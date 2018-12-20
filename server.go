@@ -545,7 +545,10 @@ func (self *Server) NewPeerConfig() *peer.Config {
 	}
 	config := &peer.Config{
 		MessageListeners: peer.MessageListeners{
-			OnBlock:     self.OnBlock,
+			OnBlockShard: ,
+			OnBlockBeacon: ,
+			OnCrossShard: ,
+			OnShardToBeacon: ,
 			OnTx:        self.OnTx,
 			OnVersion:   self.OnVersion,
 			OnGetBlocks: self.OnGetBlocks,
@@ -576,15 +579,48 @@ func (self *Server) NewPeerConfig() *peer.Config {
 
 // OnBlock is invoked when a peer receives a block message.  It
 // blocks until the coin block has been fully processed.
-func (self *Server) OnBlock(p *peer.PeerConn,
-	msg *wire.MessageBlock) {
-	Logger.log.Info("Receive a new block START")
+func (self *Server) OnBlockShard(p *peer.PeerConn,
+	msg *wire.MessageBlockShard) {
+	Logger.log.Info("Receive a new blockshard START")
 
 	var txProcessed chan struct{}
 	self.netSync.QueueBlock(nil, msg, txProcessed)
 	//<-txProcessed
 
-	Logger.log.Info("Receive a new block END")
+	Logger.log.Info("Receive a new blockshard END")
+}
+
+func (self *Server) OnBlockBeacon(p *peer.PeerConn,
+	msg *wire.MessageBlockBeacon) {
+	Logger.log.Info("Receive a new blockbeacon START")
+
+	var txProcessed chan struct{}
+	self.netSync.QueueBlock(nil, msg, txProcessed)
+	//<-txProcessed
+
+	Logger.log.Info("Receive a new blockbeacon END")
+}
+
+func (self *Server) OnCrossShard(p *peer.PeerConn,
+	msg *wire.MessageCrossShard) {
+	Logger.log.Info("Receive a new crossshard START")
+
+	var txProcessed chan struct{}
+	self.netSync.QueueBlock(nil, msg, txProcessed)
+	//<-txProcessed
+
+	Logger.log.Info("Receive a new crossshard END")
+}
+
+func (self *Server) OnShardToBeacon(p *peer.PeerConn,
+	msg *wire.MessageShardToBeacon) {
+	Logger.log.Info("Receive a new shardToBeacon START")
+
+	var txProcessed chan struct{}
+	self.netSync.QueueBlock(nil, msg, txProcessed)
+	//<-txProcessed
+
+	Logger.log.Info("Receive a new shardToBeacon END")
 }
 
 func (self *Server) OnGetBlocks(_ *peer.PeerConn, msg *wire.MessageGetBlocks) {
