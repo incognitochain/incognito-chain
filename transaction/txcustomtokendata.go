@@ -111,8 +111,8 @@ type CustomTokenParamTx struct {
 	Receiver       []TxTokenVout `json:"TokenReceiver"`
 
 	// temp variable to process coding
-	vins       []TxTokenVin
-	vinsAmount uint64
+	vins        []TxTokenVin
+	vinsAmount  uint64
 }
 
 func (self *CustomTokenParamTx) SetVins(vins []TxTokenVin) {
@@ -125,8 +125,9 @@ func (self *CustomTokenParamTx) SetVinsAmount(vinsAmount uint64) {
 
 // CreateCustomTokenReceiverArray - parse data frm rpc request to create a list vout for preparing to create a custom token tx
 // data interface is a map[paymentt-address]{transferring-amount}
-func CreateCustomTokenReceiverArray(data interface{}) []TxTokenVout {
+func CreateCustomTokenReceiverArray(data interface{}) ([]TxTokenVout, uint64) {
 	result := []TxTokenVout{}
+	voutsAmount := uint64(0)
 	receivers := data.(map[string]interface{})
 	for key, value := range receivers {
 		key, _ := wallet.Base58CheckDeserialize(key)
@@ -135,6 +136,7 @@ func CreateCustomTokenReceiverArray(data interface{}) []TxTokenVout {
 			Value:          uint64(value.(float64)),
 		}
 		result = append(result, temp)
+		voutsAmount += temp.Value
 	}
-	return result
+	return result, voutsAmount
 }
