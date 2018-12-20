@@ -1,8 +1,6 @@
 package metadata
 
 import (
-	"encoding/hex"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 )
@@ -12,18 +10,11 @@ type LoanUnlock struct {
 	MetadataBase
 }
 
-func NewLoanUnlock(data map[string]interface{}) *LoanUnlock {
-	result := LoanUnlock{}
-	s, _ := hex.DecodeString(data["LoanID"].(string))
-	result.LoanID = s
-	result.Type = LoanUnlockMeta
-	return &result
-}
-
 func (lu *LoanUnlock) Hash() *common.Hash {
 	record := string(lu.LoanID)
 
 	// final hash
+	record += string(lu.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

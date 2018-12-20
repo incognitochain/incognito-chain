@@ -7,11 +7,11 @@ import (
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/common/base58"
 )
 
 // TxCustomToken is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -63,9 +63,11 @@ func (customTokenTx *TxCustomToken) ValidateTxWithCurrentMempool(
 	}
 	txsInMem := mr.GetTxsInMem()
 	for _, txInMem := range txsInMem {
-		err := customTokenTx.validateDoubleSpendCustomTokenOnTx(txInMem.Tx)
-		if err != nil {
-			return err
+		if txInMem.Tx.GetType() == common.TxCustomTokenType {
+			err := customTokenTx.validateDoubleSpendCustomTokenOnTx(txInMem.Tx)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -169,9 +171,9 @@ func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRe
 
 // ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by constant
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
-func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainID byte) bool {
+func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainID byte, tokenID *common.Hash) bool {
 	// validate for normal tx
-	if tx.Tx.ValidateTransaction(hasPrivacy, db, chainID) {
+	if tx.Tx.ValidateTransaction(hasPrivacy, db, chainID, tokenID) {
 		if len(tx.listUtxo) == 0 {
 			return false
 		}
@@ -228,7 +230,9 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	if !ok {
 		return false
 	}
-	ok = customTokenTx.ValidateTransaction(hasPrivacy, db, chainID)
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
+	ok = customTokenTx.ValidateTransaction(hasPrivacy, db, chainID, constantTokenID)
 	if !ok {
 		return false
 	}
@@ -297,6 +301,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 		inputCoin,
 		fee,
 		false,
+		nil,
 		nil)
 	if err != nil {
 		return err

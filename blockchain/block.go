@@ -114,6 +114,11 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				tx = &transaction.TxCustomToken{}
 				parseErr = json.Unmarshal(txTempJson, &tx)
 			}
+		case common.TxCustomTokenPrivacyType:
+			{
+				tx = &transaction.TxCustomTokenPrivacy{}
+				parseErr = json.Unmarshal(txTempJson, &tx)
+			}
 		default:
 			{
 				return NewBlockChainError(UnmashallJsonBlockError, errors.New("Can not parse a wrong tx"))
@@ -161,7 +166,7 @@ func (self Block) Hash() *common.Hash {
 	record += strconv.FormatInt(self.Header.Timestamp, 10) +
 		string(self.Header.ChainID) +
 		self.Header.MerkleRoot.String() +
-		//self.Header.MerkleRootCommitments.String() +
+	//self.Header.MerkleRootCommitments.String() +
 		self.Header.PrevBlockHash.String() +
 		strconv.Itoa(int(self.Header.SalaryFund)) +
 		strconv.Itoa(int(self.Header.GOVConstitution.GOVParams.SalaryPerTx)) +
@@ -192,7 +197,7 @@ func (block *Block) updateDCBConstitution(tx metadata.Transaction, blockgen *Blk
 	if err != nil {
 		return err
 	}
-	block.Header.DCBConstitution.StartedBlockHeight = block.Header.Height
+	block.Header.DCBConstitution.StartedBlockHeight = uint32(block.Header.Height)
 	block.Header.DCBConstitution.ExecuteDuration = DCBProposal.ExecuteDuration
 	block.Header.DCBConstitution.ProposalTXID = metadataAcceptDCBProposal.DCBProposalTXID
 	block.Header.DCBConstitution.CurrentDCBNationalWelfare = GetOracleDCBNationalWelfare()
@@ -208,7 +213,7 @@ func (block *Block) updateGOVConstitution(tx metadata.Transaction, blockgen *Blk
 	if err != nil {
 		return err
 	}
-	block.Header.GOVConstitution.StartedBlockHeight = block.Header.Height
+	block.Header.GOVConstitution.StartedBlockHeight = uint32(block.Header.Height)
 	block.Header.GOVConstitution.ExecuteDuration = GOVProposal.ExecuteDuration
 	block.Header.GOVConstitution.ProposalTXID = metadataAcceptGOVProposal.GOVProposalTXID
 	block.Header.GOVConstitution.CurrentGOVNationalWelfare = GetOracleGOVNationalWelfare()

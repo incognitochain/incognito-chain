@@ -82,6 +82,9 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 			Logger.log.Infof("Number of transaction in this block %+v", len(block.Transactions))
 		}
 		for index, tx := range block.Transactions {
+			if tx.GetType() == common.TxCustomTokenPrivacyType {
+				_ = 1
+			}
 			err := self.StoreTransactionIndex(tx.Hash(), block.Hash(), index)
 			if err != nil {
 				Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)

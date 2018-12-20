@@ -10,9 +10,8 @@ const (
 const (
 	TxNormalType             = "n"  // normal tx(send and receive coin)
 	TxSalaryType             = "s"  // salary tx(gov pay salary for block producer)
-	TxRefundType             = "rf" // refund tx(gov does refund to end users for small txs)
 	TxCustomTokenType        = "t"  // token  tx with no supporting privacy
-	TxCustomTokenPrivacyType = "t"  // token  tx with supporting privacy
+	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
 )
 
 // for mining consensus
@@ -43,7 +42,7 @@ const (
 	MaximumProposalExplainationLength = 1000
 	NumberOfDCBGovernors              = 50
 	NumberOfGOVGovernors              = 50
-	EncryptionPhaseDuration           = 5
+	EncryptionPhaseDuration           = uint32(5)
 )
 
 // board types
@@ -61,7 +60,7 @@ var (
 	ConstantID      = [HashSize]byte{4} // To send Constant in custom token
 	VoteDCBTokenID  = [HashSize]byte{5}
 	VoteGOVTokenID  = [HashSize]byte{6}
-	OffchainAssetID = [HashSize]byte{7}
+	OffchainAssetID = [HashSize]byte{7, 7, 7, 7, 7, 7, 7, 7} // First 8 bytes of offchain asset
 )
 
 // asset IDs for oracle feed

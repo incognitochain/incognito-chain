@@ -4,8 +4,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 
-	"log"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 )
@@ -33,8 +31,10 @@ var (
 	feeEstimator              = []byte("feeEstimator")
 	Splitter                  = []byte("-[-]-")
 	TokenPrefix               = []byte("token-")
+	PrivacyTokenPrefix        = []byte("privacy-token-")
 	TokenPaymentAddressPrefix = []byte("token-paymentaddress-")
 	tokenInitPrefix           = []byte("token-init-")
+	privacyTokenInitPrefix    = []byte("privacy-token-init-")
 	loanIDKeyPrefix           = []byte("loanID-")
 	loanTxKeyPrefix           = []byte("loanTx-")
 	loanRequestPostfix        = []byte("-req")
@@ -43,16 +43,16 @@ var (
 
 	//vote prefix
 	voteDCBBoardSumPrefix         = []byte("votedcbsumboard-")
-	voteGOVBoardSumPrefix         = []byte("votegovsumboard-")
 	voteDCBBoardCountPrefix       = []byte("votedcbcountboard-")
-	voteGOVBoardCountPrefix       = []byte("votegovcountboard-")
 	VoteDCBBoardListPrefix        = []byte("votedcblistboard-")
-	VoteGOVBoardListPrefix        = []byte("votegovlistboard-")
 	DCBVoteTokenAmountPrefix      = []byte("dcbvotetokenamount-")
+	voteGOVBoardSumPrefix         = []byte("votegovsumboard-")
+	voteGOVBoardCountPrefix       = []byte("votegovcountboard-")
+	VoteGOVBoardListPrefix        = []byte("votegovlistboard-")
 	GOVVoteTokenAmountPrefix      = []byte("govvotetokenamount-")
 	threePhraseCryptoOwnerPrefix  = []byte("threephrasecryptoownerprefix-")
 	threePhraseCryptoSealerPrefix = []byte("threephrasecryptosealerprefix-")
-	threePhraseCryptolv3Prefix    = []byte("threephrasecryptolv3prefix")
+	threePhraseVoteValuePrefix    = []byte("threephrasevotevalueprefix-")
 
 	Unreward = []byte("unreward")
 	Spent    = []byte("spent")
@@ -97,7 +97,6 @@ func (db *db) Delete(key []byte) error {
 func (db *db) Get(key []byte) ([]byte, error) {
 	value, err := db.lvdb.Get(key, nil)
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 	return value, nil
@@ -111,65 +110,21 @@ func (db db) GetKey(keyType string, key interface{}) []byte {
 	case string(blockKeyIdxPrefix):
 		dbkey = append(blockKeyIdxPrefix, key.(*common.Hash)[:]...)
 	case string(serialNumbersPrefix):
-		dbkey = append(serialNumbersPrefix, []byte(key.(string))...)
+		dbkey = append(serialNumbersPrefix, []byte(key.(*common.Hash).String())...)
 	case string(commitmentsPrefix):
-		dbkey = append(commitmentsPrefix, []byte(key.(string))...)
+		dbkey = append(commitmentsPrefix, []byte(key.(*common.Hash).String())...)
 	case string(outcoinsPrefix):
-		dbkey = append(outcoinsPrefix, []byte(key.(string))...)
+		dbkey = append(outcoinsPrefix, []byte(key.(*common.Hash).String())...)
 	case string(snderivatorsPrefix):
-		dbkey = append(snderivatorsPrefix, []byte(key.(string))...)
+		dbkey = append(snderivatorsPrefix, []byte(key.(*common.Hash).String())...)
 	case string(TokenPrefix):
 		dbkey = append(TokenPrefix, key.(*common.Hash)[:]...)
+	case string(PrivacyTokenPrefix):
+		dbkey = append(PrivacyTokenPrefix, []byte(key.(*common.Hash).String())...)
 	case string(tokenInitPrefix):
 		dbkey = append(tokenInitPrefix, key.(*common.Hash)[:]...)
-
-	// Voting case
-	case string(voteDCBBoardSumPrefix):
-		postfix := []byte(key.(string))
-		dbkey = append(voteDCBBoardSumPrefix, postfix...)
-	case string(voteDCBBoardCountPrefix):
-		postfix := []byte(key.(string))
-		dbkey = append(voteDCBBoardCountPrefix, postfix...)
-	case string(VoteDCBBoardListPrefix):
-		postfix := []byte(key.(string))
-		dbkey = append(VoteDCBBoardListPrefix, postfix...)
-	case string(voteGOVBoardSumPrefix):
-		postfix := []byte(key.(string))
-		dbkey = append(voteGOVBoardSumPrefix, postfix...)
-	case string(voteGOVBoardCountPrefix):
-		postfix := []byte(key.(string))
-		dbkey = append(voteGOVBoardCountPrefix, postfix...)
-	case string(VoteGOVBoardListPrefix):
-		postfix := []byte(key.(string))
-		dbkey = append(VoteGOVBoardListPrefix, postfix...)
-	case string(DCBVoteTokenAmountPrefix):
-		postfix := []byte(key.(string))
-		dbkey = append(DCBVoteTokenAmountPrefix, postfix...)
-	case string(GOVVoteTokenAmountPrefix):
-		postfix := []byte(key.(string))
-		dbkey = append(GOVVoteTokenAmountPrefix, postfix...)
+	case string(privacyTokenInitPrefix):
+		dbkey = append(privacyTokenInitPrefix, []byte(key.(*common.Hash).String())...)
 	}
 	return dbkey
-}
-
-// get real PubKey from dbkey
-func (db db) ReverseGetKey(keyType string, dbkey []byte) (interface{}, error) {
-	var key interface{}
-	switch keyType {
-	case string(voteDCBBoardSumPrefix):
-		key = string(dbkey[len(voteDCBBoardSumPrefix):])
-	case string(voteDCBBoardCountPrefix):
-		key = string(dbkey[len(voteDCBBoardCountPrefix):])
-	case string(VoteDCBBoardListPrefix):
-		key = string(dbkey[len(VoteDCBBoardListPrefix):])
-	case string(voteGOVBoardSumPrefix):
-		key = string(dbkey[len(voteGOVBoardSumPrefix):])
-	case string(voteGOVBoardCountPrefix):
-		key = string(dbkey[len(voteGOVBoardCountPrefix):])
-	case string(VoteGOVBoardListPrefix):
-		key = string(dbkey[len(VoteGOVBoardListPrefix):])
-	default:
-		return nil, errors.New("This keyType is not handled yet")
-	}
-	return key, nil
 }

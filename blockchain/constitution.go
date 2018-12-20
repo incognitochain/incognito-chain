@@ -8,8 +8,8 @@ import (
 )
 
 type ConstitutionInfo struct {
-	StartedBlockHeight int32
-	ExecuteDuration    int32
+	StartedBlockHeight uint32
+	ExecuteDuration    uint32
 	ProposalTXID       common.Hash
 }
 
@@ -19,24 +19,36 @@ type GOVConstitution struct {
 	GOVParams                 params.GOVParams
 }
 
+func (dcbConstitution DCBConstitution) GetEndedBlockHeight() uint32 {
+	return dcbConstitution.StartedBlockHeight + dcbConstitution.ExecuteDuration
+}
+
+func (govConstitution GOVConstitution) GetEndedBlockHeight() uint32 {
+	return govConstitution.StartedBlockHeight + govConstitution.ExecuteDuration
+}
+
 type DCBConstitution struct {
 	ConstitutionInfo
 	CurrentDCBNationalWelfare int32
 	DCBParams                 params.DCBParams
 }
 
-func (dcbConstitution *DCBConstitution) GetEndedBlockHeight() int32 {
-	return dcbConstitution.StartedBlockHeight + dcbConstitution.ExecuteDuration
-}
-
-func (govConstitution *GOVConstitution) GetEndedBlockHeight() int32 {
-	return govConstitution.StartedBlockHeight + govConstitution.ExecuteDuration
-}
-
 type DCBConstitutionHelper struct{}
 type GOVConstitutionHelper struct{}
 
-func (DCBConstitutionHelper) GetStartedNormalVote(blockgen *BlkTmplGenerator, chainID byte) int32 {
+func (DCBConstitutionHelper) GetEndedBlockHeight(blockgen *BlkTmplGenerator, chainID byte) uint32 {
+	BestBlock := blockgen.chain.BestState[chainID].BestBlock
+	lastDCBConstitution := BestBlock.Header.DCBConstitution
+	return lastDCBConstitution.StartedBlockHeight + lastDCBConstitution.ExecuteDuration
+}
+
+func (GOVConstitutionHelper) GetEndedBlockHeight(blockgen *BlkTmplGenerator, chainID byte) uint32 {
+	BestBlock := blockgen.chain.BestState[chainID].BestBlock
+	lastGOVConstitution := BestBlock.Header.GOVConstitution
+	return lastGOVConstitution.StartedBlockHeight + lastGOVConstitution.ExecuteDuration
+}
+
+func (DCBConstitutionHelper) GetStartedNormalVote(blockgen *BlkTmplGenerator, chainID byte) uint32 {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	lastDCBConstitution := BestBlock.Header.DCBConstitution
 	return lastDCBConstitution.StartedBlockHeight - common.EncryptionPhaseDuration
@@ -54,7 +66,7 @@ func (DCBConstitutionHelper) GetAmountVoteToken(tx metadata.Transaction) uint64 
 	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
 }
 
-func (GOVConstitutionHelper) GetStartedNormalVote(blockgen *BlkTmplGenerator, chainID byte) int32 {
+func (GOVConstitutionHelper) GetStartedNormalVote(blockgen *BlkTmplGenerator, chainID byte) uint32 {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	lastGOVConstitution := BestBlock.Header.GOVConstitution
 	return lastGOVConstitution.StartedBlockHeight - common.EncryptionPhaseDuration
@@ -72,20 +84,28 @@ func (GOVConstitutionHelper) GetAmountVoteToken(tx metadata.Transaction) uint64 
 	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
 }
 
-func (DCBConstitutionHelper) TxAcceptProposal(originTx metadata.Transaction) metadata.Transaction {
+func (DCBConstitutionHelper) TxAcceptProposal(txId *common.Hash) metadata.Transaction {
 	acceptTx := transaction.Tx{
 		Metadata: &metadata.AcceptDCBProposalMetadata{
-			DCBProposalTXID: *originTx.Hash(),
+			DCBProposalTXID: *txId,
 		},
 	}
 	return &acceptTx
 }
 
-func (GOVConstitutionHelper) TxAcceptProposal(originTx metadata.Transaction) metadata.Transaction {
+func (GOVConstitutionHelper) TxAcceptProposal(txId *common.Hash) metadata.Transaction {
 	acceptTx := transaction.Tx{
 		Metadata: &metadata.AcceptGOVProposalMetadata{
-			GOVProposalTXID: *originTx.Hash(),
+			GOVProposalTXID: *txId,
 		},
 	}
 	return &acceptTx
+}
+
+func (DCBConstitutionHelper) GetLowerCaseBoardType() string {
+	return "dcb"
+}
+
+func (GOVConstitutionHelper) GetLowerCaseBoardType() string {
+	return "gov"
 }
