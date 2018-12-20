@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bytes"
 	"math"
 
 	"github.com/ninjadotorg/constant/common"
@@ -151,6 +152,15 @@ func (self Merkle) BuildMerkleTreeOfHashs(shardsHash []*common.Hash) []*common.H
 	}
 
 	return merkles
+}
+
+func (self Merkle) VerifyMerkleRootOfHashs(merkleTree []*common.Hash, merkleRoot *common.Hash) bool {
+	res := self.BuildMerkleTreeOfHashs(merkleTree)
+	tempRoot := res[len(res)-1].GetBytes()
+	if bytes.Compare(tempRoot, merkleRoot.GetBytes()) == 0 {
+		return true
+	}
+	return false
 }
 
 // nextPowerOfTwo returns the next highest power of two from a given number if
