@@ -310,7 +310,11 @@ concludeBlock:
 		Logger.log.Error(err)
 		return nil, err
 	}
-	evals := blockgen.updateOracleValues()
+	evals, err := blockgen.updateOracleValues()
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
+	}
 	oracleRewardTxs, totalOracleRewards, err := blockgen.buildOracleRewardTxs(evals, chainID, privatekey)
 	if err != nil {
 		Logger.log.Error(err)

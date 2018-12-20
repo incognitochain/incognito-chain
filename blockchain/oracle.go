@@ -2,6 +2,10 @@ package blockchain
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
+	"math"
+	"sort"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
@@ -17,26 +21,79 @@ type Evaluation struct {
 	Reward           uint64
 }
 
-func (blockGen *BlkTmplGenerator) groupOracleFeedTxsByType() map[string][]metadata.Transaction {
-	return map[string][]metadata.Transaction{}
+type Evals []*Evaluation
+
+func (p Evals) Len() int           { return len(p) }
+func (p Evals) Less(i, j int) bool { return p[i].OracleFeed.Price < p[j].OracleFeed.Price }
+func (p Evals) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+
+func (p Evals) SortEvals(isDesc bool) Evals {
+	if isDesc {
+		sort.Sort(sort.Reverse(p))
+	}
+	sort.Sort(p)
+	return p
 }
 
-// func computeMedian(txs []metadata.Transaction) uint64 {
-// 	txsLen := len(txs)
-// 	if txsLen == 0 {
-// 		return 0
-// 	}
-// 	sum := 0
-// 	for _, tx := range txs {
-// 		meta := tx.GetMetadata()
-// 		oracleFeed, ok := meta.(*metadata.OracleFeed)
-// 		if !ok {
-// 			continue
-// 		}
-// 		sum += oracleFeed.Price
-// 	}
-// 	return sum / txsLen
-// }
+func (blockGen *BlkTmplGenerator) groupOracleFeedTxsByOracleType(
+	updateFrequency uint32,
+) (map[string][]metadata.Transaction, error) {
+	txsByOracleType := map[string][]metadata.Transaction{}
+	header := blockGen.chain.BestState[0].BestBlock.Header
+	blockHash := header.PrevBlockHash
+	for i := updateFrequency; i > 0; i-- {
+		blockBytes, err := blockGen.chain.config.DataBase.FetchBlock(&blockHash)
+		if err != nil {
+			return nil, err
+		}
+		block := Block{}
+		err = json.Unmarshal(blockBytes, &block)
+		if err != nil {
+			return nil, err
+		}
+		for _, tx := range block.Transactions {
+			meta := tx.GetMetadata()
+			if meta.GetType() != metadata.OracleFeedMeta {
+				continue
+			}
+			oracleFeed, ok := meta.(*metadata.OracleFeed)
+			if !ok {
+				return nil, errors.New("Could not parse OracleFeed metadata")
+			}
+			assetTypeStr := string(oracleFeed.AssetType[:])
+			_, existed := txsByOracleType[assetTypeStr]
+			if !existed {
+				txsByOracleType[assetTypeStr] = []metadata.Transaction{tx}
+			} else {
+				txsByOracleType[assetTypeStr] = append(txsByOracleType[assetTypeStr], tx)
+			}
+		}
+		blockHash = block.Header.PrevBlockHash
+	}
+	return txsByOracleType, nil
+}
+
+func computeRewards(
+	evals []*Evaluation,
+	oracleRewardMultiplier uint8,
+) (uint64, []*Evaluation) {
+	sortedEvals := Evals(evals).SortEvals(false)
+	medPos := len(evals) / 2
+	minPos := medPos / 2
+	maxPos := medPos + minPos
+	delta := math.Abs(float64(sortedEvals[minPos].OracleFeed.Price - sortedEvals[maxPos].OracleFeed.Price))
+	selectedPrice := sortedEvals[medPos].OracleFeed.Price
+	rewardedEvals := []*Evaluation{}
+	for i, eval := range sortedEvals {
+		if i < minPos || i > maxPos {
+			continue
+		}
+		basePayout := eval.Tx.GetTxFee()
+		eval.Reward = basePayout + uint64(oracleRewardMultiplier)*uint64(math.Abs(delta-float64(2*(eval.OracleFeed.Price-selectedPrice)))/delta)
+		rewardedEvals = append(rewardedEvals, eval)
+	}
+	return selectedPrice, rewardedEvals
+}
 
 func getSenderAddress(tx *transaction.Tx) *privacy.PaymentAddress {
 	if tx.Proof == nil || len(tx.Proof.InputCoins) == 0 {
@@ -50,11 +107,6 @@ func getSenderAddress(tx *transaction.Tx) *privacy.PaymentAddress {
 	return &privacy.PaymentAddress{
 		Pk: pk,
 	}
-}
-
-func computeReward(feedPrice uint64, median uint64) uint64 {
-	// TODO: update here
-	return 100
 }
 
 func refundOracleFeeders(txs []metadata.Transaction) []*Evaluation {
@@ -109,16 +161,20 @@ func update(oracleValues *params.Oracle, updatedValues map[string]uint64) {
 	}
 }
 
-func (blockGen *BlkTmplGenerator) updateOracleValues() []*Evaluation {
+func (blockGen *BlkTmplGenerator) updateOracleValues() ([]*Evaluation, error) {
 	header := blockGen.chain.BestState[0].BestBlock.Header
-	oracleNetwork := header.GOVConstitution.GOVParams.OracleNetwork
+	govParams := header.GOVConstitution.GOVParams
+	oracleNetwork := govParams.OracleNetwork
 	if header.Height == 0 || uint32(header.Height)%oracleNetwork.UpdateFrequency != 0 {
-		return []*Evaluation{}
+		return []*Evaluation{}, nil
 	}
-	txsByType := blockGen.groupOracleFeedTxsByType()
+	txsByOracleType, err := blockGen.groupOracleFeedTxsByOracleType(oracleNetwork.UpdateFrequency)
+	if err != nil {
+		return nil, err
+	}
 	rewardAndRefundEvals := []*Evaluation{}
 	updatedValues := map[string]uint64{}
-	for oracleType, txs := range txsByType {
+	for oracleType, txs := range txsByOracleType {
 		txsLen := len(txs)
 		if txsLen < int(oracleNetwork.Quorum) {
 			refundEvals := refundOracleFeeders(txs)
@@ -126,7 +182,6 @@ func (blockGen *BlkTmplGenerator) updateOracleValues() []*Evaluation {
 			continue
 		}
 		evals := []*Evaluation{}
-		sum := uint64(0)
 		for _, tx := range txs {
 			normalTx, ok := tx.(*transaction.Tx)
 			if !ok {
@@ -147,21 +202,17 @@ func (blockGen *BlkTmplGenerator) updateOracleValues() []*Evaluation {
 				OracleFeederAddr: senderAddr,
 			}
 			evals = append(evals, eval)
-			sum += oracleFeed.Price
 		}
-		median := sum / uint64(txsLen)
-		updatedValues[oracleType] = median
-		for _, eval := range evals {
-			feedPrice := eval.OracleFeed.Price
-			reward := computeReward(feedPrice, median)
-			if reward > 0 {
-				rewardAndRefundEvals = append(rewardAndRefundEvals, eval)
-			}
-		}
+		selectedPrice, rewardedEvals := computeRewards(
+			evals,
+			oracleNetwork.OracleRewardMultiplier,
+		)
+		updatedValues[oracleType] = selectedPrice
+		rewardAndRefundEvals = append(rewardAndRefundEvals, rewardedEvals...)
 	}
 	// update oracle values in block header
 	update(header.Oracle, updatedValues)
-	return rewardAndRefundEvals
+	return rewardAndRefundEvals, nil
 }
 
 func (blockGen *BlkTmplGenerator) buildOracleRewardTxs(
