@@ -73,3 +73,20 @@ func NewBestStateBeacon() *BestStateBeacon {
 	bestStateBeacon.CurrentRandomNumber = -1
 	return &bestStateBeacon
 }
+
+func (self *BestStateBeacon) getAssignedShardIDFromPubkey(pubkey string) byte {
+	for shardID, pubkeyArr := range self.ShardPendingValidator {
+		found := common.IndexOfStr(pubkey, pubkeyArr)
+		if found > -1 {
+			return shardID
+		}
+	}
+
+	for shardID, pubkeyArr := range self.ShardCommittee {
+		found := common.IndexOfStr(pubkey, pubkeyArr)
+		if found > -1 {
+			return shardID
+		}
+	}
+	return -1
+}
