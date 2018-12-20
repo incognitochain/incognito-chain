@@ -115,7 +115,6 @@ func (coin *Coin) Bytes() []byte {
 		coin_bytes = append(coin_bytes, byte(0))
 	}
 
-	//fmt.Printf("len coin bytes : %v\n", len(coin_bytes))
 	return coin_bytes
 }
 
@@ -202,8 +201,6 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 
 // InputCoin represents a input coin of transaction
 type InputCoin struct {
-	//ShardId *big.Int
-	//BlockHeight *big.Int
 	CoinDetails *Coin
 }
 
@@ -311,10 +308,6 @@ func (coinDetailsEncrypted *CoinDetailsEncrypted) Bytes() [] byte {
 	res = append(res, coinDetailsEncrypted.SymKeyEncrypted...)
 	res = append(res, coinDetailsEncrypted.ValueEncrypted...)
 
-	//fmt.Printf("Byte - len random encrypted: %v\n", len(coinDetailsEncrypted.RandomEncrypted))
-	//fmt.Printf("Byte - len sym key encrypted: %v\n", len(coinDetailsEncrypted.SymKeyEncrypted))
-	//fmt.Printf("Byte - len value encrypted: %v\n", len(coinDetailsEncrypted.ValueEncrypted))
-
 	return res
 }
 func (coinDetailsEncrypted *CoinDetailsEncrypted) SetBytes(bytes []byte) error{
@@ -335,13 +328,10 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error {
 	symKeyPoint := new(EllipticPoint)
 	symKeyPoint.Randomize()
 	symKeyByte := symKeyPoint.X.Bytes()
-	//fmt.Printf("ENCRYPT --------- symKey plaintext : %v\n", symKeyByte)
 
 	/**** Encrypt coin details using symKeyByte ****/
-	// encrypt Randomness of coin
+	// encrypt coin's Randomness
 	randomnessBytes := coin.CoinDetails.Randomness.Bytes()
-	//fmt.Printf("ENCRYPT --------- randomnessBytes plaintext : %v\n", randomnessBytes)
-	//fmt.Printf("ENCRYPT --------- Len randomnessBytes plaintext : %v\n", len(randomnessBytes))
 
 	block, err := aes.NewCipher(symKeyByte)
 	if err != nil {
@@ -360,25 +350,11 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error {
 	stream := cipher.NewCTR(block, iv)
 	stream.XORKeyStream(coin.CoinDetailsEncrypted.RandomEncrypted[aes.BlockSize:], randomnessBytes)
 
-
-
-	// ***************** encrypt Value of coin
+	// encrypt coin's Value
 	ValueBytes := new(big.Int).SetUint64(coin.CoinDetails.Value).Bytes()
-	//fmt.Printf("ENCRYPT ------- Value byte : %v\n", ValueBytes)
-
-	//block2, err := aes.NewCipher(symKeyByte)
-	//if err != nil {
-	//	return err
-	//}
-
-
 	// The IV needs to be unique, but not secure. Therefore it's common to
 	// include it at the beginning of the ciphertext.
 	coin.CoinDetailsEncrypted.ValueEncrypted = make([]byte, aes.BlockSize+len(ValueBytes))
-	//iv2 := coin.CoinDetailsEncrypted.RandomEncrypted[:aes.BlockSize]
-	//if _, err := io.ReadFull(rand.Reader, iv2); err != nil {
-	//	panic(err)
-	//}
 
 	stream = cipher.NewCTR(block, iv)
 	stream.XORKeyStream(coin.CoinDetailsEncrypted.ValueEncrypted[aes.BlockSize:], ValueBytes)
@@ -412,9 +388,6 @@ func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 	symKeyCipher.SetBytes(coin.CoinDetailsEncrypted.SymKeyEncrypted)
 	symKeyPoint := privKey.ElGamalDec(symKeyCipher)
 
-	//fmt.Printf("DECRYPT --------- symKeybyte plaintext : %v\n", symKeyPoint.X.Bytes())
-
-
 	/*** Decrypt Encrypted using receiver's receiving key to get coin details (Randomness) ***/
 	randomness := make([]byte, 32)
 	// Set key to decrypt
@@ -426,8 +399,6 @@ func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 	iv := coin.CoinDetailsEncrypted.RandomEncrypted[:aes.BlockSize]
 	stream := cipher.NewCTR(block, iv)
 	stream.XORKeyStream(randomness, coin.CoinDetailsEncrypted.RandomEncrypted[aes.BlockSize:])
-
-	//fmt.Printf("DECRYPT --------- randomness plaintext : %v\n", randomness)
 
 	/*** Decrypt Encrypted using receiver's receiving key to get coin details (Value) ***/
 	value := make([]byte, len(coin.CoinDetailsEncrypted.ValueEncrypted[aes.BlockSize:]))
@@ -443,48 +414,7 @@ func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 
 //CommitAll commits a coin with 5 attributes (public key, value, serial number derivator, last byte pk, r)
 func (coin *Coin) CommitAll() {
-	values := []*big.Int{big.NewInt(0), big.NewInt(int64(coin.Value)), coin.SNDerivator, new(big.Int).SetBytes([]byte{coin.GetPubKeyLastByte()}), coin.Randomness}
-	//fmt.Printf("coin info: %v\n", values)
+	values := []*big.Int{big.NewInt(0), new(big.Int).SetUint64(coin.Value), coin.SNDerivator, new(big.Int).SetBytes([]byte{coin.GetPubKeyLastByte()}), coin.Randomness}
 	coin.CoinCommitment = PedCom.CommitAll(values)
 	coin.CoinCommitment = coin.CoinCommitment.Add(coin.PublicKey)
 }
-
-//// CommitPublicKey commits a public key's coin
-//func (coin *Coin) CommitPublicKey() []byte {
-//	var values [PCM_CAPACITY-1][]byte
-//	values = [PCM_CAPACITY-1][]byte{coin.PublicKey, nil, nil, coin.Randomness}
-//
-//
-//	var commitment []byte
-//	commitment = append(commitment, PK)
-//	commitment = append(commitment, PedCom.Commit(values)...)
-//	return commitment
-//}
-//
-//// CommitValue commits a value's coin
-//func (coin *Coin) CommitValue() []byte {
-//	var values [PCM_CAPACITY-1][]byte
-//	values = [PCM_CAPACITY-1][]byte{nil, coin.H, nil, coin.Randomness}
-//
-//	var commitment []byte
-//	commitment = append(commitment, VALUE)
-//	commitment = append(commitment, PedCom.Commit(values)...)
-//	return commitment
-//}
-//
-//// CommitSNDerivator commits a serial number's coin
-//func (coin *Coin) CommitSNDerivator() []byte {
-//	var values [PCM_CAPACITY-1][]byte
-//	values = [PCM_CAPACITY-1][]byte{nil, nil, coin.SNDerivator, coin.Randomness}
-//
-//	var commitment []byte
-//	commitment = append(commitment, SND)
-//	commitment = append(commitment, PedCom.Commit(values)...)
-//	return commitment
-//}
-
-// UnspentCoin represents a list of coins to be spent corresponding to spending key
-//type UnspentCoin struct {
-//	SpendingKey SpendingKey
-//	UnspentCoinList map[Coin]big.Int
-//}

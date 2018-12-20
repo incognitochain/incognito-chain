@@ -3,7 +3,6 @@ package privacy
 import (
 	"crypto/ecdsa"
 	"crypto/rand"
-	"fmt"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
@@ -32,15 +31,11 @@ func Verify(signature []byte, hash []byte, address []byte) bool {
 	verKey := new(ecdsa.PublicKey)
 	verKey.Curve = Curve
 
-	point := new(EllipticPoint)
-
-	point, _ = DecompressKey(address)
-	verKey.X = point.X
-	verKey.Y = point.Y
-
-	fmt.Printf("verKey.X: %v\n", verKey.X)
-	fmt.Printf("verKey.Y: %v\n", verKey.Y)
-
+	point, err := DecompressKey(address)
+	if err != nil{
+		return false
+	}
+	verKey.X, verKey.Y = point.X, point.Y
 	res := ecdsa.Verify(verKey, hash, r, s)
 	return res
 }
