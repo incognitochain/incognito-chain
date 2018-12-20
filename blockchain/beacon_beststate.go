@@ -24,7 +24,8 @@ type BestStateBeacon struct {
 	BestBlock     *BeaconBlock // The block.
 	BestShardHash []common.Hash
 
-	BeaconHeight uint64
+	BeaconHeight      uint64
+	BeaconLeaderIndex uint64
 
 	BeaconCommittee        []string
 	BeaconPendingValidator []string
@@ -72,4 +73,40 @@ func NewBestStateBeacon() *BestStateBeacon {
 	bestStateBeacon.Params = make(map[string]string)
 	bestStateBeacon.CurrentRandomNumber = -1
 	return &bestStateBeacon
+}
+
+// Get role of a public key base on best state beacond
+// return node-role, <shardID>
+func (self *BestStateBeacon) GetPubkeyRole(pubkey string) (string, int) {
+
+	for shardID, pubkeyArr := range self.ShardPendingValidator {
+		found := common.IndexOfStr(pubkey, pubkeyArr)
+		if found > -1 {
+			return "shard", int(shardID)
+		}
+	}
+
+	for shardID, pubkeyArr := range self.ShardCommittee {
+		found := common.IndexOfStr(pubkey, pubkeyArr)
+		if found > -1 {
+			return "shard", int(shardID)
+		}
+	}
+
+	found := common.IndexOfStr(pubkey, self.BeaconCommittee)
+	if found > -1 {
+		if uint64(found) == self.BeaconLeaderIndex+1 {
+			return "beacon-leader", 0
+		} else {
+			return "beacon-validator", 0
+		}
+
+	}
+
+	found = common.IndexOfStr(pubkey, self.BeaconPendingValidator)
+	if found > -1 {
+		return "beacon-pending", 0
+	}
+
+	return "", 0
 }
