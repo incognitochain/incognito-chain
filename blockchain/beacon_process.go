@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"errors"
 	"sort"
@@ -18,6 +19,10 @@ Insert new block into beaconchain
 	2.2 Store BestStateBeacon
 3. Store Block
 */
+const (
+	VERSION = 1
+)
+
 func (self *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
@@ -45,6 +50,7 @@ func (self *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
+	//===================Post-Verify == Validation============================
 	Logger.log.Infof("Verify Post-Process block %+v to Blockchain", blockHash)
 	err = self.VerifyPostProcessingBlockBeacon(block)
 	if err != nil {
@@ -52,6 +58,7 @@ func (self *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
+	//===================Store State============================
 	Logger.log.Infof("Store BeaconBestState block %+v", blockHash)
 	err = self.StoreBeaconBestState()
 	if err != nil {
@@ -59,7 +66,7 @@ func (self *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
-	//===================Store============================
+	//===================Store Block============================
 	Logger.log.Infof("Store Beacon block %+v", blockHash)
 	err = self.config.DataBase.StoreBeaconBlock(block)
 	if err != nil {
@@ -72,7 +79,6 @@ func (self *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
 }
 
 func (self *BlockChain) VerifyPreProcessingBlockBeacon(block *BeaconBlock) error {
-	return nil
 	/* Verify Pre-prosessing data
 	- Signature
 	- version
@@ -88,23 +94,38 @@ func (self *BlockChain) VerifyPreProcessingBlockBeacon(block *BeaconBlock) error
 	return nil
 }
 
-func (self *BlockChain) VerifyPostProcessingBlockBeacon(block *BeaconBlock) error {
+//TODO: store block & state offcial
+func (self *BlockChain) AcceptBeaconBlock(blockHeight uint64, aggregatedSig string, validatorsIdx []int) error {
 	return nil
+}
+
+//TODO: verify but not store
+func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) error {
+	return nil
+}
+func (self *BlockChain) VerifyPostProcessingBlockBeacon(block *BeaconBlock) error {
 	/* Verify Post-processing data
 	- Validator root: BeaconCommittee + BeaconPendingValidator
 	- Candidate root: CandidateBeaconWaitingForCurrentRandom + CandidateBeaconWaitingForNextRandom
 	*/
 	var (
-		err error
+		err  error
+		strs []string
 	)
-	err = VerifyRootHashFromStringArray(self.BestState.Beacon.BeaconCommittee, self.BestState.Beacon.BeaconPendingValidator, block.Header.ValidatorsRoot)
+
+	strs = append(strs, self.BestState.Beacon.BeaconCommittee...)
+	strs = append(strs, self.BestState.Beacon.BeaconPendingValidator...)
+	err = VerifyHashFromStringArray(strs, block.Header.ValidatorsRoot)
 	if err != nil {
-		return err
+		return NewBlockChainError(UnExpectedError, err)
 	}
 
-	err = VerifyRootHashFromStringArray(self.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom, self.BestState.Beacon.CandidateBeaconWaitingForNextRandom, block.Header.CandidateRoot)
+	strs = []string{}
+	strs = append(strs, self.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom...)
+	strs = append(strs, self.BestState.Beacon.CandidateBeaconWaitingForNextRandom...)
+	err = VerifyHashFromStringArray(strs, block.Header.CandidateRoot)
 	if err != nil {
-		return err
+		return NewBlockChainError(UnExpectedError, err)
 	}
 
 	return nil
@@ -253,6 +274,8 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	}
 	return nil
 }
+
+//===================================Util for Beacon=============================
 func GetStakingCandidate(beaconBlock BeaconBlock) (beacon []string, shard []string) {
 
 	beaconBlockBody := beaconBlock.Body
@@ -408,6 +431,32 @@ func VerifyRootHashFromStringArray(strs1 []string, strs2 []string, hash common.H
 		err = NewBlockChainError(UnExpectedError, errors.New("Error verify merkle root"))
 		Logger.log.Errorf("Error in VerifyRootHashFromStringArray %+v", err)
 		return err
+	}
+	return nil
+}
+
+func GenerateHashFromStringArray(strs []string) (common.Hash, error) {
+	var (
+		hash common.Hash
+		buf  bytes.Buffer
+	)
+	for _, value := range strs {
+		buf.WriteString(value)
+	}
+	temp := sha256.Sum256(buf.Bytes())
+	if err := hash.SetBytes(temp[:]); err != nil {
+		return common.Hash{}, err
+	}
+	return hash, nil
+}
+
+func VerifyHashFromStringArray(strs []string, hash common.Hash) error {
+	res, err := GenerateHashFromStringArray(strs)
+	if err != nil {
+		return err
+	}
+	if bytes.Compare(res.GetBytes(), hash.GetBytes()) != 0 {
+		return errors.New("Error verify hash from string")
 	}
 	return nil
 }
