@@ -375,10 +375,12 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 				Value:          receiverAmount,
 			})
 		}
-		VoutsTemp = append(VoutsTemp, TxTokenVout{
-			PaymentAddress: tokenParams.vins[0].PaymentAddress,
-			Value:          refundTokenAmount,
-		})
+		if refundTokenAmount > 0 {
+			VoutsTemp = append(VoutsTemp, TxTokenVout{
+				PaymentAddress: tokenParams.vins[0].PaymentAddress,
+				Value:          refundTokenAmount,
+			})
+		}
 		txCustomToken.TxTokenData.Vouts = VoutsTemp
 	}
 
