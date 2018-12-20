@@ -925,7 +925,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 
 	//Calculate new coin commitment
 
-	fmt.Println("PROVING DONE!!!")
+	fmt.Println("Privacy log: PROVING DONE!!!")
 	return proof, nil
 }
 
