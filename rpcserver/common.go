@@ -90,7 +90,9 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender)
+	tokenID := &common.Hash{}
+	tokenID.SetBytes(common.ConstantID[:])
+	outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, tokenID)
 	candidateOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, note := range outCoins {
 		amount := note.CoinDetails.Value
@@ -138,6 +140,125 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		realFee,
 		tokenParams,
 		listCustomTokens,
+	)
+
+	return tx, err
+}
+
+// buildRawCustomTokenTransaction ...
+func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
+	params interface{},
+) (*transaction.TxCustomTokenPrivacy, error) {
+	// all params
+	arrayParams := common.InterfaceSlice(params)
+
+	// param #1: private key of sender
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
+	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	// param #2: estimation fee coin per kb
+	estimateFeeCoinPerKb := int64(arrayParams[1].(float64))
+
+	// param #3: estimation fee coin per kb by numblock
+	numBlock := uint64(arrayParams[2].(float64))
+
+	// param #4: token params
+	tokenParamsRaw := arrayParams[3].(map[string]interface{})
+	tokenParams := &transaction.CustomTokenPrivacyParamTx{
+		PropertyID:     tokenParamsRaw["TokenID"].(string),
+		PropertyName:   tokenParamsRaw["TokenName"].(string),
+		PropertySymbol: tokenParamsRaw["TokenSymbol"].(string),
+		TokenTxType:    int(tokenParamsRaw["TokenTxType"].(float64)),
+		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
+		Receiver:       transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"]),
+		TokenInput:     nil,
+	}
+	switch tokenParams.TokenTxType {
+	case transaction.CustomTokenTransfer:
+		{
+			tokenID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+			if err != nil {
+				return nil, NewRPCError(ErrUnexpected, err)
+			}
+			outputTokens, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, tokenID)
+			if err != nil {
+				return nil, NewRPCError(ErrUnexpected, err)
+			}
+			intputToken := transaction.ConvertOutputCoinToInputCoin(outputTokens)
+			tokenParams.TokenInput = intputToken
+		}
+	case transaction.CustomTokenInit:
+		{
+			if tokenParams.Receiver[0].Amount != tokenParams.Amount { // Init with wrong max amount of custom token
+				return nil, NewRPCError(ErrUnexpected, errors.New("Init with wrong max amount of property"))
+			}
+		}
+	}
+
+	totalAmmount := estimateFeeCoinPerKb
+
+	// list unspent tx for estimation fee
+	estimateTotalAmount := totalAmmount
+	tokenID := &common.Hash{}
+	tokenID.SetBytes(common.ConstantID[:])
+	outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, tokenID)
+	candidateOutputCoins := make([]*privacy.OutputCoin, 0)
+	for _, note := range outCoins {
+		amount := note.CoinDetails.Value
+		candidateOutputCoins = append(candidateOutputCoins, note)
+		estimateTotalAmount -= int64(amount)
+		if estimateTotalAmount <= 0 {
+			break
+		}
+	}
+
+	// check real fee per TxNormal
+	var realFee uint64
+	if int64(estimateFeeCoinPerKb) == -1 {
+		temp, _ := self.config.FeeEstimator[chainIdSender].EstimateFee(numBlock)
+		estimateFeeCoinPerKb = int64(temp)
+	}
+	estimateFeeCoinPerKb += int64(self.config.Wallet.Config.IncrementalFee)
+	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, nil)
+	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
+
+	// list unspent tx for create tx
+	totalAmmount += int64(realFee)
+	estimateTotalAmount = totalAmmount
+	candidateOutputCoins = make([]*privacy.OutputCoin, 0)
+	if totalAmmount > 0 {
+		for _, note := range outCoins {
+			amount := note.CoinDetails.Value
+			candidateOutputCoins = append(candidateOutputCoins, note)
+			estimateTotalAmount -= int64(amount)
+			if estimateTotalAmount <= 0 {
+				break
+			}
+		}
+	}
+
+	// get list custom token
+	listCustomTokens, err := self.config.BlockChain.ListPrivacyCustomToken()
+
+	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
+	tx := &transaction.TxCustomTokenPrivacy{}
+	err = tx.Init(
+		&senderKey.KeySet.PrivateKey,
+		nil,
+		inputCoins,
+		realFee,
+		tokenParams,
+		listCustomTokens,
+		*self.config.Database,
 	)
 
 	return tx, err

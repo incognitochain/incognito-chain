@@ -114,6 +114,11 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				tx = &transaction.TxCustomToken{}
 				parseErr = json.Unmarshal(txTempJson, &tx)
 			}
+		case common.TxCustomTokenPrivacyType:
+			{
+				tx = &transaction.TxCustomTokenPrivacy{}
+				parseErr = json.Unmarshal(txTempJson, &tx)
+			}
 		default:
 			{
 				return NewBlockChainError(UnmashallJsonBlockError, errors.New("Can not parse a wrong tx"))
@@ -161,7 +166,7 @@ func (self Block) Hash() *common.Hash {
 	record += strconv.FormatInt(self.Header.Timestamp, 10) +
 		string(self.Header.ChainID) +
 		self.Header.MerkleRoot.String() +
-		//self.Header.MerkleRootCommitments.String() +
+	//self.Header.MerkleRootCommitments.String() +
 		self.Header.PrevBlockHash.String() +
 		strconv.Itoa(int(self.Header.SalaryFund)) +
 		strconv.Itoa(int(self.Header.GOVConstitution.GOVParams.SalaryPerTx)) +

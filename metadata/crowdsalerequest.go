@@ -95,6 +95,7 @@ func (csReq *CrowdsaleRequest) Hash() *common.Hash {
 	record += string(csReq.Amount.String())
 
 	// final hash
+	record += string(csReq.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

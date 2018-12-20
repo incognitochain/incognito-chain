@@ -150,11 +150,22 @@ func (wit *PKComOpeningsWitness) Prove() (*PKComOpeningsProof, error) {
 	}
 	proof := new(PKComOpeningsProof)
 	proof.Set(wit.commitmentValue, alpha, gamma, wit.indexs)
+<<<<<<< HEAD
+=======
+	//fmt.Println(proof.commitmentValue)
+	//fmt.Println(proof.alpha)
+	//fmt.Println(proof.gamma)
+	//fmt.Println(proof.indexs)
+>>>>>>> a5a1f0cff1abbfba1dea6d82817cbc09b4be368a
 	return proof, nil
 }
 
 // Verify ... (for verifier)
 func (pro *PKComOpeningsProof) Verify() bool {
+<<<<<<< HEAD
+=======
+	//fmt.Println(pro.indexs)
+>>>>>>> a5a1f0cff1abbfba1dea6d82817cbc09b4be368a
 	beta := GenerateChallengeFromPoint([]*privacy.EllipticPoint{pro.commitmentValue})
 	rightPoint := new(privacy.EllipticPoint)
 	rightPoint.X, rightPoint.Y = privacy.Curve.ScalarMult(pro.commitmentValue.X, pro.commitmentValue.Y, beta.Bytes())
@@ -174,7 +185,15 @@ func (pro *PKComOpeningsProof) Verify() bool {
 func TestOpeningsProtocol() bool {
 	witness := new(PKComOpeningsWitness)
 	witness.randValue(true)
+<<<<<<< HEAD
 	proof, _ := witness.Prove()
+=======
+	//fmt.Printf("Witness: %+v\n", witness)
+	proof, _ := witness.Prove()
+	//fmt.Printf("Len of opening proof: %v\n", len(proof.Bytes()))
+
+
+>>>>>>> a5a1f0cff1abbfba1dea6d82817cbc09b4be368a
 	proof2 := new(PKComOpeningsProof)
 	proof2.SetBytes(proof.Bytes())
 	res := proof.Verify()

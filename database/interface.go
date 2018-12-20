@@ -44,28 +44,28 @@ type DatabaseInterface interface {
 	CleanBestState() error
 
 	// SerialNumber
-	StoreSerialNumbers([]byte, byte) error
-	FetchSerialNumbers(byte) ([][]byte, error)
-	HasSerialNumber([]byte, byte) (bool, error)
+	StoreSerialNumbers(tokenID *common.Hash, data []byte, chainID byte) error
+	FetchSerialNumbers(tokenID *common.Hash, chainID byte) ([][]byte, error)
+	HasSerialNumber(tokenID *common.Hash, data []byte, chainID byte) (bool, error)
 	CleanSerialNumbers() error
 
 	// PedersenCommitment
-	StoreCommitments(pubkey []byte, commitment []byte, chainID byte) error
-	StoreOutputCoins(pubkey []byte, outputcoin []byte, chainID byte) error
-	FetchCommitments(chainID byte) ([][]byte, error)
-	HasCommitment(commitment []byte, chainID byte) (bool, error)
-	HasCommitmentIndex(commitmentIndex uint64, chainID byte) (bool, error)
-	GetCommitmentByIndex(commitmentIndex uint64, chainID byte) ([]byte, error)
-	GetCommitmentIndex(commitment []byte, chainId byte) (*big.Int, error)
-	GetCommitmentLength(chainId byte) (*big.Int, error)
-	GetCommitmentIndexsByPubkey(pubkey []byte, chainID byte) ([][]byte, error)
-	GetOutcoinsByPubkey(pubkey []byte, chainID byte) ([][]byte, error)
+	StoreCommitments(tokenID *common.Hash, pubkey []byte, commitment []byte, chainID byte) error
+	StoreOutputCoins(tokenID *common.Hash, pubkey []byte, outputcoin []byte, chainID byte) error
+	FetchCommitments(tokenID *common.Hash, chainID byte) ([][]byte, error)
+	HasCommitment(tokenID *common.Hash, commitment []byte, chainID byte) (bool, error)
+	HasCommitmentIndex(tokenID *common.Hash, commitmentIndex uint64, chainID byte) (bool, error)
+	GetCommitmentByIndex(tokenID *common.Hash, commitmentIndex uint64, chainID byte) ([]byte, error)
+	GetCommitmentIndex(tokenID *common.Hash, commitment []byte, chainId byte) (*big.Int, error)
+	GetCommitmentLength(tokenID *common.Hash, chainId byte) (*big.Int, error)
+	GetCommitmentIndexsByPubkey(tokenID *common.Hash, pubkey []byte, chainID byte) ([][]byte, error)
+	GetOutcoinsByPubkey(tokenID *common.Hash, pubkey []byte, chainID byte) ([][]byte, error)
 	CleanCommitments() error
 
 	// SNDerivator
-	StoreSNDerivators(big.Int, byte) error
-	FetchSNDerivator(byte) ([]big.Int, error)
-	HasSNDerivator(big.Int, byte) (bool, error)
+	StoreSNDerivators(tokenID *common.Hash, data big.Int, shardID byte) error
+	FetchSNDerivator(tokenID *common.Hash, chainID byte) ([]big.Int, error)
+	HasSNDerivator(tokenID *common.Hash, data big.Int, chainID byte) (bool, error)
 	CleanSNDerivator() error
 
 	// Fee estimator
@@ -82,6 +82,12 @@ type DatabaseInterface interface {
 	GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error)                      // get balance of all paymentaddress of a token (only return payment address with balance > 0)
 	UpdateRewardAccountUTXO(*common.Hash, []byte, *common.Hash, int) error
 	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error) // get all paymentaddress owner that have balance > 0 of a custom token
+
+	// privacy Custom token
+	StorePrivacyCustomToken(tokenID *common.Hash, data []byte) error // store custom token. Param: tokenID, txInitToken-id, data tx
+	StorePrivacyCustomTokenTx(tokenID *common.Hash, chainID byte, blockHeight int32, txIndex int32, txHash []byte) error
+	ListPrivacyCustomToken() ([][]byte, error)                          // get list all custom token which issued in network
+	PrivacyCustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) // from token id get all custom txs
 
 	// Loans
 	StoreLoanRequest([]byte, []byte) error                 // param: loanID, tx hash
