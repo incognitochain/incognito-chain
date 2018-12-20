@@ -11,6 +11,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/syndtr/goleveldb/leveldb/util"
+	"github.com/ninjadotorg/constant/common/base58"
 )
 
 func (db *db) StoreCustomToken(tokenID *common.Hash, txHash []byte) error {
@@ -154,7 +155,7 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 	//tempsResult := make(map[string]bool)
 	prefix := TokenPaymentAddressPrefix
 	prefix = append(prefix, Splitter...)
-	prefix = append(prefix, (*tokenID)[:]...)
+	prefix = append(prefix, []byte(tokenID.String())...)
 	//fmt.Println("GetCustomTokenPaymentAddressesBalance, prefix", prefix)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
@@ -194,7 +195,7 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 	results := make(map[privacy.PaymentAddress][][]byte)
 	prefix := TokenPaymentAddressPrefix
 	prefix = append(prefix, Splitter...)
-	prefix = append(prefix, (*tokenID)[:]...)
+	prefix = append(prefix, []byte(tokenID.String())...)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
 		key := string(iter.Key())
@@ -221,9 +222,9 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []byte) (map[string]string, error) {
 	prefix := TokenPaymentAddressPrefix
 	prefix = append(prefix, Splitter...)
-	prefix = append(prefix, (*tokenID)[:]...)
+	prefix = append(prefix, []byte(tokenID.String())...)
 	prefix = append(prefix, Splitter...)
-	prefix = append(prefix, pubkey...)
+	prefix = append(prefix, base58.Base58Check{}.Encode(pubkey, 0x00)...)
 	log.Println(hex.EncodeToString(prefix))
 	results := make(map[string]string)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
@@ -243,11 +244,11 @@ func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []by
 func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, pubkey []byte, txHash *common.Hash, voutIndex int) error {
 	key := TokenPaymentAddressPrefix
 	key = append(key, Splitter...)
-	key = append(key, (*tokenID)[:]...)
+	key = append(key, []byte(tokenID.String())...)
 	key = append(key, Splitter...)
-	key = append(key, pubkey...)
+	key = append(key, base58.Base58Check{}.Encode(pubkey, 0x00)...)
 	key = append(key, Splitter...)
-	key = append(key, (*txHash)[:]...)
+	key = append(key, []byte(txHash.String())...)
 	key = append(key, Splitter...)
 	key = append(key, byte(voutIndex))
 	_, err := db.HasValue([]byte(key))
