@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/hashicorp/golang-lru"
+
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -49,6 +51,13 @@ type Config struct {
 	// This field is required.
 	DataBase database.DatabaseInterface
 
+	//=====cache
+	beaconBlock *lru.Cache
+	beaconBody  *lru.Cache
+
+	shardBlock *lru.Cache
+	shardBody  *lru.Cache
+	//======
 	// Interrupt specifies a channel the caller can close to signal that
 	// long running operations, such as catching up indexes or performing
 	// database migrations, should be interrupted.

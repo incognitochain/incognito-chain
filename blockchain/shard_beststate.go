@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/ninjadotorg/constant/common"
 )
 
@@ -16,6 +17,11 @@ import (
 type BestState struct {
 	Beacon *BestStateBeacon
 	Shard  map[byte]*BestStateShard
+
+	// cache for beacon
+	beacon *lru.Cache
+	// cache for shard
+	shard *lru.Cache
 }
 
 type BestStateShard struct {
