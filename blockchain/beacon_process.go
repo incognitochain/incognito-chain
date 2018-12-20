@@ -21,20 +21,31 @@ func (self *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
 	defer self.chainLock.Unlock()
 	blockHash := block.Hash().String()
 
-	Logger.log.Infof("Store block %+v", blockHash)
+	Logger.log.Infof("Insert block %+v to Blockchain", blockHash)
 
-	//TODO: verify
-	err := self.VerifyBlockBeacon(block)
+	//===================Verify============================
+	Logger.log.Infof("Verify Pre-Process block %+v to Blockchain", blockHash)
+
+	err := self.VerifyPreProcessingBlockBeacon(block)
 	if err != nil {
 		Logger.log.Error("Error update best state for block", block, "in beacon chain")
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
+	//===================Process============================
 	Logger.log.Infof("Process block %+v", blockHash)
 
 	Logger.log.Infof("Process BeaconBestState block %+v", blockHash)
 	// Process best state or not and store beststate
 	err = self.BestState.Beacon.Update(block)
+	if err != nil {
+		Logger.log.Error("Error update best state for block", block, "in beacon chain")
+		return NewBlockChainError(UnExpectedError, err)
+	}
+
+	Logger.log.Infof("Verify Post-Process block %+v to Blockchain", blockHash)
+
+	err = self.VerifyPostProcessingBlockBeacon(block)
 	if err != nil {
 		Logger.log.Error("Error update best state for block", block, "in beacon chain")
 		return NewBlockChainError(UnExpectedError, err)
@@ -48,6 +59,7 @@ func (self *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
+	//===================Store============================
 	Logger.log.Infof("Store Beacon block %+v", blockHash)
 	err = self.config.DataBase.StoreBeaconBlock(block)
 	if err != nil {
@@ -63,7 +75,30 @@ func (self *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
 	return nil
 }
 
-func (self *BlockChain) VerifyBlockBeacon(block *BeaconBlock) error {
+func (self *BlockChain) VerifyPreProcessingBlockBeacon(block *BeaconBlock) error {
+	return nil
+	/* Verify Pre-prosessing data
+	- Signature
+	- version
+	- parent hash
+	- Height = parent hash + 1
+	- Epoch
+	- Timestamp can not excess some limit
+	- Instruction hash
+	- ShardStateHash
+	- Random number
+	- Sanity
+	*/
+	return nil
+}
+
+func (self *BlockChain) VerifyPostProcessingBlockBeacon(block *BeaconBlock) error {
+	return nil
+	/* Verify Post-processing data
+	- Validator root
+	- Candidate root
+
+	*/
 	return nil
 }
 

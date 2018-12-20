@@ -98,7 +98,7 @@ func (self Merkle) BuildMerkleTreeStore(transactions []metadata.Transaction) []*
 	return merkles
 }
 
-func (self Merkle) BuildMerkleShards(shardsHash []*common.Hash) []*common.Hash {
+func (self Merkle) BuildMerkleTreeOfHashs(shardsHash []*common.Hash) []*common.Hash {
 	// Calculate how many entries are required to hold the binary merkle
 	// tree as a linear array and create an array of that size.
 	nextPoT := self.nextPowerOfTwo(TestNetParams.ShardsNum)
