@@ -126,7 +126,7 @@ func (pub SchnPubKey) Verify(signature *SchnSignature, hash []byte) bool {
 		return false
 	}
 
-	fmt.Printf("VERIFY 2 ------ PUBLICKEY: %+v\n", pub.PK)
+	//fmt.Printf("VERIFY 2 ------ PUBLICKEY: %+v\n", pub.PK)
 
 	rv := new(EllipticPoint)
 	rv.X, rv.Y = Curve.ScalarMult(pub.G.X, pub.G.Y, signature.S1.Bytes())
