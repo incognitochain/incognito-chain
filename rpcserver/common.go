@@ -43,8 +43,9 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		PropertySymbol: tokenParamsRaw["TokenSymbol"].(string),
 		TokenTxType:    int(tokenParamsRaw["TokenTxType"].(float64)),
 		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
-		Receiver:       transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"]),
 	}
+	voutsAmount := uint64(0)
+	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
 	switch tokenParams.TokenTxType {
 	case transaction.CustomTokenTransfer:
 		{
@@ -74,6 +75,10 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 				item.Signature = base58.Base58Check{}.Encode(signature, 0)
 				txTokenIns = append(txTokenIns, item)
 				txTokenInsAmount += out.Value
+				voutsAmount -= out.Value
+				if voutsAmount <= 0 {
+					break
+				}
 			}
 			tokenParams.SetVins(txTokenIns)
 			tokenParams.SetVinsAmount(txTokenInsAmount)
