@@ -1,7 +1,6 @@
 package rpcserver
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wire"
+	"github.com/ninjadotorg/constant/common/base58"
 )
 
 func (self RpcServer) handleGetLoanParams(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -32,8 +32,8 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 func (self RpcServer) handleSendRawLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
-	hexRawTx := arrayParams[0].(string)
-	rawTxBytes, err := hex.DecodeString(hexRawTx)
+	base58CheckDate := arrayParams[0].(string)
+	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
 
 	if err != nil {
 		return nil, err
@@ -72,12 +72,12 @@ func (self RpcServer) handleCreateAndSendLoanRequest(params interface{}, closeCh
 		return nil, err
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
-	hexStrOfTx := tx.HexData
+	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, err
 	}
 	newParam := make([]interface{}, 0)
-	newParam = append(newParam, hexStrOfTx)
+	newParam = append(newParam, base58CheckData)
 	txId, err := self.handleSendRawLoanRequest(newParam, closeChan)
 	return txId, err
 }
@@ -98,8 +98,8 @@ func (self RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan 
 func (self RpcServer) handleSendRawLoanResponse(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
-	hexRawTx := arrayParams[0].(string)
-	rawTxBytes, err := hex.DecodeString(hexRawTx)
+	base58CheckDate := arrayParams[0].(string)
+	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
 
 	if err != nil {
 		return nil, err
@@ -136,12 +136,12 @@ func (self RpcServer) handleCreateAndSendLoanResponse(params interface{}, closeC
 		return nil, err
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
-	hexStrOfTx := tx.HexData
+	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, err
 	}
 	newParam := make([]interface{}, 0)
-	newParam = append(newParam, hexStrOfTx)
+	newParam = append(newParam, base58CheckData)
 	txId, err := self.handleSendRawLoanResponse(newParam, closeChan)
 	return txId, err
 }
@@ -162,8 +162,8 @@ func (self RpcServer) handleCreateRawLoanWithdraw(params interface{}, closeChan 
 func (self RpcServer) handleSendRawLoanWithdraw(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
-	hexRawTx := arrayParams[0].(string)
-	rawTxBytes, err := hex.DecodeString(hexRawTx)
+	base58CheckDate := arrayParams[0].(string)
+	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
 
 	if err != nil {
 		return nil, err
@@ -200,12 +200,12 @@ func (self RpcServer) handleCreateAndSendLoanWithdraw(params interface{}, closeC
 		return nil, err
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
-	hexStrOfTx := tx.HexData
+	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, err
 	}
 	newParam := make([]interface{}, 0)
-	newParam = append(newParam, hexStrOfTx)
+	newParam = append(newParam, base58CheckData)
 	txId, err := self.handleSendRawLoanWithdraw(newParam, closeChan)
 	return txId, err
 }
@@ -226,8 +226,8 @@ func (self RpcServer) handleCreateRawLoanPayment(params interface{}, closeChan <
 func (self RpcServer) handleSendRawLoanPayment(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
-	hexRawTx := arrayParams[0].(string)
-	rawTxBytes, err := hex.DecodeString(hexRawTx)
+	base58CheckData := arrayParams[0].(string)
+	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 
 	if err != nil {
 		return nil, err
@@ -264,12 +264,12 @@ func (self RpcServer) handleCreateAndSendLoanPayment(params interface{}, closeCh
 		return nil, err
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
-	hexStrOfTx := tx.HexData
+	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, err
 	}
 	newParam := make([]interface{}, 0)
-	newParam = append(newParam, hexStrOfTx)
+	newParam = append(newParam, base58CheckData)
 	txId, err := self.handleSendRawLoanPayment(newParam, closeChan)
 	return txId, err
 }

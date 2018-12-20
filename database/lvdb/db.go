@@ -4,8 +4,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 
-	"log"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 )
@@ -33,8 +31,10 @@ var (
 	feeEstimator              = []byte("feeEstimator")
 	Splitter                  = []byte("-[-]-")
 	TokenPrefix               = []byte("token-")
+	PrivacyTokenPrefix        = []byte("privacy-token-")
 	TokenPaymentAddressPrefix = []byte("token-paymentaddress-")
 	tokenInitPrefix           = []byte("token-init-")
+	privacyTokenInitPrefix    = []byte("privacy-token-init-")
 	loanIDKeyPrefix           = []byte("loanID-")
 	loanTxKeyPrefix           = []byte("loanTx-")
 	loanRequestPostfix        = []byte("-req")
@@ -97,7 +97,6 @@ func (db *db) Delete(key []byte) error {
 func (db *db) Get(key []byte) ([]byte, error) {
 	value, err := db.lvdb.Get(key, nil)
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 	return value, nil
@@ -111,17 +110,21 @@ func (db db) GetKey(keyType string, key interface{}) []byte {
 	case string(blockKeyIdxPrefix):
 		dbkey = append(blockKeyIdxPrefix, key.(*common.Hash)[:]...)
 	case string(serialNumbersPrefix):
-		dbkey = append(serialNumbersPrefix, []byte(key.(string))...)
+		dbkey = append(serialNumbersPrefix, []byte(key.(*common.Hash).String())...)
 	case string(commitmentsPrefix):
-		dbkey = append(commitmentsPrefix, []byte(key.(string))...)
+		dbkey = append(commitmentsPrefix, []byte(key.(*common.Hash).String())...)
 	case string(outcoinsPrefix):
-		dbkey = append(outcoinsPrefix, []byte(key.(string))...)
+		dbkey = append(outcoinsPrefix, []byte(key.(*common.Hash).String())...)
 	case string(snderivatorsPrefix):
-		dbkey = append(snderivatorsPrefix, []byte(key.(string))...)
+		dbkey = append(snderivatorsPrefix, []byte(key.(*common.Hash).String())...)
 	case string(TokenPrefix):
 		dbkey = append(TokenPrefix, key.(*common.Hash)[:]...)
+	case string(PrivacyTokenPrefix):
+		dbkey = append(PrivacyTokenPrefix, []byte(key.(*common.Hash).String())...)
 	case string(tokenInitPrefix):
 		dbkey = append(tokenInitPrefix, key.(*common.Hash)[:]...)
+	case string(privacyTokenInitPrefix):
+		dbkey = append(privacyTokenInitPrefix, []byte(key.(*common.Hash).String())...)
 	}
 	return dbkey
 }

@@ -34,11 +34,12 @@ type SaleDBCTOkensByUSDData struct {
 }
 
 type OracleNetwork struct {
-	OraclePubKeys         [][]byte
-	WrongTimesAllowed     uint8
-	Quorum                uint8
-	AcceptableErrorMargin uint32
-	UpdateFrequency       uint32
+	OraclePubKeys          [][]byte
+	WrongTimesAllowed      uint8
+	Quorum                 uint8
+	AcceptableErrorMargin  uint32
+	UpdateFrequency        uint32
+	OracleRewardMultiplier uint8
 }
 
 func (saleData *SaleData) Hash() *common.Hash {

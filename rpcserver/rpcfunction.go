@@ -60,6 +60,14 @@ var RpcHandler = map[string]commandHandler{
 	CustomToken:                         RpcServer.handleCustomTokenDetail,
 	GetListCustomTokenBalance:           RpcServer.handleGetListCustomTokenBalance,
 
+	// custom token which support privacy
+	CreateRawPrivacyCustomTokenTransaction:     RpcServer.handleCreateRawPrivacyCustomTokenTransaction,
+	SendRawPrivacyCustomTokenTransaction:       RpcServer.handleSendRawPrivacyCustomTokenTransaction,
+	CreateAndSendPrivacyCustomTokenTransaction: RpcServer.handleCreateAndSendPrivacyCustomTokenTransaction,
+	ListPrivacyCustomToken:                     RpcServer.handleListPrivacyCustomToken,
+	PrivacyCustomToken:                         RpcServer.handlePrivacyCustomTokenDetail,
+	GetListPrivacyCustomTokenBalance:           RpcServer.handleGetListPrivacyCustomTokenBalance,
+
 	// Loan tx
 	GetLoanParams:             RpcServer.handleGetLoanParams,
 	CreateAndSendLoanRequest:  RpcServer.handleCreateAndSendLoanRequest,
@@ -203,7 +211,9 @@ func (self RpcServer) handleListUnspentOutputCoins(params interface{}, closeChan
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&key.KeySet, 14)
+		tokenID := &common.Hash{}
+		tokenID.SetBytes(common.ConstantID[:])
+		outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&key.KeySet, 14, tokenID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
