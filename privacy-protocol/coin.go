@@ -443,7 +443,7 @@ func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 
 //CommitAll commits a coin with 5 attributes (public key, value, serial number derivator, last byte pk, r)
 func (coin *Coin) CommitAll() {
-	values := []*big.Int{big.NewInt(0), big.NewInt(int64(coin.Value)), coin.SNDerivator, new(big.Int).SetBytes([]byte{coin.GetPubKeyLastByte()}), coin.Randomness}
+	values := []*big.Int{big.NewInt(0), new(big.Int).SetUint64(coin.Value), coin.SNDerivator, new(big.Int).SetBytes([]byte{coin.GetPubKeyLastByte()}), coin.Randomness}
 	//fmt.Printf("coin info: %v\n", values)
 	coin.CoinCommitment = PedCom.CommitAll(values)
 	coin.CoinCommitment = coin.CoinCommitment.Add(coin.PublicKey)

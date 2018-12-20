@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"fmt"
 	"math/big"
 )
 
@@ -57,7 +58,12 @@ func (com PCParams) CommitAll(openings []*big.Int) *EllipticPoint {
 	commitment.X = big.NewInt(0)
 	commitment.Y = big.NewInt(0)
 	for i := 0; i < com.Capacity; i++ {
-		commitment = commitment.Add(com.G[i].ScalarMul(openings[i]))
+		tmp := com.G[i].ScalarMul(openings[i])
+		fmt.Printf("gBASE_%v: %+v\n", i, com.G[i])
+		fmt.Printf("g^%v: %+v\n", i, tmp)
+		fmt.Printf("opening %v: %v\n", i, openings[i])
+		commitment = commitment.Add(tmp)
+
 	}
 	return commitment
 }
