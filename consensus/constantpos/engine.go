@@ -2,12 +2,12 @@ package constantpos
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/connmanager"
-	"github.com/ninjadotorg/constant/mempool"
 	"github.com/ninjadotorg/constant/wire"
 )
 
@@ -24,7 +24,12 @@ type Engine struct {
 		Beacon *Layerbeacon
 		Shard  *Layershard
 	}
-	CurrentRole string
+	CurrentRole role
+}
+
+type role struct {
+	Role    string
+	ShardID byte
 }
 
 type EngineConfig struct {
@@ -32,7 +37,6 @@ type EngineConfig struct {
 	ConnManager *connmanager.ConnManager
 	ChainParams *blockchain.Params
 	BlockGen    *blockchain.BlkTmplGenerator
-	MemPool     *mempool.TxPool
 	UserKeySet  cashec.KeySet
 	RoleMode    string
 	Server      serverInterface
@@ -46,14 +50,29 @@ func (self Engine) Init(cfg *EngineConfig) (*Engine, error) {
 }
 
 func (self *Engine) Start() error {
+	self.Lock()
+	defer self.Unlock()
+	if self.started {
+		return errors.New("Consensus engine is already started")
+	}
+	self.started = true
 	for {
-		if self.config.BlockChain.IsReady == true {
-
+		// self.config.BlockChain.IsReady()
+		if true {
+			role, shardID := self.config.BlockChain.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
+			fmt.Println(role, shardID)
 		}
 	}
 	switch self.config.RoleMode {
 	case "beacon":
-
+		// bftProtocol := &BFTProtocol{
+		// 	cBFTMsg:    self.cBFTMsg,
+		// 	BlockGen:   self.config.BlockGen,
+		// 	UserKeySet: &self.config.UserKeySet,
+		// 	Chain:      self.config.BlockChain,
+		// 	Server:     self.config.Server,
+		// 	Committee:  self.config.BlockChain.BestState.Beacon.BeaconCommittee,
+		// }
 	case "shard":
 
 	case "auto":
@@ -67,8 +86,9 @@ func (self *Engine) Stop() error {
 	self.Lock()
 	defer self.Unlock()
 	if !self.started {
-		return errors.New("Protocol is already stopped")
+		return errors.New("Consensus engine is already stopped")
 	}
+
 	self.started = false
 	if self.Layers.Beacon != nil {
 		self.Layers.Beacon.Stop()

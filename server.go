@@ -208,7 +208,6 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		ChainParams: self.chainParams,
 		BlockChain:  self.blockChain,
 		ConnManager: self.connManager,
-		MemPool:     self.memPool,
 		Server:      self,
 		BlockGen:    self.blockgen,
 	})

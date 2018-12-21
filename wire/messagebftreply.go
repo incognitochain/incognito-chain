@@ -12,7 +12,6 @@ const (
 )
 
 type MessageBFTReply struct {
-	BlockHash     string
 	AggregatedSig string
 	ValidatorsIdx []int
 }

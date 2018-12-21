@@ -235,7 +235,7 @@ func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 // QueueBlock adds the passed block message and peer to the block handling
 // queue. Responds to the done channel argument after the block message is
 // processed.
-func (self *NetSync) QueueBlock(_ *peer.Peer, msg *wire.Message, done chan struct{}) {
+func (self *NetSync) QueueBlock(_ *peer.Peer, msg wire.Message, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
 	if atomic.LoadInt32(&self.shutdown) != 0 {
 		done <- struct{}{}

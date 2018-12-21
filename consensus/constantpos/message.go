@@ -262,13 +262,13 @@ func (self *Engine) OnSwapUpdate(msg *wire.MessageSwapUpdate) {
 	// return
 }
 
-func MakeMsgBFTPropose(aggregatedSig string, validatorsIdx []int, block *blockchain.BFTBlockInterface) (wire.Message, error) {
+func MakeMsgBFTPropose(aggregatedSig string, validatorsIdx []int, block blockchain.BFTBlockInterface) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTPropose)
 	if err != nil {
 		Logger.log.Error(err)
 		return msg, err
 	}
-	msg.(*wire.MessageBFTPropose).Block = *block
+	msg.(*wire.MessageBFTPropose).Block = block
 	msg.(*wire.MessageBFTPropose).AggregatedSig = aggregatedSig
 	msg.(*wire.MessageBFTPropose).ValidatorsIdx = validatorsIdx
 	return msg, nil
@@ -286,7 +286,7 @@ func MakeMsgBFTPrepare(Ri []byte, pubkey string) (wire.Message, error) {
 	return msg, nil
 }
 
-func MakeMsgBFTCommit(commitSig string, R []byte, validatorsIdx []int, pubkey string) (wire.Message, error) {
+func MakeMsgBFTCommit(commitSig string, R string, validatorsIdx []int, pubkey string) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTCommit)
 	if err != nil {
 		Logger.log.Error(err)
@@ -299,13 +299,12 @@ func MakeMsgBFTCommit(commitSig string, R []byte, validatorsIdx []int, pubkey st
 	return msg, nil
 }
 
-func MakeMsgBFTReply(blockHash string, aggregatedSig string, validatorsIdx []int) (wire.Message, error) {
+func MakeMsgBFTReply(aggregatedSig string, validatorsIdx []int) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTReply)
 	if err != nil {
 		Logger.log.Error(err)
 		return msg, err
 	}
-	msg.(*wire.MessageBFTReply).BlockHash = blockHash
 	msg.(*wire.MessageBFTReply).AggregatedSig = aggregatedSig
 	msg.(*wire.MessageBFTReply).ValidatorsIdx = validatorsIdx
 	return msg, nil

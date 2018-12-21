@@ -38,7 +38,6 @@ every beststate present for a best block in every chain
 */
 type BlockChain struct {
 	BestState *BestState
-	IsReady   bool
 	config    Config
 	chainLock sync.RWMutex
 }
@@ -77,6 +76,10 @@ type Config struct {
 	Wallet *wallet.Wallet
 	//snapshot reward
 	customTokenRewardSnapshot map[string]uint64
+}
+
+func (self *BlockChain) IsReady() {
+
 }
 
 func (self *BlockChain) GetDatabase() database.DatabaseInterface {

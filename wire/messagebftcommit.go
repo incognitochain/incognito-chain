@@ -13,7 +13,7 @@ const (
 
 type MessageBFTCommit struct {
 	CommitSig     string
-	R             []byte
+	R             string
 	ValidatorsIdx []int
 	Pubkey        string
 	MsgSig        string

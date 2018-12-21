@@ -77,19 +77,19 @@ func NewBestStateBeacon() *BestStateBeacon {
 
 // Get role of a public key base on best state beacond
 // return node-role, <shardID>
-func (self *BestStateBeacon) GetPubkeyRole(pubkey string) (string, int) {
+func (self *BestStateBeacon) GetPubkeyRole(pubkey string) (string, byte) {
 
 	for shardID, pubkeyArr := range self.ShardPendingValidator {
 		found := common.IndexOfStr(pubkey, pubkeyArr)
 		if found > -1 {
-			return "shard", int(shardID)
+			return "shard", shardID
 		}
 	}
 
 	for shardID, pubkeyArr := range self.ShardCommittee {
 		found := common.IndexOfStr(pubkey, pubkeyArr)
 		if found > -1 {
-			return "shard", int(shardID)
+			return "shard", shardID
 		}
 	}
 
