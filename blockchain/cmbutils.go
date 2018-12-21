@@ -21,6 +21,10 @@ func buildRefundTx(
 	if err != nil {
 		return nil, err
 	}
+	txs[0].Metadata = &metadata.CMBInitRefund{
+		MainAccount:  receiver,
+		MetadataBase: metadata.MetadataBase{Type: metadata.CMBInitRefundMeta},
+	}
 	return txs[0], nil // only one tx in slice
 }
 

@@ -29,23 +29,10 @@ type Dividend struct {
 	MetadataBase
 }
 
-func NewDividend(data map[string]interface{}) *Dividend {
-	result := Dividend{
-		PayoutID: uint64(data["PayoutID"].(float64)),
-	}
-	s, _ := hex.DecodeString(data["TokenID"].(string))
-	copy(result.TokenID[:], s)
-	result.Type = DividendMeta
-	return &result
-}
-
-func (div *Dividend) GetType() int {
-	return DividendMeta
-}
-
 func (div *Dividend) Hash() *common.Hash {
 	record := fmt.Sprintf("%d", div.PayoutID)
 	record += string(div.TokenID[:])
+	record += string(div.PaymentAddress.ToBytes())
 
 	// final hash
 	record += string(div.MetadataBase.Hash()[:])

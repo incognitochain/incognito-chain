@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"bytes"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
@@ -604,12 +604,11 @@ func (blockgen *BlkTmplGenerator) processDividend(
 		infos := []metadata.DividendInfo{}
 		// Build tx to pay dividend to each holder
 		for i, holder := range tokenHolders {
-			// TODO(@0xbunyip): holder here is Pk only, change to use both Pk and Pkenc
-			holderAddr, err := hex.DecodeString(holder)
+			holderAddrInBytes, _, err := base58.Base58Check{}.Decode(holder)
 			if err != nil {
 				return nil, 0, err
 			}
-			holderAddress := (&privacy.PaymentAddress{}).FromBytes(holderAddr)
+			holderAddress := (&privacy.PaymentAddress{}).FromBytes(holderAddrInBytes)
 			info := metadata.DividendInfo{
 				TokenHolder: *holderAddress,
 				Amount:      amounts[i] / totalTokenSupply,
