@@ -5,19 +5,20 @@ Use these function to validate common data in blockchain
 */
 
 import (
-	"encoding/hex"
 	"math"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common/base58"
 )
 
 func (self *BlockChain) GetAmountPerAccount(proposal *metadata.DividendProposal) (uint64, []string, []uint64, error) {
 	// TODO(@0xsirrush): cache list so that list of receivers is fixed across blocks
-	tokenHolders, err := self.config.DataBase.GetCustomTokenPaymentAddressesBalance(proposal.TokenID)
+	tokenHolders, err := self.config.DataBase.GetCustomTokenPaymentAddressesBalanceUnreward(proposal.TokenID)
 	if err != nil {
 		return 0, nil, nil, err
 	}
@@ -32,9 +33,11 @@ func (self *BlockChain) GetAmountPerAccount(proposal *metadata.DividendProposal)
 	rewardHolders := []string{}
 	amounts := []uint64{}
 	for holder, _ := range tokenHolders {
-		temp, _ := hex.DecodeString(holder)
-		paymentAddress := (&privacy.PaymentAddress{}).FromBytes(temp)
-		vouts, err := self.parseCustomTokenUTXO(proposal.TokenID, paymentAddress.Pk)
+		paymentAddressInBytes, _, _ := base58.Base58Check{}.Decode(holder)
+		keySet := cashec.KeySet{}
+		keySet.PaymentAddress = privacy.PaymentAddress{}
+		keySet.PaymentAddress.FromBytes(paymentAddressInBytes)
+		vouts, err := self.GetUnspentTxCustomTokenVout(keySet, proposal.TokenID)
 		if err != nil {
 			return 0, nil, nil, err
 		}

@@ -10,7 +10,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
@@ -223,7 +223,8 @@ func (blockGen *BlkTmplGenerator) buildOracleRewardTxs(
 	totalRewards := uint64(0)
 	oracleRewardTxs := []*transaction.Tx{}
 	for _, eval := range evals {
-		oracleRewardTx, err := transaction.CreateTxSalary(eval.Reward, eval.OracleFeederAddr, privatekey, blockGen.chain.GetDatabase())
+		oracleRewardTx := new(transaction.Tx)
+		err := oracleRewardTx.InitTxSalary(eval.Reward, eval.OracleFeederAddr, privatekey, blockGen.chain.GetDatabase())
 		if err != nil {
 			return []*transaction.Tx{}, 0, err
 		}

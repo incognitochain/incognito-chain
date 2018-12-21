@@ -34,8 +34,8 @@ const (
 	InputCoinsPrivacySize = 33  // serial number
 	OutputCoinsPrivacySize = 239 // PK + coin commitment + SND + Encrypted (138 bytes) + 2 bytes saving size
 
-	//InputCoinsNoPrivacySize = 171
-	//OutputCoinsNoPrivacySize = 138 // except serial number
+	// InputCoinsNoPrivacySize = 171
+	// OutputCoinsNoPrivacySize = 138 // except serial number
 
 
 	BigIntSize     									= 32
@@ -43,6 +43,12 @@ const (
 	// it is used for both privacy and no privacy
 	SigPubKeySize = 33
 	SigSize = 64
+
+	SerialNumberSize   = 33 // bytes
+	CoinCommitmentSize = 33 // bytes
+	RandomSize         = 32 // bytes
+	ValueSize          = 8  // bytes
+	SNDerivatorSize    = 32 // bytes
 
 
 

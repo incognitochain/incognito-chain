@@ -1,6 +1,9 @@
 package addrmanager
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/pkg/errors"
+)
 
 const (
 	UnexpectedError = iota
@@ -16,17 +19,17 @@ var ErrCodeMessage = map[int]struct {
 type AddrManagerError struct {
 	Code    int
 	Message string
-	Err     error
+	err     error
 }
 
 func (e AddrManagerError) Error() string {
-	return fmt.Sprintf("%d: %s", e.Code, e.Message)
+	return fmt.Sprintf("%d: %s %+v", e.Code, e.Message, e.err)
 }
 
 func NewAddrManagerError(key int, err error) *AddrManagerError {
 	return &AddrManagerError{
 		Code:    ErrCodeMessage[key].code,
 		Message: ErrCodeMessage[key].message,
-		Err:     err,
+		err:     errors.Wrap(err, ErrCodeMessage[key].message),
 	}
 }

@@ -1,10 +1,5 @@
 package main
 
-import (
-	"fmt"
-	"github.com/ninjadotorg/constant/privacy-protocol"
-)
-
 func main() {
 
 	// fmt.Printf("N: %X\n", privacy-protocol.Curve.Params().N)
@@ -254,7 +249,7 @@ func main() {
 
 	// var db database.DatabaseInterface
 
-	// tx, err := transaction.CreateTxSalary(10, &keySet.PaymentAddress, &keySet.PrivateKey, db)
+	// tx, err := transaction.InitTxSalary(10, &keySet.PaymentAddress, &keySet.PrivateKey, db)
 	// if err != nil{
 	// 	fmt.Println(err)
 	// }
@@ -365,7 +360,7 @@ func main() {
 	//tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
 	//tmp.X.Set(privacy.PedCom.G[privacy.VALUE].X)
 	//tmp.Y.Set(privacy.PedCom.G[privacy.VALUE].Y)
-	//tmp = tmp.ScalarMul(new(big.Int).SetUint64(coin.Value))
+	//tmp = tmp.ScalarMult(new(big.Int).SetUint64(coin.Value))
 	//com = com.Add(tmp)
 	//fmt.Printf("g_VALUE : %+v\n", privacy.PedCom.G[privacy.VALUE])
 	//fmt.Printf("g^Value : %+v\n", tmp)
@@ -374,7 +369,7 @@ func main() {
 	//tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
 	//tmp.X.Set(privacy.PedCom.G[privacy.SND].X)
 	//tmp.Y.Set(privacy.PedCom.G[privacy.SND].Y)
-	//tmp = tmp.ScalarMul(coin.SNDerivator)
+	//tmp = tmp.ScalarMult(coin.SNDerivator)
 	//com = com.Add(tmp)
 	//fmt.Printf("g_SND : %+v\n", privacy.PedCom.G[privacy.SND])
 	//fmt.Printf("g^SND : %+v\n", tmp)
@@ -383,7 +378,7 @@ func main() {
 	//tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
 	//tmp.X.Set(privacy.PedCom.G[privacy.SHARDID].X)
 	//tmp.Y.Set(privacy.PedCom.G[privacy.SHARDID].Y)
-	//tmp = tmp.ScalarMul(new(big.Int).SetBytes([]byte{coin.GetPubKeyLastByte()}))
+	//tmp = tmp.ScalarMult(new(big.Int).SetBytes([]byte{coin.GetPubKeyLastByte()}))
 	//com = com.Add(tmp)
 	//fmt.Printf("g_SHARDID : %+v\n", privacy.PedCom.G[privacy.SHARDID])
 	//fmt.Printf("g^Sharid : %+v\n", tmp)
@@ -392,7 +387,7 @@ func main() {
 	//tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
 	//tmp.X.Set(privacy.PedCom.G[privacy.RAND].X)
 	//tmp.Y.Set(privacy.PedCom.G[privacy.RAND].Y)
-	//tmp = tmp.ScalarMul(coin.Randomness)
+	//tmp = tmp.ScalarMult(coin.Randomness)
 	//com = com.Add(tmp)
 	//fmt.Printf("g_RAND : %+v\n", privacy.PedCom.G[privacy.RAND])
 	//fmt.Printf("g^Randomness : %+v\n", tmp)
@@ -401,10 +396,11 @@ func main() {
 	//	fmt.Printf("wrong")
 	//}
 
-	point := new(privacy.EllipticPoint)
-	point.Randomize()
-	fmt.Println(point)
+	//point := new(privacy.EllipticPoint)
+	//point.Randomize()
+	//fmt.Println(point)
 
+	//fmt.Println(privacy.TestElGamalPubKeyEncryption())
 
 
 }

@@ -671,7 +671,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 }
 
 // parseCustomTokenUTXO helper method for parsing UTXO data for updating dividend payout
-func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash, pubkey []byte) ([]transaction.TxTokenVout, error) {
+/*func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash, pubkey []byte) ([]transaction.TxTokenVout, error) {
 	utxoData, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, pubkey)
 	if err != nil {
 		return nil, err
@@ -704,7 +704,7 @@ func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash, pubkey []byte
 		}
 	}
 	return vouts, finalErr
-}
+}*/
 
 func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 	for _, tx := range block.Transactions {
@@ -713,15 +713,17 @@ func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 			{
 				tx := tx.(*transaction.Tx)
 				meta := tx.Metadata.(*metadata.Dividend)
-				for _, coin := range tx.Proof.OutputCoins {
-					pubkey := coin.CoinDetails.PublicKey.Compress()
-					vouts, err := self.parseCustomTokenUTXO(meta.TokenID, pubkey)
+				for _, _ = range tx.Proof.OutputCoins {
+					keySet := cashec.KeySet{
+						PaymentAddress: meta.PaymentAddress,
+					}
+					vouts, err := self.GetUnspentTxCustomTokenVout(keySet, meta.TokenID)
 					if err != nil {
 						return err
 					}
 					for _, vout := range vouts {
 						txHash := vout.GetTxCustomTokenID()
-						err := self.config.DataBase.UpdateRewardAccountUTXO(meta.TokenID, pubkey, &txHash, vout.GetIndex())
+						err := self.config.DataBase.UpdateRewardAccountUTXO(meta.TokenID, keySet.PaymentAddress.Pk, &txHash, vout.GetIndex())
 						if err != nil {
 							return err
 						}
@@ -1081,7 +1083,8 @@ func (self *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.OutputCoin, 
 		}
 		if len(keySet.PrivateKey) > 0 {
 			// check spent with private-key
-			result.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(keySet.PrivateKey), result.CoinDetails.SNDerivator)
+			result.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(keySet.PrivateKey),
+				result.CoinDetails.SNDerivator, privacy.PedCom.G[privacy.SK])
 			ok, err := self.config.DataBase.HasSerialNumber(tokenID, result.CoinDetails.SerialNumber.Compress(), chainID)
 			if ok || err != nil {
 				return nil
