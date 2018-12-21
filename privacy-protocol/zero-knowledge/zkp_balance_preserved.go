@@ -292,7 +292,7 @@ changes:
 {(g, h \in G, \textbf{V} \in G^m ; \textbf{v, \gamma} \in Z_p^m) :
 	V_j = h^{\gamma_j}g^{v_j} \wedge v_j \in [0, 2^n - 1] \forall j \in [1, m]}
 */
-func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
+func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, *privacy.PrivacyError) {
 	// RangeProofParams.V has the total number of values and bits we can support
 
 	InitCommonParams(len(wit.Values), wit.maxExp)
@@ -301,7 +301,7 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 	m := len(wit.Values)
 	MRProof.Counter = byte(m)
 	bitsPerValue := RangeProofParams.V / m
-	commonError := errors.New("Creating multi-range proof failed")
+
 	// we concatenate the binary representation of the values
 	PowerOfTwos := PowerVector(bitsPerValue, big.NewInt(2))
 	Comms := make([]*privacy.EllipticPoint, m)
@@ -314,15 +314,10 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 	for j := range wit.Values {
 		v := wit.Values[j]
 		if v.Cmp(big.NewInt(0)) == -1 {
-			//fmt.Println("H is below range! Not proving")
-			err := fmt.Errorf("H is below range! Not proving")
-			return nil, err
-			//err := fmt.Errorf("Value is above range! Not proving.")
+			return nil, privacy.NewPrivacyErr(privacy.InvalidOutputValue, errors.New("Value is below range"))
 		}
 		if v.Cmp(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(wit.maxExp)), privacy.Curve.Params().N)) == 1 {
-			//fmt.Println("Value is above range! Not proving.")
-			err := fmt.Errorf("Value is above range! Not proving.")
-			return nil, err
+			return nil, privacy.NewPrivacyErr(privacy.InvalidOutputValue, errors.New("Value is above range"))
 		}
 		gamma := new(big.Int).SetBytes(privacy.RandBytes(32))
 		gamma.Mod(gamma, privacy.Curve.Params().N)
@@ -344,7 +339,7 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 
 	A := TwoVectorPCommitWithGens(RangeProofParams.BPG, RangeProofParams.BPH, aLConcat, aRConcat).Add(RangeProofParams.H.ScalarMult((alpha)))
 	if (A==nil) {
-		return nil, commonError
+		return nil, privacy.NewPrivacyErr(privacy.ProvingErr, errors.New("Creating multi-range proof failed"))
 	} else {
 		MRProof.A = A
 	}
@@ -357,7 +352,7 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 
 	S := TwoVectorPCommitWithGens(RangeProofParams.BPG, RangeProofParams.BPH, sL, sR).Add(RangeProofParams.H.ScalarMult(rho))
 	if (S==nil){
-		return nil,commonError
+		return nil, privacy.NewPrivacyErr(privacy.ProvingErr, errors.New("Creating multi-range proof failed"))
 	}	else{
 		MRProof.S = S
 	}
@@ -386,7 +381,7 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 			VectorAddScalar(aRConcat, cz)),
 		zPowersTimesTwoVec)
 	if (r0==nil){
-		return nil,commonError
+		return nil, privacy.NewPrivacyErr(privacy.ProvingErr, errors.New("Creating multi-range proof failed"))
 	}
 	r1 := VectorHadamard(sR, PowerOfCY)
 
@@ -407,7 +402,7 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 	t1 := new(big.Int).Mod(new(big.Int).Add(InnerProduct(l1, r0), InnerProduct(l0, r1)), privacy.Curve.Params().N)
 	t2 := InnerProduct(l1, r1)
 	if (t2==nil){
-		return nil,commonError
+		return nil, privacy.NewPrivacyErr(privacy.ProvingErr, errors.New("Creating multi-range proof failed"))
 	}
 	// given the t_i values, we can generate commitments to them
 	tau1 := new(big.Int).SetBytes(privacy.RandBytes(32))
@@ -436,7 +431,7 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 	that := InnerProduct(left, right) // NOTE: BP Java implementation calculates this from the t_i
 	// thatPrime and that should be equal
 	if thatPrime.Cmp(that) != 0 {
-		return nil, commonError
+		return nil, privacy.NewPrivacyErr(privacy.ProvingErr, errors.New("Creating multi-range proof failed"))
 	}
 	MRProof.Th = that
 	vecRandomnessTotal := big.NewInt(0)
@@ -457,7 +452,7 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 	}
 	P := TwoVectorPCommitWithGens(RangeProofParams.BPG, HPrime, left, right)
 	if(P==nil) {
-		return nil,commonError
+		return nil,privacy.NewPrivacyErr(privacy.ProvingErr, errors.New("Creating multi-range proof failed"))
 	}
 	MRProof.IPP = InnerProductProve(left, right, that, P, RangeProofParams.U, RangeProofParams.BPG, HPrime)
 	return &MRProof, nil

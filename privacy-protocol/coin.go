@@ -1,14 +1,9 @@
 package privacy
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/ninjadotorg/constant/common/base58"
-	"io"
 	"math/big"
 )
 
@@ -337,46 +332,39 @@ func (coin *OutputCoin) Encrypt(recipientTK TransmissionKey) error {
 	secretPoint.Randomize()
 	aesKeyByte := secretPoint.X.Bytes()
 
-	/**** Encrypt coin details using aesKeyByte ****/
-	// encrypt coin's Randomness
-	randomnessBytes := coin.CoinDetails.Randomness.Bytes()
+	// Encrypt coin details using aesKeyByte
+	aesScheme := new(AES)
+	aesScheme.SetKey(aesKeyByte)
 
-	block, err := aes.NewCipher(aesKeyByte)
+	// encrypt coin's Randomness
+	coin.CoinDetailsEncrypted = new(CoinDetailsEncrypted)
+	var err error
+
+	randomnessBytes := coin.CoinDetails.Randomness.Bytes()
+	coin.CoinDetailsEncrypted.RandomEncrypted, err =  aesScheme.Encrypt(randomnessBytes)
+	if err != nil{
+		return err
+	}
+
+	// encrypt coin's value
+	valueBytes := new(big.Int).SetUint64(coin.CoinDetails.Value).Bytes()
+	coin.CoinDetailsEncrypted.ValueEncrypted, err =aesScheme.Encrypt(valueBytes)
+	if err != nil{
+		return err
+	}
+
+	// Encrypt aesKeyByte using Transmission key's receiver with ElGamal cryptosystem
+	// prepare public key for ElGamal cryptosystem
+	pubKey := new(ElGamalPubKey)
+	pubKey.H, err = DecompressKey(recipientTK)
 	if err != nil {
 		return err
 	}
 
-	// The IV needs to be unique, but not secure. Therefore it's common to
-	// include it at the beginning of the ciphertext.
-	coin.CoinDetailsEncrypted = new(CoinDetailsEncrypted)
-	coin.CoinDetailsEncrypted.RandomEncrypted = make([]byte, aes.BlockSize+len(randomnessBytes))
-
-	iv := coin.CoinDetailsEncrypted.RandomEncrypted[:aes.BlockSize]
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return err
-	}
-
-	stream := cipher.NewCTR(block, iv)
-	stream.XORKeyStream(coin.CoinDetailsEncrypted.RandomEncrypted[aes.BlockSize:], randomnessBytes)
-
-	// encrypt coin's value
-	ValueBytes := new(big.Int).SetUint64(coin.CoinDetails.Value).Bytes()
-	// The IV needs to be unique, but not secure. Therefore it's common to
-	// include it at the beginning of the ciphertext.
-	coin.CoinDetailsEncrypted.ValueEncrypted = make([]byte, aes.BlockSize+len(ValueBytes))
-
-	stream = cipher.NewCTR(block, iv)
-	stream.XORKeyStream(coin.CoinDetailsEncrypted.ValueEncrypted[aes.BlockSize:], ValueBytes)
-
-	/****** Encrypt aesKeyByte using Transmission key's receiver with ElGamal cryptosystem ****/
-	// prepare public key for ElGamal cryptosystem
-	pubKey := new(ElGamalPubKey)
-	pubKey.H, _ = DecompressKey(recipientTK)
 	pubKey.Curve = &Curve
 
 	coin.CoinDetailsEncrypted.SymKeyEncrypted = pubKey.Encrypt(secretPoint).Bytes()
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
@@ -385,9 +373,9 @@ func (coin *OutputCoin) Encrypt(recipientTK TransmissionKey) error {
 
 func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 	if coin.CoinDetailsEncrypted.IsNil() {
-		return errors.New("coin details encrypted is nil")
+		return errors.New("encrypted coin details is nil")
 	}
-	/*** Decrypt symKeyEncrypted using receiver's receiving key to get symKey ***/
+	// Decrypt symKeyEncrypted using receiver's receiving key to get symKey
 	// prepare private key for Elgamal cryptosystem
 	privKey := new(ElGamalPrivKey)
 	privKey.Set(&Curve, new(big.Int).SetBytes(viewingKey.Rk))
@@ -397,22 +385,19 @@ func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 	symKeyCipher.SetBytes(coin.CoinDetailsEncrypted.SymKeyEncrypted)
 	symKeyPoint := privKey.Decrypt(symKeyCipher)
 
-	/*** Decrypt Encrypted using receiver's receiving key to get coin details (Randomness) ***/
-	randomness := make([]byte, 32)
-	// Set key to decrypt
-	block, err := aes.NewCipher(symKeyPoint.X.Bytes())
+	/*** Decrypt Encrypted using aes key to get coin details (Randomness) ***/
+	aesScheme := new(AES)
+	aesScheme.SetKey(symKeyPoint.X.Bytes())
+
+	randomness, err := aesScheme.Decrypt(coin.CoinDetailsEncrypted.RandomEncrypted)
 	if err != nil {
 		return err
 	}
 
-	iv := coin.CoinDetailsEncrypted.RandomEncrypted[:aes.BlockSize]
-	stream := cipher.NewCTR(block, iv)
-	stream.XORKeyStream(randomness, coin.CoinDetailsEncrypted.RandomEncrypted[aes.BlockSize:])
-
-	/*** Decrypt Encrypted using receiver's receiving key to get coin details (Value) ***/
-	value := make([]byte, len(coin.CoinDetailsEncrypted.ValueEncrypted[aes.BlockSize:]))
-	stream = cipher.NewCTR(block, iv)
-	stream.XORKeyStream(value, coin.CoinDetailsEncrypted.ValueEncrypted[aes.BlockSize:])
+	value, err := aesScheme.Decrypt(coin.CoinDetailsEncrypted.ValueEncrypted)
+	if err != nil {
+		return err
+	}
 
 	// assign public key to coin detail
 	coin.CoinDetails.Randomness = new(big.Int).SetBytes(randomness)
