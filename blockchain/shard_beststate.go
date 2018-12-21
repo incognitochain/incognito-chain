@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/ninjadotorg/constant/common"
 )
 
@@ -14,15 +13,6 @@ import (
 // the caller when chain state changes occur as the function name implies.
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
-type BestState struct {
-	Beacon *BestStateBeacon
-	Shard  map[byte]*BestStateShard
-
-	// cache for beacon
-	beacon *lru.Cache
-	// cache for shard
-	shard *lru.Cache
-}
 
 type BestStateShard struct {
 	BestBlockHash common.Hash // The hash of the block.

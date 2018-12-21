@@ -41,6 +41,15 @@ type BlockChain struct {
 	config    Config
 	chainLock sync.RWMutex
 }
+type BestState struct {
+	Beacon *BestStateBeacon
+	Shard  map[byte]*BestStateShard
+
+	// cache for beacon
+	beacon *lru.Cache
+	// cache for shard
+	shard *lru.Cache
+}
 
 // config is a descriptor which specifies the blockchain instance configuration.
 type Config struct {
@@ -695,7 +704,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 }
 
 // parseCustomTokenUTXO helper method for parsing UTXO data for updating dividend payout
-func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash, pubkey []byte) ([]transaction.TxTokenVout, error) {
+/*func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash, pubkey []byte) ([]transaction.TxTokenVout, error) {
 	utxoData, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, pubkey)
 	if err != nil {
 		return nil, err
@@ -728,34 +737,36 @@ func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash, pubkey []byte
 		}
 	}
 	return vouts, finalErr
-}
+}*/
 
-func (self *BlockChain) UpdateDividendPayout(block *ShardBlock) error {
-	// for _, tx := range block.Body.Transactions {
-	// 	switch tx.GetMetadataType() {
-	// 	case metadata.DividendMeta:
-	// 		{
-	// 			tx := tx.(*transaction.Tx)
-	// 			meta := tx.Metadata.(*metadata.Dividend)
-	// 			for _, coin := range tx.Proof.OutputCoins {
-	// 				pubkey := coin.CoinDetails.PublicKey.Compress()
-	// 				vouts, err := self.parseCustomTokenUTXO(meta.TokenID, pubkey)
-	// 				if err != nil {
-	// 					return err
-	// 				}
-	// 				for _, vout := range vouts {
-	// 					txHash := vout.GetTxCustomTokenID()
-	// 					err := self.config.DataBase.UpdateRewardAccountUTXO(meta.TokenID, pubkey, &txHash, vout.GetIndex())
-	// 					if err != nil {
-	// 						return err
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
-	return nil
-}
+// func (self *BlockChain) UpdateDividendPayout(block *Block) error {
+// 	for _, tx := range block.Transactions {
+// 		switch tx.GetMetadataType() {
+// 		case metadata.DividendMeta:
+// 			{
+// 				tx := tx.(*transaction.Tx)
+// 				meta := tx.Metadata.(*metadata.Dividend)
+// 				for _, _ = range tx.Proof.OutputCoins {
+// 					keySet := cashec.KeySet{
+// 						PaymentAddress: meta.PaymentAddress,
+// 					}
+// 					vouts, err := self.GetUnspentTxCustomTokenVout(keySet, meta.TokenID)
+// 					if err != nil {
+// 						return err
+// 					}
+// 					for _, vout := range vouts {
+// 						txHash := vout.GetTxCustomTokenID()
+// 						err := self.config.DataBase.UpdateRewardAccountUTXO(meta.TokenID, keySet.PaymentAddress.Pk, &txHash, vout.GetIndex())
+// 						if err != nil {
+// 							return err
+// 						}
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return nil
+// }
 
 func (self *BlockChain) UpdateVoteCountBoard(block *ShardBlock) error {
 	// DCBEndedBlock := block.Header.DCBGovernor.EndBlock
@@ -1019,10 +1030,10 @@ func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *tr
 
 	tokenKey := TokenPaymentAddressPrefix
 	tokenKey = append(tokenKey, Splitter...)
-	tokenKey = append(tokenKey, (customTokenTx.TxTokenData.PropertyID)[:]...)
+	tokenKey = append(tokenKey, []byte((customTokenTx.TxTokenData.PropertyID).String())...)
 	for _, vin := range customTokenTx.TxTokenData.Vins {
-		paymentAddressPubkey := vin.PaymentAddress.Pk
-		utxoHash := &vin.TxCustomTokenID
+		paymentAddressPubkey := base58.Base58Check{}.Encode(vin.PaymentAddress.Pk, 0x00)
+		utxoHash := []byte(vin.TxCustomTokenID.String())
 		voutIndex := vin.VoutIndex
 		paymentAddressKey := tokenKey
 		paymentAddressKey = append(paymentAddressKey, Splitter...)
@@ -1050,10 +1061,10 @@ func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *tr
 			return err
 		}
 	}
-	for _, vout := range customTokenTx.TxTokenData.Vouts {
-		paymentAddressPubkey := vout.PaymentAddress.Pk
-		utxoHash := customTokenTx.Hash()
-		voutIndex := vout.GetIndex()
+	for index, vout := range customTokenTx.TxTokenData.Vouts {
+		paymentAddressPubkey := base58.Base58Check{}.Encode(vout.PaymentAddress.Pk, 0x00)
+		utxoHash := []byte(customTokenTx.Hash().String())
+		voutIndex := index
 		value := vout.Value
 		paymentAddressKey := tokenKey
 		paymentAddressKey = append(paymentAddressKey, Splitter...)
@@ -1235,6 +1246,7 @@ func (self *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, shardI
 // GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
 func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
 	data, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, receiverKeyset.PaymentAddress.Pk)
+	fmt.Println(data)
 	if err != nil {
 		return nil, err
 	}
@@ -1249,7 +1261,7 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 
 			vout := transaction.TxTokenVout{}
 			vout.PaymentAddress = receiverKeyset.PaymentAddress
-			txHash, err := common.Hash{}.NewHash([]byte(keys[3]))
+			txHash, err := common.Hash{}.NewHashFromStr(string(keys[3]))
 			if err != nil {
 				return nil, err
 			}

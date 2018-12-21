@@ -3,7 +3,6 @@ package zkp
 import (
 	"crypto/rand"
 	"errors"
-	"fmt"
 	"math/big"
 
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
@@ -26,11 +25,13 @@ type PKComOpeningsWitness struct {
 	Openings        []*big.Int
 }
 
+// Init create PKComOpeningsProof element with default value
 func (pro *PKComOpeningsProof) Init() *PKComOpeningsProof {
 	pro.commitmentValue = new(privacy.EllipticPoint).Zero()
 	return pro
 }
 
+// IsNil return true if one of each field is null
 func (pro *PKComOpeningsProof) IsNil() bool {
 	if (len(pro.gamma) == 0) || (pro.commitmentValue == nil) || (pro.alpha == nil) || (pro.indexs == nil) || (pro.gamma == nil) {
 		return true
@@ -80,6 +81,7 @@ func (pro *PKComOpeningsProof) Set(
 	pro.indexs = indexs
 }
 
+// Bytes convert PKComOpeningsProof's value to byte array and return
 func (pro PKComOpeningsProof) Bytes() []byte {
 	if pro.IsNil() {
 		return []byte{}
@@ -99,6 +101,7 @@ func (pro PKComOpeningsProof) Bytes() []byte {
 	return res
 }
 
+// SetBytes convert byte array to PKComOpeningsProof
 func (pro *PKComOpeningsProof) SetBytes(bytestr []byte) error {
 	if len(bytestr) == 0 {
 		return nil
@@ -147,16 +150,16 @@ func (wit *PKComOpeningsWitness) Prove() (*PKComOpeningsProof, error) {
 	}
 	proof := new(PKComOpeningsProof)
 	proof.Set(wit.commitmentValue, alpha, gamma, wit.indexs)
-	fmt.Println(proof.commitmentValue)
-	fmt.Println(proof.alpha)
-	fmt.Println(proof.gamma)
-	fmt.Println(proof.indexs)
+	//fmt.Println(proof.commitmentValue)
+	//fmt.Println(proof.alpha)
+	//fmt.Println(proof.gamma)
+	//fmt.Println(proof.indexs)
 	return proof, nil
 }
 
 // Verify ... (for verifier)
 func (pro *PKComOpeningsProof) Verify() bool {
-	fmt.Println(pro.indexs)
+	//fmt.Println(pro.indexs)
 	beta := GenerateChallengeFromPoint([]*privacy.EllipticPoint{pro.commitmentValue})
 	rightPoint := new(privacy.EllipticPoint)
 	rightPoint.X, rightPoint.Y = privacy.Curve.ScalarMult(pro.commitmentValue.X, pro.commitmentValue.Y, beta.Bytes())
@@ -172,18 +175,16 @@ func (pro *PKComOpeningsProof) Verify() bool {
 	return leftPoint.IsEqual(rightPoint)
 }
 
+// TestOpeningsProtocol ..
 func TestOpeningsProtocol() bool {
 	witness := new(PKComOpeningsWitness)
 	witness.randValue(true)
-	fmt.Printf("Witness: %+v\n", witness)
+	//fmt.Printf("Witness: %+v\n", witness)
 	proof, _ := witness.Prove()
-	fmt.Printf("Len of opening proof: %v\n", len(proof.Bytes()))
-
+	//fmt.Printf("Len of opening proof: %v\n", len(proof.Bytes()))
 
 	proof2 := new(PKComOpeningsProof)
 	proof2.SetBytes(proof.Bytes())
-
 	res := proof.Verify()
-	fmt.Println(res)
 	return res
 }

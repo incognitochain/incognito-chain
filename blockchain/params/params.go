@@ -9,7 +9,10 @@ type Oracle struct {
 	// TODO(@0xankylosaurus): generic prices (ETH, BTC, ...) instead of just bonds
 	Bonds    map[string]uint64 // key: bondTypeID, value: price
 	DCBToken uint64            // against USD
+	GOVToken uint64            // against USD
 	Constant uint64            // against USD
+	ETH      uint64            // against USD
+	BTC      uint64            // against USD
 }
 
 type LoanParams struct {

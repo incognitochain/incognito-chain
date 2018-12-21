@@ -2,7 +2,7 @@ package blockchain
 
 import (
 	"github.com/ninjadotorg/constant/database"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
@@ -47,10 +47,15 @@ func buildCoinbaseTxs(
 // 	if err != nil {
 // 		return nil, err
 // 	}
-// 	for _, tx := range txs {
+// 	for index, tx := range txs {
+// 		paymentAddress := privacy.PaymentAddress{
+// 			Pk: pks[index][:],
+// 			Tk: tks[index][:],
+// 		}
 // 		tx.Metadata = &metadata.Dividend{
-// 			PayoutID: proposal.PayoutID,
-// 			TokenID:  proposal.TokenID,
+// 			PayoutID:       proposal.PayoutID,
+// 			TokenID:        proposal.TokenID,
+// 			PaymentAddress: paymentAddress,
 // 		}
 // 	}
 // 	return txs, nil

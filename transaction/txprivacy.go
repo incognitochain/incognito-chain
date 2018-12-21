@@ -84,10 +84,10 @@ func (tx *Tx) Init(
 	commitmentIndexs, myCommitmentIndexs = RandomCommitmentsProcess(inputCoins, 8, db, shardID, tokenID)
 
 	// Print list of all input coins
-	fmt.Printf("List of all input coins before building tx:\n")
-	for _, coin := range inputCoins {
-		fmt.Printf("%+v\n", coin)
-	}
+	//fmt.Printf("List of all input coins before building tx:\n")
+	//for _, coin := range inputCoins {
+	//	fmt.Printf("%+v\n", coin)
+	//}
 
 	// Check number of list of random commitments, list of random commitment indices
 	if len(commitmentIndexs) != len(inputCoins)*privacy.CMRingSize {
@@ -103,7 +103,7 @@ func (tx *Tx) Init(
 	sumOutputValue = 0
 	for _, p := range paymentInfo {
 		sumOutputValue += p.Amount
-		fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
+		//fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
 	}
 
 	// Calculate sum of all input coins' value
@@ -196,6 +196,77 @@ func (tx *Tx) Init(
 		commitmentProving[i], _ = privacy.DecompressKey(temp)
 	}
 
+
+	// check
+	com := make([]*privacy.EllipticPoint, len(inputCoins))
+	for i :=0; i < len(inputCoins); i++{
+		com[i] = new(privacy.EllipticPoint)
+		com[i].X, com[i].Y = big.NewInt(0), big.NewInt(0)
+		com[i].X.Set(inputCoins[i].CoinDetails.PublicKey.X)
+		com[i].Y.Set(inputCoins[i].CoinDetails.PublicKey.Y)
+
+		tmp := new(privacy.EllipticPoint)
+		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
+		tmp.X.Set(privacy.PedCom.G[privacy.VALUE].X)
+		tmp.Y.Set(privacy.PedCom.G[privacy.VALUE].Y)
+		tmp = tmp.ScalarMul(new(big.Int).SetUint64(inputCoins[i].CoinDetails.Value))
+		com[i] = com[i].Add(tmp)
+
+		tmp = new(privacy.EllipticPoint)
+		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
+		tmp.X.Set(privacy.PedCom.G[privacy.SND].X)
+		tmp.Y.Set(privacy.PedCom.G[privacy.SND].Y)
+		tmp = tmp.ScalarMul(inputCoins[i].CoinDetails.SNDerivator)
+		com[i] = com[i].Add(tmp)
+
+		tmp = new(privacy.EllipticPoint)
+		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
+		tmp.X.Set(privacy.PedCom.G[privacy.SHARDID].X)
+		tmp.Y.Set(privacy.PedCom.G[privacy.SHARDID].Y)
+		tmp = tmp.ScalarMul(new(big.Int).SetBytes([]byte{inputCoins[i].CoinDetails.GetPubKeyLastByte()}))
+		com[i] = com[i].Add(tmp)
+
+		tmp = new(privacy.EllipticPoint)
+		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
+		tmp.X.Set(privacy.PedCom.G[privacy.RAND].X)
+		tmp.Y.Set(privacy.PedCom.G[privacy.RAND].Y)
+		tmp = tmp.ScalarMul(inputCoins[i].CoinDetails.Randomness)
+		com[i] = com[i].Add(tmp)
+    inputCoins[i].CoinDetails.CommitAll()
+		if !com[i].IsEqual(commitmentProving[myCommitmentIndexs[i]]){
+			fmt.Println("WRONG 1")
+		} else{
+			fmt.Println("Right")
+		}
+
+		if !inputCoins[i].CoinDetails.CoinCommitment.IsEqual(commitmentProving[myCommitmentIndexs[i]]){
+			fmt.Println("WRONG 2")
+		} else{
+			fmt.Println("Right")
+		}
+		if !inputCoins[i].CoinDetails.CoinCommitment.IsEqual(com[i]){
+			fmt.Println("WRONG 3")
+		} else{
+			fmt.Println("Right")
+		}
+
+		//openingWitnessInputCoin := new(zkp.PKComOpeningsWitness)
+		//openingWitnessInputCoin.Set(inputCoins[i].CoinDetails.CoinCommitment,
+		//	[]*big.Int{, new(big.Int).SetUint64(inputCoins[i].CoinDetails.Value), inputCoins[i].CoinDetails.SNDerivator, big.NewInt(int64(wit.pkLastByteSender)), randInputSum[i]},
+		//	[]byte{privacy.SK, privacy.VALUE, privacy.SND, privacy.SHARDID, privacy.RAND})
+		//
+		//openingProofHien, _ := openingWitnessHien.Prove()
+		//fmt.Println(openingProofHien.Verify())
+
+		//inputCoins[i].CoinDetails.CommitAll()
+		//if !com[i].IsEqual(inputCoins[i].CoinDetails.CoinCommitment){
+		//	fmt.Println("WRONG")
+		//}
+
+
+	}
+
+
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
 	err := witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
@@ -278,13 +349,13 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 
 		tmp.X, tmp.Y = privacy.Curve.ScalarMult(sigKey.PubKey.H.X, sigKey.PubKey.H.Y, sigKey.R.Bytes())
 		sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y = privacy.Curve.Add(sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y, tmp.X, tmp.Y)
-		fmt.Printf("SIGN ------ PUBLICKEY: %+v\n", sigKey.PubKey.PK)
+		//fmt.Printf("SIGN ------ PUBLICKEY: %+v\n", sigKey.PubKey.PK)
 		tx.SigPubKey = sigKey.PubKey.PK.Compress()
-		fmt.Printf("SIGN ------ PUBLICKEY BYTE: %+v\n", tx.SigPubKey)
+		//fmt.Printf("SIGN ------ PUBLICKEY BYTE: %+v\n", tx.SigPubKey)
 
 		// signing
 		//fmt.Printf("SIGN ------ HASH TX: %+v\n", tx.Hash().String())
-		fmt.Printf(" SIGN SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
+		//fmt.Printf(" SIGN SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
 		signature, err := sigKey.Sign(tx.Hash()[:])
 		if err != nil {
 			return err
@@ -327,7 +398,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 	}
 
 	if tx.Proof != nil {
-		fmt.Printf("VERIFY SIGNATURE ------------- TX.PROOF: %v\n", tx.Proof.Bytes())
+		//fmt.Printf("VERIFY SIGNATURE ------------- TX.PROOF: %v\n", tx.Proof.Bytes())
 	}
 
 	var err error
@@ -337,12 +408,12 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		/****** verify Schnorr signature *****/
 		// prepare Public key for verification
 		verKey := new(privacy.SchnPubKey)
-		fmt.Printf("VERIFY ------ PUBLICKEY BYTE: %+v\n", tx.SigPubKey)
+		//fmt.Printf("VERIFY ------ PUBLICKEY BYTE: %+v\n", tx.SigPubKey)
 		verKey.PK, err = privacy.DecompressKey(tx.SigPubKey)
 		if err != nil {
 			return false, err
 		}
-		fmt.Printf("VERIFY ------ PUBLICKEY: %+v\n", verKey.PK)
+		//fmt.Printf("VERIFY ------ PUBLICKEY: %+v\n", verKey.PK)
 
 		verKey.G = new(privacy.EllipticPoint)
 		verKey.G.X, verKey.G.Y = privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y
@@ -355,7 +426,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		signature.FromBytes(tx.Sig)
 
 		// verify signature
-		fmt.Printf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
+		//fmt.Printf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
 		res = verKey.Verify(signature, tx.Hash()[:])
 
 	} else {

@@ -7,7 +7,17 @@ import (
 
 type BuyBackResponse struct {
 	MetadataBase
-	RequestedTxID *common.Hash
+	RequestedTxID common.Hash
+}
+
+func NewBuyBackResponse(requestedTxID common.Hash, metaType int) *BuyBackResponse {
+	metadataBase := MetadataBase{
+		Type: metaType,
+	}
+	return &BuyBackResponse{
+		RequestedTxID: requestedTxID,
+		MetadataBase:  metadataBase,
+	}
 }
 
 func (bbRes *BuyBackResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
@@ -32,9 +42,7 @@ func (bbRes *BuyBackResponse) ValidateMetadataByItself() bool {
 func (bbRes *BuyBackResponse) Hash() *common.Hash {
 	record := bbRes.RequestedTxID.String()
 	record += string(bbRes.MetadataBase.Hash()[:])
-
 	// final hash
-	record += string(bbRes.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

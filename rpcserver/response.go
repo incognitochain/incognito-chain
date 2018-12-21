@@ -34,6 +34,9 @@ func NewResponse(id interface{}, marshalledResult []byte, rpcErr *RPCError) (*Re
 		Error:  rpcErr,
 		Id:     pid,
 	}
+	if resp.Error != nil {
+		resp.Error.StackTrace = rpcErr.Error()
+	}
 	return resp, nil
 }
 
@@ -47,10 +50,10 @@ func NewResponse(id interface{}, marshalledResult []byte, rpcErr *RPCError) (*Re
 func IsValidIDType(id interface{}) bool {
 	switch id.(type) {
 	case int, int8, int16, int32, int64,
-		uint, uint8, uint16, uint32, uint64,
-		float32, float64,
-		string,
-		nil:
+	uint, uint8, uint16, uint32, uint64,
+	float32, float64,
+	string,
+	nil:
 		return true
 	default:
 		return false
@@ -68,7 +71,7 @@ func MarshalResponse(id interface{}, result interface{}, rpcErr *RPCError) ([]by
 	if err != nil {
 		return nil, err
 	}
-	resultResp, err := json.Marshal(&response)
+	resultResp, err := json.MarshalIndent(&response, "", "\t")
 	if err != nil {
 		return nil, err
 	}

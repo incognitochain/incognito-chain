@@ -6,26 +6,11 @@ package metadata
 // 	TokenID     *common.Hash
 // }
 
-// type DividendInfo struct {
-// 	TokenHolder privacy.PaymentAddress
-// 	Amount      uint64
-// }
-
 // type Dividend struct {
-// 	PayoutID uint64
-// 	TokenID  *common.Hash
-
+// 	PayoutID       uint64
+// 	TokenID        *common.Hash
+// 	PaymentAddress privacy.PaymentAddress
 // 	MetadataBase
-// }
-
-// func NewDividend(data map[string]interface{}) *Dividend {
-// 	result := Dividend{
-// 		PayoutID: uint64(data["PayoutID"].(float64)),
-// 	}
-// 	s, _ := hex.DecodeString(data["TokenID"].(string))
-// 	copy(result.TokenID[:], s)
-// 	result.Type = DividendMeta
-// 	return &result
 // }
 
 // func (div *Dividend) GetType() int {

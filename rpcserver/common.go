@@ -8,6 +8,8 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/pkg/errors"
 )
 
 // buildRawCustomTokenTransaction ...
@@ -21,13 +23,13 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	senderKeyParam := arrayParams[0]
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, err
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender, err := common.GetTxSenderChain(lastByte)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, err
 	}
 
 	// param #2: estimation fee coin per kb
@@ -44,8 +46,9 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		PropertySymbol: tokenParamsRaw["TokenSymbol"].(string),
 		TokenTxType:    int(tokenParamsRaw["TokenTxType"].(float64)),
 		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
-		Receiver:       transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"]),
 	}
+	voutsAmount := int64(0)
+	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
 	switch tokenParams.TokenTxType {
 	case transaction.CustomTokenTransfer:
 		{
@@ -53,10 +56,10 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 			unspentTxTokenOuts, err := self.config.BlockChain.GetUnspentTxCustomTokenVout(senderKey.KeySet, tokenID)
 			Logger.log.Info("buildRawCustomTokenTransaction ", unspentTxTokenOuts)
 			if err != nil {
-				return nil, NewRPCError(ErrUnexpected, err)
+				return nil, err
 			}
 			if len(unspentTxTokenOuts) == 0 {
-				return nil, NewRPCError(ErrUnexpected, errors.New("Balance of token is zero"))
+				return nil, errors.Wrap(errors.New("Balance of token is zero"), "")
 			}
 			txTokenIns := []transaction.TxTokenVin{}
 			txTokenInsAmount := uint64(0)
@@ -75,6 +78,10 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 				item.Signature = base58.Base58Check{}.Encode(signature, 0)
 				txTokenIns = append(txTokenIns, item)
 				txTokenInsAmount += out.Value
+				voutsAmount -= int64(out.Value)
+				if voutsAmount <= 0 {
+					break
+				}
 			}
 			tokenParams.SetVins(txTokenIns)
 			tokenParams.SetVinsAmount(txTokenInsAmount)
@@ -142,8 +149,10 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		tokenParams,
 		listCustomTokens,
 	)
-
-	return tx, err
+	if err != nil {
+		return nil, err
+	}
+	return tx, nil
 }
 
 // buildRawCustomTokenTransaction ...
