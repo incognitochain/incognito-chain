@@ -1,7 +1,6 @@
 package zkp
 
 import (
-	"fmt"
 	"math"
 	"math/big"
 
@@ -18,9 +17,9 @@ func GenerateChallengeFromPoint(values []*privacy.EllipticPoint) *big.Int {
 	for i := 1; i < privacy.PedCom.Capacity; i++ {
 		appendStr = append(appendStr, privacy.PedCom.G[i].Compress()...)
 	}
-	fmt.Printf("len values: %v\n", len(values))
+	//fmt.Printf("len values: %v\n", len(values))
 
-	fmt.Printf("values[0]: %v\n", values[0])
+	//fmt.Printf("values[0]: %v\n", values[0])
 	for i := 0; i < len(values); i++ {
 		appendStr = append(appendStr, values[i].Compress()...)
 	}
