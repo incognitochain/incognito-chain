@@ -1,11 +1,10 @@
 package lvdb
 
 import (
-	"github.com/pkg/errors"
-	"github.com/syndtr/goleveldb/leveldb"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/pkg/errors"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 type db struct {
@@ -54,6 +53,10 @@ var (
 	threePhraseCryptoSealerPrefix = []byte("threephrasecryptosealerprefix-")
 	threePhraseVoteValuePrefix    = []byte("threephrasevotevalueprefix-")
 
+	// cmb
+	cmbPrefix = []byte("cmb-")
+
+	// dividend
 	Unreward = []byte("unreward")
 	Spent    = []byte("spent")
 	Unspent  = []byte("unspent")

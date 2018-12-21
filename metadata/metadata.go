@@ -7,6 +7,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/voting"
 )
 
@@ -87,6 +88,10 @@ type BlockchainRetriever interface {
 	// For validating crowdsale
 	GetCrowdsaleData([]byte) (*voting.SaleData, error)
 	GetCrowdsaleTxs([]byte) ([][]byte, error)
+
+	// For validating cmb
+	GetCMB([]byte) ([]privacy.PaymentAddress, uint64, *common.Hash, uint8, error)
+	GetBlockHeightByBlockHash(*common.Hash) (int32, byte, error)
 }
 
 type Metadata interface {

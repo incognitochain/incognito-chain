@@ -529,26 +529,22 @@ func (tx *Tx) IsSalaryTx() bool {
 func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 	pubkeys := [][]byte{}
 	amounts := []uint64{}
+	for _, coin := range tx.Proof.OutputCoins {
+		added := false
+		coinPubKey := coin.CoinDetails.PublicKey.Compress()
+		for i, key := range pubkeys {
+			if bytes.Equal(coinPubKey, key) {
+				added = true
+				amounts[i] += coin.CoinDetails.Value
+				break
+			}
+		}
+		if !added {
+			pubkeys = append(pubkeys, coinPubKey)
+			amounts = append(amounts, coin.CoinDetails.Value)
+		}
+	}
 	return pubkeys, amounts
-
-	// TODO: @bunyip - update logic here
-
-	// for _, desc := range tx.Descs {
-	// 	for _, note := range desc.Note {
-	// 		added := false
-	// 		for i, key := range pubkeys {
-	// 			if bytes.Equal(note.Apk[:], key) {
-	// 				added = true
-	// 				amounts[i] += note.Value
-	// 			}
-	// 		}
-	// 		if !added {
-	// 			pubkeys = append(pubkeys, note.Apk[:])
-	// 			amounts = append(amounts, note.Value)
-	// 		}
-	// 	}
-	// }
-	// return pubkeys, amounts
 }
 
 func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.Hash][][]byte) error {

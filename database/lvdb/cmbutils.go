@@ -3,11 +3,12 @@ package lvdb
 import (
 	"encoding/binary"
 
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/pkg/errors"
 )
 
-const PubkeyLen = 33
+const PaymentAddressLen = 66
 
 func errUnexpected(err error, content string) *database.DatabaseError {
 	if err == nil {
@@ -16,7 +17,18 @@ func errUnexpected(err error, content string) *database.DatabaseError {
 	return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, content))
 }
 
-func getCMBValue(capital uint64, members [][]byte) ([]byte, error) {
+func getCMBInitKey(mainAccount []byte) []byte {
+	// Add main account
+	key := append(cmbPrefix, mainAccount...)
+	return key
+}
+
+func getCMBInitValue(
+	capital uint64,
+	members [][]byte,
+	txHash []byte,
+	state uint8,
+) ([]byte, error) {
 	// Add capital
 	values := []byte{}
 	capitalInBytes := make([]byte, 8)
@@ -25,10 +37,45 @@ func getCMBValue(capital uint64, members [][]byte) ([]byte, error) {
 
 	// Add members
 	for _, member := range members {
-		if len(member) != PubkeyLen {
-			return nil, errors.Errorf("provided bytes are not pubkey")
+		if len(member) != PaymentAddressLen {
+			return nil, errors.Errorf("provided bytes are not payment address")
 		}
 		values = append(values, member...)
 	}
+
+	// Add txHash
+	values = append(values, txHash...)
+
+	// Add state
+	values = append(values, common.Uint8ToBytes(state)...)
 	return values, nil
+}
+
+func parseCMBInitValue(value []byte) ([][]byte, uint64, []byte, uint8, error) {
+	// Get capital (first 8 bytes)
+	if len(value) < 8 {
+		return nil, 0, nil, 0, errors.Errorf("error parsing cmb value")
+	}
+	capital := binary.LittleEndian.Uint64(value)
+
+	// Last byte: state
+	state := uint8(value[len(value)-1])
+
+	// Last 32 bytes (not counting approvalByte): txHash
+	txHash := value[len(value)-common.HashSize-1 : len(value)-1]
+
+	// The rest: members
+	value = value[8 : len(value)-common.HashSize-2]
+	if len(value)%PaymentAddressLen != 0 {
+		return nil, 0, nil, 0, errors.Errorf("error parsing cmb value")
+	}
+	numMembers := len(value) / PaymentAddressLen
+	members := [][]byte{}
+
+	for i := 0; i < numMembers; i += 1 {
+		member := make([]byte, PaymentAddressLen)
+		copy(member, value[i*PaymentAddressLen:(i+1)*PaymentAddressLen])
+		members = append(members, member)
+	}
+	return members, capital, txHash, state, nil
 }

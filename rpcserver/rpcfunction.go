@@ -78,7 +78,6 @@ var RpcHandler = map[string]commandHandler{
 	// multisig
 	CreateSignatureOnCustomTokenTx: RpcServer.handleCreateSignatureOnCustomTokenTx,
 	GetListDCBBoard:                RpcServer.handleGetListDCBBoard,
-	GetListCBBoard:                 RpcServer.handleGetListCBBoard,
 	GetListGOVBoard:                RpcServer.handleGetListGOVBoard,
 
 	// vote
@@ -109,6 +108,9 @@ var RpcHandler = map[string]commandHandler{
 	GetGOVParams:                      RpcServer.handleGetGOVParams,
 	CreateAndSendTxWithBuyBackRequest: RpcServer.handleCreateAndSendTxWithBuyBackRequest,
 	CreateAndSendTxWithBuySellRequest: RpcServer.handleCreateAndSendTxWithBuySellRequest,
+
+	// cmb
+	CreateAndSendTxWithCMBInitRequest: RpcServer.handleCreateAndSendTxWithCMBInitRequest,
 }
 
 // Commands that are available to a limited user

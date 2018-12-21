@@ -267,6 +267,15 @@ concludeBlock:
 		txToRemove = append(txToRemove, tx)
 	}
 
+	// Build CMB responses
+	cmbInitRefundTxs, err := blockgen.buildCMBRefund(sourceTxns, chainID, privatekey)
+	if err != nil {
+		return nil, err
+	}
+	for _, tx := range cmbInitRefundTxs {
+		txsToAdd = append(txsToAdd, tx)
+	}
+
 	// Get blocksalary fund from txs
 	salaryFundAdd := uint64(0)
 	salaryMULTP := uint64(0) //salary multiplier

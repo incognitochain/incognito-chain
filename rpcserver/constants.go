@@ -101,4 +101,7 @@ const (
 	GetBondTypes                      = "getbondtypes"
 	CreateAndSendTxWithBuyBackRequest = "createandsendtxwithbuybackrequest"
 	CreateAndSendTxWithBuySellRequest = "createandsendtxwithbuysellrequest"
+
+	// cmb
+	CreateAndSendTxWithCMBInitRequest = "createandsendtxwithcmbinitrequest"
 )

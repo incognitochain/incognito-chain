@@ -104,7 +104,8 @@ type DatabaseInterface interface {
 	GetCrowdsaleTxs([]byte) ([][]byte, error)
 
 	// CMB
-	StoreCMB([]byte, [][]byte, uint64) error
+	StoreCMB([]byte, [][]byte, uint64, []byte) error
+	GetCMB([]byte) ([][]byte, uint64, []byte, uint8, error)
 
 	//Vote
 	AddVoteDCBBoard(uint32, []byte, []byte, uint64) error

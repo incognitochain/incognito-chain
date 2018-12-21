@@ -13,9 +13,3 @@ type GOVGovernor struct {
 	GOVBoardPubKeys     [][]byte
 	StartAmountGOVToken uint64 //Sum of GOV token stack to all member of this board
 }
-
-type CMBGovernor struct {
-	StartedBlock    uint32
-	EndBlock        uint32
-	CMBBoardPubKeys [][]byte
-}
