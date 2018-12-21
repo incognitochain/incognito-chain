@@ -41,7 +41,7 @@ func (customTokentx *TxCustomToken) validateDoubleSpendCustomTokenOnTx(
 		for _, item := range customTokentx.TxTokenData.Vins {
 			if vin.TxCustomTokenID.String() == item.TxCustomTokenID.String() {
 				if vin.VoutIndex == item.VoutIndex {
-					return NewTransactionErr(UnexpectedErr, errors.New("Double spend"))
+					return NewTransactionErr(DoubleSpend, nil)
 				}
 			}
 		}
@@ -83,7 +83,7 @@ func (customTokenTx *TxCustomToken) validateDoubleSpendCustomTokenWithBlockchain
 
 	if len(listTxs) == 0 {
 		if customTokenTx.TxTokenData.Type != CustomTokenInit {
-			return NewTransactionErr(UnexpectedErr, errors.New("Not exist tx for this "))
+			return NewTransactionErr(TxNotExist, nil)
 		}
 	}
 

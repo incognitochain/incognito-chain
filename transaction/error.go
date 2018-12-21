@@ -6,22 +6,28 @@ import (
 )
 
 const (
-	UnexpectedErr      = iota
+	UnexpectedErr       = iota
 	WrongTokenTxType
 	CustomTokenExisted
 	WrongInput
 	WrongSig
+	DoubleSpend
+	TxNotExist
+	RandomCommitmentErr
 )
 
 var ErrCodeMessage = map[int]struct {
 	code    int
 	message string
 }{
-	UnexpectedErr:      {-1, "Unexpected error"},
-	WrongTokenTxType:   {-2, "Can't handle this TokenTxType"},
-	CustomTokenExisted: {-3, "This token is existed in network"},
-	WrongInput:         {-4, "Wrong input transaction"},
-	WrongSig:           {-5, "Wrong signature"},
+	UnexpectedErr:       {-1, "Unexpected error"},
+	WrongTokenTxType:    {-2, "Can't handle this TokenTxType"},
+	CustomTokenExisted:  {-3, "This token is existed in network"},
+	WrongInput:          {-4, "Wrong input transaction"},
+	WrongSig:            {-5, "Wrong signature"},
+	DoubleSpend:         {-6, "Double spend"},
+	TxNotExist:          {-7, "Not exist tx for this"},
+	RandomCommitmentErr: {-8, "Number of list commitments indices must be corresponding with number of input coins"},
 }
 
 type TransactionError struct {

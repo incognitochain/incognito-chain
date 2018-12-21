@@ -92,11 +92,11 @@ func (tx *Tx) Init(
 
 	// Check number of list of random commitments, list of random commitment indices
 	if len(commitmentIndexs) != len(inputCoins)*privacy.CMRingSize {
-		return NewTransactionErr(UnexpectedErr, errors.New("Number of list commitments indices must be corresponding with number of input coins"))
+		return NewTransactionErr(RandomCommitmentErr, nil)
 	}
 
 	if len(myCommitmentIndexs) != len(inputCoins) {
-		return NewTransactionErr(UnexpectedErr, errors.New("Number of list my commitment indices must be equal to number of input coins"))
+		return NewTransactionErr(RandomCommitmentErr, errors.New("Number of list my commitment indices must be equal to number of input coins"))
 	}
 
 	// Calculate sum of all output coins' value
@@ -121,7 +121,7 @@ func (tx *Tx) Init(
 	valueMax = valueMax.Sub(valueMax, big.NewInt(1))
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	if overBalance < 0 || overBalance > valueMax.Uint64() {
-		return NewTransactionErr(UnexpectedErr, errors.New("Input value less than output value"))
+		return NewTransactionErr(WrongInput, errors.New("Input value less than output value"))
 	}
 
 	// if overBalance > 0, create a new payment info with pk is sender's pk and amount is overBalance
