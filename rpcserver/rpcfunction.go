@@ -40,7 +40,7 @@ var RpcHandler = map[string]commandHandler{
 	ListOutputCoins:          RpcServer.handleListOutputCoins,
 	CreateRawTransaction:     RpcServer.handleCreateRawTransaction,
 	SendRawTransaction:       RpcServer.handleSendRawTransaction,
-	CreateAndSendTransaction: RpcServer.handlCreateAndSendTx,
+	CreateAndSendTransaction: RpcServer.handleCreateAndSendTx,
 	GetMempoolInfo:           RpcServer.handleGetMempoolInfo,
 	GetTransactionByHash:     RpcServer.handleGetTransactionByHash,
 

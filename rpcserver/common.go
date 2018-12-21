@@ -146,8 +146,10 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		tokenParams,
 		listCustomTokens,
 	)
-
-	return tx, NewRPCError(ErrUnexpected, err)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	return tx, nil
 }
 
 // buildRawCustomTokenTransaction ...

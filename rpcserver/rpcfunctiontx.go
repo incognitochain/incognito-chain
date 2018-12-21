@@ -260,9 +260,9 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 }
 
 /*
-handlCreateAndSendTx - RPC creates transaction and send to network
+handleCreateAndSendTx - RPC creates transaction and send to network
 */
-func (self RpcServer) handlCreateAndSendTx(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (self RpcServer) handleCreateAndSendTx(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	data, err := self.handleCreateRawTransaction(params, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
