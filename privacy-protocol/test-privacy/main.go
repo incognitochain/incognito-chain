@@ -1,12 +1,5 @@
 package main
 
-import (
-	"fmt"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"math/big"
-)
-
 func main() {
 
 	// fmt.Printf("N: %X\n", privacy-protocol.Curve.Params().N)
@@ -189,36 +182,36 @@ func main() {
 
 	/*----------------- TEST ENCRYPT/DECRYPT COIN -----------------*/
 
-	coin := new(privacy.OutputCoin)
-	coin.CoinDetails = new(privacy.Coin)
-	coin.CoinDetails.Randomness = privacy.RandInt()
-	coin.CoinDetails.Value = 10
-
-	fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
-
-	spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	keySetSender := cashec.KeySet{}
-	keySetSender.ImportFromPrivateKey(&spendingKey)
-	coin.CoinDetails.PublicKey, _ = privacy.DecompressKey(keySetSender.PaymentAddress.Pk)
-
-	err := coin.Encrypt(keySetSender.PaymentAddress.Tk)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	coinByte := coin.Bytes()
-
-	fmt.Printf("Coin encrypt bytes: %v\n", coinByte)
-	coin2 := new(privacy.OutputCoin)
-	err = coin2.SetBytes(coinByte)
-	if err != nil {
-		fmt.Printf("Coin encrypt setbytes: %+v\n", coin2)
-	}
-
-	coin.Decrypt(keySetSender.ReadonlyKey)
-
-	fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
-	fmt.Printf("DEcrypted Plain text 1: Value : %v\n", coin.CoinDetails.Value)
+	//coin := new(privacy.OutputCoin)
+	//coin.CoinDetails = new(privacy.Coin)
+	//coin.CoinDetails.Randomness = privacy.RandInt()
+	//coin.CoinDetails.Value = 10
+	//
+	//fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+	//
+	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	//keySetSender := cashec.KeySet{}
+	//keySetSender.ImportFromPrivateKey(&spendingKey)
+	//coin.CoinDetails.PublicKey, _ = privacy.DecompressKey(keySetSender.PaymentAddress.Pk)
+	//
+	//err := coin.Encrypt(keySetSender.PaymentAddress.Tk)
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+	//
+	//coinByte := coin.Bytes()
+	//
+	//fmt.Printf("Coin encrypt bytes: %v\n", coinByte)
+	//coin2 := new(privacy.OutputCoin)
+	//err = coin2.SetBytes(coinByte)
+	//if err != nil {
+	//	fmt.Printf("Coin encrypt setbytes: %+v\n", coin2)
+	//}
+	//
+	//coin.Decrypt(keySetSender.ReadonlyKey)
+	//
+	//fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+	//fmt.Printf("DEcrypted Plain text 1: Value : %v\n", coin.CoinDetails.Value)
 
 	/*----------------- TEST NDH -----------------*/
 	//fmt.Println(zkp.TestProofIsZero())
@@ -408,7 +401,6 @@ func main() {
 	//fmt.Println(point)
 
 	//fmt.Println(privacy.TestElGamalPubKeyEncryption())
-
 
 
 }

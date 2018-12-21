@@ -59,7 +59,7 @@ func (aes *AES) GenKey(){
 
 
 func (aes *AES) SetKey(key []byte){
-
+	aes.key = key
 }
 
 func (aes *AES) Encrypt(plaintext []byte){
