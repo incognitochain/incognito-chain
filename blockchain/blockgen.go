@@ -10,7 +10,7 @@ import (
 )
 
 type BlkTmplGenerator struct {
-	blockpool   BlockPool
+	// blockpool   BlockPool
 	txPool      TxPool
 	chain       *BlockChain
 	rewardAgent RewardAgent
@@ -59,18 +59,13 @@ func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent 
 	}, nil
 }
 
-type BlockPool interface {
-	RemoveBlock(shard int, blockHeight int) error
-	GetNewShardBlock() map[byte]([]common.Hash)
+type ShardToBeaconPool interface {
+	RemoveBlock([]common.Hash) error
+	GetBlock() map[byte][]ShardToBeaconBlock
 }
-
-type BlockPoolImp struct {
-	//blocks map[common.Hash]
-}
-
-func (self BlockPoolImp) GetNewShardBlock() map[byte]([]common.Hash) {
-	//TODO: implementation
-	return nil
+type CrossShardPool interface {
+	RemoveBlock([]common.Hash) error
+	GetBlock() map[byte][]CrossShardBlock
 }
 
 func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*ShardBlock, error) {

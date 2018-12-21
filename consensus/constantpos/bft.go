@@ -3,8 +3,15 @@ package constantpos
 import (
 	"errors"
 	"fmt"
+	"math/big"
 	"sync"
 	"time"
+
+	"github.com/ninjadotorg/constant/common/base58"
+
+	"github.com/ninjadotorg/constant/common"
+
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 
 	"github.com/ninjadotorg/constant/cashec"
 
@@ -49,9 +56,13 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 	if isProposer {
 		self.Phase = "propose"
 	}
+
 	go func() {
 		for {
 			self.cTimeout = make(chan struct{})
+			multiSigScheme := new(privacy.MultiSigScheme)
+			multiSigScheme.Init()
+			multiSigScheme.Keyset.Set(&self.UserKeySet.PrivateKey, &self.UserKeySet.PaymentAddress.Pk)
 			select {
 			case <-self.cQuit:
 				return
@@ -110,8 +121,12 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							}
 							// Todo create random Ri and broadcast
 
-							myRi := []byte{0}
-							myr := []byte{0}
+							myRiECCPoint, myrBigInt := multiSigScheme.GenerateRandom()
+							myRi := myRiECCPoint.Compress()
+							myr := myrBigInt.Bytes()
+							for len(myr) < privacy.BigIntSize {
+								myr = append([]byte{0}, myr...)
+							}
 							msg, err := MakeMsgBFTPrepare(myRi, self.UserKeySet.GetPublicKeyB58())
 							if err != nil {
 								Logger.log.Error(err)
@@ -151,8 +166,48 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							//Use collected Ri to calc R & get ValidatorsIdx if len(Ri) > 1/2size(committee)
 							// then sig block with this R
 							// phaseData.R = base58.Base58Check{}.Encode(Rbytes, byte(0x00))
+							// base58.Base58Check{}.
+							numbOfSigners := len(phaseData.RiList)
+							listPubkeyOfSigners := make([]*privacy.PublicKey, numbOfSigners)
+							listROfSigners := make([]*privacy.EllipticPoint, numbOfSigners)
+							RCombined := new(privacy.EllipticPoint)
+							//RCombined.Set(big.NewInt(0), big.NewInt(0))
+							counter := 0
+							// var byteVersion byte
+							// var err error
+
+							for szPubKey, bytesR := range phaseData.RiList {
+								pubKeyTemp, byteVersion, err := base58.Base58Check{}.Decode(szPubKey)
+								listPubkeyOfSigners[counter] = new(privacy.PublicKey)
+								*listPubkeyOfSigners[counter] = pubKeyTemp
+								if (err != nil) || (byteVersion != byte(0x00)) {
+									//Todo
+									return
+								}
+								listROfSigners[counter] = new(privacy.EllipticPoint)
+								err = listROfSigners[counter].Decompress(bytesR)
+								if err != nil {
+									//Todo
+									return
+								}
+								RCombined = RCombined.Add(listROfSigners[counter])
+								// phaseData.ValidatorsIdx[counter] = sort.SearchStrings(self.Committee, szPubKey)
+								phaseData.ValidatorsIdx[counter] = common.IndexOfStr(szPubKey, self.Committee)
+
+								counter++
+							}
 
 							//Todo Sig block with R Here
+							var blockData common.Hash
+							if layer == "beacon" {
+								blockData = self.pendingBlock.(*blockchain.BeaconBlock).Header.Hash()
+							} else {
+								blockData = self.pendingBlock.(*blockchain.ShardBlock).Header.Hash()
+							}
+							blockData.GetBytes()
+							multiSigScheme.Signature = multiSigScheme.Keyset.SignMultiSig(blockData.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(self.dataForSig.r))
+							phaseData.CommitBlkSig = base58.Base58Check{}.Encode(multiSigScheme.Signature.Bytes(), byte(0x00))
+							phaseData.R = base58.Base58Check{}.Encode(RCombined.Compress(), byte(0x00))
 
 							msg, err := MakeMsgBFTCommit(phaseData.CommitBlkSig, phaseData.R, phaseData.ValidatorsIdx, self.UserKeySet.GetPublicKeyB58())
 							if err != nil {
@@ -195,8 +250,26 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							}
 						case <-self.cTimeout:
 							//Combine collected Sigs with the same R that has the longest list must has size > 1/2size(committee)
-
+							var szRCombined string
+							szRCombined = "1"
+							for szR := range phaseData.Sigs {
+								if len(phaseData.Sigs[szR]) > (len(self.Committee) >> 1) {
+									if len(szRCombined) == 1 {
+										szRCombined = szR
+									} else {
+										if len(phaseData.Sigs[szR]) > len(phaseData.Sigs[szRCombined]) {
+											szRCombined = szR
+										}
+									}
+								}
+							}
+							if len(szRCombined) != 1 {
+								return
+							}
 							//Todo combine Sigs
+							// listSigOfSigners := make([]privacy.SchnMultiSig, len(phaseData.Sigs[szRCombined]))
+							//for sig
+							// multiSigScheme.CombineMultiSig()
 
 							var phaseData struct {
 								ValidatorsIdx []int
@@ -248,3 +321,47 @@ func (self *BFTProtocol) Stop() error {
 	close(self.cQuit)
 	return nil
 }
+
+// Moving them soon
+// type sortString []string
+
+// func lessString(a, b string) bool {
+// 	if len(a) < len(b) {
+// 		return true
+// 	}
+// 	if len(a) > len(b) {
+// 		return false
+// 	}
+
+// 	for i := 0; i < len(a); i++ {
+// 		if a[i] > b[i] {
+// 			return false
+// 		}
+// 		if a[i] < b[i] {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
+
+// func swap(str1, str2 *string) {
+// 	*str1, *str2 = *str2, *str1
+// }
+
+// func (s sortString) Less(i, j int) bool {
+// 	return lessString(s[i], s[j])
+// }
+
+// func (s sortString) Swap(i, j int) {
+// 	swap(&s[i], &s[j])
+// }
+
+// func (s sortString) Len() int {
+// 	return len(s)
+// }
+
+// func SortString(s []string) []string {
+// 	// r := [](s)
+// 	sort.Sort(sortString(s))
+// 	return s
+// }

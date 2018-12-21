@@ -105,7 +105,7 @@ type config struct {
 	TestNet bool `long:"testnet" description:"Use the test network"`
 
 	UserPrvKey  string   `long:"userprvkey" description:"User private key used for operation in consensus"`
-	NodeRole    string   `long:"noderole" description:"Role of this node (beacon/shard/wallet/relay | default role is 'relay' (relayshards must be set to run), 'shard' mode will switch between 'beacon' and 'shard')"`
+	NodeRole    string   `long:"noderole" description:"Role of this node (beacon/shard/wallet/relay | default role is 'relay' (relayshards must be set to run), 'auto' mode will switch between 'beacon' and 'shard')"`
 	RelayShards []string `long:"relayshards" description:"set relay shards of this node when in 'relay' mode if noderole is auto then it only sync shard data when user is a shard producer/validator"`
 	// For Wallet
 	Wallet           bool   `long:"enablewallet" description:"Enable wallet"`

@@ -20,11 +20,10 @@ type BeaconBody struct {
 }
 
 type BeaconHeader struct {
-	ProducerSig string      `json:"BlockProducerSignature"`
-	Producer    string      `json:"Producer"`
-	Version     int         `json:"Version"`
-	ParentHash  common.Hash `json:"ParentBlockHash"`
-	Height      uint64      `json:"Height"`
+	Producer   string      `json:"Producer"`
+	Version    int         `json:"Version"`
+	ParentHash common.Hash `json:"ParentBlockHash"`
+	Height     uint64      `json:"Height"`
 	//epoch length should be config in consensus
 	Epoch         uint64      `json:"Epoch"`
 	Timestamp     int64       `json:"Timestamp"`
@@ -49,6 +48,7 @@ type BeaconHeader struct {
 type BeaconBlock struct {
 	AggregatedSig string `json:"AggregatedSig"`
 	ValidatorsIdx []int  `json:"ValidatorsIdx"`
+	ProducerSig   string `json:"BlockProducerSignature"`
 
 	Body   BeaconBody
 	Header BeaconHeader
@@ -101,7 +101,6 @@ func (self *BeaconHeader) toString() string {
 	res += self.ShardStateHash.String()
 	res += self.InstructionHash.String()
 	res += self.Producer
-	res += self.ProducerSig
 	return res
 }
 
