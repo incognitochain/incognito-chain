@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/ninjadotorg/constant/privacy-protocol"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 )
@@ -11,21 +13,28 @@ import (
 type ShardBlock struct {
 	AggregatedSig string `json:"AggregatedSig"`
 	ValidatorsIdx []int  `json:"ValidatorsIdx"`
-
-	Body   ShardBody
-	Header ShardHeader
+	ProducerSig   string `json:"BlockProducerSignature"`
+	Body          ShardBody
+	Header        ShardHeader
 }
 
 type ShardToBeaconBlock struct {
-	Header        ShardHeader
 	AggregatedSig string `json:"AggregatedSig"`
 	ValidatorsIdx []int  `json:"ValidatorsIdx"`
 	ProducerSig   string `json:"BlockProducerSignature"`
-	Producer      string `json:"Producer"`
+
+	Header ShardHeader
+	Params interface{}
 }
 
-type ShardToShardBlock struct {
-	///
+type CrossShardBlock struct {
+	AggregatedSig string `json:"AggregatedSig"`
+	ValidatorsIdx []int  `json:"ValidatorsIdx"`
+	ProducerSig   string `json:"BlockProducerSignature"`
+
+	Header          ShardHeader
+	MerklePathShard []common.Hash
+	UTXOList        []privacy.Coin
 }
 
 //HashFinal creates a hash from block data that include AggregatedSig & ValidatorsIdx
