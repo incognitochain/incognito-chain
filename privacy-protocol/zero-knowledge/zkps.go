@@ -972,7 +972,6 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 			return false
 		}
 		// Verify for the proof one-out-of-N commitments is a commitment to the coins being spent
-		//Todo: 0xkraken
 		// Calculate cm input inverse
 		cmInputSum[i] = new(privacy.EllipticPoint)
 		cmInputSum[i].X = big.NewInt(0)
