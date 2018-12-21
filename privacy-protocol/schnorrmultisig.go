@@ -75,6 +75,15 @@ func (multiSig *SchnMultiSig) Bytes() []byte {
 	return res
 }
 
+func (multisigScheme *MultiSigScheme) Init() {
+	multisigScheme.Keyset = new(MultiSigKeyset)
+	multisigScheme.Keyset.priKey = new(SpendingKey)
+	multisigScheme.Keyset.pubKey = new(PublicKey)
+	multisigScheme.Signature = new(SchnMultiSig)
+	multisigScheme.Signature.R = new(EllipticPoint)
+	multisigScheme.Signature.S = new(big.Int)
+}
+
 // SignMultiSig ...
 func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicKey, listR []*EllipticPoint, r *big.Int) *SchnMultiSig {
 	//R = R0+R1+R2+R3+...+Rn

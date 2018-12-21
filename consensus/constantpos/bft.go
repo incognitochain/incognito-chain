@@ -3,8 +3,16 @@ package constantpos
 import (
 	"errors"
 	"fmt"
+	"math/big"
+	"sort"
 	"sync"
 	"time"
+
+	"github.com/ninjadotorg/constant/common/base58"
+
+	"github.com/ninjadotorg/constant/common"
+
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 
 	"github.com/ninjadotorg/constant/cashec"
 
@@ -49,9 +57,16 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 	if isProposer {
 		self.Phase = "propose"
 	}
+
+	//Warning
+	self.Committee = SortString(self.Committee)
+
 	go func() {
 		for {
 			self.cTimeout = make(chan struct{})
+			multiSigScheme := new(privacy.MultiSigScheme)
+			multiSigScheme.Init()
+			multiSigScheme.Keyset.Set(&self.UserKeySet.PrivateKey, &self.UserKeySet.PaymentAddress.Pk)
 			select {
 			case <-self.cQuit:
 				return
@@ -110,8 +125,12 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							}
 							// Todo create random Ri and broadcast
 
-							myRi := []byte{0}
-							myr := []byte{0}
+							myRiECCPoint, myrBigInt := multiSigScheme.GenerateRandom()
+							myRi := myRiECCPoint.Compress()
+							myr := myrBigInt.Bytes()
+							for len(myr) < privacy.BigIntSize {
+								myr = append([]byte{0}, myr...)
+							}
 							msg, err := MakeMsgBFTPrepare(myRi, self.UserKeySet.GetPublicKeyB58())
 							if err != nil {
 								Logger.log.Error(err)
@@ -151,8 +170,43 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							//Use collected Ri to calc R & get ValidatorsIdx if len(Ri) > 1/2size(committee)
 							// then sig block with this R
 							// phaseData.R = base58.Base58Check{}.Encode(Rbytes, byte(0x00))
+							// base58.Base58Check{}.
+							numbOfSigners := len(phaseData.RiList)
+							listPubkeyOfSigners := make([]*privacy.PublicKey, numbOfSigners)
+							listROfSigners := make([]*privacy.EllipticPoint, numbOfSigners)
+							counter := 0
+							// var byteVersion byte
+							// var err error
+
+							for szPubKey, bytesR := range phaseData.RiList {
+								pubKeyTemp, byteVersion, err := base58.Base58Check{}.Decode(szPubKey)
+								listPubkeyOfSigners[counter] = new(privacy.PublicKey)
+								*listPubkeyOfSigners[counter] = pubKeyTemp
+								if (err != nil) || (byteVersion != byte(0x00)) {
+									//Todo
+									return
+								}
+								listROfSigners[counter] = new(privacy.EllipticPoint)
+								err = listROfSigners[counter].Decompress(bytesR)
+								if err != nil {
+									//Todo
+									return
+								}
+
+								phaseData.ValidatorsIdx[counter] = sort.SearchStrings(self.Committee, szPubKey)
+
+								counter++
+							}
 
 							//Todo Sig block with R Here
+							var blockData common.Hash
+							if layer == "beacon" {
+								blockData = self.pendingBlock.(*blockchain.BeaconBlock).Header.Hash()
+							} else {
+								blockData = self.pendingBlock.(*blockchain.ShardBlock).Header.Hash()
+							}
+							blockData.GetBytes()
+							multiSigScheme.Signature = multiSigScheme.Keyset.SignMultiSig(blockData.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(self.dataForSig.r))
 
 							msg, err := MakeMsgBFTCommit(phaseData.CommitBlkSig, phaseData.R, phaseData.ValidatorsIdx, self.UserKeySet.GetPublicKeyB58())
 							if err != nil {
@@ -197,6 +251,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							//Combine collected Sigs with the same R that has the longest list must has size > 1/2size(committee)
 
 							//Todo combine Sigs
+							// multiSigScheme.CombineMultiSig()
 
 							var phaseData struct {
 								ValidatorsIdx []int
@@ -247,4 +302,48 @@ func (self *BFTProtocol) Stop() error {
 	close(self.cTimeout)
 	close(self.cQuit)
 	return nil
+}
+
+// Moving them soon
+type sortString []string
+
+func lessString(a, b string) bool {
+	if len(a) < len(b) {
+		return true
+	}
+	if len(a) > len(b) {
+		return false
+	}
+
+	for i := 0; i < len(a); i++ {
+		if a[i] > b[i] {
+			return false
+		}
+		if a[i] < b[i] {
+			return true
+		}
+	}
+	return false
+}
+
+func swap(str1, str2 *string) {
+	*str1, *str2 = *str2, *str1
+}
+
+func (s sortString) Less(i, j int) bool {
+	return lessString(s[i], s[j])
+}
+
+func (s sortString) Swap(i, j int) {
+	swap(&s[i], &s[j])
+}
+
+func (s sortString) Len() int {
+	return len(s)
+}
+
+func SortString(s []string) []string {
+	// r := [](s)
+	sort.Sort(sortString(s))
+	return s
 }
