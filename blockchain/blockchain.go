@@ -41,6 +41,15 @@ type BlockChain struct {
 	config    Config
 	chainLock sync.RWMutex
 }
+type BestState struct {
+	Beacon *BestStateBeacon
+	Shard  map[byte]*BestStateShard
+
+	// cache for beacon
+	beacon *lru.Cache
+	// cache for shard
+	shard *lru.Cache
+}
 
 // config is a descriptor which specifies the blockchain instance configuration.
 type Config struct {
