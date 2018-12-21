@@ -32,79 +32,66 @@ func GetNonceByTimestamp(timestamp int64) (int64, error) {
 	if resp.StatusCode == http.StatusOK {
 		chainBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return -1, err
+			return -1, NewBTCAPIError(UnExpectedError, err)
 		}
 		chain := make(map[string]interface{})
 		json.Unmarshal(chainBytes, &chain)
 		chainHeight := int(chain["height"].(float64))
 		chainTimestamp, err := makeTimestamp2(chain["time"].(string))
 		if err != nil {
-			return -1, err
+			return -1, NewBTCAPIError(UnmashallJsonBlockError, err)
 		}
 		blockHeight, err := estimateBlockHeight(timestamp, chainHeight, chainTimestamp)
 		if err != nil {
 			return -1, err
 		}
-		// TODO: 0xmerman calculate timestamp to get the right nonce
-		// get list of block with timestamp > given timestamp then get block with min timestamp value
-		fmt.Println("BlockTimestamp 0", blockTimestamp, blockHeight, timestamp)
 		_, blockTimestamp, err = GetNonceOrTimeStampByBlock(strconv.Itoa(blockHeight), false)
 		if err != nil {
-			fmt.Println(err)
 			return -1, err
 		}
 		if blockTimestamp == MAX_TIMESTAMP {
-			return -1, errors.New("API error")
+			return -1, NewBTCAPIError(APIError, errors.New("Can't get result from API"))
 		}
-		fmt.Println("BlockTimestamp 1", blockTimestamp, blockHeight, timestamp)
 		if blockTimestamp > timestamp {
 			for blockTimestamp > timestamp {
-				fmt.Println("BlockTimestamp 2", blockTimestamp, blockHeight, timestamp)
 				blockHeight--
 				_, blockTimestamp, err = GetNonceOrTimeStampByBlock(strconv.Itoa(blockHeight), false)
 				if err != nil {
-					fmt.Println(err)
 					return -1, err
 				}
 				if blockTimestamp == MAX_TIMESTAMP {
-					return -1, errors.New("API error")
+					return -1, NewBTCAPIError(APIError, errors.New("Can't get result from API"))
 				}
 				if blockTimestamp <= timestamp {
-					fmt.Println("BlockTimestamp 2-2", blockTimestamp, blockHeight, timestamp)
 					blockHeight++
 					break
 				}
 			}
 		} else {
 			for blockTimestamp <= timestamp {
-				fmt.Println("BlockTimestamp 3", blockTimestamp, blockHeight, timestamp)
 				blockHeight++
 				if blockHeight > chainHeight {
-					return -1, errors.New("Timestamp is greater than timestamp of highest block")
+					return -1, NewBTCAPIError(APIError, errors.New("Timestamp is greater than timestamp of highest block"))
 				}
 				_, blockTimestamp, err = GetNonceOrTimeStampByBlock(strconv.Itoa(blockHeight), false)
 				if err != nil {
-					fmt.Println(err)
 					return -1, err
 				}
 				if blockTimestamp == MAX_TIMESTAMP {
-					return -1, errors.New("API error")
+					return -1, NewBTCAPIError(APIError, errors.New("Can't get result from API"))
 				}
 				if blockTimestamp > timestamp {
 					break
 				}
 			}
 		}
-		fmt.Println("blockHeight", blockHeight)
 		nonce, _, err := GetNonceOrTimeStampByBlock(strconv.Itoa(blockHeight), true)
-		fmt.Println("Nonce", nonce)
 		if err != nil {
 			return -1, err
 		}
-		// common.Logger.Infof("Found nonce %d match timestamp %d", nonce, timestamp)
 		return nonce, nil
 	}
-	return -1, errors.New("ERROR Getting Nonce By Timestamp Bitcoin")
+	return -1, NewBTCAPIError(NonceError, errors.New("Can't get nonce"))
 }
 
 func VerifyNonceWithTimestamp(timestamp int64, nonce int64) (bool, error) {
@@ -115,21 +102,40 @@ func VerifyNonceWithTimestamp(timestamp int64, nonce int64) (bool, error) {
 	return res == nonce, nil
 }
 
+func GetCurrentChainTimeStamp() (int64, error) {
+	resp, err := http.Get("https://api.blockcypher.com/v1/btc/test3")
+	if err != nil {
+		return -1, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusOK {
+		chainBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return -1, err
+		}
+		chain := make(map[string]interface{})
+		json.Unmarshal(chainBytes, &chain)
+		chainTimestamp, err := makeTimestamp2(chain["time"].(string))
+		return chainTimestamp, nil
+	}
+	return -1, errors.New("API error")
+}
+
 //true for nonce, false for time
 // return param:
 // #param 1: nonce -> flag true
 // #param 2: timestamp -> flag false
 func GetNonceOrTimeStampByBlock(blockHeight string, nonceOrTime bool) (int64, int64, error) {
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 	resp, err := http.Get("https://api.blockcypher.com/v1/btc/test3/blocks/" + blockHeight + "?start=1&limit=1")
 	if err != nil {
-		return -1, MAX_TIMESTAMP, err
+		return -1, MAX_TIMESTAMP, NewBTCAPIError(APIError, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusOK {
 		blockBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return -1, MAX_TIMESTAMP, err
+			return -1, MAX_TIMESTAMP, NewBTCAPIError(UnExpectedError, err)
 		}
 		block := make(map[string]interface{})
 		json.Unmarshal(blockBytes, &block)
@@ -138,13 +144,13 @@ func GetNonceOrTimeStampByBlock(blockHeight string, nonceOrTime bool) (int64, in
 		} else {
 			timeTime, err := time.Parse(time.RFC3339, block["time"].(string))
 			if err != nil {
-				return -1, MAX_TIMESTAMP, err
+				return -1, MAX_TIMESTAMP, NewBTCAPIError(UnExpectedError, err)
 			}
 			timeInt64 := makeTimestamp(timeTime)
 			return -1, timeInt64, nil
 		}
 	}
-	return -1, MAX_TIMESTAMP, errors.New("ERROR Getting Nonce or Timestamp from Bitcoin")
+	return -1, MAX_TIMESTAMP, NewBTCAPIError(UnExpectedError, errors.New("Can't get nonce or timestamp"))
 }
 
 // count in second
@@ -169,7 +175,7 @@ func makeTimestamp2(t string) (int64, error) {
 // blockHeight = chainHeight - (chainTimestamp - timestamp) / 600
 func estimateBlockHeight(timestamp int64, chainHeight int, chainTimestamp int64) (int, error) {
 	var estimateBlockHeight int
-	fmt.Printf("EstimateBlockHeight timestamp %d, chainHeight %d, chainTimestamp %d\n", timestamp, chainHeight, chainTimestamp)
+	// fmt.Printf("EstimateBlockHeight timestamp %d, chainHeight %d, chainTimestamp %d\n", timestamp, chainHeight, chainTimestamp)
 	offsetSeconds := timestamp - chainTimestamp
 	if offsetSeconds > 0 {
 		return chainHeight, nil
@@ -184,16 +190,15 @@ func estimateBlockHeight(timestamp int64, chainHeight int, chainTimestamp int64)
 				return estimateBlockHeight, nil
 			}
 			_, blockTimestamp, err := GetNonceOrTimeStampByBlock(strconv.Itoa(estimateBlockHeight), false)
-			fmt.Printf("Try to estimate block with timestamp %d \n", blockTimestamp)
+			// fmt.Printf("Try to estimate block with timestamp %d \n", blockTimestamp)
 			if err != nil {
-				fmt.Println(err)
 				return -1, err
 			}
 			if blockTimestamp == MAX_TIMESTAMP {
-				return -1, errors.New("API error")
+				return -1, NewBTCAPIError(APIError, errors.New("Can't get result from API"))
 			}
 			offsetSeconds = timestamp - blockTimestamp
 		}
 	}
-	return chainHeight, errors.New("Can't estimate block")
+	return chainHeight, NewBTCAPIError(UnExpectedError, errors.New("Can't estimate block height"))
 }

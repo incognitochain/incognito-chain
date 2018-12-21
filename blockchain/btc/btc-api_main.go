@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/ninjadotorg/constant/utility/btc/btcapi"
+	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
 )
 
 func main() {
@@ -32,9 +32,15 @@ func main() {
 
 	//1444500800, 1544500800
 	timestamp := int64(1544500800)
-	res, err := btcapi.GetNonceByTimestamp(timestamp)
-	if err != nil {
-		fmt.Println(err)
-	}
+	// res, err := btcapi.GetNonceByTimestamp(timestamp)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// fmt.Println("Result of timestamp ", timestamp, "is: ", res)
+
+	msg := make(chan int64)
+
+	go btcapi.GenerateRandomNumber(timestamp, msg)
+	res := <-msg
 	fmt.Println("Result of timestamp ", timestamp, "is: ", res)
 }

@@ -13,17 +13,12 @@ import (
 // the caller when chain state changes occur as the function name implies.
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
-const (
-	EPOCH       = 200
-	RANDOM_TIME = 100
-	OFFSET      = 3
-)
-
 type BestStateBeacon struct {
 	BestBlockHash common.Hash  // The hash of the block.
 	BestBlock     *BeaconBlock // The block.
 	BestShardHash []common.Hash
 
+	BeaconEpoch       uint64
 	BeaconHeight      uint64
 	BeaconLeaderIndex uint64
 
@@ -48,6 +43,8 @@ type BestStateBeacon struct {
 	// UnassignShardCandidate  []string
 
 	CurrentRandomNumber int64
+	// random timestamp for this epoch
+	CurrentRandomTimeStamp int64
 	// NextRandomNumber    int64
 
 	Params map[string]string

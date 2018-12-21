@@ -19,9 +19,6 @@ Insert new block into beaconchain
 	2.2 Store BestStateBeacon
 3. Store Block
 */
-const (
-	VERSION = 1
-)
 
 func (self *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
 	self.chainLock.Lock()

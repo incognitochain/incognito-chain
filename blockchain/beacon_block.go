@@ -7,6 +7,13 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
+const (
+	EPOCH       = 200
+	RANDOM_TIME = 100
+	OFFSET      = 3
+	VERSION     = 1
+)
+
 type BeaconBody struct {
 	ShardState   [][]common.Hash
 	Instructions [][]string // Random here

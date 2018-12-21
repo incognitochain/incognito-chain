@@ -447,21 +447,3 @@ concludeBlock:
 
 	return block, nil
 }
-
-func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey) (*BeaconBlock, error) {
-	block := &BeaconBlock{}
-	// block.ProducerSig = ""
-	// block.AggregatedSig = ""
-	// block.ValidatorsIdx = nil
-
-	// //bodyBlk := BeaconBlockBody{}
-	// //shardBlock := blockPool.GetNewShardBlock()
-	// //TODO: get hash from shardBlock & build shard state
-	// //bodyBlk.ShardState = shardState
-
-	// // TODO: build param from shardBlock
-
-	// //block.Body = bodyBlk
-	// // TODO: build header
-	return block, nil
-}
