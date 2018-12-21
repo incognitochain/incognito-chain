@@ -1,6 +1,9 @@
 package peer
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/pkg/errors"
+)
 
 const (
 	// RemotePeer err
@@ -36,12 +39,12 @@ type PeerError struct {
 }
 
 func (e PeerError) Error() string {
-	return fmt.Sprintf("%+v: %+v", e.code, e.message)
+	return fmt.Sprintf("%+v: %+v \n %+v", e.code, e.message, e.err)
 }
 
 func NewPeerError(key int, err error, peer *Peer) *PeerError {
 	return &PeerError{
-		err:     err,
+		err:     errors.Wrap(err, ErrCodeMessage[key].message),
 		code:    ErrCodeMessage[key].code,
 		message: ErrCodeMessage[key].message,
 		peer:    peer,

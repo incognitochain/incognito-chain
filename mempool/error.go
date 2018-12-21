@@ -1,7 +1,12 @@
 package mempool
 
+import (
+	"github.com/pkg/errors"
+	"fmt"
+)
+
 const (
-	RejectDuplicateTx = iota
+	RejectDuplicateTx      = iota
 	RejectInvalidTx
 	RejectSansityTx
 	RejectSalaryTx
@@ -24,20 +29,20 @@ var ErrCodeMessage = map[int]struct {
 }
 
 type MempoolTxError struct {
-	code        int    // The code to send with reject messages
-	description string // Human readable description of the issue
-	err         error
+	code    int    // The code to send with reject messages
+	message string // Human readable message of the issue
+	err     error
 }
 
 // Error satisfies the error interface and prints human-readable errors.
 func (e MempoolTxError) Error() string {
-	return e.description
+	return fmt.Sprintf("%d: %s %+v", e.code, e.message, e.err)
 }
 
 // txRuleError creates an underlying MempoolTxError with the given a set of
 // arguments and returns a RuleError that encapsulates it.
 func (e *MempoolTxError) Init(key int, err error) {
 	e.code = ErrCodeMessage[key].code
-	e.description = ErrCodeMessage[key].message
-	e.err = err
+	e.message = ErrCodeMessage[key].message
+	e.err = errors.Wrap(err, e.message)
 }

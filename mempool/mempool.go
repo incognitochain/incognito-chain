@@ -29,7 +29,7 @@ type Config struct {
 	FeeEstimator map[byte]*FeeEstimator
 }
 
-// TxDesc is transaction description in mempool
+// TxDesc is transaction message in mempool
 type TxDesc struct {
 	// transaction details
 	Desc metadata.TxDesc
