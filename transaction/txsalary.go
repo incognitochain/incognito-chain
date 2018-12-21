@@ -76,8 +76,7 @@ func (tx *Tx) InitTxSalary(
 	return nil
 }
 
-func ValidateTxSalary(
-	tx *Tx,
+func (tx Tx) ValidateTxSalary(
 	db database.DatabaseInterface,
 ) bool {
 	// verify signature
