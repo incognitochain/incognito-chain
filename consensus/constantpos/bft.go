@@ -26,6 +26,10 @@ type BFTProtocol struct {
 	started    bool
 
 	pendingBlock blockchain.BFTBlockInterface
+	dataForSig   struct {
+		Ri []byte
+		r  []byte
+	}
 }
 
 type blockFinalSig struct {
@@ -104,8 +108,10 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							} else {
 								self.Chain.VerifyPreProcessingBlockShard(phaseData.Block.(*blockchain.ShardBlock))
 							}
-							// Create random Ri and broadcast
+							// Todo create random Ri and broadcast
+
 							myRi := []byte{0}
+							myr := []byte{0}
 							msg, err := MakeMsgBFTPrepare(myRi, self.UserKeySet.GetPublicKeyB58())
 							if err != nil {
 								Logger.log.Error(err)
@@ -116,6 +122,8 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							} else {
 								self.Server.PushMessageToShard(msg, shardID)
 							}
+							self.dataForSig.Ri = myRi
+							self.dataForSig.r = myr
 							self.pendingBlock = phaseData.Block
 							self.Phase = "prepare"
 						}
