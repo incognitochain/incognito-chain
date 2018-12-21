@@ -11,9 +11,11 @@ import (
 // interface.  The Id field has to be a pointer for Go to put a null in it when
 // empty.
 type Response struct {
-	Result json.RawMessage `json:"Result"`
-	Error  *RPCError       `json:"Error"`
-	Id     *interface{}    `json:"Id"`
+	Result     json.RawMessage `json:"Result"`
+	Error      *RPCError       `json:"Error"`
+	ErrMessage string          `json:"Message"`
+	ErrCode    int             `json:"Code"`
+	Id         *interface{}    `json:"Id"`
 }
 
 // NewResponse returns a new JSON-RPC response object given the provided id,
@@ -30,9 +32,11 @@ func NewResponse(id interface{}, marshalledResult []byte, rpcErr *RPCError) (*Re
 
 	pid := &id
 	resp := &Response{
-		Result: marshalledResult,
-		Error:  rpcErr,
-		Id:     pid,
+		Result:     marshalledResult,
+		Error:      rpcErr,
+		ErrMessage: rpcErr.Error(),
+		ErrCode:    rpcErr.Code,
+		Id:         pid,
 	}
 	return resp, nil
 }
@@ -47,10 +51,10 @@ func NewResponse(id interface{}, marshalledResult []byte, rpcErr *RPCError) (*Re
 func IsValidIDType(id interface{}) bool {
 	switch id.(type) {
 	case int, int8, int16, int32, int64,
-		uint, uint8, uint16, uint32, uint64,
-		float32, float64,
-		string,
-		nil:
+	uint, uint8, uint16, uint32, uint64,
+	float32, float64,
+	string,
+	nil:
 		return true
 	default:
 		return false
