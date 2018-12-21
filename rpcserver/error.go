@@ -41,8 +41,10 @@ var ErrCodeMessage = map[int]struct {
 // RPCError represents an error that is used as a part of a JSON-RPC Response
 // object.
 type RPCError struct {
-	Code int   `json:"Code,omitempty"`
-	Err  error `json:"Err"`
+	Code       int    `json:"Code,omitempty"`
+	Message    string `json:"Message,omitempty"`
+	err        error  `json:"Err"`
+	StackTrace string `json:"StackTrace"`
 }
 
 // Guarantee RPCError satisifies the builtin error interface.
@@ -51,14 +53,19 @@ var _, _ error = RPCError{}, (*RPCError)(nil)
 // Error returns a string describing the RPC error.  This satisifies the
 // builtin error interface.
 func (e RPCError) Error() string {
-	return fmt.Sprintf("%d: %+v", e.Code, e.Err)
+	return fmt.Sprintf("%d: %+v", e.Code, e.err)
+}
+
+func (e RPCError) GetErr() error {
+	return e.err
 }
 
 // NewRPCError constructs and returns a new JSON-RPC error that is suitable
 // for use in a JSON-RPC Response object.
 func NewRPCError(key int, err error) *RPCError {
 	return &RPCError{
-		Code: ErrCodeMessage[key].code,
-		Err:  errors.Wrap(err, ErrCodeMessage[key].message),
+		Code:    ErrCodeMessage[key].code,
+		Message: ErrCodeMessage[key].message,
+		err:     errors.Wrap(err, ErrCodeMessage[key].message),
 	}
 }

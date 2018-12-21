@@ -11,11 +11,9 @@ import (
 // interface.  The Id field has to be a pointer for Go to put a null in it when
 // empty.
 type Response struct {
-	Result     json.RawMessage `json:"Result"`
-	Error      *RPCError       `json:"Error"`
-	ErrMessage string          `json:"Message"`
-	ErrCode    int             `json:"Code"`
-	Id         *interface{}    `json:"Id"`
+	Result json.RawMessage `json:"Result"`
+	Error  *RPCError       `json:"Error"`
+	Id     *interface{}    `json:"Id"`
 }
 
 // NewResponse returns a new JSON-RPC response object given the provided id,
@@ -37,8 +35,7 @@ func NewResponse(id interface{}, marshalledResult []byte, rpcErr *RPCError) (*Re
 		Id:     pid,
 	}
 	if resp.Error != nil {
-		resp.ErrMessage = rpcErr.Error()
-		resp.ErrCode = rpcErr.Code
+		resp.Error.StackTrace = rpcErr.Error()
 	}
 	return resp, nil
 }
@@ -74,7 +71,7 @@ func MarshalResponse(id interface{}, result interface{}, rpcErr *RPCError) ([]by
 	if err != nil {
 		return nil, err
 	}
-	resultResp, err := json.Marshal(&response)
+	resultResp, err := json.MarshalIndent(&response, "", "\t")
 	if err != nil {
 		return nil, err
 	}
