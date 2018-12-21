@@ -154,10 +154,10 @@ func (wit *PKComProductWitness) Prove() (*PKComProductProof, error) {
 	|				(a,ra): value and its random                                               |
 	|				B : Commiment of value b                                                   |
 	|				(b,rb): value and its random														                   |
-	|				C2 : Commiment of value a*b														                     |
+	|				C : Commiment of value a*b														                     |
 	|				(ab,rc): product of 2 values and its random														     |
 	| OUTPUT: The proof for proving the statement: 														         |
-	|         "A,B and C2 is the commitment of a,b and a*b"														 |
+	|         "A,B and C is the commitment of a,b and a*b"														 |
 	|---------------------------------------------------------------------------------*/
 	/*--------------This Prove() function work under the following scheme--------------|
 	|	Choose random d, e, s, s', t in Zp																							 |
@@ -243,7 +243,7 @@ func (pro *PKComProductProof) Verify() bool {
 	|	Follow 3 test:																					                          |
 	|		Check if Com(f1,z1) under ck equals to x*A + D or not														|
 	|	  Check if Com(f2,z2) under ck equals to x*B + E or not														|
-	|   Check if Com(f1,z3) under ck' equals to x*C2 + D' or not												  |
+	|   Check if Com(f1,z3) under ck' equals to x*C + D' or not												  |
 	|----------------------------------------------------------------------------------*/
 
 	pts_cmp := new(privacy.EllipticPoint)

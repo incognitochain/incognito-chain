@@ -57,7 +57,7 @@ func (wit *PKEqualityOfCommittedValWitness) randValue() {
 	index[1] = 2
 	for i := 0; i < 2; i++ {
 		C[i] = privacy.PedCom.CommitAtIndex(X[0], X[i+1], index[i])
-		// C2[1] = privacy.PedCom.CommitAtIndex(X[0], X[2], 1)
+		// C[1] = privacy.PedCom.CommitAtIndex(X[0], X[2], 1)
 	}
 	wit.Set(C, index, X)
 }
