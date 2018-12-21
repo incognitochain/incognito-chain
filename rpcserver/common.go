@@ -12,7 +12,7 @@ import (
 // buildRawCustomTokenTransaction ...
 func (self RpcServer) buildRawCustomTokenTransaction(
 	params interface{},
-) (*transaction.TxCustomToken, error) {
+) (*transaction.TxCustomToken, *RPCError) {
 	// all params
 	arrayParams := common.InterfaceSlice(params)
 
@@ -147,7 +147,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		listCustomTokens,
 	)
 
-	return tx, err
+	return tx, NewRPCError(ErrUnexpected, err)
 }
 
 // buildRawCustomTokenTransaction ...

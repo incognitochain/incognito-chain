@@ -13,7 +13,7 @@ import (
 	"github.com/ninjadotorg/constant/wire"
 )
 
-func (self RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	tempRes1 := jsonresult.GetBondTypeResult{
 		BondID:         []byte("12345abc"),
 		StartSellingAt: 123,
@@ -29,21 +29,22 @@ func (self RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan st
 	return []jsonresult.GetBondTypeResult{tempRes1, tempRes2}, nil
 }
 
-func (self RpcServer) handleGetGOVParams(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetGOVParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	govParam := self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams
 	return govParam, nil
 }
 
-func (self RpcServer) handleGetGOVConstitution(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetGOVConstitution(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	constitution := self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution
 	return constitution, nil
 }
 
-func (self RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	return self.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.GOVBoardPubKeys, nil
 }
 
-func (self RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	var err error
 	arrayParams := common.InterfaceSlice(params)
 	normalTx, err := self.buildRawTransaction(params)
 	if err != nil {
@@ -74,7 +75,7 @@ func (self RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, cl
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendTxWithBuyBackRequest(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateAndSendTxWithBuyBackRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	data, err := self.handleCreateRawTxWithBuyBackRequest(params, closeChan)
 	if err != nil {
 		return nil, err
@@ -96,7 +97,8 @@ func (self RpcServer) handleCreateAndSendTxWithBuyBackRequest(params interface{}
 	return result, nil
 }
 
-func (self RpcServer) handleCreateRawTxWithBuySellRequest(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateRawTxWithBuySellRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	var err error
 	arrayParams := common.InterfaceSlice(params)
 	normalTx, err := self.buildRawTransaction(params)
 	if err != nil {
@@ -136,7 +138,7 @@ func (self RpcServer) handleCreateRawTxWithBuySellRequest(params interface{}, cl
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendTxWithBuySellRequest(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateAndSendTxWithBuySellRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	data, err := self.handleCreateRawTxWithBuySellRequest(params, closeChan)
 	if err != nil {
 		return nil, err
@@ -160,7 +162,7 @@ func (self RpcServer) handleCreateAndSendTxWithBuySellRequest(params interface{}
 
 func (self RpcServer) buildRawSealLv3VoteGOVProposalTransaction(
 	params interface{},
-) (*transaction.Tx, error) {
+) (*transaction.Tx, *RPCError) {
 	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
 	voteInfo := arrayParams[len(arrayParams)-4]
@@ -176,7 +178,8 @@ func (self RpcServer) buildRawSealLv3VoteGOVProposalTransaction(
 	return tx, err
 }
 
-func (self RpcServer) handleCreateRawSealLv3VoteGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateRawSealLv3VoteGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	var err error
 	tx, err := self.buildRawSealLv3VoteGOVProposalTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
@@ -196,7 +199,7 @@ func (self RpcServer) handleCreateRawSealLv3VoteGOVProposalTransaction(params in
 }
 
 //create lv3 vote by 3 layer encrypt
-func (self RpcServer) handleCreateAndSendSealLv3VoteGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateAndSendSealLv3VoteGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	data, err := self.handleCreateRawSealLv3VoteGOVProposalTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
@@ -214,7 +217,7 @@ func (self RpcServer) handleCreateAndSendSealLv3VoteGOVProposalTransaction(param
 
 func (self RpcServer) buildRawSealLv2VoteGOVProposalTransaction(
 	params interface{},
-) (*transaction.Tx, error) {
+) (*transaction.Tx, *RPCError) {
 	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
 	PointerToLv3Ballot := arrayParams[len(arrayParams)-6]
@@ -236,7 +239,8 @@ func (self RpcServer) buildRawSealLv2VoteGOVProposalTransaction(
 	return tx, err
 }
 
-func (self RpcServer) handleCreateRawSealLv2VoteGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateRawSealLv2VoteGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	var err error
 	tx, err := self.buildRawSealLv2VoteGOVProposalTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
@@ -256,7 +260,7 @@ func (self RpcServer) handleCreateRawSealLv2VoteGOVProposalTransaction(params in
 }
 
 //create lv2 vote by decrypt A layer
-func (self RpcServer) handleCreateAndSendSealLv2VoteGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateAndSendSealLv2VoteGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	data, err := self.handleCreateRawSealLv2VoteGOVProposalTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
@@ -274,7 +278,7 @@ func (self RpcServer) handleCreateAndSendSealLv2VoteGOVProposalTransaction(param
 
 func (self RpcServer) buildRawSealLv1VoteGOVProposalTransaction(
 	params interface{},
-) (*transaction.Tx, error) {
+) (*transaction.Tx, *RPCError) {
 	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
 
@@ -302,7 +306,8 @@ func (self RpcServer) buildRawSealLv1VoteGOVProposalTransaction(
 	return tx, err
 }
 
-func (self RpcServer) handleCreateRawSealLv1VoteGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateRawSealLv1VoteGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	var err error
 	tx, err := self.buildRawSealLv1VoteGOVProposalTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
@@ -321,7 +326,7 @@ func (self RpcServer) handleCreateRawSealLv1VoteGOVProposalTransaction(params in
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendSealLv1VoteGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateAndSendSealLv1VoteGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	data, err := self.handleCreateRawSealLv1VoteGOVProposalTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
@@ -339,7 +344,7 @@ func (self RpcServer) handleCreateAndSendSealLv1VoteGOVProposalTransaction(param
 
 func (self RpcServer) buildRawNormalVoteGOVProposalTransactionFromSealer(
 	params interface{},
-) (*transaction.Tx, error) {
+) (*transaction.Tx, *RPCError) {
 	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
 
@@ -367,7 +372,8 @@ func (self RpcServer) buildRawNormalVoteGOVProposalTransactionFromSealer(
 	return tx, err
 }
 
-func (self RpcServer) handleCreateRawNormalVoteGOVProposalTransactionFromSealer(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateRawNormalVoteGOVProposalTransactionFromSealer(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	var err error
 	tx, err := self.buildRawNormalVoteGOVProposalTransactionFromSealer(params)
 	if err != nil {
 		Logger.log.Error(err)
@@ -386,7 +392,7 @@ func (self RpcServer) handleCreateRawNormalVoteGOVProposalTransactionFromSealer(
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendNormalVoteGOVProposalTransactionFromSealer(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateAndSendNormalVoteGOVProposalTransactionFromSealer(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	data, err := self.handleCreateRawNormalVoteGOVProposalTransactionFromSealer(params, closeChan)
 	if err != nil {
 		return nil, err
@@ -404,7 +410,7 @@ func (self RpcServer) handleCreateAndSendNormalVoteGOVProposalTransactionFromSea
 
 func (self RpcServer) buildRawNormalVoteGOVProposalTransactionFromOwner(
 	params interface{},
-) (*transaction.Tx, error) {
+) (*transaction.Tx, *RPCError) {
 	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
 	PointerToLv3Ballot := arrayParams[len(arrayParams)-5]
@@ -423,7 +429,8 @@ func (self RpcServer) buildRawNormalVoteGOVProposalTransactionFromOwner(
 	return tx, err
 }
 
-func (self RpcServer) handleCreateRawNormalVoteGOVProposalTransactionFromOwner(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateRawNormalVoteGOVProposalTransactionFromOwner(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	var err error
 	tx, err := self.buildRawNormalVoteGOVProposalTransactionFromOwner(params)
 	if err != nil {
 		Logger.log.Error(err)
@@ -442,7 +449,7 @@ func (self RpcServer) handleCreateRawNormalVoteGOVProposalTransactionFromOwner(p
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendNormalVoteGOVProposalTransactionFromOwner(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateAndSendNormalVoteGOVProposalTransactionFromOwner(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	data, err := self.handleCreateRawNormalVoteGOVProposalTransactionFromOwner(params, closeChan)
 	if err != nil {
 		return nil, err
@@ -460,7 +467,7 @@ func (self RpcServer) handleCreateAndSendNormalVoteGOVProposalTransactionFromOwn
 
 func (self RpcServer) buildRawVoteGOVBoardTransaction(
 	params interface{},
-) (*transaction.TxCustomToken, error) {
+) (*transaction.TxCustomToken, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	tx, err := self.buildRawCustomTokenTransaction(params)
 	candidatePaymentAddress := arrayParams[len(arrayParams)-1].(string)
@@ -471,25 +478,26 @@ func (self RpcServer) buildRawVoteGOVBoardTransaction(
 	return tx, err
 }
 
-func (self RpcServer) handleSendRawVoteBoardGOVTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleSendRawVoteBoardGOVTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	var err error
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckData := arrayParams[0].(string)
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	tx := transaction.TxCustomToken{}
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	hash, txDesc, err := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
@@ -498,7 +506,7 @@ func (self RpcServer) handleSendRawVoteBoardGOVTransaction(params interface{}, c
 	// broadcast message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
@@ -510,7 +518,8 @@ func (self RpcServer) handleSendRawVoteBoardGOVTransaction(params interface{}, c
 func (self RpcServer) handleCreateRawVoteGOVBoardTransaction(
 	params interface{},
 	closeChan <-chan struct{},
-) (interface{}, error) {
+) (interface{}, *RPCError) {
+	var err error
 	tx, err := self.buildRawVoteGOVBoardTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
@@ -530,7 +539,7 @@ func (self RpcServer) handleCreateRawVoteGOVBoardTransaction(
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendVoteGOVBoardTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateAndSendVoteGOVBoardTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	data, err := self.handleCreateRawVoteGOVBoardTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
@@ -548,7 +557,7 @@ func (self RpcServer) handleCreateAndSendVoteGOVBoardTransaction(params interfac
 
 func (self RpcServer) buildRawSubmitGOVProposalTransaction(
 	params interface{},
-) (*transaction.Tx, error) {
+) (*transaction.Tx, *RPCError) {
 	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
 	GOVProposalRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
@@ -559,7 +568,8 @@ func (self RpcServer) buildRawSubmitGOVProposalTransaction(
 func (self RpcServer) handleCreateRawSubmitGOVProposalTransaction(
 	params interface{},
 	closeChan <-chan struct{},
-) (interface{}, error) {
+) (interface{}, *RPCError) {
+	var err error
 	tx, err := self.buildRawSubmitGOVProposalTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
@@ -579,25 +589,26 @@ func (self RpcServer) handleCreateRawSubmitGOVProposalTransaction(
 	return result, nil
 }
 
-func (self RpcServer) handleSendRawSubmitGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleSendRawSubmitGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
+	var err error
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckData := arrayParams[0].(string)
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	tx := transaction.Tx{}
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	hash, txDesc, err := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
@@ -606,7 +617,7 @@ func (self RpcServer) handleSendRawSubmitGOVProposalTransaction(params interface
 	// broadcast message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
@@ -615,7 +626,7 @@ func (self RpcServer) handleSendRawSubmitGOVProposalTransaction(params interface
 	return tx.Hash(), nil
 }
 
-func (self RpcServer) handleCreateAndSendSubmitGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateAndSendSubmitGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	data, err := self.handleCreateRawSubmitGOVProposalTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
@@ -631,7 +642,8 @@ func (self RpcServer) handleCreateAndSendSubmitGOVProposalTransaction(params int
 	return txId, err
 }
 
-func (self RpcServer) handleCreateRawTxWithOracleFeed(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateRawTxWithOracleFeed(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	var err error
 	arrayParams := common.InterfaceSlice(params)
 	normalTx, err := self.buildRawTransaction(params)
 	if err != nil {
@@ -663,7 +675,7 @@ func (self RpcServer) handleCreateRawTxWithOracleFeed(params interface{}, closeC
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendTxWithOracleFeed(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateAndSendTxWithOracleFeed(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	data, err := self.handleCreateRawTxWithOracleFeed(params, closeChan)
 	if err != nil {
 		return nil, err

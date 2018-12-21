@@ -1,9 +1,12 @@
 package rpcserver
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/pkg/errors"
+)
 
 const (
-	ErrUnexpected = iota
+	ErrUnexpected                 = iota
 	ErrAlreadyStarted
 	ErrRPCInvalidRequest
 	ErrRPCMethodNotFound
@@ -38,9 +41,8 @@ var ErrCodeMessage = map[int]struct {
 // RPCError represents an error that is used as a part of a JSON-RPC Response
 // object.
 type RPCError struct {
-	Code    int    `json:"Code,omitempty"`
-	Message string `json:"Message,omitempty"`
-	Err     error  `json:"Err"`
+	Code int   `json:"Code,omitempty"`
+	Err  error `json:"Err"`
 }
 
 // Guarantee RPCError satisifies the builtin error interface.
@@ -49,15 +51,14 @@ var _, _ error = RPCError{}, (*RPCError)(nil)
 // Error returns a string describing the RPC error.  This satisifies the
 // builtin error interface.
 func (e RPCError) Error() string {
-	return fmt.Sprintf("%d: %s", e.Code, e.Message)
+	return fmt.Sprintf("%d: %+v", e.Code, e.Err)
 }
 
 // NewRPCError constructs and returns a new JSON-RPC error that is suitable
 // for use in a JSON-RPC Response object.
 func NewRPCError(key int, err error) *RPCError {
 	return &RPCError{
-		Code:    ErrCodeMessage[key].code,
-		Message: ErrCodeMessage[key].message,
-		Err:     err,
+		Code: ErrCodeMessage[key].code,
+		Err:  errors.Wrap(err, ErrCodeMessage[key].message),
 	}
 }
