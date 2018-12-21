@@ -41,7 +41,7 @@ func (customTokentx *TxCustomToken) validateDoubleSpendCustomTokenOnTx(
 		for _, item := range customTokentx.TxTokenData.Vins {
 			if vin.TxCustomTokenID.String() == item.TxCustomTokenID.String() {
 				if vin.VoutIndex == item.VoutIndex {
-					return errors.New("Double spend")
+					return NewTransactionErr(UnexpectedErr, errors.New("Double spend"))
 				}
 			}
 		}
@@ -59,14 +59,14 @@ func (customTokenTx *TxCustomToken) ValidateTxWithCurrentMempool(
 	normalTx := customTokenTx.Tx
 	err := normalTx.ValidateTxWithCurrentMempool(mr)
 	if err != nil {
-		return err
+		return NewTransactionErr(UnexpectedErr, err)
 	}
 	txsInMem := mr.GetTxsInMem()
 	for _, txInMem := range txsInMem {
 		if txInMem.Tx.GetType() == common.TxCustomTokenType {
 			err := customTokenTx.validateDoubleSpendCustomTokenOnTx(txInMem.Tx)
 			if err != nil {
-				return err
+				return NewTransactionErr(UnexpectedErr, err)
 			}
 		}
 	}
@@ -78,12 +78,12 @@ func (customTokenTx *TxCustomToken) validateDoubleSpendCustomTokenWithBlockchain
 ) error {
 	listTxs, err := bcr.GetCustomTokenTxs(&customTokenTx.TxTokenData.PropertyID)
 	if err != nil {
-		return err
+		return NewTransactionErr(UnexpectedErr, err)
 	}
 
 	if len(listTxs) == 0 {
 		if customTokenTx.TxTokenData.Type != CustomTokenInit {
-			return errors.New("Not exist tx for this ")
+			return NewTransactionErr(UnexpectedErr, errors.New("Not exist tx for this "))
 		}
 	}
 
@@ -91,7 +91,7 @@ func (customTokenTx *TxCustomToken) validateDoubleSpendCustomTokenWithBlockchain
 		for _, txInBlocks := range listTxs {
 			err := customTokenTx.validateDoubleSpendCustomTokenOnTx(txInBlocks)
 			if err != nil {
-				return err
+				return NewTransactionErr(UnexpectedErr, err)
 			}
 		}
 	}
@@ -109,13 +109,13 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 	if customTokenTx.Metadata != nil {
 		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(customTokenTx, bcr, chainID, db)
 		if err != nil || !isContinued {
-			return err
+			return NewTransactionErr(UnexpectedErr, err)
 		}
 	}
 
 	err := customTokenTx.Tx.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
 	if err != nil {
-		return err
+		return NewTransactionErr(UnexpectedErr, err)
 	}
 	return customTokenTx.validateDoubleSpendCustomTokenWithBlockchain(bcr)
 }
@@ -123,13 +123,13 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 func (txCustomToken *TxCustomToken) validateCustomTokenTxSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
 	ok, err := txCustomToken.Tx.ValidateSanityData(bcr)
 	if err != nil || !ok {
-		return ok, err
+		return ok, NewTransactionErr(UnexpectedErr, err)
 	}
 	vins := txCustomToken.TxTokenData.Vins
 	zeroHash := common.Hash{}
 	for _, vin := range vins {
 		if len(vin.PaymentAddress.Pk) == 0 {
-			return common.FalseValue, errors.New("Wrong input transaction")
+			return common.FalseValue, NewTransactionErr(UnexpectedErr, errors.New("Wrong input transaction"))
 		}
 		// TODO: @0xbunyip - should move logic below to BuySellDCBResponse metadata's logic
 		// dbcAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
@@ -139,19 +139,19 @@ func (txCustomToken *TxCustomToken) validateCustomTokenTxSanityData(bcr metadata
 		// 	}
 		// }
 		if vin.Signature == "" {
-			return common.FalseValue, errors.New("Wrong signature")
+			return common.FalseValue, NewTransactionErr(UnexpectedErr, errors.New("Wrong signature"))
 		}
 		if vin.TxCustomTokenID.String() == zeroHash.String() {
-			return common.FalseValue, errors.New("Wrong input transaction")
+			return common.FalseValue, NewTransactionErr(UnexpectedErr, errors.New("Wrong input transaction"))
 		}
 	}
 	vouts := txCustomToken.TxTokenData.Vouts
 	for _, vout := range vouts {
 		if len(vout.PaymentAddress.Pk) == 0 {
-			return common.FalseValue, errors.New("Wrong input transaction")
+			return common.FalseValue, NewTransactionErr(UnexpectedErr, errors.New("Wrong input transaction"))
 		}
 		if vout.Value == 0 {
-			return common.FalseValue, errors.New("Wrong input transaction")
+			return common.FalseValue, NewTransactionErr(UnexpectedErr, errors.New("Wrong input transaction"))
 		}
 	}
 	return common.TrueValue, nil
@@ -164,7 +164,8 @@ func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRe
 			return ok, err
 		}
 	}
-	return customTokenTx.validateCustomTokenTxSanityData(bcr)
+	result, err := customTokenTx.validateCustomTokenTxSanityData(bcr)
+	return result, NewTransactionErr(UnexpectedErr, err)
 }
 
 // ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by constant
@@ -291,7 +292,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	fee uint64,
 	tokenParams *CustomTokenParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
-) error {
+) *TransactionError {
 	var err error
 	// create normal txCustomToken
 	normalTx := Tx{}
@@ -303,7 +304,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 		nil,
 		nil)
 	if err != nil {
-		return err
+		return NewTransactionErr(UnexpectedErr, err)
 	}
 	// override txCustomToken type
 	normalTx.Type = common.TxCustomTokenType
@@ -338,12 +339,12 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 			txCustomToken.TxTokenData.Vouts = VoutsTemp
 			hashInitToken, err := txCustomToken.TxTokenData.Hash()
 			if err != nil {
-				return errors.New("Can't handle this TokenTxType")
+				return NewTransactionErr(UnexpectedErr, errors.New("Can't handle this TokenTxType"))
 			}
 			// validate PropertyID is the only one
 			for customTokenID := range listCustomTokens {
 				if hashInitToken.String() == customTokenID.String() {
-					return errors.New("This token is existed in network")
+					return NewTransactionErr(UnexpectedErr, errors.New("This token is existed in network"))
 				}
 			}
 			txCustomToken.TxTokenData.PropertyID = *hashInitToken
@@ -384,7 +385,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	}
 
 	if handled != common.TrueValue {
-		return errors.New("Can't handle this TokenTxType")
+		return NewTransactionErr(UnexpectedErr, errors.New("Can't handle this TokenTxType"))
 	}
 	return nil
 }

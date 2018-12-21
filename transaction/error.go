@@ -16,18 +16,18 @@ var ErrCodeMessage = map[int]struct {
 	UnexpectedErr: {-1, "Unexpected error"},
 }
 
-type TrasactionError struct {
+type TransactionError struct {
 	code    int
 	message string
 	err     error
 }
 
-func (e TrasactionError) Error() string {
+func (e TransactionError) Error() string {
 	return fmt.Sprintf("%+v: %+v %+v", e.code, e.message, e.err)
 }
 
-func NewTransactionErr(key int, err error) *TrasactionError {
-	return &TrasactionError{
+func NewTransactionErr(key int, err error) *TransactionError {
+	return &TransactionError{
 		err:     errors.Wrap(err, ErrCodeMessage[key].message),
 		code:    ErrCodeMessage[key].code,
 		message: ErrCodeMessage[key].message,

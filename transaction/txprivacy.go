@@ -52,7 +52,7 @@ func (tx *Tx) Init(
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 	tokenID *common.Hash, // default is nill -> use for constant coin
-) *TrasactionError {
+) *TransactionError {
 	if tokenID == nil {
 		tokenID = &common.Hash{}
 		tokenID.SetBytes(common.ConstantID[:])
