@@ -139,19 +139,19 @@ func (txCustomToken *TxCustomToken) validateCustomTokenTxSanityData(bcr metadata
 		// 	}
 		// }
 		if vin.Signature == "" {
-			return common.FalseValue, NewTransactionErr(UnexpectedErr, errors.New("Wrong signature"))
+			return common.FalseValue, NewTransactionErr(WrongSig, nil)
 		}
 		if vin.TxCustomTokenID.String() == zeroHash.String() {
-			return common.FalseValue, NewTransactionErr(UnexpectedErr, errors.New("Wrong input transaction"))
+			return common.FalseValue, NewTransactionErr(WrongInput, nil)
 		}
 	}
 	vouts := txCustomToken.TxTokenData.Vouts
 	for _, vout := range vouts {
 		if len(vout.PaymentAddress.Pk) == 0 {
-			return common.FalseValue, NewTransactionErr(UnexpectedErr, errors.New("Wrong input transaction"))
+			return common.FalseValue, NewTransactionErr(WrongInput, nil)
 		}
 		if vout.Value == 0 {
-			return common.FalseValue, NewTransactionErr(UnexpectedErr, errors.New("Wrong input transaction"))
+			return common.FalseValue, NewTransactionErr(WrongInput, nil)
 		}
 	}
 	return common.TrueValue, nil

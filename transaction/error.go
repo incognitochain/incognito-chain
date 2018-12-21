@@ -10,6 +10,7 @@ const (
 	WrongTokenTxType
 	CustomTokenExisted
 	WrongInput
+	WrongSig
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -20,6 +21,7 @@ var ErrCodeMessage = map[int]struct {
 	WrongTokenTxType:   {-2, "Can't handle this TokenTxType"},
 	CustomTokenExisted: {-3, "This token is existed in network"},
 	WrongInput:         {-4, "Wrong input transaction"},
+	WrongSig:           {-5, "Wrong signature"},
 }
 
 type TransactionError struct {
