@@ -730,34 +730,34 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 	return vouts, finalErr
 }*/
 
-func (self *BlockChain) UpdateDividendPayout(block *Block) error {
-	for _, tx := range block.Transactions {
-		switch tx.GetMetadataType() {
-		case metadata.DividendMeta:
-			{
-				tx := tx.(*transaction.Tx)
-				meta := tx.Metadata.(*metadata.Dividend)
-				for _, _ = range tx.Proof.OutputCoins {
-					keySet := cashec.KeySet{
-						PaymentAddress: meta.PaymentAddress,
-					}
-					vouts, err := self.GetUnspentTxCustomTokenVout(keySet, meta.TokenID)
-					if err != nil {
-						return err
-					}
-					for _, vout := range vouts {
-						txHash := vout.GetTxCustomTokenID()
-						err := self.config.DataBase.UpdateRewardAccountUTXO(meta.TokenID, keySet.PaymentAddress.Pk, &txHash, vout.GetIndex())
-						if err != nil {
-							return err
-						}
-					}
-				}
-			}
-		}
-	}
-	return nil
-}
+// func (self *BlockChain) UpdateDividendPayout(block *Block) error {
+// 	for _, tx := range block.Transactions {
+// 		switch tx.GetMetadataType() {
+// 		case metadata.DividendMeta:
+// 			{
+// 				tx := tx.(*transaction.Tx)
+// 				meta := tx.Metadata.(*metadata.Dividend)
+// 				for _, _ = range tx.Proof.OutputCoins {
+// 					keySet := cashec.KeySet{
+// 						PaymentAddress: meta.PaymentAddress,
+// 					}
+// 					vouts, err := self.GetUnspentTxCustomTokenVout(keySet, meta.TokenID)
+// 					if err != nil {
+// 						return err
+// 					}
+// 					for _, vout := range vouts {
+// 						txHash := vout.GetTxCustomTokenID()
+// 						err := self.config.DataBase.UpdateRewardAccountUTXO(meta.TokenID, keySet.PaymentAddress.Pk, &txHash, vout.GetIndex())
+// 						if err != nil {
+// 							return err
+// 						}
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return nil
+// }
 
 func (self *BlockChain) UpdateVoteCountBoard(block *ShardBlock) error {
 	// DCBEndedBlock := block.Header.DCBGovernor.EndBlock
