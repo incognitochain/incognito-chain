@@ -118,11 +118,11 @@ func (db db) GetKey(keyType string, key interface{}) []byte {
 	case string(snderivatorsPrefix):
 		dbkey = append(snderivatorsPrefix, []byte(key.(*common.Hash).String())...)
 	case string(TokenPrefix):
-		dbkey = append(TokenPrefix, key.(*common.Hash)[:]...)
+		dbkey = append(TokenPrefix, []byte(key.(*common.Hash).String())...)
 	case string(PrivacyTokenPrefix):
 		dbkey = append(PrivacyTokenPrefix, []byte(key.(*common.Hash).String())...)
 	case string(tokenInitPrefix):
-		dbkey = append(tokenInitPrefix, key.(*common.Hash)[:]...)
+		dbkey = append(tokenInitPrefix, []byte(key.(*common.Hash).String())...)
 	case string(privacyTokenInitPrefix):
 		dbkey = append(privacyTokenInitPrefix, []byte(key.(*common.Hash).String())...)
 	}
