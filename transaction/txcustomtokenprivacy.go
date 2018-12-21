@@ -58,10 +58,10 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 	listCustomTokens map[common.Hash]TxCustomTokenPrivacy,
 	db database.DatabaseInterface,
 ) (error) {
-
+	var err error
 	// init data for tx constant for fee
 	normalTx := Tx{}
-	err := normalTx.Init(senderKey,
+	err = normalTx.Init(senderKey,
 		paymentInfo,
 		inputCoin,
 		fee,
