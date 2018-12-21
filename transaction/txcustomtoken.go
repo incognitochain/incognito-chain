@@ -165,7 +165,11 @@ func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRe
 		}
 	}
 	result, err := customTokenTx.validateCustomTokenTxSanityData(bcr)
-	return result, NewTransactionErr(UnexpectedErr, err)
+	if err == nil {
+		return result, nil
+	} else {
+		return result, NewTransactionErr(UnexpectedErr, err)
+	}
 }
 
 // ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by constant

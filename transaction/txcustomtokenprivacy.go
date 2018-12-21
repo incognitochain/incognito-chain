@@ -57,7 +57,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 	tokenParams *CustomTokenPrivacyParamTx,
 	listCustomTokens map[common.Hash]TxCustomTokenPrivacy,
 	db database.DatabaseInterface,
-) (error) {
+) *TransactionError {
 	var err error
 	// init data for tx constant for fee
 	normalTx := Tx{}
@@ -69,7 +69,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 		nil,
 		nil)
 	if err != nil {
-		return err
+		return NewTransactionErr(UnexpectedErr, err)
 	}
 	// override TxCustomTokenPrivacyType type
 	normalTx.Type = common.TxCustomTokenPrivacyType
@@ -97,7 +97,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			temp.Proof.OutputCoins[0].CoinDetails.Value = tokenParams.Amount
 			temp.Proof.OutputCoins[0].CoinDetails.PublicKey, err = privacy.DecompressKey(tokenParams.Receiver[0].PaymentAddress.Pk)
 			if err != nil {
-				return err
+				return NewTransactionErr(UnexpectedErr, err)
 			}
 			temp.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandInt()
 
@@ -117,12 +117,12 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			txCustomToken.TxTokenPrivacyData.TxNormal = temp
 			hashInitToken, err := txCustomToken.TxTokenPrivacyData.Hash()
 			if err != nil {
-				return errors.New("Can't handle this TokenTxType")
+				return NewTransactionErr(UnexpectedErr, errors.New("Can't handle this TokenTxType"))
 			}
 			// validate PropertyID is the only one
 			for customTokenID := range listCustomTokens {
 				if hashInitToken.String() == customTokenID.String() {
-					return errors.New("This token is existed in network")
+					return NewTransactionErr(UnexpectedErr, errors.New("This token is existed in network"))
 				}
 			}
 			txCustomToken.TxTokenPrivacyData.PropertyID = *hashInitToken
@@ -143,7 +143,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 	}
 
 	if handled != common.TrueValue {
-		return errors.New("Can't handle this TokenTxType")
+		return NewTransactionErr(UnexpectedErr, errors.New("Can't handle this TokenTxType"))
 	}
 	return nil
 }
@@ -154,7 +154,11 @@ func (tx *TxCustomTokenPrivacy) ValidateType() bool {
 
 func (tx *TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 	poolSerialNumbers := mr.GetSerialNumbers()
-	return tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbers)
+	err := tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbers)
+	if err != nil {
+		return NewTransactionErr(UnexpectedErr, err)
+	}
+	return nil
 }
 
 func (tx *TxCustomTokenPrivacy) ValidateTxWithBlockChain(
@@ -162,11 +166,19 @@ func (tx *TxCustomTokenPrivacy) ValidateTxWithBlockChain(
 	chainID byte,
 	db database.DatabaseInterface,
 ) error {
-	return tx.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
+	err := tx.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
+	if err != nil {
+		return NewTransactionErr(UnexpectedErr, err)
+	}
+	return nil
 }
 
 func (tx *TxCustomTokenPrivacy) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
-	return tx.validateNormalTxSanityData()
+	result, err := tx.validateNormalTxSanityData()
+	if err != nil {
+		return result, NewTransactionErr(UnexpectedErr, err)
+	}
+	return result, nil
 }
 
 func (customTokenTx *TxCustomTokenPrivacy) ValidateTxByItself(
