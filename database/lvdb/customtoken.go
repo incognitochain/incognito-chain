@@ -177,7 +177,7 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 			balance, _ := strconv.Atoi(values[0])
 			fmt.Println("GetCustomTokenListPaymentAddressesBalance, add balance", balance)
 			i += uint64(balance)
-			results[hex.EncodeToString(paymentAddress.Pk)] = i
+			results[base58.Base58Check{}.Encode(paymentAddress.Pk, 0x00)] = i
 			fmt.Println("GetCustomTokenListPaymentAddressesBalance, new balance", results[hex.EncodeToString(paymentAddress.Pk)])
 		}
 	}
