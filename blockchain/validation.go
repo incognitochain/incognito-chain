@@ -18,7 +18,7 @@ import (
 
 func (self *BlockChain) GetAmountPerAccount(proposal *metadata.DividendProposal) (uint64, []string, []uint64, error) {
 	// TODO(@0xsirrush): cache list so that list of receivers is fixed across blocks
-	tokenHolders, err := self.config.DataBase.GetCustomTokenListUnrewardUTXO(proposal.TokenID)
+	tokenHolders, err := self.config.DataBase.GetCustomTokenPaymentAddressesBalanceUnreward(proposal.TokenID)
 	if err != nil {
 		return 0, nil, nil, err
 	}

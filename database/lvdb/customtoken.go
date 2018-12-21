@@ -191,7 +191,7 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 	VoteAmount: a list of utxo
 	Each utxo consist of two part: txHash-index
 */
-func (db *db) GetCustomTokenListUnrewardUTXO(tokenID *common.Hash) (map[string]uint64, error) {
+func (db *db) GetCustomTokenPaymentAddressesBalanceUnreward(tokenID *common.Hash) (map[string]uint64, error) {
 
 	results := make(map[string]uint64)
 	prefix := TokenPaymentAddressPrefix
@@ -206,9 +206,13 @@ func (db *db) GetCustomTokenListUnrewardUTXO(tokenID *common.Hash) (map[string]u
 		// get unspent and unreward transaction output
 		if (strings.Compare(values[1], string(Unspent)) == 0) && (strings.Compare(values[2], string(Unreward)) == 0) {
 			paymentAddress := keys[2]
-			//utxo := keys[4] + string(Splitter) + keys[5]
-			//utxo := append([]byte(keys[4]), []byte(keys[5])[:]...)
-			results[paymentAddress] = uint64(0)
+			i, ok := results[paymentAddress]
+			if ok == false {
+				fmt.Println("ERROR geting VoteAmount in GetCustomTokenAccountHistory of account", paymentAddress)
+			}
+			balance, _ := strconv.Atoi(values[0])
+			i += uint64(balance)
+			results[paymentAddress] = i
 		}
 	}
 	iter.Release()
