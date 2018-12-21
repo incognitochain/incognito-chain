@@ -442,7 +442,7 @@ func (self RpcServer) handleCreateAndSendNormalVoteDCBProposalTransactionFromOwn
 
 func (self RpcServer) buildRawVoteDCBBoardTransaction(
 	params interface{},
-) (*transaction.TxCustomToken, *RPCError) {
+) (*transaction.TxCustomToken, error) {
 	arrayParams := common.InterfaceSlice(params)
 	tx, err := self.buildRawCustomTokenTransaction(params)
 	candidatePaymentAddress := arrayParams[len(arrayParams)-1].(string)
