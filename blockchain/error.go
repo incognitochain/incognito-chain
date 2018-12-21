@@ -4,10 +4,13 @@
 
 package blockchain
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/pkg/errors"
+)
 
 const (
-	UnExpectedError = iota
+	UnExpectedError               = iota
 	UpdateMerkleTreeForBlockError
 	UnmashallJsonBlockError
 	CanNotCheckDoubleSpendError
@@ -26,17 +29,17 @@ var ErrCodeMessage = map[int]struct {
 type BlockChainError struct {
 	Code    int
 	Message string
-	Err     error
+	err     error
 }
 
 func (e BlockChainError) Error() string {
-	return fmt.Sprintf("%d: %s \n %+v", e.Code, e.Message, e.Err)
+	return fmt.Sprintf("%d: %s \n %+v", e.Code, e.Message, e.err)
 }
 
 func NewBlockChainError(key int, err error) *BlockChainError {
 	return &BlockChainError{
 		Code:    ErrCodeMessage[key].code,
 		Message: ErrCodeMessage[key].message,
-		Err:     err,
+		err:     errors.Wrap(err, ErrCodeMessage[key].message),
 	}
 }

@@ -17,7 +17,7 @@ Parameter #2—whether to include watch-only addresses in results
 Result—a list of accounts and their balances
 
 */
-func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.ListAccounts{
 		Accounts:   make(map[string]uint64),
 		WalletName: self.config.Wallet.Name,
@@ -46,7 +46,7 @@ func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan st
 getaccount RPC returns the name of the account associated with the given address.
 - Param #1: address
 */
-func (self RpcServer) handleGetAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	for _, account := range self.config.Wallet.MasterAccount.Child {
 		address := account.Key.Base58CheckSerialize(wallet.PaymentAddressType)
 		if address == params.(string) {
@@ -62,7 +62,7 @@ getaddressesbyaccount RPC returns a list of every address assigned to a particul
 Parameter #1—the account name
 Result—a list of addresses
 */
-func (self RpcServer) handleGetAddressesByAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetAddressesByAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetAddressesByAccount{}
 	result.Addresses = self.config.Wallet.GetAddressesByAccount(params.(string))
 	return result, nil
@@ -73,7 +73,7 @@ getaccountaddress RPC returns the current coin address for receiving payments to
 Parameter #1—an account name
 Result—a constant address
 */
-func (self RpcServer) handleGetAccountAddress(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetAccountAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := self.config.Wallet.GetAccountAddress(params.(string))
 	return result, nil
 }
@@ -84,7 +84,7 @@ func (self RpcServer) handleGetAccountAddress(params interface{}, closeChan <-ch
 Parameter #1—the address corresponding to the private key to get
 Result—the private key
 */
-func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := self.config.Wallet.DumpPrivkey(params.(string))
 	return result, nil
 }
@@ -95,7 +95,7 @@ handleImportAccount - import a new account by private-key
 - Param #2: account name
 - Param #3: passPhrase of wallet
 */
-func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	privateKey := arrayParams[0].(string)
 	accountName := arrayParams[1].(string)
@@ -110,7 +110,7 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 	}, nil
 }
 
-func (self RpcServer) handleRemoveAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleRemoveAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	privateKey := arrayParams[0].(string)
 	accountName := arrayParams[1].(string)
@@ -125,7 +125,7 @@ func (self RpcServer) handleRemoveAccount(params interface{}, closeChan <-chan s
 /*
 handleGetAllPeers - return all peers which this node connected
 */
-func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	result := jsonresult.GetAllPeersResult{}
 	peersMap := []string{}
@@ -140,7 +140,7 @@ func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan str
 }
 
 // handleGetBalanceByPrivatekey -  return balance of private key
-func (self RpcServer) handleGetBalanceByPrivatekey(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetBalanceByPrivatekey(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	log.Println(params)
 	balance := uint64(0)
 
@@ -172,7 +172,7 @@ func (self RpcServer) handleGetBalanceByPrivatekey(params interface{}, closeChan
 }
 
 // handleGetBalanceByPaymentAddress -  return balance of private key
-func (self RpcServer) handleGetBalanceByPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetBalanceByPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	balance := uint64(0)
 
 	// all params
@@ -204,7 +204,7 @@ func (self RpcServer) handleGetBalanceByPaymentAddress(params interface{}, close
 /*
 handleGetBalance - RPC gets the balances in decimal
 */
-func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	balance := uint64(0)
 
 	if self.config.Wallet == nil {
@@ -270,7 +270,7 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 /*
 handleGetReceivedByAccount -  RPC returns the total amount received by addresses in a particular account from transactions with the specified number of confirmations. It does not count salary transactions.
 */
-func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	balance := uint64(0)
 
 	if self.config.Wallet == nil {
@@ -320,17 +320,17 @@ func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <
 /*
 handleSetTxFee - RPC sets the transaction fee per kilobyte paid more by transactions created by this wallet. default is 1 coin per 1 kb
 */
-func (self RpcServer) handleSetTxFee(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleSetTxFee(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	self.config.Wallet.Config.IncrementalFee = uint64(params.(float64))
 	err := self.config.Wallet.Save(self.config.Wallet.PassPhrase)
 	return err == nil, NewRPCError(ErrUnexpected, err)
 }
 
 // handleListCustomToken - return list all custom token in network
-func (self RpcServer) handleListCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleListCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	temps, err := self.config.BlockChain.ListCustomToken()
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
 	for _, token := range temps {
@@ -341,10 +341,10 @@ func (self RpcServer) handleListCustomToken(params interface{}, closeChan <-chan
 	return result, nil
 }
 
-func (self RpcServer) handleListPrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleListPrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	temps, err := self.config.BlockChain.ListPrivacyCustomToken()
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
 	for _, token := range temps {

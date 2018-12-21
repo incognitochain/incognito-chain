@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (self RpcServer) handleCreateAndSendTxWithCMBInitRequest(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateAndSendTxWithCMBInitRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	normalTx, err := self.buildRawTransaction(params)
 	if err != nil {
@@ -21,13 +21,13 @@ func (self RpcServer) handleCreateAndSendTxWithCMBInitRequest(params interface{}
 	paramsMap := arrayParams[4].(map[string]interface{})
 	cmbInitRequest := metadata.NewCMBInitRequest(paramsMap)
 	if cmbInitRequest == nil {
-		return nil, errors.Errorf("Invalid CMBInitRequest data")
+		return nil, NewRPCError(ErrUnexpected, errors.Errorf("Invalid CMBInitRequest data"))
 	}
 	normalTx.Metadata = cmbInitRequest
-	byteArrays, err := json.Marshal(normalTx)
+	byteArrays, marshalErr := json.Marshal(normalTx)
 	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		Logger.log.Error(marshalErr)
+		return nil, NewRPCError(ErrUnexpected, marshalErr)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID:            normalTx.Hash().String(),

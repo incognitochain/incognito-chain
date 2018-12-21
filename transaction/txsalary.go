@@ -22,6 +22,8 @@ func CreateTxSalary(
 	db database.DatabaseInterface,
 ) (*Tx, error) {
 
+
+
 	tx := new(Tx)
 	tx.Type = common.TxSalaryType
 	// assign fee tx = 0

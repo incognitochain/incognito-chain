@@ -1,6 +1,9 @@
 package wallet
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/pkg/errors"
+)
 
 const (
 	InvalidChecksumErr    = iota
@@ -35,7 +38,7 @@ func (e WalletError) Error() string {
 
 func NewWalletError(key int, err error) *WalletError {
 	return &WalletError{
-		err:     err,
+		err:     errors.Wrap(err, ErrCodeMessage[key].message),
 		code:    ErrCodeMessage[key].code,
 		message: ErrCodeMessage[key].message,
 	}

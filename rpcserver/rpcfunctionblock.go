@@ -12,7 +12,7 @@ import (
 )
 
 // handleGetBestBlock implements the getbestblock command.
-func (self RpcServer) handleGetBestBlock(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetBestBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetBestBlockResult{
 		BestBlocks: make(map[string]jsonresult.GetBestBlockItem),
 	}
@@ -27,7 +27,7 @@ func (self RpcServer) handleGetBestBlock(params interface{}, closeChan <-chan st
 }
 
 // handleGetBestBlock implements the getbestblock command.
-func (self RpcServer) handleGetBestBlockHash(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetBestBlockHash(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetBestBlockHashResult{
 		BestBlockHashes: make(map[string]string),
 	}
@@ -40,7 +40,7 @@ func (self RpcServer) handleGetBestBlockHash(params interface{}, closeChan <-cha
 /*
 getblockcount RPC return information fo blockchain node
 */
-func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	paramsT, ok := params.([]interface{})
 	if ok && len(paramsT) >= 2 {
 		hashString := paramsT[0].(string)
@@ -124,7 +124,7 @@ func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan s
 					txN := tx.(*transaction.Tx)
 					data, err := json.Marshal(txN)
 					if err != nil {
-						return nil, err
+						return nil, NewRPCError(ErrUnexpected, err)
 					}
 					transactionT.HexData = hex.EncodeToString(data)
 					transactionT.Locktime = txN.LockTime
@@ -139,7 +139,7 @@ func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan s
 }
 
 // handleGetBlocks - get n top blocks from chain ID
-func (self RpcServer) handleGetBlocks(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetBlocks(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := make([]jsonresult.GetBlockResult, 0)
 	arrayParams := common.InterfaceSlice(params)
 	numBlock := int(arrayParams[0].(float64))
@@ -150,7 +150,7 @@ func (self RpcServer) handleGetBlocks(params interface{}, closeChan <-chan struc
 		numBlock--
 		block, errD := self.config.BlockChain.GetBlockByBlockHash(previousHash)
 		if errD != nil {
-			return nil, errD
+			return nil, NewRPCError(ErrUnexpected, errD)
 		}
 		blockResult := jsonresult.GetBlockResult{}
 		blockResult.Init(block)
@@ -166,7 +166,7 @@ func (self RpcServer) handleGetBlocks(params interface{}, closeChan <-chan struc
 /*
 getblockchaininfo RPC return information fo blockchain node
 */
-func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetBlockChainInfoResult{
 		ChainName:  self.config.ChainParams.Name,
 		BestBlocks: make(map[string]jsonresult.GetBestBlockItem),
@@ -189,7 +189,7 @@ func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-ch
 /*
 getblockcount RPC return information fo blockchain node
 */
-func (self RpcServer) handleGetBlockCount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetBlockCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	chainId := byte(int(params.(float64)))
 	if self.config.BlockChain.BestState != nil && self.config.BlockChain.BestState[chainId] != nil && self.config.BlockChain.BestState[chainId].BestBlock != nil {
 		return self.config.BlockChain.BestState[chainId].BestBlock.Header.Height + 1, nil
@@ -200,7 +200,7 @@ func (self RpcServer) handleGetBlockCount(params interface{}, closeChan <-chan s
 /*
 getblockhash RPC return information fo blockchain node
 */
-func (self RpcServer) handleGetBlockHash(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetBlockHash(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	chainId := byte(int(arrayParams[0].(float64)))
 	height := int32(arrayParams[1].(float64))
@@ -212,7 +212,7 @@ func (self RpcServer) handleGetBlockHash(params interface{}, closeChan <-chan st
 }
 
 // handleGetBlockHeader - return block header data
-func (self RpcServer) handleGetBlockHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetBlockHeader(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	result := jsonresult.GetHeaderResult{}
 

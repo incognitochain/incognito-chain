@@ -1,9 +1,12 @@
 package database
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/pkg/errors"
+)
 
 const (
-	DriverExistErr = iota
+	DriverExistErr       = iota
 	DriverNotRegisterErr
 
 	// LevelDB
@@ -56,7 +59,7 @@ func (e DatabaseError) Error() string {
 
 func NewDatabaseError(key int, err error) *DatabaseError {
 	return &DatabaseError{
-		err:     err,
+		err:     errors.Wrap(err, ErrCodeMessage[key].message),
 		code:    ErrCodeMessage[key].code,
 		message: ErrCodeMessage[key].message,
 	}
