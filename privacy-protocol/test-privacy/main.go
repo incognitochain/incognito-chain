@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"math/big"
 )
 
 func main() {
@@ -187,36 +189,36 @@ func main() {
 
 	/*----------------- TEST ENCRYPT/DECRYPT COIN -----------------*/
 
-	//coin := new(privacy.OutputCoin)
-	//coin.CoinDetails = new(privacy.Coin)
-	//coin.CoinDetails.Randomness = privacy.RandInt()
-	//coin.CoinDetails.Value = 10
-	//
-	//fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
-	//
-	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	//keySetSender := cashec.KeySet{}
-	//keySetSender.ImportFromPrivateKey(&spendingKey)
-	//coin.CoinDetails.PublicKey, _ = privacy.DecompressKey(keySetSender.PaymentAddress.Pk)
-	//
-	//err := coin.Encrypt(keySetSender.PaymentAddress.Tk)
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
-	//
-	//coinByte := coin.Bytes()
-	//
-	//fmt.Printf("Coin encrypt bytes: %v\n", coinByte)
-	//coin2 := new(privacy.OutputCoin)
-	//err = coin2.SetBytes(coinByte)
-	//if err != nil {
-	//	fmt.Printf("Coin encrypt setbytes: %+v\n", coin2)
-	//}
-	//
-	//coin.Decrypt(keySetSender.ReadonlyKey)
-	//
-	//fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
-	//fmt.Printf("DEcrypted Plain text 1: Value : %v\n", coin.CoinDetails.Value)
+	coin := new(privacy.OutputCoin)
+	coin.CoinDetails = new(privacy.Coin)
+	coin.CoinDetails.Randomness = privacy.RandInt()
+	coin.CoinDetails.Value = 10
+
+	fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+
+	spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	keySetSender := cashec.KeySet{}
+	keySetSender.ImportFromPrivateKey(&spendingKey)
+	coin.CoinDetails.PublicKey, _ = privacy.DecompressKey(keySetSender.PaymentAddress.Pk)
+
+	err := coin.Encrypt(keySetSender.PaymentAddress.Tk)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	coinByte := coin.Bytes()
+
+	fmt.Printf("Coin encrypt bytes: %v\n", coinByte)
+	coin2 := new(privacy.OutputCoin)
+	err = coin2.SetBytes(coinByte)
+	if err != nil {
+		fmt.Printf("Coin encrypt setbytes: %+v\n", coin2)
+	}
+
+	coin.Decrypt(keySetSender.ReadonlyKey)
+
+	fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+	fmt.Printf("DEcrypted Plain text 1: Value : %v\n", coin.CoinDetails.Value)
 
 	/*----------------- TEST NDH -----------------*/
 	//fmt.Println(zkp.TestProofIsZero())
@@ -365,7 +367,7 @@ func main() {
 	//tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
 	//tmp.X.Set(privacy.PedCom.G[privacy.VALUE].X)
 	//tmp.Y.Set(privacy.PedCom.G[privacy.VALUE].Y)
-	//tmp = tmp.ScalarMul(new(big.Int).SetUint64(coin.Value))
+	//tmp = tmp.ScalarMult(new(big.Int).SetUint64(coin.Value))
 	//com = com.Add(tmp)
 	//fmt.Printf("g_VALUE : %+v\n", privacy.PedCom.G[privacy.VALUE])
 	//fmt.Printf("g^Value : %+v\n", tmp)
@@ -374,7 +376,7 @@ func main() {
 	//tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
 	//tmp.X.Set(privacy.PedCom.G[privacy.SND].X)
 	//tmp.Y.Set(privacy.PedCom.G[privacy.SND].Y)
-	//tmp = tmp.ScalarMul(coin.SNDerivator)
+	//tmp = tmp.ScalarMult(coin.SNDerivator)
 	//com = com.Add(tmp)
 	//fmt.Printf("g_SND : %+v\n", privacy.PedCom.G[privacy.SND])
 	//fmt.Printf("g^SND : %+v\n", tmp)
@@ -383,7 +385,7 @@ func main() {
 	//tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
 	//tmp.X.Set(privacy.PedCom.G[privacy.SHARDID].X)
 	//tmp.Y.Set(privacy.PedCom.G[privacy.SHARDID].Y)
-	//tmp = tmp.ScalarMul(new(big.Int).SetBytes([]byte{coin.GetPubKeyLastByte()}))
+	//tmp = tmp.ScalarMult(new(big.Int).SetBytes([]byte{coin.GetPubKeyLastByte()}))
 	//com = com.Add(tmp)
 	//fmt.Printf("g_SHARDID : %+v\n", privacy.PedCom.G[privacy.SHARDID])
 	//fmt.Printf("g^Sharid : %+v\n", tmp)
@@ -392,7 +394,7 @@ func main() {
 	//tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
 	//tmp.X.Set(privacy.PedCom.G[privacy.RAND].X)
 	//tmp.Y.Set(privacy.PedCom.G[privacy.RAND].Y)
-	//tmp = tmp.ScalarMul(coin.Randomness)
+	//tmp = tmp.ScalarMult(coin.Randomness)
 	//com = com.Add(tmp)
 	//fmt.Printf("g_RAND : %+v\n", privacy.PedCom.G[privacy.RAND])
 	//fmt.Printf("g^Randomness : %+v\n", tmp)
@@ -401,9 +403,11 @@ func main() {
 	//	fmt.Printf("wrong")
 	//}
 
-	point := new(privacy.EllipticPoint)
-	point.Randomize()
-	fmt.Println(point)
+	//point := new(privacy.EllipticPoint)
+	//point.Randomize()
+	//fmt.Println(point)
+
+	//fmt.Println(privacy.TestElGamalPubKeyEncryption())
 
 
 

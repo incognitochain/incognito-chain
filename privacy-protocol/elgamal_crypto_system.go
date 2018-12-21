@@ -10,15 +10,10 @@ import (
 // PrivateKey sk <-- Zn
 // PublicKey  pk <-- G*sk
 // Plaintext M is a EllipticPoint
-// Ciphertext contains 2 EllipticPoint R, C
-// R = G*k
-// C = pk*k + M
+// Ciphertext contains 2 EllipticPoint C1, C2
+// C1 = G*k
+// C2 = pk*k + M
 // k <-- Zn is a secret random number
-type ElGamalPublicKeyEncryption interface {
-	PubKeyGen() *ElGamalPubKey
-	ElGamalEnc(plainPoint *EllipticPoint) *ElGamalCipherText
-	ElGamalDec(cipher *ElGamalCipherText) *EllipticPoint
-}
 
 // ElGamalPubKey ...
 // H = G^X
@@ -32,27 +27,13 @@ type ElGamalPrivKey struct {
 	X     *big.Int
 }
 
-type ElGamalCipherText struct {
-	R, C *EllipticPoint
+type ElGamalCiphertext struct {
+	C1, C2 *EllipticPoint
 }
 
-func (elgamalCipher *ElGamalCipherText) Set(R, C *EllipticPoint) {
-	elgamalCipher.C = C
-	elgamalCipher.R = R
-}
-
-func (elgamalCipher *ElGamalCipherText) SetBytes(bytearr []byte) {
-	if len(bytearr) == 0{
-		return
-	}
-	if elgamalCipher.C == nil {
-		elgamalCipher.C = new(EllipticPoint)
-	}
-	if elgamalCipher.R == nil {
-		elgamalCipher.R = new(EllipticPoint)
-	}
-	elgamalCipher.C.Decompress(bytearr[:33])
-	elgamalCipher.R.Decompress(bytearr[33:])
+func (ciphertext *ElGamalCiphertext) Set(C1, C2 *EllipticPoint) {
+	ciphertext.C1 = C1
+	ciphertext.C2 = C2
 }
 
 func (pub *ElGamalPubKey) Set(
@@ -69,19 +50,27 @@ func (priv *ElGamalPrivKey) Set(
 	priv.X = Value
 }
 
-func (cipherText *ElGamalCipherText) Bytes() []byte {
-	if cipherText.R.IsEqual(new(EllipticPoint).Zero()){
+func (ciphertext *ElGamalCiphertext) Bytes() []byte {
+	if ciphertext.C1.IsEqual(new(EllipticPoint).Zero()){
 		return []byte{}
 	}
-	res := append(cipherText.C.Compress(), cipherText.R.Compress()...)
+	res := append(ciphertext.C1.Compress(), ciphertext.C2.Compress()...)
 	return res
 }
 
-//func (cipherText *ElGamalCipherText) SetBytes(bytes []byte)  (err error) {
-//	cipherText.C, err = DecompressKey(bytes[0:33])
-//	res := append(cipherText.C.Compress(), cipherText.R.Compress()...)
-//	return res
-//}
+func (ciphertext *ElGamalCiphertext) SetBytes(bytearr []byte) {
+	if len(bytearr) == 0 {
+		return
+	}
+	if ciphertext.C2 == nil {
+		ciphertext.C2 = new(EllipticPoint)
+	}
+	if ciphertext.C1 == nil {
+		ciphertext.C1 = new(EllipticPoint)
+	}
+	ciphertext.C1.Decompress(bytearr[:33])
+	ciphertext.C2.Decompress(bytearr[33:])
+}
 
 func (priv *ElGamalPrivKey) PubKeyGen() *ElGamalPubKey {
 	elGamalPubKey := new(ElGamalPubKey)
@@ -91,29 +80,23 @@ func (priv *ElGamalPrivKey) PubKeyGen() *ElGamalPubKey {
 	return elGamalPubKey
 }
 
-func (pub *ElGamalPubKey) ElGamalEnc(plainPoint *EllipticPoint) *ElGamalCipherText {
-	rRnd, _ := rand.Int(rand.Reader, (*pub.Curve).Params().N)
-	RRnd := new(EllipticPoint)
-	RRnd.X, RRnd.Y = (*pub.Curve).ScalarMult((*pub.Curve).Params().Gx, (*pub.Curve).Params().Gy, rRnd.Bytes())
-	Cipher := new(EllipticPoint)
-	Cipher.X, Cipher.Y = (*pub.Curve).ScalarMult(pub.H.X, pub.H.Y, rRnd.Bytes())
-	Cipher.X, Cipher.Y = (*pub.Curve).Add(Cipher.X, Cipher.Y, plainPoint.X, plainPoint.Y)
-	elgamalCipher := new(ElGamalCipherText)
-	elgamalCipher.Set(RRnd, Cipher)
-	return elgamalCipher
+func (pub *ElGamalPubKey) Encrypt(plaintext *EllipticPoint) *ElGamalCiphertext {
+	randomness := RandInt()
+
+	ciphertext := new(ElGamalCiphertext)
+	ciphertext.C1 = new(EllipticPoint).Zero()
+	ciphertext.C1.Set((*pub.Curve).Params().Gx, (*pub.Curve).Params().Gy)
+	ciphertext.C1 = ciphertext.C1.ScalarMult(randomness)
+
+	ciphertext.C2 = plaintext.Add((*pub.H).ScalarMult(randomness))
+
+	return ciphertext
 }
 
-func (priv *ElGamalPrivKey) ElGamalDec(cipher *ElGamalCipherText) *EllipticPoint {
-
-	plainPoint := EllipticPoint{big.NewInt(0), big.NewInt(0)}
-	inversePrivKey := new(big.Int)
-	inversePrivKey.Set((*priv.Curve).Params().N)
-	inversePrivKey.Sub(inversePrivKey, priv.X)
-
-	plainPoint.X, plainPoint.Y = (*priv.Curve).ScalarMult(cipher.R.X, cipher.R.Y, inversePrivKey.Bytes())
-	plainPoint.X, plainPoint.Y = (*priv.Curve).Add(plainPoint.X, plainPoint.Y, cipher.C.X, cipher.C.Y)
-	return &plainPoint
+func (priv *ElGamalPrivKey) Decrypt(ciphertext *ElGamalCiphertext) *EllipticPoint {
+	return ciphertext.C2.Sub(ciphertext.C1.ScalarMult(priv.X))
 }
+
 
 func TestElGamalPubKeyEncryption() bool {
 	privKey := new(ElGamalPrivKey)
@@ -125,9 +108,9 @@ func TestElGamalPubKeyEncryption() bool {
 	mess := new(EllipticPoint)
 	mess.Randomize()
 
-	cipher := pubKey.ElGamalEnc(mess)
-	ciphernew := new(ElGamalCipherText)
+	cipher := pubKey.Encrypt(mess)
+	ciphernew := new(ElGamalCiphertext)
 	ciphernew.SetBytes(cipher.Bytes())
-	decPoint := privKey.ElGamalDec(ciphernew)
+	decPoint := privKey.Decrypt(ciphernew)
 	return mess.IsEqual(decPoint)
 }

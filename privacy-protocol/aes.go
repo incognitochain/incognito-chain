@@ -47,3 +47,27 @@ func TestAESCTR() {
 	fmt.Printf("%s\n", plaintext2)
 	// Output: some plaintext
 }
+
+
+type AES struct{
+	key []byte
+}
+
+func (aes *AES) GenKey(){
+
+}
+
+
+func (aes *AES) SetKey(key []byte){
+
+}
+
+func (aes *AES) Encrypt(plaintext []byte){
+
+}
+
+
+func (aes *AES) Decrypt(ciphertext []byte) []byte {
+	return []byte{0}
+}
+

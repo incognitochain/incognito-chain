@@ -180,14 +180,14 @@ func (proof *PKComZeroOneProof) Verify() bool {
 	x.Mod(x, privacy.Curve.Params().N)
 
 	// Calculate leftPoint1 = c^x * ca
-	leftPoint1 := proof.commitment.ScalarMul(x).Add(proof.ca)
+	leftPoint1 := proof.commitment.ScalarMult(x).Add(proof.ca)
 	// Calculate rightPoint1 = Com(f, za)
 	rightPoint1 := privacy.PedCom.CommitAtIndex(proof.f, proof.za, proof.index)
 	// Calculate leftPoint2 = c^(x-f) * cb
 	xSubF := new(big.Int)
 	xSubF.Sub(x, proof.f)
 	xSubF.Mod(xSubF, privacy.Curve.Params().N)
-	leftPoint2 := proof.commitment.ScalarMul(xSubF).Add(proof.cb)
+	leftPoint2 := proof.commitment.ScalarMult(xSubF).Add(proof.cb)
 	// Calculate rightPoint2 = Com(0, zb)
 	rightPoint2 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zb, proof.index)
 	if leftPoint1.IsEqual(rightPoint1) && leftPoint2.IsEqual(rightPoint2) {

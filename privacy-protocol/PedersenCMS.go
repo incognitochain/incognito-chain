@@ -57,7 +57,7 @@ func (com PCParams) CommitAll(openings []*big.Int) *EllipticPoint {
 	commitment.X = big.NewInt(0)
 	commitment.Y = big.NewInt(0)
 	for i := 0; i < com.Capacity; i++ {
-		tmp := com.G[i].ScalarMul(openings[i])
+		tmp := com.G[i].ScalarMult(openings[i])
 		commitment = commitment.Add(tmp)
 
 	}
@@ -66,6 +66,6 @@ func (com PCParams) CommitAll(openings []*big.Int) *EllipticPoint {
 
 // CommitAtIndex commits specific value with index and returns 34 bytes
 func (com PCParams) CommitAtIndex(value, rand *big.Int, index byte) *EllipticPoint {
-	commitment := com.G[com.Capacity-1].ScalarMul(rand).Add(com.G[index].ScalarMul(value))
+	commitment := com.G[com.Capacity-1].ScalarMult(rand).Add(com.G[index].ScalarMult(value))
 	return commitment
 }

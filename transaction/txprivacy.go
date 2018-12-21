@@ -134,7 +134,8 @@ func (tx *Tx) Init(
 
 	// calculate serial number from SND and spending key
 	for _, inputCoin := range inputCoins {
-		inputCoin.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(*senderSK), inputCoin.CoinDetails.SNDerivator)
+		inputCoin.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(*senderSK),
+			inputCoin.CoinDetails.SNDerivator, privacy.PedCom.G[privacy.SK])
 	}
 
 	// create new output coins
@@ -197,74 +198,6 @@ func (tx *Tx) Init(
 		commitmentProving[i], _ = privacy.DecompressKey(temp)
 	}
 
-	// check
-	com := make([]*privacy.EllipticPoint, len(inputCoins))
-	for i := 0; i < len(inputCoins); i++ {
-		com[i] = new(privacy.EllipticPoint)
-		com[i].X, com[i].Y = big.NewInt(0), big.NewInt(0)
-		com[i].X.Set(inputCoins[i].CoinDetails.PublicKey.X)
-		com[i].Y.Set(inputCoins[i].CoinDetails.PublicKey.Y)
-
-		tmp := new(privacy.EllipticPoint)
-		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
-		tmp.X.Set(privacy.PedCom.G[privacy.VALUE].X)
-		tmp.Y.Set(privacy.PedCom.G[privacy.VALUE].Y)
-		tmp = tmp.ScalarMul(new(big.Int).SetUint64(inputCoins[i].CoinDetails.Value))
-		com[i] = com[i].Add(tmp)
-
-		tmp = new(privacy.EllipticPoint)
-		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
-		tmp.X.Set(privacy.PedCom.G[privacy.SND].X)
-		tmp.Y.Set(privacy.PedCom.G[privacy.SND].Y)
-		tmp = tmp.ScalarMul(inputCoins[i].CoinDetails.SNDerivator)
-		com[i] = com[i].Add(tmp)
-
-		tmp = new(privacy.EllipticPoint)
-		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
-		tmp.X.Set(privacy.PedCom.G[privacy.SHARDID].X)
-		tmp.Y.Set(privacy.PedCom.G[privacy.SHARDID].Y)
-		tmp = tmp.ScalarMul(new(big.Int).SetBytes([]byte{inputCoins[i].CoinDetails.GetPubKeyLastByte()}))
-		com[i] = com[i].Add(tmp)
-
-		tmp = new(privacy.EllipticPoint)
-		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
-		tmp.X.Set(privacy.PedCom.G[privacy.RAND].X)
-		tmp.Y.Set(privacy.PedCom.G[privacy.RAND].Y)
-		tmp = tmp.ScalarMul(inputCoins[i].CoinDetails.Randomness)
-		com[i] = com[i].Add(tmp)
-		inputCoins[i].CoinDetails.CommitAll()
-		if !com[i].IsEqual(commitmentProving[myCommitmentIndexs[i]]) {
-			Logger.log.Infof("WRONG 1")
-		} else {
-			Logger.log.Infof("Right")
-		}
-
-		if !inputCoins[i].CoinDetails.CoinCommitment.IsEqual(commitmentProving[myCommitmentIndexs[i]]) {
-			Logger.log.Infof("WRONG 2")
-		} else {
-			Logger.log.Infof("Right")
-		}
-		if !inputCoins[i].CoinDetails.CoinCommitment.IsEqual(com[i]) {
-			Logger.log.Infof("WRONG 3")
-		} else {
-			Logger.log.Infof("Right")
-		}
-
-		//openingWitnessInputCoin := new(zkp.PKComOpeningsWitness)
-		//openingWitnessInputCoin.Set(inputCoins[i].CoinDetails.CoinCommitment,
-		//	[]*big.Int{, new(big.Int).SetUint64(inputCoins[i].CoinDetails.Value), inputCoins[i].CoinDetails.SNDerivator, big.NewInt(int64(wit.pkLastByteSender)), randInputSum[i]},
-		//	[]byte{privacy.SK, privacy.VALUE, privacy.SND, privacy.SHARDID, privacy.RAND})
-		//
-		//openingProofHien, _ := openingWitnessHien.Prove()
-		//Logger.log.Infof(openingProofHien.Verify())
-
-		//inputCoins[i].CoinDetails.CommitAll()
-		//if !com[i].IsEqual(inputCoins[i].CoinDetails.CoinCommitment){
-		//	Logger.log.Infof("WRONG")
-		//}
-
-	}
-
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
 	err := witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
@@ -281,8 +214,8 @@ func (tx *Tx) Init(
 		tx.sigPrivKey = make([]byte, 64)
 		randSK := witness.RandSK
 		tx.sigPrivKey = append(*senderSK, randSK.Bytes()...)
-		//gSK := privacy.PedCom.G[privacy.SK].ScalarMul(new(big.Int).SetBytes(*senderSK))
-		//gRandSK := privacy.PedCom.G[privacy.RAND].ScalarMul(randSK)
+		//gSK := privacy.PedCom.G[privacy.SK].ScalarMult(new(big.Int).SetBytes(*senderSK))
+		//gRandSK := privacy.PedCom.G[privacy.RAND].ScalarMult(randSK)
 		//pubKeyPoint := gSK.Add(gRandSK)
 		//tx.SigPubKey = pubKeyPoint.Compress()
 
@@ -895,10 +828,10 @@ func (tx Tx) ValidateTxSalary(
 
 	// check output coin's coin commitment is calculated correctly
 	cmTmp := tx.Proof.OutputCoins[0].CoinDetails.PublicKey
-	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMul(big.NewInt(int64(tx.Proof.OutputCoins[0].CoinDetails.Value))))
-	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMul(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator))
-	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMul(new(big.Int).SetBytes([]byte{tx.Proof.OutputCoins[0].CoinDetails.GetPubKeyLastByte()})))
-	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMul(tx.Proof.OutputCoins[0].CoinDetails.Randomness))
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(tx.Proof.OutputCoins[0].CoinDetails.Value))))
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMult(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator))
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{tx.Proof.OutputCoins[0].CoinDetails.GetPubKeyLastByte()})))
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(tx.Proof.OutputCoins[0].CoinDetails.Randomness))
 	if !cmTmp.IsEqual(tx.Proof.OutputCoins[0].CoinDetails.CoinCommitment) {
 		return false
 	}
