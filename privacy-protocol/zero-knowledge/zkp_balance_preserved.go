@@ -211,9 +211,6 @@ func InitCommonParams(l int, maxExp byte) {
 	RangeProofParams = NewECPrimeGroupKey(VecLength)
 }
 func (wit *PKComMultiRangeWitness) Set(v []*big.Int, maxExp byte) {
-	if wit == nil {
-		wit = new(PKComMultiRangeWitness)
-	}
 	l := pad(len(v) + 1)
 	wit.Values = make([]*big.Int, l)
 	for i := 0; i < l; i++ {
@@ -245,7 +242,6 @@ func CalculateRMRP(aR, sR, y, zTimesTwo []*big.Int, z, x *big.Int) []*big.Int {
 		return nil
 	}
 	result := make([]*big.Int, len(aR))
-
 	tmp11 := VectorAddScalar(aR, z)
 	tmp12 := ScalarVectorMul(sR, x)
 	tmp13 := VectorAdd(tmp11, tmp12)
