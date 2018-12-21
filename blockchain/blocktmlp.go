@@ -232,7 +232,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 	}
 
 concludeBlock:
-	// rt := prevBlock.Header.MerkleRootCommitments.CloneBytes()
+// rt := prevBlock.Header.MerkleRootCommitments.CloneBytes()
 	rt := []byte{}
 	blockHeight := prevBlock.Header.Height + 1
 
@@ -281,7 +281,8 @@ concludeBlock:
 	// ------------------------------------------------------------------------
 	totalSalary := salaryMULTP*salaryPerTx + basicSalary
 	// create salary tx to pay constant for block producer
-	salaryTx, err := transaction.CreateTxSalary(totalSalary, payToAddress, privatekey, blockgen.chain.config.DataBase)
+	salaryTx := new(transaction.Tx)
+	err = salaryTx.InitTxSalary(totalSalary, payToAddress, privatekey, blockgen.chain.config.DataBase)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -787,7 +788,8 @@ func (blockgen *BlkTmplGenerator) buildBuyBackResponseTxs(
 	var buyBackResTxs []*transaction.Tx
 	for _, buyBackFromInfo := range buyBackFromInfos {
 		buyBackAmount := buyBackFromInfo.value * buyBackFromInfo.buyBackPrice
-		buyBackResTx, err := transaction.CreateTxSalary(buyBackAmount, &buyBackFromInfo.paymentAddress, privatekey, blockgen.chain.GetDatabase())
+		buyBackResTx := new(transaction.Tx)
+		err := buyBackResTx.InitTxSalary(buyBackAmount, &buyBackFromInfo.paymentAddress, privatekey, blockgen.chain.GetDatabase())
 		if err != nil {
 			return []*transaction.Tx{}, err
 		}
@@ -875,7 +877,8 @@ func (blockgen *BlkTmplGenerator) buildIssuingResTxs(
 				constantPrice = oracleParams.Constant
 			}
 			issuingAmt := issuingReq.DepositedAmount / constantPrice
-			resTx, err := transaction.CreateTxSalary(issuingAmt, &issuingReq.ReceiverAddress, privatekey, blockgen.chain.GetDatabase())
+			resTx := new(transaction.Tx)
+			err := resTx.InitTxSalary(issuingAmt, &issuingReq.ReceiverAddress, privatekey, blockgen.chain.GetDatabase())
 			if err != nil {
 				return []metadata.Transaction{}, err
 			}
@@ -905,7 +908,8 @@ func calculateAmountOfRefundTxs(
 	var refundTxs []*transaction.Tx
 	for i := 0; i < len(addresses); i++ {
 		addr := addresses[i]
-		refundTx, err := transaction.CreateTxSalary(actualRefundAmt, addr, privatekey, db)
+		refundTx := new(transaction.Tx)
+		err := refundTx.InitTxSalary(actualRefundAmt, addr, privatekey, db)
 		if err != nil {
 			Logger.log.Error(err)
 			continue

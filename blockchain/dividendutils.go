@@ -20,7 +20,8 @@ func buildCoinbaseTxs(
 			Tk: tks[i],
 		}
 		// TODO(@0xbunyip): check if txtype should be set to txnormal instead of txsalary
-		tx, err := transaction.CreateTxSalary(amounts[i], paymentAddress, producerPrivateKey, db)
+		tx := new(transaction.Tx)
+		err := tx.InitTxSalary(amounts[i], paymentAddress, producerPrivateKey, db)
 		if err != nil {
 			return nil, err
 		}

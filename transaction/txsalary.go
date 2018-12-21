@@ -9,25 +9,19 @@ import (
 	"math/big"
 )
 
-// CreateTxSalary
+// InitTxSalary
 // Blockchain use this tx to pay a reward(salary) to miner of chain
 // #1 - salary:
 // #2 - receiverAddr:
 // #3 - privKey:
 // #4 - snDerivators:
-func CreateTxSalary(
+func (tx *Tx) InitTxSalary(
 	salary uint64,
 	receiverAddr *privacy.PaymentAddress,
 	privKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
-) (*Tx, error) {
-
-
-
-	tx := new(Tx)
+) (error) {
 	tx.Type = common.TxSalaryType
-	// assign fee tx = 0
-	tx.Fee = 0
 
 	var err error
 	// create new output coins with info: Pk, value, SND, randomness, last byte pk, coin commitment
@@ -39,7 +33,7 @@ func CreateTxSalary(
 	tx.Proof.OutputCoins[0].CoinDetails.Value = salary
 	tx.Proof.OutputCoins[0].CoinDetails.PublicKey, err = privacy.DecompressKey(receiverAddr.Pk)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandInt()
 
@@ -52,7 +46,7 @@ func CreateTxSalary(
 		tokenID.SetBytes(common.ConstantID[:])
 		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, chainIdSender, db)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if ok {
 			sndOut = privacy.RandInt()
@@ -73,13 +67,13 @@ func CreateTxSalary(
 	tx.sigPrivKey = *privKey
 	err = tx.SignTx(false)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if len(tx.Proof.InputCoins) > 0 {
 		fmt.Println(11111)
 	}
-	return tx, nil
+	return nil
 }
 
 func ValidateTxSalary(

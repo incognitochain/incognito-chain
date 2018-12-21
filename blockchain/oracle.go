@@ -223,7 +223,8 @@ func (blockGen *BlkTmplGenerator) buildOracleRewardTxs(
 	totalRewards := uint64(0)
 	oracleRewardTxs := []*transaction.Tx{}
 	for _, eval := range evals {
-		oracleRewardTx, err := transaction.CreateTxSalary(eval.Reward, eval.OracleFeederAddr, privatekey, blockGen.chain.GetDatabase())
+		oracleRewardTx := new(transaction.Tx)
+		err := oracleRewardTx.InitTxSalary(eval.Reward, eval.OracleFeederAddr, privatekey, blockGen.chain.GetDatabase())
 		if err != nil {
 			return []*transaction.Tx{}, 0, err
 		}
