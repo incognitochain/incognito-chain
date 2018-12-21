@@ -23,10 +23,10 @@ type TrasactionError struct {
 }
 
 func (e TrasactionError) Error() string {
-	return fmt.Sprintf("%+v: %+v", e.code, e.message)
+	return fmt.Sprintf("%+v: %+v %+v", e.code, e.message, e.err)
 }
 
-func NewWalletError(key int, err error) *TrasactionError {
+func NewTransactionErr(key int, err error) *TrasactionError {
 	return &TrasactionError{
 		err:     errors.Wrap(err, ErrCodeMessage[key].message),
 		code:    ErrCodeMessage[key].code,

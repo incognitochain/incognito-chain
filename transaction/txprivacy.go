@@ -52,11 +52,12 @@ func (tx *Tx) Init(
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 	tokenID *common.Hash, // default is nill -> use for constant coin
-) error {
+) *TrasactionError {
 	if tokenID == nil {
 		tokenID = &common.Hash{}
 		tokenID.SetBytes(common.ConstantID[:])
 	}
+
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKey(senderSK)
@@ -71,7 +72,7 @@ func (tx *Tx) Init(
 
 		err := tx.SignTx(hasPrivacy)
 		if err != nil {
-			return err
+			return NewTransactionErr(UnexpectedErr, err)
 		}
 		return nil
 	}
@@ -91,11 +92,11 @@ func (tx *Tx) Init(
 
 	// Check number of list of random commitments, list of random commitment indices
 	if len(commitmentIndexs) != len(inputCoins)*privacy.CMRingSize {
-		return fmt.Errorf("Number of list commitments indices must be corresponding with number of input coins")
+		return NewTransactionErr(UnexpectedErr, errors.New("Number of list commitments indices must be corresponding with number of input coins"))
 	}
 
 	if len(myCommitmentIndexs) != len(inputCoins) {
-		return fmt.Errorf("Number of list my commitment indices must be equal to number of input coins")
+		return NewTransactionErr(UnexpectedErr, errors.New("Number of list my commitment indices must be equal to number of input coins"))
 	}
 
 	// Calculate sum of all output coins' value
@@ -120,7 +121,7 @@ func (tx *Tx) Init(
 	valueMax = valueMax.Sub(valueMax, big.NewInt(1))
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	if overBalance < 0 || overBalance > valueMax.Uint64() {
-		return fmt.Errorf("Input value less than output value")
+		return NewTransactionErr(UnexpectedErr, errors.New("Input value less than output value"))
 	}
 
 	// if overBalance > 0, create a new payment info with pk is sender's pk and amount is overBalance
@@ -201,11 +202,11 @@ func (tx *Tx) Init(
 	witness := new(zkp.PaymentWitness)
 	err := witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
 	if err != nil {
-		return err
+		return NewTransactionErr(UnexpectedErr, err)
 	}
 	tx.Proof, err = witness.Prove(hasPrivacy)
 	if err != nil {
-		return err
+		return NewTransactionErr(UnexpectedErr, err)
 	}
 
 	// set private key for signing tx
@@ -245,7 +246,10 @@ func (tx *Tx) Init(
 	tx.PubKeyLastByteSender = pkLastByteSender
 	err = tx.SignTx(hasPrivacy)
 
-	return err
+	if err != nil {
+		return NewTransactionErr(UnexpectedErr, err)
+	}
+	return nil
 }
 
 // SignTx - signs tx

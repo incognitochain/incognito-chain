@@ -292,9 +292,10 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	tokenParams *CustomTokenParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
 ) error {
+	var err error
 	// create normal txCustomToken
 	normalTx := Tx{}
-	err := normalTx.Init(senderKey,
+	err = normalTx.Init(senderKey,
 		paymentInfo,
 		inputCoin,
 		fee,
