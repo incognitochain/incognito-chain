@@ -15,7 +15,6 @@ const (
 	MainnetInitGovToken               = 0
 	MainnetInitCmBToken               = 0
 	MainnetInitBondToken              = 0
-	MainnetVote
 	MainnetGenesisblockPaymentAddress = "1UuyYcHgVFLMd8Qy7T1ZWRmfFvaEgogF7cEsqY98ubQjoQUy4VozTqyfSNjkjhjR85C6GKBmw1JKekgMwCeHtHex25XSKwzb9QPQ2g6a3"
 
 	// Testnet
