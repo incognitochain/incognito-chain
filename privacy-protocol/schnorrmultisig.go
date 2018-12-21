@@ -67,7 +67,7 @@ func (multiSig *SchnMultiSig) Bytes() []byte {
 
 // SignMultiSig ...
 func (privKey *SpendingKey) SignMultiSig(data []byte, listPK []*PublicKey, pubKey *PublicKey, listR []*EllipticPoint, r *big.Int) *SchnMultiSig {
-	//R = R0+R1+R2+R3+...+Rn
+	//C1 = R0+R1+R2+R3+...+Rn
 	R := new(EllipticPoint)
 	R.X = big.NewInt(0)
 	R.Y = big.NewInt(0)
@@ -78,7 +78,7 @@ func (privKey *SpendingKey) SignMultiSig(data []byte, listPK []*PublicKey, pubKe
 	//Calculate common params:
 	//	aggKey = PK0+PK1+PK2+...+PKn
 	//	X = (PK0*a0) + (PK1*a1) + ... + (PKn*an)
-	//	C = Hash(X||R||data)
+	//	C2 = Hash(X||C1||data)
 	aggKey, C, _ := generateCommonParams(nil, listPK, R, data)
 	//recalculate a0
 	selfPK := new(EllipticPoint)
@@ -89,7 +89,7 @@ func (privKey *SpendingKey) SignMultiSig(data []byte, listPK []*PublicKey, pubKe
 	aInt.SetBytes(a)
 	aInt.Mod(aInt, Curve.Params().N)
 
-	//sig = r + C*a0*privKey
+	//sig = r + C2*a0*privKey
 	sig := big.NewInt(0)
 	sig.Set(aInt)
 	sig.Mul(sig, C)
@@ -103,7 +103,7 @@ func (privKey *SpendingKey) SignMultiSig(data []byte, listPK []*PublicKey, pubKe
 	selfR.X, selfR.Y = big.NewInt(0), big.NewInt(0)
 	selfR.X.Set(Curve.Params().Gx)
 	selfR.Y.Set(Curve.Params().Gy)
-	selfR = selfR.ScalarMul(r)
+	selfR = selfR.ScalarMult(r)
 	res := new(SchnMultiSig)
 	res.Set(selfR, sig)
 
@@ -115,7 +115,7 @@ func (multiSig *SchnMultiSig) VerifyMultiSig(data []byte, listPK []*PublicKey, p
 	//Calculate common params:
 	//	aggKey = PK0+PK1+PK2+...+PKn, PK0 is selfPK
 	//	X = (PK0*a0) + (PK1*a1) + ... + (PKn*an)
-	//	C = Hash(X||R||data)
+	//	C2 = Hash(X||C1||data)
 	//for verify signature of a Signer, which wasn't combined, |listPK| = 1 and contain publickey of the Signer
 	var C *big.Int
 	var X *EllipticPoint
@@ -130,10 +130,10 @@ func (multiSig *SchnMultiSig) VerifyMultiSig(data []byte, listPK []*PublicKey, p
 	GSPoint.X, GSPoint.Y = big.NewInt(0), big.NewInt(0)
 	GSPoint.X.Set(Curve.Params().Gx)
 	GSPoint.Y.Set(Curve.Params().Gy)
-	GSPoint = GSPoint.ScalarMul(multiSig.S)
+	GSPoint = GSPoint.ScalarMult(multiSig.S)
 
-	//RXCPoint is R.X^C
-	RXCPoint := X.ScalarMul(C)
+	//RXCPoint is C1.X^C2
+	RXCPoint := X.ScalarMult(C)
 	RXCPoint = RXCPoint.Add(multiSig.R)
 	return GSPoint.IsEqual(RXCPoint)
 }
@@ -144,7 +144,7 @@ func generateRandom() (*EllipticPoint, *big.Int) {
 	GPoint.X, GPoint.Y = big.NewInt(0), big.NewInt(0)
 	GPoint.X.Set(Curve.Params().Gx)
 	GPoint.Y.Set(Curve.Params().Gy)
-	R := GPoint.ScalarMul(r)
+	R := GPoint.ScalarMult(r)
 	return R, r
 }
 
@@ -171,7 +171,7 @@ func generateCommonParams(pubKey *PublicKey, listPubkey []*PublicKey, R *Ellipti
 		aInt := big.NewInt(0)
 		aInt.SetBytes(a)
 		aInt.Mod(aInt, Curve.Params().N)
-		X = X.Add(temp.ScalarMul(aInt))
+		X = X.Add(temp.ScalarMult(aInt))
 	}
 
 	Cbyte := X.Compress()
@@ -188,7 +188,7 @@ func generateCommonParams(pubKey *PublicKey, listPubkey []*PublicKey, R *Ellipti
 		a := common.DoubleHashB(temp1.Compress())
 		aInt := big.NewInt(0)
 		aInt.SetBytes(a)
-		X = temp.ScalarMul(aInt)
+		X = temp.ScalarMult(aInt)
 	}
 	return aggPubkey, C, X
 }

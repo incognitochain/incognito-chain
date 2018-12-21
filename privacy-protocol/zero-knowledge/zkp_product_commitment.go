@@ -154,10 +154,10 @@ func (wit *PKComProductWitness) Prove() (*PKComProductProof, error) {
 	|				(a,ra): value and its random                                               |
 	|				B : Commiment of value b                                                   |
 	|				(b,rb): value and its random														                   |
-	|				C : Commiment of value a*b														                     |
+	|				C2 : Commiment of value a*b														                     |
 	|				(ab,rc): product of 2 values and its random														     |
 	| OUTPUT: The proof for proving the statement: 														         |
-	|         "A,B and C is the commitment of a,b and a*b"														 |
+	|         "A,B and C2 is the commitment of a,b and a*b"														 |
 	|---------------------------------------------------------------------------------*/
 	/*--------------This Prove() function work under the following scheme--------------|
 	|	Choose random d, e, s, s', t in Zp																							 |
@@ -191,7 +191,7 @@ func (wit *PKComProductWitness) Prove() (*PKComProductProof, error) {
 
 	proof.cmA = privacy.PedCom.CommitAtIndex(wit.witnessA, wit.randA, wit.index)
 	D := privacy.PedCom.CommitAtIndex(d, s, wit.index)
-	E := wit.cmB.ScalarMul(d)
+	E := wit.cmB.ScalarMult(d)
 	*proof.D = *D
 	*proof.E = *E
 
@@ -243,7 +243,7 @@ func (pro *PKComProductProof) Verify() bool {
 	|	Follow 3 test:																					                          |
 	|		Check if Com(f1,z1) under ck equals to x*A + D or not														|
 	|	  Check if Com(f2,z2) under ck equals to x*B + E or not														|
-	|   Check if Com(f1,z3) under ck' equals to x*C + D' or not												  |
+	|   Check if Com(f1,z3) under ck' equals to x*C2 + D' or not												  |
 	|----------------------------------------------------------------------------------*/
 
 	pts_cmp := new(privacy.EllipticPoint)
@@ -271,15 +271,15 @@ func (pro *PKComProductProof) Verify() bool {
 	}
 	//Check witness 1: xA + D == 	CommitAll(f,z)
 	A := pro.cmA
-	pts_cmp = A.ScalarMul(x).Add(pro.D)
+	pts_cmp = A.ScalarMult(x).Add(pro.D)
 	com1 := privacy.PedCom.CommitAtIndex(pro.f, pro.z, pro.index)
 	if !com1.IsEqual(pts_cmp) {
 		return false
 	}
 
 	//Check witness 2: xB + E == 	CommitAll(f2,z2)
-	com2 := pro.cmB.ScalarMul(pro.f)
-	pts_cmp = privacy.PedCom.G[pro.index].ScalarMul(x).Add(pro.E)
+	com2 := pro.cmB.ScalarMult(pro.f)
+	pts_cmp = privacy.PedCom.G[pro.index].ScalarMult(x).Add(pro.E)
 	if !com2.IsEqual(pts_cmp) {
 		return false
 	}

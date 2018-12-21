@@ -106,10 +106,10 @@ func ValidateTxSalary(
 
 	// check output coin's coin commitment is calculated correctly
 	cmTmp := tx.Proof.OutputCoins[0].CoinDetails.PublicKey
-	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMul(big.NewInt(int64(tx.Proof.OutputCoins[0].CoinDetails.Value))))
-	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMul(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator))
-	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMul(new(big.Int).SetBytes([]byte{tx.Proof.OutputCoins[0].CoinDetails.GetPubKeyLastByte()})))
-	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMul(tx.Proof.OutputCoins[0].CoinDetails.Randomness))
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(tx.Proof.OutputCoins[0].CoinDetails.Value))))
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMult(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator))
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{tx.Proof.OutputCoins[0].CoinDetails.GetPubKeyLastByte()})))
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(tx.Proof.OutputCoins[0].CoinDetails.Randomness))
 	if !cmTmp.IsEqual(tx.Proof.OutputCoins[0].CoinDetails.CoinCommitment) {
 		return false
 	}

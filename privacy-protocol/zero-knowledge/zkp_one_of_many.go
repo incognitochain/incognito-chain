@@ -380,7 +380,7 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 		for i := 0; i < N; i++ {
 			iBinary := privacy.ConvertIntToBinary(i, n)
 			pik := GetCoefficient(iBinary, k, n, a, indexIsZeroBinary)
-			res = res.Add(wit.commitments[i].ScalarMul(pik))
+			res = res.Add(wit.commitments[i].ScalarMult(pik))
 		}
 
 		comZero := privacy.PedCom.CommitAtIndex(big.NewInt(0), u[k], wit.index)
@@ -476,7 +476,7 @@ func (pro *PKOneOfManyProof) Verify() bool {
 
 	for i := 0; i < n; i++ {
 		// Check cl^x * ca = Com(f, za)
-		leftPoint1 := pro.cl[i].ScalarMul(x).Add(pro.ca[i])
+		leftPoint1 := pro.cl[i].ScalarMult(x).Add(pro.ca[i])
 		rightPoint1 := privacy.PedCom.CommitAtIndex(pro.f[i], pro.za[i], pro.index)
 
 		if !leftPoint1.IsEqual(rightPoint1) {
@@ -488,7 +488,7 @@ func (pro *PKOneOfManyProof) Verify() bool {
 		xSubF.Sub(x, pro.f[i])
 		xSubF.Mod(xSubF, privacy.Curve.Params().N)
 
-		leftPoint2 := pro.cl[i].ScalarMul(xSubF).Add(pro.cb[i])
+		leftPoint2 := pro.cl[i].ScalarMult(xSubF).Add(pro.cb[i])
 		rightPoint2 := privacy.PedCom.CommitAtIndex(big.NewInt(0), pro.zb[i], pro.index)
 
 
