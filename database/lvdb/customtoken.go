@@ -167,8 +167,9 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 		if strings.Compare(values[1], string(Unspent)) == 0 {
 			// Uncomment this to get balance of all account
 			paymentAddress := privacy.PaymentAddress{}
-			paymentAddress.FromBytes([]byte(keys[2]))
-			i, ok := results[hex.EncodeToString(paymentAddress.Pk)]
+			pkInBytes, _, _ := base58.Base58Check{}.Decode(keys[2])
+			paymentAddress.FromBytes(pkInBytes)
+			i, ok := results[base58.Base58Check{}.Encode(paymentAddress.Pk, 0x00)]
 			fmt.Println("GetCustomTokenListPaymentAddressesBalance, current balance", i)
 			if ok == false {
 				fmt.Println("ERROR geting VoteAmount in GetCustomTokenAccountHistory of account", paymentAddress)
@@ -176,7 +177,7 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 			balance, _ := strconv.Atoi(values[0])
 			fmt.Println("GetCustomTokenListPaymentAddressesBalance, add balance", balance)
 			i += uint64(balance)
-			results[hex.EncodeToString(paymentAddress.Pk)] = i
+			results[base58.Base58Check{}.Encode(paymentAddress.Pk, 0x00)] = i
 			fmt.Println("GetCustomTokenListPaymentAddressesBalance, new balance", results[hex.EncodeToString(paymentAddress.Pk)])
 		}
 	}
@@ -190,9 +191,9 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 	VoteAmount: a list of utxo
 	Each utxo consist of two part: txHash-index
 */
-/*func (db *db) GetCustomTokenListUnrewardUTXO(tokenID *common.Hash) (map[privacy.PaymentAddress][][]byte, error) {
+func (db *db) GetCustomTokenPaymentAddressesBalanceUnreward(tokenID *common.Hash) (map[string]uint64, error) {
 
-	results := make(map[privacy.PaymentAddress][][]byte)
+	results := make(map[string]uint64)
 	prefix := TokenPaymentAddressPrefix
 	prefix = append(prefix, Splitter...)
 	prefix = append(prefix, []byte(tokenID.String())...)
@@ -204,16 +205,19 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 		values := strings.Split(value, string(Splitter))
 		// get unspent and unreward transaction output
 		if (strings.Compare(values[1], string(Unspent)) == 0) && (strings.Compare(values[2], string(Unreward)) == 0) {
-			paymentAddress := privacy.PaymentAddress{}
-			paymentAddress.FromBytes([]byte(keys[2]))
-			utxo := keys[4] + string(Splitter) + keys[5]
-			//utxo := append([]byte(keys[4]), []byte(keys[5])[:]...)
-			results[paymentAddress] = append(results[paymentAddress], []byte(utxo))
+			paymentAddress := keys[2]
+			i, ok := results[paymentAddress]
+			if ok == false {
+				fmt.Println("ERROR geting VoteAmount in GetCustomTokenAccountHistory of account", paymentAddress)
+			}
+			balance, _ := strconv.Atoi(values[0])
+			i += uint64(balance)
+			results[paymentAddress] = i
 		}
 	}
 	iter.Release()
 	return results, nil
-}*/
+}
 
 /*
 	Get a list of UTXO of one address

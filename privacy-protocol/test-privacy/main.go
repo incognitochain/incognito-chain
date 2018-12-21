@@ -256,7 +256,7 @@ func main() {
 
 	// var db database.DatabaseInterface
 
-	// tx, err := transaction.CreateTxSalary(10, &keySet.PaymentAddress, &keySet.PrivateKey, db)
+	// tx, err := transaction.InitTxSalary(10, &keySet.PaymentAddress, &keySet.PrivateKey, db)
 	// if err != nil{
 	// 	fmt.Println(err)
 	// }

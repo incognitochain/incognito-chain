@@ -22,8 +22,6 @@ func CreateTxSalary(
 	db database.DatabaseInterface,
 ) (*Tx, error) {
 
-
-
 	tx := new(Tx)
 	tx.Type = common.TxSalaryType
 	// assign fee tx = 0
@@ -34,7 +32,6 @@ func CreateTxSalary(
 	tx.Proof = new(zkp.PaymentProof)
 	tx.Proof.OutputCoins = make([]*privacy.OutputCoin, 1)
 	tx.Proof.OutputCoins[0] = new(privacy.OutputCoin)
-	//tx.Proof.OutputCoins[0].CoinDetailsEncrypted = new(privacy.CoinDetailsEncrypted).Init()
 	tx.Proof.OutputCoins[0].CoinDetails = new(privacy.Coin)
 	tx.Proof.OutputCoins[0].CoinDetails.Value = salary
 	tx.Proof.OutputCoins[0].CoinDetails.PublicKey, err = privacy.DecompressKey(receiverAddr.Pk)

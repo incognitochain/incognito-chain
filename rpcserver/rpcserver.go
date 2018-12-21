@@ -71,7 +71,7 @@ type RpcServerConfig struct {
 	ConnMgr         *connmanager.ConnManager
 	AddrMgr         *addrmanager.AddrManager
 	NodeRole        string
-	Server          interface {
+	Server interface {
 		// Push TxNormal Message
 		PushMessageToAll(message wire.Message) error
 		PushMessageToPeer(message wire.Message, id peer2.ID) error
@@ -389,6 +389,9 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 			}
 		}
 	}
+	if jsonErr != nil {
+		Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
+	}
 	// Marshal the response.
 	msg, err := self.createMarshalledReply(responseID, result, jsonErr)
 	if err != nil {
@@ -499,4 +502,3 @@ func (self RpcServer) writeHTTPResponseHeaders(req *http.Request, headers http.H
 	_, err = io.WriteString(w, "\r\n")
 	return err
 }
-
