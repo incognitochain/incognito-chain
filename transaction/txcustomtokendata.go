@@ -8,6 +8,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/pkg/errors"
+	"strconv"
 )
 
 // TxTokenVin - vin format for custom token data
@@ -93,8 +94,17 @@ func (self TxTokenData) Hash() (*common.Hash, error) {
 		return nil, errors.New("Vout is empty")
 	}
 	record := self.PropertyName + self.PropertySymbol + fmt.Sprintf("%d", self.Amount)
+	if len(self.Vins) > 0 {
+		for _, in := range self.Vins {
+			record += in.TxCustomTokenID.String()
+			record += strconv.Itoa(in.VoutIndex)
+			record += base58.Base58Check{}.Encode(in.PaymentAddress.Pk, 0x00)
+			record += in.Signature
+		}
+	}
 	for _, out := range self.Vouts {
 		record += string(out.PaymentAddress.Pk[:])
+		record += strconv.FormatUint(out.Value, 10)
 	}
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
@@ -111,8 +121,8 @@ type CustomTokenParamTx struct {
 	Receiver       []TxTokenVout `json:"TokenReceiver"`
 
 	// temp variable to process coding
-	vins        []TxTokenVin
-	vinsAmount  uint64
+	vins       []TxTokenVin
+	vinsAmount uint64
 }
 
 func (self *CustomTokenParamTx) SetVins(vins []TxTokenVin) {
@@ -125,9 +135,9 @@ func (self *CustomTokenParamTx) SetVinsAmount(vinsAmount uint64) {
 
 // CreateCustomTokenReceiverArray - parse data frm rpc request to create a list vout for preparing to create a custom token tx
 // data interface is a map[paymentt-address]{transferring-amount}
-func CreateCustomTokenReceiverArray(data interface{}) ([]TxTokenVout, uint64) {
+func CreateCustomTokenReceiverArray(data interface{}) ([]TxTokenVout, int64) {
 	result := []TxTokenVout{}
-	voutsAmount := uint64(0)
+	voutsAmount := int64(0)
 	receivers := data.(map[string]interface{})
 	for key, value := range receivers {
 		key, _ := wallet.Base58CheckDeserialize(key)
@@ -136,7 +146,7 @@ func CreateCustomTokenReceiverArray(data interface{}) ([]TxTokenVout, uint64) {
 			Value:          uint64(value.(float64)),
 		}
 		result = append(result, temp)
-		voutsAmount += temp.Value
+		voutsAmount += int64(temp.Value)
 	}
 	return result, voutsAmount
 }

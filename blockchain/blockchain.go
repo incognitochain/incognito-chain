@@ -995,10 +995,10 @@ func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *tr
 
 	tokenKey := TokenPaymentAddressPrefix
 	tokenKey = append(tokenKey, Splitter...)
-	tokenKey = append(tokenKey, (customTokenTx.TxTokenData.PropertyID)[:]...)
+	tokenKey = append(tokenKey, []byte((customTokenTx.TxTokenData.PropertyID).String())...)
 	for _, vin := range customTokenTx.TxTokenData.Vins {
-		paymentAddressPubkey := vin.PaymentAddress.Pk
-		utxoHash := &vin.TxCustomTokenID
+		paymentAddressPubkey := base58.Base58Check{}.Encode(vin.PaymentAddress.Pk, 0x00)
+		utxoHash := []byte(vin.TxCustomTokenID.String())
 		voutIndex := vin.VoutIndex
 		paymentAddressKey := tokenKey
 		paymentAddressKey = append(paymentAddressKey, Splitter...)
@@ -1027,8 +1027,8 @@ func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *tr
 		}
 	}
 	for index, vout := range customTokenTx.TxTokenData.Vouts {
-		paymentAddressPubkey := vout.PaymentAddress.Pk
-		utxoHash := customTokenTx.Hash()
+		paymentAddressPubkey := base58.Base58Check{}.Encode(vout.PaymentAddress.Pk, 0x00)
+		utxoHash := []byte(customTokenTx.Hash().String())
 		voutIndex := index
 		value := vout.Value
 		paymentAddressKey := tokenKey
@@ -1211,6 +1211,7 @@ func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCand
 // GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
 func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
 	data, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, receiverKeyset.PaymentAddress.Pk)
+	fmt.Println(data)
 	if err != nil {
 		return nil, err
 	}
@@ -1225,7 +1226,7 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 
 			vout := transaction.TxTokenVout{}
 			vout.PaymentAddress = receiverKeyset.PaymentAddress
-			txHash, err := common.Hash{}.NewHash([]byte(keys[3]))
+			txHash, err := common.Hash{}.NewHashFromStr(string(keys[3]))
 			if err != nil {
 				return nil, err
 			}
