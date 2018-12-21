@@ -13,7 +13,7 @@ import (
 // )
 
 type MessageCrossShard struct {
-	Block blockchain.ShardToShardBlock
+	Block blockchain.CrossShardBlock
 }
 
 func (self MessageCrossShard) MessageType() string {
