@@ -167,7 +167,8 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 		if strings.Compare(values[1], string(Unspent)) == 0 {
 			// Uncomment this to get balance of all account
 			paymentAddress := privacy.PaymentAddress{}
-			paymentAddress.FromBytes([]byte(keys[2]))
+			pkInBytes, _, _ := base58.Base58Check{}.Decode(keys[2])
+			paymentAddress.FromBytes(pkInBytes)
 			i, ok := results[hex.EncodeToString(paymentAddress.Pk)]
 			fmt.Println("GetCustomTokenListPaymentAddressesBalance, current balance", i)
 			if ok == false {
@@ -205,7 +206,8 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 		// get unspent and unreward transaction output
 		if (strings.Compare(values[1], string(Unspent)) == 0) && (strings.Compare(values[2], string(Unreward)) == 0) {
 			paymentAddress := privacy.PaymentAddress{}
-			paymentAddress.FromBytes([]byte(keys[2]))
+			pkInBytes, _, _ := base58.Base58Check{}.Decode(keys[2])
+			paymentAddress.FromBytes(pkInBytes)
 			utxo := keys[4] + string(Splitter) + keys[5]
 			//utxo := append([]byte(keys[4]), []byte(keys[5])[:]...)
 			results[paymentAddress] = append(results[paymentAddress], []byte(utxo))

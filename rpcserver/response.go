@@ -32,11 +32,13 @@ func NewResponse(id interface{}, marshalledResult []byte, rpcErr *RPCError) (*Re
 
 	pid := &id
 	resp := &Response{
-		Result:     marshalledResult,
-		Error:      rpcErr,
-		ErrMessage: rpcErr.Error(),
-		ErrCode:    rpcErr.Code,
-		Id:         pid,
+		Result: marshalledResult,
+		Error:  rpcErr,
+		Id:     pid,
+	}
+	if resp.Error != nil {
+		resp.ErrMessage = rpcErr.Error()
+		resp.ErrCode = rpcErr.Code
 	}
 	return resp, nil
 }
