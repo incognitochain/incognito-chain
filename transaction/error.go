@@ -6,14 +6,20 @@ import (
 )
 
 const (
-	UnexpectedErr = iota
+	UnexpectedErr      = iota
+	WrongTokenTxType
+	CustomTokenExisted
+	WrongInput
 )
 
 var ErrCodeMessage = map[int]struct {
 	code    int
 	message string
 }{
-	UnexpectedErr: {-1, "Unexpected error"},
+	UnexpectedErr:      {-1, "Unexpected error"},
+	WrongTokenTxType:   {-2, "Can't handle this TokenTxType"},
+	CustomTokenExisted: {-3, "This token is existed in network"},
+	WrongInput:         {-4, "Wrong input transaction"},
 }
 
 type TransactionError struct {

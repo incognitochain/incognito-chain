@@ -129,7 +129,7 @@ func (txCustomToken *TxCustomToken) validateCustomTokenTxSanityData(bcr metadata
 	zeroHash := common.Hash{}
 	for _, vin := range vins {
 		if len(vin.PaymentAddress.Pk) == 0 {
-			return common.FalseValue, NewTransactionErr(UnexpectedErr, errors.New("Wrong input transaction"))
+			return common.FalseValue, NewTransactionErr(WrongInput, nil)
 		}
 		// TODO: @0xbunyip - should move logic below to BuySellDCBResponse metadata's logic
 		// dbcAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
@@ -343,12 +343,12 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 			txCustomToken.TxTokenData.Vouts = VoutsTemp
 			hashInitToken, err := txCustomToken.TxTokenData.Hash()
 			if err != nil {
-				return NewTransactionErr(UnexpectedErr, errors.New("Can't handle this TokenTxType"))
+				return NewTransactionErr(WrongTokenTxType, err)
 			}
 			// validate PropertyID is the only one
 			for customTokenID := range listCustomTokens {
 				if hashInitToken.String() == customTokenID.String() {
-					return NewTransactionErr(UnexpectedErr, errors.New("This token is existed in network"))
+					return NewTransactionErr(CustomTokenExisted, nil)
 				}
 			}
 			txCustomToken.TxTokenData.PropertyID = *hashInitToken
@@ -389,7 +389,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	}
 
 	if handled != common.TrueValue {
-		return NewTransactionErr(UnexpectedErr, errors.New("Can't handle this TokenTxType"))
+		return NewTransactionErr(WrongTokenTxType, nil)
 	}
 	return nil
 }
