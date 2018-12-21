@@ -64,7 +64,7 @@ func (tx *Tx) Init(
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
 
 	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
-		fmt.Printf("CREATE TX CUSTOM TOKEN\n")
+		Logger.log.Infof("CREATE TX CUSTOM TOKEN\n")
 		tx.Fee = fee
 		tx.sigPrivKey = *senderSK
 		tx.PubKeyLastByteSender = pkLastByteSender
@@ -84,9 +84,9 @@ func (tx *Tx) Init(
 	commitmentIndexs, myCommitmentIndexs = RandomCommitmentsProcess(inputCoins, 8, db, chainID, tokenID)
 
 	// Print list of all input coins
-	//fmt.Printf("List of all input coins before building tx:\n")
+	//Logger.log.Infof("List of all input coins before building tx:\n")
 	//for _, coin := range inputCoins {
-	//	fmt.Printf("%+v\n", coin)
+	//	Logger.log.Infof("%+v\n", coin)
 	//}
 
 	// Check number of list of random commitments, list of random commitment indices
@@ -103,7 +103,7 @@ func (tx *Tx) Init(
 	sumOutputValue = 0
 	for _, p := range paymentInfo {
 		sumOutputValue += p.Amount
-		//fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
+		//Logger.log.Infof("[CreateTx] paymentInfo.Value: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
 	}
 
 	// Calculate sum of all input coins' value
@@ -149,7 +149,7 @@ func (tx *Tx) Init(
 			for true {
 				ok1, err := CheckSNDerivatorExistence(tokenID, sndOut, chainID, db)
 				if err != nil {
-					fmt.Println(err)
+					Logger.log.Error(err)
 				}
 				if ok1 {
 					sndOut = privacy.RandInt()
@@ -233,20 +233,20 @@ func (tx *Tx) Init(
 		com[i] = com[i].Add(tmp)
 		inputCoins[i].CoinDetails.CommitAll()
 		if !com[i].IsEqual(commitmentProving[myCommitmentIndexs[i]]) {
-			fmt.Println("WRONG 1")
+			Logger.log.Infof("WRONG 1")
 		} else {
-			fmt.Println("Right")
+			Logger.log.Infof("Right")
 		}
 
 		if !inputCoins[i].CoinDetails.CoinCommitment.IsEqual(commitmentProving[myCommitmentIndexs[i]]) {
-			fmt.Println("WRONG 2")
+			Logger.log.Infof("WRONG 2")
 		} else {
-			fmt.Println("Right")
+			Logger.log.Infof("Right")
 		}
 		if !inputCoins[i].CoinDetails.CoinCommitment.IsEqual(com[i]) {
-			fmt.Println("WRONG 3")
+			Logger.log.Infof("WRONG 3")
 		} else {
-			fmt.Println("Right")
+			Logger.log.Infof("Right")
 		}
 
 		//openingWitnessInputCoin := new(zkp.PKComOpeningsWitness)
@@ -255,11 +255,11 @@ func (tx *Tx) Init(
 		//	[]byte{privacy.SK, privacy.VALUE, privacy.SND, privacy.SHARDID, privacy.RAND})
 		//
 		//openingProofHien, _ := openingWitnessHien.Prove()
-		//fmt.Println(openingProofHien.Verify())
+		//Logger.log.Infof(openingProofHien.Verify())
 
 		//inputCoins[i].CoinDetails.CommitAll()
 		//if !com[i].IsEqual(inputCoins[i].CoinDetails.CoinCommitment){
-		//	fmt.Println("WRONG")
+		//	Logger.log.Infof("WRONG")
 		//}
 
 	}
@@ -339,20 +339,20 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		sigKey.PubKey.H.X, sigKey.PubKey.H.Y = privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y
 
 		sigKey.PubKey.PK = &privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
-		//fmt.Println(sigKey)
+		//Logger.log.Infof(sigKey)
 		tmp := new(privacy.EllipticPoint)
 		tmp.X, tmp.Y = privacy.Curve.ScalarMult(sigKey.PubKey.G.X, sigKey.PubKey.G.Y, sigKey.SK.Bytes())
 		sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y = privacy.Curve.Add(sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y, tmp.X, tmp.Y)
 
 		tmp.X, tmp.Y = privacy.Curve.ScalarMult(sigKey.PubKey.H.X, sigKey.PubKey.H.Y, sigKey.R.Bytes())
 		sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y = privacy.Curve.Add(sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y, tmp.X, tmp.Y)
-		//fmt.Printf("SIGN ------ PUBLICKEY: %+v\n", sigKey.PubKey.PK)
+		//Logger.log.Infof("SIGN ------ PUBLICKEY: %+v\n", sigKey.PubKey.PK)
 		tx.SigPubKey = sigKey.PubKey.PK.Compress()
-		//fmt.Printf("SIGN ------ PUBLICKEY BYTE: %+v\n", tx.SigPubKey)
+		//Logger.log.Infof("SIGN ------ PUBLICKEY BYTE: %+v\n", tx.SigPubKey)
 
 		// signing
-		//fmt.Printf("SIGN ------ HASH TX: %+v\n", tx.Hash().String())
-		//fmt.Printf(" SIGN SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
+		//Logger.log.Infof("SIGN ------ HASH TX: %+v\n", tx.Hash().String())
+		//Logger.log.Infof(" SIGN SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
 		signature, err := sigKey.Sign(tx.Hash()[:])
 		if err != nil {
 			return err
@@ -395,7 +395,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 	}
 
 	if tx.Proof != nil {
-		//fmt.Printf("VERIFY SIGNATURE ------------- TX.PROOF: %v\n", tx.Proof.Bytes())
+		//Logger.log.Infof("VERIFY SIGNATURE ------------- TX.PROOF: %v\n", tx.Proof.Bytes())
 	}
 
 	var err error
@@ -405,25 +405,25 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		/****** verify Schnorr signature *****/
 		// prepare Public key for verification
 		verKey := new(privacy.SchnPubKey)
-		//fmt.Printf("VERIFY ------ PUBLICKEY BYTE: %+v\n", tx.SigPubKey)
+		//Logger.log.Infof("VERIFY ------ PUBLICKEY BYTE: %+v\n", tx.SigPubKey)
 		verKey.PK, err = privacy.DecompressKey(tx.SigPubKey)
 		if err != nil {
 			return false, err
 		}
-		//fmt.Printf("VERIFY ------ PUBLICKEY: %+v\n", verKey.PK)
+		//Logger.log.Infof("VERIFY ------ PUBLICKEY: %+v\n", verKey.PK)
 
 		verKey.G = new(privacy.EllipticPoint)
 		verKey.G.X, verKey.G.Y = privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y
 
 		verKey.H = new(privacy.EllipticPoint)
 		verKey.H.X, verKey.H.Y = privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y
-		//fmt.Println(verKey)
+		//Logger.log.Infof(verKey)
 		// convert signature from byte array to SchnorrSign
 		signature := new(privacy.SchnSignature)
 		signature.FromBytes(tx.Sig)
 
 		// verify signature
-		//fmt.Printf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
+		//Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
 		res = verKey.Verify(signature, tx.Hash()[:])
 
 	} else {
@@ -459,9 +459,9 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	valid, err = tx.VerifySigTx(hasPrivacy)
 	if valid == false {
 		if err != nil {
-			fmt.Printf("[PRIVACY LOG] - Error verifying signature of tx: %+v", err)
+			Logger.log.Infof("[PRIVACY LOG] - Error verifying signature of tx: %+v", err)
 		}
-		fmt.Println("[PRIVACY LOG] - FAILED VERIFICATION SIGNATURE")
+		Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION SIGNATURE")
 		return false
 	}
 
@@ -488,7 +488,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		// Verify the payment proof
 		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, db, chainId, tokenID)
 		if valid == false {
-			fmt.Println("[PRIVACY LOG] - FAILED VERIFICATION PAYMENT PROOF")
+			Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION PAYMENT PROOF")
 			return false
 		}
 	}
@@ -863,7 +863,7 @@ func (tx *Tx) InitTxSalary(
 	}
 
 	if len(tx.Proof.InputCoins) > 0 {
-		fmt.Println(11111)
+		Logger.log.Info(11111)
 	}
 	return nil
 }
@@ -875,7 +875,7 @@ func (tx Tx) ValidateTxSalary(
 	valid, err := tx.VerifySigTx(false)
 	if valid == false {
 		if err != nil {
-			fmt.Printf("Error verifying signature of tx: %+v", err)
+			Logger.log.Infof("Error verifying signature of tx: %+v", err)
 		}
 		return false
 	}
