@@ -17,6 +17,7 @@ import (
 	"github.com/ninjadotorg/constant/peer"
 	"github.com/ninjadotorg/constant/rpcserver"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 var (
@@ -36,6 +37,7 @@ var (
 	blockchainLogger  = backendLog.Logger("blockChain log")
 	consensusLogger   = backendLog.Logger("Consensus log")
 	mempoolLogger     = backendLog.Logger("Mempool log")
+	transactionLogger = backendLog.Logger("Transaction log")
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -63,6 +65,7 @@ func init() {
 	blockchain.Logger.Init(blockchainLogger)
 	ppos.Logger.Init(consensusLogger)
 	mempool.Logger.Init(mempoolLogger)
+	transaction.Logger.Init(transactionLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -79,6 +82,7 @@ var subsystemLoggers = map[string]common.Logger{
 	"BLOC": blockchainLogger,
 	"CONS": consensusLogger,
 	"MEMP": mempoolLogger,
+	"TRAN": transactionLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
