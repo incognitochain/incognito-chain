@@ -272,7 +272,6 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	for i := 0; i < lenComInputOpeningsProofArray; i++ {
 		lenComInputOpeningsProof := int(proofbytes[offset])
 		offset += 1
-
 		proof.ComInputOpeningsProof[i] = new(PKComOpeningsProof).Init()
 		proof.ComInputOpeningsProof[i].SetBytes(proofbytes[offset : offset+lenComInputOpeningsProof])
 		offset += lenComInputOpeningsProof
@@ -284,7 +283,6 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	for i := 0; i < lenOneOfManyProofArray; i++ {
 		lenOneOfManyProof := privacy.ByteArrToInt(proofbytes[offset : offset+2])
 		offset += 2
-
 		proof.OneOfManyProof[i] = new(PKOneOfManyProof).Init()
 		proof.OneOfManyProof[i].SetBytes(proofbytes[offset : offset+lenOneOfManyProof])
 		offset += lenOneOfManyProof
@@ -296,7 +294,6 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	for i := 0; i < lenEqualityOfCommittedValProofArray; i++ {
 		lenEqualityOfCommittedValProof := int(proofbytes[offset])
 		offset += 1
-
 		proof.EqualityOfCommittedValProof[i] = new(PKEqualityOfCommittedValProof).Init()
 		err := proof.EqualityOfCommittedValProof[i].SetBytes(proofbytes[offset : offset+lenEqualityOfCommittedValProof])
 		if err != nil {
