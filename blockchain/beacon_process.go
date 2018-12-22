@@ -442,18 +442,35 @@ func GenerateHashFromStringArray(strs []string) (common.Hash, error) {
 	}
 	temp := sha256.Sum256(buf.Bytes())
 	if err := hash.SetBytes(temp[:]); err != nil {
-		return common.Hash{}, err
+		return common.Hash{}, NewBlockChainError(HashError, err)
 	}
 	return hash, nil
 }
 
-func VerifyHashFromStringArray(strs []string, hash common.Hash) error {
+func GenerateHashFromHashArray(hashes []common.Hash) (common.Hash, error) {
+	strs := []string{}
+	for _, value := range hashes {
+		str := value.String()
+		strs = append(strs, str)
+	}
+	return GenerateHashFromStringArray(strs)
+}
+func VerifyHashFromHashArray(hashes []common.Hash, hash common.Hash) bool {
+	strs := []string{}
+	for _, value := range hashes {
+		str := value.String()
+		strs = append(strs, str)
+	}
+	return VerifyHashFromStringArray(strs, hash)
+}
+
+func VerifyHashFromStringArray(strs []string, hash common.Hash) bool {
 	res, err := GenerateHashFromStringArray(strs)
 	if err != nil {
-		return err
+		return false
 	}
 	if bytes.Compare(res.GetBytes(), hash.GetBytes()) != 0 {
-		return errors.New("Error verify hash from string")
+		return true
 	}
-	return nil
+	return false
 }

@@ -1,11 +1,5 @@
 package main
 
-import (
-	"fmt"
-
-	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
-)
-
 func main() {
 	// blockHeight := "1447349"
 	// flag := true
@@ -38,9 +32,4 @@ func main() {
 	// }
 	// fmt.Println("Result of timestamp ", timestamp, "is: ", res)
 
-	msg := make(chan int64)
-
-	go btcapi.GenerateRandomNumber(timestamp, msg)
-	res := <-msg
-	fmt.Println("Result of timestamp ", timestamp, "is: ", res)
 }
