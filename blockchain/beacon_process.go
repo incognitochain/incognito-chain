@@ -106,23 +106,23 @@ func (self *BlockChain) VerifyPostProcessingBlockBeacon(block *BeaconBlock) erro
 	- Candidate root: CandidateBeaconWaitingForCurrentRandom + CandidateBeaconWaitingForNextRandom
 	*/
 	var (
-		err  error
 		strs []string
+		isOk bool
 	)
 
 	strs = append(strs, self.BestState.Beacon.BeaconCommittee...)
 	strs = append(strs, self.BestState.Beacon.BeaconPendingValidator...)
-	err = VerifyHashFromStringArray(strs, block.Header.ValidatorsRoot)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
+	isOk = VerifyHashFromStringArray(strs, block.Header.ValidatorsRoot)
+	if !isOk {
+		return NewBlockChainError(HashError, errors.New("Error verify Validator root"))
 	}
 
 	strs = []string{}
 	strs = append(strs, self.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom...)
 	strs = append(strs, self.BestState.Beacon.CandidateBeaconWaitingForNextRandom...)
-	err = VerifyHashFromStringArray(strs, block.Header.CandidateRoot)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
+	isOk = VerifyHashFromStringArray(strs, block.Header.CandidateRoot)
+	if !isOk {
+		return NewBlockChainError(HashError, errors.New("Error verify Candidate root"))
 	}
 
 	return nil
@@ -210,11 +210,8 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			randomFlag = true
 		}
 	}
-	// get staking candidate list and store
-	newBeaconCandidate, newShardCandidate := GetStakingCandidate(*newBlock)
-	// store new staking candidate
-	self.CandidateBeaconWaitingForNextRandom = append(self.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
-	self.CandidateShardWaitingForNextRandom = append(self.CandidateShardWaitingForNextRandom, newShardCandidate...)
+	// Update candidate
+	self.ProcessUpdateCandidate(newBlock)
 	if self.BeaconHeight%EPOCH == 0 && self.BeaconHeight != 0 {
 		// Begin of each epoch
 	} else if self.BeaconHeight%EPOCH < RANDOM_TIME {
@@ -223,35 +220,16 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	} else if self.BeaconHeight%EPOCH >= RANDOM_TIME {
 		// After get random from bitcoin
 		if self.BeaconHeight%EPOCH == RANDOM_TIME {
-			// snapshot candidate list
-			self.CandidateShardWaitingForCurrentRandom = self.CandidateShardWaitingForNextRandom
-			self.CandidateBeaconWaitingForCurrentRandom = self.CandidateBeaconWaitingForNextRandom
-
-			// reset candidate list
-			self.CandidateShardWaitingForNextRandom = []string{}
-			self.CandidateBeaconWaitingForNextRandom = []string{}
+			self.ProcessSnapshotAndReset(newBlock)
 		}
-		// if get new random number???
+		// if get new random number
 		// Assign candidate to shard
-		// assign CandidateShardWaitingForCurrentRandom to ShardPendingValidator with CurrentRandom this shard
+		// assign CandidateShardWaitingForCurrentRandom to ShardPendingValidator with CurrentRandom
 		if randomFlag {
-			err := AssignValidatorShard(self.ShardPendingValidator, self.CandidateShardWaitingForCurrentRandom, self.CurrentRandomNumber)
+			err := self.ProcessAssignValidator(newBlock)
 			if err != nil {
-				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-				return NewBlockChainError(UnExpectedError, err)
+				return err
 			}
-			// delete CandidateShardWaitingForCurrentRandom list
-			self.CandidateShardWaitingForCurrentRandom = []string{}
-
-			/// Shuffle candidate
-			// shuffle CandidateBeaconWaitingForCurrentRandom with current random number
-			newBeaconPendingValidator, err := ShuffleCandidate(self.CandidateBeaconWaitingForCurrentRandom, self.CurrentRandomNumber)
-			if err != nil {
-				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-				return NewBlockChainError(UnExpectedError, err)
-			}
-			self.CandidateBeaconWaitingForCurrentRandom = []string{}
-			self.BeaconPendingValidator = append(self.BeaconPendingValidator, newBeaconPendingValidator...)
 		}
 	} else if self.BeaconHeight%EPOCH == EPOCH-1 {
 		// At the end of each epoch, eg: block 199, 399, 599 with epoch is 200
@@ -260,15 +238,55 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		// SHARD WILL SWAP ITSELF
 		var (
 			beaconSwapedCommittees []string
+			beaconNextCommittees   []string
 			err                    error
 		)
-		self.BeaconPendingValidator, self.BeaconCommittee, beaconSwapedCommittees, err = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, OFFSET)
+		self.BeaconPendingValidator, self.BeaconCommittee, beaconSwapedCommittees, beaconNextCommittees, err = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, OFFSET)
 		Logger.log.Infof("Swaped out committees %+v", beaconSwapedCommittees)
+		Logger.log.Infof("Nextcommittees %+v", beaconNextCommittees)
 		if err != nil {
 			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 			return NewBlockChainError(UnExpectedError, err)
 		}
 	}
+	return nil
+}
+
+func (self *BestStateBeacon) ProcessUpdateCandidate(newBlock *BeaconBlock) {
+	// get staking candidate list and store
+	newBeaconCandidate, newShardCandidate := GetStakingCandidate(*newBlock)
+	// store new staking candidate
+	self.CandidateBeaconWaitingForNextRandom = append(self.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
+	self.CandidateShardWaitingForNextRandom = append(self.CandidateShardWaitingForNextRandom, newShardCandidate...)
+}
+
+func (self *BestStateBeacon) ProcessSnapshotAndReset(newBlock *BeaconBlock) {
+	// snapshot candidate list
+	self.CandidateShardWaitingForCurrentRandom = self.CandidateShardWaitingForNextRandom
+	self.CandidateBeaconWaitingForCurrentRandom = self.CandidateBeaconWaitingForNextRandom
+
+	// reset candidate list
+	self.CandidateShardWaitingForNextRandom = []string{}
+	self.CandidateBeaconWaitingForNextRandom = []string{}
+}
+func (self *BestStateBeacon) ProcessAssignValidator(newBlock *BeaconBlock) error {
+	err := AssignValidatorShard(self.ShardPendingValidator, self.CandidateShardWaitingForCurrentRandom, self.CurrentRandomNumber)
+	if err != nil {
+		Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+		return NewBlockChainError(UnExpectedError, err)
+	}
+	// delete CandidateShardWaitingForCurrentRandom list
+	self.CandidateShardWaitingForCurrentRandom = []string{}
+
+	/// Shuffle candidate
+	// shuffle CandidateBeaconWaitingForCurrentRandom with current random number
+	newBeaconPendingValidator, err := ShuffleCandidate(self.CandidateBeaconWaitingForCurrentRandom, self.CurrentRandomNumber)
+	if err != nil {
+		Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+		return NewBlockChainError(UnExpectedError, err)
+	}
+	self.CandidateBeaconWaitingForCurrentRandom = []string{}
+	self.BeaconPendingValidator = append(self.BeaconPendingValidator, newBeaconPendingValidator...)
 	return nil
 }
 
@@ -336,9 +354,9 @@ func calculateHash(candidate string, rand int64) (shardID byte) {
 // unqueue a number of validator out of currentValidators list
 // enqueue a number of validator into currentValidators list <=> unqueue a number of validator out of pendingValidators list
 // return value: #1 remaining pendingValidators, #2 new currentValidators # swap validator
-func SwapValidator(pendingValidators []string, currentValidators []string, offset int) ([]string, []string, []string, error) {
+func SwapValidator(pendingValidators []string, currentValidators []string, offset int) ([]string, []string, []string, []string, error) {
 	if offset == 0 {
-		return pendingValidators, currentValidators, nil, errors.New("Can't not swap 0 validator")
+		return nil, pendingValidators, currentValidators, nil, errors.New("Can't not swap 0 validator")
 	}
 	// if number of pending validator is less or equal than offset, set offset equal to number of pending validator
 	if offset > len(pendingValidators) {
@@ -346,10 +364,10 @@ func SwapValidator(pendingValidators []string, currentValidators []string, offse
 	}
 	// do nothing
 	if offset == 0 {
-		return pendingValidators, currentValidators, nil, errors.New("No pending validator for swapping")
+		return nil, pendingValidators, currentValidators, nil, errors.New("No pending validator for swapping")
 	}
 	if offset > len(currentValidators) {
-		return pendingValidators, currentValidators, nil, errors.New("Trying to swap too many validator")
+		return nil, pendingValidators, currentValidators, nil, errors.New("Trying to swap too many validator")
 	}
 	swapValidator := currentValidators[:offset]
 	// unqueue validator with index from 0 to offset-1 from currentValidators list
@@ -361,7 +379,7 @@ func SwapValidator(pendingValidators []string, currentValidators []string, offse
 
 	// enqueue new validator to the remaning of current validators list
 	currentValidators = append(currentValidators, tempValidators...)
-	return pendingValidators, currentValidators, swapValidator, nil
+	return pendingValidators, currentValidators, swapValidator, tempValidators, nil
 }
 
 // return: #param1: validator list after remove

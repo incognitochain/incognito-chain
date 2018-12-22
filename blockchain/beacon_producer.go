@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
@@ -10,6 +12,10 @@ import (
 )
 
 // make sure beststate are up to date
+// snapshot beststate before create new block
+// beststate will be updated with new block
+// if new block fail to connect to blockchain
+// roll back best state
 func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey) (*BeaconBlock, error) {
 	block := &BeaconBlock{}
 	// Create Header
@@ -35,7 +41,7 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	}
 	block.Header.ShardStateHash = tempShardStateHash
 
-	tempInstruction := self.GenerateInstruction()
+	tempInstruction := self.GenerateInstruction(block)
 	tempInstructionArr := []string{}
 	for _, strs := range tempInstruction {
 		tempInstructionArr = append(tempInstructionArr, strs...)
@@ -60,21 +66,56 @@ func (self *BlkTmplGenerator) GetShardState() [][]common.Hash {
 	return [][]common.Hash{}
 }
 
-func (self *BlkTmplGenerator) GenerateInstruction() [][]string {
+func (self *BlkTmplGenerator) GenerateInstruction(block *BeaconBlock) [][]string {
 	// TODO:
 	// - set instruction
 	// - del instruction
 	// - swap instruction
+	//    + format
+	//    + ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "shard" "shardID"]
+	//    + ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "beacon"]
 	// - random instruction
-	random := GenerateRandomNumber(self.chain.BestState.Beacon.CurrentRandomTimeStamp)
-	Logger.log.Info("RandomNumber", random)
+	// - assign
+	instructions := [][]string{}
+
+	if block.Header.Height%EPOCH == EPOCH-1 {
+		_, _, swappedValidator, beaconNextCommittees, _ := SwapValidator(self.chain.BestState.Beacon.BeaconPendingValidator, self.chain.BestState.Beacon.BeaconCommittee, OFFSET)
+		swapInstructions := []string{}
+		swapInstructions = append(swapInstructions, "swap")
+		swapInstructions = append(swapInstructions, beaconNextCommittees...)
+		swapInstructions = append(swapInstructions, swappedValidator...)
+		swapInstructions = append(swapInstructions, "beacon")
+		instructions = append(instructions, swapInstructions)
+	}
+
+	randomInstruction := GenerateRandomInstruction(self.chain.BestState.Beacon.CurrentRandomTimeStamp)
+	instructions = append(instructions, randomInstruction)
+	Logger.log.Infof("RandomNumber %+v", randomInstruction)
+
+	//TODO
+	// process stake transaction to get staking candidate
+	beaconStaker := []string{}
+	shardStaker := []string{}
+	beaconAssingInstruction := []string{"assign"}
+	beaconAssingInstruction = append(beaconAssingInstruction, strings.Join(beaconStaker, ","))
+	beaconAssingInstruction = append(beaconAssingInstruction, "beacon")
+
+	shardAssingInstruction := []string{"assign"}
+	shardAssingInstruction = append(shardAssingInstruction, strings.Join(shardStaker, ","))
+	shardAssingInstruction = append(shardAssingInstruction, "shard")
 	return [][]string{}
 }
 
-func GenerateRandomNumber(timestamp int64) int64 {
-	msg := make(chan int64)
+// ["random" "{blockheight}" "{bitcointimestamp}" "{nonce}" "{timestamp}"]
+func GenerateRandomInstruction(timestamp int64) []string {
+	msg := make(chan string)
 
 	go btcapi.GenerateRandomNumber(timestamp, msg)
 	res := <-msg
-	return res
+	reses := strings.Split(res, (","))
+	strs := []string{}
+	strs = append(strs, "random")
+	strs = append(strs, reses...)
+	strs = append(strs, strconv.Itoa(int(timestamp)))
+	return strs
 }

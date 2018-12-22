@@ -1,12 +1,14 @@
 package btcapi
 
-func GenerateRandomNumber(timestamp int64, ch chan<- int64) {
+import "strconv"
+
+func GenerateRandomNumber(timestamp int64, ch chan<- string) {
 	for {
 		select {
 		default:
-			res, err := GetNonceByTimestamp(timestamp)
+			height, timestamp, nonce, err := GetNonceByTimestamp(timestamp)
 			if err == nil {
-				ch <- res
+				ch <- strconv.Itoa(height) + "," + strconv.Itoa(int(timestamp)) + "," + strconv.Itoa(int(nonce))
 				return
 			}
 		}
