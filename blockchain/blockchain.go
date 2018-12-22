@@ -823,28 +823,21 @@ func (self *BlockChain) ProcessCMBTxs(block *Block) error {
 		switch tx.GetMetadataType() {
 		case metadata.CMBInitRequestMeta:
 			{
-				meta := tx.GetMetadata().(*metadata.CMBInitRequest)
-
-				// Members of the CMB
-				members := [][]byte{}
-				for _, member := range meta.Members {
-					members = append(members, member.ToBytes())
+				err := self.processCMBInitRequest(tx)
+				if err != nil {
+					return err
 				}
-
-				// Capital of the CMB
-				txPrivacy := tx.(*transaction.Tx)
-				accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-				dcbPk := accountDCB.KeySet.PaymentAddress.Pk
-				capital := uint64(0)
-				for _, coin := range txPrivacy.Proof.OutputCoins {
-					if bytes.Equal(coin.CoinDetails.PublicKey.Compress(), dcbPk) {
-						capital += coin.CoinDetails.Value
-					}
+			}
+		case metadata.CMBInitResponseMeta:
+			{
+				err := self.processCMBInitResponse(tx)
+				if err != nil {
+					return err
 				}
-
-				// Store in DB
-				txHash := tx.Hash()
-				err := self.config.DataBase.StoreCMB(meta.MainAccount.ToBytes(), members, capital, txHash[:])
+			}
+		case metadata.CMBInitRefundMeta:
+			{
+				err := self.processCMBInitRefund(tx)
 				if err != nil {
 					return err
 				}

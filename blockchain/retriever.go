@@ -75,3 +75,7 @@ func (self *BlockChain) GetCMB(mainAccount []byte) ([]privacy.PaymentAddress, ui
 	txHash, _ := (&common.Hash{}).NewHash(hash)
 	return memberAddresses, capital, txHash, state, nil
 }
+
+func (self *BlockChain) GetCMBResponse(mainAccount []byte) ([][]byte, error) {
+	return self.config.DataBase.GetCMBResponse(mainAccount)
+}

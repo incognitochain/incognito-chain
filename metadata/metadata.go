@@ -92,6 +92,7 @@ type BlockchainRetriever interface {
 	// For validating cmb
 	GetCMB([]byte) ([]privacy.PaymentAddress, uint64, *common.Hash, uint8, error)
 	GetBlockHeightByBlockHash(*common.Hash) (int32, byte, error)
+	GetCMBResponse([]byte) ([][]byte, error)
 }
 
 type Metadata interface {

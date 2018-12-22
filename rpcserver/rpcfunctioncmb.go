@@ -35,3 +35,29 @@ func (self RpcServer) handleCreateAndSendTxWithCMBInitRequest(params interface{}
 	}
 	return result, nil
 }
+
+func (self RpcServer) handleCreateAndSendTxWithCMBInitResponse(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	normalTx, err := self.buildRawTransaction(params)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	// Req param #4: cmb init response
+	paramsMap := arrayParams[4].(map[string]interface{})
+	cmbInitResponse := metadata.NewCMBInitResponse(paramsMap)
+	if cmbInitResponse == nil {
+		return nil, NewRPCError(ErrUnexpected, errors.Errorf("Invalid CMBInitResponse data"))
+	}
+	normalTx.Metadata = cmbInitResponse
+	byteArrays, marshalErr := json.Marshal(normalTx)
+	if err != nil {
+		Logger.log.Error(marshalErr)
+		return nil, NewRPCError(ErrUnexpected, marshalErr)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            normalTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}

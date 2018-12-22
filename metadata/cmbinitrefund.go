@@ -22,24 +22,22 @@ type CMBInitRefund struct {
 	MetadataBase
 }
 
-func (creq *CMBInitRefund) Hash() *common.Hash {
-	record := string(creq.MainAccount.ToBytes())
+func (cref *CMBInitRefund) Hash() *common.Hash {
+	record := string(cref.MainAccount.ToBytes())
 
 	// final hash
-	record += string(creq.MetadataBase.Hash()[:])
+	record += string(cref.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
-func (creq *CMBInitRefund) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
-	// TODO(@0xbunyip): only accept response if it's still earlier than height+CMBInitRefundPeriod
-
+func (cref *CMBInitRefund) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if cmb init request existed
 	meta, ok := txr.GetMetadata().(*CMBInitRefund)
 	if !ok {
 		return false, errors.Errorf("error parsing cmb init refund metadata")
 	}
-	_, _, txHash, state, err := bcr.GetCMB(meta.MainAccount.Pk[:])
+	_, _, txHash, state, err := bcr.GetCMB(meta.MainAccount.ToBytes())
 	if err != nil {
 		return false, err
 	}
@@ -57,10 +55,10 @@ func (creq *CMBInitRefund) ValidateTxWithBlockChain(txr Transaction, bcr Blockch
 	return state == CMBRequested, nil
 }
 
-func (creq *CMBInitRefund) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (cref *CMBInitRefund) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	return true, false, nil // DCB takes care of fee
 }
 
-func (creq *CMBInitRefund) ValidateMetadataByItself() bool {
+func (cref *CMBInitRefund) ValidateMetadataByItself() bool {
 	return true
 }

@@ -54,7 +54,8 @@ var (
 	threePhraseVoteValuePrefix    = []byte("threephrasevotevalueprefix-")
 
 	// cmb
-	cmbPrefix = []byte("cmb-")
+	cmbPrefix         = []byte("cmb-")
+	cmbResponsePrefix = []byte("cmbres-")
 
 	// dividend
 	Unreward = []byte("unreward")

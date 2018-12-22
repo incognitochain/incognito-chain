@@ -24,6 +24,7 @@ type LoanParams struct {
 type DCBParams struct {
 	SaleData               *voting.SaleData
 	MinLoanResponseRequire uint8
+	MinCMBApprovalRequire  uint8
 	SaleDBCTOkensByUSDData *voting.SaleDBCTOkensByUSDData
 
 	// TODO(@0xbunyip): read loan params from proposal instead of storing and reading separately
@@ -43,6 +44,7 @@ func (dcbParams *DCBParams) Hash() *common.Hash {
 	record := string(common.ToBytes(*dcbParams.SaleData.Hash()))
 	record += string(common.ToBytes(*dcbParams.SaleDBCTOkensByUSDData.Hash()))
 	record += string(dcbParams.MinLoanResponseRequire)
+	record += string(dcbParams.MinCMBApprovalRequire)
 	for _, i := range dcbParams.LoanParams {
 		record += string(i.InterestRate)
 		record += string(i.Maturity)

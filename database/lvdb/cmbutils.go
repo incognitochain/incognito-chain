@@ -24,8 +24,8 @@ func getCMBInitKey(mainAccount []byte) []byte {
 }
 
 func getCMBInitValue(
-	capital uint64,
 	members [][]byte,
+	capital uint64,
 	txHash []byte,
 	state uint8,
 ) ([]byte, error) {
@@ -78,4 +78,11 @@ func parseCMBInitValue(value []byte) ([][]byte, uint64, []byte, uint8, error) {
 		members = append(members, member)
 	}
 	return members, capital, txHash, state, nil
+}
+
+func getCMBResponseKey(mainAccount, approver []byte) []byte {
+	key := append(cmbResponsePrefix, mainAccount...)
+	key = append(key, Splitter...)
+	key = append(key, approver...)
+	return key
 }

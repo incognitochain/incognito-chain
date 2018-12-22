@@ -107,6 +107,9 @@ type DatabaseInterface interface {
 	// CMB
 	StoreCMB([]byte, [][]byte, uint64, []byte) error
 	GetCMB([]byte) ([][]byte, uint64, []byte, uint8, error)
+	UpdateCMBState([]byte, uint8) error
+	StoreCMBResponse([]byte, []byte) error
+	GetCMBResponse([]byte) ([][]byte, error)
 
 	//Vote
 	AddVoteDCBBoard(uint32, []byte, []byte, uint64) error

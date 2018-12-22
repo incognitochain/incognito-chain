@@ -1,9 +1,12 @@
 package lvdb
 
 import (
+	"strings"
+
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/pkg/errors"
+	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 func (db *db) StoreCMB(
@@ -22,7 +25,7 @@ func (db *db) StoreCMB(
 	cmbInitKey := getCMBInitKey(mainAccount)
 
 	state := metadata.CMBRequested
-	cmbValue, err := getCMBInitValue(capital, members, txHash, state)
+	cmbValue, err := getCMBInitValue(members, capital, txHash, state)
 	if err != nil {
 		return errUnexpected(err, "getCMBValue")
 	}
@@ -34,9 +37,51 @@ func (db *db) StoreCMB(
 }
 
 func (db *db) GetCMB(mainAccount []byte) ([][]byte, uint64, []byte, uint8, error) {
-	cmbInitValue, err := db.Get(mainAccount)
+	cmbInitKey := getCMBInitKey(mainAccount)
+	cmbInitValue, err := db.Get(cmbInitKey)
 	if err != nil {
 		return nil, 0, nil, 0, err
 	}
 	return parseCMBInitValue(cmbInitValue)
+}
+
+func (db *db) UpdateCMBState(mainAccount []byte, state uint8) error {
+	cmbInitKey := getCMBInitKey(mainAccount)
+	cmbInitValue, err := db.Get(cmbInitKey)
+	if err != nil {
+		return err
+	}
+	members, capital, txHash, _, err := parseCMBInitValue(cmbInitValue)
+	newValue, err := getCMBInitValue(members, capital, txHash, state)
+	if err != nil {
+		return errUnexpected(err, "getCMBValue")
+	}
+
+	if err := db.Put(cmbInitKey, newValue); err != nil {
+		return errUnexpected(err, "put cmb main account")
+	}
+	return nil
+}
+
+func (db *db) StoreCMBResponse(mainAccount, approver []byte) error {
+	cmbResponseKey := getCMBResponseKey(mainAccount, approver)
+	cmbResponseValue := []byte{1}
+	if err := db.Put(cmbResponseKey, cmbResponseValue); err != nil {
+		return errUnexpected(err, "put cmb response")
+	}
+	return nil
+}
+
+func (db *db) GetCMBResponse(mainAccount []byte) ([][]byte, error) {
+	approver := []byte{} // empty approver to get all
+	approvers := [][]byte{}
+	cmbResponseKey := getCMBResponseKey(mainAccount, approver)
+	iter := db.lvdb.NewIterator(util.BytesPrefix(cmbResponseKey), nil)
+	for iter.Next() {
+		key := string(iter.Key())
+		keys := strings.Split(key, string(Splitter)) // cmbres-mainAccount-[-]-approver
+		approvers = append(approvers, []byte(keys[1]))
+	}
+	iter.Release()
+	return approvers, nil
 }

@@ -1,10 +1,14 @@
 package blockchain
 
 import (
+	"bytes"
+
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/wallet"
 	"github.com/pkg/errors"
 )
 
@@ -64,4 +68,52 @@ func (blockgen *BlkTmplGenerator) buildCMBRefund(sourceTxns []*metadata.TxDesc, 
 		}
 	}
 	return refunds, nil
+}
+
+func (bc *BlockChain) processCMBInitRequest(tx metadata.Transaction) error {
+	meta := tx.GetMetadata().(*metadata.CMBInitRequest)
+
+	// Members of the CMB
+	members := [][]byte{}
+	for _, member := range meta.Members {
+		members = append(members, member.ToBytes())
+	}
+
+	// Capital of the CMB
+	txPrivacy := tx.(*transaction.Tx)
+	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	dcbPk := accountDCB.KeySet.PaymentAddress.Pk
+	capital := uint64(0)
+	for _, coin := range txPrivacy.Proof.OutputCoins {
+		if bytes.Equal(coin.CoinDetails.PublicKey.Compress(), dcbPk) {
+			capital += coin.CoinDetails.Value
+		}
+	}
+
+	// Store in DB
+	txHash := tx.Hash()
+	return bc.config.DataBase.StoreCMB(meta.MainAccount.ToBytes(), members, capital, txHash[:])
+}
+
+func (bc *BlockChain) processCMBInitResponse(tx metadata.Transaction) error {
+	// Store board member who approved this cmb init request
+	meta := tx.GetMetadata().(*metadata.CMBInitResponse)
+	sender := tx.GetJSPubKey()
+	err := bc.config.DataBase.StoreCMBResponse(meta.MainAccount.ToBytes(), sender)
+	if err != nil {
+		return err
+	}
+
+	// Update state of CMB if enough DCB board governors approved
+	approvers, _ := bc.config.DataBase.GetCMBResponse(meta.MainAccount.ToBytes())
+	minApproval := bc.GetDCBParams().MinCMBApprovalRequire
+	if len(approvers) == int(minApproval) {
+		return bc.config.DataBase.UpdateCMBState(meta.MainAccount.ToBytes(), metadata.CMBApproved)
+	}
+	return nil
+}
+
+func (bc *BlockChain) processCMBInitRefund(tx metadata.Transaction) error {
+	meta := tx.GetMetadata().(*metadata.CMBInitRefund)
+	return bc.config.DataBase.UpdateCMBState(meta.MainAccount.ToBytes(), metadata.CMBRefunded)
 }
