@@ -34,6 +34,7 @@ type BestStateBeacon struct {
 	CandidateShardWaitingForNextRandom  []string
 	CandidateBeaconWaitingForNextRandom []string
 
+	// ShardCommittee && ShardPendingValidator will be verify from shardBlock
 	// validator of shards
 	ShardCommittee map[byte][]string
 	// pending validator of shards
@@ -45,7 +46,7 @@ type BestStateBeacon struct {
 	CurrentRandomNumber int64
 	// random timestamp for this epoch
 	CurrentRandomTimeStamp int64
-	// NextRandomNumber    int64
+	IsGetRandomNUmber      bool
 
 	Params map[string]string
 }

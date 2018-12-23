@@ -175,6 +175,9 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	// update BestShardHash, BestBlock, BestBlockHash
 	self.BestBlockHash = *newBlock.Hash()
 	self.BestBlock = newBlock
+	self.BeaconEpoch = newBlock.Header.Epoch
+	self.BeaconHeight = newBlock.Header.Height
+
 	shardState := newBlock.Body.ShardState
 	for idx, l := range shardState {
 		self.BestShardHash[idx] = l[len(l)-1]
@@ -251,6 +254,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	// Update candidate
 	self.ProcessUpdateCandidate(newBlock)
 	if self.BeaconHeight%EPOCH == 0 && self.BeaconHeight != 0 {
+		self.IsGetRandomNUmber = false
 		// Begin of each epoch
 	} else if self.BeaconHeight%EPOCH < RANDOM_TIME {
 		// Before get random from bitcoin
@@ -259,11 +263,13 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		// After get random from bitcoin
 		if self.BeaconHeight%EPOCH == RANDOM_TIME {
 			self.ProcessSnapshotAndReset(newBlock)
+			self.CurrentRandomTimeStamp = newBlock.Header.Timestamp
 		}
 		// if get new random number
 		// Assign candidate to shard
 		// assign CandidateShardWaitingForCurrentRandom to ShardPendingValidator with CurrentRandom
 		if randomFlag {
+			self.IsGetRandomNUmber = true
 			err := self.ProcessAssignValidator(newBlock)
 			if err != nil {
 				return err

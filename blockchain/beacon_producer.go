@@ -75,35 +75,63 @@ func (self *BlkTmplGenerator) GenerateInstruction(block *BeaconBlock) [][]string
 	//    + ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "shard" "shardID"]
 	//    + ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "beacon"]
 	// - random instruction
-	// - assign
+	// - assign instruction
 	instructions := [][]string{}
-
+	// TODO process unexpected swap
 	if block.Header.Height%EPOCH == EPOCH-1 {
-		_, _, swappedValidator, beaconNextCommittees, _ := SwapValidator(self.chain.BestState.Beacon.BeaconPendingValidator, self.chain.BestState.Beacon.BeaconCommittee, OFFSET)
+		beacanPendingValidator, beaconCommittee, swappedValidator, beaconNextCommittee, _ := SwapValidator(self.chain.BestState.Beacon.BeaconPendingValidator, self.chain.BestState.Beacon.BeaconCommittee, OFFSET)
 		swapInstructions := []string{}
 		swapInstructions = append(swapInstructions, "swap")
-		swapInstructions = append(swapInstructions, beaconNextCommittees...)
+		swapInstructions = append(swapInstructions, beaconNextCommittee...)
 		swapInstructions = append(swapInstructions, swappedValidator...)
 		swapInstructions = append(swapInstructions, "beacon")
 		instructions = append(instructions, swapInstructions)
+
+		validatorArr := append(beaconCommittee, beacanPendingValidator...)
+		var err error
+		block.Header.ValidatorsRoot, err = GenerateHashFromStringArray(validatorArr)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		validatorArr := append(self.chain.BestState.Beacon.BeaconCommittee, self.chain.BestState.Beacon.BeaconPendingValidator...)
+		var err error
+		block.Header.ValidatorsRoot, err = GenerateHashFromStringArray(validatorArr)
+		if err != nil {
+			panic(err)
+		}
 	}
+	// Time to get random number and no block in this epoch get it
+	if block.Header.Height%200 >= RANDOM_TIME && self.chain.BestState.Beacon.IsGetRandomNUmber == false {
+		chainTimeStamp, err := btcapi.GetCurrentChainTimeStamp()
+		if err != nil {
+			panic(err)
+		}
+		if chainTimeStamp > self.chain.BestState.Beacon.CurrentRandomTimeStamp {
+			randomInstruction := GenerateRandomInstruction(self.chain.BestState.Beacon.CurrentRandomTimeStamp)
+			instructions = append(instructions, randomInstruction)
+			Logger.log.Infof("RandomNumber %+v", randomInstruction)
+			//TODO
+			// process stake transaction to get staking candidate
+			beaconStaker := []string{}
+			shardStaker := []string{}
+			beaconAssingInstruction := []string{"assign"}
+			beaconAssingInstruction = append(beaconAssingInstruction, strings.Join(beaconStaker, ","))
+			beaconAssingInstruction = append(beaconAssingInstruction, "beacon")
 
-	randomInstruction := GenerateRandomInstruction(self.chain.BestState.Beacon.CurrentRandomTimeStamp)
-	instructions = append(instructions, randomInstruction)
-	Logger.log.Infof("RandomNumber %+v", randomInstruction)
-
-	//TODO
-	// process stake transaction to get staking candidate
-	beaconStaker := []string{}
-	shardStaker := []string{}
-	beaconAssingInstruction := []string{"assign"}
-	beaconAssingInstruction = append(beaconAssingInstruction, strings.Join(beaconStaker, ","))
-	beaconAssingInstruction = append(beaconAssingInstruction, "beacon")
-
-	shardAssingInstruction := []string{"assign"}
-	shardAssingInstruction = append(shardAssingInstruction, strings.Join(shardStaker, ","))
-	shardAssingInstruction = append(shardAssingInstruction, "shard")
+			shardAssingInstruction := []string{"assign"}
+			shardAssingInstruction = append(shardAssingInstruction, strings.Join(shardStaker, ","))
+			shardAssingInstruction = append(shardAssingInstruction, "shard")
+		}
+	}
 	return [][]string{}
+}
+
+// TODO: Get stake from staking tx (block pool)
+// return param #1: beacon staker
+// return param #2: shard staker
+func (self *BlkTmplGenerator) GetStakerPublicKey() ([]string, []string) {
+	return []string{}, []string{}
 }
 
 // ["random" "{blockheight}" "{bitcointimestamp}" "{nonce}" "{timestamp}"]
