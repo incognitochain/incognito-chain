@@ -64,16 +64,25 @@ func (db *db) StoreBeaconBlockHeader(v interface{}, hash *common.Hash) error {
 
 func (db *db) HasBeaconBlock(hash *common.Hash) (bool, error) {
 	key := append(append(beaconPrefix, blockKeyPrefix...), hash[:]...)
-	exists, err := db.HasValue(key)
+	_, err := db.HasValue(key)
 	if err != nil {
 		return false, err
 	} else {
-		return exists, nil
+		keyB := append(blockKeyPrefix, hash[:]...)
+		existsB, err := db.HasValue(keyB)
+		if err != nil {
+			return false, err
+		} else {
+			return existsB, nil
+		}
 	}
 }
 
 func (db *db) FetchBeaconBlock(hash *common.Hash) ([]byte, error) {
-	key := append(append(beaconPrefix, blockKeyPrefix...), hash[:]...)
+	if _, err := db.HasBeaconBlock(hash); err != nil {
+		return []byte{}, err
+	}
+	key := append(blockKeyPrefix, hash[:]...)
 	block, err := db.Get(key)
 	if err != nil {
 		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
@@ -182,26 +191,12 @@ func (db *db) GetIndexOfBeaconBlock(h *common.Hash) (uint64, error) {
 	return idx, nil
 }
 
-func (db *db) GetBeaconBlockByIndex(idx uint64) (*common.Hash, error) {
+func (db *db) GetBeaconBlockHashByIndex(idx uint64) (*common.Hash, error) {
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, idx)
 	//bea-i-{index}:[hash]
 	beaconBuf := append(append(beaconPrefix, blockKeyIdxPrefix...), buf...)
 	b, err := db.lvdb.Get(beaconBuf, nil)
-	if err != nil {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-	}
-	h := new(common.Hash)
-	_ = h.SetBytes(b[:])
-	return h, nil
-}
-
-func (db *db) GetBeaconBlockByHash(idx uint64) (*common.Hash, error) {
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, idx)
-	// {index}: {blockhash}
-
-	b, err := db.lvdb.Get(buf, nil)
 	if err != nil {
 		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}

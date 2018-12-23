@@ -42,7 +42,7 @@ type DatabaseInterface interface {
 	// Block index
 	StoreBeaconBlockIndex(*common.Hash, uint64) error
 	GetIndexOfBeaconBlock(*common.Hash) (uint64, error)
-	GetBeaconBlockByIndex(uint64) (*common.Hash, error)
+	GetBeaconBlockHashByIndex(uint64) (*common.Hash, error)
 
 	// Transaction index
 	StoreTransactionIndex(*common.Hash, *common.Hash, int) error

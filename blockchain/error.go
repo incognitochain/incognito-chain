@@ -16,6 +16,13 @@ const (
 	UnmashallJsonBlockError
 	CanNotCheckDoubleSpendError
 	HashError
+	VersionError
+	BlockHeightError
+	DBError
+	EpochError
+	TimestampError
+	InstructionHashError
+	ShardStateHashError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -27,6 +34,13 @@ var ErrCodeMessage = map[int]struct {
 	UnmashallJsonBlockError:       {-3, "Unmarshall json block is failed"},
 	CanNotCheckDoubleSpendError:   {-4, "Unmarshall json block is failed"},
 	HashError:                     {-5, "Hash error"},
+	VersionError:                  {-6, "Version error"},
+	BlockHeightError:              {-7, "Block height error"},
+	DBError:                       {-8, "Database Error"},
+	EpochError:                    {-9, "Epoch Error"},
+	TimestampError:                {-10, "Timestamp Error"},
+	InstructionHashError:          {-11, "Instruction Hash Error"},
+	ShardStateHashError:           {-12, "ShardState Hash Error"},
 }
 
 type BlockChainError struct {

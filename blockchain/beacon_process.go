@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"sort"
 	"strconv"
@@ -77,17 +78,54 @@ func (self *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
 
 func (self *BlockChain) VerifyPreProcessingBlockBeacon(block *BeaconBlock) error {
 	/* Verify Pre-prosessing data
+	This function does not verify new block with best state
+	DO NOT USE THIS with GENESIS BLOCK
 	- Signature
 	- version
 	- parent hash
 	- Height = parent hash + 1
-	- Epoch
+	- Epoch = blockHeight % Epoch ? Parent Epoch + 1
 	- Timestamp can not excess some limit
 	- Instruction hash
 	- ShardStateHash
-	- Random number
 	- Sanity
 	*/
+	if block.Header.Version != VERSION {
+		return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
+	}
+	parentHash := block.Header.ParentHash
+	parentBlock, err := self.config.DataBase.FetchBeaconBlock(&parentHash)
+	parentBlockInterface := NewBeaconBlock()
+	json.Unmarshal(parentBlock, &parentBlockInterface)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
+	if parentBlockInterface.Header.Height+1 != block.Header.Height {
+		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
+	}
+	if block.Header.Height%EPOCH == 0 && parentBlockInterface.Header.Epoch != block.Header.Epoch-1 {
+		return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
+	}
+	if block.Header.Timestamp <= parentBlockInterface.Header.Timestamp {
+		return NewBlockChainError(TimestampError, errors.New("Timestamp of new block can't equal to parent block"))
+	}
+
+	tempShardStateArr := []common.Hash{}
+	for _, hashes := range block.Body.ShardState {
+		tempShardStateArr = append(tempShardStateArr, hashes...)
+	}
+	if !VerifyHashFromHashArray(tempShardStateArr, block.Header.ShardStateHash) {
+		return NewBlockChainError(ShardStateHashError, errors.New("Shard state hash is not correct"))
+	}
+
+	tempInstructionArr := []string{}
+	for _, strs := range block.Body.Instructions {
+		tempInstructionArr = append(tempInstructionArr, strs...)
+	}
+	if !VerifyHashFromStringArray(tempInstructionArr, block.Header.InstructionHash) {
+		return NewBlockChainError(InstructionHashError, errors.New("Instruction hash is not correct"))
+	}
+	//TODO: Verify Sanity
 	return nil
 }
 

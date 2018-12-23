@@ -54,6 +54,9 @@ type BeaconBlock struct {
 	Header BeaconHeader
 }
 
+func NewBeaconBlock() BeaconBlock {
+	return BeaconBlock{}
+}
 func (self *BeaconBlock) Hash() *common.Hash {
 	record := common.EmptyString
 	record += self.Header.Hash().String() + self.AggregatedSig + common.IntArrayToString(self.ValidatorsIdx, ",")
