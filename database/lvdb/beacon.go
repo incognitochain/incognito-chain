@@ -159,8 +159,9 @@ func (db *db) StoreBeaconBlockIndex(h *common.Hash, idx uint64) error {
 	if err := db.lvdb.Put(key, buf, nil); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
-	//{index}:[hash]
-	if err := db.lvdb.Put(buf, h[:], nil); err != nil {
+	//bea-i-{index}:[hash]
+	beaconBuf := append(append(beaconPrefix, blockKeyIdxPrefix...), buf...)
+	if err := db.lvdb.Put(beaconBuf, h[:], nil); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
@@ -169,7 +170,7 @@ func (db *db) StoreBeaconBlockIndex(h *common.Hash, idx uint64) error {
 func (db *db) GetIndexOfBeaconBlock(h *common.Hash) (uint64, error) {
 	key := append(append(beaconPrefix, blockKeyIdxPrefix...), h[:]...)
 	b, err := db.lvdb.Get(key, nil)
-	//{i-[hash]}:index
+	//{bea-i-[hash]}:index
 	if err != nil {
 		return 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.get"))
 	}
@@ -182,6 +183,20 @@ func (db *db) GetIndexOfBeaconBlock(h *common.Hash) (uint64, error) {
 }
 
 func (db *db) GetBeaconBlockByIndex(idx uint64) (*common.Hash, error) {
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, idx)
+	//bea-i-{index}:[hash]
+	beaconBuf := append(append(beaconPrefix, blockKeyIdxPrefix...), buf...)
+	b, err := db.lvdb.Get(beaconBuf, nil)
+	if err != nil {
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	}
+	h := new(common.Hash)
+	_ = h.SetBytes(b[:])
+	return h, nil
+}
+
+func (db *db) GetBeaconBlockByHash(idx uint64) (*common.Hash, error) {
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, idx)
 	// {index}: {blockhash}
