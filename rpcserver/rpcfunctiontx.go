@@ -720,8 +720,9 @@ func (self RpcServer) handleCreateRawPrivacyCustomTokenTransaction(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *RPCError) {
+	var err error
 	tx, err := self.buildRawPrivacyCustomTokenTransaction(params)
-	if err != nil {
+	if err.(*transaction.TransactionError) != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}

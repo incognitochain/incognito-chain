@@ -68,7 +68,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 		common.FalseValue,
 		nil,
 		nil)
-	if err != nil {
+	if err.(*TransactionError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
 	// override TxCustomTokenPrivacyType type
