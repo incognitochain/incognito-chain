@@ -19,14 +19,21 @@ var beaconPool = map[byte]map[uint64][]blockchain.ShardToBeaconBlock{}
 
 type ShardToBeaconPool struct{}
 
-func (pool *ShardToBeaconPool) GetBlock() map[byte][]blockchain.ShardToBeaconBlock {
+func (pool *ShardToBeaconPool) GetFinalBlock() map[byte][]blockchain.ShardToBeaconBlock {
 	results := map[byte][]blockchain.ShardToBeaconBlock{}
+
 	for ShardId, shardItems := range beaconPool {
 		if shardItems == nil || len(shardItems) <= 0 {
 			continue
 		}
 		items := []blockchain.ShardToBeaconBlock{}
-		items[0] = shardItems[0]
+		for i := 0;i < len(shardItems)-1;i++ {
+			item,ok := shardItems[uint64(i)]
+			if !ok || len(item) <=0 {
+				continue
+			}
+			items = append(items, item[0])
+		}
 		results[ShardId] = items
 	}
 	return results
