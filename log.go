@@ -8,6 +8,7 @@ import (
 	"github.com/jrick/logrotate/rotator"
 	"github.com/ninjadotorg/constant/addrmanager"
 	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/connmanager"
 	"github.com/ninjadotorg/constant/consensus/constantpos"
