@@ -7,7 +7,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy"
 )
 
 // PaymentWitness contains all of witness for proving when spending coins
@@ -482,7 +482,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 
 // END----------------------------------------------------------------------------------------------------------------------------------------------
 
-//func (wit *Pprivacy-protocol/zero-knowledge/zkp_opening.goaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
+//func (wit *Pprivacy-protocol/zeroknowledge/zkp_opening.goaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
 //	wit.spendingKey = spendingKey
 //	wit.inputCoins = inputCoins
 //	wit.outputCoins = outputCoins
@@ -892,7 +892,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	if err != nil {
 		return nil, err
 	}
-	// privacy-protocol/zero-knowledge/zkp_opening.go
+	// privacy/zeroknowledge/openings.go
 	// Proving that sum of all input values is equal to sum of all output values
 	proof.ComZeroProof, err = wit.ComZeroWitness.Prove()
 	if err != nil {
@@ -983,10 +983,10 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 			return false
 		}
 
-		// get commitments list from CommitmentIndexs
+		// get commitments list from CommitmentIndices
 		commitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
 		for j := 0; j < privacy.CMRingSize; j++ {
-			commitmentBytes, err := db.GetCommitmentByIndex(tokenID, pro.OneOfManyProof[i].CommitmentIndexs[j], chainId)
+			commitmentBytes, err := db.GetCommitmentByIndex(tokenID, pro.OneOfManyProof[i].CommitmentIndices[j], chainId)
 			if err != nil {
 				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("Zero knowledge verification error"))
 				return false

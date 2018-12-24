@@ -4,7 +4,7 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 
 	"github.com/minio/blake2b-simd"
 )

@@ -3,7 +3,7 @@ import (
 	"crypto/elliptic"
 	"fmt"
 	"github.com/minio/blake2b-simd"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/pkg/errors"
 	"math"
 	"math/big"

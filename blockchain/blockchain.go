@@ -18,7 +18,7 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/database/lvdb"
 	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/voting"
 	"github.com/ninjadotorg/constant/wallet"
@@ -382,7 +382,7 @@ func (self *BlockChain) StoreTransactionIndex(txHash *common.Hash, blockHash *co
 }
 
 /*
-Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
+Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreSerialNumbersFromTxViewPoint(view TxViewPoint) error {
@@ -396,7 +396,7 @@ func (self *BlockChain) StoreSerialNumbersFromTxViewPoint(view TxViewPoint) erro
 }
 
 /*
-Uses an existing database to update the set of used tx by saving list SNDerivator of privacy-protocol,
+Uses an existing database to update the set of used tx by saving list SNDerivator of privacy,
 this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint) error {
@@ -411,7 +411,7 @@ func (self *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint) error
 }
 
 /*
-Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
+Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
@@ -445,7 +445,7 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 }
 
 /*
-Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
+Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
 */
 /*func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, chainId byte) error {
@@ -459,7 +459,7 @@ this is a list tx-out which are used by a new tx
 }*/
 
 /*
-Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
+Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
 */
 /*func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {

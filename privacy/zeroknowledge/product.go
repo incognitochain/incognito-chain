@@ -5,7 +5,7 @@ import (
 	"math/big"
 
 	"github.com/minio/blake2b-simd"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 /*The protocol is used for opening the commitments of product of 2 values*/

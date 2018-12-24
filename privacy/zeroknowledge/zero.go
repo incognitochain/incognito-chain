@@ -5,7 +5,7 @@ import (
 	"errors"
 	"math/big"
 
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy"
 )
 
 // PKComZeroProof contains Proof's value
@@ -198,26 +198,8 @@ func (pro *PKComZeroProof) Verify() bool {
 	//Generate challenge x in Zp
 	xChallenge := GenerateChallengeFromPoint([]*privacy.EllipticPoint{pro.commitmentValue})
 
-	//convert commitmentValue []byte to Point in ECC
-	// commitmentValuePoint, err := privacy.DecompressKey(commitmentValue)
-	// if err != nil {
-	// 	return false
-	// }
-	// if (!privacy.Curve.IsOnCurve(commitmentValuePoint.X, commitmentValuePoint.Y)) || (z.Cmp(privacy.Curve.Params().N) > -1) {
-	// 	return false
-	// }
-
 	//verifyPoint is result of A.x + B (in ECC)
-	verifyPoint := new(privacy.EllipticPoint)
-	verifyPoint.X = big.NewInt(0)
-	verifyPoint.Y = big.NewInt(0)
-	//Set verifyPoint = A
-	verifyPoint.X.Set(pro.commitmentValue.X)
-	verifyPoint.Y.Set(pro.commitmentValue.Y)
-	//verifyPoint = verifyPoint.x
-	verifyPoint.X, verifyPoint.Y = privacy.Curve.ScalarMult(verifyPoint.X, verifyPoint.Y, xChallenge.Bytes())
-	//verifyPoint = verifyPoint + B
-	verifyPoint.X, verifyPoint.Y = privacy.Curve.Add(verifyPoint.X, verifyPoint.Y, pro.commitmentZeroS.X, pro.commitmentZeroS.Y)
+	verifyPoint := pro.commitmentZeroS.Add(pro.commitmentValue.ScalarMult(xChallenge))
 
 	//Generate Zero number
 	zeroInt := big.NewInt(0)
@@ -225,10 +207,7 @@ func (pro *PKComZeroProof) Verify() bool {
 	//Calculate comm_ck(0,z, Index)
 	commitmentZeroZ := privacy.PedCom.CommitAtIndex(zeroInt, pro.z, *pro.index)
 
-	if commitmentZeroZ.X.CmpAbs(verifyPoint.X) != 0 {
-		return false
-	}
-	if commitmentZeroZ.Y.CmpAbs(verifyPoint.Y) != 0 {
+	if !commitmentZeroZ.IsEqual(verifyPoint){
 		return false
 	}
 

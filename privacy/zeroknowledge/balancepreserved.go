@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 
-	//"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	//"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"math"
 	"math/big"
 
 	"github.com/minio/blake2b-simd"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 type PKComMultiRangeProof struct {

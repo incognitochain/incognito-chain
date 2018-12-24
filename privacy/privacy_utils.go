@@ -90,18 +90,11 @@ func ConvertIntToBinary(inum int, n int) []byte {
 
 	return binary
 }
+
 func getindex(bigint *big.Int, stableSz int) int {
 	return stableSz - len(bigint.Bytes())
 }
 func AddPaddingBigInt(numInt *big.Int, fixedSize int) []byte {
-	//idx:=getindex(numInt, fixedSize)
-	//paddedBig:=make([]byte, fixedSize)
-	//
-	//for i:=idx;i< fixedSize;i++{
-	//	paddedBig[i] = numInt.Bytes()[i-idx]
-	//}
-	//return paddedBig
-
 	numBytes := numInt.Bytes()
 	lenNumBytes := len(numBytes)
 

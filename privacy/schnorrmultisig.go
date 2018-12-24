@@ -219,7 +219,6 @@ func broadcastR(R *EllipticPoint) {
 		counter++
 		mutex.Unlock()
 	}
-	//todo
 }
 
 // TestMultiSig EC Schnorr MultiSig Scheme

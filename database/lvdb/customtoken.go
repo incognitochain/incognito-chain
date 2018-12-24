@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/syndtr/goleveldb/leveldb/util"
 	"github.com/ninjadotorg/constant/common/base58"
 )

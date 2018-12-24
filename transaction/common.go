@@ -1,8 +1,8 @@
 package transaction
 
 import (
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"math"
 	"math/big"
 	"github.com/ninjadotorg/constant/database"

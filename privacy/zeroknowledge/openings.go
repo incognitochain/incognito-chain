@@ -5,7 +5,7 @@ import (
 	"errors"
 	"math/big"
 
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy"
 )
 
 //Openings protocol: https://courses.cs.ut.ee/MTAT.07.003/2017_fall/uploads/Main/0907-sigma-protocol-for-pedersen-commitment.pdf
@@ -175,16 +175,3 @@ func (pro *PKComOpeningsProof) Verify() bool {
 	return leftPoint.IsEqual(rightPoint)
 }
 
-// TestOpeningsProtocol ..
-func TestOpeningsProtocol() bool {
-	witness := new(PKComOpeningsWitness)
-	witness.randValue(true)
-	//fmt.Printf("Witness: %+v\n", witness)
-	proof, _ := witness.Prove()
-	//fmt.Printf("Len of opening proof: %v\n", len(proof.Bytes()))
-
-	proof2 := new(PKComOpeningsProof)
-	proof2.SetBytes(proof.Bytes())
-	res := proof.Verify()
-	return res
-}

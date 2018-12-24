@@ -5,7 +5,7 @@ import (
 	"errors"
 	"math/big"
 
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy"
 )
 
 // Protocol proving in ZK ... https://link.springer.com/chapter/10.1007/3-540-48910-X_8
@@ -50,15 +50,17 @@ func (wit *PKEqualityOfCommittedValWitness) randValue() {
 	for i := 0; i < 3; i++ {
 		X[i], _ = rand.Int(rand.Reader, privacy.Curve.Params().N)
 	}
+
 	C := make([]*privacy.EllipticPoint, 2)
 	index := make([]byte, 2)
 
 	index[0] = 1
 	index[1] = 2
+
 	for i := 0; i < 2; i++ {
 		C[i] = privacy.PedCom.CommitAtIndex(X[0], X[i+1], index[i])
-		// C[1] = privacy.PedCom.CommitAtIndex(X[0], X[2], 1)
 	}
+
 	wit.Set(C, index, X)
 }
 
