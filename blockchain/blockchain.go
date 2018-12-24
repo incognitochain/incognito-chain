@@ -1248,14 +1248,14 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 		// check lightweight
 		if self.config.LightMode {
 			// with light node, we can try get data in light mode
-			return byte(255), nil, -1, nil, errors.New("Not support in light mode")
+			return byte(255), nil, -1, nil, NewBlockChainError(NotSupportInLightMode, nil)
 		}
 		return byte(255), nil, -1, nil, err
 	}
 	block, err := self.GetBlockByBlockHash(blockHash)
 	if err != nil {
 		Logger.log.Errorf("ERROR", err, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
-		return byte(255), nil, -1, nil, err
+		return byte(255), nil, -1, nil, NewBlockChainError(UnExpectedError, err)
 	}
 	Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
 	return block.Header.ChainID, blockHash, index, block.Transactions[index], nil
@@ -1263,6 +1263,10 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 
 // ListCustomToken - return all custom token which existed in network
 func (self *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomToken, error) {
+	if self.config.LightMode {
+		// TODO 0xsirrush
+		return nil, NewBlockChainError(NotSupportInLightMode, nil)
+	}
 	data, err := self.config.DataBase.ListCustomToken()
 	if err != nil {
 		return nil, err
@@ -1275,7 +1279,7 @@ func (self *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomT
 		_ = blockHash
 		_ = index
 		if err != nil {
-			return nil, err
+			return nil, NewBlockChainError(UnExpectedError, err)
 		}
 		txCustomToken := tx.(*transaction.TxCustomToken)
 		result[txCustomToken.TxTokenData.PropertyID] = *txCustomToken
@@ -1285,6 +1289,10 @@ func (self *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomT
 
 // ListCustomToken - return all custom token which existed in network
 func (self *BlockChain) ListPrivacyCustomToken() (map[common.Hash]transaction.TxCustomTokenPrivacy, error) {
+	if self.config.LightMode {
+		// TODO 0xsirrush
+		return nil, NewBlockChainError(NotSupportInLightMode, nil)
+	}
 	data, err := self.config.DataBase.ListPrivacyCustomToken()
 	if err != nil {
 		return nil, err
