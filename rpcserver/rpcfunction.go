@@ -11,7 +11,7 @@ import (
 	"github.com/ninjadotorg/constant/wallet"
 )
 
-type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
+type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, *RPCError)
 
 // Commands valid for normal user
 var RpcHandler = map[string]commandHandler{
@@ -40,7 +40,7 @@ var RpcHandler = map[string]commandHandler{
 	ListOutputCoins:          RpcServer.handleListOutputCoins,
 	CreateRawTransaction:     RpcServer.handleCreateRawTransaction,
 	SendRawTransaction:       RpcServer.handleSendRawTransaction,
-	CreateAndSendTransaction: RpcServer.handlCreateAndSendTx,
+	CreateAndSendTransaction: RpcServer.handleCreateAndSendTx,
 	GetMempoolInfo:           RpcServer.handleGetMempoolInfo,
 	GetTransactionByHash:     RpcServer.handleGetTransactionByHash,
 
@@ -134,7 +134,7 @@ var RpcLimited = map[string]commandHandler{
 /*
 getblockcount RPC return information fo blockchain node
 */
-func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetNetworkInfoResult{}
 
 	result.Version = RpcServerVersion
@@ -190,7 +190,7 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 //Parameter #2—the maximum number of confirmations an output may have
 //Parameter #3—the list readonly which be used to view utxo
 //
-func (self RpcServer) handleListUnspentOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleListUnspentOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	result := jsonresult.ListUnspentResult{
 		ListUnspentResultItems: make(map[string][]jsonresult.ListUnspentResultItem),
@@ -246,7 +246,7 @@ func (self RpcServer) handleListUnspentOutputCoins(params interface{}, closeChan
 	return result, nil
 }
 
-func (self RpcServer) handleCheckHashValue(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCheckHashValue(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	var (
 		isTransaction bool
 		isBlock       bool
@@ -288,7 +288,7 @@ func (self RpcServer) handleCheckHashValue(params interface{}, closeChan <-chan 
 /*
 handleGetConnectionCount - RPC returns the number of connections to other nodes.
 */
-func (self RpcServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	if self.config.ConnMgr == nil || len(self.config.ConnMgr.ListeningPeers) == 0 {
 		return 0, nil
 	}
@@ -302,7 +302,7 @@ func (self RpcServer) handleGetConnectionCount(params interface{}, closeChan <-c
 /*
 handleGetGenerate - RPC returns true if the node is set to generate blocks using its CPU
 */
-func (self RpcServer) handleGetGenerate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetGenerate(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// return self.config.IsGenerateNode, nil
 	return false, nil
 }
@@ -310,7 +310,7 @@ func (self RpcServer) handleGetGenerate(params interface{}, closeChan <-chan str
 /*
 handleGetMiningInfo - RPC returns various mining-related info
 */
-func (self RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// TODO update code to new consensus
 	// if !self.config.IsGenerateNode {
 	// 	return nil, NewRPCError(ErrUnexpected, errors.New("Not mining"))
@@ -328,7 +328,7 @@ func (self RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan s
 handleGetRawMempool - RPC returns all transaction ids in memory pool as a json array of string transaction ids
 Hint: use getmempoolentry to fetch a specific transaction from the mempool.
 */
-func (self RpcServer) handleGetRawMempool(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetRawMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetRawMempoolResult{
 		TxHashes: self.config.TxMemPool.ListTxs(),
 	}
@@ -338,7 +338,7 @@ func (self RpcServer) handleGetRawMempool(params interface{}, closeChan <-chan s
 /*
 handleMempoolEntry - RPC fetch a specific transaction from the mempool
 */
-func (self RpcServer) handleMempoolEntry(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleMempoolEntry(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// Param #1: hash string of tx(tx id)
 	txID, err := common.Hash{}.NewHashFromStr(params.(string))
 	if err != nil {
@@ -356,7 +356,7 @@ func (self RpcServer) handleMempoolEntry(params interface{}, closeChan <-chan st
 /*
 handleEstimateFee - RPC estimates the transaction fee per kilobyte that needs to be paid for a transaction to be included within a certain number of blocks.
 */
-func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// Param #1: —how many blocks the transaction may wait before being included
 	arrayParams := common.InterfaceSlice(params)
 	numBlock := uint64(arrayParams[0].(float64))
@@ -382,17 +382,17 @@ func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan str
 }
 
 // handleEncryptDataByPaymentAddress - get payment address and make an encrypted data
-func (self RpcServer) handleEncryptDataByPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleEncryptDataByPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	paymentAddress := arrayParams[0].(string)
 	plainData := arrayParams[1].(string)
 	keySet, err := wallet.Base58CheckDeserialize(paymentAddress)
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	encryptData, err := keySet.KeySet.Encrypt([]byte(plainData))
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	_ = encryptData
 	return hex.EncodeToString([]byte{}), nil

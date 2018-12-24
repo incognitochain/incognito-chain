@@ -1,22 +1,17 @@
 package privacy
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/ninjadotorg/constant/common/base58"
-	"io"
 	"math/big"
 )
 
-type SerialNumber []byte   //33 bytes
-type CoinCommitment []byte //67 bytes
-type Random []byte         //32 bytes
-type Value []byte          //32 bytes
-type SNDerivator []byte
+type SerialNumber []byte   // 33 bytes
+type CoinCommitment []byte // 33 bytes
+type Random []byte         // 32 bytes
+type Value []byte          // 32 bytes
+type SNDerivator []byte    // 32 bytes
 
 // Coin represents a coin
 type Coin struct {
@@ -51,6 +46,7 @@ func (coin *Coin) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// Init initializes a coin
 func (coin *Coin) Init() *Coin {
 	coin.PublicKey = new(EllipticPoint).Zero()
 	coin.CoinCommitment = new(EllipticPoint).Zero()
@@ -61,64 +57,69 @@ func (coin *Coin) Init() *Coin {
 	return coin
 }
 
+// Bytes converts a coin's details to a byte array
 func (coin *Coin) Bytes() []byte {
-	var coin_bytes []byte
+	var coinBytes []byte
+
 	if coin.PublicKey != nil {
 		PublicKey := coin.PublicKey.Compress()
-		coin_bytes = append(coin_bytes, byte(len(PublicKey)))
-		coin_bytes = append(coin_bytes, PublicKey...)
+		coinBytes = append(coinBytes, byte(len(PublicKey)))
+		coinBytes = append(coinBytes, PublicKey...)
 	} else {
-		coin_bytes = append(coin_bytes, byte(0))
+		coinBytes = append(coinBytes, byte(0))
 	}
+
 	if coin.CoinCommitment != nil {
 		CoinCommitment := coin.CoinCommitment.Compress()
-		coin_bytes = append(coin_bytes, byte(len(CoinCommitment)))
-		coin_bytes = append(coin_bytes, CoinCommitment...)
+		coinBytes = append(coinBytes, byte(len(CoinCommitment)))
+		coinBytes = append(coinBytes, CoinCommitment...)
 	} else {
-		coin_bytes = append(coin_bytes, byte(0))
+		coinBytes = append(coinBytes, byte(0))
 	}
 
 	if coin.SNDerivator != nil {
 		SNDerivator := coin.SNDerivator.Bytes()
-		coin_bytes = append(coin_bytes, byte(len(SNDerivator)))
-		coin_bytes = append(coin_bytes, SNDerivator...)
+		coinBytes = append(coinBytes, byte(len(SNDerivator)))
+		coinBytes = append(coinBytes, SNDerivator...)
 	} else {
-		coin_bytes = append(coin_bytes, byte(0))
+		coinBytes = append(coinBytes, byte(0))
 	}
 
 	if coin.SerialNumber != nil {
 		SerialNumber := coin.SerialNumber.Compress()
-		coin_bytes = append(coin_bytes, byte(len(SerialNumber)))
-		coin_bytes = append(coin_bytes, SerialNumber...)
+		coinBytes = append(coinBytes, byte(len(SerialNumber)))
+		coinBytes = append(coinBytes, SerialNumber...)
 	} else {
-		coin_bytes = append(coin_bytes, byte(0))
+		coinBytes = append(coinBytes, byte(0))
 	}
+
 	if coin.Randomness != nil {
 		Randomness := coin.Randomness.Bytes()
-		coin_bytes = append(coin_bytes, byte(len(Randomness)))
-		coin_bytes = append(coin_bytes, Randomness...)
+		coinBytes = append(coinBytes, byte(len(Randomness)))
+		coinBytes = append(coinBytes, Randomness...)
 	} else {
-		coin_bytes = append(coin_bytes, byte(0))
+		coinBytes = append(coinBytes, byte(0))
 	}
+
 	if (coin.Value > 0) {
 		Value := new(big.Int).SetUint64(coin.Value).Bytes()
-		coin_bytes = append(coin_bytes, byte(len(Value)))
-		coin_bytes = append(coin_bytes, Value...)
+		coinBytes = append(coinBytes, byte(len(Value)))
+		coinBytes = append(coinBytes, Value...)
 	} else {
-		coin_bytes = append(coin_bytes, byte(0))
-	}
-	Info := coin.Info
-	if len(Info) > 0{
-		coin_bytes = append(coin_bytes, byte(len(Info)))
-		coin_bytes = append(coin_bytes, Info...)
-	} else{
-		coin_bytes = append(coin_bytes, byte(0))
+		coinBytes = append(coinBytes, byte(0))
 	}
 
-	//fmt.Printf("len coin bytes : %v\n", len(coin_bytes))
-	return coin_bytes
+	if len(coin.Info) > 0 {
+		coinBytes = append(coinBytes, byte(len(coin.Info)))
+		coinBytes = append(coinBytes, coin.Info...)
+	} else {
+		coinBytes = append(coinBytes, byte(0))
+	}
+
+	return coinBytes
 }
 
+// SetBytes reverts a byte array to a Coin-type
 func (coin *Coin) SetBytes(coinBytes []byte) error {
 	if len(coinBytes) == 0 {
 		return nil
@@ -130,7 +131,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if (lenField != 0) {
 		coin.PublicKey = new(EllipticPoint)
-		coin.PublicKey, err = DecompressKey(coinBytes[offset:offset+int(lenField)])
+		coin.PublicKey, err = DecompressKey(coinBytes[offset : offset+int(lenField)])
 		if err != nil {
 			return err
 		}
@@ -142,7 +143,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if (lenField != 0) {
 		coin.CoinCommitment = new(EllipticPoint)
-		coin.CoinCommitment, err = DecompressKey(coinBytes[offset:offset+int(lenField)])
+		coin.CoinCommitment, err = DecompressKey(coinBytes[offset : offset+int(lenField)])
 		if err != nil {
 			return err
 		}
@@ -154,7 +155,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if (lenField != 0) {
 		coin.SNDerivator = new(big.Int)
-		coin.SNDerivator.SetBytes(coinBytes[offset: offset+int(lenField)])
+		coin.SNDerivator.SetBytes(coinBytes[offset : offset+int(lenField)])
 		offset += int(lenField)
 	}
 
@@ -163,7 +164,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if (lenField != 0) {
 		coin.SerialNumber = new(EllipticPoint)
-		coin.SerialNumber, err = DecompressKey(coinBytes[offset:offset+int(lenField)])
+		coin.SerialNumber, err = DecompressKey(coinBytes[offset : offset+int(lenField)])
 		if err != nil {
 			return err
 		}
@@ -175,7 +176,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if (lenField != 0) {
 		coin.Randomness = new(big.Int)
-		coin.Randomness.SetBytes(coinBytes[offset: offset+int(lenField)])
+		coin.Randomness.SetBytes(coinBytes[offset : offset+int(lenField)])
 		offset += int(lenField)
 	}
 
@@ -184,7 +185,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if (lenField != 0) {
 		x := new(big.Int)
-		x.SetBytes(coinBytes[offset: offset+int(lenField)])
+		x.SetBytes(coinBytes[offset : offset+int(lenField)])
 		coin.Value = x.Uint64()
 		offset += int(lenField)
 	}
@@ -202,8 +203,6 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 
 // InputCoin represents a input coin of transaction
 type InputCoin struct {
-	//ShardId *big.Int
-	//BlockHeight *big.Int
 	CoinDetails *Coin
 }
 
@@ -263,8 +262,8 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 	offset += 1
 	if lenCoinDetailEncrypted > 0 {
 		outputCoin.CoinDetailsEncrypted = new(CoinDetailsEncrypted)
-		err := outputCoin.CoinDetailsEncrypted.SetBytes(bytes[offset:offset+lenCoinDetailEncrypted])
-		if err != nil{
+		err := outputCoin.CoinDetailsEncrypted.SetBytes(bytes[offset : offset+lenCoinDetailEncrypted])
+		if err != nil {
 			return err
 		}
 		offset += lenCoinDetailEncrypted
@@ -273,30 +272,30 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 	lenCoinDetail := int(bytes[offset])
 	offset += 1
 	outputCoin.CoinDetails = new(Coin)
-	outputCoin.CoinDetails.SetBytes(bytes[offset:offset+lenCoinDetail])
+	outputCoin.CoinDetails.SetBytes(bytes[offset : offset+lenCoinDetail])
 	return nil
 }
 
 type CoinDetailsEncrypted struct {
-	RandomEncrypted []byte // 48 bytes
-	ValueEncrypted []byte  // min: 17 bytes, max: 24 bytes
-	SymKeyEncrypted []byte // 66 bytes
+	EncryptedRandomness []byte // 48 bytes
+	EncryptedValue      []byte // 17 -> 24 bytes
+	EncryptedSymKey     []byte // 66 bytes
 }
 
 func (self *CoinDetailsEncrypted) Init() *CoinDetailsEncrypted {
-	self.RandomEncrypted = []byte{}
-	self.ValueEncrypted = []byte{}
-	self.SymKeyEncrypted = []byte{}
+	self.EncryptedRandomness = []byte{}
+	self.EncryptedValue = []byte{}
+	self.EncryptedSymKey = []byte{}
 	return self
 }
 func (coinDetailsEncrypted *CoinDetailsEncrypted) IsNil() bool {
-	if coinDetailsEncrypted.SymKeyEncrypted == nil {
+	if coinDetailsEncrypted.EncryptedSymKey == nil {
 		return true
 	}
-	if coinDetailsEncrypted.RandomEncrypted == nil {
+	if coinDetailsEncrypted.EncryptedRandomness == nil {
 		return true
 	}
-	if coinDetailsEncrypted.ValueEncrypted == nil {
+	if coinDetailsEncrypted.EncryptedValue == nil {
 		return true
 	}
 	return false
@@ -307,134 +306,106 @@ func (coinDetailsEncrypted *CoinDetailsEncrypted) Bytes() [] byte {
 		return []byte{}
 	}
 	var res []byte
-	res = append(res, coinDetailsEncrypted.RandomEncrypted...)
-	res = append(res, coinDetailsEncrypted.SymKeyEncrypted...)
-	res = append(res, coinDetailsEncrypted.ValueEncrypted...)
-
-	//fmt.Printf("Byte - len random encrypted: %v\n", len(coinDetailsEncrypted.RandomEncrypted))
-	//fmt.Printf("Byte - len sym key encrypted: %v\n", len(coinDetailsEncrypted.SymKeyEncrypted))
-	//fmt.Printf("Byte - len value encrypted: %v\n", len(coinDetailsEncrypted.ValueEncrypted))
+	res = append(res, coinDetailsEncrypted.EncryptedRandomness...)
+	res = append(res, coinDetailsEncrypted.EncryptedSymKey...)
+	res = append(res, coinDetailsEncrypted.EncryptedValue...)
 
 	return res
 }
-func (coinDetailsEncrypted *CoinDetailsEncrypted) SetBytes(bytes []byte) error{
+func (coinDetailsEncrypted *CoinDetailsEncrypted) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return nil
 	}
 
-	coinDetailsEncrypted.RandomEncrypted = bytes[0:48]
-	coinDetailsEncrypted.SymKeyEncrypted = bytes[48:48+66]
-	coinDetailsEncrypted.ValueEncrypted = bytes[48+66:]
+	coinDetailsEncrypted.EncryptedRandomness = bytes[0:48]
+	coinDetailsEncrypted.EncryptedSymKey = bytes[48 : 48+66]
+	coinDetailsEncrypted.EncryptedValue = bytes[48+66:]
 
 	return nil
 }
 
-func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error {
-	/**** Generate symmetric key of AES cryptosystem,
-				it is used for encryption coin details ****/
-	symKeyPoint := new(EllipticPoint)
-	symKeyPoint.Randomize()
-	symKeyByte := symKeyPoint.X.Bytes()
-	//fmt.Printf("ENCRYPT --------- symKey plaintext : %v\n", symKeyByte)
+// Encrypt returns a ciphertext encrypting for a coin using a hybrid cryptosystem,
+// in which AES encryption scheme is used as a data encapsulation scheme,
+// and ElGamal cryptosystem is used as a key encapsulation scheme.
+func (coin *OutputCoin) Encrypt(recipientTK TransmissionKey) error {
+	// Generate a AES key as the abscissa of a random elliptic point
+	aesKeyPoint := new(EllipticPoint)
+	aesKeyPoint.Randomize()
+	aesKeyByte := aesKeyPoint.X.Bytes()
 
-	/**** Encrypt coin details using symKeyByte ****/
-	// encrypt Randomness of coin
-	randomnessBytes := coin.CoinDetails.Randomness.Bytes()
-	//fmt.Printf("ENCRYPT --------- randomnessBytes plaintext : %v\n", randomnessBytes)
-	//fmt.Printf("ENCRYPT --------- Len randomnessBytes plaintext : %v\n", len(randomnessBytes))
+	// Encrypt coin details using aesKeyByte
+	aesScheme := new(AES)
+	aesScheme.SetKey(aesKeyByte)
 
-	block, err := aes.NewCipher(symKeyByte)
-	if err != nil {
-		return err
-	}
-
-	// The IV needs to be unique, but not secure. Therefore it's common to
-	// include it at the beginning of the ciphertext.
+	// Encrypt coin randomness
 	coin.CoinDetailsEncrypted = new(CoinDetailsEncrypted)
-	coin.CoinDetailsEncrypted.RandomEncrypted = make([]byte, aes.BlockSize+len(randomnessBytes))
-	iv := coin.CoinDetailsEncrypted.RandomEncrypted[:aes.BlockSize]
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+	var err error
+
+	randomnessBytes := coin.CoinDetails.Randomness.Bytes()
+	coin.CoinDetailsEncrypted.EncryptedRandomness, err = aesScheme.Encrypt(randomnessBytes)
+	if err != nil {
 		return err
 	}
 
-	stream := cipher.NewCTR(block, iv)
-	stream.XORKeyStream(coin.CoinDetailsEncrypted.RandomEncrypted[aes.BlockSize:], randomnessBytes)
-
-
-
-	// ***************** encrypt Value of coin
-	ValueBytes := new(big.Int).SetUint64(coin.CoinDetails.Value).Bytes()
-	//fmt.Printf("ENCRYPT ------- Value byte : %v\n", ValueBytes)
-
-	//block2, err := aes.NewCipher(symKeyByte)
-	//if err != nil {
-	//	return err
-	//}
-
-
-	// The IV needs to be unique, but not secure. Therefore it's common to
-	// include it at the beginning of the ciphertext.
-	coin.CoinDetailsEncrypted.ValueEncrypted = make([]byte, aes.BlockSize+len(ValueBytes))
-	//iv2 := coin.CoinDetailsEncrypted.RandomEncrypted[:aes.BlockSize]
-	//if _, err := io.ReadFull(rand.Reader, iv2); err != nil {
-	//	panic(err)
-	//}
-
-	stream = cipher.NewCTR(block, iv)
-	stream.XORKeyStream(coin.CoinDetailsEncrypted.ValueEncrypted[aes.BlockSize:], ValueBytes)
-
-	/****** Encrypt symKeyByte using Transmission key's receiver with ElGamal cryptosystem ****/
-	// prepare public key for ElGamal cryptosystem
-	pubKey := new(ElGamalPubKey)
-	pubKey.H, _ = DecompressKey(receiverTK)
-	pubKey.Curve = &Curve
-
-	coin.CoinDetailsEncrypted.SymKeyEncrypted = pubKey.ElGamalEnc(symKeyPoint).Bytes()
+	// Encrypt coin value
+	valueBytes := new(big.Int).SetUint64(coin.CoinDetails.Value).Bytes()
+	coin.CoinDetailsEncrypted.EncryptedValue, err = aesScheme.Encrypt(valueBytes)
 	if err != nil {
-		fmt.Println(err)
+		return err
+	}
+
+	// Get transmission key, which is a public key of ElGamal cryptosystem
+	transmissionKey := new(ElGamalPubKey)
+	transmissionKey.H, err = DecompressKey(recipientTK)
+	if err != nil {
+		return err
+	}
+	transmissionKey.Curve = &Curve
+
+	// Encrypt aesKeyByte under recipient's transmission key using ElGamal cryptosystem
+	coin.CoinDetailsEncrypted.EncryptedSymKey = transmissionKey.Encrypt(aesKeyPoint).Bytes()
+	if err != nil {
 		return err
 	}
 
 	return nil
 }
 
+// Decrypt decrypts a ciphertext encrypting for coin with recipient's receiving key
 func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
+	// Validate ciphertext
 	if coin.CoinDetailsEncrypted.IsNil() {
-		return errors.New("coin details encrypted is nil")
+		return errors.New("Ciphertext must not be nil")
 	}
-	/*** Decrypt symKeyEncrypted using receiver's receiving key to get symKey ***/
-	// prepare private key for Elgamal cryptosystem
-	privKey := new(ElGamalPrivKey)
-	privKey.Set(&Curve, new(big.Int).SetBytes(viewingKey.Rk))
 
-	// convert byte array to ElGamalCipherText
-	symKeyCipher := new(ElGamalCipherText)
-	symKeyCipher.SetBytes(coin.CoinDetailsEncrypted.SymKeyEncrypted)
-	symKeyPoint := privKey.ElGamalDec(symKeyCipher)
+	// Get receiving key, which is a private key of ElGamal cryptosystem
+	receivingKey := new(ElGamalPrivKey)
+	receivingKey.Set(&Curve, new(big.Int).SetBytes(viewingKey.Rk))
 
-	//fmt.Printf("DECRYPT --------- symKeybyte plaintext : %v\n", symKeyPoint.X.Bytes())
+	// Parse encrypted AES key encoded as an elliptic point from EncryptedSymKey
+	encryptedAESKey := new(ElGamalCiphertext)
+	encryptedAESKey.SetBytes(coin.CoinDetailsEncrypted.EncryptedSymKey)
 
+	// Decrypt encryptedAESKey using recipient's receiving key
+	aesKeyPoint := receivingKey.Decrypt(encryptedAESKey)
 
-	/*** Decrypt Encrypted using receiver's receiving key to get coin details (Randomness) ***/
-	randomness := make([]byte, 32)
-	// Set key to decrypt
-	block, err := aes.NewCipher(symKeyPoint.X.Bytes())
+	// Get AES key
+	aesScheme := new(AES)
+	aesScheme.SetKey(aesKeyPoint.X.Bytes())
+
+	// Decrypt encrypted coin randomness using AES key
+	randomness, err := aesScheme.Decrypt(coin.CoinDetailsEncrypted.EncryptedRandomness)
 	if err != nil {
 		return err
 	}
 
-	iv := coin.CoinDetailsEncrypted.RandomEncrypted[:aes.BlockSize]
-	stream := cipher.NewCTR(block, iv)
-	stream.XORKeyStream(randomness, coin.CoinDetailsEncrypted.RandomEncrypted[aes.BlockSize:])
+	// Decrypt encrypted coin value using AES key
+	value, err := aesScheme.Decrypt(coin.CoinDetailsEncrypted.EncryptedValue)
+	if err != nil {
+		return err
+	}
 
-	//fmt.Printf("DECRYPT --------- randomness plaintext : %v\n", randomness)
-
-	/*** Decrypt Encrypted using receiver's receiving key to get coin details (Value) ***/
-	value := make([]byte, len(coin.CoinDetailsEncrypted.ValueEncrypted[aes.BlockSize:]))
-	stream = cipher.NewCTR(block, iv)
-	stream.XORKeyStream(value, coin.CoinDetailsEncrypted.ValueEncrypted[aes.BlockSize:])
-
-	// assign public key to coin detail
+	// Assign randomness and value to coin details
 	coin.CoinDetails.Randomness = new(big.Int).SetBytes(randomness)
 	coin.CoinDetails.Value = new(big.Int).SetBytes(value).Uint64()
 
@@ -443,48 +414,7 @@ func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 
 //CommitAll commits a coin with 5 attributes (public key, value, serial number derivator, last byte pk, r)
 func (coin *Coin) CommitAll() {
-	values := []*big.Int{big.NewInt(0), big.NewInt(int64(coin.Value)), coin.SNDerivator, new(big.Int).SetBytes([]byte{coin.GetPubKeyLastByte()}), coin.Randomness}
-	//fmt.Printf("coin info: %v\n", values)
+	values := []*big.Int{big.NewInt(0), new(big.Int).SetUint64(coin.Value), coin.SNDerivator, new(big.Int).SetBytes([]byte{coin.GetPubKeyLastByte()}), coin.Randomness}
 	coin.CoinCommitment = PedCom.CommitAll(values)
 	coin.CoinCommitment = coin.CoinCommitment.Add(coin.PublicKey)
 }
-
-//// CommitPublicKey commits a public key's coin
-//func (coin *Coin) CommitPublicKey() []byte {
-//	var values [PCM_CAPACITY-1][]byte
-//	values = [PCM_CAPACITY-1][]byte{coin.PublicKey, nil, nil, coin.Randomness}
-//
-//
-//	var commitment []byte
-//	commitment = append(commitment, PK)
-//	commitment = append(commitment, PedCom.Commit(values)...)
-//	return commitment
-//}
-//
-//// CommitValue commits a value's coin
-//func (coin *Coin) CommitValue() []byte {
-//	var values [PCM_CAPACITY-1][]byte
-//	values = [PCM_CAPACITY-1][]byte{nil, coin.H, nil, coin.Randomness}
-//
-//	var commitment []byte
-//	commitment = append(commitment, VALUE)
-//	commitment = append(commitment, PedCom.Commit(values)...)
-//	return commitment
-//}
-//
-//// CommitSNDerivator commits a serial number's coin
-//func (coin *Coin) CommitSNDerivator() []byte {
-//	var values [PCM_CAPACITY-1][]byte
-//	values = [PCM_CAPACITY-1][]byte{nil, nil, coin.SNDerivator, coin.Randomness}
-//
-//	var commitment []byte
-//	commitment = append(commitment, SND)
-//	commitment = append(commitment, PedCom.Commit(values)...)
-//	return commitment
-//}
-
-// UnspentCoin represents a list of coins to be spent corresponding to spending key
-//type UnspentCoin struct {
-//	SpendingKey SpendingKey
-//	UnspentCoinList map[Coin]big.Int
-//}

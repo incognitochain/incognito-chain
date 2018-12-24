@@ -7,7 +7,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type DividendProposal struct {
@@ -22,8 +22,9 @@ type DividendInfo struct {
 }
 
 type Dividend struct {
-	PayoutID uint64
-	TokenID  *common.Hash
+	PayoutID       uint64
+	TokenID        *common.Hash
+	PaymentAddress privacy.PaymentAddress
 
 	MetadataBase
 }

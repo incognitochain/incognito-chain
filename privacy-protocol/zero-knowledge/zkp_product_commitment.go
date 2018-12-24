@@ -191,7 +191,7 @@ func (wit *PKComProductWitness) Prove() (*PKComProductProof, error) {
 
 	proof.cmA = privacy.PedCom.CommitAtIndex(wit.witnessA, wit.randA, wit.index)
 	D := privacy.PedCom.CommitAtIndex(d, s, wit.index)
-	E := wit.cmB.ScalarMul(d)
+	E := wit.cmB.ScalarMult(d)
 	*proof.D = *D
 	*proof.E = *E
 
@@ -271,15 +271,15 @@ func (pro *PKComProductProof) Verify() bool {
 	}
 	//Check witness 1: xA + D == 	CommitAll(f,z)
 	A := pro.cmA
-	pts_cmp = A.ScalarMul(x).Add(pro.D)
+	pts_cmp = A.ScalarMult(x).Add(pro.D)
 	com1 := privacy.PedCom.CommitAtIndex(pro.f, pro.z, pro.index)
 	if !com1.IsEqual(pts_cmp) {
 		return false
 	}
 
 	//Check witness 2: xB + E == 	CommitAll(f2,z2)
-	com2 := pro.cmB.ScalarMul(pro.f)
-	pts_cmp = privacy.PedCom.G[pro.index].ScalarMul(x).Add(pro.E)
+	com2 := pro.cmB.ScalarMult(pro.f)
+	pts_cmp = privacy.PedCom.G[pro.index].ScalarMult(x).Add(pro.E)
 	if !com2.IsEqual(pts_cmp) {
 		return false
 	}

@@ -66,7 +66,7 @@ func (priKey *SchnPrivKey) KeyGen() {
 //Sign is function which using for sign on hash array by private key
 func (priKey SchnPrivKey) Sign(hash []byte) (*SchnSignature, error) {
 	if len(hash) != 32 {
-		return nil, errors.New("Hash length must be 32 bytes")
+		return nil, NewPrivacyErr(UnexpectedErr, errors.New("Hash length must be 32 bytes"))
 	}
 
 	genPoint := *new(EllipticPoint)
@@ -126,8 +126,6 @@ func (pub SchnPubKey) Verify(signature *SchnSignature, hash []byte) bool {
 		return false
 	}
 
-	//fmt.Printf("VERIFY 2 ------ PUBLICKEY: %+v\n", pub.PK)
-
 	rv := new(EllipticPoint)
 	rv.X, rv.Y = Curve.ScalarMult(pub.G.X, pub.G.Y, signature.S1.Bytes())
 	tmp := new(EllipticPoint)
@@ -160,8 +158,6 @@ func (sig *SchnSignature) ToBytes() []byte {
 		temp = append([]byte{0}, temp...)
 	}
 	res = append(res, temp...)
-	//res := append(sig.E.Bytes(), sig.S1.Bytes()...)
-	//res = append(res, sig.S2.Bytes()...)
 	return res
 }
 

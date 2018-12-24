@@ -1,6 +1,11 @@
 package main
 
-import "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+import (
+	"fmt"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"math/big"
+)
 
 func main() {
 
@@ -57,7 +62,7 @@ func main() {
 
 	/*****************zkp.TestPKComZeroOne()****************/
 
-	zkp.TestPKOneOfMany()
+	//zkp.TestPKOneOfMany()
 
 	//zkp.TestPKComMultiRange()
 
@@ -184,36 +189,36 @@ func main() {
 
 	/*----------------- TEST ENCRYPT/DECRYPT COIN -----------------*/
 
-	//coin := new(privacy.OutputCoin)
-	//coin.CoinDetails = new(privacy.Coin)
-	//coin.CoinDetails.Randomness = privacy.RandInt()
-	//coin.CoinDetails.Value = 10
-	//
-	//fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
-	//
-	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	//keySetSender := cashec.KeySet{}
-	//keySetSender.ImportFromPrivateKey(&spendingKey)
-	//coin.CoinDetails.PublicKey, _ = privacy.DecompressKey(keySetSender.PaymentAddress.Pk)
-	//
-	//err := coin.Encrypt(keySetSender.PaymentAddress.Tk)
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
-	//
-	//coinByte := coin.Bytes()
-	//
-	//fmt.Printf("Coin encrypt bytes: %v\n", coinByte)
-	//coin2 := new(privacy.OutputCoin)
-	//err = coin2.SetBytes(coinByte)
-	//if err != nil {
-	//	fmt.Printf("Coin encrypt setbytes: %+v\n", coin2)
-	//}
-	//
-	//coin.Decrypt(keySetSender.ReadonlyKey)
-	//
-	//fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
-	//fmt.Printf("DEcrypted Plain text 1: Value : %v\n", coin.CoinDetails.Value)
+	coin := new(privacy.OutputCoin)
+	coin.CoinDetails = new(privacy.Coin)
+	coin.CoinDetails.Randomness = privacy.RandInt()
+	coin.CoinDetails.Value = 10
+
+	fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+
+	spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	keySetSender := cashec.KeySet{}
+	keySetSender.ImportFromPrivateKey(&spendingKey)
+	coin.CoinDetails.PublicKey, _ = privacy.DecompressKey(keySetSender.PaymentAddress.Pk)
+
+	err := coin.Encrypt(keySetSender.PaymentAddress.Tk)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	coinByte := coin.Bytes()
+
+	fmt.Printf("Coin encrypt bytes: %v\n", coinByte)
+	coin2 := new(privacy.OutputCoin)
+	err = coin2.SetBytes(coinByte)
+	if err != nil {
+		fmt.Printf("Coin encrypt setbytes: %+v\n", coin2)
+	}
+
+	coin.Decrypt(keySetSender.ReadonlyKey)
+
+	fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+	fmt.Printf("DEcrypted Plain text 1: Value : %v\n", coin.CoinDetails.Value)
 
 	/*----------------- TEST NDH -----------------*/
 	//fmt.Println(zkp.TestProofIsZero())
@@ -251,7 +256,7 @@ func main() {
 
 	// var db database.DatabaseInterface
 
-	// tx, err := transaction.CreateTxSalary(10, &keySet.PaymentAddress, &keySet.PrivateKey, db)
+	// tx, err := transaction.InitTxSalary(10, &keySet.PaymentAddress, &keySet.PrivateKey, db)
 	// if err != nil{
 	// 	fmt.Println(err)
 	// }
@@ -336,18 +341,89 @@ func main() {
 
 	/*----------------- TEST AddPaddingBigInt -----------------*/
 
-	//num := privacy.RandBytes(30)
-	//numInt := new(big.Int).SetBytes(num)
-	//fmt.Printf("Num int before adding padding: %v\n", numInt.Bytes())
+
+	//keySet := new(cashec.KeySet)
+	//spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	//keySet.ImportFromPrivateKey(&spendingKey)
 	//
-	//tmp :=privacy.AddPaddingBigInt(numInt,32)
-	//fmt.Printf("Num int after adding padding: %v\n", tmp)
+	//coin := new(privacy.Coin)
+	//coin.PublicKey, _ = privacy.DecompressKey(keySet.PaymentAddress.Pk)
+	//
+	//coin.Value = 10
+	//coin.SNDerivator = privacy.RandInt()
+	//coin.Randomness = privacy.RandInt()
+	//coin.CommitAll()
+	//
+	//// recalculate coin commitment
+	//fmt.Printf("coin info: %+v\n", coin)
+	//com := new(privacy.EllipticPoint)
+	//com.X, com.Y = big.NewInt(0), big.NewInt(0)
+	//com.X.Set(coin.PublicKey.X)
+	//com.Y.Set(coin.PublicKey.Y)
+	//fmt.Printf("g_sK : %+v\n", privacy.PedCom.G[privacy.SK])
+	//fmt.Printf("g^sK : %+v\n", com)
+	//
+	//tmp := new(privacy.EllipticPoint)
+	//tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
+	//tmp.X.Set(privacy.PedCom.G[privacy.VALUE].X)
+	//tmp.Y.Set(privacy.PedCom.G[privacy.VALUE].Y)
+	//tmp = tmp.ScalarMult(new(big.Int).SetUint64(coin.Value))
+	//com = com.Add(tmp)
+	//fmt.Printf("g_VALUE : %+v\n", privacy.PedCom.G[privacy.VALUE])
+	//fmt.Printf("g^Value : %+v\n", tmp)
+	//
+	//tmp = new(privacy.EllipticPoint)
+	//tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
+	//tmp.X.Set(privacy.PedCom.G[privacy.SND].X)
+	//tmp.Y.Set(privacy.PedCom.G[privacy.SND].Y)
+	//tmp = tmp.ScalarMult(coin.SNDerivator)
+	//com = com.Add(tmp)
+	//fmt.Printf("g_SND : %+v\n", privacy.PedCom.G[privacy.SND])
+	//fmt.Printf("g^SND : %+v\n", tmp)
+	//
+	//tmp = new(privacy.EllipticPoint)
+	//tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
+	//tmp.X.Set(privacy.PedCom.G[privacy.SHARDID].X)
+	//tmp.Y.Set(privacy.PedCom.G[privacy.SHARDID].Y)
+	//tmp = tmp.ScalarMult(new(big.Int).SetBytes([]byte{coin.GetPubKeyLastByte()}))
+	//com = com.Add(tmp)
+	//fmt.Printf("g_SHARDID : %+v\n", privacy.PedCom.G[privacy.SHARDID])
+	//fmt.Printf("g^Sharid : %+v\n", tmp)
+	//
+	//tmp = new(privacy.EllipticPoint)
+	//tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
+	//tmp.X.Set(privacy.PedCom.G[privacy.RAND].X)
+	//tmp.Y.Set(privacy.PedCom.G[privacy.RAND].Y)
+	//tmp = tmp.ScalarMult(coin.Randomness)
+	//com = com.Add(tmp)
+	//fmt.Printf("g_RAND : %+v\n", privacy.PedCom.G[privacy.RAND])
+	//fmt.Printf("g^Randomness : %+v\n", tmp)
+	//
+	//if !com.IsEqual(coin.CoinCommitment){
+	//	fmt.Printf("wrong")
+	//}
 
-	//n := "ssssssssss"
-	//fmt.Printf("Lem of n: %v\n", len(n))
-	//fmt.Printf("Lem of n: %v\n", len(n))
+	//point := new(privacy.EllipticPoint)
+	//point.Randomize()
+	//fmt.Println(point)
 
-	//fmt.Println(zkp.EstimateMultiRangeProof(10))
+	//fmt.Println(privacy.TestElGamalPubKeyEncryption())
+
+	//aes := new(privacy.AES)
+	//key := privacy.RandInt().Bytes()
+	//
+	//fmt.Printf("Key : %v\n", len(key))
+	//aes.SetKey(key)
+	//ciphertext, err := aes.Encrypt([]byte{123})
+	//if err != nil{
+	//	fmt.Println(err)
+	//}
+	//
+	//
+	//
+	//fmt.Printf("Ciphertext: %v\n", ciphertext)
+	//plaintext, _ := aes.Decrypt(ciphertext)
+	//fmt.Printf("Plaintext: %v\n", plaintext)
 
 
 }

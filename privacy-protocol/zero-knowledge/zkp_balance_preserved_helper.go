@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/minio/blake2b-simd"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/pkg/errors"
 	"math"
 	"math/big"
 	"strconv"
@@ -100,14 +101,14 @@ func GenerateNewParams(G, H []*privacy.EllipticPoint, x *big.Int, L, R, P *priva
 	xinv := new(big.Int).ModInverse(x, privacy.Curve.Params().N)
 
 	for i := range Gprime {
-		Gprime[i] = G[i].ScalarMul(xinv).Add(G[i+nprime].ScalarMul(x))
-		Hprime[i] = H[i].ScalarMul(x).Add(H[i+nprime].ScalarMul(xinv))
+		Gprime[i] = G[i].ScalarMult(xinv).Add(G[i+nprime].ScalarMult(x))
+		Hprime[i] = H[i].ScalarMult(x).Add(H[i+nprime].ScalarMult(xinv))
 	}
 
 	x2 := new(big.Int).Mod(new(big.Int).Mul(x, x), privacy.Curve.Params().N)
 	xinv2 := new(big.Int).ModInverse(x2, privacy.Curve.Params().N)
 
-	Pprime := L.ScalarMul(x2).Add(P).Add(R.ScalarMul(xinv2)) // x^2 * L + P + xinv^2 * R
+	Pprime := L.ScalarMult(x2).Add(P).Add(R.ScalarMult(xinv2)) // x^2 * L + P + xinv^2 * C1
 	return Gprime, Hprime, Pprime
 }
 
@@ -128,12 +129,12 @@ func InnerProductProveSub(proof InnerProdArg, G, H []*privacy.EllipticPoint, a [
 	nprime := len(a) / 2
 	cl := InnerProduct(a[:nprime], b[nprime:]) // either this line
 	cr := InnerProduct(a[nprime:], b[:nprime]) // or this line
-	L := TwoVectorPCommitWithGens(G[nprime:], H[:nprime], a[:nprime], b[nprime:]).Add(u.ScalarMul(cl))
-	R := TwoVectorPCommitWithGens(G[:nprime], H[nprime:], a[nprime:], b[:nprime]).Add(u.ScalarMul(cr))
+	L := TwoVectorPCommitWithGens(G[nprime:], H[:nprime], a[:nprime], b[nprime:]).Add(u.ScalarMult(cl))
+	R := TwoVectorPCommitWithGens(G[:nprime], H[nprime:], a[nprime:], b[:nprime]).Add(u.ScalarMult(cr))
 	proof.L[curIt] = L
 	proof.R[curIt] = R
 
-	// prover sends L & R and gets a challenge
+	// prover sends L & C1 and gets a challenge
 	s256 := blake2b.Sum256([]byte(
 		L.X.String() + L.Y.String() +
 			R.X.String() + R.Y.String()))
@@ -172,8 +173,8 @@ func InnerProductProve(a []*big.Int, b []*big.Int, c *big.Int, P, U *privacy.Ell
 
 	runningProof.Challenges[loglen] = new(big.Int).SetBytes(x[:])
 
-	Pprime := P.Add(U.ScalarMul(new(big.Int).Mul(new(big.Int).SetBytes(x[:]), c)))
-	ux := U.ScalarMul(new(big.Int).SetBytes(x[:]))
+	Pprime := P.Add(U.ScalarMult(new(big.Int).Mul(new(big.Int).SetBytes(x[:]), c)))
+	ux := U.ScalarMult(new(big.Int).SetBytes(x[:]))
 	//fmt.Printf("Prover Pprime value to run sub off of: %s\n", Pprime)
 	return InnerProductProveSub(runningProof, G, H, a, b, ux, Pprime)
 }
@@ -191,11 +192,11 @@ ipp : the proof
 func InnerProductVerify(c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy.EllipticPoint, ipp InnerProdArg) bool {
 	s1 := blake2b.Sum256([]byte(P.X.String() + P.Y.String()))
 	chal1 := new(big.Int).SetBytes(s1[:])
-	ux := U.ScalarMul(chal1)
+	ux := U.ScalarMult(chal1)
 	curIt := len(ipp.Challenges) - 1
 
 	if ipp.Challenges[curIt].Cmp(chal1) != 0 {
-		fmt.Println("IPVerify - Initial Challenge Failed")
+		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("IPVerify - Initial Challenge Failed"))
 		return false
 	}
 
@@ -203,14 +204,14 @@ func InnerProductVerify(c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy
 
 	Gprime := G
 	Hprime := H
-	Pprime := P.Add(ux.ScalarMul(c)) // line 6 from protocol 1
+	Pprime := P.Add(ux.ScalarMult(c)) // line 6 from protocol 1
 	//fmt.Printf("Zero Commitment value with u^cx: %s \n", Pprime)
 
 	for curIt >= 0 {
 		Lval := ipp.L[curIt]
 		Rval := ipp.R[curIt]
 
-		// prover sends L & R and gets a challenge
+		// prover sends L & C1 and gets a challenge
 		s256 := blake2b.Sum256([]byte(
 			Lval.X.String() + Lval.Y.String() +
 				Rval.X.String() + Rval.Y.String()))
@@ -218,7 +219,7 @@ func InnerProductVerify(c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy
 		chal2 := new(big.Int).SetBytes(s256[:])
 
 		if ipp.Challenges[curIt].Cmp(chal2) != 0 {
-			fmt.Println("IPVerify - Challenge verification failed at index " + strconv.Itoa(curIt))
+			privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("IPVerify - Challenge verification failed at index " + strconv.Itoa(curIt)))
 			return false
 		}
 
@@ -227,15 +228,13 @@ func InnerProductVerify(c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy
 	}
 	ccalc := new(big.Int).Mod(new(big.Int).Mul(ipp.A, ipp.B), privacy.Curve.Params().N)
 
-	Pcalc1 := Gprime[0].ScalarMul(ipp.A)
-	Pcalc2 := Hprime[0].ScalarMul(ipp.B)
-	Pcalc3 := ux.ScalarMul(ccalc)
+	Pcalc1 := Gprime[0].ScalarMult(ipp.A)
+	Pcalc2 := Hprime[0].ScalarMult(ipp.B)
+	Pcalc3 := ux.ScalarMult(ccalc)
 	Pcalc := Pcalc1.Add(Pcalc2).Add(Pcalc3)
 
 	if !Pprime.IsEqual(Pcalc) {
-		fmt.Println("IPVerify - Final Commitment checking failed")
-		fmt.Printf("Final Pprime value: %s \n", Pprime)
-		fmt.Printf("Calculated Pprime value to check against: %s \n", Pcalc)
+		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("IPVerify - Final Commitment checking failed"))
 		return false
 	}
 
@@ -250,7 +249,7 @@ we replace n separate exponentiations with a single ScalarMulPointi-exponentiati
 func InnerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy.EllipticPoint, ipp InnerProdArg) bool {
 	s1 := blake2b.Sum256([]byte(P.X.String() + P.Y.String()))
 	chal1 := new(big.Int).SetBytes(s1[:])
-	ux := U.ScalarMul(chal1)
+	ux := U.ScalarMult(chal1)
 	curIt := len(ipp.Challenges) - 1
 
 	// check all challenges
@@ -260,7 +259,7 @@ func InnerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*pri
 	for j := curIt - 1; j >= 0; j-- {
 		Lval := ipp.L[j]
 		Rval := ipp.R[j]
-		// prover sends L & R and gets a challenge
+		// prover sends L & C1 and gets a challenge
 		s256 := blake2b.Sum256([]byte(
 			Lval.X.String() + Lval.Y.String() +
 				Rval.X.String() + Rval.Y.String()))
@@ -273,13 +272,13 @@ func InnerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*pri
 	// begin computing
 
 	curIt -= 1
-	Pprime := P.Add(ux.ScalarMul(c))
+	Pprime := P.Add(ux.ScalarMult(c))
 
 	tmp1 := RangeProofParams.Zero()
 	for j := curIt; j >= 0; j-- {
 		x2 := new(big.Int).Exp(ipp.Challenges[j], big.NewInt(2), privacy.Curve.Params().N)
 		x2i := new(big.Int).ModInverse(x2, privacy.Curve.Params().N)
-		tmp1 = ipp.L[j].ScalarMul(x2).Add(ipp.R[j].ScalarMul(x2i)).Add(tmp1)
+		tmp1 = ipp.L[j].ScalarMult(x2).Add(ipp.R[j].ScalarMult(x2i)).Add(tmp1)
 	}
 	rhs := Pprime.Add(tmp1)
 
@@ -301,7 +300,7 @@ func InnerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*pri
 	}
 
 	ccalc := new(big.Int).Mod(new(big.Int).Mul(ipp.A, ipp.B), privacy.Curve.Params().N)
-	lhs := TwoVectorPCommitWithGens(G, H, ScalarVectorMul(sScalars, ipp.A), ScalarVectorMul(invsScalars, ipp.B)).Add(ux.ScalarMul(ccalc))
+	lhs := TwoVectorPCommitWithGens(G, H, ScalarVectorMul(sScalars, ipp.A), ScalarVectorMul(invsScalars, ipp.B)).Add(ux.ScalarMult(ccalc))
 
 	if !rhs.IsEqual(lhs) {
 		return false
@@ -312,9 +311,7 @@ func InnerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*pri
 // The length here always has to be a power of two
 func InnerProduct(a []*big.Int, b []*big.Int) *big.Int {
 	if len(a) != len(b) {
-		fmt.Println("InnerProduct: Uh oh! Arrays not of the same length")
-		fmt.Printf("len(a): %d\n", len(a))
-		fmt.Printf("len(b): %d\n", len(b))
+		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("InnerProduct: Uh oh! Arrays not of the same length"))
 	}
 
 	c := big.NewInt(0)
@@ -329,9 +326,7 @@ func InnerProduct(a []*big.Int, b []*big.Int) *big.Int {
 
 func VectorAdd(v []*big.Int, w []*big.Int) []*big.Int {
 	if len(v) != len(w) {
-		fmt.Println("VectorAddPoint: Uh oh! Arrays not of the same length")
-		fmt.Printf("len(v): %d\n", len(v))
-		fmt.Printf("len(w): %d\n", len(w))
+		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("VectorAddPoint: Uh oh! Arrays not of the same length"))
 	}
 	result := make([]*big.Int, len(v))
 	for i := range v {
@@ -342,9 +337,7 @@ func VectorAdd(v []*big.Int, w []*big.Int) []*big.Int {
 
 func VectorHadamard(v, w []*big.Int) []*big.Int {
 	if len(v) != len(w) {
-		fmt.Println("VectorHadamard: Uh oh! Arrays not of the same length")
-		fmt.Printf("len(v): %d\n", len(w))
-		fmt.Printf("len(w): %d\n", len(v))
+		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("VectorHadamard: Uh oh! Arrays not of the same length"))
 	}
 
 	result := make([]*big.Int, len(v))
@@ -498,7 +491,7 @@ func TwoVectorPCommitWithGens(G, H []*privacy.EllipticPoint, a, b []*big.Int) *p
 	for i := 0; i < len(G); i++ {
 		modA := new(big.Int).Mod(a[i], privacy.Curve.Params().N)
 		modB := new(big.Int).Mod(b[i], privacy.Curve.Params().N)
-		commitment = commitment.Add(G[i].ScalarMul(modA)).Add(H[i].ScalarMul(modB))
+		commitment = commitment.Add(G[i].ScalarMult(modA)).Add(H[i].ScalarMult(modB))
 	}
 	return commitment
 }

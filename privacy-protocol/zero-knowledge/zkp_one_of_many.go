@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
+	"github.com/pkg/errors"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/privacy-protocol"
@@ -123,11 +124,6 @@ func (pro *PKOneOfManyProof) Bytes() []byte {
 	var bytes []byte
 	nBytes := 0
 
-	//// save N to the first byte
-	//bytes = append(bytes, byte(N))
-	//// save n to the second byte
-	//bytes = append(bytes, byte(n))
-
 	// convert array cl to bytes array
 	for i := 0; i < n; i++ {
 		bytes = append(bytes, pro.cl[i].Compress()...)
@@ -188,9 +184,6 @@ func (pro *PKOneOfManyProof) Bytes() []byte {
 	// append index
 	bytes = append(bytes, pro.index)
 	nBytes += 1
-
-	//fmt.Printf("Len of proof bytes: %v\n", len(bytes))
-	//fmt.Printf("Len of proof bytes: %v\n", nBytes)
 
 	return bytes
 }
@@ -291,7 +284,6 @@ func (pro *PKOneOfManyProof) SetBytes(bytes []byte) error {
 
 	//get index
 	pro.index = bytes[len(bytes)-1]
-	//fmt.Printf("proof index setbytes: %v\n", pro.index)
 	return nil
 }
 
@@ -308,19 +300,19 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	//}
 
 	if N != privacy.CMRingSize {
-		return nil, fmt.Errorf("the number of Commitment list's elements must be equal to CMRingSize")
+		return nil,
+		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("the number of Commitment list's elements must be equal to CMRingSize"))
 	}
-
 	n := privacy.CMRingSizeExp
 
 	// Check indexIsZero
 	if wit.indexIsZero > uint64(N) || wit.indexIsZero < 0 {
-		return nil, fmt.Errorf("Index is zero must be Index in list of commitments")
+		return nil, privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("Index is zero must be Index in list of commitments"))
 	}
 
 	// Check Index
 	if wit.index < privacy.SK || wit.index > privacy.RAND {
-		return nil, fmt.Errorf("Index must be between index SK and index RAND")
+		return nil, privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("Index must be between index SK and index RAND"))
 	}
 
 	// represent indexIsZero in binary
@@ -389,7 +381,7 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 		for i := 0; i < N; i++ {
 			iBinary := privacy.ConvertIntToBinary(i, n)
 			pik := GetCoefficient(iBinary, k, n, a, indexIsZeroBinary)
-			res = res.Add(wit.commitments[i].ScalarMul(pik))
+			res = res.Add(wit.commitments[i].ScalarMult(pik))
 		}
 
 		comZero := privacy.PedCom.CommitAtIndex(big.NewInt(0), u[k], wit.index)
@@ -470,7 +462,7 @@ func (pro *PKOneOfManyProof) Verify() bool {
 	//	n++
 	//}
 	if N != privacy.CMRingSize {
-		fmt.Errorf("the number of Commitment list's elements must be equal to CMRingSize")
+		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("the number of Commitment list's elements must be equal to CMRingSize"))
 		return false
 	}
 	n := privacy.CMRingSizeExp
@@ -485,37 +477,21 @@ func (pro *PKOneOfManyProof) Verify() bool {
 
 	for i := 0; i < n; i++ {
 		// Check cl^x * ca = Com(f, za)
-		//leftPoint1 := new(privacy.EllipticPoint)
-		//leftPoint1.X, leftPoint1.Y = privacy.Curve.ScalarMult(pro.cl[i].X, pro.cl[i].Y, x.Bytes())
-		//leftPoint1.X, leftPoint1.Y = privacy.Curve.Add(leftPoint1.X, leftPoint1.Y, pro.ca[i].X, pro.ca[i].Y)
-		leftPoint1 := pro.cl[i].ScalarMul(x).Add(pro.ca[i])
-
+		leftPoint1 := pro.cl[i].ScalarMult(x).Add(pro.ca[i])
 		rightPoint1 := privacy.PedCom.CommitAtIndex(pro.f[i], pro.za[i], pro.index)
-		fmt.Printf("Left point 1 X: %v\n", leftPoint1.X)
-		fmt.Printf("Right point 1 X: %v\n", rightPoint1.X)
-		fmt.Printf("Left point 1 Y: %v\n", leftPoint1.Y)
-		fmt.Printf("Right point 1 Y: %v\n", rightPoint1.Y)
 
 		if !leftPoint1.IsEqual(rightPoint1) {
 			return false
 		}
 
 		// Check cl^(x-f) * cb = Com(0, zb)
-
 		xSubF := new(big.Int)
 		xSubF.Sub(x, pro.f[i])
 		xSubF.Mod(xSubF, privacy.Curve.Params().N)
 
-		leftPoint2 := pro.cl[i].ScalarMul(xSubF).Add(pro.cb[i])
-		//	new(privacy.EllipticPoint)
-		//leftPoint2.X, leftPoint2.Y = privacy.Curve.ScalarMult(pro.cl[i].X, pro.cl[i].Y, xSubF.Bytes())
-		//leftPoint2.X, leftPoint2.Y = privacy.Curve.Add(leftPoint2.X, leftPoint2.Y, pro.cb[i].X, pro.cb[i].Y)
+		leftPoint2 := pro.cl[i].ScalarMult(xSubF).Add(pro.cb[i])
 		rightPoint2 := privacy.PedCom.CommitAtIndex(big.NewInt(0), pro.zb[i], pro.index)
 
-		//fmt.Printf("Left point 2 X: %v\n", leftPoint2.X)
-		//fmt.Printf("Right point 2 X: %v\n", rightPoint2.X)
-		//fmt.Printf("Left point 2 Y: %v\n", leftPoint2.Y)
-		//fmt.Printf("Right point 2 Y: %v\n", rightPoint2.Y)
 
 		if !leftPoint2.IsEqual(rightPoint2) {
 			return false

@@ -3,31 +3,11 @@ package privacy
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
+	"github.com/pkg/errors"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
 )
-
-// const (
-// const (
-// 	P = 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF
-// 	N = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551
-// 	B = 0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B
-// )
-
-// These constants define the lengths of serialized public keys.
-//const (
-//	PubKeyBytesLenCompressed      = 33
-//	pubkeyCompressed         byte = 0x2 // y_bit + x coord
-//)
-
-// fmt.Printf("N: %v\n", curve.N)
-// fmt.Printf("P: %v\n", curve.P)
-// fmt.Printf("B: %v\n", curve.B)
-// fmt.Printf("Gx: %v\n", curve.Gx)
-// fmt.Printf("Gy: %v\n", curve.Gy)
-// fmt.Printf("BitSize: %v\n", curve.BitSize)
 
 // SpendingKey 32 bytes
 type SpendingKey []byte
@@ -95,9 +75,7 @@ func GenerateReceivingKey(spendingKey []byte) ReceivingKey {
 // Tk : 33 bytes
 func GenerateTransmissionKey(receivingKey []byte) TransmissionKey {
 	var p EllipticPoint
-
 	p.X, p.Y = Curve.ScalarBaseMult(receivingKey)
-	//fmt.Printf("Transmission key is not compressed: %+v\n\n", p)
 	transmissionKey := p.Compress()
 	return transmissionKey
 }
@@ -143,7 +121,7 @@ func isOdd(a *big.Int) bool {
 // DecompressKey decompress public key to elliptic point
 func DecompressKey(pubKeyStr []byte) (pubkey *EllipticPoint, err error) {
 	if len(pubKeyStr) == 0 || len(pubKeyStr) != 33 {
-		return nil, fmt.Errorf("pubkey string len is wrong")
+		return nil, NewPrivacyErr(UnexpectedErr, errors.New("pubkey string len is wrong"))
 	}
 
 	pubkey = new(EllipticPoint)
@@ -154,13 +132,13 @@ func DecompressKey(pubKeyStr []byte) (pubkey *EllipticPoint, err error) {
 	}
 
 	if pubkey.X.Cmp(Curve.Params().P) >= 0 {
-		return nil, fmt.Errorf("pubkey X parameter is >= to P")
+		return nil, NewPrivacyErr(UnexpectedErr, errors.New("pubkey X parameter is >= to P"))
 	}
 	if pubkey.Y.Cmp(Curve.Params().P) >= 0 {
-		return nil, fmt.Errorf("pubkey Y parameter is >= to P")
+		return nil, NewPrivacyErr(UnexpectedErr, errors.New("pubkey Y parameter is >= to P"))
 	}
 	if !Curve.Params().IsOnCurve(pubkey.X, pubkey.Y) {
-		return nil, fmt.Errorf("pubkey isn't on P256 curve")
+		return nil, NewPrivacyErr(UnexpectedErr, errors.New("pubkey isn't on P256 curve"))
 	}
 	return pubkey, nil
 }
