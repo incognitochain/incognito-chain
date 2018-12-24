@@ -893,16 +893,14 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	if err != nil {
 		return nil, err
 	}
-	// privacy/zeroknowledge/openings.go
+
 	// Proving that sum of all input values is equal to sum of all output values
 	proof.ComZeroProof, err = wit.ComZeroWitness.Prove()
 	if err != nil {
 		return nil, err
 	}
 
-	//Calculate new coin commitment
-
-	fmt.Println("Privacy log: PROVING DONE!!!")
+	privacy.Logger.Log.Info("Privacy log: PROVING DONE!!!")
 	return proof, nil
 }
 

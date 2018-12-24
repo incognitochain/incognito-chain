@@ -56,7 +56,6 @@ func GenerateSpendingKey(seed []byte) SpendingKey {
 func GeneratePublicKey(spendingKey []byte) PublicKey {
 	var p EllipticPoint
 	p.X, p.Y = Curve.ScalarBaseMult(spendingKey)
-	//fmt.Printf("Public key is not compressed: %+v\n\n", p)
 	publicKey := p.Compress()
 
 	return publicKey
@@ -66,8 +65,7 @@ func GeneratePublicKey(spendingKey []byte) PublicKey {
 // Rk : 32 bytes
 func GenerateReceivingKey(spendingKey []byte) ReceivingKey {
 	hash := sha256.Sum256(spendingKey)
-	receivingKey := make([]byte, 32)
-	copy(receivingKey, hash[:])
+	receivingKey := hash[:]
 	return receivingKey
 }
 
@@ -95,24 +93,6 @@ func GeneratePaymentAddress(spendingKey []byte) PaymentAddress {
 	paymentAddress.Tk = GenerateTransmissionKey(GenerateReceivingKey(spendingKey))
 	return paymentAddress
 }
-
-//// FromPointToByteArray converts an elliptic point to byte array
-//func FromPointToByteArray(p EllipticPoint) []byte {
-//	var pointByte []byte
-//	x := p.X.Bytes()
-//	y := p.Y.Bytes()
-//	pointByte = append(pointByte, x...)
-//	pointByte = append(pointByte, y...)
-//	return pointByte
-//}
-//
-//// FromByteArrayToPoint converts a byte array to elliptic point
-//func FromByteArrayToPoint(pointByte []byte) EllipticPoint {
-//	point := new(EllipticPoint)
-//	point.X = new(big.Int).SetBytes(pointByte[0:32])
-//	point.Y = new(big.Int).SetBytes(pointByte[32:64])
-//	return *point
-//}
 
 func isOdd(a *big.Int) bool {
 	return a.Bit(0) == 1

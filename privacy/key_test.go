@@ -22,13 +22,47 @@ func TestPAdd1Div4(t *testing.T) {
 	res = PAdd1Div4(new(big.Int).SetInt64(123))
 	expectedResult := new(big.Int).SetInt64(31)
 	assert.Equal(t, expectedResult, res)
-
 }
 
-// func TestGetCurve(t *testing.T) {
-// 	curve1 := GetCurve()
-// 	curve2 := GetCurve()
-// 	fmt.Printf("Pk curve 1: %v\n", &curve1)
-// 	fmt.Printf("Pk curve 2: %v\n", &curve2)
-// 	assert.Equal(t, &curve1, &curve2)
-// }
+func TestGenerateKey(t *testing.T){
+	spendingKey := GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	fmt.Printf("\nSpending key: %v\n", spendingKey)
+	lenSK := len(spendingKey)
+
+	//publicKey is compressed
+	publicKey := GeneratePublicKey(spendingKey)
+	fmt.Printf("\nPublic key: %v\n", publicKey)
+	lenPK := len(publicKey)
+
+	point, err := DecompressKey(publicKey)
+	if err != nil {
+	fmt.Println(err)
+	}
+	fmt.Printf("Public key decompress: %v\n", point)
+
+	receivingKey := GenerateReceivingKey(spendingKey)
+	fmt.Printf("\nReceiving key: %v\n", receivingKey)
+	lenRK := len(receivingKey)
+	fmt.Println(len(receivingKey))
+
+	transmissionKey := GenerateTransmissionKey(receivingKey)
+	fmt.Printf("\nTransmission key: %v\n", transmissionKey)
+	lenTK := len(transmissionKey)
+
+	point, err = DecompressKey(transmissionKey)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("Transmission key point decompress: %+v\n ", point)
+
+	paymentAddress := GeneratePaymentAddress(spendingKey)
+	lenPaymentAddr := len(paymentAddress.ToBytes())
+
+	assert.Equal(t, lenSK, 32)
+	assert.Equal(t, lenPK, CompressedPointSize)
+	assert.Equal(t, lenRK, 32)
+	assert.Equal(t, lenTK, CompressedPointSize)
+	assert.Equal(t, lenPaymentAddr, 66)
+}
+
+
