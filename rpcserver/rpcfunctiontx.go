@@ -9,7 +9,7 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
@@ -172,7 +172,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 		}
 	}
 
-	//missing flag for privacy-protocol
+	//missing flag for privacy
 	// false by default
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
 	tx := transaction.Tx{}
@@ -674,7 +674,7 @@ func (self RpcServer) handleRandomCommitments(params interface{}, closeChan <-ch
 	constantTokenID.SetBytes(common.ConstantID[:])
 	commitmentIndexs, myCommitmentIndexs := self.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, chainIdSender, constantTokenID)
 	result := make(map[string]interface{})
-	result["CommitmentIndexs"] = commitmentIndexs
+	result["CommitmentIndices"] = commitmentIndexs
 	result["MyCommitmentIndexs"] = myCommitmentIndexs
 
 	return result, nil

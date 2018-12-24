@@ -7,8 +7,8 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/transaction"
 	"math/big"
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/common/base58"
 )
 
