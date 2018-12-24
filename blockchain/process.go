@@ -25,66 +25,25 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	blockHash := block.Hash().String()
 	Logger.log.Infof("Processing block %+v", blockHash)
 
-	// Insert the block into the database if it's not already there.  Even
-	// though it is possible the block will ultimately fail to connect, it
-	// has already passed all proof-of-work and validity tests which means
-	// it would be prohibitively expensive for an attacker to fill up the
-	// disk with a bunch of blocks that fail to connect.  This is necessary
-	// since it allows block download to be decoupled from the much more
-	// expensive connection logic.  It also has some other nice properties
-	// such as making blocks that never become part of the main chain or
-	// blocks that fail to connect available for further analysis.
 	if self.config.Light {
-		/*Logger.log.Infof("Storing Block Header of Block %+v", blockHash)
 		err := self.StoreBlockHeader(block)
 		if err != nil {
 			return NewBlockChainError(UnExpectedError, err)
 		}
-
-		Logger.log.Infof("Fetch Block %+v to get unspent tx of all accoutns in wallet", blockHash)
-		for _, account := range self.config.Wallet.MasterAccount.Child {
-			unspentTxs, err1 := self.GetListUnspentTxByKeysetInBlock(&account.Key.KeySet, block.Header.ChainID, block.Transactions, true)
-			if err1 != nil {
-				return NewBlockChainError(UnExpectedError, err1)
-			}
-
-			for chainId, txs := range unspentTxs {
-				for _, unspent := range txs {
-					var txIndex = -1
-					// Iterate to get TxNormal index of transaction in a block
-					for i, _ := range block.Transactions {
-						txHash := unspent.Hash().String()
-						blockTxHash := block.Transactions[i].(*transaction.Tx).Hash().String()
-						if strings.Compare(txHash, blockTxHash) == 0 {
-							txIndex = i
-							fmt.Println("Found Transaction i", unspent.Hash(), i)
-							break
-						}
-					}
-					if txIndex == -1 {
-						return NewBlockChainError(UnExpectedError, err)
-					}
-					err := self.StoreUnspentTransactionLightMode(&account.Key.KeySet.PrivateKey, chainId, block.Header.Height, txIndex, &unspent)
-					if err != nil {
-						return NewBlockChainError(UnExpectedError, err)
-					}
-				}
-			}
-		}*/
 	} else {
+		// save full data of block
 		err := self.StoreBlock(block)
 		if err != nil {
 			return NewBlockChainError(UnExpectedError, err)
 		}
+
+		// save full data of tx tracking(which block and index in block)
 		if len(block.Transactions) < 1 {
 			Logger.log.Infof("No transaction in this block")
 		} else {
 			Logger.log.Infof("Number of transaction in this block %+v", len(block.Transactions))
 		}
 		for index, tx := range block.Transactions {
-			if tx.GetType() == common.TxCustomTokenPrivacyType {
-				_ = 1
-			}
 			err := self.StoreTransactionIndex(tx.Hash(), block.Hash(), index)
 			if err != nil {
 				Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
@@ -99,7 +58,8 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
-	// fetch serialNumbers and commitments(utxo) from block and save
+
+	// fetch data in each tx of block and save into db
 	err = self.CreateAndSaveTxViewPointFromBlock(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)

@@ -364,13 +364,13 @@ func (self *BlockChain) StoreBlockHeader(block *Block) error {
 /*
 	Store Transaction in Light mode
 */
-func (self *BlockChain) StoreUnspentTransactionLightMode(privatKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx *transaction.Tx) error {
+/*func (self *BlockChain) StoreUnspentTransactionLightMode(privatKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx *transaction.Tx) error {
 	txJsonBytes, err := json.Marshal(tx)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, errors.New("json.Marshal"))
 	}
 	return self.config.DataBase.StoreTransactionLightMode(privatKey, chainId, blockHeight, txIndex, *(tx.Hash()), txJsonBytes)
-}
+}*/
 
 /*
 Save index(height) of block by block hash
@@ -875,10 +875,19 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 }
 
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
+// need to check light or not light mode
+// with light mode - node only fetch outputcoins of account in local wallet -> smaller data
+// with not light mode - node fetch all outputcoins of all accounts in network -> big data
+// (note: still storage full data of commitments, serialnumbersm snderivator to check double spend)
 func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ChainID)
-	err := view.fetchTxViewPointFromBlock(self.config.DataBase, block)
+	var err error
+	if self.config.Light {
+		err = view.fetchTxViewPointFromBlock(self.config.DataBase, block, nil)
+	} else {
+		err = view.fetchTxViewPointFromBlock(self.config.DataBase, block, self.config.Wallet)
+	}
 	if err != nil {
 		return err
 	}
@@ -902,10 +911,9 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 		// save tx which relate to custom token
 		// Reject Double spend UTXO before enter this state
 		err = self.StoreCustomTokenPaymentAddresstHistory(customTokenTx)
-		// TODO: detect/cactch/revert/skip double spend tx
 		if err != nil {
 			// Skip double spend
-			continue
+			return err
 		}
 		err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxTokenData.PropertyID, block.Header.ChainID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
 		if err != nil {
@@ -1055,7 +1063,6 @@ func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *tr
 		}
 	}
 	return nil
-	//return self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
 }
 
 // DecryptTxByKey - process outputcoin to get outputcoin data which relate to keyset
