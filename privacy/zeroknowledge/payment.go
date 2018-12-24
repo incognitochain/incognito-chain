@@ -3,12 +3,11 @@ package zkp
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"math/big"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
+	"math/big"
 )
 
 // PaymentWitness contains all of witness for proving when spending coins
@@ -97,19 +96,25 @@ func (proof *PaymentProof) Init() *PaymentProof {
 	return proof
 }
 
-func (proof PaymentProof) MarshalJSON() ([]byte, error) {
+func (proof PaymentProof) MarshalJSON() ([]byte, *privacy.PrivacyError) {
 	data := proof.Bytes()
 	temp := base58.Base58Check{}.Encode(data, byte(0x00))
-	return json.Marshal(temp)
+	bytesArr, err := json.Marshal(temp)
+
+	if err != nil{
+		return nil, privacy.NewPrivacyErr(privacy.MarshalErr, err)
+	}
+	return bytesArr, nil
 }
 
-func (proof *PaymentProof) UnmarshalJSON(data []byte) error {
+func (proof *PaymentProof) UnmarshalJSON(data []byte) *privacy.PrivacyError {
 	dataStr := ""
 	_ = json.Unmarshal(data, &dataStr)
 	temp, _, err := base58.Base58Check{}.Decode(dataStr)
 	if err != nil {
-		return err
+		return privacy.NewPrivacyErr(privacy.UnmarshalErr, err)
 	}
+
 	proof.SetBytes(temp)
 	return nil
 }
@@ -260,9 +265,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	return proofbytes
 }
 
-func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
-
-	//fmt.Printf("***************BEFORE SETBYTE - PROOF %v\n", proofbytes)
+func (proof *PaymentProof) SetBytes(proofbytes []byte) (*privacy.PrivacyError) {
 	offset := 0
 	// Set ComInputOpeningsProof
 	lenComInputOpeningsProofArray := int(proofbytes[offset])
@@ -272,9 +275,13 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		lenComInputOpeningsProof := int(proofbytes[offset])
 		offset += 1
 		proof.ComInputOpeningsProof[i] = new(PKComOpeningsProof).Init()
-		proof.ComInputOpeningsProof[i].SetBytes(proofbytes[offset: offset+lenComInputOpeningsProof])
+		err := proof.ComInputOpeningsProof[i].SetBytes(proofbytes[offset: offset+lenComInputOpeningsProof])
+		if err != nil{
+			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+		}
 		offset += lenComInputOpeningsProof
 	}
+
 	// Set OneOfManyProofSize
 	lenOneOfManyProofArray := int(proofbytes[offset])
 	offset += 1
@@ -283,9 +290,13 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		lenOneOfManyProof := privacy.ByteArrToInt(proofbytes[offset: offset+2])
 		offset += 2
 		proof.OneOfManyProof[i] = new(PKOneOfManyProof).Init()
-		proof.OneOfManyProof[i].SetBytes(proofbytes[offset: offset+lenOneOfManyProof])
+		err := proof.OneOfManyProof[i].SetBytes(proofbytes[offset: offset+lenOneOfManyProof])
+		if err != nil{
+			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+		}
 		offset += lenOneOfManyProof
 	}
+
 	// Set EqualityOfCommittedValProofSize
 	lenEqualityOfCommittedValProofArray := int(proofbytes[offset])
 	offset += 1
@@ -296,10 +307,11 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		proof.EqualityOfCommittedValProof[i] = new(PKEqualityOfCommittedValProof).Init()
 		err := proof.EqualityOfCommittedValProof[i].SetBytes(proofbytes[offset: offset+lenEqualityOfCommittedValProof])
 		if err != nil {
-			return err
+			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
 		offset += lenEqualityOfCommittedValProof
 	}
+
 	// Set ProductCommitmentProofSize
 	lenProductCommitmentProofArray := int(proofbytes[offset])
 	offset += 1
@@ -309,9 +321,13 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		offset += 1
 
 		proof.ProductCommitmentProof[i] = new(PKComProductProof).Init()
-		proof.ProductCommitmentProof[i].SetBytes(proofbytes[offset: offset+lenProductCommitmentProof])
+		err := proof.ProductCommitmentProof[i].SetBytes(proofbytes[offset: offset+lenProductCommitmentProof])
+		if err != nil {
+			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+		}
 		offset += lenProductCommitmentProof
 	}
+
 	//Set ComOutputOpeningsProofSize
 	lenComOutputOpeningsProofArray := int(proofbytes[offset])
 	offset += 1
@@ -321,7 +337,10 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		offset += 1
 
 		proof.ComOutputOpeningsProof[i] = new(PKComOpeningsProof).Init()
-		proof.ComOutputOpeningsProof[i].SetBytes(proofbytes[offset: offset+lenComOutputOpeningsProof])
+		err := proof.ComOutputOpeningsProof[i].SetBytes(proofbytes[offset: offset+lenComOutputOpeningsProof])
+		if err != nil {
+			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+		}
 		offset += lenComOutputOpeningsProof
 	}
 
@@ -330,7 +349,10 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	offset += 2
 	if lenComOutputMultiRangeProof > 0 {
 		proof.ComOutputMultiRangeProof = new(PKComMultiRangeProof).Init()
-		proof.ComOutputMultiRangeProof.SetBytes(proofbytes[offset: offset+lenComOutputMultiRangeProof])
+		err := proof.ComOutputMultiRangeProof.SetBytes(proofbytes[offset: offset+lenComOutputMultiRangeProof])
+		if err != nil {
+			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+		}
 		offset += lenComOutputMultiRangeProof
 	}
 
@@ -339,7 +361,10 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	offset += 1
 	if lenSumOutRangeProof > 0 {
 		proof.SumOutRangeProof = new(PKComZeroProof).Init()
-		proof.SumOutRangeProof.SetBytes(proofbytes[offset: offset+lenSumOutRangeProof])
+		err := proof.SumOutRangeProof.SetBytes(proofbytes[offset: offset+lenSumOutRangeProof])
+		if err != nil {
+			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+		}
 		offset += lenSumOutRangeProof
 	}
 
@@ -348,7 +373,10 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	offset += 1
 	if lenComZeroProof > 0 {
 		proof.ComZeroProof = new(PKComZeroProof).Init()
-		proof.ComZeroProof.SetBytes(proofbytes[offset: offset+lenComZeroProof])
+		err := proof.ComZeroProof.SetBytes(proofbytes[offset: offset+lenComZeroProof])
+		if err != nil {
+			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+		}
 		offset += lenComZeroProof
 	}
 
@@ -364,7 +392,10 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		lenInputCoin := int(proofbytes[offset])
 		offset += 1
 		proof.InputCoins[i] = new(privacy.InputCoin)
-		proof.InputCoins[i].SetBytes(proofbytes[offset: offset+lenInputCoin])
+		err := proof.InputCoins[i].SetBytes(proofbytes[offset: offset+lenInputCoin])
+		if err != nil {
+			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+		}
 		offset += lenInputCoin
 	}
 	//OutputCoins []*privacy.OutputCoin
@@ -377,11 +408,12 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		proof.OutputCoins[i] = new(privacy.OutputCoin)
 		err := proof.OutputCoins[i].SetBytes(proofbytes[offset: offset+lenOutputCoin])
 		if err != nil {
-			return err
+			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
 		offset += lenOutputCoin
 	}
 	//ComOutputValue   []*privacy.EllipticPoint
+	var err error
 	lenComOutputValueArray := int(proofbytes[offset])
 	offset += 1
 	proof.ComOutputValue = make([]*privacy.EllipticPoint, lenComOutputValueArray)
@@ -391,7 +423,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		proof.ComOutputValue[i] = new(privacy.EllipticPoint)
 		proof.ComOutputValue[i], err = privacy.DecompressKey(proofbytes[offset: offset+lenComOutputValue])
 		if err != nil {
-			return err
+			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
 		offset += lenComOutputValue
 	}
@@ -405,7 +437,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		proof.ComOutputSND[i] = new(privacy.EllipticPoint)
 		proof.ComOutputSND[i], err = privacy.DecompressKey(proofbytes[offset: offset+lenComOutputSND])
 		if err != nil {
-			return err
+			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
 		offset += lenComOutputSND
 	}
@@ -422,7 +454,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		proof.ComOutputShardID[i] = new(privacy.EllipticPoint)
 		proof.ComOutputShardID[i], err = privacy.DecompressKey(proofbytes[offset: offset+lenComOutputShardId])
 		if err != nil {
-			return err
+			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
 		offset += lenComOutputShardId
 	}
@@ -434,7 +466,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		proof.ComInputSK = new(privacy.EllipticPoint)
 		proof.ComInputSK, err = privacy.DecompressKey(proofbytes[offset: offset+lenComInputSK])
 		if err != nil {
-			return err
+			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
 		offset += lenComInputSK
 	}
@@ -448,7 +480,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		proof.ComInputValue[i] = new(privacy.EllipticPoint)
 		proof.ComInputValue[i], err = privacy.DecompressKey(proofbytes[offset: offset+lenComInputValue])
 		if err != nil {
-			return err
+			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
 		offset += lenComInputValue
 	}
@@ -462,7 +494,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		proof.ComInputSND[i] = new(privacy.EllipticPoint)
 		proof.ComInputSND[i], err = privacy.DecompressKey(proofbytes[offset: offset+lenComInputSND])
 		if err != nil {
-			return err
+			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
 		offset += lenComInputSND
 	}
@@ -473,11 +505,11 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		proof.ComInputShardID = new(privacy.EllipticPoint)
 		proof.ComInputShardID, err = privacy.DecompressKey(proofbytes[offset: offset+lenComInputShardID])
 		if err != nil {
-			return err
+			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
 		offset += lenComInputShardID
 	}
-	//fmt.Printf("***************AFTER SETBYTE - PROOF %v\n", proof.Bytes())
+
 	return nil
 }
 
@@ -497,7 +529,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin,
 	pkLastByteSender byte, pkLastByteReceivers []byte,
 	commitments []*privacy.EllipticPoint, commitmentIndexs []uint64, myCommitmentIndexs []uint64,
-	fee uint64) (err error) {
+	fee uint64) (*privacy.PrivacyError) {
 
 	if !hasPrivacy {
 		wit.spendingKey = spendingKey
@@ -508,7 +540,6 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 		for i := 0; i < len(inputCoins); i++ {
 			/***** Build witness for proving that serial number is derived from the committed derivator *****/
-
 			/****Build witness for proving that the commitment of serial number is equivalent to Mul(com(sk), com(snd))****/
 			witnesssA := new(big.Int)
 			witnesssA.Add(wit.spendingKey, inputCoins[i].CoinDetails.SNDerivator)
@@ -545,7 +576,6 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	wit.ComInputSK.Y.Set(cmInputSK.Y)
 	randInputShardID := privacy.RandInt()
 	wit.ComInputShardID = privacy.PedCom.CommitAtIndex(big.NewInt(int64(wit.pkLastByteSender)), randInputShardID, privacy.SHARDID)
-	//wit.ComInputShardID = privacy.PedCom.CommitAtIndex(big.NewInt(int64(inputCoins[0].CoinDetails.GetPubKeyLastByte())), randInputShardID, privacy.SHARDID)
 	wit.ComInputValue = make([]*privacy.EllipticPoint, numInputCoin)
 	wit.ComInputSND = make([]*privacy.EllipticPoint, numInputCoin)
 	// It is used for proving 2 commitments commit to the same value (SND)
@@ -597,6 +627,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	//commitmentIndexTemps := make([][])
 
 	preIndex := 0
+	var err error
 	for i := 0; i < numInputCoin; i++ {
 		/***** Build witness for proving the knowledge of input coins' Openings  *****/
 		cmInputSum[i] = new(privacy.EllipticPoint)
@@ -638,23 +669,16 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		rndInputIsZero[i].Mod(rndInputIsZero[i], privacy.Curve.Params().N)
 
 		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, wit.ComInputShardID.X, wit.ComInputShardID.Y)
-		cmInputSumInverse[i], _ = cmInputSum[i].Inverse()
+		cmInputSumInverse[i], err = cmInputSum[i].Inverse()
+		if err != nil{
+			return privacy.NewPrivacyErr(privacy.UnexpectedErr, err)
+		}
 
 		randInputSumAll.Add(randInputSumAll, randInputSum[i])
 		randInputSumAll.Mod(randInputSumAll, privacy.Curve.Params().N)
 
-		openingWitnessHien := new(PKComOpeningsWitness)
-		openingWitnessHien.Set(cmInputSum[i],
-			[]*big.Int{wit.spendingKey, new(big.Int).SetUint64(inputCoins[i].CoinDetails.Value), inputCoins[i].CoinDetails.SNDerivator, big.NewInt(int64(wit.pkLastByteSender)), randInputSum[i]},
-			[]byte{privacy.SK, privacy.VALUE, privacy.SND, privacy.SHARDID, privacy.RAND})
-
-		openingProofHien, _ := openingWitnessHien.Prove()
-		fmt.Println(openingProofHien.Verify())
-
 		for j := 0; j < privacy.CMRingSize; j++ {
-			commitmentTemps[i][j] = new(privacy.EllipticPoint)
-			commitmentTemps[i][j].X = big.NewInt(0)
-			commitmentTemps[i][j].Y = big.NewInt(0)
+			commitmentTemps[i][j] = new(privacy.EllipticPoint).Zero()
 			commitmentTemps[i][j].X, commitmentTemps[i][j].Y = privacy.Curve.Add(commitments[preIndex+j].X, commitments[preIndex+j].Y, cmInputSumInverse[i].X, cmInputSumInverse[i].Y)
 		}
 
@@ -790,7 +814,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 	cmOutputValueAllInverse, err := cmOutputValueAll.Inverse()
 	if err != nil {
-		return err
+		return privacy.NewPrivacyErr(privacy.UnexpectedErr, err)
 	}
 
 	cmEqualCoinValue := new(privacy.EllipticPoint)
@@ -814,7 +838,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 }
 
 // Prove creates big proof
-func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
+func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.PrivacyError) {
 	proof := new(PaymentProof).Init()
 	var err error
 
@@ -837,7 +861,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 		for i := 0; i < len(wit.inputCoins); i++ {
 			productCommitmentProof, err := wit.ProductCommitmentWitness[i].Prove()
 			if err != nil {
-				return nil, err
+				return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
 			}
 			proof.ProductCommitmentProof = append(proof.ProductCommitmentProof, productCommitmentProof)
 		}
@@ -852,14 +876,14 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 		// Proving the knowledge of input coins' Openings
 		comInputOpeningsProof, err := wit.ComInputOpeningsWitness[i].Prove()
 		if err != nil {
-			return nil, err
+			return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
 		}
 		proof.ComInputOpeningsProof = append(proof.ComInputOpeningsProof, comInputOpeningsProof)
 
 		// Proving one-out-of-N commitments is a commitment to the coins being spent
 		oneOfManyProof, err := wit.OneOfManyWitness[i].Prove()
 		if err != nil {
-			return nil, err
+			return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
 		}
 		proof.OneOfManyProof = append(proof.OneOfManyProof, oneOfManyProof)
 
@@ -869,7 +893,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 
 		productCommitmentProof, err := wit.ProductCommitmentWitness[i].Prove()
 		if err != nil {
-			return nil, err
+			return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
 		}
 		proof.ProductCommitmentProof = append(proof.ProductCommitmentProof, productCommitmentProof)
 	}
@@ -879,25 +903,25 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 		// Proving the knowledge of output coins' openings
 		comOutputOpeningsProof, err := wit.ComOutputOpeningsWitness[i].Prove()
 		if err != nil {
-			return nil, err
+			return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
 		}
 		proof.ComOutputOpeningsProof = append(proof.ComOutputOpeningsProof, comOutputOpeningsProof)
 	}
 
 	// Proving that each output values and sum of them does not exceed v_max
 	proof.ComOutputMultiRangeProof, err = wit.ComOutputMultiRangeWitness.Prove()
-	if err.(*privacy.PrivacyError) != nil {
-		return nil, err
+	if err != nil {
+		return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
 	}
 	proof.SumOutRangeProof, err = wit.ComOutputMultiRangeWitness.ProveSum()
 	if err != nil {
-		return nil, err
+		return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
 	}
 
 	// Proving that sum of all input values is equal to sum of all output values
 	proof.ComZeroProof, err = wit.ComZeroWitness.Prove()
 	if err != nil {
-		return nil, err
+		return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
 	}
 
 	privacy.Logger.Log.Info("Privacy log: PROVING DONE!!!")

@@ -204,13 +204,14 @@ func (tx *Tx) Init(
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
 	err := witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
-	if err != nil {
-		return NewTransactionErr(UnexpectedErr, err)
-	}
+	//if err.(*privacy.PrivacyError) != nil {
+	//	return NewTransactionErr(UnexpectedErr, err)
+	//}
+
 	tx.Proof, err = witness.Prove(hasPrivacy)
-	if err != nil {
-		return NewTransactionErr(UnexpectedErr, err)
-	}
+	//if err.(*privacy.PrivacyError) != nil {
+	//	return NewTransactionErr(UnexpectedErr, err)
+	//}
 
 	// set private key for signing tx
 	if hasPrivacy {
@@ -247,9 +248,9 @@ func (tx *Tx) Init(
 
 	// sign tx
 	tx.PubKeyLastByteSender = pkLastByteSender
-	err = tx.SignTx(hasPrivacy)
+	err1 := tx.SignTx(hasPrivacy)
 
-	if err != nil {
+	if err1 != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
 	return nil

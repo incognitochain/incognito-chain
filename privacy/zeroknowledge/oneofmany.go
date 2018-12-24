@@ -284,20 +284,19 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	// Check the number of Commitment list's elements
 	N := len(wit.commitments)
 	if N != privacy.CMRingSize {
-		return nil,
-			privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("the number of Commitment list's elements must be equal to CMRingSize"))
+		return nil, errors.New("the number of Commitment list's elements must be equal to CMRingSize")
 	}
 
 	n := privacy.CMRingSizeExp
 
 	// Check indexIsZero
 	if wit.indexIsZero > uint64(N) || wit.indexIsZero < 0 {
-		return nil, privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("Index is zero must be Index in list of commitments"))
+		return nil, errors.New("Index is zero must be Index in list of commitments")
 	}
 
 	// Check Index
 	if wit.index < privacy.SK || wit.index > privacy.RAND {
-		return nil, privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("Index must be between index SK and index RAND"))
+		return nil, errors.New("Index must be between index SK and index RAND")
 	}
 
 	// represent indexIsZero in binary
@@ -413,8 +412,8 @@ func (pro *PKOneOfManyProof) Verify() bool {
 	N := len(pro.Commitments)
 	//N := 8
 
+	// the number of Commitment list's elements must be equal to CMRingSize
 	if N != privacy.CMRingSize {
-		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("the number of Commitment list's elements must be equal to CMRingSize"))
 		return false
 	}
 	n := privacy.CMRingSizeExp

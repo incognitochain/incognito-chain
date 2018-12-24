@@ -216,12 +216,13 @@ func (inputCoin *InputCoin) Init() *InputCoin {
 func (inputCoin *InputCoin) Bytes() []byte {
 	return inputCoin.CoinDetails.Bytes()
 }
-func (inputCoin *InputCoin) SetBytes(bytes []byte) {
+func (inputCoin *InputCoin) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
-		return
+		return errors.New("Bytes array is empty")
 	}
+
 	inputCoin.CoinDetails = new(Coin)
-	inputCoin.CoinDetails.SetBytes(bytes)
+	return inputCoin.CoinDetails.SetBytes(bytes)
 }
 
 type OutputCoin struct {
@@ -255,7 +256,7 @@ func (outputCoin *OutputCoin) Bytes() []byte {
 
 func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
-		return nil
+		return errors.New("Bytes array is empty")
 	}
 	offset := 0
 	lenCoinDetailEncrypted := int(bytes[0])
@@ -272,8 +273,7 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 	lenCoinDetail := int(bytes[offset])
 	offset += 1
 	outputCoin.CoinDetails = new(Coin)
-	outputCoin.CoinDetails.SetBytes(bytes[offset : offset+lenCoinDetail])
-	return nil
+	return outputCoin.CoinDetails.SetBytes(bytes[offset : offset+lenCoinDetail])
 }
 
 type CoinDetailsEncrypted struct {

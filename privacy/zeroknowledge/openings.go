@@ -109,12 +109,13 @@ func (pro *PKComOpeningsProof) SetBytes(bytestr []byte) error {
 	pro.commitmentValue = new(privacy.EllipticPoint)
 	pro.commitmentValue.Decompress(bytestr[0:privacy.CompressedPointSize])
 	if !pro.commitmentValue.IsSafe() {
-		return privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("Decompressed failed!"))
+		return  errors.New("Decompressed failed!")
 	}
+
 	pro.alpha = new(privacy.EllipticPoint)
 	pro.alpha.Decompress(bytestr[privacy.CompressedPointSize : privacy.CompressedPointSize*2])
 	if !pro.alpha.IsSafe() {
-		return privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("Decompressed failed!"))
+		return errors.New("Decompressed failed!")
 	}
 
 	pro.gamma = make([]*big.Int, (len(bytestr)-privacy.CompressedPointSize*2)/privacy.BigIntSize)
@@ -150,16 +151,11 @@ func (wit *PKComOpeningsWitness) Prove() (*PKComOpeningsProof, error) {
 	}
 	proof := new(PKComOpeningsProof)
 	proof.Set(wit.commitmentValue, alpha, gamma, wit.indexs)
-	//fmt.Println(proof.commitmentValue)
-	//fmt.Println(proof.alpha)
-	//fmt.Println(proof.gamma)
-	//fmt.Println(proof.indexs)
 	return proof, nil
 }
 
 // Verify ... (for verifier)
 func (pro *PKComOpeningsProof) Verify() bool {
-	//fmt.Println(pro.indexs)
 	beta := GenerateChallengeFromPoint([]*privacy.EllipticPoint{pro.commitmentValue})
 	rightPoint := new(privacy.EllipticPoint)
 	rightPoint.X, rightPoint.Y = privacy.Curve.ScalarMult(pro.commitmentValue.X, pro.commitmentValue.Y, beta.Bytes())
