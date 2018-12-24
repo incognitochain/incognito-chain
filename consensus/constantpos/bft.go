@@ -171,7 +171,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							listPubkeyOfSigners := make([]*privacy.PublicKey, numbOfSigners)
 							listROfSigners := make([]*privacy.EllipticPoint, numbOfSigners)
 							RCombined := new(privacy.EllipticPoint)
-							//RCombined.Set(big.NewInt(0), big.NewInt(0))
+							// RCombined.Set(big.NewInt(0), big.NewInt(0))
 							counter := 0
 							// var byteVersion byte
 							// var err error
@@ -246,6 +246,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 									Sig:           msgCommit.(*wire.MessageBFTCommit).CommitSig,
 								}
 								R := msgCommit.(*wire.MessageBFTCommit).R
+
 								phaseData.Sigs[R] = append(phaseData.Sigs[R], newSig)
 							}
 						case <-self.cTimeout:
@@ -267,14 +268,26 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 								return
 							}
 							//Todo combine Sigs
-							// listSigOfSigners := make([]privacy.SchnMultiSig, len(phaseData.Sigs[szRCombined]))
-							//for sig
-							// multiSigScheme.CombineMultiSig()
+							listSigOfSigners := make([]*privacy.SchnMultiSig, len(phaseData.Sigs[szRCombined]))
+							for i, valSig := range phaseData.Sigs[szRCombined] {
+								listSigOfSigners[i] = new(privacy.SchnMultiSig)
+								bytesSig, byteVersion, err := base58.Base58Check{}.Decode(valSig.Sig)
+								if (err != nil) || (byteVersion != byte(0x00)) {
+									return
+								}
+								listSigOfSigners[i].SetBytes(bytesSig)
+							}
+							var valListTemp *[]int
+							valListTemp = &phaseData.Sigs[szRCombined][0].ValidatorsIdx
+							AggregatedSig := multiSigScheme.CombineMultiSig(listSigOfSigners)
 
 							var phaseData struct {
 								ValidatorsIdx []int
 								AggregatedSig string
 							}
+							phaseData.ValidatorsIdx = make([]int, len(*valListTemp))
+							copy(phaseData.ValidatorsIdx, *valListTemp)
+							phaseData.AggregatedSig = base58.Base58Check{}.Encode(AggregatedSig.Bytes(), byte(0x00))
 							msg, err := MakeMsgBFTReply(phaseData.AggregatedSig, phaseData.ValidatorsIdx)
 							if err != nil {
 								Logger.log.Error(err)
