@@ -184,7 +184,6 @@ func (wit PKComZeroWitness) Prove() (*PKComZeroProof, error) {
 	z := big.NewInt(0)
 	z.Set(wit.commitmentRnd)
 	z.Mul(z, xChallenge)
-	z.Mod(z, privacy.Curve.Params().N)
 	z.Add(z, sRnd)
 	z.Mod(z, privacy.Curve.Params().N)
 

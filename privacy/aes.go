@@ -4,9 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"errors"
 	"io"
-	"strconv"
 )
 
 
@@ -14,13 +12,13 @@ type AES struct{
 	key []byte
 }
 
-func (self *AES) GenKey(keyLength byte) error{
-	if keyLength != 16 || keyLength != 24 || keyLength != 32{
-		return NewPrivacyErr(UnexpectedErr, errors.New("privacy/aes: invalid key size " + strconv.Itoa(int(keyLength))))
-	}
-	self.key = RandBytes(int(keyLength))
-	return nil
-}
+//func (self *AES) GenKey(keyLength byte) error{
+//	if keyLength != 16 || keyLength != 24 || keyLength != 32{
+//		return NewPrivacyErr(UnexpectedErr, errors.New("privacy/aes: invalid key size " + strconv.Itoa(int(keyLength))))
+//	}
+//	self.key = RandBytes(int(keyLength))
+//	return nil
+//}
 
 
 func (self *AES) SetKey(key []byte) {

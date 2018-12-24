@@ -1,4 +1,5 @@
 package zkp
+
 import (
 	"crypto/elliptic"
 	"fmt"
@@ -7,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 	"math"
 	"math/big"
-	"strconv"
 )
 var RangeProofParams CryptoParams
 
@@ -179,68 +179,6 @@ func InnerProductProve(a []*big.Int, b []*big.Int, c *big.Int, P, U *privacy.Ell
 	return InnerProductProveSub(runningProof, G, H, a, b, ux, Pprime)
 }
 
-/* Inner Product Verify
-Given a inner product proof, verifies the correctness of the proof
-
-Since we're using the Fiat-Shamir transform, we need to verify all x hash computations,
-all g' and h' computations
-
-P : the Pedersen commitment we are verifying is a commitment to the innner product
-ipp : the proof
-
-*/
-func InnerProductVerify(c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy.EllipticPoint, ipp InnerProdArg) bool {
-	s1 := blake2b.Sum256([]byte(P.X.String() + P.Y.String()))
-	chal1 := new(big.Int).SetBytes(s1[:])
-	ux := U.ScalarMult(chal1)
-	curIt := len(ipp.Challenges) - 1
-
-	if ipp.Challenges[curIt].Cmp(chal1) != 0 {
-		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("IPVerify - Initial Challenge Failed"))
-		return false
-	}
-
-	curIt -= 1
-
-	Gprime := G
-	Hprime := H
-	Pprime := P.Add(ux.ScalarMult(c)) // line 6 from protocol 1
-	//fmt.Printf("Zero Commitment value with u^cx: %s \n", Pprime)
-
-	for curIt >= 0 {
-		Lval := ipp.L[curIt]
-		Rval := ipp.R[curIt]
-
-		// prover sends L & C1 and gets a challenge
-		s256 := blake2b.Sum256([]byte(
-			Lval.X.String() + Lval.Y.String() +
-				Rval.X.String() + Rval.Y.String()))
-
-		chal2 := new(big.Int).SetBytes(s256[:])
-
-		if ipp.Challenges[curIt].Cmp(chal2) != 0 {
-			privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("IPVerify - Challenge verification failed at index " + strconv.Itoa(curIt)))
-			return false
-		}
-
-		Gprime, Hprime, Pprime = GenerateNewParams(Gprime, Hprime, chal2, Lval, Rval, Pprime)
-		curIt -= 1
-	}
-	ccalc := new(big.Int).Mod(new(big.Int).Mul(ipp.A, ipp.B), privacy.Curve.Params().N)
-
-	Pcalc1 := Gprime[0].ScalarMult(ipp.A)
-	Pcalc2 := Hprime[0].ScalarMult(ipp.B)
-	Pcalc3 := ux.ScalarMult(ccalc)
-	Pcalc := Pcalc1.Add(Pcalc2).Add(Pcalc3)
-
-	if !Pprime.IsEqual(Pcalc) {
-		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("IPVerify - Final Commitment checking failed"))
-		return false
-	}
-
-	return true
-}
-
 /* Inner Product Verify Fast
 Given a inner product proof, verifies the correctness of the proof. Does the same as above except
 we replace n separate exponentiations with a single ScalarMulPointi-exponentiation.
@@ -373,19 +311,6 @@ func PadLeft(str, pad string, l int) string {
 	}
 
 	return strCopy
-}
-
-func STRNot(str string) string {
-	result := ""
-
-	for _, i := range str {
-		if i == '0' {
-			result += "1"
-		} else {
-			result += "0"
-		}
-	}
-	return result
 }
 
 func StrToBigIntArray(str string) []*big.Int {

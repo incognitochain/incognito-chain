@@ -15,40 +15,7 @@ func main() {
 	// fmt.Printf("BitSize: %X\n", privacy.Curve.Params().BitSize)
 
 	/*---------------------- TEST KEY SET ----------------------*/
-	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	//fmt.Printf("\nSpending key: %v\n", spendingKey)
-	//fmt.Println(len(spendingKey))
-	//
-	////publicKey is compressed
-	//publicKey := privacy.GeneratePublicKey(spendingKey)
-	//fmt.Printf("\nPublic key: %v\n", publicKey)
-	//fmt.Printf("Len public key: %v\n", len(publicKey))
-	//point, err := privacy.DecompressKey(publicKey)
-	//if err != nil {
-	//fmt.Println(err)
-	//}
-	//fmt.Printf("Public key decompress: %v\n", point)
-	//
-	//receivingKey := privacy.GenerateReceivingKey(spendingKey)
-	//fmt.Printf("\nReceiving key: %v\n", receivingKey)
-	//fmt.Println(len(receivingKey))
-	//
-	//transmissionKey := privacy.GenerateTransmissionKey(receivingKey)
-	//fmt.Printf("\nTransmission key: %v\n", transmissionKey)
-	//fmt.Println(len(transmissionKey))
-	//
-	//point, err = privacy.DecompressKey(transmissionKey)
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
-	//fmt.Printf("Transmission key point decompress: %+v\n ", point)
-	//
-	//paymentAddress := privacy.GeneratePaymentAddress(spendingKey)
-	//fmt.Println(paymentAddress.ToBytes())
-	//fmt.Printf("tk: %v\n", paymentAddress.Tk)
-	//fmt.Printf("pk: %v\n", paymentAddress.Pk)
-	//
-	//fmt.Printf("spending key bytes: %v\n", spendingKey.String())
+
 
 	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
@@ -471,7 +438,7 @@ func main() {
 	//*(*point2).X = *privacy.RandInt()
 	tmp:= privacy.RandInt()
 	fmt.Printf("addr temp: %p\n", tmp)
-	*(point2.X) = *tmp
+	point2.X = tmp
 	//(*point2).X.Set(tmp)
 
 	fmt.Printf("Point 1: %p\n", (*point1).X)
