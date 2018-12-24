@@ -18,6 +18,7 @@ import (
 	"github.com/ninjadotorg/constant/rpcserver"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 var (
@@ -38,6 +39,7 @@ var (
 	consensusLogger   = backendLog.Logger("Consensus log")
 	mempoolLogger     = backendLog.Logger("Mempool log")
 	transactionLogger = backendLog.Logger("Transaction log")
+	privacyLogger     = backendLog.Logger("Privacy log")
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -66,6 +68,8 @@ func init() {
 	ppos.Logger.Init(consensusLogger)
 	mempool.Logger.Init(mempoolLogger)
 	transaction.Logger.Init(transactionLogger)
+	privacy.Logger.Init(privacyLogger)
+
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -83,6 +87,7 @@ var subsystemLoggers = map[string]common.Logger{
 	"CONS": consensusLogger,
 	"MEMP": mempoolLogger,
 	"TRAN": transactionLogger,
+	"PRIV": privacyLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

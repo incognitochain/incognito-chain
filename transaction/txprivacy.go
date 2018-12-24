@@ -53,6 +53,7 @@ func (tx *Tx) Init(
 	db database.DatabaseInterface,
 	tokenID *common.Hash, // default is nill -> use for constant coin
 ) *TransactionError {
+	var err error
 	if tokenID == nil {
 		tokenID = &common.Hash{}
 		tokenID.SetBytes(common.ConstantID[:])
@@ -203,15 +204,15 @@ func (tx *Tx) Init(
 
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	err := witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
-	//if err.(*privacy.PrivacyError) != nil {
-	//	return NewTransactionErr(UnexpectedErr, err)
-	//}
+	err = witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
+	if err.(*privacy.PrivacyError) != nil {
+		return NewTransactionErr(UnexpectedErr, err)
+	}
 
 	tx.Proof, err = witness.Prove(hasPrivacy)
-	//if err.(*privacy.PrivacyError) != nil {
-	//	return NewTransactionErr(UnexpectedErr, err)
-	//}
+	if err.(*privacy.PrivacyError) != nil {
+		return NewTransactionErr(UnexpectedErr, err)
+	}
 
 	// set private key for signing tx
 	if hasPrivacy {
@@ -248,9 +249,9 @@ func (tx *Tx) Init(
 
 	// sign tx
 	tx.PubKeyLastByteSender = pkLastByteSender
-	err1 := tx.SignTx(hasPrivacy)
+	err = tx.SignTx(hasPrivacy)
 
-	if err1 != nil {
+	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
 	return nil

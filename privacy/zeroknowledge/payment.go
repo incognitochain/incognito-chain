@@ -96,18 +96,18 @@ func (proof *PaymentProof) Init() *PaymentProof {
 	return proof
 }
 
-func (proof PaymentProof) MarshalJSON() ([]byte, *privacy.PrivacyError) {
+func (proof PaymentProof) MarshalJSON() ([]byte, error) {
 	data := proof.Bytes()
 	temp := base58.Base58Check{}.Encode(data, byte(0x00))
 	bytesArr, err := json.Marshal(temp)
 
-	if err != nil{
+	if err != nil {
 		return nil, privacy.NewPrivacyErr(privacy.MarshalErr, err)
 	}
 	return bytesArr, nil
 }
 
-func (proof *PaymentProof) UnmarshalJSON(data []byte) *privacy.PrivacyError {
+func (proof *PaymentProof) UnmarshalJSON(data []byte) error {
 	dataStr := ""
 	_ = json.Unmarshal(data, &dataStr)
 	temp, _, err := base58.Base58Check{}.Decode(dataStr)
@@ -276,7 +276,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (*privacy.PrivacyError) {
 		offset += 1
 		proof.ComInputOpeningsProof[i] = new(PKComOpeningsProof).Init()
 		err := proof.ComInputOpeningsProof[i].SetBytes(proofbytes[offset: offset+lenComInputOpeningsProof])
-		if err != nil{
+		if err != nil {
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
 		offset += lenComInputOpeningsProof
@@ -291,7 +291,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (*privacy.PrivacyError) {
 		offset += 2
 		proof.OneOfManyProof[i] = new(PKOneOfManyProof).Init()
 		err := proof.OneOfManyProof[i].SetBytes(proofbytes[offset: offset+lenOneOfManyProof])
-		if err != nil{
+		if err != nil {
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
 		offset += lenOneOfManyProof
@@ -670,7 +670,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, wit.ComInputShardID.X, wit.ComInputShardID.Y)
 		cmInputSumInverse[i], err = cmInputSum[i].Inverse()
-		if err != nil{
+		if err != nil {
 			return privacy.NewPrivacyErr(privacy.UnexpectedErr, err)
 		}
 

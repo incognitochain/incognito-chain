@@ -882,7 +882,7 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ChainID)
 	var err error
-	if self.config.LightMode {
+	if !self.config.LightMode {
 		// skip local wallet -> store full data
 		err = view.fetchTxViewPointFromBlock(self.config.DataBase, block, nil)
 	} else {
