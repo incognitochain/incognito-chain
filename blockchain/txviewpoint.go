@@ -101,12 +101,21 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 
 			// get data for output coin
 			// need to check light mode
-			// only store outputcoins when local wallet of node is containing tx of accounts in wallet
-			if localWallet.ContainPubKey(pubkey) {
+			if localWallet == nil {
+				// full node
 				if acceptedOutputcoins[pubkeyStr] == nil {
 					acceptedOutputcoins[pubkeyStr] = make([]privacy.OutputCoin, 0)
 				}
 				acceptedOutputcoins[pubkeyStr] = append(acceptedOutputcoins[pubkeyStr], *item)
+			} else {
+				// light mode node
+				// only store outputcoins when local wallet of node is containing tx of accounts in wallet
+				if localWallet.ContainPubKey(pubkey) {
+					if acceptedOutputcoins[pubkeyStr] == nil {
+						acceptedOutputcoins[pubkeyStr] = make([]privacy.OutputCoin, 0)
+					}
+					acceptedOutputcoins[pubkeyStr] = append(acceptedOutputcoins[pubkeyStr], *item)
+				}
 			}
 		}
 

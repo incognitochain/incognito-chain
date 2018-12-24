@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 // ProcessBlock is the main workhorse for handling insertion of new blocks into
@@ -131,8 +132,61 @@ func (self *BlockChain) BlockExists(hash *common.Hash) (bool, error) {
 	}
 }
 
+// BlockContainAccountLocalWallet - checking block which contain any data of account in local wallet
 func (self *BlockChain) BlockContainAccountLocalWallet(block *Block) (bool) {
-	// TODO
-	// 0xsirrush
-	return true
+	if self.config.Wallet == nil {
+		return false
+	}
+	if len(block.Transactions) > 0 {
+		for _, tx := range block.Transactions {
+			switch tx.GetType() {
+			case common.TxNormalType, common.TxSalaryType:
+				{
+					txNormal := tx.(*transaction.Tx)
+					if txNormal.Proof != nil {
+						for _, out := range txNormal.Proof.OutputCoins {
+							if self.config.Wallet.ContainPubKey(out.CoinDetails.PublicKey.Compress()) {
+								return true
+							}
+						}
+					}
+				}
+			case common.TxCustomTokenType:
+				txCustomToken := tx.(*transaction.TxCustomToken)
+				if txCustomToken.Proof != nil {
+					for _, out := range txCustomToken.Proof.OutputCoins {
+						if self.config.Wallet.ContainPubKey(out.CoinDetails.PublicKey.Compress()) {
+							return true
+						}
+					}
+					if txCustomToken.TxTokenData.Vouts != nil {
+						for _, out := range txCustomToken.TxTokenData.Vouts {
+							if self.config.Wallet.ContainPubKey(out.PaymentAddress.Pk) {
+								return true
+							}
+						}
+					}
+				}
+			case common.TxCustomTokenPrivacyType:
+				{
+					txCustomTokenPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
+					if txCustomTokenPrivacy.Proof != nil {
+						for _, out := range txCustomTokenPrivacy.Proof.OutputCoins {
+							if self.config.Wallet.ContainPubKey(out.CoinDetails.PublicKey.Compress()) {
+								return true
+							}
+						}
+						if txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof != nil {
+							for _, out := range txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof.OutputCoins {
+								if self.config.Wallet.ContainPubKey(out.CoinDetails.PublicKey.Compress()) {
+									return true
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return false
 }
