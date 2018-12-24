@@ -23,6 +23,8 @@ const (
 	TimestampError
 	InstructionHashError
 	ShardStateHashError
+	RandomError
+	VerificationError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -41,6 +43,8 @@ var ErrCodeMessage = map[int]struct {
 	TimestampError:                {-10, "Timestamp Error"},
 	InstructionHashError:          {-11, "Instruction Hash Error"},
 	ShardStateHashError:           {-12, "ShardState Hash Error"},
+	RandomError:                   {-13, "Random Number Error"},
+	VerificationError:             {-14, "Verify Block Error"},
 }
 
 type BlockChainError struct {

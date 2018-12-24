@@ -120,7 +120,7 @@ package blockchain
 /*@Hung
 type BeaconHeader struct {
 	Version int 				`json:"Version"`
-	ParentHash common.Hash 		`json:"ParentBlockHash"`
+	PrevBlockHash common.Hash 		`json:"ParentBlockHash"`
 	Height uint64 				`json:"Height"`
 	//epoch length should be config in consensus
 	Epoch uint64				`json:"Epoch"`
@@ -182,7 +182,7 @@ func NewBlockWithHeader(header *BeaconHeader) *BeaconBlock {
 
 type ShardHeader struct {
 	Version int 				`json:"Version"`
-	ParentHash common.Hash 		`json:"ParentBlockHash"`
+	PrevBlockHash common.Hash 		`json:"ParentBlockHash"`
 
 	Height uint64 				`json:"Height"`
 	Epoch uint64				`json:"Epoch"`

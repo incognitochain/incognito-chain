@@ -21,7 +21,7 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	// Create Header
 	block.Header.Producer = base58.Base58Check{}.Encode(self.chain.config.Wallet.MasterAccount.Key.KeySet.PaymentAddress.Pk, byte(0x00))
 	block.Header.Version = VERSION
-	block.Header.ParentHash = self.chain.BestState.Beacon.BestBlockHash
+	block.Header.PrevBlockHash = self.chain.BestState.Beacon.BestBlockHash
 	block.Header.Height = self.chain.BestState.Beacon.BeaconHeight + 1
 	block.Header.Epoch = self.chain.BestState.Beacon.BeaconEpoch
 	if block.Header.Height%200 == 0 {
