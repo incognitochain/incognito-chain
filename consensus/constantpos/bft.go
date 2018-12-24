@@ -248,6 +248,17 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 									Sig:           msgCommit.(*wire.MessageBFTCommit).CommitSig,
 								}
 								R := msgCommit.(*wire.MessageBFTCommit).R
+								RCombined := new(privacy.EllipticPoint)
+								// RCombined.Set(big.NewInt(0), big.NewInt(0))
+								Rbytesarr, byteVersion, err := base58.Base58Check{}.Decode(R)
+								if (err != nil) || (byteVersion != byte(0x00)) {
+									//Todo
+									return
+								}
+								err = RCombined.Decompress(Rbytesarr)
+								if err != nil {
+									return
+								}
 
 								phaseData.Sigs[R] = append(phaseData.Sigs[R], newSig)
 							}
@@ -279,16 +290,14 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 								}
 								listSigOfSigners[i].SetBytes(bytesSig)
 							}
-							var valListTemp *[]int
-							valListTemp = &phaseData.Sigs[szRCombined][0].ValidatorsIdx
 							AggregatedSig := multiSigScheme.CombineMultiSig(listSigOfSigners)
 
 							var replyData struct {
 								ValidatorsIdx []int
 								AggregatedSig string
 							}
-							replyData.ValidatorsIdx = make([]int, len(*valListTemp))
-							copy(replyData.ValidatorsIdx, *valListTemp)
+							replyData.ValidatorsIdx = make([]int, len(phaseData.Sigs[szRCombined][0].ValidatorsIdx))
+							copy(replyData.ValidatorsIdx, phaseData.Sigs[szRCombined][0].ValidatorsIdx)
 							replyData.AggregatedSig = base58.Base58Check{}.Encode(AggregatedSig.Bytes(), byte(0x00))
 							msg, err := MakeMsgBFTReply(replyData.AggregatedSig, replyData.ValidatorsIdx)
 							if err != nil {
