@@ -11,8 +11,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hashicorp/golang-lru"
-
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -45,10 +43,7 @@ type BestState struct {
 	Beacon *BestStateBeacon
 	Shard  map[byte]*BestStateShard
 
-	// cache for beacon
-	beacon *lru.Cache
-	// cache for shard
-	shard *lru.Cache
+	beacon map[string][]byte
 }
 
 // config is a descriptor which specifies the blockchain instance configuration.
@@ -60,11 +55,10 @@ type Config struct {
 	DataBase database.DatabaseInterface
 
 	//=====cache
-	beaconBlock *lru.Cache
-	beaconBody  *lru.Cache
+	beaconBlock map[string][]byte
 
-	shardBlock *lru.Cache
-	shardBody  *lru.Cache
+	// shardBlock *lru.Cache
+	// shardBody  *lru.Cache
 	//======
 	// Interrupt specifies a channel the caller can close to signal that
 	// long running operations, such as catching up indexes or performing
@@ -168,7 +162,26 @@ func (self *BlockChain) Init(config *Config) error {
 	// 	Logger.log.Infof("BlockChain state for chain #%d (Height %d, Best block hash %+v, Total tx %d, Salary fund %d, Gov Param %+v)",
 	// 		chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns, bestState.BestBlock.Header.SalaryFund, bestState.BestBlock.Header.GOVConstitution)
 	// }
+	return nil
+}
 
+func (self *BlockChain) SnapshotBeaconBestState() (string, error) {
+	res, err := json.Marshal(*self.BestState.Beacon)
+	if err != nil {
+		return "", NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	key := self.BestState.Beacon.BestBlockHash.String()
+	self.BestState.beacon[key] = res
+	return key, nil
+}
+
+func (self *BlockChain) RevertSnapshotBeaconBestState(key string) error {
+	res := self.BestState.beacon[key]
+	revertBeaconBestState := BestStateBeacon{}
+	if err := json.Unmarshal(res, revertBeaconBestState); err != nil {
+		return NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	self.BestState.Beacon = &revertBeaconBestState
 	return nil
 }
 
@@ -303,7 +316,6 @@ func (self *BlockChain) initBeaconState() error {
 	initBlock = self.config.ChainParams.GenesisBlockBeacon
 	//TODO: initiate first beacon state
 	self.BestState.Beacon = NewBestStateBeacon()
-
 	// Insert new block into beacon chain
 	err := self.ConnectBlockBeacon(initBlock)
 
@@ -311,6 +323,8 @@ func (self *BlockChain) initBeaconState() error {
 		Logger.log.Error(err)
 		return err
 	}
+	//=======================Init cache data==========================
+	self.BestState.beacon = make(map[string][]byte)
 	return nil
 }
 
