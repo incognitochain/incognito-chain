@@ -20,7 +20,7 @@ type BestStateBeacon struct {
 
 	BeaconEpoch       uint64
 	BeaconHeight      uint64
-	BeaconLeaderIndex uint64
+	BeaconProposerIdx int
 
 	BeaconCommittee        []string
 	BeaconPendingValidator []string
@@ -93,8 +93,8 @@ func (self *BestStateBeacon) GetPubkeyRole(pubkey string) (string, byte) {
 
 	found := common.IndexOfStr(pubkey, self.BeaconCommittee)
 	if found > -1 {
-		if uint64(found) == self.BeaconLeaderIndex+1 {
-			return "beacon-leader", 0
+		if found == self.BeaconProposerIdx+1 {
+			return "beacon-proposer", 0
 		} else {
 			return "beacon-validator", 0
 		}

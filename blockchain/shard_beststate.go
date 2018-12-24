@@ -20,8 +20,10 @@ type BestStateShard struct {
 
 	ShardCommittee        []string
 	ShardPendingValidator []string
-	NumTxns               uint64 // The number of txns in the block.
-	TotalTxns             uint64 // The total number of txns in the chain.
+	ShardProposerIdx      int
+
+	NumTxns   uint64 // The number of txns in the block.
+	TotalTxns uint64 // The total number of txns in the chain.
 }
 
 // func (self *BestStateShard) Init(block *ShardBlock) {
@@ -42,4 +44,25 @@ func (self *BestStateShard) Update(block *ShardBlock) error {
 	self.TotalTxns += uint64(len(block.Body.Transactions))
 	self.NumTxns = uint64(len(block.Body.Transactions))
 	return nil
+}
+
+// Get role of a public key base on best state shard
+func (self *BestStateShard) GetPubkeyRole(pubkey string) string {
+
+	found := common.IndexOfStr(pubkey, self.ShardCommittee)
+	if found > -1 {
+		if found == self.ShardProposerIdx+1 {
+			return "shard-proposer"
+		} else {
+			return "shard-validator"
+		}
+
+	}
+
+	found = common.IndexOfStr(pubkey, self.ShardPendingValidator)
+	if found > -1 {
+		return "shard-pending"
+	}
+
+	return ""
 }
