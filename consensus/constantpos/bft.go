@@ -206,7 +206,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							} else {
 								blockData = self.pendingBlock.(*blockchain.ShardBlock).Header.Hash()
 							}
-							blockData.GetBytes()
+
 							multiSigScheme.Signature = multiSigScheme.Keyset.SignMultiSig(blockData.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(self.dataForSig.r))
 							phaseData.CommitBlkSig = base58.Base58Check{}.Encode(multiSigScheme.Signature.Bytes(), byte(0x00))
 							phaseData.R = base58.Base58Check{}.Encode(RCombined.Compress(), byte(0x00))
@@ -250,6 +250,17 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 									Sig:           msgCommit.(*wire.MessageBFTCommit).CommitSig,
 								}
 								R := msgCommit.(*wire.MessageBFTCommit).R
+
+								//Check that Validators Index array in newSig and Validators Index array in each of sig have the same R are equality
+								for _, valSig := range phaseData.Sigs[R] {
+									for i, value := range valSig.ValidatorsIdx {
+										if value != newSig.ValidatorsIdx[i] {
+											return
+										}
+									}
+								}
+
+								//Recalculate RCombined from base58
 								RCombined := new(privacy.EllipticPoint)
 								// RCombined.Set(big.NewInt(0), big.NewInt(0))
 								Rbytesarr, byteVersion, err := base58.Base58Check{}.Decode(R)
@@ -261,7 +272,38 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 								if err != nil {
 									return
 								}
-
+								listPubkeyOfSigners := make([]*privacy.PublicKey, len(newSig.ValidatorsIdx))
+								var pubKeyTemp []byte
+								for i := 0; i < len(newSig.ValidatorsIdx); i++ {
+									listPubkeyOfSigners[i] = new(privacy.PublicKey)
+									pubKeyTemp, byteVersion, err = base58.Base58Check{}.Decode(self.Committee[newSig.ValidatorsIdx[i]])
+									if (err != nil) || (byteVersion != byte(0x00)) {
+										//Todo
+										return
+									}
+									*listPubkeyOfSigners[i] = pubKeyTemp
+								}
+								selfPubkey := new(privacy.PublicKey)
+								pubKeyTemp, byteVersion, err = base58.Base58Check{}.Decode(newSig.Pubkey)
+								if (err != nil) || (byteVersion != byte(0x00)) {
+									//Todo
+									return
+								}
+								*selfPubkey = pubKeyTemp
+								var valSigbytesarr []byte
+								valSigbytesarr, byteVersion, err = base58.Base58Check{}.Decode(newSig.Sig)
+								valSig := new(privacy.SchnMultiSig)
+								valSig.SetBytes(valSigbytesarr)
+								var blockData common.Hash
+								if layer == "beacon" {
+									blockData = self.pendingBlock.(*blockchain.BeaconBlock).Header.Hash()
+								} else {
+									blockData = self.pendingBlock.(*blockchain.ShardBlock).Header.Hash()
+								}
+								resValidateEachSigOfSigners := valSig.VerifyMultiSig(blockData.GetBytes(), listPubkeyOfSigners, selfPubkey, RCombined)
+								if !resValidateEachSigOfSigners {
+									return
+								}
 								phaseData.Sigs[R] = append(phaseData.Sigs[R], newSig)
 							}
 						case <-self.cTimeout:
@@ -347,47 +389,3 @@ func (self *BFTProtocol) Stop() error {
 	close(self.cQuit)
 	return nil
 }
-
-// Moving them soon
-// type sortString []string
-
-// func lessString(a, b string) bool {
-// 	if len(a) < len(b) {
-// 		return true
-// 	}
-// 	if len(a) > len(b) {
-// 		return false
-// 	}
-
-// 	for i := 0; i < len(a); i++ {
-// 		if a[i] > b[i] {
-// 			return false
-// 		}
-// 		if a[i] < b[i] {
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
-
-// func swap(str1, str2 *string) {
-// 	*str1, *str2 = *str2, *str1
-// }
-
-// func (s sortString) Less(i, j int) bool {
-// 	return lessString(s[i], s[j])
-// }
-
-// func (s sortString) Swap(i, j int) {
-// 	swap(&s[i], &s[j])
-// }
-
-// func (s sortString) Len() int {
-// 	return len(s)
-// }
-
-// func SortString(s []string) []string {
-// 	// r := [](s)
-// 	sort.Sort(sortString(s))
-// 	return s
-// }
