@@ -363,19 +363,6 @@ func (self *BlockChain) StoreBlockHeader(block *Block) error {
 }
 
 /*
-	Store Transaction in LightMode mode
-*/
-/*
-func (self *BlockChain) StoreTransactionLightMode(privatKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx metadata.Transaction) error {
-	txJsonBytes, err := json.Marshal(tx)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, errors.New("json.Marshal"))
-	}
-	return self.config.DataBase.StoreTransactionLightMode(privatKey, chainId, blockHeight, txIndex, *tx.Hash(), txJsonBytes)
-}
-*/
-
-/*
 Save index(height) of block by block hash
 and
 Save block hash by index(height) of block
@@ -1253,57 +1240,6 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 	}
 	return voutList, nil
 }
-
-/*func (self *BlockChain) GetTransactionByHashInLightMode(txHash *common.Hash) (byte, *common.Hash, int, metadata.Transaction, error) {
-	const (
-		bigNumber   = 999999999
-		bigNumberTx = 999999999
-	)
-	var (
-		blockHeight uint32
-		txIndex     uint32
-		chainId     []byte
-	)
-	// Get transaction
-	tx := transaction.Tx{}
-	locationByte, txByte, err := self.config.DataBase.GetTransactionLightModeByHash(txHash)
-	Logger.log.Info("GetTransactionByHash - 1", locationByte, txByte, err)
-	if err != nil {
-		return byte(255), nil, -1, nil, err
-	}
-	err = json.Unmarshal(txByte, &tx)
-	if err != nil {
-		return byte(255), nil, -1, nil, err
-	}
-	// Handle string to get chainId, blockheight, txindex information
-	locations := strings.Split(string(locationByte), string("-"))
-	// Get Chain Id
-	chainId = []byte(locations[2])
-	// Get Block Height
-	tempBlockHeight := []byte(locations[3])
-	bufBlockHeight := bytes.NewBuffer(tempBlockHeight)
-	err = binary.Read(bufBlockHeight, binary.LittleEndian, &blockHeight)
-	if err != nil {
-		return byte(255), nil, -1, nil, err
-	}
-	blockHeight = uint32(bigNumber - blockHeight)
-	Logger.log.Info("Testing in GetTransactionByHash, blockHeight", blockHeight)
-	block, err := self.GetBlockByBlockHeight(int32(blockHeight), chainId[0])
-	if err != nil {
-		Logger.log.Error("ERROR in GetTransactionByHash, get Block by height", err)
-		return byte(255), nil, -1, nil, err
-	}
-	//Get txIndex
-	tempTxIndex := []byte(locations[4])
-	bufTxIndex := bytes.NewBuffer(tempTxIndex)
-	err = binary.Read(bufTxIndex, binary.LittleEndian, &txIndex)
-	if err != nil {
-		return byte(255), nil, -1, nil, err
-	}
-	txIndex = uint32(bigNumberTx - txIndex)
-	Logger.log.Info("Testing in GetTransactionByHash, blockHash, index, tx", block.Hash(), txIndex, tx)
-	return chainId[0], block.Hash(), int(txIndex), &tx, nil
-}*/
 
 // GetTransactionByHash - retrieve tx from txId(txHash)
 func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common.Hash, int, metadata.Transaction, error) {
