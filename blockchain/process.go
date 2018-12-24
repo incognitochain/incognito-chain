@@ -55,8 +55,8 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		}
 	}
 
-	// store full data of tx tracking(which block hash and index in block)
-	// in light mode running, with block not contain data of account in local wallet which will be stored block header s
+	// store full data of tx tracking(with tx hash,  block hash and index in block)
+	// in light mode running, any blocks not contain data of account in local wallet (which should only store block header)
 	// will not contain any tx in db -> can not get tx by tx hash
 	if len(block.Transactions) < 1 {
 		Logger.log.Infof("No transaction in this block")
