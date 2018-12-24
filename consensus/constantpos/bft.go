@@ -283,14 +283,14 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							valListTemp = &phaseData.Sigs[szRCombined][0].ValidatorsIdx
 							AggregatedSig := multiSigScheme.CombineMultiSig(listSigOfSigners)
 
-							var phaseData struct {
+							var replyData struct {
 								ValidatorsIdx []int
 								AggregatedSig string
 							}
-							phaseData.ValidatorsIdx = make([]int, len(*valListTemp))
-							copy(phaseData.ValidatorsIdx, *valListTemp)
-							phaseData.AggregatedSig = base58.Base58Check{}.Encode(AggregatedSig.Bytes(), byte(0x00))
-							msg, err := MakeMsgBFTReply(phaseData.AggregatedSig, phaseData.ValidatorsIdx)
+							replyData.ValidatorsIdx = make([]int, len(*valListTemp))
+							copy(replyData.ValidatorsIdx, *valListTemp)
+							replyData.AggregatedSig = base58.Base58Check{}.Encode(AggregatedSig.Bytes(), byte(0x00))
+							msg, err := MakeMsgBFTReply(replyData.AggregatedSig, replyData.ValidatorsIdx)
 							if err != nil {
 								Logger.log.Error(err)
 								return
