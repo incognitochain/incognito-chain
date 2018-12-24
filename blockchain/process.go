@@ -28,14 +28,20 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 
 	// Store block data
 	if self.config.LightMode {
-		// if block contain output of account in local wallet: store full block
+		//
+		// **** IN Light Mode running ***
+		//
+		// if block contain output of account in local wallet: store full block data
 		if self.BlockContainAccountLocalWallet(block) {
+			// this support database contain a full block data
 			err := self.StoreBlock(block)
 			if err != nil {
 				return NewBlockChainError(UnExpectedError, err)
 			}
 		} else {
 			// else: only store block header
+			// because db only store block header
+			// -> when we have blockhash, we only get block struct with only blockheader, not body or any more data
 			err := self.StoreBlockHeader(block)
 			if err != nil {
 				return NewBlockChainError(UnExpectedError, err)
