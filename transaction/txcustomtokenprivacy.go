@@ -49,7 +49,7 @@ func (tx *TxCustomTokenPrivacy) GetTxActualSize() uint64 {
 	return normalTxSize + tokenDataSize
 }
 
-// CreateTxCustomToken ...
+// Init -  build normal tx component and privacy custom token data
 func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
 	inputCoin []*privacy.InputCoin,
@@ -75,10 +75,12 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 	normalTx.Type = common.TxCustomTokenPrivacyType
 	txCustomToken.Tx = normalTx
 
+	// check action type and create privacy custom toke data
 	var handled = common.FalseValue
 	// Add token data params
 	switch tokenParams.TokenTxType {
 	case CustomTokenInit:
+		// case init a new privacy custom token
 		{
 			handled = common.TrueValue
 			txCustomToken.TxTokenPrivacyData = TxTokenPrivacyData{
@@ -128,10 +130,11 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			txCustomToken.TxTokenPrivacyData.PropertyID = *hashInitToken
 		}
 	case CustomTokenTransfer:
-		// create privacy tx for token
+		// make a transfering for privacy custom token
+		// fee always 0 and reuse function of normal tx for custom token ID
 		temp := Tx{}
 		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
-		temp.Init(senderKey,
+		err := temp.Init(senderKey,
 			tokenParams.Receiver,
 			tokenParams.TokenInput,
 			0,
@@ -139,6 +142,9 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			db,
 			propertyID,
 		)
+		if err != nil {
+			return err
+		}
 		txCustomToken.TxTokenPrivacyData.TxNormal = temp
 	}
 
