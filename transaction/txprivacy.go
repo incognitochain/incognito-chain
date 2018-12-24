@@ -678,7 +678,7 @@ func (tx *Tx) SetMetadata(meta metadata.Metadata) {
 
 func (tx *Tx) GetJSPubKey() []byte {
 	result := []byte{}
-	if len(tx.Proof.InputCoins) > 0 {
+	if tx.Proof != nil && len(tx.Proof.InputCoins) > 0 {
 		pubkey := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
 		result = make([]byte, len(pubkey))
 		copy(result, pubkey)
@@ -731,4 +731,14 @@ func (tx *Tx) CalculateTxValue() (*privacy.PaymentAddress, uint64) {
 		txValue += outCoin.CoinDetails.Value
 	}
 	return senderAddr, txValue
+}
+
+func (tx *Tx) CloneTxThenUpdateMetadata(meta metadata.Metadata) []byte {
+	clonedTx := *tx
+	clonedTx.SetMetadata(meta)
+	return common.ToBytes(clonedTx)
+}
+
+func (tx *Tx) GetLockTime() int64 {
+	return tx.LockTime
 }

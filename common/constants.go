@@ -74,5 +74,5 @@ const (
 	DCBAddress     = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"
 	GOVAddress     = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"
 	VoteAddress    = ""
-	BurningAddress = ""
+	BurningAddress = "1UuyVqB8YeYfTHJEmA1BBYSupdbrejr1ZAusnwSUuohUFZYmD6Q8b1C7mtk9ydN2GAY7ebSDyMcB1om8DJKbDRRW3QbGNhkyoLfYo9wcQ"
 )

@@ -638,7 +638,7 @@ func (self RpcServer) handleCreateRawTxWithOracleFeed(params interface{}, closeC
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	// Req param #4: buy/sell request info
+	// Req param #4: oracle feed
 	oracleFeed := arrayParams[4].(map[string]interface{})
 
 	assetTypeBytes := []byte(oracleFeed["assetType"].(string))
@@ -665,6 +665,67 @@ func (self RpcServer) handleCreateRawTxWithOracleFeed(params interface{}, closeC
 
 func (self RpcServer) handleCreateAndSendTxWithOracleFeed(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	data, err := self.handleCreateRawTxWithOracleFeed(params, closeChan)
+	if err != nil {
+		return nil, err
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
+	}
+	return result, nil
+}
+
+func (self RpcServer) handleCreateRawTxWithUpdatingOracleBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	arrayParams := common.InterfaceSlice(params)
+	normalTx, err := self.buildRawTransaction(params)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	// Req param #4: updating oracle board info
+	updatingOracleBoard := arrayParams[4].(map[string]interface{})
+	action := int8(updatingOracleBoard["action"].(float64))
+	oraclePubKeys := updatingOracleBoard["oraclePubKeys"].([]interface{})
+	assertedOraclePKs := [][]byte{}
+	for _, pk := range oraclePubKeys {
+		assertedOraclePKs = append(assertedOraclePKs, []byte(pk.(string)))
+	}
+	signs := updatingOracleBoard["signs"].(map[string]interface{})
+	assertedSigns := map[string][]byte{}
+	for k, s := range signs {
+		assertedSigns[k] = []byte(s.(string))
+	}
+	metaType := metadata.UpdatingOracleBoardMeta
+	normalTx.Metadata = metadata.NewUpdatingOracleBoard(
+		action,
+		assertedOraclePKs,
+		assertedSigns,
+		metaType,
+	)
+	byteArrays, err := json.Marshal(normalTx)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            normalTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (self RpcServer) handleCreateAndSendTxWithUpdatingOracleBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	data, err := self.handleCreateRawTxWithUpdatingOracleBoard(params, closeChan)
 	if err != nil {
 		return nil, err
 	}

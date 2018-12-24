@@ -32,9 +32,10 @@ func (mb *MetadataBase) Hash() *common.Hash {
 	return &hash
 }
 
-func (mb *MetadataBase) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+func (mb *MetadataBase) CheckTransactionFee(tr Transaction, minFeePerKbTx uint64) bool {
 	txFee := tr.GetTxFee()
-	if txFee < minFee {
+	fullFee := minFeePerKbTx * tr.GetTxActualSize()
+	if txFee < fullFee {
 		return false
 	}
 	return true
@@ -105,6 +106,7 @@ type Transaction interface {
 	ValidateTransaction(bool, database.DatabaseInterface, byte, *common.Hash) bool
 	GetMetadataType() int
 	GetType() string
+	GetLockTime() int64
 	GetTxActualSize() uint64
 	GetSenderAddrLastByte() byte
 	GetTxFee() uint64
@@ -125,4 +127,5 @@ type Transaction interface {
 	GetReceivers() ([][]byte, []uint64)
 	IsPrivacy() bool
 	IsCoinsBurning() bool
+	CloneTxThenUpdateMetadata(Metadata) []byte
 }
