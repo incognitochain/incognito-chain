@@ -141,11 +141,11 @@ func (pro *PKComZeroProof) SetBytes(bytestr []byte) error {
 
 	err := pro.commitmentValue.Decompress(bytestr[0:privacy.CompressedPointSize])
 	if err != nil {
-		return errors.New("Decompressed failed!")
+		return privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("Decompressed failed!"))
 	}
 	err = pro.commitmentZeroS.Decompress(bytestr[privacy.CompressedPointSize : 2*privacy.CompressedPointSize])
 	if err != nil {
-		return errors.New("Decompressed failed!")
+		return privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("Decompressed failed!"))
 	}
 	pro.z.SetBytes(bytestr[2*privacy.CompressedPointSize : 2*privacy.CompressedPointSize+privacy.BigIntSize])
 	*pro.index = bytestr[2*privacy.CompressedPointSize+privacy.BigIntSize]

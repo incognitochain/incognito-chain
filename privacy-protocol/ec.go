@@ -17,7 +17,6 @@ var Curve = elliptic.P256()
 
 //EllipticPointHelper contain some function for elliptic point
 type EllipticPointHelper interface {
-	// <0xakk0r0kamui>
 	Inverse() (*EllipticPoint, error)
 	Randomize()
 	Compress() []byte
@@ -26,14 +25,9 @@ type EllipticPointHelper interface {
 	ComputeYCoord()
 	Hash() *EllipticPoint
 	Set(x, y *big.Int)
-
-	// </0xakk0r0kamui>
-
-	// <PTD>
 	AddPoint(EllipticPoint) *EllipticPoint
 	ScalarMulPoint(*big.Int) *EllipticPoint
 	IsEqual(EllipticPoint) bool
-	// </PTD>
 }
 
 // EllipticPoint represents an point of elliptic curve,
@@ -80,7 +74,6 @@ func (point *EllipticPoint) ComputeYCoord() error {
 	x3.Add(x3, Curve.Params().B)
 	x3.Sub(x3, xTemp.Mul(point.X, big.NewInt(3)))
 	x3.Mod(x3, Curve.Params().P)
-
 	// //check P = 3 mod 4?
 	// if temp.Mod(Q, new(big.Int).SetInt64(4)).Cmp(new(big.Int).SetInt64(3)) == 0 {
 	// 	//		fmt.Println("Ok!!!")
@@ -254,52 +247,6 @@ func (point EllipticPoint) Hash(index int) *EllipticPoint {
 func (point * EllipticPoint) Set(x, y *big.Int) {
 	point.X.Set(x)
 	point.Y.Set(y)
-}
-
-func TestECC() bool {
-	// //Test compress && decompress
-	// eccPoint := new(EllipticPoint)
-	// eccPoint.Randomize()
-	// neg := 0
-	// for i := 0; i < 2000; i++ {
-	// 	eccPoint1 := new(EllipticPoint)
-	// 	eccPoint1.Randomize()
-	// 	eccPoint2 := new(EllipticPoint)
-	// 	eccPoint2.Randomize()
-	// 	eccPointX := new(EllipticPoint)
-	// 	// eccPointX.Randomize()
-	// 	start := time.Now()
-	// 	eccPointX.X, eccPointX.Y = Curve.Add(eccPoint1.X, eccPoint1.Y, eccPoint2.X, eccPoint2.Y)
-	// 	end := time.Now()
-	// 	time1 := end.Sub(start)
-	// 	start = time.Now()
-	// 	eccPointX.X = big.NewInt(0)
-	// 	eccPointX.Y = big.NewInt(0)
-	// 	*eccPointX = (*eccPoint1).Add(*eccPoint2)
-	// 	end = time.Now()
-	// 	time2 := end.Sub(start)
-	// 	// fmt.Printf("%v %v \n", time1, time2)
-	// 	if time1 > time2 {
-	// 		neg++
-	// 	}
-	// }
-	// fmt.Println(neg)
-
-	// if !Curve.IsOnCurve(eccPoint.X, eccPoint.Y) {
-	// 	return false
-	// }
-	// fmt.Printf("On curve!")
-	// if !eccPoint.IsSafe() {
-	// 	return false
-	// }
-	// fmt.Printf("Safe!")
-	// compressBytes := eccPoint.Compress()
-	// eccPointDecompressed := new(EllipticPoint)
-	// err := eccPointDecompressed.Decompress(compressBytes)
-	// if err != nil {
-	// 	return false
-	// }
-	return true
 }
 
 func (point EllipticPoint) Add(targetPoint *EllipticPoint) *EllipticPoint {

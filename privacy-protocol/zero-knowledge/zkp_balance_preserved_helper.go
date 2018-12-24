@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/minio/blake2b-simd"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/pkg/errors"
 	"math"
 	"math/big"
 	"strconv"
@@ -195,7 +196,7 @@ func InnerProductVerify(c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy
 	curIt := len(ipp.Challenges) - 1
 
 	if ipp.Challenges[curIt].Cmp(chal1) != 0 {
-		fmt.Println("IPVerify - Initial Challenge Failed")
+		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("IPVerify - Initial Challenge Failed"))
 		return false
 	}
 
@@ -218,7 +219,7 @@ func InnerProductVerify(c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy
 		chal2 := new(big.Int).SetBytes(s256[:])
 
 		if ipp.Challenges[curIt].Cmp(chal2) != 0 {
-			fmt.Println("IPVerify - Challenge verification failed at index " + strconv.Itoa(curIt))
+			privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("IPVerify - Challenge verification failed at index " + strconv.Itoa(curIt)))
 			return false
 		}
 
@@ -233,9 +234,7 @@ func InnerProductVerify(c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy
 	Pcalc := Pcalc1.Add(Pcalc2).Add(Pcalc3)
 
 	if !Pprime.IsEqual(Pcalc) {
-		fmt.Println("IPVerify - Final Commitment checking failed")
-		fmt.Printf("Final Pprime value: %s \n", Pprime)
-		fmt.Printf("Calculated Pprime value to check against: %s \n", Pcalc)
+		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("IPVerify - Final Commitment checking failed"))
 		return false
 	}
 
@@ -312,9 +311,7 @@ func InnerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*pri
 // The length here always has to be a power of two
 func InnerProduct(a []*big.Int, b []*big.Int) *big.Int {
 	if len(a) != len(b) {
-		fmt.Println("InnerProduct: Uh oh! Arrays not of the same length")
-		fmt.Printf("len(a): %d\n", len(a))
-		fmt.Printf("len(b): %d\n", len(b))
+		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("InnerProduct: Uh oh! Arrays not of the same length"))
 	}
 
 	c := big.NewInt(0)
@@ -329,9 +326,7 @@ func InnerProduct(a []*big.Int, b []*big.Int) *big.Int {
 
 func VectorAdd(v []*big.Int, w []*big.Int) []*big.Int {
 	if len(v) != len(w) {
-		fmt.Println("VectorAddPoint: Uh oh! Arrays not of the same length")
-		fmt.Printf("len(v): %d\n", len(v))
-		fmt.Printf("len(w): %d\n", len(w))
+		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("VectorAddPoint: Uh oh! Arrays not of the same length"))
 	}
 	result := make([]*big.Int, len(v))
 	for i := range v {
@@ -342,9 +337,7 @@ func VectorAdd(v []*big.Int, w []*big.Int) []*big.Int {
 
 func VectorHadamard(v, w []*big.Int) []*big.Int {
 	if len(v) != len(w) {
-		fmt.Println("VectorHadamard: Uh oh! Arrays not of the same length")
-		fmt.Printf("len(v): %d\n", len(w))
-		fmt.Printf("len(w): %d\n", len(v))
+		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("VectorHadamard: Uh oh! Arrays not of the same length"))
 	}
 
 	result := make([]*big.Int, len(v))
