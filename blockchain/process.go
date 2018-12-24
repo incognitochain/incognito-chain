@@ -25,7 +25,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	blockHash := block.Hash().String()
 	Logger.log.Infof("Processing block %+v", blockHash)
 
-	if self.config.Light {
+	if self.config.LightMode {
 		err := self.StoreBlockHeader(block)
 		if err != nil {
 			return NewBlockChainError(UnExpectedError, err)

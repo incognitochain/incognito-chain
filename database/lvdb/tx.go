@@ -541,7 +541,7 @@ func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, err
 }
 
 /*
-	Store Transaction in Light mode
+	Store Transaction in LightMode mode
 	1. Key -> value : prefix(privateky)privateKey-[-]-chainId-[-]-(999999999 - blockHeight)-[-]-(999999999 - txIndex) 		-> 		tx
 	2. Key -> value :							prefix(transaction)txHash 												->  	privateKey-chainId-blockHeight-txIndex
 
@@ -597,7 +597,7 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 }
 
 /*
-	Get Transaction in Light mode
+	Get Transaction in LightMode mode
 	Get transaction by prefix(privateKey)privateKey, this prefix help to get all transaction belong to that privatekey
 	1. Key -> value : prefix(privateky)-privateKey-chainId-(999999999 - blockHeight)-(999999999 - txIndex) 		-> 		tx
 

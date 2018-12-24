@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"bytes"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -23,6 +22,7 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/voting"
 	"github.com/ninjadotorg/constant/wallet"
+	"encoding/binary"
 )
 
 const (
@@ -63,10 +63,12 @@ type Config struct {
 	// This field is required.
 	ChainParams *Params
 
-	//Light mode flag
-	Light bool
+	//LightMode mode flag
+	LightMode bool
+
 	//Wallet for light mode
 	Wallet *wallet.Wallet
+
 	//snapshot reward
 	customTokenRewardSnapshot map[string]uint64
 }
@@ -284,7 +286,7 @@ func (self *BlockChain) GetBlockByBlockHeight(height int32, chainId byte) (*Bloc
 
 	block := Block{}
 	blockHeader := BlockHeader{}
-	if self.config.Light {
+	if self.config.LightMode {
 		// with light node, we can only get data of header of block
 		err = json.Unmarshal(blockBytes, &blockHeader)
 		if err != nil {
@@ -310,7 +312,7 @@ func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 	}
 	block := Block{}
 	blockHeader := BlockHeader{}
-	if self.config.Light {
+	if self.config.LightMode {
 		// with light node, we can only get data of header of block
 		err = json.Unmarshal(blockBytes, &blockHeader)
 		if err != nil {
@@ -362,15 +364,15 @@ func (self *BlockChain) StoreBlockHeader(block *Block) error {
 }
 
 /*
-	Store Transaction in Light mode
+	Store Transaction in LightMode mode
 */
-/*func (self *BlockChain) StoreUnspentTransactionLightMode(privatKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx *transaction.Tx) error {
+func (self *BlockChain) StoreUnspentTransactionLightMode(privatKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx *transaction.Tx) error {
 	txJsonBytes, err := json.Marshal(tx)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, errors.New("json.Marshal"))
 	}
 	return self.config.DataBase.StoreTransactionLightMode(privatKey, chainId, blockHeight, txIndex, *(tx.Hash()), txJsonBytes)
-}*/
+}
 
 /*
 Save index(height) of block by block hash
@@ -499,7 +501,7 @@ func (self *BlockChain) GetAllBlocks() ([][]*Block, error) {
 			}
 			block := Block{}
 			blockHeader := BlockHeader{}
-			if self.config.Light {
+			if self.config.LightMode {
 				// with light node, we can only get data of header of block
 				err = json.Unmarshal(blockBytes, &blockHeader)
 				if err != nil {
@@ -533,7 +535,7 @@ func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
 		}
 		block := Block{}
 		blockHeader := BlockHeader{}
-		if self.config.Light {
+		if self.config.LightMode {
 			// with light node, we can only get data of header of block
 			err = json.Unmarshal(blockBytes, &blockHeader)
 			if err != nil {
@@ -883,7 +885,7 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ChainID)
 	var err error
-	if self.config.Light {
+	if self.config.LightMode {
 		err = view.fetchTxViewPointFromBlock(self.config.DataBase, block, nil)
 	} else {
 		err = view.fetchTxViewPointFromBlock(self.config.DataBase, block, self.config.Wallet)
@@ -1116,7 +1118,7 @@ func (self *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, chainI
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 
-	if self.config.Light {
+	if self.config.LightMode {
 		// Get unspent tx with light mode
 		// TODO: 0xsirrush
 	}
@@ -1312,9 +1314,8 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 	blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
 	if err != nil {
 		// check lightweight
-		if self.config.Light {
+		if self.config.LightMode {
 			// with light node, we can try get data in light mode
-			Logger.log.Info("ERROR in GetTransactionByHash, change to get in light mode", err)
 			return self.GetTransactionByHashInLightMode(txHash)
 		}
 
