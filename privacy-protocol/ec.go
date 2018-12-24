@@ -245,6 +245,12 @@ func (point EllipticPoint) Hash(index int) *EllipticPoint {
 }
 
 func (point * EllipticPoint) Set(x, y *big.Int) {
+	if (point.X ==nil){
+		point.X = big.NewInt(0)
+	}
+	if (point.Y ==nil){
+		point.Y = big.NewInt(0)
+	}
 	point.X.Set(x)
 	point.Y.Set(y)
 }
