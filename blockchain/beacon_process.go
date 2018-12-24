@@ -135,8 +135,14 @@ func (self *BlockChain) AcceptBeaconBlock(blockHeight uint64, aggregatedSig stri
 }
 
 //TODO: verify but not store
+// 90, maybe accept 91
 func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) error {
 	return nil
+}
+
+//TODO: get maybeaccept block: 91
+func (self *BlockChain) GetMaybeAcceptBeaconBlock() BeaconBlock {
+	return BeaconBlock{}
 }
 func (self *BlockChain) VerifyPostProcessingBlockBeacon(block *BeaconBlock) error {
 	/* Verify Post-processing data
