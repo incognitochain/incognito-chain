@@ -109,12 +109,12 @@ func (pro *PKComOpeningsProof) SetBytes(bytestr []byte) error {
 	pro.commitmentValue = new(privacy.EllipticPoint)
 	pro.commitmentValue.Decompress(bytestr[0:privacy.CompressedPointSize])
 	if !pro.commitmentValue.IsSafe() {
-		return errors.New("Decompressed failed!")
+		return privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("Decompressed failed!"))
 	}
 	pro.alpha = new(privacy.EllipticPoint)
 	pro.alpha.Decompress(bytestr[privacy.CompressedPointSize : privacy.CompressedPointSize*2])
 	if !pro.alpha.IsSafe() {
-		return errors.New("Decompressed failed!")
+		return privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("Decompressed failed!"))
 	}
 
 	pro.gamma = make([]*big.Int, (len(bytestr)-privacy.CompressedPointSize*2)/privacy.BigIntSize)

@@ -13,10 +13,8 @@ func Eval(seed, derivator *big.Int, generator *EllipticPoint) *EllipticPoint {
 	if !generator.IsSafe() {
 		return nil
 	}
-
 	// res stores the resulting point
 	res := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 	res.X, res.Y = Curve.ScalarMult(generator.X, generator.Y, (new(big.Int).ModInverse(new(big.Int).Add(seed, derivator), Curve.Params().N)).Bytes())
-
 	return &res
 }

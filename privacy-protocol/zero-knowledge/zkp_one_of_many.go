@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
+	"github.com/pkg/errors"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/privacy-protocol"
@@ -299,19 +300,19 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	//}
 
 	if N != privacy.CMRingSize {
-		return nil, fmt.Errorf("the number of Commitment list's elements must be equal to CMRingSize")
+		return nil,
+		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("the number of Commitment list's elements must be equal to CMRingSize"))
 	}
-
 	n := privacy.CMRingSizeExp
 
 	// Check indexIsZero
 	if wit.indexIsZero > uint64(N) || wit.indexIsZero < 0 {
-		return nil, fmt.Errorf("Index is zero must be Index in list of commitments")
+		return nil, privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("Index is zero must be Index in list of commitments"))
 	}
 
 	// Check Index
 	if wit.index < privacy.SK || wit.index > privacy.RAND {
-		return nil, fmt.Errorf("Index must be between index SK and index RAND")
+		return nil, privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("Index must be between index SK and index RAND"))
 	}
 
 	// represent indexIsZero in binary
@@ -461,7 +462,7 @@ func (pro *PKOneOfManyProof) Verify() bool {
 	//	n++
 	//}
 	if N != privacy.CMRingSize {
-		fmt.Errorf("the number of Commitment list's elements must be equal to CMRingSize")
+		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("the number of Commitment list's elements must be equal to CMRingSize"))
 		return false
 	}
 	n := privacy.CMRingSizeExp

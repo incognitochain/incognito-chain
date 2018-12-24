@@ -3,7 +3,7 @@ package privacy
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
+	"github.com/pkg/errors"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
@@ -121,7 +121,7 @@ func isOdd(a *big.Int) bool {
 // DecompressKey decompress public key to elliptic point
 func DecompressKey(pubKeyStr []byte) (pubkey *EllipticPoint, err error) {
 	if len(pubKeyStr) == 0 || len(pubKeyStr) != 33 {
-		return nil, fmt.Errorf("pubkey string len is wrong")
+		return nil, NewPrivacyErr(UnexpectedErr, errors.New("pubkey string len is wrong"))
 	}
 
 	pubkey = new(EllipticPoint)
@@ -132,13 +132,13 @@ func DecompressKey(pubKeyStr []byte) (pubkey *EllipticPoint, err error) {
 	}
 
 	if pubkey.X.Cmp(Curve.Params().P) >= 0 {
-		return nil, fmt.Errorf("pubkey X parameter is >= to P")
+		return nil, NewPrivacyErr(UnexpectedErr, errors.New("pubkey X parameter is >= to P"))
 	}
 	if pubkey.Y.Cmp(Curve.Params().P) >= 0 {
-		return nil, fmt.Errorf("pubkey Y parameter is >= to P")
+		return nil, NewPrivacyErr(UnexpectedErr, errors.New("pubkey Y parameter is >= to P"))
 	}
 	if !Curve.Params().IsOnCurve(pubkey.X, pubkey.Y) {
-		return nil, fmt.Errorf("pubkey isn't on P256 curve")
+		return nil, NewPrivacyErr(UnexpectedErr, errors.New("pubkey isn't on P256 curve"))
 	}
 	return pubkey, nil
 }

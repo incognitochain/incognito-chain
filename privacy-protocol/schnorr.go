@@ -66,7 +66,7 @@ func (priKey *SchnPrivKey) KeyGen() {
 //Sign is function which using for sign on hash array by private key
 func (priKey SchnPrivKey) Sign(hash []byte) (*SchnSignature, error) {
 	if len(hash) != 32 {
-		return nil, errors.New("Hash length must be 32 bytes")
+		return nil, NewPrivacyErr(UnexpectedErr, errors.New("Hash length must be 32 bytes"))
 	}
 
 	genPoint := *new(EllipticPoint)

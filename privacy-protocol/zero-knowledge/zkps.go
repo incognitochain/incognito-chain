@@ -1,11 +1,9 @@
 package zkp
-
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
@@ -775,7 +773,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		if outputCoins[i].CoinDetails.Value > 0 {
 			outputValue[i] = big.NewInt(int64(outputCoins[i].CoinDetails.Value))
 		} else {
-			return errors.New("output coin's value is less than 0")
+			return privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("output coin's value is less than 0"))
 		}
 	}
 	if wit.ComOutputMultiRangeWitness == nil {
@@ -990,12 +988,12 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 		for j := 0; j < privacy.CMRingSize; j++ {
 			commitmentBytes, err := db.GetCommitmentByIndex(tokenID, pro.OneOfManyProof[i].CommitmentIndexs[j], chainId)
 			if err != nil {
-				fmt.Printf("Error when verify: %v\n", err)
+				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("Zero knowledge verification error"))
 				return false
 			}
 			commitments[j], err = privacy.DecompressKey(commitmentBytes)
 			if err != nil {
-				fmt.Printf("Error when verify: %v\n", err)
+				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("Zero knowledge verification error"))
 				return false
 			}
 

@@ -16,7 +16,7 @@ type AES struct{
 
 func (self *AES) GenKey(keyLength byte) error{
 	if keyLength != 16 || keyLength != 24 || keyLength != 32{
-		return errors.New("privacy/aes: invalid key size " + strconv.Itoa(int(keyLength)))
+		return NewPrivacyErr(UnexpectedErr, errors.New("privacy/aes: invalid key size " + strconv.Itoa(int(keyLength))))
 	}
 	self.key = RandBytes(int(keyLength))
 	return nil
