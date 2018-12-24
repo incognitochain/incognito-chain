@@ -286,12 +286,15 @@ func (self *BlockChain) GetBlockByBlockHeight(height int32, chainId byte) (*Bloc
 	block := Block{}
 	blockHeader := BlockHeader{}
 	if self.config.LightMode {
-		// with light node, we can only get data of header of block
-		err = json.Unmarshal(blockBytes, &blockHeader)
+		err = json.Unmarshal(blockBytes, &block)
 		if err != nil {
-			return nil, err
+			// with light node, block data can only contain block header
+			err = json.Unmarshal(blockBytes, &blockHeader)
+			if err != nil {
+				return nil, err
+			}
+			block.Header = blockHeader
 		}
-		block.Header = blockHeader
 	} else {
 		err = json.Unmarshal(blockBytes, &block)
 		if err != nil {
@@ -312,12 +315,15 @@ func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 	block := Block{}
 	blockHeader := BlockHeader{}
 	if self.config.LightMode {
-		// with light node, we can only get data of header of block
-		err = json.Unmarshal(blockBytes, &blockHeader)
+		err = json.Unmarshal(blockBytes, &block)
 		if err != nil {
-			return nil, err
+			// with light node, block data can only contain block header
+			err = json.Unmarshal(blockBytes, &blockHeader)
+			if err != nil {
+				return nil, err
+			}
+			block.Header = blockHeader
 		}
-		block.Header = blockHeader
 	} else {
 		err = json.Unmarshal(blockBytes, &block)
 		if err != nil {
@@ -524,12 +530,15 @@ func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
 		block := Block{}
 		blockHeader := BlockHeader{}
 		if self.config.LightMode {
-			// with light node, we can only get data of header of block
-			err = json.Unmarshal(blockBytes, &blockHeader)
+			err = json.Unmarshal(blockBytes, &block)
 			if err != nil {
-				return nil, err
+				// with light node, block data can only contain block header
+				err = json.Unmarshal(blockBytes, &blockHeader)
+				if err != nil {
+					return nil, err
+				}
+				block.Header = blockHeader
 			}
-			block.Header = blockHeader
 		} else {
 			err = json.Unmarshal(blockBytes, &block)
 			if err != nil {
@@ -1245,11 +1254,6 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common.Hash, int, metadata.Transaction, error) {
 	blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
 	if err != nil {
-		// check lightweight
-		if self.config.LightMode {
-			// with light node, we can try get data in light mode
-			return byte(255), nil, -1, nil, NewBlockChainError(NotSupportInLightMode, nil)
-		}
 		return byte(255), nil, -1, nil, err
 	}
 	block, err := self.GetBlockByBlockHash(blockHash)
@@ -1263,10 +1267,6 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 
 // ListCustomToken - return all custom token which existed in network
 func (self *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomToken, error) {
-	if self.config.LightMode {
-		// TODO 0xsirrush
-		return nil, NewBlockChainError(NotSupportInLightMode, nil)
-	}
 	data, err := self.config.DataBase.ListCustomToken()
 	if err != nil {
 		return nil, err
@@ -1289,10 +1289,6 @@ func (self *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomT
 
 // ListCustomToken - return all custom token which existed in network
 func (self *BlockChain) ListPrivacyCustomToken() (map[common.Hash]transaction.TxCustomTokenPrivacy, error) {
-	if self.config.LightMode {
-		// TODO 0xsirrush
-		return nil, NewBlockChainError(NotSupportInLightMode, nil)
-	}
 	data, err := self.config.DataBase.ListPrivacyCustomToken()
 	if err != nil {
 		return nil, err

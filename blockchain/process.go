@@ -25,48 +25,46 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	blockHash := block.Hash().String()
 	Logger.log.Infof("Processing block %+v", blockHash)
 
+	// Store block data
 	if self.config.LightMode {
-		// only store block header
-		err := self.StoreBlockHeader(block)
-		if err != nil {
-			return NewBlockChainError(UnExpectedError, err)
-		}
-		// store tx which relate to account in local wallet
-		/*if len(block.Transactions) < 1 {
-			Logger.log.Infof("No transaction in this block")
-		} else {
-			Logger.log.Infof("Number of transaction in this block %+v", len(block.Transactions))
-		}
-		for _, account := range self.config.Wallet.MasterAccount.Child {
-			for index, tx := range block.Transactions {
-				err := self.StoreTransactionLightMode(&account.Key.KeySet.PrivateKey, block.Header.ChainID, block.Header.Height, index, tx)
-				if err != nil {
-					return NewBlockChainError(UnExpectedError, err)
-				}
+		// if block contain output of account in local wallet: store full block
+		if self.BlockContainAccountLocalWallet(block) {
+			err := self.StoreBlock(block)
+			if err != nil {
+				return NewBlockChainError(UnExpectedError, err)
 			}
-		}*/
+		} else {
+			// else: only store block header
+			err := self.StoreBlockHeader(block)
+			if err != nil {
+				return NewBlockChainError(UnExpectedError, err)
+			}
+		}
 	} else {
-		// save full data of block
+		// store full data of block
 		err := self.StoreBlock(block)
 		if err != nil {
 			return NewBlockChainError(UnExpectedError, err)
 		}
-
-		// store full data of tx tracking(which block and index in block)
-		if len(block.Transactions) < 1 {
-			Logger.log.Infof("No transaction in this block")
-		} else {
-			Logger.log.Infof("Number of transaction in this block %+v", len(block.Transactions))
-		}
-		for index, tx := range block.Transactions {
-			err := self.StoreTransactionIndex(tx.Hash(), block.Hash(), index)
-			if err != nil {
-				Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
-				return NewBlockChainError(UnExpectedError, err)
-			}
-			Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
-		}
 	}
+
+	// store full data of tx tracking(which block hash and index in block)
+	// in light mode running, with block not contain data of account in local wallet which will be stored block header s
+	// will not contain any tx in db -> can not get tx by tx hash
+	if len(block.Transactions) < 1 {
+		Logger.log.Infof("No transaction in this block")
+	} else {
+		Logger.log.Infof("Number of transaction in this block %+v", len(block.Transactions))
+	}
+	for index, tx := range block.Transactions {
+		err := self.StoreTransactionIndex(tx.Hash(), block.Hash(), index)
+		if err != nil {
+			Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
+			return NewBlockChainError(UnExpectedError, err)
+		}
+		Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
+	}
+
 	// TODO: @0xankylosaurus optimize for loop once instead of multiple times ; metadata.process
 	// save index of block
 	err := self.StoreBlockIndex(block)
@@ -131,4 +129,10 @@ func (self *BlockChain) BlockExists(hash *common.Hash) (bool, error) {
 	} else {
 		return result, nil
 	}
+}
+
+func (self *BlockChain) BlockContainAccountLocalWallet(block *Block) (bool) {
+	// TODO
+	// 0xsirrush
+	return true
 }
