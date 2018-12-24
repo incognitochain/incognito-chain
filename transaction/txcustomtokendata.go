@@ -93,7 +93,9 @@ func (self TxTokenData) Hash() (*common.Hash, error) {
 	if self.Vouts == nil {
 		return nil, errors.New("Vout is empty")
 	}
-	record := self.PropertyName + self.PropertySymbol + fmt.Sprintf("%d", self.Amount)
+	record := self.PropertyName
+	record += self.PropertySymbol
+	record += fmt.Sprintf("%d", self.Amount)
 	if len(self.Vins) > 0 {
 		for _, in := range self.Vins {
 			record += in.TxCustomTokenID.String()
