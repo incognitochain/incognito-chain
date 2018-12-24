@@ -131,7 +131,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 		}
 		// ValidateTransaction vote and propose transaction
 
-		// TODO: need to determine a tx is in privacy format or not
+		// TODO: 0xbunyip need to determine a tx is in privacy format or not
 		if !tx.ValidateTxByItself(tx.IsPrivacy(), blockgen.chain.config.DataBase, blockgen.chain, chainID) {
 			txToRemove = append(txToRemove, metadata.Transaction(tx))
 			continue
@@ -446,8 +446,8 @@ concludeBlock:
 		ChainID:            chainID,
 		SalaryFund:         currentSalaryFund + incomeFromBonds + totalFee + salaryFundAdd - totalSalary - govPayoutAmount - buyBackCoins - totalRefundAmt - totalOracleRewards,
 		BankFund:           prevBlock.Header.BankFund + loanPaymentAmount - bankPayoutAmount,
-		GOVConstitution:    prevBlock.Header.GOVConstitution, // TODO: need get from gov-params tx
-		DCBConstitution:    prevBlock.Header.DCBConstitution, // TODO: need get from dcb-params tx
+		GOVConstitution:    prevBlock.Header.GOVConstitution, // TODO: 0xbunyip need get from gov-params tx
+		DCBConstitution:    prevBlock.Header.DCBConstitution, // TODO: 0xbunyip need get from dcb-params tx
 		Oracle:             prevBlock.Header.Oracle,
 	}
 	if block.Header.GOVConstitution.GOVParams.SellingBonds != nil {

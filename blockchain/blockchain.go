@@ -1111,7 +1111,7 @@ func (self *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, chainI
 
 	if self.config.Light {
 		// Get unspent tx with light mode
-		// TODO
+		// TODO: 0xsirrush
 	}
 	// get list outputcoin of pubkey from db
 
