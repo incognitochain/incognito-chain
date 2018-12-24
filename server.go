@@ -210,6 +210,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		ConnManager: self.connManager,
 		Server:      self,
 		BlockGen:    self.blockgen,
+		NodeRole:    cfg.NodeRole,
 	})
 	if err != nil {
 		return err

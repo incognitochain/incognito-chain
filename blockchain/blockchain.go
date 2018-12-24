@@ -87,10 +87,6 @@ type Config struct {
 	customTokenRewardSnapshot map[string]uint64
 }
 
-func (self *BlockChain) IsReady() {
-
-}
-
 func (self *BlockChain) GetDatabase() database.DatabaseInterface {
 	return self.config.DataBase
 }
@@ -1463,4 +1459,8 @@ func (self BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.
 func (self BlockChain) GetFeePerKbTx() uint64 {
 	// return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
 	return 0
+}
+
+func (self *BlockChain) IsReady() bool {
+	return true
 }

@@ -21,16 +21,18 @@ import (
 
 type BFTProtocol struct {
 	sync.Mutex
-	Phase      string
-	cQuit      chan struct{}
-	cTimeout   chan struct{}
+
 	cBFTMsg    chan wire.Message
 	BlockGen   *blockchain.BlkTmplGenerator
 	Chain      *blockchain.BlockChain
 	Server     serverInterface
 	UserKeySet *cashec.KeySet
 	Committee  []string
-	started    bool
+
+	phase    string
+	cQuit    chan struct{}
+	cTimeout chan struct{}
+	started  bool
 
 	pendingBlock blockchain.BFTBlockInterface
 	dataForSig   struct {
@@ -52,9 +54,9 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 	}
 	self.started = true
 	self.cQuit = make(chan struct{})
-	self.Phase = "listen"
+	self.phase = "listen"
 	if isProposer {
-		self.Phase = "propose"
+		self.phase = "propose"
 	}
 
 	go func() {
@@ -67,7 +69,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 			case <-self.cQuit:
 				return
 			default:
-				switch self.Phase {
+				switch self.phase {
 				case "propose":
 					time.AfterFunc(ProposeTimeout*time.Second, func() {
 						close(self.cTimeout)
@@ -98,7 +100,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 						self.Server.PushMessageToShard(msg, shardID)
 						self.pendingBlock = newBlock
 					}
-					self.Phase = "prepare"
+					self.phase = "prepare"
 				case "listen":
 					time.AfterFunc(ListenTimeout*time.Second, func() {
 						close(self.cTimeout)
@@ -140,7 +142,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							self.dataForSig.Ri = myRi
 							self.dataForSig.r = myr
 							self.pendingBlock = phaseData.Block
-							self.Phase = "prepare"
+							self.phase = "prepare"
 						}
 					case <-self.cTimeout:
 					}
@@ -220,7 +222,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 								self.Server.PushMessageToShard(msg, shardID)
 							}
 
-							self.Phase = "commit"
+							self.phase = "commit"
 							break
 						}
 					}
@@ -299,7 +301,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 								self.Server.PushMessageToShard(msg, shardID)
 							}
 
-							self.Phase = "reply"
+							self.phase = "reply"
 							break
 						}
 					}
