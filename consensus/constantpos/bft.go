@@ -231,6 +231,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 						close(self.cTimeout)
 					})
 					type validatorSig struct {
+						Pubkey        string
 						ValidatorsIdx []int
 						Sig           string
 					}
@@ -244,6 +245,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 						case msgCommit := <-self.cBFTMsg:
 							if msgCommit.MessageType() == wire.CmdBFTCommit {
 								newSig := validatorSig{
+									Pubkey:        msgCommit.(*wire.MessageBFTCommit).Pubkey,
 									ValidatorsIdx: msgCommit.(*wire.MessageBFTCommit).ValidatorsIdx,
 									Sig:           msgCommit.(*wire.MessageBFTCommit).CommitSig,
 								}
