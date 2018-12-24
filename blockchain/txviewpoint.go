@@ -214,6 +214,8 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 					acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
 				}
 				acceptedSnD = append(acceptedSnD, snDs...)
+
+				// with custom token, we dont care light mode and store fully TODO sirrush
 				view.customTokenTxs[int32(indexTx)] = tx
 			}
 		case common.TxCustomTokenPrivacyType:
@@ -265,6 +267,8 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
+
+				// with custom token, we dont care light mode and store fully TODO sirrush
 				view.privacyCustomTokenViewPoint[int32(indexTx)] = subView
 				view.privacyCustomTokenTxs[int32(indexTx)] = tx
 			}

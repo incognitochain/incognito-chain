@@ -185,7 +185,10 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 		*self.config.Database,
 		nil, // use for constant coin -> nil is valid
 	)
-	return &tx, NewRPCError(ErrUnexpected, err)
+	if err.(*transaction.TransactionError) != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	return &tx, nil
 }
 
 /*
@@ -194,7 +197,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	var err error
 	tx, err := self.buildRawTransaction(params)
-	if err != nil {
+	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -263,19 +266,17 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 handleCreateAndSendTx - RPC creates transaction and send to network
 */
 func (self RpcServer) handleCreateAndSendTx(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	var err error
 	data, err := self.handleCreateRawTransaction(params, closeChan)
-	if err != nil {
+	if err.(*RPCError) != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
 	base58CheckData := tx.Base58CheckData
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
-	if err != nil {
+	if err.(*RPCError) != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result := jsonresult.CreateTransactionResult{
