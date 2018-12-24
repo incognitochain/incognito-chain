@@ -28,6 +28,7 @@ const (
 	OracleFeedMeta
 	OracleRewardMeta
 	RefundMeta
+	UpdatingOracleBoardMeta
 
 	//Voting
 	SubmitDCBProposalMeta
@@ -58,4 +59,10 @@ const (
 const (
 	MaxDivTxsPerBlock = 1000
 	PayoutFrequency   = 1000 // Payout dividend every 1000 blocks
+)
+
+// update oracle board actions
+const (
+	Add    = 1
+	Remove = 2
 )

@@ -505,16 +505,16 @@ func (self RpcServer) handleGetListPrivacyCustomTokenBalance(params interface{},
 	}
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
-	temps, err := self.config.BlockChain.ListCustomToken()
+	temps, err := self.config.BlockChain.ListPrivacyCustomToken()
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	for _, tx := range temps {
 		item := jsonresult.CustomTokenBalance{}
-		item.Name = tx.TxTokenData.PropertyName
-		item.Symbol = tx.TxTokenData.PropertySymbol
-		item.TokenID = tx.TxTokenData.PropertyID.String()
-		tokenID := tx.TxTokenData.PropertyID
+		item.Name = tx.TxTokenPrivacyData.PropertyName
+		item.Symbol = tx.TxTokenPrivacyData.PropertySymbol
+		item.TokenID = tx.TxTokenPrivacyData.PropertyID.String()
+		tokenID := tx.TxTokenPrivacyData.PropertyID
 
 		balance := uint64(0)
 		// get balance for accountName in wallet

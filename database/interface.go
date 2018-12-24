@@ -4,7 +4,6 @@ import (
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -33,10 +32,7 @@ type DatabaseInterface interface {
 
 	// Transaction index
 	StoreTransactionIndex(*common.Hash, *common.Hash, int) error
-	StoreTransactionLightMode(*privacy.SpendingKey, byte, int32, int, common.Hash, []byte) error
 	GetTransactionIndexById(*common.Hash) (*common.Hash, int, error)
-	GetTransactionLightModeByPrivateKey(*privacy.SpendingKey) (map[byte]([]([]byte)), error)
-	GetTransactionLightModeByHash(*common.Hash) ([]byte, []byte, error)
 
 	// Best state of chain
 	StoreBestState(interface{}, byte) error

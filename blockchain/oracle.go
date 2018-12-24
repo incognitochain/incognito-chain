@@ -7,7 +7,6 @@ import (
 	"math"
 	"sort"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
@@ -28,6 +27,20 @@ func (p Evals) Less(i, j int) bool { return p[i].OracleFeed.Price < p[j].OracleF
 func (p Evals) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
 func (p Evals) SortEvals(isDesc bool) Evals {
+	if isDesc {
+		sort.Sort(sort.Reverse(p))
+	}
+	sort.Sort(p)
+	return p
+}
+
+type Txs []metadata.Transaction
+
+func (p Txs) Len() int           { return len(p) }
+func (p Txs) Less(i, j int) bool { return p[i].GetLockTime() < p[j].GetLockTime() }
+func (p Txs) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+
+func (p Txs) SortTxs(isDesc bool) Txs {
 	if isDesc {
 		sort.Sort(sort.Reverse(p))
 	}
@@ -131,7 +144,11 @@ func refundOracleFeeders(txs []metadata.Transaction) []*Evaluation {
 	return evals
 }
 
-func update(oracleValues *params.Oracle, updatedValues map[string]uint64) {
+func (blockGen *BlkTmplGenerator) updateOracleValues(
+	newBlock *Block,
+	updatedValues map[string]uint64,
+) {
+	oracleValues := newBlock.Header.Oracle
 	for oracleType, value := range updatedValues {
 		oracleTypeBytes := []byte(oracleType)
 		if bytes.Equal(oracleTypeBytes, common.DCBTokenID[:]) {
@@ -161,19 +178,21 @@ func update(oracleValues *params.Oracle, updatedValues map[string]uint64) {
 	}
 }
 
-func (blockGen *BlkTmplGenerator) updateOracleValues() ([]*Evaluation, error) {
-	header := blockGen.chain.BestState[0].BestBlock.Header
+func (blockGen *BlkTmplGenerator) buildRewardAndRefundEvals(
+	block *Block,
+) ([]*Evaluation, map[string]uint64, error) {
+	header := block.Header
 	govParams := header.GOVConstitution.GOVParams
 	oracleNetwork := govParams.OracleNetwork
 	if header.Height == 0 || uint32(header.Height)%oracleNetwork.UpdateFrequency != 0 {
-		return []*Evaluation{}, nil
+		return []*Evaluation{}, map[string]uint64{}, nil
 	}
 	txsByOracleType, err := blockGen.groupOracleFeedTxsByOracleType(oracleNetwork.UpdateFrequency)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	rewardAndRefundEvals := []*Evaluation{}
-	updatedValues := map[string]uint64{}
+	updatedOracleValues := map[string]uint64{}
 	for oracleType, txs := range txsByOracleType {
 		txsLen := len(txs)
 		if txsLen < int(oracleNetwork.Quorum) {
@@ -207,31 +226,82 @@ func (blockGen *BlkTmplGenerator) updateOracleValues() ([]*Evaluation, error) {
 			evals,
 			oracleNetwork.OracleRewardMultiplier,
 		)
-		updatedValues[oracleType] = selectedPrice
+		updatedOracleValues[oracleType] = selectedPrice
 		rewardAndRefundEvals = append(rewardAndRefundEvals, rewardedEvals...)
 	}
 	// update oracle values in block header
-	update(header.Oracle, updatedValues)
-	return rewardAndRefundEvals, nil
+	// update(header.Oracle, updatedOracleValues)
+	return rewardAndRefundEvals, updatedOracleValues, nil
 }
 
 func (blockGen *BlkTmplGenerator) buildOracleRewardTxs(
-	evals []*Evaluation,
 	chainID byte,
 	privatekey *privacy.SpendingKey,
-) ([]*transaction.Tx, uint64, error) {
+) ([]*transaction.Tx, uint64, map[string]uint64, error) {
+	bestBlock := blockGen.chain.BestState[chainID].BestBlock
+	evals, updatedOracleValues, err := blockGen.buildRewardAndRefundEvals(bestBlock)
+	if err != nil {
+		return []*transaction.Tx{}, 0, map[string]uint64{}, err
+	}
+
 	totalRewards := uint64(0)
 	oracleRewardTxs := []*transaction.Tx{}
 	for _, eval := range evals {
 		oracleRewardTx := new(transaction.Tx)
 		err := oracleRewardTx.InitTxSalary(eval.Reward, eval.OracleFeederAddr, privatekey, blockGen.chain.GetDatabase())
 		if err != nil {
-			return []*transaction.Tx{}, 0, err
+			return []*transaction.Tx{}, 0, map[string]uint64{}, err
 		}
 		oracleReward := metadata.NewOracleReward(*eval.Tx.Hash(), metadata.OracleRewardMeta)
 		oracleRewardTx.SetMetadata(oracleReward)
 		oracleRewardTxs = append(oracleRewardTxs, oracleRewardTx)
 		totalRewards += eval.Reward
 	}
-	return oracleRewardTxs, totalRewards, nil
+	return oracleRewardTxs, totalRewards, updatedOracleValues, nil
+}
+
+func removeOraclePubKeys(
+	oracleRemovePubKeys [][]byte,
+	oracleBoardPubKeys [][]byte,
+) [][]byte {
+	pubKeys := [][]byte{}
+	for _, boardPK := range oracleBoardPubKeys {
+		isRemoved := false
+		for _, removePK := range oracleRemovePubKeys {
+			if bytes.Equal(removePK, boardPK) {
+				isRemoved = true
+				break
+			}
+		}
+		if !isRemoved {
+			pubKeys = append(pubKeys, boardPK)
+		}
+	}
+	return pubKeys
+}
+
+func (blockGen *BlkTmplGenerator) updateOracleBoard(
+	newBlock *Block,
+	txs []metadata.Transaction,
+) error {
+	if len(txs) == 0 {
+		return nil
+	}
+	oraclePubKeys := newBlock.Header.GOVConstitution.GOVParams.OracleNetwork.OraclePubKeys
+
+	sortedTxs := Txs(txs).SortTxs(false)
+	for _, tx := range sortedTxs {
+		meta := tx.GetMetadata()
+		updatingOracleBoard, ok := meta.(metadata.UpdatingOracleBoard)
+		if !ok {
+			return errors.New("Could not parse UpdatingOracleBoard metadata.")
+		}
+		action := updatingOracleBoard.Action
+		if action == metadata.Add {
+			oraclePubKeys = append(oraclePubKeys, updatingOracleBoard.OraclePubKeys...)
+		} else if action == metadata.Remove {
+			oraclePubKeys = removeOraclePubKeys(updatingOracleBoard.OraclePubKeys, oraclePubKeys)
+		}
+	}
+	return nil
 }

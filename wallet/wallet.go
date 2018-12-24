@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"github.com/pkg/errors"
+	"bytes"
 )
 
 type Account struct {
@@ -233,4 +234,13 @@ func (self *Wallet) ListAccounts() map[string]Account {
 		result[account.Name] = account
 	}
 	return result
+}
+
+func (self *Wallet) ContainPubKey(pubKey []byte) bool {
+	for _, account := range self.MasterAccount.Child {
+		if bytes.Compare(account.Key.KeySet.PaymentAddress.Pk[:], pubKey) == 0 {
+			return true
+		}
+	}
+	return false
 }

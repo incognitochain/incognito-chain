@@ -101,4 +101,5 @@ const (
 	GetBondTypes                      = "getbondtypes"
 	CreateAndSendTxWithBuyBackRequest = "createandsendtxwithbuybackrequest"
 	CreateAndSendTxWithBuySellRequest = "createandsendtxwithbuysellrequest"
+	CreateAndSendTxWithOracleFeed     = "createandsendtxwithoraclefeed"
 )

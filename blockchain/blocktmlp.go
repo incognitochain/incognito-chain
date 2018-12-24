@@ -93,6 +93,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 	var txToRemove []metadata.Transaction
 	var buySellReqTxs []metadata.Transaction
 	var issuingReqTxs []metadata.Transaction
+	var updatingOracleBoardTxs []metadata.Transaction
 	var buyBackFromInfos []*buyBackFromInfo
 	bondsSold := uint64(0)
 	dcbTokensSold := uint64(0)
@@ -130,7 +131,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 		}
 		// ValidateTransaction vote and propose transaction
 
-		// TODO: need to determine a tx is in privacy format or not
+		// TODO: 0xbunyip need to determine a tx is in privacy format or not
 		if !tx.ValidateTxByItself(tx.IsPrivacy(), blockgen.chain.config.DataBase, blockgen.chain, chainID) {
 			txToRemove = append(txToRemove, metadata.Transaction(tx))
 			continue
@@ -209,13 +210,20 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 				continue
 			}
 		case metadata.IssuingRequestMeta:
-			addable, newDCBTokensSold := blockgen.checkIssuingReqTx(chainID, tx, dcbTokensSold)
-			dcbTokensSold = newDCBTokensSold
-			if !addable {
-				txToRemove = append(txToRemove, tx)
-				continue
+			{
+				addable, newDCBTokensSold := blockgen.checkIssuingReqTx(chainID, tx, dcbTokensSold)
+				dcbTokensSold = newDCBTokensSold
+				if !addable {
+					txToRemove = append(txToRemove, tx)
+					continue
+				}
+				issuingReqTxs = append(issuingReqTxs, tx)
 			}
-			issuingReqTxs = append(issuingReqTxs, tx)
+
+		case metadata.UpdatingOracleBoardMeta:
+			{
+				updatingOracleBoardTxs = append(updatingOracleBoardTxs, tx)
+			}
 		}
 
 		totalFee += tx.GetTxFee()
@@ -303,22 +311,18 @@ concludeBlock:
 		return nil, err
 	}
 
+	oracleRewardTxs, totalOracleRewards, updatedOracleValues, err := blockgen.buildOracleRewardTxs(chainID, privatekey)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
+	}
+
 	// create refund txs
 	currentSalaryFund := prevBlock.Header.SalaryFund
-	remainingFund := currentSalaryFund + totalFee + salaryFundAdd + incomeFromBonds - (totalSalary + buyBackCoins)
+	remainingFund := currentSalaryFund + totalFee + salaryFundAdd + incomeFromBonds - (totalSalary + buyBackCoins + totalOracleRewards)
 	refundTxs, totalRefundAmt := blockgen.buildRefundTxs(chainID, remainingFund, privatekey)
 
 	issuingResTxs, err := blockgen.buildIssuingResTxs(chainID, issuingReqTxs, privatekey)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, err
-	}
-	evals, err := blockgen.updateOracleValues()
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, err
-	}
-	oracleRewardTxs, totalOracleRewards, err := blockgen.buildOracleRewardTxs(evals, chainID, privatekey)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -442,14 +446,22 @@ concludeBlock:
 		ChainID:            chainID,
 		SalaryFund:         currentSalaryFund + incomeFromBonds + totalFee + salaryFundAdd - totalSalary - govPayoutAmount - buyBackCoins - totalRefundAmt - totalOracleRewards,
 		BankFund:           prevBlock.Header.BankFund + loanPaymentAmount - bankPayoutAmount,
-		GOVConstitution:    prevBlock.Header.GOVConstitution, // TODO: need get from gov-params tx
-		DCBConstitution:    prevBlock.Header.DCBConstitution, // TODO: need get from dcb-params tx
+		GOVConstitution:    prevBlock.Header.GOVConstitution, // TODO: 0xbunyip need get from gov-params tx
+		DCBConstitution:    prevBlock.Header.DCBConstitution, // TODO: 0xbunyip need get from dcb-params tx
+		Oracle:             prevBlock.Header.Oracle,
 	}
 	if block.Header.GOVConstitution.GOVParams.SellingBonds != nil {
 		block.Header.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= bondsSold
 	}
 	if block.Header.DCBConstitution.DCBParams.SaleDBCTOkensByUSDData != nil {
 		block.Header.DCBConstitution.DCBParams.SaleDBCTOkensByUSDData.Amount -= dcbTokensSold
+	}
+
+	blockgen.updateOracleValues(&block, updatedOracleValues)
+	err = blockgen.updateOracleBoard(&block, updatingOracleBoardTxs)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
 	}
 
 	for _, tx := range txsToAdd {

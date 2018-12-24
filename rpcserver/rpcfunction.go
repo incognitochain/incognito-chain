@@ -109,6 +109,7 @@ var RpcHandler = map[string]commandHandler{
 	GetGOVParams:                      RpcServer.handleGetGOVParams,
 	CreateAndSendTxWithBuyBackRequest: RpcServer.handleCreateAndSendTxWithBuyBackRequest,
 	CreateAndSendTxWithBuySellRequest: RpcServer.handleCreateAndSendTxWithBuySellRequest,
+	CreateAndSendTxWithOracleFeed:     RpcServer.handleCreateAndSendTxWithOracleFeed,
 }
 
 // Commands that are available to a limited user

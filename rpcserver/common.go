@@ -268,7 +268,7 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 		*self.config.Database,
 	)
 
-	if err != nil {
+	if err.(*transaction.TransactionError) != nil {
 		return nil, err
 	}
 

@@ -35,24 +35,28 @@ func (of *OracleFeed) ValidateTxWithBlockChain(
 	chainID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	return true, nil
+	govParams := bcr.GetGOVParams()
+	oraclePubKeys := govParams.OracleNetwork.OraclePubKeys
+	senderPubKey := txr.GetJSPubKey()
+	for _, oraclePubKey := range oraclePubKeys {
+		if bytes.Equal(oraclePubKey, senderPubKey) {
+			return true, nil
+		}
+	}
+	return true, errors.New("The oracle feeder is not belong to eligible oracles.")
 }
 
 func (of *OracleFeed) ValidateSanityData(
 	bcr BlockchainRetriever,
 	txr Transaction,
 ) (bool, bool, error) {
-	ok, err := txr.ValidateSanityData(bcr)
-	if err != nil || !ok {
-		return false, ok, err
-	}
 	if of.Price == 0 {
 		return false, false, errors.New("Wrong oracle feed's price")
 	}
 	if len(of.AssetType) != common.HashSize {
 		return false, false, errors.New("Wrong oracle feed's asset type")
 	}
-	return false, true, nil
+	return true, true, nil
 }
 
 func (of *OracleFeed) ValidateMetadataByItself() bool {

@@ -686,7 +686,7 @@ func (tx *Tx) SetMetadata(meta metadata.Metadata) {
 
 func (tx *Tx) GetJSPubKey() []byte {
 	result := []byte{}
-	if len(tx.Proof.InputCoins) > 0 {
+	if tx.Proof != nil && len(tx.Proof.InputCoins) > 0 {
 		pubkey := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
 		result = make([]byte, len(pubkey))
 		copy(result, pubkey)
@@ -741,6 +741,16 @@ func (tx *Tx) CalculateTxValue() (*privacy.PaymentAddress, uint64) {
 	return senderAddr, txValue
 }
 
+func (tx *Tx) CloneTxThenUpdateMetadata(meta metadata.Metadata) []byte {
+	clonedTx := *tx
+	clonedTx.SetMetadata(meta)
+	return common.ToBytes(clonedTx)
+}
+
+func (tx *Tx) GetLockTime() int64 {
+	return tx.LockTime
+}
+
 // InitTxSalary
 // Blockchain use this tx to pay a reward(salary) to miner of chain
 // #1 - salary:
@@ -752,7 +762,7 @@ func (tx *Tx) InitTxSalary(
 	receiverAddr *privacy.PaymentAddress,
 	privKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
-) (error) {
+) error {
 	tx.Type = common.TxSalaryType
 
 	var err error
