@@ -6,6 +6,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"strconv"
 )
 
 type TxTokenPrivacyData struct {
@@ -18,9 +19,25 @@ type TxTokenPrivacyData struct {
 	Amount uint64 // init amount
 }
 
-// Hash - return hash of token data, be used as Token ID
+// Hash - return hash of custom token data, be used as Token ID
 func (self TxTokenPrivacyData) Hash() (*common.Hash, error) {
-	record := self.PropertyName + self.PropertySymbol + fmt.Sprintf("%d", self.Amount) + self.TxNormal.Hash().String()
+	record := self.PropertyName
+	record += self.PropertySymbol
+	record += fmt.Sprintf("%d", self.Amount)
+	if self.TxNormal.Proof != nil {
+		for _, out := range self.TxNormal.Proof.OutputCoins {
+			record += string(out.CoinDetails.PublicKey.Compress())
+			record += strconv.FormatUint(out.CoinDetails.Value, 10)
+		}
+		for _, in := range self.TxNormal.Proof.InputCoins {
+			if in.CoinDetails.PublicKey != nil {
+				record += string(in.CoinDetails.PublicKey.Compress())
+			}
+			if in.CoinDetails.Value > 0 {
+				record += strconv.FormatUint(in.CoinDetails.Value, 10)
+			}
+		}
+	}
 	hash := common.DoubleHashH([]byte(record))
 	return &hash, nil
 }
