@@ -22,7 +22,6 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/voting"
 	"github.com/ninjadotorg/constant/wallet"
-	"encoding/binary"
 )
 
 const (
@@ -366,13 +365,15 @@ func (self *BlockChain) StoreBlockHeader(block *Block) error {
 /*
 	Store Transaction in LightMode mode
 */
-func (self *BlockChain) StoreUnspentTransactionLightMode(privatKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx *transaction.Tx) error {
+/*
+func (self *BlockChain) StoreTransactionLightMode(privatKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx metadata.Transaction) error {
 	txJsonBytes, err := json.Marshal(tx)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, errors.New("json.Marshal"))
 	}
-	return self.config.DataBase.StoreTransactionLightMode(privatKey, chainId, blockHeight, txIndex, *(tx.Hash()), txJsonBytes)
+	return self.config.DataBase.StoreTransactionLightMode(privatKey, chainId, blockHeight, txIndex, *tx.Hash(), txJsonBytes)
 }
+*/
 
 /*
 Save index(height) of block by block hash
@@ -1118,12 +1119,7 @@ func (self *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, chainI
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 
-	if self.config.LightMode {
-		// Get unspent tx with light mode
-		// TODO: 0xsirrush
-	}
 	// get list outputcoin of pubkey from db
-
 	outCointsInBytes, err := self.config.DataBase.GetOutcoinsByPubkey(tokenID, keyset.PaymentAddress.Pk[:], chainID)
 	if err != nil {
 		return nil, err
@@ -1258,7 +1254,7 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 	return voutList, nil
 }
 
-func (self *BlockChain) GetTransactionByHashInLightMode(txHash *common.Hash) (byte, *common.Hash, int, metadata.Transaction, error) {
+/*func (self *BlockChain) GetTransactionByHashInLightMode(txHash *common.Hash) (byte, *common.Hash, int, metadata.Transaction, error) {
 	const (
 		bigNumber   = 999999999
 		bigNumberTx = 999999999
@@ -1307,7 +1303,7 @@ func (self *BlockChain) GetTransactionByHashInLightMode(txHash *common.Hash) (by
 	txIndex = uint32(bigNumberTx - txIndex)
 	Logger.log.Info("Testing in GetTransactionByHash, blockHash, index, tx", block.Hash(), txIndex, tx)
 	return chainId[0], block.Hash(), int(txIndex), &tx, nil
-}
+}*/
 
 // GetTransactionByHash - retrieve tx from txId(txHash)
 func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common.Hash, int, metadata.Transaction, error) {
@@ -1316,9 +1312,8 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 		// check lightweight
 		if self.config.LightMode {
 			// with light node, we can try get data in light mode
-			return self.GetTransactionByHashInLightMode(txHash)
+			return byte(255), nil, -1, nil, errors.New("Not support in light mode")
 		}
-
 		return byte(255), nil, -1, nil, err
 	}
 	block, err := self.GetBlockByBlockHash(blockHash)

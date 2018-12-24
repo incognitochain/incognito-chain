@@ -26,10 +26,25 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	Logger.log.Infof("Processing block %+v", blockHash)
 
 	if self.config.LightMode {
+		// only store block header
 		err := self.StoreBlockHeader(block)
 		if err != nil {
 			return NewBlockChainError(UnExpectedError, err)
 		}
+		// store tx which relate to account in local wallet
+		/*if len(block.Transactions) < 1 {
+			Logger.log.Infof("No transaction in this block")
+		} else {
+			Logger.log.Infof("Number of transaction in this block %+v", len(block.Transactions))
+		}
+		for _, account := range self.config.Wallet.MasterAccount.Child {
+			for index, tx := range block.Transactions {
+				err := self.StoreTransactionLightMode(&account.Key.KeySet.PrivateKey, block.Header.ChainID, block.Header.Height, index, tx)
+				if err != nil {
+					return NewBlockChainError(UnExpectedError, err)
+				}
+			}
+		}*/
 	} else {
 		// save full data of block
 		err := self.StoreBlock(block)
@@ -37,7 +52,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 			return NewBlockChainError(UnExpectedError, err)
 		}
 
-		// save full data of tx tracking(which block and index in block)
+		// store full data of tx tracking(which block and index in block)
 		if len(block.Transactions) < 1 {
 			Logger.log.Infof("No transaction in this block")
 		} else {
@@ -60,6 +75,8 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	}
 
 	// fetch data in each tx of block and save into db
+	// data: commitments, serialnumbers, snderivator, outputcoins...
+	// need to use lightmode flag to check data
 	err = self.CreateAndSaveTxViewPointFromBlock(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
