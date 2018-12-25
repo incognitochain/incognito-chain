@@ -85,7 +85,8 @@ func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, erro
 		json.Unmarshal(tempMarshal, beaconBestState)
 	} else {
 		// check with current cache best state
-		beaconBestState, err := self.GetMaybeAcceptBeaconBestState(block.Header.PrevBlockHash.String())
+		var err error
+		beaconBestState, err = self.GetMaybeAcceptBeaconBestState(block.Header.PrevBlockHash.String())
 		if err != nil {
 			return "", err
 		}
