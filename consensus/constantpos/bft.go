@@ -117,9 +117,9 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							phaseData.PrevValidatorsIdx = msgPropose.(*wire.MessageBFTPropose).ValidatorsIdx
 							phaseData.Block = msgPropose.(*wire.MessageBFTPropose).Block
 							if layer == "beacon" {
-								self.Chain.VerifyPreProcessingBlockBeacon(phaseData.Block.(*blockchain.BeaconBlock))
+								self.Chain.VerifyPreProcessingBeaconBlock(phaseData.Block.(*blockchain.BeaconBlock))
 							} else {
-								self.Chain.VerifyPreProcessingBlockShard(phaseData.Block.(*blockchain.ShardBlock))
+								self.Chain.VerifyPreProcessingShardBlock(phaseData.Block.(*blockchain.ShardBlock))
 							}
 							// Todo create random Ri and broadcast
 

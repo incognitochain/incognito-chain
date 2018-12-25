@@ -130,6 +130,10 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	// 	}
 	// }
 	userKeySet, err := cfg.GetUserKeySet()
+	if err != nil {
+		Logger.log.Error(err)
+		return err
+	}
 	self.blockChain = &blockchain.BlockChain{}
 	err = self.blockChain.Init(&blockchain.Config{
 		ChainParams: self.chainParams,
