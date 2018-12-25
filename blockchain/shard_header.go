@@ -7,10 +7,9 @@ import (
 )
 
 type ShardHeader struct {
-	ProducerSig string `json:"BlockProducerSignature"`
-	Producer    string `json:"Producer"`
-	Version     int    `json:"Version"`
-	Height      uint64 `json:"Height"`
+	Producer string `json:"Producer"`
+	Version  int    `json:"Version"`
+	Height   uint64 `json:"Height"`
 	//epoch length should be config in consensus
 	Epoch         uint64      `json:"Epoch"`
 	Timestamp     int64       `json:"Timestamp"`
@@ -37,7 +36,7 @@ func (self ShardHeader) Hash() common.Hash {
 	record += strconv.FormatInt(self.Timestamp, 10) +
 		string(self.ShardID) +
 		self.MerkleRoot.String() +
-		self.PrevBlockHash.String() + self.Producer + self.ProducerSig
+		self.PrevBlockHash.String() + self.Producer
 
 	return common.DoubleHashH([]byte(record))
 }

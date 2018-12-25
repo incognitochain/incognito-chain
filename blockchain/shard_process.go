@@ -1,6 +1,10 @@
 package blockchain
 
 import (
+	"encoding/json"
+	"errors"
+	"strconv"
+
 	"github.com/ninjadotorg/constant/common"
 )
 
@@ -161,29 +165,35 @@ func (self *BlockChain) ConnectBlock(block *ShardBlock) error {
 	return nil
 }
 
-func (self *BlockChain) VerifyPreProcessingBlockShard(block *ShardBlock) error {
-	return nil
-	/* Verify Pre-prosessing data
-	- Signature
-	- version
-	- parent hash
-	- Height = parent hash + 1
-	- Epoch
-	- Timestamp can not excess some limit
-	- Instruction hash
-	- ShardStateHash
-	- Random number
-	- Sanity
-	*/
+func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock) error {
+	if block.Header.Version != VERSION {
+		return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
+	}
+	prevBlockHash := block.Header.PrevBlockHash
+	// Verify parent hash exist or not
+	parentBlockData, err := self.config.DataBase.FetchBlock(&prevBlockHash)
+	if err != nil {
+		return NewBlockChainError(DBError, err)
+	}
+	parentBlock := ShardBlock{}
+	json.Unmarshal(parentBlockData, &parentBlock)
+	// Verify block height with parent block
+	if parentBlock.Header.Height+1 != block.Header.Height {
+		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
+	}
+	// Verify epoch with parent block
+	if block.Header.Height%EPOCH == 0 && parentBlock.Header.Epoch != block.Header.Epoch-1 {
+		return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
+	}
+	// Verify timestamp with parent block
+	if block.Header.Timestamp <= parentBlock.Header.Timestamp {
+		return NewBlockChainError(TimestampError, errors.New("Timestamp of new block can't equal to parent block"))
+	}
+
 	return nil
 }
 
-func (self *BlockChain) VerifyPostProcessingBlockShard(block *ShardBlock) error {
-	return nil
-	/* Verify Post-processing data
-	- Validator root
-	- Candidate root
+func (self *BlockChain) VerifyPostProcessingShardBlock(block *ShardBlock) error {
 
-	*/
 	return nil
 }

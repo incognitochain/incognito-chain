@@ -1,11 +1,5 @@
 package main
 
-import (
-	"fmt"
-
-	"github.com/ninjadotorg/constant/utility/btc/btcapi"
-)
-
 func main() {
 	// blockHeight := "1447349"
 	// flag := true
@@ -32,9 +26,10 @@ func main() {
 
 	//1444500800, 1544500800
 	timestamp := int64(1544500800)
-	res, err := btcapi.GetNonceByTimestamp(timestamp)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println("Result of timestamp ", timestamp, "is: ", res)
+	// res, err := btcapi.GetNonceByTimestamp(timestamp)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// fmt.Println("Result of timestamp ", timestamp, "is: ", res)
+
 }

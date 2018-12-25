@@ -23,18 +23,16 @@ func CreateBeaconGenesisBlock(
 	inst := [][]string{}
 	// build validator beacon
 	// test generate public key in utility/generateKeys
-	// CHANGE preSelectBeaconNodeTestnetSerializedPubkey to beaconNodes in param
-	// CHANGE preSelectShardNodeTestnetSerializedPubkey to shardNodes in param
-	strBeacon := []string{"assign"}
-	strBeacon = append(strBeacon, strings.Join(preSelectBeaconNodeTestnetSerializedPubkey, ","))
-	strBeacon = append(strBeacon, "beacon")
+	beaconAssingInstruction := []string{"assign"}
+	beaconAssingInstruction = append(beaconAssingInstruction, strings.Join(preSelectBeaconNodeTestnetSerializedPubkey, ","))
+	beaconAssingInstruction = append(beaconAssingInstruction, "beacon")
 
-	strShard := []string{"assign"}
-	strShard = append(strShard, strings.Join(preSelectShardNodeTestnetSerializedPubkey, ","))
-	strShard = append(strShard, "shard")
+	shardAssingInstruction := []string{"assign"}
+	shardAssingInstruction = append(shardAssingInstruction, strings.Join(preSelectShardNodeTestnetSerializedPubkey, ","))
+	shardAssingInstruction = append(shardAssingInstruction, "shard")
 
-	inst = append(inst, strBeacon)
-	inst = append(inst, strShard)
+	inst = append(inst, beaconAssingInstruction)
+	inst = append(inst, shardAssingInstruction)
 	// build network param
 	inst = append(inst, []string{"set", "salaryPerTx", fmt.Sprintf("%v", salaryPerTx)})
 	inst = append(inst, []string{"set", "basicSalary", fmt.Sprintf("%v", basicSalary)})

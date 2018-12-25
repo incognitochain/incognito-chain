@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"sync"
+
 	"github.com/ninjadotorg/constant/common"
 )
 
@@ -13,19 +15,14 @@ import (
 // the caller when chain state changes occur as the function name implies.
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
-const (
-	EPOCH       = 200
-	RANDOM_TIME = 100
-	OFFSET      = 3
-)
-
 type BestStateBeacon struct {
 	BestBlockHash common.Hash  // The hash of the block.
 	BestBlock     *BeaconBlock // The block.
 	BestShardHash []common.Hash
 
+	BeaconEpoch       uint64
 	BeaconHeight      uint64
-	BeaconLeaderIndex uint64
+	BeaconProposerIdx int
 
 	BeaconCommittee        []string
 	BeaconPendingValidator []string
@@ -39,6 +36,7 @@ type BestStateBeacon struct {
 	CandidateShardWaitingForNextRandom  []string
 	CandidateBeaconWaitingForNextRandom []string
 
+	// ShardCommittee && ShardPendingValidator will be verify from shardBlock
 	// validator of shards
 	ShardCommittee map[byte][]string
 	// pending validator of shards
@@ -48,9 +46,13 @@ type BestStateBeacon struct {
 	// UnassignShardCandidate  []string
 
 	CurrentRandomNumber int64
-	// NextRandomNumber    int64
+	// random timestamp for this epoch
+	CurrentRandomTimeStamp int64
+	IsGetRandomNUmber      bool
 
 	Params map[string]string
+
+	lock sync.RWMutex
 }
 
 func NewBestStateBeacon() *BestStateBeacon {
@@ -95,8 +97,8 @@ func (self *BestStateBeacon) GetPubkeyRole(pubkey string) (string, byte) {
 
 	found := common.IndexOfStr(pubkey, self.BeaconCommittee)
 	if found > -1 {
-		if uint64(found) == self.BeaconLeaderIndex+1 {
-			return "beacon-leader", 0
+		if found == self.BeaconProposerIdx+1 {
+			return "beacon-proposer", 0
 		} else {
 			return "beacon-validator", 0
 		}

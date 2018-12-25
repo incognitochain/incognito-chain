@@ -8,6 +8,7 @@ import (
 	"github.com/jrick/logrotate/rotator"
 	"github.com/ninjadotorg/constant/addrmanager"
 	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/connmanager"
 	"github.com/ninjadotorg/constant/consensus/constantpos"
@@ -31,10 +32,11 @@ var (
 	netsyncLogger    = backendLog.Logger("Netsync Log")
 	peerLogger       = backendLog.Logger("Peer Log")
 	dbLogger         = backendLog.Logger("Database Log")
-	walletLogger     = backendLog.Logger("Wallet log")
-	blockchainLogger = backendLog.Logger("blockChain log")
-	consensusLogger  = backendLog.Logger("Consensus log")
-	mempoolLogger    = backendLog.Logger("Mempool log")
+	walletLogger     = backendLog.Logger("Wallet Log")
+	blockchainLogger = backendLog.Logger("blockChain Log")
+	consensusLogger  = backendLog.Logger("Consensus Log")
+	mempoolLogger    = backendLog.Logger("Mempool Log")
+	randomLogger     = backendLog.Logger("Random Log")
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -62,6 +64,7 @@ func init() {
 	blockchain.Logger.Init(blockchainLogger)
 	constantpos.Logger.Init(consensusLogger)
 	mempool.Logger.Init(mempoolLogger)
+	btcapi.Logger.Init(randomLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -78,6 +81,7 @@ var subsystemLoggers = map[string]common.Logger{
 	"BLOC": blockchainLogger,
 	"CONS": consensusLogger,
 	"MEMP": mempoolLogger,
+	"RAND": randomLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

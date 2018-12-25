@@ -6,14 +6,26 @@ package blockchain
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 )
 
 const (
-	UnExpectedError               = iota
+	UnExpectedError = iota
 	UpdateMerkleTreeForBlockError
 	UnmashallJsonBlockError
 	CanNotCheckDoubleSpendError
+	HashError
+	VersionError
+	BlockHeightError
+	DBError
+	EpochError
+	TimestampError
+	InstructionHashError
+	ShardStateHashError
+	RandomError
+	VerificationError
+	BeaconError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -24,6 +36,17 @@ var ErrCodeMessage = map[int]struct {
 	UpdateMerkleTreeForBlockError: {-2, "Update Merkle Commitments Tree For Block is failed"},
 	UnmashallJsonBlockError:       {-3, "Unmarshall json block is failed"},
 	CanNotCheckDoubleSpendError:   {-4, "Unmarshall json block is failed"},
+	HashError:                     {-5, "Hash error"},
+	VersionError:                  {-6, "Version error"},
+	BlockHeightError:              {-7, "Block height error"},
+	DBError:                       {-8, "Database Error"},
+	EpochError:                    {-9, "Epoch Error"},
+	TimestampError:                {-10, "Timestamp Error"},
+	InstructionHashError:          {-11, "Instruction Hash Error"},
+	ShardStateHashError:           {-12, "ShardState Hash Error"},
+	RandomError:                   {-13, "Random Number Error"},
+	VerificationError:             {-14, "Verify Block Error"},
+	BeaconError:                   {-15, "Beacon Error"},
 }
 
 type BlockChainError struct {

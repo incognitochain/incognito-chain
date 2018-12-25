@@ -1,9 +1,12 @@
 package constantpos
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/pkg/errors"
+)
 
 const (
-	ErrUnexpected = iota
+	ErrUnexpected            = iota
 	ErrBlockSizeExceed
 	ErrNotInCommittee
 	ErrSigWrongOrNotExits
@@ -40,13 +43,13 @@ type ConsensusError struct {
 }
 
 func (e ConsensusError) Error() string {
-	return fmt.Sprintf("%d: %s", e.Code, e.Message)
+	return fmt.Sprintf("%d: %s %+v", e.Code, e.Message, e.Err)
 }
 
 func NewConsensusError(key int, err error) *ConsensusError {
 	return &ConsensusError{
 		Code:    ErrCodeMessage[key].code,
 		Message: ErrCodeMessage[key].message,
-		Err:     err,
+		Err:     errors.Wrap(err, ErrCodeMessage[key].message),
 	}
 }

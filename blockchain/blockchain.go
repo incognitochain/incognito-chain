@@ -11,8 +11,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hashicorp/golang-lru"
-
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -45,10 +43,7 @@ type BestState struct {
 	Beacon *BestStateBeacon
 	Shard  map[byte]*BestStateShard
 
-	// cache for beacon
-	beacon *lru.Cache
-	// cache for shard
-	shard *lru.Cache
+	beacon map[string][]byte
 }
 
 // config is a descriptor which specifies the blockchain instance configuration.
@@ -60,11 +55,10 @@ type Config struct {
 	DataBase database.DatabaseInterface
 
 	//=====cache
-	beaconBlock *lru.Cache
-	beaconBody  *lru.Cache
+	beaconBlock map[string][]byte
 
-	shardBlock *lru.Cache
-	shardBody  *lru.Cache
+	// shardBlock *lru.Cache
+	// shardBody  *lru.Cache
 	//======
 	// Interrupt specifies a channel the caller can close to signal that
 	// long running operations, such as catching up indexes or performing
@@ -85,10 +79,6 @@ type Config struct {
 	Wallet *wallet.Wallet
 	//snapshot reward
 	customTokenRewardSnapshot map[string]uint64
-}
-
-func (self *BlockChain) IsReady() {
-
 }
 
 func (self *BlockChain) GetDatabase() database.DatabaseInterface {
@@ -172,8 +162,43 @@ func (self *BlockChain) Init(config *Config) error {
 	// 	Logger.log.Infof("BlockChain state for chain #%d (Height %d, Best block hash %+v, Total tx %d, Salary fund %d, Gov Param %+v)",
 	// 		chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns, bestState.BestBlock.Header.SalaryFund, bestState.BestBlock.Header.GOVConstitution)
 	// }
-
 	return nil
+}
+
+func (self *BlockChain) StoreMaybeAcceptBeaconBeststate(beaconBestState BestStateBeacon) (string, error) {
+	res, err := json.Marshal(beaconBestState)
+	if err != nil {
+		return "", NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	key := beaconBestState.BestBlockHash.String()
+	self.BestState.beacon[key] = res
+	return key, nil
+}
+func (self *BlockChain) StoreMaybeAcceptBeaconBlock(block BeaconBlock) (string, error) {
+	res, err := json.Marshal(block)
+	if err != nil {
+		return "", NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	key := block.Hash().String()
+	self.config.beaconBlock[key] = res
+	return key, nil
+}
+func (self *BlockChain) GetMaybeAcceptBeaconBlock(key string) (BeaconBlock, error) {
+	res := self.config.beaconBlock[key]
+	beaconBlock := BeaconBlock{}
+	if err := json.Unmarshal(res, beaconBlock); err != nil {
+		return beaconBlock, NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	return beaconBlock, nil
+}
+
+func (self *BlockChain) GetMaybeAcceptBeaconBestState(key string) (BestStateBeacon, error) {
+	res := self.BestState.beacon[key]
+	beaconBestState := BestStateBeacon{}
+	if err := json.Unmarshal(res, beaconBestState); err != nil {
+		return beaconBestState, NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	return beaconBestState, nil
 }
 
 // -------------- Blockchain retriever's implementation --------------
@@ -211,6 +236,11 @@ func (self *BlockChain) initChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	var initialized bool
+	self.BestState = &BestState{
+		Beacon: &BestStateBeacon{},
+		Shard:  make(map[byte]*BestStateShard),
+		beacon: make(map[string][]byte),
+	}
 	bestStateBeaconBytes, err := self.config.DataBase.FetchBeaconBestState()
 	if err == nil {
 		err = json.Unmarshal(bestStateBeaconBytes, self.BestState.Beacon)
@@ -269,7 +299,7 @@ func (self *BlockChain) initChainState() error {
 */
 func (self *BlockChain) initShardState(shardID byte) error {
 	// Create a new block from genesis block and set it as best block of chain
-	var initBlock *ShardBlock
+	initBlock := &ShardBlock{}
 	if shardID == 0 {
 		initBlock = self.config.ChainParams.GenesisBlockShard
 	} else {
@@ -307,14 +337,18 @@ func (self *BlockChain) initBeaconState() error {
 	initBlock = self.config.ChainParams.GenesisBlockBeacon
 	//TODO: initiate first beacon state
 	self.BestState.Beacon = NewBestStateBeacon()
-
+	self.BestState.Beacon.Update(initBlock)
 	// Insert new block into beacon chain
-	err := self.ConnectBlockBeacon(initBlock)
-
-	if err != nil {
-		Logger.log.Error(err)
+	if err := self.config.DataBase.StoreBeaconBestState(self.BestState.Beacon); err != nil {
+		Logger.log.Error("Error Store best state for block", self.BestState.Beacon.BestBlockHash, "in beacon chain")
+		return NewBlockChainError(UnExpectedError, err)
+	}
+	if err := self.config.DataBase.StoreBeaconBlock(self.BestState.Beacon.BestBlock); err != nil {
+		Logger.log.Error("Error store beacon block", self.BestState.Beacon.BestBlockHash, "in beacon chain")
 		return err
 	}
+	//=======================Init cache data==========================
+	self.BestState.beacon = make(map[string][]byte)
 	return nil
 }
 
@@ -1463,4 +1497,8 @@ func (self BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.
 func (self BlockChain) GetFeePerKbTx() uint64 {
 	// return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
 	return 0
+}
+
+func (self *BlockChain) IsReady() bool {
+	return true
 }

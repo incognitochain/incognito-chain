@@ -37,8 +37,8 @@ type EngineConfig struct {
 	ConnManager *connmanager.ConnManager
 	ChainParams *blockchain.Params
 	BlockGen    *blockchain.BlkTmplGenerator
-	UserKeySet  cashec.KeySet
-	RoleMode    string
+	UserKeySet  *cashec.KeySet
+	NodeRole    string
 	Server      serverInterface
 }
 
@@ -56,28 +56,55 @@ func (self *Engine) Start() error {
 		return errors.New("Consensus engine is already started")
 	}
 	self.started = true
-	for {
-		// self.config.BlockChain.IsReady()
-		if true {
-			role, shardID := self.config.BlockChain.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
-			fmt.Println(role, shardID)
+	Logger.log.Info("Start consensus with key", self.config.UserKeySet.GetPublicKeyB58())
+	go func() {
+		for {
+			select {
+			case <-self.cQuit:
+				return
+			default:
+				if self.config.BlockChain.IsReady() {
+					role, shardID := self.config.BlockChain.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
+					fmt.Println(role, shardID)
+					if role != "" {
+						bftProtocol := &BFTProtocol{
+							cBFTMsg:    self.cBFTMsg,
+							BlockGen:   self.config.BlockGen,
+							UserKeySet: self.config.UserKeySet,
+							Chain:      self.config.BlockChain,
+							Server:     self.config.Server,
+							// Committee:  self.config.BlockChain.BestState.Beacon.BeaconCommittee,
+						}
+						if (self.config.NodeRole == "beacon" || self.config.NodeRole == "auto") && role != "shard" {
+							bftProtocol.Committee = self.config.BlockChain.BestState.Beacon.BeaconCommittee
+							switch role {
+							case "beacon-proposer":
+								// prevBlock :=	self.config.BlockChain.GetMayBeAcceptBlockBeacon()
+								prevBlock := &blockchain.BeaconBlock{}
+								bftProtocol.Start(true, "beacon", 0, prevBlock.AggregatedSig, prevBlock.ValidatorsIdx)
+							case "beacon-validator":
+								bftProtocol.Start(false, "beacon", 0, "", []int{})
+								// case "beacon-pending":
+							}
+							continue
+						}
+						if (self.config.NodeRole == "shard" || self.config.NodeRole == "auto") && role == "shard" {
+							bftProtocol.Committee = self.config.BlockChain.BestState.Shard[shardID].ShardCommittee
+							shardRole := self.config.BlockChain.BestState.Shard[shardID].GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
+							switch shardRole {
+							case "shard-proposer":
+								prevBlock := &blockchain.ShardBlock{}
+								bftProtocol.Start(true, "shard", 0, prevBlock.AggregatedSig, prevBlock.ValidatorsIdx)
+							case "shard-validator":
+								bftProtocol.Start(false, "shard", 0, "", []int{})
+							default:
+							}
+						}
+					}
+				}
+			}
 		}
-	}
-	switch self.config.RoleMode {
-	case "beacon":
-		// bftProtocol := &BFTProtocol{
-		// 	cBFTMsg:    self.cBFTMsg,
-		// 	BlockGen:   self.config.BlockGen,
-		// 	UserKeySet: &self.config.UserKeySet,
-		// 	Chain:      self.config.BlockChain,
-		// 	Server:     self.config.Server,
-		// 	Committee:  self.config.BlockChain.BestState.Beacon.BeaconCommittee,
-		// }
-	case "shard":
-
-	case "auto":
-
-	}
+	}()
 
 	return nil
 }

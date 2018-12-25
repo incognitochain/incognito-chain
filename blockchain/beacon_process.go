@@ -3,10 +3,14 @@ package blockchain
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
 
 	"github.com/ninjadotorg/constant/common"
 )
@@ -14,124 +18,309 @@ import (
 /*
 Insert new block into beaconchain
 1. Verify Block
+	1.1 Verify Block (block height, parent block,...)
+	1.2 Validate Block after process (root hash, random number,...)
 2. Update: Process block
 	2.1 Process BestStateBeacon
 	2.2 Store BestStateBeacon
 3. Store Block
 */
-const (
-	VERSION = 1
-)
 
-func (self *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
+// func (self *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
+// 	self.chainLock.Lock()
+// 	defer self.chainLock.Unlock()
+// 	blockHash := block.Hash().String()
+
+// 	Logger.log.Infof("Insert block %+v to Blockchain", blockHash)
+
+// 	//===================Verify============================
+// 	Logger.log.Infof("Verify Pre-Process block %+v to Blockchain", blockHash)
+
+// 	err := self.VerifyPreProcessingBeaconBlock(block)
+// 	if err != nil {
+// 		Logger.log.Error("Error update best state for block", block, "in beacon chain")
+// 		return NewBlockChainError(UnExpectedError, err)
+// 	}
+
+// 	//===================Post-Verify == Validation============================
+// 	Logger.log.Infof("Verify Post-Process block %+v to Blockchain", blockHash)
+// 	err = self.VerifyPostProcessingBeaconBlock(block)
+// 	if err != nil {
+// 		Logger.log.Error("Error Verify Post-Processing block", block, "in beacon chain")
+// 		return NewBlockChainError(UnExpectedError, err)
+// 	}
+
+// 	//===================Process============================
+// 	Logger.log.Infof("Process block %+v", blockHash)
+
+// 	Logger.log.Infof("Process BeaconBestState block %+v", blockHash)
+// 	// Process best state or not and store beststate
+// 	err = self.BestState.Beacon.Update(block)
+// 	if err != nil {
+// 		Logger.log.Error("Error update best state for block", block, "in beacon chain")
+// 		return NewBlockChainError(UnExpectedError, err)
+// 	}
+// 	//===================Store Block and BestState in cache======================
+// 	return nil
+// }
+
+// Verify Block and Snapshot beststate + block if valid
+func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, error) {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
-	blockHash := block.Hash().String()
-
-	Logger.log.Infof("Insert block %+v to Blockchain", blockHash)
-
-	//===================Verify============================
-	Logger.log.Infof("Verify Pre-Process block %+v to Blockchain", blockHash)
-
-	err := self.VerifyPreProcessingBlockBeacon(block)
-	if err != nil {
-		Logger.log.Error("Error update best state for block", block, "in beacon chain")
-		return NewBlockChainError(UnExpectedError, err)
+	//========Verify block only
+	if err := self.VerifyPreProcessingBeaconBlock(block); err != nil {
+		return "", err
+	}
+	//========Verify block with previous best state
+	// Get Beststate of previous block == previous best state
+	// Clone best state value into new variable
+	beaconBestState := BestStateBeacon{}
+	// check with current final best state
+	if strings.Compare(self.BestState.Beacon.BestBlockHash.String(), block.Header.PrevBlockHash.String()) == 0 {
+		tempMarshal, err := json.Marshal(self.BestState.Beacon)
+		if err != nil {
+			return "", NewBlockChainError(UnmashallJsonBlockError, err)
+		}
+		json.Unmarshal(tempMarshal, beaconBestState)
+	} else {
+		// check with current cache best state
+		var err error
+		beaconBestState, err = self.GetMaybeAcceptBeaconBestState(block.Header.PrevBlockHash.String())
+		if err != nil {
+			return "", err
+		}
+	}
+	// if no match best state found then block is unknown
+	if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
+		return "", NewBlockChainError(BeaconError, errors.New("Beacon Block does not match with any Beacon State in cache or in Database"))
+	}
+	// Verify block with previous best state
+	if err := beaconBestState.VerifyBestStateWithBeaconBlock(block); err != nil {
+		return "", err
+	}
+	//========Update best state with new block
+	if err := beaconBestState.Update(block); err != nil {
+		return "", err
+	}
+	//========Post verififcation: verify new beaconstate with corresponding block
+	if err := beaconBestState.VerifyPostProcessingBeaconBlock(block); err != nil {
+		return "", err
 	}
 
-	//===================Process============================
-	Logger.log.Infof("Process block %+v", blockHash)
-
-	Logger.log.Infof("Process BeaconBestState block %+v", blockHash)
-	// Process best state or not and store beststate
-	err = self.BestState.Beacon.Update(block)
+	//========Store new Beaconblock and new Beacon bestState in cache
+	_, err := self.StoreMaybeAcceptBeaconBeststate(beaconBestState)
 	if err != nil {
-		Logger.log.Error("Error update best state for block", block, "in beacon chain")
-		return NewBlockChainError(UnExpectedError, err)
+		return "", err
+	}
+	keyBL, err := self.StoreMaybeAcceptBeaconBlock(*block)
+	if err != nil {
+		return "", err
 	}
 
-	//===================Post-Verify == Validation============================
-	Logger.log.Infof("Verify Post-Process block %+v to Blockchain", blockHash)
-	err = self.VerifyPostProcessingBlockBeacon(block)
+	//=========Accept previous if new block is valid
+	if err := self.AcceptBeaconBlock(&block.Header.PrevBlockHash); err != nil {
+		return "", err
+	}
+	return keyBL, nil
+}
+
+//Store block & state offcial
+func (self *BlockChain) AcceptBeaconBlock(blockHash *common.Hash) error {
+	self.chainLock.Lock()
+	defer self.chainLock.Unlock()
+	// This function make sure if stored block at height 91, then best state height at 90
+	beaconBlock, err := self.GetMaybeAcceptBeaconBlock(blockHash.String())
 	if err != nil {
-		Logger.log.Error("Error Verify Post-Processing block", block, "in beacon chain")
-		return NewBlockChainError(UnExpectedError, err)
+		return err
+	}
+	err = self.BestState.Beacon.Update(&beaconBlock)
+	if err != nil {
+		return err
+	}
+	// beaconBestState, err := self.GetMaybeAcceptBeaconBestState(blockHash.String())
+	// if err != nil {
+	// 	return err
+	// }
+	// if !reflect.DeepEqual(beaconBestState, self.BestState.Beacon) {
+	// 	Logger.log.Error("Current best state and stored block %+v are not compatible", blockHash)
+	// 	return NewBlockChainError(BeaconError, errors.New("Current best state and stored block are not compatible"))
+	// }
+	//===================Store Block============================
+	Logger.log.Infof("Store Beacon block %+v", blockHash)
+	if err := self.config.DataBase.StoreBeaconBlock(beaconBlock); err != nil {
+		Logger.log.Error("Error store beacon block", blockHash, "in beacon chain")
+		return err
 	}
 
 	//===================Store State============================
 	Logger.log.Infof("Store BeaconBestState block %+v", blockHash)
-	err = self.StoreBeaconBestState()
-	if err != nil {
-		Logger.log.Error("Error Store best state for block", block, "in beacon chain")
+	//Process stored block with current best state
+
+	if err := self.config.DataBase.StoreBeaconBestState(self.BestState.Beacon); err != nil {
+		Logger.log.Error("Error Store best state for block", blockHash, "in beacon chain")
 		return NewBlockChainError(UnExpectedError, err)
 	}
-
-	//===================Store Block============================
-	Logger.log.Infof("Store Beacon block %+v", blockHash)
-	err = self.config.DataBase.StoreBeaconBlock(block)
-	if err != nil {
-		Logger.log.Error("Error store beacon block", block, "in beacon chain")
-		return err
-	}
 	Logger.log.Infof("Accepted block %+v", blockHash)
-
 	return nil
 }
 
-func (self *BlockChain) VerifyPreProcessingBlockBeacon(block *BeaconBlock) error {
+func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error {
 	/* Verify Pre-prosessing data
+	This function DOES NOT verify new block with best state
+	DO NOT USE THIS with GENESIS BLOCK
+	- Sanity
 	- Signature
+		+ Producer validity
+		+ Signature of producer
+		+ agg signature
 	- version
 	- parent hash
 	- Height = parent hash + 1
-	- Epoch
+	- Epoch = blockHeight % Epoch ? Parent Epoch + 1
 	- Timestamp can not excess some limit
 	- Instruction hash
 	- ShardStateHash
-	- Random number
-	- Sanity
 	*/
-	return nil
-}
+	//TODO: Verify sanity, signature
+	// Verify version
+	if block.Header.Version != VERSION {
+		return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
+	}
+	prevBlockHash := block.Header.PrevBlockHash
+	// Verify parent hash exist or not
+	parentBlock, err := self.config.DataBase.FetchBeaconBlock(&prevBlockHash)
+	if err != nil {
+		return NewBlockChainError(DBError, err)
+	}
+	parentBlockInterface := NewBeaconBlock()
+	json.Unmarshal(parentBlock, &parentBlockInterface)
+	// Verify block height with parent block
+	if parentBlockInterface.Header.Height+1 != block.Header.Height {
+		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
+	}
+	// Verify epoch with parent block
+	if block.Header.Height%EPOCH == 0 && parentBlockInterface.Header.Epoch != block.Header.Epoch-1 {
+		return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
+	}
+	// Verify timestamp with parent block
+	if block.Header.Timestamp <= parentBlockInterface.Header.Timestamp {
+		return NewBlockChainError(TimestampError, errors.New("Timestamp of new block can't equal to parent block"))
+	}
 
-//TODO: store block & state offcial
-func (self *BlockChain) AcceptBeaconBlock(blockHeight uint64, aggregatedSig string, validatorsIdx []int) error {
-	return nil
-}
+	tempShardStateArr := []common.Hash{}
+	for _, hashes := range block.Body.ShardState {
+		tempShardStateArr = append(tempShardStateArr, hashes...)
+	}
+	if !VerifyHashFromHashArray(tempShardStateArr, block.Header.ShardStateHash) {
+		return NewBlockChainError(ShardStateHashError, errors.New("Shard state hash is not correct"))
+	}
 
-//TODO: verify but not store
-func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) error {
+	tempInstructionArr := []string{}
+	for _, strs := range block.Body.Instructions {
+		tempInstructionArr = append(tempInstructionArr, strs...)
+	}
+	if !VerifyHashFromStringArray(tempInstructionArr, block.Header.InstructionHash) {
+		return NewBlockChainError(InstructionHashError, errors.New("Instruction hash is not correct"))
+	}
 	return nil
 }
-func (self *BlockChain) VerifyPostProcessingBlockBeacon(block *BeaconBlock) error {
+func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock) error {
+	/*
+			This function will verify the validation of a block with some best state in cache or current best state
+		// - Producer
+		// - Has parent hash is some beststate block hash
+		// - Height
+		// - Epoch
+	*/
+	// Get beacon state of this block
+	// For example, new blockHeight is 91 then beacon state of this block must have height 90
+	// OR new block has previous has is beacon best block hash
+
+	// TODO: Verify producer
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	if self.BeaconHeight+1 != block.Header.Height {
+		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
+	}
+	if block.Header.Height%EPOCH == 0 && self.BeaconEpoch+1 != block.Header.Epoch {
+		return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
+	}
+	if block.Header.Height%EPOCH != 0 && self.BeaconEpoch != block.Header.Epoch {
+		return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
+	}
+	return nil
+}
+func (self *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock) error {
 	/* Verify Post-processing data
 	- Validator root: BeaconCommittee + BeaconPendingValidator
-	- Candidate root: CandidateBeaconWaitingForCurrentRandom + CandidateBeaconWaitingForNextRandom
+	- Beacon Candidate root: CandidateBeaconWaitingForCurrentRandom + CandidateBeaconWaitingForNextRandom
+	- Shard Candidate root: CandidateShardWaitingForCurrentRandom + CandidateShardWaitingForNextRandom
+	- Shard Validator root: ShardCommittee + ShardPendingValidator
+	- Random number if have in instruction
 	*/
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
 	var (
-		err  error
 		strs []string
+		isOk bool
 	)
 
-	strs = append(strs, self.BestState.Beacon.BeaconCommittee...)
-	strs = append(strs, self.BestState.Beacon.BeaconPendingValidator...)
-	err = VerifyHashFromStringArray(strs, block.Header.ValidatorsRoot)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
+	strs = append(strs, self.BeaconCommittee...)
+	strs = append(strs, self.BeaconPendingValidator...)
+	isOk = VerifyHashFromStringArray(strs, block.Header.ValidatorsRoot)
+	if !isOk {
+		return NewBlockChainError(HashError, errors.New("Error verify Validator root"))
 	}
 
 	strs = []string{}
-	strs = append(strs, self.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom...)
-	strs = append(strs, self.BestState.Beacon.CandidateBeaconWaitingForNextRandom...)
-	err = VerifyHashFromStringArray(strs, block.Header.CandidateRoot)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
+	strs = append(strs, self.CandidateBeaconWaitingForCurrentRandom...)
+	strs = append(strs, self.CandidateBeaconWaitingForNextRandom...)
+	isOk = VerifyHashFromStringArray(strs, block.Header.BeaconCandidateRoot)
+	if !isOk {
+		return NewBlockChainError(HashError, errors.New("Error verify Beacon Candidate root"))
 	}
 
+	strs = []string{}
+	strs = append(strs, self.CandidateShardWaitingForCurrentRandom...)
+	strs = append(strs, self.CandidateShardWaitingForNextRandom...)
+	isOk = VerifyHashFromStringArray(strs, block.Header.ShardCandidateRoot)
+	if !isOk {
+		return NewBlockChainError(HashError, errors.New("Error verify Shard Candidate root"))
+	}
+
+	isOk = VerifyHashFromMapByteString(self.ShardCommittee, self.ShardPendingValidator, block.Header.ShardValidatorsRoot)
+	if !isOk {
+		return NewBlockChainError(HashError, errors.New("Error verify shard validator root"))
+	}
+
+	instructions := block.Body.Instructions
+
+	for _, l := range instructions {
+		if l[0] == "random" {
+			temp, err := strconv.Atoi(l[1])
+			if err != nil {
+				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+				return NewBlockChainError(UnExpectedError, err)
+			}
+			isOk, err = btcapi.VerifyNonceWithTimestamp(self.CurrentRandomTimeStamp, int64(temp))
+			if err != nil {
+				Logger.log.Error("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+				return NewBlockChainError(UnExpectedError, err)
+			}
+			if !isOk {
+				return NewBlockChainError(RandomError, errors.New("Error verify random number"))
+			}
+		}
+	}
 	return nil
 }
-
 func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
 	if newBlock == nil {
 		return errors.New("Null pointer")
 	}
@@ -140,6 +329,9 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	// update BestShardHash, BestBlock, BestBlockHash
 	self.BestBlockHash = *newBlock.Hash()
 	self.BestBlock = newBlock
+	self.BeaconEpoch = newBlock.Header.Epoch
+	self.BeaconHeight = newBlock.Header.Height
+
 	shardState := newBlock.Body.ShardState
 	for idx, l := range shardState {
 		self.BestShardHash[idx] = l[len(l)-1]
@@ -204,7 +396,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
 		if l[0] == "random" {
 			//TODO: Verify nonce is from a right block
-			temp, err := strconv.Atoi(l[4])
+			temp, err := strconv.Atoi(l[1])
 			if err != nil {
 				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 				return NewBlockChainError(UnExpectedError, err)
@@ -213,12 +405,15 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			randomFlag = true
 		}
 	}
+	// Update candidate
 	// get staking candidate list and store
 	newBeaconCandidate, newShardCandidate := GetStakingCandidate(*newBlock)
 	// store new staking candidate
 	self.CandidateBeaconWaitingForNextRandom = append(self.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
 	self.CandidateShardWaitingForNextRandom = append(self.CandidateShardWaitingForNextRandom, newShardCandidate...)
+
 	if self.BeaconHeight%EPOCH == 0 && self.BeaconHeight != 0 {
+		self.IsGetRandomNUmber = false
 		// Begin of each epoch
 	} else if self.BeaconHeight%EPOCH < RANDOM_TIME {
 		// Before get random from bitcoin
@@ -233,11 +428,14 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			// reset candidate list
 			self.CandidateShardWaitingForNextRandom = []string{}
 			self.CandidateBeaconWaitingForNextRandom = []string{}
+
+			self.CurrentRandomTimeStamp = newBlock.Header.Timestamp
 		}
-		// if get new random number???
+		// if get new random number
 		// Assign candidate to shard
-		// assign CandidateShardWaitingForCurrentRandom to ShardPendingValidator with CurrentRandom this shard
+		// assign CandidateShardWaitingForCurrentRandom to ShardPendingValidator with CurrentRandom
 		if randomFlag {
+			self.IsGetRandomNUmber = true
 			err := AssignValidatorShard(self.ShardPendingValidator, self.CandidateShardWaitingForCurrentRandom, self.CurrentRandomNumber)
 			if err != nil {
 				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
@@ -255,6 +453,9 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			}
 			self.CandidateBeaconWaitingForCurrentRandom = []string{}
 			self.BeaconPendingValidator = append(self.BeaconPendingValidator, newBeaconPendingValidator...)
+			if err != nil {
+				return err
+			}
 		}
 	} else if self.BeaconHeight%EPOCH == EPOCH-1 {
 		// At the end of each epoch, eg: block 199, 399, 599 with epoch is 200
@@ -263,10 +464,12 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		// SHARD WILL SWAP ITSELF
 		var (
 			beaconSwapedCommittees []string
+			beaconNextCommittees   []string
 			err                    error
 		)
-		self.BeaconPendingValidator, self.BeaconCommittee, beaconSwapedCommittees, err = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, OFFSET)
+		self.BeaconPendingValidator, self.BeaconCommittee, beaconSwapedCommittees, beaconNextCommittees, err = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, OFFSET)
 		Logger.log.Infof("Swaped out committees %+v", beaconSwapedCommittees)
+		Logger.log.Infof("Nextcommittees %+v", beaconNextCommittees)
 		if err != nil {
 			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 			return NewBlockChainError(UnExpectedError, err)
@@ -339,9 +542,9 @@ func calculateHash(candidate string, rand int64) (shardID byte) {
 // unqueue a number of validator out of currentValidators list
 // enqueue a number of validator into currentValidators list <=> unqueue a number of validator out of pendingValidators list
 // return value: #1 remaining pendingValidators, #2 new currentValidators # swap validator
-func SwapValidator(pendingValidators []string, currentValidators []string, offset int) ([]string, []string, []string, error) {
+func SwapValidator(pendingValidators []string, currentValidators []string, offset int) ([]string, []string, []string, []string, error) {
 	if offset == 0 {
-		return pendingValidators, currentValidators, nil, errors.New("Can't not swap 0 validator")
+		return nil, pendingValidators, currentValidators, nil, errors.New("Can't not swap 0 validator")
 	}
 	// if number of pending validator is less or equal than offset, set offset equal to number of pending validator
 	if offset > len(pendingValidators) {
@@ -349,10 +552,10 @@ func SwapValidator(pendingValidators []string, currentValidators []string, offse
 	}
 	// do nothing
 	if offset == 0 {
-		return pendingValidators, currentValidators, nil, errors.New("No pending validator for swapping")
+		return nil, pendingValidators, currentValidators, nil, errors.New("No pending validator for swapping")
 	}
 	if offset > len(currentValidators) {
-		return pendingValidators, currentValidators, nil, errors.New("Trying to swap too many validator")
+		return nil, pendingValidators, currentValidators, nil, errors.New("Trying to swap too many validator")
 	}
 	swapValidator := currentValidators[:offset]
 	// unqueue validator with index from 0 to offset-1 from currentValidators list
@@ -364,7 +567,7 @@ func SwapValidator(pendingValidators []string, currentValidators []string, offse
 
 	// enqueue new validator to the remaning of current validators list
 	currentValidators = append(currentValidators, tempValidators...)
-	return pendingValidators, currentValidators, swapValidator, nil
+	return pendingValidators, currentValidators, swapValidator, tempValidators, nil
 }
 
 // return: #param1: validator list after remove
@@ -445,18 +648,45 @@ func GenerateHashFromStringArray(strs []string) (common.Hash, error) {
 	}
 	temp := sha256.Sum256(buf.Bytes())
 	if err := hash.SetBytes(temp[:]); err != nil {
-		return common.Hash{}, err
+		return common.Hash{}, NewBlockChainError(HashError, err)
 	}
 	return hash, nil
 }
 
-func VerifyHashFromStringArray(strs []string, hash common.Hash) error {
+func GenerateHashFromHashArray(hashes []common.Hash) (common.Hash, error) {
+	strs := []string{}
+	for _, value := range hashes {
+		str := value.String()
+		strs = append(strs, str)
+	}
+	return GenerateHashFromStringArray(strs)
+}
+
+//TODO: implement
+func GenerateHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]string) (common.Hash, error) {
+	return common.Hash{}, nil
+}
+func VerifyHashFromHashArray(hashes []common.Hash, hash common.Hash) bool {
+	strs := []string{}
+	for _, value := range hashes {
+		str := value.String()
+		strs = append(strs, str)
+	}
+	return VerifyHashFromStringArray(strs, hash)
+}
+
+func VerifyHashFromStringArray(strs []string, hash common.Hash) bool {
 	res, err := GenerateHashFromStringArray(strs)
 	if err != nil {
-		return err
+		return false
 	}
 	if bytes.Compare(res.GetBytes(), hash.GetBytes()) != 0 {
-		return errors.New("Error verify hash from string")
+		return true
 	}
-	return nil
+	return false
+}
+
+//TODO: implement
+func VerifyHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]string, hash common.Hash) bool {
+	return true
 }

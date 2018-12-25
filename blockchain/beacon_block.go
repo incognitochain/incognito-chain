@@ -7,17 +7,22 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
+const (
+	EPOCH       = 200
+	RANDOM_TIME = 100
+	OFFSET      = 3
+	VERSION     = 1
+)
+
 type BeaconBody struct {
 	ShardState   [][]common.Hash
 	Instructions [][]string // Random here
 }
 
 type BeaconHeader struct {
-	ProducerSig string      `json:"BlockProducerSignature"`
-	Producer    string      `json:"Producer"`
-	Version     int         `json:"Version"`
-	ParentHash  common.Hash `json:"ParentBlockHash"`
-	Height      uint64      `json:"Height"`
+	Producer string `json:"Producer"`
+	Version  int    `json:"Version"`
+	Height   uint64 `json:"Height"`
 	//epoch length should be config in consensus
 	Epoch         uint64      `json:"Epoch"`
 	Timestamp     int64       `json:"Timestamp"`
@@ -29,8 +34,14 @@ type BeaconHeader struct {
 	//Candidate = unassigned_validator list will be store in database/memory (locally)
 	//Build from two list: CandidateBeaconWaitingForCurrentRandom + CandidateBeaconWaitingForNextRandom
 	// infer from history
-	CandidateRoot common.Hash `json:"CandidateListRootHash"`
-	// Store these two list make sure all node process the same data
+	// Candidate public key for beacon chain
+	BeaconCandidateRoot common.Hash `json:"BeaconCandidateRoot"`
+
+	// Candidate public key for all shard
+	ShardCandidateRoot common.Hash `json:"BeaconCandidateRoot"`
+
+	// Shard validator build from ShardCommittee and ShardPendingValidator
+	ShardValidatorsRoot common.Hash `json:ShardValidatorRoot`
 
 	// each shard will have a list of blockHash
 	// shardRoot is hash of all list
@@ -42,11 +53,15 @@ type BeaconHeader struct {
 type BeaconBlock struct {
 	AggregatedSig string `json:"AggregatedSig"`
 	ValidatorsIdx []int  `json:"ValidatorsIdx"`
+	ProducerSig   string `json:"BlockProducerSignature"`
 
 	Body   BeaconBody
 	Header BeaconHeader
 }
 
+func NewBeaconBlock() BeaconBlock {
+	return BeaconBlock{}
+}
 func (self *BeaconBlock) Hash() *common.Hash {
 	record := common.EmptyString
 	record += self.Header.Hash().String() + self.AggregatedSig + common.IntArrayToString(self.ValidatorsIdx, ",")
@@ -94,7 +109,6 @@ func (self *BeaconHeader) toString() string {
 	res += self.ShardStateHash.String()
 	res += self.InstructionHash.String()
 	res += self.Producer
-	res += self.ProducerSig
 	return res
 }
 
