@@ -236,6 +236,11 @@ func (self *BlockChain) initChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	var initialized bool
+	self.BestState = &BestState{
+		Beacon: &BestStateBeacon{},
+		Shard:  make(map[byte]*BestStateShard),
+		beacon: make(map[string][]byte),
+	}
 	bestStateBeaconBytes, err := self.config.DataBase.FetchBeaconBestState()
 	if err == nil {
 		err = json.Unmarshal(bestStateBeaconBytes, self.BestState.Beacon)
@@ -294,7 +299,7 @@ func (self *BlockChain) initChainState() error {
 */
 func (self *BlockChain) initShardState(shardID byte) error {
 	// Create a new block from genesis block and set it as best block of chain
-	var initBlock *ShardBlock
+	initBlock := &ShardBlock{}
 	if shardID == 0 {
 		initBlock = self.config.ChainParams.GenesisBlockShard
 	} else {
@@ -334,11 +339,11 @@ func (self *BlockChain) initBeaconState() error {
 	self.BestState.Beacon = NewBestStateBeacon()
 	self.BestState.Beacon.Update(initBlock)
 	// Insert new block into beacon chain
-	if err := self.config.DataBase.StoreBeaconBestState(*self.BestState.Beacon); err != nil {
+	if err := self.config.DataBase.StoreBeaconBestState(self.BestState.Beacon); err != nil {
 		Logger.log.Error("Error Store best state for block", self.BestState.Beacon.BestBlockHash, "in beacon chain")
 		return NewBlockChainError(UnExpectedError, err)
 	}
-	if err := self.config.DataBase.StoreBeaconBlock(*self.BestState.Beacon.BestBlock); err != nil {
+	if err := self.config.DataBase.StoreBeaconBlock(self.BestState.Beacon.BestBlock); err != nil {
 		Logger.log.Error("Error store beacon block", self.BestState.Beacon.BestBlockHash, "in beacon chain")
 		return err
 	}
