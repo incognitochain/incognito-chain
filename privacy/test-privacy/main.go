@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/ninjadotorg/constant/privacy"
+	"math/big"
 )
 
 func main() {
@@ -408,44 +409,46 @@ func main() {
 	//fmt.Printf("value of y: %v\n", y)
 
 
-	point1 := new(privacy.EllipticPoint).Zero()
-	point1.X.Set(privacy.RandInt())
-	point1.ComputeYCoord()
+	//point1 := new(privacy.EllipticPoint).Zero()
+	//point1.X.Set(privacy.RandInt())
+	//point1.ComputeYCoord()
+	//
+	////point1.Randomize()
+	//
+	//point2 := new(privacy.EllipticPoint).Zero()
+	//point2.X.Set(privacy.RandInt())
+	//point2.ComputeYCoord()
+	////point2.Randomize()
+	//
+	//fmt.Printf("Point 1: %p\n", (*point1).X)
+	//fmt.Printf("Point 2: %p\n", (*point2).X)
+	//fmt.Printf("\n\n")
+	//
+	////*(*point1).X = *(*point2).X
+	//*(point1.X) = *(point2.X)
+	//
+	//
+	////*(*point1).Y = *(*point2).Y
+	//
+	//fmt.Printf("Point 1: %p\n", (*point1).X)
+	//fmt.Printf("Point 2: %p\n", (*point2).X)
+	//fmt.Printf("Point 1 value: %v\n", *(*point1).X)
+	//fmt.Printf("Point 2 value: %v\n", *(*point2).X)
+	//fmt.Printf("\n\n")
+	//
+	////*(*point2).X = *privacy.RandInt()
+	//tmp:= privacy.RandInt()
+	//fmt.Printf("addr temp: %p\n", tmp)
+	//point2.X = tmp
+	////(*point2).X.Set(tmp)
+	//
+	//fmt.Printf("Point 1: %p\n", (*point1).X)
+	//fmt.Printf("Point 2: %p\n", (*point2).X)
+	//fmt.Printf("Point 1 value: %v\n", *(*point1).X)
+	//fmt.Printf("Point 2 value: %v\n", *(*point2).X)
+	//fmt.Printf("\n\n")
 
-	//point1.Randomize()
-
-	point2 := new(privacy.EllipticPoint).Zero()
-	point2.X.Set(privacy.RandInt())
-	point2.ComputeYCoord()
-	//point2.Randomize()
-
-	fmt.Printf("Point 1: %p\n", (*point1).X)
-	fmt.Printf("Point 2: %p\n", (*point2).X)
-	fmt.Printf("\n\n")
-
-	//*(*point1).X = *(*point2).X
-	*(point1.X) = *(point2.X)
-
-
-	//*(*point1).Y = *(*point2).Y
-
-	fmt.Printf("Point 1: %p\n", (*point1).X)
-	fmt.Printf("Point 2: %p\n", (*point2).X)
-	fmt.Printf("Point 1 value: %v\n", *(*point1).X)
-	fmt.Printf("Point 2 value: %v\n", *(*point2).X)
-	fmt.Printf("\n\n")
-
-	//*(*point2).X = *privacy.RandInt()
-	tmp:= privacy.RandInt()
-	fmt.Printf("addr temp: %p\n", tmp)
-	point2.X = tmp
-	//(*point2).X.Set(tmp)
-
-	fmt.Printf("Point 1: %p\n", (*point1).X)
-	fmt.Printf("Point 2: %p\n", (*point2).X)
-	fmt.Printf("Point 1 value: %v\n", *(*point1).X)
-	fmt.Printf("Point 2 value: %v\n", *(*point2).X)
-	fmt.Printf("\n\n")
+	fmt.Printf("%+v\n", privacy.PedCom.G[0].ScalarMult(big.NewInt(2)))
 
 
 }

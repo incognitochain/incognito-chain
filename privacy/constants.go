@@ -17,8 +17,8 @@ const (
 	MaxExp = 64
 
 	// size of zero knowledge proof corresponding one input
-	ComInputOpeningsProofSize       = 198
-	OneOfManyProofSize              = 781
+	//ComInputOpeningsProofSize       = 198
+	OneOfManyProofSize              = 781	// corresponding to CMRingSize = 4: 521
 	EqualityOfCommittedValProofSize = 230
 	ProductCommitmentProofSize      = 197
 

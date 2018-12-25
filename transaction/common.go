@@ -32,7 +32,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 	commitmentIndexs = []uint64{}   // : list commitment indexes which: random from full db commitments + commitments of usableInputCoins
 	myCommitmentIndexs = []uint64{} // : list indexes of commitments(usableInputCoins) in {commitmentIndexs}
 	if randNum == 0 {
-		randNum = 8 // default
+		randNum = privacy.CMRingSize // default
 	}
 
 	// loop to create list usable commitments from usableInputCoins
@@ -95,7 +95,7 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 
 	sizeSigPubKey := uint64(privacy.SigPubKeySize)
 	sizeSig := uint64(privacy.SigSize)
-	sizeProof := zkp.EstimateProofSize(inputCoins, payments)
+	sizeProof := zkp.EstimateProofSize(len(inputCoins), len(payments))
 
 	sizePubKeyLastByte := uint64(1)
 	// TODO 0xjackpolope

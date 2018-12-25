@@ -53,11 +53,8 @@ func GenerateChallengeFromByte(values [][]byte) *big.Int {
 }
 
 // EstimateProofSize returns the estimated size of the proof in kilobyte
-func EstimateProofSize(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo) uint64 {
-	nInput := len(inputCoins)
-	nOutput := len(payments)
-
-	sizeComInputOpeningsProof := nInput * privacy.ComInputOpeningsProofSize
+func EstimateProofSize(nInput int, nOutput int) uint64 {
+	//sizeComInputOpeningsProof := nInput * privacy.ComInputOpeningsProofSize
 	sizeOneOfManyProof := nInput * privacy.OneOfManyProofSize
 	sizeEqualityOfCommittedValProof := nInput * privacy.EqualityOfCommittedValProofSize
 	sizeProductCommitmentProof := nInput * privacy.ProductCommitmentProofSize
@@ -74,9 +71,17 @@ func EstimateProofSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Pay
 	sizeComOutputSND  := nOutput * privacy.CompressedPointSize
 	sizeComOutputShardID  := nOutput * privacy.CompressedPointSize
 
-	sizeProof := sizeComInputOpeningsProof + sizeOneOfManyProof + sizeEqualityOfCommittedValProof + sizeProductCommitmentProof +
+	sizeComInputSK := nInput * privacy.CompressedPointSize
+	sizeComInputValue := nInput * privacy.CompressedPointSize
+	sizeComInputSND  := nInput * privacy.CompressedPointSize
+	sizeComInputShardID := nInput * privacy.CompressedPointSize
+
+	// sizeBytes = NumArr + SizeProof
+	sizeBytes := 13 + 9*nInput + 5*nOutput + 4
+
+	sizeProof := sizeOneOfManyProof + sizeEqualityOfCommittedValProof + sizeProductCommitmentProof +
 		sizeComOutputOpeningsProof + sizeComOutputMultiRangeProof + sizeSumOutRangeProof + sizeComZeroProof + sizeInputCoins + sizeOutputCoins +
-		sizeComOutputValue + sizeComOutputSND + sizeComOutputShardID
+		sizeComOutputValue + sizeComOutputSND + sizeComOutputShardID + sizeComInputSK+ sizeComInputValue + sizeComInputSND + sizeComInputShardID + sizeBytes
 
 	return uint64(math.Ceil(float64(sizeProof) / 1024))
 }

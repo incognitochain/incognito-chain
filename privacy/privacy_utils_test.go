@@ -17,3 +17,5 @@ func TestIsPowerOfTwo(t *testing.T) {
 	testcase3 := IsPowerOfTwo(0)
 	assert.Equal(t, false, testcase3)
 }
+
+
