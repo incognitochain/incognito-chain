@@ -137,14 +137,14 @@ func (self *BlockChain) AcceptBeaconBlock(blockHash *common.Hash) error {
 	if err != nil {
 		return err
 	}
-	beaconBestState, err := self.GetMaybeAcceptBeaconBestState(blockHash.String())
-	if err != nil {
-		return err
-	}
-	if !reflect.DeepEqual(beaconBestState, self.BestState.Beacon) {
-		Logger.log.Error("Current best state and stored block %+v are not compatible", blockHash)
-		return NewBlockChainError(BeaconError, errors.New("Current best state and stored block are not compatible"))
-	}
+	// beaconBestState, err := self.GetMaybeAcceptBeaconBestState(blockHash.String())
+	// if err != nil {
+	// 	return err
+	// }
+	// if !reflect.DeepEqual(beaconBestState, self.BestState.Beacon) {
+	// 	Logger.log.Error("Current best state and stored block %+v are not compatible", blockHash)
+	// 	return NewBlockChainError(BeaconError, errors.New("Current best state and stored block are not compatible"))
+	// }
 	//===================Store Block============================
 	Logger.log.Infof("Store Beacon block %+v", blockHash)
 	if err := self.config.DataBase.StoreBeaconBlock(beaconBlock); err != nil {
