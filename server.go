@@ -129,6 +129,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	// 		return errors.New("No child account in wallet. Light Mode required Wallet with at least one child account")
 	// 	}
 	// }
+	userKeySet, err := cfg.GetUserKeySet()
 	self.blockChain = &blockchain.BlockChain{}
 	err = self.blockChain.Init(&blockchain.Config{
 		ChainParams: self.chainParams,
@@ -211,6 +212,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		Server:      self,
 		BlockGen:    self.blockgen,
 		NodeRole:    cfg.NodeRole,
+		UserKeySet:  userKeySet,
 	})
 	if err != nil {
 		return err
