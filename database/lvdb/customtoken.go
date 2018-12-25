@@ -168,7 +168,7 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 			// Uncomment this to get balance of all account
 			paymentAddress := privacy.PaymentAddress{}
 			pkInBytes, _, _ := base58.Base58Check{}.Decode(keys[2])
-			paymentAddress.FromBytes(pkInBytes)
+			paymentAddress.SetBytes(pkInBytes)
 			i, ok := results[base58.Base58Check{}.Encode(paymentAddress.Pk, 0x00)]
 			fmt.Println("GetCustomTokenListPaymentAddressesBalance, current balance", i)
 			if ok == false {

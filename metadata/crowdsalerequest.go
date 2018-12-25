@@ -89,7 +89,7 @@ func (csReq *CrowdsaleRequest) ValidateMetadataByItself() bool {
 }
 
 func (csReq *CrowdsaleRequest) Hash() *common.Hash {
-	record := string(csReq.PaymentAddress.ToBytes())
+	record := string(csReq.PaymentAddress.Bytes())
 	record += string(csReq.SaleID)
 	record += string(csReq.Info)
 	record += string(csReq.Amount.String())

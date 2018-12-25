@@ -6,9 +6,9 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 
-	"github.com/pkg/errors"
 	"encoding/json"
 	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/pkg/errors"
 )
 
 // Curve P256
@@ -37,9 +37,9 @@ type EllipticPoint struct {
 }
 
 // Zero initializes elliptic point with X = 0, Y = 0
-func (point *EllipticPoint) Zero() *EllipticPoint{
-	point.X = new(big.Int).SetInt64(0)
-	point.Y = new(big.Int).SetInt64(0)
+func (point *EllipticPoint) Zero() *EllipticPoint {
+	point.X = big.NewInt(0)
+	point.Y = big.NewInt(0)
 	return point
 }
 
@@ -67,27 +67,25 @@ func (point *EllipticPoint) ComputeYCoord() error {
 	if point.Y == nil {
 		point.Y = big.NewInt(0)
 	}
-	xTemp := new(big.Int)
+
 	// Y = +-sqrt(x^3 - 3*x + B)
-	x3 := new(big.Int).Mul(point.X, point.X)
-	x3.Mul(x3, point.X)
-	x3.Add(x3, Curve.Params().B)
-	x3.Sub(x3, xTemp.Mul(point.X, big.NewInt(3)))
-	x3.Mod(x3, Curve.Params().P)
-	// //check P = 3 mod 4?
-	// if temp.Mod(Q, new(big.Int).SetInt64(4)).Cmp(new(big.Int).SetInt64(3)) == 0 {
-	// 	//		fmt.Println("Ok!!!")
-	// }
+	xCube := new(big.Int).Mul(point.X, point.X)
+	xCube.Mul(xCube, point.X)
+	xCube.Add(xCube, Curve.Params().B)
+	xCube.Sub(xCube, new(big.Int).Mul(point.X, big.NewInt(3)))
+	xCube.Mod(xCube, Curve.Params().P)
 
 	// Now calculate sqrt mod p of x^3 - 3*x + B
 	// This code used to do a full sqrt based on tonelli/shanks,
 	// but this was replaced by the algorithms referenced in
 	// https://bitcointalk.org/index.php?topic=162805.msg1712294#msg1712294
-	point.Y = new(big.Int).Exp(x3, PAdd1Div4(Curve.Params().P), Curve.Params().P)
+	point.Y = new(big.Int).Exp(xCube, PAdd1Div4(Curve.Params().P), Curve.Params().P)
+
 	// Check that y is a square root of x^3  - 3*x + B.
-	y2 := new(big.Int).Mul(point.Y, point.Y)
-	y2.Mod(y2, Curve.Params().P)
-	if y2.Cmp(x3) != 0 {
+	ySquared := new(big.Int).Mul(point.Y, point.Y)
+	ySquared.Mod(ySquared, Curve.Params().P)
+
+	if ySquared.Cmp(xCube) != 0 {
 		return errors.New("Cant compute y")
 	}
 	return nil
@@ -101,14 +99,11 @@ func (point EllipticPoint) Inverse() (*EllipticPoint, error) {
 	}
 
 	//Create result point
-	resPoint := new(EllipticPoint)
-	resPoint.X = big.NewInt(0)
-	resPoint.Y = big.NewInt(0)
+	resPoint := new(EllipticPoint).Zero()
 
 	//inverse point of A(x,y) in ECC is A'(x, P - y) with P is order of Curve
 	resPoint.X.Set(point.X)
-	resPoint.Y.Set(point.Y)
-	resPoint.Y.Sub(Curve.Params().P, resPoint.Y)
+	resPoint.Y.Sub(Curve.Params().P, point.Y)
 	resPoint.Y.Mod(resPoint.Y, Curve.Params().P)
 
 	return resPoint, nil
@@ -124,24 +119,25 @@ func (point *EllipticPoint) Randomize() {
 	}
 
 	for {
-		point.X.SetBytes(RandBytes(32))
+		point.X.SetBytes(RandBytes(Curve.Params().BitSize / 8))
 		err := point.ComputeYCoord()
 		if Curve.IsOnCurve(point.X, point.Y) && (err == nil) && (point.IsSafe()) {
 			break
 		}
 	}
-
-	//Logger.Log.Infof("Privacy log: Randomize elliptic point: %+v\n", point)
 }
 
-// IsSafe return true if eccPoint*eccPoint is not at infinity
+// IsSafe return true if point*point has not order 2 and point is on curve
 func (point EllipticPoint) IsSafe() bool {
-	var res EllipticPoint
 	if !Curve.IsOnCurve(point.X, point.Y) {
 		return false
 	}
-	res.X, res.Y = Curve.Double(point.X, point.Y)
-	if res.X.Cmp(big.NewInt(0)) == 0 && res.Y.Cmp(big.NewInt(0)) == 0 {
+
+	var doublePoint EllipticPoint
+	doublePoint.X, doublePoint.Y = Curve.Double(point.X, point.Y)
+
+	zeroPoint := new(EllipticPoint).Zero()
+	if doublePoint.IsEqual(zeroPoint) {
 		return false
 	}
 	return true
@@ -196,11 +192,6 @@ func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
 	xCube.Sub(xCube, xTemp.Mul(x, new(big.Int).SetInt64(3)))
 	xCube.Mod(xCube, Curve.Params().P)
 
-	//check P = 3 mod 4?
-	// if temp.Mod(Q, new(big.Int).SetInt64(4)).Cmp(new(big.Int).SetInt64(3)) != 0 {
-	// 	return nil, errors.Zero("parameter P must be congruent to 3 mod 4")
-	// }
-
 	// Now calculate sqrt mod p of x^3 - 3*x + B
 	// This code used to do a full sqrt based on tonelli/shanks,
 	// but this was replaced by the algorithms referenced in
@@ -212,9 +203,9 @@ func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
 	}
 
 	// Check that y is a square root of x^3  - 3*x + B.
-	ySquare := new(big.Int).Mul(y, y)
-	ySquare.Mod(ySquare, Curve.Params().P)
-	if ySquare.Cmp(xCube) != 0 {
+	ySquared := new(big.Int).Mul(y, y)
+	ySquared.Mod(ySquared, Curve.Params().P)
+	if ySquared.Cmp(xCube) != 0 {
 		return nil, errors.New("invalid square root")
 	}
 
@@ -226,31 +217,33 @@ func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
 	return y, nil
 }
 
-// Hash derives new elliptic point from another elliptic point using hash function
+// Hash derives new elliptic point from another elliptic point and index using hash function
 func (point EllipticPoint) Hash(index int) *EllipticPoint {
 	// res.X = hash(g.X || index), res.Y = sqrt(res.X^3 - 3X + B)
-	var res = new(EllipticPoint)
-	res.X = big.NewInt(0)
-	res.Y = big.NewInt(0)
+	res := new(EllipticPoint).Zero()
+
 	res.X.SetBytes(point.X.Bytes())
 	res.X.Add(res.X, big.NewInt(int64(index)))
+
 	for {
 		res.X.SetBytes(common.DoubleHashB(res.X.Bytes()))
-		res.ComputeYCoord()
-		if (res.Y != nil) && (Curve.IsOnCurve(res.X, res.Y)) && (res.IsSafe()) {
+		err := res.ComputeYCoord()
+
+		if (err == nil) && (Curve.IsOnCurve(res.X, res.Y)) && (res.IsSafe()) {
 			break
 		}
 	}
 	return res
 }
 
-func (point * EllipticPoint) Set(x, y *big.Int) {
-	if (point.X ==nil){
+func (point *EllipticPoint) Set(x, y *big.Int) {
+	if point.X == nil {
 		point.X = big.NewInt(0)
 	}
-	if (point.Y ==nil){
+	if point.Y == nil {
 		point.Y = big.NewInt(0)
 	}
+
 	point.X.Set(x)
 	point.Y.Set(y)
 }
@@ -279,10 +272,10 @@ func (point EllipticPoint) IsEqual(p *EllipticPoint) bool {
 	}
 	return false
 }
+
 func (point EllipticPoint) ScalarMult(factor *big.Int) *EllipticPoint {
 	res := new(EllipticPoint)
 	res.X, res.Y = Curve.ScalarMult(point.X, point.Y, factor.Bytes())
 	return res
 }
 
-/*******************************************************************************************/

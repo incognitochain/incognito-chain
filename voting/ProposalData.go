@@ -25,14 +25,14 @@ package voting
 //}
 //
 //func (data DCBProposalData) Hash() *common.Hash {
-//	record := string(common.ToBytes(data.DCBParams.Hash()))
+//	record := string(common.Bytes(data.DCBParams.Hash()))
 //	record += data.Explaination
 //	hash := common.DoubleHashH([]byte(record))
 //	return &hash
 //}
 //
 //func (GOVProposalData GOVProposalData) Hash() *common.Hash {
-//	record := string(common.ToBytes(GOVProposalData.GOVParams.Hash()))
+//	record := string(common.Bytes(GOVProposalData.GOVParams.Hash()))
 //	record += GOVProposalData.Explaination
 //	hash := common.DoubleHashH([]byte(record))
 //	return &hash

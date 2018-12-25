@@ -320,7 +320,7 @@ func (coinDetailsEncrypted *CoinDetailsEncrypted) SetBytes(bytes []byte) error {
 	}
 
 	coinDetailsEncrypted.EncryptedRandomness = bytes[0:48]
-	coinDetailsEncrypted.EncryptedSymKey = bytes[48 : 48+66]
+	coinDetailsEncrypted.EncryptedSymKey = bytes[48:48+66]
 	coinDetailsEncrypted.EncryptedValue = bytes[48+66:]
 
 	return nil
@@ -366,9 +366,6 @@ func (coin *OutputCoin) Encrypt(recipientTK TransmissionKey) error {
 
 	// Encrypt aesKeyByte under recipient's transmission key using ElGamal cryptosystem
 	coin.CoinDetailsEncrypted.EncryptedSymKey = transmissionKey.Encrypt(aesKeyPoint).Bytes()
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
@@ -386,7 +383,10 @@ func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 
 	// Parse encrypted AES key encoded as an elliptic point from EncryptedSymKey
 	encryptedAESKey := new(ElGamalCiphertext)
-	encryptedAESKey.SetBytes(coin.CoinDetailsEncrypted.EncryptedSymKey)
+	err := encryptedAESKey.SetBytes(coin.CoinDetailsEncrypted.EncryptedSymKey)
+	if err != nil{
+		return err
+	}
 
 	// Decrypt encryptedAESKey using recipient's receiving key
 	aesKeyPoint := receivingKey.Decrypt(encryptedAESKey)

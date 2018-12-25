@@ -35,7 +35,7 @@ func (self *BlockChain) GetAmountPerAccount(proposal *metadata.DividendProposal)
 		paymentAddressInBytes, _, _ := base58.Base58Check{}.Decode(holder)
 		keySet := cashec.KeySet{}
 		keySet.PaymentAddress = privacy.PaymentAddress{}
-		keySet.PaymentAddress.FromBytes(paymentAddressInBytes)
+		keySet.PaymentAddress.SetBytes(paymentAddressInBytes)
 		vouts, err := self.GetUnspentTxCustomTokenVout(keySet, proposal.TokenID)
 		if err != nil {
 			return 0, nil, nil, err

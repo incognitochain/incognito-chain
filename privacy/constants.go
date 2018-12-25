@@ -43,6 +43,10 @@ const (
 	ValueSize          = 8  // bytes
 	SNDerivatorSize    = 32 // bytes
 
+	SpendingKeySize = 32
+
 	BigIntSize     									= 32 // bytes
 	Uint64Size		= 8 // bytes
+
+
 )

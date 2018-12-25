@@ -613,7 +613,7 @@ func (blockgen *BlkTmplGenerator) processDividend(
 			if err != nil {
 				return nil, 0, err
 			}
-			holderAddress := (&privacy.PaymentAddress{}).FromBytes(holderAddr)
+			holderAddress := (&privacy.PaymentAddress{}).SetBytes(holderAddr)
 			info := metadata.DividendInfo{
 				TokenHolder: *holderAddress,
 				Amount:      amounts[i] / totalTokenSupply,

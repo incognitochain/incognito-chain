@@ -69,7 +69,7 @@ func (div *Dividend) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRet
 		count := 0
 		for i, holder := range tokenHolders {
 			temp, _ := hex.DecodeString(holder)
-			paymentAddress := (&privacy.PaymentAddress{}).FromBytes(temp)
+			paymentAddress := (&privacy.PaymentAddress{}).SetBytes(temp)
 			if bytes.Equal(paymentAddress.Pk[:], rec) {
 				count += 1
 				if correctAmounts[i] != recAmounts[j] {

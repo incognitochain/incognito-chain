@@ -1,7 +1,6 @@
 package privacy
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
 	"github.com/pkg/errors"
 	"math/big"
@@ -41,9 +40,9 @@ type PaymentInfo struct {
 // GenerateSpendingKey generates a random SpendingKey
 // SpendingKey: 32 bytes
 func GenerateSpendingKey(seed []byte) SpendingKey {
+	spendingKey := common.HashB(seed)
+
 	temp := new(big.Int)
-	spendingKey := make([]byte, 32)
-	spendingKey = common.HashB(seed)
 	for temp.SetBytes(spendingKey).Cmp(Curve.Params().N) == 1 {
 		spendingKey = common.HashB(spendingKey)
 	}
@@ -54,28 +53,23 @@ func GenerateSpendingKey(seed []byte) SpendingKey {
 // GeneratePublicKey computes an address corresponding with spendingKey
 // Pk : 33 bytes
 func GeneratePublicKey(spendingKey []byte) PublicKey {
-	var p EllipticPoint
-	p.X, p.Y = Curve.ScalarBaseMult(spendingKey)
-	publicKey := p.Compress()
-
-	return publicKey
+	var publicKey EllipticPoint
+	publicKey.X, publicKey.Y = Curve.ScalarBaseMult(spendingKey)
+	return publicKey.Compress()
 }
 
 // GenerateReceivingKey computes a receiving key corresponding with spendingKey
 // Rk : 32 bytes
 func GenerateReceivingKey(spendingKey []byte) ReceivingKey {
-	hash := sha256.Sum256(spendingKey)
-	receivingKey := hash[:]
-	return receivingKey
+	return common.HashB(spendingKey)
 }
 
 // GenerateTransmissionKey computes a transmission key corresponding with receivingKey
 // Tk : 33 bytes
 func GenerateTransmissionKey(receivingKey []byte) TransmissionKey {
-	var p EllipticPoint
-	p.X, p.Y = Curve.ScalarBaseMult(receivingKey)
-	transmissionKey := p.Compress()
-	return transmissionKey
+	var transmissionKey EllipticPoint
+	transmissionKey.X, transmissionKey.Y = Curve.ScalarBaseMult(receivingKey)
+	return transmissionKey.Compress()
 }
 
 // GenerateViewingKey generates a viewingKey corresponding with spendingKey
@@ -94,13 +88,9 @@ func GeneratePaymentAddress(spendingKey []byte) PaymentAddress {
 	return paymentAddress
 }
 
-func isOdd(a *big.Int) bool {
-	return a.Bit(0) == 1
-}
-
 // DecompressKey decompress public key to elliptic point
 func DecompressKey(pubKeyStr []byte) (pubkey *EllipticPoint, err error) {
-	if len(pubKeyStr) == 0 || len(pubKeyStr) != 33 {
+	if len(pubKeyStr) == 0 || len(pubKeyStr) != CompressedPointSize {
 		return nil, NewPrivacyErr(UnexpectedErr, errors.New("pubkey string len is wrong"))
 	}
 
@@ -123,48 +113,29 @@ func DecompressKey(pubKeyStr []byte) (pubkey *EllipticPoint, err error) {
 	return pubkey, nil
 }
 
-// PAdd1Div4 computes (p + 1) / 4
-func PAdd1Div4(p *big.Int) (res *big.Int) {
-	res = new(big.Int)
-	res.Add(p, new(big.Int).SetInt64(1))
-	res.Div(res, new(big.Int).SetInt64(4))
-	return
+// Bytes converts payment address to bytes array
+func (addr *PaymentAddress) Bytes() []byte {
+	return append(addr.Pk, addr.Tk...)
 }
 
-// paddedAppend appends the src byte slice to dst, returning the new slice.
-// If the length of the source is smaller than the passed size, leading zero
-// bytes are appended to the dst slice before appending src.
-func paddedAppend(size uint, dst, src []byte) []byte {
-	for i := 0; i < int(size)-len(src); i++ {
-		dst = append(dst, 0)
-	}
-	return append(dst, src...)
+// SetBytes reverts bytes array to payment address
+func (addr *PaymentAddress) SetBytes(bytes []byte) *PaymentAddress {
+	// First 33 bytes are public key
+	addr.Pk = bytes[:33]
+	// Last 33 bytes are transmission key
+	addr.Tk = bytes[33:]
+	return addr
 }
 
-func (addr *PaymentAddress) ToBytes() []byte {
-	result := make([]byte, 33)
-	pkenc := make([]byte, 33)
-	copy(result, addr.Pk[:33])
-	copy(pkenc, addr.Tk[:33])
-	result = append(result, pkenc...)
-	return result
-}
-
+// Size returns size of payment address
 func (addr *PaymentAddress) Size() int {
 	return len(addr.Pk) + len(addr.Tk)
 }
 
-func (addr *PaymentAddress) FromBytes(data []byte) *PaymentAddress {
-	addr.Pk = make([]byte, 33)
-	addr.Tk = make([]byte, 33)
-	copy(addr.Pk[:], data[:33]) // First 33 bytes are PaymentAddress's
-	copy(addr.Tk[:], data[33:]) // Last 33 bytes are Pkenc's
-	return addr
-}
-
+// String converts spending key to string
 func (spendingKey SpendingKey) String() string {
-	for i := 0; i < 32/2; i++ {
-		spendingKey[i], spendingKey[32-1-i] = spendingKey[32-1-i], spendingKey[i]
+	for i := 0; i < SpendingKeySize/2; i++ {
+		spendingKey[i], spendingKey[SpendingKeySize-1-i] = spendingKey[SpendingKeySize-1-i], spendingKey[i]
 	}
 	return hex.EncodeToString(spendingKey[:])
 }

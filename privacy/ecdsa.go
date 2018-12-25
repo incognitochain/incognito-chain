@@ -10,7 +10,6 @@ import (
 
 // Sign create signature for message with secret key
 func Sign(hash []byte, spendingKey []byte) (signature []byte, err error) {
-
 	signingKey := new(ecdsa.PrivateKey)
 	signingKey.PublicKey.Curve = Curve
 	signingKey.D = new(big.Int).SetBytes(spendingKey)
@@ -20,6 +19,8 @@ func Sign(hash []byte, spendingKey []byte) (signature []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// convert signature to bytes array
 	signature = SigToByteArray(r, s)
 	return
 }

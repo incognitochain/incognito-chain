@@ -26,43 +26,41 @@ func TestPAdd1Div4(t *testing.T) {
 
 func TestGenerateKey(t *testing.T){
 	spendingKey := GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	fmt.Printf("\nSpending key: %v\n", spendingKey)
-	lenSK := len(spendingKey)
 
 	//publicKey is compressed
 	publicKey := GeneratePublicKey(spendingKey)
-	fmt.Printf("\nPublic key: %v\n", publicKey)
-	lenPK := len(publicKey)
+	publicKeyBytes := make([]byte, CompressedPointSize)
+	copy(publicKeyBytes, publicKey[:])
 
-	point, err := DecompressKey(publicKey)
-	if err != nil {
-	fmt.Println(err)
-	}
-	fmt.Printf("Public key decompress: %v\n", point)
-
-	receivingKey := GenerateReceivingKey(spendingKey)
-	fmt.Printf("\nReceiving key: %v\n", receivingKey)
-	lenRK := len(receivingKey)
-	fmt.Println(len(receivingKey))
-
-	transmissionKey := GenerateTransmissionKey(receivingKey)
-	fmt.Printf("\nTransmission key: %v\n", transmissionKey)
-	lenTK := len(transmissionKey)
-
-	point, err = DecompressKey(transmissionKey)
+	// decompress public key
+	publicKeyPoint, err := DecompressKey(publicKey)
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Printf("Transmission key point decompress: %+v\n ", point)
+
+	assert.Equal(t, publicKeyBytes, publicKeyPoint.Compress())
+
+	receivingKey := GenerateReceivingKey(spendingKey)
+
+	transmissionKey := GenerateTransmissionKey(receivingKey)
+	transmissionKeyBytes := make([]byte, CompressedPointSize)
+	copy(transmissionKeyBytes, transmissionKey[:])
+
+	transmissionKeyPoint, err := DecompressKey(transmissionKey)
+	if err != nil {
+		fmt.Println(err)
+	}
+	assert.Equal(t, transmissionKeyBytes, transmissionKeyPoint.Compress())
 
 	paymentAddress := GeneratePaymentAddress(spendingKey)
-	lenPaymentAddr := len(paymentAddress.ToBytes())
+	paymentAddrBytes := paymentAddress.Bytes()
 
-	assert.Equal(t, lenSK, 32)
-	assert.Equal(t, lenPK, CompressedPointSize)
-	assert.Equal(t, lenRK, 32)
-	assert.Equal(t, lenTK, CompressedPointSize)
-	assert.Equal(t, lenPaymentAddr, 66)
+	paymentAddress2 := new(PaymentAddress)
+	paymentAddress2.SetBytes(paymentAddrBytes)
+
+	assert.Equal(t, paymentAddress.Pk, paymentAddress2.Pk)
+	assert.Equal(t, paymentAddress.Tk, paymentAddress2.Tk)
+
 }
 
 

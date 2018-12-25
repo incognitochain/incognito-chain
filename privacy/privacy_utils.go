@@ -119,7 +119,6 @@ func IntToByteArr(n int) []byte {
 }
 
 //
-
 func ByteArrToInt(bytesArr []byte) int {
 	if len(bytesArr) != 2 {
 		return 0
@@ -127,4 +126,28 @@ func ByteArrToInt(bytesArr []byte) int {
 	numInt := new(big.Int).SetBytes(bytesArr)
 	return int(numInt.Int64())
 
+}
+
+
+// isOdd check a big int is odd or not
+func isOdd(a *big.Int) bool {
+	return a.Bit(0) == 1
+}
+
+// PAdd1Div4 computes (p + 1) / 4
+func PAdd1Div4(p *big.Int) (res *big.Int) {
+	res = new(big.Int)
+	res.Add(p, new(big.Int).SetInt64(1))
+	res.Div(res, new(big.Int).SetInt64(4))
+	return
+}
+
+// paddedAppend appends the src byte slice to dst, returning the new slice.
+// If the length of the source is smaller than the passed size, leading zero
+// bytes are appended to the dst slice before appending src.
+func paddedAppend(size uint, dst, src []byte) []byte {
+	for i := 0; i < int(size)-len(src); i++ {
+		dst = append(dst, 0)
+	}
+	return append(dst, src...)
 }
