@@ -171,10 +171,10 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if self.Config.MessageListeners.OnBFTReply != nil {
 						self.Config.MessageListeners.OnBFTReply(self, message.(*wire.MessageBFTReply))
 					}
-				// case reflect.TypeOf(&wire.MessageInvalidBlock{}):
-				// 	if self.Config.MessageListeners.OnInvalidBlock != nil {
-				// 		self.Config.MessageListeners.OnInvalidBlock(self, message.(*wire.MessageInvalidBlock))
-				// 	}
+					// case reflect.TypeOf(&wire.MessageInvalidBlock{}):
+					// 	if self.Config.MessageListeners.OnInvalidBlock != nil {
+					// 		self.Config.MessageListeners.OnInvalidBlock(self, message.(*wire.MessageInvalidBlock))
+					// 	}
 				case reflect.TypeOf(&wire.MessageGetChainState{}):
 					if self.Config.MessageListeners.OnGetChainState != nil {
 						self.Config.MessageListeners.OnGetChainState(self, message.(*wire.MessageGetChainState))
@@ -187,18 +187,18 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					  if self.Config.MessageListeners.OnRegistration != nil {
 						  self.Config.MessageListeners.OnRegistration(self, message.(*wire.MessageRegistration))
 					  }*/
-				// case reflect.TypeOf(&wire.MessageSwapRequest{}):
-				// 	if self.Config.MessageListeners.OnSwapRequest != nil {
-				// 		self.Config.MessageListeners.OnSwapRequest(self, message.(*wire.MessageSwapRequest))
-				// 	}
-				// case reflect.TypeOf(&wire.MessageSwapSig{}):
-				// 	if self.Config.MessageListeners.OnSwapSig != nil {
-				// 		self.Config.MessageListeners.OnSwapSig(self, message.(*wire.MessageSwapSig))
-				// 	}
-				// case reflect.TypeOf(&wire.MessageSwapUpdate{}):
-				// 	if self.Config.MessageListeners.OnSwapUpdate != nil {
-				// 		self.Config.MessageListeners.OnSwapUpdate(self, message.(*wire.MessageSwapUpdate))
-				// 	}
+					// case reflect.TypeOf(&wire.MessageSwapRequest{}):
+					// 	if self.Config.MessageListeners.OnSwapRequest != nil {
+					// 		self.Config.MessageListeners.OnSwapRequest(self, message.(*wire.MessageSwapRequest))
+					// 	}
+					// case reflect.TypeOf(&wire.MessageSwapSig{}):
+					// 	if self.Config.MessageListeners.OnSwapSig != nil {
+					// 		self.Config.MessageListeners.OnSwapSig(self, message.(*wire.MessageSwapSig))
+					// 	}
+					// case reflect.TypeOf(&wire.MessageSwapUpdate{}):
+					// 	if self.Config.MessageListeners.OnSwapUpdate != nil {
+					// 		self.Config.MessageListeners.OnSwapUpdate(self, message.(*wire.MessageSwapUpdate))
+					// 	}
 				case reflect.TypeOf(&wire.MessageMsgCheck{}):
 					self.handleMsgCheck(message.(*wire.MessageMsgCheck))
 				case reflect.TypeOf(&wire.MessageMsgCheckResp{}):
@@ -276,7 +276,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 // encoding/decoding blocks and transactions.
 //
 // This function is safe for concurrent access.
-func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
+func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}, forwardType byte, forwardValue *byte) {
 	go func() {
 		if self.IsConnected {
 			data, _ := msg.JsonSerialize()
@@ -301,7 +301,7 @@ func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<-
 						return
 					}
 					msgCheck.(*wire.MessageMsgCheck).Hash = hash
-					self.QueueMessageWithEncoding(msgCheck, nil)
+					self.QueueMessageWithEncoding(msgCheck, nil, MESSAGE_TO_PEER, nil)
 				}()
 				Logger.log.Infof("QueueMessageWithEncoding WAIT result check hash %s", hash)
 				for {
@@ -325,7 +325,7 @@ func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<-
 				// set time out for check message
 				go func() {
 					select {
-					case <-time.NewTimer(10 * time.Second).C:
+					case <-time.NewTimer(MAX_TIMEOUT_CHECK_HASH_MESSAGE * time.Second).C:
 						if cTimeOut != nil {
 							Logger.log.Infof("QueueMessageWithEncoding TIMER time out %s", hash)
 							bTimeOut = true
@@ -340,10 +340,20 @@ func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<-
 				}
 
 				if bOk {
-					self.sendMessageQueue <- outMsg{message: msg, doneChan: doneChan}
+					self.sendMessageQueue <- outMsg{
+						message:      msg,
+						doneChan:     doneChan,
+						forwardType:  forwardType,
+						forwardValue: forwardValue,
+					}
 				}
 			} else {
-				self.sendMessageQueue <- outMsg{message: msg, doneChan: doneChan}
+				self.sendMessageQueue <- outMsg{
+					message:      msg,
+					doneChan:     doneChan,
+					forwardType:  forwardType,
+					forwardValue: forwardValue,
+				}
 			}
 		}
 	}()
@@ -359,7 +369,7 @@ func (p *PeerConn) handleMsgCheck(msg *wire.MessageMsgCheck) {
 		msgResp.(*wire.MessageMsgCheckResp).Hash = msg.Hash
 		msgResp.(*wire.MessageMsgCheckResp).Accept = true
 	}
-	p.QueueMessageWithEncoding(msgResp, nil)
+	p.QueueMessageWithEncoding(msgResp, nil, MESSAGE_TO_PEER, nil)
 }
 
 func (p *PeerConn) handleMsgCheckResp(msg *wire.MessageMsgCheckResp) {

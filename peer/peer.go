@@ -27,9 +27,15 @@ import (
 type ConnState uint8
 
 var MAX_RETRIES_CHECK_HASH_MESSAGE = 5
+var MAX_TIMEOUT_CHECK_HASH_MESSAGE = time.Duration(10)
 var HEAVY_MESSAGE_SIZE = 512 * 1024
 var SPAM_MESSAGE_SIZE = 50 * 1024 * 1024
 var MESSAGE_HASH_POOL_SIZE = 1000
+
+var MESSAGE_TO_ALL = byte(0)
+var MESSAGE_TO_SHARD = byte(1)
+var MESSAGE_TO_PEER = byte(2)
+var MESSAGE_TO_BEACON = byte(3)
 
 // RemotePeer is present for libp2p node data
 type Peer struct {
@@ -124,8 +130,10 @@ type MessageListeners struct {
 // when the message has been sent (or won't be sent due to things such as
 // shutdown)
 type outMsg struct {
-	message  wire.Message
-	doneChan chan<- struct{}
+	forwardType  byte // 0 all, 1 shard, 2  peer, 3 beacon
+	forwardValue *byte
+	message      wire.Message
+	doneChan     chan<- struct{}
 	//encoding wire.MessageEncoding
 }
 
@@ -588,9 +596,9 @@ func (self *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 // encoding/decoding blocks and transactions.
 //
 // This function is safe for concurrent access.
-func (self *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
+func (self *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}, msgType byte, msgShard *byte) {
 	for _, peerConnection := range self.PeerConns {
-		go peerConnection.QueueMessageWithEncoding(msg, doneChan)
+		go peerConnection.QueueMessageWithEncoding(msg, doneChan, msgType, msgShard)
 	}
 }
 
