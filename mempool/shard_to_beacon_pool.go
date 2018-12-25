@@ -53,7 +53,7 @@ func (pool *ShardToBeaconPool) RemoveBlock(shardID byte, blockHeight uint64) err
 	if !ok || len(shardItems) <= 0 {
 		return errors.New("Shard is not exist")
 	}
-	items := make(map[uint64][]blockchain.ShardToBeaconBlock)
+	items := map[uint64][]blockchain.ShardToBeaconBlock{}
 	for key, blocks := range shardItems {
 		if key <= blockHeight {
 			continue
@@ -97,7 +97,7 @@ func (pool *ShardToBeaconPool) AddBeaconBlock(newBlock blockchain.ShardToBeaconB
 
 	err := UpdateBeaconPool(ShardID, Height, PrevBlockHash)
 	if err != nil {
-		return err
+		log.Println("update beacon pool err: ", err)
 	}
 	log.Println("update previous block items with same height")
 

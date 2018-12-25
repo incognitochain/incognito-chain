@@ -165,24 +165,40 @@ func (self *BlockChain) Init(config *Config) error {
 	return nil
 }
 
-func (self *BlockChain) SnapshotBeaconBestState() (string, error) {
-	res, err := json.Marshal(*self.BestState.Beacon)
+func (self *BlockChain) StoreMaybeAcceptBeaconBeststate(beaconBestState BestStateBeacon) (string, error) {
+	res, err := json.Marshal(beaconBestState)
 	if err != nil {
 		return "", NewBlockChainError(UnmashallJsonBlockError, err)
 	}
-	key := self.BestState.Beacon.BestBlockHash.String()
+	key := beaconBestState.BestBlockHash.String()
 	self.BestState.beacon[key] = res
 	return key, nil
 }
-
-func (self *BlockChain) RevertSnapshotBeaconBestState(key string) error {
-	res := self.BestState.beacon[key]
-	revertBeaconBestState := BestStateBeacon{}
-	if err := json.Unmarshal(res, revertBeaconBestState); err != nil {
-		return NewBlockChainError(UnmashallJsonBlockError, err)
+func (self *BlockChain) StoreMaybeAcceptBeaconBlock(block BeaconBlock) (string, error) {
+	res, err := json.Marshal(block)
+	if err != nil {
+		return "", NewBlockChainError(UnmashallJsonBlockError, err)
 	}
-	self.BestState.Beacon = &revertBeaconBestState
-	return nil
+	key := block.Hash().String()
+	self.config.beaconBlock[key] = res
+	return key, nil
+}
+func (self *BlockChain) GetMaybeAcceptBeaconBlock(key string) (BeaconBlock, error) {
+	res := self.config.beaconBlock[key]
+	beaconBlock := BeaconBlock{}
+	if err := json.Unmarshal(res, beaconBlock); err != nil {
+		return beaconBlock, NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	return beaconBlock, nil
+}
+
+func (self *BlockChain) GetMaybeAcceptBeaconBestState(key string) (BestStateBeacon, error) {
+	res := self.BestState.beacon[key]
+	beaconBestState := BestStateBeacon{}
+	if err := json.Unmarshal(res, beaconBestState); err != nil {
+		return beaconBestState, NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	return beaconBestState, nil
 }
 
 // -------------- Blockchain retriever's implementation --------------
