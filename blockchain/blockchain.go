@@ -233,11 +233,6 @@ func (self *BlockChain) createChainState(chainId byte) error {
 	}
 	initBlock.Header.Height = 1
 
-	/*tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
-	if err := UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
-		return NewBlockChainError(UpdateMerkleTreeForBlockError, err)
-	}*/
-
 	self.BestState[chainId] = &BestState{}
 	self.BestState[chainId].Init(initBlock /*, tree*/)
 
