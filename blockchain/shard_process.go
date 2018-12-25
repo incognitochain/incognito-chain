@@ -161,7 +161,7 @@ func (self *BlockChain) ConnectBlock(block *ShardBlock) error {
 	return nil
 }
 
-func (self *BlockChain) VerifyPreProcessingBlockShard(block *ShardBlock) error {
+func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock) error {
 	return nil
 	/* Verify Pre-prosessing data
 	- Signature
@@ -178,7 +178,7 @@ func (self *BlockChain) VerifyPreProcessingBlockShard(block *ShardBlock) error {
 	return nil
 }
 
-func (self *BlockChain) VerifyPostProcessingBlockShard(block *ShardBlock) error {
+func (self *BlockChain) VerifyPostProcessingShardBlock(block *ShardBlock) error {
 	return nil
 	/* Verify Post-processing data
 	- Validator root
