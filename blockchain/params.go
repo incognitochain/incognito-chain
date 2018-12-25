@@ -22,12 +22,14 @@ type Params struct {
 	GenesisBlockShard *ShardBlock
 }
 
+// public key
 var preSelectBeaconNodeTestnetSerializedPubkey = []string{
 	"14uPLoQ8GneVYYyyYUyacQENfZREyX5vxzNCWKwLLyfbwhW1dpX",
 	"18AjeCbiownZuCzk7aoJHqPVkVhzNVJhwbGVHb8iecYSLRVxuaA",
 	"17ndcst8UgcCf9kxReSKqgizvAjrFHS7nfF3Fxgf3GEMajtpAUH",
 }
 
+// private key - seed
 var preSelectBeaconNodeTestnet = []string{
 	"124sf2tJ4K6iVD6PS4dZzs3BNYuYmHmup3Q9MfhorDrJ6aiSr46",
 	"1WG3ys2tsZKpAYV7UEMirmALrMe7wDijnZfTp2Nnd9Ei6upGhc",

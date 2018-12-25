@@ -63,11 +63,89 @@ Insert new block into beaconchain
 // 	//===================Store Block and BestState in cache======================
 // 	return nil
 // }
+/*
+	// This function should receives block in consensus round
+	// It verify validity of this function before sign it
+	// This should be verify in the first round of consensus
 
-// Verify Block and Snapshot beststate + block if valid
+	Step:
+	1. Verify Pre proccessing data
+	2. Retrieve beststate for new block, store in local variable
+	3. Update: process local beststate with new block
+	4. Verify Post processing: updated local beststate and newblock
+
+	Return:
+	- No error: valid and can be sign
+	- Error: invalid new block
+*/
+func (self *BlockChain) VerifyBlockForSigningProcess(block *BeaconBlock) error {
+	self.chainLock.Lock()
+	defer self.chainLock.Unlock()
+	//========Verify block only
+	if err := self.VerifyPreProcessingBeaconBlock(block); err != nil {
+		return err
+	}
+	//========Verify block with previous best state
+	// Get Beststate of previous block == previous best state
+	// Clone best state value into new variable
+	beaconBestState := BestStateBeacon{}
+	// check with current final best state
+	if strings.Compare(self.BestState.Beacon.BestBlockHash.String(), block.Header.PrevBlockHash.String()) == 0 {
+		tempMarshal, err := json.Marshal(self.BestState.Beacon)
+		if err != nil {
+			return NewBlockChainError(UnmashallJsonBlockError, err)
+		}
+		json.Unmarshal(tempMarshal, beaconBestState)
+	} else {
+		// check with current cache best state
+		var err error
+		beaconBestState, err = self.GetMaybeAcceptBeaconBestState(block.Header.PrevBlockHash.String())
+		if err != nil {
+			return err
+		}
+	}
+	// if no match best state found then block is unknown
+	if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
+		return NewBlockChainError(BeaconError, errors.New("Beacon Block does not match with any Beacon State in cache or in Database"))
+	}
+	// Verify block with previous best state
+	if err := beaconBestState.VerifyBestStateWithBeaconBlock(block); err != nil {
+		return err
+	}
+	//========Update best state with new block
+	if err := beaconBestState.Update(block); err != nil {
+		return err
+	}
+	//========Post verififcation: verify new beaconstate with corresponding block
+	if err := beaconBestState.VerifyPostProcessingBeaconBlock(block); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Maybe accept new block (new block created from consensus)
+/*
+	1. Verify Signature
+	2. Verify Pre Processing
+	3.
+		- Load (from cache or database) beststate corressponding to block
+		- Stored loaded beststate in local variable
+		- verify loaded beststate with new block
+	4. Update local beststate (process local beststate with new block)
+	5. Verify Post Processing (verify updated local beststate with new block)
+	6. Store in cache
+		- updated local beststate
+		- new block
+	7. Acceptblock
+		- Store in DB Previous Block of new Block
+	    - Update final beststate (blockchain.BestState.BestStateBeacon.Beacon) with previous block
+	    - Store just updated final beststate in DB
+*/
+// This function return key to retrive new block and new beststate in cache
 func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, error) {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
+	//TODO: Verify Signature
 	//========Verify block only
 	if err := self.VerifyPreProcessingBeaconBlock(block); err != nil {
 		return "", err
