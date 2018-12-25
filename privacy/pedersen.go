@@ -24,7 +24,7 @@ type PCParams struct {
 	// G[1]: Value
 	// G[2]: SNDerivator
 	// G[3]: ShardID
-	// G[4]: Random
+	// G[4]: Randomness
 }
 
 // newPedersenParams creates new generators
@@ -53,13 +53,10 @@ func (com PCParams) CommitAll(openings []*big.Int) *EllipticPoint {
 	if len(openings) != com.Capacity {
 		return nil
 	}
-	commitment := new(EllipticPoint)
-	commitment.X = big.NewInt(0)
-	commitment.Y = big.NewInt(0)
-	for i := 0; i < com.Capacity; i++ {
-		tmp := com.G[i].ScalarMult(openings[i])
-		commitment = commitment.Add(tmp)
 
+	commitment := new(EllipticPoint).Zero()
+	for i := 0; i < com.Capacity; i++ {
+		commitment = commitment.Add(com.G[i].ScalarMult(openings[i]))
 	}
 	return commitment
 }

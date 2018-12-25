@@ -19,6 +19,7 @@ func RandBytes(n int) []byte {
 	}
 	return b
 }
+
 func RandByte() byte {
 	var res byte
 	res = 0
@@ -91,9 +92,7 @@ func ConvertIntToBinary(inum int, n int) []byte {
 	return binary
 }
 
-func getindex(bigint *big.Int, stableSz int) int {
-	return stableSz - len(bigint.Bytes())
-}
+// AddPaddingBigInt adds padding to big int to it is fixed size
 func AddPaddingBigInt(numInt *big.Int, fixedSize int) []byte {
 	numBytes := numInt.Bytes()
 	lenNumBytes := len(numBytes)
@@ -104,30 +103,34 @@ func AddPaddingBigInt(numInt *big.Int, fixedSize int) []byte {
 	return numBytes
 }
 
+// IntToByteArr converts an integer number to 2 bytes array
 func IntToByteArr(n int) []byte {
+	if n == 0 {
+		return []byte{0, 0}
+	}
+
 	a := big.NewInt(int64(n))
+
 	if len(a.Bytes()) > 2 {
 		return []byte{}
 	}
-	if (len(a.Bytes()) == 1) {
+
+	if len(a.Bytes()) == 1 {
 		return []byte{0, a.Bytes()[0]}
 	}
-	if (n == 0) {
-		return []byte{0, 0}
-	}
+
 	return a.Bytes()
 }
 
-//
+// ByteArrToInt reverts an integer number from bytes array
 func ByteArrToInt(bytesArr []byte) int {
 	if len(bytesArr) != 2 {
 		return 0
 	}
+
 	numInt := new(big.Int).SetBytes(bytesArr)
 	return int(numInt.Int64())
-
 }
-
 
 // isOdd check a big int is odd or not
 func isOdd(a *big.Int) bool {

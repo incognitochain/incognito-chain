@@ -301,7 +301,7 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		}
 
 		// convert signature to byte array
-		tx.Sig = signature.ToBytes()
+		tx.Sig = signature.Bytes()
 
 	} else {
 		/***** using ECDSA ****/
@@ -358,7 +358,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		//Logger.log.Infof(verKey)
 		// convert signature from byte array to SchnorrSign
 		signature := new(privacy.SchnSignature)
-		signature.FromBytes(tx.Sig)
+		signature.SetBytes(tx.Sig)
 
 		// verify signature
 		//Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())

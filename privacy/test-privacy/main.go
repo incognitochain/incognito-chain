@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/ninjadotorg/constant/privacy"
 )
 
@@ -447,9 +446,6 @@ func main() {
 	//fmt.Printf("Point 2 value: %v\n", *(*point2).X)
 	//fmt.Printf("\n\n")
 
-	//fmt.Printf("%+v\n", privacy.PedCom.G[0].ScalarMult(big.NewInt(2)))
-
-	fmt.Printf("bit size: %v\n", privacy.Curve.Params().BitSize)
-
+	privacy.TestSchn()
 
 }
