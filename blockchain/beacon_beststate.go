@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"sync"
+
 	"github.com/ninjadotorg/constant/common"
 )
 
@@ -49,6 +51,8 @@ type BestStateBeacon struct {
 	IsGetRandomNUmber      bool
 
 	Params map[string]string
+
+	lock sync.RWMutex
 }
 
 func NewBestStateBeacon() *BestStateBeacon {

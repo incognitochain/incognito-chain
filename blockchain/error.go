@@ -25,6 +25,7 @@ const (
 	ShardStateHashError
 	RandomError
 	VerificationError
+	BeaconError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -45,6 +46,7 @@ var ErrCodeMessage = map[int]struct {
 	ShardStateHashError:           {-12, "ShardState Hash Error"},
 	RandomError:                   {-13, "Random Number Error"},
 	VerificationError:             {-14, "Verify Block Error"},
+	BeaconError:                   {-15, "Beacon Error"},
 }
 
 type BlockChainError struct {
