@@ -493,7 +493,7 @@ func loadConfig() (*config, []string, error) {
 	// set.
 	if cfg.Generate {
 		// if mining mode -> not light mode
-		cfg.Light = false
+		//cfg.Light = false
 	}
 	if cfg.Generate && len(cfg.ProducerSpendingKey) == 0 {
 		str := "%s: the generate flag is set, but there are no producer's key specified "

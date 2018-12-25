@@ -165,11 +165,11 @@ func (self *BlockChain) BlockContainAccountLocalWallet(block *Block) (bool) {
 							return true
 						}
 					}
-					if txCustomToken.TxTokenData.Vouts != nil {
-						for _, out := range txCustomToken.TxTokenData.Vouts {
-							if self.config.Wallet.ContainPubKey(out.PaymentAddress.Pk) {
-								return true
-							}
+				}
+				if txCustomToken.TxTokenData.Vouts != nil {
+					for _, out := range txCustomToken.TxTokenData.Vouts {
+						if self.config.Wallet.ContainPubKey(out.PaymentAddress.Pk) {
+							return true
 						}
 					}
 				}
@@ -182,11 +182,11 @@ func (self *BlockChain) BlockContainAccountLocalWallet(block *Block) (bool) {
 								return true
 							}
 						}
-						if txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof != nil {
-							for _, out := range txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof.OutputCoins {
-								if self.config.Wallet.ContainPubKey(out.CoinDetails.PublicKey.Compress()) {
-									return true
-								}
+					}
+					if txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof != nil {
+						for _, out := range txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof.OutputCoins {
+							if self.config.Wallet.ContainPubKey(out.CoinDetails.PublicKey.Compress()) {
+								return true
 							}
 						}
 					}
