@@ -60,7 +60,7 @@ func (tx *Tx) Init(
 	}
 
 	if tx.LockTime == 0 {
-
+		tx.LockTime = time.Now().Unix()
 	}
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
@@ -334,10 +334,6 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, fmt.Errorf("input transaction must be an signed one!")
-	}
-
-	if tx.Proof != nil {
-		//Logger.log.Infof("VERIFY SIGNATURE ------------- TX.PROOF: %v\n", tx.Proof.Bytes())
 	}
 
 	var err error

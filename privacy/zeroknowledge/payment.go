@@ -99,12 +99,7 @@ func (proof *PaymentProof) Init() *PaymentProof {
 func (proof PaymentProof) MarshalJSON() ([]byte, error) {
 	data := proof.Bytes()
 	temp := base58.Base58Check{}.Encode(data, byte(0x00))
-	bytesArr, err := json.Marshal(temp)
-
-	if err != nil {
-		return nil, privacy.NewPrivacyErr(privacy.MarshalErr, err)
-	}
-	return bytesArr, nil
+	return json.Marshal(temp)
 }
 
 func (proof *PaymentProof) UnmarshalJSON(data []byte) error {
@@ -112,7 +107,7 @@ func (proof *PaymentProof) UnmarshalJSON(data []byte) error {
 	_ = json.Unmarshal(data, &dataStr)
 	temp, _, err := base58.Base58Check{}.Decode(dataStr)
 	if err != nil {
-		return privacy.NewPrivacyErr(privacy.UnmarshalErr, err)
+		return err
 	}
 
 	proof.SetBytes(temp)
