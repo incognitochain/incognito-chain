@@ -316,11 +316,14 @@ func (self *BlockChain) initBeaconState() error {
 	initBlock = self.config.ChainParams.GenesisBlockBeacon
 	//TODO: initiate first beacon state
 	self.BestState.Beacon = NewBestStateBeacon()
+	self.BestState.Beacon.Update(initBlock)
 	// Insert new block into beacon chain
-	err := self.ConnectBlockBeacon(initBlock)
-
-	if err != nil {
-		Logger.log.Error(err)
+	if err := self.config.DataBase.StoreBeaconBestState(*self.BestState.Beacon); err != nil {
+		Logger.log.Error("Error Store best state for block", self.BestState.Beacon.BestBlockHash, "in beacon chain")
+		return NewBlockChainError(UnExpectedError, err)
+	}
+	if err := self.config.DataBase.StoreBeaconBlock(*self.BestState.Beacon.BestBlock); err != nil {
+		Logger.log.Error("Error store beacon block", self.BestState.Beacon.BestBlockHash, "in beacon chain")
 		return err
 	}
 	//=======================Init cache data==========================
