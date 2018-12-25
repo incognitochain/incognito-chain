@@ -27,9 +27,9 @@ func (pool *ShardToBeaconPool) GetFinalBlock() map[byte][]blockchain.ShardToBeac
 			continue
 		}
 		items := []blockchain.ShardToBeaconBlock{}
-		for i := 0;i < len(shardItems)-1;i++ {
-			item,ok := shardItems[uint64(i)]
-			if !ok || len(item) <=0 {
+		for i := 0; i < len(shardItems)-1; i++ {
+			item, ok := shardItems[uint64(i)]
+			if !ok || len(item) <= 0 {
 				continue
 			}
 			items = append(items, item[0])
@@ -53,7 +53,7 @@ func (pool *ShardToBeaconPool) RemoveBlock(shardID byte, blockHeight uint64) err
 	if !ok || len(shardItems) <= 0 {
 		return errors.New("Shard is not exist")
 	}
-	items := map[uint64][]blockchain.ShardToBeaconBlock
+	items := make(map[uint64][]blockchain.ShardToBeaconBlock)
 	for key, blocks := range shardItems {
 		if key <= blockHeight {
 			continue
@@ -96,6 +96,9 @@ func (pool *ShardToBeaconPool) AddBeaconBlock(newBlock blockchain.ShardToBeaconB
 	beaconPool[ShardID] = beaconPoolShardItem
 
 	err := UpdateBeaconPool(ShardID, Height, PrevBlockHash)
+	if err != nil {
+		return err
+	}
 	log.Println("update previous block items with same height")
 
 	beaconPoolLock.Unlock()
@@ -132,7 +135,7 @@ func UpdateBeaconPool(shardID byte, blockHeight uint64, preBlockHash common.Hash
 		hash := header.Hash()
 		if hash == preBlockHash {
 			shardItems[prevBlockHeight] = []blockchain.ShardToBeaconBlock{block}
-			beaconPool[ShardID] = shardItems
+			beaconPool[shardID] = shardItems
 			break
 		}
 	}
