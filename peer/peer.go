@@ -124,6 +124,8 @@ type MessageListeners struct {
 	// OnSwapRequest func(p *PeerConn, msg *wire.MessageSwapRequest)
 	// OnSwapSig     func(p *PeerConn, msg *wire.MessageSwapSig)
 	// OnSwapUpdate  func(p *PeerConn, msg *wire.MessageSwapUpdate)
+	PushRawBytesToShard func(msgBytes *[]byte, shard byte) error
+	GetCurrentShard     func() *byte
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal
@@ -600,6 +602,12 @@ func (self *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 func (self *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}, msgType byte, msgShard *byte) {
 	for _, peerConnection := range self.PeerConns {
 		go peerConnection.QueueMessageWithEncoding(msg, doneChan, msgType, msgShard)
+	}
+}
+
+func (self *Peer) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<- struct{}) {
+	for _, peerConnection := range self.PeerConns {
+		go peerConnection.QueueMessageWithBytes(msgBytes, doneChan)
 	}
 }
 

@@ -12,11 +12,6 @@ import (
 var beaconPoolLock sync.RWMutex
 var beaconPool = map[byte]map[uint64][]blockchain.ShardToBeaconBlock{}
 
-// type ShardToBeaconPool interface {
-// 	RemoveBlock([]common.Hash) error
-// 	GetBlock() map[byte][]ShardToBeaconBlock
-// }
-
 type ShardToBeaconPool struct{}
 
 func (pool *ShardToBeaconPool) GetFinalBlock() map[byte][]blockchain.ShardToBeaconBlock {
@@ -40,27 +35,32 @@ func (pool *ShardToBeaconPool) GetFinalBlock() map[byte][]blockchain.ShardToBeac
 
 }
 
-func (pool *ShardToBeaconPool) RemoveBlock(shardID byte, blockHeight uint64) error {
-	if shardID <= 0 {
-		return errors.New("Invalid Shard ID")
-	}
-	if shardID == 0 {
-		return errors.New("Invalid Block Heght")
+func (pool *ShardToBeaconPool) RemoveBlock(blockItems map[byte]uint64) error {
+	if len(blockItems) <= 0 {
+		log.Println("Block items empty")
+		return nil
 	}
 
 	beaconPoolLock.Lock()
-	shardItems, ok := beaconPool[shardID]
-	if !ok || len(shardItems) <= 0 {
-		return errors.New("Shard is not exist")
-	}
-	items := map[uint64][]blockchain.ShardToBeaconBlock{}
-	for key, blocks := range shardItems {
-		if key <= blockHeight {
+	for shardID, blockHeight := range blockItems {
+		shardItems, ok := beaconPool[shardID]
+		if !ok || len(shardItems) <= 0 {
+			log.Println("Shard is not exist")
 			continue
 		}
-		items[key] = blocks
+
+		items := map[uint64][]blockchain.ShardToBeaconBlock{}
+		for i := int(blockHeight) + 1; i < len(shardItems); i++ {
+			items = append(items, shardItems[i])
+		}
+		// for key, blocks := range shardItems {
+		// 	if key <= blockHeight {
+		// 		continue
+		// 	}
+		// 	items[key] = blocks
+		// }
+		beaconPool[shardID] = items
 	}
-	beaconPool[shardID] = items
 	beaconPoolLock.Unlock()
 	return nil
 }
