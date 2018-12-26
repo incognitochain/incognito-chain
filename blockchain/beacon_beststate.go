@@ -1,8 +1,6 @@
 package blockchain
 
 import (
-	"sync"
-
 	"github.com/ninjadotorg/constant/common"
 )
 
@@ -52,7 +50,7 @@ type BestStateBeacon struct {
 
 	Params map[string]string
 
-	lock sync.RWMutex
+	// lock sync.RWMutex
 }
 
 func NewBestStateBeacon() *BestStateBeacon {

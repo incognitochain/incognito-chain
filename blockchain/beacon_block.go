@@ -15,7 +15,7 @@ const (
 )
 
 type BeaconBody struct {
-	ShardState   [][]common.Hash
+	ShardState   map[byte][]common.Hash
 	Instructions [][]string // Random here
 }
 

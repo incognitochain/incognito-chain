@@ -173,10 +173,15 @@ func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, erro
 	if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
 		return "", NewBlockChainError(BeaconError, errors.New("Beacon Block does not match with any Beacon State in cache or in Database"))
 	}
+
+	// beaconBestState.lock.Lock()
+	// defer beaconBestState.lock.Unlock()
+
 	// Verify block with previous best state
 	if err := beaconBestState.VerifyBestStateWithBeaconBlock(block); err != nil {
 		return "", err
 	}
+
 	//========Update best state with new block
 	if err := beaconBestState.Update(block); err != nil {
 		return "", err
@@ -204,9 +209,10 @@ func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, erro
 }
 
 //Store block & state offcial
+//lock sync.Mutex blockchain before call accept beacon block
 func (self *BlockChain) AcceptBeaconBlock(blockHash *common.Hash) error {
-	self.chainLock.Lock()
-	defer self.chainLock.Unlock()
+	// self.chainLock.Lock()
+	// defer self.chainLock.Unlock()
 	// This function make sure if stored block at height 91, then best state height at 90
 	beaconBlock, err := self.GetMaybeAcceptBeaconBlock(blockHash.String())
 	if err != nil {
@@ -242,7 +248,6 @@ func (self *BlockChain) AcceptBeaconBlock(blockHash *common.Hash) error {
 	Logger.log.Infof("Accepted block %+v", blockHash)
 	return nil
 }
-
 func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error {
 	/* Verify Pre-prosessing data
 	This function DOES NOT verify new block with best state
@@ -316,8 +321,8 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock) 
 	// OR new block has previous has is beacon best block hash
 
 	// TODO: Verify producer
-	self.lock.Lock()
-	defer self.lock.Unlock()
+	// self.lock.Lock()
+	// defer self.lock.Unlock()
 
 	if self.BeaconHeight+1 != block.Header.Height {
 		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
@@ -338,8 +343,8 @@ func (self *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock)
 	- Shard Validator root: ShardCommittee + ShardPendingValidator
 	- Random number if have in instruction
 	*/
-	self.lock.Lock()
-	defer self.lock.Unlock()
+	// self.lock.Lock()
+	// defer self.lock.Unlock()
 
 	var (
 		strs []string
@@ -396,8 +401,8 @@ func (self *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock)
 	return nil
 }
 func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
-	self.lock.Lock()
-	defer self.lock.Unlock()
+	// self.lock.Lock()
+	// defer self.lock.Unlock()
 
 	if newBlock == nil {
 		return errors.New("Null pointer")
@@ -426,7 +431,6 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			delete(self.Params, l[1])
 		}
 		if l[0] == "swap" {
-			//TODO: remove from candidate list
 			// format
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "shard" "shardID"]
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "beacon"]
@@ -468,12 +472,10 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 					return NewBlockChainError(UnExpectedError, err)
 				}
 				self.BeaconCommittee = append(self.BeaconCommittee, inPubkeys...)
-				// TODO: Check new list with root hash received from block
 			}
 		}
 		// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
 		if l[0] == "random" {
-			//TODO: Verify nonce is from a right block
 			temp, err := strconv.Atoi(l[1])
 			if err != nil {
 				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
@@ -558,7 +560,6 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 
 //===================================Util for Beacon=============================
 func GetStakingCandidate(beaconBlock BeaconBlock) (beacon []string, shard []string) {
-
 	beaconBlockBody := beaconBlock.Body
 	for _, v := range beaconBlockBody.Instructions {
 		if v[0] == "assign" && v[2] == "beacon" {
