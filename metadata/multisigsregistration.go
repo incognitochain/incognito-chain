@@ -38,12 +38,12 @@ func (msReg *MultiSigsRegistration) ValidateTxWithBlockChain(
 	paymentAddressBytes := []byte{}
 	paymentAddressBytes = append(paymentAddressBytes, msReg.PaymentAddress.Pk[:]...)
 	paymentAddressBytes = append(paymentAddressBytes, msReg.PaymentAddress.Tk[:]...)
-	existedMSRegBytes, err := bcr.GetMultiSigsRegistration(paymentAddressBytes)
-	if err != nil {
-		return false, err
-	}
-	if len(existedMSRegBytes) != 0 {
+	_, err := bcr.GetMultiSigsRegistration(paymentAddressBytes)
+	if err == nil { // found
 		return false, errors.New("The payment address is already existed.")
+	}
+	if err != lvdberr.ErrNotFound {
+		return false, err
 	}
 	return true, nil
 }
