@@ -7,7 +7,7 @@ import (
 
 // PKOneOfManyWitness is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
 // include Witness: CommitedValue, r []byte
-type PKSerialNumberWitness struct {
+type PKSNPrivacyWitness struct {
 	// general info
 	serialNumber *privacy.EllipticPoint
 	comSK        *privacy.EllipticPoint
@@ -22,7 +22,7 @@ type PKSerialNumberWitness struct {
 }
 
 // PKOneOfManyProof contains Proof's value
-type PKSerialNumberProof struct {
+type PKSNPrivacyProof struct {
 	// general info
 	serialNumber *privacy.EllipticPoint
 	comSK        *privacy.EllipticPoint
@@ -41,7 +41,7 @@ type PKSerialNumberProof struct {
 	zRSND2 *big.Int
 }
 
-func (pro *PKSerialNumberProof) IsNil() bool {
+func (pro *PKSNPrivacyProof) IsNil() bool {
 	if pro.serialNumber == nil {
 		return true
 	}
@@ -85,7 +85,7 @@ func (pro *PKSerialNumberProof) IsNil() bool {
 	return false
 }
 
-func (pro *PKSerialNumberProof) Init() *PKSerialNumberProof {
+func (pro *PKSNPrivacyProof) Init() *PKSNPrivacyProof {
 	pro.serialNumber = new(privacy.EllipticPoint)
 	pro.comSK = new(privacy.EllipticPoint)
 	pro.comSND1 = new(privacy.EllipticPoint)
@@ -106,7 +106,7 @@ func (pro *PKSerialNumberProof) Init() *PKSerialNumberProof {
 }
 
 // Set sets Witness
-func (wit *PKSerialNumberWitness) Set(
+func (wit *PKSNPrivacyWitness) Set(
 	serialNumber *privacy.EllipticPoint,
 	comSK        *privacy.EllipticPoint,
 	comSND1      *privacy.EllipticPoint,
@@ -118,7 +118,7 @@ func (wit *PKSerialNumberWitness) Set(
 	rSND2 *big.Int) {
 
 	if wit == nil {
-		wit = new(PKSerialNumberWitness)
+		wit = new(PKSNPrivacyWitness)
 	}
 
 	wit.serialNumber = serialNumber
@@ -134,7 +134,7 @@ func (wit *PKSerialNumberWitness) Set(
 }
 
 // Set sets Proof
-func (pro *PKSerialNumberProof) Set(
+func (pro *PKSNPrivacyProof) Set(
 	serialNumber *privacy.EllipticPoint,
 	comSK        *privacy.EllipticPoint,
 	comSND1      *privacy.EllipticPoint,
@@ -150,7 +150,7 @@ func (pro *PKSerialNumberProof) Set(
 	zRSND2 *big.Int ) {
 
 	if pro == nil {
-		pro = new(PKSerialNumberProof)
+		pro = new(PKSNPrivacyProof)
 	}
 
 	pro.serialNumber = serialNumber
@@ -170,7 +170,7 @@ func (pro *PKSerialNumberProof) Set(
 	pro.zRSND2 = zRSND2
 }
 
-func (pro *PKSerialNumberProof) Bytes() []byte {
+func (pro *PKSNPrivacyProof) Bytes() []byte {
 	// if proof is nil, return an empty array
 	if pro.IsNil() {
 		return []byte{}
@@ -196,7 +196,7 @@ func (pro *PKSerialNumberProof) Bytes() []byte {
 	return bytes
 }
 
-func (pro *PKSerialNumberProof) SetBytes(bytes []byte) error {
+func (pro *PKSNPrivacyProof) SetBytes(bytes []byte) error {
 	if pro == nil {
 		pro = pro.Init()
 	}
@@ -287,7 +287,7 @@ func (pro *PKSerialNumberProof) SetBytes(bytes []byte) error {
 	return nil
 }
 
-func (wit *PKSerialNumberWitness) Prove() (*PKSerialNumberProof, error){
+func (wit *PKSNPrivacyWitness) Prove() (*PKSNPrivacyProof, error){
 	// randomness
 	eSK := privacy.RandInt()
 	eSND := privacy.RandInt()
@@ -335,16 +335,16 @@ func (wit *PKSerialNumberWitness) Prove() (*PKSerialNumberProof, error){
 	zRSND2.Add(zRSND2, dSND2)
 	zRSND2.Mod(zRSND2, privacy.Curve.Params().N)
 
-	proof := new(PKSerialNumberProof).Init()
+	proof := new(PKSNPrivacyProof).Init()
 	proof.Set(wit.serialNumber, wit.comSK, wit.comSND1, wit.comSND2, tSK, tSND1, tSND2, tE, zSK, zRSK, zSND, zRSND1, zRSND2)
 	return proof, nil
 }
 
-func (pro * PKSerialNumberProof) Verify() bool{
+func (pro *PKSNPrivacyProof) Verify() bool{
 	// re-calculate x = hash(tSK || tSND1 || tSND2 || tE)
 	x := GenerateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSK, pro.tSND1, pro.tSND2, pro.tE})
 
-	// Check gSND^zSND * h^zRSND1 = comSND1^x * tSND1
+	// Check gSND^zSND * h^zRSND1 = SND^x * tSND1
 	leftPoint1 := privacy.PedCom.CommitAtIndex(pro.zSND, pro.zRSND1, privacy.SND)
 
 	rightPoint1 := pro.comSND1.ScalarMult(x)
@@ -364,7 +364,7 @@ func (pro * PKSerialNumberProof) Verify() bool{
 		return false
 	}
 
-	// Check gSK^zSK * h^zRSK = comSK^x * tSK
+	// Check gSK^zSK * h^zRSK = PK^x * tSK
 	leftPoint3 := privacy.PedCom.CommitAtIndex(pro.zSK, pro.zRSK, privacy.SK)
 
 	rightPoint3 := pro.comSK.ScalarMult(x)

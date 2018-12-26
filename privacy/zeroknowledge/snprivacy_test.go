@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestPKSerialNumber(t *testing.T) {
+func TestPKSNPrivacy(t *testing.T) {
 	sk := privacy.GenerateSpendingKey([]byte{123})
 	skInt := new(big.Int).SetBytes(sk)
 	SND := privacy.RandInt()
@@ -23,7 +23,7 @@ func TestPKSerialNumber(t *testing.T) {
 	comSND1 := privacy.PedCom.CommitAtIndex(SND, rSND1, privacy.SND)
 	comSND2 := privacy.PedCom.CommitAtIndex(SND, rSND2, privacy.SK)
 
-	witness := new(PKSerialNumberWitness)
+	witness := new(PKSNPrivacyWitness)
 	witness.Set(serialNumber, comSK, comSND1, comSND2, skInt, rSK, SND, rSND1, rSND2)
 
 	proof, err := witness.Prove()
@@ -31,7 +31,12 @@ func TestPKSerialNumber(t *testing.T) {
 		fmt.Println(err)
 	}
 
-	res := proof.Verify()
+	proofBytes := proof.Bytes()
+
+	proof2 := new(PKSNPrivacyProof).Init()
+	proof2.SetBytes(proofBytes)
+
+	res := proof2.Verify()
 
 	assert.Equal(t, true, res)
 }

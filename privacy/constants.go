@@ -22,6 +22,10 @@ const (
 	EqualityOfCommittedValProofSize = 230
 	ProductCommitmentProofSize      = 197
 
+	SNPrivacyProofSize = 424
+	SNNoPrivacyProofSize = 196
+
+
 	// size of zero knowledge proof corresponding one output
 	ComOutputOpeningsProofSize   = 198
 	SumOutRangeProofSize             = 99
