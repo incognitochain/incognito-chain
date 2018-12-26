@@ -165,26 +165,6 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	)
 	genesisBlock.AddTransaction(&bondTokenTx)
 
-	// Create genesis vote token tx for DCB
-	VoteDCBTokenTx := createSpecialTokenTx(
-		common.Hash(common.VoteDCBTokenID),
-		"Bond",
-		"BON",
-		icoParams.InitialVoteDCBToken,
-		key.KeySet.PaymentAddress,
-	)
-	genesisBlock.AddTransaction(&VoteDCBTokenTx)
-
-	// Create genesis vote token tx for GOV
-	VoteGOVTokenTx := createSpecialTokenTx(
-		common.Hash(common.VoteGOVTokenID),
-		"Bond",
-		"BON",
-		icoParams.InitialVoteGOVToken,
-		key.KeySet.PaymentAddress,
-	)
-	genesisBlock.AddTransaction(&VoteGOVTokenTx)
-
 	// calculate merkle root tx for genesis block
 	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
 

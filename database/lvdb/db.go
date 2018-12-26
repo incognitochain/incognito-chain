@@ -53,6 +53,7 @@ var (
 	threePhraseCryptoOwnerPrefix  = []byte("threephrasecryptoownerprefix-")
 	threePhraseCryptoSealerPrefix = []byte("threephrasecryptosealerprefix-")
 	threePhraseVoteValuePrefix    = []byte("threephrasevotevalueprefix-")
+	winningVoterPrefix            = []byte("winningvoterprefix-")
 
 	Unreward = []byte("unreward")
 	Spent    = []byte("spent")
