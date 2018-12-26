@@ -114,7 +114,7 @@ func (pro *PKSNNoPrivacyProof) Bytes() []byte {
 	var bytes []byte
 	bytes = append(bytes, pro.serialNumber.Compress()...)
 	bytes = append(bytes, pro.PK.Compress()...)
-	bytes = append(bytes, pro.SND.Bytes()...)
+	bytes = append(bytes, privacy.AddPaddingBigInt(pro.SND, privacy.BigIntSize)...)
 
 	bytes = append(bytes, pro.tSK.Compress()...)
 	bytes = append(bytes, pro.tE.Compress()...)

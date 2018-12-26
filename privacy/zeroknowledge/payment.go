@@ -112,7 +112,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	proofbytes = append(proofbytes, byte(len(paymentProof.OneOfManyProof)))
 	for i := 0; i < len(paymentProof.OneOfManyProof); i++ {
 		oneOfManyProof := paymentProof.OneOfManyProof[i].Bytes()
-		proofbytes = append(proofbytes, privacy.IntToByteArr(len(oneOfManyProof))...)
+		proofbytes = append(proofbytes, privacy.IntToByteArr(privacy.OneOfManyProofSize)...)
 		proofbytes = append(proofbytes, oneOfManyProof...)
 	}
 
@@ -120,7 +120,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	proofbytes = append(proofbytes, byte(len(paymentProof.SerialNumberProof)))
 	for i := 0; i < len(paymentProof.SerialNumberProof); i++ {
 		serialNumberProof := paymentProof.SerialNumberProof[i].Bytes()
-		proofbytes = append(proofbytes, privacy.IntToByteArr(len(serialNumberProof))...)
+		proofbytes = append(proofbytes, privacy.IntToByteArr(privacy.SNPrivacyProofSize)...)
 		proofbytes = append(proofbytes, serialNumberProof...)
 	}
 
@@ -128,7 +128,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	proofbytes = append(proofbytes, byte(len(paymentProof.SNNoPrivacyProof)))
 	for i := 0; i < len(paymentProof.SNNoPrivacyProof); i++ {
 		snNoPrivacyProof := paymentProof.SNNoPrivacyProof[i].Bytes()
-		proofbytes = append(proofbytes, byte(len(snNoPrivacyProof)))
+		proofbytes = append(proofbytes, byte(privacy.SNNoPrivacyProofSize))
 		proofbytes = append(proofbytes, snNoPrivacyProof...)
 	}
 
@@ -145,7 +145,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	// SumOutRangeProof
 	if paymentProof.SumOutRangeProof != nil {
 		sumOutRangeProof := paymentProof.SumOutRangeProof.Bytes()
-		proofbytes = append(proofbytes, byte(len(sumOutRangeProof)))
+		proofbytes = append(proofbytes, byte(privacy.ComZeroProofSize))
 		proofbytes = append(proofbytes, sumOutRangeProof...)
 	} else {
 		proofbytes = append(proofbytes, byte(0))
@@ -154,7 +154,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	// ComZeroProof
 	if paymentProof.ComZeroProof != nil {
 		comZeroProof := paymentProof.ComZeroProof.Bytes()
-		proofbytes = append(proofbytes, byte(len(comZeroProof)))
+		proofbytes = append(proofbytes, byte(privacy.ComZeroProofSize))
 		proofbytes = append(proofbytes, comZeroProof...)
 	} else {
 		proofbytes = append(proofbytes, byte(0))
@@ -180,28 +180,28 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	proofbytes = append(proofbytes, byte(len(paymentProof.ComOutputValue)))
 	for i := 0; i < len(paymentProof.ComOutputValue); i++ {
 		comOutputValue := paymentProof.ComOutputValue[i].Compress()
-		proofbytes = append(proofbytes, byte(len(comOutputValue)))
+		proofbytes = append(proofbytes, byte(privacy.CompressedPointSize))
 		proofbytes = append(proofbytes, comOutputValue...)
 	}
 	// ComOutputSND
 	proofbytes = append(proofbytes, byte(len(paymentProof.ComOutputSND)))
 	for i := 0; i < len(paymentProof.ComOutputSND); i++ {
 		comOutputSND := paymentProof.ComOutputSND[i].Compress()
-		proofbytes = append(proofbytes, byte(len(comOutputSND)))
+		proofbytes = append(proofbytes, byte(privacy.CompressedPointSize))
 		proofbytes = append(proofbytes, comOutputSND...)
 	}
 	// ComOutputShardID
 	proofbytes = append(proofbytes, byte(len(paymentProof.ComOutputShardID)))
 	for i := 0; i < len(paymentProof.ComOutputShardID); i++ {
 		comOutputShardID := paymentProof.ComOutputShardID[i].Compress()
-		proofbytes = append(proofbytes, byte(len(comOutputShardID)))
+		proofbytes = append(proofbytes, byte(privacy.CompressedPointSize))
 		proofbytes = append(proofbytes, comOutputShardID...)
 	}
 
 	//ComInputSK 				*privacy.EllipticPoint
 	if paymentProof.ComInputSK != nil {
 		comInputSK := paymentProof.ComInputSK.Compress()
-		proofbytes = append(proofbytes, byte(len(comInputSK)))
+		proofbytes = append(proofbytes, byte(privacy.CompressedPointSize))
 		proofbytes = append(proofbytes, comInputSK...)
 	} else {
 		proofbytes = append(proofbytes, byte(0))
@@ -210,20 +210,20 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	proofbytes = append(proofbytes, byte(len(paymentProof.ComInputValue)))
 	for i := 0; i < len(paymentProof.ComInputValue); i++ {
 		comInputValue := paymentProof.ComInputValue[i].Compress()
-		proofbytes = append(proofbytes, byte(len(comInputValue)))
+		proofbytes = append(proofbytes, byte(privacy.CompressedPointSize))
 		proofbytes = append(proofbytes, comInputValue...)
 	}
 	//ComInputSND 			[]*privacy.EllipticPoint
 	proofbytes = append(proofbytes, byte(len(paymentProof.ComInputSND)))
 	for i := 0; i < len(paymentProof.ComInputSND); i++ {
 		comInputSND := paymentProof.ComInputSND[i].Compress()
-		proofbytes = append(proofbytes, byte(len(comInputSND)))
+		proofbytes = append(proofbytes, byte(privacy.CompressedPointSize))
 		proofbytes = append(proofbytes, comInputSND...)
 	}
 	//ComInputShardID 	*privacy.EllipticPoint
 	if paymentProof.ComInputShardID != nil {
 		comInputShardID := paymentProof.ComInputShardID.Compress()
-		proofbytes = append(proofbytes, byte(len(comInputShardID)))
+		proofbytes = append(proofbytes, byte(privacy.CompressedPointSize))
 		proofbytes = append(proofbytes, comInputShardID...)
 	} else {
 		proofbytes = append(proofbytes, byte(0))
