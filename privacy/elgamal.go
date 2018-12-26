@@ -80,7 +80,7 @@ func (priv *ElGamalPrivKey) GenPubKey() *ElGamalPubKey {
 	pubKey.Set(Curve.Params().Gx, Curve.Params().Gy)
 	pubKey = pubKey.ScalarMult(priv.X)
 
-	elGamalPubKey.Set(priv.Curve, pubKey)
+	elGamalPubKey.Set(pubKey)
 	return elGamalPubKey
 }
 
