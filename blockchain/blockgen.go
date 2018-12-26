@@ -62,7 +62,7 @@ func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent 
 }
 
 type ShardToBeaconPool interface {
-	RemoveBlock(byte, uint64) error
+	RemoveBlock(map[byte]uint64) error
 	GetFinalBlock() map[byte][]ShardToBeaconBlock
 }
 type CrossShardPool interface {

@@ -39,14 +39,15 @@ type Server struct {
 	blockChain      *blockchain.BlockChain
 	dataBase        database.DatabaseInterface
 	// rpcServer       *rpcserver.RpcServer
-	memPool         *mempool.TxPool
-	waitGroup       sync.WaitGroup
-	netSync         *netsync.NetSync
-	addrManager     *addrmanager.AddrManager
-	wallet          *wallet.Wallet
-	consensusEngine *constantpos.Engine
-	blockgen        *blockchain.BlkTmplGenerator
-	rewardAgent     *rewardagent.RewardAgent
+	memPool           *mempool.TxPool
+	shardToBeaconPool *mempool.ShardToBeaconPool
+	waitGroup         sync.WaitGroup
+	netSync           *netsync.NetSync
+	addrManager       *addrmanager.AddrManager
+	wallet            *wallet.Wallet
+	consensusEngine   *constantpos.Engine
+	blockgen          *blockchain.BlkTmplGenerator
+	rewardAgent       *rewardagent.RewardAgent
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
 	feeEstimator map[byte]*mempool.FeeEstimator
@@ -204,7 +205,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		return err
 	}
 
-	self.blockgen, err = blockchain.BlkTmplGenerator{}.Init(self.memPool, self.blockChain, self.rewardAgent)
+	self.blockgen, err = blockchain.BlkTmplGenerator{}.Init(self.memPool, self.blockChain, self.rewardAgent, self.shardToBeaconPool)
 	if err != nil {
 		return err
 	}
