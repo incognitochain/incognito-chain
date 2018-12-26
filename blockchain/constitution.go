@@ -4,7 +4,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/voting"
 )
@@ -151,23 +151,25 @@ func (GOVConstitutionHelper) GetSealerPubKey(tx metadata.Transaction) [][]byte {
 }
 
 func (DCBConstitutionHelper) NewTxRewardProposalSubmitter(blockgen *BlkTmplGenerator, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
-	tx, err := transaction.CreateTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, blockgen.chain.config.DataBase)
+	tx := transaction.Tx{}
+	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, blockgen.chain.config.DataBase)
 	if err != nil {
 		return nil, err
 	}
 	meta := metadata.NewRewardDCBProposalSubmitterMetadata()
 	tx.SetMetadata(meta)
-	return tx, nil
+	return &tx, nil
 }
 
 func (GOVConstitutionHelper) NewTxRewardProposalSubmitter(blockgen *BlkTmplGenerator, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
-	tx, err := transaction.CreateTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, blockgen.chain.config.DataBase)
+	tx := transaction.Tx{}
+	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, blockgen.chain.config.DataBase)
 	if err != nil {
 		return nil, err
 	}
 	meta := metadata.NewRewardGOVProposalSubmitterMetadata()
 	tx.SetMetadata(meta)
-	return tx, nil
+	return &tx, nil
 }
 
 func (DCBConstitutionHelper) GetPaymentAddressFromSubmitProposalMetadata(tx metadata.Transaction) *privacy.PaymentAddress {

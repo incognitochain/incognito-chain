@@ -1,19 +1,12 @@
 package common
 
 const (
-<<<<<<< HEAD
-	EmptyString         = ""
-	NanoConstant        = 2 // 1 constant = 10^2 nano constant, we will use 1 miliconstant as minimum unit constant in tx
-	IncMerkleTreeHeight = 29
-	RefundPeriod        = 1000 // after 1000 blocks since a tx (small & no-privacy) happens, the network will refund an amount of constants to tx initiator automatically
-	PubKeyLength        = 33
-=======
 	EmptyString  = ""
 	TrueValue    = true
 	FalseValue   = false
 	NanoConstant = 2    // 1 constant = 10^2 nano constant, we will use 1 miliconstant as minimum unit constant in tx
 	RefundPeriod = 1000 // after 1000 blocks since a tx (small & no-privacy) happens, the network will refund an amount of constants to tx initiator automatically
->>>>>>> origin/master
+	PubKeyLength = 33
 )
 
 const (
