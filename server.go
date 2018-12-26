@@ -278,7 +278,6 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	//connManager.UpdateConsensusState("", userPbk, &currentShard, beaconCommittee, shardCommittee)
 
 	self.connManager = connManager
-
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
 	if len(permanentPeers) == 0 {

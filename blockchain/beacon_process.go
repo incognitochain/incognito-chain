@@ -316,8 +316,8 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock) 
 	// OR new block has previous has is beacon best block hash
 
 	// TODO: Verify producer
-	self.lock.Lock()
-	defer self.lock.Unlock()
+	// self.lock.Lock()
+	// defer self.lock.Unlock()
 
 	if self.BeaconHeight+1 != block.Header.Height {
 		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
@@ -338,8 +338,8 @@ func (self *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock)
 	- Shard Validator root: ShardCommittee + ShardPendingValidator
 	- Random number if have in instruction
 	*/
-	self.lock.Lock()
-	defer self.lock.Unlock()
+	// self.lock.Lock()
+	// defer self.lock.Unlock()
 
 	var (
 		strs []string
@@ -396,8 +396,8 @@ func (self *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock)
 	return nil
 }
 func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
-	self.lock.Lock()
-	defer self.lock.Unlock()
+	// self.lock.Lock()
+	// defer self.lock.Unlock()
 
 	if newBlock == nil {
 		return errors.New("Null pointer")

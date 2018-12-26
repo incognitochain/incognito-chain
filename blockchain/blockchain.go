@@ -241,6 +241,8 @@ func (self *BlockChain) initChainState() error {
 		Shard:  make(map[byte]*BestStateShard),
 		beacon: make(map[string][]byte),
 	}
+
+	self.BestState.Beacon = NewBestStateBeacon()
 	bestStateBeaconBytes, err := self.config.DataBase.FetchBeaconBestState()
 	if err == nil {
 		err = json.Unmarshal(bestStateBeaconBytes, self.BestState.Beacon)
@@ -252,7 +254,6 @@ func (self *BlockChain) initChainState() error {
 	} else {
 		initialized = false
 	}
-
 	if !initialized {
 		// At this point the database has not already been initialized, so
 		// initialize both it and the chain state to the genesis block.
@@ -288,7 +289,6 @@ func (self *BlockChain) initChainState() error {
 
 		}
 	}
-
 	return nil
 }
 
@@ -299,15 +299,17 @@ func (self *BlockChain) initChainState() error {
 */
 func (self *BlockChain) initShardState(shardID byte) error {
 	// Create a new block from genesis block and set it as best block of chain
-	initBlock := &ShardBlock{}
+	initBlock := &ShardBlock{
+		Header: ShardHeader{},
+		Body:   ShardBody{},
+	}
 	if shardID == 0 {
-		initBlock = self.config.ChainParams.GenesisBlockShard
+		initBlock = self.config.ChainParams.GenesisShardBlock
 	} else {
-		initBlock.Header = self.config.ChainParams.GenesisBlockShard.Header
+		initBlock.Header = self.config.ChainParams.GenesisShardBlock.Header
 		initBlock.Header.ShardID = shardID
 		initBlock.Header.PrevBlockHash = common.Hash{}
 	}
-	initBlock.Header.Height = 1
 
 	/*tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
 	if err := UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
@@ -334,9 +336,8 @@ func (self *BlockChain) initShardState(shardID byte) error {
 
 func (self *BlockChain) initBeaconState() error {
 	var initBlock *BeaconBlock
-	initBlock = self.config.ChainParams.GenesisBlockBeacon
+	initBlock = self.config.ChainParams.GenesisBeaconBlock
 	//TODO: initiate first beacon state
-	self.BestState.Beacon = NewBestStateBeacon()
 	self.BestState.Beacon.Update(initBlock)
 	// Insert new block into beacon chain
 	if err := self.config.DataBase.StoreBeaconBestState(self.BestState.Beacon); err != nil {

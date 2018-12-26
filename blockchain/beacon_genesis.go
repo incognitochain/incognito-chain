@@ -16,9 +16,6 @@ func CreateBeaconGenesisBlock(
 	basicSalary uint64,
 	randomnumber int,
 ) *BeaconBlock {
-
-	time := time.Date(2018, 8, 1, 0, 0, 0, 0, time.UTC)
-
 	//TODO: build param
 	inst := [][]string{}
 	// build validator beacon
@@ -46,7 +43,7 @@ func CreateBeaconGenesisBlock(
 
 	body := BeaconBody{ShardState: nil, Instructions: inst}
 	header := BeaconHeader{
-		Timestamp: time.Unix(),
+		Timestamp: time.Date(2018, 8, 1, 0, 0, 0, 0, time.UTC).Unix(),
 		Height:    1,
 		Version:   1,
 		//TODO:

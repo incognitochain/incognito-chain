@@ -105,7 +105,7 @@ type config struct {
 	// Net config
 	TestNet bool `long:"testnet" description:"Use the test network"`
 
-	UserPrvKey  string   `long:"userprvkey" description:"User private key used for operation in consensus"`
+	SpendingKey string   `long:"spendingkey" description:"User spending key used for operation in consensus"`
 	NodeRole    string   `long:"noderole" description:"Role of this node (beacon/shard/wallet/relay | default role is 'relay' (relayshards must be set to run), 'auto' mode will switch between 'beacon' and 'shard')"`
 	RelayShards []string `long:"relayshards" description:"set relay shards of this node when in 'relay' mode if noderole is auto then it only sync shard data when user is a shard producer/validator"`
 	// For Wallet
@@ -291,7 +291,7 @@ func loadConfig() (*config, []string, error) {
 		TestNet:              false,
 		DiscoverPeersAddress: "35.230.8.182:9339",
 		NodeRole:             defaultNodeRole,
-		UserPrvKey:           common.EmptyString,
+		SpendingKey:          common.EmptyString,
 		// FastStartup:          defaultFastStartup,
 	}
 
@@ -655,11 +655,11 @@ func parseAndSetDebugLevels(debugLevel string) error {
 }
 
 func (self *config) GetUserKeySet() (*cashec.KeySet, error) {
-	if self.UserPrvKey == common.EmptyString {
+	if self.SpendingKey == common.EmptyString {
 		return nil, errors.New("User key set cant be empty")
 	}
 	KeySetUser := &cashec.KeySet{}
-	temp, err := wallet.Base58CheckDeserialize(self.UserPrvKey)
+	temp, err := wallet.Base58CheckDeserialize(self.SpendingKey)
 	if err != nil {
 		return KeySetUser, err
 	}
