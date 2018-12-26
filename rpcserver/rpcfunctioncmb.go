@@ -61,3 +61,55 @@ func (self RpcServer) handleCreateAndSendTxWithCMBInitResponse(params interface{
 	}
 	return result, nil
 }
+
+func (self RpcServer) handleCreateAndSendTxWithCMBDepositContract(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	normalTx, err := self.buildRawTransaction(params)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	// Req param #4: cmb deposit contract
+	paramsMap := arrayParams[4].(map[string]interface{})
+	cmbDepositContract := metadata.NewCMBDepositContract(paramsMap)
+	if cmbDepositContract == nil {
+		return nil, NewRPCError(ErrUnexpected, errors.Errorf("Invalid CMBDepositContract data"))
+	}
+	normalTx.Metadata = cmbDepositContract
+	byteArrays, marshalErr := json.Marshal(normalTx)
+	if err != nil {
+		Logger.log.Error(marshalErr)
+		return nil, NewRPCError(ErrUnexpected, marshalErr)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            normalTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (self RpcServer) handleCreateAndSendTxWithCMBDepositSend(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	normalTx, err := self.buildRawTransaction(params)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	// Req param #4: cmb deposit send
+	paramsMap := arrayParams[4].(map[string]interface{})
+	cmbDepositSend := metadata.NewCMBDepositSend(paramsMap)
+	if cmbDepositSend == nil {
+		return nil, NewRPCError(ErrUnexpected, errors.Errorf("Invalid CMBDepositSend data"))
+	}
+	normalTx.Metadata = cmbDepositSend
+	byteArrays, marshalErr := json.Marshal(normalTx)
+	if err != nil {
+		Logger.log.Error(marshalErr)
+		return nil, NewRPCError(ErrUnexpected, marshalErr)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            normalTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}

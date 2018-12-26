@@ -39,11 +39,7 @@ func (cres *CMBInitResponse) Hash() *common.Hash {
 
 func (cres *CMBInitResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if cmb init request existed
-	meta, ok := txr.GetMetadata().(*CMBInitResponse)
-	if !ok {
-		return false, errors.Errorf("error parsing cmb init response metadata")
-	}
-	_, _, txHash, state, err := bcr.GetCMB(meta.MainAccount.ToBytes())
+	_, _, _, txHash, state, err := bcr.GetCMB(cres.MainAccount.ToBytes())
 	if err != nil {
 		return false, err
 	}
@@ -59,7 +55,7 @@ func (cres *CMBInitResponse) ValidateTxWithBlockChain(txr Transaction, bcr Block
 	}
 
 	// Check if this member hasn't responded to this request
-	memberResponded, err := bcr.GetCMBResponse(meta.MainAccount.ToBytes())
+	memberResponded, err := bcr.GetCMBResponse(cres.MainAccount.ToBytes())
 	if err != nil {
 		return false, errors.Errorf("error getting list of old cmb init responses")
 	}

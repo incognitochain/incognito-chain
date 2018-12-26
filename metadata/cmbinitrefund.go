@@ -33,11 +33,7 @@ func (cref *CMBInitRefund) Hash() *common.Hash {
 
 func (cref *CMBInitRefund) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if cmb init request existed
-	meta, ok := txr.GetMetadata().(*CMBInitRefund)
-	if !ok {
-		return false, errors.Errorf("error parsing cmb init refund metadata")
-	}
-	_, _, txHash, state, err := bcr.GetCMB(meta.MainAccount.ToBytes())
+	_, _, _, txHash, state, err := bcr.GetCMB(cref.MainAccount.ToBytes())
 	if err != nil {
 		return false, err
 	}

@@ -842,6 +842,13 @@ func (self *BlockChain) ProcessCMBTxs(block *Block) error {
 					return err
 				}
 			}
+		case metadata.CMBDepositSendMeta:
+			{
+				err := self.processCMBDepositSend(tx)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil

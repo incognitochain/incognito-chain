@@ -196,10 +196,9 @@ func (tx *Tx) Init(
 		commitmentProving[i], _ = privacy.DecompressKey(temp)
 	}
 
-
 	// check
 	com := make([]*privacy.EllipticPoint, len(inputCoins))
-	for i :=0; i < len(inputCoins); i++{
+	for i := 0; i < len(inputCoins); i++ {
 		com[i] = new(privacy.EllipticPoint)
 		com[i].X, com[i].Y = big.NewInt(0), big.NewInt(0)
 		com[i].X.Set(inputCoins[i].CoinDetails.PublicKey.X)
@@ -232,21 +231,21 @@ func (tx *Tx) Init(
 		tmp.Y.Set(privacy.PedCom.G[privacy.RAND].Y)
 		tmp = tmp.ScalarMul(inputCoins[i].CoinDetails.Randomness)
 		com[i] = com[i].Add(tmp)
-    inputCoins[i].CoinDetails.CommitAll()
-		if !com[i].IsEqual(commitmentProving[myCommitmentIndexs[i]]){
+		inputCoins[i].CoinDetails.CommitAll()
+		if !com[i].IsEqual(commitmentProving[myCommitmentIndexs[i]]) {
 			fmt.Println("WRONG 1")
-		} else{
+		} else {
 			fmt.Println("Right")
 		}
 
-		if !inputCoins[i].CoinDetails.CoinCommitment.IsEqual(commitmentProving[myCommitmentIndexs[i]]){
+		if !inputCoins[i].CoinDetails.CoinCommitment.IsEqual(commitmentProving[myCommitmentIndexs[i]]) {
 			fmt.Println("WRONG 2")
-		} else{
+		} else {
 			fmt.Println("Right")
 		}
-		if !inputCoins[i].CoinDetails.CoinCommitment.IsEqual(com[i]){
+		if !inputCoins[i].CoinDetails.CoinCommitment.IsEqual(com[i]) {
 			fmt.Println("WRONG 3")
-		} else{
+		} else {
 			fmt.Println("Right")
 		}
 
@@ -263,9 +262,7 @@ func (tx *Tx) Init(
 		//	fmt.Println("WRONG")
 		//}
 
-
 	}
-
 
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
@@ -616,6 +613,22 @@ func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 		}
 	}
 	return pubkeys, amounts
+}
+
+func (tx *Tx) GetUniqueReceiver() (bool, []byte, uint64) {
+	sender := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	pubkeys, amounts := tx.GetReceivers()
+	pubkey := []byte{}
+	amount := uint64(0)
+	count := 0
+	for i, pk := range pubkeys {
+		if !bytes.Equal(pk, sender) {
+			pubkey = pk
+			amount = amounts[i]
+			count += 1
+		}
+	}
+	return count == 1, pubkey, amount
 }
 
 func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.Hash][][]byte) error {

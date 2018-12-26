@@ -8,14 +8,19 @@ import (
 )
 
 type CMBInitRequest struct {
-	MainAccount privacy.PaymentAddress   // (Offchain) multisig account of CMB, receive deposits
-	Members     []privacy.PaymentAddress // For validating multisig signature
+	MainAccount    privacy.PaymentAddress   // (Offchain) multisig account of CMB, receive deposits
+	ReserveAccount privacy.PaymentAddress   // (Offchain) multisig account of CMB, store reserve requirement assets
+	Members        []privacy.PaymentAddress // For validating multisig signature
 
 	MetadataBase
 }
 
 func NewCMBInitRequest(data map[string]interface{}) *CMBInitRequest {
 	mainKey, err := wallet.Base58CheckDeserialize(data["MainAccount"].(string))
+	if err != nil {
+		return nil
+	}
+	reserveKey, err := wallet.Base58CheckDeserialize(data["ReserveAccount"].(string))
 	if err != nil {
 		return nil
 	}
@@ -32,8 +37,9 @@ func NewCMBInitRequest(data map[string]interface{}) *CMBInitRequest {
 		members = append(members, memberKey.KeySet.PaymentAddress)
 	}
 	result := CMBInitRequest{
-		MainAccount: mainKey.KeySet.PaymentAddress,
-		Members:     members,
+		MainAccount:    mainKey.KeySet.PaymentAddress,
+		ReserveAccount: reserveKey.KeySet.PaymentAddress,
+		Members:        members,
 	}
 
 	result.Type = CMBInitRequestMeta
@@ -42,6 +48,7 @@ func NewCMBInitRequest(data map[string]interface{}) *CMBInitRequest {
 
 func (creq *CMBInitRequest) Hash() *common.Hash {
 	record := string(creq.MainAccount.ToBytes())
+	record += string(creq.ReserveAccount.ToBytes())
 	for _, member := range creq.Members {
 		record += string(member.ToBytes())
 	}
@@ -54,6 +61,7 @@ func (creq *CMBInitRequest) Hash() *common.Hash {
 
 func (creq *CMBInitRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// TODO(@0xbunyip): check that MainAccount is multisig address and is unique
+	// TODO(@0xbunyip); check that ReserveAccount is unique
 	return true, nil
 }
 

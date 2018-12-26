@@ -90,9 +90,10 @@ type BlockchainRetriever interface {
 	GetCrowdsaleTxs([]byte) ([][]byte, error)
 
 	// For validating cmb
-	GetCMB([]byte) ([]privacy.PaymentAddress, uint64, *common.Hash, uint8, error)
+	GetCMB([]byte) (privacy.PaymentAddress, []privacy.PaymentAddress, uint64, *common.Hash, uint8, error)
 	GetBlockHeightByBlockHash(*common.Hash) (int32, byte, error)
 	GetCMBResponse([]byte) ([][]byte, error)
+	GetDepositSend([]byte) ([]byte, error)
 }
 
 type Metadata interface {
@@ -129,6 +130,7 @@ type Transaction interface {
 
 	GetJSPubKey() []byte
 	GetReceivers() ([][]byte, []uint64)
+	GetUniqueReceiver() (bool, []byte, uint64)
 	IsPrivacy() bool
 	IsCoinsBurning() bool
 }

@@ -24,13 +24,17 @@ func getCMBInitKey(mainAccount []byte) []byte {
 }
 
 func getCMBInitValue(
+	reserve []byte,
 	members [][]byte,
 	capital uint64,
 	txHash []byte,
 	state uint8,
 ) ([]byte, error) {
-	// Add capital
+	// Add reserve account
 	values := []byte{}
+	values = append(values, reserve...)
+
+	// Add capital
 	capitalInBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(capitalInBytes, capital)
 	values = append(values, capitalInBytes...)
@@ -51,10 +55,17 @@ func getCMBInitValue(
 	return values, nil
 }
 
-func parseCMBInitValue(value []byte) ([][]byte, uint64, []byte, uint8, error) {
-	// Get capital (first 8 bytes)
+func parseCMBInitValue(value []byte) ([]byte, [][]byte, uint64, []byte, uint8, error) {
+	// Get reserve
+	if len(value) < PaymentAddressLen {
+		return nil, nil, 0, nil, 0, errors.Errorf("error parsing cmb value")
+	}
+	reserve := value[:PaymentAddressLen]
+
+	// Get capital
+	value = value[PaymentAddressLen:]
 	if len(value) < 8 {
-		return nil, 0, nil, 0, errors.Errorf("error parsing cmb value")
+		return nil, nil, 0, nil, 0, errors.Errorf("error parsing cmb value")
 	}
 	capital := binary.LittleEndian.Uint64(value)
 
@@ -67,7 +78,7 @@ func parseCMBInitValue(value []byte) ([][]byte, uint64, []byte, uint8, error) {
 	// The rest: members
 	value = value[8 : len(value)-common.HashSize-2]
 	if len(value)%PaymentAddressLen != 0 {
-		return nil, 0, nil, 0, errors.Errorf("error parsing cmb value")
+		return nil, nil, 0, nil, 0, errors.Errorf("error parsing cmb value")
 	}
 	numMembers := len(value) / PaymentAddressLen
 	members := [][]byte{}
@@ -77,7 +88,7 @@ func parseCMBInitValue(value []byte) ([][]byte, uint64, []byte, uint8, error) {
 		copy(member, value[i*PaymentAddressLen:(i+1)*PaymentAddressLen])
 		members = append(members, member)
 	}
-	return members, capital, txHash, state, nil
+	return reserve, members, capital, txHash, state, nil
 }
 
 func getCMBResponseKey(mainAccount, approver []byte) []byte {
@@ -85,4 +96,13 @@ func getCMBResponseKey(mainAccount, approver []byte) []byte {
 	key = append(key, Splitter...)
 	key = append(key, approver...)
 	return key
+}
+
+func getCMBDepositSendKey(contractID []byte) []byte {
+	key := append(cmbDepositSendKeyPrefix, contractID...)
+	return key
+}
+
+func getCMBDepositSendValue(txHash []byte) []byte {
+	return txHash
 }

@@ -11,6 +11,7 @@ import (
 
 func (db *db) StoreCMB(
 	mainAccount []byte,
+	reserveAccount []byte,
 	members [][]byte,
 	capital uint64,
 	txHash []byte,
@@ -25,7 +26,7 @@ func (db *db) StoreCMB(
 	cmbInitKey := getCMBInitKey(mainAccount)
 
 	state := metadata.CMBRequested
-	cmbValue, err := getCMBInitValue(members, capital, txHash, state)
+	cmbValue, err := getCMBInitValue(reserveAccount, members, capital, txHash, state)
 	if err != nil {
 		return errUnexpected(err, "getCMBValue")
 	}
@@ -36,11 +37,11 @@ func (db *db) StoreCMB(
 	return nil
 }
 
-func (db *db) GetCMB(mainAccount []byte) ([][]byte, uint64, []byte, uint8, error) {
+func (db *db) GetCMB(mainAccount []byte) ([]byte, [][]byte, uint64, []byte, uint8, error) {
 	cmbInitKey := getCMBInitKey(mainAccount)
 	cmbInitValue, err := db.Get(cmbInitKey)
 	if err != nil {
-		return nil, 0, nil, 0, err
+		return nil, nil, 0, nil, 0, err
 	}
 	return parseCMBInitValue(cmbInitValue)
 }
@@ -51,8 +52,8 @@ func (db *db) UpdateCMBState(mainAccount []byte, state uint8) error {
 	if err != nil {
 		return err
 	}
-	members, capital, txHash, _, err := parseCMBInitValue(cmbInitValue)
-	newValue, err := getCMBInitValue(members, capital, txHash, state)
+	reserve, members, capital, txHash, _, err := parseCMBInitValue(cmbInitValue)
+	newValue, err := getCMBInitValue(reserve, members, capital, txHash, state)
 	if err != nil {
 		return errUnexpected(err, "getCMBValue")
 	}
@@ -84,4 +85,22 @@ func (db *db) GetCMBResponse(mainAccount []byte) ([][]byte, error) {
 	}
 	iter.Release()
 	return approvers, nil
+}
+
+func (db *db) StoreDepositSend(contractID []byte, txHash []byte) error {
+	cmbDepositSendKey := getCMBDepositSendKey(contractID)
+	cmbDepositSendValue := getCMBDepositSendValue(txHash)
+	if err := db.Put(cmbDepositSendKey, cmbDepositSendValue); err != nil {
+		return errUnexpected(err, "put cmb deposit send")
+	}
+	return nil
+}
+
+func (db *db) GetDepositSend(contractID []byte) ([]byte, error) {
+	cmbDepositSendKey := getCMBDepositSendKey(contractID)
+	cmbDepositSendValue, err := db.Get(cmbDepositSendKey)
+	if err != nil {
+		return nil, err
+	}
+	return cmbDepositSendValue, nil
 }

@@ -22,9 +22,8 @@ const (
 	CMBInitRequestMeta
 	CMBInitResponseMeta // offchain multisig
 	CMBInitRefundMeta   // miner
-	CMBDepositRequestMeta
-	CMBDepositResponseMeta // offchain multisig
-	CMBDepositRefundMeta   // miner
+	CMBDepositContractMeta
+	CMBDepositSendMeta
 	CMBWithdrawRequestMeta
 	CMBWithdrawResponseMeta // offchain multisig
 

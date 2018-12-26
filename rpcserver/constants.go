@@ -103,6 +103,8 @@ const (
 	CreateAndSendTxWithBuySellRequest = "createandsendtxwithbuysellrequest"
 
 	// cmb
-	CreateAndSendTxWithCMBInitRequest  = "createandsendtxwithcmbinitrequest"
-	CreateAndSendTxWithCMBInitResponse = "createandsendtxwithcmbinitresponse"
+	CreateAndSendTxWithCMBInitRequest     = "createandsendtxwithcmbinitrequest"
+	CreateAndSendTxWithCMBInitResponse    = "createandsendtxwithcmbinitresponse"
+	CreateAndSendTxWithCMBDepositContract = "createandsendtxwithcmbdepositcontract"
+	CreateAndSendTxWithCMBDepositSend     = "createandsendtxwithcmbdepositsend"
 )

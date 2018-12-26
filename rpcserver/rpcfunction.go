@@ -110,8 +110,10 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendTxWithBuySellRequest: RpcServer.handleCreateAndSendTxWithBuySellRequest,
 
 	// cmb
-	CreateAndSendTxWithCMBInitRequest:  RpcServer.handleCreateAndSendTxWithCMBInitRequest,
-	CreateAndSendTxWithCMBInitResponse: RpcServer.handleCreateAndSendTxWithCMBInitResponse,
+	CreateAndSendTxWithCMBInitRequest:     RpcServer.handleCreateAndSendTxWithCMBInitRequest,
+	CreateAndSendTxWithCMBInitResponse:    RpcServer.handleCreateAndSendTxWithCMBInitResponse,
+	CreateAndSendTxWithCMBDepositContract: RpcServer.handleCreateAndSendTxWithCMBDepositContract,
+	CreateAndSendTxWithCMBDepositSend:     RpcServer.handleCreateAndSendTxWithCMBDepositSend,
 }
 
 // Commands that are available to a limited user
