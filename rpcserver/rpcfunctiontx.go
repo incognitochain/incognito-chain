@@ -516,6 +516,7 @@ func (self RpcServer) handleGetListPrivacyCustomTokenBalance(params interface{},
 		item.Name = tx.TxTokenPrivacyData.PropertyName
 		item.Symbol = tx.TxTokenPrivacyData.PropertySymbol
 		item.TokenID = tx.TxTokenPrivacyData.PropertyID.String()
+		item.TokenImage = common.Render([]byte(item.TokenID))
 		tokenID := tx.TxTokenPrivacyData.PropertyID
 
 		balance := uint64(0)
