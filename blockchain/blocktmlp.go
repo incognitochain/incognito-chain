@@ -93,7 +93,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 	var txToRemove []metadata.Transaction
 	var buySellReqTxs []metadata.Transaction
 	var issuingReqTxs []metadata.Transaction
-	// var updatingOracleBoardTxs []metadata.Transaction
+	var updatingOracleBoardTxs []metadata.Transaction
 	var buyBackFromInfos []*buyBackFromInfo
 	bondsSold := uint64(0)
 	dcbTokensSold := uint64(0)
@@ -220,10 +220,10 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 				issuingReqTxs = append(issuingReqTxs, tx)
 			}
 
-			// case metadata.UpdatingOracleBoardMeta:
-			// 	{
-			// 		updatingOracleBoardTxs = append(updatingOracleBoardTxs, tx)
-			// 	}
+		case metadata.UpdatingOracleBoardMeta:
+			{
+				updatingOracleBoardTxs = append(updatingOracleBoardTxs, tx)
+			}
 		}
 
 		totalFee += tx.GetTxFee()
@@ -311,15 +311,15 @@ concludeBlock:
 		return nil, err
 	}
 
-	// oracleRewardTxs, totalOracleRewards, updatedOracleValues, err := blockgen.buildOracleRewardTxs(chainID, privatekey)
-	// if err != nil {
-	// 	Logger.log.Error(err)
-	// 	return nil, err
-	// }
+	oracleRewardTxs, totalOracleRewards, updatedOracleValues, err := blockgen.buildOracleRewardTxs(chainID, privatekey)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
+	}
 
 	// create refund txs
 	currentSalaryFund := prevBlock.Header.SalaryFund
-	remainingFund := currentSalaryFund + totalFee + salaryFundAdd + incomeFromBonds - (totalSalary + buyBackCoins)
+	remainingFund := currentSalaryFund + totalFee + salaryFundAdd + incomeFromBonds - (totalSalary + buyBackCoins + totalOracleRewards)
 	refundTxs, totalRefundAmt := blockgen.buildRefundTxs(chainID, remainingFund, privatekey)
 
 	issuingResTxs, err := blockgen.buildIssuingResTxs(chainID, issuingReqTxs, privatekey)
@@ -407,9 +407,9 @@ concludeBlock:
 	for _, refundTx := range refundTxs {
 		coinbases = append(coinbases, refundTx)
 	}
-	// for _, oracleRewardTx := range oracleRewardTxs {
-	// 	coinbases = append(coinbases, oracleRewardTx)
-	// }
+	for _, oracleRewardTx := range oracleRewardTxs {
+		coinbases = append(coinbases, oracleRewardTx)
+	}
 
 	txsToAdd = append(coinbases, txsToAdd...)
 
@@ -418,7 +418,7 @@ concludeBlock:
 	}
 
 	// Check for final balance of DCB and GOV
-	if currentSalaryFund+totalFee+salaryFundAdd+incomeFromBonds < totalSalary+govPayoutAmount+buyBackCoins+totalRefundAmt {
+	if currentSalaryFund+totalFee+salaryFundAdd+incomeFromBonds < totalSalary+govPayoutAmount+buyBackCoins+totalRefundAmt+totalOracleRewards {
 		return nil, fmt.Errorf("Gov fund is not enough for salary and dividend payout")
 	}
 
@@ -444,7 +444,7 @@ concludeBlock:
 		BlockCommitteeSigs: make([]string, common.TotalValidators),
 		Committee:          make([]string, common.TotalValidators),
 		ChainID:            chainID,
-		SalaryFund:         currentSalaryFund + incomeFromBonds + totalFee + salaryFundAdd - totalSalary - govPayoutAmount - buyBackCoins - totalRefundAmt,
+		SalaryFund:         currentSalaryFund + incomeFromBonds + totalFee + salaryFundAdd - totalSalary - govPayoutAmount - buyBackCoins - totalRefundAmt - totalOracleRewards,
 		BankFund:           prevBlock.Header.BankFund + loanPaymentAmount - bankPayoutAmount,
 		GOVConstitution:    prevBlock.Header.GOVConstitution, // TODO: 0xbunyip need get from gov-params tx
 		DCBConstitution:    prevBlock.Header.DCBConstitution, // TODO: 0xbunyip need get from dcb-params tx
@@ -457,12 +457,12 @@ concludeBlock:
 		block.Header.DCBConstitution.DCBParams.SaleDBCTOkensByUSDData.Amount -= dcbTokensSold
 	}
 
-	// blockgen.updateOracleValues(&block, updatedOracleValues)
-	// err = blockgen.updateOracleBoard(&block, updatingOracleBoardTxs)
-	// if err != nil {
-	// 	Logger.log.Error(err)
-	// 	return nil, err
-	// }
+	blockgen.updateOracleValues(&block, updatedOracleValues)
+	err = blockgen.updateOracleBoard(&block, updatingOracleBoardTxs)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
+	}
 
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
