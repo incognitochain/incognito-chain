@@ -25,7 +25,7 @@ These instructions will get you a copy of the project up and running on your loc
 - Clone Project to GOPATH
 NOTE: The GOROOT and GOPATH above must not be the same path. It is recommended that GOPATH is set to a directory in your home directory such as ~/goprojects to avoid write permission issues. It is also recommended to add $GOPATH/bin to your PATH at this point.
 - Install go lib with `go get -v`
-- Run `go build` in project dir or run `sh build.sh` to copy into go bin dir
+- Run `go build -o constant` in project dir or run `sh build.sh` to copy into go bin dir
 
 ### Run node
 
