@@ -374,7 +374,7 @@ func (self *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock)
 		return NewBlockChainError(HashError, errors.New("Error verify Shard Candidate root"))
 	}
 
-	isOk = VerifyHashFromMapByteString(self.ShardCommittee, self.ShardPendingValidator, block.Header.ShardValidatorsRoot)
+	isOk = VerifyHashFromMapByteString(self.ShardPendingValidator, self.ShardCommittee, block.Header.ShardValidatorsRoot)
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("Error verify shard validator root"))
 	}
