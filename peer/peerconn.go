@@ -406,11 +406,82 @@ func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<-
 }
 
 func (self *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<- struct{}) {
+	if msgBytes == nil || len(*msgBytes) <= 0 {
+		return
+	}
 	go func() {
 		if self.IsConnected {
-			self.sendMessageQueue <- outMsg{
-				rawBytes: msgBytes,
-				doneChan: doneChan,
+			data := (*msgBytes)[wire.MessageHeaderSize:]
+			if len(data) >= HEAVY_MESSAGE_SIZE {
+				hash := common.HashH(data).String()
+
+				Logger.log.Infof("QueueMessageWithBytes HEAVY_MESSAGE_SIZE %s", hash)
+				numRetries := 0
+
+			BeginCheckHashMessage:
+				numRetries++
+				bTimeOut := false
+				// new model for received response
+				self.cMsgHash[hash] = make(chan bool)
+				cTimeOut := make(chan struct{})
+				bOk := false
+				// send msg for check has
+				go func() {
+					msgCheck, err := wire.MakeEmptyMessage(wire.CmdMsgCheck)
+					if err != nil {
+						Logger.log.Error(err)
+						return
+					}
+					msgCheck.(*wire.MessageMsgCheck).Hash = hash
+					self.QueueMessageWithEncoding(msgCheck, nil, MESSAGE_TO_PEER, nil)
+				}()
+				Logger.log.Infof("QueueMessageWithBytes WAIT result check hash %s", hash)
+				for {
+					select {
+					case accept := <-self.cMsgHash[hash]:
+						Logger.log.Infof("QueueMessageWithBytes RECEIVED hash %s accept %s", hash, accept)
+						bOk = accept
+						cTimeOut = nil
+						break
+					case <-cTimeOut:
+						Logger.log.Infof("QueueMessageWithBytes RECEIVED time out")
+						cTimeOut = nil
+						bTimeOut = true
+						break
+					}
+					if cTimeOut == nil {
+						delete(self.cMsgHash, hash)
+						break
+					}
+				}
+				// set time out for check message
+				go func() {
+					select {
+					case <-time.NewTimer(MAX_TIMEOUT_CHECK_HASH_MESSAGE * time.Second).C:
+						if cTimeOut != nil {
+							Logger.log.Infof("QueueMessageWithBytes TIMER time out %s", hash)
+							bTimeOut = true
+							close(cTimeOut)
+						}
+						return
+					}
+				}()
+				Logger.log.Infof("QueueMessageWithBytes FINISHED check hash %s %s", hash, bOk)
+				if bTimeOut && numRetries >= MAX_RETRIES_CHECK_HASH_MESSAGE {
+					goto BeginCheckHashMessage
+				}
+
+				if bOk {
+					self.sendMessageQueue <- outMsg{
+						rawBytes: msgBytes,
+						doneChan: doneChan,
+					}
+				}
+			} else {
+				self.sendMessageQueue <- outMsg{
+					rawBytes: msgBytes,
+					doneChan: doneChan,
+				}
 			}
 		}
 	}()
