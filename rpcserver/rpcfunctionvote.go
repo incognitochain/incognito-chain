@@ -24,7 +24,10 @@ func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-c
 	TokenID.SetBytes(common.DCBVotingTokenID[:])
 	item.TokenID = TokenID.String()
 	item.TokenImage = common.Render([]byte(item.TokenID))
-	amount, _ := db.GetDCBVoteTokenAmount(uint32(startedBlock), pubKey)
+	amount, err := db.GetDCBVoteTokenAmount(uint32(startedBlock), pubKey)
+	if err != nil {
+		Logger.log.Error(err)
+	}
 	item.Amount = uint64(amount)
 	result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
 
@@ -36,7 +39,10 @@ func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-c
 	TokenID.SetBytes(common.GOVVotingTokenID[:])
 	item.TokenID = TokenID.String()
 	item.TokenImage = common.Render([]byte(item.TokenID))
-	amount, _ = db.GetGOVVoteTokenAmount(uint32(startedBlock), pubKey)
+	amount, err = db.GetGOVVoteTokenAmount(uint32(startedBlock), pubKey)
+	if err != nil {
+		Logger.log.Error(err)
+	}
 	item.Amount = uint64(amount)
 	result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
 
