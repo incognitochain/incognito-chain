@@ -316,6 +316,59 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 	}
 }
 
+func (self *PeerConn) checkMessageHashBeforeSend(hash string) bool {
+	numRetries := 0
+BeginCheckHashMessage:
+	numRetries++
+	bTimeOut := false
+	// new model for received response
+	self.cMsgHash[hash] = make(chan bool)
+	cTimeOut := make(chan struct{})
+	bCheck := false
+	// send msg for check has
+	go func() {
+		msgCheck, err := wire.MakeEmptyMessage(wire.CmdMsgCheck)
+		if err != nil {
+			Logger.log.Error(err)
+			return
+		}
+		msgCheck.(*wire.MessageMsgCheck).Hash = hash
+		self.QueueMessageWithEncoding(msgCheck, nil, MESSAGE_TO_PEER, nil)
+	}()
+	// set time out for check message
+	go func() {
+		select {
+		case <-time.NewTimer(MAX_TIMEOUT_CHECK_HASH_MESSAGE * time.Second).C:
+			if cTimeOut != nil {
+				Logger.log.Infof("checkMessageHashBeforeSend TIMER time out %s", hash)
+				bTimeOut = true
+				close(cTimeOut)
+			}
+			return
+		}
+	}()
+	Logger.log.Infof("checkMessageHashBeforeSend WAIT result check hash %s", hash)
+	select {
+	case bCheck = <-self.cMsgHash[hash]:
+		Logger.log.Infof("checkMessageHashBeforeSend RECEIVED hash %s bAccept %s", hash, bCheck)
+		cTimeOut = nil
+		break
+	case <-cTimeOut:
+		Logger.log.Infof("checkMessageHashBeforeSend RECEIVED time out")
+		cTimeOut = nil
+		bTimeOut = true
+		break
+	}
+	if cTimeOut == nil {
+		delete(self.cMsgHash, hash)
+	}
+	Logger.log.Infof("checkMessageHashBeforeSend FINISHED check hash %s %s", hash, bCheck)
+	if bTimeOut && numRetries < MAX_RETRIES_CHECK_HASH_MESSAGE {
+		goto BeginCheckHashMessage
+	}
+	return bCheck
+}
+
 // QueueMessageWithEncoding adds the passed Constant message to the peer send
 // queue. This function is identical to QueueMessage, however it allows the
 // caller to specify the wire encoding type that should be used when
@@ -328,64 +381,9 @@ func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<-
 			data, _ := msg.JsonSerialize()
 			if len(data) >= HEAVY_MESSAGE_SIZE && msg.MessageType() != wire.CmdMsgCheck && msg.MessageType() != wire.CmdMsgCheckResp {
 				hash := common.HashH(data).String()
-
 				Logger.log.Infof("QueueMessageWithEncoding HEAVY_MESSAGE_SIZE %s %s", hash, msg.MessageType())
-				numRetries := 0
 
-			BeginCheckHashMessage:
-				numRetries++
-				bTimeOut := false
-				// new model for received response
-				self.cMsgHash[hash] = make(chan bool)
-				cTimeOut := make(chan struct{})
-				bOk := false
-				// send msg for check has
-				go func() {
-					msgCheck, err := wire.MakeEmptyMessage(wire.CmdMsgCheck)
-					if err != nil {
-						Logger.log.Error(err)
-						return
-					}
-					msgCheck.(*wire.MessageMsgCheck).Hash = hash
-					self.QueueMessageWithEncoding(msgCheck, nil, MESSAGE_TO_PEER, nil)
-				}()
-				Logger.log.Infof("QueueMessageWithEncoding WAIT result check hash %s", hash)
-				for {
-					select {
-					case accept := <-self.cMsgHash[hash]:
-						Logger.log.Infof("QueueMessageWithEncoding RECEIVED hash %s accept %s", hash, accept)
-						bOk = accept
-						cTimeOut = nil
-						break
-					case <-cTimeOut:
-						Logger.log.Infof("QueueMessageWithEncoding RECEIVED time out")
-						cTimeOut = nil
-						bTimeOut = true
-						break
-					}
-					if cTimeOut == nil {
-						delete(self.cMsgHash, hash)
-						break
-					}
-				}
-				// set time out for check message
-				go func() {
-					select {
-					case <-time.NewTimer(MAX_TIMEOUT_CHECK_HASH_MESSAGE * time.Second).C:
-						if cTimeOut != nil {
-							Logger.log.Infof("QueueMessageWithEncoding TIMER time out %s", hash)
-							bTimeOut = true
-							close(cTimeOut)
-						}
-						return
-					}
-				}()
-				Logger.log.Infof("QueueMessageWithEncoding FINISHED check hash %s %s", hash, bOk)
-				if bTimeOut && numRetries >= MAX_RETRIES_CHECK_HASH_MESSAGE {
-					goto BeginCheckHashMessage
-				}
-
-				if bOk {
+				if self.checkMessageHashBeforeSend(hash) {
 					self.sendMessageQueue <- outMsg{
 						message:      msg,
 						doneChan:     doneChan,
@@ -414,64 +412,9 @@ func (self *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<- st
 			data := (*msgBytes)[wire.MessageHeaderSize:]
 			if len(data) >= HEAVY_MESSAGE_SIZE {
 				hash := common.HashH(data).String()
-
 				Logger.log.Infof("QueueMessageWithBytes HEAVY_MESSAGE_SIZE %s", hash)
-				numRetries := 0
 
-			BeginCheckHashMessage:
-				numRetries++
-				bTimeOut := false
-				// new model for received response
-				self.cMsgHash[hash] = make(chan bool)
-				cTimeOut := make(chan struct{})
-				bOk := false
-				// send msg for check has
-				go func() {
-					msgCheck, err := wire.MakeEmptyMessage(wire.CmdMsgCheck)
-					if err != nil {
-						Logger.log.Error(err)
-						return
-					}
-					msgCheck.(*wire.MessageMsgCheck).Hash = hash
-					self.QueueMessageWithEncoding(msgCheck, nil, MESSAGE_TO_PEER, nil)
-				}()
-				Logger.log.Infof("QueueMessageWithBytes WAIT result check hash %s", hash)
-				for {
-					select {
-					case accept := <-self.cMsgHash[hash]:
-						Logger.log.Infof("QueueMessageWithBytes RECEIVED hash %s accept %s", hash, accept)
-						bOk = accept
-						cTimeOut = nil
-						break
-					case <-cTimeOut:
-						Logger.log.Infof("QueueMessageWithBytes RECEIVED time out")
-						cTimeOut = nil
-						bTimeOut = true
-						break
-					}
-					if cTimeOut == nil {
-						delete(self.cMsgHash, hash)
-						break
-					}
-				}
-				// set time out for check message
-				go func() {
-					select {
-					case <-time.NewTimer(MAX_TIMEOUT_CHECK_HASH_MESSAGE * time.Second).C:
-						if cTimeOut != nil {
-							Logger.log.Infof("QueueMessageWithBytes TIMER time out %s", hash)
-							bTimeOut = true
-							close(cTimeOut)
-						}
-						return
-					}
-				}()
-				Logger.log.Infof("QueueMessageWithBytes FINISHED check hash %s %s", hash, bOk)
-				if bTimeOut && numRetries >= MAX_RETRIES_CHECK_HASH_MESSAGE {
-					goto BeginCheckHashMessage
-				}
-
-				if bOk {
+				if self.checkMessageHashBeforeSend(hash) {
 					self.sendMessageQueue <- outMsg{
 						rawBytes: msgBytes,
 						doneChan: doneChan,
