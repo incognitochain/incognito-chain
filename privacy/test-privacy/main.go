@@ -1,9 +1,5 @@
 package main
 
-import (
-	"github.com/ninjadotorg/constant/privacy"
-)
-
 func main() {
 
 	// fmt.Printf("N: %X\n", privacy.Curve.Params().N)
@@ -153,36 +149,7 @@ func main() {
 
 	/*----------------- TEST ENCRYPT/DECRYPT COIN -----------------*/
 
-	//coin := new(privacy.OutputCoin)
-	//coin.CoinDetails = new(privacy.Coin)
-	//coin.CoinDetails.Randomness = privacy.RandInt()
-	//coin.CoinDetails.Value = 10
-	//
-	//fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
-	//
-	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	//keySetSender := cashec.KeySet{}
-	//keySetSender.ImportFromPrivateKey(&spendingKey)
-	//coin.CoinDetails.PublicKey, _ = privacy.DecompressKey(keySetSender.PaymentAddress.Pk)
-	//
-	//err := coin.Encrypt(keySetSender.PaymentAddress.Tk)
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
-	//
-	//coinByte := coin.Bytes()
-	//
-	//fmt.Printf("Coin encrypt bytes: %v\n", coinByte)
-	//coin2 := new(privacy.OutputCoin)
-	//err = coin2.SetBytes(coinByte)
-	//if err != nil {
-	//	fmt.Printf("Coin encrypt setbytes: %+v\n", coin2)
-	//}
-	//
-	//coin.Decrypt(keySetSender.ReadonlyKey)
-	//
-	//fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
-	//fmt.Printf("DEcrypted Plain text 1: Value : %v\n", coin.CoinDetails.Value)
+
 
 	/*----------------- TEST NDH -----------------*/
 	//fmt.Println(zkp.TestProofIsZero())
@@ -446,6 +413,5 @@ func main() {
 	//fmt.Printf("Point 2 value: %v\n", *(*point2).X)
 	//fmt.Printf("\n\n")
 
-	privacy.TestSchn()
-
+	//fmt.Printf("%+v\n", privacy.Eval(big.NewInt(3), big.NewInt(2), privacy.PedCom.G[privacy.SK]))
 }
