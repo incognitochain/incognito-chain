@@ -6,7 +6,6 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/voting"
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
@@ -461,12 +460,12 @@ func (db *db) GetAmountVoteToken(boardType string, startedBlock uint32, pubKey [
 	return currentAmount, nil
 }
 
-func (db *db) TakeVoteTokenFromWinner(boardType string, startedBlock uint32, voter voting.Voter) error {
+func (db *db) TakeVoteTokenFromWinner(boardType string, startedBlock uint32, voterPubKey []byte, amountOfVote int32) error {
 	key := make([]byte, 0)
 	if boardType == "dcb" {
-		key = GetDCBVoteTokenAmountKey(startedBlock, voter.PubKey)
+		key = GetDCBVoteTokenAmountKey(startedBlock, voterPubKey)
 	} else if boardType == "gov" {
-		key = GetGOVVoteTokenAmountKey(startedBlock, voter.PubKey)
+		key = GetGOVVoteTokenAmountKey(startedBlock, voterPubKey)
 	} else {
 		return errors.New("wrong board type")
 	}
@@ -475,7 +474,7 @@ func (db *db) TakeVoteTokenFromWinner(boardType string, startedBlock uint32, vot
 		return err
 	}
 	currentAmount := common.BytesToUint32(currentAmountInByte)
-	newAmount := currentAmount - uint32(voter.AmountOfVote)
+	newAmount := currentAmount - uint32(amountOfVote)
 	db.Put(key, common.Uint32ToBytes(newAmount))
 	return nil
 }

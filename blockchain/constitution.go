@@ -6,7 +6,6 @@ import (
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/voting"
 )
 
 type ConstitutionInfo struct {
@@ -110,14 +109,14 @@ func (GOVConstitutionHelper) GetAmountVoteToken(tx metadata.Transaction) uint64 
 	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
 }
 
-func (DCBConstitutionHelper) TxAcceptProposal(txId *common.Hash, voter voting.Voter) metadata.Transaction {
+func (DCBConstitutionHelper) TxAcceptProposal(txId *common.Hash, voter metadata.Voter) metadata.Transaction {
 	acceptTx := transaction.Tx{
 		Metadata: metadata.NewAcceptDCBProposalMetadata(*txId, voter),
 	}
 	return &acceptTx
 }
 
-func (GOVConstitutionHelper) TxAcceptProposal(txId *common.Hash, voter voting.Voter) metadata.Transaction {
+func (GOVConstitutionHelper) TxAcceptProposal(txId *common.Hash, voter metadata.Voter) metadata.Transaction {
 	acceptTx := transaction.Tx{
 		Metadata: metadata.NewAcceptGOVProposalMetadata(*txId, voter),
 	}

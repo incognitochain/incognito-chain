@@ -59,6 +59,9 @@ func (tx *Tx) Init(
 		tokenID.SetBytes(common.ConstantID[:])
 	}
 
+	// Calculate execution time
+	start := time.Now()
+
 	if tx.LockTime == 0 {
 		tx.LockTime = time.Now().Unix()
 	}
@@ -250,10 +253,12 @@ func (tx *Tx) Init(
 	// sign tx
 	tx.PubKeyLastByteSender = pkLastByteSender
 	err = tx.SignTx(hasPrivacy)
-
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
+
+	elapsed := time.Since(start)
+	Logger.log.Infof("Creating normal tx time %s", elapsed)
 	return nil
 }
 
@@ -269,8 +274,8 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		// sign with sigPrivKey
 		// prepare private key for Schnorr
 		sigKey := new(privacy.SchnPrivKey)
-		sigKey.SK = new(big.Int).SetBytes(tx.sigPrivKey[:32])
-		sigKey.R = new(big.Int).SetBytes(tx.sigPrivKey[32:])
+		sigKey.SK = new(big.Int).SetBytes(tx.sigPrivKey[:privacy.BigIntSize])
+		sigKey.R = new(big.Int).SetBytes(tx.sigPrivKey[privacy.BigIntSize:])
 
 		// save public key for verification signature tx
 		sigKey.PubKey = new(privacy.SchnPubKey)
@@ -281,20 +286,15 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		sigKey.PubKey.H.X, sigKey.PubKey.H.Y = privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y
 
 		sigKey.PubKey.PK = &privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
-		//Logger.log.Infof(sigKey)
 		tmp := new(privacy.EllipticPoint)
 		tmp.X, tmp.Y = privacy.Curve.ScalarMult(sigKey.PubKey.G.X, sigKey.PubKey.G.Y, sigKey.SK.Bytes())
 		sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y = privacy.Curve.Add(sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y, tmp.X, tmp.Y)
 
 		tmp.X, tmp.Y = privacy.Curve.ScalarMult(sigKey.PubKey.H.X, sigKey.PubKey.H.Y, sigKey.R.Bytes())
 		sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y = privacy.Curve.Add(sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y, tmp.X, tmp.Y)
-		//Logger.log.Infof("SIGN ------ PUBLICKEY: %+v\n", sigKey.PubKey.PK)
 		tx.SigPubKey = sigKey.PubKey.PK.Compress()
-		//Logger.log.Infof("SIGN ------ PUBLICKEY BYTE: %+v\n", tx.SigPubKey)
 
 		// signing
-		//Logger.log.Infof("SIGN ------ HASH TX: %+v\n", tx.Hash().String())
-		//Logger.log.Infof(" SIGN SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
 		signature, err := sigKey.Sign(tx.Hash()[:])
 		if err != nil {
 			return err
@@ -388,6 +388,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 // - Verify the payment proof
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
+	start := time.Now()
 	// Verify tx signature
 	if tx.GetType() == common.TxSalaryType {
 		return tx.ValidateTxSalary(db)
@@ -430,6 +431,8 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			return false
 		}
 	}
+	elapsed := time.Since(start)
+	Logger.log.Infof("Validation normal tx time %s", elapsed)
 
 	return true
 }
@@ -762,6 +765,10 @@ func (tx *Tx) InitTxSalary(
 	db database.DatabaseInterface,
 ) error {
 	tx.Type = common.TxSalaryType
+
+	if tx.LockTime == 0 {
+		tx.LockTime = time.Now().Unix()
+	}
 
 	var err error
 	// create new output coins with info: Pk, value, SND, randomness, last byte pk, coin commitment

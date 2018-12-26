@@ -8,33 +8,43 @@ import (
 
 func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	boardType := arrayParams[0].(string)
-	paymentAddress := arrayParams[1].(string)
-	chainID := byte(arrayParams[2].(float64))
+	paymentAddress := arrayParams[0].(string)
+	chainID := byte(arrayParams[1].(float64))
 	pubKey := wallet.GetPubKeyFromPaymentAddress(paymentAddress)
 	startedBlock := self.config.BlockChain.BestState[chainID].BestBlock.Header.Height
 	db := *self.config.Database
-	result := jsonresult.GetAmountVoteTokenResult{}
-	var err error
-	if boardType == "dcb" {
-		result.DCBVoteTokenAmount, err = db.GetDCBVoteTokenAmount(uint32(startedBlock), pubKey)
-		if err != nil {
-			result.DCBVoteTokenAmount = 0
-		}
-	} else if boardType == "gov" {
-		result.GOVVoteTokenAmount, err = db.GetGOVVoteTokenAmount(uint32(startedBlock), pubKey)
-		if err != nil {
-			result.GOVVoteTokenAmount = 0
-		}
-	} else if boardType == "" {
-		result.DCBVoteTokenAmount, err = db.GetDCBVoteTokenAmount(uint32(startedBlock), pubKey)
-		if err != nil {
-			result.DCBVoteTokenAmount = 0
-		}
-		result.GOVVoteTokenAmount, err = db.GetGOVVoteTokenAmount(uint32(startedBlock), pubKey)
-		if err != nil {
-			result.GOVVoteTokenAmount = 0
-		}
+	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
+
+	// For DCB voting token
+	result.PaymentAddress = paymentAddress
+	item := jsonresult.CustomTokenBalance{}
+	item.Name = "DCB voting token"
+	item.Symbol = "DCB Voting Token"
+	TokenID := &common.Hash{}
+	TokenID.SetBytes(common.DCBVotingTokenID[:])
+	item.TokenID = TokenID.String()
+	item.TokenImage = common.Render([]byte(item.TokenID))
+	amount, err := db.GetDCBVoteTokenAmount(uint32(startedBlock), pubKey)
+	if err != nil {
+		Logger.log.Error(err)
 	}
+	item.Amount = uint64(amount)
+	result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
+
+	// For GOV voting token
+	item = jsonresult.CustomTokenBalance{}
+	item.Name = "GOV voting token"
+	item.Symbol = "GOV Voting Token"
+	TokenID = &common.Hash{}
+	TokenID.SetBytes(common.GOVVotingTokenID[:])
+	item.TokenID = TokenID.String()
+	item.TokenImage = common.Render([]byte(item.TokenID))
+	amount, err = db.GetGOVVoteTokenAmount(uint32(startedBlock), pubKey)
+	if err != nil {
+		Logger.log.Error(err)
+	}
+	item.Amount = uint64(amount)
+	result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
+
 	return result, nil
 }
