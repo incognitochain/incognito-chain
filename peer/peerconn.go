@@ -81,6 +81,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			go func(msgStr string) {
 				// Parse Message header from last 24 bytes header message
 				jsonDecodeString, _ := hex.DecodeString(msgStr)
+
 				Logger.log.Infof("In message content : %s", string(jsonDecodeString))
 				messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
 
@@ -98,10 +99,16 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 
 				// Parse Message body
 				messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
+
 				// cache message hash S
 				hashMsg := common.HashH(messageBody).String()
+				if self.ListenerPeer.CheckHashMessage(hashMsg) {
+					Logger.log.Infof("InMessageHandler existed hash message %s", hashMsg)
+					return
+				}
 				self.ListenerPeer.ReceivedHashMessage(hashMsg)
 				// cache message hash E
+
 				err = json.Unmarshal(messageBody, &message)
 				if err != nil {
 					Logger.log.Error("Can not parse struct from json message")
@@ -222,37 +229,54 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 		select {
 		case outMsg := <-self.sendMessageQueue:
 			{
-				// Create and send message
-				messageByte, err := outMsg.message.JsonSerialize()
-				if err != nil {
-					Logger.log.Error("Can not serialize json format for message:" + outMsg.message.MessageType())
-					Logger.log.Error(err)
-					continue
-				}
+				if outMsg.rawBytes != nil && len(*outMsg.rawBytes) > 0 {
+					Logger.log.Infof("OutMessageHandler with raw bytes")
+					message := hex.EncodeToString(*outMsg.rawBytes)
+					message += DelimMessageStr
+					_, err := rw.Writer.WriteString(message)
+					if err != nil {
+						Logger.log.Critical("DM ERROR", err)
+						continue
+					}
+					err = rw.Writer.Flush()
+					if err != nil {
+						Logger.log.Critical("DM ERROR", err)
+						continue
+					}
+				} else {
+					// Create and send message
+					messageByte, err := outMsg.message.JsonSerialize()
+					if err != nil {
+						Logger.log.Error("Can not serialize json format for message:" + outMsg.message.MessageType())
+						Logger.log.Error(err)
+						continue
+					}
 
-				// add 24 bytes header into message
-				header := make([]byte, wire.MessageHeaderSize)
-				cmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.message))
-				copy(header[:], []byte(cmdType))
-				messageByte = append(messageByte, header...)
-				Logger.log.Infof("Out message TYPE %s CONTENT %s", cmdType, string(messageByte))
-				message := hex.EncodeToString(messageByte)
-				//Logger.log.Infof("Content in hex encode: %s", string(message))
-				// add end character to message (delim '\n')
-				message += DelimMessageStr
+					// add 24 bytes header into message
+					header := make([]byte, wire.MessageHeaderSize)
+					cmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.message))
+					copy(header[:], []byte(cmdType))
+					messageByte = append(messageByte, header...)
+					Logger.log.Infof("Out message TYPE %s CONTENT %s", cmdType, string(messageByte))
+					message := hex.EncodeToString(messageByte)
+					//Logger.log.Infof("Content in hex encode: %s", string(message))
+					// add end character to message (delim '\n')
+					message += DelimMessageStr
 
-				// send on p2p stream
-				Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.RemotePeer.PeerID.Pretty())
-				_, err = rw.Writer.WriteString(message)
-				if err != nil {
-					Logger.log.Critical("DM ERROR", err)
-					continue
+					// send on p2p stream
+					Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.RemotePeer.PeerID.Pretty())
+					_, err = rw.Writer.WriteString(message)
+					if err != nil {
+						Logger.log.Critical("DM ERROR", err)
+						continue
+					}
+					err = rw.Writer.Flush()
+					if err != nil {
+						Logger.log.Critical("DM ERROR", err)
+						continue
+					}
 				}
-				err = rw.Writer.Flush()
-				if err != nil {
-					Logger.log.Critical("DM ERROR", err)
-					continue
-				}
+				continue
 			}
 		case <-self.cWrite:
 			Logger.log.Infof("OutMessageHandler QUIT %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
@@ -354,6 +378,17 @@ func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<-
 					forwardType:  forwardType,
 					forwardValue: forwardValue,
 				}
+			}
+		}
+	}()
+}
+
+func (self *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<- struct{}) {
+	go func() {
+		if self.IsConnected {
+			self.sendMessageQueue <- outMsg{
+				rawBytes: msgBytes,
+				doneChan: doneChan,
 			}
 		}
 	}()

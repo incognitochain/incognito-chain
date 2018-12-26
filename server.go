@@ -968,11 +968,13 @@ func (self *Server) PushMessageToShard(msg wire.Message, shard byte) error {
 			peerConn.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_SHARD, &shard)
 		}
 		Logger.log.Infof("Pushed shard %d", shard)
-		return nil
 	} else {
 		Logger.log.Error("RemotePeer of shard not exist!")
+		for _, listener := range self.connManager.Config.ListenerPeers {
+			listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_SHARD, &shard)
+		}
 	}
-	return errors.New("RemotePeer of shard not found")
+	return nil
 }
 
 /*

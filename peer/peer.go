@@ -132,6 +132,7 @@ type MessageListeners struct {
 type outMsg struct {
 	forwardType  byte // 0 all, 1 shard, 2  peer, 3 beacon
 	forwardValue *byte
+	rawBytes     *[]byte
 	message      wire.Message
 	doneChan     chan<- struct{}
 	//encoding wire.MessageEncoding
