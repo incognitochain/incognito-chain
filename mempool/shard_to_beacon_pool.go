@@ -50,8 +50,8 @@ func (pool *ShardToBeaconPool) RemoveBlock(blockItems map[byte]uint64) error {
 		}
 
 		items := map[uint64][]blockchain.ShardToBeaconBlock{}
-		for i := int(blockHeight) + 1; i < len(shardItems); i++ {
-			items = append(items, shardItems[i])
+		for i := blockHeight + 1; i < uint64(len(shardItems)); i++ {
+			items[i] = append(items[i], shardItems[i]...)
 		}
 		// for key, blocks := range shardItems {
 		// 	if key <= blockHeight {
