@@ -242,7 +242,31 @@ func (self *BlockChain) initChainState() error {
 		beacon: make(map[string][]byte),
 	}
 
-	self.BestState.Beacon = NewBestStateBeacon()
+	// for shard := 1; shard <= self.config.ChainParams.ShardsNum; shard++ {
+	// 	shardID := byte(shard - 1)
+	// 	bestStateBytes, err := self.config.DataBase.FetchBestState(shardID)
+	// 	if err == nil {
+	// 		err = json.Unmarshal(bestStateBytes, self.BestState.Shard[shardID])
+	// 		if err != nil {
+	// 			initialized = false
+	// 		} else {
+	// 			initialized = true
+	// 		}
+	// 	} else {
+	// 		initialized = false
+	// 	}
+
+	// 	if !initialized {
+	// 		// At this point the database has not already been initialized, so
+	// 		// initialize both it and the chain state to the genesis block.
+	// 		err := self.initShardState(shardID)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+
+	// 	}
+	// }
+
 	bestStateBeaconBytes, err := self.config.DataBase.FetchBeaconBestState()
 	if err == nil {
 		err = json.Unmarshal(bestStateBeaconBytes, self.BestState.Beacon)
@@ -264,31 +288,6 @@ func (self *BlockChain) initChainState() error {
 
 	}
 
-	self.BestState.Shard = make(map[byte]*BestStateShard)
-	for shard := 1; shard < self.config.ChainParams.ShardsNum; shard++ {
-		shardID := byte(shard - 1)
-		bestStateBytes, err := self.config.DataBase.FetchBestState(shardID)
-		if err == nil {
-			err = json.Unmarshal(bestStateBytes, self.BestState.Shard[shardID])
-			if err != nil {
-				initialized = false
-			} else {
-				initialized = true
-			}
-		} else {
-			initialized = false
-		}
-
-		if !initialized {
-			// At this point the database has not already been initialized, so
-			// initialize both it and the chain state to the genesis block.
-			err := self.initShardState(shardID)
-			if err != nil {
-				return err
-			}
-
-		}
-	}
 	return nil
 }
 
@@ -305,6 +304,7 @@ func (self *BlockChain) initShardState(shardID byte) error {
 	}
 	if shardID == 0 {
 		initBlock = self.config.ChainParams.GenesisShardBlock
+		initBlock.Header.ShardID = shardID
 	} else {
 		initBlock.Header = self.config.ChainParams.GenesisShardBlock.Header
 		initBlock.Header.ShardID = shardID
@@ -335,6 +335,7 @@ func (self *BlockChain) initShardState(shardID byte) error {
 }
 
 func (self *BlockChain) initBeaconState() error {
+	self.BestState.Beacon = NewBestStateBeacon()
 	var initBlock *BeaconBlock
 	initBlock = self.config.ChainParams.GenesisBeaconBlock
 	//TODO: initiate first beacon state

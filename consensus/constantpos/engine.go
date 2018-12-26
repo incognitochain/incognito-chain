@@ -2,8 +2,8 @@ package constantpos
 
 import (
 	"errors"
-	"fmt"
 	"sync"
+	"time"
 
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/cashec"
@@ -57,6 +57,7 @@ func (self *Engine) Start() error {
 	}
 	self.started = true
 	Logger.log.Info("Start consensus with key", self.config.UserKeySet.GetPublicKeyB58())
+
 	go func() {
 		for {
 			select {
@@ -65,7 +66,6 @@ func (self *Engine) Start() error {
 			default:
 				if self.config.BlockChain.IsReady() {
 					role, shardID := self.config.BlockChain.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
-					fmt.Println(role, shardID)
 					if role != "" {
 						bftProtocol := &BFTProtocol{
 							cBFTMsg:    self.cBFTMsg,
@@ -100,6 +100,8 @@ func (self *Engine) Start() error {
 							default:
 							}
 						}
+					} else {
+						time.Sleep(1 * time.Second)
 					}
 				}
 			}

@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
@@ -41,7 +40,7 @@ type BeaconHeader struct {
 	ShardCandidateRoot common.Hash `json:"BeaconCandidateRoot"`
 
 	// Shard validator build from ShardCommittee and ShardPendingValidator
-	ShardValidatorsRoot common.Hash `json:ShardValidatorRoot`
+	ShardValidatorsRoot common.Hash `json:"ShardValidatorRoot"`
 
 	// each shard will have a list of blockHash
 	// shardRoot is hash of all list
@@ -69,30 +68,30 @@ func (self *BeaconBlock) Hash() *common.Hash {
 	return &hash
 }
 
-func (self *BeaconBlock) UnmarshalJSON(data []byte) error {
-	tempBlk := &struct {
-		AggregatedSig string
-		ValidatorsIdx []int
-		Header        BeaconHeader
-		Body          *json.RawMessage
-	}{}
-	err := json.Unmarshal(data, &tempBlk)
-	if err != nil {
-		return NewBlockChainError(UnmashallJsonBlockError, err)
-	}
-	self.AggregatedSig = tempBlk.AggregatedSig
-	self.ValidatorsIdx = tempBlk.ValidatorsIdx
+// func (self *BeaconBlock) UnmarshalJSON(data []byte) error {
+// 	tempBlk := &struct {
+// 		AggregatedSig string
+// 		ValidatorsIdx []int
+// 		Header        BeaconHeader
+// 		Body          *json.RawMessage
+// 	}{}
+// 	err := json.Unmarshal(data, &tempBlk)
+// 	if err != nil {
+// 		return NewBlockChainError(UnmashallJsonBlockError, err)
+// 	}
+// 	self.AggregatedSig = tempBlk.AggregatedSig
+// 	self.ValidatorsIdx = tempBlk.ValidatorsIdx
 
-	blkBody := BeaconBody{}
-	err = blkBody.UnmarshalJSON(*tempBlk.Body)
-	if err != nil {
-		return NewBlockChainError(UnmashallJsonBlockError, err)
-	}
-	self.Header = tempBlk.Header
+// 	blkBody := BeaconBody{}
+// 	err = blkBody.UnmarshalJSON(*tempBlk.Body)
+// 	if err != nil {
+// 		return NewBlockChainError(UnmashallJsonBlockError, err)
+// 	}
+// 	self.Header = tempBlk.Header
 
-	self.Body = blkBody
-	return nil
-}
+// 	self.Body = blkBody
+// 	return nil
+// }
 
 func (self *BeaconBody) toString() string {
 	res := ""
@@ -114,16 +113,18 @@ func (self *BeaconBody) Hash() common.Hash {
 	return common.DoubleHashH([]byte(self.toString()))
 }
 
-func (self *BeaconBody) UnmarshalJSON(data []byte) error {
-	blkBody := &BeaconBody{}
+// func (self *BeaconBody) UnmarshalJSON(data []byte) error {
+// 	type BodyAlias BeaconBody
+// 	blkBody := &BodyAlias{}
 
-	err := json.Unmarshal(data, blkBody)
-	if err != nil {
-		return NewBlockChainError(UnmashallJsonBlockError, err)
-	}
-	self = blkBody
-	return nil
-}
+// 	err := json.Unmarshal(data, blkBody)
+// 	if err != nil {
+// 		return NewBlockChainError(UnmashallJsonBlockError, err)
+// 	}
+// 	self.Instructions = blkBody.Instructions
+// 	self.ShardState = blkBody.ShardState
+// 	return nil
+// }
 
 func (self *BeaconHeader) toString() string {
 	res := ""
@@ -141,12 +142,12 @@ func (self *BeaconHeader) Hash() common.Hash {
 	return common.DoubleHashH([]byte(self.toString()))
 }
 
-func (self *BeaconHeader) UnmarshalJSON(data []byte) error {
-	blkHeader := &BeaconHeader{}
-	err := json.Unmarshal(data, blkHeader)
-	if err != nil {
-		return NewBlockChainError(UnmashallJsonBlockError, err)
-	}
-	self = blkHeader
-	return nil
-}
+// func (self *BeaconHeader) UnmarshalJSON(data []byte) error {
+// 	blkHeader := &BeaconHeader{}
+// 	err := json.Unmarshal(data, blkHeader)
+// 	if err != nil {
+// 		return NewBlockChainError(UnmashallJsonBlockError, err)
+// 	}
+// 	self = blkHeader
+// 	return nil
+// }

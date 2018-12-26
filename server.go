@@ -195,7 +195,6 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		ChainParams:  chainParams,
 		FeeEstimator: self.feeEstimator,
 	})
-
 	self.addrManager = addrmanager.New(cfg.DataDir)
 
 	self.rewardAgent, err = rewardagent.RewardAgent{}.Init(&rewardagent.RewardAgentConfig{
@@ -209,6 +208,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	if err != nil {
 		return err
 	}
+
 	self.consensusEngine, err = constantpos.Engine{}.Init(&constantpos.EngineConfig{
 		ChainParams: self.chainParams,
 		BlockChain:  self.blockChain,
@@ -221,7 +221,6 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	if err != nil {
 		return err
 	}
-
 	// Init Net Sync manager to process messages
 	self.netSync = netsync.NetSync{}.New(&netsync.NetSyncConfig{
 		BlockChain:   self.blockChain,
@@ -231,7 +230,6 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		Consensus:    self.consensusEngine,
 		FeeEstimator: self.feeEstimator,
 	})
-
 	// Create a connection manager.
 	var peers []*peer.Peer
 	if !cfg.DisableListen {
@@ -242,7 +240,6 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			return err
 		}
 	}
-
 	connManager := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
@@ -475,15 +472,7 @@ func (self Server) Start() {
 		go self.Stop()
 		return
 	}
-	// if cfg.Generate == true && (len(cfg.UserPrvKey) > 0) {
-	// 	userKeySet, err := cfg.GetProducerKeySet()
-	// 	if err != nil {
-	// 		Logger.log.Critical(err)
-	// 		return
-	// 	}
-	// 	self.consensusEngine.StartProducer(*producerKeySet)
-	// 	self.consensusEngine.StartSwap()
-	// }
+
 }
 
 /*
