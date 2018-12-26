@@ -4,7 +4,6 @@ import (
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/voting"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -120,7 +119,7 @@ type DatabaseInterface interface {
 	AddVoteNormalProposalFromOwner(string, uint32, *common.Hash, []byte) error
 	AddVoteNormalProposalFromSealer(string, uint32, *common.Hash, []byte) error
 	GetAmountVoteToken(string, uint32, []byte) (uint32, error)
-	TakeVoteTokenFromWinner(string, uint32, voting.Voter) error
+	TakeVoteTokenFromWinner(string, uint32, []byte, int32) error
 	SetNewWinningVoter(string, uint32, []byte) error
 	GetDCBVoteTokenAmount(startedBlock uint32, pubKey []byte) (uint32, error)
 	GetGOVVoteTokenAmount(startedBlock uint32, pubKey []byte) (uint32, error)

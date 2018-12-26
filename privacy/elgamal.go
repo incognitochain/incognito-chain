@@ -1,7 +1,6 @@
 package privacy
 
 import (
-	"crypto/elliptic"
 	"math/big"
 )
 
@@ -17,13 +16,11 @@ import (
 // ElGamalPubKey ...
 // H = G^X
 type ElGamalPubKey struct {
-	Curve *elliptic.Curve
-	H     *EllipticPoint
+	H *EllipticPoint
 }
 
 type ElGamalPrivKey struct {
-	Curve *elliptic.Curve
-	X     *big.Int
+	X *big.Int
 }
 
 type ElGamalCiphertext struct {
@@ -36,21 +33,17 @@ func (ciphertext *ElGamalCiphertext) Set(C1, C2 *EllipticPoint) {
 }
 
 func (pub *ElGamalPubKey) Set(
-	Curve *elliptic.Curve,
 	H *EllipticPoint) {
-	pub.Curve = Curve
 	pub.H = H
 }
 
 func (priv *ElGamalPrivKey) Set(
-	Curve *elliptic.Curve,
 	Value *big.Int) {
-	priv.Curve = Curve
 	priv.X = Value
 }
 
 func (ciphertext *ElGamalCiphertext) Bytes() []byte {
-	if ciphertext.C1.IsEqual(new(EllipticPoint).Zero()){
+	if ciphertext.C1.IsEqual(new(EllipticPoint).Zero()) {
 		return []byte{}
 	}
 	res := append(ciphertext.C1.Compress(), ciphertext.C2.Compress()...)
@@ -70,11 +63,11 @@ func (ciphertext *ElGamalCiphertext) SetBytes(bytearr []byte) error {
 	}
 
 	err := ciphertext.C1.Decompress(bytearr[:33])
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	err = ciphertext.C2.Decompress(bytearr[33:])
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	return nil
@@ -84,7 +77,7 @@ func (priv *ElGamalPrivKey) GenPubKey() *ElGamalPubKey {
 	elGamalPubKey := new(ElGamalPubKey)
 
 	pubKey := new(EllipticPoint)
-	pubKey.Set((*priv.Curve).Params().Gx, (*priv.Curve).Params().Gy)
+	pubKey.Set(Curve.Params().Gx, Curve.Params().Gy)
 	pubKey = pubKey.ScalarMult(priv.X)
 
 	elGamalPubKey.Set(priv.Curve, pubKey)
@@ -97,7 +90,7 @@ func (pub *ElGamalPubKey) Encrypt(plaintext *EllipticPoint) *ElGamalCiphertext {
 	ciphertext := new(ElGamalCiphertext)
 
 	ciphertext.C1 = new(EllipticPoint).Zero()
-	ciphertext.C1.Set((*pub.Curve).Params().Gx, (*pub.Curve).Params().Gy)
+	ciphertext.C1.Set(Curve.Params().Gx, Curve.Params().Gy)
 	ciphertext.C1 = ciphertext.C1.ScalarMult(randomness)
 
 	ciphertext.C2 = plaintext.Add((*pub.H).ScalarMult(randomness))

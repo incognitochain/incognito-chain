@@ -9,7 +9,6 @@ import (
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/voting"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
@@ -113,18 +112,18 @@ func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTxAndRewardSu
 		CountVote[*txId] += 1
 	}
 
-	bestProposal := voting.ProposalVote{
+	bestProposal := metadata.ProposalVote{
 		TxId:         common.Hash{},
 		AmountOfVote: 0,
 		NumberOfVote: 0,
 	}
-	bestVoterAll := voting.Voter{
+	bestVoterAll := metadata.Voter{
 		PubKey:       make([]byte, 0),
 		AmountOfVote: 0,
 	}
 	// Get most vote proposal
 	for txId, listVoter := range VoteTable {
-		bestVoterThisProposal := voting.Voter{
+		bestVoterThisProposal := metadata.Voter{
 			PubKey:       make([]byte, 0),
 			AmountOfVote: 0,
 		}
@@ -137,7 +136,7 @@ func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTxAndRewardSu
 				// can change listvoter because it is a pointer
 				continue
 			} else {
-				tVoter := voting.Voter{
+				tVoter := metadata.Voter{
 					PubKey:       []byte(voterPubKey),
 					AmountOfVote: amount,
 				}
@@ -149,7 +148,7 @@ func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTxAndRewardSu
 			}
 		}
 		amountOfThisProposal -= int64(bestVoterThisProposal.AmountOfVote)
-		tProposalVote := voting.ProposalVote{
+		tProposalVote := metadata.ProposalVote{
 			TxId:         txId,
 			AmountOfVote: amountOfThisProposal,
 			NumberOfVote: countOfThisProposal,

@@ -3,8 +3,9 @@ package privacy
 import (
 	"encoding/json"
 	"errors"
-	"github.com/ninjadotorg/constant/common/base58"
 	"math/big"
+
+	"github.com/ninjadotorg/constant/common/base58"
 )
 
 // Coin represents a coin
@@ -302,7 +303,7 @@ func (coinDetailsEncrypted *CoinDetailsEncrypted) IsNil() bool {
 	return false
 }
 
-func (coinDetailsEncrypted *CoinDetailsEncrypted) Bytes() [] byte {
+func (coinDetailsEncrypted *CoinDetailsEncrypted) Bytes() []byte {
 	if coinDetailsEncrypted.IsNil() {
 		return []byte{}
 	}
@@ -320,7 +321,7 @@ func (coinDetailsEncrypted *CoinDetailsEncrypted) SetBytes(bytes []byte) error {
 	}
 
 	coinDetailsEncrypted.EncryptedRandomness = bytes[0:48]
-	coinDetailsEncrypted.EncryptedSymKey = bytes[48:48+66]
+	coinDetailsEncrypted.EncryptedSymKey = bytes[48 : 48+66]
 	coinDetailsEncrypted.EncryptedValue = bytes[48+66:]
 
 	return nil
@@ -362,7 +363,6 @@ func (coin *OutputCoin) Encrypt(recipientTK TransmissionKey) error {
 	if err != nil {
 		return err
 	}
-	transmissionKey.Curve = &Curve
 
 	// Encrypt aesKeyByte under recipient's transmission key using ElGamal cryptosystem
 	coin.CoinDetailsEncrypted.EncryptedSymKey = transmissionKey.Encrypt(aesKeyPoint).Bytes()
@@ -379,12 +379,12 @@ func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 
 	// Get receiving key, which is a private key of ElGamal cryptosystem
 	receivingKey := new(ElGamalPrivKey)
-	receivingKey.Set(&Curve, new(big.Int).SetBytes(viewingKey.Rk))
+	receivingKey.Set(new(big.Int).SetBytes(viewingKey.Rk))
 
 	// Parse encrypted AES key encoded as an elliptic point from EncryptedSymKey
 	encryptedAESKey := new(ElGamalCiphertext)
 	err := encryptedAESKey.SetBytes(coin.CoinDetailsEncrypted.EncryptedSymKey)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 

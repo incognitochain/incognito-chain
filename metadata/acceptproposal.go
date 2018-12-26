@@ -3,16 +3,44 @@ package metadata
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/voting"
 )
+
+type Voter struct {
+	PubKey       []byte
+	AmountOfVote int32
+}
+
+func (voter *Voter) Greater(voter2 Voter) bool {
+	return voter.AmountOfVote > voter2.AmountOfVote ||
+		(voter.AmountOfVote == voter2.AmountOfVote && string(voter.PubKey) > string(voter2.PubKey))
+}
+
+func (voter *Voter) Hash() *common.Hash {
+	record := string(voter.PubKey)
+	record += string(voter.AmountOfVote)
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
+
+type ProposalVote struct {
+	TxId         common.Hash
+	AmountOfVote int64
+	NumberOfVote uint32
+}
+
+func (proposalVote ProposalVote) Greater(proposalVote2 ProposalVote) bool {
+	return proposalVote.AmountOfVote > proposalVote2.AmountOfVote ||
+		(proposalVote.AmountOfVote == proposalVote2.AmountOfVote || proposalVote.NumberOfVote > proposalVote2.NumberOfVote) ||
+		(proposalVote.AmountOfVote == proposalVote2.AmountOfVote || proposalVote.NumberOfVote == proposalVote2.NumberOfVote || string(proposalVote.TxId.GetBytes()) > string(proposalVote2.TxId.GetBytes()))
+}
 
 type AcceptDCBProposalMetadata struct {
 	DCBProposalTXID common.Hash
-	Voter           voting.Voter
+	Voter           Voter
 	MetadataBase
 }
 
-func NewAcceptDCBProposalMetadata(DCBProposalTXID common.Hash, voter voting.Voter) *AcceptDCBProposalMetadata {
+func NewAcceptDCBProposalMetadata(DCBProposalTXID common.Hash, voter Voter) *AcceptDCBProposalMetadata {
 	return &AcceptDCBProposalMetadata{
 		DCBProposalTXID: DCBProposalTXID,
 		Voter:           voter,
@@ -49,11 +77,11 @@ func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ValidateMetadataByIt
 
 type AcceptGOVProposalMetadata struct {
 	GOVProposalTXID common.Hash
-	Voter           voting.Voter
+	Voter           Voter
 	MetadataBase
 }
 
-func NewAcceptGOVProposalMetadata(GOVProposalTXID common.Hash, voter voting.Voter) *AcceptGOVProposalMetadata {
+func NewAcceptGOVProposalMetadata(GOVProposalTXID common.Hash, voter Voter) *AcceptGOVProposalMetadata {
 	return &AcceptGOVProposalMetadata{
 		GOVProposalTXID: GOVProposalTXID,
 		Voter:           voter,
