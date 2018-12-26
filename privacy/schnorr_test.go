@@ -8,7 +8,7 @@ import (
 
 func TestSchn(t *testing.T) {
 	schnPrivKey := new(SchnPrivKey)
-	schnPrivKey.KeyGen()
+	schnPrivKey.GenKey()
 
 	hash := RandBytes(SpendingKeySize)
 	fmt.Printf("Hash: %v\n", hash)
