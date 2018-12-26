@@ -6,6 +6,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
+	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 type MultiSigsRegistration struct {
