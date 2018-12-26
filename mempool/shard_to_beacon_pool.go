@@ -51,14 +51,9 @@ func (pool *ShardToBeaconPool) RemoveBlock(blockItems map[byte]uint64) error {
 
 		items := map[uint64][]blockchain.ShardToBeaconBlock{}
 		for i := blockHeight + 1; i < uint64(len(shardItems)); i++ {
-			items[i] = append(items[i], shardItems[i]...)
+			items[i] = shardItems[i]
 		}
-		// for key, blocks := range shardItems {
-		// 	if key <= blockHeight {
-		// 		continue
-		// 	}
-		// 	items[key] = blocks
-		// }
+
 		beaconPool[shardID] = items
 	}
 	beaconPoolLock.Unlock()
