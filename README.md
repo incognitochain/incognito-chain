@@ -1,6 +1,8 @@
 # Constant core
+
 ![Constant is digital money you can actually use.
 ](https://constant.money/static/images/block5.webp)
+
 One prototype version for a new type of crypto curency
 
 ## Getting Started
