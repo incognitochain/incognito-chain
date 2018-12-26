@@ -2,7 +2,6 @@ package params
 
 import (
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/voting"
 )
 
 type Oracle struct {
@@ -26,15 +25,15 @@ func NewLoanParams(interestRate uint64, maturity uint32, liquidationStart uint64
 }
 
 type DCBParams struct {
-	SaleData               *voting.SaleData
+	SaleData               *SaleData
 	MinLoanResponseRequire uint8
-	SaleDBCTOkensByUSDData *voting.SaleDBCTOkensByUSDData
+	SaleDBCTOkensByUSDData *SaleDBCTOkensByUSDData
 
 	// TODO(@0xbunyip): read loan params from proposal instead of storing and reading separately
 	LoanParams []LoanParams // params for collateralized loans of Constant
 }
 
-func NewDCBParams(saleData *voting.SaleData, minLoanResponseRequire uint8, saleDBCTOkensByUSDData *voting.SaleDBCTOkensByUSDData, loanParams []LoanParams) *DCBParams {
+func NewDCBParams(saleData *SaleData, minLoanResponseRequire uint8, saleDBCTOkensByUSDData *SaleDBCTOkensByUSDData, loanParams []LoanParams) *DCBParams {
 	return &DCBParams{
 		SaleData:               saleData,
 		MinLoanResponseRequire: minLoanResponseRequire,
@@ -47,7 +46,7 @@ func NewDCBParamsFromRPC(data interface{}) *DCBParams {
 	arrayParams := common.InterfaceSlice(data)
 
 	saleDataData := common.InterfaceSlice(arrayParams[0])
-	saleData := voting.NewSaleData(
+	saleData := NewSaleData(
 		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData[0])),
 		int32(saleDataData[1].(float64)),
 		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData[2])),
@@ -59,7 +58,7 @@ func NewDCBParamsFromRPC(data interface{}) *DCBParams {
 	minLoanResponseRequire := uint8(arrayParams[1].(float64))
 
 	saleDBCTOkensByUSDDataData := common.InterfaceSlice(arrayParams[2])
-	saleDBCTOkensByUSDData := voting.NewSaleDBCTOkensByUSDData(
+	saleDBCTOkensByUSDData := NewSaleDBCTOkensByUSDData(
 		uint64(saleDBCTOkensByUSDDataData[0].(float64)),
 		int32(saleDBCTOkensByUSDDataData[1].(float64)),
 	)
@@ -81,12 +80,12 @@ type GOVParams struct {
 	SalaryPerTx   uint64 // salary for each tx in block(mili constant)
 	BasicSalary   uint64 // basic salary per block(mili constant)
 	FeePerKbTx    uint64
-	SellingBonds  *voting.SellingBonds
-	RefundInfo    *voting.RefundInfo
-	OracleNetwork *voting.OracleNetwork
+	SellingBonds  *SellingBonds
+	RefundInfo    *RefundInfo
+	OracleNetwork *OracleNetwork
 }
 
-func NewGOVParams(salaryPerTx uint64, basicSalary uint64, feePerKbTx uint64, sellingBonds *voting.SellingBonds, refundInfo *voting.RefundInfo, oracleNetwork *voting.OracleNetwork) *GOVParams {
+func NewGOVParams(salaryPerTx uint64, basicSalary uint64, feePerKbTx uint64, sellingBonds *SellingBonds, refundInfo *RefundInfo, oracleNetwork *OracleNetwork) *GOVParams {
 	return &GOVParams{SalaryPerTx: salaryPerTx, BasicSalary: basicSalary, FeePerKbTx: feePerKbTx, SellingBonds: sellingBonds, RefundInfo: refundInfo, OracleNetwork: oracleNetwork}
 }
 
@@ -100,7 +99,7 @@ func NewGOVParamsFromRPC(data interface{}) *GOVParams {
 	feePerKbTx := uint64(arrayParams[2].(float64))
 
 	sellingBondsData := common.InterfaceSlice(arrayParams[3])
-	sellingBonds := voting.NewSellingBonds(
+	sellingBonds := NewSellingBonds(
 		uint64(sellingBondsData[0].(float64)),
 		uint64(sellingBondsData[1].(float64)),
 		uint32(sellingBondsData[2].(float64)),
@@ -110,7 +109,7 @@ func NewGOVParamsFromRPC(data interface{}) *GOVParams {
 	)
 
 	refundInfoData := common.InterfaceSlice(arrayParams[4])
-	refundInfo := voting.NewRefundInfo(
+	refundInfo := NewRefundInfo(
 		uint64(refundInfoData[0].(float64)),
 		uint64(refundInfoData[1].(float64)),
 	)
@@ -122,7 +121,7 @@ func NewGOVParamsFromRPC(data interface{}) *GOVParams {
 	for _, i := range oraclePubKeysInterface {
 		oraclePubKeys = append(oraclePubKeys, common.SliceInterfaceToSliceByte(common.InterfaceSlice(i)))
 	}
-	oracleNetwork := voting.NewOracleNetwork(
+	oracleNetwork := NewOracleNetwork(
 		oraclePubKeys,
 		uint8(oracleNetworkData[1].(float64)),
 		uint8(oracleNetworkData[2].(float64)),

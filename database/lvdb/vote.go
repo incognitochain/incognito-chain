@@ -326,15 +326,21 @@ func GetDCBVoteTokenAmountKey(startedBlock uint32, pubKey []byte) []byte {
 	return key
 }
 
-func (db *db) GetDCBVoteTokenAmount(startedBlock uint32, pubKey []byte) uint32 {
+func (db *db) GetDCBVoteTokenAmount(startedBlock uint32, pubKey []byte) (uint32, error) {
 	key := GetDCBVoteTokenAmountKey(startedBlock, pubKey)
-	value, _ := db.Get(key)
-	return common.BytesToUint32(value)
+	value, err := db.Get(key)
+	if err != nil {
+		return 0, err
+	}
+	return common.BytesToUint32(value), nil
 }
-func (db *db) GetGOVVoteTokenAmount(startedBlock uint32, pubKey []byte) uint32 {
+func (db *db) GetGOVVoteTokenAmount(startedBlock uint32, pubKey []byte) (uint32, error) {
 	key := GetGOVVoteTokenAmountKey(startedBlock, pubKey)
-	value, _ := db.Get(key)
-	return common.BytesToUint32(value)
+	value, err := db.Get(key)
+	if err != nil {
+		return 0, err
+	}
+	return common.BytesToUint32(value), nil
 }
 
 func GetVoteGOVBoardSumKey(startedBlock uint32, candidatePubKey []byte) []byte {

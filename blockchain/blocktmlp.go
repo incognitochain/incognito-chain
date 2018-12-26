@@ -8,6 +8,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
@@ -152,6 +153,11 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 		lv3GOVPivot := endedGOVPivot - common.EncryptionPhaseDuration
 		lv2GOVPivot := lv3GOVPivot - common.EncryptionPhaseDuration
 		lv1GOVPivot := lv2GOVPivot - common.EncryptionPhaseDuration
+		//meta := tx.GetMetadata()
+		//if !meta.ValidateBeforeNewBlock(blockgen.chain) {
+		//	txToRemove = append(txToRemove, metadata.Transaction(tx))
+		//	continue
+		//}
 		switch tx.GetMetadataType() {
 		case metadata.BuyFromGOVRequestMeta:
 			{
@@ -610,7 +616,7 @@ func (blockgen *BlkTmplGenerator) processGovDividend(blockHeight int32, producer
 
 func buildSingleBuySellResponseTx(
 	buySellReqTx metadata.Transaction,
-	sellingBondsParam *voting.SellingBonds,
+	sellingBondsParam *params.SellingBonds,
 ) (*transaction.TxCustomToken, error) {
 	bondID := fmt.Sprintf("%s%s%s", sellingBondsParam.Maturity, sellingBondsParam.BuyBackPrice, sellingBondsParam.StartSellingAt)
 	additionalSuffix := make([]byte, 24-len(bondID))
@@ -680,7 +686,7 @@ func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
 // the tx is to distribute tokens (bond, gov, ...) to token requesters
 func (blockgen *BlkTmplGenerator) buildBuySellResponsesTx(
 	buySellReqTxs []metadata.Transaction,
-	sellingBondsParam *voting.SellingBonds,
+	sellingBondsParam *params.SellingBonds,
 ) ([]*transaction.TxCustomToken, error) {
 	if len(buySellReqTxs) == 0 {
 		return []*transaction.TxCustomToken{}, nil
