@@ -19,21 +19,21 @@ func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-c
 	if boardType == "dcb" {
 		result.DCBVoteTokenAmount, err = db.GetDCBVoteTokenAmount(uint32(startedBlock), pubKey)
 		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
+			result.DCBVoteTokenAmount = 0
 		}
 	} else if boardType == "gov" {
 		result.GOVVoteTokenAmount, err = db.GetGOVVoteTokenAmount(uint32(startedBlock), pubKey)
 		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
+			result.GOVVoteTokenAmount = 0
 		}
 	} else if boardType == "" {
 		result.DCBVoteTokenAmount, err = db.GetDCBVoteTokenAmount(uint32(startedBlock), pubKey)
 		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
+			result.DCBVoteTokenAmount = 0
 		}
 		result.GOVVoteTokenAmount, err = db.GetGOVVoteTokenAmount(uint32(startedBlock), pubKey)
 		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
+			result.GOVVoteTokenAmount = 0
 		}
 	}
 	return result, nil
