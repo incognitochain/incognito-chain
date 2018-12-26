@@ -84,6 +84,7 @@ const (
 	SendRawVoteBoardGOVTx                = "sendrawvoteboardgovtx"
 	CreateRawVoteGOVBoardTx              = "createrawvotegovboardtx"
 	CreateAndSendVoteGOVBoardTransaction = "createandsendvotegovboardtransaction"
+	GetAmountVoteToken                   = "getamountvotetoken"
 
 	// Submit Proposal
 	CreateAndSendSubmitDCBProposalTx = "createandsendsubmitdcbproposaltx"

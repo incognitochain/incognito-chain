@@ -4,54 +4,34 @@ import (
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/voting"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type SubmitDCBProposalMetadata struct {
 	DCBParams       params.DCBParams
 	ExecuteDuration uint32
 	Explanation     string
+	PaymentAddress  privacy.PaymentAddress
 
 	MetadataBase
 }
 
-//calling from rpc function
-func NewSubmitDCBProposalMetadataFromJson(jsonData map[string]interface{}) *SubmitDCBProposalMetadata {
-	LoanParamList := (jsonData["LoanParams"].([]interface{}))
-	loanParams := make([]params.LoanParams, 0)
-	for _, param := range LoanParamList {
-		j := param.(map[string]interface{})
-		loanParams = append(loanParams, params.LoanParams{
-			InterestRate:     uint64(j["InterestRate"].(float64)),
-			Maturity:         uint32(j["Maturity"].(float64)),
-			LiquidationStart: uint64(j["LiquidationStart"].(float64)),
-		})
+func NewSubmitDCBProposalMetadata(DCBParams params.DCBParams, executeDuration uint32, explanation string, address *privacy.PaymentAddress) *SubmitDCBProposalMetadata {
+	return &SubmitDCBProposalMetadata{
+		DCBParams:       DCBParams,
+		ExecuteDuration: executeDuration,
+		Explanation:     explanation,
+		PaymentAddress:  *address,
+		MetadataBase:    *NewMetadataBase(SubmitDCBProposalMeta),
 	}
-	submitDCBProposalMetadata := SubmitDCBProposalMetadata{
-		DCBParams: params.DCBParams{
-			SaleData: &voting.SaleData{
-				SaleID:       []byte(jsonData["SaleID"].(string)),
-				BuyingAsset:  []byte(jsonData["BuyingAsset"].(string)),
-				SellingAsset: []byte(jsonData["SellingAsset"].(string)),
-				EndBlock:     int32(jsonData["EndBlock"].(float64)),
-			},
-			MinLoanResponseRequire: uint8(jsonData["MinLoanResponseRequire"].(float64)),
-			LoanParams:             loanParams,
-		},
-		ExecuteDuration: uint32(jsonData["ExecuteDuration"].(float64)),
-		Explanation:     jsonData["Explanation"].(string),
-		MetadataBase: MetadataBase{
-			Type: SubmitDCBProposalMeta,
-		},
-	}
-	return &submitDCBProposalMetadata
 }
 
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) Hash() *common.Hash {
-	record := string(common.ToBytes(*submitDCBProposalMetadata.DCBParams.Hash()))
+	record := string(submitDCBProposalMetadata.DCBParams.Hash().GetBytes())
 	record += string(submitDCBProposalMetadata.ExecuteDuration)
 	record += submitDCBProposalMetadata.Explanation
-	record += string(submitDCBProposalMetadata.MetadataBase.Hash()[:])
+	record += string(submitDCBProposalMetadata.PaymentAddress.ToBytes())
+	record += string(submitDCBProposalMetadata.MetadataBase.Hash().GetBytes())
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -81,45 +61,28 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateMetadataByIt
 type SubmitGOVProposalMetadata struct {
 	GOVParams       params.GOVParams
 	ExecuteDuration uint32
-	Explaination    string
+	Explanation     string
+	PaymentAddress  privacy.PaymentAddress
 
 	MetadataBase
 }
 
-//calling from rpc function
-func NewSubmitGOVProposalMetadataFromJson(jsonData map[string]interface{}) *SubmitGOVProposalMetadata {
-	submitGOVProposalMetadata := SubmitGOVProposalMetadata{
-		GOVParams: params.GOVParams{
-			SalaryPerTx: uint64(jsonData["SalaryPerTx"].(float64)),
-			BasicSalary: uint64(jsonData["BasicSalary"].(float64)),
-			FeePerKbTx:  uint64(jsonData["FeePerKbTx"].(float64)),
-			SellingBonds: &voting.SellingBonds{
-				BondsToSell:    uint64(jsonData["BondsToSell"].(float64)),
-				BondPrice:      uint64(jsonData["BondPrice"].(float64)),
-				Maturity:       uint32(jsonData["Maturity"].(float64)),
-				BuyBackPrice:   uint64(jsonData["BuyBackPrice"].(float64)),
-				StartSellingAt: uint32(jsonData["StartSellingAt"].(float64)),
-				SellingWithin:  uint32(jsonData["SellingWithin"].(float64)),
-			},
-			RefundInfo: &voting.RefundInfo{
-				ThresholdToLargeTx: uint64(jsonData["ThresholdToLargeTx"].(float64)),
-				RefundAmount:       uint64(jsonData["RefundAmount"].(float64)),
-			},
-		},
-		ExecuteDuration: uint32(jsonData["ExecuteDuration"].(float64)),
-		Explaination:    string(jsonData["Explaination"].(string)),
-		MetadataBase: MetadataBase{
-			Type: SubmitGOVProposalMeta,
-		},
+func NewSubmitGOVProposalMetadata(GOVParams params.GOVParams, executeDuration uint32, explaination string, address *privacy.PaymentAddress) *SubmitGOVProposalMetadata {
+	return &SubmitGOVProposalMetadata{
+		GOVParams:       GOVParams,
+		ExecuteDuration: executeDuration,
+		Explanation:     explaination,
+		PaymentAddress:  *address,
+		MetadataBase:    *NewMetadataBase(SubmitGOVProposalMeta),
 	}
-	return &submitGOVProposalMetadata
 }
 
 func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) Hash() *common.Hash {
-	record := string(common.ToBytes(*submitGOVProposalMetadata.GOVParams.Hash()))
+	record := string(submitGOVProposalMetadata.GOVParams.Hash().GetBytes())
 	record += string(submitGOVProposalMetadata.ExecuteDuration)
-	record += submitGOVProposalMetadata.Explaination
-	record += string(submitGOVProposalMetadata.MetadataBase.Hash()[:])
+	record += submitGOVProposalMetadata.Explanation
+	record += string(submitGOVProposalMetadata.PaymentAddress.ToBytes())
+	record += string(submitGOVProposalMetadata.MetadataBase.Hash().GetBytes())
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -136,7 +99,7 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateSanityData(B
 		submitGOVProposalMetadata.ExecuteDuration > common.MaximumBlockOfProposalDuration {
 		return true, false, nil
 	}
-	if len(submitGOVProposalMetadata.Explaination) > common.MaximumProposalExplainationLength {
+	if len(submitGOVProposalMetadata.Explanation) > common.MaximumProposalExplainationLength {
 		return true, false, nil
 	}
 	return true, true, nil
