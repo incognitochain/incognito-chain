@@ -20,7 +20,6 @@ import (
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/voting"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
@@ -108,11 +107,11 @@ func (self *BlockChain) GetCrowdsaleTxs(requestTxHash []byte) ([][]byte, error) 
 	return self.config.DataBase.GetCrowdsaleTxs(requestTxHash)
 }
 
-func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*voting.SaleData, error) {
+func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*params.SaleData, error) {
 	endBlock, buyingAsset, buyingAmount, sellingAsset, sellingAmount, err := self.config.DataBase.LoadCrowdsaleData(saleID)
-	var saleData *voting.SaleData
+	var saleData *params.SaleData
 	if err != nil {
-		saleData = &voting.SaleData{
+		saleData = &params.SaleData{
 			SaleID:        saleID,
 			EndBlock:      endBlock,
 			BuyingAsset:   buyingAsset,

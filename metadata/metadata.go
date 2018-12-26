@@ -7,7 +7,6 @@ import (
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/voting"
 )
 
 type MetadataBase struct {
@@ -90,7 +89,7 @@ type BlockchainRetriever interface {
 	GetAmountPerAccount(*DividendProposal) (uint64, []string, []uint64, error)
 
 	// For validating crowdsale
-	GetCrowdsaleData([]byte) (*voting.SaleData, error)
+	GetCrowdsaleData([]byte) (*params.SaleData, error)
 	GetCrowdsaleTxs([]byte) ([][]byte, error)
 }
 

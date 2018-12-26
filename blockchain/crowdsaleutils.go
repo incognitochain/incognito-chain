@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	privacy "github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/voting"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
@@ -194,7 +194,7 @@ func buildPaymentForToken(
 
 func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	tx *transaction.TxCustomToken,
-	saleDataMap map[string]*voting.SaleData,
+	saleDataMap map[string]*params.SaleData,
 	unspentTokenMap map[string]([]transaction.TxTokenVout),
 	rt []byte,
 	chainID byte,
@@ -288,7 +288,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleResponse(
 	tx metadata.Transaction,
 	txsPayment []*transaction.TxCustomToken,
 	txsToRemove []metadata.Transaction,
-	saleDataMap map[string]*voting.SaleData,
+	saleDataMap map[string]*params.SaleData,
 	unspentTokenMap map[string][]transaction.TxTokenVout,
 	rt []byte,
 	chainID byte,
@@ -365,7 +365,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 	tx metadata.Transaction,
 	txsPayment []*transaction.TxCustomToken,
 	txsToRemove []metadata.Transaction,
-	saleDataMap map[string]*voting.SaleData,
+	saleDataMap map[string]*params.SaleData,
 	unspentTokenMap map[string][]transaction.TxTokenVout,
 	rt []byte,
 	chainID byte,
@@ -435,7 +435,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 
 	// Get unspent bond tx to spend if needed
 	unspentTokenMap := map[string]([]transaction.TxTokenVout){}
-	saleDataMap := map[string]*voting.SaleData{}
+	saleDataMap := map[string]*params.SaleData{}
 	respCounter := map[string]int{}
 	for _, txDesc := range sourceTxns {
 		switch txDesc.Tx.GetMetadataType() {

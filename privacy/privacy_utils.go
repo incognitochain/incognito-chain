@@ -8,50 +8,30 @@ import (
 
 // RandBytes generates random bytes
 func RandBytes(length int) []byte {
-	seed:=time.Now().UnixNano()
+	seed := time.Now().UnixNano()
 	b := make([]byte, length)
 	reader := rand2.New(rand2.NewSource(int64(seed)))
+
 	for n := 0; n < length; {
 		read, err := reader.Read(b[n:])
 		if err != nil {
-			panic(err)
+			Logger.Log.Errorf("[PRIVACY LOG] Rand byte error : %v\n", err)
+			return nil
 		}
 		n += read
 	}
 	return b
-	//b := make([]byte, n)
-	//_, err := rand.Read(b)
-	//if err != nil {
-	//	fmt.Println("error:", err)
-	//	return nil
-	//}
-	//return b
 }
-
-//func RandByte() byte {
-//	var res byte
-//	res = 0
-//	var bit byte
-//	rand2.Seed(time.Now().UnixNano())
-//	for i := 0; i < 8; i++ {
-//		bit = byte(rand2.Intn(2))
-//		res += bit << byte(i)
-//	}
-//	return res
-//}
 
 // RandInt generates a big int with value less than order of group of elliptic points
 func RandInt() *big.Int {
 	for {
-		//bytes := make([]byte, BigIntSize)
 		randNum := new(big.Int).SetBytes(RandBytes(BigIntSize))
 		if randNum.Cmp(Curve.Params().N) == -1 {
 			return randNum
 		}
 	}
 }
-
-
 
 // IsPowerOfTwo checks whether n is power of two or not
 func IsPowerOfTwo(n int) bool {
