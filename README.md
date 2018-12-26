@@ -18,8 +18,8 @@ These instructions will get you a copy of the project up and running on your loc
 ##### Linux/BSD/MacOSX/POSIX/Window - Build from Source
 - Install Go according to the installation instructions here: [http://golang.org/doc/install](http://golang.org/doc/install)
 - Ensure Go was installed properly and is a supported version:
-`$ go version`
-`$ go env GOROOT GOPATH`
+```$ go version```
+```$ go env GOROOT GOPATH```
 - Clone Project to GOPATH
 NOTE: The GOROOT and GOPATH above must not be the same path. It is recommended that GOPATH is set to a directory in your home directory such as ~/goprojects to avoid write permission issues. It is also recommended to add $GOPATH/bin to your PATH at this point.
 - Install go lib with `go get -v`
