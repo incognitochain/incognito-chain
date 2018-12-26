@@ -11,7 +11,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 #### Environment for dev
 
-- [Go](https://golang.org/) 1.11 or newer.
+- [Go](https://golang.org/) 1.10 or newer.
 - Mac, Linux, Window OS
 
 ### Run node
