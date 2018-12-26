@@ -29,30 +29,39 @@ func NewMultiSigsRegistration(
 	}
 }
 
-func (msr *MultiSigsRegistration) ValidateTxWithBlockChain(
+func (msReg *MultiSigsRegistration) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	chainID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	// TODO: check registing address is existed or not
+	paymentAddressBytes := []byte{}
+	paymentAddressBytes = append(paymentAddressBytes, msReg.PaymentAddress.Pk[:]...)
+	paymentAddressBytes = append(paymentAddressBytes, msReg.PaymentAddress.Tk[:]...)
+	existedMSRegBytes, err := bcr.GetMultiSigsRegistration(paymentAddressBytes)
+	if err != nil {
+		return false, err
+	}
+	if len(existedMSRegBytes) != 0 {
+		return false, errors.New("The payment address is already existed.")
+	}
 	return true, nil
 }
 
-func (msr *MultiSigsRegistration) ValidateSanityData(
+func (msReg *MultiSigsRegistration) ValidateSanityData(
 	bcr BlockchainRetriever,
 	txr Transaction,
 ) (bool, bool, error) {
-	if len(msr.PaymentAddress.Pk) == 0 {
+	if len(msReg.PaymentAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's payment address")
 	}
-	if len(msr.PaymentAddress.Tk) == 0 {
+	if len(msReg.PaymentAddress.Tk) == 0 {
 		return false, false, errors.New("Wrong request info's payment address")
 	}
-	if len(msr.SpendableMembers) == 0 {
+	if len(msReg.SpendableMembers) == 0 {
 		return false, false, errors.New("Wrong request info's spendable members")
 	}
-	for _, pk := range msr.SpendableMembers {
+	for _, pk := range msReg.SpendableMembers {
 		if len(pk) == 0 {
 			return false, false, errors.New("Wrong request info's spendable members")
 		}
@@ -61,19 +70,19 @@ func (msr *MultiSigsRegistration) ValidateSanityData(
 	return true, true, nil
 }
 
-func (msr *MultiSigsRegistration) ValidateMetadataByItself() bool {
-	if msr.Type != MultiSigsRegistrationMeta {
+func (msReg *MultiSigsRegistration) ValidateMetadataByItself() bool {
+	if msReg.Type != MultiSigsRegistrationMeta {
 		return false
 	}
 	return true
 }
 
-func (msr *MultiSigsRegistration) Hash() *common.Hash {
-	record := string(msr.PaymentAddress.Bytes())
-	for _, pk := range msr.SpendableMembers {
+func (msReg *MultiSigsRegistration) Hash() *common.Hash {
+	record := string(msReg.PaymentAddress.Bytes())
+	for _, pk := range msReg.SpendableMembers {
 		record += string(pk)
 	}
-	record += string(msr.MetadataBase.Hash()[:])
+	record += string(msReg.MetadataBase.Hash()[:])
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

@@ -3,6 +3,7 @@ package blockchain
 import (
 	"errors"
 
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 )
 
@@ -25,6 +26,16 @@ func (blockGen *BlkTmplGenerator) registerMultiSigsAddresses(
 		}
 		msRegs[string(multiSigsReg.PaymentAddress.Pk)] = multiSigsReg
 	}
-	// TODO: store msRegs to db
+	// store msRegs to db
+	// TODO: should use batch-write to ensure data consistency
+	for _, msReg := range msRegs {
+		paymentAddressBytes := []byte{}
+		paymentAddressBytes = append(paymentAddressBytes, msReg.PaymentAddress.Pk[:]...)
+		paymentAddressBytes = append(paymentAddressBytes, msReg.PaymentAddress.Tk[:]...)
+		err := blockGen.chain.config.DataBase.StoreMultiSigsRegistration(paymentAddressBytes, common.ToBytes(*msReg))
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

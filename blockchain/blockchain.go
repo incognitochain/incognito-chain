@@ -175,6 +175,12 @@ func (self *BlockChain) GetOracleParams() *params.Oracle {
 	return self.BestState[0].BestBlock.Header.Oracle
 }
 
+func (self *BlockChain) GetMultiSigsRegistration(
+	paymentAddressBytes []byte,
+) ([]byte, error) {
+	return self.config.DataBase.GetMultiSigsRegistration(paymentAddressBytes)
+}
+
 // -------------- End of Blockchain retriever's implementation --------------
 
 /*
