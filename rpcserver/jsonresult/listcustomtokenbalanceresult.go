@@ -1,10 +1,11 @@
 package jsonresult
 
 type CustomTokenBalance struct {
-	Name    string `json:"Name"`
-	Symbol  string `json:"Symbol"`
-	Amount  uint64 `json:"Amount"`
-	TokenID string `json:"TokenID"`
+	Name       string `json:"Name"`
+	Symbol     string `json:"Symbol"`
+	Amount     uint64 `json:"Amount"`
+	TokenID    string `json:"TokenID"`
+	TokenImage string `json:"TokenImage"`
 }
 
 type ListCustomTokenBalance struct {
