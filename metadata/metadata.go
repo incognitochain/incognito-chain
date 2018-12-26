@@ -7,11 +7,14 @@ import (
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/voting"
 )
 
 type MetadataBase struct {
 	Type int
+}
+
+func NewMetadataBase(thisType int) *MetadataBase {
+	return &MetadataBase{Type: thisType}
 }
 
 func (mb *MetadataBase) Validate() error {
@@ -86,7 +89,7 @@ type BlockchainRetriever interface {
 	GetAmountPerAccount(*DividendProposal) (uint64, []string, []uint64, error)
 
 	// For validating crowdsale
-	GetCrowdsaleData([]byte) (*voting.SaleData, error)
+	GetCrowdsaleData([]byte) (*params.SaleData, error)
 	GetCrowdsaleTxs([]byte) ([][]byte, error)
 }
 
@@ -94,9 +97,9 @@ type Metadata interface {
 	GetType() int
 	Hash() *common.Hash
 	CheckTransactionFee(Transaction, uint64) bool
-	ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error)
+	ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error)
 	// isContinue, ok, err
-	ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error)
+	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
 }
 

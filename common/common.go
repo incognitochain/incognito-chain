@@ -318,6 +318,13 @@ func Max(x, y int) int {
 	return y
 }
 
+func Maxint32(x, y int32) int32 {
+	if x > y {
+		return x
+	}
+	return y
+}
+
 func ToBytes(obj interface{}) []byte {
 	buff := new(bytes.Buffer)
 	json.NewEncoder(buff).Encode(obj)
@@ -360,4 +367,17 @@ func Uint32ToBytes(value uint32) []byte {
 
 func BytesToUint32(b []byte) uint32 {
 	return binary.LittleEndian.Uint32(b)
+}
+
+func BytesToInt32(b []byte) int32 {
+	i, _ := strconv.Atoi(string(b))
+	return int32(i)
+}
+
+func SliceInterfaceToSliceByte(Arr []interface{}) []byte {
+	res := make([]byte, 0)
+	for _, element := range Arr {
+		res = append(res, element.(byte))
+	}
+	return res
 }

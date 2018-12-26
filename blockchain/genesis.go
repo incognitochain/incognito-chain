@@ -9,7 +9,6 @@ import (
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/voting"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
@@ -84,9 +83,9 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	genesisBlock.Header.GOVConstitution.GOVParams = params.GOVParams{
 		SalaryPerTx:  salaryPerTx,
 		BasicSalary:  basicSalary,
-		SellingBonds: &voting.SellingBonds{},
-		RefundInfo:   &voting.RefundInfo{},
-		OracleNetwork: &voting.OracleNetwork{
+		SellingBonds: &params.SellingBonds{},
+		RefundInfo:   &params.RefundInfo{},
+		OracleNetwork: &params.OracleNetwork{
 			OraclePubKeys:         [][]byte{},
 			WrongTimesAllowed:     2,
 			Quorum:                1,
@@ -104,7 +103,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	}
 	genesisBlock.Header.DCBConstitution.DCBParams = params.DCBParams{
 		LoanParams:             loanParams,
-		SaleDBCTOkensByUSDData: &voting.SaleDBCTOkensByUSDData{},
+		SaleDBCTOkensByUSDData: &params.SaleDBCTOkensByUSDData{},
 	}
 
 	// Commercial bank params
@@ -164,26 +163,6 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 		key.KeySet.PaymentAddress,
 	)
 	genesisBlock.AddTransaction(&bondTokenTx)
-
-	// Create genesis vote token tx for DCB
-	VoteDCBTokenTx := createSpecialTokenTx(
-		common.Hash(common.VoteDCBTokenID),
-		"Bond",
-		"BON",
-		icoParams.InitialVoteDCBToken,
-		key.KeySet.PaymentAddress,
-	)
-	genesisBlock.AddTransaction(&VoteDCBTokenTx)
-
-	// Create genesis vote token tx for GOV
-	VoteGOVTokenTx := createSpecialTokenTx(
-		common.Hash(common.VoteGOVTokenID),
-		"Bond",
-		"BON",
-		icoParams.InitialVoteGOVToken,
-		key.KeySet.PaymentAddress,
-	)
-	genesisBlock.AddTransaction(&VoteGOVTokenTx)
 
 	// calculate merkle root tx for genesis block
 	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)

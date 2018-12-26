@@ -54,12 +54,9 @@ func GenerateChallengeFromByte(values [][]byte) *big.Int {
 
 // EstimateProofSize returns the estimated size of the proof in kilobyte
 func EstimateProofSize(nInput int, nOutput int) uint64 {
-	//sizeComInputOpeningsProof := nInput * privacy.ComInputOpeningsProofSize
 	sizeOneOfManyProof := nInput * privacy.OneOfManyProofSize
-	sizeEqualityOfCommittedValProof := nInput * privacy.EqualityOfCommittedValProofSize
-	sizeProductCommitmentProof := nInput * privacy.ProductCommitmentProofSize
+	sizeSNPrivacyProof := nInput * privacy.SNPrivacyProofSize
 
-	sizeComOutputOpeningsProof := nOutput * privacy.ComOutputOpeningsProofSize
 	sizeComOutputMultiRangeProof := int(EstimateMultiRangeProof(nOutput))
 	sizeSumOutRangeProof := privacy.SumOutRangeProofSize
 	sizeComZeroProof := privacy.ComZeroProofSize
@@ -77,10 +74,10 @@ func EstimateProofSize(nInput int, nOutput int) uint64 {
 	sizeComInputShardID := nInput * privacy.CompressedPointSize
 
 	// sizeBytes = NumArr + SizeProof
-	sizeBytes := 13 + 9*nInput + 5*nOutput + 4
+	sizeBytes := 11 + 9*nInput + 4*nOutput + 4
 
-	sizeProof := sizeOneOfManyProof + sizeEqualityOfCommittedValProof + sizeProductCommitmentProof +
-		sizeComOutputOpeningsProof + sizeComOutputMultiRangeProof + sizeSumOutRangeProof + sizeComZeroProof + sizeInputCoins + sizeOutputCoins +
+	sizeProof := sizeOneOfManyProof + sizeSNPrivacyProof +
+		sizeComOutputMultiRangeProof + sizeSumOutRangeProof + sizeComZeroProof + sizeInputCoins + sizeOutputCoins +
 		sizeComOutputValue + sizeComOutputSND + sizeComOutputShardID + sizeComInputSK+ sizeComInputValue + sizeComInputSND + sizeComInputShardID + sizeBytes
 
 	return uint64(math.Ceil(float64(sizeProof) / 1024))

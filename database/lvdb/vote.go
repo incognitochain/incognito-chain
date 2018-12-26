@@ -6,6 +6,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/voting"
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
@@ -269,8 +270,7 @@ func (db *db) AddVoteNormalProposalFromOwner(boardType string, startedBlock uint
 	if err != nil {
 		return err
 	}
-	newValueInByte := make([]byte, 4)
-	binary.LittleEndian.PutUint32(newValueInByte, 1)
+	newValueInByte := common.Uint32ToBytes(1)
 	db.Put(keyOwner, newValueInByte)
 
 	key := GetThreePhraseVoteValueKey(boardType, startedBlock, txID)
@@ -315,8 +315,8 @@ func GetVoteDCBBoardListKey(currentCount uint32, startedBlock uint32, candidateP
 func ParseKeyVoteDCBBoardList(key []byte) (uint32, []byte, uint32, error) {
 	realKey := key[len(VoteDCBBoardListPrefix):]
 	startedBlock := common.BytesToUint32(realKey[:4])
-	pubKey := realKey[4 : 4+common.HashSize]
-	currentIndex := common.BytesToUint32(realKey[4+common.HashSize:])
+	pubKey := realKey[4 : 4+common.PubKeyLength]
+	currentIndex := common.BytesToUint32(realKey[4+common.PubKeyLength:])
 	return startedBlock, pubKey, currentIndex, nil
 }
 
@@ -324,6 +324,23 @@ func GetDCBVoteTokenAmountKey(startedBlock uint32, pubKey []byte) []byte {
 	key := append(DCBVoteTokenAmountPrefix, common.Uint32ToBytes(startedBlock)...)
 	key = append(key, pubKey...)
 	return key
+}
+
+func (db *db) GetDCBVoteTokenAmount(startedBlock uint32, pubKey []byte) (uint32, error) {
+	key := GetDCBVoteTokenAmountKey(startedBlock, pubKey)
+	value, err := db.Get(key)
+	if err != nil {
+		return 0, err
+	}
+	return common.BytesToUint32(value), nil
+}
+func (db *db) GetGOVVoteTokenAmount(startedBlock uint32, pubKey []byte) (uint32, error) {
+	key := GetGOVVoteTokenAmountKey(startedBlock, pubKey)
+	value, err := db.Get(key)
+	if err != nil {
+		return 0, err
+	}
+	return common.BytesToUint32(value), nil
 }
 
 func GetVoteGOVBoardSumKey(startedBlock uint32, candidatePubKey []byte) []byte {
@@ -348,8 +365,8 @@ func GetVoteGOVBoardListKey(currentCount uint32, startedBlock uint32, candidateP
 func ParseKeyVoteGOVBoardList(key []byte) (uint32, []byte, uint32, error) {
 	realKey := key[len(VoteGOVBoardListPrefix):]
 	startedBlock := common.BytesToUint32(realKey[:4])
-	pubKey := realKey[4 : 4+common.HashSize]
-	currentIndex := common.BytesToUint32(realKey[4+common.HashSize:])
+	pubKey := realKey[4 : 4+common.PubKeyLength]
+	currentIndex := common.BytesToUint32(realKey[4+common.PubKeyLength:])
 	return startedBlock, pubKey, currentIndex, nil
 }
 
@@ -374,6 +391,11 @@ func ParseKeyThreePhraseCryptoOwner(key []byte) (string, uint32, *common.Hash, e
 	startedBlock := common.BytesToUint32(realKey[3 : 3+4])
 	hash := common.NewHash([]byte(realKey[3+4:]))
 	return string(boardType), uint32(startedBlock), &hash, nil
+}
+
+func ParseValueThreePhraseCryptoOwner(value []byte) (uint32, error) {
+	i := common.BytesToUint32(value)
+	return i, nil
 }
 
 func GetThreePhraseCryptoSealerKey(boardType string, startedBlock uint32, txId *common.Hash) []byte {
@@ -402,6 +424,12 @@ func GetThreePhraseVoteValueKey(boardType string, startedBlock uint32, txId *com
 	return key
 }
 
+func GetWinningVoterKey(boardType string, startedBlock uint32) []byte {
+	key := append(winningVoterPrefix, []byte(boardType)...)
+	key = append(key, common.Uint32ToBytes(startedBlock)...)
+	return key
+}
+
 func ParseKeyThreePhraseVoteValue(key []byte) (string, uint32, *common.Hash, error) {
 	realKey := key[len(threePhraseVoteValuePrefix):]
 	boardType := realKey[:3]
@@ -410,8 +438,57 @@ func ParseKeyThreePhraseVoteValue(key []byte) (string, uint32, *common.Hash, err
 	return string(boardType), uint32(startedBlock), &hash, nil
 }
 
-func ParseValueThreePhraseVoteValue(value []byte) (*common.Hash, uint32, error) {
+func ParseValueThreePhraseVoteValue(value []byte) (*common.Hash, int32, error) {
 	txId := common.NewHash(value[:common.HashSize])
-	amount := common.BytesToUint32(value[common.HashSize:])
+	amount := common.BytesToInt32(value[common.HashSize:])
 	return &txId, amount, nil
+}
+
+func (db *db) GetAmountVoteToken(boardType string, startedBlock uint32, pubKey []byte) (uint32, error) {
+	key := make([]byte, 0)
+	if boardType == "dcb" {
+		key = GetDCBVoteTokenAmountKey(startedBlock, pubKey)
+	} else if boardType == "gov" {
+		key = GetGOVVoteTokenAmountKey(startedBlock, pubKey)
+	} else {
+		return 0, errors.New("wrong board type")
+	}
+	currentAmountInBytes, err := db.lvdb.Get(key, nil)
+	if err != nil {
+		return 0, err
+	}
+	currentAmount := common.BytesToUint32(currentAmountInBytes)
+	return currentAmount, nil
+}
+
+func (db *db) TakeVoteTokenFromWinner(boardType string, startedBlock uint32, voter voting.Voter) error {
+	key := make([]byte, 0)
+	if boardType == "dcb" {
+		key = GetDCBVoteTokenAmountKey(startedBlock, voter.PubKey)
+	} else if boardType == "gov" {
+		key = GetGOVVoteTokenAmountKey(startedBlock, voter.PubKey)
+	} else {
+		return errors.New("wrong board type")
+	}
+	currentAmountInByte, err := db.Get(key)
+	if err != nil {
+		return err
+	}
+	currentAmount := common.BytesToUint32(currentAmountInByte)
+	newAmount := currentAmount - uint32(voter.AmountOfVote)
+	db.Put(key, common.Uint32ToBytes(newAmount))
+	return nil
+}
+
+func (db *db) SetNewWinningVoter(boardType string, startedBlock uint32, voterPubKey []byte) error {
+	key := make([]byte, 0)
+	if boardType == "dcb" {
+		key = GetWinningVoterKey(boardType, startedBlock)
+	} else if boardType == "gov" {
+		key = GetWinningVoterKey(boardType, startedBlock)
+	} else {
+		return errors.New("wrong board type")
+	}
+	db.Put(key, voterPubKey)
+	return nil
 }

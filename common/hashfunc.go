@@ -2,8 +2,9 @@ package common
 
 import (
 	"crypto/sha256"
-	"golang.org/x/crypto/ripemd160"
 	"io"
+
+	"golang.org/x/crypto/ripemd160"
 )
 
 // HashB calculates hash(b) and returns the resulting bytes.
@@ -43,7 +44,7 @@ func HashRipeMD160(data []byte) ([]byte, error) {
 
 /*
 Double hash or HASH 160
- */
+*/
 func Hash160(data []byte) ([]byte, error) {
 	hash1 := HashB(data)
 	hash2, err := HashRipeMD160(hash1)

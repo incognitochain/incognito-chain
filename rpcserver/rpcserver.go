@@ -389,7 +389,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 			}
 		}
 	}
-	if jsonErr != nil && r.Method != "OPTIONS" {
+	if jsonErr.(*RPCError) != nil && r.Method != "OPTIONS" {
 		Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
 	}
 	// Marshal the response.

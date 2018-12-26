@@ -3,12 +3,13 @@ package transaction
 import (
 	"fmt"
 
+	"strconv"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/pkg/errors"
-	"strconv"
 )
 
 // TxTokenVin - vin format for custom token data

@@ -2,11 +2,12 @@ package database
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 )
 
 const (
-	DriverExistErr       = iota
+	DriverExistErr = iota
 	DriverNotRegisterErr
 
 	// LevelDB

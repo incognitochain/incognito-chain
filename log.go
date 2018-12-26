@@ -35,7 +35,7 @@ var (
 	peerLogger        = backendLog.Logger("Peer Log")
 	dbLogger          = backendLog.Logger("Database Log")
 	walletLogger      = backendLog.Logger("Wallet log")
-	blockchainLogger  = backendLog.Logger("blockChain log")
+	blockchainLogger  = backendLog.Logger("BlockChain log")
 	consensusLogger   = backendLog.Logger("Consensus log")
 	mempoolLogger     = backendLog.Logger("Mempool log")
 	transactionLogger = backendLog.Logger("Transaction log")

@@ -403,7 +403,7 @@ func (tx *TxCustomToken) GetTxCustomTokenSignature(keyset cashec.KeySet) ([]byte
 func (tx *TxCustomToken) GetAmountOfVote() uint64 {
 	sum := uint64(0)
 	for _, vout := range tx.TxTokenData.Vouts {
-		voteAccount, _ := wallet.Base58CheckDeserialize(common.VoteAddress)
+		voteAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 		pubKey := string(voteAccount.KeySet.PaymentAddress.Pk)
 		if string(vout.PaymentAddress.Pk) == string(pubKey) {
 			sum += vout.Value

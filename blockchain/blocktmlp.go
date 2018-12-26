@@ -3,12 +3,12 @@ package blockchain
 import (
 	"bytes"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
 	"time"
 
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
@@ -29,9 +29,15 @@ type ConstitutionHelper interface {
 	CheckSubmitProposalType(tx metadata.Transaction) bool
 	CheckVotingProposalType(tx metadata.Transaction) bool
 	GetAmountVoteToken(tx metadata.Transaction) uint64
-	TxAcceptProposal(txId *common.Hash) metadata.Transaction
+	TxAcceptProposal(txId *common.Hash, voter voting.Voter) metadata.Transaction
 	GetLowerCaseBoardType() string
-	GetEndedBlockHeight(generator *BlkTmplGenerator, chainID byte) uint32
+	GetConstitutionEndedBlockHeight(generator *BlkTmplGenerator, chainID byte) uint32
+	CreatePunishDecryptTx([]byte) metadata.Metadata
+	GetSealerPubKey(metadata.Transaction) [][]byte
+	NewTxRewardProposalSubmitter(blockgen *BlkTmplGenerator, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error)
+	GetPaymentAddressFromSubmitProposalMetadata(tx metadata.Transaction) *privacy.PaymentAddress
+	GetPubKeyVoter(blockgen *BlkTmplGenerator, chainID byte) ([]byte, error)
+	GetPrizeProposal() uint32
 }
 
 // txPool represents a source of transactions to consider for inclusion in
@@ -148,6 +154,11 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 		lv3GOVPivot := endedGOVPivot - common.EncryptionPhaseDuration
 		lv2GOVPivot := lv3GOVPivot - common.EncryptionPhaseDuration
 		lv1GOVPivot := lv2GOVPivot - common.EncryptionPhaseDuration
+		//meta := tx.GetMetadata()
+		//if !meta.ValidateBeforeNewBlock(blockgen.chain) {
+		//	txToRemove = append(txToRemove, metadata.Transaction(tx))
+		//	continue
+		//}
 		switch tx.GetMetadataType() {
 		case metadata.BuyFromGOVRequestMeta:
 			{
@@ -170,11 +181,11 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 				buyBackCoins += (buyBackFromInfo.buyBackPrice + buyBackFromInfo.value)
 				buyBackFromInfos = append(buyBackFromInfos, buyBackFromInfo)
 			}
-		case metadata.NormalDCBBallotMetaFromSealer:
+		case metadata.NormalDCBBallotMetaFromSealerMeta:
 			if !(currentBlockHeight < endedDCBPivot && currentBlockHeight >= lv1DCBPivot) {
 				continue
 			}
-		case metadata.NormalDCBBallotMetaFromOwner:
+		case metadata.NormalDCBBallotMetaFromOwnerMeta:
 			if !(currentBlockHeight < endedDCBPivot && currentBlockHeight >= lv1DCBPivot) {
 				continue
 			}
@@ -190,11 +201,11 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 			if !(currentBlockHeight < lv3DCBPivot && currentBlockHeight >= startedDCBPivot) {
 				continue
 			}
-		case metadata.NormalGOVBallotMetaFromSealer:
+		case metadata.NormalGOVBallotMetaFromSealerMeta:
 			if !(currentBlockHeight < endedGOVPivot && currentBlockHeight >= lv1GOVPivot) {
 				continue
 			}
-		case metadata.NormalGOVBallotMetaFromOwner:
+		case metadata.NormalGOVBallotMetaFromOwnerMeta:
 			if !(currentBlockHeight < endedGOVPivot && currentBlockHeight >= lv1GOVPivot) {
 				continue
 			}
@@ -344,23 +355,27 @@ concludeBlock:
 	// 1. newNW < lastNW * 0.9
 	// 2. current block height == last Constitution start time + last Constitution execute duration
 	if blockgen.neededNewDCBConstitution(chainID) {
-		tx, err := blockgen.createAcceptConstitutionAndPunishTx(chainID, DCBConstitutionHelper{})
+		tx, err := blockgen.createAcceptConstitutionAndPunishTxAndRewardSubmitter(chainID, DCBConstitutionHelper{}, privatekey)
 		coinbases = append(coinbases, tx...)
 		if err != nil {
 			Logger.log.Error(err)
 			return nil, err
 		}
+		rewardTx, err := blockgen.createRewardProposalWinnerTx(chainID, DCBConstitutionHelper{})
+		coinbases = append(coinbases, rewardTx)
 	}
 	if blockgen.neededNewGOVConstitution(chainID) {
-		tx, err := blockgen.createAcceptConstitutionAndPunishTx(chainID, GOVConstitutionHelper{})
+		tx, err := blockgen.createAcceptConstitutionAndPunishTxAndRewardSubmitter(chainID, GOVConstitutionHelper{}, privatekey)
 		coinbases = append(coinbases, tx...)
 		if err != nil {
 			Logger.log.Error(err)
 			return nil, err
 		}
+		rewardTx, err := blockgen.createRewardProposalWinnerTx(chainID, GOVConstitutionHelper{})
+		coinbases = append(coinbases, rewardTx)
 	}
 
-	if int32(prevBlock.Header.DCBGovernor.EndBlock) == prevBlock.Header.Height+1 {
+	if blockgen.neededNewDCBGovernor(chainID) {
 		newBoardList, _ := blockgen.chain.config.DataBase.GetTopMostVoteDCBGovernor(common.NumberOfDCBGovernors)
 		sort.Sort(newBoardList)
 		sumOfVote := uint64(0)
@@ -472,7 +487,7 @@ concludeBlock:
 		if err := block.AddTransaction(tx); err != nil {
 			return nil, err
 		}
-		// Handle if this transaction change something in block header
+		// Handle if this transaction change something in block header or database
 		if tx.GetMetadataType() == metadata.AcceptDCBProposalMeta {
 			block.updateDCBConstitution(tx, blockgen)
 		}
@@ -484,6 +499,12 @@ concludeBlock:
 		}
 		if tx.GetMetadataType() == metadata.AcceptGOVBoardMeta {
 			block.UpdateGOVBoard(tx)
+		}
+		if tx.GetMetadataType() == metadata.RewardDCBProposalSubmitterMeta {
+			block.UpdateDCBFund(tx)
+		}
+		if tx.GetMetadataType() == metadata.RewardGOVProposalSubmitterMeta {
+			block.UpdateGOVFund(tx)
 		}
 	}
 
@@ -522,7 +543,7 @@ func (blockgen *BlkTmplGenerator) neededNewDCBConstitution(chainID byte) bool {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	lastDCBConstitution := BestBlock.Header.DCBConstitution
 	if GetOracleDCBNationalWelfare() < lastDCBConstitution.CurrentDCBNationalWelfare*ThresholdRatioOfDCBCrisis/100 ||
-		uint32(BestBlock.Header.Height+1) == lastDCBConstitution.StartedBlockHeight+lastDCBConstitution.ExecuteDuration {
+		uint32(BestBlock.Header.Height+2) == lastDCBConstitution.StartedBlockHeight+lastDCBConstitution.ExecuteDuration {
 		return true
 	}
 	return false
@@ -531,75 +552,18 @@ func (blockgen *BlkTmplGenerator) neededNewGOVConstitution(chainID byte) bool {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	lastGovConstitution := BestBlock.Header.GOVConstitution
 	if GetOracleGOVNationalWelfare() < lastGovConstitution.CurrentGOVNationalWelfare*ThresholdRatioOfGovCrisis/100 ||
-		uint32(BestBlock.Header.Height+1) == lastGovConstitution.StartedBlockHeight+lastGovConstitution.ExecuteDuration {
+		uint32(BestBlock.Header.Height+2) == lastGovConstitution.StartedBlockHeight+lastGovConstitution.ExecuteDuration {
 		return true
 	}
 	return false
 }
-
-func (blockgen *BlkTmplGenerator) createAcceptConstitutionTxDecs(
-	chainID byte,
-	ConstitutionHelper ConstitutionHelper,
-) (*metadata.TxDesc, error) {
+func (blockgen *BlkTmplGenerator) neededNewDCBGovernor(chainID byte) bool {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
-
-	// count vote from lastConstitution.StartedBlockHeight to Bestblock height
-	CountVote := make(map[common.Hash]int64)
-	Transaction := make(map[common.Hash]*metadata.Transaction)
-	for blockHeight := ConstitutionHelper.GetStartedNormalVote(blockgen, chainID); blockHeight < uint32(BestBlock.Header.Height); blockHeight += 1 {
-		//retrieve block from block's height
-		hashBlock, err := blockgen.chain.config.DataBase.GetBlockByIndex(int32(blockHeight), chainID)
-		if err != nil {
-			return nil, err
-		}
-		blockBytes, err := blockgen.chain.config.DataBase.FetchBlock(hashBlock)
-		if err != nil {
-			return nil, err
-		}
-		block := Block{}
-		err = json.Unmarshal(blockBytes, &block)
-		if err != nil {
-			return nil, err
-		}
-		//count vote of this block
-		for _, tx := range block.Transactions {
-			_, exist := CountVote[*tx.Hash()]
-			if ConstitutionHelper.CheckSubmitProposalType(tx) {
-				if exist {
-					return nil, err
-				}
-				CountVote[*tx.Hash()] = 0
-				Transaction[*tx.Hash()] = &tx
-			} else {
-				if ConstitutionHelper.CheckVotingProposalType(tx) {
-					if !exist {
-						return nil, err
-					}
-					CountVote[*tx.Hash()] += int64(ConstitutionHelper.GetAmountVoteToken(tx))
-				}
-			}
-		}
-	}
-
-	// get transaction and create transaction desc
-	var maxVote int64
-	var res common.Hash
-	for key, value := range CountVote {
-		if value > maxVote {
-			maxVote = value
-			res = key
-		}
-	}
-
-	acceptedSubmitProposalTransaction := ConstitutionHelper.TxAcceptProposal(&res)
-
-	AcceptedTransactionDesc := metadata.TxDesc{
-		Tx:     acceptedSubmitProposalTransaction,
-		Added:  time.Now(),
-		Height: BestBlock.Header.Height,
-		Fee:    0,
-	}
-	return &AcceptedTransactionDesc, nil
+	return int32(BestBlock.Header.DCBGovernor.EndBlock) == BestBlock.Header.Height+2
+}
+func (blockgen *BlkTmplGenerator) neededNewGOVGovernor(chainID byte) bool {
+	BestBlock := blockgen.chain.BestState[chainID].BestBlock
+	return int32(BestBlock.Header.GOVGovernor.EndBlock) == BestBlock.Header.Height+2
 }
 
 func (blockgen *BlkTmplGenerator) processDividend(
@@ -663,7 +627,7 @@ func (blockgen *BlkTmplGenerator) processGovDividend(blockHeight int32, producer
 
 func buildSingleBuySellResponseTx(
 	buySellReqTx metadata.Transaction,
-	sellingBondsParam *voting.SellingBonds,
+	sellingBondsParam *params.SellingBonds,
 ) (*transaction.TxCustomToken, error) {
 	bondID := fmt.Sprintf("%s%s%s", sellingBondsParam.Maturity, sellingBondsParam.BuyBackPrice, sellingBondsParam.StartSellingAt)
 	additionalSuffix := make([]byte, 24-len(bondID))
@@ -733,7 +697,7 @@ func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
 // the tx is to distribute tokens (bond, gov, ...) to token requesters
 func (blockgen *BlkTmplGenerator) buildBuySellResponsesTx(
 	buySellReqTxs []metadata.Transaction,
-	sellingBondsParam *voting.SellingBonds,
+	sellingBondsParam *params.SellingBonds,
 ) ([]*transaction.TxCustomToken, error) {
 	if len(buySellReqTxs) == 0 {
 		return []*transaction.TxCustomToken{}, nil
