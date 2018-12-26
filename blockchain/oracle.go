@@ -50,11 +50,15 @@ func (p Txs) SortTxs(isDesc bool) Txs {
 
 func (blockGen *BlkTmplGenerator) groupOracleFeedTxsByOracleType(
 	updateFrequency uint32,
+	chainID byte,
 ) (map[string][]metadata.Transaction, error) {
 	txsByOracleType := map[string][]metadata.Transaction{}
-	header := blockGen.chain.BestState[0].BestBlock.Header
+	header := blockGen.chain.BestState[chainID].BestBlock.Header
 	blockHash := header.PrevBlockHash
 	for i := updateFrequency; i > 0; i-- {
+		if blockHash.String() == (common.Hash{}).String() {
+			return txsByOracleType, nil
+		}
 		blockBytes, err := blockGen.chain.config.DataBase.FetchBlock(&blockHash)
 		if err != nil {
 			return nil, err
@@ -66,7 +70,7 @@ func (blockGen *BlkTmplGenerator) groupOracleFeedTxsByOracleType(
 		}
 		for _, tx := range block.Transactions {
 			meta := tx.GetMetadata()
-			if meta.GetType() != metadata.OracleFeedMeta {
+			if meta == nil || meta.GetType() != metadata.OracleFeedMeta {
 				continue
 			}
 			oracleFeed, ok := meta.(*metadata.OracleFeed)
@@ -180,6 +184,7 @@ func (blockGen *BlkTmplGenerator) updateOracleValues(
 
 func (blockGen *BlkTmplGenerator) buildRewardAndRefundEvals(
 	block *Block,
+	chainID byte,
 ) ([]*Evaluation, map[string]uint64, error) {
 	header := block.Header
 	govParams := header.GOVConstitution.GOVParams
@@ -187,7 +192,7 @@ func (blockGen *BlkTmplGenerator) buildRewardAndRefundEvals(
 	if header.Height == 0 || uint32(header.Height)%oracleNetwork.UpdateFrequency != 0 {
 		return []*Evaluation{}, map[string]uint64{}, nil
 	}
-	txsByOracleType, err := blockGen.groupOracleFeedTxsByOracleType(oracleNetwork.UpdateFrequency)
+	txsByOracleType, err := blockGen.groupOracleFeedTxsByOracleType(oracleNetwork.UpdateFrequency, chainID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -239,7 +244,7 @@ func (blockGen *BlkTmplGenerator) buildOracleRewardTxs(
 	privatekey *privacy.SpendingKey,
 ) ([]*transaction.Tx, uint64, map[string]uint64, error) {
 	bestBlock := blockGen.chain.BestState[chainID].BestBlock
-	evals, updatedOracleValues, err := blockGen.buildRewardAndRefundEvals(bestBlock)
+	evals, updatedOracleValues, err := blockGen.buildRewardAndRefundEvals(bestBlock, chainID)
 	if err != nil {
 		return []*transaction.Tx{}, 0, map[string]uint64{}, err
 	}
