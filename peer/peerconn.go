@@ -58,29 +58,33 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	self.IsConnected = true
 	for {
 		Logger.log.Infof("PEER %s (address: %s) Reading stream", self.RemotePeer.PeerID.Pretty(), self.RemotePeer.RawAddress)
-		str, err := rw.ReadString(DelimMessageByte)
-		if err != nil {
+		str, errR := rw.ReadString(DelimMessageByte)
+		if errR != nil {
 			self.IsConnected = false
 			Logger.log.Error("---------------------------------------------------------------------")
 			Logger.log.Errorf("InMessageHandler ERROR %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
-			Logger.log.Error(err)
+			Logger.log.Error(errR)
 			Logger.log.Errorf("InMessageHandler QUIT %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
 			Logger.log.Error("---------------------------------------------------------------------")
 			close(self.cWrite)
 			return
 		}
 
-		// disconnect when received spam message
-		if len(str) >= SPAM_MESSAGE_SIZE {
-			Logger.log.Errorf("InMessageHandler received spam message")
-			self.ForceClose()
-			continue
-		}
-
 		if str != DelimMessageStr {
 			go func(msgStr string) {
 				// Parse Message header from last 24 bytes header message
-				jsonDecodeString, _ := hex.DecodeString(msgStr)
+				jsonDecodeString, errD := hex.DecodeString(msgStr)
+				if errD != nil {
+					Logger.log.Errorf("Can not decode hex string with error ", errD)
+					return
+				}
+
+				// disconnect when received spam message
+				if len(jsonDecodeString) >= SPAM_MESSAGE_SIZE {
+					Logger.log.Error("InMessageHandler received spam message")
+					self.ForceClose()
+					return
+				}
 
 				Logger.log.Infof("In message content : %s", string(jsonDecodeString))
 				messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
