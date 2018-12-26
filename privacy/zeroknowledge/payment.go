@@ -25,8 +25,6 @@ type PaymentWitness struct {
 	OneOfManyWitness              []*PKOneOfManyWitness
 	SerialNumberWitness []*PKSerialNumberWitness
 
-	ComOutputOpeningsWitness []*PKComOpeningsWitness
-
 	ComOutputMultiRangeWitness *PKComMultiRangeWitness
 
 	ComZeroWitness *PKComZeroWitness
@@ -48,7 +46,6 @@ type PaymentProof struct {
 	SerialNumberProof []*PKSerialNumberProof
 
 	// for output coins
-	ComOutputOpeningsProof []*PKComOpeningsProof
 	// for proving each value and sum of them are less than a threshold value
 	ComOutputMultiRangeProof *PKComMultiRangeProof
 	// for proving that the last element of output array is really the sum of all other values
@@ -74,7 +71,6 @@ func (proof *PaymentProof) Init() *PaymentProof {
 	proof = &PaymentProof{
 		OneOfManyProof:              []*PKOneOfManyProof{},
 		SerialNumberProof: []*PKSerialNumberProof{},
-		ComOutputOpeningsProof:      []*PKComOpeningsProof{},
 		ComOutputMultiRangeProof:    new(PKComMultiRangeProof).Init(),
 		SumOutRangeProof:            new(PKComZeroProof).Init(),
 		ComZeroProof:                new(PKComZeroProof).Init(),
@@ -127,13 +123,6 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, serialNumberProof...)
 	}
 
-	//ComOutputOpeningsProofSize
-	proofbytes = append(proofbytes, byte(len(paymentProof.ComOutputOpeningsProof)))
-	for i := 0; i < len(paymentProof.ComOutputOpeningsProof); i++ {
-		comOutputOpeningsProof := paymentProof.ComOutputOpeningsProof[i].Bytes()
-		proofbytes = append(proofbytes, byte(len(comOutputOpeningsProof)))
-		proofbytes = append(proofbytes, comOutputOpeningsProof...)
-	}
 	// ComOutputMultiRangeProofSize
 	if paymentProof.ComOutputMultiRangeProof != nil {
 		comOutputMultiRangeProof := paymentProof.ComOutputMultiRangeProof.Bytes()
@@ -145,7 +134,6 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	}
 
 	// SumOutRangeProof
-	//paymentProof.SumOutRangeProof = nil
 	if paymentProof.SumOutRangeProof != nil {
 		sumOutRangeProof := paymentProof.SumOutRangeProof.Bytes()
 		proofbytes = append(proofbytes, byte(len(sumOutRangeProof)))
@@ -155,7 +143,6 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	}
 
 	// ComZeroProof
-	//paymentProof.ComZeroProof = nil
 	if paymentProof.ComZeroProof != nil {
 		comZeroProof := paymentProof.ComZeroProof.Bytes()
 		proofbytes = append(proofbytes, byte(len(comZeroProof)))
@@ -267,22 +254,6 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (*privacy.PrivacyError) {
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
 		offset += lenSerialNumberProof
-	}
-
-	//Set ComOutputOpeningsProofSize
-	lenComOutputOpeningsProofArray := int(proofbytes[offset])
-	offset += 1
-	proof.ComOutputOpeningsProof = make([]*PKComOpeningsProof, lenComOutputOpeningsProofArray)
-	for i := 0; i < lenComOutputOpeningsProofArray; i++ {
-		lenComOutputOpeningsProof := int(proofbytes[offset])
-		offset += 1
-
-		proof.ComOutputOpeningsProof[i] = new(PKComOpeningsProof).Init()
-		err := proof.ComOutputOpeningsProof[i].SetBytes(proofbytes[offset: offset+lenComOutputOpeningsProof])
-		if err != nil {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
-		}
-		offset += lenComOutputOpeningsProof
 	}
 
 	//ComOutputMultiRangeProofSize *PKComMultiRangeProof
@@ -622,9 +593,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	cmOutputSND := make([]*privacy.EllipticPoint, numOutputCoin)
 
 	cmOutputSum := make([]*privacy.EllipticPoint, numOutputCoin)
-	cmOutputSumwithoutShardID := make([]*privacy.EllipticPoint, numOutputCoin)
 	randOutputSum := make([]*big.Int, numOutputCoin)
-	randOutputSumwithoutShardID := make([]*big.Int, numOutputCoin)
 
 	cmOutputSumAll := new(privacy.EllipticPoint)
 	cmOutputSumAll.X = big.NewInt(0)
@@ -634,56 +603,33 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	cmOutputValueAll := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
 	randOutputValueAll := big.NewInt(0)
 
-	wit.ComOutputOpeningsWitness = make([]*PKComOpeningsWitness, numOutputCoin)
+	randOutputShardID := make([]*big.Int, numOutputCoin)
+	cmOutputShardID := make([]*privacy.EllipticPoint, numOutputCoin)
 
 	for i, outputCoin := range wit.outputCoins {
 		randOutputValue[i] = privacy.RandInt()
 		randOutputSND[i] = privacy.RandInt()
 		cmOutputValue[i] = privacy.PedCom.CommitAtIndex(new(big.Int).SetUint64(outputCoin.CoinDetails.Value), randOutputValue[i], privacy.VALUE)
 		cmOutputSND[i] = privacy.PedCom.CommitAtIndex(outputCoin.CoinDetails.SNDerivator, randOutputSND[i], privacy.SND)
+		randOutputShardID[i] = privacy.RandInt()
+		cmOutputShardID[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(outputCoins[i].CoinDetails.GetPubKeyLastByte())), randOutputShardID[i], privacy.SHARDID)
 
 		randOutputSum[i] = big.NewInt(0)
 		randOutputSum[i].Set(randOutputValue[i])
 		randOutputSum[i].Add(randOutputSum[i], randOutputSND[i])
+		randOutputSum[i].Add(randOutputSum[i], randOutputShardID[i])
 		randOutputSum[i].Mod(randOutputSum[i], privacy.Curve.Params().N)
-		randOutputSumwithoutShardID[i] = big.NewInt(0)
-		randOutputSumwithoutShardID[i].Set(randOutputSum[i])
 
-		cmOutputSum[i] = new(privacy.EllipticPoint)
-		cmOutputSum[i].X = big.NewInt(0)
-		cmOutputSum[i].Y = big.NewInt(0)
-		cmOutputSum[i].X.Set(cmOutputValue[i].X)
-		cmOutputSum[i].Y.Set(cmOutputValue[i].Y)
+		cmOutputSum[i] = new(privacy.EllipticPoint).Zero()
+		cmOutputSum[i].Set(cmOutputValue[i].X, cmOutputValue[i].Y)
 		cmOutputSum[i].X, cmOutputSum[i].Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputSND[i].X, cmOutputSND[i].Y)
-		cmOutputSumwithoutShardID[i] = new(privacy.EllipticPoint)
-		cmOutputSumwithoutShardID[i].X, cmOutputSumwithoutShardID[i].Y = big.NewInt(0), big.NewInt(0)
-		cmOutputSumwithoutShardID[i].X.Set(cmOutputSum[i].X)
-		cmOutputSumwithoutShardID[i].Y.Set(cmOutputSum[i].Y)
-		cmOutputValueAll = *(cmOutputValueAll.Add(cmOutputValue[i]))
-		randOutputValueAll.Add(randOutputValueAll, randOutputValue[i])
-
-		/***** Build witness for proving the knowledge of output coins' Openings (value, snd, randomness) *****/
-		if wit.ComOutputOpeningsWitness[i] == nil {
-			wit.ComOutputOpeningsWitness[i] = new(PKComOpeningsWitness)
-		}
-		wit.ComOutputOpeningsWitness[i].Set(cmOutputSumwithoutShardID[i],
-			[]*big.Int{big.NewInt(int64(outputCoins[i].CoinDetails.Value)), outputCoins[i].CoinDetails.SNDerivator, randOutputSumwithoutShardID[i]},
-			[]byte{privacy.VALUE, privacy.SND, privacy.RAND})
-	}
-
-	randOutputShardID := make([]*big.Int, numOutputCoin)
-	cmOutputShardID := make([]*privacy.EllipticPoint, numOutputCoin)
-
-	for i := 0; i < numOutputCoin; i++ {
-		// calculate final commitment for output coins
-		randOutputShardID[i] = privacy.RandInt()
-		cmOutputShardID[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(outputCoins[i].CoinDetails.GetPubKeyLastByte())), randOutputShardID[i], privacy.SHARDID)
-
 		cmOutputSum[i] = cmOutputSum[i].Add(outputCoins[i].CoinDetails.PublicKey)
 		cmOutputSum[i] = cmOutputSum[i].Add(cmOutputShardID[i])
 
-		randOutputSum[i].Add(randOutputSum[i], randOutputShardID[i])
-		randOutputSum[i].Mod(randOutputSum[i], privacy.Curve.Params().N)
+		cmOutputValueAll = *(cmOutputValueAll.Add(cmOutputValue[i]))
+		randOutputValueAll.Add(randOutputValueAll, randOutputValue[i])
+
+		// calculate final commitment for output coins
 
 		outputCoins[i].CoinDetails.CoinCommitment = cmOutputSum[i]
 		outputCoins[i].CoinDetails.Randomness = randOutputSum[i]
@@ -771,7 +717,6 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 
 	// if hasPrivacy == true
 	numInputCoins := len(wit.OneOfManyWitness)
-	numOutputCoins := len(wit.ComOutputOpeningsWitness)
 
 	for i := 0; i < numInputCoins; i++ {
 		// Proving one-out-of-N commitments is a commitment to the coins being spent
@@ -787,16 +732,6 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 			return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
 		}
 		proof.SerialNumberProof = append(proof.SerialNumberProof, serialNumberProof)
-	}
-
-	// Proving the knowledge of output coins' openings
-	for i := 0; i < numOutputCoins; i++ {
-		// Proving the knowledge of output coins' openings
-		comOutputOpeningsProof, err := wit.ComOutputOpeningsWitness[i].Prove()
-		if err != nil {
-			return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
-		}
-		proof.ComOutputOpeningsProof = append(proof.ComOutputOpeningsProof, comOutputOpeningsProof)
 	}
 
 	// Proving that each output values and sum of them does not exceed v_max
@@ -921,13 +856,6 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 		}
 		// Verify for the Proof that input coins' serial number is derived from the committed derivator
 		if !pro.SerialNumberProof[i].Verify() {
-			return false
-		}
-	}
-
-	// Verify the proof for knowledge of output coins' openings
-	for i := 0; i < len(pro.ComOutputOpeningsProof); i++ {
-		if !pro.ComOutputOpeningsProof[i].Verify() {
 			return false
 		}
 	}
