@@ -38,6 +38,10 @@ type BlockChain struct {
 	BestState *BestState
 	config    Config
 	chainLock sync.RWMutex
+
+	//=====cache
+	beaconBlock        map[string][]byte
+	highestBeaconBlock string
 }
 type BestState struct {
 	Beacon *BestStateBeacon
@@ -53,9 +57,6 @@ type Config struct {
 	//
 	// This field is required.
 	DataBase database.DatabaseInterface
-
-	//=====cache
-	beaconBlock map[string][]byte
 
 	// shardBlock *lru.Cache
 	// shardBody  *lru.Cache
@@ -165,6 +166,7 @@ func (self *BlockChain) Init(config *Config) error {
 	return nil
 }
 
+// Before call store and get block from cache or db, call chain.lock()
 func (self *BlockChain) StoreMaybeAcceptBeaconBeststate(beaconBestState BestStateBeacon) (string, error) {
 	res, err := json.Marshal(beaconBestState)
 	if err != nil {
@@ -180,11 +182,17 @@ func (self *BlockChain) StoreMaybeAcceptBeaconBlock(block BeaconBlock) (string, 
 		return "", NewBlockChainError(UnmashallJsonBlockError, err)
 	}
 	key := block.Hash().String()
-	self.config.beaconBlock[key] = res
+	self.beaconBlock[key] = res
+	// Update heightest block
+	// Ignore error
+	heightBeaconBlock, _ := self.GetMaybeAcceptBeaconBlock(self.highestBeaconBlock)
+	if err != nil || heightBeaconBlock.Header.Height < block.Header.Height {
+		self.highestBeaconBlock = block.Hash().String()
+	}
 	return key, nil
 }
 func (self *BlockChain) GetMaybeAcceptBeaconBlock(key string) (BeaconBlock, error) {
-	res := self.config.beaconBlock[key]
+	res := self.beaconBlock[key]
 	beaconBlock := BeaconBlock{}
 	if err := json.Unmarshal(res, beaconBlock); err != nil {
 		return beaconBlock, NewBlockChainError(UnmashallJsonBlockError, err)

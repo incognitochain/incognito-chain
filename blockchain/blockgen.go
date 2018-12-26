@@ -11,9 +11,10 @@ import (
 
 type BlkTmplGenerator struct {
 	// blockpool   BlockPool
-	txPool      TxPool
-	chain       *BlockChain
-	rewardAgent RewardAgent
+	txPool            TxPool
+	shardToBeaconPool ShardToBeaconPool
+	chain             *BlockChain
+	rewardAgent       RewardAgent
 }
 
 type TxPool interface {
@@ -51,17 +52,18 @@ type RewardAgent interface {
 	GetSalaryPerTx(shardID byte) uint64
 }
 
-func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent RewardAgent) (*BlkTmplGenerator, error) {
+func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent RewardAgent, shardToBeaconPool ShardToBeaconPool) (*BlkTmplGenerator, error) {
 	return &BlkTmplGenerator{
-		txPool:      txPool,
-		chain:       chain,
-		rewardAgent: rewardAgent,
+		txPool:            txPool,
+		shardToBeaconPool: shardToBeaconPool,
+		chain:             chain,
+		rewardAgent:       rewardAgent,
 	}, nil
 }
 
 type ShardToBeaconPool interface {
-	RemoveBlock([]common.Hash) error
-	GetBlock() map[byte][]ShardToBeaconBlock
+	RemoveBlock(byte, uint64) error
+	GetFinalBlock() map[byte][]ShardToBeaconBlock
 }
 type CrossShardPool interface {
 	RemoveBlock([]common.Hash) error

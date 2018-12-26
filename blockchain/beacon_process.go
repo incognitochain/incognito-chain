@@ -173,10 +173,15 @@ func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, erro
 	if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
 		return "", NewBlockChainError(BeaconError, errors.New("Beacon Block does not match with any Beacon State in cache or in Database"))
 	}
+
+	// beaconBestState.lock.Lock()
+	// defer beaconBestState.lock.Unlock()
+
 	// Verify block with previous best state
 	if err := beaconBestState.VerifyBestStateWithBeaconBlock(block); err != nil {
 		return "", err
 	}
+
 	//========Update best state with new block
 	if err := beaconBestState.Update(block); err != nil {
 		return "", err
@@ -204,9 +209,10 @@ func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, erro
 }
 
 //Store block & state offcial
+//lock sync.Mutex blockchain before call accept beacon block
 func (self *BlockChain) AcceptBeaconBlock(blockHash *common.Hash) error {
-	self.chainLock.Lock()
-	defer self.chainLock.Unlock()
+	// self.chainLock.Lock()
+	// defer self.chainLock.Unlock()
 	// This function make sure if stored block at height 91, then best state height at 90
 	beaconBlock, err := self.GetMaybeAcceptBeaconBlock(blockHash.String())
 	if err != nil {
@@ -242,7 +248,6 @@ func (self *BlockChain) AcceptBeaconBlock(blockHash *common.Hash) error {
 	Logger.log.Infof("Accepted block %+v", blockHash)
 	return nil
 }
-
 func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error {
 	/* Verify Pre-prosessing data
 	This function DOES NOT verify new block with best state
@@ -369,7 +374,7 @@ func (self *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock)
 		return NewBlockChainError(HashError, errors.New("Error verify Shard Candidate root"))
 	}
 
-	isOk = VerifyHashFromMapByteString(self.ShardCommittee, self.ShardPendingValidator, block.Header.ShardValidatorsRoot)
+	isOk = VerifyHashFromMapByteString(self.ShardPendingValidator, self.ShardCommittee, block.Header.ShardValidatorsRoot)
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("Error verify shard validator root"))
 	}
@@ -426,7 +431,6 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			delete(self.Params, l[1])
 		}
 		if l[0] == "swap" {
-			//TODO: remove from candidate list
 			// format
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "shard" "shardID"]
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "beacon"]
@@ -468,12 +472,10 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 					return NewBlockChainError(UnExpectedError, err)
 				}
 				self.BeaconCommittee = append(self.BeaconCommittee, inPubkeys...)
-				// TODO: Check new list with root hash received from block
 			}
 		}
 		// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
 		if l[0] == "random" {
-			//TODO: Verify nonce is from a right block
 			temp, err := strconv.Atoi(l[1])
 			if err != nil {
 				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
@@ -558,7 +560,6 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 
 //===================================Util for Beacon=============================
 func GetStakingCandidate(beaconBlock BeaconBlock) (beacon []string, shard []string) {
-
 	beaconBlockBody := beaconBlock.Body
 	for _, v := range beaconBlockBody.Instructions {
 		if v[0] == "assign" && v[2] == "beacon" {
@@ -740,9 +741,29 @@ func GenerateHashFromHashArray(hashes []common.Hash) (common.Hash, error) {
 	return GenerateHashFromStringArray(strs)
 }
 
-//TODO: implement
 func GenerateHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]string) (common.Hash, error) {
-	return common.Hash{}, nil
+	var keys1 []int
+	for k := range maps1 {
+		keys1 = append(keys1, int(k))
+	}
+	sort.Ints(keys1)
+	shardPendingValidator := []string{}
+	// To perform the opertion you want
+	for _, k := range keys1 {
+		shardPendingValidator = append(shardPendingValidator, maps1[byte(k)]...)
+	}
+
+	var keys2 []int
+	for k := range maps2 {
+		keys2 = append(keys2, int(k))
+	}
+	sort.Ints(keys2)
+	shardValidator := []string{}
+	// To perform the opertion you want
+	for _, k := range keys2 {
+		shardValidator = append(shardValidator, maps2[byte(k)]...)
+	}
+	return GenerateHashFromStringArray(append(shardPendingValidator, shardValidator...))
 }
 func VerifyHashFromHashArray(hashes []common.Hash, hash common.Hash) bool {
 	strs := []string{}
@@ -764,7 +785,13 @@ func VerifyHashFromStringArray(strs []string, hash common.Hash) bool {
 	return false
 }
 
-//TODO: implement
 func VerifyHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]string, hash common.Hash) bool {
-	return true
+	res, err := GenerateHashFromMapByteString(maps1, maps2)
+	if err != nil {
+		return false
+	}
+	if bytes.Compare(res.GetBytes(), hash.GetBytes()) != 0 {
+		return true
+	}
+	return false
 }
