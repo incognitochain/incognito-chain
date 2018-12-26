@@ -1,5 +1,6 @@
 # Constant core
-
+![Constant is digital money you can actually use.
+](https://constant.money/static/images/block5.webp)
 One prototype version for a new type of crypto curency
 
 ## Getting Started
@@ -8,48 +9,18 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
-#### Environment
+#### Environment for dev
 
-- Language: Go
-  - Install glide by https://github.com/Masterminds/glide
-
-#### Install
-
-Install privacy server
-
-##### MacOS
-
-```bash
-$ make install-privacy
-```
+- Language: Golang
+- Mac, Linux, Window OS
 
 ### Run node
 
 - Clone Project
 - Pre-install like "Prerequisites"
-- Run privacy-server
+- Get node up
     ```bash
-    $ make start-privacy # or
-    $ cd path_proj/privacy/server/build
-    $ ./main
-    ```
-- To install dependencies Run command-line below
-    ```bash
-    $ glide install
-    $ go build ./
-    ```
-- Get first node up
-    ```bash
-    $ ./cash-prototype
-    ```
-- Get node `n` up
-    ```bash
-    $ ./cash-prototype --listen "127.0.0.1:9555" --norpc --datadir "data1" --connect "/ip4/127.0.0.1/tcp/9333/ipfs/QmawrS2w63oXTq9dS8sFYk6ebttLPpdKm7eosTUPx4YGu8" --generate --miningaddr "mgnUx4Ah4VBvtaL7U1VXkmRjKUk3h8pbst"
-    ```
--
-    ```bash
-    $ make start-nodes
-    $ make stop-nodes
+    $ ./constant --enablewallet --wallet "wallet" --walletpassphrase "12345678" --testnet --norpcauth
     ```
 
 ### Run with docker-compose
@@ -78,3 +49,10 @@ $ make install-privacy
     ```
     $ docker run -i -t --net cashdev_cash-net --mount type=bind,src=$PWD/cash-prototype,dst=/cash-prototype --mount type=bind,src=$PWD/dev-env/nodes-data/node<REPLACE THIS WILL NODE_NUMBER>,dst=/nodedata --expose 9333 alpine:3.7 /cash-prototype --configfile /nodedata/config.conf
     ```
+## Config values
+### How to use config
+-   Refer to [config.go](https://github.com/ninjadotorg/constant/blob/master/config.go) or [sample-config.conf](https://github.com/ninjadotorg/constant/blob/master/sample-config.conf) in source code to get full explanation
+-   Run node with config param in long or short format to change features of running node
+
+## Other Utilities
+-   Node wallet tool https://github.com/ninjadotorg/constant-wallet-extension
