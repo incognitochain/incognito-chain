@@ -69,6 +69,31 @@ func (self *BeaconBlock) Hash() *common.Hash {
 	return &hash
 }
 
+func (self *BeaconBlock) UnmarshalJSON(data []byte) error {
+	tempBlk := &struct {
+		AggregatedSig string
+		ValidatorsIdx []int
+		Header        BeaconHeader
+		Body          *json.RawMessage
+	}{}
+	err := json.Unmarshal(data, &tempBlk)
+	if err != nil {
+		return NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	self.AggregatedSig = tempBlk.AggregatedSig
+	self.ValidatorsIdx = tempBlk.ValidatorsIdx
+
+	blkBody := BeaconBody{}
+	err = blkBody.UnmarshalJSON(*tempBlk.Body)
+	if err != nil {
+		return NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	self.Header = tempBlk.Header
+
+	self.Body = blkBody
+	return nil
+}
+
 func (self *BeaconBody) toString() string {
 	res := ""
 	for _, l := range self.ShardState {

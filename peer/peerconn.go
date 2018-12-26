@@ -58,34 +58,57 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	self.IsConnected = true
 	for {
 		Logger.log.Infof("PEER %s (address: %s) Reading stream", self.RemotePeer.PeerID.Pretty(), self.RemotePeer.RawAddress)
-		str, err := rw.ReadString(DelimMessageByte)
-		if err != nil {
+		str, errR := rw.ReadString(DelimMessageByte)
+		if errR != nil {
 			self.IsConnected = false
 			Logger.log.Error("---------------------------------------------------------------------")
 			Logger.log.Errorf("InMessageHandler ERROR %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
-			Logger.log.Error(err)
+			Logger.log.Error(errR)
 			Logger.log.Errorf("InMessageHandler QUIT %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
 			Logger.log.Error("---------------------------------------------------------------------")
 			close(self.cWrite)
 			return
 		}
 
-		// disconnect when received spam message
-		if len(str) >= SPAM_MESSAGE_SIZE {
-			Logger.log.Errorf("InMessageHandler received spam message")
-			self.ForceClose()
-			continue
-		}
-
 		if str != DelimMessageStr {
 			go func(msgStr string) {
 				// Parse Message header from last 24 bytes header message
-				jsonDecodeString, _ := hex.DecodeString(msgStr)
+				jsonDecodeString, errD := hex.DecodeString(msgStr)
+				if errD != nil {
+					Logger.log.Errorf("Can not decode hex string with error ", errD)
+					return
+				}
+
+				// disconnect when received spam message
+				if len(jsonDecodeString) >= SPAM_MESSAGE_SIZE {
+					Logger.log.Error("InMessageHandler received spam message")
+					self.ForceClose()
+					return
+				}
+
 				Logger.log.Infof("In message content : %s", string(jsonDecodeString))
 				messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
 
 				// get cmd type in header message
 				commandInHeader := messageHeader[:wire.MessageCmdTypeSize]
+
+				// check forward
+				if self.Config.MessageListeners.GetCurrentShard != nil {
+					shard := self.Config.MessageListeners.GetCurrentShard()
+					if shard != nil {
+						fT := commandInHeader[wire.MessageCmdTypeSize]
+						if fT == MESSAGE_TO_SHARD {
+							fS := commandInHeader[wire.MessageCmdTypeSize+1]
+							if *shard != fS {
+								if self.Config.MessageListeners.PushRawBytesToShard != nil {
+									self.Config.MessageListeners.PushRawBytesToShard(&jsonDecodeString, *shard)
+								}
+								return
+							}
+						}
+					}
+				}
+
 				commandInHeader = bytes.Trim(messageHeader, "\x00")
 				commandType := string(messageHeader[:len(commandInHeader)])
 				// convert to particular message from message cmd type
@@ -98,10 +121,16 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 
 				// Parse Message body
 				messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
+
 				// cache message hash S
 				hashMsg := common.HashH(messageBody).String()
+				if self.ListenerPeer.CheckHashMessage(hashMsg) {
+					Logger.log.Infof("InMessageHandler existed hash message %s", hashMsg)
+					return
+				}
 				self.ListenerPeer.ReceivedHashMessage(hashMsg)
 				// cache message hash E
+
 				err = json.Unmarshal(messageBody, &message)
 				if err != nil {
 					Logger.log.Error("Can not parse struct from json message")
@@ -171,10 +200,10 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if self.Config.MessageListeners.OnBFTReply != nil {
 						self.Config.MessageListeners.OnBFTReply(self, message.(*wire.MessageBFTReply))
 					}
-				// case reflect.TypeOf(&wire.MessageInvalidBlock{}):
-				// 	if self.Config.MessageListeners.OnInvalidBlock != nil {
-				// 		self.Config.MessageListeners.OnInvalidBlock(self, message.(*wire.MessageInvalidBlock))
-				// 	}
+					// case reflect.TypeOf(&wire.MessageInvalidBlock{}):
+					// 	if self.Config.MessageListeners.OnInvalidBlock != nil {
+					// 		self.Config.MessageListeners.OnInvalidBlock(self, message.(*wire.MessageInvalidBlock))
+					// 	}
 				case reflect.TypeOf(&wire.MessageGetChainState{}):
 					if self.Config.MessageListeners.OnGetChainState != nil {
 						self.Config.MessageListeners.OnGetChainState(self, message.(*wire.MessageGetChainState))
@@ -187,18 +216,18 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					  if self.Config.MessageListeners.OnRegistration != nil {
 						  self.Config.MessageListeners.OnRegistration(self, message.(*wire.MessageRegistration))
 					  }*/
-				// case reflect.TypeOf(&wire.MessageSwapRequest{}):
-				// 	if self.Config.MessageListeners.OnSwapRequest != nil {
-				// 		self.Config.MessageListeners.OnSwapRequest(self, message.(*wire.MessageSwapRequest))
-				// 	}
-				// case reflect.TypeOf(&wire.MessageSwapSig{}):
-				// 	if self.Config.MessageListeners.OnSwapSig != nil {
-				// 		self.Config.MessageListeners.OnSwapSig(self, message.(*wire.MessageSwapSig))
-				// 	}
-				// case reflect.TypeOf(&wire.MessageSwapUpdate{}):
-				// 	if self.Config.MessageListeners.OnSwapUpdate != nil {
-				// 		self.Config.MessageListeners.OnSwapUpdate(self, message.(*wire.MessageSwapUpdate))
-				// 	}
+					// case reflect.TypeOf(&wire.MessageSwapRequest{}):
+					// 	if self.Config.MessageListeners.OnSwapRequest != nil {
+					// 		self.Config.MessageListeners.OnSwapRequest(self, message.(*wire.MessageSwapRequest))
+					// 	}
+					// case reflect.TypeOf(&wire.MessageSwapSig{}):
+					// 	if self.Config.MessageListeners.OnSwapSig != nil {
+					// 		self.Config.MessageListeners.OnSwapSig(self, message.(*wire.MessageSwapSig))
+					// 	}
+					// case reflect.TypeOf(&wire.MessageSwapUpdate{}):
+					// 	if self.Config.MessageListeners.OnSwapUpdate != nil {
+					// 		self.Config.MessageListeners.OnSwapUpdate(self, message.(*wire.MessageSwapUpdate))
+					// 	}
 				case reflect.TypeOf(&wire.MessageMsgCheck{}):
 					self.handleMsgCheck(message.(*wire.MessageMsgCheck))
 				case reflect.TypeOf(&wire.MessageMsgCheckResp{}):
@@ -222,37 +251,58 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 		select {
 		case outMsg := <-self.sendMessageQueue:
 			{
-				// Create and send message
-				messageByte, err := outMsg.message.JsonSerialize()
-				if err != nil {
-					Logger.log.Error("Can not serialize json format for message:" + outMsg.message.MessageType())
-					Logger.log.Error(err)
-					continue
-				}
+				if outMsg.rawBytes != nil && len(*outMsg.rawBytes) > 0 {
+					Logger.log.Infof("OutMessageHandler with raw bytes")
+					message := hex.EncodeToString(*outMsg.rawBytes)
+					message += DelimMessageStr
+					_, err := rw.Writer.WriteString(message)
+					if err != nil {
+						Logger.log.Critical("DM ERROR", err)
+						continue
+					}
+					err = rw.Writer.Flush()
+					if err != nil {
+						Logger.log.Critical("DM ERROR", err)
+						continue
+					}
+				} else {
+					// Create and send message
+					messageByte, err := outMsg.message.JsonSerialize()
+					if err != nil {
+						Logger.log.Error("Can not serialize json format for message:" + outMsg.message.MessageType())
+						Logger.log.Error(err)
+						continue
+					}
 
-				// add 24 bytes header into message
-				header := make([]byte, wire.MessageHeaderSize)
-				cmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.message))
-				copy(header[:], []byte(cmdType))
-				messageByte = append(messageByte, header...)
-				Logger.log.Infof("Out message TYPE %s CONTENT %s", cmdType, string(messageByte))
-				message := hex.EncodeToString(messageByte)
-				//Logger.log.Infof("Content in hex encode: %s", string(message))
-				// add end character to message (delim '\n')
-				message += DelimMessageStr
+					// add 24 bytes header into message
+					header := make([]byte, wire.MessageHeaderSize)
+					cmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.message))
+					copy(header[:], []byte(cmdType))
+					copy(header[wire.MessageCmdTypeSize:], []byte{outMsg.forwardType})
+					if outMsg.forwardValue != nil {
+						copy(header[wire.MessageCmdTypeSize+1:], []byte{*outMsg.forwardValue})
+					}
+					messageByte = append(messageByte, header...)
+					Logger.log.Infof("Out message TYPE %s CONTENT %s", cmdType, string(messageByte))
+					message := hex.EncodeToString(messageByte)
+					//Logger.log.Infof("Content in hex encode: %s", string(message))
+					// add end character to message (delim '\n')
+					message += DelimMessageStr
 
-				// send on p2p stream
-				Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.RemotePeer.PeerID.Pretty())
-				_, err = rw.Writer.WriteString(message)
-				if err != nil {
-					Logger.log.Critical("DM ERROR", err)
-					continue
+					// send on p2p stream
+					Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.RemotePeer.PeerID.Pretty())
+					_, err = rw.Writer.WriteString(message)
+					if err != nil {
+						Logger.log.Critical("DM ERROR", err)
+						continue
+					}
+					err = rw.Writer.Flush()
+					if err != nil {
+						Logger.log.Critical("DM ERROR", err)
+						continue
+					}
 				}
-				err = rw.Writer.Flush()
-				if err != nil {
-					Logger.log.Critical("DM ERROR", err)
-					continue
-				}
+				continue
 			}
 		case <-self.cWrite:
 			Logger.log.Infof("OutMessageHandler QUIT %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
@@ -270,80 +320,115 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 	}
 }
 
+func (self *PeerConn) checkMessageHashBeforeSend(hash string) bool {
+	numRetries := 0
+BeginCheckHashMessage:
+	numRetries++
+	bTimeOut := false
+	// new model for received response
+	self.cMsgHash[hash] = make(chan bool)
+	cTimeOut := make(chan struct{})
+	bCheck := false
+	// send msg for check has
+	go func() {
+		msgCheck, err := wire.MakeEmptyMessage(wire.CmdMsgCheck)
+		if err != nil {
+			Logger.log.Error(err)
+			return
+		}
+		msgCheck.(*wire.MessageMsgCheck).Hash = hash
+		self.QueueMessageWithEncoding(msgCheck, nil, MESSAGE_TO_PEER, nil)
+	}()
+	// set time out for check message
+	go func() {
+		select {
+		case <-time.NewTimer(MAX_TIMEOUT_CHECK_HASH_MESSAGE * time.Second).C:
+			if cTimeOut != nil {
+				Logger.log.Infof("checkMessageHashBeforeSend TIMER time out %s", hash)
+				bTimeOut = true
+				close(cTimeOut)
+			}
+			return
+		}
+	}()
+	Logger.log.Infof("checkMessageHashBeforeSend WAIT result check hash %s", hash)
+	select {
+	case bCheck = <-self.cMsgHash[hash]:
+		Logger.log.Infof("checkMessageHashBeforeSend RECEIVED hash %s bAccept %s", hash, bCheck)
+		cTimeOut = nil
+		break
+	case <-cTimeOut:
+		Logger.log.Infof("checkMessageHashBeforeSend RECEIVED time out")
+		cTimeOut = nil
+		bTimeOut = true
+		break
+	}
+	if cTimeOut == nil {
+		delete(self.cMsgHash, hash)
+	}
+	Logger.log.Infof("checkMessageHashBeforeSend FINISHED check hash %s %s", hash, bCheck)
+	if bTimeOut && numRetries < MAX_RETRIES_CHECK_HASH_MESSAGE {
+		goto BeginCheckHashMessage
+	}
+	return bCheck
+}
+
 // QueueMessageWithEncoding adds the passed Constant message to the peer send
 // queue. This function is identical to QueueMessage, however it allows the
 // caller to specify the wire encoding type that should be used when
 // encoding/decoding blocks and transactions.
 //
 // This function is safe for concurrent access.
-func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
+func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}, forwardType byte, forwardValue *byte) {
 	go func() {
 		if self.IsConnected {
 			data, _ := msg.JsonSerialize()
 			if len(data) >= HEAVY_MESSAGE_SIZE && msg.MessageType() != wire.CmdMsgCheck && msg.MessageType() != wire.CmdMsgCheckResp {
 				hash := common.HashH(data).String()
-
 				Logger.log.Infof("QueueMessageWithEncoding HEAVY_MESSAGE_SIZE %s %s", hash, msg.MessageType())
-				numRetries := 0
 
-			BeginCheckHashMessage:
-				numRetries++
-				bTimeOut := false
-				// new model for received response
-				self.cMsgHash[hash] = make(chan bool)
-				cTimeOut := make(chan struct{})
-				bOk := false
-				// send msg for check has
-				go func() {
-					msgCheck, err := wire.MakeEmptyMessage(wire.CmdMsgCheck)
-					if err != nil {
-						Logger.log.Error(err)
-						return
+				if self.checkMessageHashBeforeSend(hash) {
+					self.sendMessageQueue <- outMsg{
+						message:      msg,
+						doneChan:     doneChan,
+						forwardType:  forwardType,
+						forwardValue: forwardValue,
 					}
-					msgCheck.(*wire.MessageMsgCheck).Hash = hash
-					self.QueueMessageWithEncoding(msgCheck, nil)
-				}()
-				Logger.log.Infof("QueueMessageWithEncoding WAIT result check hash %s", hash)
-				for {
-					select {
-					case accept := <-self.cMsgHash[hash]:
-						Logger.log.Infof("QueueMessageWithEncoding RECEIVED hash %s accept %s", hash, accept)
-						bOk = accept
-						cTimeOut = nil
-						break
-					case <-cTimeOut:
-						Logger.log.Infof("QueueMessageWithEncoding RECEIVED time out")
-						cTimeOut = nil
-						bTimeOut = true
-						break
-					}
-					if cTimeOut == nil {
-						delete(self.cMsgHash, hash)
-						break
-					}
-				}
-				// set time out for check message
-				go func() {
-					select {
-					case <-time.NewTimer(10 * time.Second).C:
-						if cTimeOut != nil {
-							Logger.log.Infof("QueueMessageWithEncoding TIMER time out %s", hash)
-							bTimeOut = true
-							close(cTimeOut)
-						}
-						return
-					}
-				}()
-				Logger.log.Infof("QueueMessageWithEncoding FINISHED check hash %s %s", hash, bOk)
-				if bTimeOut && numRetries >= MAX_RETRIES_CHECK_HASH_MESSAGE {
-					goto BeginCheckHashMessage
-				}
-
-				if bOk {
-					self.sendMessageQueue <- outMsg{message: msg, doneChan: doneChan}
 				}
 			} else {
-				self.sendMessageQueue <- outMsg{message: msg, doneChan: doneChan}
+				self.sendMessageQueue <- outMsg{
+					message:      msg,
+					doneChan:     doneChan,
+					forwardType:  forwardType,
+					forwardValue: forwardValue,
+				}
+			}
+		}
+	}()
+}
+
+func (self *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<- struct{}) {
+	if msgBytes == nil || len(*msgBytes) <= 0 {
+		return
+	}
+	go func() {
+		if self.IsConnected {
+			data := (*msgBytes)[wire.MessageHeaderSize:]
+			if len(data) >= HEAVY_MESSAGE_SIZE {
+				hash := common.HashH(data).String()
+				Logger.log.Infof("QueueMessageWithBytes HEAVY_MESSAGE_SIZE %s", hash)
+
+				if self.checkMessageHashBeforeSend(hash) {
+					self.sendMessageQueue <- outMsg{
+						rawBytes: msgBytes,
+						doneChan: doneChan,
+					}
+				}
+			} else {
+				self.sendMessageQueue <- outMsg{
+					rawBytes: msgBytes,
+					doneChan: doneChan,
+				}
 			}
 		}
 	}()
@@ -359,7 +444,7 @@ func (p *PeerConn) handleMsgCheck(msg *wire.MessageMsgCheck) {
 		msgResp.(*wire.MessageMsgCheckResp).Hash = msg.Hash
 		msgResp.(*wire.MessageMsgCheckResp).Accept = true
 	}
-	p.QueueMessageWithEncoding(msgResp, nil)
+	p.QueueMessageWithEncoding(msgResp, nil, MESSAGE_TO_PEER, nil)
 }
 
 func (p *PeerConn) handleMsgCheckResp(msg *wire.MessageMsgCheckResp) {

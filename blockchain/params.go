@@ -16,24 +16,24 @@ type Params struct {
 	DefaultPort string
 	ShardsNum   int //max 256 shards
 	// GenesisBlock defines the first block of the chain.
-	GenesisBlockBeacon *BeaconBlock
+	GenesisBeaconBlock *BeaconBlock
 
 	// GenesisBlock defines the first block of the chain.
-	GenesisBlockShard *ShardBlock
+	GenesisShardBlock *ShardBlock
 }
 
 // public key
 var preSelectBeaconNodeTestnetSerializedPubkey = []string{
-	"14uPLoQ8GneVYYyyYUyacQENfZREyX5vxzNCWKwLLyfbwhW1dpX",
-	"18AjeCbiownZuCzk7aoJHqPVkVhzNVJhwbGVHb8iecYSLRVxuaA",
-	"17ndcst8UgcCf9kxReSKqgizvAjrFHS7nfF3Fxgf3GEMajtpAUH",
+	"16QMc6ARYki7eL3p8cj8T8b54ZAhPrnBcfaTY9CgPBDKEtwcm2u",
+	"158haewyeNr4WXGk4Bao2MUonNNaAjSpYeUTJ8JoD4at2AjVS45",
+	"16S3Db9V2kqmmogfggKAD2bpJjXcveJcdUQmx9S3ewEGQBE3rrv",
 }
 
-// private key - seed
+// spendingKey
 var preSelectBeaconNodeTestnet = []string{
-	"124sf2tJ4K6iVD6PS4dZzs3BNYuYmHmup3Q9MfhorDrJ6aiSr46",
-	"1WG3ys2tsZKpAYV7UEMirmALrMe7wDijnZfTp2Nnd9Ei6upGhc",
-	"12K2poTdqzStNZjKdvYzdTBihhigTRWimHWVd7nZ5wRjEPVEZ8n",
+	"112t8rnXDNYL1RyTuT85JXeX7mJg1Sc6tCby5akSM7pfEGApgAx83X8C46EDu6dFAK6MVcWfQv2sfTk5nV9HqU3jrkrWdhrmi9z34jEhgHak",
+	"112t8rnXZD2GmbVAP3xBefJaorCgebytpoRK1oAzcgoNNSVtXzoRTu21KeSmnRbzvd7qMJd1mTcsqFS1CGZ8UpY4mFRZzBa69aVcFWpLXuRv",
+	"112t8rnXmEeG5zsS7rExURJfqaRZhm6r4Pypkeag2gprdhtgDpen3LwV68x1nDPRYz2zhyhJTJCGvq1tUx4P1dvrdxF9W9DH7ME7PeGN2ohZ",
 }
 
 var preSelectShardNodeTestnetSerializedPubkey = []string{
@@ -91,8 +91,8 @@ var TestNetParams = Params{
 	DefaultPort: TestnetDefaultPort,
 	ShardsNum:   4,
 	// blockChain parameters
-	GenesisBlockBeacon: CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnetSerializedPubkey, icoParamsTestnetNew, 1000, 1000, 0),
-	GenesisBlockShard:  CreateShardGenesisBlock(1, preSelectShardNodeTestnetSerializedPubkey, 4, icoParamsTestnetNew, 1000, 1000),
+	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnetSerializedPubkey, icoParamsTestnetNew, 1000, 1000, 0),
+	GenesisShardBlock:  CreateShardGenesisBlock(1, preSelectShardNodeTestnetSerializedPubkey, icoParamsTestnetNew),
 }
 
 type IcoParams struct {

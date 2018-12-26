@@ -686,6 +686,10 @@ func (self *ConnManager) getShardOfPbk(pbk string) *byte {
 	return nil
 }
 
+func (self *ConnManager) GetCurrentShard() *byte {
+	return self.Config.ConsensusState.CurrentShard
+}
+
 func (self *ConnManager) GetPeerConnOfShard(shard byte) []*peer.PeerConn {
 	peerConns := make([]*peer.PeerConn, 0)
 	for _, listener := range self.Config.ListenerPeers {
