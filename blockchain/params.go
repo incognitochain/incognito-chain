@@ -92,7 +92,7 @@ var TestNetParams = Params{
 	ShardsNum:   4,
 	// blockChain parameters
 	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnetSerializedPubkey, icoParamsTestnetNew, 1000, 1000, 0),
-	GenesisShardBlock:  CreateShardGenesisBlock(1, preSelectShardNodeTestnetSerializedPubkey, 4, icoParamsTestnetNew, 1000, 1000),
+	GenesisShardBlock:  CreateShardGenesisBlock(1, preSelectShardNodeTestnetSerializedPubkey, icoParamsTestnetNew),
 }
 
 type IcoParams struct {

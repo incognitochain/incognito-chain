@@ -6,7 +6,6 @@ import "time"
 func CreateShardGenesisBlock(
 	version int,
 	shardNodes []string,
-	shardsNum int,
 	icoParams IcoParams,
 ) *ShardBlock {
 
