@@ -87,6 +87,24 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 
 				// get cmd type in header message
 				commandInHeader := messageHeader[:wire.MessageCmdTypeSize]
+
+				// check forward
+				if self.Config.MessageListeners.GetCurrentShard != nil {
+					shard := self.Config.MessageListeners.GetCurrentShard()
+					if shard != nil {
+						fT := commandInHeader[wire.MessageCmdTypeSize]
+						if fT == MESSAGE_TO_SHARD {
+							fS := commandInHeader[wire.MessageCmdTypeSize+1]
+							if *shard != fS {
+								if self.Config.MessageListeners.PushRawBytesToShard != nil {
+									self.Config.MessageListeners.PushRawBytesToShard(&jsonDecodeString, *shard)
+								}
+								return
+							}
+						}
+					}
+				}
+
 				commandInHeader = bytes.Trim(messageHeader, "\x00")
 				commandType := string(messageHeader[:len(commandInHeader)])
 				// convert to particular message from message cmd type
@@ -256,6 +274,10 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 					header := make([]byte, wire.MessageHeaderSize)
 					cmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.message))
 					copy(header[:], []byte(cmdType))
+					copy(header[wire.MessageCmdTypeSize:], []byte{outMsg.forwardType})
+					if outMsg.forwardValue != nil {
+						copy(header[wire.MessageCmdTypeSize+1:], []byte{*outMsg.forwardValue})
+					}
 					messageByte = append(messageByte, header...)
 					Logger.log.Infof("Out message TYPE %s CONTENT %s", cmdType, string(messageByte))
 					message := hex.EncodeToString(messageByte)

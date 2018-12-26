@@ -575,6 +575,8 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			// OnSwapRequest: self.OnSwapRequest,
 			// OnSwapSig:     self.OnSwapSig,
 			// OnSwapUpdate:  self.OnSwapUpdate,
+			PushRawBytesToShard: self.PushRawBytesToShard,
+			GetCurrentShard:     self.GetCurrentShard,
 		},
 	}
 	if len(KeySetUser.PrivateKey) != 0 {
@@ -977,6 +979,23 @@ func (self *Server) PushMessageToShard(msg wire.Message, shard byte) error {
 	return nil
 }
 
+func (self *Server) PushRawBytesToShard(msgBytes *[]byte, shard byte) error {
+	Logger.log.Infof("Push raw bytes to shard %d", shard)
+	peerConns := self.connManager.GetPeerConnOfShard(shard)
+	if peerConns != nil && len(peerConns) > 0 {
+		for _, peerConn := range peerConns {
+			peerConn.QueueMessageWithBytes(msgBytes, nil)
+		}
+		Logger.log.Infof("Pushed shard %d", shard)
+	} else {
+		Logger.log.Error("RemotePeer of shard not exist!")
+		for _, listener := range self.connManager.Config.ListenerPeers {
+			listener.QueueMessageWithBytes(msgBytes, nil)
+		}
+	}
+	return nil
+}
+
 /*
 PushMessageToPeer push msg to beacon node
 */
@@ -1060,4 +1079,8 @@ func (self *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	}
 	peerConn.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_PEER, nil)
 	return nil
+}
+
+func (self *Server) GetCurrentShard() *byte {
+	return self.connManager.GetCurrentShard()
 }
