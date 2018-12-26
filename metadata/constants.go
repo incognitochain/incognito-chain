@@ -29,6 +29,7 @@ const (
 	OracleRewardMeta
 	RefundMeta
 	UpdatingOracleBoardMeta
+	MultiSigsRegistrationMeta
 
 	//Voting
 	SubmitDCBProposalMeta
