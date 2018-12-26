@@ -47,13 +47,18 @@ const (
 	SealedLv1DCBBallotMeta
 	SealedLv2DCBBallotMeta
 	SealedLv3DCBBallotMeta
-	NormalDCBBallotMetaFromSealer
-	NormalDCBBallotMetaFromOwner
+	NormalDCBBallotMetaFromSealerMeta
+	NormalDCBBallotMetaFromOwnerMeta
 	SealedLv1GOVBallotMeta
 	SealedLv2GOVBallotMeta
 	SealedLv3GOVBallotMeta
-	NormalGOVBallotMetaFromSealer
-	NormalGOVBallotMetaFromOwner
+	NormalGOVBallotMetaFromSealerMeta
+	NormalGOVBallotMetaFromOwnerMeta
+	RewardProposalWinnerMeta
+	RewardDCBProposalSubmitterMeta
+	RewardGOVProposalSubmitterMeta
+	PunishDCBDecryptMeta
+	PunishGOVDecryptMeta
 )
 
 const (

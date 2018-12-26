@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/json"
 
+	params2 "github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
@@ -170,11 +171,7 @@ func (self RpcServer) buildRawSealLv3VoteGOVProposalTransaction(
 	secondPubKey := arrayParams[len(arrayParams)-2]
 	thirdPubKey := arrayParams[len(arrayParams)-1]
 	Seal3Data := common.Encrypt(common.Encrypt(common.Encrypt(voteInfo, thirdPubKey), secondPubKey), firstPubKey)
-	tx.Metadata = metadata.NewSealedLv3GOVBallotMetadata(
-		map[string]interface{}{
-			"SealedBallot": []byte(Seal3Data.(string)),
-			"LockerPubKey": [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))},
-		})
+	tx.Metadata = metadata.NewSealedLv3GOVBallotMetadata([]byte(Seal3Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))})
 	return tx, err
 }
 
@@ -229,13 +226,7 @@ func (self RpcServer) buildRawSealLv2VoteGOVProposalTransaction(
 	Seal2Data := common.Decrypt(Seal3Data, firstPrivateKey)
 	Pointer := common.Hash{}
 	copy(Pointer[:], []byte(PointerToLv3Ballot.(string)))
-	tx.Metadata = metadata.NewSealedLv2GOVBallotMetadata(
-		map[string]interface{}{
-			"SealedBallot":       []byte(Seal2Data.(string)),
-			"LockerPubKey":       [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))},
-			"PointerToLv3Ballot": &Pointer,
-		},
-	)
+	tx.Metadata = metadata.NewSealedLv2GOVBallotMetadata([]byte(Seal2Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer)
 	return tx, err
 }
 
@@ -296,13 +287,7 @@ func (self RpcServer) buildRawSealLv1VoteGOVProposalTransaction(
 	thirdPubKey := arrayParams[len(arrayParams)-2]
 	secondPrivateKey := arrayParams[len(arrayParams)-1]
 	Seal1Data := common.Decrypt(Seal2Data, secondPrivateKey)
-	tx.Metadata = metadata.NewSealedLv1GOVBallotMetadata(
-		map[string]interface{}{
-			"SealedBallot":       []byte(Seal1Data.(string)),
-			"LockerPubKey":       [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))},
-			"PointerToLv2Ballot": &Pointer2,
-			"PointerToLv3Ballot": &Pointer3,
-		})
+	tx.Metadata = metadata.NewSealedLv1GOVBallotMetadata([]byte(Seal1Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer2, Pointer3)
 	return tx, err
 }
 
@@ -362,13 +347,7 @@ func (self RpcServer) buildRawNormalVoteGOVProposalTransactionFromSealer(
 	thirdPubKey := arrayParams[len(arrayParams)-2]
 	thirdPrivateKey := arrayParams[len(arrayParams)-1]
 	normalBallot := common.Decrypt(Seal1Data, thirdPrivateKey)
-	tx.Metadata = metadata.NewNormalGOVBallotFromSealerMetadata(
-		map[string]interface{}{
-			"Ballot":             normalBallot.([]byte),
-			"LockerPubKey":       [][]byte{firstPubKey.([]byte), secondPubKey.([]byte), thirdPubKey.([]byte)},
-			"PointerToLv1Ballot": &Pointer1,
-			"PointerToLv3Ballot": &Pointer3,
-		})
+	tx.Metadata = metadata.NewNormalGOVBallotFromSealerMetadata(normalBallot.([]byte), [][]byte{firstPubKey.([]byte), secondPubKey.([]byte), thirdPubKey.([]byte)}, Pointer1, Pointer3)
 	return tx, err
 }
 
@@ -420,12 +399,7 @@ func (self RpcServer) buildRawNormalVoteGOVProposalTransactionFromOwner(
 	secondPubKey := arrayParams[len(arrayParams)-3]
 	thirdPubKey := arrayParams[len(arrayParams)-2]
 	normalBallot := arrayParams[len(arrayParams)-1]
-	tx.Metadata = metadata.NewNormalGOVBallotFromOwnerMetadata(
-		map[string]interface{}{
-			"Ballot":             normalBallot.([]byte),
-			"LockerPubKey":       [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))},
-			"PointerToLv3Ballot": &Pointer,
-		})
+	tx.Metadata = metadata.NewNormalGOVBallotFromOwnerMetadata(normalBallot.([]byte), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer)
 	return tx, err
 }
 
@@ -472,9 +446,7 @@ func (self RpcServer) buildRawVoteGOVBoardTransaction(
 	tx, err := self.buildRawCustomTokenTransaction(params)
 	candidatePaymentAddress := arrayParams[len(arrayParams)-1].(string)
 	account, _ := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-	tx.Metadata = &metadata.VoteGOVBoardMetadata{
-		CandidatePubKey: account.KeySet.PaymentAddress.Pk,
-	}
+	tx.Metadata = metadata.NewVoteGOVBoardMetadata(account.KeySet.PaymentAddress.Pk)
 	return tx, err
 }
 
@@ -560,8 +532,17 @@ func (self RpcServer) buildRawSubmitGOVProposalTransaction(
 ) (*transaction.Tx, *RPCError) {
 	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
-	GOVProposalRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
-	tx.Metadata = metadata.NewSubmitGOVProposalMetadataFromJson(GOVProposalRaw)
+	NParams := len(arrayParams)
+	GOVParams := *params2.NewGOVParamsFromRPC(arrayParams[NParams-4])
+	executeDuration := arrayParams[NParams-3].(uint32)
+	explanation := arrayParams[NParams-2].(string)
+	paymentData := common.InterfaceSlice(arrayParams[NParams-1])
+	address := privacy.PaymentAddress{
+		Pk: paymentData[0].([]byte),
+		Tk: paymentData[1].([]byte),
+	}
+
+	tx.Metadata = metadata.NewSubmitGOVProposalMetadata(GOVParams, executeDuration, explanation, &address)
 	return tx, err
 }
 

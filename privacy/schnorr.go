@@ -133,17 +133,17 @@ func (pub SchnPubKey) Verify(signature *SchnSignature, hash []byte) bool {
 
 func (sig *SchnSignature) Bytes() []byte {
 	temp := sig.E.Bytes()
-	for i:=0; i<BigIntSize-len(temp); i++{
+	for i := 0; i < BigIntSize-len(temp); i++ {
 		temp = append([]byte{0}, temp...)
 	}
-	res:=temp
+	res := temp
 	temp = sig.S1.Bytes()
-	for i:=0; i<BigIntSize-len(temp); i++{
+	for i := 0; i < BigIntSize-len(temp); i++ {
 		temp = append([]byte{0}, temp...)
 	}
 	res = append(res, temp...)
 	temp = sig.S2.Bytes()
-	for i:=0; i<BigIntSize-len(temp); i++{
+	for i := 0; i < BigIntSize-len(temp); i++ {
 		temp = append([]byte{0}, temp...)
 	}
 	res = append(res, temp...)
