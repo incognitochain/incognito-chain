@@ -122,8 +122,8 @@ type DatabaseInterface interface {
 	GetAmountVoteToken(string, uint32, []byte) (uint32, error)
 	TakeVoteTokenFromWinner(string, uint32, voting.Voter) error
 	SetNewWinningVoter(string, uint32, []byte) error
-	GetDCBVoteTokenAmount(startedBlock uint32, pubKey []byte) uint32
-	GetGOVVoteTokenAmount(startedBlock uint32, pubKey []byte) uint32
+	GetDCBVoteTokenAmount(startedBlock uint32, pubKey []byte) (uint32, error)
+	GetGOVVoteTokenAmount(startedBlock uint32, pubKey []byte) (uint32, error)
 
 	Close() error
 }

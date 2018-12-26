@@ -10,18 +10,31 @@ func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-c
 	arrayParams := common.InterfaceSlice(params)
 	boardType := arrayParams[0].(string)
 	paymentAddress := arrayParams[1].(string)
-	chainID := arrayParams[2].(byte)
+	chainID := byte(arrayParams[2].(float64))
 	pubKey := wallet.GetPubKeyFromPaymentAddress(paymentAddress)
 	startedBlock := self.config.BlockChain.BestState[chainID].BestBlock.Header.Height
 	db := *self.config.Database
 	result := jsonresult.GetAmountVoteTokenResult{}
+	var err error
 	if boardType == "dcb" {
-		result.DCBVoteTokenAmount = db.GetDCBVoteTokenAmount(uint32(startedBlock), pubKey)
+		result.DCBVoteTokenAmount, err = db.GetDCBVoteTokenAmount(uint32(startedBlock), pubKey)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
 	} else if boardType == "gov" {
-		result.GOVVoteTokenAmount = db.GetGOVVoteTokenAmount(uint32(startedBlock), pubKey)
+		result.GOVVoteTokenAmount, err = db.GetGOVVoteTokenAmount(uint32(startedBlock), pubKey)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
 	} else if boardType == "" {
-		result.DCBVoteTokenAmount = db.GetDCBVoteTokenAmount(uint32(startedBlock), pubKey)
-		result.GOVVoteTokenAmount = db.GetGOVVoteTokenAmount(uint32(startedBlock), pubKey)
+		result.DCBVoteTokenAmount, err = db.GetDCBVoteTokenAmount(uint32(startedBlock), pubKey)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		result.GOVVoteTokenAmount, err = db.GetGOVVoteTokenAmount(uint32(startedBlock), pubKey)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
 	}
 	return result, nil
 }
