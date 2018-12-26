@@ -98,7 +98,10 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	if err != nil {
 		panic(err)
 	}
-	// TODO: Shard validator root
+	beaconBlock.Header.ShardValidatorsRoot, err = GenerateHashFromMapByteString(beaconBestState.ShardPendingValidator, beaconBestState.ShardCommittee)
+	if err != nil {
+		panic(err)
+	}
 	// Shard state hash
 	tempShardStateArr := []common.Hash{}
 	for _, hashes := range tempShardState {
