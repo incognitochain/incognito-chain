@@ -491,7 +491,10 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	// store new staking candidate
 	self.CandidateBeaconWaitingForNextRandom = append(self.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
 	self.CandidateShardWaitingForNextRandom = append(self.CandidateShardWaitingForNextRandom, newShardCandidate...)
-
+	if self.BeaconHeight == 1 {
+		//TODO: committee assign
+		self.BeaconCommittee = append(self.BeaconCommittee, newBeaconCandidate...)
+	}
 	if self.BeaconHeight%EPOCH == 0 && self.BeaconHeight != 0 {
 		self.IsGetRandomNUmber = false
 		// Begin of each epoch

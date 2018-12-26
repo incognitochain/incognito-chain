@@ -241,7 +241,7 @@ func SliceBytesExists(slice interface{}, item interface{}) (int64, error) {
 }
 
 func GetTxSenderChain(senderLastByte byte) (byte, error) {
-	modResult := senderLastByte % 100
+	modResult := senderLastByte % 4
 	for index := byte(0); index < 5; index++ {
 		if (modResult-index)%5 == 0 {
 			return byte((modResult - index) / 5), nil
