@@ -114,6 +114,10 @@ func (self *ConnManager) UpdateConsensusState(role string, userPbk string, curre
 	self.Config.ConsensusState.ShardCommittee = shardCommittee
 	self.Config.ConsensusState.UserPbk = userPbk
 	self.Config.ConsensusState.rebuild()
+
+	// update peer connection
+	self.processDiscoverPeers()
+
 	return
 }
 
