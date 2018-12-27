@@ -95,7 +95,7 @@ func (self *BlockChain) VerifyBlockForSigningProcess(block *BeaconBlock) error {
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
 		}
-		json.Unmarshal(tempMarshal, beaconBestState)
+		json.Unmarshal(tempMarshal, &beaconBestState)
 	} else {
 		// check with current cache best state
 		var err error
@@ -160,7 +160,7 @@ func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, erro
 		if err != nil {
 			return "", NewBlockChainError(UnmashallJsonBlockError, err)
 		}
-		json.Unmarshal(tempMarshal, beaconBestState)
+		json.Unmarshal(tempMarshal, &beaconBestState)
 	} else {
 		// check with current cache best state
 		var err error
