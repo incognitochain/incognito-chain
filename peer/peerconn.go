@@ -83,8 +83,20 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				}
 
 				Logger.log.Infof("In message content : %s", string(jsonDecodeString))
-				messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
 
+				// Parse Message body
+				messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
+
+				// cache message hash S
+				hashMsg := common.HashH(messageBody).String()
+				if self.ListenerPeer.CheckHashMessage(hashMsg) {
+					Logger.log.Infof("InMessageHandler existed hash message %s", hashMsg)
+					return
+				}
+				self.ListenerPeer.ReceivedHashMessage(hashMsg)
+				// cache message hash E
+
+				messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
 				// check forward
 				if self.Config.MessageListeners.GetCurrentShard != nil {
 					cShard := self.Config.MessageListeners.GetCurrentShard()
@@ -112,18 +124,6 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					Logger.log.Error(err)
 					return
 				}
-
-				// Parse Message body
-				messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
-
-				// cache message hash S
-				hashMsg := common.HashH(messageBody).String()
-				if self.ListenerPeer.CheckHashMessage(hashMsg) {
-					Logger.log.Infof("InMessageHandler existed hash message %s", hashMsg)
-					return
-				}
-				self.ListenerPeer.ReceivedHashMessage(hashMsg)
-				// cache message hash E
 
 				err = json.Unmarshal(messageBody, &message)
 				if err != nil {
