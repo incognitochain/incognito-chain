@@ -53,6 +53,7 @@ func (tx *Tx) Init(
 	db database.DatabaseInterface,
 	tokenID *common.Hash, // default is nill -> use for constant coin
 ) *TransactionError {
+	tx.Version = TxVersion
 	var err error
 	if tokenID == nil {
 		tokenID = &common.Hash{}
@@ -764,6 +765,7 @@ func (tx *Tx) InitTxSalary(
 	privKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
 ) error {
+	tx.Version = TxVersion
 	tx.Type = common.TxSalaryType
 
 	if tx.LockTime == 0 {

@@ -310,7 +310,7 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 	}
 	result := jsonresult.TransactionDetail{}
 	switch tx.GetType() {
-	case common.TxNormalType:
+	case common.TxNormalType, common.TxSalaryType:
 		{
 			tempTx := tx.(*transaction.Tx)
 			result = jsonresult.TransactionDetail{
