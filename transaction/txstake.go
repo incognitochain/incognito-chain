@@ -81,27 +81,27 @@ func (tx *Tx) validateTxStake(db database.DatabaseInterface, shardID byte) bool 
 	return true
 }
 
-// func (tx *Tx) ValidateTxStakeShard(db database.DatabaseInterface, shardID byte) bool {
-// 	if tx.validateTxStake(db, shardID) == false {
-// 		return false
-// 	}
-// 	// validate staking amount
-// 	if tx.Proof.OutputCoins[0].CoinDetails.Value != stakeShardAmount {
-// 		return false
-// 	}
-// 	return true
-// }
+func (tx *Tx) ValidateTxStakeShard(db database.DatabaseInterface, shardID byte) bool {
+	if tx.validateTxStake(db, shardID) == false {
+		return false
+	}
+	// validate staking amount
+	if tx.Proof.OutputCoins[0].CoinDetails.Value != stakeShardAmount {
+		return false
+	}
+	return true
+}
 
-// func (tx *Tx) ValidateTxStakeBeacon(db database.DatabaseInterface, shardID byte) bool {
-// 	if tx.validateTxStake(db, shardID) == false {
-// 		return false
-// 	}
-// 	// validate staking amount
-// 	if tx.Proof.OutputCoins[0].CoinDetails.Value != stakeBeaconAmount {
-// 		return false
-// 	}
-// 	return true
-// }
+func (tx *Tx) ValidateTxStakeBeacon(db database.DatabaseInterface, shardID byte) bool {
+	if tx.validateTxStake(db, shardID) == false {
+		return false
+	}
+	// validate staking amount
+	if tx.Proof.OutputCoins[0].CoinDetails.Value != stakeBeaconAmount {
+		return false
+	}
+	return true
+}
 
 // // return param:
 // // #param1: state shard Address

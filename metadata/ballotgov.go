@@ -27,7 +27,7 @@ func (sealGOVBallotMetadata *SealedGOVBallot) Hash() *common.Hash {
 	return &hash
 }
 
-func (sealGOVBallotMetadata *SealedGOVBallotMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (sealGOVBallotMetadata *SealedGOVBallot) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	//Validate these pubKeys are in board
 	govBoardPubKeys := bcr.GetGOVBoardPubKeys()
 	for _, j := range sealGOVBallotMetadata.LockerPubKeys {
@@ -118,7 +118,7 @@ func (sealedLv1GOVBallotMetadata *SealedLv1GOVBallotMetadata) Hash() *common.Has
 
 func (sealedLv1GOVBallotMetadata *SealedLv1GOVBallotMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	//Check base seal metadata
-	ok, err := sealedLv1GOVBallotMetadata.SealedGOVBallotMetadata.ValidateTxWithBlockChain(tx, bcr, shardID, db)
+	ok, err := sealedLv1GOVBallotMetadata.sealedGOVBallot.ValidateTxWithBlockChain(tx, bcr, shardID, db)
 	if err != nil || !ok {
 		return ok, err
 	}
@@ -195,7 +195,7 @@ func (sealedLv2GOVBallotMetadata *SealedLv2GOVBallotMetadata) Hash() *common.Has
 
 func (sealedLv2GOVBallotMetadata *SealedLv2GOVBallotMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	//Check base seal metadata
-	ok, err := sealedLv2GOVBallotMetadata.SealedGOVBallotMetadata.ValidateTxWithBlockChain(tx, bcr, shardID, db)
+	ok, err := sealedLv2GOVBallotMetadata.sealedGOVBallot.ValidateTxWithBlockChain(tx, bcr, shardID, db)
 	if err != nil || !ok {
 		return ok, err
 	}

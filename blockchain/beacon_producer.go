@@ -11,7 +11,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy"
 )
 
 /*

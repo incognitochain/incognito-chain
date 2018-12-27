@@ -20,7 +20,7 @@ type LoanParams struct {
 	LiquidationStart uint64 `json:"LiquidationStart"` // ratio between collateral and debt to start auto-liquidation, stored in basis points
 }
 
-func NewLoanParams(interestRate uint64, maturity uint32, liquidationStart uint64) *LoanParams {
+func NewLoanParams(interestRate uint64, maturity uint64, liquidationStart uint64) *LoanParams {
 	return &LoanParams{InterestRate: interestRate, Maturity: maturity, LiquidationStart: liquidationStart}
 }
 
@@ -48,7 +48,7 @@ func NewDCBParamsFromRPC(data interface{}) *DCBParams {
 	saleDataData := common.InterfaceSlice(arrayParams[0])
 	saleData := NewSaleData(
 		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData[0])),
-		int32(saleDataData[1].(float64)),
+		uint64(saleDataData[1].(float64)),
 		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData[2])),
 		uint64(saleDataData[3].(float64)),
 		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData[4])),
@@ -60,7 +60,7 @@ func NewDCBParamsFromRPC(data interface{}) *DCBParams {
 	saleDBCTOkensByUSDDataData := common.InterfaceSlice(arrayParams[2])
 	saleDBCTOkensByUSDData := NewSaleDBCTOkensByUSDData(
 		uint64(saleDBCTOkensByUSDDataData[0].(float64)),
-		int32(saleDBCTOkensByUSDDataData[1].(float64)),
+		uint64(saleDBCTOkensByUSDDataData[1].(float64)),
 	)
 
 	loanParamsData := common.InterfaceSlice(arrayParams[3])
@@ -69,7 +69,7 @@ func NewDCBParamsFromRPC(data interface{}) *DCBParams {
 		loanParamsSingleData := common.InterfaceSlice(i)
 		loanParams = append(loanParams, *NewLoanParams(
 			uint64(loanParamsSingleData[0].(float64)),
-			uint32(loanParamsSingleData[1].(float64)),
+			uint64(loanParamsSingleData[1].(float64)),
 			uint64(loanParamsSingleData[2].(float64)),
 		))
 	}

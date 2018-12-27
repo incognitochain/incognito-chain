@@ -8,13 +8,9 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-	"github.com/ninjadotorg/constant/transaction"
-	"math/big"
-	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
+	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
@@ -63,7 +59,7 @@ func (view *TxViewPoint) ListSerialNumnbersEclipsePoint() []*privacy.EllipticPoi
 // with not light mode - node fetch all outputcoins of all accounts in network -> big data
 // (note: still storage full data of commitments, serialnumbers, snderivator to check double spend)
 func (view *TxViewPoint) processFetchTxViewPoint(
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface,
 	proof *zkp.PaymentProof,
 	tokenID *common.Hash,
@@ -143,7 +139,7 @@ return a tx view point which contains list new nullifiers and new commitments fr
 // with not light mode - node fetch all outputcoins of all accounts in network -> big data
 // (note: still storage full data of commitments, serialnumbers, snderivator to check double spend)
 */
-func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface, block *ShardBlock) error {
+func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface, block *ShardBlock, localWallet *wallet.Wallet) error {
 	transactions := block.Body.Transactions
 	// Loop through all of the transaction descs (except for the salary tx)
 	acceptedSerialNumbers := make([][]byte, 0)
@@ -157,7 +153,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 		case common.TxNormalType:
 			{
 				normalTx := tx.(*transaction.Tx)
-				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, normalTx.Proof, constantTolenID)
+				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, normalTx.Proof, constantTolenID, localWallet)
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
@@ -179,7 +175,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 		case common.TxSalaryType:
 			{
 				normalTx := tx.(*transaction.Tx)
-				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, normalTx.Proof, constantTolenID)
+				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, normalTx.Proof, constantTolenID, localWallet)
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
@@ -201,7 +197,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 		case common.TxCustomTokenType:
 			{
 				tx := tx.(*transaction.TxCustomToken)
-				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, tx.Proof, constantTolenID)
+				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, tx.Proof, constantTolenID, localWallet)
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
@@ -226,7 +222,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 		case common.TxCustomTokenPrivacyType:
 			{
 				tx := tx.(*transaction.TxCustomTokenPrivacy)
-				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, tx.Proof, constantTolenID)
+				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, tx.Proof, constantTolenID, localWallet)
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
@@ -251,7 +247,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 				// sub view for privacy custom token
 				subView := NewTxViewPoint(block.Header.ShardID)
 				subView.tokenID = &tx.TxTokenPrivacyData.PropertyID
-				serialNumbersP, commitmentsP, outCoinsP, snDsP, errP := subView.processFetchTxViewPoint(subView.shardID, db, tx.TxTokenPrivacyData.TxNormal.Proof, subView.tokenID)
+				serialNumbersP, commitmentsP, outCoinsP, snDsP, errP := subView.processFetchTxViewPoint(subView.shardID, db, tx.TxTokenPrivacyData.TxNormal.Proof, subView.tokenID, localWallet)
 				if errP != nil {
 					return NewBlockChainError(UnExpectedError, errP)
 				}

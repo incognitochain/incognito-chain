@@ -5,7 +5,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 )
 

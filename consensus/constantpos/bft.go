@@ -12,7 +12,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy"
 
 	"github.com/ninjadotorg/constant/cashec"
 
@@ -219,7 +219,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 						listPubkeyOfSigners := make([]*privacy.PublicKey, numbOfSigners)
 						listROfSigners := make([]*privacy.EllipticPoint, numbOfSigners)
 						RCombined := new(privacy.EllipticPoint)
-						// RCombined.Set(big.NewInt(0), big.NewInt(0))
+						RCombined.Set(big.NewInt(0), big.NewInt(0))
 						counter := 0
 						// var byteVersion byte
 						// var err error
@@ -309,7 +309,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 
 							//Recalculate RCombined from base58
 							RCombined := new(privacy.EllipticPoint)
-							// RCombined.Set(big.NewInt(0), big.NewInt(0))
+							RCombined.Set(big.NewInt(0), big.NewInt(0))
 							Rbytesarr, byteVersion, err := base58.Base58Check{}.Decode(R)
 							if (err != nil) || (byteVersion != byte(0x00)) {
 								//Todo

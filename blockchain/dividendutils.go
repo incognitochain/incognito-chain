@@ -1,34 +1,34 @@
 package blockchain
 
-import (
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/transaction"
-)
+// import (
+// 	"github.com/ninjadotorg/constant/database"
+// 	"github.com/ninjadotorg/constant/metadata"
+// 	"github.com/ninjadotorg/constant/privacy"
+// 	"github.com/ninjadotorg/constant/transaction"
+// )
 
-func buildCoinbaseTxs(
-	pks, tks [][]byte,
-	amounts []uint64,
-	producerPrivateKey *privacy.SpendingKey,
-	db database.DatabaseInterface,
-) ([]*transaction.Tx, error) {
-	txs := []*transaction.Tx{}
-	for i := 0; i < len(pks); i++ {
-		paymentAddress := &privacy.PaymentAddress{
-			Pk: pks[i],
-			Tk: tks[i],
-		}
-		// TODO(@0xbunyip): check if txtype should be set to txnormal instead of txsalary
-		tx := new(transaction.Tx)
-		err := tx.InitTxSalary(amounts[i], paymentAddress, producerPrivateKey, db)
-		if err != nil {
-			return nil, err
-		}
-		txs = append(txs, tx)
-	}
-	return txs, nil
-}
+// func buildCoinbaseTxs(
+// 	pks, tks [][]byte,
+// 	amounts []uint64,
+// 	producerPrivateKey *privacy.SpendingKey,
+// 	db database.DatabaseInterface,
+// ) ([]*transaction.Tx, error) {
+// 	txs := []*transaction.Tx{}
+// 	for i := 0; i < len(pks); i++ {
+// 		paymentAddress := &privacy.PaymentAddress{
+// 			Pk: pks[i],
+// 			Tk: tks[i],
+// 		}
+// 		// TODO(@0xbunyip): check if txtype should be set to txnormal instead of txsalary
+// 		tx := new(transaction.Tx)
+// 		err := tx.InitTxSalary(amounts[i], paymentAddress, producerPrivateKey, db)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		txs = append(txs, tx)
+// 	}
+// 	return txs, nil
+// }
 
 // func buildDividendTxs(
 // 	infos []metadata.DividendInfo,

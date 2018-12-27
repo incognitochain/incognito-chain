@@ -5,14 +5,14 @@ package blockchain
 // 	"errors"
 // 	"fmt"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/metadata"
-	privacy "github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/wallet"
-)
+// 	"github.com/ninjadotorg/constant/blockchain/params"
+// 	"github.com/ninjadotorg/constant/common"
+// 	"github.com/ninjadotorg/constant/database"
+// 	"github.com/ninjadotorg/constant/metadata"
+// 	privacy "github.com/ninjadotorg/constant/privacy"
+// 	"github.com/ninjadotorg/constant/transaction"
+// 	"github.com/ninjadotorg/constant/wallet"
+// )
 
 // // getTxTokenValue converts total tokens in a tx to Constant
 // func getTxTokenValue(tokenData transaction.TxTokenData, tokenID []byte, pk []byte, prices map[string]uint64) (uint64, uint64) {
@@ -192,18 +192,18 @@ package blockchain
 // 	return txToken, nil
 // }
 
-func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
-	tx *transaction.TxCustomToken,
-	saleDataMap map[string]*params.SaleData,
-	unspentTokenMap map[string]([]transaction.TxTokenVout),
-	rt []byte,
-	chainID byte,
-	saleID []byte,
-	producerPrivateKey *privacy.SpendingKey,
-) (*transaction.TxCustomToken, error) {
-	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	dcbPk := accountDCB.KeySet.PaymentAddress.Pk
-	saleData := saleDataMap[string(saleID)]
+// func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
+// 	tx *transaction.TxCustomToken,
+// 	saleDataMap map[string]*params.SaleData,
+// 	unspentTokenMap map[string]([]transaction.TxTokenVout),
+// 	rt []byte,
+// 	chainID byte,
+// 	saleID []byte,
+// 	producerPrivateKey *privacy.SpendingKey,
+// ) (*transaction.TxCustomToken, error) {
+// 	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+// 	dcbPk := accountDCB.KeySet.PaymentAddress.Pk
+// 	saleData := saleDataMap[string(saleID)]
 
 // 	// Get price for asset
 // 	prices := blockgen.chain.BestState[shardID].BestBlock.Header.Oracle.Bonds
@@ -284,37 +284,37 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 // 	return txResponse, err
 // }
 
-func (blockgen *BlkTmplGenerator) processCrowdsaleResponse(
-	tx metadata.Transaction,
-	txsPayment []*transaction.TxCustomToken,
-	txsToRemove []metadata.Transaction,
-	saleDataMap map[string]*params.SaleData,
-	unspentTokenMap map[string][]transaction.TxTokenVout,
-	rt []byte,
-	chainID byte,
-	producerPrivateKey *privacy.SpendingKey,
-	respCounter map[string]int,
-) {
-	// Create corresponding response to send selling asset
-	// Get buying and selling asset from current sale
-	meta := tx.GetMetadata()
-	if meta == nil {
-		txsToRemove = append(txsToRemove, tx)
-		return
-	}
-	metaResponse, ok := meta.(*metadata.CrowdsaleResponse)
-	if !ok {
-		txsToRemove = append(txsToRemove, tx)
-		return
-	}
-	_, _, _, txReq, err := blockgen.chain.GetTransactionByHash(metaResponse.RequestedTxID)
-	if err != nil {
-		return
-	}
-	metaRequest, ok := txReq.GetMetadata().(*metadata.CrowdsaleRequest)
-	if !ok {
-		return
-	}
+// func (blockgen *BlkTmplGenerator) processCrowdsaleResponse(
+// 	tx metadata.Transaction,
+// 	txsPayment []*transaction.TxCustomToken,
+// 	txsToRemove []metadata.Transaction,
+// 	saleDataMap map[string]*params.SaleData,
+// 	unspentTokenMap map[string][]transaction.TxTokenVout,
+// 	rt []byte,
+// 	chainID byte,
+// 	producerPrivateKey *privacy.SpendingKey,
+// 	respCounter map[string]int,
+// ) {
+// 	// Create corresponding response to send selling asset
+// 	// Get buying and selling asset from current sale
+// 	meta := tx.GetMetadata()
+// 	if meta == nil {
+// 		txsToRemove = append(txsToRemove, tx)
+// 		return
+// 	}
+// 	metaResponse, ok := meta.(*metadata.CrowdsaleResponse)
+// 	if !ok {
+// 		txsToRemove = append(txsToRemove, tx)
+// 		return
+// 	}
+// 	_, _, _, txReq, err := blockgen.chain.GetTransactionByHash(metaResponse.RequestedTxID)
+// 	if err != nil {
+// 		return
+// 	}
+// 	metaRequest, ok := txReq.GetMetadata().(*metadata.CrowdsaleRequest)
+// 	if !ok {
+// 		return
+// 	}
 
 // 	if _, ok := saleDataMap[string(metaRequest.SaleID)]; !ok {
 // 		saleData, err := blockgen.chain.GetCrowdsaleData(metaRequest.SaleID)
@@ -361,33 +361,33 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleResponse(
 // 	respCounter[string(metaResponse.RequestedTxID[:])] += 1
 // }
 
-func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
-	tx metadata.Transaction,
-	txsPayment []*transaction.TxCustomToken,
-	txsToRemove []metadata.Transaction,
-	saleDataMap map[string]*params.SaleData,
-	unspentTokenMap map[string][]transaction.TxTokenVout,
-	rt []byte,
-	chainID byte,
-	producerPrivateKey *privacy.SpendingKey,
-) {
-	// Create corresponding payment to send selling asset
-	meta := tx.GetMetadata()
-	if meta == nil {
-		txsToRemove = append(txsToRemove, tx)
-		return
-	}
-	metaRequest, ok := meta.(*metadata.CrowdsaleRequest)
-	if !ok {
-		txsToRemove = append(txsToRemove, tx)
-		return
-	}
-	if _, ok := saleDataMap[string(metaRequest.SaleID)]; !ok {
-		saleData, err := blockgen.chain.GetCrowdsaleData(metaRequest.SaleID)
-		if err != nil {
-			txsToRemove = append(txsToRemove, tx)
-			return
-		}
+// func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
+// 	tx metadata.Transaction,
+// 	txsPayment []*transaction.TxCustomToken,
+// 	txsToRemove []metadata.Transaction,
+// 	saleDataMap map[string]*params.SaleData,
+// 	unspentTokenMap map[string][]transaction.TxTokenVout,
+// 	rt []byte,
+// 	chainID byte,
+// 	producerPrivateKey *privacy.SpendingKey,
+// ) {
+// 	// Create corresponding payment to send selling asset
+// 	meta := tx.GetMetadata()
+// 	if meta == nil {
+// 		txsToRemove = append(txsToRemove, tx)
+// 		return
+// 	}
+// 	metaRequest, ok := meta.(*metadata.CrowdsaleRequest)
+// 	if !ok {
+// 		txsToRemove = append(txsToRemove, tx)
+// 		return
+// 	}
+// 	if _, ok := saleDataMap[string(metaRequest.SaleID)]; !ok {
+// 		saleData, err := blockgen.chain.GetCrowdsaleData(metaRequest.SaleID)
+// 		if err != nil {
+// 			txsToRemove = append(txsToRemove, tx)
+// 			return
+// 		}
 
 // 		saleDataMap[string(metaRequest.SaleID)] = saleData
 // 	}
@@ -433,40 +433,40 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 // 	txsToRemove := []metadata.Transaction{}
 // 	txsPayment := []*transaction.TxCustomToken{}
 
-	// Get unspent bond tx to spend if needed
-	unspentTokenMap := map[string]([]transaction.TxTokenVout){}
-	saleDataMap := map[string]*params.SaleData{}
-	respCounter := map[string]int{}
-	for _, txDesc := range sourceTxns {
-		switch txDesc.Tx.GetMetadataType() {
-		case metadata.CrowdsaleRequestMeta:
-			{
-				blockgen.processCrowdsaleRequest(
-					txDesc.Tx,
-					txsPayment,
-					txsToRemove,
-					saleDataMap,
-					unspentTokenMap,
-					rt,
-					chainID,
-					producerPrivateKey,
-				)
-			}
-		case metadata.CrowdsaleResponseMeta:
-			{
-				blockgen.processCrowdsaleResponse(
-					txDesc.Tx,
-					txsPayment,
-					txsToRemove,
-					saleDataMap,
-					unspentTokenMap,
-					rt,
-					chainID,
-					producerPrivateKey,
-					respCounter,
-				)
-			}
-		}
+// Get unspent bond tx to spend if needed
+// unspentTokenMap := map[string]([]transaction.TxTokenVout){}
+// saleDataMap := map[string]*params.SaleData{}
+// respCounter := map[string]int{}
+// for _, txDesc := range sourceTxns {
+// 	switch txDesc.Tx.GetMetadataType() {
+// 	case metadata.CrowdsaleRequestMeta:
+// 		{
+// 			blockgen.processCrowdsaleRequest(
+// 				txDesc.Tx,
+// 				txsPayment,
+// 				txsToRemove,
+// 				saleDataMap,
+// 				unspentTokenMap,
+// 				rt,
+// 				chainID,
+// 				producerPrivateKey,
+// 			)
+// 		}
+// 	case metadata.CrowdsaleResponseMeta:
+// 		{
+// 			blockgen.processCrowdsaleResponse(
+// 				txDesc.Tx,
+// 				txsPayment,
+// 				txsToRemove,
+// 				saleDataMap,
+// 				unspentTokenMap,
+// 				rt,
+// 				chainID,
+// 				producerPrivateKey,
+// 				respCounter,
+// 			)
+// 		}
+// 	}
 
 // 	}
 // 	return txsPayment, txsToRemove, nil

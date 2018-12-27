@@ -27,7 +27,7 @@ type SaleData struct {
 	SellingAmount uint64
 }
 
-func NewSaleData(saleID []byte, endBlock int32, buyingAsset []byte, buyingAmount uint64, sellingAsset []byte, sellingAmount uint64) *SaleData {
+func NewSaleData(saleID []byte, endBlock uint64, buyingAsset []byte, buyingAmount uint64, sellingAsset []byte, sellingAmount uint64) *SaleData {
 	return &SaleData{
 		SaleID:        saleID,
 		EndBlock:      endBlock,
@@ -52,7 +52,7 @@ type SaleDBCTOkensByUSDData struct {
 	EndBlock uint64
 }
 
-func NewSaleDBCTOkensByUSDData(amount uint64, endBlock int32) *SaleDBCTOkensByUSDData {
+func NewSaleDBCTOkensByUSDData(amount uint64, endBlock uint64) *SaleDBCTOkensByUSDData {
 	return &SaleDBCTOkensByUSDData{Amount: amount, EndBlock: endBlock}
 }
 

@@ -1,17 +1,16 @@
 package transaction
 
 import (
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"math"
 	"math/big"
 	"math/rand"
 
+	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
 // ConvertOutputCoinToInputCoin - convert output coin from old tx to input coin for new tx

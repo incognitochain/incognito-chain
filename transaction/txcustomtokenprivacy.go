@@ -3,13 +3,13 @@ package transaction
 import (
 	"errors"
 
+	"encoding/json"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy"
-	"errors"
-	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"github.com/ninjadotorg/constant/metadata"
-	"encoding/json"
+	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 )
 
 // TxCustomTokenPrivacy is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -28,8 +28,7 @@ func (self *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) error {
 
 	temp := &struct {
 		TxTokenPrivacyData interface{}
-	}{
-	}
+	}{}
 	err = json.Unmarshal(data, &temp)
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
@@ -193,7 +192,7 @@ func (tx *TxCustomTokenPrivacy) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) error {
-	err := tx.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
+	err := tx.ValidateConstDoubleSpendWithBlockchain(bcr, shardID, db)
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
@@ -233,9 +232,9 @@ func (customTokenTx *TxCustomTokenPrivacy) ValidateTxByItself(
 func (customTokenTx *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	if customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, tokenID) {
 		if customTokenTx.TxTokenPrivacyData.Type == CustomTokenInit {
-			customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(common.FalseValue, db, chainID, &customTokenTx.TxTokenPrivacyData.PropertyID)
+			customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(common.FalseValue, db, shardID, &customTokenTx.TxTokenPrivacyData.PropertyID)
 		} else {
-			customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(common.TrueValue, db, chainID, &customTokenTx.TxTokenPrivacyData.PropertyID)
+			customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(common.TrueValue, db, shardID, &customTokenTx.TxTokenPrivacyData.PropertyID)
 		}
 	}
 	return common.FalseValue
