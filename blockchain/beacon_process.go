@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
+	"github.com/ninjadotorg/constant/common/base58"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 
 	"github.com/ninjadotorg/constant/common"
 )
@@ -145,8 +147,6 @@ func (self *BlockChain) VerifyBlockForSigningProcess(block *BeaconBlock) error {
 func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, error) {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
-	//TODO: Verify Signature
-	//========Verify block only
 	if err := self.VerifyPreProcessingBeaconBlock(block); err != nil {
 		return "", err
 	}
@@ -253,7 +253,6 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 	This function DOES NOT verify new block with best state
 	DO NOT USE THIS with GENESIS BLOCK
 	- Sanity
-	- Signature
 		+ Producer validity
 		+ Signature of producer
 		+ agg signature
@@ -265,8 +264,6 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 	- Instruction hash
 	- ShardStateHash
 	*/
-	//TODO: Verify sanity, signature
-	// Verify version
 	if block.Header.Version != VERSION {
 		return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
 	}
@@ -310,20 +307,45 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 }
 func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock) error {
 	/*
-			This function will verify the validation of a block with some best state in cache or current best state
+		This function will verify the validation of a block with some best state in cache or current best state
+		Get beacon state of this block
+		For example, new blockHeight is 91 then beacon state of this block must have height 90
+		OR new block has previous has is beacon best block hash
 		// - Producer
+		// - Signature
 		// - Has parent hash is some beststate block hash
 		// - Height
 		// - Epoch
-	*/
-	// Get beacon state of this block
-	// For example, new blockHeight is 91 then beacon state of this block must have height 90
-	// OR new block has previous has is beacon best block hash
 
-	// TODO: Verify producer
+	*/
+
 	// self.lock.Lock()
 	// defer self.lock.Unlock()
 
+	if len(self.BeaconCommittee) != len(block.ValidatorsIdx) {
+		return NewBlockChainError(SignatureError, errors.New("Block validators and Beacon committee is not compatible"))
+	}
+	pubKeys := []*privacy.PublicKey{}
+	for _, index := range block.ValidatorsIdx {
+		pubkeyBytes, _, err := base58.Base58Check{}.Decode(self.BeaconCommittee[index])
+		if err != nil {
+			return NewBlockChainError(SignatureError, errors.New("Error in convert Public key from string to byte"))
+		}
+		pubKey := &privacy.PublicKey{}
+		copy(*pubKey, pubkeyBytes[:])
+		pubKeys = append(pubKeys, pubKey)
+	}
+
+	aggSig, _, err := base58.Base58Check{}.Decode(block.AggregatedSig)
+	if err != nil {
+		return NewBlockChainError(SignatureError, errors.New("Error in convert aggregated signature from string to byte"))
+	}
+	schnMultiSig := &privacy.SchnMultiSig{}
+	schnMultiSig.SetBytes(aggSig)
+	blockHash := block.Header.Hash()
+	if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeys, nil, nil) == false {
+		return NewBlockChainError(SignatureError, errors.New("Invalid Agg signature"))
+	}
 	if self.BeaconHeight+1 != block.Header.Height {
 		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}

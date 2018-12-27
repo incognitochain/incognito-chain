@@ -84,6 +84,14 @@ func (multisigScheme *MultiSigScheme) Init() {
 	multisigScheme.Signature.S = new(big.Int)
 }
 
+/*
+	function: sign
+	param
+	#1 data need to be signed
+	#2 notice verifymultisignature
+	#3 g^r
+	#4 r: random number of signer
+*/
 // SignMultiSig ...
 func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicKey, listR []*EllipticPoint, r *big.Int) *SchnMultiSig {
 	//R = R0+R1+R2+R3+...+Rn
@@ -130,6 +138,18 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 }
 
 // VerifyMultiSig ...
+/*
+	function: Verify signature
+	params:
+		#1: data need to be signed
+		#2: List of public key join (either sign or un-sign) -> alway not null
+		#3: public key of signer
+			if null: verify of many party
+			if not null: verify of this publickey
+		#4: R combine from params #2
+
+	return: true or false (notice param 3)
+*/
 func (multiSig *SchnMultiSig) VerifyMultiSig(data []byte, listPK []*PublicKey, pubKey *PublicKey, RCombine *EllipticPoint) bool {
 	//Calculate common params:
 	//	aggKey = PK0+PK1+PK2+...+PKn, PK0 is selfPK
@@ -212,6 +232,11 @@ func generateCommonParams(pubKey *PublicKey, listPubkey []*PublicKey, R *Ellipti
 	return aggPubkey, C, X
 }
 
+/*
+	function: aggregate signature
+	param: list of signature
+	return: agg sign
+*/
 // CombineMultiSig Combining all EC Schnorr MultiSig in given list
 func (multisigScheme *MultiSigScheme) CombineMultiSig(listSignatures []*SchnMultiSig) *SchnMultiSig {
 	res := new(SchnMultiSig)
