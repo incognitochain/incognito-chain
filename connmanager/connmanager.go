@@ -555,7 +555,7 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 	if shard == nil {
 		return 0
 	}
-	Logger.log.Info("handleRandPeersOfShard", *shard)
+	//Logger.log.Info("handleRandPeersOfShard", *shard)
 	countPeerShard := self.countPeerConnOfShard(shard)
 	if countPeerShard >= maxPeers {
 		// close if over max conn
@@ -590,7 +590,7 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 }
 
 func (self *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxShardPeers int, maxPeers int, mPeers map[string]*wire.RawPeer) int {
-	Logger.log.Info("handleRandPeersOfOtherShard", maxShardPeers, maxPeers)
+	//Logger.log.Info("handleRandPeersOfOtherShard", maxShardPeers, maxPeers)
 	countPeers := 0
 	for _, shard := range self.OtherShards {
 		if cShard == nil || (cShard != nil && *cShard != shard) {
@@ -611,7 +611,7 @@ func (self *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxShardPeers
 }
 
 func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[string]*wire.RawPeer) int {
-	Logger.log.Info("handleRandPeersOfBeacon")
+	//Logger.log.Info("handleRandPeersOfBeacon")
 	countPeerShard := 0
 	pBKs := self.Config.ConsensusState.BeaconCommittee
 	for len(pBKs) > 0 {

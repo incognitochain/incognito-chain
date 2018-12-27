@@ -73,11 +73,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 		if str != DelimMessageStr {
 			go func(msgStr string) {
 				// Parse Message header from last 24 bytes header message
-				jsonDecodeString, errD := hex.DecodeString(msgStr)
-				if errD != nil {
-					Logger.log.Errorf("Can not decode hex string with error ", errD)
-					return
-				}
+				jsonDecodeString, _ := hex.DecodeString(msgStr)
 
 				// disconnect when received spam message
 				if len(jsonDecodeString) >= SPAM_MESSAGE_SIZE {
@@ -94,14 +90,14 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 
 				// check forward
 				if self.Config.MessageListeners.GetCurrentShard != nil {
-					shard := self.Config.MessageListeners.GetCurrentShard()
-					if shard != nil {
-						fT := commandInHeader[wire.MessageCmdTypeSize]
+					cShard := self.Config.MessageListeners.GetCurrentShard()
+					if cShard != nil {
+						fT := messageHeader[wire.MessageCmdTypeSize]
 						if fT == MESSAGE_TO_SHARD {
-							fS := commandInHeader[wire.MessageCmdTypeSize+1]
-							if *shard != fS {
+							fS := messageHeader[wire.MessageCmdTypeSize+1]
+							if *cShard != fS {
 								if self.Config.MessageListeners.PushRawBytesToShard != nil {
-									self.Config.MessageListeners.PushRawBytesToShard(&jsonDecodeString, *shard)
+									self.Config.MessageListeners.PushRawBytesToShard(&jsonDecodeString, *cShard)
 								}
 								return
 							}
@@ -109,7 +105,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					}
 				}
 
-				commandInHeader = bytes.Trim(messageHeader, "\x00")
+				commandInHeader = bytes.Trim(commandInHeader, "\x00")
 				commandType := string(messageHeader[:len(commandInHeader)])
 				// convert to particular message from message cmd type
 				var message, err = wire.MakeEmptyMessage(string(commandType))
@@ -481,11 +477,4 @@ func (p *PeerConn) Close() {
 func (p *PeerConn) ForceClose() {
 	p.isForceClose = true
 	close(p.cClose)
-}
-
-func (p *PeerConn) CheckAccepted() bool {
-	// check max conn
-	// check max shard conn
-	// check max unknown shard conn
-	return true
 }
