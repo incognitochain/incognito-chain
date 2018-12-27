@@ -6,7 +6,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy"
 )
 
 type IssuingRequest struct {
@@ -56,10 +56,6 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 }
 
 func (iReq *IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	ok, err := txr.ValidateSanityData(bcr)
-	if err != nil || !ok {
-		return false, ok, err
-	}
 	if len(iReq.ReceiverAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's receiver address")
 	}
@@ -72,7 +68,7 @@ func (iReq *IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 	if len(iReq.AssetType) != common.HashSize {
 		return false, false, errors.New("Wrong request info's asset type")
 	}
-	return false, true, nil
+	return true, true, nil
 }
 
 func (iReq *IssuingRequest) ValidateMetadataByItself() bool {
@@ -87,7 +83,7 @@ func (iReq *IssuingRequest) ValidateMetadataByItself() bool {
 }
 
 func (iReq *IssuingRequest) Hash() *common.Hash {
-	record := string(iReq.ReceiverAddress.ToBytes())
+	record := string(iReq.ReceiverAddress.Bytes())
 	record += iReq.AssetType.String()
 	record += string(iReq.DepositedAmount)
 	record += string(iReq.MetadataBase.Hash()[:])

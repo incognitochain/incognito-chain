@@ -27,6 +27,7 @@ const (
 	VerificationError
 	BeaconError
 	SignatureError
+	NotSupportInLightMode
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -49,6 +50,7 @@ var ErrCodeMessage = map[int]struct {
 	VerificationError:             {-14, "Verify Block Error"},
 	BeaconError:                   {-15, "Beacon Error"},
 	SignatureError:                {-16, "Signature Error"},
+	NotSupportInLightMode:         {-5, "This features is not supported in light mode running"},
 }
 
 type BlockChainError struct {

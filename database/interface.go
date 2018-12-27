@@ -4,7 +4,6 @@ import (
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -45,11 +44,8 @@ type DatabaseInterface interface {
 	GetBeaconBlockHashByIndex(uint64) (*common.Hash, error)
 
 	// Transaction index
-	StoreTransactionIndex(*common.Hash, *common.Hash, int) error
-	StoreTransactionLightMode(*privacy.SpendingKey, byte, int32, int, common.Hash, []byte) error
-	GetTransactionIndexById(*common.Hash) (*common.Hash, int, error)
-	GetTransactionLightModeByPrivateKey(*privacy.SpendingKey) (map[byte]([]([]byte)), error)
-	GetTransactionLightModeByHash(*common.Hash) ([]byte, []byte, error)
+	StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, indexInBlock int) error
+	GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, error)
 
 	// Best state of chain
 	StoreBestState(interface{}, byte) error
@@ -100,7 +96,7 @@ type DatabaseInterface interface {
 	GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error)                       // get balance of all paymentaddress of a token (only return payment address with balance > 0)
 	UpdateRewardAccountUTXO(*common.Hash, []byte, *common.Hash, int) error
 	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error) // get all paymentaddress owner that have balance > 0 of a custom token
-	GetCustomTokenListUnrewardUTXO(tokenID *common.Hash) (map[string]uint64, error)
+	GetCustomTokenPaymentAddressesBalanceUnreward(tokenID *common.Hash) (map[string]uint64, error)
 
 	// privacy Custom token
 	StorePrivacyCustomToken(tokenID *common.Hash, data []byte) error // store custom token. Param: tokenID, txInitToken-id, data tx
@@ -134,12 +130,21 @@ type DatabaseInterface interface {
 	GetThreePhraseSealerPrefix() []byte
 	GetThreePhraseOwnerPrefix() []byte
 	GetThreePhraseVoteValuePrefix() []byte
-	SendInitDCBVoteToken(uint32, []byte, uint64) error
-	SendInitGOVVoteToken(uint32, []byte, uint64) error
+	SendInitDCBVoteToken(uint32, []byte, uint32) error
+	SendInitGOVVoteToken(uint32, []byte, uint32) error
 	AddVoteLv3Proposal(string, uint32, *common.Hash) error
 	AddVoteLv1or2Proposal(string, uint32, *common.Hash) error
 	AddVoteNormalProposalFromOwner(string, uint32, *common.Hash, []byte) error
 	AddVoteNormalProposalFromSealer(string, uint32, *common.Hash, []byte) error
+	GetAmountVoteToken(string, uint32, []byte) (uint32, error)
+	TakeVoteTokenFromWinner(string, uint32, []byte, int32) error
+	SetNewWinningVoter(string, uint32, []byte) error
+	GetDCBVoteTokenAmount(startedBlock uint32, pubKey []byte) (uint32, error)
+	GetGOVVoteTokenAmount(startedBlock uint32, pubKey []byte) (uint32, error)
+
+	// Multisigs
+	StoreMultiSigsRegistration([]byte, []byte) error
+	GetMultiSigsRegistration([]byte) ([]byte, error)
 
 	Close() error
 }

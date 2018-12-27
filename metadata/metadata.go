@@ -7,11 +7,14 @@ import (
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/voting"
 )
 
 type MetadataBase struct {
 	Type int
+}
+
+func NewMetadataBase(thisType int) *MetadataBase {
+	return &MetadataBase{Type: thisType}
 }
 
 func (mb *MetadataBase) Validate() error {
@@ -32,9 +35,14 @@ func (mb *MetadataBase) Hash() *common.Hash {
 	return &hash
 }
 
-func (mb *MetadataBase) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+func (mb *MetadataBase) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
+	return true
+}
+
+func (mb *MetadataBase) CheckTransactionFee(tr Transaction, minFeePerKbTx uint64) bool {
 	txFee := tr.GetTxFee()
-	if txFee < minFee {
+	fullFee := minFeePerKbTx * tr.GetTxActualSize()
+	if txFee < fullFee {
 		return false
 	}
 	return true
@@ -73,6 +81,11 @@ type BlockchainRetriever interface {
 	GetGOVBoardPubKeys() [][]byte
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
 	GetOracleParams() *params.Oracle
+	GetDCBConstitutionStartHeight(byte) uint32
+	GetGOVConstitutionStartHeight(byte) uint32
+	GetDCBConstitutionEndHeight(byte) uint32
+	GetGOVConstitutionEndHeight(byte) uint32
+	GetCurrentBlockHeight(byte) uint32
 
 	// For validating loan metadata
 	GetLoanTxs([]byte) ([][]byte, error)
@@ -85,18 +98,22 @@ type BlockchainRetriever interface {
 	// GetAmountPerAccount(*DividendProposal) (uint64, []string, []uint64, error)
 
 	// For validating crowdsale
-	GetCrowdsaleData([]byte) (*voting.SaleData, error)
+	GetCrowdsaleData([]byte) (*params.SaleData, error)
 	GetCrowdsaleTxs([]byte) ([][]byte, error)
+
+	// For validating multisigs
+	GetMultiSigsRegistration([]byte) ([]byte, error)
 }
 
 type Metadata interface {
 	GetType() int
 	Hash() *common.Hash
 	CheckTransactionFee(Transaction, uint64) bool
-	ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error)
+	ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error)
 	// isContinue, ok, err
-	ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error)
+	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
+	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool
 }
 
 // Interface for all type of transaction
@@ -105,6 +122,7 @@ type Transaction interface {
 	ValidateTransaction(bool, database.DatabaseInterface, byte, *common.Hash) bool
 	GetMetadataType() int
 	GetType() string
+	GetLockTime() int64
 	GetTxActualSize() uint64
 	GetSenderAddrLastByte() byte
 	GetTxFee() uint64
@@ -125,4 +143,5 @@ type Transaction interface {
 	GetReceivers() ([][]byte, []uint64)
 	IsPrivacy() bool
 	IsCoinsBurning() bool
+	CloneTxThenUpdateMetadata(Metadata) []byte
 }

@@ -81,13 +81,14 @@ var RpcHandler = map[string]commandHandler{
 	GetListCBBoard:                 RpcServer.handleGetListCBBoard,
 	GetListGOVBoard:                RpcServer.handleGetListGOVBoard,
 
-	// vote
+	// vote board
 	CreateAndSendVoteDCBBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
 	CreateRawVoteDCBBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
 	SendRawVoteBoardDCBTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
 	CreateAndSendVoteGOVBoardTransaction: RpcServer.handleCreateAndSendVoteGOVBoardTransaction,
 	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
 	SendRawVoteBoardGOVTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
+	GetAmountVoteToken:                   RpcServer.handleGetAmountVoteToken,
 
 	// Submit Proposal:
 	CreateAndSendSubmitDCBProposalTx: RpcServer.handleCreateAndSendSubmitDCBProposalTransaction,
@@ -109,6 +110,7 @@ var RpcHandler = map[string]commandHandler{
 	GetGOVParams:                      RpcServer.handleGetGOVParams,
 	CreateAndSendTxWithBuyBackRequest: RpcServer.handleCreateAndSendTxWithBuyBackRequest,
 	CreateAndSendTxWithBuySellRequest: RpcServer.handleCreateAndSendTxWithBuySellRequest,
+	CreateAndSendTxWithOracleFeed:     RpcServer.handleCreateAndSendTxWithOracleFeed,
 }
 
 // Commands that are available to a limited user

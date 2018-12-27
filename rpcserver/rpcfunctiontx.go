@@ -9,7 +9,7 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
@@ -111,7 +111,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 	}
 
 	// param #2: list receiver
-	totalAmmount := int64(0)
+	totalAmmount := uint64(0)
 	receiversParam := arrayParams[1].(map[string]interface{})
 	paymentInfos := make([]*privacy.PaymentInfo, 0)
 	for pubKeyStr, amount := range receiversParam {
@@ -123,7 +123,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 			Amount:         common.ConstantToMiliConstant(uint64(amount.(float64))),
 			PaymentAddress: receiverPubKey.KeySet.PaymentAddress,
 		}
-		totalAmmount += int64(paymentInfo.Amount)
+		totalAmmount += uint64(paymentInfo.Amount)
 		paymentInfos = append(paymentInfos, paymentInfo)
 	}
 
@@ -148,7 +148,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 	for _, note := range outCoins {
 		amount := note.CoinDetails.Value
 		candidateOutputCoins = append(candidateOutputCoins, note)
-		estimateTotalAmount -= int64(amount)
+		estimateTotalAmount -= uint64(amount)
 		if estimateTotalAmount <= 0 {
 			break
 		}
@@ -158,21 +158,21 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 	realFee := self.EstimateFee(estimateFeeCoinPerKb, candidateOutputCoins, paymentInfos, shardIDSender, numBlock)
 
 	// list unspent tx for create tx
-	totalAmmount += int64(realFee)
+	totalAmmount += uint64(realFee)
 	estimateTotalAmount = totalAmmount
 	if totalAmmount > 0 {
 		candidateOutputCoins = make([]*privacy.OutputCoin, 0)
 		for _, note := range outCoins {
 			amount := note.CoinDetails.Value
 			candidateOutputCoins = append(candidateOutputCoins, note)
-			estimateTotalAmount -= int64(amount)
+			estimateTotalAmount -= uint64(amount)
 			if estimateTotalAmount <= 0 {
 				break
 			}
 		}
 	}
 
-	//missing flag for privacy-protocol
+	//missing flag for privacy
 	// false by default
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
 	tx := transaction.Tx{}
@@ -185,7 +185,10 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 		*self.config.Database,
 		nil, // use for constant coin -> nil is valid
 	)
-	return &tx, NewRPCError(ErrUnexpected, err)
+	if err.(*transaction.TransactionError) != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	return &tx, nil
 }
 
 /*
@@ -194,7 +197,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	var err error
 	tx, err := self.buildRawTransaction(params)
-	if err != nil {
+	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -263,19 +266,17 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 handleCreateAndSendTx - RPC creates transaction and send to network
 */
 func (self RpcServer) handleCreateAndSendTx(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	var err error
 	data, err := self.handleCreateRawTransaction(params, closeChan)
-	if err != nil {
+	if err.(*RPCError) != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
 	base58CheckData := tx.Base58CheckData
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
-	if err != nil {
+	if err.(*RPCError) != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result := jsonresult.CreateTransactionResult{
@@ -309,7 +310,7 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 	}
 	result := jsonresult.TransactionDetail{}
 	switch tx.GetType() {
-	case common.TxNormalType:
+	case common.TxNormalType, common.TxSalaryType:
 		{
 			tempTx := tx.(*transaction.Tx)
 			result = jsonresult.TransactionDetail{
@@ -479,6 +480,7 @@ func (self RpcServer) handleGetListCustomTokenBalance(params interface{}, closeC
 		item.Name = tx.TxTokenData.PropertyName
 		item.Symbol = tx.TxTokenData.PropertySymbol
 		item.TokenID = tx.TxTokenData.PropertyID.String()
+		item.TokenImage = common.Render([]byte(item.TokenID))
 		tokenID := tx.TxTokenData.PropertyID
 		res, err := self.config.BlockChain.GetListTokenHolders(&tokenID)
 		if err != nil {
@@ -505,16 +507,17 @@ func (self RpcServer) handleGetListPrivacyCustomTokenBalance(params interface{},
 	}
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
-	temps, err := self.config.BlockChain.ListCustomToken()
+	temps, err := self.config.BlockChain.ListPrivacyCustomToken()
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	for _, tx := range temps {
 		item := jsonresult.CustomTokenBalance{}
-		item.Name = tx.TxTokenData.PropertyName
-		item.Symbol = tx.TxTokenData.PropertySymbol
-		item.TokenID = tx.TxTokenData.PropertyID.String()
-		tokenID := tx.TxTokenData.PropertyID
+		item.Name = tx.TxTokenPrivacyData.PropertyName
+		item.Symbol = tx.TxTokenPrivacyData.PropertySymbol
+		item.TokenID = tx.TxTokenPrivacyData.PropertyID.String()
+		item.TokenImage = common.Render([]byte(item.TokenID))
+		tokenID := tx.TxTokenPrivacyData.PropertyID
 
 		balance := uint64(0)
 		// get balance for accountName in wallet
@@ -674,7 +677,7 @@ func (self RpcServer) handleRandomCommitments(params interface{}, closeChan <-ch
 	constantTokenID.SetBytes(common.ConstantID[:])
 	commitmentIndexs, myCommitmentIndexs := self.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, shardIDSender, constantTokenID)
 	result := make(map[string]interface{})
-	result["CommitmentIndexs"] = commitmentIndexs
+	result["CommitmentIndices"] = commitmentIndexs
 	result["MyCommitmentIndexs"] = myCommitmentIndexs
 
 	return result, nil
@@ -720,8 +723,9 @@ func (self RpcServer) handleCreateRawPrivacyCustomTokenTransaction(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *RPCError) {
+	var err error
 	tx, err := self.buildRawPrivacyCustomTokenTransaction(params)
-	if err != nil {
+	if err.(*transaction.TransactionError) != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}

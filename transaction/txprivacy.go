@@ -15,9 +15,10 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"github.com/ninjadotorg/constant/wallet"
+	"encoding/json"
 )
 
 type Tx struct {
@@ -40,6 +41,27 @@ type Tx struct {
 	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
 }
 
+func (self *Tx) UnmarshalJSON(data []byte) error {
+	type Alias Tx
+	temp := &struct {
+		MetaData interface{}
+		*Alias
+	}{
+		Alias: (*Alias)(self),
+	}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return NewTransactionErr(UnexpectedErr, err)
+	}
+	meta, parseErr := metadata.ParseMetadata(temp.Metadata)
+	if parseErr != nil {
+		return nil
+	}
+	self.SetMetadata(meta)
+
+	return nil
+}
+
 // Init - init value for tx from inputcoin(old output coin from old tx)
 // create new outputcoin and build privacy proof
 // if not want to create a privacy tx proof, set hashPrivacy = false
@@ -51,12 +73,27 @@ func (tx *Tx) Init(
 	fee uint64,
 	hasPrivacy bool,
 	db database.DatabaseInterface,
-	tokenID *common.Hash, // default is nill -> use for constant coin
-) error {
+	tokenID *common.Hash, // default is nil -> use for constant coin
+) *TransactionError {
+	tx.Version = TxVersion
+	var err error
 	if tokenID == nil {
 		tokenID = &common.Hash{}
 		tokenID.SetBytes(common.ConstantID[:])
 	}
+
+	// Calculate execution time
+	start := time.Now()
+
+	if tx.LockTime == 0 {
+		tx.LockTime = time.Now().Unix()
+	}
+
+	// check number of outputs
+	//if len(paymentInfo) > privacy.ValueMax{
+	//	return NewTransactionErr(WrongInput, errors.New("Number of outputs is exceed max value"))
+	//}
+
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKey(senderSK)
@@ -64,14 +101,14 @@ func (tx *Tx) Init(
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
 
 	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
-		fmt.Printf("CREATE TX CUSTOM TOKEN\n")
+		Logger.log.Infof("CREATE TX CUSTOM TOKEN\n")
 		tx.Fee = fee
 		tx.sigPrivKey = *senderSK
 		tx.PubKeyLastByteSender = pkLastByteSender
 
 		err := tx.SignTx(hasPrivacy)
 		if err != nil {
-			return err
+			return NewTransactionErr(UnexpectedErr, err)
 		}
 		return nil
 	}
@@ -83,19 +120,13 @@ func (tx *Tx) Init(
 
 	commitmentIndexs, myCommitmentIndexs = RandomCommitmentsProcess(inputCoins, 8, db, shardID, tokenID)
 
-	// Print list of all input coins
-	//fmt.Printf("List of all input coins before building tx:\n")
-	//for _, coin := range inputCoins {
-	//	fmt.Printf("%+v\n", coin)
-	//}
-
 	// Check number of list of random commitments, list of random commitment indices
 	if len(commitmentIndexs) != len(inputCoins)*privacy.CMRingSize {
-		return fmt.Errorf("Number of list commitments indices must be corresponding with number of input coins")
+		return NewTransactionErr(RandomCommitmentErr, nil)
 	}
 
 	if len(myCommitmentIndexs) != len(inputCoins) {
-		return fmt.Errorf("Number of list my commitment indices must be equal to number of input coins")
+		return NewTransactionErr(RandomCommitmentErr, errors.New("Number of list my commitment indices must be equal to number of input coins"))
 	}
 
 	// Calculate sum of all output coins' value
@@ -103,7 +134,6 @@ func (tx *Tx) Init(
 	sumOutputValue = 0
 	for _, p := range paymentInfo {
 		sumOutputValue += p.Amount
-		//fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
 	}
 
 	// Calculate sum of all input coins' value
@@ -114,26 +144,28 @@ func (tx *Tx) Init(
 	}
 
 	// Calculate over balance, it will be returned to sender
-	overBalance := sumInputValue - sumOutputValue - fee
+	overBalance := int(sumInputValue - sumOutputValue - fee)
 
+	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	valueMax := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(64)), nil)
 	valueMax = valueMax.Sub(valueMax, big.NewInt(1))
-	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
-	if overBalance < 0 || overBalance > valueMax.Uint64() {
-		return fmt.Errorf("Input value less than output value")
+
+	if overBalance < 0 {
+		return NewTransactionErr(WrongInput, errors.New("Input value less than output value"))
 	}
 
 	// if overBalance > 0, create a new payment info with pk is sender's pk and amount is overBalance
 	if overBalance > 0 {
 		changePaymentInfo := new(privacy.PaymentInfo)
-		changePaymentInfo.Amount = overBalance
+		changePaymentInfo.Amount = uint64(overBalance)
 		changePaymentInfo.PaymentAddress = senderFullKey.PaymentAddress
 		paymentInfo = append(paymentInfo, changePaymentInfo)
 	}
 
 	// calculate serial number from SND and spending key
 	for _, inputCoin := range inputCoins {
-		inputCoin.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(*senderSK), inputCoin.CoinDetails.SNDerivator)
+		inputCoin.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(*senderSK),
+			inputCoin.CoinDetails.SNDerivator, privacy.PedCom.G[privacy.SK])
 	}
 
 	// create new output coins
@@ -149,7 +181,7 @@ func (tx *Tx) Init(
 			for true {
 				ok1, err := CheckSNDerivatorExistence(tokenID, sndOut, shardID, db)
 				if err != nil {
-					fmt.Println(err)
+					Logger.log.Error(err)
 				}
 				if ok1 {
 					sndOut = privacy.RandInt()
@@ -196,86 +228,16 @@ func (tx *Tx) Init(
 		commitmentProving[i], _ = privacy.DecompressKey(temp)
 	}
 
-
-	// check
-	com := make([]*privacy.EllipticPoint, len(inputCoins))
-	for i :=0; i < len(inputCoins); i++{
-		com[i] = new(privacy.EllipticPoint)
-		com[i].X, com[i].Y = big.NewInt(0), big.NewInt(0)
-		com[i].X.Set(inputCoins[i].CoinDetails.PublicKey.X)
-		com[i].Y.Set(inputCoins[i].CoinDetails.PublicKey.Y)
-
-		tmp := new(privacy.EllipticPoint)
-		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
-		tmp.X.Set(privacy.PedCom.G[privacy.VALUE].X)
-		tmp.Y.Set(privacy.PedCom.G[privacy.VALUE].Y)
-		tmp = tmp.ScalarMul(new(big.Int).SetUint64(inputCoins[i].CoinDetails.Value))
-		com[i] = com[i].Add(tmp)
-
-		tmp = new(privacy.EllipticPoint)
-		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
-		tmp.X.Set(privacy.PedCom.G[privacy.SND].X)
-		tmp.Y.Set(privacy.PedCom.G[privacy.SND].Y)
-		tmp = tmp.ScalarMul(inputCoins[i].CoinDetails.SNDerivator)
-		com[i] = com[i].Add(tmp)
-
-		tmp = new(privacy.EllipticPoint)
-		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
-		tmp.X.Set(privacy.PedCom.G[privacy.SHARDID].X)
-		tmp.Y.Set(privacy.PedCom.G[privacy.SHARDID].Y)
-		tmp = tmp.ScalarMul(new(big.Int).SetBytes([]byte{inputCoins[i].CoinDetails.GetPubKeyLastByte()}))
-		com[i] = com[i].Add(tmp)
-
-		tmp = new(privacy.EllipticPoint)
-		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
-		tmp.X.Set(privacy.PedCom.G[privacy.RAND].X)
-		tmp.Y.Set(privacy.PedCom.G[privacy.RAND].Y)
-		tmp = tmp.ScalarMul(inputCoins[i].CoinDetails.Randomness)
-		com[i] = com[i].Add(tmp)
-    inputCoins[i].CoinDetails.CommitAll()
-		if !com[i].IsEqual(commitmentProving[myCommitmentIndexs[i]]){
-			fmt.Println("WRONG 1")
-		} else{
-			fmt.Println("Right")
-		}
-
-		if !inputCoins[i].CoinDetails.CoinCommitment.IsEqual(commitmentProving[myCommitmentIndexs[i]]){
-			fmt.Println("WRONG 2")
-		} else{
-			fmt.Println("Right")
-		}
-		if !inputCoins[i].CoinDetails.CoinCommitment.IsEqual(com[i]){
-			fmt.Println("WRONG 3")
-		} else{
-			fmt.Println("Right")
-		}
-
-		//openingWitnessInputCoin := new(zkp.PKComOpeningsWitness)
-		//openingWitnessInputCoin.Set(inputCoins[i].CoinDetails.CoinCommitment,
-		//	[]*big.Int{, new(big.Int).SetUint64(inputCoins[i].CoinDetails.Value), inputCoins[i].CoinDetails.SNDerivator, big.NewInt(int64(wit.pkLastByteSender)), randInputSum[i]},
-		//	[]byte{privacy.SK, privacy.VALUE, privacy.SND, privacy.SHARDID, privacy.RAND})
-		//
-		//openingProofHien, _ := openingWitnessHien.Prove()
-		//fmt.Println(openingProofHien.Verify())
-
-		//inputCoins[i].CoinDetails.CommitAll()
-		//if !com[i].IsEqual(inputCoins[i].CoinDetails.CoinCommitment){
-		//	fmt.Println("WRONG")
-		//}
-
-
-	}
-
-
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	err := witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
-	if err != nil {
-		return err
+	err = witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
+	if err.(*privacy.PrivacyError) != nil {
+		return NewTransactionErr(UnexpectedErr, err)
 	}
+
 	tx.Proof, err = witness.Prove(hasPrivacy)
-	if err != nil {
-		return err
+	if err.(*privacy.PrivacyError) != nil {
+		return NewTransactionErr(UnexpectedErr, err)
 	}
 
 	// set private key for signing tx
@@ -283,8 +245,8 @@ func (tx *Tx) Init(
 		tx.sigPrivKey = make([]byte, 64)
 		randSK := witness.RandSK
 		tx.sigPrivKey = append(*senderSK, randSK.Bytes()...)
-		//gSK := privacy.PedCom.G[privacy.SK].ScalarMul(new(big.Int).SetBytes(*senderSK))
-		//gRandSK := privacy.PedCom.G[privacy.RAND].ScalarMul(randSK)
+		//gSK := privacy.PedCom.G[privacy.SK].ScalarMult(new(big.Int).SetBytes(*senderSK))
+		//gRandSK := privacy.PedCom.G[privacy.RAND].ScalarMult(randSK)
 		//pubKeyPoint := gSK.Add(gRandSK)
 		//tx.SigPubKey = pubKeyPoint.Compress()
 
@@ -314,8 +276,13 @@ func (tx *Tx) Init(
 	// sign tx
 	tx.PubKeyLastByteSender = pkLastByteSender
 	err = tx.SignTx(hasPrivacy)
+	if err != nil {
+		return NewTransactionErr(UnexpectedErr, err)
+	}
 
-	return err
+	elapsed := time.Since(start)
+	Logger.log.Infof("Creating normal tx time %s", elapsed)
+	return nil
 }
 
 // SignTx - signs tx
@@ -330,8 +297,8 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		// sign with sigPrivKey
 		// prepare private key for Schnorr
 		sigKey := new(privacy.SchnPrivKey)
-		sigKey.SK = new(big.Int).SetBytes(tx.sigPrivKey[:32])
-		sigKey.R = new(big.Int).SetBytes(tx.sigPrivKey[32:])
+		sigKey.SK = new(big.Int).SetBytes(tx.sigPrivKey[:privacy.BigIntSize])
+		sigKey.R = new(big.Int).SetBytes(tx.sigPrivKey[privacy.BigIntSize:])
 
 		// save public key for verification signature tx
 		sigKey.PubKey = new(privacy.SchnPubKey)
@@ -342,27 +309,22 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		sigKey.PubKey.H.X, sigKey.PubKey.H.Y = privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y
 
 		sigKey.PubKey.PK = &privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
-		//fmt.Println(sigKey)
 		tmp := new(privacy.EllipticPoint)
 		tmp.X, tmp.Y = privacy.Curve.ScalarMult(sigKey.PubKey.G.X, sigKey.PubKey.G.Y, sigKey.SK.Bytes())
 		sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y = privacy.Curve.Add(sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y, tmp.X, tmp.Y)
 
 		tmp.X, tmp.Y = privacy.Curve.ScalarMult(sigKey.PubKey.H.X, sigKey.PubKey.H.Y, sigKey.R.Bytes())
 		sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y = privacy.Curve.Add(sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y, tmp.X, tmp.Y)
-		//fmt.Printf("SIGN ------ PUBLICKEY: %+v\n", sigKey.PubKey.PK)
 		tx.SigPubKey = sigKey.PubKey.PK.Compress()
-		//fmt.Printf("SIGN ------ PUBLICKEY BYTE: %+v\n", tx.SigPubKey)
 
 		// signing
-		//fmt.Printf("SIGN ------ HASH TX: %+v\n", tx.Hash().String())
-		//fmt.Printf(" SIGN SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
 		signature, err := sigKey.Sign(tx.Hash()[:])
 		if err != nil {
 			return err
 		}
 
 		// convert signature to byte array
-		tx.Sig = signature.ToBytes()
+		tx.Sig = signature.Bytes()
 
 	} else {
 		/***** using ECDSA ****/
@@ -397,10 +359,6 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		return false, fmt.Errorf("input transaction must be an signed one!")
 	}
 
-	if tx.Proof != nil {
-		//fmt.Printf("VERIFY SIGNATURE ------------- TX.PROOF: %v\n", tx.Proof.Bytes())
-	}
-
 	var err error
 	res := false
 
@@ -408,25 +366,25 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		/****** verify Schnorr signature *****/
 		// prepare Public key for verification
 		verKey := new(privacy.SchnPubKey)
-		//fmt.Printf("VERIFY ------ PUBLICKEY BYTE: %+v\n", tx.SigPubKey)
+		//Logger.log.Infof("VERIFY ------ PUBLICKEY BYTE: %+v\n", tx.SigPubKey)
 		verKey.PK, err = privacy.DecompressKey(tx.SigPubKey)
 		if err != nil {
 			return false, err
 		}
-		//fmt.Printf("VERIFY ------ PUBLICKEY: %+v\n", verKey.PK)
+		//Logger.log.Infof("VERIFY ------ PUBLICKEY: %+v\n", verKey.PK)
 
 		verKey.G = new(privacy.EllipticPoint)
 		verKey.G.X, verKey.G.Y = privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y
 
 		verKey.H = new(privacy.EllipticPoint)
 		verKey.H.X, verKey.H.Y = privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y
-		//fmt.Println(verKey)
+		//Logger.log.Infof(verKey)
 		// convert signature from byte array to SchnorrSign
 		signature := new(privacy.SchnSignature)
-		signature.FromBytes(tx.Sig)
+		signature.SetBytes(tx.Sig)
 
 		// verify signature
-		//fmt.Printf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
+		//Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
 		res = verKey.Verify(signature, tx.Hash()[:])
 
 	} else {
@@ -453,18 +411,19 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 // - Verify the payment proof
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
+	start := time.Now()
 	// Verify tx signature
 	if tx.GetType() == common.TxSalaryType {
-		return ValidateTxSalary(tx, db)
+		return tx.ValidateTxSalary(db)
 	}
 	var valid bool
 	var err error
 	valid, err = tx.VerifySigTx(hasPrivacy)
 	if valid == false {
 		if err != nil {
-			fmt.Printf("[PRIVACY LOG] - Error verifying signature of tx: %+v", err)
+			Logger.log.Infof("[PRIVACY LOG] - Error verifying signature of tx: %+v", err)
 		}
-		fmt.Println("[PRIVACY LOG] - FAILED VERIFICATION SIGNATURE")
+		Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION SIGNATURE")
 		return false
 	}
 
@@ -491,10 +450,12 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		// Verify the payment proof
 		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, db, shardID, tokenID)
 		if valid == false {
-			fmt.Println("[PRIVACY LOG] - FAILED VERIFICATION PAYMENT PROOF")
+			Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION PAYMENT PROOF")
 			return false
 		}
 	}
+	elapsed := time.Since(start)
+	Logger.log.Infof("Validation normal tx time %s", elapsed)
 
 	return true
 }
@@ -749,7 +710,7 @@ func (tx *Tx) SetMetadata(meta metadata.Metadata) {
 
 func (tx *Tx) GetJSPubKey() []byte {
 	result := []byte{}
-	if len(tx.Proof.InputCoins) > 0 {
+	if tx.Proof != nil && len(tx.Proof.InputCoins) > 0 {
 		pubkey := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
 		result = make([]byte, len(pubkey))
 		copy(result, pubkey)
@@ -802,4 +763,120 @@ func (tx *Tx) CalculateTxValue() (*privacy.PaymentAddress, uint64) {
 		txValue += outCoin.CoinDetails.Value
 	}
 	return senderAddr, txValue
+}
+
+func (tx *Tx) CloneTxThenUpdateMetadata(meta metadata.Metadata) []byte {
+	clonedTx := *tx
+	clonedTx.SetMetadata(meta)
+	return common.ToBytes(clonedTx)
+}
+
+func (tx *Tx) GetLockTime() int64 {
+	return tx.LockTime
+}
+
+// InitTxSalary
+// Blockchain use this tx to pay a reward(salary) to miner of chain
+// #1 - salary:
+// #2 - receiverAddr:
+// #3 - privKey:
+// #4 - snDerivators:
+func (tx *Tx) InitTxSalary(
+	salary uint64,
+	receiverAddr *privacy.PaymentAddress,
+	privKey *privacy.SpendingKey,
+	db database.DatabaseInterface,
+) error {
+	tx.Version = TxVersion
+	tx.Type = common.TxSalaryType
+
+	if tx.LockTime == 0 {
+		tx.LockTime = time.Now().Unix()
+	}
+
+	var err error
+	// create new output coins with info: Pk, value, SND, randomness, last byte pk, coin commitment
+	tx.Proof = new(zkp.PaymentProof)
+	tx.Proof.OutputCoins = make([]*privacy.OutputCoin, 1)
+	tx.Proof.OutputCoins[0] = new(privacy.OutputCoin)
+	//tx.Proof.OutputCoins[0].CoinDetailsEncrypted = new(privacy.CoinDetailsEncrypted).Init()
+	tx.Proof.OutputCoins[0].CoinDetails = new(privacy.Coin)
+	tx.Proof.OutputCoins[0].CoinDetails.Value = salary
+	tx.Proof.OutputCoins[0].CoinDetails.PublicKey, err = privacy.DecompressKey(receiverAddr.Pk)
+	if err != nil {
+		return err
+	}
+	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandInt()
+
+	sndOut := privacy.RandInt()
+	for true {
+		lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
+		chainIdSender, err := common.GetTxSenderChain(lastByte)
+
+		tokenID := &common.Hash{}
+		tokenID.SetBytes(common.ConstantID[:])
+		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, chainIdSender, db)
+		if err != nil {
+			return err
+		}
+		if ok {
+			sndOut = privacy.RandInt()
+		} else {
+			break
+		}
+	}
+
+	tx.Proof.OutputCoins[0].CoinDetails.SNDerivator = sndOut
+
+	// create coin commitment
+	tx.Proof.OutputCoins[0].CoinDetails.CommitAll()
+	// get last byte
+	tx.PubKeyLastByteSender = receiverAddr.Pk[len(receiverAddr.Pk)-1]
+
+	// sign Tx
+	tx.SigPubKey = receiverAddr.Pk
+	tx.sigPrivKey = *privKey
+	err = tx.SignTx(false)
+	if err != nil {
+		return err
+	}
+
+	if len(tx.Proof.InputCoins) > 0 {
+		Logger.log.Info(11111)
+	}
+	return nil
+}
+
+func (tx Tx) ValidateTxSalary(
+	db database.DatabaseInterface,
+) bool {
+	// verify signature
+	valid, err := tx.VerifySigTx(false)
+	if valid == false {
+		if err != nil {
+			Logger.log.Infof("Error verifying signature of tx: %+v", err)
+		}
+		return false
+	}
+
+	// check whether output coin's SND exists in SND list or not
+	lastByte := tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress())-1]
+	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	tokenID := &common.Hash{}
+	tokenID.SetBytes(common.ConstantID[:])
+	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, chainIdSender, db); ok || err != nil {
+		return false
+	}
+
+	// check output coin's coin commitment is calculated correctly
+	cmTmp := tx.Proof.OutputCoins[0].CoinDetails.PublicKey
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(tx.Proof.OutputCoins[0].CoinDetails.Value))))
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMult(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator))
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{tx.Proof.OutputCoins[0].CoinDetails.GetPubKeyLastByte()})))
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(tx.Proof.OutputCoins[0].CoinDetails.Randomness))
+	if !cmTmp.IsEqual(tx.Proof.OutputCoins[0].CoinDetails.CoinCommitment) {
+		return false
+	}
+
+	return true
 }

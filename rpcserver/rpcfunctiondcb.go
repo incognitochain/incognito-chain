@@ -3,14 +3,15 @@ package rpcserver
 import (
 	"encoding/json"
 
+	params2 "github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
-	"github.com/ninjadotorg/constant/common/base58"
 )
 
 // handleGetDCBParams - get dcb params
@@ -145,11 +146,7 @@ func (self RpcServer) buildRawSealLv3VoteDCBProposalTransaction(
 	secondPubKey := arrayParams[len(arrayParams)-2]
 	thirdPubKey := arrayParams[len(arrayParams)-1]
 	Seal3Data := common.Encrypt(common.Encrypt(common.Encrypt(voteInfo, thirdPubKey), secondPubKey), firstPubKey)
-	tx.Metadata = metadata.NewSealedLv3DCBBallotMetadata(
-		map[string]interface{}{
-			"SealedBallot": []byte(Seal3Data.(string)),
-			"LockerPubKey": [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))},
-		})
+	tx.Metadata = metadata.NewSealedLv3DCBBallotMetadata([]byte(Seal3Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))})
 	return tx, err
 }
 
@@ -204,13 +201,7 @@ func (self RpcServer) buildRawSealLv2VoteDCBProposalTransaction(
 	Seal2Data := common.Decrypt(Seal3Data, firstPrivateKey)
 	Pointer := common.Hash{}
 	copy(Pointer[:], []byte(PointerToLv3Ballot.(string)))
-	tx.Metadata = metadata.NewSealedLv2DCBBallotMetadata(
-		map[string]interface{}{
-			"SealedBallot":       []byte(Seal2Data.(string)),
-			"LockerPubKey":       [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))},
-			"PointerToLv3Ballot": &Pointer,
-		},
-	)
+	tx.Metadata = metadata.NewSealedLv2DCBBallotMetadata([]byte(Seal2Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer)
 	return tx, err
 }
 
@@ -271,13 +262,7 @@ func (self RpcServer) buildRawSealLv1VoteDCBProposalTransaction(
 	thirdPubKey := arrayParams[len(arrayParams)-2]
 	secondPrivateKey := arrayParams[len(arrayParams)-1]
 	Seal1Data := common.Decrypt(Seal2Data, secondPrivateKey)
-	tx.Metadata = metadata.NewSealedLv1DCBBallotMetadata(
-		map[string]interface{}{
-			"SealedBallot":       []byte(Seal1Data.(string)),
-			"LockerPubKey":       [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))},
-			"PointerToLv2Ballot": &Pointer2,
-			"PointerToLv3Ballot": &Pointer3,
-		})
+	tx.Metadata = metadata.NewSealedLv1DCBBallotMetadata([]byte(Seal1Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer2, Pointer3)
 	return tx, err
 }
 
@@ -337,13 +322,7 @@ func (self RpcServer) buildRawNormalVoteDCBProposalTransactionFromSealer(
 	thirdPubKey := arrayParams[len(arrayParams)-2]
 	thirdPrivateKey := arrayParams[len(arrayParams)-1]
 	normalBallot := common.Decrypt(Seal1Data, thirdPrivateKey)
-	tx.Metadata = metadata.NewNormalDCBBallotFromSealerMetadata(
-		map[string]interface{}{
-			"Ballot":             normalBallot.([]byte),
-			"LockerPubKey":       [][]byte{firstPubKey.([]byte), secondPubKey.([]byte), thirdPubKey.([]byte)},
-			"PointerToLv1Ballot": &Pointer1,
-			"PointerToLv3Ballot": &Pointer3,
-		})
+	tx.Metadata = metadata.NewNormalDCBBallotFromSealerMetadata(normalBallot.([]byte), [][]byte{firstPubKey.([]byte), secondPubKey.([]byte), thirdPubKey.([]byte)}, Pointer1, Pointer3)
 	return tx, err
 }
 
@@ -395,12 +374,7 @@ func (self RpcServer) buildRawNormalVoteDCBProposalTransactionFromOwner(
 	secondPubKey := arrayParams[len(arrayParams)-3]
 	thirdPubKey := arrayParams[len(arrayParams)-2]
 	normalBallot := arrayParams[len(arrayParams)-1]
-	tx.Metadata = metadata.NewNormalDCBBallotFromOwnerMetadata(
-		map[string]interface{}{
-			"Ballot":             normalBallot.([]byte),
-			"LockerPubKey":       [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))},
-			"PointerToLv3Ballot": &Pointer,
-		})
+	tx.Metadata = metadata.NewNormalDCBBallotFromOwnerMetadata(normalBallot.([]byte), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer)
 	return tx, err
 }
 
@@ -445,11 +419,12 @@ func (self RpcServer) buildRawVoteDCBBoardTransaction(
 ) (*transaction.TxCustomToken, error) {
 	arrayParams := common.InterfaceSlice(params)
 	tx, err := self.buildRawCustomTokenTransaction(params)
+	if err != nil {
+		return nil, err
+	}
 	candidatePaymentAddress := arrayParams[len(arrayParams)-1].(string)
 	account, _ := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-	tx.Metadata = &metadata.VoteDCBBoardMetadata{
-		CandidatePubKey: account.KeySet.PaymentAddress.Pk,
-	}
+	tx.Metadata = metadata.NewVoteDCBBoardMetadata(account.KeySet.PaymentAddress.Pk)
 	return tx, err
 }
 
@@ -533,8 +508,17 @@ func (self RpcServer) buildRawSubmitDCBProposalTransaction(
 ) (*transaction.Tx, *RPCError) {
 	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
-	DCBProposalRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
-	tx.Metadata = metadata.NewSubmitDCBProposalMetadataFromJson(DCBProposalRaw)
+	NParams := len(arrayParams)
+	DCBParams := *params2.NewDCBParamsFromRPC(arrayParams[NParams-4])
+	executeDuration := arrayParams[NParams-3].(uint32)
+	explanation := arrayParams[NParams-2].(string)
+	paymentData := common.InterfaceSlice(arrayParams[NParams-1])
+	address := privacy.PaymentAddress{
+		Pk: paymentData[0].([]byte),
+		Tk: paymentData[1].([]byte),
+	}
+
+	tx.Metadata = metadata.NewSubmitDCBProposalMetadata(DCBParams, executeDuration, explanation, &address)
 	return tx, err
 }
 

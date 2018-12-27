@@ -36,7 +36,6 @@ func (db *db) StoreShardBlock(v interface{}, shardID byte) error {
 	if err := db.Put(keyB, val); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
-	//fmt.Println("Test Store Block keyB: ", string(keyB))
 	return nil
 }
 

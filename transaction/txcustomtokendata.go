@@ -3,12 +3,13 @@ package transaction
 import (
 	"fmt"
 
+	"strconv"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/pkg/errors"
-	"strconv"
 )
 
 // TxTokenVin - vin format for custom token data
@@ -93,7 +94,9 @@ func (self TxTokenData) Hash() (*common.Hash, error) {
 	if self.Vouts == nil {
 		return nil, errors.New("Vout is empty")
 	}
-	record := self.PropertyName + self.PropertySymbol + fmt.Sprintf("%d", self.Amount)
+	record := self.PropertyName
+	record += self.PropertySymbol
+	record += fmt.Sprintf("%d", self.Amount)
 	if len(self.Vins) > 0 {
 		for _, in := range self.Vins {
 			record += in.TxCustomTokenID.String()

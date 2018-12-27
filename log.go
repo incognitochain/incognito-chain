@@ -17,6 +17,8 @@ import (
 	"github.com/ninjadotorg/constant/netsync"
 	"github.com/ninjadotorg/constant/peer"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 var (
@@ -29,14 +31,15 @@ var (
 	connManagerLogger = backendLog.Logger("Connection Manager Log")
 	mainLogger        = backendLog.Logger("Server Log")
 	// rpcLogger         = backendLog.Logger("RPC Log")
-	netsyncLogger    = backendLog.Logger("Netsync Log")
-	peerLogger       = backendLog.Logger("Peer Log")
-	dbLogger         = backendLog.Logger("Database Log")
-	walletLogger     = backendLog.Logger("Wallet Log")
-	blockchainLogger = backendLog.Logger("blockChain Log")
-	consensusLogger  = backendLog.Logger("Consensus Log")
-	mempoolLogger    = backendLog.Logger("Mempool Log")
-	randomLogger     = backendLog.Logger("Random Log")
+	netsyncLogger     = backendLog.Logger("Netsync Log")
+	peerLogger        = backendLog.Logger("Peer Log")
+	dbLogger          = backendLog.Logger("Database Log")
+	walletLogger      = backendLog.Logger("Wallet log")
+	blockchainLogger  = backendLog.Logger("BlockChain log")
+	consensusLogger   = backendLog.Logger("Consensus log")
+	mempoolLogger     = backendLog.Logger("Mempool log")
+	transactionLogger = backendLog.Logger("Transaction log")
+	privacyLogger     = backendLog.Logger("Privacy log")
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -65,6 +68,9 @@ func init() {
 	constantpos.Logger.Init(consensusLogger)
 	mempool.Logger.Init(mempoolLogger)
 	btcapi.Logger.Init(randomLogger)
+	transaction.Logger.Init(transactionLogger)
+	privacy.Logger.Init(privacyLogger)
+
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -82,6 +88,8 @@ var subsystemLoggers = map[string]common.Logger{
 	"CONS": consensusLogger,
 	"MEMP": mempoolLogger,
 	"RAND": randomLogger,
+	"TRAN": transactionLogger,
+	"PRIV": privacyLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

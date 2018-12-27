@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"bytes"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,9 +17,8 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/database/lvdb"
 	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/voting"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
@@ -78,6 +76,7 @@ type Config struct {
 	// Light bool
 	//Wallet for light mode
 	Wallet *wallet.Wallet
+
 	//snapshot reward
 	customTokenRewardSnapshot map[string]uint64
 }
@@ -122,11 +121,11 @@ func (self *BlockChain) GetCrowdsaleTxs(requestTxHash []byte) ([][]byte, error) 
 	return self.config.DataBase.GetCrowdsaleTxs(requestTxHash)
 }
 
-func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*voting.SaleData, error) {
+func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*params.SaleData, error) {
 	endBlock, buyingAsset, buyingAmount, sellingAsset, sellingAmount, err := self.config.DataBase.LoadCrowdsaleData(saleID)
-	var saleData *voting.SaleData
+	var saleData *params.SaleData
 	if err != nil {
-		saleData = &voting.SaleData{
+		saleData = &params.SaleData{
 			SaleID:        saleID,
 			EndBlock:      endBlock,
 			BuyingAsset:   buyingAsset,
@@ -233,6 +232,12 @@ func (self *BlockChain) GetOracleParams() *params.Oracle {
 	// return self.BestState[0].BestBlock.Header.Oracle
 }
 
+func (self *BlockChain) GetMultiSigsRegistration(
+	paymentAddressBytes []byte,
+) ([]byte, error) {
+	return self.config.DataBase.GetMultiSigsRegistration(paymentAddressBytes)
+}
+
 // -------------- End of Blockchain retriever's implementation --------------
 
 /*
@@ -318,11 +323,6 @@ func (self *BlockChain) initShardState(shardID byte) error {
 		initBlock.Header.ShardID = shardID
 		initBlock.Header.PrevBlockHash = common.Hash{}
 	}
-
-	/*tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
-	if err := UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
-		return NewBlockChainError(UpdateMerkleTreeForBlockError, err)
-	}*/
 
 	self.BestState.Shard[shardID] = &BestStateShard{}
 	// self.BestState.Shard[shardID].Init(initBlock)
@@ -482,7 +482,7 @@ func (self *BlockChain) StoreTransactionIndex(txHash *common.Hash, blockHash *co
 }
 
 /*
-Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
+Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreSerialNumbersFromTxViewPoint(view TxViewPoint) error {
@@ -496,7 +496,7 @@ func (self *BlockChain) StoreSerialNumbersFromTxViewPoint(view TxViewPoint) erro
 }
 
 /*
-Uses an existing database to update the set of used tx by saving list SNDerivator of privacy-protocol,
+Uses an existing database to update the set of used tx by saving list SNDerivator of privacy,
 this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint) error {
@@ -511,7 +511,7 @@ func (self *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint) error
 }
 
 /*
-Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
+Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
@@ -545,7 +545,7 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 }
 
 /*
-Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
+Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
 */
 /*func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, shardID byte) error {
@@ -559,7 +559,7 @@ this is a list tx-out which are used by a new tx
 }*/
 
 /*
-Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
+Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
 */
 /*func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
@@ -867,32 +867,54 @@ func (self *BlockChain) UpdateVoteTokenHolder(block *ShardBlock) error {
 	return nil
 }
 
-// func (self *BlockChain) ProcessVoteProposal(block *Block) error {
-// 	nextDCBConstitutionBlockHeight := uint32(block.Header.DCBConstitution.GetEndedBlockHeight())
-// 	for _, tx := range block.Transactions {
-// 		meta := tx.GetMetadata()
-// 		switch tx.GetMetadataType() {
-// 		case metadata.SealedLv3DCBBallotMeta:
-// 			underlieMetadata := meta.(*metadata.SealedLv3DCBBallotMetadata)
-// 			self.config.DataBase.AddVoteLv3Proposal("dcb", nextDCBConstitutionBlockHeight, underlieMetadata.Hash())
-// 		case metadata.SealedLv2DCBBallotMeta:
-// 			underlieMetadata := meta.(*metadata.SealedLv2DCBBallotMetadata)
-// 			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot)
-// 		case metadata.SealedLv1DCBBallotMeta:
-// 			underlieMetadata := meta.(*metadata.SealedLv1DCBBallotMetadata)
-// 			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot)
-// 		case metadata.NormalDCBBallotMetaFromOwner:
-// 			underlieMetadata := meta.(*metadata.NormalDCBBallotFromOwnerMetadata)
-// 			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
-// 		case metadata.NormalDCBBallotMetaFromSealer:
-// 			underlieMetadata := meta.(*metadata.NormalDCBBallotFromSealerMetadata)
-// 			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
-// 			// todo: @0xjackalope
-
-// 		}
-// 	}
-// 	return nil
-// }
+func (self *BlockChain) ProcessVoteProposal(block *Block) error {
+	nextDCBConstitutionBlockHeight := uint32(block.Header.DCBConstitution.GetEndedBlockHeight())
+	nextGOVConstitutionBlockHeight := uint32(block.Header.GOVConstitution.GetEndedBlockHeight())
+	for _, tx := range block.Transactions {
+		meta := tx.GetMetadata()
+		switch tx.GetMetadataType() {
+		case metadata.SealedLv3DCBBallotMeta:
+			underlieMetadata := meta.(*metadata.SealedLv3DCBBallotMetadata)
+			self.config.DataBase.AddVoteLv3Proposal("dcb", nextDCBConstitutionBlockHeight, underlieMetadata.Hash())
+		case metadata.SealedLv2DCBBallotMeta:
+			underlieMetadata := meta.(*metadata.SealedLv2DCBBallotMetadata)
+			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot)
+		case metadata.SealedLv1DCBBallotMeta:
+			underlieMetadata := meta.(*metadata.SealedLv1DCBBallotMetadata)
+			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot)
+		case metadata.NormalDCBBallotMetaFromOwnerMeta:
+			underlieMetadata := meta.(*metadata.NormalDCBBallotFromOwnerMetadata)
+			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
+		case metadata.NormalDCBBallotMetaFromSealerMeta:
+			underlieMetadata := meta.(*metadata.NormalDCBBallotFromSealerMetadata)
+			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
+		case metadata.AcceptDCBProposalMeta:
+			underlieMetadata := meta.(*metadata.AcceptDCBProposalMetadata)
+			self.config.DataBase.TakeVoteTokenFromWinner("dcb", nextDCBConstitutionBlockHeight, underlieMetadata.Voter.PubKey, underlieMetadata.Voter.AmountOfVote)
+			self.config.DataBase.SetNewWinningVoter("dcb", nextDCBConstitutionBlockHeight, underlieMetadata.Voter.PubKey)
+		case metadata.SealedLv3GOVBallotMeta:
+			underlieMetadata := meta.(*metadata.SealedLv3GOVBallotMetadata)
+			self.config.DataBase.AddVoteLv3Proposal("gov", nextGOVConstitutionBlockHeight, underlieMetadata.Hash())
+		case metadata.SealedLv2GOVBallotMeta:
+			underlieMetadata := meta.(*metadata.SealedLv2GOVBallotMetadata)
+			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot)
+		case metadata.SealedLv1GOVBallotMeta:
+			underlieMetadata := meta.(*metadata.SealedLv1GOVBallotMetadata)
+			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot)
+		case metadata.NormalGOVBallotMetaFromOwnerMeta:
+			underlieMetadata := meta.(*metadata.NormalGOVBallotFromOwnerMetadata)
+			self.config.DataBase.AddVoteNormalProposalFromOwner("gov", nextGOVConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
+		case metadata.NormalGOVBallotMetaFromSealerMeta:
+			underlieMetadata := meta.(*metadata.NormalGOVBallotFromSealerMetadata)
+			self.config.DataBase.AddVoteNormalProposalFromSealer("gov", nextGOVConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
+		case metadata.AcceptGOVProposalMeta:
+			underlieMetadata := meta.(*metadata.AcceptGOVProposalMetadata)
+			self.config.DataBase.TakeVoteTokenFromWinner("gov", nextGOVConstitutionBlockHeight, underlieMetadata.Voter.PubKey, underlieMetadata.Voter.AmountOfVote)
+			self.config.DataBase.SetNewWinningVoter("gov", nextGOVConstitutionBlockHeight, underlieMetadata.Voter.PubKey)
+		}
+	}
+	return nil
+}
 
 // func (self *BlockChain) ProcessCrowdsaleTxs(block *ShardBlock) error {
 // 	for _, tx := range block.Body.Transactions {
@@ -952,6 +974,10 @@ func (self *BlockChain) UpdateVoteTokenHolder(block *ShardBlock) error {
 // }
 
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
+// need to check light or not light mode
+// with light mode - node only fetch outputcoins of account in local wallet -> smaller data
+// with not light mode - node fetch all outputcoins of all accounts in network -> big data
+// (note: still storage full data of commitments, serialnumbersm snderivator to check double spend)
 func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBlock) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
@@ -979,10 +1005,9 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBlock) err
 		// save tx which relate to custom token
 		// Reject Double spend UTXO before enter this state
 		err = self.StoreCustomTokenPaymentAddresstHistory(customTokenTx)
-		// TODO: detect/cactch/revert/skip double spend tx
 		if err != nil {
 			// Skip double spend
-			continue
+			return err
 		}
 		err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxTokenData.PropertyID, block.Header.ShardID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
 		if err != nil {
@@ -1132,7 +1157,6 @@ func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *tr
 		}
 	}
 	return nil
-	//return self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
 }
 
 // DecryptTxByKey - process outputcoin to get outputcoin data which relate to keyset
@@ -1325,83 +1349,30 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 	return voutList, nil
 }
 
-func (self *BlockChain) GetTransactionByHashInLightMode(txHash *common.Hash) (byte, *common.Hash, int, metadata.Transaction, error) {
-	const (
-		bigNumber   = 999999999
-		bigNumberTx = 999999999
-	)
-	var (
-		blockHeight uint64
-		txIndex     uint32
-		shardID     []byte
-	)
-	// Get transaction
-	tx := transaction.Tx{}
-	locationByte, txByte, err := self.config.DataBase.GetTransactionLightModeByHash(txHash)
-	Logger.log.Info("GetTransactionByHash - 1", locationByte, txByte, err)
-	if err != nil {
-		return byte(255), nil, -1, nil, err
-	}
-	err = json.Unmarshal(txByte, &tx)
-	if err != nil {
-		return byte(255), nil, -1, nil, err
-	}
-	// Handle string to get shardID, blockheight, txindex information
-	locations := strings.Split(string(locationByte), string("-"))
-	// Get Chain Id
-	shardID = []byte(locations[2])
-	// Get Block Height
-	tempBlockHeight := []byte(locations[3])
-	bufBlockHeight := bytes.NewBuffer(tempBlockHeight)
-	err = binary.Read(bufBlockHeight, binary.LittleEndian, &blockHeight)
-	if err != nil {
-		return byte(255), nil, -1, nil, err
-	}
-	blockHeight = uint64(bigNumber - blockHeight)
-	Logger.log.Info("Testing in GetTransactionByHash, blockHeight", blockHeight)
-	block, err := self.GetShardBlockByHeight(blockHeight, shardID[0])
-	if err != nil {
-		Logger.log.Error("ERROR in GetTransactionByHash, get Block by height", err)
-		return byte(255), nil, -1, nil, err
-	}
-	//Get txIndex
-	tempTxIndex := []byte(locations[4])
-	bufTxIndex := bytes.NewBuffer(tempTxIndex)
-	err = binary.Read(bufTxIndex, binary.LittleEndian, &txIndex)
-	if err != nil {
-		return byte(255), nil, -1, nil, err
-	}
-	txIndex = uint32(bigNumberTx - txIndex)
-	Logger.log.Info("Testing in GetTransactionByHash, blockHash, index, tx", block.Hash(), txIndex, tx)
-	return shardID[0], block.Hash(), int(txIndex), &tx, nil
-}
-
-//TODO:
-func (self *BlockChain) GetBlockByHash(txHash *common.Hash) (ShardBlock, error) {
-	return ShardBlock{}, nil
-}
-
 // GetTransactionByHash - retrieve tx from txId(txHash)
 func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common.Hash, int, metadata.Transaction, error) {
 	blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
 	if err != nil {
-		// check lightweight
-		// if self.config.Light {
-		// 	// with light node, we can try get data in light mode
-		// 	Logger.log.Info("ERROR in GetTransactionByHash, change to get in light mode", err)
-		// 	return self.GetTransactionByHashInLightMode(txHash)
-		// }
-
 		return byte(255), nil, -1, nil, err
 	}
 
 	block, err := self.GetBlockByHash(blockHash)
 	if err != nil {
-		Logger.log.Errorf("ERROR", err, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
-		return byte(255), nil, -1, nil, err
+		Logger.log.Errorf("ERROR", err, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
+		return byte(255), nil, -1, nil, NewBlockChainError(UnExpectedError, err)
 	}
 	Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
 	return block.Header.ShardID, blockHash, index, block.Body.Transactions[index], nil
+}
+
+func (self *BlockChain) GetTransactionSenderByHash(txHash *common.Hash) ([]byte, error) {
+	_, _, _, tx, err := self.GetTransactionByHash(txHash)
+	if err != nil {
+		return nil, err
+	}
+	key := tx.GetJSPubKey()
+
+	return key, nil
 }
 
 // ListCustomToken - return all custom token which existed in network
@@ -1418,7 +1389,7 @@ func (self *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomT
 		_ = blockHash
 		_ = index
 		if err != nil {
-			return nil, err
+			return nil, NewBlockChainError(UnExpectedError, err)
 		}
 		txCustomToken := tx.(*transaction.TxCustomToken)
 		result[txCustomToken.TxTokenData.PropertyID] = *txCustomToken
@@ -1493,6 +1464,30 @@ func (self *BlockChain) GetNumberOfDCBGovernors() int {
 
 func (self *BlockChain) GetNumberOfGOVGovernors() int {
 	return common.NumberOfGOVGovernors
+}
+
+func (self *BlockChain) GetBestBlock(chainID byte) *Block {
+	return self.BestState[chainID].BestBlock
+}
+
+func (self *BlockChain) GetDCBConstitutionStartHeight(chainID byte) uint32 {
+	return self.GetBestBlock(chainID).Header.DCBConstitution.StartedBlockHeight
+}
+
+func (self *BlockChain) GetDCBConstitutionEndHeight(chainID byte) uint32 {
+	return self.GetBestBlock(chainID).Header.DCBConstitution.GetEndedBlockHeight()
+}
+
+func (self *BlockChain) GetGOVConstitutionStartHeight(chainID byte) uint32 {
+	return self.GetBestBlock(chainID).Header.GOVConstitution.StartedBlockHeight
+}
+
+func (self *BlockChain) GetGOVConstitutionEndHeight(chainID byte) uint32 {
+	return self.GetBestBlock(chainID).Header.GOVConstitution.GetEndedBlockHeight()
+}
+
+func (self *BlockChain) GetCurrentBlockHeight(chainID byte) uint32 {
+	return uint32(self.GetBestBlock(chainID).Header.Height)
 }
 
 func (self BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {

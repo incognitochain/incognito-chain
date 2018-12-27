@@ -12,8 +12,12 @@ type AcceptDCBBoardMetadata struct {
 	MetadataBase
 }
 
-func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) GetType() int {
-	return AcceptDCBProposalMeta
+func NewAcceptDCBBoardMetadata(DCBBoardPubKeys [][]byte, startAmountDCBToken uint64) *AcceptDCBBoardMetadata {
+	return &AcceptDCBBoardMetadata{
+		DCBBoardPubKeys:     DCBBoardPubKeys,
+		StartAmountDCBToken: startAmountDCBToken,
+		MetadataBase:        *NewMetadataBase(AcceptDCBBoardMeta),
+	}
 }
 
 func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) Hash() *common.Hash {
@@ -22,7 +26,7 @@ func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) Hash() *common.Hash {
 		record += string(i)
 	}
 	record += string(acceptDCBBoardMetadata.StartAmountDCBToken)
-	record += string(acceptDCBBoardMetadata.MetadataBase.Hash()[:])
+	record += string(acceptDCBBoardMetadata.MetadataBase.Hash().GetBytes())
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -36,7 +40,7 @@ func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) ValidateSanityData(bcr Blo
 		return true, false, nil
 	}
 	for _, i := range acceptDCBBoardMetadata.DCBBoardPubKeys {
-		if len(i) != common.HashSize {
+		if len(i) != common.PubKeyLength {
 			return true, false, nil
 		}
 	}
@@ -54,8 +58,12 @@ type AcceptGOVBoardMetadata struct {
 	MetadataBase
 }
 
-func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) GetType() int {
-	return AcceptGOVProposalMeta
+func NewAcceptGOVBoardMetadata(GOVBoardPubKeys [][]byte, startAmountGOVToken uint64) *AcceptGOVBoardMetadata {
+	return &AcceptGOVBoardMetadata{
+		GOVBoardPubKeys:     GOVBoardPubKeys,
+		StartAmountGOVToken: startAmountGOVToken,
+		MetadataBase:        *NewMetadataBase(AcceptGOVBoardMeta),
+	}
 }
 
 func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) Hash() *common.Hash {
@@ -64,7 +72,7 @@ func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) Hash() *common.Hash {
 		record += string(i)
 	}
 	record += string(acceptGOVBoardMetadata.StartAmountGOVToken)
-	record += string(acceptGOVBoardMetadata.MetadataBase.Hash()[:])
+	record += string(acceptGOVBoardMetadata.MetadataBase.Hash().GetBytes())
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -78,7 +86,7 @@ func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) ValidateSanityData(bcr Blo
 		return true, false, nil
 	}
 	for _, i := range acceptGOVBoardMetadata.GOVBoardPubKeys {
-		if len(i) != common.HashSize {
+		if len(i) != common.PubKeyLength {
 			return true, false, nil
 		}
 	}

@@ -8,7 +8,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
@@ -67,7 +67,7 @@ func (lr *LoanRequest) Hash() *common.Hash {
 	record += lr.CollateralType
 	record += lr.CollateralAmount.String()
 	record += string(lr.LoanAmount)
-	record += string(lr.ReceiveAddress.ToBytes())
+	record += string(lr.ReceiveAddress.Bytes())
 	record += string(lr.KeyDigest)
 
 	// final hash

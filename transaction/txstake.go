@@ -4,8 +4,9 @@ import (
 	"bytes"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 // count in miliconstant
@@ -107,20 +108,20 @@ func (tx *Tx) validateTxStake(db database.DatabaseInterface, shardID byte) bool 
 // // #param2: state beacon Address
 // // #param3: has staker or not?
 
-// //using b, _, err := base58.Base58Check{}.Decode(data) for decode base58 string
-// func (tx *Tx) ProcessTxStake(db database.DatabaseInterface, shardID byte) (string, string, bool) {
-// 	if tx.ValidateTxStakeBeacon(db, shardID) == true {
-// 		// skip comparing all address in input coin
-// 		// ASSUME that all address are the same
-// 		res := base58.Base58Check{}.Encode(tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))
-// 		return "", res, true
-// 	}
+//using b, _, err := base58.Base58Check{}.Decode(data) for decode base58 string
+func (tx *Tx) ProcessTxStake(db database.DatabaseInterface, chainID byte) (string, string, bool) {
+	if tx.ValidateTxStakeBeacon(db, chainID) == true {
+		// skip comparing all address in input coin
+		// ASSUME that all address are the same
+		res := base58.Base58Check{}.Encode(tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))
+		return common.EmptyString, res, true
+	}
 
-// 	if tx.ValidateTxStakeShard(db, shardID) == true {
-// 		// skip comparing all address in input coin
-// 		// ASSUME that all address are the same
-// 		res := base58.Base58Check{}.Encode(tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))
-// 		return res, "", true
-// 	}
-// 	return "", "", false
-// }
+	if tx.ValidateTxStakeShard(db, chainID) == true {
+		// skip comparing all address in input coin
+		// ASSUME that all address are the same
+		res := base58.Base58Check{}.Encode(tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))
+		return res, common.EmptyString, true
+	}
+	return common.EmptyString, common.EmptyString, false
+}

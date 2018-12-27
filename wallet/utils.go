@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"encoding/binary"
+
 	"github.com/ninjadotorg/constant/common/base58"
 )
 
@@ -17,4 +18,9 @@ func uint32Bytes(i uint32) []byte {
 	bytes := make([]byte, 4)
 	binary.BigEndian.PutUint32(bytes, i)
 	return bytes
+}
+
+func GetPubKeyFromPaymentAddress(paymentAddress string) []byte {
+	account, _ := Base58CheckDeserialize(paymentAddress)
+	return account.KeySet.PaymentAddress.Pk
 }

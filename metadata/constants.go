@@ -28,6 +28,8 @@ const (
 	OracleFeedMeta
 	OracleRewardMeta
 	RefundMeta
+	UpdatingOracleBoardMeta
+	MultiSigsRegistrationMeta
 
 	//Voting
 	SubmitDCBProposalMeta
@@ -46,16 +48,27 @@ const (
 	SealedLv1DCBBallotMeta
 	SealedLv2DCBBallotMeta
 	SealedLv3DCBBallotMeta
-	NormalDCBBallotMetaFromSealer
-	NormalDCBBallotMetaFromOwner
+	NormalDCBBallotMetaFromSealerMeta
+	NormalDCBBallotMetaFromOwnerMeta
 	SealedLv1GOVBallotMeta
 	SealedLv2GOVBallotMeta
 	SealedLv3GOVBallotMeta
-	NormalGOVBallotMetaFromSealer
-	NormalGOVBallotMetaFromOwner
+	NormalGOVBallotMetaFromSealerMeta
+	NormalGOVBallotMetaFromOwnerMeta
+	RewardProposalWinnerMeta
+	RewardDCBProposalSubmitterMeta
+	RewardGOVProposalSubmitterMeta
+	PunishDCBDecryptMeta
+	PunishGOVDecryptMeta
 )
 
 const (
 	MaxDivTxsPerBlock = 1000
 	PayoutFrequency   = 1000 // Payout dividend every 1000 blocks
+)
+
+// update oracle board actions
+const (
+	Add    = 1
+	Remove = 2
 )
