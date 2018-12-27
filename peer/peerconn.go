@@ -98,8 +98,8 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 
 				messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
 				// check forward
-				if self.Config.MessageListeners.GetCurrentShard != nil {
-					cShard := self.Config.MessageListeners.GetCurrentShard()
+				if self.Config.MessageListeners.GetCurrentRoleShard != nil {
+					cRole, cShard := self.Config.MessageListeners.GetCurrentRoleShard()
 					if cShard != nil {
 						fT := messageHeader[wire.MessageCmdTypeSize]
 						if fT == MESSAGE_TO_SHARD {
@@ -110,6 +110,15 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 								}
 								return
 							}
+						}
+					}
+					if cRole != "" {
+						fT := messageHeader[wire.MessageCmdTypeSize]
+						if fT == MESSAGE_TO_BEACON && cRole != "beacon" {
+							if self.Config.MessageListeners.PushRawBytesToBeacon != nil {
+								self.Config.MessageListeners.PushRawBytesToBeacon(&jsonDecodeString)
+							}
+							return
 						}
 					}
 				}

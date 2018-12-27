@@ -643,8 +643,8 @@ func (self *ConnManager) getShardOfPbk(pbk string) *byte {
 	return nil
 }
 
-func (self *ConnManager) GetCurrentShard() *byte {
-	return self.Config.ConsensusState.CurrentShard
+func (self *ConnManager) GetCurrentRoleShard() (string, *byte) {
+	return self.Config.ConsensusState.Role, self.Config.ConsensusState.CurrentShard
 }
 
 func (self *ConnManager) GetPeerConnOfShard(shard byte) []*peer.PeerConn {
