@@ -85,9 +85,6 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				Logger.log.Infof("In message content : %s", string(jsonDecodeString))
 				messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
 
-				// get cmd type in header message
-				commandInHeader := messageHeader[:wire.MessageCmdTypeSize]
-
 				// check forward
 				if self.Config.MessageListeners.GetCurrentShard != nil {
 					cShard := self.Config.MessageListeners.GetCurrentShard()
@@ -105,7 +102,8 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					}
 				}
 
-				commandInHeader = bytes.Trim(commandInHeader, "\x00")
+				// get cmd type in header message
+				commandInHeader := bytes.Trim(messageHeader[:wire.MessageCmdTypeSize], "\x00")
 				commandType := string(messageHeader[:len(commandInHeader)])
 				// convert to particular message from message cmd type
 				var message, err = wire.MakeEmptyMessage(string(commandType))
