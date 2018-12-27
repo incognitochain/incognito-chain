@@ -9,7 +9,7 @@ import (
 
 //TestPKOneOfMany test protocol for one of many Commitment is Commitment to zero
 func TestPKOneOfMany(t *testing.T) {
-	witness := new(PKOneOfManyWitness)
+	witness := new(OneOutOfManyWitness)
 
 	indexIsZero := 2
 
@@ -38,7 +38,7 @@ func TestPKOneOfMany(t *testing.T) {
 	proofBytes := proof.Bytes()
 
 	//revert bytes array to proof
-	proof2 := new(PKOneOfManyProof)
+	proof2 := new(OneOutOfManyProof)
 	proof2.SetBytes(proofBytes)
 
 	res := proof.Verify()

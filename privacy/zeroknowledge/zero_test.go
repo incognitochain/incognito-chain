@@ -10,7 +10,7 @@ import (
 
 
 // randValue return random witness value for testing
-func (wit *PKComZeroWitness) randValue(testcase bool) {
+func (wit *ComZeroWitness) randValue(testcase bool) {
 	switch testcase {
 	case false:
 		commitmentValue := new(privacy.EllipticPoint)
@@ -30,14 +30,14 @@ func (wit *PKComZeroWitness) randValue(testcase bool) {
 
 //TestProofIsZero test prove and verify function
 func TestPKComZero(t* testing.T){
-	witness := new(PKComZeroWitness)
+	witness := new(ComZeroWitness)
 	witness.randValue(true)
 
 	proof, _ := witness.Prove()
 
 	proofBytes := proof.Bytes()
 
-	proof2 := new(PKComZeroProof)
+	proof2 := new(ComZeroProof)
 	proof2.SetBytes(proofBytes)
 
 	res := proof2.Verify()
