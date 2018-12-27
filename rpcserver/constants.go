@@ -107,4 +107,5 @@ const (
 	CreateAndSendTxWithCMBInitResponse    = "createandsendtxwithcmbinitresponse"
 	CreateAndSendTxWithCMBDepositContract = "createandsendtxwithcmbdepositcontract"
 	CreateAndSendTxWithCMBDepositSend     = "createandsendtxwithcmbdepositsend"
+	CreateAndSendTxWithCMBWithdrawRequest = "createandsendtxwithcmbwithdrawrequest"
 )

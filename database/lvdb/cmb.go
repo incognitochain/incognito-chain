@@ -9,6 +9,26 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
+func (db *db) updateCMB(
+	cmbInitKey []byte,
+	reserve []byte,
+	members [][]byte,
+	capital uint64,
+	txHash []byte,
+	state uint8,
+	fine uint64,
+) error {
+	newValue, err := getCMBInitValue(reserve, members, capital, txHash, state, fine)
+	if err != nil {
+		return errUnexpected(err, "getCMBValue")
+	}
+
+	if err := db.Put(cmbInitKey, newValue); err != nil {
+		return errUnexpected(err, "put cmb main account")
+	}
+	return nil
+}
+
 func (db *db) StoreCMB(
 	mainAccount []byte,
 	reserveAccount []byte,
@@ -26,22 +46,15 @@ func (db *db) StoreCMB(
 	cmbInitKey := getCMBInitKey(mainAccount)
 
 	state := metadata.CMBRequested
-	cmbValue, err := getCMBInitValue(reserveAccount, members, capital, txHash, state)
-	if err != nil {
-		return errUnexpected(err, "getCMBValue")
-	}
-
-	if err := db.Put(cmbInitKey, cmbValue); err != nil {
-		return errUnexpected(err, "put cmb main account")
-	}
-	return nil
+	fine := uint64(0)
+	return db.updateCMB(cmbInitKey, reserveAccount, members, capital, txHash, state, fine)
 }
 
-func (db *db) GetCMB(mainAccount []byte) ([]byte, [][]byte, uint64, []byte, uint8, error) {
+func (db *db) GetCMB(mainAccount []byte) ([]byte, [][]byte, uint64, []byte, uint8, uint64, error) {
 	cmbInitKey := getCMBInitKey(mainAccount)
 	cmbInitValue, err := db.Get(cmbInitKey)
 	if err != nil {
-		return nil, nil, 0, nil, 0, err
+		return nil, nil, 0, nil, 0, 0, err
 	}
 	return parseCMBInitValue(cmbInitValue)
 }
@@ -52,16 +65,18 @@ func (db *db) UpdateCMBState(mainAccount []byte, state uint8) error {
 	if err != nil {
 		return err
 	}
-	reserve, members, capital, txHash, _, err := parseCMBInitValue(cmbInitValue)
-	newValue, err := getCMBInitValue(reserve, members, capital, txHash, state)
-	if err != nil {
-		return errUnexpected(err, "getCMBValue")
-	}
+	reserve, members, capital, txHash, _, fine, err := parseCMBInitValue(cmbInitValue)
+	return db.updateCMB(cmbInitKey, reserve, members, capital, txHash, state, fine)
+}
 
-	if err := db.Put(cmbInitKey, newValue); err != nil {
-		return errUnexpected(err, "put cmb main account")
+func (db *db) UpdateCMBFine(mainAccount []byte, fine uint64) error {
+	cmbInitKey := getCMBInitKey(mainAccount)
+	cmbInitValue, err := db.Get(cmbInitKey)
+	if err != nil {
+		return err
 	}
-	return nil
+	reserve, members, capital, txHash, state, _, err := parseCMBInitValue(cmbInitValue)
+	return db.updateCMB(cmbInitKey, reserve, members, capital, txHash, state, fine)
 }
 
 func (db *db) StoreCMBResponse(mainAccount, approver []byte) error {
@@ -103,4 +118,63 @@ func (db *db) GetDepositSend(contractID []byte) ([]byte, error) {
 		return nil, err
 	}
 	return cmbDepositSendValue, nil
+}
+
+func (db *db) StoreWithdrawRequest(contractID []byte, txHash []byte) error {
+	cmbWithdrawRequestKey := getCMBWithdrawRequestKey(contractID)
+	state := metadata.WithdrawRequested
+	cmbWithdrawRequestValue := getCMBWithdrawRequestValue(txHash, state)
+	if err := db.Put(cmbWithdrawRequestKey, cmbWithdrawRequestValue); err != nil {
+		return errUnexpected(err, "put cmb withdraw request")
+	}
+	return nil
+}
+
+func (db *db) GetWithdrawRequest(contractID []byte) ([]byte, uint8, error) {
+	cmbWithdrawRequestKey := getCMBWithdrawRequestKey(contractID)
+	cmbWithdrawRequestValue, err := db.Get(cmbWithdrawRequestKey)
+	if err != nil {
+		return nil, 0, err
+	}
+	return parseWithdrawRequestValue(cmbWithdrawRequestValue)
+}
+
+func (db *db) UpdateWithdrawRequestState(contractID []byte, state uint8) error {
+	cmbWithdrawRequestKey := getCMBWithdrawRequestKey(contractID)
+	cmbWithdrawRequestValue, err := db.Get(cmbWithdrawRequestKey)
+	if err != nil {
+		return err
+	}
+	txHash, _, err := parseWithdrawRequestValue(cmbWithdrawRequestValue)
+	if err != nil {
+		return errUnexpected(err, "parseWithdrawRequestValue")
+	}
+	newValue := getCMBWithdrawRequestValue(txHash, state)
+	if err := db.Put(cmbWithdrawRequestKey, newValue); err != nil {
+		return errUnexpected(err, "put cmb withdraw request")
+	}
+	return nil
+}
+
+func (db *db) StoreNoticePeriod(blockHeight int32, txReqHash []byte) error {
+	cmbNoticeKey := getCMBNoticeKey(blockHeight, txReqHash)
+	cmbNoticeValue := []byte{1}
+	if err := db.Put(cmbNoticeKey, cmbNoticeValue); err != nil {
+		return errUnexpected(err, "put cmb notice")
+	}
+	return nil
+}
+
+func (db *db) GetNoticePeriod(blockHeight int32) ([][]byte, error) {
+	txReqHash := []byte{} // empty hash to get all
+	txHashes := [][]byte{}
+	cmbNoticeKey := getCMBNoticeKey(blockHeight, txReqHash)
+	iter := db.lvdb.NewIterator(util.BytesPrefix(cmbNoticeKey), nil)
+	for iter.Next() {
+		key := string(iter.Key())
+		keys := strings.Split(key, string(Splitter)) // cmbnotice-blockHeight-[-]-txHash
+		txHashes = append(txHashes, []byte(keys[1]))
+	}
+	iter.Release()
+	return txHashes, nil
 }

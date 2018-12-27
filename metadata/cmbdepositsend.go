@@ -42,6 +42,9 @@ func (ds *CMBDepositSend) Hash() *common.Hash {
 func (ds *CMBDepositSend) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if contract is still valid
 	_, _, _, txContract, err := bcr.GetTransactionByHash(&ds.ContractID)
+	if err != nil {
+		return false, errors.Errorf("Error retrieving contract for sending deposit")
+	}
 	contractMeta := txContract.GetMetadata().(*CMBDepositContract)
 	if contractMeta.ValidUntil >= bcr.GetHeight() {
 		return false, errors.Errorf("Deposit contract is not valid anymore")

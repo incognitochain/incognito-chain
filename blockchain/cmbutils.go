@@ -54,7 +54,7 @@ func (blockgen *BlkTmplGenerator) buildCMBRefund(sourceTxns []*metadata.TxDesc, 
 
 		// Check if CMB is still not approved in previous blocks
 		meta := tx.GetMetadata().(*metadata.CMBInitRequest)
-		_, _, capital, _, state, err := blockgen.chain.GetCMB(meta.MainAccount.ToBytes())
+		_, _, capital, _, state, _, err := blockgen.chain.GetCMB(meta.MainAccount.ToBytes())
 		if err != nil {
 			// Unexpected error, cannot create a block if CMB init request is not refundable
 			return nil, errors.Errorf("error retrieving cmb for building refund")
@@ -120,7 +120,77 @@ func (bc *BlockChain) processCMBInitRefund(tx metadata.Transaction) error {
 
 func (bc *BlockChain) processCMBDepositSend(tx metadata.Transaction) error {
 	meta := tx.GetMetadata().(*metadata.CMBDepositSend)
-
 	hash := tx.Hash()
 	return bc.config.DataBase.StoreDepositSend(meta.ContractID[:], hash[:])
+}
+
+func (bc *BlockChain) processCMBWithdrawRequest(tx metadata.Transaction) error {
+	// Store request in db to prevent another request for this contract
+	meta := tx.GetMetadata().(*metadata.CMBWithdrawRequest)
+	hash := tx.Hash()
+	err := bc.config.DataBase.StoreWithdrawRequest(meta.ContractID[:], hash[:])
+	if err != nil {
+		return err
+	}
+
+	// Add notice period for later lateness check
+	_, _, _, txContract, err := bc.GetTransactionByHash(&meta.ContractID)
+	contractMeta := txContract.GetMetadata().(*metadata.CMBDepositContract)
+	endBlock := bc.GetHeight() + contractMeta.NoticePeriod
+	return bc.config.DataBase.StoreNoticePeriod(endBlock, hash[:])
+}
+
+func (bc *BlockChain) processCMBWithdrawResponse(tx metadata.Transaction) error {
+	// Update state of withdraw request
+	meta := tx.GetMetadata().(*metadata.CMBWithdrawResponse)
+	_, _, _, txRequest, err := bc.GetTransactionByHash(&meta.RequestTxID)
+	if err != nil {
+		return err
+	}
+	metaReq := txRequest.GetMetadata().(*metadata.CMBWithdrawRequest)
+	state := metadata.WithdrawFulfilled
+	return bc.config.DataBase.UpdateWithdrawRequestState(metaReq.ContractID[:], state)
+}
+
+func (bc *BlockChain) findLateWithdrawResponse() error {
+	blockHeight := bc.GetHeight()
+	txHashes, err := bc.config.DataBase.GetNoticePeriod(blockHeight)
+	if err != nil {
+		return err
+	}
+	for _, txHash := range txHashes {
+		// Get request tx
+		hash, _ := (&common.Hash{}).NewHash(txHash)
+		_, _, _, txReq, err := bc.GetTransactionByHash(hash)
+		if err != nil {
+			return err
+		}
+		reqMeta := txReq.GetMetadata().(*metadata.CMBWithdrawRequest)
+
+		// Check if request is still not fulfilled
+		_, state, err := bc.GetWithdrawRequest(reqMeta.ContractID[:])
+		if err != nil {
+			return err
+		}
+		if state == metadata.WithdrawFulfilled {
+			continue
+		}
+
+		// Get deposit contract of the request
+		contIDHash, _ := (&common.Hash{}).NewHash(reqMeta.ContractID[:])
+		_, _, _, txCont, err := bc.GetTransactionByHash(contIDHash)
+		if err != nil {
+			return err
+		}
+		contractMeta := txCont.GetMetadata().(*metadata.CMBDepositContract)
+
+		// Update fine
+		_, _, _, _, _, fine, err := bc.config.DataBase.GetCMB(contractMeta.CMBAddress.ToBytes())
+		fine += bc.GetDCBParams().LateWithdrawResponseFine
+		err = bc.config.DataBase.UpdateCMBFine(contractMeta.CMBAddress.ToBytes(), fine)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

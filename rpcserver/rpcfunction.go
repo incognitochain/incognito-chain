@@ -114,6 +114,7 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendTxWithCMBInitResponse:    RpcServer.handleCreateAndSendTxWithCMBInitResponse,
 	CreateAndSendTxWithCMBDepositContract: RpcServer.handleCreateAndSendTxWithCMBDepositContract,
 	CreateAndSendTxWithCMBDepositSend:     RpcServer.handleCreateAndSendTxWithCMBDepositSend,
+	CreateAndSendTxWithCMBWithdrawRequest: RpcServer.handleCreateAndSendTxWithCMBWithdrawRequest,
 }
 
 // Commands that are available to a limited user

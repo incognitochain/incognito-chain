@@ -60,10 +60,10 @@ func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*voting.SaleData, error
 	return saleData, err
 }
 
-func (self *BlockChain) GetCMB(mainAccount []byte) (privacy.PaymentAddress, []privacy.PaymentAddress, uint64, *common.Hash, uint8, error) {
-	reserveAcc, members, capital, hash, state, err := self.config.DataBase.GetCMB(mainAccount)
+func (self *BlockChain) GetCMB(mainAccount []byte) (privacy.PaymentAddress, []privacy.PaymentAddress, uint64, *common.Hash, uint8, uint64, error) {
+	reserveAcc, members, capital, hash, state, fine, err := self.config.DataBase.GetCMB(mainAccount)
 	if err != nil {
-		return privacy.PaymentAddress{}, nil, 0, nil, 0, err
+		return privacy.PaymentAddress{}, nil, 0, nil, 0, 0, err
 	}
 
 	memberAddresses := []privacy.PaymentAddress{}
@@ -74,7 +74,7 @@ func (self *BlockChain) GetCMB(mainAccount []byte) (privacy.PaymentAddress, []pr
 
 	txHash, _ := (&common.Hash{}).NewHash(hash)
 	reserve := (&privacy.PaymentAddress{}).FromBytes(reserveAcc)
-	return *reserve, memberAddresses, capital, txHash, state, nil
+	return *reserve, memberAddresses, capital, txHash, state, fine, nil
 }
 
 func (self *BlockChain) GetCMBResponse(mainAccount []byte) ([][]byte, error) {
@@ -83,4 +83,8 @@ func (self *BlockChain) GetCMBResponse(mainAccount []byte) ([][]byte, error) {
 
 func (self *BlockChain) GetDepositSend(contractID []byte) ([]byte, error) {
 	return self.config.DataBase.GetDepositSend(contractID)
+}
+
+func (self *BlockChain) GetWithdrawRequest(contractID []byte) ([]byte, uint8, error) {
+	return self.config.DataBase.GetWithdrawRequest(contractID)
 }

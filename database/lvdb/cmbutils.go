@@ -29,6 +29,7 @@ func getCMBInitValue(
 	capital uint64,
 	txHash []byte,
 	state uint8,
+	fine uint64,
 ) ([]byte, error) {
 	// Add reserve account
 	values := []byte{}
@@ -38,6 +39,11 @@ func getCMBInitValue(
 	capitalInBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(capitalInBytes, capital)
 	values = append(values, capitalInBytes...)
+
+	// Add fine
+	fineInBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(fineInBytes, fine)
+	values = append(values, fineInBytes...)
 
 	// Add members
 	for _, member := range members {
@@ -52,22 +58,30 @@ func getCMBInitValue(
 
 	// Add state
 	values = append(values, common.Uint8ToBytes(state)...)
+
 	return values, nil
 }
 
-func parseCMBInitValue(value []byte) ([]byte, [][]byte, uint64, []byte, uint8, error) {
+func parseCMBInitValue(value []byte) ([]byte, [][]byte, uint64, []byte, uint8, uint64, error) {
 	// Get reserve
 	if len(value) < PaymentAddressLen {
-		return nil, nil, 0, nil, 0, errors.Errorf("error parsing cmb value")
+		return nil, nil, 0, nil, 0, 0, errors.Errorf("error parsing cmb value")
 	}
 	reserve := value[:PaymentAddressLen]
 
 	// Get capital
 	value = value[PaymentAddressLen:]
 	if len(value) < 8 {
-		return nil, nil, 0, nil, 0, errors.Errorf("error parsing cmb value")
+		return nil, nil, 0, nil, 0, 0, errors.Errorf("error parsing cmb value")
 	}
 	capital := binary.LittleEndian.Uint64(value)
+
+	// Get fine
+	value = value[8:]
+	if len(value) < 8 {
+		return nil, nil, 0, nil, 0, 0, errors.Errorf("error parsing cmb value")
+	}
+	fine := binary.LittleEndian.Uint64(value)
 
 	// Last byte: state
 	state := uint8(value[len(value)-1])
@@ -78,7 +92,7 @@ func parseCMBInitValue(value []byte) ([]byte, [][]byte, uint64, []byte, uint8, e
 	// The rest: members
 	value = value[8 : len(value)-common.HashSize-2]
 	if len(value)%PaymentAddressLen != 0 {
-		return nil, nil, 0, nil, 0, errors.Errorf("error parsing cmb value")
+		return nil, nil, 0, nil, 0, 0, errors.Errorf("error parsing cmb value")
 	}
 	numMembers := len(value) / PaymentAddressLen
 	members := [][]byte{}
@@ -88,7 +102,7 @@ func parseCMBInitValue(value []byte) ([]byte, [][]byte, uint64, []byte, uint8, e
 		copy(member, value[i*PaymentAddressLen:(i+1)*PaymentAddressLen])
 		members = append(members, member)
 	}
-	return reserve, members, capital, txHash, state, nil
+	return reserve, members, capital, txHash, state, fine, nil
 }
 
 func getCMBResponseKey(mainAccount, approver []byte) []byte {
@@ -105,4 +119,34 @@ func getCMBDepositSendKey(contractID []byte) []byte {
 
 func getCMBDepositSendValue(txHash []byte) []byte {
 	return txHash
+}
+
+func getCMBWithdrawRequestKey(contractID []byte) []byte {
+	key := append(cmbWithdrawRequestPrefix, contractID...)
+	return key
+}
+
+func getCMBWithdrawRequestValue(txHash []byte, state uint8) []byte {
+	values := make([]byte, len(txHash), len(txHash)+1)
+	copy(values, txHash)
+	values = append(values, common.Uint8ToBytes(state)...)
+	return txHash
+}
+
+func parseWithdrawRequestValue(values []byte) ([]byte, uint8, error) {
+	if len(values) != 1+common.HashSize {
+		return nil, 0, errors.Errorf("Error parsing withdraw request")
+	}
+	txHash := values[:len(values)-2]
+	state := uint8(values[len(values)-1])
+	return txHash, state, nil
+}
+
+func getCMBNoticeKey(blockHeight int32, txReqHash []byte) []byte {
+	// 0xjackalope: convert to uint32 before saving to db
+	key := cmbNoticePrefix
+	key = append(key, common.Uint32ToBytes(uint32(blockHeight))...)
+	key = append(key, Splitter...)
+	key = append(key, txReqHash...)
+	return key
 }

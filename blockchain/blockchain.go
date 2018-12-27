@@ -849,9 +849,25 @@ func (self *BlockChain) ProcessCMBTxs(block *Block) error {
 					return err
 				}
 			}
+		case metadata.CMBWithdrawRequestMeta:
+			{
+				err := self.processCMBWithdrawRequest(tx)
+				if err != nil {
+					return err
+				}
+			}
+		case metadata.CMBWithdrawResponseMeta:
+			{
+				err := self.processCMBWithdrawResponse(tx)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
-	return nil
+
+	// Penalize late response for cmb withdraw request
+	return self.findLateWithdrawResponse()
 }
 
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
