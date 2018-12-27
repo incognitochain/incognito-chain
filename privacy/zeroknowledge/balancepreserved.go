@@ -2,17 +2,17 @@ package zkp
 
 import (
 	"fmt"
+	"github.com/ninjadotorg/constant/common"
 	"github.com/pkg/errors"
 
 	//"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"math"
 	"math/big"
 
-	"github.com/minio/blake2b-simd"
 	"github.com/ninjadotorg/constant/privacy"
 )
 
-type PKComMultiRangeProof struct {
+type MultiRangeProof struct {
 	Counter byte
 	Comms   []*privacy.EllipticPoint
 	A       *privacy.EllipticPoint
@@ -30,14 +30,14 @@ type PKComMultiRangeProof struct {
 	Cx *big.Int
 }
 
-type PKComMultiRangeWitness struct {
+type MultiRangeWitness struct {
 	Comms  []*privacy.EllipticPoint
 	Values []*big.Int
 	Rands  []*big.Int
 	maxExp byte
 }
 
-func (pro *PKComMultiRangeProof) Init() *PKComMultiRangeProof {
+func (pro *MultiRangeProof) Init() *MultiRangeProof {
 	pro.A = new(privacy.EllipticPoint).Zero()
 	pro.S = new(privacy.EllipticPoint).Zero()
 	pro.T1 = new(privacy.EllipticPoint).Zero()
@@ -52,7 +52,7 @@ func (pro *PKComMultiRangeProof) Init() *PKComMultiRangeProof {
 	pro.IPP.B = new(big.Int)
 	return pro
 }
-func (pro *PKComMultiRangeProof) IsNil() bool {
+func (pro *MultiRangeProof) IsNil() bool {
 	if pro.A == nil {
 		return true
 	}
@@ -92,7 +92,7 @@ func (pro *PKComMultiRangeProof) IsNil() bool {
 	return false
 }
 
-func (pro PKComMultiRangeProof) Bytes() []byte {
+func (pro MultiRangeProof) Bytes() []byte {
 	var res []byte
 
 	if pro.IsNil() == true {
@@ -105,10 +105,12 @@ func (pro PKComMultiRangeProof) Bytes() []byte {
 	for i := 0; i < int(pro.Counter); i++ {
 		res = append(res, pro.Comms[i].Compress()...)
 	}
+
 	res = append(res, pro.A.Compress()...)
 	res = append(res, pro.S.Compress()...)
 	res = append(res, pro.T1.Compress()...)
 	res = append(res, pro.T2.Compress()...)
+
 	res = append(res, privacy.AddPaddingBigInt(pro.Tau, privacy.BigIntSize)...)
 	res = append(res, privacy.AddPaddingBigInt(pro.Th, privacy.BigIntSize)...)
 	res = append(res, privacy.AddPaddingBigInt(pro.Mu, privacy.BigIntSize)...)
@@ -119,48 +121,57 @@ func (pro PKComMultiRangeProof) Bytes() []byte {
 	return res
 
 }
-func (pro *PKComMultiRangeProof) SetBytes(proofbytes []byte) error {
-
+func (pro *MultiRangeProof) SetBytes(proofbytes []byte) error {
 	if pro.IsNil() {
 		pro = pro.Init()
 	}
+
 	if len(proofbytes) == 0 {
 		return nil
 	}
 
 	pro.Counter = proofbytes[0]
 	pro.maxExp = proofbytes[1]
-	pro.Comms = make([]*privacy.EllipticPoint, pro.Counter)
 	offset := 2
+
+	pro.Comms = make([]*privacy.EllipticPoint, pro.Counter)
 	for i := 0; i < int(pro.Counter); i++ {
 		pro.Comms[i] = new(privacy.EllipticPoint)
-		pro.Comms[i].Decompress(proofbytes[offset : offset+privacy.CompressedPointSize])
+		err := pro.Comms[i].Decompress(proofbytes[offset : offset+privacy.CompressedPointSize])
+		if err != nil{
+			return err
+		}
 		offset += privacy.CompressedPointSize
 	}
+
 	pro.A = new(privacy.EllipticPoint)
 	err := pro.A.Decompress(proofbytes[offset:])
 	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
+
 	pro.S = new(privacy.EllipticPoint)
 	err = pro.S.Decompress(proofbytes[offset:])
 	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
+
 	pro.T1 = new(privacy.EllipticPoint)
 	err = pro.T1.Decompress(proofbytes[offset:])
 	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
+
 	pro.T2 = new(privacy.EllipticPoint)
 	err = pro.T2.Decompress(proofbytes[offset:])
 	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
+
 	pro.Tau = new(big.Int)
 	pro.Tau.SetBytes(proofbytes[offset : offset+privacy.BigIntSize])
 	offset += privacy.BigIntSize
@@ -183,7 +194,7 @@ func (pro *PKComMultiRangeProof) SetBytes(proofbytes []byte) error {
 	pro.IPP.SetBytes(proofbytes[offset:end])
 	return nil
 }
-func (pro *PKComMultiRangeProof) Print() {
+func (pro *MultiRangeProof) Print() {
 	fmt.Println(pro.Counter)
 	fmt.Println(pro.Comms)
 	fmt.Println(pro.A)
@@ -225,7 +236,7 @@ func InitCommonParams(l int, maxExp byte) {
 	VecLength = int(maxExp) * pad(l)
 	RangeProofParams = NewECPrimeGroupKey(VecLength)
 }
-func (wit *PKComMultiRangeWitness) Set(v []*big.Int, maxExp byte) {
+func (wit *MultiRangeWitness) Set(v []*big.Int, maxExp byte) {
 	l := pad(len(v) + 1)
 	wit.Values = make([]*big.Int, l)
 	for i := 0; i < l; i++ {
@@ -291,7 +302,7 @@ func DeltaMRP(y []*big.Int, z *big.Int, m int) *big.Int {
 }
 
 /*
-PKComMultiRangeProof Prove
+MultiRangeProof Prove
 Takes in a list of values and provides an aggregate
 range proof for all the values.
 
@@ -304,11 +315,11 @@ changes:
 {(g, h \in G, \textbf{V} \in G^m ; \textbf{v, \gamma} \in Z_p^m) :
 	V_j = h^{\gamma_j}g^{v_j} \wedge v_j \in [0, 2^n - 1] \forall j \in [1, m]}
 */
-func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
+func (wit *MultiRangeWitness) Prove() (*MultiRangeProof, error) {
 	// RangeProofParams.V has the total number of values and bits we can support
 
 	InitCommonParams(len(wit.Values), wit.maxExp)
-	MRProof := PKComMultiRangeProof{}
+	MRProof := MultiRangeProof{}
 	MRProof.maxExp = wit.maxExp
 	m := len(wit.Values)
 	MRProof.Counter = byte(m)
@@ -368,11 +379,11 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 	} else {
 		MRProof.S = S
 	}
-	chal1s256 := blake2b.Sum256([]byte(A.X.String() + A.Y.String()))
+	chal1s256 := common.HashB([]byte(A.X.String() + A.Y.String()))
 	cy := new(big.Int).SetBytes(chal1s256[:])
 	MRProof.Cy = cy
 
-	chal2s256 := blake2b.Sum256([]byte(S.X.String() + S.Y.String()))
+	chal2s256 := common.HashB([]byte(S.X.String() + S.Y.String()))
 	cz := new(big.Int).SetBytes(chal2s256[:])
 	MRProof.Cz = cz
 
@@ -429,7 +440,7 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 	MRProof.T1 = T1
 	MRProof.T2 = T2
 
-	chal3s256 := blake2b.Sum256([]byte(T1.X.String() + T1.Y.String() + T2.X.String() + T2.Y.String()))
+	chal3s256 := common.HashB([]byte(T1.X.String() + T1.Y.String() + T2.X.String() + T2.Y.String()))
 	cx := new(big.Int).SetBytes(chal3s256[:])
 
 	MRProof.Cx = cx
@@ -469,53 +480,12 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 	MRProof.IPP = InnerProductProve(left, right, that, P, RangeProofParams.U, RangeProofParams.BPG, HPrime)
 	return &MRProof, nil
 }
-func (wit *PKComMultiRangeWitness) ProveSum() (*PKComZeroProof, error) {
-	l := len(wit.Comms)
-	if l == 0 {
-		return new(PKComZeroProof), errors.New("Witness for proving sum value is not valid")
-	}
-
-	sumComms := RangeProofParams.Zero()
-	sumRand := new(big.Int).SetInt64(0)
-	temp := new(privacy.EllipticPoint)
-	for i := 0; i < l-1; i++ {
-		temp = privacy.PedCom.CommitAtIndex(wit.Values[i], wit.Rands[i], privacy.VALUE)
-		sumComms = sumComms.Add(temp)
-		sumRand.Add(sumRand, new(big.Int).Set(wit.Rands[i]))
-	}
-	sumRand.Sub(sumRand, wit.Rands[l-1])
-	temp = privacy.PedCom.CommitAtIndex(wit.Values[l-1], wit.Rands[l-1], privacy.VALUE)
-	temp, _ = temp.Inverse()
-	sumComms = sumComms.Add(temp)
-	sumRand.Mod(sumRand, privacy.Curve.Params().N)
-	var zeroWit PKComZeroWitness
-	idx := new(byte)
-	*idx = privacy.VALUE
-	zeroWit.Set(sumComms, idx, sumRand)
-	return zeroWit.Prove()
-}
-func (pro *PKComMultiRangeProof) VerifySum(zproof *PKComZeroProof) bool {
-	if zproof.commitmentValue == nil {
-		return false
-	}
-	zeroCom := RangeProofParams.Zero()
-	for i := 0; i < len(pro.Comms)-1; i++ {
-		zeroCom = zeroCom.Add(pro.Comms[i])
-	}
-	invSumCom, _ := pro.Comms[len(pro.Comms)-1].Inverse()
-	zeroCom = zeroCom.Add(invSumCom)
-	if !zeroCom.IsEqual(zproof.commitmentValue) {
-		return false
-	} else {
-		return zproof.Verify()
-	}
-}
 
 /*
-PKComMultiRangeProof Verify
-Takes in a PKComMultiRangeProof and verifies its correctness
+MultiRangeProof Verify
+Takes in a MultiRangeProof and verifies its correctness
 */
-func (pro *PKComMultiRangeProof) Verify() bool {
+func (pro *MultiRangeProof) Verify() bool {
 	m := len(pro.Comms)
 	InitCommonParams(m, pro.maxExp)
 	if m == 0 {
@@ -526,17 +496,17 @@ func (pro *PKComMultiRangeProof) Verify() bool {
 	// check 1 changes since it includes all commitments
 	// check 2 commitment generation is also different
 	// verify the challenges
-	chal1s256 := blake2b.Sum256([]byte(pro.A.X.String() + pro.A.Y.String()))
+	chal1s256 := common.HashB([]byte(pro.A.X.String() + pro.A.Y.String()))
 	cy := new(big.Int).SetBytes(chal1s256[:])
 	if cy.Cmp(pro.Cy) != 0 {
 		return false
 	}
-	chal2s256 := blake2b.Sum256([]byte(pro.S.X.String() + pro.S.Y.String()))
+	chal2s256 := common.HashB([]byte(pro.S.X.String() + pro.S.Y.String()))
 	cz := new(big.Int).SetBytes(chal2s256[:])
 	if cz.Cmp(pro.Cz) != 0 {
 		return false
 	}
-	chal3s256 := blake2b.Sum256([]byte(pro.T1.X.String() + pro.T1.Y.String() + pro.T2.X.String() + pro.T2.Y.String()))
+	chal3s256 := common.HashB([]byte(pro.T1.X.String() + pro.T1.Y.String() + pro.T2.X.String() + pro.T2.Y.String()))
 	cx := new(big.Int).SetBytes(chal3s256[:])
 	if cx.Cmp(pro.Cx) != 0 {
 		return false

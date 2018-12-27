@@ -81,7 +81,7 @@ func (tx *Tx) Init(
 	fee uint64,
 	hasPrivacy bool,
 	db database.DatabaseInterface,
-	tokenID *common.Hash, // default is nill -> use for constant coin
+	tokenID *common.Hash, // default is nil -> use for constant coin
 ) *TransactionError {
 	tx.Version = TxVersion
 	var err error
@@ -96,6 +96,12 @@ func (tx *Tx) Init(
 	if tx.LockTime == 0 {
 		tx.LockTime = time.Now().Unix()
 	}
+
+	// check number of outputs
+	//if len(paymentInfo) > privacy.ValueMax{
+	//	return NewTransactionErr(WrongInput, errors.New("Number of outputs is exceed max value"))
+	//}
+
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKey(senderSK)
@@ -116,17 +122,12 @@ func (tx *Tx) Init(
 	}
 
 	tx.Type = common.TxNormalType
+
 	chainID, _ := common.GetTxSenderChain(pkLastByteSender)
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
 	commitmentIndexs, myCommitmentIndexs = RandomCommitmentsProcess(inputCoins, privacy.CMRingSize, db, chainID, tokenID)
-
-	// Print list of all input coins
-	//Logger.log.Infof("List of all input coins before building tx:\n")
-	//for _, coin := range inputCoins {
-	//	Logger.log.Infof("%+v\n", coin)
-	//}
 
 	// Check number of list of random commitments, list of random commitment indices
 	if len(commitmentIndexs) != len(inputCoins)*privacy.CMRingSize {
@@ -142,7 +143,6 @@ func (tx *Tx) Init(
 	sumOutputValue = 0
 	for _, p := range paymentInfo {
 		sumOutputValue += p.Amount
-		//Logger.log.Infof("[CreateTx] paymentInfo.Value: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
 	}
 
 	// Calculate sum of all input coins' value
@@ -153,19 +153,20 @@ func (tx *Tx) Init(
 	}
 
 	// Calculate over balance, it will be returned to sender
-	overBalance := sumInputValue - sumOutputValue - fee
+	overBalance := int(sumInputValue - sumOutputValue - fee)
 
+	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	valueMax := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(64)), nil)
 	valueMax = valueMax.Sub(valueMax, big.NewInt(1))
-	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
-	if overBalance < 0 || overBalance > valueMax.Uint64() {
+
+	if overBalance < 0 {
 		return NewTransactionErr(WrongInput, errors.New("Input value less than output value"))
 	}
 
 	// if overBalance > 0, create a new payment info with pk is sender's pk and amount is overBalance
 	if overBalance > 0 {
 		changePaymentInfo := new(privacy.PaymentInfo)
-		changePaymentInfo.Amount = overBalance
+		changePaymentInfo.Amount = uint64(overBalance)
 		changePaymentInfo.PaymentAddress = senderFullKey.PaymentAddress
 		paymentInfo = append(paymentInfo, changePaymentInfo)
 	}
@@ -238,7 +239,7 @@ func (tx *Tx) Init(
 
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	err = witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
+	err = witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
 	if err.(*privacy.PrivacyError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}

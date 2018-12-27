@@ -5,7 +5,7 @@ import (
 	"math/big"
 )
 
-// PKOneOfManyWitness is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
+// OneOutOfManyWitness is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
 // include Witness: CommitedValue, r []byte
 type PKSNPrivacyWitness struct {
 	// general info
@@ -21,7 +21,7 @@ type PKSNPrivacyWitness struct {
 	rSND2 *big.Int
 }
 
-// PKOneOfManyProof contains Proof's value
+// OneOutOfManyProof contains Proof's value
 type PKSNPrivacyProof struct {
 	// general info
 	serialNumber *privacy.EllipticPoint

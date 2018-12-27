@@ -1,5 +1,10 @@
 package main
 
+import (
+	"fmt"
+	"math/big"
+)
+
 func main() {
 
 	// fmt.Printf("N: %X\n", privacy.Curve.Params().N)
@@ -414,4 +419,25 @@ func main() {
 	//fmt.Printf("\n\n")
 
 	//fmt.Printf("%+v\n", privacy.Eval(big.NewInt(3), big.NewInt(2), privacy.PedCom.G[privacy.SK]))
+
+	valueMax := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(64)), nil)
+	valueMax = valueMax.Sub(valueMax, big.NewInt(1))
+	fmt.Println(valueMax)
+
+	valueMax1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(32)), nil)
+	valueMax1 = valueMax1.Sub(valueMax1, big.NewInt(1))
+
+
+	//f := int(90)z
+
+	//
+	//fmt.Println(uint64(f))
+
+	//arr := make([]int, valueMax1.Uint64())
+	//fmt.Printf("len arr : %v\n", len(arr))
+	//for i := 0; i < ; i++{
+	//	arr[i] = 10
+	//	//fmt.Printf("arr[%v]: %v\n", i, arr[i])
+	//}
+
 }

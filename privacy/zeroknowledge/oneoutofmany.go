@@ -8,9 +8,9 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 )
 
-// PKOneOfManyWitness is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
+// OneOutOfManyWitness is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
 // include Witness: CommitedValue, r []byte
-type PKOneOfManyWitness struct {
+type OneOutOfManyWitness struct {
 	rand        *big.Int
 	indexIsZero uint64
 	// general info
@@ -19,8 +19,8 @@ type PKOneOfManyWitness struct {
 	index             byte
 }
 
-// PKOneOfManyProof contains Proof's value
-type PKOneOfManyProof struct {
+// OneOutOfManyProof contains Proof's value
+type OneOutOfManyProof struct {
 	cl, ca, cb, cd []*privacy.EllipticPoint
 	f, za, zb      []*big.Int
 	zd             *big.Int
@@ -30,7 +30,7 @@ type PKOneOfManyProof struct {
 	index             byte
 }
 
-func (pro *PKOneOfManyProof) IsNil() bool {
+func (pro *OneOutOfManyProof) IsNil() bool {
 	if pro.cl == nil {
 		return true
 	}
@@ -61,13 +61,13 @@ func (pro *PKOneOfManyProof) IsNil() bool {
 	return false
 }
 
-func (pro *PKOneOfManyProof) Init() *PKOneOfManyProof {
+func (pro *OneOutOfManyProof) Init() *OneOutOfManyProof {
 	pro.zd = new(big.Int)
 	return pro
 }
 
 // Set sets Witness
-func (wit *PKOneOfManyWitness) Set(
+func (wit *OneOutOfManyWitness) Set(
 	commitments []*privacy.EllipticPoint,
 	commitmentIndexs []uint64,
 	rand *big.Int,
@@ -75,7 +75,7 @@ func (wit *PKOneOfManyWitness) Set(
 	index byte) {
 
 	if wit == nil {
-		wit = new(PKOneOfManyWitness)
+		wit = new(OneOutOfManyWitness)
 	}
 
 	wit.commitmentIndices = commitmentIndexs
@@ -86,7 +86,7 @@ func (wit *PKOneOfManyWitness) Set(
 }
 
 // Set sets Proof
-func (pro *PKOneOfManyProof) Set(
+func (pro *OneOutOfManyProof) Set(
 	commitmentIndexs []uint64,
 	commitments []*privacy.EllipticPoint,
 	cl, ca, cb, cd []*privacy.EllipticPoint,
@@ -95,7 +95,7 @@ func (pro *PKOneOfManyProof) Set(
 	index byte) {
 
 	if pro == nil {
-		pro = new(PKOneOfManyProof)
+		pro = new(OneOutOfManyProof)
 	}
 
 	pro.CommitmentIndices = commitmentIndexs
@@ -107,7 +107,7 @@ func (pro *PKOneOfManyProof) Set(
 }
 
 // Bytes converts one of many proof to bytes array
-func (pro *PKOneOfManyProof) Bytes() []byte {
+func (pro *OneOutOfManyProof) Bytes() []byte {
 	// if proof is nil, return an empty array
 	if pro.IsNil() {
 		return []byte{}
@@ -169,8 +169,8 @@ func (pro *PKOneOfManyProof) Bytes() []byte {
 	return bytes
 }
 
-// SetBytes convert from bytes array to PKOneOfManyProof
-func (pro *PKOneOfManyProof) SetBytes(bytes []byte) error {
+// SetBytes convert from bytes array to OneOutOfManyProof
+func (pro *OneOutOfManyProof) SetBytes(bytes []byte) error {
 	if pro == nil {
 		pro = pro.Init()
 	}
@@ -261,7 +261,7 @@ func (pro *PKOneOfManyProof) SetBytes(bytes []byte) error {
 }
 
 // Prove creates proof for one out of many commitments containing 0
-func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
+func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	// Check the number of Commitment list's elements
 	N := len(wit.commitments)
 	if N != privacy.CMRingSize {
@@ -379,13 +379,13 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	zd.Sub(zd, sumInt)
 	zd.Mod(zd, privacy.Curve.Params().N)
 
-	proof := new(PKOneOfManyProof).Init()
+	proof := new(OneOutOfManyProof).Init()
 	proof.Set(wit.commitmentIndices, wit.commitments, cl, ca, cb, cd, f, za, zb, zd, wit.index)
 
 	return proof, nil
 }
 
-func (pro *PKOneOfManyProof) Verify() bool {
+func (pro *OneOutOfManyProof) Verify() bool {
 	N := len(pro.Commitments)
 	//N := 8
 

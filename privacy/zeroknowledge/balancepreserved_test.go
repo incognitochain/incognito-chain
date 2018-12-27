@@ -15,14 +15,14 @@ func TestPKComMultiRange(t *testing.T) {
 		values[i] = new(big.Int).SetBytes(privacy.RandBytes(1))
 	}
 
-	var witness PKComMultiRangeWitness
+	var witness MultiRangeWitness
 	witness.Set(values, 64)
 
 	// Testing smallest number in range
 	proof, _ := witness.Prove()
 	b := proof.Bytes()
 
-	Vproof := new(PKComMultiRangeProof)
+	Vproof := new(MultiRangeProof)
 	Vproof.SetBytes(b)
 
 	res := Vproof.Verify()

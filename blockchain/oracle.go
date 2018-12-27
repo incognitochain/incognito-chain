@@ -283,7 +283,7 @@ func (blockGen *BlkTmplGenerator) updateOracleBoard(
 	sortedTxs := Txs(txs).SortTxs(false)
 	for _, tx := range sortedTxs {
 		meta := tx.GetMetadata()
-		updatingOracleBoard, ok := meta.(metadata.UpdatingOracleBoard)
+		updatingOracleBoard, ok := meta.(*metadata.UpdatingOracleBoard)
 		if !ok {
 			return errors.New("Could not parse UpdatingOracleBoard metadata.")
 		}

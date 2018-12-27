@@ -22,7 +22,7 @@ func TestPKSNNoPrivacy(t *testing.T) {
 
 	serialNumber := privacy.Eval(skInt, SND, privacy.PedCom.G[privacy.SK])
 
-	witness := new(PKSNNoPrivacyWitness)
+	witness := new(SNNoPrivacyWitness)
 	witness.Set(serialNumber, pkPoint, SND, skInt)
 
 	proof, err := witness.Prove()
@@ -32,7 +32,7 @@ func TestPKSNNoPrivacy(t *testing.T) {
 
 	proofBytes := proof.Bytes()
 
-	proof2 := new(PKSNNoPrivacyProof).Init()
+	proof2 := new(SNNoPrivacyProof).Init()
 	proof2.SetBytes(proofBytes)
 
 	res := proof2.Verify()
