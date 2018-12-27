@@ -75,7 +75,7 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	}
 	beaconBlock.Header.Timestamp = time.Now().Unix()
 	beaconBlock.Header.PrevBlockHash = beaconBestState.BestBlockHash
-	tempShardState, staker, swap := self.GetShardState()
+	tempShardState, staker, swap := self.GetShardState(&beaconBestState)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap)
 	//==========Create Body
 	beaconBlock.Body.Instructions = tempInstruction
@@ -131,20 +131,46 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	return beaconBlock, nil
 }
 
-func (self *BlkTmplGenerator) GetShardState() (map[byte][]common.Hash, map[byte]interface{}, map[byte]interface{}) {
+func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (map[byte][]common.Hash, map[byte]interface{}, map[byte]interface{}) {
 	shardState := make(map[byte][]common.Hash)
-	staker := make(map[byte]interface{})
+	stakers := make(map[byte]interface{})
+	validStakers := [][]string{}
 	swap := make(map[byte]interface{})
 	shardsBlocks := self.shardToBeaconPool.GetFinalBlock()
 	for shardID, shardBlocks := range shardsBlocks {
 		for _, shardBlock := range shardBlocks {
-			//TODO: Need to define hash to append
 			shardState[shardID] = append(shardState[shardID], shardBlock.Header.Hash())
-			//TODO: Get staker from shard block
-			//TODO: Get Swap validator from shard block
+			//TODO: Get staker from shard block -> depend on ShardToBeaconBlock
+			// stakers := ...
+			for _, staker := range stakers {
+				staker = staker.([]string)
+				tempStaker := []string{}
+				newBeaconCandidate, newShardCandidate := GetStakeValidatorArrayString(staker.([]string))
+				assignShard := true
+				if !reflect.DeepEqual(newBeaconBlock, []string{}) {
+					copy(tempStaker, newBeaconCandidate[:])
+					assignShard := false
+				} else {
+					copy(tempStaker, newShardCandidate[:])
+				}
+				for _, committees := range beaconBestState.ShardCommittee {
+					tempStaker = GetValidStaker(committees, tempStaker)
+				}
+				for _, validators := range beaconBestState.ShardPendingValidator {
+					tempStaker = GetValidStaker(validators, tempStaker)
+				}
+				tempStaker = GetValidStaker(beaconBestState.BeaconCommittee, tempStaker)
+				tempStaker = GetValidStaker(beaconBestState.BeaconPendingValidator, tempStaker)
+				if assignShard {
+					validStakers = append(validStakers, []string{"assign", strings.Join(tempStaker, ","), "shard"})
+				} else {
+					validStakers = append(validStakers, []string{"assign", strings.Join(tempStaker, ","), "beacon"})
+				}
+			}
+			//TODO: Get Swap validator from shard block -> depend on ShardToBeaconBlock
 		}
 	}
-	return shardState, staker, swap
+	return shardState, validStakers, swap
 }
 
 /*
@@ -157,18 +183,18 @@ func (self *BlkTmplGenerator) GetShardState() (map[byte][]common.Hash, map[byte]
 	- random instruction -> ok
 	- assign instruction -> ok
 */
-func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, staker map[byte]interface{}, swap map[byte]interface{}) [][]string {
+func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, stakers map[byte]interface{}, swap map[byte]interface{}) [][]string {
 	instructions := [][]string{}
 	//=======Swap
 	// Shard Swap: both abnormal or normal swap
 	for _, swapInstruction := range swap {
 		instructions = append(instructions, swapInstruction.([]string))
-		//TODO: detect swap and change
+		//TODO: detect swap and change -> depend on GetShardState function
 		// - ShardCommittee map[byte][]string
 		// - ShardPendingValidator map[byte][]string
 		// Build ShardValidatorsRoot
 	}
-	// TODO: beacon unexpeted swap
+	// TODO: beacon unexpeted swap -> pbft
 	// Beacon normal swap
 	if block.Header.Height%EPOCH == EPOCH-1 {
 		swapBeaconInstructions := []string{}
@@ -186,7 +212,7 @@ func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, staker map[
 	// ["assign", "pubkey.....", "shard" or "beacon"]
 	// beaconStaker := []string{}
 	// shardStaker := []string{}
-	for _, assignInstruction := range staker {
+	for _, assignInstruction := range stakers {
 		instructions = append(instructions, assignInstruction.([]string))
 		// assignInstructionTemp := assignInstruction.([]string)
 		// if assignInstructionTemp[0] == "assign" && assignInstructionTemp[2] == "beacon" {
@@ -233,4 +259,34 @@ func GenerateRandomInstruction(timestamp int64) []string {
 	strs = append(strs, reses...)
 	strs = append(strs, strconv.Itoa(int(timestamp)))
 	return strs
+}
+
+//===================================Util for Beacon=============================
+func GetValidStaker(committees []string, stakers []string) []string {
+	validStaker := []string{}
+	for _, staker := range stakers {
+		flag := false
+		for _, committee := range committees {
+			if strings.Compare(staker, committee) == 0 {
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			validStaker = append(validStaker, staker)
+		}
+	}
+	return validStaker
+}
+
+func GetStakeValidatorArrayString(v []string) ([]string, []string) {
+	beacon := []string{}
+	shard := []string{}
+	if v[0] == "assign" && v[2] == "beacon" {
+		beacon = strings.Split(v[1], ",")
+	}
+	if v[0] == "assign" && v[2] == "shard" {
+		shard = strings.Split(v[1], ",")
+	}
+	return beacon, shard
 }

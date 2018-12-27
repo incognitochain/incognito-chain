@@ -246,6 +246,7 @@ func (self *BlockChain) AcceptBeaconBlock(blockHash *common.Hash) error {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 	Logger.log.Infof("Accepted block %+v", blockHash)
+	//
 	return nil
 }
 func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error {
@@ -479,8 +480,6 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 				}
 				// append in public key to committees
 				self.ShardCommittee[shardID] = append(self.ShardCommittee[shardID], inPubkeys...)
-
-				// TODO: Check new list with root hash received from block
 			} else if l[3] == "beacon" {
 				var err error
 				self.BeaconPendingValidator, err = RemoveValidator(self.BeaconPendingValidator, inPubkeys)
@@ -514,10 +513,10 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	self.CandidateBeaconWaitingForNextRandom = append(self.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
 	self.CandidateShardWaitingForNextRandom = append(self.CandidateShardWaitingForNextRandom, newShardCandidate...)
 	if self.BeaconHeight == 1 {
-		//TODO: committee assign
+		// Assign committee with genesis block
 		self.BeaconCommittee = append(self.BeaconCommittee, newBeaconCandidate...)
 	}
-	if self.BeaconHeight%EPOCH == 0 && self.BeaconHeight != 0 {
+	if self.BeaconHeight%EPOCH == 0 && self.BeaconHeight != 1 {
 		self.IsGetRandomNUmber = false
 		// Begin of each epoch
 	} else if self.BeaconHeight%EPOCH < RANDOM_TIME {
