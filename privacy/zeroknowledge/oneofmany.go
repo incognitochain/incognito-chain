@@ -118,68 +118,53 @@ func (pro *PKOneOfManyProof) Bytes() []byte {
 	n := privacy.CMRingSizeExp
 
 	var bytes []byte
-	nBytes := 0
 
 	// convert array cl to bytes array
 	for i := 0; i < n; i++ {
 		bytes = append(bytes, pro.cl[i].Compress()...)
-		nBytes += privacy.CompressedPointSize
 	}
 	// convert array ca to bytes array
 	for i := 0; i < n; i++ {
 		bytes = append(bytes, pro.ca[i].Compress()...)
-		nBytes += privacy.CompressedPointSize
 	}
 
 	// convert array cb to bytes array
 	for i := 0; i < n; i++ {
 		bytes = append(bytes, pro.cb[i].Compress()...)
-		nBytes += privacy.CompressedPointSize
 	}
 
 	// convert array cd to bytes array
 	for i := 0; i < n; i++ {
 		bytes = append(bytes, pro.cd[i].Compress()...)
-		nBytes += privacy.CompressedPointSize
 	}
 
 	// convert array f to bytes array
 	for i := 0; i < n; i++ {
-		fBytes := privacy.AddPaddingBigInt(pro.f[i], privacy.BigIntSize)
-		bytes = append(bytes, fBytes...)
-		nBytes += privacy.BigIntSize
+		bytes = append(bytes, privacy.AddPaddingBigInt(pro.f[i], privacy.BigIntSize)...)
 	}
 
 	// convert array za to bytes array
 	for i := 0; i < n; i++ {
-		zaBytes := privacy.AddPaddingBigInt(pro.za[i], privacy.BigIntSize)
-		bytes = append(bytes, zaBytes...)
-		nBytes += privacy.BigIntSize
+		bytes = append(bytes, privacy.AddPaddingBigInt(pro.za[i], privacy.BigIntSize)...)
 	}
 
 	// convert array zb to bytes array
 	for i := 0; i < n; i++ {
-		zbBytes := privacy.AddPaddingBigInt(pro.zb[i], privacy.BigIntSize)
-		bytes = append(bytes, zbBytes...)
-		nBytes += privacy.BigIntSize
+		bytes = append(bytes, privacy.AddPaddingBigInt(pro.zb[i], privacy.BigIntSize)...)
 	}
 
 	// convert array zd to bytes array
-	zdBytes := privacy.AddPaddingBigInt(pro.zd, privacy.BigIntSize)
-	bytes = append(bytes, zdBytes...)
-	nBytes += privacy.BigIntSize
+	bytes = append(bytes, privacy.AddPaddingBigInt(pro.zd, privacy.BigIntSize)...)
 
 	// convert commitment index to bytes array
 	for i := 0; i < N; i++ {
 		commitmentIndexBytes := make([]byte, privacy.Uint64Size)
 		binary.LittleEndian.PutUint64(commitmentIndexBytes, pro.CommitmentIndices[i])
 		bytes = append(bytes, commitmentIndexBytes...)
-		nBytes += privacy.Uint64Size
 	}
 
 	// append index
 	bytes = append(bytes, pro.index)
-	nBytes += 1
 
 	return bytes
 }
@@ -203,7 +188,6 @@ func (pro *PKOneOfManyProof) SetBytes(bytes []byte) error {
 	// get cl array
 	pro.cl = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
-		pro.cl[i] = new(privacy.EllipticPoint)
 		pro.cl[i], err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
 		if err != nil {
 			return err
@@ -213,7 +197,6 @@ func (pro *PKOneOfManyProof) SetBytes(bytes []byte) error {
 	// get ca array
 	pro.ca = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
-		pro.ca[i] = new(privacy.EllipticPoint)
 		pro.ca[i], err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
 		if err != nil {
 			return err
@@ -223,7 +206,6 @@ func (pro *PKOneOfManyProof) SetBytes(bytes []byte) error {
 	// get cb array
 	pro.cb = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
-		pro.cb[i] = new(privacy.EllipticPoint)
 		pro.cb[i], err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
 		if err != nil {
 			return err
@@ -234,7 +216,6 @@ func (pro *PKOneOfManyProof) SetBytes(bytes []byte) error {
 	// get cd array
 	pro.cd = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
-		pro.cd[i] = new(privacy.EllipticPoint)
 		pro.cd[i], err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
 		if err != nil {
 			return err
@@ -333,8 +314,7 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 		ca[j] = privacy.PedCom.CommitAtIndex(a[j], s[j], wit.index)
 
 		// cb = Com(la, t)
-		la := new(big.Int)
-		la.Mul(indexInt, a[j])
+		la := new(big.Int).Mul(indexInt, a[j])
 		la.Mod(la, privacy.Curve.Params().N)
 		cb[j] = privacy.PedCom.CommitAtIndex(la, t[j], wit.index)
 	}
@@ -367,20 +347,17 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 
 	for j := n - 1; j >= 0; j-- {
 		// f = lx + a
-		f[j] = new(big.Int)
-		f[j] = f[j].Mul(big.NewInt(int64(indexIsZeroBinary[j])), x)
+		f[j] = new(big.Int).Mul(big.NewInt(int64(indexIsZeroBinary[j])), x)
 		f[j].Add(f[j], a[j])
 		f[j].Mod(f[j], privacy.Curve.Params().N)
 
 		// za = s + rx
-		za[j] = new(big.Int)
-		za[j].Mul(r[j], x)
+		za[j] = new(big.Int).Mul(r[j], x)
 		za[j].Add(za[j], s[j])
 		za[j].Mod(za[j], privacy.Curve.Params().N)
 
 		// zb = r(x - f) + t
-		zb[j] = new(big.Int)
-		zb[j].Sub(x, f[j])
+		zb[j] = new(big.Int).Sub(x, f[j])
 		zb[j].Mul(zb[j], r[j])
 		zb[j].Add(zb[j], t[j])
 		zb[j].Mod(zb[j], privacy.Curve.Params().N)
@@ -435,8 +412,7 @@ func (pro *PKOneOfManyProof) Verify() bool {
 		}
 
 		// Check cl^(x-f) * cb = Com(0, zb)
-		xSubF := new(big.Int)
-		xSubF.Sub(x, pro.f[i])
+		xSubF := new(big.Int).Sub(x, pro.f[i])
 		xSubF.Mod(xSubF, privacy.Curve.Params().N)
 
 		leftPoint2 := pro.cl[i].ScalarMult(xSubF).Add(pro.cb[i])
@@ -471,8 +447,7 @@ func (pro *PKOneOfManyProof) Verify() bool {
 	}
 
 	for k := 0; k < n; k++ {
-		xk := big.NewInt(0)
-		xk.Exp(x, big.NewInt(int64(k)), privacy.Curve.Params().N)
+		xk := big.NewInt(0).Exp(x, big.NewInt(int64(k)), privacy.Curve.Params().N)
 		xk.Sub(privacy.Curve.Params().N, xk)
 
 		leftPoint32 = leftPoint32.Add(pro.cd[k].ScalarMult(xk))

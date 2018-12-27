@@ -175,6 +175,12 @@ func (self *BlockChain) GetOracleParams() *params.Oracle {
 	return self.BestState[0].BestBlock.Header.Oracle
 }
 
+func (self *BlockChain) GetMultiSigsRegistration(
+	paymentAddressBytes []byte,
+) ([]byte, error) {
+	return self.config.DataBase.GetMultiSigsRegistration(paymentAddressBytes)
+}
+
 // -------------- End of Blockchain retriever's implementation --------------
 
 /*
@@ -806,7 +812,7 @@ func (self *BlockChain) ProcessVoteProposal(block *Block) error {
 			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
 		case metadata.AcceptDCBProposalMeta:
 			underlieMetadata := meta.(*metadata.AcceptDCBProposalMetadata)
-			self.config.DataBase.TakeVoteTokenFromWinner("dcb", nextDCBConstitutionBlockHeight, underlieMetadata.Voter)
+			self.config.DataBase.TakeVoteTokenFromWinner("dcb", nextDCBConstitutionBlockHeight, underlieMetadata.Voter.PubKey, underlieMetadata.Voter.AmountOfVote)
 			self.config.DataBase.SetNewWinningVoter("dcb", nextDCBConstitutionBlockHeight, underlieMetadata.Voter.PubKey)
 		case metadata.SealedLv3GOVBallotMeta:
 			underlieMetadata := meta.(*metadata.SealedLv3GOVBallotMetadata)
@@ -825,7 +831,7 @@ func (self *BlockChain) ProcessVoteProposal(block *Block) error {
 			self.config.DataBase.AddVoteNormalProposalFromSealer("gov", nextGOVConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
 		case metadata.AcceptGOVProposalMeta:
 			underlieMetadata := meta.(*metadata.AcceptGOVProposalMetadata)
-			self.config.DataBase.TakeVoteTokenFromWinner("gov", nextGOVConstitutionBlockHeight, underlieMetadata.Voter)
+			self.config.DataBase.TakeVoteTokenFromWinner("gov", nextGOVConstitutionBlockHeight, underlieMetadata.Voter.PubKey, underlieMetadata.Voter.AmountOfVote)
 			self.config.DataBase.SetNewWinningVoter("gov", nextGOVConstitutionBlockHeight, underlieMetadata.Voter.PubKey)
 		}
 	}

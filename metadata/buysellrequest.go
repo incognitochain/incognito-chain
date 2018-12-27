@@ -59,6 +59,9 @@ func (bsReq *BuySellRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tra
 	if len(bsReq.PaymentAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's payment address")
 	}
+	if len(bsReq.PaymentAddress.Tk) == 0 {
+		return false, false, errors.New("Wrong request info's payment address")
+	}
 	if bsReq.BuyPrice == 0 {
 		return false, false, errors.New("Wrong request info's buy price")
 	}

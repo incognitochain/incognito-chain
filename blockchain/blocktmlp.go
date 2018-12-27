@@ -14,7 +14,6 @@ import (
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/voting"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
@@ -29,7 +28,7 @@ type ConstitutionHelper interface {
 	CheckSubmitProposalType(tx metadata.Transaction) bool
 	CheckVotingProposalType(tx metadata.Transaction) bool
 	GetAmountVoteToken(tx metadata.Transaction) uint64
-	TxAcceptProposal(txId *common.Hash, voter voting.Voter) metadata.Transaction
+	TxAcceptProposal(txId *common.Hash, voter metadata.Voter) metadata.Transaction
 	GetLowerCaseBoardType() string
 	GetConstitutionEndedBlockHeight(generator *BlkTmplGenerator, chainID byte) uint32
 	CreatePunishDecryptTx([]byte) metadata.Metadata
@@ -100,6 +99,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 	var buySellReqTxs []metadata.Transaction
 	var issuingReqTxs []metadata.Transaction
 	var updatingOracleBoardTxs []metadata.Transaction
+	var multiSigsRegistrationTxs []metadata.Transaction
 	var buyBackFromInfos []*buyBackFromInfo
 	bondsSold := uint64(0)
 	dcbTokensSold := uint64(0)
@@ -230,10 +230,13 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 				}
 				issuingReqTxs = append(issuingReqTxs, tx)
 			}
-
 		case metadata.UpdatingOracleBoardMeta:
 			{
 				updatingOracleBoardTxs = append(updatingOracleBoardTxs, tx)
+			}
+		case metadata.MultiSigsRegistrationMeta:
+			{
+				multiSigsRegistrationTxs = append(multiSigsRegistrationTxs, tx)
 			}
 		}
 
@@ -502,6 +505,13 @@ concludeBlock:
 		if tx.GetMetadataType() == metadata.RewardGOVProposalSubmitterMeta {
 			block.UpdateGOVFund(tx)
 		}
+	}
+
+	// register multisigs addresses
+	err = blockgen.registerMultiSigsAddresses(multiSigsRegistrationTxs)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
 	}
 
 	// Add new commitments to merkle tree and save the root
