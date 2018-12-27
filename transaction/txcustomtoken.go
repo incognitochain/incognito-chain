@@ -28,6 +28,30 @@ type TxCustomToken struct {
 	listUtxo map[common.Hash]TxCustomToken
 }
 
+func (self *TxCustomToken) UnmarshalJSON(data []byte) error {
+	type Alias TxCustomToken
+	temp := &struct {
+		MetaData    interface{}
+		TxTokenData interface{}
+		*Alias
+	}{
+		Alias: (*Alias)(self),
+	}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return NewTransactionErr(UnexpectedErr, err)
+	}
+	aaa, _ := json.MarshalIndent(temp.TxTokenData, "", "")
+	_ = json.Unmarshal(aaa, &self.TxTokenData)
+	meta, parseErr := metadata.ParseMetadata(temp.Metadata)
+	if parseErr != nil {
+		return nil
+	}
+	self.SetMetadata(meta)
+
+	return nil
+}
+
 // Set listUtxo, which is used to contain a list old TxCustomToken relate to itself
 func (tx *TxCustomToken) SetListUtxo(data map[common.Hash]TxCustomToken) {
 	tx.listUtxo = data

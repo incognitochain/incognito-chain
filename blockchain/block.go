@@ -27,51 +27,6 @@ type Block struct {
 	blockHash *common.Hash
 }
 
-func parseMetadata(meta interface{}) (metadata.Metadata, error) {
-	if meta == nil {
-		return nil, nil
-	}
-
-	mtTemp := map[string]interface{}{}
-	metaInBytes, err := json.Marshal(meta)
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(metaInBytes, &mtTemp)
-	if err != nil {
-		return nil, err
-	}
-	var md metadata.Metadata
-	switch int(mtTemp["Type"].(float64)) {
-	case metadata.BuyFromGOVRequestMeta:
-		md = &metadata.BuySellRequest{}
-
-	case metadata.BuyBackRequestMeta:
-		md = &metadata.BuyBackRequest{}
-
-	case metadata.BuyFromGOVResponseMeta:
-		md = &metadata.BuySellResponse{}
-
-	case metadata.BuyBackResponseMeta:
-		md = &metadata.BuyBackResponse{}
-
-	case metadata.LoanRequestMeta:
-		md = &metadata.LoanRequest{}
-
-	case metadata.LoanResponseMeta:
-		md = &metadata.LoanResponse{}
-
-	default:
-		return nil, errors.New("Could not parse metadata with known types.")
-	}
-
-	err = json.Unmarshal(metaInBytes, &md)
-	if err != nil {
-		return nil, err
-	}
-	return md, nil
-}
-
 /*
 Customize UnmarshalJSON to parse list TxNormal
 because we have many types of block, so we can need to customize data from marshal from json string to build a block
@@ -128,7 +83,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 		if parseErr != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, parseErr)
 		}
-		meta, parseErr := parseMetadata(txTemp["Metadata"])
+		meta, parseErr := metadata.ParseMetadata(txTemp["Metadata"])
 		if parseErr != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, parseErr)
 		}
@@ -166,7 +121,7 @@ func (self Block) Hash() *common.Hash {
 	record += strconv.FormatInt(self.Header.Timestamp, 10) +
 		string(self.Header.ChainID) +
 		self.Header.MerkleRoot.String() +
-		//self.Header.MerkleRootCommitments.String() +
+	//self.Header.MerkleRootCommitments.String() +
 		self.Header.PrevBlockHash.String() +
 		strconv.Itoa(int(self.Header.SalaryFund)) +
 		strconv.Itoa(int(self.Header.GOVConstitution.GOVParams.SalaryPerTx)) +
