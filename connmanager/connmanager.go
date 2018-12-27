@@ -420,6 +420,7 @@ func (self *ConnManager) processDiscoverPeers() {
 			for _, rawPeer := range response {
 				p := rawPeer
 				mPeers[rawPeer.PublicKey] = &p
+				fmt.Println(p)
 			}
 			// connect to beacon peers
 			self.handleRandPeersOfBeacon(self.Config.MaxPeersBeacon, mPeers)

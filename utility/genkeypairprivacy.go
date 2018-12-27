@@ -28,14 +28,14 @@ func main() {
 
 	for i := 0; i < 30; i++ {
 		child, _ := key.NewChildKey(uint32(i))
-		//pubAddr := child.Base58CheckSerialize(wallet.PaymentAddressType)
+		// pubAddr := child.Base58CheckSerialize(wallet.PaymentAddressType)
 		privAddr := child.Base58CheckSerialize(wallet.PriKeyType)
 		//readAddr := child.Base58CheckSerialize(wallet.ReadonlyKeyType)
 		fmt.Printf("Acc %d:\n ", i)
-		/*fmt.Printf("pubAddr: %v\n", pubAddr)
-		fmt.Printf("pubAddr: %x\n\n", pubAddr)*/
-		fmt.Printf("privAddr: %v\n", privAddr)
-		fmt.Printf("privAddr: %x\n", privAddr)
+		fmt.Printf("pubKey: %v\n", child.KeySet.GetPublicKeyB58())
+		// fmt.Printf("pubAddr: %x\n\n", pubAddr)
+		fmt.Printf("spendingKey: %v\n", privAddr)
+		// fmt.Printf("privAddr: %x\n", privAddr)
 		/*fmt.Printf("readAddr: %v\n", readAddr)
 		fmt.Printf("readAddr: %x\n\n", readAddr)*/
 	}

@@ -69,12 +69,20 @@ func (self *Engine) Start() error {
 			default:
 				if self.config.BlockChain.IsReady() {
 					time.Sleep(2 * time.Second)
-					self.config.Server.UpdateConsensusState(self.config.NodeMode, self.config.UserKeySet.GetPublicKeyB58(), nil, self.config.BlockChain.BestState.Beacon.BeaconCommittee, self.config.BlockChain.BestState.Beacon.ShardCommittee)
+
+					role, shardID := self.config.BlockChain.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
+					nodeRole := ""
+					if (self.config.NodeMode == "beacon" || self.config.NodeMode == "auto") && role != "shard" {
+						nodeRole = "beacon"
+					}
+					if (self.config.NodeMode == "shard" || self.config.NodeMode == "auto") && role == "shard" {
+						nodeRole = "shard"
+					}
+					self.config.Server.UpdateConsensusState(nodeRole, self.config.UserKeySet.GetPublicKeyB58(), nil, self.config.BlockChain.BestState.Beacon.BeaconCommittee, self.config.BlockChain.BestState.Beacon.ShardCommittee)
 
 					fmt.Println(self.config.BlockChain.BestState.Beacon.BeaconCommittee)
 					time.Sleep(5 * time.Second)
-
-					role, shardID := self.config.BlockChain.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
+					self.cBFTMsg = make(chan wire.Message)
 					fmt.Println(self.config.NodeMode, role)
 					if role != "" {
 						bftProtocol := &BFTProtocol{
