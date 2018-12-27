@@ -1383,6 +1383,30 @@ func (self *BlockChain) GetNumberOfGOVGovernors() int {
 	return common.NumberOfGOVGovernors
 }
 
+func (self *BlockChain) GetBestBlock(chainID byte) *Block {
+	return self.BestState[chainID].BestBlock
+}
+
+func (self *BlockChain) GetDCBConstitutionStartHeight(chainID byte) uint32 {
+	return self.GetBestBlock(chainID).Header.DCBConstitution.StartedBlockHeight
+}
+
+func (self *BlockChain) GetDCBConstitutionEndHeight(chainID byte) uint32 {
+	return self.GetBestBlock(chainID).Header.DCBConstitution.GetEndedBlockHeight()
+}
+
+func (self *BlockChain) GetGOVConstitutionStartHeight(chainID byte) uint32 {
+	return self.GetBestBlock(chainID).Header.GOVConstitution.StartedBlockHeight
+}
+
+func (self *BlockChain) GetGOVConstitutionEndHeight(chainID byte) uint32 {
+	return self.GetBestBlock(chainID).Header.GOVConstitution.GetEndedBlockHeight()
+}
+
+func (self *BlockChain) GetCurrentBlockHeight(chainID byte) uint32 {
+	return uint32(self.GetBestBlock(chainID).Header.Height)
+}
+
 func (self BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, chainID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
 	return transaction.RandomCommitmentsProcess(usableInputCoins, randNum, self.config.DataBase, chainID, tokenID)
 }

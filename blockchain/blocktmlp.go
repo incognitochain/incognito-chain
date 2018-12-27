@@ -110,7 +110,6 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(chainID)
 	// Get basic salary on block
 	basicSalary := blockgen.rewardAgent.GetBasicSalary(chainID)
-	currentBlockHeight := uint32(prevBlock.Header.Height + 1)
 
 	if len(sourceTxns) < common.MinTxsInBlock {
 		// if len of sourceTxns < MinTxsInBlock -> wait for more transactions
@@ -142,21 +141,12 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 			continue
 		}
 
-		startedDCBPivot := prevBlock.Header.DCBConstitution.StartedBlockHeight
-		endedDCBPivot := prevBlock.Header.DCBConstitution.GetEndedBlockHeight()
-		lv3DCBPivot := endedDCBPivot - common.EncryptionPhaseDuration
-		lv2DCBPivot := lv3DCBPivot - common.EncryptionPhaseDuration
-		lv1DCBPivot := lv2DCBPivot - common.EncryptionPhaseDuration
-		startedGOVPivot := prevBlock.Header.GOVConstitution.StartedBlockHeight
-		endedGOVPivot := prevBlock.Header.GOVConstitution.GetEndedBlockHeight()
-		lv3GOVPivot := endedGOVPivot - common.EncryptionPhaseDuration
-		lv2GOVPivot := lv3GOVPivot - common.EncryptionPhaseDuration
-		lv1GOVPivot := lv2GOVPivot - common.EncryptionPhaseDuration
-		//meta := tx.GetMetadata()
-		//if !meta.ValidateBeforeNewBlock(blockgen.chain) {
-		//	txToRemove = append(txToRemove, metadata.Transaction(tx))
-		//	continue
-		//}
+		meta := tx.GetMetadata()
+		if !meta.ValidateBeforeNewBlock(tx, blockgen.chain, chainID) {
+			txToRemove = append(txToRemove, metadata.Transaction(tx))
+			continue
+		}
+
 		switch tx.GetMetadataType() {
 		case metadata.BuyFromGOVRequestMeta:
 			{
@@ -178,46 +168,6 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 				}
 				buyBackCoins += (buyBackFromInfo.buyBackPrice + buyBackFromInfo.value)
 				buyBackFromInfos = append(buyBackFromInfos, buyBackFromInfo)
-			}
-		case metadata.NormalDCBBallotMetaFromSealerMeta:
-			if !(currentBlockHeight < endedDCBPivot && currentBlockHeight >= lv1DCBPivot) {
-				continue
-			}
-		case metadata.NormalDCBBallotMetaFromOwnerMeta:
-			if !(currentBlockHeight < endedDCBPivot && currentBlockHeight >= lv1DCBPivot) {
-				continue
-			}
-		case metadata.SealedLv1DCBBallotMeta:
-			if !(currentBlockHeight < lv1DCBPivot && currentBlockHeight >= lv2DCBPivot) {
-				continue
-			}
-		case metadata.SealedLv2DCBBallotMeta:
-			if !(currentBlockHeight < lv2DCBPivot && currentBlockHeight >= lv3DCBPivot) {
-				continue
-			}
-		case metadata.SealedLv3DCBBallotMeta:
-			if !(currentBlockHeight < lv3DCBPivot && currentBlockHeight >= startedDCBPivot) {
-				continue
-			}
-		case metadata.NormalGOVBallotMetaFromSealerMeta:
-			if !(currentBlockHeight < endedGOVPivot && currentBlockHeight >= lv1GOVPivot) {
-				continue
-			}
-		case metadata.NormalGOVBallotMetaFromOwnerMeta:
-			if !(currentBlockHeight < endedGOVPivot && currentBlockHeight >= lv1GOVPivot) {
-				continue
-			}
-		case metadata.SealedLv1GOVBallotMeta:
-			if !(currentBlockHeight < lv1GOVPivot && currentBlockHeight >= lv2GOVPivot) {
-				continue
-			}
-		case metadata.SealedLv2GOVBallotMeta:
-			if !(currentBlockHeight < lv2GOVPivot && currentBlockHeight >= lv3GOVPivot) {
-				continue
-			}
-		case metadata.SealedLv3GOVBallotMeta:
-			if !(currentBlockHeight < lv3GOVPivot && currentBlockHeight >= startedGOVPivot) {
-				continue
 			}
 		case metadata.IssuingRequestMeta:
 			{

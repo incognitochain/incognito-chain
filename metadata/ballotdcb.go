@@ -74,6 +74,18 @@ type SealedLv1DCBBallotMetadata struct {
 	MetadataBase
 }
 
+func (sealedLv1DCBBallotMetadata *SealedLv1DCBBallotMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
+	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(chainID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+	lv3DCBPivot := endedDCBPivot - common.EncryptionPhaseDuration
+	lv2DCBPivot := lv3DCBPivot - common.EncryptionPhaseDuration
+	lv1DCBPivot := lv2DCBPivot - common.EncryptionPhaseDuration
+	if !(currentBlockHeight < lv1DCBPivot && currentBlockHeight >= lv2DCBPivot) {
+		return false
+	}
+	return true
+}
+
 func (sealedLv1DCBBallotMetadata *SealedLv1DCBBallotMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
 	_, ok, _ := sealedLv1DCBBallotMetadata.sealedDCBBallot.ValidateSanityData(bcr, tx)
 	if !ok {
@@ -142,6 +154,17 @@ type SealedLv2DCBBallotMetadata struct {
 	MetadataBase
 }
 
+func (sealedLv2DCBBallotMetadata *SealedLv2DCBBallotMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
+	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(chainID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+	lv3DCBPivot := endedDCBPivot - common.EncryptionPhaseDuration
+	lv2DCBPivot := lv3DCBPivot - common.EncryptionPhaseDuration
+	if !(currentBlockHeight < lv2DCBPivot && currentBlockHeight >= lv3DCBPivot) {
+		return false
+	}
+	return true
+}
+
 func (sealedLv2DCBBallotMetadata *SealedLv2DCBBallotMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
 	_, ok, _ := sealedLv2DCBBallotMetadata.sealedDCBBallot.ValidateSanityData(bcr, tx)
 	if !ok {
@@ -201,6 +224,17 @@ func (sealedLv2DCBBallotMetadata *SealedLv2DCBBallotMetadata) ValidateTxWithBloc
 type SealedLv3DCBBallotMetadata struct {
 	SealedDCBBallot SealedDCBBallot
 	MetadataBase
+}
+
+func (sealedLv3DCBBallotMetadata *SealedLv3DCBBallotMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
+	startedDCBPivot := bcr.GetDCBConstitutionStartHeight(chainID)
+	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(chainID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+	lv3DCBPivot := endedDCBPivot - common.EncryptionPhaseDuration
+	if !(currentBlockHeight < lv3DCBPivot && currentBlockHeight >= startedDCBPivot) {
+		return false
+	}
+	return true
 }
 
 func (sealLv3DCBBallotMetadata *SealedLv3DCBBallotMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
@@ -315,6 +349,18 @@ func (normalDCBBallotFromSealerMetadata *NormalDCBBallotFromSealerMetadata) Vali
 	return true, nil
 }
 
+func (normalDCBBallotFromSealerMetadata *NormalDCBBallotFromSealerMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
+	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(chainID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+	lv3DCBPivot := endedDCBPivot - common.EncryptionPhaseDuration
+	lv2DCBPivot := lv3DCBPivot - common.EncryptionPhaseDuration
+	lv1DCBPivot := lv2DCBPivot - common.EncryptionPhaseDuration
+	if !(currentBlockHeight < endedDCBPivot && currentBlockHeight >= lv1DCBPivot) {
+		return false
+	}
+	return true
+}
+
 type NormalDCBBallotFromOwnerMetadata struct {
 	Ballot             []byte
 	LockerPubKey       [][]byte
@@ -408,6 +454,18 @@ func (normalDCBBallotFromOwnerMetadata *NormalDCBBallotFromOwnerMetadata) Valida
 				return false
 			}
 		}
+	}
+	return true
+}
+
+func (normalDCBBallotFromOwnerMetadata *NormalDCBBallotFromOwnerMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
+	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(chainID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+	lv3DCBPivot := endedDCBPivot - common.EncryptionPhaseDuration
+	lv2DCBPivot := lv3DCBPivot - common.EncryptionPhaseDuration
+	lv1DCBPivot := lv2DCBPivot - common.EncryptionPhaseDuration
+	if !(currentBlockHeight < endedDCBPivot && currentBlockHeight >= lv1DCBPivot) {
+		return false
 	}
 	return true
 }

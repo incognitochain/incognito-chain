@@ -35,6 +35,10 @@ func (mb *MetadataBase) Hash() *common.Hash {
 	return &hash
 }
 
+func (mb *MetadataBase) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
+	return true
+}
+
 func (mb *MetadataBase) CheckTransactionFee(tr Transaction, minFeePerKbTx uint64) bool {
 	txFee := tr.GetTxFee()
 	fullFee := minFeePerKbTx * tr.GetTxActualSize()
@@ -77,6 +81,11 @@ type BlockchainRetriever interface {
 	GetGOVBoardPubKeys() [][]byte
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
 	GetOracleParams() *params.Oracle
+	GetDCBConstitutionStartHeight(byte) uint32
+	GetGOVConstitutionStartHeight(byte) uint32
+	GetDCBConstitutionEndHeight(byte) uint32
+	GetGOVConstitutionEndHeight(byte) uint32
+	GetCurrentBlockHeight(byte) uint32
 
 	// For validating loan metadata
 	GetLoanTxs([]byte) ([][]byte, error)
@@ -101,6 +110,7 @@ type Metadata interface {
 	// isContinue, ok, err
 	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
+	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool
 }
 
 // Interface for all type of transaction
