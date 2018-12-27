@@ -2,6 +2,7 @@ package connmanager
 
 import (
 	"fmt"
+	"math"
 	"net"
 	"net/rpc"
 	"os"
@@ -9,7 +10,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	"math"
+
 	libpeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
@@ -53,9 +54,11 @@ type ConnManager struct {
 	start        int32
 	stop         int32
 	// Discover Peers
-	discoveredPeers map[string]*DiscoverPeerInfo
+	discoveredPeers     map[string]*DiscoverPeerInfo
+	discoverPeerAddress string
 	// channel
-	cQuit chan struct{}
+	cQuit            chan struct{}
+	cDiscoveredPeers chan struct{}
 
 	Config Config
 
@@ -106,12 +109,53 @@ type DiscoverPeerInfo struct {
 func (self *ConnManager) UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string) {
 	self.Config.ConsensusState.Lock()
 	defer self.Config.ConsensusState.Unlock()
-	self.Config.ConsensusState.Role = role
-	self.Config.ConsensusState.CurrentShard = currentShard
-	self.Config.ConsensusState.BeaconCommittee = beaconCommittee
-	self.Config.ConsensusState.ShardCommittee = shardCommittee
+
+	bChange := false
+	if self.Config.ConsensusState.Role != role {
+		self.Config.ConsensusState.Role = role
+		bChange = true
+	}
+	if (self.Config.ConsensusState.CurrentShard != nil && currentShard == nil) ||
+		(self.Config.ConsensusState.CurrentShard == nil && currentShard != nil) ||
+		(self.Config.ConsensusState.CurrentShard != nil && currentShard != nil && *self.Config.ConsensusState.CurrentShard != *currentShard) {
+		self.Config.ConsensusState.CurrentShard = currentShard
+		bChange = true
+	}
+	if !common.CompareStringArray(self.Config.ConsensusState.BeaconCommittee, beaconCommittee) {
+		copy(self.Config.ConsensusState.BeaconCommittee, beaconCommittee)
+		bChange = true
+	}
+	if len(self.Config.ConsensusState.ShardCommittee) != len(shardCommittee) {
+		for shardID, _ := range self.Config.ConsensusState.ShardCommittee {
+			_, ok := shardCommittee[shardID]
+			if !ok {
+				delete(self.Config.ConsensusState.ShardCommittee, shardID)
+			}
+		}
+		bChange = true
+	}
+	for shardID, committee := range shardCommittee {
+		_, ok := self.Config.ConsensusState.ShardCommittee[shardID]
+		if ok {
+			if !common.CompareStringArray(self.Config.ConsensusState.ShardCommittee[shardID], committee) {
+				self.Config.ConsensusState.ShardCommittee[shardID] = make([]string, len(committee))
+				copy(self.Config.ConsensusState.ShardCommittee[shardID], committee)
+				bChange = true
+			}
+		} else {
+			self.Config.ConsensusState.ShardCommittee[shardID] = make([]string, len(committee))
+			copy(self.Config.ConsensusState.ShardCommittee[shardID], committee)
+			bChange = true
+		}
+	}
 	self.Config.ConsensusState.UserPbk = userPbk
 	self.Config.ConsensusState.rebuild()
+
+	// update peer connection
+	if bChange {
+		self.processDiscoverPeers()
+	}
+
 	return
 }
 
@@ -129,6 +173,10 @@ func (self *ConnManager) Stop() {
 		listener.Stop()
 	}
 
+	if self.cDiscoveredPeers != nil {
+		close(self.cDiscoveredPeers)
+	}
+
 	close(self.cQuit)
 	Logger.log.Warn("Connection manager stopped")
 }
@@ -141,26 +189,6 @@ func (self ConnManager) New(cfg *Config) *ConnManager {
 	self.ListeningPeers = map[string]*peer.Peer{}
 
 	self.Config.ConsensusState = &ConsensusState{}
-	// set default config
-
-	// for testing
-	//var mPBK = map[string]byte{
-	//	"15Z7uGSzG4ZR5ENDnBE6PuGcquNGYj7PqPFj4ojEEGk8QQNZoN6": 0,
-	//	"15CfJ8vH78zw8PT2FbBeNssFWcHMW1sSxoJ6RKv2hZ6nztp4mCQ": 1,
-	//	"17PnJ3sjHvFLp3Sck12FaHfvk4AghGctecTG54bdLNFVGygi8DN": 2,
-	//	"17qiWdX7ubTHpVu5eMDxMCCwesYYcLWKE1KTP62LQK3ALrQ6A5T": 3,
-	//	"18mxtXGaaRkfkLS9L7eNGTjawpxTnqZSBqKXLSDc4Un8VLGgVPg": 4,
-	//	"17W59bSax64ykVeGPk8nnXQAoWmiDfPGtVQMVvqJSSep3Py2Jxn": 5,
-	//	"15nvyVJvmrzp3KK7SF8xMcsffZyvV2BTBmnR4kx8XszdtXhqUm9": 6,
-	//	"15VmkDTBgFs86h8fD7c9Bk41xndCGA3qXKmqMjy2dJpC6UVWNhZ": 7,
-	//	"159DQTsMrzrKyF1787R2iK8RA9X8GMXjgwLqPsVR1a129RjSAi5": 8,
-	//	"18fk4aLAT7F8aTf4Uo784DiGgEBJajC3u8SqcY766FcRPPLHPBz": 9,
-	//	"15ma6n91BbgyCJNeWa9TzG5gQGCERLZ9F9jaYB1mMPGsJGKhmB7": 10,
-	//	"18NwuP2PqDNcAWyhAgPpcRgFeS8h7LWv8LX7vzRgfaVmTzBERBZ": 11,
-	//	"165RABeGBuYYX72S6w8wJqvSgZE7JZ32YVG8ApSwUW38Lm3RrEt": 12,
-	//	"15yDGFUwf5r7rZcfEzEmpcNvMfC5zi1g454AeHMZNSGEiBFacvt": 13,
-	//	"16C6356Xst2bKnAuXYM3Ezfz7ZwG9kiKmHAPTFMupQs3wzQfaoM": 14,
-	//}
 
 	return &self
 }
@@ -301,178 +329,107 @@ func (self *ConnManager) handleFailed(peerConn *peer.PeerConn) {
 	Logger.log.Infof("handleFailed %s", peerConn.RemotePeerID.Pretty())
 }
 
-/*func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)) {
-	addrs := []string{}
-	for _, host := range hosts {
-		request, err := http.NewRequest("GET", host, nil)
-		if err != nil {
-			Logger.log.Info(err)
+func (self *ConnManager) DiscoverPeers(discoverPeerAddress string) {
+	Logger.log.Infof("Start Discover Peers : %s", discoverPeerAddress)
+	self.OtherShards = self.randShards(SHARD_NUMBER)
+	self.discoverPeerAddress = discoverPeerAddress
+	self.cDiscoveredPeers = make(chan struct{})
+	for {
+		self.processDiscoverPeers()
+		select {
+		case <-self.cDiscoveredPeers:
+			Logger.log.Info("Stop Discover Peers")
+			return
+		case <-time.NewTimer(60 * time.Second).C:
 			continue
-		}
-		client := &http.Client{}
-		resp, err := client.Do(request)
-		if err != nil {
-			Logger.log.Info(err)
-			continue
-		}
-		if resp.StatusCode != http.StatusOK {
-			continue
-		}
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			Logger.log.Info(err)
-			continue
-		}
-		results := map[string]interface{}{}
-		err = json.Unmarshal(bodyBytes, &results)
-		if err != nil {
-			Logger.log.Info(err)
-			continue
-		}
-		dataT, ok := results["data"]
-		if !ok {
-			continue
-		}
-		data, ok := dataT.([]string)
-		if !ok {
-			continue
-		}
-		for _, peer := range data {
-			addrs = append(addrs, peer)
 		}
 	}
-	seedFn(addrs)
-}*/
+}
 
-func (self *ConnManager) DiscoverPeers(discoverPeerAddress string) {
-	Logger.log.Info("Start Discover Peers")
-	var client *rpc.Client
-	var err error
+func (self *ConnManager) processDiscoverPeers() {
+	discoverPeerAddress := self.discoverPeerAddress
+	if discoverPeerAddress == "" {
+		return
+	}
+	client, err := rpc.Dial("tcp", discoverPeerAddress)
+	if err != nil {
+		Logger.log.Error("[Exchange Peers] re-connect:")
+		Logger.log.Error(err)
+		return
+	}
+	if client != nil {
+		for _, listener := range self.Config.ListenerPeers {
+			var response []wire.RawPeer
 
-	self.OtherShards = self.randShards(SHARD_NUMBER)
-
-listen:
-	for {
-		//Logger.log.Infof("Peers", self.discoveredPeers)
-		if client == nil {
-			client, err = rpc.Dial("tcp", discoverPeerAddress)
-			if err != nil {
-				Logger.log.Error("[Exchange Peers] re-connect:")
-				Logger.log.Error(err)
-			}
-		}
-		if client != nil {
-			for _, listener := range self.Config.ListenerPeers {
-				var response []wire.RawPeer
-
-				var pbkB58 string
-				signDataB58 := ""
-				if listener.Config.UserKeySet != nil {
-					pbkB58 = listener.Config.UserKeySet.GetPublicKeyB58()
-					Logger.log.Info("Start Discover Peers", pbkB58)
-					// sign data
-					signDataB58, err = listener.Config.UserKeySet.SignDataB58([]byte{byte(0x00)})
-					if err != nil {
-						Logger.log.Error(err)
-					}
-				}
-				// remove later
-				rawAddress := listener.RawAddress
-
-				externalAddress := self.Config.ExternalAddress
-				if externalAddress == EmptyString {
-					externalAddress = os.Getenv("EXTERNAL_ADDRESS")
-				}
-				if externalAddress != EmptyString {
-					host, _, err := net.SplitHostPort(externalAddress)
-					if err == nil && host != EmptyString {
-						rawAddress = strings.Replace(rawAddress, "127.0.0.1", host, 1)
-					}
-				}
-
-				args := &server.PingArgs{
-					RawAddress: rawAddress,
-					PublicKey:  pbkB58,
-					SignData:   signDataB58,
-				}
-				Logger.log.Infof("[Exchange Peers] Ping", args)
-
-				Logger.log.Info("Dump PeerConns", len(listener.PeerConns))
-				for pubK, info := range self.discoveredPeers {
-					var result []string
-					for _, peerConn := range listener.PeerConns {
-						if peerConn.RemotePeer.PublicKey == pubK {
-							result = append(result, peerConn.RemotePeer.PeerID.Pretty())
-						}
-					}
-					Logger.log.Infof("Public PubKey %s, %s, %s", pubK, info.PeerID.Pretty(), result)
-				}
-
-				for _, peerConn := range listener.PeerConns {
-					Logger.log.Info("PeerConn state %s %s %s", peerConn.ConnState(), peerConn.IsOutbound, peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
-				}
-
-				err := client.Call("Handler.Ping", args, &response)
+			var pbkB58 string
+			signDataB58 := ""
+			if listener.Config.UserKeySet != nil {
+				pbkB58 = listener.Config.UserKeySet.GetPublicKeyB58()
+				Logger.log.Info("Start Process Discover Peers", pbkB58)
+				// sign data
+				signDataB58, err = listener.Config.UserKeySet.SignDataB58([]byte{byte(0x00)})
 				if err != nil {
-					Logger.log.Error("[Exchange Peers] Ping:")
 					Logger.log.Error(err)
-					client = nil
-					time.Sleep(time.Second * 2)
-
-					goto listen
 				}
-				// make models
-				mPeers := make(map[string]*wire.RawPeer)
-				for _, rawPeer := range response {
-					p := rawPeer
-					mPeers[rawPeer.PublicKey] = &p
-				}
-				//for _, rawPeer := range response {
-				//	if rawPeer.PublicKey != EmptyString && !strings.Contains(rawPeer.RawAddress, listener.PeerID.Pretty()) {
-				//		_, exist := self.discoveredPeers[rawPeer.PublicKey]
-				//		//Logger.log.Info("Discovered peer", rawPeer.PaymentAddress, rawPeer.RemoteRawAddress, exist)
-				//		if !exist {
-				//			// The following code extracts target's peer Id from the
-				//			// given multiaddress
-				//			ipfsaddr, err := ma.NewMultiaddr(rawPeer.RawAddress)
-				//			if err != nil {
-				//				Logger.log.Error(err)
-				//				return
-				//			}
-				//
-				//			pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
-				//			if err != nil {
-				//				Logger.log.Error(err)
-				//				return
-				//			}
-				//
-				//			peerId, err := libpeer.IDB58Decode(pid)
-				//			if err != nil {
-				//				Logger.log.Error(err)
-				//				return
-				//			}
-				//
-				//			self.discoveredPeers[rawPeer.PublicKey] = &DiscoverPeerInfo{rawPeer.PublicKey, rawPeer.RawAddress, peerId}
-				//			//Logger.log.Info("Start connect to peer", rawPeer.PaymentAddress, rawPeer.RemoteRawAddress, exist)
-				//			go self.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
-				//		} else {
-				//			peerIds := self.getPeerIdsFromPublicKey(rawPeer.PublicKey)
-				//			if len(peerIds) == 0 {
-				//				go self.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
-				//			}
-				//		}
-				//	}
-				//}
-
-				// connect to beacon peers
-				self.handleRandPeersOfBeacon(self.Config.MaxPeersBeacon, mPeers)
-				// connect to same shard peers
-				self.handleRandPeersOfShard(self.Config.ConsensusState.CurrentShard, self.Config.MaxPeersSameShard, mPeers)
-				// connect to other shard peers
-				self.handleRandPeersOfOtherShard(self.Config.ConsensusState.CurrentShard, self.Config.MaxPeersOtherShard, self.Config.MaxPeersOther, mPeers)
 			}
+			// remove later
+			rawAddress := listener.RawAddress
+
+			externalAddress := self.Config.ExternalAddress
+			if externalAddress == EmptyString {
+				externalAddress = os.Getenv("EXTERNAL_ADDRESS")
+			}
+			if externalAddress != EmptyString {
+				host, _, err := net.SplitHostPort(externalAddress)
+				if err == nil && host != EmptyString {
+					rawAddress = strings.Replace(rawAddress, "127.0.0.1", host, 1)
+				}
+			}
+
+			args := &server.PingArgs{
+				RawAddress: rawAddress,
+				PublicKey:  pbkB58,
+				SignData:   signDataB58,
+			}
+			Logger.log.Infof("[Exchange Peers] Ping", args)
+
+			Logger.log.Info("Dump PeerConns", len(listener.PeerConns))
+			for pubK, info := range self.discoveredPeers {
+				var result []string
+				for _, peerConn := range listener.PeerConns {
+					if peerConn.RemotePeer.PublicKey == pubK {
+						result = append(result, peerConn.RemotePeer.PeerID.Pretty())
+					}
+				}
+				Logger.log.Infof("Public PubKey %s, %s, %s", pubK, info.PeerID.Pretty(), result)
+			}
+
+			for _, peerConn := range listener.PeerConns {
+				Logger.log.Info("PeerConn state %s %s %s", peerConn.ConnState(), peerConn.IsOutbound, peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
+			}
+
+			err := client.Call("Handler.Ping", args, &response)
+			if err != nil {
+				Logger.log.Error("[Exchange Peers] Ping:")
+				Logger.log.Error(err)
+				client = nil
+				return
+			}
+			// make models
+			mPeers := make(map[string]*wire.RawPeer)
+			for _, rawPeer := range response {
+				p := rawPeer
+				mPeers[rawPeer.PublicKey] = &p
+				fmt.Println(p)
+			}
+			// connect to beacon peers
+			self.handleRandPeersOfBeacon(self.Config.MaxPeersBeacon, mPeers)
+			// connect to same shard peers
+			self.handleRandPeersOfShard(self.Config.ConsensusState.CurrentShard, self.Config.MaxPeersSameShard, mPeers)
+			// connect to other shard peers
+			self.handleRandPeersOfOtherShard(self.Config.ConsensusState.CurrentShard, self.Config.MaxPeersOtherShard, self.Config.MaxPeersOther, mPeers)
+
 		}
-		time.Sleep(time.Second * 60)
 	}
 }
 
@@ -555,7 +512,7 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 	if shard == nil {
 		return 0
 	}
-	Logger.log.Info("handleRandPeersOfShard", *shard)
+	//Logger.log.Info("handleRandPeersOfShard", *shard)
 	countPeerShard := self.countPeerConnOfShard(shard)
 	if countPeerShard >= maxPeers {
 		// close if over max conn
@@ -590,7 +547,7 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 }
 
 func (self *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxShardPeers int, maxPeers int, mPeers map[string]*wire.RawPeer) int {
-	Logger.log.Info("handleRandPeersOfOtherShard", maxShardPeers, maxPeers)
+	//Logger.log.Info("handleRandPeersOfOtherShard", maxShardPeers, maxPeers)
 	countPeers := 0
 	for _, shard := range self.OtherShards {
 		if cShard == nil || (cShard != nil && *cShard != shard) {
@@ -611,9 +568,10 @@ func (self *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxShardPeers
 }
 
 func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[string]*wire.RawPeer) int {
-	Logger.log.Info("handleRandPeersOfBeacon")
+	//Logger.log.Info("handleRandPeersOfBeacon")
 	countPeerShard := 0
 	pBKs := self.Config.ConsensusState.BeaconCommittee
+	//Logger.log.Info("handleRandPeersOfBeacon", pBKs)
 	for len(pBKs) > 0 {
 		randN := common.RandInt() % len(pBKs)
 		pbk := pBKs[randN]
@@ -625,7 +583,7 @@ func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[
 			if cPbk != pbk && !self.checkPeerConnOfPbk(pbk) {
 				go self.Connect(peerI.RawAddress, peerI.PublicKey)
 			}
-			countPeerShard ++
+			countPeerShard++
 			if countPeerShard >= maxBeaconPeers {
 				return countPeerShard
 			}
@@ -686,8 +644,8 @@ func (self *ConnManager) getShardOfPbk(pbk string) *byte {
 	return nil
 }
 
-func (self *ConnManager) GetCurrentShard() *byte {
-	return self.Config.ConsensusState.CurrentShard
+func (self *ConnManager) GetCurrentRoleShard() (string, *byte) {
+	return self.Config.ConsensusState.Role, self.Config.ConsensusState.CurrentShard
 }
 
 func (self *ConnManager) GetPeerConnOfShard(shard byte) []*peer.PeerConn {

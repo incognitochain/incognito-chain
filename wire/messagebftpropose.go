@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/cashec"
 )
 
@@ -15,7 +14,7 @@ const (
 type MessageBFTPropose struct {
 	AggregatedSig string
 	ValidatorsIdx []int
-	Block         blockchain.BFTBlockInterface
+	Block         json.RawMessage
 	MsgSig        string
 }
 

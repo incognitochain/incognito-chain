@@ -26,6 +26,7 @@ const (
 	RandomError
 	VerificationError
 	BeaconError
+	SignatureError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -47,6 +48,7 @@ var ErrCodeMessage = map[int]struct {
 	RandomError:                   {-13, "Random Number Error"},
 	VerificationError:             {-14, "Verify Block Error"},
 	BeaconError:                   {-15, "Beacon Error"},
+	SignatureError:                {-16, "Signature Error"},
 }
 
 type BlockChainError struct {

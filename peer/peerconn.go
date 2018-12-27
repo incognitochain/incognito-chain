@@ -73,11 +73,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 		if str != DelimMessageStr {
 			go func(msgStr string) {
 				// Parse Message header from last 24 bytes header message
-				jsonDecodeString, errD := hex.DecodeString(msgStr)
-				if errD != nil {
-					Logger.log.Errorf("Can not decode hex string with error ", errD)
-					return
-				}
+				jsonDecodeString, _ := hex.DecodeString(msgStr)
 
 				// disconnect when received spam message
 				if len(jsonDecodeString) >= SPAM_MESSAGE_SIZE {
@@ -87,37 +83,6 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				}
 
 				Logger.log.Infof("In message content : %s", string(jsonDecodeString))
-				messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
-
-				// get cmd type in header message
-				commandInHeader := messageHeader[:wire.MessageCmdTypeSize]
-
-				// check forward
-				if self.Config.MessageListeners.GetCurrentShard != nil {
-					shard := self.Config.MessageListeners.GetCurrentShard()
-					if shard != nil {
-						fT := commandInHeader[wire.MessageCmdTypeSize]
-						if fT == MESSAGE_TO_SHARD {
-							fS := commandInHeader[wire.MessageCmdTypeSize+1]
-							if *shard != fS {
-								if self.Config.MessageListeners.PushRawBytesToShard != nil {
-									self.Config.MessageListeners.PushRawBytesToShard(&jsonDecodeString, *shard)
-								}
-								return
-							}
-						}
-					}
-				}
-
-				commandInHeader = bytes.Trim(messageHeader, "\x00")
-				commandType := string(messageHeader[:len(commandInHeader)])
-				// convert to particular message from message cmd type
-				var message, err = wire.MakeEmptyMessage(string(commandType))
-				if err != nil {
-					Logger.log.Error("Can not find particular message for message cmd type")
-					Logger.log.Error(err)
-					return
-				}
 
 				// Parse Message body
 				messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
@@ -130,6 +95,44 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				}
 				self.ListenerPeer.ReceivedHashMessage(hashMsg)
 				// cache message hash E
+
+				messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
+				// check forward
+				if self.Config.MessageListeners.GetCurrentRoleShard != nil {
+					cRole, cShard := self.Config.MessageListeners.GetCurrentRoleShard()
+					if cShard != nil {
+						fT := messageHeader[wire.MessageCmdTypeSize]
+						if fT == MESSAGE_TO_SHARD {
+							fS := messageHeader[wire.MessageCmdTypeSize+1]
+							if *cShard != fS {
+								if self.Config.MessageListeners.PushRawBytesToShard != nil {
+									self.Config.MessageListeners.PushRawBytesToShard(&jsonDecodeString, *cShard)
+								}
+								return
+							}
+						}
+					}
+					if cRole != "" {
+						fT := messageHeader[wire.MessageCmdTypeSize]
+						if fT == MESSAGE_TO_BEACON && cRole != "beacon" {
+							if self.Config.MessageListeners.PushRawBytesToBeacon != nil {
+								self.Config.MessageListeners.PushRawBytesToBeacon(&jsonDecodeString)
+							}
+							return
+						}
+					}
+				}
+
+				// get cmd type in header message
+				commandInHeader := bytes.Trim(messageHeader[:wire.MessageCmdTypeSize], "\x00")
+				commandType := string(messageHeader[:len(commandInHeader)])
+				// convert to particular message from message cmd type
+				var message, err = wire.MakeEmptyMessage(string(commandType))
+				if err != nil {
+					Logger.log.Error("Can not find particular message for message cmd type")
+					Logger.log.Error(err)
+					return
+				}
 
 				err = json.Unmarshal(messageBody, &message)
 				if err != nil {
@@ -481,11 +484,4 @@ func (p *PeerConn) Close() {
 func (p *PeerConn) ForceClose() {
 	p.isForceClose = true
 	close(p.cClose)
-}
-
-func (p *PeerConn) CheckAccepted() bool {
-	// check max conn
-	// check max shard conn
-	// check max unknown shard conn
-	return true
 }

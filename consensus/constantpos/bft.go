@@ -1,6 +1,7 @@
 package constantpos
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -34,7 +35,7 @@ type BFTProtocol struct {
 	cTimeout chan struct{}
 	started  bool
 
-	pendingBlock blockchain.BFTBlockInterface
+	pendingBlock interface{}
 	dataForSig   struct {
 		Ri []byte
 		r  []byte
@@ -46,11 +47,12 @@ type blockFinalSig struct {
 	ValidatorsIdx []int
 }
 
-func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prevAggregatedSig string, prevValidatorsIdx []int) error {
+func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prevAggregatedSig string, prevValidatorsIdx []int) {
 	self.Lock()
 	defer self.Unlock()
 	if self.started {
-		return errors.New("Protocol is already started")
+		// return errors.New("Protocol is already started")
+		return
 	}
 	self.started = true
 	self.cQuit = make(chan struct{})
@@ -58,324 +60,370 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 	if isProposer {
 		self.phase = "propose"
 	}
+	fmt.Println("Starting PBFT protocol for " + layer)
 
-	go func() {
-		for {
-			self.cTimeout = make(chan struct{})
-			multiSigScheme := new(privacy.MultiSigScheme)
-			multiSigScheme.Init()
-			multiSigScheme.Keyset.Set(&self.UserKeySet.PrivateKey, &self.UserKeySet.PaymentAddress.Pk)
-			select {
-			case <-self.cQuit:
-				return
-			default:
-				switch self.phase {
-				case "propose":
-					time.AfterFunc(ProposeTimeout*time.Second, func() {
-						close(self.cTimeout)
-					})
-					if layer == "beacon" {
-						newBlock, err := self.BlockGen.NewBlockBeacon(&self.UserKeySet.PaymentAddress, &self.UserKeySet.PrivateKey)
-						if err != nil {
-							Logger.log.Error(err)
-							return
-						}
-						msg, err := MakeMsgBFTPropose(prevAggregatedSig, prevValidatorsIdx, newBlock)
-						if err != nil {
-							Logger.log.Error(err)
-							return
-						}
-						self.Server.PushMessageToBeacon(msg)
-						self.pendingBlock = newBlock
-					} else {
-						newBlock, err := self.BlockGen.NewBlockShard(&self.UserKeySet.PaymentAddress, &self.UserKeySet.PrivateKey, shardID)
-						if err != nil {
-							return
-						}
-						msg, err := MakeMsgBFTPropose(prevAggregatedSig, prevValidatorsIdx, newBlock)
-						if err != nil {
-							Logger.log.Error(err)
-							return
-						}
-						self.Server.PushMessageToShard(msg, shardID)
-						self.pendingBlock = newBlock
+	// go func() {
+	for {
+		self.cTimeout = make(chan struct{})
+		multiSigScheme := new(privacy.MultiSigScheme)
+		multiSigScheme.Init()
+		multiSigScheme.Keyset.Set(&self.UserKeySet.PrivateKey, &self.UserKeySet.PaymentAddress.Pk)
+		select {
+		case <-self.cQuit:
+			return
+		default:
+			switch self.phase {
+			case "propose":
+				// timeout := time.AfterFunc(ProposeTimeout*time.Second, func() {
+				// 	close(self.cTimeout)
+				// })
+				if layer == "beacon" {
+					newBlock, err := self.BlockGen.NewBlockBeacon(&self.UserKeySet.PaymentAddress, &self.UserKeySet.PrivateKey)
+					if err != nil {
+						Logger.log.Error(err)
+						return
 					}
-					self.phase = "prepare"
-				case "listen":
-					time.AfterFunc(ListenTimeout*time.Second, func() {
-						close(self.cTimeout)
-					})
-					select {
-					case msgPropose := <-self.cBFTMsg:
-						var phaseData struct {
-							PrevAggregatedSig string
-							PrevValidatorsIdx []int
-							Block             blockchain.BFTBlockInterface
-						}
-						if msgPropose.MessageType() == wire.CmdBFTPropose {
-							phaseData.PrevAggregatedSig = msgPropose.(*wire.MessageBFTPropose).AggregatedSig
-							phaseData.PrevValidatorsIdx = msgPropose.(*wire.MessageBFTPropose).ValidatorsIdx
-							phaseData.Block = msgPropose.(*wire.MessageBFTPropose).Block
-							if layer == "beacon" {
-								self.Chain.VerifyPreProcessingBeaconBlock(phaseData.Block.(*blockchain.BeaconBlock))
-							} else {
-								self.Chain.VerifyPreProcessingShardBlock(phaseData.Block.(*blockchain.ShardBlock))
-							}
-							// Todo create random Ri and broadcast
+					fmt.Println("Propose block")
+					jsonBlock, _ := json.Marshal(newBlock)
+					msg, err := MakeMsgBFTPropose(prevAggregatedSig, prevValidatorsIdx, jsonBlock)
+					if err != nil {
+						Logger.log.Error(err)
+						return
+					}
+					self.Server.PushMessageToBeacon(msg)
+					self.pendingBlock = newBlock
+				} else {
+					newBlock, err := self.BlockGen.NewBlockShard(&self.UserKeySet.PaymentAddress, &self.UserKeySet.PrivateKey, shardID)
+					if err != nil {
+						return
+					}
+					jsonBlock, _ := json.Marshal(newBlock)
+					msg, err := MakeMsgBFTPropose(prevAggregatedSig, prevValidatorsIdx, jsonBlock)
+					if err != nil {
+						Logger.log.Error(err)
+						return
+					}
+					self.Server.PushMessageToShard(msg, shardID)
+					self.pendingBlock = newBlock
+				}
 
-							myRiECCPoint, myrBigInt := multiSigScheme.GenerateRandom()
-							myRi := myRiECCPoint.Compress()
-							myr := myrBigInt.Bytes()
-							for len(myr) < privacy.BigIntSize {
-								myr = append([]byte{0}, myr...)
-							}
-							msg, err := MakeMsgBFTPrepare(myRi, self.UserKeySet.GetPublicKeyB58())
-							if err != nil {
-								Logger.log.Error(err)
-								return
-							}
+				myRiECCPoint, myrBigInt := multiSigScheme.GenerateRandom()
+				myRi := myRiECCPoint.Compress()
+				myr := myrBigInt.Bytes()
+				for len(myr) < privacy.BigIntSize {
+					myr = append([]byte{0}, myr...)
+				}
+				msg, err := MakeMsgBFTPrepare(myRi, self.UserKeySet.GetPublicKeyB58())
+				if err != nil {
+					Logger.log.Error(err)
+					return
+				}
+				time.AfterFunc(2000*time.Millisecond, func() {
+					fmt.Println("Sending out prepare msg")
+					if layer == "beacon" {
+						self.Server.PushMessageToBeacon(msg)
+					} else {
+						self.Server.PushMessageToShard(msg, shardID)
+					}
+				})
+				self.dataForSig.Ri = myRi
+				self.dataForSig.r = myr
+
+				self.phase = "prepare"
+			case "listen":
+				fmt.Println("Listen phase")
+				timeout := time.AfterFunc(ListenTimeout*time.Second, func() {
+					close(self.cTimeout)
+				})
+				select {
+				case msgPropose := <-self.cBFTMsg:
+
+					fmt.Println("Propose block received")
+					var phaseData struct {
+						PrevAggregatedSig string
+						PrevValidatorsIdx []int
+						Block             interface{}
+					}
+					if msgPropose.MessageType() == wire.CmdBFTPropose {
+						phaseData.PrevAggregatedSig = msgPropose.(*wire.MessageBFTPropose).AggregatedSig
+						phaseData.PrevValidatorsIdx = msgPropose.(*wire.MessageBFTPropose).ValidatorsIdx
+						// phaseData.Block = msgPropose.(*wire.MessageBFTPropose).Block
+						if layer == "beacon" {
+							pendingBlk := blockchain.BeaconBlock{}
+							pendingBlk.UnmarshalJSON(msgPropose.(*wire.MessageBFTPropose).Block)
+							self.Chain.VerifyPreProcessingBeaconBlock(&pendingBlk)
+							phaseData.Block = pendingBlk
+						} else {
+							pendingBlk := blockchain.ShardBlock{}
+							pendingBlk.UnmarshalJSON(msgPropose.(*wire.MessageBFTPropose).Block)
+							self.Chain.VerifyPreProcessingShardBlock(&pendingBlk)
+							phaseData.Block = pendingBlk
+						}
+						// Todo create random Ri and broadcast
+
+						myRiECCPoint, myrBigInt := multiSigScheme.GenerateRandom()
+						myRi := myRiECCPoint.Compress()
+						myr := myrBigInt.Bytes()
+						for len(myr) < privacy.BigIntSize {
+							myr = append([]byte{0}, myr...)
+						}
+						msg, err := MakeMsgBFTPrepare(myRi, self.UserKeySet.GetPublicKeyB58())
+						if err != nil {
+							Logger.log.Error(err)
+							return
+						}
+						time.AfterFunc(1500*time.Millisecond, func() {
+							fmt.Println("Sending out prepare msg")
 							if layer == "beacon" {
 								self.Server.PushMessageToBeacon(msg)
 							} else {
 								self.Server.PushMessageToShard(msg, shardID)
 							}
-							self.dataForSig.Ri = myRi
-							self.dataForSig.r = myr
-							self.pendingBlock = phaseData.Block
-							self.phase = "prepare"
+						})
+						self.dataForSig.Ri = myRi
+						self.dataForSig.r = myr
+						self.pendingBlock = phaseData.Block
+						self.phase = "prepare"
+						timeout.Stop()
+						continue
+					}
+				case <-self.cTimeout:
+				}
+			case "prepare":
+				fmt.Println("Prepare phase")
+				time.AfterFunc(PrepareTimeout*time.Second, func() {
+					close(self.cTimeout)
+				})
+				var phaseData struct {
+					RiList map[string][]byte
+
+					R             string
+					ValidatorsIdx []int
+					CommitBlkSig  string
+				}
+				phaseData.RiList = make(map[string][]byte)
+				phaseData.RiList[self.UserKeySet.GetPublicKeyB58()] = self.dataForSig.Ri
+				for {
+					select {
+					case msgPrepare := <-self.cBFTMsg:
+						fmt.Println("djg;ldfl;gsl;g;ls")
+						if msgPrepare.MessageType() == wire.CmdBFTPrepare {
+							phaseData.RiList[msgPrepare.(*wire.MessageBFTPrepare).Pubkey] = msgPrepare.(*wire.MessageBFTPrepare).Ri
 						}
 					case <-self.cTimeout:
-					}
-				case "prepare":
-					time.AfterFunc(PrepareTimeout*time.Second, func() {
-						close(self.cTimeout)
-					})
-					var phaseData struct {
-						RiList map[string][]byte
+						//Use collected Ri to calc R & get ValidatorsIdx if len(Ri) > 1/2size(committee)
+						// then sig block with this R
+						// phaseData.R = base58.Base58Check{}.Encode(Rbytes, byte(0x00))
+						// base58.Base58Check{}.
+						numbOfSigners := len(phaseData.RiList)
+						listPubkeyOfSigners := make([]*privacy.PublicKey, numbOfSigners)
+						listROfSigners := make([]*privacy.EllipticPoint, numbOfSigners)
+						RCombined := new(privacy.EllipticPoint)
+						// RCombined.Set(big.NewInt(0), big.NewInt(0))
+						counter := 0
+						// var byteVersion byte
+						// var err error
 
-						R             string
-						ValidatorsIdx []int
-						CommitBlkSig  string
-					}
-					phaseData.RiList = make(map[string][]byte)
-					for {
-						select {
-						case msgPrepare := <-self.cBFTMsg:
-							if msgPrepare.MessageType() == wire.CmdBFTPrepare {
-								phaseData.RiList[msgPrepare.(*wire.MessageBFTPrepare).Pubkey] = msgPrepare.(*wire.MessageBFTPrepare).Ri
+						for szPubKey, bytesR := range phaseData.RiList {
+							pubKeyTemp, byteVersion, err := base58.Base58Check{}.Decode(szPubKey)
+							listPubkeyOfSigners[counter] = new(privacy.PublicKey)
+							*listPubkeyOfSigners[counter] = pubKeyTemp
+							if (err != nil) || (byteVersion != byte(0x00)) {
+								//Todo
+								return
 							}
-						case <-self.cTimeout:
-							//Use collected Ri to calc R & get ValidatorsIdx if len(Ri) > 1/2size(committee)
-							// then sig block with this R
-							// phaseData.R = base58.Base58Check{}.Encode(Rbytes, byte(0x00))
-							// base58.Base58Check{}.
-							numbOfSigners := len(phaseData.RiList)
-							listPubkeyOfSigners := make([]*privacy.PublicKey, numbOfSigners)
-							listROfSigners := make([]*privacy.EllipticPoint, numbOfSigners)
+							listROfSigners[counter] = new(privacy.EllipticPoint)
+							err = listROfSigners[counter].Decompress(bytesR)
+							if err != nil {
+								//Todo
+								return
+							}
+							RCombined = RCombined.Add(listROfSigners[counter])
+							// phaseData.ValidatorsIdx[counter] = sort.SearchStrings(self.Committee, szPubKey)
+							phaseData.ValidatorsIdx[counter] = common.IndexOfStr(szPubKey, self.Committee)
+
+							counter++
+						}
+
+						//Todo Sig block with R Here
+						var blockData common.Hash
+						if layer == "beacon" {
+							blockData = self.pendingBlock.(*blockchain.BeaconBlock).Header.Hash()
+						} else {
+							blockData = self.pendingBlock.(*blockchain.ShardBlock).Header.Hash()
+						}
+
+						multiSigScheme.Signature = multiSigScheme.Keyset.SignMultiSig(blockData.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(self.dataForSig.r))
+						phaseData.CommitBlkSig = base58.Base58Check{}.Encode(multiSigScheme.Signature.Bytes(), byte(0x00))
+						phaseData.R = base58.Base58Check{}.Encode(RCombined.Compress(), byte(0x00))
+
+						msg, err := MakeMsgBFTCommit(phaseData.CommitBlkSig, phaseData.R, phaseData.ValidatorsIdx, self.UserKeySet.GetPublicKeyB58())
+						if err != nil {
+							Logger.log.Error(err)
+							return
+						}
+						if layer == "beacon" {
+							self.Server.PushMessageToBeacon(msg)
+						} else {
+							self.Server.PushMessageToShard(msg, shardID)
+						}
+
+						self.phase = "commit"
+						break
+					}
+				}
+			case "commit":
+				fmt.Println("Commit phase")
+				time.AfterFunc(CommitTimeout*time.Second, func() {
+					close(self.cTimeout)
+				})
+				type validatorSig struct {
+					Pubkey        string
+					ValidatorsIdx []int
+					Sig           string
+				}
+				var phaseData struct {
+					Sigs map[string][]validatorSig
+				}
+
+				phaseData.Sigs = make(map[string][]validatorSig)
+				for {
+					select {
+					case msgCommit := <-self.cBFTMsg:
+						if msgCommit.MessageType() == wire.CmdBFTCommit {
+							newSig := validatorSig{
+								Pubkey:        msgCommit.(*wire.MessageBFTCommit).Pubkey,
+								ValidatorsIdx: msgCommit.(*wire.MessageBFTCommit).ValidatorsIdx,
+								Sig:           msgCommit.(*wire.MessageBFTCommit).CommitSig,
+							}
+							R := msgCommit.(*wire.MessageBFTCommit).R
+
+							//Check that Validators Index array in newSig and Validators Index array in each of sig have the same R are equality
+							for _, valSig := range phaseData.Sigs[R] {
+								for i, value := range valSig.ValidatorsIdx {
+									if value != newSig.ValidatorsIdx[i] {
+										return
+									}
+								}
+							}
+
+							//Recalculate RCombined from base58
 							RCombined := new(privacy.EllipticPoint)
 							// RCombined.Set(big.NewInt(0), big.NewInt(0))
-							counter := 0
-							// var byteVersion byte
-							// var err error
-
-							for szPubKey, bytesR := range phaseData.RiList {
-								pubKeyTemp, byteVersion, err := base58.Base58Check{}.Decode(szPubKey)
-								listPubkeyOfSigners[counter] = new(privacy.PublicKey)
-								*listPubkeyOfSigners[counter] = pubKeyTemp
+							Rbytesarr, byteVersion, err := base58.Base58Check{}.Decode(R)
+							if (err != nil) || (byteVersion != byte(0x00)) {
+								//Todo
+								return
+							}
+							err = RCombined.Decompress(Rbytesarr)
+							if err != nil {
+								return
+							}
+							listPubkeyOfSigners := make([]*privacy.PublicKey, len(newSig.ValidatorsIdx))
+							var pubKeyTemp []byte
+							for i := 0; i < len(newSig.ValidatorsIdx); i++ {
+								listPubkeyOfSigners[i] = new(privacy.PublicKey)
+								pubKeyTemp, byteVersion, err = base58.Base58Check{}.Decode(self.Committee[newSig.ValidatorsIdx[i]])
 								if (err != nil) || (byteVersion != byte(0x00)) {
 									//Todo
 									return
 								}
-								listROfSigners[counter] = new(privacy.EllipticPoint)
-								err = listROfSigners[counter].Decompress(bytesR)
-								if err != nil {
-									//Todo
-									return
-								}
-								RCombined = RCombined.Add(listROfSigners[counter])
-								// phaseData.ValidatorsIdx[counter] = sort.SearchStrings(self.Committee, szPubKey)
-								phaseData.ValidatorsIdx[counter] = common.IndexOfStr(szPubKey, self.Committee)
-
-								counter++
+								*listPubkeyOfSigners[i] = pubKeyTemp
 							}
-
-							//Todo Sig block with R Here
+							selfPubkey := new(privacy.PublicKey)
+							pubKeyTemp, byteVersion, err = base58.Base58Check{}.Decode(newSig.Pubkey)
+							if (err != nil) || (byteVersion != byte(0x00)) {
+								//Todo
+								return
+							}
+							*selfPubkey = pubKeyTemp
+							var valSigbytesarr []byte
+							valSigbytesarr, byteVersion, err = base58.Base58Check{}.Decode(newSig.Sig)
+							valSig := new(privacy.SchnMultiSig)
+							valSig.SetBytes(valSigbytesarr)
 							var blockData common.Hash
 							if layer == "beacon" {
 								blockData = self.pendingBlock.(*blockchain.BeaconBlock).Header.Hash()
 							} else {
 								blockData = self.pendingBlock.(*blockchain.ShardBlock).Header.Hash()
 							}
-
-							multiSigScheme.Signature = multiSigScheme.Keyset.SignMultiSig(blockData.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(self.dataForSig.r))
-							phaseData.CommitBlkSig = base58.Base58Check{}.Encode(multiSigScheme.Signature.Bytes(), byte(0x00))
-							phaseData.R = base58.Base58Check{}.Encode(RCombined.Compress(), byte(0x00))
-
-							msg, err := MakeMsgBFTCommit(phaseData.CommitBlkSig, phaseData.R, phaseData.ValidatorsIdx, self.UserKeySet.GetPublicKeyB58())
-							if err != nil {
-								Logger.log.Error(err)
+							resValidateEachSigOfSigners := valSig.VerifyMultiSig(blockData.GetBytes(), listPubkeyOfSigners, selfPubkey, RCombined)
+							if !resValidateEachSigOfSigners {
 								return
 							}
-							if layer == "beacon" {
-								self.Server.PushMessageToBeacon(msg)
-							} else {
-								self.Server.PushMessageToShard(msg, shardID)
-							}
-
-							self.phase = "commit"
-							break
+							phaseData.Sigs[R] = append(phaseData.Sigs[R], newSig)
 						}
-					}
-				case "commit":
-					time.AfterFunc(CommitTimeout*time.Second, func() {
-						close(self.cTimeout)
-					})
-					type validatorSig struct {
-						Pubkey        string
-						ValidatorsIdx []int
-						Sig           string
-					}
-					var phaseData struct {
-						Sigs map[string][]validatorSig
-					}
-
-					phaseData.Sigs = make(map[string][]validatorSig)
-					for {
-						select {
-						case msgCommit := <-self.cBFTMsg:
-							if msgCommit.MessageType() == wire.CmdBFTCommit {
-								newSig := validatorSig{
-									Pubkey:        msgCommit.(*wire.MessageBFTCommit).Pubkey,
-									ValidatorsIdx: msgCommit.(*wire.MessageBFTCommit).ValidatorsIdx,
-									Sig:           msgCommit.(*wire.MessageBFTCommit).CommitSig,
-								}
-								R := msgCommit.(*wire.MessageBFTCommit).R
-
-								//Check that Validators Index array in newSig and Validators Index array in each of sig have the same R are equality
-								for _, valSig := range phaseData.Sigs[R] {
-									for i, value := range valSig.ValidatorsIdx {
-										if value != newSig.ValidatorsIdx[i] {
-											return
-										}
-									}
-								}
-
-								//Recalculate RCombined from base58
-								RCombined := new(privacy.EllipticPoint)
-								// RCombined.Set(big.NewInt(0), big.NewInt(0))
-								Rbytesarr, byteVersion, err := base58.Base58Check{}.Decode(R)
-								if (err != nil) || (byteVersion != byte(0x00)) {
-									//Todo
-									return
-								}
-								err = RCombined.Decompress(Rbytesarr)
-								if err != nil {
-									return
-								}
-								listPubkeyOfSigners := make([]*privacy.PublicKey, len(newSig.ValidatorsIdx))
-								var pubKeyTemp []byte
-								for i := 0; i < len(newSig.ValidatorsIdx); i++ {
-									listPubkeyOfSigners[i] = new(privacy.PublicKey)
-									pubKeyTemp, byteVersion, err = base58.Base58Check{}.Decode(self.Committee[newSig.ValidatorsIdx[i]])
-									if (err != nil) || (byteVersion != byte(0x00)) {
-										//Todo
-										return
-									}
-									*listPubkeyOfSigners[i] = pubKeyTemp
-								}
-								selfPubkey := new(privacy.PublicKey)
-								pubKeyTemp, byteVersion, err = base58.Base58Check{}.Decode(newSig.Pubkey)
-								if (err != nil) || (byteVersion != byte(0x00)) {
-									//Todo
-									return
-								}
-								*selfPubkey = pubKeyTemp
-								var valSigbytesarr []byte
-								valSigbytesarr, byteVersion, err = base58.Base58Check{}.Decode(newSig.Sig)
-								valSig := new(privacy.SchnMultiSig)
-								valSig.SetBytes(valSigbytesarr)
-								var blockData common.Hash
-								if layer == "beacon" {
-									blockData = self.pendingBlock.(*blockchain.BeaconBlock).Header.Hash()
+					case <-self.cTimeout:
+						//Combine collected Sigs with the same R that has the longest list must has size > 1/2size(committee)
+						var szRCombined string
+						szRCombined = "1"
+						for szR := range phaseData.Sigs {
+							if len(phaseData.Sigs[szR]) > (len(self.Committee) >> 1) {
+								if len(szRCombined) == 1 {
+									szRCombined = szR
 								} else {
-									blockData = self.pendingBlock.(*blockchain.ShardBlock).Header.Hash()
-								}
-								resValidateEachSigOfSigners := valSig.VerifyMultiSig(blockData.GetBytes(), listPubkeyOfSigners, selfPubkey, RCombined)
-								if !resValidateEachSigOfSigners {
-									return
-								}
-								phaseData.Sigs[R] = append(phaseData.Sigs[R], newSig)
-							}
-						case <-self.cTimeout:
-							//Combine collected Sigs with the same R that has the longest list must has size > 1/2size(committee)
-							var szRCombined string
-							szRCombined = "1"
-							for szR := range phaseData.Sigs {
-								if len(phaseData.Sigs[szR]) > (len(self.Committee) >> 1) {
-									if len(szRCombined) == 1 {
+									if len(phaseData.Sigs[szR]) > len(phaseData.Sigs[szRCombined]) {
 										szRCombined = szR
-									} else {
-										if len(phaseData.Sigs[szR]) > len(phaseData.Sigs[szRCombined]) {
-											szRCombined = szR
-										}
 									}
 								}
 							}
-							if len(szRCombined) != 1 {
-								return
-							}
-							//Todo combine Sigs
-							listSigOfSigners := make([]*privacy.SchnMultiSig, len(phaseData.Sigs[szRCombined]))
-							for i, valSig := range phaseData.Sigs[szRCombined] {
-								listSigOfSigners[i] = new(privacy.SchnMultiSig)
-								bytesSig, byteVersion, err := base58.Base58Check{}.Decode(valSig.Sig)
-								if (err != nil) || (byteVersion != byte(0x00)) {
-									return
-								}
-								listSigOfSigners[i].SetBytes(bytesSig)
-							}
-							AggregatedSig := multiSigScheme.CombineMultiSig(listSigOfSigners)
-
-							var replyData struct {
-								ValidatorsIdx []int
-								AggregatedSig string
-							}
-							replyData.ValidatorsIdx = make([]int, len(phaseData.Sigs[szRCombined][0].ValidatorsIdx))
-							copy(replyData.ValidatorsIdx, phaseData.Sigs[szRCombined][0].ValidatorsIdx)
-							replyData.AggregatedSig = base58.Base58Check{}.Encode(AggregatedSig.Bytes(), byte(0x00))
-							msg, err := MakeMsgBFTReply(replyData.AggregatedSig, replyData.ValidatorsIdx)
-							if err != nil {
-								Logger.log.Error(err)
-								return
-							}
-							if layer == "beacon" {
-								self.Server.PushMessageToBeacon(msg)
-							} else {
-								self.Server.PushMessageToShard(msg, shardID)
-							}
-
-							self.phase = "reply"
-							break
 						}
+						if len(szRCombined) != 1 {
+							return
+						}
+						//Todo combine Sigs
+						listSigOfSigners := make([]*privacy.SchnMultiSig, len(phaseData.Sigs[szRCombined]))
+						for i, valSig := range phaseData.Sigs[szRCombined] {
+							listSigOfSigners[i] = new(privacy.SchnMultiSig)
+							bytesSig, byteVersion, err := base58.Base58Check{}.Decode(valSig.Sig)
+							if (err != nil) || (byteVersion != byte(0x00)) {
+								return
+							}
+							listSigOfSigners[i].SetBytes(bytesSig)
+						}
+						AggregatedSig := multiSigScheme.CombineMultiSig(listSigOfSigners)
+
+						var replyData struct {
+							ValidatorsIdx []int
+							AggregatedSig string
+						}
+						replyData.ValidatorsIdx = make([]int, len(phaseData.Sigs[szRCombined][0].ValidatorsIdx))
+						copy(replyData.ValidatorsIdx, phaseData.Sigs[szRCombined][0].ValidatorsIdx)
+						replyData.AggregatedSig = base58.Base58Check{}.Encode(AggregatedSig.Bytes(), byte(0x00))
+						msg, err := MakeMsgBFTReply(replyData.AggregatedSig, replyData.ValidatorsIdx)
+						if err != nil {
+							Logger.log.Error(err)
+							return
+						}
+						if layer == "beacon" {
+							self.Server.PushMessageToBeacon(msg)
+						} else {
+							self.Server.PushMessageToShard(msg, shardID)
+						}
+
+						self.phase = "reply"
+						break
 					}
-				case "reply":
-					time.AfterFunc(ReplyTimeout*time.Second, func() {
-						close(self.cTimeout)
-					})
-					for {
-						select {
-						case msgReply := <-self.cBFTMsg:
-							fmt.Println(msgReply)
-						case <-self.cTimeout:
+				}
+			case "reply":
+				fmt.Println("Reply phase")
+				time.AfterFunc(ReplyTimeout*time.Second, func() {
+					close(self.cTimeout)
+				})
+				for {
+					select {
+					case msgReply := <-self.cBFTMsg:
+						fmt.Println(msgReply)
+					case <-self.cTimeout:
 
-						}
 					}
 				}
 			}
-
 		}
-	}()
-	return nil
+
+	}
+	// }()
+	return
 }
 
 func (self *BFTProtocol) Stop() error {

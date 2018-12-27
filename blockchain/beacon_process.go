@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
+	"github.com/ninjadotorg/constant/common/base58"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 
 	"github.com/ninjadotorg/constant/common"
 )
@@ -95,7 +97,7 @@ func (self *BlockChain) VerifyBlockForSigningProcess(block *BeaconBlock) error {
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
 		}
-		json.Unmarshal(tempMarshal, beaconBestState)
+		json.Unmarshal(tempMarshal, &beaconBestState)
 	} else {
 		// check with current cache best state
 		var err error
@@ -145,8 +147,6 @@ func (self *BlockChain) VerifyBlockForSigningProcess(block *BeaconBlock) error {
 func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, error) {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
-	//TODO: Verify Signature
-	//========Verify block only
 	if err := self.VerifyPreProcessingBeaconBlock(block); err != nil {
 		return "", err
 	}
@@ -160,7 +160,7 @@ func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, erro
 		if err != nil {
 			return "", NewBlockChainError(UnmashallJsonBlockError, err)
 		}
-		json.Unmarshal(tempMarshal, beaconBestState)
+		json.Unmarshal(tempMarshal, &beaconBestState)
 	} else {
 		// check with current cache best state
 		var err error
@@ -253,7 +253,6 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 	This function DOES NOT verify new block with best state
 	DO NOT USE THIS with GENESIS BLOCK
 	- Sanity
-	- Signature
 		+ Producer validity
 		+ Signature of producer
 		+ agg signature
@@ -265,8 +264,6 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 	- Instruction hash
 	- ShardStateHash
 	*/
-	//TODO: Verify sanity, signature
-	// Verify version
 	if block.Header.Version != VERSION {
 		return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
 	}
@@ -310,20 +307,45 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 }
 func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock) error {
 	/*
-			This function will verify the validation of a block with some best state in cache or current best state
+		This function will verify the validation of a block with some best state in cache or current best state
+		Get beacon state of this block
+		For example, new blockHeight is 91 then beacon state of this block must have height 90
+		OR new block has previous has is beacon best block hash
 		// - Producer
+		// - Signature
 		// - Has parent hash is some beststate block hash
 		// - Height
 		// - Epoch
-	*/
-	// Get beacon state of this block
-	// For example, new blockHeight is 91 then beacon state of this block must have height 90
-	// OR new block has previous has is beacon best block hash
 
-	// TODO: Verify producer
+	*/
+
 	// self.lock.Lock()
 	// defer self.lock.Unlock()
 
+	if len(self.BeaconCommittee) != len(block.ValidatorsIdx) {
+		return NewBlockChainError(SignatureError, errors.New("Block validators and Beacon committee is not compatible"))
+	}
+	pubKeys := []*privacy.PublicKey{}
+	for _, index := range block.ValidatorsIdx {
+		pubkeyBytes, _, err := base58.Base58Check{}.Decode(self.BeaconCommittee[index])
+		if err != nil {
+			return NewBlockChainError(SignatureError, errors.New("Error in convert Public key from string to byte"))
+		}
+		pubKey := &privacy.PublicKey{}
+		copy(*pubKey, pubkeyBytes[:])
+		pubKeys = append(pubKeys, pubKey)
+	}
+
+	aggSig, _, err := base58.Base58Check{}.Decode(block.AggregatedSig)
+	if err != nil {
+		return NewBlockChainError(SignatureError, errors.New("Error in convert aggregated signature from string to byte"))
+	}
+	schnMultiSig := &privacy.SchnMultiSig{}
+	schnMultiSig.SetBytes(aggSig)
+	blockHash := block.Header.Hash()
+	if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeys, nil, nil) == false {
+		return NewBlockChainError(SignatureError, errors.New("Invalid Agg signature"))
+	}
 	if self.BeaconHeight+1 != block.Header.Height {
 		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
@@ -550,7 +572,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			beaconNextCommittees   []string
 			err                    error
 		)
-		self.BeaconPendingValidator, self.BeaconCommittee, beaconSwapedCommittees, beaconNextCommittees, err = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, OFFSET)
+		self.BeaconPendingValidator, self.BeaconCommittee, beaconSwapedCommittees, beaconNextCommittees, err = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, COMMITEES, OFFSET)
 		Logger.log.Infof("Swaped out committees %+v", beaconSwapedCommittees)
 		Logger.log.Infof("Nextcommittees %+v", beaconNextCommittees)
 		if err != nil {
@@ -623,8 +645,11 @@ func calculateHash(candidate string, rand int64) (shardID byte) {
 // consider these list as queue structure
 // unqueue a number of validator out of currentValidators list
 // enqueue a number of validator into currentValidators list <=> unqueue a number of validator out of pendingValidators list
-// return value: #1 remaining pendingValidators, #2 new currentValidators # swap validator
-func SwapValidator(pendingValidators []string, currentValidators []string, offset int) ([]string, []string, []string, []string, error) {
+// return value: #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator #5 error
+func SwapValidator(pendingValidators []string, currentValidators []string, maxCommittee int, offset int) ([]string, []string, []string, []string, error) {
+	if maxCommittee < 0 || offset < 0 {
+		panic("Committee can't be zero")
+	}
 	if offset == 0 {
 		return nil, pendingValidators, currentValidators, nil, errors.New("Can't not swap 0 validator")
 	}
@@ -632,23 +657,43 @@ func SwapValidator(pendingValidators []string, currentValidators []string, offse
 	if offset > len(pendingValidators) {
 		offset = len(pendingValidators)
 	}
-	// do nothing
+	// if swap offset = 0 then do nothing
 	if offset == 0 {
 		return nil, pendingValidators, currentValidators, nil, errors.New("No pending validator for swapping")
 	}
-	if offset > len(currentValidators) {
+	if offset > maxCommittee {
 		return nil, pendingValidators, currentValidators, nil, errors.New("Trying to swap too many validator")
 	}
-	swapValidator := currentValidators[:offset]
+	tempValidators := []string{}
+	swapValidator := []string{}
+	// if len(currentValidator) < maxCommittee then push validator until it is full
+	if len(currentValidators) < maxCommittee {
+		diff := maxCommittee - len(currentValidators)
+		if diff >= offset {
+			tempValidators = append(tempValidators, pendingValidators[:offset]...)
+			currentValidators = append(currentValidators, tempValidators...)
+			pendingValidators = pendingValidators[offset:]
+			return pendingValidators, currentValidators, swapValidator, tempValidators, nil
+		} else {
+			offset -= diff
+			tempValidators := append(tempValidators, pendingValidators[:diff]...)
+			pendingValidators = pendingValidators[diff:]
+			currentValidators = append(currentValidators, tempValidators...)
+		}
+	}
+	// out pubkey: swapped out validator
+	swapValidator = append(swapValidator, currentValidators[:offset]...)
 	// unqueue validator with index from 0 to offset-1 from currentValidators list
 	currentValidators = currentValidators[offset:]
-	// unqueue validator with index from 0 to offset-1 from currentValidators list
-	tempValidators := pendingValidators[:offset]
+	// in pubkey: unqueue validator with index from 0 to offset-1 from pendingValidators list
+	tempValidators = append(tempValidators, pendingValidators[:offset]...)
 	// save new pending validators list
 	pendingValidators = pendingValidators[offset:]
-
 	// enqueue new validator to the remaning of current validators list
-	currentValidators = append(currentValidators, tempValidators...)
+	currentValidators = append(currentValidators, pendingValidators[:offset]...)
+	if len(currentValidators) > maxCommittee {
+		panic("Length of current validator greater than max committee in Swap validator ")
+	}
 	return pendingValidators, currentValidators, swapValidator, tempValidators, nil
 }
 

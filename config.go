@@ -40,7 +40,7 @@ const (
 	sampleConfigFilename      = "sample-config.conf"
 	defaultDisableRpcTLS      = true
 	defaultFastMode           = true
-	defaultNodeRole           = "relay"
+	defaultNodeMode           = "relay"
 	// For wallet
 	defaultWalletName = "wallet"
 )
@@ -106,7 +106,7 @@ type config struct {
 	TestNet bool `long:"testnet" description:"Use the test network"`
 
 	SpendingKey string   `long:"spendingkey" description:"User spending key used for operation in consensus"`
-	NodeRole    string   `long:"noderole" description:"Role of this node (beacon/shard/wallet/relay | default role is 'relay' (relayshards must be set to run), 'auto' mode will switch between 'beacon' and 'shard')"`
+	NodeMode    string   `long:"nodemode" description:"Role of this node (beacon/shard/wallet/relay | default role is 'relay' (relayshards must be set to run), 'auto' mode will switch between 'beacon' and 'shard')"`
 	RelayShards []string `long:"relayshards" description:"set relay shards of this node when in 'relay' mode if noderole is auto then it only sync shard data when user is a shard producer/validator"`
 	// For Wallet
 	Wallet           bool   `long:"enablewallet" description:"Enable wallet"`
@@ -287,10 +287,10 @@ func loadConfig() (*config, []string, error) {
 		WalletName:           defaultWalletName,
 		DisableTLS:           defaultDisableRpcTLS,
 		RPCDisableAuth:       false,
-		DiscoverPeers:        false,
+		DiscoverPeers:        true,
 		TestNet:              false,
-		DiscoverPeersAddress: "35.230.8.182:9339",
-		NodeRole:             defaultNodeRole,
+		DiscoverPeersAddress: "127.0.0.1:9330", //"35.230.8.182:9339",
+		NodeMode:             defaultNodeMode,
 		SpendingKey:          common.EmptyString,
 		// FastStartup:          defaultFastStartup,
 	}

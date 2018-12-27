@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
@@ -9,7 +10,8 @@ import (
 const (
 	EPOCH       = 200
 	RANDOM_TIME = 100
-	OFFSET      = 3
+	COMMITEES   = 3
+	OFFSET      = 1
 	VERSION     = 1
 )
 
@@ -68,30 +70,30 @@ func (self *BeaconBlock) Hash() *common.Hash {
 	return &hash
 }
 
-// func (self *BeaconBlock) UnmarshalJSON(data []byte) error {
-// 	tempBlk := &struct {
-// 		AggregatedSig string
-// 		ValidatorsIdx []int
-// 		Header        BeaconHeader
-// 		Body          *json.RawMessage
-// 	}{}
-// 	err := json.Unmarshal(data, &tempBlk)
-// 	if err != nil {
-// 		return NewBlockChainError(UnmashallJsonBlockError, err)
-// 	}
-// 	self.AggregatedSig = tempBlk.AggregatedSig
-// 	self.ValidatorsIdx = tempBlk.ValidatorsIdx
+func (self *BeaconBlock) UnmarshalJSON(data []byte) error {
+	tempBlk := &struct {
+		AggregatedSig string
+		ValidatorsIdx []int
+		Header        BeaconHeader
+		Body          BeaconBody
+	}{}
+	err := json.Unmarshal(data, &tempBlk)
+	if err != nil {
+		return NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	self.AggregatedSig = tempBlk.AggregatedSig
+	self.ValidatorsIdx = tempBlk.ValidatorsIdx
 
-// 	blkBody := BeaconBody{}
-// 	err = blkBody.UnmarshalJSON(*tempBlk.Body)
-// 	if err != nil {
-// 		return NewBlockChainError(UnmashallJsonBlockError, err)
-// 	}
-// 	self.Header = tempBlk.Header
+	// blkBody := BeaconBody{}
+	// err = blkBody.UnmarshalJSON(*tempBlk.Body)
+	// if err != nil {
+	// 	return NewBlockChainError(UnmashallJsonBlockError, err)
+	// }
+	self.Header = tempBlk.Header
 
-// 	self.Body = blkBody
-// 	return nil
-// }
+	self.Body = tempBlk.Body
+	return nil
+}
 
 func (self *BeaconBody) toString() string {
 	res := ""

@@ -1,7 +1,8 @@
 package constantpos
 
 import (
-	"github.com/ninjadotorg/constant/blockchain"
+	"encoding/json"
+
 	"github.com/ninjadotorg/constant/wire"
 )
 
@@ -83,20 +84,24 @@ import (
 // }
 
 func (self *Engine) OnBFTPropose(msg *wire.MessageBFTPropose) {
+	self.cBFTMsg <- msg
 	return
 }
 
 func (self *Engine) OnBFTPrepare(msg *wire.MessageBFTPrepare) {
+	self.cBFTMsg <- msg
 	return
 
 }
 
 func (self *Engine) OnBFTCommit(msg *wire.MessageBFTCommit) {
+	self.cBFTMsg <- msg
 	return
 
 }
 
 func (self *Engine) OnBFTReply(msg *wire.MessageBFTReply) {
+	self.cBFTMsg <- msg
 	return
 
 }
@@ -262,7 +267,7 @@ func (self *Engine) OnSwapUpdate(msg *wire.MessageSwapUpdate) {
 	// return
 }
 
-func MakeMsgBFTPropose(aggregatedSig string, validatorsIdx []int, block blockchain.BFTBlockInterface) (wire.Message, error) {
+func MakeMsgBFTPropose(aggregatedSig string, validatorsIdx []int, block json.RawMessage) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTPropose)
 	if err != nil {
 		Logger.log.Error(err)

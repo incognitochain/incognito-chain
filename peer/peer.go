@@ -32,10 +32,10 @@ var HEAVY_MESSAGE_SIZE = 512 * 1024
 var SPAM_MESSAGE_SIZE = 50 * 1024 * 1024
 var MESSAGE_HASH_POOL_SIZE = 1000
 
-var MESSAGE_TO_ALL = byte(0)
-var MESSAGE_TO_SHARD = byte(1)
-var MESSAGE_TO_PEER = byte(2)
-var MESSAGE_TO_BEACON = byte(3)
+var MESSAGE_TO_ALL = byte('a')
+var MESSAGE_TO_SHARD = byte('s')
+var MESSAGE_TO_PEER = byte('p')
+var MESSAGE_TO_BEACON = byte('b')
 
 // RemotePeer is present for libp2p node data
 type Peer struct {
@@ -124,8 +124,9 @@ type MessageListeners struct {
 	// OnSwapRequest func(p *PeerConn, msg *wire.MessageSwapRequest)
 	// OnSwapSig     func(p *PeerConn, msg *wire.MessageSwapSig)
 	// OnSwapUpdate  func(p *PeerConn, msg *wire.MessageSwapUpdate)
-	PushRawBytesToShard func(msgBytes *[]byte, shard byte) error
-	GetCurrentShard     func() *byte
+	PushRawBytesToShard  func(msgBytes *[]byte, shard byte) error
+	PushRawBytesToBeacon func(msgBytes *[]byte) error
+	GetCurrentRoleShard  func() (string, *byte)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal

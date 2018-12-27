@@ -54,7 +54,10 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 		if err != nil {
 			return nil, NewBlockChainError(UnmashallJsonBlockError, err)
 		}
-		json.Unmarshal(tempMarshal, beaconBestState)
+		err = json.Unmarshal(tempMarshal, &beaconBestState)
+		if err != nil {
+			return nil, NewBlockChainError(UnmashallJsonBlockError, err)
+		}
 	}
 	if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
 		panic(NewBlockChainError(BeaconError, errors.New("Can't create beacon block beacause no beststate found")))
@@ -171,7 +174,7 @@ func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, staker map[
 		swapBeaconInstructions := []string{}
 		swappedValidator := []string{}
 		beaconNextCommittee := []string{}
-		_, _, swappedValidator, beaconNextCommittee, _ = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, OFFSET)
+		_, _, swappedValidator, beaconNextCommittee, _ = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, COMMITEES, OFFSET)
 		swapBeaconInstructions = append(swapBeaconInstructions, "swap")
 		swapBeaconInstructions = append(swapBeaconInstructions, beaconNextCommittee...)
 		swapBeaconInstructions = append(swapBeaconInstructions, swappedValidator...)

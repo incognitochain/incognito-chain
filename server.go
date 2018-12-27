@@ -216,7 +216,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		ConnManager: self.connManager,
 		Server:      self,
 		BlockGen:    self.blockgen,
-		NodeRole:    cfg.NodeRole,
+		NodeMode:    cfg.NodeMode,
 		UserKeySet:  userKeySet,
 	})
 	if err != nil {
@@ -564,8 +564,9 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			// OnSwapRequest: self.OnSwapRequest,
 			// OnSwapSig:     self.OnSwapSig,
 			// OnSwapUpdate:  self.OnSwapUpdate,
-			PushRawBytesToShard: self.PushRawBytesToShard,
-			GetCurrentShard:     self.GetCurrentShard,
+			PushRawBytesToShard:  self.PushRawBytesToShard,
+			PushRawBytesToBeacon: self.PushRawBytesToBeacon,
+			GetCurrentRoleShard:  self.GetCurrentRoleShard,
 		},
 	}
 	if len(KeySetUser.PrivateKey) != 0 {
@@ -992,6 +993,7 @@ func (self *Server) PushMessageToBeacon(msg wire.Message) error {
 	Logger.log.Infof("Push msg to beacon")
 	peerConns := self.connManager.GetPeerConnOfBeacon()
 	if peerConns != nil && len(peerConns) > 0 {
+		fmt.Println(len(peerConns))
 		for _, peerConn := range peerConns {
 			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
 			peerConn.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_BEACON, nil)
@@ -1000,8 +1002,28 @@ func (self *Server) PushMessageToBeacon(msg wire.Message) error {
 		return nil
 	} else {
 		Logger.log.Error("RemotePeer of beacon not exist!")
+		for _, listener := range self.connManager.Config.ListenerPeers {
+			listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_BEACON, nil)
+		}
 	}
 	return errors.New("RemotePeer of beacon not found")
+}
+
+func (self *Server) PushRawBytesToBeacon(msgBytes *[]byte) error {
+	Logger.log.Infof("Push raw bytes to beacon")
+	peerConns := self.connManager.GetPeerConnOfBeacon()
+	if peerConns != nil && len(peerConns) > 0 {
+		for _, peerConn := range peerConns {
+			peerConn.QueueMessageWithBytes(msgBytes, nil)
+		}
+		Logger.log.Infof("Pushed raw bytes beacon done")
+	} else {
+		Logger.log.Error("RemotePeer of beacon not exist!")
+		for _, listener := range self.connManager.Config.ListenerPeers {
+			listener.QueueMessageWithBytes(msgBytes, nil)
+		}
+	}
+	return nil
 }
 
 // handleAddPeerMsg deals with adding new peers.  It is invoked from the
@@ -1011,7 +1033,7 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 		return false
 	}
 	Logger.log.Info("Zero peer have just sent a message version")
-	Logger.log.Info(peer)
+	//Logger.log.Info(peer)
 	return true
 }
 
@@ -1070,6 +1092,10 @@ func (self *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	return nil
 }
 
-func (self *Server) GetCurrentShard() *byte {
-	return self.connManager.GetCurrentShard()
+func (self *Server) GetCurrentRoleShard() (string, *byte) {
+	return self.connManager.GetCurrentRoleShard()
+}
+
+func (self *Server) UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string) {
+	self.connManager.UpdateConsensusState(role, userPbk, currentShard, beaconCommittee, shardCommittee)
 }
