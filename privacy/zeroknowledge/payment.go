@@ -19,9 +19,6 @@ type PaymentWitness struct {
 	commitmentIndexs   []uint64
 	myCommitmentIndexs []uint64
 
-	pkLastByteSender    byte
-	pkLastByteReceivers []byte
-
 	OneOfManyWitness    []*OneOutOfManyWitness
 	SerialNumberWitness []*PKSNPrivacyWitness
 	SNNoPrivacyWitness  []*SNNoPrivacyWitness
@@ -50,8 +47,6 @@ type PaymentProof struct {
 	// for output coins
 	// for proving each value and sum of them are less than a threshold value
 	ComOutputMultiRangeProof *MultiRangeProof
-	// for proving that the last element of output array is really the sum of all other values
-	//SumOutRangeProof *ComZeroProof
 	// for input = output
 	ComZeroProof *ComZeroProof
 
@@ -311,6 +306,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (*privacy.PrivacyError) {
 		}
 		offset += lenInputCoin
 	}
+
 	//OutputCoins []*privacy.OutputCoin
 	lenOutputCoinsArray := int(proofbytes[offset])
 	offset += 1
@@ -432,17 +428,16 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (*privacy.PrivacyError) {
 func (wit *PaymentWitness) Build(hasPrivacy bool,
 	spendingKey *big.Int,
 	inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin,
-	pkLastByteSender byte, pkLastByteReceivers []byte,
-	commitments []*privacy.EllipticPoint, commitmentIndexs []uint64, myCommitmentIndexs []uint64,
+	pkLastByteSender byte,
+	commitments []*privacy.EllipticPoint, commitmentIndices []uint64, myCommitmentIndices []uint64,
 	fee uint64) (*privacy.PrivacyError) {
 
 	if !hasPrivacy {
 		wit.spendingKey = spendingKey
 		wit.inputCoins = inputCoins
 		wit.outputCoins = outputCoins
-		wit.commitmentIndexs = commitmentIndexs
-		wit.myCommitmentIndexs = myCommitmentIndexs
-		wit.pkLastByteSender = pkLastByteSender
+		wit.commitmentIndexs = commitmentIndices
+		wit.myCommitmentIndexs = myCommitmentIndices
 
 		publicKey := inputCoins[0].CoinDetails.PublicKey
 
@@ -459,9 +454,8 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	wit.spendingKey = spendingKey
 	wit.inputCoins = inputCoins
 	wit.outputCoins = outputCoins
-	wit.commitmentIndexs = commitmentIndexs
-	wit.myCommitmentIndexs = myCommitmentIndexs
-	wit.pkLastByteSender = pkLastByteSender
+	wit.commitmentIndexs = commitmentIndices
+	wit.myCommitmentIndexs = myCommitmentIndices
 
 	numInputCoin := len(wit.inputCoins)
 
@@ -473,8 +467,9 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	wit.ComInputSK = new(privacy.EllipticPoint).Zero()
 	wit.ComInputSK.X.Set(cmInputSK.X)
 	wit.ComInputSK.Y.Set(cmInputSK.Y)
+
 	randInputShardID := privacy.RandInt()
-	wit.ComInputShardID = privacy.PedCom.CommitAtIndex(big.NewInt(int64(wit.pkLastByteSender)), randInputShardID, privacy.SHARDID)
+	wit.ComInputShardID = privacy.PedCom.CommitAtIndex(big.NewInt(int64(pkLastByteSender)), randInputShardID, privacy.SHARDID)
 	wit.ComInputValue = make([]*privacy.EllipticPoint, numInputCoin)
 	wit.ComInputSND = make([]*privacy.EllipticPoint, numInputCoin)
 	// It is used for proving 2 commitments commit to the same value (SND)
@@ -561,9 +556,9 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		if wit.OneOfManyWitness[i] == nil {
 			wit.OneOfManyWitness[i] = new(OneOutOfManyWitness)
 		}
-		indexIsZero := myCommitmentIndexs[i] % privacy.CMRingSize
+		indexIsZero := myCommitmentIndices[i] % privacy.CMRingSize
 
-		wit.OneOfManyWitness[i].Set(commitmentTemps[i], commitmentIndexs[preIndex:preIndex+privacy.CMRingSize], rndInputIsZero[i], indexIsZero, privacy.SK)
+		wit.OneOfManyWitness[i].Set(commitmentTemps[i], commitmentIndices[preIndex:preIndex+privacy.CMRingSize], rndInputIsZero[i], indexIsZero, privacy.SK)
 		preIndex = privacy.CMRingSize * (i + 1)
 
 		/***** Build witness for proving that serial number is derived from the committed derivator *****/
