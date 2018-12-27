@@ -14,7 +14,7 @@ var shardPool = map[byte]map[uint64][]blockchain.CrossShardBlock{}
 
 type CrossShardPool struct{}
 
-func (pool *CrossShardPool) GetBlock(bestStateInfos map[byte]uint64) map[byte][]blockchain.CrossShardPool {
+func (pool *CrossShardPool) GetBlock(bestStateInfos map[byte]uint64) map[byte][]blockchain.CrossShardBlock {
 	results := map[byte][]blockchain.CrossShardBlock{}
 
 	for ShardId, shardItems := range shardPool {
@@ -28,11 +28,15 @@ func (pool *CrossShardPool) GetBlock(bestStateInfos map[byte]uint64) map[byte][]
 
 		items := []blockchain.CrossShardBlock{}
 
-		for i := 0; i <= shardBestState; i++ {
-			item, ok := shardItems[i]
-			if !ok || len(item) <= 0 {
+		for height, item := range shardItems {
+			if height > shardBestState {
 				continue
 			}
+
+			if len(item) <= 0 {
+				continue
+			}
+
 			items = append(items, item...)
 		}
 		results[ShardId] = items
