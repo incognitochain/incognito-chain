@@ -44,7 +44,7 @@ type Tx struct {
 func (self *Tx) UnmarshalJSON(data []byte) error {
 	type Alias Tx
 	temp := &struct {
-		MetaData []map[string]interface{}
+		MetaData interface{}
 		*Alias
 	}{
 		Alias: (*Alias)(self),
@@ -53,20 +53,12 @@ func (self *Tx) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
-	if temp.Metadata != nil {
-		switch temp.Metadata.GetType() {
-		case metadata.VoteDCBBoardMeta:
-			{
-				metaData := &metadata.VoteDCBBoardMetadata{}
-				self.Metadata = metaData
-			}
-		case metadata.VoteGOVBoardMeta:
-			{
-				metaData := &metadata.VoteGOVBoardMetadata{}
-				self.Metadata = metaData
-			}
-		}
+	meta, parseErr := metadata.ParseMetadata(temp.Metadata)
+	if parseErr != nil {
+		return nil
 	}
+	self.SetMetadata(meta)
+
 	return nil
 }
 

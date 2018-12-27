@@ -29,26 +29,26 @@ type TxCustomToken struct {
 }
 
 func (self *TxCustomToken) UnmarshalJSON(data []byte) error {
-	type Alias TxCustomToken
+	tx := Tx{}
+	err := json.Unmarshal(data, &tx)
+
 	temp := &struct {
-		MetaData    interface{}
 		TxTokenData interface{}
-		*Alias
+		BoardType   interface{}
+		BoardSigns  interface{}
 	}{
-		Alias: (*Alias)(self),
 	}
-	err := json.Unmarshal(data, &temp)
+	err = json.Unmarshal(data, &temp)
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
-	aaa, _ := json.MarshalIndent(temp.TxTokenData, "", "")
-	_ = json.Unmarshal(aaa, &self.TxTokenData)
-	meta, parseErr := metadata.ParseMetadata(temp.Metadata)
-	if parseErr != nil {
-		return nil
-	}
-	self.SetMetadata(meta)
-
+	txTokenDataJson, _ := json.MarshalIndent(temp.TxTokenData, "", "\t")
+	_ = json.Unmarshal(txTokenDataJson, &self.TxTokenData)
+	boardSignsJson, _ := json.MarshalIndent(temp.BoardSigns, "", "\t")
+	_ = json.Unmarshal(boardSignsJson, &self.BoardSigns)
+	boardTypeJson, _ := json.MarshalIndent(temp.BoardType, "", "\t")
+	_ = json.Unmarshal(boardTypeJson, &self.BoardType)
+	self.Tx = tx
 	return nil
 }
 
