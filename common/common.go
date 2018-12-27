@@ -375,3 +375,15 @@ func Uint32ToBytes(value uint32) []byte {
 func BytesToUint32(b []byte) uint32 {
 	return binary.LittleEndian.Uint32(b)
 }
+
+func CompareStringArray(src []string, dst []string) bool {
+	if len(src) != len(dst) {
+		return false
+	}
+	for idx, val := range src {
+		if dst[idx] != val {
+			return false
+		}
+	}
+	return true
+}

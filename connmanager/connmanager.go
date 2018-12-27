@@ -109,18 +109,52 @@ type DiscoverPeerInfo struct {
 func (self *ConnManager) UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string) {
 	self.Config.ConsensusState.Lock()
 	defer self.Config.ConsensusState.Unlock()
-	self.Config.ConsensusState.Role = role
-	self.Config.ConsensusState.CurrentShard = currentShard
-	copy(self.Config.ConsensusState.BeaconCommittee, beaconCommittee)
-	for shardID, committee := range shardCommittee {
-		copy(self.Config.ConsensusState.ShardCommittee[shardID], committee)
-	}
 
+	bChange := false
+	if self.Config.ConsensusState.Role != role {
+		self.Config.ConsensusState.Role = role
+		bChange = true
+	}
+	if (self.Config.ConsensusState.CurrentShard != nil && currentShard == nil) ||
+		(self.Config.ConsensusState.CurrentShard == nil && currentShard != nil) ||
+		(self.Config.ConsensusState.CurrentShard != nil && currentShard != nil && *self.Config.ConsensusState.CurrentShard != *currentShard) {
+		self.Config.ConsensusState.CurrentShard = currentShard
+		bChange = true
+	}
+	if !common.CompareStringArray(self.Config.ConsensusState.BeaconCommittee, beaconCommittee) {
+		copy(self.Config.ConsensusState.BeaconCommittee, beaconCommittee)
+		bChange = true
+	}
+	if len(self.Config.ConsensusState.ShardCommittee) != len(shardCommittee) {
+		for shardID, _ := range self.Config.ConsensusState.ShardCommittee {
+			_, ok := shardCommittee[shardID]
+			if !ok {
+				delete(self.Config.ConsensusState.ShardCommittee, shardID)
+			}
+		}
+		bChange = true
+	}
+	for shardID, committee := range shardCommittee {
+		_, ok := self.Config.ConsensusState.ShardCommittee[shardID]
+		if ok {
+			if !common.CompareStringArray(self.Config.ConsensusState.ShardCommittee[shardID], committee) {
+				self.Config.ConsensusState.ShardCommittee[shardID] = make([]string, len(committee))
+				copy(self.Config.ConsensusState.ShardCommittee[shardID], committee)
+				bChange = true
+			}
+		} else {
+			self.Config.ConsensusState.ShardCommittee[shardID] = make([]string, len(committee))
+			copy(self.Config.ConsensusState.ShardCommittee[shardID], committee)
+			bChange = true
+		}
+	}
 	self.Config.ConsensusState.UserPbk = userPbk
 	self.Config.ConsensusState.rebuild()
 
 	// update peer connection
-	self.processDiscoverPeers()
+	if bChange {
+		self.processDiscoverPeers()
+	}
 
 	return
 }
@@ -536,6 +570,7 @@ func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[
 	//Logger.log.Info("handleRandPeersOfBeacon")
 	countPeerShard := 0
 	pBKs := self.Config.ConsensusState.BeaconCommittee
+	//Logger.log.Info("handleRandPeersOfBeacon", pBKs)
 	for len(pBKs) > 0 {
 		randN := common.RandInt() % len(pBKs)
 		pbk := pBKs[randN]
@@ -608,8 +643,8 @@ func (self *ConnManager) getShardOfPbk(pbk string) *byte {
 	return nil
 }
 
-func (self *ConnManager) GetCurrentShard() *byte {
-	return self.Config.ConsensusState.CurrentShard
+func (self *ConnManager) GetCurrentRoleShard() (string, *byte) {
+	return self.Config.ConsensusState.Role, self.Config.ConsensusState.CurrentShard
 }
 
 func (self *ConnManager) GetPeerConnOfShard(shard byte) []*peer.PeerConn {
