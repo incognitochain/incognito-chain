@@ -9,7 +9,8 @@ import (
 const (
 	EPOCH       = 200
 	RANDOM_TIME = 100
-	OFFSET      = 3
+	COMMITEES   = 3
+	OFFSET      = 1
 	VERSION     = 1
 )
 

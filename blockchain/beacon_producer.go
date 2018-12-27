@@ -171,7 +171,7 @@ func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, staker map[
 		swapBeaconInstructions := []string{}
 		swappedValidator := []string{}
 		beaconNextCommittee := []string{}
-		_, _, swappedValidator, beaconNextCommittee, _ = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, OFFSET)
+		_, _, swappedValidator, beaconNextCommittee, _ = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, COMMITEES, OFFSET)
 		swapBeaconInstructions = append(swapBeaconInstructions, "swap")
 		swapBeaconInstructions = append(swapBeaconInstructions, beaconNextCommittee...)
 		swapBeaconInstructions = append(swapBeaconInstructions, swappedValidator...)
