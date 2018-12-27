@@ -306,6 +306,9 @@ func (self *ConnManager) DiscoverPeers(discoverPeerAddress string) {
 
 func (self *ConnManager) processDiscoverPeers() {
 	discoverPeerAddress := self.discoverPeerAddress
+	if discoverPeerAddress == "" {
+		return
+	}
 	client, err := rpc.Dial("tcp", discoverPeerAddress)
 	if err != nil {
 		Logger.log.Error("[Exchange Peers] re-connect:")
