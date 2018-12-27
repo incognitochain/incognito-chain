@@ -1,23 +1,22 @@
 package zkp
 
 import (
-	"crypto/rand"
 	"errors"
 	"math/big"
 
-	privacy "github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
-// PKComZeroProof contains Proof's value
-type PKComZeroProof struct {
+// ComZeroProof contains Proof's value
+type ComZeroProof struct {
 	commitmentValue *privacy.EllipticPoint //statement
 	index           *byte                  //statement
 	commitmentZeroS *privacy.EllipticPoint
 	z               *big.Int
 }
 
-// PKComZeroWitness contains Witness's value
-type PKComZeroWitness struct {
+// ComZeroWitness contains Witness's value
+type ComZeroWitness struct {
 	commitmentValue *privacy.EllipticPoint //statement
 	index           *byte                  //statement
 	commitmentRnd   *big.Int
@@ -48,7 +47,7 @@ Verify:
 	return boolValue
 )
 */
-func (pro *PKComZeroProof) Init() *PKComZeroProof {
+func (pro *ComZeroProof) Init() *ComZeroProof {
 	pro.index = new(byte)
 	pro.commitmentValue = new(privacy.EllipticPoint).Zero()
 	pro.commitmentZeroS = new(privacy.EllipticPoint).Zero()
@@ -56,42 +55,20 @@ func (pro *PKComZeroProof) Init() *PKComZeroProof {
 	return pro
 }
 
-func (pro *PKComZeroProof) IsNil() bool {
+func (pro *ComZeroProof) IsNil() bool {
 	if (pro.commitmentValue == nil) || (pro.commitmentZeroS == nil) || (pro.index == nil) || (pro.z == nil) {
 		return true
 	}
 	return false
 }
 
-// randValue return random witness value for testing
-func (wit *PKComZeroWitness) randValue(testcase bool) {
-	switch testcase {
-	case false:
-		commitmentValue := new(privacy.EllipticPoint)
-		commitmentValue.Randomize()
-		index := byte(3)
-		commitmentRnd, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
-		wit.Set(commitmentValue, &index, commitmentRnd)
-		break
-	case true:
-		// commitmentValue := new(privacy.EllipticPoint)
-		// commitmentValue.Randomize()
-		index := byte(3)
-		commitmentRnd, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
-		commitmentValue := privacy.PedCom.CommitAtIndex(big.NewInt(0), commitmentRnd, index)
-		wit.Set(commitmentValue, &index, commitmentRnd)
-		break
-	}
-
-}
-
 // Set dosomethings
-func (wit *PKComZeroWitness) Set(
+func (wit *ComZeroWitness) Set(
 	commitmentValue *privacy.EllipticPoint, //statement
 	index *byte, //statement
 	commitmentRnd *big.Int) {
 	if wit == nil {
-		wit = new(PKComZeroWitness)
+		wit = new(ComZeroWitness)
 	}
 
 	wit.commitmentRnd = commitmentRnd
@@ -100,30 +77,24 @@ func (wit *PKComZeroWitness) Set(
 }
 
 // Bytes ...
-func (pro PKComZeroProof) Bytes() []byte {
+func (pro ComZeroProof) Bytes() []byte {
 	if pro.IsNil() {
 		return []byte{}
 	}
 	var res []byte
 	res = append(pro.commitmentValue.Compress(), pro.commitmentZeroS.Compress()...)
-
-	temp := pro.z.Bytes()
-	for j := 0; j < privacy.BigIntSize-len(temp); j++ {
-		temp = append([]byte{0}, temp...)
-	}
-	res = append(res, temp...)
-	//res = append(res, *pro.index)
-	res = append(res, []byte{*pro.index}...)
+	res = append(res, privacy.AddPaddingBigInt(pro.z, privacy.BigIntSize)...)
+	res = append(res, *pro.index)
 	return res
 }
 
 // SetBytes ...
-func (pro *PKComZeroProof) SetBytes(bytestr []byte) error {
+func (pro *ComZeroProof) SetBytes(bytes []byte) error {
 	if pro == nil {
 		pro = pro.Init()
 	}
 
-	if len(bytestr) == 0 {
+	if len(bytes) == 0 {
 		return nil
 	}
 	if pro.commitmentValue == nil {
@@ -139,28 +110,35 @@ func (pro *PKComZeroProof) SetBytes(bytestr []byte) error {
 		pro.index = new(byte)
 	}
 
-	err := pro.commitmentValue.Decompress(bytestr[0:privacy.CompressedPointSize])
+	offset := 0
+	err := pro.commitmentValue.Decompress(bytes[offset : offset + privacy.CompressedPointSize])
 	if err != nil {
-		return privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("Decompressed failed!"))
+		return errors.New("Decompressed failed!")
 	}
-	err = pro.commitmentZeroS.Decompress(bytestr[privacy.CompressedPointSize : 2*privacy.CompressedPointSize])
+	offset += privacy.CompressedPointSize
+
+	err = pro.commitmentZeroS.Decompress(bytes[offset : offset + privacy.CompressedPointSize])
 	if err != nil {
-		return privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("Decompressed failed!"))
+		return errors.New("Decompressed failed!")
 	}
-	pro.z.SetBytes(bytestr[2*privacy.CompressedPointSize : 2*privacy.CompressedPointSize+privacy.BigIntSize])
-	*pro.index = bytestr[2*privacy.CompressedPointSize+privacy.BigIntSize]
+	offset += privacy.CompressedPointSize
+
+	pro.z.SetBytes(bytes[offset : offset + privacy.BigIntSize])
+	offset += privacy.BigIntSize
+
+	*pro.index = bytes[offset]
 	return nil
 }
 
 // Set dosomethings
-func (pro *PKComZeroProof) Set(
+func (pro *ComZeroProof) Set(
 	commitmentValue *privacy.EllipticPoint, //statement
 	index *byte, //statement
 	commitmentZeroS *privacy.EllipticPoint,
 	z *big.Int) {
 
 	if pro == nil {
-		pro = new(PKComZeroProof)
+		pro = new(ComZeroProof)
 	}
 	pro.commitmentValue = commitmentValue
 	pro.commitmentZeroS = commitmentZeroS
@@ -169,10 +147,10 @@ func (pro *PKComZeroProof) Set(
 }
 
 //Prove generate a Proof prove that the PedersenCommitment is zero
-func (wit PKComZeroWitness) Prove() (*PKComZeroProof, error) {
+func (wit ComZeroWitness) Prove() (*ComZeroProof, error) {
 	//var x big.Int
 	//s is a random number in Zp, with p is N, which is order of base point of privacy.Curve
-	sRnd, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
+	sRnd := privacy.RandInt()
 
 	//Calculate B = commitmentZeroS = comm_ck(0,s,Index)
 	commitmentZeroS := privacy.PedCom.CommitAtIndex(big.NewInt(0), sRnd, *wit.index)
@@ -181,19 +159,17 @@ func (wit PKComZeroWitness) Prove() (*PKComZeroProof, error) {
 	xChallenge := GenerateChallengeFromPoint([]*privacy.EllipticPoint{wit.commitmentValue})
 
 	//Calculate z=r*x + s (mod N)
-	z := big.NewInt(0)
-	z.Set(wit.commitmentRnd)
-	z.Mul(z, xChallenge)
+	z := new(big.Int).Mul(wit.commitmentRnd, xChallenge)
 	z.Add(z, sRnd)
 	z.Mod(z, privacy.Curve.Params().N)
 
-	proof := new(PKComZeroProof)
+	proof := new(ComZeroProof)
 	proof.Set(wit.commitmentValue, wit.index, commitmentZeroS, z)
 	return proof, nil
 }
 
 //Verify verify that under PedersenCommitment is zero
-func (pro *PKComZeroProof) Verify() bool {
+func (pro *ComZeroProof) Verify() bool {
 	//Generate challenge x in Zp
 	xChallenge := GenerateChallengeFromPoint([]*privacy.EllipticPoint{pro.commitmentValue})
 

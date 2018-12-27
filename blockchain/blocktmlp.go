@@ -99,6 +99,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 	var buySellReqTxs []metadata.Transaction
 	var issuingReqTxs []metadata.Transaction
 	var updatingOracleBoardTxs []metadata.Transaction
+	var multiSigsRegistrationTxs []metadata.Transaction
 	var buyBackFromInfos []*buyBackFromInfo
 	bondsSold := uint64(0)
 	dcbTokensSold := uint64(0)
@@ -179,10 +180,13 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 				}
 				issuingReqTxs = append(issuingReqTxs, tx)
 			}
-
 		case metadata.UpdatingOracleBoardMeta:
 			{
 				updatingOracleBoardTxs = append(updatingOracleBoardTxs, tx)
+			}
+		case metadata.MultiSigsRegistrationMeta:
+			{
+				multiSigsRegistrationTxs = append(multiSigsRegistrationTxs, tx)
 			}
 		}
 
@@ -451,6 +455,13 @@ concludeBlock:
 		if tx.GetMetadataType() == metadata.RewardGOVProposalSubmitterMeta {
 			block.UpdateGOVFund(tx)
 		}
+	}
+
+	// register multisigs addresses
+	err = blockgen.registerMultiSigsAddresses(multiSigsRegistrationTxs)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
 	}
 
 	// Add new commitments to merkle tree and save the root

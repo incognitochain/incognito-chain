@@ -44,4 +44,6 @@ const (
 	BigIntSize = 32 // bytes
 	Uint64Size = 8  // bytes
 
+	ValueMax = 18446744073709551615 // 2^64 - 1
+
 )

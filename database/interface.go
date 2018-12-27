@@ -124,5 +124,9 @@ type DatabaseInterface interface {
 	GetDCBVoteTokenAmount(startedBlock uint32, pubKey []byte) (uint32, error)
 	GetGOVVoteTokenAmount(startedBlock uint32, pubKey []byte) (uint32, error)
 
+	// Multisigs
+	StoreMultiSigsRegistration([]byte, []byte) error
+	GetMultiSigsRegistration([]byte) ([]byte, error)
+
 	Close() error
 }

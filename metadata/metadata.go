@@ -100,6 +100,9 @@ type BlockchainRetriever interface {
 	// For validating crowdsale
 	GetCrowdsaleData([]byte) (*params.SaleData, error)
 	GetCrowdsaleTxs([]byte) ([][]byte, error)
+
+	// For validating multisigs
+	GetMultiSigsRegistration([]byte) ([]byte, error)
 }
 
 type Metadata interface {

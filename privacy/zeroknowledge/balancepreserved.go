@@ -12,7 +12,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 )
 
-type PKComMultiRangeProof struct {
+type MultiRangeProof struct {
 	Counter byte
 	Comms   []*privacy.EllipticPoint
 	A       *privacy.EllipticPoint
@@ -30,38 +30,14 @@ type PKComMultiRangeProof struct {
 	Cx *big.Int
 }
 
-//func CreatePKComMultiRangeProof() *PKComMultiRangeProof {
-//	return &PKComMultiRangeProof{
-//		Counter: byte(0x00),
-//		Comms:   []*privacy.EllipticPoint{},
-//		A:       new(privacy.EllipticPoint).Zero(),
-//		S:       new(privacy.EllipticPoint).Zero(),
-//		T1:      new(privacy.EllipticPoint).Zero(),
-//		T2:      new(privacy.EllipticPoint).Zero(),
-//		Tau:     new(big.Int),
-//		Th:      new(big.Int),
-//		Mu:      new(big.Int),
-//		IPP: InnerProdArg{
-//			A:          new(big.Int),
-//			B:          new(big.Int),
-//			Challenges: []*big.Int{},
-//			L:          []*privacy.EllipticPoint{},
-//			C1:          []*privacy.EllipticPoint{},
-//		},
-//		Cx: new(big.Int),
-//		Cy: new(big.Int),
-//		Cz: new(big.Int),
-//	}
-//}
-
-type PKComMultiRangeWitness struct {
+type MultiRangeWitness struct {
 	Comms  []*privacy.EllipticPoint
 	Values []*big.Int
 	Rands  []*big.Int
 	maxExp byte
 }
 
-func (pro *PKComMultiRangeProof) Init() *PKComMultiRangeProof {
+func (pro *MultiRangeProof) Init() *MultiRangeProof {
 	pro.A = new(privacy.EllipticPoint).Zero()
 	pro.S = new(privacy.EllipticPoint).Zero()
 	pro.T1 = new(privacy.EllipticPoint).Zero()
@@ -76,112 +52,149 @@ func (pro *PKComMultiRangeProof) Init() *PKComMultiRangeProof {
 	pro.IPP.B = new(big.Int)
 	return pro
 }
-func (pro *PKComMultiRangeProof) IsNil() bool{
-	if (pro.A==nil) {return true}
-	if (pro.S==nil) {return true}
-	if (pro.T1==nil){return true}
-	if (pro.T2==nil){return true}
-	if (pro.Tau==nil){return true}
-	if (pro.Th==nil){return true}
-	if (pro.Mu==nil){return true}
-	if (pro.Cx==nil){return true}
-	if (pro.Cy==nil){return true}
-	if (pro.Cz==nil){return true}
-	if (pro.IPP.A==nil){return true}
-	if (pro.IPP.B==nil){return true}
+func (pro *MultiRangeProof) IsNil() bool {
+	if pro.A == nil {
+		return true
+	}
+	if pro.S == nil {
+		return true
+	}
+	if pro.T1 == nil {
+		return true
+	}
+	if pro.T2 == nil {
+		return true
+	}
+	if pro.Tau == nil {
+		return true
+	}
+	if pro.Th == nil {
+		return true
+	}
+	if pro.Mu == nil {
+		return true
+	}
+	if pro.Cx == nil {
+		return true
+	}
+	if pro.Cy == nil {
+		return true
+	}
+	if pro.Cz == nil {
+		return true
+	}
+	if pro.IPP.A == nil {
+		return true
+	}
+	if pro.IPP.B == nil {
+		return true
+	}
 	return false
 }
 
-func (pro PKComMultiRangeProof) Bytes() []byte {
+func (pro MultiRangeProof) Bytes() []byte {
 	var res []byte
 
 	if pro.IsNil() == true {
 		return []byte{}
 	}
+
 	res = append(res, pro.Counter)
 	res = append(res, pro.maxExp)
+
 	for i := 0; i < int(pro.Counter); i++ {
 		res = append(res, pro.Comms[i].Compress()...)
 	}
+
 	res = append(res, pro.A.Compress()...)
 	res = append(res, pro.S.Compress()...)
 	res = append(res, pro.T1.Compress()...)
 	res = append(res, pro.T2.Compress()...)
-	res = append(res, privacy.AddPaddingBigInt(pro.Tau,privacy.BigIntSize)...)
-	res = append(res, privacy.AddPaddingBigInt(pro.Th,privacy.BigIntSize)...)
-	res = append(res, privacy.AddPaddingBigInt(pro.Mu,privacy.BigIntSize)...)
-	res = append(res, privacy.AddPaddingBigInt(pro.Cx,privacy.BigIntSize)...)
-	res = append(res, privacy.AddPaddingBigInt(pro.Cy,privacy.BigIntSize)...)
-	res = append(res, privacy.AddPaddingBigInt(pro.Cz,privacy.BigIntSize)...)
+
+	res = append(res, privacy.AddPaddingBigInt(pro.Tau, privacy.BigIntSize)...)
+	res = append(res, privacy.AddPaddingBigInt(pro.Th, privacy.BigIntSize)...)
+	res = append(res, privacy.AddPaddingBigInt(pro.Mu, privacy.BigIntSize)...)
+	res = append(res, privacy.AddPaddingBigInt(pro.Cx, privacy.BigIntSize)...)
+	res = append(res, privacy.AddPaddingBigInt(pro.Cy, privacy.BigIntSize)...)
+	res = append(res, privacy.AddPaddingBigInt(pro.Cz, privacy.BigIntSize)...)
 	res = append(res, pro.IPP.Bytes()...)
 	return res
 
 }
-func (pro *PKComMultiRangeProof) SetBytes(proofbytes []byte) error {
-
-	if pro.IsNil(){
+func (pro *MultiRangeProof) SetBytes(proofbytes []byte) error {
+	if pro.IsNil() {
 		pro = pro.Init()
 	}
-	if len(proofbytes) == 0{
+
+	if len(proofbytes) == 0 {
 		return nil
 	}
 
 	pro.Counter = proofbytes[0]
 	pro.maxExp = proofbytes[1]
-	pro.Comms = make([]*privacy.EllipticPoint, pro.Counter)
 	offset := 2
+
+	pro.Comms = make([]*privacy.EllipticPoint, pro.Counter)
 	for i := 0; i < int(pro.Counter); i++ {
 		pro.Comms[i] = new(privacy.EllipticPoint)
-		pro.Comms[i].Decompress(proofbytes[offset:offset + privacy.CompressedPointSize])
+		err := pro.Comms[i].Decompress(proofbytes[offset : offset+privacy.CompressedPointSize])
+		if err != nil{
+			return err
+		}
 		offset += privacy.CompressedPointSize
 	}
+
 	pro.A = new(privacy.EllipticPoint)
 	err := pro.A.Decompress(proofbytes[offset:])
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
+
 	pro.S = new(privacy.EllipticPoint)
 	err = pro.S.Decompress(proofbytes[offset:])
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
+
 	pro.T1 = new(privacy.EllipticPoint)
 	err = pro.T1.Decompress(proofbytes[offset:])
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
+
 	pro.T2 = new(privacy.EllipticPoint)
 	err = pro.T2.Decompress(proofbytes[offset:])
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
+
 	pro.Tau = new(big.Int)
-	pro.Tau.SetBytes(proofbytes[offset:offset+privacy.BigIntSize])
+	pro.Tau.SetBytes(proofbytes[offset : offset+privacy.BigIntSize])
 	offset += privacy.BigIntSize
 	pro.Th = new(big.Int)
-	pro.Th.SetBytes(proofbytes[offset:offset+privacy.BigIntSize])
+	pro.Th.SetBytes(proofbytes[offset : offset+privacy.BigIntSize])
 	offset += privacy.BigIntSize
 	pro.Mu = new(big.Int)
-	pro.Mu.SetBytes(proofbytes[offset:offset+privacy.BigIntSize])
+	pro.Mu.SetBytes(proofbytes[offset : offset+privacy.BigIntSize])
 	offset += privacy.BigIntSize
 	pro.Cx = new(big.Int)
-	pro.Cx.SetBytes(proofbytes[offset:offset+privacy.BigIntSize])
+	pro.Cx.SetBytes(proofbytes[offset : offset+privacy.BigIntSize])
 	offset += privacy.BigIntSize
 	pro.Cy = new(big.Int)
-	pro.Cy.SetBytes(proofbytes[offset:offset+privacy.BigIntSize])
+	pro.Cy.SetBytes(proofbytes[offset : offset+privacy.BigIntSize])
 	offset += privacy.BigIntSize
 	pro.Cz = new(big.Int)
-	pro.Cz.SetBytes(proofbytes[offset:offset+privacy.BigIntSize])
+	pro.Cz.SetBytes(proofbytes[offset : offset+privacy.BigIntSize])
 	offset += privacy.BigIntSize
 	end := len(proofbytes)
 	pro.IPP.SetBytes(proofbytes[offset:end])
 	return nil
 }
-func (pro *PKComMultiRangeProof) Print() {
+func (pro *MultiRangeProof) Print() {
 	fmt.Println(pro.Counter)
 	fmt.Println(pro.Comms)
 	fmt.Println(pro.A)
@@ -223,7 +236,7 @@ func InitCommonParams(l int, maxExp byte) {
 	VecLength = int(maxExp) * pad(l)
 	RangeProofParams = NewECPrimeGroupKey(VecLength)
 }
-func (wit *PKComMultiRangeWitness) Set(v []*big.Int, maxExp byte) {
+func (wit *MultiRangeWitness) Set(v []*big.Int, maxExp byte) {
 	l := pad(len(v) + 1)
 	wit.Values = make([]*big.Int, l)
 	for i := 0; i < l; i++ {
@@ -262,6 +275,7 @@ func CalculateRMRP(aR, sR, y, zTimesTwo []*big.Int, z, x *big.Int) []*big.Int {
 	result = VectorAdd(tmp1, zTimesTwo)
 	return result
 }
+
 /*
 DeltaMRP is a helper function that is used in the multi range proof
 
@@ -288,7 +302,7 @@ func DeltaMRP(y []*big.Int, z *big.Int, m int) *big.Int {
 }
 
 /*
-PKComMultiRangeProof Prove
+MultiRangeProof Prove
 Takes in a list of values and provides an aggregate
 range proof for all the values.
 
@@ -301,11 +315,11 @@ changes:
 {(g, h \in G, \textbf{V} \in G^m ; \textbf{v, \gamma} \in Z_p^m) :
 	V_j = h^{\gamma_j}g^{v_j} \wedge v_j \in [0, 2^n - 1] \forall j \in [1, m]}
 */
-func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
+func (wit *MultiRangeWitness) Prove() (*MultiRangeProof, error) {
 	// RangeProofParams.V has the total number of values and bits we can support
 
 	InitCommonParams(len(wit.Values), wit.maxExp)
-	MRProof := PKComMultiRangeProof{}
+	MRProof := MultiRangeProof{}
 	MRProof.maxExp = wit.maxExp
 	m := len(wit.Values)
 	MRProof.Counter = byte(m)
@@ -347,7 +361,7 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 	alpha.Mod(alpha, privacy.Curve.Params().N)
 
 	A := TwoVectorPCommitWithGens(RangeProofParams.BPG, RangeProofParams.BPH, aLConcat, aRConcat).Add(RangeProofParams.H.ScalarMult((alpha)))
-	if (A==nil) {
+	if (A == nil) {
 		return nil, errors.New("Creating multi-range proof failed")
 	} else {
 		MRProof.A = A
@@ -360,9 +374,9 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 	rho.Mod(alpha, privacy.Curve.Params().N)
 
 	S := TwoVectorPCommitWithGens(RangeProofParams.BPG, RangeProofParams.BPH, sL, sR).Add(RangeProofParams.H.ScalarMult(rho))
-	if (S==nil){
+	if (S == nil) {
 		return nil, errors.New("Creating multi-range proof failed")
-	}	else{
+	} else {
 		MRProof.S = S
 	}
 	chal1s256 := blake2b.Sum256([]byte(A.X.String() + A.Y.String()))
@@ -389,7 +403,7 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 			PowerOfCY,
 			VectorAddScalar(aRConcat, cz)),
 		zPowersTimesTwoVec)
-	if (r0==nil){
+	if (r0 == nil) {
 		return nil, errors.New("Creating multi-range proof failed")
 	}
 	r1 := VectorHadamard(sR, PowerOfCY)
@@ -410,7 +424,7 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 
 	t1 := new(big.Int).Mod(new(big.Int).Add(InnerProduct(l1, r0), InnerProduct(l0, r1)), privacy.Curve.Params().N)
 	t2 := InnerProduct(l1, r1)
-	if (t2==nil){
+	if (t2 == nil) {
 		return nil, errors.New("Creating multi-range proof failed")
 	}
 	// given the t_i values, we can generate commitments to them
@@ -460,59 +474,18 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 		HPrime[i] = RangeProofParams.BPH[i].ScalarMult(new(big.Int).ModInverse(PowerOfCY[i], privacy.Curve.Params().N))
 	}
 	P := TwoVectorPCommitWithGens(RangeProofParams.BPG, HPrime, left, right)
-	if(P==nil) {
+	if (P == nil) {
 		return nil, errors.New("Creating multi-range proof failed")
 	}
 	MRProof.IPP = InnerProductProve(left, right, that, P, RangeProofParams.U, RangeProofParams.BPG, HPrime)
 	return &MRProof, nil
 }
-func (wit *PKComMultiRangeWitness) ProveSum() (*PKComZeroProof, error) {
-	l := len(wit.Comms)
-	if l == 0 {
-		return new(PKComZeroProof), errors.New("Witness for proving sum value is not valid")
-	}
-
-	sumComms := RangeProofParams.Zero()
-	sumRand := new(big.Int).SetInt64(0)
-	temp := new(privacy.EllipticPoint)
-	for i := 0; i < l-1; i++ {
-		temp = privacy.PedCom.CommitAtIndex(wit.Values[i], wit.Rands[i], privacy.VALUE)
-		sumComms = sumComms.Add(temp)
-		sumRand.Add(sumRand, new(big.Int).Set(wit.Rands[i]))
-	}
-	sumRand.Sub(sumRand, wit.Rands[l-1])
-	temp = privacy.PedCom.CommitAtIndex(wit.Values[l-1], wit.Rands[l-1], privacy.VALUE)
-	temp, _ = temp.Inverse()
-	sumComms = sumComms.Add(temp)
-	sumRand.Mod(sumRand, privacy.Curve.Params().N)
-	var zeroWit PKComZeroWitness
-	idx := new(byte)
-	*idx = privacy.VALUE
-	zeroWit.Set(sumComms, idx, sumRand)
-	return zeroWit.Prove()
-}
-func (pro *PKComMultiRangeProof) VerifySum(zproof *PKComZeroProof) bool {
-	if zproof.commitmentValue == nil {
-		return false
-	}
-	zeroCom := RangeProofParams.Zero()
-	for i := 0; i < len(pro.Comms)-1; i++ {
-		zeroCom = zeroCom.Add(pro.Comms[i])
-	}
-	invSumCom, _ := pro.Comms[len(pro.Comms)-1].Inverse()
-	zeroCom = zeroCom.Add(invSumCom)
-	if !zeroCom.IsEqual(zproof.commitmentValue) {
-		return false
-	} else {
-		return zproof.Verify()
-	}
-}
 
 /*
-PKComMultiRangeProof Verify
-Takes in a PKComMultiRangeProof and verifies its correctness
+MultiRangeProof Verify
+Takes in a MultiRangeProof and verifies its correctness
 */
-func (pro *PKComMultiRangeProof) Verify() bool {
+func (pro *MultiRangeProof) Verify() bool {
 	m := len(pro.Comms)
 	InitCommonParams(m, pro.maxExp)
 	if m == 0 {
@@ -588,5 +561,3 @@ func (pro *PKComMultiRangeProof) Verify() bool {
 	}
 	return true
 }
-
-

@@ -6,18 +6,6 @@ import (
 	"math/big"
 )
 
-//1
-
-//SignScheme contains some algorithms for digital signature scheme
-type SignScheme interface {
-	KeyGen()                //Generate PriKey and PubKey
-	GetPubkey() *SchnPubKey //return Publickey belong to the PrivateKey
-	Sign(hash []byte) (*SchnSignature, error)
-	Verify(signature *SchnSignature, hash []byte) bool
-}
-
-/*---------------------------------------------------------------------------------------------------------*/
-
 //SchnPubKey denoted Schnorr Publickey
 type SchnPubKey struct {
 	PK, G, H *EllipticPoint // PK = G^SK + H^Randomness
@@ -34,8 +22,8 @@ type SchnSignature struct {
 	E, S1, S2 *big.Int
 }
 
-//KeyGen generates PriKey and PubKey
-func (priKey *SchnPrivKey) KeyGen() {
+//GenKey generates PriKey and PubKey
+func (priKey *SchnPrivKey) GenKey() {
 	if priKey == nil {
 		priKey = new(SchnPrivKey)
 	}
@@ -53,8 +41,7 @@ func (priKey *SchnPrivKey) KeyGen() {
 	priKey.PubKey.G = new(EllipticPoint)
 	priKey.PubKey.G.Set(Curve.Params().Gx, Curve.Params().Gy)
 
-	priKey.PubKey.H = new(EllipticPoint)
-	priKey.PubKey.H.X, priKey.PubKey.H.Y = Curve.ScalarBaseMult(RandBytes(SpendingKeySize))
+	priKey.PubKey.H = priKey.PubKey.G.ScalarMult(RandInt())
 	rH := priKey.PubKey.H.ScalarMult(priKey.R)
 
 	priKey.PubKey.PK = priKey.PubKey.G.ScalarMult(priKey.SK).Add(rH)
@@ -132,28 +119,17 @@ func (pub SchnPubKey) Verify(signature *SchnSignature, hash []byte) bool {
 }
 
 func (sig *SchnSignature) Bytes() []byte {
-	temp := sig.E.Bytes()
-	for i := 0; i < BigIntSize-len(temp); i++ {
-		temp = append([]byte{0}, temp...)
-	}
-	res := temp
-	temp = sig.S1.Bytes()
-	for i := 0; i < BigIntSize-len(temp); i++ {
-		temp = append([]byte{0}, temp...)
-	}
-	res = append(res, temp...)
-	temp = sig.S2.Bytes()
-	for i := 0; i < BigIntSize-len(temp); i++ {
-		temp = append([]byte{0}, temp...)
-	}
-	res = append(res, temp...)
-	return res
+	var bytes []byte
+	bytes = append(AddPaddingBigInt(sig.E, BigIntSize), AddPaddingBigInt(sig.S1, BigIntSize)...)
+	bytes = append(bytes, AddPaddingBigInt(sig.S2, BigIntSize)...)
+
+	return bytes
 }
 
 func (sig *SchnSignature) SetBytes(bytes []byte) {
-	sig.E = new(big.Int).SetBytes(bytes[0:32])
-	sig.S1 = new(big.Int).SetBytes(bytes[32:64])
-	sig.S2 = new(big.Int).SetBytes(bytes[64:96])
+	sig.E = new(big.Int).SetBytes(bytes[0:BigIntSize])
+	sig.S1 = new(big.Int).SetBytes(bytes[BigIntSize : 2*BigIntSize])
+	sig.S2 = new(big.Int).SetBytes(bytes[2*BigIntSize : 3*BigIntSize])
 }
 
 // Hash calculates a hash concatenating a given message bytes with a given EC Point. H(p||m)
@@ -165,5 +141,3 @@ func Hash(p EllipticPoint, m []byte) *big.Int {
 
 	return new(big.Int).SetBytes(common.HashB(b))
 }
-
-
