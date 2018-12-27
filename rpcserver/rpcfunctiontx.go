@@ -111,7 +111,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 	}
 
 	// param #2: list receiver
-	totalAmmount := int64(0)
+	totalAmmount := uint64(0)
 	receiversParam := arrayParams[1].(map[string]interface{})
 	paymentInfos := make([]*privacy.PaymentInfo, 0)
 	for pubKeyStr, amount := range receiversParam {
@@ -123,7 +123,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 			Amount:         common.ConstantToMiliConstant(uint64(amount.(float64))),
 			PaymentAddress: receiverPubKey.KeySet.PaymentAddress,
 		}
-		totalAmmount += int64(paymentInfo.Amount)
+		totalAmmount += uint64(paymentInfo.Amount)
 		paymentInfos = append(paymentInfos, paymentInfo)
 	}
 
@@ -148,7 +148,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 	for _, note := range outCoins {
 		amount := note.CoinDetails.Value
 		candidateOutputCoins = append(candidateOutputCoins, note)
-		estimateTotalAmount -= int64(amount)
+		estimateTotalAmount -= uint64(amount)
 		if estimateTotalAmount <= 0 {
 			break
 		}
@@ -158,14 +158,14 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 	realFee := self.EstimateFee(estimateFeeCoinPerKb, candidateOutputCoins, paymentInfos, chainIdSender, numBlock)
 
 	// list unspent tx for create tx
-	totalAmmount += int64(realFee)
+	totalAmmount += uint64(realFee)
 	estimateTotalAmount = totalAmmount
 	if totalAmmount > 0 {
 		candidateOutputCoins = make([]*privacy.OutputCoin, 0)
 		for _, note := range outCoins {
 			amount := note.CoinDetails.Value
 			candidateOutputCoins = append(candidateOutputCoins, note)
-			estimateTotalAmount -= int64(amount)
+			estimateTotalAmount -= uint64(amount)
 			if estimateTotalAmount <= 0 {
 				break
 			}
@@ -310,7 +310,7 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 	}
 	result := jsonresult.TransactionDetail{}
 	switch tx.GetType() {
-	case common.TxNormalType:
+	case common.TxNormalType, common.TxSalaryType:
 		{
 			tempTx := tx.(*transaction.Tx)
 			result = jsonresult.TransactionDetail{
