@@ -143,7 +143,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 		}
 
 		meta := tx.GetMetadata()
-		if !meta.ValidateBeforeNewBlock(tx, blockgen.chain, chainID) {
+		if meta != nil && !meta.ValidateBeforeNewBlock(tx, blockgen.chain, chainID) {
 			txToRemove = append(txToRemove, metadata.Transaction(tx))
 			continue
 		}
