@@ -216,7 +216,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		ConnManager: self.connManager,
 		Server:      self,
 		BlockGen:    self.blockgen,
-		NodeRole:    cfg.NodeRole,
+		NodeMode:    cfg.NodeMode,
 		UserKeySet:  userKeySet,
 	})
 	if err != nil {
@@ -1072,4 +1072,8 @@ func (self *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 
 func (self *Server) GetCurrentShard() *byte {
 	return self.connManager.GetCurrentShard()
+}
+
+func (self *Server) UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string) {
+	self.connManager.UpdateConsensusState(role, userPbk, currentShard, beaconCommittee, shardCommittee)
 }

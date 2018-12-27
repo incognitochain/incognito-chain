@@ -2,6 +2,7 @@ package constantpos
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -38,7 +39,7 @@ type EngineConfig struct {
 	ChainParams *blockchain.Params
 	BlockGen    *blockchain.BlkTmplGenerator
 	UserKeySet  *cashec.KeySet
-	NodeRole    string
+	NodeMode    string
 	Server      serverInterface
 }
 
@@ -55,8 +56,10 @@ func (self *Engine) Start() error {
 	if self.started {
 		return errors.New("Consensus engine is already started")
 	}
+	self.cQuit = make(chan struct{})
 	self.started = true
 	Logger.log.Info("Start consensus with key", self.config.UserKeySet.GetPublicKeyB58())
+	fmt.Println(self.config.BlockChain.BestState.Beacon.BeaconCommittee)
 
 	go func() {
 		for {
@@ -65,7 +68,14 @@ func (self *Engine) Start() error {
 				return
 			default:
 				if self.config.BlockChain.IsReady() {
+					time.Sleep(2 * time.Second)
+					self.config.Server.UpdateConsensusState(self.config.NodeMode, self.config.UserKeySet.GetPublicKeyB58(), nil, self.config.BlockChain.BestState.Beacon.BeaconCommittee, self.config.BlockChain.BestState.Beacon.ShardCommittee)
+
+					fmt.Println(self.config.BlockChain.BestState.Beacon.BeaconCommittee)
+					time.Sleep(5 * time.Second)
+
 					role, shardID := self.config.BlockChain.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
+					fmt.Println(self.config.NodeMode, role)
 					if role != "" {
 						bftProtocol := &BFTProtocol{
 							cBFTMsg:    self.cBFTMsg,
@@ -73,9 +83,9 @@ func (self *Engine) Start() error {
 							UserKeySet: self.config.UserKeySet,
 							Chain:      self.config.BlockChain,
 							Server:     self.config.Server,
-							// Committee:  self.config.BlockChain.BestState.Beacon.BeaconCommittee,
+							Committee:  self.config.BlockChain.BestState.Beacon.BeaconCommittee,
 						}
-						if (self.config.NodeRole == "beacon" || self.config.NodeRole == "auto") && role != "shard" {
+						if (self.config.NodeMode == "beacon" || self.config.NodeMode == "auto") && role != "shard" {
 							bftProtocol.Committee = self.config.BlockChain.BestState.Beacon.BeaconCommittee
 							switch role {
 							case "beacon-proposer":
@@ -88,7 +98,7 @@ func (self *Engine) Start() error {
 							}
 							continue
 						}
-						if (self.config.NodeRole == "shard" || self.config.NodeRole == "auto") && role == "shard" {
+						if (self.config.NodeMode == "shard" || self.config.NodeMode == "auto") && role == "shard" {
 							bftProtocol.Committee = self.config.BlockChain.BestState.Shard[shardID].ShardCommittee
 							shardRole := self.config.BlockChain.BestState.Shard[shardID].GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
 							switch shardRole {

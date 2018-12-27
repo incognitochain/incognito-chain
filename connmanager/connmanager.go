@@ -2,6 +2,7 @@ package connmanager
 
 import (
 	"fmt"
+	"math"
 	"net"
 	"net/rpc"
 	"os"
@@ -9,7 +10,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	"math"
+
 	libpeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
@@ -108,10 +109,16 @@ func (self *ConnManager) UpdateConsensusState(role string, userPbk string, curre
 	defer self.Config.ConsensusState.Unlock()
 	self.Config.ConsensusState.Role = role
 	self.Config.ConsensusState.CurrentShard = currentShard
-	self.Config.ConsensusState.BeaconCommittee = beaconCommittee
-	self.Config.ConsensusState.ShardCommittee = shardCommittee
+	copy(self.Config.ConsensusState.BeaconCommittee, beaconCommittee)
+	for shardID, committee := range shardCommittee {
+		copy(self.Config.ConsensusState.ShardCommittee[shardID], committee)
+	}
+
 	self.Config.ConsensusState.UserPbk = userPbk
 	self.Config.ConsensusState.rebuild()
+
+	go self.DiscoverPeers("127.0.0.1:9330")
+
 	return
 }
 
@@ -625,7 +632,7 @@ func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[
 			if cPbk != pbk && !self.checkPeerConnOfPbk(pbk) {
 				go self.Connect(peerI.RawAddress, peerI.PublicKey)
 			}
-			countPeerShard ++
+			countPeerShard++
 			if countPeerShard >= maxBeaconPeers {
 				return countPeerShard
 			}

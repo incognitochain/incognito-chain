@@ -54,7 +54,10 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 		if err != nil {
 			return nil, NewBlockChainError(UnmashallJsonBlockError, err)
 		}
-		json.Unmarshal(tempMarshal, beaconBestState)
+		err = json.Unmarshal(tempMarshal, &beaconBestState)
+		if err != nil {
+			return nil, NewBlockChainError(UnmashallJsonBlockError, err)
+		}
 	}
 	if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
 		panic(NewBlockChainError(BeaconError, errors.New("Can't create beacon block beacause no beststate found")))
