@@ -18,6 +18,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"github.com/ninjadotorg/constant/wallet"
+	"encoding/json"
 )
 
 type Tx struct {
@@ -38,6 +39,35 @@ type Tx struct {
 	Metadata metadata.Metadata
 
 	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
+}
+
+func (self *Tx) UnmarshalJSON(data []byte) error {
+	type Alias Tx
+	temp := &struct {
+		MetaData []map[string]interface{}
+		*Alias
+	}{
+		Alias: (*Alias)(self),
+	}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return NewTransactionErr(UnexpectedErr, err)
+	}
+	if temp.Metadata != nil {
+		switch temp.Metadata.GetType() {
+		case metadata.VoteDCBBoardMeta:
+			{
+				metaData := &metadata.VoteDCBBoardMetadata{}
+				self.Metadata = metaData
+			}
+		case metadata.VoteGOVBoardMeta:
+			{
+				metaData := &metadata.VoteGOVBoardMetadata{}
+				self.Metadata = metaData
+			}
+		}
+	}
+	return nil
 }
 
 // Init - init value for tx from inputcoin(old output coin from old tx)
