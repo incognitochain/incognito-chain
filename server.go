@@ -1011,7 +1011,7 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 		return false
 	}
 	Logger.log.Info("Zero peer have just sent a message version")
-	Logger.log.Info(peer)
+	//Logger.log.Info(peer)
 	return true
 }
 
