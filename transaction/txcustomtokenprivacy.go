@@ -240,3 +240,7 @@ func (customTokenTx *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy bool, 
 	}
 	return common.FalseValue
 }
+
+func (tx *TxCustomTokenPrivacy) GetProof() *zkp.PaymentProof {
+	return tx.Proof
+}

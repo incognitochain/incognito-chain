@@ -7,6 +7,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 )
 
 type MetadataBase struct {
@@ -144,4 +145,5 @@ type Transaction interface {
 	IsPrivacy() bool
 	IsCoinsBurning() bool
 	CloneTxThenUpdateMetadata(Metadata) []byte
+	GetProof() *zkp.PaymentProof
 }

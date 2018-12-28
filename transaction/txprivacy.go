@@ -721,6 +721,10 @@ func (tx *Tx) GetJSPubKey() []byte {
 	return result
 }
 
+func (tx *Tx) GetProof() *zkp.PaymentProof {
+	return tx.Proof
+}
+
 func (tx *Tx) IsPrivacy() bool {
 	switch tx.GetType() {
 	case common.TxSalaryType:
