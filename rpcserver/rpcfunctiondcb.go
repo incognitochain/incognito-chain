@@ -475,7 +475,7 @@ func (self RpcServer) handleCreateRawVoteDCBBoardTransaction(
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	byteArrays, err := json.Marshal(tx)
+	byteArrays, err := json.MarshalIndent(tx, "", "\t")
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
