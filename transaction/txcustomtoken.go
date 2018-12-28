@@ -28,6 +28,30 @@ type TxCustomToken struct {
 	listUtxo map[common.Hash]TxCustomToken
 }
 
+func (self *TxCustomToken) UnmarshalJSON(data []byte) error {
+	tx := Tx{}
+	err := json.Unmarshal(data, &tx)
+
+	temp := &struct {
+		TxTokenData interface{}
+		BoardType   interface{}
+		BoardSigns  interface{}
+	}{
+	}
+	err = json.Unmarshal(data, &temp)
+	if err != nil {
+		return NewTransactionErr(UnexpectedErr, err)
+	}
+	txTokenDataJson, _ := json.MarshalIndent(temp.TxTokenData, "", "\t")
+	_ = json.Unmarshal(txTokenDataJson, &self.TxTokenData)
+	boardSignsJson, _ := json.MarshalIndent(temp.BoardSigns, "", "\t")
+	_ = json.Unmarshal(boardSignsJson, &self.BoardSigns)
+	boardTypeJson, _ := json.MarshalIndent(temp.BoardType, "", "\t")
+	_ = json.Unmarshal(boardTypeJson, &self.BoardType)
+	self.Tx = tx
+	return nil
+}
+
 // Set listUtxo, which is used to contain a list old TxCustomToken relate to itself
 func (tx *TxCustomToken) SetListUtxo(data map[common.Hash]TxCustomToken) {
 	tx.listUtxo = data
@@ -296,6 +320,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	fee uint64,
 	tokenParams *CustomTokenParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
+	metaData metadata.Metadata,
 ) *TransactionError {
 	var err error
 	// create normal txCustomToken
@@ -306,7 +331,8 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 		fee,
 		common.FalseValue,
 		nil,
-		nil)
+		nil,
+		metaData)
 	if err.(*TransactionError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}

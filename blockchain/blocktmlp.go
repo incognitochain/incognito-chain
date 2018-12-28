@@ -37,6 +37,7 @@ type ConstitutionHelper interface {
 	GetPaymentAddressFromSubmitProposalMetadata(tx metadata.Transaction) *privacy.PaymentAddress
 	GetPubKeyVoter(blockgen *BlkTmplGenerator, chainID byte) ([]byte, error)
 	GetPrizeProposal() uint32
+	GetTopMostVoteGovernor(blockgen *BlkTmplGenerator) (database.CandidateList, error)
 }
 
 // txPool represents a source of transactions to consider for inclusion in
@@ -143,7 +144,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 		}
 
 		meta := tx.GetMetadata()
-		if !meta.ValidateBeforeNewBlock(tx, blockgen.chain, chainID) {
+		if meta != nil && !meta.ValidateBeforeNewBlock(tx, blockgen.chain, chainID) {
 			txToRemove = append(txToRemove, metadata.Transaction(tx))
 			continue
 		}
@@ -325,39 +326,10 @@ concludeBlock:
 	}
 
 	if blockgen.neededNewDCBGovernor(chainID) {
-		newBoardList, _ := blockgen.chain.config.DataBase.GetTopMostVoteDCBGovernor(common.NumberOfDCBGovernors)
-		sort.Sort(newBoardList)
-		sumOfVote := uint64(0)
-		var newDCBBoardPubKey [][]byte
-		for _, i := range newBoardList {
-			newDCBBoardPubKey = append(newDCBBoardPubKey, i.PubKey)
-			sumOfVote += i.VoteAmount
-		}
-
-		coinbases = append(coinbases, blockgen.createAcceptDCBBoardTx(newDCBBoardPubKey, sumOfVote))
-		coinbases = append(coinbases, blockgen.CreateSendDCBVoteTokenToGovernorTx(chainID, newBoardList, sumOfVote)...)
-
-		coinbases = append(coinbases, blockgen.CreateSendBackDCBTokenAfterVoteFail(chainID, newDCBBoardPubKey)...)
-		// Todo @0xjackalope: send reward to old board and delete them from database before send back token to new board
-		//xxx add to pool
+		coinbases = append(coinbases, blockgen.UpdateNewGovernor(DCBConstitutionHelper{}, chainID)...)
 	}
-
-	if int32(prevBlock.Header.GOVGovernor.EndBlock) == prevBlock.Header.Height+1 {
-		newBoardList, _ := blockgen.chain.config.DataBase.GetTopMostVoteGOVGovernor(common.NumberOfGOVGovernors)
-		sort.Sort(newBoardList)
-		sumOfVote := uint64(0)
-		var newGOVBoardPubKey [][]byte
-		for _, i := range newBoardList {
-			newGOVBoardPubKey = append(newGOVBoardPubKey, i.PubKey)
-			sumOfVote += i.VoteAmount
-		}
-
-		coinbases = append(coinbases, blockgen.createAcceptGOVBoardTx(newGOVBoardPubKey, sumOfVote))
-		coinbases = append(coinbases, blockgen.CreateSendGOVVoteTokenToGovernorTx(chainID, newBoardList, sumOfVote)...)
-
-		coinbases = append(coinbases, blockgen.CreateSendBackGOVTokenAfterVoteFail(chainID, newGOVBoardPubKey)...)
-		// Todo @0xjackalope: send reward to old board and delete them from database before send back token to new board
-		//xxx add to pool
+	if blockgen.neededNewGOVGovernor(chainID) {
+		coinbases = append(coinbases, blockgen.UpdateNewGovernor(GOVConstitutionHelper{}, chainID)...)
 	}
 
 	for _, tx := range unlockTxs {
@@ -965,4 +937,24 @@ func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, pro
 		}
 	}
 	return amount, loanUnlockTxs, removableTxs
+}
+
+func (blockgen *BlkTmplGenerator) UpdateNewGovernor(helper ConstitutionHelper, chainID byte) []metadata.Transaction {
+	txs := make([]metadata.Transaction, 0)
+	newBoardList, _ := helper.GetTopMostVoteGovernor(blockgen)
+	sort.Sort(newBoardList)
+	sumOfVote := uint64(0)
+	var newDCBBoardPubKey [][]byte
+	for _, i := range newBoardList {
+		newDCBBoardPubKey = append(newDCBBoardPubKey, i.PubKey)
+		sumOfVote += i.VoteAmount
+	}
+
+	txs = append(txs, blockgen.createAcceptDCBBoardTx(newDCBBoardPubKey, sumOfVote))
+	txs = append(txs, blockgen.CreateSendDCBVoteTokenToGovernorTx(chainID, newBoardList, sumOfVote)...)
+
+	txs = append(txs, blockgen.CreateSendBackDCBTokenAfterVoteFail(chainID, newDCBBoardPubKey)...)
+	// Todo @0xjackalope: send reward to old board and delete them from database before send back token to new board
+	//xxx add to pool
+	return txs
 }
