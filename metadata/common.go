@@ -39,6 +39,12 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case LoanResponseMeta:
 		md = &LoanResponse{}
 
+	case VoteDCBBoardMeta:
+		md = &VoteDCBBoardMetadata{}
+
+	case VoteGOVBoardMeta:
+		md = &VoteGOVBoardMetadata{}
+
 	default:
 		return nil, errors.New("Could not parse metadata with known types.")
 	}
