@@ -81,10 +81,6 @@ type Config struct {
 	//snapshot reward
 	customTokenRewardSnapshot map[string]uint64
 }
-type ShardToBeaconPool interface {
-	RemoveBlock(map[byte]uint64) error
-	GetFinalBlock() map[byte][]ShardToBeaconBlock
-}
 
 func (self *BlockChain) GetDatabase() database.DatabaseInterface {
 	return self.config.DataBase
