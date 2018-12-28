@@ -16,7 +16,7 @@ import (
 type BestStateBeacon struct {
 	BestBlockHash common.Hash  // The hash of the block.
 	BestBlock     *BeaconBlock // The block.
-	BestShardHash []common.Hash
+	BestShardHash map[byte][]common.Hash
 
 	BeaconEpoch       uint64
 	BeaconHeight      uint64
@@ -57,7 +57,7 @@ func NewBestStateBeacon() *BestStateBeacon {
 	bestStateBeacon := BestStateBeacon{}
 	bestStateBeacon.BestBlockHash.SetBytes(make([]byte, 32))
 	bestStateBeacon.BestBlock = nil
-	bestStateBeacon.BestShardHash = []common.Hash{}
+	bestStateBeacon.BestShardHash = make(map[byte][]common.Hash)
 	bestStateBeacon.BeaconHeight = 0
 	bestStateBeacon.BeaconCommittee = []string{}
 	bestStateBeacon.BeaconPendingValidator = []string{}
