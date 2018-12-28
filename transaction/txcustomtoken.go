@@ -320,6 +320,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	fee uint64,
 	tokenParams *CustomTokenParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
+	metaData metadata.Metadata,
 ) *TransactionError {
 	var err error
 	// create normal txCustomToken
@@ -330,7 +331,8 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 		fee,
 		common.FalseValue,
 		nil,
-		nil)
+		nil,
+		metaData)
 	if err.(*TransactionError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}

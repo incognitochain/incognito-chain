@@ -75,6 +75,7 @@ func (tx *Tx) Init(
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 	tokenID *common.Hash, // default is nil -> use for constant coin
+	metaData metadata.Metadata,
 ) *TransactionError {
 	tx.Version = TxVersion
 	var err error
@@ -100,7 +101,7 @@ func (tx *Tx) Init(
 	senderFullKey.ImportFromPrivateKey(senderSK)
 	// get public key last byte of sender
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
-
+	tx.Metadata = metaData
 	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
 		Logger.log.Infof("CREATE TX CUSTOM TOKEN\n")
 		tx.Fee = fee
