@@ -87,6 +87,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 		fee,
 		common.FalseValue,
 		nil,
+		nil,
 		nil)
 	if err.(*TransactionError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
@@ -161,6 +162,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			common.TrueValue,
 			db,
 			propertyID,
+			nil,
 		)
 		if err != nil {
 			return err
@@ -238,4 +240,8 @@ func (customTokenTx *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy bool, 
 		}
 	}
 	return common.FalseValue
+}
+
+func (tx *TxCustomTokenPrivacy) GetProof() *zkp.PaymentProof {
+	return tx.Proof
 }

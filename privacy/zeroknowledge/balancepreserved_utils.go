@@ -3,7 +3,7 @@ package zkp
 import (
 	"crypto/elliptic"
 	"fmt"
-	"github.com/minio/blake2b-simd"
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/pkg/errors"
 	"math"
@@ -135,7 +135,7 @@ func InnerProductProveSub(proof InnerProdArg, G, H []*privacy.EllipticPoint, a [
 	proof.R[curIt] = R
 
 	// prover sends L & C1 and gets a challenge
-	s256 := blake2b.Sum256([]byte(
+	s256 := common.HashB([]byte(
 		L.X.String() + L.Y.String() +
 			R.X.String() + R.Y.String()))
 
@@ -169,7 +169,7 @@ func InnerProductProve(a []*big.Int, b []*big.Int, c *big.Int, P, U *privacy.Ell
 		big.NewInt(0),
 		challenges}
 	// randomly generate an x value from public data
-	x := blake2b.Sum256([]byte(P.X.String() + P.Y.String()))
+	x := common.HashB([]byte(P.X.String() + P.Y.String()))
 
 	runningProof.Challenges[loglen] = new(big.Int).SetBytes(x[:])
 
@@ -185,7 +185,7 @@ we replace n separate exponentiations with a single ScalarMulPointi-exponentiati
 */
 
 func InnerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy.EllipticPoint, ipp InnerProdArg) bool {
-	s1 := blake2b.Sum256([]byte(P.X.String() + P.Y.String()))
+	s1 := common.HashB([]byte(P.X.String() + P.Y.String()))
 	chal1 := new(big.Int).SetBytes(s1[:])
 	ux := U.ScalarMult(chal1)
 	curIt := len(ipp.Challenges) - 1
@@ -198,7 +198,7 @@ func InnerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*pri
 		Lval := ipp.L[j]
 		Rval := ipp.R[j]
 		// prover sends L & C1 and gets a challenge
-		s256 := blake2b.Sum256([]byte(
+		s256 := common.HashB([]byte(
 			Lval.X.String() + Lval.Y.String() +
 				Rval.X.String() + Rval.Y.String()))
 		chal2 := new(big.Int).SetBytes(s256[:])

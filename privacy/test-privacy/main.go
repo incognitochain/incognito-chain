@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"math/big"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 func main() {
@@ -420,24 +421,45 @@ func main() {
 
 	//fmt.Printf("%+v\n", privacy.Eval(big.NewInt(3), big.NewInt(2), privacy.PedCom.G[privacy.SK]))
 
-	valueMax := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(64)), nil)
-	valueMax = valueMax.Sub(valueMax, big.NewInt(1))
-	fmt.Println(valueMax)
-
-	valueMax1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(32)), nil)
-	valueMax1 = valueMax1.Sub(valueMax1, big.NewInt(1))
-
-
-	//f := int(90)z
-
+	//valueMax := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(64)), nil)
+	//valueMax = valueMax.Sub(valueMax, big.NewInt(1))
+	//fmt.Println(valueMax)
 	//
-	//fmt.Println(uint64(f))
+	//valueMax1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(32)), nil)
+	//valueMax1 = valueMax1.Sub(valueMax1, big.NewInt(1))
+	//
+	//
+	////f := int(90)z
+	//
+	////
+	////fmt.Println(uint64(f))
+	//
+	////arr := make([]int, valueMax1.Uint64())
+	////fmt.Printf("len arr : %v\n", len(arr))
+	////for i := 0; i < ; i++{
+	////	arr[i] = 10
+	////	//fmt.Printf("arr[%v]: %v\n", i, arr[i])
+	////}
+	//
+	//fmt.Println(math.MaxInt64)
 
-	//arr := make([]int, valueMax1.Uint64())
-	//fmt.Printf("len arr : %v\n", len(arr))
-	//for i := 0; i < ; i++{
-	//	arr[i] = 10
-	//	//fmt.Printf("arr[%v]: %v\n", i, arr[i])
-	//}
+	arr := []byte{123}
+
+	hash1 := common.HashB(arr)
+	fmt.Printf("hash: %v\n", hash1)
+	hash2 := common.HashB(hash1)
+	fmt.Printf("hash: %v\n", hash2)
+
+	spendingKey := privacy.GenerateSpendingKey([]byte{123})
+
+	publicKey := privacy.GeneratePublicKey(spendingKey)
+	fmt.Println(spendingKey)
+	fmt.Println(publicKey)
+
+	data := []byte{93, 92, 91, 90}
+	fmt.Println(common.HashB(common.HashB(data)))
+
+	fmt.Printf("Curve N : %v\n", privacy.Curve.Params().N.Bytes())
+
 
 }

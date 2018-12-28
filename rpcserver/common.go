@@ -6,11 +6,13 @@ import (
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/pkg/errors"
+	"github.com/ninjadotorg/constant/metadata"
 )
 
 // buildRawCustomTokenTransaction ...
 func (self RpcServer) buildRawCustomTokenTransaction(
 	params interface{},
+	metaData metadata.Metadata,
 ) (*transaction.TxCustomToken, error) {
 	// all params
 	arrayParams := common.InterfaceSlice(params)
@@ -144,6 +146,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		realFee,
 		tokenParams,
 		listCustomTokens,
+		metaData,
 	)
 	if err.(*transaction.TransactionError) != nil {
 		return nil, err
