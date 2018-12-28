@@ -33,9 +33,10 @@ this struct has a array best state with len = 20,
 every beststate present for a best block in every chain
 */
 type BlockChain struct {
-	BestState *BestState
-	config    Config
-	chainLock sync.RWMutex
+	BestState         *BestState
+	config            Config
+	chainLock         sync.RWMutex
+	shardToBeaconPool ShardToBeaconPool
 
 	//=====cache
 	beaconBlock        map[string][]byte
@@ -79,6 +80,10 @@ type Config struct {
 
 	//snapshot reward
 	customTokenRewardSnapshot map[string]uint64
+}
+type ShardToBeaconPool interface {
+	RemoveBlock(map[byte]uint64) error
+	GetFinalBlock() map[byte][]ShardToBeaconBlock
 }
 
 func (self *BlockChain) GetDatabase() database.DatabaseInterface {
