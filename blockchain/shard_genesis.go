@@ -7,7 +7,7 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 
 	"github.com/ninjadotorg/constant/common"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
