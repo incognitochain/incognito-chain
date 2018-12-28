@@ -110,23 +110,23 @@ func CreateShardGenesisBlock(
 	block.Body.Transactions = append(block.Body.Transactions, &bondTokenTx)
 
 	// Create genesis vote token tx for DCB
-	voteDCBTokenTx := createSpecialTokenTx(
-		common.Hash(common.VoteDCBTokenID),
-		"Bond",
-		"BON",
-		icoParams.InitialVoteDCBToken,
-		initialKeySet.PaymentAddress,
-	)
-	block.Body.Transactions = append(block.Body.Transactions, &voteDCBTokenTx)
+	// voteDCBTokenTx := createSpecialTokenTx(
+	// 	common.Hash(common.VoteDCBTokenID),
+	// 	"Bond",
+	// 	"BON",
+	// 	icoParams.InitialVoteDCBToken,
+	// 	initialKeySet.PaymentAddress,
+	// )
+	// block.Body.Transactions = append(block.Body.Transactions, &voteDCBTokenTx)
 
-	voteGOVTokenTx := createSpecialTokenTx(
-		common.Hash(common.VoteGOVTokenID),
-		"Bond",
-		"BON",
-		icoParams.InitialVoteGOVToken,
-		initialKeySet.PaymentAddress,
-	)
-	block.Body.Transactions = append(block.Body.Transactions, &voteGOVTokenTx)
+	// voteGOVTokenTx := createSpecialTokenTx(
+	// 	common.Hash(common.VoteGOVTokenID),
+	// 	"Bond",
+	// 	"BON",
+	// 	icoParams.InitialVoteGOVToken,
+	// 	initialKeySet.PaymentAddress,
+	// )
+	// block.Body.Transactions = append(block.Body.Transactions, &voteGOVTokenTx)
 
 	return block
 }
