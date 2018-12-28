@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"time"
 
+	"encoding/json"
+
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -18,7 +20,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"github.com/ninjadotorg/constant/wallet"
-	"encoding/json"
+	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 type Tx struct {
@@ -407,6 +409,17 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 	return res, nil
 }
 
+func (tx *Tx) validateMultiSigsTx(db database.DatabaseInterface) (bool, error) {
+	meta := tx.GetMetadata()
+	if meta == nil {
+		return false, nil
+	}
+	if meta.GetType() != metadata.MultiSigsSpendingMeta {
+		return false, nil
+	}
+	return meta.VerifyMultiSigs(tx, db)
+}
+
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
@@ -417,15 +430,33 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	if tx.GetType() == common.TxSalaryType {
 		return tx.ValidateTxSalary(db)
 	}
+
 	var valid bool
 	var err error
-	valid, err = tx.VerifySigTx(hasPrivacy)
-	if valid == false {
-		if err != nil {
-			Logger.log.Infof("[PRIVACY LOG] - Error verifying signature of tx: %+v", err)
+	senderPK := tx.GetJSPubKey()
+	_, getMSRErr := db.GetMultiSigsRegistration(senderPK)
+	if getMSRErr != nil {
+		if getMSRErr != lvdberr.ErrNotFound {
+			Logger.log.Infof("%+v", err)
+			return false
+		} else {
+			valid, err = tx.VerifySigTx(hasPrivacy)
+			if valid == false {
+				if err != nil {
+					Logger.log.Infof("[PRIVACY LOG] - Error verifying signature of tx: %+v", err)
+				}
+				Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION SIGNATURE")
+				return false
+			}
 		}
-		Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION SIGNATURE")
-		return false
+	} else { // found, spending on multisigs address
+		valid, err = tx.validateMultiSigsTx(db)
+		if err != nil {
+			Logger.log.Infof("%+v", err)
+		}
+		if !valid {
+			return false
+		}
 	}
 
 	if tx.Proof != nil {
@@ -710,13 +741,7 @@ func (tx *Tx) SetMetadata(meta metadata.Metadata) {
 }
 
 func (tx *Tx) GetJSPubKey() []byte {
-	result := []byte{}
-	if tx.Proof != nil && len(tx.Proof.InputCoins) > 0 {
-		pubkey := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
-		result = make([]byte, len(pubkey))
-		copy(result, pubkey)
-	}
-	return result
+	return tx.SigPubKey
 }
 
 func (tx *Tx) IsPrivacy() bool {

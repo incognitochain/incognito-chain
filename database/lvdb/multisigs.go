@@ -6,10 +6,10 @@ import (
 )
 
 func (db *db) StoreMultiSigsRegistration(
-	paymentAddressBytes []byte,
+	pubKey []byte,
 	multiSigsRegistrationBytes []byte,
 ) error {
-	key := append(multisigsPrefix, paymentAddressBytes...)
+	key := append(multisigsPrefix, pubKey...)
 	err := db.Put(key, multiSigsRegistrationBytes)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
@@ -18,9 +18,9 @@ func (db *db) StoreMultiSigsRegistration(
 }
 
 func (db *db) GetMultiSigsRegistration(
-	paymentAddressBytes []byte,
+	pubKey []byte,
 ) ([]byte, error) {
-	key := append(multisigsPrefix, paymentAddressBytes...)
+	key := append(multisigsPrefix, pubKey...)
 	multisigsRegBytes, err := db.Get(key)
 	return multisigsRegBytes, err
 }

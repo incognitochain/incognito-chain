@@ -30,6 +30,7 @@ const (
 	RefundMeta
 	UpdatingOracleBoardMeta
 	MultiSigsRegistrationMeta
+	MultiSigsSpendingMeta
 
 	//Voting
 	SubmitDCBProposalMeta

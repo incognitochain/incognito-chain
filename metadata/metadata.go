@@ -48,6 +48,13 @@ func (mb *MetadataBase) CheckTransactionFee(tr Transaction, minFeePerKbTx uint64
 	return true
 }
 
+func (mb *MetadataBase) VerifyMultiSigs(
+	txr Transaction,
+	db database.DatabaseInterface,
+) (bool, error) {
+	return true, nil
+}
+
 // TODO(@0xankylosaurus): move TxDesc to mempool DTO
 // This is tx struct which is really saved in tx mempool
 type TxDesc struct {
@@ -100,9 +107,6 @@ type BlockchainRetriever interface {
 	// For validating crowdsale
 	GetCrowdsaleData([]byte) (*params.SaleData, error)
 	GetCrowdsaleTxs([]byte) ([][]byte, error)
-
-	// For validating multisigs
-	GetMultiSigsRegistration([]byte) ([]byte, error)
 }
 
 type Metadata interface {
@@ -114,6 +118,7 @@ type Metadata interface {
 	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
 	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool
+	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
 }
 
 // Interface for all type of transaction

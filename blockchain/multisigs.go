@@ -29,10 +29,7 @@ func (blockGen *BlkTmplGenerator) registerMultiSigsAddresses(
 	// store msRegs to db
 	// TODO: should use batch-write to ensure data consistency
 	for _, msReg := range msRegs {
-		paymentAddressBytes := []byte{}
-		paymentAddressBytes = append(paymentAddressBytes, msReg.PaymentAddress.Pk[:]...)
-		paymentAddressBytes = append(paymentAddressBytes, msReg.PaymentAddress.Tk[:]...)
-		err := blockGen.chain.config.DataBase.StoreMultiSigsRegistration(paymentAddressBytes, common.ToBytes(*msReg))
+		err := blockGen.chain.config.DataBase.StoreMultiSigsRegistration(msReg.PaymentAddress.Pk, common.ToBytes(*msReg))
 		if err != nil {
 			return err
 		}
