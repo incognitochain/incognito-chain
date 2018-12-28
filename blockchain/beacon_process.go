@@ -200,7 +200,7 @@ func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, erro
 	if err != nil {
 		return "", err
 	}
-
+	//=========Remove beacon block
 	//=========Accept previous if new block is valid
 	if err := self.AcceptBeaconBlock(&block.Header.PrevBlockHash); err != nil {
 		return "", err
@@ -439,8 +439,11 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	self.BeaconHeight = newBlock.Header.Height
 
 	shardState := newBlock.Body.ShardState
+
+	// Append new block hash into BestShardHash
+	// BestShardHash maintain all block hash of all shard
 	for idx, l := range shardState {
-		self.BestShardHash[idx] = l[len(l)-1]
+		self.BestShardHash[idx] = append(self.BestShardHash[idx], l...)
 	}
 
 	// update param

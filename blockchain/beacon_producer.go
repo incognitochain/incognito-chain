@@ -80,7 +80,7 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	//==========Create Body
 	beaconBlock.Body.Instructions = tempInstruction
 	beaconBlock.Body.ShardState = tempShardState
-	// Process new block with beststate
+	//============Process new block with beststate
 	beaconBestState.Update(beaconBlock)
 	//==========Create Hash in Header
 	// BeaconValidator root: beacon committee + beacon pending committee
@@ -189,10 +189,6 @@ func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, stakers map
 	// Shard Swap: both abnormal or normal swap
 	for _, swapInstruction := range swap {
 		instructions = append(instructions, swapInstruction.([]string))
-		//TODO: detect swap and change -> depend on GetShardState function
-		// - ShardCommittee map[byte][]string
-		// - ShardPendingValidator map[byte][]string
-		// Build ShardValidatorsRoot
 	}
 	// TODO: beacon unexpeted swap -> pbft
 	// Beacon normal swap
