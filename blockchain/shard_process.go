@@ -307,12 +307,12 @@ func VerifyCrossShardBlockUTXO(block *CrossShardBlock, merklePathShard []common.
 func getOutCoinHashEachShard(txList []metadata.Transaction) []common.Hash {
 	// group transaction by shardID
 	outCoinEachShard := make([][]*privacy.OutputCoin, 256)
-	//for _, tx := range txList {
-	//	for _, outCoin := range tx.GetProof().OutputCoins {
-	//		lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-	//		outCoinEachShard[lastByte] = append(outCoinEachShard[lastByte], outCoin)
-	//	}
-	//}
+	for _, tx := range txList {
+		for _, outCoin := range tx.GetProof().OutputCoins {
+			lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+			outCoinEachShard[lastByte] = append(outCoinEachShard[lastByte], outCoin)
+		}
+	}
 	//calcualte hash for each shard
 	outputCoinHash := make([]common.Hash, 256)
 	for i := 0; i < 256; i++ {
@@ -332,13 +332,13 @@ func getOutCoinHashEachShard(txList []metadata.Transaction) []common.Hash {
 // helper function to get the hash of OutputCoins (send to a shard) from list of transaction
 func getOutCoinCrossShard(txList []metadata.Transaction, shardID byte) []privacy.OutputCoin {
 	coinList := []privacy.OutputCoin{}
-	//for _, tx := range txList {
-	//for _, outCoin := range tx.GetProof().OutputCoins {
-	//	lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-	//	if lastByte == shardID {
-	//		coinList = append(coinList, *outCoin)
-	//	}
-	//}
-	//}
+	for _, tx := range txList {
+		for _, outCoin := range tx.GetProof().OutputCoins {
+			lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+			if lastByte == shardID {
+				coinList = append(coinList, *outCoin)
+			}
+		}
+	}
 	return coinList
 }
