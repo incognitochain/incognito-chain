@@ -131,7 +131,7 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	return beaconBlock, nil
 }
 
-func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (map[byte][]common.Hash, map[byte]interface{}, map[byte]interface{}) {
+func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (map[byte][]common.Hash, [][]string, map[byte]interface{}) {
 	shardState := make(map[byte][]common.Hash)
 	stakers := make(map[byte]interface{})
 	validStakers := [][]string{}
@@ -147,7 +147,7 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 				tempStaker := []string{}
 				newBeaconCandidate, newShardCandidate := GetStakeValidatorArrayString(staker.([]string))
 				assignShard := true
-				if !reflect.DeepEqual(newBeaconBlock, []string{}) {
+				if !reflect.DeepEqual(newBeaconCandidate, []string{}) {
 					copy(tempStaker, newBeaconCandidate[:])
 					assignShard := false
 				} else {
@@ -183,7 +183,7 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 	- random instruction -> ok
 	- assign instruction -> ok
 */
-func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, stakers map[byte]interface{}, swap map[byte]interface{}) [][]string {
+func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, stakers [][]string, swap map[byte]interface{}) [][]string {
 	instructions := [][]string{}
 	//=======Swap
 	// Shard Swap: both abnormal or normal swap
@@ -209,7 +209,7 @@ func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, stakers map
 	// beaconStaker := []string{}
 	// shardStaker := []string{}
 	for _, assignInstruction := range stakers {
-		instructions = append(instructions, assignInstruction.([]string))
+		instructions = append(instructions, assignInstruction)
 		// assignInstructionTemp := assignInstruction.([]string)
 		// if assignInstructionTemp[0] == "assign" && assignInstructionTemp[2] == "beacon" {
 		// 	beaconStaker = append(beaconStaker, strings.Split(assignInstructionTemp[1], ",")...)
