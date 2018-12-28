@@ -149,7 +149,7 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 				assignShard := true
 				if !reflect.DeepEqual(newBeaconCandidate, []string{}) {
 					copy(tempStaker, newBeaconCandidate[:])
-					assignShard := false
+					assignShard = false
 				} else {
 					copy(tempStaker, newShardCandidate[:])
 				}

@@ -16,9 +16,9 @@ import (
 	"github.com/ninjadotorg/constant/mempool"
 	"github.com/ninjadotorg/constant/netsync"
 	"github.com/ninjadotorg/constant/peer"
-	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 var (
@@ -40,6 +40,7 @@ var (
 	mempoolLogger     = backendLog.Logger("Mempool log")
 	transactionLogger = backendLog.Logger("Transaction log")
 	privacyLogger     = backendLog.Logger("Privacy log")
+	randomLogger      = backendLog.Logger("RandomAPI log")
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
