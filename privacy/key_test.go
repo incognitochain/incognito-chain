@@ -41,8 +41,10 @@ func TestGenerateKey(t *testing.T){
 	assert.Equal(t, publicKeyBytes, publicKeyPoint.Compress())
 
 	receivingKey := GenerateReceivingKey(spendingKey)
+	fmt.Printf("Receiving key: %v\n", receivingKey)
 
 	transmissionKey := GenerateTransmissionKey(receivingKey)
+	fmt.Printf("transmission key: %v\n", transmissionKey)
 	transmissionKeyBytes := make([]byte, CompressedPointSize)
 	copy(transmissionKeyBytes, transmissionKey[:])
 
@@ -53,6 +55,7 @@ func TestGenerateKey(t *testing.T){
 	assert.Equal(t, transmissionKeyBytes, transmissionKeyPoint.Compress())
 
 	paymentAddress := GeneratePaymentAddress(spendingKey)
+	fmt.Printf("Receiving key: %v\n", paymentAddress)
 	paymentAddrBytes := paymentAddress.Bytes()
 
 	paymentAddress2 := new(PaymentAddress)
