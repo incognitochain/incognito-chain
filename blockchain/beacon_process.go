@@ -205,7 +205,7 @@ func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, erro
 	for shardID, hashes := range beaconBestState.BestShardHash {
 		shardToBeaconMap[shardID] = uint64(len(hashes))
 	}
-	self.shardToBeaconPool.RemoveBlock(shardToBeaconMap)
+	self.config.ShardToBeaconPool.RemoveBlock(shardToBeaconMap)
 	//=========Accept previous if new block is valid
 	if err := self.AcceptBeaconBlock(&block.Header.PrevBlockHash); err != nil {
 		return "", err
