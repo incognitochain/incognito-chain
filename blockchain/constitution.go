@@ -3,6 +3,7 @@ package blockchain
 import (
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
@@ -199,4 +200,11 @@ func (DCBConstitutionHelper) GetPrizeProposal() uint32 {
 
 func (GOVConstitutionHelper) GetPrizeProposal() uint32 {
 	return uint32(common.Maxint32(GetOracleGOVNationalWelfare(), int32(0)))
+}
+
+func (DCBConstitutionHelper) GetTopMostVoteGovernor(blockgen *BlkTmplGenerator) (database.CandidateList, error) {
+	return blockgen.chain.config.DataBase.GetTopMostVoteDCBGovernor(common.NumberOfDCBGovernors)
+}
+func (GOVConstitutionHelper) GetTopMostVoteGovernor(blockgen *BlkTmplGenerator) (database.CandidateList, error) {
+	return blockgen.chain.config.DataBase.GetTopMostVoteGOVGovernor(common.NumberOfGOVGovernors)
 }
