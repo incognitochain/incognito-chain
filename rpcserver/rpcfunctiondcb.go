@@ -418,10 +418,13 @@ func (self RpcServer) buildRawVoteDCBBoardTransaction(
 	params interface{},
 ) (*transaction.TxCustomToken, error) {
 	arrayParams := common.InterfaceSlice(params)
-	tx, err := self.buildRawCustomTokenTransaction(params)
 	candidatePaymentAddress := arrayParams[len(arrayParams)-1].(string)
 	account, _ := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-	tx.Metadata = metadata.NewVoteDCBBoardMetadata(account.KeySet.PaymentAddress.Pk)
+	metadata := metadata.NewVoteDCBBoardMetadata(account.KeySet.PaymentAddress.Pk)
+	tx, err := self.buildRawCustomTokenTransaction(params, metadata)
+	if err != nil {
+		return nil, err
+	}
 	return tx, err
 }
 
@@ -472,7 +475,7 @@ func (self RpcServer) handleCreateRawVoteDCBBoardTransaction(
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	byteArrays, err := json.Marshal(tx)
+	byteArrays, err := json.MarshalIndent(tx, "", "\t")
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)

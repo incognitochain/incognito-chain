@@ -18,6 +18,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"github.com/ninjadotorg/constant/wallet"
+	"encoding/json"
 )
 
 type Tx struct {
@@ -40,6 +41,28 @@ type Tx struct {
 	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
 }
 
+func (self *Tx) UnmarshalJSON(data []byte) error {
+	type Alias Tx
+	temp := &struct {
+		Metadata interface{}
+		*Alias
+	}{
+		Alias: (*Alias)(self),
+	}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return NewTransactionErr(UnexpectedErr, err)
+	}
+	meta, parseErr := metadata.ParseMetadata(temp.Metadata)
+	if parseErr != nil {
+		Logger.log.Error(parseErr)
+		return nil
+	}
+	self.SetMetadata(meta)
+
+	return nil
+}
+
 // Init - init value for tx from inputcoin(old output coin from old tx)
 // create new outputcoin and build privacy proof
 // if not want to create a privacy tx proof, set hashPrivacy = false
@@ -52,6 +75,7 @@ func (tx *Tx) Init(
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 	tokenID *common.Hash, // default is nil -> use for constant coin
+	metaData metadata.Metadata,
 ) *TransactionError {
 	tx.Version = TxVersion
 	var err error
@@ -77,7 +101,7 @@ func (tx *Tx) Init(
 	senderFullKey.ImportFromPrivateKey(senderSK)
 	// get public key last byte of sender
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
-
+	tx.Metadata = metaData
 	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
 		Logger.log.Infof("CREATE TX CUSTOM TOKEN\n")
 		tx.Fee = fee

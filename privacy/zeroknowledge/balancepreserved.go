@@ -2,13 +2,13 @@ package zkp
 
 import (
 	"fmt"
+	"github.com/ninjadotorg/constant/common"
 	"github.com/pkg/errors"
 
 	//"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"math"
 	"math/big"
 
-	"github.com/minio/blake2b-simd"
 	"github.com/ninjadotorg/constant/privacy"
 )
 
@@ -379,11 +379,11 @@ func (wit *MultiRangeWitness) Prove() (*MultiRangeProof, error) {
 	} else {
 		MRProof.S = S
 	}
-	chal1s256 := blake2b.Sum256([]byte(A.X.String() + A.Y.String()))
+	chal1s256 := common.HashB([]byte(A.X.String() + A.Y.String()))
 	cy := new(big.Int).SetBytes(chal1s256[:])
 	MRProof.Cy = cy
 
-	chal2s256 := blake2b.Sum256([]byte(S.X.String() + S.Y.String()))
+	chal2s256 := common.HashB([]byte(S.X.String() + S.Y.String()))
 	cz := new(big.Int).SetBytes(chal2s256[:])
 	MRProof.Cz = cz
 
@@ -440,7 +440,7 @@ func (wit *MultiRangeWitness) Prove() (*MultiRangeProof, error) {
 	MRProof.T1 = T1
 	MRProof.T2 = T2
 
-	chal3s256 := blake2b.Sum256([]byte(T1.X.String() + T1.Y.String() + T2.X.String() + T2.Y.String()))
+	chal3s256 := common.HashB([]byte(T1.X.String() + T1.Y.String() + T2.X.String() + T2.Y.String()))
 	cx := new(big.Int).SetBytes(chal3s256[:])
 
 	MRProof.Cx = cx
@@ -496,17 +496,17 @@ func (pro *MultiRangeProof) Verify() bool {
 	// check 1 changes since it includes all commitments
 	// check 2 commitment generation is also different
 	// verify the challenges
-	chal1s256 := blake2b.Sum256([]byte(pro.A.X.String() + pro.A.Y.String()))
+	chal1s256 := common.HashB([]byte(pro.A.X.String() + pro.A.Y.String()))
 	cy := new(big.Int).SetBytes(chal1s256[:])
 	if cy.Cmp(pro.Cy) != 0 {
 		return false
 	}
-	chal2s256 := blake2b.Sum256([]byte(pro.S.X.String() + pro.S.Y.String()))
+	chal2s256 := common.HashB([]byte(pro.S.X.String() + pro.S.Y.String()))
 	cz := new(big.Int).SetBytes(chal2s256[:])
 	if cz.Cmp(pro.Cz) != 0 {
 		return false
 	}
-	chal3s256 := blake2b.Sum256([]byte(pro.T1.X.String() + pro.T1.Y.String() + pro.T2.X.String() + pro.T2.Y.String()))
+	chal3s256 := common.HashB([]byte(pro.T1.X.String() + pro.T1.Y.String() + pro.T2.X.String() + pro.T2.Y.String()))
 	cx := new(big.Int).SetBytes(chal3s256[:])
 	if cx.Cmp(pro.Cx) != 0 {
 		return false

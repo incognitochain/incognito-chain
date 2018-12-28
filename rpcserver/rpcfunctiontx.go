@@ -184,6 +184,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 		true,
 		*self.config.Database,
 		nil, // use for constant coin -> nil is valid
+		nil,
 	)
 	if err.(*transaction.TransactionError) != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -388,7 +389,7 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(
 	closeChan <-chan struct{},
 ) (interface{}, *RPCError) {
 	var err error
-	tx, err := self.buildRawCustomTokenTransaction(params)
+	tx, err := self.buildRawCustomTokenTransaction(params, nil)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)

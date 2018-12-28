@@ -67,7 +67,7 @@ func (uob UpdatingOracleBoard) ValidateTxWithBlockChain(
 		nil,
 		uob.Type,
 	)
-	txBytes := txr.CloneTxThenUpdateMetadata(*metaWithoutSigns)
+	txBytes := txr.CloneTxThenUpdateMetadata(metaWithoutSigns)
 	signs := uob.Signs
 	verifiedSignCount := 0
 	for _, pubKey := range govBoardPubKeys {

@@ -443,10 +443,10 @@ func (self RpcServer) buildRawVoteGOVBoardTransaction(
 	params interface{},
 ) (*transaction.TxCustomToken, error) {
 	arrayParams := common.InterfaceSlice(params)
-	tx, err := self.buildRawCustomTokenTransaction(params)
 	candidatePaymentAddress := arrayParams[len(arrayParams)-1].(string)
 	account, _ := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-	tx.Metadata = metadata.NewVoteGOVBoardMetadata(account.KeySet.PaymentAddress.Pk)
+	metadata := metadata.NewVoteGOVBoardMetadata(account.KeySet.PaymentAddress.Pk)
+	tx, err := self.buildRawCustomTokenTransaction(params, metadata)
 	return tx, err
 }
 

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"github.com/ninjadotorg/constant/metadata"
+	"encoding/json"
 )
 
 // TxCustomTokenPrivacy is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -17,6 +18,24 @@ import (
 type TxCustomTokenPrivacy struct {
 	Tx                                    // inherit from normal tx of constant(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
 	TxTokenPrivacyData TxTokenPrivacyData // supporting privacy format
+}
+
+func (self *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) error {
+	tx := Tx{}
+	err := json.Unmarshal(data, &tx)
+
+	temp := &struct {
+		TxTokenPrivacyData interface{}
+	}{
+	}
+	err = json.Unmarshal(data, &temp)
+	if err != nil {
+		return NewTransactionErr(UnexpectedErr, err)
+	}
+	TxTokenPrivacyDataJson, _ := json.MarshalIndent(temp.TxTokenPrivacyData, "", "\t")
+	_ = json.Unmarshal(TxTokenPrivacyDataJson, &self.TxTokenPrivacyData)
+	self.Tx = tx
+	return nil
 }
 
 // Hash returns the hash of all fields of the transaction
@@ -66,6 +85,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 		inputCoin,
 		fee,
 		common.FalseValue,
+		nil,
 		nil,
 		nil)
 	if err.(*TransactionError) != nil {
@@ -141,6 +161,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			common.TrueValue,
 			db,
 			propertyID,
+			nil,
 		)
 		if err != nil {
 			return err
