@@ -125,7 +125,7 @@ func (self *ShardBody) CalcMerkleRootShard() *common.Hash {
 }
 
 func (self *ShardBody) CalcMerkleRootTx() *common.Hash {
-	//TODO
+	//TODO:
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(self.Transactions)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 	return merkleRoot
