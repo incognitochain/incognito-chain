@@ -38,9 +38,9 @@ type PeerConn struct {
 	IsOutbound       bool
 	isForceClose     bool
 
-	ReaderWriterStream *bufio.ReadWriter
-	VerValid           bool
-	IsConnected        bool
+	RWStream    *bufio.ReadWriter
+	VerValid    bool
+	IsConnected bool
 
 	Config Config
 
@@ -74,6 +74,8 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			go func(msgStr string) {
 				// Parse Message header from last 24 bytes header message
 				jsonDecodeString, _ := hex.DecodeString(msgStr)
+
+				// uncompress data before process
 				jsonDecodeString, errG := common.GZipFromBytes(jsonDecodeString)
 				if errG != nil {
 					Logger.log.Error("Can unzip from message")
@@ -111,7 +113,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 							fS := messageHeader[wire.MessageCmdTypeSize+1]
 							if *cShard != fS {
 								if self.Config.MessageListeners.PushRawBytesToShard != nil {
-									self.Config.MessageListeners.PushRawBytesToShard(&jsonDecodeString, *cShard)
+									self.Config.MessageListeners.PushRawBytesToShard(self, &jsonDecodeString, *cShard)
 								}
 								return
 							}
@@ -121,7 +123,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 						fT := messageHeader[wire.MessageCmdTypeSize]
 						if fT == MESSAGE_TO_BEACON && cRole != "beacon" {
 							if self.Config.MessageListeners.PushRawBytesToBeacon != nil {
-								self.Config.MessageListeners.PushRawBytesToBeacon(&jsonDecodeString)
+								self.Config.MessageListeners.PushRawBytesToBeacon(self, &jsonDecodeString)
 							}
 							return
 						}
@@ -292,6 +294,8 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 					}
 					messageByte = append(messageByte, header...)
 					Logger.log.Infof("Out message TYPE %s CONTENT %s", cmdType, string(messageByte))
+
+					// compress data before send
 					messageByte, err = common.GZipToBytes(messageByte)
 					if err != nil {
 						Logger.log.Error("Can not gzip for message:" + outMsg.message.MessageType())

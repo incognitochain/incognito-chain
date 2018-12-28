@@ -124,8 +124,8 @@ type MessageListeners struct {
 	// OnSwapRequest func(p *PeerConn, msg *wire.MessageSwapRequest)
 	// OnSwapSig     func(p *PeerConn, msg *wire.MessageSwapSig)
 	// OnSwapUpdate  func(p *PeerConn, msg *wire.MessageSwapUpdate)
-	PushRawBytesToShard  func(msgBytes *[]byte, shard byte) error
-	PushRawBytesToBeacon func(msgBytes *[]byte) error
+	PushRawBytesToShard  func(p *PeerConn, msgBytes *[]byte, shard byte) error
+	PushRawBytesToBeacon func(p *PeerConn, msgBytes *[]byte) error
 	GetCurrentRoleShard  func() (string, *byte)
 }
 
@@ -466,7 +466,7 @@ func (self *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error
 		RemoteRawAddress:   peer.RawAddress,
 		ListenerPeer:       self,
 		Config:             self.Config,
-		ReaderWriterStream: rw,
+		RWStream:           rw,
 		cDisconnect:        make(chan struct{}),
 		cClose:             make(chan struct{}),
 		cRead:              make(chan struct{}),
@@ -549,7 +549,7 @@ func (self *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 		},
 		Config:             self.Config,
 		RemotePeerID:       remotePeerID,
-		ReaderWriterStream: rw,
+		RWStream:           rw,
 		cDisconnect:        make(chan struct{}),
 		cClose:             make(chan struct{}),
 		cRead:              make(chan struct{}),

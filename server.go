@@ -972,18 +972,23 @@ func (self *Server) PushMessageToShard(msg wire.Message, shard byte) error {
 	return nil
 }
 
-func (self *Server) PushRawBytesToShard(msgBytes *[]byte, shard byte) error {
+func (self *Server) PushRawBytesToShard(p *peer.PeerConn, msgBytes *[]byte, shard byte) error {
 	Logger.log.Infof("Push raw bytes to shard %d", shard)
 	peerConns := self.connManager.GetPeerConnOfShard(shard)
 	if peerConns != nil && len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
-			peerConn.QueueMessageWithBytes(msgBytes, nil)
+			if p == nil || peerConn != p {
+				peerConn.QueueMessageWithBytes(msgBytes, nil)
+			}
 		}
 		Logger.log.Infof("Pushed shard %d", shard)
 	} else {
 		Logger.log.Error("RemotePeer of shard not exist!")
-		for _, listener := range self.connManager.Config.ListenerPeers {
-			listener.QueueMessageWithBytes(msgBytes, nil)
+		peerConns := self.connManager.GetPeerConnOfAll()
+		for _, peerConn := range peerConns {
+			if p == nil || peerConn != p {
+				peerConn.QueueMessageWithBytes(msgBytes, nil)
+			}
 		}
 	}
 	return nil
@@ -1012,18 +1017,23 @@ func (self *Server) PushMessageToBeacon(msg wire.Message) error {
 	return errors.New("RemotePeer of beacon not found")
 }
 
-func (self *Server) PushRawBytesToBeacon(msgBytes *[]byte) error {
+func (self *Server) PushRawBytesToBeacon(p *peer.PeerConn, msgBytes *[]byte) error {
 	Logger.log.Infof("Push raw bytes to beacon")
 	peerConns := self.connManager.GetPeerConnOfBeacon()
 	if peerConns != nil && len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
-			peerConn.QueueMessageWithBytes(msgBytes, nil)
+			if p == nil || peerConn != p {
+				peerConn.QueueMessageWithBytes(msgBytes, nil)
+			}
 		}
 		Logger.log.Infof("Pushed raw bytes beacon done")
 	} else {
 		Logger.log.Error("RemotePeer of beacon not exist!")
-		for _, listener := range self.connManager.Config.ListenerPeers {
-			listener.QueueMessageWithBytes(msgBytes, nil)
+		peerConns := self.connManager.GetPeerConnOfAll()
+		for _, peerConn := range peerConns {
+			if p == nil || peerConn != p {
+				peerConn.QueueMessageWithBytes(msgBytes, nil)
+			}
 		}
 	}
 	return nil

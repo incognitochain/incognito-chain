@@ -689,3 +689,13 @@ func (self *ConnManager) GetPeerConnOfPbk(pbk string) []*peer.PeerConn {
 	}
 	return peerConns
 }
+
+func (self *ConnManager) GetPeerConnOfAll() []*peer.PeerConn {
+	peerConns := make([]*peer.PeerConn, 0)
+	for _, listener := range self.Config.ListenerPeers {
+		for _, peerConn := range listener.PeerConns {
+			peerConns = append(peerConns, peerConn)
+		}
+	}
+	return peerConns
+}
