@@ -47,6 +47,7 @@ type SchnMultiSig struct {
 
 // SetBytes - Constructing multiSig from byte array
 func (multiSig *SchnMultiSig) SetBytes(sigByte []byte) {
+	multiSig.R = new(EllipticPoint)
 	multiSig.R.Decompress(sigByte[0:CompressedPointSize])
 	multiSig.S = big.NewInt(0)
 	multiSig.S.SetBytes(sigByte[CompressedPointSize : CompressedPointSize+BigIntSize])

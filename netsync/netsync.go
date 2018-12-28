@@ -43,6 +43,10 @@ type NetSyncConfig struct {
 		// OnSwapSig(swap *wire.MessageSwapSig)
 		// OnSwapUpdate(swap *wire.MessageSwapUpdate)
 	}
+	ShardToBeaconPool interface {
+		AddBeaconBlock(blockchain.ShardToBeaconBlock) error
+	}
+
 	FeeEstimator map[byte]*mempool.FeeEstimator
 }
 

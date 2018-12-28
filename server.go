@@ -135,13 +135,15 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		Logger.log.Error(err)
 		return err
 	}
+	self.shardToBeaconPool = &mempool.ShardToBeaconPool{}
 	self.blockChain = &blockchain.BlockChain{}
 	err = self.blockChain.Init(&blockchain.Config{
 		ChainParams: self.chainParams,
 		DataBase:    self.dataBase,
 		Interrupt:   interrupt,
 		// Light:       cfg.Light,
-		Wallet: self.wallet,
+		Wallet:            self.wallet,
+		ShardToBeaconPool: self.shardToBeaconPool,
 	})
 	if err != nil {
 		return err
@@ -224,12 +226,13 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	}
 	// Init Net Sync manager to process messages
 	self.netSync = netsync.NetSync{}.New(&netsync.NetSyncConfig{
-		BlockChain:   self.blockChain,
-		ChainParam:   chainParams,
-		MemTxPool:    self.memPool,
-		Server:       self,
-		Consensus:    self.consensusEngine,
-		FeeEstimator: self.feeEstimator,
+		BlockChain:        self.blockChain,
+		ChainParam:        chainParams,
+		MemTxPool:         self.memPool,
+		Server:            self,
+		Consensus:         self.consensusEngine,
+		FeeEstimator:      self.feeEstimator,
+		ShardToBeaconPool: self.shardToBeaconPool,
 	})
 	// Create a connection manager.
 	var peers []*peer.Peer
