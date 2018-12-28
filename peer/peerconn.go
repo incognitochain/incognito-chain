@@ -74,7 +74,12 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			go func(msgStr string) {
 				// Parse Message header from last 24 bytes header message
 				jsonDecodeString, _ := hex.DecodeString(msgStr)
-
+				jsonDecodeString, errG := common.GZipFromBytes(jsonDecodeString)
+				if errG != nil {
+					Logger.log.Error("Can unzip from message")
+					Logger.log.Error(errG)
+					return
+				}
 				// disconnect when received spam message
 				if len(jsonDecodeString) >= SPAM_MESSAGE_SIZE {
 					Logger.log.Error("InMessageHandler received spam message")
@@ -287,6 +292,12 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 					}
 					messageByte = append(messageByte, header...)
 					Logger.log.Infof("Out message TYPE %s CONTENT %s", cmdType, string(messageByte))
+					messageByte, err = common.GZipToBytes(messageByte)
+					if err != nil {
+						Logger.log.Error("Can not gzip for message:" + outMsg.message.MessageType())
+						Logger.log.Error(err)
+						continue
+					}
 					message := hex.EncodeToString(messageByte)
 					//Logger.log.Infof("Content in hex encode: %s", string(message))
 					// add end character to message (delim '\n')

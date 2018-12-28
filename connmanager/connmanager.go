@@ -38,6 +38,7 @@ type ConsensusState struct {
 	ShardCommittee  map[byte][]string
 	UserPbk         string
 	Committee       map[string]byte
+	ShardNumber     int
 }
 
 func (self *ConsensusState) rebuild() {
