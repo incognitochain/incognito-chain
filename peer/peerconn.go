@@ -35,12 +35,15 @@ type PeerConn struct {
 	RemotePeer       *Peer
 	RemotePeerID     peer.ID
 	RemoteRawAddress string
-	IsOutbound       bool
+	isOutbound       bool
+	isOutboundMtx    sync.Mutex
 	isForceClose     bool
+	isForceCloseMtx  sync.Mutex
 
-	RWStream    *bufio.ReadWriter
-	VerValid    bool
-	IsConnected bool
+	RWStream       *bufio.ReadWriter
+	VerValid       bool
+	isConnected    bool
+	isConnectedMtx sync.Mutex
 
 	Config Config
 
@@ -51,16 +54,52 @@ type PeerConn struct {
 	HandleFailed       func(peerConn *PeerConn)
 }
 
+func (self *PeerConn) GetIsOutbound() bool {
+	self.isOutboundMtx.Lock()
+	defer self.isOutboundMtx.Unlock()
+	return self.isOutbound
+}
+
+func (self *PeerConn) SetIsOutbound(v bool) {
+	self.isOutboundMtx.Lock()
+	defer self.isOutboundMtx.Unlock()
+	self.isOutbound = v
+}
+
+func (self *PeerConn) GetIsForceClose() bool {
+	self.isForceCloseMtx.Lock()
+	defer self.isForceCloseMtx.Unlock()
+	return self.isForceClose
+}
+
+func (self *PeerConn) SetIsForceClose(v bool) {
+	self.isForceCloseMtx.Lock()
+	defer self.isForceCloseMtx.Unlock()
+	self.isForceClose = v
+}
+
+func (self *PeerConn) GetIsConnected() bool {
+	self.isConnectedMtx.Lock()
+	defer self.isConnectedMtx.Unlock()
+	return self.isConnected
+}
+
+func (self *PeerConn) SetIsConnected(v bool) {
+	self.isConnectedMtx.Lock()
+	defer self.isConnectedMtx.Unlock()
+	self.isConnected = v
+}
+
 /*
 Handle all in message
 */
 func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
-	self.IsConnected = true
+	self.SetIsConnected(true)
 	for {
 		Logger.log.Infof("PEER %s (address: %s) Reading stream", self.RemotePeer.PeerID.Pretty(), self.RemotePeer.RawAddress)
 		str, errR := rw.ReadString(DelimMessageByte)
 		if errR != nil {
-			self.IsConnected = false
+			self.SetIsConnected(false)
 			Logger.log.Error("---------------------------------------------------------------------")
 			Logger.log.Errorf("InMessageHandler ERROR %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
 			Logger.log.Error(errR)
@@ -325,7 +364,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 		case <-self.cWrite:
 			Logger.log.Infof("OutMessageHandler QUIT %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
 
-			self.IsConnected = false
+			self.SetIsConnected(false)
 
 			close(self.cDisconnect)
 
@@ -399,7 +438,7 @@ BeginCheckHashMessage:
 // This function is safe for concurrent access.
 func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}, forwardType byte, forwardValue *byte) {
 	go func() {
-		if self.IsConnected {
+		if self.GetIsConnected() {
 			data, _ := msg.JsonSerialize()
 			if len(data) >= HEAVY_MESSAGE_SIZE && msg.MessageType() != wire.CmdMsgCheck && msg.MessageType() != wire.CmdMsgCheckResp {
 				hash := common.HashH(data).String()
@@ -430,7 +469,7 @@ func (self *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<- st
 		return
 	}
 	go func() {
-		if self.IsConnected {
+		if self.GetIsConnected() {
 			data := (*msgBytes)[wire.MessageHeaderSize:]
 			if len(data) >= HEAVY_MESSAGE_SIZE {
 				hash := common.HashH(data).String()
@@ -497,6 +536,6 @@ func (p *PeerConn) Close() {
 }
 
 func (p *PeerConn) ForceClose() {
-	p.isForceClose = true
+	p.SetIsForceClose(true)
 	close(p.cClose)
 }

@@ -310,7 +310,7 @@ func (self *ConnManager) listenHandler(listen *peer.Peer) {
 
 func (self *ConnManager) handleConnected(peerConn *peer.PeerConn) {
 	Logger.log.Infof("handleConnected %s", peerConn.RemotePeerID.Pretty())
-	if peerConn.IsOutbound {
+	if peerConn.GetIsOutbound() {
 		Logger.log.Infof("handleConnected OUTBOUND %s", peerConn.RemotePeerID.Pretty())
 
 		if self.Config.OnOutboundConnection != nil {
@@ -406,7 +406,7 @@ func (self *ConnManager) processDiscoverPeers() {
 			}
 
 			for _, peerConn := range listener.PeerConns {
-				Logger.log.Info("PeerConn state %s %s %s", peerConn.ConnState(), peerConn.IsOutbound, peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
+				Logger.log.Info("PeerConn state %s %s %s", peerConn.ConnState(), peerConn.GetIsOutbound(), peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
 			}
 
 			err := client.Call("Handler.Ping", args, &response)

@@ -742,7 +742,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	if msg.Valid {
 		peerConn.VerValid = true
 
-		if peerConn.IsOutbound {
+		if peerConn.GetIsOutbound() {
 			self.addrManager.Good(peerConn.RemotePeer)
 		}
 
