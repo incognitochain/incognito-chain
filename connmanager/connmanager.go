@@ -123,6 +123,7 @@ func (self *ConnManager) UpdateConsensusState(role string, userPbk string, curre
 		bChange = true
 	}
 	if !common.CompareStringArray(self.Config.ConsensusState.BeaconCommittee, beaconCommittee) {
+		self.Config.ConsensusState.BeaconCommittee = make([]string, len(beaconCommittee))
 		copy(self.Config.ConsensusState.BeaconCommittee, beaconCommittee)
 		bChange = true
 	}
@@ -310,7 +311,7 @@ func (self *ConnManager) listenHandler(listen *peer.Peer) {
 
 func (self *ConnManager) handleConnected(peerConn *peer.PeerConn) {
 	Logger.log.Infof("handleConnected %s", peerConn.RemotePeerID.Pretty())
-	if peerConn.IsOutbound {
+	if peerConn.GetIsOutbound() {
 		Logger.log.Infof("handleConnected OUTBOUND %s", peerConn.RemotePeerID.Pretty())
 
 		if self.Config.OnOutboundConnection != nil {
@@ -406,7 +407,7 @@ func (self *ConnManager) processDiscoverPeers() {
 			}
 
 			for _, peerConn := range listener.PeerConns {
-				Logger.log.Info("PeerConn state %s %s %s", peerConn.ConnState(), peerConn.IsOutbound, peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
+				Logger.log.Info("PeerConn state %s %s %s", peerConn.ConnState(), peerConn.GetIsOutbound(), peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
 			}
 
 			err := client.Call("Handler.Ping", args, &response)
@@ -569,10 +570,11 @@ func (self *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxShardPeers
 }
 
 func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[string]*wire.RawPeer) int {
-	//Logger.log.Info("handleRandPeersOfBeacon")
+	Logger.log.Info("handleRandPeersOfBeacon")
+
 	countPeerShard := 0
 	pBKs := self.Config.ConsensusState.BeaconCommittee
-	//Logger.log.Info("handleRandPeersOfBeacon", pBKs)
+	Logger.log.Info("handleRandPeersOfBeacon", pBKs)
 	for len(pBKs) > 0 {
 		randN := common.RandInt() % len(pBKs)
 		pbk := pBKs[randN]

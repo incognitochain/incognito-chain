@@ -8,6 +8,7 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
+	"time"
 )
 
 // list message type
@@ -145,9 +146,9 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageBFTCommit{}
 	case CmdBFTReply:
 		msg = &MessageBFTReply{}
-	// case CmdInvalidBlock:
-	// 	msg = &MessageInvalidBlock{}
-	// 	break
+		// case CmdInvalidBlock:
+		// 	msg = &MessageInvalidBlock{}
+		// 	break
 	case CmdGetChainState:
 		msg = &MessageGetChainState{}
 	case CmdChainState:
@@ -161,22 +162,26 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdPing:
 		msg = &MessagePing{}
 		break
-	// case CmdSwapRequest:
-	// 	msg = &MessageSwapRequest{}
-	// 	break
-	// case CmdSwapSig:
-	// 	msg = &MessageSwapSig{}
-	// 	break
-	// case CmdSwapUpdate:
-	// 	msg = &MessageSwapUpdate{
-	// 		Signatures: make(map[string]string),
-	// 	}
-	// 	break
+		// case CmdSwapRequest:
+		// 	msg = &MessageSwapRequest{}
+		// 	break
+		// case CmdSwapSig:
+		// 	msg = &MessageSwapSig{}
+		// 	break
+		// case CmdSwapUpdate:
+		// 	msg = &MessageSwapUpdate{
+		// 		Signatures: make(map[string]string),
+		// 	}
+		// 	break
 	case CmdMsgCheck:
-		msg = &MessageMsgCheck{}
+		msg = &MessageMsgCheck{
+			Timestamp: time.Now(),
+		}
 		break
 	case CmdMsgCheckResp:
-		msg = &MessageMsgCheckResp{}
+		msg = &MessageMsgCheckResp{
+			Timestamp: time.Now(),
+		}
 		break
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)

@@ -28,7 +28,7 @@ type ConnState uint8
 
 var MAX_RETRIES_CHECK_HASH_MESSAGE = 5
 var MAX_TIMEOUT_CHECK_HASH_MESSAGE = time.Duration(10)
-var HEAVY_MESSAGE_SIZE = 512 * 1024
+var HEAVY_MESSAGE_SIZE = 5 * 1024 * 1024
 var SPAM_MESSAGE_SIZE = 50 * 1024 * 1024
 var MESSAGE_HASH_POOL_SIZE = 1000
 
@@ -344,7 +344,7 @@ func (self *Peer) NumInbound() int {
 	ret := int(0)
 	self.peerConnMutex.Lock()
 	for _, peerConn := range self.PeerConns {
-		if !peerConn.IsOutbound {
+		if !peerConn.GetIsOutbound() {
 			ret++
 		}
 	}
@@ -356,7 +356,7 @@ func (self *Peer) NumOutbound() int {
 	ret := int(0)
 	self.peerConnMutex.Lock()
 	for _, peerConn := range self.PeerConns {
-		if peerConn.IsOutbound {
+		if peerConn.GetIsOutbound() {
 			ret++
 		}
 	}
@@ -390,7 +390,7 @@ func (self *Peer) UpdateShardForPeerConn() {
 func (self *Peer) SetPeerConn(peerConn *PeerConn) {
 	internalConnPeer, ok := self.PeerConns[peerConn.RemotePeer.PeerID.Pretty()]
 	if ok && internalConnPeer != peerConn {
-		if internalConnPeer.IsConnected {
+		if internalConnPeer.GetIsOutbound() {
 			internalConnPeer.Close()
 		}
 		Logger.log.Infof("SetPeerConn and Remove %s %s", internalConnPeer.RemotePeer.PeerID, internalConnPeer.RemotePeer.RawAddress)
@@ -401,7 +401,7 @@ func (self *Peer) SetPeerConn(peerConn *PeerConn) {
 func (self *Peer) RemovePeerConn(peerConn *PeerConn) {
 	internalConnPeer, ok := self.PeerConns[peerConn.RemotePeer.PeerID.Pretty()]
 	if ok {
-		if internalConnPeer.IsConnected {
+		if internalConnPeer.GetIsOutbound() {
 			internalConnPeer.Close()
 		}
 		delete(self.PeerConns, peerConn.RemotePeer.PeerID.Pretty())
@@ -460,7 +460,7 @@ func (self *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
 	peerConn := PeerConn{
-		IsOutbound:         true,
+		isOutbound:         true,
 		RemotePeer:         peer,
 		RemotePeerID:       remotePeerID,
 		RemoteRawAddress:   peer.RawAddress,
@@ -542,7 +542,7 @@ func (self *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
 	peerConn := PeerConn{
-		IsOutbound:   false,
+		isOutbound:   false,
 		ListenerPeer: self,
 		RemotePeer: &Peer{
 			PeerID: remotePeerID,
@@ -648,7 +648,7 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleDisconnected %s", peerConn.RemotePeerID.Pretty())
 	peerConn.updateConnState(ConnCanceled)
 	self.RemovePeerConn(peerConn)
-	if peerConn.IsOutbound && !peerConn.isForceClose {
+	if peerConn.GetIsOutbound() && !peerConn.GetIsForceClose() {
 		go self.retryPeerConnection(peerConn)
 	}
 

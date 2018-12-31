@@ -742,7 +742,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	if msg.Valid {
 		peerConn.VerValid = true
 
-		if peerConn.IsOutbound {
+		if peerConn.GetIsOutbound() {
 			self.addrManager.Good(peerConn.RemotePeer)
 		}
 
@@ -827,31 +827,31 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 }
 
 func (self *Server) OnBFTPropose(_ *peer.PeerConn, msg *wire.MessageBFTPropose) {
-	Logger.log.Info("Receive a requestsign START")
+	Logger.log.Info("Receive a BFTPropose START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a requestsign END")
+	Logger.log.Info("Receive a BFTPropose END")
 }
 
 func (self *Server) OnBFTPrepare(_ *peer.PeerConn, msg *wire.MessageBFTPrepare) {
-	Logger.log.Info("Receive a requestsign START")
+	Logger.log.Info("Receive a BFTPrepare START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a requestsign END")
+	Logger.log.Info("Receive a BFTPrepare END")
 }
 
 func (self *Server) OnBFTCommit(_ *peer.PeerConn, msg *wire.MessageBFTCommit) {
-	Logger.log.Info("Receive a requestsign START")
+	Logger.log.Info("Receive a BFTCommit START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a requestsign END")
+	Logger.log.Info("Receive a BFTCommit END")
 }
 
 func (self *Server) OnBFTReply(_ *peer.PeerConn, msg *wire.MessageBFTReply) {
-	Logger.log.Info("Receive a requestsign START")
+	Logger.log.Info("Receive a BFTReply START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a requestsign END")
+	Logger.log.Info("Receive a BFTReply END")
 }
 
 // func (self *Server) OnInvalidBlock(_ *peer.PeerConn, msg *wire.MessageInvalidBlock) {
@@ -1001,7 +1001,7 @@ func (self *Server) PushMessageToBeacon(msg wire.Message) error {
 	Logger.log.Infof("Push msg to beacon")
 	peerConns := self.connManager.GetPeerConnOfBeacon()
 	if peerConns != nil && len(peerConns) > 0 {
-		fmt.Println(len(peerConns))
+		// fmt.Println(len(peerConns))
 		for _, peerConn := range peerConns {
 			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
 			peerConn.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_BEACON, nil)
