@@ -405,7 +405,7 @@ func (self *Peer) RemovePeerConn(peerConn *PeerConn) {
 			internalConnPeer.Close()
 		}
 		delete(self.PeerConns, peerConn.RemotePeer.PeerID.Pretty())
-		Logger.log.Infof("RemovePeerConn %s %s", peerConn.RemotePeer.PeerID, peerConn.RemotePeer.RawAddress)
+		Logger.log.Infof("RemovePeerConn %s %s", peerConn.RemotePeer.PeerID.Pretty(), peerConn.RemotePeer.RawAddress)
 	}
 }
 
@@ -453,8 +453,6 @@ func (self *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error
 		return nil, NewPeerError(OpeningStreamP2PErr, err, self)
 	}
 
-	defer stream.Close()
-
 	remotePeerID := stream.Conn().RemotePeer()
 
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
@@ -479,6 +477,10 @@ func (self *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error
 	}
 
 	self.SetPeerConn(&peerConn)
+	defer func() {
+		stream.Close()
+		self.RemovePeerConn(&peerConn)
+	}()
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
@@ -509,7 +511,6 @@ func (self *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error
 			return &peerConn, nil
 		}
 	}
-
 	return &peerConn, nil
 }
 
@@ -574,6 +575,11 @@ func (self *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 	if cDone != nil {
 		close(cDone)
 	}
+
+	defer func() {
+		stream.Close()
+		self.RemovePeerConn(&peerConn)
+	}()
 
 	for {
 		select {
@@ -687,11 +693,6 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 				peerConn.RetryCount++
 				go self.retryPeerConnection(peerConn)
 			}
-		} else {
-			peerConn.updateConnState(ConnCanceled)
-			self.ConnCanceled(peerConn.RemotePeer)
-			self.renewPeerConnection()
-			self.ConnPending(peerConn.RemotePeer)
 		}
 	})
 }
@@ -710,4 +711,14 @@ func (self *Peer) renewPeerConnection() {
 		}
 		Logger.log.Infof("*end - Creating peer conn to %d pending peers", len(self.PendingPeers))
 	}
+}
+
+func (self *Peer) GetPeerConnOfAll() []*PeerConn {
+	self.peerConnMutex.Lock()
+	defer self.peerConnMutex.Unlock()
+	peerConns := make([]*PeerConn, 0)
+	for _, peerConn := range self.PeerConns {
+		peerConns = append(peerConns, peerConn)
+	}
+	return peerConns
 }

@@ -40,8 +40,8 @@ KEY32="112t8rnXZD2GmbVAP3xBefJaorCgebytpoRK1oAzcgoNNSVtXzoRTu21KeSmnRbzvd7qMJd1m
 KEY33="112t8rnXmEeG5zsS7rExURJfqaRZhm6r4Pypkeag2gprdhtgDpen3LwV68x1nDPRYz2zhyhJTJCGvq1tUx4P1dvrdxF9W9DH7ME7PeGN2ohZ"
 
 rm -rf ./data/node-$1/mainnet/block
-#rm -rf ./data/node-$1/mainnet/wallet
-#rm -rf ./data/node-$1/mainnet/peer.json
+rm -rf ./data/node-$1/mainnet/wallet
+rm -rf ./data/node-$1/mainnet/peer.json
 
 mkdir -p ./data/node-$1
 rm -rf ./constant-$1
@@ -54,7 +54,7 @@ export EXTERNAL_ADDRESS="127.0.0.1:$PORT"
 
 if [ $1 != 1 ]
 then
-    ./constant-$1 --listen "127.0.0.1:$PORT" --externaladdress "127.0.0.1:$PORT" --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --spendingkey $KEY --norpc --connect "/ip4/127.0.0.1/tcp/9431/ipfs/QmegJNFmj4owSJi1fJh2ifCL67k7kTAehAQBmFreX4uPkh"
+    ./constant-$1 --nodemode "beacon" --listen "127.0.0.1:$PORT" --externaladdress $EXTERNAL_ADDRESS --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --spendingkey $KEY --norpc
 else
-    ./constant-$1 --listen "127.0.0.1:$PORT" --externaladdress "127.0.0.1:$PORT" --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --spendingkey $KEY --rpcuser "ad" --rpcpass "123" --enablewallet --walletpassphrase "12345678"
+    ./constant-$1 --listen "127.0.0.1:$PORT" --externaladdress $EXTERNAL_ADDRESS --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --spendingkey $KEY --rpcuser "ad" --rpcpass "123" --enablewallet --walletpassphrase "12345678"
 fi

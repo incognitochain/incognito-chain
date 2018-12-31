@@ -378,6 +378,7 @@ func (self *ConnManager) processDiscoverPeers() {
 			rawAddress := listener.RawAddress
 
 			externalAddress := self.Config.ExternalAddress
+			Logger.log.Info("Start Process Discover Peers ExternalAddress", externalAddress)
 			if externalAddress == EmptyString {
 				externalAddress = os.Getenv("EXTERNAL_ADDRESS")
 			}
@@ -439,7 +440,8 @@ func (self *ConnManager) getPeerIdsFromPublicKey(pubKey string) []libpeer.ID {
 	result := []libpeer.ID{}
 
 	for _, listener := range self.Config.ListenerPeers {
-		for _, peerConn := range listener.PeerConns {
+		pcs := listener.GetPeerConnOfAll()
+		for _, peerConn := range pcs {
 			// Logger.log.Info("Test PeerConn", peerConn.RemotePeer.PaymentAddress)
 			if peerConn.RemotePeer.PublicKey == pubKey {
 				exist := false
@@ -462,7 +464,8 @@ func (self *ConnManager) getPeerIdsFromPublicKey(pubKey string) []libpeer.ID {
 func (self *ConnManager) getPeerConnOfShard(shard *byte) []*peer.PeerConn {
 	c := make([]*peer.PeerConn, 0)
 	for _, listener := range self.Config.ListenerPeers {
-		for _, peerConn := range listener.PeerConns {
+		pcs := listener.GetPeerConnOfAll()
+		for _, peerConn := range pcs {
 			sh := self.getShardOfPbk(peerConn.RemotePeer.PublicKey)
 			if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
 				c = append(c, peerConn)
@@ -475,7 +478,8 @@ func (self *ConnManager) getPeerConnOfShard(shard *byte) []*peer.PeerConn {
 func (self *ConnManager) countPeerConnOfShard(shard *byte) int {
 	c := 0
 	for _, listener := range self.Config.ListenerPeers {
-		for _, peerConn := range listener.PeerConns {
+		pcs := listener.GetPeerConnOfAll()
+		for _, peerConn := range pcs {
 			sh := self.getShardOfPbk(peerConn.RemotePeer.PublicKey)
 			if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
 				c++
@@ -487,7 +491,8 @@ func (self *ConnManager) countPeerConnOfShard(shard *byte) int {
 
 func (self *ConnManager) checkPeerConnOfPbk(pbk string) bool {
 	for _, listener := range self.Config.ListenerPeers {
-		for _, peerConn := range listener.PeerConns {
+		pcs := listener.GetPeerConnOfAll()
+		for _, peerConn := range pcs {
 			if peerConn.RemotePeer.PublicKey == pbk {
 				return true
 			}
@@ -527,7 +532,8 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 		}
 		return maxPeers
 	}
-	pBKs := self.Config.ConsensusState.ShardCommittee[*shard]
+	pBKs := make([]string, len(self.Config.ConsensusState.ShardCommittee[*shard]))
+	copy(pBKs, self.Config.ConsensusState.ShardCommittee[*shard])
 	for len(pBKs) > 0 {
 		randN := common.RandInt() % len(pBKs)
 		pbk := pBKs[randN]
@@ -573,7 +579,8 @@ func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[
 	Logger.log.Info("handleRandPeersOfBeacon")
 
 	countPeerShard := 0
-	pBKs := self.Config.ConsensusState.BeaconCommittee
+	pBKs := make([]string, len(self.Config.ConsensusState.BeaconCommittee))
+	copy(pBKs, self.Config.ConsensusState.BeaconCommittee)
 	Logger.log.Info("handleRandPeersOfBeacon", pBKs)
 	for len(pBKs) > 0 {
 		randN := common.RandInt() % len(pBKs)
@@ -654,7 +661,8 @@ func (self *ConnManager) GetCurrentRoleShard() (string, *byte) {
 func (self *ConnManager) GetPeerConnOfShard(shard byte) []*peer.PeerConn {
 	peerConns := make([]*peer.PeerConn, 0)
 	for _, listener := range self.Config.ListenerPeers {
-		for _, peerConn := range listener.PeerConns {
+		pcs := listener.GetPeerConnOfAll()
+		for _, peerConn := range pcs {
 			shardT := self.getShardOfPbk(peerConn.RemotePeer.PublicKey)
 			if shardT != nil && *shardT == shard {
 				peerConns = append(peerConns, peerConn)
@@ -667,7 +675,8 @@ func (self *ConnManager) GetPeerConnOfShard(shard byte) []*peer.PeerConn {
 func (self *ConnManager) GetPeerConnOfBeacon() []*peer.PeerConn {
 	peerConns := make([]*peer.PeerConn, 0)
 	for _, listener := range self.Config.ListenerPeers {
-		for _, peerConn := range listener.PeerConns {
+		pcs := listener.GetPeerConnOfAll()
+		for _, peerConn := range pcs {
 			pbk := peerConn.RemotePeer.PublicKey
 			if pbk != "" && self.checkBeaconOfPbk(pbk) {
 				peerConns = append(peerConns, peerConn)
@@ -683,7 +692,8 @@ func (self *ConnManager) GetPeerConnOfPbk(pbk string) []*peer.PeerConn {
 		return peerConns
 	}
 	for _, listener := range self.Config.ListenerPeers {
-		for _, peerConn := range listener.PeerConns {
+		pcs := listener.GetPeerConnOfAll()
+		for _, peerConn := range pcs {
 			if pbk == peerConn.RemotePeer.PublicKey {
 				peerConns = append(peerConns, peerConn)
 			}
@@ -695,9 +705,7 @@ func (self *ConnManager) GetPeerConnOfPbk(pbk string) []*peer.PeerConn {
 func (self *ConnManager) GetPeerConnOfAll() []*peer.PeerConn {
 	peerConns := make([]*peer.PeerConn, 0)
 	for _, listener := range self.Config.ListenerPeers {
-		for _, peerConn := range listener.PeerConns {
-			peerConns = append(peerConns, peerConn)
-		}
+		peerConns = append(peerConns, listener.GetPeerConnOfAll()...)
 	}
 	return peerConns
 }

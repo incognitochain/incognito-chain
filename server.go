@@ -1028,7 +1028,7 @@ func (self *Server) PushRawBytesToBeacon(p *peer.PeerConn, msgBytes *[]byte) err
 		}
 		Logger.log.Infof("Pushed raw bytes beacon done")
 	} else {
-		Logger.log.Error("RemotePeer of beacon not exist!")
+		Logger.log.Error("RemotePeer of beacon raw bytes not exist!")
 		peerConns := self.connManager.GetPeerConnOfAll()
 		for _, peerConn := range peerConns {
 			if p == nil || peerConn != p {
