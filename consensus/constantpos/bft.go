@@ -271,22 +271,23 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 						multiSigScheme.Signature = multiSigScheme.Keyset.SignMultiSig(blockData.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(self.dataForSig.r))
 						phaseData.CommitBlkSig = base58.Base58Check{}.Encode(multiSigScheme.Signature.Bytes(), byte(0x00))
 						phaseData.R = base58.Base58Check{}.Encode(RCombined.Compress(), byte(0x00))
-
-						msg, err := MakeMsgBFTCommit(phaseData.CommitBlkSig, phaseData.R, phaseData.ValidatorsIdx, self.UserKeySet.GetPublicKeyB58())
-						if err != nil {
-							fmt.Println("BLah err", err)
-							return
-						}
-						fmt.Println("Sending out commit msg")
-						if layer == "beacon" {
-							self.Server.PushMessageToBeacon(msg)
-						} else {
-							self.Server.PushMessageToShard(msg, shardID)
-						}
-
 						self.dataForCombine.R = phaseData.R
 						self.dataForCombine.ValidatorsIdx = phaseData.ValidatorsIdx
 						self.dataForCombine.mySig = phaseData.CommitBlkSig
+
+						time.AfterFunc(1500*time.Millisecond, func() {
+							msg, err := MakeMsgBFTCommit(phaseData.CommitBlkSig, phaseData.R, phaseData.ValidatorsIdx, self.UserKeySet.GetPublicKeyB58())
+							if err != nil {
+								fmt.Println("BLah err", err)
+								return
+							}
+							fmt.Println("Sending out commit msg")
+							if layer == "beacon" {
+								self.Server.PushMessageToBeacon(msg)
+							} else {
+								self.Server.PushMessageToShard(msg, shardID)
+							}
+						})
 
 						self.phase = "commit"
 						break preparephase
