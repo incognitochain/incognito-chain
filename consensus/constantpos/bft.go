@@ -277,6 +277,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							fmt.Println("BLah err", err)
 							return
 						}
+						fmt.Println("Sending out commit msg")
 						if layer == "beacon" {
 							self.Server.PushMessageToBeacon(msg)
 						} else {
