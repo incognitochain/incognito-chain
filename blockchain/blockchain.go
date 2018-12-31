@@ -1511,6 +1511,13 @@ func (self BlockChain) GetFeePerKbTx() uint64 {
 	return 0
 }
 
-func (self *BlockChain) IsReady() bool {
+func (self *BlockChain) IsReady(shard bool, shardID byte) bool {
+
+	if shard {
+		//TODO check shardChain ready
+	} else {
+		//TODO check beaconChain ready
+	}
+
 	return true
 }
