@@ -6,10 +6,12 @@ import (
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
+	"time"
 )
 
 type MessageMsgCheck struct {
-	Hash string
+	Hash      string
+	Timestamp time.Time
 }
 
 func (self MessageMsgCheck) MessageType() string {

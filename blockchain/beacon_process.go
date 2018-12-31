@@ -84,6 +84,7 @@ func (self *BlockChain) VerifyBlockForSigningProcess(block *BeaconBlock) error {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 	//========Verify block only
+	Logger.log.Infof("Verify block for signing process %d, with hash %+v", block.Header.Height, *block.Hash())
 	if err := self.VerifyPreProcessingBeaconBlock(block); err != nil {
 		return err
 	}
@@ -122,6 +123,7 @@ func (self *BlockChain) VerifyBlockForSigningProcess(block *BeaconBlock) error {
 	if err := beaconBestState.VerifyPostProcessingBeaconBlock(block); err != nil {
 		return err
 	}
+	Logger.log.Infof("Block %d, with hash %+v is VALID for signing", block.Header.Height, *block.Hash())
 	return nil
 }
 
@@ -147,6 +149,7 @@ func (self *BlockChain) VerifyBlockForSigningProcess(block *BeaconBlock) error {
 func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, error) {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
+	Logger.log.Infof("Maybe accept new block %d, with hash %+v", block.Header.Height, *block.Hash())
 	if err := self.VerifyPreProcessingBeaconBlock(block); err != nil {
 		return "", err
 	}
@@ -210,6 +213,7 @@ func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, erro
 	if err := self.AcceptBeaconBlock(&block.Header.PrevBlockHash); err != nil {
 		return "", err
 	}
+	Logger.log.Infof("New maybe accepted VALID block %d, with hash %x", block.Header.Height, *block.Hash())
 	return keyBL, nil
 }
 
@@ -221,8 +225,10 @@ func (self *BlockChain) AcceptBeaconBlock(blockHash *common.Hash) error {
 	// This function make sure if stored block at height 91, then best state height at 90
 	beaconBlock, err := self.GetMaybeAcceptBeaconBlock(blockHash.String())
 	if err != nil {
+		Logger.log.Errorf("Can't find block %+v to accept", blockHash)
 		return err
 	}
+	Logger.log.Infof("Accept block %d, with hash %+v", beaconBlock.Header.Height, blockHash)
 	err = self.BestState.Beacon.Update(&beaconBlock)
 	if err != nil {
 		return err
@@ -251,7 +257,6 @@ func (self *BlockChain) AcceptBeaconBlock(blockHash *common.Hash) error {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 	Logger.log.Infof("Accepted block %+v", blockHash)
-	//
 	return nil
 }
 func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error {
@@ -431,7 +436,7 @@ func (self *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock)
 func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	// self.lock.Lock()
 	// defer self.lock.Unlock()
-
+	Logger.log.Infof("Start processing new block at height %d, with hash %+v", newBlock.Header.Height, *newBlock.Hash())
 	if newBlock == nil {
 		return errors.New("Null pointer")
 	}
@@ -511,6 +516,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 				return NewBlockChainError(UnExpectedError, err)
 			}
 			self.CurrentRandomNumber = int64(temp)
+			Logger.log.Info("Random number found %d", self.CurrentRandomNumber)
 			randomFlag = true
 		}
 	}
@@ -522,6 +528,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	self.CandidateShardWaitingForNextRandom = append(self.CandidateShardWaitingForNextRandom, newShardCandidate...)
 	if self.BeaconHeight == 1 {
 		// Assign committee with genesis block
+		Logger.log.Infof("Proccessing Genesis Block")
 		self.BeaconCommittee = append(self.BeaconCommittee, newBeaconCandidate...)
 	}
 	if self.BeaconHeight%EPOCH == 0 && self.BeaconHeight != 1 {
@@ -586,6 +593,8 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 			return NewBlockChainError(UnExpectedError, err)
 		}
+		Logger.log.Info("Swap block: Out committee %+v", beaconSwapedCommittees)
+		Logger.log.Info("Swap block: In committee %+v", beaconNextCommittees)
 	}
 	return nil
 }

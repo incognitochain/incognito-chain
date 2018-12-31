@@ -393,7 +393,7 @@ func (self *ConnManager) processDiscoverPeers() {
 				PublicKey:  pbkB58,
 				SignData:   signDataB58,
 			}
-			Logger.log.Infof("[Exchange Peers] Ping", args)
+			Logger.log.Infof("[Exchange Peers] Ping %+v", args)
 
 			Logger.log.Info("Dump PeerConns", len(listener.PeerConns))
 			for pubK, info := range self.discoveredPeers {

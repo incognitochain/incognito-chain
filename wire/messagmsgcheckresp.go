@@ -6,11 +6,13 @@ import (
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
+	"time"
 )
 
 type MessageMsgCheckResp struct {
-	Hash   string
-	Accept bool
+	Hash      string
+	Accept    bool
+	Timestamp time.Time
 }
 
 func (self MessageMsgCheckResp) MessageType() string {
