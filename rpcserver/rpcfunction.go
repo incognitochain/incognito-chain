@@ -76,10 +76,12 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendLoanPayment:  RpcServer.handleCreateAndSendLoanPayment,
 
 	// multisig
-	CreateSignatureOnCustomTokenTx: RpcServer.handleCreateSignatureOnCustomTokenTx,
-	GetListDCBBoard:                RpcServer.handleGetListDCBBoard,
-	GetListCBBoard:                 RpcServer.handleGetListCBBoard,
-	GetListGOVBoard:                RpcServer.handleGetListGOVBoard,
+	CreateSignatureOnCustomTokenTx:       RpcServer.handleCreateSignatureOnCustomTokenTx,
+	GetListDCBBoard:                      RpcServer.handleGetListDCBBoard,
+	GetListCBBoard:                       RpcServer.handleGetListCBBoard,
+	GetListGOVBoard:                      RpcServer.handleGetListGOVBoard,
+	CreateAndSendTxWithMultiSigsReg:      RpcServer.handleCreateAndSendTxWithMultiSigsReg,
+	CreateAndSendTxWithMultiSigsSpending: RpcServer.handleCreateAndSendTxWithMultiSigsSpending,
 
 	// vote board
 	CreateAndSendVoteDCBBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
@@ -105,12 +107,13 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendTxWithContractingRequest: RpcServer.handleCreateAndSendTxWithContractingRequest,
 
 	// gov
-	GetBondTypes:                      RpcServer.handleGetBondTypes,
-	GetGOVConstitution:                RpcServer.handleGetGOVConstitution,
-	GetGOVParams:                      RpcServer.handleGetGOVParams,
-	CreateAndSendTxWithBuyBackRequest: RpcServer.handleCreateAndSendTxWithBuyBackRequest,
-	CreateAndSendTxWithBuySellRequest: RpcServer.handleCreateAndSendTxWithBuySellRequest,
-	CreateAndSendTxWithOracleFeed:     RpcServer.handleCreateAndSendTxWithOracleFeed,
+	GetBondTypes:                           RpcServer.handleGetBondTypes,
+	GetGOVConstitution:                     RpcServer.handleGetGOVConstitution,
+	GetGOVParams:                           RpcServer.handleGetGOVParams,
+	CreateAndSendTxWithBuyBackRequest:      RpcServer.handleCreateAndSendTxWithBuyBackRequest,
+	CreateAndSendTxWithBuySellRequest:      RpcServer.handleCreateAndSendTxWithBuySellRequest,
+	CreateAndSendTxWithOracleFeed:          RpcServer.handleCreateAndSendTxWithOracleFeed,
+	CreateAndSendTxWithUpdatingOracleBoard: RpcServer.handleCreateAndSendTxWithUpdatingOracleBoard,
 }
 
 // Commands that are available to a limited user
