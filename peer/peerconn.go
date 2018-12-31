@@ -415,7 +415,7 @@ BeginCheckHashMessage:
 		cTimeOut = nil
 		break
 	case <-cTimeOut:
-		Logger.log.Infof("checkMessageHashBeforeSend RECEIVED time out")
+		Logger.log.Infof("checkMessageHashBeforeSend RECEIVED time out %d", numRetries)
 		cTimeOut = nil
 		bTimeOut = true
 		break
