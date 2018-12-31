@@ -437,6 +437,7 @@ BeginCheckHashMessage:
 //
 // This function is safe for concurrent access.
 func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}, forwardType byte, forwardValue *byte) {
+	Logger.log.Infof("QueueMessageWithEncoding %s %s", self.RemotePeer.PeerID.Pretty(), msg.MessageType())
 	go func() {
 		if self.GetIsConnected() {
 			data, _ := msg.JsonSerialize()
@@ -465,6 +466,7 @@ func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<-
 }
 
 func (self *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<- struct{}) {
+	Logger.log.Infof("QueueMessageWithBytes %s", self.RemotePeer.PeerID.Pretty())
 	if msgBytes == nil || len(*msgBytes) <= 0 {
 		return
 	}
