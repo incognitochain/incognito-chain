@@ -50,6 +50,26 @@ func (self *ConsensusState) rebuild() {
 	}
 }
 
+func (self *ConsensusState) CloneBeaconCommittee() []string {
+	self.Lock()
+	defer self.Unlock()
+	ret := make([]string, len(self.BeaconCommittee))
+	copy(ret, self.BeaconCommittee)
+	return ret
+}
+
+func (self *ConsensusState) CloneShardCommittee(shard byte) []string {
+	self.Lock()
+	defer self.Unlock()
+	committee, ok := self.ShardCommittee[shard]
+	if ok {
+		ret := make([]string, len(committee))
+		copy(ret, committee)
+		return ret
+	}
+	return make([]string, 0)
+}
+
 type ConnManager struct {
 	connReqCount uint64
 	start        int32
@@ -532,8 +552,7 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 		}
 		return maxPeers
 	}
-	pBKs := make([]string, len(self.Config.ConsensusState.ShardCommittee[*shard]))
-	copy(pBKs, self.Config.ConsensusState.ShardCommittee[*shard])
+	pBKs := self.Config.ConsensusState.CloneShardCommittee(*shard)
 	for len(pBKs) > 0 {
 		randN := common.RandInt() % len(pBKs)
 		pbk := pBKs[randN]
@@ -579,9 +598,7 @@ func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[
 	Logger.log.Info("handleRandPeersOfBeacon")
 
 	countPeerShard := 0
-	pBKs := make([]string, len(self.Config.ConsensusState.BeaconCommittee))
-	copy(pBKs, self.Config.ConsensusState.BeaconCommittee)
-	Logger.log.Info("handleRandPeersOfBeacon", pBKs)
+	pBKs := self.Config.ConsensusState.CloneBeaconCommittee()
 	for len(pBKs) > 0 {
 		randN := common.RandInt() % len(pBKs)
 		pbk := pBKs[randN]
