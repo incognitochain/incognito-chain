@@ -90,7 +90,7 @@ contract SimpleLoan {
             loans[lid].amount += msg.value;
         } else {
             lid = keccak256(abi.encodePacked(digest, stableCoinReceiver, request));
-            require(loans[lid].state == State.Empty);
+            require(loans[lid].state == State.Empty, "loan state is not empty");
 
             Loan memory c;
             c.state = State.Inited;
