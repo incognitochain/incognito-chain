@@ -6,7 +6,6 @@ contract SimpleLoan {
 
     enum State {Empty, Inited, Accepted, Rejected, Refunded, Liquidated}
 
-    // TODO: each loan has separate interest and maturity window
     struct Loan {
         State state;
         address payable borrower;
@@ -44,12 +43,8 @@ contract SimpleLoan {
         lender = _lender;
         owner = _owner;
 
-        // TODO: support different types of loan
-        params["loanMaturity"] = 90 days; // seconds
-        params["escrowWindow"] = 3 days;
-        params["interestRate"] = 1 * decimals; // 1%
+        params["escrowWindow"] = 7 days;
         params["liquidationStart"] = 150 * decimals; // auto-liquidation starts at 150%
-        params["liquidationEnd"] = 100 * decimals; // below 100%, commission doesn't increase
         params["liquidationPenalty"] = 10 * decimals; // 10%, maximum penalty for auto-liquidation
     }
 
@@ -149,7 +144,7 @@ contract SimpleLoan {
     function liquidate(bytes32 lid, uint256 interest, uint256 collateralPrice, uint256 assetPrice, bytes32 offchain) public lenderOrOwner {
         uint256 debt = loans[lid].principle + interest;
         require(loans[lid].state == State.Accepted && loans[lid].principle > 0 &&
-                !safelyCollateralized(loans[lid].amount, debt, collateralPrice, assetPrice)); // collateral is not enough
+                (interest > 0 || !safelyCollateralized(loans[lid].amount, debt, collateralPrice, assetPrice))); // late interest payment or collateral is not enough
 
         uint256 base = debt * assetPrice * 10 ** 18 / collateralPrice; // Wei amount needed to buy back enough Constant at current price
         uint256 penalty = part(base, params["liquidationPenalty"]);
