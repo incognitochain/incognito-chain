@@ -797,12 +797,6 @@ func (tx *Tx) CalculateTxValue() (*privacy.PaymentAddress, uint64) {
 	return senderAddr, txValue
 }
 
-func (tx *Tx) CloneTxThenUpdateMetadata(meta metadata.Metadata) []byte {
-	clonedTx := *tx
-	clonedTx.SetMetadata(meta)
-	return common.ToBytes(clonedTx)
-}
-
 func (tx *Tx) GetLockTime() int64 {
 	return tx.LockTime
 }

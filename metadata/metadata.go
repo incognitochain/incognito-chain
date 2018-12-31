@@ -149,6 +149,5 @@ type Transaction interface {
 	GetReceivers() ([][]byte, []uint64)
 	IsPrivacy() bool
 	IsCoinsBurning() bool
-	CloneTxThenUpdateMetadata(Metadata) []byte
 	GetProof() *zkp.PaymentProof
 }
