@@ -75,11 +75,11 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				// Parse Message header from last 24 bytes header message
 				jsonDecodeString, _ := hex.DecodeString(msgStr)
 
-				// uncompress data before process
-				jsonDecodeString, errG := common.GZipFromBytes(jsonDecodeString)
-				if errG != nil {
+				// unzip data before process
+				jsonDecodeString, err := common.GZipFromBytes(jsonDecodeString)
+				if err != nil {
 					Logger.log.Error("Can unzip from message")
-					Logger.log.Error(errG)
+					Logger.log.Error(err)
 					return
 				}
 				// disconnect when received spam message
@@ -134,7 +134,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				commandInHeader := bytes.Trim(messageHeader[:wire.MessageCmdTypeSize], "\x00")
 				commandType := string(messageHeader[:len(commandInHeader)])
 				// convert to particular message from message cmd type
-				var message, err = wire.MakeEmptyMessage(string(commandType))
+				message, err := wire.MakeEmptyMessage(string(commandType))
 				if err != nil {
 					Logger.log.Error("Can not find particular message for message cmd type")
 					Logger.log.Error(err)
@@ -276,40 +276,40 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 						continue
 					}
 				} else {
-					// Create and send message
-					messageByte, err := outMsg.message.JsonSerialize()
+					// Create and send messageHex
+					messageBytes, err := outMsg.message.JsonSerialize()
 					if err != nil {
-						Logger.log.Error("Can not serialize json format for message:" + outMsg.message.MessageType())
+						Logger.log.Error("Can not serialize json format for messageHex:" + outMsg.message.MessageType())
 						Logger.log.Error(err)
 						continue
 					}
 
-					// add 24 bytes header into message
-					header := make([]byte, wire.MessageHeaderSize)
+					// add 24 bytes headerBytes into messageHex
+					headerBytes := make([]byte, wire.MessageHeaderSize)
 					cmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.message))
-					copy(header[:], []byte(cmdType))
-					copy(header[wire.MessageCmdTypeSize:], []byte{outMsg.forwardType})
+					copy(headerBytes[:], []byte(cmdType))
+					copy(headerBytes[wire.MessageCmdTypeSize:], []byte{outMsg.forwardType})
 					if outMsg.forwardValue != nil {
-						copy(header[wire.MessageCmdTypeSize+1:], []byte{*outMsg.forwardValue})
+						copy(headerBytes[wire.MessageCmdTypeSize+1:], []byte{*outMsg.forwardValue})
 					}
-					messageByte = append(messageByte, header...)
-					Logger.log.Infof("Out message TYPE %s CONTENT %s", cmdType, string(messageByte))
+					messageBytes = append(messageBytes, headerBytes...)
+					Logger.log.Infof("Out messageHex TYPE %s CONTENT %s", cmdType, string(messageBytes))
 
-					// compress data before send
-					messageByte, err = common.GZipToBytes(messageByte)
+					// zip data before send
+					messageBytes, err = common.GZipToBytes(messageBytes)
 					if err != nil {
-						Logger.log.Error("Can not gzip for message:" + outMsg.message.MessageType())
+						Logger.log.Error("Can not gzip for messageHex:" + outMsg.message.MessageType())
 						Logger.log.Error(err)
 						continue
 					}
-					message := hex.EncodeToString(messageByte)
-					//Logger.log.Infof("Content in hex encode: %s", string(message))
-					// add end character to message (delim '\n')
-					message += DelimMessageStr
+					messageHex := hex.EncodeToString(messageBytes)
+					//Logger.log.Infof("Content in hex encode: %s", string(messageHex))
+					// add end character to messageHex (delim '\n')
+					messageHex += DelimMessageStr
 
 					// send on p2p stream
-					Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.RemotePeer.PeerID.Pretty())
-					_, err = rw.Writer.WriteString(message)
+					Logger.log.Infof("Send a messageHex %s to %s", outMsg.message.MessageType(), self.RemotePeer.PeerID.Pretty())
+					_, err = rw.Writer.WriteString(messageHex)
 					if err != nil {
 						Logger.log.Critical("DM ERROR", err)
 						continue
