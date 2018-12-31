@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"bytes"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"sort"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
@@ -238,6 +238,15 @@ concludeBlock:
 	}
 	for _, tx := range removableTxs {
 		txToRemove = append(txToRemove, tx)
+	}
+
+	// Build CMB responses
+	cmbInitRefundTxs, err := blockgen.buildCMBRefund(sourceTxns, chainID, privatekey)
+	if err != nil {
+		return nil, err
+	}
+	for _, tx := range cmbInitRefundTxs {
+		txsToAdd = append(txsToAdd, tx)
 	}
 
 	// Get blocksalary fund from txs
@@ -504,12 +513,11 @@ func (blockgen *BlkTmplGenerator) processDividend(
 		infos := []metadata.DividendInfo{}
 		// Build tx to pay dividend to each holder
 		for i, holder := range tokenHolders {
-			// TODO(@0xbunyip): holder here is Pk only, change to use both Pk and Pkenc
-			holderAddr, err := hex.DecodeString(holder)
+			holderAddrInBytes, _, err := base58.Base58Check{}.Decode(holder)
 			if err != nil {
 				return nil, 0, err
 			}
-			holderAddress := (&privacy.PaymentAddress{}).SetBytes(holderAddr)
+			holderAddress := (&privacy.PaymentAddress{}).SetBytes(holderAddrInBytes)
 			info := metadata.DividendInfo{
 				TokenHolder: *holderAddress,
 				Amount:      amounts[i] / totalTokenSupply,

@@ -1,11 +1,10 @@
 package lvdb
 
 import (
-	"github.com/pkg/errors"
-	"github.com/syndtr/goleveldb/leveldb"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/pkg/errors"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 type db struct {
@@ -58,6 +57,14 @@ var (
 	// multisigs
 	multisigsPrefix = []byte("multisigs")
 
+	// cmb
+	cmbPrefix                = []byte("cmb-")
+	cmbResponsePrefix        = []byte("cmbres-")
+	cmbDepositSendKeyPrefix  = []byte("cmbdepositsend-")
+	cmbWithdrawRequestPrefix = []byte("cmbwithdrawreq-")
+	cmbNoticePrefix          = []byte("cmbnotice-")
+
+	// dividend
 	Unreward = []byte("unreward")
 	Spent    = []byte("spent")
 	Unspent  = []byte("unspent")

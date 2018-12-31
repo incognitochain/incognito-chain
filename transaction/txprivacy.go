@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"crypto/rand"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
 	"math/big"
 	"strconv"
 	"time"
-
-	"encoding/json"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -595,26 +594,38 @@ func (tx *Tx) IsSalaryTx() bool {
 func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 	pubkeys := [][]byte{}
 	amounts := []uint64{}
+	for _, coin := range tx.Proof.OutputCoins {
+		added := false
+		coinPubKey := coin.CoinDetails.PublicKey.Compress()
+		for i, key := range pubkeys {
+			if bytes.Equal(coinPubKey, key) {
+				added = true
+				amounts[i] += coin.CoinDetails.Value
+				break
+			}
+		}
+		if !added {
+			pubkeys = append(pubkeys, coinPubKey)
+			amounts = append(amounts, coin.CoinDetails.Value)
+		}
+	}
 	return pubkeys, amounts
+}
 
-	// TODO: @bunyip - update logic here
-
-	// for _, desc := range tx.Descs {
-	// 	for _, note := range desc.Note {
-	// 		added := false
-	// 		for i, key := range pubkeys {
-	// 			if bytes.Equal(note.Apk[:], key) {
-	// 				added = true
-	// 				amounts[i] += note.Value
-	// 			}
-	// 		}
-	// 		if !added {
-	// 			pubkeys = append(pubkeys, note.Apk[:])
-	// 			amounts = append(amounts, note.Value)
-	// 		}
-	// 	}
-	// }
-	// return pubkeys, amounts
+func (tx *Tx) GetUniqueReceiver() (bool, []byte, uint64) {
+	sender := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	pubkeys, amounts := tx.GetReceivers()
+	pubkey := []byte{}
+	amount := uint64(0)
+	count := 0
+	for i, pk := range pubkeys {
+		if !bytes.Equal(pk, sender) {
+			pubkey = pk
+			amount = amounts[i]
+			count += 1
+		}
+	}
+	return count == 1, pubkey, amount
 }
 
 func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.Hash][][]byte) error {

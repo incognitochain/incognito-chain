@@ -100,6 +100,21 @@ type DatabaseInterface interface {
 	StoreCrowdsaleResponse([]byte, []byte) error
 	GetCrowdsaleTxs([]byte) ([][]byte, error)
 
+	// CMB
+	StoreCMB([]byte, []byte, [][]byte, uint64, []byte) error
+	GetCMB([]byte) ([]byte, [][]byte, uint64, []byte, uint8, uint64, error)
+	UpdateCMBState([]byte, uint8) error
+	UpdateCMBFine(mainAccount []byte, fine uint64) error
+	StoreCMBResponse([]byte, []byte) error
+	GetCMBResponse([]byte) ([][]byte, error)
+	StoreDepositSend([]byte, []byte) error
+	GetDepositSend([]byte) ([]byte, error)
+	StoreWithdrawRequest(contractID []byte, txHash []byte) error
+	GetWithdrawRequest(contractID []byte) ([]byte, uint8, error)
+	UpdateWithdrawRequestState(contractID []byte, state uint8) error
+	StoreNoticePeriod(blockHeight int32, txReqHash []byte) error
+	GetNoticePeriod(blockHeight int32) ([][]byte, error)
+
 	//Vote
 	AddVoteDCBBoard(uint32, []byte, []byte, uint64) error
 	AddVoteGOVBoard(uint32, []byte, []byte, uint64) error

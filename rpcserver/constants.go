@@ -106,4 +106,11 @@ const (
 	CreateAndSendTxWithBuySellRequest      = "createandsendtxwithbuysellrequest"
 	CreateAndSendTxWithOracleFeed          = "createandsendtxwithoraclefeed"
 	CreateAndSendTxWithUpdatingOracleBoard = "createandsendtxwithupdatingoracleboard"
+
+	// cmb
+	CreateAndSendTxWithCMBInitRequest     = "createandsendtxwithcmbinitrequest"
+	CreateAndSendTxWithCMBInitResponse    = "createandsendtxwithcmbinitresponse"
+	CreateAndSendTxWithCMBDepositContract = "createandsendtxwithcmbdepositcontract"
+	CreateAndSendTxWithCMBDepositSend     = "createandsendtxwithcmbdepositsend"
+	CreateAndSendTxWithCMBWithdrawRequest = "createandsendtxwithcmbwithdrawrequest"
 )
