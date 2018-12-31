@@ -201,7 +201,6 @@ func (self *BlockChain) VerifyPostProcessingShardBlock(block *ShardBlock) error 
 }
 
 //TODO: get #shard from param
-
 //Receive a shard block, produce a map of CrossShard block with shardID as key
 func GenerateAllCrossShardBlock(block *ShardBlock) map[byte]*CrossShardBlock {
 	allCrossShard := make(map[byte]*CrossShardBlock)
@@ -214,7 +213,7 @@ func GenerateAllCrossShardBlock(block *ShardBlock) map[byte]*CrossShardBlock {
 	return allCrossShard
 }
 
-//Receive a shard block and shard ID, produce CrossShard block for that shardID
+//Receive a shard block, produce CrossShard block for a specific shardID
 func GenerateCrossShard(block *ShardBlock, shardID byte) (*CrossShardBlock, error) {
 	crossShard := &CrossShardBlock{}
 	utxoList := getOutCoinCrossShard(block.Body.Transactions, shardID)
@@ -237,7 +236,7 @@ func GenerateCrossShard(block *ShardBlock, shardID byte) (*CrossShardBlock, erro
 	return crossShard, nil
 }
 
-//Receive tx list from shard block body and shard ID, produce merkle path for the UTXO CrossShard
+//Receive tx list from shard block body, produce merkle path of UTXO CrossShard List from specific shardID
 func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merklePathShard []common.Hash, merkleShardRoot common.Hash) {
 	//calculate output coin hash for each shard
 	outputCoinHash := getOutCoinHashEachShard(txList)
