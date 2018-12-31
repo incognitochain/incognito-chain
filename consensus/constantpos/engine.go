@@ -21,10 +21,10 @@ type Engine struct {
 	cBFTMsg chan wire.Message
 
 	config EngineConfig
-	Layers struct {
-		Beacon *Layerbeacon
-		Shard  *Layershard
-	}
+	// Layers struct {
+	// 	Beacon *Layerbeacon
+	// 	Shard  *Layershard
+	// }
 	CurrentRole role
 }
 
@@ -67,9 +67,7 @@ func (self *Engine) Start() error {
 			case <-self.cQuit:
 				return
 			default:
-				if self.config.BlockChain.IsReady() {
-					time.Sleep(2 * time.Second)
-
+				if self.config.BlockChain.IsReady(false, 0) {
 					role, shardID := self.config.BlockChain.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
 					nodeRole := ""
 					if (self.config.NodeMode == "beacon" || self.config.NodeMode == "auto") && role != "shard" {
@@ -78,22 +76,23 @@ func (self *Engine) Start() error {
 					if (self.config.NodeMode == "shard" || self.config.NodeMode == "auto") && role == "shard" {
 						nodeRole = "shard"
 					}
-					self.config.Server.UpdateConsensusState(nodeRole, self.config.UserKeySet.GetPublicKeyB58(), nil, self.config.BlockChain.BestState.Beacon.BeaconCommittee, self.config.BlockChain.BestState.Beacon.ShardCommittee)
-
+					go self.config.Server.UpdateConsensusState(nodeRole, self.config.UserKeySet.GetPublicKeyB58(), nil, self.config.BlockChain.BestState.Beacon.BeaconCommittee, self.config.BlockChain.BestState.Beacon.ShardCommittee)
 					time.Sleep(4 * time.Second)
-					self.cBFTMsg = make(chan wire.Message)
+
 					fmt.Println(self.config.NodeMode, role)
 					if role != "" {
+						self.cBFTMsg = make(chan wire.Message)
 						bftProtocol := &BFTProtocol{
+							cQuit:      self.cQuit,
 							cBFTMsg:    self.cBFTMsg,
 							BlockGen:   self.config.BlockGen,
 							UserKeySet: self.config.UserKeySet,
 							Chain:      self.config.BlockChain,
 							Server:     self.config.Server,
-							Committee:  self.config.BlockChain.BestState.Beacon.BeaconCommittee,
 						}
 						if (self.config.NodeMode == "beacon" || self.config.NodeMode == "auto") && role != "shard" {
-							bftProtocol.Committee = self.config.BlockChain.BestState.Beacon.BeaconCommittee
+							bftProtocol.Committee = make([]string, len(self.config.BlockChain.BestState.Beacon.BeaconCommittee))
+							copy(bftProtocol.Committee, self.config.BlockChain.BestState.Beacon.BeaconCommittee)
 							switch role {
 							case "beacon-proposer":
 								// prevBlock :=	self.config.BlockChain.GetMayBeAcceptBlockBeacon()
@@ -101,20 +100,26 @@ func (self *Engine) Start() error {
 								bftProtocol.Start(true, "beacon", 0, prevBlock.AggregatedSig, prevBlock.ValidatorsIdx)
 							case "beacon-validator":
 								bftProtocol.Start(false, "beacon", 0, "", []int{})
-								// case "beacon-pending":
+							// case "beacon-pending":
+							default:
 							}
 							continue
 						}
 						if (self.config.NodeMode == "shard" || self.config.NodeMode == "auto") && role == "shard" {
-							bftProtocol.Committee = self.config.BlockChain.BestState.Shard[shardID].ShardCommittee
-							shardRole := self.config.BlockChain.BestState.Shard[shardID].GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
-							switch shardRole {
-							case "shard-proposer":
-								prevBlock := &blockchain.ShardBlock{}
-								bftProtocol.Start(true, "shard", 0, prevBlock.AggregatedSig, prevBlock.ValidatorsIdx)
-							case "shard-validator":
-								bftProtocol.Start(false, "shard", 0, "", []int{})
-							default:
+							bftProtocol.Committee = make([]string, len(self.config.BlockChain.BestState.Shard[shardID].ShardCommittee))
+							copy(bftProtocol.Committee, self.config.BlockChain.BestState.Shard[shardID].ShardCommittee)
+							if self.config.BlockChain.IsReady(true, shardID) {
+								shardRole := self.config.BlockChain.BestState.Shard[shardID].GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
+								switch shardRole {
+								case "shard-proposer":
+									prevBlock := &blockchain.ShardBlock{}
+									bftProtocol.Start(true, "shard", 0, prevBlock.AggregatedSig, prevBlock.ValidatorsIdx)
+								case "shard-validator":
+									bftProtocol.Start(false, "shard", 0, "", []int{})
+								default:
+								}
+							} else {
+
 							}
 						}
 					} else {
@@ -136,12 +141,6 @@ func (self *Engine) Stop() error {
 	}
 
 	self.started = false
-	if self.Layers.Beacon != nil {
-		self.Layers.Beacon.Stop()
-	}
-	if self.Layers.Beacon != nil {
-		self.Layers.Beacon.Stop()
-	}
 	close(self.cQuit)
 	return nil
 }
@@ -178,11 +177,3 @@ func (self *Engine) Stop() error {
 
 // 	// self.Committee().UpdateCommitteePoint(block.BlockProducer, block.Header.BlockCommitteeSigs)
 // }
-
-func (self *Engine) GetShardCommittee(shardID byte) CommitteeStruct {
-	return CommitteeStruct{}
-}
-
-func (self *Engine) GetBeaconCommittee() CommitteeStruct {
-	return CommitteeStruct{}
-}
