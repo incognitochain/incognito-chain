@@ -5,6 +5,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 func (blockGen *BlkTmplGenerator) registerMultiSigsAddresses(
@@ -14,7 +15,7 @@ func (blockGen *BlkTmplGenerator) registerMultiSigsAddresses(
 		return nil
 	}
 	msRegs := map[string]*metadata.MultiSigsRegistration{}
-	sortedTxs := Txs(txs).SortTxs(false)
+	sortedTxs := transaction.SortTxsByLockTime(txs, false)
 	for _, tx := range sortedTxs {
 		meta := tx.GetMetadata()
 		if meta == nil {

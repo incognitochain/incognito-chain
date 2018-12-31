@@ -1,14 +1,17 @@
 package transaction
 
 import (
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"math"
 	"math/big"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/common"
 	"math/rand"
+	"sort"
+
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 )
 
 // ConvertOutputCoinToInputCoin - convert output coin from old tx to input coin for new tx
@@ -104,4 +107,15 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte
 
 	return uint64(math.Ceil(float64(sizeTx) / 1024))
+}
+
+// SortTxsByLockTime sorts txs by lock time
+func SortTxsByLockTime(txs []metadata.Transaction, isDesc bool) []metadata.Transaction {
+	sort.Slice(txs, func(i, j int) bool {
+		if isDesc {
+			return txs[i].GetLockTime() > txs[j].GetLockTime()
+		}
+		return txs[i].GetLockTime() <= txs[j].GetLockTime()
+	})
+	return txs
 }

@@ -20,18 +20,14 @@ type Evaluation struct {
 	Reward           uint64
 }
 
-type Evals []*Evaluation
-
-func (p Evals) Len() int           { return len(p) }
-func (p Evals) Less(i, j int) bool { return p[i].OracleFeed.Price < p[j].OracleFeed.Price }
-func (p Evals) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
-
-func (p Evals) SortEvals(isDesc bool) Evals {
-	if isDesc {
-		sort.Sort(sort.Reverse(p))
-	}
-	sort.Sort(p)
-	return p
+func sortEvalsByPrice(evals []*Evaluation, isDesc bool) []*Evaluation {
+	sort.Slice(evals, func(i, j int) bool {
+		if isDesc {
+			return evals[i].OracleFeed.Price > evals[j].OracleFeed.Price
+		}
+		return evals[i].OracleFeed.Price <= evals[j].OracleFeed.Price
+	})
+	return evals
 }
 
 func (blockGen *BlkTmplGenerator) groupOracleFeedTxsByOracleType(
@@ -80,7 +76,7 @@ func computeRewards(
 	evals []*Evaluation,
 	oracleRewardMultiplier uint8,
 ) (uint64, []*Evaluation) {
-	sortedEvals := Evals(evals).SortEvals(false)
+	sortedEvals := sortEvalsByPrice(evals, false)
 	medPos := len(evals) / 2
 	minPos := medPos / 2
 	maxPos := medPos + minPos
@@ -279,8 +275,7 @@ func (blockGen *BlkTmplGenerator) updateOracleBoard(
 		return nil
 	}
 	oraclePubKeys := newBlock.Header.GOVConstitution.GOVParams.OracleNetwork.OraclePubKeys
-
-	sortedTxs := Txs(txs).SortTxs(false)
+	sortedTxs := transaction.SortTxsByLockTime(txs, false)
 	for _, tx := range sortedTxs {
 		meta := tx.GetMetadata()
 		updatingOracleBoard, ok := meta.(*metadata.UpdatingOracleBoard)
