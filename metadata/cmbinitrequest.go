@@ -3,7 +3,7 @@ package metadata
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
@@ -47,10 +47,10 @@ func NewCMBInitRequest(data map[string]interface{}) *CMBInitRequest {
 }
 
 func (creq *CMBInitRequest) Hash() *common.Hash {
-	record := string(creq.MainAccount.ToBytes())
-	record += string(creq.ReserveAccount.ToBytes())
+	record := string(creq.MainAccount.Bytes())
+	record += string(creq.ReserveAccount.Bytes())
 	for _, member := range creq.Members {
-		record += string(member.ToBytes())
+		record += string(member.Bytes())
 	}
 
 	// final hash

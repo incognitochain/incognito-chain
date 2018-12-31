@@ -10,8 +10,9 @@ import (
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 )
 
 // TxCustomToken is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -28,6 +29,30 @@ type TxCustomToken struct {
 	listUtxo map[common.Hash]TxCustomToken
 }
 
+func (self *TxCustomToken) UnmarshalJSON(data []byte) error {
+	tx := Tx{}
+	err := json.Unmarshal(data, &tx)
+
+	temp := &struct {
+		TxTokenData interface{}
+		BoardType   interface{}
+		BoardSigns  interface{}
+	}{
+	}
+	err = json.Unmarshal(data, &temp)
+	if err != nil {
+		return NewTransactionErr(UnexpectedErr, err)
+	}
+	txTokenDataJson, _ := json.MarshalIndent(temp.TxTokenData, "", "\t")
+	_ = json.Unmarshal(txTokenDataJson, &self.TxTokenData)
+	boardSignsJson, _ := json.MarshalIndent(temp.BoardSigns, "", "\t")
+	_ = json.Unmarshal(boardSignsJson, &self.BoardSigns)
+	boardTypeJson, _ := json.MarshalIndent(temp.BoardType, "", "\t")
+	_ = json.Unmarshal(boardTypeJson, &self.BoardType)
+	self.Tx = tx
+	return nil
+}
+
 // Set listUtxo, which is used to contain a list old TxCustomToken relate to itself
 func (tx *TxCustomToken) SetListUtxo(data map[common.Hash]TxCustomToken) {
 	tx.listUtxo = data
@@ -41,7 +66,7 @@ func (customTokentx *TxCustomToken) validateDoubleSpendCustomTokenOnTx(
 		for _, item := range customTokentx.TxTokenData.Vins {
 			if vin.TxCustomTokenID.String() == item.TxCustomTokenID.String() {
 				if vin.VoutIndex == item.VoutIndex {
-					return errors.New("Double spend")
+					return NewTransactionErr(DoubleSpend, nil)
 				}
 			}
 		}
@@ -59,14 +84,14 @@ func (customTokenTx *TxCustomToken) ValidateTxWithCurrentMempool(
 	normalTx := customTokenTx.Tx
 	err := normalTx.ValidateTxWithCurrentMempool(mr)
 	if err != nil {
-		return err
+		return NewTransactionErr(UnexpectedErr, err)
 	}
 	txsInMem := mr.GetTxsInMem()
 	for _, txInMem := range txsInMem {
 		if txInMem.Tx.GetType() == common.TxCustomTokenType {
 			err := customTokenTx.validateDoubleSpendCustomTokenOnTx(txInMem.Tx)
 			if err != nil {
-				return err
+				return NewTransactionErr(UnexpectedErr, err)
 			}
 		}
 	}
@@ -78,12 +103,12 @@ func (customTokenTx *TxCustomToken) validateDoubleSpendCustomTokenWithBlockchain
 ) error {
 	listTxs, err := bcr.GetCustomTokenTxs(&customTokenTx.TxTokenData.PropertyID)
 	if err != nil {
-		return err
+		return NewTransactionErr(UnexpectedErr, err)
 	}
 
 	if len(listTxs) == 0 {
 		if customTokenTx.TxTokenData.Type != CustomTokenInit {
-			return errors.New("Not exist tx for this ")
+			return NewTransactionErr(TxNotExist, nil)
 		}
 	}
 
@@ -91,7 +116,7 @@ func (customTokenTx *TxCustomToken) validateDoubleSpendCustomTokenWithBlockchain
 		for _, txInBlocks := range listTxs {
 			err := customTokenTx.validateDoubleSpendCustomTokenOnTx(txInBlocks)
 			if err != nil {
-				return err
+				return NewTransactionErr(UnexpectedErr, err)
 			}
 		}
 	}
@@ -109,15 +134,13 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 	if customTokenTx.Metadata != nil {
 		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(customTokenTx, bcr, chainID, db)
 		if err != nil || !isContinued {
-			return err
+			return NewTransactionErr(UnexpectedErr, err)
 		}
 	}
 
-	// TODO: add validate signs for multisig tx
-
 	err := customTokenTx.Tx.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
 	if err != nil {
-		return err
+		return NewTransactionErr(UnexpectedErr, err)
 	}
 	return customTokenTx.validateDoubleSpendCustomTokenWithBlockchain(bcr)
 }
@@ -125,38 +148,38 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 func (txCustomToken *TxCustomToken) validateCustomTokenTxSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
 	ok, err := txCustomToken.Tx.ValidateSanityData(bcr)
 	if err != nil || !ok {
-		return ok, err
+		return ok, NewTransactionErr(UnexpectedErr, err)
 	}
 	vins := txCustomToken.TxTokenData.Vins
 	zeroHash := common.Hash{}
 	for _, vin := range vins {
 		if len(vin.PaymentAddress.Pk) == 0 {
-			return false, errors.New("Wrong input transaction")
+			return common.FalseValue, NewTransactionErr(WrongInput, nil)
 		}
 		// TODO: @0xbunyip - should move logic below to BuySellDCBResponse metadata's logic
 		// dbcAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 		// if bytes.Equal(vin.PaymentAddress.Pk, dbcAccount.KeySet.PaymentAddress.Pk) {
 		// 	if !allowToUseDCBFund {
-		// 		return false, errors.New("Cannot use DCB's fund here")
+		// 		return common.FalseValue, errors.New("Cannot use DCB's fund here")
 		// 	}
 		// }
 		if vin.Signature == "" {
-			return false, errors.New("Wrong signature")
+			return common.FalseValue, NewTransactionErr(WrongSig, nil)
 		}
 		if vin.TxCustomTokenID.String() == zeroHash.String() {
-			return false, errors.New("Wrong input transaction")
+			return common.FalseValue, NewTransactionErr(WrongInput, nil)
 		}
 	}
 	vouts := txCustomToken.TxTokenData.Vouts
 	for _, vout := range vouts {
 		if len(vout.PaymentAddress.Pk) == 0 {
-			return false, errors.New("Wrong input transaction")
+			return common.FalseValue, NewTransactionErr(WrongInput, nil)
 		}
 		if vout.Value == 0 {
-			return false, errors.New("Wrong input transaction")
+			return common.FalseValue, NewTransactionErr(WrongInput, nil)
 		}
 	}
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
@@ -166,7 +189,12 @@ func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRe
 			return ok, err
 		}
 	}
-	return customTokenTx.validateCustomTokenTxSanityData(bcr)
+	result, err := customTokenTx.validateCustomTokenTxSanityData(bcr)
+	if err == nil {
+		return result, nil
+	} else {
+		return result, NewTransactionErr(UnexpectedErr, err)
+	}
 }
 
 // ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by constant
@@ -175,7 +203,7 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 	// validate for normal tx
 	if tx.Tx.ValidateTransaction(hasPrivacy, db, chainID, tokenID) {
 		if len(tx.listUtxo) == 0 {
-			return false
+			return common.FalseValue
 		}
 		for _, vin := range tx.TxTokenData.Vins {
 			keySet := cashec.KeySet{}
@@ -188,13 +216,13 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 			signature, _, _ := base58.Base58Check{}.Decode(vin.Signature)
 			ok, err := keySet.Verify(data[:], signature)
 			if err != nil {
-				return false
+				return common.FalseValue
 			}
 			return ok
 		}
-		return true
+		return common.TrueValue
 	}
-	return false
+	return common.FalseValue
 }
 
 func (customTokenTx *TxCustomToken) getListUTXOFromTxCustomToken(
@@ -205,16 +233,16 @@ func (customTokenTx *TxCustomToken) getListUTXOFromTxCustomToken(
 		_, _, _, utxo, err := bcr.GetTransactionByHash(&vin.TxCustomTokenID)
 		if err != nil {
 			// Logger.log.Error(err)
-			return false
+			return common.FalseValue
 		}
 		data[vin.TxCustomTokenID] = *(utxo.(*TxCustomToken))
 	}
 	if len(data) == 0 {
 		// Logger.log.Error(errors.New("Can not find any utxo for TxCustomToken"))
-		return false
+		return common.FalseValue
 	}
 	customTokenTx.SetListUtxo(data)
-	return true
+	return common.TrueValue
 }
 
 func (customTokenTx *TxCustomToken) ValidateTxByItself(
@@ -224,22 +252,22 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	chainID byte,
 ) bool {
 	if customTokenTx.TxTokenData.Type == CustomTokenInit {
-		return true
+		return common.TrueValue
 	}
 	ok := customTokenTx.getListUTXOFromTxCustomToken(bcr)
 	if !ok {
-		return false
+		return common.FalseValue
 	}
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	ok = customTokenTx.ValidateTransaction(hasPrivacy, db, chainID, constantTokenID)
 	if !ok {
-		return false
+		return common.FalseValue
 	}
 	if customTokenTx.Metadata != nil {
 		return customTokenTx.Metadata.ValidateMetadataByItself()
 	}
-	return true
+	return common.TrueValue
 }
 
 // Hash returns the hash of all fields of the transaction
@@ -293,18 +321,21 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	fee uint64,
 	tokenParams *CustomTokenParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
-) error {
+	metaData metadata.Metadata,
+) *TransactionError {
+	var err error
 	// create normal txCustomToken
 	normalTx := Tx{}
-	err := normalTx.Init(senderKey,
+	err = normalTx.Init(senderKey,
 		paymentInfo,
 		inputCoin,
 		fee,
-		false,
+		common.FalseValue,
 		nil,
-		nil)
-	if err != nil {
-		return err
+		nil,
+		metaData)
+	if err.(*TransactionError) != nil {
+		return NewTransactionErr(UnexpectedErr, err)
 	}
 	// override txCustomToken type
 	normalTx.Type = common.TxCustomTokenType
@@ -312,13 +343,13 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	txCustomToken.Tx = normalTx
 	txCustomToken.TxTokenData = TxTokenData{}
 
-	var handled = false
+	var handled = common.FalseValue
 
 	// Add token data params
 	switch tokenParams.TokenTxType {
 	case CustomTokenInit:
 		{
-			handled = true
+			handled = common.TrueValue
 			txCustomToken.TxTokenData = TxTokenData{
 				Type:           tokenParams.TokenTxType,
 				PropertyName:   tokenParams.PropertyName,
@@ -339,19 +370,19 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 			txCustomToken.TxTokenData.Vouts = VoutsTemp
 			hashInitToken, err := txCustomToken.TxTokenData.Hash()
 			if err != nil {
-				return errors.New("Can't handle this TokenTxType")
+				return NewTransactionErr(WrongTokenTxType, err)
 			}
 			// validate PropertyID is the only one
 			for customTokenID := range listCustomTokens {
 				if hashInitToken.String() == customTokenID.String() {
-					return errors.New("This token is existed in network")
+					return NewTransactionErr(CustomTokenExisted, nil)
 				}
 			}
 			txCustomToken.TxTokenData.PropertyID = *hashInitToken
 
 		}
 	case CustomTokenTransfer:
-		handled = true
+		handled = common.TrueValue
 		paymentTokenAmount := uint64(0)
 		for _, receiver := range tokenParams.Receiver {
 			paymentTokenAmount += receiver.Value
@@ -384,8 +415,8 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 		txCustomToken.TxTokenData.Vouts = VoutsTemp
 	}
 
-	if handled != true {
-		return errors.New("Can't handle this TokenTxType")
+	if handled != common.TrueValue {
+		return NewTransactionErr(WrongTokenTxType, nil)
 	}
 	return nil
 }
@@ -399,7 +430,7 @@ func (tx *TxCustomToken) GetTxCustomTokenSignature(keyset cashec.KeySet) ([]byte
 func (tx *TxCustomToken) GetAmountOfVote() uint64 {
 	sum := uint64(0)
 	for _, vout := range tx.TxTokenData.Vouts {
-		voteAccount, _ := wallet.Base58CheckDeserialize(common.VoteAddress)
+		voteAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 		pubKey := string(voteAccount.KeySet.PaymentAddress.Pk)
 		if string(vout.PaymentAddress.Pk) == string(pubKey) {
 			sum += vout.Value
@@ -409,9 +440,13 @@ func (tx *TxCustomToken) GetAmountOfVote() uint64 {
 }
 
 func (tx *TxCustomToken) IsPrivacy() bool {
-	return false
+	return common.FalseValue
 }
 
 func (tx *TxCustomToken) ValidateType() bool {
 	return tx.Type == common.TxCustomTokenType
+}
+
+func (tx *TxCustomToken) GetProof() *zkp.PaymentProof {
+	return tx.Proof
 }

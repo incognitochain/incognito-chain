@@ -9,7 +9,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/cashec"
@@ -17,7 +17,6 @@ import (
 )
 
 func (self *BlockChain) GetAmountPerAccount(proposal *metadata.DividendProposal) (uint64, []string, []uint64, error) {
-	// TODO(@0xsirrush): cache list so that list of receivers is fixed across blocks
 	tokenHolders, err := self.config.DataBase.GetCustomTokenPaymentAddressesBalanceUnreward(proposal.TokenID)
 	if err != nil {
 		return 0, nil, nil, err
@@ -36,7 +35,7 @@ func (self *BlockChain) GetAmountPerAccount(proposal *metadata.DividendProposal)
 		paymentAddressInBytes, _, _ := base58.Base58Check{}.Decode(holder)
 		keySet := cashec.KeySet{}
 		keySet.PaymentAddress = privacy.PaymentAddress{}
-		keySet.PaymentAddress.FromBytes(paymentAddressInBytes)
+		keySet.PaymentAddress.SetBytes(paymentAddressInBytes)
 		vouts, err := self.GetUnspentTxCustomTokenVout(keySet, proposal.TokenID)
 		if err != nil {
 			return 0, nil, nil, err

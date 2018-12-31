@@ -4,8 +4,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/voting"
+	privacy "github.com/ninjadotorg/constant/privacy"
 )
 
 func (self *BlockChain) GetDatabase() database.DatabaseInterface {
@@ -44,11 +43,11 @@ func (self *BlockChain) GetCrowdsaleTxs(requestTxHash []byte) ([][]byte, error) 
 	return self.config.DataBase.GetCrowdsaleTxs(requestTxHash)
 }
 
-func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*voting.SaleData, error) {
+func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*params.SaleData, error) {
 	endBlock, buyingAsset, buyingAmount, sellingAsset, sellingAmount, err := self.config.DataBase.LoadCrowdsaleData(saleID)
-	var saleData *voting.SaleData
+	var saleData *params.SaleData
 	if err != nil {
-		saleData = &voting.SaleData{
+		saleData = &params.SaleData{
 			SaleID:        saleID,
 			EndBlock:      endBlock,
 			BuyingAsset:   buyingAsset,
@@ -68,12 +67,12 @@ func (self *BlockChain) GetCMB(mainAccount []byte) (privacy.PaymentAddress, []pr
 
 	memberAddresses := []privacy.PaymentAddress{}
 	for _, member := range members {
-		memberAddress := (&privacy.PaymentAddress{}).FromBytes(member)
+		memberAddress := (&privacy.PaymentAddress{}).SetBytes(member)
 		memberAddresses = append(memberAddresses, *memberAddress)
 	}
 
 	txHash, _ := (&common.Hash{}).NewHash(hash)
-	reserve := (&privacy.PaymentAddress{}).FromBytes(reserveAcc)
+	reserve := (&privacy.PaymentAddress{}).SetBytes(reserveAcc)
 	return *reserve, memberAddresses, capital, txHash, state, fine, nil
 }
 

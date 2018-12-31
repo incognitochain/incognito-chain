@@ -5,7 +5,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/pkg/errors"
 )
@@ -29,7 +29,7 @@ func NewCMBInitResponse(data map[string]interface{}) *CMBInitResponse {
 }
 
 func (cres *CMBInitResponse) Hash() *common.Hash {
-	record := string(cres.MainAccount.ToBytes())
+	record := string(cres.MainAccount.Bytes())
 
 	// final hash
 	record += string(cres.MetadataBase.Hash()[:])
@@ -39,7 +39,7 @@ func (cres *CMBInitResponse) Hash() *common.Hash {
 
 func (cres *CMBInitResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if cmb init request existed
-	_, _, _, txHash, state, _, err := bcr.GetCMB(cres.MainAccount.ToBytes())
+	_, _, _, txHash, state, _, err := bcr.GetCMB(cres.MainAccount.Bytes())
 	if err != nil {
 		return false, err
 	}
@@ -55,7 +55,7 @@ func (cres *CMBInitResponse) ValidateTxWithBlockChain(txr Transaction, bcr Block
 	}
 
 	// Check if this member hasn't responded to this request
-	memberResponded, err := bcr.GetCMBResponse(cres.MainAccount.ToBytes())
+	memberResponded, err := bcr.GetCMBResponse(cres.MainAccount.Bytes())
 	if err != nil {
 		return false, errors.Errorf("error getting list of old cmb init responses")
 	}

@@ -3,7 +3,7 @@ package metadata
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/pkg/errors"
 )
 
@@ -23,7 +23,7 @@ type CMBInitRefund struct {
 }
 
 func (cref *CMBInitRefund) Hash() *common.Hash {
-	record := string(cref.MainAccount.ToBytes())
+	record := string(cref.MainAccount.Bytes())
 
 	// final hash
 	record += string(cref.MetadataBase.Hash()[:])
@@ -33,7 +33,7 @@ func (cref *CMBInitRefund) Hash() *common.Hash {
 
 func (cref *CMBInitRefund) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if cmb init request existed
-	_, _, _, txHash, state, _, err := bcr.GetCMB(cref.MainAccount.ToBytes())
+	_, _, _, txHash, state, _, err := bcr.GetCMB(cref.MainAccount.Bytes())
 	if err != nil {
 		return false, err
 	}

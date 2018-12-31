@@ -227,7 +227,6 @@ func SliceBytesExists(slice interface{}, item interface{}) (int64, error) {
 		return -1, errors.New("SliceBytesExists() given a non-slice type")
 	}
 
-	// TODO upgrade
 	for i := 0; i < s.Len(); i++ {
 		interfacea := s.Index(i).Interface()
 		if bytes.Compare(interfacea.([]byte), item.([]byte)) == 0 {
@@ -317,6 +316,13 @@ func Max(x, y int) int {
 	return y
 }
 
+func Maxint32(x, y int32) int32 {
+	if x > y {
+		return x
+	}
+	return y
+}
+
 func ToBytes(obj interface{}) []byte {
 	buff := new(bytes.Buffer)
 	json.NewEncoder(buff).Encode(obj)
@@ -369,4 +375,17 @@ func Uint8ToBytes(value uint8) []byte {
 
 func BytesToUint8(b []byte) uint8 {
 	return uint8(b[0])
+}
+
+func BytesToInt32(b []byte) int32 {
+	i, _ := strconv.Atoi(string(b))
+	return int32(i)
+}
+
+func SliceInterfaceToSliceByte(Arr []interface{}) []byte {
+	res := make([]byte, 0)
+	for _, element := range Arr {
+		res = append(res, element.(byte))
+	}
+	return res
 }

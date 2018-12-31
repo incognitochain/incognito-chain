@@ -124,10 +124,10 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	// Create a new block chain instance with the appropriate configuration.9
 	if cfg.Light {
 		if self.wallet == nil {
-			return errors.New("Wallet NOT FOUND. Light Mode required Wallet with at least one child account")
+			return errors.New("Wallet NOT FOUND. LightMode Mode required Wallet with at least one child account")
 		}
 		if len(self.wallet.MasterAccount.Child) < 1 {
-			return errors.New("No child account in wallet. Light Mode required Wallet with at least one child account")
+			return errors.New("No child account in wallet. LightMode Mode required Wallet with at least one child account")
 		}
 	}
 	self.blockChain = &blockchain.BlockChain{}
@@ -135,7 +135,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		ChainParams: self.chainParams,
 		DataBase:    self.dataBase,
 		Interrupt:   interrupt,
-		Light:       cfg.Light,
+		LightMode:   cfg.Light,
 		Wallet:      self.wallet,
 	})
 	if err != nil {

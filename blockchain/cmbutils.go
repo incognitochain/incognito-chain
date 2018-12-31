@@ -6,7 +6,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/pkg/errors"
@@ -54,7 +54,7 @@ func (blockgen *BlkTmplGenerator) buildCMBRefund(sourceTxns []*metadata.TxDesc, 
 
 		// Check if CMB is still not approved in previous blocks
 		meta := tx.GetMetadata().(*metadata.CMBInitRequest)
-		_, _, capital, _, state, _, err := blockgen.chain.GetCMB(meta.MainAccount.ToBytes())
+		_, _, capital, _, state, _, err := blockgen.chain.GetCMB(meta.MainAccount.Bytes())
 		if err != nil {
 			// Unexpected error, cannot create a block if CMB init request is not refundable
 			return nil, errors.Errorf("error retrieving cmb for building refund")
@@ -76,7 +76,7 @@ func (bc *BlockChain) processCMBInitRequest(tx metadata.Transaction) error {
 	// Members of the CMB
 	members := [][]byte{}
 	for _, member := range meta.Members {
-		members = append(members, member.ToBytes())
+		members = append(members, member.Bytes())
 	}
 
 	// Capital of the CMB
@@ -92,30 +92,30 @@ func (bc *BlockChain) processCMBInitRequest(tx metadata.Transaction) error {
 
 	// Store in DB
 	txHash := tx.Hash()
-	return bc.config.DataBase.StoreCMB(meta.MainAccount.ToBytes(), meta.ReserveAccount.ToBytes(), members, capital, txHash[:])
+	return bc.config.DataBase.StoreCMB(meta.MainAccount.Bytes(), meta.ReserveAccount.Bytes(), members, capital, txHash[:])
 }
 
 func (bc *BlockChain) processCMBInitResponse(tx metadata.Transaction) error {
 	// Store board member who approved this cmb init request
 	meta := tx.GetMetadata().(*metadata.CMBInitResponse)
 	sender := tx.GetJSPubKey()
-	err := bc.config.DataBase.StoreCMBResponse(meta.MainAccount.ToBytes(), sender)
+	err := bc.config.DataBase.StoreCMBResponse(meta.MainAccount.Bytes(), sender)
 	if err != nil {
 		return err
 	}
 
 	// Update state of CMB if enough DCB board governors approved
-	approvers, _ := bc.config.DataBase.GetCMBResponse(meta.MainAccount.ToBytes())
+	approvers, _ := bc.config.DataBase.GetCMBResponse(meta.MainAccount.Bytes())
 	minApproval := bc.GetDCBParams().MinCMBApprovalRequire
 	if len(approvers) == int(minApproval) {
-		return bc.config.DataBase.UpdateCMBState(meta.MainAccount.ToBytes(), metadata.CMBApproved)
+		return bc.config.DataBase.UpdateCMBState(meta.MainAccount.Bytes(), metadata.CMBApproved)
 	}
 	return nil
 }
 
 func (bc *BlockChain) processCMBInitRefund(tx metadata.Transaction) error {
 	meta := tx.GetMetadata().(*metadata.CMBInitRefund)
-	return bc.config.DataBase.UpdateCMBState(meta.MainAccount.ToBytes(), metadata.CMBRefunded)
+	return bc.config.DataBase.UpdateCMBState(meta.MainAccount.Bytes(), metadata.CMBRefunded)
 }
 
 func (bc *BlockChain) processCMBDepositSend(tx metadata.Transaction) error {
@@ -185,9 +185,9 @@ func (bc *BlockChain) findLateWithdrawResponse() error {
 		contractMeta := txCont.GetMetadata().(*metadata.CMBDepositContract)
 
 		// Update fine
-		_, _, _, _, _, fine, err := bc.config.DataBase.GetCMB(contractMeta.CMBAddress.ToBytes())
+		_, _, _, _, _, fine, err := bc.config.DataBase.GetCMB(contractMeta.CMBAddress.Bytes())
 		fine += bc.GetDCBParams().LateWithdrawResponseFine
-		err = bc.config.DataBase.UpdateCMBFine(contractMeta.CMBAddress.ToBytes(), fine)
+		err = bc.config.DataBase.UpdateCMBFine(contractMeta.CMBAddress.Bytes(), fine)
 		if err != nil {
 			return err
 		}

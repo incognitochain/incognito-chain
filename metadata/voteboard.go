@@ -11,9 +11,10 @@ type VoteDCBBoardMetadata struct {
 	MetadataBase
 }
 
-func NewVoteDCBBoardMetadata(voteDCBBoardMetadata map[string]interface{}) *VoteDCBBoardMetadata {
+func NewVoteDCBBoardMetadata(candidatePubKey []byte) *VoteDCBBoardMetadata {
 	return &VoteDCBBoardMetadata{
-		CandidatePubKey: voteDCBBoardMetadata["candidatePubKey"].([]byte),
+		CandidatePubKey: candidatePubKey,
+		MetadataBase:    *NewMetadataBase(VoteDCBBoardMeta),
 	}
 }
 
@@ -27,13 +28,13 @@ func (voteDCBBoardMetadata *VoteDCBBoardMetadata) GetType() int {
 
 func (voteDCBBoardMetadata *VoteDCBBoardMetadata) Hash() *common.Hash {
 	record := string(voteDCBBoardMetadata.CandidatePubKey)
-	record += string(voteDCBBoardMetadata.MetadataBase.Hash()[:])
+	record += string(voteDCBBoardMetadata.MetadataBase.Hash().GetBytes())
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
-	if len(voteDCBBoardMetadata.CandidatePubKey) != common.HashSize {
+	if len(voteDCBBoardMetadata.CandidatePubKey) != common.PubKeyLength {
 		return true, false, nil
 	}
 	return true, true, nil
@@ -49,9 +50,10 @@ type VoteGOVBoardMetadata struct {
 	MetadataBase
 }
 
-func NewVoteGOVBoardMetadata(voteGOVBoardMetadata map[string]interface{}) *VoteGOVBoardMetadata {
+func NewVoteGOVBoardMetadata(candidatePubKey []byte) *VoteGOVBoardMetadata {
 	return &VoteGOVBoardMetadata{
-		CandidatePubKey: voteGOVBoardMetadata["candidatePubKey"].([]byte),
+		CandidatePubKey: candidatePubKey,
+		MetadataBase:    *NewMetadataBase(VoteGOVBoardMeta),
 	}
 }
 
@@ -64,13 +66,13 @@ func (voteGOVBoardMetadata *VoteGOVBoardMetadata) GetType() int {
 }
 func (voteGOVBoardMetadata *VoteGOVBoardMetadata) Hash() *common.Hash {
 	record := string(voteGOVBoardMetadata.CandidatePubKey)
-	record += string(voteGOVBoardMetadata.MetadataBase.Hash()[:])
+	record += string(voteGOVBoardMetadata.MetadataBase.Hash().GetBytes())
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
-	if len(voteGOVBoardMetadata.CandidatePubKey) != common.HashSize {
+	if len(voteGOVBoardMetadata.CandidatePubKey) != common.PubKeyLength {
 		return true, false, nil
 	}
 	return true, true, nil

@@ -3,10 +3,11 @@ package rpcserver
 import (
 	"encoding/json"
 
+	params2 "github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
@@ -170,11 +171,7 @@ func (self RpcServer) buildRawSealLv3VoteGOVProposalTransaction(
 	secondPubKey := arrayParams[len(arrayParams)-2]
 	thirdPubKey := arrayParams[len(arrayParams)-1]
 	Seal3Data := common.Encrypt(common.Encrypt(common.Encrypt(voteInfo, thirdPubKey), secondPubKey), firstPubKey)
-	tx.Metadata = metadata.NewSealedLv3GOVBallotMetadata(
-		map[string]interface{}{
-			"SealedBallot": []byte(Seal3Data.(string)),
-			"LockerPubKey": [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))},
-		})
+	tx.Metadata = metadata.NewSealedLv3GOVBallotMetadata([]byte(Seal3Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))})
 	return tx, err
 }
 
@@ -229,13 +226,7 @@ func (self RpcServer) buildRawSealLv2VoteGOVProposalTransaction(
 	Seal2Data := common.Decrypt(Seal3Data, firstPrivateKey)
 	Pointer := common.Hash{}
 	copy(Pointer[:], []byte(PointerToLv3Ballot.(string)))
-	tx.Metadata = metadata.NewSealedLv2GOVBallotMetadata(
-		map[string]interface{}{
-			"SealedBallot":       []byte(Seal2Data.(string)),
-			"LockerPubKey":       [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))},
-			"PointerToLv3Ballot": &Pointer,
-		},
-	)
+	tx.Metadata = metadata.NewSealedLv2GOVBallotMetadata([]byte(Seal2Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer)
 	return tx, err
 }
 
@@ -296,13 +287,7 @@ func (self RpcServer) buildRawSealLv1VoteGOVProposalTransaction(
 	thirdPubKey := arrayParams[len(arrayParams)-2]
 	secondPrivateKey := arrayParams[len(arrayParams)-1]
 	Seal1Data := common.Decrypt(Seal2Data, secondPrivateKey)
-	tx.Metadata = metadata.NewSealedLv1GOVBallotMetadata(
-		map[string]interface{}{
-			"SealedBallot":       []byte(Seal1Data.(string)),
-			"LockerPubKey":       [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))},
-			"PointerToLv2Ballot": &Pointer2,
-			"PointerToLv3Ballot": &Pointer3,
-		})
+	tx.Metadata = metadata.NewSealedLv1GOVBallotMetadata([]byte(Seal1Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer2, Pointer3)
 	return tx, err
 }
 
@@ -362,13 +347,7 @@ func (self RpcServer) buildRawNormalVoteGOVProposalTransactionFromSealer(
 	thirdPubKey := arrayParams[len(arrayParams)-2]
 	thirdPrivateKey := arrayParams[len(arrayParams)-1]
 	normalBallot := common.Decrypt(Seal1Data, thirdPrivateKey)
-	tx.Metadata = metadata.NewNormalGOVBallotFromSealerMetadata(
-		map[string]interface{}{
-			"Ballot":             normalBallot.([]byte),
-			"LockerPubKey":       [][]byte{firstPubKey.([]byte), secondPubKey.([]byte), thirdPubKey.([]byte)},
-			"PointerToLv1Ballot": &Pointer1,
-			"PointerToLv3Ballot": &Pointer3,
-		})
+	tx.Metadata = metadata.NewNormalGOVBallotFromSealerMetadata(normalBallot.([]byte), [][]byte{firstPubKey.([]byte), secondPubKey.([]byte), thirdPubKey.([]byte)}, Pointer1, Pointer3)
 	return tx, err
 }
 
@@ -420,12 +399,7 @@ func (self RpcServer) buildRawNormalVoteGOVProposalTransactionFromOwner(
 	secondPubKey := arrayParams[len(arrayParams)-3]
 	thirdPubKey := arrayParams[len(arrayParams)-2]
 	normalBallot := arrayParams[len(arrayParams)-1]
-	tx.Metadata = metadata.NewNormalGOVBallotFromOwnerMetadata(
-		map[string]interface{}{
-			"Ballot":             normalBallot.([]byte),
-			"LockerPubKey":       [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))},
-			"PointerToLv3Ballot": &Pointer,
-		})
+	tx.Metadata = metadata.NewNormalGOVBallotFromOwnerMetadata(normalBallot.([]byte), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer)
 	return tx, err
 }
 
@@ -469,12 +443,10 @@ func (self RpcServer) buildRawVoteGOVBoardTransaction(
 	params interface{},
 ) (*transaction.TxCustomToken, error) {
 	arrayParams := common.InterfaceSlice(params)
-	tx, err := self.buildRawCustomTokenTransaction(params)
 	candidatePaymentAddress := arrayParams[len(arrayParams)-1].(string)
 	account, _ := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-	tx.Metadata = &metadata.VoteGOVBoardMetadata{
-		CandidatePubKey: account.KeySet.PaymentAddress.Pk,
-	}
+	metadata := metadata.NewVoteGOVBoardMetadata(account.KeySet.PaymentAddress.Pk)
+	tx, err := self.buildRawCustomTokenTransaction(params, metadata)
 	return tx, err
 }
 
@@ -560,8 +532,17 @@ func (self RpcServer) buildRawSubmitGOVProposalTransaction(
 ) (*transaction.Tx, *RPCError) {
 	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
-	GOVProposalRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
-	tx.Metadata = metadata.NewSubmitGOVProposalMetadataFromJson(GOVProposalRaw)
+	NParams := len(arrayParams)
+	GOVParams := *params2.NewGOVParamsFromRPC(arrayParams[NParams-4])
+	executeDuration := arrayParams[NParams-3].(uint32)
+	explanation := arrayParams[NParams-2].(string)
+	paymentData := common.InterfaceSlice(arrayParams[NParams-1])
+	address := privacy.PaymentAddress{
+		Pk: paymentData[0].([]byte),
+		Tk: paymentData[1].([]byte),
+	}
+
+	tx.Metadata = metadata.NewSubmitGOVProposalMetadata(GOVParams, executeDuration, explanation, &address)
 	return tx, err
 }
 
@@ -650,7 +631,7 @@ func (self RpcServer) handleCreateRawTxWithOracleFeed(params interface{}, closeC
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	// Req param #4: buy/sell request info
+	// Req param #4: oracle feed
 	oracleFeed := arrayParams[4].(map[string]interface{})
 
 	assetTypeBytes := []byte(oracleFeed["assetType"].(string))
@@ -677,6 +658,67 @@ func (self RpcServer) handleCreateRawTxWithOracleFeed(params interface{}, closeC
 
 func (self RpcServer) handleCreateAndSendTxWithOracleFeed(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	data, err := self.handleCreateRawTxWithOracleFeed(params, closeChan)
+	if err != nil {
+		return nil, err
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
+	}
+	return result, nil
+}
+
+func (self RpcServer) handleCreateRawTxWithUpdatingOracleBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	var err error
+	arrayParams := common.InterfaceSlice(params)
+	normalTx, err := self.buildRawTransaction(params)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	// Req param #4: updating oracle board info
+	updatingOracleBoard := arrayParams[4].(map[string]interface{})
+	action := int8(updatingOracleBoard["action"].(float64))
+	oraclePubKeys := updatingOracleBoard["oraclePubKeys"].([]interface{})
+	assertedOraclePKs := [][]byte{}
+	for _, pk := range oraclePubKeys {
+		assertedOraclePKs = append(assertedOraclePKs, []byte(pk.(string)))
+	}
+	signs := updatingOracleBoard["signs"].(map[string]interface{})
+	assertedSigns := map[string][]byte{}
+	for k, s := range signs {
+		assertedSigns[k] = []byte(s.(string))
+	}
+	metaType := metadata.UpdatingOracleBoardMeta
+	normalTx.Metadata = metadata.NewUpdatingOracleBoard(
+		action,
+		assertedOraclePKs,
+		assertedSigns,
+		metaType,
+	)
+
+	byteArrays, err := json.Marshal(normalTx)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            normalTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (self RpcServer) handleCreateAndSendTxWithUpdatingOracleBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := self.handleCreateRawTxWithUpdatingOracleBoard(params, closeChan)
 	if err != nil {
 		return nil, err
 	}

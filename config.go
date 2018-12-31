@@ -491,6 +491,10 @@ func loadConfig() (*config, []string, error) {
 
 	// Ensure there is at least one mining address when the generate flag is
 	// set.
+	if cfg.Generate {
+		// if mining mode -> not run in light mode
+		cfg.Light = false
+	}
 	if cfg.Generate && len(cfg.ProducerSpendingKey) == 0 {
 		str := "%s: the generate flag is set, but there are no producer's key specified "
 		err := fmt.Errorf(str, funcName)

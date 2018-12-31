@@ -36,12 +36,10 @@ func (db *db) StoreBlock(v interface{}, chainID byte) error {
 	if err := db.Put(keyB, val); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
-	//fmt.Println("Test Store Block keyB: ", string(keyB))
 	return nil
 }
 
 func (db *db) StoreBlockHeader(v interface{}, hash *common.Hash, chainID byte) error {
-	//fmt.Println("Log in StoreBlockHeader", v, hash, chainID)
 	var (
 		key = append(append(chainIDPrefix, chainID), append(blockKeyPrefix, hash[:]...)...)
 		// PubKey should look like this c10{bh-[blockhash]}:{bh-[blockhash]}

@@ -27,51 +27,6 @@ type Block struct {
 	blockHash *common.Hash
 }
 
-func parseMetadata(meta interface{}) (metadata.Metadata, error) {
-	if meta == nil {
-		return nil, nil
-	}
-
-	mtTemp := map[string]interface{}{}
-	metaInBytes, err := json.Marshal(meta)
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(metaInBytes, &mtTemp)
-	if err != nil {
-		return nil, err
-	}
-	var md metadata.Metadata
-	switch int(mtTemp["Type"].(float64)) {
-	case metadata.BuyFromGOVRequestMeta:
-		md = &metadata.BuySellRequest{}
-
-	case metadata.BuyBackRequestMeta:
-		md = &metadata.BuyBackRequest{}
-
-	case metadata.BuyFromGOVResponseMeta:
-		md = &metadata.BuySellResponse{}
-
-	case metadata.BuyBackResponseMeta:
-		md = &metadata.BuyBackResponse{}
-
-	case metadata.LoanRequestMeta:
-		md = &metadata.LoanRequest{}
-
-	case metadata.LoanResponseMeta:
-		md = &metadata.LoanResponse{}
-
-	default:
-		return nil, errors.New("Could not parse metadata with known types.")
-	}
-
-	err = json.Unmarshal(metaInBytes, &md)
-	if err != nil {
-		return nil, err
-	}
-	return md, nil
-}
-
 /*
 Customize UnmarshalJSON to parse list TxNormal
 because we have many types of block, so we can need to customize data from marshal from json string to build a block
@@ -128,11 +83,11 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 		if parseErr != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, parseErr)
 		}
-		meta, parseErr := parseMetadata(txTemp["Metadata"])
+		/*meta, parseErr := metadata.ParseMetadata(txTemp["Metadata"])
 		if parseErr != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, parseErr)
 		}
-		tx.SetMetadata(meta)
+		tx.SetMetadata(meta)*/
 		self.Transactions = append(self.Transactions, tx)
 	}
 
@@ -197,12 +152,12 @@ func (block *Block) updateDCBConstitution(tx metadata.Transaction, blockgen *Blk
 	if err != nil {
 		return err
 	}
-	block.Header.DCBConstitution.StartedBlockHeight = uint32(block.Header.Height)
-	block.Header.DCBConstitution.ExecuteDuration = DCBProposal.ExecuteDuration
-	block.Header.DCBConstitution.ProposalTXID = metadataAcceptDCBProposal.DCBProposalTXID
-	block.Header.DCBConstitution.CurrentDCBNationalWelfare = GetOracleDCBNationalWelfare()
-
-	block.Header.DCBConstitution.DCBParams = DCBProposal.DCBParams
+	constitutionInfo := NewConstitutionInfo(
+		uint32(block.Header.Height),
+		DCBProposal.ExecuteDuration,
+		*metadataAcceptDCBProposal.Hash(),
+	)
+	block.Header.DCBConstitution = *NewDCBConstitution(constitutionInfo, GetOracleDCBNationalWelfare(), &DCBProposal.DCBParams)
 	return nil
 }
 
@@ -213,11 +168,11 @@ func (block *Block) updateGOVConstitution(tx metadata.Transaction, blockgen *Blk
 	if err != nil {
 		return err
 	}
-	block.Header.GOVConstitution.StartedBlockHeight = uint32(block.Header.Height)
-	block.Header.GOVConstitution.ExecuteDuration = GOVProposal.ExecuteDuration
-	block.Header.GOVConstitution.ProposalTXID = metadataAcceptGOVProposal.GOVProposalTXID
-	block.Header.GOVConstitution.CurrentGOVNationalWelfare = GetOracleGOVNationalWelfare()
-
-	block.Header.GOVConstitution.GOVParams = GOVProposal.GOVParams
+	constitutionInfo := NewConstitutionInfo(
+		uint32(block.Header.Height),
+		GOVProposal.ExecuteDuration,
+		*metadataAcceptGOVProposal.Hash(),
+	)
+	block.Header.GOVConstitution = *NewGOVConstitution(constitutionInfo, GetOracleGOVNationalWelfare(), &GOVProposal.GOVParams)
 	return nil
 }

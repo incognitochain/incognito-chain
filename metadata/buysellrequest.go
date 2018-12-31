@@ -5,7 +5,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy"
 )
 
 type BuySellRequest struct {
@@ -40,12 +40,6 @@ func NewBuySellRequest(
 
 func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 
-	// check double spending on fee + buy/sell amount tx
-	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
-	if err != nil {
-		return false, err
-	}
-
 	// TODO: support and validate for either bonds or govs buy requests
 
 	govParams := bcr.GetGOVParams()
@@ -58,15 +52,14 @@ func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr Block
 	if bsReq.BuyPrice < sellingBondsParams.BondPrice {
 		return false, errors.New("Requested buy price is under SellingBonds params' buy price.")
 	}
-	return false, nil
+	return true, nil
 }
 
 func (bsReq *BuySellRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	ok, err := txr.ValidateSanityData(bcr)
-	if err != nil || !ok {
-		return false, ok, err
-	}
 	if len(bsReq.PaymentAddress.Pk) == 0 {
+		return false, false, errors.New("Wrong request info's payment address")
+	}
+	if len(bsReq.PaymentAddress.Tk) == 0 {
 		return false, false, errors.New("Wrong request info's payment address")
 	}
 	if bsReq.BuyPrice == 0 {
@@ -78,7 +71,7 @@ func (bsReq *BuySellRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tra
 	if len(bsReq.AssetType) != common.HashSize {
 		return false, false, errors.New("Wrong request info's asset type")
 	}
-	return false, true, nil
+	return true, true, nil
 }
 
 func (bsReq *BuySellRequest) ValidateMetadataByItself() bool {
@@ -87,7 +80,7 @@ func (bsReq *BuySellRequest) ValidateMetadataByItself() bool {
 }
 
 func (bsReq *BuySellRequest) Hash() *common.Hash {
-	record := string(bsReq.PaymentAddress.ToBytes())
+	record := string(bsReq.PaymentAddress.Bytes())
 	record += bsReq.AssetType.String()
 	record += string(bsReq.Amount)
 	record += string(bsReq.BuyPrice)

@@ -5,7 +5,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/pkg/errors"
 )
@@ -55,8 +55,8 @@ func (dc *CMBDepositContract) Hash() *common.Hash {
 	record += string(dc.TotalInterest)
 	record += string(dc.DepositValue)
 	record += string(dc.NoticePeriod)
-	record += string(dc.Receiver.ToBytes())
-	record += string(dc.CMBAddress.ToBytes())
+	record += string(dc.Receiver.Bytes())
+	record += string(dc.CMBAddress.Bytes())
 
 	// final hash
 	record += string(dc.MetadataBase.Hash()[:])
@@ -73,7 +73,7 @@ func (dc *CMBDepositContract) ValidateTxWithBlockChain(txr Transaction, bcr Bloc
 	if !bytes.Equal(txr.GetJSPubKey(), dc.CMBAddress.Pk[:]) {
 		return false, errors.Errorf("CMBAddress must be the one creating this tx")
 	}
-	_, _, _, _, _, _, err := bcr.GetCMB(dc.CMBAddress.ToBytes())
+	_, _, _, _, _, _, err := bcr.GetCMB(dc.CMBAddress.Bytes())
 	if err != nil {
 		return false, err
 	}

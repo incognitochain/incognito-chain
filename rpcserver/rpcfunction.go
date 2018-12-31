@@ -76,17 +76,20 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendLoanPayment:  RpcServer.handleCreateAndSendLoanPayment,
 
 	// multisig
-	CreateSignatureOnCustomTokenTx: RpcServer.handleCreateSignatureOnCustomTokenTx,
-	GetListDCBBoard:                RpcServer.handleGetListDCBBoard,
-	GetListGOVBoard:                RpcServer.handleGetListGOVBoard,
+	CreateSignatureOnCustomTokenTx:       RpcServer.handleCreateSignatureOnCustomTokenTx,
+	GetListDCBBoard:                      RpcServer.handleGetListDCBBoard,
+	GetListGOVBoard:                      RpcServer.handleGetListGOVBoard,
+	CreateAndSendTxWithMultiSigsReg:      RpcServer.handleCreateAndSendTxWithMultiSigsReg,
+	CreateAndSendTxWithMultiSigsSpending: RpcServer.handleCreateAndSendTxWithMultiSigsSpending,
 
-	// vote
+	// vote board
 	CreateAndSendVoteDCBBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
 	CreateRawVoteDCBBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
 	SendRawVoteBoardDCBTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
 	CreateAndSendVoteGOVBoardTransaction: RpcServer.handleCreateAndSendVoteGOVBoardTransaction,
 	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
 	SendRawVoteBoardGOVTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
+	GetAmountVoteToken:                   RpcServer.handleGetAmountVoteToken,
 
 	// Submit Proposal:
 	CreateAndSendSubmitDCBProposalTx: RpcServer.handleCreateAndSendSubmitDCBProposalTransaction,
@@ -103,11 +106,13 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendTxWithContractingRequest: RpcServer.handleCreateAndSendTxWithContractingRequest,
 
 	// gov
-	GetBondTypes:                      RpcServer.handleGetBondTypes,
-	GetGOVConstitution:                RpcServer.handleGetGOVConstitution,
-	GetGOVParams:                      RpcServer.handleGetGOVParams,
-	CreateAndSendTxWithBuyBackRequest: RpcServer.handleCreateAndSendTxWithBuyBackRequest,
-	CreateAndSendTxWithBuySellRequest: RpcServer.handleCreateAndSendTxWithBuySellRequest,
+	GetBondTypes:                           RpcServer.handleGetBondTypes,
+	GetGOVConstitution:                     RpcServer.handleGetGOVConstitution,
+	GetGOVParams:                           RpcServer.handleGetGOVParams,
+	CreateAndSendTxWithBuyBackRequest:      RpcServer.handleCreateAndSendTxWithBuyBackRequest,
+	CreateAndSendTxWithBuySellRequest:      RpcServer.handleCreateAndSendTxWithBuySellRequest,
+	CreateAndSendTxWithOracleFeed:          RpcServer.handleCreateAndSendTxWithOracleFeed,
+	CreateAndSendTxWithUpdatingOracleBoard: RpcServer.handleCreateAndSendTxWithUpdatingOracleBoard,
 
 	// cmb
 	CreateAndSendTxWithCMBInitRequest:     RpcServer.handleCreateAndSendTxWithCMBInitRequest,

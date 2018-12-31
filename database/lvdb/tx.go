@@ -13,7 +13,7 @@ import (
 
 	"math/big"
 
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -541,7 +541,7 @@ func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, err
 }
 
 /*
-	Store Transaction in Light mode
+	Store Transaction in LightMode mode
 	1. Key -> value : prefix(privateky)privateKey-[-]-chainId-[-]-(999999999 - blockHeight)-[-]-(999999999 - txIndex) 		-> 		tx
 	2. Key -> value :							prefix(transaction)txHash 												->  	privateKey-chainId-blockHeight-txIndex
 
@@ -597,12 +597,12 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 }
 
 /*
-	Get Transaction in Light mode
+	Get Transaction in LightMode mode
 	Get transaction by prefix(privateKey)privateKey, this prefix help to get all transaction belong to that privatekey
 	1. Key -> value : prefix(privateky)-privateKey-chainId-(999999999 - blockHeight)-(999999999 - txIndex) 		-> 		tx
 
 */
-func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKey) (map[byte]([]([]byte)), error) {
+/*func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKey) (map[byte]([]([]byte)), error) {
 	prefix := []byte(string(privateKeyPrefix) + privateKey.String())
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 
@@ -614,11 +614,11 @@ func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKe
 		reses := strings.Split(string(key), string(Splitter))
 		tempChainId, _ := strconv.Atoi(reses[2])
 		chainId := byte(tempChainId)
-		/*tx := transaction.Tx{}
+		*//*tx := transaction.Tx{}
 		err := json.Unmarshal(value, &tx)
 		if err != nil {
 			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
-		}*/
+		}*//*
 		data := make([]byte, len(value))
 		copy(data[:], value[:])
 		results[chainId] = append(results[chainId], data)
@@ -626,14 +626,14 @@ func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKe
 
 	iter.Release()
 	return results, nil
-}
+}*/
 
 /*
 	Key: transactionPrefix-txHash
   H: txLocation
   tx: tx object in byte
 */
-func (db *db) GetTransactionLightModeByHash(txId *common.Hash) ([]byte, []byte, error) {
+/*func (db *db) GetTransactionLightModeByHash(txId *common.Hash) ([]byte, []byte, error) {
 	key := string(transactionKeyPrefix) + txId.String()
 	_, err := db.HasValue([]byte(key))
 	if err != nil {
@@ -652,4 +652,4 @@ func (db *db) GetTransactionLightModeByHash(txId *common.Hash) ([]byte, []byte, 
 		return nil, nil, err
 	}
 	return value, tx, nil
-}
+}*/

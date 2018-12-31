@@ -42,17 +42,13 @@ func (bbReq *BuyBackRequest) ValidateSanityData(
 	bcr BlockchainRetriever,
 	txr Transaction,
 ) (bool, bool, error) {
-	ok, err := txr.ValidateSanityData(bcr)
-	if err != nil || !ok {
-		return false, ok, err
-	}
 	if bbReq.VoutIndex < 0 {
 		return false, false, errors.New("Wrong request info's vout index")
 	}
 	if len(bbReq.BuyBackFromTxID) == 0 {
 		return false, false, errors.New("Wrong request info's BuyBackFromTxID")
 	}
-	return false, true, nil
+	return true, true, nil
 }
 
 func (bbReq *BuyBackRequest) ValidateMetadataByItself() bool {

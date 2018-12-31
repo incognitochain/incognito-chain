@@ -1,17 +1,19 @@
 package rpcserver
 
 import (
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/pkg/errors"
+	"github.com/ninjadotorg/constant/metadata"
 )
 
 // buildRawCustomTokenTransaction ...
 func (self RpcServer) buildRawCustomTokenTransaction(
 	params interface{},
+	metaData metadata.Metadata,
 ) (*transaction.TxCustomToken, error) {
 	// all params
 	arrayParams := common.InterfaceSlice(params)
@@ -145,8 +147,9 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		realFee,
 		tokenParams,
 		listCustomTokens,
+		metaData,
 	)
-	if err != nil {
+	if err.(*transaction.TransactionError) != nil {
 		return nil, err
 	}
 	return tx, nil
@@ -267,6 +270,10 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 		listCustomTokens,
 		*self.config.Database,
 	)
+
+	if err.(*transaction.TransactionError) != nil {
+		return nil, err
+	}
 
 	return tx, err
 }

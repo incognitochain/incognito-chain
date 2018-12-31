@@ -7,7 +7,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 type DividendProposal struct {
@@ -32,7 +32,7 @@ type Dividend struct {
 func (div *Dividend) Hash() *common.Hash {
 	record := fmt.Sprintf("%d", div.PayoutID)
 	record += string(div.TokenID[:])
-	record += string(div.PaymentAddress.ToBytes())
+	record += string(div.PaymentAddress.Bytes())
 
 	// final hash
 	record += string(div.MetadataBase.Hash()[:])
@@ -56,7 +56,7 @@ func (div *Dividend) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRet
 		count := 0
 		for i, holder := range tokenHolders {
 			temp, _ := hex.DecodeString(holder)
-			paymentAddress := (&privacy.PaymentAddress{}).FromBytes(temp)
+			paymentAddress := (&privacy.PaymentAddress{}).SetBytes(temp)
 			if bytes.Equal(paymentAddress.Pk[:], rec) {
 				count += 1
 				if correctAmounts[i] != recAmounts[j] {

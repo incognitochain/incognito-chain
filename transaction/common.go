@@ -1,14 +1,17 @@
 package transaction
 
 import (
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"math"
 	"math/big"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/common"
 	"math/rand"
+	"sort"
+
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 )
 
 // ConvertOutputCoinToInputCoin - convert output coin from old tx to input coin for new tx
@@ -32,7 +35,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 	commitmentIndexs = []uint64{}   // : list commitment indexes which: random from full db commitments + commitments of usableInputCoins
 	myCommitmentIndexs = []uint64{} // : list indexes of commitments(usableInputCoins) in {commitmentIndexs}
 	if randNum == 0 {
-		randNum = 8 // default
+		randNum = privacy.CMRingSize // default
 	}
 
 	// loop to create list usable commitments from usableInputCoins
@@ -95,7 +98,7 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 
 	sizeSigPubKey := uint64(privacy.SigPubKeySize)
 	sizeSig := uint64(privacy.SigSize)
-	sizeProof := zkp.EstimateProofSize(inputCoins, payments)
+	sizeProof := zkp.EstimateProofSize(len(inputCoins), len(payments))
 
 	sizePubKeyLastByte := uint64(1)
 	// TODO 0xjackpolope
@@ -104,4 +107,15 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte
 
 	return uint64(math.Ceil(float64(sizeTx) / 1024))
+}
+
+// SortTxsByLockTime sorts txs by lock time
+func SortTxsByLockTime(txs []metadata.Transaction, isDesc bool) []metadata.Transaction {
+	sort.Slice(txs, func(i, j int) bool {
+		if isDesc {
+			return txs[i].GetLockTime() > txs[j].GetLockTime()
+		}
+		return txs[i].GetLockTime() <= txs[j].GetLockTime()
+	})
+	return txs
 }
