@@ -9,6 +9,7 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
@@ -91,7 +92,7 @@ func (self RpcServer) handleListOutputCoins(params interface{}, closeChan <-chan
 	return result, nil
 }
 
-func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, *RPCError) {
+func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
 	Logger.log.Info(params)
 
 	// all params
@@ -184,7 +185,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 		true,
 		*self.config.Database,
 		nil, // use for constant coin -> nil is valid
-		nil,
+		meta,
 	)
 	if err.(*transaction.TransactionError) != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -197,7 +198,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 */
 func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	var err error
-	tx, err := self.buildRawTransaction(params)
+	tx, err := self.buildRawTransaction(params, nil)
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrUnexpected, err)
