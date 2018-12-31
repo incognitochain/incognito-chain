@@ -123,6 +123,7 @@ func (self *ConnManager) UpdateConsensusState(role string, userPbk string, curre
 		bChange = true
 	}
 	if !common.CompareStringArray(self.Config.ConsensusState.BeaconCommittee, beaconCommittee) {
+		self.Config.ConsensusState.BeaconCommittee = make([]string, len(beaconCommittee))
 		copy(self.Config.ConsensusState.BeaconCommittee, beaconCommittee)
 		bChange = true
 	}
@@ -569,10 +570,11 @@ func (self *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxShardPeers
 }
 
 func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[string]*wire.RawPeer) int {
-	//Logger.log.Info("handleRandPeersOfBeacon")
+	Logger.log.Info("handleRandPeersOfBeacon")
+
 	countPeerShard := 0
 	pBKs := self.Config.ConsensusState.BeaconCommittee
-	//Logger.log.Info("handleRandPeersOfBeacon", pBKs)
+	Logger.log.Info("handleRandPeersOfBeacon", pBKs)
 	for len(pBKs) > 0 {
 		randN := common.RandInt() % len(pBKs)
 		pbk := pBKs[randN]

@@ -80,8 +80,7 @@ func (self *Engine) Start() error {
 					}
 					self.config.Server.UpdateConsensusState(nodeRole, self.config.UserKeySet.GetPublicKeyB58(), nil, self.config.BlockChain.BestState.Beacon.BeaconCommittee, self.config.BlockChain.BestState.Beacon.ShardCommittee)
 
-					fmt.Println(self.config.BlockChain.BestState.Beacon.BeaconCommittee)
-					time.Sleep(5 * time.Second)
+					time.Sleep(4 * time.Second)
 					self.cBFTMsg = make(chan wire.Message)
 					fmt.Println(self.config.NodeMode, role)
 					if role != "" {

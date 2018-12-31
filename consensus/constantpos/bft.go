@@ -92,7 +92,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 						Logger.log.Error(err)
 						return
 					}
-					self.Server.PushMessageToBeacon(msg)
+					go self.Server.PushMessageToBeacon(msg)
 					self.pendingBlock = newBlock
 				} else {
 					newBlock, err := self.BlockGen.NewBlockShard(&self.UserKeySet.PaymentAddress, &self.UserKeySet.PrivateKey, shardID)
@@ -105,7 +105,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 						Logger.log.Error(err)
 						return
 					}
-					self.Server.PushMessageToShard(msg, shardID)
+					go self.Server.PushMessageToShard(msg, shardID)
 					self.pendingBlock = newBlock
 				}
 
@@ -115,6 +115,10 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 				for len(myr) < privacy.BigIntSize {
 					myr = append([]byte{0}, myr...)
 				}
+
+				self.dataForSig.Ri = myRi
+				self.dataForSig.r = myr
+
 				msg, err := MakeMsgBFTPrepare(myRi, self.UserKeySet.GetPublicKeyB58())
 				if err != nil {
 					Logger.log.Error(err)
@@ -128,10 +132,6 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 						self.Server.PushMessageToShard(msg, shardID)
 					}
 				})
-
-				self.dataForSig.Ri = myRi
-				self.dataForSig.r = myr
-
 				self.phase = "prepare"
 			case "listen":
 				fmt.Println("Listen phase")
@@ -140,14 +140,13 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 				})
 				select {
 				case msgPropose := <-self.cBFTMsg:
-
-					fmt.Println("Propose block received")
 					var phaseData struct {
 						PrevAggregatedSig string
 						PrevValidatorsIdx []int
 						Block             interface{}
 					}
 					if msgPropose.MessageType() == wire.CmdBFTPropose {
+						fmt.Println("Propose block received")
 						phaseData.PrevAggregatedSig = msgPropose.(*wire.MessageBFTPropose).AggregatedSig
 						phaseData.PrevValidatorsIdx = msgPropose.(*wire.MessageBFTPropose).ValidatorsIdx
 						if layer == "beacon" {
@@ -213,7 +212,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 					select {
 					case msgPrepare := <-self.cBFTMsg:
 						if msgPrepare.MessageType() == wire.CmdBFTPrepare {
-							fmt.Println("Ri received")
+							fmt.Println("Prepare msg received")
 							if common.IndexOfStr(msgPrepare.(*wire.MessageBFTPrepare).Pubkey, self.Committee) >= 0 {
 								phaseData.RiList[msgPrepare.(*wire.MessageBFTPrepare).Pubkey] = msgPrepare.(*wire.MessageBFTPrepare).Ri
 							}
@@ -238,12 +237,14 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							*listPubkeyOfSigners[counter] = pubKeyTemp
 							if (err != nil) || (byteVersion != byte(0x00)) {
 								//Todo
+								fmt.Println("BLah err", err)
 								return
 							}
 							listROfSigners[counter] = new(privacy.EllipticPoint)
 							err = listROfSigners[counter].Decompress(bytesR)
 							if err != nil {
 								//Todo
+								fmt.Println("BLah err", err)
 								return
 							}
 							RCombined = RCombined.Add(listROfSigners[counter])
@@ -266,7 +267,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 
 						msg, err := MakeMsgBFTCommit(phaseData.CommitBlkSig, phaseData.R, phaseData.ValidatorsIdx, self.UserKeySet.GetPublicKeyB58())
 						if err != nil {
-							Logger.log.Error(err)
+							fmt.Println("BLah err", err)
 							return
 						}
 						if layer == "beacon" {
@@ -331,10 +332,12 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							RCombined.Set(big.NewInt(0), big.NewInt(0))
 							Rbytesarr, byteVersion, err := base58.Base58Check{}.Decode(R)
 							if (err != nil) || (byteVersion != byte(0x00)) {
+								fmt.Println("BLah err", err)
 								return
 							}
 							err = RCombined.Decompress(Rbytesarr)
 							if err != nil {
+								fmt.Println("BLah err", err)
 								return
 							}
 							listPubkeyOfSigners := make([]*privacy.PublicKey, len(newSig.ValidatorsIdx))
@@ -343,7 +346,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 								listPubkeyOfSigners[i] = new(privacy.PublicKey)
 								pubKeyTemp, byteVersion, err = base58.Base58Check{}.Decode(self.Committee[newSig.ValidatorsIdx[i]])
 								if (err != nil) || (byteVersion != byte(0x00)) {
-
+									fmt.Println("BLah err", err)
 									return
 								}
 								*listPubkeyOfSigners[i] = pubKeyTemp
@@ -352,7 +355,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							pubKeyTemp, byteVersion, err = base58.Base58Check{}.Decode(newSig.Pubkey)
 							if (err != nil) || (byteVersion != byte(0x00)) {
 								//Todo
-
+								fmt.Println("BLah err", err)
 								return
 							}
 							*selfPubkey = pubKeyTemp
@@ -369,6 +372,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 
 							resValidateEachSigOfSigners := valSig.VerifyMultiSig(blockData.GetBytes(), listPubkeyOfSigners, selfPubkey, RCombined)
 							if !resValidateEachSigOfSigners {
+								fmt.Println("BLah err22222")
 								return
 							}
 							phaseData.Sigs[R] = append(phaseData.Sigs[R], newSig)
@@ -396,6 +400,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							listSigOfSigners[i] = new(privacy.SchnMultiSig)
 							bytesSig, byteVersion, err := base58.Base58Check{}.Decode(valSig.Sig)
 							if (err != nil) || (byteVersion != byte(0x00)) {
+								fmt.Println("BLah err", err)
 								return
 							}
 							listSigOfSigners[i].SetBytes(bytesSig)
@@ -431,9 +436,10 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 						replyData.AggregatedSig = base58.Base58Check{}.Encode(AggregatedSig.Bytes(), byte(0x00))
 						msg, err := MakeMsgBFTReply(replyData.AggregatedSig, replyData.ValidatorsIdx)
 						if err != nil {
-							Logger.log.Error(err)
+							fmt.Println("BLah err", err)
 							return
 						}
+						fmt.Println("Sending out reply msg")
 						if layer == "beacon" {
 							self.Server.PushMessageToBeacon(msg)
 						} else {
