@@ -336,6 +336,8 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock) 
 	if len(self.BeaconCommittee) != len(block.ValidatorsIdx) {
 		return NewBlockChainError(SignatureError, errors.New("Block validators and Beacon committee is not compatible"))
 	}
+
+	//=============Verify signature
 	pubKeys := []*privacy.PublicKey{}
 	for _, index := range block.ValidatorsIdx {
 		pubkeyBytes, _, err := base58.Base58Check{}.Decode(self.BeaconCommittee[index])
