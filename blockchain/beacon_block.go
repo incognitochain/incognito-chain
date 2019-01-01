@@ -64,9 +64,11 @@ func NewBeaconBlock() BeaconBlock {
 	return BeaconBlock{}
 }
 func (self *BeaconBlock) Hash() *common.Hash {
-	record := common.EmptyString
-	record += self.Header.Hash().String() + self.AggregatedSig + common.IntArrayToString(self.ValidatorsIdx, ",")
-	hash := common.DoubleHashH([]byte(record))
+	// record := common.EmptyString
+	// record += self.Header.Hash().String() + self.AggregatedSig + common.IntArrayToString(self.ValidatorsIdx, ",")
+	// record += self.Header.Hash().String()
+	// hash := common.DoubleHashH([]byte(record))
+	hash := self.Header.Hash()
 	return &hash
 }
 

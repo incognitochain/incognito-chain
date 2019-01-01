@@ -359,6 +359,7 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock) 
 	if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeys, nil, nil) == false {
 		return NewBlockChainError(SignatureError, errors.New("Invalid Agg signature"))
 	}
+	//=============End Verify signature
 	if self.BeaconHeight+1 != block.Header.Height {
 		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
