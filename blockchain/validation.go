@@ -7,13 +7,13 @@ Use these function to validate common data in blockchain
 import (
 	"math"
 
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common/base58"
 )
 
 func (self *BlockChain) GetAmountPerAccount(proposal *metadata.DividendProposal) (uint64, []string, []uint64, error) {
@@ -125,11 +125,11 @@ func (bc *BlockChain) verifyByBoard(
 	var pubKeys [][]byte
 	if boardType == common.DCB {
 		address = string(common.DCBAddress)
-		pubKeys = bc.BestState[0].BestBlock.Header.DCBGovernor.DCBBoardPubKeys
+		pubKeys = bc.BestState[0].BestBlock.Header.DCBGovernor.BoardPubKeys
 	} else if boardType == common.GOV {
 		govAccount, _ := wallet.Base58CheckDeserialize(common.GOVAddress)
 		address = string(govAccount.KeySet.PaymentAddress.Pk)
-		pubKeys = bc.BestState[0].BestBlock.Header.GOVGovernor.GOVBoardPubKeys
+		pubKeys = bc.BestState[0].BestBlock.Header.GOVGovernor.BoardPubKeys
 	} else {
 		return false
 	}
