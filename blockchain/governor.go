@@ -20,12 +20,6 @@ type GOVGovernor struct {
 	GovernorInfo
 }
 
-type CMBGovernor struct {
-	StartedBlock    uint32
-	EndBlock        uint32
-	CMBBoardPubKeys [][]byte
-}
-
 type Governor interface {
 	BoardIndex() uint32
 }

@@ -71,58 +71,6 @@ type Config struct {
 	customTokenRewardSnapshot map[string]uint64
 }
 
-func (self *BlockChain) GetDatabase() database.DatabaseInterface {
-	return self.config.DataBase
-}
-
-func (self *BlockChain) GetHeight() int32 {
-	return self.BestState[0].BestBlock.Header.Height
-}
-
-func (self *BlockChain) GetDCBBoardPubKeys() [][]byte {
-	return self.BestState[0].BestBlock.Header.DCBGovernor.BoardPubKeys
-}
-
-func (self *BlockChain) GetGOVBoardPubKeys() [][]byte {
-	return self.BestState[0].BestBlock.Header.GOVGovernor.BoardPubKeys
-}
-
-func (self *BlockChain) GetDCBParams() params.DCBParams {
-	return self.BestState[0].BestBlock.Header.DCBConstitution.DCBParams
-}
-
-func (self *BlockChain) GetGOVParams() params.GOVParams {
-	return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams
-}
-
-func (self *BlockChain) GetLoanTxs(loanID []byte) ([][]byte, error) {
-	return self.config.DataBase.GetLoanTxs(loanID)
-}
-
-func (self *BlockChain) GetLoanPayment(loanID []byte) (uint64, uint64, uint32, error) {
-	return self.config.DataBase.GetLoanPayment(loanID)
-}
-
-func (self *BlockChain) GetCrowdsaleTxs(requestTxHash []byte) ([][]byte, error) {
-	return self.config.DataBase.GetCrowdsaleTxs(requestTxHash)
-}
-
-func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*params.SaleData, error) {
-	endBlock, buyingAsset, buyingAmount, sellingAsset, sellingAmount, err := self.config.DataBase.LoadCrowdsaleData(saleID)
-	var saleData *params.SaleData
-	if err != nil {
-		saleData = &params.SaleData{
-			SaleID:        saleID,
-			EndBlock:      endBlock,
-			BuyingAsset:   buyingAsset,
-			BuyingAmount:  buyingAmount,
-			SellingAsset:  sellingAsset,
-			SellingAmount: sellingAmount,
-		}
-	}
-	return saleData, err
-}
-
 /*
 Init - init a blockchain view from config
 */
@@ -173,12 +121,6 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 // GetOracleParams returns oracle params
 func (self *BlockChain) GetOracleParams() *params.Oracle {
 	return self.BestState[0].BestBlock.Header.Oracle
-}
-
-func (self *BlockChain) GetMultiSigsRegistration(
-	paymentAddressBytes []byte,
-) ([]byte, error) {
-	return self.config.DataBase.GetMultiSigsRegistration(paymentAddressBytes)
 }
 
 // -------------- End of Blockchain retriever's implementation --------------
@@ -594,18 +536,15 @@ func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest
 }
 
 func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
+	txNormal := tx.(*transaction.Tx)
+	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	dcbPk := accountDCB.KeySet.PaymentAddress.Pk
 	value := uint64(0)
-	//TODO: need to update to new txprivacy's fields
-	// txNormal := tx.(*transaction.Tx)
-	// for _, desc := range txNormal.Descs {
-	// 	for _, note := range desc.Note {
-	// 		accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	// 		dcbPk := accountDCB.KeySet.PaymentAddress.Pk
-	// 		if bytes.Equal(note.Apk[:], dcbPk) {
-	// 			value += note.Value
-	// 		}
-	// 	}
-	// }
+	for _, coin := range txNormal.Proof.OutputCoins {
+		if bytes.Equal(coin.CoinDetails.PublicKey.Compress(), dcbPk) {
+			value += coin.CoinDetails.Value
+		}
+	}
 	meta := tx.GetMetadata().(*metadata.LoanPayment)
 	principle, interest, deadline, err := self.config.DataBase.GetLoanPayment(meta.LoanID)
 	if meta.PayPrinciple {
@@ -893,6 +832,58 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 		}
 	}
 	return nil
+}
+
+func (self *BlockChain) ProcessCMBTxs(block *Block) error {
+	for _, tx := range block.Transactions {
+		switch tx.GetMetadataType() {
+		case metadata.CMBInitRequestMeta:
+			{
+				err := self.processCMBInitRequest(tx)
+				if err != nil {
+					return err
+				}
+			}
+		case metadata.CMBInitResponseMeta:
+			{
+				err := self.processCMBInitResponse(tx)
+				if err != nil {
+					return err
+				}
+			}
+		case metadata.CMBInitRefundMeta:
+			{
+				err := self.processCMBInitRefund(tx)
+				if err != nil {
+					return err
+				}
+			}
+		case metadata.CMBDepositSendMeta:
+			{
+				err := self.processCMBDepositSend(tx)
+				if err != nil {
+					return err
+				}
+			}
+		case metadata.CMBWithdrawRequestMeta:
+			{
+				err := self.processCMBWithdrawRequest(tx)
+				if err != nil {
+					return err
+				}
+			}
+		case metadata.CMBWithdrawResponseMeta:
+			{
+				err := self.processCMBWithdrawResponse(tx)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	// Penalize late response for cmb withdraw request
+	return self.findLateWithdrawResponse()
 }
 
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db

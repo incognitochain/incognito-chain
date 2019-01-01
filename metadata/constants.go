@@ -18,6 +18,15 @@ const (
 	CrowdsaleResponseMeta
 	CrowdsalePaymentMeta
 
+	// CMB
+	CMBInitRequestMeta
+	CMBInitResponseMeta // offchain multisig
+	CMBInitRefundMeta   // miner
+	CMBDepositContractMeta
+	CMBDepositSendMeta
+	CMBWithdrawRequestMeta
+	CMBWithdrawResponseMeta // offchain multisig
+
 	BuyFromGOVRequestMeta
 	BuyFromGOVResponseMeta
 	BuyBackRequestMeta
@@ -30,6 +39,7 @@ const (
 	RefundMeta
 	UpdatingOracleBoardMeta
 	MultiSigsRegistrationMeta
+	MultiSigsSpendingMeta
 
 	//Voting
 	SubmitDCBProposalMeta

@@ -2,6 +2,7 @@ package privacy
 
 import (
 	"encoding/hex"
+	"fmt"
 	"github.com/pkg/errors"
 	"math/big"
 
@@ -46,11 +47,11 @@ func GenerateSpendingKey(seed []byte) SpendingKey {
 	for temp.SetBytes(spendingKey).Cmp(Curve.Params().N) == 1 {
 		spendingKey = common.HashB(spendingKey)
 	}
-
-	return spendingKey
+	fmt.Printf("Spending key bytes: %v\n", spendingKey)
+	return spendingKey[:]
 }
 
-// GeneratePublicKey computes an address corresponding with spendingKey
+// GeneratePublicKey computes an public key corresponding with spendingKey
 // Pk : 33 bytes
 func GeneratePublicKey(spendingKey []byte) PublicKey {
 	var publicKey EllipticPoint
@@ -121,9 +122,9 @@ func (addr *PaymentAddress) Bytes() []byte {
 // SetBytes reverts bytes array to payment address
 func (addr *PaymentAddress) SetBytes(bytes []byte) *PaymentAddress {
 	// First 33 bytes are public key
-	addr.Pk = bytes[:33]
+	addr.Pk = bytes[:CompressedPointSize]
 	// Last 33 bytes are transmission key
-	addr.Tk = bytes[33:]
+	addr.Tk = bytes[CompressedPointSize:]
 	return addr
 }
 

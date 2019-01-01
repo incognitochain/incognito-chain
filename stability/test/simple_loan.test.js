@@ -98,22 +98,22 @@ contract("SimpleLoan", (accounts) => {
 
         it("should fail to liquidate", async () => {
             u.increaseTime(u.d2s(100)) // pass maturity date of loan
-            await u.assertRevert(c.liquidate(lid, 5, 12000, 100, offchain, { from: requester2 })) // Caller not authorized
+            await u.assertRevert(c.liquidate(lid, 5, 18000, 100, offchain, { from: requester2 })) // Caller not authorized
         })
 
         it("should be able to liquidate", async () => {
             let x = await c.loans(lid)
-            tx = await c.liquidate(lid, 5, 12000, 100, offchain, { from: owner })
+            tx = await c.liquidate(lid, 5, 18000, 100, offchain, { from: owner })
             x = await c.loans(lid)
             let amount = await u.oc(tx, "__liquidate", "amount")
-            eq(amount.toString(), web3.utils.toWei("9.2125"))
+            eq(amount.toString().substring(0, 7), web3.utils.toWei("6.1416666").substring(0, 7))
         })
 
         it("should be able to refund", async () => {
             tx = await c.refundCollateral(lid, offchain, { from: requester1 })
             lid1 = await u.oc(tx, "__refundCollateral", "lid")
             let amount = await u.oc(tx, "__refundCollateral", "amount")
-            eq(amount.toString(), web3.utils.toWei("0.7875"))
+            eq(amount.toString().substring(0, 7), web3.utils.toWei("3.85833333").substring(0, 7))
             eq(lid1, lid)
         })
     })
@@ -148,6 +148,31 @@ contract("SimpleLoan", (accounts) => {
             tx = await s.submitTransaction(c.address, 0, data, { from: msAcc })
             let amount = await u.roc(tx, abi, "__liquidate", "amount")
             eq(amount.toString().substr(0, 5), web3.utils.toWei("9.2583333").substr(0, 5))
+        })
+    })
+
+    describe('no response from lender', () => {
+        it('should create new loan request', async () => {
+            lid = "0x0"
+            receiver = "0xabc"
+            request = 100
+
+            tx1 = await c.sendCollateral(lid, digest, receiver, request, offchain, { from: requester1, value: web3.utils.toWei("1") })
+            lid = await u.oc(tx1, "__sendCollateral", "lid")
+            as(!isNaN(lid))
+        })
+
+        it("should fail to refund", async () => {
+            await u.assertRevert(c.refundCollateral(lid, offchain, { from: requester1 })) // before escrowDeadline
+        })
+
+        it("should refund successfully", async () => {
+            let name = web3.utils.fromAscii("escrowWindow")
+            let escrowWindow = (await c.get(name)).toNumber()
+            u.increaseTime(escrowWindow) // pass escrowDeadline
+            tx2 = await c.refundCollateral(lid, offchain, { from: requester1 })
+            let amount = u.oc(tx2, "__refundCollateral", "amount")
+            eq(amount.toString(), web3.utils.toWei("1"))
         })
     })
 })

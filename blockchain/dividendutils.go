@@ -58,6 +58,7 @@ func buildDividendTxs(
 			PayoutID:       proposal.PayoutID,
 			TokenID:        proposal.TokenID,
 			PaymentAddress: paymentAddress,
+			MetadataBase:   metadata.MetadataBase{Type: metadata.DividendMeta},
 		}
 	}
 	return txs, nil

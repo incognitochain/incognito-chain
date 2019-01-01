@@ -10,8 +10,8 @@ import (
 )
 
 type MultiSigsRegistration struct {
-	PaymentAddress   privacy.PaymentAddress // registing address
-	SpendableMembers [][]byte
+	PaymentAddress   privacy.PaymentAddress // registering address
+	SpendableMembers [][]byte               // pub keys of spendable members™
 	MetadataBase
 }
 
@@ -36,12 +36,9 @@ func (msReg *MultiSigsRegistration) ValidateTxWithBlockChain(
 	chainID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	paymentAddressBytes := []byte{}
-	paymentAddressBytes = append(paymentAddressBytes, msReg.PaymentAddress.Pk[:]...)
-	paymentAddressBytes = append(paymentAddressBytes, msReg.PaymentAddress.Tk[:]...)
-	_, err := bcr.GetMultiSigsRegistration(paymentAddressBytes)
+	_, err := db.GetMultiSigsRegistration(msReg.PaymentAddress.Pk)
 	if err == nil { // found
-		return false, errors.New("The payment address is already existed.")
+		return false, errors.New("The payment address's public key is already existed.")
 	}
 	if err != lvdberr.ErrNotFound {
 		return false, err

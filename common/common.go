@@ -2,11 +2,14 @@ package common
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"log"
+	"math"
 	"math/big"
 	"net"
 	"os"
@@ -17,11 +20,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
-
-	"log"
-	"math"
-
-	"crypto/rand"
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/multiformats/go-multiaddr"
@@ -367,6 +365,16 @@ func Uint32ToBytes(value uint32) []byte {
 
 func BytesToUint32(b []byte) uint32 {
 	return binary.LittleEndian.Uint32(b)
+}
+
+func Uint8ToBytes(value uint8) []byte {
+	b := make([]byte, 1)
+	b[0] = byte(value)
+	return b
+}
+
+func BytesToUint8(b []byte) uint8 {
+	return uint8(b[0])
 }
 
 func BytesToInt32(b []byte) int32 {

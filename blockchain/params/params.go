@@ -25,9 +25,11 @@ func NewLoanParams(interestRate uint64, maturity uint32, liquidationStart uint64
 }
 
 type DCBParams struct {
-	SaleData               *SaleData
-	MinLoanResponseRequire uint8
-	SaleDBCTOkensByUSDData *SaleDBCTOkensByUSDData
+	SaleData                 *SaleData
+	MinLoanResponseRequire   uint8
+	MinCMBApprovalRequire    uint8
+	LateWithdrawResponseFine uint64 // CST penalty for each CMB's late withdraw response
+	SaleDBCTOkensByUSDData   *SaleDBCTOkensByUSDData
 
 	// TODO(@0xbunyip): read loan params from proposal instead of storing and reading separately
 	LoanParams []LoanParams // params for collateralized loans of Constant
@@ -137,6 +139,8 @@ func (dcbParams *DCBParams) Hash() *common.Hash {
 	record := string(dcbParams.SaleData.Hash().GetBytes())
 	record += string(dcbParams.SaleDBCTOkensByUSDData.Hash().GetBytes())
 	record += string(dcbParams.MinLoanResponseRequire)
+	record += string(dcbParams.MinCMBApprovalRequire)
+	record += string(dcbParams.LateWithdrawResponseFine)
 	for _, i := range dcbParams.LoanParams {
 		record += string(i.InterestRate)
 		record += string(i.Maturity)

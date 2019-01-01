@@ -120,6 +120,12 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
+	// Save CMB data
+	err = self.ProcessCMBTxs(block)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
+
 	Logger.log.Infof("Accepted block %s", blockHash)
 
 	return nil

@@ -7,7 +7,6 @@ import (
 
 func TestElGamalEncryption(t *testing.T) {
 	privKey := new(ElGamalPrivKey)
-	privKey.Curve = &Curve
 	privKey.X = RandInt()
 
 	pubKey := privKey.GenPubKey()
