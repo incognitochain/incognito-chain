@@ -374,10 +374,34 @@ func BytesToInt32(b []byte) int32 {
 	return int32(i)
 }
 
+func BytesToUint64(b []byte) uint64 {
+	return binary.LittleEndian.Uint64(b)
+}
+
+func Uint64ToBytes(value uint64) []byte {
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, value)
+	return b
+}
+
 func SliceInterfaceToSliceByte(Arr []interface{}) []byte {
 	res := make([]byte, 0)
 	for _, element := range Arr {
 		res = append(res, element.(byte))
+	}
+	return res
+}
+
+func BytesPlusOne(b []byte) []byte {
+	res := make([]byte, len(b))
+	for i := len(b); i >= 0; i-- {
+		if b[i] < 0xff {
+			copy(res[0:i], b[0:i])
+			res[i] = b[i] + 1
+			break
+		} else {
+			res[i] = 0
+		}
 	}
 	return res
 }

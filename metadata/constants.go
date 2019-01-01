@@ -58,6 +58,8 @@ const (
 	RewardProposalWinnerMeta
 	RewardDCBProposalSubmitterMeta
 	RewardGOVProposalSubmitterMeta
+	RewardShareOldDCBBoardMeta
+	RewardShareOldGOVBoardMeta
 	PunishDCBDecryptMeta
 	PunishGOVDecryptMeta
 )

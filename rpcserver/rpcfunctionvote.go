@@ -1,6 +1,7 @@
 package rpcserver
 
 import (
+	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/wallet"
@@ -9,9 +10,7 @@ import (
 func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	paymentAddress := arrayParams[0].(string)
-	chainID := byte(arrayParams[1].(float64))
 	pubKey := wallet.GetPubKeyFromPaymentAddress(paymentAddress)
-	startedBlock := self.config.BlockChain.BestState[chainID].BestBlock.Header.Height
 	db := *self.config.Database
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 
@@ -24,7 +23,7 @@ func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-c
 	TokenID.SetBytes(common.DCBVotingTokenID[:])
 	item.TokenID = TokenID.String()
 	item.TokenImage = common.Render([]byte(item.TokenID))
-	amount, err := db.GetDCBVoteTokenAmount(uint32(startedBlock), pubKey)
+	amount, err := db.GetDCBVoteTokenAmount(self.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), pubKey)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -39,7 +38,7 @@ func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-c
 	TokenID.SetBytes(common.GOVVotingTokenID[:])
 	item.TokenID = TokenID.String()
 	item.TokenImage = common.Render([]byte(item.TokenID))
-	amount, err = db.GetGOVVoteTokenAmount(uint32(startedBlock), pubKey)
+	amount, err = db.GetGOVVoteTokenAmount(self.config.BlockChain.GetCurrentBoardIndex(blockchain.GOVConstitutionHelper{}), pubKey)
 	if err != nil {
 		Logger.log.Error(err)
 	}
