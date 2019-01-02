@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"crypto/rand"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -18,7 +19,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"github.com/ninjadotorg/constant/wallet"
-	"encoding/json"
+	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 type Tx struct {
@@ -409,6 +410,17 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 	return res, nil
 }
 
+func (tx *Tx) validateMultiSigsTx(db database.DatabaseInterface) (bool, error) {
+	meta := tx.GetMetadata()
+	if meta == nil {
+		return false, nil
+	}
+	if meta.GetType() != metadata.MultiSigsSpendingMeta {
+		return false, nil
+	}
+	return meta.VerifyMultiSigs(tx, db)
+}
+
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
@@ -419,15 +431,33 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	if tx.GetType() == common.TxSalaryType {
 		return tx.ValidateTxSalary(db)
 	}
+
 	var valid bool
 	var err error
-	valid, err = tx.VerifySigTx(hasPrivacy)
-	if valid == false {
-		if err != nil {
-			Logger.log.Infof("[PRIVACY LOG] - Error verifying signature of tx: %+v", err)
+	senderPK := tx.GetJSPubKey()
+	_, getMSRErr := db.GetMultiSigsRegistration(senderPK)
+	if getMSRErr != nil {
+		if getMSRErr != lvdberr.ErrNotFound {
+			Logger.log.Infof("%+v", err)
+			return false
+		} else {
+			valid, err = tx.VerifySigTx(hasPrivacy)
+			if valid == false {
+				if err != nil {
+					Logger.log.Infof("[PRIVACY LOG] - Error verifying signature of tx: %+v", err)
+				}
+				Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION SIGNATURE")
+				return false
+			}
 		}
-		Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION SIGNATURE")
-		return false
+	} else { // found, spending on multisigs address
+		valid, err = tx.validateMultiSigsTx(db)
+		if err != nil {
+			Logger.log.Infof("%+v", err)
+		}
+		if !valid {
+			return false
+		}
 	}
 
 	if tx.Proof != nil {
@@ -564,26 +594,38 @@ func (tx *Tx) IsSalaryTx() bool {
 func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 	pubkeys := [][]byte{}
 	amounts := []uint64{}
+	for _, coin := range tx.Proof.OutputCoins {
+		added := false
+		coinPubKey := coin.CoinDetails.PublicKey.Compress()
+		for i, key := range pubkeys {
+			if bytes.Equal(coinPubKey, key) {
+				added = true
+				amounts[i] += coin.CoinDetails.Value
+				break
+			}
+		}
+		if !added {
+			pubkeys = append(pubkeys, coinPubKey)
+			amounts = append(amounts, coin.CoinDetails.Value)
+		}
+	}
 	return pubkeys, amounts
+}
 
-	// TODO: @bunyip - update logic here
-
-	// for _, desc := range tx.Descs {
-	// 	for _, note := range desc.Note {
-	// 		added := false
-	// 		for i, key := range pubkeys {
-	// 			if bytes.Equal(note.Apk[:], key) {
-	// 				added = true
-	// 				amounts[i] += note.Value
-	// 			}
-	// 		}
-	// 		if !added {
-	// 			pubkeys = append(pubkeys, note.Apk[:])
-	// 			amounts = append(amounts, note.Value)
-	// 		}
-	// 	}
-	// }
-	// return pubkeys, amounts
+func (tx *Tx) GetUniqueReceiver() (bool, []byte, uint64) {
+	sender := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	pubkeys, amounts := tx.GetReceivers()
+	pubkey := []byte{}
+	amount := uint64(0)
+	count := 0
+	for i, pk := range pubkeys {
+		if !bytes.Equal(pk, sender) {
+			pubkey = pk
+			amount = amounts[i]
+			count += 1
+		}
+	}
+	return count == 1, pubkey, amount
 }
 
 func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.Hash][][]byte) error {
@@ -712,13 +754,11 @@ func (tx *Tx) SetMetadata(meta metadata.Metadata) {
 }
 
 func (tx *Tx) GetJSPubKey() []byte {
-	result := []byte{}
-	if tx.Proof != nil && len(tx.Proof.InputCoins) > 0 {
-		pubkey := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
-		result = make([]byte, len(pubkey))
-		copy(result, pubkey)
-	}
-	return result
+	return tx.SigPubKey
+}
+
+func (tx *Tx) GetProof() *zkp.PaymentProof {
+	return tx.Proof
 }
 
 func (tx *Tx) IsPrivacy() bool {
@@ -766,12 +806,6 @@ func (tx *Tx) CalculateTxValue() (*privacy.PaymentAddress, uint64) {
 		txValue += outCoin.CoinDetails.Value
 	}
 	return senderAddr, txValue
-}
-
-func (tx *Tx) CloneTxThenUpdateMetadata(meta metadata.Metadata) []byte {
-	clonedTx := *tx
-	clonedTx.SetMetadata(meta)
-	return common.ToBytes(clonedTx)
 }
 
 func (tx *Tx) GetLockTime() int64 {

@@ -25,41 +25,40 @@ func (blockgen *BlkTmplGenerator) createRewardProposalWinnerTx(chainID byte, con
 
 func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 	chainID byte,
-	ConstitutionHelper ConstitutionHelper,
+	helper ConstitutionHelper,
 	minerPrivateKey *privacy.SpendingKey,
 ) ([]metadata.Transaction, error) {
 	resTx := make([]metadata.Transaction, 0)
 	SumVote := make(map[common.Hash]uint64)
 	CountVote := make(map[common.Hash]uint32)
 	VoteTable := make(map[common.Hash]map[string]int32)
-	BestBlock := blockgen.chain.BestState[chainID].BestBlock
-	startedBlockOfNextConstitution := ConstitutionHelper.GetConstitutionEndedBlockHeight(blockgen, chainID)
+	NextConstitutionIndex := blockgen.chain.GetCurrentBoardIndex(helper)
 
 	db := blockgen.chain.config.DataBase
-	boardType := ConstitutionHelper.GetLowerCaseBoardType()
+	boardType := helper.GetLowerCaseBoardType()
 	begin := lvdb.GetThreePhraseCryptoSealerKey(boardType, 0, nil)
 	// +1 to search in that range
-	end := lvdb.GetThreePhraseCryptoSealerKey(boardType, 1+startedBlockOfNextConstitution, nil)
+	end := lvdb.GetThreePhraseCryptoSealerKey(boardType, 1+NextConstitutionIndex, nil)
 
 	searchrange := util.Range{
 		Start: begin,
 		Limit: end,
 	}
 	iter := db.NewIterator(&searchrange, nil)
-	rightStartedBlock := BestBlock.Header.Height + 1
+	rightIndex := blockgen.chain.GetConstitutionIndex(helper) + 1
 	for iter.Next() {
 		key := iter.Key()
-		_, startedBlock, transactionID, err := lvdb.ParseKeyThreePhraseCryptoSealer(key)
+		_, constitutionIndex, transactionID, err := lvdb.ParseKeyThreePhraseCryptoSealer(key)
 		if err != nil {
 			return nil, err
 		}
-		if startedBlock != uint32(rightStartedBlock) {
+		if constitutionIndex != uint32(rightIndex) {
 			//@todo 0xjackalope delete all relevant thing
 			db.Delete(key)
 			continue
 		}
 		//Punish owner if he don't send decrypted message
-		keyOwner := lvdb.GetThreePhraseCryptoOwnerKey(boardType, startedBlock, transactionID)
+		keyOwner := lvdb.GetThreePhraseCryptoOwnerKey(boardType, constitutionIndex, transactionID)
 		valueOwnerInByte, err := db.Get(keyOwner)
 		if err != nil {
 			return nil, err
@@ -70,15 +69,15 @@ func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTxAndRewardSu
 		}
 
 		_, _, _, lv3Tx, _ := blockgen.chain.GetTransactionByHash(transactionID)
-		sealerPubKeyList := ConstitutionHelper.GetSealerPubKey(lv3Tx)
+		sealerPubKeyList := helper.GetSealerPubKey(lv3Tx)
 		if valueOwner != 1 {
 			newTx := transaction.Tx{
-				Metadata: ConstitutionHelper.CreatePunishDecryptTx(sealerPubKeyList[0]),
+				Metadata: helper.CreatePunishDecryptTx(sealerPubKeyList[0]),
 			}
 			resTx = append(resTx, &newTx)
 		}
 		//Punish sealer if he don't send decrypted message
-		keySealer := lvdb.GetThreePhraseCryptoSealerKey(boardType, startedBlock, transactionID)
+		keySealer := lvdb.GetThreePhraseCryptoSealerKey(boardType, constitutionIndex, transactionID)
 		valueSealerInByte, err := db.Get(keySealer)
 		if err != nil {
 			return nil, err
@@ -87,14 +86,14 @@ func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTxAndRewardSu
 		if valueSealer != 3 {
 			//Count number of time she don't send encrypted message if number==2 create punish transaction
 			newTx := transaction.Tx{
-				Metadata: ConstitutionHelper.CreatePunishDecryptTx(sealerPubKeyList[valueSealer]),
+				Metadata: helper.CreatePunishDecryptTx(sealerPubKeyList[valueSealer]),
 			}
 			resTx = append(resTx, &newTx)
 		}
 
 		//Accumulate count vote
 		voter := sealerPubKeyList[0]
-		keyVote := lvdb.GetThreePhraseVoteValueKey(boardType, startedBlock, transactionID)
+		keyVote := lvdb.GetThreePhraseVoteValueKey(boardType, constitutionIndex, transactionID)
 		valueVote, err := db.Get(keyVote)
 		if err != nil {
 			return nil, err
@@ -130,7 +129,7 @@ func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTxAndRewardSu
 		amountOfThisProposal := int64(0)
 		countOfThisProposal := uint32(0)
 		for voterPubKey, amount := range listVoter {
-			voterToken, _ := db.GetAmountVoteToken(boardType, startedBlockOfNextConstitution, []byte(voterPubKey))
+			voterToken, _ := db.GetAmountVoteToken(boardType, NextConstitutionIndex, []byte(voterPubKey))
 			if int32(voterToken) < amount || amount < 0 {
 				listVoter[voterPubKey] = 0
 				// can change listvoter because it is a pointer
@@ -158,13 +157,13 @@ func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTxAndRewardSu
 			bestVoterAll = bestVoterThisProposal
 		}
 	}
-	acceptedSubmitProposalTransaction := ConstitutionHelper.TxAcceptProposal(&bestProposal.TxId, bestVoterAll)
+	acceptedSubmitProposalTransaction := helper.TxAcceptProposal(&bestProposal.TxId, bestVoterAll)
 	_, _, _, bestSubmittedProposal, _ := blockgen.chain.GetTransactionByHash(&bestProposal.TxId)
-	submitterPaymentAddress := ConstitutionHelper.GetPaymentAddressFromSubmitProposalMetadata(bestSubmittedProposal)
+	submitterPaymentAddress := helper.GetPaymentAddressFromSubmitProposalMetadata(bestSubmittedProposal)
 
 	// If submitterPaymentAdress use don't use privacy for
 	if submitterPaymentAddress == nil {
-		rewardForProposalSubmitter, err := ConstitutionHelper.NewTxRewardProposalSubmitter(blockgen, submitterPaymentAddress, minerPrivateKey)
+		rewardForProposalSubmitter, err := helper.NewTxRewardProposalSubmitter(blockgen, submitterPaymentAddress, minerPrivateKey)
 		if err != nil {
 			return nil, err
 		}
@@ -228,19 +227,19 @@ func (blockgen *BlkTmplGenerator) createAcceptGOVBoardTx(DCBBoardPubKeys [][]byt
 
 func (block *Block) UpdateDCBBoard(thisTx metadata.Transaction) error {
 	meta := thisTx.GetMetadata().(*metadata.AcceptDCBBoardMetadata)
-	block.Header.DCBGovernor.DCBBoardPubKeys = meta.DCBBoardPubKeys
+	block.Header.DCBGovernor.BoardPubKeys = meta.DCBBoardPubKeys
 	block.Header.DCBGovernor.StartedBlock = uint32(block.Header.Height)
 	block.Header.DCBGovernor.EndBlock = block.Header.DCBGovernor.StartedBlock + common.DurationOfTermDCB
-	block.Header.DCBGovernor.StartAmountDCBToken = meta.StartAmountDCBToken
+	block.Header.DCBGovernor.StartAmountToken = meta.StartAmountDCBToken
 	return nil
 }
 
 func (block *Block) UpdateGOVBoard(thisTx metadata.Transaction) error {
 	meta := thisTx.GetMetadata().(*metadata.AcceptGOVBoardMetadata)
-	block.Header.GOVGovernor.GOVBoardPubKeys = meta.GOVBoardPubKeys
+	block.Header.GOVGovernor.BoardPubKeys = meta.GOVBoardPubKeys
 	block.Header.GOVGovernor.StartedBlock = uint32(block.Header.Height)
 	block.Header.GOVGovernor.EndBlock = block.Header.GOVGovernor.StartedBlock + common.DurationOfTermGOV
-	block.Header.GOVGovernor.StartAmountGOVToken = meta.StartAmountGOVToken
+	block.Header.GOVGovernor.StartAmountToken = meta.StartAmountGOVToken
 	return nil
 }
 
@@ -266,10 +265,7 @@ func parseVoteGOVBoardListValue(value []byte) ([]byte, uint64) {
 	return voterPubKey, amount
 }
 
-func createSingleSendDCBVoteTokenFail(pubKey []byte, amount uint64) metadata.Transaction {
-	paymentAddress := privacy.PaymentAddress{
-		Pk: pubKey,
-	}
+func createSingleSendDCBVoteTokenFail(paymentAddress privacy.PaymentAddress, amount uint64) metadata.Transaction {
 	txTokenVout := transaction.TxTokenVout{
 		Value:          amount,
 		PaymentAddress: paymentAddress,
@@ -286,10 +282,7 @@ func createSingleSendDCBVoteTokenFail(pubKey []byte, amount uint64) metadata.Tra
 	return &newTx
 }
 
-func createSingleSendGOVVoteTokenFail(pubKey []byte, amount uint64) metadata.Transaction {
-	paymentAddress := privacy.PaymentAddress{
-		Pk: pubKey,
-	}
+func createSingleSendGOVVoteTokenFail(paymentAddress privacy.PaymentAddress, amount uint64) metadata.Transaction {
 	txTokenVout := transaction.TxTokenVout{
 		Value:          amount,
 		PaymentAddress: paymentAddress,
@@ -312,10 +305,10 @@ func (blockgen *BlkTmplGenerator) CreateSendBackDCBTokenAfterVoteFail(chainID by
 	for _, i := range newDCBList {
 		setOfNewDCB[string(i)] = true
 	}
-	currentHeight := blockgen.chain.BestState[chainID].Height
+	currentBoardIndex := blockgen.chain.GetCurrentBoardIndex(DCBConstitutionHelper{})
 	db := blockgen.chain.config.DataBase
-	begin := db.GetKey(string(blockgen.chain.config.DataBase.GetVoteDCBBoardListPrefix()), string(0))
-	end := db.GetKey(string(blockgen.chain.config.DataBase.GetVoteDCBBoardListPrefix()), currentHeight+1)
+	begin := lvdb.GetKeyVoteDCBBoardList(0, make([]byte, common.PubKeyLength), make([]byte, common.PubKeyLength))
+	end := lvdb.GetKeyVoteDCBBoardList(currentBoardIndex+1, make([]byte, common.PubKeyLength), make([]byte, common.PubKeyLength))
 	searchRange := util.Range{
 		Start: begin,
 		Limit: end,
@@ -325,12 +318,15 @@ func (blockgen *BlkTmplGenerator) CreateSendBackDCBTokenAfterVoteFail(chainID by
 	listNewTx := make([]metadata.Transaction, 0)
 	for iter.Next() {
 		key := iter.Key()
-		startedBlock, PubKey, _, _ := lvdb.ParseKeyVoteDCBBoardList(key)
+		boardIndex, PubKey, _, _ := lvdb.ParseKeyVoteDCBBoardList(key)
 		value := iter.Value()
-		senderPubkey, amountOfDCBToken := parseVoteDCBBoardListValue(value)
+		senderPubKey, amountOfDCBToken := parseVoteDCBBoardListValue(value)
 		_, found := setOfNewDCB[string(PubKey)]
-		if startedBlock < uint32(currentHeight) || !found {
-			listNewTx = append(listNewTx, createSingleSendDCBVoteTokenFail(senderPubkey, amountOfDCBToken))
+		if boardIndex < uint32(currentBoardIndex) || !found {
+			paymentAddressByte := db.GetPaymentAddressFromPubKey(senderPubKey)
+			paymentAddress := privacy.PaymentAddress{}
+			paymentAddress.SetBytes(paymentAddressByte)
+			listNewTx = append(listNewTx, createSingleSendDCBVoteTokenFail(paymentAddress, amountOfDCBToken))
 		}
 	}
 	return listNewTx
@@ -341,10 +337,10 @@ func (blockgen *BlkTmplGenerator) CreateSendBackGOVTokenAfterVoteFail(chainID by
 	for _, i := range newGOVList {
 		setOfNewGOV[string(i)] = true
 	}
-	currentHeight := blockgen.chain.BestState[chainID].Height
+	currentBoardIndex := blockgen.chain.GetCurrentBoardIndex(GOVConstitutionHelper{})
 	db := blockgen.chain.config.DataBase
-	begin := db.GetKey(string(blockgen.chain.config.DataBase.GetVoteGOVBoardListPrefix()), string(0))
-	end := db.GetKey(string(blockgen.chain.config.DataBase.GetVoteGOVBoardListPrefix()), currentHeight+1)
+	begin := lvdb.GetKeyVoteGOVBoardList(0, make([]byte, common.PubKeyLength), make([]byte, common.PubKeyLength))
+	end := lvdb.GetKeyVoteGOVBoardList(currentBoardIndex+1, make([]byte, common.PubKeyLength), make([]byte, common.PubKeyLength))
 	searchRange := util.Range{
 		Start: begin,
 		Limit: end,
@@ -354,12 +350,15 @@ func (blockgen *BlkTmplGenerator) CreateSendBackGOVTokenAfterVoteFail(chainID by
 	listNewTx := make([]metadata.Transaction, 0)
 	for iter.Next() {
 		key := iter.Key()
-		startedBlock, PubKey, _, _ := lvdb.ParseKeyVoteGOVBoardList(key)
+		boardIndex, PubKey, _, _ := lvdb.ParseKeyVoteGOVBoardList(key)
 		value := iter.Value()
-		senderPubkey, amountOfGOVToken := parseVoteGOVBoardListValue(value)
+		senderPubKey, amountOfGOVToken := parseVoteGOVBoardListValue(value)
 		_, found := setOfNewGOV[string(PubKey)]
-		if startedBlock < uint32(currentHeight) || !found {
-			listNewTx = append(listNewTx, createSingleSendGOVVoteTokenFail(senderPubkey, amountOfGOVToken))
+		if boardIndex < uint32(currentBoardIndex) || !found {
+			paymentAddressByte := db.GetPaymentAddressFromPubKey(senderPubKey)
+			paymentAddress := privacy.PaymentAddress{}
+			paymentAddress.SetBytes(paymentAddressByte)
+			listNewTx = append(listNewTx, createSingleSendGOVVoteTokenFail(paymentAddress, amountOfGOVToken))
 		}
 	}
 	return listNewTx

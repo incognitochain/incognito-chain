@@ -3,8 +3,8 @@ package blockchain
 // constant for network
 const (
 	//Network fixed params
-	ThresholdRatioOfDCBCrisis = 90
-	ThresholdRatioOfGovCrisis = 90
+	ThresholdRatioOfDCBCrisis = 9000
+	ThresholdRatioOfGovCrisis = 9000
 
 	// Mainnet
 	Mainnet                           = 0x01

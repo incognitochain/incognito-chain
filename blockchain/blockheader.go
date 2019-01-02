@@ -42,7 +42,6 @@ type BlockHeader struct {
 	// BOARD
 	DCBGovernor DCBGovernor
 	GOVGovernor GOVGovernor
-	CMBGovernor CMBGovernor
 
 	//Block Height
 	Height int32

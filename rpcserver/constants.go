@@ -68,14 +68,16 @@ const (
 	EncryptData                = "encryptdata"
 
 	// multisig for board spending
-	CreateSignatureOnCustomTokenTx = "createsignatureoncustomtokentx"
-	GetListDCBBoard                = "getlistdcbboard"
-	GetListCBBoard                 = "getlistcbboard"
-	GetListGOVBoard                = "getlistgovboard"
-	GetGOVParams                   = "getgovparams"
-	GetDCBParams                   = "getdcbparams"
-	GetGOVConstitution             = "getgovconstitution"
-	GetDCBConstitution             = "getdcbconstitution"
+	CreateSignatureOnCustomTokenTx       = "createsignatureoncustomtokentx"
+	GetListDCBBoard                      = "getlistdcbboard"
+	GetListCBBoard                       = "getlistcbboard"
+	GetListGOVBoard                      = "getlistgovboard"
+	GetGOVParams                         = "getgovparams"
+	GetDCBParams                         = "getdcbparams"
+	GetGOVConstitution                   = "getgovconstitution"
+	GetDCBConstitution                   = "getdcbconstitution"
+	CreateAndSendTxWithMultiSigsReg      = "createandsendtxwithmultisigsreg"
+	CreateAndSendTxWithMultiSigsSpending = "createandsendtxwithmultisigsspending"
 
 	// vote
 	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"
@@ -99,8 +101,16 @@ const (
 	CreateAndSendTxWithContractingRequest = "createandsendtxwithcontractingrequest"
 
 	// gov
-	GetBondTypes                      = "getbondtypes"
-	CreateAndSendTxWithBuyBackRequest = "createandsendtxwithbuybackrequest"
-	CreateAndSendTxWithBuySellRequest = "createandsendtxwithbuysellrequest"
-	CreateAndSendTxWithOracleFeed     = "createandsendtxwithoraclefeed"
+	GetBondTypes                           = "getbondtypes"
+	CreateAndSendTxWithBuyBackRequest      = "createandsendtxwithbuybackrequest"
+	CreateAndSendTxWithBuySellRequest      = "createandsendtxwithbuysellrequest"
+	CreateAndSendTxWithOracleFeed          = "createandsendtxwithoraclefeed"
+	CreateAndSendTxWithUpdatingOracleBoard = "createandsendtxwithupdatingoracleboard"
+
+	// cmb
+	CreateAndSendTxWithCMBInitRequest     = "createandsendtxwithcmbinitrequest"
+	CreateAndSendTxWithCMBInitResponse    = "createandsendtxwithcmbinitresponse"
+	CreateAndSendTxWithCMBDepositContract = "createandsendtxwithcmbdepositcontract"
+	CreateAndSendTxWithCMBDepositSend     = "createandsendtxwithcmbdepositsend"
+	CreateAndSendTxWithCMBWithdrawRequest = "createandsendtxwithcmbwithdrawrequest"
 )

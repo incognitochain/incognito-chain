@@ -6,8 +6,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (db *db) SendInitDCBVoteToken(startedBlock uint32, pubKey []byte, amount uint32) error {
-	key := GetDCBVoteTokenAmountKey(startedBlock, pubKey)
+func (db *db) SendInitDCBVoteToken(boardIndex uint32, pubKey []byte, amount uint32) error {
+	key := GetKeyDCBVoteTokenAmount(boardIndex, pubKey)
 	ok, err := db.HasValue(key)
 	if err != nil {
 		return err
@@ -30,8 +30,8 @@ func (db *db) SendInitDCBVoteToken(startedBlock uint32, pubKey []byte, amount ui
 	return nil
 }
 
-func (db *db) SendInitGOVVoteToken(startedBlock uint32, pubKey []byte, amount uint32) error {
-	key := GetGOVVoteTokenAmountKey(startedBlock, pubKey)
+func (db *db) SendInitGOVVoteToken(boardIndex uint32, pubKey []byte, amount uint32) error {
+	key := GetGOVVoteTokenAmountKey(boardIndex, pubKey)
 	ok, err := db.HasValue(key)
 	if err != nil {
 		return err

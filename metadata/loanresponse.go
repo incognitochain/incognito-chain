@@ -48,16 +48,20 @@ func (lr *LoanResponse) Hash() *common.Hash {
 	return &hash
 }
 
-func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
-	// Check if only board members created this tx
+func txCreatedByDCBBoardMember(txr Transaction, bcr BlockchainRetriever) bool {
 	isBoard := false
-	for _, gov := range bcr.GetDCBBoardPubKeys() {
+	for _, member := range bcr.GetDCBBoardPubKeys() {
 		// TODO(@0xbunyip): change gov to []byte or use Base58Decode for entire payment address of governors
-		if bytes.Equal([]byte(gov), txr.GetJSPubKey()) {
+		if bytes.Equal([]byte(member), txr.GetJSPubKey()) {
 			isBoard = true
 		}
 	}
-	if !isBoard {
+	return isBoard
+}
+
+func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+	// Check if only board members created this tx
+	if !txCreatedByDCBBoardMember(txr, bcr) {
 		return false, fmt.Errorf("Tx must be created by DCB Governor")
 	}
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 func (blockGen *BlkTmplGenerator) registerMultiSigsAddresses(
@@ -14,7 +15,7 @@ func (blockGen *BlkTmplGenerator) registerMultiSigsAddresses(
 		return nil
 	}
 	msRegs := map[string]*metadata.MultiSigsRegistration{}
-	sortedTxs := Txs(txs).SortTxs(false)
+	sortedTxs := transaction.SortTxsByLockTime(txs, false)
 	for _, tx := range sortedTxs {
 		meta := tx.GetMetadata()
 		if meta == nil {
@@ -29,10 +30,7 @@ func (blockGen *BlkTmplGenerator) registerMultiSigsAddresses(
 	// store msRegs to db
 	// TODO: should use batch-write to ensure data consistency
 	for _, msReg := range msRegs {
-		paymentAddressBytes := []byte{}
-		paymentAddressBytes = append(paymentAddressBytes, msReg.PaymentAddress.Pk[:]...)
-		paymentAddressBytes = append(paymentAddressBytes, msReg.PaymentAddress.Tk[:]...)
-		err := blockGen.chain.config.DataBase.StoreMultiSigsRegistration(paymentAddressBytes, common.ToBytes(*msReg))
+		err := blockGen.chain.config.DataBase.StoreMultiSigsRegistration(msReg.PaymentAddress.Pk, common.ToBytes(*msReg))
 		if err != nil {
 			return err
 		}

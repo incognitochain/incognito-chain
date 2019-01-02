@@ -100,18 +100,28 @@ type DatabaseInterface interface {
 	StoreCrowdsaleResponse([]byte, []byte) error
 	GetCrowdsaleTxs([]byte) ([][]byte, error)
 
+	// CMB
+	StoreCMB([]byte, []byte, [][]byte, uint64, []byte) error
+	GetCMB([]byte) ([]byte, [][]byte, uint64, []byte, uint8, uint64, error)
+	UpdateCMBState([]byte, uint8) error
+	UpdateCMBFine(mainAccount []byte, fine uint64) error
+	StoreCMBResponse([]byte, []byte) error
+	GetCMBResponse([]byte) ([][]byte, error)
+	StoreDepositSend([]byte, []byte) error
+	GetDepositSend([]byte) ([]byte, error)
+	StoreWithdrawRequest(contractID []byte, txHash []byte) error
+	GetWithdrawRequest(contractID []byte) ([]byte, uint8, error)
+	UpdateWithdrawRequestState(contractID []byte, state uint8) error
+	StoreNoticePeriod(blockHeight int32, txReqHash []byte) error
+	GetNoticePeriod(blockHeight int32) ([][]byte, error)
+
 	//Vote
-	AddVoteDCBBoard(uint32, []byte, []byte, uint64) error
-	AddVoteGOVBoard(uint32, []byte, []byte, uint64) error
-	GetTopMostVoteDCBGovernor(uint32) (CandidateList, error)
+	AddVoteDCBBoard(uint32, []byte, []byte, []byte, uint64) error
+	AddVoteGOVBoard(uint32, []byte, []byte, []byte, uint64) error
+	GetTopMostVoteDCBGovernor(currentBoardIndex uint32) (CandidateList, error)
 	GetTopMostVoteGOVGovernor(uint32) (CandidateList, error)
 	NewIterator(*util.Range, *opt.ReadOptions) iterator.Iterator
 	GetKey(string, interface{}) []byte
-	GetVoteDCBBoardListPrefix() []byte
-	GetVoteGOVBoardListPrefix() []byte
-	GetThreePhraseSealerPrefix() []byte
-	GetThreePhraseOwnerPrefix() []byte
-	GetThreePhraseVoteValuePrefix() []byte
 	SendInitDCBVoteToken(uint32, []byte, uint32) error
 	SendInitGOVVoteToken(uint32, []byte, uint32) error
 	AddVoteLv3Proposal(string, uint32, *common.Hash) error
@@ -120,13 +130,15 @@ type DatabaseInterface interface {
 	AddVoteNormalProposalFromSealer(string, uint32, *common.Hash, []byte) error
 	GetAmountVoteToken(string, uint32, []byte) (uint32, error)
 	TakeVoteTokenFromWinner(string, uint32, []byte, int32) error
-	SetNewWinningVoter(string, uint32, []byte) error
-	GetDCBVoteTokenAmount(startedBlock uint32, pubKey []byte) (uint32, error)
-	GetGOVVoteTokenAmount(startedBlock uint32, pubKey []byte) (uint32, error)
+	SetNewProposalWinningVoter(string, uint32, []byte) error
+	GetDCBVoteTokenAmount(boardIndex uint32, pubKey []byte) (uint32, error)
+	GetGOVVoteTokenAmount(boardIndex uint32, pubKey []byte) (uint32, error)
 
 	// Multisigs
 	StoreMultiSigsRegistration([]byte, []byte) error
 	GetMultiSigsRegistration([]byte) ([]byte, error)
+	GetPaymentAddressFromPubKey(pubKey []byte) []byte
+	GetBoardVoterList(chairPubKey []byte, boardIndex uint32) [][]byte
 
 	Close() error
 }

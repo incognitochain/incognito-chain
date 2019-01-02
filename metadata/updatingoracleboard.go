@@ -1,12 +1,13 @@
 package metadata
 
 import (
+	"crypto/ecdsa"
 	"errors"
 	"math"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 type UpdatingOracleBoard struct {
@@ -61,13 +62,7 @@ func (uob UpdatingOracleBoard) ValidateTxWithBlockChain(
 		return false, errors.New("There is no one in GOV board yet.")
 	}
 	// verify signs
-	metaWithoutSigns := NewUpdatingOracleBoard(
-		uob.Action,
-		uob.OraclePubKeys,
-		nil,
-		uob.Type,
-	)
-	txBytes := txr.CloneTxThenUpdateMetadata(metaWithoutSigns)
+	txBytes := txr.Hash()[:]
 	signs := uob.Signs
 	verifiedSignCount := 0
 	for _, pubKey := range govBoardPubKeys {
@@ -75,22 +70,23 @@ func (uob UpdatingOracleBoard) ValidateTxWithBlockChain(
 		if !existed {
 			continue
 		}
-		keyObj, err := wallet.Base58CheckDeserialize(string(pubKey))
-		if err != nil {
-			// Logger.log.Info(err)
-			continue
-		}
-		isValid, err := keyObj.KeySet.Verify(txBytes, sign)
-		if err != nil {
-			// Logger.log.Info(err)
-			continue
-		}
-		if isValid {
+		verKey := new(ecdsa.PublicKey)
+		point := new(privacy.EllipticPoint)
+		point, _ = privacy.DecompressKey(pubKey)
+		verKey.X, verKey.Y = point.X, point.Y
+		verKey.Curve = privacy.Curve
+
+		// convert signature from byte array to ECDSASign
+		r, s := common.FromByteArrayToECDSASig(sign)
+
+		// verify signature
+		res := ecdsa.Verify(verKey, txBytes, r, s)
+		if res {
 			verifiedSignCount += 1
 		}
 	}
 	if verifiedSignCount < int(math.Floor(float64(boardLen/2)))+1 {
-		return false, errors.New("Number of signatures are not enough.")
+		return false, errors.New("Number of signatures is not enough.")
 	}
 	return true, nil
 }
@@ -136,7 +132,7 @@ func (uob UpdatingOracleBoard) Hash() *common.Hash {
 	for _, pk := range uob.OraclePubKeys {
 		record += string(pk)
 	}
-	record += string(common.ToBytes(uob.Signs))
+	// record += string(common.ToBytes(uob.Signs))
 	record += string(uob.MetadataBase.Hash()[:])
 
 	// final hash

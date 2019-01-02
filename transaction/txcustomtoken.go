@@ -12,6 +12,7 @@ import (
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 )
 
 // TxCustomToken is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -444,4 +445,8 @@ func (tx *TxCustomToken) IsPrivacy() bool {
 
 func (tx *TxCustomToken) ValidateType() bool {
 	return tx.Type == common.TxCustomTokenType
+}
+
+func (tx *TxCustomToken) GetProof() *zkp.PaymentProof {
+	return tx.Proof
 }
