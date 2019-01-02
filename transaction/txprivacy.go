@@ -123,6 +123,9 @@ func (tx *Tx) Init(
 
 	commitmentIndexs, myCommitmentIndexs = RandomCommitmentsProcess(inputCoins, privacy.CMRingSize, db, chainID, tokenID)
 
+	// Calculate execution time for creating payment proof
+	startPrivacy := time.Now()
+
 	// Check number of list of random commitments, list of random commitment indices
 	if len(commitmentIndexs) != len(inputCoins)*privacy.CMRingSize {
 		return NewTransactionErr(RandomCommitmentErr, nil)
@@ -232,6 +235,7 @@ func (tx *Tx) Init(
 	}
 
 	// prepare witness for proving
+
 	witness := new(zkp.PaymentWitness)
 	err = witness.Init(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
 	if err.(*privacy.PrivacyError) != nil {
@@ -283,7 +287,9 @@ func (tx *Tx) Init(
 		return NewTransactionErr(UnexpectedErr, err)
 	}
 
+	elapsedPrivacy := time.Since(startPrivacy)
 	elapsed := time.Since(start)
+	Logger.log.Infof("Creating payment proof time %s", elapsedPrivacy)
 	Logger.log.Infof("Creating normal tx time %s", elapsed)
 	return nil
 }

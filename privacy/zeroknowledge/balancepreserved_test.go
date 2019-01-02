@@ -1,7 +1,7 @@
 package zkp
 
 import (
-	"github.com/magiconair/properties/assert"
+	"github.com/stretchr/testify/assert"
 	"github.com/ninjadotorg/constant/privacy"
 	"math/big"
 	"testing"
@@ -27,5 +27,5 @@ func TestPKComMultiRange(t *testing.T) {
 
 	res := Vproof.Verify()
 
-	assert.Equal(t, true, res)
+	assert.Equal(t,true, res, )
 }
