@@ -30,4 +30,7 @@ const (
 
 	BigIntSize = 32 // bytes
 	Uint64Size = 8  // bytes
+
+	EncryptedRandomnessSize = 48 //bytes
+	EncryptedSymKeySize = 66 //bytes
 )

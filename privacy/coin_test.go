@@ -39,8 +39,11 @@ func TestEncryptionCoin(t *testing.T){
 	coin3 := new(Coin)
 	coin3.SetBytes(coin3Bytes)
 
-	fmt.Printf("coin3 info: %+v", coin3)
-	fmt.Printf("Public key: %v\n", coin3.PublicKey)
+	fmt.Printf("coin3 info: %+v\n", coin3)
+	//fmt.Printf("Public key: %v\n", coin3.PublicKey.Compress())
+	fmt.Printf("SND: %v\n", coin3.SNDerivator.Bytes())
+	//fmt.Printf("Public key: %v\n", coin3.PublicKey)
+
 
 	assert.Equal(t, coin.CoinDetails.Randomness , coin2.CoinDetails.Randomness)
 	assert.Equal(t, coin.CoinDetails.Value , coin2.CoinDetails.Value)
