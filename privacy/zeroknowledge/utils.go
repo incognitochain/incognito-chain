@@ -11,7 +11,7 @@ import (
 // GenerateChallengeFromPoint get hash of n points in G append with input values
 // return blake_2b(G[0]||G[1]||...||G[CM_CAPACITY-1]||<values>)
 // G[i] is list of all generator point of Curve
-func GenerateChallengeFromPoint(values []*privacy.EllipticPoint) *big.Int {
+func generateChallengeFromPoint(values []*privacy.EllipticPoint) *big.Int {
 	bytes := privacy.PedCom.G[0].Compress()
 	for i := 1; i < len(privacy.PedCom.G); i++ {
 		bytes = append(bytes, privacy.PedCom.G[i].Compress()...)
@@ -31,7 +31,7 @@ func GenerateChallengeFromPoint(values []*privacy.EllipticPoint) *big.Int {
 // GenerateChallengeFromByte get hash of n points in G append with input values
 // return blake_2b(G[0]||G[1]||...||G[CM_CAPACITY-1]||<values>)
 // G[i] is list of all generator point of Curve
-func GenerateChallengeFromByte(values [][]byte) *big.Int {
+func generateChallengeFromByte(values [][]byte) *big.Int {
 	bytes := privacy.PedCom.G[0].Compress()
 	for i := 1; i < len(privacy.PedCom.G); i++ {
 		bytes = append(bytes, privacy.PedCom.G[i].Compress()...)
@@ -53,7 +53,7 @@ func EstimateProofSize(nInput int, nOutput int) uint64 {
 	sizeOneOfManyProof := nInput * privacy.OneOfManyProofSize
 	sizeSNPrivacyProof := nInput * privacy.SNPrivacyProofSize
 
-	sizeComOutputMultiRangeProof := int(EstimateMultiRangeProof(nOutput))
+	sizeComOutputMultiRangeProof := int(estimateMultiRangeProof(nOutput))
 	sizeSumOutRangeProof := privacy.SumOutRangeProofSize
 	sizeComZeroProof := privacy.ComZeroProofSize
 
@@ -79,7 +79,7 @@ func EstimateProofSize(nInput int, nOutput int) uint64 {
 	return uint64(math.Ceil(float64(sizeProof) / 1024))
 }
 
-func EstimateMultiRangeProof(nOutput int) uint64 {
+func estimateMultiRangeProof(nOutput int) uint64 {
 	sizeCounter := uint64(1)                                        // byte
 	sizeComms := uint64(pad(nOutput) * privacy.CompressedPointSize) //  []*privacy.EllipticPoint
 	sizeA := uint64(privacy.CompressedPointSize)                    //    *privacy.EllipticPoint

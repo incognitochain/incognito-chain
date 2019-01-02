@@ -30,7 +30,7 @@ type OneOutOfManyProof struct {
 	index             byte
 }
 
-func (pro *OneOutOfManyProof) IsNil() bool {
+func (pro *OneOutOfManyProof) isNil() bool {
 	if pro.cl == nil {
 		return true
 	}
@@ -109,7 +109,7 @@ func (pro *OneOutOfManyProof) Set(
 // Bytes converts one of many proof to bytes array
 func (pro *OneOutOfManyProof) Bytes() []byte {
 	// if proof is nil, return an empty array
-	if pro.IsNil() {
+	if pro.isNil() {
 		return []byte{}
 	}
 
@@ -336,7 +336,7 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	// Calculate x
 	x := big.NewInt(0)
 	for j := 0; j <= n-1; j++ {
-		x = GenerateChallengeFromByte([][]byte{x.Bytes(), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
+		x = generateChallengeFromByte([][]byte{x.Bytes(), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
 	}
 
 	// Calculate za, zb zd
@@ -399,7 +399,7 @@ func (pro *OneOutOfManyProof) Verify() bool {
 	x := big.NewInt(0)
 
 	for j := 0; j <= n-1; j++ {
-		x = GenerateChallengeFromByte([][]byte{x.Bytes(), pro.cl[j].Compress(), pro.ca[j].Compress(), pro.cb[j].Compress(), pro.cd[j].Compress()})
+		x = generateChallengeFromByte([][]byte{x.Bytes(), pro.cl[j].Compress(), pro.ca[j].Compress(), pro.cb[j].Compress(), pro.cd[j].Compress()})
 	}
 
 	for i := 0; i < n; i++ {
