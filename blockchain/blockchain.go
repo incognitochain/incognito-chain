@@ -1103,7 +1103,7 @@ func (self *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.OutputCoin, 
 		}
 		if len(keySet.PrivateKey) > 0 {
 			// check spent with private-key
-			result.CoinDetails.SerialNumber = privacy.PedCom.G[privacy.SK].Eval(new(big.Int).SetBytes(keySet.PrivateKey),
+			result.CoinDetails.SerialNumber = privacy.PedCom.G[privacy.SK].Derive(new(big.Int).SetBytes(keySet.PrivateKey),
 				result.CoinDetails.SNDerivator)
 			ok, err := self.config.DataBase.HasSerialNumber(tokenID, result.CoinDetails.SerialNumber.Compress(), chainID)
 			if ok || err != nil {
