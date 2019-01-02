@@ -572,7 +572,7 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 	reverseTxIndex := make([]byte, 4)
 	binary.LittleEndian.PutUint32(reverseTxIndex, uint32(bigNumberTx-int32(txIndex)))
 
-	key1 := string(privateKeyPrefix) + base58.Base58Check{}.Encode(privateKey[:], 0x00) + string(Splitter) + string(int(chainId)) + string(Splitter) + string(reverseBlockHeight) + string(Splitter) + string(reverseTxIndex)
+	key1 := string(privateKeyPrefix) + base58.Base58Check{}.Encode((*privateKey)[:], 0x00) + string(Splitter) + string(int(chainId)) + string(Splitter) + string(reverseBlockHeight) + string(Splitter) + string(reverseTxIndex)
 	key2 := string(transactionKeyPrefix) + unspentTxHash.String()
 
 	if ok, _ := db.HasValue([]byte(key1)); ok {
