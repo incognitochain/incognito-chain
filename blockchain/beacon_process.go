@@ -369,11 +369,11 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 		Get beacon state of this block
 		For example, new blockHeight is 91 then beacon state of this block must have height 90
 		OR new block has previous has is beacon best block hash
-		// - Producer
-		// - Signature
+		// - Producer + sig
 		// - Has parent hash is some beststate block hash
 		// - Height
 		// - Epoch
+		// - staker
 
 	*/
 
@@ -418,6 +418,22 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 	if block.Header.Height%EPOCH != 0 && self.BeaconEpoch != block.Header.Epoch {
 		return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
 	}
+	//=============Verify Stakers
+	newBeaconCandidate, newShardCandidate := GetStakingCandidate(*block)
+	if !reflect.DeepEqual(newBeaconCandidate, []string{}) {
+		validBeaconCandidate := self.GetValidStakers(newBeaconCandidate)
+		// TODO: Debug to check deep equal function
+		if !reflect.DeepEqual(validBeaconCandidate, newBeaconCandidate) {
+			return NewBlockChainError(CandidateError, errors.New("Beacon candidate list is INVALID"))
+		}
+	}
+	if reflect.DeepEqual(newShardCandidate, []string{}) {
+		validShardCandidate := self.GetValidStakers(newShardCandidate)
+		if !reflect.DeepEqual(validShardCandidate, newShardCandidate) {
+			return NewBlockChainError(CandidateError, errors.New("Shard candidate list is INVALID"))
+		}
+	}
+	//=============End Verify Stakers
 	return nil
 }
 func (self *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock) error {
