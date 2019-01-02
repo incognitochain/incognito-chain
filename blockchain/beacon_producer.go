@@ -48,19 +48,19 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	beaconBestState := BestStateBeacon{}
 	// lock blockchain
 	self.chain.chainLock.Lock()
-	beaconBestState, err := self.chain.GetMaybeAcceptBeaconBestState(self.chain.highestBeaconBlock)
+
+	// produce new block with current beststate
+	tempMarshal, err := json.Marshal(self.chain.BestState.Beacon)
 	if err != nil {
-		tempMarshal, err := json.Marshal(self.chain.BestState.Beacon)
-		if err != nil {
-			return nil, NewBlockChainError(UnmashallJsonBlockError, err)
-		}
-		err = json.Unmarshal(tempMarshal, &beaconBestState)
-		if err != nil {
-			return nil, NewBlockChainError(UnmashallJsonBlockError, err)
-		}
+		return nil, NewBlockChainError(UnmashallJsonBlockError, err)
 	}
+	err = json.Unmarshal(tempMarshal, &beaconBestState)
+	if err != nil {
+		return nil, NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+
 	if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
-		panic(NewBlockChainError(BeaconError, errors.New("Can't create beacon block beacause no beststate found")))
+		panic(NewBlockChainError(BeaconError, errors.New("Problem with beststate in producing new block")))
 	}
 	// unlock blockchain
 	self.chain.chainLock.Unlock()
