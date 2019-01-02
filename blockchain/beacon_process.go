@@ -80,7 +80,7 @@ Insert new block into beaconchain
 	- No error: valid and can be sign
 	- Error: invalid new block
 */
-func (self *BlockChain) VerifyBlockForSigningProcess(block *BeaconBlock) error {
+func (self *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock) error {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 	//========Verify block only
@@ -350,11 +350,7 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 		return NewBlockChainError(TimestampError, errors.New("Timestamp of new block can't equal to parent block"))
 	}
 
-	tempShardStateArr := []common.Hash{}
-	for _, hashes := range block.Body.ShardState {
-		tempShardStateArr = append(tempShardStateArr, hashes...)
-	}
-	if !VerifyHashFromHashArray(tempShardStateArr, block.Header.ShardStateHash) {
+	if !VerifyHashFromShardState(block.Body.ShardState, block.Header.ShardStateHash) {
 		return NewBlockChainError(ShardStateHashError, errors.New("Shard state hash is not correct"))
 	}
 
@@ -504,12 +500,14 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	self.BeaconEpoch = newBlock.Header.Epoch
 	self.BeaconHeight = newBlock.Header.Height
 
-	shardState := newBlock.Body.ShardState
+	allShardState := newBlock.Body.ShardState
 
 	// Append new block hash into BestShardHash
 	// BestShardHash maintain all block hash of all shard
-	for idx, l := range shardState {
-		self.BestShardHash[idx] = append(self.BestShardHash[idx], l...)
+	for shardID, shardStates := range allShardState {
+		for _, shardState := range shardStates {
+			self.BestShardHash[shardID] = append(self.BestShardHash[shardID], shardState.Hash)
+		}
 	}
 
 	// update param
@@ -806,6 +804,121 @@ func ShuffleCandidate(candidates []string, rand int64) ([]string, error) {
 	return hashes, nil
 }
 
+//=========================HASH util==================================
+func GenerateZeroValueHash() (common.Hash, error) {
+	hash := common.Hash{}
+	hash.SetBytes(make([]byte, 32))
+	return hash, nil
+}
+func GenerateHashFromHashArray(hashes []common.Hash) (common.Hash, error) {
+	// if input is empty list
+	// return hash value of bytes zero
+	if len(hashes) == 0 {
+		return GenerateZeroValueHash()
+	}
+	strs := []string{}
+	for _, value := range hashes {
+		str := value.String()
+		strs = append(strs, str)
+	}
+	return GenerateHashFromStringArray(strs)
+}
+
+func GenerateHashFromStringArray(strs []string) (common.Hash, error) {
+	// if input is empty list
+	// return hash value of bytes zero
+	if len(strs) == 0 {
+		return GenerateZeroValueHash()
+	}
+	var (
+		hash common.Hash
+		buf  bytes.Buffer
+	)
+	for _, value := range strs {
+		buf.WriteString(value)
+	}
+	temp := sha256.Sum256(buf.Bytes())
+	if err := hash.SetBytes(temp[:]); err != nil {
+		return common.Hash{}, NewBlockChainError(HashError, err)
+	}
+	return hash, nil
+}
+
+func GenerateHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]string) (common.Hash, error) {
+	var keys1 []int
+	for k := range maps1 {
+		keys1 = append(keys1, int(k))
+	}
+	sort.Ints(keys1)
+	shardPendingValidator := []string{}
+	// To perform the opertion you want
+	for _, k := range keys1 {
+		shardPendingValidator = append(shardPendingValidator, maps1[byte(k)]...)
+	}
+
+	var keys2 []int
+	for k := range maps2 {
+		keys2 = append(keys2, int(k))
+	}
+	sort.Ints(keys2)
+	shardValidator := []string{}
+	// To perform the opertion you want
+	for _, k := range keys2 {
+		shardValidator = append(shardValidator, maps2[byte(k)]...)
+	}
+	return GenerateHashFromStringArray(append(shardPendingValidator, shardValidator...))
+}
+
+func GenerateHashFromShardState(allShardState map[byte][]ShardState) (common.Hash, error) {
+	allShardStateStr := []string{}
+	var keys []int
+	for k := range allShardState {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, shardID := range keys {
+		res := ""
+		for _, shardState := range allShardState[byte(shardID)] {
+			res += strconv.Itoa(int(shardState.Height))
+			res += shardState.Hash.String()
+			crossShard, _ := json.Marshal(shardState.CrossShard)
+			res += string(crossShard)
+		}
+		allShardStateStr = append(allShardStateStr, res)
+	}
+	return GenerateHashFromStringArray(allShardStateStr)
+}
+func VerifyHashFromHashArray(hashes []common.Hash, hash common.Hash) bool {
+	strs := []string{}
+	for _, value := range hashes {
+		str := value.String()
+		strs = append(strs, str)
+	}
+	return VerifyHashFromStringArray(strs, hash)
+}
+
+func VerifyHashFromStringArray(strs []string, hash common.Hash) bool {
+	res, err := GenerateHashFromStringArray(strs)
+	if err != nil {
+		return false
+	}
+	if bytes.Compare(res.GetBytes(), hash.GetBytes()) != 0 {
+		return true
+	}
+	return false
+}
+
+func VerifyHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]string, hash common.Hash) bool {
+	res, err := GenerateHashFromMapByteString(maps1, maps2)
+	if err != nil {
+		return false
+	}
+	if bytes.Compare(res.GetBytes(), hash.GetBytes()) != 0 {
+		return true
+	}
+	return false
+}
+
 func VerifyRootHashFromStringArray(strs1 []string, strs2 []string, hash common.Hash) error {
 	var (
 		tempMerkle Merkle
@@ -836,77 +949,8 @@ func VerifyRootHashFromStringArray(strs1 []string, strs2 []string, hash common.H
 	}
 	return nil
 }
-
-func GenerateHashFromStringArray(strs []string) (common.Hash, error) {
-	var (
-		hash common.Hash
-		buf  bytes.Buffer
-	)
-	for _, value := range strs {
-		buf.WriteString(value)
-	}
-	temp := sha256.Sum256(buf.Bytes())
-	if err := hash.SetBytes(temp[:]); err != nil {
-		return common.Hash{}, NewBlockChainError(HashError, err)
-	}
-	return hash, nil
-}
-
-func GenerateHashFromHashArray(hashes []common.Hash) (common.Hash, error) {
-	strs := []string{}
-	for _, value := range hashes {
-		str := value.String()
-		strs = append(strs, str)
-	}
-	return GenerateHashFromStringArray(strs)
-}
-
-func GenerateHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]string) (common.Hash, error) {
-	var keys1 []int
-	for k := range maps1 {
-		keys1 = append(keys1, int(k))
-	}
-	sort.Ints(keys1)
-	shardPendingValidator := []string{}
-	// To perform the opertion you want
-	for _, k := range keys1 {
-		shardPendingValidator = append(shardPendingValidator, maps1[byte(k)]...)
-	}
-
-	var keys2 []int
-	for k := range maps2 {
-		keys2 = append(keys2, int(k))
-	}
-	sort.Ints(keys2)
-	shardValidator := []string{}
-	// To perform the opertion you want
-	for _, k := range keys2 {
-		shardValidator = append(shardValidator, maps2[byte(k)]...)
-	}
-	return GenerateHashFromStringArray(append(shardPendingValidator, shardValidator...))
-}
-func VerifyHashFromHashArray(hashes []common.Hash, hash common.Hash) bool {
-	strs := []string{}
-	for _, value := range hashes {
-		str := value.String()
-		strs = append(strs, str)
-	}
-	return VerifyHashFromStringArray(strs, hash)
-}
-
-func VerifyHashFromStringArray(strs []string, hash common.Hash) bool {
-	res, err := GenerateHashFromStringArray(strs)
-	if err != nil {
-		return false
-	}
-	if bytes.Compare(res.GetBytes(), hash.GetBytes()) != 0 {
-		return true
-	}
-	return false
-}
-
-func VerifyHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]string, hash common.Hash) bool {
-	res, err := GenerateHashFromMapByteString(maps1, maps2)
+func VerifyHashFromShardState(allShardState map[byte][]ShardState, hash common.Hash) bool {
+	res, err := GenerateHashFromShardState(allShardState)
 	if err != nil {
 		return false
 	}

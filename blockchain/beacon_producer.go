@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
-	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	privacy "github.com/ninjadotorg/constant/privacy"
 )
@@ -106,11 +105,7 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 		panic(err)
 	}
 	// Shard state hash
-	tempShardStateArr := []common.Hash{}
-	for _, hashes := range tempShardState {
-		tempShardStateArr = append(tempShardStateArr, hashes...)
-	}
-	tempShardStateHash, err := GenerateHashFromHashArray(tempShardStateArr)
+	tempShardStateHash, err := GenerateHashFromShardState(tempShardState)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -131,15 +126,29 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	return beaconBlock, nil
 }
 
-func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (map[byte][]common.Hash, [][]string, map[byte]interface{}) {
-	shardState := make(map[byte][]common.Hash)
+// return param:
+// #1: shard state
+// #2: valid stakers
+// #3: swap validator => map[byte][]string
+func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (map[byte][]ShardState, [][]string, map[byte]interface{}) {
+	shardStates := make(map[byte][]ShardState)
 	stakers := make(map[byte]interface{})
 	validStakers := [][]string{}
 	swap := make(map[byte]interface{})
 	shardsBlocks := self.shardToBeaconPool.GetFinalBlock()
 	for shardID, shardBlocks := range shardsBlocks {
 		for _, shardBlock := range shardBlocks {
-			shardState[shardID] = append(shardState[shardID], shardBlock.Header.Hash())
+			shardState := ShardState{}
+			// TODO:  Get crosshard map from shardtoBeaconblock
+			// shardState.CrossShard = shardBlock...
+			// Fake data for testing
+			shardState.CrossShard = make(map[byte]bool)
+			for shardStateShardID, _ := range shardState.CrossShard {
+				shardState.CrossShard[shardStateShardID] = false
+			}
+			shardState.Hash = shardBlock.Header.Hash()
+			shardState.Height = shardBlock.Header.Height
+			shardStates[shardID] = append(shardStates[shardID], shardState)
 			//TODO: Get staker from shard block -> depend on ShardToBeaconBlock
 			// stakers := ...
 			for _, staker := range stakers {
@@ -170,7 +179,7 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 			//TODO: Get Swap validator from shard block -> depend on ShardToBeaconBlock
 		}
 	}
-	return shardState, validStakers, swap
+	return shardStates, validStakers, swap
 }
 
 /*
