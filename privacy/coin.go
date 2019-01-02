@@ -274,8 +274,16 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 
 	lenCoinDetail := int(bytes[offset])
 	offset += 1
-	outputCoin.CoinDetails = new(Coin)
-	return outputCoin.CoinDetails.SetBytes(bytes[offset: offset+lenCoinDetail])
+
+	if lenCoinDetail > 0 {
+		outputCoin.CoinDetails = new(Coin)
+		err := outputCoin.CoinDetails.SetBytes(bytes[offset : offset+lenCoinDetail])
+		if err != nil{
+			return err
+		}
+	}
+
+	return nil
 }
 
 type CoinDetailsEncrypted struct {
@@ -320,10 +328,9 @@ func (coinDetailsEncrypted *CoinDetailsEncrypted) SetBytes(bytes []byte) error {
 		return nil
 	}
 
-	coinDetailsEncrypted.EncryptedRandomness = bytes[0:48]
-	coinDetailsEncrypted.EncryptedSymKey = bytes[48: 48+66]
-	coinDetailsEncrypted.EncryptedValue = bytes[48+66:]
-
+	coinDetailsEncrypted.EncryptedRandomness = bytes[0:EncryptedRandomnessSize]
+	coinDetailsEncrypted.EncryptedSymKey = bytes[EncryptedRandomnessSize : EncryptedRandomnessSize + EncryptedSymKeySize]
+	coinDetailsEncrypted.EncryptedValue = bytes[EncryptedRandomnessSize + EncryptedSymKeySize:]
 	return nil
 }
 
