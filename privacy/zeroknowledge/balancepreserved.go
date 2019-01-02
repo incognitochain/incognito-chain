@@ -259,8 +259,8 @@ func (wit *MultiRangeWitness) Prove() (*MultiRangeProof, error) {
 		gammas[j] = gamma
 		wit.Rands[j] = gamma
 		// break up v into its bitwise representation
-		aL := reverse(StrToBigIntArray(PadLeft(fmt.Sprintf("%b", v), "0", bitsPerValue)))
-		aR := VectorAddScalar(aL, big.NewInt(-1))
+		aL := reverse(strToBigIntArray(padLeft(fmt.Sprintf("%b", v), "0", bitsPerValue)))
+		aR := vectorAddScalar(aL, big.NewInt(-1))
 		for i := range aR {
 			aLConcat[bitsPerValue*j+i] = aL[i]
 			aRConcat[bitsPerValue*j+i] = aR[i]
@@ -271,7 +271,7 @@ func (wit *MultiRangeWitness) Prove() (*MultiRangeProof, error) {
 	alpha := new(big.Int).SetBytes(privacy.RandBytes(32))
 	alpha.Mod(alpha, privacy.Curve.Params().N)
 
-	A := TwoVectorPCommitWithGens(RangeProofParams.BPG, RangeProofParams.BPH, aLConcat, aRConcat).Add(RangeProofParams.H.ScalarMult((alpha)))
+	A := twoVectorPCommitWithGens(RangeProofParams.BPG, RangeProofParams.BPH, aLConcat, aRConcat).Add(RangeProofParams.H.ScalarMult((alpha)))
 	if (A == nil) {
 		return nil, errors.New("Creating multi-range proof failed")
 	} else {
@@ -284,7 +284,7 @@ func (wit *MultiRangeWitness) Prove() (*MultiRangeProof, error) {
 	rho := new(big.Int).SetBytes(privacy.RandBytes(32))
 	rho.Mod(alpha, privacy.Curve.Params().N)
 
-	S := TwoVectorPCommitWithGens(RangeProofParams.BPG, RangeProofParams.BPH, sL, sR).Add(RangeProofParams.H.ScalarMult(rho))
+	S := twoVectorPCommitWithGens(RangeProofParams.BPG, RangeProofParams.BPH, sL, sR).Add(RangeProofParams.H.ScalarMult(rho))
 	if (S == nil) {
 		return nil, errors.New("Creating multi-range proof failed")
 	} else {
@@ -307,17 +307,17 @@ func (wit *MultiRangeWitness) Prove() (*MultiRangeProof, error) {
 	}
 	// need to generate l(X), r(X), and t(X)=<l(X),r(X)>
 	PowerOfCY := powerVector(RangeProofParams.V, cy)
-	l0 := VectorAddScalar(aLConcat, new(big.Int).Neg(cz))
+	l0 := vectorAddScalar(aLConcat, new(big.Int).Neg(cz))
 	l1 := sL
-	r0 := VectorAdd(
-		VectorHadamard(
+	r0 := vectorAdd(
+		vectorHadamard(
 			PowerOfCY,
-			VectorAddScalar(aRConcat, cz)),
+			vectorAddScalar(aRConcat, cz)),
 		zPowersTimesTwoVec)
 	if (r0 == nil) {
 		return nil, errors.New("Creating multi-range proof failed")
 	}
-	r1 := VectorHadamard(sR, PowerOfCY)
+	r1 := vectorHadamard(sR, PowerOfCY)
 
 	//calculate t0
 	vz2 := big.NewInt(0)
@@ -333,8 +333,8 @@ func (wit *MultiRangeWitness) Prove() (*MultiRangeProof, error) {
 
 	t0 := new(big.Int).Mod(new(big.Int).Add(vz2, deltaMRP(PowerOfCY, cz, m)), privacy.Curve.Params().N)
 
-	t1 := new(big.Int).Mod(new(big.Int).Add(InnerProduct(l1, r0), InnerProduct(l0, r1)), privacy.Curve.Params().N)
-	t2 := InnerProduct(l1, r1)
+	t1 := new(big.Int).Mod(new(big.Int).Add(innerProduct(l1, r0), innerProduct(l0, r1)), privacy.Curve.Params().N)
+	t2 := innerProduct(l1, r1)
 	if (t2 == nil) {
 		return nil, errors.New("Creating multi-range proof failed")
 	}
@@ -362,7 +362,7 @@ func (wit *MultiRangeWitness) Prove() (*MultiRangeProof, error) {
 	thatPrime := new(big.Int).Mod( // t0 + t1*x + t2*x^2
 		new(big.Int).Add(t0, new(big.Int).Add(new(big.Int).Mul(t1, cx), new(big.Int).Mul(new(big.Int).Mul(cx, cx), t2))), privacy.Curve.Params().N)
 
-	that := InnerProduct(left, right) // NOTE: BP Java implementation calculates this from the t_i
+	that := innerProduct(left, right) // NOTE: BP Java implementation calculates this from the t_i
 	// thatPrime and that should be equal
 	if thatPrime.Cmp(that) != 0 {
 		return nil, errors.New("Creating multi-range proof failed")
@@ -384,7 +384,7 @@ func (wit *MultiRangeWitness) Prove() (*MultiRangeProof, error) {
 	for i := range HPrime {
 		HPrime[i] = RangeProofParams.BPH[i].ScalarMult(new(big.Int).ModInverse(PowerOfCY[i], privacy.Curve.Params().N))
 	}
-	P := TwoVectorPCommitWithGens(RangeProofParams.BPG, HPrime, left, right)
+	P := twoVectorPCommitWithGens(RangeProofParams.BPG, HPrime, left, right)
 	if (P == nil) {
 		return nil, errors.New("Creating multi-range proof failed")
 	}
@@ -427,7 +427,7 @@ func (pro *MultiRangeProof) Verify() bool {
 	// t_hat * G + tau * H
 	lhs := RangeProofParams.G.ScalarMult(pro.Th).Add(RangeProofParams.H.ScalarMult(pro.Tau))
 	// z^2 * \bold{z}^m \bold{V} + delta(y,z) * G + x * T1 + x^2 * T2
-	CommPowers := RangeProofParams.Zero()
+	CommPowers := RangeProofParams.zero()
 	PowersOfZ := powerVector(m, cz)
 	z2 := new(big.Int).Mod(new(big.Int).Mul(cz, cz), privacy.Curve.Params().N)
 
@@ -442,13 +442,13 @@ func (pro *MultiRangeProof) Verify() bool {
 		return false
 	}
 
-	tmp1 := RangeProofParams.Zero()
+	tmp1 := RangeProofParams.zero()
 	zneg := new(big.Int).Mod(new(big.Int).Neg(cz), privacy.Curve.Params().N)
 	for i := range RangeProofParams.BPG {
 		tmp1 = tmp1.Add(RangeProofParams.BPG[i].ScalarMult(zneg))
 	}
 	PowerOfTwos := powerVector(bitsPerValue, big.NewInt(2))
-	tmp2 := RangeProofParams.Zero()
+	tmp2 := RangeProofParams.zero()
 	// generate h'
 	HPrime := make([]*privacy.EllipticPoint, len(RangeProofParams.BPH))
 

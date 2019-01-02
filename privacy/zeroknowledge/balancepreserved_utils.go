@@ -128,10 +128,10 @@ func innerProductProveSub(proof InnerProdArg, G, H []*privacy.EllipticPoint, a [
 	}
 	curIt := int(math.Log2(float64(len(a)))) - 1
 	nprime := len(a) / 2
-	cl := InnerProduct(a[:nprime], b[nprime:]) // either this line
-	cr := InnerProduct(a[nprime:], b[:nprime]) // or this line
-	L := TwoVectorPCommitWithGens(G[nprime:], H[:nprime], a[:nprime], b[nprime:]).Add(u.ScalarMult(cl))
-	R := TwoVectorPCommitWithGens(G[:nprime], H[nprime:], a[nprime:], b[:nprime]).Add(u.ScalarMult(cr))
+	cl := innerProduct(a[:nprime], b[nprime:]) // either this line
+	cr := innerProduct(a[nprime:], b[:nprime]) // or this line
+	L := twoVectorPCommitWithGens(G[nprime:], H[:nprime], a[:nprime], b[nprime:]).Add(u.ScalarMult(cl))
+	R := twoVectorPCommitWithGens(G[:nprime], H[nprime:], a[nprime:], b[:nprime]).Add(u.ScalarMult(cr))
 	proof.L[curIt] = L
 	proof.R[curIt] = R
 
@@ -147,12 +147,12 @@ func innerProductProveSub(proof InnerProdArg, G, H []*privacy.EllipticPoint, a [
 	Gprime, Hprime, Pprime := GenerateNewParams(G, H, x, L, R, P)
 	xinv := new(big.Int).ModInverse(x, privacy.Curve.Params().N)
 	// or these two lines
-	aprime := VectorAdd(
-		ScalarVectorMul(a[:nprime], x),
-		ScalarVectorMul(a[nprime:], xinv))
-	bprime := VectorAdd(
-		ScalarVectorMul(b[:nprime], xinv),
-		ScalarVectorMul(b[nprime:], x))
+	aprime := vectorHadamard(
+		scalarVectorMul(a[:nprime], x),
+		scalarVectorMul(a[nprime:], xinv))
+	bprime := vectorHadamard(
+		scalarVectorMul(b[:nprime], xinv),
+		scalarVectorMul(b[nprime:], x))
 
 	return innerProductProveSub(proof, Gprime, Hprime, aprime, bprime, u, Pprime)
 }
@@ -212,7 +212,7 @@ func innerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*pri
 	curIt -= 1
 	Pprime := P.Add(ux.ScalarMult(c))
 
-	tmp1 := RangeProofParams.Zero()
+	tmp1 := RangeProofParams.zero()
 	for j := curIt; j >= 0; j-- {
 		x2 := new(big.Int).Exp(ipp.Challenges[j], big.NewInt(2), privacy.Curve.Params().N)
 		x2i := new(big.Int).ModInverse(x2, privacy.Curve.Params().N)
@@ -238,7 +238,7 @@ func innerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*pri
 	}
 
 	ccalc := new(big.Int).Mod(new(big.Int).Mul(ipp.A, ipp.B), privacy.Curve.Params().N)
-	lhs := TwoVectorPCommitWithGens(G, H, ScalarVectorMul(sScalars, ipp.A), ScalarVectorMul(invsScalars, ipp.B)).Add(ux.ScalarMult(ccalc))
+	lhs := twoVectorPCommitWithGens(G, H, scalarVectorMul(sScalars, ipp.A), scalarVectorMul(invsScalars, ipp.B)).Add(ux.ScalarMult(ccalc))
 
 	if !rhs.IsEqual(lhs) {
 		return false
@@ -248,7 +248,7 @@ func innerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*pri
 
 /*-----------------------------Vector Functions-----------------------------*/
 // The length here always has to be a power of two
-func InnerProduct(a []*big.Int, b []*big.Int) *big.Int {
+func innerProduct(a []*big.Int, b []*big.Int) *big.Int {
 	if len(a) != len(b) {
 		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("InnerProduct: Uh oh! Arrays not of the same length"))
 	}
@@ -263,7 +263,7 @@ func InnerProduct(a []*big.Int, b []*big.Int) *big.Int {
 	return new(big.Int).Mod(c, privacy.Curve.Params().N)
 }
 
-func VectorAdd(v []*big.Int, w []*big.Int) []*big.Int {
+func vectorAdd(v []*big.Int, w []*big.Int) []*big.Int {
 	if len(v) != len(w) {
 		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("VectorAddPoint: Uh oh! Arrays not of the same length"))
 	}
@@ -274,7 +274,7 @@ func VectorAdd(v []*big.Int, w []*big.Int) []*big.Int {
 	return result
 }
 
-func VectorHadamard(v, w []*big.Int) []*big.Int {
+func vectorHadamard(v, w []*big.Int) []*big.Int {
 	if len(v) != len(w) {
 		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("VectorHadamard: Uh oh! Arrays not of the same length"))
 	}
@@ -288,7 +288,7 @@ func VectorHadamard(v, w []*big.Int) []*big.Int {
 	return result
 }
 
-func VectorAddScalar(v []*big.Int, s *big.Int) []*big.Int {
+func vectorAddScalar(v []*big.Int, s *big.Int) []*big.Int {
 	result := make([]*big.Int, len(v))
 	for i := range v {
 		result[i] = new(big.Int).Mod(new(big.Int).Add(v[i], s), privacy.Curve.Params().N)
@@ -296,7 +296,7 @@ func VectorAddScalar(v []*big.Int, s *big.Int) []*big.Int {
 	return result
 }
 
-func ScalarVectorMul(v []*big.Int, s *big.Int) []*big.Int {
+func scalarVectorMul(v []*big.Int, s *big.Int) []*big.Int {
 	result := make([]*big.Int, len(v))
 	for i := range v {
 		result[i] = new(big.Int).Mod(new(big.Int).Mul(v[i], s), privacy.Curve.Params().N)
@@ -305,7 +305,7 @@ func ScalarVectorMul(v []*big.Int, s *big.Int) []*big.Int {
 }
 
 // from here: https://play.golang.org/p/zciRZvD0Gr with a fix
-func PadLeft(str, pad string, l int) string {
+func padLeft(str, pad string, l int) string {
 	strCopy := str
 	for len(strCopy) < l {
 		strCopy = pad + strCopy
@@ -314,7 +314,7 @@ func PadLeft(str, pad string, l int) string {
 	return strCopy
 }
 
-func StrToBigIntArray(str string) []*big.Int {
+func strToBigIntArray(str string) []*big.Int {
 	result := make([]*big.Int, len(str))
 
 	for i := range str {
@@ -373,7 +373,7 @@ type CryptoParams struct {
 	H   *privacy.EllipticPoint   // H value for commitments of a single value
 }
 
-func (c CryptoParams) Zero() *privacy.EllipticPoint {
+func (c CryptoParams) zero() *privacy.EllipticPoint {
 	zeroPoint := new(privacy.EllipticPoint)
 	zeroPoint.X = new(big.Int).SetInt64(0)
 	zeroPoint.Y = new(big.Int).SetInt64(0)
@@ -386,7 +386,7 @@ func newECPrimeGroupKey(n int) CryptoParams {
 
 	gen1Vals := make([]*privacy.EllipticPoint, n)
 	gen2Vals := make([]*privacy.EllipticPoint, n)
-	u := CryptoParams{}.Zero()
+	u := CryptoParams{}.zero()
 	G := privacy.PedCom.G[privacy.VALUE]
 	H := privacy.PedCom.G[privacy.RAND]
 
@@ -409,11 +409,11 @@ func newECPrimeGroupKey(n int) CryptoParams {
 }
 
 /*Perdersen commit for 2 vector*/
-func TwoVectorPCommitWithGens(G, H []*privacy.EllipticPoint, a, b []*big.Int) *privacy.EllipticPoint {
+func twoVectorPCommitWithGens(G, H []*privacy.EllipticPoint, a, b []*big.Int) *privacy.EllipticPoint {
 	if len(G) != len(H) || len(G) != len(a) || len(a) != len(b) {
 		return nil
 	}
-	commitment := CryptoParams{}.Zero()
+	commitment := CryptoParams{}.zero()
 	for i := 0; i < len(G); i++ {
 		modA := new(big.Int).Mod(a[i], privacy.Curve.Params().N)
 		modB := new(big.Int).Mod(b[i], privacy.Curve.Params().N)
@@ -447,9 +447,9 @@ func pad(l int) int {
 // Calculates (aL - z*1^n) + sL*x
 func calculateLMRP(aL, sL []*big.Int, z, x *big.Int) []*big.Int {
 	result := make([]*big.Int, len(aL))
-	tmp1 := VectorAddScalar(aL, new(big.Int).Neg(z))
-	tmp2 := ScalarVectorMul(sL, x)
-	result = VectorAdd(tmp1, tmp2)
+	tmp1 := vectorAddScalar(aL, new(big.Int).Neg(z))
+	tmp2 := scalarVectorMul(sL, x)
+	result = vectorAdd(tmp1, tmp2)
 	return result
 	//return nil
 }
@@ -459,11 +459,11 @@ func calculateRMRP(aR, sR, y, zTimesTwo []*big.Int, z, x *big.Int) []*big.Int {
 		return nil
 	}
 	result := make([]*big.Int, len(aR))
-	tmp11 := VectorAddScalar(aR, z)
-	tmp12 := ScalarVectorMul(sR, x)
-	tmp13 := VectorAdd(tmp11, tmp12)
-	tmp1 := VectorHadamard(y, tmp13)
-	result = VectorAdd(tmp1, zTimesTwo)
+	tmp11 := vectorAddScalar(aR, z)
+	tmp12 := scalarVectorMul(sR, x)
+	tmp13 := vectorAdd(tmp11, tmp12)
+	tmp1 := vectorHadamard(y, tmp13)
+	result = vectorAdd(tmp1, zTimesTwo)
 	return result
 }
 
