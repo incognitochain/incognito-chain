@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -915,10 +916,11 @@ func VerifyHashFromHashArray(hashes []common.Hash, hash common.Hash) bool {
 
 func VerifyHashFromStringArray(strs []string, hash common.Hash) bool {
 	res, err := GenerateHashFromStringArray(strs)
+	fmt.Println("===========VerifyHashFromStringArray", res, strs, hash)
 	if err != nil {
 		return false
 	}
-	if bytes.Compare(res.GetBytes(), hash.GetBytes()) != 0 {
+	if bytes.Compare(res.GetBytes(), hash.GetBytes()) == 0 {
 		return true
 	}
 	return false
@@ -929,7 +931,7 @@ func VerifyHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]strin
 	if err != nil {
 		return false
 	}
-	if bytes.Compare(res.GetBytes(), hash.GetBytes()) != 0 {
+	if bytes.Compare(res.GetBytes(), hash.GetBytes()) == 0 {
 		return true
 	}
 	return false
@@ -970,7 +972,7 @@ func VerifyHashFromShardState(allShardState map[byte][]ShardState, hash common.H
 	if err != nil {
 		return false
 	}
-	if bytes.Compare(res.GetBytes(), hash.GetBytes()) != 0 {
+	if bytes.Compare(res.GetBytes(), hash.GetBytes()) == 0 {
 		return true
 	}
 	return false
