@@ -77,7 +77,7 @@ func (self *Engine) Start() error {
 						nodeRole = "shard"
 					}
 					go self.config.Server.UpdateConsensusState(nodeRole, self.config.UserKeySet.GetPublicKeyB58(), nil, self.config.BlockChain.BestState.Beacon.BeaconCommittee, self.config.BlockChain.BestState.Beacon.ShardCommittee)
-					time.Sleep(4 * time.Second)
+					time.Sleep(2 * time.Second)
 
 					fmt.Println(self.config.NodeMode, role)
 					if role != "" {
@@ -93,33 +93,71 @@ func (self *Engine) Start() error {
 						if (self.config.NodeMode == "beacon" || self.config.NodeMode == "auto") && role != "shard" {
 							bftProtocol.Committee = make([]string, len(self.config.BlockChain.BestState.Beacon.BeaconCommittee))
 							copy(bftProtocol.Committee, self.config.BlockChain.BestState.Beacon.BeaconCommittee)
+							var (
+								err    error
+								resBlk interface{}
+							)
 							switch role {
 							case "beacon-proposer":
 								// prevBlock :=	self.config.BlockChain.GetMayBeAcceptBlockBeacon()
 								prevBlock := &blockchain.BeaconBlock{}
-								bftProtocol.Start(true, "beacon", 0, prevBlock.AggregatedSig, prevBlock.ValidatorsIdx)
+								resBlk, err = bftProtocol.Start(true, "beacon", 0, prevBlock.AggregatedSig, prevBlock.ValidatorsIdx)
+								if err != nil {
+									Logger.log.Error("PBFT fatal error", err)
+									continue
+								}
 							case "beacon-validator":
-								bftProtocol.Start(false, "beacon", 0, "", []int{})
-							// case "beacon-pending":
+								resBlk, err = bftProtocol.Start(false, "beacon", 0, "", []int{})
+								if err != nil {
+									Logger.log.Error("PBFT fatal error", err)
+									continue
+								}
 							default:
+								err = errors.New("Not your turn yet")
+							}
+
+							if err == nil {
+								fmt.Println(resBlk.(*blockchain.BeaconBlock))
+								//TODO insert block to blockchain
+							} else {
+								Logger.log.Error(err)
 							}
 							continue
 						}
 						if (self.config.NodeMode == "shard" || self.config.NodeMode == "auto") && role == "shard" {
 							bftProtocol.Committee = make([]string, len(self.config.BlockChain.BestState.Shard[shardID].ShardCommittee))
 							copy(bftProtocol.Committee, self.config.BlockChain.BestState.Shard[shardID].ShardCommittee)
+							var (
+								err    error
+								resBlk interface{}
+							)
 							if self.config.BlockChain.IsReady(true, shardID) {
 								shardRole := self.config.BlockChain.BestState.Shard[shardID].GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
 								switch shardRole {
 								case "shard-proposer":
 									prevBlock := &blockchain.ShardBlock{}
-									bftProtocol.Start(true, "shard", 0, prevBlock.AggregatedSig, prevBlock.ValidatorsIdx)
+									resBlk, err = bftProtocol.Start(true, "shard", 0, prevBlock.AggregatedSig, prevBlock.ValidatorsIdx)
+									if err != nil {
+										Logger.log.Error("PBFT fatal error", err)
+										continue
+									}
 								case "shard-validator":
-									bftProtocol.Start(false, "shard", 0, "", []int{})
+									resBlk, err = bftProtocol.Start(false, "shard", 0, "", []int{})
+									if err != nil {
+										Logger.log.Error("PBFT fatal error", err)
+										continue
+									}
 								default:
+									err = errors.New("Not your turn yet")
+								}
+								if err == nil {
+									fmt.Println(resBlk.(*blockchain.ShardBlock))
+									//TODO insert block to blockchain
+								} else {
+									Logger.log.Error(err)
 								}
 							} else {
-
+								Logger.log.Warn("Blockchain is not ready!")
 							}
 						}
 					} else {

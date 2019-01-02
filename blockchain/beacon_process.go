@@ -93,26 +93,29 @@ func (self *BlockChain) VerifyBlockForSigningProcess(block *BeaconBlock) error {
 	// Clone best state value into new variable
 	beaconBestState := BestStateBeacon{}
 	// check with current final best state
+	// New block must be compatible with current best state
 	if strings.Compare(self.BestState.Beacon.BestBlockHash.String(), block.Header.PrevBlockHash.String()) == 0 {
 		tempMarshal, err := json.Marshal(self.BestState.Beacon)
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
 		}
 		json.Unmarshal(tempMarshal, &beaconBestState)
-	} else {
-		// check with current cache best state
-		var err error
-		beaconBestState, err = self.GetMaybeAcceptBeaconBestState(block.Header.PrevBlockHash.String())
-		if err != nil {
-			return err
-		}
 	}
+	//else {
+	// check with current cache best state
+	// var err error
+	// beaconBestState, err = self.GetMaybeAcceptBeaconBestState(block.Header.PrevBlockHash.String())
+	// if err != nil {
+	// 	return err
+	// }
+	// }
 	// if no match best state found then block is unknown
 	if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
 		return NewBlockChainError(BeaconError, errors.New("Beacon Block does not match with any Beacon State in cache or in Database"))
 	}
 	// Verify block with previous best state
-	if err := beaconBestState.VerifyBestStateWithBeaconBlock(block); err != nil {
+	// not verify agg signature in this function
+	if err := beaconBestState.VerifyBestStateWithBeaconBlock(block, false); err != nil {
 		return err
 	}
 	//========Update best state with new block
@@ -124,6 +127,53 @@ func (self *BlockChain) VerifyBlockForSigningProcess(block *BeaconBlock) error {
 		return err
 	}
 	Logger.log.Infof("Block %d, with hash %+v is VALID for signing", block.Header.Height, *block.Hash())
+	return nil
+}
+
+func (self *BlockChain) InsertBeaconBlock(block *BeaconBlock) error {
+	self.chainLock.Lock()
+	defer self.chainLock.Unlock()
+	Logger.log.Infof("Insert new block %d, with hash %+v", block.Header.Height, *block.Hash())
+	if err := self.VerifyPreProcessingBeaconBlock(block); err != nil {
+		return err
+	}
+	//========Verify block with previous best state
+	// check with current final best state
+	// block can only be insert if it match the current best state
+	if strings.Compare(self.BestState.Beacon.BestBlockHash.String(), block.Header.PrevBlockHash.String()) == 0 {
+		return NewBlockChainError(BeaconError, errors.New("Beacon Block does not match with any Beacon State in cache or in Database"))
+	}
+
+	// Verify block with previous best state
+	if err := self.BestState.Beacon.VerifyBestStateWithBeaconBlock(block, true); err != nil {
+		return err
+	}
+
+	//========Update best state with new block
+	if err := self.BestState.Beacon.Update(block); err != nil {
+		return err
+	}
+	//========Post verififcation: verify new beaconstate with corresponding block
+	if err := self.BestState.Beacon.VerifyPostProcessingBeaconBlock(block); err != nil {
+		return err
+	}
+
+	//========Store new Beaconblock and new Beacon bestState in cache
+
+	if err := self.config.DataBase.StoreBeaconBestState(self.BestState.Beacon); err != nil {
+		return err
+	}
+	if err := self.config.DataBase.StoreBeaconBlock(block); err != nil {
+		return err
+	}
+	//=========Remove shard block in beacon pool
+	shardToBeaconMap := make(map[byte]uint64)
+	for shardID, hashes := range self.BestState.Beacon.BestShardHash {
+		shardToBeaconMap[shardID] = uint64(len(hashes))
+	}
+	self.config.ShardToBeaconPool.RemoveBlock(shardToBeaconMap)
+
+	Logger.log.Infof("Insert new block %d, with hash %x", block.Header.Height, *block.Hash())
 	return nil
 }
 
@@ -181,7 +231,7 @@ func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, erro
 	// defer beaconBestState.lock.Unlock()
 
 	// Verify block with previous best state
-	if err := beaconBestState.VerifyBestStateWithBeaconBlock(block); err != nil {
+	if err := beaconBestState.VerifyBestStateWithBeaconBlock(block, true); err != nil {
 		return "", err
 	}
 
@@ -259,6 +309,7 @@ func (self *BlockChain) AcceptBeaconBlock(blockHash *common.Hash) error {
 	Logger.log.Infof("Accepted block %+v", blockHash)
 	return nil
 }
+
 func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error {
 	/* Verify Pre-prosessing data
 	This function DOES NOT verify new block with best state
@@ -316,7 +367,7 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 	}
 	return nil
 }
-func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock) error {
+func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, isVerifySig bool) error {
 	/*
 		This function will verify the validation of a block with some best state in cache or current best state
 		Get beacon state of this block
@@ -338,26 +389,28 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock) 
 	}
 
 	//=============Verify signature
-	pubKeys := []*privacy.PublicKey{}
-	for _, index := range block.ValidatorsIdx {
-		pubkeyBytes, _, err := base58.Base58Check{}.Decode(self.BeaconCommittee[index])
-		if err != nil {
-			return NewBlockChainError(SignatureError, errors.New("Error in convert Public key from string to byte"))
+	if isVerifySig {
+		pubKeys := []*privacy.PublicKey{}
+		for _, index := range block.ValidatorsIdx {
+			pubkeyBytes, _, err := base58.Base58Check{}.Decode(self.BeaconCommittee[index])
+			if err != nil {
+				return NewBlockChainError(SignatureError, errors.New("Error in convert Public key from string to byte"))
+			}
+			pubKey := &privacy.PublicKey{}
+			copy(*pubKey, pubkeyBytes[:])
+			pubKeys = append(pubKeys, pubKey)
 		}
-		pubKey := &privacy.PublicKey{}
-		copy(*pubKey, pubkeyBytes[:])
-		pubKeys = append(pubKeys, pubKey)
-	}
 
-	aggSig, _, err := base58.Base58Check{}.Decode(block.AggregatedSig)
-	if err != nil {
-		return NewBlockChainError(SignatureError, errors.New("Error in convert aggregated signature from string to byte"))
-	}
-	schnMultiSig := &privacy.SchnMultiSig{}
-	schnMultiSig.SetBytes(aggSig)
-	blockHash := block.Header.Hash()
-	if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeys, nil, nil) == false {
-		return NewBlockChainError(SignatureError, errors.New("Invalid Agg signature"))
+		aggSig, _, err := base58.Base58Check{}.Decode(block.AggregatedSig)
+		if err != nil {
+			return NewBlockChainError(SignatureError, errors.New("Error in convert aggregated signature from string to byte"))
+		}
+		schnMultiSig := &privacy.SchnMultiSig{}
+		schnMultiSig.SetBytes(aggSig)
+		blockHash := block.Header.Hash()
+		if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeys, nil, nil) == false {
+			return NewBlockChainError(SignatureError, errors.New("Invalid Agg signature"))
+		}
 	}
 	//=============End Verify signature
 	if self.BeaconHeight+1 != block.Header.Height {
