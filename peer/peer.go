@@ -40,6 +40,7 @@ var MESSAGE_TO_BEACON = byte('b')
 // RemotePeer is present for libp2p node data
 type Peer struct {
 	messagePool       map[string]bool
+	messagePoolMtx    sync.Mutex
 	peerConnMutex     sync.Mutex
 	pendingPeersMutex sync.Mutex
 
@@ -142,6 +143,9 @@ type outMsg struct {
 }
 
 func (self *Peer) ReceivedHashMessage(hash string) {
+	self.messagePoolMtx.Lock()
+	defer self.messagePoolMtx.Unlock()
+
 	if self.messagePool == nil {
 		self.messagePool = make(map[string]bool)
 	}
@@ -159,6 +163,8 @@ func (self *Peer) ReceivedHashMessage(hash string) {
 }
 
 func (self *Peer) CheckHashMessage(hash string) bool {
+	self.messagePoolMtx.Lock()
+	defer self.messagePoolMtx.Unlock()
 	if self.messagePool == nil {
 		self.messagePool = make(map[string]bool)
 	}

@@ -170,11 +170,13 @@ func (self *ConnManager) UpdateConsensusState(role string, userPbk string, curre
 			bChange = true
 		}
 	}
-	self.Config.ConsensusState.UserPbk = userPbk
-	self.Config.ConsensusState.rebuild()
+	if self.Config.ConsensusState.UserPbk != userPbk {
+		self.Config.ConsensusState.UserPbk = userPbk
+	}
 
 	// update peer connection
 	if bChange {
+		self.Config.ConsensusState.rebuild()
 		self.processDiscoverPeers()
 	}
 
