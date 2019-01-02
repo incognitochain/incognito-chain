@@ -30,11 +30,6 @@ func newPedersenCommitment() PedersenCommitment {
 
 var PedCom = newPedersenCommitment()
 
-// Params returns parameters of commitment
-func (com PedersenCommitment) Params() PedersenCommitment {
-	return com
-}
-
 // CommitAll commits a list of PCM_CAPACITY value(s)
 func (com PedersenCommitment) CommitAll(openings []*big.Int) *EllipticPoint {
 	if len(openings) != len(com.G) {
