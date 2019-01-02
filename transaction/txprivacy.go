@@ -168,8 +168,8 @@ func (tx *Tx) Init(
 
 	// calculate serial number from SND and spending key
 	for _, inputCoin := range inputCoins {
-		inputCoin.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(*senderSK),
-			inputCoin.CoinDetails.SNDerivator, privacy.PedCom.G[privacy.SK])
+		inputCoin.CoinDetails.SerialNumber = privacy.PedCom.G[privacy.SK].Eval(new(big.Int).SetBytes(*senderSK),
+			inputCoin.CoinDetails.SNDerivator)
 	}
 
 	// create new output coins

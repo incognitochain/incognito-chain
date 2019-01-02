@@ -4,6 +4,15 @@ import (
 	"math/big"
 )
 
+const (
+	SK      = byte(0x00)
+	VALUE   = byte(0x01)
+	SND     = byte(0x02)
+	SHARDID = byte(0x03)
+	RAND    = byte(0x04)
+	FULL    = byte(0x05)
+)
+
 // PedersenCommitment represents the parameters for the commitment
 type PedersenCommitment struct {
 	G []*EllipticPoint // generators
