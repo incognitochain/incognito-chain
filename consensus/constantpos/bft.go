@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/pkg/errors"
 
 	"github.com/ninjadotorg/constant/common"
 
@@ -51,7 +52,7 @@ type blockFinalSig struct {
 	ValidatorsIdx []int
 }
 
-func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prevAggregatedSig string, prevValidatorsIdx []int) {
+func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prevAggregatedSig string, prevValidatorsIdx []int) error {
 	// self.Lock()
 	// defer self.Unlock()
 	// if self.started {
@@ -75,35 +76,33 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 		self.cTimeout = make(chan struct{})
 		select {
 		case <-self.cQuit:
-			return
+			return nil
 		default:
 			switch self.phase {
 			case "propose":
+				time.Sleep(1500 * time.Millisecond)
 				if layer == "beacon" {
 					newBlock, err := self.BlockGen.NewBlockBeacon(&self.UserKeySet.PaymentAddress, &self.UserKeySet.PrivateKey)
 					if err != nil {
-						Logger.log.Error(err)
-						return
+						return err
 					}
 					fmt.Println("Propose block")
 					jsonBlock, _ := json.Marshal(newBlock)
 					msg, err := MakeMsgBFTPropose(prevAggregatedSig, prevValidatorsIdx, jsonBlock)
 					if err != nil {
-						Logger.log.Error(err)
-						return
+						return err
 					}
 					go self.Server.PushMessageToBeacon(msg)
 					self.pendingBlock = newBlock
 				} else {
 					newBlock, err := self.BlockGen.NewBlockShard(&self.UserKeySet.PaymentAddress, &self.UserKeySet.PrivateKey, shardID)
 					if err != nil {
-						return
+						return err
 					}
 					jsonBlock, _ := json.Marshal(newBlock)
 					msg, err := MakeMsgBFTPropose(prevAggregatedSig, prevValidatorsIdx, jsonBlock)
 					if err != nil {
-						Logger.log.Error(err)
-						return
+						return err
 					}
 					go self.Server.PushMessageToShard(msg, shardID)
 					self.pendingBlock = newBlock
@@ -179,8 +178,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							msg, err := MakeMsgBFTPrepare(myRi, self.UserKeySet.GetPublicKeyB58())
 							if err != nil {
 								timeout.Stop()
-								Logger.log.Error(err)
-								return
+								return err
 							}
 							time.AfterFunc(1500*time.Millisecond, func() {
 								fmt.Println("Sending out prepare msg")
@@ -196,7 +194,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							break listenphase
 						}
 					case <-self.cTimeout:
-						return
+						return nil
 					}
 				}
 			case "prepare":
@@ -244,15 +242,13 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							*listPubkeyOfSigners[counter] = pubKeyTemp
 							if (err != nil) || (byteVersion != byte(0x00)) {
 								//Todo
-								fmt.Println("BLah err", err)
-								return
+								return err
 							}
 							listROfSigners[counter] = new(privacy.EllipticPoint)
 							err = listROfSigners[counter].Decompress(bytesR)
 							if err != nil {
 								//Todo
-								fmt.Println("BLah err", err)
-								return
+								return err
 							}
 							RCombined = RCombined.Add(listROfSigners[counter])
 							// phaseData.ValidatorsIdx[counter] = sort.SearchStrings(self.Committee, szPubKey)
@@ -278,7 +274,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 						time.AfterFunc(1500*time.Millisecond, func() {
 							msg, err := MakeMsgBFTCommit(phaseData.CommitBlkSig, phaseData.R, phaseData.ValidatorsIdx, self.UserKeySet.GetPublicKeyB58())
 							if err != nil {
-								fmt.Println("BLah err", err)
+								Logger.log.Error(err)
 								return
 							}
 							fmt.Println("Sending out commit msg")
@@ -341,12 +337,12 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							RCombined.Set(big.NewInt(0), big.NewInt(0))
 							Rbytesarr, byteVersion, err := base58.Base58Check{}.Decode(R)
 							if (err != nil) || (byteVersion != byte(0x00)) {
-								fmt.Println("BLah err", err)
+								Logger.log.Info(err)
 								continue
 							}
 							err = RCombined.Decompress(Rbytesarr)
 							if err != nil {
-								fmt.Println("BLah err", err)
+								Logger.log.Info(err)
 								continue
 							}
 							listPubkeyOfSigners := make([]*privacy.PublicKey, len(newSig.ValidatorsIdx))
@@ -355,19 +351,18 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 								listPubkeyOfSigners[i] = new(privacy.PublicKey)
 								pubKeyTemp, byteVersion, err = base58.Base58Check{}.Decode(self.Committee[newSig.ValidatorsIdx[i]])
 								if (err != nil) || (byteVersion != byte(0x00)) {
-									fmt.Println("BLah err", err)
+									Logger.log.Info(err)
 									continue
 								}
 								*listPubkeyOfSigners[i] = pubKeyTemp
 							}
-							selfPubkey := new(privacy.PublicKey)
+							validatorPubkey := new(privacy.PublicKey)
 							pubKeyTemp, byteVersion, err = base58.Base58Check{}.Decode(newSig.Pubkey)
 							if (err != nil) || (byteVersion != byte(0x00)) {
-								//Todo
-								fmt.Println("BLah err", err)
+								Logger.log.Info(err)
 								continue
 							}
-							*selfPubkey = pubKeyTemp
+							*validatorPubkey = pubKeyTemp
 							var valSigbytesarr []byte
 							valSigbytesarr, byteVersion, err = base58.Base58Check{}.Decode(newSig.Sig)
 							valSig := new(privacy.SchnMultiSig)
@@ -379,9 +374,9 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 								blockData = self.pendingBlock.(*blockchain.ShardBlock).Header.Hash()
 							}
 
-							resValidateEachSigOfSigners := valSig.VerifyMultiSig(blockData.GetBytes(), listPubkeyOfSigners, selfPubkey, RCombined)
+							resValidateEachSigOfSigners := valSig.VerifyMultiSig(blockData.GetBytes(), listPubkeyOfSigners, validatorPubkey, RCombined)
 							if !resValidateEachSigOfSigners {
-								fmt.Println("BLah err22222")
+								Logger.log.Error("Validator's sig is invalid", validatorPubkey)
 								continue
 							}
 							phaseData.Sigs[R] = append(phaseData.Sigs[R], newSig)
@@ -402,15 +397,14 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							}
 						}
 						if len(szRCombined) == 1 {
-							return
+							return errors.New("Not enough sigs to combine")
 						}
 						listSigOfSigners := make([]*privacy.SchnMultiSig, len(phaseData.Sigs[szRCombined]))
 						for i, valSig := range phaseData.Sigs[szRCombined] {
 							listSigOfSigners[i] = new(privacy.SchnMultiSig)
 							bytesSig, byteVersion, err := base58.Base58Check{}.Decode(valSig.Sig)
 							if (err != nil) || (byteVersion != byte(0x00)) {
-								fmt.Println("BLah err", err)
-								return
+								return err
 							}
 							listSigOfSigners[i].SetBytes(bytesSig)
 						}
@@ -453,7 +447,18 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 						// 	self.Server.PushMessageToShard(msg, shardID)
 						// }
 						fmt.Println("\n \n Block consensus reach", ValidatorsIdx, AggregatedSigB58, "\n")
-						return
+
+						if layer == "beacon" {
+							self.pendingBlock.(*blockchain.BeaconBlock).AggregatedSig = AggregatedSigB58
+							self.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx = make([]int, len(ValidatorsIdx))
+							copy(self.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx, ValidatorsIdx)
+						} else {
+							self.pendingBlock.(*blockchain.ShardBlock).AggregatedSig = AggregatedSigB58
+							self.pendingBlock.(*blockchain.ShardBlock).ValidatorsIdx = make([]int, len(ValidatorsIdx))
+							copy(self.pendingBlock.(*blockchain.ShardBlock).ValidatorsIdx, ValidatorsIdx)
+						}
+
+						return nil
 						// self.phase = "reply"
 						// break commitphase
 					}

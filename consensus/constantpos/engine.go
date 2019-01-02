@@ -77,7 +77,7 @@ func (self *Engine) Start() error {
 						nodeRole = "shard"
 					}
 					go self.config.Server.UpdateConsensusState(nodeRole, self.config.UserKeySet.GetPublicKeyB58(), nil, self.config.BlockChain.BestState.Beacon.BeaconCommittee, self.config.BlockChain.BestState.Beacon.ShardCommittee)
-					time.Sleep(4 * time.Second)
+					time.Sleep(2 * time.Second)
 
 					fmt.Println(self.config.NodeMode, role)
 					if role != "" {
@@ -97,12 +97,23 @@ func (self *Engine) Start() error {
 							case "beacon-proposer":
 								// prevBlock :=	self.config.BlockChain.GetMayBeAcceptBlockBeacon()
 								prevBlock := &blockchain.BeaconBlock{}
-								bftProtocol.Start(true, "beacon", 0, prevBlock.AggregatedSig, prevBlock.ValidatorsIdx)
+								err := bftProtocol.Start(true, "beacon", 0, prevBlock.AggregatedSig, prevBlock.ValidatorsIdx)
+								if err != nil {
+									Logger.log.Error("PBFT fatal error", err)
+									continue
+								}
+								//TODO Insert block to chain
 							case "beacon-validator":
-								bftProtocol.Start(false, "beacon", 0, "", []int{})
+								err := bftProtocol.Start(false, "beacon", 0, "", []int{})
+								if err != nil {
+									Logger.log.Error("PBFT fatal error", err)
+									continue
+								}
+								//TODO Insert block to chain
 							// case "beacon-pending":
 							default:
 							}
+
 							continue
 						}
 						if (self.config.NodeMode == "shard" || self.config.NodeMode == "auto") && role == "shard" {
@@ -113,13 +124,23 @@ func (self *Engine) Start() error {
 								switch shardRole {
 								case "shard-proposer":
 									prevBlock := &blockchain.ShardBlock{}
-									bftProtocol.Start(true, "shard", 0, prevBlock.AggregatedSig, prevBlock.ValidatorsIdx)
+									err := bftProtocol.Start(true, "shard", 0, prevBlock.AggregatedSig, prevBlock.ValidatorsIdx)
+									if err != nil {
+										Logger.log.Error("PBFT fatal error", err)
+										continue
+									}
+									//TODO Insert block to chain
 								case "shard-validator":
-									bftProtocol.Start(false, "shard", 0, "", []int{})
+									err := bftProtocol.Start(false, "shard", 0, "", []int{})
+									if err != nil {
+										Logger.log.Error("PBFT fatal error", err)
+										continue
+									}
+									//TODO Insert block to chain
 								default:
 								}
 							} else {
-
+								Logger.log.Warn("Blockchain is not ready!")
 							}
 						}
 					} else {
