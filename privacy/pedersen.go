@@ -4,20 +4,8 @@ import (
 	"math/big"
 )
 
-// PedersenCommitment represents a commitment that includes 4 generators
-type PedersenCommitment interface {
-	// Params returns the parameters for the commitment
-	Params() *PCParams
-	// CommitAll commits
-	CommitAll(openings []*big.Int) *EllipticPoint
-	// CommitAtIndex commits value at index
-	CommitAtIndex(value *big.Int, rand *big.Int, index byte) *EllipticPoint
-	//CommitEllipticPoint commit a elliptic point
-	CommitEllipticPoint(point *EllipticPoint, rand *big.Int) *EllipticPoint
-}
-
-// PCParams represents the parameters for the commitment
-type PCParams struct {
+// PedersenCommitment represents the parameters for the commitment
+type PedersenCommitment struct {
 	G        []*EllipticPoint // generators
 	Capacity int
 	// G[0]: public key
@@ -27,9 +15,9 @@ type PCParams struct {
 	// G[4]: Randomness
 }
 
-// newPedersenParams creates new generators
-func newPedersenParams() PCParams {
-	var pcm PCParams
+// newPedersenCommitment creates new generators
+func newPedersenCommitment() PedersenCommitment {
+	var pcm PedersenCommitment
 	pcm.Capacity = 5
 	pcm.G = make([]*EllipticPoint, pcm.Capacity)
 	pcm.G[0] = new(EllipticPoint)
@@ -41,15 +29,15 @@ func newPedersenParams() PCParams {
 	return pcm
 }
 
-var PedCom = newPedersenParams()
+var PedCom = newPedersenCommitment()
 
 // Params returns parameters of commitment
-func (com PCParams) Params() PCParams {
+func (com PedersenCommitment) Params() PedersenCommitment {
 	return com
 }
 
 // CommitAll commits a list of PCM_CAPACITY value(s)
-func (com PCParams) CommitAll(openings []*big.Int) *EllipticPoint {
+func (com PedersenCommitment) CommitAll(openings []*big.Int) *EllipticPoint {
 	if len(openings) != com.Capacity {
 		return nil
 	}
@@ -62,7 +50,7 @@ func (com PCParams) CommitAll(openings []*big.Int) *EllipticPoint {
 }
 
 // CommitAtIndex commits specific value with index and returns 34 bytes
-func (com PCParams) CommitAtIndex(value, rand *big.Int, index byte) *EllipticPoint {
+func (com PedersenCommitment) CommitAtIndex(value, rand *big.Int, index byte) *EllipticPoint {
 	commitment := com.G[com.Capacity-1].ScalarMult(rand).Add(com.G[index].ScalarMult(value))
 	return commitment
 }
