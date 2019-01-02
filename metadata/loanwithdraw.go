@@ -17,7 +17,7 @@ type LoanWithdraw struct {
 	MetadataBase
 }
 
-func NewLoanWithdraw(data map[string]interface{}) *LoanWithdraw {
+func NewLoanWithdraw(data map[string]interface{}) (Metadata, error) {
 	result := LoanWithdraw{}
 	s, _ := hex.DecodeString(data["LoanID"].(string))
 	result.LoanID = s
@@ -25,7 +25,7 @@ func NewLoanWithdraw(data map[string]interface{}) *LoanWithdraw {
 	result.Key = s
 
 	result.Type = LoanWithdrawMeta
-	return &result
+	return &result, nil
 }
 
 func (lw *LoanWithdraw) Hash() *common.Hash {

@@ -24,7 +24,7 @@ type LoanResponse struct {
 	MetadataBase
 }
 
-func NewLoanResponse(data map[string]interface{}) *LoanResponse {
+func NewLoanResponse(data map[string]interface{}) (Metadata, error) {
 	result := LoanResponse{
 		ValidUntil: int32(data["ValidUntil"].(float64)),
 	}
@@ -34,7 +34,7 @@ func NewLoanResponse(data map[string]interface{}) *LoanResponse {
 	result.Response = ValidLoanResponse(int(data["Response"].(float64)))
 	result.Type = LoanResponseMeta
 
-	return &result
+	return &result, nil
 }
 
 func (lr *LoanResponse) Hash() *common.Hash {

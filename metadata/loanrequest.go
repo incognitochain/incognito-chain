@@ -27,7 +27,7 @@ type LoanRequest struct {
 	MetadataBase
 }
 
-func NewLoanRequest(data map[string]interface{}) (*LoanRequest, error) {
+func NewLoanRequest(data map[string]interface{}) (Metadata, error) {
 	loanParams := data["Params"].(map[string]interface{})
 	result := LoanRequest{
 		Params: params.LoanParams{

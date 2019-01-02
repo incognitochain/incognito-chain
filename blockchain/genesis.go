@@ -96,9 +96,9 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	// Decentralize central bank params
 	loanParams := []params.LoanParams{
 		params.LoanParams{
-			InterestRate:     0,
-			Maturity:         7776000, // 3 months in seconds
-			LiquidationStart: 15000,   // 150%
+			InterestRate:     100,   // 1%
+			Maturity:         1000,  // 1 month in blocks
+			LiquidationStart: 15000, // 150%
 		},
 	}
 	genesisBlock.Header.DCBConstitution.DCBParams = params.DCBParams{
