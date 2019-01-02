@@ -70,7 +70,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 		default:
 			switch self.phase {
 			case "propose":
-				time.Sleep(1500 * time.Millisecond)
+				time.Sleep(1 * time.Second)
 				if layer == "beacon" {
 					newBlock, err := self.BlockGen.NewBlockBeacon(&self.UserKeySet.PaymentAddress, &self.UserKeySet.PrivateKey)
 					if err != nil {
@@ -100,29 +100,19 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 					self.multiSigScheme.dataToSig = newBlock.Header.Hash()
 				}
 
-				// myRiECCPoint, myrBigInt := self.multiScheme.GenerateRandom()
-				// myRi := myRiECCPoint.Compress()
-				// myr := myrBigInt.Bytes()
-				// for len(myr) < privacy.BigIntSize {
-				// 	myr = append([]byte{0}, myr...)
-				// }
-
-				// self.dataForSig.Ri = myRi
-				// self.dataForSig.r = myr
-
-				time.AfterFunc(2000*time.Millisecond, func() {
-					fmt.Println("Sending out prepare msg")
-					msg, err := MakeMsgBFTPrepare(self.multiSigScheme.personal.Ri, self.UserKeySet.GetPublicKeyB58())
-					if err != nil {
-						Logger.log.Error(err)
-						return
-					}
-					if layer == "beacon" {
-						self.Server.PushMessageToBeacon(msg)
-					} else {
-						self.Server.PushMessageToShard(msg, shardID)
-					}
-				})
+				// time.AfterFunc(2000*time.Millisecond, func() {
+				// 	fmt.Println("Sending out prepare msg")
+				// 	msg, err := MakeMsgBFTPrepare(self.multiSigScheme.personal.Ri, self.UserKeySet.GetPublicKeyB58())
+				// 	if err != nil {
+				// 		Logger.log.Error(err)
+				// 		return
+				// 	}
+				// 	if layer == "beacon" {
+				// 		self.Server.PushMessageToBeacon(msg)
+				// 	} else {
+				// 		self.Server.PushMessageToShard(msg, shardID)
+				// 	}
+				// })
 				self.phase = "prepare"
 			case "listen":
 				fmt.Println("Listen phase")
@@ -139,7 +129,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 							if layer == "beacon" {
 								pendingBlk := blockchain.BeaconBlock{}
 								pendingBlk.UnmarshalJSON(msgPropose.(*wire.MessageBFTPropose).Block)
-								self.Chain.VerifyPreProcessingBeaconBlock(&pendingBlk)
+								self.Chain.VerifyPreSignBeaconBlock(&pendingBlk)
 								self.pendingBlock = &pendingBlk
 								self.multiSigScheme.dataToSig = pendingBlk.Header.Hash()
 							} else {
@@ -150,19 +140,19 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 								self.multiSigScheme.dataToSig = pendingBlk.Header.Hash()
 							}
 
-							msg, err := MakeMsgBFTPrepare(self.multiSigScheme.personal.Ri, self.UserKeySet.GetPublicKeyB58())
-							if err != nil {
-								timeout.Stop()
-								return nil, err
-							}
-							time.AfterFunc(1500*time.Millisecond, func() {
-								fmt.Println("Sending out prepare msg")
-								if layer == "beacon" {
-									self.Server.PushMessageToBeacon(msg)
-								} else {
-									self.Server.PushMessageToShard(msg, shardID)
-								}
-							})
+							// msg, err := MakeMsgBFTPrepare(self.multiSigScheme.personal.Ri, self.UserKeySet.GetPublicKeyB58())
+							// if err != nil {
+							// 	timeout.Stop()
+							// 	return nil, err
+							// }
+							// time.AfterFunc(1500*time.Millisecond, func() {
+							// 	fmt.Println("Sending out prepare msg")
+							// 	if layer == "beacon" {
+							// 		self.Server.PushMessageToBeacon(msg)
+							// 	} else {
+							// 		self.Server.PushMessageToShard(msg, shardID)
+							// 	}
+							// })
 
 							self.phase = "prepare"
 							timeout.Stop()
@@ -178,6 +168,20 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 					fmt.Println("Prepare phase timeout")
 					close(self.cTimeout)
 				})
+				time.AfterFunc(1500*time.Millisecond, func() {
+					fmt.Println("Sending out prepare msg")
+					msg, err := MakeMsgBFTPrepare(self.multiSigScheme.personal.Ri, self.UserKeySet.GetPublicKeyB58())
+					if err != nil {
+						Logger.log.Error(err)
+						return
+					}
+					if layer == "beacon" {
+						self.Server.PushMessageToBeacon(msg)
+					} else {
+						self.Server.PushMessageToShard(msg, shardID)
+					}
+				})
+
 				var collectedRiList map[string][]byte //map of members and their Ri
 				collectedRiList = make(map[string][]byte)
 				collectedRiList[self.UserKeySet.GetPublicKeyB58()] = self.multiSigScheme.personal.Ri
@@ -201,19 +205,6 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 						if err != nil {
 							return nil, err
 						}
-						time.AfterFunc(1500*time.Millisecond, func() {
-							msg, err := MakeMsgBFTCommit(self.multiSigScheme.combine.CommitSig, self.multiSigScheme.combine.R, self.multiSigScheme.combine.ValidatorsIdx, self.UserKeySet.GetPublicKeyB58())
-							if err != nil {
-								Logger.log.Error(err)
-								return
-							}
-							fmt.Println("Sending out commit msg")
-							if layer == "beacon" {
-								self.Server.PushMessageToBeacon(msg)
-							} else {
-								self.Server.PushMessageToShard(msg, shardID)
-							}
-						})
 
 						self.phase = "commit"
 						break preparephase
@@ -224,6 +215,20 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 				time.AfterFunc(CommitTimeout*time.Second, func() {
 					fmt.Println("Commit phase timeout")
 					close(self.cTimeout)
+				})
+
+				time.AfterFunc(1500*time.Millisecond, func() {
+					msg, err := MakeMsgBFTCommit(self.multiSigScheme.combine.CommitSig, self.multiSigScheme.combine.R, self.multiSigScheme.combine.ValidatorsIdx, self.UserKeySet.GetPublicKeyB58())
+					if err != nil {
+						Logger.log.Error(err)
+						return
+					}
+					fmt.Println("Sending out commit msg")
+					if layer == "beacon" {
+						self.Server.PushMessageToBeacon(msg)
+					} else {
+						self.Server.PushMessageToShard(msg, shardID)
+					}
 				})
 				var phaseData struct {
 					Sigs map[string][]bftCommittedSig
