@@ -8,7 +8,6 @@ import (
 
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/connmanager"
 	"github.com/ninjadotorg/constant/wire"
 )
 
@@ -35,7 +34,6 @@ type role struct {
 
 type EngineConfig struct {
 	BlockChain  *blockchain.BlockChain
-	ConnManager *connmanager.ConnManager
 	ChainParams *blockchain.Params
 	BlockGen    *blockchain.BlkTmplGenerator
 	UserKeySet  *cashec.KeySet
@@ -119,6 +117,11 @@ func (self *Engine) Start() error {
 							if err == nil {
 								fmt.Println(resBlk.(*blockchain.BeaconBlock))
 								//TODO insert block to blockchain
+								err = self.config.BlockChain.InsertBeaconBlock(resBlk.(*blockchain.BeaconBlock))
+								if err != nil {
+									Logger.log.Error("Insert beacon block error", err)
+									continue
+								}
 							} else {
 								Logger.log.Error(err)
 							}
