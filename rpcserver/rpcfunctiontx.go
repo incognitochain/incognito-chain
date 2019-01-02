@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/cashec"
@@ -161,6 +162,7 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 	// list unspent tx for create tx
 	totalAmmount += uint64(realFee)
 	estimateTotalAmount = totalAmmount
+	fmt.Printf("realFee and totalAmount: %d %d\n", realFee, totalAmmount)
 	if totalAmmount > 0 {
 		candidateOutputCoins = make([]*privacy.OutputCoin, 0)
 		for _, note := range outCoins {

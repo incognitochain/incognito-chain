@@ -107,7 +107,7 @@ func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 
 func (lr *LoanRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if len(lr.KeyDigest) != LoanKeyDigestLength {
-		return false, false, nil
+		return false, false, errors.Errorf("KeyDigest is not 32 bytes")
 	}
 	return true, true, nil // continue to check for fee
 }

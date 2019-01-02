@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"math/big"
 	"strconv"
@@ -196,6 +197,7 @@ func (tx *Tx) Init(
 		}
 
 		ok = common.CheckDuplicateBigInt(sndOuts)
+		fmt.Printf("checkduplidatebigint: %v\n", ok)
 		if ok {
 			sndOuts = make([]*big.Int, 0)
 		}
@@ -427,6 +429,7 @@ func (tx *Tx) validateMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
 	start := time.Now()
 	// Verify tx signature
+	fmt.Printf("tx.GetType(): %v\n", tx.GetType())
 	if tx.GetType() == common.TxSalaryType {
 		return tx.ValidateTxSalary(db)
 	}
@@ -435,6 +438,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	var err error
 	senderPK := tx.GetJSPubKey()
 	_, getMSRErr := db.GetMultiSigsRegistration(senderPK)
+	fmt.Printf("getMSRErr: %v\n", getMSRErr)
 	if getMSRErr != nil {
 		if getMSRErr != lvdberr.ErrNotFound {
 			Logger.log.Infof("%+v", err)
@@ -465,6 +469,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
 			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, chainId, db); ok || err != nil {
+				fmt.Printf("snd existed: %d\n", i)
 				return false
 			}
 		}
@@ -481,6 +486,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 		// Verify the payment proof
 		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, chainId, tokenID)
+		fmt.Printf("proof valid: %v\n", valid)
 		if valid == false {
 			Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION PAYMENT PROOF")
 			return false
@@ -707,6 +713,7 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 }
 
 func (tx *Tx) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
+	fmt.Println("Validating sanity data!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", tx.Metadata)
 	if tx.Metadata != nil {
 		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, tx)
 		if err != nil || !ok || !isContinued {
@@ -725,10 +732,12 @@ func (tx *Tx) ValidateTxByItself(
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	ok := tx.ValidateTransaction(hasPrivacy, db, chainID, constantTokenID)
+	fmt.Printf("ok validatetxbyitself validatetransaction: %d\n", ok)
 	if !ok {
 		return false
 	}
 	if tx.Metadata != nil {
+		fmt.Printf("validatetxbyitself metadata: %d\n", tx.Metadata.ValidateMetadataByItself())
 		return tx.Metadata.ValidateMetadataByItself()
 	}
 	return true
