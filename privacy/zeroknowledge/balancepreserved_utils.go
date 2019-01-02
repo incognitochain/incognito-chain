@@ -93,7 +93,7 @@ func (IPA *InnerProdArg) setBytes(IPA_byte []byte) {
 	IPA.B.SetBytes(IPA_byte[offset+privacy.BigIntSize:offset+2*privacy.BigIntSize])
 }
 
-func GenerateNewParams(G, H []*privacy.EllipticPoint, x *big.Int, L, R, P *privacy.EllipticPoint) ([]*privacy.EllipticPoint, []*privacy.EllipticPoint, *privacy.EllipticPoint) {
+func generateNewParams(G, H []*privacy.EllipticPoint, x *big.Int, L, R, P *privacy.EllipticPoint) ([]*privacy.EllipticPoint, []*privacy.EllipticPoint, *privacy.EllipticPoint) {
 	nprime := len(G) / 2
 
 	Gprime := make([]*privacy.EllipticPoint, nprime)
@@ -144,7 +144,7 @@ func innerProductProveSub(proof InnerProdArg, G, H []*privacy.EllipticPoint, a [
 
 	proof.Challenges[curIt] = x
 
-	Gprime, Hprime, Pprime := GenerateNewParams(G, H, x, L, R, P)
+	Gprime, Hprime, Pprime := generateNewParams(G, H, x, L, R, P)
 	xinv := new(big.Int).ModInverse(x, privacy.Curve.Params().N)
 	// or these two lines
 	aprime := vectorHadamard(
