@@ -16,11 +16,11 @@ func (self *BlockChain) GetHeight() int32 {
 }
 
 func (self *BlockChain) GetDCBBoardPubKeys() [][]byte {
-	return self.BestState[0].BestBlock.Header.DCBGovernor.DCBBoardPubKeys
+	return self.BestState[0].BestBlock.Header.DCBGovernor.BoardPubKeys
 }
 
 func (self *BlockChain) GetGOVBoardPubKeys() [][]byte {
-	return self.BestState[0].BestBlock.Header.GOVGovernor.GOVBoardPubKeys
+	return self.BestState[0].BestBlock.Header.GOVGovernor.BoardPubKeys
 }
 
 func (self *BlockChain) GetDCBParams() params.DCBParams {

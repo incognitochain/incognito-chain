@@ -2,7 +2,6 @@ package privacy
 
 import (
 	"encoding/hex"
-	"fmt"
 	"github.com/pkg/errors"
 	"math/big"
 
@@ -47,7 +46,6 @@ func GenerateSpendingKey(seed []byte) SpendingKey {
 	for temp.SetBytes(spendingKey).Cmp(Curve.Params().N) == 1 {
 		spendingKey = common.HashB(spendingKey)
 	}
-	fmt.Printf("Spending key bytes: %v\n", spendingKey)
 	return spendingKey[:]
 }
 

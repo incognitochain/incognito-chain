@@ -25,11 +25,10 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 	if errLoan != nil {
 		return nil, NewRPCError(ErrUnexpected, errLoan)
 	}
-	tx, err := self.buildRawTransaction(params)
+	tx, err := self.buildRawTransaction(params, loanRequest)
 	if err != nil {
 		return nil, err
 	}
-	tx.Metadata = loanRequest
 	byteArrays, errMarshal := json.Marshal(tx)
 	if errMarshal != nil {
 		// return hex for a new tx
@@ -95,14 +94,13 @@ func (self RpcServer) handleCreateAndSendLoanRequest(params interface{}, closeCh
 
 func (self RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
-	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
 	loanResponseRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
 	loanResponse := metadata.NewLoanResponse(loanResponseRaw)
 	if loanResponse == nil {
 		return nil, NewRPCError(ErrUnexpected, errors.New("Loan data missing"))
 	}
-	tx.Metadata = loanResponse
+	tx, err := self.buildRawTransaction(params, loanResponse)
 	return tx, err
 }
 
@@ -159,14 +157,13 @@ func (self RpcServer) handleCreateAndSendLoanResponse(params interface{}, closeC
 
 func (self RpcServer) handleCreateRawLoanWithdraw(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
-	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
 	loanWithdrawRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
 	loanWithdraw := metadata.NewLoanWithdraw(loanWithdrawRaw)
 	if loanWithdraw == nil {
 		return nil, NewRPCError(ErrUnexpected, errors.New("Loan data missing"))
 	}
-	tx.Metadata = loanWithdraw
+	tx, err := self.buildRawTransaction(params, loanWithdraw)
 	return tx, err
 }
 
@@ -223,14 +220,13 @@ func (self RpcServer) handleCreateAndSendLoanWithdraw(params interface{}, closeC
 
 func (self RpcServer) handleCreateRawLoanPayment(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
-	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
 	loanPaymentRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
 	loanPayment := metadata.NewLoanPayment(loanPaymentRaw)
 	if loanPayment == nil {
 		return nil, NewRPCError(ErrUnexpected, errors.New("Loan data missing"))
 	}
-	tx.Metadata = loanPayment
+	tx, err := self.buildRawTransaction(params, loanPayment)
 	return tx, err
 }
 

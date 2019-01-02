@@ -41,7 +41,7 @@ type PKSNPrivacyProof struct {
 	zRSND2 *big.Int
 }
 
-func (pro *PKSNPrivacyProof) IsNil() bool {
+func (pro *PKSNPrivacyProof) isNil() bool {
 	if pro.serialNumber == nil {
 		return true
 	}
@@ -172,7 +172,7 @@ func (pro *PKSNPrivacyProof) Set(
 
 func (pro *PKSNPrivacyProof) Bytes() []byte {
 	// if proof is nil, return an empty array
-	if pro.IsNil() {
+	if pro.isNil() {
 		return []byte{}
 	}
 
@@ -308,7 +308,7 @@ func (wit *PKSNPrivacyWitness) Prove() (*PKSNPrivacyProof, error){
 	tE := wit.serialNumber.ScalarMult(new(big.Int).Add(eSK, eSND))
 
 	// calculate x = hash(tSK || tSND1 || tSND2 || tE)
-	x := GenerateChallengeFromPoint([]*privacy.EllipticPoint{tSK, tSND1, tSND2, tE})
+	x := generateChallengeFromPoint([]*privacy.EllipticPoint{tSK, tSND1, tSND2, tE})
 
 	// Calculate zSK = SK * x + eSK
 	zSK := new(big.Int).Mul(wit.sk, x)
@@ -342,7 +342,7 @@ func (wit *PKSNPrivacyWitness) Prove() (*PKSNPrivacyProof, error){
 
 func (pro *PKSNPrivacyProof) Verify() bool{
 	// re-calculate x = hash(tSK || tSND1 || tSND2 || tE)
-	x := GenerateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSK, pro.tSND1, pro.tSND2, pro.tE})
+	x := generateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSK, pro.tSND1, pro.tSND2, pro.tE})
 
 	// Check gSND^zSND * h^zRSND1 = SND^x * tSND1
 	leftPoint1 := privacy.PedCom.CommitAtIndex(pro.zSND, pro.zRSND1, privacy.SND)

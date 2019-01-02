@@ -46,6 +46,8 @@ const (
 	NumberOfGOVGovernors              = 50
 	EncryptionPhaseDuration           = uint32(5)
 	RewardProposalSubmitter           = 500
+	BasePercentage                    = 10000
+	PercentageBoardSalary             = 5
 )
 
 // board types

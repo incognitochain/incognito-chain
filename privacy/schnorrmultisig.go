@@ -1,39 +1,9 @@
 package privacy
 
 import (
-	"fmt"
 	"math/big"
-	"sync"
-	"time"
-
 	"github.com/ninjadotorg/constant/common"
 )
-
-var isTesting bool
-
-//#if isTesting
-var pubkeyTest []*PublicKey
-var RTest []*EllipticPoint
-var mutex sync.Mutex
-var counter int
-var wg sync.WaitGroup
-var wgchild sync.WaitGroup
-var Numbs int
-
-//#endif
-
-//MultiSigSchemeInterface define all of function for create EC Schnorr signature which could be combine by adding with another EC Schnorr Signature
-type MultiSigSchemeInterface interface {
-	SignMultiSig(data []byte) *SchnMultiSig
-	VerifyMultiSig(data []byte, listPK []*PublicKey) bool
-	CombineMultiSig(listSignatures []*SchnMultiSig) *SchnMultiSig
-}
-
-type MultiSigScheme interface {
-	SignMultiSig(data []byte) *SchnMultiSig
-	VerifyMultiSig(data []byte, listPK []*PublicKey) bool
-	CombineMultiSig(listSignatures []*SchnMultiSig) *SchnMultiSig
-}
 
 // SchnMultiSig is struct of EC Schnorr Signature which is combinable
 type SchnMultiSig struct {
@@ -45,7 +15,7 @@ type SchnMultiSig struct {
 func (multiSig *SchnMultiSig) SetBytes(sigByte []byte) {
 	multiSig.R.Decompress(sigByte[0:CompressedPointSize])
 	multiSig.S = big.NewInt(0)
-	multiSig.S.SetBytes(sigByte[CompressedPointSize : CompressedPointSize+BigIntSize])
+	multiSig.S.SetBytes(sigByte[CompressedPointSize: CompressedPointSize+BigIntSize])
 }
 
 // Set - Constructing multiSig
@@ -208,68 +178,3 @@ func CombineMultiSig(listSignatures []*SchnMultiSig) *SchnMultiSig {
 
 	return res
 }
-
-// Functions for testing
-// -------------------------------------------------------------------------------------------------
-
-func broadcastR(R *EllipticPoint) {
-	if isTesting {
-		mutex.Lock()
-		RTest[counter] = R
-		counter++
-		mutex.Unlock()
-	}
-}
-
-// TestMultiSig EC Schnorr MultiSig Scheme
-func TestMultiSig() {
-	isTesting = true
-	Numbs = 20
-	counter = 0
-	listSigners := make([]*SpendingKey, Numbs)
-	pubkeyTest = make([]*PublicKey, Numbs)
-	RTest = make([]*EllipticPoint, Numbs)
-	// REachSigner := make([]*EllipticPoint, Numbs)
-	Sig := make([]*SchnMultiSig, Numbs)
-	R := new(EllipticPoint)
-	R.X = big.NewInt(0)
-	R.Y = big.NewInt(0)
-	for i := 0; i < Numbs; i++ {
-		listSigners[i] = new(SpendingKey)
-		*listSigners[i] = GenerateSpendingKey(RandInt().Bytes())
-		pubkeyTest[i] = new(PublicKey)
-		*pubkeyTest[i] = GeneratePublicKey(*listSigners[i])
-	}
-	for i := 0; i < Numbs; i++ {
-		wg.Add(1)
-		go func(j int) {
-			defer wg.Done()
-			Ri, ri := generateRandom()
-			broadcastR(Ri)
-			time.Sleep(500 * time.Millisecond)
-			for counter < Numbs {
-			}
-			Sig[j] = listSigners[j].SignMultiSig([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, pubkeyTest, pubkeyTest[j], RTest, ri)
-		}(i)
-	}
-	wg.Wait()
-
-	aggSig := CombineMultiSig(Sig)
-	for i := 0; i < Numbs; i++ {
-		R = R.Add(RTest[i])
-		fmt.Printf("\n**********************************************************************************************************************************************************************************")
-		fmt.Printf("\n* Signature of signer %v\n", i)
-		fmt.Printf("*\tR  [%v]: %v\n", i, Sig[i].R)
-		fmt.Printf("*\tSig[%v]: %v\n", i, Sig[i].S)
-		fmt.Printf("* Verifing... ")
-		fmt.Printf("Signature %v is %v\n", i, Sig[i].VerifyMultiSig([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, pubkeyTest, pubkeyTest[i], aggSig.R))
-		fmt.Println("**********************************************************************************************************************************************************************************")
-	}
-
-	fmt.Println("\tAggregate:")
-	fmt.Printf("\t\tAggSignature: %v\n", aggSig.S)
-	fmt.Printf("\t\tAggR        : %v\n", aggSig.R)
-	fmt.Printf("\tVerify result: %v\n", aggSig.VerifyMultiSig([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, pubkeyTest, nil, nil))
-}
-
-// -------------------------------------------------------------------------------------------------

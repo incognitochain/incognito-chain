@@ -12,10 +12,9 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
-func (db *db) AddVoteDCBBoard(StartedBlockInt uint32, VoterPubKey []byte, CandidatePubKey []byte, amount uint64) error {
-	StartedBlock := uint32(StartedBlockInt)
+func (db *db) AddVoteDCBBoard(boardIndex uint32, paymentAddress []byte, VoterPubKey []byte, CandidatePubKey []byte, amount uint64) error {
 	//add to sum amount of vote token to this candidate
-	key := GetVoteDCBBoardSumKey(StartedBlock, CandidatePubKey)
+	key := GetKeyVoteDCBBoardSum(boardIndex, CandidatePubKey)
 	ok, err := db.HasValue(key)
 	if err != nil {
 		return err
@@ -38,7 +37,7 @@ func (db *db) AddVoteDCBBoard(StartedBlockInt uint32, VoterPubKey []byte, Candid
 	}
 
 	// add to count amount of vote to this candidate
-	key = GetVoteDCBBoardCountKey(StartedBlock, CandidatePubKey)
+	key = GetKeyVoteDCBBoardCount(boardIndex, CandidatePubKey)
 	currentCountInBytes, err := db.lvdb.Get(key, nil)
 	if err != nil {
 		return err
@@ -53,19 +52,23 @@ func (db *db) AddVoteDCBBoard(StartedBlockInt uint32, VoterPubKey []byte, Candid
 	}
 
 	// add to list voter new voter base on count as index
-	key = GetVoteDCBBoardListKey(currentCount, StartedBlock, CandidatePubKey)
-	amountInByte := make([]byte, 8)
-	binary.LittleEndian.PutUint64(amountInByte, amount)
-	valueInByte := append([]byte(VoterPubKey), amountInByte...)
-	err = db.Put(key, valueInByte)
+	key = GetKeyVoteDCBBoardList(boardIndex, CandidatePubKey, VoterPubKey)
+	oldAmountInByte, _ := db.Get(key)
+	oldAmount := ParseValueVoteDCBBoardList(oldAmountInByte)
+	newAmount := oldAmount + amount
+	newAmountInByte := GetValueVoteDCBBoardList(newAmount)
+	err = db.Put(key, newAmountInByte)
+
+	//add database to get paymentAddress from pubKey
+	key = GetPubKeyToPaymentAddressKey(VoterPubKey)
+	db.Put(key, paymentAddress)
 
 	return nil
 }
 
-func (db *db) AddVoteGOVBoard(StartedBlockInt uint32, VoterPubKey []byte, CandidatePubKey []byte, amount uint64) error {
-	StartedBlock := uint32(StartedBlockInt)
+func (db *db) AddVoteGOVBoard(boardIndex uint32, paymentAddress []byte, VoterPubKey []byte, CandidatePubKey []byte, amount uint64) error {
 	//add to sum amount of vote token to this candidate
-	key := GetVoteGOVBoardSumKey(StartedBlock, CandidatePubKey)
+	key := GetKeyVoteGOVBoardSum(boardIndex, CandidatePubKey)
 	ok, err := db.HasValue(key)
 	if err != nil {
 		return err
@@ -88,7 +91,7 @@ func (db *db) AddVoteGOVBoard(StartedBlockInt uint32, VoterPubKey []byte, Candid
 	}
 
 	// add to count amount of vote to this candidate
-	key = GetVoteGOVBoardCountKey(StartedBlock, CandidatePubKey)
+	key = GetKeyVoteGOVBoardCount(boardIndex, CandidatePubKey)
 	currentCountInBytes, err := db.lvdb.Get(key, nil)
 	if err != nil {
 		return err
@@ -103,23 +106,29 @@ func (db *db) AddVoteGOVBoard(StartedBlockInt uint32, VoterPubKey []byte, Candid
 	}
 
 	// add to list voter new voter base on count as index
-	key = GetVoteGOVBoardListKey(currentCount, StartedBlock, CandidatePubKey)
-	amountInByte := make([]byte, 8)
-	binary.LittleEndian.PutUint64(amountInByte, amount)
-	valueInByte := append([]byte(VoterPubKey), amountInByte...)
-	err = db.Put(key, valueInByte)
+	key = GetKeyVoteGOVBoardList(boardIndex, CandidatePubKey, VoterPubKey)
+	oldAmountInByte, _ := db.Get(key)
+	oldAmount := ParseValueVoteGOVBoardList(oldAmountInByte)
+	newAmount := oldAmount + amount
+	newAmountInByte := GetValueVoteGOVBoardList(newAmount)
+	err = db.Put(key, newAmountInByte)
+
+	//add database to get paymentAddress from pubKey
+	key = GetPubKeyToPaymentAddressKey(VoterPubKey)
+	db.Put(key, paymentAddress)
 
 	return nil
 }
 
-func (db *db) GetTopMostVoteDCBGovernor(StartedBlock uint32) (database.CandidateList, error) {
+func (db *db) GetTopMostVoteDCBGovernor(currentBoardIndex uint32) (database.CandidateList, error) {
 	var candidateList database.CandidateList
 	//use prefix  as in file lvdb/block.go FetchChain
-	prefix := GetVoteDCBBoardSumKey(StartedBlock, make([]byte, 0))
+	newBoardIndex := currentBoardIndex + 1
+	prefix := GetKeyVoteDCBBoardSum(newBoardIndex, make([]byte, 0))
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
 		_, pubKey, err := ParseKeyVoteDCBBoardSum(iter.Key())
-		countKey := GetVoteDCBBoardCountKey(StartedBlock, pubKey)
+		countKey := GetKeyVoteDCBBoardCount(newBoardIndex, pubKey)
 		if err != nil {
 			return nil, err
 		}
@@ -142,14 +151,15 @@ func (db *db) GetTopMostVoteDCBGovernor(StartedBlock uint32) (database.Candidate
 	return candidateList[len(candidateList)-common.NumberOfDCBGovernors:], nil
 }
 
-func (db *db) GetTopMostVoteGOVGovernor(StartedBlock uint32) (database.CandidateList, error) {
+func (db *db) GetTopMostVoteGOVGovernor(currentBoardIndex uint32) (database.CandidateList, error) {
 	var candidateList database.CandidateList
 	//use prefix  as in file lvdb/block.go FetchChain
-	prefix := GetVoteGOVBoardSumKey(StartedBlock, make([]byte, 0))
+	newBoardIndex := currentBoardIndex + 1
+	prefix := GetKeyVoteGOVBoardSum(newBoardIndex, make([]byte, 0))
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
 		_, pubKey, err := ParseKeyVoteGOVBoardSum(iter.Key())
-		countKey := GetVoteGOVBoardCountKey(StartedBlock, pubKey)
+		countKey := GetKeyVoteGOVBoardCount(newBoardIndex, pubKey)
 		if err != nil {
 			return nil, err
 		}
@@ -176,29 +186,9 @@ func (db *db) NewIterator(slice *util.Range, ro *opt.ReadOptions) iterator.Itera
 	return db.lvdb.NewIterator(slice, ro)
 }
 
-func (db *db) GetVoteDCBBoardListPrefix() []byte {
-	return VoteDCBBoardListPrefix
-}
-
-func (db *db) GetVoteGOVBoardListPrefix() []byte {
-	return VoteGOVBoardListPrefix
-}
-
-func (db *db) GetThreePhraseSealerPrefix() []byte {
-	return threePhraseCryptoSealerPrefix
-}
-
-func (db *db) GetThreePhraseOwnerPrefix() []byte {
-	return threePhraseCryptoOwnerPrefix
-}
-
-func (db *db) GetThreePhraseVoteValuePrefix() []byte {
-	return threePhraseVoteValuePrefix
-}
-
-func (db *db) AddVoteLv3Proposal(boardType string, startedBlock uint32, txID *common.Hash) error {
+func (db *db) AddVoteLv3Proposal(boardType string, constitutionIndex uint32, txID *common.Hash) error {
 	//init sealer
-	keySealer := GetThreePhraseCryptoSealerKey(boardType, startedBlock, txID)
+	keySealer := GetThreePhraseCryptoSealerKey(boardType, constitutionIndex, txID)
 	ok, err := db.HasValue(keySealer)
 	if err != nil {
 		return err
@@ -211,7 +201,7 @@ func (db *db) AddVoteLv3Proposal(boardType string, startedBlock uint32, txID *co
 	db.Put(keySealer, zeroInBytes)
 
 	// init owner
-	keyOwner := GetThreePhraseCryptoOwnerKey(boardType, startedBlock, txID)
+	keyOwner := GetThreePhraseCryptoOwnerKey(boardType, constitutionIndex, txID)
 	ok, err = db.HasValue(keyOwner)
 	if err != nil {
 		return err
@@ -224,8 +214,8 @@ func (db *db) AddVoteLv3Proposal(boardType string, startedBlock uint32, txID *co
 	return nil
 }
 
-func (db *db) AddVoteLv1or2Proposal(boardType string, startedBlock uint32, txID *common.Hash) error {
-	keySealer := GetThreePhraseCryptoSealerKey(boardType, startedBlock, txID)
+func (db *db) AddVoteLv1or2Proposal(boardType string, constitutionIndex uint32, txID *common.Hash) error {
+	keySealer := GetThreePhraseCryptoSealerKey(boardType, constitutionIndex, txID)
 	ok, err := db.HasValue(keySealer)
 	if err != nil {
 		return err
@@ -245,20 +235,20 @@ func (db *db) AddVoteLv1or2Proposal(boardType string, startedBlock uint32, txID 
 	return nil
 }
 
-func (db *db) AddVoteNormalProposalFromSealer(boardType string, startedBlock uint32, txID *common.Hash, voteValue []byte) error {
-	err := db.AddVoteLv1or2Proposal(boardType, startedBlock, txID)
+func (db *db) AddVoteNormalProposalFromSealer(boardType string, constitutionIndex uint32, txID *common.Hash, voteValue []byte) error {
+	err := db.AddVoteLv1or2Proposal(boardType, constitutionIndex, txID)
 	if err != nil {
 		return err
 	}
-	key := GetThreePhraseVoteValueKey(boardType, startedBlock, txID)
+	key := GetThreePhraseVoteValueKey(boardType, constitutionIndex, txID)
 
 	db.Put(key, voteValue)
 
 	return nil
 }
 
-func (db *db) AddVoteNormalProposalFromOwner(boardType string, startedBlock uint32, txID *common.Hash, voteValue []byte) error {
-	keyOwner := GetThreePhraseCryptoOwnerKey(boardType, startedBlock, txID)
+func (db *db) AddVoteNormalProposalFromOwner(boardType string, constitutionIndex uint32, txID *common.Hash, voteValue []byte) error {
+	keyOwner := GetThreePhraseCryptoOwnerKey(boardType, constitutionIndex, txID)
 	ok, err := db.HasValue(keyOwner)
 	if err != nil {
 		return err
@@ -272,69 +262,98 @@ func (db *db) AddVoteNormalProposalFromOwner(boardType string, startedBlock uint
 	newValueInByte := common.Uint32ToBytes(1)
 	db.Put(keyOwner, newValueInByte)
 
-	key := GetThreePhraseVoteValueKey(boardType, startedBlock, txID)
+	key := GetThreePhraseVoteValueKey(boardType, constitutionIndex, txID)
 	db.Put(key, voteValue)
 
 	return nil
 }
 
-func GetVoteDCBBoardSumKey(startedBlock uint32, candidatePubKey []byte) []byte {
-	key := append(voteDCBBoardSumPrefix, common.Uint32ToBytes(startedBlock)...)
+func GetPubKeyToPaymentAddressKey(pubKey []byte) []byte {
+	key := append(pubKeyToPaymentAddress, pubKey...)
+	return key
+}
+
+func GetKeyVoteDCBBoardSum(boardIndex uint32, candidatePubKey []byte) []byte {
+	key := append(voteDCBBoardSumPrefix, common.Uint32ToBytes(boardIndex)...)
 	key = append(key, candidatePubKey...)
 	return key
 }
 
 func ParseKeyVoteDCBBoardSum(key []byte) (uint32, []byte, error) {
 	realKey := key[len(voteDCBBoardSumPrefix):]
-	startedBlock := common.BytesToUint32(realKey[:4])
+	boardIndex := common.BytesToUint32(realKey[:4])
 	candidatePubKey := realKey[4:]
-	return startedBlock, candidatePubKey, nil
+	return boardIndex, candidatePubKey, nil
 }
 
-func GetVoteDCBBoardCountKey(startedBlock uint32, candidatePubKey []byte) []byte {
-	key := append(voteDCBBoardCountPrefix, common.Uint32ToBytes(startedBlock)...)
+func GetKeyVoteDCBBoardCount(boardIndex uint32, candidatePubKey []byte) []byte {
+	key := append(voteDCBBoardCountPrefix, common.Uint32ToBytes(boardIndex)...)
 	key = append(key, candidatePubKey...)
 	return key
 }
 
 func ParseKeyVoteGOVBoardSum(key []byte) (uint32, []byte, error) {
 	realKey := key[len(voteGOVBoardSumPrefix):]
-	startedBlock := common.BytesToUint32(realKey[:4])
+	boardIndex := common.BytesToUint32(realKey[:4])
 	candidatePubKey := realKey[4:]
-	return startedBlock, candidatePubKey, nil
+	return boardIndex, candidatePubKey, nil
 }
 
-func GetVoteDCBBoardListKey(currentCount uint32, startedBlock uint32, candidatePubKey []byte) []byte {
-	key := append(VoteDCBBoardListPrefix, common.Uint32ToBytes(currentCount)...)
-	key = append(key, common.Uint32ToBytes(startedBlock)...)
-	key = append(key, candidatePubKey...)
+func GetPosFromLength(length []int) []int {
+	pos := []int{0}
+	for i := 0; i < len(length); i++ {
+		pos = append(pos, pos[i]+length[i])
+	}
+	return pos
+}
+
+func GetKeyVoteDCBBoardList(boardIndex uint32, candidatePubKey []byte, voterPubKey []byte) []byte {
+	length := []int{len(VoteDCBBoardListPrefix), 4, common.PubKeyLength, common.PubKeyLength}
+	pos := GetPosFromLength(length)
+
+	key := make([]byte, pos[len(pos)-1])
+	copy(key[pos[0]:pos[1]], VoteDCBBoardListPrefix)
+	copy(key[pos[1]:pos[2]], common.Uint32ToBytes(boardIndex))
+	copy(key[pos[2]:pos[3]], candidatePubKey)
+	copy(key[pos[3]:pos[4]], voterPubKey)
 	return key
 }
 
-func ParseKeyVoteDCBBoardList(key []byte) (uint32, []byte, uint32, error) {
-	realKey := key[len(VoteDCBBoardListPrefix):]
-	startedBlock := common.BytesToUint32(realKey[:4])
-	pubKey := realKey[4 : 4+common.PubKeyLength]
-	currentIndex := common.BytesToUint32(realKey[4+common.PubKeyLength:])
-	return startedBlock, pubKey, currentIndex, nil
+func ParseKeyVoteDCBBoardList(key []byte) (uint32, []byte, []byte, error) {
+	length := []int{len(VoteDCBBoardListPrefix), 4, common.PubKeyLength, common.PubKeyLength}
+	pos := GetPosFromLength(length)
+
+	_ = key[pos[0]:pos[1]]
+	boardIndex := common.BytesToUint32(key[pos[1]:pos[2]])
+	candidatePubKey := key[pos[2]:pos[3]]
+	voterPubKey := key[pos[3]:pos[4]]
+	return boardIndex, candidatePubKey, voterPubKey, nil
 }
 
-func GetDCBVoteTokenAmountKey(startedBlock uint32, pubKey []byte) []byte {
-	key := append(DCBVoteTokenAmountPrefix, common.Uint32ToBytes(startedBlock)...)
+func GetValueVoteDCBBoardList(amount uint64) []byte {
+	return common.Uint64ToBytes(amount)
+}
+
+func ParseValueVoteDCBBoardList(value []byte) uint64 {
+	return common.BytesToUint64(value)
+}
+
+func GetKeyDCBVoteTokenAmount(boardIndex uint32, pubKey []byte) []byte {
+	key := append(DCBVoteTokenAmountPrefix, common.Uint32ToBytes(boardIndex)...)
 	key = append(key, pubKey...)
 	return key
 }
 
-func (db *db) GetDCBVoteTokenAmount(startedBlock uint32, pubKey []byte) (uint32, error) {
-	key := GetDCBVoteTokenAmountKey(startedBlock, pubKey)
+func (db *db) GetDCBVoteTokenAmount(boardIndex uint32, pubKey []byte) (uint32, error) {
+	key := GetKeyDCBVoteTokenAmount(boardIndex, pubKey)
 	value, err := db.Get(key)
 	if err != nil {
 		return 0, err
 	}
 	return common.BytesToUint32(value), nil
 }
-func (db *db) GetGOVVoteTokenAmount(startedBlock uint32, pubKey []byte) (uint32, error) {
-	key := GetGOVVoteTokenAmountKey(startedBlock, pubKey)
+func (db *db) GetGOVVoteTokenAmount(boardIndex uint32, pubKey []byte) (uint32, error) {
+	key := GetGOVVoteTokenAmountKey(boardIndex, pubKey)
 	value, err := db.Get(key)
 	if err != nil {
 		return 0, err
@@ -342,42 +361,58 @@ func (db *db) GetGOVVoteTokenAmount(startedBlock uint32, pubKey []byte) (uint32,
 	return common.BytesToUint32(value), nil
 }
 
-func GetVoteGOVBoardSumKey(startedBlock uint32, candidatePubKey []byte) []byte {
-	key := append(voteGOVBoardSumPrefix, common.Uint32ToBytes(startedBlock)...)
+func GetKeyVoteGOVBoardSum(boardIndex uint32, candidatePubKey []byte) []byte {
+	key := append(voteGOVBoardSumPrefix, common.Uint32ToBytes(boardIndex)...)
 	key = append(key, candidatePubKey...)
 	return key
 }
 
-func GetVoteGOVBoardCountKey(startedBlock uint32, candidatePubKey []byte) []byte {
-	key := append(voteGOVBoardCountPrefix, common.Uint32ToBytes(startedBlock)...)
+func GetKeyVoteGOVBoardCount(boardIndex uint32, candidatePubKey []byte) []byte {
+	key := append(voteGOVBoardCountPrefix, common.Uint32ToBytes(boardIndex)...)
 	key = append(key, candidatePubKey...)
 	return key
 }
 
-func GetVoteGOVBoardListKey(currentCount uint32, startedBlock uint32, candidatePubKey []byte) []byte {
-	key := append(VoteGOVBoardListPrefix, common.Uint32ToBytes(currentCount)...)
-	key = append(key, common.Uint32ToBytes(startedBlock)...)
-	key = append(key, candidatePubKey...)
+func GetKeyVoteGOVBoardList(boardIndex uint32, candidatePubKey []byte, voterPubKey []byte) []byte {
+	length := []int{len(VoteGOVBoardListPrefix), 4, common.PubKeyLength, common.PubKeyLength}
+	pos := GetPosFromLength(length)
+
+	key := make([]byte, pos[len(pos)-1])
+	copy(key[pos[0]:pos[1]], VoteGOVBoardListPrefix)
+	copy(key[pos[1]:pos[2]], common.Uint32ToBytes(boardIndex))
+	copy(key[pos[2]:pos[3]], candidatePubKey)
+	copy(key[pos[3]:pos[4]], voterPubKey)
 	return key
 }
 
-func ParseKeyVoteGOVBoardList(key []byte) (uint32, []byte, uint32, error) {
-	realKey := key[len(VoteGOVBoardListPrefix):]
-	startedBlock := common.BytesToUint32(realKey[:4])
-	pubKey := realKey[4 : 4+common.PubKeyLength]
-	currentIndex := common.BytesToUint32(realKey[4+common.PubKeyLength:])
-	return startedBlock, pubKey, currentIndex, nil
+func ParseKeyVoteGOVBoardList(key []byte) (uint32, []byte, []byte, error) {
+	length := []int{len(VoteGOVBoardListPrefix), 4, common.PubKeyLength, common.PubKeyLength}
+	pos := GetPosFromLength(length)
+
+	_ = key[pos[0]:pos[1]]
+	boardIndex := common.BytesToUint32(key[pos[1]:pos[2]])
+	candidatePubKey := key[pos[2]:pos[3]]
+	voterPubKey := key[pos[3]:pos[4]]
+	return boardIndex, candidatePubKey, voterPubKey, nil
 }
 
-func GetGOVVoteTokenAmountKey(startedBlock uint32, pubKey []byte) []byte {
-	key := append(GOVVoteTokenAmountPrefix, common.Uint32ToBytes(startedBlock)...)
+func GetValueVoteGOVBoardList(amount uint64) []byte {
+	return common.Uint64ToBytes(amount)
+}
+
+func ParseValueVoteGOVBoardList(value []byte) uint64 {
+	return common.BytesToUint64(value)
+}
+
+func GetGOVVoteTokenAmountKey(boardIndex uint32, pubKey []byte) []byte {
+	key := append(GOVVoteTokenAmountPrefix, common.Uint32ToBytes(boardIndex)...)
 	key = append(key, pubKey...)
 	return key
 }
 
-func GetThreePhraseCryptoOwnerKey(boardType string, startedBlock uint32, txId *common.Hash) []byte {
+func GetThreePhraseCryptoOwnerKey(boardType string, constitutionIndex uint32, txId *common.Hash) []byte {
 	key := append(threePhraseCryptoOwnerPrefix, []byte(boardType)...)
-	key = append(key, common.Uint32ToBytes(startedBlock)...)
+	key = append(key, common.Uint32ToBytes(constitutionIndex)...)
 	if txId != nil {
 		key = append(key, txId.GetBytes()...)
 	}
@@ -387,9 +422,9 @@ func GetThreePhraseCryptoOwnerKey(boardType string, startedBlock uint32, txId *c
 func ParseKeyThreePhraseCryptoOwner(key []byte) (string, uint32, *common.Hash, error) {
 	realKey := key[len(threePhraseCryptoOwnerPrefix):]
 	boardType := realKey[:3]
-	startedBlock := common.BytesToUint32(realKey[3 : 3+4])
+	constitutionIndex := common.BytesToUint32(realKey[3 : 3+4])
 	hash := common.NewHash([]byte(realKey[3+4:]))
-	return string(boardType), uint32(startedBlock), &hash, nil
+	return string(boardType), uint32(constitutionIndex), &hash, nil
 }
 
 func ParseValueThreePhraseCryptoOwner(value []byte) (uint32, error) {
@@ -397,9 +432,9 @@ func ParseValueThreePhraseCryptoOwner(value []byte) (uint32, error) {
 	return i, nil
 }
 
-func GetThreePhraseCryptoSealerKey(boardType string, startedBlock uint32, txId *common.Hash) []byte {
+func GetThreePhraseCryptoSealerKey(boardType string, constitutionIndex uint32, txId *common.Hash) []byte {
 	key := append(threePhraseCryptoSealerPrefix, []byte(boardType)...)
-	key = append(key, common.Uint32ToBytes(startedBlock)...)
+	key = append(key, common.Uint32ToBytes(constitutionIndex)...)
 	if txId != nil {
 		key = append(key, txId.GetBytes()...)
 	}
@@ -409,32 +444,32 @@ func GetThreePhraseCryptoSealerKey(boardType string, startedBlock uint32, txId *
 func ParseKeyThreePhraseCryptoSealer(key []byte) (string, uint32, *common.Hash, error) {
 	realKey := key[len(threePhraseCryptoSealerPrefix):]
 	boardType := realKey[:3]
-	startedBlock := common.BytesToUint32(realKey[3 : 3+4])
+	constitutionIndex := common.BytesToUint32(realKey[3 : 3+4])
 	hash := common.NewHash([]byte(realKey[3+4:]))
-	return string(boardType), uint32(startedBlock), &hash, nil
+	return string(boardType), uint32(constitutionIndex), &hash, nil
 }
 
-func GetThreePhraseVoteValueKey(boardType string, startedBlock uint32, txId *common.Hash) []byte {
+func GetThreePhraseVoteValueKey(boardType string, constitutionIndex uint32, txId *common.Hash) []byte {
 	key := append(threePhraseCryptoSealerPrefix, []byte(boardType)...)
-	key = append(key, common.Uint32ToBytes(startedBlock)...)
+	key = append(key, common.Uint32ToBytes(constitutionIndex)...)
 	if txId != nil {
 		key = append(key, txId.GetBytes()...)
 	}
 	return key
 }
 
-func GetWinningVoterKey(boardType string, startedBlock uint32) []byte {
+func GetKeyWinningVoter(boardType string, constitutionIndex uint32) []byte {
 	key := append(winningVoterPrefix, []byte(boardType)...)
-	key = append(key, common.Uint32ToBytes(startedBlock)...)
+	key = append(key, common.Uint32ToBytes(constitutionIndex)...)
 	return key
 }
 
 func ParseKeyThreePhraseVoteValue(key []byte) (string, uint32, *common.Hash, error) {
 	realKey := key[len(threePhraseVoteValuePrefix):]
 	boardType := realKey[:3]
-	startedBlock := common.BytesToUint32(realKey[3 : 3+4])
+	constitutionIndex := common.BytesToUint32(realKey[3 : 3+4])
 	hash := common.NewHash([]byte(realKey[3+4:]))
-	return string(boardType), uint32(startedBlock), &hash, nil
+	return string(boardType), uint32(constitutionIndex), &hash, nil
 }
 
 func ParseValueThreePhraseVoteValue(value []byte) (*common.Hash, int32, error) {
@@ -443,12 +478,12 @@ func ParseValueThreePhraseVoteValue(value []byte) (*common.Hash, int32, error) {
 	return &txId, amount, nil
 }
 
-func (db *db) GetAmountVoteToken(boardType string, startedBlock uint32, pubKey []byte) (uint32, error) {
+func (db *db) GetAmountVoteToken(boardType string, boardIndex uint32, pubKey []byte) (uint32, error) {
 	key := make([]byte, 0)
 	if boardType == "dcb" {
-		key = GetDCBVoteTokenAmountKey(startedBlock, pubKey)
+		key = GetKeyDCBVoteTokenAmount(boardIndex, pubKey)
 	} else if boardType == "gov" {
-		key = GetGOVVoteTokenAmountKey(startedBlock, pubKey)
+		key = GetGOVVoteTokenAmountKey(boardIndex, pubKey)
 	} else {
 		return 0, errors.New("wrong board type")
 	}
@@ -460,12 +495,12 @@ func (db *db) GetAmountVoteToken(boardType string, startedBlock uint32, pubKey [
 	return currentAmount, nil
 }
 
-func (db *db) TakeVoteTokenFromWinner(boardType string, startedBlock uint32, voterPubKey []byte, amountOfVote int32) error {
+func (db *db) TakeVoteTokenFromWinner(boardType string, boardIndex uint32, voterPubKey []byte, amountOfVote int32) error {
 	key := make([]byte, 0)
 	if boardType == "dcb" {
-		key = GetDCBVoteTokenAmountKey(startedBlock, voterPubKey)
+		key = GetKeyDCBVoteTokenAmount(boardIndex, voterPubKey)
 	} else if boardType == "gov" {
-		key = GetGOVVoteTokenAmountKey(startedBlock, voterPubKey)
+		key = GetGOVVoteTokenAmountKey(boardIndex, voterPubKey)
 	} else {
 		return errors.New("wrong board type")
 	}
@@ -479,15 +514,39 @@ func (db *db) TakeVoteTokenFromWinner(boardType string, startedBlock uint32, vot
 	return nil
 }
 
-func (db *db) SetNewWinningVoter(boardType string, startedBlock uint32, voterPubKey []byte) error {
+func (db *db) SetNewProposalWinningVoter(boardType string, constitutionIndex uint32, voterPubKey []byte) error {
 	key := make([]byte, 0)
 	if boardType == "dcb" {
-		key = GetWinningVoterKey(boardType, startedBlock)
+		key = GetKeyWinningVoter(boardType, constitutionIndex)
 	} else if boardType == "gov" {
-		key = GetWinningVoterKey(boardType, startedBlock)
+		key = GetKeyWinningVoter(boardType, constitutionIndex)
 	} else {
 		return errors.New("wrong board type")
 	}
 	db.Put(key, voterPubKey)
 	return nil
+}
+
+func (db *db) GetPaymentAddressFromPubKey(pubKey []byte) []byte {
+	key := GetPubKeyToPaymentAddressKey(pubKey)
+	value, _ := db.Get(key)
+	return value
+}
+
+func (db *db) GetBoardVoterList(candidatePubKey []byte, boardIndex uint32) [][]byte {
+	begin := GetKeyVoteDCBBoardList(boardIndex, candidatePubKey, make([]byte, common.PubKeyLength))
+	end := GetKeyVoteDCBBoardList(boardIndex, common.BytesPlusOne(candidatePubKey), make([]byte, common.PubKeyLength))
+	searchRange := util.Range{
+		Start: begin,
+		Limit: end,
+	}
+
+	iter := db.NewIterator(&searchRange, nil)
+	listVoter := make([][]byte, 0)
+	for iter.Next() {
+		key := iter.Key()
+		_, _, pubKey, _ := ParseKeyVoteDCBBoardList(key)
+		listVoter = append(listVoter, pubKey)
+	}
+	return listVoter
 }

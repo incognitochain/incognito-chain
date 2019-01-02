@@ -497,7 +497,6 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 	preIndex := 0
 
-
 	for i, inputCoin := range wit.inputCoins {
 		// commit each component of coin commitment
 		randInputValue[i] = privacy.RandInt()
@@ -625,7 +624,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 	// Build witness for proving Sum(Input's value) == Sum(Output's Value)
 	if fee > 0 {
-		cmOutputValueAll.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(fee))))
+		cmOutputValueAll = cmOutputValueAll.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(fee))))
 	}
 
 	//cmEqualCoinValue := new(privacy.EllipticPoint)
@@ -714,7 +713,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 	return proof, nil
 }
 
-func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
+func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
 	// has no privacy
 	if !hasPrivacy {
 		var sumInputValue, sumOutputValue uint64
@@ -759,7 +758,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 		}
 
 		// check if sum of input values equal sum of output values
-		if sumInputValue != sumOutputValue {
+		if sumInputValue != sumOutputValue + fee {
 			return false
 		}
 		return true
@@ -820,6 +819,23 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 		return false
 	}
 	// Verify the proof that sum of all input values is equal to sum of all output values
+	comInputValueSum := new(privacy.EllipticPoint).Zero()
+	for i:=0; i <len(pro.ComInputValue); i++{
+		comInputValueSum = comInputValueSum.Add(pro.ComInputValue[i])
+	}
+
+	comOutputValueSum := new(privacy.EllipticPoint).Zero()
+	for i:=0; i <len(pro.ComOutputValue); i++{
+		comOutputValueSum = comOutputValueSum.Add(pro.ComOutputValue[i])
+	}
+
+	if fee > 0 {
+		comOutputValueSum = comOutputValueSum.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(fee))))
+	}
+
+	comZero := comInputValueSum.Sub(comOutputValueSum)
+	pro.ComZeroProof.commitmentValue = comZero
+
 	if !pro.ComZeroProof.Verify() {
 		return false
 	}

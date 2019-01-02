@@ -1,9 +1,8 @@
 package zkp
 
 import (
-	"fmt"
-	"github.com/stretchr/testify/assert"
 	"github.com/ninjadotorg/constant/privacy"
+	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
 )
@@ -28,7 +27,7 @@ func TestPKSNPrivacy(t *testing.T) {
 
 	proof, err := witness.Prove()
 	if err != nil{
-		fmt.Println(err)
+		return
 	}
 
 	proofBytes := proof.Bytes()

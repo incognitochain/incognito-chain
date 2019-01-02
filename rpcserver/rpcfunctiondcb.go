@@ -28,17 +28,12 @@ func (self RpcServer) handleGetDCBConstitution(params interface{}, closeChan <-c
 
 // handleGetListDCBBoard - return list payment address of DCB board
 func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.DCBBoardPubKeys, nil
+	return self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPubKeys, nil
 }
 
 func (self RpcServer) handleCreateRawTxWithIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	var err error
 	arrayParams := common.InterfaceSlice(params)
-	normalTx, err := self.buildRawTransaction(params)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
 	// Req param #4: issuing request info
 	issuingReq := arrayParams[4].(map[string]interface{})
 	depositedAmount := uint64(issuingReq["depositedAmount"].(float64))
@@ -52,12 +47,18 @@ func (self RpcServer) handleCreateRawTxWithIssuingRequest(params interface{}, cl
 		Tk: []byte(receiverAddressMap["tk"].(string)),
 	}
 
-	normalTx.Metadata = metadata.NewIssuingRequest(
+	meta := metadata.NewIssuingRequest(
 		receiverAddress,
 		depositedAmount,
 		assetType,
 		metaType,
 	)
+
+	normalTx, err := self.buildRawTransaction(params, meta)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 
 	byteArrays, err := json.Marshal(normalTx)
 	if err != nil {
@@ -95,13 +96,14 @@ func (self RpcServer) handleCreateAndSendTxWithIssuingRequest(params interface{}
 
 func (self RpcServer) handleCreateRawTxWithContractingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	var err error
-	normalTx, err := self.buildRawTransaction(params)
+	metaType := metadata.ContractingRequestMeta
+	meta := metadata.NewContractingRequest(metaType)
+	normalTx, err := self.buildRawTransaction(params, meta)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	metaType := metadata.ContractingRequestMeta
-	normalTx.Metadata = metadata.NewContractingRequest(metaType)
+
 	byteArrays, err := json.Marshal(normalTx)
 	if err != nil {
 		Logger.log.Error(err)
@@ -139,14 +141,14 @@ func (self RpcServer) handleCreateAndSendTxWithContractingRequest(params interfa
 func (self RpcServer) buildRawSealLv3VoteDCBProposalTransaction(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
-	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
 	voteInfo := arrayParams[len(arrayParams)-4]
 	firstPubKey := arrayParams[len(arrayParams)-3] // firstPubKey is pubkey of itself
 	secondPubKey := arrayParams[len(arrayParams)-2]
 	thirdPubKey := arrayParams[len(arrayParams)-1]
 	Seal3Data := common.Encrypt(common.Encrypt(common.Encrypt(voteInfo, thirdPubKey), secondPubKey), firstPubKey)
-	tx.Metadata = metadata.NewSealedLv3DCBBallotMetadata([]byte(Seal3Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))})
+	meta := metadata.NewSealedLv3DCBBallotMetadata([]byte(Seal3Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))})
+	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }
 
@@ -190,7 +192,6 @@ func (self RpcServer) handleCreateAndSendSealLv3VoteDCBProposalTransaction(param
 func (self RpcServer) buildRawSealLv2VoteDCBProposalTransaction(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
-	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
 	PointerToLv3Ballot := arrayParams[len(arrayParams)-6]
 	Seal3Data := arrayParams[len(arrayParams)-5]
@@ -201,7 +202,8 @@ func (self RpcServer) buildRawSealLv2VoteDCBProposalTransaction(
 	Seal2Data := common.Decrypt(Seal3Data, firstPrivateKey)
 	Pointer := common.Hash{}
 	copy(Pointer[:], []byte(PointerToLv3Ballot.(string)))
-	tx.Metadata = metadata.NewSealedLv2DCBBallotMetadata([]byte(Seal2Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer)
+	meta := metadata.NewSealedLv2DCBBallotMetadata([]byte(Seal2Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer)
+	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }
 
@@ -245,7 +247,6 @@ func (self RpcServer) handleCreateAndSendSealLv2VoteDCBProposalTransaction(param
 func (self RpcServer) buildRawSealLv1VoteDCBProposalTransaction(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
-	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
 
 	PointerToLv3Ballot := arrayParams[len(arrayParams)-7]
@@ -262,7 +263,8 @@ func (self RpcServer) buildRawSealLv1VoteDCBProposalTransaction(
 	thirdPubKey := arrayParams[len(arrayParams)-2]
 	secondPrivateKey := arrayParams[len(arrayParams)-1]
 	Seal1Data := common.Decrypt(Seal2Data, secondPrivateKey)
-	tx.Metadata = metadata.NewSealedLv1DCBBallotMetadata([]byte(Seal1Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer2, Pointer3)
+	meta := metadata.NewSealedLv1DCBBallotMetadata([]byte(Seal1Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer2, Pointer3)
+	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }
 
@@ -305,7 +307,6 @@ func (self RpcServer) handleCreateAndSendSealLv1VoteDCBProposalTransaction(param
 func (self RpcServer) buildRawNormalVoteDCBProposalTransactionFromSealer(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
-	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
 
 	PointerToLv3Ballot := arrayParams[len(arrayParams)-7]
@@ -322,7 +323,8 @@ func (self RpcServer) buildRawNormalVoteDCBProposalTransactionFromSealer(
 	thirdPubKey := arrayParams[len(arrayParams)-2]
 	thirdPrivateKey := arrayParams[len(arrayParams)-1]
 	normalBallot := common.Decrypt(Seal1Data, thirdPrivateKey)
-	tx.Metadata = metadata.NewNormalDCBBallotFromSealerMetadata(normalBallot.([]byte), [][]byte{firstPubKey.([]byte), secondPubKey.([]byte), thirdPubKey.([]byte)}, Pointer1, Pointer3)
+	meta := metadata.NewNormalDCBBallotFromSealerMetadata(normalBallot.([]byte), [][]byte{firstPubKey.([]byte), secondPubKey.([]byte), thirdPubKey.([]byte)}, Pointer1, Pointer3)
+	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }
 
@@ -365,7 +367,6 @@ func (self RpcServer) handleCreateAndSendNormalVoteDCBProposalTransactionFromSea
 func (self RpcServer) buildRawNormalVoteDCBProposalTransactionFromOwner(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
-	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
 	PointerToLv3Ballot := arrayParams[len(arrayParams)-5]
 	Pointer := common.Hash{}
@@ -374,7 +375,8 @@ func (self RpcServer) buildRawNormalVoteDCBProposalTransactionFromOwner(
 	secondPubKey := arrayParams[len(arrayParams)-3]
 	thirdPubKey := arrayParams[len(arrayParams)-2]
 	normalBallot := arrayParams[len(arrayParams)-1]
-	tx.Metadata = metadata.NewNormalDCBBallotFromOwnerMetadata(normalBallot.([]byte), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer)
+	meta := metadata.NewNormalDCBBallotFromOwnerMetadata(normalBallot.([]byte), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer)
+	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }
 
@@ -506,7 +508,6 @@ func (self RpcServer) handleCreateAndSendVoteDCBBoardTransaction(params interfac
 func (self RpcServer) buildRawSubmitDCBProposalTransaction(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
-	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
 	NParams := len(arrayParams)
 	DCBParams := *params2.NewDCBParamsFromRPC(arrayParams[NParams-4])
@@ -518,7 +519,8 @@ func (self RpcServer) buildRawSubmitDCBProposalTransaction(
 		Tk: paymentData[1].([]byte),
 	}
 
-	tx.Metadata = metadata.NewSubmitDCBProposalMetadata(DCBParams, executeDuration, explanation, &address)
+	meta := metadata.NewSubmitDCBProposalMetadata(DCBParams, executeDuration, explanation, &address)
+	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }
 

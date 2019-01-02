@@ -53,6 +53,7 @@ var (
 	threePhraseCryptoSealerPrefix = []byte("threephrasecryptosealerprefix-")
 	threePhraseVoteValuePrefix    = []byte("threephrasevotevalueprefix-")
 	winningVoterPrefix            = []byte("winningvoterprefix-")
+	pubKeyToPaymentAddress        = []byte("pubkeytopaymentaddress")
 
 	// multisigs
 	multisigsPrefix = []byte("multisigs")

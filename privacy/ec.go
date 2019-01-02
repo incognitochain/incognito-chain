@@ -15,21 +15,6 @@ import (
 // We only use P256 Curve in our protocol
 var Curve = elliptic.P256()
 
-//EllipticPointHelper contain some function for elliptic point
-type EllipticPointHelper interface {
-	Inverse() (*EllipticPoint, error)
-	Randomize()
-	Compress() []byte
-	Decompress(compressPointBytes []byte) error
-	IsSafe() bool
-	ComputeYCoord()
-	Hash() *EllipticPoint
-	Set(x, y *big.Int)
-	AddPoint(EllipticPoint) *EllipticPoint
-	ScalarMulPoint(*big.Int) *EllipticPoint
-	IsEqual(EllipticPoint) bool
-}
-
 // EllipticPoint represents an point of elliptic curve,
 // which contains X, Y. X is Abscissa, Y is Ordinate
 type EllipticPoint struct {
@@ -279,3 +264,14 @@ func (point EllipticPoint) ScalarMult(factor *big.Int) *EllipticPoint {
 	return res
 }
 
+// Derive returns a pseudo-random elliptic curve point P = F(seed, derivator), where
+// F is a pseudo-random function defined by F(x, y) = 1/(x + y)*G, where x, y are integers,
+// seed and derivator are integers of size at least 32 bytes,
+// G is a generating point of the group of points of an elliptic curve.
+func (point *EllipticPoint) Derive(seed, derivator *big.Int) *EllipticPoint {
+	// point must be on the curve
+	if !point.IsSafe() {
+		return nil
+	}
+	return point.ScalarMult(new(big.Int).ModInverse(new(big.Int).Add(seed, derivator), Curve.Params().N))
+}

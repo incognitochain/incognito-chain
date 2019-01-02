@@ -13,10 +13,6 @@ import (
 func (self RpcServer) handleCreateRawTxWithMultiSigsReg(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	var err error
 	arrayParams := common.InterfaceSlice(params)
-	normalTx, err := self.buildRawTransaction(params)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
 	// Req param #4: multisigs registration info
 	multiSigsReg := arrayParams[4].(map[string]interface{})
 	paymentAddressMap := multiSigsReg["paymentAddress"].(map[string]interface{})
@@ -30,11 +26,16 @@ func (self RpcServer) handleCreateRawTxWithMultiSigsReg(params interface{}, clos
 		assertedSpendableMembers = append(assertedSpendableMembers, []byte(pk.(string)))
 	}
 	metaType := metadata.MultiSigsRegistrationMeta
-	normalTx.Metadata = metadata.NewMultiSigsRegistration(
+	meta := metadata.NewMultiSigsRegistration(
 		paymentAddress,
 		assertedSpendableMembers,
 		metaType,
 	)
+
+	normalTx, err := self.buildRawTransaction(params, meta)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 
 	byteArrays, err := json.Marshal(normalTx)
 	if err != nil {
@@ -72,10 +73,6 @@ func (self RpcServer) handleCreateAndSendTxWithMultiSigsReg(params interface{}, 
 func (self RpcServer) handleCreateRawTxWithMultiSigsSpending(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	var err error
 	arrayParams := common.InterfaceSlice(params)
-	normalTx, err := self.buildRawTransaction(params)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
 	// Req param #4: multisigs spending info
 	multiSigsSpending := arrayParams[4].(map[string]interface{})
 	signs := multiSigsSpending["signs"].(map[string]interface{})
@@ -84,10 +81,15 @@ func (self RpcServer) handleCreateRawTxWithMultiSigsSpending(params interface{},
 		assertedSigns[k] = []byte(s.(string))
 	}
 	metaType := metadata.MultiSigsSpendingMeta
-	normalTx.Metadata = metadata.NewMultiSigsSpending(
+	meta := metadata.NewMultiSigsSpending(
 		assertedSigns,
 		metaType,
 	)
+
+	normalTx, err := self.buildRawTransaction(params, meta)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 
 	byteArrays, err := json.Marshal(normalTx)
 	if err != nil {

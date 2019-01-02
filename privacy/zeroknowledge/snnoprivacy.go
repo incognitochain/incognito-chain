@@ -29,7 +29,7 @@ type SNNoPrivacyProof struct {
 	zSK *big.Int
 }
 
-func (pro *SNNoPrivacyProof) IsNil() bool {
+func (pro *SNNoPrivacyProof) isNil() bool {
 	if pro.serialNumber == nil {
 		return true
 	}
@@ -107,7 +107,7 @@ func (pro *SNNoPrivacyProof) Set(
 
 func (pro *SNNoPrivacyProof) Bytes() []byte {
 	// if proof is nil, return an empty array
-	if pro.IsNil() {
+	if pro.isNil() {
 		return []byte{}
 	}
 
@@ -185,7 +185,7 @@ func (wit *SNNoPrivacyWitness) Prove() (*SNNoPrivacyProof, error) {
 	tE := wit.serialNumber.ScalarMult(eSK)
 
 	// calculate x = hash(tSK || tSND1 || tSND2 || tE)
-	x := GenerateChallengeFromPoint([]*privacy.EllipticPoint{tSK, tE})
+	x := generateChallengeFromPoint([]*privacy.EllipticPoint{tSK, tE})
 
 	// Calculate zSK = SK * x + eSK
 	zSK := new(big.Int).Mul(wit.sk, x)
@@ -199,7 +199,7 @@ func (wit *SNNoPrivacyWitness) Prove() (*SNNoPrivacyProof, error) {
 
 func (pro *SNNoPrivacyProof) Verify() bool {
 	// re-calculate x = hash(tSK || tE)
-	x := GenerateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSK, pro.tE})
+	x := generateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSK, pro.tE})
 
 	// Check gSK^zSK = PK^x * tSK
 	leftPoint1 := privacy.PedCom.G[privacy.SK].ScalarMult(pro.zSK)

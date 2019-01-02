@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math"
 	"math/big"
 	"strconv"
@@ -168,8 +167,8 @@ func (tx *Tx) Init(
 
 	// calculate serial number from SND and spending key
 	for _, inputCoin := range inputCoins {
-		inputCoin.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(*senderSK),
-			inputCoin.CoinDetails.SNDerivator, privacy.PedCom.G[privacy.SK])
+		inputCoin.CoinDetails.SerialNumber = privacy.PedCom.G[privacy.SK].Derive(new(big.Int).SetBytes(*senderSK),
+			inputCoin.CoinDetails.SNDerivator)
 	}
 
 	// create new output coins
@@ -293,7 +292,7 @@ func (tx *Tx) Init(
 func (tx *Tx) SignTx(hasPrivacy bool) error {
 	//Check input transaction
 	if tx.Sig != nil {
-		return fmt.Errorf("input transaction must be an unsigned one")
+		return errors.New("input transaction must be an unsigned one")
 	}
 
 	if hasPrivacy {
@@ -360,7 +359,7 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
-		return false, fmt.Errorf("input transaction must be an signed one!")
+		return false, errors.New("input transaction must be an signed one!")
 	}
 
 	var err error
@@ -481,7 +480,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 
 		// Verify the payment proof
-		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, db, chainId, tokenID)
+		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, chainId, tokenID)
 		if valid == false {
 			Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION PAYMENT PROOF")
 			return false
