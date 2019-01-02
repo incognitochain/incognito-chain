@@ -395,8 +395,8 @@ func (self *Peer) UpdateShardForPeerConn() {
 
 func (self *Peer) SetPeerConn(peerConn *PeerConn) {
 	internalConnPeer, ok := self.PeerConns[peerConn.RemotePeer.PeerID.Pretty()]
-	if ok && internalConnPeer != peerConn {
-		if internalConnPeer.GetIsOutbound() {
+	if ok {
+		if internalConnPeer.GetIsConnected() {
 			internalConnPeer.Close()
 		}
 		Logger.log.Infof("SetPeerConn and Remove %s %s", internalConnPeer.RemotePeer.PeerID, internalConnPeer.RemotePeer.RawAddress)
@@ -407,7 +407,7 @@ func (self *Peer) SetPeerConn(peerConn *PeerConn) {
 func (self *Peer) RemovePeerConn(peerConn *PeerConn) {
 	internalConnPeer, ok := self.PeerConns[peerConn.RemotePeer.PeerID.Pretty()]
 	if ok {
-		if internalConnPeer.GetIsOutbound() {
+		if internalConnPeer.GetIsConnected() {
 			internalConnPeer.Close()
 		}
 		delete(self.PeerConns, peerConn.RemotePeer.PeerID.Pretty())
@@ -659,7 +659,6 @@ handleDisconnected - handle connected peer when it is disconnected, remove and r
 func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleDisconnected %s", peerConn.RemotePeerID.Pretty())
 	peerConn.updateConnState(ConnCanceled)
-	self.RemovePeerConn(peerConn)
 	if peerConn.GetIsOutbound() && !peerConn.GetIsForceClose() {
 		go self.retryPeerConnection(peerConn)
 	}
