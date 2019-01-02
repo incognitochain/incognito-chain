@@ -17,7 +17,7 @@ type PedersenCommitment struct {
 // newPedersenCommitment creates new generators
 func newPedersenCommitment() PedersenCommitment {
 	var pcm PedersenCommitment
-	capacity := 5 // fixed value
+	const capacity = 5 // fixed value
 	pcm.G = make([]*EllipticPoint, capacity, capacity)
 	pcm.G[0] = new(EllipticPoint)
 	pcm.G[0].X, pcm.G[0].Y = Curve.Params().Gx, Curve.Params().Gy
