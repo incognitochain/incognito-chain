@@ -2,7 +2,6 @@ package zkp
 
 import (
 	"crypto/elliptic"
-	"fmt"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/pkg/errors"
@@ -33,6 +32,7 @@ func (IPA *InnerProdArg) Init(l int) {
 		IPA.Challenges[i] = new(big.Int)
 	}
 }
+
 func makeBigIntArray(l int) []*big.Int{
 	result:=make([]*big.Int, l)
 	for i:=0;i<l;i++{
@@ -40,11 +40,7 @@ func makeBigIntArray(l int) []*big.Int{
 	}
 	return result
 }
-func (IPA InnerProdArg) Print(){
-	for i:=0;i<len(IPA.Challenges);i++{
-		fmt.Println(IPA.Challenges[i])
-	}
-}
+
 func (IPA *InnerProdArg) Bytes() []byte{
 	var res []byte
 	for i:=0;i<len(IPA.L);i++{
@@ -60,6 +56,7 @@ func (IPA *InnerProdArg) Bytes() []byte{
 	res = append(res,privacy.AddPaddingBigInt(IPA.B,privacy.BigIntSize)...)
 	return res
 }
+
 func (IPA *InnerProdArg) SetBytes(IPA_byte []byte){
 	offset:=0
 	l:=(len(IPA_byte) - 96)/98
@@ -92,6 +89,7 @@ func (IPA *InnerProdArg) SetBytes(IPA_byte []byte){
 	IPA.A.SetBytes(IPA_byte[offset:offset+privacy.BigIntSize])
 	IPA.B.SetBytes(IPA_byte[offset+privacy.BigIntSize:offset+2*privacy.BigIntSize])
 }
+
 func GenerateNewParams(G, H []*privacy.EllipticPoint, x *big.Int, L, R, P *privacy.EllipticPoint) ([]*privacy.EllipticPoint, []*privacy.EllipticPoint, *privacy.EllipticPoint) {
 	nprime := len(G) / 2
 

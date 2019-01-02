@@ -26,17 +26,8 @@ const (
 	SigPubKeySize = 33
 	SigSize       = 64
 
-	SerialNumberSize   = 33 // bytes
-	CoinCommitmentSize = 33 // bytes
-	RandomSize         = 32 // bytes
-	ValueSize          = 8  // bytes
-	SNDerivatorSize    = 32 // bytes
-
 	SpendingKeySize = 32
 
 	BigIntSize = 32 // bytes
 	Uint64Size = 8  // bytes
-
-	ValueMax = 18446744073709551615 // 2^64 - 1
-
 )

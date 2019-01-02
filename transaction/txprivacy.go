@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math"
 	"math/big"
 	"strconv"
@@ -293,7 +292,7 @@ func (tx *Tx) Init(
 func (tx *Tx) SignTx(hasPrivacy bool) error {
 	//Check input transaction
 	if tx.Sig != nil {
-		return fmt.Errorf("input transaction must be an unsigned one")
+		return errors.New("input transaction must be an unsigned one")
 	}
 
 	if hasPrivacy {
@@ -360,7 +359,7 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
-		return false, fmt.Errorf("input transaction must be an signed one!")
+		return false, errors.New("input transaction must be an signed one!")
 	}
 
 	var err error

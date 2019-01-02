@@ -195,23 +195,6 @@ func (pro *MultiRangeProof) SetBytes(proofbytes []byte) error {
 	return nil
 }
 
-func (pro *MultiRangeProof) Print() {
-	fmt.Println(pro.Counter)
-	fmt.Println(pro.Comms)
-	fmt.Println(pro.A)
-	fmt.Println(pro.S)
-	fmt.Println(pro.T1)
-	fmt.Println(pro.T2)
-	fmt.Println(pro.Tau)
-	fmt.Println(pro.Th)
-	fmt.Println(pro.Mu)
-	fmt.Println(pro.IPP)
-	fmt.Println(pro.maxExp)
-	fmt.Println(pro.Cy)
-	fmt.Println(pro.Cz)
-	fmt.Println(pro.Cx)
-}
-
 func initCommonParams(l int, maxExp byte) {
 	VecLength = int(maxExp) * pad(l)
 	RangeProofParams = newECPrimeGroupKey(VecLength)
