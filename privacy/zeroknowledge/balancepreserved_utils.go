@@ -8,83 +8,86 @@ import (
 	"math"
 	"math/big"
 )
+
+var VecLength int
 var RangeProofParams CryptoParams
 
 /* ------------ Inner Product Functions ---------------*/
 type InnerProdArg struct {
-	L []*privacy.EllipticPoint
-	R []*privacy.EllipticPoint
-	A *big.Int
-	B *big.Int
+	L          []*privacy.EllipticPoint
+	R          []*privacy.EllipticPoint
+	A          *big.Int
+	B          *big.Int
 	Challenges []*big.Int
 }
+
 func (IPA *InnerProdArg) Init(l int) {
-	IPA.L= make([]*privacy.EllipticPoint,l)
-	IPA.R= make([]*privacy.EllipticPoint,l)
-	for i:=0;i<l;i++ {
+	IPA.L = make([]*privacy.EllipticPoint, l)
+	IPA.R = make([]*privacy.EllipticPoint, l)
+	for i := 0; i < l; i++ {
 		IPA.L[i] = new(privacy.EllipticPoint)
 		IPA.R[i] = new(privacy.EllipticPoint)
 	}
 	IPA.A = new(big.Int)
 	IPA.B = new(big.Int)
 	IPA.Challenges = make([]*big.Int, l+1)
-	for i:=0;i<l+1;i++{
+	for i := 0; i < l+1; i++ {
 		IPA.Challenges[i] = new(big.Int)
 	}
 }
 
-func makeBigIntArray(l int) []*big.Int{
-	result:=make([]*big.Int, l)
-	for i:=0;i<l;i++{
+func makeBigIntArray(l int) []*big.Int {
+	result := make([]*big.Int, l)
+	for i := 0; i < l; i++ {
 		result[i] = new(big.Int).SetInt64(0)
 	}
 	return result
 }
 
-func (IPA *InnerProdArg) Bytes() []byte{
+func (IPA *InnerProdArg) Bytes() []byte {
 	var res []byte
-	for i:=0;i<len(IPA.L);i++{
-		res =append(res, IPA.L[i].Compress()...)
+	for i := 0; i < len(IPA.L); i++ {
+		res = append(res, IPA.L[i].Compress()...)
 	}
-	for i:=0;i<len(IPA.R);i++{
+	for i := 0; i < len(IPA.R); i++ {
 		res = append(res, IPA.R[i].Compress()...)
 	}
-	for i:=0;i<len(IPA.Challenges);i++{
-		res = append(res, privacy.AddPaddingBigInt(IPA.Challenges[i],privacy.BigIntSize)...)
+	for i := 0; i < len(IPA.Challenges); i++ {
+		res = append(res, privacy.AddPaddingBigInt(IPA.Challenges[i], privacy.BigIntSize)...)
 	}
-	res = append(res,privacy.AddPaddingBigInt(IPA.A,privacy.BigIntSize)...)
-	res = append(res,privacy.AddPaddingBigInt(IPA.B,privacy.BigIntSize)...)
+	res = append(res, privacy.AddPaddingBigInt(IPA.A, privacy.BigIntSize)...)
+	res = append(res, privacy.AddPaddingBigInt(IPA.B, privacy.BigIntSize)...)
 	return res
 }
 
-func (IPA *InnerProdArg) SetBytes(IPA_byte []byte){
-	offset:=0
-	l:=(len(IPA_byte) - 96)/98
+func (IPA *InnerProdArg) SetBytes(IPA_byte []byte) {
+	offset := 0
+	l := (len(IPA_byte) - 96) / 98
 	IPA.Init(l)
-	L_array_length:=l*privacy.CompressedPointSize
-	R_array_length:=L_array_length
-	C_array_length:=privacy.BigIntSize*(l+1)
-	L_array:=IPA_byte[0:L_array_length]
+	L_array_length := l * privacy.CompressedPointSize
+	R_array_length := L_array_length
+	C_array_length := privacy.BigIntSize * (l + 1)
+	L_array := IPA_byte[0:L_array_length]
 	offset = L_array_length
-	R_array:=IPA_byte[offset:offset+R_array_length]
-	offset+=R_array_length
-	C_array:=IPA_byte[offset:offset+C_array_length]
-	offset+=C_array_length
-	offsetL:=0
+	R_array := IPA_byte[offset:offset+R_array_length]
+	offset += R_array_length
+	C_array := IPA_byte[offset:offset+C_array_length]
+	offset += C_array_length
+	offsetL := 0
 
-	for i:=0;i<l;i++{
+	for i := 0; i < l; i++ {
 		IPA.L[i].Decompress(L_array[offsetL:])
-		offsetL+=privacy.CompressedPointSize
+		offsetL += privacy.CompressedPointSize
 	}
 	offsetR := 0
-	for i:=0;i<l;i++{
+	for i := 0; i < l; i++ {
 		IPA.R[i].Decompress(R_array[offsetR:])
-		offsetR+=privacy.CompressedPointSize
+		offsetR += privacy.CompressedPointSize
 	}
 	offsetC := 0
-	for i:=0;i<l+1;i++{
+	for i := 0; i < l+1; i++ {
 		IPA.Challenges[i].SetBytes(C_array[offsetC:offsetC+privacy.BigIntSize])
-		offsetC+=privacy.BigIntSize
+		offsetC += privacy.BigIntSize
 	}
 	IPA.A.SetBytes(IPA_byte[offset:offset+privacy.BigIntSize])
 	IPA.B.SetBytes(IPA_byte[offset+privacy.BigIntSize:offset+2*privacy.BigIntSize])
@@ -218,7 +221,7 @@ func InnerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*pri
 	}
 	rhs := Pprime.Add(tmp1)
 
-	sScalars:= makeBigIntArray(RangeProofParams.V)
+	sScalars := makeBigIntArray(RangeProofParams.V)
 	invsScalars := makeBigIntArray(RangeProofParams.V)
 
 	for i := 0; i < RangeProofParams.V; i++ {
@@ -243,6 +246,7 @@ func InnerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*pri
 	}
 	return true
 }
+
 /*-----------------------------Vector Functions-----------------------------*/
 // The length here always has to be a power of two
 func InnerProduct(a []*big.Int, b []*big.Int) *big.Int {
@@ -342,8 +346,8 @@ func PowerVector(l int, base *big.Int) []*big.Int {
 func RandVector(l int) []*big.Int {
 	result := make([]*big.Int, l)
 	for i := 0; i < l; i++ {
-		x:= new(big.Int).SetBytes(privacy.RandBytes(32))
-		x.Mod(x,privacy.Curve.Params().N)
+		x := new(big.Int).SetBytes(privacy.RandBytes(32))
+		x.Mod(x, privacy.Curve.Params().N)
 		result[i] = x
 	}
 	return result
@@ -356,27 +360,27 @@ func VectorSum(y []*big.Int) *big.Int {
 	}
 	return result
 }
+
 /*-----------------------Crypto Params Functions------------------*/
 
-var VecLength int
-
 type CryptoParams struct {
-	C   elliptic.Curve      							 // curve
-	BPG []*privacy.EllipticPoint           // slice of gen 1 for BP
-	BPH []*privacy.EllipticPoint           // slice of gen 2 for BP
-	N   *big.Int            							 // scalar prime
-	U   *privacy.EllipticPoint             // a point that is a fixed group element with an unknown discrete-log relative to g,h
-	V   int                 							 // Vector length
-	G   *privacy.EllipticPoint             // G value for commitments of a single value
-	H   *privacy.EllipticPoint             // H value for commitments of a single value
+	C   elliptic.Curve           // curve
+	BPG []*privacy.EllipticPoint // slice of gen 1 for BP
+	BPH []*privacy.EllipticPoint // slice of gen 2 for BP
+	N   *big.Int                 // scalar prime
+	U   *privacy.EllipticPoint   // a point that is a fixed group element with an unknown discrete-log relative to g,h
+	V   int                      // Vector length
+	G   *privacy.EllipticPoint   // G value for commitments of a single value
+	H   *privacy.EllipticPoint   // H value for commitments of a single value
 }
 
 func (c CryptoParams) Zero() *privacy.EllipticPoint {
-	zeroPoint:=new(privacy.EllipticPoint)
-	zeroPoint.X= new(big.Int).SetInt64(0)
-	zeroPoint.Y= new(big.Int).SetInt64(0)
+	zeroPoint := new(privacy.EllipticPoint)
+	zeroPoint.X = new(big.Int).SetInt64(0)
+	zeroPoint.Y = new(big.Int).SetInt64(0)
 	return zeroPoint
 }
+
 // NewECPrimeGroupKey returns the curve (field),
 // Generator 1 x&y, Generator 2 x&y, order of the generators
 func newECPrimeGroupKey(n int) CryptoParams {
@@ -384,16 +388,16 @@ func newECPrimeGroupKey(n int) CryptoParams {
 	gen1Vals := make([]*privacy.EllipticPoint, n)
 	gen2Vals := make([]*privacy.EllipticPoint, n)
 	u := CryptoParams{}.Zero()
-	G:=privacy.PedCom.G[privacy.VALUE]
-	H:=privacy.PedCom.G[privacy.RAND]
+	G := privacy.PedCom.G[privacy.VALUE]
+	H := privacy.PedCom.G[privacy.RAND]
 
-	for i:=0;i<n;i++{
-		gen1Vals[i]= G.Hash(0)
-		G=G.Hash(0)
-		gen2Vals[i]= H.Hash(0)
+	for i := 0; i < n; i++ {
+		gen1Vals[i] = G.Hash(0)
+		G = G.Hash(0)
+		gen2Vals[i] = H.Hash(0)
 		H = H.Hash(0)
 	}
-	u	= G.Add(H).Hash(0)
+	u = G.Add(H).Hash(0)
 	return CryptoParams{
 		privacy.Curve,
 		gen1Vals,
@@ -439,4 +443,57 @@ func pad(l int) int {
 		}
 	}
 	return l
+}
+
+// Calculates (aL - z*1^n) + sL*x
+func calculateLMRP(aL, sL []*big.Int, z, x *big.Int) []*big.Int {
+	result := make([]*big.Int, len(aL))
+	tmp1 := VectorAddScalar(aL, new(big.Int).Neg(z))
+	tmp2 := ScalarVectorMul(sL, x)
+	result = VectorAdd(tmp1, tmp2)
+	return result
+	//return nil
+}
+
+func calculateRMRP(aR, sR, y, zTimesTwo []*big.Int, z, x *big.Int) []*big.Int {
+	if len(aR) != len(sR) || len(aR) != len(y) || len(y) != len(zTimesTwo) {
+		return nil
+	}
+	result := make([]*big.Int, len(aR))
+	tmp11 := VectorAddScalar(aR, z)
+	tmp12 := ScalarVectorMul(sR, x)
+	tmp13 := VectorAdd(tmp11, tmp12)
+	tmp1 := VectorHadamard(y, tmp13)
+	result = VectorAdd(tmp1, zTimesTwo)
+	return result
+}
+
+/*
+DeltaMRP is a helper function that is used in the multi range proof
+
+\delta(y, z) = (z-z^2)<1^n, y^n> - \sum_j z^3+j<1^n, 2^n>
+*/
+func deltaMRP(y []*big.Int, z *big.Int, m int) *big.Int {
+	result := big.NewInt(0)
+	// (z-z^2)<1^n, y^n>
+	z2 := new(big.Int).Mod(new(big.Int).Mul(z, z), privacy.Curve.Params().N)
+	t1 := new(big.Int).Mod(new(big.Int).Sub(z, z2), privacy.Curve.Params().N)
+	t2 := new(big.Int).Mod(new(big.Int).Mul(t1, VectorSum(y)), privacy.Curve.Params().N)
+
+	// \sum_j z^3+j<1^n, 2^n>
+	// <1^n, 2^n> = 2^n - 1
+	po2sum := new(big.Int).Sub(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(RangeProofParams.V/m)), privacy.Curve.Params().N), big.NewInt(1))
+	t3 := big.NewInt(0)
+	for j := 0; j < m; j++ {
+		zp := new(big.Int).Exp(z, big.NewInt(3+int64(j)), privacy.Curve.Params().N)
+		tmp1 := new(big.Int).Mod(new(big.Int).Mul(zp, po2sum), privacy.Curve.Params().N)
+		t3 = new(big.Int).Mod(new(big.Int).Add(t3, tmp1), privacy.Curve.Params().N)
+	}
+	result = new(big.Int).Mod(new(big.Int).Sub(t2, t3), privacy.Curve.Params().N)
+	return result
+}
+
+func initCommonParams(l int, maxExp byte) {
+	VecLength = int(maxExp) * pad(l)
+	RangeProofParams = newECPrimeGroupKey(VecLength)
 }

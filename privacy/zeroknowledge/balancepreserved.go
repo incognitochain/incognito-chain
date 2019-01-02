@@ -195,11 +195,6 @@ func (pro *MultiRangeProof) SetBytes(proofbytes []byte) error {
 	return nil
 }
 
-func initCommonParams(l int, maxExp byte) {
-	VecLength = int(maxExp) * pad(l)
-	RangeProofParams = newECPrimeGroupKey(VecLength)
-}
-
 func (wit *MultiRangeWitness) Set(v []*big.Int, maxExp byte) {
 	l := pad(len(v) + 1)
 	wit.Values = make([]*big.Int, l)
@@ -215,54 +210,6 @@ func (wit *MultiRangeWitness) Set(v []*big.Int, maxExp byte) {
 	}
 	*wit.Values[l-1] = *total
 	wit.maxExp = maxExp
-}
-
-// Calculates (aL - z*1^n) + sL*x
-func calculateLMRP(aL, sL []*big.Int, z, x *big.Int) []*big.Int {
-	result := make([]*big.Int, len(aL))
-	tmp1 := VectorAddScalar(aL, new(big.Int).Neg(z))
-	tmp2 := ScalarVectorMul(sL, x)
-	result = VectorAdd(tmp1, tmp2)
-	return result
-	//return nil
-}
-
-func calculateRMRP(aR, sR, y, zTimesTwo []*big.Int, z, x *big.Int) []*big.Int {
-	if len(aR) != len(sR) || len(aR) != len(y) || len(y) != len(zTimesTwo) {
-		return nil
-	}
-	result := make([]*big.Int, len(aR))
-	tmp11 := VectorAddScalar(aR, z)
-	tmp12 := ScalarVectorMul(sR, x)
-	tmp13 := VectorAdd(tmp11, tmp12)
-	tmp1 := VectorHadamard(y, tmp13)
-	result = VectorAdd(tmp1, zTimesTwo)
-	return result
-}
-
-/*
-DeltaMRP is a helper function that is used in the multi range proof
-
-\delta(y, z) = (z-z^2)<1^n, y^n> - \sum_j z^3+j<1^n, 2^n>
-*/
-func deltaMRP(y []*big.Int, z *big.Int, m int) *big.Int {
-	result := big.NewInt(0)
-	// (z-z^2)<1^n, y^n>
-	z2 := new(big.Int).Mod(new(big.Int).Mul(z, z), privacy.Curve.Params().N)
-	t1 := new(big.Int).Mod(new(big.Int).Sub(z, z2), privacy.Curve.Params().N)
-	t2 := new(big.Int).Mod(new(big.Int).Mul(t1, VectorSum(y)), privacy.Curve.Params().N)
-
-	// \sum_j z^3+j<1^n, 2^n>
-	// <1^n, 2^n> = 2^n - 1
-	po2sum := new(big.Int).Sub(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(RangeProofParams.V/m)), privacy.Curve.Params().N), big.NewInt(1))
-	t3 := big.NewInt(0)
-	for j := 0; j < m; j++ {
-		zp := new(big.Int).Exp(z, big.NewInt(3+int64(j)), privacy.Curve.Params().N)
-		tmp1 := new(big.Int).Mod(new(big.Int).Mul(zp, po2sum), privacy.Curve.Params().N)
-		t3 = new(big.Int).Mod(new(big.Int).Add(t3, tmp1), privacy.Curve.Params().N)
-	}
-	result = new(big.Int).Mod(new(big.Int).Sub(t2, t3), privacy.Curve.Params().N)
-	return result
 }
 
 /*
