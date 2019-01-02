@@ -29,6 +29,7 @@ const (
 	SignatureError
 	NotSupportInLightMode
 	CrossShardBlockError
+	CandidateError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -52,6 +53,7 @@ var ErrCodeMessage = map[int]struct {
 	BeaconError:                   {-15, "Beacon Error"},
 	CrossShardBlockError:          {-17, "CrossShardBlockError"},
 	SignatureError:                {-16, "Signature Error"},
+	CandidateError:                {-17, "Candidate Error"},
 	NotSupportInLightMode:         {-5, "This features is not supported in light mode running"},
 }
 

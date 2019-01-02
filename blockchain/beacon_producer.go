@@ -132,7 +132,7 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 // #3: swap validator => map[byte][]string
 func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (map[byte][]ShardState, [][]string, map[byte]interface{}) {
 	shardStates := make(map[byte][]ShardState)
-	stakers := make(map[byte]interface{})
+	stakers := make(map[byte][]string)
 	validStakers := [][]string{}
 	swap := make(map[byte]interface{})
 	shardsBlocks := self.shardToBeaconPool.GetFinalBlock()
@@ -152,9 +152,8 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 			//TODO: Get staker from shard block -> depend on ShardToBeaconBlock
 			// stakers := ...
 			for _, staker := range stakers {
-				staker = staker.([]string)
 				tempStaker := []string{}
-				newBeaconCandidate, newShardCandidate := GetStakeValidatorArrayString(staker.([]string))
+				newBeaconCandidate, newShardCandidate := GetStakeValidatorArrayString(staker)
 				assignShard := true
 				if !reflect.DeepEqual(newBeaconCandidate, []string{}) {
 					copy(tempStaker, newBeaconCandidate[:])
@@ -162,14 +161,19 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 				} else {
 					copy(tempStaker, newShardCandidate[:])
 				}
-				for _, committees := range beaconBestState.ShardCommittee {
-					tempStaker = GetValidStaker(committees, tempStaker)
-				}
-				for _, validators := range beaconBestState.ShardPendingValidator {
-					tempStaker = GetValidStaker(validators, tempStaker)
-				}
-				tempStaker = GetValidStaker(beaconBestState.BeaconCommittee, tempStaker)
-				tempStaker = GetValidStaker(beaconBestState.BeaconPendingValidator, tempStaker)
+				tempStaker = self.chain.BestState.Beacon.GetValidStakers(tempStaker)
+				// for _, committees := range beaconBestState.ShardCommittee {
+				// 	tempStaker = GetValidStaker(committees, tempStaker)
+				// }
+				// for _, validators := range beaconBestState.ShardPendingValidator {
+				// 	tempStaker = GetValidStaker(validators, tempStaker)
+				// }
+				// tempStaker = GetValidStaker(beaconBestState.BeaconCommittee, tempStaker)
+				// tempStaker = GetValidStaker(beaconBestState.BeaconPendingValidator, tempStaker)
+				// tempStaker = GetValidStaker(beaconBestState.CandidateBeaconWaitingForCurrentRandom, tempStaker)
+				// tempStaker = GetValidStaker(beaconBestState.CandidateBeaconWaitingForNextRandom, tempStaker)
+				// tempStaker = GetValidStaker(beaconBestState.CandidateShardWaitingForCurrentRandom, tempStaker)
+				// tempStaker = GetValidStaker(beaconBestState.CandidateBeaconWaitingForNextRandom, tempStaker)
 				if assignShard {
 					validStakers = append(validStakers, []string{"assign", strings.Join(tempStaker, ","), "shard"})
 				} else {
@@ -251,6 +255,23 @@ func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, stakers [][
 	}
 	return instructions
 }
+func (self *BestStateBeacon) GetValidStakers(tempStaker []string) []string {
+	for _, committees := range self.ShardCommittee {
+		tempStaker = GetValidStaker(committees, tempStaker)
+	}
+	for _, validators := range self.ShardPendingValidator {
+		tempStaker = GetValidStaker(validators, tempStaker)
+	}
+	tempStaker = GetValidStaker(self.BeaconCommittee, tempStaker)
+	tempStaker = GetValidStaker(self.BeaconPendingValidator, tempStaker)
+	tempStaker = GetValidStaker(self.CandidateBeaconWaitingForCurrentRandom, tempStaker)
+	tempStaker = GetValidStaker(self.CandidateBeaconWaitingForNextRandom, tempStaker)
+	tempStaker = GetValidStaker(self.CandidateShardWaitingForCurrentRandom, tempStaker)
+	tempStaker = GetValidStaker(self.CandidateBeaconWaitingForNextRandom, tempStaker)
+	return tempStaker
+}
+
+//===================================Util for Beacon=============================
 
 // ["random" "{blockheight}" "{bitcointimestamp}" "{nonce}" "{timestamp}"]
 func GenerateRandomInstruction(timestamp int64) []string {
@@ -266,7 +287,6 @@ func GenerateRandomInstruction(timestamp int64) []string {
 	return strs
 }
 
-//===================================Util for Beacon=============================
 func GetValidStaker(committees []string, stakers []string) []string {
 	validStaker := []string{}
 	for _, staker := range stakers {
