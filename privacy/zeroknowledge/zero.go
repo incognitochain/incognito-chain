@@ -82,7 +82,8 @@ func (pro ComZeroProof) Bytes() []byte {
 		return []byte{}
 	}
 	var res []byte
-	res = append(pro.commitmentValue.Compress(), pro.commitmentZeroS.Compress()...)
+	// don't need to send commitmentValue, because verifiers can recalculate.
+	res = append(res, pro.commitmentZeroS.Compress()...)
 	res = append(res, privacy.AddPaddingBigInt(pro.z, privacy.BigIntSize)...)
 	res = append(res, *pro.index)
 	return res
@@ -111,13 +112,13 @@ func (pro *ComZeroProof) SetBytes(bytes []byte) error {
 	}
 
 	offset := 0
-	err := pro.commitmentValue.Decompress(bytes[offset : offset + privacy.CompressedPointSize])
-	if err != nil {
-		return errors.New("Decompressed failed!")
-	}
-	offset += privacy.CompressedPointSize
+	//err := pro.commitmentValue.Decompress(bytes[offset : offset + privacy.CompressedPointSize])
+	//if err != nil {
+	//	return errors.New("Decompressed failed!")
+	//}
+	//offset += privacy.CompressedPointSize
 
-	err = pro.commitmentZeroS.Decompress(bytes[offset : offset + privacy.CompressedPointSize])
+	err := pro.commitmentZeroS.Decompress(bytes[offset : offset + privacy.CompressedPointSize])
 	if err != nil {
 		return errors.New("Decompressed failed!")
 	}

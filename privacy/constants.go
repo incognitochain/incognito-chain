@@ -24,7 +24,7 @@ const (
 
 	// size of zero knowledge proof corresponding one output
 	SumOutRangeProofSize = 99
-	ComZeroProofSize     = 99
+	ComZeroProofSize     = 66
 
 	InputCoinsPrivacySize  = 33  // serial number
 	OutputCoinsPrivacySize = 239 // PK + coin commitment + SND + Encrypted (138 bytes) + 2 bytes saving size
