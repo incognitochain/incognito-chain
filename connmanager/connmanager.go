@@ -458,14 +458,14 @@ func (self *ConnManager) processDiscoverPeers() {
 	}
 }
 
-func (self *ConnManager) getPeerIdsFromPublicKey(pubKey string) []libpeer.ID {
+func (self *ConnManager) getPeerIdsFromPbk(pbk string) []libpeer.ID {
 	result := []libpeer.ID{}
 
 	for _, listener := range self.Config.ListenerPeers {
 		pcs := listener.GetPeerConnOfAll()
 		for _, peerConn := range pcs {
 			// Logger.log.Info("Test PeerConn", peerConn.RemotePeer.PaymentAddress)
-			if peerConn.RemotePeer.PublicKey == pubKey {
+			if peerConn.RemotePeer.PublicKey == pbk {
 				exist := false
 				for _, item := range result {
 					if item.Pretty() == peerConn.RemotePeer.PeerID.Pretty() {
@@ -524,7 +524,8 @@ func (self *ConnManager) checkPeerConnOfPbk(pbk string) bool {
 }
 
 func (self *ConnManager) checkBeaconOfPbk(pbk string) bool {
-	if pbk != "" && common.IndexOfStr(pbk, self.Config.ConsensusState.BeaconCommittee) >= 0 {
+	beaconCommittee := self.Config.ConsensusState.GetBeaconCommittee()
+	if pbk != "" && common.IndexOfStr(pbk, beaconCommittee) >= 0 {
 		return true
 	}
 	return false
