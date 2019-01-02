@@ -322,55 +322,57 @@ func (self *Peer) processConn() {
 }
 
 func (self *Peer) ConnPending(peer *Peer) {
-	self.pendingPeersMutex.Lock()
+	self.peerConnMutex.Lock()
+	defer self.peerConnMutex.Unlock()
 	self.PendingPeers[peer.PeerID.Pretty()] = peer
-	self.pendingPeersMutex.Unlock()
 }
 
 func (self *Peer) ConnEstablished(peer *Peer) {
-	self.pendingPeersMutex.Lock()
+	self.peerConnMutex.Lock()
+	defer self.peerConnMutex.Unlock()
 	_, ok := self.PendingPeers[peer.PeerID.Pretty()]
 	if ok {
 		delete(self.PendingPeers, peer.PeerID.Pretty())
 	}
-	self.pendingPeersMutex.Unlock()
 }
 
 func (self *Peer) ConnCanceled(peer *Peer) {
+	self.peerConnMutex.Lock()
+	defer self.peerConnMutex.Unlock()
 	_, ok := self.PeerConns[peer.PeerID.Pretty()]
 	if ok {
 		delete(self.PeerConns, peer.PeerID.Pretty())
 	}
-	self.pendingPeersMutex.Lock()
 	self.PendingPeers[peer.PeerID.Pretty()] = peer
-	self.pendingPeersMutex.Unlock()
 }
 
 func (self *Peer) NumInbound() int {
-	ret := int(0)
 	self.peerConnMutex.Lock()
+	defer self.peerConnMutex.Unlock()
+	ret := int(0)
 	for _, peerConn := range self.PeerConns {
 		if !peerConn.GetIsOutbound() {
 			ret++
 		}
 	}
-	self.peerConnMutex.Unlock()
 	return ret
 }
 
 func (self *Peer) NumOutbound() int {
-	ret := int(0)
 	self.peerConnMutex.Lock()
+	defer self.peerConnMutex.Unlock()
+	ret := int(0)
 	for _, peerConn := range self.PeerConns {
 		if peerConn.GetIsOutbound() {
 			ret++
 		}
 	}
-	self.peerConnMutex.Unlock()
 	return ret
 }
 
 func (self *Peer) GetPeerConnByPeerID(peerID string) *PeerConn {
+	self.peerConnMutex.Lock()
+	defer self.peerConnMutex.Unlock()
 	peerConn, ok := self.PeerConns[peerID]
 	if ok {
 		return peerConn
@@ -379,6 +381,8 @@ func (self *Peer) GetPeerConnByPeerID(peerID string) *PeerConn {
 }
 
 func (self *Peer) GetPeerConnByPbk(pbk string) *PeerConn {
+	self.peerConnMutex.Lock()
+	defer self.peerConnMutex.Unlock()
 	for _, peerConn := range self.PeerConns {
 		if peerConn.RemotePeer.PublicKey == pbk {
 			return peerConn
@@ -387,13 +391,9 @@ func (self *Peer) GetPeerConnByPbk(pbk string) *PeerConn {
 	return nil
 }
 
-func (self *Peer) UpdateShardForPeerConn() {
-	for _, peerConn := range self.PeerConns {
-		_ = peerConn
-	}
-}
-
 func (self *Peer) SetPeerConn(peerConn *PeerConn) {
+	self.peerConnMutex.Lock()
+	defer self.peerConnMutex.Unlock()
 	internalConnPeer, ok := self.PeerConns[peerConn.RemotePeer.PeerID.Pretty()]
 	if ok {
 		if internalConnPeer.GetIsConnected() {
@@ -405,6 +405,8 @@ func (self *Peer) SetPeerConn(peerConn *PeerConn) {
 }
 
 func (self *Peer) RemovePeerConn(peerConn *PeerConn) {
+	self.peerConnMutex.Lock()
+	defer self.peerConnMutex.Unlock()
 	internalConnPeer, ok := self.PeerConns[peerConn.RemotePeer.PeerID.Pretty()]
 	if ok {
 		if internalConnPeer.GetIsConnected() {

@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
 )
@@ -15,8 +16,13 @@ const (
 	VERSION     = 1
 )
 
+type ShardState struct {
+	Height     uint64
+	Hash       common.Hash
+	CrossShard map[byte]bool
+}
 type BeaconBody struct {
-	ShardState   map[byte][]common.Hash
+	ShardState   map[byte][]ShardState
 	Instructions [][]string // Random here
 }
 
@@ -101,7 +107,11 @@ func (self *BeaconBody) toString() string {
 	res := ""
 	for _, l := range self.ShardState {
 		for _, r := range l {
-			res += r.String()
+			res += strconv.Itoa(int(r.Height))
+			res += r.Hash.String()
+			crossShard, _ := json.Marshal(r.CrossShard)
+			res += string(crossShard)
+
 		}
 	}
 
