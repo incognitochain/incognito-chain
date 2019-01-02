@@ -21,7 +21,7 @@ type InnerProdArg struct {
 	Challenges []*big.Int
 }
 
-func (IPA *InnerProdArg) Init(l int) {
+func (IPA *InnerProdArg) init(l int) {
 	IPA.L = make([]*privacy.EllipticPoint, l)
 	IPA.R = make([]*privacy.EllipticPoint, l)
 	for i := 0; i < l; i++ {
@@ -44,7 +44,7 @@ func makeBigIntArray(l int) []*big.Int {
 	return result
 }
 
-func (IPA *InnerProdArg) Bytes() []byte {
+func (IPA *InnerProdArg) bytes() []byte {
 	var res []byte
 	for i := 0; i < len(IPA.L); i++ {
 		res = append(res, IPA.L[i].Compress()...)
@@ -60,10 +60,10 @@ func (IPA *InnerProdArg) Bytes() []byte {
 	return res
 }
 
-func (IPA *InnerProdArg) SetBytes(IPA_byte []byte) {
+func (IPA *InnerProdArg) setBytes(IPA_byte []byte) {
 	offset := 0
 	l := (len(IPA_byte) - 96) / 98
-	IPA.Init(l)
+	IPA.init(l)
 	L_array_length := l * privacy.CompressedPointSize
 	R_array_length := L_array_length
 	C_array_length := privacy.BigIntSize * (l + 1)
@@ -120,7 +120,7 @@ Proves that <a,b>=c
 This is a building block for BulletProofs
 
 */
-func InnerProductProveSub(proof InnerProdArg, G, H []*privacy.EllipticPoint, a []*big.Int, b []*big.Int, u *privacy.EllipticPoint, P *privacy.EllipticPoint) InnerProdArg {
+func innerProductProveSub(proof InnerProdArg, G, H []*privacy.EllipticPoint, a []*big.Int, b []*big.Int, u *privacy.EllipticPoint, P *privacy.EllipticPoint) InnerProdArg {
 	if len(a) == 1 {
 		proof.A = a[0]
 		proof.B = b[0]
@@ -154,10 +154,10 @@ func InnerProductProveSub(proof InnerProdArg, G, H []*privacy.EllipticPoint, a [
 		ScalarVectorMul(b[:nprime], xinv),
 		ScalarVectorMul(b[nprime:], x))
 
-	return InnerProductProveSub(proof, Gprime, Hprime, aprime, bprime, u, Pprime)
+	return innerProductProveSub(proof, Gprime, Hprime, aprime, bprime, u, Pprime)
 }
 
-func InnerProductProve(a []*big.Int, b []*big.Int, c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy.EllipticPoint) InnerProdArg {
+func innerProductProve(a []*big.Int, b []*big.Int, c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy.EllipticPoint) InnerProdArg {
 	loglen := int(math.Log2(float64(len(a))))
 
 	challenges := make([]*big.Int, loglen+1)
@@ -177,15 +177,14 @@ func InnerProductProve(a []*big.Int, b []*big.Int, c *big.Int, P, U *privacy.Ell
 	Pprime := P.Add(U.ScalarMult(new(big.Int).Mul(new(big.Int).SetBytes(x[:]), c)))
 	ux := U.ScalarMult(new(big.Int).SetBytes(x[:]))
 	//fmt.Printf("Prover Pprime value to run sub off of: %s\n", Pprime)
-	return InnerProductProveSub(runningProof, G, H, a, b, ux, Pprime)
+	return innerProductProveSub(runningProof, G, H, a, b, ux, Pprime)
 }
 
 /* Inner Product Verify Fast
 Given a inner product proof, verifies the correctness of the proof. Does the same as above except
 we replace n separate exponentiations with a single ScalarMulPointi-exponentiation.
 */
-
-func InnerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy.EllipticPoint, ipp InnerProdArg) bool {
+func innerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy.EllipticPoint, ipp InnerProdArg) bool {
 	s1 := common.HashB([]byte(P.X.String() + P.Y.String()))
 	chal1 := new(big.Int).SetBytes(s1[:])
 	ux := U.ScalarMult(chal1)
@@ -335,7 +334,7 @@ func reverse(l []*big.Int) []*big.Int {
 	return result
 }
 
-func PowerVector(l int, base *big.Int) []*big.Int {
+func powerVector(l int, base *big.Int) []*big.Int {
 	result := make([]*big.Int, l)
 	for i := 0; i < l; i++ {
 		result[i] = new(big.Int).Exp(base, big.NewInt(int64(i)), privacy.Curve.Params().N)
@@ -343,7 +342,7 @@ func PowerVector(l int, base *big.Int) []*big.Int {
 	return result
 }
 
-func RandVector(l int) []*big.Int {
+func randVector(l int) []*big.Int {
 	result := make([]*big.Int, l)
 	for i := 0; i < l; i++ {
 		x := new(big.Int).SetBytes(privacy.RandBytes(32))
@@ -353,7 +352,7 @@ func RandVector(l int) []*big.Int {
 	return result
 }
 
-func VectorSum(y []*big.Int) *big.Int {
+func vectorSum(y []*big.Int) *big.Int {
 	result := big.NewInt(0)
 	for _, j := range y {
 		result = new(big.Int).Mod(new(big.Int).Add(result, j), privacy.Curve.Params().N)
@@ -478,7 +477,7 @@ func deltaMRP(y []*big.Int, z *big.Int, m int) *big.Int {
 	// (z-z^2)<1^n, y^n>
 	z2 := new(big.Int).Mod(new(big.Int).Mul(z, z), privacy.Curve.Params().N)
 	t1 := new(big.Int).Mod(new(big.Int).Sub(z, z2), privacy.Curve.Params().N)
-	t2 := new(big.Int).Mod(new(big.Int).Mul(t1, VectorSum(y)), privacy.Curve.Params().N)
+	t2 := new(big.Int).Mod(new(big.Int).Mul(t1, vectorSum(y)), privacy.Curve.Params().N)
 
 	// \sum_j z^3+j<1^n, 2^n>
 	// <1^n, 2^n> = 2^n - 1
