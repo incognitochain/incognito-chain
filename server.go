@@ -215,7 +215,6 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	self.consensusEngine, err = constantpos.Engine{}.Init(&constantpos.EngineConfig{
 		ChainParams: self.chainParams,
 		BlockChain:  self.blockChain,
-		ConnManager: self.connManager,
 		Server:      self,
 		BlockGen:    self.blockgen,
 		NodeMode:    cfg.NodeMode,
