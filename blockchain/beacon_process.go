@@ -135,6 +135,7 @@ func (self *BlockChain) InsertBeaconBlock(block *BeaconBlock) error {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 	Logger.log.Infof("Insert new block %d, with hash %+v \n", block.Header.Height, *block.Hash())
+	fmt.Printf("New block %+v \n", block)
 	Logger.log.Infof("Verify Pre Processing Beacon Block %+v \n", *block.Hash())
 	if err := self.VerifyPreProcessingBeaconBlock(block); err != nil {
 		return err
