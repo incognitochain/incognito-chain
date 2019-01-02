@@ -381,7 +381,7 @@ func (c CryptoParams) Zero() *privacy.EllipticPoint {
 }
 // NewECPrimeGroupKey returns the curve (field),
 // Generator 1 x&y, Generator 2 x&y, order of the generators
-func NewECPrimeGroupKey(n int) CryptoParams {
+func newECPrimeGroupKey(n int) CryptoParams {
 
 	gen1Vals := make([]*privacy.EllipticPoint, n)
 	gen2Vals := make([]*privacy.EllipticPoint, n)
@@ -419,4 +419,26 @@ func TwoVectorPCommitWithGens(G, H []*privacy.EllipticPoint, a, b []*big.Int) *p
 		commitment = commitment.Add(G[i].ScalarMult(modA)).Add(H[i].ScalarMult(modB))
 	}
 	return commitment
+}
+
+func pad(l int) int {
+	deg := 0
+	for l > 0 {
+		if l%2 == 0 {
+			deg++
+			l = l / 2
+		} else {
+			break
+		}
+	}
+	i := 0
+	for {
+		if math.Pow(2, float64(i)) < float64(l) {
+			i++
+		} else {
+			l = int(math.Pow(2, float64(i+deg)))
+			break
+		}
+	}
+	return l
 }
