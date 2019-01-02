@@ -9,9 +9,6 @@ import (
 	"math/big"
 )
 
-var VecLength int
-var RangeProofParams CryptoParams
-
 /* ------------ Inner Product Functions ---------------*/
 type InnerProdArg struct {
 	L          []*privacy.EllipticPoint
@@ -184,10 +181,10 @@ func innerProductProve(a []*big.Int, b []*big.Int, c *big.Int, P, U *privacy.Ell
 Given a inner product proof, verifies the correctness of the proof. Does the same as above except
 we replace n separate exponentiations with a single ScalarMulPointi-exponentiation.
 */
-func innerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy.EllipticPoint, ipp InnerProdArg) bool {
+func innerProductVerifyFast(c *big.Int, P *privacy.EllipticPoint, H []*privacy.EllipticPoint, ipp InnerProdArg, rangeProofParams *CryptoParams) bool {
 	s1 := common.HashB([]byte(P.X.String() + P.Y.String()))
 	chal1 := new(big.Int).SetBytes(s1[:])
-	ux := U.ScalarMult(chal1)
+	ux := rangeProofParams.U.ScalarMult(chal1)
 	curIt := len(ipp.Challenges) - 1
 
 	// check all challenges
@@ -212,7 +209,7 @@ func innerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*pri
 	curIt -= 1
 	Pprime := P.Add(ux.ScalarMult(c))
 
-	tmp1 := RangeProofParams.zero()
+	tmp1 := rangeProofParams.zero()
 	for j := curIt; j >= 0; j-- {
 		x2 := new(big.Int).Exp(ipp.Challenges[j], big.NewInt(2), privacy.Curve.Params().N)
 		x2i := new(big.Int).ModInverse(x2, privacy.Curve.Params().N)
@@ -220,10 +217,10 @@ func innerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*pri
 	}
 	rhs := Pprime.Add(tmp1)
 
-	sScalars := makeBigIntArray(RangeProofParams.V)
-	invsScalars := makeBigIntArray(RangeProofParams.V)
+	sScalars := makeBigIntArray(rangeProofParams.V)
+	invsScalars := makeBigIntArray(rangeProofParams.V)
 
-	for i := 0; i < RangeProofParams.V; i++ {
+	for i := 0; i < rangeProofParams.V; i++ {
 		si := big.NewInt(1)
 		for j := curIt; j >= 0; j-- {
 			// original challenge if the jth bit of i is 1, inverse challenge otherwise
@@ -238,7 +235,7 @@ func innerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*pri
 	}
 
 	ccalc := new(big.Int).Mod(new(big.Int).Mul(ipp.A, ipp.B), privacy.Curve.Params().N)
-	lhs := twoVectorPCommitWithGens(G, H, scalarVectorMul(sScalars, ipp.A), scalarVectorMul(invsScalars, ipp.B)).Add(ux.ScalarMult(ccalc))
+	lhs := twoVectorPCommitWithGens(rangeProofParams.BPG, H, scalarVectorMul(sScalars, ipp.A), scalarVectorMul(invsScalars, ipp.B)).Add(ux.ScalarMult(ccalc))
 
 	if !rhs.IsEqual(lhs) {
 		return false
@@ -361,7 +358,6 @@ func vectorSum(y []*big.Int) *big.Int {
 }
 
 /*-----------------------Crypto Params Functions------------------*/
-
 type CryptoParams struct {
 	C   elliptic.Curve           // curve
 	BPG []*privacy.EllipticPoint // slice of gen 1 for BP
@@ -472,7 +468,7 @@ DeltaMRP is a helper function that is used in the multi range proof
 
 \delta(y, z) = (z-z^2)<1^n, y^n> - \sum_j z^3+j<1^n, 2^n>
 */
-func deltaMRP(y []*big.Int, z *big.Int, m int) *big.Int {
+func deltaMRP(y []*big.Int, z *big.Int, m int, rangeProofParams *CryptoParams) *big.Int {
 	result := big.NewInt(0)
 	// (z-z^2)<1^n, y^n>
 	z2 := new(big.Int).Mod(new(big.Int).Mul(z, z), privacy.Curve.Params().N)
@@ -481,7 +477,7 @@ func deltaMRP(y []*big.Int, z *big.Int, m int) *big.Int {
 
 	// \sum_j z^3+j<1^n, 2^n>
 	// <1^n, 2^n> = 2^n - 1
-	po2sum := new(big.Int).Sub(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(RangeProofParams.V/m)), privacy.Curve.Params().N), big.NewInt(1))
+	po2sum := new(big.Int).Sub(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(rangeProofParams.V/m)), privacy.Curve.Params().N), big.NewInt(1))
 	t3 := big.NewInt(0)
 	for j := 0; j < m; j++ {
 		zp := new(big.Int).Exp(z, big.NewInt(3+int64(j)), privacy.Curve.Params().N)
@@ -492,7 +488,8 @@ func deltaMRP(y []*big.Int, z *big.Int, m int) *big.Int {
 	return result
 }
 
-func initCommonParams(l int, maxExp byte) {
-	VecLength = int(maxExp) * pad(l)
-	RangeProofParams = newECPrimeGroupKey(VecLength)
+func initCryptoParams(l int, maxExp byte) *CryptoParams {
+	vecLength := int(maxExp) * pad(l)
+	rangeProofParams := newECPrimeGroupKey(vecLength)
+	return &rangeProofParams
 }
