@@ -7,25 +7,11 @@ import (
 	"io"
 )
 
-
-type AES struct{
+type AES struct {
 	key []byte
 }
 
-//func (self *AES) GenKey(keyLength byte) error{
-//	if keyLength != 16 || keyLength != 24 || keyLength != 32{
-//		return NewPrivacyErr(UnexpectedErr, errors.New("privacy/aes: invalid key size " + strconv.Itoa(int(keyLength))))
-//	}
-//	self.key = RandBytes(int(keyLength))
-//	return nil
-//}
-
-
-func (self *AES) SetKey(key []byte) {
-	self.key = key
-}
-
-func (self *AES) Encrypt(plaintext []byte) ([]byte, error){
+func (self *AES) Encrypt(plaintext []byte) ([]byte, error) {
 	block, err := aes.NewCipher(self.key)
 	if err != nil {
 		return nil, err
@@ -42,7 +28,6 @@ func (self *AES) Encrypt(plaintext []byte) ([]byte, error){
 	return ciphertext, nil
 }
 
-
 func (self *AES) Decrypt(ciphertext []byte) ([]byte, error) {
 	plaintext := make([]byte, len(ciphertext[aes.BlockSize:]))
 
@@ -57,4 +42,3 @@ func (self *AES) Decrypt(ciphertext []byte) ([]byte, error) {
 
 	return plaintext, nil
 }
-

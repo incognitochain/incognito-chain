@@ -427,7 +427,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 // Build prepares witnesses for all protocol need to be proved when create tx
 // if hashPrivacy = false, witness includes spending key, input coins, output coins
 // otherwise, witness includes all attributes in PaymentWitness struct
-func (wit *PaymentWitness) Build(hasPrivacy bool,
+func (wit *PaymentWitness) Init(hasPrivacy bool,
 	spendingKey *big.Int,
 	inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin,
 	pkLastByteSender byte,

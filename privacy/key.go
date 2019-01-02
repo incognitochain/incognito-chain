@@ -1,7 +1,6 @@
 package privacy
 
 import (
-	"encoding/hex"
 	"github.com/pkg/errors"
 	"math/big"
 
@@ -129,12 +128,4 @@ func (addr *PaymentAddress) SetBytes(bytes []byte) *PaymentAddress {
 // Size returns size of payment address
 func (addr *PaymentAddress) Size() int {
 	return len(addr.Pk) + len(addr.Tk)
-}
-
-// String converts spending key to string
-func (spendingKey SpendingKey) String() string {
-	for i := 0; i < SpendingKeySize/2; i++ {
-		spendingKey[i], spendingKey[SpendingKeySize-1-i] = spendingKey[SpendingKeySize-1-i], spendingKey[i]
-	}
-	return hex.EncodeToString(spendingKey[:])
 }

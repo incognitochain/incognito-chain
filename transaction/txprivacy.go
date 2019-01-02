@@ -235,7 +235,7 @@ func (tx *Tx) Init(
 
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	err = witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
+	err = witness.Init(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
 	if err.(*privacy.PrivacyError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
