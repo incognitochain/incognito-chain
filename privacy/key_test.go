@@ -1,7 +1,6 @@
 package privacy
 
 import (
-	"fmt"
 	"math/big"
 	"testing"
 
@@ -10,8 +9,6 @@ import (
 
 func TestGenerateSpendingKey(t *testing.T) {
 	spendingKey := GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	fmt.Printf("\nSpending key: %v\n", spendingKey)
-	fmt.Println(len(spendingKey))
 	expectedResult := []byte{2, 31, 181, 150, 219, 129, 230, 208, 43, 243, 210, 88, 110, 227, 152, 31, 229, 25, 242, 117, 192, 172, 156, 167, 107, 188, 242, 235, 180, 9, 125, 150}
 
 	assert.Equal(t, expectedResult, spendingKey)
@@ -35,27 +32,24 @@ func TestGenerateKey(t *testing.T){
 	// decompress public key
 	publicKeyPoint, err := DecompressKey(publicKey)
 	if err != nil {
-		fmt.Println(err)
+		return
 	}
 
 	assert.Equal(t, publicKeyBytes, publicKeyPoint.Compress())
 
 	receivingKey := GenerateReceivingKey(spendingKey)
-	fmt.Printf("Receiving key: %v\n", receivingKey)
 
 	transmissionKey := GenerateTransmissionKey(receivingKey)
-	fmt.Printf("transmission key: %v\n", transmissionKey)
 	transmissionKeyBytes := make([]byte, CompressedPointSize)
 	copy(transmissionKeyBytes, transmissionKey[:])
 
 	transmissionKeyPoint, err := DecompressKey(transmissionKey)
 	if err != nil {
-		fmt.Println(err)
+		return
 	}
 	assert.Equal(t, transmissionKeyBytes, transmissionKeyPoint.Compress())
 
 	paymentAddress := GeneratePaymentAddress(spendingKey)
-	fmt.Printf("Receiving key: %v\n", paymentAddress)
 	paymentAddrBytes := paymentAddress.Bytes()
 
 	paymentAddress2 := new(PaymentAddress)
