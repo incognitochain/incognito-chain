@@ -85,7 +85,7 @@ type ConnManager struct {
 
 	ListeningPeers map[string]*peer.Peer
 
-	OtherShards []byte
+	randShards []byte
 }
 
 type Config struct {
@@ -355,7 +355,7 @@ func (self *ConnManager) handleFailed(peerConn *peer.PeerConn) {
 
 func (self *ConnManager) DiscoverPeers(discoverPeerAddress string) {
 	Logger.log.Infof("Start Discover Peers : %s", discoverPeerAddress)
-	self.OtherShards = self.randShards(SHARD_NUMBER)
+	self.randShards = self.makeRandShards(SHARD_NUMBER)
 	self.discoverPeerAddress = discoverPeerAddress
 	self.cDiscoveredPeers = make(chan struct{})
 	for {
@@ -459,8 +459,7 @@ func (self *ConnManager) processDiscoverPeers() {
 }
 
 func (self *ConnManager) getPeerIdsFromPbk(pbk string) []libpeer.ID {
-	result := []libpeer.ID{}
-
+	result := make([]libpeer.ID, 0)
 	for _, listener := range self.Config.ListenerPeers {
 		pcs := listener.GetPeerConnOfAll()
 		for _, peerConn := range pcs {
@@ -472,14 +471,12 @@ func (self *ConnManager) getPeerIdsFromPbk(pbk string) []libpeer.ID {
 						exist = true
 					}
 				}
-
 				if !exist {
 					result = append(result, peerConn.RemotePeer.PeerID)
 				}
 			}
 		}
 	}
-
 	return result
 }
 
@@ -579,7 +576,7 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 func (self *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxShardPeers int, maxPeers int, mPeers map[string]*wire.RawPeer) int {
 	//Logger.log.Info("handleRandPeersOfOtherShard", maxShardPeers, maxPeers)
 	countPeers := 0
-	for _, shard := range self.OtherShards {
+	for _, shard := range self.randShards {
 		if cShard == nil || (cShard != nil && *cShard != shard) {
 			if countPeers < maxPeers {
 				mP := int(math.Min(float64(maxShardPeers), float64(maxPeers-countPeers)))
@@ -622,7 +619,7 @@ func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[
 	return countPeerShard
 }
 
-func (self *ConnManager) randShards(maxShards int) []byte {
+func (self *ConnManager) makeRandShards(maxShards int) []byte {
 	shardBytes := make([]byte, 0)
 	for i := 0; i < SHARD_NUMBER; i++ {
 		shardBytes = append(shardBytes, byte(i))
