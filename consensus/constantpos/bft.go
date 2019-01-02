@@ -52,7 +52,7 @@ type blockFinalSig struct {
 	ValidatorsIdx []int
 }
 
-func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prevAggregatedSig string, prevValidatorsIdx []int) error {
+func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prevAggregatedSig string, prevValidatorsIdx []int) (interface{}, error) {
 	// self.Lock()
 	// defer self.Unlock()
 	// if self.started {
@@ -76,7 +76,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 		self.cTimeout = make(chan struct{})
 		select {
 		case <-self.cQuit:
-			return nil
+			return nil, errors.New("Consensus quit")
 		default:
 			switch self.phase {
 			case "propose":
@@ -84,25 +84,25 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 				if layer == "beacon" {
 					newBlock, err := self.BlockGen.NewBlockBeacon(&self.UserKeySet.PaymentAddress, &self.UserKeySet.PrivateKey)
 					if err != nil {
-						return err
+						return nil, err
 					}
 					fmt.Println("Propose block")
 					jsonBlock, _ := json.Marshal(newBlock)
 					msg, err := MakeMsgBFTPropose(prevAggregatedSig, prevValidatorsIdx, jsonBlock)
 					if err != nil {
-						return err
+						return nil, err
 					}
 					go self.Server.PushMessageToBeacon(msg)
 					self.pendingBlock = newBlock
 				} else {
 					newBlock, err := self.BlockGen.NewBlockShard(&self.UserKeySet.PaymentAddress, &self.UserKeySet.PrivateKey, shardID)
 					if err != nil {
-						return err
+						return nil, err
 					}
 					jsonBlock, _ := json.Marshal(newBlock)
 					msg, err := MakeMsgBFTPropose(prevAggregatedSig, prevValidatorsIdx, jsonBlock)
 					if err != nil {
-						return err
+						return nil, err
 					}
 					go self.Server.PushMessageToShard(msg, shardID)
 					self.pendingBlock = newBlock
@@ -178,7 +178,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							msg, err := MakeMsgBFTPrepare(myRi, self.UserKeySet.GetPublicKeyB58())
 							if err != nil {
 								timeout.Stop()
-								return err
+								return nil, err
 							}
 							time.AfterFunc(1500*time.Millisecond, func() {
 								fmt.Println("Sending out prepare msg")
@@ -194,7 +194,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							break listenphase
 						}
 					case <-self.cTimeout:
-						return nil
+						return nil, errors.New("Listen phase timeout")
 					}
 				}
 			case "prepare":
@@ -242,13 +242,13 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							*listPubkeyOfSigners[counter] = pubKeyTemp
 							if (err != nil) || (byteVersion != byte(0x00)) {
 								//Todo
-								return err
+								return nil, err
 							}
 							listROfSigners[counter] = new(privacy.EllipticPoint)
 							err = listROfSigners[counter].Decompress(bytesR)
 							if err != nil {
 								//Todo
-								return err
+								return nil, err
 							}
 							RCombined = RCombined.Add(listROfSigners[counter])
 							// phaseData.ValidatorsIdx[counter] = sort.SearchStrings(self.Committee, szPubKey)
@@ -397,14 +397,14 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							}
 						}
 						if len(szRCombined) == 1 {
-							return errors.New("Not enough sigs to combine")
+							return nil, errors.New("Not enough sigs to combine")
 						}
 						listSigOfSigners := make([]*privacy.SchnMultiSig, len(phaseData.Sigs[szRCombined]))
 						for i, valSig := range phaseData.Sigs[szRCombined] {
 							listSigOfSigners[i] = new(privacy.SchnMultiSig)
 							bytesSig, byteVersion, err := base58.Base58Check{}.Decode(valSig.Sig)
 							if (err != nil) || (byteVersion != byte(0x00)) {
-								return err
+								return nil, err
 							}
 							listSigOfSigners[i].SetBytes(bytesSig)
 						}
@@ -458,7 +458,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte, prev
 							copy(self.pendingBlock.(*blockchain.ShardBlock).ValidatorsIdx, ValidatorsIdx)
 						}
 
-						return nil
+						return self.pendingBlock, nil
 						// self.phase = "reply"
 						// break commitphase
 					}
