@@ -7,12 +7,11 @@ import (
 	"encoding/json"
 	"reflect"
 	"sync"
-
 	"time"
-
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/wire"
+	"errors"
 )
 
 type PeerConn struct {
@@ -90,6 +89,27 @@ func (self *PeerConn) SetIsConnected(v bool) {
 	self.isConnected = v
 }
 
+func (self *PeerConn) readString(rw *bufio.ReadWriter, delim byte, maxReadBytes int) (string, error) {
+	buf := make([]byte, 0)
+	bufL := 0
+	for {
+		b, err := rw.ReadByte()
+		if err != nil {
+			return "", err
+		}
+		if b == delim {
+			break
+		}
+		buf = append(buf, b)
+		bufL++
+		if bufL > maxReadBytes {
+			return "", errors.New("Limit bytes for message")
+		}
+	}
+
+	return string(buf), nil
+}
+
 /*
 Handle all in message
 */
@@ -97,7 +117,18 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	self.SetIsConnected(true)
 	for {
 		Logger.log.Infof("PEER %s (address: %s) Reading stream", self.RemotePeer.PeerID.Pretty(), self.RemotePeer.RawAddress)
-		str, errR := rw.ReadString(DelimMessageByte)
+		//str, errR := rw.ReadString(c)
+		//if errR != nil {
+		//	self.SetIsConnected(false)
+		//	Logger.log.Error("---------------------------------------------------------------------")
+		//	Logger.log.Errorf("InMessageHandler ERROR %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
+		//	Logger.log.Error(errR)
+		//	Logger.log.Errorf("InMessageHandler QUIT %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
+		//	Logger.log.Error("---------------------------------------------------------------------")
+		//	close(self.cWrite)
+		//	return
+		//}
+		str, errR := self.readString(rw, DelimMessageByte, SPAM_MESSAGE_SIZE)
 		if errR != nil {
 			self.SetIsConnected(false)
 			Logger.log.Error("---------------------------------------------------------------------")
@@ -112,26 +143,26 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 		if str != DelimMessageStr {
 			go func(msgStr string) {
 				// Parse Message header from last 24 bytes header message
-				jsonDecodeString, _ := hex.DecodeString(msgStr)
+				jsonDecodeBytes, _ := hex.DecodeString(msgStr)
 
 				// unzip data before process
-				jsonDecodeString, err := common.GZipFromBytes(jsonDecodeString)
+				jsonDecodeBytes, err := common.GZipFromBytes(jsonDecodeBytes)
 				if err != nil {
 					Logger.log.Error("Can unzip from message")
 					Logger.log.Error(err)
 					return
 				}
 				// disconnect when received spam message
-				if len(jsonDecodeString) >= SPAM_MESSAGE_SIZE {
-					Logger.log.Error("InMessageHandler received spam message")
-					self.ForceClose()
-					return
-				}
+				//if len(jsonDecodeBytes) >= SPAM_MESSAGE_SIZE {
+				//	Logger.log.Error("InMessageHandler received spam message")
+				//	self.ForceClose()
+				//	return
+				//}
 
-				Logger.log.Infof("In message content : %s", string(jsonDecodeString))
+				Logger.log.Infof("In message content : %s", string(jsonDecodeBytes))
 
 				// Parse Message body
-				messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
+				messageBody := jsonDecodeBytes[:len(jsonDecodeBytes)-wire.MessageHeaderSize]
 
 				// cache message hash S
 				hashMsg := common.HashH(messageBody).String()
@@ -142,7 +173,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				self.ListenerPeer.ReceivedHashMessage(hashMsg)
 				// cache message hash E
 
-				messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
+				messageHeader := jsonDecodeBytes[len(jsonDecodeBytes)-wire.MessageHeaderSize:]
 				// check forward
 				if self.Config.MessageListeners.GetCurrentRoleShard != nil {
 					cRole, cShard := self.Config.MessageListeners.GetCurrentRoleShard()
@@ -152,7 +183,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 							fS := messageHeader[wire.MessageCmdTypeSize+1]
 							if *cShard != fS {
 								if self.Config.MessageListeners.PushRawBytesToShard != nil {
-									self.Config.MessageListeners.PushRawBytesToShard(self, &jsonDecodeString, *cShard)
+									self.Config.MessageListeners.PushRawBytesToShard(self, &jsonDecodeBytes, *cShard)
 								}
 								return
 							}
@@ -162,7 +193,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 						fT := messageHeader[wire.MessageCmdTypeSize]
 						if fT == MESSAGE_TO_BEACON && cRole != "beacon" {
 							if self.Config.MessageListeners.PushRawBytesToBeacon != nil {
-								self.Config.MessageListeners.PushRawBytesToBeacon(self, &jsonDecodeString)
+								self.Config.MessageListeners.PushRawBytesToBeacon(self, &jsonDecodeBytes)
 							}
 							return
 						}
@@ -521,15 +552,15 @@ func (p *PeerConn) VerAckReceived() bool {
 // updateState updates the state of the connection request.
 func (p *PeerConn) updateConnState(connState ConnState) {
 	p.stateMtx.Lock()
+	defer p.stateMtx.Unlock()
 	p.connState = connState
-	p.stateMtx.Unlock()
 }
 
 // State is the connection state of the requested connection.
 func (p *PeerConn) ConnState() ConnState {
 	p.stateMtx.RLock()
+	defer p.stateMtx.RUnlock()
 	connState := p.connState
-	p.stateMtx.RUnlock()
 	return connState
 }
 

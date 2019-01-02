@@ -291,7 +291,7 @@ func (self *Peer) processConn() {
 			Logger.log.Info("ProcessConn QUIT")
 			return
 		case newPeerMsg := <-self.cNewConn:
-			Logger.log.Infof("ProcessConn START CONN %s %s", newPeerMsg.Peer.PeerID, newPeerMsg.Peer.RawAddress)
+			Logger.log.Infof("ProcessConn START CONN %s %s", newPeerMsg.Peer.PeerID.Pretty(), newPeerMsg.Peer.RawAddress)
 			cConn := make(chan *PeerConn)
 			go func(self *Peer) {
 				peerConn, err := self.handleConn(newPeerMsg.Peer, cConn)
@@ -303,18 +303,18 @@ func (self *Peer) processConn() {
 			if newPeerMsg.CConn != nil {
 				newPeerMsg.CConn <- p
 			}
-			Logger.log.Infof("ProcessConn END CONN %s %s", newPeerMsg.Peer.PeerID, newPeerMsg.Peer.RawAddress)
+			Logger.log.Infof("ProcessConn END CONN %s %s", newPeerMsg.Peer.PeerID.Pretty(), newPeerMsg.Peer.RawAddress)
 			continue
 		case newStreamMsg := <-self.cNewStream:
 			remotePeerID := newStreamMsg.Stream.Conn().RemotePeer()
-			Logger.log.Infof("ProcessConn START STREAM %s", remotePeerID)
+			Logger.log.Infof("ProcessConn START STREAM %s", remotePeerID.Pretty())
 			cConn := make(chan *PeerConn)
 			go self.handleStream(newStreamMsg.Stream, cConn)
 			p := <-cConn
 			if newStreamMsg.CConn != nil {
 				newStreamMsg.CConn <- p
 			}
-			Logger.log.Infof("ProcessConn END STREAM %s", remotePeerID)
+			Logger.log.Infof("ProcessConn END STREAM %s", remotePeerID.Pretty())
 			continue
 		}
 	}
