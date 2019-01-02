@@ -50,7 +50,7 @@ func (self *ConsensusState) rebuild() {
 	}
 }
 
-func (self *ConsensusState) CloneBeaconCommittee() []string {
+func (self *ConsensusState) GetBeaconCommittee() []string {
 	self.Lock()
 	defer self.Unlock()
 	ret := make([]string, len(self.BeaconCommittee))
@@ -58,7 +58,7 @@ func (self *ConsensusState) CloneBeaconCommittee() []string {
 	return ret
 }
 
-func (self *ConsensusState) CloneShardCommittee(shard byte) []string {
+func (self *ConsensusState) GetShardCommittee(shard byte) []string {
 	self.Lock()
 	defer self.Unlock()
 	committee, ok := self.ShardCommittee[shard]
@@ -554,7 +554,7 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 		}
 		return maxPeers
 	}
-	pBKs := self.Config.ConsensusState.CloneShardCommittee(*shard)
+	pBKs := self.Config.ConsensusState.GetShardCommittee(*shard)
 	for len(pBKs) > 0 {
 		randN := common.RandInt() % len(pBKs)
 		pbk := pBKs[randN]
@@ -600,7 +600,7 @@ func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[
 	Logger.log.Info("handleRandPeersOfBeacon")
 
 	countPeerShard := 0
-	pBKs := self.Config.ConsensusState.CloneBeaconCommittee()
+	pBKs := self.Config.ConsensusState.GetBeaconCommittee()
 	for len(pBKs) > 0 {
 		randN := common.RandInt() % len(pBKs)
 		pbk := pBKs[randN]
