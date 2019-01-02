@@ -134,40 +134,47 @@ func (self *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock) error {
 func (self *BlockChain) InsertBeaconBlock(block *BeaconBlock) error {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
-	Logger.log.Infof("Insert new block %d, with hash %+v", block.Header.Height, *block.Hash())
+	Logger.log.Infof("Insert new block %d, with hash %+v \n", block.Header.Height, *block.Hash())
+	Logger.log.Infof("Verify Pre Processing Beacon Block %+v \n", *block.Hash())
 	if err := self.VerifyPreProcessingBeaconBlock(block); err != nil {
 		return err
 	}
 	//========Verify block with previous best state
 	// check with current final best state
 	// block can only be insert if it match the current best state
-	if strings.Compare(self.BestState.Beacon.BestBlockHash.String(), block.Header.PrevBlockHash.String()) == 0 {
+	if strings.Compare(self.BestState.Beacon.BestBlockHash.String(), block.Header.PrevBlockHash.String()) != 0 {
 		return NewBlockChainError(BeaconError, errors.New("Beacon Block does not match with any Beacon State in cache or in Database"))
 	}
-
+	fmt.Printf("BeaconBest state %+v \n", self.BestState.Beacon)
+	Logger.log.Infof("Verify BestState with Beacon Block %+v \n", *block.Hash())
 	// Verify block with previous best state
 	if err := self.BestState.Beacon.VerifyBestStateWithBeaconBlock(block, true); err != nil {
 		return err
 	}
 
+	Logger.log.Infof("Update BestState with Beacon Block %+v \n", *block.Hash())
 	//========Update best state with new block
 	if err := self.BestState.Beacon.Update(block); err != nil {
 		return err
 	}
+
+	Logger.log.Infof("Verify Post Processing Beacon Block %+v \n", *block.Hash())
 	//========Post verififcation: verify new beaconstate with corresponding block
 	if err := self.BestState.Beacon.VerifyPostProcessingBeaconBlock(block); err != nil {
 		return err
 	}
 
 	//========Store new Beaconblock and new Beacon bestState in cache
-
+	Logger.log.Infof("Store Beacon BestState %+v \n", *block.Hash())
 	if err := self.config.DataBase.StoreBeaconBestState(self.BestState.Beacon); err != nil {
 		return err
 	}
+	Logger.log.Infof("Store Beacon Block %+v \n", *block.Hash())
 	if err := self.config.DataBase.StoreBeaconBlock(block); err != nil {
 		return err
 	}
 	//=========Remove shard block in beacon pool
+	Logger.log.Infof("Remove block from pool %+v \n", *block.Hash())
 	shardToBeaconMap := make(map[byte]uint64)
 	for shardID, hashes := range self.BestState.Beacon.BestShardHash {
 		shardToBeaconMap[shardID] = uint64(len(hashes))
@@ -393,9 +400,9 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 			if err != nil {
 				return NewBlockChainError(SignatureError, errors.New("Error in convert Public key from string to byte"))
 			}
-			pubKey := &privacy.PublicKey{}
-			copy(*pubKey, pubkeyBytes[:])
-			pubKeys = append(pubKeys, pubKey)
+			pubKey := privacy.PublicKey{}
+			pubKey = pubkeyBytes
+			pubKeys = append(pubKeys, &pubKey)
 		}
 
 		aggSig, _, err := base58.Base58Check{}.Decode(block.AggregatedSig)
@@ -428,7 +435,7 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 			return NewBlockChainError(CandidateError, errors.New("Beacon candidate list is INVALID"))
 		}
 	}
-	if reflect.DeepEqual(newShardCandidate, []string{}) {
+	if !reflect.DeepEqual(newShardCandidate, []string{}) {
 		validShardCandidate := self.GetValidStakers(newShardCandidate)
 		if !reflect.DeepEqual(validShardCandidate, newShardCandidate) {
 			return NewBlockChainError(CandidateError, errors.New("Shard candidate list is INVALID"))
@@ -463,6 +470,7 @@ func (self *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock)
 	strs = []string{}
 	strs = append(strs, self.CandidateBeaconWaitingForCurrentRandom...)
 	strs = append(strs, self.CandidateBeaconWaitingForNextRandom...)
+	fmt.Println("<<<<<<<<<<<<<<<<<<<<<<<<<<Beacon Array in verify and root", strs, block.Header.BeaconCandidateRoot)
 	isOk = VerifyHashFromStringArray(strs, block.Header.BeaconCandidateRoot)
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("Error verify Beacon Candidate root"))
@@ -671,7 +679,9 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 }
 
 //===================================Util for Beacon=============================
-func GetStakingCandidate(beaconBlock BeaconBlock) (beacon []string, shard []string) {
+func GetStakingCandidate(beaconBlock BeaconBlock) ([]string, []string) {
+	beacon := []string{}
+	shard := []string{}
 	beaconBlockBody := beaconBlock.Body
 	for _, v := range beaconBlockBody.Instructions {
 		if v[0] == "assign" && v[2] == "beacon" {
@@ -916,7 +926,7 @@ func VerifyHashFromHashArray(hashes []common.Hash, hash common.Hash) bool {
 
 func VerifyHashFromStringArray(strs []string, hash common.Hash) bool {
 	res, err := GenerateHashFromStringArray(strs)
-	fmt.Println("===========VerifyHashFromStringArray", res, strs, hash)
+	fmt.Println("=======VerifyHashFromStringArray", res, strs, hash)
 	if err != nil {
 		return false
 	}
