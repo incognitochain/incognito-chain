@@ -111,6 +111,7 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+	fmt.Println("Done param #1")
 
 	// param #2: list receiver
 	totalAmmount := uint64(0)
@@ -128,21 +129,26 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 		totalAmmount += uint64(paymentInfo.Amount)
 		paymentInfos = append(paymentInfos, paymentInfo)
 	}
+	fmt.Println("Done param #2")
 
 	// param #3: estimation fee nano constant per kb
 	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
+	fmt.Println("Done param #3")
 
 	// param #4: estimation fee coin per kb by numblock
 	numBlock := uint64(arrayParams[3].(float64))
+	fmt.Println("Done param #4")
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, constantTokenID)
+	fmt.Println("Done param #5", err)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+	fmt.Println("Done param #6", len(outCoins))
 	if len(outCoins) == 0 {
 		return nil, NewRPCError(ErrUnexpected, nil)
 	}
@@ -189,6 +195,7 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 		nil, // use for constant coin -> nil is valid
 		meta,
 	)
+	fmt.Println("Done init")
 	if err.(*transaction.TransactionError) != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}

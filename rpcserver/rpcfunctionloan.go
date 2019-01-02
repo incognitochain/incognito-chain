@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -88,6 +89,7 @@ func (self RpcServer) sendRawLoanTx(params interface{}, closeChan <-chan struct{
 
 func (self RpcServer) createAndSendLoanTx(params interface{}, closeChan <-chan struct{}, createHandler, sendHandler commandHandler) (interface{}, *RPCError) {
 	data, err := createHandler(self, params, closeChan)
+	fmt.Printf("err create handler: %v\n", err)
 	if err != nil {
 		return nil, err
 	}
