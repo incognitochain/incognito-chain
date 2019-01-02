@@ -3,13 +3,14 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wire"
-	"github.com/ninjadotorg/constant/common/base58"
 )
 
 func (self RpcServer) handleGetLoanParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -18,15 +19,27 @@ func (self RpcServer) handleGetLoanParams(params interface{}, closeChan <-chan s
 
 func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
-	tx, err := self.buildRawTransaction(params)
 	arrayParams := common.InterfaceSlice(params)
 	loanRequestRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
-	loanRequest := metadata.NewLoanRequest(loanRequestRaw)
-	if loanRequest == nil {
-		return nil, NewRPCError(ErrUnexpected, errors.New("Loan data missing"))
+	loanRequest, errLoan := metadata.NewLoanRequest(loanRequestRaw)
+	if errLoan != nil {
+		return nil, NewRPCError(ErrUnexpected, errLoan)
+	}
+	tx, err := self.buildRawTransaction(params)
+	if err != nil {
+		return nil, err
 	}
 	tx.Metadata = loanRequest
-	return tx, err
+	byteArrays, errMarshal := json.Marshal(tx)
+	if errMarshal != nil {
+		// return hex for a new tx
+		return nil, NewRPCError(ErrUnexpected, errMarshal)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
 }
 
 func (self RpcServer) handleSendRawLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -39,12 +52,11 @@ func (self RpcServer) handleSendRawLoanRequest(params interface{}, closeChan <-c
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	tx := transaction.Tx{}
-	//tx := transaction.TxCustomToken{}
-	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+	fmt.Printf("tx unsmarshal: %+v\n", tx)
 
 	hash, txDesc, err := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
@@ -63,7 +75,10 @@ func (self RpcServer) handleSendRawLoanRequest(params interface{}, closeChan <-c
 	txMsg.(*wire.MessageTx).Transaction = &tx
 	self.config.Server.PushMessageToAll(txMsg)
 
-	return tx.Hash(), nil
+	result := jsonresult.CreateTransactionResult{
+		TxID: tx.Hash().String(),
+	}
+	return result, nil
 }
 
 func (self RpcServer) handleCreateAndSendLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -73,13 +88,9 @@ func (self RpcServer) handleCreateAndSendLoanRequest(params interface{}, closeCh
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
 	base58CheckData := tx.Base58CheckData
-	if err != nil {
-		return nil, err
-	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	txId, err := self.handleSendRawLoanRequest(newParam, closeChan)
-	return txId, err
+	return self.handleSendRawLoanRequest(newParam, closeChan)
 }
 
 func (self RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {

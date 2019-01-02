@@ -16,6 +16,7 @@ import (
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/addrmanager"
 	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/connmanager"
 	"github.com/ninjadotorg/constant/consensus/ppos"
@@ -27,7 +28,6 @@ import (
 	"github.com/ninjadotorg/constant/rpcserver"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
-	"github.com/ninjadotorg/constant/cashec"
 )
 
 type Server struct {
@@ -270,9 +270,11 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		go self.connManager.Connect(addr, "")
 	}
 
+	fmt.Println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", cfg.DisableRPC)
 	if !cfg.DisableRPC {
 		// Setup listeners for the configured RPC listen addresses and
 		// TLS settings.
+		fmt.Println("settingup RPCListeners")
 		rpcListeners, err := self.setupRPCListeners()
 		if err != nil {
 			return err
@@ -441,6 +443,7 @@ func (self Server) Start() {
 
 	go self.peerHandler()
 
+	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", cfg.DisableRPC, self.rpcServer)
 	if !cfg.DisableRPC && self.rpcServer != nil {
 		self.waitGroup.Add(1)
 
@@ -448,6 +451,7 @@ func (self Server) Start() {
 		// the RPC server are rebroadcast until being included in a block.
 		//go self.rebroadcastHandler()
 
+		fmt.Println("START !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 		self.rpcServer.Start()
 	}
 

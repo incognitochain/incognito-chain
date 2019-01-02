@@ -14,7 +14,7 @@ var ww = new Web3(Web3.givenProvider)
 
 contract("SimpleLoan", (accounts) => {
     const msAcc = accounts[0]
-    const owner = accounts[1]
+    const owner = accounts[0]
     const requester1 = accounts[2]
     const requester2 = accounts[3]
 
@@ -53,6 +53,8 @@ contract("SimpleLoan", (accounts) => {
         })
 
         it('should accept loan request successfully', async () => {
+            l('key:', key)
+            l('digest:', digest)
             let data = web3.eth.abi.encodeFunctionCall(getFunc(abi, "acceptLoan"), [lid, key, offchain])
             tx1 = await s.submitTransaction(c.address, 0, data, { from: msAcc })
             lid1 = await u.roc(tx1, abi, "__acceptLoan", "lid")
@@ -138,7 +140,7 @@ contract("SimpleLoan", (accounts) => {
         it('should update price but fail to liquidate', async () => {
             let collateralPrice = 180 * 100
             let assetPrice = 1 * 100
-            await u.assertRevert(c.liquidate(lid, 10, collateralPrice, assetPrice, offchain, { from: msAcc }))
+            await u.assertRevert(c.liquidate(lid, 0, collateralPrice, assetPrice, offchain, { from: msAcc })) // not under-collateralized and interest = 0
         })
 
         it("should be able to liquidate", async () => {
@@ -168,8 +170,8 @@ contract("SimpleLoan", (accounts) => {
 
         it("should refund successfully", async () => {
             let name = web3.utils.fromAscii("escrowWindow")
-            let escrowWindow = (await c.get(name)).toNumber()
-            u.increaseTime(escrowWindow) // pass escrowDeadline
+            let escrowWindow = (await c.get(name)).toNumber() + 100 // pass escrowDeadline
+            u.increaseTime(escrowWindow) 
             tx2 = await c.refundCollateral(lid, offchain, { from: requester1 })
             let amount = u.oc(tx2, "__refundCollateral", "amount")
             eq(amount.toString(), web3.utils.toWei("1"))
