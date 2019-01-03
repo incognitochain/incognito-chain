@@ -89,7 +89,7 @@ func (self *PeerConn) SetIsConnected(v bool) {
 	self.isConnected = v
 }
 
-func (self *PeerConn) readString(rw *bufio.ReadWriter, delim byte, maxReadBytes int) (string, error) {
+func (self *PeerConn) ReadString(rw *bufio.ReadWriter, delim byte, maxReadBytes int) (string, error) {
 	buf := make([]byte, 0)
 	bufL := 0
 	for {
@@ -117,7 +117,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	self.SetIsConnected(true)
 	for {
 		Logger.log.Infof("PEER %s (address: %s) Reading stream", self.RemotePeer.PeerID.Pretty(), self.RemotePeer.RawAddress)
-		//str, errR := rw.ReadString(c)
+		//str, errR := rw.ReadString(DelimMessageByte)
 		//if errR != nil {
 		//	self.SetIsConnected(false)
 		//	Logger.log.Error("---------------------------------------------------------------------")
@@ -128,7 +128,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 		//	close(self.cWrite)
 		//	return
 		//}
-		str, errR := self.readString(rw, DelimMessageByte, SPAM_MESSAGE_SIZE)
+		str, errR := self.ReadString(rw, DelimMessageByte, SPAM_MESSAGE_SIZE)
 		if errR != nil {
 			self.SetIsConnected(false)
 			Logger.log.Error("---------------------------------------------------------------------")
