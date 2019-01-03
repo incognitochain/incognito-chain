@@ -58,7 +58,7 @@ func (pro ComZeroProof) Bytes() []byte {
 		return []byte{}
 	}
 	var res []byte
-	// don't need to send commitmentValue, because verifiers can recalculate.
+	// don't need to send commitmentValue, because verifiers can re-calculate.
 	res = append(res, pro.commitmentZeroS.Compress()...)
 	res = append(res, privacy.AddPaddingBigInt(pro.z, privacy.BigIntSize)...)
 	res = append(res, *pro.index)
