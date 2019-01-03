@@ -122,19 +122,21 @@ func (tx *Tx) Init(
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
-	commitmentIndexs, myCommitmentIndexs = RandomCommitmentsProcess(inputCoins, privacy.CMRingSize, db, chainID, tokenID)
+	if hasPrivacy {
+		commitmentIndexs, myCommitmentIndexs = RandomCommitmentsProcess(inputCoins, privacy.CMRingSize, db, chainID, tokenID)
+
+		// Check number of list of random commitments, list of random commitment indices
+		if len(commitmentIndexs) != len(inputCoins)*privacy.CMRingSize {
+			return NewTransactionErr(RandomCommitmentErr, nil)
+		}
+
+		if len(myCommitmentIndexs) != len(inputCoins) {
+			return NewTransactionErr(RandomCommitmentErr, errors.New("Number of list my commitment indices must be equal to number of input coins"))
+		}
+	}
 
 	// Calculate execution time for creating payment proof
 	startPrivacy := time.Now()
-
-	// Check number of list of random commitments, list of random commitment indices
-	if len(commitmentIndexs) != len(inputCoins)*privacy.CMRingSize {
-		return NewTransactionErr(RandomCommitmentErr, nil)
-	}
-
-	if len(myCommitmentIndexs) != len(inputCoins) {
-		return NewTransactionErr(RandomCommitmentErr, errors.New("Number of list my commitment indices must be equal to number of input coins"))
-	}
 
 	// Calculate sum of all output coins' value
 	var sumOutputValue uint64

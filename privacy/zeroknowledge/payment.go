@@ -3,6 +3,7 @@ package zkp
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
@@ -102,6 +103,7 @@ func (proof *PaymentProof) UnmarshalJSON(data []byte) error {
 
 func (paymentProof *PaymentProof) Bytes() []byte {
 	var proofbytes []byte
+	hasPrivacy := len(paymentProof.OneOfManyProof) > 0
 	// OneOfManyProofSize
 	proofbytes = append(proofbytes, byte(len(paymentProof.OneOfManyProof)))
 	for i := 0; i < len(paymentProof.OneOfManyProof); i++ {
@@ -127,44 +129,23 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	}
 
 	// ComOutputMultiRangeProofSize
-	tmp := false
-	if paymentProof.ComOutputMultiRangeProof != nil {
-		if paymentProof.ComOutputMultiRangeProof.Counter != 0 {
-			comOutputMultiRangeProof := paymentProof.ComOutputMultiRangeProof.Bytes()
-			proofbytes = append(proofbytes, privacy.IntToByteArr(len(comOutputMultiRangeProof))...)
-			proofbytes = append(proofbytes, comOutputMultiRangeProof...)
-			tmp = true
-		} else {
-			proofbytes = append(proofbytes, []byte{0, 0}...)
-			tmp = true
-		}
+	if hasPrivacy{
+		comOutputMultiRangeProof := paymentProof.ComOutputMultiRangeProof.Bytes()
+		proofbytes = append(proofbytes, privacy.IntToByteArr(len(comOutputMultiRangeProof))...)
+		proofbytes = append(proofbytes, comOutputMultiRangeProof...)
 	} else{
-		proofbytes = append(proofbytes, []byte{0, 0}...)
-		tmp = true
-	}
-	if !tmp {
 		proofbytes = append(proofbytes, []byte{0, 0}...)
 	}
 
-	// ComZeroProof
-	tmp = false
-	if paymentProof.ComZeroProof != nil {
-		if paymentProof.ComZeroProof.commitmentValue.X != nil{
-			comZeroProof := paymentProof.ComZeroProof.Bytes()
-			proofbytes = append(proofbytes, byte(len(comZeroProof)))
-			proofbytes = append(proofbytes, comZeroProof...)
-			tmp = true
-		} else{
-			proofbytes = append(proofbytes, byte(0))
-			tmp = true
-		}
-	} else {
-		proofbytes = append(proofbytes, byte(0))
-		tmp = true
-	}
-	if !tmp {
+	if hasPrivacy {
+		comZeroProof := paymentProof.ComZeroProof.Bytes()
+		proofbytes = append(proofbytes, byte(len(comZeroProof)))
+		proofbytes = append(proofbytes, comZeroProof...)
+	} else{
 		proofbytes = append(proofbytes, byte(0))
 	}
+
+
 
 	// InputCoins
 	proofbytes = append(proofbytes, byte(len(paymentProof.InputCoins)))
@@ -234,6 +215,8 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	} else {
 		proofbytes = append(proofbytes, byte(0))
 	}
+
+	fmt.Printf("BYTES ------------------ %v\n", proofbytes)
 
 	return proofbytes
 }
@@ -434,6 +417,8 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (*privacy.PrivacyError) {
 		offset += lenComInputShardID
 	}
 
+	fmt.Printf("SETBYTES ------------------ %v\n", proof.Bytes())
+
 	return nil
 }
 
@@ -456,8 +441,8 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 		wit.spendingKey = spendingKey
 		wit.inputCoins = inputCoins
 		wit.outputCoins = outputCoins
-		wit.commitmentIndexs = commitmentIndices
-		wit.myCommitmentIndexs = myCommitmentIndices
+		//wit.commitmentIndexs = commitmentIndices
+		//wit.myCommitmentIndexs = myCommitmentIndices
 
 		publicKey := inputCoins[0].CoinDetails.PublicKey
 
