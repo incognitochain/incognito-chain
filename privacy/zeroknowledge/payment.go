@@ -133,6 +133,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 			comOutputMultiRangeProof := paymentProof.ComOutputMultiRangeProof.Bytes()
 			proofbytes = append(proofbytes, privacy.IntToByteArr(len(comOutputMultiRangeProof))...)
 			proofbytes = append(proofbytes, comOutputMultiRangeProof...)
+			tmp = true
 		} else {
 			proofbytes = append(proofbytes, []byte{0, 0}...)
 			tmp = true
@@ -152,6 +153,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 			comZeroProof := paymentProof.ComZeroProof.Bytes()
 			proofbytes = append(proofbytes, byte(len(comZeroProof)))
 			proofbytes = append(proofbytes, comZeroProof...)
+			tmp = true
 		} else{
 			proofbytes = append(proofbytes, byte(0))
 			tmp = true
@@ -161,7 +163,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		tmp = true
 	}
 	if !tmp {
-		proofbytes = append(proofbytes, []byte{0, 0}...)
+		proofbytes = append(proofbytes, byte(0))
 	}
 
 	// InputCoins

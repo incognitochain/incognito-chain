@@ -124,7 +124,7 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 			Amount:         common.ConstantToMiliConstant(uint64(amount.(float64))),
 			PaymentAddress: receiverPubKey.KeySet.PaymentAddress,
 		}
-		totalAmmount += uint64(paymentInfo.Amount)
+		totalAmmount += paymentInfo.Amount
 		paymentInfos = append(paymentInfos, paymentInfo)
 	}
 
@@ -135,7 +135,7 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 	numBlock := uint64(arrayParams[3].(float64))
 
 	// list unspent tx for estimation fee
-	estimateTotalAmount := totalAmmount
+	estimateTotalAmount := uint64(0)
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, constantTokenID)
@@ -149,8 +149,8 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 	for _, note := range outCoins {
 		amount := note.CoinDetails.Value
 		candidateOutputCoins = append(candidateOutputCoins, note)
-		estimateTotalAmount -= uint64(amount)
-		if estimateTotalAmount <= 0 {
+		estimateTotalAmount += amount
+		if estimateTotalAmount >= totalAmmount {
 			break
 		}
 	}
@@ -160,14 +160,14 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 
 	// list unspent tx for create tx
 	totalAmmount += uint64(realFee)
-	estimateTotalAmount = totalAmmount
+	estimateTotalAmount = 0
 	if totalAmmount > 0 {
 		candidateOutputCoins = make([]*privacy.OutputCoin, 0)
 		for _, note := range outCoins {
 			amount := note.CoinDetails.Value
 			candidateOutputCoins = append(candidateOutputCoins, note)
-			estimateTotalAmount -= uint64(amount)
-			if estimateTotalAmount <= 0 {
+			estimateTotalAmount -= amount
+			if estimateTotalAmount >= totalAmmount {
 				break
 			}
 		}
