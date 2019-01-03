@@ -127,13 +127,13 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	//===============End Create Header
 	//===============Generate Signature
 	// Signature of producer, sign on hash of header
-	schnPrivKey := privacy.SchnPrivKey{}
-	schnPrivKey.GenKeyFromExistedSPKey(*privatekey)
 	blockHash := beaconBlock.Header.Hash()
-	producerSig, err := schnPrivKey.Sign(blockHash.GetBytes())
-	if err != nil {
-		return nil, err
-	}
+	multiSigScheme := &privacy.MultiSigScheme{}
+	R, r := multiSigScheme.GenerateRandom()
+	multiSigKeyset := &privacy.MultiSigKeyset{}
+	pubkeyList := []*privacy.PublicKey{}
+	pubkeyList = append(pubkeyList, &payToAddress.Pk)
+	producerSig := multiSigKeyset.SignMultiSig(blockHash.GetBytes(), pubkeyList, []*privacy.EllipticPoint{R}, r)
 	beaconBlock.ProducerSig = base58.Base58Check{}.Encode(producerSig.Bytes(), byte(0x00))
 	//================End Generate Signature
 	return beaconBlock, nil
