@@ -120,6 +120,9 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendTxWithCMBDepositContract: RpcServer.handleCreateAndSendTxWithCMBDepositContract,
 	CreateAndSendTxWithCMBDepositSend:     RpcServer.handleCreateAndSendTxWithCMBDepositSend,
 	CreateAndSendTxWithCMBWithdrawRequest: RpcServer.handleCreateAndSendTxWithCMBWithdrawRequest,
+
+	// wallet
+	GetPublicKeyFromPaymentAddress: RpcServer.handleGetPublicKeyFromPaymentAddress,
 }
 
 // Commands that are available to a limited user
