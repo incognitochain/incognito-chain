@@ -58,7 +58,7 @@ func (self *KeySet) Sign(data []byte) ([]byte, error) {
 	return signature, err
 }
 
-func (self *KeySet) SignBase58(data []byte) (string, error) {
+func (self *KeySet) SignDataB58(data []byte) (string, error) {
 	signatureByte, err := self.Sign(data)
 	if err != nil {
 		return common.EmptyString, errors.New("Can't sign data. " + err.Error())
@@ -121,12 +121,4 @@ func ValidateDataB58(pbkB58 string, sigB58 string, data []byte) error {
 		return errors.New("Invalid signature")
 	}
 	return nil
-}
-
-func (self *KeySet) SignDataB58(data []byte) (string, error) {
-	signatureByte, err := self.Sign(data)
-	if err != nil {
-		return common.EmptyString, errors.New("Can't sign data. " + err.Error())
-	}
-	return base58.Base58Check{}.Encode(signatureByte, byte(0x00)), nil
 }

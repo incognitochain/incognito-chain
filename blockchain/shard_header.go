@@ -16,10 +16,10 @@ type ShardHeader struct {
 	PrevBlockHash common.Hash `json:"PrevBlockHash"`
 	SalaryFund    uint64
 	//Validator list will be store in database/memory (locally)
-	ValidatorsRoot common.Hash `json:"CurrentValidatorRootHash"`
+	//ValidatorsRoot common.Hash `json:"CurrentValidatorRootHash"`
 	//Candidate = unassigned_validator list will be store in database/memory (locally)
 	// infer from history
-	PendingValidatorRoot common.Hash `json:"PendingValidatorRoot"`
+	//PendingValidatorRoot common.Hash `json:"PendingValidatorRoot"`
 	// Store these two list make sure all node process the same data
 
 	MerkleRoot      common.Hash
