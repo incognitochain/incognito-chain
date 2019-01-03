@@ -291,6 +291,7 @@ func (self *BlockChain) AcceptBeaconBlock(blockHash *common.Hash) error {
 	if err != nil {
 		return err
 	}
+
 	// beaconBestState, err := self.GetMaybeAcceptBeaconBestState(blockHash.String())
 	// if err != nil {
 	// 	return err
@@ -602,13 +603,23 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	// get staking candidate list and store
 	newBeaconCandidate, newShardCandidate := GetStakingCandidate(*newBlock)
 	// store new staking candidate
-	self.CandidateBeaconWaitingForNextRandom = append(self.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
-	self.CandidateShardWaitingForNextRandom = append(self.CandidateShardWaitingForNextRandom, newShardCandidate...)
+
 	if self.BeaconHeight == 1 {
 		// Assign committee with genesis block
 		Logger.log.Infof("Proccessing Genesis Block")
 		self.BeaconCommittee = append(self.BeaconCommittee, newBeaconCandidate...)
+
+		self.CurrentRandomNumber = 3
+		err := AssignValidatorShard(self.ShardCommittee, newShardCandidate, self.CurrentRandomNumber)
+		if err != nil {
+			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+			return NewBlockChainError(UnExpectedError, err)
+		}
+	} else {
+		self.CandidateBeaconWaitingForNextRandom = append(self.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
+		self.CandidateShardWaitingForNextRandom = append(self.CandidateShardWaitingForNextRandom, newShardCandidate...)
 	}
+
 	if self.BeaconHeight%EPOCH == 0 && self.BeaconHeight != 1 {
 		self.IsGetRandomNUmber = false
 		// Begin of each epoch
@@ -728,13 +739,14 @@ func VerifyValidator(candidate string, rand int64, shardID byte) (bool, error) {
 // Formula ShardID: LSB[hash(candidatePubKey+randomNumber)]
 // Last byte of hash(candidatePubKey+randomNumber)
 func calculateHash(candidate string, rand int64) (shardID byte) {
+
 	seed := candidate + strconv.Itoa(int(rand))
 	hash := sha256.Sum256([]byte(seed))
 	// fmt.Println("Candidate public key", candidate)
 	// fmt.Println("Hash of candidate serialized pubkey and random number", hash)
 	// fmt.Printf("\"%d\",\n", hash[len(hash)-1])
 	// fmt.Println("Shard to be assign", hash[len(hash)-1])
-	shardID = hash[len(hash)-1]
+	shardID = byte(int(hash[len(hash)-1]) % TestNetParams.ShardsNum)
 	return shardID
 }
 
