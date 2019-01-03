@@ -291,6 +291,7 @@ func (self *BlockChain) AcceptBeaconBlock(blockHash *common.Hash) error {
 	if err != nil {
 		return err
 	}
+
 	// beaconBestState, err := self.GetMaybeAcceptBeaconBestState(blockHash.String())
 	// if err != nil {
 	// 	return err
@@ -602,13 +603,28 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	// get staking candidate list and store
 	newBeaconCandidate, newShardCandidate := GetStakingCandidate(*newBlock)
 	// store new staking candidate
-	self.CandidateBeaconWaitingForNextRandom = append(self.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
-	self.CandidateShardWaitingForNextRandom = append(self.CandidateShardWaitingForNextRandom, newShardCandidate...)
+
 	if self.BeaconHeight == 1 {
 		// Assign committee with genesis block
 		Logger.log.Infof("Proccessing Genesis Block")
 		self.BeaconCommittee = append(self.BeaconCommittee, newBeaconCandidate...)
+
+		// self.CurrentRandomNumber = RANDOM_NUMBER
+		// err := AssignValidatorShard(self.ShardCommittee, newShardCandidate, self.CurrentRandomNumber)
+		// if err != nil {
+		// 	Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+		// 	return NewBlockChainError(UnExpectedError, err)
+		// }
+		self.ShardCommittee[byte(0)] = append(self.ShardCommittee[byte(0)], newShardCandidate[:3]...)
+		self.ShardCommittee[byte(1)] = append(self.ShardCommittee[byte(1)], newShardCandidate[3:6]...)
+		self.ShardCommittee[byte(2)] = append(self.ShardCommittee[byte(2)], newShardCandidate[6:9]...)
+		self.ShardCommittee[byte(3)] = append(self.ShardCommittee[byte(3)], newShardCandidate[9:12]...)
+		//TODO: Assign public key from shard 0 -> 4 (each shard has 3 pubkey)
+	} else {
+		self.CandidateBeaconWaitingForNextRandom = append(self.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
+		self.CandidateShardWaitingForNextRandom = append(self.CandidateShardWaitingForNextRandom, newShardCandidate...)
 	}
+
 	if self.BeaconHeight%EPOCH == 0 && self.BeaconHeight != 1 {
 		self.IsGetRandomNUmber = false
 		// Begin of each epoch
@@ -683,10 +699,10 @@ func GetStakingCandidate(beaconBlock BeaconBlock) ([]string, []string) {
 	shard := []string{}
 	beaconBlockBody := beaconBlock.Body
 	for _, v := range beaconBlockBody.Instructions {
-		if v[0] == "assign" && v[2] == "beacon" {
+		if v[0] == "stake" && v[2] == "beacon" {
 			beacon = strings.Split(v[1], ",")
 		}
-		if v[0] == "assign" && v[2] == "shard" {
+		if v[0] == "stake" && v[2] == "shard" {
 			shard = strings.Split(v[1], ",")
 		}
 	}
@@ -728,13 +744,14 @@ func VerifyValidator(candidate string, rand int64, shardID byte) (bool, error) {
 // Formula ShardID: LSB[hash(candidatePubKey+randomNumber)]
 // Last byte of hash(candidatePubKey+randomNumber)
 func calculateHash(candidate string, rand int64) (shardID byte) {
+
 	seed := candidate + strconv.Itoa(int(rand))
 	hash := sha256.Sum256([]byte(seed))
 	// fmt.Println("Candidate public key", candidate)
 	// fmt.Println("Hash of candidate serialized pubkey and random number", hash)
 	// fmt.Printf("\"%d\",\n", hash[len(hash)-1])
 	// fmt.Println("Shard to be assign", hash[len(hash)-1])
-	shardID = hash[len(hash)-1]
+	shardID = byte(int(hash[len(hash)-1]) % TestNetParams.ShardsNum)
 	return shardID
 }
 
