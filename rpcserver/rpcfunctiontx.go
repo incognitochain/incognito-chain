@@ -111,7 +111,7 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	fmt.Println("Done param #1")
+	fmt.Printf("Done param #1: keyset: %+v\n", senderKey.KeySet)
 
 	// param #2: list receiver
 	totalAmmount := uint64(0)
@@ -184,13 +184,14 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 	//missing flag for privacy
 	// false by default
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
+	fmt.Printf("#inputCoins: %d\n", len(inputCoins))
 	tx := transaction.Tx{}
 	err = tx.Init(
 		&senderKey.KeySet.PrivateKey,
 		paymentInfos,
 		inputCoins,
 		realFee,
-		true,
+		false,
 		*self.config.Database,
 		nil, // use for constant coin -> nil is valid
 		meta,

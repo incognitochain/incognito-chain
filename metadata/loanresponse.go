@@ -17,17 +17,14 @@ const (
 )
 
 type LoanResponse struct {
-	LoanID     []byte
-	Response   ValidLoanResponse
-	ValidUntil int32
+	LoanID   []byte
+	Response ValidLoanResponse
 
 	MetadataBase
 }
 
 func NewLoanResponse(data map[string]interface{}) (Metadata, error) {
-	result := LoanResponse{
-		ValidUntil: int32(data["ValidUntil"].(float64)),
-	}
+	result := LoanResponse{}
 	s, _ := hex.DecodeString(data["LoanID"].(string))
 	result.LoanID = s
 
@@ -40,7 +37,6 @@ func NewLoanResponse(data map[string]interface{}) (Metadata, error) {
 func (lr *LoanResponse) Hash() *common.Hash {
 	record := string(lr.LoanID)
 	record += string(lr.Response)
-	record += string(lr.ValidUntil)
 
 	// final hash
 	record += string(lr.MetadataBase.Hash()[:])
@@ -50,9 +46,11 @@ func (lr *LoanResponse) Hash() *common.Hash {
 
 func txCreatedByDCBBoardMember(txr Transaction, bcr BlockchainRetriever) bool {
 	isBoard := false
+	txPubKey := txr.GetJSPubKey()
+	fmt.Printf("check if created by dcb board: %v\n", txPubKey)
 	for _, member := range bcr.GetDCBBoardPubKeys() {
-		// TODO(@0xbunyip): change gov to []byte or use Base58Decode for entire payment address of governors
-		if bytes.Equal([]byte(member), txr.GetJSPubKey()) {
+		fmt.Printf("member of board pubkey: %v\n", member)
+		if bytes.Equal(member, txPubKey) {
 			isBoard = true
 		}
 	}
@@ -60,6 +58,7 @@ func txCreatedByDCBBoardMember(txr Transaction, bcr BlockchainRetriever) bool {
 }
 
 func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+	fmt.Println("Validating LoanResponse with blockchain!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	// Check if only board members created this tx
 	if !txCreatedByDCBBoardMember(txr, bcr) {
 		return false, fmt.Errorf("Tx must be created by DCB Governor")
@@ -88,10 +87,6 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 				meta := txOld.GetMetadata()
 				if meta == nil {
 					continue
-				}
-				metaOld := meta.(*LoanResponse)
-				if lr.ValidUntil != metaOld.ValidUntil {
-					return false, fmt.Errorf("Valid deadline of all responses of a loan must be the same")
 				}
 			}
 		case LoanRequestMeta:

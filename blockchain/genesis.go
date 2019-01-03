@@ -102,8 +102,24 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 		},
 	}
 	genesisBlock.Header.DCBConstitution.DCBParams = params.DCBParams{
-		LoanParams:             loanParams,
-		SaleDBCTOkensByUSDData: &params.SaleDBCTOkensByUSDData{},
+		LoanParams:               loanParams,
+		MinLoanResponseRequire:   1,
+		MinCMBApprovalRequire:    1,
+		LateWithdrawResponseFine: 1000,
+		SaleDBCTOkensByUSDData:   &params.SaleDBCTOkensByUSDData{},
+	}
+
+	// TODO(@0xjackalope): fill correct values
+	genesisBlock.Header.DCBGovernor = DCBGovernor{
+		GovernorInfo: GovernorInfo{
+			boardIndex:   0,
+			StartedBlock: 1,
+			EndBlock:     1000, // = startedblock of decent governor
+			BoardPubKeys: [][]byte{
+				[]byte{3, 85, 237, 178, 30, 58, 190, 219, 126, 31, 9, 93, 40, 217, 109, 177, 70, 41, 64, 157, 2, 133, 2, 138, 23, 108, 228, 152, 234, 35, 101, 192, 173},
+			},
+			StartAmountToken: 0, //Sum of DCB token stack to all member of this board
+		},
 	}
 
 	// Commercial bank params

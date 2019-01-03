@@ -149,6 +149,7 @@ func (tx *Tx) Init(
 	for _, coin := range inputCoins {
 		sumInputValue += coin.CoinDetails.Value
 	}
+	fmt.Printf("sumInputValue: %d\n", sumInputValue)
 
 	// Calculate over balance, it will be returned to sender
 	overBalance := int(sumInputValue - sumOutputValue - fee)

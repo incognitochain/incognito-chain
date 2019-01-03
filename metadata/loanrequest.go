@@ -81,6 +81,7 @@ func (lr *LoanRequest) Hash() *common.Hash {
 }
 
 func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+	fmt.Println("Validating LoanRequest with blockchain!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	// Check if loan's params are correct
 	dcbParams := bcr.GetDCBParams()
 	validLoanParams := dcbParams.LoanParams

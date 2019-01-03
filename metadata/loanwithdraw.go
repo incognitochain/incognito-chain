@@ -46,7 +46,7 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 	}
 	foundResponse := 0
 	keyCorrect := false
-	validUntil := int32(0)
+	// TODO(@0xbunyip): make sure withdraw is not too close to escrowDeadline in SimpleLoan smart contract
 	for _, txHash := range txHashes {
 		hash := &common.Hash{}
 		copy(hash[:], txHash)
@@ -85,7 +85,6 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 				}
 				if responseMeta.Response == Accept {
 					foundResponse += 1
-					validUntil = responseMeta.ValidUntil
 				}
 			}
 		}
@@ -94,9 +93,6 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 	minResponse := bcr.GetDCBParams().MinLoanResponseRequire
 	if foundResponse < int(minResponse) {
 		return false, fmt.Errorf("Not enough loan accepted response")
-	}
-	if bcr.GetHeight() >= validUntil {
-		return false, fmt.Errorf("Loan is not valid anymore, cannot claim Constant")
 	}
 	if !keyCorrect {
 		return false, fmt.Errorf("Provided key is incorrect")

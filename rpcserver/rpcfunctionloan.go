@@ -34,6 +34,7 @@ func (self RpcServer) createRawLoanTx(params interface{}, closeChan <-chan struc
 		return nil, NewRPCError(ErrUnexpected, errCons)
 	}
 	tx, err := self.buildRawTransaction(params, loanMeta)
+	fmt.Printf("sigPubKey after build: %v\n", tx.SigPubKey)
 	if err != nil {
 		return nil, err
 	}
