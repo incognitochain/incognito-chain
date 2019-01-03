@@ -324,26 +324,29 @@ func (self *Peer) processConn() {
 func (self *Peer) ConnPending(peer *Peer) {
 	self.peerConnsMtx.Lock()
 	defer self.peerConnsMtx.Unlock()
-	self.PendingPeers[peer.PeerID.Pretty()] = peer
+	peerIDStr := peer.PeerID.Pretty()
+	self.PendingPeers[peerIDStr] = peer
 }
 
 func (self *Peer) ConnEstablished(peer *Peer) {
 	self.peerConnsMtx.Lock()
 	defer self.peerConnsMtx.Unlock()
-	_, ok := self.PendingPeers[peer.PeerID.Pretty()]
+	peerIDStr := peer.PeerID.Pretty()
+	_, ok := self.PendingPeers[peerIDStr]
 	if ok {
-		delete(self.PendingPeers, peer.PeerID.Pretty())
+		delete(self.PendingPeers, peerIDStr)
 	}
 }
 
 func (self *Peer) ConnCanceled(peer *Peer) {
 	self.peerConnsMtx.Lock()
 	defer self.peerConnsMtx.Unlock()
-	_, ok := self.PeerConns[peer.PeerID.Pretty()]
+	peerIDStr := peer.PeerID.Pretty()
+	_, ok := self.PeerConns[peerIDStr]
 	if ok {
-		delete(self.PeerConns, peer.PeerID.Pretty())
+		delete(self.PeerConns, peerIDStr)
 	}
-	self.PendingPeers[peer.PeerID.Pretty()] = peer
+	self.PendingPeers[peerIDStr] = peer
 }
 
 func (self *Peer) CountOfInboundConn() int {
@@ -394,33 +397,37 @@ func (self *Peer) GetPeerConnByPbk(pbk string) *PeerConn {
 func (self *Peer) SetPeerConn(peerConn *PeerConn) {
 	self.peerConnsMtx.Lock()
 	defer self.peerConnsMtx.Unlock()
-	internalConnPeer, ok := self.PeerConns[peerConn.RemotePeer.PeerID.Pretty()]
+	peerIDStr := peerConn.RemotePeer.PeerID.Pretty()
+	internalConnPeer, ok := self.PeerConns[peerIDStr]
 	if ok {
 		if internalConnPeer.GetIsConnected() {
 			internalConnPeer.Close()
 		}
-		Logger.log.Infof("SetPeerConn and Remove %s %s", internalConnPeer.RemotePeer.PeerID, internalConnPeer.RemotePeer.RawAddress)
+		Logger.log.Infof("SetPeerConn and Remove %s %s", peerIDStr, internalConnPeer.RemotePeer.RawAddress)
 	}
-	self.PeerConns[peerConn.RemotePeer.PeerID.Pretty()] = peerConn
+	self.PeerConns[peerIDStr] = peerConn
 }
 
 func (self *Peer) RemovePeerConn(peerConn *PeerConn) {
 	self.peerConnsMtx.Lock()
 	defer self.peerConnsMtx.Unlock()
-	internalConnPeer, ok := self.PeerConns[peerConn.RemotePeer.PeerID.Pretty()]
+	peerIDStr := peerConn.RemotePeer.PeerID.Pretty()
+	internalConnPeer, ok := self.PeerConns[peerIDStr]
 	if ok {
 		if internalConnPeer.GetIsConnected() {
 			internalConnPeer.Close()
 		}
-		delete(self.PeerConns, peerConn.RemotePeer.PeerID.Pretty())
-		Logger.log.Infof("RemovePeerConn %s %s", peerConn.RemotePeer.PeerID.Pretty(), peerConn.RemotePeer.RawAddress)
+		delete(self.PeerConns, peerIDStr)
+		Logger.log.Infof("RemovePeerConn %s %s", peerIDStr, peerConn.RemotePeer.RawAddress)
 	}
 }
 
 func (self *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error) {
 	Logger.log.Infof("Opening stream to PEER Id - %s", peer.RawAddress)
 
-	_, ok := self.PeerConns[peer.PeerID.Pretty()]
+	peerIDStr := peer.PeerID.Pretty()
+
+	_, ok := self.PeerConns[peerIDStr]
 	if ok {
 		Logger.log.Infof("Checked Existed PEER Id - %s", peer.RawAddress)
 
@@ -430,7 +437,7 @@ func (self *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error
 		return nil, nil
 	}
 
-	if peer.PeerID.Pretty() == self.PeerID.Pretty() {
+	if peerIDStr == self.PeerID.Pretty() {
 		Logger.log.Infof("Checked Myself PEER Id - %s", peer.RawAddress)
 		//self.newPeerConnectionMutex.Unlock()
 
