@@ -13,21 +13,18 @@ import (
 
 //@tamle
 func (self *BlockChain) MayBeAcceptShardBlock(block *ShardBlock) error {
-	//TODO: ValidateShardBlockSignature
+	err := self.ValidateShardBlockSignature(block)
+	if err != nil {
+		return err
+	}
 	//TODO: push to tmp database
+
 	return nil
 }
 
-//@tamle: ask Hung for this
-func (self *BlockChain) ValidateShardBlockSignature(block *ShardBlock) (bool, error) {
-	//TODO: check leader & validator signature
-	// beststate beacon -> leader & validator
-	// R
-	// aggregation signature
-
+func (self *BlockChain) ValidateShardBlockSignature(block *ShardBlock) error {
 	// get shard id
 	shardID := block.Header.ShardID
-
 	// get best state shard committee corresponding to shardID
 	bestStateShardCommittee := self.BestState.Shard[shardID].ShardCommittee
 
@@ -35,7 +32,7 @@ func (self *BlockChain) ValidateShardBlockSignature(block *ShardBlock) (bool, er
 	for _, index := range block.ValidatorsIdx {
 		pubkeyBytes, _, err := base58.Base58Check{}.Decode(bestStateShardCommittee[index])
 		if err != nil {
-			return false, errors.New("Error in convert Public key from string to byte")
+			return errors.New("Error in convert Public key from string to byte")
 		}
 		pubKey := privacy.PublicKey{}
 		pubKey = pubkeyBytes
@@ -44,16 +41,16 @@ func (self *BlockChain) ValidateShardBlockSignature(block *ShardBlock) (bool, er
 
 	aggSig, _, err := base58.Base58Check{}.Decode(block.AggregatedSig)
 	if err != nil {
-		return false, errors.New("Error in convert aggregated signature from string to byte")
+		return errors.New("Error in convert aggregated signature from string to byte")
 	}
 	schnMultiSig := &privacy.SchnMultiSig{}
 	schnMultiSig.SetBytes(aggSig)
 	blockHash := block.Header.Hash()
 	if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeys, nil, nil) == false {
-		return false, errors.New("Invalid Agg signature")
+		return errors.New("Invalid Agg signature")
 	}
 
-	return true, nil
+	return nil
 }
 
 func (self *BlockChain) ProcessShardBlockListenner(block *ShardBlock) error {
@@ -65,9 +62,12 @@ func (self *BlockChain) ProcessShardBlockListenner(block *ShardBlock) error {
 }
 
 func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
-	//TODO: ValidateShardBlockSignature
-	//TODO: CreateNewShardState and assign new Shard BestState
-	//TODO: StoreShardBlock
+	err := self.ValidateShardBlockSignature(block)
+	if err != nil {
+		return err
+	}
+	self.BestState.Shard[block.Header.ShardID].Update(block)
+	self.StoreShardBlockIndex(block)
 	return nil
 }
 
