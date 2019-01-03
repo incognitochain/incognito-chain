@@ -97,22 +97,9 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 					}
 					go self.Server.PushMessageToShard(msg, shardID)
 					self.pendingBlock = newBlock
+					fmt.Println("\n", newBlock.Header)
 					self.multiSigScheme.dataToSig = newBlock.Header.Hash()
 				}
-
-				// time.AfterFunc(2000*time.Millisecond, func() {
-				// 	fmt.Println("Sending out prepare msg")
-				// 	msg, err := MakeMsgBFTPrepare(self.multiSigScheme.personal.Ri, self.UserKeySet.GetPublicKeyB58())
-				// 	if err != nil {
-				// 		Logger.log.Error(err)
-				// 		return
-				// 	}
-				// 	if layer == "beacon" {
-				// 		self.Server.PushMessageToBeacon(msg)
-				// 	} else {
-				// 		self.Server.PushMessageToShard(msg, shardID)
-				// 	}
-				// })
 				self.phase = "prepare"
 			case "listen":
 				fmt.Println("Listen phase")

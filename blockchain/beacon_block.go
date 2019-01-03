@@ -45,7 +45,7 @@ type BeaconHeader struct {
 	BeaconCandidateRoot common.Hash `json:"BeaconCandidateRoot"`
 
 	// Candidate public key for all shard
-	ShardCandidateRoot common.Hash `json:"BeaconCandidateRoot"`
+	ShardCandidateRoot common.Hash `json:"ShardCandidateRoot"`
 
 	// Shard validator build from ShardCommittee and ShardPendingValidator
 	ShardValidatorsRoot common.Hash `json:"ShardValidatorRoot"`
@@ -93,10 +93,16 @@ func (self *BeaconBlock) UnmarshalJSON(data []byte) error {
 	self.ValidatorsIdx = tempBlk.ValidatorsIdx
 
 	// blkBody := BeaconBody{}
-	// err = blkBody.UnmarshalJSON(*tempBlk.Body)
+	// err = blkBody.UnmarshalJSON(tempBlk.Body)
 	// if err != nil {
 	// 	return NewBlockChainError(UnmashallJsonBlockError, err)
 	// }
+	// blkHeader := BeaconHeader{}
+	// err = blkBody.UnmarshalJSON(tempBlk.Header)
+	// if err != nil {
+	// 	return NewBlockChainError(UnmashallJsonBlockError, err)
+	// }
+
 	self.Header = tempBlk.Header
 
 	self.Body = tempBlk.Body
@@ -157,11 +163,23 @@ func (self *BeaconHeader) Hash() common.Hash {
 }
 
 // func (self *BeaconHeader) UnmarshalJSON(data []byte) error {
-// 	blkHeader := &BeaconHeader{}
+// 	type HeaderAlias BeaconHeader
+// 	blkHeader := &HeaderAlias{}
 // 	err := json.Unmarshal(data, blkHeader)
 // 	if err != nil {
 // 		return NewBlockChainError(UnmashallJsonBlockError, err)
 // 	}
-// 	self = blkHeader
+// 	self.Height = blkHeader.Height
+// 	self.InstructionHash = blkHeader.InstructionHash
+// 	self.PrevBlockHash = blkHeader.PrevBlockHash
+// 	self.Producer = blkHeader.Producer
+// 	self.ShardCandidateRoot = blkHeader.ShardCandidateRoot
+// 	self.ShardStateHash = blkHeader.ShardStateHash
+// 	self.ShardValidatorsRoot = blkHeader.ShardValidatorsRoot
+// 	self.Timestamp = blkHeader.Timestamp
+// 	self.Epoch = blkHeader.Epoch
+// 	self.ValidatorsRoot = blkHeader.ValidatorsRoot
+// 	self.Version = blkHeader.Version
+// 	self.BeaconCandidateRoot = blkHeader.BeaconCandidateRoot
 // 	return nil
 // }
