@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -135,7 +134,7 @@ func (self *BlockChain) InsertBeaconBlock(block *BeaconBlock) error {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 	Logger.log.Infof("Insert new block %d, with hash %+v \n", block.Header.Height, *block.Hash())
-	fmt.Printf("New block %+v \n", block)
+	// fmt.Printf("Beacon block %+v \n", block)
 	Logger.log.Infof("Verify Pre Processing Beacon Block %+v \n", *block.Hash())
 	if err := self.VerifyPreProcessingBeaconBlock(block); err != nil {
 		return err
@@ -146,7 +145,7 @@ func (self *BlockChain) InsertBeaconBlock(block *BeaconBlock) error {
 	if strings.Compare(self.BestState.Beacon.BestBlockHash.String(), block.Header.PrevBlockHash.String()) != 0 {
 		return NewBlockChainError(BeaconError, errors.New("Beacon Block does not match with any Beacon State in cache or in Database"))
 	}
-	fmt.Printf("BeaconBest state %+v \n", self.BestState.Beacon)
+	// fmt.Printf("BeaconBest state %+v \n", self.BestState.Beacon)
 	Logger.log.Infof("Verify BestState with Beacon Block %+v \n", *block.Hash())
 	// Verify block with previous best state
 	if err := self.BestState.Beacon.VerifyBestStateWithBeaconBlock(block, true); err != nil {
@@ -471,7 +470,6 @@ func (self *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock)
 	strs = []string{}
 	strs = append(strs, self.CandidateBeaconWaitingForCurrentRandom...)
 	strs = append(strs, self.CandidateBeaconWaitingForNextRandom...)
-	fmt.Println("<<<<<<<<<<<<<<<<<<<<<<<<<<Beacon Array in verify and root", strs, block.Header.BeaconCandidateRoot)
 	isOk = VerifyHashFromStringArray(strs, block.Header.BeaconCandidateRoot)
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("Error verify Beacon Candidate root"))
@@ -927,7 +925,6 @@ func VerifyHashFromHashArray(hashes []common.Hash, hash common.Hash) bool {
 
 func VerifyHashFromStringArray(strs []string, hash common.Hash) bool {
 	res, err := GenerateHashFromStringArray(strs)
-	fmt.Println("=======VerifyHashFromStringArray", res, strs, hash)
 	if err != nil {
 		return false
 	}

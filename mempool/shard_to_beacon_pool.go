@@ -37,7 +37,7 @@ func (pool *ShardToBeaconPool) GetFinalBlock() map[byte][]blockchain.ShardToBeac
 
 func (pool *ShardToBeaconPool) RemoveBlock(blockItems map[byte]uint64) error {
 	if len(blockItems) <= 0 {
-		log.Println("Block items empty")
+		log.Println("ShardToBeaconPool: Block items empty")
 		return nil
 	}
 
