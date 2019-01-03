@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/common"
 )
 
 // Coin represents a coin
@@ -27,7 +28,7 @@ func (coin *Coin) GetPubKeyLastByte() byte {
 
 func (coin Coin) MarshalJSON() ([]byte, error) {
 	data := coin.Bytes()
-	temp := base58.Base58Check{}.Encode(data, byte(0x00))
+	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
 	return json.Marshal(temp)
 }
 
