@@ -169,3 +169,29 @@ func NewTLSCertPair(organization string, validUntil time.Time, extraHosts []stri
 func interfaceAddrs() ([]net.Addr, error) {
 	return net.InterfaceAddrs()
 }
+//Todo: 0xKraken
+// knapsackDPAlg solves Knapsack problem using dynamic programing to collect unspent output coins for spending protocol
+//func changeMaking(values []uint64, target uint64) []uint64 {
+//	nValues := len(values)
+//	V := make([][]uint64, nValues)
+//	V[0] = make([]uint64, target)
+//
+//	// trace
+//	trace := make([][]int, nValues)
+//	for i:=0; i<nValues; i++{
+//		trace[i] = make([]int, target)
+//	}
+//
+//	for w := uint64(0); w < target; w++{
+//		V[0][w] = 0
+//	}
+//
+//	for i:= 1; i < nValues; i++{
+//		for w := uint64(0); w <target; w++{
+//			if values[i] >= w && (1 + V[i-1][w-values[i]] > V[i-1][w]){
+//				V[i][w] = 1 + V[i-1][w-values[i]]
+//
+//			}
+//		}
+//	}
+//}
