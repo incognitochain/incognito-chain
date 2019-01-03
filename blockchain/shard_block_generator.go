@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
@@ -9,6 +10,9 @@ import (
 )
 
 func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*ShardBlock, error) {
+
+	userKeySet := cashec.KeySet{}
+	userKeySet.ImportFromPrivateKey(privatekey)
 	prevBlock := self.chain.BestState.Shard[shardID].BestBlock
 	prevBlockHash := self.chain.BestState.Shard[shardID].BestBlock.Hash()
 	sourceTxns := self.txPool.MiningDescs()
@@ -215,7 +219,8 @@ concludeBlock:
 	// }
 
 	// create refund txs
-	currentSalaryFund := prevBlock.Header.SalaryFund
+	//TODO: get salary from beacon beststate
+	currentSalaryFund := uint64(0)
 	remainingFund := currentSalaryFund + totalFee + salaryFundAdd - totalSalary
 	// remainingFund := currentSalaryFund + totalFee + salaryFundAdd + incomeFromBonds - (totalSalary + buyBackCoins)
 	// refundTxs, totalRefundAmt := blockgen.buildRefundTxs(shardID, remainingFund, privatekey)
@@ -331,19 +336,6 @@ concludeBlock:
 		},
 	}
 
-	block.Header = ShardHeader{
-		Height:        prevBlock.Header.Height + 1,
-		Version:       BlockVersion,
-		PrevBlockHash: *prevBlockHash,
-		MerkleRoot:    *merkleRoot,
-		// MerkleRootCommitments: common.Hash{},
-		Timestamp:  time.Now().Unix(),
-		ShardID:    shardID,
-		SalaryFund: remainingFund,
-		// BankFund:           prevBlock.Header.BankFund + loanPaymentAmount - bankPayoutAmount,
-		// GOVConstitution:    prevBlock.Header.GOVConstitution, // TODO: need get from gov-params tx
-		// DCBConstitution:    prevBlock.Header.DCBConstitution, // TODO: need get from dcb-params tx
-	}
 	// if block.Header.GOVConstitution.GOVParams.SellingBonds != nil {
 	// 	block.Header.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= bondsSold
 	// }
@@ -380,5 +372,29 @@ concludeBlock:
 	rt = newTree.GetRoot(common.IncMerkleTreeHeight)
 	copy(block.Header.MerkleRootCommitments[:], rt)*/
 
+	block.Header = ShardHeader{
+		Producer: userKeySet.GetPublicKeyB58(),
+		//TODO: Epoch, RefBlockHash, Action
+		Height:          prevBlock.Header.Height + 1,
+		Version:         BlockVersion,
+		PrevBlockHash:   *prevBlockHash,
+		MerkleRoot:      *merkleRoot,
+		MerkleRootShard: CreateMerkleRootShard(block.Body.Transactions),
+		Timestamp:       time.Now().Unix(),
+		ShardID:         shardID,
+		//SalaryFund: remainingFund,
+		// BankFund:           prevBlock.Header.BankFund + loanPaymentAmount - bankPayoutAmount,
+		// GOVConstitution:    prevBlock.Header.GOVConstitution, // TODO: need get from gov-params tx
+		// DCBConstitution:    prevBlock.Header.DCBConstitution, // TODO: need get from dcb-params tx
+	}
+
+	// Create producer signature
+	sig, err := userKeySet.SignDataB58([]byte(block.Header.Hash().String()))
+	if err == nil {
+		return nil, err
+	}
+	block.ProducerSig = sig
+
+	_ = remainingFund
 	return block, nil
 }

@@ -3,11 +3,12 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
+	"github.com/ninjadotorg/constant/metadata"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
-	privacy "github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 //@tamle
@@ -80,15 +81,15 @@ func (self *BlockChain) CreateNewShardBestState(block *ShardBlock) error {
 	// get best state shard corresponding with shardID
 	bestStateShard := self.BestState.Shard[shardID]
 
-	bestStateShard.BestBlockHash = block.Hash()
+	bestStateShard.BestBlockHash = *block.Hash()
 	bestStateShard.BestBlock = block
 
 	bestStateShard.ShardCommittee = self.BestState.Beacon.ShardCommittee[shardID]
 	bestStateShard.ShardPendingValidator = self.BestState.Beacon.ShardPendingValidator[shardID]
 
-	bestStateShard.NumTxns = len(block.Body.Transactions)
+	bestStateShard.NumTxns = uint64(len(block.Body.Transactions))
 	totalTxns := bestStateShard.TotalTxns
-	bestStateShard.TotalTxns = totalTxns + len(block.Body.Transactions)
+	bestStateShard.TotalTxns = totalTxns + uint64(len(block.Body.Transactions))
 
 	return nil
 }
@@ -266,4 +267,27 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock) error {
 
 func (self *BlockChain) VerifyPostProcessingShardBlock(block *ShardBlock) error {
 	return nil
+}
+
+func CreateMerkleRootShard(txList []metadata.Transaction) common.Hash {
+	//calculate output coin hash for each shard
+	outputCoinHash := getOutCoinHashEachShard(txList)
+	// calculate merkle data : 1 2 3 4 12 34 1234
+	merkleData := outputCoinHash
+	if len(merkleData)%2 == 1 {
+		merkleData = append(merkleData, common.HashH([]byte{}))
+	}
+
+	cursor := 0
+	for {
+		v1 := merkleData[cursor]
+		v2 := merkleData[cursor+1]
+		merkleData = append(merkleData, common.HashH(append(v1.GetBytes(), v2.GetBytes()...)))
+		cursor += 2
+		if cursor >= len(merkleData)-1 {
+			break
+		}
+	}
+	merkleShardRoot := merkleData[len(merkleData)-1]
+	return merkleShardRoot
 }

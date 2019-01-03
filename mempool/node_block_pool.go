@@ -25,7 +25,7 @@ func (pool *NodeShardPool) PushBlock(block blockchain.ShardBlock) error {
 
 	nodeShardPoolLock.Lock()
 	nodeShardPool[Height] = append(nodeShardPool[Height], block)
-	nodeShardPoolLock.UnLock()
+	nodeShardPoolLock.Unlock()
 
 	return nil
 }
@@ -50,17 +50,17 @@ func (pool *NodeBeaconPool) PushBlock(block blockchain.BeaconBlock) error {
 	}
 
 	nodeBeaconPoolLock.Lock()
-	NodeBeaconPool[Height] = append(NodeBeaconPool[Height], block)
-	nodeBeaconPoolLock.UnLock()
+	nodeBeaconPool[Height] = append(nodeBeaconPool[Height], block)
+	nodeBeaconPoolLock.Unlock()
 
 	return nil
 }
 
 func (pool *NodeBeaconPool) GetBlocks(blockHeight uint64) []blockchain.BeaconBlock {
-	return NodeBeaconPool[blockHeight]
+	return nodeBeaconPool[blockHeight]
 }
 
 func (pool *NodeBeaconPool) RemoveBlocks(blockHeight uint64) error {
-	delete(NodeBeaconPool, blockHeight)
+	delete(nodeBeaconPool, blockHeight)
 	return nil
 }
