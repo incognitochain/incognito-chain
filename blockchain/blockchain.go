@@ -37,6 +37,9 @@ type BlockChain struct {
 	config    Config
 	chainLock sync.RWMutex
 
+	newShardBlkCh  chan *ShardBlock
+	newBeaconBlkCh chan *BeaconBlock
+
 	//=====cache
 	beaconBlock        map[string][]byte
 	highestBeaconBlock string
@@ -257,30 +260,31 @@ func (self *BlockChain) initChainState() error {
 		beacon: make(map[string][]byte),
 	}
 
-	// for shard := 1; shard <= self.config.ChainParams.ShardsNum; shard++ {
-	// 	shardID := byte(shard - 1)
-	// 	bestStateBytes, err := self.config.DataBase.FetchBestState(shardID)
-	// 	if err == nil {
-	// 		err = json.Unmarshal(bestStateBytes, self.BestState.Shard[shardID])
-	// 		if err != nil {
-	// 			initialized = false
-	// 		} else {
-	// 			initialized = true
-	// 		}
-	// 	} else {
-	// 		initialized = false
-	// 	}
+	for shard := 1; shard <= self.config.ChainParams.ShardsNum; shard++ {
+		shardID := byte(shard - 1)
+		bestStateBytes, err := self.config.DataBase.FetchBestState(shardID)
+		if err == nil {
+			self.BestState.Shard[shardID] = &BestStateShard{}
+			err = json.Unmarshal(bestStateBytes, self.BestState.Shard[shardID])
+			if err != nil {
+				initialized = false
+			} else {
+				initialized = true
+			}
+		} else {
+			initialized = false
+		}
 
-	// 	if !initialized {
-	// 		// At this point the database has not already been initialized, so
-	// 		// initialize both it and the chain state to the genesis block.
-	// 		err := self.initShardState(shardID)
-	// 		if err != nil {
-	// 			return err
-	// 		}
+		if !initialized {
+			// At this point the database has not already been initialized, so
+			// initialize both it and the chain state to the genesis block.
+			err := self.initShardState(shardID)
+			if err != nil {
+				return err
+			}
 
-	// 	}
-	// }
+		}
+	}
 
 	bestStateBeaconBytes, err := self.config.DataBase.FetchBeaconBestState()
 	if err == nil {
