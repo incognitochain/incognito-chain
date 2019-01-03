@@ -73,6 +73,23 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 //@tamle
 func (self *BlockChain) CreateNewShardBestState(block *ShardBlock) error {
 	// beststate shard + block header => new beststate shard
+
+	// get shard id
+	shardID := block.Header.ShardID
+
+	// get best state shard corresponding with shardID
+	bestStateShard := self.BestState.Shard[shardID]
+
+	bestStateShard.BestBlockHash = block.Hash()
+	bestStateShard.BestBlock = block
+
+	bestStateShard.ShardCommittee = self.BestState.Beacon.ShardCommittee[shardID]
+	bestStateShard.ShardPendingValidator = self.BestState.Beacon.ShardPendingValidator[shardID]
+
+	bestStateShard.NumTxns = len(block.Body.Transactions)
+	totalTxns := bestStateShard.TotalTxns
+	bestStateShard.TotalTxns = totalTxns + len(block.Body.Transactions)
+
 	return nil
 }
 

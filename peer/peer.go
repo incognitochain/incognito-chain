@@ -39,10 +39,8 @@ var MESSAGE_TO_BEACON = byte('b')
 
 // RemotePeer is present for libp2p node data
 type Peer struct {
-	messagePool       map[string]bool
-	messagePoolMtx    sync.Mutex
-	peerConnMutex     sync.Mutex
-	pendingPeersMutex sync.Mutex
+	messagePool    map[string]bool
+	messagePoolMtx sync.Mutex
 
 	// channel
 	cStop           chan struct{}
@@ -63,8 +61,10 @@ type Peer struct {
 	Config Config
 	Shard  byte
 
-	PeerConns    map[string]*PeerConn
-	PendingPeers map[string]*Peer
+	PeerConns       map[string]*PeerConn
+	peerConnsMtx    sync.Mutex
+	PendingPeers    map[string]*Peer
+	pendingPeersMtx sync.Mutex
 
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
@@ -244,7 +244,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.cNewStream = make(chan *NewStreamMsg)
 	self.cStopConn = make(chan struct{})
 
-	self.peerConnMutex = sync.Mutex{}
+	self.peerConnsMtx = sync.Mutex{}
 	return &self, nil
 }
 
@@ -322,33 +322,36 @@ func (self *Peer) processConn() {
 }
 
 func (self *Peer) ConnPending(peer *Peer) {
-	self.peerConnMutex.Lock()
-	defer self.peerConnMutex.Unlock()
-	self.PendingPeers[peer.PeerID.Pretty()] = peer
+	self.peerConnsMtx.Lock()
+	defer self.peerConnsMtx.Unlock()
+	peerIDStr := peer.PeerID.Pretty()
+	self.PendingPeers[peerIDStr] = peer
 }
 
 func (self *Peer) ConnEstablished(peer *Peer) {
-	self.peerConnMutex.Lock()
-	defer self.peerConnMutex.Unlock()
-	_, ok := self.PendingPeers[peer.PeerID.Pretty()]
+	self.peerConnsMtx.Lock()
+	defer self.peerConnsMtx.Unlock()
+	peerIDStr := peer.PeerID.Pretty()
+	_, ok := self.PendingPeers[peerIDStr]
 	if ok {
-		delete(self.PendingPeers, peer.PeerID.Pretty())
+		delete(self.PendingPeers, peerIDStr)
 	}
 }
 
 func (self *Peer) ConnCanceled(peer *Peer) {
-	self.peerConnMutex.Lock()
-	defer self.peerConnMutex.Unlock()
-	_, ok := self.PeerConns[peer.PeerID.Pretty()]
+	self.peerConnsMtx.Lock()
+	defer self.peerConnsMtx.Unlock()
+	peerIDStr := peer.PeerID.Pretty()
+	_, ok := self.PeerConns[peerIDStr]
 	if ok {
-		delete(self.PeerConns, peer.PeerID.Pretty())
+		delete(self.PeerConns, peerIDStr)
 	}
-	self.PendingPeers[peer.PeerID.Pretty()] = peer
+	self.PendingPeers[peerIDStr] = peer
 }
 
-func (self *Peer) NumInbound() int {
-	self.peerConnMutex.Lock()
-	defer self.peerConnMutex.Unlock()
+func (self *Peer) CountOfInboundConn() int {
+	self.peerConnsMtx.Lock()
+	defer self.peerConnsMtx.Unlock()
 	ret := int(0)
 	for _, peerConn := range self.PeerConns {
 		if !peerConn.GetIsOutbound() {
@@ -358,9 +361,9 @@ func (self *Peer) NumInbound() int {
 	return ret
 }
 
-func (self *Peer) NumOutbound() int {
-	self.peerConnMutex.Lock()
-	defer self.peerConnMutex.Unlock()
+func (self *Peer) CountOfOutboundConn() int {
+	self.peerConnsMtx.Lock()
+	defer self.peerConnsMtx.Unlock()
 	ret := int(0)
 	for _, peerConn := range self.PeerConns {
 		if peerConn.GetIsOutbound() {
@@ -371,8 +374,8 @@ func (self *Peer) NumOutbound() int {
 }
 
 func (self *Peer) GetPeerConnByPeerID(peerID string) *PeerConn {
-	self.peerConnMutex.Lock()
-	defer self.peerConnMutex.Unlock()
+	self.peerConnsMtx.Lock()
+	defer self.peerConnsMtx.Unlock()
 	peerConn, ok := self.PeerConns[peerID]
 	if ok {
 		return peerConn
@@ -381,8 +384,8 @@ func (self *Peer) GetPeerConnByPeerID(peerID string) *PeerConn {
 }
 
 func (self *Peer) GetPeerConnByPbk(pbk string) *PeerConn {
-	self.peerConnMutex.Lock()
-	defer self.peerConnMutex.Unlock()
+	self.peerConnsMtx.Lock()
+	defer self.peerConnsMtx.Unlock()
 	for _, peerConn := range self.PeerConns {
 		if peerConn.RemotePeer.PublicKey == pbk {
 			return peerConn
@@ -392,35 +395,39 @@ func (self *Peer) GetPeerConnByPbk(pbk string) *PeerConn {
 }
 
 func (self *Peer) SetPeerConn(peerConn *PeerConn) {
-	self.peerConnMutex.Lock()
-	defer self.peerConnMutex.Unlock()
-	internalConnPeer, ok := self.PeerConns[peerConn.RemotePeer.PeerID.Pretty()]
+	self.peerConnsMtx.Lock()
+	defer self.peerConnsMtx.Unlock()
+	peerIDStr := peerConn.RemotePeer.PeerID.Pretty()
+	internalConnPeer, ok := self.PeerConns[peerIDStr]
 	if ok {
 		if internalConnPeer.GetIsConnected() {
 			internalConnPeer.Close()
 		}
-		Logger.log.Infof("SetPeerConn and Remove %s %s", internalConnPeer.RemotePeer.PeerID, internalConnPeer.RemotePeer.RawAddress)
+		Logger.log.Infof("SetPeerConn and Remove %s %s", peerIDStr, internalConnPeer.RemotePeer.RawAddress)
 	}
-	self.PeerConns[peerConn.RemotePeer.PeerID.Pretty()] = peerConn
+	self.PeerConns[peerIDStr] = peerConn
 }
 
 func (self *Peer) RemovePeerConn(peerConn *PeerConn) {
-	self.peerConnMutex.Lock()
-	defer self.peerConnMutex.Unlock()
-	internalConnPeer, ok := self.PeerConns[peerConn.RemotePeer.PeerID.Pretty()]
+	self.peerConnsMtx.Lock()
+	defer self.peerConnsMtx.Unlock()
+	peerIDStr := peerConn.RemotePeer.PeerID.Pretty()
+	internalConnPeer, ok := self.PeerConns[peerIDStr]
 	if ok {
 		if internalConnPeer.GetIsConnected() {
 			internalConnPeer.Close()
 		}
-		delete(self.PeerConns, peerConn.RemotePeer.PeerID.Pretty())
-		Logger.log.Infof("RemovePeerConn %s %s", peerConn.RemotePeer.PeerID.Pretty(), peerConn.RemotePeer.RawAddress)
+		delete(self.PeerConns, peerIDStr)
+		Logger.log.Infof("RemovePeerConn %s %s", peerIDStr, peerConn.RemotePeer.RawAddress)
 	}
 }
 
 func (self *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error) {
 	Logger.log.Infof("Opening stream to PEER Id - %s", peer.RawAddress)
 
-	_, ok := self.PeerConns[peer.PeerID.Pretty()]
+	peerIDStr := peer.PeerID.Pretty()
+
+	_, ok := self.PeerConns[peerIDStr]
 	if ok {
 		Logger.log.Infof("Checked Existed PEER Id - %s", peer.RawAddress)
 
@@ -430,7 +437,7 @@ func (self *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error
 		return nil, nil
 	}
 
-	if peer.PeerID.Pretty() == self.PeerID.Pretty() {
+	if peerIDStr == self.PeerID.Pretty() {
 		Logger.log.Infof("Checked Myself PEER Id - %s", peer.RawAddress)
 		//self.newPeerConnectionMutex.Unlock()
 
@@ -440,7 +447,7 @@ func (self *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error
 		return nil, nil
 	}
 
-	if self.NumOutbound() >= self.Config.MaxOutPeers && self.Config.MaxOutPeers > 0 && !ok {
+	if self.CountOfOutboundConn() >= self.Config.MaxOutPeers && self.Config.MaxOutPeers > 0 && !ok {
 		Logger.log.Infof("Checked Max Outbound Connection PEER Id - %s", peer.RawAddress)
 
 		//push to pending peers
@@ -526,7 +533,7 @@ func (self *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
-	if self.NumInbound() >= self.Config.MaxInPeers && self.Config.MaxInPeers > 0 {
+	if self.CountOfInboundConn() >= self.Config.MaxInPeers && self.Config.MaxInPeers > 0 {
 		Logger.log.Infof("Max RemotePeer Inbound Connection")
 
 		if cDone != nil {
@@ -630,11 +637,11 @@ func (self *Peer) Stop() {
 	Logger.log.Infof("Stopping PEER %s", self.PeerID.Pretty())
 
 	self.Host.Close()
-	self.peerConnMutex.Lock()
+	self.peerConnsMtx.Lock()
 	for _, peerConn := range self.PeerConns {
 		peerConn.updateConnState(ConnCanceled)
 	}
-	self.peerConnMutex.Unlock()
+	self.peerConnsMtx.Unlock()
 
 	close(self.cStop)
 	Logger.log.Infof("PEER %s stopped", self.PeerID.Pretty())
@@ -708,8 +715,8 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 renewPeerConnection - create peer conn by goroutines for pending peers(reconnect)
 */
 func (self *Peer) renewPeerConnection() {
-	self.pendingPeersMutex.Lock()
-	defer self.pendingPeersMutex.Unlock()
+	self.pendingPeersMtx.Lock()
+	defer self.pendingPeersMtx.Unlock()
 	if len(self.PendingPeers) > 0 {
 		Logger.log.Infof("*start - Creating peer conn to %d pending peers", len(self.PendingPeers))
 		for _, peer := range self.PendingPeers {
@@ -721,8 +728,8 @@ func (self *Peer) renewPeerConnection() {
 }
 
 func (self *Peer) GetPeerConnOfAll() []*PeerConn {
-	self.peerConnMutex.Lock()
-	defer self.peerConnMutex.Unlock()
+	self.peerConnsMtx.Lock()
+	defer self.peerConnsMtx.Unlock()
 	peerConns := make([]*PeerConn, 0)
 	for _, peerConn := range self.PeerConns {
 		peerConns = append(peerConns, peerConn)
