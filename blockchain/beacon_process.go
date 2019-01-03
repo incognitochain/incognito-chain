@@ -378,6 +378,7 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 		Get beacon state of this block
 		For example, new blockHeight is 91 then beacon state of this block must have height 90
 		OR new block has previous has is beacon best block hash
+		// - committee length and validatorIndex length
 		// - Producer + sig
 		// - Has parent hash is some beststate block hash
 		// - Height
@@ -392,8 +393,9 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 	if len(self.BeaconCommittee) != len(block.ValidatorsIdx) {
 		return NewBlockChainError(SignatureError, errors.New("Block validators and Beacon committee is not compatible"))
 	}
-
-	//=============Verify signature
+	//=============TODO: Verify producer signature
+	//=============End Verify producer signature
+	//=============Verify aggegrate signature
 	if isVerifySig {
 		pubKeys := []*privacy.PublicKey{}
 		for _, index := range block.ValidatorsIdx {
@@ -417,7 +419,7 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 			return NewBlockChainError(SignatureError, errors.New("Invalid Agg signature"))
 		}
 	}
-	//=============End Verify signature
+	//=============End Verify Aggegrate signature
 	if self.BeaconHeight+1 != block.Header.Height {
 		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}

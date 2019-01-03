@@ -131,9 +131,9 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	multiSigScheme := &privacy.MultiSigScheme{}
 	R, r := multiSigScheme.GenerateRandom()
 	multiSigKeyset := &privacy.MultiSigKeyset{}
-	pubkeyList := []*privacy.PublicKey{}
-	pubkeyList = append(pubkeyList, &payToAddress.Pk)
-	producerSig := multiSigKeyset.SignMultiSig(blockHash.GetBytes(), pubkeyList, []*privacy.EllipticPoint{R}, r)
+	pubKeys := []*privacy.PublicKey{}
+	pubKeys = append(pubKeys, &payToAddress.Pk)
+	producerSig := multiSigKeyset.SignMultiSig(blockHash.GetBytes(), pubKeys, []*privacy.EllipticPoint{R}, r)
 	beaconBlock.ProducerSig = base58.Base58Check{}.Encode(producerSig.Bytes(), byte(0x00))
 	//================End Generate Signature
 	return beaconBlock, nil
