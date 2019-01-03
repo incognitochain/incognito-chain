@@ -149,7 +149,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	// ComZeroProof
 	tmp = false
 	if paymentProof.ComZeroProof != nil {
-		if !paymentProof.ComZeroProof.commitmentValue.IsEqual(new(privacy.EllipticPoint).Zero()){
+		if paymentProof.ComZeroProof.commitmentValue.X != nil{
 			comZeroProof := paymentProof.ComZeroProof.Bytes()
 			proofbytes = append(proofbytes, byte(len(comZeroProof)))
 			proofbytes = append(proofbytes, comZeroProof...)
@@ -310,10 +310,6 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (*privacy.PrivacyError) {
 		offset += lenComZeroProof
 	}
 
-	//if len(proof.OneOfManyProof) == 0 {
-	//	offset -= 1
-	//}
-
 	//InputCoins  []*privacy.InputCoin
 	lenInputCoinsArray := int(proofbytes[offset])
 	offset += 1
@@ -373,9 +369,6 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (*privacy.PrivacyError) {
 		offset += lenComOutputSND
 	}
 
-	//if len(proof.OneOfManyProof) == 0 {
-	//	offset -= 1
-	//}
 	lenComOutputShardIdArray := int(proofbytes[offset])
 	offset += 1
 	proof.ComOutputShardID = make([]*privacy.EllipticPoint, lenComOutputShardIdArray)

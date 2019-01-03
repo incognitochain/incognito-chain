@@ -166,7 +166,7 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 		for _, note := range outCoins {
 			amount := note.CoinDetails.Value
 			candidateOutputCoins = append(candidateOutputCoins, note)
-			estimateTotalAmount -= amount
+			estimateTotalAmount += amount
 			if estimateTotalAmount >= totalAmmount {
 				break
 			}
