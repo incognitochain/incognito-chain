@@ -830,6 +830,7 @@ func (tx *Tx) InitTxSalary(
 	receiverAddr *privacy.PaymentAddress,
 	privKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
+	metaData metadata.Metadata,
 ) error {
 	tx.Version = TxVersion
 	tx.Type = common.TxSalaryType
@@ -880,6 +881,7 @@ func (tx *Tx) InitTxSalary(
 	// sign Tx
 	tx.SigPubKey = receiverAddr.Pk
 	tx.sigPrivKey = *privKey
+	tx.SetMetadata(metaData)
 	err = tx.SignTx(false)
 	if err != nil {
 		return err
