@@ -378,6 +378,7 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 		Get beacon state of this block
 		For example, new blockHeight is 91 then beacon state of this block must have height 90
 		OR new block has previous has is beacon best block hash
+		// - committee length and validatorIndex length
 		// - Producer + sig
 		// - Has parent hash is some beststate block hash
 		// - Height
@@ -392,8 +393,9 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 	if len(self.BeaconCommittee) != len(block.ValidatorsIdx) {
 		return NewBlockChainError(SignatureError, errors.New("Block validators and Beacon committee is not compatible"))
 	}
-
-	//=============Verify signature
+	//=============TODO: Verify producer signature
+	//=============End Verify producer signature
+	//=============Verify aggegrate signature
 	if isVerifySig {
 		pubKeys := []*privacy.PublicKey{}
 		for _, index := range block.ValidatorsIdx {
@@ -417,7 +419,7 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 			return NewBlockChainError(SignatureError, errors.New("Invalid Agg signature"))
 		}
 	}
-	//=============End Verify signature
+	//=============End Verify Aggegrate signature
 	if self.BeaconHeight+1 != block.Header.Height {
 		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
@@ -619,7 +621,6 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		self.ShardCommittee[byte(1)] = append(self.ShardCommittee[byte(1)], newShardCandidate[3:6]...)
 		self.ShardCommittee[byte(2)] = append(self.ShardCommittee[byte(2)], newShardCandidate[6:9]...)
 		self.ShardCommittee[byte(3)] = append(self.ShardCommittee[byte(3)], newShardCandidate[9:12]...)
-		//TODO: Assign public key from shard 0 -> 4 (each shard has 3 pubkey)
 	} else {
 		self.CandidateBeaconWaitingForNextRandom = append(self.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
 		self.CandidateShardWaitingForNextRandom = append(self.CandidateShardWaitingForNextRandom, newShardCandidate...)

@@ -79,8 +79,10 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	//==========Create Body
 	beaconBlock.Body.Instructions = tempInstruction
 	beaconBlock.Body.ShardState = tempShardState
+	//==========End Create Body
 	//============Process new block with beststate
 	beaconBestState.Update(beaconBlock)
+	//============End Process new block with beststate
 	//==========Create Hash in Header
 	// BeaconValidator root: beacon committee + beacon pending committee
 	validatorArr := append(beaconBestState.BeaconCommittee, beaconBestState.BeaconPendingValidator...)
@@ -122,8 +124,18 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 		return nil, err
 	}
 	beaconBlock.Header.InstructionHash = tempInstructionHash
-
-	//TODO: cal producer sig
+	//===============End Create Header
+	//===============Generate Signature
+	// Signature of producer, sign on hash of header
+	blockHash := beaconBlock.Header.Hash()
+	multiSigScheme := &privacy.MultiSigScheme{}
+	R, r := multiSigScheme.GenerateRandom()
+	multiSigKeyset := &privacy.MultiSigKeyset{}
+	pubKeys := []*privacy.PublicKey{}
+	pubKeys = append(pubKeys, &payToAddress.Pk)
+	producerSig := multiSigKeyset.SignMultiSig(blockHash.GetBytes(), pubKeys, []*privacy.EllipticPoint{R}, r)
+	beaconBlock.ProducerSig = base58.Base58Check{}.Encode(producerSig.Bytes(), byte(0x00))
+	//================End Generate Signature
 	return beaconBlock, nil
 }
 

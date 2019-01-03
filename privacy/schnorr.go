@@ -2,8 +2,9 @@ package privacy
 
 import (
 	"errors"
-	"github.com/ninjadotorg/constant/common"
 	"math/big"
+
+	"github.com/ninjadotorg/constant/common"
 )
 
 //SchnPubKey denoted Schnorr Publickey
@@ -140,4 +141,26 @@ func Hash(p EllipticPoint, m []byte) *big.Int {
 	b = append(b, m...)
 
 	return new(big.Int).SetBytes(common.HashB(b))
+}
+
+func (priKey *SchnPrivKey) GenKeyFromExistedSPKey(spKey SpendingKey) {
+	if priKey == nil {
+		priKey = new(SchnPrivKey)
+	}
+
+	priKey.SK = new(big.Int).SetBytes(spKey)
+
+	rBytes := common.HashB(spKey)
+	priKey.R = new(big.Int).SetBytes(rBytes)
+	priKey.R.Mod(priKey.R, Curve.Params().N)
+
+	priKey.PubKey = new(SchnPubKey)
+
+	priKey.PubKey.G = new(EllipticPoint)
+	priKey.PubKey.G.Set(Curve.Params().Gx, Curve.Params().Gy)
+
+	priKey.PubKey.H = priKey.PubKey.G.ScalarMult(RandInt())
+	rH := priKey.PubKey.H.ScalarMult(priKey.R)
+
+	priKey.PubKey.PK = priKey.PubKey.G.ScalarMult(priKey.SK).Add(rH)
 }
