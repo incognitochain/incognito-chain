@@ -609,7 +609,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		Logger.log.Infof("Proccessing Genesis Block")
 		self.BeaconCommittee = append(self.BeaconCommittee, newBeaconCandidate...)
 
-		self.CurrentRandomNumber = 3
+		self.CurrentRandomNumber = RANDOM_NUMBER
 		err := AssignValidatorShard(self.ShardCommittee, newShardCandidate, self.CurrentRandomNumber)
 		if err != nil {
 			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
