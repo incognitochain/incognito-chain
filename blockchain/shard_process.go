@@ -3,8 +3,11 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
-	"github.com/ninjadotorg/constant/common"
 	"strconv"
+
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
+	privacy "github.com/ninjadotorg/constant/privacy"
 )
 
 //@tamle
@@ -20,6 +23,35 @@ func (self *BlockChain) ValidateShardBlockSignature(block *ShardBlock) (bool, er
 	// beststate beacon -> leader & validator
 	// R
 	// aggregation signature
+
+	// get shard id
+	shardID := block.Header.ShardID
+
+	// get best state shard committee corresponding to shardID
+	bestStateShardCommittee := self.BestState.Shard[shardID].ShardCommittee
+
+	pubKeys := []*privacy.PublicKey{}
+	for _, index := range block.ValidatorsIdx {
+		pubkeyBytes, _, err := base58.Base58Check{}.Decode(bestStateShardCommittee[index])
+		if err != nil {
+			return false, errors.New("Error in convert Public key from string to byte")
+		}
+		pubKey := privacy.PublicKey{}
+		pubKey = pubkeyBytes
+		pubKeys = append(pubKeys, &pubKey)
+	}
+
+	aggSig, _, err := base58.Base58Check{}.Decode(block.AggregatedSig)
+	if err != nil {
+		return false, errors.New("Error in convert aggregated signature from string to byte")
+	}
+	schnMultiSig := &privacy.SchnMultiSig{}
+	schnMultiSig.SetBytes(aggSig)
+	blockHash := block.Header.Hash()
+	if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeys, nil, nil) == false {
+		return false, errors.New("Invalid Agg signature")
+	}
+
 	return true, nil
 }
 
