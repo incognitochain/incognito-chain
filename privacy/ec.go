@@ -43,7 +43,7 @@ func (point *EllipticPoint) UnmarshalJSON(data []byte) error {
 // MarshalJSON marshal from elliptic point to byte array
 func (point EllipticPoint) MarshalJSON() ([]byte, error) {
 	data := point.Compress()
-	temp := base58.Base58Check{}.Encode(data, byte(0x00))
+	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
 	return json.Marshal(temp)
 }
 

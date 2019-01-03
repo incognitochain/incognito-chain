@@ -50,13 +50,6 @@ func buildPaymentForCoin(
 ) (*transaction.TxCustomToken, error) {
 	// Mint and send Constant
 	meta := txRequest.Metadata.(*metadata.CrowdsaleRequest)
-	amounts := []uint64{amount}
-	pks := [][]byte{meta.PaymentAddress.Pk[:]}
-	tks := [][]byte{meta.PaymentAddress.Tk[:]}
-	txs, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db) // There's only one tx in txs
-	if err != nil {
-		return nil, err
-	}
 	metaPay := &metadata.CrowdsalePayment{
 		RequestedTxID: &common.Hash{},
 		SaleID:        make([]byte, len(saleID)),
@@ -64,11 +57,20 @@ func buildPaymentForCoin(
 	hash := txRequest.Hash()
 	copy(metaPay.RequestedTxID[:], hash[:])
 	copy(metaPay.SaleID, saleID)
+	metaPayList := []metadata.Metadata{metaPay}
+
+	amounts := []uint64{amount}
+	pks := [][]byte{meta.PaymentAddress.Pk[:]}
+	tks := [][]byte{meta.PaymentAddress.Tk[:]}
+	txs, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db, metaPayList) // There's only one tx in txs
+	if err != nil {
+		return nil, err
+	}
+
 	txToken := &transaction.TxCustomToken{
 		Tx:          *(txs[0]),
 		TxTokenData: transaction.TxTokenData{},
 	}
-	txToken.Metadata = metaPay
 	return txToken, nil
 }
 

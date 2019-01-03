@@ -84,7 +84,7 @@ func (proof *PaymentProof) Init() *PaymentProof {
 
 func (proof PaymentProof) MarshalJSON() ([]byte, error) {
 	data := proof.Bytes()
-	temp := base58.Base58Check{}.Encode(data, byte(0x00))
+	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
 	return json.Marshal(temp)
 }
 

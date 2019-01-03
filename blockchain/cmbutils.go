@@ -18,16 +18,17 @@ func buildRefundTx(
 	producerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
 ) (*transaction.Tx, error) {
+	meta := &metadata.CMBInitRefund{
+		MainAccount:  receiver,
+		MetadataBase: metadata.MetadataBase{Type: metadata.CMBInitRefundMeta},
+	}
+	metaList := []metadata.Metadata{meta}
 	pks := [][]byte{receiver.Pk[:]}
 	tks := [][]byte{receiver.Tk[:]}
 	amounts := []uint64{amount}
-	txs, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db)
+	txs, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db, metaList)
 	if err != nil {
 		return nil, err
-	}
-	txs[0].Metadata = &metadata.CMBInitRefund{
-		MainAccount:  receiver,
-		MetadataBase: metadata.MetadataBase{Type: metadata.CMBInitRefundMeta},
 	}
 	return txs[0], nil // only one tx in slice
 }
