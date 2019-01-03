@@ -86,7 +86,7 @@ func (proof *PaymentProof) Init() *PaymentProof {
 
 func (proof PaymentProof) MarshalJSON() ([]byte, error) {
 	data := proof.Bytes()
-	temp := base58.Base58Check{}.Encode(data, byte(0x00))
+	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
 	return json.Marshal(temp)
 }
 
@@ -129,20 +129,42 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	}
 
 	// ComOutputMultiRangeProofSize
+	tmp := false
 	if paymentProof.ComOutputMultiRangeProof != nil {
-		comOutputMultiRangeProof := paymentProof.ComOutputMultiRangeProof.Bytes()
-		proofbytes = append(proofbytes, privacy.IntToByteArr(len(comOutputMultiRangeProof))...)
-		proofbytes = append(proofbytes, comOutputMultiRangeProof...)
-	} else {
-		proofbytes = append(proofbytes, byte(0))
+		if paymentProof.ComOutputMultiRangeProof.Counter != 0 {
+			comOutputMultiRangeProof := paymentProof.ComOutputMultiRangeProof.Bytes()
+			proofbytes = append(proofbytes, privacy.IntToByteArr(len(comOutputMultiRangeProof))...)
+			proofbytes = append(proofbytes, comOutputMultiRangeProof...)
+			tmp = true
+		} else {
+			proofbytes = append(proofbytes, []byte{0, 0}...)
+			tmp = true
+		}
+	} else{
+		proofbytes = append(proofbytes, []byte{0, 0}...)
+		tmp = true
+	}
+	if !tmp {
+		proofbytes = append(proofbytes, []byte{0, 0}...)
 	}
 
 	// ComZeroProof
+	tmp = false
 	if paymentProof.ComZeroProof != nil {
-		comZeroProof := paymentProof.ComZeroProof.Bytes()
-		proofbytes = append(proofbytes, byte(privacy.ComZeroProofSize))
-		proofbytes = append(proofbytes, comZeroProof...)
+		if paymentProof.ComZeroProof.commitmentValue.X != nil{
+			comZeroProof := paymentProof.ComZeroProof.Bytes()
+			proofbytes = append(proofbytes, byte(len(comZeroProof)))
+			proofbytes = append(proofbytes, comZeroProof...)
+			tmp = true
+		} else{
+			proofbytes = append(proofbytes, byte(0))
+			tmp = true
+		}
 	} else {
+		proofbytes = append(proofbytes, byte(0))
+		tmp = true
+	}
+	if !tmp {
 		proofbytes = append(proofbytes, byte(0))
 	}
 
@@ -290,10 +312,6 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		offset += lenComZeroProof
 	}
 
-	if len(proof.OneOfManyProof) == 0 {
-		offset -= 1
-	}
-
 	//InputCoins  []*privacy.InputCoin
 	lenInputCoinsArray := int(proofbytes[offset])
 	offset += 1
@@ -353,9 +371,6 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		offset += lenComOutputSND
 	}
 
-	if len(proof.OneOfManyProof) == 0 {
-		offset -= 1
-	}
 	lenComOutputShardIdArray := int(proofbytes[offset])
 	offset += 1
 	proof.ComOutputShardID = make([]*privacy.EllipticPoint, lenComOutputShardIdArray)
@@ -435,6 +450,11 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 	fee uint64) *privacy.PrivacyError {
 
 	if !hasPrivacy {
+		for _, outCoin := range outputCoins{
+			outCoin.CoinDetails.Randomness = privacy.RandInt()
+			outCoin.CoinDetails.CommitAll()
+		}
+
 		wit.spendingKey = spendingKey
 		wit.inputCoins = inputCoins
 		wit.outputCoins = outputCoins
@@ -443,6 +463,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 
 		publicKey := inputCoins[0].CoinDetails.PublicKey
 
+		wit.SNNoPrivacyWitness = make([]*SNNoPrivacyWitness, len(inputCoins))
 		for i := 0; i < len(inputCoins); i++ {
 			/***** Build witness for proving that serial number is derived from the committed derivator *****/
 			if wit.SNNoPrivacyWitness[i] == nil {

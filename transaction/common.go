@@ -47,7 +47,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 		usableCommitment := in.CoinDetails.CoinCommitment.Compress()
 		listUsableCommitments = append(listUsableCommitments, usableCommitment)
 		index, _ := db.GetCommitmentIndex(tokenID, usableCommitment, chainID)
-		mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(usableCommitment, byte(0x00))] = index
+		mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(usableCommitment, common.ZeroByte)] = index
 	}
 
 	// loop to random commitmentIndexs
@@ -73,7 +73,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 
 	// loop to insert usable commitments into commitmentIndexs for every group
 	for j, temp := range listUsableCommitments {
-		index := mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(temp, byte(0x00))]
+		index := mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(temp, common.ZeroByte)]
 		rand := rand.Intn(randNum)
 		i := (j * randNum) + rand
 		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index.Uint64()}, commitmentIndexs[i:]...)...)

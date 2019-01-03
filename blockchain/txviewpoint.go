@@ -91,7 +91,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 			return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
 		}
 		if !ok {
-			pubkeyStr := base58.Base58Check{}.Encode(pubkey, byte(0x00))
+			pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
 			if acceptedCommitments[pubkeyStr] == nil {
 				acceptedCommitments[pubkeyStr] = make([][]byte, 0)
 			}

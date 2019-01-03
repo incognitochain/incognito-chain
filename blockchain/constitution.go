@@ -158,24 +158,22 @@ func (GOVConstitutionHelper) GetSealerPubKey(tx metadata.Transaction) [][]byte {
 }
 
 func (DCBConstitutionHelper) NewTxRewardProposalSubmitter(blockgen *BlkTmplGenerator, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
+	meta := metadata.NewRewardDCBProposalSubmitterMetadata()
 	tx := transaction.Tx{}
-	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, blockgen.chain.config.DataBase)
+	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, blockgen.chain.config.DataBase, meta)
 	if err != nil {
 		return nil, err
 	}
-	meta := metadata.NewRewardDCBProposalSubmitterMetadata()
-	tx.SetMetadata(meta)
 	return &tx, nil
 }
 
 func (GOVConstitutionHelper) NewTxRewardProposalSubmitter(blockgen *BlkTmplGenerator, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
+	meta := metadata.NewRewardGOVProposalSubmitterMetadata()
 	tx := transaction.Tx{}
-	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, blockgen.chain.config.DataBase)
+	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, blockgen.chain.config.DataBase, meta)
 	if err != nil {
 		return nil, err
 	}
-	meta := metadata.NewRewardGOVProposalSubmitterMetadata()
-	tx.SetMetadata(meta)
 	return &tx, nil
 }
 
