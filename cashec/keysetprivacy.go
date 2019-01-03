@@ -63,7 +63,7 @@ func (self *KeySet) SignBase58(data []byte) (string, error) {
 	if err != nil {
 		return common.EmptyString, errors.New("Can't sign data. " + err.Error())
 	}
-	return base58.Base58Check{}.Encode(signatureByte, byte(0x00)), nil
+	return base58.Base58Check{}.Encode(signatureByte, common.ZeroByte), nil
 }
 
 func (self *KeySet) Encrypt(data []byte) ([]byte, error) {
@@ -80,7 +80,7 @@ func (self *KeySet) Decrypt(data []byte) ([]byte, error) {
 
 func (self *KeySet) EncodeToString() string {
 	val, _ := json.Marshal(self)
-	result := base58.Base58Check{}.Encode(val, byte(0x00))
+	result := base58.Base58Check{}.Encode(val, common.ZeroByte)
 	return result
 }
 
@@ -96,7 +96,7 @@ func (self *KeySet) GetViewingKey() (privacy.ViewingKey, error) {
 }
 
 func (self *KeySet) GetPublicKeyB58() string {
-	return base58.Base58Check{}.Encode(self.PaymentAddress.Pk, byte(0x00))
+	return base58.Base58Check{}.Encode(self.PaymentAddress.Pk, common.ZeroByte)
 }
 
 func ValidateDataB58(pbkB58 string, sigB58 string, data []byte) error {
@@ -128,5 +128,5 @@ func (self *KeySet) SignDataB58(data []byte) (string, error) {
 	if err != nil {
 		return common.EmptyString, errors.New("Can't sign data. " + err.Error())
 	}
-	return base58.Base58Check{}.Encode(signatureByte, byte(0x00)), nil
+	return base58.Base58Check{}.Encode(signatureByte, common.ZeroByte), nil
 }
