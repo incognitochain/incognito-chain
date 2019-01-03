@@ -123,6 +123,7 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	}
 	beaconBlock.Header.InstructionHash = tempInstructionHash
 
+	//TODO: cal producer sig
 	return beaconBlock, nil
 }
 
@@ -175,9 +176,9 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 				// tempStaker = GetValidStaker(beaconBestState.CandidateShardWaitingForCurrentRandom, tempStaker)
 				// tempStaker = GetValidStaker(beaconBestState.CandidateBeaconWaitingForNextRandom, tempStaker)
 				if assignShard {
-					validStakers = append(validStakers, []string{"assign", strings.Join(tempStaker, ","), "shard"})
+					validStakers = append(validStakers, []string{"stake", strings.Join(tempStaker, ","), "shard"})
 				} else {
-					validStakers = append(validStakers, []string{"assign", strings.Join(tempStaker, ","), "beacon"})
+					validStakers = append(validStakers, []string{"stake", strings.Join(tempStaker, ","), "beacon"})
 				}
 			}
 			//TODO: Get Swap validator from shard block -> depend on ShardToBeaconBlock
@@ -218,16 +219,16 @@ func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, stakers [][
 	}
 
 	//=======Assign
-	// ["assign", "pubkey.....", "shard" or "beacon"]
+	// ["stake", "pubkey.....", "shard" or "beacon"]
 	// beaconStaker := []string{}
 	// shardStaker := []string{}
 	for _, assignInstruction := range stakers {
 		instructions = append(instructions, assignInstruction)
 		// assignInstructionTemp := assignInstruction.([]string)
-		// if assignInstructionTemp[0] == "assign" && assignInstructionTemp[2] == "beacon" {
+		// if assignInstructionTemp[0] == "stake" && assignInstructionTemp[2] == "beacon" {
 		// 	beaconStaker = append(beaconStaker, strings.Split(assignInstructionTemp[1], ",")...)
 		// }
-		// if assignInstructionTemp[0] == "assign" && assignInstructionTemp[2] == "shard" {
+		// if assignInstructionTemp[0] == "stake" && assignInstructionTemp[2] == "shard" {
 		// 	shardStaker = append(shardStaker, strings.Split(assignInstructionTemp[1], ",")...)
 		// }
 	}
@@ -244,11 +245,11 @@ func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, stakers [][
 			instructions = append(instructions, randomInstruction)
 			Logger.log.Infof("RandomNumber %+v", randomInstruction)
 
-			// beaconAssingInstruction := []string{"assign"}
+			// beaconAssingInstruction := []string{"stake"}
 			// beaconAssingInstruction = append(beaconAssingInstruction, strings.Join(beaconStaker, ","))
 			// beaconAssingInstruction = append(beaconAssingInstruction, "beacon")
 
-			// shardAssingInstruction := []string{"assign"}
+			// shardAssingInstruction := []string{"stake"}
 			// shardAssingInstruction = append(shardAssingInstruction, strings.Join(shardStaker, ","))
 			// shardAssingInstruction = append(shardAssingInstruction, "shard")
 		}
@@ -307,10 +308,10 @@ func GetValidStaker(committees []string, stakers []string) []string {
 func GetStakeValidatorArrayString(v []string) ([]string, []string) {
 	beacon := []string{}
 	shard := []string{}
-	if v[0] == "assign" && v[2] == "beacon" {
+	if v[0] == "stake" && v[2] == "beacon" {
 		beacon = strings.Split(v[1], ",")
 	}
-	if v[0] == "assign" && v[2] == "shard" {
+	if v[0] == "stake" && v[2] == "shard" {
 		shard = strings.Split(v[1], ",")
 	}
 	return beacon, shard
