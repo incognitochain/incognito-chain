@@ -127,20 +127,6 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 								self.multiSigScheme.dataToSig = pendingBlk.Header.Hash()
 							}
 
-							// msg, err := MakeMsgBFTPrepare(self.multiSigScheme.personal.Ri, self.UserKeySet.GetPublicKeyB58())
-							// if err != nil {
-							// 	timeout.Stop()
-							// 	return nil, err
-							// }
-							// time.AfterFunc(1500*time.Millisecond, func() {
-							// 	fmt.Println("Sending out prepare msg")
-							// 	if layer == "beacon" {
-							// 		self.Server.PushMessageToBeacon(msg)
-							// 	} else {
-							// 		self.Server.PushMessageToShard(msg, shardID)
-							// 	}
-							// })
-
 							self.phase = "prepare"
 							timeout.Stop()
 							break listenphase
@@ -282,17 +268,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 
 						ValidatorsIdx := make([]int, len(phaseData.Sigs[szRCombined][0].ValidatorsIdx))
 						copy(ValidatorsIdx, phaseData.Sigs[szRCombined][0].ValidatorsIdx)
-						// msg, err := MakeMsgBFTReply(AggregatedSigB58, ValidatorsIdx)
-						// if err != nil {
-						// 	fmt.Println("BLah err", err)
-						// 	return
-						// }
-						// fmt.Println("Sending out reply msg")
-						// if layer == "beacon" {
-						// 	self.Server.PushMessageToBeacon(msg)
-						// } else {
-						// 	self.Server.PushMessageToShard(msg, shardID)
-						// }
+
 						fmt.Println("\n \n Block consensus reach", ValidatorsIdx, AggregatedSig, "\n")
 
 						if layer == "beacon" {
@@ -306,37 +282,9 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 						}
 
 						return self.pendingBlock, nil
-						// self.phase = "reply"
-						// break commitphase
 					}
 				}
-				// case "reply":
-				// 	fmt.Println("Reply phase")
-				// 	time.AfterFunc(ReplyTimeout*time.Second, func() {
-				// 		close(self.cTimeout)
-				// 	})
-				// 	for {
-				// 		select {
-				// 		case msgReply := <-self.cBFTMsg:
-				// 			fmt.Println(msgReply)
-				// 		case <-self.cTimeout:
-				// 			return
-				// 		}
-				// 	}
 			}
 		}
-
 	}
 }
-
-// func (self *BFTProtocol) Stop() error {
-// 	self.Lock()
-// 	defer self.Unlock()
-// 	if !self.started {
-// 		return errors.New("Protocol is already stopped")
-// 	}
-// 	self.started = false
-// 	close(self.cTimeout)
-// 	close(self.cQuit)
-// 	return nil
-// }
