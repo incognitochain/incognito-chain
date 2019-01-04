@@ -18,18 +18,18 @@ import (
 
 func (self RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	tempRes1 := jsonresult.GetBondTypeResultItem{
-		StartSellingAt: 123,
-		EndSellingAt:   300,
-		Maturity:       400,
+		StartSellingAt: 0,
+		EndSellingAt:   500,
+		Maturity:       700,
 		BuyBackPrice:   110, // in constant
 		BuyPrice:       105, // in constant
 		TotalIssue:     1000,
 		Available:      800,
 	}
 	tempRes2 := jsonresult.GetBondTypeResultItem{
-		StartSellingAt: 95,
+		StartSellingAt: 0,
 		EndSellingAt:   500,
-		Maturity:       400,
+		Maturity:       700,
 		BuyBackPrice:   130, // in constant
 		BuyPrice:       110, // in constant
 		TotalIssue:     2000,
