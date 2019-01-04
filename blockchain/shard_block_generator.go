@@ -1,12 +1,13 @@
 package blockchain
 
 import (
+	"time"
+
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
-	"time"
 )
 
 func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*ShardBlock, error) {
@@ -390,7 +391,7 @@ concludeBlock:
 
 	// Create producer signature
 	sig, err := userKeySet.SignDataB58([]byte(block.Header.Hash().String()))
-	if err == nil {
+	if err != nil {
 		return nil, err
 	}
 	block.ProducerSig = sig

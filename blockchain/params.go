@@ -13,8 +13,10 @@ type Params struct {
 	Net uint32
 
 	// DefaultPort defines the default peer-to-peer port for the network.
-	DefaultPort string
-	ShardsNum   int //max 256 shards
+	DefaultPort         string
+	ShardsNum           int //max 256 shards
+	ShardCommitteeSize  int
+	BeaconCommitteeSize int
 	// GenesisBlock defines the first block of the chain.
 	GenesisBeaconBlock *BeaconBlock
 
@@ -76,10 +78,12 @@ var icoParamsTestnetNew = IcoParams{
 }
 
 var TestNetParams = Params{
-	Name:        TestnetName,
-	Net:         Testnet,
-	DefaultPort: TestnetDefaultPort,
-	ShardsNum:   4,
+	Name:                TestnetName,
+	Net:                 Testnet,
+	DefaultPort:         TestnetDefaultPort,
+	ShardsNum:           4,
+	ShardCommitteeSize:  3,
+	BeaconCommitteeSize: 3,
 	// blockChain parameters
 	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnetSerializedPubkey, icoParamsTestnetNew, 1000, 1000, 0),
 	GenesisShardBlock:  CreateShardGenesisBlock(1, preSelectShardNodeTestnetSerializedPubkey, icoParamsTestnetNew),

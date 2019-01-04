@@ -77,7 +77,7 @@ func (self *Engine) Start() error {
 					go self.config.Server.UpdateConsensusState(nodeRole, self.config.UserKeySet.GetPublicKeyB58(), nil, self.config.BlockChain.BestState.Beacon.BeaconCommittee, self.config.BlockChain.BestState.Beacon.ShardCommittee)
 					time.Sleep(2 * time.Second)
 
-					fmt.Println(self.config.NodeMode, role)
+					fmt.Println(self.config.NodeMode, role, shardID)
 					if role != "" {
 						self.cBFTMsg = make(chan wire.Message)
 						bftProtocol := &BFTProtocol{
@@ -143,6 +143,7 @@ func (self *Engine) Start() error {
 							)
 							if self.config.BlockChain.IsReady(true, shardID) {
 								shardRole := self.config.BlockChain.BestState.Shard[shardID].GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
+								fmt.Println("My shard role", shardRole)
 								switch shardRole {
 								case "shard-proposer":
 									// prevBlock := self.config.BlockChain.BestState.Shard[shardID].BestBlock
@@ -164,6 +165,11 @@ func (self *Engine) Start() error {
 								if err == nil {
 									fmt.Println(resBlk.(*blockchain.ShardBlock))
 									//TODO insert block to blockchain
+									err = self.config.BlockChain.InsertShardBlock(resBlk.(*blockchain.ShardBlock))
+									if err != nil {
+										Logger.log.Error("Insert beacon block error", err)
+										continue
+									}
 								} else {
 									Logger.log.Error(err)
 								}
