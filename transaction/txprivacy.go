@@ -2,8 +2,6 @@ package transaction
 
 import (
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"math"
@@ -171,12 +169,6 @@ func (tx *Tx) Init(
 		paymentInfo = append(paymentInfo, changePaymentInfo)
 	}
 
-	// calculate serial number from SND and spending key
-	for _, inputCoin := range inputCoins {
-		inputCoin.CoinDetails.SerialNumber = privacy.PedCom.G[privacy.SK].Derive(new(big.Int).SetBytes(*senderSK),
-			inputCoin.CoinDetails.SNDerivator)
-	}
-
 	// create new output coins
 	outputCoins := make([]*privacy.OutputCoin, len(paymentInfo))
 
@@ -188,10 +180,12 @@ func (tx *Tx) Init(
 		for i := 0; i < len(paymentInfo); i++ {
 			sndOut = privacy.RandInt()
 			for true {
+
 				ok1, err := CheckSNDerivatorExistence(tokenID, sndOut, chainID, db)
 				if err != nil {
 					Logger.log.Error(err)
 				}
+				// if sndOut existed, then re-random it
 				if ok1 {
 					sndOut = privacy.RandInt()
 				} else {
@@ -201,7 +195,8 @@ func (tx *Tx) Init(
 			sndOuts = append(sndOuts, sndOut)
 		}
 
-		ok = common.CheckDuplicateBigInt(sndOuts)
+		// if sndOuts has two elements that have same value, then re-generates it
+		ok = common.CheckDuplicateBigIntArray(sndOuts)
 		if ok {
 			sndOuts = make([]*big.Int, 0)
 		}
@@ -219,15 +214,8 @@ func (tx *Tx) Init(
 	// assign fee tx
 	tx.Fee = fee
 
-	tx.Proof = &zkp.PaymentProof{}
-
-	// get public key last byte of receivers
-	pkLastByteReceivers := make([]byte, len(paymentInfo))
-	for i, payInfo := range paymentInfo {
-		pkLastByteReceivers[i] = payInfo.PaymentAddress.Pk[len(payInfo.PaymentAddress.Pk)-1]
-	}
-
 	// create zero knowledge proof of payment
+	tx.Proof = &zkp.PaymentProof{}
 
 	// get list of commitments for proving one-out-of-many from commitmentIndexs
 	commitmentProving := make([]*privacy.EllipticPoint, len(commitmentIndexs))
@@ -238,7 +226,6 @@ func (tx *Tx) Init(
 	}
 
 	// prepare witness for proving
-
 	witness := new(zkp.PaymentWitness)
 	err = witness.Init(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
 	if err.(*privacy.PrivacyError) != nil {
@@ -255,10 +242,6 @@ func (tx *Tx) Init(
 		tx.sigPrivKey = make([]byte, 64)
 		randSK := witness.RandSK
 		tx.sigPrivKey = append(*senderSK, randSK.Bytes()...)
-		//gSK := privacy.PedCom.G[privacy.SK].ScalarMult(new(big.Int).SetBytes(*senderSK))
-		//gRandSK := privacy.PedCom.G[privacy.RAND].ScalarMult(randSK)
-		//pubKeyPoint := gSK.Add(gRandSK)
-		//tx.SigPubKey = pubKeyPoint.Compress()
 
 		// encrypt coin details (Randomness)
 		// hide information of output coins except coin commitments, public key, snDerivators
@@ -279,8 +262,9 @@ func (tx *Tx) Init(
 		}
 
 	} else {
-		tx.sigPrivKey = *senderSK
-		//tx.SigPubKey = senderFullKey.PaymentAddress.Pk
+		tx.sigPrivKey = []byte{}
+		randSK := big.NewInt(0)
+		tx.sigPrivKey = append(*senderSK, randSK.Bytes()...)
 	}
 
 	// sign tx
@@ -304,116 +288,67 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		return errors.New("input transaction must be an unsigned one")
 	}
 
-	if hasPrivacy {
-		/****** using Schnorr *******/
-		// sign with sigPrivKey
-		// prepare private key for Schnorr
-		sigKey := new(privacy.SchnPrivKey)
-		sigKey.SK = new(big.Int).SetBytes(tx.sigPrivKey[:privacy.BigIntSize])
-		sigKey.R = new(big.Int).SetBytes(tx.sigPrivKey[privacy.BigIntSize:])
+	/****** using Schnorr *******/
+	// sign with sigPrivKey
+	// prepare private key for Schnorr
+	sigKey := new(privacy.SchnPrivKey)
+	sigKey.SK = new(big.Int).SetBytes(tx.sigPrivKey[:privacy.BigIntSize])
+	sigKey.R = new(big.Int).SetBytes(tx.sigPrivKey[privacy.BigIntSize:])
 
-		// save public key for verification signature tx
-		sigKey.PubKey = new(privacy.SchnPubKey)
-		sigKey.PubKey.G = new(privacy.EllipticPoint)
-		sigKey.PubKey.G.X, sigKey.PubKey.G.Y = privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y
+	// save public key for verification signature tx
+	sigKey.PubKey = new(privacy.SchnPubKey)
+	sigKey.PubKey.G = new(privacy.EllipticPoint)
+	sigKey.PubKey.G.Set(privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y)
 
-		sigKey.PubKey.H = new(privacy.EllipticPoint)
-		sigKey.PubKey.H.X, sigKey.PubKey.H.Y = privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y
+	sigKey.PubKey.H = new(privacy.EllipticPoint)
+	sigKey.PubKey.H.Set(privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y)
 
-		sigKey.PubKey.PK = &privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
-		tmp := new(privacy.EllipticPoint)
-		tmp.X, tmp.Y = privacy.Curve.ScalarMult(sigKey.PubKey.G.X, sigKey.PubKey.G.Y, sigKey.SK.Bytes())
-		sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y = privacy.Curve.Add(sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y, tmp.X, tmp.Y)
+	tmp := sigKey.PubKey.G.ScalarMult(sigKey.SK)
+	sigKey.PubKey.PK = tmp.Add(sigKey.PubKey.H.ScalarMult(sigKey.R))
+	tx.SigPubKey = sigKey.PubKey.PK.Compress()
 
-		tmp.X, tmp.Y = privacy.Curve.ScalarMult(sigKey.PubKey.H.X, sigKey.PubKey.H.Y, sigKey.R.Bytes())
-		sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y = privacy.Curve.Add(sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y, tmp.X, tmp.Y)
-		tx.SigPubKey = sigKey.PubKey.PK.Compress()
-
-		// signing
-		signature, err := sigKey.Sign(tx.Hash()[:])
-		if err != nil {
-			return err
-		}
-
-		// convert signature to byte array
-		tx.Sig = signature.Bytes()
-
-	} else {
-		/***** using ECDSA ****/
-		// sign with sigPrivKey
-		// prepare private key for ECDSA
-		sigKey := new(ecdsa.PrivateKey)
-		sigKey.PublicKey.Curve = privacy.Curve
-		sigKey.D = new(big.Int).SetBytes(tx.sigPrivKey)
-		sigKey.PublicKey.X, sigKey.PublicKey.Y = privacy.Curve.ScalarBaseMult(tx.sigPrivKey)
-
-		// save public key for verification signature tx
-		verKey := new(privacy.EllipticPoint)
-		verKey.X, verKey.Y = sigKey.PublicKey.X, sigKey.PublicKey.Y
-		tx.SigPubKey = verKey.Compress()
-
-		// signing
-		r, s, err := ecdsa.Sign(rand.Reader, sigKey, tx.Hash()[:])
-		if err != nil {
-			return err
-		}
-
-		// convert signature to byte array
-		tx.Sig = common.ECDSASigToByteArray(r, s)
+	// signing
+	signature, err := sigKey.Sign(tx.Hash()[:])
+	if err != nil {
+		return err
 	}
+
+	// convert signature to byte array
+	tx.Sig = signature.Bytes()
 
 	return nil
 }
 
-func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
+func (tx *Tx) VerifySigTx() (bool, error) {
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
-		return false, errors.New("input transaction must be an signed one!")
+		return false, errors.New("input transaction must be an signed one")
 	}
 
 	var err error
 	res := false
 
-	if hasPrivacy {
-		/****** verify Schnorr signature *****/
-		// prepare Public key for verification
-		verKey := new(privacy.SchnPubKey)
-		//Logger.log.Infof("VERIFY ------ PUBLICKEY BYTE: %+v\n", tx.SigPubKey)
-		verKey.PK, err = privacy.DecompressKey(tx.SigPubKey)
-		if err != nil {
-			return false, err
-		}
-		//Logger.log.Infof("VERIFY ------ PUBLICKEY: %+v\n", verKey.PK)
-
-		verKey.G = new(privacy.EllipticPoint)
-		verKey.G.X, verKey.G.Y = privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y
-
-		verKey.H = new(privacy.EllipticPoint)
-		verKey.H.X, verKey.H.Y = privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y
-		//Logger.log.Infof(verKey)
-		// convert signature from byte array to SchnorrSign
-		signature := new(privacy.SchnSignature)
-		signature.SetBytes(tx.Sig)
-
-		// verify signature
-		//Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
-		res = verKey.Verify(signature, tx.Hash()[:])
-
-	} else {
-		/****** verify ECDSA signature *****/
-		// prepare Public key for verification
-		verKey := new(ecdsa.PublicKey)
-		point := new(privacy.EllipticPoint)
-		point, _ = privacy.DecompressKey(tx.SigPubKey)
-		verKey.X, verKey.Y = point.X, point.Y
-		verKey.Curve = privacy.Curve
-
-		// convert signature from byte array to ECDSASign
-		r, s := common.FromByteArrayToECDSASig(tx.Sig)
-
-		// verify signature
-		res = ecdsa.Verify(verKey, tx.Hash()[:], r, s)
+	/****** verify Schnorr signature *****/
+	// prepare Public key for verification
+	verKey := new(privacy.SchnPubKey)
+	verKey.PK, err = privacy.DecompressKey(tx.SigPubKey)
+	if err != nil {
+		return false, err
 	}
+
+	verKey.G = new(privacy.EllipticPoint)
+	verKey.G.Set(privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y)
+
+	verKey.H = new(privacy.EllipticPoint)
+	verKey.H.Set(privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y)
+
+	// convert signature from byte array to SchnorrSign
+	signature := new(privacy.SchnSignature)
+	signature.SetBytes(tx.Sig)
+
+	// verify signature
+	//Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
+	res = verKey.Verify(signature, tx.Hash()[:])
 
 	return res, nil
 }
@@ -450,7 +385,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			Logger.log.Infof("%+v", err)
 			return false
 		} else {
-			valid, err = tx.VerifySigTx(hasPrivacy)
+			valid, err = tx.VerifySigTx()
 			if valid == false {
 				if err != nil {
 					Logger.log.Infof("[PRIVACY LOG] - Error verifying signature of tx: %+v", err)
@@ -899,7 +834,7 @@ func (tx Tx) ValidateTxSalary(
 	db database.DatabaseInterface,
 ) bool {
 	// verify signature
-	valid, err := tx.VerifySigTx(false)
+	valid, err := tx.VerifySigTx()
 	if valid == false {
 		if err != nil {
 			Logger.log.Infof("Error verifying signature of tx: %+v", err)
