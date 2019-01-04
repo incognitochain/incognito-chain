@@ -177,7 +177,11 @@ func innerProductProve(a []*big.Int, b []*big.Int, c *big.Int, P, U *privacy.Ell
 
 	runningProof.Challenges[loglen] = new(big.Int).SetBytes(x[:])
 
-	Pprime := P.Add(U.ScalarMult(new(big.Int).Mul(new(big.Int).SetBytes(x[:]), c)))
+	//Pprime := P.Add(U.ScalarMult(new(big.Int).Mul(new(big.Int).SetBytes(x[:]), c)))
+	tmp:= new(big.Int).SetBytes(x[:])
+	tmp.Mul(tmp,c)
+	Pprime:=P.Add(U.ScalarMult(tmp))
+
 	ux := U.ScalarMult(new(big.Int).SetBytes(x[:]))
 	//fmt.Printf("Prover Pprime value to run sub off of: %s\n", Pprime)
 	return innerProductProveSub(runningProof, G, H, a, b, ux, Pprime)
@@ -486,7 +490,8 @@ func deltaMRP(y []*big.Int, z *big.Int, m int, rangeProofParams *CryptoParams) *
 		t3.Add(t3, tmp)
 	}
 	t3.Mod(t3, privacy.Curve.Params().N)
-	result = new(big.Int).Mod(new(big.Int).Sub(t2, t3), privacy.Curve.Params().N)
+	result = new(big.Int).Sub(t2, t3)
+	result.Mod(result,privacy.Curve.Params().N)
 	return result
 }
 
