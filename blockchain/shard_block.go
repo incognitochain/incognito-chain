@@ -24,7 +24,6 @@ type ShardToBeaconBlock struct {
 	ProducerSig   string `json:"BlockProducerSignature"`
 
 	Header ShardHeader
-	Params interface{}
 }
 
 type CrossShardBlock struct {

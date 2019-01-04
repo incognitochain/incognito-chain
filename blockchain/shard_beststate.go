@@ -37,7 +37,6 @@ type BestStateShard struct {
 // }
 
 func (self *BestStateShard) Update(block *ShardBlock) error {
-
 	self.BestBlock = block
 	self.BestBlockHash = *block.Hash()
 

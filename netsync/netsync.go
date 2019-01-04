@@ -45,9 +45,6 @@ type NetSyncConfig struct {
 		// OnSwapSig(swap *wire.MessageSwapSig)
 		// OnSwapUpdate(swap *wire.MessageSwapUpdate)
 	}
-	ShardToBeaconPool interface {
-		AddBeaconBlock(blockchain.ShardToBeaconBlock) error
-	}
 
 	FeeEstimator map[byte]*mempool.FeeEstimator
 }
@@ -337,11 +334,12 @@ func (self *NetSync) HandleMessageBlockShard(msg *wire.MessageBlockShard) {
 }
 func (self *NetSync) HandleMessageCrossShard(msg *wire.MessageCrossShard) {
 	Logger.log.Info("Handling new message CrossShard")
-	// self.config.Consensus.OnBlockReceived(&msg.Block)
+	self.config.BlockChain.OnCrossShardBlockReceived(msg.Block)
+
 }
 func (self *NetSync) HandleMessageShardToBeacon(msg *wire.MessageShardToBeacon) {
 	Logger.log.Info("Handling new message ShardToBeacon")
-	//ToDo send to blockpool for process
+	self.config.BlockChain.OnShardToBeaconBlockReceived(msg.Block)
 }
 
 func (self *NetSync) HandleMessageBFTPropose(msg *wire.MessageBFTPropose) {

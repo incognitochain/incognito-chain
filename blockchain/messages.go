@@ -28,3 +28,12 @@ func (self *BlockChain) OnGetShardState(shardID byte) *ShardChainState {
 func (self *BlockChain) OnShardStateReceived(state *ShardChainState) {
 
 }
+
+func (self *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
+	self.config.ShardToBeaconPool.AddShardBeaconBlock(block)
+}
+
+func (self *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {
+	self.config.CrossShardPool.AddCrossShardBlock(block)
+
+}

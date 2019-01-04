@@ -1,7 +1,5 @@
 package blockchain
 
-import "github.com/ninjadotorg/constant/common"
-
 type BFTBlockInterface interface {
 	// UnmarshalJSON(data []byte) error
 }
@@ -9,10 +7,11 @@ type BFTBlockInterface interface {
 type ShardToBeaconPool interface {
 	RemoveBlock(map[byte]uint64) error
 	GetFinalBlock() map[byte][]ShardToBeaconBlock
+	AddShardBeaconBlock(ShardToBeaconBlock) error
 }
+
 type CrossShardPool interface {
-	RemoveBlock([]common.Hash) error
-	GetBlock() map[byte][]CrossShardBlock
+	AddCrossShardBlock(CrossShardBlock) error
 }
 
 type NodeShardPool interface {
