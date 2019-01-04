@@ -47,6 +47,10 @@ func (priKey *SchnPrivKey) GenKey() {
 	priKey.PubKey.PK = priKey.PubKey.G.ScalarMult(priKey.SK).Add(rH)
 }
 
+func (priKey *SchnPrivKey) Set(sk *big.Int, r *big.Int){
+
+}
+
 //Sign is function which using for sign on hash array by private key
 func (priKey SchnPrivKey) Sign(hash []byte) (*SchnSignature, error) {
 	if len(hash) != common.HashSize {
@@ -81,16 +85,13 @@ func (priKey SchnPrivKey) Sign(hash []byte) (*SchnSignature, error) {
 	xe := new(big.Int)
 	xe.Mul(priKey.SK, signature.E)
 
-	signature.S1 = new(big.Int)
-	signature.S1.Sub(k1, xe)
+	signature.S1 = new(big.Int).Sub(k1, xe)
 	signature.S1.Mod(signature.S1, Curve.Params().N)
 
 	// re = Randomness * e
-	re := new(big.Int)
-	re.Mul(priKey.R, signature.E)
+	re := new(big.Int).Mul(priKey.R, signature.E)
 
-	signature.S2 = new(big.Int)
-	signature.S2.Sub(k2, re)
+	signature.S2 = new(big.Int).Sub(k2, re)
 	signature.S2.Mod(signature.S2, Curve.Params().N)
 
 	return signature, nil
@@ -106,8 +107,7 @@ func (pub SchnPubKey) Verify(signature *SchnSignature, hash []byte) bool {
 		return false
 	}
 
-	rv := pub.G.ScalarMult(signature.S1)
-	rv = rv.Add(pub.H.ScalarMult(signature.S2))
+	rv := pub.G.ScalarMult(signature.S1).Add(pub.H.ScalarMult(signature.S2))
 	rv = rv.Add(pub.PK.ScalarMult(signature.E))
 
 	ev := Hash(*rv, hash)
