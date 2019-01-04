@@ -39,6 +39,7 @@ func (lw *LoanWithdraw) Hash() *common.Hash {
 }
 
 func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+	fmt.Println("Validating LoanWithdraw with blockchain!!!")
 	// Check if a loan response with the same id exists on any chain
 	txHashes, err := bcr.GetLoanTxs(lw.LoanID)
 	if err != nil {
@@ -68,6 +69,7 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 				}
 				h := make([]byte, 32)
 				sha3.ShakeSum256(h, lw.Key)
+				fmt.Printf("Found digest, checking key: %x\n", h)
 				if bytes.Equal(h, requestMeta.KeyDigest) {
 					keyCorrect = true
 				}
@@ -83,6 +85,7 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 				if !ok {
 					continue
 				}
+				fmt.Printf("Found an accept response\n")
 				if responseMeta.Response == Accept {
 					foundResponse += 1
 				}
@@ -101,9 +104,6 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 }
 
 func (lw *LoanWithdraw) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	if len(lw.Key) != LoanKeyLength {
-		return false, false, nil
-	}
 	return true, true, nil // continue checking for fee
 }
 
