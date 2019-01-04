@@ -149,12 +149,15 @@ func (self RpcServer) handleGetBalanceByPrivatekey(params interface{}, closeChan
 	arrayParams := common.InterfaceSlice(params)
 
 	// param #1: private key of sender
+	log.Println("importing")
 	senderKeyParam := arrayParams[0]
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	log.Println(err)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	log.Println(senderKey)
 
 	// get balance for accountName in wallet
 	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
@@ -162,12 +165,14 @@ func (self RpcServer) handleGetBalanceByPrivatekey(params interface{}, closeChan
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	outcoints, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, constantTokenID)
+	log.Println(err)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	for _, out := range outcoints {
 		balance += out.CoinDetails.Value
 	}
+	log.Println(balance)
 
 	return balance, nil
 }

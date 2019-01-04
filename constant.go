@@ -35,6 +35,7 @@ func mainMaster(serverChan chan<- *Server) error {
 		return err
 	}
 	cfg = tempConfig
+	fmt.Printf("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB: %+v", cfg)
 	// Get a channel that will be closed when a shutdown signal has been
 	// triggered either from an OS signal such as SIGINT (Ctrl+C) or from
 	// another subsystem such as the RPC server.

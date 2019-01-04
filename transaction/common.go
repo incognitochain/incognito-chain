@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"fmt"
 	"math"
 	"math/big"
 	"math/rand"
@@ -51,6 +52,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 
 	// loop to random commitmentIndexs
 	cpRandNum := (len(listUsableCommitments) * randNum) - len(listUsableCommitments)
+	fmt.Printf("cpRandNum: %d\n", cpRandNum)
 	for i := 0; i < cpRandNum; i++ {
 		for true {
 			lenCommitment, _ := db.GetCommitmentLength(tokenID, chainID)

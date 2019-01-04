@@ -580,6 +580,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 			{
 				tx := tx.(*transaction.Tx)
 				meta := tx.Metadata.(*metadata.LoanRequest)
+				fmt.Printf("Found tx %x of type loan request\n", tx.Hash()[:])
 				self.config.DataBase.StoreLoanRequest(meta.LoanID, tx.Hash()[:])
 			}
 		case metadata.LoanResponseMeta:
@@ -587,6 +588,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 				tx := tx.(*transaction.Tx)
 				meta := tx.Metadata.(*metadata.LoanResponse)
 				// TODO(@0xbunyip): store multiple responses with different suffixes
+				fmt.Printf("Found tx %x of type loan response\n", tx.Hash()[:])
 				self.config.DataBase.StoreLoanResponse(meta.LoanID, tx.Hash()[:])
 			}
 		case metadata.LoanUnlockMeta:
