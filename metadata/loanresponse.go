@@ -12,8 +12,8 @@ import (
 type ValidLoanResponse int
 
 const (
-	Accept ValidLoanResponse = iota
-	Reject
+	Reject ValidLoanResponse = iota
+	Accept
 )
 
 type LoanResponse struct {
@@ -21,6 +21,11 @@ type LoanResponse struct {
 	Response ValidLoanResponse
 
 	MetadataBase
+}
+
+type ResponseData struct {
+	PublicKey []byte
+	Response  ValidLoanResponse
 }
 
 func NewLoanResponse(data map[string]interface{}) (Metadata, error) {
@@ -120,4 +125,28 @@ func (lr *LoanResponse) ValidateMetadataByItself() bool {
 // CheckTransactionFee returns true since loan response tx doesn't have fee
 func (lr *LoanResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	return true
+}
+
+// GetLoanResponses returns list of members who responded to a loan; input the hashes of request and response txs of the loan
+func GetLoanResponses(txHashes [][]byte, bcr BlockchainRetriever) []ResponseData {
+	data := []ResponseData{}
+	for _, txHash := range txHashes {
+		hash, err := (&common.Hash{}).NewHash(txHash)
+		if err != nil {
+			continue
+		}
+		_, _, _, txOld, err := bcr.GetTransactionByHash(hash)
+		if txOld == nil || err != nil {
+			continue
+		}
+		if txOld.GetMetadataType() == LoanResponseMeta {
+			meta := txOld.GetMetadata().(*LoanResponse)
+			respData := ResponseData{
+				PublicKey: txOld.GetJSPubKey(),
+				Response:  meta.Response,
+			}
+			data = append(data, respData)
+		}
+	}
+	return data
 }

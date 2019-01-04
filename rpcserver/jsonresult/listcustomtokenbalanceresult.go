@@ -12,3 +12,8 @@ type ListCustomTokenBalance struct {
 	PaymentAddress         string               `json:"PaymentAddress"`
 	ListCustomTokenBalance []CustomTokenBalance `json:"ListCustomTokenBalance"`
 }
+
+type ListLoanResponseApproved struct {
+	Approvers map[string][]string `json:"Approvers"`
+	Approved  map[string]bool     `json:"Approved"`
+}

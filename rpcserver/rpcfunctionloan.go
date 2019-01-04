@@ -1,14 +1,18 @@
 package rpcserver
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
 )
 
@@ -171,4 +175,50 @@ func (self RpcServer) handleCreateAndSendLoanPayment(params interface{}, closeCh
 		RpcServer.handleCreateRawLoanPayment,
 		RpcServer.handleSendRawLoanPayment,
 	)
+}
+
+// Input: LoanIDs
+// Output: for each loan:
+//  - approved (bool)
+//  - approvers (list pubkeys)
+func (self RpcServer) handleGetLoanResponseApproved(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	result := jsonresult.ListLoanResponseApproved{
+		Approvers: make(map[string][]string),
+		Approved:  make(map[string]bool),
+	}
+	for _, param := range arrayParams {
+		approvers := []string{}
+		strLoanID := param.(string)
+		loanID, err := hex.DecodeString(strLoanID)
+		if err != nil {
+			txHashes, err := (*self.config.Database).GetLoanTxs(loanID)
+			if err != nil {
+				respData := metadata.GetLoanResponses(txHashes, self.config.BlockChain)
+				for _, resp := range respData {
+					if resp.Response == metadata.Accept {
+						address := getPaymentAddressStrFromPubKey(resp.PublicKey)
+						approvers = append(approvers, address)
+					}
+				}
+			}
+		}
+		approveReq := self.config.BlockChain.GetDCBParams().MinLoanResponseRequire
+		approved := len(approvers) >= int(approveReq)
+		result.Approvers[strLoanID] = approvers
+		result.Approved[strLoanID] = approved
+	}
+	return result, nil
+}
+
+func getPaymentAddressStrFromPubKey(pubkey []byte) string {
+	key := &wallet.Key{
+		KeySet: cashec.KeySet{
+			PaymentAddress: privacy.PaymentAddress{
+				Pk: pubkey,
+				Tk: make([]byte, 33),
+			},
+		},
+	}
+	return key.Base58CheckSerialize(wallet.PaymentAddressType)
 }
