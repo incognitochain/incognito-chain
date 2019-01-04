@@ -12,30 +12,48 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
+	"crypto/rand"
+	"fmt"
 )
 
 func (self RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	tempRes1 := jsonresult.GetBondTypeResult{
-		BondID:         []byte("12345abc"),
-		StartSellingAt: 123,
-		EndSellingAt:   300,
-		Maturity:       400,
+	tempRes1 := jsonresult.GetBondTypeResultItem{
+		StartSellingAt: 0,
+		EndSellingAt:   500,
+		Maturity:       700,
 		BuyBackPrice:   110, // in constant
 		BuyPrice:       105, // in constant
 		TotalIssue:     1000,
 		Available:      800,
 	}
-	tempRes2 := jsonresult.GetBondTypeResult{
-		BondID:         []byte("12345xyz"),
-		StartSellingAt: 95,
+	tempRes2 := jsonresult.GetBondTypeResultItem{
+		StartSellingAt: 0,
 		EndSellingAt:   500,
-		Maturity:       400,
+		Maturity:       700,
 		BuyBackPrice:   130, // in constant
 		BuyPrice:       110, // in constant
 		TotalIssue:     2000,
 		Available:      800,
 	}
-	return []jsonresult.GetBondTypeResult{tempRes1, tempRes2}, nil
+	result := jsonresult.GetBondTypeResult{
+		BondTypes: make(map[string]jsonresult.GetBondTypeResultItem),
+	}
+
+	token := make([]byte, 32)
+	rand.Read(token)
+	fmt.Println(token)
+	token1 := common.Hash{}
+	token1.SetBytes(token)
+	result.BondTypes[token1.String()] = tempRes1
+
+	token = make([]byte, 32)
+	rand.Read(token)
+	fmt.Println(token)
+	token2 := common.Hash{}
+	token2.SetBytes(token)
+	result.BondTypes[token2.String()] = tempRes2
+
+	return result, nil
 }
 
 func (self RpcServer) handleGetGOVParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
