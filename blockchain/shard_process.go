@@ -62,12 +62,37 @@ func (self *BlockChain) ProcessShardBlockListenner(block *ShardBlock) error {
 }
 
 func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
+	blockHash := block.Hash().String()
+	Logger.log.Infof("Processing block %+v", blockHash)
+
 	err := self.ValidateShardBlockSignature(block)
 	if err != nil {
 		return err
 	}
 	self.BestState.Shard[block.Header.ShardID].Update(block)
 	self.StoreShardBlockIndex(block)
+
+	// Process transaction db
+	if len(block.Body.Transactions) < 1 {
+		Logger.log.Infof("No transaction in this block")
+	} else {
+		Logger.log.Infof("Number of transaction in this block %d", len(block.Body.Transactions))
+	}
+
+	for index, tx := range block.Body.Transactions {
+		if tx.GetType() == common.TxCustomTokenPrivacyType {
+			_ = 1
+			//TODO: do what???
+		}
+
+		err := self.StoreTransactionIndex(tx.Hash(), block.Hash(), index)
+		if err != nil {
+			Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
+			return NewBlockChainError(UnExpectedError, err)
+		}
+		Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
+	}
+
 	return nil
 }
 
@@ -157,17 +182,20 @@ func (self *BlockChain) ConnectBlock(block *ShardBlock) error {
 	} else {
 		Logger.log.Infof("Number of transaction in this block %d", len(block.Body.Transactions))
 	}
+
 	for index, tx := range block.Body.Transactions {
 		err := self.StoreTransactionIndex(tx.Hash(), block.Hash(), index)
 		if err != nil {
 			Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
 			return NewBlockChainError(UnExpectedError, err)
 		}
+
 		if len(block.Body.Transactions) < 1 {
 			Logger.log.Infof("No transaction in this block")
 		} else {
 			Logger.log.Infof("Number of transaction in this block %+v", len(block.Body.Transactions))
 		}
+
 		for index, tx := range block.Body.Transactions {
 			if tx.GetType() == common.TxCustomTokenPrivacyType {
 				_ = 1
