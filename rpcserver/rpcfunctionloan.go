@@ -188,28 +188,55 @@ func (self RpcServer) handleGetLoanResponseApproved(params interface{}, closeCha
 		Approved:  make(map[string]bool),
 	}
 	for _, param := range arrayParams {
-		approvers := []string{}
 		strLoanID := param.(string)
-		loanID, err := hex.DecodeString(strLoanID)
-		if err == nil {
-			txHashes, err := (*self.config.Database).GetLoanTxs(loanID)
-			fmt.Printf("GetLoanTxs found: %x\n", txHashes)
-			if err == nil {
-				respData := metadata.GetLoanResponses(txHashes, self.config.BlockChain)
-				for _, resp := range respData {
-					if resp.Response == metadata.Accept {
-						address := getPaymentAddressStrFromPubKey(resp.PublicKey)
-						approvers = append(approvers, address)
-					}
-				}
-			}
-		}
+		approvers := self.getResponseAddresses(strLoanID, metadata.Accept)
 		approveReq := self.config.BlockChain.GetDCBParams().MinLoanResponseRequire
 		approved := len(approvers) >= int(approveReq)
 		result.Approvers[strLoanID] = approvers
 		result.Approved[strLoanID] = approved
 	}
 	return result, nil
+}
+
+// Input: LoanIDs
+// Output: for each loan:
+//  - rejected (bool)
+//  - rejectors (list pubkeys)
+func (self RpcServer) handleGetLoanResponseRejected(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	result := jsonresult.ListLoanResponseRejected{
+		Rejectors: make(map[string][]string),
+		Rejected:  make(map[string]bool),
+	}
+	for _, param := range arrayParams {
+		strLoanID := param.(string)
+		rejectors := self.getResponseAddresses(strLoanID, metadata.Reject)
+		approveReq := self.config.BlockChain.GetDCBParams().MinLoanResponseRequire
+		rejectReq := common.NumberOfDCBGovernors - approveReq
+		rejected := len(rejectors) > int(rejectReq)
+		result.Rejectors[strLoanID] = rejectors
+		result.Rejected[strLoanID] = rejected
+	}
+	return result, nil
+}
+
+func (self RpcServer) getResponseAddresses(strLoanID string, respType metadata.ValidLoanResponse) []string {
+	addresses := []string{}
+	loanID, err := hex.DecodeString(strLoanID)
+	if err == nil {
+		txHashes, err := (*self.config.Database).GetLoanTxs(loanID)
+		fmt.Printf("GetLoanTxs found: %x\n", txHashes)
+		if err == nil {
+			respData := metadata.GetLoanResponses(txHashes, self.config.BlockChain)
+			for _, resp := range respData {
+				if resp.Response == respType {
+					address := getPaymentAddressStrFromPubKey(resp.PublicKey)
+					addresses = append(addresses, address)
+				}
+			}
+		}
+	}
+	return addresses
 }
 
 func getPaymentAddressStrFromPubKey(pubkey []byte) string {
