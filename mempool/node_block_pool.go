@@ -55,7 +55,7 @@ func (pool *NodeShardPool) RemoveBlocks(shardID byte, blockHeight uint64) error 
 	}
 
 	nodeShardPoolLock.Lock()
-	shardItems = nodeShardPool[shardID]
+	shardItems := nodeShardPool[shardID]
 	delete(shardItems, blockHeight)
 	nodeShardPool[shardID] = shardItems
 	nodeShardPoolLock.Unlock()
