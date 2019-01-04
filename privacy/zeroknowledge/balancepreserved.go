@@ -217,11 +217,13 @@ func (wit *MultiRangeWitness) Set(v []*big.Int, maxExp byte) {
 MultiRangeProof Prove
 Takes in a list of values and provides an aggregate
 range proof for all the values.
+
 changes:
  all values are concatenated
  r(x) is computed differently
  tau_x calculation is different
  delta calculation is different
+
 {(g, h \in G, \textbf{V} \in G^m ; \textbf{v, \gamma} \in Z_p^m) :
 	V_j = h^{\gamma_j}g^{v_j} \wedge v_j \in [0, 2^n - 1] \forall j \in [1, m]}
 */
@@ -331,9 +333,11 @@ func (wit *MultiRangeWitness) Prove() (*MultiRangeProof, error) {
 		vz2 = new(big.Int).Mod(vz2, privacy.Curve.Params().N)
 	}
 
-	t0 := new(big.Int).Mod(new(big.Int).Add(vz2, deltaMRP(PowerOfCY, cz, m, rangeProofParams)), privacy.Curve.Params().N)
+	t0 := new(big.Int).Add(vz2, deltaMRP(PowerOfCY, cz, m, rangeProofParams))
+	t0.Mod(t0,privacy.Curve.Params().N)
 
-	t1 := new(big.Int).Mod(new(big.Int).Add(innerProduct(l1, r0), innerProduct(l0, r1)), privacy.Curve.Params().N)
+	t1 := new(big.Int).Add(innerProduct(l1, r0), innerProduct(l0, r1))
+	t1.Mod(t1,privacy.Curve.Params().N)
 	t2 := innerProduct(l1, r1)
 	if (t2 == nil) {
 		return nil, errors.New("Creating multi-range proof failed")
@@ -370,14 +374,28 @@ func (wit *MultiRangeWitness) Prove() (*MultiRangeProof, error) {
 	for j := 0; j < m; j++ {
 		zp := new(big.Int).Exp(cz, big.NewInt(2+int64(j)), privacy.Curve.Params().N)
 		tmp1 := new(big.Int).Mul(gammas[j], zp)
-		vecRandomnessTotal = new(big.Int).Mod(new(big.Int).Add(vecRandomnessTotal, tmp1), privacy.Curve.Params().N)
+		vecRandomnessTotal = new(big.Int).Add(vecRandomnessTotal, tmp1)
+		vecRandomnessTotal.Mod(vecRandomnessTotal,privacy.Curve.Params().N)
 	}
-	taux1 := new(big.Int).Mod(new(big.Int).Mul(tau2, new(big.Int).Mul(cx, cx)), privacy.Curve.Params().N)
-	taux2 := new(big.Int).Mod(new(big.Int).Mul(tau1, cx), privacy.Curve.Params().N)
-	taux := new(big.Int).Mod(new(big.Int).Add(taux1, new(big.Int).Add(taux2, vecRandomnessTotal)), privacy.Curve.Params().N)
+	//taux1 := new(big.Int).Mod(new(big.Int).Mul(tau2, new(big.Int).Mul(cx, cx)), privacy.Curve.Params().N)
+	taux1 := new(big.Int).Mul(cx, cx)
+	taux1.Mul(taux1,tau2)
+	taux1.Mod(taux1,privacy.Curve.Params().N)
+
+	taux2 := new(big.Int).Mul(tau1, cx)
+	taux2.Mod(taux2,privacy.Curve.Params().N)
+
+	//taux := new(big.Int).Mod(new(big.Int).Add(taux1, new(big.Int).Add(taux2, vecRandomnessTotal)), privacy.Curve.Params().N)
+	taux := new(big.Int).Add(taux2, vecRandomnessTotal)
+	taux.Add(taux,taux1)
+	taux.Mod(taux,privacy.Curve.Params().N)
+
 
 	MRProof.Tau = taux
-	mu := new(big.Int).Mod(new(big.Int).Add(alpha, new(big.Int).Mul(rho, cx)), privacy.Curve.Params().N)
+	//mu := new(big.Int).Mod(new(big.Int).Add(alpha, new(big.Int).Mul(rho, cx)), privacy.Curve.Params().N)
+	mu:= new(big.Int).Mul(rho, cx)
+	mu.Add(mu,alpha)
+	mu.Mod(mu,privacy.Curve.Params().N)
 	MRProof.Mu = mu
 	HPrime := make([]*privacy.EllipticPoint, len(rangeProofParams.BPH))
 	for i := range HPrime {
@@ -444,7 +462,8 @@ func (pro *MultiRangeProof) Verify() bool {
 	}
 
 	tmp1 := new(privacy.EllipticPoint).Zero()
-	zneg := new(big.Int).Mod(new(big.Int).Neg(cz), privacy.Curve.Params().N)
+	zneg := new(big.Int).Neg(cz)
+	zneg.Mod(zneg, privacy.Curve.Params().N)
 	for i := range rangeProofParams.BPG {
 		tmp1 = tmp1.Add(rangeProofParams.BPG[i].ScalarMult(zneg))
 	}
@@ -463,7 +482,8 @@ func (pro *MultiRangeProof) Verify() bool {
 		for i := 0; i < bitsPerValue; i++ {
 			val1 := new(big.Int).Mul(cz, PowersOfY[j*bitsPerValue+i])
 			zp := new(big.Int).Exp(cz, big.NewInt(2+int64(j)), privacy.Curve.Params().N)
-			val2 := new(big.Int).Mod(new(big.Int).Mul(zp, PowerOfTwos[i]), privacy.Curve.Params().N)
+			val2 := new(big.Int).Mul(zp, PowerOfTwos[i])
+			val2.Mod(val2,privacy.Curve.Params().N)
 			tmp2 = tmp2.Add(HPrime[j*bitsPerValue+i].ScalarMult(new(big.Int).Add(val1, val2)))
 		}
 	}

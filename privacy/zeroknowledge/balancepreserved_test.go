@@ -27,5 +27,5 @@ func TestPKComMultiRange(t *testing.T) {
 
 	res := Vproof.Verify()
 
-	assert.Equal(t,true, res, )
+	assert.Equal(t,true, res)
 }
