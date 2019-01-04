@@ -134,7 +134,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			// sign Tx
 			temp.SigPubKey = tokenParams.Receiver[0].PaymentAddress.Pk
 			temp.sigPrivKey = *senderKey
-			err = temp.SignTx(common.FalseValue)
+			err = temp.SignTx()
 
 			txCustomToken.TxTokenPrivacyData.TxNormal = temp
 			hashInitToken, err := txCustomToken.TxTokenPrivacyData.Hash()

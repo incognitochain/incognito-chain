@@ -108,7 +108,7 @@ func (tx *Tx) Init(
 		tx.sigPrivKey = *senderSK
 		tx.PubKeyLastByteSender = pkLastByteSender
 
-		err := tx.SignTx(hasPrivacy)
+		err := tx.SignTx()
 		if err != nil {
 			return NewTransactionErr(UnexpectedErr, err)
 		}
@@ -271,7 +271,7 @@ func (tx *Tx) Init(
 
 	// sign tx
 	tx.PubKeyLastByteSender = pkLastByteSender
-	err = tx.SignTx(hasPrivacy)
+	err = tx.SignTx()
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
@@ -284,29 +284,23 @@ func (tx *Tx) Init(
 }
 
 // SignTx - signs tx
-func (tx *Tx) SignTx(hasPrivacy bool) error {
+func (tx *Tx) SignTx() error {
 	//Check input transaction
 	if tx.Sig != nil {
 		return errors.New("input transaction must be an unsigned one")
 	}
 
+
+
 	/****** using Schnorr *******/
 	// sign with sigPrivKey
 	// prepare private key for Schnorr
+	sk := new(big.Int).SetBytes(tx.sigPrivKey[:privacy.BigIntSize])
+	r := new(big.Int).SetBytes(tx.sigPrivKey[privacy.BigIntSize:])
 	sigKey := new(privacy.SchnPrivKey)
-	sigKey.SK = new(big.Int).SetBytes(tx.sigPrivKey[:privacy.BigIntSize])
-	sigKey.R = new(big.Int).SetBytes(tx.sigPrivKey[privacy.BigIntSize:])
+	sigKey.Set(sk, r)
 
 	// save public key for verification signature tx
-	sigKey.PubKey = new(privacy.SchnPubKey)
-	sigKey.PubKey.G = new(privacy.EllipticPoint)
-	sigKey.PubKey.G.Set(privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y)
-
-	sigKey.PubKey.H = new(privacy.EllipticPoint)
-	sigKey.PubKey.H.Set(privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y)
-
-	tmp := sigKey.PubKey.G.ScalarMult(sigKey.SK)
-	sigKey.PubKey.PK = tmp.Add(sigKey.PubKey.H.ScalarMult(sigKey.R))
 	tx.SigPubKey = sigKey.PubKey.PK.Compress()
 
 	// signing
@@ -828,14 +822,11 @@ func (tx *Tx) InitTxSalary(
 	tx.SigPubKey = receiverAddr.Pk
 	tx.sigPrivKey = *privKey
 	tx.SetMetadata(metaData)
-	err = tx.SignTx(false)
+	err = tx.SignTx()
 	if err != nil {
 		return err
 	}
 
-	if len(tx.Proof.InputCoins) > 0 {
-		Logger.log.Info(11111)
-	}
 	return nil
 }
 
