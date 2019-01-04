@@ -470,13 +470,17 @@ func deltaMRP(y []*big.Int, z *big.Int, m int, rangeProofParams *CryptoParams) *
 	po2sum := new(big.Int).Sub(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(rangeProofParams.V/m)), privacy.Curve.Params().N), big.NewInt(1))
 	t3 := big.NewInt(0)
 	for j := 0; j < m; j++ {
-		zp := new(big.Int).Exp(z, big.NewInt(3+int64(j)), privacy.Curve.Params().N)
-		tmp1 := new(big.Int).Mod(new(big.Int).Mul(zp, po2sum), privacy.Curve.Params().N)
-		t3 = new(big.Int).Mod(new(big.Int).Add(t3, tmp1), privacy.Curve.Params().N)
+		//zp := new(big.Int).Exp(z, big.NewInt(3+int64(j)), privacy.Curve.Params().N)
+		//tmp1 := new(big.Int).Mod(new(big.Int).Mul(zp, po2sum), privacy.Curve.Params().N)
+		//t3 = new(big.Int).Mod(new(big.Int).Add(t3, tmp1), privacy.Curve.Params().N)
 
-		//t3 = new(big.Int).Exp(z, big.NewInt(3+int64(j)), privacy.Curve.Params().N)
-		
+		tmp := new(big.Int).Exp(z, big.NewInt(3+int64(j)), privacy.Curve.Params().N)
+		tmp.Mul(tmp, po2sum)
+		t3.Add(t3, tmp)
 	}
+
+	t3.Mod(t3, privacy.Curve.Params().N)
+
 	result = new(big.Int).Mod(new(big.Int).Sub(t2, t3), privacy.Curve.Params().N)
 	return result
 }
