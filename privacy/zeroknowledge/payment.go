@@ -718,7 +718,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 	return proof, nil
 }
 
-func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
+func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	// has no privacy
 	if !hasPrivacy {
 		var sumInputValue, sumOutputValue uint64
@@ -783,7 +783,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee ui
 		// get commitments list from CommitmentIndices
 		commitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
 		for j := 0; j < privacy.CMRingSize; j++ {
-			commitmentBytes, err := db.GetCommitmentByIndex(tokenID, pro.OneOfManyProof[i].CommitmentIndices[j], chainId)
+			commitmentBytes, err := db.GetCommitmentByIndex(tokenID, pro.OneOfManyProof[i].CommitmentIndices[j], shardID)
 			if err != nil {
 				fmt.Printf("err 1\n")
 				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("Zero knowledge verification error"))

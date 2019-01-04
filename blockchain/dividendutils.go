@@ -1,5 +1,12 @@
 package blockchain
 
+import (
+	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/transaction"
+)
+
 // import (
 // 	"github.com/ninjadotorg/constant/database"
 // 	"github.com/ninjadotorg/constant/metadata"
@@ -52,19 +59,19 @@ func buildCoinbaseTxs(
 // 		amounts = append(amounts, info.Amount)
 // 	}
 
-	dividendMetaList := []metadata.Metadata{}
-	for i := 0; i < len(pks); i++ {
-		paymentAddress := privacy.PaymentAddress{
-			Pk: pks[i],
-			Tk: tks[i],
-		}
-		dividendMeta := &metadata.Dividend{
-			PayoutID:       proposal.PayoutID,
-			TokenID:        proposal.TokenID,
-			PaymentAddress: paymentAddress,
-			MetadataBase:   metadata.MetadataBase{Type: metadata.DividendMeta},
-		}
-		dividendMetaList = append(dividendMetaList, dividendMeta)
-	}
-	return buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db, dividendMetaList)
-}
+// 	dividendMetaList := []metadata.Metadata{}
+// 	for i := 0; i < len(pks); i++ {
+// 		paymentAddress := privacy.PaymentAddress{
+// 			Pk: pks[i],
+// 			Tk: tks[i],
+// 		}
+// 		dividendMeta := &metadata.Dividend{
+// 			PayoutID:       proposal.PayoutID,
+// 			TokenID:        proposal.TokenID,
+// 			PaymentAddress: paymentAddress,
+// 			MetadataBase:   metadata.MetadataBase{Type: metadata.DividendMeta},
+// 		}
+// 		dividendMetaList = append(dividendMetaList, dividendMeta)
+// 	}
+// 	return buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db, dividendMetaList)
+// }

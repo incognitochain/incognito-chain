@@ -37,7 +37,7 @@ func (mb *MetadataBase) Hash() *common.Hash {
 	return &hash
 }
 
-func (mb *MetadataBase) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
+func (mb *MetadataBase) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
 	return true
 }
 
@@ -112,7 +112,7 @@ type BlockchainRetriever interface {
 
 	// For validating cmb
 	GetCMB([]byte) (privacy.PaymentAddress, []privacy.PaymentAddress, uint64, *common.Hash, uint8, uint64, error)
-	GetBlockHeightByBlockHash(*common.Hash) (int32, byte, error)
+	GetShardBlockHeightByHash(*common.Hash) (uint64, byte, error)
 	GetCMBResponse([]byte) ([][]byte, error)
 	GetDepositSend([]byte) ([]byte, error)
 	GetWithdrawRequest([]byte) ([]byte, uint8, error)
@@ -126,7 +126,7 @@ type Metadata interface {
 	// isContinue, ok, err
 	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
-	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool
+	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool
 	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
 }
 

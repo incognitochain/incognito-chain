@@ -121,7 +121,7 @@ func (tx *Tx) Init(
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
 	if hasPrivacy {
-		commitmentIndexs, myCommitmentIndexs = RandomCommitmentsProcess(inputCoins, privacy.CMRingSize, db, chainID, tokenID)
+		commitmentIndexs, myCommitmentIndexs = RandomCommitmentsProcess(inputCoins, privacy.CMRingSize, db, shardID, tokenID)
 
 		// Check number of list of random commitments, list of random commitment indices
 		if len(commitmentIndexs) != len(inputCoins)*privacy.CMRingSize {
@@ -182,7 +182,7 @@ func (tx *Tx) Init(
 			sndOut = privacy.RandInt()
 			for true {
 
-				ok1, err := CheckSNDerivatorExistence(tokenID, sndOut, chainID, db)
+				ok1, err := CheckSNDerivatorExistence(tokenID, sndOut, shardID, db)
 				if err != nil {
 					Logger.log.Error(err)
 				}
@@ -369,7 +369,7 @@ func (tx *Tx) validateMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Verify tx signature
 // - Verify the payment proof
 // - Check double spendingComInputOpeningsWitnessval
-func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
+func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	//hasPrivacy = false
 	start := time.Now()
 	// Verify tx signature
@@ -412,7 +412,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		tokenID.SetBytes(common.ConstantID[:])
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
-			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, chainId, db); ok || err != nil {
+			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, shardID, db); ok || err != nil {
 				fmt.Printf("snd existed: %d\n", i)
 				return false
 			}
@@ -429,7 +429,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 
 		// Verify the payment proof
-		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, chainId, tokenID)
+		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, shardID, tokenID)
 		fmt.Printf("proof valid: %v\n", valid)
 		if valid == false {
 			Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION PAYMENT PROOF")
@@ -675,7 +675,7 @@ func (tx *Tx) ValidateTxByItself(
 ) bool {
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
-	ok := tx.ValidateTransaction(hasPrivacy, db, chainID, constantTokenID)
+	ok := tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
 	fmt.Printf("ok validatetxbyitself validatetransaction: %d\n", ok)
 	if !ok {
 		return false
@@ -801,11 +801,11 @@ func (tx *Tx) InitTxSalary(
 	sndOut := privacy.RandInt()
 	for true {
 		lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
-		chainIdSender, err := common.GetTxSenderChain(lastByte)
+		shardIDSender, err := common.GetTxSenderChain(lastByte)
 
 		tokenID := &common.Hash{}
 		tokenID.SetBytes(common.ConstantID[:])
-		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, chainIdSender, db)
+		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, shardIDSender, db)
 		if err != nil {
 			return err
 		}
@@ -852,10 +852,10 @@ func (tx Tx) ValidateTxSalary(
 
 	// check whether output coin's SND exists in SND list or not
 	lastByte := tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress())-1]
-	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	shardIDSender, err := common.GetTxSenderChain(lastByte)
 	tokenID := &common.Hash{}
 	tokenID.SetBytes(common.ConstantID[:])
-	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, chainIdSender, db); ok || err != nil {
+	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, shardIDSender, db); ok || err != nil {
 		return false
 	}
 

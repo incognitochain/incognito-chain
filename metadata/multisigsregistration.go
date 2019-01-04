@@ -33,7 +33,7 @@ func NewMultiSigsRegistration(
 func (msReg *MultiSigsRegistration) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
 	_, err := db.GetMultiSigsRegistration(msReg.PaymentAddress.Pk)

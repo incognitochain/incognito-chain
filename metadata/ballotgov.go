@@ -74,9 +74,9 @@ type SealedLv1GOVBallotMetadata struct {
 	MetadataBase
 }
 
-func (sealedLv1GOVBallotMetadata *SealedLv1GOVBallotMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
-	endedGOVPivot := bcr.GetGOVConstitutionEndHeight(chainID)
-	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+func (sealedLv1GOVBallotMetadata *SealedLv1GOVBallotMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+	endedGOVPivot := bcr.GetGOVConstitutionEndHeight(shardID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(shardID) + 1
 	lv3GOVPivot := endedGOVPivot - common.EncryptionPhaseDuration
 	lv2GOVPivot := lv3GOVPivot - common.EncryptionPhaseDuration
 	lv1GOVPivot := lv2GOVPivot - common.EncryptionPhaseDuration
@@ -154,9 +154,9 @@ type SealedLv2GOVBallotMetadata struct {
 	MetadataBase
 }
 
-func (sealedLv2GOVBallotMetadata *SealedLv2GOVBallotMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
-	endedGOVPivot := bcr.GetGOVConstitutionEndHeight(chainID)
-	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+func (sealedLv2GOVBallotMetadata *SealedLv2GOVBallotMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+	endedGOVPivot := bcr.GetGOVConstitutionEndHeight(shardID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(shardID) + 1
 	lv3GOVPivot := endedGOVPivot - common.EncryptionPhaseDuration
 	lv2GOVPivot := lv3GOVPivot - common.EncryptionPhaseDuration
 	if !(currentBlockHeight < lv2GOVPivot && currentBlockHeight >= lv3GOVPivot) {
@@ -226,10 +226,10 @@ type SealedLv3GOVBallotMetadata struct {
 	MetadataBase
 }
 
-func (sealedLv3GOVBallotMetadata *SealedLv3GOVBallotMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
-	startedGOVPivot := bcr.GetGOVConstitutionStartHeight(chainID)
-	endedGOVPivot := bcr.GetGOVConstitutionEndHeight(chainID)
-	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+func (sealedLv3GOVBallotMetadata *SealedLv3GOVBallotMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+	startedGOVPivot := bcr.GetGOVConstitutionStartHeight(shardID)
+	endedGOVPivot := bcr.GetGOVConstitutionEndHeight(shardID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(shardID) + 1
 	lv3GOVPivot := endedGOVPivot - common.EncryptionPhaseDuration
 	if !(currentBlockHeight < lv3GOVPivot && currentBlockHeight >= startedGOVPivot) {
 		return false
@@ -349,9 +349,9 @@ func (normalGOVBallotFromSealerMetadata *NormalGOVBallotFromSealerMetadata) Vali
 	return true, nil
 }
 
-func (normalGOVBallotFromSealerMetadata *NormalGOVBallotFromSealerMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
-	endedGOVPivot := bcr.GetGOVConstitutionEndHeight(chainID)
-	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+func (normalGOVBallotFromSealerMetadata *NormalGOVBallotFromSealerMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+	endedGOVPivot := bcr.GetGOVConstitutionEndHeight(shardID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(shardID) + 1
 	lv3GOVPivot := endedGOVPivot - common.EncryptionPhaseDuration
 	lv2GOVPivot := lv3GOVPivot - common.EncryptionPhaseDuration
 	lv1GOVPivot := lv2GOVPivot - common.EncryptionPhaseDuration
@@ -458,9 +458,9 @@ func (normalGOVBallotFromOwnerMetadata *NormalGOVBallotFromOwnerMetadata) Valida
 	return true
 }
 
-func (normalGOVBallotFromOwnerMetadata *NormalGOVBallotFromOwnerMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
-	endedGOVPivot := bcr.GetGOVConstitutionEndHeight(chainID)
-	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+func (normalGOVBallotFromOwnerMetadata *NormalGOVBallotFromOwnerMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+	endedGOVPivot := bcr.GetGOVConstitutionEndHeight(shardID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(shardID) + 1
 	lv3GOVPivot := endedGOVPivot - common.EncryptionPhaseDuration
 	lv2GOVPivot := lv3GOVPivot - common.EncryptionPhaseDuration
 	lv1GOVPivot := lv2GOVPivot - common.EncryptionPhaseDuration

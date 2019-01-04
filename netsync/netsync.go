@@ -276,7 +276,7 @@ func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan s
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	Logger.log.Info("Handling new message - " + wire.CmdGetBlocks)
 	// blockHash, _ := common.Hash{}.NewHashFromStr(msg.LastBlockHash)
-	// senderBlockHeaderIndex, shardID, err := self.config.BlockChain.GetBlockHeightByBlockHash(blockHash)
+	// senderBlockHeaderIndex, shardID, err := self.config.BlockChain.GetShardBlockHeightByHash(blockHash)
 	// if err == nil {
 	// 	bestHashStr := self.config.BlockChain.BestState[shardID].BestBlockHash.String()
 	// 	Logger.log.Infof("Blockhash from message %s", blockHash.String())

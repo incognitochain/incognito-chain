@@ -74,9 +74,9 @@ type SealedLv1DCBBallotMetadata struct {
 	MetadataBase
 }
 
-func (sealedLv1DCBBallotMetadata *SealedLv1DCBBallotMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
-	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(chainID)
-	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+func (sealedLv1DCBBallotMetadata *SealedLv1DCBBallotMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(shardID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(shardID) + 1
 	lv3DCBPivot := endedDCBPivot - common.EncryptionPhaseDuration
 	lv2DCBPivot := lv3DCBPivot - common.EncryptionPhaseDuration
 	lv1DCBPivot := lv2DCBPivot - common.EncryptionPhaseDuration
@@ -154,9 +154,9 @@ type SealedLv2DCBBallotMetadata struct {
 	MetadataBase
 }
 
-func (sealedLv2DCBBallotMetadata *SealedLv2DCBBallotMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
-	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(chainID)
-	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+func (sealedLv2DCBBallotMetadata *SealedLv2DCBBallotMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(shardID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(shardID) + 1
 	lv3DCBPivot := endedDCBPivot - common.EncryptionPhaseDuration
 	lv2DCBPivot := lv3DCBPivot - common.EncryptionPhaseDuration
 	if !(currentBlockHeight < lv2DCBPivot && currentBlockHeight >= lv3DCBPivot) {
@@ -226,10 +226,10 @@ type SealedLv3DCBBallotMetadata struct {
 	MetadataBase
 }
 
-func (sealedLv3DCBBallotMetadata *SealedLv3DCBBallotMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
-	startedDCBPivot := bcr.GetDCBConstitutionStartHeight(chainID)
-	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(chainID)
-	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+func (sealedLv3DCBBallotMetadata *SealedLv3DCBBallotMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+	startedDCBPivot := bcr.GetDCBConstitutionStartHeight(shardID)
+	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(shardID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(shardID) + 1
 	lv3DCBPivot := endedDCBPivot - common.EncryptionPhaseDuration
 	if !(currentBlockHeight < lv3DCBPivot && currentBlockHeight >= startedDCBPivot) {
 		return false
@@ -349,9 +349,9 @@ func (normalDCBBallotFromSealerMetadata *NormalDCBBallotFromSealerMetadata) Vali
 	return true, nil
 }
 
-func (normalDCBBallotFromSealerMetadata *NormalDCBBallotFromSealerMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
-	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(chainID)
-	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+func (normalDCBBallotFromSealerMetadata *NormalDCBBallotFromSealerMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(shardID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(shardID) + 1
 	lv3DCBPivot := endedDCBPivot - common.EncryptionPhaseDuration
 	lv2DCBPivot := lv3DCBPivot - common.EncryptionPhaseDuration
 	lv1DCBPivot := lv2DCBPivot - common.EncryptionPhaseDuration
@@ -458,9 +458,9 @@ func (normalDCBBallotFromOwnerMetadata *NormalDCBBallotFromOwnerMetadata) Valida
 	return true
 }
 
-func (normalDCBBallotFromOwnerMetadata *NormalDCBBallotFromOwnerMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
-	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(chainID)
-	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+func (normalDCBBallotFromOwnerMetadata *NormalDCBBallotFromOwnerMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(shardID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(shardID) + 1
 	lv3DCBPivot := endedDCBPivot - common.EncryptionPhaseDuration
 	lv2DCBPivot := lv3DCBPivot - common.EncryptionPhaseDuration
 	lv1DCBPivot := lv2DCBPivot - common.EncryptionPhaseDuration

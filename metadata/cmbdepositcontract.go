@@ -11,14 +11,14 @@ import (
 )
 
 type CMBDepositContract struct {
-	MaturityAt    int32
+	MaturityAt    uint64
 	TotalInterest uint64
 	DepositValue  uint64
 	NoticePeriod  int32
 	Receiver      privacy.PaymentAddress // address of user who wants to deposit
 	CMBAddress    privacy.PaymentAddress // address of CMB, must be the same as the one creating this tx
 
-	ValidUntil int32
+	ValidUntil uint64
 	MetadataBase
 }
 
@@ -31,11 +31,11 @@ func NewCMBDepositContract(data map[string]interface{}) *CMBDepositContract {
 	if err != nil {
 		return nil
 	}
-	maturity := int32(data["MaturityAt"].(float64))
+	maturity := uint64(data["MaturityAt"].(float64))
 	value := uint64(data["DepositValue"].(float64))
 	interest := uint64(data["TotalInterest"].(float64))
 	notice := int32(data["NoticePeriod"].(float64))
-	validUntil := int32(data["ValidUntil"].(float64))
+	validUntil := uint64(data["ValidUntil"].(float64))
 	result := CMBDepositContract{
 		MaturityAt:    maturity,
 		TotalInterest: interest,
@@ -64,8 +64,8 @@ func (dc *CMBDepositContract) Hash() *common.Hash {
 	return &hash
 }
 
-func (dc *CMBDepositContract) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
-	if bcr.GetHeight()+1 >= dc.ValidUntil {
+func (dc *CMBDepositContract) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+	if bcr.GetHeight(shardID)+1 >= dc.ValidUntil {
 		return false, errors.Errorf("ValidUntil must be larger than block height")
 	}
 

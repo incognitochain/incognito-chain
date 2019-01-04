@@ -31,7 +31,7 @@ func (cref *CMBInitRefund) Hash() *common.Hash {
 	return &hash
 }
 
-func (cref *CMBInitRefund) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (cref *CMBInitRefund) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if cmb init request existed
 	_, _, _, txHash, state, _, err := bcr.GetCMB(cref.MainAccount.Bytes())
 	if err != nil {
@@ -43,8 +43,8 @@ func (cref *CMBInitRefund) ValidateTxWithBlockChain(txr Transaction, bcr Blockch
 	if err != nil {
 		return false, err
 	}
-	reqBlockHeight, _, err := bcr.GetBlockHeightByBlockHash(blockHash)
-	curBlockHeight := bcr.GetHeight()
+	reqBlockHeight, _, err := bcr.GetShardBlockHeightByHash(blockHash)
+	curBlockHeight := bcr.GetHeight(shardID)
 	if curBlockHeight-reqBlockHeight < CMBInitRefundPeriod {
 		return false, errors.Errorf("still waiting for repsponses, cannot refund cmb init request now")
 	}

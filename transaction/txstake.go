@@ -109,15 +109,15 @@ func (tx *Tx) ValidateTxStakeBeacon(db database.DatabaseInterface, shardID byte)
 // // #param3: has staker or not?
 
 //using b, _, err := base58.Base58Check{}.Decode(data) for decode base58 string
-func (tx *Tx) ProcessTxStake(db database.DatabaseInterface, chainID byte) (string, string, bool) {
-	if tx.ValidateTxStakeBeacon(db, chainID) == true {
+func (tx *Tx) ProcessTxStake(db database.DatabaseInterface, shardID byte) (string, string, bool) {
+	if tx.ValidateTxStakeBeacon(db, shardID) == true {
 		// skip comparing all address in input coin
 		// ASSUME that all address are the same
 		res := base58.Base58Check{}.Encode(tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))
 		return common.EmptyString, res, true
 	}
 
-	if tx.ValidateTxStakeShard(db, chainID) == true {
+	if tx.ValidateTxStakeShard(db, shardID) == true {
 		// skip comparing all address in input coin
 		// ASSUME that all address are the same
 		res := base58.Base58Check{}.Encode(tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))

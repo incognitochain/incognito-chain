@@ -86,7 +86,7 @@ func ValidateTxSalary(
 	db database.DatabaseInterface,
 ) bool {
 	// verify signature
-	valid, err := tx.VerifySigTx(false)
+	valid, err := tx.VerifySigTx()
 	if valid == false {
 		if err != nil {
 			fmt.Printf("Error verifying signature of tx: %+v", err)

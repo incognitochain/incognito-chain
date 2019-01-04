@@ -53,7 +53,7 @@ func (uob UpdatingOracleBoard) CheckTransactionFee(
 func (uob UpdatingOracleBoard) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
 	govBoardPubKeys := bcr.GetGOVBoardPubKeys()

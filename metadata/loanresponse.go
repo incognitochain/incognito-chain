@@ -62,7 +62,7 @@ func txCreatedByDCBBoardMember(txr Transaction, bcr BlockchainRetriever) bool {
 	return isBoard
 }
 
-func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	fmt.Println("Validating LoanResponse with blockchain!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	// Check if only board members created this tx
 	if !txCreatedByDCBBoardMember(txr, bcr) {

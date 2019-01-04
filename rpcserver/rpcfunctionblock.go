@@ -192,9 +192,9 @@ func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-ch
 getblockcount RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetBlockCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	chainId := byte(int(params.(float64)))
-	if self.config.BlockChain.BestState != nil && self.config.BlockChain.BestState[chainId] != nil && self.config.BlockChain.BestState[chainId].BestBlock != nil {
-		return self.config.BlockChain.BestState[chainId].BestBlock.Header.Height + 1, nil
+	shardID := byte(int(params.(float64)))
+	if self.config.BlockChain.BestState != nil && self.config.BlockChain.BestState[shardID] != nil && self.config.BlockChain.BestState[shardID].BestBlock != nil {
+		return self.config.BlockChain.BestState[shardID].BestBlock.Header.Height + 1, nil
 	}
 	return 0, nil
 }

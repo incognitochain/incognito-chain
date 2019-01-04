@@ -41,38 +41,38 @@ package blockchain
 // 	return value, amounts
 // }
 
-func buildPaymentForCoin(
-	txRequest *transaction.TxCustomToken,
-	amount uint64,
-	saleID []byte,
-	producerPrivateKey *privacy.SpendingKey,
-	db database.DatabaseInterface,
-) (*transaction.TxCustomToken, error) {
-	// Mint and send Constant
-	meta := txRequest.Metadata.(*metadata.CrowdsaleRequest)
-	metaPay := &metadata.CrowdsalePayment{
-		RequestedTxID: &common.Hash{},
-		SaleID:        make([]byte, len(saleID)),
-	}
-	hash := txRequest.Hash()
-	copy(metaPay.RequestedTxID[:], hash[:])
-	copy(metaPay.SaleID, saleID)
-	metaPayList := []metadata.Metadata{metaPay}
+// func buildPaymentForCoin(
+// 	txRequest *transaction.TxCustomToken,
+// 	amount uint64,
+// 	saleID []byte,
+// 	producerPrivateKey *privacy.SpendingKey,
+// 	db database.DatabaseInterface,
+// ) (*transaction.TxCustomToken, error) {
+// 	// Mint and send Constant
+// 	meta := txRequest.Metadata.(*metadata.CrowdsaleRequest)
+// 	metaPay := &metadata.CrowdsalePayment{
+// 		RequestedTxID: &common.Hash{},
+// 		SaleID:        make([]byte, len(saleID)),
+// 	}
+// 	hash := txRequest.Hash()
+// 	copy(metaPay.RequestedTxID[:], hash[:])
+// 	copy(metaPay.SaleID, saleID)
+// 	metaPayList := []metadata.Metadata{metaPay}
 
-	amounts := []uint64{amount}
-	pks := [][]byte{meta.PaymentAddress.Pk[:]}
-	tks := [][]byte{meta.PaymentAddress.Tk[:]}
-	txs, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db, metaPayList) // There's only one tx in txs
-	if err != nil {
-		return nil, err
-	}
+// 	amounts := []uint64{amount}
+// 	pks := [][]byte{meta.PaymentAddress.Pk[:]}
+// 	tks := [][]byte{meta.PaymentAddress.Tk[:]}
+// 	txs, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db, metaPayList) // There's only one tx in txs
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	txToken := &transaction.TxCustomToken{
-		Tx:          *(txs[0]),
-		TxTokenData: transaction.TxTokenData{},
-	}
-	return txToken, nil
-}
+// 	txToken := &transaction.TxCustomToken{
+// 		Tx:          *(txs[0]),
+// 		TxTokenData: transaction.TxTokenData{},
+// 	}
+// 	return txToken, nil
+// }
 
 // func transferTxToken(tokenAmount uint64, unspentTxTokenOuts []transaction.TxTokenVout, tokenID, receiverPk []byte) (*transaction.TxCustomToken, int, error) {
 // 	sumTokens := uint64(0)
@@ -199,7 +199,7 @@ func buildPaymentForCoin(
 // 	saleDataMap map[string]*params.SaleData,
 // 	unspentTokenMap map[string]([]transaction.TxTokenVout),
 // 	rt []byte,
-// 	chainID byte,
+// 	shardID byte,
 // 	saleID []byte,
 // 	producerPrivateKey *privacy.SpendingKey,
 // ) (*transaction.TxCustomToken, error) {
@@ -293,7 +293,7 @@ func buildPaymentForCoin(
 // 	saleDataMap map[string]*params.SaleData,
 // 	unspentTokenMap map[string][]transaction.TxTokenVout,
 // 	rt []byte,
-// 	chainID byte,
+// 	shardID byte,
 // 	producerPrivateKey *privacy.SpendingKey,
 // 	respCounter map[string]int,
 // ) {
@@ -370,7 +370,7 @@ func buildPaymentForCoin(
 // 	saleDataMap map[string]*params.SaleData,
 // 	unspentTokenMap map[string][]transaction.TxTokenVout,
 // 	rt []byte,
-// 	chainID byte,
+// 	shardID byte,
 // 	producerPrivateKey *privacy.SpendingKey,
 // ) {
 // 	// Create corresponding payment to send selling asset
@@ -450,7 +450,7 @@ func buildPaymentForCoin(
 // 				saleDataMap,
 // 				unspentTokenMap,
 // 				rt,
-// 				chainID,
+// 				shardID,
 // 				producerPrivateKey,
 // 			)
 // 		}
@@ -463,7 +463,7 @@ func buildPaymentForCoin(
 // 				saleDataMap,
 // 				unspentTokenMap,
 // 				rt,
-// 				chainID,
+// 				shardID,
 // 				producerPrivateKey,
 // 				respCounter,
 // 			)

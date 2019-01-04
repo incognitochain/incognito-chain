@@ -13,11 +13,11 @@ import (
 
 	"math/big"
 
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
-	"github.com/ninjadotorg/constant/common/base58"
 )
 
 // StoreSerialNumbers - store list serialNumbers by shardID
@@ -572,7 +572,7 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, shardID
 	reverseTxIndex := make([]byte, 4)
 	binary.LittleEndian.PutUint32(reverseTxIndex, uint32(bigNumberTx-int32(txIndex)))
 
-	key1 := string(privateKeyPrefix) + base58.Base58Check{}.Encode((*privateKey)[:], 0x00) + string(Splitter) + string(int(chainId)) + string(Splitter) + string(reverseBlockHeight) + string(Splitter) + string(reverseTxIndex)
+	key1 := string(privateKeyPrefix) + base58.Base58Check{}.Encode((*privateKey)[:], 0x00) + string(Splitter) + string(int(shardID)) + string(Splitter) + string(reverseBlockHeight) + string(Splitter) + string(reverseTxIndex)
 	key2 := string(transactionKeyPrefix) + unspentTxHash.String()
 
 	if ok, _ := db.HasValue([]byte(key1)); ok {
@@ -604,22 +604,22 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, shardID
 
 */
 /*func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKey) (map[byte]([]([]byte)), error) {
-	prefix := []byte(string(privateKeyPrefix) + privateKey.String())
-	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
+prefix := []byte(string(privateKeyPrefix) + privateKey.String())
+iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 
-	results := make(map[byte]([]([]byte)))
-	for iter.Next() {
-		key := iter.Key()
-		value := iter.Value()
+results := make(map[byte]([]([]byte)))
+for iter.Next() {
+	key := iter.Key()
+	value := iter.Value()
 
-		reses := strings.Split(string(key), string(Splitter))
-		tempShardID, _ := strconv.Atoi(reses[2])
-		shardID := byte(tempShardID)
-		/*tx := transaction.Tx{}
-		err := json.Unmarshal(value, &tx)
-		if err != nil {
-			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
-		}*//*
+	reses := strings.Split(string(key), string(Splitter))
+	tempShardID, _ := strconv.Atoi(reses[2])
+	shardID := byte(tempShardID)
+	/*tx := transaction.Tx{}
+	err := json.Unmarshal(value, &tx)
+	if err != nil {
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+	}*/ /*
 		data := make([]byte, len(value))
 		copy(data[:], value[:])
 		results[shardID] = append(results[shardID], data)

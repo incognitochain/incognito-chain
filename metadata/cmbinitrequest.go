@@ -59,7 +59,7 @@ func (creq *CMBInitRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (creq *CMBInitRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (creq *CMBInitRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// TODO(@0xbunyip): check that MainAccount is multisig address and is unique
 	// TODO(@0xbunyip); check that ReserveAccount is unique
 	return true, nil

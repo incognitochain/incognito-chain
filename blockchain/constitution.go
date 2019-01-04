@@ -3,11 +3,6 @@ package blockchain
 import (
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/database/lvdb"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/transaction"
 )
 
 type ConstitutionInfo struct {
@@ -44,14 +39,14 @@ type GOVConstitution struct {
 // 	}
 // }
 
-// // type DCBConstitutionHelper struct{}
-// // type GOVConstitutionHelper struct{}
+// type DCBConstitutionHelper struct{}
+// type GOVConstitutionHelper struct{}
 
-// // func (DCBConstitutionHelper) GetEndedBlockHeight(blockgen *BlkTmplGenerator, shardID byte) uint32 {
-// // 	BestBlock := blockgen.chain.BestState[shardID].BestBlock
-// // 	lastDCBConstitution := BestBlock.Header.DCBConstitution
-// // 	return lastDCBConstitution.StartedBlockHeight + lastDCBConstitution.ExecuteDuration
-// // }
+// func (DCBConstitutionHelper) GetEndedBlockHeight(blockgen *BlkTmplGenerator, shardID byte) uint32 {
+// 	BestBlock := blockgen.chain.BestState[shardID].BestBlock
+// 	lastDCBConstitution := BestBlock.Header.DCBConstitution
+// 	return lastDCBConstitution.StartedBlockHeight + lastDCBConstitution.ExecuteDuration
+// }
 
 // func NewDCBConstitution(constitutionInfo *ConstitutionInfo, currentDCBNationalWelfare int32, DCBParams *params.DCBParams) *DCBConstitution {
 // 	return &DCBConstitution{
@@ -64,72 +59,72 @@ type GOVConstitution struct {
 // type DCBConstitutionHelper struct{}
 // type GOVConstitutionHelper struct{}
 
-// func (DCBConstitutionHelper) GetConstitutionEndedBlockHeight(blockgen *BlkTmplGenerator, chainID byte) uint32 {
-// 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
+// func (DCBConstitutionHelper) GetConstitutionEndedBlockHeight(blockgen *BlkTmplGenerator, shardID byte) uint32 {
+// 	BestBlock := blockgen.chain.BestState[shardID].BestBlock
 // 	lastDCBConstitution := BestBlock.Header.DCBConstitution
 // 	return lastDCBConstitution.StartedBlockHeight + lastDCBConstitution.ExecuteDuration
 // }
 
-// func (GOVConstitutionHelper) GetConstitutionEndedBlockHeight(blockgen *BlkTmplGenerator, chainID byte) uint32 {
-// 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
+// func (GOVConstitutionHelper) GetConstitutionEndedBlockHeight(blockgen *BlkTmplGenerator, shardID byte) uint32 {
+// 	BestBlock := blockgen.chain.BestState[shardID].BestBlock
 // 	lastGOVConstitution := BestBlock.Header.GOVConstitution
 // 	return lastGOVConstitution.StartedBlockHeight + lastGOVConstitution.ExecuteDuration
 // }
 
-// // // func (DCBConstitutionHelper) GetAmountVoteToken(tx metadata.Transaction) uint64 {
-// // // 	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
-// // // }
+// func (DCBConstitutionHelper) GetAmountVoteToken(tx metadata.Transaction) uint64 {
+// 	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
+// }
 
-// // // func (GOVConstitutionHelper) GetStartedNormalVote(blockgen *BlkTmplGenerator, shardID byte) int32 {
-// // // 	BestBlock := blockgen.chain.BestState[shardID].BestBlock
-// // // 	lastGOVConstitution := BestBlock.Header.GOVConstitution
-// // // 	return lastGOVConstitution.StartedBlockHeight - common.EncryptionPhaseDuration
-// // // }
+// func (GOVConstitutionHelper) GetStartedNormalVote(blockgen *BlkTmplGenerator, shardID byte) int32 {
+// 	BestBlock := blockgen.chain.BestState[shardID].BestBlock
+// 	lastGOVConstitution := BestBlock.Header.GOVConstitution
+// 	return lastGOVConstitution.StartedBlockHeight - common.EncryptionPhaseDuration
+// }
 
-// // func (GOVConstitutionHelper) GetStartedNormalVote(blockgen *BlkTmplGenerator, shardID byte) uint32 {
-// // 	BestBlock := blockgen.chain.BestState[shardID].BestBlock
-// // 	lastGOVConstitution := BestBlock.Header.GOVConstitution
-// // 	return lastGOVConstitution.StartedBlockHeight - common.EncryptionPhaseDuration
-// // }
+// func (GOVConstitutionHelper) GetStartedNormalVote(blockgen *BlkTmplGenerator, shardID byte) uint32 {
+// 	BestBlock := blockgen.chain.BestState[shardID].BestBlock
+// 	lastGOVConstitution := BestBlock.Header.GOVConstitution
+// 	return lastGOVConstitution.StartedBlockHeight - common.EncryptionPhaseDuration
+// }
 
-// // // func (GOVConstitutionHelper) CheckVotingProposalType(tx metadata.Transaction) bool {
-// // // 	return tx.GetMetadataType() == metadata.VoteGOVProposalMeta
-// // // }
+// func (GOVConstitutionHelper) CheckVotingProposalType(tx metadata.Transaction) bool {
+// 	return tx.GetMetadataType() == metadata.VoteGOVProposalMeta
+// }
 
-func (DCBConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transaction) uint64 {
-	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
-}
+// func (DCBConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transaction) uint64 {
+// 	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
+// }
 
-// // // func (DCBConstitutionHelper) TxAcceptProposal(originTx metadata.Transaction) metadata.Transaction {
-// // // 	acceptTx := transaction.Tx{
-// // // 		Metadata: &metadata.AcceptDCBProposalMetadata{
-// // // 			DCBProposalTXID: *originTx.Hash(),
-// // // 		},
-// // // 	}
-// // // 	return &acceptTx
-// // // }
+// func (DCBConstitutionHelper) TxAcceptProposal(originTx metadata.Transaction) metadata.Transaction {
+// 	acceptTx := transaction.Tx{
+// 		Metadata: &metadata.AcceptDCBProposalMetadata{
+// 			DCBProposalTXID: *originTx.Hash(),
+// 		},
+// 	}
+// 	return &acceptTx
+// }
 
-// // func (DCBConstitutionHelper) TxAcceptProposal(txId *common.Hash) metadata.Transaction {
-// // 	acceptTx := transaction.Tx{
-// // 		Metadata: &metadata.AcceptDCBProposalMetadata{
-// // 			DCBProposalTXID: *txId,
-// // 		},
-// // 	}
-// // 	return &acceptTx
-// // }
+// func (DCBConstitutionHelper) TxAcceptProposal(txId *common.Hash) metadata.Transaction {
+// 	acceptTx := transaction.Tx{
+// 		Metadata: &metadata.AcceptDCBProposalMetadata{
+// 			DCBProposalTXID: *txId,
+// 		},
+// 	}
+// 	return &acceptTx
+// }
 
-// // func (GOVConstitutionHelper) TxAcceptProposal(txId *common.Hash) metadata.Transaction {
-// // 	acceptTx := transaction.Tx{
-// // 		Metadata: &metadata.AcceptGOVProposalMetadata{
-// // 			GOVProposalTXID: *txId,
-// // 		},
-// // 	}
-// // 	return &acceptTx
-// // }
+// func (GOVConstitutionHelper) TxAcceptProposal(txId *common.Hash) metadata.Transaction {
+// 	acceptTx := transaction.Tx{
+// 		Metadata: &metadata.AcceptGOVProposalMetadata{
+// 			GOVProposalTXID: *txId,
+// 		},
+// 	}
+// 	return &acceptTx
+// }
 
-func (GOVConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transaction) uint64 {
-	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
-}
+// func (GOVConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transaction) uint64 {
+// 	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
+// }
 
 // func (GOVConstitutionHelper) TxAcceptProposal(txId *common.Hash, voter metadata.Voter) metadata.Transaction {
 // 	acceptTx := transaction.Tx{
@@ -175,34 +170,34 @@ func (GOVConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transaction) uin
 // 	return &tx, nil
 // }
 
-func (DCBConstitutionHelper) NewTxRewardProposalSubmitter(blockgen *BlkTmplGenerator, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
-	meta := metadata.NewRewardDCBProposalSubmitterMetadata()
-	tx := transaction.Tx{}
-	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, blockgen.chain.config.DataBase, meta)
-	if err != nil {
-		return nil, err
-	}
-	return &tx, nil
-}
+// func (DCBConstitutionHelper) NewTxRewardProposalSubmitter(blockgen *BlkTmplGenerator, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
+// 	meta := metadata.NewRewardDCBProposalSubmitterMetadata()
+// 	tx := transaction.Tx{}
+// 	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, blockgen.chain.config.DataBase, meta)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return &tx, nil
+// }
 
-func (GOVConstitutionHelper) NewTxRewardProposalSubmitter(blockgen *BlkTmplGenerator, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
-	meta := metadata.NewRewardGOVProposalSubmitterMetadata()
-	tx := transaction.Tx{}
-	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, blockgen.chain.config.DataBase, meta)
-	if err != nil {
-		return nil, err
-	}
-	return &tx, nil
-}
+// func (GOVConstitutionHelper) NewTxRewardProposalSubmitter(blockgen *BlkTmplGenerator, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
+// 	meta := metadata.NewRewardGOVProposalSubmitterMetadata()
+// 	tx := transaction.Tx{}
+// 	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, blockgen.chain.config.DataBase, meta)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return &tx, nil
+// }
 
-// func (DCBConstitutionHelper) GetPubKeyVoter(blockgen *BlkTmplGenerator, chainID byte) ([]byte, error) {
-// 	bestBlock := blockgen.chain.BestState[chainID].BestBlock
+// func (DCBConstitutionHelper) GetPubKeyVoter(blockgen *BlkTmplGenerator, shardID byte) ([]byte, error) {
+// 	bestBlock := blockgen.chain.BestState[shardID].BestBlock
 // 	_, _, _, tx, _ := blockgen.chain.GetTransactionByHash(&bestBlock.Header.DCBConstitution.AcceptProposalTXID)
 // 	meta := tx.GetMetadata().(*metadata.AcceptDCBProposalMetadata)
 // 	return meta.Voter.PubKey, nil
 // }
-// func (GOVConstitutionHelper) GetPubKeyVoter(blockgen *BlkTmplGenerator, chainID byte) ([]byte, error) {
-// 	bestBlock := blockgen.chain.BestState[chainID].BestBlock
+// func (GOVConstitutionHelper) GetPubKeyVoter(blockgen *BlkTmplGenerator, shardID byte) ([]byte, error) {
+// 	bestBlock := blockgen.chain.BestState[shardID].BestBlock
 // 	_, _, _, tx, _ := blockgen.chain.GetTransactionByHash(&bestBlock.Header.GOVConstitution.AcceptProposalTXID)
 // 	meta := tx.GetMetadata().(*metadata.AcceptGOVProposalMetadata)
 // 	return meta.Voter.PubKey, nil
@@ -220,81 +215,81 @@ func (GOVConstitutionHelper) NewTxRewardProposalSubmitter(blockgen *BlkTmplGener
 // 	return uint32(common.Maxint32(GetOracleGOVNationalWelfare(), int32(0)))
 // }
 
-func (helper DCBConstitutionHelper) GetTopMostVoteGovernor(blockgen *BlkTmplGenerator) (database.CandidateList, error) {
-	return blockgen.chain.config.DataBase.GetTopMostVoteDCBGovernor(blockgen.chain.GetCurrentBoardIndex(helper))
-}
-func (helper GOVConstitutionHelper) GetTopMostVoteGovernor(blockgen *BlkTmplGenerator) (database.CandidateList, error) {
-	return blockgen.chain.config.DataBase.GetTopMostVoteGOVGovernor(blockgen.chain.GetCurrentBoardIndex(helper))
-}
+// func (helper DCBConstitutionHelper) GetTopMostVoteGovernor(blockgen *BlkTmplGenerator) (database.CandidateList, error) {
+// 	return blockgen.chain.config.DataBase.GetTopMostVoteDCBGovernor(blockgen.chain.GetCurrentBoardIndex(helper))
+// }
+// func (helper GOVConstitutionHelper) GetTopMostVoteGovernor(blockgen *BlkTmplGenerator) (database.CandidateList, error) {
+// 	return blockgen.chain.config.DataBase.GetTopMostVoteGOVGovernor(blockgen.chain.GetCurrentBoardIndex(helper))
+// }
 
-func (DCBConstitutionHelper) GetBoardSumToken(blockgen *BlkTmplGenerator) uint64 {
-	return blockgen.chain.BestState[0].BestBlock.Header.DCBGovernor.StartAmountToken
-}
+// func (DCBConstitutionHelper) GetBoardSumToken(blockgen *BlkTmplGenerator) uint64 {
+// 	return blockgen.chain.BestState[0].BestBlock.Header.DCBGovernor.StartAmountToken
+// }
 
-func (GOVConstitutionHelper) GetBoardSumToken(blockgen *BlkTmplGenerator) uint64 {
-	return blockgen.chain.BestState[0].BestBlock.Header.GOVGovernor.StartAmountToken
-}
+// func (GOVConstitutionHelper) GetBoardSumToken(blockgen *BlkTmplGenerator) uint64 {
+// 	return blockgen.chain.BestState[0].BestBlock.Header.GOVGovernor.StartAmountToken
+// }
 
-func (DCBConstitutionHelper) GetBoardFund(blockgen *BlkTmplGenerator) uint64 {
-	return blockgen.chain.BestState[0].BestBlock.Header.BankFund
-}
+// func (DCBConstitutionHelper) GetBoardFund(blockgen *BlkTmplGenerator) uint64 {
+// 	return blockgen.chain.BestState[0].BestBlock.Header.BankFund
+// }
 
-func (GOVConstitutionHelper) GetBoardFund(blockgen *BlkTmplGenerator) uint64 {
-	return blockgen.chain.BestState[0].BestBlock.Header.SalaryFund
-}
+// func (GOVConstitutionHelper) GetBoardFund(blockgen *BlkTmplGenerator) uint64 {
+// 	return blockgen.chain.BestState[0].BestBlock.Header.SalaryFund
+// }
 
-func (DCBConstitutionHelper) GetTokenID() *common.Hash {
-	id := common.Hash(common.DCBTokenID)
-	return &id
-}
+// func (DCBConstitutionHelper) GetTokenID() *common.Hash {
+// 	id := common.Hash(common.DCBTokenID)
+// 	return &id
+// }
 
-func (GOVConstitutionHelper) GetTokenID() *common.Hash {
-	id := common.Hash(common.GOVTokenID)
-	return &id
-}
+// func (GOVConstitutionHelper) GetTokenID() *common.Hash {
+// 	id := common.Hash(common.GOVTokenID)
+// 	return &id
+// }
 
-func (DCBConstitutionHelper) GetBoard(chain BlockChain) Governor {
-	return chain.BestState[0].BestBlock.Header.DCBGovernor
-}
+// func (DCBConstitutionHelper) GetBoard(chain BlockChain) Governor {
+// 	return chain.BestState[0].BestBlock.Header.DCBGovernor
+// }
 
-func (GOVConstitutionHelper) GetBoard(chain BlockChain) Governor {
-	return chain.BestState[0].BestBlock.Header.GOVGovernor
-}
+// func (GOVConstitutionHelper) GetBoard(chain BlockChain) Governor {
+// 	return chain.BestState[0].BestBlock.Header.GOVGovernor
+// }
 
-func (DCBConstitutionHelper) GetAmountVoteTokenOfBoard(blockgen *BlkTmplGenerator, pubKey []byte, boardIndex uint32) uint64 {
-	value, _ := blockgen.chain.config.DataBase.GetDCBVoteTokenAmount(boardIndex, pubKey)
-	return uint64(value)
-}
-func (GOVConstitutionHelper) GetAmountVoteTokenOfBoard(blockgen *BlkTmplGenerator, pubKey []byte, boardIndex uint32) uint64 {
-	value, _ := blockgen.chain.config.DataBase.GetGOVVoteTokenAmount(boardIndex, pubKey)
-	return uint64(value)
-}
+// func (DCBConstitutionHelper) GetAmountVoteTokenOfBoard(blockgen *BlkTmplGenerator, pubKey []byte, boardIndex uint32) uint64 {
+// 	value, _ := blockgen.chain.config.DataBase.GetDCBVoteTokenAmount(boardIndex, pubKey)
+// 	return uint64(value)
+// }
+// func (GOVConstitutionHelper) GetAmountVoteTokenOfBoard(blockgen *BlkTmplGenerator, pubKey []byte, boardIndex uint32) uint64 {
+// 	value, _ := blockgen.chain.config.DataBase.GetGOVVoteTokenAmount(boardIndex, pubKey)
+// 	return uint64(value)
+// }
 
-func (DCBConstitutionHelper) GetAmountOfVoteToBoard(blockgen *BlkTmplGenerator, candidatePubKey []byte, voterPubKey []byte, boardIndex uint32) uint64 {
-	key := lvdb.GetKeyVoteDCBBoardList(boardIndex, candidatePubKey, voterPubKey)
-	value, _ := blockgen.chain.config.DataBase.Get(key)
-	amount := lvdb.ParseValueVoteDCBBoardList(value)
-	return amount
-}
-func (GOVConstitutionHelper) GetAmountOfVoteToBoard(blockgen *BlkTmplGenerator, candidatePubKey []byte, voterPubKey []byte, boardIndex uint32) uint64 {
-	key := lvdb.GetKeyVoteGOVBoardList(boardIndex, candidatePubKey, voterPubKey)
-	value, _ := blockgen.chain.config.DataBase.Get(key)
-	amount := lvdb.ParseValueVoteGOVBoardList(value)
-	return amount
-}
+// func (DCBConstitutionHelper) GetAmountOfVoteToBoard(blockgen *BlkTmplGenerator, candidatePubKey []byte, voterPubKey []byte, boardIndex uint32) uint64 {
+// 	key := lvdb.GetKeyVoteDCBBoardList(boardIndex, candidatePubKey, voterPubKey)
+// 	value, _ := blockgen.chain.config.DataBase.Get(key)
+// 	amount := lvdb.ParseValueVoteDCBBoardList(value)
+// 	return amount
+// }
+// func (GOVConstitutionHelper) GetAmountOfVoteToBoard(blockgen *BlkTmplGenerator, candidatePubKey []byte, voterPubKey []byte, boardIndex uint32) uint64 {
+// 	key := lvdb.GetKeyVoteGOVBoardList(boardIndex, candidatePubKey, voterPubKey)
+// 	value, _ := blockgen.chain.config.DataBase.Get(key)
+// 	amount := lvdb.ParseValueVoteGOVBoardList(value)
+// 	return amount
+// }
 
-func (DCBConstitutionHelper) GetCurrentBoardPubKeys(blockgen *BlkTmplGenerator) [][]byte {
-	return blockgen.chain.BestState[0].BestBlock.Header.DCBGovernor.BoardPubKeys
-}
+// func (DCBConstitutionHelper) GetCurrentBoardPubKeys(blockgen *BlkTmplGenerator) [][]byte {
+// 	return blockgen.chain.BestState[0].BestBlock.Header.DCBGovernor.BoardPubKeys
+// }
 
-func (GOVConstitutionHelper) GetCurrentBoardPubKeys(blockgen *BlkTmplGenerator) [][]byte {
-	return blockgen.chain.BestState[0].BestBlock.Header.GOVGovernor.BoardPubKeys
-}
+// func (GOVConstitutionHelper) GetCurrentBoardPubKeys(blockgen *BlkTmplGenerator) [][]byte {
+// 	return blockgen.chain.BestState[0].BestBlock.Header.GOVGovernor.BoardPubKeys
+// }
 
-func (DCBConstitutionHelper) GetConstitutionInfo(chain BlockChain) ConstitutionInfo {
-	return chain.BestState[0].BestBlock.Header.DCBConstitution.ConstitutionInfo
-}
+// func (DCBConstitutionHelper) GetConstitutionInfo(chain BlockChain) ConstitutionInfo {
+// 	return chain.BestState[0].BestBlock.Header.DCBConstitution.ConstitutionInfo
+// }
 
-func (GOVConstitutionHelper) GetConstitutionInfo(chain BlockChain) ConstitutionInfo {
-	return chain.BestState[0].BestBlock.Header.GOVConstitution.ConstitutionInfo
-}
+// func (GOVConstitutionHelper) GetConstitutionInfo(chain BlockChain) ConstitutionInfo {
+// 	return chain.BestState[0].BestBlock.Header.GOVConstitution.ConstitutionInfo
+// }

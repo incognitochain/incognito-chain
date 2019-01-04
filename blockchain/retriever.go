@@ -4,43 +4,51 @@ import (
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	privacy "github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 func (self *BlockChain) GetDatabase() database.DatabaseInterface {
 	return self.config.DataBase
 }
 
-func (self *BlockChain) GetHeight() int32 {
-	return self.BestState[0].BestBlock.Header.Height
+func (self *BlockChain) GetHeight(shardID byte) uint64 {
+	// return self.BestState[0].BestBlock.Header.Height
+	return 0
 }
 
 func (self *BlockChain) GetDCBBoardPubKeys() [][]byte {
-	return self.BestState[0].BestBlock.Header.DCBGovernor.BoardPubKeys
+	// return self.BestState[0].BestBlock.Header.DCBGovernor.BoardPubKeys
+	return nil
 }
 
 func (self *BlockChain) GetGOVBoardPubKeys() [][]byte {
-	return self.BestState[0].BestBlock.Header.GOVGovernor.BoardPubKeys
+	// return self.BestState[0].BestBlock.Header.GOVGovernor.BoardPubKeys
+	return nil
 }
 
 func (self *BlockChain) GetDCBParams() params.DCBParams {
-	return self.BestState[0].BestBlock.Header.DCBConstitution.DCBParams
+	// return self.BestState[0].BestBlock.Header.DCBConstitution.DCBParams
+	return params.DCBParams{}
 }
 
 func (self *BlockChain) GetGOVParams() params.GOVParams {
-	return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams
+	// return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams
+	return params.GOVParams{}
 }
 
 func (self *BlockChain) GetLoanTxs(loanID []byte) ([][]byte, error) {
-	return self.config.DataBase.GetLoanTxs(loanID)
+	// return self.config.DataBase.GetLoanTxs(loanID)
+	return nil, nil
 }
 
-func (self *BlockChain) GetLoanPayment(loanID []byte) (uint64, uint64, uint32, error) {
-	return self.config.DataBase.GetLoanPayment(loanID)
+func (self *BlockChain) GetLoanPayment(loanID []byte) (uint64, uint64, uint64, error) {
+	// return self.config.DataBase.GetLoanPayment(loanID)
+	return 0, 0, 0, nil
 }
 
 func (self *BlockChain) GetCrowdsaleTxs(requestTxHash []byte) ([][]byte, error) {
-	return self.config.DataBase.GetCrowdsaleTxs(requestTxHash)
+	// return self.config.DataBase.GetCrowdsaleTxs(requestTxHash)
+	return nil, nil
 }
 
 func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*params.SaleData, error) {

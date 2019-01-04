@@ -25,7 +25,7 @@ func (rf *Refund) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	return true
 }
 
-func (rf *Refund) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (rf *Refund) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requeste tx (via SmallTxID) in current block
 	return false, nil
 }

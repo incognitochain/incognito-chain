@@ -24,18 +24,18 @@ type BlkTmplGenerator struct {
 }
 
 type ConstitutionHelper interface {
-	GetStartedNormalVote(generator *BlkTmplGenerator, chainID byte) uint32
+	GetStartedNormalVote(generator *BlkTmplGenerator, shardID byte) uint32
 	CheckSubmitProposalType(tx metadata.Transaction) bool
 	CheckVotingProposalType(tx metadata.Transaction) bool
 	GetAmountVoteTokenOfTx(tx metadata.Transaction) uint64
 	TxAcceptProposal(txId *common.Hash, voter metadata.Voter) metadata.Transaction
 	GetLowerCaseBoardType() string
-	GetConstitutionEndedBlockHeight(generator *BlkTmplGenerator, chainID byte) uint32
+	GetConstitutionEndedBlockHeight(generator *BlkTmplGenerator, shardID byte) uint32
 	CreatePunishDecryptTx([]byte) metadata.Metadata
 	GetSealerPubKey(metadata.Transaction) [][]byte
 	NewTxRewardProposalSubmitter(blockgen *BlkTmplGenerator, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error)
 	GetPaymentAddressFromSubmitProposalMetadata(tx metadata.Transaction) *privacy.PaymentAddress
-	GetPubKeyVoter(blockgen *BlkTmplGenerator, chainID byte) ([]byte, error)
+	GetPubKeyVoter(blockgen *BlkTmplGenerator, shardID byte) ([]byte, error)
 	GetPrizeProposal() uint32
 	GetTopMostVoteGovernor(blockgen *BlkTmplGenerator) (database.CandidateList, error)
 	GetCurrentBoardPubKeys(blockgen *BlkTmplGenerator) [][]byte
@@ -77,8 +77,8 @@ type TxPool interface {
 }
 
 type RewardAgent interface {
-	GetBasicSalary(chainID byte) uint64
-	GetSalaryPerTx(chainID byte) uint64
+	GetBasicSalary(shardID byte) uint64
+	GetSalaryPerTx(shardID byte) uint64
 }
 
 type buyBackFromInfo struct {
@@ -96,11 +96,11 @@ func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent 
 	}, nil
 }
 
-func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, chainID byte) (*Block, error) {
+func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*Block, error) {
 
-	prevBlock := blockgen.chain.BestState[chainID].BestBlock
-	prevBlockHash := blockgen.chain.BestState[chainID].BestBlock.Hash()
-	//prevCmTree := blockgen.chain.BestState[chainID].CmTree.MakeCopy()
+	prevBlock := blockgen.chain.BestState[shardID].BestBlock
+	prevBlockHash := blockgen.chain.BestState[shardID].BestBlock.Hash()
+	//prevCmTree := blockgen.chain.BestState[shardID].CmTree.MakeCopy()
 	sourceTxns := blockgen.txPool.MiningDescs()
 
 	var txsToAdd []metadata.Transaction
@@ -117,9 +117,9 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 	buyBackCoins := uint64(0)
 
 	// Get salary per tx
-	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(chainID)
+	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(shardID)
 	// Get basic salary on block
-	basicSalary := blockgen.rewardAgent.GetBasicSalary(chainID)
+	basicSalary := blockgen.rewardAgent.GetBasicSalary(shardID)
 
 	if len(sourceTxns) < common.MinTxsInBlock {
 		// if len of sourceTxns < MinTxsInBlock -> wait for more transactions
@@ -139,20 +139,20 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 
 	for _, txDesc := range sourceTxns {
 		tx := txDesc.Tx
-		txChainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
-		if txChainID != chainID {
+		txShardID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+		if txShardID != shardID {
 			continue
 		}
 		// ValidateTransaction vote and propose transaction
 
 		// TODO: 0xbunyip need to determine a tx is in privacy format or not
-		if !tx.ValidateTxByItself(tx.IsPrivacy(), blockgen.chain.config.DataBase, blockgen.chain, chainID) {
+		if !tx.ValidateTxByItself(tx.IsPrivacy(), blockgen.chain.config.DataBase, blockgen.chain, shardID) {
 			txToRemove = append(txToRemove, metadata.Transaction(tx))
 			continue
 		}
 
 		meta := tx.GetMetadata()
-		if meta != nil && !meta.ValidateBeforeNewBlock(tx, blockgen.chain, chainID) {
+		if meta != nil && !meta.ValidateBeforeNewBlock(tx, blockgen.chain, shardID) {
 			txToRemove = append(txToRemove, metadata.Transaction(tx))
 			continue
 		}
@@ -160,7 +160,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 		switch tx.GetMetadataType() {
 		case metadata.BuyFromGOVRequestMeta:
 			{
-				income, soldAmt, addable := blockgen.checkBuyFromGOVReqTx(chainID, tx, bondsSold)
+				income, soldAmt, addable := blockgen.checkBuyFromGOVReqTx(shardID, tx, bondsSold)
 				if !addable {
 					txToRemove = append(txToRemove, tx)
 					continue
@@ -171,7 +171,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 			}
 		case metadata.BuyBackRequestMeta:
 			{
-				buyBackFromInfo, addable := blockgen.checkBuyBackReqTx(chainID, tx, buyBackCoins)
+				buyBackFromInfo, addable := blockgen.checkBuyBackReqTx(shardID, tx, buyBackCoins)
 				if !addable {
 					txToRemove = append(txToRemove, tx)
 					continue
@@ -181,7 +181,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 			}
 		case metadata.IssuingRequestMeta:
 			{
-				addable, newDCBTokensSold := blockgen.checkIssuingReqTx(chainID, tx, dcbTokensSold)
+				addable, newDCBTokensSold := blockgen.checkIssuingReqTx(shardID, tx, dcbTokensSold)
 				dcbTokensSold = newDCBTokensSold
 				if !addable {
 					txToRemove = append(txToRemove, tx)
@@ -237,7 +237,7 @@ concludeBlock:
 	}
 
 	// Process crowdsale for DCB
-	dcbSaleTxs, removableTxs, err := blockgen.processCrowdsale(sourceTxns, rt, chainID, privatekey)
+	dcbSaleTxs, removableTxs, err := blockgen.processCrowdsale(sourceTxns, rt, shardID, privatekey)
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +249,7 @@ concludeBlock:
 	}
 
 	// Build CMB responses
-	cmbInitRefundTxs, err := blockgen.buildCMBRefund(sourceTxns, chainID, privatekey)
+	cmbInitRefundTxs, err := blockgen.buildCMBRefund(sourceTxns, shardID, privatekey)
 	if err != nil {
 		return nil, err
 	}
@@ -287,13 +287,13 @@ concludeBlock:
 		return nil, err
 	}
 	// create buy-back response txs to distribute constants to buy-back requesters
-	buyBackResTxs, err := blockgen.buildBuyBackResponseTxs(buyBackFromInfos, chainID, privatekey)
+	buyBackResTxs, err := blockgen.buildBuyBackResponseTxs(buyBackFromInfos, shardID, privatekey)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
 	}
 
-	oracleRewardTxs, totalOracleRewards, updatedOracleValues, err := blockgen.buildOracleRewardTxs(chainID, privatekey)
+	oracleRewardTxs, totalOracleRewards, updatedOracleValues, err := blockgen.buildOracleRewardTxs(shardID, privatekey)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -302,9 +302,9 @@ concludeBlock:
 	// create refund txs
 	currentSalaryFund := prevBlock.Header.SalaryFund
 	remainingFund := currentSalaryFund + totalFee + salaryFundAdd + incomeFromBonds - (totalSalary + buyBackCoins + totalOracleRewards)
-	refundTxs, totalRefundAmt := blockgen.buildRefundTxs(chainID, remainingFund, privatekey)
+	refundTxs, totalRefundAmt := blockgen.buildRefundTxs(shardID, remainingFund, privatekey)
 
-	issuingResTxs, err := blockgen.buildIssuingResTxs(chainID, issuingReqTxs, privatekey)
+	issuingResTxs, err := blockgen.buildIssuingResTxs(shardID, issuingReqTxs, privatekey)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -321,32 +321,32 @@ concludeBlock:
 	// Check if it is the case we need to apply a new proposal
 	// 1. newNW < lastNW * 0.9
 	// 2. current block height == last Constitution start time + last Constitution execute duration
-	if blockgen.neededNewDCBConstitution(chainID) {
-		tx, err := blockgen.createAcceptConstitutionAndPunishTxAndRewardSubmitter(chainID, DCBConstitutionHelper{}, privatekey)
+	if blockgen.neededNewDCBConstitution(shardID) {
+		tx, err := blockgen.createAcceptConstitutionAndPunishTxAndRewardSubmitter(shardID, DCBConstitutionHelper{}, privatekey)
 		coinbases = append(coinbases, tx...)
 		if err != nil {
 			Logger.log.Error(err)
 			return nil, err
 		}
-		rewardTx, err := blockgen.createRewardProposalWinnerTx(chainID, DCBConstitutionHelper{})
+		rewardTx, err := blockgen.createRewardProposalWinnerTx(shardID, DCBConstitutionHelper{})
 		coinbases = append(coinbases, rewardTx)
 	}
-	if blockgen.neededNewGOVConstitution(chainID) {
-		tx, err := blockgen.createAcceptConstitutionAndPunishTxAndRewardSubmitter(chainID, GOVConstitutionHelper{}, privatekey)
+	if blockgen.neededNewGOVConstitution(shardID) {
+		tx, err := blockgen.createAcceptConstitutionAndPunishTxAndRewardSubmitter(shardID, GOVConstitutionHelper{}, privatekey)
 		coinbases = append(coinbases, tx...)
 		if err != nil {
 			Logger.log.Error(err)
 			return nil, err
 		}
-		rewardTx, err := blockgen.createRewardProposalWinnerTx(chainID, GOVConstitutionHelper{})
+		rewardTx, err := blockgen.createRewardProposalWinnerTx(shardID, GOVConstitutionHelper{})
 		coinbases = append(coinbases, rewardTx)
 	}
 
-	if blockgen.neededNewDCBGovernor(chainID) {
-		coinbases = append(coinbases, blockgen.UpdateNewGovernor(DCBConstitutionHelper{}, chainID, privatekey)...)
+	if blockgen.neededNewDCBGovernor(shardID) {
+		coinbases = append(coinbases, blockgen.UpdateNewGovernor(DCBConstitutionHelper{}, shardID, privatekey)...)
 	}
-	if blockgen.neededNewGOVGovernor(chainID) {
-		coinbases = append(coinbases, blockgen.UpdateNewGovernor(GOVConstitutionHelper{}, chainID, privatekey)...)
+	if blockgen.neededNewGOVGovernor(shardID) {
+		coinbases = append(coinbases, blockgen.UpdateNewGovernor(GOVConstitutionHelper{}, shardID, privatekey)...)
 	}
 
 	for _, tx := range unlockTxs {
@@ -400,7 +400,7 @@ concludeBlock:
 		Timestamp:          time.Now().Unix(),
 		BlockCommitteeSigs: make([]string, common.TotalValidators),
 		Committee:          make([]string, common.TotalValidators),
-		ChainID:            chainID,
+		ShardID:            shardID,
 		SalaryFund:         currentSalaryFund + incomeFromBonds + totalFee + salaryFundAdd - totalSalary - govPayoutAmount - buyBackCoins - totalRefundAmt - totalOracleRewards,
 		BankFund:           prevBlock.Header.BankFund + loanPaymentAmount - bankPayoutAmount,
 		GOVConstitution:    prevBlock.Header.GOVConstitution, // TODO: 0xbunyip need get from gov-params tx
@@ -477,8 +477,8 @@ func GetOracleGOVNationalWelfare() int32 {
 
 //1. Current National welfare (NW)  < lastNW * 0.9 (Emergency case)
 //2. Block height == last constitution start time + last constitution window
-func (blockgen *BlkTmplGenerator) neededNewDCBConstitution(chainID byte) bool {
-	BestBlock := blockgen.chain.BestState[chainID].BestBlock
+func (blockgen *BlkTmplGenerator) neededNewDCBConstitution(shardID byte) bool {
+	BestBlock := blockgen.chain.BestState[shardID].BestBlock
 	lastDCBConstitution := BestBlock.Header.DCBConstitution
 	if GetOracleDCBNationalWelfare() < lastDCBConstitution.CurrentDCBNationalWelfare*ThresholdRatioOfDCBCrisis/common.BasePercentage ||
 		uint32(BestBlock.Header.Height+2) == lastDCBConstitution.StartedBlockHeight+lastDCBConstitution.ExecuteDuration {
@@ -486,8 +486,8 @@ func (blockgen *BlkTmplGenerator) neededNewDCBConstitution(chainID byte) bool {
 	}
 	return false
 }
-func (blockgen *BlkTmplGenerator) neededNewGOVConstitution(chainID byte) bool {
-	BestBlock := blockgen.chain.BestState[chainID].BestBlock
+func (blockgen *BlkTmplGenerator) neededNewGOVConstitution(shardID byte) bool {
+	BestBlock := blockgen.chain.BestState[shardID].BestBlock
 	lastGovConstitution := BestBlock.Header.GOVConstitution
 	if GetOracleGOVNationalWelfare() < lastGovConstitution.CurrentGOVNationalWelfare*ThresholdRatioOfGovCrisis/common.BasePercentage ||
 		uint32(BestBlock.Header.Height+2) == lastGovConstitution.StartedBlockHeight+lastGovConstitution.ExecuteDuration {
@@ -495,12 +495,12 @@ func (blockgen *BlkTmplGenerator) neededNewGOVConstitution(chainID byte) bool {
 	}
 	return false
 }
-func (blockgen *BlkTmplGenerator) neededNewDCBGovernor(chainID byte) bool {
-	BestBlock := blockgen.chain.BestState[chainID].BestBlock
+func (blockgen *BlkTmplGenerator) neededNewDCBGovernor(shardID byte) bool {
+	BestBlock := blockgen.chain.BestState[shardID].BestBlock
 	return int32(BestBlock.Header.DCBGovernor.EndBlock) == BestBlock.Header.Height+2
 }
-func (blockgen *BlkTmplGenerator) neededNewGOVGovernor(chainID byte) bool {
-	BestBlock := blockgen.chain.BestState[chainID].BestBlock
+func (blockgen *BlkTmplGenerator) neededNewGOVGovernor(shardID byte) bool {
+	BestBlock := blockgen.chain.BestState[shardID].BestBlock
 	return int32(BestBlock.Header.GOVGovernor.EndBlock) == BestBlock.Header.Height+2
 }
 
@@ -608,11 +608,11 @@ func buildSingleBuySellResponseTx(
 }
 
 func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
-	chainID byte,
+	shardID byte,
 	tx metadata.Transaction,
 	bondsSold uint64,
 ) (uint64, uint64, bool) {
-	prevBlock := blockgen.chain.BestState[chainID].BestBlock
+	prevBlock := blockgen.chain.BestState[shardID].BestBlock
 	sellingBondsParams := prevBlock.Header.GOVConstitution.GOVParams.SellingBonds
 	if uint32(prevBlock.Header.Height)+1 > sellingBondsParams.StartSellingAt+sellingBondsParams.SellingWithin {
 		return 0, 0, false
@@ -651,7 +651,7 @@ func (blockgen *BlkTmplGenerator) buildBuySellResponsesTx(
 }
 
 func (blockgen *BlkTmplGenerator) checkBuyBackReqTx(
-	chainID byte,
+	shardID byte,
 	tx metadata.Transaction,
 	buyBackConsts uint64,
 ) (*buyBackFromInfo, bool) {
@@ -679,7 +679,7 @@ func (blockgen *BlkTmplGenerator) checkBuyBackReqTx(
 	}
 
 	vout := customTokenTx.TxTokenData.Vouts[buyBackReq.VoutIndex]
-	prevBlock := blockgen.chain.BestState[chainID].BestBlock
+	prevBlock := blockgen.chain.BestState[shardID].BestBlock
 
 	if buySellRes.StartSellingAt+buySellRes.Maturity > uint32(prevBlock.Header.Height)+1 {
 		Logger.log.Error("The token is not overdued yet.")
@@ -701,14 +701,14 @@ func (blockgen *BlkTmplGenerator) checkBuyBackReqTx(
 
 func (blockgen *BlkTmplGenerator) buildBuyBackResponseTxs(
 	buyBackFromInfos []*buyBackFromInfo,
-	chainID byte,
+	shardID byte,
 	privatekey *privacy.SpendingKey,
 ) ([]*transaction.Tx, error) {
 	if len(buyBackFromInfos) == 0 {
 		return []*transaction.Tx{}, nil
 	}
 
-	// prevBlock := blockgen.chain.BestState[chainID].BestBlock
+	// prevBlock := blockgen.chain.BestState[shardID].BestBlock
 	var buyBackResTxs []*transaction.Tx
 	for _, buyBackFromInfo := range buyBackFromInfos {
 		buyBackAmount := buyBackFromInfo.value * buyBackFromInfo.buyBackPrice
@@ -724,7 +724,7 @@ func (blockgen *BlkTmplGenerator) buildBuyBackResponseTxs(
 }
 
 func (blockgen *BlkTmplGenerator) checkIssuingReqTx(
-	chainID byte,
+	shardID byte,
 	tx metadata.Transaction,
 	dcbTokensSold uint64,
 ) (bool, uint64) {
@@ -737,7 +737,7 @@ func (blockgen *BlkTmplGenerator) checkIssuingReqTx(
 	if !bytes.Equal(issuingReq.AssetType[:], common.DCBTokenID[:]) {
 		return true, dcbTokensSold
 	}
-	header := blockgen.chain.BestState[chainID].BestBlock.Header
+	header := blockgen.chain.BestState[shardID].BestBlock.Header
 	saleDBCTOkensByUSDData := header.DCBConstitution.DCBParams.SaleDBCTOkensByUSDData
 	oracleParams := header.Oracle
 	dcbTokenPrice := uint64(1)
@@ -752,11 +752,11 @@ func (blockgen *BlkTmplGenerator) checkIssuingReqTx(
 }
 
 func (blockgen *BlkTmplGenerator) buildIssuingResTxs(
-	chainID byte,
+	shardID byte,
 	issuingReqTxs []metadata.Transaction,
 	privatekey *privacy.SpendingKey,
 ) ([]metadata.Transaction, error) {
-	prevBlock := blockgen.chain.BestState[chainID].BestBlock
+	prevBlock := blockgen.chain.BestState[shardID].BestBlock
 	oracleParams := prevBlock.Header.Oracle
 
 	issuingResTxs := []metadata.Transaction{}
@@ -843,7 +843,7 @@ func calculateAmountOfRefundTxs(
 }
 
 func (blockgen *BlkTmplGenerator) buildRefundTxs(
-	chainID byte,
+	shardID byte,
 	remainingFund uint64,
 	privatekey *privacy.SpendingKey,
 ) ([]*transaction.Tx, uint64) {
@@ -851,7 +851,7 @@ func (blockgen *BlkTmplGenerator) buildRefundTxs(
 		Logger.log.Info("GOV fund is not enough for refund.")
 		return []*transaction.Tx{}, 0
 	}
-	prevBlock := blockgen.chain.BestState[chainID].BestBlock
+	prevBlock := blockgen.chain.BestState[shardID].BestBlock
 	header := prevBlock.Header
 	govParams := header.GOVConstitution.GOVParams
 	refundInfo := govParams.RefundInfo
@@ -863,7 +863,7 @@ func (blockgen *BlkTmplGenerator) buildRefundTxs(
 	if lookbackBlockHeight < 0 {
 		return []*transaction.Tx{}, 0
 	}
-	lookbackBlock, err := blockgen.chain.GetBlockByBlockHeight(lookbackBlockHeight, chainID)
+	lookbackBlock, err := blockgen.chain.GetBlockByBlockHeight(lookbackBlockHeight, shardID)
 	if err != nil {
 		Logger.log.Error(err)
 		return []*transaction.Tx{}, 0
@@ -953,7 +953,7 @@ func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, pro
 	return amount, loanUnlockTxs, removableTxs
 }
 
-func (blockgen *BlkTmplGenerator) UpdateNewGovernor(helper ConstitutionHelper, chainID byte, minerPrivateKey *privacy.SpendingKey) []metadata.Transaction {
+func (blockgen *BlkTmplGenerator) UpdateNewGovernor(helper ConstitutionHelper, shardID byte, minerPrivateKey *privacy.SpendingKey) []metadata.Transaction {
 	txs := make([]metadata.Transaction, 0)
 	newBoardList, _ := helper.GetTopMostVoteGovernor(blockgen)
 	sort.Sort(newBoardList)
@@ -965,9 +965,9 @@ func (blockgen *BlkTmplGenerator) UpdateNewGovernor(helper ConstitutionHelper, c
 	}
 
 	txs = append(txs, blockgen.createAcceptDCBBoardTx(newDCBBoardPubKey, sumOfVote))
-	txs = append(txs, blockgen.CreateSendDCBVoteTokenToGovernorTx(chainID, newBoardList, sumOfVote)...)
+	txs = append(txs, blockgen.CreateSendDCBVoteTokenToGovernorTx(shardID, newBoardList, sumOfVote)...)
 
-	txs = append(txs, blockgen.CreateSendBackDCBTokenAfterVoteFail(chainID, newDCBBoardPubKey)...)
+	txs = append(txs, blockgen.CreateSendBackDCBTokenAfterVoteFail(shardID, newDCBBoardPubKey)...)
 
 	txs = append(txs, blockgen.CreateSendRewardOldBoard(helper, minerPrivateKey)...)
 
