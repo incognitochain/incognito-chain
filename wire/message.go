@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"reflect"
 
+	"time"
+
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
-	"time"
 )
 
 // list message type
@@ -38,13 +39,15 @@ const (
 	CmdPing               = "ping"
 
 	// POS Cmd
-	CmdBFTPropose    = "bftpropose"
-	CmdBFTPrepare    = "bftprepare"
-	CmdBFTCommit     = "bftcommit"
-	CmdBFTReply      = "bftreply"
-	CmdInvalidBlock  = "invalidblock"
-	CmdGetChainState = "getchstate"
-	CmdChainState    = "chainstate"
+	CmdBFTPropose     = "bftpropose"
+	CmdBFTPrepare     = "bftprepare"
+	CmdBFTCommit      = "bftcommit"
+	CmdBFTReply       = "bftreply"
+	CmdInvalidBlock   = "invalidblock"
+	CmdGetBeaconState = "getbcstate"
+	CmdBeaconState    = "beaconstate"
+	CmdGetShardState  = "getshdstate"
+	CmdShardState     = "shardstate"
 
 	// SWAP Cmd
 	CmdSwapRequest = "swaprequest"
@@ -149,10 +152,14 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		// case CmdInvalidBlock:
 		// 	msg = &MessageInvalidBlock{}
 		// 	break
-	case CmdGetChainState:
-		msg = &MessageGetChainState{}
-	case CmdChainState:
-		msg = &MessageChainState{}
+	case CmdGetBeaconState:
+		msg = &MessageGetBeaconState{}
+	case CmdBeaconState:
+		msg = &MessageBeaconState{}
+	case CmdGetShardState:
+		msg = &MessageGetShardState{}
+	case CmdShardState:
+		msg = &MessageShardState{}
 	case CmdGetAddr:
 		msg = &MessageGetAddr{}
 		break
@@ -225,10 +232,14 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdBFTReply, nil
 	case reflect.TypeOf(&MessageInvalidBlock{}):
 		return CmdInvalidBlock, nil
-	case reflect.TypeOf(&MessageGetChainState{}):
-		return CmdGetChainState, nil
-	case reflect.TypeOf(&MessageChainState{}):
-		return CmdChainState, nil
+	case reflect.TypeOf(&MessageGetBeaconState{}):
+		return CmdGetBeaconState, nil
+	case reflect.TypeOf(&MessageBeaconState{}):
+		return CmdBeaconState, nil
+	case reflect.TypeOf(&MessageGetShardState{}):
+		return CmdGetShardState, nil
+	case reflect.TypeOf(&MessageShardState{}):
+		return CmdShardState, nil
 	case reflect.TypeOf(&MessageSwapRequest{}):
 		return CmdSwapRequest, nil
 	case reflect.TypeOf(&MessageSwapSig{}):

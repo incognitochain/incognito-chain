@@ -84,6 +84,9 @@ type Config struct {
 	customTokenRewardSnapshot map[string]uint64
 
 	ShardToBeaconPool ShardToBeaconPool
+	CrossShardPool    CrossShardPool
+	NodeBeaconPool    NodeBeaconPool
+	NodeShardPool     NodeShardPool
 }
 
 func (self *BlockChain) GetDatabase() database.DatabaseInterface {

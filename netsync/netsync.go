@@ -37,8 +37,10 @@ type NetSyncConfig struct {
 		OnBFTCommit(*wire.MessageBFTCommit)
 		OnBFTReply(*wire.MessageBFTReply)
 		// OnInvalidBlockReceived(string, byte, string)
-		OnGetChainState(*wire.MessageGetChainState)
-		OnChainStateReceived(*wire.MessageChainState)
+		// OnGetBeaconState(*wire.MessageGetBeaconState)
+		// OnBeaconStateReceived(*wire.MessageBeaconState)
+		// OnGetShardState(*wire.MessageGetShardState)
+		// OnShardStateReceived(*wire.MessageShardState)
 		// OnSwapRequest(swap *wire.MessageSwapRequest)
 		// OnSwapSig(swap *wire.MessageSwapSig)
 		// OnSwapUpdate(swap *wire.MessageSwapUpdate)
@@ -140,13 +142,21 @@ out:
 					// 	{
 					// 		self.HandleMessageInvalidBlock(msg)
 					// 	}
-					case *wire.MessageGetChainState:
+					case *wire.MessageGetBeaconState:
 						{
-							self.HandleMessageGetChainState(msg)
+							self.HandleMessageGetBeaconState(msg)
 						}
-					case *wire.MessageChainState:
+					case *wire.MessageBeaconState:
 						{
-							self.HandleMessageChainState(msg)
+							self.HandleMessageBeaconState(msg)
+						}
+					case *wire.MessageGetShardState:
+						{
+							self.HandleMessageGetShardState(msg)
+						}
+					case *wire.MessageShardState:
+						{
+							self.HandleMessageShardState(msg)
 						}
 					// case *wire.MessageSwapRequest:
 					// 	{
@@ -359,14 +369,24 @@ func (self *NetSync) HandleMessageBFTReply(msg *wire.MessageBFTReply) {
 // 	self.config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.shardID, msg.Reason)
 // }
 
-func (self *NetSync) HandleMessageGetChainState(msg *wire.MessageGetChainState) {
-	Logger.log.Info("Handling new message getchainstate")
-	self.config.Consensus.OnGetChainState(msg)
+func (self *NetSync) HandleMessageGetBeaconState(msg *wire.MessageGetBeaconState) {
+	Logger.log.Info("Handling new message getbeaconstate")
+	// self.config.Consensus.OnGetCState(msg)
 }
 
-func (self *NetSync) HandleMessageChainState(msg *wire.MessageChainState) {
-	Logger.log.Info("Handling new message chainstate")
-	self.config.Consensus.OnChainStateReceived(msg)
+func (self *NetSync) HandleMessageBeaconState(msg *wire.MessageBeaconState) {
+	Logger.log.Info("Handling new message beaconstate")
+	// self.config.Consensus.OnChainStateReceived(msg)
+}
+
+func (self *NetSync) HandleMessageGetShardState(msg *wire.MessageGetShardState) {
+	Logger.log.Info("Handling new message getshardstate")
+	// self.config.Consensus.OnGetChainState(msg)
+}
+
+func (self *NetSync) HandleMessageShardState(msg *wire.MessageShardState) {
+	Logger.log.Info("Handling new message shardstate")
+	// self.config.Consensus.OnChainStateReceived(msg)
 }
 
 // func (self *NetSync) HandleMessageSwapRequest(msg *wire.MessageSwapRequest) {

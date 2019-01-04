@@ -559,8 +559,10 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnBFTCommit:  self.OnBFTCommit,
 			OnBFTReply:   self.OnBFTReply,
 			// OnInvalidBlock:  self.OnInvalidBlock,
-			OnGetChainState: self.OnGetChainState,
-			OnChainState:    self.OnChainState,
+			OnGetBeaconState: self.OnGetBeaconState,
+			OnBeaconState:    self.OnBeaconState,
+			OnGetShardState:  self.OnGetShardState,
+			OnShardState:     self.OnShardState,
 			//
 			//OnRegistration: self.OnRegistration,
 			// OnSwapRequest: self.OnSwapRequest,
@@ -860,18 +862,32 @@ func (self *Server) OnBFTReply(_ *peer.PeerConn, msg *wire.MessageBFTReply) {
 // 	Logger.log.Info("Receive a invalidblock END", msg)
 // }
 
-func (self *Server) OnGetChainState(_ *peer.PeerConn, msg *wire.MessageGetChainState) {
-	Logger.log.Info("Receive a getchainstate START")
+func (self *Server) OnGetBeaconState(_ *peer.PeerConn, msg *wire.MessageGetBeaconState) {
+	Logger.log.Info("Receive a getbeaconstate START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a getchainstate END")
+	Logger.log.Info("Receive a getbeaconstate END")
 }
 
-func (self *Server) OnChainState(_ *peer.PeerConn, msg *wire.MessageChainState) {
-	Logger.log.Info("Receive a chainstate START")
+func (self *Server) OnBeaconState(_ *peer.PeerConn, msg *wire.MessageBeaconState) {
+	Logger.log.Info("Receive a beacontate START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a chainstate END")
+	Logger.log.Info("Receive a beaconstate END")
+}
+
+func (self *Server) OnGetShardState(_ *peer.PeerConn, msg *wire.MessageGetShardState) {
+	Logger.log.Info("Receive a getshardstate START")
+	var txProcessed chan struct{}
+	self.netSync.QueueMessage(nil, msg, txProcessed)
+	Logger.log.Info("Receive a getshardstate END")
+}
+
+func (self *Server) OnShardState(_ *peer.PeerConn, msg *wire.MessageShardState) {
+	Logger.log.Info("Receive a shardstate START")
+	var txProcessed chan struct{}
+	self.netSync.QueueMessage(nil, msg, txProcessed)
+	Logger.log.Info("Receive a shardstate END")
 }
 
 func (self *Server) GetPeerIDsFromPublicKey(pubKey string) []libp2p.ID {
@@ -1052,14 +1068,32 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 /*
 GetChainState - send a getchainstate msg to connected peer
 */
-func (self *Server) PushMessageGetChainState() error {
+func (self *Server) PushMessageGetBeaconState() error {
 	Logger.log.Infof("Send a GetChainState")
 	for _, listener := range self.connManager.Config.ListenerPeers {
-		msg, err := wire.MakeEmptyMessage(wire.CmdGetChainState)
+		msg, err := wire.MakeEmptyMessage(wire.CmdGetBeaconState)
 		if err != nil {
 			return err
 		}
-		msg.(*wire.MessageGetChainState).Timestamp = time.Unix(time.Now().Unix(), 0)
+		msg.(*wire.MessageGetBeaconState).Timestamp = time.Unix(time.Now().Unix(), 0)
+		msg.SetSenderID(listener.PeerID)
+		Logger.log.Infof("Send a GetChainState from %s", listener.RawAddress)
+		listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_PEER, nil)
+	}
+	return nil
+}
+
+/*
+GetChainState - send a getchainstate msg to connected peer
+*/
+func (self *Server) PushMessageGetShardState(shardID byte) error {
+	Logger.log.Infof("Send a GetChainState")
+	for _, listener := range self.connManager.Config.ListenerPeers {
+		msg, err := wire.MakeEmptyMessage(wire.CmdGetShardState)
+		if err != nil {
+			return err
+		}
+		msg.(*wire.MessageGetShardState).Timestamp = time.Unix(time.Now().Unix(), 0)
 		msg.SetSenderID(listener.PeerID)
 		Logger.log.Infof("Send a GetChainState from %s", listener.RawAddress)
 		listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_PEER, nil)

@@ -28,7 +28,6 @@ type BFTProtocol struct {
 	cTimeout chan struct{}
 
 	phase string
-	// Committee []string
 
 	pendingBlock interface{}
 
@@ -39,15 +38,6 @@ type BFTProtocol struct {
 		Committee  []string
 	}
 
-	// dataForSig struct {
-	// 	Ri []byte
-	// 	r  []byte
-	// }
-	// dataForCombine struct {
-	// 	mySig         string
-	// 	R             string
-	// 	ValidatorsIdx []int
-	// }
 	multiSigScheme *multiSigScheme
 }
 

@@ -19,11 +19,7 @@ type Engine struct {
 	cQuit   chan struct{}
 	cBFTMsg chan wire.Message
 
-	config EngineConfig
-	// Layers struct {
-	// 	Beacon *Layerbeacon
-	// 	Shard  *Layershard
-	// }
+	config      EngineConfig
 	CurrentRole role
 }
 

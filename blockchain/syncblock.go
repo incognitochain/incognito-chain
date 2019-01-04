@@ -6,6 +6,12 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 )
 
+type ShardChainState struct {
+}
+
+type BeaconChainState struct {
+}
+
 func (self *BlockChain) SyncShard(shardID byte, stopCh chan struct{}) {
 
 }

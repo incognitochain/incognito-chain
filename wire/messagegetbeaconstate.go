@@ -10,41 +10,40 @@ import (
 )
 
 const (
-	MaxGetChainStatePayload = 1000 // 1kb
+	MaxGetBeaconStatePayload = 1000 // 1kb
 )
 
-type MessageGetChainState struct {
+type MessageGetBeaconState struct {
 	Timestamp time.Time
-	SenderID  string
 }
 
-func (self *MessageGetChainState) MessageType() string {
-	return CmdGetChainState
+func (self *MessageGetBeaconState) MessageType() string {
+	return CmdGetBeaconState
 }
 
-func (self *MessageGetChainState) MaxPayloadLength(pver int) int {
-	return MaxGetChainStatePayload
+func (self *MessageGetBeaconState) MaxPayloadLength(pver int) int {
+	return MaxGetBeaconStatePayload
 }
 
-func (self *MessageGetChainState) JsonSerialize() ([]byte, error) {
+func (self *MessageGetBeaconState) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(self)
 	return jsonBytes, err
 }
 
-func (self *MessageGetChainState) JsonDeserialize(jsonStr string) error {
+func (self *MessageGetBeaconState) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), self)
 	return err
 }
 
-func (self *MessageGetChainState) SetSenderID(senderID peer.ID) error {
-	self.SenderID = senderID.Pretty()
+func (self *MessageGetBeaconState) SetSenderID(senderID peer.ID) error {
+	// self.SenderID = senderID.Pretty()
 	return nil
 }
 
-func (self *MessageGetChainState) SignMsg(_ *cashec.KeySet) error {
+func (self *MessageGetBeaconState) SignMsg(_ *cashec.KeySet) error {
 	return nil
 }
 
-func (self *MessageGetChainState) VerifyMsgSanity() error {
+func (self *MessageGetBeaconState) VerifyMsgSanity() error {
 	return nil
 }

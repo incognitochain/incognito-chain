@@ -24,6 +24,5 @@ type serverInterface interface {
 	PushMessageToShard(wire.Message, byte) error
 	PushMessageToBeacon(wire.Message) error
 	PushMessageToPbk(wire.Message, string) error
-	PushMessageGetChainState() error
 	UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 }

@@ -5,13 +5,14 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"reflect"
 	"sync"
 	"time"
+
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/wire"
-	"errors"
 )
 
 type PeerConn struct {
@@ -284,13 +285,21 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					// 	if self.Config.MessageListeners.OnInvalidBlock != nil {
 					// 		self.Config.MessageListeners.OnInvalidBlock(self, message.(*wire.MessageInvalidBlock))
 					// 	}
-				case reflect.TypeOf(&wire.MessageGetChainState{}):
-					if self.Config.MessageListeners.OnGetChainState != nil {
-						self.Config.MessageListeners.OnGetChainState(self, message.(*wire.MessageGetChainState))
+				case reflect.TypeOf(&wire.MessageGetBeaconState{}):
+					if self.Config.MessageListeners.OnGetBeaconState != nil {
+						self.Config.MessageListeners.OnGetBeaconState(self, message.(*wire.MessageGetBeaconState))
 					}
-				case reflect.TypeOf(&wire.MessageChainState{}):
-					if self.Config.MessageListeners.OnChainState != nil {
-						self.Config.MessageListeners.OnChainState(self, message.(*wire.MessageChainState))
+				case reflect.TypeOf(&wire.MessageBeaconState{}):
+					if self.Config.MessageListeners.OnBeaconState != nil {
+						self.Config.MessageListeners.OnBeaconState(self, message.(*wire.MessageBeaconState))
+					}
+				case reflect.TypeOf(&wire.MessageGetShardState{}):
+					if self.Config.MessageListeners.OnGetShardState != nil {
+						self.Config.MessageListeners.OnGetShardState(self, message.(*wire.MessageGetShardState))
+					}
+				case reflect.TypeOf(&wire.MessageShardState{}):
+					if self.Config.MessageListeners.OnShardState != nil {
+						self.Config.MessageListeners.OnShardState(self, message.(*wire.MessageShardState))
 					}
 					/*case reflect.TypeOf(&wire.MessageRegistration{}):
 					  if self.Config.MessageListeners.OnRegistration != nil {

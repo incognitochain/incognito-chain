@@ -114,53 +114,53 @@ func (self *Engine) OnInvalidBlockReceived(blockHash string, shardID byte, reaso
 	return
 }
 
-func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
-	// chainInfo := msg.ChainInfo.(map[string]interface{})
-	// for i, v := range self.validatedChainsHeight.Heights {
-	// 	if chainInfo["ChainsHeight"] != nil {
-	// 		if v < int(chainInfo["ChainsHeight"].([]interface{})[i].(float64)) {
-	// 			self.knownChainsHeight.Heights[i] = int(chainInfo["ChainsHeight"].([]interface{})[i].(float64))
-	// 			lastBlockHash := self.config.BlockChain.BestState[i].BestBlockHash.String()
-	// 			getBlkMsg := &wire.MessageGetBlocks{
-	// 				LastBlockHash: lastBlockHash,
-	// 			}
-	// 			Logger.log.Info("Send " + getBlkMsg.MessageType() + " to " + msg.SenderID)
-	// 			peerID, err := libp2p.IDB58Decode(msg.SenderID)
-	// 			if err != nil {
-	// 				Logger.log.Error(err)
-	// 				continue
-	// 			}
-	// 			self.config.Server.PushMessageToPeer(getBlkMsg, peerID)
-	// 		}
-	// 	} else {
-	// 		Logger.log.Error("ChainsHeight is empty!")
-	// 	}
-	// }
-	return
-}
+// func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
+// chainInfo := msg.ChainInfo.(map[string]interface{})
+// for i, v := range self.validatedChainsHeight.Heights {
+// 	if chainInfo["ChainsHeight"] != nil {
+// 		if v < int(chainInfo["ChainsHeight"].([]interface{})[i].(float64)) {
+// 			self.knownChainsHeight.Heights[i] = int(chainInfo["ChainsHeight"].([]interface{})[i].(float64))
+// 			lastBlockHash := self.config.BlockChain.BestState[i].BestBlockHash.String()
+// 			getBlkMsg := &wire.MessageGetBlocks{
+// 				LastBlockHash: lastBlockHash,
+// 			}
+// 			Logger.log.Info("Send " + getBlkMsg.MessageType() + " to " + msg.SenderID)
+// 			peerID, err := libp2p.IDB58Decode(msg.SenderID)
+// 			if err != nil {
+// 				Logger.log.Error(err)
+// 				continue
+// 			}
+// 			self.config.Server.PushMessageToPeer(getBlkMsg, peerID)
+// 		}
+// 	} else {
+// 		Logger.log.Error("ChainsHeight is empty!")
+// 	}
+// }
+// return
+// }
 
-func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
-	// newMsg, err := wire.MakeEmptyMessage(wire.CmdChainState)
-	// if err != nil {
-	// 	return
-	// }
-	// newMsg.(*wire.MessageChainState).ChainInfo = ChainInfo{
-	// 	CurrentCommittee:        self.Committee().GetCommittee(),
-	// 	CandidateListMerkleHash: common.EmptyString,
-	// 	ChainsHeight:            self.validatedChainsHeight.Heights,
-	// }
-	// peerID, _ := libp2p.IDB58Decode(msg.SenderID)
-	// self.config.Server.PushMessageToPeer(newMsg, peerID)
-	return
-}
+// func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
+// newMsg, err := wire.MakeEmptyMessage(wire.CmdChainState)
+// if err != nil {
+// 	return
+// }
+// newMsg.(*wire.MessageChainState).ChainInfo = ChainInfo{
+// 	CurrentCommittee:        self.Committee().GetCommittee(),
+// 	CandidateListMerkleHash: common.EmptyString,
+// 	ChainsHeight:            self.validatedChainsHeight.Heights,
+// }
+// peerID, _ := libp2p.IDB58Decode(msg.SenderID)
+// self.config.Server.PushMessageToPeer(newMsg, peerID)
+// 	return
+// }
 
-func (self *Engine) OnBeaconStateReceived(msg *wire.MessageChainState) {
+// func (self *Engine) OnBeaconStateReceived(msg *wire.MessageChainState) {
 
-}
+// }
 
-func (self *Engine) OnGetBeaconState(msg *wire.MessageChainState) {
+// func (self *Engine) OnGetBeaconState(msg *wire.MessageChainState) {
 
-}
+// }
 
 // func (self *Engine) OnSwapRequest(msg *wire.MessageSwapRequest) {
 // 	Logger.log.Info("Received a MessageSwapRequest")
