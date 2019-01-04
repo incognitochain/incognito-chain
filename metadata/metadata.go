@@ -7,6 +7,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	privacy "github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 )
 
@@ -47,6 +48,13 @@ func (mb *MetadataBase) CheckTransactionFee(tr Transaction, minFeePerKbTx uint64
 		return false
 	}
 	return true
+}
+
+func (mb *MetadataBase) VerifyMultiSigs(
+	txr Transaction,
+	db database.DatabaseInterface,
+) (bool, error) {
+	return true, nil
 }
 
 // TODO(@0xankylosaurus): move TxDesc to mempool DTO
@@ -102,8 +110,12 @@ type BlockchainRetriever interface {
 	GetCrowdsaleData([]byte) (*params.SaleData, error)
 	GetCrowdsaleTxs([]byte) ([][]byte, error)
 
-	// For validating multisigs
-	GetMultiSigsRegistration([]byte) ([]byte, error)
+	// For validating cmb
+	GetCMB([]byte) (privacy.PaymentAddress, []privacy.PaymentAddress, uint64, *common.Hash, uint8, uint64, error)
+	GetBlockHeightByBlockHash(*common.Hash) (int32, byte, error)
+	GetCMBResponse([]byte) ([][]byte, error)
+	GetDepositSend([]byte) ([]byte, error)
+	GetWithdrawRequest([]byte) ([]byte, uint8, error)
 }
 
 type Metadata interface {
@@ -115,6 +127,7 @@ type Metadata interface {
 	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
 	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool
+	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
 }
 
 // Interface for all type of transaction
@@ -142,8 +155,8 @@ type Transaction interface {
 
 	GetJSPubKey() []byte
 	GetReceivers() ([][]byte, []uint64)
+	GetUniqueReceiver() (bool, []byte, uint64)
 	IsPrivacy() bool
 	IsCoinsBurning() bool
-	CloneTxThenUpdateMetadata(Metadata) []byte
 	GetProof() *zkp.PaymentProof
 }

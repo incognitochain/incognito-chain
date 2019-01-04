@@ -1,7 +1,6 @@
 package privacy
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -10,13 +9,11 @@ func TestSchn(t *testing.T) {
 	schnPrivKey := new(SchnPrivKey)
 	schnPrivKey.GenKey()
 
-	hash := RandBytes(SpendingKeySize)
-	fmt.Printf("Hash: %v\n", hash)
+	data := RandBytes(SpendingKeySize)
 
-	signature, _ := schnPrivKey.Sign(hash)
-	fmt.Printf("Signature: %+v\n", signature)
+	signature, _ := schnPrivKey.Sign(data)
 
-	res := schnPrivKey.PubKey.Verify(signature, hash)
+	res := schnPrivKey.PubKey.Verify(signature, data)
 
 	assert.Equal(t, true, res)
 }

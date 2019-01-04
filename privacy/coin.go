@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/common"
 )
 
 // Coin represents a coin
@@ -27,7 +28,7 @@ func (coin *Coin) GetPubKeyLastByte() byte {
 
 func (coin Coin) MarshalJSON() ([]byte, error) {
 	data := coin.Bytes()
-	temp := base58.Base58Check{}.Encode(data, byte(0x00))
+	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
 	return json.Marshal(temp)
 }
 
@@ -128,7 +129,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField := coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.PublicKey, err = DecompressKey(coinBytes[offset : offset+int(lenField)])
+		coin.PublicKey, err = DecompressKey(coinBytes[offset: offset+int(lenField)])
 		if err != nil {
 			return err
 		}
@@ -139,7 +140,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.CoinCommitment, err = DecompressKey(coinBytes[offset : offset+int(lenField)])
+		coin.CoinCommitment, err = DecompressKey(coinBytes[offset: offset+int(lenField)])
 		if err != nil {
 			return err
 		}
@@ -151,7 +152,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if lenField != 0 {
 		coin.SNDerivator = new(big.Int)
-		coin.SNDerivator.SetBytes(coinBytes[offset : offset+int(lenField)])
+		coin.SNDerivator.SetBytes(coinBytes[offset: offset+int(lenField)])
 		offset += int(lenField)
 	}
 
@@ -159,7 +160,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.SerialNumber, err = DecompressKey(coinBytes[offset : offset+int(lenField)])
+		coin.SerialNumber, err = DecompressKey(coinBytes[offset: offset+int(lenField)])
 		if err != nil {
 			return err
 		}
@@ -171,7 +172,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if lenField != 0 {
 		coin.Randomness = new(big.Int)
-		coin.Randomness.SetBytes(coinBytes[offset : offset+int(lenField)])
+		coin.Randomness.SetBytes(coinBytes[offset: offset+int(lenField)])
 		offset += int(lenField)
 	}
 
@@ -180,7 +181,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if lenField != 0 {
 		x := new(big.Int)
-		x.SetBytes(coinBytes[offset : offset+int(lenField)])
+		x.SetBytes(coinBytes[offset: offset+int(lenField)])
 		coin.Value = x.Uint64()
 		offset += int(lenField)
 	}
@@ -265,7 +266,7 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 
 	if lenCoinDetailEncrypted > 0 {
 		outputCoin.CoinDetailsEncrypted = new(CoinDetailsEncrypted)
-		err := outputCoin.CoinDetailsEncrypted.SetBytes(bytes[offset : offset+lenCoinDetailEncrypted])
+		err := outputCoin.CoinDetailsEncrypted.SetBytes(bytes[offset: offset+lenCoinDetailEncrypted])
 		if err != nil {
 			return err
 		}
@@ -274,8 +275,16 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 
 	lenCoinDetail := int(bytes[offset])
 	offset += 1
-	outputCoin.CoinDetails = new(Coin)
-	return outputCoin.CoinDetails.SetBytes(bytes[offset : offset+lenCoinDetail])
+
+	if lenCoinDetail > 0 {
+		outputCoin.CoinDetails = new(Coin)
+		err := outputCoin.CoinDetails.SetBytes(bytes[offset : offset+lenCoinDetail])
+		if err != nil{
+			return err
+		}
+	}
+
+	return nil
 }
 
 type CoinDetailsEncrypted struct {
@@ -320,10 +329,9 @@ func (coinDetailsEncrypted *CoinDetailsEncrypted) SetBytes(bytes []byte) error {
 		return nil
 	}
 
-	coinDetailsEncrypted.EncryptedRandomness = bytes[0:48]
-	coinDetailsEncrypted.EncryptedSymKey = bytes[48 : 48+66]
-	coinDetailsEncrypted.EncryptedValue = bytes[48+66:]
-
+	coinDetailsEncrypted.EncryptedRandomness = bytes[0:EncryptedRandomnessSize]
+	coinDetailsEncrypted.EncryptedSymKey = bytes[EncryptedRandomnessSize : EncryptedRandomnessSize + EncryptedSymKeySize]
+	coinDetailsEncrypted.EncryptedValue = bytes[EncryptedRandomnessSize + EncryptedSymKeySize:]
 	return nil
 }
 
@@ -337,8 +345,9 @@ func (coin *OutputCoin) Encrypt(recipientTK TransmissionKey) error {
 	aesKeyByte := aesKeyPoint.X.Bytes()
 
 	// Encrypt coin details using aesKeyByte
-	aesScheme := new(AES)
-	aesScheme.SetKey(aesKeyByte)
+	aesScheme := &AES{
+		key: aesKeyByte,
+	}
 
 	// Encrypt coin randomness
 	coin.CoinDetailsEncrypted = new(CoinDetailsEncrypted)
@@ -392,8 +401,9 @@ func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 	aesKeyPoint := receivingKey.Decrypt(encryptedAESKey)
 
 	// Get AES key
-	aesScheme := new(AES)
-	aesScheme.SetKey(aesKeyPoint.X.Bytes())
+	aesScheme := &AES{
+		key: aesKeyPoint.X.Bytes(),
+	}
 
 	// Decrypt encrypted coin randomness using AES key
 	randomness, err := aesScheme.Decrypt(coin.CoinDetailsEncrypted.EncryptedRandomness)

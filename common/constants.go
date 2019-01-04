@@ -7,6 +7,7 @@ const (
 	NanoConstant = 2    // 1 constant = 10^2 nano constant, we will use 1 miliconstant as minimum unit constant in tx
 	RefundPeriod = 1000 // after 1000 blocks since a tx (small & no-privacy) happens, the network will refund an amount of constants to tx initiator automatically
 	PubKeyLength = 33
+	ZeroByte     = byte(0x00)
 )
 
 const (
@@ -46,6 +47,8 @@ const (
 	NumberOfGOVGovernors              = 50
 	EncryptionPhaseDuration           = uint32(5)
 	RewardProposalSubmitter           = 500
+	BasePercentage                    = 10000
+	PercentageBoardSalary             = 5
 )
 
 // board types

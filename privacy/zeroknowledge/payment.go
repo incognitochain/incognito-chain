@@ -3,11 +3,13 @@ package zkp
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"math/big"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
-	"math/big"
 )
 
 // PaymentWitness contains all of witness for proving when spending coins
@@ -84,7 +86,7 @@ func (proof *PaymentProof) Init() *PaymentProof {
 
 func (proof PaymentProof) MarshalJSON() ([]byte, error) {
 	data := proof.Bytes()
-	temp := base58.Base58Check{}.Encode(data, byte(0x00))
+	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
 	return json.Marshal(temp)
 }
 
@@ -102,6 +104,7 @@ func (proof *PaymentProof) UnmarshalJSON(data []byte) error {
 
 func (paymentProof *PaymentProof) Bytes() []byte {
 	var proofbytes []byte
+	hasPrivacy := len(paymentProof.OneOfManyProof) > 0
 	// OneOfManyProofSize
 	proofbytes = append(proofbytes, byte(len(paymentProof.OneOfManyProof)))
 	for i := 0; i < len(paymentProof.OneOfManyProof); i++ {
@@ -127,18 +130,17 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	}
 
 	// ComOutputMultiRangeProofSize
-	if paymentProof.ComOutputMultiRangeProof != nil {
+	if hasPrivacy {
 		comOutputMultiRangeProof := paymentProof.ComOutputMultiRangeProof.Bytes()
 		proofbytes = append(proofbytes, privacy.IntToByteArr(len(comOutputMultiRangeProof))...)
 		proofbytes = append(proofbytes, comOutputMultiRangeProof...)
 	} else {
-		proofbytes = append(proofbytes, byte(0))
+		proofbytes = append(proofbytes, []byte{0, 0}...)
 	}
 
-	// ComZeroProof
-	if paymentProof.ComZeroProof != nil {
+	if hasPrivacy {
 		comZeroProof := paymentProof.ComZeroProof.Bytes()
-		proofbytes = append(proofbytes, byte(privacy.ComZeroProofSize))
+		proofbytes = append(proofbytes, byte(len(comZeroProof)))
 		proofbytes = append(proofbytes, comZeroProof...)
 	} else {
 		proofbytes = append(proofbytes, byte(0))
@@ -213,10 +215,12 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, byte(0))
 	}
 
+	fmt.Printf("BYTES ------------------ %v\n", proofbytes)
+
 	return proofbytes
 }
 
-func (proof *PaymentProof) SetBytes(proofbytes []byte) (*privacy.PrivacyError) {
+func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	offset := 0
 
 	// Set OneOfManyProofSize
@@ -288,10 +292,6 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (*privacy.PrivacyError) {
 		offset += lenComZeroProof
 	}
 
-	if len(proof.OneOfManyProof) == 0 {
-		offset -= 1
-	}
-
 	//InputCoins  []*privacy.InputCoin
 	lenInputCoinsArray := int(proofbytes[offset])
 	offset += 1
@@ -351,9 +351,6 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (*privacy.PrivacyError) {
 		offset += lenComOutputSND
 	}
 
-	if len(proof.OneOfManyProof) == 0 {
-		offset -= 1
-	}
 	lenComOutputShardIdArray := int(proofbytes[offset])
 	offset += 1
 	proof.ComOutputShardID = make([]*privacy.EllipticPoint, lenComOutputShardIdArray)
@@ -419,28 +416,36 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (*privacy.PrivacyError) {
 		offset += lenComInputShardID
 	}
 
+	fmt.Printf("SETBYTES ------------------ %v\n", proof.Bytes())
+
 	return nil
 }
 
 // Build prepares witnesses for all protocol need to be proved when create tx
 // if hashPrivacy = false, witness includes spending key, input coins, output coins
 // otherwise, witness includes all attributes in PaymentWitness struct
-func (wit *PaymentWitness) Build(hasPrivacy bool,
+func (wit *PaymentWitness) Init(hasPrivacy bool,
 	spendingKey *big.Int,
 	inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin,
 	pkLastByteSender byte,
 	commitments []*privacy.EllipticPoint, commitmentIndices []uint64, myCommitmentIndices []uint64,
-	fee uint64) (*privacy.PrivacyError) {
+	fee uint64) *privacy.PrivacyError {
 
 	if !hasPrivacy {
+		for _, outCoin := range outputCoins {
+			outCoin.CoinDetails.Randomness = privacy.RandInt()
+			outCoin.CoinDetails.CommitAll()
+		}
+
 		wit.spendingKey = spendingKey
 		wit.inputCoins = inputCoins
 		wit.outputCoins = outputCoins
-		wit.commitmentIndexs = commitmentIndices
-		wit.myCommitmentIndexs = myCommitmentIndices
+		//wit.commitmentIndexs = commitmentIndices
+		//wit.myCommitmentIndexs = myCommitmentIndices
 
 		publicKey := inputCoins[0].CoinDetails.PublicKey
 
+		wit.SNNoPrivacyWitness = make([]*SNNoPrivacyWitness, len(inputCoins))
 		for i := 0; i < len(inputCoins); i++ {
 			/***** Build witness for proving that serial number is derived from the committed derivator *****/
 			if wit.SNNoPrivacyWitness[i] == nil {
@@ -496,7 +501,6 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	randInputIsZero := make([]*big.Int, numInputCoin)
 
 	preIndex := 0
-
 
 	for i, inputCoin := range wit.inputCoins {
 		// commit each component of coin commitment
@@ -625,7 +629,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 	// Build witness for proving Sum(Input's value) == Sum(Output's Value)
 	if fee > 0 {
-		cmOutputValueAll.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(fee))))
+		cmOutputValueAll = cmOutputValueAll.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(fee))))
 	}
 
 	//cmEqualCoinValue := new(privacy.EllipticPoint)
@@ -714,7 +718,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 	return proof, nil
 }
 
-func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
+func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
 	// has no privacy
 	if !hasPrivacy {
 		var sumInputValue, sumOutputValue uint64
@@ -759,7 +763,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 		}
 
 		// check if sum of input values equal sum of output values
-		if sumInputValue != sumOutputValue {
+		if sumInputValue != sumOutputValue+fee {
 			return false
 		}
 		return true
@@ -781,11 +785,13 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 		for j := 0; j < privacy.CMRingSize; j++ {
 			commitmentBytes, err := db.GetCommitmentByIndex(tokenID, pro.OneOfManyProof[i].CommitmentIndices[j], chainId)
 			if err != nil {
+				fmt.Printf("err 1\n")
 				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("Zero knowledge verification error"))
 				return false
 			}
 			commitments[j], err = privacy.DecompressKey(commitmentBytes)
 			if err != nil {
+				fmt.Printf("err 2\n")
 				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("Zero knowledge verification error"))
 				return false
 			}
@@ -796,10 +802,12 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 		pro.OneOfManyProof[i].Commitments = commitments
 
 		if !pro.OneOfManyProof[i].Verify() {
+			fmt.Printf("err 3\n")
 			return false
 		}
 		// Verify for the Proof that input coins' serial number is derived from the committed derivator
 		if !pro.SerialNumberProof[i].Verify() {
+			fmt.Printf("err 4\n")
 			return false
 		}
 	}
@@ -811,16 +819,36 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 		cmTmp = cmTmp.Add(pro.ComOutputShardID[i])
 
 		if !cmTmp.IsEqual(pro.OutputCoins[i].CoinDetails.CoinCommitment) {
+			fmt.Printf("err 5\n")
 			return false
 		}
 	}
 
 	// Verify the proof that output values and sum of them do not exceed v_max
 	if !pro.ComOutputMultiRangeProof.Verify() {
+		fmt.Printf("err 6\n")
 		return false
 	}
 	// Verify the proof that sum of all input values is equal to sum of all output values
+	comInputValueSum := new(privacy.EllipticPoint).Zero()
+	for i := 0; i < len(pro.ComInputValue); i++ {
+		comInputValueSum = comInputValueSum.Add(pro.ComInputValue[i])
+	}
+
+	comOutputValueSum := new(privacy.EllipticPoint).Zero()
+	for i := 0; i < len(pro.ComOutputValue); i++ {
+		comOutputValueSum = comOutputValueSum.Add(pro.ComOutputValue[i])
+	}
+
+	if fee > 0 {
+		comOutputValueSum = comOutputValueSum.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(fee))))
+	}
+
+	comZero := comInputValueSum.Sub(comOutputValueSum)
+	pro.ComZeroProof.commitmentValue = comZero
+
 	if !pro.ComZeroProof.Verify() {
+		fmt.Printf("err 7\n")
 		return false
 	}
 

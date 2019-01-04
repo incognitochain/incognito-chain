@@ -12,35 +12,36 @@ import (
 type ValidLoanResponse int
 
 const (
-	Accept ValidLoanResponse = iota
-	Reject
+	Reject ValidLoanResponse = iota
+	Accept
 )
 
 type LoanResponse struct {
-	LoanID     []byte
-	Response   ValidLoanResponse
-	ValidUntil uint64
+	LoanID   []byte
+	Response ValidLoanResponse
 
 	MetadataBase
 }
 
-func NewLoanResponse(data map[string]interface{}) *LoanResponse {
-	result := LoanResponse{
-		ValidUntil: uint64(data["ValidUntil"].(float64)),
-	}
+type ResponseData struct {
+	PublicKey []byte
+	Response  ValidLoanResponse
+}
+
+func NewLoanResponse(data map[string]interface{}) (Metadata, error) {
+	result := LoanResponse{}
 	s, _ := hex.DecodeString(data["LoanID"].(string))
 	result.LoanID = s
 
 	result.Response = ValidLoanResponse(int(data["Response"].(float64)))
 	result.Type = LoanResponseMeta
 
-	return &result
+	return &result, nil
 }
 
 func (lr *LoanResponse) Hash() *common.Hash {
 	record := string(lr.LoanID)
 	record += string(lr.Response)
-	record += string(lr.ValidUntil)
 
 	// final hash
 	record += string(lr.MetadataBase.Hash()[:])
@@ -48,16 +49,23 @@ func (lr *LoanResponse) Hash() *common.Hash {
 	return &hash
 }
 
-func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-	// Check if only board members created this tx
+func txCreatedByDCBBoardMember(txr Transaction, bcr BlockchainRetriever) bool {
 	isBoard := false
-	for _, gov := range bcr.GetDCBBoardPubKeys() {
-		// TODO(@0xbunyip): change gov to []byte or use Base58Decode for entire payment address of governors
-		if bytes.Equal([]byte(gov), txr.GetJSPubKey()) {
+	txPubKey := txr.GetJSPubKey()
+	fmt.Printf("check if created by dcb board: %v\n", txPubKey)
+	for _, member := range bcr.GetDCBBoardPubKeys() {
+		fmt.Printf("member of board pubkey: %v\n", member)
+		if bytes.Equal(member, txPubKey) {
 			isBoard = true
 		}
 	}
-	if !isBoard {
+	return isBoard
+}
+
+func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+	fmt.Println("Validating LoanResponse with blockchain!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	// Check if only board members created this tx
+	if !txCreatedByDCBBoardMember(txr, bcr) {
 		return false, fmt.Errorf("Tx must be created by DCB Governor")
 	}
 
@@ -84,10 +92,6 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 				meta := txOld.GetMetadata()
 				if meta == nil {
 					continue
-				}
-				metaOld := meta.(*LoanResponse)
-				if lr.ValidUntil != metaOld.ValidUntil {
-					return false, fmt.Errorf("Valid deadline of all responses of a loan must be the same")
 				}
 			}
 		case LoanRequestMeta:
@@ -121,4 +125,28 @@ func (lr *LoanResponse) ValidateMetadataByItself() bool {
 // CheckTransactionFee returns true since loan response tx doesn't have fee
 func (lr *LoanResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	return true
+}
+
+// GetLoanResponses returns list of members who responded to a loan; input the hashes of request and response txs of the loan
+func GetLoanResponses(txHashes [][]byte, bcr BlockchainRetriever) []ResponseData {
+	data := []ResponseData{}
+	for _, txHash := range txHashes {
+		hash, err := (&common.Hash{}).NewHash(txHash)
+		if err != nil {
+			continue
+		}
+		_, _, _, txOld, err := bcr.GetTransactionByHash(hash)
+		if txOld == nil || err != nil {
+			continue
+		}
+		if txOld.GetMetadataType() == LoanResponseMeta {
+			meta := txOld.GetMetadata().(*LoanResponse)
+			respData := ResponseData{
+				PublicKey: txOld.GetJSPubKey(),
+				Response:  meta.Response,
+			}
+			data = append(data, respData)
+		}
+	}
+	return data
 }

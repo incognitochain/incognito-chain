@@ -74,12 +74,14 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendLoanResponse: RpcServer.handleCreateAndSendLoanResponse,
 	CreateAndSendLoanWithdraw: RpcServer.handleCreateAndSendLoanWithdraw,
 	CreateAndSendLoanPayment:  RpcServer.handleCreateAndSendLoanPayment,
+	GetLoanResponseApproved:   RpcServer.handleGetLoanResponseApproved,
 
 	// multisig
-	CreateSignatureOnCustomTokenTx: RpcServer.handleCreateSignatureOnCustomTokenTx,
-	GetListDCBBoard:                RpcServer.handleGetListDCBBoard,
-	GetListCBBoard:                 RpcServer.handleGetListCBBoard,
-	GetListGOVBoard:                RpcServer.handleGetListGOVBoard,
+	CreateSignatureOnCustomTokenTx:       RpcServer.handleCreateSignatureOnCustomTokenTx,
+	GetListDCBBoard:                      RpcServer.handleGetListDCBBoard,
+	GetListGOVBoard:                      RpcServer.handleGetListGOVBoard,
+	CreateAndSendTxWithMultiSigsReg:      RpcServer.handleCreateAndSendTxWithMultiSigsReg,
+	CreateAndSendTxWithMultiSigsSpending: RpcServer.handleCreateAndSendTxWithMultiSigsSpending,
 
 	// vote board
 	CreateAndSendVoteDCBBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
@@ -105,12 +107,23 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendTxWithContractingRequest: RpcServer.handleCreateAndSendTxWithContractingRequest,
 
 	// gov
-	GetBondTypes:                      RpcServer.handleGetBondTypes,
-	GetGOVConstitution:                RpcServer.handleGetGOVConstitution,
-	GetGOVParams:                      RpcServer.handleGetGOVParams,
-	CreateAndSendTxWithBuyBackRequest: RpcServer.handleCreateAndSendTxWithBuyBackRequest,
-	CreateAndSendTxWithBuySellRequest: RpcServer.handleCreateAndSendTxWithBuySellRequest,
-	CreateAndSendTxWithOracleFeed:     RpcServer.handleCreateAndSendTxWithOracleFeed,
+	GetBondTypes:                           RpcServer.handleGetBondTypes,
+	GetGOVConstitution:                     RpcServer.handleGetGOVConstitution,
+	GetGOVParams:                           RpcServer.handleGetGOVParams,
+	CreateAndSendTxWithBuyBackRequest:      RpcServer.handleCreateAndSendTxWithBuyBackRequest,
+	CreateAndSendTxWithBuySellRequest:      RpcServer.handleCreateAndSendTxWithBuySellRequest,
+	CreateAndSendTxWithOracleFeed:          RpcServer.handleCreateAndSendTxWithOracleFeed,
+	CreateAndSendTxWithUpdatingOracleBoard: RpcServer.handleCreateAndSendTxWithUpdatingOracleBoard,
+
+	// cmb
+	CreateAndSendTxWithCMBInitRequest:     RpcServer.handleCreateAndSendTxWithCMBInitRequest,
+	CreateAndSendTxWithCMBInitResponse:    RpcServer.handleCreateAndSendTxWithCMBInitResponse,
+	CreateAndSendTxWithCMBDepositContract: RpcServer.handleCreateAndSendTxWithCMBDepositContract,
+	CreateAndSendTxWithCMBDepositSend:     RpcServer.handleCreateAndSendTxWithCMBDepositSend,
+	CreateAndSendTxWithCMBWithdrawRequest: RpcServer.handleCreateAndSendTxWithCMBWithdrawRequest,
+
+	// wallet
+	GetPublicKeyFromPaymentAddress: RpcServer.handleGetPublicKeyFromPaymentAddress,
 }
 
 // Commands that are available to a limited user
@@ -225,11 +238,11 @@ func (self RpcServer) handleListUnspentOutputCoins(params interface{}, closeChan
 		}
 		for _, outCoin := range outCoins {
 			item.OutCoins = append(item.OutCoins, jsonresult.OutCoin{
-				SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), byte(0x00)),
-				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), byte(0x00)),
+				SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
+				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),
 				Value:          outCoin.CoinDetails.Value,
-				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], byte(0x00)),
-				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), byte(0x00)),
+				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], common.ZeroByte),
+				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), common.ZeroByte),
 				Randomness:     *outCoin.CoinDetails.Randomness,
 				SNDerivator:    *outCoin.CoinDetails.SNDerivator,
 			})

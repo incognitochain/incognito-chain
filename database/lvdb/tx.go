@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
+	"github.com/ninjadotorg/constant/common/base58"
 )
 
 // StoreSerialNumbers - store list serialNumbers by shardID
@@ -571,7 +572,7 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, shardID
 	reverseTxIndex := make([]byte, 4)
 	binary.LittleEndian.PutUint32(reverseTxIndex, uint32(bigNumberTx-int32(txIndex)))
 
-	key1 := string(privateKeyPrefix) + privateKey.String() + string(Splitter) + string(int(shardID)) + string(Splitter) + string(reverseBlockHeight) + string(Splitter) + string(reverseTxIndex)
+	key1 := string(privateKeyPrefix) + base58.Base58Check{}.Encode((*privateKey)[:], 0x00) + string(Splitter) + string(int(chainId)) + string(Splitter) + string(reverseBlockHeight) + string(Splitter) + string(reverseTxIndex)
 	key2 := string(transactionKeyPrefix) + unspentTxHash.String()
 
 	if ok, _ := db.HasValue([]byte(key1)); ok {

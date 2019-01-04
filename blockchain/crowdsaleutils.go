@@ -41,36 +41,38 @@ package blockchain
 // 	return value, amounts
 // }
 
-// func buildPaymentForCoin(
-// 	txRequest *transaction.TxCustomToken,
-// 	amount uint64,
-// 	saleID []byte,
-// 	producerPrivateKey *privacy.SpendingKey,
-// 	db database.DatabaseInterface,
-// ) (*transaction.TxCustomToken, error) {
-// 	// Mint and send Constant
-// 	meta := txRequest.Metadata.(*metadata.CrowdsaleRequest)
-// 	amounts := []uint64{amount}
-// 	pks := [][]byte{meta.PaymentAddress.Pk[:]}
-// 	tks := [][]byte{meta.PaymentAddress.Tk[:]}
-// 	txs, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db) // There's only one tx in txs
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	metaPay := &metadata.CrowdsalePayment{
-// 		RequestedTxID: &common.Hash{},
-// 		SaleID:        make([]byte, len(saleID)),
-// 	}
-// 	hash := txRequest.Hash()
-// 	copy(metaPay.RequestedTxID[:], hash[:])
-// 	copy(metaPay.SaleID, saleID)
-// 	txToken := &transaction.TxCustomToken{
-// 		Tx:          *(txs[0]),
-// 		TxTokenData: transaction.TxTokenData{},
-// 	}
-// 	txToken.Metadata = metaPay
-// 	return txToken, nil
-// }
+func buildPaymentForCoin(
+	txRequest *transaction.TxCustomToken,
+	amount uint64,
+	saleID []byte,
+	producerPrivateKey *privacy.SpendingKey,
+	db database.DatabaseInterface,
+) (*transaction.TxCustomToken, error) {
+	// Mint and send Constant
+	meta := txRequest.Metadata.(*metadata.CrowdsaleRequest)
+	metaPay := &metadata.CrowdsalePayment{
+		RequestedTxID: &common.Hash{},
+		SaleID:        make([]byte, len(saleID)),
+	}
+	hash := txRequest.Hash()
+	copy(metaPay.RequestedTxID[:], hash[:])
+	copy(metaPay.SaleID, saleID)
+	metaPayList := []metadata.Metadata{metaPay}
+
+	amounts := []uint64{amount}
+	pks := [][]byte{meta.PaymentAddress.Pk[:]}
+	tks := [][]byte{meta.PaymentAddress.Tk[:]}
+	txs, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db, metaPayList) // There's only one tx in txs
+	if err != nil {
+		return nil, err
+	}
+
+	txToken := &transaction.TxCustomToken{
+		Tx:          *(txs[0]),
+		TxTokenData: transaction.TxTokenData{},
+	}
+	return txToken, nil
+}
 
 // func transferTxToken(tokenAmount uint64, unspentTxTokenOuts []transaction.TxTokenVout, tokenID, receiverPk []byte) (*transaction.TxCustomToken, int, error) {
 // 	sumTokens := uint64(0)

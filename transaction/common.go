@@ -1,16 +1,18 @@
 package transaction
 
 import (
+	"fmt"
 	"math"
 	"math/big"
 	"math/rand"
-
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
+	"sort"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 )
 
 // ConvertOutputCoinToInputCoin - convert output coin from old tx to input coin for new tx
@@ -44,12 +46,13 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 	for _, in := range usableInputCoins {
 		usableCommitment := in.CoinDetails.CoinCommitment.Compress()
 		listUsableCommitments = append(listUsableCommitments, usableCommitment)
-		index, _ := db.GetCommitmentIndex(tokenID, usableCommitment, shardID)
-		mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(usableCommitment, byte(0x00))] = index
+		index, _ := db.GetCommitmentIndex(tokenID, usableCommitment, chainID)
+		mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(usableCommitment, common.ZeroByte)] = index
 	}
 
 	// loop to random commitmentIndexs
 	cpRandNum := (len(listUsableCommitments) * randNum) - len(listUsableCommitments)
+	fmt.Printf("cpRandNum: %d\n", cpRandNum)
 	for i := 0; i < cpRandNum; i++ {
 		for true {
 			lenCommitment, _ := db.GetCommitmentLength(tokenID, shardID)
@@ -70,7 +73,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 
 	// loop to insert usable commitments into commitmentIndexs for every group
 	for j, temp := range listUsableCommitments {
-		index := mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(temp, byte(0x00))]
+		index := mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(temp, common.ZeroByte)]
 		rand := rand.Intn(randNum)
 		i := (j * randNum) + rand
 		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index.Uint64()}, commitmentIndexs[i:]...)...)
@@ -106,4 +109,15 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte
 
 	return uint64(math.Ceil(float64(sizeTx) / 1024))
+}
+
+// SortTxsByLockTime sorts txs by lock time
+func SortTxsByLockTime(txs []metadata.Transaction, isDesc bool) []metadata.Transaction {
+	sort.Slice(txs, func(i, j int) bool {
+		if isDesc {
+			return txs[i].GetLockTime() > txs[j].GetLockTime()
+		}
+		return txs[i].GetLockTime() <= txs[j].GetLockTime()
+	})
+	return txs
 }

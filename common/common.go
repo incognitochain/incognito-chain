@@ -2,11 +2,14 @@ package common
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"log"
+	"math"
 	"math/big"
 	"net"
 	"os"
@@ -17,11 +20,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
-
-	"log"
-	"math"
-
-	"crypto/rand"
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/multiformats/go-multiaddr"
@@ -331,8 +329,9 @@ func ToBytes(obj interface{}) []byte {
 	return buff.Bytes()
 }
 
-// CheckDuplicate returns true if there are at least 2 elements in array have same values
-func CheckDuplicateBigInt(arr []*big.Int) bool {
+// CheckDuplicate returns true if there are at least 2 elements in an array have same values
+// todo:
+func CheckDuplicateBigIntArray(arr []*big.Int) bool {
 	return false
 }
 
@@ -382,6 +381,16 @@ func BytesToUint32(b []byte) uint32 {
 	return binary.LittleEndian.Uint32(b)
 }
 
+func Uint8ToBytes(value uint8) []byte {
+	b := make([]byte, 1)
+	b[0] = byte(value)
+	return b
+}
+
+func BytesToUint8(b []byte) uint8 {
+	return uint8(b[0])
+}
+
 func CompareStringArray(src []string, dst []string) bool {
 	if len(src) != len(dst) {
 		return false
@@ -399,10 +408,34 @@ func BytesToInt32(b []byte) int32 {
 	return int32(i)
 }
 
+func BytesToUint64(b []byte) uint64 {
+	return binary.LittleEndian.Uint64(b)
+}
+
+func Uint64ToBytes(value uint64) []byte {
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, value)
+	return b
+}
+
 func SliceInterfaceToSliceByte(Arr []interface{}) []byte {
 	res := make([]byte, 0)
 	for _, element := range Arr {
 		res = append(res, element.(byte))
+	}
+	return res
+}
+
+func BytesPlusOne(b []byte) []byte {
+	res := make([]byte, len(b))
+	for i := len(b); i >= 0; i-- {
+		if b[i] < 0xff {
+			copy(res[0:i], b[0:i])
+			res[i] = b[i] + 1
+			break
+		} else {
+			res[i] = 0
+		}
 	}
 	return res
 }

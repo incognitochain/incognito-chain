@@ -149,10 +149,13 @@ func (block *Block) updateDCBConstitution(tx metadata.Transaction, blockgen *Blk
 	metadataAcceptDCBProposal := tx.GetMetadata().(*metadata.AcceptDCBProposalMetadata)
 	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(&metadataAcceptDCBProposal.DCBProposalTXID)
 	DCBProposal := getTx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
+	previousConstitutionIndex := blockgen.chain.GetConstitutionIndex(DCBConstitutionHelper{})
+	newConstitutionIndex := previousConstitutionIndex + 1
 	if err != nil {
 		return err
 	}
 	constitutionInfo := NewConstitutionInfo(
+		newConstitutionIndex,
 		uint32(block.Header.Height),
 		DCBProposal.ExecuteDuration,
 		*metadataAcceptDCBProposal.Hash(),
@@ -165,10 +168,13 @@ func (block *Block) updateGOVConstitution(tx metadata.Transaction, blockgen *Blk
 	metadataAcceptGOVProposal := tx.GetMetadata().(*metadata.AcceptGOVProposalMetadata)
 	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(&metadataAcceptGOVProposal.GOVProposalTXID)
 	GOVProposal := getTx.GetMetadata().(*metadata.SubmitGOVProposalMetadata)
+	previousConstitutionIndex := blockgen.chain.GetConstitutionIndex(GOVConstitutionHelper{})
+	newConstitutionIndex := previousConstitutionIndex + 1
 	if err != nil {
 		return err
 	}
 	constitutionInfo := NewConstitutionInfo(
+		newConstitutionIndex,
 		uint32(block.Header.Height),
 		GOVProposal.ExecuteDuration,
 		*metadataAcceptGOVProposal.Hash(),

@@ -288,9 +288,11 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		go self.connManager.Connect(addr, "")
 	}
 
+	fmt.Println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", cfg.DisableRPC)
 	if !cfg.DisableRPC {
 		// Setup listeners for the configured RPC listen addresses and
 		// TLS settings.
+		fmt.Println("settingup RPCListeners")
 		rpcListeners, err := self.setupRPCListeners()
 		if err != nil {
 			return err

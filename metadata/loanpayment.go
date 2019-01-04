@@ -17,13 +17,13 @@ type LoanPayment struct {
 	MetadataBase
 }
 
-func NewLoanPayment(data map[string]interface{}) *LoanPayment {
+func NewLoanPayment(data map[string]interface{}) (Metadata, error) {
 	result := LoanPayment{}
 	s, _ := hex.DecodeString(data["LoanID"].(string))
 	result.LoanID = s
 	result.PayPrinciple = data["PayPrinciple"].(bool)
 	result.Type = LoanPaymentMeta
-	return &result
+	return &result, nil
 }
 
 func (lp *LoanPayment) Hash() *common.Hash {

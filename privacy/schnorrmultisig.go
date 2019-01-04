@@ -50,7 +50,7 @@ func (multiSig *SchnMultiSig) SetBytes(sigByte []byte) {
 	multiSig.R = new(EllipticPoint)
 	multiSig.R.Decompress(sigByte[0:CompressedPointSize])
 	multiSig.S = big.NewInt(0)
-	multiSig.S.SetBytes(sigByte[CompressedPointSize : CompressedPointSize+BigIntSize])
+	multiSig.S.SetBytes(sigByte[CompressedPointSize: CompressedPointSize+BigIntSize])
 }
 
 // Set - Constructing multiSig

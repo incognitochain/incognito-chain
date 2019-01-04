@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"bytes"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"sort"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
@@ -27,7 +27,7 @@ type ConstitutionHelper interface {
 	GetStartedNormalVote(generator *BlkTmplGenerator, chainID byte) uint32
 	CheckSubmitProposalType(tx metadata.Transaction) bool
 	CheckVotingProposalType(tx metadata.Transaction) bool
-	GetAmountVoteToken(tx metadata.Transaction) uint64
+	GetAmountVoteTokenOfTx(tx metadata.Transaction) uint64
 	TxAcceptProposal(txId *common.Hash, voter metadata.Voter) metadata.Transaction
 	GetLowerCaseBoardType() string
 	GetConstitutionEndedBlockHeight(generator *BlkTmplGenerator, chainID byte) uint32
@@ -38,6 +38,14 @@ type ConstitutionHelper interface {
 	GetPubKeyVoter(blockgen *BlkTmplGenerator, chainID byte) ([]byte, error)
 	GetPrizeProposal() uint32
 	GetTopMostVoteGovernor(blockgen *BlkTmplGenerator) (database.CandidateList, error)
+	GetCurrentBoardPubKeys(blockgen *BlkTmplGenerator) [][]byte
+	GetAmountVoteTokenOfBoard(blockgen *BlkTmplGenerator, pubKey []byte, boardIndex uint32) uint64
+	GetBoardSumToken(blockgen *BlkTmplGenerator) uint64
+	GetBoardFund(blockgen *BlkTmplGenerator) uint64
+	GetTokenID() *common.Hash
+	GetAmountOfVoteToBoard(blockgen *BlkTmplGenerator, candidatePubKey []byte, voterPubKey []byte, boardIndex uint32) uint64
+	GetBoard(chain BlockChain) Governor
+	GetConstitutionInfo(chain BlockChain) ConstitutionInfo
 }
 
 // txPool represents a source of transactions to consider for inclusion in
@@ -240,6 +248,15 @@ concludeBlock:
 		txToRemove = append(txToRemove, tx)
 	}
 
+	// Build CMB responses
+	cmbInitRefundTxs, err := blockgen.buildCMBRefund(sourceTxns, chainID, privatekey)
+	if err != nil {
+		return nil, err
+	}
+	for _, tx := range cmbInitRefundTxs {
+		txsToAdd = append(txsToAdd, tx)
+	}
+
 	// Get blocksalary fund from txs
 	salaryFundAdd := uint64(0)
 	salaryMULTP := uint64(0) //salary multiplier
@@ -255,7 +272,7 @@ concludeBlock:
 	totalSalary := salaryMULTP*salaryPerTx + basicSalary
 	// create salary tx to pay constant for block producer
 	salaryTx := new(transaction.Tx)
-	err = salaryTx.InitTxSalary(totalSalary, payToAddress, privatekey, blockgen.chain.config.DataBase)
+	err = salaryTx.InitTxSalary(totalSalary, payToAddress, privatekey, blockgen.chain.config.DataBase, nil)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -326,10 +343,10 @@ concludeBlock:
 	}
 
 	if blockgen.neededNewDCBGovernor(chainID) {
-		coinbases = append(coinbases, blockgen.UpdateNewGovernor(DCBConstitutionHelper{}, chainID)...)
+		coinbases = append(coinbases, blockgen.UpdateNewGovernor(DCBConstitutionHelper{}, chainID, privatekey)...)
 	}
 	if blockgen.neededNewGOVGovernor(chainID) {
-		coinbases = append(coinbases, blockgen.UpdateNewGovernor(GOVConstitutionHelper{}, chainID)...)
+		coinbases = append(coinbases, blockgen.UpdateNewGovernor(GOVConstitutionHelper{}, chainID, privatekey)...)
 	}
 
 	for _, tx := range unlockTxs {
@@ -463,7 +480,7 @@ func GetOracleGOVNationalWelfare() int32 {
 func (blockgen *BlkTmplGenerator) neededNewDCBConstitution(chainID byte) bool {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	lastDCBConstitution := BestBlock.Header.DCBConstitution
-	if GetOracleDCBNationalWelfare() < lastDCBConstitution.CurrentDCBNationalWelfare*ThresholdRatioOfDCBCrisis/100 ||
+	if GetOracleDCBNationalWelfare() < lastDCBConstitution.CurrentDCBNationalWelfare*ThresholdRatioOfDCBCrisis/common.BasePercentage ||
 		uint32(BestBlock.Header.Height+2) == lastDCBConstitution.StartedBlockHeight+lastDCBConstitution.ExecuteDuration {
 		return true
 	}
@@ -472,7 +489,7 @@ func (blockgen *BlkTmplGenerator) neededNewDCBConstitution(chainID byte) bool {
 func (blockgen *BlkTmplGenerator) neededNewGOVConstitution(chainID byte) bool {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	lastGovConstitution := BestBlock.Header.GOVConstitution
-	if GetOracleGOVNationalWelfare() < lastGovConstitution.CurrentGOVNationalWelfare*ThresholdRatioOfGovCrisis/100 ||
+	if GetOracleGOVNationalWelfare() < lastGovConstitution.CurrentGOVNationalWelfare*ThresholdRatioOfGovCrisis/common.BasePercentage ||
 		uint32(BestBlock.Header.Height+2) == lastGovConstitution.StartedBlockHeight+lastGovConstitution.ExecuteDuration {
 		return true
 	}
@@ -504,12 +521,11 @@ func (blockgen *BlkTmplGenerator) processDividend(
 		infos := []metadata.DividendInfo{}
 		// Build tx to pay dividend to each holder
 		for i, holder := range tokenHolders {
-			// TODO(@0xbunyip): holder here is Pk only, change to use both Pk and Pkenc
-			holderAddr, err := hex.DecodeString(holder)
+			holderAddrInBytes, _, err := base58.Base58Check{}.Decode(holder)
 			if err != nil {
 				return nil, 0, err
 			}
-			holderAddress := (&privacy.PaymentAddress{}).SetBytes(holderAddr)
+			holderAddress := (&privacy.PaymentAddress{}).SetBytes(holderAddrInBytes)
 			info := metadata.DividendInfo{
 				TokenHolder: *holderAddress,
 				Amount:      amounts[i] / totalTokenSupply,
@@ -696,13 +712,12 @@ func (blockgen *BlkTmplGenerator) buildBuyBackResponseTxs(
 	var buyBackResTxs []*transaction.Tx
 	for _, buyBackFromInfo := range buyBackFromInfos {
 		buyBackAmount := buyBackFromInfo.value * buyBackFromInfo.buyBackPrice
+		buyBackRes := metadata.NewBuyBackResponse(*buyBackFromInfo.requestedTxID, metadata.BuyBackResponseMeta)
 		buyBackResTx := new(transaction.Tx)
-		err := buyBackResTx.InitTxSalary(buyBackAmount, &buyBackFromInfo.paymentAddress, privatekey, blockgen.chain.GetDatabase())
+		err := buyBackResTx.InitTxSalary(buyBackAmount, &buyBackFromInfo.paymentAddress, privatekey, blockgen.chain.GetDatabase(), buyBackRes)
 		if err != nil {
 			return []*transaction.Tx{}, err
 		}
-		buyBackRes := metadata.NewBuyBackResponse(*buyBackFromInfo.requestedTxID, metadata.BuyBackResponseMeta)
-		buyBackResTx.SetMetadata(buyBackRes)
 		buyBackResTxs = append(buyBackResTxs, buyBackResTx)
 	}
 	return buyBackResTxs, nil
@@ -785,13 +800,12 @@ func (blockgen *BlkTmplGenerator) buildIssuingResTxs(
 				constantPrice = oracleParams.Constant
 			}
 			issuingAmt := issuingReq.DepositedAmount / constantPrice
+			issuingRes := metadata.NewIssuingResponse(*issuingReqTx.Hash(), metadata.IssuingResponseMeta)
 			resTx := new(transaction.Tx)
-			err := resTx.InitTxSalary(issuingAmt, &issuingReq.ReceiverAddress, privatekey, blockgen.chain.GetDatabase())
+			err := resTx.InitTxSalary(issuingAmt, &issuingReq.ReceiverAddress, privatekey, blockgen.chain.GetDatabase(), issuingRes)
 			if err != nil {
 				return []metadata.Transaction{}, err
 			}
-			issuingRes := metadata.NewIssuingResponse(*issuingReqTx.Hash(), metadata.IssuingResponseMeta)
-			resTx.SetMetadata(issuingRes)
 			issuingResTxs = append(issuingResTxs, resTx)
 		}
 	}
@@ -816,14 +830,13 @@ func calculateAmountOfRefundTxs(
 	var refundTxs []*transaction.Tx
 	for i := 0; i < len(addresses); i++ {
 		addr := addresses[i]
+		refundMeta := metadata.NewRefund(*smallTxHashes[i], metadata.RefundMeta)
 		refundTx := new(transaction.Tx)
-		err := refundTx.InitTxSalary(actualRefundAmt, addr, privatekey, db)
+		err := refundTx.InitTxSalary(actualRefundAmt, addr, privatekey, db, refundMeta)
 		if err != nil {
 			Logger.log.Error(err)
 			continue
 		}
-		refundMeta := metadata.NewRefund(*smallTxHashes[i], metadata.RefundMeta)
-		refundTx.SetMetadata(refundMeta)
 		refundTxs = append(refundTxs, refundTx)
 	}
 	return refundTxs, amt
@@ -919,27 +932,28 @@ func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, pro
 				removableTxs = append(removableTxs, txDesc.Tx)
 				continue
 			}
-			pks := [][]byte{meta.ReceiveAddress.Pk[:]}
-			tks := [][]byte{meta.ReceiveAddress.Tk[:]}
-			amounts := []uint64{meta.LoanAmount}
-			txNormals, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, blockgen.chain.GetDatabase())
-			if err != nil {
-				removableTxs = append(removableTxs, txDesc.Tx)
-				continue
-			}
+
 			unlockMeta := &metadata.LoanUnlock{
 				LoanID:       make([]byte, len(withdrawMeta.LoanID)),
 				MetadataBase: metadata.MetadataBase{Type: metadata.LoanUnlockMeta},
 			}
 			copy(unlockMeta.LoanID, withdrawMeta.LoanID)
-			txNormals[0].Metadata = unlockMeta
+			uplockMetaList := []metadata.Metadata{unlockMeta}
+			pks := [][]byte{meta.ReceiveAddress.Pk[:]}
+			tks := [][]byte{meta.ReceiveAddress.Tk[:]}
+			amounts := []uint64{meta.LoanAmount}
+			txNormals, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, blockgen.chain.GetDatabase(), uplockMetaList)
+			if err != nil {
+				removableTxs = append(removableTxs, txDesc.Tx)
+				continue
+			}
 			loanUnlockTxs = append(loanUnlockTxs, txNormals[0]) // There's only one tx
 		}
 	}
 	return amount, loanUnlockTxs, removableTxs
 }
 
-func (blockgen *BlkTmplGenerator) UpdateNewGovernor(helper ConstitutionHelper, chainID byte) []metadata.Transaction {
+func (blockgen *BlkTmplGenerator) UpdateNewGovernor(helper ConstitutionHelper, chainID byte, minerPrivateKey *privacy.SpendingKey) []metadata.Transaction {
 	txs := make([]metadata.Transaction, 0)
 	newBoardList, _ := helper.GetTopMostVoteGovernor(blockgen)
 	sort.Sort(newBoardList)
@@ -954,7 +968,86 @@ func (blockgen *BlkTmplGenerator) UpdateNewGovernor(helper ConstitutionHelper, c
 	txs = append(txs, blockgen.CreateSendDCBVoteTokenToGovernorTx(chainID, newBoardList, sumOfVote)...)
 
 	txs = append(txs, blockgen.CreateSendBackDCBTokenAfterVoteFail(chainID, newDCBBoardPubKey)...)
-	// Todo @0xjackalope: send reward to old board and delete them from database before send back token to new board
-	//xxx add to pool
+
+	txs = append(txs, blockgen.CreateSendRewardOldBoard(helper, minerPrivateKey)...)
+
+	return txs
+}
+
+func (blockgen *BlkTmplGenerator) CreateSingleShareRewardOldBoard(
+	helper ConstitutionHelper,
+	chairPubKey []byte,
+	voterPubKey []byte,
+	amountOfCoin uint64,
+	amountOfToken uint64,
+	minerPrivateKey *privacy.SpendingKey,
+) metadata.Transaction {
+	paymentAddressByte := blockgen.chain.config.DataBase.GetPaymentAddressFromPubKey(voterPubKey)
+	paymentAddress := privacy.PaymentAddress{}
+	paymentAddress.SetBytes(paymentAddressByte)
+	tx := transaction.Tx{}
+	rewardShareOldBoardMeta := metadata.NewRewardShareOldBoardMetadata(chairPubKey, voterPubKey, helper.GetLowerCaseBoardType())
+	tx.InitTxSalary(amountOfCoin, &paymentAddress, minerPrivateKey, blockgen.chain.config.DataBase, rewardShareOldBoardMeta)
+	txTokenData := transaction.TxTokenData{
+		Type:       transaction.CustomTokenInit,
+		Amount:     amountOfToken,
+		PropertyID: *helper.GetTokenID(),
+		Vins:       []transaction.TxTokenVin{},
+		Vouts:      []transaction.TxTokenVout{},
+	}
+
+	txCustomToken := transaction.TxCustomToken{
+		Tx:          tx,
+		TxTokenData: txTokenData,
+	}
+	return &txCustomToken
+}
+
+func (blockgen *BlkTmplGenerator) CreateShareRewardOldBoard(
+	helper ConstitutionHelper,
+	chairPubKey []byte,
+	totalAmountCoinReward uint64,
+	totalAmountTokenReward uint64,
+	totalVoteAmount uint64,
+	minerPrivateKey *privacy.SpendingKey,
+) []metadata.Transaction {
+	txs := make([]metadata.Transaction, 0)
+
+	voterList := blockgen.chain.config.DataBase.GetBoardVoterList(chairPubKey, blockgen.chain.GetCurrentBoardIndex(helper))
+	boardIndex := blockgen.chain.GetCurrentBoardIndex(helper)
+	for _, pubKey := range voterList {
+		amountOfVote := helper.GetAmountOfVoteToBoard(blockgen, chairPubKey, pubKey, boardIndex)
+		amountOfCoin := amountOfVote * totalAmountCoinReward / totalVoteAmount
+		amountOfToken := amountOfVote * totalAmountTokenReward / totalVoteAmount
+		blockgen.CreateSingleShareRewardOldBoard(helper, chairPubKey, pubKey, amountOfCoin, amountOfToken, minerPrivateKey)
+	}
+	return txs
+}
+
+func (blockgen *BlkTmplGenerator) GetCoinTermReward(helper ConstitutionHelper) uint64 {
+	return helper.GetBoardFund(blockgen) * common.PercentageBoardSalary / common.BasePercentage
+}
+
+func (blockgen *BlkTmplGenerator) CreateSendRewardOldBoard(helper ConstitutionHelper, minerPrivateKey *privacy.SpendingKey) []metadata.Transaction {
+	txs := make([]metadata.Transaction, 0)
+	voteTokenAmount := make(map[string]uint64)
+	sumVoteTokenAmount := uint64(0)
+	pubKeys := helper.GetCurrentBoardPubKeys(blockgen)
+	totalAmountOfTokenReward := helper.GetBoardSumToken(blockgen) // Total amount of token
+	totalAmountOfCoinReward := blockgen.GetCoinTermReward(helper)
+	helper.GetBoardFund(blockgen)
+	//reward for each by voteDCBList
+	for _, i := range pubKeys {
+		amount := helper.GetAmountVoteTokenOfBoard(blockgen, i, blockgen.chain.GetCurrentBoardIndex(helper))
+		voteTokenAmount[string(i)] = amount
+		sumVoteTokenAmount += amount
+	}
+	for pubKey, voteAmount := range voteTokenAmount {
+		percentageReward := voteAmount * common.BasePercentage / sumVoteTokenAmount
+		amountTokenReward := totalAmountOfTokenReward * uint64(percentageReward) / common.BasePercentage
+		amountCoinReward := totalAmountOfCoinReward * uint64(percentageReward) / common.BasePercentage
+		txs = append(txs, blockgen.CreateShareRewardOldBoard(helper, []byte(pubKey), amountCoinReward, amountTokenReward, voteAmount, minerPrivateKey)...)
+		//todo @0xjackalope: reward for chair
+	}
 	return txs
 }

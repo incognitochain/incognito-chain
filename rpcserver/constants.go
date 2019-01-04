@@ -29,10 +29,6 @@ const (
 	CreateRawPrivacyCustomTokenTransaction     = "createrawprivacycustomtokentransaction"
 	SendRawPrivacyCustomTokenTransaction       = "sendrawprivacycustomtokentransaction"
 	CreateAndSendPrivacyCustomTokenTransaction = "createandsendprivacycustomtokentransaction"
-	CreateAndSendLoanRequest                   = "createandsendloanrequest"
-	CreateAndSendLoanResponse                  = "createandsendloanresponse"
-	CreateAndSendLoanPayment                   = "createandsendloanpayment"
-	CreateAndSendLoanWithdraw                  = "createandsendloanwithdraw"
 	GetMempoolInfo                             = "getmempoolinfo"
 	GetCommitteeCandidateList                  = "getcommitteecandidate"
 	RetrieveCommitteeCandidate                 = "retrievecommitteecandidate"
@@ -46,7 +42,6 @@ const (
 	CheckHashValue                             = "checkhashvalue"
 	GetListCustomTokenBalance                  = "getlistcustomtokenbalance"
 	GetListPrivacyCustomTokenBalance           = "getlistprivacycustomtokenbalance"
-	GetLoanParams                              = "loanparams"
 	GetBlockHeader                             = "getheader"
 	RandomCommitments                          = "randomcommitments"
 	HasSerialNumbers                           = "hasserialnumbers"
@@ -68,14 +63,24 @@ const (
 	EncryptData                = "encryptdata"
 
 	// multisig for board spending
-	CreateSignatureOnCustomTokenTx = "createsignatureoncustomtokentx"
-	GetListDCBBoard                = "getlistdcbboard"
-	GetListCBBoard                 = "getlistcbboard"
-	GetListGOVBoard                = "getlistgovboard"
-	GetGOVParams                   = "getgovparams"
-	GetDCBParams                   = "getdcbparams"
-	GetGOVConstitution             = "getgovconstitution"
-	GetDCBConstitution             = "getdcbconstitution"
+	CreateSignatureOnCustomTokenTx       = "createsignatureoncustomtokentx"
+	GetListDCBBoard                      = "getlistdcbboard"
+	GetListCBBoard                       = "getlistcbboard"
+	GetListGOVBoard                      = "getlistgovboard"
+	GetGOVParams                         = "getgovparams"
+	GetDCBParams                         = "getdcbparams"
+	GetGOVConstitution                   = "getgovconstitution"
+	GetDCBConstitution                   = "getdcbconstitution"
+	CreateAndSendTxWithMultiSigsReg      = "createandsendtxwithmultisigsreg"
+	CreateAndSendTxWithMultiSigsSpending = "createandsendtxwithmultisigsspending"
+
+	// dcb loan
+	CreateAndSendLoanRequest  = "createandsendloanrequest"
+	CreateAndSendLoanResponse = "createandsendloanresponse"
+	CreateAndSendLoanPayment  = "createandsendloanpayment"
+	CreateAndSendLoanWithdraw = "createandsendloanwithdraw"
+	GetLoanResponseApproved   = "getloanresponseapproved"
+	GetLoanParams             = "loanparams"
 
 	// vote
 	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"
@@ -99,8 +104,19 @@ const (
 	CreateAndSendTxWithContractingRequest = "createandsendtxwithcontractingrequest"
 
 	// gov
-	GetBondTypes                      = "getbondtypes"
-	CreateAndSendTxWithBuyBackRequest = "createandsendtxwithbuybackrequest"
-	CreateAndSendTxWithBuySellRequest = "createandsendtxwithbuysellrequest"
-	CreateAndSendTxWithOracleFeed     = "createandsendtxwithoraclefeed"
+	GetBondTypes                           = "getbondtypes"
+	CreateAndSendTxWithBuyBackRequest      = "createandsendtxwithbuybackrequest"
+	CreateAndSendTxWithBuySellRequest      = "createandsendtxwithbuysellrequest"
+	CreateAndSendTxWithOracleFeed          = "createandsendtxwithoraclefeed"
+	CreateAndSendTxWithUpdatingOracleBoard = "createandsendtxwithupdatingoracleboard"
+
+	// cmb
+	CreateAndSendTxWithCMBInitRequest     = "createandsendtxwithcmbinitrequest"
+	CreateAndSendTxWithCMBInitResponse    = "createandsendtxwithcmbinitresponse"
+	CreateAndSendTxWithCMBDepositContract = "createandsendtxwithcmbdepositcontract"
+	CreateAndSendTxWithCMBDepositSend     = "createandsendtxwithcmbdepositsend"
+	CreateAndSendTxWithCMBWithdrawRequest = "createandsendtxwithcmbwithdrawrequest"
+
+	// wallet
+	GetPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
 )

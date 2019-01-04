@@ -295,7 +295,7 @@ func (p Poly) Gcd(q Poly, m *big.Int) Poly {
 	}
 }
 
-// Eval() returns p(v) where v is the given big integer
+// Eval() returns p(x) where x is the given big integer
 func (p Poly) Eval(x *big.Int, m *big.Int) (y *big.Int) {
 	y = big.NewInt(0)
 	accx := big.NewInt(1)
