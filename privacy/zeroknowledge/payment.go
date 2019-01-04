@@ -215,7 +215,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, byte(0))
 	}
 
-	fmt.Printf("BYTES ------------------ %v\n", proofbytes)
+	//	fmt.Printf("BYTES ------------------ %v\n", proofbytes)
 
 	return proofbytes
 }
@@ -416,7 +416,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		offset += lenComInputShardID
 	}
 
-	fmt.Printf("SETBYTES ------------------ %v\n", proof.Bytes())
+	//	fmt.Printf("SETBYTES ------------------ %v\n", proof.Bytes())
 
 	return nil
 }

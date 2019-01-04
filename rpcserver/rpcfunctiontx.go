@@ -191,7 +191,7 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 		paymentInfos,
 		inputCoins,
 		realFee,
-		true,
+		false,
 		*self.config.Database,
 		nil, // use for constant coin -> nil is valid
 		meta,

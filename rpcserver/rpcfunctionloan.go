@@ -191,9 +191,10 @@ func (self RpcServer) handleGetLoanResponseApproved(params interface{}, closeCha
 		approvers := []string{}
 		strLoanID := param.(string)
 		loanID, err := hex.DecodeString(strLoanID)
-		if err != nil {
+		if err == nil {
 			txHashes, err := (*self.config.Database).GetLoanTxs(loanID)
-			if err != nil {
+			fmt.Printf("GetLoanTxs found: %x\n", txHashes)
+			if err == nil {
 				respData := metadata.GetLoanResponses(txHashes, self.config.BlockChain)
 				for _, resp := range respData {
 					if resp.Response == metadata.Accept {

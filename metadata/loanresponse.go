@@ -74,8 +74,10 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 	if err != nil {
 		return false, err
 	}
+	fmt.Printf("GetLoanTxs found:\n")
 	found := false
 	for _, txHash := range txHashes {
+		fmt.Printf("%x\n", txHash)
 		hash := &common.Hash{}
 		copy(hash[:], txHash)
 		_, _, _, txOld, err := bcr.GetTransactionByHash(hash)
@@ -85,20 +87,20 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 		switch txOld.GetMetadataType() {
 		case LoanResponseMeta:
 			{
+				_, ok := txOld.GetMetadata().(*LoanResponse)
+				if !ok {
+					continue
+				}
 				// Check if the same user responses twice
 				if bytes.Equal(txOld.GetJSPubKey(), txr.GetJSPubKey()) {
 					return false, fmt.Errorf("Current board member already responded to loan request")
 				}
-				meta := txOld.GetMetadata()
-				if meta == nil {
-					continue
-				}
 			}
 		case LoanRequestMeta:
 			{
-				meta := txOld.GetMetadata()
-				if meta == nil {
-					return false, fmt.Errorf("Error parsing loan request tx")
+				_, ok := txOld.GetMetadata().(*LoanRequest)
+				if !ok {
+					continue
 				}
 				found = true
 			}
@@ -108,6 +110,7 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 	if found == false {
 		return false, fmt.Errorf("Corresponding loan request not found")
 	}
+	fmt.Printf("Validate returns true!!!\n")
 	return true, nil
 }
 
@@ -133,12 +136,15 @@ func GetLoanResponses(txHashes [][]byte, bcr BlockchainRetriever) []ResponseData
 	for _, txHash := range txHashes {
 		hash, err := (&common.Hash{}).NewHash(txHash)
 		if err != nil {
+			fmt.Printf("NewHash err: %x\n", txHash)
 			continue
 		}
 		_, _, _, txOld, err := bcr.GetTransactionByHash(hash)
 		if txOld == nil || err != nil {
+			fmt.Printf("GetTxByHash err: %x\n", hash)
 			continue
 		}
+		fmt.Printf("Type: %d\n", txOld.GetMetadataType())
 		if txOld.GetMetadataType() == LoanResponseMeta {
 			meta := txOld.GetMetadata().(*LoanResponse)
 			respData := ResponseData{

@@ -580,7 +580,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 			{
 				tx := tx.(*transaction.Tx)
 				meta := tx.Metadata.(*metadata.LoanRequest)
-				fmt.Printf("Found tx %x of type loan request\n", tx.Hash()[:])
+				fmt.Printf("Found tx %x of type loan request: %x\n", tx.Hash()[:], meta.LoanID)
 				self.config.DataBase.StoreLoanRequest(meta.LoanID, tx.Hash()[:])
 			}
 		case metadata.LoanResponseMeta:
@@ -596,10 +596,13 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 				// Update loan payment info after withdrawing Constant
 				tx := tx.(*transaction.Tx)
 				meta := tx.GetMetadata().(*metadata.LoanUnlock)
+				fmt.Printf("Found tx %x of type loan unlock\n", tx.Hash()[:])
+				fmt.Printf("LoanID: %x\n", meta.LoanID)
 				requestMeta, _ := self.GetLoanRequestMeta(meta.LoanID)
 				principle := requestMeta.LoanAmount
 				interest := GetInterestAmount(principle, requestMeta.Params.InterestRate)
 				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint32(block.Header.Height))
+				fmt.Printf("principle: %d\ninterest: %d\nblock: %d\n", principle, interest, int32(block.Header.Height))
 			}
 		case metadata.LoanPaymentMeta:
 			{
