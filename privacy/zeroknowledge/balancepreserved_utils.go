@@ -234,13 +234,16 @@ func innerProductVerifyFast(c *big.Int, P *privacy.EllipticPoint, H []*privacy.E
 			if big.NewInt(int64(i)).Bit(j) == 0 {
 				chal = new(big.Int).ModInverse(chal, privacy.Curve.Params().N)
 			}
-			si = new(big.Int).Mod(new(big.Int).Mul(si, chal), privacy.Curve.Params().N)
+			si = new(big.Int).Mul(si, chal)
+			si = si.Mod(si,privacy.Curve.Params().N)
 		}
 		sScalars[i] = si
 		invsScalars[i] = new(big.Int).ModInverse(si, privacy.Curve.Params().N)
 	}
 
-	ccalc := new(big.Int).Mod(new(big.Int).Mul(ipp.A, ipp.B), privacy.Curve.Params().N)
+	ccalc := new(big.Int).Mul(ipp.A, ipp.B)
+	ccalc = ccalc.Mod(ccalc,privacy.Curve.Params().N)
+
 	lhs := twoVectorPCommitWithGens(rangeProofParams.BPG, H, scalarVectorMul(sScalars, ipp.A), scalarVectorMul(invsScalars, ipp.B)).Add(ux.ScalarMult(ccalc))
 
 	if !rhs.IsEqual(lhs) {
@@ -272,7 +275,8 @@ func vectorAdd(v []*big.Int, w []*big.Int) []*big.Int {
 
 	result := make([]*big.Int, len(v))
 	for i := range v {
-		result[i] = new(big.Int).Mod(new(big.Int).Add(v[i], w[i]), privacy.Curve.Params().N)
+		result[i] = new(big.Int).Add(v[i], w[i])
+		result[i] = result[i].Mod(result[i],privacy.Curve.Params().N)
 	}
 	return result
 }
@@ -285,9 +289,9 @@ func vectorHadamard(v, w []*big.Int) []*big.Int {
 	result := make([]*big.Int, len(v))
 
 	for i := range v {
-		result[i] = new(big.Int).Mod(new(big.Int).Mul(v[i], w[i]), privacy.Curve.Params().N)
+		result[i] = new(big.Int).Mul(v[i], w[i])
+		result[i].Mod(result[i],privacy.Curve.Params().N)
 	}
-
 	return result
 }
 
@@ -303,7 +307,8 @@ func vectorAddScalar(v []*big.Int, s *big.Int) []*big.Int {
 func scalarVectorMul(v []*big.Int, s *big.Int) []*big.Int {
 	result := make([]*big.Int, len(v))
 	for i := range v {
-		result[i] = new(big.Int).Mod(new(big.Int).Mul(v[i], s), privacy.Curve.Params().N)
+		result[i] = new(big.Int).Mul(v[i], s)
+		result[i].Mod(result[i],privacy.Curve.Params().N)
 	}
 	return result
 }
@@ -461,26 +466,26 @@ DeltaMRP is a helper function that is used in the multi range proof
 func deltaMRP(y []*big.Int, z *big.Int, m int, rangeProofParams *CryptoParams) *big.Int {
 	result := big.NewInt(0)
 	// (z-z^2)<1^n, y^n>
-	z2 := new(big.Int).Mod(new(big.Int).Mul(z, z), privacy.Curve.Params().N)
-	t1 := new(big.Int).Mod(new(big.Int).Sub(z, z2), privacy.Curve.Params().N)
-	t2 := new(big.Int).Mod(new(big.Int).Mul(t1, vectorSum(y)), privacy.Curve.Params().N)
-
+	z2 := new(big.Int).Mul(z, z)
+	z2 = z2.Mod(z2, privacy.Curve.Params().N)
+	t1 := new(big.Int).Sub(z, z2)
+	t1 = t1.Mod(t1,privacy.Curve.Params().N)
+	t2 := new(big.Int).Mul(t1, vectorSum(y))
+	t2 = t2.Mod(t2,privacy.Curve.Params().N)
 	// \sum_j z^3+j<1^n, 2^n>
 	// <1^n, 2^n> = 2^n - 1
-	po2sum := new(big.Int).Sub(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(rangeProofParams.V/m)), privacy.Curve.Params().N), big.NewInt(1))
+	po2sum := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(rangeProofParams.V/m)), privacy.Curve.Params().N)
+	po2sum.Sub(po2sum,big.NewInt(1))
 	t3 := big.NewInt(0)
 	for j := 0; j < m; j++ {
 		//zp := new(big.Int).Exp(z, big.NewInt(3+int64(j)), privacy.Curve.Params().N)
 		//tmp1 := new(big.Int).Mod(new(big.Int).Mul(zp, po2sum), privacy.Curve.Params().N)
 		//t3 = new(big.Int).Mod(new(big.Int).Add(t3, tmp1), privacy.Curve.Params().N)
-
 		tmp := new(big.Int).Exp(z, big.NewInt(3+int64(j)), privacy.Curve.Params().N)
 		tmp.Mul(tmp, po2sum)
 		t3.Add(t3, tmp)
 	}
-
 	t3.Mod(t3, privacy.Curve.Params().N)
-
 	result = new(big.Int).Mod(new(big.Int).Sub(t2, t3), privacy.Curve.Params().N)
 	return result
 }
