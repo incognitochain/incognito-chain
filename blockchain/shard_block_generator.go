@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"errors"
 	"time"
 
 	"github.com/ninjadotorg/constant/cashec"
@@ -390,7 +391,8 @@ concludeBlock:
 	}
 
 	// Create producer signature
-	sig, err := userKeySet.SignDataB58([]byte(block.Header.Hash().String()))
+	blkHeaderHash := block.Header.Hash()
+	sig, err := userKeySet.SignDataB58(blkHeaderHash.GetBytes())
 	if err != nil {
 		return nil, err
 	}
@@ -398,4 +400,45 @@ concludeBlock:
 
 	_ = remainingFund
 	return block, nil
+}
+
+func (self *ShardBlock) CreateShardToBeaconBlock() ShardToBeaconBlock {
+	block := ShardToBeaconBlock{}
+	block.AggregatedSig = self.AggregatedSig
+	copy(block.ValidatorsIdx, self.ValidatorsIdx)
+	block.ProducerSig = self.ProducerSig
+	block.Header = self.Header
+	return block
+}
+
+func (blk *ShardBlock) CreateAllCrossShardBlock() map[byte]*CrossShardBlock {
+	allCrossShard := make(map[byte]*CrossShardBlock)
+	for i := 0; i < TestNetParams.ShardsNum; i++ {
+		crossShard, err := blk.CreateCrossShardBlock(byte(i))
+		if crossShard != nil && err == nil {
+			allCrossShard[byte(i)] = crossShard
+		}
+	}
+	return allCrossShard
+}
+
+func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
+	crossShard := &CrossShardBlock{}
+	utxoList := getOutCoinCrossShard(block.Body.Transactions, shardID)
+	if len(utxoList) == 0 {
+		return nil, nil
+	}
+	merklePathShard, merkleShardRoot := GetMerklePathCrossShard(block.Body.Transactions, shardID)
+	if merkleShardRoot != block.Header.MerkleRootShard {
+		return crossShard, NewBlockChainError(CrossShardBlockError, errors.New("MerkleRootShard mismatch"))
+	}
+
+	//Copy signature and header
+	crossShard.AggregatedSig = block.AggregatedSig
+	copy(crossShard.ValidatorsIdx, block.ValidatorsIdx)
+	crossShard.ProducerSig = block.ProducerSig
+	crossShard.Header = block.Header
+	crossShard.MerklePathShard = merklePathShard
+	crossShard.UTXOList = utxoList
+	return crossShard, nil
 }

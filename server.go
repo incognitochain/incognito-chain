@@ -39,15 +39,18 @@ type Server struct {
 	blockChain      *blockchain.BlockChain
 	dataBase        database.DatabaseInterface
 	// rpcServer       *rpcserver.RpcServer
+
 	memPool           *mempool.TxPool
 	shardToBeaconPool *mempool.ShardToBeaconPool
-	waitGroup         sync.WaitGroup
-	netSync           *netsync.NetSync
-	addrManager       *addrmanager.AddrManager
-	wallet            *wallet.Wallet
-	consensusEngine   *constantpos.Engine
-	blockgen          *blockchain.BlkTmplGenerator
-	rewardAgent       *rewardagent.RewardAgent
+	crossShardPool    *mempool.CrossShardPool
+
+	waitGroup       sync.WaitGroup
+	netSync         *netsync.NetSync
+	addrManager     *addrmanager.AddrManager
+	wallet          *wallet.Wallet
+	consensusEngine *constantpos.Engine
+	blockgen        *blockchain.BlkTmplGenerator
+	rewardAgent     *rewardagent.RewardAgent
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
 	feeEstimator map[byte]*mempool.FeeEstimator
@@ -136,7 +139,10 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		return err
 	}
 	self.shardToBeaconPool = &mempool.ShardToBeaconPool{}
+	self.crossShardPool = &mempool.CrossShardPool{}
+
 	self.blockChain = &blockchain.BlockChain{}
+
 	err = self.blockChain.Init(&blockchain.Config{
 		ChainParams: self.chainParams,
 		DataBase:    self.dataBase,
@@ -144,6 +150,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		// Light:       cfg.Light,
 		Wallet:            self.wallet,
 		ShardToBeaconPool: self.shardToBeaconPool,
+		CrossShardPool:    self.crossShardPool,
 	})
 	if err != nil {
 		return err
@@ -198,6 +205,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		ChainParams:  chainParams,
 		FeeEstimator: self.feeEstimator,
 	})
+
 	self.addrManager = addrmanager.New(cfg.DataDir)
 
 	self.rewardAgent, err = rewardagent.RewardAgent{}.Init(&rewardagent.RewardAgentConfig{
@@ -207,7 +215,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		return err
 	}
 
-	self.blockgen, err = blockchain.BlkTmplGenerator{}.Init(self.memPool, self.blockChain, self.rewardAgent, self.shardToBeaconPool)
+	self.blockgen, err = blockchain.BlkTmplGenerator{}.Init(self.memPool, self.blockChain, self.rewardAgent, self.shardToBeaconPool, self.crossShardPool)
 	if err != nil {
 		return err
 	}
@@ -225,13 +233,12 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	}
 	// Init Net Sync manager to process messages
 	self.netSync = netsync.NetSync{}.New(&netsync.NetSyncConfig{
-		BlockChain:        self.blockChain,
-		ChainParam:        chainParams,
-		MemTxPool:         self.memPool,
-		Server:            self,
-		Consensus:         self.consensusEngine,
-		FeeEstimator:      self.feeEstimator,
-		ShardToBeaconPool: self.shardToBeaconPool,
+		BlockChain:   self.blockChain,
+		ChainParam:   chainParams,
+		MemTxPool:    self.memPool,
+		Server:       self,
+		Consensus:    self.consensusEngine,
+		FeeEstimator: self.feeEstimator,
 	})
 	// Create a connection manager.
 	var peers []*peer.Peer

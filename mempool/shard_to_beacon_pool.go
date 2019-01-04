@@ -60,7 +60,7 @@ func (pool *ShardToBeaconPool) RemoveBlock(blockItems map[byte]uint64) error {
 	return nil
 }
 
-func (pool *ShardToBeaconPool) AddBeaconBlock(newBlock blockchain.ShardToBeaconBlock) error {
+func (pool *ShardToBeaconPool) AddShardBeaconBlock(newBlock blockchain.ShardToBeaconBlock) error {
 
 	blockHeader := newBlock.Header
 	ShardID := blockHeader.ShardID

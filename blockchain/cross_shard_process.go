@@ -1,48 +1,11 @@
 package blockchain
 
 import (
-	"errors"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"math"
 )
-
-//TODO: get #shard from param
-//Receive a shard block, produce a map of CrossShard block with shardID as key
-func GenerateAllCrossShardBlock(block *ShardBlock) map[byte]*CrossShardBlock {
-	allCrossShard := make(map[byte]*CrossShardBlock)
-	for i := 0; i < 256; i++ {
-		crossShard, err := GenerateCrossShard(block, byte(i))
-		if crossShard != nil && err == nil {
-			allCrossShard[byte(i)] = crossShard
-		}
-	}
-	return allCrossShard
-}
-
-//Receive a shard block, produce CrossShard block for a specific shardID
-func GenerateCrossShard(block *ShardBlock, shardID byte) (*CrossShardBlock, error) {
-	crossShard := &CrossShardBlock{}
-	utxoList := getOutCoinCrossShard(block.Body.Transactions, shardID)
-	if len(utxoList) == 0 {
-		return nil, nil
-	}
-	merklePathShard, merkleShardRoot := GetMerklePathCrossShard(block.Body.Transactions, shardID)
-
-	if merkleShardRoot != block.Header.MerkleRootShard {
-		return crossShard, NewBlockChainError(CrossShardBlockError, errors.New("MerkleRootShard mismatch"))
-	}
-
-	//Copy signature and header
-	crossShard.AggregatedSig = block.AggregatedSig
-	copy(crossShard.ValidatorsIdx, block.ValidatorsIdx)
-	crossShard.ProducerSig = block.ProducerSig
-	crossShard.Header = block.Header
-	crossShard.MerklePathShard = merklePathShard
-	crossShard.UTXOList = utxoList
-	return crossShard, nil
-}
 
 //Receive tx list from shard block body, produce merkle path of UTXO CrossShard List from specific shardID
 func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merklePathShard []common.Hash, merkleShardRoot common.Hash) {
