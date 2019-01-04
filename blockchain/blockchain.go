@@ -331,6 +331,11 @@ func (self *BlockChain) initShardState(shardID byte) error {
 	}
 
 	self.BestState.Shard[shardID] = &BestStateShard{}
+
+	_, newShardCandidate := GetStakingCandidate(*self.config.ChainParams.GenesisBeaconBlock)
+
+	self.BestState.Shard[shardID].ShardCommittee = append(self.BestState.Shard[shardID].ShardCommittee, newShardCandidate[int(shardID)*self.config.ChainParams.ShardCommitteeSize:(int(shardID)*self.config.ChainParams.ShardCommitteeSize)+self.config.ChainParams.ShardCommitteeSize]...)
+
 	// self.BestState.Shard[shardID].Init(initBlock)
 
 	err := self.ConnectBlock(initBlock)

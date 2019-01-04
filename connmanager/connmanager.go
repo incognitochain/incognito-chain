@@ -156,6 +156,9 @@ func (self *ConnManager) UpdateConsensusState(role string, userPbk string, curre
 		}
 		bChange = true
 	}
+	if self.Config.ConsensusState.ShardCommittee == nil {
+		self.Config.ConsensusState.ShardCommittee = make(map[byte][]string)
+	}
 	for shardID, committee := range shardCommittee {
 		_, ok := self.Config.ConsensusState.ShardCommittee[shardID]
 		if ok {
