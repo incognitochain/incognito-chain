@@ -329,8 +329,9 @@ func ToBytes(obj interface{}) []byte {
 	return buff.Bytes()
 }
 
-// CheckDuplicate returns true if there are at least 2 elements in array have same values
-func CheckDuplicateBigInt(arr []*big.Int) bool {
+// CheckDuplicate returns true if there are at least 2 elements in an array have same values
+// todo:
+func CheckDuplicateBigIntArray(arr []*big.Int) bool {
 	return false
 }
 

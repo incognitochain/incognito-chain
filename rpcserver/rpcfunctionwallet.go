@@ -7,6 +7,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/common/base58"
 )
 
 /*
@@ -358,4 +359,16 @@ func (self RpcServer) handleListPrivacyCustomToken(params interface{}, closeChan
 		result.ListCustomToken = append(result.ListCustomToken, item)
 	}
 	return result, nil
+}
+
+func (self RpcServer) handleGetPublicKeyFromPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	paymentAddress := arrayParams[0].(string)
+
+	key, err := wallet.Base58CheckDeserialize(paymentAddress)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	return base58.Base58Check{}.Encode(key.KeySet.PaymentAddress.Pk[:], common.ZeroByte), nil
 }

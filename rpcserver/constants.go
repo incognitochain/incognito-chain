@@ -116,4 +116,7 @@ const (
 	CreateAndSendTxWithCMBDepositContract = "createandsendtxwithcmbdepositcontract"
 	CreateAndSendTxWithCMBDepositSend     = "createandsendtxwithcmbdepositsend"
 	CreateAndSendTxWithCMBWithdrawRequest = "createandsendtxwithcmbwithdrawrequest"
+
+	// wallet
+	GetPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
 )
