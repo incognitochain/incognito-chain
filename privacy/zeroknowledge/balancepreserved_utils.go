@@ -294,7 +294,8 @@ func vectorHadamard(v, w []*big.Int) []*big.Int {
 func vectorAddScalar(v []*big.Int, s *big.Int) []*big.Int {
 	result := make([]*big.Int, len(v))
 	for i := range v {
-		result[i] = new(big.Int).Mod(new(big.Int).Add(v[i], s), privacy.Curve.Params().N)
+		result[i] = new(big.Int).Add(v[i], s)
+		result[i].Mod(result[i], privacy.Curve.Params().N)
 	}
 	return result
 }
@@ -472,6 +473,9 @@ func deltaMRP(y []*big.Int, z *big.Int, m int, rangeProofParams *CryptoParams) *
 		zp := new(big.Int).Exp(z, big.NewInt(3+int64(j)), privacy.Curve.Params().N)
 		tmp1 := new(big.Int).Mod(new(big.Int).Mul(zp, po2sum), privacy.Curve.Params().N)
 		t3 = new(big.Int).Mod(new(big.Int).Add(t3, tmp1), privacy.Curve.Params().N)
+
+		//t3 = new(big.Int).Exp(z, big.NewInt(3+int64(j)), privacy.Curve.Params().N)
+		
 	}
 	result = new(big.Int).Mod(new(big.Int).Sub(t2, t3), privacy.Curve.Params().N)
 	return result
