@@ -380,7 +380,7 @@ func (wit *MultiRangeWitness) Prove() (*MultiRangeProof, error) {
 	//taux1 := new(big.Int).Mod(new(big.Int).Mul(tau2, new(big.Int).Mul(cx, cx)), privacy.Curve.Params().N)
 	taux1 := new(big.Int).Mul(cx, cx)
 	taux1.Mul(taux1,tau2)
-	taux1.Mul(taux1,privacy.Curve.Params().N)
+	taux1.Mod(taux1,privacy.Curve.Params().N)
 
 	taux2 := new(big.Int).Mul(tau1, cx)
 	taux2.Mod(taux2,privacy.Curve.Params().N)
