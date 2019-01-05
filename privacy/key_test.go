@@ -1,8 +1,11 @@
 package privacy
 
 import (
+	"fmt"
+	"github.com/ninjadotorg/constant/common"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -22,41 +25,48 @@ func TestPAdd1Div4(t *testing.T) {
 }
 
 func TestGenerateKey(t *testing.T){
-	spendingKey := GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	//spendingKey := GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	//
+	////publicKey is compressed
+	//publicKey := GeneratePublicKey(spendingKey)
+	//publicKeyBytes := make([]byte, CompressedPointSize)
+	//copy(publicKeyBytes, publicKey[:])
+	//
+	//// decompress public key
+	//publicKeyPoint, err := DecompressKey(publicKey)
+	//if err != nil {
+	//	return
+	//}
+	//
+	//assert.Equal(t, publicKeyBytes, publicKeyPoint.Compress())
+	//
+	//receivingKey := GenerateReceivingKey(spendingKey)
+	//
+	//transmissionKey := GenerateTransmissionKey(receivingKey)
+	//transmissionKeyBytes := make([]byte, CompressedPointSize)
+	//copy(transmissionKeyBytes, transmissionKey[:])
+	//
+	//transmissionKeyPoint, err := DecompressKey(transmissionKey)
+	//if err != nil {
+	//	return
+	//}
+	//assert.Equal(t, transmissionKeyBytes, transmissionKeyPoint.Compress())
+	//
+	//paymentAddress := GeneratePaymentAddress(spendingKey)
+	//paymentAddrBytes := paymentAddress.Bytes()
+	//
+	//paymentAddress2 := new(PaymentAddress)
+	//paymentAddress2.SetBytes(paymentAddrBytes)
 
-	//publicKey is compressed
-	publicKey := GeneratePublicKey(spendingKey)
-	publicKeyBytes := make([]byte, CompressedPointSize)
-	copy(publicKeyBytes, publicKey[:])
+	bytes := RandBytes(1000)
+	start := time.Now()
+	hash := common.HashB(bytes)
+	end := time.Since(start)
+	fmt.Printf("Hash: %v\n",hash )
+	fmt.Printf("Hashing time: %v\n", end)
 
-	// decompress public key
-	publicKeyPoint, err := DecompressKey(publicKey)
-	if err != nil {
-		return
-	}
-
-	assert.Equal(t, publicKeyBytes, publicKeyPoint.Compress())
-
-	receivingKey := GenerateReceivingKey(spendingKey)
-
-	transmissionKey := GenerateTransmissionKey(receivingKey)
-	transmissionKeyBytes := make([]byte, CompressedPointSize)
-	copy(transmissionKeyBytes, transmissionKey[:])
-
-	transmissionKeyPoint, err := DecompressKey(transmissionKey)
-	if err != nil {
-		return
-	}
-	assert.Equal(t, transmissionKeyBytes, transmissionKeyPoint.Compress())
-
-	paymentAddress := GeneratePaymentAddress(spendingKey)
-	paymentAddrBytes := paymentAddress.Bytes()
-
-	paymentAddress2 := new(PaymentAddress)
-	paymentAddress2.SetBytes(paymentAddrBytes)
-
-	assert.Equal(t, paymentAddress.Pk, paymentAddress2.Pk)
-	assert.Equal(t, paymentAddress.Tk, paymentAddress2.Tk)
+	//assert.Equal(t, paymentAddress.Pk, paymentAddress2.Pk)
+	//assert.Equal(t, paymentAddress.Tk, paymentAddress2.Tk)
 
 }
 

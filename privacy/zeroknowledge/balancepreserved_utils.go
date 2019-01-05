@@ -21,12 +21,15 @@ type InnerProdArg struct {
 func (IPA *InnerProdArg) init(l int) {
 	IPA.L = make([]*privacy.EllipticPoint, l)
 	IPA.R = make([]*privacy.EllipticPoint, l)
+
 	for i := 0; i < l; i++ {
 		IPA.L[i] = new(privacy.EllipticPoint)
 		IPA.R[i] = new(privacy.EllipticPoint)
 	}
+
 	IPA.A = new(big.Int)
 	IPA.B = new(big.Int)
+
 	IPA.Challenges = make([]*big.Int, l+1)
 	for i := 0; i < l+1; i++ {
 		IPA.Challenges[i] = new(big.Int)
@@ -61,29 +64,32 @@ func (IPA *InnerProdArg) setBytes(IPA_byte []byte) {
 	offset := 0
 	l := (len(IPA_byte) - 96) / 98
 	IPA.init(l)
-	L_array_length := l * privacy.CompressedPointSize
-	R_array_length := L_array_length
-	C_array_length := privacy.BigIntSize * (l + 1)
-	L_array := IPA_byte[0:L_array_length]
-	offset = L_array_length
-	R_array := IPA_byte[offset:offset+R_array_length]
-	offset += R_array_length
-	C_array := IPA_byte[offset:offset+C_array_length]
-	offset += C_array_length
+	LArrLength := l * privacy.CompressedPointSize
+	RArrLength := LArrLength
+	CArrLength := privacy.BigIntSize * (l + 1)
+
+	LArr := IPA_byte[0:LArrLength]
+	offset = LArrLength
+
+	RArr := IPA_byte[offset:offset+RArrLength]
+	offset += RArrLength
+
+	CArr := IPA_byte[offset:offset+CArrLength]
+	offset += CArrLength
 	offsetL := 0
 
 	for i := 0; i < l; i++ {
-		IPA.L[i].Decompress(L_array[offsetL:])
+		IPA.L[i].Decompress(LArr[offsetL:])
 		offsetL += privacy.CompressedPointSize
 	}
 	offsetR := 0
 	for i := 0; i < l; i++ {
-		IPA.R[i].Decompress(R_array[offsetR:])
+		IPA.R[i].Decompress(RArr[offsetR:])
 		offsetR += privacy.CompressedPointSize
 	}
 	offsetC := 0
 	for i := 0; i < l+1; i++ {
-		IPA.Challenges[i].SetBytes(C_array[offsetC:offsetC+privacy.BigIntSize])
+		IPA.Challenges[i].SetBytes(CArr[offsetC:offsetC+privacy.BigIntSize])
 		offsetC += privacy.BigIntSize
 	}
 	IPA.A.SetBytes(IPA_byte[offset:offset+privacy.BigIntSize])
@@ -171,7 +177,11 @@ func innerProductProve(a []*big.Int, b []*big.Int, c *big.Int, P, U *privacy.Ell
 
 	runningProof.Challenges[loglen] = new(big.Int).SetBytes(x[:])
 
-	Pprime := P.Add(U.ScalarMult(new(big.Int).Mul(new(big.Int).SetBytes(x[:]), c)))
+	//Pprime := P.Add(U.ScalarMult(new(big.Int).Mul(new(big.Int).SetBytes(x[:]), c)))
+	tmp:= new(big.Int).SetBytes(x[:])
+	tmp.Mul(tmp,c)
+	Pprime:=P.Add(U.ScalarMult(tmp))
+
 	ux := U.ScalarMult(new(big.Int).SetBytes(x[:]))
 	//fmt.Printf("Prover Pprime value to run sub off of: %s\n", Pprime)
 	return innerProductProveSub(runningProof, G, H, a, b, ux, Pprime)
@@ -209,7 +219,7 @@ func innerProductVerifyFast(c *big.Int, P *privacy.EllipticPoint, H []*privacy.E
 	curIt -= 1
 	Pprime := P.Add(ux.ScalarMult(c))
 
-	tmp1 := rangeProofParams.zero()
+	tmp1 := new(privacy.EllipticPoint).Zero()
 	for j := curIt; j >= 0; j-- {
 		x2 := new(big.Int).Exp(ipp.Challenges[j], big.NewInt(2), privacy.Curve.Params().N)
 		x2i := new(big.Int).ModInverse(x2, privacy.Curve.Params().N)
@@ -228,13 +238,16 @@ func innerProductVerifyFast(c *big.Int, P *privacy.EllipticPoint, H []*privacy.E
 			if big.NewInt(int64(i)).Bit(j) == 0 {
 				chal = new(big.Int).ModInverse(chal, privacy.Curve.Params().N)
 			}
-			si = new(big.Int).Mod(new(big.Int).Mul(si, chal), privacy.Curve.Params().N)
+			si = new(big.Int).Mul(si, chal)
+			si = si.Mod(si,privacy.Curve.Params().N)
 		}
 		sScalars[i] = si
 		invsScalars[i] = new(big.Int).ModInverse(si, privacy.Curve.Params().N)
 	}
 
-	ccalc := new(big.Int).Mod(new(big.Int).Mul(ipp.A, ipp.B), privacy.Curve.Params().N)
+	ccalc := new(big.Int).Mul(ipp.A, ipp.B)
+	ccalc = ccalc.Mod(ccalc,privacy.Curve.Params().N)
+
 	lhs := twoVectorPCommitWithGens(rangeProofParams.BPG, H, scalarVectorMul(sScalars, ipp.A), scalarVectorMul(invsScalars, ipp.B)).Add(ux.ScalarMult(ccalc))
 
 	if !rhs.IsEqual(lhs) {
@@ -253,20 +266,21 @@ func innerProduct(a []*big.Int, b []*big.Int) *big.Int {
 	c := big.NewInt(0)
 
 	for i := range a {
-		tmp1 := new(big.Int).Mul(a[i], b[i])
-		c = new(big.Int).Add(c, new(big.Int).Mod(tmp1, privacy.Curve.Params().N))
+		c.Add(c, new(big.Int).Mul(a[i], b[i]))
 	}
 
-	return new(big.Int).Mod(c, privacy.Curve.Params().N)
+	return c.Mod(c, privacy.Curve.Params().N)
 }
 
 func vectorAdd(v []*big.Int, w []*big.Int) []*big.Int {
 	if len(v) != len(w) {
 		privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("VectorAddPoint: Uh oh! Arrays not of the same length"))
 	}
+
 	result := make([]*big.Int, len(v))
 	for i := range v {
-		result[i] = new(big.Int).Mod(new(big.Int).Add(v[i], w[i]), privacy.Curve.Params().N)
+		result[i] = new(big.Int).Add(v[i], w[i])
+		result[i] = result[i].Mod(result[i],privacy.Curve.Params().N)
 	}
 	return result
 }
@@ -279,16 +293,17 @@ func vectorHadamard(v, w []*big.Int) []*big.Int {
 	result := make([]*big.Int, len(v))
 
 	for i := range v {
-		result[i] = new(big.Int).Mod(new(big.Int).Mul(v[i], w[i]), privacy.Curve.Params().N)
+		result[i] = new(big.Int).Mul(v[i], w[i])
+		result[i].Mod(result[i],privacy.Curve.Params().N)
 	}
-
 	return result
 }
 
 func vectorAddScalar(v []*big.Int, s *big.Int) []*big.Int {
 	result := make([]*big.Int, len(v))
 	for i := range v {
-		result[i] = new(big.Int).Mod(new(big.Int).Add(v[i], s), privacy.Curve.Params().N)
+		result[i] = new(big.Int).Add(v[i], s)
+		result[i].Mod(result[i], privacy.Curve.Params().N)
 	}
 	return result
 }
@@ -296,7 +311,8 @@ func vectorAddScalar(v []*big.Int, s *big.Int) []*big.Int {
 func scalarVectorMul(v []*big.Int, s *big.Int) []*big.Int {
 	result := make([]*big.Int, len(v))
 	for i := range v {
-		result[i] = new(big.Int).Mod(new(big.Int).Mul(v[i], s), privacy.Curve.Params().N)
+		result[i] = new(big.Int).Mul(v[i], s)
+		result[i].Mod(result[i],privacy.Curve.Params().N)
 	}
 	return result
 }
@@ -342,9 +358,7 @@ func powerVector(l int, base *big.Int) []*big.Int {
 func randVector(l int) []*big.Int {
 	result := make([]*big.Int, l)
 	for i := 0; i < l; i++ {
-		x := new(big.Int).SetBytes(privacy.RandBytes(32))
-		x.Mod(x, privacy.Curve.Params().N)
-		result[i] = x
+		result[i] = privacy.RandInt()
 	}
 	return result
 }
@@ -352,9 +366,10 @@ func randVector(l int) []*big.Int {
 func vectorSum(y []*big.Int) *big.Int {
 	result := big.NewInt(0)
 	for _, j := range y {
-		result = new(big.Int).Mod(new(big.Int).Add(result, j), privacy.Curve.Params().N)
+		result.Add(result, j)
 	}
-	return result
+
+	return result.Mod(result, privacy.Curve.Params().N)
 }
 
 /*-----------------------Crypto Params Functions------------------*/
@@ -369,30 +384,24 @@ type CryptoParams struct {
 	H   *privacy.EllipticPoint   // H value for commitments of a single value
 }
 
-func (c CryptoParams) zero() *privacy.EllipticPoint {
-	zeroPoint := new(privacy.EllipticPoint)
-	zeroPoint.X = new(big.Int).SetInt64(0)
-	zeroPoint.Y = new(big.Int).SetInt64(0)
-	return zeroPoint
-}
-
 // NewECPrimeGroupKey returns the curve (field),
 // Generator 1 x&y, Generator 2 x&y, order of the generators
 func newECPrimeGroupKey(n int) CryptoParams {
 
 	gen1Vals := make([]*privacy.EllipticPoint, n)
 	gen2Vals := make([]*privacy.EllipticPoint, n)
-	u := CryptoParams{}.zero()
 	G := privacy.PedCom.G[privacy.VALUE]
 	H := privacy.PedCom.G[privacy.RAND]
 
 	for i := 0; i < n; i++ {
 		gen1Vals[i] = G.Hash(0)
 		G = G.Hash(0)
+
 		gen2Vals[i] = H.Hash(0)
 		H = H.Hash(0)
 	}
-	u = G.Add(H).Hash(0)
+	u := G.Add(H).Hash(0)
+
 	return CryptoParams{
 		privacy.Curve,
 		gen1Vals,
@@ -409,7 +418,7 @@ func twoVectorPCommitWithGens(G, H []*privacy.EllipticPoint, a, b []*big.Int) *p
 	if len(G) != len(H) || len(G) != len(a) || len(a) != len(b) {
 		return nil
 	}
-	commitment := CryptoParams{}.zero()
+	commitment := new(privacy.EllipticPoint).Zero()
 	for i := 0; i < len(G); i++ {
 		modA := new(big.Int).Mod(a[i], privacy.Curve.Params().N)
 		modB := new(big.Int).Mod(b[i], privacy.Curve.Params().N)
@@ -442,25 +451,15 @@ func pad(l int) int {
 
 // Calculates (aL - z*1^n) + sL*x
 func calculateLMRP(aL, sL []*big.Int, z, x *big.Int) []*big.Int {
-	result := make([]*big.Int, len(aL))
-	tmp1 := vectorAddScalar(aL, new(big.Int).Neg(z))
-	tmp2 := scalarVectorMul(sL, x)
-	result = vectorAdd(tmp1, tmp2)
-	return result
-	//return nil
+	return vectorAdd(vectorAddScalar(aL, new(big.Int).Neg(z)), scalarVectorMul(sL, x))
 }
 
 func calculateRMRP(aR, sR, y, zTimesTwo []*big.Int, z, x *big.Int) []*big.Int {
 	if len(aR) != len(sR) || len(aR) != len(y) || len(y) != len(zTimesTwo) {
 		return nil
 	}
-	result := make([]*big.Int, len(aR))
-	tmp11 := vectorAddScalar(aR, z)
-	tmp12 := scalarVectorMul(sR, x)
-	tmp13 := vectorAdd(tmp11, tmp12)
-	tmp1 := vectorHadamard(y, tmp13)
-	result = vectorAdd(tmp1, zTimesTwo)
-	return result
+
+	return vectorAdd(vectorHadamard(y, vectorAdd( vectorAddScalar(aR, z), scalarVectorMul(sR, x))), zTimesTwo)
 }
 
 /*
@@ -471,20 +470,28 @@ DeltaMRP is a helper function that is used in the multi range proof
 func deltaMRP(y []*big.Int, z *big.Int, m int, rangeProofParams *CryptoParams) *big.Int {
 	result := big.NewInt(0)
 	// (z-z^2)<1^n, y^n>
-	z2 := new(big.Int).Mod(new(big.Int).Mul(z, z), privacy.Curve.Params().N)
-	t1 := new(big.Int).Mod(new(big.Int).Sub(z, z2), privacy.Curve.Params().N)
-	t2 := new(big.Int).Mod(new(big.Int).Mul(t1, vectorSum(y)), privacy.Curve.Params().N)
-
+	z2 := new(big.Int).Mul(z, z)
+	z2 = z2.Mod(z2, privacy.Curve.Params().N)
+	t1 := new(big.Int).Sub(z, z2)
+	t1 = t1.Mod(t1,privacy.Curve.Params().N)
+	t2 := new(big.Int).Mul(t1, vectorSum(y))
+	t2 = t2.Mod(t2,privacy.Curve.Params().N)
 	// \sum_j z^3+j<1^n, 2^n>
 	// <1^n, 2^n> = 2^n - 1
-	po2sum := new(big.Int).Sub(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(rangeProofParams.V/m)), privacy.Curve.Params().N), big.NewInt(1))
+	po2sum := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(rangeProofParams.V/m)), privacy.Curve.Params().N)
+	po2sum.Sub(po2sum,big.NewInt(1))
 	t3 := big.NewInt(0)
 	for j := 0; j < m; j++ {
-		zp := new(big.Int).Exp(z, big.NewInt(3+int64(j)), privacy.Curve.Params().N)
-		tmp1 := new(big.Int).Mod(new(big.Int).Mul(zp, po2sum), privacy.Curve.Params().N)
-		t3 = new(big.Int).Mod(new(big.Int).Add(t3, tmp1), privacy.Curve.Params().N)
+		//zp := new(big.Int).Exp(z, big.NewInt(3+int64(j)), privacy.Curve.Params().N)
+		//tmp1 := new(big.Int).Mod(new(big.Int).Mul(zp, po2sum), privacy.Curve.Params().N)
+		//t3 = new(big.Int).Mod(new(big.Int).Add(t3, tmp1), privacy.Curve.Params().N)
+		tmp := new(big.Int).Exp(z, big.NewInt(3+int64(j)), privacy.Curve.Params().N)
+		tmp.Mul(tmp, po2sum)
+		t3.Add(t3, tmp)
 	}
-	result = new(big.Int).Mod(new(big.Int).Sub(t2, t3), privacy.Curve.Params().N)
+	t3.Mod(t3, privacy.Curve.Params().N)
+	result = new(big.Int).Sub(t2, t3)
+	result.Mod(result,privacy.Curve.Params().N)
 	return result
 }
 
