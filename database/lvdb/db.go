@@ -36,6 +36,7 @@ var (
 	privacyTokenInitPrefix    = []byte("privacy-token-init-")
 	loanIDKeyPrefix           = []byte("loanID-")
 	loanTxKeyPrefix           = []byte("loanTx-")
+	loanPaymentKeyPrefix      = []byte("loanPayment-")
 	loanRequestPostfix        = []byte("-req")
 	loanResponsePostfix       = []byte("-res")
 	rewared                   = []byte("reward")

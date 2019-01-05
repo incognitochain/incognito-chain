@@ -92,11 +92,23 @@ func (db *db) GetLoanTxs(loanID []byte) ([][]byte, error) {
 }
 
 func (db *db) StoreLoanPayment(loanID []byte, principle, interest uint64, deadline uint32) error {
-	// TODO(@0xbunyip): implement
+	loanPaymentKey := string(loanPaymentKeyPrefix) + string(loanID)
+	loanPaymentValue := getLoanPaymentValue(principle, interest, deadline)
+
+	fmt.Printf("Putting key %x, value %x\n", loanPaymentKey, loanPaymentValue)
+	if err := db.Put([]byte(loanPaymentKey), []byte(loanPaymentValue)); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
+	}
 	return nil
 }
 
 func (db *db) GetLoanPayment(loanID []byte) (uint64, uint64, uint32, error) {
-	// TODO(@0xbunyip): implement
-	return 0, 0, 0, nil
+	loanPaymentKey := string(loanPaymentKeyPrefix) + string(loanID)
+	loanPaymentValue, err := db.Get([]byte(loanPaymentKey))
+	if err != nil {
+		return 0, 0, 0, err
+	}
+
+	fmt.Printf("Found payment %x: %x", loanPaymentKey, loanPaymentValue)
+	return parseLoanPaymentValue(loanPaymentValue)
 }
