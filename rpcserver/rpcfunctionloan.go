@@ -250,3 +250,29 @@ func getPaymentAddressStrFromPubKey(pubkey []byte) string {
 	}
 	return key.Base58CheckSerialize(wallet.PaymentAddressType)
 }
+
+// Input: LoanIDs
+// Output: for each loan:
+//  - rejected (bool)
+//  - rejectors (list pubkeys)
+func (self RpcServer) handleGetLoanPaymentInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	result := jsonresult.ListLoanPaymentInfo{
+		Info: make(map[string]jsonresult.LoanPaymentInfo),
+	}
+	for _, param := range arrayParams {
+		strLoanID := param.(string)
+		loanID, err := hex.DecodeString(strLoanID)
+		loanPaymentInfo := jsonresult.LoanPaymentInfo{}
+		if err == nil {
+			priciple, interest, deadline, err := (*self.config.Database).GetLoanPayment(loanID)
+			if err == nil {
+				loanPaymentInfo.Principle = priciple
+				loanPaymentInfo.Interest = interest
+				loanPaymentInfo.Deadline = deadline
+			}
+		}
+		result.Info[strLoanID] = loanPaymentInfo
+	}
+	return result, nil
+}

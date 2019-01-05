@@ -70,14 +70,9 @@ contract("SimpleLoan", (accounts) => {
             let loan = await c.loans(lid)
             let newPrinciple = loan[5].toNumber()
             eq(newPrinciple, 0)
-        })
-
-        it("should be able to refund", async () => {
-            tx = await c.refundCollateral(lid, offchain, { from: requester1 })
-            lid1 = await u.oc(tx, "__refundCollateral", "lid")
-            let amount = await u.oc(tx, "__refundCollateral", "amount")
+            
+            let amount = await u.roc(tx, abi, "__refundCollateral", "amount")
             eq(amount, web3.utils.toWei("10"))
-            eq(lid1, lid)
         })
     })
 

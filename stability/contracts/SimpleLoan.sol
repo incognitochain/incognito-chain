@@ -139,6 +139,7 @@ contract SimpleLoan {
         require(loans[lid].state == State.Accepted);
         loans[lid].principle = 0;
         emit __wipeDebt(lid, offchain);
+        refundCollateral(lid, offchain);
     }
 
     function liquidate(bytes32 lid, uint256 interest, uint256 collateralPrice, uint256 assetPrice, bytes32 offchain) public lenderOrOwner {
