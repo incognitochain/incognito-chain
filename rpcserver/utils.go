@@ -172,13 +172,13 @@ func interfaceAddrs() ([]net.Addr, error) {
 }
 
 // getUnspentCoinToSpent returns list of unspent coins for spending with amount
-func getUnspentCoinToSpent(outCoins []*privacy.OutputCoin, amount uint64) []*privacy.OutputCoin{
+func getUnspentCoinToSpent(outCoins []*privacy.OutputCoin, amount uint64) []*privacy.OutputCoin {
 	var res = make([]*privacy.OutputCoin, 0)
 
 	// Calculate sum of all output coins' value
 	sumValue := uint64(0)
 	values := make([]uint64, 0)
-	for _, outCoin := range outCoins{
+	for _, outCoin := range outCoins {
 		sumValue += outCoin.CoinDetails.Value
 		values = append(values, outCoin.CoinDetails.Value)
 	}
@@ -186,8 +186,8 @@ func getUnspentCoinToSpent(outCoins []*privacy.OutputCoin, amount uint64) []*pri
 	// target
 	target := sumValue - amount
 	choices := privacy.Knapsack(values, target)
-	for i, choice := range choices{
-		if !choice{
+	for i, choice := range choices {
+		if !choice {
 			res = append(res, outCoins[i])
 		}
 	}
