@@ -189,7 +189,7 @@ func (self *Engine) Start() error {
 									if err != nil {
 										Logger.log.Error("Make new cross shard block message error", err)
 									} else {
-										self.config.Server.PushMessageToShard(newCrossShardMsg)
+										self.config.Server.PushMessageToShard(newCrossShardMsg, shardID)
 									}
 
 								} else {
