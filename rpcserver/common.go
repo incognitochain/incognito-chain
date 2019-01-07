@@ -77,12 +77,12 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 
 	// check real fee(nano constant) per tx
 	realFee := self.estimateFee(estimateFeeCoinPerKb, candidateOutputCoins, paymentInfos, chainIdSender, numBlock)
-	needToPayFee := (totalAmmount + realFee) - candidateOutputCoinAmount
+	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
 
 	// if not enough to pay fee
 	if needToPayFee > 0 {
-		if len(outCoins) == 0 {
-			candidateOutputCoinsForFee, _, _, err1 := getUnspentCoinToSpent(outCoins, needToPayFee)
+		if len(outCoins) > 0 {
+			candidateOutputCoinsForFee, _, _, err1 := getUnspentCoinToSpent(outCoins, uint64(needToPayFee))
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err1)
 			}
