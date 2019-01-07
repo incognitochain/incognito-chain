@@ -6,6 +6,7 @@ import (
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
 )
 
 const (
@@ -17,7 +18,11 @@ type MessageBlockShard struct {
 }
 
 func (self *MessageBlockShard) Hash() string {
-	return ""
+	rawBytes, err := self.JsonSerialize()
+	if err != nil {
+		return ""
+	}
+	return common.HashH(rawBytes).String()
 }
 
 func (self *MessageBlockShard) MessageType() string {

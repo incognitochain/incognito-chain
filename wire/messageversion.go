@@ -28,7 +28,11 @@ type MessageVersion struct {
 }
 
 func (self *MessageVersion) Hash() string {
-	return ""
+	rawBytes, err := self.JsonSerialize()
+	if err != nil {
+		return ""
+	}
+	return common.HashH(rawBytes).String()
 }
 
 func (self *MessageVersion) MessageType() string {
