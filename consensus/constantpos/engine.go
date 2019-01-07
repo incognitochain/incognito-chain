@@ -3,6 +3,7 @@ package constantpos
 import (
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -176,20 +177,28 @@ func (self *Engine) Start() error {
 									}
 
 									//PUSH SHARD TO BEACON
-									newShardToBeaconBlock := resBlk.(*blockchain.ShardToBeaconBlock)
-									newShardToBeaconMsg, err := MakeMsgShardToBeaconBlock(newShardToBeaconBlock)
-									if err != nil {
-										Logger.log.Error("Make new shard to beacon block message error", err)
-									} else {
+									shardBlk, ok := resBlk.(*blockchain.ShardBlock)
+									if !ok {
+										log.Printf("Got data of type %T but wanted blockchain.ShardBlock", resBlk)
+										continue
+									}
+
+									newShardToBeaconBlock := shardBlk.CreateShardToBeaconBlock()
+									newShardToBeaconMsg, err := MakeMsgShardToBeaconBlock(&newShardToBeaconBlock)
+									if err == nil {
 										self.config.Server.PushMessageToBeacon(newShardToBeaconMsg)
 									}
 									//PUSH CROSS-SHARD
-									newCrossShardBlock := resBlk.(*blockchain.CrossShardBlock)
-									newCrossShardMsg, err := MakeMsgCrossShardBlock(newCrossShardBlock)
+									newCrossShardBlocks := shardBlk.CreateAllCrossShardBlock()
+									for sID, newCrossShardBlock := range newCrossShardBlocks {
+										newCrossShardMsg, err := MakeMsgCrossShardBlock(newCrossShardBlock)
+										if err == nil {
+											self.config.Server.PushMessageToShard(newCrossShardMsg, sID)
+										}
+									}
+
 									if err != nil {
-										Logger.log.Error("Make new cross shard block message error", err)
-									} else {
-										self.config.Server.PushMessageToShard(newCrossShardMsg, shardID)
+										Logger.log.Error("Make new block message error", err)
 									}
 
 								} else {
