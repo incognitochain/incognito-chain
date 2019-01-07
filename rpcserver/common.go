@@ -1,14 +1,15 @@
 package rpcserver
 
 import (
+	"fmt"
+
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/pkg/errors"
-	"github.com/ninjadotorg/constant/metadata"
-	"fmt"
 )
 
 func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
@@ -100,7 +101,7 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 		paymentInfos,
 		inputCoins,
 		realFee,
-		true,
+		false,
 		*self.config.Database,
 		nil, // use for constant coin -> nil is valid
 		meta,

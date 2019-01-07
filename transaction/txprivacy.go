@@ -364,7 +364,7 @@ func (tx *Tx) validateMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Verify the payment proof
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
-	//hasPrivacy = false
+	hasPrivacy = tx.IsPrivacy()
 	start := time.Now()
 	// Verify tx signature
 	fmt.Printf("tx.GetType(): %v\n", tx.GetType())
