@@ -3,7 +3,6 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/big"
 	"sort"
@@ -21,6 +20,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -547,29 +547,26 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 	}
 	meta := tx.GetMetadata().(*metadata.LoanPayment)
 	principle, interest, deadline, err := self.config.DataBase.GetLoanPayment(meta.LoanID)
-	if meta.PayPrinciple {
-		if err != nil {
-			return err
-		}
-		if principle < value {
-			value = principle
-		}
-		principle -= value
-	} else {
-		requestMeta, err := self.GetLoanRequestMeta(meta.LoanID)
-		if err != nil {
-			return err
-		}
-		interestPerPeriod := GetInterestAmount(principle, requestMeta.Params.InterestRate)
-		periodInc := uint32(0)
-		if value < interest {
-			interest -= value
-		} else {
-			periodInc = 1 + uint32((value-interest)/interestPerPeriod)
-			interest = interestPerPeriod - (value-interest)%interestPerPeriod
-		}
-		deadline = deadline + periodInc*requestMeta.Params.Maturity
+	requestMeta, err := self.GetLoanRequestMeta(meta.LoanID)
+	if err != nil {
+		return err
 	}
+	interestPerTerm := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
+	if meta.PayPrinciple {
+		if value < principle {
+			return errors.Errorf("Loan payment value doesn't cover priciple")
+		}
+		value -= principle
+		principle = 0
+	}
+	periodInc := uint32(0)
+	if value < interest {
+		interest -= value
+	} else {
+		periodInc = 1 + uint32((value-interest)/interestPerTerm)
+		interest = interestPerTerm - (value-interest)%interestPerTerm
+	}
+	deadline = deadline + periodInc*requestMeta.Params.Maturity
 	return self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, deadline)
 }
 
@@ -600,7 +597,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 				fmt.Printf("LoanID: %x\n", meta.LoanID)
 				requestMeta, _ := self.GetLoanRequestMeta(meta.LoanID)
 				principle := requestMeta.LoanAmount
-				interest := GetInterestAmount(principle, requestMeta.Params.InterestRate)
+				interest := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
 				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint32(block.Header.Height))
 				fmt.Printf("principle: %d\ninterest: %d\nblock: %d\n", principle, interest, int32(block.Header.Height))
 			}

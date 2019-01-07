@@ -11,6 +11,8 @@ import (
 	"github.com/ninjadotorg/constant/wallet"
 )
 
+const Decimals = uint64(10000) // Each float number is multiplied by this value to store as uint64
+
 type LoanPayment struct {
 	LoanID       []byte
 	PayPrinciple bool
@@ -37,18 +39,11 @@ func (lp *LoanPayment) Hash() *common.Hash {
 }
 
 func (lp *LoanPayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
-	receivers, _ := txr.GetReceivers()
-	if len(receivers) == 0 {
-		return false, fmt.Errorf("Loan payment must be sent to DCB address")
-	}
-
 	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	dcbPk := accountDCB.KeySet.PaymentAddress.Pk
-	sender := txr.GetJSPubKey()
-	for _, receiver := range receivers {
-		if !bytes.Equal(receiver, sender) && !bytes.Equal(receiver, dcbPk) {
-			return false, fmt.Errorf("Loan payment can only be sent to DCB address")
-		}
+	unique, receiver, amount := txr.GetUniqueReceiver()
+	if !unique || !bytes.Equal(receiver, dcbPk) {
+		return false, fmt.Errorf("Loan payment must be sent to DCB address")
 	}
 
 	// Check if payment amount is correct
@@ -59,11 +54,19 @@ func (lp *LoanPayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 	if requestMeta == nil {
 		return false, fmt.Errorf("Found no loan request for this loan payment")
 	}
-	_, _, deadline, err := bcr.GetLoanPayment(lp.LoanID)
+	principle, interest, deadline, err := bcr.GetLoanPayment(lp.LoanID)
 	if err != nil {
 		return false, err
 	}
-	if lp.PayPrinciple && uint32(bcr.GetHeight())+requestMeta.Params.Maturity >= deadline {
+	totalDebt := GetTotalDebt(
+		principle,
+		interest,
+		requestMeta.Params.InterestRate,
+		requestMeta.Params.Maturity,
+		deadline,
+		uint32(bcr.GetHeight()),
+	)
+	if lp.PayPrinciple && amount < totalDebt {
 		return false, fmt.Errorf("Interest must be fully paid before paying principle")
 	}
 	return true, nil
@@ -75,4 +78,16 @@ func (lp *LoanPayment) ValidateSanityData(bcr BlockchainRetriever, txr Transacti
 
 func (lp *LoanPayment) ValidateMetadataByItself() bool {
 	return true
+}
+
+func GetTotalDebt(principle, interest, interestRate uint64, maturity, deadline, currentHeight uint32) uint64 {
+	totalInterest := uint64(0)
+	if currentHeight >= deadline {
+		totalInterest = interest + uint64(1+(currentHeight-deadline)/maturity)*GetInterestPerTerm(principle, interestRate)
+	}
+	return principle + totalInterest
+}
+
+func GetInterestPerTerm(principle, interestRate uint64) uint64 {
+	return principle * interestRate / Decimals
 }
