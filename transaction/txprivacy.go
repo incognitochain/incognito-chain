@@ -302,6 +302,7 @@ func (tx *Tx) SignTx() error {
 	tx.SigPubKey = sigKey.PubKey.PK.Compress()
 
 	// signing
+	Logger.log.Infof(tx.Hash().String())
 	signature, err := sigKey.Sign(tx.Hash()[:])
 	if err != nil {
 		return err
@@ -341,7 +342,7 @@ func (tx *Tx) VerifySigTx() (bool, error) {
 	signature.SetBytes(tx.Sig)
 
 	// verify signature
-	//Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
+	Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
 	res = verKey.Verify(signature, tx.Hash()[:])
 
 	return res, nil
