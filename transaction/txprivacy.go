@@ -721,7 +721,7 @@ func (tx *Tx) GetProof() *zkp.PaymentProof {
 }
 
 func (tx *Tx) IsPrivacy() bool {
-	if len(tx.Proof.OneOfManyProof) == 0{
+	if tx.Proof == nil || tx.Proof.OneOfManyProof == nil || len(tx.Proof.OneOfManyProof) == 0 {
 		return false
 	}
 	return true
