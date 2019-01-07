@@ -7,6 +7,7 @@ import (
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
+	"time"
 )
 
 const (
@@ -14,6 +15,7 @@ const (
 )
 
 type MessagePing struct {
+	Timestamp time.Time
 }
 
 func (self MessagePing) MessageType() string {

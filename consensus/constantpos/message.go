@@ -230,44 +230,44 @@ func (self *Engine) OnInvalidBlockReceived(blockHash string, shardID byte, reaso
 // 	return
 // }
 
-func (self *Engine) OnSwapUpdate(msg *wire.MessageSwapUpdate) {
-	// Logger.log.Info("Received a MessageSwapUpdate")
-
-	// if msg.LockTime > time.Now().Unix() {
-	// 	return
-	// }
-
-	// committee := self.Committee().GetCommittee()
-
-	// if common.IndexOfStr(msg.Candidate, committee) >= 0 {
-	// 	Logger.log.Error("ERROR OnSwapUpdate is existed committee")
-	// 	return
-	// }
-
-	// //verify signatures
-	// rawBytes := getRawBytesForSwap(msg.LockTime, msg.Requester, msg.shardID, msg.Candidate)
-	// cLeader := 0
-	// for leaderPbk, leaderSig := range msg.Signatures {
-	// 	if common.IndexOfStr(leaderPbk, committee) >= 0 {
-	// 		err := cashec.ValidateDataB58(leaderPbk, leaderSig, rawBytes)
-	// 		if err != nil {
-	// 			Logger.log.Error("ERROR OnSwapUpdate", leaderPbk, err)
-	// 			continue
-	// 		}
-	// 	} else {
-	// 		continue
-	// 	}
-	// 	cLeader++
-	// }
-	// if cLeader < common.TotalValidators/2 {
-	// 	Logger.log.Error("ERROR OnSwapUpdate not enough signatures")
-	// 	return
-	// }
-	// //TODO update committee list
-	// self.Committee().UpdateCommittee(msg.Candidate, msg.shardID)
-
-	// return
-}
+//func (self *Engine) OnSwapUpdate(msg *wire.MessageSwapUpdate) {
+//	// Logger.log.Info("Received a MessageSwapUpdate")
+//
+//	// if msg.LockTime > time.Now().Unix() {
+//	// 	return
+//	// }
+//
+//	// committee := self.Committee().GetCommittee()
+//
+//	// if common.IndexOfStr(msg.Candidate, committee) >= 0 {
+//	// 	Logger.log.Error("ERROR OnSwapUpdate is existed committee")
+//	// 	return
+//	// }
+//
+//	// //verify signatures
+//	// rawBytes := getRawBytesForSwap(msg.LockTime, msg.Requester, msg.shardID, msg.Candidate)
+//	// cLeader := 0
+//	// for leaderPbk, leaderSig := range msg.Signatures {
+//	// 	if common.IndexOfStr(leaderPbk, committee) >= 0 {
+//	// 		err := cashec.ValidateDataB58(leaderPbk, leaderSig, rawBytes)
+//	// 		if err != nil {
+//	// 			Logger.log.Error("ERROR OnSwapUpdate", leaderPbk, err)
+//	// 			continue
+//	// 		}
+//	// 	} else {
+//	// 		continue
+//	// 	}
+//	// 	cLeader++
+//	// }
+//	// if cLeader < common.TotalValidators/2 {
+//	// 	Logger.log.Error("ERROR OnSwapUpdate not enough signatures")
+//	// 	return
+//	// }
+//	// //TODO update committee list
+//	// self.Committee().UpdateCommittee(msg.Candidate, msg.shardID)
+//
+//	// return
+//}
 
 func MakeMsgBFTPropose(block json.RawMessage) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTPropose)

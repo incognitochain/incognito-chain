@@ -7,6 +7,7 @@ import (
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/common"
+	"time"
 )
 
 const (
@@ -19,7 +20,8 @@ type RawPeer struct {
 }
 
 type MessageAddr struct {
-	RawPeers []RawPeer
+	Timestamp time.Time
+	RawPeers  []RawPeer
 }
 
 func (self *MessageAddr) Hash() string {

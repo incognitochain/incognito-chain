@@ -50,9 +50,9 @@ const (
 	CmdShardState     = "shardstate"
 
 	// SWAP Cmd
-	CmdSwapRequest = "swaprequest"
-	CmdSwapSig     = "swapsig"
-	CmdSwapUpdate  = "swapupdate"
+	//CmdSwapRequest = "swaprequest"
+	//CmdSwapSig     = "swapsig"
+	//CmdSwapUpdate  = "swapupdate"
 
 	// heavy message check cmd
 	CmdMsgCheck     = "msgcheck"
@@ -169,10 +169,14 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageShardState{}
 		break
 	case CmdGetAddr:
-		msg = &MessageGetAddr{}
+		msg = &MessageGetAddr{
+			Timestamp: time.Now(),
+		}
 		break
 	case CmdAddr:
-		msg = &MessageAddr{}
+		msg = &MessageAddr{
+			Timestamp: time.Now(),
+		}
 		break
 	case CmdPing:
 		msg = &MessagePing{}
@@ -248,12 +252,12 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdGetShardState, nil
 	case reflect.TypeOf(&MessageShardState{}):
 		return CmdShardState, nil
-	case reflect.TypeOf(&MessageSwapRequest{}):
-		return CmdSwapRequest, nil
-	case reflect.TypeOf(&MessageSwapSig{}):
-		return CmdSwapSig, nil
-	case reflect.TypeOf(&MessageSwapUpdate{}):
-		return CmdSwapUpdate, nil
+		//case reflect.TypeOf(&MessageSwapRequest{}):
+		//	return CmdSwapRequest, nil
+		//case reflect.TypeOf(&MessageSwapSig{}):
+		//	return CmdSwapSig, nil
+		//case reflect.TypeOf(&MessageSwapUpdate{}):
+		//	return CmdSwapUpdate, nil
 	case reflect.TypeOf(&MessageMsgCheck{}):
 		return CmdMsgCheck, nil
 	case reflect.TypeOf(&MessageMsgCheckResp{}):
