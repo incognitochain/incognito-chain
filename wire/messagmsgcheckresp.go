@@ -18,6 +18,7 @@ type MessageMsgCheckResp struct {
 
 func (self *MessageMsgCheckResp) Hash() string {
 	rawBytes := make([]byte, 0)
+	rawBytes = append(rawBytes, []byte(self.MessageType())...)
 	rawBytes = append(rawBytes, []byte(self.HashStr)...)
 	rawBytes = append(rawBytes, common.BoolToByte(self.Accept))
 	rawBytes = append(rawBytes, common.Int64ToBytes(self.Timestamp.UnixNano())...)
