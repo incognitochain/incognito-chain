@@ -15,8 +15,9 @@ type TxTokenPrivacyData struct {
 	PropertyName   string
 	PropertySymbol string
 
-	Type   int    // action type
-	Amount uint64 // init amount
+	Type     int    // action type
+	Mintable bool   // default false
+	Amount   uint64 // init amount
 }
 
 // Hash - return hash of custom token data, be used as Token ID
