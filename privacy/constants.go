@@ -12,7 +12,7 @@ const (
 	// size of zero knowledge proof corresponding one input
 	OneOfManyProofSize = 781 // corresponding to CMRingSize = 4: 521
 
-	SNPrivacyProofSize   = 424
+	SNPrivacyProofSize   = 326
 	SNNoPrivacyProofSize = 196
 
 	// size of zero knowledge proof corresponding one output

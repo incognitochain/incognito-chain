@@ -178,16 +178,16 @@ func (wit *SNNoPrivacyWitness) Prove() (*SNNoPrivacyProof, error) {
 	// randomness
 	eSK := privacy.RandInt()
 
-	// calculate tSK = g_SK^eSK
+	// calculate tSeed = g_SK^eSK
 	tSK := privacy.PedCom.G[privacy.SK].ScalarMult(eSK)
 
-	// calculate tE = SN^eSK
+	// calculate tOutput = SN^eSK
 	tE := wit.serialNumber.ScalarMult(eSK)
 
-	// calculate x = hash(tSK || tSND1 || tSND2 || tE)
+	// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 	x := generateChallengeFromPoint([]*privacy.EllipticPoint{tSK, tE})
 
-	// Calculate zSK = SK * x + eSK
+	// Calculate zSeed = SK * x + eSK
 	zSK := new(big.Int).Mul(wit.sk, x)
 	zSK.Add(zSK, eSK)
 	zSK.Mod(zSK, privacy.Curve.Params().N)
@@ -198,10 +198,10 @@ func (wit *SNNoPrivacyWitness) Prove() (*SNNoPrivacyProof, error) {
 }
 
 func (pro *SNNoPrivacyProof) Verify() bool {
-	// re-calculate x = hash(tSK || tE)
+	// re-calculate x = hash(tSeed || tOutput)
 	x := generateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSK, pro.tE})
 
-	// Check gSK^zSK = PK^x * tSK
+	// Check gSK^zSeed = PK^x * tSeed
 	leftPoint1 := privacy.PedCom.G[privacy.SK].ScalarMult(pro.zSK)
 
 	rightPoint1 := pro.PK.ScalarMult(x)
@@ -211,7 +211,7 @@ func (pro *SNNoPrivacyProof) Verify() bool {
 		return false
 	}
 
-	// Check SN^(zSK + x*SND) = gSK^x * tE
+	// Check SN^(zSeed + x*SND) = gSK^x * tOutput
 	leftPoint2 := pro.serialNumber.ScalarMult(new(big.Int).Add(pro.zSK, new(big.Int).Mul(x, pro.SND)))
 
 	rightPoint4 := privacy.PedCom.G[privacy.SK].ScalarMult(x)
