@@ -58,7 +58,6 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 	fmt.Println("Done param #4")
 
 	// list unspent tx for estimation fee
-	estimateTotalAmount := uint64(0)
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, constantTokenID)
@@ -70,32 +69,24 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 	if len(outCoins) == 0 {
 		return nil, NewRPCError(ErrUnexpected, nil)
 	}
-	candidateOutputCoins := make([]*privacy.OutputCoin, 0)
-	for _, note := range outCoins {
-		amount := note.CoinDetails.Value
-		candidateOutputCoins = append(candidateOutputCoins, note)
-		estimateTotalAmount += amount
-		if estimateTotalAmount >= totalAmmount {
-			break
-		}
+	// Use Knapsack to get candiate output coin
+	candidateOutputCoins, candidateOutputCoinAmount, err := getUnspentCoinToSpent(outCoins, totalAmmount)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	// check real fee(nano constant) per tx
 	realFee := self.estimateFee(estimateFeeCoinPerKb, candidateOutputCoins, paymentInfos, chainIdSender, numBlock)
+	needToPayFee := (totalAmmount + realFee) - candidateOutputCoinAmount
 
-	// list unspent tx for create tx
-	totalAmmount += uint64(realFee)
-	estimateTotalAmount = 0
-	fmt.Printf("realFee and totalAmount: %d %d\n", realFee, totalAmmount)
-	if totalAmmount > 0 {
-		candidateOutputCoins = make([]*privacy.OutputCoin, 0)
-		for _, note := range outCoins {
-			amount := note.CoinDetails.Value
-			candidateOutputCoins = append(candidateOutputCoins, note)
-			estimateTotalAmount += amount
-			if estimateTotalAmount >= totalAmmount {
-				break
+	// if not enough to pay fee
+	if needToPayFee > 0 {
+		if len(outCoins) == 0 {
+			candidateOutputCoinsForFee, _, err1 := getUnspentCoinToSpent(outCoins, needToPayFee)
+			if err != nil {
+				return nil, NewRPCError(ErrUnexpected, err1)
 			}
+			candidateOutputCoins = append(candidateOutputCoins, candidateOutputCoinsForFee...)
 		}
 	}
 
@@ -407,8 +398,9 @@ func (self RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []*priv
 }
 
 // getUnspentCoinToSpent returns list of unspent coins for spending with amount
-func getUnspentCoinToSpent(outCoins []*privacy.OutputCoin, amount uint64) []*privacy.OutputCoin {
-	var res = make([]*privacy.OutputCoin, 0)
+func getUnspentCoinToSpent(outCoins []*privacy.OutputCoin, amount uint64) (res []*privacy.OutputCoin, totalOutputCoinAmount uint64, err error) {
+	res = make([]*privacy.OutputCoin, 0)
+	totalOutputCoinAmount = uint64(0)
 
 	// Calculate sum of all output coins' value
 	sumValue := uint64(0)
@@ -419,12 +411,18 @@ func getUnspentCoinToSpent(outCoins []*privacy.OutputCoin, amount uint64) []*pri
 	}
 
 	// target
-	target := sumValue - amount
-	choices := privacy.Knapsack(values, target)
+	target := int64(sumValue - amount)
+	if target < 0 {
+		return nil, uint64(0), errors.Wrap(errors.New("Not enough coin"), "")
+	}
+	choices := privacy.Knapsack(values, uint64(target))
 	for i, choice := range choices {
 		if !choice {
+			totalOutputCoinAmount += outCoins[i].CoinDetails.Value
 			res = append(res, outCoins[i])
+			// and remove from outCoins list
+			outCoins = append(outCoins[:i], outCoins[i+1:]...)
 		}
 	}
-	return res
+	return res, totalOutputCoinAmount, nil
 }
