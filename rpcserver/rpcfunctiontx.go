@@ -4,13 +4,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
@@ -91,116 +89,6 @@ func (self RpcServer) handleListOutputCoins(params interface{}, closeChan <-chan
 	}
 
 	return result, nil
-}
-
-func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
-	Logger.log.Info(params)
-
-	// all params
-	arrayParams := common.InterfaceSlice(params)
-
-	// param #1: private key of sender
-	senderKeyParam := arrayParams[0]
-	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
-	chainIdSender, err := common.GetTxSenderChain(lastByte)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	fmt.Printf("Done param #1: keyset: %+v\n", senderKey.KeySet)
-
-	// param #2: list receiver
-	totalAmmount := uint64(0)
-	receiversParam := arrayParams[1].(map[string]interface{})
-	paymentInfos := make([]*privacy.PaymentInfo, 0)
-	for pubKeyStr, amount := range receiversParam {
-		receiverPubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
-		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
-		}
-		paymentInfo := &privacy.PaymentInfo{
-			Amount:         common.ConstantToMiliConstant(uint64(amount.(float64))),
-			PaymentAddress: receiverPubKey.KeySet.PaymentAddress,
-		}
-		totalAmmount += paymentInfo.Amount
-		paymentInfos = append(paymentInfos, paymentInfo)
-	}
-	fmt.Println("Done param #2")
-
-	// param #3: estimation fee nano constant per kb
-	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
-	fmt.Println("Done param #3")
-
-	// param #4: estimation fee coin per kb by numblock
-	numBlock := uint64(arrayParams[3].(float64))
-	fmt.Println("Done param #4")
-
-	// list unspent tx for estimation fee
-	estimateTotalAmount := uint64(0)
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
-	outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, constantTokenID)
-	fmt.Println("Done param #5", err)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	fmt.Println("Done param #6", len(outCoins))
-	if len(outCoins) == 0 {
-		return nil, NewRPCError(ErrUnexpected, nil)
-	}
-	candidateOutputCoins := make([]*privacy.OutputCoin, 0)
-	for _, note := range outCoins {
-		amount := note.CoinDetails.Value
-		candidateOutputCoins = append(candidateOutputCoins, note)
-		estimateTotalAmount += amount
-		if estimateTotalAmount >= totalAmmount {
-			break
-		}
-	}
-
-	// check real fee(nano constant) per tx
-	realFee := self.EstimateFee(estimateFeeCoinPerKb, candidateOutputCoins, paymentInfos, chainIdSender, numBlock)
-
-	// list unspent tx for create tx
-	totalAmmount += uint64(realFee)
-	estimateTotalAmount = 0
-	fmt.Printf("realFee and totalAmount: %d %d\n", realFee, totalAmmount)
-	if totalAmmount > 0 {
-		candidateOutputCoins = make([]*privacy.OutputCoin, 0)
-		for _, note := range outCoins {
-			amount := note.CoinDetails.Value
-			candidateOutputCoins = append(candidateOutputCoins, note)
-			estimateTotalAmount += amount
-			if estimateTotalAmount >= totalAmmount {
-				break
-			}
-		}
-	}
-
-	//missing flag for privacy
-	// false by default
-	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
-	fmt.Printf("#inputCoins: %d\n", len(inputCoins))
-	tx := transaction.Tx{}
-	err = tx.Init(
-		&senderKey.KeySet.PrivateKey,
-		paymentInfos,
-		inputCoins,
-		realFee,
-		false,
-		*self.config.Database,
-		nil, // use for constant coin -> nil is valid
-		meta,
-	)
-	fmt.Println("Done init")
-	if err.(*transaction.TransactionError) != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	return &tx, nil
 }
 
 /*
