@@ -50,7 +50,8 @@ func (self *BestStateShard) GetPubkeyRole(pubkey string) string {
 
 	found := common.IndexOfStr(pubkey, self.ShardCommittee)
 	if found > -1 {
-		if found == self.ShardProposerIdx+1 {
+		tmpID := (self.ShardProposerIdx + 1) % len(self.ShardCommittee)
+		if found == tmpID {
 			return "shard-proposer"
 		} else {
 			return "shard-validator"

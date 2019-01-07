@@ -165,15 +165,6 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				// Parse Message body
 				messageBody := jsonDecodeBytes[:len(jsonDecodeBytes)-wire.MessageHeaderSize]
 
-				// cache message hash S
-				hashMsg := common.HashH(messageBody).String()
-				if self.ListenerPeer.CheckHashMessage(hashMsg) {
-					Logger.log.Infof("InMessageHandler existed hash message %s", hashMsg)
-					return
-				}
-				self.ListenerPeer.ReceivedHashMessage(hashMsg)
-				// cache message hash E
-
 				messageHeader := jsonDecodeBytes[len(jsonDecodeBytes)-wire.MessageHeaderSize:]
 				// check forward
 				if self.Config.MessageListeners.GetCurrentRoleShard != nil {
@@ -220,6 +211,15 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				}
 				realType := reflect.TypeOf(message)
 				Logger.log.Infof("Cmd message type of struct %s", realType.String())
+
+				// cache message hash S
+				hashMsg := message.Hash()
+				if self.ListenerPeer.CheckHashMessage(hashMsg) {
+					Logger.log.Infof("InMessageHandler existed hash message %s", hashMsg)
+					return
+				}
+				self.ListenerPeer.ReceivedHashMessage(hashMsg)
+				// cache message hash E
 
 				// process message for each of message type
 				switch realType {
@@ -482,7 +482,7 @@ func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<-
 		if self.GetIsConnected() {
 			data, _ := msg.JsonSerialize()
 			if len(data) >= HEAVY_MESSAGE_SIZE && msg.MessageType() != wire.CmdMsgCheck && msg.MessageType() != wire.CmdMsgCheckResp {
-				hash := common.HashH(data).String()
+				hash := msg.Hash()
 				Logger.log.Infof("QueueMessageWithEncoding HEAVY_MESSAGE_SIZE %s %s", hash, msg.MessageType())
 
 				if self.checkMessageHashBeforeSend(hash) {

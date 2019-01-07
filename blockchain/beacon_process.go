@@ -526,6 +526,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	self.BestBlock = newBlock
 	self.BeaconEpoch = newBlock.Header.Epoch
 	self.BeaconHeight = newBlock.Header.Height
+	self.BeaconProposerIdx = common.IndexOfStr(newBlock.Header.Producer, self.BeaconCommittee)
 
 	allShardState := newBlock.Body.ShardState
 

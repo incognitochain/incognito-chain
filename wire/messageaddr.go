@@ -6,6 +6,7 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 
 	"github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/constant/common"
 )
 
 const (
@@ -22,7 +23,11 @@ type MessageAddr struct {
 }
 
 func (self *MessageAddr) Hash() string {
-	return ""
+	rawBytes, err := self.JsonSerialize()
+	if err != nil {
+		return ""
+	}
+	return common.HashH(rawBytes).String()
 }
 
 func (self *MessageAddr) MessageType() string {

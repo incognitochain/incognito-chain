@@ -95,12 +95,12 @@ func (self *BestStateBeacon) GetPubkeyRole(pubkey string) (string, byte) {
 
 	found := common.IndexOfStr(pubkey, self.BeaconCommittee)
 	if found > -1 {
-		if found == self.BeaconProposerIdx+1 {
+		tmpID := (self.BeaconProposerIdx + 1) % len(self.BeaconCommittee)
+		if found == tmpID {
 			return "beacon-proposer", 0
 		} else {
 			return "beacon-validator", 0
 		}
-
 	}
 
 	found = common.IndexOfStr(pubkey, self.BeaconPendingValidator)
