@@ -160,7 +160,9 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			// fee always 0 and reuse function of normal tx for custom token ID
 			temp := Tx{}
 			propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
-			txCustomToken.TxTokenPrivacyData.PropertyID = *propertyID
+			if _, ok := listCustomTokens[*propertyID]; !ok {
+				return NewTransactionErr(UnexpectedErr, errors.New("Invalid Token ID"))
+			}
 			Logger.log.Infof("Token %+v wil be transfered with", propertyID)
 			err := temp.Init(senderKey,
 				tokenParams.Receiver,

@@ -295,12 +295,19 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 	}
 	voutsAmount := int64(0)
 	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"])
+
+	// get list custom token
+	listCustomTokens, err := self.config.BlockChain.ListPrivacyCustomToken()
+
 	switch tokenParams.TokenTxType {
 	case transaction.CustomTokenTransfer:
 		{
 			tokenID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
+			}
+			if _, ok := listCustomTokens[*tokenID]; !ok {
+				return nil, NewRPCError(ErrUnexpected, errors.New("Invalid Token ID"))
 			}
 			outputTokens, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, tokenID)
 			if err != nil {
@@ -359,9 +366,6 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 			}
 		}
 	}
-
-	// get list custom token
-	listCustomTokens, err := self.config.BlockChain.ListPrivacyCustomToken()
 
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
 	tx := &transaction.TxCustomTokenPrivacy{}
