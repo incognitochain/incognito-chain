@@ -245,13 +245,13 @@ func (wit *PKSNPrivacyWitness) Prove() (*PKSNPrivacyProof, error){
 	eSK := privacy.RandInt()
 	eSND := privacy.RandInt()
 	dSK := privacy.RandInt()
-	dSND1 := privacy.RandInt()
+	dSND := privacy.RandInt()
 
 	// calculate tSeed = g_SK^eSK * h^dSK
 	tSeed := privacy.PedCom.CommitAtIndex(eSK, dSK, privacy.SK)
 
-	// calculate tSND = g_SND^eSND * h^dSND1
-	tInput := privacy.PedCom.CommitAtIndex(eSND, dSND1, privacy.SND)
+	// calculate tSND = g_SND^eSND * h^dSND
+	tInput := privacy.PedCom.CommitAtIndex(eSND, dSND, privacy.SND)
 
 	// calculate tSND = g_SK^eSND * h^dSND2
 	tOutput := wit.output.ScalarMult(new(big.Int).Add(eSK, eSND))
@@ -269,14 +269,14 @@ func (wit *PKSNPrivacyWitness) Prove() (*PKSNPrivacyProof, error){
 	zRSeed.Add(zRSeed, dSK)
 	zRSeed.Mod(zRSeed, privacy.Curve.Params().N)
 
-	// Calculate zInput = SND * x + eSND
+	// Calculate zInput = input * x + eSND
 	zInput := new(big.Int).Mul(wit.input, x)
 	zInput.Add(zInput, eSND)
 	zInput.Mod(zInput, privacy.Curve.Params().N)
 
-	// Calculate zRInput = rInput * x + dSND1
+	// Calculate zRInput = rInput * x + dSND
 	zRInput := new(big.Int).Mul(wit.rInput, x)
-	zRInput.Add(zRInput, dSND1)
+	zRInput.Add(zRInput, dSND)
 	zRInput.Mod(zRInput, privacy.Curve.Params().N)
 
 	proof := new(PKSNPrivacyProof).Init()
@@ -288,7 +288,7 @@ func (pro *PKSNPrivacyProof) Verify() bool{
 	// re-calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 	x := generateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSeed, pro.tInput, pro.tOutput})
 
-	// Check gSND^zInput * h^zRInput = SND^x * tInput
+	// Check gSND^zInput * h^zRInput = input^x * tInput
 	leftPoint1 := privacy.PedCom.CommitAtIndex(pro.zInput, pro.zRInput, privacy.SND)
 
 	rightPoint1 := pro.comInput.ScalarMult(x)
@@ -298,7 +298,7 @@ func (pro *PKSNPrivacyProof) Verify() bool{
 		return false
 	}
 
-	// Check gSK^zSeed * h^zRSeed = PK^x * tSeed
+	// Check gSK^zSeed * h^zRSeed = vKey^x * tSeed
 	leftPoint3 := privacy.PedCom.CommitAtIndex(pro.zSeed, pro.zRSeed, privacy.SK)
 
 	rightPoint3 := pro.comSeed.ScalarMult(x)

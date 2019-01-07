@@ -477,7 +477,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 
 	wit.ComInputValue = make([]*privacy.EllipticPoint, numInputCoin)
 	wit.ComInputSND = make([]*privacy.EllipticPoint, numInputCoin)
-	// It is used for proving 2 commitments commit to the same value (SND)
+	// It is used for proving 2 commitments commit to the same value (input)
 	cmInputSNDIndexSK := make([]*privacy.EllipticPoint, numInputCoin)
 
 	randInputValue := make([]*big.Int, numInputCoin)
@@ -726,7 +726,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee ui
 		sumOutputValue = 0
 
 		for i := 0; i < len(pro.InputCoins); i++ {
-			// Check input coins' Serial number is created from input coins' SND and sender's spending key
+			// Check input coins' Serial number is created from input coins' input and sender's spending key
 			if !pro.SNNoPrivacyProof[i].Verify() {
 				return false
 			}

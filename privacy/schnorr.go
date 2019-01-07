@@ -7,7 +7,7 @@ import (
 
 //SchnPubKey denoted Schnorr Publickey
 type SchnPubKey struct {
-	PK, G, H *EllipticPoint // PK = G^SK + H^Randomness
+	PK, G, H *EllipticPoint // vKey = G^SK + H^Randomness
 }
 
 //SchnPrivKey denoted Schnorr Privatekey

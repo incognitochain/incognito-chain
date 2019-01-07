@@ -20,7 +20,7 @@ const (
 	ComZeroProofSize     = 66
 
 	InputCoinsPrivacySize  = 33  // serial number
-	OutputCoinsPrivacySize = 239 // PK + coin commitment + SND + Encrypted (138 bytes) + 2 bytes saving size
+	OutputCoinsPrivacySize = 239 // vKey + coin commitment + input + Encrypted (138 bytes) + 2 bytes saving size
 
 	// it is used for both privacy and no privacy
 	SigPubKeySize = 33

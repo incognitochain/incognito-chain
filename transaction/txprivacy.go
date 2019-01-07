@@ -404,7 +404,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		tokenID := &common.Hash{}
 		tokenID.SetBytes(common.ConstantID[:])
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
-			// Check output coins' SND is not exists in SND list (Database)
+			// Check output coins' input is not exists in input list (Database)
 			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, chainId, db); ok || err != nil {
 				fmt.Printf("snd existed: %d\n", i)
 				return false
@@ -776,7 +776,7 @@ func (tx *Tx) InitTxSalary(
 	}
 
 	var err error
-	// create new output coins with info: Pk, value, SND, randomness, last byte pk, coin commitment
+	// create new output coins with info: Pk, value, input, randomness, last byte pk, coin commitment
 	tx.Proof = new(zkp.PaymentProof)
 	tx.Proof.OutputCoins = make([]*privacy.OutputCoin, 1)
 	tx.Proof.OutputCoins[0] = new(privacy.OutputCoin)
@@ -838,7 +838,7 @@ func (tx Tx) ValidateTxSalary(
 		return false
 	}
 
-	// check whether output coin's SND exists in SND list or not
+	// check whether output coin's input exists in input list or not
 	lastByte := tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress())-1]
 	chainIdSender, err := common.GetTxSenderChain(lastByte)
 	tokenID := &common.Hash{}
