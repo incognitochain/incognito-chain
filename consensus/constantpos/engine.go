@@ -119,12 +119,13 @@ func (self *Engine) Start() error {
 
 							if err == nil {
 								fmt.Println(resBlk.(*blockchain.BeaconBlock))
-								//TODO insert block to blockchain
 								err = self.config.BlockChain.InsertBeaconBlock(resBlk.(*blockchain.BeaconBlock))
 								if err != nil {
 									Logger.log.Error("Insert beacon block error", err)
 									continue
 								}
+								//TODO: push beacon to all
+
 							} else {
 								Logger.log.Error(err)
 							}
@@ -160,12 +161,14 @@ func (self *Engine) Start() error {
 								}
 								if err == nil {
 									fmt.Println(resBlk.(*blockchain.ShardBlock))
-									//TODO insert block to blockchain
 									err = self.config.BlockChain.InsertShardBlock(resBlk.(*blockchain.ShardBlock))
 									if err != nil {
 										Logger.log.Error("Insert beacon block error", err)
 										continue
 									}
+									//TODO: push shard-beacon to beacon
+									//TODO: push cross-shard to shard
+
 								} else {
 									Logger.log.Error(err)
 								}
