@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ninjadotorg/constant/cashec"
+
 	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
 	"github.com/ninjadotorg/constant/common/base58"
 	privacy "github.com/ninjadotorg/constant/privacy"
@@ -42,7 +44,7 @@ import (
 	Sign:
 		Sign block and update validator index, agg sig
 */
-func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey) (*BeaconBlock, error) {
+func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddress, privateKey *privacy.SpendingKey) (*BeaconBlock, error) {
 	beaconBlock := &BeaconBlock{}
 	beaconBestState := BestStateBeacon{}
 	// lock blockchain
@@ -128,13 +130,14 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	//===============Generate Signature
 	// Signature of producer, sign on hash of header
 	blockHash := beaconBlock.Header.Hash()
-	multiSigScheme := &privacy.MultiSigScheme{}
-	R, r := multiSigScheme.GenerateRandom()
-	multiSigKeyset := &privacy.MultiSigKeyset{}
-	pubKeys := []*privacy.PublicKey{}
-	pubKeys = append(pubKeys, &payToAddress.Pk)
-	producerSig := multiSigKeyset.SignMultiSig(blockHash.GetBytes(), pubKeys, []*privacy.EllipticPoint{R}, r)
-	beaconBlock.ProducerSig = base58.Base58Check{}.Encode(producerSig.Bytes(), byte(0x00))
+	keySet := &cashec.KeySet{}
+	keySet.ImportFromPrivateKey(privateKey)
+	producerSig, err := keySet.SignDataB58(blockHash.GetBytes())
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
+	}
+	beaconBlock.ProducerSig = producerSig
 	//================End Generate Signature
 	return beaconBlock, nil
 }
