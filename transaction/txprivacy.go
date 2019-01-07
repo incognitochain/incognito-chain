@@ -76,7 +76,7 @@ func (tx *Tx) Init(
 	tokenID *common.Hash, // default is nil -> use for constant coin
 	metaData metadata.Metadata,
 ) *TransactionError {
-	hasPrivacy = false
+	//hasPrivacy = false
 	tx.Version = TxVersion
 	var err error
 	if tokenID == nil {
@@ -302,7 +302,7 @@ func (tx *Tx) SignTx() error {
 	tx.SigPubKey = sigKey.PubKey.PK.Compress()
 
 	// signing
-	signature, err := sigKey.Sign(tx.Hash()[:])
+	signature, err := sigKey.Sign([]byte(tx.toString()))
 	if err != nil {
 		return err
 	}
@@ -342,7 +342,7 @@ func (tx *Tx) VerifySigTx() (bool, error) {
 
 	// verify signature
 	//Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
-	res = verKey.Verify(signature, tx.Hash()[:])
+	res = verKey.Verify(signature, []byte(tx.toString()))
 
 	return res, nil
 }
@@ -363,7 +363,7 @@ func (tx *Tx) validateMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Verify the payment proof
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
-	hasPrivacy = false
+	//hasPrivacy = false
 	start := time.Now()
 	// Verify tx signature
 	fmt.Printf("tx.GetType(): %v\n", tx.GetType())
@@ -447,6 +447,20 @@ func (tx *Tx) Hash() *common.Hash {
 	}
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
+}
+
+func (tx *Tx) toString() string {
+	record := strconv.Itoa(int(tx.Version))
+	record += strconv.FormatInt(tx.LockTime, 10)
+	record += strconv.FormatUint(tx.Fee, 10)
+	if tx.Proof != nil {
+		record += string(tx.Proof.Bytes()[:])
+	}
+	if tx.Metadata != nil {
+		record += string(tx.Metadata.Hash()[:])
+	}
+
+	return record
 }
 
 func (tx *Tx) GetSenderAddrLastByte() byte {
@@ -707,12 +721,10 @@ func (tx *Tx) GetProof() *zkp.PaymentProof {
 }
 
 func (tx *Tx) IsPrivacy() bool {
-	switch tx.GetType() {
-	case common.TxSalaryType:
+	if len(tx.Proof.OneOfManyProof) == 0{
 		return false
-	default:
-		return true
 	}
+	return true
 }
 
 func (tx *Tx) ValidateType() bool {
