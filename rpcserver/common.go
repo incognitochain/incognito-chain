@@ -70,7 +70,7 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 		return nil, NewRPCError(ErrUnexpected, nil)
 	}
 	// Use Knapsack to get candiate output coin
-	candidateOutputCoins, candidateOutputCoinAmount, err := getUnspentCoinToSpent(outCoins, totalAmmount)
+	candidateOutputCoins, outCoins, candidateOutputCoinAmount, err := getUnspentCoinToSpent(outCoins, totalAmmount)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -82,7 +82,7 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 	// if not enough to pay fee
 	if needToPayFee > 0 {
 		if len(outCoins) == 0 {
-			candidateOutputCoinsForFee, _, err1 := getUnspentCoinToSpent(outCoins, needToPayFee)
+			candidateOutputCoinsForFee, _, _, err1 := getUnspentCoinToSpent(outCoins, needToPayFee)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err1)
 			}
@@ -398,9 +398,10 @@ func (self RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []*priv
 }
 
 // getUnspentCoinToSpent returns list of unspent coins for spending with amount
-func getUnspentCoinToSpent(outCoins []*privacy.OutputCoin, amount uint64) (res []*privacy.OutputCoin, totalOutputCoinAmount uint64, err error) {
-	res = make([]*privacy.OutputCoin, 0)
-	totalOutputCoinAmount = uint64(0)
+func getUnspentCoinToSpent(outCoins []*privacy.OutputCoin, amount uint64) (resultOutputCoins []*privacy.OutputCoin, remainOutputCoins []*privacy.OutputCoin, totalResultOutputCoinAmount uint64, err error) {
+	resultOutputCoins = make([]*privacy.OutputCoin, 0)
+	remainOutputCoins = make([]*privacy.OutputCoin, 0)
+	totalResultOutputCoinAmount = uint64(0)
 
 	// Calculate sum of all output coins' value
 	sumValue := uint64(0)
@@ -413,16 +414,16 @@ func getUnspentCoinToSpent(outCoins []*privacy.OutputCoin, amount uint64) (res [
 	// target
 	target := int64(sumValue - amount)
 	if target < 0 {
-		return nil, uint64(0), errors.Wrap(errors.New("Not enough coin"), "")
+		return nil, remainOutputCoins, uint64(0), errors.Wrap(errors.New("Not enough coin"), "")
 	}
 	choices := privacy.Knapsack(values, uint64(target))
 	for i, choice := range choices {
 		if !choice {
-			totalOutputCoinAmount += outCoins[i].CoinDetails.Value
-			res = append(res, outCoins[i])
-			// and remove from outCoins list
-			outCoins = append(outCoins[:i], outCoins[i+1:]...)
+			totalResultOutputCoinAmount += outCoins[i].CoinDetails.Value
+			resultOutputCoins = append(resultOutputCoins, outCoins[i])
+		} else {
+			remainOutputCoins = append(remainOutputCoins, outCoins[i])
 		}
 	}
-	return res, totalOutputCoinAmount, nil
+	return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, nil
 }
