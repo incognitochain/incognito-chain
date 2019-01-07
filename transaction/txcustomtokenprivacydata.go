@@ -15,8 +15,9 @@ type TxTokenPrivacyData struct {
 	PropertyName   string
 	PropertySymbol string
 
-	Type   int    // action type
-	Amount uint64 // init amount
+	Type     int    // action type
+	Mintable bool   // default false
+	Amount   uint64 // init amount
 }
 
 // Hash - return hash of custom token data, be used as Token ID
@@ -55,8 +56,9 @@ type CustomTokenPrivacyParamTx struct {
 
 // CreateCustomTokenReceiverArray - parse data frm rpc request to create a list vout for preparing to create a custom token tx
 // data interface is a map[paymentt-address]{transferring-amount}
-func CreateCustomTokenPrivacyReceiverArray(data interface{}) []*privacy.PaymentInfo {
+func CreateCustomTokenPrivacyReceiverArray(data interface{}) ([]*privacy.PaymentInfo, int64) {
 	result := []*privacy.PaymentInfo{}
+	voutsAmount := int64(0)
 	receivers := data.(map[string]interface{})
 	for key, value := range receivers {
 		key, _ := wallet.Base58CheckDeserialize(key)
@@ -65,6 +67,7 @@ func CreateCustomTokenPrivacyReceiverArray(data interface{}) []*privacy.PaymentI
 			Amount:         uint64(value.(float64)),
 		}
 		result = append(result, temp)
+		voutsAmount += int64(temp.Amount)
 	}
-	return result
+	return result, voutsAmount
 }

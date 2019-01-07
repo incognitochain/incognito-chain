@@ -150,23 +150,26 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			txCustomToken.TxTokenPrivacyData.PropertyID = *hashInitToken
 		}
 	case CustomTokenTransfer:
-		// make a transfering for privacy custom token
-		// fee always 0 and reuse function of normal tx for custom token ID
-		temp := Tx{}
-		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
-		err := temp.Init(senderKey,
-			tokenParams.Receiver,
-			tokenParams.TokenInput,
-			0,
-			common.TrueValue,
-			db,
-			propertyID,
-			nil,
-		)
-		if err != nil {
-			return err
+		{
+			handled = common.TrueValue
+			// make a transfering for privacy custom token
+			// fee always 0 and reuse function of normal tx for custom token ID
+			temp := Tx{}
+			propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+			err := temp.Init(senderKey,
+				tokenParams.Receiver,
+				tokenParams.TokenInput,
+				0,
+				common.TrueValue,
+				db,
+				propertyID,
+				nil,
+			)
+			if err != nil {
+				return err
+			}
+			txCustomToken.TxTokenPrivacyData.TxNormal = temp
 		}
-		txCustomToken.TxTokenPrivacyData.TxNormal = temp
 	}
 
 	if handled != common.TrueValue {

@@ -291,9 +291,10 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 		PropertySymbol: tokenParamsRaw["TokenSymbol"].(string),
 		TokenTxType:    int(tokenParamsRaw["TokenTxType"].(float64)),
 		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
-		Receiver:       transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"]),
 		TokenInput:     nil,
 	}
+	voutsAmount := int64(0)
+	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"])
 	switch tokenParams.TokenTxType {
 	case transaction.CustomTokenTransfer:
 		{
@@ -305,7 +306,8 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
-			intputToken := transaction.ConvertOutputCoinToInputCoin(outputTokens)
+			candidateOutputTokens, outputTokens, _, err := getUnspentCoinToSpent(outputTokens, uint64(voutsAmount))
+			intputToken := transaction.ConvertOutputCoinToInputCoin(candidateOutputTokens)
 			tokenParams.TokenInput = intputToken
 		}
 	case transaction.CustomTokenInit:
