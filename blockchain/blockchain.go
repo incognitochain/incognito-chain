@@ -48,7 +48,8 @@ type BlockChain struct {
 	cQuitSync  chan struct{}
 	syncStatus struct {
 		Beacon bool
-		Shard  map[byte]bool
+		Shard  map[byte](chan struct{})
+		sync.Mutex
 	}
 	knownChainState struct {
 		Shards map[byte]ShardChainState
@@ -85,6 +86,7 @@ type Config struct {
 	//
 	// This field is required.
 	ChainParams *Params
+	RelayShards []byte
 	NodeRole    string
 	//Light mode flag
 	// Light bool
@@ -130,7 +132,13 @@ func (self *BlockChain) Init(config *Config) error {
 	// 		chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns, bestState.BestBlock.Header.SalaryFund, bestState.BestBlock.Header.GOVConstitution)
 	// }
 	self.cQuitSync = make(chan struct{})
+	self.syncStatus.Shard = make(map[byte](chan struct{}))
 	go self.SyncBeacon()
+	// self.syncStatus.Lock()
+	// for _, shardID := range self.config.RelayShards {
+	// 	self.SyncShard(shardID)
+	// }
+	// self.syncStatus.Unlock()
 	return nil
 }
 

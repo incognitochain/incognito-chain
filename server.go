@@ -142,11 +142,16 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	self.crossShardPool = &mempool.CrossShardPool{}
 
 	self.blockChain = &blockchain.BlockChain{}
-
+	relayShards := []byte{}
+	for index := 0; index < len(cfg.RelayShards); index += 2 {
+		s, _ := strconv.Atoi(fmt.Sprintf("%c", byte(cfg.RelayShards[index])))
+		relayShards = append(relayShards, byte(s))
+	}
 	err = self.blockChain.Init(&blockchain.Config{
 		ChainParams: self.chainParams,
 		DataBase:    self.dataBase,
 		Interrupt:   interrupt,
+		RelayShards: relayShards,
 		// Light:       cfg.Light,
 		Wallet:            self.wallet,
 		ShardToBeaconPool: self.shardToBeaconPool,
@@ -232,6 +237,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	if err != nil {
 		return err
 	}
+
 	// Init Net Sync manager to process messages
 	self.netSync = netsync.NetSync{}.New(&netsync.NetSyncConfig{
 		BlockChain:   self.blockChain,
@@ -479,13 +485,14 @@ func (self Server) Start() {
 	// 	self.rpcServer.Start()
 	// }
 
-	err := self.consensusEngine.Start()
-	if err != nil {
-		Logger.log.Error(err)
-		go self.Stop()
-		return
+	if cfg.NodeMode != "relay" {
+		err := self.consensusEngine.Start()
+		if err != nil {
+			Logger.log.Error(err)
+			go self.Stop()
+			return
+		}
 	}
-
 }
 
 /*
@@ -1079,7 +1086,7 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 GetChainState - send a getchainstate msg to connected peer
 */
 func (self *Server) PushMessageGetBeaconState() error {
-	Logger.log.Infof("Send a GetChainState")
+	Logger.log.Infof("Send a GetBeaconState")
 	for _, listener := range self.connManager.Config.ListenerPeers {
 		msg, err := wire.MakeEmptyMessage(wire.CmdGetBeaconState)
 		if err != nil {
@@ -1087,7 +1094,7 @@ func (self *Server) PushMessageGetBeaconState() error {
 		}
 		msg.(*wire.MessageGetBeaconState).Timestamp = time.Unix(time.Now().Unix(), 0)
 		msg.SetSenderID(listener.PeerID)
-		Logger.log.Infof("Send a GetChainState from %s", listener.RawAddress)
+		Logger.log.Infof("Send a GetBeaconState from %s", listener.RawAddress)
 		listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_PEER, nil)
 	}
 	return nil
@@ -1097,7 +1104,7 @@ func (self *Server) PushMessageGetBeaconState() error {
 GetChainState - send a getchainstate msg to connected peer
 */
 func (self *Server) PushMessageGetShardState(shardID byte) error {
-	Logger.log.Infof("Send a GetChainState")
+	Logger.log.Infof("Send a GetShardState")
 	for _, listener := range self.connManager.Config.ListenerPeers {
 		msg, err := wire.MakeEmptyMessage(wire.CmdGetShardState)
 		if err != nil {
@@ -1105,7 +1112,7 @@ func (self *Server) PushMessageGetShardState(shardID byte) error {
 		}
 		msg.(*wire.MessageGetShardState).Timestamp = time.Unix(time.Now().Unix(), 0)
 		msg.SetSenderID(listener.PeerID)
-		Logger.log.Infof("Send a GetChainState from %s", listener.RawAddress)
+		Logger.log.Infof("Send a GetShardState from %s", listener.RawAddress)
 		listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_PEER, nil)
 	}
 	return nil

@@ -17,7 +17,7 @@ type BeaconChainState struct {
 	BlockHash common.Hash
 }
 
-func (self *BlockChain) SyncShard(shardID byte, stopCh chan struct{}) {
+func (self *BlockChain) SyncShard(shardID byte) {
 
 }
 
@@ -26,6 +26,7 @@ func (self *BlockChain) SyncBeacon() {
 		Logger.log.Error("Beacon synchronzation is already started")
 		return
 	}
+	Logger.log.Info("Beacon synchronzation started")
 	self.syncStatus.Beacon = true
 	var pendingBlock map[uint64]*BeaconBlock
 	pendingBlock = make(map[uint64]*BeaconBlock)
