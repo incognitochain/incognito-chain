@@ -190,10 +190,10 @@ func (self *Engine) Start() error {
 									}
 									//PUSH CROSS-SHARD
 									newCrossShardBlocks := shardBlk.CreateAllCrossShardBlock()
-									for _, newCrossShardBlock := range newCrossShardBlocks {
+									for sID, newCrossShardBlock := range newCrossShardBlocks {
 										newCrossShardMsg, err := MakeMsgCrossShardBlock(newCrossShardBlock)
 										if err == nil {
-											self.config.Server.PushMessageToShard(newCrossShardMsg, shardID)
+											self.config.Server.PushMessageToShard(newCrossShardMsg, sID)
 										}
 									}
 
