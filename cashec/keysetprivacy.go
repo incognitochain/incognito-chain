@@ -47,6 +47,7 @@ func (self *KeySet) ImportFromPrivateKey(privateKey *privacy.SpendingKey) {
 }
 
 func (self *KeySet) Verify(data, signature []byte) (bool, error) {
+	hash := common.HashB(data)
 	isValid := false
 
 	pubKeySig := new(privacy.SchnPubKey)
@@ -59,15 +60,16 @@ func (self *KeySet) Verify(data, signature []byte) (bool, error) {
 	signatureSetBytes := new(privacy.SchnSignature)
 	signatureSetBytes.SetBytes(signature)
 
-	isValid = pubKeySig.Verify(signatureSetBytes, data)
+	isValid = pubKeySig.Verify(signatureSetBytes, hash)
 	return isValid, nil
 }
 
 func (self *KeySet) Sign(data []byte) ([]byte, error) {
+	hash := common.HashB(data)
 	privKeySig := new(privacy.SchnPrivKey)
 	privKeySig.Set(new(big.Int).SetBytes(self.PrivateKey), big.NewInt(0))
 
-	signature, err := privKeySig.Sign(data)
+	signature, err := privKeySig.Sign(hash)
 	return signature.Bytes(), err
 }
 

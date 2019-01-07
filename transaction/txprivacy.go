@@ -302,7 +302,7 @@ func (tx *Tx) SignTx() error {
 	tx.SigPubKey = sigKey.PubKey.PK.Compress()
 
 	// signing
-	signature, err := sigKey.Sign([]byte(tx.toString()))
+	signature, err := sigKey.Sign(tx.Hash()[:])
 	if err != nil {
 		return err
 	}
@@ -342,7 +342,7 @@ func (tx *Tx) VerifySigTx() (bool, error) {
 
 	// verify signature
 	//Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
-	res = verKey.Verify(signature, []byte(tx.toString()))
+	res = verKey.Verify(signature, tx.Hash()[:])
 
 	return res, nil
 }
@@ -447,20 +447,6 @@ func (tx *Tx) Hash() *common.Hash {
 	}
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
-}
-
-func (tx *Tx) toString() string {
-	record := strconv.Itoa(int(tx.Version))
-	record += strconv.FormatInt(tx.LockTime, 10)
-	record += strconv.FormatUint(tx.Fee, 10)
-	if tx.Proof != nil {
-		record += string(tx.Proof.Bytes()[:])
-	}
-	if tx.Metadata != nil {
-		record += string(tx.Metadata.Hash()[:])
-	}
-
-	return record
 }
 
 func (tx *Tx) GetSenderAddrLastByte() byte {
