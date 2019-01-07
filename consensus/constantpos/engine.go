@@ -55,6 +55,7 @@ func (self *Engine) Start() error {
 	Logger.log.Info("Start consensus with key", self.config.UserKeySet.GetPublicKeyB58())
 	fmt.Println(self.config.BlockChain.BestState.Beacon.BeaconCommittee)
 
+	//Note: why goroutine in this function
 	go func() {
 		for {
 			select {
