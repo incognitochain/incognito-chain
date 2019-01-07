@@ -76,7 +76,7 @@ func (tx *Tx) Init(
 	tokenID *common.Hash, // default is nil -> use for constant coin
 	metaData metadata.Metadata,
 ) *TransactionError {
-	//hasPrivacy = false
+	hasPrivacy = false
 	tx.Version = TxVersion
 	var err error
 	if tokenID == nil {
@@ -290,9 +290,7 @@ func (tx *Tx) SignTx() error {
 		return errors.New("input transaction must be an unsigned one")
 	}
 
-
-
-	/****** using Schnorr *******/
+	/****** using Schnorr signature *******/
 	// sign with sigPrivKey
 	// prepare private key for Schnorr
 	sk := new(big.Int).SetBytes(tx.sigPrivKey[:privacy.BigIntSize])
