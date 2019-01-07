@@ -418,6 +418,18 @@ func Uint64ToBytes(value uint64) []byte {
 	return b
 }
 
+func Int64ToBytes(value int64) []byte {
+	return Uint64ToBytes(uint64(value))
+}
+
+func BoolToByte(value bool) byte {
+	var bitSetVar byte
+	if value {
+		bitSetVar = 1
+	}
+	return bitSetVar
+}
+
 func SliceInterfaceToSliceByte(Arr []interface{}) []byte {
 	res := make([]byte, 0)
 	for _, element := range Arr {

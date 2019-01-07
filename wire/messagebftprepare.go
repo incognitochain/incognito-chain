@@ -5,6 +5,7 @@ import (
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
 )
 
 const (
@@ -15,6 +16,14 @@ type MessageBFTPrepare struct {
 	Ri     []byte
 	Pubkey string
 	MsgSig string
+}
+
+func (self *MessageBFTPrepare) Hash() string {
+	rawBytes, err := self.JsonSerialize()
+	if err != nil {
+		return ""
+	}
+	return common.HashH(rawBytes).String()
 }
 
 func (self *MessageBFTPrepare) MessageType() string {

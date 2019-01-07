@@ -6,6 +6,7 @@ import (
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
 )
 
 const (
@@ -19,21 +20,29 @@ func (self MessagePing) MessageType() string {
 	return CmdPing
 }
 
-func (self MessagePing) MaxPayloadLength(pver int) int {
+func (self *MessagePing) Hash() string {
+	rawBytes, err := self.JsonSerialize()
+	if err != nil {
+		return ""
+	}
+	return common.HashH(rawBytes).String()
+}
+
+func (self *MessagePing) MaxPayloadLength(pver int) int {
 	return MaxPingPayload
 }
 
-func (self MessagePing) JsonSerialize() ([]byte, error) {
+func (self *MessagePing) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(self)
 	return jsonBytes, err
 }
 
-func (self MessagePing) JsonDeserialize(jsonStr string) error {
+func (self *MessagePing) JsonDeserialize(jsonStr string) error {
 	jsonDecodeString, _ := hex.DecodeString(jsonStr)
 	err := json.Unmarshal([]byte(jsonDecodeString), self)
 	return err
 }
-func (self MessagePing) SetSenderID(senderID peer.ID) error {
+func (self *MessagePing) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 

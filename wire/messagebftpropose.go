@@ -5,6 +5,7 @@ import (
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
 )
 
 const (
@@ -16,6 +17,14 @@ type MessageBFTPropose struct {
 	ValidatorsIdx []int
 	Block         json.RawMessage
 	MsgSig        string
+}
+
+func (self *MessageBFTPropose) Hash() string {
+	rawBytes, err := self.JsonSerialize()
+	if err != nil {
+		return ""
+	}
+	return common.HashH(rawBytes).String()
 }
 
 func (self *MessageBFTPropose) MessageType() string {

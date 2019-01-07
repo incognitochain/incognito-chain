@@ -6,6 +6,7 @@ import (
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
 )
 
 const (
@@ -21,20 +22,28 @@ type MessageSwapRequest struct {
 	SenderID     string
 }
 
-func (self MessageSwapRequest) MessageType() string {
+func (self *MessageSwapRequest) Hash() string {
+	rawBytes, err := self.JsonSerialize()
+	if err != nil {
+		return ""
+	}
+	return common.HashH(rawBytes).String()
+}
+
+func (self *MessageSwapRequest) MessageType() string {
 	return CmdSwapRequest
 }
 
-func (self MessageSwapRequest) MaxPayloadLength(pver int) int {
+func (self *MessageSwapRequest) MaxPayloadLength(pver int) int {
 	return MaxSwapRequestPayload
 }
 
-func (self MessageSwapRequest) JsonSerialize() ([]byte, error) {
+func (self *MessageSwapRequest) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(self)
 	return jsonBytes, err
 }
 
-func (self MessageSwapRequest) JsonDeserialize(jsonStr string) error {
+func (self *MessageSwapRequest) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), self)
 	return err
 }

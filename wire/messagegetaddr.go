@@ -5,6 +5,7 @@ import (
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
 )
 
 const (
@@ -14,25 +15,33 @@ const (
 type MessageGetAddr struct {
 }
 
-func (self MessageGetAddr) MessageType() string {
+func (self *MessageGetAddr) Hash() string {
+	rawBytes, err := self.JsonSerialize()
+	if err != nil {
+		return ""
+	}
+	return common.HashH(rawBytes).String()
+}
+
+func (self *MessageGetAddr) MessageType() string {
 	return CmdGetAddr
 }
 
-func (self MessageGetAddr) MaxPayloadLength(pver int) int {
+func (self *MessageGetAddr) MaxPayloadLength(pver int) int {
 	return MaxGetAddrPayload
 }
 
-func (self MessageGetAddr) JsonSerialize() ([]byte, error) {
+func (self *MessageGetAddr) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(self)
 	return jsonBytes, err
 }
 
-func (self MessageGetAddr) JsonDeserialize(jsonStr string) error {
+func (self *MessageGetAddr) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), self)
 	return err
 }
 
-func (self MessageGetAddr) SetSenderID(senderID peer.ID) error {
+func (self *MessageGetAddr) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 

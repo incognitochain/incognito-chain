@@ -5,6 +5,7 @@ import (
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
 )
 
 const (
@@ -14,6 +15,14 @@ const (
 type MessageGetBlocks struct {
 	LastBlockHash string
 	SenderID      string
+}
+
+func (self *MessageGetBlocks) Hash() string {
+	rawBytes, err := self.JsonSerialize()
+	if err != nil {
+		return ""
+	}
+	return common.HashH(rawBytes).String()
 }
 
 func (self *MessageGetBlocks) MessageType() string {

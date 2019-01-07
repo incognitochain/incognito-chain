@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/constant/common"
 )
 
 const (
@@ -16,6 +17,14 @@ type MessageInvalidBlock struct {
 	shardID      byte
 	Validator    string
 	ValidatorSig string
+}
+
+func (self *MessageInvalidBlock) Hash() string {
+	rawBytes, err := self.JsonSerialize()
+	if err != nil {
+		return ""
+	}
+	return common.HashH(rawBytes).String()
 }
 
 func (self *MessageInvalidBlock) MessageType() string {
