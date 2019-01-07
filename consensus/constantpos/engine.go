@@ -124,7 +124,14 @@ func (self *Engine) Start() error {
 									Logger.log.Error("Insert beacon block error", err)
 									continue
 								}
-								//TODO: push beacon to all
+								//PUSH BEACON TO ALL
+								newBeaconBlock := resBlk.(*blockchain.BeaconBlock)
+								newBeaconBlockMsg, err := MakeMsgBeaconBlock(newBeaconBlock)
+								if err != nil {
+									Logger.log.Error("Make new beacon block message error", err)
+								} else {
+									self.config.Server.PushMessageToAll(newBeaconBlockMsg)
+								}
 
 							} else {
 								Logger.log.Error(err)
@@ -166,8 +173,23 @@ func (self *Engine) Start() error {
 										Logger.log.Error("Insert beacon block error", err)
 										continue
 									}
-									//TODO: push shard-beacon to beacon
-									//TODO: push cross-shard to shard
+
+									//PUSH SHARD TO BEACON
+									newShardToBeaconBlock := resBlk.(*blockchain.ShardToBeaconBlock)
+									newShardToBeaconMsg, err := MakeMsgShardToBeaconBlock(newShardToBeaconBlock)
+									if err != nil {
+										Logger.log.Error("Make new shard to beacon block message error", err)
+									} else {
+										self.config.Server.PushMessageToBeacon(newShardToBeaconMsg)
+									}
+									//PUSH CROSS-SHARD
+									newCrossShardBlock := resBlk.(*blockchain.CrossShardBlock)
+									newCrossShardMsg, err := MakeMsgCrossShardBlock(newCrossShardBlock)
+									if err != nil {
+										Logger.log.Error("Make new cross shard block message error", err)
+									} else {
+										self.config.Server.PushMessageToShard(newCrossShardMsg)
+									}
 
 								} else {
 									Logger.log.Error(err)
