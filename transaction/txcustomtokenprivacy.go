@@ -46,6 +46,9 @@ func (tx *TxCustomTokenPrivacy) Hash() *common.Hash {
 	// add more hash of tx custom token data privacy
 	tokenPrivacyDataHash, _ := tx.TxTokenPrivacyData.Hash()
 	record += tokenPrivacyDataHash.String()
+	if tx.Metadata != nil {
+		record += string(tx.Metadata.Hash()[:])
+	}
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
@@ -148,6 +151,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 				}
 			}
 			txCustomToken.TxTokenPrivacyData.PropertyID = *hashInitToken
+			Logger.log.Infof("A new token wil be issued with ID: %+v", txCustomToken.TxTokenPrivacyData.PropertyID.String())
 		}
 	case CustomTokenTransfer:
 		{
@@ -156,6 +160,8 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			// fee always 0 and reuse function of normal tx for custom token ID
 			temp := Tx{}
 			propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+			txCustomToken.TxTokenPrivacyData.PropertyID = *propertyID
+			Logger.log.Infof("Token %+v wil be transfered with", propertyID)
 			err := temp.Init(senderKey,
 				tokenParams.Receiver,
 				tokenParams.TokenInput,
