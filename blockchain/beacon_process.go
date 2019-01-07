@@ -393,7 +393,13 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 	if len(self.BeaconCommittee) != len(block.ValidatorsIdx) {
 		return NewBlockChainError(SignatureError, errors.New("Block validators and Beacon committee is not compatible"))
 	}
-	//=============TODO: Verify producer signature
+	//=============Verify producer signature
+	//==========UNCOMMENT to verify producer signature
+	// producerPubkey := self.BeaconCommittee[self.BeaconProposerIdx]
+	// blockHash := block.Header.Hash()
+	// if err := cashec.ValidateDataB58(producerPubkey, block.ProducerSig, blockHash.GetBytes()); err != nil {
+	// 	return NewBlockChainError(SignatureError, err)
+	// }
 	//=============End Verify producer signature
 	//=============Verify aggegrate signature
 	if isVerifySig {
