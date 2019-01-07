@@ -402,8 +402,10 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	}
 
 	if tx.Proof != nil {
-		tokenID := &common.Hash{}
-		tokenID.SetBytes(common.ConstantID[:])
+		if tokenID == nil {
+			tokenID = &common.Hash{}
+			tokenID.SetBytes(common.ConstantID[:])
+		}
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 			// Check output coins' input is not exists in input list (Database)
 			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, chainId, db); ok || err != nil {
