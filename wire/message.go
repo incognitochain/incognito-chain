@@ -144,23 +144,30 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		break
 	case CmdBFTPropose:
 		msg = &MessageBFTPropose{}
+		break
 	case CmdBFTPrepare:
 		msg = &MessageBFTPrepare{}
+		break
 	case CmdBFTCommit:
 		msg = &MessageBFTCommit{}
+		break
 	case CmdBFTReply:
 		msg = &MessageBFTReply{}
 		// case CmdInvalidBlock:
 		// 	msg = &MessageInvalidBlock{}
-		// 	break
+		break
 	case CmdGetBeaconState:
 		msg = &MessageGetBeaconState{}
+		break
 	case CmdBeaconState:
 		msg = &MessageBeaconState{}
+		break
 	case CmdGetShardState:
 		msg = &MessageGetShardState{}
+		break
 	case CmdShardState:
 		msg = &MessageShardState{}
+		break
 	case CmdGetAddr:
 		msg = &MessageGetAddr{}
 		break
