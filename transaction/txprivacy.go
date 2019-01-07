@@ -290,9 +290,7 @@ func (tx *Tx) SignTx() error {
 		return errors.New("input transaction must be an unsigned one")
 	}
 
-
-
-	/****** using Schnorr *******/
+	/****** using Schnorr signature *******/
 	// sign with sigPrivKey
 	// prepare private key for Schnorr
 	sk := new(big.Int).SetBytes(tx.sigPrivKey[:privacy.BigIntSize])
