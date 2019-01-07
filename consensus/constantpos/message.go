@@ -334,3 +334,23 @@ func MakeMsgShardBlock(block *blockchain.ShardBlock) (wire.Message, error) {
 	msg.(*wire.MessageBlockShard).Block = *block
 	return msg, nil
 }
+
+func MakeMsgShardToBeaconBlock(block *blockchain.ShardToBeaconBlock) (wire.Message, error) {
+	msg, err := wire.MakeEmptyMessage(wire.CmdBlkShardToBeacon)
+	if err != nil {
+		Logger.log.Error(err)
+		return msg, err
+	}
+	msg.(*wire.MessageShardToBeacon).Block = *block
+	return msg, nil
+}
+
+func MakeMsgCrossShardBlock(block *blockchain.CrossShardBlock) (wire.Message, error) {
+	msg, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
+	if err != nil {
+		Logger.log.Error(err)
+		return msg, err
+	}
+	msg.(*wire.MessageCrossShard).Block = *block
+	return msg, nil
+}
