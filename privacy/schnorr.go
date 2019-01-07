@@ -19,7 +19,7 @@ type SchnPrivKey struct {
 
 //SchnSignature denoted Schnorr Signature
 type SchnSignature struct {
-	E, S1, S2 *big.Int
+	E, Z1, Z2 *big.Int
 }
 
 //GenKey generates PriKey and PubKey
@@ -87,53 +87,37 @@ func (priKey SchnPrivKey) Sign(hash []byte) (*SchnSignature, error) {
 
 	// has privacy
 	if priKey.R.Cmp(big.NewInt(0)) != 0 {
-		// generates random numbers k1, k2 in [0, Curve.Params().N - 1]
-		k1 := RandInt()
-		k2 := RandInt()
+		// generates random numbers s1, s2 in [0, Curve.Params().N - 1]
+		s1 := RandInt()
+		s2 := RandInt()
 
-		// t1 = G^k1
-		t1 := priKey.PubKey.G.ScalarMult(k1)
-
-		// t2 = H^k2
-		t2 := priKey.PubKey.H.ScalarMult(k2)
-
-		// t = t1 + t2
-		t := t1.Add(t2)
+		// t = s1*G + s2*H
+		t := priKey.PubKey.G.ScalarMult(s1).Add(priKey.PubKey.H.ScalarMult(s2))
 
 		// E is the hash of elliptic point t and data need to be signed
 		signature.E = Hash(*t, hash)
 
-		// xe = Sk * e
-		xe := new(big.Int)
-		xe.Mul(priKey.SK, signature.E)
+		signature.Z1 = new(big.Int).Sub(s1, new(big.Int).Mul(priKey.SK, signature.E))
+		signature.Z1.Mod(signature.Z1, Curve.Params().N)
 
-		signature.S1 = new(big.Int).Sub(k1, xe)
-		signature.S1.Mod(signature.S1, Curve.Params().N)
-
-		// re = Randomness * e
-		re := new(big.Int).Mul(priKey.R, signature.E)
-
-		signature.S2 = new(big.Int).Sub(k2, re)
-		signature.S2.Mod(signature.S2, Curve.Params().N)
+		signature.Z2 = new(big.Int).Sub(s2, new(big.Int).Mul(priKey.R, signature.E))
+		signature.Z2.Mod(signature.Z2, Curve.Params().N)
 
 		return signature, nil
 	}
 
-	// generates random numbers k1, k2 in [0, Curve.Params().N - 1]
-	k1 := RandInt()
+	// generates random numbers s, k2 in [0, Curve.Params().N - 1]
+	s := RandInt()
 
-	// t1 = G^k1
-	t1 := priKey.PubKey.G.ScalarMult(k1)
+	// t = s*G
+	t := priKey.PubKey.G.ScalarMult(s)
 
 	// E is the hash of elliptic point t and data need to be signed
-	signature.E = Hash(*t1, hash)
+	signature.E = Hash(*t, hash)
 
-	// xe = Sk * e
-	xe := new(big.Int)
-	xe.Mul(priKey.SK, signature.E)
-
-	signature.S1 = new(big.Int).Sub(k1, xe)
-	signature.S1.Mod(signature.S1, Curve.Params().N)
+	// Z1 = s - e*SK
+	signature.Z1 = new(big.Int).Sub(s, new(big.Int).Mul(priKey.SK, signature.E))
+	signature.Z1.Mod(signature.Z1, Curve.Params().N)
 
 	return signature, nil
 }
@@ -148,7 +132,7 @@ func (pub SchnPubKey) Verify(signature *SchnSignature, hash []byte) bool {
 		return false
 	}
 
-	rv := pub.G.ScalarMult(signature.S1).Add(pub.H.ScalarMult(signature.S2))
+	rv := pub.G.ScalarMult(signature.Z1).Add(pub.H.ScalarMult(signature.Z2))
 	rv = rv.Add(pub.PK.ScalarMult(signature.E))
 
 	ev := Hash(*rv, hash)
@@ -161,18 +145,18 @@ func (pub SchnPubKey) Verify(signature *SchnSignature, hash []byte) bool {
 
 func (sig *SchnSignature) Bytes() []byte {
 	var bytes []byte
-	bytes = append(AddPaddingBigInt(sig.E, BigIntSize), AddPaddingBigInt(sig.S1, BigIntSize)...)
-	// S2 is nil when has no privacy
-	if sig.S2 != nil {
-		bytes = append(bytes, AddPaddingBigInt(sig.S2, BigIntSize)...)
+	bytes = append(AddPaddingBigInt(sig.E, BigIntSize), AddPaddingBigInt(sig.Z1, BigIntSize)...)
+	// Z2 is nil when has no privacy
+	if sig.Z2 != nil {
+		bytes = append(bytes, AddPaddingBigInt(sig.Z2, BigIntSize)...)
 	}
 	return bytes
 }
 
 func (sig *SchnSignature) SetBytes(bytes []byte) {
 	sig.E = new(big.Int).SetBytes(bytes[0:BigIntSize])
-	sig.S1 = new(big.Int).SetBytes(bytes[BigIntSize : 2*BigIntSize])
-	sig.S2 = new(big.Int).SetBytes(bytes[2*BigIntSize:])
+	sig.Z1 = new(big.Int).SetBytes(bytes[BigIntSize : 2*BigIntSize])
+	sig.Z2 = new(big.Int).SetBytes(bytes[2*BigIntSize:])
 }
 
 // Hash calculates a hash concatenating a given message bytes with a given EC Point. H(p||m)
