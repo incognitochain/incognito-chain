@@ -14,25 +14,29 @@ const (
 type MessageGetAddr struct {
 }
 
-func (self MessageGetAddr) MessageType() string {
+func (self *MessageGetAddr) Hash() string {
+	return ""
+}
+
+func (self *MessageGetAddr) MessageType() string {
 	return CmdGetAddr
 }
 
-func (self MessageGetAddr) MaxPayloadLength(pver int) int {
+func (self *MessageGetAddr) MaxPayloadLength(pver int) int {
 	return MaxGetAddrPayload
 }
 
-func (self MessageGetAddr) JsonSerialize() ([]byte, error) {
+func (self *MessageGetAddr) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(self)
 	return jsonBytes, err
 }
 
-func (self MessageGetAddr) JsonDeserialize(jsonStr string) error {
+func (self *MessageGetAddr) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), self)
 	return err
 }
 
-func (self MessageGetAddr) SetSenderID(senderID peer.ID) error {
+func (self *MessageGetAddr) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 

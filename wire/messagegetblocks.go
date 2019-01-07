@@ -16,6 +16,10 @@ type MessageGetBlocks struct {
 	SenderID      string
 }
 
+func (self *MessageGetBlocks) Hash() string {
+	return ""
+}
+
 func (self *MessageGetBlocks) MessageType() string {
 	return CmdGetBlocks
 }

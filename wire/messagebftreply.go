@@ -16,6 +16,10 @@ type MessageBFTReply struct {
 	ValidatorsIdx []int
 }
 
+func (self *MessageBFTReply) Hash() string {
+	return ""
+}
+
 func (self *MessageBFTReply) MessageType() string {
 	return CmdBFTReply
 }

@@ -19,6 +19,10 @@ type MessageBFTCommit struct {
 	MsgSig        string
 }
 
+func (self *MessageBFTCommit) Hash() string {
+	return ""
+}
+
 func (self *MessageBFTCommit) MessageType() string {
 	return CmdBFTCommit
 }

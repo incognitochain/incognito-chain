@@ -15,26 +15,30 @@ type MessageVerAck struct {
 	Timestamp time.Time
 }
 
-func (self MessageVerAck) MessageType() string {
+func (self *MessageVerAck) Hash() string {
+	return ""
+}
+
+func (self *MessageVerAck) MessageType() string {
 	return CmdVerack
 }
 
-func (self MessageVerAck) MaxPayloadLength(pver int) int {
+func (self *MessageVerAck) MaxPayloadLength(pver int) int {
 	return MaxBlockPayload
 }
 
-func (self MessageVerAck) JsonSerialize() ([]byte, error) {
+func (self *MessageVerAck) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(self)
 	return jsonBytes, err
 }
 
-func (self MessageVerAck) JsonDeserialize(jsonStr string) error {
+func (self *MessageVerAck) JsonDeserialize(jsonStr string) error {
 	jsonDecodeString, _ := hex.DecodeString(jsonStr)
 	err := json.Unmarshal([]byte(jsonDecodeString), self)
 	return err
 }
 
-func (self MessageVerAck) SetSenderID(senderID peer.ID) error {
+func (self *MessageVerAck) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 

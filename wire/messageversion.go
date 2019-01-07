@@ -27,26 +27,30 @@ type MessageVersion struct {
 	SignDataB58      string
 }
 
-func (self MessageVersion) MessageType() string {
+func (self *MessageVersion) Hash() string {
+	return ""
+}
+
+func (self *MessageVersion) MessageType() string {
 	return CmdVersion
 }
 
-func (self MessageVersion) MaxPayloadLength(pver int) int {
+func (self *MessageVersion) MaxPayloadLength(pver int) int {
 	return MaxVersionPayload
 }
 
-func (self MessageVersion) JsonSerialize() ([]byte, error) {
+func (self *MessageVersion) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(self)
 	return jsonBytes, err
 }
 
-func (self MessageVersion) JsonDeserialize(jsonStr string) error {
+func (self *MessageVersion) JsonDeserialize(jsonStr string) error {
 	jsonDecodeString, _ := hex.DecodeString(jsonStr)
 	err := json.Unmarshal([]byte(jsonDecodeString), self)
 	return err
 }
 
-func (self MessageVersion) SetSenderID(senderID peer.ID) error {
+func (self *MessageVersion) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 

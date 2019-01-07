@@ -433,7 +433,7 @@ BeginCheckHashMessage:
 			Logger.log.Error(err)
 			return
 		}
-		msgCheck.(*wire.MessageMsgCheck).Hash = hash
+		msgCheck.(*wire.MessageMsgCheck).HashStr = hash
 		self.QueueMessageWithEncoding(msgCheck, nil, MESSAGE_TO_PEER, nil)
 	}()
 	// set time out for check message
@@ -534,21 +534,21 @@ func (self *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<- st
 }
 
 func (p *PeerConn) handleMsgCheck(msg *wire.MessageMsgCheck) {
-	Logger.log.Infof("handleMsgCheck %s", msg.Hash)
+	Logger.log.Infof("handleMsgCheck %s", msg.HashStr)
 	msgResp, _ := wire.MakeEmptyMessage(wire.CmdMsgCheckResp)
-	if p.ListenerPeer.CheckHashMessage(msg.Hash) {
-		msgResp.(*wire.MessageMsgCheckResp).Hash = msg.Hash
+	if p.ListenerPeer.CheckHashMessage(msg.HashStr) {
+		msgResp.(*wire.MessageMsgCheckResp).HashStr = msg.HashStr
 		msgResp.(*wire.MessageMsgCheckResp).Accept = false
 	} else {
-		msgResp.(*wire.MessageMsgCheckResp).Hash = msg.Hash
+		msgResp.(*wire.MessageMsgCheckResp).HashStr = msg.HashStr
 		msgResp.(*wire.MessageMsgCheckResp).Accept = true
 	}
 	p.QueueMessageWithEncoding(msgResp, nil, MESSAGE_TO_PEER, nil)
 }
 
 func (p *PeerConn) handleMsgCheckResp(msg *wire.MessageMsgCheckResp) {
-	Logger.log.Infof("handleMsgCheckResp %s", msg.Hash)
-	m, ok := p.cMsgHash[msg.Hash]
+	Logger.log.Infof("handleMsgCheckResp %s", msg.HashStr)
+	m, ok := p.cMsgHash[msg.HashStr]
 	if ok {
 		m <- msg.Accept
 	}

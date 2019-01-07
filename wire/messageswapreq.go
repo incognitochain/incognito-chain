@@ -21,20 +21,24 @@ type MessageSwapRequest struct {
 	SenderID     string
 }
 
-func (self MessageSwapRequest) MessageType() string {
+func (self *MessageSwapRequest) Hash() string {
+	return ""
+}
+
+func (self *MessageSwapRequest) MessageType() string {
 	return CmdSwapRequest
 }
 
-func (self MessageSwapRequest) MaxPayloadLength(pver int) int {
+func (self *MessageSwapRequest) MaxPayloadLength(pver int) int {
 	return MaxSwapRequestPayload
 }
 
-func (self MessageSwapRequest) JsonSerialize() ([]byte, error) {
+func (self *MessageSwapRequest) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(self)
 	return jsonBytes, err
 }
 
-func (self MessageSwapRequest) JsonDeserialize(jsonStr string) error {
+func (self *MessageSwapRequest) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), self)
 	return err
 }

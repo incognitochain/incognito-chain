@@ -19,6 +19,10 @@ type MessageShardState struct {
 	SenderID  string
 }
 
+func (self *MessageShardState) Hash() string {
+	return ""
+}
+
 func (self *MessageShardState) MessageType() string {
 	return CmdShardState
 }

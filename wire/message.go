@@ -61,6 +61,7 @@ const (
 
 // Interface for message wire on P2P network
 type Message interface {
+	Hash() string
 	MessageType() string
 	MaxPayloadLength(int) int
 	JsonSerialize() ([]byte, error)

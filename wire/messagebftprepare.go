@@ -17,6 +17,10 @@ type MessageBFTPrepare struct {
 	MsgSig string
 }
 
+func (self *MessageBFTPrepare) Hash() string {
+	return ""
+}
+
 func (self *MessageBFTPrepare) MessageType() string {
 	return CmdBFTPrepare
 }

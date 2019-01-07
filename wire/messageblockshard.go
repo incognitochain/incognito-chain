@@ -16,25 +16,29 @@ type MessageBlockShard struct {
 	Block blockchain.ShardBlock
 }
 
-func (self MessageBlockShard) MessageType() string {
+func (self *MessageBlockShard) Hash() string {
+	return ""
+}
+
+func (self *MessageBlockShard) MessageType() string {
 	return CmdBlockShard
 }
 
-func (self MessageBlockShard) MaxPayloadLength(pver int) int {
+func (self *MessageBlockShard) MaxPayloadLength(pver int) int {
 	return MaxBlockPayload
 }
 
-func (self MessageBlockShard) JsonSerialize() ([]byte, error) {
+func (self *MessageBlockShard) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(self)
 	return jsonBytes, err
 }
 
-func (self MessageBlockShard) JsonDeserialize(jsonStr string) error {
+func (self *MessageBlockShard) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), self)
 	return err
 }
 
-func (self MessageBlockShard) SetSenderID(senderID peer.ID) error {
+func (self *MessageBlockShard) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 

@@ -16,25 +16,29 @@ type MessageCrossShard struct {
 	Block blockchain.CrossShardBlock
 }
 
-func (self MessageCrossShard) MessageType() string {
+func (self *MessageCrossShard) Hash() string {
+	return ""
+}
+
+func (self *MessageCrossShard) MessageType() string {
 	return CmdCrossShard
 }
 
-func (self MessageCrossShard) MaxPayloadLength(pver int) int {
+func (self *MessageCrossShard) MaxPayloadLength(pver int) int {
 	return MaxBlockPayload
 }
 
-func (self MessageCrossShard) JsonSerialize() ([]byte, error) {
+func (self *MessageCrossShard) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(self)
 	return jsonBytes, err
 }
 
-func (self MessageCrossShard) JsonDeserialize(jsonStr string) error {
+func (self *MessageCrossShard) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), self)
 	return err
 }
 
-func (self MessageCrossShard) SetSenderID(senderID peer.ID) error {
+func (self *MessageCrossShard) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 

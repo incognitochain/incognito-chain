@@ -18,6 +18,10 @@ type MessageBFTPropose struct {
 	MsgSig        string
 }
 
+func (self *MessageBFTPropose) Hash() string {
+	return ""
+}
+
 func (self *MessageBFTPropose) MessageType() string {
 	return CmdBFTPropose
 }

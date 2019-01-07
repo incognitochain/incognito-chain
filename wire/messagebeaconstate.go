@@ -19,6 +19,10 @@ type MessageBeaconState struct {
 	SenderID  string
 }
 
+func (self *MessageBeaconState) Hash() string {
+	return ""
+}
+
 func (self *MessageBeaconState) MessageType() string {
 	return CmdBeaconState
 }

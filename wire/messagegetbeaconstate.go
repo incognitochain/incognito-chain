@@ -17,6 +17,10 @@ type MessageGetBeaconState struct {
 	Timestamp time.Time
 }
 
+func (self *MessageGetBeaconState) Hash() string {
+	return ""
+}
+
 func (self *MessageGetBeaconState) MessageType() string {
 	return CmdGetBeaconState
 }

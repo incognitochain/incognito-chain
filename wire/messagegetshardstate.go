@@ -17,6 +17,10 @@ type MessageGetShardState struct {
 	Timestamp time.Time
 }
 
+func (self *MessageGetShardState) Hash() string {
+	return ""
+}
+
 func (self *MessageGetShardState) MessageType() string {
 	return CmdGetShardState
 }

@@ -17,26 +17,30 @@ type MessageTx struct {
 	Transaction metadata.Transaction
 }
 
-func (self MessageTx) MessageType() string {
+func (self *MessageTx) Hash() string {
+	return ""
+}
+
+func (self *MessageTx) MessageType() string {
 	return CmdTx
 }
 
-func (self MessageTx) MaxPayloadLength(pver int) int {
+func (self *MessageTx) MaxPayloadLength(pver int) int {
 	return MaxTxPayload
 }
 
-func (self MessageTx) JsonSerialize() ([]byte, error) {
+func (self *MessageTx) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(self)
 	return jsonBytes, err
 }
 
-func (self MessageTx) JsonDeserialize(jsonStr string) error {
+func (self *MessageTx) JsonDeserialize(jsonStr string) error {
 	jsonDecodeString, _ := hex.DecodeString(jsonStr)
 	err := json.Unmarshal([]byte(jsonDecodeString), self)
 	return err
 }
 
-func (self MessageTx) SetSenderID(senderID peer.ID) error {
+func (self *MessageTx) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 

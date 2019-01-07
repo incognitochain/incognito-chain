@@ -18,6 +18,10 @@ type MessageInvalidBlock struct {
 	ValidatorSig string
 }
 
+func (self *MessageInvalidBlock) Hash() string {
+	return ""
+}
+
 func (self *MessageInvalidBlock) MessageType() string {
 	return CmdInvalidBlock
 }
