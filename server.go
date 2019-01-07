@@ -151,6 +151,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		Wallet:            self.wallet,
 		ShardToBeaconPool: self.shardToBeaconPool,
 		CrossShardPool:    self.crossShardPool,
+		Server:            self,
 	})
 	if err != nil {
 		return err
@@ -399,7 +400,7 @@ func (self *Server) Stop() error {
 	// }
 
 	self.consensusEngine.Stop()
-
+	self.blockChain.StopSync()
 	// Signal the remaining goroutines to cQuit.
 	close(self.cQuit)
 	return nil

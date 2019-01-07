@@ -43,6 +43,17 @@ type BlockChain struct {
 	//=====cache
 	beaconBlock        map[string][]byte
 	highestBeaconBlock string
+
+	//channel
+	cQuitSync  chan struct{}
+	syncStatus struct {
+		Beacon bool
+		Shard  map[byte]bool
+	}
+	knownChainState struct {
+		Shards map[byte]ShardChainState
+		Beacon BeaconChainState
+	}
 }
 type BestState struct {
 	Beacon *BestStateBeacon
@@ -87,6 +98,10 @@ type Config struct {
 	CrossShardPool    CrossShardPool
 	NodeBeaconPool    NodeBeaconPool
 	NodeShardPool     NodeShardPool
+	Server            interface {
+		PushMessageGetBeaconState() error
+		PushMessageGetShardState(byte) error
+	}
 }
 
 /*
@@ -114,6 +129,8 @@ func (self *BlockChain) Init(config *Config) error {
 	// 	Logger.log.Infof("BlockChain state for chain #%d (Height %d, Best block hash %+v, Total tx %d, Salary fund %d, Gov Param %+v)",
 	// 		chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns, bestState.BestBlock.Header.SalaryFund, bestState.BestBlock.Header.GOVConstitution)
 	// }
+	self.cQuitSync = make(chan struct{})
+	go self.SyncBeacon()
 	return nil
 }
 
