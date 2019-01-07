@@ -214,11 +214,11 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 
 				// cache message hash S
 				hashMsg := message.Hash()
-				if self.ListenerPeer.CheckHashMessage(hashMsg) {
+				if self.ListenerPeer.CheckHashPool(hashMsg) {
 					Logger.log.Infof("InMessageHandler existed hash message %s", hashMsg)
 					return
 				}
-				self.ListenerPeer.ReceivedHashMessage(hashMsg)
+				self.ListenerPeer.HashToPool(hashMsg)
 				// cache message hash E
 
 				// process message for each of message type
@@ -430,7 +430,7 @@ BeginCheckHashMessage:
 	go func() {
 		msgCheck, err := wire.MakeEmptyMessage(wire.CmdMsgCheck)
 		if err != nil {
-			Logger.log.Error(err)
+			Logger.log.Error("checkMessageHashBeforeSend error", err)
 			return
 		}
 		msgCheck.(*wire.MessageMsgCheck).HashStr = hash
@@ -535,8 +535,12 @@ func (self *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<- st
 
 func (p *PeerConn) handleMsgCheck(msg *wire.MessageMsgCheck) {
 	Logger.log.Infof("handleMsgCheck %s", msg.HashStr)
-	msgResp, _ := wire.MakeEmptyMessage(wire.CmdMsgCheckResp)
-	if p.ListenerPeer.CheckHashMessage(msg.HashStr) {
+	msgResp, err := wire.MakeEmptyMessage(wire.CmdMsgCheckResp)
+	if err != nil {
+		Logger.log.Error("handleMsgCheck error", err)
+		return
+	}
+	if p.ListenerPeer.CheckHashPool(msg.HashStr) {
 		msgResp.(*wire.MessageMsgCheckResp).HashStr = msg.HashStr
 		msgResp.(*wire.MessageMsgCheckResp).Accept = false
 	} else {

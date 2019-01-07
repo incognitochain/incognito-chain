@@ -144,7 +144,7 @@ type outMsg struct {
 	//encoding wire.MessageEncoding
 }
 
-func (self *Peer) ReceivedHashMessage(hash string) {
+func (self *Peer) HashToPool(hash string) {
 	self.messagePoolMtx.Lock()
 	defer self.messagePoolMtx.Unlock()
 
@@ -164,7 +164,7 @@ func (self *Peer) ReceivedHashMessage(hash string) {
 	}
 }
 
-func (self *Peer) CheckHashMessage(hash string) bool {
+func (self *Peer) CheckHashPool(hash string) bool {
 	self.messagePoolMtx.Lock()
 	defer self.messagePoolMtx.Unlock()
 	if self.messagePool == nil {
