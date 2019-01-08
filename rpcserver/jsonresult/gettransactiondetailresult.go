@@ -7,7 +7,7 @@ import (
 type TransactionDetail struct {
 	BlockHash string `json:"BlockHash"`
 	Index     uint64 `json:"index"`
-	shardID   byte   `json:"shardID"`
+	ShardID   byte   `json:"shardID"`
 	Hash      string `json:"Hash"`
 	Version   int8   `json:"Version"`
 	Type      string `json:"Type"` // Transaction type
