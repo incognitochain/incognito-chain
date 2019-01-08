@@ -9,6 +9,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/pkg/errors"
 )
 
 const Decimals = uint64(10000) // Each float number is multiplied by this value to store as uint64
@@ -39,11 +40,22 @@ func (lp *LoanPayment) Hash() *common.Hash {
 }
 
 func (lp *LoanPayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+	fmt.Println("Start validating LoanPayment tx with blockchain!!!")
 	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	dcbPk := accountDCB.KeySet.PaymentAddress.Pk
-	unique, receiver, amount := txr.GetUniqueReceiver()
-	if !unique || !bytes.Equal(receiver, dcbPk) {
-		return false, fmt.Errorf("Loan payment must be sent to DCB address")
+	// TODO(@0xbunyip); use unique receiver, ignore case DCB loan from itself
+	//	unique, receiver, amount := txr.GetUniqueReceiver()
+	//	fmt.Printf("unique, receiver, amount: %v, %x, %v\n", unique, receiver, amount)
+	//	fmt.Printf("input, output coins: %d %d\n", len(txr.GetProof().InputCoins), len(txr.GetProof().OutputCoins))
+	//	if !unique || !bytes.Equal(receiver, dcbPk) {
+	//		return false, fmt.Errorf("Loan payment must be sent to DCB address")
+	//	}
+	amount := uint64(0)
+	receivers, amounts := txr.GetReceivers()
+	for i, pubkey := range receivers {
+		if bytes.Equal(pubkey, dcbPk) {
+			amount += amounts[i]
+		}
 	}
 
 	// Check if payment amount is correct
@@ -73,6 +85,10 @@ func (lp *LoanPayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 }
 
 func (lp *LoanPayment) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+	proof := txr.GetProof()
+	if proof == nil || len(proof.InputCoins) < 1 || len(proof.OutputCoins) < 1 {
+		return false, false, errors.Errorf("Loan payment must send Constant")
+	}
 	return true, true, nil // continue checking for fee
 }
 

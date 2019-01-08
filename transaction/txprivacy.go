@@ -102,6 +102,8 @@ func (tx *Tx) Init(
 	// get public key last byte of sender
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
 	tx.Metadata = metaData
+	tx.Type = common.TxNormalType
+	fmt.Printf("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(inputCoins), fee, hasPrivacy)
 	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
 		Logger.log.Infof("CREATE TX CUSTOM TOKEN\n")
 		tx.Fee = fee
@@ -114,8 +116,6 @@ func (tx *Tx) Init(
 		}
 		return nil
 	}
-
-	tx.Type = common.TxNormalType
 
 	chainID, _ := common.GetTxSenderChain(pkLastByteSender)
 	var commitmentIndexs []uint64   // array index random of commitments in db
@@ -364,6 +364,7 @@ func (tx *Tx) validateMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Verify the payment proof
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
+	fmt.Printf("[db] Validating Transaction tx\n")
 	hasPrivacy = tx.IsPrivacy()
 	start := time.Now()
 	// Verify tx signature
@@ -401,6 +402,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 	}
 
+	fmt.Printf("[db]tx.Proof: %+v\n", tx.Proof)
 	if tx.Proof != nil {
 		if tokenID == nil {
 			tokenID = &common.Hash{}
@@ -419,6 +421,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			for i := 0; i < len(tx.Proof.InputCoins); i++ {
 				ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, chainId, tokenID)
 				if !ok || err != nil {
+					fmt.Printf("[db]cm existed: %d\n", i)
 					return false
 				}
 			}
@@ -672,12 +675,12 @@ func (tx *Tx) ValidateTxByItself(
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	ok := tx.ValidateTransaction(hasPrivacy, db, chainID, constantTokenID)
-	fmt.Printf("ok validatetxbyitself validatetransaction: %d\n", ok)
+	fmt.Printf("[db]ok validatetxbyitself: %v\n", ok)
 	if !ok {
 		return false
 	}
 	if tx.Metadata != nil {
-		fmt.Printf("validatetxbyitself metadata: %d\n", tx.Metadata.ValidateMetadataByItself())
+		fmt.Printf("[db]validatetxbyitself metadata: %v\n", tx.Metadata.ValidateMetadataByItself())
 		return tx.Metadata.ValidateMetadataByItself()
 	}
 	return true

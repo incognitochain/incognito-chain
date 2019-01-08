@@ -563,8 +563,10 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 	if value < interest {
 		interest -= value
 	} else {
-		periodInc = 1 + uint32((value-interest)/interestPerTerm)
-		interest = interestPerTerm - (value-interest)%interestPerTerm
+		if interestPerTerm != 0 {
+			periodInc = 1 + uint32((value-interest)/interestPerTerm)
+			interest = interestPerTerm - (value-interest)%interestPerTerm
+		}
 	}
 	deadline = deadline + periodInc*requestMeta.Params.Maturity
 	return self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, deadline)
