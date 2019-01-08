@@ -215,7 +215,7 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 			result = jsonresult.TransactionDetail{
 				BlockHash: blockHash.String(),
 				Index:     uint64(index),
-				shardID:   shardID,
+				ShardID:   shardID,
 				Hash:      tx.Hash().String(),
 				Version:   tempTx.Version,
 				Type:      tempTx.Type,
@@ -232,7 +232,7 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 			result = jsonresult.TransactionDetail{
 				BlockHash: blockHash.String(),
 				Index:     uint64(index),
-				shardID:   shardID,
+				ShardID:   shardID,
 				Hash:      tx.Hash().String(),
 				Version:   tempTx.Version,
 				Type:      tempTx.Type,
