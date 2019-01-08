@@ -118,19 +118,19 @@ func (self RpcServer) handleCreateRawTxWithBuySellRequest(params interface{}, cl
 	var err error
 	arrayParams := common.InterfaceSlice(params)
 
-	// Req param #4: buy/sell request info
+	// Req param #5: buy/sell request info
 	buySellReq := arrayParams[4].(map[string]interface{})
 
-	paymentAddressMap := buySellReq["paymentAddress"].(map[string]interface{})
+	paymentAddressMap := buySellReq["PaymentAddress"].(map[string]interface{})
 	paymentAddress := privacy.PaymentAddress{
 		Pk: []byte(paymentAddressMap["pk"].(string)),
 		Tk: []byte(paymentAddressMap["tk"].(string)),
 	}
-	assetTypeBytes := []byte(buySellReq["assetType"].(string))
+	assetTypeBytes := []byte(buySellReq["TokenID"].(string))
 	assetType := common.Hash{}
 	copy(assetType[:], assetTypeBytes)
-	amount := uint64(buySellReq["amount"].(float64))
-	buyPrice := uint64(buySellReq["buyPrice"].(float64))
+	amount := uint64(buySellReq["Amount"].(float64))
+	buyPrice := uint64(buySellReq["BuyPrice"].(float64))
 	metaType := metadata.BuyFromGOVRequestMeta
 	meta := metadata.NewBuySellRequest(
 		paymentAddress,
