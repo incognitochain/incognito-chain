@@ -276,6 +276,16 @@ func (self *BlockChain) initChainState() error {
 			return err
 		}
 
+	} else {
+
+		for index := uint64(0); index < self.BestState.Beacon.BeaconHeight; index++ {
+			blk, err := self.GetBeaconBlockByHeight(index)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			fmt.Println(blk)
+		}
 	}
 
 	return nil
@@ -347,6 +357,53 @@ func (self *BlockChain) initBeaconState() error {
 /*
 Get block index(height) of block
 */
+func (self *BlockChain) GetBeaconBlockHeightByHash(hash *common.Hash) (uint64, error) {
+	return self.config.DataBase.GetIndexOfBeaconBlock(hash)
+}
+
+/*
+Get block hash by block index(height)
+*/
+func (self *BlockChain) GetBeaconBlockHashByHeight(height uint64) (*common.Hash, error) {
+	return self.config.DataBase.GetBeaconBlockHashByIndex(height)
+}
+
+/*
+Fetch DatabaseInterface and get block by index(height) of block
+*/
+func (self *BlockChain) GetBeaconBlockByHeight(height uint64) (*BeaconBlock, error) {
+	hashBlock, err := self.config.DataBase.GetBeaconBlockHashByIndex(height)
+	if err != nil {
+		fmt.Println("123456789")
+		return nil, err
+	}
+	block, err := self.GetBeaconBlockByHash(hashBlock)
+	if err != nil {
+		fmt.Println("000000000000")
+		return nil, err
+	}
+	return block, nil
+}
+
+/*
+Fetch DatabaseInterface and get block data by block hash
+*/
+func (self *BlockChain) GetBeaconBlockByHash(hash *common.Hash) (*BeaconBlock, error) {
+	blockBytes, err := self.config.DataBase.FetchBeaconBlock(hash)
+	if err != nil {
+		return nil, err
+	}
+	block := BeaconBlock{}
+	err = json.Unmarshal(blockBytes, &block)
+	if err != nil {
+		return nil, err
+	}
+	return &block, nil
+}
+
+/*
+Get block index(height) of block
+*/
 func (self *BlockChain) GetShardBlockHeightByHash(hash *common.Hash) (uint64, byte, error) {
 	return self.config.DataBase.GetIndexOfBlock(hash)
 }
@@ -366,31 +423,22 @@ func (self *BlockChain) GetShardBlockByHeight(height uint64, shardID byte) (*Sha
 	if err != nil {
 		return nil, err
 	}
-	blockBytes, err := self.config.DataBase.FetchBlock(hashBlock)
-	if err != nil {
-		return nil, err
-	}
+	block, err := self.GetShardBlockByHash(hashBlock)
 
-	block := ShardBlock{}
-	err = json.Unmarshal(blockBytes, &block)
-	if err != nil {
-		return nil, err
-	}
-	return &block, nil
+	return block, nil
 }
 
 /*
 Fetch DatabaseInterface and get block data by block hash
 */
 func (self *BlockChain) GetShardBlockByHash(hash *common.Hash) (*ShardBlock, error) {
-	//TODO:
-	_, err := self.config.DataBase.FetchBlock(hash)
+	blockBytes, err := self.config.DataBase.FetchBlock(hash)
 	if err != nil {
 		return nil, err
 	}
+
 	block := ShardBlock{}
-	//TODO:
-	//err = block
+	err = json.Unmarshal(blockBytes, &block)
 	if err != nil {
 		return nil, err
 	}
