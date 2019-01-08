@@ -155,13 +155,13 @@ func (self *Peer) HashToPool(hash string) {
 	if ok {
 		return
 	}
-	self.messagePool[hash] = true
-	if len(self.messagePool) > MESSAGE_HASH_POOL_SIZE {
+	if len(self.messagePool) >= MESSAGE_HASH_POOL_SIZE {
 		for k, _ := range self.messagePool {
 			delete(self.messagePool, k)
 			break
 		}
 	}
+	self.messagePool[hash] = true
 }
 
 func (self *Peer) CheckHashPool(hash string) bool {
@@ -271,19 +271,23 @@ func (self *Peer) Start() {
 }
 
 func (self *Peer) PushStream(stream net.Stream) {
-	newStreamMsg := NewStreamMsg{
-		Stream: stream,
-		CConn:  nil,
-	}
-	self.cNewStream <- &newStreamMsg
+	go func(stream net.Stream) {
+		newStreamMsg := NewStreamMsg{
+			Stream: stream,
+			CConn:  nil,
+		}
+		self.cNewStream <- &newStreamMsg
+	}(stream)
 }
 
 func (self *Peer) PushConn(peer *Peer, cConn chan *PeerConn) {
-	newPeerMsg := NewPeerMsg{
-		Peer:  peer,
-		CConn: cConn,
-	}
-	self.cNewConn <- &newPeerMsg
+	go func(peer *Peer, cConn chan *PeerConn) {
+		newPeerMsg := NewPeerMsg{
+			Peer:  peer,
+			CConn: cConn,
+		}
+		self.cNewConn <- &newPeerMsg
+	}(peer, cConn)
 }
 
 func (self *Peer) processConn() {
@@ -493,14 +497,14 @@ func (self *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error
 		HandleFailed:       self.handleFailed,
 	}
 
+	go peerConn.InMessageHandler(rw)
+	go peerConn.OutMessageHandler(rw)
+
 	self.SetPeerConn(&peerConn)
 	defer func() {
 		stream.Close()
 		self.RemovePeerConn(&peerConn)
 	}()
-
-	go peerConn.InMessageHandler(rw)
-	go peerConn.OutMessageHandler(rw)
 
 	peerConn.RetryCount = 0
 	peerConn.updateConnState(ConnEstablished)
@@ -723,7 +727,7 @@ func (self *Peer) renewPeerConnection() {
 		Logger.log.Infof("*start - Creating peer conn to %d pending peers", len(self.PendingPeers))
 		for _, peer := range self.PendingPeers {
 			Logger.log.Infof("---> RemotePeer: ", peer.RawAddress)
-			go self.PushConn(peer, nil)
+			self.PushConn(peer, nil)
 		}
 		Logger.log.Infof("*end - Creating peer conn to %d pending peers", len(self.PendingPeers))
 	}
