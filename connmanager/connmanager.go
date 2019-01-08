@@ -293,7 +293,7 @@ func (self *ConnManager) Connect(addr string, pubKey string) {
 		listen.Host.Peerstore().AddAddr(peer.PeerID, peer.TargetAddress, pstore.PermanentAddrTTL)
 		Logger.log.Info("DEBUG Connect to RemotePeer", peer.PublicKey)
 		Logger.log.Info(listen.Host.Peerstore().Addrs(peer.PeerID))
-		go listen.PushConn(&peer, nil)
+		listen.PushConn(&peer, nil)
 	}
 }
 
