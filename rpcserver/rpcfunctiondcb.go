@@ -16,19 +16,22 @@ import (
 
 // handleGetDCBParams - get dcb params
 func (self RpcServer) handleGetDCBParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	dcbParam := self.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution.DCBParams
-	return dcbParam, nil
+	// dcbParam := self.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution.DCBParams
+	// return dcbParam, nil
+	return nil, nil
 }
 
 // handleGetDCBConstitution - get dcb constitution
 func (self RpcServer) handleGetDCBConstitution(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	constitution := self.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution
-	return constitution, nil
+	// constitution := self.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution
+	// return constitution, nil
+	return nil, nil
 }
 
 // handleGetListDCBBoard - return list payment address of DCB board
 func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPubKeys, nil
+	// return self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPubKeys, nil
+	return nil, nil
 }
 
 func (self RpcServer) handleCreateRawTxWithIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {

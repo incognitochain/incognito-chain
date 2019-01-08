@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"strconv"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -256,29 +255,31 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 
 func (self RpcServer) handleGetCommitteeCandidateList(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// param #1: private key of sender
-	cndList := self.config.BlockChain.GetCommitteeCandidateList()
-	return cndList, nil
+	// cndList := self.config.BlockChain.GetCommitteeCandidateList()
+	// return cndList, nil
+	return nil, nil
 }
 
 func (self RpcServer) handleRetrieveCommiteeCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	candidateInfo := self.config.BlockChain.GetCommitteCandidate(params.(string))
-	if candidateInfo == nil {
-		return nil, nil
-	}
-	result := jsonresult.RetrieveCommitteecCandidateResult{}
-	result.Init(candidateInfo)
-	return result, nil
+	// candidateInfo := self.config.BlockChain.GetCommitteCandidate(params.(string))
+	// if candidateInfo == nil {
+	// 	return nil, nil
+	// }
+	// result := jsonresult.RetrieveCommitteecCandidateResult{}
+	// result.Init(candidateInfo)
+	// return result, nil
+	return nil, nil
 }
 
 func (self RpcServer) handleGetBlockProducerList(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := make(map[string]string)
-	for shardID, bestState := range self.config.BlockChain.BestState {
-		if bestState.BestBlock.BlockProducer != "" {
-			result[strconv.Itoa(shardID)] = bestState.BestBlock.BlockProducer
-		} else {
-			result[strconv.Itoa(shardID)] = self.config.ChainParams.GenesisBlock.Header.Committee[shardID]
-		}
-	}
+	// for shardID, bestState := range self.config.BlockChain.BestState {
+	// 	if bestState.BestBlock.BlockProducer != "" {
+	// 		result[strconv.Itoa(shardID)] = bestState.BestBlock.BlockProducer
+	// 	} else {
+	// 		result[strconv.Itoa(shardID)] = self.config.ChainParams.GenesisBlock.Header.Committee[shardID]
+	// 	}
+	// }
 	return result, nil
 }
 

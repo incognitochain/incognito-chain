@@ -45,17 +45,20 @@ func (self RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan st
 }
 
 func (self RpcServer) handleGetGOVParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	govParam := self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams
-	return govParam, nil
+	// govParam := self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams
+	// return govParam, nil
+	return nil, nil
 }
 
 func (self RpcServer) handleGetGOVConstitution(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	constitution := self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution
-	return constitution, nil
+	// constitution := self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution
+	// return constitution, nil
+	return nil, nil
 }
 
 func (self RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPubKeys, nil
+	// return self.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPubKeys, nil
+	return nil, nil
 }
 
 func (self RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {

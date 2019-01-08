@@ -26,7 +26,8 @@ var constructors = map[string]metaConstructor{
 }
 
 func (self RpcServer) handleGetLoanParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution.DCBParams.LoanParams, nil
+	// return self.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution.DCBParams.LoanParams, nil
+	return nil, nil
 }
 
 func (self RpcServer) createRawLoanTx(params interface{}, closeChan <-chan struct{}, metaConstructor metaConstructor) (interface{}, *RPCError) {
@@ -269,7 +270,8 @@ func (self RpcServer) handleGetLoanPaymentInfo(params interface{}, closeChan <-c
 			if err == nil {
 				loanPaymentInfo.Principle = priciple
 				loanPaymentInfo.Interest = interest
-				loanPaymentInfo.Deadline = deadline
+				// loanPaymentInfo.Deadline = deadline
+				loanPaymentInfo.Deadline = uint32(deadline)
 			}
 		}
 		result.Info[strLoanID] = loanPaymentInfo

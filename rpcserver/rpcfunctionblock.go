@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
@@ -20,7 +19,8 @@ func (self RpcServer) handleGetBestBlock(params interface{}, closeChan <-chan st
 	}
 	for shardID, best := range self.config.BlockChain.BestState.Shard {
 		result.BestBlocks[strconv.Itoa(int(shardID))] = jsonresult.GetBestBlockItem{
-			Height:   best.BestBlock.Header.GetHeight(),
+			// Height:   best.BestBlock.Header.GetHeight(),
+			Height:   best.BestBlock.Header.Height,
 			Hash:     best.BestBlockHash.String(),
 			TotalTxs: best.TotalTxns,
 		}
@@ -50,7 +50,8 @@ func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan s
 		if errH != nil {
 			return nil, NewRPCError(ErrUnexpected, errH)
 		}
-		block, errD := self.config.BlockChain.GetBlockByHash(hash)
+		// block, errD := self.config.BlockChain.GetBlockByHash(hash)
+		block, errD := self.config.BlockChain.GetShardBlockByHash(hash)
 		if errD != nil {
 			return nil, NewRPCError(ErrUnexpected, errD)
 		}
@@ -58,7 +59,8 @@ func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan s
 
 		verbosity := paramsT[1].(string)
 
-		shardID := block.Header.(*blockchain.BlockHeaderShard).ShardID
+		// shardID := block.Header.(*blockchain.BlockHeaderShard).ShardID
+		shardID := block.Header.ShardID
 
 		if verbosity == "0" {
 			data, err := json.Marshal(block)
@@ -69,10 +71,12 @@ func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan s
 		} else if verbosity == "1" {
 			best := self.config.BlockChain.BestState.Shard[shardID].BestBlock
 
-			blockHeight := block.Header.GetHeight()
+			// blockHeight := block.Header.GetHeight()
+			blockHeight := block.Header.Height
 			// Get next block hash unless there are none.
 			var nextHashString string
-			if blockHeight < best.Header.GetHeight() {
+			// if blockHeight < best.Header.GetHeight() {
+			if blockHeight < best.Header.Height {
 				nextHash, err := self.config.BlockChain.GetShardBlockByHeight(blockHeight+1, shardID)
 				if err != nil {
 					return nil, NewRPCError(ErrUnexpected, err)
@@ -81,26 +85,36 @@ func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan s
 			}
 
 			result.Hash = block.Hash().String()
-			result.Confirmations = int64(1 + best.Header.GetHeight() - blockHeight)
-			result.Height = block.Header.GetHeight()
-			result.Version = block.Header.(*blockchain.BlockHeaderShard).Version
-			result.MerkleRoot = block.Header.(*blockchain.BlockHeaderShard).MerkleRoot.String()
-			result.Time = block.Header.(*blockchain.BlockHeaderShard).Timestamp
-			result.ShardID = block.Header.(*blockchain.BlockHeaderShard).ShardID
-			result.PreviousBlockHash = block.Header.(*blockchain.BlockHeaderShard).PrevBlockHash.String()
+			// result.Confirmations = int64(1 + best.Header.GetHeight() - blockHeight)
+			result.Confirmations = int64(1 + best.Header.Height - blockHeight)
+			// result.Height = block.Header.GetHeight()
+			result.Height = block.Header.Height
+			// result.Version = block.Header.(*blockchain.BlockHeaderShard).Version
+			result.Version = block.Header.Version
+			// result.MerkleRoot = block.Header.(*blockchain.BlockHeaderShard).MerkleRoot.String()
+			result.MerkleRoot = block.Header.MerkleRoot.String()
+			// result.Time = block.Header.(*blockchain.BlockHeaderShard).Timestamp
+			result.Time = block.Header.Timestamp
+			// result.ShardID = block.Header.(*blockchain.BlockHeaderShard).ShardID
+			result.ShardID = block.Header.ShardID
+			// result.PreviousBlockHash = block.Header.(*blockchain.BlockHeaderShard).PrevBlockHash.String()
+			result.PreviousBlockHash = block.Header.PrevBlockHash.String()
 			result.NextBlockHash = nextHashString
 			result.TxHashes = []string{}
 			result.BlockProducerSign = block.ProducerSig
-			for _, tx := range block.Body.(*blockchain.BlockBodyShard).Transactions {
+			// for _, tx := range block.Body.(*blockchain.BlockBodyShard).Transactions {
+			for _, tx := range block.Body.Transactions {
 				result.TxHashes = append(result.TxHashes, tx.Hash().String())
 			}
 		} else if verbosity == "2" {
 			best := self.config.BlockChain.BestState.Shard[shardID].BestBlock
 
-			blockHeight := block.Header.GetHeight()
+			// blockHeight := block.Header.GetHeight()
+			blockHeight := block.Header.Height
 			// Get next block hash unless there are none.
 			var nextHashString string
-			if blockHeight < best.Header.GetHeight() {
+			// if blockHeight < best.Header.GetHeight() {
+			if blockHeight < best.Header.Height {
 				nextHash, err := self.config.BlockChain.GetShardBlockByHeight(blockHeight+1, shardID)
 				if err != nil {
 					return nil, NewRPCError(ErrUnexpected, err)
@@ -109,16 +123,24 @@ func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan s
 			}
 
 			result.Hash = block.Hash().String()
-			result.Confirmations = int64(1 + best.Header.GetHeight() - blockHeight)
-			result.Height = block.Header.GetHeight()
-			result.Version = block.Header.(*blockchain.BlockHeaderShard).Version
-			result.MerkleRoot = block.Header.(*blockchain.BlockHeaderShard).MerkleRoot.String()
-			result.Time = block.Header.(*blockchain.BlockHeaderShard).Timestamp
-			result.ShardID = block.Header.(*blockchain.BlockHeaderShard).ShardID
-			result.PreviousBlockHash = block.Header.(*blockchain.BlockHeaderShard).PrevBlockHash.String()
+			// result.Confirmations = int64(1 + best.Header.GetHeight() - blockHeight)
+			result.Confirmations = int64(1 + best.Header.Height - blockHeight)
+			// result.Height = block.Header.GetHeight()
+			result.Height = block.Header.Height
+			// result.Version = block.Header.(*blockchain.BlockHeaderShard).Version
+			// result.MerkleRoot = block.Header.(*blockchain.BlockHeaderShard).MerkleRoot.String()
+			// result.Time = block.Header.(*blockchain.BlockHeaderShard).Timestamp
+			// result.ShardID = block.Header.(*blockchain.BlockHeaderShard).ShardID
+			// result.PreviousBlockHash = block.Header.(*blockchain.BlockHeaderShard).PrevBlockHash.String()
+			result.Version = block.Header.Version
+			result.MerkleRoot = block.Header.MerkleRoot.String()
+			result.Time = block.Header.Timestamp
+			result.ShardID = block.Header.ShardID
+			result.PreviousBlockHash = block.Header.PrevBlockHash.String()
 			result.NextBlockHash = nextHashString
 			result.Txs = make([]jsonresult.GetBlockTxResult, 0)
-			for _, tx := range block.Body.(*blockchain.BlockBodyShard).Transactions {
+			// for _, tx := range block.Body.(*blockchain.BlockBodyShard).Transactions {
+			for _, tx := range block.Body.Transactions {
 				transactionT := jsonresult.GetBlockTxResult{}
 
 				transactionT.Hash = tx.Hash().String()
@@ -150,14 +172,16 @@ func (self RpcServer) handleGetBlocks(params interface{}, closeChan <-chan struc
 	previousHash := bestBlock.Hash()
 	for numBlock > 0 {
 		numBlock--
-		block, errD := self.config.BlockChain.GetBlockByHash(previousHash)
+		// block, errD := self.config.BlockChain.GetBlockByHash(previousHash)
+		block, errD := self.config.BlockChain.GetShardBlockByHash(previousHash)
 		if errD != nil {
 			return nil, NewRPCError(ErrUnexpected, errD)
 		}
 		blockResult := jsonresult.GetBlockResult{}
 		blockResult.Init(block)
 		result = append(result, blockResult)
-		previousHash = &block.Header.(*blockchain.BlockHeaderShard).PrevBlockHash
+		// previousHash = &block.Header.(*blockchain.BlockHeaderShard).PrevBlockHash
+		previousHash = &block.Header.PrevBlockHash
 		if previousHash.String() == (common.Hash{}).String() {
 			break
 		}
@@ -175,13 +199,14 @@ func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-ch
 	}
 	for shardID, bestState := range self.config.BlockChain.BestState.Shard {
 		result.BestBlocks[shardID] = jsonresult.GetBestBlockItem{
-			Height:   bestState.BestBlock.Header.GetHeight(),
+			// Height:   bestState.BestBlock.Header.GetHeight(),
+			Height:   bestState.BestBlock.Header.Height,
 			Hash:     bestState.BestBlockHash.String(),
 			TotalTxs: bestState.TotalTxns,
 			// SalaryFund:       bestState.BestBlock.Header.SalaryFund,
 			// BasicSalary:      bestState.BestBlock.Header.GOVConstitution.GOVParams.BasicSalary,
 			// SalaryPerTx:      bestState.BestBlock.Header.GOVConstitution.GOVParams.SalaryPerTx,
-			BlockProducer:    bestState.BestBlock.Producer,
+			// BlockProducer:    bestState.BestBlock.Producer,
 			BlockProducerSig: bestState.BestBlock.ProducerSig,
 		}
 	}
@@ -193,8 +218,11 @@ getblockcount RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetBlockCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	shardID := byte(int(params.(float64)))
-	if self.config.BlockChain.BestState != nil && self.config.BlockChain.BestState[shardID] != nil && self.config.BlockChain.BestState[shardID].BestBlock != nil {
-		return self.config.BlockChain.BestState[shardID].BestBlock.Header.Height + 1, nil
+	// if self.config.BlockChain.BestState != nil && self.config.BlockChain.BestState[shardID] != nil && self.config.BlockChain.BestState[shardID].BestBlock != nil {
+	// 	return self.config.BlockChain.BestState[shardID].BestBlock.Header.Height + 1, nil
+	// }
+	if self.config.BlockChain.BestState != nil && self.config.BlockChain.BestState.Shard[shardID] != nil && self.config.BlockChain.BestState.Shard[shardID].BestBlock != nil {
+		return self.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height + 1, nil
 	}
 	return 0, nil
 }
@@ -231,12 +259,14 @@ func (self RpcServer) handleGetBlockHeader(params interface{}, closeChan <-chan 
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, errors.New("Invalid blockhash format"))
 		}
-		block, err := self.config.BlockChain.GetBlockByHash(&bhash)
+		// block, err := self.config.BlockChain.GetBlockByHash(&bhash)
+		block, err := self.config.BlockChain.GetShardBlockByHash(&bhash)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, errors.New("Block not exist"))
 		}
 		result.Header = block.Header
-		result.BlockNum = int(block.Header.GetHeight()) + 1
+		// result.BlockNum = int(block.Header.GetHeight()) + 1
+		result.BlockNum = int(block.Header.Height) + 1
 		result.ShardID = uint8(shardID)
 		result.BlockHash = bhash.String()
 	case "blocknum":
@@ -245,7 +275,8 @@ func (self RpcServer) handleGetBlockHeader(params interface{}, closeChan <-chan 
 			return nil, NewRPCError(ErrUnexpected, errors.New("Invalid blocknum format"))
 		}
 		fmt.Println(shardID)
-		if uint64(bnum-1) > self.config.BlockChain.BestState.Shard[uint8(shardID)].BestBlock.Header.GetHeight() || bnum <= 0 {
+		// if uint64(bnum-1) > self.config.BlockChain.BestState.Shard[uint8(shardID)].BestBlock.Header.GetHeight() || bnum <= 0 {
+		if uint64(bnum-1) > self.config.BlockChain.BestState.Shard[uint8(shardID)].BestBlock.Header.Height || bnum <= 0 {
 			return nil, NewRPCError(ErrUnexpected, errors.New("Block not exist"))
 		}
 		block, _ := self.config.BlockChain.GetShardBlockByHeight(uint64(bnum-1), uint8(shardID))
