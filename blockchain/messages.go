@@ -1,5 +1,7 @@
 package blockchain
 
+import libp2p "github.com/libp2p/go-libp2p-peer"
+
 func (self *BlockChain) OnBlockShardReceived(block *ShardBlock) {
 	if self.newShardBlkCh != nil {
 
@@ -11,13 +13,20 @@ func (self *BlockChain) OnBlockBeaconReceived(block *BeaconBlock) {
 	}
 }
 
-func (self *BlockChain) OnGetBeaconState() *BeaconChainState {
-	state := &BeaconChainState{}
-	return state
+func (self *BlockChain) GetBeaconState() (*BeaconChainState, error) {
+	state := &BeaconChainState{
+		Height:    self.BestState.Beacon.BeaconHeight,
+		BlockHash: self.BestState.Beacon.BestBlockHash,
+	}
+	return state, nil
 }
 
-func (self *BlockChain) OnBeaconStateReceived(state *BeaconChainState) {
-
+func (self *BlockChain) OnBeaconStateReceived(state *BeaconChainState, peerID libp2p.ID) {
+	if self.syncStatus.Beacon {
+		self.BeaconStateCh <- &PeerBeaconChainState{
+			state, peerID,
+		}
+	}
 }
 
 func (self *BlockChain) OnGetShardState(shardID byte) *ShardChainState {

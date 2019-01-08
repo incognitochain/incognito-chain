@@ -3,8 +3,6 @@ package wire
 import (
 	"encoding/json"
 
-	"time"
-
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -15,7 +13,8 @@ const (
 )
 
 type MessageGetBeaconState struct {
-	Timestamp time.Time
+	Timestamp int64
+	SenderID  string
 }
 
 func (self *MessageGetBeaconState) Hash() string {
@@ -45,7 +44,7 @@ func (self *MessageGetBeaconState) JsonDeserialize(jsonStr string) error {
 }
 
 func (self *MessageGetBeaconState) SetSenderID(senderID peer.ID) error {
-	// self.SenderID = senderID.Pretty()
+	self.SenderID = senderID.Pretty()
 	return nil
 }
 

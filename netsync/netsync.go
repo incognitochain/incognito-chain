@@ -1,10 +1,11 @@
 package netsync
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 
-	peer2 "github.com/libp2p/go-libp2p-peer"
+	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/mempool"
 	"github.com/ninjadotorg/constant/peer"
@@ -28,7 +29,7 @@ type NetSyncConfig struct {
 	MemTxPool  *mempool.TxPool
 	Server     interface {
 		// list functions callback which are assigned from Server struct
-		PushMessageToPeer(wire.Message, peer2.ID) error
+		PushMessageToPeer(wire.Message, libp2p.ID) error
 		PushMessageToAll(wire.Message) error
 	}
 	Consensus interface {
@@ -115,9 +116,9 @@ out:
 						{
 							self.HandleMessageShardToBeacon(msg)
 						}
-					case *wire.MessageGetBlocks:
+					case *wire.MessageGetBlockBeacon:
 						{
-							self.HandleMessageGetBlocks(msg)
+							self.HandleMessageGetBlockBeacon(msg)
 						}
 					case *wire.MessageBFTPropose:
 						{
@@ -255,7 +256,7 @@ func (self *NetSync) QueueBlock(_ *peer.Peer, msg wire.Message, done chan struct
 	self.cMessage <- msg
 }
 
-func (self *NetSync) QueueGetBlock(peer *peer.Peer, msg *wire.MessageGetBlocks, done chan struct{}) {
+func (self *NetSync) QueueGetBlockBeacon(peer *peer.Peer, msg *wire.MessageGetBlockBeacon, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
 	if atomic.LoadInt32(&self.shutdown) != 0 {
 		done <- struct{}{}
@@ -273,8 +274,21 @@ func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan s
 	self.cMessage <- msg
 }
 
-func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
-	Logger.log.Info("Handling new message - " + wire.CmdGetBlocks)
+func (self *NetSync) HandleMessageGetBlockBeacon(msg *wire.MessageGetBlockBeacon) {
+	fmt.Println()
+	Logger.log.Info("Handling new message - " + wire.CmdGetBlockBeacon)
+	fmt.Println()
+
+	// for index := 0; index < count; index++ {
+	// 	self.config.BlockChain.GetBea()
+	// // }
+	// msgBeaconBlk, err := wire.MakeEmptyMessage(wire.CmdBlockBeacon)
+	// if err != nil {
+	// 	Logger.log.Error(err)
+	// 	return
+	// }
+	// msgBeaconBlk.(*wire.MessageBlockBeacon).
+
 	// blockHash, _ := common.Hash{}.NewHashFromStr(msg.LastBlockHash)
 	// senderBlockHeaderIndex, shardID, err := self.config.BlockChain.GetShardBlockHeightByHash(blockHash)
 	// if err == nil {
@@ -301,7 +315,7 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	// 				Logger.log.Error("Sender ID is empty")
 	// 				break
 	// 			}
-	// 			peerID, err := peer2.IDB58Decode(msg.SenderID)
+	// 			peerID, err := libp2p.IDB58Decode(msg.SenderID)
 	// 			if err != nil {
 	// 				Logger.log.Error(err)
 	// 				break
@@ -369,12 +383,33 @@ func (self *NetSync) HandleMessageBFTReply(msg *wire.MessageBFTReply) {
 
 func (self *NetSync) HandleMessageGetBeaconState(msg *wire.MessageGetBeaconState) {
 	Logger.log.Info("Handling new message getbeaconstate")
-	// self.config.Consensus.OnGetCState(msg)
+	peerID, err := libp2p.IDB58Decode(msg.SenderID)
+	if err != nil {
+		Logger.log.Error(err)
+		return
+	}
+	beaconState, e := self.config.BlockChain.GetBeaconState()
+	if e != nil {
+		Logger.log.Error(e)
+		return
+	}
+	msgBeaconState, err := wire.MakeEmptyMessage(wire.CmdBeaconState)
+	if err != nil {
+		Logger.log.Error(err)
+		return
+	}
+	msgBeaconState.(*wire.MessageBeaconState).ChainInfo = *beaconState
+	self.config.Server.PushMessageToPeer(msgBeaconState, peerID)
 }
 
 func (self *NetSync) HandleMessageBeaconState(msg *wire.MessageBeaconState) {
 	Logger.log.Info("Handling new message beaconstate")
-	// self.config.Consensus.OnChainStateReceived(msg)
+	peerID, err := libp2p.IDB58Decode(msg.SenderID)
+	if err != nil {
+		Logger.log.Error(err)
+		return
+	}
+	self.config.BlockChain.OnBeaconStateReceived(&msg.ChainInfo, peerID)
 }
 
 func (self *NetSync) HandleMessageGetShardState(msg *wire.MessageGetShardState) {

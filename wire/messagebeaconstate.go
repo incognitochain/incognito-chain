@@ -3,7 +3,7 @@ package wire
 import (
 	"encoding/json"
 
-	"time"
+	"github.com/ninjadotorg/constant/blockchain"
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
@@ -15,8 +15,8 @@ const (
 )
 
 type MessageBeaconState struct {
-	Timestamp time.Time
-	ChainInfo interface{}
+	Timestamp int64
+	ChainInfo blockchain.BeaconChainState
 	SenderID  string
 }
 

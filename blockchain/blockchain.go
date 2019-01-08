@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -55,6 +56,8 @@ type BlockChain struct {
 		Shards map[byte]ShardChainState
 		Beacon BeaconChainState
 	}
+	BeaconStateCh chan *PeerBeaconChainState
+	ShardStateCh  map[byte](chan *ShardChainState)
 }
 type BestState struct {
 	Beacon *BestStateBeacon
@@ -103,6 +106,8 @@ type Config struct {
 	Server            interface {
 		PushMessageGetBeaconState() error
 		PushMessageGetShardState(byte) error
+		PushMessageGetBlockBeacon(from uint64, to uint64, peerID libp2p.ID) error
+		PushMessageGetBlockShard(shardID byte, from uint64, to uint64, peerID libp2p.ID) error
 	}
 }
 

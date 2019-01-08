@@ -559,16 +559,16 @@ func (self *Server) NewPeerConfig() *peer.Config {
 	}
 	config := &peer.Config{
 		MessageListeners: peer.MessageListeners{
-			OnBlockShard:    self.OnBlockShard,
-			OnBlockBeacon:   self.OnBlockBeacon,
-			OnCrossShard:    self.OnCrossShard,
-			OnShardToBeacon: self.OnShardToBeacon,
-			OnTx:            self.OnTx,
-			OnVersion:       self.OnVersion,
-			OnGetBlocks:     self.OnGetBlocks,
-			OnVerAck:        self.OnVerAck,
-			OnGetAddr:       self.OnGetAddr,
-			OnAddr:          self.OnAddr,
+			OnBlockShard:     self.OnBlockShard,
+			OnBlockBeacon:    self.OnBlockBeacon,
+			OnCrossShard:     self.OnCrossShard,
+			OnShardToBeacon:  self.OnShardToBeacon,
+			OnTx:             self.OnTx,
+			OnVersion:        self.OnVersion,
+			OnGetBlockBeacon: self.OnGetBlockBeacon,
+			OnVerAck:         self.OnVerAck,
+			OnGetAddr:        self.OnGetAddr,
+			OnAddr:           self.OnAddr,
 
 			//constantpos
 			OnBFTPropose: self.OnBFTPropose,
@@ -642,10 +642,10 @@ func (self *Server) OnShardToBeacon(p *peer.PeerConn,
 	Logger.log.Info("Receive a new shardToBeacon END")
 }
 
-func (self *Server) OnGetBlocks(_ *peer.PeerConn, msg *wire.MessageGetBlocks) {
+func (self *Server) OnGetBlockBeacon(_ *peer.PeerConn, msg *wire.MessageGetBlockBeacon) {
 	Logger.log.Info("Receive a " + msg.MessageType() + " message START")
 	var txProcessed chan struct{}
-	self.netSync.QueueGetBlock(nil, msg, txProcessed)
+	self.netSync.QueueGetBlockBeacon(nil, msg, txProcessed)
 	//<-txProcessed
 
 	Logger.log.Info("Receive a " + msg.MessageType() + " message END")
@@ -1092,7 +1092,7 @@ func (self *Server) PushMessageGetBeaconState() error {
 		if err != nil {
 			return err
 		}
-		msg.(*wire.MessageGetBeaconState).Timestamp = time.Unix(time.Now().Unix(), 0)
+		// msg.(*wire.MessageGetBeaconState).Timestamp = time.Unix(time.Now().Unix(), 0)
 		msg.SetSenderID(listener.PeerID)
 		Logger.log.Infof("Send a GetBeaconState from %s", listener.RawAddress)
 		listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_PEER, nil)
@@ -1161,4 +1161,17 @@ func (self *Server) GetCurrentRoleShard() (string, *byte) {
 
 func (self *Server) UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string) {
 	self.connManager.UpdateConsensusState(role, userPbk, currentShard, beaconCommittee, shardCommittee)
+}
+
+func (self *Server) PushMessageGetBlockBeacon(from uint64, to uint64, peerID libp2p.ID) error {
+	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockBeacon)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessageGetBlockBeacon).From = from
+	msg.(*wire.MessageGetBlockBeacon).To = to
+	return self.PushMessageToPeer(msg, peerID)
+}
+func (self *Server) PushMessageGetBlockShard(shardID byte, from uint64, to uint64, peerID libp2p.ID) error {
+	return nil
 }
