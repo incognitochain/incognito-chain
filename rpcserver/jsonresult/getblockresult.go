@@ -25,7 +25,7 @@ type GetBlockTxResult struct {
 	HexData  string `json:"HexData"`
 }
 
-func (self *GetBlockResult) Init(block *blockchain.BlockV2) {
+func (self *GetBlockResult) Init(block *blockchain.ShardBlock) {
 	// self.BlockProducerSign = block.BlockProducerSig
 	// self.BlockProducer = block.BlockProducer
 	// self.Hash = block.Hash().String()
