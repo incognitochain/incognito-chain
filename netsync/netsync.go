@@ -278,16 +278,28 @@ func (self *NetSync) HandleMessageGetBlockBeacon(msg *wire.MessageGetBlockBeacon
 	fmt.Println()
 	Logger.log.Info("Handling new message - " + wire.CmdGetBlockBeacon)
 	fmt.Println()
-
-	// for index := 0; index < count; index++ {
-	// 	self.config.BlockChain.GetBea()
-	// // }
-	// msgBeaconBlk, err := wire.MakeEmptyMessage(wire.CmdBlockBeacon)
-	// if err != nil {
-	// 	Logger.log.Error(err)
-	// 	return
-	// }
-	// msgBeaconBlk.(*wire.MessageBlockBeacon).
+	peerID, err := libp2p.IDB58Decode(msg.SenderID)
+	if err != nil {
+		Logger.log.Error(err)
+		return
+	}
+	for index := msg.From; index <= msg.To; index++ {
+		blk, err := self.config.BlockChain.GetBeaconBlockByHeight(index)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		msgBeaconBlk, err := wire.MakeEmptyMessage(wire.CmdBlockBeacon)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		msgBeaconBlk.(*wire.MessageBlockBeacon).Block = *blk
+		err = self.config.Server.PushMessageToPeer(msgBeaconBlk, peerID)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
 
 	// blockHash, _ := common.Hash{}.NewHashFromStr(msg.LastBlockHash)
 	// senderBlockHeaderIndex, shardID, err := self.config.BlockChain.GetShardBlockHeightByHash(blockHash)

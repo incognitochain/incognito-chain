@@ -161,7 +161,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 					case <-self.cTimeout:
 						//Use collected Ri to calc R & get ValidatorsIdx if len(Ri) > 1/2size(committee)
 						// then sig block with this R
-						if len(collectedRiList) == 0 {
+						if len(collectedRiList) < len(self.RoleData.Committee)/2 {
 							return nil, errors.New("Didn't receive any prepare phase msg")
 						}
 						err := self.multiSigScheme.SignData(collectedRiList)

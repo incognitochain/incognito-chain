@@ -35,6 +35,7 @@ func (self *BlockChain) SyncBeacon() {
 	Logger.log.Info("Beacon synchronzation started")
 	self.BeaconStateCh = make(chan *PeerBeaconChainState)
 	self.syncStatus.Beacon = true
+	self.newBeaconBlkCh = make(chan *BeaconBlock)
 	var pendingBlock map[uint64]*BeaconBlock
 	pendingBlock = make(map[uint64]*BeaconBlock)
 	go func() {
@@ -76,6 +77,7 @@ func (self *BlockChain) SyncBeacon() {
 		case <-self.cQuitSync:
 			return
 		case newBlk := <-self.newBeaconBlkCh:
+			fmt.Println("Beacon block received")
 			if self.BestState.Beacon.BeaconHeight < newBlk.Header.Height {
 				err := cashec.ValidateDataB58(newBlk.Header.Producer, newBlk.ProducerSig, []byte(newBlk.Header.Hash().String()))
 				if err != nil {
