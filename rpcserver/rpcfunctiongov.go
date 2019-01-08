@@ -12,8 +12,6 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
-	"crypto/rand"
-	"fmt"
 )
 
 func (self RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -39,19 +37,9 @@ func (self RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan st
 		BondTypes: make(map[string]jsonresult.GetBondTypeResultItem),
 	}
 
-	token := make([]byte, 32)
-	rand.Read(token)
-	fmt.Println(token)
-	token1 := common.Hash{}
-	token1.SetBytes(token)
-	result.BondTypes[token1.String()] = tempRes1
+	result.BondTypes["fc8bbbd183f97ff6cc55a62b2ddceade8e93eed5cdf1240b42e223d589b29645"] = tempRes1
 
-	token = make([]byte, 32)
-	rand.Read(token)
-	fmt.Println(token)
-	token2 := common.Hash{}
-	token2.SetBytes(token)
-	result.BondTypes[token2.String()] = tempRes2
+	result.BondTypes["fe7d3d124cf0309d8f1575982842b57266951a37a717a4d332a69eb176c409fa"] = tempRes2
 
 	return result, nil
 }
@@ -130,19 +118,19 @@ func (self RpcServer) handleCreateRawTxWithBuySellRequest(params interface{}, cl
 	var err error
 	arrayParams := common.InterfaceSlice(params)
 
-	// Req param #4: buy/sell request info
+	// Req param #5: buy/sell request info
 	buySellReq := arrayParams[4].(map[string]interface{})
 
-	paymentAddressMap := buySellReq["paymentAddress"].(map[string]interface{})
+	paymentAddressMap := buySellReq["PaymentAddress"].(map[string]interface{})
 	paymentAddress := privacy.PaymentAddress{
 		Pk: []byte(paymentAddressMap["pk"].(string)),
 		Tk: []byte(paymentAddressMap["tk"].(string)),
 	}
-	assetTypeBytes := []byte(buySellReq["assetType"].(string))
+	assetTypeBytes := []byte(buySellReq["TokenID"].(string))
 	assetType := common.Hash{}
 	copy(assetType[:], assetTypeBytes)
-	amount := uint64(buySellReq["amount"].(float64))
-	buyPrice := uint64(buySellReq["buyPrice"].(float64))
+	amount := uint64(buySellReq["Amount"].(float64))
+	buyPrice := uint64(buySellReq["BuyPrice"].(float64))
 	metaType := metadata.BuyFromGOVRequestMeta
 	meta := metadata.NewBuySellRequest(
 		paymentAddress,

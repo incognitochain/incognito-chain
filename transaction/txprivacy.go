@@ -108,7 +108,7 @@ func (tx *Tx) Init(
 		tx.sigPrivKey = *senderSK
 		tx.PubKeyLastByteSender = pkLastByteSender
 
-		err := tx.SignTx(hasPrivacy)
+		err := tx.SignTx()
 		if err != nil {
 			return NewTransactionErr(UnexpectedErr, err)
 		}
@@ -270,7 +270,7 @@ func (tx *Tx) Init(
 
 	// sign tx
 	tx.PubKeyLastByteSender = pkLastByteSender
-	err = tx.SignTx(hasPrivacy)
+	err = tx.SignTx()
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
@@ -283,32 +283,25 @@ func (tx *Tx) Init(
 }
 
 // SignTx - signs tx
-func (tx *Tx) SignTx(hasPrivacy bool) error {
+func (tx *Tx) SignTx() error {
 	//Check input transaction
 	if tx.Sig != nil {
 		return errors.New("input transaction must be an unsigned one")
 	}
 
-	/****** using Schnorr *******/
+	/****** using Schnorr signature *******/
 	// sign with sigPrivKey
 	// prepare private key for Schnorr
+	sk := new(big.Int).SetBytes(tx.sigPrivKey[:privacy.BigIntSize])
+	r := new(big.Int).SetBytes(tx.sigPrivKey[privacy.BigIntSize:])
 	sigKey := new(privacy.SchnPrivKey)
-	sigKey.SK = new(big.Int).SetBytes(tx.sigPrivKey[:privacy.BigIntSize])
-	sigKey.R = new(big.Int).SetBytes(tx.sigPrivKey[privacy.BigIntSize:])
+	sigKey.Set(sk, r)
 
 	// save public key for verification signature tx
-	sigKey.PubKey = new(privacy.SchnPubKey)
-	sigKey.PubKey.G = new(privacy.EllipticPoint)
-	sigKey.PubKey.G.Set(privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y)
-
-	sigKey.PubKey.H = new(privacy.EllipticPoint)
-	sigKey.PubKey.H.Set(privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y)
-
-	tmp := sigKey.PubKey.G.ScalarMult(sigKey.SK)
-	sigKey.PubKey.PK = tmp.Add(sigKey.PubKey.H.ScalarMult(sigKey.R))
 	tx.SigPubKey = sigKey.PubKey.PK.Compress()
 
 	// signing
+	Logger.log.Infof(tx.Hash().String())
 	signature, err := sigKey.Sign(tx.Hash()[:])
 	if err != nil {
 		return err
@@ -348,7 +341,7 @@ func (tx *Tx) VerifySigTx() (bool, error) {
 	signature.SetBytes(tx.Sig)
 
 	// verify signature
-	//Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
+	Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
 	res = verKey.Verify(signature, tx.Hash()[:])
 
 	return res, nil
@@ -408,8 +401,10 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	}
 
 	if tx.Proof != nil {
-		tokenID := &common.Hash{}
-		tokenID.SetBytes(common.ConstantID[:])
+		if tokenID == nil {
+			tokenID = &common.Hash{}
+			tokenID.SetBytes(common.ConstantID[:])
+		}
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
 			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, shardID, db); ok || err != nil {
@@ -714,12 +709,10 @@ func (tx *Tx) GetProof() *zkp.PaymentProof {
 }
 
 func (tx *Tx) IsPrivacy() bool {
-	switch tx.GetType() {
-	case common.TxSalaryType:
+	if tx.Proof == nil || tx.Proof.OneOfManyProof == nil || len(tx.Proof.OneOfManyProof) == 0 {
 		return false
-	default:
-		return true
 	}
+	return true
 }
 
 func (tx *Tx) ValidateType() bool {
@@ -785,7 +778,7 @@ func (tx *Tx) InitTxSalary(
 	}
 
 	var err error
-	// create new output coins with info: Pk, value, SND, randomness, last byte pk, coin commitment
+	// create new output coins with info: Pk, value, input, randomness, last byte pk, coin commitment
 	tx.Proof = new(zkp.PaymentProof)
 	tx.Proof.OutputCoins = make([]*privacy.OutputCoin, 1)
 	tx.Proof.OutputCoins[0] = new(privacy.OutputCoin)
@@ -827,14 +820,11 @@ func (tx *Tx) InitTxSalary(
 	tx.SigPubKey = receiverAddr.Pk
 	tx.sigPrivKey = *privKey
 	tx.SetMetadata(metaData)
-	err = tx.SignTx(false)
+	err = tx.SignTx()
 	if err != nil {
 		return err
 	}
 
-	if len(tx.Proof.InputCoins) > 0 {
-		Logger.log.Info(11111)
-	}
 	return nil
 }
 
@@ -850,7 +840,7 @@ func (tx Tx) ValidateTxSalary(
 		return false
 	}
 
-	// check whether output coin's SND exists in SND list or not
+	// check whether output coin's input exists in input list or not
 	lastByte := tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress())-1]
 	shardIDSender, err := common.GetTxSenderChain(lastByte)
 	tokenID := &common.Hash{}

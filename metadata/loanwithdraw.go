@@ -7,6 +7,8 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/pkg/errors"
+	"github.com/syndtr/goleveldb/leveldb"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -44,6 +46,18 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 	if err != nil {
 		return false, err
 	}
+
+	// Check if loan hasn't been withdrawed
+	_, _, _, err = bcr.GetLoanPayment(lw.LoanID)
+	if err != leveldb.ErrNotFound {
+		if err == nil {
+			return false, errors.Errorf("Loan has been withdrawed")
+		}
+		return false, err
+	}
+
+	// TODO(@0xbunyip): validate that for a loan, there's only one withdraw in a single block
+
 	foundResponse := 0
 	keyCorrect := false
 	// TODO(@0xbunyip): make sure withdraw is not too close to escrowDeadline in SimpleLoan smart contract
@@ -66,9 +80,11 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 				if !ok {
 					return false, fmt.Errorf("Error parsing loan request of tx loan withdraw")
 				}
-				h := make([]byte, 32)
-				sha3.ShakeSum256(h, lw.Key)
-				if bytes.Equal(h, requestMeta.KeyDigest) {
+				hasher := sha3.NewLegacyKeccak256()
+				hasher.Write(lw.Key)
+				digest := hasher.Sum(nil)
+				fmt.Printf("Found committed digest, checking key and digest: %x\n%x\n", lw.Key, digest)
+				if bytes.Equal(digest, requestMeta.KeyDigest) {
 					keyCorrect = true
 				}
 			}
@@ -83,6 +99,7 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 				if !ok {
 					continue
 				}
+				fmt.Printf("Found an accept response\n")
 				if responseMeta.Response == Accept {
 					foundResponse += 1
 				}
@@ -101,9 +118,6 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 }
 
 func (lw *LoanWithdraw) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	if len(lw.Key) != LoanKeyLength {
-		return false, false, nil
-	}
 	return true, true, nil // continue checking for fee
 }
 

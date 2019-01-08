@@ -80,7 +80,9 @@ const (
 	CreateAndSendLoanPayment  = "createandsendloanpayment"
 	CreateAndSendLoanWithdraw = "createandsendloanwithdraw"
 	GetLoanResponseApproved   = "getloanresponseapproved"
+	GetLoanResponseRejected   = "getloanresponserejected"
 	GetLoanParams             = "loanparams"
+	GetLoanPaymentInfo        = "getloanpaymentinfo"
 
 	// vote
 	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"

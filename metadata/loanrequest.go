@@ -39,9 +39,7 @@ func NewLoanRequest(data map[string]interface{}) (Metadata, error) {
 		LoanAmount:     uint64(data["LoanAmount"].(float64)),
 	}
 	n := new(big.Int)
-	fmt.Println("collat amount:", data["CollateralAmount"].(string))
 	n, ok := n.SetString(data["CollateralAmount"].(string), 10)
-	fmt.Printf("ok setstring: %v\n", ok)
 	if !ok {
 		return nil, errors.Errorf("Collateral amount incorrect")
 	}
@@ -54,9 +52,15 @@ func NewLoanRequest(data map[string]interface{}) (Metadata, error) {
 	result.ReceiveAddress = &key.KeySet.PaymentAddress
 
 	s, err := hex.DecodeString(data["LoanID"].(string))
+	if err != nil {
+		return nil, errors.Errorf("LoanID incorrect")
+	}
 	result.LoanID = s
 
 	s, err = hex.DecodeString(data["KeyDigest"].(string))
+	if err != nil {
+		return nil, errors.Errorf("KeyDigest incorrect")
+	}
 	result.KeyDigest = s
 
 	result.Type = LoanRequestMeta

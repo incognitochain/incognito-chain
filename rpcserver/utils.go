@@ -10,7 +10,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"github.com/ninjadotorg/constant/privacy"
 	"io/ioutil"
 	"math/big"
 	"net"
@@ -169,27 +168,4 @@ func NewTLSCertPair(organization string, validUntil time.Time, extraHosts []stri
 // building for systems that do not allow access to net.InterfaceAddrs().
 func interfaceAddrs() ([]net.Addr, error) {
 	return net.InterfaceAddrs()
-}
-
-// getUnspentCoinToSpent returns list of unspent coins for spending with amount
-func getUnspentCoinToSpent(outCoins []*privacy.OutputCoin, amount uint64) []*privacy.OutputCoin{
-	var res = make([]*privacy.OutputCoin, 0)
-
-	// Calculate sum of all output coins' value
-	sumValue := uint64(0)
-	values := make([]uint64, 0)
-	for _, outCoin := range outCoins{
-		sumValue += outCoin.CoinDetails.Value
-		values = append(values, outCoin.CoinDetails.Value)
-	}
-
-	// target
-	target := sumValue - amount
-	choices := privacy.Knapsack(values, target)
-	for i, choice := range choices{
-		if !choice{
-			res = append(res, outCoins[i])
-		}
-	}
-	return res
 }

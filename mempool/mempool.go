@@ -165,6 +165,23 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		return nil, nil, err
 	}
 
+	// sanity data
+	// if validate, errS := tp.ValidateSanityData(tx); !validate {
+	if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
+		err := MempoolTxError{}
+		err.Init(RejectSansityTx, errors.New(fmt.Sprintf("transaction's sansity %v is error %v", txHash.String(), errS.Error())))
+		return nil, nil, err
+	}
+
+	// ValidateTransaction tx by it self
+	// validate := tp.ValidateTxByItSelf(tx)
+	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, chainID)
+	if !validated {
+		err := MempoolTxError{}
+		err.Init(RejectInvalidTx, errors.New("Invalid tx"))
+		return nil, nil, err
+	}
+
 	// validate tx with data of blockchain
 	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardID, tp.config.BlockChain.GetDatabase())
 	// err = tp.ValidateTxWithBlockChain(tx, shardID)
@@ -185,23 +202,6 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	if tx.IsSalaryTx() {
 		err := MempoolTxError{}
 		err.Init(RejectSalaryTx, errors.New(fmt.Sprintf("%+v is salary tx", txHash.String())))
-		return nil, nil, err
-	}
-
-	// sanity data
-	// if validate, errS := tp.ValidateSanityData(tx); !validate {
-	if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
-		err := MempoolTxError{}
-		err.Init(RejectSansityTx, errors.New(fmt.Sprintf("transaction's sansity %v is error %v", txHash.String(), errS.Error())))
-		return nil, nil, err
-	}
-
-	// ValidateTransaction tx by it self
-	// validate := tp.ValidateTxByItSelf(tx)
-	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
-	if !validated {
-		err := MempoolTxError{}
-		err.Init(RejectInvalidTx, errors.New("Invalid tx"))
 		return nil, nil, err
 	}
 

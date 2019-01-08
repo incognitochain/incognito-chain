@@ -75,6 +75,8 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendLoanWithdraw: RpcServer.handleCreateAndSendLoanWithdraw,
 	CreateAndSendLoanPayment:  RpcServer.handleCreateAndSendLoanPayment,
 	GetLoanResponseApproved:   RpcServer.handleGetLoanResponseApproved,
+	GetLoanResponseRejected:   RpcServer.handleGetLoanResponseRejected,
+	GetLoanPaymentInfo:        RpcServer.handleGetLoanPaymentInfo,
 
 	// multisig
 	CreateSignatureOnCustomTokenTx:       RpcServer.handleCreateSignatureOnCustomTokenTx,

@@ -24,10 +24,13 @@ contract("SimpleLoan", (accounts) => {
     before(async () => {
         s = await ms.deployed();
         c = await sl.deployed();
-        key = u.padToBytes32(web3.utils.toHex("a"))
+        key = web3.utils.toHex("constant.money")
         digest = ww.utils.soliditySha3(key) 
         abi = JSON.parse(fs.readFileSync('./build/contracts/SimpleLoan.json', 'utf8')).abi
         //	l(key, digest, web3.sha3(key, { encoding: "hex" }))
+//        l('ab:', web3.utils.toHex('ab'))
+        l('key:', key)
+        l('digest:', digest)
     })
 
     function getFunc(abiObj, name) {
@@ -53,8 +56,6 @@ contract("SimpleLoan", (accounts) => {
         })
 
         it('should accept loan request successfully', async () => {
-            l('key:', key)
-            l('digest:', digest)
             let data = web3.eth.abi.encodeFunctionCall(getFunc(abi, "acceptLoan"), [lid, key, offchain])
             tx1 = await s.submitTransaction(c.address, 0, data, { from: msAcc })
             lid1 = await u.roc(tx1, abi, "__acceptLoan", "lid")
@@ -69,14 +70,9 @@ contract("SimpleLoan", (accounts) => {
             let loan = await c.loans(lid)
             let newPrinciple = loan[5].toNumber()
             eq(newPrinciple, 0)
-        })
-
-        it("should be able to refund", async () => {
-            tx = await c.refundCollateral(lid, offchain, { from: requester1 })
-            lid1 = await u.oc(tx, "__refundCollateral", "lid")
-            let amount = await u.oc(tx, "__refundCollateral", "amount")
+            
+            let amount = await u.roc(tx, abi, "__refundCollateral", "amount")
             eq(amount, web3.utils.toWei("10"))
-            eq(lid1, lid)
         })
     })
 

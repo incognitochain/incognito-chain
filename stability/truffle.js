@@ -31,7 +31,7 @@ module.exports = {
     },
     rinkeby: {
       provider: function() {
-        return new HDWalletProvider("verb lake ribbon pride stamp kiwi viable move shop actor drop cake", "https://rinkeby.infura.io/v3/03f57f19c3e1478fb38fb91a8f680550")
+        return new HDWalletProvider("", "")
       },
       network_id: 4,
       gas: 6500000,
@@ -42,7 +42,7 @@ module.exports = {
     reporter: 'eth-gas-reporter',
     reporterOptions : {
       currency: 'USD',
-      gasPrice: 21
+      gasPrice: 22
     }
   }
 };

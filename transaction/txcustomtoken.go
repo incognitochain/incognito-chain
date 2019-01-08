@@ -387,6 +387,9 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 			Vouts:          nil,
 		}
 		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+		if _, ok := listCustomTokens[*propertyID]; !ok {
+			return NewTransactionErr(UnexpectedErr, errors.New("Invalid Token ID"))
+		}
 		txCustomToken.TxTokenData.PropertyID = *propertyID
 		txCustomToken.TxTokenData.Vins = tokenParams.vins
 		var VoutsTemp []TxTokenVout
