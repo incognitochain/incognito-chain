@@ -91,7 +91,7 @@ func (db *db) GetLoanTxs(loanID []byte) ([][]byte, error) {
 	return results, nil
 }
 
-func (db *db) StoreLoanPayment(loanID []byte, principle, interest uint64, deadline uint32) error {
+func (db *db) StoreLoanPayment(loanID []byte, principle, interest uint64, deadline uint64) error {
 	loanPaymentKey := string(loanPaymentKeyPrefix) + string(loanID)
 	loanPaymentValue := getLoanPaymentValue(principle, interest, deadline)
 
@@ -102,7 +102,7 @@ func (db *db) StoreLoanPayment(loanID []byte, principle, interest uint64, deadli
 	return nil
 }
 
-func (db *db) GetLoanPayment(loanID []byte) (uint64, uint64, uint32, error) {
+func (db *db) GetLoanPayment(loanID []byte) (uint64, uint64, uint64, error) {
 	loanPaymentKey := string(loanPaymentKeyPrefix) + string(loanID)
 	loanPaymentValue, err := db.Get([]byte(loanPaymentKey))
 	if err != nil {

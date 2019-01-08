@@ -251,11 +251,9 @@ func (customTokenTx *TxCustomTokenPrivacy) ValidateTxByItself(
 func (customTokenTx *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	if customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, tokenID) {
 		if customTokenTx.TxTokenPrivacyData.Type == CustomTokenInit {
-			customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(common.FalseValue, db, shardID, &customTokenTx.TxTokenPrivacyData.PropertyID)
-			return customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(common.FalseValue, db, chainID, &customTokenTx.TxTokenPrivacyData.PropertyID)
+			return customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(common.FalseValue, db, shardID, &customTokenTx.TxTokenPrivacyData.PropertyID)
 		} else {
-			customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(common.TrueValue, db, shardID, &customTokenTx.TxTokenPrivacyData.PropertyID)
-			return customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(common.TrueValue, db, chainID, &customTokenTx.TxTokenPrivacyData.PropertyID)
+			return customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(common.TrueValue, db, shardID, &customTokenTx.TxTokenPrivacyData.PropertyID)
 		}
 	}
 	return common.FalseValue

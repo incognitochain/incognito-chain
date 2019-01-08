@@ -9,7 +9,7 @@ import (
 
 func getLoanPaymentValue(
 	principle, interest uint64,
-	deadline uint32,
+	deadline uint64,
 ) []byte {
 	// Add principle
 	values := []byte{}
@@ -23,12 +23,12 @@ func getLoanPaymentValue(
 	values = append(values, interestInBytes...)
 
 	// Add deadline
-	values = append(values, common.Uint32ToBytes(deadline)...)
+	values = append(values, common.Uint64ToBytes(deadline)...)
 
 	return values
 }
 
-func parseLoanPaymentValue(value []byte) (uint64, uint64, uint32, error) {
+func parseLoanPaymentValue(value []byte) (uint64, uint64, uint64, error) {
 	// Get principle
 	if len(value) < 8 {
 		return 0, 0, 0, errors.Errorf("Error parsing loan payment value")
@@ -47,6 +47,6 @@ func parseLoanPaymentValue(value []byte) (uint64, uint64, uint32, error) {
 	if len(value) < 4 {
 		return 0, 0, 0, errors.Errorf("Error parsing loan payment value")
 	}
-	deadline := common.BytesToUint32(value)
+	deadline := common.BytesToUint64(value)
 	return principle, interest, deadline, nil
 }

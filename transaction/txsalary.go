@@ -70,7 +70,7 @@ func CreateTxSalary(
 	// sign Tx
 	tx.SigPubKey = receiverAddr.Pk
 	tx.sigPrivKey = *privKey
-	err = tx.SignTx(false)
+	err = tx.SignTx()
 	if err != nil {
 		return nil, err
 	}
