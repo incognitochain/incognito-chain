@@ -2,6 +2,7 @@ package zkp
 
 import (
 	"crypto/rand"
+	"fmt"
 	"github.com/ninjadotorg/constant/privacy"
 	"math/big"
 	"testing"
@@ -36,11 +37,12 @@ func TestPKComZero(t* testing.T){
 	proof, _ := witness.Prove()
 
 	proofBytes := proof.Bytes()
+	fmt.Printf("Zero commitment len proof: %v\n", len(proofBytes))
 
-	proof2 := new(ComZeroProof)
-	proof2.SetBytes(proofBytes)
+	//proof2 := new(ComZeroProof)
+	//proof2.SetBytes(proofBytes)
 
-	res := proof2.Verify()
+	res := proof.Verify()
 
 	assert.Equal(t, true, res)
 }

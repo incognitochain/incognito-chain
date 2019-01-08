@@ -104,7 +104,7 @@ func (point *EllipticPoint) Randomize() {
 	}
 
 	for {
-		point.X.SetBytes(RandBytes(Curve.Params().BitSize / 8))
+		point.X = RandInt()
 		err := point.ComputeYCoord()
 		if Curve.IsOnCurve(point.X, point.Y) && (err == nil) && (point.IsSafe()) {
 			break

@@ -1,19 +1,14 @@
 package zkp
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
-	"github.com/ninjadotorg/constant/privacy"
 	"math/big"
 	"testing"
 )
 
 func TestPKComMultiRange(t *testing.T) {
-	numValues := 2
-	values := make([]*big.Int, numValues)
-
-	for i := 0; i < numValues; i++ {
-		values[i] = new(big.Int).SetBytes(privacy.RandBytes(1))
-	}
+	values := []*big.Int{big.NewInt(10), big.NewInt(20)}
 
 	var witness AggregatedRangeWitness
 	witness.Set(values, 64)
@@ -21,6 +16,7 @@ func TestPKComMultiRange(t *testing.T) {
 	// Testing smallest number in range
 	proof, _ := witness.Prove()
 	b := proof.Bytes()
+	fmt.Printf("Proof size: %v\n", len(b))
 
 	Vproof := new(AggregatedRangeProof)
 	Vproof.SetBytes(b)

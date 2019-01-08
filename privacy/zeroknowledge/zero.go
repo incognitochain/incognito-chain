@@ -2,7 +2,9 @@ package zkp
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ninjadotorg/constant/privacy"
 )
@@ -125,6 +127,7 @@ func (pro *ComZeroProof) Set(
 
 //Prove generate a Proof prove that the PedersenCommitment is zero
 func (wit ComZeroWitness) Prove() (*ComZeroProof, error) {
+	start := time.Now()
 	//var x big.Int
 	//s is a random number in Zp, with p is N, which is order of base point of privacy.Curve
 	sRnd := privacy.RandInt()
@@ -142,11 +145,15 @@ func (wit ComZeroWitness) Prove() (*ComZeroProof, error) {
 
 	proof := new(ComZeroProof)
 	proof.Set(wit.commitmentValue, wit.index, commitmentZeroS, z)
+	end := time.Since(start)
+	fmt.Printf("Zero commitment proving time: %v\n", end)
+
 	return proof, nil
 }
 
 //Verify verify that under PedersenCommitment is zero
 func (pro *ComZeroProof) Verify() bool {
+	start := time.Now()
 	//Generate challenge x in Zp
 	xChallenge := generateChallengeFromPoint([]*privacy.EllipticPoint{pro.commitmentValue})
 
@@ -162,6 +169,7 @@ func (pro *ComZeroProof) Verify() bool {
 	if !commitmentZeroZ.IsEqual(verifyPoint) {
 		return false
 	}
-
+	end := time.Since(start)
+	fmt.Printf("Zero commitment verification time: %v\n", end)
 	return true
 }

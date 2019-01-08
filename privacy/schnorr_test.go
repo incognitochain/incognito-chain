@@ -9,11 +9,11 @@ func TestSchn(t *testing.T) {
 	schnPrivKey := new(SchnPrivKey)
 	schnPrivKey.GenKey()
 
-	data := RandBytes(SpendingKeySize)
+	data := RandInt()
 
-	signature, _ := schnPrivKey.Sign(data)
+	signature, _ := schnPrivKey.Sign(data.Bytes())
 
-	res := schnPrivKey.PubKey.Verify(signature, data)
+	res := schnPrivKey.PubKey.Verify(signature, data.Bytes())
 
 	assert.Equal(t, true, res)
 }

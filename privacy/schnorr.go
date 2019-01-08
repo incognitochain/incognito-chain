@@ -27,13 +27,8 @@ func (priKey *SchnPrivKey) GenKey() {
 		priKey = new(SchnPrivKey)
 	}
 
-	xBytes := RandBytes(SpendingKeySize)
-	priKey.SK = new(big.Int).SetBytes(xBytes)
-	priKey.SK.Mod(priKey.SK, Curve.Params().N)
-
-	rBytes := RandBytes(SpendingKeySize)
-	priKey.R = new(big.Int).SetBytes(rBytes)
-	priKey.R.Mod(priKey.R, Curve.Params().N)
+	priKey.SK = RandInt()
+	priKey.R = RandInt()
 
 	priKey.PubKey = new(SchnPubKey)
 
