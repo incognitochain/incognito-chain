@@ -49,7 +49,7 @@ func (lp *LoanPayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 	unique, receiver, amount := txr.GetUniqueReceiver()
 	fmt.Printf("unique, receiver, amount: %v, %x, %v\n", unique, receiver, amount)
 	if !unique || !bytes.Equal(receiver, burnPk) {
-		return false, fmt.Errorf("Loan payment must be sent to DCB address")
+		return false, fmt.Errorf("Loan payment must be sent to burn address")
 	}
 
 	return true, nil
@@ -70,7 +70,7 @@ func (lp *LoanPayment) ValidateMetadataByItself() bool {
 func GetTotalInterest(principle, interest, interestRate uint64, maturity, deadline, currentHeight uint32) uint64 {
 	totalInterest := uint64(0)
 	if currentHeight >= deadline {
-		totalInterest = interest + uint64(1+(currentHeight-deadline)/maturity)*GetInterestPerTerm(principle, interestRate)
+		totalInterest = interest + uint64((currentHeight-deadline)/maturity)*GetInterestPerTerm(principle, interestRate)
 	}
 	return totalInterest
 }

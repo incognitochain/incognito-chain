@@ -543,23 +543,30 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 	if err != nil {
 		return err
 	}
+	fmt.Printf("[db]pid: %d, %d, %d\n", principle, interest, deadline)
 
 	// Pay interest
 	interestPerTerm := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
 	chainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+	height := uint32(self.GetChainHeight(chainID))
 	totalInterest := metadata.GetTotalInterest(
 		principle,
 		interest,
 		requestMeta.Params.InterestRate,
 		requestMeta.Params.Maturity,
 		deadline,
-		uint32(self.GetChainHeight(chainID)),
+		height,
 	)
-	periodInc := uint32(0)
+	fmt.Printf("[db]perTerm, totalInt: %d, %d\n", interestPerTerm, totalInterest)
+	termInc := uint32(0)
 	if value <= totalInterest { // Pay all to cover interest
-		if interestPerTerm != 0 {
-			periodInc = 1 + uint32((value-interest)/interestPerTerm)
-			interest = interestPerTerm - (value-interest)%interestPerTerm
+		if interestPerTerm > 0 {
+			if value >= interest {
+				termInc = 1 + uint32((value-interest)/interestPerTerm)
+				interest = interestPerTerm - (value-interest)%interestPerTerm
+			} else {
+				interest -= value
+			}
 		}
 	} else { // Pay enough to cover interest, the rest go to principle
 		if value-totalInterest > principle {
@@ -567,10 +574,15 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 		} else {
 			principle -= value - totalInterest
 		}
-		periodInc = 1 + uint32((totalInterest-interest)/interestPerTerm)
-		interest = interestPerTerm
+		if totalInterest >= interest { // This payment pays for interest
+			if interestPerTerm > 0 {
+				termInc = 1 + uint32((totalInterest-interest)/interestPerTerm)
+				interest = interestPerTerm
+			}
+		}
 	}
-	deadline = deadline + periodInc*requestMeta.Params.Maturity
+	fmt.Printf("termInc: %d\n", termInc)
+	deadline = deadline + termInc*requestMeta.Params.Maturity
 
 	return self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, deadline)
 }
