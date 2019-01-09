@@ -398,11 +398,12 @@ func (self *ConnManager) processDiscoverPeers() {
 					Logger.log.Error(err)
 				}
 			}
-			// remove later
-			rawAddress := listener.RawAddress
 
 			externalAddress := self.Config.ExternalAddress
 			Logger.log.Info("Start Process Discover Peers ExternalAddress", externalAddress)
+
+			// remove later
+			rawAddress := listener.RawAddress
 			if externalAddress == EmptyString {
 				externalAddress = os.Getenv("EXTERNAL_ADDRESS")
 			}
@@ -411,6 +412,8 @@ func (self *ConnManager) processDiscoverPeers() {
 				if err == nil && host != EmptyString {
 					rawAddress = strings.Replace(rawAddress, "127.0.0.1", host, 1)
 				}
+			} else {
+				rawAddress = ""
 			}
 
 			args := &server.PingArgs{
