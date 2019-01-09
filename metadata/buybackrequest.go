@@ -9,9 +9,6 @@ import (
 )
 
 type BuyBackRequest struct {
-	// BuyBackFromTxID common.Hash
-	// VoutIndex       int
-
 	PaymentAddress privacy.PaymentAddress
 	Amount         uint64
 	TokenID        []byte
@@ -19,9 +16,6 @@ type BuyBackRequest struct {
 }
 
 func NewBuyBackRequest(
-	// buyBackFromTxID common.Hash,
-	// voutIndex int,
-
 	paymentAddress privacy.PaymentAddress,
 	amount uint64,
 	tokenID []byte,
@@ -31,9 +25,6 @@ func NewBuyBackRequest(
 		Type: metaType,
 	}
 	return &BuyBackRequest{
-		// BuyBackFromTxID: buyBackFromTxID,
-		// VoutIndex:       voutIndex,
-
 		PaymentAddress: paymentAddress,
 		Amount:         amount,
 		TokenID:        tokenID,

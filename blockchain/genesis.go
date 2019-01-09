@@ -81,10 +81,18 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 
 	// Gov param
 	genesisBlock.Header.GOVConstitution.GOVParams = params.GOVParams{
-		SalaryPerTx:  salaryPerTx,
-		BasicSalary:  basicSalary,
-		SellingBonds: &params.SellingBonds{},
-		RefundInfo:   &params.RefundInfo{},
+		SalaryPerTx: salaryPerTx,
+		BasicSalary: basicSalary,
+		SellingBonds: &params.SellingBonds{
+			TotalIssue:     10000,
+			BondsToSell:    10000,
+			BondPrice:      100,
+			Maturity:       1000,
+			BuyBackPrice:   120,
+			StartSellingAt: 1,
+			SellingWithin:  500,
+		},
+		RefundInfo: &params.RefundInfo{},
 		OracleNetwork: &params.OracleNetwork{
 			OraclePubKeys:         [][]byte{},
 			WrongTimesAllowed:     2,
