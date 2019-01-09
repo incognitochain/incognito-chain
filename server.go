@@ -25,9 +25,9 @@ import (
 	"github.com/ninjadotorg/constant/netsync"
 	"github.com/ninjadotorg/constant/peer"
 	"github.com/ninjadotorg/constant/rewardagent"
+	"github.com/ninjadotorg/constant/rpcserver"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
-	"github.com/ninjadotorg/constant/rpcserver"
 )
 
 type Server struct {
@@ -476,15 +476,15 @@ func (self Server) Start() {
 	self.waitGroup.Add(1)
 
 	go self.peerHandler()
-	// if !cfg.DisableRPC && self.rpcServer != nil {
-	// 	self.waitGroup.Add(1)
+	if !cfg.DisableRPC && self.rpcServer != nil {
+		self.waitGroup.Add(1)
 
-	// 	// Start the rebroadcastHandler, which ensures user tx received by
-	// 	// the RPC server are rebroadcast until being included in a block.
-	// 	//go self.rebroadcastHandler()
+		// Start the rebroadcastHandler, which ensures user tx received by
+		// the RPC server are rebroadcast until being included in a block.
+		//go self.rebroadcastHandler()
 
-	// 	self.rpcServer.Start()
-	// }
+		self.rpcServer.Start()
+	}
 
 	if cfg.NodeMode != "relay" {
 		err := self.consensusEngine.Start()

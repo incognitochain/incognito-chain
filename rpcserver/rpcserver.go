@@ -69,7 +69,7 @@ type RpcServerConfig struct {
 	ConnMgr         *connmanager.ConnManager
 	AddrMgr         *addrmanager.AddrManager
 	NodeMode        string
-	Server interface {
+	Server          interface {
 		// Push TxNormal Message
 		PushMessageToAll(message wire.Message) error
 		PushMessageToPeer(message wire.Message, id peer2.ID) error
