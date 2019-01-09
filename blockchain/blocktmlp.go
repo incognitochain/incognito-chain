@@ -576,13 +576,15 @@ func buildSingleBuySellResponseTx(
 	copy(propertyID[:], bondID[:])
 	txTokenData := transaction.TxTokenData{
 		Type:       transaction.CustomTokenInit,
+		Mintable:   true,
 		Amount:     buySellReq.Amount,
 		PropertyID: common.Hash(propertyID),
 		Vins:       []transaction.TxTokenVin{},
 		Vouts:      []transaction.TxTokenVout{txTokenVout},
-		// PropertyName:   "",
-		// PropertySymbol: coinbaseTxType,
 	}
+	txTokenData.PropertyName = txTokenData.PropertyID.String()
+	txTokenData.PropertySymbol = txTokenData.PropertyID.String()
+
 	resTx := &transaction.TxCustomToken{
 		TxTokenData: txTokenData,
 	}

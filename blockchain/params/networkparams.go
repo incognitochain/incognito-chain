@@ -17,7 +17,10 @@ type SellingBonds struct {
 }
 
 func (self SellingBonds) GetID() *common.Hash {
-	temp, _ := common.Hash{}.NewHashFromStr(fmt.Sprintf("%d%d%d", self.Maturity, self.BuyBackPrice, self.StartSellingAt))
+	record := fmt.Sprintf("%d", self.Maturity)
+	record += fmt.Sprintf("%d", self.BuyBackPrice)
+	record += fmt.Sprintf("%d", self.StartSellingAt)
+	temp := common.DoubleHashH([]byte(record))
 	bondIDBytesWithPrefix := append(common.BondTokenID[0:8], temp[8:]...)
 	result := &common.Hash{}
 	result.SetBytes(bondIDBytesWithPrefix)

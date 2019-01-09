@@ -2,11 +2,26 @@ package main
 
 import (
 	"fmt"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/privacy"
 
 	"github.com/ninjadotorg/constant/wallet"
 )
 
 func main() {
+
+	burnPubKeyE := privacy.PedCom.G[0].Hash(1000000)
+	burnPubKey := burnPubKeyE.Compress()
+	burnKey := wallet.Key{
+		KeySet: cashec.KeySet{
+			PaymentAddress: privacy.PaymentAddress{
+				Pk: burnPubKey,
+			},
+		},
+	}
+	burnPaymentAddress := burnKey.Base58CheckSerialize(wallet.PaymentAddressType)
+	fmt.Printf("Burn payment address : %s", burnPaymentAddress)
+
 	mnemonicGen := wallet.MnemonicGenerator{}
 	Entropy, _ := mnemonicGen.NewEntropy(128)
 	Mnemonic, _ := mnemonicGen.NewMnemonic(Entropy)
