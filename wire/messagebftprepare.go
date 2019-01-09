@@ -13,9 +13,10 @@ const (
 )
 
 type MessageBFTPrepare struct {
-	Ri     []byte
-	Pubkey string
-	MsgSig string
+	BlkHash string
+	Ri      []byte
+	Pubkey  string
+	MsgSig  string
 }
 
 func (self *MessageBFTPrepare) Hash() string {
