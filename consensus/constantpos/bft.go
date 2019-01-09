@@ -181,7 +181,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 				}
 			case "commit":
 				fmt.Println("Commit phase")
-				time.AfterFunc(CommitTimeout*time.Second, func() {
+				cmTimeout := time.AfterFunc(CommitTimeout*time.Second, func() {
 					fmt.Println("Commit phase timeout")
 					close(self.cTimeout)
 				})
@@ -212,31 +212,6 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 				// commitphase:
 				for {
 					select {
-					case msgCommit := <-self.cBFTMsg:
-						if msgCommit.MessageType() == wire.CmdBFTCommit {
-							fmt.Println("Commit msg received")
-							newSig := bftCommittedSig{
-								Pubkey:        msgCommit.(*wire.MessageBFTCommit).Pubkey,
-								ValidatorsIdx: msgCommit.(*wire.MessageBFTCommit).ValidatorsIdx,
-								Sig:           msgCommit.(*wire.MessageBFTCommit).CommitSig,
-							}
-							R := msgCommit.(*wire.MessageBFTCommit).R
-
-							//Check that Validators Index array in newSig and Validators Index array in each of sig have the same R are equality
-							// for _, valSig := range phaseData.Sigs[R] {
-							// 	for i, value := range valSig.ValidatorsIdx {
-							// 		if value != newSig.ValidatorsIdx[i] {
-							// 			return
-							// 		}
-							// 	}
-							// }
-
-							err := self.multiSigScheme.VerifyCommitSig(newSig.Pubkey, newSig.Sig, R, newSig.ValidatorsIdx)
-							if err != nil {
-								return nil, err
-							}
-							phaseData.Sigs[R] = append(phaseData.Sigs[R], newSig)
-						}
 					case <-self.cTimeout:
 						//Combine collected Sigs with the same R that has the longest list must has size > 1/2size(committee)
 						var szRCombined string
@@ -278,6 +253,37 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 						}
 
 						return self.pendingBlock, nil
+					case msgCommit := <-self.cBFTMsg:
+						if msgCommit.MessageType() == wire.CmdBFTCommit {
+							fmt.Println("Commit msg received")
+							newSig := bftCommittedSig{
+								Pubkey:        msgCommit.(*wire.MessageBFTCommit).Pubkey,
+								ValidatorsIdx: msgCommit.(*wire.MessageBFTCommit).ValidatorsIdx,
+								Sig:           msgCommit.(*wire.MessageBFTCommit).CommitSig,
+							}
+							R := msgCommit.(*wire.MessageBFTCommit).R
+
+							//Check that Validators Index array in newSig and Validators Index array in each of sig have the same R are equality
+							// for _, valSig := range phaseData.Sigs[R] {
+							// 	for i, value := range valSig.ValidatorsIdx {
+							// 		if value != newSig.ValidatorsIdx[i] {
+							// 			return
+							// 		}
+							// 	}
+							// }
+
+							err := self.multiSigScheme.VerifyCommitSig(newSig.Pubkey, newSig.Sig, R, newSig.ValidatorsIdx)
+							if err != nil {
+								return nil, err
+							}
+							phaseData.Sigs[R] = append(phaseData.Sigs[R], newSig)
+							if len(phaseData.Sigs[R]) > (len(self.RoleData.Committee) >> 1) {
+								cmTimeout.Stop()
+								fmt.Println("Collected enough R")
+								close(self.cTimeout)
+							}
+
+						}
 					}
 				}
 			}
