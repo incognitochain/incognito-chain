@@ -203,12 +203,12 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		// 	break
 	case CmdMsgCheck:
 		msg = &MessageMsgCheck{
-			Timestamp: time.Now(),
+			Timestamp: time.Now().UnixNano(),
 		}
 		break
 	case CmdMsgCheckResp:
 		msg = &MessageMsgCheckResp{
-			Timestamp: time.Now(),
+			Timestamp: time.Now().UnixNano(),
 		}
 		break
 	default:
