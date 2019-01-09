@@ -62,31 +62,35 @@ func (self RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, cl
 	var err error
 	arrayParams := common.InterfaceSlice(params)
 
-	// Req param #4: issuing request info
-	buyBackReq := arrayParams[4].(map[string]interface{})
-	voutIndex := int(buyBackReq["voutIndex"].(float64))
-	buyBackFromTxIDBytes := []byte(buyBackReq["buyBackFromTxID"].(string))
-	buyBackFromTxID := common.Hash{}
-	copy(buyBackFromTxID[:], buyBackFromTxIDBytes)
-	metaType := metadata.BuyBackRequestMeta
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	paymentAddr := senderKey.KeySet.PaymentAddress
+	tokenParamsRaw := arrayParams[3].(map[string]interface{})
+	_, voutsAmount := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
+
+	tokenID := []byte(tokenParamsRaw["TokenID"].(string))
 	meta := metadata.NewBuyBackRequest(
-		buyBackFromTxID,
-		voutIndex,
-		metaType,
+		paymentAddr,
+		uint64(voutsAmount),
+		tokenID,
+		metadata.BuyBackRequestMeta,
 	)
-	normalTx, err := self.buildRawTransaction(params, meta)
+	customTokenTx, err := self.buildRawCustomTokenTransaction(params, meta)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	byteArrays, err := json.Marshal(normalTx)
+	byteArrays, err := json.Marshal(customTokenTx)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result := jsonresult.CreateTransactionResult{
-		TxID:            normalTx.Hash().String(),
+		TxID:            customTokenTx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil

@@ -655,45 +655,58 @@ func (blockgen *BlkTmplGenerator) checkBuyBackReqTx(
 	tx metadata.Transaction,
 	buyBackConsts uint64,
 ) (*buyBackFromInfo, bool) {
-	buyBackReqMeta := tx.GetMetadata()
+	buyBackReqTx, ok := tx.(*transaction.TxCustomToken)
+	if !ok {
+		Logger.log.Error(errors.New("Could not parse BuyBackRequest tx (custom token tx)."))
+		return nil, false
+	}
+	vins := buyBackReqTx.TxTokenData.Vins
+	if len(vins) == 0 {
+		Logger.log.Error(errors.New("No existed Vins from BuyBackRequest tx"))
+		return nil, false
+	}
+	priorTxID := vins[0].TxCustomTokenID
+	_, _, _, priorTx, err := blockgen.chain.GetTransactionByHash(&priorTxID)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, false
+	}
+	priorCustomTokenTx, ok := priorTx.(*transaction.TxCustomToken)
+	if !ok {
+		Logger.log.Error(errors.New("Could not parse prior TxCustomToken."))
+		return nil, false
+	}
+
+	priorMeta := priorCustomTokenTx.GetMetadata()
+	if priorMeta == nil {
+		Logger.log.Error(errors.New("No existed metadata in priorCustomTokenTx"))
+		return nil, false
+	}
+	buySellResMeta, ok := priorMeta.(*metadata.BuySellResponse)
+	if !ok {
+		Logger.log.Error(errors.New("Could not parse BuySellResponse metadata."))
+		return nil, false
+	}
+	prevBlock := blockgen.chain.BestState[chainID].BestBlock
+	if buySellResMeta.StartSellingAt+buySellResMeta.Maturity > uint32(prevBlock.Header.Height)+1 {
+		Logger.log.Error("The token is not overdued yet.")
+		return nil, false
+	}
+	// check remaining constants in GOV fund is enough or not
+	buyBackReqMeta := buyBackReqTx.GetMetadata()
 	buyBackReq, ok := buyBackReqMeta.(*metadata.BuyBackRequest)
 	if !ok {
 		Logger.log.Error(errors.New("Could not parse BuyBackRequest metadata."))
 		return nil, false
 	}
-	_, _, _, fromTx, err := blockgen.chain.GetTransactionByHash(&buyBackReq.BuyBackFromTxID)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, false
-	}
-	customTokenTx, ok := fromTx.(*transaction.TxCustomToken)
-	if !ok {
-		Logger.log.Error(errors.New("Could not parse TxCustomToken."))
-		return nil, false
-	}
-	fromTxMeta := fromTx.GetMetadata()
-	buySellRes, ok := fromTxMeta.(*metadata.BuySellResponse)
-	if !ok {
-		Logger.log.Error(errors.New("Could not parse BuySellResponse metadata."))
-		return nil, false
-	}
-
-	vout := customTokenTx.TxTokenData.Vouts[buyBackReq.VoutIndex]
-	prevBlock := blockgen.chain.BestState[chainID].BestBlock
-
-	if buySellRes.StartSellingAt+buySellRes.Maturity > uint32(prevBlock.Header.Height)+1 {
-		Logger.log.Error("The token is not overdued yet.")
-		return nil, false
-	}
-	// check remaining constants in GOV fund is enough or not
-	buyBackAmount := vout.Value * buySellRes.BuyBackPrice
-	if buyBackConsts+buyBackAmount > prevBlock.Header.SalaryFund {
+	buyBackValue := buyBackReq.Amount * buySellResMeta.BuyBackPrice
+	if buyBackConsts+buyBackValue > prevBlock.Header.SalaryFund {
 		return nil, false
 	}
 	buyBackFromInfo := &buyBackFromInfo{
-		paymentAddress: vout.PaymentAddress,
-		buyBackPrice:   buySellRes.BuyBackPrice,
-		value:          vout.Value,
+		paymentAddress: buyBackReq.PaymentAddress,
+		buyBackPrice:   buySellResMeta.BuyBackPrice,
+		value:          buyBackReq.Amount,
 		requestedTxID:  tx.Hash(),
 	}
 	return buyBackFromInfo, true
