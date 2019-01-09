@@ -47,3 +47,7 @@ func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-c
 
 	return result, nil
 }
+
+func (self RpcServer) handleGetEncryptionFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+
+}

@@ -26,6 +26,18 @@ func NewSubmitDCBProposalMetadata(DCBParams params.DCBParams, executeDuration ui
 	}
 }
 
+func NewSubmitDCBProposalMetadataFromJson(data interface{}) SubmitDCBProposalMetadata {
+	DCBParams := *params2.NewDCBParamsFromRPC(arrayParams[NParams-4])
+	executeDuration := arrayParams[NParams-3].(uint32)
+	explanation := arrayParams[NParams-2].(string)
+
+	paymentData := []byte(arrayParams[NParams-1].(string))
+	address := privacy.PaymentAddress{}
+	address.SetBytes(paymentData)
+	meta := metadata.NewSubmitDCBProposalMetadata(DCBParams, executeDuration, explanation, &address)
+	data.(map[string])
+}
+
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) Hash() *common.Hash {
 	record := string(submitDCBProposalMetadata.DCBParams.Hash().GetBytes())
 	record += string(submitDCBProposalMetadata.ExecuteDuration)

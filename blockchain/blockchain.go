@@ -1446,7 +1446,7 @@ func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) b
 	pivotOfStart := endedOfConstitution - 3*common.EncryptionOnePhraseDuration
 
 	rightTime := newNationalWelfare < thresholdNationalWelfare || pivotOfStart == uint32(thisBlockHeight)
-	rightFlag := self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType()) == common.Lv3EncryptionFlag
+	rightFlag := self.config.DataBase.GetEncryptFlag(helper.GetBoardType()) == common.Lv3EncryptionFlag
 	if rightTime && rightFlag {
 		return true
 	}
@@ -1457,9 +1457,9 @@ func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) b
 func (self *BlockChain) NeedEnterEncryptLv1(helper ConstitutionHelper) bool {
 	BestBlock := self.BestState[0].BestBlock
 	thisBlockHeight := BestBlock.Header.Height
-	lastEncryptBlockHeight := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetLowerCaseBoardType())
+	lastEncryptBlockHeight := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
 	if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
-		self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType()) == common.Lv2EncryptionFlag {
+		self.config.DataBase.GetEncryptFlag(helper.GetBoardType()) == common.Lv2EncryptionFlag {
 		return true
 	}
 	return false
@@ -1469,9 +1469,9 @@ func (self *BlockChain) NeedEnterEncryptLv1(helper ConstitutionHelper) bool {
 func (self *BlockChain) NeedEnterEncryptNormal(helper ConstitutionHelper) bool {
 	BestBlock := self.BestState[0].BestBlock
 	thisBlockHeight := BestBlock.Header.Height
-	lastEncryptBlockHeight := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetLowerCaseBoardType())
+	lastEncryptBlockHeight := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
 	if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
-		self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType()) == common.Lv1EncryptionFlag {
+		self.config.DataBase.GetEncryptFlag(helper.GetBoardType()) == common.Lv1EncryptionFlag {
 		return true
 	}
 	return false
@@ -1480,7 +1480,7 @@ func (self *BlockChain) NeedEnterEncryptNormal(helper ConstitutionHelper) bool {
 //This function is called after successful connect block => block height is block height of best state
 func (self *BlockChain) SetEncryptPhrase(helper ConstitutionHelper) {
 	flag := 0
-	boardType := helper.GetLowerCaseBoardType()
+	boardType := helper.GetBoardType()
 	if self.NeedToEnterEncryptionPhrase(helper) {
 		flag = common.Lv2EncryptionFlag
 		self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[0].BestBlock.Header.Height))
@@ -1500,9 +1500,9 @@ func (self *BlockChain) SetEncryptPhrase(helper ConstitutionHelper) {
 func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
 	BestBlock := self.BestState[0].BestBlock
 	thisBlockHeight := BestBlock.Header.Height + 1
-	lastEncryptBlockHeight := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetLowerCaseBoardType())
+	lastEncryptBlockHeight := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
 	if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
-		self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType()) == common.NormalEncryptionFlag {
+		self.config.DataBase.GetEncryptFlag(helper.GetBoardType()) == common.NormalEncryptionFlag {
 		return true
 	}
 	return false
