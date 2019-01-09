@@ -428,7 +428,7 @@ func (db *db) SetEncryptFlag(boardType string, flag uint32) {
 }
 
 func GetKeyEncryptionLastBlockHeight(boardType string) []byte {
-	key := GetKeyFromVariadic(encryptionLastBlockHeightPrefix)
+	key := GetKeyFromVariadic(encryptionLastBlockHeightPrefix, []byte(boardType))
 	return key
 }
 
@@ -446,7 +446,7 @@ func (db *db) SetEncryptionLastBlockHeight(boardType string, height uint32) {
 
 func (db *db) GetAmountVoteToken(boardType string, boardIndex uint32, pubKey []byte) (uint32, error) {
 	key := GetKeyVoteTokenAmount(boardType, boardIndex, pubKey)
-	currentAmountInBytes, err := db.lvdb.Get(key, nil)
+	currentAmountInBytes, err := db.Get(key)
 	if err != nil {
 		return 0, err
 	}

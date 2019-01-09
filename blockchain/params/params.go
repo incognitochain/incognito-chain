@@ -35,47 +35,53 @@ type DCBParams struct {
 	LoanParams []LoanParams // params for collateralized loans of Constant
 }
 
-func NewDCBParams(saleData *SaleData, minLoanResponseRequire uint8, saleDBCTOkensByUSDData *SaleDBCTOkensByUSDData, loanParams []LoanParams) *DCBParams {
-	return &DCBParams{
-		SaleData:               saleData,
-		MinLoanResponseRequire: minLoanResponseRequire,
-		SaleDBCTOkensByUSDData: saleDBCTOkensByUSDData,
-		LoanParams:             loanParams,
-	}
+func NewDCBParams(
+	saleData *SaleData,
+ minLoanResponseRequire uint8,
+ minCMBApprovalRequire uint8,
+ lateWithdrawResponseFine uint64,
+		 saleDBCTOkensByUSDData *SaleDBCTOkensByUSDData,
+ loanParams []LoanParams,
+ ) *DCBParams {
+	return &DCBParams{SaleData: saleData, MinLoanResponseRequire: minLoanResponseRequire, MinCMBApprovalRequire: minCMBApprovalRequire, LateWithdrawResponseFine: lateWithdrawResponseFine, SaleDBCTOkensByUSDData: saleDBCTOkensByUSDData, LoanParams: loanParams}
 }
 
-func NewDCBParamsFromRPC(data interface{}) *DCBParams {
-	arrayParams := common.InterfaceSlice(data)
+func NewDCBParamsFromJson(rawData interface{}) *DCBParams {
 
-	saleDataData := common.InterfaceSlice(arrayParams[0])
+	data := rawData.(map[string]interface{})
+
+	saleDataData := data["saleData"].(map[string]interface{})
 	saleData := NewSaleData(
-		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData[0])),
-		int32(saleDataData[1].(float64)),
-		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData[2])),
-		uint64(saleDataData[3].(float64)),
-		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData[4])),
-		uint64(saleDataData[5].(float64)),
+		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["saleID"])),
+		int32(saleDataData["endBlock"].(float64)),
+		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["buyingAsset"])),
+		uint64(saleDataData["buyingAmount"].(float64)),
+		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["sellingAsset"])),
+		uint64(saleDataData["sellingAmount"].(float64)),
 	)
+	
+	
+	minLoanResponseRequire := uint8(data["minLoanResponseRequire"].(float64))
+	minCMBApprovalRequire  := uint8(data["minCMBApprovalRequire"].(float64))
+	lateWithdrawResponseFine := uint64(data["lateWithdrawResponseFine"].(float64))
 
-	minLoanResponseRequire := uint8(arrayParams[1].(float64))
-
-	saleDBCTOkensByUSDDataData := common.InterfaceSlice(arrayParams[2])
+	saleDBCTOkensByUSDDataData := data["saleDBCTOkensByUSDDataData"].(map[string]interface{})
 	saleDBCTOkensByUSDData := NewSaleDBCTOkensByUSDData(
-		uint64(saleDBCTOkensByUSDDataData[0].(float64)),
-		int32(saleDBCTOkensByUSDDataData[1].(float64)),
+		uint64(saleDBCTOkensByUSDDataData["amount"].(float64)),
+		int32(saleDBCTOkensByUSDDataData["endBlock"].(float64)),
 	)
 
-	loanParamsData := common.InterfaceSlice(arrayParams[3])
+	loanParamsData := common.InterfaceSlice(data["loanParams"])
 	loanParams := make([]LoanParams, 0)
 	for _, i := range loanParamsData {
-		loanParamsSingleData := common.InterfaceSlice(i)
+		loanParamsSingleData := i.(map[string]interface{})
 		loanParams = append(loanParams, *NewLoanParams(
-			uint64(loanParamsSingleData[0].(float64)),
-			uint32(loanParamsSingleData[1].(float64)),
-			uint64(loanParamsSingleData[2].(float64)),
+			uint64(loanParamsSingleData["interestRate"].(float64)),
+			uint32(loanParamsSingleData["maturity"].(float64)),
+			uint64(loanParamsSingleData["liquidationStart"].(float64)),
 		))
 	}
-	return NewDCBParams(saleData, minLoanResponseRequire, saleDBCTOkensByUSDData, loanParams)
+	return NewDCBParams(saleData, minLoanResponseRequire, minCMBApprovalRequire, lateWithdrawResponseFine, saleDBCTOkensByUSDData, loanParams)
 }
 
 type GOVParams struct {
