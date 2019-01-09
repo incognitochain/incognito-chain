@@ -34,7 +34,10 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 
 	// param #2: list receiver
 	totalAmmount := uint64(0)
-	receiversParam := arrayParams[1].(map[string]interface{})
+	receiversParam := make(map[string]interface{})
+	if arrayParams[1] != nil {
+		receiversParam = arrayParams[1].(map[string]interface{})
+	}
 	paymentInfos := make([]*privacy.PaymentInfo, 0)
 	for pubKeyStr, amount := range receiversParam {
 		receiverPubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
