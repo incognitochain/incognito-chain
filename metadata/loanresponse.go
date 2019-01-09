@@ -12,35 +12,36 @@ import (
 type ValidLoanResponse int
 
 const (
-	Accept ValidLoanResponse = iota
-	Reject
+	Reject ValidLoanResponse = iota
+	Accept
 )
 
 type LoanResponse struct {
-	LoanID     []byte
-	Response   ValidLoanResponse
-	ValidUntil int32
+	LoanID   []byte
+	Response ValidLoanResponse
 
 	MetadataBase
 }
 
-func NewLoanResponse(data map[string]interface{}) *LoanResponse {
-	result := LoanResponse{
-		ValidUntil: int32(data["ValidUntil"].(float64)),
-	}
+type ResponseData struct {
+	PublicKey []byte
+	Response  ValidLoanResponse
+}
+
+func NewLoanResponse(data map[string]interface{}) (Metadata, error) {
+	result := LoanResponse{}
 	s, _ := hex.DecodeString(data["LoanID"].(string))
 	result.LoanID = s
 
 	result.Response = ValidLoanResponse(int(data["Response"].(float64)))
 	result.Type = LoanResponseMeta
 
-	return &result
+	return &result, nil
 }
 
 func (lr *LoanResponse) Hash() *common.Hash {
 	record := string(lr.LoanID)
 	record += string(lr.Response)
-	record += string(lr.ValidUntil)
 
 	// final hash
 	record += string(lr.MetadataBase.Hash()[:])
@@ -50,9 +51,11 @@ func (lr *LoanResponse) Hash() *common.Hash {
 
 func txCreatedByDCBBoardMember(txr Transaction, bcr BlockchainRetriever) bool {
 	isBoard := false
+	txPubKey := txr.GetJSPubKey()
+	fmt.Printf("check if created by dcb board: %v\n", txPubKey)
 	for _, member := range bcr.GetDCBBoardPubKeys() {
-		// TODO(@0xbunyip): change gov to []byte or use Base58Decode for entire payment address of governors
-		if bytes.Equal([]byte(member), txr.GetJSPubKey()) {
+		fmt.Printf("member of board pubkey: %v\n", member)
+		if bytes.Equal(member, txPubKey) {
 			isBoard = true
 		}
 	}
@@ -60,6 +63,7 @@ func txCreatedByDCBBoardMember(txr Transaction, bcr BlockchainRetriever) bool {
 }
 
 func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+	fmt.Println("Validating LoanResponse with blockchain!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	// Check if only board members created this tx
 	if !txCreatedByDCBBoardMember(txr, bcr) {
 		return false, fmt.Errorf("Tx must be created by DCB Governor")
@@ -70,8 +74,10 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 	if err != nil {
 		return false, err
 	}
+	fmt.Printf("GetLoanTxs found:\n")
 	found := false
 	for _, txHash := range txHashes {
+		fmt.Printf("%x\n", txHash)
 		hash := &common.Hash{}
 		copy(hash[:], txHash)
 		_, _, _, txOld, err := bcr.GetTransactionByHash(hash)
@@ -81,24 +87,20 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 		switch txOld.GetMetadataType() {
 		case LoanResponseMeta:
 			{
+				_, ok := txOld.GetMetadata().(*LoanResponse)
+				if !ok {
+					continue
+				}
 				// Check if the same user responses twice
 				if bytes.Equal(txOld.GetJSPubKey(), txr.GetJSPubKey()) {
 					return false, fmt.Errorf("Current board member already responded to loan request")
 				}
-				meta := txOld.GetMetadata()
-				if meta == nil {
-					continue
-				}
-				metaOld := meta.(*LoanResponse)
-				if lr.ValidUntil != metaOld.ValidUntil {
-					return false, fmt.Errorf("Valid deadline of all responses of a loan must be the same")
-				}
 			}
 		case LoanRequestMeta:
 			{
-				meta := txOld.GetMetadata()
-				if meta == nil {
-					return false, fmt.Errorf("Error parsing loan request tx")
+				_, ok := txOld.GetMetadata().(*LoanRequest)
+				if !ok {
+					continue
 				}
 				found = true
 			}
@@ -108,6 +110,7 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 	if found == false {
 		return false, fmt.Errorf("Corresponding loan request not found")
 	}
+	fmt.Printf("Validate returns true!!!\n")
 	return true, nil
 }
 
@@ -125,4 +128,31 @@ func (lr *LoanResponse) ValidateMetadataByItself() bool {
 // CheckTransactionFee returns true since loan response tx doesn't have fee
 func (lr *LoanResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	return true
+}
+
+// GetLoanResponses returns list of members who responded to a loan; input the hashes of request and response txs of the loan
+func GetLoanResponses(txHashes [][]byte, bcr BlockchainRetriever) []ResponseData {
+	data := []ResponseData{}
+	for _, txHash := range txHashes {
+		hash, err := (&common.Hash{}).NewHash(txHash)
+		if err != nil {
+			fmt.Printf("NewHash err: %x\n", txHash)
+			continue
+		}
+		_, _, _, txOld, err := bcr.GetTransactionByHash(hash)
+		if txOld == nil || err != nil {
+			fmt.Printf("GetTxByHash err: %x\n", hash)
+			continue
+		}
+		fmt.Printf("Type: %d\n", txOld.GetMetadataType())
+		if txOld.GetMetadataType() == LoanResponseMeta {
+			meta := txOld.GetMetadata().(*LoanResponse)
+			respData := ResponseData{
+				PublicKey: txOld.GetJSPubKey(),
+				Response:  meta.Response,
+			}
+			data = append(data, respData)
+		}
+	}
+	return data
 }

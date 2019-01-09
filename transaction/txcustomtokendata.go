@@ -37,7 +37,7 @@ func (self TxTokenVin) Hash() *common.Hash {
 // It look like vout format of bitcoin
 type TxTokenVout struct {
 	Value          uint64                 // Amount to transfer
-	PaymentAddress privacy.PaymentAddress // public key of receiver
+	PaymentAddress privacy.PaymentAddress // payment address of receiver
 
 	// temp variable to determine position of itself in vouts arrays of tx which contain itself
 	index int
@@ -83,10 +83,11 @@ type TxTokenData struct {
 	PropertyName   string
 	PropertySymbol string
 
-	Type   int    // action type [init, transfer]
-	Amount uint64 // init amount
-	Vins   []TxTokenVin
-	Vouts  []TxTokenVout
+	Type     int    // action type [init, transfer]
+	Mintable bool   // can mine, default false
+	Amount   uint64 // init amount
+	Vins     []TxTokenVin
+	Vouts    []TxTokenVout
 }
 
 // Hash - return hash of token data, be used as Token ID

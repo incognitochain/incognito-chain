@@ -14,7 +14,7 @@ var ww = new Web3(Web3.givenProvider)
 
 contract("SimpleLoan", (accounts) => {
     const msAcc = accounts[0]
-    const owner = accounts[1]
+    const owner = accounts[0]
     const requester1 = accounts[2]
     const requester2 = accounts[3]
 
@@ -24,10 +24,13 @@ contract("SimpleLoan", (accounts) => {
     before(async () => {
         s = await ms.deployed();
         c = await sl.deployed();
-        key = u.padToBytes32(web3.utils.toHex("a"))
+        key = web3.utils.toHex("constant.money")
         digest = ww.utils.soliditySha3(key) 
         abi = JSON.parse(fs.readFileSync('./build/contracts/SimpleLoan.json', 'utf8')).abi
         //	l(key, digest, web3.sha3(key, { encoding: "hex" }))
+//        l('ab:', web3.utils.toHex('ab'))
+        l('key:', key)
+        l('digest:', digest)
     })
 
     function getFunc(abiObj, name) {
@@ -67,14 +70,9 @@ contract("SimpleLoan", (accounts) => {
             let loan = await c.loans(lid)
             let newPrinciple = loan[5].toNumber()
             eq(newPrinciple, 0)
-        })
-
-        it("should be able to refund", async () => {
-            tx = await c.refundCollateral(lid, offchain, { from: requester1 })
-            lid1 = await u.oc(tx, "__refundCollateral", "lid")
-            let amount = await u.oc(tx, "__refundCollateral", "amount")
+            
+            let amount = await u.roc(tx, abi, "__refundCollateral", "amount")
             eq(amount, web3.utils.toWei("10"))
-            eq(lid1, lid)
         })
     })
 
@@ -138,7 +136,7 @@ contract("SimpleLoan", (accounts) => {
         it('should update price but fail to liquidate', async () => {
             let collateralPrice = 180 * 100
             let assetPrice = 1 * 100
-            await u.assertRevert(c.liquidate(lid, 10, collateralPrice, assetPrice, offchain, { from: msAcc }))
+            await u.assertRevert(c.liquidate(lid, 0, collateralPrice, assetPrice, offchain, { from: msAcc })) // not under-collateralized and interest = 0
         })
 
         it("should be able to liquidate", async () => {
@@ -168,8 +166,8 @@ contract("SimpleLoan", (accounts) => {
 
         it("should refund successfully", async () => {
             let name = web3.utils.fromAscii("escrowWindow")
-            let escrowWindow = (await c.get(name)).toNumber()
-            u.increaseTime(escrowWindow) // pass escrowDeadline
+            let escrowWindow = (await c.get(name)).toNumber() + 100 // pass escrowDeadline
+            u.increaseTime(escrowWindow) 
             tx2 = await c.refundCollateral(lid, offchain, { from: requester1 })
             let amount = u.oc(tx2, "__refundCollateral", "amount")
             eq(amount.toString(), web3.utils.toWei("1"))

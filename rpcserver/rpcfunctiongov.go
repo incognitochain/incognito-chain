@@ -15,19 +15,33 @@ import (
 )
 
 func (self RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	tempRes1 := jsonresult.GetBondTypeResult{
-		BondID:         []byte("12345abc"),
-		StartSellingAt: 123,
-		Maturity:       300,
-		BuyBackPrice:   100000,
+	tempRes1 := jsonresult.GetBondTypeResultItem{
+		StartSellingAt: 0,
+		EndSellingAt:   500,
+		Maturity:       700,
+		BuyBackPrice:   110, // in constant
+		BuyPrice:       105, // in constant
+		TotalIssue:     1000,
+		Available:      800,
 	}
-	tempRes2 := jsonresult.GetBondTypeResult{
-		BondID:         []byte("12345xyz"),
-		StartSellingAt: 95,
-		Maturity:       200,
-		BuyBackPrice:   200000,
+	tempRes2 := jsonresult.GetBondTypeResultItem{
+		StartSellingAt: 0,
+		EndSellingAt:   500,
+		Maturity:       700,
+		BuyBackPrice:   130, // in constant
+		BuyPrice:       110, // in constant
+		TotalIssue:     2000,
+		Available:      800,
 	}
-	return []jsonresult.GetBondTypeResult{tempRes1, tempRes2}, nil
+	result := jsonresult.GetBondTypeResult{
+		BondTypes: make(map[string]jsonresult.GetBondTypeResultItem),
+	}
+
+	result.BondTypes["fc8bbbd183f97ff6cc55a62b2ddceade8e93eed5cdf1240b42e223d589b29645"] = tempRes1
+
+	result.BondTypes["fe7d3d124cf0309d8f1575982842b57266951a37a717a4d332a69eb176c409fa"] = tempRes2
+
+	return result, nil
 }
 
 func (self RpcServer) handleGetGOVParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -104,19 +118,19 @@ func (self RpcServer) handleCreateRawTxWithBuySellRequest(params interface{}, cl
 	var err error
 	arrayParams := common.InterfaceSlice(params)
 
-	// Req param #4: buy/sell request info
+	// Req param #5: buy/sell request info
 	buySellReq := arrayParams[4].(map[string]interface{})
 
-	paymentAddressMap := buySellReq["paymentAddress"].(map[string]interface{})
+	paymentAddressMap := buySellReq["PaymentAddress"].(map[string]interface{})
 	paymentAddress := privacy.PaymentAddress{
 		Pk: []byte(paymentAddressMap["pk"].(string)),
 		Tk: []byte(paymentAddressMap["tk"].(string)),
 	}
-	assetTypeBytes := []byte(buySellReq["assetType"].(string))
+	assetTypeBytes := []byte(buySellReq["TokenID"].(string))
 	assetType := common.Hash{}
 	copy(assetType[:], assetTypeBytes)
-	amount := uint64(buySellReq["amount"].(float64))
-	buyPrice := uint64(buySellReq["buyPrice"].(float64))
+	amount := uint64(buySellReq["Amount"].(float64))
+	buyPrice := uint64(buySellReq["BuyPrice"].(float64))
 	metaType := metadata.BuyFromGOVRequestMeta
 	meta := metadata.NewBuySellRequest(
 		paymentAddress,

@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"fmt"
 	"math"
 	"math/big"
 	"math/rand"
@@ -46,32 +47,38 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 		usableCommitment := in.CoinDetails.CoinCommitment.Compress()
 		listUsableCommitments = append(listUsableCommitments, usableCommitment)
 		index, _ := db.GetCommitmentIndex(tokenID, usableCommitment, chainID)
-		mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(usableCommitment, byte(0x00))] = index
+		mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(usableCommitment, common.ZeroByte)] = index
 	}
 
 	// loop to random commitmentIndexs
 	cpRandNum := (len(listUsableCommitments) * randNum) - len(listUsableCommitments)
-	for i := 0; i < cpRandNum; i++ {
-		for true {
-			lenCommitment, _ := db.GetCommitmentLength(tokenID, chainID)
-			index, _ := common.RandBigIntN(lenCommitment)
-			ok, err := db.HasCommitmentIndex(tokenID, index.Uint64(), chainID)
-			if ok && err == nil {
-				temp, _ := db.GetCommitmentByIndex(tokenID, index.Uint64(), chainID)
-				if index2, err := common.SliceBytesExists(listUsableCommitments, temp); index2 == -1 && err == nil {
-					// random commitment not in commitments of usableinputcoin
-					commitmentIndexs = append(commitmentIndexs, index.Uint64())
-					break
+	fmt.Printf("cpRandNum: %d\n", cpRandNum)
+	lenCommitment, _ := db.GetCommitmentLength(tokenID, chainID)
+	if lenCommitment.Uint64() == 1 {
+		commitmentIndexs = []uint64{0, 0, 0, 0, 0, 0, 0}
+	} else {
+		for i := 0; i < cpRandNum; i++ {
+			for true {
+				lenCommitment, _ = db.GetCommitmentLength(tokenID, chainID)
+				index, _ := common.RandBigIntN(lenCommitment)
+				ok, err := db.HasCommitmentIndex(tokenID, index.Uint64(), chainID)
+				if ok && err == nil {
+					temp, _ := db.GetCommitmentByIndex(tokenID, index.Uint64(), chainID)
+					if index2, err := common.SliceBytesExists(listUsableCommitments, temp); index2 == -1 && err == nil {
+						// random commitment not in commitments of usableinputcoin
+						commitmentIndexs = append(commitmentIndexs, index.Uint64())
+						break
+					}
+				} else {
+					continue
 				}
-			} else {
-				continue
 			}
 		}
 	}
 
 	// loop to insert usable commitments into commitmentIndexs for every group
 	for j, temp := range listUsableCommitments {
-		index := mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(temp, byte(0x00))]
+		index := mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(temp, common.ZeroByte)]
 		rand := rand.Intn(randNum)
 		i := (j * randNum) + rand
 		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index.Uint64()}, commitmentIndexs[i:]...)...)

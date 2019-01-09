@@ -7,6 +7,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/common/base58"
 )
 
 /*
@@ -148,12 +149,15 @@ func (self RpcServer) handleGetBalanceByPrivatekey(params interface{}, closeChan
 	arrayParams := common.InterfaceSlice(params)
 
 	// param #1: private key of sender
+	log.Println("importing")
 	senderKeyParam := arrayParams[0]
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	log.Println(err)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	log.Println(senderKey)
 
 	// get balance for accountName in wallet
 	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
@@ -161,12 +165,14 @@ func (self RpcServer) handleGetBalanceByPrivatekey(params interface{}, closeChan
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	outcoints, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, constantTokenID)
+	log.Println(err)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	for _, out := range outcoints {
 		balance += out.CoinDetails.Value
 	}
+	log.Println(balance)
 
 	return balance, nil
 }
@@ -353,4 +359,16 @@ func (self RpcServer) handleListPrivacyCustomToken(params interface{}, closeChan
 		result.ListCustomToken = append(result.ListCustomToken, item)
 	}
 	return result, nil
+}
+
+func (self RpcServer) handleGetPublicKeyFromPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	paymentAddress := arrayParams[0].(string)
+
+	key, err := wallet.Base58CheckDeserialize(paymentAddress)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	return base58.Base58Check{}.Encode(key.KeySet.PaymentAddress.Pk[:], common.ZeroByte), nil
 }

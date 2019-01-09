@@ -1,7 +1,7 @@
 package zkp
 
 import (
-	"github.com/magiconair/properties/assert"
+	"github.com/stretchr/testify/assert"
 	"github.com/ninjadotorg/constant/privacy"
 	"math/big"
 	"testing"
@@ -15,17 +15,17 @@ func TestPKComMultiRange(t *testing.T) {
 		values[i] = new(big.Int).SetBytes(privacy.RandBytes(1))
 	}
 
-	var witness MultiRangeWitness
+	var witness AggregatedRangeWitness
 	witness.Set(values, 64)
 
 	// Testing smallest number in range
 	proof, _ := witness.Prove()
 	b := proof.Bytes()
 
-	Vproof := new(MultiRangeProof)
+	Vproof := new(AggregatedRangeProof)
 	Vproof.SetBytes(b)
 
 	res := Vproof.Verify()
 
-	assert.Equal(t, true, res)
+	assert.Equal(t,true, res)
 }

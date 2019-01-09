@@ -29,10 +29,6 @@ const (
 	CreateRawPrivacyCustomTokenTransaction     = "createrawprivacycustomtokentransaction"
 	SendRawPrivacyCustomTokenTransaction       = "sendrawprivacycustomtokentransaction"
 	CreateAndSendPrivacyCustomTokenTransaction = "createandsendprivacycustomtokentransaction"
-	CreateAndSendLoanRequest                   = "createandsendloanrequest"
-	CreateAndSendLoanResponse                  = "createandsendloanresponse"
-	CreateAndSendLoanPayment                   = "createandsendloanpayment"
-	CreateAndSendLoanWithdraw                  = "createandsendloanwithdraw"
 	GetMempoolInfo                             = "getmempoolinfo"
 	GetCommitteeCandidateList                  = "getcommitteecandidate"
 	RetrieveCommitteeCandidate                 = "retrievecommitteecandidate"
@@ -46,7 +42,6 @@ const (
 	CheckHashValue                             = "checkhashvalue"
 	GetListCustomTokenBalance                  = "getlistcustomtokenbalance"
 	GetListPrivacyCustomTokenBalance           = "getlistprivacycustomtokenbalance"
-	GetLoanParams                              = "loanparams"
 	GetBlockHeader                             = "getheader"
 	RandomCommitments                          = "randomcommitments"
 	HasSerialNumbers                           = "hasserialnumbers"
@@ -78,6 +73,16 @@ const (
 	GetDCBConstitution                   = "getdcbconstitution"
 	CreateAndSendTxWithMultiSigsReg      = "createandsendtxwithmultisigsreg"
 	CreateAndSendTxWithMultiSigsSpending = "createandsendtxwithmultisigsspending"
+
+	// dcb loan
+	CreateAndSendLoanRequest  = "createandsendloanrequest"
+	CreateAndSendLoanResponse = "createandsendloanresponse"
+	CreateAndSendLoanPayment  = "createandsendloanpayment"
+	CreateAndSendLoanWithdraw = "createandsendloanwithdraw"
+	GetLoanResponseApproved   = "getloanresponseapproved"
+	GetLoanResponseRejected   = "getloanresponserejected"
+	GetLoanParams             = "loanparams"
+	GetLoanPaymentInfo        = "getloanpaymentinfo"
 
 	// vote
 	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"
@@ -113,4 +118,7 @@ const (
 	CreateAndSendTxWithCMBDepositContract = "createandsendtxwithcmbdepositcontract"
 	CreateAndSendTxWithCMBDepositSend     = "createandsendtxwithcmbdepositsend"
 	CreateAndSendTxWithCMBWithdrawRequest = "createandsendtxwithcmbwithdrawrequest"
+
+	// wallet
+	GetPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
 )

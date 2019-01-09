@@ -11,8 +11,8 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 // TxCustomToken is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -22,8 +22,6 @@ import (
 type TxCustomToken struct {
 	Tx                      // inherit from normal tx of constant(supporting privacy)
 	TxTokenData TxTokenData // vin - vout format
-	BoardType   uint8       // 1: DCB, 2: GOV
-	BoardSigns  map[string][]byte
 
 	// Template data variable to process logic
 	listUtxo map[common.Hash]TxCustomToken
@@ -35,20 +33,13 @@ func (self *TxCustomToken) UnmarshalJSON(data []byte) error {
 
 	temp := &struct {
 		TxTokenData interface{}
-		BoardType   interface{}
-		BoardSigns  interface{}
-	}{
-	}
+	}{}
 	err = json.Unmarshal(data, &temp)
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
 	txTokenDataJson, _ := json.MarshalIndent(temp.TxTokenData, "", "\t")
 	_ = json.Unmarshal(txTokenDataJson, &self.TxTokenData)
-	boardSignsJson, _ := json.MarshalIndent(temp.BoardSigns, "", "\t")
-	_ = json.Unmarshal(boardSignsJson, &self.BoardSigns)
-	boardTypeJson, _ := json.MarshalIndent(temp.BoardType, "", "\t")
-	_ = json.Unmarshal(boardTypeJson, &self.BoardType)
 	self.Tx = tx
 	return nil
 }
@@ -396,6 +387,9 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 			Vouts:          nil,
 		}
 		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+		if _, ok := listCustomTokens[*propertyID]; !ok {
+			return NewTransactionErr(UnexpectedErr, errors.New("Invalid Token ID"))
+		}
 		txCustomToken.TxTokenData.PropertyID = *propertyID
 		txCustomToken.TxTokenData.Vins = tokenParams.vins
 		var VoutsTemp []TxTokenVout

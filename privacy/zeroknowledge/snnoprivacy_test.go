@@ -1,9 +1,8 @@
 package zkp
 
 import (
-	"fmt"
-	"github.com/stretchr/testify/assert"
 	"github.com/ninjadotorg/constant/privacy"
+	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
 )
@@ -15,19 +14,19 @@ func TestPKSNNoPrivacy(t *testing.T) {
 	pk := privacy.GeneratePublicKey(sk)
 	pkPoint, err := privacy.DecompressKey(pk)
 	if err != nil{
-		fmt.Println(err)
+		return
 	}
 
 	SND := privacy.RandInt()
 
-	serialNumber := privacy.Eval(skInt, SND, privacy.PedCom.G[privacy.SK])
+	serialNumber := privacy.PedCom.G[privacy.SK].Derive(skInt, SND)
 
 	witness := new(SNNoPrivacyWitness)
 	witness.Set(serialNumber, pkPoint, SND, skInt)
 
 	proof, err := witness.Prove()
 	if err != nil{
-		fmt.Println(err)
+		return
 	}
 
 	proofBytes := proof.Bytes()

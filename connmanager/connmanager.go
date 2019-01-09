@@ -374,7 +374,7 @@ listen:
 					pbkB58 = listener.Config.ProducerKeySet.GetPublicKeyB58()
 					Logger.log.Info("Start Discover Peers", pbkB58)
 					// sign data
-					signDataB58, err = listener.Config.ProducerKeySet.SignDataB58([]byte{byte(0x00)})
+					signDataB58, err = listener.Config.ProducerKeySet.SignDataB58([]byte{common.ZeroByte})
 					if err != nil {
 						Logger.log.Error(err)
 					}

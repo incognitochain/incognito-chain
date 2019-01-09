@@ -275,7 +275,7 @@ concludeBlock:
 	totalSalary := salaryMULTP*salaryPerTx + basicSalary
 	// create salary tx to pay constant for block producer
 	salaryTx := new(transaction.Tx)
-	err = salaryTx.InitTxSalary(totalSalary, payToAddress, privatekey, blockgen.chain.config.DataBase)
+	err = salaryTx.InitTxSalary(totalSalary, payToAddress, privatekey, blockgen.chain.config.DataBase, nil)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -699,13 +699,12 @@ func (blockgen *BlkTmplGenerator) buildBuyBackResponseTxs(
 	var buyBackResTxs []*transaction.Tx
 	for _, buyBackFromInfo := range buyBackFromInfos {
 		buyBackAmount := buyBackFromInfo.value * buyBackFromInfo.buyBackPrice
+		buyBackRes := metadata.NewBuyBackResponse(*buyBackFromInfo.requestedTxID, metadata.BuyBackResponseMeta)
 		buyBackResTx := new(transaction.Tx)
-		err := buyBackResTx.InitTxSalary(buyBackAmount, &buyBackFromInfo.paymentAddress, privatekey, blockgen.chain.GetDatabase())
+		err := buyBackResTx.InitTxSalary(buyBackAmount, &buyBackFromInfo.paymentAddress, privatekey, blockgen.chain.GetDatabase(), buyBackRes)
 		if err != nil {
 			return []*transaction.Tx{}, err
 		}
-		buyBackRes := metadata.NewBuyBackResponse(*buyBackFromInfo.requestedTxID, metadata.BuyBackResponseMeta)
-		buyBackResTx.SetMetadata(buyBackRes)
 		buyBackResTxs = append(buyBackResTxs, buyBackResTx)
 	}
 	return buyBackResTxs, nil
@@ -788,13 +787,12 @@ func (blockgen *BlkTmplGenerator) buildIssuingResTxs(
 				constantPrice = oracleParams.Constant
 			}
 			issuingAmt := issuingReq.DepositedAmount / constantPrice
+			issuingRes := metadata.NewIssuingResponse(*issuingReqTx.Hash(), metadata.IssuingResponseMeta)
 			resTx := new(transaction.Tx)
-			err := resTx.InitTxSalary(issuingAmt, &issuingReq.ReceiverAddress, privatekey, blockgen.chain.GetDatabase())
+			err := resTx.InitTxSalary(issuingAmt, &issuingReq.ReceiverAddress, privatekey, blockgen.chain.GetDatabase(), issuingRes)
 			if err != nil {
 				return []metadata.Transaction{}, err
 			}
-			issuingRes := metadata.NewIssuingResponse(*issuingReqTx.Hash(), metadata.IssuingResponseMeta)
-			resTx.SetMetadata(issuingRes)
 			issuingResTxs = append(issuingResTxs, resTx)
 		}
 	}
@@ -819,14 +817,13 @@ func calculateAmountOfRefundTxs(
 	var refundTxs []*transaction.Tx
 	for i := 0; i < len(addresses); i++ {
 		addr := addresses[i]
+		refundMeta := metadata.NewRefund(*smallTxHashes[i], metadata.RefundMeta)
 		refundTx := new(transaction.Tx)
-		err := refundTx.InitTxSalary(actualRefundAmt, addr, privatekey, db)
+		err := refundTx.InitTxSalary(actualRefundAmt, addr, privatekey, db, refundMeta)
 		if err != nil {
 			Logger.log.Error(err)
 			continue
 		}
-		refundMeta := metadata.NewRefund(*smallTxHashes[i], metadata.RefundMeta)
-		refundTx.SetMetadata(refundMeta)
 		refundTxs = append(refundTxs, refundTx)
 	}
 	return refundTxs, amt
@@ -922,20 +919,21 @@ func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, pro
 				removableTxs = append(removableTxs, txDesc.Tx)
 				continue
 			}
-			pks := [][]byte{meta.ReceiveAddress.Pk[:]}
-			tks := [][]byte{meta.ReceiveAddress.Tk[:]}
-			amounts := []uint64{meta.LoanAmount}
-			txNormals, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, blockgen.chain.GetDatabase())
-			if err != nil {
-				removableTxs = append(removableTxs, txDesc.Tx)
-				continue
-			}
+
 			unlockMeta := &metadata.LoanUnlock{
 				LoanID:       make([]byte, len(withdrawMeta.LoanID)),
 				MetadataBase: metadata.MetadataBase{Type: metadata.LoanUnlockMeta},
 			}
 			copy(unlockMeta.LoanID, withdrawMeta.LoanID)
-			txNormals[0].Metadata = unlockMeta
+			uplockMetaList := []metadata.Metadata{unlockMeta}
+			pks := [][]byte{meta.ReceiveAddress.Pk[:]}
+			tks := [][]byte{meta.ReceiveAddress.Tk[:]}
+			amounts := []uint64{meta.LoanAmount}
+			txNormals, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, blockgen.chain.GetDatabase(), uplockMetaList)
+			if err != nil {
+				removableTxs = append(removableTxs, txDesc.Tx)
+				continue
+			}
 			loanUnlockTxs = append(loanUnlockTxs, txNormals[0]) // There's only one tx
 		}
 	}
@@ -975,8 +973,8 @@ func (blockgen *BlkTmplGenerator) CreateSingleShareRewardOldBoard(
 	paymentAddress := privacy.PaymentAddress{}
 	paymentAddress.SetBytes(paymentAddressByte)
 	tx := transaction.Tx{}
-	tx.Metadata = metadata.NewRewardShareOldBoardMetadata(chairPubKey, voterPubKey, helper.GetLowerCaseBoardType())
-	tx.InitTxSalary(amountOfCoin, &paymentAddress, minerPrivateKey, blockgen.chain.config.DataBase)
+	rewardShareOldBoardMeta := metadata.NewRewardShareOldBoardMetadata(chairPubKey, voterPubKey, helper.GetLowerCaseBoardType())
+	tx.InitTxSalary(amountOfCoin, &paymentAddress, minerPrivateKey, blockgen.chain.config.DataBase, rewardShareOldBoardMeta)
 	txTokenData := transaction.TxTokenData{
 		Type:       transaction.CustomTokenInit,
 		Amount:     amountOfToken,

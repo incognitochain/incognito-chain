@@ -9,7 +9,6 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
@@ -76,11 +75,11 @@ func (self RpcServer) handleListOutputCoins(params interface{}, closeChan <-chan
 		}
 		for _, outCoin := range outputCoins {
 			item.OutCoins = append(item.OutCoins, jsonresult.OutCoin{
-				SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), byte(0x00)),
-				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), byte(0x00)),
+				SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
+				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),
 				Value:          outCoin.CoinDetails.Value,
-				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], byte(0x00)),
-				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), byte(0x00)),
+				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], common.ZeroByte),
+				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), common.ZeroByte),
 				Randomness:     *outCoin.CoinDetails.Randomness,
 				SNDerivator:    *outCoin.CoinDetails.SNDerivator,
 			})
@@ -90,107 +89,6 @@ func (self RpcServer) handleListOutputCoins(params interface{}, closeChan <-chan
 	}
 
 	return result, nil
-}
-
-func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
-	Logger.log.Info(params)
-
-	// all params
-	arrayParams := common.InterfaceSlice(params)
-
-	// param #1: private key of sender
-	senderKeyParam := arrayParams[0]
-	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
-	chainIdSender, err := common.GetTxSenderChain(lastByte)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-
-	// param #2: list receiver
-	totalAmmount := uint64(0)
-	receiversParam := arrayParams[1].(map[string]interface{})
-	paymentInfos := make([]*privacy.PaymentInfo, 0)
-	for pubKeyStr, amount := range receiversParam {
-		receiverPubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
-		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
-		}
-		paymentInfo := &privacy.PaymentInfo{
-			Amount:         common.ConstantToMiliConstant(uint64(amount.(float64))),
-			PaymentAddress: receiverPubKey.KeySet.PaymentAddress,
-		}
-		totalAmmount += uint64(paymentInfo.Amount)
-		paymentInfos = append(paymentInfos, paymentInfo)
-	}
-
-	// param #3: estimation fee nano constant per kb
-	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
-
-	// param #4: estimation fee coin per kb by numblock
-	numBlock := uint64(arrayParams[3].(float64))
-
-	// list unspent tx for estimation fee
-	estimateTotalAmount := totalAmmount
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
-	outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, constantTokenID)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	if len(outCoins) == 0 {
-		return nil, NewRPCError(ErrUnexpected, nil)
-	}
-	candidateOutputCoins := make([]*privacy.OutputCoin, 0)
-	for _, note := range outCoins {
-		amount := note.CoinDetails.Value
-		candidateOutputCoins = append(candidateOutputCoins, note)
-		estimateTotalAmount -= uint64(amount)
-		if estimateTotalAmount <= 0 {
-			break
-		}
-	}
-
-	// check real fee(nano constant) per tx
-	realFee := self.EstimateFee(estimateFeeCoinPerKb, candidateOutputCoins, paymentInfos, chainIdSender, numBlock)
-
-	// list unspent tx for create tx
-	totalAmmount += uint64(realFee)
-	estimateTotalAmount = totalAmmount
-	if totalAmmount > 0 {
-		candidateOutputCoins = make([]*privacy.OutputCoin, 0)
-		for _, note := range outCoins {
-			amount := note.CoinDetails.Value
-			candidateOutputCoins = append(candidateOutputCoins, note)
-			estimateTotalAmount -= uint64(amount)
-			if estimateTotalAmount <= 0 {
-				break
-			}
-		}
-	}
-
-	//missing flag for privacy
-	// false by default
-	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
-	tx := transaction.Tx{}
-	err = tx.Init(
-		&senderKey.KeySet.PrivateKey,
-		paymentInfos,
-		inputCoins,
-		realFee,
-		true,
-		*self.config.Database,
-		nil, // use for constant coin -> nil is valid
-		meta,
-	)
-	if err.(*transaction.TransactionError) != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	return &tx, nil
 }
 
 /*

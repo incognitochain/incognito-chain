@@ -14,7 +14,7 @@ var ww = new Web3(Web3.givenProvider)
 
 contract("Reserve", (accounts) => {
     const msAcc = accounts[0]
-    const owner = accounts[1]
+    const owner = accounts[0]
     const requester1 = accounts[2]
     const requester2 = accounts[3]
 

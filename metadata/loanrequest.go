@@ -10,6 +10,7 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/pkg/errors"
 )
 
 type LoanRequest struct {
@@ -26,7 +27,7 @@ type LoanRequest struct {
 	MetadataBase
 }
 
-func NewLoanRequest(data map[string]interface{}) *LoanRequest {
+func NewLoanRequest(data map[string]interface{}) (Metadata, error) {
 	loanParams := data["Params"].(map[string]interface{})
 	result := LoanRequest{
 		Params: params.LoanParams{
@@ -40,23 +41,30 @@ func NewLoanRequest(data map[string]interface{}) *LoanRequest {
 	n := new(big.Int)
 	n, ok := n.SetString(data["CollateralAmount"].(string), 10)
 	if !ok {
-		return nil
+		return nil, errors.Errorf("Collateral amount incorrect")
 	}
 	result.CollateralAmount = n
 	key, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
+	fmt.Printf("err receiveaddress: %v\n", err)
 	if err != nil {
-		return nil
+		return nil, errors.Errorf("ReceiveAddress incorrect")
 	}
 	result.ReceiveAddress = &key.KeySet.PaymentAddress
 
 	s, err := hex.DecodeString(data["LoanID"].(string))
+	if err != nil {
+		return nil, errors.Errorf("LoanID incorrect")
+	}
 	result.LoanID = s
 
 	s, err = hex.DecodeString(data["KeyDigest"].(string))
+	if err != nil {
+		return nil, errors.Errorf("KeyDigest incorrect")
+	}
 	result.KeyDigest = s
 
 	result.Type = LoanRequestMeta
-	return &result
+	return &result, nil
 }
 
 func (lr *LoanRequest) Hash() *common.Hash {
@@ -77,6 +85,7 @@ func (lr *LoanRequest) Hash() *common.Hash {
 }
 
 func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+	fmt.Println("Validating LoanRequest with blockchain!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	// Check if loan's params are correct
 	dcbParams := bcr.GetDCBParams()
 	validLoanParams := dcbParams.LoanParams
@@ -103,7 +112,7 @@ func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 
 func (lr *LoanRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if len(lr.KeyDigest) != LoanKeyDigestLength {
-		return false, false, nil
+		return false, false, errors.Errorf("KeyDigest is not 32 bytes")
 	}
 	return true, true, nil // continue to check for fee
 }

@@ -22,7 +22,7 @@ contract SimpleLoan {
     uint256 public decimals = 10 ** 2; // support 2 digits after decimal point
 
     event __sendCollateral(bytes32 lid, uint256 amount, bytes32 offchain);
-    event __acceptLoan(bytes32 lid, bytes32 key, bytes32 offchain);
+    event __acceptLoan(bytes32 lid, bytes key, bytes32 offchain);
     event __rejectLoan(bytes32 lid, bytes32 offchain);
     event __refundCollateral(bytes32 lid, uint256 amount, bytes32 offchain);
     event __liquidate(bytes32 lid, uint256 amount, bytes32 offchain);
@@ -106,7 +106,7 @@ contract SimpleLoan {
         emit __sendCollateral(lid, msg.value, offchain);
     }
 
-    function acceptLoan(bytes32 lid, bytes32 key, bytes32 offchain) public lenderOrOwner {
+    function acceptLoan(bytes32 lid, bytes memory key, bytes32 offchain) public lenderOrOwner {
         // TODO: loan hasn't passed escrow deadline?
         require(loans[lid].state == State.Inited, "state must be inited");
         require(keccak256(abi.encodePacked(key)) == loans[lid].digest, "key does not match digest");
@@ -139,6 +139,7 @@ contract SimpleLoan {
         require(loans[lid].state == State.Accepted);
         loans[lid].principle = 0;
         emit __wipeDebt(lid, offchain);
+        refundCollateral(lid, offchain);
     }
 
     function liquidate(bytes32 lid, uint256 interest, uint256 collateralPrice, uint256 assetPrice, bytes32 offchain) public lenderOrOwner {

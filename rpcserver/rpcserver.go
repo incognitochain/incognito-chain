@@ -1,6 +1,9 @@
 package rpcserver
 
 import (
+	"crypto/sha256"
+	"crypto/subtle"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,12 +16,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ninjadotorg/constant/wire"
-
-	"crypto/sha256"
-	"crypto/subtle"
-	"encoding/base64"
-
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/addrmanager"
 	"github.com/ninjadotorg/constant/blockchain"
@@ -27,6 +24,7 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/mempool"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/wire"
 )
 
 const (
@@ -71,7 +69,7 @@ type RpcServerConfig struct {
 	ConnMgr         *connmanager.ConnManager
 	AddrMgr         *addrmanager.AddrManager
 	NodeRole        string
-	Server interface {
+	Server          interface {
 		// Push TxNormal Message
 		PushMessageToAll(message wire.Message) error
 		PushMessageToPeer(message wire.Message, id peer2.ID) error

@@ -9,117 +9,117 @@ import (
 // include Witness: CommitedValue, r []byte
 type SNNoPrivacyWitness struct {
 	// general info
-	serialNumber *privacy.EllipticPoint
-	PK           *privacy.EllipticPoint
-	SND          *big.Int
+	output *privacy.EllipticPoint
+	vKey   *privacy.EllipticPoint
+	input  *big.Int
 
-	sk *big.Int
+	seed *big.Int
 }
 
 // SNNoPrivacyProof contains Proof's value
 type SNNoPrivacyProof struct {
 	// general info
-	serialNumber *privacy.EllipticPoint
-	PK           *privacy.EllipticPoint
-	SND          *big.Int
+	output *privacy.EllipticPoint
+	vKey   *privacy.EllipticPoint
+	input  *big.Int
 
-	tSK *privacy.EllipticPoint
-	tE  *privacy.EllipticPoint
+	tSeed   *privacy.EllipticPoint
+	tOutput *privacy.EllipticPoint
 
-	zSK *big.Int
+	zSeed *big.Int
 }
 
-func (pro *SNNoPrivacyProof) IsNil() bool {
-	if pro.serialNumber == nil {
+func (pro *SNNoPrivacyProof) isNil() bool {
+	if pro.output == nil {
 		return true
 	}
-	if pro.PK == nil {
+	if pro.vKey == nil {
 		return true
 	}
-	if pro.SND == nil {
+	if pro.input == nil {
 		return true
 	}
-	if pro.tSK == nil {
+	if pro.tSeed == nil {
 		return true
 	}
-	if pro.tE == nil {
+	if pro.tOutput == nil {
 		return true
 	}
-	if pro.zSK == nil {
+	if pro.zSeed == nil {
 		return true
 	}
 	return false
 }
 
 func (pro *SNNoPrivacyProof) Init() *SNNoPrivacyProof {
-	pro.serialNumber = new(privacy.EllipticPoint)
-	pro.PK = new(privacy.EllipticPoint)
-	pro.SND = new(big.Int)
+	pro.output = new(privacy.EllipticPoint)
+	pro.vKey = new(privacy.EllipticPoint)
+	pro.input = new(big.Int)
 
-	pro.tSK = new(privacy.EllipticPoint)
-	pro.tE = new(privacy.EllipticPoint)
+	pro.tSeed = new(privacy.EllipticPoint)
+	pro.tOutput = new(privacy.EllipticPoint)
 
-	pro.zSK = new(big.Int)
+	pro.zSeed = new(big.Int)
 
 	return pro
 }
 
 // Set sets Witness
 func (wit *SNNoPrivacyWitness) Set(
-	serialNumber *privacy.EllipticPoint,
-	Pk *privacy.EllipticPoint,
-	SND *big.Int,
-	sk *big.Int) {
+	output *privacy.EllipticPoint,
+	vKey *privacy.EllipticPoint,
+	input *big.Int,
+	seed *big.Int) {
 
 	if wit == nil {
 		wit = new(SNNoPrivacyWitness)
 	}
 
-	wit.serialNumber = serialNumber
-	wit.PK = Pk
-	wit.SND = SND
+	wit.output = output
+	wit.vKey = vKey
+	wit.input = input
 
-	wit.sk = sk
+	wit.seed = seed
 }
 
 // Set sets Proof
 func (pro *SNNoPrivacyProof) Set(
-	serialNumber *privacy.EllipticPoint,
-	PK *privacy.EllipticPoint,
-	SND *big.Int,
-	tSK *privacy.EllipticPoint,
-	tE *privacy.EllipticPoint,
-	zSK *big.Int) {
+	output *privacy.EllipticPoint,
+	vKey *privacy.EllipticPoint,
+	input *big.Int,
+	tSeed *privacy.EllipticPoint,
+	tOutput *privacy.EllipticPoint,
+	zSeed *big.Int) {
 
 	if pro == nil {
 		pro = new(SNNoPrivacyProof)
 	}
 
-	pro.serialNumber = serialNumber
-	pro.PK = PK
-	pro.SND = SND
+	pro.output = output
+	pro.vKey = vKey
+	pro.input = input
 
-	pro.tSK = tSK
-	pro.tE = tE
+	pro.tSeed = tSeed
+	pro.tOutput = tOutput
 
-	pro.zSK = zSK
+	pro.zSeed = zSeed
 }
 
 func (pro *SNNoPrivacyProof) Bytes() []byte {
 	// if proof is nil, return an empty array
-	if pro.IsNil() {
+	if pro.isNil() {
 		return []byte{}
 	}
 
 	var bytes []byte
-	bytes = append(bytes, pro.serialNumber.Compress()...)
-	bytes = append(bytes, pro.PK.Compress()...)
-	bytes = append(bytes, privacy.AddPaddingBigInt(pro.SND, privacy.BigIntSize)...)
+	bytes = append(bytes, pro.output.Compress()...)
+	bytes = append(bytes, pro.vKey.Compress()...)
+	bytes = append(bytes, privacy.AddPaddingBigInt(pro.input, privacy.BigIntSize)...)
 
-	bytes = append(bytes, pro.tSK.Compress()...)
-	bytes = append(bytes, pro.tE.Compress()...)
+	bytes = append(bytes, pro.tSeed.Compress()...)
+	bytes = append(bytes, pro.tOutput.Compress()...)
 
-	bytes = append(bytes, privacy.AddPaddingBigInt(pro.zSK, privacy.BigIntSize)...)
+	bytes = append(bytes, privacy.AddPaddingBigInt(pro.zSeed, privacy.BigIntSize)...)
 
 	return bytes
 }
@@ -136,37 +136,37 @@ func (pro *SNNoPrivacyProof) SetBytes(bytes []byte) error {
 	offset := 0
 	var err error
 
-	pro.serialNumber, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	pro.output, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
 
-	pro.PK, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	pro.vKey, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
 
-	pro.SND.SetBytes(bytes[offset : offset+privacy.BigIntSize])
+	pro.input.SetBytes(bytes[offset : offset+privacy.BigIntSize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.BigIntSize
 
-	pro.tSK, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	pro.tSeed, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
 
-	pro.tE, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	pro.tOutput, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
 
-	pro.zSK.SetBytes(bytes[offset : offset+privacy.BigIntSize])
+	pro.zSeed.SetBytes(bytes[offset : offset+privacy.BigIntSize])
 	if err != nil {
 		return err
 	}
@@ -178,44 +178,44 @@ func (wit *SNNoPrivacyWitness) Prove() (*SNNoPrivacyProof, error) {
 	// randomness
 	eSK := privacy.RandInt()
 
-	// calculate tSK = g_SK^eSK
+	// calculate tSeed = g_SK^eSK
 	tSK := privacy.PedCom.G[privacy.SK].ScalarMult(eSK)
 
-	// calculate tE = SN^eSK
-	tE := wit.serialNumber.ScalarMult(eSK)
+	// calculate tOutput = SN^eSK
+	tE := wit.output.ScalarMult(eSK)
 
-	// calculate x = hash(tSK || tSND1 || tSND2 || tE)
-	x := GenerateChallengeFromPoint([]*privacy.EllipticPoint{tSK, tE})
+	// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
+	x := generateChallengeFromPoint([]*privacy.EllipticPoint{tSK, tE})
 
-	// Calculate zSK = SK * x + eSK
-	zSK := new(big.Int).Mul(wit.sk, x)
+	// Calculate zSeed = SK * x + eSK
+	zSK := new(big.Int).Mul(wit.seed, x)
 	zSK.Add(zSK, eSK)
 	zSK.Mod(zSK, privacy.Curve.Params().N)
 
 	proof := new(SNNoPrivacyProof).Init()
-	proof.Set(wit.serialNumber, wit.PK, wit.SND, tSK, tE, zSK)
+	proof.Set(wit.output, wit.vKey, wit.input, tSK, tE, zSK)
 	return proof, nil
 }
 
 func (pro *SNNoPrivacyProof) Verify() bool {
-	// re-calculate x = hash(tSK || tE)
-	x := GenerateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSK, pro.tE})
+	// re-calculate x = hash(tSeed || tOutput)
+	x := generateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSeed, pro.tOutput})
 
-	// Check gSK^zSK = PK^x * tSK
-	leftPoint1 := privacy.PedCom.G[privacy.SK].ScalarMult(pro.zSK)
+	// Check gSK^zSeed = vKey^x * tSeed
+	leftPoint1 := privacy.PedCom.G[privacy.SK].ScalarMult(pro.zSeed)
 
-	rightPoint1 := pro.PK.ScalarMult(x)
-	rightPoint1 = rightPoint1.Add(pro.tSK)
+	rightPoint1 := pro.vKey.ScalarMult(x)
+	rightPoint1 = rightPoint1.Add(pro.tSeed)
 
 	if !leftPoint1.IsEqual(rightPoint1) {
 		return false
 	}
 
-	// Check SN^(zSK + x*SND) = gSK^x * tE
-	leftPoint2 := pro.serialNumber.ScalarMult(new(big.Int).Add(pro.zSK, new(big.Int).Mul(x, pro.SND)))
+	// Check SN^(zSeed + x*input) = gSK^x * tOutput
+	leftPoint2 := pro.output.ScalarMult(new(big.Int).Add(pro.zSeed, new(big.Int).Mul(x, pro.input)))
 
 	rightPoint4 := privacy.PedCom.G[privacy.SK].ScalarMult(x)
-	rightPoint4 = rightPoint4.Add(pro.tE)
+	rightPoint4 = rightPoint4.Add(pro.tOutput)
 
 	if !leftPoint2.IsEqual(rightPoint4) {
 		return false

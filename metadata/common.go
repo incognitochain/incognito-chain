@@ -2,7 +2,8 @@ package metadata
 
 import (
 	"encoding/json"
-	"errors"
+
+	"github.com/pkg/errors"
 )
 
 func ParseMetadata(meta interface{}) (Metadata, error) {
@@ -39,6 +40,12 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case LoanResponseMeta:
 		md = &LoanResponse{}
 
+	case LoanWithdrawMeta:
+		md = &LoanWithdraw{}
+
+	case LoanPaymentMeta:
+		md = &LoanPayment{}
+
 	case VoteDCBBoardMeta:
 		md = &VoteDCBBoardMetadata{}
 
@@ -46,7 +53,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &VoteGOVBoardMetadata{}
 
 	default:
-		return nil, errors.New("Could not parse metadata with known types.")
+		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
 	}
 
 	err = json.Unmarshal(metaInBytes, &md)
