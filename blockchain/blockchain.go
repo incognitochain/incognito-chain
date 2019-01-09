@@ -536,39 +536,42 @@ func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest
 }
 
 func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
-	txNormal := tx.(*transaction.Tx)
-	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	dcbPk := accountDCB.KeySet.PaymentAddress.Pk
-	value := uint64(0)
-	for _, coin := range txNormal.Proof.OutputCoins {
-		if bytes.Equal(coin.CoinDetails.PublicKey.Compress(), dcbPk) {
-			value += coin.CoinDetails.Value
-		}
-	}
+	_, _, value := tx.GetUniqueReceiver()
 	meta := tx.GetMetadata().(*metadata.LoanPayment)
 	principle, interest, deadline, err := self.config.DataBase.GetLoanPayment(meta.LoanID)
 	requestMeta, err := self.GetLoanRequestMeta(meta.LoanID)
 	if err != nil {
 		return err
 	}
+
+	// Pay interest
 	interestPerTerm := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
-	if meta.PayPrinciple {
-		if value < principle {
-			return errors.Errorf("Loan payment value doesn't cover priciple")
-		}
-		value -= principle
-		principle = 0
-	}
+	chainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+	totalInterest := metadata.GetTotalInterest(
+		principle,
+		interest,
+		requestMeta.Params.InterestRate,
+		requestMeta.Params.Maturity,
+		deadline,
+		uint32(self.GetChainHeight(chainID)),
+	)
 	periodInc := uint32(0)
-	if value < interest {
-		interest -= value
-	} else {
+	if value <= totalInterest { // Pay all to cover interest
 		if interestPerTerm != 0 {
 			periodInc = 1 + uint32((value-interest)/interestPerTerm)
 			interest = interestPerTerm - (value-interest)%interestPerTerm
 		}
+	} else { // Pay enough to cover interest, the rest go to principle
+		if value-totalInterest > principle {
+			principle = 0
+		} else {
+			principle -= value - totalInterest
+		}
+		periodInc = 1 + uint32((totalInterest-interest)/interestPerTerm)
+		interest = interestPerTerm
 	}
 	deadline = deadline + periodInc*requestMeta.Params.Maturity
+
 	return self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, deadline)
 }
 

@@ -14,7 +14,6 @@ import (
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/wallet"
 )
 
 type BlkTmplGenerator struct {
@@ -907,24 +906,12 @@ func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, pro
 	removableTxs := []metadata.Transaction{}
 	for _, txDesc := range sourceTxns {
 		if txDesc.Tx.GetMetadataType() == metadata.LoanPaymentMeta {
-			paymentMeta := txDesc.Tx.GetMetadata().(*metadata.LoanPayment)
-			_, _, _, err := blockgen.chain.config.DataBase.GetLoanPayment(paymentMeta.LoanID)
+			paymentAmount, err := blockgen.calculateInterestPaid(txDesc.Tx)
 			if err != nil {
 				removableTxs = append(removableTxs, txDesc.Tx)
 				continue
 			}
-			paymentAmount := uint64(0)
-			accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-			dcbPk := accountDCB.KeySet.PaymentAddress.Pk
-			txNormal := txDesc.Tx.(*transaction.Tx)
-			for _, coin := range txNormal.Proof.OutputCoins {
-				if bytes.Equal(coin.CoinDetails.PublicKey.Compress(), dcbPk) {
-					paymentAmount += coin.CoinDetails.Value
-				}
-			}
-			if !paymentMeta.PayPrinciple { // Only keep interest
-				amount += paymentAmount
-			}
+			amount += paymentAmount
 		} else if txDesc.Tx.GetMetadataType() == metadata.LoanWithdrawMeta {
 			withdrawMeta := txDesc.Tx.GetMetadata().(*metadata.LoanWithdraw)
 			meta, err := blockgen.chain.GetLoanRequestMeta(withdrawMeta.LoanID)
