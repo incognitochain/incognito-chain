@@ -577,6 +577,7 @@ func buildSingleBuySellResponseTx(
 	copy(propertyID[:], bondID[:])
 	txTokenData := transaction.TxTokenData{
 		Type:       transaction.CustomTokenInit,
+		Mintable:   true,
 		Amount:     buySellReq.Amount,
 		PropertyID: common.Hash(propertyID),
 		Vins:       []transaction.TxTokenVin{},
