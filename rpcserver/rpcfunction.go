@@ -193,7 +193,9 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 		}
 	}
 	result.Networks = networks
-	result.IncrementalFee = self.config.Wallet.Config.IncrementalFee
+	if self.config.Wallet != nil && self.config.Wallet.Config != nil {
+		result.IncrementalFee = self.config.Wallet.Config.IncrementalFee
+	}
 	result.Warnings = ""
 
 	return result, nil
@@ -376,6 +378,10 @@ handleEstimateFee - RPC estimates the transaction fee per kilobyte that needs to
 func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// Param #1: —how many blocks the transaction may wait before being included
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil {
+		arrayParams = []interface{}{}
+		arrayParams = append(arrayParams, float64(0))
+	}
 	numBlock := uint64(arrayParams[0].(float64))
 	result := jsonresult.EstimateFeeResult{
 		FeeRate: make(map[string]uint64),
