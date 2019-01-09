@@ -22,7 +22,6 @@ const (
 	CmdCrossShard         = "crossshard"
 	CmdBlkShardToBeacon   = "blkshdtobcn"
 	CmdTx                 = "tx"
-	CmdRegisteration      = "registeration"
 	CmdCustomToken        = "txtoken"
 	CmdPrivacyCustomToken = "txprivacytok"
 	CmdCLoanRequestToken  = "txloanreq"
@@ -134,9 +133,9 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 			Timestamp: time.Now().Unix(),
 		}
 		break
-	// case CmdGetBlockShard:
-	// 	msg = &MessageGetBlocks{}
-	// 	break
+		// case CmdGetBlockShard:
+		// 	msg = &MessageGetBlocks{}
+		// 	break
 	case CmdTx:
 		msg = &MessageTx{
 			Transaction: &transaction.Tx{},
@@ -204,12 +203,12 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		// 	break
 	case CmdMsgCheck:
 		msg = &MessageMsgCheck{
-			Timestamp: time.Now(),
+			Timestamp: time.Now().UnixNano(),
 		}
 		break
 	case CmdMsgCheckResp:
 		msg = &MessageMsgCheckResp{
-			Timestamp: time.Now(),
+			Timestamp: time.Now().UnixNano(),
 		}
 		break
 	default:
@@ -230,8 +229,8 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdBlkShardToBeacon, nil
 	case reflect.TypeOf(&MessageGetBlockBeacon{}):
 		return CmdGetBlockBeacon, nil
-	// case reflect.TypeOf(&MessageGetBlockShard{}):
-	// 	return CmdGetBlockShard, nil
+		// case reflect.TypeOf(&MessageGetBlockShard{}):
+		// 	return CmdGetBlockShard, nil
 	case reflect.TypeOf(&MessageTx{}):
 		return CmdTx, nil
 		/*case reflect.TypeOf(&MessageRegistration{}):
