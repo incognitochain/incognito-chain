@@ -10,7 +10,7 @@ import (
 
 type BuySellRequest struct {
 	PaymentAddress privacy.PaymentAddress
-	AssetType      common.Hash // token id (note: for bond, this one is just bond token id prefix)
+	AssetType      common.Hash
 	Amount         uint64
 	BuyPrice       uint64 // in Constant unit
 
