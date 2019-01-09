@@ -1446,7 +1446,11 @@ func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) b
 	pivotOfStart := endedOfConstitution - 3*common.EncryptionOnePhraseDuration
 
 	rightTime := newNationalWelfare < thresholdNationalWelfare || pivotOfStart == uint32(thisBlockHeight)
-	rightFlag := self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType()) == common.Lv3EncryptionFlag
+	encryptFlag, err := self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType())
+	if err != nil {
+		return false
+	}
+	rightFlag := (encryptFlag == common.Lv3EncryptionFlag)
 	if rightTime && rightFlag {
 		return true
 	}
@@ -1457,10 +1461,12 @@ func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) b
 func (self *BlockChain) NeedEnterEncryptLv1(helper ConstitutionHelper) bool {
 	BestBlock := self.BestState[0].BestBlock
 	thisBlockHeight := BestBlock.Header.Height
-	lastEncryptBlockHeight := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetLowerCaseBoardType())
-	if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
-		self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType()) == common.Lv2EncryptionFlag {
-		return true
+	lastEncryptBlockHeight, err := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetLowerCaseBoardType())
+	if err != nil && uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration {
+		encryptFlag, err := self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType())
+		if err != nil && encryptFlag == common.Lv2EncryptionFlag {
+			return true
+		}
 	}
 	return false
 }
@@ -1469,10 +1475,12 @@ func (self *BlockChain) NeedEnterEncryptLv1(helper ConstitutionHelper) bool {
 func (self *BlockChain) NeedEnterEncryptNormal(helper ConstitutionHelper) bool {
 	BestBlock := self.BestState[0].BestBlock
 	thisBlockHeight := BestBlock.Header.Height
-	lastEncryptBlockHeight := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetLowerCaseBoardType())
-	if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
-		self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType()) == common.Lv1EncryptionFlag {
-		return true
+	lastEncryptBlockHeight, err := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetLowerCaseBoardType())
+	if err != nil && uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration {
+		encryptFlag, err := self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType())
+		if err != nil && encryptFlag == common.Lv1EncryptionFlag {
+			return true
+		}
 	}
 	return false
 }
@@ -1500,10 +1508,12 @@ func (self *BlockChain) SetEncryptPhrase(helper ConstitutionHelper) {
 func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
 	BestBlock := self.BestState[0].BestBlock
 	thisBlockHeight := BestBlock.Header.Height + 1
-	lastEncryptBlockHeight := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetLowerCaseBoardType())
-	if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
-		self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType()) == common.NormalEncryptionFlag {
-		return true
+	lastEncryptBlockHeight, err := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetLowerCaseBoardType())
+	if err != nil && uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration {
+		encryptFlag, err := self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType())
+		if err != nil && encryptFlag == common.NormalEncryptionFlag {
+			return true
+		}
 	}
 	return false
 }

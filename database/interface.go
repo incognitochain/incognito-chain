@@ -129,9 +129,9 @@ type DatabaseInterface interface {
 	TakeVoteTokenFromWinner(string, uint32, []byte, int32) error
 	SetNewProposalWinningVoter(string, uint32, []byte) error
 	GetVoteTokenAmount(boardType string, boardIndex uint32, pubKey []byte) (uint32, error)
-	GetEncryptFlag(boardType string) uint32
+	GetEncryptFlag(boardType string) (uint32, error)
 	SetEncryptFlag(boardType string, flag uint32)
-	GetEncryptionLastBlockHeight(boardType string) uint32
+	GetEncryptionLastBlockHeight(boardType string) (uint32, error)
 	SetEncryptionLastBlockHeight(boardType string, height uint32)
 
 	// Multisigs
