@@ -513,12 +513,10 @@ func (self RpcServer) buildRawSubmitDCBProposalTransaction(
 	DCBParams := *params2.NewDCBParamsFromRPC(arrayParams[NParams-4])
 	executeDuration := arrayParams[NParams-3].(uint32)
 	explanation := arrayParams[NParams-2].(string)
-	paymentData := common.InterfaceSlice(arrayParams[NParams-1])
-	address := privacy.PaymentAddress{
-		Pk: paymentData[0].([]byte),
-		Tk: paymentData[1].([]byte),
-	}
 
+	paymentData := []byte(arrayParams[NParams-1].(string))
+	address := privacy.PaymentAddress{}
+	address.SetBytes(paymentData)
 	meta := metadata.NewSubmitDCBProposalMetadata(DCBParams, executeDuration, explanation, &address)
 	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err

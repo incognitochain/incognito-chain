@@ -2,7 +2,6 @@ package rpcserver
 
 import (
 	"encoding/json"
-
 	params2 "github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -44,6 +43,37 @@ func (self RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan st
 	return result, nil
 }
 
+func (self RpcServer) handleGetCurrentSellingBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+
+	bestBlock := self.config.BlockChain.BestState[0].BestBlock
+	blockHeader := bestBlock.Header
+	sellingBondsParam := bestBlock.Header.GOVConstitution.GOVParams.SellingBonds
+	buyPrice := uint64(0)
+	bondID := sellingBondsParam.GetID()
+	bondPriceFromOracle := blockHeader.Oracle.Bonds[bondID.String()]
+	if bondPriceFromOracle == 0 {
+		buyPrice = sellingBondsParam.BondPrice
+	} else {
+		buyPrice = bondPriceFromOracle
+	}
+
+	bondTypeRes := jsonresult.GetBondTypeResultItem{
+		BondID:         bondID.GetBytes(),
+		StartSellingAt: sellingBondsParam.StartSellingAt,
+		EndSellingAt:   sellingBondsParam.StartSellingAt + sellingBondsParam.SellingWithin,
+		Maturity:       sellingBondsParam.Maturity,
+		BuyBackPrice:   sellingBondsParam.BuyBackPrice, // in constant
+		BuyPrice:       buyPrice,                       // in constant
+		TotalIssue:     sellingBondsParam.TotalIssue,
+		Available:      sellingBondsParam.BondsToSell,
+	}
+	result := jsonresult.GetBondTypeResult{
+		BondTypes: make(map[string]jsonresult.GetBondTypeResultItem),
+	}
+	result.BondTypes[bondID.String()] = bondTypeRes
+	return result, nil
+}
+
 func (self RpcServer) handleGetGOVParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	govParam := self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams
 	return govParam, nil
@@ -62,31 +92,35 @@ func (self RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, cl
 	var err error
 	arrayParams := common.InterfaceSlice(params)
 
-	// Req param #4: issuing request info
-	buyBackReq := arrayParams[4].(map[string]interface{})
-	voutIndex := int(buyBackReq["voutIndex"].(float64))
-	buyBackFromTxIDBytes := []byte(buyBackReq["buyBackFromTxID"].(string))
-	buyBackFromTxID := common.Hash{}
-	copy(buyBackFromTxID[:], buyBackFromTxIDBytes)
-	metaType := metadata.BuyBackRequestMeta
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	paymentAddr := senderKey.KeySet.PaymentAddress
+	tokenParamsRaw := arrayParams[3].(map[string]interface{})
+	_, voutsAmount := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
+
+	tokenID := []byte(tokenParamsRaw["TokenID"].(string))
 	meta := metadata.NewBuyBackRequest(
-		buyBackFromTxID,
-		voutIndex,
-		metaType,
+		paymentAddr,
+		uint64(voutsAmount),
+		tokenID,
+		metadata.BuyBackRequestMeta,
 	)
-	normalTx, err := self.buildRawTransaction(params, meta)
+	customTokenTx, err := self.buildRawCustomTokenTransaction(params, meta)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	byteArrays, err := json.Marshal(normalTx)
+	byteArrays, err := json.Marshal(customTokenTx)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result := jsonresult.CreateTransactionResult{
-		TxID:            normalTx.Hash().String(),
+		TxID:            customTokenTx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
@@ -126,15 +160,13 @@ func (self RpcServer) handleCreateRawTxWithBuySellRequest(params interface{}, cl
 		Pk: []byte(paymentAddressMap["pk"].(string)),
 		Tk: []byte(paymentAddressMap["tk"].(string)),
 	}
-	assetTypeBytes := []byte(buySellReq["TokenID"].(string))
-	assetType := common.Hash{}
-	copy(assetType[:], assetTypeBytes)
+	tokenID := []byte(buySellReq["TokenID"].(string))
 	amount := uint64(buySellReq["Amount"].(float64))
 	buyPrice := uint64(buySellReq["BuyPrice"].(float64))
 	metaType := metadata.BuyFromGOVRequestMeta
 	meta := metadata.NewBuySellRequest(
 		paymentAddress,
-		assetType,
+		tokenID,
 		amount,
 		buyPrice,
 		metaType,
@@ -553,11 +585,9 @@ func (self RpcServer) buildRawSubmitGOVProposalTransaction(
 	GOVParams := *params2.NewGOVParamsFromRPC(arrayParams[NParams-4])
 	executeDuration := arrayParams[NParams-3].(uint32)
 	explanation := arrayParams[NParams-2].(string)
-	paymentData := common.InterfaceSlice(arrayParams[NParams-1])
-	address := privacy.PaymentAddress{
-		Pk: paymentData[0].([]byte),
-		Tk: paymentData[1].([]byte),
-	}
+	paymentData := []byte(arrayParams[NParams-1].(string))
+	address := privacy.PaymentAddress{}
+	address.SetBytes(paymentData)
 
 	meta := metadata.NewSubmitGOVProposalMetadata(GOVParams, executeDuration, explanation, &address)
 	tx, err := self.buildRawTransaction(params, meta)

@@ -690,7 +690,7 @@ func (self *BlockChain) UpdateVoteCountBoard(block *Block) error {
 				tx := tx.(*transaction.TxCustomToken)
 				voteAmount := tx.GetAmountOfVote()
 				voteDCBBoardMetadata := tx.Metadata.(*metadata.VoteDCBBoardMetadata)
-				err := self.config.DataBase.AddVoteDCBBoard(DCBBoardIndex, tx.TxTokenData.Vins[0].PaymentAddress.Bytes(), tx.TxTokenData.Vins[0].PaymentAddress.Pk, voteDCBBoardMetadata.CandidatePubKey, voteAmount)
+				err := self.config.DataBase.AddVoteBoard("dcb", DCBBoardIndex, tx.TxTokenData.Vins[0].PaymentAddress.Bytes(), tx.TxTokenData.Vins[0].PaymentAddress.Pk, voteDCBBoardMetadata.CandidatePubKey, voteAmount)
 				if err != nil {
 					return err
 				}
@@ -700,7 +700,7 @@ func (self *BlockChain) UpdateVoteCountBoard(block *Block) error {
 				tx := tx.(*transaction.TxCustomToken)
 				voteAmount := tx.GetAmountOfVote()
 				voteGOVBoardMetadata := tx.Metadata.(*metadata.VoteGOVBoardMetadata)
-				err := self.config.DataBase.AddVoteGOVBoard(GOVBoardIndex, tx.TxTokenData.Vins[0].PaymentAddress.Bytes(), tx.TxTokenData.Vins[0].PaymentAddress.Pk, voteGOVBoardMetadata.CandidatePubKey, voteAmount)
+				err := self.config.DataBase.AddVoteBoard("gov", GOVBoardIndex, tx.TxTokenData.Vins[0].PaymentAddress.Bytes(), tx.TxTokenData.Vins[0].PaymentAddress.Pk, voteGOVBoardMetadata.CandidatePubKey, voteAmount)
 				if err != nil {
 					return err
 				}
@@ -716,7 +716,7 @@ func (self *BlockChain) UpdateVoteTokenHolder(block *Block) error {
 		case metadata.SendInitDCBVoteTokenMeta:
 			{
 				meta := tx.GetMetadata().(*metadata.SendInitDCBVoteTokenMetadata)
-				err := self.config.DataBase.SendInitDCBVoteToken(self.GetCurrentBoardIndex(DCBConstitutionHelper{}), meta.ReceiverPubKey, meta.Amount)
+				err := self.config.DataBase.SendInitVoteToken("dcb", self.GetCurrentBoardIndex(DCBConstitutionHelper{}), meta.ReceiverPubKey, meta.Amount)
 				if err != nil {
 					return err
 				}
@@ -724,7 +724,7 @@ func (self *BlockChain) UpdateVoteTokenHolder(block *Block) error {
 		case metadata.SendInitGOVVoteTokenMeta:
 			{
 				meta := tx.GetMetadata().(*metadata.SendInitGOVVoteTokenMetadata)
-				err := self.config.DataBase.SendInitGOVVoteToken(self.GetCurrentBoardIndex(GOVConstitutionHelper{}), meta.ReceiverPubKey, meta.Amount)
+				err := self.config.DataBase.SendInitVoteToken("gov", self.GetCurrentBoardIndex(GOVConstitutionHelper{}), meta.ReceiverPubKey, meta.Amount)
 				if err != nil {
 					return err
 				}
@@ -1424,12 +1424,99 @@ func (self BlockChain) GetFeePerKbTx() uint64 {
 	return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
 }
 
-func (self BlockChain) GetCurrentBoardIndex(helper ConstitutionHelper) uint32 {
+func (self *BlockChain) GetCurrentBoardIndex(helper ConstitutionHelper) uint32 {
 	board := helper.GetBoard(self)
 	return board.BoardIndex()
 }
 
-func (self BlockChain) GetConstitutionIndex(helper ConstitutionHelper) uint32 {
+func (self *BlockChain) GetConstitutionIndex(helper ConstitutionHelper) uint32 {
 	constitutionInfo := helper.GetConstitutionInfo(self)
 	return constitutionInfo.ConstitutionIndex
+}
+
+//1. Current National welfare (NW)  < lastNW * 0.9 (Emergency case)
+//2. Block height == last constitution start time + last constitution window
+//This function is called after successful connect block => block height is block height of best state
+func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) bool {
+	BestBlock := self.BestState[0].BestBlock
+	thisBlockHeight := BestBlock.Header.Height
+	newNationalWelfare := helper.GetCurrentNationalWelfare(self)
+	oldNationalWelfare := helper.GetOldNationalWelfare(self)
+	thresholdNationalWelfare := oldNationalWelfare * helper.GetThresholdRatioOfCrisis() / common.BasePercentage
+
+	constitutionInfo := helper.GetConstitutionInfo(self)
+	endedOfConstitution := constitutionInfo.StartedBlockHeight + constitutionInfo.ExecuteDuration
+	pivotOfStart := endedOfConstitution - 3*common.EncryptionOnePhraseDuration
+
+	rightTime := newNationalWelfare < thresholdNationalWelfare || pivotOfStart == uint32(thisBlockHeight)
+	encryptFlag, err := self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType())
+	if err != nil {
+		return false
+	}
+	rightFlag := (encryptFlag == common.Lv3EncryptionFlag)
+	if rightTime && rightFlag {
+		return true
+	}
+	return false
+}
+
+//This function is called after successful connect block => block height is block height of best state
+func (self *BlockChain) NeedEnterEncryptLv1(helper ConstitutionHelper) bool {
+	BestBlock := self.BestState[0].BestBlock
+	thisBlockHeight := BestBlock.Header.Height
+	lastEncryptBlockHeight, err := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetLowerCaseBoardType())
+	if err != nil && uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration {
+		encryptFlag, err := self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType())
+		if err != nil && encryptFlag == common.Lv2EncryptionFlag {
+			return true
+		}
+	}
+	return false
+}
+
+//This function is called after successful connect block => block height is block height of best state
+func (self *BlockChain) NeedEnterEncryptNormal(helper ConstitutionHelper) bool {
+	BestBlock := self.BestState[0].BestBlock
+	thisBlockHeight := BestBlock.Header.Height
+	lastEncryptBlockHeight, err := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetLowerCaseBoardType())
+	if err != nil && uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration {
+		encryptFlag, err := self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType())
+		if err != nil && encryptFlag == common.Lv1EncryptionFlag {
+			return true
+		}
+	}
+	return false
+}
+
+//This function is called after successful connect block => block height is block height of best state
+func (self *BlockChain) SetEncryptPhrase(helper ConstitutionHelper) {
+	flag := 0
+	boardType := helper.GetLowerCaseBoardType()
+	if self.NeedToEnterEncryptionPhrase(helper) {
+		flag = common.Lv2EncryptionFlag
+		self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[0].BestBlock.Header.Height))
+		self.config.DataBase.SetEncryptFlag(boardType, uint32(flag))
+	} else if self.NeedEnterEncryptLv1(helper) {
+		flag = common.Lv1EncryptionFlag
+		self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[0].BestBlock.Header.Height))
+		self.config.DataBase.SetEncryptFlag(boardType, uint32(flag))
+	} else if self.NeedEnterEncryptNormal(helper) {
+		flag = common.NormalEncryptionFlag
+		self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[0].BestBlock.Header.Height))
+		self.config.DataBase.SetEncryptFlag(boardType, uint32(flag))
+	}
+}
+
+//This function is called when new block => block height is block height of best state + 1
+func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
+	BestBlock := self.BestState[0].BestBlock
+	thisBlockHeight := BestBlock.Header.Height + 1
+	lastEncryptBlockHeight, err := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetLowerCaseBoardType())
+	if err != nil && uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration {
+		encryptFlag, err := self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType())
+		if err != nil && encryptFlag == common.NormalEncryptionFlag {
+			return true
+		}
+	}
+	return false
 }

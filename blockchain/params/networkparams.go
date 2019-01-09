@@ -1,9 +1,13 @@
 package params
 
-import "github.com/ninjadotorg/constant/common"
+import (
+	"fmt"
+	"github.com/ninjadotorg/constant/common"
+)
 
 // Todo: @0xjackalope, @0xbunyip Check logic in Hash and Validate and rpcfunction because other will change params struct without modified these function
 type SellingBonds struct {
+	TotalIssue     uint64
 	BondsToSell    uint64
 	BondPrice      uint64 // in Constant unit
 	Maturity       uint32
@@ -12,8 +16,32 @@ type SellingBonds struct {
 	SellingWithin  uint32 // selling bonds within n blocks
 }
 
-func NewSellingBonds(bondsToSell uint64, bondPrice uint64, maturity uint32, buyBackPrice uint64, startSellingAt uint32, sellingWithin uint32) *SellingBonds {
-	return &SellingBonds{BondsToSell: bondsToSell, BondPrice: bondPrice, Maturity: maturity, BuyBackPrice: buyBackPrice, StartSellingAt: startSellingAt, SellingWithin: sellingWithin}
+func (self SellingBonds) GetID() *common.Hash {
+	temp, _ := common.Hash{}.NewHashFromStr(fmt.Sprintf("%d%d%d", self.Maturity, self.BuyBackPrice, self.StartSellingAt))
+	bondIDBytesWithPrefix := append(common.BondTokenID[0:8], temp[8:]...)
+	result := &common.Hash{}
+	result.SetBytes(bondIDBytesWithPrefix)
+	return result
+}
+
+func NewSellingBonds(
+	bondsToSell uint64,
+	bondPrice uint64,
+	maturity uint32,
+	buyBackPrice uint64,
+	startSellingAt uint32,
+	sellingWithin uint32,
+	totalIssue uint64,
+) *SellingBonds {
+	return &SellingBonds{
+		TotalIssue:     totalIssue,
+		BondsToSell:    bondsToSell,
+		BondPrice:      bondPrice,
+		Maturity:       maturity,
+		BuyBackPrice:   buyBackPrice,
+		StartSellingAt: startSellingAt,
+		SellingWithin:  sellingWithin,
+	}
 }
 
 type SaleData struct {
@@ -89,6 +117,7 @@ func (sellingBonds *SellingBonds) Hash() *common.Hash {
 	record += string(sellingBonds.BuyBackPrice)
 	record += string(sellingBonds.StartSellingAt)
 	record += string(sellingBonds.SellingWithin)
+	record += string(sellingBonds.TotalIssue)
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

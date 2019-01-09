@@ -110,6 +110,7 @@ var RpcHandler = map[string]commandHandler{
 
 	// gov
 	GetBondTypes:                           RpcServer.handleGetBondTypes,
+	GetCurrentSellingBondTypes:             RpcServer.handleGetCurrentSellingBondTypes,
 	GetGOVConstitution:                     RpcServer.handleGetGOVConstitution,
 	GetGOVParams:                           RpcServer.handleGetGOVParams,
 	CreateAndSendTxWithBuyBackRequest:      RpcServer.handleCreateAndSendTxWithBuyBackRequest,

@@ -84,7 +84,7 @@ func (GOVConstitutionHelper) GetConstitutionEndedBlockHeight(blockgen *BlkTmplGe
 func (DCBConstitutionHelper) GetStartedNormalVote(blockgen *BlkTmplGenerator, chainID byte) uint32 {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	lastDCBConstitution := BestBlock.Header.DCBConstitution
-	return lastDCBConstitution.StartedBlockHeight - common.EncryptionPhaseDuration
+	return lastDCBConstitution.StartedBlockHeight - common.EncryptionOnePhraseDuration
 }
 
 func (DCBConstitutionHelper) CheckSubmitProposalType(tx metadata.Transaction) bool {
@@ -102,7 +102,7 @@ func (DCBConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transaction) uin
 func (GOVConstitutionHelper) GetStartedNormalVote(blockgen *BlkTmplGenerator, chainID byte) uint32 {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	lastGOVConstitution := BestBlock.Header.GOVConstitution
-	return lastGOVConstitution.StartedBlockHeight - common.EncryptionPhaseDuration
+	return lastGOVConstitution.StartedBlockHeight - common.EncryptionOnePhraseDuration
 }
 
 func (GOVConstitutionHelper) CheckSubmitProposalType(tx metadata.Transaction) bool {
@@ -208,10 +208,10 @@ func (GOVConstitutionHelper) GetPrizeProposal() uint32 {
 }
 
 func (helper DCBConstitutionHelper) GetTopMostVoteGovernor(blockgen *BlkTmplGenerator) (database.CandidateList, error) {
-	return blockgen.chain.config.DataBase.GetTopMostVoteDCBGovernor(blockgen.chain.GetCurrentBoardIndex(helper))
+	return blockgen.chain.config.DataBase.GetTopMostVoteGovernor("dcb", blockgen.chain.GetCurrentBoardIndex(helper))
 }
 func (helper GOVConstitutionHelper) GetTopMostVoteGovernor(blockgen *BlkTmplGenerator) (database.CandidateList, error) {
-	return blockgen.chain.config.DataBase.GetTopMostVoteGOVGovernor(blockgen.chain.GetCurrentBoardIndex(helper))
+	return blockgen.chain.config.DataBase.GetTopMostVoteGovernor("gov", blockgen.chain.GetCurrentBoardIndex(helper))
 }
 
 func (DCBConstitutionHelper) GetBoardSumToken(blockgen *BlkTmplGenerator) uint64 {
@@ -240,33 +240,33 @@ func (GOVConstitutionHelper) GetTokenID() *common.Hash {
 	return &id
 }
 
-func (DCBConstitutionHelper) GetBoard(chain BlockChain) Governor {
+func (DCBConstitutionHelper) GetBoard(chain *BlockChain) Governor {
 	return chain.BestState[0].BestBlock.Header.DCBGovernor
 }
 
-func (GOVConstitutionHelper) GetBoard(chain BlockChain) Governor {
+func (GOVConstitutionHelper) GetBoard(chain *BlockChain) Governor {
 	return chain.BestState[0].BestBlock.Header.GOVGovernor
 }
 
 func (DCBConstitutionHelper) GetAmountVoteTokenOfBoard(blockgen *BlkTmplGenerator, pubKey []byte, boardIndex uint32) uint64 {
-	value, _ := blockgen.chain.config.DataBase.GetDCBVoteTokenAmount(boardIndex, pubKey)
+	value, _ := blockgen.chain.config.DataBase.GetVoteTokenAmount("dcb", boardIndex, pubKey)
 	return uint64(value)
 }
 func (GOVConstitutionHelper) GetAmountVoteTokenOfBoard(blockgen *BlkTmplGenerator, pubKey []byte, boardIndex uint32) uint64 {
-	value, _ := blockgen.chain.config.DataBase.GetGOVVoteTokenAmount(boardIndex, pubKey)
+	value, _ := blockgen.chain.config.DataBase.GetVoteTokenAmount("gov", boardIndex, pubKey)
 	return uint64(value)
 }
 
 func (DCBConstitutionHelper) GetAmountOfVoteToBoard(blockgen *BlkTmplGenerator, candidatePubKey []byte, voterPubKey []byte, boardIndex uint32) uint64 {
-	key := lvdb.GetKeyVoteDCBBoardList(boardIndex, candidatePubKey, voterPubKey)
+	key := lvdb.GetKeyVoteBoardList("dcb", boardIndex, candidatePubKey, voterPubKey)
 	value, _ := blockgen.chain.config.DataBase.Get(key)
-	amount := lvdb.ParseValueVoteDCBBoardList(value)
+	amount := lvdb.ParseValueVoteBoardList(value)
 	return amount
 }
 func (GOVConstitutionHelper) GetAmountOfVoteToBoard(blockgen *BlkTmplGenerator, candidatePubKey []byte, voterPubKey []byte, boardIndex uint32) uint64 {
-	key := lvdb.GetKeyVoteGOVBoardList(boardIndex, candidatePubKey, voterPubKey)
+	key := lvdb.GetKeyVoteBoardList("gov", boardIndex, candidatePubKey, voterPubKey)
 	value, _ := blockgen.chain.config.DataBase.Get(key)
-	amount := lvdb.ParseValueVoteGOVBoardList(value)
+	amount := lvdb.ParseValueVoteBoardList(value)
 	return amount
 }
 
@@ -278,10 +278,34 @@ func (GOVConstitutionHelper) GetCurrentBoardPubKeys(blockgen *BlkTmplGenerator) 
 	return blockgen.chain.BestState[0].BestBlock.Header.GOVGovernor.BoardPubKeys
 }
 
-func (DCBConstitutionHelper) GetConstitutionInfo(chain BlockChain) ConstitutionInfo {
+func (DCBConstitutionHelper) GetConstitutionInfo(chain *BlockChain) ConstitutionInfo {
 	return chain.BestState[0].BestBlock.Header.DCBConstitution.ConstitutionInfo
 }
 
-func (GOVConstitutionHelper) GetConstitutionInfo(chain BlockChain) ConstitutionInfo {
+func (GOVConstitutionHelper) GetConstitutionInfo(chain *BlockChain) ConstitutionInfo {
 	return chain.BestState[0].BestBlock.Header.GOVConstitution.ConstitutionInfo
+}
+
+func (DCBConstitutionHelper) GetCurrentNationalWelfare(chain *BlockChain) int32 {
+	return GetOracleDCBNationalWelfare()
+}
+
+func (GOVConstitutionHelper) GetCurrentNationalWelfare(chain *BlockChain) int32 {
+	return GetOracleGOVNationalWelfare()
+}
+
+func (DCBConstitutionHelper) GetThresholdRatioOfCrisis() int32 {
+	return ThresholdRatioOfDCBCrisis
+}
+
+func (GOVConstitutionHelper) GetThresholdRatioOfCrisis() int32 {
+	return ThresholdRatioOfGOVCrisis
+}
+
+func (DCBConstitutionHelper) GetOldNationalWelfare(chain *BlockChain) int32 {
+	return chain.BestState[0].BestBlock.Header.DCBConstitution.CurrentDCBNationalWelfare
+}
+
+func (GOVConstitutionHelper) GetOldNationalWelfare(chain *BlockChain) int32 {
+	return chain.BestState[0].BestBlock.Header.GOVConstitution.CurrentGOVNationalWelfare
 }

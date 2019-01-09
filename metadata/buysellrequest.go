@@ -1,16 +1,16 @@
 package metadata
 
 import (
+	"bytes"
 	"errors"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	privacy "github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 type BuySellRequest struct {
 	PaymentAddress privacy.PaymentAddress
-	AssetType      common.Hash // token id (note: for bond, this one is just bond token id prefix)
+	TokenID        []byte
 	Amount         uint64
 	BuyPrice       uint64 // in Constant unit
 
@@ -21,7 +21,7 @@ type BuySellRequest struct {
 
 func NewBuySellRequest(
 	paymentAddress privacy.PaymentAddress,
-	assetType common.Hash,
+	tokenID []byte,
 	amount uint64,
 	buyPrice uint64,
 	metaType int,
@@ -31,7 +31,7 @@ func NewBuySellRequest(
 	}
 	return &BuySellRequest{
 		PaymentAddress: paymentAddress,
-		AssetType:      assetType,
+		TokenID:        tokenID,
 		Amount:         amount,
 		BuyPrice:       buyPrice,
 		MetadataBase:   metadataBase,
@@ -46,6 +46,11 @@ func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr Block
 	sellingBondsParams := govParams.SellingBonds
 	if sellingBondsParams == nil {
 		return false, errors.New("SellingBonds params are not existed.")
+	}
+
+	bondID := sellingBondsParams.GetID()
+	if !bytes.Equal(bondID[:], bsReq.TokenID) {
+		return false, errors.New("Requested tokenID has not been selling yet.")
 	}
 
 	// check if buy price againsts SellingBonds params' BondPrice is correct or not
@@ -68,7 +73,7 @@ func (bsReq *BuySellRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tra
 	if bsReq.Amount == 0 {
 		return false, false, errors.New("Wrong request info's amount")
 	}
-	if len(bsReq.AssetType) != common.HashSize {
+	if len(bsReq.TokenID) != common.HashSize {
 		return false, false, errors.New("Wrong request info's asset type")
 	}
 	return true, true, nil
@@ -81,7 +86,7 @@ func (bsReq *BuySellRequest) ValidateMetadataByItself() bool {
 
 func (bsReq *BuySellRequest) Hash() *common.Hash {
 	record := string(bsReq.PaymentAddress.Bytes())
-	record += bsReq.AssetType.String()
+	record += string(bsReq.TokenID)
 	record += string(bsReq.Amount)
 	record += string(bsReq.BuyPrice)
 	record += string(bsReq.SaleID)

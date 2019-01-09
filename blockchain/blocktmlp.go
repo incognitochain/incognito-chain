@@ -43,8 +43,11 @@ type ConstitutionHelper interface {
 	GetBoardFund(blockgen *BlkTmplGenerator) uint64
 	GetTokenID() *common.Hash
 	GetAmountOfVoteToBoard(blockgen *BlkTmplGenerator, candidatePubKey []byte, voterPubKey []byte, boardIndex uint32) uint64
-	GetBoard(chain BlockChain) Governor
-	GetConstitutionInfo(chain BlockChain) ConstitutionInfo
+	GetBoard(chain *BlockChain) Governor
+	GetConstitutionInfo(chain *BlockChain) ConstitutionInfo
+	GetCurrentNationalWelfare(chain *BlockChain) int32
+	GetThresholdRatioOfCrisis() int32
+	GetOldNationalWelfare(chain *BlockChain) int32
 }
 
 // txPool represents a source of transactions to consider for inclusion in
@@ -320,7 +323,9 @@ concludeBlock:
 	// Check if it is the case we need to apply a new proposal
 	// 1. newNW < lastNW * 0.9
 	// 2. current block height == last Constitution start time + last Constitution execute duration
-	if blockgen.neededNewDCBConstitution(chainID) {
+	if blockgen.chain.readyNewConstitution(DCBConstitutionHelper{}) {
+		blockgen.chain.config.DataBase.SetEncryptionLastBlockHeight("dcb", uint32(prevBlock.Header.Height+1))
+		blockgen.chain.config.DataBase.SetEncryptFlag("dcb", uint32(common.Lv3EncryptionFlag))
 		tx, err := blockgen.createAcceptConstitutionAndPunishTxAndRewardSubmitter(chainID, DCBConstitutionHelper{}, privatekey)
 		coinbases = append(coinbases, tx...)
 		if err != nil {
@@ -330,7 +335,9 @@ concludeBlock:
 		rewardTx, err := blockgen.createRewardProposalWinnerTx(chainID, DCBConstitutionHelper{})
 		coinbases = append(coinbases, rewardTx)
 	}
-	if blockgen.neededNewGOVConstitution(chainID) {
+	if blockgen.chain.readyNewConstitution(GOVConstitutionHelper{}) {
+		blockgen.chain.config.DataBase.SetEncryptionLastBlockHeight("gov", uint32(prevBlock.Header.Height+1))
+		blockgen.chain.config.DataBase.SetEncryptFlag("gov", uint32(common.Lv3EncryptionFlag))
 		tx, err := blockgen.createAcceptConstitutionAndPunishTxAndRewardSubmitter(chainID, GOVConstitutionHelper{}, privatekey)
 		coinbases = append(coinbases, tx...)
 		if err != nil {
@@ -474,26 +481,6 @@ func GetOracleGOVNationalWelfare() int32 {
 	return 1234
 }
 
-//1. Current National welfare (NW)  < lastNW * 0.9 (Emergency case)
-//2. Block height == last constitution start time + last constitution window
-func (blockgen *BlkTmplGenerator) neededNewDCBConstitution(chainID byte) bool {
-	BestBlock := blockgen.chain.BestState[chainID].BestBlock
-	lastDCBConstitution := BestBlock.Header.DCBConstitution
-	if GetOracleDCBNationalWelfare() < lastDCBConstitution.CurrentDCBNationalWelfare*ThresholdRatioOfDCBCrisis/common.BasePercentage ||
-		uint32(BestBlock.Header.Height+2) == lastDCBConstitution.StartedBlockHeight+lastDCBConstitution.ExecuteDuration {
-		return true
-	}
-	return false
-}
-func (blockgen *BlkTmplGenerator) neededNewGOVConstitution(chainID byte) bool {
-	BestBlock := blockgen.chain.BestState[chainID].BestBlock
-	lastGovConstitution := BestBlock.Header.GOVConstitution
-	if GetOracleGOVNationalWelfare() < lastGovConstitution.CurrentGOVNationalWelfare*ThresholdRatioOfGovCrisis/common.BasePercentage ||
-		uint32(BestBlock.Header.Height+2) == lastGovConstitution.StartedBlockHeight+lastGovConstitution.ExecuteDuration {
-		return true
-	}
-	return false
-}
 func (blockgen *BlkTmplGenerator) neededNewDCBGovernor(chainID byte) bool {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	return int32(BestBlock.Header.DCBGovernor.EndBlock) == BestBlock.Header.Height+2
@@ -565,15 +552,13 @@ func buildSingleBuySellResponseTx(
 	buySellReqTx metadata.Transaction,
 	sellingBondsParam *params.SellingBonds,
 ) (*transaction.TxCustomToken, error) {
-	bondID := fmt.Sprintf("%s%s%s", sellingBondsParam.Maturity, sellingBondsParam.BuyBackPrice, sellingBondsParam.StartSellingAt)
-	additionalSuffix := make([]byte, 24-len(bondID))
-	bondIDBytes := append([]byte(bondID), additionalSuffix...)
+	bondID := sellingBondsParam.GetID()
 	buySellRes := metadata.NewBuySellResponse(
 		*buySellReqTx.Hash(),
 		sellingBondsParam.StartSellingAt,
 		sellingBondsParam.Maturity,
 		sellingBondsParam.BuyBackPrice,
-		bondIDBytes,
+		bondID[:],
 		metadata.BuyFromGOVResponseMeta,
 	)
 
@@ -588,7 +573,7 @@ func buildSingleBuySellResponseTx(
 	}
 
 	var propertyID [common.HashSize]byte
-	copy(propertyID[:], append(common.BondTokenID[0:8], bondIDBytes...))
+	copy(propertyID[:], bondID[:])
 	txTokenData := transaction.TxTokenData{
 		Type:       transaction.CustomTokenInit,
 		Amount:     buySellReq.Amount,
@@ -654,45 +639,58 @@ func (blockgen *BlkTmplGenerator) checkBuyBackReqTx(
 	tx metadata.Transaction,
 	buyBackConsts uint64,
 ) (*buyBackFromInfo, bool) {
-	buyBackReqMeta := tx.GetMetadata()
+	buyBackReqTx, ok := tx.(*transaction.TxCustomToken)
+	if !ok {
+		Logger.log.Error(errors.New("Could not parse BuyBackRequest tx (custom token tx)."))
+		return nil, false
+	}
+	vins := buyBackReqTx.TxTokenData.Vins
+	if len(vins) == 0 {
+		Logger.log.Error(errors.New("No existed Vins from BuyBackRequest tx"))
+		return nil, false
+	}
+	priorTxID := vins[0].TxCustomTokenID
+	_, _, _, priorTx, err := blockgen.chain.GetTransactionByHash(&priorTxID)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, false
+	}
+	priorCustomTokenTx, ok := priorTx.(*transaction.TxCustomToken)
+	if !ok {
+		Logger.log.Error(errors.New("Could not parse prior TxCustomToken."))
+		return nil, false
+	}
+
+	priorMeta := priorCustomTokenTx.GetMetadata()
+	if priorMeta == nil {
+		Logger.log.Error(errors.New("No existed metadata in priorCustomTokenTx"))
+		return nil, false
+	}
+	buySellResMeta, ok := priorMeta.(*metadata.BuySellResponse)
+	if !ok {
+		Logger.log.Error(errors.New("Could not parse BuySellResponse metadata."))
+		return nil, false
+	}
+	prevBlock := blockgen.chain.BestState[chainID].BestBlock
+	if buySellResMeta.StartSellingAt+buySellResMeta.Maturity > uint32(prevBlock.Header.Height)+1 {
+		Logger.log.Error("The token is not overdued yet.")
+		return nil, false
+	}
+	// check remaining constants in GOV fund is enough or not
+	buyBackReqMeta := buyBackReqTx.GetMetadata()
 	buyBackReq, ok := buyBackReqMeta.(*metadata.BuyBackRequest)
 	if !ok {
 		Logger.log.Error(errors.New("Could not parse BuyBackRequest metadata."))
 		return nil, false
 	}
-	_, _, _, fromTx, err := blockgen.chain.GetTransactionByHash(&buyBackReq.BuyBackFromTxID)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, false
-	}
-	customTokenTx, ok := fromTx.(*transaction.TxCustomToken)
-	if !ok {
-		Logger.log.Error(errors.New("Could not parse TxCustomToken."))
-		return nil, false
-	}
-	fromTxMeta := fromTx.GetMetadata()
-	buySellRes, ok := fromTxMeta.(*metadata.BuySellResponse)
-	if !ok {
-		Logger.log.Error(errors.New("Could not parse BuySellResponse metadata."))
-		return nil, false
-	}
-
-	vout := customTokenTx.TxTokenData.Vouts[buyBackReq.VoutIndex]
-	prevBlock := blockgen.chain.BestState[chainID].BestBlock
-
-	if buySellRes.StartSellingAt+buySellRes.Maturity > uint32(prevBlock.Header.Height)+1 {
-		Logger.log.Error("The token is not overdued yet.")
-		return nil, false
-	}
-	// check remaining constants in GOV fund is enough or not
-	buyBackAmount := vout.Value * buySellRes.BuyBackPrice
-	if buyBackConsts+buyBackAmount > prevBlock.Header.SalaryFund {
+	buyBackValue := buyBackReq.Amount * buySellResMeta.BuyBackPrice
+	if buyBackConsts+buyBackValue > prevBlock.Header.SalaryFund {
 		return nil, false
 	}
 	buyBackFromInfo := &buyBackFromInfo{
-		paymentAddress: vout.PaymentAddress,
-		buyBackPrice:   buySellRes.BuyBackPrice,
-		value:          vout.Value,
+		paymentAddress: buyBackReq.PaymentAddress,
+		buyBackPrice:   buySellResMeta.BuyBackPrice,
+		value:          buyBackReq.Amount,
 		requestedTxID:  tx.Hash(),
 	}
 	return buyBackFromInfo, true
@@ -954,7 +952,7 @@ func (blockgen *BlkTmplGenerator) UpdateNewGovernor(helper ConstitutionHelper, c
 	txs = append(txs, blockgen.createAcceptDCBBoardTx(newDCBBoardPubKey, sumOfVote))
 	txs = append(txs, blockgen.CreateSendDCBVoteTokenToGovernorTx(chainID, newBoardList, sumOfVote)...)
 
-	txs = append(txs, blockgen.CreateSendBackDCBTokenAfterVoteFail(chainID, newDCBBoardPubKey)...)
+	txs = append(txs, blockgen.CreateSendBackTokenAfterVoteFail(helper.GetLowerCaseBoardType(), chainID, newDCBBoardPubKey)...)
 
 	txs = append(txs, blockgen.CreateSendRewardOldBoard(helper, minerPrivateKey)...)
 
@@ -1000,7 +998,7 @@ func (blockgen *BlkTmplGenerator) CreateShareRewardOldBoard(
 ) []metadata.Transaction {
 	txs := make([]metadata.Transaction, 0)
 
-	voterList := blockgen.chain.config.DataBase.GetBoardVoterList(chairPubKey, blockgen.chain.GetCurrentBoardIndex(helper))
+	voterList := blockgen.chain.config.DataBase.GetBoardVoterList(helper.GetLowerCaseBoardType(), chairPubKey, blockgen.chain.GetCurrentBoardIndex(helper))
 	boardIndex := blockgen.chain.GetCurrentBoardIndex(helper)
 	for _, pubKey := range voterList {
 		amountOfVote := helper.GetAmountOfVoteToBoard(blockgen, chairPubKey, pubKey, boardIndex)
