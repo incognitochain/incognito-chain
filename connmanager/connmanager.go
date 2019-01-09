@@ -388,11 +388,12 @@ func (self *ConnManager) processDiscoverPeers() {
 
 			var pbkB58 string
 			signDataB58 := ""
+			nowNano := time.Now().UnixNano()
 			if listener.Config.UserKeySet != nil {
 				pbkB58 = listener.Config.UserKeySet.GetPublicKeyB58()
 				Logger.log.Info("Start Process Discover Peers", pbkB58)
 				// sign data
-				signDataB58, err = listener.Config.UserKeySet.SignDataB58([]byte{byte(0x00)})
+				signDataB58, err = listener.Config.UserKeySet.SignDataB58(common.Int64ToBytes(nowNano))
 				if err != nil {
 					Logger.log.Error(err)
 				}
@@ -416,6 +417,7 @@ func (self *ConnManager) processDiscoverPeers() {
 				RawAddress: rawAddress,
 				PublicKey:  pbkB58,
 				SignData:   signDataB58,
+				Timestamp:  nowNano,
 			}
 			Logger.log.Infof("[Exchange Peers] Ping %+v", args)
 

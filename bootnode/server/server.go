@@ -7,6 +7,7 @@ import (
 	"net/rpc"
 	"time"
 	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
 )
 
 const (
@@ -59,9 +60,9 @@ func (self *RpcServer) Start() {
 	server.Accept(l)
 }
 
-func (self *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 string, signDataB58 string) {
+func (self *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 string, signDataB58 string, nowNano int64) {
 	if signDataB58 != "" && publicKeyB58 != "" && rawAddress != "" {
-		err := cashec.ValidateDataB58(publicKeyB58, signDataB58, []byte{0x00})
+		err := cashec.ValidateDataB58(publicKeyB58, signDataB58, common.Int64ToBytes(nowNano))
 		if err == nil {
 			self.Peers[publicKeyB58] = &Peer{
 				ID:         self.CombineID(rawAddress, publicKeyB58),
