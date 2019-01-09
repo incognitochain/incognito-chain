@@ -5,9 +5,9 @@ import (
 	"log"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/common/base58"
 )
 
 /*
@@ -127,7 +127,8 @@ func (self RpcServer) handleRemoveAccount(params interface{}, closeChan <-chan s
 handleGetAllPeers - return all peers which this node connected
 */
 func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Info(params)
+	// Logger.log.Info(params)
+	log.Printf("%+v\n", params)
 	result := jsonresult.GetAllPeersResult{}
 	peersMap := []string{}
 	peers := self.config.AddrMgr.AddressCache()
