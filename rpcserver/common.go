@@ -45,7 +45,8 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		paymentInfo := &privacy.PaymentInfo{
-			Amount:         common.ConstantToMiliConstant(uint64(amount.(float64))),
+			//Amount:         common.ConstantToMiliConstant(uint64(amount.(float64))),
+			Amount:         uint64(amount.(float64)),
 			PaymentAddress: receiverPubKey.KeySet.PaymentAddress,
 		}
 		totalAmmount += paymentInfo.Amount
