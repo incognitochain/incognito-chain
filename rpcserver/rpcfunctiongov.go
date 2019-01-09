@@ -54,7 +54,8 @@ func (self RpcServer) handleGetCurrentSellingBondTypes(params interface{}, close
 	bondID := fmt.Sprintf("%s%s%s", sellingBondsParam.Maturity, sellingBondsParam.BuyBackPrice, sellingBondsParam.StartSellingAt)
 	additionalSuffix := make([]byte, 24-len(bondID))
 	bondIDBytes := append([]byte(bondID), additionalSuffix...)
-	bondIDStr := string(append(common.BondTokenID[0:8], bondIDBytes...))
+	bondIDBytesWithPrefix := append(common.BondTokenID[0:8], bondIDBytes...)
+	bondIDStr := string(bondIDBytesWithPrefix)
 	bondPriceFromOracle := blockHeader.Oracle.Bonds[bondIDStr]
 	if bondPriceFromOracle == 0 {
 		buyPrice = sellingBondsParam.BondPrice
@@ -63,6 +64,7 @@ func (self RpcServer) handleGetCurrentSellingBondTypes(params interface{}, close
 	}
 
 	bondTypeRes := jsonresult.GetBondTypeResultItem{
+		BondID:         bondIDBytesWithPrefix,
 		StartSellingAt: sellingBondsParam.StartSellingAt,
 		EndSellingAt:   sellingBondsParam.StartSellingAt + sellingBondsParam.SellingWithin,
 		Maturity:       sellingBondsParam.Maturity,
@@ -164,15 +166,13 @@ func (self RpcServer) handleCreateRawTxWithBuySellRequest(params interface{}, cl
 		Pk: []byte(paymentAddressMap["pk"].(string)),
 		Tk: []byte(paymentAddressMap["tk"].(string)),
 	}
-	assetTypeBytes := []byte(buySellReq["TokenID"].(string))
-	assetType := common.Hash{}
-	copy(assetType[:], assetTypeBytes)
+	tokenID := []byte(buySellReq["TokenID"].(string))
 	amount := uint64(buySellReq["Amount"].(float64))
 	buyPrice := uint64(buySellReq["BuyPrice"].(float64))
 	metaType := metadata.BuyFromGOVRequestMeta
 	meta := metadata.NewBuySellRequest(
 		paymentAddress,
-		assetType,
+		tokenID,
 		amount,
 		buyPrice,
 		metaType,
