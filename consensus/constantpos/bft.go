@@ -60,7 +60,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 		default:
 			switch self.phase {
 			case "propose":
-				time.Sleep(1 * time.Second)
+				time.Sleep(2 * time.Second)
 				if layer == "beacon" {
 					newBlock, err := self.BlockGen.NewBlockBeacon(&self.UserKeySet.PaymentAddress, &self.UserKeySet.PrivateKey)
 					if err != nil {
@@ -106,6 +106,12 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 							if layer == "beacon" {
 								pendingBlk := blockchain.BeaconBlock{}
 								pendingBlk.UnmarshalJSON(msgPropose.(*wire.MessageBFTPropose).Block)
+								blkHash := pendingBlk.Header.Hash()
+								err := cashec.ValidateDataB58(pendingBlk.Header.Producer, pendingBlk.ProducerSig, blkHash.GetBytes())
+								if err != nil {
+									Logger.log.Error(err)
+									continue
+								}
 								self.Chain.VerifyPreSignBeaconBlock(&pendingBlk)
 								self.pendingBlock = &pendingBlk
 								self.multiSigScheme.dataToSig = pendingBlk.Header.Hash()
@@ -161,8 +167,8 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 					case <-self.cTimeout:
 						//Use collected Ri to calc R & get ValidatorsIdx if len(Ri) > 1/2size(committee)
 						// then sig block with this R
-						if len(collectedRiList) < len(self.RoleData.Committee)/2 {
-							return nil, errors.New("Didn't receive any prepare phase msg")
+						if len(collectedRiList) < (len(self.RoleData.Committee) >> 1) {
+							return nil, errors.New("Didn't receive enough Ri to continue")
 						}
 						err := self.multiSigScheme.SignData(collectedRiList)
 						if err != nil {

@@ -95,14 +95,13 @@ func (self *Engine) Start() error {
 							)
 							switch role {
 							case "beacon-proposer":
-								// prevBlock :=	self.config.BlockChain.GetMayBeAcceptBlockBeacon()
-								prevBlock := self.config.BlockChain.BestState.Beacon.BestBlock
-								msg, errmsg := MakeMsgBeaconBlock(prevBlock)
-								if errmsg != nil {
-									Logger.log.Error("PBFT fatal error", err)
-									continue
-								}
-								self.config.Server.PushMessageToAll(msg)
+								// prevBlock := self.config.BlockChain.BestState.Beacon.BestBlock
+								// msg, errmsg := MakeMsgBeaconBlock(prevBlock)
+								// if errmsg != nil {
+								// 	Logger.log.Error("PBFT fatal error", err)
+								// 	continue
+								// }
+								// self.config.Server.PushMessageToAll(msg)
 								// self.config.Server.PushMessageToAll(prevBlock)
 								resBlk, err = bftProtocol.Start(true, "beacon", 0)
 								if err != nil {
