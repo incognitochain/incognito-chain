@@ -87,7 +87,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 			TotalIssue:     10000,
 			BondsToSell:    10000,
 			BondPrice:      100,
-			Maturity:       1000,
+			Maturity:       2,
 			BuyBackPrice:   120,
 			StartSellingAt: 1,
 			SellingWithin:  500,
