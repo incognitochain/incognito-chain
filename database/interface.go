@@ -116,14 +116,11 @@ type DatabaseInterface interface {
 	GetNoticePeriod(blockHeight int32) ([][]byte, error)
 
 	//Vote
-	AddVoteDCBBoard(uint32, []byte, []byte, []byte, uint64) error
-	AddVoteGOVBoard(uint32, []byte, []byte, []byte, uint64) error
-	GetTopMostVoteDCBGovernor(currentBoardIndex uint32) (CandidateList, error)
-	GetTopMostVoteGOVGovernor(uint32) (CandidateList, error)
+	AddVoteBoard(string, uint32, []byte, []byte, []byte, uint64) error
+	GetTopMostVoteGovernor(boardType string, currentBoardIndex uint32) (CandidateList, error)
 	NewIterator(*util.Range, *opt.ReadOptions) iterator.Iterator
 	GetKey(string, interface{}) []byte
-	SendInitDCBVoteToken(uint32, []byte, uint32) error
-	SendInitGOVVoteToken(uint32, []byte, uint32) error
+	SendInitVoteToken(boardType string, boardIndex uint32, pubKey []byte, amount uint32) error
 	AddVoteLv3Proposal(string, uint32, *common.Hash) error
 	AddVoteLv1or2Proposal(string, uint32, *common.Hash) error
 	AddVoteNormalProposalFromOwner(string, uint32, *common.Hash, []byte) error
@@ -131,14 +128,17 @@ type DatabaseInterface interface {
 	GetAmountVoteToken(string, uint32, []byte) (uint32, error)
 	TakeVoteTokenFromWinner(string, uint32, []byte, int32) error
 	SetNewProposalWinningVoter(string, uint32, []byte) error
-	GetDCBVoteTokenAmount(boardIndex uint32, pubKey []byte) (uint32, error)
-	GetGOVVoteTokenAmount(boardIndex uint32, pubKey []byte) (uint32, error)
+	GetVoteTokenAmount(boardType string, boardIndex uint32, pubKey []byte) (uint32, error)
+	GetEncryptFlag(boardType string) uint32
+	SetEncryptFlag(boardType string, flag uint32)
+	GetEncryptionLastBlockHeight(boardType string) uint32
+	SetEncryptionLastBlockHeight(boardType string, height uint32)
 
 	// Multisigs
 	StoreMultiSigsRegistration([]byte, []byte) error
 	GetMultiSigsRegistration([]byte) ([]byte, error)
 	GetPaymentAddressFromPubKey(pubKey []byte) []byte
-	GetBoardVoterList(chairPubKey []byte, boardIndex uint32) [][]byte
+	GetBoardVoterList(boardType string, chairPubKey []byte, boardIndex uint32) [][]byte
 
 	Close() error
 }
