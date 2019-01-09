@@ -394,7 +394,7 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 	// self.lock.Lock()
 	// defer self.lock.Unlock()
 
-	if len(self.BeaconCommittee) != len(block.ValidatorsIdx) {
+	if len(block.ValidatorsIdx) < (len(self.BeaconCommittee) >> 1) {
 		return NewBlockChainError(SignatureError, errors.New("Block validators and Beacon committee is not compatible"))
 	}
 	//=============Verify producer signature

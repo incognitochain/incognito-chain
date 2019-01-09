@@ -13,7 +13,7 @@ import (
 type ShardBlock struct {
 	AggregatedSig string `json:"AggregatedSig"`
 	ValidatorsIdx []int  `json:"ValidatorsIdx"`
-	ProducerSig   string `json:"BlockProducerSignature"`
+	ProducerSig   string `json:"ProducerSig"`
 	Body          ShardBody
 	Header        ShardHeader
 }
@@ -21,7 +21,7 @@ type ShardBlock struct {
 type ShardToBeaconBlock struct {
 	AggregatedSig string `json:"AggregatedSig"`
 	ValidatorsIdx []int  `json:"ValidatorsIdx"`
-	ProducerSig   string `json:"BlockProducerSignature"`
+	ProducerSig   string `json:"ProducerSig"`
 
 	Header ShardHeader
 }
@@ -29,7 +29,7 @@ type ShardToBeaconBlock struct {
 type CrossShardBlock struct {
 	AggregatedSig string `json:"AggregatedSig"`
 	ValidatorsIdx []int  `json:"ValidatorsIdx"`
-	ProducerSig   string `json:"BlockProducerSignature"`
+	ProducerSig   string `json:"ProducerSig"`
 
 	Header          ShardHeader
 	MerklePathShard []common.Hash
@@ -48,6 +48,7 @@ func (self *ShardBlock) UnmarshalJSON(data []byte) error {
 	tempBlk := &struct {
 		AggregatedSig string
 		ValidatorsIdx []int
+		ProducerSig   string
 		Header        ShardHeader
 		Body          *json.RawMessage
 	}{}
