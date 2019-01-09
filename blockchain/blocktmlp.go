@@ -553,15 +553,13 @@ func buildSingleBuySellResponseTx(
 	buySellReqTx metadata.Transaction,
 	sellingBondsParam *params.SellingBonds,
 ) (*transaction.TxCustomToken, error) {
-	bondID := fmt.Sprintf("%s%s%s", sellingBondsParam.Maturity, sellingBondsParam.BuyBackPrice, sellingBondsParam.StartSellingAt)
-	additionalSuffix := make([]byte, 24-len(bondID))
-	bondIDBytes := append([]byte(bondID), additionalSuffix...)
+	bondID := sellingBondsParam.GetID()
 	buySellRes := metadata.NewBuySellResponse(
 		*buySellReqTx.Hash(),
 		sellingBondsParam.StartSellingAt,
 		sellingBondsParam.Maturity,
 		sellingBondsParam.BuyBackPrice,
-		bondIDBytes,
+		bondID[:],
 		metadata.BuyFromGOVResponseMeta,
 	)
 
@@ -576,7 +574,7 @@ func buildSingleBuySellResponseTx(
 	}
 
 	var propertyID [common.HashSize]byte
-	copy(propertyID[:], append(common.BondTokenID[0:8], bondIDBytes...))
+	copy(propertyID[:], bondID[:])
 	txTokenData := transaction.TxTokenData{
 		Type:       transaction.CustomTokenInit,
 		Amount:     buySellReq.Amount,

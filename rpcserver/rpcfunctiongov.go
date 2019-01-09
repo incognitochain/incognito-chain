@@ -2,8 +2,6 @@ package rpcserver
 
 import (
 	"encoding/json"
-	"fmt"
-
 	params2 "github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -51,12 +49,8 @@ func (self RpcServer) handleGetCurrentSellingBondTypes(params interface{}, close
 	blockHeader := bestBlock.Header
 	sellingBondsParam := bestBlock.Header.GOVConstitution.GOVParams.SellingBonds
 	buyPrice := uint64(0)
-	bondID := fmt.Sprintf("%s%s%s", sellingBondsParam.Maturity, sellingBondsParam.BuyBackPrice, sellingBondsParam.StartSellingAt)
-	additionalSuffix := make([]byte, 24-len(bondID))
-	bondIDBytes := append([]byte(bondID), additionalSuffix...)
-	bondIDBytesWithPrefix := append(common.BondTokenID[0:8], bondIDBytes...)
-	bondIDStr := string(bondIDBytesWithPrefix)
-	bondPriceFromOracle := blockHeader.Oracle.Bonds[bondIDStr]
+	bondID := sellingBondsParam.GetID()
+	bondPriceFromOracle := blockHeader.Oracle.Bonds[bondID.String()]
 	if bondPriceFromOracle == 0 {
 		buyPrice = sellingBondsParam.BondPrice
 	} else {
@@ -64,7 +58,7 @@ func (self RpcServer) handleGetCurrentSellingBondTypes(params interface{}, close
 	}
 
 	bondTypeRes := jsonresult.GetBondTypeResultItem{
-		BondID:         bondIDBytesWithPrefix,
+		BondID:         bondID.GetBytes(),
 		StartSellingAt: sellingBondsParam.StartSellingAt,
 		EndSellingAt:   sellingBondsParam.StartSellingAt + sellingBondsParam.SellingWithin,
 		Maturity:       sellingBondsParam.Maturity,
@@ -76,7 +70,7 @@ func (self RpcServer) handleGetCurrentSellingBondTypes(params interface{}, close
 	result := jsonresult.GetBondTypeResult{
 		BondTypes: make(map[string]jsonresult.GetBondTypeResultItem),
 	}
-	result.BondTypes[bondIDStr] = bondTypeRes
+	result.BondTypes[bondID.String()] = bondTypeRes
 	return result, nil
 }
 

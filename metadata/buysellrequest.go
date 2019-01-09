@@ -3,11 +3,9 @@ package metadata
 import (
 	"bytes"
 	"errors"
-	"fmt"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	privacy "github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 type BuySellRequest struct {
@@ -50,11 +48,8 @@ func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr Block
 		return false, errors.New("SellingBonds params are not existed.")
 	}
 
-	bondID := fmt.Sprintf("%s%s%s", sellingBondsParams.Maturity, sellingBondsParams.BuyBackPrice, sellingBondsParams.StartSellingAt)
-	additionalSuffix := make([]byte, 24-len(bondID))
-	bondIDBytes := append([]byte(bondID), additionalSuffix...)
-	bondIDBytesWithPrefix := append(common.BondTokenID[0:8], bondIDBytes...)
-	if !bytes.Equal(bondIDBytesWithPrefix, bsReq.TokenID) {
+	bondID := sellingBondsParams.GetID()
+	if !bytes.Equal(bondID[:], bsReq.TokenID) {
 		return false, errors.New("Requested tokenID has not been selling yet.")
 	}
 
