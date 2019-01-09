@@ -102,15 +102,17 @@ func (self RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, cl
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	paymentAddr := senderKey.KeySet.PaymentAddress
 	tokenParamsRaw := arrayParams[3].(map[string]interface{})
 	_, voutsAmount := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
 
-	tokenID := []byte(tokenParamsRaw["TokenID"].(string))
+	tokenIDStr := tokenParamsRaw["TokenID"].(string)
+	tokenID, _ := common.Hash{}.NewHashFromStr(tokenIDStr)
 	meta := metadata.NewBuyBackRequest(
 		paymentAddr,
 		uint64(voutsAmount),
-		tokenID,
+		*tokenID,
 		metadata.BuyBackRequestMeta,
 	)
 	customTokenTx, err := self.buildRawCustomTokenTransaction(params, meta)
@@ -132,19 +134,18 @@ func (self RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, cl
 }
 
 func (self RpcServer) handleCreateAndSendTxWithBuyBackRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	var err error
 	data, err := self.handleCreateRawTxWithBuyBackRequest(params, closeChan)
-	if err != nil {
-		return nil, err
-	}
-	tx := data.(jsonresult.CreateTransactionResult)
-	base58CheckData := tx.Base58CheckData
-	if err != nil {
+	if err.(*RPCError) != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
-	if err != nil {
+	sendResult, err := self.handleSendRawCustomTokenTransaction(newParam, closeChan)
+	if err.(*RPCError) != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result := jsonresult.CreateTransactionResult{
