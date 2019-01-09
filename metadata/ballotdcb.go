@@ -77,9 +77,9 @@ type SealedLv1DCBBallotMetadata struct {
 func (sealedLv1DCBBallotMetadata *SealedLv1DCBBallotMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
 	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(chainID)
 	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
-	lv3DCBPivot := endedDCBPivot - common.EncryptionPhaseDuration
-	lv2DCBPivot := lv3DCBPivot - common.EncryptionPhaseDuration
-	lv1DCBPivot := lv2DCBPivot - common.EncryptionPhaseDuration
+	lv3DCBPivot := endedDCBPivot - common.EncryptionOnePhraseDuration
+	lv2DCBPivot := lv3DCBPivot - common.EncryptionOnePhraseDuration
+	lv1DCBPivot := lv2DCBPivot - common.EncryptionOnePhraseDuration
 	if !(currentBlockHeight < lv1DCBPivot && currentBlockHeight >= lv2DCBPivot) {
 		return false
 	}
@@ -157,8 +157,8 @@ type SealedLv2DCBBallotMetadata struct {
 func (sealedLv2DCBBallotMetadata *SealedLv2DCBBallotMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
 	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(chainID)
 	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
-	lv3DCBPivot := endedDCBPivot - common.EncryptionPhaseDuration
-	lv2DCBPivot := lv3DCBPivot - common.EncryptionPhaseDuration
+	lv3DCBPivot := endedDCBPivot - common.EncryptionOnePhraseDuration
+	lv2DCBPivot := lv3DCBPivot - common.EncryptionOnePhraseDuration
 	if !(currentBlockHeight < lv2DCBPivot && currentBlockHeight >= lv3DCBPivot) {
 		return false
 	}
@@ -230,7 +230,7 @@ func (sealedLv3DCBBallotMetadata *SealedLv3DCBBallotMetadata) ValidataBeforeNewB
 	startedDCBPivot := bcr.GetDCBConstitutionStartHeight(chainID)
 	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(chainID)
 	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
-	lv3DCBPivot := endedDCBPivot - common.EncryptionPhaseDuration
+	lv3DCBPivot := endedDCBPivot - common.EncryptionOnePhraseDuration
 	if !(currentBlockHeight < lv3DCBPivot && currentBlockHeight >= startedDCBPivot) {
 		return false
 	}
@@ -352,9 +352,9 @@ func (normalDCBBallotFromSealerMetadata *NormalDCBBallotFromSealerMetadata) Vali
 func (normalDCBBallotFromSealerMetadata *NormalDCBBallotFromSealerMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
 	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(chainID)
 	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
-	lv3DCBPivot := endedDCBPivot - common.EncryptionPhaseDuration
-	lv2DCBPivot := lv3DCBPivot - common.EncryptionPhaseDuration
-	lv1DCBPivot := lv2DCBPivot - common.EncryptionPhaseDuration
+	lv3DCBPivot := endedDCBPivot - common.EncryptionOnePhraseDuration
+	lv2DCBPivot := lv3DCBPivot - common.EncryptionOnePhraseDuration
+	lv1DCBPivot := lv2DCBPivot - common.EncryptionOnePhraseDuration
 	if !(currentBlockHeight < endedDCBPivot && currentBlockHeight >= lv1DCBPivot) {
 		return false
 	}
@@ -461,9 +461,9 @@ func (normalDCBBallotFromOwnerMetadata *NormalDCBBallotFromOwnerMetadata) Valida
 func (normalDCBBallotFromOwnerMetadata *NormalDCBBallotFromOwnerMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
 	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(chainID)
 	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
-	lv3DCBPivot := endedDCBPivot - common.EncryptionPhaseDuration
-	lv2DCBPivot := lv3DCBPivot - common.EncryptionPhaseDuration
-	lv1DCBPivot := lv2DCBPivot - common.EncryptionPhaseDuration
+	lv3DCBPivot := endedDCBPivot - common.EncryptionOnePhraseDuration
+	lv2DCBPivot := lv3DCBPivot - common.EncryptionOnePhraseDuration
+	lv1DCBPivot := lv2DCBPivot - common.EncryptionOnePhraseDuration
 	if !(currentBlockHeight < endedDCBPivot && currentBlockHeight >= lv1DCBPivot) {
 		return false
 	}

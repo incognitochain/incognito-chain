@@ -126,6 +126,9 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
+	self.SetEncryptPhrase(DCBConstitutionHelper{})
+	self.SetEncryptPhrase(GOVConstitutionHelper{})
+
 	Logger.log.Infof("Accepted block %s", blockHash)
 
 	return nil
@@ -145,7 +148,7 @@ func (self *BlockChain) BlockExists(hash *common.Hash) (bool, error) {
 }
 
 // BlockContainAccountLocalWallet - checking block which contain any data of account in local wallet
-func (self *BlockChain) BlockContainAccountLocalWallet(block *Block) (bool) {
+func (self *BlockChain) BlockContainAccountLocalWallet(block *Block) bool {
 	if self.config.Wallet == nil {
 		return false
 	}

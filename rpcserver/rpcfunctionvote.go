@@ -23,7 +23,7 @@ func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-c
 	TokenID.SetBytes(common.DCBVotingTokenID[:])
 	item.TokenID = TokenID.String()
 	item.TokenImage = common.Render([]byte(item.TokenID))
-	amount, err := db.GetDCBVoteTokenAmount(self.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), pubKey)
+	amount, err := db.GetVoteTokenAmount("dcb", self.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), pubKey)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -38,7 +38,7 @@ func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-c
 	TokenID.SetBytes(common.GOVVotingTokenID[:])
 	item.TokenID = TokenID.String()
 	item.TokenImage = common.Render([]byte(item.TokenID))
-	amount, err = db.GetGOVVoteTokenAmount(self.config.BlockChain.GetCurrentBoardIndex(blockchain.GOVConstitutionHelper{}), pubKey)
+	amount, err = db.GetVoteTokenAmount("gov", self.config.BlockChain.GetCurrentBoardIndex(blockchain.GOVConstitutionHelper{}), pubKey)
 	if err != nil {
 		Logger.log.Error(err)
 	}

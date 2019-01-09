@@ -45,10 +45,18 @@ const (
 	MaximumProposalExplainationLength = 1000
 	NumberOfDCBGovernors              = 50
 	NumberOfGOVGovernors              = 50
-	EncryptionPhaseDuration           = uint32(5)
+	EncryptionOnePhraseDuration       = uint32(5)
 	RewardProposalSubmitter           = 500
 	BasePercentage                    = 10000
 	PercentageBoardSalary             = 5
+)
+
+//voting flag
+const (
+	Lv3EncryptionFlag = iota
+	Lv2EncryptionFlag
+	Lv1EncryptionFlag
+	NormalEncryptionFlag
 )
 
 // board types
