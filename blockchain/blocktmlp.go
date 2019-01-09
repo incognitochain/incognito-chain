@@ -585,6 +585,7 @@ func buildSingleBuySellResponseTx(
 	}
 	txTokenData.PropertyName = txTokenData.PropertyID.String()
 	txTokenData.PropertySymbol = txTokenData.PropertyID.String()
+
 	resTx := &transaction.TxCustomToken{
 		TxTokenData: txTokenData,
 	}

@@ -44,8 +44,13 @@ func (self RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan st
 }
 
 func (self RpcServer) handleGetCurrentSellingBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	paymentAddressStr := arrayParams[0].(string)
+	senderKey, _ := wallet.Base58CheckDeserialize(paymentAddressStr)
+	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
+	chainIdSender, _ := common.GetTxSenderChain(lastByte)
 
-	bestBlock := self.config.BlockChain.BestState[0].BestBlock
+	bestBlock := self.config.BlockChain.BestState[chainIdSender].BestBlock
 	blockHeader := bestBlock.Header
 	sellingBondsParam := bestBlock.Header.GOVConstitution.GOVParams.SellingBonds
 	buyPrice := uint64(0)
