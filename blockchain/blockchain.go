@@ -278,7 +278,7 @@ func (self *BlockChain) initChainState() error {
 
 	} else {
 
-		for index := uint64(0); index < self.BestState.Beacon.BeaconHeight; index++ {
+		for index := uint64(1); index <= self.BestState.Beacon.BeaconHeight; index++ {
 			blk, err := self.GetBeaconBlockByHeight(index)
 			if err != nil {
 				fmt.Println(err)
@@ -349,6 +349,10 @@ func (self *BlockChain) initBeaconState() error {
 		Logger.log.Error("Error store beacon block", self.BestState.Beacon.BestBlockHash, "in beacon chain")
 		return err
 	}
+	blockHash := initBlock.Hash()
+	if err := self.config.DataBase.StoreBeaconBlockIndex(blockHash, initBlock.Header.Height); err != nil {
+		return err
+	}
 	//=======================Init cache data==========================
 	self.BestState.beacon = make(map[string][]byte)
 	return nil
@@ -374,12 +378,10 @@ Fetch DatabaseInterface and get block by index(height) of block
 func (self *BlockChain) GetBeaconBlockByHeight(height uint64) (*BeaconBlock, error) {
 	hashBlock, err := self.config.DataBase.GetBeaconBlockHashByIndex(height)
 	if err != nil {
-		fmt.Println("123456789")
 		return nil, err
 	}
 	block, err := self.GetBeaconBlockByHash(hashBlock)
 	if err != nil {
-		fmt.Println("000000000000")
 		return nil, err
 	}
 	return block, nil
