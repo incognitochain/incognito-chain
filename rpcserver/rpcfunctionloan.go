@@ -269,9 +269,12 @@ func (self RpcServer) handleGetLoanPaymentInfo(params interface{}, closeChan <-c
 		if err == nil {
 			priciple, interest, deadline, err := (*self.config.Database).GetLoanPayment(loanID)
 			if err == nil {
-				loanPaymentInfo.Principle = priciple
-				loanPaymentInfo.Interest = interest
-				loanPaymentInfo.Deadline = deadline
+				reqMeta, err := (*self.config.BlockChain).GetLoanRequestMeta(loanID)
+				if err == nil {
+					loanPaymentInfo.Principle = priciple
+					loanPaymentInfo.Interest = interest
+					loanPaymentInfo.Deadline = deadline + reqMeta.Params.Maturity
+				}
 			}
 		}
 		result.Info[strLoanID] = loanPaymentInfo
