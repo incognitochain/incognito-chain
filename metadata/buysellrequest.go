@@ -3,16 +3,14 @@ package metadata
 import (
 	"bytes"
 	"errors"
-	"fmt"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	privacy "github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 type BuySellRequest struct {
 	PaymentAddress privacy.PaymentAddress
-	TokenID        []byte
+	TokenID        common.Hash
 	Amount         uint64
 	BuyPrice       uint64 // in Constant unit
 
@@ -23,7 +21,7 @@ type BuySellRequest struct {
 
 func NewBuySellRequest(
 	paymentAddress privacy.PaymentAddress,
-	tokenID []byte,
+	tokenID common.Hash,
 	amount uint64,
 	buyPrice uint64,
 	metaType int,
@@ -31,13 +29,14 @@ func NewBuySellRequest(
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
-	return &BuySellRequest{
+	result := &BuySellRequest{
 		PaymentAddress: paymentAddress,
-		TokenID:        tokenID,
 		Amount:         amount,
 		BuyPrice:       buyPrice,
 		MetadataBase:   metadataBase,
+		TokenID:        tokenID,
 	}
+	return result
 }
 
 func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
@@ -50,11 +49,8 @@ func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr Block
 		return false, errors.New("SellingBonds params are not existed.")
 	}
 
-	bondID := fmt.Sprintf("%s%s%s", sellingBondsParams.Maturity, sellingBondsParams.BuyBackPrice, sellingBondsParams.StartSellingAt)
-	additionalSuffix := make([]byte, 24-len(bondID))
-	bondIDBytes := append([]byte(bondID), additionalSuffix...)
-	bondIDBytesWithPrefix := append(common.BondTokenID[0:8], bondIDBytes...)
-	if !bytes.Equal(bondIDBytesWithPrefix, bsReq.TokenID) {
+	bondID := sellingBondsParams.GetID()
+	if !bytes.Equal(bondID[:], bsReq.TokenID[:]) {
 		return false, errors.New("Requested tokenID has not been selling yet.")
 	}
 
@@ -91,7 +87,7 @@ func (bsReq *BuySellRequest) ValidateMetadataByItself() bool {
 
 func (bsReq *BuySellRequest) Hash() *common.Hash {
 	record := string(bsReq.PaymentAddress.Bytes())
-	record += string(bsReq.TokenID)
+	record += string(bsReq.TokenID.String())
 	record += string(bsReq.Amount)
 	record += string(bsReq.BuyPrice)
 	record += string(bsReq.SaleID)

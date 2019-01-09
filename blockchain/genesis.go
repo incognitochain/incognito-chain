@@ -92,6 +92,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 			StartSellingAt: 1,
 			SellingWithin:  500,
 		},
+
 		RefundInfo: &params.RefundInfo{},
 		OracleNetwork: &params.OracleNetwork{
 			OraclePubKeys:         [][]byte{},

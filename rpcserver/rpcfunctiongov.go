@@ -2,8 +2,6 @@ package rpcserver
 
 import (
 	"encoding/json"
-	"fmt"
-
 	params2 "github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -46,17 +44,18 @@ func (self RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan st
 }
 
 func (self RpcServer) handleGetCurrentSellingBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	paymentAddressStr := arrayParams[0].(string)
+	senderKey, _ := wallet.Base58CheckDeserialize(paymentAddressStr)
+	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
+	chainIdSender, _ := common.GetTxSenderChain(lastByte)
 
-	bestBlock := self.config.BlockChain.BestState[0].BestBlock
+	bestBlock := self.config.BlockChain.BestState[chainIdSender].BestBlock
 	blockHeader := bestBlock.Header
 	sellingBondsParam := bestBlock.Header.GOVConstitution.GOVParams.SellingBonds
 	buyPrice := uint64(0)
-	bondID := fmt.Sprintf("%s%s%s", sellingBondsParam.Maturity, sellingBondsParam.BuyBackPrice, sellingBondsParam.StartSellingAt)
-	additionalSuffix := make([]byte, 24-len(bondID))
-	bondIDBytes := append([]byte(bondID), additionalSuffix...)
-	bondIDBytesWithPrefix := append(common.BondTokenID[0:8], bondIDBytes...)
-	bondIDStr := string(bondIDBytesWithPrefix)
-	bondPriceFromOracle := blockHeader.Oracle.Bonds[bondIDStr]
+	bondID := sellingBondsParam.GetID()
+	bondPriceFromOracle := blockHeader.Oracle.Bonds[bondID.String()]
 	if bondPriceFromOracle == 0 {
 		buyPrice = sellingBondsParam.BondPrice
 	} else {
@@ -64,7 +63,7 @@ func (self RpcServer) handleGetCurrentSellingBondTypes(params interface{}, close
 	}
 
 	bondTypeRes := jsonresult.GetBondTypeResultItem{
-		BondID:         bondIDBytesWithPrefix,
+		BondID:         bondID.GetBytes(),
 		StartSellingAt: sellingBondsParam.StartSellingAt,
 		EndSellingAt:   sellingBondsParam.StartSellingAt + sellingBondsParam.SellingWithin,
 		Maturity:       sellingBondsParam.Maturity,
@@ -76,7 +75,7 @@ func (self RpcServer) handleGetCurrentSellingBondTypes(params interface{}, close
 	result := jsonresult.GetBondTypeResult{
 		BondTypes: make(map[string]jsonresult.GetBondTypeResultItem),
 	}
-	result.BondTypes[bondIDStr] = bondTypeRes
+	result.BondTypes[bondID.String()] = bondTypeRes
 	return result, nil
 }
 
@@ -161,24 +160,22 @@ func (self RpcServer) handleCreateRawTxWithBuySellRequest(params interface{}, cl
 	// Req param #5: buy/sell request info
 	buySellReq := arrayParams[4].(map[string]interface{})
 
-	paymentAddressMap := buySellReq["PaymentAddress"].(map[string]interface{})
-	paymentAddress := privacy.PaymentAddress{
-		Pk: []byte(paymentAddressMap["pk"].(string)),
-		Tk: []byte(paymentAddressMap["tk"].(string)),
-	}
-	tokenID := []byte(buySellReq["TokenID"].(string))
+	paymentAddressP := buySellReq["PaymentAddress"].(string)
+	key, _ := wallet.Base58CheckDeserialize(paymentAddressP)
+	tokenIDStr := buySellReq["TokenID"].(string)
+	tokenID, _ := common.Hash{}.NewHashFromStr(tokenIDStr)
 	amount := uint64(buySellReq["Amount"].(float64))
 	buyPrice := uint64(buySellReq["BuyPrice"].(float64))
 	metaType := metadata.BuyFromGOVRequestMeta
 	meta := metadata.NewBuySellRequest(
-		paymentAddress,
-		tokenID,
+		key.KeySet.PaymentAddress,
+		*tokenID,
 		amount,
 		buyPrice,
 		metaType,
 	)
 	normalTx, err := self.buildRawTransaction(params, meta)
-	if err != nil {
+	if err.(*RPCError) != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}

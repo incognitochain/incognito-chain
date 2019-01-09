@@ -1,6 +1,9 @@
 package params
 
-import "github.com/ninjadotorg/constant/common"
+import (
+	"fmt"
+	"github.com/ninjadotorg/constant/common"
+)
 
 // Todo: @0xjackalope, @0xbunyip Check logic in Hash and Validate and rpcfunction because other will change params struct without modified these function
 type SellingBonds struct {
@@ -11,6 +14,17 @@ type SellingBonds struct {
 	BuyBackPrice   uint64 // in Constant unit
 	StartSellingAt uint32 // start selling bonds at block height
 	SellingWithin  uint32 // selling bonds within n blocks
+}
+
+func (self SellingBonds) GetID() *common.Hash {
+	record := fmt.Sprintf("%d", self.Maturity)
+	record += fmt.Sprintf("%d", self.BuyBackPrice)
+	record += fmt.Sprintf("%d", self.StartSellingAt)
+	temp := common.DoubleHashH([]byte(record))
+	bondIDBytesWithPrefix := append(common.BondTokenID[0:8], temp[8:]...)
+	result := &common.Hash{}
+	result.SetBytes(bondIDBytesWithPrefix)
+	return result
 }
 
 func NewSellingBonds(
