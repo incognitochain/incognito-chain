@@ -415,10 +415,13 @@ func GetKeyEncryptFlag(boardType string) []byte {
 	return key
 }
 
-func (db *db) GetEncryptFlag(boardType string) uint32 {
+func (db *db) GetEncryptFlag(boardType string) (uint32, error) {
 	key := GetKeyEncryptFlag(boardType)
-	value, _ := db.Get(key)
-	return common.BytesToUint32(value)
+	value, err := db.Get(key)
+	if err != nil {
+		return 0, err
+	}
+	return common.BytesToUint32(value), nil
 }
 
 func (db *db) SetEncryptFlag(boardType string, flag uint32) {
@@ -432,10 +435,13 @@ func GetKeyEncryptionLastBlockHeight(boardType string) []byte {
 	return key
 }
 
-func (db *db) GetEncryptionLastBlockHeight(boardType string) uint32 {
+func (db *db) GetEncryptionLastBlockHeight(boardType string) (uint32, error) {
 	key := GetKeyEncryptionLastBlockHeight(boardType)
-	value, _ := db.Get(key)
-	return common.BytesToUint32(value)
+	value, err := db.Get(key)
+	if err != nil {
+		return 0, err
+	}
+	return common.BytesToUint32(value), nil
 }
 
 func (db *db) SetEncryptionLastBlockHeight(boardType string, height uint32) {
