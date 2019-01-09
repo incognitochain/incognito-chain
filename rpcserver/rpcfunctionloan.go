@@ -47,6 +47,7 @@ func (self RpcServer) createRawLoanTx(params interface{}, closeChan <-chan struc
 		// return hex for a new tx
 		return nil, NewRPCError(ErrUnexpected, errMarshal)
 	}
+	fmt.Printf("Created raw loan tx: %+v\n", tx)
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
@@ -65,6 +66,7 @@ func (self RpcServer) sendRawLoanTx(params interface{}, closeChan <-chan struct{
 	}
 	tx := transaction.Tx{}
 	err = json.Unmarshal(rawTxBytes, &tx)
+	fmt.Printf("%+v\n", tx)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}

@@ -102,6 +102,8 @@ func (tx *Tx) Init(
 	// get public key last byte of sender
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
 	tx.Metadata = metaData
+	tx.Type = common.TxNormalType
+	fmt.Printf("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(inputCoins), fee, hasPrivacy)
 	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
 		Logger.log.Infof("CREATE TX CUSTOM TOKEN\n")
 		tx.Fee = fee
@@ -114,8 +116,6 @@ func (tx *Tx) Init(
 		}
 		return nil
 	}
-
-	tx.Type = common.TxNormalType
 
 	chainID, _ := common.GetTxSenderChain(pkLastByteSender)
 	var commitmentIndexs []uint64   // array index random of commitments in db
@@ -302,6 +302,7 @@ func (tx *Tx) SignTx() error {
 	tx.SigPubKey = sigKey.PubKey.PK.Compress()
 
 	// signing
+	Logger.log.Infof(tx.Hash().String())
 	signature, err := sigKey.Sign(tx.Hash()[:])
 	if err != nil {
 		return err
@@ -341,7 +342,7 @@ func (tx *Tx) VerifySigTx() (bool, error) {
 	signature.SetBytes(tx.Sig)
 
 	// verify signature
-	//Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
+	Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
 	res = verKey.Verify(signature, tx.Hash()[:])
 
 	return res, nil
@@ -363,7 +364,8 @@ func (tx *Tx) validateMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Verify the payment proof
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
-	//hasPrivacy = false
+	fmt.Printf("[db] Validating Transaction tx\n")
+	hasPrivacy = tx.IsPrivacy()
 	start := time.Now()
 	// Verify tx signature
 	fmt.Printf("tx.GetType(): %v\n", tx.GetType())
@@ -400,11 +402,14 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 	}
 
+	fmt.Printf("[db]tx.Proof: %+v\n", tx.Proof)
 	if tx.Proof != nil {
-		tokenID := &common.Hash{}
-		tokenID.SetBytes(common.ConstantID[:])
+		if tokenID == nil {
+			tokenID = &common.Hash{}
+			tokenID.SetBytes(common.ConstantID[:])
+		}
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
-			// Check output coins' SND is not exists in SND list (Database)
+			// Check output coins' input is not exists in input list (Database)
 			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, chainId, db); ok || err != nil {
 				fmt.Printf("snd existed: %d\n", i)
 				return false
@@ -416,6 +421,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			for i := 0; i < len(tx.Proof.InputCoins); i++ {
 				ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, chainId, tokenID)
 				if !ok || err != nil {
+					fmt.Printf("[db]cm existed: %d\n", i)
 					return false
 				}
 			}
@@ -669,12 +675,12 @@ func (tx *Tx) ValidateTxByItself(
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	ok := tx.ValidateTransaction(hasPrivacy, db, chainID, constantTokenID)
-	fmt.Printf("ok validatetxbyitself validatetransaction: %d\n", ok)
+	fmt.Printf("[db]ok validatetxbyitself: %v\n", ok)
 	if !ok {
 		return false
 	}
 	if tx.Metadata != nil {
-		fmt.Printf("validatetxbyitself metadata: %d\n", tx.Metadata.ValidateMetadataByItself())
+		fmt.Printf("[db]validatetxbyitself metadata: %v\n", tx.Metadata.ValidateMetadataByItself())
 		return tx.Metadata.ValidateMetadataByItself()
 	}
 	return true
@@ -707,12 +713,10 @@ func (tx *Tx) GetProof() *zkp.PaymentProof {
 }
 
 func (tx *Tx) IsPrivacy() bool {
-	switch tx.GetType() {
-	case common.TxSalaryType:
+	if tx.Proof == nil || tx.Proof.OneOfManyProof == nil || len(tx.Proof.OneOfManyProof) == 0 {
 		return false
-	default:
-		return true
 	}
+	return true
 }
 
 func (tx *Tx) ValidateType() bool {
@@ -778,7 +782,7 @@ func (tx *Tx) InitTxSalary(
 	}
 
 	var err error
-	// create new output coins with info: Pk, value, SND, randomness, last byte pk, coin commitment
+	// create new output coins with info: Pk, value, input, randomness, last byte pk, coin commitment
 	tx.Proof = new(zkp.PaymentProof)
 	tx.Proof.OutputCoins = make([]*privacy.OutputCoin, 1)
 	tx.Proof.OutputCoins[0] = new(privacy.OutputCoin)
@@ -840,7 +844,7 @@ func (tx Tx) ValidateTxSalary(
 		return false
 	}
 
-	// check whether output coin's SND exists in SND list or not
+	// check whether output coin's input exists in input list or not
 	lastByte := tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress())-1]
 	chainIdSender, err := common.GetTxSenderChain(lastByte)
 	tokenID := &common.Hash{}

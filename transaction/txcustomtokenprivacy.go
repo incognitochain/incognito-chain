@@ -46,6 +46,9 @@ func (tx *TxCustomTokenPrivacy) Hash() *common.Hash {
 	// add more hash of tx custom token data privacy
 	tokenPrivacyDataHash, _ := tx.TxTokenPrivacyData.Hash()
 	record += tokenPrivacyDataHash.String()
+	if tx.Metadata != nil {
+		record += string(tx.Metadata.Hash()[:])
+	}
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
@@ -148,25 +151,39 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 				}
 			}
 			txCustomToken.TxTokenPrivacyData.PropertyID = *hashInitToken
+			Logger.log.Infof("A new token wil be issued with ID: %+v", txCustomToken.TxTokenPrivacyData.PropertyID.String())
 		}
 	case CustomTokenTransfer:
-		// make a transfering for privacy custom token
-		// fee always 0 and reuse function of normal tx for custom token ID
-		temp := Tx{}
-		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
-		err := temp.Init(senderKey,
-			tokenParams.Receiver,
-			tokenParams.TokenInput,
-			0,
-			common.TrueValue,
-			db,
-			propertyID,
-			nil,
-		)
-		if err != nil {
-			return err
+		{
+			handled = common.TrueValue
+			// make a transfering for privacy custom token
+			// fee always 0 and reuse function of normal tx for custom token ID
+			temp := Tx{}
+			propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+			if _, ok := listCustomTokens[*propertyID]; !ok {
+				return NewTransactionErr(UnexpectedErr, errors.New("Invalid Token ID"))
+			}
+			Logger.log.Infof("Token %+v wil be transfered with", propertyID)
+			txCustomToken.TxTokenPrivacyData = TxTokenPrivacyData{
+				Type:           tokenParams.TokenTxType,
+				PropertyName:   tokenParams.PropertyName,
+				PropertySymbol: tokenParams.PropertySymbol,
+				PropertyID:     *propertyID,
+			}
+			err := temp.Init(senderKey,
+				tokenParams.Receiver,
+				tokenParams.TokenInput,
+				0,
+				common.TrueValue,
+				db,
+				propertyID,
+				nil,
+			)
+			if err != nil {
+				return err
+			}
+			txCustomToken.TxTokenPrivacyData.TxNormal = temp
 		}
-		txCustomToken.TxTokenPrivacyData.TxNormal = temp
 	}
 
 	if handled != common.TrueValue {
@@ -233,9 +250,9 @@ func (customTokenTx *TxCustomTokenPrivacy) ValidateTxByItself(
 func (customTokenTx *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainID byte, tokenID *common.Hash) bool {
 	if customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, chainID, tokenID) {
 		if customTokenTx.TxTokenPrivacyData.Type == CustomTokenInit {
-			customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(common.FalseValue, db, chainID, &customTokenTx.TxTokenPrivacyData.PropertyID)
+			return customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(common.FalseValue, db, chainID, &customTokenTx.TxTokenPrivacyData.PropertyID)
 		} else {
-			customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(common.TrueValue, db, chainID, &customTokenTx.TxTokenPrivacyData.PropertyID)
+			return customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(common.TrueValue, db, chainID, &customTokenTx.TxTokenPrivacyData.PropertyID)
 		}
 	}
 	return common.FalseValue

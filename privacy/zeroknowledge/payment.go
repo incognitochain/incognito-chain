@@ -25,7 +25,7 @@ type PaymentWitness struct {
 	SerialNumberWitness []*PKSNPrivacyWitness
 	SNNoPrivacyWitness  []*SNNoPrivacyWitness
 
-	ComOutputMultiRangeWitness *MultiRangeWitness
+	ComOutputMultiRangeWitness *AggregatedRangeWitness
 	ComZeroWitness             *ComZeroWitness
 
 	ComOutputValue   []*privacy.EllipticPoint
@@ -48,7 +48,7 @@ type PaymentProof struct {
 
 	// for output coins
 	// for proving each value and sum of them are less than a threshold value
-	ComOutputMultiRangeProof *MultiRangeProof
+	ComOutputMultiRangeProof *AggregatedRangeProof
 	// for input = output
 	ComZeroProof *ComZeroProof
 
@@ -69,7 +69,7 @@ func (proof *PaymentProof) Init() *PaymentProof {
 	proof = &PaymentProof{
 		OneOfManyProof:           []*OneOutOfManyProof{},
 		SerialNumberProof:        []*PKSNPrivacyProof{},
-		ComOutputMultiRangeProof: new(MultiRangeProof).Init(),
+		ComOutputMultiRangeProof: new(AggregatedRangeProof).Init(),
 		ComZeroProof:             new(ComZeroProof).Init(),
 		InputCoins:               []*privacy.InputCoin{},
 		OutputCoins:              []*privacy.OutputCoin{},
@@ -215,7 +215,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, byte(0))
 	}
 
-	//	fmt.Printf("BYTES ------------------ %v\n", proofbytes)
+		//fmt.Printf("BYTES ------------------ %v\n", proofbytes)
 
 	return proofbytes
 }
@@ -268,11 +268,11 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		offset += lenSNNoPrivacyProof
 	}
 
-	//ComOutputMultiRangeProofSize *MultiRangeProof
+	//ComOutputMultiRangeProofSize *AggregatedRangeProof
 	lenComOutputMultiRangeProof := privacy.ByteArrToInt(proofbytes[offset : offset+2])
 	offset += 2
 	if lenComOutputMultiRangeProof > 0 {
-		proof.ComOutputMultiRangeProof = new(MultiRangeProof).Init()
+		proof.ComOutputMultiRangeProof = new(AggregatedRangeProof).Init()
 		err := proof.ComOutputMultiRangeProof.SetBytes(proofbytes[offset : offset+lenComOutputMultiRangeProof])
 		if err != nil {
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
@@ -416,7 +416,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		offset += lenComInputShardID
 	}
 
-	//	fmt.Printf("SETBYTES ------------------ %v\n", proof.Bytes())
+		//fmt.Printf("SETBYTES ------------------ %v\n", proof.Bytes())
 
 	return nil
 }
@@ -477,7 +477,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 
 	wit.ComInputValue = make([]*privacy.EllipticPoint, numInputCoin)
 	wit.ComInputSND = make([]*privacy.EllipticPoint, numInputCoin)
-	// It is used for proving 2 commitments commit to the same value (SND)
+	// It is used for proving 2 commitments commit to the same value (input)
 	cmInputSNDIndexSK := make([]*privacy.EllipticPoint, numInputCoin)
 
 	randInputValue := make([]*big.Int, numInputCoin)
@@ -557,8 +557,8 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 		if wit.SerialNumberWitness[i] == nil {
 			wit.SerialNumberWitness[i] = new(PKSNPrivacyWitness)
 		}
-		wit.SerialNumberWitness[i].Set(inputCoin.CoinDetails.SerialNumber, cmInputSK, wit.ComInputSND[i], cmInputSNDIndexSK[i],
-			spendingKey, randInputSK, inputCoin.CoinDetails.SNDerivator, randInputSND[i], randInputSNDIndexSK[i])
+		wit.SerialNumberWitness[i].Set(inputCoin.CoinDetails.SerialNumber, cmInputSK, wit.ComInputSND[i],
+			spendingKey, randInputSK, inputCoin.CoinDetails.SNDerivator, randInputSND[i])
 		// ---------------------------------------------------
 	}
 
@@ -622,7 +622,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 		}
 	}
 	if wit.ComOutputMultiRangeWitness == nil {
-		wit.ComOutputMultiRangeWitness = new(MultiRangeWitness)
+		wit.ComOutputMultiRangeWitness = new(AggregatedRangeWitness)
 	}
 	wit.ComOutputMultiRangeWitness.Set(outputValue, 64)
 	// ---------------------------------------------------
@@ -645,7 +645,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 	wit.ComZeroWitness.Set(cmEqualCoinValue, index, randEqualCoinValue)
 	// ---------------------------------------------------
 
-	// save partial commitments (value, snd, shardID)
+	// save partial commitments (value, input, shardID)
 	wit.ComOutputValue = cmOutputValue
 	wit.ComOutputSND = cmOutputSND
 	wit.ComOutputShardID = cmOutputShardID
@@ -726,7 +726,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee ui
 		sumOutputValue = 0
 
 		for i := 0; i < len(pro.InputCoins); i++ {
-			// Check input coins' Serial number is created from input coins' SND and sender's spending key
+			// Check input coins' Serial number is created from input coins' input and sender's spending key
 			if !pro.SNNoPrivacyProof[i].Verify() {
 				return false
 			}

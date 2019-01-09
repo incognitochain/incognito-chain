@@ -43,7 +43,7 @@ func TestEncryptionCoin(t *testing.T){
 
 	fmt.Printf("coin3 info: %+v\n", coin3)
 	//fmt.Printf("Public key: %v\n", coin3.PublicKey.Compress())
-	fmt.Printf("SND: %v\n", coin3.SNDerivator.Bytes())
+	fmt.Printf("input: %v\n", coin3.SNDerivator.Bytes())
 	//fmt.Printf("Public key: %v\n", coin3.PublicKey)
 
 	outCoin := new(OutputCoin)

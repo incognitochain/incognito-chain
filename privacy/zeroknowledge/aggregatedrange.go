@@ -10,7 +10,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 )
 
-type MultiRangeProof struct {
+type AggregatedRangeProof struct {
 	Counter byte
 	Comms   []*privacy.EllipticPoint
 	A       *privacy.EllipticPoint
@@ -28,14 +28,14 @@ type MultiRangeProof struct {
 	Cx *big.Int
 }
 
-type MultiRangeWitness struct {
+type AggregatedRangeWitness struct {
 	Comms  []*privacy.EllipticPoint
 	Values []*big.Int
 	Rands  []*big.Int
 	maxExp byte
 }
 
-func (pro *MultiRangeProof) Init() *MultiRangeProof {
+func (pro *AggregatedRangeProof) Init() *AggregatedRangeProof {
 	pro.A = new(privacy.EllipticPoint).Zero()
 	pro.S = new(privacy.EllipticPoint).Zero()
 	pro.T1 = new(privacy.EllipticPoint).Zero()
@@ -51,7 +51,7 @@ func (pro *MultiRangeProof) Init() *MultiRangeProof {
 	return pro
 }
 
-func (pro *MultiRangeProof) IsNil() bool {
+func (pro *AggregatedRangeProof) IsNil() bool {
 	if pro.A == nil {
 		return true
 	}
@@ -91,7 +91,7 @@ func (pro *MultiRangeProof) IsNil() bool {
 	return false
 }
 
-func (pro MultiRangeProof) Bytes() []byte {
+func (pro AggregatedRangeProof) Bytes() []byte {
 	var res []byte
 
 	if pro.IsNil() == true {
@@ -121,7 +121,7 @@ func (pro MultiRangeProof) Bytes() []byte {
 
 }
 
-func (pro *MultiRangeProof) SetBytes(proofbytes []byte) error {
+func (pro *AggregatedRangeProof) SetBytes(proofbytes []byte) error {
 	if pro.IsNil() {
 		pro = pro.Init()
 	}
@@ -195,7 +195,7 @@ func (pro *MultiRangeProof) SetBytes(proofbytes []byte) error {
 	return nil
 }
 
-func (wit *MultiRangeWitness) Set(v []*big.Int, maxExp byte) {
+func (wit *AggregatedRangeWitness) Set(v []*big.Int, maxExp byte) {
 	l := pad(len(v) + 1)
 	wit.Values = make([]*big.Int, l)
 	for i := 0; i < l; i++ {
@@ -214,7 +214,7 @@ func (wit *MultiRangeWitness) Set(v []*big.Int, maxExp byte) {
 }
 
 /*
-MultiRangeProof Prove
+AggregatedRangeProof Prove
 Takes in a list of values and provides an aggregate
 range proof for all the values.
 
@@ -227,11 +227,11 @@ changes:
 {(g, h \in G, \textbf{V} \in G^m ; \textbf{v, \gamma} \in Z_p^m) :
 	V_j = h^{\gamma_j}g^{v_j} \wedge v_j \in [0, 2^n - 1] \forall j \in [1, m]}
 */
-func (wit *MultiRangeWitness) Prove() (*MultiRangeProof, error) {
+func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	// RangeProofParams.V has the total number of values and bits we can support
 
 	rangeProofParams := initCryptoParams(len(wit.Values), wit.maxExp)
-	MRProof := MultiRangeProof{}
+	MRProof := AggregatedRangeProof{}
 	MRProof.maxExp = wit.maxExp
 	m := len(wit.Values)
 	MRProof.Counter = byte(m)
@@ -410,10 +410,10 @@ func (wit *MultiRangeWitness) Prove() (*MultiRangeProof, error) {
 }
 
 /*
-MultiRangeProof Verify
-Takes in a MultiRangeProof and verifies its correctness
+AggregatedRangeProof Verify
+Takes in a AggregatedRangeProof and verifies its correctness
 */
-func (pro *MultiRangeProof) Verify() bool {
+func (pro *AggregatedRangeProof) Verify() bool {
 	m := len(pro.Comms)
 	rangeProofParams := initCryptoParams(m, pro.maxExp)
 	if m == 0 {

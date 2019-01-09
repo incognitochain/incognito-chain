@@ -84,7 +84,7 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 				hasher := sha3.NewLegacyKeccak256()
 				hasher.Write(lw.Key)
 				digest := hasher.Sum(nil)
-				fmt.Printf("Found committed digest, checking key and digest: %x\n%x\n", lw.Key, digest)
+				fmt.Printf("Found committed digest, checking key and digest: %x\n%x\n%x\n", lw.Key, digest, requestMeta.KeyDigest)
 				if bytes.Equal(digest, requestMeta.KeyDigest) {
 					keyCorrect = true
 				}
