@@ -581,9 +581,9 @@ func buildSingleBuySellResponseTx(
 		PropertyID: common.Hash(propertyID),
 		Vins:       []transaction.TxTokenVin{},
 		Vouts:      []transaction.TxTokenVout{txTokenVout},
-		// PropertyName:   "",
-		// PropertySymbol: coinbaseTxType,
 	}
+	txTokenData.PropertyName = txTokenData.PropertyID.String()
+	txTokenData.PropertySymbol = txTokenData.PropertyID.String()
 	resTx := &transaction.TxCustomToken{
 		TxTokenData: txTokenData,
 	}
