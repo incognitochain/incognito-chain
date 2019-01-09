@@ -148,9 +148,9 @@ func (self *RpcServer) Start() error {
 	})
 	for _, listen := range self.config.Listenters {
 		go func(listen net.Listener) {
-			Logger.log.Infof("RPC server listening on %s", listen.Addr())
+			log.Printf("RPC server listening on %s\n", listen.Addr().String())
 			go self.httpServer.Serve(listen)
-			Logger.log.Infof("RPC listener done for %s", listen.Addr())
+			log.Printf("RPC listener done for %s\n", listen.Addr().String())
 		}(listen)
 	}
 	self.started = 1
