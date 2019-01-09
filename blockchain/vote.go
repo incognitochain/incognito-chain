@@ -36,9 +36,9 @@ func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTxAndRewardSu
 
 	db := blockgen.chain.config.DataBase
 	boardType := helper.GetLowerCaseBoardType()
-	begin := lvdb.GetThreePhraseCryptoSealerKey(boardType, 0, nil)
+	begin := lvdb.GetKeyThreePhraseCryptoSealer(boardType, 0, nil)
 	// +1 to search in that range
-	end := lvdb.GetThreePhraseCryptoSealerKey(boardType, 1+NextConstitutionIndex, nil)
+	end := lvdb.GetKeyThreePhraseCryptoSealer(boardType, 1+NextConstitutionIndex, nil)
 
 	searchrange := util.Range{
 		Start: begin,
@@ -58,7 +58,7 @@ func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTxAndRewardSu
 			continue
 		}
 		//Punish owner if he don't send decrypted message
-		keyOwner := lvdb.GetThreePhraseCryptoOwnerKey(boardType, constitutionIndex, transactionID)
+		keyOwner := lvdb.GetKeyThreePhraseCryptoOwner(boardType, constitutionIndex, transactionID)
 		valueOwnerInByte, err := db.Get(keyOwner)
 		if err != nil {
 			return nil, err
@@ -77,7 +77,7 @@ func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTxAndRewardSu
 			resTx = append(resTx, &newTx)
 		}
 		//Punish sealer if he don't send decrypted message
-		keySealer := lvdb.GetThreePhraseCryptoSealerKey(boardType, constitutionIndex, transactionID)
+		keySealer := lvdb.GetKeyThreePhraseCryptoSealer(boardType, constitutionIndex, transactionID)
 		valueSealerInByte, err := db.Get(keySealer)
 		if err != nil {
 			return nil, err
@@ -93,7 +93,7 @@ func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTxAndRewardSu
 
 		//Accumulate count vote
 		voter := sealerPubKeyList[0]
-		keyVote := lvdb.GetThreePhraseVoteValueKey(boardType, constitutionIndex, transactionID)
+		keyVote := lvdb.GetKeyThreePhraseVoteValue(boardType, constitutionIndex, transactionID)
 		valueVote, err := db.Get(keyVote)
 		if err != nil {
 			return nil, err
@@ -300,15 +300,15 @@ func createSingleSendGOVVoteTokenFail(paymentAddress privacy.PaymentAddress, amo
 }
 
 //Send back vote token to voters who have vote to lose candidate
-func (blockgen *BlkTmplGenerator) CreateSendBackDCBTokenAfterVoteFail(chainID byte, newDCBList [][]byte) []metadata.Transaction {
+func (blockgen *BlkTmplGenerator) CreateSendBackTokenAfterVoteFail(boardType string, chainID byte, newDCBList [][]byte) []metadata.Transaction {
 	setOfNewDCB := make(map[string]bool, 0)
 	for _, i := range newDCBList {
 		setOfNewDCB[string(i)] = true
 	}
 	currentBoardIndex := blockgen.chain.GetCurrentBoardIndex(DCBConstitutionHelper{})
 	db := blockgen.chain.config.DataBase
-	begin := lvdb.GetKeyVoteDCBBoardList(0, make([]byte, common.PubKeyLength), make([]byte, common.PubKeyLength))
-	end := lvdb.GetKeyVoteDCBBoardList(currentBoardIndex+1, make([]byte, common.PubKeyLength), make([]byte, common.PubKeyLength))
+	begin := lvdb.GetKeyVoteBoardList(boardType, 0, make([]byte, common.PubKeyLength), make([]byte, common.PubKeyLength))
+	end := lvdb.GetKeyVoteBoardList(boardType, currentBoardIndex+1, make([]byte, common.PubKeyLength), make([]byte, common.PubKeyLength))
 	searchRange := util.Range{
 		Start: begin,
 		Limit: end,
@@ -318,7 +318,7 @@ func (blockgen *BlkTmplGenerator) CreateSendBackDCBTokenAfterVoteFail(chainID by
 	listNewTx := make([]metadata.Transaction, 0)
 	for iter.Next() {
 		key := iter.Key()
-		boardIndex, PubKey, _, _ := lvdb.ParseKeyVoteDCBBoardList(key)
+		_, boardIndex, PubKey, _, _ := lvdb.ParseKeyVoteBoardList(key)
 		value := iter.Value()
 		senderPubKey, amountOfDCBToken := parseVoteDCBBoardListValue(value)
 		_, found := setOfNewDCB[string(PubKey)]
@@ -327,38 +327,6 @@ func (blockgen *BlkTmplGenerator) CreateSendBackDCBTokenAfterVoteFail(chainID by
 			paymentAddress := privacy.PaymentAddress{}
 			paymentAddress.SetBytes(paymentAddressByte)
 			listNewTx = append(listNewTx, createSingleSendDCBVoteTokenFail(paymentAddress, amountOfDCBToken))
-		}
-	}
-	return listNewTx
-}
-
-func (blockgen *BlkTmplGenerator) CreateSendBackGOVTokenAfterVoteFail(chainID byte, newGOVList [][]byte) []metadata.Transaction {
-	setOfNewGOV := make(map[string]bool, 0)
-	for _, i := range newGOVList {
-		setOfNewGOV[string(i)] = true
-	}
-	currentBoardIndex := blockgen.chain.GetCurrentBoardIndex(GOVConstitutionHelper{})
-	db := blockgen.chain.config.DataBase
-	begin := lvdb.GetKeyVoteGOVBoardList(0, make([]byte, common.PubKeyLength), make([]byte, common.PubKeyLength))
-	end := lvdb.GetKeyVoteGOVBoardList(currentBoardIndex+1, make([]byte, common.PubKeyLength), make([]byte, common.PubKeyLength))
-	searchRange := util.Range{
-		Start: begin,
-		Limit: end,
-	}
-
-	iter := blockgen.chain.config.DataBase.NewIterator(&searchRange, nil)
-	listNewTx := make([]metadata.Transaction, 0)
-	for iter.Next() {
-		key := iter.Key()
-		boardIndex, PubKey, _, _ := lvdb.ParseKeyVoteGOVBoardList(key)
-		value := iter.Value()
-		senderPubKey, amountOfGOVToken := parseVoteGOVBoardListValue(value)
-		_, found := setOfNewGOV[string(PubKey)]
-		if boardIndex < uint32(currentBoardIndex) || !found {
-			paymentAddressByte := db.GetPaymentAddressFromPubKey(senderPubKey)
-			paymentAddress := privacy.PaymentAddress{}
-			paymentAddress.SetBytes(paymentAddressByte)
-			listNewTx = append(listNewTx, createSingleSendGOVVoteTokenFail(paymentAddress, amountOfGOVToken))
 		}
 	}
 	return listNewTx
