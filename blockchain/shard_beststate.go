@@ -18,6 +18,8 @@ type BestStateShard struct {
 	BestBlockHash common.Hash // The hash of the block.
 	BestBlock     *ShardBlock // The block.
 
+	Height uint64
+
 	ShardCommittee        []string
 	ShardPendingValidator []string
 	ShardProposerIdx      int
@@ -39,7 +41,7 @@ type BestStateShard struct {
 func (self *BestStateShard) Update(block *ShardBlock) error {
 	self.BestBlock = block
 	self.BestBlockHash = *block.Hash()
-
+	self.Height = block.Header.Height
 	self.TotalTxns += uint64(len(block.Body.Transactions))
 	self.NumTxns = uint64(len(block.Body.Transactions))
 	return nil
