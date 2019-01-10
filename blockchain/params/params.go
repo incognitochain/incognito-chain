@@ -92,14 +92,16 @@ type GOVParams struct {
 	OracleNetwork *OracleNetwork
 }
 
-func NewGOVParams(salaryPerTx uint64,
+func NewGOVParams(
+	salaryPerTx uint64,
 	basicSalary uint64,
 	feePerKbTx uint64,
 	sellingBonds *SellingBonds,
 	refundInfo *RefundInfo,
 	oracleNetwork *OracleNetwork,
 ) *GOVParams {
-	return &GOVParams{SalaryPerTx: salaryPerTx,
+	return &GOVParams{
+		SalaryPerTx:   salaryPerTx,
 		BasicSalary:   basicSalary,
 		FeePerKbTx:    feePerKbTx,
 		SellingBonds:  sellingBonds,
@@ -109,14 +111,14 @@ func NewGOVParams(salaryPerTx uint64,
 }
 
 func NewGOVParamsFromJson(data interface{}) *GOVParams {
-	arrayParams := common.InterfaceSlice(data)
+	arrayParams := data.(map[string]interface{})
 
-	salaryPerTx := uint64(arrayParams[0].(float64))
-	basicSalary := uint64(arrayParams[1].(float64))
-	feePerKbTx := uint64(arrayParams[2].(float64))
-	sellingBonds := NewSellingBondsFromJson(arrayParams[3])
-	refundInfo := NewRefundInfoFromJson(arrayParams[4])
-	oracleNetwork := NewOracleNetworkFromJson(arrayParams[5])
+	salaryPerTx := uint64(arrayParams["salaryPerTx"].(float64))
+	basicSalary := uint64(arrayParams["basicSalary"].(float64))
+	feePerKbTx := uint64(arrayParams["feePerKbTx"].(float64))
+	sellingBonds := NewSellingBondsFromJson(arrayParams["sellingBonds"])
+	refundInfo := NewRefundInfoFromJson(arrayParams["refundInfo"])
+	oracleNetwork := NewOracleNetworkFromJson(arrayParams["oracleNetwork"])
 
 	return NewGOVParams(salaryPerTx, basicSalary, feePerKbTx, sellingBonds, refundInfo, oracleNetwork)
 }

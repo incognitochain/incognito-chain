@@ -27,7 +27,7 @@ func NewSubmitDCBProposalMetadata(DCBParams params.DCBParams, executeDuration ui
 }
 
 // this function should be in privacy package
-func NewPaymentAddress(b []byte) *privacy.PaymentAddress{
+func NewPaymentAddress(b []byte) *privacy.PaymentAddress {
 	payment := privacy.PaymentAddress{}
 	payment.SetBytes(b)
 	return &payment
@@ -85,14 +85,36 @@ type SubmitGOVProposalMetadata struct {
 	MetadataBase
 }
 
-func NewSubmitGOVProposalMetadata(GOVParams params.GOVParams, executeDuration uint32, explaination string, address *privacy.PaymentAddress) *SubmitGOVProposalMetadata {
+func NewSubmitGOVProposalMetadata(
+	govParams params.GOVParams,
+	executeDuration uint32,
+	explanation string,
+	address *privacy.PaymentAddress,
+) *SubmitGOVProposalMetadata {
 	return &SubmitGOVProposalMetadata{
-		GOVParams:       GOVParams,
+		GOVParams:       govParams,
 		ExecuteDuration: executeDuration,
-		Explanation:     explaination,
+		Explanation:     explanation,
 		PaymentAddress:  *address,
 		MetadataBase:    *NewMetadataBase(SubmitGOVProposalMeta),
 	}
+}
+
+func NewSubmitGOVProposalMetadataFromJson(data interface{}) *SubmitGOVProposalMetadata {
+	submitGOVProposalData := data.(map[string]interface{})
+
+	paymentAddressData := submitGOVProposalData["paymentAddress"].(map[string]interface{})
+	paymentAddress := privacy.PaymentAddress{
+		Pk: []byte(paymentAddressData["pk"].(string)),
+		Tk: []byte(paymentAddressData["tk"].(string)),
+	}
+
+	return NewSubmitGOVProposalMetadata(
+		*params.NewGOVParamsFromJson(submitGOVProposalData["govParams"]),
+		submitGOVProposalData["executeDuration"].(uint32),
+		submitGOVProposalData["explaination"].(string),
+		&paymentAddress,
+	)
 }
 
 func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) Hash() *common.Hash {

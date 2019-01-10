@@ -2,11 +2,9 @@ package rpcserver
 
 import (
 	"encoding/json"
-	params2 "github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
@@ -586,14 +584,8 @@ func (self RpcServer) buildRawSubmitGOVProposalTransaction(
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	NParams := len(arrayParams)
-	GOVParams := *params2.NewGOVParamsFromJson(arrayParams[NParams-4])
-	executeDuration := arrayParams[NParams-3].(uint32)
-	explanation := arrayParams[NParams-2].(string)
-	paymentData := []byte(arrayParams[NParams-1].(string))
-	address := privacy.PaymentAddress{}
-	address.SetBytes(paymentData)
 
-	meta := metadata.NewSubmitGOVProposalMetadata(GOVParams, executeDuration, explanation, &address)
+	meta := metadata.NewSubmitGOVProposalMetadataFromJson(arrayParams[NParams-1])
 	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }
