@@ -223,10 +223,15 @@ func (self RpcServer) handleGetBlockCount(params interface{}, closeChan <-chan s
 	if !ok {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected get float number params"))
 	}
-	shardID := byte(int(params.(float64)))
-	// if self.config.BlockChain.BestState != nil && self.config.BlockChain.BestState[shardID] != nil && self.config.BlockChain.BestState[shardID].BestBlock != nil {
-	// 	return self.config.BlockChain.BestState[shardID].BestBlock.Header.Height + 1, nil
-	// }
+	paramNumber := int(params.(float64))
+	shardID := byte(paramNumber)
+	isGetBeacon := paramNumber == -1
+	if isGetBeacon {
+		if self.config.BlockChain.BestState != nil && self.config.BlockChain.BestState.Beacon != nil && self.config.BlockChain.BestState.Beacon.BestBlock != nil {
+			return self.config.BlockChain.BestState.Beacon.BestBlock.Header.Height, nil
+		}
+	}
+
 	if self.config.BlockChain.BestState != nil && self.config.BlockChain.BestState.Shard[shardID] != nil && self.config.BlockChain.BestState.Shard[shardID].BestBlock != nil {
 		return self.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height + 1, nil
 	}
