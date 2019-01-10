@@ -229,29 +229,17 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		}
 	}
 
-	// check real fee per TxNormal
-	realFee := self.estimateFee(estimateFeeCoinPerKb, nil, nil, chainIdSender, 0)
-
-	// if needing to pay fee
-	candidateOutputCoins := []*privacy.OutputCoin{}
-	if realFee > 0 {
-		// list unspent tx for estimation fee
-		tokenID := &common.Hash{}
-		tokenID.SetBytes(common.ConstantID[:])
-		outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, tokenID)
-		// Use Knapsack to get candiate output coin
-		if len(outCoins) > 0 {
-			candidateOutputCoinsForFee, _, _, err1 := self.chooseBestOutCoinsToSpent(outCoins, uint64(realFee))
-			if err != nil {
-				return nil, NewRPCError(ErrUnexpected, err1)
-			}
-			candidateOutputCoins = append(candidateOutputCoins, candidateOutputCoinsForFee...)
-		}
-	} else {
+	/******* START choose output coins constant, which is used to create tx *****/
+	paymentInfos := []*privacy.PaymentInfo{}
+	inputCoins, realFee, err := self.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKey, chainIdSender)
+	if err.(*RPCError) != nil {
+		return nil, err.(*RPCError)
+	}
+	if len(paymentInfos) == 0 && realFee == 0 {
 		hasPrivacy = false
 	}
+	/******* END GET output coins constant, which is used to create tx *****/
 
-	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
 	tx := &transaction.TxCustomToken{}
 	err = tx.Init(
 		&senderKey.KeySet.PrivateKey,
@@ -340,26 +328,17 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 	// check real fee per TxNormal
 	realFee := self.estimateFee(estimateFeeCoinPerKb, nil, nil, chainIdSender, 0)
 
-	// if needing to pay fee
-	candidateOutputCoins := []*privacy.OutputCoin{}
-	if realFee > 0 {
-		// list unspent tx for estimation fee
-		tokenID := &common.Hash{}
-		tokenID.SetBytes(common.ConstantID[:])
-		outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, tokenID)
-		// Use Knapsack to get candiate output coin
-		if len(outCoins) > 0 {
-			candidateOutputCoinsForFee, _, _, err1 := self.chooseBestOutCoinsToSpent(outCoins, uint64(realFee))
-			if err != nil {
-				return nil, NewRPCError(ErrUnexpected, err1)
-			}
-			candidateOutputCoins = append(candidateOutputCoins, candidateOutputCoinsForFee...)
-		}
-	} else {
+	/******* START choose output coins constant, which is used to create tx *****/
+	paymentInfos := []*privacy.PaymentInfo{}
+	inputCoins, realFee, err := self.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKey, chainIdSender)
+	if err.(*RPCError) != nil {
+		return nil, err.(*RPCError)
+	}
+	if len(paymentInfos) == 0 && realFee == 0 {
 		hasPrivacy = false
 	}
+	/******* END GET output coins constant, which is used to create tx *****/
 
-	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
 	tx := &transaction.TxCustomTokenPrivacy{}
 	err = tx.Init(
 		&senderKey.KeySet.PrivateKey,
