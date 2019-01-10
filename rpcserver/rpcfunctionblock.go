@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
@@ -200,13 +201,13 @@ func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-ch
 	for shardID, bestState := range self.config.BlockChain.BestState.Shard {
 		result.BestBlocks[shardID] = jsonresult.GetBestBlockItem{
 			// Height:   bestState.BestBlock.Header.GetHeight(),
-			Height:   bestState.BestBlock.Header.Height,
-			Hash:     bestState.BestBlockHash.String(),
-			TotalTxs: bestState.TotalTxns,
-			// SalaryFund:       bestState.BestBlock.Header.SalaryFund,
+			Height:     bestState.BestBlock.Header.Height,
+			Hash:       bestState.BestBlockHash.String(),
+			TotalTxs:   bestState.TotalTxns,
+			SalaryFund: bestState.BestBlock.Header.SalaryFund,
 			// BasicSalary:      bestState.BestBlock.Header.GOVConstitution.GOVParams.BasicSalary,
 			// SalaryPerTx:      bestState.BestBlock.Header.GOVConstitution.GOVParams.SalaryPerTx,
-			// BlockProducer:    bestState.BestBlock.Producer,
+			BlockProducer:    bestState.BestBlock.Header.Producer,
 			BlockProducerSig: bestState.BestBlock.ProducerSig,
 		}
 	}
@@ -243,11 +244,16 @@ func (self RpcServer) handleGetBlockHash(params interface{}, closeChan <-chan st
 
 // handleGetBlockHeader - return block header data
 func (self RpcServer) handleGetBlockHeader(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Info(params)
+	// Logger.log.Info(params)
+	log.Printf("%+v", params)
 	result := jsonresult.GetHeaderResult{}
 
 	arrayParams := common.InterfaceSlice(params)
-	Logger.log.Info(arrayParams)
+	// Logger.log.Info(arrayParams)
+	log.Printf("arrayParams: %+v", arrayParams)
+	if arrayParams == nil || len(arrayParams) == 0 || len(arrayParams) <= 3 {
+		arrayParams = append(arrayParams, "", "", 0.0)
+	}
 	getBy := arrayParams[0].(string)
 	block := arrayParams[1].(string)
 	shardID := arrayParams[2].(float64)
@@ -255,7 +261,8 @@ func (self RpcServer) handleGetBlockHeader(params interface{}, closeChan <-chan 
 	case "blockhash":
 		bhash := common.Hash{}
 		err := bhash.Decode(&bhash, block)
-		Logger.log.Info(bhash)
+		// Logger.log.Info(bhash)
+		log.Printf("%+v", bhash)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, errors.New("Invalid blockhash format"))
 		}
@@ -280,10 +287,13 @@ func (self RpcServer) handleGetBlockHeader(params interface{}, closeChan <-chan 
 			return nil, NewRPCError(ErrUnexpected, errors.New("Block not exist"))
 		}
 		block, _ := self.config.BlockChain.GetShardBlockByHeight(uint64(bnum-1), uint8(shardID))
-		result.Header = block.Header
+
+		if block != nil {
+			result.Header = block.Header
+			result.BlockHash = block.Hash().String()
+		}
 		result.BlockNum = bnum
 		result.ShardID = uint8(shardID)
-		result.BlockHash = block.Hash().String()
 	default:
 		return nil, NewRPCError(ErrUnexpected, errors.New("Wrong request format"))
 	}
