@@ -157,14 +157,32 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		return nil, err
 	}
 
-	// param #2: estimation fee coin per kb
-	estimateFeeCoinPerKb := int64(arrayParams[1].(float64))
+	// param #2: list receiver
+	receiversParam := make(map[string]interface{})
+	if arrayParams[1] != nil {
+		receiversParam = arrayParams[1].(map[string]interface{})
+	}
+	paymentInfos := make([]*privacy.PaymentInfo, 0)
+	for pubKeyStr, amount := range receiversParam {
+		receiverPubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		paymentInfo := &privacy.PaymentInfo{
+			Amount:         uint64(amount.(float64)),
+			PaymentAddress: receiverPubKey.KeySet.PaymentAddress,
+		}
+		paymentInfos = append(paymentInfos, paymentInfo)
+	}
 
-	// param #3: hasPrivacy flag
-	hasPrivacy := int(arrayParams[2].(float64)) > 0
+	// param #3: estimation fee coin per kb
+	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
 
-	// param #4: token params
-	tokenParamsRaw := arrayParams[3].(map[string]interface{})
+	// param #4: hasPrivacy flag
+	hasPrivacy := int(arrayParams[3].(float64)) > 0
+
+	// param #5: token params
+	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	tokenParams := &transaction.CustomTokenParamTx{
 		PropertyID:     tokenParamsRaw["TokenID"].(string),
 		PropertyName:   tokenParamsRaw["TokenName"].(string),
@@ -230,7 +248,6 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	}
 
 	/******* START choose output coins constant, which is used to create tx *****/
-	paymentInfos := []*privacy.PaymentInfo{}
 	inputCoins, realFee, err := self.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKey, chainIdSender)
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)

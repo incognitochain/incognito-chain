@@ -102,7 +102,7 @@ func (self RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, cl
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	paymentAddr := senderKey.KeySet.PaymentAddress
-	tokenParamsRaw := arrayParams[3].(map[string]interface{})
+	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	_, voutsAmount := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
 
 	tokenIDStr := tokenParamsRaw["TokenID"].(string)
