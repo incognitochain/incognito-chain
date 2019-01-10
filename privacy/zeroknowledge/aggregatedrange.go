@@ -229,7 +229,7 @@ changes:
 	V_j = h^{\gamma_j}g^{v_j} \wedge v_j \in [0, 2^n - 1] \forall j \in [1, m]}
 */
 func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
-	start := time.Now()
+	//start := time.Now()
 	// RangeProofParams.V has the total number of values and bits we can support
 
 	rangeProofParams := initCryptoParams(len(wit.Values), wit.maxExp)
@@ -408,8 +408,8 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		return nil, errors.New("Creating multi-range proof failed")
 	}
 	MRProof.IPP = innerProductProve(left, right, that, P, rangeProofParams.U, rangeProofParams.BPG, HPrime)
-	end := time.Since(start)
-	fmt.Printf("Zero commitment proving time: %v\n", end)
+	//end := time.Since(start)
+	//fmt.Printf("Zero commitment proving time: %v\n", end)
 	return &MRProof, nil
 }
 

@@ -49,33 +49,44 @@ func generateChallengeFromByte(values [][]byte) *big.Int {
 }
 
 // EstimateProofSize returns the estimated size of the proof in kilobyte
-func EstimateProofSize(nInput int, nOutput int) uint64 {
-	sizeOneOfManyProof := nInput * privacy.OneOfManyProofSize
-	sizeSNPrivacyProof := nInput * privacy.SNPrivacyProofSize
+func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
+	sizeProof := 0
+	if hasPrivacy{
+		sizeOneOfManyProof := nInput * privacy.OneOfManyProofSize
+		sizeSNPrivacyProof := nInput * privacy.SNPrivacyProofSize
 
-	sizeComOutputMultiRangeProof := int(estimateMultiRangeProof(nOutput))
-	sizeSumOutRangeProof := privacy.SumOutRangeProofSize
-	sizeComZeroProof := privacy.ComZeroProofSize
+		sizeComOutputMultiRangeProof := int(estimateMultiRangeProof(nOutput))
+		sizeComZeroProof := privacy.ComZeroProofSize
 
-	sizeInputCoins := nInput * privacy.InputCoinsPrivacySize
-	sizeOutputCoins := nOutput * privacy.OutputCoinsPrivacySize
+		sizeInputCoins := nInput * privacy.InputCoinsPrivacySize
+		sizeOutputCoins := nOutput * privacy.OutputCoinsPrivacySize
 
-	sizeComOutputValue := nOutput * privacy.CompressedPointSize
-	sizeComOutputSND := nOutput * privacy.CompressedPointSize
-	sizeComOutputShardID := nOutput * privacy.CompressedPointSize
+		sizeComOutputValue := nOutput * privacy.CompressedPointSize
+		sizeComOutputSND := nOutput * privacy.CompressedPointSize
+		sizeComOutputShardID := nOutput * privacy.CompressedPointSize
 
-	sizeComInputSK := nInput * privacy.CompressedPointSize
-	sizeComInputValue := nInput * privacy.CompressedPointSize
-	sizeComInputSND := nInput * privacy.CompressedPointSize
-	sizeComInputShardID := nInput * privacy.CompressedPointSize
+		sizeComInputSK := nInput * privacy.CompressedPointSize
+		sizeComInputValue := nInput * privacy.CompressedPointSize
+		sizeComInputSND := nInput * privacy.CompressedPointSize
+		sizeComInputShardID := nInput * privacy.CompressedPointSize
 
-	// sizeBytes = NumArr + SizeProof
-	sizeBytes := 11 + 9*nInput + 4*nOutput + 4
+		// sizeBytes = ArrLen + SizeProof
+		sizeBytes := 11 + 9*nInput + 4*nOutput + 3 + 1 // 1: saving len of snnoprivacy proof
 
-	sizeProof := sizeOneOfManyProof + sizeSNPrivacyProof +
-		sizeComOutputMultiRangeProof + sizeSumOutRangeProof + sizeComZeroProof + sizeInputCoins + sizeOutputCoins +
-		sizeComOutputValue + sizeComOutputSND + sizeComOutputShardID + sizeComInputSK + sizeComInputValue + sizeComInputSND + sizeComInputShardID + sizeBytes
+		sizeProof = sizeOneOfManyProof + sizeSNPrivacyProof +
+			sizeComOutputMultiRangeProof + sizeComZeroProof + sizeInputCoins + sizeOutputCoins +
+			sizeComOutputValue + sizeComOutputSND + sizeComOutputShardID +
+			sizeComInputSK + sizeComInputValue + sizeComInputSND + sizeComInputShardID + sizeBytes
+	} else{
+		sizeSNNoPrivacyProof := nInput*privacy.SNNoPrivacyProofSize
+		sizeInputCoins := nInput * privacy.InputCoinsNoPrivacySize
+		sizeOutputCoins := nOutput * privacy.OutputCoinsNoPrivacySize
 
+		sizeBytes := 3 + nInput*2 + nOutput + 12
+
+		sizeProof = sizeSNNoPrivacyProof + sizeInputCoins + sizeOutputCoins + sizeBytes
+	}
+	//fmt.Printf("sizeProof estimate : %v\n", sizeProof)
 	return uint64(math.Ceil(float64(sizeProof) / 1024))
 }
 

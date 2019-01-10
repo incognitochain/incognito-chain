@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"errors"
 	"math/big"
 	rand2 "math/rand"
 	"time"
@@ -121,4 +122,133 @@ func paddedAppend(size uint, dst, src []byte) []byte {
 		dst = append(dst, 0)
 	}
 	return append(dst, src...)
+}
+
+// checkZeroArray check whether all ellement of values array are zero value or not
+func checkZeroArray(values []*big.Int) bool{
+	for i:=0; i<len(values); i++{
+		if values[i].Cmp(big.NewInt(0)) !=0{
+			return false
+		}
+	}
+	return true
+}
+
+func MaxBitLen(values []*big.Int) int{
+	res := 0
+	for i:=0; i< len(values); i++{
+		if values[i].BitLen() > res {
+			res = values[i].BitLen()
+		}
+	}
+
+	return res
+}
+
+func multiExp(g []*EllipticPoint, values []*big.Int) (*EllipticPoint, error) {
+	// Check inputs
+	if len(g) != len(values) {
+		return nil, errors.New("wrong inputs")
+	}
+
+	maxBitLen := MaxBitLen(values)
+
+	// save values
+	valuesTmp := make([]*big.Int, len(values))
+	for i := 0; i < len(valuesTmp); i++ {
+		valuesTmp[i] = new(big.Int)
+		valuesTmp[i].Set(values[i])
+	}
+
+	// generator result point
+	res := new(EllipticPoint).Zero()
+
+	for i := maxBitLen -1; i >= 0; i-- {
+		// res = 2*res
+		res = res.ScalarMult(big.NewInt(2))
+
+		// res = res + e1,i*g1 + ... + en,i*gn
+		for j := 0; j < len(valuesTmp); j++ {
+			r := valuesTmp[i].Bit(i)
+			if r == 1{
+				res = res.Add(g[j])
+			}
+			//valuesTmp[j].Div(valuesTmp[j], big.NewInt(2))
+		}
+
+		//if checkZeroArray(valuesTmp){
+		//	//res = res.ScalarMult(big.NewInt(2))
+		//	break
+		//}
+	}
+	return res, nil
+}
+
+//func multiExp2(g []*EllipticPoint, values []*big.Int) (*EllipticPoint, error) {
+//	// Check inputs
+//	if len(g) != len(values) {
+//		return nil, errors.New("wrong inputs")
+//	}
+//
+//	// save values
+//	valuesTmp := make([]*big.Int, len(values))
+//	for i := 0; i < len(valuesTmp); i++ {
+//		valuesTmp[i] = new(big.Int)
+//		valuesTmp[i].Set(values[i])
+//	}
+//
+//	// generator result point
+//	r := new(big.Int)
+//	res := new(EllipticPoint).Zero()
+//
+//	y := big.NewInt(1)
+//	for values
+//
+//	//for i := 0; i < Curve.Params().BitSize; i++ {
+//	//	// res = 2*res
+//	//	res = res.ScalarMult(big.NewInt(2))
+//	//
+//	//	// res = res + e1,i*g1 + ... + en,i*gn
+//	//	for j := 0; j < len(valuesTmp); j++ {
+//	//		r.Mod(valuesTmp[j], big.NewInt(2))
+//	//		if r.Cmp(big.NewInt(1)) ==0{
+//	//			res = res.Add(g[j])
+//	//		}
+//	//		valuesTmp[j].Div(valuesTmp[j], big.NewInt(2))
+//	//	}
+//	//
+//	//	if checkZeroArray(valuesTmp){
+//	//		//res = res.ScalarMult(big.NewInt(2))
+//	//		break
+//	//	}
+//	//}
+//	return res, nil
+//}
+
+
+func exp (x * EllipticPoint, n *big.Int) *EllipticPoint{
+	if n.Cmp(big.NewInt(0)) == 0{
+		return x
+	}
+
+	nTmp := new(big.Int)
+	nTmp.Set(n)
+
+	xTmp := new(EllipticPoint)
+	xTmp.Set(x.X, x.Y)
+
+	y := new(EllipticPoint).Zero()
+
+	r := big.NewInt(0)
+
+	for nTmp.Cmp(big.NewInt(1)) == 1{
+		// nTmp is even
+		if r.Mod(nTmp, big.NewInt(2)).Cmp(big.NewInt(1)) == 0 {
+			y = xTmp.Add(y)
+		}
+		xTmp = xTmp.Add(xTmp)
+		nTmp.Div(nTmp, big.NewInt(2))
+	}
+
+	return xTmp.Add(y)
 }

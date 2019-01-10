@@ -117,23 +117,6 @@ func (tx *Tx) Init(
 
 	tx.Type = common.TxNormalType
 
-	chainID, _ := common.GetTxSenderChain(pkLastByteSender)
-	var commitmentIndexs []uint64   // array index random of commitments in db
-	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
-
-	if hasPrivacy {
-		commitmentIndexs, myCommitmentIndexs = RandomCommitmentsProcess(inputCoins, privacy.CMRingSize, db, chainID, tokenID)
-
-		// Check number of list of random commitments, list of random commitment indices
-		if len(commitmentIndexs) != len(inputCoins)*privacy.CMRingSize {
-			return NewTransactionErr(RandomCommitmentErr, nil)
-		}
-
-		if len(myCommitmentIndexs) != len(inputCoins) {
-			return NewTransactionErr(RandomCommitmentErr, errors.New("Number of list my commitment indices must be equal to number of input coins"))
-		}
-	}
-
 	// Calculate execution time for creating payment proof
 	startPrivacy := time.Now()
 
@@ -156,11 +139,37 @@ func (tx *Tx) Init(
 	overBalance := int(sumInputValue - sumOutputValue - fee)
 
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
-	valueMax := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(64)), nil)
-	valueMax = valueMax.Sub(valueMax, big.NewInt(1))
+	//valueMax := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(64)), nil)
+	//valueMax = valueMax.Sub(valueMax, big.NewInt(1))
 
 	if overBalance < 0 {
 		return NewTransactionErr(WrongInput, errors.New("Input value less than output value"))
+	}
+
+	chainID, _ := common.GetTxSenderChain(pkLastByteSender)
+	var commitmentIndexs []uint64   // array index random of commitments in db
+	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
+	var commitmentProving []*privacy.EllipticPoint
+
+	if hasPrivacy {
+		commitmentIndexs, myCommitmentIndexs = RandomCommitmentsProcess(inputCoins, privacy.CMRingSize, db, chainID, tokenID)
+
+		// Check number of list of random commitments, list of random commitment indices
+		if len(commitmentIndexs) != len(inputCoins)*privacy.CMRingSize {
+			return NewTransactionErr(RandomCommitmentErr, nil)
+		}
+
+		if len(myCommitmentIndexs) != len(inputCoins) {
+			return NewTransactionErr(RandomCommitmentErr, errors.New("Number of list my commitment indices must be equal to number of input coins"))
+		}
+
+		// get list of commitments for proving one-out-of-many from commitmentIndexs
+		commitmentProving = make([]*privacy.EllipticPoint, len(commitmentIndexs))
+		for i, cmIndex := range commitmentIndexs {
+			commitmentProving[i] = new(privacy.EllipticPoint)
+			temp, _ := db.GetCommitmentByIndex(tokenID, cmIndex, chainID)
+			commitmentProving[i], _ = privacy.DecompressKey(temp)
+		}
 	}
 
 	// if overBalance > 0, create a new payment info with pk is sender's pk and amount is overBalance
@@ -219,13 +228,7 @@ func (tx *Tx) Init(
 	// create zero knowledge proof of payment
 	tx.Proof = &zkp.PaymentProof{}
 
-	// get list of commitments for proving one-out-of-many from commitmentIndexs
-	commitmentProving := make([]*privacy.EllipticPoint, len(commitmentIndexs))
-	for i, cmIndex := range commitmentIndexs {
-		commitmentProving[i] = new(privacy.EllipticPoint)
-		temp, _ := db.GetCommitmentByIndex(tokenID, cmIndex, chainID)
-		commitmentProving[i], _ = privacy.DecompressKey(temp)
-	}
+
 
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
