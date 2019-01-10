@@ -237,9 +237,17 @@ getblockhash RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetBlockHash(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) != 2 {
+		arrayParams = []interface{}{
+			0.0,
+			1.0,
+		}
+	}
 	shardID := byte(int(arrayParams[0].(float64)))
 	height := uint64(arrayParams[1].(float64))
+
 	hash, err := self.config.BlockChain.GetShardBlockByHeight(height, shardID)
+
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
