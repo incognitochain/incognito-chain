@@ -74,9 +74,19 @@ func (pool *NodeBeaconPool) PushBlock(block blockchain.BeaconBlock) error {
 	}
 
 	nodeBeaconPoolLock.Lock()
-	nodeBeaconPool[height] = append(nodeBeaconPool[height], block)
-	nodeBeaconPoolLock.Unlock()
-
+	defer nodeBeaconPoolLock.Unlock()
+	if _, ok := nodeBeaconPool[height]; ok {
+		isNew := true
+		for _, poolblk := range nodeBeaconPool[height] {
+			if poolblk.Hash() == block.Hash() {
+				isNew = false
+				return nil
+			}
+		}
+		if isNew {
+			nodeBeaconPool[height] = append(nodeBeaconPool[height], block)
+		}
+	}
 	return nil
 }
 

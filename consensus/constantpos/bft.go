@@ -50,7 +50,10 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 	fmt.Println("Starting PBFT protocol for " + layer)
 	self.multiSigScheme = new(multiSigScheme)
 	self.multiSigScheme.Init(self.UserKeySet, self.RoleData.Committee)
-	_ = self.multiSigScheme.Prepare()
+	err := self.multiSigScheme.Prepare()
+	if err != nil {
+		return nil, err
+	}
 	for {
 		fmt.Println("New Phase")
 		self.cTimeout = make(chan struct{})
@@ -280,7 +283,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 								return nil, err
 							}
 							phaseData.Sigs[R] = append(phaseData.Sigs[R], newSig)
-							if len(phaseData.Sigs[R]) > (len(self.RoleData.Committee) >> 1) {
+							if len(phaseData.Sigs[R]) > (2 * len(self.RoleData.Committee) / 3) {
 								cmTimeout.Stop()
 								fmt.Println("Collected enough R")
 								select {
