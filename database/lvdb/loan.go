@@ -109,6 +109,6 @@ func (db *db) GetLoanPayment(loanID []byte) (uint64, uint64, uint32, error) {
 		return 0, 0, 0, err
 	}
 
-	fmt.Printf("Found payment %x: %x", loanPaymentKey, loanPaymentValue)
+	fmt.Printf("Found payment %x: %x\n", loanPaymentKey, loanPaymentValue)
 	return parseLoanPaymentValue(loanPaymentValue)
 }

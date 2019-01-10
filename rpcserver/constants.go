@@ -107,6 +107,7 @@ const (
 
 	// gov
 	GetBondTypes                           = "getbondtypes"
+	GetCurrentSellingBondTypes             = "getcurrentsellingbondtypes"
 	CreateAndSendTxWithBuyBackRequest      = "createandsendtxwithbuybackrequest"
 	CreateAndSendTxWithBuySellRequest      = "createandsendtxwithbuysellrequest"
 	CreateAndSendTxWithOracleFeed          = "createandsendtxwithoraclefeed"

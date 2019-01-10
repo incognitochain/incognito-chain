@@ -114,6 +114,7 @@ func NewGOVParamsFromRPC(data interface{}) *GOVParams {
 		uint64(sellingBondsData[3].(float64)),
 		uint32(sellingBondsData[4].(float64)),
 		uint32(sellingBondsData[5].(float64)),
+		uint64(sellingBondsData[6].(float64)),
 	)
 
 	refundInfoData := common.InterfaceSlice(arrayParams[4])

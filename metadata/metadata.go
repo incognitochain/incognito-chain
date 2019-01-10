@@ -83,6 +83,7 @@ type MempoolRetriever interface {
 
 type BlockchainRetriever interface {
 	GetHeight() int32
+	GetChainHeight(byte) int32
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
 	GetDCBParams() params.DCBParams
 	GetDCBBoardPubKeys() [][]byte

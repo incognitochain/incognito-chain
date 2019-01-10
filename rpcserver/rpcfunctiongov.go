@@ -2,7 +2,6 @@ package rpcserver
 
 import (
 	"encoding/json"
-
 	params2 "github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -44,6 +43,42 @@ func (self RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan st
 	return result, nil
 }
 
+func (self RpcServer) handleGetCurrentSellingBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	paymentAddressStr := arrayParams[0].(string)
+	senderKey, _ := wallet.Base58CheckDeserialize(paymentAddressStr)
+	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
+	chainIdSender, _ := common.GetTxSenderChain(lastByte)
+
+	bestBlock := self.config.BlockChain.BestState[chainIdSender].BestBlock
+	blockHeader := bestBlock.Header
+	sellingBondsParam := bestBlock.Header.GOVConstitution.GOVParams.SellingBonds
+	buyPrice := uint64(0)
+	bondID := sellingBondsParam.GetID()
+	bondPriceFromOracle := blockHeader.Oracle.Bonds[bondID.String()]
+	if bondPriceFromOracle == 0 {
+		buyPrice = sellingBondsParam.BondPrice
+	} else {
+		buyPrice = bondPriceFromOracle
+	}
+
+	bondTypeRes := jsonresult.GetBondTypeResultItem{
+		BondID:         bondID.GetBytes(),
+		StartSellingAt: sellingBondsParam.StartSellingAt,
+		EndSellingAt:   sellingBondsParam.StartSellingAt + sellingBondsParam.SellingWithin,
+		Maturity:       sellingBondsParam.Maturity,
+		BuyBackPrice:   sellingBondsParam.BuyBackPrice, // in constant
+		BuyPrice:       buyPrice,                       // in constant
+		TotalIssue:     sellingBondsParam.TotalIssue,
+		Available:      sellingBondsParam.BondsToSell,
+	}
+	result := jsonresult.GetBondTypeResult{
+		BondTypes: make(map[string]jsonresult.GetBondTypeResultItem),
+	}
+	result.BondTypes[bondID.String()] = bondTypeRes
+	return result, nil
+}
+
 func (self RpcServer) handleGetGOVParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	govParam := self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams
 	return govParam, nil
@@ -62,50 +97,55 @@ func (self RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, cl
 	var err error
 	arrayParams := common.InterfaceSlice(params)
 
-	// Req param #4: issuing request info
-	buyBackReq := arrayParams[4].(map[string]interface{})
-	voutIndex := int(buyBackReq["voutIndex"].(float64))
-	buyBackFromTxIDBytes := []byte(buyBackReq["buyBackFromTxID"].(string))
-	buyBackFromTxID := common.Hash{}
-	copy(buyBackFromTxID[:], buyBackFromTxIDBytes)
-	metaType := metadata.BuyBackRequestMeta
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	paymentAddr := senderKey.KeySet.PaymentAddress
+	tokenParamsRaw := arrayParams[3].(map[string]interface{})
+	_, voutsAmount := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
+
+	tokenIDStr := tokenParamsRaw["TokenID"].(string)
+	tokenID, _ := common.Hash{}.NewHashFromStr(tokenIDStr)
 	meta := metadata.NewBuyBackRequest(
-		buyBackFromTxID,
-		voutIndex,
-		metaType,
+		paymentAddr,
+		uint64(voutsAmount),
+		*tokenID,
+		metadata.BuyBackRequestMeta,
 	)
-	normalTx, err := self.buildRawTransaction(params, meta)
+	customTokenTx, err := self.buildRawCustomTokenTransaction(params, meta)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	byteArrays, err := json.Marshal(normalTx)
+	byteArrays, err := json.Marshal(customTokenTx)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result := jsonresult.CreateTransactionResult{
-		TxID:            normalTx.Hash().String(),
+		TxID:            customTokenTx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
 
 func (self RpcServer) handleCreateAndSendTxWithBuyBackRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	var err error
 	data, err := self.handleCreateRawTxWithBuyBackRequest(params, closeChan)
-	if err != nil {
-		return nil, err
-	}
-	tx := data.(jsonresult.CreateTransactionResult)
-	base58CheckData := tx.Base58CheckData
-	if err != nil {
+	if err.(*RPCError) != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
-	if err != nil {
+	sendResult, err := self.handleSendRawCustomTokenTransaction(newParam, closeChan)
+	if err.(*RPCError) != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result := jsonresult.CreateTransactionResult{
@@ -121,26 +161,22 @@ func (self RpcServer) handleCreateRawTxWithBuySellRequest(params interface{}, cl
 	// Req param #5: buy/sell request info
 	buySellReq := arrayParams[4].(map[string]interface{})
 
-	paymentAddressMap := buySellReq["PaymentAddress"].(map[string]interface{})
-	paymentAddress := privacy.PaymentAddress{
-		Pk: []byte(paymentAddressMap["pk"].(string)),
-		Tk: []byte(paymentAddressMap["tk"].(string)),
-	}
-	assetTypeBytes := []byte(buySellReq["TokenID"].(string))
-	assetType := common.Hash{}
-	copy(assetType[:], assetTypeBytes)
+	paymentAddressP := buySellReq["PaymentAddress"].(string)
+	key, _ := wallet.Base58CheckDeserialize(paymentAddressP)
+	tokenIDStr := buySellReq["TokenID"].(string)
+	tokenID, _ := common.Hash{}.NewHashFromStr(tokenIDStr)
 	amount := uint64(buySellReq["Amount"].(float64))
 	buyPrice := uint64(buySellReq["BuyPrice"].(float64))
 	metaType := metadata.BuyFromGOVRequestMeta
 	meta := metadata.NewBuySellRequest(
-		paymentAddress,
-		assetType,
+		key.KeySet.PaymentAddress,
+		*tokenID,
 		amount,
 		buyPrice,
 		metaType,
 	)
 	normalTx, err := self.buildRawTransaction(params, meta)
-	if err != nil {
+	if err.(*RPCError) != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}

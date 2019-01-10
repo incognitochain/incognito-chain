@@ -14,7 +14,6 @@ import (
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/wallet"
 )
 
 type BlkTmplGenerator struct {
@@ -555,15 +554,13 @@ func buildSingleBuySellResponseTx(
 	buySellReqTx metadata.Transaction,
 	sellingBondsParam *params.SellingBonds,
 ) (*transaction.TxCustomToken, error) {
-	bondID := fmt.Sprintf("%s%s%s", sellingBondsParam.Maturity, sellingBondsParam.BuyBackPrice, sellingBondsParam.StartSellingAt)
-	additionalSuffix := make([]byte, 24-len(bondID))
-	bondIDBytes := append([]byte(bondID), additionalSuffix...)
+	bondID := sellingBondsParam.GetID()
 	buySellRes := metadata.NewBuySellResponse(
 		*buySellReqTx.Hash(),
 		sellingBondsParam.StartSellingAt,
 		sellingBondsParam.Maturity,
 		sellingBondsParam.BuyBackPrice,
-		bondIDBytes,
+		bondID[:],
 		metadata.BuyFromGOVResponseMeta,
 	)
 
@@ -578,16 +575,18 @@ func buildSingleBuySellResponseTx(
 	}
 
 	var propertyID [common.HashSize]byte
-	copy(propertyID[:], append(common.BondTokenID[0:8], bondIDBytes...))
+	copy(propertyID[:], bondID[:])
 	txTokenData := transaction.TxTokenData{
 		Type:       transaction.CustomTokenInit,
+		Mintable:   true,
 		Amount:     buySellReq.Amount,
 		PropertyID: common.Hash(propertyID),
 		Vins:       []transaction.TxTokenVin{},
 		Vouts:      []transaction.TxTokenVout{txTokenVout},
-		// PropertyName:   "",
-		// PropertySymbol: coinbaseTxType,
 	}
+	txTokenData.PropertyName = txTokenData.PropertyID.String()
+	txTokenData.PropertySymbol = txTokenData.PropertyID.String()
+
 	resTx := &transaction.TxCustomToken{
 		TxTokenData: txTokenData,
 	}
@@ -644,45 +643,58 @@ func (blockgen *BlkTmplGenerator) checkBuyBackReqTx(
 	tx metadata.Transaction,
 	buyBackConsts uint64,
 ) (*buyBackFromInfo, bool) {
-	buyBackReqMeta := tx.GetMetadata()
+	buyBackReqTx, ok := tx.(*transaction.TxCustomToken)
+	if !ok {
+		Logger.log.Error(errors.New("Could not parse BuyBackRequest tx (custom token tx)."))
+		return nil, false
+	}
+	vins := buyBackReqTx.TxTokenData.Vins
+	if len(vins) == 0 {
+		Logger.log.Error(errors.New("No existed Vins from BuyBackRequest tx"))
+		return nil, false
+	}
+	priorTxID := vins[0].TxCustomTokenID
+	_, _, _, priorTx, err := blockgen.chain.GetTransactionByHash(&priorTxID)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, false
+	}
+	priorCustomTokenTx, ok := priorTx.(*transaction.TxCustomToken)
+	if !ok {
+		Logger.log.Error(errors.New("Could not parse prior TxCustomToken."))
+		return nil, false
+	}
+
+	priorMeta := priorCustomTokenTx.GetMetadata()
+	if priorMeta == nil {
+		Logger.log.Error(errors.New("No existed metadata in priorCustomTokenTx"))
+		return nil, false
+	}
+	buySellResMeta, ok := priorMeta.(*metadata.BuySellResponse)
+	if !ok {
+		Logger.log.Error(errors.New("Could not parse BuySellResponse metadata."))
+		return nil, false
+	}
+	prevBlock := blockgen.chain.BestState[chainID].BestBlock
+	if buySellResMeta.StartSellingAt+buySellResMeta.Maturity > uint32(prevBlock.Header.Height)+1 {
+		Logger.log.Error("The token is not overdued yet.")
+		return nil, false
+	}
+	// check remaining constants in GOV fund is enough or not
+	buyBackReqMeta := buyBackReqTx.GetMetadata()
 	buyBackReq, ok := buyBackReqMeta.(*metadata.BuyBackRequest)
 	if !ok {
 		Logger.log.Error(errors.New("Could not parse BuyBackRequest metadata."))
 		return nil, false
 	}
-	_, _, _, fromTx, err := blockgen.chain.GetTransactionByHash(&buyBackReq.BuyBackFromTxID)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, false
-	}
-	customTokenTx, ok := fromTx.(*transaction.TxCustomToken)
-	if !ok {
-		Logger.log.Error(errors.New("Could not parse TxCustomToken."))
-		return nil, false
-	}
-	fromTxMeta := fromTx.GetMetadata()
-	buySellRes, ok := fromTxMeta.(*metadata.BuySellResponse)
-	if !ok {
-		Logger.log.Error(errors.New("Could not parse BuySellResponse metadata."))
-		return nil, false
-	}
-
-	vout := customTokenTx.TxTokenData.Vouts[buyBackReq.VoutIndex]
-	prevBlock := blockgen.chain.BestState[chainID].BestBlock
-
-	if buySellRes.StartSellingAt+buySellRes.Maturity > uint32(prevBlock.Header.Height)+1 {
-		Logger.log.Error("The token is not overdued yet.")
-		return nil, false
-	}
-	// check remaining constants in GOV fund is enough or not
-	buyBackAmount := vout.Value * buySellRes.BuyBackPrice
-	if buyBackConsts+buyBackAmount > prevBlock.Header.SalaryFund {
+	buyBackValue := buyBackReq.Amount * buySellResMeta.BuyBackPrice
+	if buyBackConsts+buyBackValue > prevBlock.Header.SalaryFund {
 		return nil, false
 	}
 	buyBackFromInfo := &buyBackFromInfo{
-		paymentAddress: vout.PaymentAddress,
-		buyBackPrice:   buySellRes.BuyBackPrice,
-		value:          vout.Value,
+		paymentAddress: buyBackReq.PaymentAddress,
+		buyBackPrice:   buySellResMeta.BuyBackPrice,
+		value:          buyBackReq.Amount,
 		requestedTxID:  tx.Hash(),
 	}
 	return buyBackFromInfo, true
@@ -896,24 +908,12 @@ func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, pro
 	removableTxs := []metadata.Transaction{}
 	for _, txDesc := range sourceTxns {
 		if txDesc.Tx.GetMetadataType() == metadata.LoanPaymentMeta {
-			paymentMeta := txDesc.Tx.GetMetadata().(*metadata.LoanPayment)
-			_, _, _, err := blockgen.chain.config.DataBase.GetLoanPayment(paymentMeta.LoanID)
+			paymentAmount, err := blockgen.calculateInterestPaid(txDesc.Tx)
 			if err != nil {
 				removableTxs = append(removableTxs, txDesc.Tx)
 				continue
 			}
-			paymentAmount := uint64(0)
-			accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-			dcbPk := accountDCB.KeySet.PaymentAddress.Pk
-			txNormal := txDesc.Tx.(*transaction.Tx)
-			for _, coin := range txNormal.Proof.OutputCoins {
-				if bytes.Equal(coin.CoinDetails.PublicKey.Compress(), dcbPk) {
-					paymentAmount += coin.CoinDetails.Value
-				}
-			}
-			if !paymentMeta.PayPrinciple { // Only keep interest
-				amount += paymentAmount
-			}
+			amount += paymentAmount
 		} else if txDesc.Tx.GetMetadataType() == metadata.LoanWithdrawMeta {
 			withdrawMeta := txDesc.Tx.GetMetadata().(*metadata.LoanWithdraw)
 			meta, err := blockgen.chain.GetLoanRequestMeta(withdrawMeta.LoanID)
