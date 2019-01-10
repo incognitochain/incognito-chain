@@ -146,6 +146,15 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				// Parse Message header from last 24 bytes header message
 				jsonDecodeBytesRaw, _ := hex.DecodeString(msgStr)
 
+				// cache message hash S
+				hashMsgRaw := common.HashH(jsonDecodeBytesRaw).String()
+				if self.ListenerPeer.CheckHashPool(hashMsgRaw) {
+					Logger.log.Infof("InMessageHandler existed raw hash message %s", hashMsgRaw)
+					return
+				}
+				self.ListenerPeer.HashToPool(hashMsgRaw)
+				// cache message hash E
+
 				// unzip data before process
 				jsonDecodeBytes, err := common.GZipFromBytes(jsonDecodeBytesRaw)
 				if err != nil {
