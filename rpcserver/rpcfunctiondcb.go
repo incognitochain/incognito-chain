@@ -3,7 +3,6 @@ package rpcserver
 import (
 	"encoding/json"
 
-	params2 "github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
@@ -510,14 +509,7 @@ func (self RpcServer) buildRawSubmitDCBProposalTransaction(
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	NParams := len(arrayParams)
-	DCBParams := *params2.NewDCBParamsFromRPC(arrayParams[NParams-4])
-	executeDuration := arrayParams[NParams-3].(uint32)
-	explanation := arrayParams[NParams-2].(string)
-
-	paymentData := []byte(arrayParams[NParams-1].(string))
-	address := privacy.PaymentAddress{}
-	address.SetBytes(paymentData)
-	meta := metadata.NewSubmitDCBProposalMetadata(DCBParams, executeDuration, explanation, &address)
+	meta := metadata.NewSubmitDCBProposalMetadataFromJson(arrayParams[NParams-1])
 	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }

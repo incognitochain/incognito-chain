@@ -47,3 +47,19 @@ func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-c
 
 	return result, nil
 }
+
+func (self RpcServer) handleGetEncryptionFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	boardType := arrayParams[0].(string)
+	db := *self.config.Database
+	encryptionFlag, _ := db.GetEncryptFlag(boardType)
+	return jsonresult.GetEncryptionFlagResult{encryptionFlag}, nil
+}
+
+func (self RpcServer) handleGetEncryptionLastBlockHeightFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	boardType := arrayParams[0].(string)
+	db := *self.config.Database
+	blockHeight, _ := db.GetEncryptionLastBlockHeight(boardType)
+	return jsonresult.GetEncryptionLastBlockHeightResult{blockHeight}, nil
+}

@@ -35,7 +35,7 @@ func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTxAndRewardSu
 	NextConstitutionIndex := blockgen.chain.GetCurrentBoardIndex(helper)
 
 	db := blockgen.chain.config.DataBase
-	boardType := helper.GetLowerCaseBoardType()
+	boardType := helper.GetBoardType()
 	begin := lvdb.GetKeyThreePhraseCryptoSealer(boardType, 0, nil)
 	// +1 to search in that range
 	end := lvdb.GetKeyThreePhraseCryptoSealer(boardType, 1+NextConstitutionIndex, nil)
