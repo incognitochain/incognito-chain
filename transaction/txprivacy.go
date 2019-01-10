@@ -55,7 +55,7 @@ func (self *Tx) UnmarshalJSON(data []byte) error {
 	meta, parseErr := metadata.ParseMetadata(temp.Metadata)
 	if parseErr != nil {
 		Logger.log.Error(parseErr)
-		return nil
+		return parseErr
 	}
 	self.SetMetadata(meta)
 
