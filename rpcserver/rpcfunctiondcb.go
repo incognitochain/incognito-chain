@@ -30,7 +30,6 @@ func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan
 }
 
 func (self RpcServer) handleCreateRawTxWithIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	var err error
 	arrayParams := common.InterfaceSlice(params)
 	// Req param #4: issuing request info
 	issuingReq := arrayParams[4].(map[string]interface{})
@@ -58,10 +57,10 @@ func (self RpcServer) handleCreateRawTxWithIssuingRequest(params interface{}, cl
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	byteArrays, err := json.Marshal(normalTx)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
+	byteArrays, err1 := json.Marshal(normalTx)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID:            normalTx.Hash().String(),
@@ -93,7 +92,6 @@ func (self RpcServer) handleCreateAndSendTxWithIssuingRequest(params interface{}
 }
 
 func (self RpcServer) handleCreateRawTxWithContractingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	var err error
 	metaType := metadata.ContractingRequestMeta
 	meta := metadata.NewContractingRequest(metaType)
 	normalTx, err := self.buildRawTransaction(params, meta)
@@ -102,10 +100,10 @@ func (self RpcServer) handleCreateRawTxWithContractingRequest(params interface{}
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	byteArrays, err := json.Marshal(normalTx)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
+	byteArrays, err1 := json.Marshal(normalTx)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID:            normalTx.Hash().String(),
@@ -151,17 +149,16 @@ func (self RpcServer) buildRawSealLv3VoteDCBProposalTransaction(
 }
 
 func (self RpcServer) handleCreateRawSealLv3VoteDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	var err error
 	tx, err := self.buildRawSealLv3VoteDCBProposalTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	byteArrays, err := json.Marshal(tx)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
+	byteArrays, err1 := json.Marshal(tx)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
@@ -206,17 +203,16 @@ func (self RpcServer) buildRawSealLv2VoteDCBProposalTransaction(
 }
 
 func (self RpcServer) handleCreateRawSealLv2VoteDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	var err error
 	tx, err := self.buildRawSealLv2VoteDCBProposalTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	byteArrays, err := json.Marshal(tx)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
+	byteArrays, err1 := json.Marshal(tx)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
@@ -267,17 +263,16 @@ func (self RpcServer) buildRawSealLv1VoteDCBProposalTransaction(
 }
 
 func (self RpcServer) handleCreateRawSealLv1VoteDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	var err error
 	tx, err := self.buildRawSealLv1VoteDCBProposalTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	byteArrays, err := json.Marshal(tx)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
+	byteArrays, err1 := json.Marshal(tx)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
@@ -327,17 +322,16 @@ func (self RpcServer) buildRawNormalVoteDCBProposalTransactionFromSealer(
 }
 
 func (self RpcServer) handleCreateRawNormalVoteDCBProposalTransactionFromSealer(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	var err error
 	tx, err := self.buildRawNormalVoteDCBProposalTransactionFromSealer(params)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	byteArrays, err := json.Marshal(tx)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
+	byteArrays, err1 := json.Marshal(tx)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
@@ -379,11 +373,10 @@ func (self RpcServer) buildRawNormalVoteDCBProposalTransactionFromOwner(
 }
 
 func (self RpcServer) handleCreateRawNormalVoteDCBProposalTransactionFromOwner(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	var err error
-	tx, err := self.buildRawNormalVoteDCBProposalTransactionFromOwner(params)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
+	tx, err1 := self.buildRawNormalVoteDCBProposalTransactionFromOwner(params)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 
 	byteArrays, err := json.Marshal(tx)
@@ -468,7 +461,6 @@ func (self RpcServer) handleCreateRawVoteDCBBoardTransaction(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *RPCError) {
-	var err error
 	tx, err := self.buildRawVoteDCBBoardTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
