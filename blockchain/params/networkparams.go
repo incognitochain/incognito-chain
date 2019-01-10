@@ -83,6 +83,19 @@ func NewSaleData(saleID []byte, endBlock int32, buyingAsset []byte, buyingAmount
 	}
 }
 
+func NewSaleDataFromJson(data interface{}) *SaleData {
+	saleDataData := data.(map[string]interface{})
+	saleData := NewSaleData(
+		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["saleID"])),
+		int32(saleDataData["endBlock"].(float64)),
+		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["buyingAsset"])),
+		uint64(saleDataData["buyingAmount"].(float64)),
+		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["sellingAsset"])),
+		uint64(saleDataData["sellingAmount"].(float64)),
+	)
+	return saleData
+}
+
 type RefundInfo struct {
 	ThresholdToLargeTx uint64
 	RefundAmount       uint64
@@ -107,13 +120,22 @@ func NewRefundInfoFromJson(data interface{}) *RefundInfo {
 	return refundInfo
 }
 
-type SaleDBCTOkensByUSDData struct {
+type SaleDCBTokensByUSDData struct {
 	Amount   uint64
 	EndBlock int32
 }
 
-func NewSaleDBCTOkensByUSDData(amount uint64, endBlock int32) *SaleDBCTOkensByUSDData {
-	return &SaleDBCTOkensByUSDData{Amount: amount, EndBlock: endBlock}
+func NewSaleDCBTokensByUSDData(amount uint64, endBlock int32) *SaleDCBTokensByUSDData {
+	return &SaleDCBTokensByUSDData{Amount: amount, EndBlock: endBlock}
+}
+
+func NewSaleDCBTokensByUSDDataFromJson(data interface{}) *SaleDCBTokensByUSDData {
+	saleDCBTokensByUSDDataData := data.(map[string]interface{})
+	saleDCBTokensByUSDData := NewSaleDCBTokensByUSDData(
+		uint64(saleDCBTokensByUSDDataData["amount"].(float64)),
+		int32(saleDCBTokensByUSDDataData["endBlock"].(float64)),
+	)
+	return saleDCBTokensByUSDData
 }
 
 type OracleNetwork struct {
@@ -181,7 +203,7 @@ func (refundInfo *RefundInfo) Hash() *common.Hash {
 	return &hash
 }
 
-func (sdt *SaleDBCTOkensByUSDData) Hash() *common.Hash {
+func (sdt *SaleDCBTokensByUSDData) Hash() *common.Hash {
 	record := string(sdt.Amount)
 	record += string(sdt.EndBlock)
 	hash := common.DoubleHashH([]byte(record))
