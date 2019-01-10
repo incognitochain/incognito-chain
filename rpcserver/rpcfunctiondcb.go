@@ -508,10 +508,20 @@ func (self RpcServer) buildRawSubmitDCBProposalTransaction(
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	NParams := len(arrayParams)
+	var err error
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	paymentAddr := senderKey.KeySet.PaymentAddress
+	_ = paymentAddr
+
 	meta := metadata.NewSubmitDCBProposalMetadataFromJson(arrayParams[NParams-1])
 	tx, err := self.buildRawTransaction(params, meta)
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	return tx, nil
