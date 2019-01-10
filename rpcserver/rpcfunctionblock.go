@@ -184,6 +184,9 @@ func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan s
 func (self RpcServer) handleGetBlocks(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := make([]jsonresult.GetBlockResult, 0)
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) != 2 {
+		arrayParams = append(arrayParams, 0.0, 0.0)
+	}
 	numBlock := int(arrayParams[0].(float64))
 	shardID := byte(arrayParams[1].(float64))
 	bestBlock := self.config.BlockChain.BestState.Shard[shardID].BestBlock
