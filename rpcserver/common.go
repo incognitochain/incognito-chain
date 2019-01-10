@@ -160,8 +160,8 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	// param #2: estimation fee coin per kb
 	estimateFeeCoinPerKb := int64(arrayParams[1].(float64))
 
-	// param #3: estimation fee coin per kb by numblock
-	numBlock := uint64(arrayParams[2].(float64))
+	// param #3: hasPrivacy flag
+	hasPrivacy := int(arrayParams[2].(float64)) > 0
 
 	// param #4: token params
 	tokenParamsRaw := arrayParams[3].(map[string]interface{})
@@ -230,7 +230,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	}
 
 	// check real fee per TxNormal
-	realFee := self.estimateFee(estimateFeeCoinPerKb, nil, nil, chainIdSender, numBlock)
+	realFee := self.estimateFee(estimateFeeCoinPerKb, nil, nil, chainIdSender, 0)
 
 	// if needing to pay fee
 	candidateOutputCoins := []*privacy.OutputCoin{}
@@ -247,6 +247,8 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 			}
 			candidateOutputCoins = append(candidateOutputCoins, candidateOutputCoinsForFee...)
 		}
+	} else {
+		hasPrivacy = false
 	}
 
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
@@ -259,6 +261,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		tokenParams,
 		listCustomTokens,
 		metaData,
+		hasPrivacy,
 	)
 	if err.(*transaction.TransactionError) != nil {
 		return nil, err
@@ -289,8 +292,8 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 	// param #2: estimation fee coin per kb
 	estimateFeeCoinPerKb := int64(arrayParams[1].(float64))
 
-	// param #3: estimation fee coin per kb by numblock
-	numBlock := uint64(arrayParams[2].(float64))
+	// param #3: hasPrivacy flag
+	hasPrivacy := int(arrayParams[2].(float64)) > 0
 
 	// param #4: token params
 	tokenParamsRaw := arrayParams[3].(map[string]interface{})
@@ -335,7 +338,7 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 	}
 
 	// check real fee per TxNormal
-	realFee := self.estimateFee(estimateFeeCoinPerKb, nil, nil, chainIdSender, numBlock)
+	realFee := self.estimateFee(estimateFeeCoinPerKb, nil, nil, chainIdSender, 0)
 
 	// if needing to pay fee
 	candidateOutputCoins := []*privacy.OutputCoin{}
@@ -352,6 +355,8 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 			}
 			candidateOutputCoins = append(candidateOutputCoins, candidateOutputCoinsForFee...)
 		}
+	} else {
+		hasPrivacy = false
 	}
 
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
@@ -364,6 +369,7 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 		tokenParams,
 		listCustomTokens,
 		*self.config.Database,
+		hasPrivacy,
 	)
 
 	if err.(*transaction.TransactionError) != nil {
@@ -374,6 +380,9 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 }
 
 func (self RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []*privacy.OutputCoin, paymentInfos []*privacy.PaymentInfo, chainID byte, numBlock uint64) uint64 {
+	if numBlock == 0 {
+		numBlock = 10
+	}
 	// check real fee(nano constant) per tx
 	var realFee uint64
 	estimateFeeCoinPerKb := uint64(0)
