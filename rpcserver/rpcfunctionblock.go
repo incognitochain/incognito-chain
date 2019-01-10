@@ -8,6 +8,7 @@ import (
 	"log"
 	"strconv"
 
+	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
@@ -243,15 +244,34 @@ func (self RpcServer) handleGetBlockHash(params interface{}, closeChan <-chan st
 			1.0,
 		}
 	}
-	shardID := byte(int(arrayParams[0].(float64)))
+
+	shardID := int(arrayParams[0].(float64))
 	height := uint64(arrayParams[1].(float64))
 
-	hash, err := self.config.BlockChain.GetShardBlockByHeight(height, shardID)
+	var hash *common.Hash
+	var err error
+	var beaconBlock *blockchain.BeaconBlock
+	var shardBlock *blockchain.ShardBlock
+
+	isGetBeacon := shardID == -1
+
+	if isGetBeacon {
+		beaconBlock, err = self.config.BlockChain.GetBeaconBlockByHeight(height)
+	} else {
+		shardBlock, err = self.config.BlockChain.GetShardBlockByHeight(height, byte(shardID))
+	}
 
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	return hash.Hash().String(), nil
+
+	if isGetBeacon {
+		hash = beaconBlock.Hash()
+	} else {
+		hash = shardBlock.Hash()
+	}
+	// return hash.Hash().String(), nil
+	return hash.String(), nil
 }
 
 // handleGetBlockHeader - return block header data
