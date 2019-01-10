@@ -28,13 +28,13 @@ func (self SellingBonds) GetID() *common.Hash {
 }
 
 func NewSellingBonds(
+	totalIssue uint64,
 	bondsToSell uint64,
 	bondPrice uint64,
 	maturity uint32,
 	buyBackPrice uint64,
 	startSellingAt uint32,
 	sellingWithin uint32,
-	totalIssue uint64,
 ) *SellingBonds {
 	return &SellingBonds{
 		TotalIssue:     totalIssue,
@@ -45,6 +45,20 @@ func NewSellingBonds(
 		StartSellingAt: startSellingAt,
 		SellingWithin:  sellingWithin,
 	}
+}
+
+func NewSellingBondsFromJson(data interface{}) *SellingBonds {
+	sellingBondsData := data.(map[string]interface{})
+	sellingBonds := NewSellingBonds(
+		uint64(sellingBondsData["totalIssue"].(float64)),
+		uint64(sellingBondsData["bondsToSell"].(float64)),
+		uint64(sellingBondsData["bondPrice"].(float64)),
+		uint32(sellingBondsData["maturity"].(float64)),
+		uint64(sellingBondsData["buyBackPrice"].(float64)),
+		uint32(sellingBondsData["startSellingAt"].(float64)),
+		uint32(sellingBondsData["sellingWithin"].(float64)),
+	)
+	return sellingBonds
 }
 
 type SaleData struct {
@@ -74,8 +88,23 @@ type RefundInfo struct {
 	RefundAmount       uint64
 }
 
-func NewRefundInfo(thresholdToLargeTx uint64, refundAmount uint64) *RefundInfo {
-	return &RefundInfo{ThresholdToLargeTx: thresholdToLargeTx, RefundAmount: refundAmount}
+func NewRefundInfo(
+	thresholdToLargeTx uint64,
+	refundAmount uint64,
+) *RefundInfo {
+	return &RefundInfo{
+		ThresholdToLargeTx: thresholdToLargeTx,
+		RefundAmount:       refundAmount,
+	}
+}
+
+func NewRefundInfoFromJson(data interface{}) *RefundInfo {
+	refundInfoData := data.(map[string]interface{})
+	refundInfo := NewRefundInfo(
+		uint64(refundInfoData["thresholdToLargeTx"].(float64)),
+		uint64(refundInfoData["refundAmount"].(float64)),
+	)
+	return refundInfo
 }
 
 type SaleDBCTOkensByUSDData struct {
@@ -98,6 +127,26 @@ type OracleNetwork struct {
 
 func NewOracleNetwork(oraclePubKeys [][]byte, wrongTimesAllowed uint8, quorum uint8, acceptableErrorMargin uint32, updateFrequency uint32, oracleRewardMultiplier uint8) *OracleNetwork {
 	return &OracleNetwork{OraclePubKeys: oraclePubKeys, WrongTimesAllowed: wrongTimesAllowed, Quorum: quorum, AcceptableErrorMargin: acceptableErrorMargin, UpdateFrequency: updateFrequency, OracleRewardMultiplier: oracleRewardMultiplier}
+}
+
+func NewOracleNetworkFromJson(data interface{}) *OracleNetwork {
+	oracleNetworkData := data.(map[string]interface{})
+
+	oraclePubKeysInterface := common.InterfaceSlice(oracleNetworkData["oraclePubKeys"])
+	oraclePubKeys := make([][]byte, 0)
+	for _, i := range oraclePubKeysInterface {
+		oraclePubKeys = append(oraclePubKeys, common.SliceInterfaceToSliceByte(common.InterfaceSlice(i)))
+	}
+
+	oracleNetwork := NewOracleNetwork(
+		oraclePubKeys,
+		uint8(oracleNetworkData["wrongTimesAllowed"].(float64)),
+		uint8(oracleNetworkData["quorum"].(float64)),
+		uint32(oracleNetworkData["acceptableErrorMargin"].(float64)),
+		uint32(oracleNetworkData["updateFrequency"].(float64)),
+		uint8(oracleNetworkData["oracleRewardMultiplier"].(float64)),
+	)
+	return oracleNetwork
 }
 
 func (saleData *SaleData) Hash() *common.Hash {
