@@ -38,9 +38,6 @@ type BlockChain struct {
 	config    Config
 	chainLock sync.RWMutex
 
-	newShardBlkCh  chan *ShardBlock
-	newBeaconBlkCh chan *BeaconBlock
-
 	//=====cache
 	beaconBlock        map[string][]byte
 	highestBeaconBlock string
@@ -56,8 +53,10 @@ type BlockChain struct {
 		Shards map[byte]ShardChainState
 		Beacon BeaconChainState
 	}
-	BeaconStateCh chan *PeerBeaconChainState
-	ShardStateCh  map[byte](chan *ShardChainState)
+	BeaconStateCh  chan *PeerBeaconChainState
+	newBeaconBlkCh chan *BeaconBlock
+	ShardStateCh   map[byte](chan *PeerShardChainState)
+	newShardBlkCh  map[byte](chan *ShardBlock)
 }
 type BestState struct {
 	Beacon *BestStateBeacon
@@ -137,8 +136,9 @@ func (self *BlockChain) Init(config *Config) error {
 	// 		chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns, bestState.BestBlock.Header.SalaryFund, bestState.BestBlock.Header.GOVConstitution)
 	// }
 	self.cQuitSync = make(chan struct{})
+	self.newShardBlkCh = make(map[byte](chan *ShardBlock))
 	self.syncStatus.Shard = make(map[byte](chan struct{}))
-	go self.SyncBeacon()
+	self.SyncBeacon()
 	// self.syncStatus.Lock()
 	// for _, shardID := range self.config.RelayShards {
 	// 	self.SyncShard(shardID)
@@ -319,7 +319,7 @@ func (self *BlockChain) initShardState(shardID byte) error {
 
 	// self.BestState.Shard[shardID].Init(initBlock)
 
-	err := self.ConnectBlock(initBlock)
+	err := self.InsertShardBlock(initBlock)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
