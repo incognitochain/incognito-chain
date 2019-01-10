@@ -2,6 +2,8 @@ package rpcserver
 
 import (
 	"encoding/hex"
+	"errors"
+	"log"
 	"net"
 	"strconv"
 
@@ -271,11 +273,16 @@ func (self RpcServer) handleCheckHashValue(params interface{}, closeChan <-chan 
 	)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) == 0 {
-		arrayParams[0] = ""
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected array params"))
+	}
+	hashParams, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected hash string value"))
 	}
 	// param #1: transaction Hash
-	Logger.log.Infof("Check hash value  input Param %+v", arrayParams[0].(string))
-	hash, _ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
+	// Logger.log.Infof("Check hash value  input Param %+v", arrayParams[0].(string))
+	log.Printf("Check hash value  input Param %+v", hashParams)
+	hash, _ := common.Hash{}.NewHashFromStr(hashParams)
 
 	// Check block
 	// _, err := self.config.BlockChain.GetBlockByHash(hash)
