@@ -2,7 +2,6 @@ package rpcserver
 
 import (
 	"encoding/json"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
@@ -511,18 +510,21 @@ func (self RpcServer) buildRawSubmitDCBProposalTransaction(
 	NParams := len(arrayParams)
 	meta := metadata.NewSubmitDCBProposalMetadataFromJson(arrayParams[NParams-1])
 	tx, err := self.buildRawTransaction(params, meta)
-	return tx, err
+	if err != nil {
+		return nil, err
+	}
+
+	return tx, nil
 }
 
 func (self RpcServer) handleCreateRawSubmitDCBProposalTransaction(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *RPCError) {
-	var err error
-	tx, err := self.buildRawSubmitDCBProposalTransaction(params)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
+	tx, err1 := self.buildRawSubmitDCBProposalTransaction(params)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 
 	byteArrays, err := json.Marshal(tx)
@@ -538,7 +540,6 @@ func (self RpcServer) handleCreateRawSubmitDCBProposalTransaction(
 }
 
 func (self RpcServer) handleSendRawSubmitDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	var err error
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckDate := arrayParams[0].(string)
