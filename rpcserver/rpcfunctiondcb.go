@@ -500,7 +500,7 @@ func (self RpcServer) buildRawSubmitDCBProposalTransaction(
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	NParams := len(arrayParams)
-	var err error
+
 	senderKeyParam := arrayParams[0]
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
 	if err != nil {
@@ -509,11 +509,16 @@ func (self RpcServer) buildRawSubmitDCBProposalTransaction(
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	paymentAddr := senderKey.KeySet.PaymentAddress
 	_ = paymentAddr
+	paymentAddressData := make(map[string]interface{})
+	paymentAddressData["pk"] = string(paymentAddr.Pk)
+	paymentAddressData["tk"] = string(paymentAddr.Tk)
+	newParams := arrayParams[NParams-1].(map[string]interface{})
+	newParams["paymentAddress"] = paymentAddressData
 
-	meta := metadata.NewSubmitDCBProposalMetadataFromJson(arrayParams[NParams-1])
-	tx, err := self.buildRawTransaction(params, meta)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+	meta := metadata.NewSubmitDCBProposalMetadataFromJson(newParams)
+	tx, err1 := self.buildRawTransaction(params, meta)
+	if err1 != nil {
+		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 
 	return tx, nil
@@ -557,9 +562,9 @@ func (self RpcServer) handleSendRawSubmitDCBProposalTransaction(params interface
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	hash, txDesc, err := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+	hash, txDesc, err1 := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	if err1 != nil {
+		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
