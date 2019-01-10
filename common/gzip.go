@@ -3,6 +3,7 @@ package common
 import (
 	"compress/gzip"
 	"bytes"
+	"io/ioutil"
 )
 
 func GZipToBytes(src []byte) ([]byte, error) {
@@ -27,17 +28,9 @@ func GZipFromBytes(src []byte) ([]byte, error) {
 	if err != nil {
 		return []byte{}, err
 	}
-	tmpBytes := make([]byte, 101024)
-	resultBytes := make([]byte, 0)
-	for {
-		l, err := gz.Read(tmpBytes)
-		if err != nil {
-			return []byte{}, err
-		}
-		resultBytes = append(resultBytes, tmpBytes[:l]...)
-		if l < 101024 {
-			break
-		}
+	resultBytes, err := ioutil.ReadAll(gz)
+	if err != nil {
+		return nil, err
 	}
 	if err := gz.Close(); err != nil {
 		return []byte{}, err
