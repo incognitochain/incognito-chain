@@ -467,7 +467,7 @@ func (self *ConnManager) processDiscoverPeers() {
 			// connect to other shard peers
 			self.handleRandPeersOfOtherShard(self.Config.ConsensusState.CurrentShard, self.Config.MaxPeersOtherShard, self.Config.MaxPeersOther, mPeers)
 			// connect to no shard peers
-			self.handleRandPeersOfNoShard(0, mPeers)
+			self.handleRandPeersOfNoShard(self.Config.MaxPeersNoShard, mPeers)
 		}
 	}
 }
