@@ -25,6 +25,7 @@ import (
 	"github.com/ninjadotorg/constant/netsync"
 	"github.com/ninjadotorg/constant/peer"
 	"github.com/ninjadotorg/constant/rewardagent"
+	"github.com/ninjadotorg/constant/rpcserver"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
 )
@@ -38,7 +39,7 @@ type Server struct {
 	connManager     *connmanager.ConnManager
 	blockChain      *blockchain.BlockChain
 	dataBase        database.DatabaseInterface
-	// rpcServer       *rpcserver.RpcServer
+	rpcServer       *rpcserver.RpcServer
 
 	memPool           *mempool.TxPool
 	shardToBeaconPool *mempool.ShardToBeaconPool
@@ -69,12 +70,12 @@ func (self *Server) setupRPCListeners() ([]net.Listener, error) {
 		Logger.log.Info("Disable TLS for RPC is false")
 		// Generate the TLS cert and key file if both don't already
 		// exist.
-		// if !fileExists(cfg.RPCKey) && !fileExists(cfg.RPCCert) {
-		// 	err := rpcserver.GenCertPair(cfg.RPCCert, cfg.RPCKey)
-		// 	if err != nil {
-		// 		return nil, err
-		// 	}
-		// }
+		if !fileExists(cfg.RPCKey) && !fileExists(cfg.RPCCert) {
+			err := rpcserver.GenCertPair(cfg.RPCCert, cfg.RPCKey)
+			if err != nil {
+				return nil, err
+			}
+		}
 		keyPair, err := tls.LoadX509KeyPair(cfg.RPCCert, cfg.RPCKey)
 		if err != nil {
 			return nil, err
@@ -315,36 +316,36 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			return errors.New("RPCS: No valid listen address")
 		}
 
-		// rpcConfig := rpcserver.RpcServerConfig{
-		// 	Listenters:    rpcListeners,
-		// 	RPCQuirks:     cfg.RPCQuirks,
-		// 	RPCMaxClients: cfg.RPCMaxClients,
-		// 	ChainParams:   chainParams,
-		// 	BlockChain:    self.blockChain,
-		// 	TxMemPool:     self.memPool,
-		// 	Server:        self,
-		// 	Wallet:        self.wallet,
-		// 	ConnMgr:       self.connManager,
-		// 	AddrMgr:       self.addrManager,
-		// 	RPCUser:       cfg.RPCUser,
-		// 	RPCPass:       cfg.RPCPass,
-		// 	RPCLimitUser:  cfg.RPCLimitUser,
-		// 	RPCLimitPass:  cfg.RPCLimitPass,
-		// 	DisableAuth:   cfg.RPCDisableAuth,
-		// 	// IsGenerateNode:  cfg.Generate,
-		// 	NodeRole:        cfg.NodeRole,
-		// 	FeeEstimator:    self.feeEstimator,
-		// 	ProtocolVersion: self.protocolVersion,
-		// 	Database:        &self.dataBase,
-		// }
-		// self.rpcServer = &rpcserver.RpcServer{}
-		// self.rpcServer.Init(&rpcConfig)
+		rpcConfig := rpcserver.RpcServerConfig{
+			Listenters:    rpcListeners,
+			RPCQuirks:     cfg.RPCQuirks,
+			RPCMaxClients: cfg.RPCMaxClients,
+			ChainParams:   chainParams,
+			BlockChain:    self.blockChain,
+			TxMemPool:     self.memPool,
+			Server:        self,
+			Wallet:        self.wallet,
+			ConnMgr:       self.connManager,
+			AddrMgr:       self.addrManager,
+			RPCUser:       cfg.RPCUser,
+			RPCPass:       cfg.RPCPass,
+			RPCLimitUser:  cfg.RPCLimitUser,
+			RPCLimitPass:  cfg.RPCLimitPass,
+			DisableAuth:   cfg.RPCDisableAuth,
+			// IsGenerateNode:  cfg.Generate,
+			NodeMode:        cfg.NodeMode,
+			FeeEstimator:    self.feeEstimator,
+			ProtocolVersion: self.protocolVersion,
+			Database:        &self.dataBase,
+		}
+		self.rpcServer = &rpcserver.RpcServer{}
+		self.rpcServer.Init(&rpcConfig)
 
-		// // Signal process shutdown when the RPC server requests it.
-		// go func() {
-		// 	<-self.rpcServer.RequestedProcessShutdown()
-		// 	shutdownRequestChannel <- struct{}{}
-		// }()
+		// Signal process shutdown when the RPC server requests it.
+		go func() {
+			<-self.rpcServer.RequestedProcessShutdown()
+			shutdownRequestChannel <- struct{}{}
+		}()
 	}
 
 	return nil
@@ -475,15 +476,15 @@ func (self Server) Start() {
 	self.waitGroup.Add(1)
 
 	go self.peerHandler()
-	// if !cfg.DisableRPC && self.rpcServer != nil {
-	// 	self.waitGroup.Add(1)
+	if !cfg.DisableRPC && self.rpcServer != nil {
+		self.waitGroup.Add(1)
 
-	// 	// Start the rebroadcastHandler, which ensures user tx received by
-	// 	// the RPC server are rebroadcast until being included in a block.
-	// 	//go self.rebroadcastHandler()
+		// Start the rebroadcastHandler, which ensures user tx received by
+		// the RPC server are rebroadcast until being included in a block.
+		//go self.rebroadcastHandler()
 
-	// 	self.rpcServer.Start()
-	// }
+		self.rpcServer.Start()
+	}
 
 	if cfg.NodeMode != "relay" {
 		err := self.consensusEngine.Start()

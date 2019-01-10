@@ -2,6 +2,8 @@ package rpcserver
 
 import (
 	"encoding/hex"
+	"errors"
+	"log"
 	"net"
 	"strconv"
 
@@ -193,7 +195,9 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 		}
 	}
 	result.Networks = networks
-	result.IncrementalFee = self.config.Wallet.Config.IncrementalFee
+	if self.config.Wallet != nil && self.config.Wallet.Config != nil {
+		result.IncrementalFee = self.config.Wallet.Config.IncrementalFee
+	}
 	result.Warnings = ""
 
 	return result, nil
@@ -268,12 +272,21 @@ func (self RpcServer) handleCheckHashValue(params interface{}, closeChan <-chan 
 		isBlock       bool
 	)
 	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) == 0 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected array params"))
+	}
+	hashParams, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected hash string value"))
+	}
 	// param #1: transaction Hash
-	Logger.log.Infof("Check hash value  input Param %+v", arrayParams[0].(string))
-	hash, _ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
+	// Logger.log.Infof("Check hash value  input Param %+v", arrayParams[0].(string))
+	log.Printf("Check hash value  input Param %+v", hashParams)
+	hash, _ := common.Hash{}.NewHashFromStr(hashParams)
 
 	// Check block
-	_, err := self.config.BlockChain.GetBlockByHash(hash)
+	// _, err := self.config.BlockChain.GetBlockByHash(hash)
+	_, err := self.config.BlockChain.GetShardBlockByHash(hash)
 	if err != nil {
 		isBlock = false
 	} else {
@@ -375,6 +388,10 @@ handleEstimateFee - RPC estimates the transaction fee per kilobyte that needs to
 func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// Param #1: —how many blocks the transaction may wait before being included
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil {
+		arrayParams = []interface{}{}
+		arrayParams = append(arrayParams, float64(0))
+	}
 	numBlock := uint64(arrayParams[0].(float64))
 	result := jsonresult.EstimateFeeResult{
 		FeeRate: make(map[string]uint64),

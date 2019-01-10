@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/ninjadotorg/constant/metadata"
 	"fmt"
+	"github.com/ninjadotorg/constant/common"
 )
 
 func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
@@ -205,7 +206,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	}
 
 	// check real fee per TxNormal
-	realFee := self.estimateFee(estimateFeeCoinPerKb, nil, nil, chainIdSender, numBlock)
+	realFee := self.estimateFee(estimateFeeCoinPerKb, nil, nil, shardIDSender, numBlock)
 
 	// if needing to pay fee
 	candidateOutputCoins := []*privacy.OutputCoin{}
@@ -213,7 +214,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		// list unspent tx for estimation fee
 		tokenID := &common.Hash{}
 		tokenID.SetBytes(common.ConstantID[:])
-		outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, tokenID)
+		outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, shardIDSender, tokenID)
 		// Use Knapsack to get candiate output coin
 		if len(outCoins) > 0 {
 			candidateOutputCoinsForFee, _, _, err1 := getUnspentCoinToSpent(outCoins, uint64(realFee))
@@ -293,7 +294,7 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 			if _, ok := listCustomTokens[*tokenID]; !ok {
 				return nil, NewRPCError(ErrUnexpected, errors.New("Invalid Token ID"))
 			}
-			outputTokens, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, tokenID)
+			outputTokens, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, shardIDSender, tokenID)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
@@ -310,7 +311,7 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 	}
 
 	// check real fee per TxNormal
-	realFee := self.estimateFee(estimateFeeCoinPerKb, nil, nil, chainIdSender, numBlock)
+	realFee := self.estimateFee(estimateFeeCoinPerKb, nil, nil, shardIDSender, numBlock)
 
 	// if needing to pay fee
 	candidateOutputCoins := []*privacy.OutputCoin{}
@@ -318,7 +319,7 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 		// list unspent tx for estimation fee
 		tokenID := &common.Hash{}
 		tokenID.SetBytes(common.ConstantID[:])
-		outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, tokenID)
+		outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, shardIDSender, tokenID)
 		// Use Knapsack to get candiate output coin
 		if len(outCoins) > 0 {
 			candidateOutputCoinsForFee, _, _, err1 := getUnspentCoinToSpent(outCoins, uint64(realFee))
@@ -353,7 +354,7 @@ func (self RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []*priv
 	var realFee uint64
 	estimateFeeCoinPerKb := uint64(0)
 	if defaultFee == -1 {
-		temp, _ := self.config.FeeEstimator[shardID].EstimateFee(numBlock)
+		temp, _ := self.config.FeeEstimator[chainID].EstimateFee(numBlock)
 		estimateFeeCoinPerKb = uint64(temp)
 	}
 	if estimateFeeCoinPerKb == 0 {
