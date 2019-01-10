@@ -92,6 +92,7 @@ const (
 	CreateRawVoteGOVBoardTx              = "createrawvotegovboardtx"
 	CreateAndSendVoteGOVBoardTransaction = "createandsendvotegovboardtransaction"
 	GetAmountVoteToken                   = "getamountvotetoken"
+	GetEncryptionFlag                    = "getencryptionflag"
 
 	// Submit Proposal
 	CreateAndSendSubmitDCBProposalTx = "createandsendsubmitdcbproposaltx"
