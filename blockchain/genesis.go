@@ -84,6 +84,8 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 		SalaryPerTx: salaryPerTx,
 		BasicSalary: basicSalary,
 		SellingBonds: &params.SellingBonds{
+			BondName:       "Bonds have 2 blocks maturity",
+			BondSymbol:     "BND2",
 			TotalIssue:     10000,
 			BondsToSell:    10000,
 			BondPrice:      100,

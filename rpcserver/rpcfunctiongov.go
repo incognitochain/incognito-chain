@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"encoding/json"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
@@ -61,6 +62,8 @@ func (self RpcServer) handleGetCurrentSellingBondTypes(params interface{}, close
 	}
 
 	bondTypeRes := jsonresult.GetBondTypeResultItem{
+		BondName:       sellingBondsParam.BondName,
+		BondSymbol:     sellingBondsParam.BondSymbol,
 		BondID:         bondID.String(),
 		StartSellingAt: sellingBondsParam.StartSellingAt,
 		EndSellingAt:   sellingBondsParam.StartSellingAt + sellingBondsParam.SellingWithin,

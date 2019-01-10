@@ -2,11 +2,14 @@ package params
 
 import (
 	"fmt"
+
 	"github.com/ninjadotorg/constant/common"
 )
 
 // Todo: @0xjackalope, @0xbunyip Check logic in Hash and Validate and rpcfunction because other will change params struct without modified these function
 type SellingBonds struct {
+	BondName       string
+	BondSymbol     string
 	TotalIssue     uint64
 	BondsToSell    uint64
 	BondPrice      uint64 // in Constant unit
@@ -28,6 +31,8 @@ func (self SellingBonds) GetID() *common.Hash {
 }
 
 func NewSellingBonds(
+	bondName string,
+	bondSymbol string,
 	totalIssue uint64,
 	bondsToSell uint64,
 	bondPrice uint64,
@@ -37,6 +42,8 @@ func NewSellingBonds(
 	sellingWithin uint32,
 ) *SellingBonds {
 	return &SellingBonds{
+		BondName:       bondName,
+		BondSymbol:     bondSymbol,
 		TotalIssue:     totalIssue,
 		BondsToSell:    bondsToSell,
 		BondPrice:      bondPrice,
@@ -50,6 +57,8 @@ func NewSellingBonds(
 func NewSellingBondsFromJson(data interface{}) *SellingBonds {
 	sellingBondsData := data.(map[string]interface{})
 	sellingBonds := NewSellingBonds(
+		sellingBondsData["bondName"].(string),
+		sellingBondsData["bondSymbol"].(string),
 		uint64(sellingBondsData["totalIssue"].(float64)),
 		uint64(sellingBondsData["bondsToSell"].(float64)),
 		uint64(sellingBondsData["bondPrice"].(float64)),
@@ -163,7 +172,9 @@ func (saleData *SaleData) Hash() *common.Hash {
 }
 
 func (sellingBonds *SellingBonds) Hash() *common.Hash {
-	record := string(sellingBonds.BondsToSell)
+	record := sellingBonds.BondName
+	record += sellingBonds.BondSymbol
+	record += string(sellingBonds.BondsToSell)
 	record += string(sellingBonds.BondPrice)
 	record += string(sellingBonds.Maturity)
 	record += string(sellingBonds.BuyBackPrice)
