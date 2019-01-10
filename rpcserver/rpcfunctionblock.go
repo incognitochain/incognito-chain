@@ -43,11 +43,17 @@ func (self RpcServer) handleGetBestBlock(params interface{}, closeChan <-chan st
 // handleGetBestBlock implements the getbestblock command.
 func (self RpcServer) handleGetBestBlockHash(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetBestBlockHashResult{
-		BestBlockHashes: make(map[byte]string),
+		// BestBlockHashes: make(map[byte]string),
+		BestBlockHashes: make(map[int]string),
 	}
 	for shardID, best := range self.config.BlockChain.BestState.Shard {
-		result.BestBlockHashes[shardID] = best.BestBlockHash.String()
+		result.BestBlockHashes[int(shardID)] = best.BestBlockHash.String()
 	}
+	beaconBestState := self.config.BlockChain.BestState.Beacon
+	if beaconBestState == nil {
+		return result, nil
+	}
+	result.BestBlockHashes[-1] = beaconBestState.BestBlockHash.String()
 	return result, nil
 }
 
