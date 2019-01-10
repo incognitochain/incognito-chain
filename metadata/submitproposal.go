@@ -27,19 +27,31 @@ func NewSubmitDCBProposalMetadata(DCBParams params.DCBParams, executeDuration ui
 }
 
 // this function should be in privacy package
-func NewPaymentAddress(b []byte) *privacy.PaymentAddress {
+func NewPaymentAddress(pk privacy.PublicKey, tk privacy.TransmissionKey) *privacy.PaymentAddress {
 	payment := privacy.PaymentAddress{}
-	payment.SetBytes(b)
+	payment.Pk = pk
+	payment.Tk = tk
 	return &payment
 }
 
+func NewPaymentAddressFromJson(data interface{}) *privacy.PaymentAddress {
+	paymentAddressData := data.(map[string]interface{})
+	x := paymentAddressData["pk"].(string)
+	_ = x
+	paymentAddress := NewPaymentAddress(
+		[]byte(paymentAddressData["pk"].(string)),
+		[]byte(paymentAddressData["tk"].(string)),
+	)
+	return paymentAddress
+}
+
 func NewSubmitDCBProposalMetadataFromJson(data interface{}) *SubmitDCBProposalMetadata {
-	rawData := data.(map[string]interface{})
+	SubmitDCBProposalData := data.(map[string]interface{})
 	meta := NewSubmitDCBProposalMetadata(
-		*params.NewDCBParamsFromJson(rawData["dcbParams"]),
-		uint32(rawData["executeDuration"].(float64)),
-		rawData["explanation"].(string),
-		NewPaymentAddress([]byte(rawData["paymentAdress"].(string))),
+		*params.NewDCBParamsFromJson(SubmitDCBProposalData["dcbParams"]),
+		uint32(SubmitDCBProposalData["executeDuration"].(float64)),
+		SubmitDCBProposalData["explanation"].(string),
+		NewPaymentAddressFromJson(SubmitDCBProposalData["paymentAddress"]),
 	)
 	return meta
 }

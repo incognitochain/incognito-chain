@@ -418,8 +418,8 @@ concludeBlock:
 	if block.Header.GOVConstitution.GOVParams.SellingBonds != nil {
 		block.Header.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= bondsSold
 	}
-	if block.Header.DCBConstitution.DCBParams.SaleDBCTOkensByUSDData != nil {
-		block.Header.DCBConstitution.DCBParams.SaleDBCTOkensByUSDData.Amount -= dcbTokensSold
+	if block.Header.DCBConstitution.DCBParams.SaleDCBTokensByUSDData != nil {
+		block.Header.DCBConstitution.DCBParams.SaleDCBTokensByUSDData.Amount -= dcbTokensSold
 	}
 
 	blockgen.updateOracleValues(&block, updatedOracleValues)
@@ -739,7 +739,7 @@ func (blockgen *BlkTmplGenerator) checkIssuingReqTx(
 		return true, dcbTokensSold
 	}
 	header := blockgen.chain.BestState[chainID].BestBlock.Header
-	saleDBCTOkensByUSDData := header.DCBConstitution.DCBParams.SaleDBCTOkensByUSDData
+	saleDBCTOkensByUSDData := header.DCBConstitution.DCBParams.SaleDCBTokensByUSDData
 	oracleParams := header.Oracle
 	dcbTokenPrice := uint64(1)
 	if oracleParams.DCBToken != 0 {
