@@ -313,6 +313,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	tokenParams *CustomTokenParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
 	metaData metadata.Metadata,
+	hasPrivacy bool,
 ) *TransactionError {
 	var err error
 	// create normal txCustomToken
@@ -321,7 +322,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 		paymentInfo,
 		inputCoin,
 		fee,
-		common.FalseValue,
+		hasPrivacy,
 		nil,
 		nil,
 		metaData)

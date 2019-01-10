@@ -61,7 +61,7 @@ func (self RpcServer) handleGetCurrentSellingBondTypes(params interface{}, close
 	}
 
 	bondTypeRes := jsonresult.GetBondTypeResultItem{
-		BondID:         bondID.GetBytes(),
+		BondID:         bondID.String(),
 		StartSellingAt: sellingBondsParam.StartSellingAt,
 		EndSellingAt:   sellingBondsParam.StartSellingAt + sellingBondsParam.SellingWithin,
 		Maturity:       sellingBondsParam.Maturity,
