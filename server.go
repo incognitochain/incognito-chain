@@ -703,7 +703,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	Logger.log.Info("Receive version message START")
 
 	pbk := ""
-	err := cashec.ValidateDataB58(msg.PublicKey, msg.SignDataB58, common.Int64ToBytes(msg.Timestamp))
+	err := cashec.ValidateDataB58(msg.PublicKey, msg.SignDataB58, []byte(peerConn.ListenerPeer.PeerID.Pretty()))
 	if err == nil {
 		pbk = msg.PublicKey
 	} else {
@@ -1143,7 +1143,7 @@ func (self *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	// ValidateTransaction Public Key from ProducerPrvKey
 	if peerConn.ListenerPeer.Config.UserKeySet != nil {
 		msg.(*wire.MessageVersion).PublicKey = peerConn.ListenerPeer.Config.UserKeySet.GetPublicKeyB58()
-		signDataB58, err := peerConn.ListenerPeer.Config.UserKeySet.SignDataB58(common.Int64ToBytes(msg.(*wire.MessageVersion).Timestamp))
+		signDataB58, err := peerConn.ListenerPeer.Config.UserKeySet.SignDataB58([]byte(peerConn.RemotePeer.PeerID.Pretty()))
 		if err == nil {
 			msg.(*wire.MessageVersion).SignDataB58 = signDataB58
 		}

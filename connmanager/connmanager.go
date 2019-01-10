@@ -215,6 +215,7 @@ func (self ConnManager) New(cfg *Config) *ConnManager {
 	self.discoveredPeers = make(map[string]*DiscoverPeerInfo)
 	self.ListeningPeers = make(map[string]*peer.Peer)
 	self.Config.ConsensusState = &ConsensusState{}
+	self.cDiscoveredPeers = make(chan struct{})
 	return &self
 }
 
@@ -358,7 +359,6 @@ func (self *ConnManager) DiscoverPeers(discoverPeerAddress string) {
 	Logger.log.Infof("Start Discover Peers : %s", discoverPeerAddress)
 	self.randShards = self.makeRandShards(SHARD_NUMBER)
 	self.discoverPeerAddress = discoverPeerAddress
-	self.cDiscoveredPeers = make(chan struct{})
 	for {
 		self.processDiscoverPeers()
 		select {
@@ -386,19 +386,6 @@ func (self *ConnManager) processDiscoverPeers() {
 		for _, listener := range self.Config.ListenerPeers {
 			var response []wire.RawPeer
 
-			var pbkB58 string
-			signDataB58 := ""
-			nowNano := time.Now().UnixNano()
-			if listener.Config.UserKeySet != nil {
-				pbkB58 = listener.Config.UserKeySet.GetPublicKeyB58()
-				Logger.log.Info("Start Process Discover Peers", pbkB58)
-				// sign data
-				signDataB58, err = listener.Config.UserKeySet.SignDataB58(common.Int64ToBytes(nowNano))
-				if err != nil {
-					Logger.log.Error(err)
-				}
-			}
-
 			externalAddress := self.Config.ExternalAddress
 			Logger.log.Info("Start Process Discover Peers ExternalAddress", externalAddress)
 
@@ -416,11 +403,22 @@ func (self *ConnManager) processDiscoverPeers() {
 				rawAddress = ""
 			}
 
+			var pbkB58 string
+			signDataB58 := ""
+			if listener.Config.UserKeySet != nil {
+				pbkB58 = listener.Config.UserKeySet.GetPublicKeyB58()
+				Logger.log.Info("Start Process Discover Peers", pbkB58)
+				// sign data
+				signDataB58, err = listener.Config.UserKeySet.SignDataB58([]byte(rawAddress))
+				if err != nil {
+					Logger.log.Error(err)
+				}
+			}
+
 			args := &server.PingArgs{
 				RawAddress: rawAddress,
 				PublicKey:  pbkB58,
 				SignData:   signDataB58,
-				Timestamp:  nowNano,
 			}
 			Logger.log.Infof("[Exchange Peers] Ping %+v", args)
 
