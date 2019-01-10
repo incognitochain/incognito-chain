@@ -70,7 +70,18 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 		return err
 	}
 	self.BestState.Shard[block.Header.ShardID].Update(block)
-	self.StoreShardBlockIndex(block)
+
+	if err = self.BestState.Shard[block.Header.ShardID].Update(block); err != nil {
+		return err
+	}
+
+	if err = self.StoreShardBlock(block); err != nil {
+		return err
+	}
+
+	if err = self.StoreShardBlockIndex(block); err != nil {
+		return err
+	}
 
 	// Process transaction db
 	if len(block.Body.Transactions) < 1 {
