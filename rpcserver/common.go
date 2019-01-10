@@ -104,7 +104,6 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 
 	// param #4: hasPrivacy flag: 1 or -1
 	hasPrivacy := int(arrayParams[3].(float64)) > 0
-	hasPrivacy = false
 	/********* END Fetch all params to *******/
 
 	/******* START choose output coins constant, which is used to create tx *****/
