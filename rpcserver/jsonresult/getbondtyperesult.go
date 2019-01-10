@@ -7,7 +7,7 @@ type GetBondTypeResult struct {
 type GetBondTypeResultItem struct {
 	BondName       string `json:"BondName"`
 	BondSymbol     string `json:"BondSymbol"`
-	BondID         []byte `json:"BondID"`
+	BondID         string `json:"BondID"`
 	StartSellingAt uint32 `json:"StartSellingAt"`
 	EndSellingAt   uint32 `json:"EndSellingAt"`
 	Maturity       uint32 `json:"Maturity"`
