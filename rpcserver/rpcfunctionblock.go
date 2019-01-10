@@ -17,27 +17,43 @@ import (
 // handleGetBestBlock implements the getbestblock command.
 func (self RpcServer) handleGetBestBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetBestBlockResult{
-		BestBlocks: make(map[string]jsonresult.GetBestBlockItem),
+		// BestBlocks: make(map[string]jsonresult.GetBestBlockItem),
+		BestBlocks: make(map[int]jsonresult.GetBestBlockItem),
 	}
 	for shardID, best := range self.config.BlockChain.BestState.Shard {
-		result.BestBlocks[strconv.Itoa(int(shardID))] = jsonresult.GetBestBlockItem{
-			// Height:   best.BestBlock.Header.GetHeight(),
+		// result.BestBlocks[strconv.Itoa(int(shardID))] = jsonresult.GetBestBlockItem{
+		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
 			Height:   best.BestBlock.Header.Height,
 			Hash:     best.BestBlockHash.String(),
 			TotalTxs: best.TotalTxns,
 		}
 	}
+	beaconBestState := self.config.BlockChain.BestState.Beacon
+	if beaconBestState == nil {
+		return result, nil
+	}
+	result.BestBlocks[-1] = jsonresult.GetBestBlockItem{
+		Height: beaconBestState.BestBlock.Header.Height,
+		Hash:   beaconBestState.BestBlockHash.String(),
+	}
+
 	return result, nil
 }
 
 // handleGetBestBlock implements the getbestblock command.
 func (self RpcServer) handleGetBestBlockHash(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetBestBlockHashResult{
-		BestBlockHashes: make(map[byte]string),
+		// BestBlockHashes: make(map[byte]string),
+		BestBlockHashes: make(map[int]string),
 	}
 	for shardID, best := range self.config.BlockChain.BestState.Shard {
-		result.BestBlockHashes[shardID] = best.BestBlockHash.String()
+		result.BestBlockHashes[int(shardID)] = best.BestBlockHash.String()
 	}
+	beaconBestState := self.config.BlockChain.BestState.Beacon
+	if beaconBestState == nil {
+		return result, nil
+	}
+	result.BestBlockHashes[-1] = beaconBestState.BestBlockHash.String()
 	return result, nil
 }
 
@@ -168,6 +184,9 @@ func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan s
 func (self RpcServer) handleGetBlocks(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := make([]jsonresult.GetBlockResult, 0)
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) != 2 {
+		arrayParams = append(arrayParams, 0.0, 0.0)
+	}
 	numBlock := int(arrayParams[0].(float64))
 	shardID := byte(arrayParams[1].(float64))
 	bestBlock := self.config.BlockChain.BestState.Shard[shardID].BestBlock
@@ -196,11 +215,12 @@ getblockchaininfo RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetBlockChainInfoResult{
-		ChainName:  self.config.ChainParams.Name,
-		BestBlocks: make(map[byte]jsonresult.GetBestBlockItem),
+		ChainName: self.config.ChainParams.Name,
+		// BestBlocks: make(map[byte]jsonresult.GetBestBlockItem),
+		BestBlocks: make(map[int]jsonresult.GetBestBlockItem),
 	}
 	for shardID, bestState := range self.config.BlockChain.BestState.Shard {
-		result.BestBlocks[shardID] = jsonresult.GetBestBlockItem{
+		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
 			// Height:   bestState.BestBlock.Header.GetHeight(),
 			Height:     bestState.BestBlock.Header.Height,
 			Hash:       bestState.BestBlockHash.String(),
@@ -211,6 +231,13 @@ func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-ch
 			BlockProducer:    bestState.BestBlock.Header.Producer,
 			BlockProducerSig: bestState.BestBlock.ProducerSig,
 		}
+	}
+	beaconBestState := self.config.BlockChain.BestState.Beacon
+	result.BestBlocks[-1] = jsonresult.GetBestBlockItem{
+		Height:           beaconBestState.BestBlock.Header.Height,
+		Hash:             beaconBestState.BestBlockHash.String(),
+		BlockProducer:    beaconBestState.BestBlock.Header.Producer,
+		BlockProducerSig: beaconBestState.BestBlock.ProducerSig,
 	}
 	return result, nil
 }
@@ -223,10 +250,15 @@ func (self RpcServer) handleGetBlockCount(params interface{}, closeChan <-chan s
 	if !ok {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected get float number params"))
 	}
-	shardID := byte(int(params.(float64)))
-	// if self.config.BlockChain.BestState != nil && self.config.BlockChain.BestState[shardID] != nil && self.config.BlockChain.BestState[shardID].BestBlock != nil {
-	// 	return self.config.BlockChain.BestState[shardID].BestBlock.Header.Height + 1, nil
-	// }
+	paramNumber := int(params.(float64))
+	shardID := byte(paramNumber)
+	isGetBeacon := paramNumber == -1
+	if isGetBeacon {
+		if self.config.BlockChain.BestState != nil && self.config.BlockChain.BestState.Beacon != nil && self.config.BlockChain.BestState.Beacon.BestBlock != nil {
+			return self.config.BlockChain.BestState.Beacon.BestBlock.Header.Height, nil
+		}
+	}
+
 	if self.config.BlockChain.BestState != nil && self.config.BlockChain.BestState.Shard[shardID] != nil && self.config.BlockChain.BestState.Shard[shardID].BestBlock != nil {
 		return self.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height + 1, nil
 	}
