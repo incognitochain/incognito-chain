@@ -319,7 +319,7 @@ func (self *BlockChain) initShardState(shardID byte) error {
 
 	// self.BestState.Shard[shardID].Init(initBlock)
 
-	err := self.ConnectBlock(initBlock)
+	err := self.InsertShardBlock(initBlock)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
