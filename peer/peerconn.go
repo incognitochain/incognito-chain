@@ -144,12 +144,12 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 		if str != DelimMessageStr {
 			go func(msgStr string) {
 				// Parse Message header from last 24 bytes header message
-				jsonDecodeBytes, _ := hex.DecodeString(msgStr)
+				jsonDecodeBytesRaw, _ := hex.DecodeString(msgStr)
 
 				// unzip data before process
-				jsonDecodeBytes, err := common.GZipFromBytes(jsonDecodeBytes)
+				jsonDecodeBytes, err := common.GZipFromBytes(jsonDecodeBytesRaw)
 				if err != nil {
-					Logger.log.Error("Can unzip from message")
+					Logger.log.Error("Can not unzip from message")
 					Logger.log.Error(err)
 					return
 				}
@@ -175,7 +175,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 							fS := messageHeader[wire.MessageCmdTypeSize+1]
 							if *cShard != fS {
 								if self.Config.MessageListeners.PushRawBytesToShard != nil {
-									self.Config.MessageListeners.PushRawBytesToShard(self, &jsonDecodeBytes, *cShard)
+									self.Config.MessageListeners.PushRawBytesToShard(self, &jsonDecodeBytesRaw, *cShard)
 								}
 								return
 							}
@@ -185,7 +185,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 						fT := messageHeader[wire.MessageCmdTypeSize]
 						if fT == MESSAGE_TO_BEACON && cRole != "beacon" {
 							if self.Config.MessageListeners.PushRawBytesToBeacon != nil {
-								self.Config.MessageListeners.PushRawBytesToBeacon(self, &jsonDecodeBytes)
+								self.Config.MessageListeners.PushRawBytesToBeacon(self, &jsonDecodeBytesRaw)
 							}
 							return
 						}
