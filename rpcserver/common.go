@@ -13,6 +13,9 @@ import (
 )
 
 func (self RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.PaymentInfo, estimateFeeCoinPerKb int64, numBlock uint64, keyset *wallet.Key, chainIdSender byte) ([]*privacy.InputCoin, uint64, *RPCError) {
+	if numBlock == 0 {
+		numBlock = 8
+	}
 	// calculate total amount to send
 	totalAmmount := uint64(0)
 	for _, receiver := range paymentInfos {
@@ -99,12 +102,13 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 	// param #3: estimation fee nano constant per kb
 	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
 
-	// param #4: estimation fee coin per kb by numblock
-	numBlock := uint64(arrayParams[3].(float64))
+	// param #4: hasPrivacy flag: 1 or -1
+	hasPrivacy := int(arrayParams[3].(float64)) > 0
+	hasPrivacy = false
 	/********* END Fetch all params to *******/
 
 	/******* START choose output coins constant, which is used to create tx *****/
-	inputCoins, realFee, err := self.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, numBlock, senderKey, chainIdSender)
+	inputCoins, realFee, err := self.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKey, chainIdSender)
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
@@ -120,7 +124,7 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 		paymentInfos,
 		inputCoins,
 		realFee,
-		false,
+		hasPrivacy,
 		*self.config.Database,
 		nil, // use for constant coin -> nil is valid
 		meta,
