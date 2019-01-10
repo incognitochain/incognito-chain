@@ -1,7 +1,8 @@
 package jsonresult
 
 type GetBestBlockResult struct {
-	BestBlocks map[string]GetBestBlockItem `json:"BestBlocks"`
+	// BestBlocks map[string]GetBestBlockItem `json:"BestBlocks"`
+	BestBlocks map[int]GetBestBlockItem `json:"BestBlocks"`
 }
 
 type GetBestBlockItem struct {

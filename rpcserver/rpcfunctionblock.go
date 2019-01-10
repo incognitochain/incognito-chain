@@ -17,16 +17,26 @@ import (
 // handleGetBestBlock implements the getbestblock command.
 func (self RpcServer) handleGetBestBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetBestBlockResult{
-		BestBlocks: make(map[string]jsonresult.GetBestBlockItem),
+		// BestBlocks: make(map[string]jsonresult.GetBestBlockItem),
+		BestBlocks: make(map[int]jsonresult.GetBestBlockItem),
 	}
 	for shardID, best := range self.config.BlockChain.BestState.Shard {
-		result.BestBlocks[strconv.Itoa(int(shardID))] = jsonresult.GetBestBlockItem{
-			// Height:   best.BestBlock.Header.GetHeight(),
+		// result.BestBlocks[strconv.Itoa(int(shardID))] = jsonresult.GetBestBlockItem{
+		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
 			Height:   best.BestBlock.Header.Height,
 			Hash:     best.BestBlockHash.String(),
 			TotalTxs: best.TotalTxns,
 		}
 	}
+	beaconBestState := self.config.BlockChain.BestState.Beacon
+	if beaconBestState == nil {
+		return result, nil
+	}
+	result.BestBlocks[-1] = jsonresult.GetBestBlockItem{
+		Height: beaconBestState.BestBlock.Header.Height,
+		Hash:   beaconBestState.BestBlockHash.String(),
+	}
+
 	return result, nil
 }
 
