@@ -1,7 +1,9 @@
 package constantpos
 
 import (
+	"fmt"
 	"math/big"
+	"sort"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -11,9 +13,9 @@ import (
 )
 
 type bftCommittedSig struct {
-	Pubkey        string
-	ValidatorsIdx []int
-	Sig           string
+	Pubkey         string
+	ValidatorsIdxR []int
+	Sig            string
 }
 
 type multiSigScheme struct {
@@ -26,10 +28,11 @@ type multiSigScheme struct {
 	}
 	//user data user for combine sig
 	combine struct {
-		CommitSig        string
-		R                string
-		ValidatorsIdx    []int
-		SigningCommittee []string
+		CommitSig           string
+		R                   string
+		ValidatorsIdxR      []int
+		ValidatorsIdxAggSig []int
+		SigningCommittee    []string
 	}
 	cryptoScheme *privacy.MultiSigScheme
 }
@@ -79,10 +82,10 @@ func (self *multiSigScheme) SignData(RiList map[string][]byte) error {
 		}
 		RCombined = RCombined.Add(listROfSigners[counter])
 		// phaseData.ValidatorsIdx[counter] = sort.SearchStrings(self.Committee, szPubKey)
-		self.combine.ValidatorsIdx = append(self.combine.ValidatorsIdx, common.IndexOfStr(szPubKey, self.combine.SigningCommittee))
+		self.combine.ValidatorsIdxR = append(self.combine.ValidatorsIdxR, common.IndexOfStr(szPubKey, self.combine.SigningCommittee))
 		counter++
 	}
-
+	sort.Ints(self.combine.ValidatorsIdxAggSig)
 	//Todo Sig block with R Here
 
 	commitSig := self.cryptoScheme.Keyset.SignMultiSig(self.dataToSig.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(self.personal.r))
@@ -124,6 +127,9 @@ func (self *multiSigScheme) VerifyCommitSig(validatorPk string, commitSig string
 }
 
 func (self *multiSigScheme) CombineSigs(commitSigs []bftCommittedSig) (string, error) {
+
+	//TODO: Hy include valSig.ValidatorsIdxR in aggregatedSig
+
 	listSigOfSigners := make([]*privacy.SchnMultiSig, len(commitSigs))
 	for i, valSig := range commitSigs {
 		listSigOfSigners[i] = new(privacy.SchnMultiSig)
@@ -132,7 +138,11 @@ func (self *multiSigScheme) CombineSigs(commitSigs []bftCommittedSig) (string, e
 			return "", err
 		}
 		listSigOfSigners[i].SetBytes(bytesSig)
+		self.combine.ValidatorsIdxAggSig = append(self.combine.ValidatorsIdxAggSig, common.IndexOfStr(valSig.Pubkey, self.combine.SigningCommittee))
 	}
+	sort.Ints(self.combine.ValidatorsIdxAggSig)
 	aggregatedSig := self.cryptoScheme.CombineMultiSig(listSigOfSigners)
+	fmt.Println("aaaaaaaaaaaaaaaaaaaa", len(commitSigs))
+	// fmt.Println("bbbbbbbbbbbbbbbbbbbb", commitSigs[0], commitSigs[1], commitSigs[2])
 	return base58.Base58Check{}.Encode(aggregatedSig.Bytes(), byte(0x00)), nil
 }

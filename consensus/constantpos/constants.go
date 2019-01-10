@@ -1,9 +1,7 @@
 package constantpos
 
 const (
-	ProposeTimeout = 2 //in second
-	ListenTimeout  = 40
-	PrepareTimeout = 10
-	CommitTimeout  = 10
-	ReplyTimeout   = 5
+	ListenTimeout  = 30 //in second
+	PrepareTimeout = 6
+	CommitTimeout  = 6
 )

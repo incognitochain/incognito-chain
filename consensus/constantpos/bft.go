@@ -60,7 +60,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 		default:
 			switch self.phase {
 			case "propose":
-				time.Sleep(1 * time.Second)
+				time.Sleep(2 * time.Second)
 				if layer == "beacon" {
 					newBlock, err := self.BlockGen.NewBlockBeacon(&self.UserKeySet.PaymentAddress, &self.UserKeySet.PrivateKey)
 					if err != nil {
@@ -106,6 +106,12 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 							if layer == "beacon" {
 								pendingBlk := blockchain.BeaconBlock{}
 								pendingBlk.UnmarshalJSON(msgPropose.(*wire.MessageBFTPropose).Block)
+								blkHash := pendingBlk.Header.Hash()
+								err := cashec.ValidateDataB58(pendingBlk.Header.Producer, pendingBlk.ProducerSig, blkHash.GetBytes())
+								if err != nil {
+									Logger.log.Error(err)
+									continue
+								}
 								self.Chain.VerifyPreSignBeaconBlock(&pendingBlk)
 								self.pendingBlock = &pendingBlk
 								self.multiSigScheme.dataToSig = pendingBlk.Header.Hash()
@@ -133,7 +139,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 				})
 				time.AfterFunc(1500*time.Millisecond, func() {
 					fmt.Println("Sending out prepare msg")
-					msg, err := MakeMsgBFTPrepare(self.multiSigScheme.personal.Ri, self.UserKeySet.GetPublicKeyB58())
+					msg, err := MakeMsgBFTPrepare(self.multiSigScheme.personal.Ri, self.UserKeySet.GetPublicKeyB58(), self.multiSigScheme.dataToSig.String())
 					if err != nil {
 						Logger.log.Error(err)
 						return
@@ -154,15 +160,15 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 					case msgPrepare := <-self.cBFTMsg:
 						if msgPrepare.MessageType() == wire.CmdBFTPrepare {
 							fmt.Println("Prepare msg received")
-							if common.IndexOfStr(msgPrepare.(*wire.MessageBFTPrepare).Pubkey, self.RoleData.Committee) >= 0 {
+							if common.IndexOfStr(msgPrepare.(*wire.MessageBFTPrepare).Pubkey, self.RoleData.Committee) >= 0 && (self.multiSigScheme.dataToSig.String() == msgPrepare.(*wire.MessageBFTPrepare).BlkHash) {
 								collectedRiList[msgPrepare.(*wire.MessageBFTPrepare).Pubkey] = msgPrepare.(*wire.MessageBFTPrepare).Ri
 							}
 						}
 					case <-self.cTimeout:
 						//Use collected Ri to calc R & get ValidatorsIdx if len(Ri) > 1/2size(committee)
 						// then sig block with this R
-						if len(collectedRiList) == 0 {
-							return nil, errors.New("Didn't receive any prepare phase msg")
+						if len(collectedRiList) < (len(self.RoleData.Committee) >> 1) {
+							return nil, errors.New("Didn't receive enough Ri to continue")
 						}
 						err := self.multiSigScheme.SignData(collectedRiList)
 						if err != nil {
@@ -175,13 +181,13 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 				}
 			case "commit":
 				fmt.Println("Commit phase")
-				time.AfterFunc(CommitTimeout*time.Second, func() {
+				cmTimeout := time.AfterFunc(CommitTimeout*time.Second, func() {
 					fmt.Println("Commit phase timeout")
 					close(self.cTimeout)
 				})
 
 				time.AfterFunc(1500*time.Millisecond, func() {
-					msg, err := MakeMsgBFTCommit(self.multiSigScheme.combine.CommitSig, self.multiSigScheme.combine.R, self.multiSigScheme.combine.ValidatorsIdx, self.UserKeySet.GetPublicKeyB58())
+					msg, err := MakeMsgBFTCommit(self.multiSigScheme.combine.CommitSig, self.multiSigScheme.combine.R, self.multiSigScheme.combine.ValidatorsIdxR, self.UserKeySet.GetPublicKeyB58())
 					if err != nil {
 						Logger.log.Error(err)
 						return
@@ -199,38 +205,13 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 
 				phaseData.Sigs = make(map[string][]bftCommittedSig)
 				phaseData.Sigs[self.multiSigScheme.combine.R] = append(phaseData.Sigs[self.multiSigScheme.combine.R], bftCommittedSig{
-					Pubkey:        self.UserKeySet.GetPublicKeyB58(),
-					Sig:           self.multiSigScheme.combine.CommitSig,
-					ValidatorsIdx: self.multiSigScheme.combine.ValidatorsIdx,
+					Pubkey:         self.UserKeySet.GetPublicKeyB58(),
+					Sig:            self.multiSigScheme.combine.CommitSig,
+					ValidatorsIdxR: self.multiSigScheme.combine.ValidatorsIdxR,
 				})
 				// commitphase:
 				for {
 					select {
-					case msgCommit := <-self.cBFTMsg:
-						if msgCommit.MessageType() == wire.CmdBFTCommit {
-							fmt.Println("Commit msg received")
-							newSig := bftCommittedSig{
-								Pubkey:        msgCommit.(*wire.MessageBFTCommit).Pubkey,
-								ValidatorsIdx: msgCommit.(*wire.MessageBFTCommit).ValidatorsIdx,
-								Sig:           msgCommit.(*wire.MessageBFTCommit).CommitSig,
-							}
-							R := msgCommit.(*wire.MessageBFTCommit).R
-
-							//Check that Validators Index array in newSig and Validators Index array in each of sig have the same R are equality
-							// for _, valSig := range phaseData.Sigs[R] {
-							// 	for i, value := range valSig.ValidatorsIdx {
-							// 		if value != newSig.ValidatorsIdx[i] {
-							// 			return
-							// 		}
-							// 	}
-							// }
-
-							err := self.multiSigScheme.VerifyCommitSig(newSig.Pubkey, newSig.Sig, R, newSig.ValidatorsIdx)
-							if err != nil {
-								return nil, err
-							}
-							phaseData.Sigs[R] = append(phaseData.Sigs[R], newSig)
-						}
 					case <-self.cTimeout:
 						//Combine collected Sigs with the same R that has the longest list must has size > 1/2size(committee)
 						var szRCombined string
@@ -256,8 +237,11 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 						}
 						// fmt.Println(AggregatedSig.VerifyMultiSig(blockData.GetBytes(), listPubkeyOfSigners, nil, nil))
 
-						ValidatorsIdx := make([]int, len(phaseData.Sigs[szRCombined][0].ValidatorsIdx))
-						copy(ValidatorsIdx, phaseData.Sigs[szRCombined][0].ValidatorsIdx)
+						// ValidatorsIdx := make([]int, len(phaseData.Sigs[szRCombined][0].ValidatorsIdx))
+						// copy(ValidatorsIdx, phaseData.Sigs[szRCombined][0].ValidatorsIdx)
+
+						ValidatorsIdx := make([]int, len(self.multiSigScheme.combine.ValidatorsIdxAggSig))
+						copy(ValidatorsIdx, self.multiSigScheme.combine.ValidatorsIdxAggSig)
 
 						fmt.Println("\n \n Block consensus reach", ValidatorsIdx, AggregatedSig, "\n")
 
@@ -272,6 +256,41 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 						}
 
 						return self.pendingBlock, nil
+					case msgCommit := <-self.cBFTMsg:
+						if msgCommit.MessageType() == wire.CmdBFTCommit {
+							fmt.Println("Commit msg received")
+							newSig := bftCommittedSig{
+								Pubkey:         msgCommit.(*wire.MessageBFTCommit).Pubkey,
+								ValidatorsIdxR: msgCommit.(*wire.MessageBFTCommit).ValidatorsIdx,
+								Sig:            msgCommit.(*wire.MessageBFTCommit).CommitSig,
+							}
+							R := msgCommit.(*wire.MessageBFTCommit).R
+
+							//Check that Validators Index array in newSig and Validators Index array in each of sig have the same R are equality
+							// for _, valSig := range phaseData.Sigs[R] {
+							// 	for i, value := range valSig.ValidatorsIdx {
+							// 		if value != newSig.ValidatorsIdx[i] {
+							// 			return
+							// 		}
+							// 	}
+							// }
+
+							err := self.multiSigScheme.VerifyCommitSig(newSig.Pubkey, newSig.Sig, R, newSig.ValidatorsIdxR)
+							if err != nil {
+								return nil, err
+							}
+							phaseData.Sigs[R] = append(phaseData.Sigs[R], newSig)
+							if len(phaseData.Sigs[R]) > (len(self.RoleData.Committee) >> 1) {
+								cmTimeout.Stop()
+								fmt.Println("Collected enough R")
+								select {
+								case <-self.cTimeout:
+									continue
+								default:
+									close(self.cTimeout)
+								}
+							}
+						}
 					}
 				}
 			}

@@ -35,6 +35,7 @@ func (self *BlockChain) SyncBeacon() {
 	Logger.log.Info("Beacon synchronzation started")
 	self.BeaconStateCh = make(chan *PeerBeaconChainState)
 	self.syncStatus.Beacon = true
+	self.newBeaconBlkCh = make(chan *BeaconBlock)
 	var pendingBlock map[uint64]*BeaconBlock
 	pendingBlock = make(map[uint64]*BeaconBlock)
 	go func() {
@@ -42,9 +43,6 @@ func (self *BlockChain) SyncBeacon() {
 		for {
 			select {
 			case beaconState := <-self.BeaconStateCh:
-				fmt.Println()
-				fmt.Println(self.BestState.Beacon.BeaconHeight, beaconState.State)
-				fmt.Println()
 				if self.BestState.Beacon.BeaconHeight < beaconState.State.Height {
 					if self.knownChainState.Beacon.Height < beaconState.State.Height {
 						self.knownChainState.Beacon = *beaconState.State
@@ -76,9 +74,12 @@ func (self *BlockChain) SyncBeacon() {
 		case <-self.cQuitSync:
 			return
 		case newBlk := <-self.newBeaconBlkCh:
+			fmt.Println("Beacon block received")
 			if self.BestState.Beacon.BeaconHeight < newBlk.Header.Height {
-				err := cashec.ValidateDataB58(newBlk.Header.Producer, newBlk.ProducerSig, []byte(newBlk.Header.Hash().String()))
+				blkHash := newBlk.Header.Hash()
+				err := cashec.ValidateDataB58(newBlk.Header.Producer, newBlk.ProducerSig, blkHash.GetBytes())
 				if err != nil {
+					Logger.log.Error(err)
 					continue
 				} else {
 					if self.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
@@ -104,7 +105,12 @@ func (self *BlockChain) RequestSyncShard(shardID byte) {
 }
 
 func (self *BlockChain) StopSyncShard(shardID byte) {
-
+	self.syncStatus.Lock()
+	defer self.syncStatus.Unlock()
+	if _, ok := self.syncStatus.Shard[shardID]; ok {
+		close(self.syncStatus.Shard[shardID])
+		delete(self.syncStatus.Shard, shardID)
+	}
 }
 
 func (self *BlockChain) GetCurrentSyncShards() []byte {

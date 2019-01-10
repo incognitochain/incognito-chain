@@ -6,20 +6,19 @@ import (
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
-	"time"
 	"github.com/ninjadotorg/constant/common"
 )
 
 type MessageMsgCheck struct {
 	HashStr   string
-	Timestamp time.Time
+	Timestamp int64
 }
 
 func (self *MessageMsgCheck) Hash() string {
 	rawBytes := make([]byte, 0)
 	rawBytes = append(rawBytes, []byte(self.MessageType())...)
 	rawBytes = append(rawBytes, []byte(self.HashStr)...)
-	rawBytes = append(rawBytes, common.Int64ToBytes(self.Timestamp.UnixNano())...)
+	rawBytes = append(rawBytes, common.Int64ToBytes(self.Timestamp)...)
 	return common.HashH(rawBytes).String()
 }
 

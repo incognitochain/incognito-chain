@@ -173,6 +173,10 @@ func (self *BlockChain) InsertBeaconBlock(block *BeaconBlock) error {
 	if err := self.config.DataBase.StoreBeaconBlock(block); err != nil {
 		return err
 	}
+	blockHash := block.Hash()
+	if err := self.config.DataBase.StoreBeaconBlockIndex(blockHash, block.Header.Height); err != nil {
+		return err
+	}
 	//=========Remove shard block in beacon pool
 	Logger.log.Infof("Remove block from pool %+v \n", *block.Hash())
 	shardToBeaconMap := make(map[byte]uint64)
@@ -390,7 +394,7 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 	// self.lock.Lock()
 	// defer self.lock.Unlock()
 
-	if len(self.BeaconCommittee) != len(block.ValidatorsIdx) {
+	if len(block.ValidatorsIdx) < (len(self.BeaconCommittee) >> 1) {
 		return NewBlockChainError(SignatureError, errors.New("Block validators and Beacon committee is not compatible"))
 	}
 	//=============Verify producer signature

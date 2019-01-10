@@ -3,8 +3,6 @@ package wire
 import (
 	"encoding/hex"
 	"encoding/json"
-	"time"
-
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -16,7 +14,7 @@ const (
 
 type MessageVersion struct {
 	ProtocolVersion  string
-	Timestamp        time.Time
+	Timestamp        int64
 	RemoteAddress    common.SimpleAddr
 	RawRemoteAddress string
 	RemotePeerId     peer.ID

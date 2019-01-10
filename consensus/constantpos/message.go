@@ -279,7 +279,7 @@ func MakeMsgBFTPropose(block json.RawMessage) (wire.Message, error) {
 	return msg, nil
 }
 
-func MakeMsgBFTPrepare(Ri []byte, pubkey string) (wire.Message, error) {
+func MakeMsgBFTPrepare(Ri []byte, pubkey string, blkHash string) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTPrepare)
 	if err != nil {
 		Logger.log.Error(err)
@@ -288,6 +288,7 @@ func MakeMsgBFTPrepare(Ri []byte, pubkey string) (wire.Message, error) {
 	}
 	msg.(*wire.MessageBFTPrepare).Ri = Ri
 	msg.(*wire.MessageBFTPrepare).Pubkey = pubkey
+	msg.(*wire.MessageBFTPrepare).BlkHash = blkHash
 	return msg, nil
 }
 
