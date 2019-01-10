@@ -586,7 +586,7 @@ func (self RpcServer) buildRawSubmitGOVProposalTransaction(
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	NParams := len(arrayParams)
-	GOVParams := *params2.NewGOVParamsFromRPC(arrayParams[NParams-4])
+	GOVParams := *params2.NewGOVParamsFromJson(arrayParams[NParams-4])
 	executeDuration := arrayParams[NParams-3].(uint32)
 	explanation := arrayParams[NParams-2].(string)
 	paymentData := []byte(arrayParams[NParams-1].(string))

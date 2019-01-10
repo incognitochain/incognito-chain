@@ -37,12 +37,12 @@ type DCBParams struct {
 
 func NewDCBParams(
 	saleData *SaleData,
- minLoanResponseRequire uint8,
- minCMBApprovalRequire uint8,
- lateWithdrawResponseFine uint64,
-		 saleDBCTOkensByUSDData *SaleDBCTOkensByUSDData,
- loanParams []LoanParams,
- ) *DCBParams {
+	minLoanResponseRequire uint8,
+	minCMBApprovalRequire uint8,
+	lateWithdrawResponseFine uint64,
+	saleDBCTOkensByUSDData *SaleDBCTOkensByUSDData,
+	loanParams []LoanParams,
+) *DCBParams {
 	return &DCBParams{SaleData: saleData, MinLoanResponseRequire: minLoanResponseRequire, MinCMBApprovalRequire: minCMBApprovalRequire, LateWithdrawResponseFine: lateWithdrawResponseFine, SaleDBCTOkensByUSDData: saleDBCTOkensByUSDData, LoanParams: loanParams}
 }
 
@@ -59,10 +59,9 @@ func NewDCBParamsFromJson(rawData interface{}) *DCBParams {
 		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["sellingAsset"])),
 		uint64(saleDataData["sellingAmount"].(float64)),
 	)
-	
-	
+
 	minLoanResponseRequire := uint8(data["minLoanResponseRequire"].(float64))
-	minCMBApprovalRequire  := uint8(data["minCMBApprovalRequire"].(float64))
+	minCMBApprovalRequire := uint8(data["minCMBApprovalRequire"].(float64))
 	lateWithdrawResponseFine := uint64(data["lateWithdrawResponseFine"].(float64))
 
 	saleDBCTOkensByUSDDataData := data["saleDBCTOkensByUSDDataData"].(map[string]interface{})
@@ -93,51 +92,31 @@ type GOVParams struct {
 	OracleNetwork *OracleNetwork
 }
 
-func NewGOVParams(salaryPerTx uint64, basicSalary uint64, feePerKbTx uint64, sellingBonds *SellingBonds, refundInfo *RefundInfo, oracleNetwork *OracleNetwork) *GOVParams {
-	return &GOVParams{SalaryPerTx: salaryPerTx, BasicSalary: basicSalary, FeePerKbTx: feePerKbTx, SellingBonds: sellingBonds, RefundInfo: refundInfo, OracleNetwork: oracleNetwork}
+func NewGOVParams(salaryPerTx uint64,
+	basicSalary uint64,
+	feePerKbTx uint64,
+	sellingBonds *SellingBonds,
+	refundInfo *RefundInfo,
+	oracleNetwork *OracleNetwork,
+) *GOVParams {
+	return &GOVParams{SalaryPerTx: salaryPerTx,
+		BasicSalary:   basicSalary,
+		FeePerKbTx:    feePerKbTx,
+		SellingBonds:  sellingBonds,
+		RefundInfo:    refundInfo,
+		OracleNetwork: oracleNetwork,
+	}
 }
 
-func NewGOVParamsFromRPC(data interface{}) *GOVParams {
+func NewGOVParamsFromJson(data interface{}) *GOVParams {
 	arrayParams := common.InterfaceSlice(data)
 
 	salaryPerTx := uint64(arrayParams[0].(float64))
-
 	basicSalary := uint64(arrayParams[1].(float64))
-
 	feePerKbTx := uint64(arrayParams[2].(float64))
-
-	sellingBondsData := common.InterfaceSlice(arrayParams[3])
-	sellingBonds := NewSellingBonds(
-		uint64(sellingBondsData[0].(float64)),
-		uint64(sellingBondsData[1].(float64)),
-		uint32(sellingBondsData[2].(float64)),
-		uint64(sellingBondsData[3].(float64)),
-		uint32(sellingBondsData[4].(float64)),
-		uint32(sellingBondsData[5].(float64)),
-		uint64(sellingBondsData[6].(float64)),
-	)
-
-	refundInfoData := common.InterfaceSlice(arrayParams[4])
-	refundInfo := NewRefundInfo(
-		uint64(refundInfoData[0].(float64)),
-		uint64(refundInfoData[1].(float64)),
-	)
-
-	oracleNetworkData := common.InterfaceSlice(arrayParams[5])
-
-	oraclePubKeysInterface := common.InterfaceSlice(oracleNetworkData[0])
-	oraclePubKeys := make([][]byte, 0)
-	for _, i := range oraclePubKeysInterface {
-		oraclePubKeys = append(oraclePubKeys, common.SliceInterfaceToSliceByte(common.InterfaceSlice(i)))
-	}
-	oracleNetwork := NewOracleNetwork(
-		oraclePubKeys,
-		uint8(oracleNetworkData[1].(float64)),
-		uint8(oracleNetworkData[2].(float64)),
-		uint32(oracleNetworkData[3].(float64)),
-		uint32(oracleNetworkData[4].(float64)),
-		uint8(oracleNetworkData[5].(float64)),
-	)
+	sellingBonds := NewSellingBondsFromJson(arrayParams[3])
+	refundInfo := NewRefundInfoFromJson(arrayParams[4])
+	oracleNetwork := NewOracleNetworkFromJson(arrayParams[5])
 
 	return NewGOVParams(salaryPerTx, basicSalary, feePerKbTx, sellingBonds, refundInfo, oracleNetwork)
 }
