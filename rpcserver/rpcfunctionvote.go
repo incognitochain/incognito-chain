@@ -52,7 +52,7 @@ func (self RpcServer) handleGetEncryptionFlag(params interface{}, closeChan <-ch
 	arrayParams := common.InterfaceSlice(params)
 	boardType := arrayParams[0].(string)
 	db := *self.config.Database
-	encryptionFlag := db.GetEncryptFlag(boardType)
+	encryptionFlag, _ := db.GetEncryptFlag(boardType)
 	return jsonresult.GetEncryptionFlagResult{encryptionFlag}, nil
 }
 
@@ -60,6 +60,6 @@ func (self RpcServer) handleGetEncryptionLastBlockHeightFlag(params interface{},
 	arrayParams := common.InterfaceSlice(params)
 	boardType := arrayParams[0].(string)
 	db := *self.config.Database
-	blockHeight := db.GetEncryptionLastBlockHeight(boardType)
+	blockHeight, _ := db.GetEncryptionLastBlockHeight(boardType)
 	return jsonresult.GetEncryptionLastBlockHeightResult{blockHeight}, nil
 }
