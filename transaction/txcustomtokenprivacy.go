@@ -79,7 +79,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 	tokenParams *CustomTokenPrivacyParamTx,
 	listCustomTokens map[common.Hash]TxCustomTokenPrivacy,
 	db database.DatabaseInterface,
-	hasPrivacy bool,
+	hasPrivacyConst bool,
 ) *TransactionError {
 	var err error
 	// init data for tx constant for fee
@@ -88,7 +88,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 		paymentInfo,
 		inputCoin,
 		fee,
-		hasPrivacy,
+		hasPrivacyConst,
 		nil,
 		nil,
 		nil)
