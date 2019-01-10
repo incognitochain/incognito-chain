@@ -71,7 +71,7 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	fmt.Println("Done param #6", len(outCoins))
-	if len(outCoins) == 0 {
+	if len(outCoins) == 0 && totalAmmount > 0 {
 		return nil, NewRPCError(ErrUnexpected, nil)
 	}
 	// Use Knapsack to get candiate output coin
@@ -82,6 +82,9 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 
 	// check real fee(nano constant) per tx
 	realFee := self.estimateFee(estimateFeeCoinPerKb, candidateOutputCoins, paymentInfos, chainIdSender, numBlock)
+	if len(outCoins) == 0 {
+		realFee = 0
+	}
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
 
 	// if not enough to pay fee
@@ -376,6 +379,10 @@ func getUnspentCoinToSpent(outCoins []*privacy.OutputCoin, amount uint64) (resul
 	resultOutputCoins = make([]*privacy.OutputCoin, 0)
 	remainOutputCoins = make([]*privacy.OutputCoin, 0)
 	totalResultOutputCoinAmount = uint64(0)
+
+	if amount == 0 || len(outCoins) == 0 {
+		return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, nil
+	}
 
 	// Calculate sum of all output coins' value
 	sumValue := uint64(0)
