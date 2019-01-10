@@ -26,6 +26,24 @@ func NewSubmitDCBProposalMetadata(DCBParams params.DCBParams, executeDuration ui
 	}
 }
 
+// this function should be in privacy package
+func NewPaymentAddress(b []byte) *privacy.PaymentAddress{
+	payment := privacy.PaymentAddress{}
+	payment.SetBytes(b)
+	return &payment
+}
+
+func NewSubmitDCBProposalMetadataFromJson(data interface{}) *SubmitDCBProposalMetadata {
+	rawData := data.(map[string]interface{})
+	meta := NewSubmitDCBProposalMetadata(
+		*params.NewDCBParamsFromJson(rawData["dcbParams"]),
+		uint32(rawData["executeDuration"].(float64)),
+		rawData["explanation"].(string),
+		NewPaymentAddress([]byte(rawData["paymentAdress"].(string))),
+	)
+	return meta
+}
+
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) Hash() *common.Hash {
 	record := string(submitDCBProposalMetadata.DCBParams.Hash().GetBytes())
 	record += string(submitDCBProposalMetadata.ExecuteDuration)
