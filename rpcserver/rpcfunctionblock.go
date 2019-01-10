@@ -196,11 +196,12 @@ getblockchaininfo RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetBlockChainInfoResult{
-		ChainName:  self.config.ChainParams.Name,
-		BestBlocks: make(map[byte]jsonresult.GetBestBlockItem),
+		ChainName: self.config.ChainParams.Name,
+		// BestBlocks: make(map[byte]jsonresult.GetBestBlockItem),
+		BestBlocks: make(map[int]jsonresult.GetBestBlockItem),
 	}
 	for shardID, bestState := range self.config.BlockChain.BestState.Shard {
-		result.BestBlocks[shardID] = jsonresult.GetBestBlockItem{
+		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
 			// Height:   bestState.BestBlock.Header.GetHeight(),
 			Height:     bestState.BestBlock.Header.Height,
 			Hash:       bestState.BestBlockHash.String(),
@@ -211,6 +212,13 @@ func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-ch
 			BlockProducer:    bestState.BestBlock.Header.Producer,
 			BlockProducerSig: bestState.BestBlock.ProducerSig,
 		}
+	}
+	beaconBestState := self.config.BlockChain.BestState.Beacon
+	result.BestBlocks[-1] = jsonresult.GetBestBlockItem{
+		Height:           beaconBestState.BestBlock.Header.Height,
+		Hash:             beaconBestState.BestBlockHash.String(),
+		BlockProducer:    beaconBestState.BestBlock.Header.Producer,
+		BlockProducerSig: beaconBestState.BestBlock.ProducerSig,
 	}
 	return result, nil
 }
