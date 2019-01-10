@@ -17,5 +17,6 @@ type GetBestBlockItem struct {
 }
 
 type GetBestBlockHashResult struct {
-	BestBlockHashes map[byte]string `json:"BestBlockHashes"`
+	// BestBlockHashes map[byte]string `json:"BestBlockHashes"`
+	BestBlockHashes map[int]string `json:"BestBlockHashes"`
 }
