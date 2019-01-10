@@ -70,6 +70,16 @@ func (self *ConsensusState) GetShardCommittee(shard byte) []string {
 	return make([]string, 0)
 }
 
+func (self *ConsensusState) GetCommittee() (map[string]byte) {
+	self.Lock()
+	defer self.Unlock()
+	ret := make(map[string]byte)
+	for k, v := range self.Committee {
+		ret[k] = v
+	}
+	return ret
+}
+
 type ConnManager struct {
 	connReqCount uint64
 	start        int32
@@ -215,6 +225,7 @@ func (self ConnManager) New(cfg *Config) *ConnManager {
 	self.discoveredPeers = make(map[string]*DiscoverPeerInfo)
 	self.ListeningPeers = make(map[string]*peer.Peer)
 	self.Config.ConsensusState = &ConsensusState{}
+	self.cDiscoveredPeers = make(chan struct{})
 	return &self
 }
 
@@ -358,7 +369,6 @@ func (self *ConnManager) DiscoverPeers(discoverPeerAddress string) {
 	Logger.log.Infof("Start Discover Peers : %s", discoverPeerAddress)
 	self.randShards = self.makeRandShards(SHARD_NUMBER)
 	self.discoverPeerAddress = discoverPeerAddress
-	self.cDiscoveredPeers = make(chan struct{})
 	for {
 		self.processDiscoverPeers()
 		select {
@@ -386,19 +396,6 @@ func (self *ConnManager) processDiscoverPeers() {
 		for _, listener := range self.Config.ListenerPeers {
 			var response []wire.RawPeer
 
-			var pbkB58 string
-			signDataB58 := ""
-			nowNano := time.Now().UnixNano()
-			if listener.Config.UserKeySet != nil {
-				pbkB58 = listener.Config.UserKeySet.GetPublicKeyB58()
-				Logger.log.Info("Start Process Discover Peers", pbkB58)
-				// sign data
-				signDataB58, err = listener.Config.UserKeySet.SignDataB58(common.Int64ToBytes(nowNano))
-				if err != nil {
-					Logger.log.Error(err)
-				}
-			}
-
 			externalAddress := self.Config.ExternalAddress
 			Logger.log.Info("Start Process Discover Peers ExternalAddress", externalAddress)
 
@@ -416,11 +413,22 @@ func (self *ConnManager) processDiscoverPeers() {
 				rawAddress = ""
 			}
 
+			pbkB58 := ""
+			signDataB58 := ""
+			if listener.Config.UserKeySet != nil {
+				pbkB58 = listener.Config.UserKeySet.GetPublicKeyB58()
+				Logger.log.Info("Start Process Discover Peers", pbkB58)
+				// sign data
+				signDataB58, err = listener.Config.UserKeySet.SignDataB58([]byte(rawAddress))
+				if err != nil {
+					Logger.log.Error(err)
+				}
+			}
+
 			args := &server.PingArgs{
 				RawAddress: rawAddress,
 				PublicKey:  pbkB58,
 				SignData:   signDataB58,
-				Timestamp:  nowNano,
 			}
 			Logger.log.Infof("[Exchange Peers] Ping %+v", args)
 
@@ -451,7 +459,6 @@ func (self *ConnManager) processDiscoverPeers() {
 			for _, rawPeer := range response {
 				p := rawPeer
 				mPeers[rawPeer.PublicKey] = &p
-				fmt.Println(p)
 			}
 			// connect to beacon peers
 			self.handleRandPeersOfBeacon(self.Config.MaxPeersBeacon, mPeers)
@@ -459,7 +466,8 @@ func (self *ConnManager) processDiscoverPeers() {
 			self.handleRandPeersOfShard(self.Config.ConsensusState.CurrentShard, self.Config.MaxPeersSameShard, mPeers)
 			// connect to other shard peers
 			self.handleRandPeersOfOtherShard(self.Config.ConsensusState.CurrentShard, self.Config.MaxPeersOtherShard, self.Config.MaxPeersOther, mPeers)
-
+			// connect to no shard peers
+			self.handleRandPeersOfNoShard(self.Config.MaxPeersNoShard, mPeers)
 		}
 	}
 }
@@ -602,7 +610,6 @@ func (self *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxShardPeers
 
 func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[string]*wire.RawPeer) int {
 	Logger.log.Info("handleRandPeersOfBeacon")
-
 	countPeerShard := 0
 	pBKs := self.Config.ConsensusState.GetBeaconCommittee()
 	for len(pBKs) > 0 {
@@ -623,6 +630,30 @@ func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[
 		}
 	}
 	return countPeerShard
+}
+
+func (self *ConnManager) handleRandPeersOfNoShard(maxPeers int, mPeers map[string]*wire.RawPeer) int {
+	countPeers := 0
+	committee := self.Config.ConsensusState.GetCommittee()
+	for _, peer := range mPeers {
+		pbk := peer.PublicKey
+		if !self.checkPeerConnOfPbk(pbk) {
+			pBKs := self.Config.ConsensusState.GetBeaconCommittee()
+			if common.IndexOfStr(pbk, pBKs) >= 0 {
+				continue
+			}
+			_, ok := committee[pbk]
+			if ok {
+				continue
+			}
+			go self.Connect(peer.RawAddress, peer.PublicKey)
+			countPeers++
+			if countPeers >= maxPeers {
+				return countPeers
+			}
+		}
+	}
+	return countPeers
 }
 
 func (self *ConnManager) makeRandShards(maxShards int) []byte {
