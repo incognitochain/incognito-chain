@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"encoding/json"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
@@ -61,6 +62,8 @@ func (self RpcServer) handleGetCurrentSellingBondTypes(params interface{}, close
 	}
 
 	bondTypeRes := jsonresult.GetBondTypeResultItem{
+		BondName:       sellingBondsParam.BondName,
+		BondSymbol:     sellingBondsParam.BondSymbol,
 		BondID:         bondID.String(),
 		StartSellingAt: sellingBondsParam.StartSellingAt,
 		EndSellingAt:   sellingBondsParam.StartSellingAt + sellingBondsParam.SellingWithin,
@@ -101,7 +104,7 @@ func (self RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, cl
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	paymentAddr := senderKey.KeySet.PaymentAddress
-	tokenParamsRaw := arrayParams[3].(map[string]interface{})
+	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	_, voutsAmount := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
 
 	tokenIDStr := tokenParamsRaw["TokenID"].(string)
