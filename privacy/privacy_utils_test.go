@@ -56,6 +56,4 @@ func TestIsPowerOfTwo(t *testing.T) {
 	//fmt.Printf("5* G[0]: %+v\n",PedCom.G[0].ScalarMult(big.NewInt(5)) )
 	assert.Equal(t, expectedRes, testcase5)
 
-
-
 }

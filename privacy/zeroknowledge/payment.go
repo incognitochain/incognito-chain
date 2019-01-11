@@ -103,12 +103,6 @@ func (proof *PaymentProof) UnmarshalJSON(data []byte) error {
 }
 
 func (paymentProof *PaymentProof) Bytes() []byte {
-	//estimate := EstimateProofSize(len(paymentProof.InputCoins), len(paymentProof.InputCoins), true )
-	//fmt.Printf("SizeProof before bytes: %v\n", estimate)
-
-	fmt.Printf("num Input: %v\n", len(paymentProof.InputCoins))
-	fmt.Printf("num Output: %v\n", len(paymentProof.OutputCoins))
-
 	var proofbytes []byte
 	hasPrivacy := len(paymentProof.OneOfManyProof) > 0
 	// OneOfManyProofSize
@@ -144,7 +138,6 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, []byte{0, 0}...)
 	}
 
-	// Com zero proof size
 	if hasPrivacy {
 		comZeroProof := paymentProof.ComZeroProof.Bytes()
 		proofbytes = append(proofbytes, byte(len(comZeroProof)))
@@ -221,8 +214,8 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	} else {
 		proofbytes = append(proofbytes, byte(0))
 	}
-	//fmt.Printf("BYTES ------------------ %v\n", proofbytes)
-	fmt.Printf("sizeProof actual : %v\n", len(proofbytes))
+
+		//fmt.Printf("BYTES ------------------ %v\n", proofbytes)
 
 	return proofbytes
 }
@@ -447,6 +440,8 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 		wit.spendingKey = spendingKey
 		wit.inputCoins = inputCoins
 		wit.outputCoins = outputCoins
+		//wit.commitmentIndexs = commitmentIndices
+		//wit.myCommitmentIndexs = myCommitmentIndices
 
 		publicKey := inputCoins[0].CoinDetails.PublicKey
 
@@ -544,7 +539,9 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 		randInputIsZero[i].Mod(randInputIsZero[i], privacy.Curve.Params().N)
 
 		for j := 0; j < privacy.CMRingSize; j++ {
+			commitmentTemps[i][j] = new(privacy.EllipticPoint).Zero()
 			commitmentTemps[i][j] = commitments[preIndex+j].Sub(cmInputSum[i])
+			//commitmentTemps[i][j].X, commitmentTemps[i][j].Y = privacy.Curve.Add(commitments[preIndex+j].X, commitments[preIndex+j].Y, cmInputSumInverse[i].X, cmInputSumInverse[i].Y)
 		}
 
 		if wit.OneOfManyWitness[i] == nil {

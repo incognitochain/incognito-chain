@@ -127,7 +127,7 @@ func (pro *ComZeroProof) Set(
 
 //Prove generate a Proof prove that the PedersenCommitment is zero
 func (wit ComZeroWitness) Prove() (*ComZeroProof, error) {
-	//start := time.Now()
+	start := time.Now()
 	//var x big.Int
 	//s is a random number in Zp, with p is N, which is order of base point of privacy.Curve
 	sRnd := privacy.RandInt()
@@ -145,8 +145,8 @@ func (wit ComZeroWitness) Prove() (*ComZeroProof, error) {
 
 	proof := new(ComZeroProof)
 	proof.Set(wit.commitmentValue, wit.index, commitmentZeroS, z)
-	//end := time.Since(start)
-	//fmt.Printf("Zero commitment proving time: %v\n", end)
+	end := time.Since(start)
+	fmt.Printf("Zero commitment proving time: %v\n", end)
 
 	return proof, nil
 }
