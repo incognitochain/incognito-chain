@@ -15,12 +15,12 @@ func (self RpcServer) handleCreateRawTxWithMultiSigsReg(params interface{}, clos
 	arrayParams := common.InterfaceSlice(params)
 	// Req param #4: multisigs registration info
 	multiSigsReg := arrayParams[4].(map[string]interface{})
-	paymentAddressMap := multiSigsReg["paymentAddress"].(map[string]interface{})
+	paymentAddressMap := multiSigsReg["PaymentAddress"].(map[string]interface{})
 	paymentAddress := privacy.PaymentAddress{
-		Pk: []byte(paymentAddressMap["pk"].(string)),
-		Tk: []byte(paymentAddressMap["tk"].(string)),
+		Pk: []byte(paymentAddressMap["Pk"].(string)),
+		Tk: []byte(paymentAddressMap["Tk"].(string)),
 	}
-	spendableMembers := multiSigsReg["spendableMembers"].([]interface{})
+	spendableMembers := multiSigsReg["SpendableMembers"].([]interface{})
 	assertedSpendableMembers := [][]byte{}
 	for _, pk := range spendableMembers {
 		assertedSpendableMembers = append(assertedSpendableMembers, []byte(pk.(string)))
@@ -75,7 +75,7 @@ func (self RpcServer) handleCreateRawTxWithMultiSigsSpending(params interface{},
 	arrayParams := common.InterfaceSlice(params)
 	// Req param #4: multisigs spending info
 	multiSigsSpending := arrayParams[4].(map[string]interface{})
-	signs := multiSigsSpending["signs"].(map[string]interface{})
+	signs := multiSigsSpending["Signs"].(map[string]interface{})
 	assertedSigns := map[string][]byte{}
 	for k, s := range signs {
 		assertedSigns[k] = []byte(s.(string))
