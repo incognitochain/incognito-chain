@@ -182,6 +182,43 @@ func ParseListeners(addrs []string, netType string) ([]SimpleAddr, error) {
 	return netAddrs, nil
 }
 
+func ParseListener(addr string, netType string) (*SimpleAddr, error) {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		// Shouldn't happen due to already being normalized.
+		return nil, err
+	}
+	var netAddr *SimpleAddr
+	// Empty host or host of * on plan9 is both IPv4 and IPv6.
+	if host == EmptyString || (host == "*" && runtime.GOOS == "plan9") {
+		netAddr = &SimpleAddr{Net: netType + "4", Addr: addr}
+		//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
+		return netAddr, nil
+	}
+
+	// Strip IPv6 zone id if present since net.ParseIP does not
+	// handle it.
+	zoneIndex := strings.LastIndex(host, "%")
+	if zoneIndex > 0 {
+		host = host[:zoneIndex]
+	}
+
+	// Parse the IP.
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return nil, fmt.Errorf("'%s' is not a valid IP address", host)
+	}
+
+	// To4 returns nil when the IP is not an IPv4 address, so use
+	// this determine the address type.
+	if ip.To4() == nil {
+		//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
+	} else {
+		netAddr = &SimpleAddr{Net: netType + "4", Addr: addr}
+	}
+	return netAddr, nil
+}
+
 /*
 JsonUnmarshallByteArray - because golang default base64 encode for byte[] data
 */

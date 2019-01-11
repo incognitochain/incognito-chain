@@ -70,7 +70,7 @@ type config struct {
 	AddPeers             []string `short:"a" long:"addpeer" description:"Add a peer to connect with at startup"`
 	ConnectPeers         []string `short:"c" long:"connect" description:"Connect only to the specified peers at startup"`
 	DisableListen        bool     `long:"nolisten" description:"Disable listening for incoming connections -- NOTE: Listening is automatically disabled if the --connect or --proxy options are used without also specifying listen interfaces via --listen"`
-	Listeners            []string `long:"listen" description:"Add an interface/port to listen for connections (default all interfaces port: 9333, testnet: 9444)"`
+	Listener             string   `long:"listen" description:"Add an interface/port to listen for connections (default all interfaces port: 9333, testnet: 9444)"`
 	MaxPeers             int      `long:"maxpeers" description:"Max number of inbound and outbound peers"`
 	MaxOutPeers          int      `long:"maxoutpeers" description:"Max number of outbound peers"`
 	MaxInPeers           int      `long:"maxinpeers" description:"Max number of inbound peers"`
@@ -438,17 +438,15 @@ func loadConfig() (*config, []string, error) {
 
 	// --proxy or --connect without --listen disables listening.
 	if (cfg.Proxy != common.EmptyString || len(cfg.ConnectPeers) > 0) &&
-		len(cfg.Listeners) == 0 {
+		len(cfg.Listener) == 0 {
 		cfg.DisableListen = true
 	}
 
 	// Add the default listener if none were specified. The default
 	// listener is all addresses on the listen port for the network
 	// we are to connect to.
-	if len(cfg.Listeners) == 0 {
-		cfg.Listeners = []string{
-			net.JoinHostPort("", activeNetParams.DefaultPort),
-		}
+	if len(cfg.Listener) == 0 {
+		cfg.Listener = net.JoinHostPort("", activeNetParams.DefaultPort)
 	}
 
 	if cfg.RPCUser == cfg.RPCLimitUser && cfg.RPCUser != "" {
@@ -519,8 +517,7 @@ func loadConfig() (*config, []string, error) {
 
 	// Add default port to all listener addresses if needed and remove
 	// duplicate addresses.
-	cfg.Listeners = normalizeAddresses(cfg.Listeners,
-		activeNetParams.DefaultPort)
+	cfg.Listener = normalizeAddress(cfg.Listener, activeNetParams.DefaultPort)
 
 	// Add default port to all rpc listener addresses if needed and remove
 	// duplicate addresses.

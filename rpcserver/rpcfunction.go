@@ -158,12 +158,11 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 	result.Version = RpcServerVersion
 	result.SubVersion = ""
 	result.ProtocolVersion = self.config.ProtocolVersion
-	result.NetworkActive = len(self.config.ConnMgr.ListeningPeers) > 0
+	result.NetworkActive = self.config.ConnMgr.ListeningPeer != nil
 	result.LocalAddresses = []string{}
-	for _, listener := range self.config.ConnMgr.ListeningPeers {
-		result.Connections += len(listener.PeerConns)
-		result.LocalAddresses = append(result.LocalAddresses, listener.RawAddress)
-	}
+	listener := self.config.ConnMgr.ListeningPeer
+	result.Connections = len(listener.PeerConns)
+	result.LocalAddresses = append(result.LocalAddresses, listener.RawAddress)
 
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -318,13 +317,12 @@ func (self RpcServer) handleCheckHashValue(params interface{}, closeChan <-chan 
 handleGetConnectionCount - RPC returns the number of connections to other nodes.
 */
 func (self RpcServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	if self.config.ConnMgr == nil || len(self.config.ConnMgr.ListeningPeers) == 0 {
+	if self.config.ConnMgr == nil || self.config.ConnMgr.ListeningPeer == nil {
 		return 0, nil
 	}
 	result := 0
-	for _, listeningPeer := range self.config.ConnMgr.ListeningPeers {
-		result += len(listeningPeer.PeerConns)
-	}
+	listeningPeer := self.config.ConnMgr.ListeningPeer
+	result += len(listeningPeer.PeerConns)
 	return result, nil
 }
 
