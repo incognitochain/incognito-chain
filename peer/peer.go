@@ -225,7 +225,8 @@ func (self Peer) NewPeer() (*Peer, error) {
 	// by encapsulating both addresses:
 	addr := basicHost.Addrs()[0]
 	fullAddr := addr.Encapsulate(hostAddr)
-	Logger.log.Infof("I am listening on %s with PEER Id - %s", fullAddr, basicHost.ID().String())
+	rawAddress := fmt.Sprintf("%s%s", listeningAddressString, mulAddrStr)
+	Logger.log.Infof("I am listening on %s with PEER Id - %s", rawAddress, basicHost.ID().Pretty())
 	pid, err := fullAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
 		return &self, NewPeerError(GetPeerIdFromProtocolErr, err, &self)
@@ -236,7 +237,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 		return &self, NewPeerError(GetPeerIdFromProtocolErr, err, &self)
 	}
 
-	self.RawAddress = fmt.Sprintf("%s%s", listeningAddressString, mulAddrStr)
+	self.RawAddress = rawAddress
 	self.Host = basicHost
 	self.TargetAddress = fullAddr
 	self.PeerID = peerID
