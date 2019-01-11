@@ -400,6 +400,14 @@ func SliceInterfaceToSliceByte(Arr []interface{}) []byte {
 	return res
 }
 
+func SliceInterfaceToSliceSliceByte(Arr []interface{}) [][]byte {
+	res := make([][]byte, 0)
+	for _, element := range Arr {
+		res = append(res, element.([]byte))
+	}
+	return res
+}
+
 func BytesPlusOne(b []byte) []byte {
 	res := make([]byte, len(b))
 	for i := len(b); i >= 0; i-- {
