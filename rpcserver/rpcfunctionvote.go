@@ -79,15 +79,16 @@ func (self RpcServer) buildRawSealLv3VoteProposalTransaction(
 	boardType := arrayParams[nParams-3].(string)
 	voteInfo := arrayParams[len(arrayParams)-2]
 
-	pubKey := arrayParams[len(arrayParams)-1].([]interface{}) // firstPubKey is pubkey of itself
+	pubKeys := arrayParams[len(arrayParams)-1].([]interface{}) // firstPubKey is pubkey of itself
+	//pubKeys := self.config.BlockChain.GetDCBBoardPubKeys()
 
-	Seal3Data := common.Encrypt(common.Encrypt(common.Encrypt(voteInfo, pubKey[0]), pubKey[1]), pubKey[2])
+	Seal3Data := common.Encrypt(common.Encrypt(common.Encrypt(voteInfo, pubKeys[0]), pubKeys[1]), pubKeys[2])
 
 	var meta metadata.Metadata
 	if boardType == "dcb" {
-		meta = metadata.NewSealedLv3DCBVoteProposalMetadata(Seal3Data, common.SliceInterfaceToSliceSliceByte(pubKey))
+		meta = metadata.NewSealedLv3DCBVoteProposalMetadata(Seal3Data, common.SliceInterfaceToSliceSliceByte(pubKeys))
 	} else {
-		meta = metadata.NewSealedLv3GOVVoteProposalMetadata(Seal3Data, common.SliceInterfaceToSliceSliceByte(pubKey))
+		meta = metadata.NewSealedLv3GOVVoteProposalMetadata(Seal3Data, common.SliceInterfaceToSliceSliceByte(pubKeys))
 	}
 	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
