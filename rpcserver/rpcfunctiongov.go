@@ -81,8 +81,13 @@ func (self RpcServer) handleGetCurrentSellingBondTypes(params interface{}, close
 }
 
 func (self RpcServer) handleGetGOVParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	govParam := self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams
-	return govParam, nil
+	constitution := self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution
+	govParams := constitution.GOVParams
+	results := make(map[string]interface{})
+	results["GOVParams"] = govParams
+	results["ExecuteDuration"] = constitution.ExecuteDuration
+	results["Explanation"] = constitution.Explanation
+	return results, nil
 }
 
 func (self RpcServer) handleGetGOVConstitution(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
