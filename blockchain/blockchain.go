@@ -753,40 +753,40 @@ func (self *BlockChain) ProcessVoteProposal(block *Block) error {
 	for _, tx := range block.Transactions {
 		meta := tx.GetMetadata()
 		switch tx.GetMetadataType() {
-		case metadata.SealedLv3DCBBallotMeta:
-			underlieMetadata := meta.(*metadata.SealedLv3DCBBallotMetadata)
+		case metadata.SealedLv3DCBVoteProposalMeta:
+			underlieMetadata := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
 			self.config.DataBase.AddVoteLv3Proposal("dcb", nextDCBConstitutionIndex, underlieMetadata.Hash())
-		case metadata.SealedLv2DCBBallotMeta:
-			underlieMetadata := meta.(*metadata.SealedLv2DCBBallotMetadata)
-			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3Ballot)
-		case metadata.SealedLv1DCBBallotMeta:
-			underlieMetadata := meta.(*metadata.SealedLv1DCBBallotMetadata)
-			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3Ballot)
-		case metadata.NormalDCBBallotMetaFromOwnerMeta:
-			underlieMetadata := meta.(*metadata.NormalDCBBallotFromOwnerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
-		case metadata.NormalDCBBallotMetaFromSealerMeta:
-			underlieMetadata := meta.(*metadata.NormalDCBBallotFromSealerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
+		case metadata.SealedLv2DCBVoteProposalMeta:
+			underlieMetadata := meta.(*metadata.SealedLv2DCBVoteProposalMetadata)
+			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
+		case metadata.SealedLv1DCBVoteProposalMeta:
+			underlieMetadata := meta.(*metadata.SealedLv1DCBVoteProposalMetadata)
+			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
+		case metadata.NormalDCBVoteProposalFromOwnerMeta:
+			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromOwnerMetadata)
+			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal)
+		case metadata.NormalDCBVoteProposalFromSealerMeta:
+			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromSealerMetadata)
+			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal)
 		case metadata.AcceptDCBProposalMeta:
 			underlieMetadata := meta.(*metadata.AcceptDCBProposalMetadata)
 			self.config.DataBase.TakeVoteTokenFromWinner("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PubKey, underlieMetadata.Voter.AmountOfVote)
 			self.config.DataBase.SetNewProposalWinningVoter("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PubKey)
-		case metadata.SealedLv3GOVBallotMeta:
-			underlieMetadata := meta.(*metadata.SealedLv3GOVBallotMetadata)
+		case metadata.SealedLv3GOVVoteProposalMeta:
+			underlieMetadata := meta.(*metadata.SealedLv3GOVVoteProposalMetadata)
 			self.config.DataBase.AddVoteLv3Proposal("gov", nextGOVConstitutionIndex, underlieMetadata.Hash())
-		case metadata.SealedLv2GOVBallotMeta:
-			underlieMetadata := meta.(*metadata.SealedLv2GOVBallotMetadata)
-			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3Ballot)
-		case metadata.SealedLv1GOVBallotMeta:
-			underlieMetadata := meta.(*metadata.SealedLv1GOVBallotMetadata)
-			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3Ballot)
-		case metadata.NormalGOVBallotMetaFromOwnerMeta:
-			underlieMetadata := meta.(*metadata.NormalGOVBallotFromOwnerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromOwner("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
-		case metadata.NormalGOVBallotMetaFromSealerMeta:
-			underlieMetadata := meta.(*metadata.NormalGOVBallotFromSealerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromSealer("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
+		case metadata.SealedLv2GOVVoteProposalMeta:
+			underlieMetadata := meta.(*metadata.SealedLv2GOVVoteProposalMetadata)
+			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
+		case metadata.SealedLv1GOVVoteProposalMeta:
+			underlieMetadata := meta.(*metadata.SealedLv1GOVVoteProposalMetadata)
+			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
+		case metadata.NormalGOVVoteProposalFromOwnerMeta:
+			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromOwnerMetadata)
+			self.config.DataBase.AddVoteNormalProposalFromOwner("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal)
+		case metadata.NormalGOVVoteProposalFromSealerMeta:
+			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromSealerMetadata)
+			self.config.DataBase.AddVoteNormalProposalFromSealer("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal)
 		case metadata.AcceptGOVProposalMeta:
 			underlieMetadata := meta.(*metadata.AcceptGOVProposalMetadata)
 			self.config.DataBase.TakeVoteTokenFromWinner("gov", nextGOVConstitutionIndex, underlieMetadata.Voter.PubKey, underlieMetadata.Voter.AmountOfVote)
@@ -1403,16 +1403,31 @@ func (self *BlockChain) GetBestBlock(chainID byte) *Block {
 	return self.BestState[chainID].BestBlock
 }
 
+func (self *BlockChain) GetConstitutionStartHeight(boardType string, chainID byte) uint32 {
+	if boardType == "dcb" {
+		return self.GetDCBConstitutionStartHeight(chainID)
+	} else {
+		return self.GetGOVConstitutionStartHeight(chainID)
+	}
+}
+
 func (self *BlockChain) GetDCBConstitutionStartHeight(chainID byte) uint32 {
 	return self.GetBestBlock(chainID).Header.DCBConstitution.StartedBlockHeight
+}
+func (self *BlockChain) GetGOVConstitutionStartHeight(chainID byte) uint32 {
+	return self.GetBestBlock(chainID).Header.GOVConstitution.StartedBlockHeight
+}
+
+func (self *BlockChain) GetConstitutionEndHeight(boardType string, chainID byte) uint32 {
+	if boardType == "dcb" {
+		return self.GetDCBConstitutionEndHeight(chainID)
+	} else {
+		return self.GetGOVConstitutionEndHeight(chainID)
+	}
 }
 
 func (self *BlockChain) GetDCBConstitutionEndHeight(chainID byte) uint32 {
 	return self.GetBestBlock(chainID).Header.DCBConstitution.GetEndedBlockHeight()
-}
-
-func (self *BlockChain) GetGOVConstitutionStartHeight(chainID byte) uint32 {
-	return self.GetBestBlock(chainID).Header.GOVConstitution.StartedBlockHeight
 }
 
 func (self *BlockChain) GetGOVConstitutionEndHeight(chainID byte) uint32 {

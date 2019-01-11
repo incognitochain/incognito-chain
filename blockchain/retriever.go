@@ -22,6 +22,14 @@ func (self *BlockChain) GetChainHeight(chainID byte) int32 {
 	return self.BestState[chainID].BestBlock.Header.Height
 }
 
+func (self *BlockChain) GetBoardPubKeys(boardType string) [][]byte {
+	if boardType == "dcb" {
+		return self.GetDCBBoardPubKeys()
+	} else {
+		return self.GetGOVBoardPubKeys()
+	}
+}
+
 func (self *BlockChain) GetDCBBoardPubKeys() [][]byte {
 	return self.BestState[0].BestBlock.Header.DCBGovernor.BoardPubKeys
 }
