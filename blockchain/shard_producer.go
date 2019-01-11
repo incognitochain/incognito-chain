@@ -13,6 +13,140 @@ import (
 
 func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*ShardBlock, error) {
 
+	//Get user key set
+	userKeySet := cashec.KeySet{}
+	userKeySet.ImportFromPrivateKey(privatekey)
+
+	// Get valid transaction (add tx, remove tx, fee of add tx)
+	txsToAdd, txToRemove, totalFee := self.getPendingTransaction(shardID)
+	if len(txsToAdd) == 0 {
+		Logger.log.Info("Creating empty block...")
+	}
+
+	// Remove unrelated shard tx
+	for _, tx := range txToRemove {
+		self.txPool.RemoveTx(tx)
+	}
+
+	// Calculate coinbases
+	salaryPerTx := self.rewardAgent.GetSalaryPerTx(shardID)
+	basicSalary := self.rewardAgent.GetBasicSalary(shardID)
+	salaryFundAdd := uint64(0)
+	salaryMULTP := uint64(0) //salary multiplier
+	for _, blockTx := range txsToAdd {
+		if blockTx.GetTxFee() > 0 {
+			salaryMULTP++
+		}
+	}
+
+	totalSalary := salaryMULTP*salaryPerTx + basicSalary
+	salaryTx, err := transaction.CreateTxSalary(totalSalary, payToAddress, privatekey, self.chain.config.DataBase)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
+	}
+
+	currentSalaryFund := uint64(0)
+	remainingFund := currentSalaryFund + totalFee + salaryFundAdd - totalSalary
+	coinbases := []metadata.Transaction{salaryTx}
+	txsToAdd = append(coinbases, txsToAdd...)
+
+	// Build block
+	block := &ShardBlock{
+		Body: ShardBody{
+			Transactions: make([]metadata.Transaction, 0),
+		},
+	}
+
+	for _, tx := range txsToAdd {
+		if err := block.AddTransaction(tx); err != nil {
+			return nil, err
+		}
+	}
+
+	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
+	merkleRoot := merkleRoots[len(merkleRoots)-1]
+	prevBlock := self.chain.BestState.Shard[shardID].BestBlock
+	prevBlockHash := self.chain.BestState.Shard[shardID].BestBlock.Hash()
+
+	block.Header = ShardHeader{
+		Producer:        userKeySet.GetPublicKeyB58(),
+		Epoch:           self.chain.BestState.Beacon.BeaconEpoch,
+		Height:          prevBlock.Header.Height + 1,
+		Version:         BlockVersion,
+		PrevBlockHash:   *prevBlockHash,
+		MerkleRoot:      *merkleRoot,
+		MerkleRootShard: CreateMerkleRootShard(block.Body.Transactions),
+		Timestamp:       time.Now().Unix(),
+		ShardID:         shardID,
+		CrossShard:      self.createCrossShardBytemap(txsToAdd),
+		Actions:         self.createShardAction(),
+	}
+
+	// Create producer signature
+	blkHeaderHash := block.Header.Hash()
+	sig, err := userKeySet.SignDataB58(blkHeaderHash.GetBytes())
+	if err != nil {
+		return nil, err
+	}
+	block.ProducerSig = sig
+	_ = remainingFund
+	return block, nil
+}
+
+func (self *BlkTmplGenerator) createCrossShardBytemap(txList []metadata.Transaction) (byteMap []byte) {
+	byteMap = make([]byte, TestNetParams.ShardsNum)
+	for _, tx := range txList {
+		for _, outCoin := range tx.GetProof().OutputCoins {
+			lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+			byteMap[lastByte] = 1
+		}
+	}
+	return byteMap
+}
+
+func (self *BlkTmplGenerator) createShardAction() (actions [][]string) {
+
+	return actions
+}
+
+// get valid tx for specific shard and their fee, also return unvalid tx
+func (self *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
+	sourceTxns := self.txPool.MiningDescs()
+
+	// get tx and wait for more if not enough
+	if len(sourceTxns) < common.MinTxsInBlock {
+		<-time.Tick(common.MinBlockWaitTime * time.Second)
+		sourceTxns = self.txPool.MiningDescs()
+		if len(sourceTxns) == 0 {
+			<-time.Tick(common.MaxBlockWaitTime * time.Second)
+			sourceTxns = self.txPool.MiningDescs()
+		}
+	}
+
+	// validate tx and calculate total fee
+	for _, txDesc := range sourceTxns {
+		tx := txDesc.Tx
+		txShardID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+		if txShardID != shardID {
+			continue
+		}
+		// TODO: need to determine a tx is in privacy format or not
+		if !tx.ValidateTxByItself(tx.IsPrivacy(), self.chain.config.DataBase, self.chain, shardID) {
+			txToRemove = append(txToRemove, metadata.Transaction(tx))
+			continue
+		}
+		totalFee += tx.GetTxFee()
+		txsToAdd = append(txsToAdd, tx)
+		if len(txsToAdd) == common.MaxTxsInBlock {
+			break
+		}
+	}
+	return txsToAdd, txToRemove, totalFee
+}
+
+func (self *BlkTmplGenerator) _NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*ShardBlock, error) {
+
 	userKeySet := cashec.KeySet{}
 	userKeySet.ImportFromPrivateKey(privatekey)
 	prevBlock := self.chain.BestState.Shard[shardID].BestBlock

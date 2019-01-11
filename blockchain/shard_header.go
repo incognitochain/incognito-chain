@@ -24,9 +24,9 @@ type ShardHeader struct {
 
 	MerkleRoot      common.Hash
 	MerkleRootShard common.Hash
-	RefBlocksHash   common.Hash
-	Actions         []interface{}
 	ShardID         byte
+	CrossShard      []byte
+	Actions         [][]string
 }
 
 func (self ShardHeader) Hash() common.Hash {
