@@ -182,3 +182,57 @@ func (block *Block) updateGOVConstitution(tx metadata.Transaction, blockgen *Blk
 	block.Header.GOVConstitution = *NewGOVConstitution(constitutionInfo, GetOracleGOVNationalWelfare(), &GOVProposal.GOVParams)
 	return nil
 }
+
+func (block *Block) updateBlockHeader(
+	blockgen *BlkTmplGenerator,
+	txGroups map[string][]metadata.Transaction,
+	accumulativeValues map[string]uint64,
+	updatedOracleValues map[string]uint64,
+) error {
+	if block.Header.GOVConstitution.GOVParams.SellingBonds != nil {
+		block.Header.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= accumulativeValues["bondsSold"]
+	}
+	if block.Header.DCBConstitution.DCBParams.SaleDCBTokensByUSDData != nil {
+		block.Header.DCBConstitution.DCBParams.SaleDCBTokensByUSDData.Amount -= accumulativeValues["dcbTokensSold"]
+	}
+
+	blockgen.updateOracleValues(block, updatedOracleValues)
+	err := blockgen.updateOracleBoard(block, txGroups["updatingOracleBoardTxs"])
+	if err != nil {
+		Logger.log.Error(err)
+		return err
+	}
+
+	for _, tx := range txGroups["txsToAdd"] {
+		if err := block.AddTransaction(tx); err != nil {
+			return err
+		}
+		// Handle if this transaction change something in block header or database
+		if tx.GetMetadataType() == metadata.AcceptDCBProposalMeta {
+			block.updateDCBConstitution(tx, blockgen)
+		}
+		if tx.GetMetadataType() == metadata.AcceptGOVProposalMeta {
+			block.updateGOVConstitution(tx, blockgen)
+		}
+		if tx.GetMetadataType() == metadata.AcceptDCBBoardMeta {
+			block.UpdateDCBBoard(tx)
+		}
+		if tx.GetMetadataType() == metadata.AcceptGOVBoardMeta {
+			block.UpdateGOVBoard(tx)
+		}
+		if tx.GetMetadataType() == metadata.RewardDCBProposalSubmitterMeta {
+			block.UpdateDCBFund(tx)
+		}
+		if tx.GetMetadataType() == metadata.RewardGOVProposalSubmitterMeta {
+			block.UpdateGOVFund(tx)
+		}
+	}
+
+	// register multisigs addresses
+	err = blockgen.registerMultiSigsAddresses(txGroups["multiSigsRegistrationTxs"])
+	if err != nil {
+		Logger.log.Error(err)
+		return err
+	}
+	return nil
+}
