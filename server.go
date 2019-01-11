@@ -940,7 +940,7 @@ func (self *Server) PushMessageToAll(msg wire.Message) error {
 PushMessageToPeer push msg to peer
 */
 func (self *Server) PushMessageToPeer(msg wire.Message, peerId libp2p.ID) error {
-	Logger.log.Infof("Push msg to peer %s", peerId.String())
+	Logger.log.Infof("Push msg to peer %s", peerId.Pretty())
 	var dc chan<- struct{}
 	peerConn := self.connManager.Config.ListenerPeer.GetPeerConnByPeerID(peerId.Pretty())
 	if peerConn != nil {
