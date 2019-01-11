@@ -14,8 +14,13 @@ import (
 
 // handleGetDCBParams - get dcb params
 func (self RpcServer) handleGetDCBParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	dcbParam := self.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution.DCBParams
-	return dcbParam, nil
+	constitution := self.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution
+	dcbParam := constitution.DCBParams
+	results := make(map[string]interface{})
+	results["DCBParams"] = dcbParam
+	results["ExecuteDuration"] = constitution.ExecuteDuration
+	results["Explanation"] = constitution.Explanation
+	return results, nil
 }
 
 // handleGetDCBConstitution - get dcb constitution
