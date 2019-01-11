@@ -6,13 +6,11 @@ import (
 )
 
 func RandInt() int {
-	seed := time.Now().UnixNano()
-	rand.Seed(seed)
+	rand.Seed(time.Now().UnixNano())
 	return rand.Int()
 }
 
 func RandInt64() int64 {
-	seed := time.Now().UnixNano()
-	rand.Seed(seed)
+	rand.Seed(time.Now().UnixNano())
 	return rand.Int63()
 }
