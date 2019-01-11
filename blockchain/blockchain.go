@@ -760,7 +760,7 @@ func (self *BlockChain) ProcessVoteProposal(block *Block) error {
 			underlieMetadata := meta.(*metadata.SealedLv2DCBVoteProposalMetadata)
 			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
 		case metadata.SealedLv1DCBVoteProposalMeta:
-			underlieMetadata := meta.(*metadata.SealedLv1VoteProposalMetadata)
+			underlieMetadata := meta.(*metadata.SealedLv1DCBVoteProposalMetadata)
 			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
 		case metadata.NormalDCBVoteProposalFromOwnerMeta:
 			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromOwnerMetadata)
@@ -1403,16 +1403,31 @@ func (self *BlockChain) GetBestBlock(chainID byte) *Block {
 	return self.BestState[chainID].BestBlock
 }
 
+func (self *BlockChain) GetConstitutionStartHeight(boardType string, chainID byte) uint32 {
+	if boardType == "dcb" {
+		return self.GetDCBConstitutionStartHeight(chainID)
+	} else {
+		return self.GetGOVConstitutionStartHeight(chainID)
+	}
+}
+
 func (self *BlockChain) GetDCBConstitutionStartHeight(chainID byte) uint32 {
 	return self.GetBestBlock(chainID).Header.DCBConstitution.StartedBlockHeight
+}
+func (self *BlockChain) GetGOVConstitutionStartHeight(chainID byte) uint32 {
+	return self.GetBestBlock(chainID).Header.GOVConstitution.StartedBlockHeight
+}
+
+func (self *BlockChain) GetConstitutionEndHeight(boardType string, chainID byte) uint32 {
+	if boardType == "dcb" {
+		return self.GetDCBConstitutionEndHeight(chainID)
+	} else {
+		return self.GetGOVConstitutionEndHeight(chainID)
+	}
 }
 
 func (self *BlockChain) GetDCBConstitutionEndHeight(chainID byte) uint32 {
 	return self.GetBestBlock(chainID).Header.DCBConstitution.GetEndedBlockHeight()
-}
-
-func (self *BlockChain) GetGOVConstitutionStartHeight(chainID byte) uint32 {
-	return self.GetBestBlock(chainID).Header.GOVConstitution.StartedBlockHeight
 }
 
 func (self *BlockChain) GetGOVConstitutionEndHeight(chainID byte) uint32 {

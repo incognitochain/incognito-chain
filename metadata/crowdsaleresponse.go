@@ -40,7 +40,7 @@ func (cr *CrowdsaleResponse) Hash() *common.Hash {
 func (cr *CrowdsaleResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if only board members created this tx
 	isBoard := false
-	for _, gov := range bcr.GetDCBBoardPubKeys() {
+	for _, gov := range bcr.GetBoardPubKeys("dcb") {
 		// TODO(@0xbunyip): change gov to []byte or use Base58Decode for entire payment address of governors
 		if bytes.Equal([]byte(gov), txr.GetJSPubKey()) {
 			isBoard = true

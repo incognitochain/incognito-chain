@@ -149,12 +149,12 @@ func (helper GOVConstitutionHelper) CreatePunishDecryptTx(pubKey []byte) metadat
 
 func (helper DCBConstitutionHelper) GetSealerPubKey(tx metadata.Transaction) [][]byte {
 	meta := tx.GetMetadata().(*metadata.SealedLv3DCBVoteProposalMetadata)
-	return meta.SealedDCBVoteProposal.LockerPubKeys
+	return meta.SealedVoteProposal.LockerPubKeys
 }
 
 func (helper GOVConstitutionHelper) GetSealerPubKey(tx metadata.Transaction) [][]byte {
 	meta := tx.GetMetadata().(*metadata.SealedLv3GOVVoteProposalMetadata)
-	return meta.SealedGOVVoteProposal.LockerPubKeys
+	return meta.SealedVoteProposal.LockerPubKeys
 }
 
 func (helper DCBConstitutionHelper) NewTxRewardProposalSubmitter(blockgen *BlkTmplGenerator, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {

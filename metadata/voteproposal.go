@@ -434,10 +434,10 @@ func (sealedLv3VoteProposalMetadata *SealedLv3VoteProposalMetadata) GetBoardType
 	panic("overwrite me")
 }
 func (sealedLv3DCBVoteProposalMetadata *SealedLv3DCBVoteProposalMetadata) GetBoardType() string {
-	panic("overwrite me")
+	return "dcb"
 }
 func (sealedLv3GOVVoteProposalMetadata *SealedLv3GOVVoteProposalMetadata) GetBoardType() string {
-	panic("overwrite me")
+	return "gov"
 }
 
 func (sealedLv3VoteProposalMetadata *SealedLv3VoteProposalMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
@@ -733,23 +733,44 @@ func NewNormalDCBVoteProposalFromOwnerMetadata(
 			*NewMetadataBase(NormalDCBVoteProposalFromOwnerMeta),
 		),
 	}
-
 }
 
-func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMetadata) Hash() *common.Hash {
-	record := string(normalDCBVoteProposalFromOwnerMetadata.VoteProposal)
-	for _, i := range normalDCBVoteProposalFromOwnerMetadata.LockerPubKey {
+func NewNormalGOVVoteProposalFromOwnerMetadata(
+	voteProposal []byte,
+	lockerPubKey [][]byte,
+	pointerToLv3VoteProposal common.Hash,
+) *NormalGOVVoteProposalFromOwnerMetadata {
+	return &NormalGOVVoteProposalFromOwnerMetadata{
+		NormalVoteProposalFromOwnerMetadata: *NewNormalVoteProposalFromOwnerMetadata(
+			voteProposal,
+			lockerPubKey,
+			pointerToLv3VoteProposal,
+			*NewMetadataBase(NormalGOVVoteProposalFromOwnerMeta),
+		),
+	}
+}
+
+func (normalVoteProposalFromOwnerMetadata *NormalVoteProposalFromOwnerMetadata) Hash() *common.Hash {
+	record := string(normalVoteProposalFromOwnerMetadata.VoteProposal)
+	for _, i := range normalVoteProposalFromOwnerMetadata.LockerPubKey {
 		record += string(i)
 	}
-	record += string(normalDCBVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal.GetBytes())
-	record += string(normalDCBVoteProposalFromOwnerMetadata.MetadataBase.Hash().GetBytes())
+	record += string(normalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal.GetBytes())
+	record += string(normalVoteProposalFromOwnerMetadata.MetadataBase.Hash().GetBytes())
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
+func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMetadata) Hash() *common.Hash {
+	return normalDCBVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.Hash()
+}
+func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMetadata) Hash() *common.Hash {
+	return normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.Hash()
+}
+
 func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	//Validate these pubKeys are in board
-	dcbBoardPubKeys := bcr.GetDCBBoardPubKeys()
+	dcbBoardPubKeys := bcr.GetBoardPubKeys("dcb")
 	for _, j := range normalDCBVoteProposalFromOwnerMetadata.LockerPubKey {
 		exist := false
 		for _, i := range dcbBoardPubKeys {
@@ -772,31 +793,78 @@ func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMeta
 	// check 2 array equal
 	metaLv3 := lv3Tx.GetMetadata().(*SealedLv3DCBVoteProposalMetadata)
 	for i := 0; i < len(normalDCBVoteProposalFromOwnerMetadata.LockerPubKey); i++ {
-		if !common.ByteEqual(normalDCBVoteProposalFromOwnerMetadata.LockerPubKey[i], metaLv3.SealedDCBVoteProposal.LockerPubKeys[i]) {
+		if !common.ByteEqual(normalDCBVoteProposalFromOwnerMetadata.LockerPubKey[i], metaLv3.SealedVoteProposal.LockerPubKeys[i]) {
 			return false, nil
 		}
 	}
 
 	// Check encrypting
 	if !common.ByteEqual(
-		metaLv3.SealedDCBVoteProposal.VoteProposalData,
+		metaLv3.SealedVoteProposal.VoteProposalData,
 		common.Encrypt(
 			common.Encrypt(
 				common.Encrypt(
 					normalDCBVoteProposalFromOwnerMetadata.VoteProposal,
-					metaLv3.SealedDCBVoteProposal.LockerPubKeys[2],
+					metaLv3.SealedVoteProposal.LockerPubKeys[2],
 				),
-				metaLv3.SealedDCBVoteProposal.LockerPubKeys[1],
+				metaLv3.SealedVoteProposal.LockerPubKeys[1],
 			),
-			metaLv3.SealedDCBVoteProposal.LockerPubKeys[0],
+			metaLv3.SealedVoteProposal.LockerPubKeys[0],
+		).([]byte)) {
+		return false, nil
+	}
+	return true, nil
+}
+func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+	//Validate these pubKeys are in board
+	govBoardPubKeys := bcr.GetBoardPubKeys("gov")
+	for _, j := range normalGOVVoteProposalFromOwnerMetadata.LockerPubKey {
+		exist := false
+		for _, i := range govBoardPubKeys {
+			if common.ByteEqual(i, j) {
+				exist = true
+				break
+			}
+		}
+		if !exist {
+			return false, nil
+		}
+	}
+
+	//Check precede transaction type
+	_, _, _, lv3Tx, _ := bcr.GetTransactionByHash(&normalGOVVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal)
+	if lv3Tx.GetMetadataType() != SealedLv3GOVVoteProposalMeta {
+		return false, nil
+	}
+
+	// check 2 array equal
+	metaLv3 := lv3Tx.GetMetadata().(*SealedLv3GOVVoteProposalMetadata)
+	for i := 0; i < len(normalGOVVoteProposalFromOwnerMetadata.LockerPubKey); i++ {
+		if !common.ByteEqual(normalGOVVoteProposalFromOwnerMetadata.LockerPubKey[i], metaLv3.SealedVoteProposal.LockerPubKeys[i]) {
+			return false, nil
+		}
+	}
+
+	// Check encrypting
+	if !common.ByteEqual(
+		metaLv3.SealedVoteProposal.VoteProposalData,
+		common.Encrypt(
+			common.Encrypt(
+				common.Encrypt(
+					normalGOVVoteProposalFromOwnerMetadata.VoteProposal,
+					metaLv3.SealedVoteProposal.LockerPubKeys[2],
+				),
+				metaLv3.SealedVoteProposal.LockerPubKeys[1],
+			),
+			metaLv3.SealedVoteProposal.LockerPubKeys[0],
 		).([]byte)) {
 		return false, nil
 	}
 	return true, nil
 }
 
-func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
-	for _, i := range normalDCBVoteProposalFromOwnerMetadata.LockerPubKey {
+func (normalVoteProposalFromOwnerMetadata *NormalVoteProposalFromOwnerMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
+	for _, i := range normalVoteProposalFromOwnerMetadata.LockerPubKey {
 		if len(i) != common.PubKeyLength {
 			return true, false, nil
 		}
@@ -804,11 +872,11 @@ func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMeta
 	return true, true, nil
 }
 
-func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMetadata) ValidateMetadataByItself() bool {
-	for index1 := 0; index1 < len(normalDCBVoteProposalFromOwnerMetadata.LockerPubKey); index1++ {
-		pub1 := normalDCBVoteProposalFromOwnerMetadata.LockerPubKey[index1]
-		for index2 := index1 + 1; index2 < len(normalDCBVoteProposalFromOwnerMetadata.LockerPubKey); index2++ {
-			pub2 := normalDCBVoteProposalFromOwnerMetadata.LockerPubKey[index2]
+func (normalVoteProposalFromOwnerMetadata *NormalVoteProposalFromOwnerMetadata) ValidateMetadataByItself() bool {
+	for index1 := 0; index1 < len(normalVoteProposalFromOwnerMetadata.LockerPubKey); index1++ {
+		pub1 := normalVoteProposalFromOwnerMetadata.LockerPubKey[index1]
+		for index2 := index1 + 1; index2 < len(normalVoteProposalFromOwnerMetadata.LockerPubKey); index2++ {
+			pub2 := normalVoteProposalFromOwnerMetadata.LockerPubKey[index2]
 			if !common.ByteEqual(pub1, pub2) {
 				return false
 			}
@@ -817,13 +885,13 @@ func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMeta
 	return true
 }
 
-func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
-	endedDCBPivot := bcr.GetDCBConstitutionEndHeight(chainID)
+func (normalVoteProposalFromOwnerMetadata *NormalVoteProposalFromOwnerMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
+	endedPivot := bcr.GetConstitutionEndHeight("dcb", chainID)
 	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
-	lv3DCBPivot := endedDCBPivot - common.EncryptionOnePhraseDuration
-	lv2DCBPivot := lv3DCBPivot - common.EncryptionOnePhraseDuration
-	lv1DCBPivot := lv2DCBPivot - common.EncryptionOnePhraseDuration
-	if !(currentBlockHeight < endedDCBPivot && currentBlockHeight >= lv1DCBPivot) {
+	lv3Pivot := endedPivot - common.EncryptionOnePhraseDuration
+	lv2Pivot := lv3Pivot - common.EncryptionOnePhraseDuration
+	lv1Pivot := lv2Pivot - common.EncryptionOnePhraseDuration
+	if !(currentBlockHeight < endedPivot && currentBlockHeight >= lv1Pivot) {
 		return false
 	}
 	return true
@@ -862,5 +930,41 @@ func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) ValidateSanityData(Blo
 }
 
 func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) ValidateMetadataByItself() bool {
+	return true
+}
+
+type PunishGOVDecryptMetadata struct {
+	pubKey []byte
+	MetadataBase
+}
+
+func NewPunishGOVDecryptMetadata(pubKey []byte) *PunishGOVDecryptMetadata {
+	return &PunishGOVDecryptMetadata{
+		pubKey:       pubKey,
+		MetadataBase: *NewMetadataBase(PunishGOVDecryptMeta),
+	}
+}
+
+func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) Hash() *common.Hash {
+	record := string(punishGOVDecryptMetadata.pubKey)
+	record += string(punishGOVDecryptMetadata.MetadataBase.Hash()[:])
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
+
+//todo @0xjackalope validate within block chain and current block
+
+func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
+	return true, nil
+}
+
+func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
+	if len(punishGOVDecryptMetadata.pubKey) != common.PubKeyLength {
+		return true, false, nil
+	}
+	return true, true, nil
+}
+
+func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) ValidateMetadataByItself() bool {
 	return true
 }

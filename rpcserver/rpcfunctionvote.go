@@ -71,28 +71,29 @@ func (self RpcServer) handleGetEncryptionLastBlockHeightFlag(params interface{},
 func (self RpcServer) buildRawSealLv3VoteProposalTransaction(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	nParams := len(arrayParams)
-
-	boardType := arrayParams[nParams-2].(string)
-	var meta metadata.Metadata
-	if boardType == "dcb" {
-		meta = metadata.NewSealedLv3DCBVoteProposalMetadataFromJson()
-	} else {
-
-	}
-	voteInfo := arrayParams[len(arrayParams)-4]
-	firstPubKey := arrayParams[len(arrayParams)-3] // firstPubKey is pubkey of itself
-	secondPubKey := arrayParams[len(arrayParams)-2]
-	thirdPubKey := arrayParams[len(arrayParams)-1]
-	Seal3Data := common.Encrypt(common.Encrypt(common.Encrypt(voteInfo, thirdPubKey), secondPubKey), firstPubKey)
-	meta := metadata.NewSealedLv3DCBVoteProposalMetadata([]byte(Seal3Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))})
-	tx, err := self.buildRawTransaction(params, meta)
-	return tx, err
+	//arrayParams := common.InterfaceSlice(params)
+	//nParams := len(arrayParams)
+	//
+	//boardType := arrayParams[nParams-2].(string)
+	//var meta metadata.Metadata
+	//if boardType == "dcb" {
+	//	meta = metadata.NewSealedLv3DCBVoteProposalMetadataFromJson()
+	//} else {
+	//
+	//}
+	//voteInfo := arrayParams[len(arrayParams)-4]
+	//firstPubKey := arrayParams[len(arrayParams)-3] // firstPubKey is pubkey of itself
+	//secondPubKey := arrayParams[len(arrayParams)-2]
+	//thirdPubKey := arrayParams[len(arrayParams)-1]
+	//Seal3Data := common.Encrypt(common.Encrypt(common.Encrypt(voteInfo, thirdPubKey), secondPubKey), firstPubKey)
+	//meta := metadata.NewSealedLv3DCBVoteProposalMetadata([]byte(Seal3Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))})
+	//tx, err := self.buildRawTransaction(params, meta)
+	//return tx, err
+	return nil, nil
 }
 
 func (self RpcServer) handleCreateRawSealLv3VoteDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	tx, err := self.buildRawSealLv3VoteDCBProposalTransaction(params)
+	tx, err := self.buildRawSealLv3VoteProposalTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
