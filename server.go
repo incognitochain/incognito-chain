@@ -513,9 +513,9 @@ func (self *Server) InitListenerPeer(amgr *addrmanager.AddrManager, listenAddrs 
 
 	// load seed of libp2p from keycache file, if not exist -> save a new data into keycache file
 	seed := int64(0)
-	seedC, _ := strconv.ParseInt(os.Getenv("NODE_SEED"), 10, 64)
+	seedC, _ := strconv.ParseInt(os.Getenv("LISTENER_PEER_SEED"), 10, 64)
 	if seedC == 0 {
-		key := fmt.Sprintf("%s_seed", netAddr.String())
+		key := "LISTENER_PEER_SEED"
 		seedT := kc.Get(key)
 		if seedT == nil {
 			seed = common.RandInt64()
