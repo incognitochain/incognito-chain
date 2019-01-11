@@ -213,20 +213,6 @@ func (self RpcServer) handleCreateAndSendTxWithBuySellRequest(params interface{}
 	return result, nil
 }
 
-func (self RpcServer) buildRawSealLv3VoteGOVProposalTransaction(
-	params interface{},
-) (*transaction.Tx, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	voteInfo := arrayParams[len(arrayParams)-4]
-	firstPubKey := arrayParams[len(arrayParams)-3] // firstPubKey is pubkey of itself
-	secondPubKey := arrayParams[len(arrayParams)-2]
-	thirdPubKey := arrayParams[len(arrayParams)-1]
-	Seal3Data := common.Encrypt(common.Encrypt(common.Encrypt(voteInfo, thirdPubKey), secondPubKey), firstPubKey)
-	meta := metadata.NewSealedLv3GOVVoteProposalMetadata([]byte(Seal3Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))})
-	tx, err := self.buildRawTransaction(params, meta)
-	return tx, err
-}
-
 func (self RpcServer) handleCreateRawSealLv3VoteGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	tx, err := self.buildRawSealLv3VoteGOVProposalTransaction(params)
 	if err != nil {

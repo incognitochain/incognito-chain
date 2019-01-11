@@ -213,7 +213,7 @@ func (sealedLv1DCBVoteProposalMetadata *SealedLv1DCBVoteProposalMetadata) Valida
 
 	// Check encrypting
 	if !common.ByteEqual(sealedLv1DCBVoteProposalMetadata.sealedVoteProposal.VoteProposalData,
-		common.Encrypt(metaLv2.sealedVoteProposal.VoteProposalData, metaLv2.sealedVoteProposal.LockerPubKeys[1]).([]byte)) {
+		common.Encrypt(metaLv2.sealedVoteProposal.VoteProposalData, metaLv2.sealedVoteProposal.LockerPubKeys[1])) {
 		return false, nil
 	}
 	return true, nil
@@ -251,7 +251,7 @@ func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) Valida
 
 	// Check encrypting
 	if !common.ByteEqual(sealedLv1GOVVoteProposalMetadata.sealedVoteProposal.VoteProposalData,
-		common.Encrypt(metaLv2.sealedVoteProposal.VoteProposalData, metaLv2.sealedVoteProposal.LockerPubKeys[1]).([]byte)) {
+		common.Encrypt(metaLv2.sealedVoteProposal.VoteProposalData, metaLv2.sealedVoteProposal.LockerPubKeys[1])) {
 		return false, nil
 	}
 	return true, nil
@@ -379,7 +379,7 @@ func (sealedLv2DCBVoteProposalMetadata *SealedLv2DCBVoteProposalMetadata) Valida
 	// Check encrypting
 	if !common.ByteEqual(
 		sealedLv2DCBVoteProposalMetadata.sealedVoteProposal.VoteProposalData,
-		common.Encrypt(metaLv3.SealedVoteProposal.VoteProposalData, metaLv3.SealedVoteProposal.LockerPubKeys[2]).([]byte),
+		common.Encrypt(metaLv3.SealedVoteProposal.VoteProposalData, metaLv3.SealedVoteProposal.LockerPubKeys[2]),
 	) {
 		return false, nil
 	}
@@ -411,7 +411,7 @@ func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) Valida
 	// Check encrypting
 	if !common.ByteEqual(
 		sealedLv2GOVVoteProposalMetadata.sealedVoteProposal.VoteProposalData,
-		common.Encrypt(metaLv3.SealedVoteProposal.VoteProposalData, metaLv3.SealedVoteProposal.LockerPubKeys[2]).([]byte),
+		common.Encrypt(metaLv3.SealedVoteProposal.VoteProposalData, metaLv3.SealedVoteProposal.LockerPubKeys[2]),
 	) {
 		return false, nil
 	}
@@ -464,14 +464,21 @@ func (sealLv3VoteProposalMetadata *SealedLv3VoteProposalMetadata) ValidateMetada
 	return sealLv3VoteProposalMetadata.ValidateMetadataByItself()
 }
 
-func NewSealedLv3VoteProposalMetadata(sealedVoteProposal []byte, lockerPubKeys [][]byte, metadataBase MetadataBase) *SealedLv3VoteProposalMetadata {
+func NewSealedLv3VoteProposalMetadata(
+	sealedVoteProposal []byte,
+	lockerPubKeys [][]byte,
+	metadataBase MetadataBase,
+) *SealedLv3VoteProposalMetadata {
 	return &SealedLv3VoteProposalMetadata{
 		SealedVoteProposal: *NewSealedVoteProposalMetadata(sealedVoteProposal, lockerPubKeys),
 		MetadataBase:       metadataBase,
 	}
 
 }
-func NewSealedLv3DCBVoteProposalMetadata(sealedVoteProposal []byte, lockerPubKeys [][]byte) *SealedLv3DCBVoteProposalMetadata {
+func NewSealedLv3DCBVoteProposalMetadata(
+	sealedVoteProposal []byte,
+	lockerPubKeys [][]byte,
+) *SealedLv3DCBVoteProposalMetadata {
 	return &SealedLv3DCBVoteProposalMetadata{
 		SealedLv3VoteProposalMetadata: *NewSealedLv3VoteProposalMetadata(
 			sealedVoteProposal, lockerPubKeys,
@@ -479,13 +486,31 @@ func NewSealedLv3DCBVoteProposalMetadata(sealedVoteProposal []byte, lockerPubKey
 		),
 	}
 }
-func NewSealedLv3GOVVoteProposalMetadata(sealedVoteProposal []byte, lockerPubKeys [][]byte) *SealedLv3GOVVoteProposalMetadata {
+func NewSealedLv3GOVVoteProposalMetadata(
+	sealedVoteProposal []byte,
+	lockerPubKeys [][]byte,
+) *SealedLv3GOVVoteProposalMetadata {
 	return &SealedLv3GOVVoteProposalMetadata{
 		SealedLv3VoteProposalMetadata: *NewSealedLv3VoteProposalMetadata(
 			sealedVoteProposal, lockerPubKeys,
 			*NewMetadataBase(SealedLv3GOVVoteProposalMeta),
 		),
 	}
+}
+
+func NewSealedLv3DCBVoteProposalMetadataFromJson(data interface{}) *SealedLv3DCBVoteProposalMetadata {
+	dataSealedLv3DCBVoteProposal := data.(map[string]interface{})
+	return NewSealedLv3DCBVoteProposalMetadata(
+		[]byte(dataSealedLv3DCBVoteProposal["sealedVoteProposal"].(string)),
+		common.SliceInterfaceToSliceSliceByte(dataSealedLv3DCBVoteProposal["lockerPubKeys"].([]interface{})),
+	)
+}
+func NewSealedLv3GOVVoteProposalMetadataFromJson(data interface{}) *SealedLv3GOVVoteProposalMetadata {
+	dataSealedLv3GOVVoteProposal := data.(map[string]interface{})
+	return NewSealedLv3GOVVoteProposalMetadata(
+		[]byte(dataSealedLv3GOVVoteProposal["sealedVoteProposal"].(string)),
+		common.SliceInterfaceToSliceSliceByte(dataSealedLv3GOVVoteProposal["lockerPubKeys"].([]interface{})),
+	)
 }
 
 type NormalVoteProposalFromSealerMetadata struct {
@@ -632,7 +657,7 @@ func (normalDCBVoteProposalFromSealerMetadata *NormalDCBVoteProposalFromSealerMe
 	}
 
 	// Check encrypting
-	if !common.ByteEqual(normalDCBVoteProposalFromSealerMetadata.VoteProposal, common.Encrypt(metaLv1.sealedVoteProposal.VoteProposalData, metaLv1.sealedVoteProposal.LockerPubKeys[0]).([]byte)) {
+	if !common.ByteEqual(normalDCBVoteProposalFromSealerMetadata.VoteProposal, common.Encrypt(metaLv1.sealedVoteProposal.VoteProposalData, metaLv1.sealedVoteProposal.LockerPubKeys[0])) {
 		return false, nil
 	}
 	return true, nil
@@ -673,7 +698,7 @@ func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMe
 	}
 
 	// Check encrypting
-	if !common.ByteEqual(normalGOVVoteProposalFromSealerMetadata.VoteProposal, common.Encrypt(metaLv1.sealedVoteProposal.VoteProposalData, metaLv1.sealedVoteProposal.LockerPubKeys[0]).([]byte)) {
+	if !common.ByteEqual(normalGOVVoteProposalFromSealerMetadata.VoteProposal, common.Encrypt(metaLv1.sealedVoteProposal.VoteProposalData, metaLv1.sealedVoteProposal.LockerPubKeys[0])) {
 		return false, nil
 	}
 	return true, nil
@@ -810,7 +835,7 @@ func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMeta
 				metaLv3.SealedVoteProposal.LockerPubKeys[1],
 			),
 			metaLv3.SealedVoteProposal.LockerPubKeys[0],
-		).([]byte)) {
+		)) {
 		return false, nil
 	}
 	return true, nil
@@ -857,7 +882,7 @@ func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMeta
 				metaLv3.SealedVoteProposal.LockerPubKeys[1],
 			),
 			metaLv3.SealedVoteProposal.LockerPubKeys[0],
-		).([]byte)) {
+		)) {
 		return false, nil
 	}
 	return true, nil

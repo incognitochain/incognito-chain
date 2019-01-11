@@ -117,7 +117,10 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 		MinLoanResponseRequire:   1,
 		MinCMBApprovalRequire:    1,
 		LateWithdrawResponseFine: 1000,
-		SaleDCBTokensByUSDData:   &params.SaleDCBTokensByUSDData{},
+		SaleDCBTokensByUSDData: &params.SaleDCBTokensByUSDData{
+			Amount:   0,
+			EndBlock: 0,
+		},
 	}
 
 	// TODO(@0xjackalope): fill correct values

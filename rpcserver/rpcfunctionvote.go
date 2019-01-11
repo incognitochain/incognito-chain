@@ -71,28 +71,25 @@ func (self RpcServer) handleGetEncryptionLastBlockHeightFlag(params interface{},
 func (self RpcServer) buildRawSealLv3VoteProposalTransaction(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
-	//arrayParams := common.InterfaceSlice(params)
-	//nParams := len(arrayParams)
-	//
-	//boardType := arrayParams[nParams-2].(string)
-	//var meta metadata.Metadata
-	//if boardType == "dcb" {
-	//	meta = metadata.NewSealedLv3DCBVoteProposalMetadataFromJson()
-	//} else {
-	//
-	//}
-	//voteInfo := arrayParams[len(arrayParams)-4]
-	//firstPubKey := arrayParams[len(arrayParams)-3] // firstPubKey is pubkey of itself
-	//secondPubKey := arrayParams[len(arrayParams)-2]
-	//thirdPubKey := arrayParams[len(arrayParams)-1]
-	//Seal3Data := common.Encrypt(common.Encrypt(common.Encrypt(voteInfo, thirdPubKey), secondPubKey), firstPubKey)
-	//meta := metadata.NewSealedLv3DCBVoteProposalMetadata([]byte(Seal3Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))})
-	//tx, err := self.buildRawTransaction(params, meta)
-	//return tx, err
-	return nil, nil
+	arrayParams := common.InterfaceSlice(params)
+	nParams := len(arrayParams)
+
+	boardType := arrayParams[nParams-3].(string)
+	voteInfo := arrayParams[len(arrayParams)-2]
+	pubKey := arrayParams[len(arrayParams)-1].([]interface{}) // firstPubKey is pubkey of itself
+	Seal3Data := common.Encrypt(common.Encrypt(common.Encrypt(voteInfo, pubKey[0]), pubKey[1]), pubKey[2])
+
+	var meta metadata.Metadata
+	if boardType == "dcb" {
+		meta = metadata.NewSealedLv3DCBVoteProposalMetadata(Seal3Data, common.SliceInterfaceToSliceSliceByte(pubKey))
+	} else {
+		meta = metadata.NewSealedLv3GOVVoteProposalMetadata(Seal3Data, common.SliceInterfaceToSliceSliceByte(pubKey))
+	}
+	tx, err := self.buildRawTransaction(params, meta)
+	return tx, err
 }
 
-func (self RpcServer) handleCreateRawSealLv3VoteDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (self RpcServer) handleCreateRawSealLv3VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	tx, err := self.buildRawSealLv3VoteProposalTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
@@ -112,8 +109,8 @@ func (self RpcServer) handleCreateRawSealLv3VoteDCBProposalTransaction(params in
 }
 
 //create lv3 vote by 3 layer encrypt
-func (self RpcServer) handleCreateAndSendSealLv3VoteDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawSealLv3VoteDCBProposalTransaction(params, closeChan)
+func (self RpcServer) handleCreateAndSendSealLv3VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := self.handleCreateRawSealLv3VoteProposalTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
