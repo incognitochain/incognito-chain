@@ -92,6 +92,7 @@ type DatabaseInterface interface {
 	GetLoanTxs([]byte) ([][]byte, error)                   // param: loanID
 	StoreLoanPayment([]byte, uint64, uint64, uint32) error // param: loanID, principle, interest, deadline
 	GetLoanPayment([]byte) (uint64, uint64, uint32, error) // param: loanID; return: principle, interest, deadline
+	GetLoanRequestTx(loanID []byte) ([]byte, error)
 
 	// Crowdsale
 	SaveCrowdsaleData([]byte, int32, []byte, uint64, []byte, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
