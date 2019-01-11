@@ -45,7 +45,7 @@ func NewListLoanParamsFromJson(data interface{}) []LoanParams {
 }
 
 type DCBParams struct {
-	SaleData                 *SaleData
+	SaleData                 []SaleData
 	MinLoanResponseRequire   uint8
 	MinCMBApprovalRequire    uint8
 	LateWithdrawResponseFine uint64 // CST penalty for each CMB's late withdraw response
@@ -56,14 +56,21 @@ type DCBParams struct {
 }
 
 func NewDCBParams(
-	saleData *SaleData,
+	saleData []SaleData,
 	minLoanResponseRequire uint8,
 	minCMBApprovalRequire uint8,
 	lateWithdrawResponseFine uint64,
 	saleDCBTokensByUSDData *SaleDCBTokensByUSDData,
 	listLoanParams []LoanParams,
 ) *DCBParams {
-	return &DCBParams{SaleData: saleData, MinLoanResponseRequire: minLoanResponseRequire, MinCMBApprovalRequire: minCMBApprovalRequire, LateWithdrawResponseFine: lateWithdrawResponseFine, SaleDCBTokensByUSDData: saleDCBTokensByUSDData, LoanParams: listLoanParams}
+	return &DCBParams{
+		SaleData:                 saleData,
+		MinLoanResponseRequire:   minLoanResponseRequire,
+		MinCMBApprovalRequire:    minCMBApprovalRequire,
+		LateWithdrawResponseFine: lateWithdrawResponseFine,
+		SaleDCBTokensByUSDData:   saleDCBTokensByUSDData,
+		LoanParams:               listLoanParams,
+	}
 }
 
 func NewDCBParamsFromJson(rawData interface{}) *DCBParams {
@@ -122,7 +129,10 @@ func NewGOVParamsFromJson(data interface{}) *GOVParams {
 }
 
 func (dcbParams *DCBParams) Hash() *common.Hash {
-	record := string(dcbParams.SaleData.Hash().GetBytes())
+	record := ""
+	for _, saleData := range dcbParams.SaleData {
+		record := string(saleData.Hash().GetBytes())
+	}
 	record += string(dcbParams.SaleDCBTokensByUSDData.Hash().GetBytes())
 	record += string(dcbParams.MinLoanResponseRequire)
 	record += string(dcbParams.MinCMBApprovalRequire)

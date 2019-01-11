@@ -808,11 +808,12 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 					return err
 				}
 
-				// Store saledata in db if needed
-				if proposal.DCBParams.SaleData != nil {
-					saleData := proposal.DCBParams.SaleData
+				// Store saledata in db
+				saleData := proposal.DCBParams.SaleData
+				for _, data := range saleData {
 					if _, _, _, _, _, err := self.config.DataBase.LoadCrowdsaleData(saleData.SaleID); err == nil {
-						return fmt.Errorf("SaleID not unique")
+						// TODO(@0xbunyip): support update crowdsale data
+						continue
 					}
 					if err := self.config.DataBase.SaveCrowdsaleData(
 						saleData.SaleID,
