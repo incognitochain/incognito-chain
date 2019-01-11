@@ -1,8 +1,8 @@
 package privacy
 
 import (
-
 	"errors"
+	"fmt"
 	"math/big"
 	rand2 "math/rand"
 	"time"
@@ -126,18 +126,18 @@ func paddedAppend(size uint, dst, src []byte) []byte {
 }
 
 // checkZeroArray check whether all ellement of values array are zero value or not
-func checkZeroArray(values []*big.Int) bool{
-	for i:=0; i<len(values); i++{
-		if values[i].Cmp(big.NewInt(0)) !=0{
+func checkZeroArray(values []*big.Int) bool {
+	for i := 0; i < len(values); i++ {
+		if values[i].Cmp(big.NewInt(0)) != 0 {
 			return false
 		}
 	}
 	return true
 }
 
-func MaxBitLen(values []*big.Int) int{
+func MaxBitLen(values []*big.Int) int {
 	res := 0
-	for i:=0; i< len(values); i++{
+	for i := 0; i < len(values); i++ {
 		if values[i].BitLen() > res {
 			res = values[i].BitLen()
 		}
@@ -146,44 +146,44 @@ func MaxBitLen(values []*big.Int) int{
 	return res
 }
 
-func multiExp(g []*EllipticPoint, values []*big.Int) (*EllipticPoint, error) {
-	// Check inputs
-	if len(g) != len(values) {
-		return nil, errors.New("wrong inputs")
-	}
-
-	maxBitLen := MaxBitLen(values)
-
-	// save values
-	valuesTmp := make([]*big.Int, len(values))
-	for i := 0; i < len(valuesTmp); i++ {
-		valuesTmp[i] = new(big.Int)
-		valuesTmp[i].Set(values[i])
-	}
-
-	// generator result point
-	res := new(EllipticPoint).Zero()
-
-	for i := maxBitLen -1; i >= 0; i-- {
-		// res = 2*res
-		res = res.ScalarMult(big.NewInt(2))
-
-		// res = res + e1,i*g1 + ... + en,i*gn
-		for j := 0; j < len(valuesTmp); j++ {
-			r := valuesTmp[i].Bit(i)
-			if r == 1{
-				res = res.Add(g[j])
-			}
-			//valuesTmp[j].Div(valuesTmp[j], big.NewInt(2))
-		}
-
-		//if checkZeroArray(valuesTmp){
-		//	//res = res.ScalarMult(big.NewInt(2))
-		//	break
-		//}
-	}
-	return res, nil
-}
+//func multiExp(g []*EllipticPoint, values []*big.Int) (*EllipticPoint, error) {
+//	// Check inputs
+//	if len(g) != len(values) {
+//		return nil, errors.New("wrong inputs")
+//	}
+//
+//	maxBitLen := MaxBitLen(values)
+//
+//	// save values
+//	valuesTmp := make([]*big.Int, len(values))
+//	for i := 0; i < len(valuesTmp); i++ {
+//		valuesTmp[i] = new(big.Int)
+//		valuesTmp[i].Set(values[i])
+//	}
+//
+//	// generator result point
+//	res := new(EllipticPoint).Zero()
+//
+//	for i := maxBitLen -1; i >= 0; i-- {
+//		// res = 2*res
+//		res = res.ScalarMult(big.NewInt(2))
+//
+//		// res = res + e1,i*g1 + ... + en,i*gn
+//		for j := 0; j < len(valuesTmp); j++ {
+//			r := valuesTmp[i].Bit(i)
+//			if r == 1{
+//				res = res.Add(g[j])
+//			}
+//			//valuesTmp[j].Div(valuesTmp[j], big.NewInt(2))
+//		}
+//
+//		//if checkZeroArray(valuesTmp){
+//		//	//res = res.ScalarMult(big.NewInt(2))
+//		//	break
+//		//}
+//	}
+//	return res, nil
+//}
 
 //func multiExp2(g []*EllipticPoint, values []*big.Int) (*EllipticPoint, error) {
 //	// Check inputs
@@ -226,30 +226,69 @@ func multiExp(g []*EllipticPoint, values []*big.Int) (*EllipticPoint, error) {
 //	return res, nil
 //}
 
+//func exp (x * EllipticPoint, n *big.Int) *EllipticPoint{
+//	if n.Cmp(big.NewInt(0)) == 0{
+//		return x
+//	}
+//
+//	nTmp := new(big.Int)
+//	nTmp.Set(n)
+//
+//	xTmp := new(EllipticPoint)
+//	xTmp.Set(x.X, x.Y)
+//
+//	y := new(EllipticPoint).Zero()
+//
+//	r := big.NewInt(0)
+//
+//	for nTmp.Cmp(big.NewInt(1)) == 1{
+//		// nTmp is even
+//		if r.Mod(nTmp, big.NewInt(2)).Cmp(big.NewInt(1)) == 0 {
+//			y = xTmp.Add(y)
+//		}
+//		xTmp = xTmp.Add(xTmp)
+//		nTmp.Div(nTmp, big.NewInt(2))
+//	}
+//
+//	return xTmp.Add(y)
+//}
 
-func exp (x * EllipticPoint, n *big.Int) *EllipticPoint{
-	if n.Cmp(big.NewInt(0)) == 0{
-		return x
+func multiScalarmult(bases []*EllipticPoint, exponents []*big.Int) (*EllipticPoint, error) {
+	n := len(bases)
+	if n != len(exponents) {
+		return nil, errors.New("wrong inputs")
 	}
 
-	nTmp := new(big.Int)
-	nTmp.Set(n)
+	//count := 0
 
-	xTmp := new(EllipticPoint)
-	xTmp.Set(x.X, x.Y)
+	baseTmp := make([]*EllipticPoint, n)
+	for i:=0; i<n; i++{
+		baseTmp[i] = new(EllipticPoint)
+		baseTmp[i].Set(bases[i].X, bases[i].Y)
+	}
 
-	y := new(EllipticPoint).Zero()
+	expTmp := make([]*big.Int, n)
+	for i:=0; i<n; i++{
+		expTmp[i] = new(big.Int)
+		expTmp[i].Set(exponents[i])
+	}
+	start1 := time.Now()
 
-	r := big.NewInt(0)
+	result := new(EllipticPoint).Zero()
 
-	for nTmp.Cmp(big.NewInt(1)) == 1{
-		// nTmp is even
-		if r.Mod(nTmp, big.NewInt(2)).Cmp(big.NewInt(1)) == 0 {
-			y = xTmp.Add(y)
+	for !checkZeroArray(expTmp) {
+		for i := 0; i < n; i++ {
+			if new(big.Int).And(expTmp[i], big.NewInt(1)).Cmp(big.NewInt(1)) ==0 {
+				result = result.Add(baseTmp[i])
+			}
+
+			expTmp[i].Rsh(expTmp[i], uint(1))
+			baseTmp[i] = baseTmp[i].Add(baseTmp[i])
 		}
-		xTmp = xTmp.Add(xTmp)
-		nTmp.Div(nTmp, big.NewInt(2))
 	}
 
-	return xTmp.Add(y)
+	end1 := time.Since(start1)
+	fmt.Printf(" time faster: %v\n", end1)
+
+	return result, nil
 }

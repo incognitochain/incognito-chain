@@ -1,8 +1,10 @@
 package zkp
 
 import (
+	"fmt"
 	"github.com/ninjadotorg/constant/privacy"
 	"math/big"
+	"time"
 )
 
 // SNNoPrivacyWitness is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
@@ -175,6 +177,7 @@ func (pro *SNNoPrivacyProof) SetBytes(bytes []byte) error {
 }
 
 func (wit *SNNoPrivacyWitness) Prove() (*SNNoPrivacyProof, error) {
+	start := time.Now()
 	// randomness
 	eSK := privacy.RandInt()
 
@@ -194,10 +197,13 @@ func (wit *SNNoPrivacyWitness) Prove() (*SNNoPrivacyProof, error) {
 
 	proof := new(SNNoPrivacyProof).Init()
 	proof.Set(wit.output, wit.vKey, wit.input, tSK, tE, zSK)
+	end := time.Since(start)
+	fmt.Printf("Serial number no privacy proving time: %v\n", end)
 	return proof, nil
 }
 
 func (pro *SNNoPrivacyProof) Verify() bool {
+	start := time.Now()
 	// re-calculate x = hash(tSeed || tOutput)
 	x := generateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSeed, pro.tOutput})
 
@@ -220,6 +226,9 @@ func (pro *SNNoPrivacyProof) Verify() bool {
 	if !leftPoint2.IsEqual(rightPoint4) {
 		return false
 	}
+	end := time.Since(start)
+	fmt.Printf("Serial number no privacy verification time: %v\n", end)
+
 
 	return true
 }
