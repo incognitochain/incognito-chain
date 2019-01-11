@@ -25,7 +25,7 @@ func NewLoanParams(interestRate uint64, maturity uint32, liquidationStart uint64
 }
 
 type DCBParams struct {
-	SaleData                 *SaleData
+	SaleData                 []SaleData
 	MinLoanResponseRequire   uint8
 	MinCMBApprovalRequire    uint8
 	LateWithdrawResponseFine uint64 // CST penalty for each CMB's late withdraw response
@@ -35,7 +35,7 @@ type DCBParams struct {
 	LoanParams []LoanParams // params for collateralized loans of Constant
 }
 
-func NewDCBParams(saleData *SaleData, minLoanResponseRequire uint8, saleDBCTOkensByUSDData *SaleDBCTOkensByUSDData, loanParams []LoanParams) *DCBParams {
+func NewDCBParams(saleData []SaleData, minLoanResponseRequire uint8, saleDBCTOkensByUSDData *SaleDBCTOkensByUSDData, loanParams []LoanParams) *DCBParams {
 	return &DCBParams{
 		SaleData:               saleData,
 		MinLoanResponseRequire: minLoanResponseRequire,
@@ -137,7 +137,10 @@ func NewGOVParamsFromRPC(data interface{}) *GOVParams {
 }
 
 func (dcbParams *DCBParams) Hash() *common.Hash {
-	record := string(dcbParams.SaleData.Hash().GetBytes())
+	record := ""
+	for _, saleData := range dcbParams.SaleData {
+		record := string(saleData.Hash().GetBytes())
+	}
 	record += string(dcbParams.SaleDBCTOkensByUSDData.Hash().GetBytes())
 	record += string(dcbParams.MinLoanResponseRequire)
 	record += string(dcbParams.MinCMBApprovalRequire)
