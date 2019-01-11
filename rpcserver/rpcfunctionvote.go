@@ -78,7 +78,9 @@ func (self RpcServer) buildRawSealLv3VoteProposalTransaction(
 
 	boardType := arrayParams[nParams-3].(string)
 	voteInfo := arrayParams[len(arrayParams)-2]
+
 	pubKey := arrayParams[len(arrayParams)-1].([]interface{}) // firstPubKey is pubkey of itself
+
 	Seal3Data := common.Encrypt(common.Encrypt(common.Encrypt(voteInfo, pubKey[0]), pubKey[1]), pubKey[2])
 
 	var meta metadata.Metadata
