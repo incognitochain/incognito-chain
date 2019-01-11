@@ -77,6 +77,7 @@ func mainMaster(serverChan chan<- *Server) error {
 				walletObj.Save(cfg.WalletPassphrase)
 			} else {
 				if cfg.WalletAutoInit {
+					Logger.log.Critical("\n **** Auto init wallet flag is TRUE ****\n")
 					walletObj.Init(cfg.WalletPassphrase, 0, cfg.WalletName)
 					walletObj.Save(cfg.WalletPassphrase)
 				} else {
