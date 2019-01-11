@@ -2,11 +2,14 @@ package params
 
 import (
 	"fmt"
+
 	"github.com/ninjadotorg/constant/common"
 )
 
 // Todo: @0xjackalope, @0xbunyip Check logic in Hash and Validate and rpcfunction because other will change params struct without modified these function
 type SellingBonds struct {
+	BondName       string
+	BondSymbol     string
 	TotalIssue     uint64
 	BondsToSell    uint64
 	BondPrice      uint64 // in Constant unit
@@ -28,15 +31,19 @@ func (self SellingBonds) GetID() *common.Hash {
 }
 
 func NewSellingBonds(
+	bondName string,
+	bondSymbol string,
+	totalIssue uint64,
 	bondsToSell uint64,
 	bondPrice uint64,
 	maturity uint32,
 	buyBackPrice uint64,
 	startSellingAt uint32,
 	sellingWithin uint32,
-	totalIssue uint64,
 ) *SellingBonds {
 	return &SellingBonds{
+		BondName:       bondName,
+		BondSymbol:     bondSymbol,
 		TotalIssue:     totalIssue,
 		BondsToSell:    bondsToSell,
 		BondPrice:      bondPrice,
@@ -45,6 +52,22 @@ func NewSellingBonds(
 		StartSellingAt: startSellingAt,
 		SellingWithin:  sellingWithin,
 	}
+}
+
+func NewSellingBondsFromJson(data interface{}) *SellingBonds {
+	sellingBondsData := data.(map[string]interface{})
+	sellingBonds := NewSellingBonds(
+		sellingBondsData["bondName"].(string),
+		sellingBondsData["bondSymbol"].(string),
+		uint64(sellingBondsData["totalIssue"].(float64)),
+		uint64(sellingBondsData["bondsToSell"].(float64)),
+		uint64(sellingBondsData["bondPrice"].(float64)),
+		uint32(sellingBondsData["maturity"].(float64)),
+		uint64(sellingBondsData["buyBackPrice"].(float64)),
+		uint32(sellingBondsData["startSellingAt"].(float64)),
+		uint32(sellingBondsData["sellingWithin"].(float64)),
+	)
+	return sellingBonds
 }
 
 type SaleData struct {
@@ -69,22 +92,59 @@ func NewSaleData(saleID []byte, endBlock int32, buyingAsset []byte, buyingAmount
 	}
 }
 
+func NewSaleDataFromJson(data interface{}) *SaleData {
+	saleDataData := data.(map[string]interface{})
+	saleData := NewSaleData(
+		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["saleID"])),
+		int32(saleDataData["endBlock"].(float64)),
+		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["buyingAsset"])),
+		uint64(saleDataData["buyingAmount"].(float64)),
+		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["sellingAsset"])),
+		uint64(saleDataData["sellingAmount"].(float64)),
+	)
+	return saleData
+}
+
 type RefundInfo struct {
 	ThresholdToLargeTx uint64
 	RefundAmount       uint64
 }
 
-func NewRefundInfo(thresholdToLargeTx uint64, refundAmount uint64) *RefundInfo {
-	return &RefundInfo{ThresholdToLargeTx: thresholdToLargeTx, RefundAmount: refundAmount}
+func NewRefundInfo(
+	thresholdToLargeTx uint64,
+	refundAmount uint64,
+) *RefundInfo {
+	return &RefundInfo{
+		ThresholdToLargeTx: thresholdToLargeTx,
+		RefundAmount:       refundAmount,
+	}
 }
 
-type SaleDBCTOkensByUSDData struct {
+func NewRefundInfoFromJson(data interface{}) *RefundInfo {
+	refundInfoData := data.(map[string]interface{})
+	refundInfo := NewRefundInfo(
+		uint64(refundInfoData["thresholdToLargeTx"].(float64)),
+		uint64(refundInfoData["refundAmount"].(float64)),
+	)
+	return refundInfo
+}
+
+type SaleDCBTokensByUSDData struct {
 	Amount   uint64
 	EndBlock int32
 }
 
-func NewSaleDBCTOkensByUSDData(amount uint64, endBlock int32) *SaleDBCTOkensByUSDData {
-	return &SaleDBCTOkensByUSDData{Amount: amount, EndBlock: endBlock}
+func NewSaleDCBTokensByUSDData(amount uint64, endBlock int32) *SaleDCBTokensByUSDData {
+	return &SaleDCBTokensByUSDData{Amount: amount, EndBlock: endBlock}
+}
+
+func NewSaleDCBTokensByUSDDataFromJson(data interface{}) *SaleDCBTokensByUSDData {
+	saleDCBTokensByUSDDataData := data.(map[string]interface{})
+	saleDCBTokensByUSDData := NewSaleDCBTokensByUSDData(
+		uint64(saleDCBTokensByUSDDataData["amount"].(float64)),
+		int32(saleDCBTokensByUSDDataData["endBlock"].(float64)),
+	)
+	return saleDCBTokensByUSDData
 }
 
 type OracleNetwork struct {
@@ -98,6 +158,26 @@ type OracleNetwork struct {
 
 func NewOracleNetwork(oraclePubKeys [][]byte, wrongTimesAllowed uint8, quorum uint8, acceptableErrorMargin uint32, updateFrequency uint32, oracleRewardMultiplier uint8) *OracleNetwork {
 	return &OracleNetwork{OraclePubKeys: oraclePubKeys, WrongTimesAllowed: wrongTimesAllowed, Quorum: quorum, AcceptableErrorMargin: acceptableErrorMargin, UpdateFrequency: updateFrequency, OracleRewardMultiplier: oracleRewardMultiplier}
+}
+
+func NewOracleNetworkFromJson(data interface{}) *OracleNetwork {
+	oracleNetworkData := data.(map[string]interface{})
+
+	oraclePubKeysInterface := common.InterfaceSlice(oracleNetworkData["oraclePubKeys"])
+	oraclePubKeys := make([][]byte, 0)
+	for _, i := range oraclePubKeysInterface {
+		oraclePubKeys = append(oraclePubKeys, common.SliceInterfaceToSliceByte(common.InterfaceSlice(i)))
+	}
+
+	oracleNetwork := NewOracleNetwork(
+		oraclePubKeys,
+		uint8(oracleNetworkData["wrongTimesAllowed"].(float64)),
+		uint8(oracleNetworkData["quorum"].(float64)),
+		uint32(oracleNetworkData["acceptableErrorMargin"].(float64)),
+		uint32(oracleNetworkData["updateFrequency"].(float64)),
+		uint8(oracleNetworkData["oracleRewardMultiplier"].(float64)),
+	)
+	return oracleNetwork
 }
 
 func (saleData *SaleData) Hash() *common.Hash {
@@ -114,7 +194,9 @@ func (saleData *SaleData) Hash() *common.Hash {
 }
 
 func (sellingBonds *SellingBonds) Hash() *common.Hash {
-	record := string(sellingBonds.BondsToSell)
+	record := sellingBonds.BondName
+	record += sellingBonds.BondSymbol
+	record += string(sellingBonds.BondsToSell)
 	record += string(sellingBonds.BondPrice)
 	record += string(sellingBonds.Maturity)
 	record += string(sellingBonds.BuyBackPrice)
@@ -132,7 +214,7 @@ func (refundInfo *RefundInfo) Hash() *common.Hash {
 	return &hash
 }
 
-func (sdt *SaleDBCTOkensByUSDData) Hash() *common.Hash {
+func (sdt *SaleDCBTokensByUSDData) Hash() *common.Hash {
 	record := string(sdt.Amount)
 	record += string(sdt.EndBlock)
 	hash := common.DoubleHashH([]byte(record))

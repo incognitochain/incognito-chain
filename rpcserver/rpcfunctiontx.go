@@ -226,6 +226,8 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 				SigPubKey: tempTx.SigPubKey,
 				Sig:       tempTx.Sig,
 			}
+			metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
+			result.Metadata = string(metaData)
 		}
 	case common.TxCustomTokenType:
 		{
@@ -244,7 +246,34 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 				Sig:       tempTx.Sig,
 			}
 			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
-			result.MetaData = string(txCustomData)
+			result.CustomTokenData = string(txCustomData)
+			if tempTx.Metadata != nil {
+				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
+				result.Metadata = string(metaData)
+			}
+		}
+	case common.TxCustomTokenPrivacyType:
+		{
+			tempTx := tx.(*transaction.TxCustomTokenPrivacy)
+			result = jsonresult.TransactionDetail{
+				BlockHash: blockHash.String(),
+				Index:     uint64(index),
+				ChainId:   chainId,
+				Hash:      tx.Hash().String(),
+				Version:   tempTx.Version,
+				Type:      tempTx.Type,
+				LockTime:  tempTx.LockTime,
+				Fee:       tempTx.Fee,
+				Proof:     tempTx.Proof,
+				SigPubKey: tempTx.SigPubKey,
+				Sig:       tempTx.Sig,
+			}
+			tokenData, _ := json.MarshalIndent(tempTx.TxTokenPrivacyData, "", "\t")
+			result.PrivacyCustomTokenData = string(tokenData)
+			if tempTx.Metadata != nil {
+				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
+				result.Metadata = string(metaData)
+			}
 		}
 	default:
 		{

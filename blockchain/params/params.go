@@ -24,58 +24,68 @@ func NewLoanParams(interestRate uint64, maturity uint32, liquidationStart uint64
 	return &LoanParams{InterestRate: interestRate, Maturity: maturity, LiquidationStart: liquidationStart}
 }
 
+func NewLoanParamsFromJson(data interface{}) *LoanParams {
+	loanParamsData := data.(map[string]interface{})
+	loanParams := NewLoanParams(
+		uint64(loanParamsData["interestRate"].(float64)),
+		uint32(loanParamsData["maturity"].(float64)),
+		uint64(loanParamsData["liquidationStart"].(float64)),
+	)
+	return loanParams
+}
+
+func NewListLoanParamsFromJson(data interface{}) []LoanParams {
+	listLoanParamsData := common.InterfaceSlice(data)
+	listLoanParams := make([]LoanParams, 0)
+
+	for _, loanParamsData := range listLoanParamsData {
+		listLoanParams = append(listLoanParams, *NewLoanParamsFromJson(loanParamsData))
+	}
+	return listLoanParams
+}
+
 type DCBParams struct {
 	SaleData                 []SaleData
 	MinLoanResponseRequire   uint8
 	MinCMBApprovalRequire    uint8
 	LateWithdrawResponseFine uint64 // CST penalty for each CMB's late withdraw response
-	SaleDBCTOkensByUSDData   *SaleDBCTOkensByUSDData
+	SaleDCBTokensByUSDData   *SaleDCBTokensByUSDData
 
 	// TODO(@0xbunyip): read loan params from proposal instead of storing and reading separately
 	LoanParams []LoanParams // params for collateralized loans of Constant
 }
 
-func NewDCBParams(saleData []SaleData, minLoanResponseRequire uint8, saleDBCTOkensByUSDData *SaleDBCTOkensByUSDData, loanParams []LoanParams) *DCBParams {
+func NewDCBParams(
+	saleData []SaleData,
+	minLoanResponseRequire uint8,
+	minCMBApprovalRequire uint8,
+	lateWithdrawResponseFine uint64,
+	saleDCBTokensByUSDData *SaleDCBTokensByUSDData,
+	listLoanParams []LoanParams,
+) *DCBParams {
 	return &DCBParams{
-		SaleData:               saleData,
-		MinLoanResponseRequire: minLoanResponseRequire,
-		SaleDBCTOkensByUSDData: saleDBCTOkensByUSDData,
-		LoanParams:             loanParams,
+		SaleData:                 saleData,
+		MinLoanResponseRequire:   minLoanResponseRequire,
+		MinCMBApprovalRequire:    minCMBApprovalRequire,
+		LateWithdrawResponseFine: lateWithdrawResponseFine,
+		SaleDCBTokensByUSDData:   saleDCBTokensByUSDData,
+		LoanParams:               listLoanParams,
 	}
 }
 
-func NewDCBParamsFromRPC(data interface{}) *DCBParams {
-	arrayParams := common.InterfaceSlice(data)
+func NewDCBParamsFromJson(rawData interface{}) *DCBParams {
 
-	saleDataData := common.InterfaceSlice(arrayParams[0])
-	saleData := NewSaleData(
-		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData[0])),
-		int32(saleDataData[1].(float64)),
-		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData[2])),
-		uint64(saleDataData[3].(float64)),
-		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData[4])),
-		uint64(saleDataData[5].(float64)),
-	)
+	DCBParams := rawData.(map[string]interface{})
 
-	minLoanResponseRequire := uint8(arrayParams[1].(float64))
+	saleData := NewSaleDataFromJson(DCBParams["saleData"])
+	minLoanResponseRequire := uint8(DCBParams["minLoanResponseRequire"].(float64))
+	minCMBApprovalRequire := uint8(DCBParams["minCMBApprovalRequire"].(float64))
+	lateWithdrawResponseFine := uint64(DCBParams["lateWithdrawResponseFine"].(float64))
 
-	saleDBCTOkensByUSDDataData := common.InterfaceSlice(arrayParams[2])
-	saleDBCTOkensByUSDData := NewSaleDBCTOkensByUSDData(
-		uint64(saleDBCTOkensByUSDDataData[0].(float64)),
-		int32(saleDBCTOkensByUSDDataData[1].(float64)),
-	)
+	saleDCBTokensByUSDData := NewSaleDCBTokensByUSDDataFromJson(DCBParams["saleDCBTokensByUSDData"])
 
-	loanParamsData := common.InterfaceSlice(arrayParams[3])
-	loanParams := make([]LoanParams, 0)
-	for _, i := range loanParamsData {
-		loanParamsSingleData := common.InterfaceSlice(i)
-		loanParams = append(loanParams, *NewLoanParams(
-			uint64(loanParamsSingleData[0].(float64)),
-			uint32(loanParamsSingleData[1].(float64)),
-			uint64(loanParamsSingleData[2].(float64)),
-		))
-	}
-	return NewDCBParams(saleData, minLoanResponseRequire, saleDBCTOkensByUSDData, loanParams)
+	listLoanParams := NewListLoanParamsFromJson(DCBParams["listLoanParams"])
+	return NewDCBParams(saleData, minLoanResponseRequire, minCMBApprovalRequire, lateWithdrawResponseFine, saleDCBTokensByUSDData, listLoanParams)
 }
 
 type GOVParams struct {
@@ -87,51 +97,33 @@ type GOVParams struct {
 	OracleNetwork *OracleNetwork
 }
 
-func NewGOVParams(salaryPerTx uint64, basicSalary uint64, feePerKbTx uint64, sellingBonds *SellingBonds, refundInfo *RefundInfo, oracleNetwork *OracleNetwork) *GOVParams {
-	return &GOVParams{SalaryPerTx: salaryPerTx, BasicSalary: basicSalary, FeePerKbTx: feePerKbTx, SellingBonds: sellingBonds, RefundInfo: refundInfo, OracleNetwork: oracleNetwork}
+func NewGOVParams(
+	salaryPerTx uint64,
+	basicSalary uint64,
+	feePerKbTx uint64,
+	sellingBonds *SellingBonds,
+	refundInfo *RefundInfo,
+	oracleNetwork *OracleNetwork,
+) *GOVParams {
+	return &GOVParams{
+		SalaryPerTx:   salaryPerTx,
+		BasicSalary:   basicSalary,
+		FeePerKbTx:    feePerKbTx,
+		SellingBonds:  sellingBonds,
+		RefundInfo:    refundInfo,
+		OracleNetwork: oracleNetwork,
+	}
 }
 
-func NewGOVParamsFromRPC(data interface{}) *GOVParams {
-	arrayParams := common.InterfaceSlice(data)
+func NewGOVParamsFromJson(data interface{}) *GOVParams {
+	arrayParams := data.(map[string]interface{})
 
-	salaryPerTx := uint64(arrayParams[0].(float64))
-
-	basicSalary := uint64(arrayParams[1].(float64))
-
-	feePerKbTx := uint64(arrayParams[2].(float64))
-
-	sellingBondsData := common.InterfaceSlice(arrayParams[3])
-	sellingBonds := NewSellingBonds(
-		uint64(sellingBondsData[0].(float64)),
-		uint64(sellingBondsData[1].(float64)),
-		uint32(sellingBondsData[2].(float64)),
-		uint64(sellingBondsData[3].(float64)),
-		uint32(sellingBondsData[4].(float64)),
-		uint32(sellingBondsData[5].(float64)),
-		uint64(sellingBondsData[6].(float64)),
-	)
-
-	refundInfoData := common.InterfaceSlice(arrayParams[4])
-	refundInfo := NewRefundInfo(
-		uint64(refundInfoData[0].(float64)),
-		uint64(refundInfoData[1].(float64)),
-	)
-
-	oracleNetworkData := common.InterfaceSlice(arrayParams[5])
-
-	oraclePubKeysInterface := common.InterfaceSlice(oracleNetworkData[0])
-	oraclePubKeys := make([][]byte, 0)
-	for _, i := range oraclePubKeysInterface {
-		oraclePubKeys = append(oraclePubKeys, common.SliceInterfaceToSliceByte(common.InterfaceSlice(i)))
-	}
-	oracleNetwork := NewOracleNetwork(
-		oraclePubKeys,
-		uint8(oracleNetworkData[1].(float64)),
-		uint8(oracleNetworkData[2].(float64)),
-		uint32(oracleNetworkData[3].(float64)),
-		uint32(oracleNetworkData[4].(float64)),
-		uint8(oracleNetworkData[5].(float64)),
-	)
+	salaryPerTx := uint64(arrayParams["salaryPerTx"].(float64))
+	basicSalary := uint64(arrayParams["basicSalary"].(float64))
+	feePerKbTx := uint64(arrayParams["feePerKbTx"].(float64))
+	sellingBonds := NewSellingBondsFromJson(arrayParams["sellingBonds"])
+	refundInfo := NewRefundInfoFromJson(arrayParams["refundInfo"])
+	oracleNetwork := NewOracleNetworkFromJson(arrayParams["oracleNetwork"])
 
 	return NewGOVParams(salaryPerTx, basicSalary, feePerKbTx, sellingBonds, refundInfo, oracleNetwork)
 }
@@ -141,7 +133,7 @@ func (dcbParams *DCBParams) Hash() *common.Hash {
 	for _, saleData := range dcbParams.SaleData {
 		record := string(saleData.Hash().GetBytes())
 	}
-	record += string(dcbParams.SaleDBCTOkensByUSDData.Hash().GetBytes())
+	record += string(dcbParams.SaleDCBTokensByUSDData.Hash().GetBytes())
 	record += string(dcbParams.MinLoanResponseRequire)
 	record += string(dcbParams.MinCMBApprovalRequire)
 	record += string(dcbParams.LateWithdrawResponseFine)

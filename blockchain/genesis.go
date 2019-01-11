@@ -84,6 +84,8 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 		SalaryPerTx: salaryPerTx,
 		BasicSalary: basicSalary,
 		SellingBonds: &params.SellingBonds{
+			BondName:       "Bonds have 2 blocks maturity",
+			BondSymbol:     "BND2",
 			TotalIssue:     10000,
 			BondsToSell:    10000,
 			BondPrice:      100,
@@ -115,7 +117,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 		MinLoanResponseRequire:   1,
 		MinCMBApprovalRequire:    1,
 		LateWithdrawResponseFine: 1000,
-		SaleDBCTOkensByUSDData:   &params.SaleDBCTOkensByUSDData{},
+		SaleDCBTokensByUSDData:   &params.SaleDCBTokensByUSDData{},
 	}
 
 	// TODO(@0xjackalope): fill correct values

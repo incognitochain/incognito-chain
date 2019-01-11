@@ -11,14 +11,14 @@ import (
 type BuyBackRequest struct {
 	PaymentAddress privacy.PaymentAddress
 	Amount         uint64
-	TokenID        []byte
+	TokenID        common.Hash
 	MetadataBase
 }
 
 func NewBuyBackRequest(
 	paymentAddress privacy.PaymentAddress,
 	amount uint64,
-	tokenID []byte,
+	tokenID common.Hash,
 	metaType int,
 ) *BuyBackRequest {
 	metadataBase := MetadataBase{
@@ -70,7 +70,7 @@ func (bbReq *BuyBackRequest) ValidateMetadataByItself() bool {
 func (bbReq *BuyBackRequest) Hash() *common.Hash {
 	record := string(bbReq.PaymentAddress.Bytes())
 	record += string(bbReq.Amount)
-	record += string(bbReq.TokenID)
+	record += bbReq.TokenID.String()
 	record += string(bbReq.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash

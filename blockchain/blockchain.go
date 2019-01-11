@@ -753,40 +753,40 @@ func (self *BlockChain) ProcessVoteProposal(block *Block) error {
 	for _, tx := range block.Transactions {
 		meta := tx.GetMetadata()
 		switch tx.GetMetadataType() {
-		case metadata.SealedLv3DCBBallotMeta:
-			underlieMetadata := meta.(*metadata.SealedLv3DCBBallotMetadata)
+		case metadata.SealedLv3DCBVoteProposalMeta:
+			underlieMetadata := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
 			self.config.DataBase.AddVoteLv3Proposal("dcb", nextDCBConstitutionIndex, underlieMetadata.Hash())
-		case metadata.SealedLv2DCBBallotMeta:
-			underlieMetadata := meta.(*metadata.SealedLv2DCBBallotMetadata)
-			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3Ballot)
-		case metadata.SealedLv1DCBBallotMeta:
-			underlieMetadata := meta.(*metadata.SealedLv1DCBBallotMetadata)
-			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3Ballot)
-		case metadata.NormalDCBBallotMetaFromOwnerMeta:
-			underlieMetadata := meta.(*metadata.NormalDCBBallotFromOwnerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
-		case metadata.NormalDCBBallotMetaFromSealerMeta:
-			underlieMetadata := meta.(*metadata.NormalDCBBallotFromSealerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
+		case metadata.SealedLv2DCBVoteProposalMeta:
+			underlieMetadata := meta.(*metadata.SealedLv2DCBVoteProposalMetadata)
+			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
+		case metadata.SealedLv1DCBVoteProposalMeta:
+			underlieMetadata := meta.(*metadata.SealedLv1DCBVoteProposalMetadata)
+			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
+		case metadata.NormalDCBVoteProposalFromOwnerMeta:
+			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromOwnerMetadata)
+			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal)
+		case metadata.NormalDCBVoteProposalFromSealerMeta:
+			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromSealerMetadata)
+			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal)
 		case metadata.AcceptDCBProposalMeta:
 			underlieMetadata := meta.(*metadata.AcceptDCBProposalMetadata)
 			self.config.DataBase.TakeVoteTokenFromWinner("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PubKey, underlieMetadata.Voter.AmountOfVote)
 			self.config.DataBase.SetNewProposalWinningVoter("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PubKey)
-		case metadata.SealedLv3GOVBallotMeta:
-			underlieMetadata := meta.(*metadata.SealedLv3GOVBallotMetadata)
+		case metadata.SealedLv3GOVVoteProposalMeta:
+			underlieMetadata := meta.(*metadata.SealedLv3GOVVoteProposalMetadata)
 			self.config.DataBase.AddVoteLv3Proposal("gov", nextGOVConstitutionIndex, underlieMetadata.Hash())
-		case metadata.SealedLv2GOVBallotMeta:
-			underlieMetadata := meta.(*metadata.SealedLv2GOVBallotMetadata)
-			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3Ballot)
-		case metadata.SealedLv1GOVBallotMeta:
-			underlieMetadata := meta.(*metadata.SealedLv1GOVBallotMetadata)
-			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3Ballot)
-		case metadata.NormalGOVBallotMetaFromOwnerMeta:
-			underlieMetadata := meta.(*metadata.NormalGOVBallotFromOwnerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromOwner("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
-		case metadata.NormalGOVBallotMetaFromSealerMeta:
-			underlieMetadata := meta.(*metadata.NormalGOVBallotFromSealerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromSealer("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
+		case metadata.SealedLv2GOVVoteProposalMeta:
+			underlieMetadata := meta.(*metadata.SealedLv2GOVVoteProposalMetadata)
+			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
+		case metadata.SealedLv1GOVVoteProposalMeta:
+			underlieMetadata := meta.(*metadata.SealedLv1GOVVoteProposalMetadata)
+			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
+		case metadata.NormalGOVVoteProposalFromOwnerMeta:
+			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromOwnerMetadata)
+			self.config.DataBase.AddVoteNormalProposalFromOwner("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal)
+		case metadata.NormalGOVVoteProposalFromSealerMeta:
+			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromSealerMetadata)
+			self.config.DataBase.AddVoteNormalProposalFromSealer("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal)
 		case metadata.AcceptGOVProposalMeta:
 			underlieMetadata := meta.(*metadata.AcceptGOVProposalMetadata)
 			self.config.DataBase.TakeVoteTokenFromWinner("gov", nextGOVConstitutionIndex, underlieMetadata.Voter.PubKey, underlieMetadata.Voter.AmountOfVote)
@@ -1404,16 +1404,31 @@ func (self *BlockChain) GetBestBlock(chainID byte) *Block {
 	return self.BestState[chainID].BestBlock
 }
 
+func (self *BlockChain) GetConstitutionStartHeight(boardType string, chainID byte) uint32 {
+	if boardType == "dcb" {
+		return self.GetDCBConstitutionStartHeight(chainID)
+	} else {
+		return self.GetGOVConstitutionStartHeight(chainID)
+	}
+}
+
 func (self *BlockChain) GetDCBConstitutionStartHeight(chainID byte) uint32 {
 	return self.GetBestBlock(chainID).Header.DCBConstitution.StartedBlockHeight
+}
+func (self *BlockChain) GetGOVConstitutionStartHeight(chainID byte) uint32 {
+	return self.GetBestBlock(chainID).Header.GOVConstitution.StartedBlockHeight
+}
+
+func (self *BlockChain) GetConstitutionEndHeight(boardType string, chainID byte) uint32 {
+	if boardType == "dcb" {
+		return self.GetDCBConstitutionEndHeight(chainID)
+	} else {
+		return self.GetGOVConstitutionEndHeight(chainID)
+	}
 }
 
 func (self *BlockChain) GetDCBConstitutionEndHeight(chainID byte) uint32 {
 	return self.GetBestBlock(chainID).Header.DCBConstitution.GetEndedBlockHeight()
-}
-
-func (self *BlockChain) GetGOVConstitutionStartHeight(chainID byte) uint32 {
-	return self.GetBestBlock(chainID).Header.GOVConstitution.StartedBlockHeight
 }
 
 func (self *BlockChain) GetGOVConstitutionEndHeight(chainID byte) uint32 {
@@ -1462,11 +1477,9 @@ func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) b
 	pivotOfStart := endedOfConstitution - 3*common.EncryptionOnePhraseDuration
 
 	rightTime := newNationalWelfare < thresholdNationalWelfare || pivotOfStart == uint32(thisBlockHeight)
-	encryptFlag, err := self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType())
-	if err != nil {
-		return false
-	}
-	rightFlag := (encryptFlag == common.Lv3EncryptionFlag)
+
+	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
+	rightFlag := encryptFlag == common.Lv3EncryptionFlag
 	if rightTime && rightFlag {
 		return true
 	}
@@ -1477,12 +1490,11 @@ func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) b
 func (self *BlockChain) NeedEnterEncryptLv1(helper ConstitutionHelper) bool {
 	BestBlock := self.BestState[0].BestBlock
 	thisBlockHeight := BestBlock.Header.Height
-	lastEncryptBlockHeight, err := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetLowerCaseBoardType())
-	if err != nil && uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration {
-		encryptFlag, err := self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType())
-		if err != nil && encryptFlag == common.Lv2EncryptionFlag {
-			return true
-		}
+	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
+	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
+	if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
+		encryptFlag == common.Lv2EncryptionFlag {
+		return true
 	}
 	return false
 }
@@ -1491,12 +1503,11 @@ func (self *BlockChain) NeedEnterEncryptLv1(helper ConstitutionHelper) bool {
 func (self *BlockChain) NeedEnterEncryptNormal(helper ConstitutionHelper) bool {
 	BestBlock := self.BestState[0].BestBlock
 	thisBlockHeight := BestBlock.Header.Height
-	lastEncryptBlockHeight, err := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetLowerCaseBoardType())
-	if err != nil && uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration {
-		encryptFlag, err := self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType())
-		if err != nil && encryptFlag == common.Lv1EncryptionFlag {
-			return true
-		}
+	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
+	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
+	if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
+		encryptFlag == common.Lv1EncryptionFlag {
+		return true
 	}
 	return false
 }
@@ -1504,7 +1515,7 @@ func (self *BlockChain) NeedEnterEncryptNormal(helper ConstitutionHelper) bool {
 //This function is called after successful connect block => block height is block height of best state
 func (self *BlockChain) SetEncryptPhrase(helper ConstitutionHelper) {
 	flag := 0
-	boardType := helper.GetLowerCaseBoardType()
+	boardType := helper.GetBoardType()
 	if self.NeedToEnterEncryptionPhrase(helper) {
 		flag = common.Lv2EncryptionFlag
 		self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[0].BestBlock.Header.Height))
@@ -1524,12 +1535,11 @@ func (self *BlockChain) SetEncryptPhrase(helper ConstitutionHelper) {
 func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
 	BestBlock := self.BestState[0].BestBlock
 	thisBlockHeight := BestBlock.Header.Height + 1
-	lastEncryptBlockHeight, err := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetLowerCaseBoardType())
-	if err != nil && uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration {
-		encryptFlag, err := self.config.DataBase.GetEncryptFlag(helper.GetLowerCaseBoardType())
-		if err != nil && encryptFlag == common.NormalEncryptionFlag {
-			return true
-		}
+	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
+	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
+	if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
+		encryptFlag == common.NormalEncryptionFlag {
+		return true
 	}
 	return false
 }

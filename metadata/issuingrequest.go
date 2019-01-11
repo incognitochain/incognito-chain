@@ -42,7 +42,7 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 	db database.DatabaseInterface,
 ) (bool, error) {
 	if bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) {
-		saleDBCTOkensByUSDData := bcr.GetDCBParams().SaleDBCTOkensByUSDData
+		saleDBCTOkensByUSDData := bcr.GetDCBParams().SaleDCBTokensByUSDData
 		if bcr.GetHeight()+1 > saleDBCTOkensByUSDData.EndBlock {
 			return false, nil
 		}
