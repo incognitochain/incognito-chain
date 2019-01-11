@@ -521,9 +521,8 @@ func (self *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<- st
 	}
 	go func() {
 		if self.GetIsConnected() {
-			data := (*msgBytes)[wire.MessageHeaderSize:]
-			if len(data) >= HEAVY_MESSAGE_SIZE {
-				hash := common.HashH(data).String()
+			if len(*msgBytes) >= HEAVY_MESSAGE_SIZE+wire.MessageHeaderSize {
+				hash := common.HashH(*msgBytes).String()
 				Logger.log.Infof("QueueMessageWithBytes HEAVY_MESSAGE_SIZE %s", hash)
 
 				if self.checkMessageHashBeforeSend(hash) {
