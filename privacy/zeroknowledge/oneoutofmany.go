@@ -2,10 +2,8 @@ package zkp
 
 import (
 	"encoding/binary"
-	"fmt"
 	"github.com/pkg/errors"
 	"math/big"
-	"time"
 
 	"github.com/ninjadotorg/constant/privacy"
 )
@@ -71,12 +69,16 @@ func (pro *OneOutOfManyProof) Init() *OneOutOfManyProof {
 // Set sets Witness
 func (wit *OneOutOfManyWitness) Set(
 	commitments []*privacy.EllipticPoint,
-	commitmentIndices []uint64,
+	commitmentIndexs []uint64,
 	rand *big.Int,
 	indexIsZero uint64,
 	index byte) {
 
-	wit.commitmentIndices = commitmentIndices
+	if wit == nil {
+		wit = new(OneOutOfManyWitness)
+	}
+
+	wit.commitmentIndices = commitmentIndexs
 	wit.commitments = commitments
 	wit.indexIsZero = indexIsZero
 	wit.rand = rand
@@ -91,6 +93,10 @@ func (pro *OneOutOfManyProof) Set(
 	f, za, zb []*big.Int,
 	zd *big.Int,
 	index byte) {
+
+	if pro == nil {
+		pro = new(OneOutOfManyProof)
+	}
 
 	pro.CommitmentIndices = commitmentIndexs
 	pro.Commitments = commitments
@@ -256,7 +262,6 @@ func (pro *OneOutOfManyProof) SetBytes(bytes []byte) error {
 
 // Prove creates proof for one out of many commitments containing 0
 func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
-	start :=time.Now()
 	// Check the number of Commitment list's elements
 	N := len(wit.commitments)
 	if N != privacy.CMRingSize {
@@ -377,13 +382,10 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	proof := new(OneOutOfManyProof).Init()
 	proof.Set(wit.commitmentIndices, wit.commitments, cl, ca, cb, cd, f, za, zb, zd, wit.index)
 
-	end := time.Since(start)
-	fmt.Printf("One out of many proving time: %v\n", end)
 	return proof, nil
 }
 
 func (pro *OneOutOfManyProof) Verify() bool {
-	start := time.Now()
 	N := len(pro.Commitments)
 	//N := 8
 
@@ -458,8 +460,6 @@ func (pro *OneOutOfManyProof) Verify() bool {
 	if !leftPoint3.IsEqual(rightPoint3) {
 		return false
 	}
-	end := time.Since(start)
-	fmt.Printf("One out of many verification time: %v\n", end)
 
 	return true
 }

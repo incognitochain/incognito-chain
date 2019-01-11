@@ -1,7 +1,6 @@
 package zkp
 
 import (
-	"fmt"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/stretchr/testify/assert"
 	"math/big"
@@ -30,8 +29,6 @@ func TestPKSNPrivacy(t *testing.T) {
 	}
 
 	proofBytes := proof.Bytes()
-
-	fmt.Printf("Serial number proof size: %v\n", len(proofBytes))
 
 	proof2 := new(PKSNPrivacyProof).Init()
 	proof2.SetBytes(proofBytes)

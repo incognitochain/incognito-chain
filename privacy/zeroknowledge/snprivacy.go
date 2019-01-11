@@ -1,10 +1,8 @@
 package zkp
 
 import (
-	"fmt"
 	"github.com/ninjadotorg/constant/privacy"
 	"math/big"
-	"time"
 )
 
 // OneOutOfManyWitness is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
@@ -243,8 +241,6 @@ func (pro *PKSNPrivacyProof) SetBytes(bytes []byte) error {
 }
 
 func (wit *PKSNPrivacyWitness) Prove() (*PKSNPrivacyProof, error){
-	start := time.Now()
-
 	// randomness
 	eSK := privacy.RandInt()
 	eSND := privacy.RandInt()
@@ -285,13 +281,10 @@ func (wit *PKSNPrivacyWitness) Prove() (*PKSNPrivacyProof, error){
 
 	proof := new(PKSNPrivacyProof).Init()
 	proof.Set(wit.output, wit.comSeed, wit.comInput, tSeed, tInput, tOutput, zSeed, zRSeed, zInput, zRInput)
-	end := time.Since(start)
-	fmt.Printf("Serial number proving time: %v\n", end)
 	return proof, nil
 }
 
 func (pro *PKSNPrivacyProof) Verify() bool{
-	start := time.Now()
 	// re-calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 	x := generateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSeed, pro.tInput, pro.tOutput})
 
@@ -324,9 +317,6 @@ func (pro *PKSNPrivacyProof) Verify() bool{
 	if !leftPoint4.IsEqual(rightPoint4){
 		return false
 	}
-
-	end := time.Since(start)
-	fmt.Printf("Serial number verification time: %v\n", end)
 
 	return true
 }
