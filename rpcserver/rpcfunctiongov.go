@@ -222,7 +222,7 @@ func (self RpcServer) buildRawSealLv3VoteGOVProposalTransaction(
 	secondPubKey := arrayParams[len(arrayParams)-2]
 	thirdPubKey := arrayParams[len(arrayParams)-1]
 	Seal3Data := common.Encrypt(common.Encrypt(common.Encrypt(voteInfo, thirdPubKey), secondPubKey), firstPubKey)
-	meta := metadata.NewSealedLv3GOVBallotMetadata([]byte(Seal3Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))})
+	meta := metadata.NewSealedLv3GOVVoteProposalMetadata([]byte(Seal3Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))})
 	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }
@@ -267,7 +267,7 @@ func (self RpcServer) buildRawSealLv2VoteGOVProposalTransaction(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	PointerToLv3Ballot := arrayParams[len(arrayParams)-6]
+	PointerToLv3VoteProposal := arrayParams[len(arrayParams)-6]
 	Seal3Data := arrayParams[len(arrayParams)-5]
 	firstPubKey := arrayParams[len(arrayParams)-4]
 	secondPubKey := arrayParams[len(arrayParams)-3]
@@ -275,8 +275,8 @@ func (self RpcServer) buildRawSealLv2VoteGOVProposalTransaction(
 	firstPrivateKey := arrayParams[len(arrayParams)-1]
 	Seal2Data := common.Decrypt(Seal3Data, firstPrivateKey)
 	Pointer := common.Hash{}
-	copy(Pointer[:], []byte(PointerToLv3Ballot.(string)))
-	meta := metadata.NewSealedLv2GOVBallotMetadata([]byte(Seal2Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer)
+	copy(Pointer[:], []byte(PointerToLv3VoteProposal.(string)))
+	meta := metadata.NewSealedLv2GOVVoteProposalMetadata([]byte(Seal2Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer)
 	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }
@@ -322,13 +322,13 @@ func (self RpcServer) buildRawSealLv1VoteGOVProposalTransaction(
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
-	PointerToLv3Ballot := arrayParams[len(arrayParams)-7]
+	PointerToLv3VoteProposal := arrayParams[len(arrayParams)-7]
 	Pointer3 := common.Hash{}
-	copy(Pointer3[:], []byte(PointerToLv3Ballot.(string)))
+	copy(Pointer3[:], []byte(PointerToLv3VoteProposal.(string)))
 
-	PointerToLv2Ballot := arrayParams[len(arrayParams)-6]
+	PointerToLv2VoteProposal := arrayParams[len(arrayParams)-6]
 	Pointer2 := common.Hash{}
-	copy(Pointer2[:], []byte(PointerToLv2Ballot.(string)))
+	copy(Pointer2[:], []byte(PointerToLv2VoteProposal.(string)))
 
 	Seal2Data := arrayParams[len(arrayParams)-5]
 	firstPubKey := arrayParams[len(arrayParams)-4]
@@ -336,7 +336,7 @@ func (self RpcServer) buildRawSealLv1VoteGOVProposalTransaction(
 	thirdPubKey := arrayParams[len(arrayParams)-2]
 	secondPrivateKey := arrayParams[len(arrayParams)-1]
 	Seal1Data := common.Decrypt(Seal2Data, secondPrivateKey)
-	meta := metadata.NewSealedLv1GOVBallotMetadata([]byte(Seal1Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer2, Pointer3)
+	meta := metadata.NewSealedLv1GOVVoteProposalMetadata([]byte(Seal1Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer2, Pointer3)
 	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }
@@ -381,21 +381,21 @@ func (self RpcServer) buildRawNormalVoteGOVProposalTransactionFromSealer(
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
-	PointerToLv3Ballot := arrayParams[len(arrayParams)-7]
+	PointerToLv3VoteProposal := arrayParams[len(arrayParams)-7]
 	Pointer3 := common.Hash{}
-	copy(Pointer3[:], []byte(PointerToLv3Ballot.(string)))
+	copy(Pointer3[:], []byte(PointerToLv3VoteProposal.(string)))
 
-	PointerToLv1Ballot := arrayParams[len(arrayParams)-6]
+	PointerToLv1VoteProposal := arrayParams[len(arrayParams)-6]
 	Pointer1 := common.Hash{}
-	copy(Pointer1[:], []byte(PointerToLv1Ballot.(string)))
+	copy(Pointer1[:], []byte(PointerToLv1VoteProposal.(string)))
 
 	Seal1Data := arrayParams[len(arrayParams)-5]
 	firstPubKey := arrayParams[len(arrayParams)-4]
 	secondPubKey := arrayParams[len(arrayParams)-3]
 	thirdPubKey := arrayParams[len(arrayParams)-2]
 	thirdPrivateKey := arrayParams[len(arrayParams)-1]
-	normalBallot := common.Decrypt(Seal1Data, thirdPrivateKey)
-	meta := metadata.NewNormalGOVBallotFromSealerMetadata(normalBallot.([]byte), [][]byte{firstPubKey.([]byte), secondPubKey.([]byte), thirdPubKey.([]byte)}, Pointer1, Pointer3)
+	normalVoteProposal := common.Decrypt(Seal1Data, thirdPrivateKey)
+	meta := metadata.NewNormalGOVVoteProposalFromSealerMetadata(normalVoteProposal.([]byte), [][]byte{firstPubKey.([]byte), secondPubKey.([]byte), thirdPubKey.([]byte)}, Pointer1, Pointer3)
 	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }
@@ -439,14 +439,14 @@ func (self RpcServer) buildRawNormalVoteGOVProposalTransactionFromOwner(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	PointerToLv3Ballot := arrayParams[len(arrayParams)-5]
+	PointerToLv3VoteProposal := arrayParams[len(arrayParams)-5]
 	Pointer := common.Hash{}
-	copy(Pointer[:], []byte(PointerToLv3Ballot.(string)))
+	copy(Pointer[:], []byte(PointerToLv3VoteProposal.(string)))
 	firstPubKey := arrayParams[len(arrayParams)-4]
 	secondPubKey := arrayParams[len(arrayParams)-3]
 	thirdPubKey := arrayParams[len(arrayParams)-2]
-	normalBallot := arrayParams[len(arrayParams)-1]
-	meta := metadata.NewNormalGOVBallotFromOwnerMetadata(normalBallot.([]byte), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer)
+	normalVoteProposal := arrayParams[len(arrayParams)-1]
+	meta := metadata.NewNormalGOVVoteProposalFromOwnerMetadata(normalVoteProposal.([]byte), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer)
 	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }
@@ -578,9 +578,27 @@ func (self RpcServer) buildRawSubmitGOVProposalTransaction(
 	arrayParams := common.InterfaceSlice(params)
 	NParams := len(arrayParams)
 
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	paymentAddr := senderKey.KeySet.PaymentAddress
+	_ = paymentAddr
+	paymentAddressData := make(map[string]interface{})
+	paymentAddressData["pk"] = string(paymentAddr.Pk)
+	paymentAddressData["tk"] = string(paymentAddr.Tk)
+	newParams := arrayParams[NParams-1].(map[string]interface{})
+	newParams["paymentAddress"] = paymentAddressData
+
 	meta := metadata.NewSubmitGOVProposalMetadataFromJson(arrayParams[NParams-1])
-	tx, err := self.buildRawTransaction(params, meta)
-	return tx, err
+	tx, err1 := self.buildRawTransaction(params, meta)
+	if err1 != nil {
+		return nil, err1
+	}
+
+	return tx, nil
 }
 
 func (self RpcServer) handleCreateRawSubmitGOVProposalTransaction(
@@ -622,9 +640,9 @@ func (self RpcServer) handleSendRawSubmitGOVProposalTransaction(params interface
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	hash, txDesc, err := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+	hash, txDesc, err1 := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	if err1 != nil {
+		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
