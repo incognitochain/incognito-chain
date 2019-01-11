@@ -76,9 +76,14 @@ func mainMaster(serverChan chan<- *Server) error {
 				walletObj.Init(cfg.WalletPassphrase, 0, cfg.WalletName)
 				walletObj.Save(cfg.WalletPassphrase)
 			} else {
-				// write log and exit when can not load wallet
-				Logger.log.Criticalf("Can not load wallet with %s. Please use constantctl to create a new wallet", walletObj.Config.DataPath)
-				return err
+				if cfg.WalletAutoInit {
+					walletObj.Init(cfg.WalletPassphrase, 0, cfg.WalletName)
+					walletObj.Save(cfg.WalletPassphrase)
+				} else {
+					// write log and exit when can not load wallet
+					Logger.log.Criticalf("Can not load wallet with %s. Please use constantctl to create a new wallet", walletObj.Config.DataPath)
+					return err
+				}
 			}
 		}
 	}
