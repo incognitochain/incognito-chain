@@ -52,6 +52,8 @@ func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-c
 	return result, nil
 }
 
+// ============================== VOTE PROPOSAL
+
 func (self RpcServer) handleGetEncryptionFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	boardType := arrayParams[0].(string)
@@ -71,28 +73,28 @@ func (self RpcServer) handleGetEncryptionLastBlockHeightFlag(params interface{},
 func (self RpcServer) buildRawSealLv3VoteProposalTransaction(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
-	//arrayParams := common.InterfaceSlice(params)
-	//nParams := len(arrayParams)
-	//
-	//boardType := arrayParams[nParams-2].(string)
-	//var meta metadata.Metadata
-	//if boardType == "dcb" {
-	//	meta = metadata.NewSealedLv3DCBVoteProposalMetadataFromJson()
-	//} else {
-	//
-	//}
-	//voteInfo := arrayParams[len(arrayParams)-4]
-	//firstPubKey := arrayParams[len(arrayParams)-3] // firstPubKey is pubkey of itself
-	//secondPubKey := arrayParams[len(arrayParams)-2]
-	//thirdPubKey := arrayParams[len(arrayParams)-1]
-	//Seal3Data := common.Encrypt(common.Encrypt(common.Encrypt(voteInfo, thirdPubKey), secondPubKey), firstPubKey)
-	//meta := metadata.NewSealedLv3DCBVoteProposalMetadata([]byte(Seal3Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))})
-	//tx, err := self.buildRawTransaction(params, meta)
-	//return tx, err
-	return nil, nil
+	arrayParams := common.InterfaceSlice(params)
+	nParams := len(arrayParams)
+
+	boardType := arrayParams[nParams-3].(string)
+	voteInfo := arrayParams[len(arrayParams)-2]
+
+	pubKeys := arrayParams[len(arrayParams)-1].([]interface{}) // firstPubKey is pubkey of itself
+	//pubKeys := self.config.BlockChain.GetDCBBoardPubKeys()
+
+	Seal3Data := common.Encrypt(common.Encrypt(common.Encrypt(voteInfo, pubKeys[0]), pubKeys[1]), pubKeys[2])
+
+	var meta metadata.Metadata
+	if boardType == "dcb" {
+		meta = metadata.NewSealedLv3DCBVoteProposalMetadata(Seal3Data, common.SliceInterfaceToSliceSliceByte(pubKeys))
+	} else {
+		meta = metadata.NewSealedLv3GOVVoteProposalMetadata(Seal3Data, common.SliceInterfaceToSliceSliceByte(pubKeys))
+	}
+	tx, err := self.buildRawTransaction(params, meta)
+	return tx, err
 }
 
-func (self RpcServer) handleCreateRawSealLv3VoteDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (self RpcServer) handleCreateRawSealLv3VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	tx, err := self.buildRawSealLv3VoteProposalTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
@@ -112,8 +114,8 @@ func (self RpcServer) handleCreateRawSealLv3VoteDCBProposalTransaction(params in
 }
 
 //create lv3 vote by 3 layer encrypt
-func (self RpcServer) handleCreateAndSendSealLv3VoteDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawSealLv3VoteDCBProposalTransaction(params, closeChan)
+func (self RpcServer) handleCreateAndSendSealLv3VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := self.handleCreateRawSealLv3VoteProposalTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
@@ -128,26 +130,42 @@ func (self RpcServer) handleCreateAndSendSealLv3VoteDCBProposalTransaction(param
 	return txId, err
 }
 
-func (self RpcServer) buildRawSealLv2VoteDCBProposalTransaction(
+func (self RpcServer) buildRawSealLv2VoteProposalTransaction(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	PointerToLv3VoteProposal := arrayParams[len(arrayParams)-6]
-	Seal3Data := arrayParams[len(arrayParams)-5]
-	firstPubKey := arrayParams[len(arrayParams)-4]
-	secondPubKey := arrayParams[len(arrayParams)-3]
-	thirdPubKey := arrayParams[len(arrayParams)-2]
-	firstPrivateKey := arrayParams[len(arrayParams)-1]
+	nParams := len(arrayParams)
+
+	boardType := arrayParams[nParams-5]
+
+	firstPrivateKey := arrayParams[nParams-4]
+	Seal3Data := arrayParams[nParams-3]
 	Seal2Data := common.Decrypt(Seal3Data, firstPrivateKey)
-	Pointer := common.Hash{}
-	copy(Pointer[:], []byte(PointerToLv3VoteProposal.(string)))
-	meta := metadata.NewSealedLv2DCBVoteProposalMetadata([]byte(Seal2Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer)
+
+	pubKeys := arrayParams[nParams-2].([]interface{})
+
+	Pointer := common.NewHash([]byte(arrayParams[nParams-1].(string)))
+
+	var meta metadata.Metadata
+	if boardType == "dcb" {
+		meta = metadata.NewSealedLv2DCBVoteProposalMetadata(
+			[]byte(Seal2Data.(string)),
+			common.SliceInterfaceToSliceSliceByte(pubKeys),
+			Pointer,
+		)
+	} else {
+		meta = metadata.NewSealedLv2GOVVoteProposalMetadata(
+			[]byte(Seal2Data.(string)),
+			common.SliceInterfaceToSliceSliceByte(pubKeys),
+			Pointer,
+		)
+	}
 	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }
 
-func (self RpcServer) handleCreateRawSealLv2VoteDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	tx, err := self.buildRawSealLv2VoteDCBProposalTransaction(params)
+func (self RpcServer) handleCreateRawSealLv2VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	tx, err := self.buildRawSealLv2VoteProposalTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -166,8 +184,8 @@ func (self RpcServer) handleCreateRawSealLv2VoteDCBProposalTransaction(params in
 }
 
 //create lv2 vote by decrypt A layer
-func (self RpcServer) handleCreateAndSendSealLv2VoteDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawSealLv2VoteDCBProposalTransaction(params, closeChan)
+func (self RpcServer) handleCreateAndSendSealLv2VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := self.handleCreateRawSealLv2VoteProposalTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
@@ -182,32 +200,46 @@ func (self RpcServer) handleCreateAndSendSealLv2VoteDCBProposalTransaction(param
 	return txId, err
 }
 
-func (self RpcServer) buildRawSealLv1VoteDCBProposalTransaction(
+func (self RpcServer) buildRawSealLv1VoteProposalTransaction(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	nParams := len(arrayParams)
 
-	PointerToLv3VoteProposal := arrayParams[len(arrayParams)-7]
-	Pointer3 := common.Hash{}
-	copy(Pointer3[:], []byte(PointerToLv3VoteProposal.(string)))
+	boardType := arrayParams[nParams-5].(string)
 
-	PointerToLv2VoteProposal := arrayParams[len(arrayParams)-6]
-	Pointer2 := common.Hash{}
-	copy(Pointer2[:], []byte(PointerToLv2VoteProposal.(string)))
+	pointer3 := common.NewHash([]byte(arrayParams[nParams-4].(string)))
 
-	Seal2Data := arrayParams[len(arrayParams)-5]
-	firstPubKey := arrayParams[len(arrayParams)-4]
-	secondPubKey := arrayParams[len(arrayParams)-3]
-	thirdPubKey := arrayParams[len(arrayParams)-2]
-	secondPrivateKey := arrayParams[len(arrayParams)-1]
-	Seal1Data := common.Decrypt(Seal2Data, secondPrivateKey)
-	meta := metadata.NewSealedLv1DCBVoteProposalMetadata([]byte(Seal1Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer2, Pointer3)
+	pointer2 := common.NewHash([]byte(arrayParams[nParams-3].(string)))
+
+	Seal2Data := arrayParams[nParams-2]
+
+	pubKeys := arrayParams[nParams-1].([]interface{})
+	Seal1Data := common.Decrypt(Seal2Data, pubKeys[1])
+
+	var meta metadata.Metadata
+	if boardType == "dcb" {
+		meta = metadata.NewSealedLv1DCBVoteProposalMetadata(
+			[]byte(Seal1Data.(string)),
+			common.SliceInterfaceToSliceSliceByte(pubKeys),
+			pointer2,
+			pointer3,
+		)
+	} else {
+		meta = metadata.NewSealedLv1GOVVoteProposalMetadata(
+			[]byte(Seal1Data.(string)),
+			common.SliceInterfaceToSliceSliceByte(pubKeys),
+			pointer2,
+			pointer3,
+		)
+	}
+
 	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }
 
-func (self RpcServer) handleCreateRawSealLv1VoteDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	tx, err := self.buildRawSealLv1VoteDCBProposalTransaction(params)
+func (self RpcServer) handleCreateRawSealLv1VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	tx, err := self.buildRawSealLv1VoteProposalTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -225,8 +257,8 @@ func (self RpcServer) handleCreateRawSealLv1VoteDCBProposalTransaction(params in
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendSealLv1VoteDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawSealLv1VoteDCBProposalTransaction(params, closeChan)
+func (self RpcServer) handleCreateAndSendSealLv1VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := self.handleCreateRawSealLv1VoteProposalTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
@@ -241,32 +273,47 @@ func (self RpcServer) handleCreateAndSendSealLv1VoteDCBProposalTransaction(param
 	return txId, err
 }
 
-func (self RpcServer) buildRawNormalVoteDCBProposalTransactionFromSealer(
+func (self RpcServer) buildRawNormalVoteProposalTransactionFromSealer(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	nParams := len(arrayParams)
 
-	PointerToLv3VoteProposal := arrayParams[len(arrayParams)-7]
-	Pointer3 := common.Hash{}
-	copy(Pointer3[:], []byte(PointerToLv3VoteProposal.(string)))
+	boardType := arrayParams[nParams-6].(string)
 
-	PointerToLv1VoteProposal := arrayParams[len(arrayParams)-6]
-	Pointer1 := common.Hash{}
-	copy(Pointer1[:], []byte(PointerToLv1VoteProposal.(string)))
+	pointer3 := common.NewHash([]byte(arrayParams[nParams-5].(string)))
 
-	Seal1Data := arrayParams[len(arrayParams)-5]
-	firstPubKey := arrayParams[len(arrayParams)-4]
-	secondPubKey := arrayParams[len(arrayParams)-3]
-	thirdPubKey := arrayParams[len(arrayParams)-2]
-	thirdPrivateKey := arrayParams[len(arrayParams)-1]
+	pointer1 := common.NewHash([]byte(arrayParams[nParams-4].(string)))
+
+	Seal1Data := arrayParams[nParams-3]
+
+	pubKeys := arrayParams[nParams-2].([]interface{})
+
+	thirdPrivateKey := arrayParams[nParams-1]
+
 	normalVoteProposal := common.Decrypt(Seal1Data, thirdPrivateKey)
-	meta := metadata.NewNormalDCBVoteProposalFromSealerMetadata(normalVoteProposal.([]byte), [][]byte{firstPubKey.([]byte), secondPubKey.([]byte), thirdPubKey.([]byte)}, Pointer1, Pointer3)
+	var meta metadata.Metadata
+	if boardType == "dcb" {
+		meta = metadata.NewNormalDCBVoteProposalFromSealerMetadata(
+			normalVoteProposal.([]byte),
+			common.SliceInterfaceToSliceSliceByte(pubKeys),
+			pointer1,
+			pointer3,
+		)
+	} else {
+		meta = metadata.NewNormalGOVVoteProposalFromSealerMetadata(
+			normalVoteProposal.([]byte),
+			common.SliceInterfaceToSliceSliceByte(pubKeys),
+			pointer1,
+			pointer3,
+		)
+	}
 	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }
 
-func (self RpcServer) handleCreateRawNormalVoteDCBProposalTransactionFromSealer(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	tx, err := self.buildRawNormalVoteDCBProposalTransactionFromSealer(params)
+func (self RpcServer) handleCreateRawNormalVoteProposalTransactionFromSealer(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	tx, err := self.buildRawNormalVoteProposalTransactionFromSealer(params)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -284,8 +331,8 @@ func (self RpcServer) handleCreateRawNormalVoteDCBProposalTransactionFromSealer(
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendNormalVoteDCBProposalTransactionFromSealer(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawNormalVoteDCBProposalTransactionFromSealer(params, closeChan)
+func (self RpcServer) handleCreateAndSendNormalVoteProposalTransactionFromSealer(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := self.handleCreateRawNormalVoteProposalTransactionFromSealer(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
@@ -300,24 +347,40 @@ func (self RpcServer) handleCreateAndSendNormalVoteDCBProposalTransactionFromSea
 	return txId, err
 }
 
-func (self RpcServer) buildRawNormalVoteDCBProposalTransactionFromOwner(
+func (self RpcServer) buildRawNormalVoteProposalTransactionFromOwner(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	PointerToLv3VoteProposal := arrayParams[len(arrayParams)-5]
-	Pointer := common.Hash{}
-	copy(Pointer[:], []byte(PointerToLv3VoteProposal.(string)))
-	firstPubKey := arrayParams[len(arrayParams)-4]
-	secondPubKey := arrayParams[len(arrayParams)-3]
-	thirdPubKey := arrayParams[len(arrayParams)-2]
-	normalVoteProposal := arrayParams[len(arrayParams)-1]
-	meta := metadata.NewNormalDCBVoteProposalFromOwnerMetadata(normalVoteProposal.([]byte), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer)
+	nParams := len(arrayParams)
+
+	boardType := arrayParams[nParams-4].(string)
+
+	pointer := common.NewHash([]byte(arrayParams[nParams-3].(string)))
+
+	pubKeys := arrayParams[nParams-2].([]interface{})
+
+	normalVoteProposal := arrayParams[nParams-1]
+
+	var meta metadata.Metadata
+	if boardType == "dcb" {
+		meta = metadata.NewNormalDCBVoteProposalFromOwnerMetadata(
+			normalVoteProposal.([]byte),
+			common.SliceInterfaceToSliceSliceByte(pubKeys),
+			pointer,
+		)
+	} else {
+		meta = metadata.NewNormalGOVVoteProposalFromOwnerMetadata(
+			normalVoteProposal.([]byte),
+			common.SliceInterfaceToSliceSliceByte(pubKeys),
+			pointer,
+		)
+	}
 	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }
 
-func (self RpcServer) handleCreateRawNormalVoteDCBProposalTransactionFromOwner(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	tx, err1 := self.buildRawNormalVoteDCBProposalTransactionFromOwner(params)
+func (self RpcServer) handleCreateRawNormalVoteProposalTransactionFromOwner(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	tx, err1 := self.buildRawNormalVoteProposalTransactionFromOwner(params)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, NewRPCError(ErrUnexpected, err1)
@@ -335,8 +398,8 @@ func (self RpcServer) handleCreateRawNormalVoteDCBProposalTransactionFromOwner(p
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendNormalVoteDCBProposalTransactionFromOwner(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawNormalVoteDCBProposalTransactionFromOwner(params, closeChan)
+func (self RpcServer) handleCreateAndSendNormalVoteProposalTransactionFromOwner(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := self.handleCreateRawNormalVoteProposalTransactionFromOwner(params, closeChan)
 	if err != nil {
 		return nil, err
 	}

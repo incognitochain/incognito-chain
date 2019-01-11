@@ -14,8 +14,13 @@ import (
 
 // handleGetDCBParams - get dcb params
 func (self RpcServer) handleGetDCBParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	dcbParam := self.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution.DCBParams
-	return dcbParam, nil
+	constitution := self.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution
+	dcbParam := constitution.DCBParams
+	results := make(map[string]interface{})
+	results["DCBParams"] = dcbParam
+	results["ExecuteDuration"] = constitution.ExecuteDuration
+	results["Explanation"] = constitution.Explanation
+	return results, nil
 }
 
 // handleGetDCBConstitution - get dcb constitution
@@ -33,15 +38,15 @@ func (self RpcServer) handleCreateRawTxWithIssuingRequest(params interface{}, cl
 	arrayParams := common.InterfaceSlice(params)
 	// Req param #4: issuing request info
 	issuingReq := arrayParams[4].(map[string]interface{})
-	depositedAmount := uint64(issuingReq["depositedAmount"].(float64))
-	assetTypeBytes := []byte(issuingReq["assetType"].(string))
+	depositedAmount := uint64(issuingReq["DepositedAmount"].(float64))
+	assetTypeBytes := []byte(issuingReq["AssetType"].(string))
 	assetType := common.Hash{}
 	copy(assetType[:], assetTypeBytes)
 	metaType := metadata.IssuingRequestMeta
-	receiverAddressMap := issuingReq["receiverAddress"].(map[string]interface{})
+	receiverAddressMap := issuingReq["ReceiverAddress"].(map[string]interface{})
 	receiverAddress := privacy.PaymentAddress{
-		Pk: []byte(receiverAddressMap["pk"].(string)),
-		Tk: []byte(receiverAddressMap["tk"].(string)),
+		Pk: []byte(receiverAddressMap["Pk"].(string)),
+		Tk: []byte(receiverAddressMap["Tk"].(string)),
 	}
 
 	meta := metadata.NewIssuingRequest(
@@ -237,10 +242,10 @@ func (self RpcServer) buildRawSubmitDCBProposalTransaction(
 	paymentAddr := senderKey.KeySet.PaymentAddress
 	_ = paymentAddr
 	paymentAddressData := make(map[string]interface{})
-	paymentAddressData["pk"] = string(paymentAddr.Pk)
-	paymentAddressData["tk"] = string(paymentAddr.Tk)
+	paymentAddressData["Pk"] = string(paymentAddr.Pk)
+	paymentAddressData["Tk"] = string(paymentAddr.Tk)
 	newParams := arrayParams[NParams-1].(map[string]interface{})
-	newParams["paymentAddress"] = paymentAddressData
+	newParams["PaymentAddress"] = paymentAddressData
 
 	meta := metadata.NewSubmitDCBProposalMetadataFromJson(newParams)
 	tx, err1 := self.buildRawTransaction(params, meta)

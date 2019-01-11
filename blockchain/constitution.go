@@ -14,14 +14,16 @@ type ConstitutionInfo struct {
 	ConstitutionIndex  uint32
 	StartedBlockHeight uint32
 	ExecuteDuration    uint32
+	Explanation        string
 	AcceptProposalTXID common.Hash
 }
 
-func NewConstitutionInfo(constitutionIndex uint32, startedBlockHeight uint32, executeDuration uint32, proposalTXID common.Hash) *ConstitutionInfo {
+func NewConstitutionInfo(constitutionIndex uint32, startedBlockHeight uint32, executeDuration uint32, explanation string, proposalTXID common.Hash) *ConstitutionInfo {
 	return &ConstitutionInfo{
 		ConstitutionIndex:  constitutionIndex,
 		StartedBlockHeight: startedBlockHeight,
 		ExecuteDuration:    executeDuration,
+		Explanation:        explanation,
 		AcceptProposalTXID: proposalTXID,
 	}
 }

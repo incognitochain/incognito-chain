@@ -106,6 +106,7 @@ type config struct {
 	Wallet           bool   `long:"enablewallet" description:"Enable wallet"`
 	WalletName       string `long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
 	WalletPassphrase string `long:"walletpassphrase" description:"Wallet passphrase"`
+	WalletAutoInit   bool   `long:"walletautoinit" description:"Init wallet automatically if not exist"`
 
 	FastMode bool `long:"fastmode" description:"Load existed chain dependencies instead of rebuild from block data"`
 }
