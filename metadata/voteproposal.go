@@ -316,7 +316,11 @@ func NewSealedLv2VoteProposalMetadata(sealedVoteProposal []byte, lockerPubKeys [
 
 }
 
-func NewSealedLv2DCBVoteProposalMetadata(sealedVoteProposal []byte, lockerPubKeys [][]byte, pointerToLv3VoteProposal common.Hash) *SealedLv2DCBVoteProposalMetadata {
+func NewSealedLv2DCBVoteProposalMetadata(
+	sealedVoteProposal []byte,
+	lockerPubKeys [][]byte,
+	pointerToLv3VoteProposal common.Hash,
+) *SealedLv2DCBVoteProposalMetadata {
 	return &SealedLv2DCBVoteProposalMetadata{
 		SealedLv2VoteProposalMetadata: *NewSealedLv2VoteProposalMetadata(
 			sealedVoteProposal,

@@ -52,6 +52,8 @@ func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-c
 	return result, nil
 }
 
+// ============================== VOTE PROPOSAL
+
 func (self RpcServer) handleGetEncryptionFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	boardType := arrayParams[0].(string)
@@ -125,20 +127,36 @@ func (self RpcServer) handleCreateAndSendSealLv3VoteProposalTransaction(params i
 	return txId, err
 }
 
-func (self RpcServer) buildRawSealLv2VoteDCBProposalTransaction(
+func (self RpcServer) buildRawSealLv2VoteProposalTransaction(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	PointerToLv3VoteProposal := arrayParams[len(arrayParams)-6]
-	Seal3Data := arrayParams[len(arrayParams)-5]
-	firstPubKey := arrayParams[len(arrayParams)-4]
-	secondPubKey := arrayParams[len(arrayParams)-3]
-	thirdPubKey := arrayParams[len(arrayParams)-2]
-	firstPrivateKey := arrayParams[len(arrayParams)-1]
+	nParams := len(arrayParams)
+
+	boardType := arrayParams[nParams-5]
+
+	firstPrivateKey := arrayParams[nParams-4]
+	Seal3Data := arrayParams[nParams-3]
 	Seal2Data := common.Decrypt(Seal3Data, firstPrivateKey)
-	Pointer := common.Hash{}
-	copy(Pointer[:], []byte(PointerToLv3VoteProposal.(string)))
-	meta := metadata.NewSealedLv2DCBVoteProposalMetadata([]byte(Seal2Data.(string)), [][]byte{[]byte(firstPubKey.(string)), []byte(secondPubKey.(string)), []byte(thirdPubKey.(string))}, Pointer)
+
+	pubKeys := arrayParams[nParams-2].([]interface{})
+
+	Pointer := common.NewHash([]byte(arrayParams[nParams-1].(string)))
+
+	meta := metadata.Metadata()
+	if boardType == "dcb" {
+		meta = metadata.NewSealedLv2DCBVoteProposalMetadata(
+			[]byte(Seal2Data.(string)),
+			common.SliceInterfaceToSliceSliceByte(pubKeys),
+			Pointer,
+		)
+	} else {
+		meta = metadata.NewSealedLv2GOVVoteProposalMetadata(
+			[]byte(Seal2Data.(string)),
+			common.SliceInterfaceToSliceSliceByte(pubKeys),
+			Pointer,
+		)
+	}
 	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }
