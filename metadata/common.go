@@ -46,6 +46,9 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case LoanPaymentMeta:
 		md = &LoanPayment{}
 
+	case LoanUnlockMeta:
+		md = &LoanUnlock{}
+
 	case VoteDCBBoardMeta:
 		md = &VoteDCBBoardMetadata{}
 
