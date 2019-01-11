@@ -249,10 +249,10 @@ func (self *Server) NewServer(listenAddrs string, db database.DatabaseInterface,
 		FeeEstimator: self.feeEstimator,
 	})
 	// Create a connection manager.
-	var peers *peer.Peer
+	var peer *peer.Peer
 	if !cfg.DisableListen {
 		var err error
-		peers, err = self.InitListenerPeer(self.addrManager, listenAddrs, cfg.MaxPeers, cfg.MaxOutPeers, cfg.MaxInPeers)
+		peer, err = self.InitListenerPeer(self.addrManager, listenAddrs, cfg.MaxPeers, cfg.MaxOutPeers, cfg.MaxInPeers)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
@@ -261,7 +261,7 @@ func (self *Server) NewServer(listenAddrs string, db database.DatabaseInterface,
 	connManager := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
-		ListenerPeers:        peers,
+		ListenerPeer:         peer,
 		DiscoverPeers:        cfg.DiscoverPeers,
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
 		ExternalAddress:      cfg.ExternalAddress,
@@ -905,7 +905,7 @@ func (self *Server) OnShardState(_ *peer.PeerConn, msg *wire.MessageShardState) 
 func (self *Server) GetPeerIDsFromPublicKey(pubKey string) []libp2p.ID {
 	result := []libp2p.ID{}
 
-	listener := self.connManager.Config.ListenerPeers
+	listener := self.connManager.Config.ListenerPeer
 	for _, peerConn := range listener.PeerConns {
 		// Logger.log.Info("Test PeerConn", peerConn.RemotePeer.PaymentAddress)
 		if peerConn.RemotePeer.PublicKey == pubKey {
@@ -931,8 +931,8 @@ PushMessageToAll broadcast msg
 func (self *Server) PushMessageToAll(msg wire.Message) error {
 	Logger.log.Info("Push msg to all peers")
 	var dc chan<- struct{}
-	msg.SetSenderID(self.connManager.Config.ListenerPeers.PeerID)
-	self.connManager.Config.ListenerPeers.QueueMessageWithEncoding(msg, dc, peer.MESSAGE_TO_ALL, nil)
+	msg.SetSenderID(self.connManager.Config.ListenerPeer.PeerID)
+	self.connManager.Config.ListenerPeer.QueueMessageWithEncoding(msg, dc, peer.MESSAGE_TO_ALL, nil)
 	return nil
 }
 
@@ -942,9 +942,9 @@ PushMessageToPeer push msg to peer
 func (self *Server) PushMessageToPeer(msg wire.Message, peerId libp2p.ID) error {
 	Logger.log.Infof("Push msg to peer %s", peerId.String())
 	var dc chan<- struct{}
-	peerConn := self.connManager.Config.ListenerPeers.GetPeerConnByPeerID(peerId.Pretty())
+	peerConn := self.connManager.Config.ListenerPeer.GetPeerConnByPeerID(peerId.Pretty())
 	if peerConn != nil {
-		msg.SetSenderID(self.connManager.Config.ListenerPeers.PeerID)
+		msg.SetSenderID(self.connManager.Config.ListenerPeer.PeerID)
 		peerConn.QueueMessageWithEncoding(msg, dc, peer.MESSAGE_TO_PEER, nil)
 		Logger.log.Infof("Pushed peer %s", peerId.Pretty())
 		return nil
@@ -987,7 +987,7 @@ func (self *Server) PushMessageToShard(msg wire.Message, shard byte) error {
 		Logger.log.Infof("Pushed shard %d", shard)
 	} else {
 		Logger.log.Error("RemotePeer of shard not exist!")
-		listener := self.connManager.Config.ListenerPeers
+		listener := self.connManager.Config.ListenerPeer
 		listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_SHARD, &shard)
 	}
 	return nil
@@ -1031,7 +1031,7 @@ func (self *Server) PushMessageToBeacon(msg wire.Message) error {
 		return nil
 	} else {
 		Logger.log.Error("RemotePeer of beacon not exist!")
-		listener := self.connManager.Config.ListenerPeers
+		listener := self.connManager.Config.ListenerPeer
 		listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_BEACON, nil)
 	}
 	return errors.New("RemotePeer of beacon not found")
@@ -1075,7 +1075,7 @@ GetChainState - send a getchainstate msg to connected peer
 */
 func (self *Server) PushMessageGetBeaconState() error {
 	Logger.log.Infof("Send a GetBeaconState")
-	listener := self.connManager.Config.ListenerPeers
+	listener := self.connManager.Config.ListenerPeer
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetBeaconState)
 	if err != nil {
 		return err
@@ -1092,7 +1092,7 @@ GetChainState - send a getchainstate msg to connected peer
 */
 func (self *Server) PushMessageGetShardState(shardID byte) error {
 	Logger.log.Infof("Send a GetShardState")
-	listener := self.connManager.Config.ListenerPeers
+	listener := self.connManager.Config.ListenerPeer
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetShardState)
 	if err != nil {
 		return err

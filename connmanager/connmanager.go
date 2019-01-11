@@ -115,7 +115,7 @@ type Config struct {
 	// This field will not have any effect if the OnAccept field is not
 	// also specified.  It may be nil if the caller does not wish to listen
 	// for incoming connections.
-	ListenerPeers *peer.Peer
+	ListenerPeer *peer.Peer
 
 	// OnInboundAccept is a callback that is fired when an inbound connection is accepted
 	OnInboundAccept func(peerConn *peer.PeerConn)
@@ -207,7 +207,7 @@ func (self *ConnManager) Stop() {
 
 	// Stop all the listeners.  There will not be any listeners if
 	// listening is disabled.
-	listener := self.Config.ListenerPeers
+	listener := self.Config.ListenerPeer
 	listener.Stop()
 
 	if self.cDiscoveredPeers != nil {
@@ -279,7 +279,7 @@ func (self *ConnManager) Connect(addr string, pubKey string, cConn chan *peer.Pe
 	targetPeerAddr, _ := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", libpeer.IDB58Encode(peerId)))
 	targetAddr := ipfsaddr.Decapsulate(targetPeerAddr)
 
-	listen := self.Config.ListenerPeers
+	listen := self.Config.ListenerPeer
 	listen.HandleConnected = self.handleConnected
 	listen.HandleDisconnected = self.handleDisconnected
 	listen.HandleFailed = self.handleFailed
@@ -319,7 +319,7 @@ func (self *ConnManager) Start(discoverPeerAddress string) {
 	// Start all the listeners so long as the caller requested them and
 	// provided a callback to be invoked when connections are accepted.
 	if self.Config.OnInboundAccept != nil {
-		listner := self.Config.ListenerPeers
+		listner := self.Config.ListenerPeer
 		listner.HandleConnected = self.handleConnected
 		listner.HandleDisconnected = self.handleDisconnected
 		listner.HandleFailed = self.handleFailed
@@ -389,7 +389,7 @@ func (self *ConnManager) processDiscoverPeers() {
 		return
 	}
 	if client != nil {
-		listener := self.Config.ListenerPeers
+		listener := self.Config.ListenerPeer
 		var response []wire.RawPeer
 
 		externalAddress := self.Config.ExternalAddress
@@ -469,7 +469,7 @@ func (self *ConnManager) processDiscoverPeers() {
 
 func (self *ConnManager) getPeerIdsFromPbk(pbk string) []libpeer.ID {
 	result := make([]libpeer.ID, 0)
-	listener := self.Config.ListenerPeers
+	listener := self.Config.ListenerPeer
 	allPeers := listener.GetPeerConnOfAll()
 	for _, peerConn := range allPeers {
 		// Logger.log.Info("Test PeerConn", peerConn.RemotePeer.PaymentAddress)
@@ -490,7 +490,7 @@ func (self *ConnManager) getPeerIdsFromPbk(pbk string) []libpeer.ID {
 
 func (self *ConnManager) getPeerConnOfShard(shard *byte) []*peer.PeerConn {
 	c := make([]*peer.PeerConn, 0)
-	listener := self.Config.ListenerPeers
+	listener := self.Config.ListenerPeer
 	allPeers := listener.GetPeerConnOfAll()
 	for _, peerConn := range allPeers {
 		sh := self.getShardOfPbk(peerConn.RemotePeer.PublicKey)
@@ -503,7 +503,7 @@ func (self *ConnManager) getPeerConnOfShard(shard *byte) []*peer.PeerConn {
 
 func (self *ConnManager) countPeerConnOfShard(shard *byte) int {
 	c := 0
-	listener := self.Config.ListenerPeers
+	listener := self.Config.ListenerPeer
 	allPeers := listener.GetPeerConnOfAll()
 	for _, peerConn := range allPeers {
 		sh := self.getShardOfPbk(peerConn.RemotePeer.PublicKey)
@@ -515,7 +515,7 @@ func (self *ConnManager) countPeerConnOfShard(shard *byte) int {
 }
 
 func (self *ConnManager) checkPeerConnOfPbk(pbk string) bool {
-	listener := self.Config.ListenerPeers
+	listener := self.Config.ListenerPeer
 	pcs := listener.GetPeerConnOfAll()
 	for _, peerConn := range pcs {
 		if peerConn.RemotePeer.PublicKey == pbk {
@@ -705,7 +705,7 @@ func (self *ConnManager) GetCurrentRoleShard() (string, *byte) {
 
 func (self *ConnManager) GetPeerConnOfShard(shard byte) []*peer.PeerConn {
 	peerConns := make([]*peer.PeerConn, 0)
-	listener := self.Config.ListenerPeers
+	listener := self.Config.ListenerPeer
 	allPeers := listener.GetPeerConnOfAll()
 	for _, peerConn := range allPeers {
 		shardT := self.getShardOfPbk(peerConn.RemotePeer.PublicKey)
@@ -718,7 +718,7 @@ func (self *ConnManager) GetPeerConnOfShard(shard byte) []*peer.PeerConn {
 
 func (self *ConnManager) GetPeerConnOfBeacon() []*peer.PeerConn {
 	peerConns := make([]*peer.PeerConn, 0)
-	listener := self.Config.ListenerPeers
+	listener := self.Config.ListenerPeer
 	allPeers := listener.GetPeerConnOfAll()
 	for _, peerConn := range allPeers {
 		pbk := peerConn.RemotePeer.PublicKey
@@ -734,7 +734,7 @@ func (self *ConnManager) GetPeerConnOfPbk(pbk string) []*peer.PeerConn {
 	if pbk == "" {
 		return peerConns
 	}
-	listener := self.Config.ListenerPeers
+	listener := self.Config.ListenerPeer
 	allPeers := listener.GetPeerConnOfAll()
 	for _, peerConn := range allPeers {
 		if pbk == peerConn.RemotePeer.PublicKey {
@@ -746,7 +746,7 @@ func (self *ConnManager) GetPeerConnOfPbk(pbk string) []*peer.PeerConn {
 
 func (self *ConnManager) GetPeerConnOfAll() []*peer.PeerConn {
 	peerConns := make([]*peer.PeerConn, 0)
-	listener := self.Config.ListenerPeers
+	listener := self.Config.ListenerPeer
 	peerConns = append(peerConns, listener.GetPeerConnOfAll()...)
 	return peerConns
 }
