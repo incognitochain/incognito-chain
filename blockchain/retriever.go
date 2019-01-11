@@ -1,8 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
-
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -18,7 +16,6 @@ func (self *BlockChain) GetHeight() int32 {
 }
 
 func (self *BlockChain) GetChainHeight(chainID byte) int32 {
-	fmt.Printf("len(BestState): %d\n", len(self.BestState))
 	return self.BestState[chainID].BestBlock.Header.Height
 }
 
