@@ -57,15 +57,15 @@ func NewSellingBonds(
 func NewSellingBondsFromJson(data interface{}) *SellingBonds {
 	sellingBondsData := data.(map[string]interface{})
 	sellingBonds := NewSellingBonds(
-		sellingBondsData["bondName"].(string),
-		sellingBondsData["bondSymbol"].(string),
-		uint64(sellingBondsData["totalIssue"].(float64)),
-		uint64(sellingBondsData["bondsToSell"].(float64)),
-		uint64(sellingBondsData["bondPrice"].(float64)),
-		uint32(sellingBondsData["maturity"].(float64)),
-		uint64(sellingBondsData["buyBackPrice"].(float64)),
-		uint32(sellingBondsData["startSellingAt"].(float64)),
-		uint32(sellingBondsData["sellingWithin"].(float64)),
+		sellingBondsData["BondName"].(string),
+		sellingBondsData["BondSymbol"].(string),
+		uint64(sellingBondsData["TotalIssue"].(float64)),
+		uint64(sellingBondsData["BondsToSell"].(float64)),
+		uint64(sellingBondsData["BondPrice"].(float64)),
+		uint32(sellingBondsData["Maturity"].(float64)),
+		uint64(sellingBondsData["BuyBackPrice"].(float64)),
+		uint32(sellingBondsData["StartSellingAt"].(float64)),
+		uint32(sellingBondsData["SellingWithin"].(float64)),
 	)
 	return sellingBonds
 }
@@ -95,12 +95,12 @@ func NewSaleData(saleID []byte, endBlock int32, buyingAsset []byte, buyingAmount
 func NewSaleDataFromJson(data interface{}) *SaleData {
 	saleDataData := data.(map[string]interface{})
 	saleData := NewSaleData(
-		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["saleID"])),
-		int32(saleDataData["endBlock"].(float64)),
-		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["buyingAsset"])),
-		uint64(saleDataData["buyingAmount"].(float64)),
-		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["sellingAsset"])),
-		uint64(saleDataData["sellingAmount"].(float64)),
+		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["SaleID"])),
+		int32(saleDataData["EndBlock"].(float64)),
+		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["BuyingAsset"])),
+		uint64(saleDataData["BuyingAmount"].(float64)),
+		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["SellingAsset"])),
+		uint64(saleDataData["SellingAmount"].(float64)),
 	)
 	return saleData
 }
@@ -123,8 +123,8 @@ func NewRefundInfo(
 func NewRefundInfoFromJson(data interface{}) *RefundInfo {
 	refundInfoData := data.(map[string]interface{})
 	refundInfo := NewRefundInfo(
-		uint64(refundInfoData["thresholdToLargeTx"].(float64)),
-		uint64(refundInfoData["refundAmount"].(float64)),
+		uint64(refundInfoData["ThresholdToLargeTx"].(float64)),
+		uint64(refundInfoData["RefundAmount"].(float64)),
 	)
 	return refundInfo
 }
@@ -141,8 +141,8 @@ func NewSaleDCBTokensByUSDData(amount uint64, endBlock int32) *SaleDCBTokensByUS
 func NewSaleDCBTokensByUSDDataFromJson(data interface{}) *SaleDCBTokensByUSDData {
 	saleDCBTokensByUSDDataData := data.(map[string]interface{})
 	saleDCBTokensByUSDData := NewSaleDCBTokensByUSDData(
-		uint64(saleDCBTokensByUSDDataData["amount"].(float64)),
-		int32(saleDCBTokensByUSDDataData["endBlock"].(float64)),
+		uint64(saleDCBTokensByUSDDataData["Amount"].(float64)),
+		int32(saleDCBTokensByUSDDataData["EndBlock"].(float64)),
 	)
 	return saleDCBTokensByUSDData
 }
@@ -163,7 +163,7 @@ func NewOracleNetwork(oraclePubKeys [][]byte, wrongTimesAllowed uint8, quorum ui
 func NewOracleNetworkFromJson(data interface{}) *OracleNetwork {
 	oracleNetworkData := data.(map[string]interface{})
 
-	oraclePubKeysInterface := common.InterfaceSlice(oracleNetworkData["oraclePubKeys"])
+	oraclePubKeysInterface := common.InterfaceSlice(oracleNetworkData["OraclePubKeys"])
 	oraclePubKeys := make([][]byte, 0)
 	for _, i := range oraclePubKeysInterface {
 		oraclePubKeys = append(oraclePubKeys, common.SliceInterfaceToSliceByte(common.InterfaceSlice(i)))
@@ -171,11 +171,11 @@ func NewOracleNetworkFromJson(data interface{}) *OracleNetwork {
 
 	oracleNetwork := NewOracleNetwork(
 		oraclePubKeys,
-		uint8(oracleNetworkData["wrongTimesAllowed"].(float64)),
-		uint8(oracleNetworkData["quorum"].(float64)),
-		uint32(oracleNetworkData["acceptableErrorMargin"].(float64)),
-		uint32(oracleNetworkData["updateFrequency"].(float64)),
-		uint8(oracleNetworkData["oracleRewardMultiplier"].(float64)),
+		uint8(oracleNetworkData["WrongTimesAllowed"].(float64)),
+		uint8(oracleNetworkData["Quorum"].(float64)),
+		uint32(oracleNetworkData["AcceptableErrorMargin"].(float64)),
+		uint32(oracleNetworkData["UpdateFrequency"].(float64)),
+		uint8(oracleNetworkData["OracleRewardMultiplier"].(float64)),
 	)
 	return oracleNetwork
 }

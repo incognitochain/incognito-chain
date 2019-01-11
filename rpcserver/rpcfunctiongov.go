@@ -314,10 +314,10 @@ func (self RpcServer) buildRawSubmitGOVProposalTransaction(
 	paymentAddr := senderKey.KeySet.PaymentAddress
 	_ = paymentAddr
 	paymentAddressData := make(map[string]interface{})
-	paymentAddressData["pk"] = string(paymentAddr.Pk)
-	paymentAddressData["tk"] = string(paymentAddr.Tk)
+	paymentAddressData["Pk"] = string(paymentAddr.Pk)
+	paymentAddressData["Tk"] = string(paymentAddr.Tk)
 	newParams := arrayParams[NParams-1].(map[string]interface{})
-	newParams["paymentAddress"] = paymentAddressData
+	newParams["PaymentAddress"] = paymentAddressData
 
 	meta := metadata.NewSubmitGOVProposalMetadataFromJson(arrayParams[NParams-1])
 	tx, err1 := self.buildRawTransaction(params, meta)
@@ -408,10 +408,10 @@ func (self RpcServer) handleCreateRawTxWithOracleFeed(params interface{}, closeC
 	// Req param #4: oracle feed
 	oracleFeed := arrayParams[4].(map[string]interface{})
 
-	assetTypeBytes := []byte(oracleFeed["assetType"].(string))
+	assetTypeBytes := []byte(oracleFeed["AssetType"].(string))
 	assetType := common.Hash{}
 	copy(assetType[:], assetTypeBytes)
-	price := uint64(oracleFeed["price"].(float64))
+	price := uint64(oracleFeed["Price"].(float64))
 	metaType := metadata.OracleFeedMeta
 	meta := metadata.NewOracleFeed(
 		assetType,
@@ -463,13 +463,13 @@ func (self RpcServer) handleCreateRawTxWithUpdatingOracleBoard(params interface{
 	arrayParams := common.InterfaceSlice(params)
 	// Req param #4: updating oracle board info
 	updatingOracleBoard := arrayParams[4].(map[string]interface{})
-	action := int8(updatingOracleBoard["action"].(float64))
-	oraclePubKeys := updatingOracleBoard["oraclePubKeys"].([]interface{})
+	action := int8(updatingOracleBoard["Action"].(float64))
+	oraclePubKeys := updatingOracleBoard["OraclePubKeys"].([]interface{})
 	assertedOraclePKs := [][]byte{}
 	for _, pk := range oraclePubKeys {
 		assertedOraclePKs = append(assertedOraclePKs, []byte(pk.(string)))
 	}
-	signs := updatingOracleBoard["signs"].(map[string]interface{})
+	signs := updatingOracleBoard["Signs"].(map[string]interface{})
 	assertedSigns := map[string][]byte{}
 	for k, s := range signs {
 		assertedSigns[k] = []byte(s.(string))

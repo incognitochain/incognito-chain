@@ -27,9 +27,9 @@ func NewLoanParams(interestRate uint64, maturity uint32, liquidationStart uint64
 func NewLoanParamsFromJson(data interface{}) *LoanParams {
 	loanParamsData := data.(map[string]interface{})
 	loanParams := NewLoanParams(
-		uint64(loanParamsData["interestRate"].(float64)),
-		uint32(loanParamsData["maturity"].(float64)),
-		uint64(loanParamsData["liquidationStart"].(float64)),
+		uint64(loanParamsData["InterestRate"].(float64)),
+		uint32(loanParamsData["Maturity"].(float64)),
+		uint64(loanParamsData["LiquidationStart"].(float64)),
 	)
 	return loanParams
 }
@@ -86,14 +86,14 @@ func NewDCBParamsFromJson(rawData interface{}) *DCBParams {
 
 	DCBParams := rawData.(map[string]interface{})
 
-	listSaleData := NewListSaleDataFromJson(DCBParams["listSaleData"])
-	minLoanResponseRequire := uint8(DCBParams["minLoanResponseRequire"].(float64))
-	minCMBApprovalRequire := uint8(DCBParams["minCMBApprovalRequire"].(float64))
-	lateWithdrawResponseFine := uint64(DCBParams["lateWithdrawResponseFine"].(float64))
+	listSaleData := NewListSaleDataFromJson(DCBParams["ListSaleData"])
+	minLoanResponseRequire := uint8(DCBParams["MinLoanResponseRequire"].(float64))
+	minCMBApprovalRequire := uint8(DCBParams["MinCMBApprovalRequire"].(float64))
+	lateWithdrawResponseFine := uint64(DCBParams["LateWithdrawResponseFine"].(float64))
 
-	saleDCBTokensByUSDData := NewSaleDCBTokensByUSDDataFromJson(DCBParams["saleDCBTokensByUSDData"])
+	saleDCBTokensByUSDData := NewSaleDCBTokensByUSDDataFromJson(DCBParams["SaleDCBTokensByUSDData"])
 
-	listLoanParams := NewListLoanParamsFromJson(DCBParams["listLoanParams"])
+	listLoanParams := NewListLoanParamsFromJson(DCBParams["ListLoanParams"])
 	return NewDCBParams(
 		listSaleData,
 		minLoanResponseRequire,
@@ -134,12 +134,12 @@ func NewGOVParams(
 func NewGOVParamsFromJson(data interface{}) *GOVParams {
 	arrayParams := data.(map[string]interface{})
 
-	salaryPerTx := uint64(arrayParams["salaryPerTx"].(float64))
-	basicSalary := uint64(arrayParams["basicSalary"].(float64))
-	feePerKbTx := uint64(arrayParams["feePerKbTx"].(float64))
-	sellingBonds := NewSellingBondsFromJson(arrayParams["sellingBonds"])
-	refundInfo := NewRefundInfoFromJson(arrayParams["refundInfo"])
-	oracleNetwork := NewOracleNetworkFromJson(arrayParams["oracleNetwork"])
+	salaryPerTx := uint64(arrayParams["SalaryPerTx"].(float64))
+	basicSalary := uint64(arrayParams["BasicSalary"].(float64))
+	feePerKbTx := uint64(arrayParams["FeePerKbTx"].(float64))
+	sellingBonds := NewSellingBondsFromJson(arrayParams["SellingBonds"])
+	refundInfo := NewRefundInfoFromJson(arrayParams["RefundInfo"])
+	oracleNetwork := NewOracleNetworkFromJson(arrayParams["OracleNetwork"])
 
 	return NewGOVParams(salaryPerTx, basicSalary, feePerKbTx, sellingBonds, refundInfo, oracleNetwork)
 }

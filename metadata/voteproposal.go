@@ -505,15 +505,15 @@ func NewSealedLv3GOVVoteProposalMetadata(
 func NewSealedLv3DCBVoteProposalMetadataFromJson(data interface{}) *SealedLv3DCBVoteProposalMetadata {
 	dataSealedLv3DCBVoteProposal := data.(map[string]interface{})
 	return NewSealedLv3DCBVoteProposalMetadata(
-		[]byte(dataSealedLv3DCBVoteProposal["sealedVoteProposal"].(string)),
-		common.SliceInterfaceToSliceSliceByte(dataSealedLv3DCBVoteProposal["lockerPubKeys"].([]interface{})),
+		[]byte(dataSealedLv3DCBVoteProposal["SealedVoteProposal"].(string)),
+		common.SliceInterfaceToSliceSliceByte(dataSealedLv3DCBVoteProposal["LockerPubKeys"].([]interface{})),
 	)
 }
 func NewSealedLv3GOVVoteProposalMetadataFromJson(data interface{}) *SealedLv3GOVVoteProposalMetadata {
 	dataSealedLv3GOVVoteProposal := data.(map[string]interface{})
 	return NewSealedLv3GOVVoteProposalMetadata(
-		[]byte(dataSealedLv3GOVVoteProposal["sealedVoteProposal"].(string)),
-		common.SliceInterfaceToSliceSliceByte(dataSealedLv3GOVVoteProposal["lockerPubKeys"].([]interface{})),
+		[]byte(dataSealedLv3GOVVoteProposal["SealedVoteProposal"].(string)),
+		common.SliceInterfaceToSliceSliceByte(dataSealedLv3GOVVoteProposal["LockerPubKeys"].([]interface{})),
 	)
 }
 

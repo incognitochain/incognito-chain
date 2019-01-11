@@ -36,11 +36,11 @@ func NewPaymentAddress(pk privacy.PublicKey, tk privacy.TransmissionKey) *privac
 
 func NewPaymentAddressFromJson(data interface{}) *privacy.PaymentAddress {
 	paymentAddressData := data.(map[string]interface{})
-	x := paymentAddressData["pk"].(string)
+	x := paymentAddressData["Pk"].(string)
 	_ = x
 	paymentAddress := NewPaymentAddress(
-		[]byte(paymentAddressData["pk"].(string)),
-		[]byte(paymentAddressData["tk"].(string)),
+		[]byte(paymentAddressData["Pk"].(string)),
+		[]byte(paymentAddressData["Tk"].(string)),
 	)
 	return paymentAddress
 }
@@ -48,10 +48,10 @@ func NewPaymentAddressFromJson(data interface{}) *privacy.PaymentAddress {
 func NewSubmitDCBProposalMetadataFromJson(data interface{}) *SubmitDCBProposalMetadata {
 	SubmitDCBProposalData := data.(map[string]interface{})
 	meta := NewSubmitDCBProposalMetadata(
-		*params.NewDCBParamsFromJson(SubmitDCBProposalData["dcbParams"]),
-		uint32(SubmitDCBProposalData["executeDuration"].(float64)),
-		SubmitDCBProposalData["explanation"].(string),
-		NewPaymentAddressFromJson(SubmitDCBProposalData["paymentAddress"]),
+		*params.NewDCBParamsFromJson(SubmitDCBProposalData["DcbParams"]),
+		uint32(SubmitDCBProposalData["ExecuteDuration"].(float64)),
+		SubmitDCBProposalData["Explanation"].(string),
+		NewPaymentAddressFromJson(SubmitDCBProposalData["PaymentAddress"]),
 	)
 	return meta
 }
@@ -115,16 +115,16 @@ func NewSubmitGOVProposalMetadata(
 func NewSubmitGOVProposalMetadataFromJson(data interface{}) *SubmitGOVProposalMetadata {
 	submitGOVProposalData := data.(map[string]interface{})
 
-	paymentAddressData := submitGOVProposalData["paymentAddress"].(map[string]interface{})
+	paymentAddressData := submitGOVProposalData["PaymentAddress"].(map[string]interface{})
 	paymentAddress := privacy.PaymentAddress{
-		Pk: []byte(paymentAddressData["pk"].(string)),
-		Tk: []byte(paymentAddressData["tk"].(string)),
+		Pk: []byte(paymentAddressData["Pk"].(string)),
+		Tk: []byte(paymentAddressData["Tk"].(string)),
 	}
 
 	return NewSubmitGOVProposalMetadata(
-		*params.NewGOVParamsFromJson(submitGOVProposalData["govParams"]),
-		uint32(submitGOVProposalData["executeDuration"].(float64)),
-		submitGOVProposalData["explanation"].(string),
+		*params.NewGOVParamsFromJson(submitGOVProposalData["GovParams"]),
+		uint32(submitGOVProposalData["ExecuteDuration"].(float64)),
+		submitGOVProposalData["Explanation"].(string),
 		&paymentAddress,
 	)
 }
