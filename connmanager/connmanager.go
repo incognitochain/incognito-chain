@@ -249,7 +249,7 @@ func (self *ConnManager) GetPeerId(addr string) string {
 
 // Connect assigns an id and dials a connection to the address of the
 // connection request.
-func (self *ConnManager) Connect(addr string, pubKey string) {
+func (self *ConnManager) Connect(addr string, pubKey string, cConn chan *peer.PeerConn) {
 	if atomic.LoadInt32(&self.stop) != 0 {
 		return
 	}
@@ -303,7 +303,7 @@ func (self *ConnManager) Connect(addr string, pubKey string) {
 	listen.Host.Peerstore().AddAddr(peer.PeerID, peer.TargetAddress, pstore.PermanentAddrTTL)
 	Logger.log.Info("DEBUG Connect to RemotePeer", peer.PublicKey)
 	Logger.log.Info(listen.Host.Peerstore().Addrs(peer.PeerID))
-	listen.PushConn(&peer, nil)
+	listen.PushConn(&peer, cConn)
 }
 
 func (self *ConnManager) Start(discoverPeerAddress string) {
@@ -567,7 +567,7 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 			cPbk := self.Config.ConsensusState.UserPbk
 			// if existed conn then not append to array
 			if cPbk != pbk && !self.checkPeerConnOfPbk(pbk) {
-				go self.Connect(peerI.RawAddress, peerI.PublicKey)
+				go self.Connect(peerI.RawAddress, peerI.PublicKey, nil)
 				countPeerShard++
 			}
 			if countPeerShard >= maxPeers {
@@ -612,7 +612,7 @@ func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[
 			cPbk := self.Config.ConsensusState.UserPbk
 			// if existed conn then not append to array
 			if cPbk != pbk && !self.checkPeerConnOfPbk(pbk) {
-				go self.Connect(peerI.RawAddress, peerI.PublicKey)
+				go self.Connect(peerI.RawAddress, peerI.PublicKey, nil)
 			}
 			countPeerShard++
 			if countPeerShard >= maxBeaconPeers {
@@ -637,7 +637,7 @@ func (self *ConnManager) handleRandPeersOfNoShard(maxPeers int, mPeers map[strin
 			if ok {
 				continue
 			}
-			go self.Connect(peer.RawAddress, peer.PublicKey)
+			go self.Connect(peer.RawAddress, peer.PublicKey, nil)
 			countPeers++
 			if countPeers >= maxPeers {
 				return countPeers

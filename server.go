@@ -300,7 +300,7 @@ func (self *Server) NewServer(listenAddrs string, db database.DatabaseInterface,
 	}
 
 	for _, addr := range permanentPeers {
-		go self.connManager.Connect(addr, "")
+		go self.connManager.Connect(addr, "", nil)
 	}
 
 	fmt.Println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", cfg.DisableRPC)
@@ -431,7 +431,7 @@ func (self *Server) peerHandler() {
 
 	if len(cfg.ConnectPeers) == 0 {
 		for _, addr := range self.addrManager.AddressCache() {
-			go self.connManager.Connect(addr.RawAddress, addr.PublicKey)
+			go self.connManager.Connect(addr.RawAddress, addr.PublicKey, nil)
 		}
 	}
 

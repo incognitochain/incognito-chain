@@ -136,7 +136,7 @@ type MessageListeners struct {
 // when the message has been sent (or won't be sent due to things such as
 // shutdown)
 type outMsg struct {
-	forwardType  byte // 0 all, 1 shard, 2  peer, 3 beacon
+	forwardType  byte // a all, s shard, p  peer, b beacon
 	forwardValue *byte
 	rawBytes     *[]byte
 	message      wire.Message
