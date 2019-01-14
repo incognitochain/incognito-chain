@@ -1,8 +1,9 @@
 package privacy
 
 import (
-	"github.com/ninjadotorg/constant/common"
 	"math/big"
+
+	"github.com/ninjadotorg/constant/common"
 )
 
 //SchnPubKey denoted Schnorr Publickey
@@ -26,9 +27,13 @@ func (priKey *SchnPrivKey) GenKey() {
 	if priKey == nil {
 		priKey = new(SchnPrivKey)
 	}
-
+	hasprivacy := false
 	priKey.SK = RandInt()
-	priKey.R = RandInt()
+	if hasprivacy {
+		priKey.R = RandInt()
+	} else {
+		priKey.R = big.NewInt(0)
+	}
 
 	priKey.PubKey = new(SchnPubKey)
 
