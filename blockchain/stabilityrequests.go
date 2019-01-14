@@ -11,6 +11,13 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 )
 
+type buyBackFromInfo struct {
+	paymentAddress privacy.PaymentAddress
+	buyBackPrice   uint64
+	value          uint64
+	requestedTxID  *common.Hash
+}
+
 func (blockgen *BlkTmplGenerator) checkIssuingReqTx(
 	chainID byte,
 	tx metadata.Transaction,
