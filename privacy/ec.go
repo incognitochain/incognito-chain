@@ -7,6 +7,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 
 	"encoding/json"
+
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/pkg/errors"
 )
@@ -206,12 +207,18 @@ func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
 func (point EllipticPoint) Hash(index int) *EllipticPoint {
 	// res.X = hash(g.X || index), res.Y = sqrt(res.X^3 - 3X + B)
 	res := new(EllipticPoint).Zero()
-
-	res.X.SetBytes(point.X.Bytes())
+	temp := point.X.Bytes()
+	for len(temp) < BigIntSize {
+		temp = append([]byte{0}, temp...)
+	}
+	res.X.SetBytes(temp)
 	res.X.Add(res.X, big.NewInt(int64(index)))
-
 	for {
-		res.X.SetBytes(common.DoubleHashB(res.X.Bytes()))
+		temp = res.X.Bytes()
+		for len(temp) < BigIntSize {
+			temp = append([]byte{0}, temp...)
+		}
+		res.X.SetBytes(common.DoubleHashB(temp))
 		err := res.ComputeYCoord()
 
 		if (err == nil) && (Curve.IsOnCurve(res.X, res.Y)) && (res.IsSafe()) {
