@@ -1,19 +1,21 @@
 package rpcserver
 
 import (
+	"fmt"
+	"log"
+
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/pkg/errors"
-	"github.com/ninjadotorg/constant/metadata"
-	"fmt"
-	"github.com/ninjadotorg/constant/common"
 )
 
 func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
-	Logger.log.Info(params)
-
+	// Logger.log.Info(params)
+	log.Printf("%+v", params)
 	// all params
 	arrayParams := common.InterfaceSlice(params)
 
@@ -74,7 +76,6 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-
 	// check real fee(nano constant) per tx
 	realFee := self.estimateFee(estimateFeeCoinPerKb, candidateOutputCoins, paymentInfos, chainIdSender, numBlock)
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)

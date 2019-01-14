@@ -109,6 +109,18 @@ func CreateShardGenesisBlock(
 	)
 	block.Body.Transactions = append(block.Body.Transactions, &bondTokenTx)
 
+	privKeyTest := privacy.SpendingKey([]byte("11111119q5P6bukedopEFUh7HDuiobEhcXb8VxdygNTzNoyDyXPzmAN13UXRKnwuXPEehA6AfD9UyGbsfKsg1aKvnf8AfX6nnfSQVr9bHio"))
+	userKeySet := cashec.KeySet{}
+	userKeySet.ImportFromPrivateKey(&privKeyTest)
+
+	testSpendingKey := privacy.SpendingKey([]byte("112t8rnXZD2GmbVAP3xBefJaorCgebytpoRK1oAzcgoNNSVtXzoRTu21KeSmnRbzvd7qMJd1mTcsqFS1CGZ8UpY4mFRZzBa69aVcFWpLXuRv"))
+	testSalaryTX := transaction.Tx{}
+	testSalaryTX.InitTxSalary(100, &userKeySet.PaymentAddress, &testSpendingKey,
+		nil,
+		nil,
+	)
+	// block.Body.Transactions = append(block.Body.Transactions, &testSalaryTX)
+
 	// Create genesis vote token tx for DCB
 	// voteDCBTokenTx := createSpecialTokenTx(
 	// 	common.Hash(common.VoteDCBTokenID),

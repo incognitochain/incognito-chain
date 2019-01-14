@@ -97,7 +97,7 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 	var err error
 	tx, err := self.buildRawTransaction(params, nil)
 	if err.(*RPCError) != nil {
-		Logger.log.Critical(err)
+		// Logger.log.Critical(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	byteArrays, err := json.Marshal(tx)

@@ -15,7 +15,7 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
+	zkp "github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"github.com/ninjadotorg/constant/wallet"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )
@@ -793,20 +793,20 @@ func (tx *Tx) InitTxSalary(
 
 	sndOut := privacy.RandInt()
 	for true {
-		lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
-		shardIDSender, err := common.GetTxSenderChain(lastByte)
+		// lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
+		// shardIDSender, err := common.GetTxSenderChain(lastByte)
 
 		tokenID := &common.Hash{}
 		tokenID.SetBytes(common.ConstantID[:])
-		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, shardIDSender, db)
-		if err != nil {
-			return err
-		}
-		if ok {
-			sndOut = privacy.RandInt()
-		} else {
-			break
-		}
+		// ok, err := CheckSNDerivatorExistence(tokenID, sndOut, shardIDSender, db)
+		// if err != nil {
+		// 	return err
+		// }
+		// if ok {
+		// 	sndOut = privacy.RandInt()
+		// } else {
+		// 	break
+		// }
 	}
 
 	tx.Proof.OutputCoins[0].CoinDetails.SNDerivator = sndOut
