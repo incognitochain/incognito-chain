@@ -24,6 +24,7 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 	}
 
 	// Remove unrelated shard tx
+	// @Hung: Txpool should be remove after create block is successful
 	for _, tx := range txToRemove {
 		self.txPool.RemoveTx(tx)
 	}
@@ -71,7 +72,8 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 	prevBlockHash := self.chain.BestState.Shard[shardID].BestBlock.Hash()
 
 	block.Header = ShardHeader{
-		Producer:          userKeySet.GetPublicKeyB58(),
+		Producer: userKeySet.GetPublicKeyB58(),
+		//@Hung: increase epoch if new block %epoch = 0
 		Epoch:             self.chain.BestState.Beacon.BeaconEpoch,
 		Height:            prevBlock.Header.Height + 1,
 		Version:           BlockVersion,
