@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"math/big"
 	"strconv"
@@ -301,7 +302,8 @@ func (tx *Tx) SignTx() error {
 	tx.SigPubKey = sigKey.PubKey.PK.Compress()
 
 	// signing
-	Logger.log.Infof(tx.Hash().String())
+	// Logger.log.Infof(tx.Hash().String())
+	log.Printf("%+v", tx.Hash().String())
 	signature, err := sigKey.Sign(tx.Hash()[:])
 	if err != nil {
 		return err
@@ -792,22 +794,23 @@ func (tx *Tx) InitTxSalary(
 	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandInt()
 
 	sndOut := privacy.RandInt()
-	for true {
-		// lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
-		// shardIDSender, err := common.GetTxSenderChain(lastByte)
 
-		tokenID := &common.Hash{}
-		tokenID.SetBytes(common.ConstantID[:])
-		// ok, err := CheckSNDerivatorExistence(tokenID, sndOut, shardIDSender, db)
-		// if err != nil {
-		// 	return err
-		// }
-		// if ok {
-		// 	sndOut = privacy.RandInt()
-		// } else {
-		// 	break
-		// }
-	}
+	// for true {
+	// 	lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
+	// 	shardIDSender, err := common.GetTxSenderChain(lastByte)
+
+	// 	tokenID := &common.Hash{}
+	// 	tokenID.SetBytes(common.ConstantID[:])
+	// 	ok, err := CheckSNDerivatorExistence(tokenID, sndOut, shardIDSender, db)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	if ok {
+	// 		sndOut = privacy.RandInt()
+	// 	} else {
+	// 		break
+	// 	}
+	// }
 
 	tx.Proof.OutputCoins[0].CoinDetails.SNDerivator = sndOut
 

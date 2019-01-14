@@ -119,7 +119,7 @@ func CreateShardGenesisBlock(
 		nil,
 		nil,
 	)
-	// block.Body.Transactions = append(block.Body.Transactions, &testSalaryTX)
+	block.Body.Transactions = append(block.Body.Transactions, &testSalaryTX)
 
 	// Create genesis vote token tx for DCB
 	// voteDCBTokenTx := createSpecialTokenTx(
