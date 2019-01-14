@@ -30,6 +30,7 @@ const (
 	NotSupportInLightMode
 	CrossShardBlockError
 	CandidateError
+	ShardIDError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -54,6 +55,7 @@ var ErrCodeMessage = map[int]struct {
 	CrossShardBlockError:          {-17, "CrossShardBlockError"},
 	SignatureError:                {-16, "Signature Error"},
 	CandidateError:                {-17, "Candidate Error"},
+	ShardIDError:                  {-18, "ShardID Error"},
 	NotSupportInLightMode:         {-5, "This features is not supported in light mode running"},
 }
 

@@ -122,7 +122,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 								pendingBlk := blockchain.ShardBlock{}
 								pendingBlk.UnmarshalJSON(msgPropose.(*wire.MessageBFTPropose).Block)
 								//TODO: should change to VerifyPreSignShardBlock
-								self.Chain.VerifyPreProcessingShardBlock(&pendingBlk)
+								self.Chain.VerifyPreSignShardBlock(&pendingBlk, self.RoleData.ShardID)
 								self.pendingBlock = &pendingBlk
 								self.multiSigScheme.dataToSig = pendingBlk.Header.Hash()
 							}

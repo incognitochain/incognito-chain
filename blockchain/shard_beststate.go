@@ -24,6 +24,7 @@ type BestStateShard struct {
 	ShardPendingValidator []string
 	ShardProposerIdx      int
 
+	//@Hung: these information are no needs!!!
 	NumTxns   uint64 // The number of txns in the block.
 	TotalTxns uint64 // The total number of txns in the chain.
 }
