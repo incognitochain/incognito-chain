@@ -22,11 +22,11 @@ type ShardHeader struct {
 	//PendingValidatorRoot common.Hash `json:"PendingValidatorRoot"`
 	// Store these two list make sure all node process the same data
 
-	MerkleRoot      common.Hash
-	MerkleRootShard common.Hash
-	RefBlocksHash   common.Hash
-	Actions         []interface{}
-	ShardID         byte
+	MerkleRoot        common.Hash
+	MerkleRootShard   common.Hash
+	ShardID           byte
+	CrossShardByteMap []byte
+	Actions           [][]string
 }
 
 func (self ShardHeader) Hash() common.Hash {

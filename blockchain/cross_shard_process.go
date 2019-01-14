@@ -55,7 +55,7 @@ func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merkl
 
 //Receive a cross shard block and merkle path, verify whether the UTXO list is valid or not
 func VerifyCrossShardBlockUTXO(block *CrossShardBlock, merklePathShard []common.Hash) bool {
-	outCoins := block.UTXOList
+	outCoins := block.CrossOutputCoin
 	tmpByte := []byte{}
 	for _, coin := range outCoins {
 		tmpByte = append(tmpByte, coin.Bytes()...)

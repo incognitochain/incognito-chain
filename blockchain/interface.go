@@ -19,6 +19,7 @@ type ShardToBeaconPool interface {
 
 type CrossShardPool interface {
 	AddCrossShardBlock(CrossShardBlock) error
+	GetBlock(map[byte]uint64) map[byte][]CrossShardBlock
 }
 
 type NodeShardPool interface {

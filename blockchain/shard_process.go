@@ -38,7 +38,6 @@ func (self *BlockChain) ValidateShardBlockSignature(block *ShardBlock) error {
 	if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeys, nil, nil) == false {
 		return errors.New("Invalid Agg signature")
 	}
-
 	return nil
 }
 
@@ -46,21 +45,19 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	blockHash := block.Hash().String()
 	Logger.log.Infof("Processing block %+v", blockHash)
 
-	err := self.ValidateShardBlockSignature(block)
-	if err != nil {
-		return err
-	}
-	self.BestState.Shard[block.Header.ShardID].Update(block)
-
-	if err = self.BestState.Shard[block.Header.ShardID].Update(block); err != nil {
+	if err := self.ValidateShardBlockSignature(block); err != nil {
 		return err
 	}
 
-	if err = self.StoreShardBlock(block); err != nil {
+	if err := self.BestState.Shard[block.Header.ShardID].Update(block); err != nil {
 		return err
 	}
 
-	if err = self.StoreShardBlockIndex(block); err != nil {
+	if err := self.StoreShardBlock(block); err != nil {
+		return err
+	}
+
+	if err := self.StoreShardBlockIndex(block); err != nil {
 		return err
 	}
 
@@ -71,20 +68,22 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 		Logger.log.Infof("Number of transaction in this block %d", len(block.Body.Transactions))
 	}
 
+	if err := self.CreateAndSaveTxViewPointFromBlock(block); err != nil {
+		return err
+	}
+
 	for index, tx := range block.Body.Transactions {
 		if tx.GetType() == common.TxCustomTokenPrivacyType {
 			_ = 1
 			//TODO: do what???
 		}
 
-		err := self.StoreTransactionIndex(tx.Hash(), block.Hash(), index)
-		if err != nil {
+		if err := self.StoreTransactionIndex(tx.Hash(), block.Hash(), index); err != nil {
 			Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
 			return NewBlockChainError(UnExpectedError, err)
 		}
 		Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
 	}
-
 	return nil
 }
 

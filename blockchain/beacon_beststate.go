@@ -16,9 +16,10 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 type BestStateBeacon struct {
-	BestBlockHash common.Hash  // The hash of the block.
-	BestBlock     *BeaconBlock // The block.
-	BestShardHash map[byte][]common.Hash
+	BestBlockHash   common.Hash  // The hash of the block.
+	BestBlock       *BeaconBlock // The block.
+	BestShardHash   map[byte]common.Hash
+	BestShardHeight map[byte]uint64
 
 	BeaconEpoch       uint64
 	BeaconHeight      uint64
@@ -42,13 +43,13 @@ type BestStateBeacon struct {
 	// pending validator of shards
 	ShardPendingValidator map[byte][]string
 
-	// UnassignBeaconCandidate []string
+	// UnassignBeaconCandidate []strings
 	// UnassignShardCandidate  []string
 
 	CurrentRandomNumber int64
 	// random timestamp for this epoch
 	CurrentRandomTimeStamp int64
-	IsGetRandomNUmber      bool
+	IsGetRandomNumber      bool
 
 	Params map[string]string
 
@@ -59,7 +60,8 @@ func NewBestStateBeacon() *BestStateBeacon {
 	bestStateBeacon := BestStateBeacon{}
 	bestStateBeacon.BestBlockHash.SetBytes(make([]byte, 32))
 	bestStateBeacon.BestBlock = nil
-	bestStateBeacon.BestShardHash = make(map[byte][]common.Hash)
+	bestStateBeacon.BestShardHash = make(map[byte]common.Hash)
+	bestStateBeacon.BestShardHeight = make(map[byte]uint64)
 	bestStateBeacon.BeaconHeight = 0
 	bestStateBeacon.BeaconCommittee = []string{}
 	bestStateBeacon.BeaconPendingValidator = []string{}

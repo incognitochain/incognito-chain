@@ -140,6 +140,7 @@ func (self *Engine) Start() error {
 							continue
 						}
 						if (self.config.NodeMode == "shard" || self.config.NodeMode == "auto") && role == "shard" {
+							self.config.BlockChain.SyncShard(shardID)
 							bftProtocol.RoleData.Committee = make([]string, len(self.config.BlockChain.BestState.Shard[shardID].ShardCommittee))
 							copy(bftProtocol.RoleData.Committee, self.config.BlockChain.BestState.Shard[shardID].ShardCommittee)
 							var (

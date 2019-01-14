@@ -136,14 +136,13 @@ func (self *BlockChain) Init(config *Config) error {
 	// 		chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns, bestState.BestBlock.Header.SalaryFund, bestState.BestBlock.Header.GOVConstitution)
 	// }
 	self.cQuitSync = make(chan struct{})
+	self.ShardStateCh = make(map[byte](chan *PeerShardChainState))
 	self.newShardBlkCh = make(map[byte](chan *ShardBlock))
 	self.syncStatus.Shard = make(map[byte](chan struct{}))
 	self.SyncBeacon()
-	// self.syncStatus.Lock()
-	// for _, shardID := range self.config.RelayShards {
-	// 	self.SyncShard(shardID)
-	// }
-	// self.syncStatus.Unlock()
+	for _, shardID := range self.config.RelayShards {
+		self.SyncShard(shardID)
+	}
 	return nil
 }
 

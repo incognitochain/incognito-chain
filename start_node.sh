@@ -43,6 +43,10 @@ rm -rf ./data/node-$1/mainnet/block
 rm -rf ./data/node-$1/mainnet/wallet
 rm -rf ./data/node-$1/mainnet/peer.json
 
+rm -rf ./data/node-$1/testnet/block
+rm -rf ./data/node-$1/testnet/wallet
+rm -rf ./data/node-$1/testnet/peer.json
+
 mkdir -p ./data/node-$1
 rm -rf ./constant-$1
 go build

@@ -119,7 +119,7 @@ func (self *multiSigScheme) VerifyCommitSig(validatorPk string, commitSig string
 	valSig := new(privacy.SchnMultiSig)
 	valSig.SetBytes(valSigbytesarr)
 
-	resValidateEachSigOfSigners := valSig.VerifyMultiSig(self.dataToSig.GetBytes(), listPubkeyOfSigners, validatorPubkey, RCombined)
+	resValidateEachSigOfSigners := valSig.VerifyMultiSig(self.dataToSig.GetBytes(), listPubkeyOfSigners, []*privacy.PublicKey{validatorPubkey}, RCombined)
 	if !resValidateEachSigOfSigners {
 		return errors.New("Validator's sig is invalid " + validatorPk)
 	}

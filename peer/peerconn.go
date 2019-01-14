@@ -144,12 +144,21 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 		if str != DelimMessageStr {
 			go func(msgStr string) {
 				// Parse Message header from last 24 bytes header message
-				jsonDecodeBytes, _ := hex.DecodeString(msgStr)
+				jsonDecodeBytesRaw, _ := hex.DecodeString(msgStr)
+
+				// cache message hash S
+				hashMsgRaw := common.HashH(jsonDecodeBytesRaw).String()
+				if self.ListenerPeer.CheckHashPool(hashMsgRaw) {
+					Logger.log.Infof("InMessageHandler existed raw hash message %s", hashMsgRaw)
+					return
+				}
+				self.ListenerPeer.HashToPool(hashMsgRaw)
+				// cache message hash E
 
 				// unzip data before process
-				jsonDecodeBytes, err := common.GZipFromBytes(jsonDecodeBytes)
+				jsonDecodeBytes, err := common.GZipFromBytes(jsonDecodeBytesRaw)
 				if err != nil {
-					Logger.log.Error("Can unzip from message")
+					Logger.log.Error("Can not unzip from message")
 					Logger.log.Error(err)
 					return
 				}
@@ -175,7 +184,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 							fS := messageHeader[wire.MessageCmdTypeSize+1]
 							if *cShard != fS {
 								if self.Config.MessageListeners.PushRawBytesToShard != nil {
-									self.Config.MessageListeners.PushRawBytesToShard(self, &jsonDecodeBytes, *cShard)
+									self.Config.MessageListeners.PushRawBytesToShard(self, &jsonDecodeBytesRaw, *cShard)
 								}
 								return
 							}
@@ -185,7 +194,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 						fT := messageHeader[wire.MessageCmdTypeSize]
 						if fT == MESSAGE_TO_BEACON && cRole != "beacon" {
 							if self.Config.MessageListeners.PushRawBytesToBeacon != nil {
-								self.Config.MessageListeners.PushRawBytesToBeacon(self, &jsonDecodeBytes)
+								self.Config.MessageListeners.PushRawBytesToBeacon(self, &jsonDecodeBytesRaw)
 							}
 							return
 						}
@@ -340,20 +349,13 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 		select {
 		case outMsg := <-self.sendMessageQueue:
 			{
+				var sendString string
 				if outMsg.rawBytes != nil && len(*outMsg.rawBytes) > 0 {
 					Logger.log.Infof("OutMessageHandler with raw bytes")
 					message := hex.EncodeToString(*outMsg.rawBytes)
 					message += DelimMessageStr
-					_, err := rw.Writer.WriteString(message)
-					if err != nil {
-						Logger.log.Critical("DM ERROR", err)
-						continue
-					}
-					err = rw.Writer.Flush()
-					if err != nil {
-						Logger.log.Critical("DM ERROR", err)
-						continue
-					}
+					sendString = message
+					Logger.log.Infof("Send a messageHex raw bytes to %s", self.RemotePeer.PeerID.Pretty())
 				} else {
 					// Create and send messageHex
 					messageBytes, err := outMsg.message.JsonSerialize()
@@ -372,7 +374,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 						copy(headerBytes[wire.MessageCmdTypeSize+1:], []byte{*outMsg.forwardValue})
 					}
 					messageBytes = append(messageBytes, headerBytes...)
-					Logger.log.Infof("Out messageHex TYPE %s CONTENT %s", cmdType, string(messageBytes))
+					Logger.log.Infof("OutMessageHandler TYPE %s CONTENT %s", cmdType, string(messageBytes))
 
 					// zip data before send
 					messageBytes, err = common.GZipToBytes(messageBytes)
@@ -388,16 +390,17 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 
 					// send on p2p stream
 					Logger.log.Infof("Send a messageHex %s to %s", outMsg.message.MessageType(), self.RemotePeer.PeerID.Pretty())
-					_, err = rw.Writer.WriteString(messageHex)
-					if err != nil {
-						Logger.log.Critical("DM ERROR", err)
-						continue
-					}
-					err = rw.Writer.Flush()
-					if err != nil {
-						Logger.log.Critical("DM ERROR", err)
-						continue
-					}
+					sendString = messageHex
+				}
+				_, err := rw.Writer.WriteString(sendString)
+				if err != nil {
+					Logger.log.Critical("OutMessageHandler WriteString error", err)
+					continue
+				}
+				err = rw.Writer.Flush()
+				if err != nil {
+					Logger.log.Critical("OutMessageHandler Flush error", err)
+					continue
 				}
 				continue
 			}
@@ -512,9 +515,8 @@ func (self *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<- st
 	}
 	go func() {
 		if self.GetIsConnected() {
-			data := (*msgBytes)[wire.MessageHeaderSize:]
-			if len(data) >= HEAVY_MESSAGE_SIZE {
-				hash := common.HashH(data).String()
+			if len(*msgBytes) >= HEAVY_MESSAGE_SIZE+wire.MessageHeaderSize {
+				hash := common.HashH(*msgBytes).String()
 				Logger.log.Infof("QueueMessageWithBytes HEAVY_MESSAGE_SIZE %s", hash)
 
 				if self.checkMessageHashBeforeSend(hash) {
