@@ -361,7 +361,9 @@ func (self RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []*priv
 	if estimateFeeCoinPerKb == 0 {
 		estimateFeeCoinPerKb = self.config.BlockChain.GetFeePerKbTx()
 	}
-	estimateFeeCoinPerKb += uint64(self.config.Wallet.Config.IncrementalFee)
+	if self.config.Wallet != nil && self.config.Wallet.Config != nil {
+		estimateFeeCoinPerKb += uint64(self.config.Wallet.Config.IncrementalFee)
+	}
 	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, nil)
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	return realFee

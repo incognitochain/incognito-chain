@@ -301,7 +301,7 @@ func (self *BlockChain) initShardState(shardID byte) error {
 		Header: ShardHeader{},
 		Body:   ShardBody{},
 	}
-	if shardID == 0 {
+	if shardID == 6 {
 		initBlock = self.config.ChainParams.GenesisShardBlock
 		initBlock.Header.ShardID = shardID
 	} else {
@@ -310,7 +310,11 @@ func (self *BlockChain) initShardState(shardID byte) error {
 		initBlock.Header.PrevBlockHash = common.Hash{}
 	}
 
-	self.BestState.Shard[shardID] = &BestStateShard{}
+	self.BestState.Shard[shardID] = &BestStateShard{
+		ShardCommittee:        []string{},
+		ShardPendingValidator: []string{},
+		BestBlock:             &ShardBlock{},
+	}
 
 	_, newShardCandidate := GetStakingCandidate(*self.config.ChainParams.GenesisBeaconBlock)
 
