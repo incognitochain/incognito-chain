@@ -34,43 +34,4 @@ var PubParams = newPublicParams()
 
 /***** Pedersen commitment params *****/
 
-func setPedersenParams() PedersenCommitment {
-	var pcm PedersenCommitment
-	const capacity = 5 // fixed value
-	pcm.G = make([]*EllipticPoint, capacity, capacity)
-
-	for i := 0; i < capacity; i++ {
-		pcm.G[i] = new(EllipticPoint)
-		pcm.G[i].Set(PubParams.G[i].X, PubParams.G[i].Y)
-	}
-	return pcm
-}
-
-var PedCom = setPedersenParams()
-
-/***** Bullet proof params *****/
-
-// BulletproofParams includes all generator for aggregated range proof
-type BulletproofParams struct {
-	G []*EllipticPoint
-	H []*EllipticPoint
-}
-
-func setBulletproofParams() BulletproofParams {
-	var gen BulletproofParams
-	const capacity = 64 // fixed value
-	gen.G = make([]*EllipticPoint, capacity, capacity)
-	gen.H = make([]*EllipticPoint, capacity, capacity)
-
-	for i := 0; i < capacity; i++ {
-		gen.G[i] = new(EllipticPoint)
-		gen.G[i].Set(PubParams.G[5 + i].X, PubParams.G[5 + i].Y)
-
-		gen.H[i] = new(EllipticPoint)
-		gen.H[i].Set(PubParams.G[69 + i].X, PubParams.G[69 + i].Y)
-	}
-	return gen
-}
-
-var AggParam = setBulletproofParams()
 

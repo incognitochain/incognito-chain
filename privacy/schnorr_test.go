@@ -12,6 +12,7 @@ func TestSchn(t *testing.T) {
 	data := RandInt()
 
 	signature, _ := schnPrivKey.Sign(data.Bytes())
+	signature.SetBytes(signature.Bytes())
 
 	res := schnPrivKey.PubKey.Verify(signature, data.Bytes())
 
