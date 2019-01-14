@@ -8,7 +8,6 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
-	"github.com/ninjadotorg/constant/blockchain"
 	"log"
 	"math"
 	"math/big"
@@ -276,8 +275,10 @@ func SliceBytesExists(slice interface{}, item interface{}) (int64, error) {
 }
 
 func GetTxSenderChain(senderLastByte byte) (byte, error) {
-	chainID := uint(senderLastByte) % uint(blockchain.TestNetShardsNum)
-	return byte(chainID), nil
+	//TODO: cycle import blockchain!!! -> cannot use shardnum
+	//chainID := uint(senderLastByte) % uint(blockchain.TestNetShardsNum)
+	//return byte(chainID), nil
+	return senderLastByte, nil
 }
 
 func IntArrayEquals(a []int, b []int) bool {
