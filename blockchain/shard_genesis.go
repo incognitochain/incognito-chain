@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/wallet"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy"
@@ -109,6 +110,20 @@ func CreateShardGenesisBlock(
 	)
 	block.Body.Transactions = append(block.Body.Transactions, &bondTokenTx)
 
+	testUserKey, _ := wallet.Base58CheckDeserialize("11111119q5P6bukedopEFUh7HDuiobEhcXb8VxdygNTzNoyDyXPzmAN13UXRKnwuXPEehA6AfD9UyGbsfKsg1aKvnf8AfX6nnfSQVr9bHio")
+	testUserKey.KeySet.ImportFromPrivateKey(&testUserKey.KeySet.PrivateKey)
+	// privKeyTest := privacy.SpendingKey([]byte("11111119q5P6bukedopEFUh7HDuiobEhcXb8VxdygNTzNoyDyXPzmAN13UXRKnwuXPEehA6AfD9UyGbsfKsg1aKvnf8AfX6nnfSQVr9bHio"))
+	// userKeySet := cashec.KeySet{}
+	// userKeySet.ImportFromPrivateKey(&privKeyTest)
+	log.Println("con ga :", testUserKey.KeySet.PaymentAddress.Pk)
+	log.Println("haahhahahahhahahahaha")
+	testSpendingKey := privacy.SpendingKey([]byte("11111119q5P6bukedopEFUh7HDuiobEhcXb8VxdygNTzNoyDyXPzmAN13UXRKnwuXPEehA6AfD9UyGbsfKsg1aKvnf8AfX6nnfSQVr9bHio"))
+	testSalaryTX := transaction.Tx{}
+	testSalaryTX.InitTxSalary(10000, &testUserKey.KeySet.PaymentAddress, &testSpendingKey,
+		nil,
+		nil,
+	)
+	block.Body.Transactions = append(block.Body.Transactions, &testSalaryTX)
 	// Create genesis vote token tx for DCB
 	// voteDCBTokenTx := createSpecialTokenTx(
 	// 	common.Hash(common.VoteDCBTokenID),

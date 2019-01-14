@@ -163,7 +163,7 @@ func (self *Server) NewServer(listenAddrs string, db database.DatabaseInterface,
 		return err
 	}
 
-	// Search for a feeEstimator state in the database. If none can be found
+	// TODO: 0xbahamooth Search for a feeEstimator state in the database. If none can be found
 	// or if it cannot be loaded, create a new one.
 	// if false {
 	// 	Logger.log.Info("Load chain dependencies from DB")

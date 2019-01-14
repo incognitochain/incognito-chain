@@ -1,19 +1,21 @@
 package rpcserver
 
 import (
+	"fmt"
+	"log"
+
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/pkg/errors"
-	"github.com/ninjadotorg/constant/metadata"
-	"fmt"
-	"github.com/ninjadotorg/constant/common"
 )
 
 func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
-	Logger.log.Info(params)
-
+	// Logger.log.Info(params)
+	log.Printf("%+v", params)
 	// all params
 	arrayParams := common.InterfaceSlice(params)
 
@@ -74,7 +76,6 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-
 	// check real fee(nano constant) per tx
 	realFee := self.estimateFee(estimateFeeCoinPerKb, candidateOutputCoins, paymentInfos, chainIdSender, numBlock)
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
@@ -360,7 +361,9 @@ func (self RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []*priv
 	if estimateFeeCoinPerKb == 0 {
 		estimateFeeCoinPerKb = self.config.BlockChain.GetFeePerKbTx()
 	}
-	estimateFeeCoinPerKb += uint64(self.config.Wallet.Config.IncrementalFee)
+	if self.config.Wallet != nil && self.config.Wallet.Config != nil {
+		estimateFeeCoinPerKb += uint64(self.config.Wallet.Config.IncrementalFee)
+	}
 	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, nil)
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	return realFee
