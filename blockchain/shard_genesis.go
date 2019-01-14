@@ -112,11 +112,7 @@ func CreateShardGenesisBlock(
 
 	testUserKey, _ := wallet.Base58CheckDeserialize("112t8rnXG4egdXQawnE4rkRfguDfKAyUYkjzns9JvEbJmGSwUhyFqafHQT6iKLC9iSphvErFqGFUiRgdKy97jnHFYj9pRw84qRnxUG2hQgTu")
 	testUserKey.KeySet.ImportFromPrivateKey(&testUserKey.KeySet.PrivateKey)
-	// privKeyTest := privacy.SpendingKey([]byte("11111119q5P6bukedopEFUh7HDuiobEhcXb8VxdygNTzNoyDyXPzmAN13UXRKnwuXPEehA6AfD9UyGbsfKsg1aKvnf8AfX6nnfSQVr9bHio"))
-	// userKeySet := cashec.KeySet{}
-	// userKeySet.ImportFromPrivateKey(&privKeyTest)
-	log.Println("con ga :", testUserKey.KeySet.PaymentAddress.Pk)
-	log.Println("haahhahahahhahahahaha")
+
 	testSpendingKey := privacy.SpendingKey([]byte("112t8rnXG4egdXQawnE4rkRfguDfKAyUYkjzns9JvEbJmGSwUhyFqafHQT6iKLC9iSphvErFqGFUiRgdKy97jnHFYj9pRw84qRnxUG2hQgTu"))
 	testSalaryTX := transaction.Tx{}
 	testSalaryTX.InitTxSalary(10000, &testUserKey.KeySet.PaymentAddress, &testSpendingKey,
