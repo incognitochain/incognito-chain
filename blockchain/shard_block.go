@@ -33,7 +33,7 @@ type CrossShardBlock struct {
 
 	Header          ShardHeader
 	MerklePathShard []common.Hash
-	UTXOList        []privacy.OutputCoin
+	CrossOutputCoin []privacy.OutputCoin
 }
 
 //HashFinal creates a hash from block data that include AggregatedSig & ValidatorsIdx

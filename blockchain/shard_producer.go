@@ -54,7 +54,8 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 	// Build block
 	block := &ShardBlock{
 		Body: ShardBody{
-			Transactions: make([]metadata.Transaction, 0),
+			CrossOutputCoin: self.getCrossOutputCoin(shardID),
+			Transactions:    make([]metadata.Transaction, 0),
 		},
 	}
 
@@ -92,6 +93,15 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 	block.ProducerSig = sig
 	_ = remainingFund
 	return block, nil
+}
+
+func (self *BlkTmplGenerator) getCrossOutputCoin(shardID byte) []CrossOutputCoin {
+	// get cross shard block
+	//bestShardState := self.chain.BestState.Beacon.BestShardHash
+	//self.crossShardPool.GetBlock()
+	// build CrossOutputCoin
+
+	return []CrossOutputCoin{}
 }
 
 func (self *BlkTmplGenerator) createCrossShardBytemap(txList []metadata.Transaction) (byteMap []byte) {
@@ -573,6 +583,6 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 	crossShard.ProducerSig = block.ProducerSig
 	crossShard.Header = block.Header
 	crossShard.MerklePathShard = merklePathShard
-	crossShard.UTXOList = utxoList
+	crossShard.CrossOutputCoin = utxoList
 	return crossShard, nil
 }

@@ -179,11 +179,7 @@ func (self *BlockChain) InsertBeaconBlock(block *BeaconBlock) error {
 	}
 	//=========Remove shard block in beacon pool
 	Logger.log.Infof("Remove block from pool %+v \n", *block.Hash())
-	shardToBeaconMap := make(map[byte]uint64)
-	for shardID, hashes := range self.BestState.Beacon.BestShardHash {
-		shardToBeaconMap[shardID] = uint64(len(hashes))
-	}
-	self.config.ShardToBeaconPool.RemoveBlock(shardToBeaconMap)
+	self.config.ShardToBeaconPool.RemoveBlock(self.BestState.Beacon.BestShardHeight)
 
 	Logger.log.Infof("Insert new block %d, with hash %x", block.Header.Height, *block.Hash())
 	return nil
@@ -266,11 +262,7 @@ func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, erro
 		return "", err
 	}
 	//=========Remove beacon block
-	shardToBeaconMap := make(map[byte]uint64)
-	for shardID, hashes := range beaconBestState.BestShardHash {
-		shardToBeaconMap[shardID] = uint64(len(hashes))
-	}
-	self.config.ShardToBeaconPool.RemoveBlock(shardToBeaconMap)
+	self.config.ShardToBeaconPool.RemoveBlock(beaconBestState.BestShardHeight)
 	//=========Accept previous if new block is valid
 	if err := self.AcceptBeaconBlock(&block.Header.PrevBlockHash); err != nil {
 		return "", err
@@ -540,12 +532,10 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 
 	allShardState := newBlock.Body.ShardState
 
-	// Append new block hash into BestShardHash
-	// BestShardHash maintain all block hash of all shard
+	// Update new best new block hash
 	for shardID, shardStates := range allShardState {
-		for _, shardState := range shardStates {
-			self.BestShardHash[shardID] = append(self.BestShardHash[shardID], shardState.Hash)
-		}
+		self.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
+		self.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
 	}
 
 	// update param

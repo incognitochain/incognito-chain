@@ -3,30 +3,35 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
 type ShardBody struct {
-	RefBlocks    []BlockRef
-	Transactions []metadata.Transaction
+	CrossOutputCoin []CrossOutputCoin
+	Transactions    []metadata.Transaction
 }
-type BlockRef struct {
-	ShardID byte
-	Block   common.Hash
+type CrossOutputCoin struct {
+	ShardID    byte
+	BlockHash  common.Hash
+	OutputCoin []privacy.OutputCoin
 }
 
 func (self *ShardBody) Hash() common.Hash {
-	record := common.EmptyString
-	for _, ref := range self.RefBlocks {
-		record += string(ref.ShardID) + ref.Block.String()
+	record := []byte{}
+	for _, ref := range self.CrossOutputCoin {
+		record = append(record, ref.ShardID)
+		record = append(record, ref.BlockHash.GetBytes()...)
+		for _, coins := range ref.OutputCoin {
+			record = append(record, coins.Bytes()...)
+		}
 	}
 	for _, tx := range self.Transactions {
-		record += tx.Hash().String()
+		record = append(record, tx.Hash().GetBytes()...)
 	}
-	return common.DoubleHashH([]byte(record))
+	return common.DoubleHashH(record)
 }
 
 /*
