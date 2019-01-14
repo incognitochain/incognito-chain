@@ -103,7 +103,9 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 		if tp.config.FeeEstimator != nil {
 			shardID, err := common.GetTxSenderChain(tx.(*transaction.Tx).PubKeyLastByteSender)
 			if err == nil {
-				tp.config.FeeEstimator[shardID].ObserveTransaction(txD)
+				if temp, ok := tp.config.FeeEstimator[shardID]; ok {
+					temp.ObserveTransaction(txD)
+				}
 			} else {
 				Logger.log.Error(err)
 			}

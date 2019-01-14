@@ -275,13 +275,10 @@ func SliceBytesExists(slice interface{}, item interface{}) (int64, error) {
 }
 
 func GetTxSenderChain(senderLastByte byte) (byte, error) {
-	modResult := senderLastByte % 4
-	for index := byte(0); index < 5; index++ {
-		if (modResult-index)%5 == 0 {
-			return byte((modResult - index) / 5), nil
-		}
-	}
-	return 0, errors.New("can't get sender's shardID")
+	//TODO: cycle import blockchain!!! -> cannot use shardnum
+	//chainID := uint(senderLastByte) % uint(blockchain.TestNetShardsNum)
+	//return byte(chainID), nil
+	return senderLastByte, nil
 }
 
 func IntArrayEquals(a []int, b []int) bool {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/ninjadotorg/constant/rpcserver"
 	"os"
 	"path/filepath"
 
@@ -30,7 +31,7 @@ var (
 	addrManagerLoger  = backendLog.Logger("Address Log")
 	connManagerLogger = backendLog.Logger("Connection Manager Log")
 	mainLogger        = backendLog.Logger("Server Log")
-	// rpcLogger         = backendLog.Logger("RPC Log")
+	rpcLogger         = backendLog.Logger("RPC Log")
 	netsyncLogger     = backendLog.Logger("Netsync Log")
 	peerLogger        = backendLog.Logger("Peer Log")
 	dbLogger          = backendLog.Logger("Database Log")
@@ -60,7 +61,7 @@ func init() {
 	// for other components
 	connmanager.Logger.Init(connManagerLogger)
 	addrmanager.Logger.Init(addrManagerLoger)
-	// rpcserver.Logger.Init(rpcLogger)
+	rpcserver.Logger.Init(rpcLogger)
 	netsync.Logger.Init(netsyncLogger)
 	peer.Logger.Init(peerLogger)
 	database.Logger.Init(dbLogger)
@@ -80,7 +81,7 @@ var subsystemLoggers = map[string]common.Logger{
 
 	"AMGR": addrManagerLoger,
 	"CMGR": connManagerLogger,
-	// "RPCS": rpcLogger,
+	"RPCS": rpcLogger,
 	"NSYN": netsyncLogger,
 	"PEER": peerLogger,
 	"DABA": dbLogger,

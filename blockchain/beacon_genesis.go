@@ -21,11 +21,11 @@ func CreateBeaconGenesisBlock(
 	// build validator beacon
 	// test generate public key in utility/generateKeys
 	beaconAssingInstruction := []string{"stake"}
-	beaconAssingInstruction = append(beaconAssingInstruction, strings.Join(preSelectBeaconNodeTestnetSerializedPubkey, ","))
+	beaconAssingInstruction = append(beaconAssingInstruction, strings.Join(preSelectBeaconNodeTestnetSerializedPubkey[:], ","))
 	beaconAssingInstruction = append(beaconAssingInstruction, "beacon")
 
 	shardAssingInstruction := []string{"stake"}
-	shardAssingInstruction = append(shardAssingInstruction, strings.Join(preSelectShardNodeTestnetSerializedPubkey, ","))
+	shardAssingInstruction = append(shardAssingInstruction, strings.Join(preSelectShardNodeTestnetSerializedPubkey[:], ","))
 	shardAssingInstruction = append(shardAssingInstruction, "shard")
 
 	inst = append(inst, beaconAssingInstruction)

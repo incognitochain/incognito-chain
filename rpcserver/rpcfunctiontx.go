@@ -97,7 +97,7 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 	var err error
 	tx, err := self.buildRawTransaction(params, nil)
 	if err.(*RPCError) != nil {
-		Logger.log.Critical(err)
+		// Logger.log.Critical(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	byteArrays, err := json.Marshal(tx)
@@ -105,9 +105,11 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 		// return hex for a new tx
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+	txShardID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+		ShardID:         txShardID,
 	}
 	return result, nil
 }
@@ -174,12 +176,14 @@ func (self RpcServer) handleCreateAndSendTx(params interface{}, closeChan <-chan
 	base58CheckData := tx.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
+
 	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
 	if err.(*RPCError) != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result := jsonresult.CreateTransactionResult{
-		TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
+		TxID:    sendResult.(jsonresult.CreateTransactionResult).TxID,
+		ShardID: tx.ShardID,
 	}
 	return result, nil
 }
