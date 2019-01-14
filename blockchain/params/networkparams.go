@@ -95,7 +95,7 @@ func NewSaleData(saleID []byte, endBlock int32, buyingAsset []byte, buyingAmount
 func NewSaleDataFromJson(data interface{}) *SaleData {
 	saleDataData := data.(map[string]interface{})
 	saleData := NewSaleData(
-		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["SaleID"])),
+		[]byte(saleDataData["SaleID"].(string)),
 		int32(saleDataData["EndBlock"].(float64)),
 		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["BuyingAsset"])),
 		uint64(saleDataData["BuyingAmount"].(float64)),
