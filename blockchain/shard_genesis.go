@@ -119,7 +119,7 @@ func CreateShardGenesisBlock(
 	log.Println("haahhahahahhahahahaha")
 	testSpendingKey := privacy.SpendingKey([]byte("11111119q5P6bukedopEFUh7HDuiobEhcXb8VxdygNTzNoyDyXPzmAN13UXRKnwuXPEehA6AfD9UyGbsfKsg1aKvnf8AfX6nnfSQVr9bHio"))
 	testSalaryTX := transaction.Tx{}
-	testSalaryTX.InitTxSalary(1000000000, &testUserKey.KeySet.PaymentAddress, &testSpendingKey,
+	testSalaryTX.InitTxSalary(10000, &testUserKey.KeySet.PaymentAddress, &testSpendingKey,
 		nil,
 		nil,
 	)
