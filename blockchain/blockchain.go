@@ -318,25 +318,7 @@ func (self *BlockChain) initShardState(shardID byte) error {
 
 	// self.BestState.Shard[shardID].Init(initBlock)
 
-	err := self.BestState.Shard[shardID].Update(initBlock)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
-
-	// store best state
-	err = self.StoreShardBestState(shardID)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
-	}
-
-	if err := self.StoreShardBlock(initBlock); err != nil {
-		Logger.log.Error("Error store shard block", self.BestState.Shard[shardID].BestBlockHash, "in beacon chain")
-		return err
-	}
-	if err := self.StoreShardBlockIndex(initBlock); err != nil {
-		return err
-	}
+	self.ProcessStoreShardBlock(initBlock)
 
 	return nil
 }
