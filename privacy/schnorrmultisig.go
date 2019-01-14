@@ -50,7 +50,7 @@ func (multiSig *SchnMultiSig) SetBytes(sigByte []byte) {
 	multiSig.R = new(EllipticPoint)
 	multiSig.R.Decompress(sigByte[0:CompressedPointSize])
 	multiSig.S = big.NewInt(0)
-	multiSig.S.SetBytes(sigByte[CompressedPointSize: CompressedPointSize+BigIntSize])
+	multiSig.S.SetBytes(sigByte[CompressedPointSize : CompressedPointSize+BigIntSize])
 }
 
 // Set - Constructing multiSig
@@ -107,7 +107,7 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 	//	aggKey = PK0+PK1+PK2+...+PKn
 	//	X = (PK0*a0) + (PK1*a1) + ... + (PKn*an)
 	//	C = Hash(X||R||data)
-	aggKey, C, _ := generateCommonParams(nil, listPK, R, data)
+	aggKey, C, _ := generateCommonParams(listPK, listPK, R, data)
 	//recalculate a0
 	selfPK := new(EllipticPoint)
 	selfPK.Decompress(*multiSigKeyset.pubKey)
@@ -143,15 +143,12 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 	function: Verify signature
 	params:
 		#1: data need to be signed
-		#2: List of public key join (either sign or un-sign) -> alway not null
-		#3: public key of signer
-			if null: verify of many party
-			if not null: verify of this publickey
-		#4: R combine from params #2
-
-	return: true or false (notice param 3)
+		#2: List of public key join phase 1 (create RCombine)
+		#3: List of public key of signer who create multi signature
+		#4: R combine in phase 1
+	return: true or false
 */
-func (multiSig *SchnMultiSig) VerifyMultiSig(data []byte, listPK []*PublicKey, pubKey *PublicKey, RCombine *EllipticPoint) bool {
+func (multiSig *SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicKey, listCombinePK []*PublicKey, RCombine *EllipticPoint) bool {
 	//Calculate common params:
 	//	aggKey = PK0+PK1+PK2+...+PKn, PK0 is selfPK
 	//	X = (PK0*a0) + (PK1*a1) + ... + (PKn*an)
@@ -159,11 +156,11 @@ func (multiSig *SchnMultiSig) VerifyMultiSig(data []byte, listPK []*PublicKey, p
 	//for verify signature of a Signer, which wasn't combined, |listPK| = 1 and contain publickey of the Signer
 	var C *big.Int
 	var X *EllipticPoint
-	if RCombine == nil {
-		_, C, X = generateCommonParams(nil, listPK, multiSig.R, data)
-	} else {
-		_, C, X = generateCommonParams(pubKey, listPK, RCombine, data)
-	}
+	// if RCombine == nil {
+	_, C, X = generateCommonParams(listCommonPK, listCombinePK, RCombine, data)
+	// } else {
+	// _, C, X = generateCommonParams(pubKey, listPK, RCombine, data)
+	// }
 
 	//GSPoint = G*S
 	GSPoint := new(EllipticPoint)
@@ -188,14 +185,14 @@ func (multisigScheme *MultiSigScheme) GenerateRandom() (*EllipticPoint, *big.Int
 	return R, r
 }
 
-func generateCommonParams(pubKey *PublicKey, listPubkey []*PublicKey, R *EllipticPoint, data []byte) (*EllipticPoint, *big.Int, *EllipticPoint) {
+func generateCommonParams(listCommonPK []*PublicKey, listCombinePK []*PublicKey, R *EllipticPoint, data []byte) (*EllipticPoint, *big.Int, *EllipticPoint) {
 	aggPubkey := new(EllipticPoint)
 	aggPubkey.X = big.NewInt(0)
 	aggPubkey.Y = big.NewInt(0)
 
-	for i := 0; i < len(listPubkey); i++ {
+	for i := 0; i < len(listCommonPK); i++ {
 		temp := new(EllipticPoint)
-		temp.Decompress(*listPubkey[i])
+		temp.Decompress(*listCommonPK[i])
 		aggPubkey = aggPubkey.Add(temp)
 	}
 
@@ -203,9 +200,9 @@ func generateCommonParams(pubKey *PublicKey, listPubkey []*PublicKey, R *Ellipti
 	X.X = big.NewInt(0)
 	X.Y = big.NewInt(0)
 
-	for i := 0; i < len(listPubkey); i++ {
+	for i := 0; i < len(listCommonPK); i++ {
 		temp := new(EllipticPoint)
-		temp.Decompress(*listPubkey[i])
+		temp.Decompress(*listCommonPK[i])
 		temp1 := aggPubkey.Add(temp)
 		a := common.DoubleHashB(temp1.Compress())
 		aInt := big.NewInt(0)
@@ -221,14 +218,18 @@ func generateCommonParams(pubKey *PublicKey, listPubkey []*PublicKey, R *Ellipti
 	C.SetBytes(Cbyte)
 	C.Mod(C, Curve.Params().N)
 
-	if pubKey != nil {
-		temp := new(EllipticPoint)
-		temp.Decompress(*pubKey)
-		temp1 := aggPubkey.Add(temp)
-		a := common.DoubleHashB(temp1.Compress())
-		aInt := big.NewInt(0)
-		aInt.SetBytes(a)
-		X = temp.ScalarMult(aInt)
+	if len(listCommonPK) > len(listCombinePK) {
+		X.X.Set(big.NewInt(0))
+		X.Y.Set(big.NewInt(0))
+		for i := 0; i < len(listCombinePK); i++ {
+			temp := new(EllipticPoint)
+			temp.Decompress(*listCombinePK[i])
+			temp1 := aggPubkey.Add(temp)
+			a := common.DoubleHashB(temp1.Compress())
+			aInt := big.NewInt(0)
+			aInt.SetBytes(a)
+			X = X.Add(temp.ScalarMult(aInt))
+		}
 	}
 	return aggPubkey, C, X
 }
@@ -257,18 +258,19 @@ func (multisigScheme *MultiSigScheme) CombineMultiSig(listSignatures []*SchnMult
 // Functions for testing
 // -------------------------------------------------------------------------------------------------
 
-func broadcastR(R *EllipticPoint) {
-	if isTesting {
-		mutex.Lock()
-		RTest[counter] = R
-		counter++
-		mutex.Unlock()
-	}
-	//todo
-}
+// func broadcastR(R *EllipticPoint) {
+// 	if isTesting {
+// 		mutex.Lock()
+// 		RTest[counter] = R
+// 		counter++
+// 		mutex.Unlock()
+// 	}
+// 	//todo
+// }
 
 // TestMultiSig EC Schnorr MultiSig Scheme
 // func TestMultiSig() {
+// 	var mtsScheme = new(MultiSigScheme)
 // 	isTesting = true
 // 	Numbs = 20
 // 	counter = 0
@@ -293,7 +295,7 @@ func broadcastR(R *EllipticPoint) {
 // 		wg.Add(1)
 // 		go func(j int) {
 // 			defer wg.Done()
-// 			Ri, ri := generateRandom()
+// 			Ri, ri := mtsScheme.GenerateRandom()
 // 			broadcastR(Ri)
 // 			time.Sleep(500 * time.Millisecond)
 // 			for counter < Numbs {
@@ -302,7 +304,7 @@ func broadcastR(R *EllipticPoint) {
 // 		}(i)
 // 	}
 // 	wg.Wait()
-// 	aggSig := CombineMultiSig(Sig)
+// 	aggSig := mtsScheme.CombineMultiSig(Sig)
 // 	for i := 0; i < Numbs; i++ {
 // 		R = R.Add(RTest[i])
 // 		fmt.Printf("\n**********************************************************************************************************************************************************************************")
@@ -310,14 +312,16 @@ func broadcastR(R *EllipticPoint) {
 // 		fmt.Printf("*\tR  [%v]: %v\n", i, Sig[i].R)
 // 		fmt.Printf("*\tSig[%v]: %v\n", i, Sig[i].S)
 // 		fmt.Printf("* Verifing... ")
-// 		fmt.Printf("Signature %v is %v\n", i, Sig[i].VerifyMultiSig([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, pubkeyTest, pubkeyTest[i], aggSig.R))
+// 		fmt.Printf("Signature %v is %v\n", i, Sig[i].VerifyMultiSig([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, pubkeyTest, []*PublicKey{pubkeyTest[i]}, aggSig.R))
 // 		fmt.Println("**********************************************************************************************************************************************************************************")
 // 	}
-
+// 	subAggSig := mtsScheme.CombineMultiSig(Sig[0:9])
+// 	fmt.Printf("Verifing sub aggSig... ")
+// 	fmt.Printf("aggSignature is %v\n", subAggSig.VerifyMultiSig([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, pubkeyTest, pubkeyTest[0:9], aggSig.R))
 // 	fmt.Println("\tAggregate:")
 // 	fmt.Printf("\t\tAggSignature: %v\n", aggSig.S)
 // 	fmt.Printf("\t\tAggR        : %v\n", aggSig.R)
-// 	fmt.Printf("\tVerify result: %v\n", aggSig.VerifyMultiSig([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, pubkeyTest, nil, nil))
+// 	fmt.Printf("\tVerify result: %v\n", aggSig.VerifyMultiSig([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, pubkeyTest, pubkeyTest, aggSig.R))
 // }
 
 // -------------------------------------------------------------------------------------------------
