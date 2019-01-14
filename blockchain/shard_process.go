@@ -41,13 +41,9 @@ func (self *BlockChain) ValidateShardBlockSignature(block *ShardBlock) error {
 	return nil
 }
 
-func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
+func (self *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	blockHash := block.Hash().String()
-	Logger.log.Infof("Processing block %+v", blockHash)
-
-	if err := self.ValidateShardBlockSignature(block); err != nil {
-		return err
-	}
+	Logger.log.Infof("Process store block %+v", blockHash)
 
 	if err := self.BestState.Shard[block.Header.ShardID].Update(block); err != nil {
 		return err
@@ -61,6 +57,10 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 		return err
 	}
 
+	if err := self.StoreShardBestState(block.Header.ShardID); err != nil {
+		return err
+	}
+
 	// Process transaction db
 	if len(block.Body.Transactions) < 1 {
 		Logger.log.Infof("No transaction in this block")
@@ -68,6 +68,7 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 		Logger.log.Infof("Number of transaction in this block %d", len(block.Body.Transactions))
 	}
 
+	// TODO: Check: store output coin?
 	if err := self.CreateAndSaveTxViewPointFromBlock(block); err != nil {
 		return err
 	}
@@ -85,6 +86,17 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 		Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
 	}
 	return nil
+}
+
+func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
+	blockHash := block.Hash().String()
+	Logger.log.Infof("Insert block %+v", blockHash)
+
+	if err := self.ValidateShardBlockSignature(block); err != nil {
+		return err
+	}
+
+	return self.ProcessStoreShardBlock(block)
 }
 
 func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock) error {
