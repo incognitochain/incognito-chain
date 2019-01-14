@@ -23,22 +23,6 @@ type PedersenCommitment struct {
 	// G[4]: Randomness
 }
 
-// newPedersenCommitment creates new generators
-func newPedersenCommitment() PedersenCommitment {
-	var pcm PedersenCommitment
-	const capacity = 5 // fixed value
-	pcm.G = make([]*EllipticPoint, capacity, capacity)
-	pcm.G[0] = new(EllipticPoint)
-	pcm.G[0].X, pcm.G[0].Y = Curve.Params().Gx, Curve.Params().Gy
-
-	for i := 1; i < len(pcm.G); i++ {
-		pcm.G[i] = pcm.G[0].Hash(i)
-	}
-	return pcm
-}
-
-var PedCom = newPedersenCommitment()
-
 // CommitAll commits a list of PCM_CAPACITY value(s)
 func (com PedersenCommitment) CommitAll(openings []*big.Int) *EllipticPoint {
 	if len(openings) != len(com.G) {
