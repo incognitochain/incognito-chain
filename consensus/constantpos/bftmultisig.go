@@ -108,12 +108,13 @@ func (self *multiSigScheme) VerifyCommitSig(validatorPk string, commitSig string
 		return err
 	}
 	listPubkeyOfSigners := GetPubKeysFromIdx(self.combine.SigningCommittee, validatorsIdx)
-	validatorPubkey := new(privacy.PublicKey)
-	pubKeyTemp, byteVersion, err := base58.Base58Check{}.Decode(validatorPk)
+	validatorPubkey := []*privacy.PublicKey{}
+	//TODO: @lam fixed
+	//pubKeyTemp, byteVersion, err := base58.Base58Check{}.Decode(validatorPk)
 	if (err != nil) || (byteVersion != byte(0x00)) {
 		return err
 	}
-	*validatorPubkey = pubKeyTemp
+	//*validatorPubkey = pubKeyTemp
 	var valSigbytesarr []byte
 	valSigbytesarr, byteVersion, err = base58.Base58Check{}.Decode(commitSig)
 	valSig := new(privacy.SchnMultiSig)

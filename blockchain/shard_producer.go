@@ -71,17 +71,17 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 	prevBlockHash := self.chain.BestState.Shard[shardID].BestBlock.Hash()
 
 	block.Header = ShardHeader{
-		Producer:        userKeySet.GetPublicKeyB58(),
-		Epoch:           self.chain.BestState.Beacon.BeaconEpoch,
-		Height:          prevBlock.Header.Height + 1,
-		Version:         BlockVersion,
-		PrevBlockHash:   *prevBlockHash,
-		MerkleRoot:      *merkleRoot,
-		MerkleRootShard: CreateMerkleRootShard(block.Body.Transactions),
-		Timestamp:       time.Now().Unix(),
-		ShardID:         shardID,
-		CrossShard:      self.createCrossShardBytemap(txsToAdd),
-		Actions:         self.createShardAction(),
+		Producer:          userKeySet.GetPublicKeyB58(),
+		Epoch:             self.chain.BestState.Beacon.BeaconEpoch,
+		Height:            prevBlock.Header.Height + 1,
+		Version:           BlockVersion,
+		PrevBlockHash:     *prevBlockHash,
+		MerkleRoot:        *merkleRoot,
+		MerkleRootShard:   CreateMerkleRootShard(block.Body.Transactions),
+		Timestamp:         time.Now().Unix(),
+		ShardID:           shardID,
+		CrossShardByteMap: self.createCrossShardBytemap(txsToAdd),
+		Actions:           self.createShardAction(),
 	}
 
 	// Create producer signature
@@ -96,12 +96,24 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 }
 
 func (self *BlkTmplGenerator) getCrossOutputCoin(shardID byte) []CrossOutputCoin {
+	res := []CrossOutputCoin{}
 	// get cross shard block
-	//bestShardState := self.chain.BestState.Beacon.BestShardHash
-	//self.crossShardPool.GetBlock()
+	bestShardHeight := self.chain.BestState.Beacon.BestShardHeight
+	crossBlock := self.crossShardPool.GetBlock(bestShardHeight)
 	// build CrossOutputCoin
+	shardCrossBlock := crossBlock[shardID]
+	for _, blk := range shardCrossBlock {
+		//TODO: validate blk
 
-	return []CrossOutputCoin{}
+		outputCoin := CrossOutputCoin{
+			OutputCoin: blk.CrossOutputCoin,
+			ShardID:    shardID,
+			BlockHash:  *blk.Hash(),
+		}
+		res = append(res, outputCoin)
+	}
+
+	return res
 }
 
 func (self *BlkTmplGenerator) createCrossShardBytemap(txList []metadata.Transaction) (byteMap []byte) {

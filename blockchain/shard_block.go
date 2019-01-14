@@ -36,11 +36,13 @@ type CrossShardBlock struct {
 	CrossOutputCoin []privacy.OutputCoin
 }
 
-//HashFinal creates a hash from block data that include AggregatedSig & ValidatorsIdx
+func (self *CrossShardBlock) Hash() *common.Hash {
+	hash := self.Header.Hash()
+	return &hash
+}
+
 func (self *ShardBlock) Hash() *common.Hash {
-	record := common.EmptyString
-	record += self.Header.Hash().String() + self.AggregatedSig + common.IntArrayToString(self.ValidatorsIdx, ",")
-	hash := common.DoubleHashH([]byte(record))
+	hash := self.Header.Hash()
 	return &hash
 }
 
