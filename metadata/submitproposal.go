@@ -48,7 +48,7 @@ func NewPaymentAddressFromJson(data interface{}) *privacy.PaymentAddress {
 func NewSubmitDCBProposalMetadataFromJson(data interface{}) *SubmitDCBProposalMetadata {
 	SubmitDCBProposalData := data.(map[string]interface{})
 	meta := NewSubmitDCBProposalMetadata(
-		*params.NewDCBParamsFromJson(SubmitDCBProposalData["DcbParams"]),
+		*params.NewDCBParamsFromJson(SubmitDCBProposalData["DCBParams"]),
 		uint32(SubmitDCBProposalData["ExecuteDuration"].(float64)),
 		SubmitDCBProposalData["Explanation"].(string),
 		NewPaymentAddressFromJson(SubmitDCBProposalData["PaymentAddress"]),
