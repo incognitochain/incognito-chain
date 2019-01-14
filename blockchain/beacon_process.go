@@ -409,6 +409,7 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 			pubKey := privacy.PublicKey{}
 			pubKey = pubkeyBytes
 			pubKeys = append(pubKeys, &pubKey)
+			fmt.Println("**************ABCCC", pubKeys)
 		}
 		aggSig, _, err := base58.Base58Check{}.Decode(block.AggregatedSig)
 		if err != nil {
@@ -628,7 +629,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	}
 
 	if self.BeaconHeight%EPOCH == 0 && self.BeaconHeight != 1 {
-		self.IsGetRandomNUmber = false
+		self.IsGetRandomNumber = false
 		// Begin of each epoch
 	} else if self.BeaconHeight%EPOCH < RANDOM_TIME {
 		// Before get random from bitcoin
@@ -650,7 +651,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		// Assign candidate to shard
 		// assign CandidateShardWaitingForCurrentRandom to ShardPendingValidator with CurrentRandom
 		if randomFlag {
-			self.IsGetRandomNUmber = true
+			self.IsGetRandomNumber = true
 			err := AssignValidatorShard(self.ShardPendingValidator, self.CandidateShardWaitingForCurrentRandom, self.CurrentRandomNumber)
 			if err != nil {
 				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))

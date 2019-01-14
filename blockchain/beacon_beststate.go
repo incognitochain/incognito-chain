@@ -43,13 +43,13 @@ type BestStateBeacon struct {
 	// pending validator of shards
 	ShardPendingValidator map[byte][]string
 
-	// UnassignBeaconCandidate []string
+	// UnassignBeaconCandidate []strings
 	// UnassignShardCandidate  []string
 
 	CurrentRandomNumber int64
 	// random timestamp for this epoch
 	CurrentRandomTimeStamp int64
-	IsGetRandomNUmber      bool
+	IsGetRandomNumber      bool
 
 	Params map[string]string
 
@@ -61,6 +61,7 @@ func NewBestStateBeacon() *BestStateBeacon {
 	bestStateBeacon.BestBlockHash.SetBytes(make([]byte, 32))
 	bestStateBeacon.BestBlock = nil
 	bestStateBeacon.BestShardHash = make(map[byte]common.Hash)
+	bestStateBeacon.BestShardHeight = make(map[byte]uint64)
 	bestStateBeacon.BeaconHeight = 0
 	bestStateBeacon.BeaconCommittee = []string{}
 	bestStateBeacon.BeaconPendingValidator = []string{}

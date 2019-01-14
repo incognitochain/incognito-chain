@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -250,7 +251,10 @@ func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, stakers [][
 
 	//=======Random
 	// Time to get random number and no block in this epoch get it
-	if block.Header.Height%200 >= RANDOM_TIME && self.IsGetRandomNUmber == false {
+	fmt.Printf("RandomTimestamp %+v \n", self.CurrentRandomTimeStamp)
+	fmt.Printf("============height epoch: %+v, RANDOM TIME: %+v \n", block.Header.Height%200, RANDOM_TIME)
+	fmt.Printf("============IsGetRandomNumber %+v \n", self.IsGetRandomNumber)
+	if block.Header.Height%200 > RANDOM_TIME && self.IsGetRandomNumber == false {
 		chainTimeStamp, err := btcapi.GetCurrentChainTimeStamp()
 		if err != nil {
 			panic(err)
