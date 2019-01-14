@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -408,8 +409,8 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 			pubKey := privacy.PublicKey{}
 			pubKey = pubkeyBytes
 			pubKeys = append(pubKeys, &pubKey)
+			fmt.Println("**************ABCCC", pubKeys)
 		}
-
 		aggSig, _, err := base58.Base58Check{}.Decode(block.AggregatedSig)
 		if err != nil {
 			return NewBlockChainError(SignatureError, errors.New("Error in convert aggregated signature from string to byte"))
@@ -417,7 +418,7 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 		schnMultiSig := &privacy.SchnMultiSig{}
 		schnMultiSig.SetBytes(aggSig)
 		blockHash := block.Header.Hash()
-		if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeys, nil, nil) == false {
+		if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeys, pubKeys, schnMultiSig.R) == false {
 			return NewBlockChainError(SignatureError, errors.New("Invalid Agg signature"))
 		}
 	}
@@ -628,7 +629,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	}
 
 	if self.BeaconHeight%EPOCH == 0 && self.BeaconHeight != 1 {
-		self.IsGetRandomNUmber = false
+		self.IsGetRandomNumber = false
 		// Begin of each epoch
 	} else if self.BeaconHeight%EPOCH < RANDOM_TIME {
 		// Before get random from bitcoin
@@ -650,7 +651,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		// Assign candidate to shard
 		// assign CandidateShardWaitingForCurrentRandom to ShardPendingValidator with CurrentRandom
 		if randomFlag {
-			self.IsGetRandomNUmber = true
+			self.IsGetRandomNumber = true
 			err := AssignValidatorShard(self.ShardPendingValidator, self.CandidateShardWaitingForCurrentRandom, self.CurrentRandomNumber)
 			if err != nil {
 				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
@@ -692,6 +693,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		Logger.log.Info("Swap block: Out committee %+v", beaconSwapedCommittees)
 		Logger.log.Info("Swap block: In committee %+v", beaconNextCommittees)
 	}
+	//TODO: swap committess for shard
 	return nil
 }
 
