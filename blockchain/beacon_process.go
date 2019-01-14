@@ -134,7 +134,7 @@ func (self *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock) error {
 func (self *BlockChain) InsertBeaconBlock(block *BeaconBlock) error {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
-	Logger.log.Infof("Insert new block %d, with hash %+v \n", block.Header.Height, *block.Hash())
+	Logger.log.Infof("Begin Insert new block %d, with hash %+v \n", block.Header.Height, *block.Hash())
 	// fmt.Printf("Beacon block %+v \n", block)
 	Logger.log.Infof("Verify Pre Processing Beacon Block %+v \n", *block.Hash())
 	if err := self.VerifyPreProcessingBeaconBlock(block); err != nil {
@@ -182,7 +182,7 @@ func (self *BlockChain) InsertBeaconBlock(block *BeaconBlock) error {
 	Logger.log.Infof("Remove block from pool %+v \n", *block.Hash())
 	self.config.ShardToBeaconPool.RemoveBlock(self.BestState.Beacon.BestShardHeight)
 
-	Logger.log.Infof("Insert new block %d, with hash %x", block.Header.Height, *block.Hash())
+	Logger.log.Infof("Finish Insert new block %d, with hash %x", block.Header.Height, *block.Hash())
 	return nil
 }
 
@@ -498,12 +498,13 @@ func (self *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock)
 
 	for _, l := range instructions {
 		if l[0] == "random" {
-			temp, err := strconv.Atoi(l[1])
+			temp, err := strconv.Atoi(l[3])
 			if err != nil {
 				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 				return NewBlockChainError(UnExpectedError, err)
 			}
 			isOk, err = btcapi.VerifyNonceWithTimestamp(self.CurrentRandomTimeStamp, int64(temp))
+			Logger.log.Infof("Verify Random number %+v", isOk)
 			if err != nil {
 				Logger.log.Error("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 				return NewBlockChainError(UnExpectedError, err)
@@ -599,7 +600,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 				return NewBlockChainError(UnExpectedError, err)
 			}
 			self.CurrentRandomNumber = int64(temp)
-			Logger.log.Info("Random number found %d", self.CurrentRandomNumber)
+			Logger.log.Info("Random number found %+v", self.CurrentRandomNumber)
 			randomFlag = true
 		}
 	}

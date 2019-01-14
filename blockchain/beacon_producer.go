@@ -254,8 +254,9 @@ func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, stakers [][
 	fmt.Printf("RandomTimestamp %+v \n", self.CurrentRandomTimeStamp)
 	fmt.Printf("============height epoch: %+v, RANDOM TIME: %+v \n", block.Header.Height%200, RANDOM_TIME)
 	fmt.Printf("============IsGetRandomNumber %+v \n", self.IsGetRandomNumber)
-	if block.Header.Height%200 > RANDOM_TIME && self.IsGetRandomNumber == false {
+	if block.Header.Height%EPOCH > RANDOM_TIME && self.IsGetRandomNumber == false {
 		chainTimeStamp, err := btcapi.GetCurrentChainTimeStamp()
+		fmt.Printf("============chainTimeStamp %+v \n", chainTimeStamp)
 		if err != nil {
 			panic(err)
 		}
