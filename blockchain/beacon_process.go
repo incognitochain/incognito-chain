@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -409,7 +410,6 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 			pubKey = pubkeyBytes
 			pubKeys = append(pubKeys, &pubKey)
 		}
-
 		aggSig, _, err := base58.Base58Check{}.Decode(block.AggregatedSig)
 		if err != nil {
 			return NewBlockChainError(SignatureError, errors.New("Error in convert aggregated signature from string to byte"))
@@ -417,7 +417,7 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 		schnMultiSig := &privacy.SchnMultiSig{}
 		schnMultiSig.SetBytes(aggSig)
 		blockHash := block.Header.Hash()
-		if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeys, nil, nil) == false {
+		if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeys, pubKeys, schnMultiSig.R) == false {
 			return NewBlockChainError(SignatureError, errors.New("Invalid Agg signature"))
 		}
 	}
@@ -692,6 +692,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		Logger.log.Info("Swap block: Out committee %+v", beaconSwapedCommittees)
 		Logger.log.Info("Swap block: In committee %+v", beaconNextCommittees)
 	}
+	//TODO: swap committess for shard
 	return nil
 }
 
