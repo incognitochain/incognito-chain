@@ -136,7 +136,7 @@ func (db *db) CleanBestState() error {
 	return nil
 }
 
-func (db *db) StoreBlockIndex(h *common.Hash, idx int32, chainID byte) error {
+func (db *db) StoreBlockIndex(h *common.Hash, idx uint64, chainID byte) error {
 	buf := make([]byte, 5)
 	binary.LittleEndian.PutUint32(buf, uint32(idx))
 	buf[4] = chainID
@@ -151,14 +151,14 @@ func (db *db) StoreBlockIndex(h *common.Hash, idx int32, chainID byte) error {
 	return nil
 }
 
-func (db *db) GetIndexOfBlock(h *common.Hash) (int32, byte, error) {
+func (db *db) GetIndexOfBlock(h *common.Hash) (uint64, byte, error) {
 	b, err := db.lvdb.Get(db.GetKey(string(blockKeyIdxPrefix), h), nil)
 	//{i-[hash]}:index-chainid
 	if err != nil {
 		return 0, 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.get"))
 	}
 
-	var idx int32
+	var idx uint64
 	var chainID byte
 	if err := binary.Read(bytes.NewReader(b[:4]), binary.LittleEndian, &idx); err != nil {
 		return 0, 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "binary.Read"))

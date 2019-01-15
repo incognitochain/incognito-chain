@@ -142,7 +142,7 @@ func parseWithdrawRequestValue(values []byte) ([]byte, uint8, error) {
 	return txHash, state, nil
 }
 
-func getCMBNoticeKey(blockHeight int32, txReqHash []byte) []byte {
+func getCMBNoticeKey(blockHeight uint64, txReqHash []byte) []byte {
 	// 0xjackalope: convert to uint32 before saving to db
 	key := cmbNoticePrefix
 	key = append(key, common.Uint32ToBytes(uint32(blockHeight))...)

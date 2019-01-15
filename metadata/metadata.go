@@ -82,17 +82,17 @@ type MempoolRetriever interface {
 }
 
 type BlockchainRetriever interface {
-	GetHeight() int32
-	GetChainHeight(byte) int32
+	GetHeight() uint64
+	GetChainHeight(byte) uint64
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
 	GetDCBParams() params.DCBParams
 	GetBoardPubKeys(boardType string) [][]byte
 	GetGOVParams() params.GOVParams
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
 	GetOracleParams() *params.Oracle
-	GetConstitutionStartHeight(boardType string, chainID byte) uint32
-	GetConstitutionEndHeight(boardType string, chainID byte) uint32
-	GetCurrentBlockHeight(byte) uint32
+	GetConstitutionStartHeight(boardType string, chainID byte) uint64
+	GetConstitutionEndHeight(boardType string, chainID byte) uint64
+	GetCurrentBlockHeight(byte) uint64
 
 	// For validating loan metadata
 	GetLoanTxs([]byte) ([][]byte, error)
@@ -110,7 +110,7 @@ type BlockchainRetriever interface {
 
 	// For validating cmb
 	GetCMB([]byte) (privacy.PaymentAddress, []privacy.PaymentAddress, uint64, *common.Hash, uint8, uint64, error)
-	GetBlockHeightByBlockHash(*common.Hash) (int32, byte, error)
+	GetBlockHeightByBlockHash(*common.Hash) (uint64, byte, error)
 	GetCMBResponse([]byte) ([][]byte, error)
 	GetDepositSend([]byte) ([]byte, error)
 	GetWithdrawRequest([]byte) ([]byte, uint8, error)

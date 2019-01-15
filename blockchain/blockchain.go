@@ -201,7 +201,7 @@ func (self *BlockChain) createChainState(chainId byte) error {
 /*
 Get block index(height) of block
 */
-func (self *BlockChain) GetBlockHeightByBlockHash(hash *common.Hash) (int32, byte, error) {
+func (self *BlockChain) GetBlockHeightByBlockHash(hash *common.Hash) (uint64, byte, error) {
 	return self.config.DataBase.GetIndexOfBlock(hash)
 }
 
@@ -316,7 +316,7 @@ and
 Save block hash by index(height) of block
 */
 func (self *BlockChain) StoreBlockIndex(block *Block) error {
-	return self.config.DataBase.StoreBlockIndex(block.Hash(), block.Header.Height, block.Header.ChainID)
+	return self.config.DataBase.StoreBlockIndex(block.Hash(), uint64(block.Header.Height), block.Header.ChainID)
 }
 
 func (self *BlockChain) StoreTransactionIndex(txHash *common.Hash, blockHash *common.Hash, index int) error {
@@ -1404,7 +1404,7 @@ func (self *BlockChain) GetBestBlock(chainID byte) *Block {
 	return self.BestState[chainID].BestBlock
 }
 
-func (self *BlockChain) GetConstitutionStartHeight(boardType string, chainID byte) uint32 {
+func (self *BlockChain) GetConstitutionStartHeight(boardType string, chainID byte) uint64 {
 	if boardType == "dcb" {
 		return self.GetDCBConstitutionStartHeight(chainID)
 	} else {
@@ -1412,14 +1412,14 @@ func (self *BlockChain) GetConstitutionStartHeight(boardType string, chainID byt
 	}
 }
 
-func (self *BlockChain) GetDCBConstitutionStartHeight(chainID byte) uint32 {
+func (self *BlockChain) GetDCBConstitutionStartHeight(chainID byte) uint64 {
 	return self.GetBestBlock(chainID).Header.DCBConstitution.StartedBlockHeight
 }
-func (self *BlockChain) GetGOVConstitutionStartHeight(chainID byte) uint32 {
+func (self *BlockChain) GetGOVConstitutionStartHeight(chainID byte) uint64 {
 	return self.GetBestBlock(chainID).Header.GOVConstitution.StartedBlockHeight
 }
 
-func (self *BlockChain) GetConstitutionEndHeight(boardType string, chainID byte) uint32 {
+func (self *BlockChain) GetConstitutionEndHeight(boardType string, chainID byte) uint64 {
 	if boardType == "dcb" {
 		return self.GetDCBConstitutionEndHeight(chainID)
 	} else {
@@ -1427,16 +1427,16 @@ func (self *BlockChain) GetConstitutionEndHeight(boardType string, chainID byte)
 	}
 }
 
-func (self *BlockChain) GetDCBConstitutionEndHeight(chainID byte) uint32 {
+func (self *BlockChain) GetDCBConstitutionEndHeight(chainID byte) uint64 {
 	return self.GetBestBlock(chainID).Header.DCBConstitution.GetEndedBlockHeight()
 }
 
-func (self *BlockChain) GetGOVConstitutionEndHeight(chainID byte) uint32 {
+func (self *BlockChain) GetGOVConstitutionEndHeight(chainID byte) uint64 {
 	return self.GetBestBlock(chainID).Header.GOVConstitution.GetEndedBlockHeight()
 }
 
-func (self *BlockChain) GetCurrentBlockHeight(chainID byte) uint32 {
-	return uint32(self.GetBestBlock(chainID).Header.Height)
+func (self *BlockChain) GetCurrentBlockHeight(chainID byte) uint64 {
+	return uint64(self.GetBestBlock(chainID).Header.Height)
 }
 
 func (self BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, chainID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
@@ -1474,9 +1474,9 @@ func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) b
 
 	constitutionInfo := helper.GetConstitutionInfo(self)
 	endedOfConstitution := constitutionInfo.StartedBlockHeight + constitutionInfo.ExecuteDuration
-	pivotOfStart := endedOfConstitution - 3*common.EncryptionOnePhraseDuration
+	pivotOfStart := endedOfConstitution - 3*uint64(common.EncryptionOnePhraseDuration)
 
-	rightTime := newNationalWelfare < thresholdNationalWelfare || pivotOfStart == uint32(thisBlockHeight)
+	rightTime := newNationalWelfare < thresholdNationalWelfare || pivotOfStart == uint64(thisBlockHeight)
 
 	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
 	rightFlag := encryptFlag == common.Lv3EncryptionFlag

@@ -156,7 +156,7 @@ func (db *db) UpdateWithdrawRequestState(contractID []byte, state uint8) error {
 	return nil
 }
 
-func (db *db) StoreNoticePeriod(blockHeight int32, txReqHash []byte) error {
+func (db *db) StoreNoticePeriod(blockHeight uint64, txReqHash []byte) error {
 	cmbNoticeKey := getCMBNoticeKey(blockHeight, txReqHash)
 	cmbNoticeValue := []byte{1}
 	if err := db.Put(cmbNoticeKey, cmbNoticeValue); err != nil {
@@ -165,7 +165,7 @@ func (db *db) StoreNoticePeriod(blockHeight int32, txReqHash []byte) error {
 	return nil
 }
 
-func (db *db) GetNoticePeriod(blockHeight int32) ([][]byte, error) {
+func (db *db) GetNoticePeriod(blockHeight uint64) ([][]byte, error) {
 	txReqHash := []byte{} // empty hash to get all
 	txHashes := [][]byte{}
 	cmbNoticeKey := getCMBNoticeKey(blockHeight, txReqHash)

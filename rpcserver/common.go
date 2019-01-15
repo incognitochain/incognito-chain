@@ -411,11 +411,11 @@ func (self RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []*priv
 	return realFee
 }
 
-func min (values []uint64) int{
+func min(values []uint64) int {
 	min := values[0]
 	indexMin := 0
-	for i:=1; i<len(values); i++{
-		if values[i] < min{
+	for i := 1; i < len(values); i++ {
+		if values[i] < min {
 			min = values[i]
 			indexMin = i
 		}
@@ -439,7 +439,7 @@ func (self RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, 
 	outCoinsUnknapsack := make([]*privacy.OutputCoin, 0)
 
 	for _, outCoin := range outCoins {
-		if outCoin.CoinDetails.Value > amount{
+		if outCoin.CoinDetails.Value > amount {
 			valuesUnknapsack = append(valuesUnknapsack, outCoin.CoinDetails.Value)
 			outCoinsUnknapsack = append(outCoinsUnknapsack, outCoin)
 		} else {
@@ -468,19 +468,19 @@ func (self RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, 
 		for _, outCoin := range outCoinsUnknapsack {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
-	} else if target == 0{
+	} else if target == 0 {
 		totalResultOutputCoinAmount = sumValueKnapsack
 		resultOutputCoins = outCoinsKnapsack
 		remainOutputCoins = outCoinsUnknapsack
-	} else{
-		if len(outCoinsUnknapsack) == 0{
-			return nil, outCoins,0, errors.New("Not enough coin")
-		} else{
+	} else {
+		if len(outCoinsUnknapsack) == 0 {
+			return nil, outCoins, 0, errors.New("Not enough coin")
+		} else {
 			indexMin := min(valuesUnknapsack)
 			resultOutputCoins = append(resultOutputCoins, outCoinsUnknapsack[indexMin])
 			totalResultOutputCoinAmount = valuesUnknapsack[indexMin]
 			for i, outCoin := range outCoinsUnknapsack {
-				if i != indexMin{
+				if i != indexMin {
 					remainOutputCoins = append(remainOutputCoins, outCoin)
 				}
 			}
@@ -493,3 +493,26 @@ func (self RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, 
 	return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, nil
 }
 
+func SenderKeyParamToMap(senderKeyParam interface{}) (interface{}, error) {
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	paymentAddr := senderKey.KeySet.PaymentAddress
+	paymentAddressData := make(map[string]interface{})
+	paymentAddressData["Pk"] = string(paymentAddr.Pk)
+	paymentAddressData["Tk"] = string(paymentAddr.Tk)
+
+	return paymentAddressData, nil
+}
+
+func GetPubKeyFromSenderKeyParams(senderKeyParam string) ([]byte, error) {
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam)
+	if err != nil {
+		return nil, err
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	paymentAddr := senderKey.KeySet.PaymentAddress
+	return paymentAddr.Pk, nil
+}

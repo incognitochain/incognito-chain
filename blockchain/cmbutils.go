@@ -135,7 +135,7 @@ func (bc *BlockChain) processCMBWithdrawRequest(tx metadata.Transaction) error {
 	// Add notice period for later lateness check
 	_, _, _, txContract, err := bc.GetTransactionByHash(&meta.ContractID)
 	contractMeta := txContract.GetMetadata().(*metadata.CMBDepositContract)
-	endBlock := bc.GetHeight() + contractMeta.NoticePeriod
+	endBlock := uint64(bc.GetHeight()) + contractMeta.NoticePeriod
 	return bc.config.DataBase.StoreNoticePeriod(endBlock, hash[:])
 }
 
@@ -152,7 +152,7 @@ func (bc *BlockChain) processCMBWithdrawResponse(tx metadata.Transaction) error 
 }
 
 func (bc *BlockChain) findLateWithdrawResponse() error {
-	blockHeight := bc.GetHeight()
+	blockHeight := uint64(bc.GetHeight())
 	txHashes, err := bc.config.DataBase.GetNoticePeriod(blockHeight)
 	if err != nil {
 		return err
