@@ -634,7 +634,7 @@ if err != nil {
   H: txLocation
   tx: tx object in byte
 */
-/*func (db *db) GetTransactionLightModeByHash(txId *common.Hash2) ([]byte, []byte, error) {
+/*func (db *db) GetTransactionLightModeByHash(txId *common.Hash) ([]byte, []byte, error) {
 	key := string(transactionKeyPrefix) + txId.String()
 	_, err := db.HasValue([]byte(key))
 	if err != nil {

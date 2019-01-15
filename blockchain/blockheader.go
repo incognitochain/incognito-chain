@@ -12,14 +12,14 @@ type BlockHeader struct {
 	// Version of the block.  This is not the same as the protocol version.
 	Version int
 
-	// Hash2 of the previous block header in the block chain.
+	// Hash of the previous block header in the block chain.
 	PrevBlockHash common.Hash
 
 	// Merkle tree reference to hash of all transactions for the block.
 	MerkleRoot common.Hash
 
 	// Merkle tree reference to hash of all commitments to the current block.
-	//MerkleRootCommitments common.Hash2
+	//MerkleRootCommitments common.Hash
 
 	// Time the block was created.  This is, unfortunately, encoded as a
 	// uint64 on the wire and therefore is limited to 2106.

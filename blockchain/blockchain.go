@@ -628,7 +628,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 }
 
 // parseCustomTokenUTXO helper method for parsing UTXO data for updating dividend payout
-/*func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash2, pubkey []byte) ([]transaction.TxTokenVout, error) {
+/*func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash, pubkey []byte) ([]transaction.TxTokenVout, error) {
 	utxoData, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, pubkey)
 	if err != nil {
 		return nil, err
@@ -642,7 +642,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 		if strings.Compare(values[1], string(lvdb.Unspent)) == 0 {
 			vout := transaction.TxTokenVout{}
 			vout.PaymentAddress = privacy.PaymentAddress{Pk: pubkey}
-			txHash, err := common.Hash2{}.NewHash([]byte(keys[3]))
+			txHash, err := common.Hash{}.NewHash([]byte(keys[3]))
 			if err != nil {
 				finalErr = err
 				continue

@@ -6,7 +6,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
-// Todo: @0xjackalope, @0xbunyip Check logic in Hash2 and Validate and rpcfunction because other will change params struct without modified these function
+// Todo: @0xjackalope, @0xbunyip Check logic in Hash and Validate and rpcfunction because other will change params struct without modified these function
 type SellingBonds struct {
 	BondName       string
 	BondSymbol     string

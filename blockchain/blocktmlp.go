@@ -156,7 +156,7 @@ concludeBlock:
 		Version:       BlockVersion,
 		PrevBlockHash: *prevBlockHash,
 		MerkleRoot:    *merkleRoot,
-		// MerkleRootCommitments: common.Hash2{},
+		// MerkleRootCommitments: common.Hash{},
 		Timestamp:          time.Now().Unix(),
 		BlockCommitteeSigs: make([]string, common.TotalValidators),
 		Committee:          make([]string, common.TotalValidators),
