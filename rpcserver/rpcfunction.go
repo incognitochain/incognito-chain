@@ -277,7 +277,7 @@ func (self RpcServer) handleCheckHashValue(params interface{}, closeChan <-chan 
 		isBlock       bool
 	)
 	arrayParams := common.InterfaceSlice(params)
-	// param #1: transaction Hash2
+	// param #1: transaction Hash
 	Logger.log.Infof("Check hash value  input Param %+v", arrayParams[0].(string))
 	hash, _ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
 
