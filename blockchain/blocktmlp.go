@@ -90,7 +90,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 	}
 
 	// check len of txs in block
-	if len(txGroups["txsToAdd"]) == 0 {
+	if len(txGroups.txsToAdd) == 0 {
 		// return nil, errors.Zero("no transaction available for this chain")
 		Logger.log.Info("Creating empty block...")
 	}
@@ -99,7 +99,7 @@ concludeBlock:
 
 	// Get blocksalary fund from txs
 	salaryMULTP := uint64(0) //salary multiplier
-	for _, blockTx := range txGroups["txsToAdd"] {
+	for _, blockTx := range txGroups.txsToAdd {
 		if blockTx.GetTxFee() > 0 {
 			salaryMULTP++
 		}
@@ -116,7 +116,7 @@ concludeBlock:
 		Logger.log.Error(err)
 		return nil, err
 	}
-	accumulativeValues["totalSalary"] = totalSalary
+	accumulativeValues.totalSalary = totalSalary
 	txGroups, accumulativeValues, updatedOracleValues, err := blockgen.buildResponseTxs(chainID, sourceTxns, privatekey, txGroups, accumulativeValues, buyBackFromInfos)
 	if err != nil {
 		Logger.log.Error(err)
@@ -128,23 +128,23 @@ concludeBlock:
 		Logger.log.Error(err)
 		return nil, err
 	}
-	txGroups["txsToAdd"] = append(coinbases, txGroups["txsToAdd"]...)
+	txGroups.txsToAdd = append(coinbases, txGroups.txsToAdd...)
 
-	for _, tx := range txGroups["txToRemove"] {
+	for _, tx := range txGroups.txToRemove {
 		blockgen.txPool.RemoveTx(tx)
 	}
 
 	// Check for final balance of DCB and GOV
-	if accumulativeValues["currentSalaryFund"]+accumulativeValues["totalFee"]+accumulativeValues["incomeFromBonds"] < accumulativeValues["totalSalary"]+accumulativeValues["govPayoutAmount"]+accumulativeValues["buyBackCoins"]+accumulativeValues["totalRefundAmt"]+accumulativeValues["totalOracleRewards"] {
+	if accumulativeValues.currentSalaryFund+accumulativeValues.totalFee+accumulativeValues.incomeFromBonds < accumulativeValues.totalSalary+accumulativeValues.govPayoutAmount+accumulativeValues.buyBackCoins+accumulativeValues.totalRefundAmt+accumulativeValues.totalOracleRewards {
 		return nil, fmt.Errorf("Gov fund is not enough for salary and dividend payout")
 	}
 
 	currentBankFund := prevBlock.Header.BankFund
-	if currentBankFund < accumulativeValues["bankPayoutAmount"] { // Can't spend loan payment just received in this block
+	if currentBankFund < accumulativeValues.bankPayoutAmount { // Can't spend loan payment just received in this block
 		return nil, fmt.Errorf("Bank fund is not enough for dividend payout")
 	}
 
-	merkleRoots := Merkle{}.BuildMerkleTreeStore(txGroups["txsToAdd"])
+	merkleRoots := Merkle{}.BuildMerkleTreeStore(txGroups.txsToAdd)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 
 	block := Block{
@@ -161,8 +161,8 @@ concludeBlock:
 		BlockCommitteeSigs: make([]string, common.TotalValidators),
 		Committee:          make([]string, common.TotalValidators),
 		ChainID:            chainID,
-		SalaryFund:         accumulativeValues["currentSalaryFund"] + accumulativeValues["incomeFromBonds"] + accumulativeValues["totalFee"] - accumulativeValues["totalSalary"] - accumulativeValues["govPayoutAmount"] - accumulativeValues["buyBackCoins"] - accumulativeValues["totalRefundAmt"] - accumulativeValues["totalOracleRewards"],
-		BankFund:           prevBlock.Header.BankFund + accumulativeValues["loanPaymentAmount"] - accumulativeValues["bankPayoutAmount"],
+		SalaryFund:         accumulativeValues.currentSalaryFund + accumulativeValues.incomeFromBonds + accumulativeValues.totalFee - accumulativeValues.totalSalary - accumulativeValues.govPayoutAmount - accumulativeValues.buyBackCoins - accumulativeValues.totalRefundAmt - accumulativeValues.totalOracleRewards,
+		BankFund:           prevBlock.Header.BankFund + accumulativeValues.loanPaymentAmount - accumulativeValues.bankPayoutAmount,
 		GOVConstitution:    prevBlock.Header.GOVConstitution, // TODO: 0xbunyip need get from gov-params tx
 		DCBConstitution:    prevBlock.Header.DCBConstitution, // TODO: 0xbunyip need get from dcb-params tx
 		Oracle:             prevBlock.Header.Oracle,

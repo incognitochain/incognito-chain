@@ -186,25 +186,25 @@ func (block *Block) updateGOVConstitution(tx metadata.Transaction, blockgen *Blk
 
 func (block *Block) updateBlockHeader(
 	blockgen *BlkTmplGenerator,
-	txGroups map[string][]metadata.Transaction,
-	accumulativeValues map[string]uint64,
+	txGroups *txGroups,
+	accumulativeValues *accumulativeValues,
 	updatedOracleValues map[string]uint64,
 ) error {
 	if block.Header.GOVConstitution.GOVParams.SellingBonds != nil {
-		block.Header.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= accumulativeValues["bondsSold"]
+		block.Header.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= accumulativeValues.bondsSold
 	}
 	if block.Header.DCBConstitution.DCBParams.SaleDCBTokensByUSDData != nil {
-		block.Header.DCBConstitution.DCBParams.SaleDCBTokensByUSDData.Amount -= accumulativeValues["dcbTokensSold"]
+		block.Header.DCBConstitution.DCBParams.SaleDCBTokensByUSDData.Amount -= accumulativeValues.dcbTokensSold
 	}
 
 	blockgen.updateOracleValues(block, updatedOracleValues)
-	err := blockgen.updateOracleBoard(block, txGroups["updatingOracleBoardTxs"])
+	err := blockgen.updateOracleBoard(block, txGroups.updatingOracleBoardTxs)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
 	}
 
-	for _, tx := range txGroups["txsToAdd"] {
+	for _, tx := range txGroups.txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
 			return err
 		}
@@ -230,7 +230,7 @@ func (block *Block) updateBlockHeader(
 	}
 
 	// register multisigs addresses
-	err = blockgen.registerMultiSigsAddresses(txGroups["multiSigsRegistrationTxs"])
+	err = blockgen.registerMultiSigsAddresses(txGroups.multiSigsRegistrationTxs)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
