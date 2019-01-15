@@ -65,6 +65,7 @@ func (self *ShardBlock) UnmarshalJSON(data []byte) error {
 	self.AggregatedSig = tempBlk.AggregatedSig
 	self.R = tempBlk.R
 	self.ValidatorsIdx = tempBlk.ValidatorsIdx
+	self.ProducerSig = tempBlk.ProducerSig
 
 	blkBody := ShardBody{}
 	err = blkBody.UnmarshalJSON(*tempBlk.Body)

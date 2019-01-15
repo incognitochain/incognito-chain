@@ -5,8 +5,8 @@ import (
 )
 
 func (self *BlockChain) OnBlockShardReceived(block *ShardBlock) {
-	if self.newShardBlkCh != nil {
-
+	if self.newShardBlkCh[block.Header.ShardID] != nil {
+		*self.newShardBlkCh[block.Header.ShardID] <- block
 	}
 }
 func (self *BlockChain) OnBlockBeaconReceived(block *BeaconBlock) {
@@ -31,13 +31,21 @@ func (self *BlockChain) OnBeaconStateReceived(state *BeaconChainState, peerID li
 	}
 }
 
-func (self *BlockChain) OnGetShardState(shardID byte) *ShardChainState {
-	state := &ShardChainState{}
+func (self *BlockChain) GetShardState(shardID byte) *ShardChainState {
+	state := &ShardChainState{
+		Height:    self.BestState.Shard[shardID].Height,
+		ShardID:   shardID,
+		BlockHash: self.BestState.Shard[shardID].BestBlockHash,
+	}
 	return state
 }
 
-func (self *BlockChain) OnShardStateReceived(state *ShardChainState) {
-
+func (self *BlockChain) OnShardStateReceived(state *ShardChainState, peerID libp2p.ID) {
+	if self.newShardBlkCh[state.ShardID] != nil {
+		self.ShardStateCh[state.ShardID] <- &PeerShardChainState{
+			state, peerID,
+		}
+	}
 }
 
 func (self *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {

@@ -256,6 +256,10 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if self.Config.MessageListeners.OnGetBlockBeacon != nil {
 						self.Config.MessageListeners.OnGetBlockBeacon(self, message.(*wire.MessageGetBlockBeacon))
 					}
+				case reflect.TypeOf(&wire.MessageGetBlockShard{}):
+					if self.Config.MessageListeners.OnGetBlockShard != nil {
+						self.Config.MessageListeners.OnGetBlockShard(self, message.(*wire.MessageGetBlockShard))
+					}
 				case reflect.TypeOf(&wire.MessageVersion{}):
 					if self.Config.MessageListeners.OnVersion != nil {
 						versionMessage := message.(*wire.MessageVersion)
