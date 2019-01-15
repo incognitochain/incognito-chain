@@ -141,7 +141,7 @@ func (blockgen *BlkTmplGenerator) processDividend(
 	dividendTxs := []*transaction.Tx{}
 	if common.FalseValue && blockHeight%metadata.PayoutFrequency == 0 { // only chain 0 process dividend proposals
 		totalTokenSupply, tokenHolders, amounts, err := blockgen.chain.GetAmountPerAccount(proposal)
-		if err != nil {
+		if err != nil || totalTokenSupply == 0 {
 			return nil, 0, err
 		}
 
@@ -174,7 +174,10 @@ func (blockgen *BlkTmplGenerator) processDividend(
 }
 
 func (blockgen *BlkTmplGenerator) processBankDividend(blockHeight int32, producerPrivateKey *privacy.SpendingKey) ([]*transaction.Tx, uint64, error) {
-	tokenID, _ := (&common.Hash{}).NewHash(common.DCBTokenID[:])
+	tokenID, err := (&common.Hash{}).NewHash(common.DCBTokenID[:])
+	if err != nil {
+		return nil, 0, err
+	}
 	proposal := &metadata.DividendProposal{
 		TokenID: tokenID,
 	}
@@ -182,7 +185,10 @@ func (blockgen *BlkTmplGenerator) processBankDividend(blockHeight int32, produce
 }
 
 func (blockgen *BlkTmplGenerator) processGovDividend(blockHeight int32, producerPrivateKey *privacy.SpendingKey) ([]*transaction.Tx, uint64, error) {
-	tokenID, _ := (&common.Hash{}).NewHash(common.GOVTokenID[:])
+	tokenID, err := (&common.Hash{}).NewHash(common.GOVTokenID[:])
+	if err != nil {
+		return nil, 0, err
+	}
 	proposal := &metadata.DividendProposal{
 		TokenID: tokenID,
 	}
@@ -215,8 +221,8 @@ func (blockgen *BlkTmplGenerator) checkAndGroupTxs(
 
 	for _, txDesc := range sourceTxns {
 		tx := txDesc.Tx
-		txChainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
-		if txChainID != chainID {
+		txChainID, err := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+		if txChainID != chainID || err != nil {
 			continue
 		}
 		// ValidateTransaction vote and propose transaction
