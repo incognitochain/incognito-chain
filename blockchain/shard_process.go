@@ -3,14 +3,66 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
-	"github.com/ninjadotorg/constant/metadata"
+	"reflect"
 	"strconv"
+	"strings"
+
+	"github.com/ninjadotorg/constant/metadata"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/privacy"
 )
 
+func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardId byte) error {
+	self.chainLock.Lock()
+	defer self.chainLock.Unlock()
+	//========Verify block only
+	Logger.log.Infof("Verify block for signing process %d, with hash %+v", block.Header.Height, *block.Hash())
+	if err := self.VerifyPreProcessingShardBlock(block, shardId); err != nil {
+		return err
+	}
+	//========Verify block with previous best state
+	// Get Beststate of previous block == previous best state
+	// Clone best state value into new variable
+	shardBestState := BestStateShard{}
+	// check with current final best state
+	// New block must be compatible with current best state
+	if strings.Compare(self.BestState.Beacon.BestBlockHash.String(), block.Header.PrevBlockHash.String()) == 0 {
+		tempMarshal, err := json.Marshal(self.BestState.Beacon)
+		if err != nil {
+			return NewBlockChainError(UnmashallJsonBlockError, err)
+		}
+		json.Unmarshal(tempMarshal, &shardBestState)
+	}
+	//else {
+	// check with current cache best state
+	// var err error
+	// beaconBestState, err = self.GetMaybeAcceptBeaconBestState(block.Header.PrevBlockHash.String())
+	// if err != nil {
+	// 	return err
+	// }
+	// }
+	// if no match best state found then block is unknown
+	if reflect.DeepEqual(shardBestState, BestStateShard{}) {
+		return NewBlockChainError(BeaconError, errors.New("Beacon Block does not match with any Beacon State in cache or in Database"))
+	}
+	// Verify block with previous best state
+	// not verify agg signature in this function
+	if err := shardBestState.VerifyBestStateWithShardBlock(block, false, shardId); err != nil {
+		return err
+	}
+	//========Update best state with new block
+	if err := shardBestState.Update(block); err != nil {
+		return err
+	}
+	//========Post verififcation: verify new beaconstate with corresponding block
+	if err := shardBestState.VerifyPostProcessingShardBlock(block, shardId); err != nil {
+		return err
+	}
+	Logger.log.Infof("Block %d, with hash %+v is VALID for signing", block.Header.Height, *block.Hash())
+	return nil
+}
 func (self *BlockChain) ValidateShardBlockSignature(block *ShardBlock) error {
 	// get shard id
 	shardID := block.Header.ShardID
@@ -18,7 +70,7 @@ func (self *BlockChain) ValidateShardBlockSignature(block *ShardBlock) error {
 	bestStateShardCommittee := self.BestState.Shard[shardID].ShardCommittee
 
 	pubKeys := []*privacy.PublicKey{}
-	for _, index := range block.ValidatorsIdx {
+	for _, index := range block.ValidatorsIdx[1] {
 		pubkeyBytes, _, err := base58.Base58Check{}.Decode(bestStateShardCommittee[index])
 		if err != nil {
 			return errors.New("Error in convert Public key from string to byte")
@@ -35,6 +87,7 @@ func (self *BlockChain) ValidateShardBlockSignature(block *ShardBlock) error {
 	schnMultiSig := &privacy.SchnMultiSig{}
 	schnMultiSig.SetBytes(aggSig)
 	blockHash := block.Header.Hash()
+	//@Hung: Update this method for new version
 	if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeys, nil, nil) == false {
 		return errors.New("Invalid Agg signature")
 	}
@@ -99,12 +152,28 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	return self.ProcessStoreShardBlock(block)
 }
 
-func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock) error {
+func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID byte) error {
+	/* Verify Pre-prosessing data
+	This function DOES NOT verify new block with best state
+	DO NOT USE THIS with GENESIS BLOCK
+	- Block ShardID receive same shardID with input
+	- Version
+	- Parent hash
+	- Height = parent hash + 1
+	- Epoch = blockHeight % Epoch ? Parent Epoch + 1
+	- Timestamp can not excess some limit
+	- MerkleRoot
+	- MerkleRootShard
+	- ActionsRoot
+	*/
+	if block.Header.ShardID != shardID {
+		return NewBlockChainError(ShardIDError, errors.New("Shard should be :"+strconv.Itoa(int(shardID))))
+	}
 	if block.Header.Version != VERSION {
 		return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
 	}
-	prevBlockHash := block.Header.PrevBlockHash
 	// Verify parent hash exist or not
+	prevBlockHash := block.Header.PrevBlockHash
 	parentBlockData, err := self.config.DataBase.FetchBlock(&prevBlockHash)
 	if err != nil {
 		return NewBlockChainError(DBError, err)
@@ -127,7 +196,20 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock) error {
 	return nil
 }
 
-func (self *BlockChain) VerifyPostProcessingShardBlock(block *ShardBlock) error {
+func (self *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlock, shardId byte) error {
+	return nil
+}
+
+func (self *BestStateShard) Update(block *ShardBlock) error {
+	self.BestBlock = block
+	self.BestBlockHash = *block.Hash()
+	self.Height = block.Header.Height
+	self.TotalTxns += uint64(len(block.Body.Transactions))
+	self.NumTxns = uint64(len(block.Body.Transactions))
+	return nil
+}
+
+func (self *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBlock, isSign bool, shardId byte) error {
 	return nil
 }
 

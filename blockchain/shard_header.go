@@ -6,25 +6,28 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
+/*
+	-MerkleRoot and MerkleRootShard: make from transaction
+	-Validator Root is root hash of current committee in beststate
+	-PendingValidator Root is root hash of pending validator in beststate
+*/
 type ShardHeader struct {
-	Producer string `json:"Producer"`
-	Version  int    `json:"Version"`
-	Height   uint64 `json:"Height"`
-	//epoch length should be config in consensus
-	Epoch         uint64      `json:"Epoch"`
-	Timestamp     int64       `json:"Timestamp"`
-	PrevBlockHash common.Hash `json:"PrevBlockHash"`
-	SalaryFund    uint64
-	//Validator list will be store in database/memory (locally)
-	//ValidatorsRoot common.Hash `json:"CurrentValidatorRootHash"`
-	//Candidate = unassigned_validator list will be store in database/memory (locally)
-	// infer from history
-	//PendingValidatorRoot common.Hash `json:"PendingValidatorRoot"`
-	// Store these two list make sure all node process the same data
-
-	MerkleRoot        common.Hash
-	MerkleRootShard   common.Hash
-	ShardID           byte
+	ShardID              byte
+	Producer             string      `json:"Producer"`
+	Version              int         `json:"Version"`
+	Height               uint64      `json:"Height"`
+	Epoch                uint64      `json:"Epoch"`
+	Timestamp            int64       `json:"Timestamp"`
+	PrevBlockHash        common.Hash `json:"PrevBlockHash"`
+	SalaryFund           uint64      `json:"SalaryFund"`
+	MerkleRoot           common.Hash `json:"TransactionRoot"`
+	MerkleRootShard      common.Hash `json:"ShardTransactionRoot"`
+	ActionsRoot          common.Hash `json:"ActionsRootHash"`
+	CommitteeRoot        common.Hash `json:"CurrentValidatorRootHash"`
+	PendingValidatorRoot common.Hash `json:"PendingValidatorRoot"`
+	//@Hung: These field contains real data, should not be included in header
+	//@Hung: How to make sure cross shard byte map contain all data from other
+	//@Hung: CrossShardByteMap should have hash
 	CrossShardByteMap []byte
 	Actions           [][]string
 }

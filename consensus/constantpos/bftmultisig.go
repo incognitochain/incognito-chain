@@ -140,6 +140,8 @@ func (self *multiSigScheme) CombineSigs(commitSigs []bftCommittedSig) (string, e
 		listSigOfSigners[i].SetBytes(bytesSig)
 		self.combine.ValidatorsIdxAggSig = append(self.combine.ValidatorsIdxAggSig, common.IndexOfStr(valSig.Pubkey, self.combine.SigningCommittee))
 	}
+	self.combine.ValidatorsIdxR = make([]int, len(commitSigs[0].ValidatorsIdxR))
+	copy(self.combine.ValidatorsIdxR, commitSigs[0].ValidatorsIdxR)
 	sort.Ints(self.combine.ValidatorsIdxAggSig)
 	aggregatedSig := self.cryptoScheme.CombineMultiSig(listSigOfSigners)
 	fmt.Println("aaaaaaaaaaaaaaaaaaaa", len(commitSigs))

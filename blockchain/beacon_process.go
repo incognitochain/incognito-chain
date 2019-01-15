@@ -401,7 +401,7 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 	//=============Verify aggegrate signature
 	if isVerifySig {
 		pubKeys := []*privacy.PublicKey{}
-		for _, index := range block.ValidatorsIdx {
+		for _, index := range block.ValidatorsIdx[1] {
 			pubkeyBytes, _, err := base58.Base58Check{}.Decode(self.BeaconCommittee[index])
 			if err != nil {
 				return NewBlockChainError(SignatureError, errors.New("Error in convert Public key from string to byte"))

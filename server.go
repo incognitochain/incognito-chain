@@ -165,45 +165,44 @@ func (self *Server) NewServer(listenAddrs string, db database.DatabaseInterface,
 
 	// TODO: 0xbahamooth Search for a feeEstimator state in the database. If none can be found
 	// or if it cannot be loaded, create a new one.
-	// if false {
-	// 	Logger.log.Info("Load chain dependencies from DB")
-	// 	self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
-	// 	for _, bestState := range self.blockChain.BestState.Shard {
-	// 		shardID := bestState.BestBlock.Header.ShardID
-	// 		feeEstimatorData, err := self.dataBase.GetFeeEstimator(shardID)
-	// 		if err == nil && len(feeEstimatorData) > 0 {
-	// 			feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
-	// 			if err != nil {
-	// 				Logger.log.Errorf("Failed to restore fee estimator %v", err)
-	// 				Logger.log.Info("Init NewFeeEstimator")
-	// 				self.feeEstimator[shardID] = mempool.NewFeeEstimator(
-	// 					mempool.DefaultEstimateFeeMaxRollback,
-	// 					mempool.DefaultEstimateFeeMinRegisteredBlocks)
-	// 			} else {
-	// 				self.feeEstimator[shardID] = feeEstimator
-	// 			}
-	// 		}
-	// 	}
-	// } else {
-	// 	err := self.dataBase.CleanCommitments()
-	// 	if err != nil {
-	// 		Logger.log.Error(err)
-	// 		return err
-	// 	}
-	// 	err = self.dataBase.CleanSerialNumbers()
-	// 	if err != nil {
-	// 		Logger.log.Error(err)
-	// 		return err
-	// 	}
-	// 	err = self.dataBase.CleanFeeEstimator()
-	// 	if err != nil {
-	// 		Logger.log.Error(err)
-	// 		return err
-	// 	}
+	if cfg.FastStartup {
+		Logger.log.Info("Load chain dependencies from DB")
+		self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
+		for _, bestState := range self.blockChain.BestState.Shard {
+			shardID := bestState.BestBlock.Header.ShardID
+			feeEstimatorData, err := self.dataBase.GetFeeEstimator(shardID)
+			if err == nil && len(feeEstimatorData) > 0 {
+				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
+				if err != nil {
+					Logger.log.Errorf("Failed to restore fee estimator %v", err)
+					Logger.log.Info("Init NewFeeEstimator")
+					self.feeEstimator[shardID] = mempool.NewFeeEstimator(
+						mempool.DefaultEstimateFeeMaxRollback,
+						mempool.DefaultEstimateFeeMinRegisteredBlocks)
+				} else {
+					self.feeEstimator[shardID] = feeEstimator
+				}
+			}
+		}
+	} else {
+		err := self.dataBase.CleanCommitments()
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		err = self.dataBase.CleanSerialNumbers()
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		err = self.dataBase.CleanFeeEstimator()
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
 
-	// 	self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
-	// }
-	self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
+		self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
+	}
 	// create mempool tx
 	self.memPool = &mempool.TxPool{}
 	self.memPool.Init(&mempool.Config{
