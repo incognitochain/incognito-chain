@@ -313,7 +313,7 @@ func (self *BlockChain) initShardState(shardID byte) error {
 	self.BestState.Shard[shardID] = &BestStateShard{
 		ShardCommittee:        []string{},
 		ShardPendingValidator: []string{},
-		BestBlock:             &ShardBlock{},
+		BestShardBlock:        &ShardBlock{},
 	}
 
 	_, newShardCandidate := GetStakingCandidate(*self.config.ChainParams.GenesisBeaconBlock)

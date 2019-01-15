@@ -18,9 +18,9 @@ type BestStateShard struct {
 	BestShardBlockHash common.Hash // The hash of the block.
 	BestBeaconHash     common.Hash
 	// BestBlockShard can be fetch from db
-	// BestBlockShard     *ShardBlock // The block.
-	ShardHeight  uint64
-	BeaconHeight uint64
+	BestShardBlock *ShardBlock // The block.
+	ShardHeight    uint64
+	BeaconHeight   uint64
 
 	ShardCommittee        []string
 	ShardPendingValidator []string

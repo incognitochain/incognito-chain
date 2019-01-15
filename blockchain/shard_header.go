@@ -12,13 +12,13 @@ import (
 	-PendingValidator Root is root hash of pending validator in beststate
 */
 type ShardHeader struct {
-	ShardID       byte
 	Producer      string
+	ShardID       byte
 	Version       int
+	PrevBlockHash common.Hash
 	Height        uint64
 	Epoch         uint64
 	Timestamp     int64
-	PrevBlockHash common.Hash
 	SalaryFund    uint64
 	//Transaction root created from transaction in shard
 	TxRoot common.Hash
@@ -27,9 +27,9 @@ type ShardHeader struct {
 	//Output root created for other shard
 	CrossOutputCoinRoot common.Hash
 	//Actions root created from Instructions and Metadata of transaction
-	ActionsRoot          common.Hash
-	CommitteeRoot        common.Hash
-	PendingValidatorRoot common.Hash
+	ActionsRoot          common.Hash `description: verify when update`
+	CommitteeRoot        common.Hash `description: verify post processing`
+	PendingValidatorRoot common.Hash `description: verify post processing`
 	// CrossShards for beacon
 	CrossShards []byte
 	//Beacon check point
