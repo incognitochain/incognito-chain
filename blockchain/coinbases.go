@@ -9,7 +9,7 @@ import (
 func (blockgen *BlkTmplGenerator) buildCoinbases(
 	chainID byte,
 	privatekey *privacy.SpendingKey,
-	txGroups map[string][]metadata.Transaction,
+	txGroups *txGroups,
 	salaryTx metadata.Transaction,
 ) ([]metadata.Transaction, error) {
 
@@ -53,22 +53,22 @@ func (blockgen *BlkTmplGenerator) buildCoinbases(
 		coinbases = append(coinbases, blockgen.UpdateNewGovernor(GOVConstitutionHelper{}, chainID, privatekey)...)
 	}
 
-	for _, tx := range txGroups["unlockTxs"] {
+	for _, tx := range txGroups.unlockTxs {
 		coinbases = append(coinbases, tx)
 	}
-	for _, resTx := range txGroups["buySellResTxs"] {
+	for _, resTx := range txGroups.buySellResTxs {
 		coinbases = append(coinbases, resTx)
 	}
-	for _, resTx := range txGroups["buyBackResTxs"] {
+	for _, resTx := range txGroups.buyBackResTxs {
 		coinbases = append(coinbases, resTx)
 	}
-	for _, resTx := range txGroups["issuingResTxs"] {
+	for _, resTx := range txGroups.issuingResTxs {
 		coinbases = append(coinbases, resTx)
 	}
-	for _, refundTx := range txGroups["refundTxs"] {
+	for _, refundTx := range txGroups.refundTxs {
 		coinbases = append(coinbases, refundTx)
 	}
-	for _, oracleRewardTx := range txGroups["oracleRewardTxs"] {
+	for _, oracleRewardTx := range txGroups.oracleRewardTxs {
 		coinbases = append(coinbases, oracleRewardTx)
 	}
 	return coinbases, nil

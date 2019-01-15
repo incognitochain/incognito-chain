@@ -70,9 +70,9 @@ func (cres *CMBInitResponse) ValidateTxWithBlockChain(txr Transaction, bcr Block
 	if err != nil {
 		return false, err
 	}
-	reqBlockHeight, _, err := bcr.GetBlockHeightByBlockHash(blockHash)
-	curBlockHeight := bcr.GetHeight()
-	if curBlockHeight-reqBlockHeight >= CMBInitRefundPeriod {
+	reqBlockHeight, _, _ := bcr.GetBlockHeightByBlockHash(blockHash)
+	curBlockHeight, err := bcr.GetTxChainHeight(txr)
+	if err != nil || curBlockHeight-reqBlockHeight >= CMBInitRefundPeriod {
 		return false, errors.Errorf("response time is over for this cmb init request")
 	}
 	return true, nil

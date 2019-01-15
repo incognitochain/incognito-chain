@@ -387,38 +387,6 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 }
 
 /*
-Uses an existing database to update the set of used tx by saving list nullifier of privacy,
-this is a list tx-out which are used by a new tx
-*/
-/*func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, chainId byte) error {
-	for _, nullifier := range nullifiers {
-		err := self.config.DataBase.StoreSerialNumbers(nullifier, chainId)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}*/
-
-/*
-Uses an existing database to update the set of used tx by saving list nullifier of privacy,
-this is a list tx-out which are used by a new tx
-*/
-/*func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
-	for _, desc := range tx.Proof.InputCoins {
-		chainId, err := common.GetTxSenderChain(tx.PubKeyLastByteSender)
-		if err != nil {
-			return err
-		}
-		err = self.config.DataBase.StoreSerialNumbers(desc.CoinDetails.SerialNumber.Compress(), chainId)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}*/
-
-/*
 Get all blocks in chain
 Return block array
 */
@@ -548,7 +516,7 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 	// Pay interest
 	interestPerTerm := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
 	chainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
-	height := uint32(self.GetChainHeight(chainID))
+	height := self.GetChainHeight(chainID)
 	totalInterest := metadata.GetTotalInterest(
 		principle,
 		interest,
@@ -558,11 +526,11 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 		height,
 	)
 	fmt.Printf("[db]perTerm, totalInt: %d, %d\n", interestPerTerm, totalInterest)
-	termInc := uint32(0)
+	termInc := uint64(0)
 	if value <= totalInterest { // Pay all to cover interest
 		if interestPerTerm > 0 {
 			if value >= interest {
-				termInc = 1 + uint32((value-interest)/interestPerTerm)
+				termInc = 1 + uint64((value-interest)/interestPerTerm)
 				interest = interestPerTerm - (value-interest)%interestPerTerm
 			} else {
 				interest -= value
@@ -576,7 +544,7 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 		}
 		if totalInterest >= interest { // This payment pays for interest
 			if interestPerTerm > 0 {
-				termInc = 1 + uint32((totalInterest-interest)/interestPerTerm)
+				termInc = 1 + uint64((totalInterest-interest)/interestPerTerm)
 				interest = interestPerTerm
 			}
 		}
@@ -615,8 +583,8 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 				requestMeta, _ := self.GetLoanRequestMeta(meta.LoanID)
 				principle := requestMeta.LoanAmount
 				interest := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
-				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint32(block.Header.Height))
-				fmt.Printf("principle: %d\ninterest: %d\nblock: %d\n", principle, interest, int32(block.Header.Height))
+				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint64(block.Header.Height))
+				fmt.Printf("principle: %d\ninterest: %d\nblock: %d\n", principle, interest, uint64(block.Header.Height))
 			}
 		case metadata.LoanPaymentMeta:
 			{
@@ -627,42 +595,6 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 	return nil
 }
 
-// parseCustomTokenUTXO helper method for parsing UTXO data for updating dividend payout
-/*func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash, pubkey []byte) ([]transaction.TxTokenVout, error) {
-	utxoData, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, pubkey)
-	if err != nil {
-		return nil, err
-	}
-	var finalErr error
-	vouts := []transaction.TxTokenVout{}
-	for key, value := range utxoData {
-		keys := strings.Split(key, string(lvdb.Splitter))
-		values := strings.Split(value, string(lvdb.Splitter))
-		// get unspent and unreward transaction output
-		if strings.Compare(values[1], string(lvdb.Unspent)) == 0 {
-			vout := transaction.TxTokenVout{}
-			vout.PaymentAddress = privacy.PaymentAddress{Pk: pubkey}
-			txHash, err := common.Hash{}.NewHash([]byte(keys[3]))
-			if err != nil {
-				finalErr = err
-				continue
-			}
-			vout.SetTxCustomTokenID(*txHash)
-			voutIndexByte := []byte(keys[4])[0]
-			voutIndex := int(voutIndexByte)
-			vout.SetIndex(voutIndex)
-			value, err := strconv.Atoi(values[0])
-			if err != nil {
-				finalErr = err
-				continue
-			}
-			vout.Value = uint64(value)
-			vouts = append(vouts, vout)
-		}
-	}
-	return vouts, finalErr
-}*/
-
 func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 	for _, tx := range block.Transactions {
 		switch tx.GetMetadataType() {
@@ -670,6 +602,9 @@ func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 			{
 				tx := tx.(*transaction.Tx)
 				meta := tx.Metadata.(*metadata.Dividend)
+				if tx.Proof == nil {
+					return errors.New("Miss output in tx")
+				}
 				for _, _ = range tx.Proof.OutputCoins {
 					keySet := cashec.KeySet{
 						PaymentAddress: meta.PaymentAddress,
@@ -811,11 +746,11 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 				// Store saledata in db
 				saleData := proposal.DCBParams.ListSaleData
 				for _, data := range saleData {
-					if _, _, _, _, _, err := self.config.DataBase.LoadCrowdsaleData(data.SaleID); err == nil {
+					if _, _, _, _, _, err := self.config.DataBase.GetCrowdsaleData(data.SaleID); err == nil {
 						// TODO(@0xbunyip): support update crowdsale data
 						continue
 					}
-					if err := self.config.DataBase.SaveCrowdsaleData(
+					if err := self.config.DataBase.StoreCrowdsaleData(
 						data.SaleID,
 						data.EndBlock,
 						data.BuyingAsset,
@@ -903,7 +838,7 @@ func (self *BlockChain) ProcessCMBTxs(block *Block) error {
 	}
 
 	// Penalize late response for cmb withdraw request
-	return self.findLateWithdrawResponse()
+	return self.findLateWithdrawResponse(uint64(block.Header.Height))
 }
 
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
@@ -1295,18 +1230,8 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 		Logger.log.Errorf("ERROR", err, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
 		return byte(255), nil, -1, nil, NewBlockChainError(UnExpectedError, err)
 	}
-	Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
+	//Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
 	return block.Header.ChainID, blockHash, index, block.Transactions[index], nil
-}
-
-func (self *BlockChain) GetTransactionSenderByHash(txHash *common.Hash) ([]byte, error) {
-	_, _, _, tx, err := self.GetTransactionByHash(txHash)
-	if err != nil {
-		return nil, err
-	}
-	key := tx.GetJSPubKey()
-
-	return key, nil
 }
 
 // ListCustomToken - return all custom token which existed in network

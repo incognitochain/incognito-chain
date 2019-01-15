@@ -65,7 +65,10 @@ func (dc *CMBDepositContract) Hash() *common.Hash {
 }
 
 func (dc *CMBDepositContract) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
-	if uint64(bcr.GetHeight())+1 >= dc.ValidUntil {
+	lastByte := dc.Receiver.Pk[len(dc.Receiver.Pk)-1]
+	chainID, err := common.GetTxSenderChain(lastByte)
+	receiverChainHeight := bcr.GetChainHeight(chainID)
+	if err != nil || receiverChainHeight+1 >= dc.ValidUntil {
 		return false, errors.Errorf("ValidUntil must be larger than block height")
 	}
 
@@ -73,7 +76,7 @@ func (dc *CMBDepositContract) ValidateTxWithBlockChain(txr Transaction, bcr Bloc
 	if !bytes.Equal(txr.GetJSPubKey(), dc.CMBAddress.Pk[:]) {
 		return false, errors.Errorf("CMBAddress must be the one creating this tx")
 	}
-	_, _, _, _, _, _, err := bcr.GetCMB(dc.CMBAddress.Bytes())
+	_, _, _, _, _, _, err = bcr.GetCMB(dc.CMBAddress.Bytes())
 	if err != nil {
 		return false, err
 	}
@@ -83,6 +86,9 @@ func (dc *CMBDepositContract) ValidateTxWithBlockChain(txr Transaction, bcr Bloc
 func (dc *CMBDepositContract) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if dc.ValidUntil >= dc.MaturityAt {
 		return false, false, errors.Errorf("Deposit maturity must be greater than ValidUntil")
+	}
+	if len(dc.Receiver.Pk) <= 0 {
+		return false, false, errors.Errorf("Receiver must be set")
 	}
 	return true, true, nil // continue to check for fee
 }

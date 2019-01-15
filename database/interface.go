@@ -91,12 +91,13 @@ type DatabaseInterface interface {
 	StoreLoanRequest([]byte, []byte) error                 // param: loanID, tx hash
 	StoreLoanResponse([]byte, []byte) error                // param: loanID, tx hash
 	GetLoanTxs([]byte) ([][]byte, error)                   // param: loanID
-	StoreLoanPayment([]byte, uint64, uint64, uint32) error // param: loanID, principle, interest, deadline
-	GetLoanPayment([]byte) (uint64, uint64, uint32, error) // param: loanID; return: principle, interest, deadline
+	StoreLoanPayment([]byte, uint64, uint64, uint64) error // param: loanID, principle, interest, deadline
+	GetLoanPayment([]byte) (uint64, uint64, uint64, error) // param: loanID; return: principle, interest, deadline
+	GetLoanRequestTx(loanID []byte) ([]byte, error)
 
 	// Crowdsale
-	SaveCrowdsaleData([]byte, uint64, []byte, uint64, []byte, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
-	LoadCrowdsaleData([]byte) (uint64, []byte, uint64, []byte, uint64, error)
+	StoreCrowdsaleData([]byte, uint64, []byte, uint64, []byte, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
+	GetCrowdsaleData([]byte) (uint64, []byte, uint64, []byte, uint64, error)
 	StoreCrowdsaleRequest([]byte, []byte, []byte, []byte, []byte) error
 	StoreCrowdsaleResponse([]byte, []byte) error
 	GetCrowdsaleTxs([]byte) ([][]byte, error)

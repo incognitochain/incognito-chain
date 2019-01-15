@@ -13,7 +13,7 @@ type ListLoanResponseRejected struct {
 type LoanPaymentInfo struct {
 	Principle uint64 `json:"Principle"`
 	Interest  uint64 `json:"Interest"`
-	Deadline  uint32 `json:"Deadline"`
+	Deadline  uint64 `json:"Deadline"`
 }
 
 type ListLoanPaymentInfo struct {

@@ -70,6 +70,7 @@ type SealedLv1VoteProposalMetadata struct {
 }
 
 func (sealedLv1VoteProposalMetadata *SealedLv1VoteProposalMetadata) GetBoardType() string {
+	// TODO: @0xjackalope
 	panic("override me")
 }
 func (sealedLv1VoteProposalMetadata *SealedLv1VoteProposalMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {

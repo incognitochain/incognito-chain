@@ -18,6 +18,36 @@ type buyBackFromInfo struct {
 	requestedTxID  *common.Hash
 }
 
+type txGroups struct {
+	txsToAdd                 []metadata.Transaction
+	txToRemove               []metadata.Transaction
+	buySellReqTxs            []metadata.Transaction
+	issuingReqTxs            []metadata.Transaction
+	updatingOracleBoardTxs   []metadata.Transaction
+	multiSigsRegistrationTxs []metadata.Transaction
+	unlockTxs                []metadata.Transaction
+	buySellResTxs            []metadata.Transaction
+	buyBackResTxs            []metadata.Transaction
+	issuingResTxs            []metadata.Transaction
+	refundTxs                []metadata.Transaction
+	oracleRewardTxs          []metadata.Transaction
+}
+
+type accumulativeValues struct {
+	bondsSold          uint64
+	dcbTokensSold      uint64
+	incomeFromBonds    uint64
+	totalFee           uint64
+	buyBackCoins       uint64
+	govPayoutAmount    uint64
+	bankPayoutAmount   uint64
+	totalSalary        uint64
+	currentSalaryFund  uint64
+	totalRefundAmt     uint64
+	totalOracleRewards uint64
+	loanPaymentAmount  uint64
+}
+
 func (blockgen *BlkTmplGenerator) checkIssuingReqTx(
 	chainID byte,
 	tx metadata.Transaction,
@@ -199,10 +229,9 @@ func (blockgen *BlkTmplGenerator) checkAndGroupTxs(
 	sourceTxns []*metadata.TxDesc,
 	chainID byte,
 	privatekey *privacy.SpendingKey,
-) (map[string][]metadata.Transaction, map[string]uint64, []*buyBackFromInfo, error) {
+) (*txGroups, *accumulativeValues, []*buyBackFromInfo, error) {
 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 	blockHeight := prevBlock.Header.Height + 1
-	rt := []byte{}
 
 	var txsToAdd []metadata.Transaction
 	var txToRemove []metadata.Transaction
@@ -308,10 +337,7 @@ func (blockgen *BlkTmplGenerator) checkAndGroupTxs(
 	}
 
 	// Process crowdsale for DCB
-	dcbSaleTxs, removableTxs, err := blockgen.processCrowdsale(sourceTxns, rt, chainID, privatekey)
-	if err != nil {
-		return nil, nil, nil, err
-	}
+	dcbSaleTxs, removableTxs := blockgen.processCrowdsale(sourceTxns, chainID, privatekey)
 	for _, tx := range dcbSaleTxs {
 		txsToAdd = append(txsToAdd, tx)
 	}
@@ -328,22 +354,22 @@ func (blockgen *BlkTmplGenerator) checkAndGroupTxs(
 		txsToAdd = append(txsToAdd, tx)
 	}
 
-	txGroups := map[string][]metadata.Transaction{
-		"txsToAdd":                 txsToAdd,
-		"txToRemove":               txToRemove,
-		"buySellReqTxs":            buySellReqTxs,
-		"issuingReqTxs":            issuingReqTxs,
-		"updatingOracleBoardTxs":   updatingOracleBoardTxs,
-		"multiSigsRegistrationTxs": multiSigsRegistrationTxs,
+	txGroups := &txGroups{
+		txsToAdd:                 txsToAdd,
+		txToRemove:               txToRemove,
+		buySellReqTxs:            buySellReqTxs,
+		issuingReqTxs:            issuingReqTxs,
+		updatingOracleBoardTxs:   updatingOracleBoardTxs,
+		multiSigsRegistrationTxs: multiSigsRegistrationTxs,
 	}
-	accumulativeValues := map[string]uint64{
-		"bondsSold":        bondsSold,
-		"dcbTokensSold":    dcbTokensSold,
-		"incomeFromBonds":  incomeFromBonds,
-		"totalFee":         totalFee,
-		"buyBackCoins":     buyBackCoins,
-		"govPayoutAmount":  govPayoutAmount,
-		"bankPayoutAmount": bankPayoutAmount,
+	accumulativeValues := &accumulativeValues{
+		bondsSold:        bondsSold,
+		dcbTokensSold:    dcbTokensSold,
+		incomeFromBonds:  incomeFromBonds,
+		totalFee:         totalFee,
+		buyBackCoins:     buyBackCoins,
+		govPayoutAmount:  govPayoutAmount,
+		bankPayoutAmount: bankPayoutAmount,
 	}
 	return txGroups, accumulativeValues, buyBackFromInfos, nil
 }
