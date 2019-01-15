@@ -6,11 +6,13 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 type OracleFeed struct {
-	AssetType common.Hash
-	Price     uint64 // in USD
+	FeederAddress privacy.PaymentAddress
+	AssetType     common.Hash
+	Price         uint64 // in USD
 	MetadataBase
 }
 
@@ -18,14 +20,16 @@ func NewOracleFeed(
 	assetType common.Hash,
 	price uint64,
 	metaType int,
+	feederAddress privacy.PaymentAddress,
 ) *OracleFeed {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 	return &OracleFeed{
-		AssetType:    assetType,
-		Price:        price,
-		MetadataBase: metadataBase,
+		AssetType:     assetType,
+		Price:         price,
+		MetadataBase:  metadataBase,
+		FeederAddress: feederAddress,
 	}
 }
 
@@ -50,6 +54,12 @@ func (of *OracleFeed) ValidateSanityData(
 	bcr BlockchainRetriever,
 	txr Transaction,
 ) (bool, bool, error) {
+	if len(of.FeederAddress.Pk) == 0 {
+		return false, false, errors.New("Wrong request info's payment address")
+	}
+	if len(of.FeederAddress.Tk) == 0 {
+		return false, false, errors.New("Wrong request info's payment address")
+	}
 	if of.Price == 0 {
 		return false, false, errors.New("Wrong oracle feed's price")
 	}
@@ -77,6 +87,7 @@ func (of *OracleFeed) ValidateMetadataByItself() bool {
 
 func (of *OracleFeed) Hash() *common.Hash {
 	record := of.AssetType.String()
+	record += string(of.FeederAddress.Bytes())
 	record += string(of.Price)
 	record += string(of.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))

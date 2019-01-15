@@ -94,18 +94,16 @@ func computeRewards(
 	return selectedPrice, rewardedEvals
 }
 
-func getSenderAddress(tx *transaction.Tx) *privacy.PaymentAddress {
-	if tx.Proof == nil || len(tx.Proof.InputCoins) == 0 {
-		return nil
+func getSenderAddress(tx *transaction.Tx) (*privacy.PaymentAddress, error) {
+	meta := tx.GetMetadata()
+	if meta == nil || meta.GetType() != metadata.OracleFeedMeta {
+		return nil, errors.New("Metadata from tx is not OracleFeedMeta type.")
 	}
-	coin := tx.Proof.InputCoins[0].CoinDetails
-	if coin == nil {
-		return nil
+	oracleFeed, ok := meta.(*metadata.OracleFeed)
+	if !ok {
+		return nil, errors.New("Could not parse OracleFeedMeta metadata.")
 	}
-	pk := coin.PublicKey.Compress()
-	return &privacy.PaymentAddress{
-		Pk: pk,
-	}
+	return &oracleFeed.FeederAddress, nil
 }
 
 func refundOracleFeeders(txs []metadata.Transaction) []*Evaluation {
@@ -115,8 +113,8 @@ func refundOracleFeeders(txs []metadata.Transaction) []*Evaluation {
 		if !ok {
 			continue
 		}
-		senderAddr := getSenderAddress(normalTx)
-		if senderAddr == nil {
+		senderAddr, err := getSenderAddress(normalTx)
+		if err != nil {
 			continue
 		}
 		eval := &Evaluation{
@@ -193,10 +191,6 @@ func (blockGen *BlkTmplGenerator) buildRewardAndRefundEvals(
 			if !ok {
 				continue
 			}
-			senderAddr := getSenderAddress(normalTx)
-			if senderAddr == nil {
-				continue
-			}
 			meta := tx.GetMetadata()
 			oracleFeed, ok := meta.(*metadata.OracleFeed)
 			if !ok {
@@ -205,7 +199,7 @@ func (blockGen *BlkTmplGenerator) buildRewardAndRefundEvals(
 			eval := &Evaluation{
 				Tx:               normalTx,
 				OracleFeed:       oracleFeed,
-				OracleFeederAddr: senderAddr,
+				OracleFeederAddr: &oracleFeed.FeederAddress,
 			}
 			evals = append(evals, eval)
 		}
