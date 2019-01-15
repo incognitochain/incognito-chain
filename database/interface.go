@@ -26,8 +26,8 @@ type DatabaseInterface interface {
 	DeleteBlock(*common.Hash, int32, byte) error
 
 	// Block index
-	StoreBlockIndex(*common.Hash, int32, byte) error
-	GetIndexOfBlock(*common.Hash) (int32, byte, error)
+	StoreBlockIndex(*common.Hash, uint64, byte) error
+	GetIndexOfBlock(*common.Hash) (uint64, byte, error)
 	GetBlockByIndex(int32, byte) (*common.Hash, error)
 
 	// Transaction index
@@ -94,8 +94,8 @@ type DatabaseInterface interface {
 	GetLoanPayment([]byte) (uint64, uint64, uint32, error) // param: loanID; return: principle, interest, deadline
 
 	// Crowdsale
-	SaveCrowdsaleData([]byte, int32, []byte, uint64, []byte, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
-	LoadCrowdsaleData([]byte) (int32, []byte, uint64, []byte, uint64, error)
+	SaveCrowdsaleData([]byte, uint64, []byte, uint64, []byte, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
+	LoadCrowdsaleData([]byte) (uint64, []byte, uint64, []byte, uint64, error)
 	StoreCrowdsaleRequest([]byte, []byte, []byte, []byte, []byte) error
 	StoreCrowdsaleResponse([]byte, []byte) error
 	GetCrowdsaleTxs([]byte) ([][]byte, error)
@@ -112,8 +112,8 @@ type DatabaseInterface interface {
 	StoreWithdrawRequest(contractID []byte, txHash []byte) error
 	GetWithdrawRequest(contractID []byte) ([]byte, uint8, error)
 	UpdateWithdrawRequestState(contractID []byte, state uint8) error
-	StoreNoticePeriod(blockHeight int32, txReqHash []byte) error
-	GetNoticePeriod(blockHeight int32) ([][]byte, error)
+	StoreNoticePeriod(blockHeight uint64, txReqHash []byte) error
+	GetNoticePeriod(blockHeight uint64) ([][]byte, error)
 
 	//Vote
 	AddVoteBoard(string, uint32, []byte, []byte, []byte, uint64) error

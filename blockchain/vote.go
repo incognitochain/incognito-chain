@@ -15,13 +15,13 @@ import (
 )
 
 type ConstitutionHelper interface {
-	GetStartedNormalVote(generator *BlkTmplGenerator, chainID byte) uint32
+	GetStartedNormalVote(generator *BlkTmplGenerator, chainID byte) uint64
 	CheckSubmitProposalType(tx metadata.Transaction) bool
 	CheckVotingProposalType(tx metadata.Transaction) bool
 	GetAmountVoteTokenOfTx(tx metadata.Transaction) uint64
 	TxAcceptProposal(txId *common.Hash, voter metadata.Voter) metadata.Transaction
 	GetBoardType() string
-	GetConstitutionEndedBlockHeight(generator *BlkTmplGenerator, chainID byte) uint32
+	GetConstitutionEndedBlockHeight(generator *BlkTmplGenerator, chainID byte) uint64
 	CreatePunishDecryptTx([]byte) metadata.Metadata
 	GetSealerPubKey(metadata.Transaction) [][]byte
 	NewTxRewardProposalSubmitter(blockgen *BlkTmplGenerator, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error)

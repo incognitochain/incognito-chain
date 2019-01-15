@@ -45,7 +45,7 @@ func (cref *CMBInitRefund) ValidateTxWithBlockChain(txr Transaction, bcr Blockch
 	}
 	reqBlockHeight, _, err := bcr.GetBlockHeightByBlockHash(blockHash)
 	curBlockHeight := bcr.GetHeight()
-	if curBlockHeight-reqBlockHeight < CMBInitRefundPeriod {
+	if curBlockHeight-reqBlockHeight < uint64(CMBInitRefundPeriod) {
 		return false, errors.Errorf("still waiting for repsponses, cannot refund cmb init request now")
 	}
 	return state == CMBRequested, nil

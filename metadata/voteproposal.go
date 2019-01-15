@@ -95,9 +95,9 @@ func (sealedLv1VoteProposalMetadata *SealedLv1VoteProposalMetadata) ValidataBefo
 	boardType := sealedLv1VoteProposalMetadata.GetBoardType()
 	endedPivot := bcr.GetConstitutionEndHeight(boardType, chainID)
 	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
-	lv3Pivot := endedPivot - common.EncryptionOnePhraseDuration
-	lv2Pivot := lv3Pivot - common.EncryptionOnePhraseDuration
-	lv1Pivot := lv2Pivot - common.EncryptionOnePhraseDuration
+	lv3Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
+	lv2Pivot := lv3Pivot - uint64(common.EncryptionOnePhraseDuration)
+	lv1Pivot := lv2Pivot - uint64(common.EncryptionOnePhraseDuration)
 	if !(currentBlockHeight < lv1Pivot && currentBlockHeight >= lv2Pivot) {
 		return false
 	}
@@ -284,8 +284,8 @@ func (sealedLv2VoteProposalMetadata *SealedLv2VoteProposalMetadata) ValidataBefo
 	boardType := sealedLv2VoteProposalMetadata.GetBoardType()
 	endedPivot := bcr.GetConstitutionEndHeight(boardType, chainID)
 	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
-	lv3Pivot := endedPivot - common.EncryptionOnePhraseDuration
-	lv2Pivot := lv3Pivot - common.EncryptionOnePhraseDuration
+	lv3Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
+	lv2Pivot := lv3Pivot - uint64(common.EncryptionOnePhraseDuration)
 	if !(currentBlockHeight < lv2Pivot && currentBlockHeight >= lv3Pivot) {
 		return false
 	}
@@ -449,7 +449,7 @@ func (sealedLv3VoteProposalMetadata *SealedLv3VoteProposalMetadata) ValidataBefo
 	startedPivot := bcr.GetConstitutionStartHeight(boardType, chainID)
 	endedPivot := bcr.GetConstitutionEndHeight(boardType, chainID)
 	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
-	lv3Pivot := endedPivot - common.EncryptionOnePhraseDuration
+	lv3Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
 	if !(currentBlockHeight < lv3Pivot && currentBlockHeight >= startedPivot) {
 		return false
 	}
@@ -712,9 +712,9 @@ func (normalVoteProposalFromSealerMetadata *NormalVoteProposalFromSealerMetadata
 	boardType := normalVoteProposalFromSealerMetadata.GetBoardType()
 	endedPivot := bcr.GetConstitutionEndHeight(boardType, chainID)
 	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
-	lv3Pivot := endedPivot - common.EncryptionOnePhraseDuration
-	lv2Pivot := lv3Pivot - common.EncryptionOnePhraseDuration
-	lv1Pivot := lv2Pivot - common.EncryptionOnePhraseDuration
+	lv3Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
+	lv2Pivot := lv3Pivot - uint64(common.EncryptionOnePhraseDuration)
+	lv1Pivot := lv2Pivot - uint64(common.EncryptionOnePhraseDuration)
 	if !(currentBlockHeight < endedPivot && currentBlockHeight >= lv1Pivot) {
 		return false
 	}
@@ -917,9 +917,9 @@ func (normalVoteProposalFromOwnerMetadata *NormalVoteProposalFromOwnerMetadata) 
 func (normalVoteProposalFromOwnerMetadata *NormalVoteProposalFromOwnerMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
 	endedPivot := bcr.GetConstitutionEndHeight("dcb", chainID)
 	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
-	lv3Pivot := endedPivot - common.EncryptionOnePhraseDuration
-	lv2Pivot := lv3Pivot - common.EncryptionOnePhraseDuration
-	lv1Pivot := lv2Pivot - common.EncryptionOnePhraseDuration
+	lv3Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
+	lv2Pivot := lv3Pivot - uint64(common.EncryptionOnePhraseDuration)
+	lv1Pivot := lv2Pivot - uint64(common.EncryptionOnePhraseDuration)
 	if !(currentBlockHeight < endedPivot && currentBlockHeight >= lv1Pivot) {
 		return false
 	}

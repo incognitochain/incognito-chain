@@ -84,7 +84,7 @@ func (blockgen *BlkTmplGenerator) checkBuyBackReqTx(
 		return nil, common.FalseValue
 	}
 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
-	if buySellResMeta.StartSellingAt+buySellResMeta.Maturity > uint32(prevBlock.Header.Height)+1 {
+	if buySellResMeta.StartSellingAt+buySellResMeta.Maturity > uint64(prevBlock.Header.Height)+1 {
 		Logger.log.Error("The token is not overdued yet.")
 		return nil, common.FalseValue
 	}
@@ -115,7 +115,7 @@ func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
 ) (uint64, uint64, bool) {
 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 	sellingBondsParams := prevBlock.Header.GOVConstitution.GOVParams.SellingBonds
-	if uint32(prevBlock.Header.Height)+1 > sellingBondsParams.StartSellingAt+sellingBondsParams.SellingWithin {
+	if uint64(prevBlock.Header.Height)+1 > sellingBondsParams.StartSellingAt+sellingBondsParams.SellingWithin {
 		return 0, 0, common.FalseValue
 	}
 
