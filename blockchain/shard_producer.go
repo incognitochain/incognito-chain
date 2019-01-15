@@ -52,10 +52,13 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 	coinbases := []metadata.Transaction{salaryTx}
 	txsToAdd = append(coinbases, txsToAdd...)
 
+	crossOutputCoin, crossOutputCoinHash := self.getCrossOutputCoin(shardID)
+	instructions, instructionRoot := self.createShardAction()
 	// Build block
 	block := &ShardBlock{
 		Body: ShardBody{
-			CrossOutputCoin: self.getCrossOutputCoin(shardID),
+			CrossOutputCoin: crossOutputCoin,
+			Instructions:    instructions,
 			Transactions:    make([]metadata.Transaction, 0),
 		},
 	}
@@ -66,25 +69,26 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 		}
 	}
 
-	// merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
-	// merkleRoot := merkleRoots[len(merkleRoots)-1]
-	// prevBlock := self.chain.BestState.Shard[shardID].BestBlock
-	// prevBlockHash := self.chain.BestState.Shard[shardID].BestBlock.Hash()
+	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
+	merkleRoot := merkleRoots[len(merkleRoots)-1]
+	prevBlockHash := self.chain.BestState.Shard[shardID].PrevShardBlockHash
 
-	// block.Header = ShardHeader{
-	// 	Producer: userKeySet.GetPublicKeyB58(),
-	// 	//@Hung: increase epoch if new block %epoch = 0
-	// 	Epoch:             self.chain.BestState.Beacon.BeaconEpoch,
-	// 	Height:            prevBlock.Header.Height + 1,
-	// 	Version:           BlockVersion,
-	// 	PrevBlockHash:     *prevBlockHash,
-	// 	MerkleRoot:        *merkleRoot,
-	// 	MerkleRootShard:   CreateMerkleRootShard(block.Body.Transactions),
-	// 	Timestamp:         time.Now().Unix(),
-	// 	ShardID:           shardID,
-	// 	CrossShardByteMap: self.createCrossShardBytemap(txsToAdd),
-	// 	Actions:           self.createShardAction(),
-	// }
+	block.Header = ShardHeader{
+		Producer: userKeySet.GetPublicKeyB58(),
+		//@Hung: increase epoch if new block %epoch = 0
+		Epoch:         self.chain.BestState.Beacon.BeaconEpoch,
+		Height:        self.chain.BestState.Shard[shardID].ShardHeight,
+		Version:       BlockVersion,
+		PrevBlockHash: prevBlockHash,
+		TxRoot:        *merkleRoot,
+		ShardTxRoot:   CreateMerkleRootShard(block.Body.Transactions),
+		Timestamp:     time.Now().Unix(),
+		ShardID:       shardID,
+		//TODO: get hash root
+		CrossShards:         self.createCrossShardByteArray(txsToAdd),
+		CrossOutputCoinRoot: crossOutputCoinHash, //
+		ActionsRoot:         instructionRoot,     //           self.createShardAction(),
+	}
 
 	// Create producer signature
 	blkHeaderHash := block.Header.Hash()
@@ -97,7 +101,7 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 	return block, nil
 }
 
-func (self *BlkTmplGenerator) getCrossOutputCoin(shardID byte) []CrossOutputCoin {
+func (self *BlkTmplGenerator) getCrossOutputCoin(shardID byte) ([]CrossOutputCoin, common.Hash) {
 	res := []CrossOutputCoin{}
 	// get cross shard block
 	bestShardHeight := self.chain.BestState.Beacon.BestShardHeight
@@ -115,23 +119,31 @@ func (self *BlkTmplGenerator) getCrossOutputCoin(shardID byte) []CrossOutputCoin
 		res = append(res, outputCoin)
 	}
 
-	return res
+	//TODO: calculate cross output coin hash
+	return res, [32]byte{}
 }
 
-func (self *BlkTmplGenerator) createCrossShardBytemap(txList []metadata.Transaction) (byteMap []byte) {
-	byteMap = make([]byte, TestNetParams.ShardsNum)
+func (self *BlkTmplGenerator) createCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) {
+	byteMap := make([]byte, TestNetParams.ShardsNum)
 	for _, tx := range txList {
 		for _, outCoin := range tx.GetProof().OutputCoins {
 			lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
 			byteMap[lastByte] = 1
 		}
 	}
-	return byteMap
+
+	for _, v := range byteMap {
+		if byteMap[v] == 1 {
+			crossIDs = append(crossIDs, v)
+		}
+	}
+
+	return crossIDs
 }
 
-func (self *BlkTmplGenerator) createShardAction() (actions [][]string) {
-
-	return actions
+func (self *BlkTmplGenerator) createShardAction() (actions [][]string, instrRoot common.Hash) {
+	//TODO: create shard action and action hash
+	return actions, instrRoot
 }
 
 // get valid tx for specific shard and their fee, also return unvalid tx
@@ -487,9 +499,6 @@ concludeBlock:
 	// 	return nil, fmt.Errorf("Bank fund is not enough for dividend payout")
 	// }
 
-	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
-	merkleRoot := merkleRoots[len(merkleRoots)-1]
-
 	block := &ShardBlock{
 		Body: ShardBody{
 			Transactions: make([]metadata.Transaction, 0),
@@ -538,10 +547,10 @@ concludeBlock:
 		Height:        prevBlock.Header.Height + 1,
 		Version:       BlockVersion,
 		PrevBlockHash: *prevBlockHash,
-		TxRoot:        *merkleRoot,
-		ShardTxRoot:   CreateMerkleRootShard(block.Body.Transactions),
-		Timestamp:     time.Now().Unix(),
-		ShardID:       shardID,
+		//TxRoot:        *merkleRoot,
+		ShardTxRoot: CreateMerkleRootShard(block.Body.Transactions),
+		Timestamp:   time.Now().Unix(),
+		ShardID:     shardID,
 		//SalaryFund: remainingFund,
 		// BankFund:           prevBlock.Header.BankFund + loanPaymentAmount - bankPayoutAmount,
 		// GOVConstitution:    prevBlock.Header.GOVConstitution, // TODO: need get from gov-params tx
