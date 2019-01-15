@@ -387,38 +387,6 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 }
 
 /*
-Uses an existing database to update the set of used tx by saving list nullifier of privacy,
-this is a list tx-out which are used by a new tx
-*/
-/*func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, chainId byte) error {
-	for _, nullifier := range nullifiers {
-		err := self.config.DataBase.StoreSerialNumbers(nullifier, chainId)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}*/
-
-/*
-Uses an existing database to update the set of used tx by saving list nullifier of privacy,
-this is a list tx-out which are used by a new tx
-*/
-/*func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
-	for _, desc := range tx.Proof.InputCoins {
-		chainId, err := common.GetTxSenderChain(tx.PubKeyLastByteSender)
-		if err != nil {
-			return err
-		}
-		err = self.config.DataBase.StoreSerialNumbers(desc.CoinDetails.SerialNumber.Compress(), chainId)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}*/
-
-/*
 Get all blocks in chain
 Return block array
 */
@@ -626,42 +594,6 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 	}
 	return nil
 }
-
-// parseCustomTokenUTXO helper method for parsing UTXO data for updating dividend payout
-/*func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash, pubkey []byte) ([]transaction.TxTokenVout, error) {
-	utxoData, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, pubkey)
-	if err != nil {
-		return nil, err
-	}
-	var finalErr error
-	vouts := []transaction.TxTokenVout{}
-	for key, value := range utxoData {
-		keys := strings.Split(key, string(lvdb.Splitter))
-		values := strings.Split(value, string(lvdb.Splitter))
-		// get unspent and unreward transaction output
-		if strings.Compare(values[1], string(lvdb.Unspent)) == 0 {
-			vout := transaction.TxTokenVout{}
-			vout.PaymentAddress = privacy.PaymentAddress{Pk: pubkey}
-			txHash, err := common.Hash{}.NewHash([]byte(keys[3]))
-			if err != nil {
-				finalErr = err
-				continue
-			}
-			vout.SetTxCustomTokenID(*txHash)
-			voutIndexByte := []byte(keys[4])[0]
-			voutIndex := int(voutIndexByte)
-			vout.SetIndex(voutIndex)
-			value, err := strconv.Atoi(values[0])
-			if err != nil {
-				finalErr = err
-				continue
-			}
-			vout.Value = uint64(value)
-			vouts = append(vouts, vout)
-		}
-	}
-	return vouts, finalErr
-}*/
 
 func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 	for _, tx := range block.Transactions {
