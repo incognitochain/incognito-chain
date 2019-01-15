@@ -9,14 +9,14 @@ import (
 
 type SubmitDCBProposalMetadata struct {
 	DCBParams       params.DCBParams
-	ExecuteDuration uint32
+	ExecuteDuration uint64
 	Explanation     string
 	PaymentAddress  privacy.PaymentAddress
 
 	MetadataBase
 }
 
-func NewSubmitDCBProposalMetadata(DCBParams params.DCBParams, executeDuration uint32, explanation string, address *privacy.PaymentAddress) *SubmitDCBProposalMetadata {
+func NewSubmitDCBProposalMetadata(DCBParams params.DCBParams, executeDuration uint64, explanation string, address *privacy.PaymentAddress) *SubmitDCBProposalMetadata {
 	return &SubmitDCBProposalMetadata{
 		DCBParams:       DCBParams,
 		ExecuteDuration: executeDuration,
@@ -49,7 +49,7 @@ func NewSubmitDCBProposalMetadataFromJson(data interface{}) *SubmitDCBProposalMe
 	SubmitDCBProposalData := data.(map[string]interface{})
 	meta := NewSubmitDCBProposalMetadata(
 		*params.NewDCBParamsFromJson(SubmitDCBProposalData["DCBParams"]),
-		uint32(SubmitDCBProposalData["ExecuteDuration"].(float64)),
+		uint64(SubmitDCBProposalData["ExecuteDuration"].(float64)),
 		SubmitDCBProposalData["Explanation"].(string),
 		NewPaymentAddressFromJson(SubmitDCBProposalData["PaymentAddress"]),
 	)
@@ -90,7 +90,7 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateMetadataByIt
 
 type SubmitGOVProposalMetadata struct {
 	GOVParams       params.GOVParams
-	ExecuteDuration uint32
+	ExecuteDuration uint64
 	Explanation     string
 	PaymentAddress  privacy.PaymentAddress
 
@@ -99,7 +99,7 @@ type SubmitGOVProposalMetadata struct {
 
 func NewSubmitGOVProposalMetadata(
 	govParams params.GOVParams,
-	executeDuration uint32,
+	executeDuration uint64,
 	explanation string,
 	address *privacy.PaymentAddress,
 ) *SubmitGOVProposalMetadata {
@@ -123,7 +123,7 @@ func NewSubmitGOVProposalMetadataFromJson(data interface{}) *SubmitGOVProposalMe
 
 	return NewSubmitGOVProposalMetadata(
 		*params.NewGOVParamsFromJson(submitGOVProposalData["GOVParams"]),
-		uint32(submitGOVProposalData["ExecuteDuration"].(float64)),
+		uint64(submitGOVProposalData["ExecuteDuration"].(float64)),
 		submitGOVProposalData["Explanation"].(string),
 		&paymentAddress,
 	)

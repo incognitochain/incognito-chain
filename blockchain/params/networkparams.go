@@ -13,10 +13,10 @@ type SellingBonds struct {
 	TotalIssue     uint64
 	BondsToSell    uint64
 	BondPrice      uint64 // in Constant unit
-	Maturity       uint32
+	Maturity       uint64
 	BuyBackPrice   uint64 // in Constant unit
-	StartSellingAt uint32 // start selling bonds at block height
-	SellingWithin  uint32 // selling bonds within n blocks
+	StartSellingAt uint64 // start selling bonds at block height
+	SellingWithin  uint64 // selling bonds within n blocks
 }
 
 func (self SellingBonds) GetID() *common.Hash {
@@ -36,10 +36,10 @@ func NewSellingBonds(
 	totalIssue uint64,
 	bondsToSell uint64,
 	bondPrice uint64,
-	maturity uint32,
+	maturity uint64,
 	buyBackPrice uint64,
-	startSellingAt uint32,
-	sellingWithin uint32,
+	startSellingAt uint64,
+	sellingWithin uint64,
 ) *SellingBonds {
 	return &SellingBonds{
 		BondName:       bondName,
@@ -62,17 +62,17 @@ func NewSellingBondsFromJson(data interface{}) *SellingBonds {
 		uint64(sellingBondsData["TotalIssue"].(float64)),
 		uint64(sellingBondsData["BondsToSell"].(float64)),
 		uint64(sellingBondsData["BondPrice"].(float64)),
-		uint32(sellingBondsData["Maturity"].(float64)),
+		uint64(sellingBondsData["Maturity"].(float64)),
 		uint64(sellingBondsData["BuyBackPrice"].(float64)),
-		uint32(sellingBondsData["StartSellingAt"].(float64)),
-		uint32(sellingBondsData["SellingWithin"].(float64)),
+		uint64(sellingBondsData["StartSellingAt"].(float64)),
+		uint64(sellingBondsData["SellingWithin"].(float64)),
 	)
 	return sellingBonds
 }
 
 type SaleData struct {
 	SaleID   []byte // Unique id of the crowdsale to store in db
-	EndBlock int32
+	EndBlock uint64
 
 	BuyingAsset  []byte
 	BuyingAmount uint64 // TODO(@0xbunyip): change to big.Int
@@ -81,7 +81,7 @@ type SaleData struct {
 	SellingAmount uint64
 }
 
-func NewSaleData(saleID []byte, endBlock int32, buyingAsset []byte, buyingAmount uint64, sellingAsset []byte, sellingAmount uint64) *SaleData {
+func NewSaleData(saleID []byte, endBlock uint64, buyingAsset []byte, buyingAmount uint64, sellingAsset []byte, sellingAmount uint64) *SaleData {
 	return &SaleData{
 		SaleID:        saleID,
 		EndBlock:      endBlock,
@@ -96,7 +96,7 @@ func NewSaleDataFromJson(data interface{}) *SaleData {
 	saleDataData := data.(map[string]interface{})
 	saleData := NewSaleData(
 		[]byte(saleDataData["SaleID"].(string)),
-		int32(saleDataData["EndBlock"].(float64)),
+		uint64(saleDataData["EndBlock"].(float64)),
 		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["BuyingAsset"])),
 		uint64(saleDataData["BuyingAmount"].(float64)),
 		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["SellingAsset"])),
@@ -131,10 +131,10 @@ func NewRefundInfoFromJson(data interface{}) *RefundInfo {
 
 type SaleDCBTokensByUSDData struct {
 	Amount   uint64
-	EndBlock int32
+	EndBlock uint64
 }
 
-func NewSaleDCBTokensByUSDData(amount uint64, endBlock int32) *SaleDCBTokensByUSDData {
+func NewSaleDCBTokensByUSDData(amount uint64, endBlock uint64) *SaleDCBTokensByUSDData {
 	return &SaleDCBTokensByUSDData{Amount: amount, EndBlock: endBlock}
 }
 
@@ -142,7 +142,7 @@ func NewSaleDCBTokensByUSDDataFromJson(data interface{}) *SaleDCBTokensByUSDData
 	saleDCBTokensByUSDDataData := data.(map[string]interface{})
 	saleDCBTokensByUSDData := NewSaleDCBTokensByUSDData(
 		uint64(saleDCBTokensByUSDDataData["Amount"].(float64)),
-		int32(saleDCBTokensByUSDDataData["EndBlock"].(float64)),
+		uint64(saleDCBTokensByUSDDataData["EndBlock"].(float64)),
 	)
 	return saleDCBTokensByUSDData
 }

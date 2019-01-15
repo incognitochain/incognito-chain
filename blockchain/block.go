@@ -156,7 +156,7 @@ func (block *Block) updateDCBConstitution(tx metadata.Transaction, blockgen *Blk
 	}
 	constitutionInfo := NewConstitutionInfo(
 		newConstitutionIndex,
-		uint32(block.Header.Height),
+		uint64(block.Header.Height),
 		DCBProposal.ExecuteDuration,
 		DCBProposal.Explanation,
 		*metadataAcceptDCBProposal.Hash(),
@@ -176,7 +176,7 @@ func (block *Block) updateGOVConstitution(tx metadata.Transaction, blockgen *Blk
 	}
 	constitutionInfo := NewConstitutionInfo(
 		newConstitutionIndex,
-		uint32(block.Header.Height),
+		uint64(block.Header.Height),
 		GOVProposal.ExecuteDuration,
 		GOVProposal.Explanation,
 		*metadataAcceptGOVProposal.Hash(),

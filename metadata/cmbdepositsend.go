@@ -46,7 +46,7 @@ func (ds *CMBDepositSend) ValidateTxWithBlockChain(txr Transaction, bcr Blockcha
 		return false, errors.Errorf("Error retrieving contract for sending deposit")
 	}
 	contractMeta := txContract.GetMetadata().(*CMBDepositContract)
-	if contractMeta.ValidUntil >= bcr.GetHeight() {
+	if contractMeta.ValidUntil >= uint64(bcr.GetHeight()) {
 		return false, errors.Errorf("Deposit contract is not valid anymore")
 	}
 
