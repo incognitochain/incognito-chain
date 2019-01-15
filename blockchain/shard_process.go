@@ -201,11 +201,11 @@ func (self *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlock, sh
 }
 
 func (self *BestStateShard) Update(block *ShardBlock) error {
-	self.BestBlock = block
-	self.BestBlockHash = *block.Hash()
-	self.Height = block.Header.Height
-	self.TotalTxns += uint64(len(block.Body.Transactions))
-	self.NumTxns = uint64(len(block.Body.Transactions))
+	// self.BestBlock = block
+	// self.BestBlockHash = *block.Hash()
+	// self.Height = block.Header.Height
+	// self.TotalTxns += uint64(len(block.Body.Transactions))
+	// self.NumTxns = uint64(len(block.Body.Transactions))
 	return nil
 }
 
