@@ -72,7 +72,7 @@ func (pubKey *SchnPubKey) Set(pk *EllipticPoint) {
 //Sign is function which using for sign on hash array by private key
 func (priKey SchnPrivKey) Sign(data []byte) (*SchnSignature, error) {
 	//if len(hash) != common.HashSize {
-	//	return nil, NewPrivacyErr(UnexpectedErr, errors.New("Hash2 length must be 32 bytes"))
+	//	return nil, NewPrivacyErr(UnexpectedErr, errors.New("Hash length must be 32 bytes"))
 	//}
 
 	genPoint := new(EllipticPoint)
@@ -150,7 +150,7 @@ func (sig *SchnSignature) SetBytes(bytes []byte) {
 	sig.Z2 = new(big.Int).SetBytes(bytes[2*BigIntSize:])
 }
 
-// Hash2 calculates a hash concatenating a given message bytes with a given EC Point. H(p||m)
+// Hash calculates a hash concatenating a given message bytes with a given EC Point. H(p||m)
 func Hash(p EllipticPoint, m []byte) *big.Int {
 	var b []byte
 

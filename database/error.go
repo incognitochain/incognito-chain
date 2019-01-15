@@ -37,7 +37,7 @@ var ErrCodeMessage = map[int]struct {
 	NotExistValue: {-2001, "H is not existed"},
 
 	// -3xxx blockchain
-	NotImplHashMethod: {-3000, "Data does not implement Hash2() method"},
+	NotImplHashMethod: {-3000, "Data does not implement Hash() method"},
 	BlockExisted:      {-3001, "Block already existed"},
 	UnexpectedError:   {-3002, "Unexpected error"},
 	KeyExisted:        {-3003, "PubKey already existed in database"},

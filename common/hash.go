@@ -27,7 +27,7 @@ func (hash *Hash) UnmarshalJSON(data []byte) error {
 }
 
 /*
-String returns the Hash2 as the hexadecimal string of the byte-reversed
+String returns the Hash as the hexadecimal string of the byte-reversed
  hash.
 */
 func (hash Hash) String() string {
@@ -87,7 +87,7 @@ func (hash *Hash) IsEqual(target *Hash) bool {
 }
 
 /*
-NewHash returns a new Hash2 from a byte slice.  An error is returned if the number of bytes passed in is not HashSize.
+NewHash returns a new Hash from a byte slice.  An error is returned if the number of bytes passed in is not HashSize.
 */
 func (hash Hash) NewHash(newHash []byte) (*Hash, error) {
 	err := hash.SetBytes(newHash)
@@ -98,9 +98,9 @@ func (hash Hash) NewHash(newHash []byte) (*Hash, error) {
 }
 
 /*
-// NewHashFromStr creates a Hash2 from a hash string.  The string should be
+// NewHashFromStr creates a Hash from a hash string.  The string should be
 // the hexadecimal string of a byte-reversed hash, but any missing characters
-// result in zero padding at the end of the Hash2.
+// result in zero padding at the end of the Hash.
 */
 func (self Hash) NewHashFromStr(hash string) (*Hash, error) {
 	err := self.Decode(&self, hash)
@@ -111,7 +111,7 @@ func (self Hash) NewHashFromStr(hash string) (*Hash, error) {
 }
 
 /*
-// Decode decodes the byte-reversed hexadecimal string encoding of a Hash2 to a
+// Decode decodes the byte-reversed hexadecimal string encoding of a Hash to a
 // destination.
 */
 func (self *Hash) Decode(dst *Hash, src string) error {

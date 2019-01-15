@@ -4,7 +4,7 @@ import "github.com/ninjadotorg/constant/blockchain"
 
 type GetBlockResult struct {
 	Data              string             `json:"Data"`
-	Hash              string             `json:"Hash2"`
+	Hash              string             `json:"Hash"`
 	Confirmations     int64              `json:"confirmations"`
 	Height            int32              `json:"Height"`
 	Version           int                `json:"Version"`
@@ -20,7 +20,7 @@ type GetBlockResult struct {
 }
 
 type GetBlockTxResult struct {
-	Hash     string `json:"Hash2"`
+	Hash     string `json:"Hash"`
 	Locktime int64  `json:"Locktime"`
 	HexData  string `json:"HexData"`
 }

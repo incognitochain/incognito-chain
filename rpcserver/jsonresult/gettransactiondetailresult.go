@@ -8,7 +8,7 @@ type TransactionDetail struct {
 	BlockHash string `json:"BlockHash"`
 	Index     uint64 `json:"index"`
 	ChainId   byte   `json:"ChainId"`
-	Hash      string `json:"Hash2"`
+	Hash      string `json:"Hash"`
 	Version   int8   `json:"Version"`
 	Type      string `json:"Type"` // Transaction type
 	LockTime  int64  `json:"LockTime"`

@@ -21,7 +21,7 @@ type TxTokenVin struct {
 	PaymentAddress  privacy.PaymentAddress // use to verify signature of pre-utxo of token
 }
 
-// Hash2 - return hash data of TxTokenVin
+// Hash - return hash data of TxTokenVin
 func (self TxTokenVin) Hash() *common.Hash {
 	record := common.EmptyString
 	record += self.TxCustomTokenID.String()
@@ -46,7 +46,7 @@ type TxTokenVout struct {
 	// BuySellResponse *BuySellResponse
 }
 
-// Hash2 - return hash data of TxTokenVout
+// Hash - return hash data of TxTokenVout
 func (self TxTokenVout) Hash() *common.Hash {
 	record := common.EmptyString
 	record += fmt.Sprintf("%d", self.Value)
@@ -90,7 +90,7 @@ type TxTokenData struct {
 	Vouts    []TxTokenVout
 }
 
-// Hash2 - return hash of token data, be used as Token ID
+// Hash - return hash of token data, be used as Token ID
 func (self TxTokenData) Hash() (*common.Hash, error) {
 	if self.Vouts == nil {
 		return nil, errors.New("Vout is empty")
