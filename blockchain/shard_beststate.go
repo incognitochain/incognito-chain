@@ -39,15 +39,6 @@ type BestStateShard struct {
 // 	self.TotalTxns = self.NumTxns
 // }
 
-func (self *BestStateShard) Update(block *ShardBlock) error {
-	self.BestBlock = block
-	self.BestBlockHash = *block.Hash()
-	self.Height = block.Header.Height
-	self.TotalTxns += uint64(len(block.Body.Transactions))
-	self.NumTxns = uint64(len(block.Body.Transactions))
-	return nil
-}
-
 // Get role of a public key base on best state shard
 func (self *BestStateShard) GetPubkeyRole(pubkey string) string {
 
