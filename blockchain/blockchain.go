@@ -903,7 +903,7 @@ func (self *BlockChain) ProcessCMBTxs(block *Block) error {
 	}
 
 	// Penalize late response for cmb withdraw request
-	return self.findLateWithdrawResponse()
+	return self.findLateWithdrawResponse(uint64(block.Header.Height))
 }
 
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db

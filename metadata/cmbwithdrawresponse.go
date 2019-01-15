@@ -48,7 +48,10 @@ func (cwres *CMBWithdrawResponse) ValidateTxWithBlockChain(txr Transaction, bcr 
 	metaReq := txRequest.GetMetadata().(*CMBWithdrawRequest)
 	_, _, _, txContract, err := bcr.GetTransactionByHash(&metaReq.ContractID)
 	metaContract := txContract.GetMetadata().(*CMBDepositContract)
-	blockHeight := uint64(bcr.GetHeight())
+	blockHeight, err := bcr.GetTxChainHeight(txr)
+	if err != nil {
+		return false, errors.Errorf("Error retrieving block height of tx chain")
+	}
 
 	// Check if amount is enough
 	_, receiver, amount := txr.GetUniqueReceiver()

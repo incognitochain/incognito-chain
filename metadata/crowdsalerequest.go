@@ -3,13 +3,13 @@ package metadata
 import (
 	"bytes"
 	"encoding/hex"
-	"errors"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	privacy "github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/pkg/errors"
 )
 
 type CrowdsaleRequest struct {
@@ -54,14 +54,16 @@ func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	if err != nil {
 		return false, err
 	}
-	if saleData.EndBlock >= bcr.GetHeight() {
-		return false, err
+	// TODO(@0xbunyip): get height of beacon chain on new consensus
+	height, err := bcr.GetTxChainHeight(txr)
+	if err != nil || saleData.EndBlock >= height {
+		return false, errors.Errorf("Crowdsale ended")
 	}
 
 	// Check if Payment address is DCB's
 	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	if !bytes.Equal(csReq.PaymentAddress.Pk[:], accountDCB.KeySet.PaymentAddress.Pk[:]) || !bytes.Equal(csReq.PaymentAddress.Tk[:], accountDCB.KeySet.PaymentAddress.Tk[:]) {
-		return false, err
+		return false, errors.Errorf("Crowdsale request must send CST to DCBAddress")
 	}
 	return true, nil
 }

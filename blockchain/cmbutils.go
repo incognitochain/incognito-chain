@@ -31,11 +31,15 @@ func buildRefundTx(
 	return txs[0], nil // only one tx in slice
 }
 
-func (blockgen *BlkTmplGenerator) buildCMBRefund(sourceTxns []*metadata.TxDesc, chainID byte, producerPrivateKey *privacy.SpendingKey) ([]*transaction.Tx, error) {
+func (blockgen *BlkTmplGenerator) buildCMBRefund(
+	sourceTxns []*metadata.TxDesc,
+	chainID byte,
+	producerPrivateKey *privacy.SpendingKey,
+) ([]*transaction.Tx, error) {
 	// Get old block
 	refunds := []*transaction.Tx{}
 	header := blockgen.chain.BestState[chainID].BestBlock.Header
-	lookbackBlockHeight := header.Height - metadata.CMBInitRefundPeriod
+	lookbackBlockHeight := header.Height - int32(metadata.CMBInitRefundPeriod)
 	if lookbackBlockHeight < 0 {
 		return refunds, nil
 	}
@@ -135,7 +139,8 @@ func (bc *BlockChain) processCMBWithdrawRequest(tx metadata.Transaction) error {
 	// Add notice period for later lateness check
 	_, _, _, txContract, err := bc.GetTransactionByHash(&meta.ContractID)
 	contractMeta := txContract.GetMetadata().(*metadata.CMBDepositContract)
-	endBlock := uint64(bc.GetHeight()) + contractMeta.NoticePeriod
+	height, _ := bc.GetTxChainHeight(tx)
+	endBlock := height + contractMeta.NoticePeriod
 	return bc.config.DataBase.StoreNoticePeriod(endBlock, hash[:])
 }
 
@@ -151,8 +156,7 @@ func (bc *BlockChain) processCMBWithdrawResponse(tx metadata.Transaction) error 
 	return bc.config.DataBase.UpdateWithdrawRequestState(metaReq.ContractID[:], state)
 }
 
-func (bc *BlockChain) findLateWithdrawResponse() error {
-	blockHeight := uint64(bc.GetHeight())
+func (bc *BlockChain) findLateWithdrawResponse(blockHeight uint64) error {
 	txHashes, err := bc.config.DataBase.GetNoticePeriod(blockHeight)
 	if err != nil {
 		return err

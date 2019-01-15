@@ -4,6 +4,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/metadata"
 	privacy "github.com/ninjadotorg/constant/privacy"
 )
 
@@ -11,8 +12,12 @@ func (self *BlockChain) GetDatabase() database.DatabaseInterface {
 	return self.config.DataBase
 }
 
-func (self *BlockChain) GetHeight() uint64 {
-	return uint64(self.BestState[0].BestBlock.Header.Height)
+func (self *BlockChain) GetTxChainHeight(tx metadata.Transaction) (uint64, error) {
+	chainID, err := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+	if err != nil {
+		return 0, err
+	}
+	return self.GetChainHeight(chainID), nil
 }
 
 func (self *BlockChain) GetChainHeight(chainID byte) uint64 {
