@@ -436,22 +436,22 @@ func (self RpcServer) buildRawNormalVoteProposalTransactionFromSealer(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	index := len(arrayParams) - 5
+	index := len(arrayParams) - 4
 
 	boardType := arrayParams[iPlusPlus(&index)].(string)
 
 	lv3TxID := common.NewHash([]byte(arrayParams[iPlusPlus(&index)].(string)))
 
 	lv1TxID := common.NewHash([]byte(arrayParams[iPlusPlus(&index)].(string)))
-
-	Seal1Data := []byte(arrayParams[iPlusPlus(&index)].(string))
+	_, _, _, lv1tx, _ := self.config.BlockChain.GetTransactionByHash(&lv1TxID)
+	SealLv1Data := GetSealLv2Data(lv1tx)
 
 	_, _, _, lv3tx, _ := self.config.BlockChain.GetTransactionByHash(&lv3TxID)
 	pubKeys := GetLockerPubKeys(lv3tx)
 
 	thirdPrivateKey := []byte(arrayParams[iPlusPlus(&index)].(string))
 
-	normalVoteProposalData := common.Decrypt(Seal1Data, thirdPrivateKey)
+	normalVoteProposalData := common.Decrypt(SealLv1Data, thirdPrivateKey)
 	voteProposalData := metadata.NewVoteProposalDataFromBytes(normalVoteProposalData)
 
 	meta := NewNormalVoteProposalFromSealerMetadata(
