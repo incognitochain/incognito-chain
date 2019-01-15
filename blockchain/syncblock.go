@@ -20,6 +20,7 @@ type PeerShardChainState struct {
 }
 type ShardChainState struct {
 	Height    uint64
+	ShardID   byte
 	BlockHash common.Hash
 }
 
@@ -45,7 +46,7 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 	newShardBlkCh = make(chan *ShardBlock)
 
 	self.ShardStateCh[shardID] = shardStateCh
-	self.newShardBlkCh[shardID] = newShardBlkCh
+	self.newShardBlkCh[shardID] = &newShardBlkCh
 	go func(shardID byte) {
 		//used for fancy block retriever but too lazy to implement that now :p
 		var peerChainState map[libp2p.ID]PeerShardChainState
@@ -64,12 +65,19 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 				delete(self.syncStatus.Shard, shardID)
 				return
 			case shardState := <-shardStateCh:
+
+				fmt.Println()
+				fmt.Println("SHARDSTATE RECEIVED")
+				fmt.Println()
 				if self.BestState.Shard[shardID].Height < shardState.State.Height {
 					if self.knownChainState.Shards[shardID].Height < shardState.State.Height {
 						self.knownChainState.Shards[shardID] = *shardState.State
 						if getStateWaitTime > 5 {
 							getStateWaitTime -= 5
 						}
+						fmt.Println()
+						fmt.Println("Push msg GET BLOCK SHARD")
+						fmt.Println()
 						self.config.Server.PushMessageGetBlockShard(shardID, self.BestState.Shard[shardID].Height+1, shardState.State.Height, shardState.Peer)
 					} else {
 						if getStateWaitTime < 10 {

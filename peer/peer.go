@@ -108,6 +108,7 @@ type MessageListeners struct {
 	OnCrossShard     func(p *PeerConn, msg *wire.MessageCrossShard)
 	OnShardToBeacon  func(p *PeerConn, msg *wire.MessageShardToBeacon)
 	OnGetBlockBeacon func(p *PeerConn, msg *wire.MessageGetBlockBeacon)
+	OnGetBlockShard  func(p *PeerConn, msg *wire.MessageGetBlockShard)
 	OnVersion        func(p *PeerConn, msg *wire.MessageVersion)
 	OnVerAck         func(p *PeerConn, msg *wire.MessageVerAck)
 	OnGetAddr        func(p *PeerConn, msg *wire.MessageGetAddr)

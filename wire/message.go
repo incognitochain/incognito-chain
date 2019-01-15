@@ -133,9 +133,9 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 			Timestamp: time.Now().Unix(),
 		}
 		break
-		// case CmdGetBlockShard:
-		// 	msg = &MessageGetBlocks{}
-		// 	break
+	case CmdGetBlockShard:
+		msg = &MessageGetBlockShard{}
+		break
 	case CmdTx:
 		msg = &MessageTx{
 			Transaction: &transaction.Tx{},
@@ -229,8 +229,8 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdBlkShardToBeacon, nil
 	case reflect.TypeOf(&MessageGetBlockBeacon{}):
 		return CmdGetBlockBeacon, nil
-		// case reflect.TypeOf(&MessageGetBlockShard{}):
-		// 	return CmdGetBlockShard, nil
+	case reflect.TypeOf(&MessageGetBlockShard{}):
+		return CmdGetBlockShard, nil
 	case reflect.TypeOf(&MessageTx{}):
 		return CmdTx, nil
 		/*case reflect.TypeOf(&MessageRegistration{}):
