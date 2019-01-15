@@ -543,19 +543,21 @@ func (tx *Tx) IsSalaryTx() bool {
 func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 	pubkeys := [][]byte{}
 	amounts := []uint64{}
-	for _, coin := range tx.Proof.OutputCoins {
-		added := false
-		coinPubKey := coin.CoinDetails.PublicKey.Compress()
-		for i, key := range pubkeys {
-			if bytes.Equal(coinPubKey, key) {
-				added = true
-				amounts[i] += coin.CoinDetails.Value
-				break
+	if tx.Proof != nil && len(tx.Proof.OutputCoins) > 0 {
+		for _, coin := range tx.Proof.OutputCoins {
+			added := false
+			coinPubKey := coin.CoinDetails.PublicKey.Compress()
+			for i, key := range pubkeys {
+				if bytes.Equal(coinPubKey, key) {
+					added = true
+					amounts[i] += coin.CoinDetails.Value
+					break
+				}
 			}
-		}
-		if !added {
-			pubkeys = append(pubkeys, coinPubKey)
-			amounts = append(amounts, coin.CoinDetails.Value)
+			if !added {
+				pubkeys = append(pubkeys, coinPubKey)
+				amounts = append(amounts, coin.CoinDetails.Value)
+			}
 		}
 	}
 	return pubkeys, amounts

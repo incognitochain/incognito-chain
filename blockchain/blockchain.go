@@ -602,6 +602,9 @@ func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 			{
 				tx := tx.(*transaction.Tx)
 				meta := tx.Metadata.(*metadata.Dividend)
+				if tx.Proof == nil {
+					return errors.New("Miss output in tx")
+				}
 				for _, _ = range tx.Proof.OutputCoins {
 					keySet := cashec.KeySet{
 						PaymentAddress: meta.PaymentAddress,
