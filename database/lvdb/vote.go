@@ -404,12 +404,6 @@ func ParseKeyThreePhraseVoteValue(key []byte) (boardType string, constitutionInd
 	return
 }
 
-func ParseValueThreePhraseVoteValue(value []byte) (*common.Hash, int32, error) {
-	txId := common.NewHash(value[:common.HashSize])
-	amount := common.BytesToInt32(value[common.HashSize:])
-	return &txId, amount, nil
-}
-
 func GetKeyEncryptFlag(boardType string) []byte {
 	key := GetKeyFromVariadic(encryptFlagPrefix, []byte(boardType))
 	return key

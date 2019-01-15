@@ -8,9 +8,9 @@ type GetBondTypeResultItem struct {
 	BondName       string `json:"BondName"`
 	BondSymbol     string `json:"BondSymbol"`
 	BondID         string `json:"BondID"`
-	StartSellingAt uint32 `json:"StartSellingAt"`
-	EndSellingAt   uint32 `json:"EndSellingAt"`
-	Maturity       uint32 `json:"Maturity"`
+	StartSellingAt uint64 `json:"StartSellingAt"`
+	EndSellingAt   uint64 `json:"EndSellingAt"`
+	Maturity       uint64 `json:"Maturity"`
 	BuyBackPrice   uint64 `json:"BuyBackPrice"`
 	BuyPrice       uint64 `json:"BuyPrice"`
 	TotalIssue     uint64 `json:"TotalIssue"`

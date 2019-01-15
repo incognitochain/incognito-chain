@@ -201,7 +201,7 @@ func (self *BlockChain) createChainState(chainId byte) error {
 /*
 Get block index(height) of block
 */
-func (self *BlockChain) GetBlockHeightByBlockHash(hash *common.Hash) (int32, byte, error) {
+func (self *BlockChain) GetBlockHeightByBlockHash(hash *common.Hash) (uint64, byte, error) {
 	return self.config.DataBase.GetIndexOfBlock(hash)
 }
 
@@ -316,7 +316,7 @@ and
 Save block hash by index(height) of block
 */
 func (self *BlockChain) StoreBlockIndex(block *Block) error {
-	return self.config.DataBase.StoreBlockIndex(block.Hash(), block.Header.Height, block.Header.ChainID)
+	return self.config.DataBase.StoreBlockIndex(block.Hash(), uint64(block.Header.Height), block.Header.ChainID)
 }
 
 func (self *BlockChain) StoreTransactionIndex(txHash *common.Hash, blockHash *common.Hash, index int) error {
@@ -548,7 +548,7 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 	// Pay interest
 	interestPerTerm := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
 	chainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
-	height := uint32(self.GetChainHeight(chainID))
+	height := self.GetChainHeight(chainID)
 	totalInterest := metadata.GetTotalInterest(
 		principle,
 		interest,
@@ -558,11 +558,11 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 		height,
 	)
 	fmt.Printf("[db]perTerm, totalInt: %d, %d\n", interestPerTerm, totalInterest)
-	termInc := uint32(0)
+	termInc := uint64(0)
 	if value <= totalInterest { // Pay all to cover interest
 		if interestPerTerm > 0 {
 			if value >= interest {
-				termInc = 1 + uint32((value-interest)/interestPerTerm)
+				termInc = 1 + uint64((value-interest)/interestPerTerm)
 				interest = interestPerTerm - (value-interest)%interestPerTerm
 			} else {
 				interest -= value
@@ -576,7 +576,7 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 		}
 		if totalInterest >= interest { // This payment pays for interest
 			if interestPerTerm > 0 {
-				termInc = 1 + uint32((totalInterest-interest)/interestPerTerm)
+				termInc = 1 + uint64((totalInterest-interest)/interestPerTerm)
 				interest = interestPerTerm
 			}
 		}
@@ -615,8 +615,8 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 				requestMeta, _ := self.GetLoanRequestMeta(meta.LoanID)
 				principle := requestMeta.LoanAmount
 				interest := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
-				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint32(block.Header.Height))
-				fmt.Printf("principle: %d\ninterest: %d\nblock: %d\n", principle, interest, int32(block.Header.Height))
+				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint64(block.Header.Height))
+				fmt.Printf("principle: %d\ninterest: %d\nblock: %d\n", principle, interest, uint64(block.Header.Height))
 			}
 		case metadata.LoanPaymentMeta:
 			{
@@ -755,7 +755,7 @@ func (self *BlockChain) ProcessVoteProposal(block *Block) error {
 		switch tx.GetMetadataType() {
 		case metadata.SealedLv3DCBVoteProposalMeta:
 			underlieMetadata := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
-			self.config.DataBase.AddVoteLv3Proposal("dcb", nextDCBConstitutionIndex, underlieMetadata.Hash())
+			self.config.DataBase.AddVoteLv3Proposal("dcb", nextDCBConstitutionIndex, underlieMetadata.Hash2())
 		case metadata.SealedLv2DCBVoteProposalMeta:
 			underlieMetadata := meta.(*metadata.SealedLv2DCBVoteProposalMetadata)
 			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
@@ -764,17 +764,17 @@ func (self *BlockChain) ProcessVoteProposal(block *Block) error {
 			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
 		case metadata.NormalDCBVoteProposalFromOwnerMeta:
 			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromOwnerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal)
+			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal.ToBytes())
 		case metadata.NormalDCBVoteProposalFromSealerMeta:
 			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromSealerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal)
+			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal.ToBytes())
 		case metadata.AcceptDCBProposalMeta:
 			underlieMetadata := meta.(*metadata.AcceptDCBProposalMetadata)
 			self.config.DataBase.TakeVoteTokenFromWinner("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PubKey, underlieMetadata.Voter.AmountOfVote)
 			self.config.DataBase.SetNewProposalWinningVoter("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PubKey)
 		case metadata.SealedLv3GOVVoteProposalMeta:
 			underlieMetadata := meta.(*metadata.SealedLv3GOVVoteProposalMetadata)
-			self.config.DataBase.AddVoteLv3Proposal("gov", nextGOVConstitutionIndex, underlieMetadata.Hash())
+			self.config.DataBase.AddVoteLv3Proposal("gov", nextGOVConstitutionIndex, underlieMetadata.Hash2())
 		case metadata.SealedLv2GOVVoteProposalMeta:
 			underlieMetadata := meta.(*metadata.SealedLv2GOVVoteProposalMetadata)
 			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
@@ -783,10 +783,10 @@ func (self *BlockChain) ProcessVoteProposal(block *Block) error {
 			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
 		case metadata.NormalGOVVoteProposalFromOwnerMeta:
 			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromOwnerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromOwner("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal)
+			self.config.DataBase.AddVoteNormalProposalFromOwner("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal.ToBytes())
 		case metadata.NormalGOVVoteProposalFromSealerMeta:
 			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromSealerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromSealer("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal)
+			self.config.DataBase.AddVoteNormalProposalFromSealer("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal.ToBytes())
 		case metadata.AcceptGOVProposalMeta:
 			underlieMetadata := meta.(*metadata.AcceptGOVProposalMetadata)
 			self.config.DataBase.TakeVoteTokenFromWinner("gov", nextGOVConstitutionIndex, underlieMetadata.Voter.PubKey, underlieMetadata.Voter.AmountOfVote)
@@ -1404,7 +1404,7 @@ func (self *BlockChain) GetBestBlock(chainID byte) *Block {
 	return self.BestState[chainID].BestBlock
 }
 
-func (self *BlockChain) GetConstitutionStartHeight(boardType string, chainID byte) uint32 {
+func (self *BlockChain) GetConstitutionStartHeight(boardType string, chainID byte) uint64 {
 	if boardType == "dcb" {
 		return self.GetDCBConstitutionStartHeight(chainID)
 	} else {
@@ -1412,14 +1412,14 @@ func (self *BlockChain) GetConstitutionStartHeight(boardType string, chainID byt
 	}
 }
 
-func (self *BlockChain) GetDCBConstitutionStartHeight(chainID byte) uint32 {
+func (self *BlockChain) GetDCBConstitutionStartHeight(chainID byte) uint64 {
 	return self.GetBestBlock(chainID).Header.DCBConstitution.StartedBlockHeight
 }
-func (self *BlockChain) GetGOVConstitutionStartHeight(chainID byte) uint32 {
+func (self *BlockChain) GetGOVConstitutionStartHeight(chainID byte) uint64 {
 	return self.GetBestBlock(chainID).Header.GOVConstitution.StartedBlockHeight
 }
 
-func (self *BlockChain) GetConstitutionEndHeight(boardType string, chainID byte) uint32 {
+func (self *BlockChain) GetConstitutionEndHeight(boardType string, chainID byte) uint64 {
 	if boardType == "dcb" {
 		return self.GetDCBConstitutionEndHeight(chainID)
 	} else {
@@ -1427,16 +1427,16 @@ func (self *BlockChain) GetConstitutionEndHeight(boardType string, chainID byte)
 	}
 }
 
-func (self *BlockChain) GetDCBConstitutionEndHeight(chainID byte) uint32 {
+func (self *BlockChain) GetDCBConstitutionEndHeight(chainID byte) uint64 {
 	return self.GetBestBlock(chainID).Header.DCBConstitution.GetEndedBlockHeight()
 }
 
-func (self *BlockChain) GetGOVConstitutionEndHeight(chainID byte) uint32 {
+func (self *BlockChain) GetGOVConstitutionEndHeight(chainID byte) uint64 {
 	return self.GetBestBlock(chainID).Header.GOVConstitution.GetEndedBlockHeight()
 }
 
-func (self *BlockChain) GetCurrentBlockHeight(chainID byte) uint32 {
-	return uint32(self.GetBestBlock(chainID).Header.Height)
+func (self *BlockChain) GetCurrentBlockHeight(chainID byte) uint64 {
+	return uint64(self.GetBestBlock(chainID).Header.Height)
 }
 
 func (self BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, chainID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
@@ -1474,9 +1474,9 @@ func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) b
 
 	constitutionInfo := helper.GetConstitutionInfo(self)
 	endedOfConstitution := constitutionInfo.StartedBlockHeight + constitutionInfo.ExecuteDuration
-	pivotOfStart := endedOfConstitution - 3*common.EncryptionOnePhraseDuration
+	pivotOfStart := endedOfConstitution - 3*uint64(common.EncryptionOnePhraseDuration)
 
-	rightTime := newNationalWelfare < thresholdNationalWelfare || pivotOfStart == uint32(thisBlockHeight)
+	rightTime := newNationalWelfare < thresholdNationalWelfare || pivotOfStart == uint64(thisBlockHeight)
 
 	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
 	rightFlag := encryptFlag == common.Lv3EncryptionFlag

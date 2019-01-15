@@ -9,7 +9,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
-	privacy "github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 )
@@ -60,9 +60,7 @@ func buildPaymentForCoin(
 	metaPayList := []metadata.Metadata{metaPay}
 
 	amounts := []uint64{amount}
-	pks := [][]byte{meta.PaymentAddress.Pk[:]}
-	tks := [][]byte{meta.PaymentAddress.Tk[:]}
-	txs, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db, metaPayList) // There's only one tx in txs
+	txs, err := transaction.BuildCoinbaseTxs([]*privacy.PaymentAddress{&meta.PaymentAddress}, amounts, producerPrivateKey, db, metaPayList) // There's only one tx in txs
 	if err != nil {
 		return nil, err
 	}

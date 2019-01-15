@@ -11,6 +11,13 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 )
 
+type buyBackFromInfo struct {
+	paymentAddress privacy.PaymentAddress
+	buyBackPrice   uint64
+	value          uint64
+	requestedTxID  *common.Hash
+}
+
 func (blockgen *BlkTmplGenerator) checkIssuingReqTx(
 	chainID byte,
 	tx metadata.Transaction,
@@ -20,10 +27,10 @@ func (blockgen *BlkTmplGenerator) checkIssuingReqTx(
 	issuingReq, ok := issuingReqMeta.(*metadata.IssuingRequest)
 	if !ok {
 		Logger.log.Error(errors.New("Could not parse IssuingRequest metadata"))
-		return false, dcbTokensSold
+		return common.FalseValue, dcbTokensSold
 	}
 	if !bytes.Equal(issuingReq.AssetType[:], common.DCBTokenID[:]) {
-		return true, dcbTokensSold
+		return common.TrueValue, dcbTokensSold
 	}
 	header := blockgen.chain.BestState[chainID].BestBlock.Header
 	saleDBCTOkensByUSDData := header.DCBConstitution.DCBParams.SaleDCBTokensByUSDData
@@ -34,9 +41,9 @@ func (blockgen *BlkTmplGenerator) checkIssuingReqTx(
 	}
 	dcbTokensReq := issuingReq.DepositedAmount / dcbTokenPrice
 	if dcbTokensSold+dcbTokensReq > saleDBCTOkensByUSDData.Amount {
-		return false, dcbTokensSold
+		return common.FalseValue, dcbTokensSold
 	}
-	return true, dcbTokensSold + dcbTokensReq
+	return common.TrueValue, dcbTokensSold + dcbTokensReq
 }
 
 func (blockgen *BlkTmplGenerator) checkBuyBackReqTx(
@@ -47,50 +54,50 @@ func (blockgen *BlkTmplGenerator) checkBuyBackReqTx(
 	buyBackReqTx, ok := tx.(*transaction.TxCustomToken)
 	if !ok {
 		Logger.log.Error(errors.New("Could not parse BuyBackRequest tx (custom token tx)."))
-		return nil, false
+		return nil, common.FalseValue
 	}
 	vins := buyBackReqTx.TxTokenData.Vins
 	if len(vins) == 0 {
 		Logger.log.Error(errors.New("No existed Vins from BuyBackRequest tx"))
-		return nil, false
+		return nil, common.FalseValue
 	}
 	priorTxID := vins[0].TxCustomTokenID
 	_, _, _, priorTx, err := blockgen.chain.GetTransactionByHash(&priorTxID)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil, false
+		return nil, common.FalseValue
 	}
 	priorCustomTokenTx, ok := priorTx.(*transaction.TxCustomToken)
 	if !ok {
 		Logger.log.Error(errors.New("Could not parse prior TxCustomToken."))
-		return nil, false
+		return nil, common.FalseValue
 	}
 
 	priorMeta := priorCustomTokenTx.GetMetadata()
 	if priorMeta == nil {
 		Logger.log.Error(errors.New("No existed metadata in priorCustomTokenTx"))
-		return nil, false
+		return nil, common.FalseValue
 	}
 	buySellResMeta, ok := priorMeta.(*metadata.BuySellResponse)
 	if !ok {
 		Logger.log.Error(errors.New("Could not parse BuySellResponse metadata."))
-		return nil, false
+		return nil, common.FalseValue
 	}
 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
-	if buySellResMeta.StartSellingAt+buySellResMeta.Maturity > uint32(prevBlock.Header.Height)+1 {
+	if buySellResMeta.StartSellingAt+buySellResMeta.Maturity > uint64(prevBlock.Header.Height)+1 {
 		Logger.log.Error("The token is not overdued yet.")
-		return nil, false
+		return nil, common.FalseValue
 	}
 	// check remaining constants in GOV fund is enough or not
 	buyBackReqMeta := buyBackReqTx.GetMetadata()
 	buyBackReq, ok := buyBackReqMeta.(*metadata.BuyBackRequest)
 	if !ok {
 		Logger.log.Error(errors.New("Could not parse BuyBackRequest metadata."))
-		return nil, false
+		return nil, common.FalseValue
 	}
 	buyBackValue := buyBackReq.Amount * buySellResMeta.BuyBackPrice
 	if buyBackConsts+buyBackValue > prevBlock.Header.SalaryFund {
-		return nil, false
+		return nil, common.FalseValue
 	}
 	buyBackFromInfo := &buyBackFromInfo{
 		paymentAddress: buyBackReq.PaymentAddress,
@@ -98,7 +105,7 @@ func (blockgen *BlkTmplGenerator) checkBuyBackReqTx(
 		value:          buyBackReq.Amount,
 		requestedTxID:  tx.Hash(),
 	}
-	return buyBackFromInfo, true
+	return buyBackFromInfo, common.TrueValue
 }
 
 func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
@@ -108,20 +115,20 @@ func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
 ) (uint64, uint64, bool) {
 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 	sellingBondsParams := prevBlock.Header.GOVConstitution.GOVParams.SellingBonds
-	if uint32(prevBlock.Header.Height)+1 > sellingBondsParams.StartSellingAt+sellingBondsParams.SellingWithin {
-		return 0, 0, false
+	if uint64(prevBlock.Header.Height)+1 > sellingBondsParams.StartSellingAt+sellingBondsParams.SellingWithin {
+		return 0, 0, common.FalseValue
 	}
 
 	buySellReqMeta := tx.GetMetadata()
 	req, ok := buySellReqMeta.(*metadata.BuySellRequest)
 	if !ok {
-		return 0, 0, false
+		return 0, 0, common.FalseValue
 	}
 
 	if bondsSold+req.Amount > sellingBondsParams.BondsToSell { // run out of bonds for selling
-		return 0, 0, false
+		return 0, 0, common.FalseValue
 	}
-	return req.Amount * req.BuyPrice, req.Amount, true
+	return req.Amount * req.BuyPrice, req.Amount, common.TrueValue
 }
 
 func (blockgen *BlkTmplGenerator) processDividend(
@@ -132,9 +139,9 @@ func (blockgen *BlkTmplGenerator) processDividend(
 	payoutAmount := uint64(0)
 	// TODO(@0xbunyip): how to execute payout dividend proposal
 	dividendTxs := []*transaction.Tx{}
-	if false && blockHeight%metadata.PayoutFrequency == 0 { // only chain 0 process dividend proposals
+	if common.FalseValue && blockHeight%metadata.PayoutFrequency == 0 { // only chain 0 process dividend proposals
 		totalTokenSupply, tokenHolders, amounts, err := blockgen.chain.GetAmountPerAccount(proposal)
-		if err != nil {
+		if err != nil || totalTokenSupply == 0 {
 			return nil, 0, err
 		}
 
@@ -158,7 +165,7 @@ func (blockgen *BlkTmplGenerator) processDividend(
 			}
 		}
 
-		dividendTxs, err = buildDividendTxs(infos, proposal, producerPrivateKey, blockgen.chain.GetDatabase())
+		dividendTxs, err = transaction.BuildDividendTxs(infos, proposal, producerPrivateKey, blockgen.chain.GetDatabase())
 		if err != nil {
 			return nil, 0, err
 		}
@@ -167,7 +174,10 @@ func (blockgen *BlkTmplGenerator) processDividend(
 }
 
 func (blockgen *BlkTmplGenerator) processBankDividend(blockHeight int32, producerPrivateKey *privacy.SpendingKey) ([]*transaction.Tx, uint64, error) {
-	tokenID, _ := (&common.Hash{}).NewHash(common.DCBTokenID[:])
+	tokenID, err := (&common.Hash{}).NewHash(common.DCBTokenID[:])
+	if err != nil {
+		return nil, 0, err
+	}
 	proposal := &metadata.DividendProposal{
 		TokenID: tokenID,
 	}
@@ -175,7 +185,10 @@ func (blockgen *BlkTmplGenerator) processBankDividend(blockHeight int32, produce
 }
 
 func (blockgen *BlkTmplGenerator) processGovDividend(blockHeight int32, producerPrivateKey *privacy.SpendingKey) ([]*transaction.Tx, uint64, error) {
-	tokenID, _ := (&common.Hash{}).NewHash(common.GOVTokenID[:])
+	tokenID, err := (&common.Hash{}).NewHash(common.GOVTokenID[:])
+	if err != nil {
+		return nil, 0, err
+	}
 	proposal := &metadata.DividendProposal{
 		TokenID: tokenID,
 	}
@@ -208,8 +221,8 @@ func (blockgen *BlkTmplGenerator) checkAndGroupTxs(
 
 	for _, txDesc := range sourceTxns {
 		tx := txDesc.Tx
-		txChainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
-		if txChainID != chainID {
+		txChainID, err := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+		if txChainID != chainID || err != nil {
 			continue
 		}
 		// ValidateTransaction vote and propose transaction

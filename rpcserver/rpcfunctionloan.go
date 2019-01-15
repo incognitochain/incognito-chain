@@ -280,7 +280,7 @@ func (self RpcServer) calcLoanPaymentInfo(strLoanID string) jsonresult.LoanPayme
 					chainID, _ := common.GetTxSenderChain(txReq.GetSenderAddrLastByte())
 					height := self.config.BlockChain.GetChainHeight(chainID)
 					loanPaymentInfo.Principle = priciple
-					if height >= int32(deadline) { // Current term interest is not fully paid
+					if height >= deadline { // Current term interest is not fully paid
 						loanPaymentInfo.Interest = interest
 					}
 					loanPaymentInfo.Deadline = deadline + reqMeta.Params.Maturity

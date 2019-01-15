@@ -11,12 +11,12 @@ func (self *BlockChain) GetDatabase() database.DatabaseInterface {
 	return self.config.DataBase
 }
 
-func (self *BlockChain) GetHeight() int32 {
-	return self.BestState[0].BestBlock.Header.Height
+func (self *BlockChain) GetHeight() uint64 {
+	return uint64(self.BestState[0].BestBlock.Header.Height)
 }
 
-func (self *BlockChain) GetChainHeight(chainID byte) int32 {
-	return self.BestState[chainID].BestBlock.Header.Height
+func (self *BlockChain) GetChainHeight(chainID byte) uint64 {
+	return uint64(self.BestState[chainID].BestBlock.Header.Height)
 }
 
 func (self *BlockChain) GetBoardPubKeys(boardType string) [][]byte {
@@ -47,7 +47,7 @@ func (self *BlockChain) GetLoanTxs(loanID []byte) ([][]byte, error) {
 	return self.config.DataBase.GetLoanTxs(loanID)
 }
 
-func (self *BlockChain) GetLoanPayment(loanID []byte) (uint64, uint64, uint32, error) {
+func (self *BlockChain) GetLoanPayment(loanID []byte) (uint64, uint64, uint64, error) {
 	return self.config.DataBase.GetLoanPayment(loanID)
 }
 

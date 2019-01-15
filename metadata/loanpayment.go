@@ -67,15 +67,19 @@ func (lp *LoanPayment) ValidateMetadataByItself() bool {
 	return true
 }
 
-func GetTotalInterest(principle, interest, interestRate uint64, maturity, deadline, currentHeight uint32) uint64 {
+func GetTotalInterest(principle, interest, interestRate, maturity, deadline, currentHeight uint64) uint64 {
 	totalInterest := uint64(0)
 	if currentHeight >= deadline {
-		totalInterest = interest + uint64((currentHeight-deadline)/maturity)*GetInterestPerTerm(principle, interestRate)
+		perTerm := GetInterestPerTerm(principle, interestRate)
+		totalInterest = interest
+		if perTerm > 0 {
+			totalInterest += (currentHeight - deadline) / maturity * perTerm
+		}
 	}
 	return totalInterest
 }
 
-func GetTotalDebt(principle, interest, interestRate uint64, maturity, deadline, currentHeight uint32) uint64 {
+func GetTotalDebt(principle, interest, interestRate, maturity, deadline, currentHeight uint64) uint64 {
 	return principle + GetTotalInterest(principle, interest, interestRate, maturity, deadline, currentHeight)
 }
 

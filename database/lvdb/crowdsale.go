@@ -4,7 +4,7 @@ package lvdb
 
 func (db *db) StoreCrowdsaleData(
 	saleID []byte,
-	endBlock int32,
+	endBlock uint64,
 	buyingAsset []byte,
 	amountBuying uint64,
 	sellingAsset []byte,
@@ -13,7 +13,7 @@ func (db *db) StoreCrowdsaleData(
 	return nil
 }
 
-func (db *db) GetCrowdsaleData(saleID []byte) (int32, []byte, uint64, []byte, uint64, error) {
+func (db *db) GetCrowdsaleData(saleID []byte) (uint64, []byte, uint64, []byte, uint64, error) {
 	return 0, nil, 0, nil, 0, nil
 }
 
