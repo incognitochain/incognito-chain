@@ -460,7 +460,13 @@ func (blockgen *BlkTmplGenerator) CreateSendRewardOldBoard(helper ConstitutionHe
 
 func (blockgen *BlkTmplGenerator) UpdateNewGovernor(helper ConstitutionHelper, chainID byte, minerPrivateKey *privacy.SpendingKey) []metadata.Transaction {
 	txs := make([]metadata.Transaction, 0)
-	newBoardList, _ := helper.GetTopMostVoteGovernor(blockgen)
+	newBoardList, err := helper.GetTopMostVoteGovernor(blockgen)
+	if err != nil || len(newBoardList) == 0 {
+		Logger.log.Error(err)
+		// return empty array
+		return txs
+	}
+
 	sort.Sort(newBoardList)
 	sumOfVote := uint64(0)
 	var newDCBBoardPubKey [][]byte
@@ -483,6 +489,7 @@ func (blockgen *BlkTmplGenerator) neededNewDCBGovernor(chainID byte) bool {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	return int32(BestBlock.Header.DCBGovernor.EndBlock) == BestBlock.Header.Height+2
 }
+
 func (blockgen *BlkTmplGenerator) neededNewGOVGovernor(chainID byte) bool {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	return int32(BestBlock.Header.GOVGovernor.EndBlock) == BestBlock.Header.Height+2
