@@ -191,10 +191,6 @@ func (blockGen *BlkTmplGenerator) buildRewardAndRefundEvals(
 			if !ok {
 				continue
 			}
-			senderAddr, err := getSenderAddress(normalTx)
-			if err != nil {
-				continue
-			}
 			meta := tx.GetMetadata()
 			oracleFeed, ok := meta.(*metadata.OracleFeed)
 			if !ok {
@@ -203,7 +199,7 @@ func (blockGen *BlkTmplGenerator) buildRewardAndRefundEvals(
 			eval := &Evaluation{
 				Tx:               normalTx,
 				OracleFeed:       oracleFeed,
-				OracleFeederAddr: senderAddr,
+				OracleFeederAddr: &oracleFeed.FeederAddress,
 			}
 			evals = append(evals, eval)
 		}
