@@ -6,7 +6,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
-	privacy "github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/pkg/errors"
@@ -23,10 +23,8 @@ func buildRefundTx(
 		MetadataBase: metadata.MetadataBase{Type: metadata.CMBInitRefundMeta},
 	}
 	metaList := []metadata.Metadata{meta}
-	pks := [][]byte{receiver.Pk[:]}
-	tks := [][]byte{receiver.Tk[:]}
 	amounts := []uint64{amount}
-	txs, err := transaction.BuildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db, metaList)
+	txs, err := transaction.BuildCoinbaseTxs([]*privacy.PaymentAddress{&receiver}, amounts, producerPrivateKey, db, metaList)
 	if err != nil {
 		return nil, err
 	}
