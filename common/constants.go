@@ -45,7 +45,7 @@ const (
 	MaximumProposalExplainationLength = 1000
 	NumberOfDCBGovernors              = 50
 	NumberOfGOVGovernors              = 50
-	EncryptionOnePhraseDuration       = uint32(5)
+	EncryptionOnePhraseDuration       = 5
 	RewardProposalSubmitter           = 500
 	BasePercentage                    = 10000
 	PercentageBoardSalary             = 5

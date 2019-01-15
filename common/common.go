@@ -382,6 +382,11 @@ func BytesToInt32(b []byte) int32 {
 	return int32(i)
 }
 
+func Int32ToBytes(value int32) []byte {
+	b := strconv.Itoa(int(value))
+	return []byte(b)
+}
+
 func BytesToUint64(b []byte) uint64 {
 	return binary.LittleEndian.Uint64(b)
 }

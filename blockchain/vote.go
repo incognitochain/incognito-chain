@@ -131,7 +131,8 @@ func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTxAndRewardSu
 		if err != nil {
 			return nil, err
 		}
-		txId, voteAmount, err := lvdb.ParseValueThreePhraseVoteValue(valueVote)
+		proposalData := metadata.NewVoteProposalDataFromBytes(valueVote)
+		txId, voteAmount := &proposalData.ProposalTxID, proposalData.AmountOfVote
 		if err != nil {
 			return nil, err
 		}
