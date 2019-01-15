@@ -3,6 +3,7 @@ package metadata
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 //abstract class
@@ -399,4 +400,12 @@ func (normalVoteProposalFromOwnerMetadata *NormalVoteProposalFromOwnerMetadata) 
 		}
 	}
 	return true
+}
+
+type PunishDecryptMetadata struct {
+	PaymentAddress privacy.PaymentAddress
+}
+
+func (punishDecryptMetadata PunishDecryptMetadata) ToBytes() []byte {
+	return punishDecryptMetadata.PaymentAddress.Bytes()
 }

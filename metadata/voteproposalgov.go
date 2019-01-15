@@ -3,6 +3,7 @@ package metadata
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 type SealedLv1GOVVoteProposalMetadata struct {
@@ -298,19 +299,21 @@ func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMeta
 }
 
 type PunishGOVDecryptMetadata struct {
-	pubKey []byte
+	PunishDecryptMetadata PunishDecryptMetadata
 	MetadataBase
 }
 
-func NewPunishGOVDecryptMetadata(pubKey []byte) *PunishGOVDecryptMetadata {
+func NewPunishGOVDecryptMetadata(paymentAddress privacy.PaymentAddress) *PunishGOVDecryptMetadata {
 	return &PunishGOVDecryptMetadata{
-		pubKey:       pubKey,
+		PunishDecryptMetadata: PunishDecryptMetadata{
+			PaymentAddress: paymentAddress,
+		},
 		MetadataBase: *NewMetadataBase(PunishGOVDecryptMeta),
 	}
 }
 
 func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) Hash() *common.Hash {
-	record := string(punishGOVDecryptMetadata.pubKey)
+	record := string(punishGOVDecryptMetadata.PunishDecryptMetadata.ToBytes())
 	record += string(punishGOVDecryptMetadata.MetadataBase.Hash().GetBytes())
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
@@ -321,9 +324,6 @@ func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) ValidateTxWithBlockCha
 }
 
 func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
-	if len(punishGOVDecryptMetadata.pubKey) != common.PubKeyLength {
-		return true, false, nil
-	}
 	return true, true, nil
 }
 
