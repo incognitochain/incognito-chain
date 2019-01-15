@@ -95,8 +95,8 @@ type DatabaseInterface interface {
 	GetLoanRequestTx(loanID []byte) ([]byte, error)
 
 	// Crowdsale
-	SaveCrowdsaleData([]byte, int32, []byte, uint64, []byte, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
-	LoadCrowdsaleData([]byte) (int32, []byte, uint64, []byte, uint64, error)
+	StoreCrowdsaleData([]byte, int32, []byte, uint64, []byte, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
+	GetCrowdsaleData([]byte) (int32, []byte, uint64, []byte, uint64, error)
 	StoreCrowdsaleRequest([]byte, []byte, []byte, []byte, []byte) error
 	StoreCrowdsaleResponse([]byte, []byte) error
 	GetCrowdsaleTxs([]byte) ([][]byte, error)

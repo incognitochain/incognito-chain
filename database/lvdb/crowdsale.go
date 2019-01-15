@@ -2,7 +2,7 @@ package lvdb
 
 // TODO(@0xbunyip): implement
 
-func (db *db) SaveCrowdsaleData(
+func (db *db) StoreCrowdsaleData(
 	saleID []byte,
 	endBlock int32,
 	buyingAsset []byte,
@@ -13,7 +13,7 @@ func (db *db) SaveCrowdsaleData(
 	return nil
 }
 
-func (db *db) LoadCrowdsaleData(saleID []byte) (int32, []byte, uint64, []byte, uint64, error) {
+func (db *db) GetCrowdsaleData(saleID []byte) (int32, []byte, uint64, []byte, uint64, error) {
 	return 0, nil, 0, nil, 0, nil
 }
 

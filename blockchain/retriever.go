@@ -56,7 +56,7 @@ func (self *BlockChain) GetCrowdsaleTxs(requestTxHash []byte) ([][]byte, error) 
 }
 
 func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*params.SaleData, error) {
-	endBlock, buyingAsset, buyingAmount, sellingAsset, sellingAmount, err := self.config.DataBase.LoadCrowdsaleData(saleID)
+	endBlock, buyingAsset, buyingAmount, sellingAsset, sellingAmount, err := self.config.DataBase.GetCrowdsaleData(saleID)
 	var saleData *params.SaleData
 	if err != nil {
 		saleData = &params.SaleData{

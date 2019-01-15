@@ -14,7 +14,7 @@ import (
 
 type CrowdsaleRequest struct {
 	PaymentAddress privacy.PaymentAddress
-	SaleID         []byte // only when requesting to DCB
+	SaleID         []byte
 	Info           []byte // offchain payment info (e.g. ETH/BTC txhash)
 
 	Amount     *big.Int // amount of offchain asset (ignored if buying asset is not offchain)
@@ -49,18 +49,6 @@ func NewCrowdsaleRequest(csReqData map[string]interface{}) *CrowdsaleRequest {
 }
 
 func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
-	// check double spending on fee + buy/sell amount tx
-	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
-	if err != nil {
-		return false, err
-	}
-
-	// Check if Payment address is DCB's
-	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	if !bytes.Equal(csReq.PaymentAddress.Pk[:], accountDCB.KeySet.PaymentAddress.Pk[:]) || !bytes.Equal(csReq.PaymentAddress.Tk[:], accountDCB.KeySet.PaymentAddress.Tk[:]) {
-		return false, err
-	}
-
 	// Check if sale exists and ongoing
 	saleData, err := bcr.GetCrowdsaleData(csReq.SaleID)
 	if err != nil {
@@ -69,14 +57,16 @@ func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	if saleData.EndBlock >= bcr.GetHeight() {
 		return false, err
 	}
-	return false, nil
+
+	// Check if Payment address is DCB's
+	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	if !bytes.Equal(csReq.PaymentAddress.Pk[:], accountDCB.KeySet.PaymentAddress.Pk[:]) || !bytes.Equal(csReq.PaymentAddress.Tk[:], accountDCB.KeySet.PaymentAddress.Tk[:]) {
+		return false, err
+	}
+	return true, nil
 }
 
 func (csReq *CrowdsaleRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	ok, err := txr.ValidateSanityData(bcr)
-	if err != nil || !ok {
-		return false, ok, err
-	}
 	if len(csReq.PaymentAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's payment address")
 	}
@@ -93,6 +83,7 @@ func (csReq *CrowdsaleRequest) Hash() *common.Hash {
 	record += string(csReq.SaleID)
 	record += string(csReq.Info)
 	record += string(csReq.Amount.String())
+	record += string(csReq.AssetPrice)
 
 	// final hash
 	record += string(csReq.MetadataBase.Hash()[:])

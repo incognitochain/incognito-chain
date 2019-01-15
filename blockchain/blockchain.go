@@ -811,11 +811,11 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 				// Store saledata in db
 				saleData := proposal.DCBParams.ListSaleData
 				for _, data := range saleData {
-					if _, _, _, _, _, err := self.config.DataBase.LoadCrowdsaleData(data.SaleID); err == nil {
+					if _, _, _, _, _, err := self.config.DataBase.GetCrowdsaleData(data.SaleID); err == nil {
 						// TODO(@0xbunyip): support update crowdsale data
 						continue
 					}
-					if err := self.config.DataBase.SaveCrowdsaleData(
+					if err := self.config.DataBase.StoreCrowdsaleData(
 						data.SaleID,
 						data.EndBlock,
 						data.BuyingAsset,
