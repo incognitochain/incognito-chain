@@ -40,7 +40,7 @@ func TestKnapSack(t *testing.T){
 	//target := uint64(100000)
 	//fmt.Printf("Target: %v\n", target)
 	//_ = Knapsack(values, target)
-	n := 2
+	n := 10000
 
 	outCoins := make([]*OutputCoin, n)
 	for i:=0; i<n ; i++{

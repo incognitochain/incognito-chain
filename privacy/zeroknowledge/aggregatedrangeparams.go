@@ -1,6 +1,7 @@
 package zkp
 
 import (
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/pkg/errors"
 	"math/big"
@@ -33,14 +34,35 @@ func setBulletproofParams() BulletproofParams {
 var AggParam = setBulletproofParams()
 
 // CommitAll commits a list of PCM_CAPACITY value(s)
-func (param BulletproofParams) EncodeVectors(a []*big.Int, b []*big.Int) (*privacy.EllipticPoint, error) {
-	if len(a) != len(b) || len(a) != len(param.G) {
+func EncodeVectors(a []*big.Int, b []*big.Int, g[]*privacy.EllipticPoint, h[]*privacy.EllipticPoint) (*privacy.EllipticPoint, error) {
+	if len(a) != len(b) || len(g) != len(h) || len(a)!= len(g){
 		return nil, errors.New("invalid input")
 	}
 
 	res := new(privacy.EllipticPoint).Zero()
-	for i := 0; i < len(param.G); i++ {
-		res = res.Add(param.G[i].ScalarMult(a[i]).Add(param.H[i].ScalarMult(b[i])))
+	for i := 0; i < len(a); i++ {
+		res = res.Add(g[i].ScalarMult(a[i]).Add(h[i].ScalarMult(b[i])))
 	}
 	return res, nil
+}
+
+func generateChallengeForAggRange(values []*privacy.EllipticPoint) *big.Int {
+	bytes := AggParam.G[0].Compress()
+	for i := 1; i < len(AggParam.G); i++ {
+		bytes = append(bytes, AggParam.G[i].Compress()...)
+	}
+
+	for i := 0; i < len(AggParam.H); i++ {
+		bytes = append(bytes, AggParam.H[i].Compress()...)
+	}
+
+	for i := 0; i < len(values); i++ {
+		bytes = append(bytes, values[i].Compress()...)
+	}
+
+	hash := common.HashB(bytes)
+
+	res := new(big.Int).SetBytes(hash)
+	res.Mod(res, privacy.Curve.Params().N)
+	return res
 }
