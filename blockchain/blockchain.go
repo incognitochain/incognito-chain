@@ -1231,16 +1231,6 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 	return block.Header.ChainID, blockHash, index, block.Transactions[index], nil
 }
 
-func (self *BlockChain) GetTransactionSenderByHash(txHash *common.Hash) ([]byte, error) {
-	_, _, _, tx, err := self.GetTransactionByHash(txHash)
-	if err != nil {
-		return nil, err
-	}
-	key := tx.GetJSPubKey()
-
-	return key, nil
-}
-
 // ListCustomToken - return all custom token which existed in network
 func (self *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomToken, error) {
 	data, err := self.config.DataBase.ListCustomToken()
