@@ -75,6 +75,7 @@ type SealedLv1VoteProposalMetadata struct {
 }
 
 func (sealedLv1VoteProposalMetadata *SealedLv1VoteProposalMetadata) GetBoardType() string {
+	// TODO: @0xjackalope
 	panic("override me")
 }
 func (sealedLv1VoteProposalMetadata *SealedLv1VoteProposalMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
@@ -187,6 +188,7 @@ type SealedLv3VoteProposalMetadata struct {
 func (sealedLv3VoteProposalMetadata *SealedLv3VoteProposalMetadata) GetBoardType() string {
 	panic("overwrite me")
 }
+
 func (sealedLv3VoteProposalMetadata *SealedLv3VoteProposalMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
 	boardType := sealedLv3VoteProposalMetadata.GetBoardType()
 	startedPivot := bcr.GetConstitutionStartHeight(boardType, chainID)
