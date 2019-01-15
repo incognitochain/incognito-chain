@@ -202,7 +202,7 @@ func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
 	return y, nil
 }
 
-// Hash derives new elliptic point from another elliptic point and index using hash function
+// Hash2 derives new elliptic point from another elliptic point and index using hash function
 func (point EllipticPoint) Hash(index int) *EllipticPoint {
 	// res.X = hash(g.X || index), res.Y = sqrt(res.X^3 - 3X + B)
 	res := new(EllipticPoint).Zero()

@@ -1,8 +1,8 @@
 package privacy
 
 import (
-	"math/big"
 	"github.com/ninjadotorg/constant/common"
+	"math/big"
 )
 
 // SchnMultiSig is struct of EC Schnorr Signature which is combinable
@@ -15,7 +15,7 @@ type SchnMultiSig struct {
 func (multiSig *SchnMultiSig) SetBytes(sigByte []byte) {
 	multiSig.R.Decompress(sigByte[0:CompressedPointSize])
 	multiSig.S = big.NewInt(0)
-	multiSig.S.SetBytes(sigByte[CompressedPointSize: CompressedPointSize+BigIntSize])
+	multiSig.S.SetBytes(sigByte[CompressedPointSize : CompressedPointSize+BigIntSize])
 }
 
 // Set - Constructing multiSig
@@ -48,7 +48,7 @@ func (privKey *SpendingKey) SignMultiSig(data []byte, listPK []*PublicKey, pubKe
 	//Calculate common params:
 	//	aggKey = PK0+PK1+PK2+...+PKn
 	//	X = (PK0*a0) + (PK1*a1) + ... + (PKn*an)
-	//	C2 = Hash(X||C1||data)
+	//	C2 = Hash2(X||C1||data)
 	aggKey, C, _ := generateCommonParams(nil, listPK, R, data)
 	//recalculate a0
 	selfPK := new(EllipticPoint)
@@ -85,7 +85,7 @@ func (multiSig *SchnMultiSig) VerifyMultiSig(data []byte, listPK []*PublicKey, p
 	//Calculate common params:
 	//	aggKey = PK0+PK1+PK2+...+PKn, PK0 is selfPK
 	//	X = (PK0*a0) + (PK1*a1) + ... + (PKn*an)
-	//	C2 = Hash(X||C1||data)
+	//	C2 = Hash2(X||C1||data)
 	//for verify signature of a Signer, which wasn't combined, |listPK| = 1 and contain publickey of the Signer
 	var C *big.Int
 	var X *EllipticPoint

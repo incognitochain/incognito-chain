@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/wallet"
 	"strconv"
 )
 
@@ -20,7 +20,7 @@ type TxTokenPrivacyData struct {
 	Amount   uint64 // init amount
 }
 
-// Hash - return hash of custom token data, be used as Token ID
+// Hash2 - return hash of custom token data, be used as Token ID
 func (self TxTokenPrivacyData) Hash() (*common.Hash, error) {
 	record := self.PropertyName
 	record += self.PropertySymbol

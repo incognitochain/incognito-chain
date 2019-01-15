@@ -261,7 +261,7 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	return common.TrueValue
 }
 
-// Hash returns the hash of all fields of the transaction
+// Hash2 returns the hash of all fields of the transaction
 func (tx TxCustomToken) Hash() *common.Hash {
 	// get hash of tx
 	record := tx.Tx.Hash().String()

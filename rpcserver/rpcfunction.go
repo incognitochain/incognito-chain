@@ -93,8 +93,14 @@ var RpcHandler = map[string]commandHandler{
 	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
 	SendRawVoteBoardGOVTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
 	GetAmountVoteToken:                   RpcServer.handleGetAmountVoteToken,
-	GetEncryptionFlag:                    RpcServer.handleGetEncryptionFlag,
-	GetEncryptionLastBlockHeightFlag:     RpcServer.handleGetEncryptionLastBlockHeightFlag,
+
+	// vote proposal
+	GetEncryptionFlag:                        RpcServer.handleGetEncryptionFlag,
+	GetEncryptionLastBlockHeightFlag:         RpcServer.handleGetEncryptionLastBlockHeightFlag,
+	CreateAndSendSealLv3VoteProposal:         RpcServer.handleCreateAndSendSealLv3VoteProposalTransaction,
+	CreateAndSendSealLv2VoteProposal:         RpcServer.handleCreateAndSendSealLv2VoteProposalTransaction,
+	CreateAndSendSealLv1VoteProposal:         RpcServer.handleCreateAndSendSealLv1VoteProposalTransaction,
+	CreateAndSendNormalVoteProposalFromOwner: RpcServer.handleCreateAndSendNormalVoteProposalFromOwnerTransaction,
 
 	// Submit Proposal:
 	CreateAndSendSubmitDCBProposalTx: RpcServer.handleCreateAndSendSubmitDCBProposalTransaction,
@@ -271,7 +277,7 @@ func (self RpcServer) handleCheckHashValue(params interface{}, closeChan <-chan 
 		isBlock       bool
 	)
 	arrayParams := common.InterfaceSlice(params)
-	// param #1: transaction Hash
+	// param #1: transaction Hash2
 	Logger.log.Infof("Check hash value  input Param %+v", arrayParams[0].(string))
 	hash, _ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
 

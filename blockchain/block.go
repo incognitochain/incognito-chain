@@ -108,7 +108,7 @@ func (self *Block) AddTransaction(tx metadata.Transaction) error {
 }
 
 /*
-Hash creates a hash from block data
+Hash2 creates a hash from block data
 */
 func (self Block) Hash() *common.Hash {
 	if self.blockHash != nil {

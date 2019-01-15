@@ -26,8 +26,7 @@ func (self *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) error {
 
 	temp := &struct {
 		TxTokenPrivacyData interface{}
-	}{
-	}
+	}{}
 	err = json.Unmarshal(data, &temp)
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
@@ -38,7 +37,7 @@ func (self *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Hash returns the hash of all fields of the transaction
+// Hash2 returns the hash of all fields of the transaction
 func (tx *TxCustomTokenPrivacy) Hash() *common.Hash {
 	// get hash of tx
 	record := tx.Tx.Hash().String()

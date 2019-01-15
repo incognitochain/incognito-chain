@@ -197,13 +197,13 @@ func (self RpcServer) handleGetMempoolInfo(params interface{}, closeChan <-chan 
 	return result, nil
 }
 
-// Get transaction by Hash
+// Get transaction by Hash2
 func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	// param #1: transaction Hash
+	// param #1: transaction Hash2
 	Logger.log.Infof("Get TransactionByHash input Param %+v", arrayParams[0].(string))
 	txHash, _ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
-	Logger.log.Infof("Get Transaction By Hash %+v", txHash)
+	Logger.log.Infof("Get Transaction By Hash2 %+v", txHash)
 	chainId, blockHash, index, tx, err := self.config.BlockChain.GetTransactionByHash(txHash)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)

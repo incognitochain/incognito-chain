@@ -628,7 +628,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 }
 
 // parseCustomTokenUTXO helper method for parsing UTXO data for updating dividend payout
-/*func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash, pubkey []byte) ([]transaction.TxTokenVout, error) {
+/*func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash2, pubkey []byte) ([]transaction.TxTokenVout, error) {
 	utxoData, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, pubkey)
 	if err != nil {
 		return nil, err
@@ -642,7 +642,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 		if strings.Compare(values[1], string(lvdb.Unspent)) == 0 {
 			vout := transaction.TxTokenVout{}
 			vout.PaymentAddress = privacy.PaymentAddress{Pk: pubkey}
-			txHash, err := common.Hash{}.NewHash([]byte(keys[3]))
+			txHash, err := common.Hash2{}.NewHash([]byte(keys[3]))
 			if err != nil {
 				finalErr = err
 				continue
@@ -755,7 +755,7 @@ func (self *BlockChain) ProcessVoteProposal(block *Block) error {
 		switch tx.GetMetadataType() {
 		case metadata.SealedLv3DCBVoteProposalMeta:
 			underlieMetadata := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
-			self.config.DataBase.AddVoteLv3Proposal("dcb", nextDCBConstitutionIndex, underlieMetadata.Hash())
+			self.config.DataBase.AddVoteLv3Proposal("dcb", nextDCBConstitutionIndex, underlieMetadata.Hash2())
 		case metadata.SealedLv2DCBVoteProposalMeta:
 			underlieMetadata := meta.(*metadata.SealedLv2DCBVoteProposalMetadata)
 			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
@@ -764,17 +764,17 @@ func (self *BlockChain) ProcessVoteProposal(block *Block) error {
 			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
 		case metadata.NormalDCBVoteProposalFromOwnerMeta:
 			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromOwnerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal)
+			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal.ToBytes())
 		case metadata.NormalDCBVoteProposalFromSealerMeta:
 			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromSealerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal)
+			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal.ToBytes())
 		case metadata.AcceptDCBProposalMeta:
 			underlieMetadata := meta.(*metadata.AcceptDCBProposalMetadata)
 			self.config.DataBase.TakeVoteTokenFromWinner("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PubKey, underlieMetadata.Voter.AmountOfVote)
 			self.config.DataBase.SetNewProposalWinningVoter("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PubKey)
 		case metadata.SealedLv3GOVVoteProposalMeta:
 			underlieMetadata := meta.(*metadata.SealedLv3GOVVoteProposalMetadata)
-			self.config.DataBase.AddVoteLv3Proposal("gov", nextGOVConstitutionIndex, underlieMetadata.Hash())
+			self.config.DataBase.AddVoteLv3Proposal("gov", nextGOVConstitutionIndex, underlieMetadata.Hash2())
 		case metadata.SealedLv2GOVVoteProposalMeta:
 			underlieMetadata := meta.(*metadata.SealedLv2GOVVoteProposalMetadata)
 			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
@@ -783,10 +783,10 @@ func (self *BlockChain) ProcessVoteProposal(block *Block) error {
 			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
 		case metadata.NormalGOVVoteProposalFromOwnerMeta:
 			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromOwnerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromOwner("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal)
+			self.config.DataBase.AddVoteNormalProposalFromOwner("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal.ToBytes())
 		case metadata.NormalGOVVoteProposalFromSealerMeta:
 			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromSealerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromSealer("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal)
+			self.config.DataBase.AddVoteNormalProposalFromSealer("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal.ToBytes())
 		case metadata.AcceptGOVProposalMeta:
 			underlieMetadata := meta.(*metadata.AcceptGOVProposalMetadata)
 			self.config.DataBase.TakeVoteTokenFromWinner("gov", nextGOVConstitutionIndex, underlieMetadata.Voter.PubKey, underlieMetadata.Voter.AmountOfVote)

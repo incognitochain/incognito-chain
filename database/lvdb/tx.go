@@ -13,11 +13,11 @@ import (
 
 	"math/big"
 
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
-	"github.com/ninjadotorg/constant/common/base58"
 )
 
 // StoreSerialNumbers - store list serialNumbers by chainID
@@ -604,22 +604,22 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 
 */
 /*func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKey) (map[byte]([]([]byte)), error) {
-	prefix := []byte(string(privateKeyPrefix) + privateKey.String())
-	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
+prefix := []byte(string(privateKeyPrefix) + privateKey.String())
+iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 
-	results := make(map[byte]([]([]byte)))
-	for iter.Next() {
-		key := iter.Key()
-		value := iter.Value()
+results := make(map[byte]([]([]byte)))
+for iter.Next() {
+	key := iter.Key()
+	value := iter.Value()
 
-		reses := strings.Split(string(key), string(Splitter))
-		tempChainId, _ := strconv.Atoi(reses[2])
-		chainId := byte(tempChainId)
-		*//*tx := transaction.Tx{}
-		err := json.Unmarshal(value, &tx)
-		if err != nil {
-			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
-		}*//*
+	reses := strings.Split(string(key), string(Splitter))
+	tempChainId, _ := strconv.Atoi(reses[2])
+	chainId := byte(tempChainId)
+*/ /*tx := transaction.Tx{}
+err := json.Unmarshal(value, &tx)
+if err != nil {
+	return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+}*/ /*
 		data := make([]byte, len(value))
 		copy(data[:], value[:])
 		results[chainId] = append(results[chainId], data)
@@ -634,7 +634,7 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
   H: txLocation
   tx: tx object in byte
 */
-/*func (db *db) GetTransactionLightModeByHash(txId *common.Hash) ([]byte, []byte, error) {
+/*func (db *db) GetTransactionLightModeByHash(txId *common.Hash2) ([]byte, []byte, error) {
 	key := string(transactionKeyPrefix) + txId.String()
 	_, err := db.HasValue([]byte(key))
 	if err != nil {

@@ -14,7 +14,7 @@ import (
 func (db *db) StoreBlock(v interface{}, chainID byte) error {
 	h, ok := v.(hasher)
 	if !ok {
-		return database.NewDatabaseError(database.NotImplHashMethod, errors.New("v must implement Hash() method"))
+		return database.NewDatabaseError(database.NotImplHashMethod, errors.New("v must implement Hash2() method"))
 	}
 	var (
 		hash = h.Hash()

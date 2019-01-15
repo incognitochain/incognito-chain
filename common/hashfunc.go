@@ -13,7 +13,7 @@ func HashB(b []byte) []byte {
 	return hash[:]
 }
 
-// HashH calculates hash(b) and returns the resulting bytes as a Hash.
+// HashH calculates hash(b) and returns the resulting bytes as a Hash2.
 func HashH(b []byte) Hash {
 	return Hash(sha256.Sum256(b))
 }

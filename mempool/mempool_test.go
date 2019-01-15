@@ -22,7 +22,7 @@ func TestNew(t *testing.T) {
 
 func (m *TxMockedObject) GetTransaction() transaction.TxNormal {
 
-	//hash, error := common.Hash{}.NewHash([]byte("12345678901234567890123456789012"))
+	//hash, error := common.Hash2{}.NewHash([]byte("12345678901234567890123456789012"))
 	//if error != nil {
 	//
 	//}
