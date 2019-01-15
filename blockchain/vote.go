@@ -226,6 +226,8 @@ func (blockgen *BlkTmplGenerator) createSingleSendGOVVoteTokenTx(chainID byte, p
 }
 
 func getAmountOfVoteToken(sumAmount uint64, voteAmount uint64) uint64 {
+	// TODO: 0xjackalop
+	// not check sumAmount = 0
 	return voteAmount * common.SumOfVoteDCBToken / sumAmount
 }
 
