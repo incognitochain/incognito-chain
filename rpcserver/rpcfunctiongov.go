@@ -404,6 +404,15 @@ func (self RpcServer) handleCreateAndSendSubmitGOVProposalTransaction(params int
 
 func (self RpcServer) handleCreateRawTxWithOracleFeed(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	feederAddr := senderKey.KeySet.PaymentAddress
+
 	// Req param #4: oracle feed
 	oracleFeed := arrayParams[4].(map[string]interface{})
 
@@ -412,10 +421,12 @@ func (self RpcServer) handleCreateRawTxWithOracleFeed(params interface{}, closeC
 	copy(assetType[:], assetTypeBytes)
 	price := uint64(oracleFeed["Price"].(float64))
 	metaType := metadata.OracleFeedMeta
+
 	meta := metadata.NewOracleFeed(
 		assetType,
 		price,
 		metaType,
+		feederAddr,
 	)
 
 	normalTx, err := self.buildRawTransaction(params, meta)

@@ -44,7 +44,10 @@ type ConstitutionHelper interface {
 
 func (blockgen *BlkTmplGenerator) createRewardProposalWinnerTx(chainID byte, constitutionHelper ConstitutionHelper,
 ) (metadata.Transaction, error) {
-	pubKey, _ := constitutionHelper.GetPubKeyVoter(blockgen, chainID)
+	pubKey, err := constitutionHelper.GetPubKeyVoter(blockgen, chainID)
+	if err != nil {
+		return nil, err
+	}
 	prize := constitutionHelper.GetPrizeProposal()
 	meta := metadata.NewRewardProposalWinnerMetadata(pubKey, prize)
 	tx := transaction.Tx{
@@ -189,7 +192,10 @@ func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTxAndRewardSu
 		}
 	}
 	acceptedSubmitProposalTransaction := helper.TxAcceptProposal(&bestProposal.TxId, bestVoterAll)
-	_, _, _, bestSubmittedProposal, _ := blockgen.chain.GetTransactionByHash(&bestProposal.TxId)
+	_, _, _, bestSubmittedProposal, err := blockgen.chain.GetTransactionByHash(&bestProposal.TxId)
+	if err != nil {
+		return nil, err
+	}
 	submitterPaymentAddress := helper.GetPaymentAddressFromSubmitProposalMetadata(bestSubmittedProposal)
 
 	// If submitterPaymentAdress use don't use privacy for
@@ -206,21 +212,23 @@ func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTxAndRewardSu
 	return resTx, nil
 }
 
-func (blockgen *BlkTmplGenerator) createSingleSendDCBVoteTokenTx(chainID byte, pubKey []byte, amount uint32) (metadata.Transaction, error) {
+func (blockgen *BlkTmplGenerator) createSingleSendDCBVoteTokenTx(chainID byte, pubKey []byte, amount uint32) (metadata.Transaction) {
 	sendDCBVoteTokenTransaction := transaction.Tx{
 		Metadata: metadata.NewSendInitDCBVoteTokenMetadata(amount, pubKey),
 	}
-	return &sendDCBVoteTokenTransaction, nil
+	return &sendDCBVoteTokenTransaction
 }
 
-func (blockgen *BlkTmplGenerator) createSingleSendGOVVoteTokenTx(chainID byte, pubKey []byte, amount uint32) (metadata.Transaction, error) {
+func (blockgen *BlkTmplGenerator) createSingleSendGOVVoteTokenTx(chainID byte, pubKey []byte, amount uint32) (metadata.Transaction) {
 	sendGOVVoteTokenTransaction := transaction.Tx{
 		Metadata: metadata.NewSendInitGOVVoteTokenMetadata(amount, pubKey),
 	}
-	return &sendGOVVoteTokenTransaction, nil
+	return &sendGOVVoteTokenTransaction
 }
 
 func getAmountOfVoteToken(sumAmount uint64, voteAmount uint64) uint64 {
+	// TODO: 0xjackalop
+	// not check sumAmount = 0
 	return voteAmount * common.SumOfVoteDCBToken / sumAmount
 }
 
@@ -228,7 +236,7 @@ func (blockgen *BlkTmplGenerator) CreateSendDCBVoteTokenToGovernorTx(chainID byt
 	var SendVoteTx []metadata.Transaction
 	var newTx metadata.Transaction
 	for i := 0; i <= common.NumberOfDCBGovernors; i++ {
-		newTx, _ = blockgen.createSingleSendDCBVoteTokenTx(chainID, newDCBList[i].PubKey, uint32(getAmountOfVoteToken(sumAmountDCB, newDCBList[i].VoteAmount)))
+		newTx = blockgen.createSingleSendDCBVoteTokenTx(chainID, newDCBList[i].PubKey, uint32(getAmountOfVoteToken(sumAmountDCB, newDCBList[i].VoteAmount)))
 		SendVoteTx = append(SendVoteTx, newTx)
 	}
 	return SendVoteTx
@@ -238,7 +246,7 @@ func (blockgen *BlkTmplGenerator) CreateSendGOVVoteTokenToGovernorTx(chainID byt
 	var SendVoteTx []metadata.Transaction
 	var newTx metadata.Transaction
 	for i := 0; i <= common.NumberOfGOVGovernors; i++ {
-		newTx, _ = blockgen.createSingleSendGOVVoteTokenTx(chainID, newGOVList[i].PubKey, uint32(getAmountOfVoteToken(sumAmountGOV, newGOVList[i].VoteAmount)))
+		newTx = blockgen.createSingleSendGOVVoteTokenTx(chainID, newGOVList[i].PubKey, uint32(getAmountOfVoteToken(sumAmountGOV, newGOVList[i].VoteAmount)))
 		SendVoteTx = append(SendVoteTx, newTx)
 	}
 	return SendVoteTx
@@ -452,7 +460,13 @@ func (blockgen *BlkTmplGenerator) CreateSendRewardOldBoard(helper ConstitutionHe
 
 func (blockgen *BlkTmplGenerator) UpdateNewGovernor(helper ConstitutionHelper, chainID byte, minerPrivateKey *privacy.SpendingKey) []metadata.Transaction {
 	txs := make([]metadata.Transaction, 0)
-	newBoardList, _ := helper.GetTopMostVoteGovernor(blockgen)
+	newBoardList, err := helper.GetTopMostVoteGovernor(blockgen)
+	if err != nil || len(newBoardList) == 0 {
+		Logger.log.Error(err)
+		// return empty array
+		return txs
+	}
+
 	sort.Sort(newBoardList)
 	sumOfVote := uint64(0)
 	var newDCBBoardPubKey [][]byte
@@ -478,6 +492,7 @@ func (blockgen *BlkTmplGenerator) neededNewDCBGovernor(chainID byte) bool {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	return int32(BestBlock.Header.DCBGovernor.EndBlock) == BestBlock.Header.Height+2
 }
+
 func (blockgen *BlkTmplGenerator) neededNewGOVGovernor(chainID byte) bool {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	return int32(BestBlock.Header.GOVGovernor.EndBlock) == BestBlock.Header.Height+2
