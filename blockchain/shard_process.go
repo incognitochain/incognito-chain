@@ -14,18 +14,18 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 )
 
-func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte) error {
+func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardId byte) error {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 	//========Verify block only
 	Logger.log.Infof("Verify block for signing process %d, with hash %+v", block.Header.Height, *block.Hash())
-	if err := self.VerifyPreProcessingShardBlock(block); err != nil {
+	if err := self.VerifyPreProcessingShardBlock(block, shardId); err != nil {
 		return err
 	}
 	//========Verify block with previous best state
 	// Get Beststate of previous block == previous best state
 	// Clone best state value into new variable
-	beaconBestState := BestStateBeacon{}
+	shardBestState := BestStateShard{}
 	// check with current final best state
 	// New block must be compatible with current best state
 	if strings.Compare(self.BestState.Beacon.BestBlockHash.String(), block.Header.PrevBlockHash.String()) == 0 {
@@ -33,7 +33,7 @@ func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte)
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
 		}
-		json.Unmarshal(tempMarshal, &beaconBestState)
+		json.Unmarshal(tempMarshal, &shardBestState)
 	}
 	//else {
 	// check with current cache best state
@@ -44,20 +44,20 @@ func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte)
 	// }
 	// }
 	// if no match best state found then block is unknown
-	if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
+	if reflect.DeepEqual(shardBestState, BestStateShard{}) {
 		return NewBlockChainError(BeaconError, errors.New("Beacon Block does not match with any Beacon State in cache or in Database"))
 	}
 	// Verify block with previous best state
 	// not verify agg signature in this function
-	if err := beaconBestState.VerifyBestStateWithBeaconBlock(block, false); err != nil {
+	if err := shardBestState.VerifyBestStateWithShardBlock(block, false, shardId); err != nil {
 		return err
 	}
 	//========Update best state with new block
-	if err := beaconBestState.Update(block); err != nil {
+	if err := shardBestState.Update(block); err != nil {
 		return err
 	}
 	//========Post verififcation: verify new beaconstate with corresponding block
-	if err := beaconBestState.VerifyPostProcessingBeaconBlock(block); err != nil {
+	if err := shardBestState.VerifyPostProcessingShardBlock(block, shardId); err != nil {
 		return err
 	}
 	Logger.log.Infof("Block %d, with hash %+v is VALID for signing", block.Header.Height, *block.Hash())
@@ -196,7 +196,20 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	return nil
 }
 
-func (self *BlockChain) VerifyPostProcessingShardBlock(block *ShardBlock) error {
+func (self *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlock, shardId byte) error {
+	return nil
+}
+
+func (self *BestStateShard) Update(block *ShardBlock) error {
+	self.BestBlock = block
+	self.BestBlockHash = *block.Hash()
+	self.Height = block.Header.Height
+	self.TotalTxns += uint64(len(block.Body.Transactions))
+	self.NumTxns = uint64(len(block.Body.Transactions))
+	return nil
+}
+
+func (self *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBlock, isSign bool, shardId byte) error {
 	return nil
 }
 
