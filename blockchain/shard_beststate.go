@@ -17,7 +17,6 @@ import (
 type BestStateShard struct {
 	PrevShardBlockHash common.Hash
 
-	BestBlock          *ShardBlock // The block.
 	BestShardBlockHash common.Hash // The hash of the block.
 
 	BestBeaconHash common.Hash

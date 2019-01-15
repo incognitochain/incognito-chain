@@ -238,7 +238,7 @@ func (self *BestStateShard) Update(block *ShardBlock) error {
 	self.ShardHeight = block.Header.Height
 	self.BeaconHeight = block.Header.BeaconHeight
 	self.ShardProposerIdx = common.IndexOfStr(block.Header.Producer, self.ShardCommittee)
-	self.BestBlock = block
+	self.BestShardBlock = block
 	//self.TotalTxns += uint64(len(block.Body.Transactions))
 	//self.NumTxns = uint64(len(block.Body.Transactions))
 	return nil
