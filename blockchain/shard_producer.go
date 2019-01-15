@@ -24,7 +24,7 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 	}
 
 	// Remove unrelated shard tx
-	// @Hung: Txpool should be remove after create block is successful
+	// TODO: Check again Txpool should be remove after create block is successful
 	for _, tx := range txToRemove {
 		self.txPool.RemoveTx(tx)
 	}
@@ -66,25 +66,30 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 		}
 	}
 
-	// merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
-	// merkleRoot := merkleRoots[len(merkleRoots)-1]
-	// prevBlock := self.chain.BestState.Shard[shardID].BestBlock
-	// prevBlockHash := self.chain.BestState.Shard[shardID].BestBlock.Hash()
-
-	// block.Header = ShardHeader{
-	// 	Producer: userKeySet.GetPublicKeyB58(),
-	// 	//@Hung: increase epoch if new block %epoch = 0
-	// 	Epoch:             self.chain.BestState.Beacon.BeaconEpoch,
-	// 	Height:            prevBlock.Header.Height + 1,
-	// 	Version:           BlockVersion,
-	// 	PrevBlockHash:     *prevBlockHash,
-	// 	MerkleRoot:        *merkleRoot,
-	// 	MerkleRootShard:   CreateMerkleRootShard(block.Body.Transactions),
-	// 	Timestamp:         time.Now().Unix(),
-	// 	ShardID:           shardID,
-	// 	CrossShardByteMap: self.createCrossShardBytemap(txsToAdd),
-	// 	Actions:           self.createShardAction(),
-	// }
+	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
+	merkleRoot := merkleRoots[len(merkleRoots)-1]
+	prevBlock := self.chain.BestState.Shard[shardID].BestShardBlock
+	prevBlockHash := self.chain.BestState.Shard[shardID].BestShardBlock.Hash()
+	crossOutputCoinRoot, err := CreateMerkleCrossOutputCoin(block.Body.CrossOutputCoin)
+	if err != nil {
+		return nil, err
+	}
+	block.Header = ShardHeader{
+		Producer: userKeySet.GetPublicKeyB58(),
+		//TODO: increase epoch if new block %epoch = 0
+		Epoch:               self.chain.BestState.Beacon.BeaconEpoch,
+		Height:              prevBlock.Header.Height + 1,
+		Version:             BlockVersion,
+		PrevBlockHash:       *prevBlockHash,
+		TxRoot:              *merkleRoot,
+		ShardTxRoot:         CreateMerkleRootShard(block.Body.Transactions),
+		Timestamp:           time.Now().Unix(),
+		ShardID:             shardID,
+		CrossShards:         self.createCrossShardBytemap(txsToAdd),
+		CrossOutputCoinRoot: *crossOutputCoinRoot,
+		// TODO: create actions root
+		// ActionsRoot:       self.createShardAction(),
+	}
 
 	// Create producer signature
 	blkHeaderHash := block.Header.Hash()
@@ -106,7 +111,6 @@ func (self *BlkTmplGenerator) getCrossOutputCoin(shardID byte) []CrossOutputCoin
 	shardCrossBlock := crossBlock[shardID]
 	for _, blk := range shardCrossBlock {
 		//TODO: validate blk
-
 		outputCoin := CrossOutputCoin{
 			OutputCoin: blk.CrossOutputCoin,
 			ShardID:    shardID,

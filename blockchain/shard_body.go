@@ -97,9 +97,16 @@ func (self *ShardBody) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
-
+func (self *CrossOutputCoin) Hash() common.Hash {
+	record := []byte{}
+	record = append(record, self.ShardID)
+	record = append(record, self.BlockHash.GetBytes()...)
+	for _, coins := range self.OutputCoin {
+		record = append(record, coins.Bytes()...)
+	}
+	return common.DoubleHashH(record)
+}
 func (self *ShardBody) CalcMerkleRootShard() *common.Hash {
-	//TODO
 	var shardTxs map[int][]*common.Hash
 
 	for _, tx := range self.Transactions {
@@ -132,7 +139,6 @@ func (self *ShardBody) CalcMerkleRootShard() *common.Hash {
 }
 
 func (self *ShardBody) CalcMerkleRootTx() *common.Hash {
-	//TODO:
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(self.Transactions)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 	return merkleRoot

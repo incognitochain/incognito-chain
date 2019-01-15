@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"math/big"
@@ -177,6 +178,7 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	- TxRoot
 	- ShardTxRoot
 	- CrossOutputCoinRoot
+	//TODO: define where to verify beacon info and Action root
 	- ActionsRoot
 	- BeaconHeight
 	- BeaconHash
@@ -207,7 +209,21 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	if block.Header.Timestamp <= parentBlock.Header.Timestamp {
 		return NewBlockChainError(TimestampError, errors.New("Timestamp of new block can't equal to parent block"))
 	}
-
+	// Verify transaction root
+	txMerkle := Merkle{}.BuildMerkleTreeStore(block.Body.Transactions)
+	txRoot := txMerkle[len(txMerkle)-1]
+	if bytes.Compare(block.Header.TxRoot.GetBytes(), txRoot.GetBytes()) != 0 {
+		return NewBlockChainError(HashError, errors.New("Can't Verify Transaction Root"))
+	}
+	// Verify ShardTx Root
+	shardTxRoot := CreateMerkleRootShard(block.Body.Transactions)
+	if bytes.Compare(block.Header.ShardTxRoot.GetBytes(), shardTxRoot.GetBytes()) != 0 {
+		return NewBlockChainError(HashError, errors.New("Can't Verify CrossShardTransaction Root"))
+	}
+	// Verify Crossoutput coin
+	if !VerifyMerkleCrossOutputCoin(block.Body.CrossOutputCoin, block.Header.CrossOutputCoinRoot) {
+		return NewBlockChainError(HashError, errors.New("Can't Verify CrossOutputCoin Root"))
+	}
 	return nil
 }
 
@@ -228,6 +244,7 @@ func (self *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBlock, isS
 	return nil
 }
 
+//=====================Util for shard====================
 func CreateMerkleRootShard(txList []metadata.Transaction) common.Hash {
 	//calculate output coin hash for each shard
 	outputCoinHash := getOutCoinHashEachShard(txList)
@@ -249,4 +266,30 @@ func CreateMerkleRootShard(txList []metadata.Transaction) common.Hash {
 	}
 	merkleShardRoot := merkleData[len(merkleData)-1]
 	return merkleShardRoot
+}
+
+func CreateMerkleCrossOutputCoin(crossOutputCoins []CrossOutputCoin) (*common.Hash, error) {
+	crossOutputCoinHashes := []*common.Hash{}
+	for _, value := range crossOutputCoins {
+		hash := value.Hash()
+		hashByte := hash.GetBytes()
+		newHash, err := common.Hash{}.NewHash(hashByte)
+		if err != nil {
+			return &common.Hash{}, NewBlockChainError(HashError, err)
+		}
+		crossOutputCoinHashes = append(crossOutputCoinHashes, newHash)
+	}
+	merkle := Merkle{}
+	merkleTree := merkle.BuildMerkleTreeOfHashs(crossOutputCoinHashes)
+	return merkleTree[len(merkleTree)-1], nil
+}
+
+func VerifyMerkleCrossOutputCoin(crossOutputCoins []CrossOutputCoin, rootHash common.Hash) bool {
+	res, err := CreateMerkleCrossOutputCoin(crossOutputCoins)
+	if err != nil {
+		return false
+	}
+	hashByte := rootHash.GetBytes()
+	newHash, err := common.Hash{}.NewHash(hashByte)
+	return newHash.IsEqual(res)
 }
