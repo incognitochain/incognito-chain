@@ -795,6 +795,7 @@ func (tx *Tx) InitTxSalary(
 
 	sndOut := privacy.RandInt()
 
+	// ---- COMMENT OUT FOR TEMP -------
 	// for true {
 	// 	lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
 	// 	shardIDSender, err := common.GetTxSenderChain(lastByte)
@@ -811,6 +812,7 @@ func (tx *Tx) InitTxSalary(
 	// 		break
 	// 	}
 	// }
+	// ----------------------------------
 
 	tx.Proof.OutputCoins[0].CoinDetails.SNDerivator = sndOut
 
