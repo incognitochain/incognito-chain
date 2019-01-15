@@ -65,20 +65,13 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 				delete(self.syncStatus.Shard, shardID)
 				return
 			case shardState := <-shardStateCh:
-
-				fmt.Println()
-				fmt.Println("SHARDSTATE RECEIVED")
-				fmt.Println()
-				if self.BestState.Shard[shardID].Height < shardState.State.Height {
+				if self.BestState.Shard[shardID].ShardHeight < shardState.State.Height {
 					if self.knownChainState.Shards[shardID].Height < shardState.State.Height {
 						self.knownChainState.Shards[shardID] = *shardState.State
 						if getStateWaitTime > 5 {
 							getStateWaitTime -= 5
 						}
-						fmt.Println()
-						fmt.Println("Push msg GET BLOCK SHARD")
-						fmt.Println()
-						self.config.Server.PushMessageGetBlockShard(shardID, self.BestState.Shard[shardID].Height+1, shardState.State.Height, shardState.Peer)
+						self.config.Server.PushMessageGetBlockShard(shardID, self.BestState.Shard[shardID].ShardHeight+1, shardState.State.Height, shardState.Peer)
 					} else {
 						if getStateWaitTime < 10 {
 							getStateWaitTime += 5
@@ -91,14 +84,14 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 				}
 			case newBlk := <-newShardBlkCh:
 				fmt.Println("Shard block received")
-				if self.BestState.Shard[shardID].Height < newBlk.Header.Height {
+				if self.BestState.Shard[shardID].ShardHeight < newBlk.Header.Height {
 					blkHash := newBlk.Header.Hash()
 					err := cashec.ValidateDataB58(newBlk.Header.Producer, newBlk.ProducerSig, blkHash.GetBytes())
 					if err != nil {
 						Logger.log.Error(err)
 						continue
 					} else {
-						if self.BestState.Shard[shardID].Height == newBlk.Header.Height-1 {
+						if self.BestState.Shard[shardID].ShardHeight == newBlk.Header.Height-1 {
 							err = self.InsertShardBlock(newBlk)
 							if err != nil {
 								Logger.log.Error(err)

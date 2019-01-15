@@ -36,14 +36,6 @@ func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardId byte)
 		}
 		json.Unmarshal(tempMarshal, &shardBestState)
 	}
-	//else {
-	// check with current cache best state
-	// var err error
-	// beaconBestState, err = self.GetMaybeAcceptBeaconBestState(block.Header.PrevBlockHash.String())
-	// if err != nil {
-	// 	return err
-	// }
-	// }
 	// if no match best state found then block is unknown
 	if reflect.DeepEqual(shardBestState, BestStateShard{}) {
 		return NewBlockChainError(BeaconError, errors.New("Beacon Block does not match with any Beacon State in cache or in Database"))
@@ -176,15 +168,18 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	/* Verify Pre-prosessing data
 	This function DOES NOT verify new block with best state
 	DO NOT USE THIS with GENESIS BLOCK
-	- Block ShardID receive same shardID with input
+	- ShardID: of received block same shardID with input
 	- Version
 	- Parent hash
 	- Height = parent hash + 1
 	- Epoch = blockHeight % Epoch ? Parent Epoch + 1
 	- Timestamp can not excess some limit
-	- MerkleRoot
-	- MerkleRootShard
+	- TxRoot
+	- ShardTxRoot
+	- CrossOutputCoinRoot
 	- ActionsRoot
+	- BeaconHeight
+	- BeaconHash
 	*/
 	if block.Header.ShardID != shardID {
 		return NewBlockChainError(ShardIDError, errors.New("Shard should be :"+strconv.Itoa(int(shardID))))
@@ -221,11 +216,15 @@ func (self *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlock, sh
 }
 
 func (self *BestStateShard) Update(block *ShardBlock) error {
+	self.BestBeaconHash = block.Header.BeaconHash
+	self.PrevShardBlockHash = self.BestShardBlockHash
+	self.BestShardBlockHash = *block.Hash()
+	self.ShardHeight = block.Header.Height
+	self.BeaconHeight = block.Header.BeaconHeight
+	self.ShardProposerIdx = common.IndexOfStr(block.Header.Producer, self.ShardCommittee)
 	self.BestBlock = block
-	self.BestBlockHash = *block.Hash()
-	self.Height = block.Header.Height
-	self.TotalTxns += uint64(len(block.Body.Transactions))
-	self.NumTxns = uint64(len(block.Body.Transactions))
+	//self.TotalTxns += uint64(len(block.Body.Transactions))
+	//self.NumTxns = uint64(len(block.Body.Transactions))
 	return nil
 }
 
