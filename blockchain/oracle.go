@@ -94,7 +94,7 @@ func computeRewards(
 	return selectedPrice, rewardedEvals
 }
 
-func getSenderAddress(tx *transaction.Tx) *privacy.PaymentAddress {
+/*func getSenderAddress(tx *transaction.Tx) *privacy.PaymentAddress {
 	if tx.Proof == nil || len(tx.Proof.InputCoins) == 0 {
 		return nil
 	}
@@ -106,7 +106,7 @@ func getSenderAddress(tx *transaction.Tx) *privacy.PaymentAddress {
 	return &privacy.PaymentAddress{
 		Pk: pk,
 	}
-}
+}*/
 
 func refundOracleFeeders(txs []metadata.Transaction) []*Evaluation {
 	evals := []*Evaluation{}
