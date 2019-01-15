@@ -87,6 +87,7 @@ type BlockchainRetriever interface {
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
 	GetDCBParams() params.DCBParams
 	GetBoardPubKeys(boardType string) [][]byte
+	GetBoardPaymentAddress(boardType string) []privacy.PaymentAddress
 	GetGOVParams() params.GOVParams
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
 	GetOracleParams() *params.Oracle

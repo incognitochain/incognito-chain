@@ -7,7 +7,16 @@ import (
 )
 
 type SealedLv1GOVVoteProposalMetadata struct {
-	SealedLv1VoteProposalMetadata
+	SealedLv1VoteProposalMetadata SealedLv1VoteProposalMetadata
+	MetadataBase
+}
+
+func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
+	return sealedLv1GOVVoteProposalMetadata.SealedLv1VoteProposalMetadata.ValidateSanityData(bcr, tx)
+}
+
+func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) ValidateMetadataByItself() bool {
+	return sealedLv1GOVVoteProposalMetadata.SealedLv1VoteProposalMetadata.ValidateMetadataByItself()
 }
 
 func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) GetBoardType() string {
@@ -16,23 +25,28 @@ func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) GetBoa
 
 func NewSealedLv1GOVVoteProposalMetadata(
 	sealedVoteProposal []byte,
-	lockersPubKey [][]byte,
+	lockersPaymentAddress []privacy.PaymentAddress,
 	pointerToLv2VoteProposal common.Hash,
 	pointerToLv3VoteProposal common.Hash,
 ) *SealedLv1GOVVoteProposalMetadata {
 	return &SealedLv1GOVVoteProposalMetadata{
 		SealedLv1VoteProposalMetadata: *NewSealedLv1VoteProposalMetadata(
 			sealedVoteProposal,
-			lockersPubKey,
+			lockersPaymentAddress,
 			pointerToLv2VoteProposal,
 			pointerToLv3VoteProposal,
-			*NewMetadataBase(SealedLv1GOVVoteProposalMeta),
 		),
+
+		MetadataBase: *NewMetadataBase(SealedLv1GOVVoteProposalMeta),
 	}
 }
 
 func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) Hash() *common.Hash {
-	return sealedLv1GOVVoteProposalMetadata.SealedLv1VoteProposalMetadata.Hash2()
+	record := string(sealedLv1GOVVoteProposalMetadata.SealedLv1VoteProposalMetadata.ToBytes())
+
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+
 }
 
 func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) ValidateTxWithBlockChain(
@@ -41,40 +55,28 @@ func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) Valida
 	chainID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	//Check base seal metadata
-	ok, err := sealedLv1GOVVoteProposalMetadata.SealedVoteProposal.ValidateLockerPubKeys(bcr, sealedLv1GOVVoteProposalMetadata.GetBoardType())
-	if err != nil || !ok {
-		return ok, err
-	}
-
-	//Check precede transaction type
-	_, _, _, lv2Tx, _ := bcr.GetTransactionByHash(&sealedLv1GOVVoteProposalMetadata.PointerToLv2VoteProposal)
-	if lv2Tx.GetMetadataType() != SealedLv2GOVVoteProposalMeta {
-		return false, nil
-	}
-	_, _, _, lv3Tx, _ := bcr.GetTransactionByHash(&sealedLv1GOVVoteProposalMetadata.PointerToLv3VoteProposal)
-	if lv3Tx.GetMetadataType() != SealedLv3GOVVoteProposalMeta {
-		return false, nil
-	}
-
-	// check 2 array equal
-	metaLv2 := lv2Tx.GetMetadata().(*SealedLv2GOVVoteProposalMetadata)
-	for i := 0; i < len(sealedLv1GOVVoteProposalMetadata.SealedVoteProposal.LockerPubKeys); i++ {
-		if !common.ByteEqual(sealedLv1GOVVoteProposalMetadata.SealedVoteProposal.LockerPubKeys[i], metaLv2.SealedVoteProposal.LockerPubKeys[i]) {
-			return false, nil
-		}
-	}
-
-	// Check encrypting
-	if !common.ByteEqual(sealedLv1GOVVoteProposalMetadata.SealedVoteProposal.SealVoteProposalData,
-		common.Encrypt(metaLv2.SealedVoteProposal.SealVoteProposalData, metaLv2.SealedVoteProposal.LockerPubKeys[1])) {
-		return false, nil
-	}
-	return true, nil
+	boardType := "gov"
+	return sealedLv1GOVVoteProposalMetadata.SealedLv1VoteProposalMetadata.ValidateTxWithBlockChain(
+		boardType,
+		tx,
+		bcr,
+		chainID,
+		db,
+	)
 }
 
 type SealedLv2GOVVoteProposalMetadata struct {
-	SealedLv2VoteProposalMetadata
+	SealedLv2VoteProposalMetadata SealedLv2VoteProposalMetadata
+
+	MetadataBase
+}
+
+func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
+	return sealedLv2GOVVoteProposalMetadata.SealedLv2VoteProposalMetadata.ValidateSanityData(bcr, tx)
+}
+
+func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) ValidateMetadataByItself() bool {
+	return sealedLv2GOVVoteProposalMetadata.SealedLv2VoteProposalMetadata.ValidateMetadataByItself()
 }
 
 func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) GetBoardType() string {
@@ -83,57 +85,54 @@ func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) GetBoa
 
 func NewSealedLv2GOVVoteProposalMetadata(
 	sealedVoteProposal []byte,
-	lockerPubKeys [][]byte,
+	lockerPaymentAddress []privacy.PaymentAddress,
 	pointerToLv3VoteProposal common.Hash,
 ) *SealedLv2GOVVoteProposalMetadata {
 	return &SealedLv2GOVVoteProposalMetadata{
 		SealedLv2VoteProposalMetadata: *NewSealedLv2VoteProposalMetadata(
 			sealedVoteProposal,
-			lockerPubKeys,
+			lockerPaymentAddress,
 			pointerToLv3VoteProposal,
-			*NewMetadataBase(SealedLv2GOVVoteProposalMeta),
 		),
+
+		MetadataBase: *NewMetadataBase(SealedLv2GOVVoteProposalMeta),
 	}
 }
 
 func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) Hash() *common.Hash {
-	return sealedLv2GOVVoteProposalMetadata.SealedLv2VoteProposalMetadata.Hash()
+	record := sealedLv2GOVVoteProposalMetadata.SealedLv2VoteProposalMetadata.ToBytes()
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
 }
 
 func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	boardType := sealedLv2GOVVoteProposalMetadata.GetBoardType()
-	//Check base seal metadata
-	ok, err := sealedLv2GOVVoteProposalMetadata.SealedVoteProposal.ValidateLockerPubKeys(bcr, boardType)
-	if err != nil || !ok {
-		return ok, err
-	}
+	return sealedLv2GOVVoteProposalMetadata.SealedLv2VoteProposalMetadata.ValidateTxWithBlockChain(
+		boardType,
+		tx,
+		bcr,
+		chainID,
+		db,
+	)
 
-	//Check precede transaction type
-	_, _, _, lv3Tx, _ := bcr.GetTransactionByHash(&sealedLv2GOVVoteProposalMetadata.PointerToLv3VoteProposal)
-	if lv3Tx.GetMetadataType() != SealedLv3GOVVoteProposalMeta {
-		return false, nil
-	}
-
-	// check 2 array equal
-	metaLv3 := lv3Tx.GetMetadata().(*SealedLv3GOVVoteProposalMetadata)
-	for i := 0; i < len(sealedLv2GOVVoteProposalMetadata.SealedVoteProposal.LockerPubKeys); i++ {
-		if !common.ByteEqual(sealedLv2GOVVoteProposalMetadata.SealedVoteProposal.LockerPubKeys[i], metaLv3.SealedVoteProposal.LockerPubKeys[i]) {
-			return false, nil
-		}
-	}
-
-	// Check encrypting
-	if !common.ByteEqual(
-		sealedLv2GOVVoteProposalMetadata.SealedVoteProposal.SealVoteProposalData,
-		common.Encrypt(metaLv3.SealedVoteProposal.SealVoteProposalData, metaLv3.SealedVoteProposal.LockerPubKeys[2]),
-	) {
-		return false, nil
-	}
-	return true, nil
 }
 
 type SealedLv3GOVVoteProposalMetadata struct {
-	SealedLv3VoteProposalMetadata
+	SealedLv3VoteProposalMetadata SealedLv3VoteProposalMetadata
+
+	MetadataBase
+}
+
+func (sealedLv3GOVVoteProposalMetadata *SealedLv3GOVVoteProposalMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
+	return sealedLv3GOVVoteProposalMetadata.SealedLv3VoteProposalMetadata.ValidateTxWithBlockChain(tx, bcr, b, db)
+}
+
+func (sealedLv3GOVVoteProposalMetadata *SealedLv3GOVVoteProposalMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
+	return sealedLv3GOVVoteProposalMetadata.SealedLv3VoteProposalMetadata.ValidateSanityData(bcr, tx)
+}
+
+func (sealedLv3GOVVoteProposalMetadata *SealedLv3GOVVoteProposalMetadata) ValidateMetadataByItself() bool {
+	return sealedLv3GOVVoteProposalMetadata.SealedLv3VoteProposalMetadata.ValidateMetadataByItself()
 }
 
 func (sealedLv3GOVVoteProposalMetadata *SealedLv3GOVVoteProposalMetadata) GetBoardType() string {
@@ -142,42 +141,58 @@ func (sealedLv3GOVVoteProposalMetadata *SealedLv3GOVVoteProposalMetadata) GetBoa
 
 func NewSealedLv3GOVVoteProposalMetadata(
 	sealedVoteProposal []byte,
-	lockerPubKeys [][]byte,
+	lockerPaymentAddress []privacy.PaymentAddress,
 ) *SealedLv3GOVVoteProposalMetadata {
 	return &SealedLv3GOVVoteProposalMetadata{
 		SealedLv3VoteProposalMetadata: *NewSealedLv3VoteProposalMetadata(
-			sealedVoteProposal, lockerPubKeys,
-			*NewMetadataBase(SealedLv3GOVVoteProposalMeta),
+			sealedVoteProposal, lockerPaymentAddress,
 		),
+		MetadataBase: *NewMetadataBase(SealedLv3GOVVoteProposalMeta),
 	}
 }
 
 func NewSealedLv3GOVVoteProposalMetadataFromJson(data interface{}) *SealedLv3GOVVoteProposalMetadata {
 	dataSealedLv3GOVVoteProposal := data.(map[string]interface{})
+
+	threePaymentBytes := common.SliceInterfaceToSliceSliceByte(dataSealedLv3GOVVoteProposal["LockerPaymentAddress"].([]interface{}))
+	listPaymentAddress := make([]privacy.PaymentAddress, 0)
+	for _, i := range threePaymentBytes {
+		listPaymentAddress = append(listPaymentAddress, *privacy.NewPaymentAddress(i))
+	}
 	return NewSealedLv3GOVVoteProposalMetadata(
 		[]byte(dataSealedLv3GOVVoteProposal["SealedVoteProposal"].(string)),
-		common.SliceInterfaceToSliceSliceByte(dataSealedLv3GOVVoteProposal["LockerPubKeys"].([]interface{})),
+		listPaymentAddress,
 	)
 }
 
 type NormalGOVVoteProposalFromSealerMetadata struct {
-	NormalVoteProposalFromSealerMetadata
+	NormalVoteProposalFromSealerMetadata NormalVoteProposalFromSealerMetadata
+
+	MetadataBase
+}
+
+func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
+	return normalGOVVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.ValidateSanityData(bcr, tx)
+}
+
+func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) ValidateMetadataByItself() bool {
+	return normalGOVVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.ValidateMetadataByItself()
 }
 
 func NewNormalGOVVoteProposalFromSealerMetadata(
 	voteProposal VoteProposalData,
-	lockerPubKey [][]byte,
+	lockerPaymentAddress []privacy.PaymentAddress,
 	pointerToLv1VoteProposal common.Hash,
 	pointerToLv3VoteProposal common.Hash,
 ) *NormalGOVVoteProposalFromSealerMetadata {
 	return &NormalGOVVoteProposalFromSealerMetadata{
 		NormalVoteProposalFromSealerMetadata: *NewNormalVoteProposalFromSealerMetadata(
 			voteProposal,
-			lockerPubKey,
+			lockerPaymentAddress,
 			pointerToLv1VoteProposal,
 			pointerToLv3VoteProposal,
-			*NewMetadataBase(NormalGOVVoteProposalFromSealerMeta),
 		),
+		MetadataBase: *NewMetadataBase(NormalGOVVoteProposalFromSealerMeta),
 	}
 }
 
@@ -188,114 +203,60 @@ func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMe
 func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	//Validate these pubKeys are in board
 	boardType := normalGOVVoteProposalFromSealerMetadata.GetBoardType()
-	govBoardPubKeys := bcr.GetBoardPubKeys(boardType)
-	for _, j := range normalGOVVoteProposalFromSealerMetadata.LockerPubKey {
-		exist := false
-		for _, i := range govBoardPubKeys {
-			if common.ByteEqual(i, j) {
-				exist = true
-				break
-			}
-		}
-		if !exist {
-			return false, nil
-		}
-	}
-
-	//Check precede transaction type
-	_, _, _, lv1Tx, _ := bcr.GetTransactionByHash(&normalGOVVoteProposalFromSealerMetadata.PointerToLv1VoteProposal)
-	if lv1Tx.GetMetadataType() != SealedLv1GOVVoteProposalMeta {
-		return false, nil
-	}
-	_, _, _, lv3Tx, _ := bcr.GetTransactionByHash(&normalGOVVoteProposalFromSealerMetadata.PointerToLv3VoteProposal)
-	if lv3Tx.GetMetadataType() != SealedLv3GOVVoteProposalMeta {
-		return false, nil
-	}
-
-	// check 2 array equal
-	metaLv1 := lv1Tx.GetMetadata().(*SealedLv1GOVVoteProposalMetadata)
-	for i := 0; i < len(normalGOVVoteProposalFromSealerMetadata.LockerPubKey); i++ {
-		if !common.ByteEqual(normalGOVVoteProposalFromSealerMetadata.LockerPubKey[i], metaLv1.SealedVoteProposal.LockerPubKeys[i]) {
-			return false, nil
-		}
-	}
-
-	// Check encrypting
-	if !common.ByteEqual(normalGOVVoteProposalFromSealerMetadata.VoteProposal.ToBytes(), common.Encrypt(metaLv1.SealedVoteProposal.SealVoteProposalData, metaLv1.SealedVoteProposal.LockerPubKeys[0])) {
-		return false, nil
-	}
-	return true, nil
+	return normalGOVVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.ValidateTxWithBlockChain(
+		boardType,
+		tx,
+		bcr,
+		chainID,
+		db,
+	)
 }
 
 type NormalGOVVoteProposalFromOwnerMetadata struct {
-	NormalVoteProposalFromOwnerMetadata
+	NormalVoteProposalFromOwnerMetadata NormalVoteProposalFromOwnerMetadata
+	MetadataBase
+}
+
+func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
+	return normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.ValidateSanityData(bcr, tx)
+}
+
+func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMetadata) ValidateMetadataByItself() bool {
+	return normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.ValidateMetadataByItself()
 }
 
 func NewNormalGOVVoteProposalFromOwnerMetadata(
 	voteProposal VoteProposalData,
-	lockerPubKey [][]byte,
+	lockerPaymentAddress []privacy.PaymentAddress,
 	pointerToLv3VoteProposal common.Hash,
 ) *NormalGOVVoteProposalFromOwnerMetadata {
 	return &NormalGOVVoteProposalFromOwnerMetadata{
 		NormalVoteProposalFromOwnerMetadata: *NewNormalVoteProposalFromOwnerMetadata(
 			voteProposal,
-			lockerPubKey,
+			lockerPaymentAddress,
 			pointerToLv3VoteProposal,
-			*NewMetadataBase(NormalGOVVoteProposalFromOwnerMeta),
 		),
+		MetadataBase: *NewMetadataBase(NormalGOVVoteProposalFromOwnerMeta),
 	}
 }
 
 func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMetadata) Hash() *common.Hash {
-	return normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.Hash()
+	record := normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.ToBytes()
+
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
 }
 
 func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	//Validate these pubKeys are in board
-	govBoardPubKeys := bcr.GetBoardPubKeys("gov")
-	for _, j := range normalGOVVoteProposalFromOwnerMetadata.LockerPubKey {
-		exist := false
-		for _, i := range govBoardPubKeys {
-			if common.ByteEqual(i, j) {
-				exist = true
-				break
-			}
-		}
-		if !exist {
-			return false, nil
-		}
-	}
-
-	//Check precede transaction type
-	_, _, _, lv3Tx, _ := bcr.GetTransactionByHash(&normalGOVVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal)
-	if lv3Tx.GetMetadataType() != SealedLv3GOVVoteProposalMeta {
-		return false, nil
-	}
-
-	// check 2 array equal
-	metaLv3 := lv3Tx.GetMetadata().(*SealedLv3GOVVoteProposalMetadata)
-	for i := 0; i < len(normalGOVVoteProposalFromOwnerMetadata.LockerPubKey); i++ {
-		if !common.ByteEqual(normalGOVVoteProposalFromOwnerMetadata.LockerPubKey[i], metaLv3.SealedVoteProposal.LockerPubKeys[i]) {
-			return false, nil
-		}
-	}
-
-	// Check encrypting
-	if !common.ByteEqual(
-		metaLv3.SealedVoteProposal.SealVoteProposalData,
-		common.Encrypt(
-			common.Encrypt(
-				common.Encrypt(
-					normalGOVVoteProposalFromOwnerMetadata.VoteProposal.ToBytes(),
-					metaLv3.SealedVoteProposal.LockerPubKeys[2],
-				),
-				metaLv3.SealedVoteProposal.LockerPubKeys[1],
-			),
-			metaLv3.SealedVoteProposal.LockerPubKeys[0],
-		)) {
-		return false, nil
-	}
-	return true, nil
+	boardType := "gov"
+	return normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.ValidateTxWithBlockChain(
+		boardType,
+		tx,
+		bcr,
+		chainID,
+		db,
+	)
 }
 
 type PunishGOVDecryptMetadata struct {
@@ -315,6 +276,7 @@ func NewPunishGOVDecryptMetadata(paymentAddress privacy.PaymentAddress) *PunishG
 func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) Hash() *common.Hash {
 	record := string(punishGOVDecryptMetadata.PunishDecryptMetadata.ToBytes())
 	record += string(punishGOVDecryptMetadata.MetadataBase.Hash().GetBytes())
+
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

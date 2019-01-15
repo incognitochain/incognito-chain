@@ -145,7 +145,7 @@ func (self RpcServer) buildRawVoteDCBBoardTransaction(
 	arrayParams := common.InterfaceSlice(params)
 	candidatePaymentAddress := arrayParams[len(arrayParams)-1].(string)
 	account, _ := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-	metadata := metadata.NewVoteDCBBoardMetadata(account.KeySet.PaymentAddress.Pk)
+	metadata := metadata.NewVoteDCBBoardMetadata(account.KeySet.PaymentAddress)
 	tx, err := self.buildRawCustomTokenTransaction(params, metadata)
 	if err != nil {
 		return nil, err

@@ -149,14 +149,14 @@ func (helper GOVConstitutionHelper) CreatePunishDecryptTx(paymentAddress privacy
 	return metadata.NewPunishGOVDecryptMetadata(paymentAddress)
 }
 
-func (helper DCBConstitutionHelper) GetSealerPubKey(tx metadata.Transaction) [][]byte {
+func (helper DCBConstitutionHelper) GetSealerPaymentAddress(tx metadata.Transaction) []privacy.PaymentAddress {
 	meta := tx.GetMetadata().(*metadata.SealedLv3DCBVoteProposalMetadata)
-	return meta.SealedVoteProposal.LockerPubKeys
+	return meta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddress
 }
 
-func (helper GOVConstitutionHelper) GetSealerPubKey(tx metadata.Transaction) [][]byte {
+func (helper GOVConstitutionHelper) GetSealerPaymentAddress(tx metadata.Transaction) []privacy.PaymentAddress {
 	meta := tx.GetMetadata().(*metadata.SealedLv3GOVVoteProposalMetadata)
-	return meta.SealedVoteProposal.LockerPubKeys
+	return meta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddress
 }
 
 func (helper DCBConstitutionHelper) NewTxRewardProposalSubmitter(blockgen *BlkTmplGenerator, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
@@ -188,13 +188,13 @@ func (helper GOVConstitutionHelper) GetPaymentAddressFromSubmitProposalMetadata(
 	return &meta.PaymentAddress
 }
 
-func (helper DCBConstitutionHelper) GetPubKeyVoter(blockgen *BlkTmplGenerator, chainID byte) ([]byte, error) {
+func (helper DCBConstitutionHelper) GetPaymentAddressVoter(blockgen *BlkTmplGenerator, chainID byte) (privacy.PaymentAddress, error) {
 	bestBlock := blockgen.chain.BestState[chainID].BestBlock
 	_, _, _, tx, _ := blockgen.chain.GetTransactionByHash(&bestBlock.Header.DCBConstitution.AcceptProposalTXID)
 	meta := tx.GetMetadata().(*metadata.AcceptDCBProposalMetadata)
 	return meta.Voter.PaymentAddress, nil
 }
-func (helper GOVConstitutionHelper) GetPubKeyVoter(blockgen *BlkTmplGenerator, chainID byte) ([]byte, error) {
+func (helper GOVConstitutionHelper) GetPaymentAddressVoter(blockgen *BlkTmplGenerator, chainID byte) (privacy.PaymentAddress, error) {
 	bestBlock := blockgen.chain.BestState[chainID].BestBlock
 	_, _, _, tx, _ := blockgen.chain.GetTransactionByHash(&bestBlock.Header.GOVConstitution.AcceptProposalTXID)
 	meta := tx.GetMetadata().(*metadata.AcceptGOVProposalMetadata)
@@ -250,23 +250,23 @@ func (helper GOVConstitutionHelper) GetBoard(chain *BlockChain) Governor {
 	return chain.BestState[0].BestBlock.Header.GOVGovernor
 }
 
-func (helper DCBConstitutionHelper) GetAmountVoteTokenOfBoard(blockgen *BlkTmplGenerator, pubKey []byte, boardIndex uint32) uint64 {
-	value, _ := blockgen.chain.config.DataBase.GetVoteTokenAmount(helper.GetBoardType(), boardIndex, pubKey)
+func (helper DCBConstitutionHelper) GetAmountVoteTokenOfBoard(blockgen *BlkTmplGenerator, paymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
+	value, _ := blockgen.chain.config.DataBase.GetVoteTokenAmount(helper.GetBoardType(), boardIndex, paymentAddress)
 	return uint64(value)
 }
-func (helper GOVConstitutionHelper) GetAmountVoteTokenOfBoard(blockgen *BlkTmplGenerator, pubKey []byte, boardIndex uint32) uint64 {
-	value, _ := blockgen.chain.config.DataBase.GetVoteTokenAmount(helper.GetBoardType(), boardIndex, pubKey)
+func (helper GOVConstitutionHelper) GetAmountVoteTokenOfBoard(blockgen *BlkTmplGenerator, paymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
+	value, _ := blockgen.chain.config.DataBase.GetVoteTokenAmount(helper.GetBoardType(), boardIndex, paymentAddress)
 	return uint64(value)
 }
 
 func (helper DCBConstitutionHelper) GetAmountOfVoteToBoard(blockgen *BlkTmplGenerator, candidatePaymentAddress privacy.PaymentAddress, voterPaymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
-	key := lvdb.GetKeyVoteBoardList(helper.GetBoardType(), boardIndex, candidatePaymentAddress, &voterPaymentAddress)
+	key := lvdb.GetKeyVoteBoardList(helper.GetBoardType(), boardIndex, &candidatePaymentAddress, &voterPaymentAddress)
 	value, _ := blockgen.chain.config.DataBase.Get(key)
 	amount := lvdb.ParseValueVoteBoardList(value)
 	return amount
 }
 func (helper GOVConstitutionHelper) GetAmountOfVoteToBoard(blockgen *BlkTmplGenerator, candidatePaymentAddress privacy.PaymentAddress, voterPaymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
-	key := lvdb.GetKeyVoteBoardList(helper.GetBoardType(), boardIndex, candidatePaymentAddress, &voterPaymentAddress)
+	key := lvdb.GetKeyVoteBoardList(helper.GetBoardType(), boardIndex, &candidatePaymentAddress, &voterPaymentAddress)
 	value, _ := blockgen.chain.config.DataBase.Get(key)
 	amount := lvdb.ParseValueVoteBoardList(value)
 	return amount

@@ -6,9 +6,9 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/wallet"
 )
 
 func iPlusPlus(x *int) int {
@@ -18,13 +18,13 @@ func iPlusPlus(x *int) int {
 
 func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	paymentAddress := arrayParams[0].(string)
-	pubKey := wallet.GetPubKeyFromPaymentAddress(paymentAddress)
+	paymentAddressByte := []byte(arrayParams[0].(string))
+	paymentAddress := privacy.NewPaymentAddress(paymentAddressByte)
 	db := *self.config.Database
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 
 	// For DCB voting token
-	result.PaymentAddress = paymentAddress
+	result.PaymentAddress = string(paymentAddressByte)
 	item := jsonresult.CustomTokenBalance{}
 	item.Name = "DCB voting token"
 	item.Symbol = "DCB Voting Token"
@@ -32,7 +32,7 @@ func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-c
 	TokenID.SetBytes(common.DCBVotingTokenID[:])
 	item.TokenID = TokenID.String()
 	item.TokenImage = common.Render([]byte(item.TokenID))
-	amount, err := db.GetVoteTokenAmount("dcb", self.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), pubKey)
+	amount, err := db.GetVoteTokenAmount("dcb", self.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -47,7 +47,7 @@ func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-c
 	TokenID.SetBytes(common.GOVVotingTokenID[:])
 	item.TokenID = TokenID.String()
 	item.TokenImage = common.Render([]byte(item.TokenID))
-	amount, err = db.GetVoteTokenAmount("gov", self.config.BlockChain.GetCurrentBoardIndex(blockchain.GOVConstitutionHelper{}), pubKey)
+	amount, err = db.GetVoteTokenAmount("gov", self.config.BlockChain.GetCurrentBoardIndex(blockchain.GOVConstitutionHelper{}), *paymentAddress)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -91,14 +91,24 @@ func (self RpcServer) buildRawSealLv3VoteProposalTransaction(
 	boardType := arrayParams[iPlusPlus(&index)].(string)
 	voteProposalData := metadata.NewVoteProposalDataFromJson(arrayParams[iPlusPlus(&index)])
 
-	threePaymentAddress := common.SliceInterfaceToSliceSliceByte(arrayParams[iPlusPlus(&index)].([]interface{}))
-	pubKeys := ListPubKeyFromListSenderKey(threePaymentAddress)
+	threeSenderKey := common.SliceInterfaceToSliceSliceByte(arrayParams[iPlusPlus(&index)].([]interface{}))
+	pubKeys := ListPubKeyFromListSenderKey(threeSenderKey)
+	threePaymentAddress := ListPaymentAddressFromListSenderKey(threeSenderKey)
 
 	Seal3Data := CreateSealLv3Data(voteProposalData, pubKeys)
-	meta := NewSealedLv3VoteProposalMetadata(boardType, Seal3Data, pubKeys)
+	meta := NewSealedLv3VoteProposalMetadata(boardType, Seal3Data, threePaymentAddress)
 
 	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
+}
+
+func ListPaymentAddressFromListSenderKey(bytes [][]byte) []privacy.PaymentAddress {
+	paymentAddresses := make([]privacy.PaymentAddress, 0)
+	for i := 0; i < 3; i++ {
+		new, _ := GetPaymentAddressFromSenderKeyParams(string(bytes[i]))
+		paymentAddresses = append(paymentAddresses, *new)
+	}
+	return paymentAddresses
 }
 
 func ListPubKeyFromListSenderKey(threePaymentAddress [][]byte) [][]byte {
@@ -109,12 +119,12 @@ func ListPubKeyFromListSenderKey(threePaymentAddress [][]byte) [][]byte {
 	return pubKeys
 }
 
-func NewSealedLv3VoteProposalMetadata(boardType string, Seal3Data []byte, pubKeys [][]byte) metadata.Metadata {
+func NewSealedLv3VoteProposalMetadata(boardType string, Seal3Data []byte, paymentAddresses []privacy.PaymentAddress) metadata.Metadata {
 	var meta metadata.Metadata
 	if boardType == "dcb" {
-		meta = metadata.NewSealedLv3DCBVoteProposalMetadata(Seal3Data, pubKeys)
+		meta = metadata.NewSealedLv3DCBVoteProposalMetadata(Seal3Data, paymentAddresses)
 	} else {
-		meta = metadata.NewSealedLv3GOVVoteProposalMetadata(Seal3Data, pubKeys)
+		meta = metadata.NewSealedLv3GOVVoteProposalMetadata(Seal3Data, paymentAddresses)
 	}
 	return meta
 }
@@ -168,7 +178,7 @@ func (self RpcServer) buildRawSealLv2VoteProposalTransaction(
 	lv3txID := common.NewHash([]byte(arrayParams[iPlusPlus(&index)].(string)))
 	_, _, _, lv3Tx, _ := self.config.BlockChain.GetTransactionByHash(&lv3txID)
 	SealLv3Data := GetSealLv3Data(lv3Tx)
-	pubKeys := GetLockerPubKeys(lv3Tx)
+	pubKeys := GetLockerPaymentAddress(lv3Tx)
 	Seal2Data := common.Decrypt(SealLv3Data, firstPrivateKey)
 
 	meta := NewSealedLv2VoteProposalMetadata(
@@ -181,32 +191,32 @@ func (self RpcServer) buildRawSealLv2VoteProposalTransaction(
 	return tx, err
 }
 
-func NewSealedLv2VoteProposalMetadata(boardType string, Seal2Data []byte, pubKeys [][]byte, pointer common.Hash) metadata.Metadata {
+func NewSealedLv2VoteProposalMetadata(boardType string, Seal2Data []byte, paymentAddresses []privacy.PaymentAddress, pointer common.Hash) metadata.Metadata {
 	var meta metadata.Metadata
 	if boardType == "dcb" {
 		meta = metadata.NewSealedLv2DCBVoteProposalMetadata(
 			Seal2Data,
-			pubKeys,
+			paymentAddresses,
 			pointer,
 		)
 	} else {
 		meta = metadata.NewSealedLv2GOVVoteProposalMetadata(
 			Seal2Data,
-			pubKeys,
+			paymentAddresses,
 			pointer,
 		)
 	}
 	return meta
 }
 
-func GetLockerPubKeys(tx metadata.Transaction) [][]byte {
+func GetLockerPaymentAddress(tx metadata.Transaction) []privacy.PaymentAddress {
 	meta := tx.GetMetadata()
 	if meta.GetType() == metadata.SealedLv3DCBVoteProposalMeta {
 		newMeta := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
-		return newMeta.LockerPubKeys
+		return newMeta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddress
 	} else {
 		newMeta := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
-		return newMeta.LockerPubKeys
+		return newMeta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddress
 	}
 }
 
@@ -214,10 +224,10 @@ func GetSealLv3Data(tx metadata.Transaction) []byte {
 	meta := tx.GetMetadata()
 	if meta.GetType() == metadata.SealedLv3DCBVoteProposalMeta {
 		newMeta := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
-		return newMeta.SealedVoteProposal.SealVoteProposalData
+		return newMeta.SealedLv3VoteProposalMetadata.SealedVoteProposal.SealVoteProposalData
 	} else {
 		newMeta := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
-		return newMeta.SealedVoteProposal.SealVoteProposalData
+		return newMeta.SealedLv3VoteProposalMetadata.SealedVoteProposal.SealVoteProposalData
 	}
 }
 
@@ -274,7 +284,7 @@ func (self RpcServer) buildRawSealLv1VoteProposalTransaction(
 	SealLv2Data := GetSealLv2Data(lv2tx)
 
 	_, _, _, lv3tx, _ := self.config.BlockChain.GetTransactionByHash(&lv3TxID)
-	pubKeys := GetLockerPubKeys(lv3tx)
+	pubKeys := GetLockerPaymentAddress(lv3tx)
 
 	Seal1Data := common.Decrypt(SealLv2Data, secondPrivateKey)
 
@@ -289,19 +299,19 @@ func (self RpcServer) buildRawSealLv1VoteProposalTransaction(
 	return tx, err
 }
 
-func NewSealedLv1VoteProposalMetadata(boardType string, sealLv1Data []byte, pubKeys [][]byte, lv2TxID common.Hash, lv3TxID common.Hash) metadata.Metadata {
+func NewSealedLv1VoteProposalMetadata(boardType string, sealLv1Data []byte, listPaymentAddress []privacy.PaymentAddress, lv2TxID common.Hash, lv3TxID common.Hash) metadata.Metadata {
 	var meta metadata.Metadata
 	if boardType == "dcb" {
 		meta = metadata.NewSealedLv1DCBVoteProposalMetadata(
 			sealLv1Data,
-			pubKeys,
+			listPaymentAddress,
 			lv2TxID,
 			lv3TxID,
 		)
 	} else {
 		meta = metadata.NewSealedLv1GOVVoteProposalMetadata(
 			sealLv1Data,
-			pubKeys,
+			listPaymentAddress,
 			lv2TxID,
 			lv3TxID,
 		)
@@ -313,10 +323,10 @@ func GetSealLv2Data(lv2tx metadata.Transaction) []byte {
 	meta := lv2tx.GetMetadata()
 	if meta.GetType() == metadata.SealedLv2DCBVoteProposalMeta {
 		newMeta := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
-		return newMeta.SealVoteProposalData
+		return newMeta.SealedLv3VoteProposalMetadata.SealedVoteProposal.SealVoteProposalData
 	} else if meta.GetType() == metadata.SealedLv2GOVVoteProposalMeta {
 		newMeta := meta.(*metadata.SealedLv3GOVVoteProposalMetadata)
-		return newMeta.SealVoteProposalData
+		return newMeta.SealedLv3VoteProposalMetadata.SealedVoteProposal.SealVoteProposalData
 	}
 	return nil
 }
@@ -367,32 +377,32 @@ func (self RpcServer) buildRawNormalVoteProposalTransactionFromOwner(
 	lv3TxID := common.NewHash([]byte(arrayParams[iPlusPlus(&index)].(string)))
 
 	_, _, _, lv3tx, _ := self.config.BlockChain.GetTransactionByHash(&lv3TxID)
-	pubKeys := GetLockerPubKeys(lv3tx)
+	paymentAddresses := GetLockerPaymentAddress(lv3tx)
 
 	voteProposalData := metadata.NewVoteProposalDataFromJson(arrayParams[iPlusPlus(&index)])
 
 	meta := NewNormalVoteProposalFromOwnerMetadata(
 		boardType,
 		voteProposalData,
-		pubKeys,
+		paymentAddresses,
 		lv3TxID,
 	)
 	tx, err := self.buildRawTransaction(params, meta)
 	return tx, err
 }
 
-func NewNormalVoteProposalFromOwnerMetadata(boardType string, voteProposalData *metadata.VoteProposalData, pubKeys [][]byte, lv3TxID common.Hash) metadata.Metadata {
+func NewNormalVoteProposalFromOwnerMetadata(boardType string, voteProposalData *metadata.VoteProposalData, listPaymentAddress []privacy.PaymentAddress, lv3TxID common.Hash) metadata.Metadata {
 	var meta metadata.Metadata
 	if boardType == "dcb" {
 		meta = metadata.NewNormalDCBVoteProposalFromOwnerMetadata(
 			*voteProposalData,
-			pubKeys,
+			listPaymentAddress,
 			lv3TxID,
 		)
 	} else {
 		meta = metadata.NewNormalGOVVoteProposalFromOwnerMetadata(
 			*voteProposalData,
-			pubKeys,
+			listPaymentAddress,
 			lv3TxID,
 		)
 	}
@@ -449,7 +459,7 @@ func (self RpcServer) buildRawNormalVoteProposalTransactionFromSealer(
 	SealLv1Data := GetSealLv2Data(lv1tx)
 
 	_, _, _, lv3tx, _ := self.config.BlockChain.GetTransactionByHash(&lv3TxID)
-	pubKeys := GetLockerPubKeys(lv3tx)
+	paymentAddresses := GetLockerPaymentAddress(lv3tx)
 
 	thirdPrivateKey := []byte(arrayParams[iPlusPlus(&index)].(string))
 
@@ -459,7 +469,7 @@ func (self RpcServer) buildRawNormalVoteProposalTransactionFromSealer(
 	meta := NewNormalVoteProposalFromSealerMetadata(
 		boardType,
 		*voteProposalData,
-		pubKeys,
+		paymentAddresses,
 		lv1TxID,
 		lv3TxID,
 	)
@@ -467,19 +477,19 @@ func (self RpcServer) buildRawNormalVoteProposalTransactionFromSealer(
 	return tx, err
 }
 
-func NewNormalVoteProposalFromSealerMetadata(boardType string, voteProposalData metadata.VoteProposalData, pubKeys [][]byte, lv1TxID common.Hash, lv3TxID common.Hash) metadata.Metadata {
+func NewNormalVoteProposalFromSealerMetadata(boardType string, voteProposalData metadata.VoteProposalData, paymentAddresses []privacy.PaymentAddress, lv1TxID common.Hash, lv3TxID common.Hash) metadata.Metadata {
 	var meta metadata.Metadata
 	if boardType == "dcb" {
 		meta = metadata.NewNormalDCBVoteProposalFromSealerMetadata(
 			voteProposalData,
-			pubKeys,
+			paymentAddresses,
 			lv1TxID,
 			lv3TxID,
 		)
 	} else {
 		meta = metadata.NewNormalGOVVoteProposalFromSealerMetadata(
 			voteProposalData,
-			pubKeys,
+			paymentAddresses,
 			lv1TxID,
 			lv3TxID,
 		)

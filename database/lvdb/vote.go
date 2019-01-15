@@ -55,7 +55,7 @@ func (db *db) AddVoteBoard(
 	}
 
 	// add to list voter new voter base on count as index
-	key = GetKeyVoteBoardList(boardType, boardIndex, CandidatePaymentAddress, &VoterPaymentAddress)
+	key = GetKeyVoteBoardList(boardType, boardIndex, &CandidatePaymentAddress, &VoterPaymentAddress)
 	oldAmountInByte, _ := db.Get(key)
 	oldAmount := ParseValueVoteBoardList(oldAmountInByte)
 	newAmount := oldAmount + amount
@@ -265,7 +265,7 @@ func ParseKeyVoteBoardCount(key []byte) (boardType string, boardIndex uint32, ca
 	return
 }
 
-func GetKeyVoteBoardList(boardType string, boardIndex uint32, candidatePaymentAddress privacy.PaymentAddress, voterPaymentAddress *privacy.PaymentAddress) []byte {
+func GetKeyVoteBoardList(boardType string, boardIndex uint32, candidatePaymentAddress *privacy.PaymentAddress, voterPaymentAddress *privacy.PaymentAddress) []byte {
 	key := GetKeyFromVariadic(voteBoardListPrefix, []byte(boardType), common.Uint32ToBytes(boardIndex), candidatePaymentAddress.Bytes(), voterPaymentAddress.Bytes())
 	return key
 }
@@ -471,8 +471,8 @@ func (db *db) SetNewProposalWinningVoter(boardType string, constitutionIndex uin
 }
 
 func (db *db) GetBoardVoterList(boardType string, candidatePaymentAddress privacy.PaymentAddress, boardIndex uint32) []privacy.PaymentAddress {
-	begin := GetKeyVoteBoardList(boardType, boardIndex, candidatePaymentAddress, nil)
-	end := GetKeyVoteBoardList(boardType, boardIndex, candidatePaymentAddress, nil)
+	begin := GetKeyVoteBoardList(boardType, boardIndex, &candidatePaymentAddress, nil)
+	end := GetKeyVoteBoardList(boardType, boardIndex, &candidatePaymentAddress, nil)
 	end = common.BytesPlusOne(end)
 	searchRange := util.Range{
 		Start: begin,
