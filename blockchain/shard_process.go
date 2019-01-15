@@ -226,12 +226,12 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	}
 	return nil
 }
-
-func (self *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlock, shardId byte) error {
+func (self *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBlock, isSign bool, shardId byte) error {
+	//TODO
 	return nil
 }
-
 func (self *BestStateShard) Update(block *ShardBlock) error {
+	//TODO
 	self.BestBeaconHash = block.Header.BeaconHash
 	self.PrevShardBlockHash = self.BestShardBlockHash
 	self.BestShardBlockHash = *block.Hash()
@@ -243,8 +243,8 @@ func (self *BestStateShard) Update(block *ShardBlock) error {
 	//self.NumTxns = uint64(len(block.Body.Transactions))
 	return nil
 }
-
-func (self *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBlock, isSign bool, shardId byte) error {
+func (self *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlock, shardId byte) error {
+	//TODO
 	return nil
 }
 
