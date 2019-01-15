@@ -165,7 +165,7 @@ func (blockgen *BlkTmplGenerator) processDividend(
 			}
 		}
 
-		dividendTxs, err = buildDividendTxs(infos, proposal, producerPrivateKey, blockgen.chain.GetDatabase())
+		dividendTxs, err = transaction.BuildDividendTxs(infos, proposal, producerPrivateKey, blockgen.chain.GetDatabase())
 		if err != nil {
 			return nil, 0, err
 		}

@@ -62,7 +62,7 @@ func buildPaymentForCoin(
 	amounts := []uint64{amount}
 	pks := [][]byte{meta.PaymentAddress.Pk[:]}
 	tks := [][]byte{meta.PaymentAddress.Tk[:]}
-	txs, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db, metaPayList) // There's only one tx in txs
+	txs, err := transaction.BuildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db, metaPayList) // There's only one tx in txs
 	if err != nil {
 		return nil, err
 	}

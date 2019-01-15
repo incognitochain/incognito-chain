@@ -26,7 +26,7 @@ func buildRefundTx(
 	pks := [][]byte{receiver.Pk[:]}
 	tks := [][]byte{receiver.Tk[:]}
 	amounts := []uint64{amount}
-	txs, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db, metaList)
+	txs, err := transaction.BuildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db, metaList)
 	if err != nil {
 		return nil, err
 	}

@@ -1,20 +1,19 @@
-package blockchain
+package transaction
 
 import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/transaction"
 )
 
-func buildCoinbaseTxs(
+func BuildCoinbaseTxs(
 	pks, tks [][]byte,
 	amounts []uint64,
 	producerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
 	metaList []metadata.Metadata,
-) ([]*transaction.Tx, error) {
-	txs := []*transaction.Tx{}
+) ([]*Tx, error) {
+	txs := []*Tx{}
 	for i := 0; i < len(pks); i++ {
 		var meta metadata.Metadata
 		if metaList == nil || len(metaList) == 0 {
@@ -27,7 +26,7 @@ func buildCoinbaseTxs(
 			Tk: tks[i],
 		}
 		// TODO(@0xbunyip): check if txtype should be set to txnormal instead of txsalary
-		tx := new(transaction.Tx)
+		tx := new(Tx)
 		err := tx.InitTxSalary(amounts[i], paymentAddress, producerPrivateKey, db, meta)
 		if err != nil {
 			return nil, err
@@ -37,12 +36,12 @@ func buildCoinbaseTxs(
 	return txs, nil
 }
 
-func buildDividendTxs(
+func BuildDividendTxs(
 	infos []metadata.DividendInfo,
 	proposal *metadata.DividendProposal,
 	producerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
-) ([]*transaction.Tx, error) {
+) ([]*Tx, error) {
 	pks := [][]byte{}
 	tks := [][]byte{}
 	amounts := []uint64{}
@@ -66,5 +65,5 @@ func buildDividendTxs(
 		}
 		dividendMetaList = append(dividendMetaList, dividendMeta)
 	}
-	return buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db, dividendMetaList)
+	return BuildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db, dividendMetaList)
 }
