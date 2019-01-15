@@ -122,7 +122,7 @@ func NewSubmitGOVProposalMetadataFromJson(data interface{}) *SubmitGOVProposalMe
 	}
 
 	return NewSubmitGOVProposalMetadata(
-		*params.NewGOVParamsFromJson(submitGOVProposalData["GovParams"]),
+		*params.NewGOVParamsFromJson(submitGOVProposalData["GOVParams"]),
 		uint32(submitGOVProposalData["ExecuteDuration"].(float64)),
 		submitGOVProposalData["Explanation"].(string),
 		&paymentAddress,

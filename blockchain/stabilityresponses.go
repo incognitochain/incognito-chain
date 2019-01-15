@@ -187,10 +187,8 @@ func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, pro
 			}
 			copy(unlockMeta.LoanID, withdrawMeta.LoanID)
 			uplockMetaList := []metadata.Metadata{unlockMeta}
-			pks := [][]byte{meta.ReceiveAddress.Pk[:]}
-			tks := [][]byte{meta.ReceiveAddress.Tk[:]}
 			amounts := []uint64{meta.LoanAmount}
-			txNormals, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, blockgen.chain.GetDatabase(), uplockMetaList)
+			txNormals, err := transaction.BuildCoinbaseTxs([]*privacy.PaymentAddress{meta.ReceiveAddress}, amounts, producerPrivateKey, blockgen.chain.GetDatabase(), uplockMetaList)
 			if err != nil {
 				removableTxs = append(removableTxs, txDesc.Tx)
 				continue
