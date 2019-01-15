@@ -24,7 +24,7 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 	}
 
 	// Remove unrelated shard tx
-	// @Hung: Txpool should be remove after create block is successful
+	// TODO: Check again Txpool should be remove after create block is successful
 	for _, tx := range txToRemove {
 		self.txPool.RemoveTx(tx)
 	}
@@ -52,8 +52,8 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 	coinbases := []metadata.Transaction{salaryTx}
 	txsToAdd = append(coinbases, txsToAdd...)
 
-	crossOutputCoin, crossOutputCoinHash := self.getCrossOutputCoin(shardID)
-	instructions, instructionRoot := self.createShardAction()
+	crossOutputCoin := self.getCrossOutputCoin(shardID)
+	instructions := self.createShardAction()
 	// Build block
 	block := &ShardBlock{
 		Body: ShardBody{
@@ -71,23 +71,27 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
-	prevBlockHash := self.chain.BestState.Shard[shardID].PrevShardBlockHash
-
+	prevBlock := self.chain.BestState.Shard[shardID].BestShardBlock
+	prevBlockHash := self.chain.BestState.Shard[shardID].BestShardBlock.Hash()
+	crossOutputCoinRoot, err := CreateMerkleCrossOutputCoin(block.Body.CrossOutputCoin)
+	if err != nil {
+		return nil, err
+	}
 	block.Header = ShardHeader{
 		Producer: userKeySet.GetPublicKeyB58(),
-		//@Hung: increase epoch if new block %epoch = 0
-		Epoch:         self.chain.BestState.Beacon.BeaconEpoch,
-		Height:        self.chain.BestState.Shard[shardID].ShardHeight,
-		Version:       BlockVersion,
-		PrevBlockHash: prevBlockHash,
-		TxRoot:        *merkleRoot,
-		ShardTxRoot:   CreateMerkleRootShard(block.Body.Transactions),
-		Timestamp:     time.Now().Unix(),
-		ShardID:       shardID,
-		//TODO: get hash root
+		//TODO: increase epoch if new block %epoch = 0
+		Epoch:               self.chain.BestState.Beacon.BeaconEpoch,
+		Height:              prevBlock.Header.Height + 1,
+		Version:             BlockVersion,
+		PrevBlockHash:       *prevBlockHash,
+		TxRoot:              *merkleRoot,
+		ShardTxRoot:         CreateMerkleRootShard(block.Body.Transactions),
+		Timestamp:           time.Now().Unix(),
+		ShardID:             shardID,
 		CrossShards:         self.createCrossShardByteArray(txsToAdd),
-		CrossOutputCoinRoot: crossOutputCoinHash, //
-		ActionsRoot:         instructionRoot,     //           self.createShardAction(),
+		CrossOutputCoinRoot: *crossOutputCoinRoot,
+		// TODO: create actions root
+		// ActionsRoot:       self.createShardAction(),
 	}
 
 	// Create producer signature
@@ -101,7 +105,7 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 	return block, nil
 }
 
-func (self *BlkTmplGenerator) getCrossOutputCoin(shardID byte) ([]CrossOutputCoin, common.Hash) {
+func (self *BlkTmplGenerator) getCrossOutputCoin(shardID byte) []CrossOutputCoin {
 	res := []CrossOutputCoin{}
 	// get cross shard block
 	bestShardHeight := self.chain.BestState.Beacon.BestShardHeight
@@ -110,7 +114,6 @@ func (self *BlkTmplGenerator) getCrossOutputCoin(shardID byte) ([]CrossOutputCoi
 	shardCrossBlock := crossBlock[shardID]
 	for _, blk := range shardCrossBlock {
 		//TODO: validate blk
-
 		outputCoin := CrossOutputCoin{
 			OutputCoin: blk.CrossOutputCoin,
 			ShardID:    shardID,
@@ -118,9 +121,7 @@ func (self *BlkTmplGenerator) getCrossOutputCoin(shardID byte) ([]CrossOutputCoi
 		}
 		res = append(res, outputCoin)
 	}
-
-	//TODO: calculate cross output coin hash
-	return res, [32]byte{}
+	return res
 }
 
 func (self *BlkTmplGenerator) createCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) {
@@ -141,9 +142,9 @@ func (self *BlkTmplGenerator) createCrossShardByteArray(txList []metadata.Transa
 	return crossIDs
 }
 
-func (self *BlkTmplGenerator) createShardAction() (actions [][]string, instrRoot common.Hash) {
-	//TODO: create shard action and action hash
-	return actions, instrRoot
+func (self *BlkTmplGenerator) createShardAction() (actions [][]string) {
+	//TODO: create shard action and action hash (will be created some where else)
+	return actions
 }
 
 // get valid tx for specific shard and their fee, also return unvalid tx

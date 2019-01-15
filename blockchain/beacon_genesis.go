@@ -7,7 +7,6 @@ import (
 	"time"
 )
 
-// @Hung: genesis should be build as configuration file like JSON
 func CreateBeaconGenesisBlock(
 	version int,
 	beaconNodes []string,
