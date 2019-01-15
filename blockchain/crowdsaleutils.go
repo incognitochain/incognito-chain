@@ -15,7 +15,7 @@ import (
 )
 
 // getTxTokenValue converts total tokens in a tx to Constant
-func getTxTokenValue(tokenData transaction.TxTokenData, tokenID []byte, pk []byte, prices map[string]uint64) (uint64, uint64) {
+func getTxTokenValue(tokenData transaction.TxTokenData, tokenID []byte, pk []byte, prices map[string]uint64) (uint64, uint64, error) {
 	amount := uint64(0)
 	if bytes.Equal(tokenData.PropertyID[:], tokenID) {
 		for _, vout := range tokenData.Vouts {
@@ -24,7 +24,10 @@ func getTxTokenValue(tokenData transaction.TxTokenData, tokenID []byte, pk []byt
 			}
 		}
 	}
-	return amount, amount * prices[string(tokenID)]
+	if price, ok := prices[string(tokenID)]; ok {
+		return amount, amount * price, nil
+	}
+	return 0, 0, errors.New("Miss price")
 }
 
 // getTxValue converts total Constants in a tx to another token
@@ -206,7 +209,13 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	saleData := saleDataMap[string(saleID)]
 
 	// Get price for asset
-	prices := blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds
+	prices := make(map[string]uint64)
+	if blockgen.chain.BestState[chainID].BestBlock.Header.Oracle != nil && len(blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds) > 0 {
+		prices = blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds
+	}
+	if len(prices) == 0 {
+		return nil, errors.New("Missing bonds data in block")
+	}
 	// TODO(@0xbunyip): validate sale data in proposal to admit only valid pair of assets
 	txResponse := &transaction.TxCustomToken{}
 	err := errors.New("Incorrect assets for crowdsale")
@@ -214,7 +223,10 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	copy(sellingAsset[:], saleData.SellingAsset)
 
 	if bytes.Equal(sellingAsset[:], common.ConstantID[:]) {
-		tokenAmount, valuesInConstant := getTxTokenValue(tx.TxTokenData, saleData.BuyingAsset, dcbPk, prices)
+		tokenAmount, valuesInConstant, err := getTxTokenValue(tx.TxTokenData, saleData.BuyingAsset, dcbPk, prices)
+		if err != nil {
+			return nil, err
+		}
 		if tokenAmount > saleData.BuyingAmount || valuesInConstant > saleData.SellingAmount {
 			// User sent too many token, reject request
 			return nil, fmt.Errorf("Crowdsale reached limit")
@@ -229,6 +241,9 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 			producerPrivateKey,
 			blockgen.chain.GetDatabase(),
 		)
+		if err != nil {
+			return nil, err
+		}
 
 	} else if bytes.Equal(sellingAsset[:8], common.BondTokenID[:8]) || bytes.Equal(sellingAsset[:], common.DCBTokenID[:]) {
 		// Get unspent token UTXO to send to user
