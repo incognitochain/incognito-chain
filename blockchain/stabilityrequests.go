@@ -202,7 +202,6 @@ func (blockgen *BlkTmplGenerator) checkAndGroupTxs(
 ) (map[string][]metadata.Transaction, map[string]uint64, []*buyBackFromInfo, error) {
 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 	blockHeight := prevBlock.Header.Height + 1
-	rt := []byte{}
 
 	var txsToAdd []metadata.Transaction
 	var txToRemove []metadata.Transaction
@@ -308,7 +307,7 @@ func (blockgen *BlkTmplGenerator) checkAndGroupTxs(
 	}
 
 	// Process crowdsale for DCB
-	dcbSaleTxs, removableTxs := blockgen.processCrowdsale(sourceTxns, rt, chainID, privatekey)
+	dcbSaleTxs, removableTxs := blockgen.processCrowdsale(sourceTxns, chainID, privatekey)
 	for _, tx := range dcbSaleTxs {
 		txsToAdd = append(txsToAdd, tx)
 	}
