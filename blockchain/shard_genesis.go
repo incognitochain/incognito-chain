@@ -110,6 +110,7 @@ func CreateShardGenesisBlock(
 	)
 	block.Body.Transactions = append(block.Body.Transactions, &bondTokenTx)
 
+	// ---- test RPC api data --- remove after
 	testUserKey, _ := wallet.Base58CheckDeserialize("112t8rnXG4egdXQawnE4rkRfguDfKAyUYkjzns9JvEbJmGSwUhyFqafHQT6iKLC9iSphvErFqGFUiRgdKy97jnHFYj9pRw84qRnxUG2hQgTu")
 	testUserKey.KeySet.ImportFromPrivateKey(&testUserKey.KeySet.PrivateKey)
 
@@ -120,6 +121,8 @@ func CreateShardGenesisBlock(
 		nil,
 	)
 	block.Body.Transactions = append(block.Body.Transactions, &testSalaryTX)
+	// ---- -------- ---
+
 	// Create genesis vote token tx for DCB
 	// voteDCBTokenTx := createSpecialTokenTx(
 	// 	common.Hash(common.VoteDCBTokenID),
