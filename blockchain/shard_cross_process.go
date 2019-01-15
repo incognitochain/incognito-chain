@@ -1,10 +1,11 @@
 package blockchain
 
 import (
+	"math"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
-	"math"
 )
 
 //Receive tx list from shard block body, produce merkle path of UTXO CrossShard List from specific shardID
@@ -64,7 +65,7 @@ func VerifyCrossShardBlockUTXO(block *CrossShardBlock, merklePathShard []common.
 	for _, hash := range merklePathShard {
 		finalHash = common.HashH(append(finalHash.GetBytes(), hash.GetBytes()...))
 	}
-	return VerifyMerkleTree(finalHash, merklePathShard, block.Header.MerkleRootShard)
+	return VerifyMerkleTree(finalHash, merklePathShard, block.Header.ShardTxRoot)
 }
 
 func VerifyMerkleTree(finalHash common.Hash, merklePath []common.Hash, merkleRoot common.Hash) bool {

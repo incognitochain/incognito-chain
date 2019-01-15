@@ -66,25 +66,25 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 		}
 	}
 
-	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
-	merkleRoot := merkleRoots[len(merkleRoots)-1]
-	prevBlock := self.chain.BestState.Shard[shardID].BestBlock
-	prevBlockHash := self.chain.BestState.Shard[shardID].BestBlock.Hash()
+	// merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
+	// merkleRoot := merkleRoots[len(merkleRoots)-1]
+	// prevBlock := self.chain.BestState.Shard[shardID].BestBlock
+	// prevBlockHash := self.chain.BestState.Shard[shardID].BestBlock.Hash()
 
-	block.Header = ShardHeader{
-		Producer: userKeySet.GetPublicKeyB58(),
-		//@Hung: increase epoch if new block %epoch = 0
-		Epoch:             self.chain.BestState.Beacon.BeaconEpoch,
-		Height:            prevBlock.Header.Height + 1,
-		Version:           BlockVersion,
-		PrevBlockHash:     *prevBlockHash,
-		MerkleRoot:        *merkleRoot,
-		MerkleRootShard:   CreateMerkleRootShard(block.Body.Transactions),
-		Timestamp:         time.Now().Unix(),
-		ShardID:           shardID,
-		CrossShardByteMap: self.createCrossShardBytemap(txsToAdd),
-		Actions:           self.createShardAction(),
-	}
+	// block.Header = ShardHeader{
+	// 	Producer: userKeySet.GetPublicKeyB58(),
+	// 	//@Hung: increase epoch if new block %epoch = 0
+	// 	Epoch:             self.chain.BestState.Beacon.BeaconEpoch,
+	// 	Height:            prevBlock.Header.Height + 1,
+	// 	Version:           BlockVersion,
+	// 	PrevBlockHash:     *prevBlockHash,
+	// 	MerkleRoot:        *merkleRoot,
+	// 	MerkleRootShard:   CreateMerkleRootShard(block.Body.Transactions),
+	// 	Timestamp:         time.Now().Unix(),
+	// 	ShardID:           shardID,
+	// 	CrossShardByteMap: self.createCrossShardBytemap(txsToAdd),
+	// 	Actions:           self.createShardAction(),
+	// }
 
 	// Create producer signature
 	blkHeaderHash := block.Header.Hash()
@@ -173,8 +173,8 @@ func (self *BlkTmplGenerator) _NewBlockShard(payToAddress *privacy.PaymentAddres
 
 	userKeySet := cashec.KeySet{}
 	userKeySet.ImportFromPrivateKey(privatekey)
-	prevBlock := self.chain.BestState.Shard[shardID].BestBlock
-	prevBlockHash := self.chain.BestState.Shard[shardID].BestBlock.Hash()
+	prevBlock := self.chain.BestState.Shard[shardID].BestShardBlock
+	prevBlockHash := self.chain.BestState.Shard[shardID].BestShardBlock.Hash()
 	sourceTxns := self.txPool.MiningDescs()
 
 	var txsToAdd []metadata.Transaction
@@ -535,13 +535,13 @@ concludeBlock:
 	block.Header = ShardHeader{
 		Producer: userKeySet.GetPublicKeyB58(),
 		//TODO: Epoch, RefBlockHash, Action
-		Height:          prevBlock.Header.Height + 1,
-		Version:         BlockVersion,
-		PrevBlockHash:   *prevBlockHash,
-		MerkleRoot:      *merkleRoot,
-		MerkleRootShard: CreateMerkleRootShard(block.Body.Transactions),
-		Timestamp:       time.Now().Unix(),
-		ShardID:         shardID,
+		Height:        prevBlock.Header.Height + 1,
+		Version:       BlockVersion,
+		PrevBlockHash: *prevBlockHash,
+		TxRoot:        *merkleRoot,
+		ShardTxRoot:   CreateMerkleRootShard(block.Body.Transactions),
+		Timestamp:     time.Now().Unix(),
+		ShardID:       shardID,
 		//SalaryFund: remainingFund,
 		// BankFund:           prevBlock.Header.BankFund + loanPaymentAmount - bankPayoutAmount,
 		// GOVConstitution:    prevBlock.Header.GOVConstitution, // TODO: need get from gov-params tx
@@ -587,7 +587,7 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 		return nil, nil
 	}
 	merklePathShard, merkleShardRoot := GetMerklePathCrossShard(block.Body.Transactions, shardID)
-	if merkleShardRoot != block.Header.MerkleRootShard {
+	if merkleShardRoot != block.Header.TxRoot {
 		return crossShard, NewBlockChainError(CrossShardBlockError, errors.New("MerkleRootShard mismatch"))
 	}
 
