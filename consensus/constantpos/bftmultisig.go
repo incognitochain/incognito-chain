@@ -85,7 +85,7 @@ func (self *multiSigScheme) SignData(RiList map[string][]byte) error {
 		self.combine.ValidatorsIdxR = append(self.combine.ValidatorsIdxR, common.IndexOfStr(szPubKey, self.combine.SigningCommittee))
 		counter++
 	}
-	sort.Ints(self.combine.ValidatorsIdxAggSig)
+	sort.Ints(self.combine.ValidatorsIdxR)
 	//Todo Sig block with R Here
 
 	commitSig := self.cryptoScheme.Keyset.SignMultiSig(self.dataToSig.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(self.personal.r))
@@ -126,7 +126,7 @@ func (self *multiSigScheme) VerifyCommitSig(validatorPk string, commitSig string
 	return nil
 }
 
-func (self *multiSigScheme) CombineSigs(commitSigs []bftCommittedSig) (string, error) {
+func (self *multiSigScheme) CombineSigs(R string, commitSigs []bftCommittedSig) (string, error) {
 
 	//TODO: Hy include valSig.ValidatorsIdxR in aggregatedSig
 
@@ -140,9 +140,10 @@ func (self *multiSigScheme) CombineSigs(commitSigs []bftCommittedSig) (string, e
 		listSigOfSigners[i].SetBytes(bytesSig)
 		self.combine.ValidatorsIdxAggSig = append(self.combine.ValidatorsIdxAggSig, common.IndexOfStr(valSig.Pubkey, self.combine.SigningCommittee))
 	}
+	sort.Ints(self.combine.ValidatorsIdxAggSig)
+	self.combine.R = R
 	self.combine.ValidatorsIdxR = make([]int, len(commitSigs[0].ValidatorsIdxR))
 	copy(self.combine.ValidatorsIdxR, commitSigs[0].ValidatorsIdxR)
-	sort.Ints(self.combine.ValidatorsIdxAggSig)
 	aggregatedSig := self.cryptoScheme.CombineMultiSig(listSigOfSigners)
 	fmt.Println("aaaaaaaaaaaaaaaaaaaa", len(commitSigs))
 	// fmt.Println("bbbbbbbbbbbbbbbbbbbb", commitSigs[0], commitSigs[1], commitSigs[2])

@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
+	"math/big"
 	"reflect"
 	"strconv"
 	"strings"
@@ -69,7 +70,17 @@ func (self *BlockChain) ValidateShardBlockSignature(block *ShardBlock) error {
 	// get best state shard committee corresponding to shardID
 	bestStateShardCommittee := self.BestState.Shard[shardID].ShardCommittee
 
-	pubKeys := []*privacy.PublicKey{}
+	pubKeysR := []*privacy.PublicKey{}
+	for _, index := range block.ValidatorsIdx[0] {
+		pubkeyBytes, _, err := base58.Base58Check{}.Decode(bestStateShardCommittee[index])
+		if err != nil {
+			return errors.New("Error in convert Public key from string to byte")
+		}
+		pubKey := privacy.PublicKey{}
+		pubKey = pubkeyBytes
+		pubKeysR = append(pubKeysR, &pubKey)
+	}
+	pubKeysAggSig := []*privacy.PublicKey{}
 	for _, index := range block.ValidatorsIdx[1] {
 		pubkeyBytes, _, err := base58.Base58Check{}.Decode(bestStateShardCommittee[index])
 		if err != nil {
@@ -77,7 +88,17 @@ func (self *BlockChain) ValidateShardBlockSignature(block *ShardBlock) error {
 		}
 		pubKey := privacy.PublicKey{}
 		pubKey = pubkeyBytes
-		pubKeys = append(pubKeys, &pubKey)
+		pubKeysAggSig = append(pubKeysAggSig, &pubKey)
+	}
+	RCombined := new(privacy.EllipticPoint)
+	RCombined.Set(big.NewInt(0), big.NewInt(0))
+	Rbytesarr, byteVersion, err := base58.Base58Check{}.Decode(block.R)
+	if (err != nil) || (byteVersion != byte(0x00)) {
+		return err
+	}
+	err = RCombined.Decompress(Rbytesarr)
+	if err != nil {
+		return err
 	}
 
 	aggSig, _, err := base58.Base58Check{}.Decode(block.AggregatedSig)
@@ -87,8 +108,7 @@ func (self *BlockChain) ValidateShardBlockSignature(block *ShardBlock) error {
 	schnMultiSig := &privacy.SchnMultiSig{}
 	schnMultiSig.SetBytes(aggSig)
 	blockHash := block.Header.Hash()
-	//@Hung: Update this method for new version
-	if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeys, nil, nil) == false {
+	if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeysR, pubKeysAggSig, RCombined) == false {
 		return errors.New("Invalid Agg signature")
 	}
 	return nil
