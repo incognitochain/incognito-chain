@@ -460,6 +460,9 @@ func (blockgen *BlkTmplGenerator) UpdateNewGovernor(helper ConstitutionHelper, c
 		newDCBBoardPubKey = append(newDCBBoardPubKey, i.PubKey)
 		sumOfVote += i.VoteAmount
 	}
+	if sumOfVote == 0 {
+		sumOfVote = 1
+	}
 
 	txs = append(txs, blockgen.createAcceptDCBBoardTx(newDCBBoardPubKey, sumOfVote))
 	txs = append(txs, blockgen.CreateSendDCBVoteTokenToGovernorTx(chainID, newBoardList, sumOfVote)...)
