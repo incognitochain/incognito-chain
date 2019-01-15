@@ -33,9 +33,9 @@ func (self *BlockChain) OnBeaconStateReceived(state *BeaconChainState, peerID li
 
 func (self *BlockChain) GetShardState(shardID byte) *ShardChainState {
 	state := &ShardChainState{
-		Height:    self.BestState.Shard[shardID].Height,
+		Height:    self.BestState.Shard[shardID].ShardHeight,
 		ShardID:   shardID,
-		BlockHash: self.BestState.Shard[shardID].BestBlockHash,
+		BlockHash: self.BestState.Shard[shardID].BestShardBlockHash,
 	}
 	return state
 }
