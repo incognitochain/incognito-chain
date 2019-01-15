@@ -15,10 +15,16 @@ import (
 // shared by all callers.
 
 type BestStateShard struct {
-	BestBlockHash common.Hash // The hash of the block.
-	BestBlock     *ShardBlock // The block.
+	PrevShardBlockHash common.Hash
 
-	Height uint64
+	BestBlock          *ShardBlock // The block.
+	BestShardBlockHash common.Hash // The hash of the block.
+
+	BestBeaconHash common.Hash
+	// BestBlockShard can be fetch from db
+	BestShardBlock *ShardBlock // The block.
+	ShardHeight    uint64
+	BeaconHeight   uint64
 
 	ShardCommittee        []string
 	ShardPendingValidator []string

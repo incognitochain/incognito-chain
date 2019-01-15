@@ -121,7 +121,12 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 							} else {
 								pendingBlk := blockchain.ShardBlock{}
 								pendingBlk.UnmarshalJSON(msgPropose.(*wire.MessageBFTPropose).Block)
-								//TODO: should change to VerifyPreSignShardBlock
+								blkHash := pendingBlk.Header.Hash()
+								err := cashec.ValidateDataB58(pendingBlk.Header.Producer, pendingBlk.ProducerSig, blkHash.GetBytes())
+								if err != nil {
+									Logger.log.Error(err)
+									continue
+								}
 								self.Chain.VerifyPreSignShardBlock(&pendingBlk, self.RoleData.ShardID)
 								self.pendingBlock = &pendingBlk
 								self.multiSigScheme.dataToSig = pendingBlk.Header.Hash()
@@ -235,7 +240,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 							return nil, errors.New("Not enough sigs to combine")
 						}
 
-						AggregatedSig, err := self.multiSigScheme.CombineSigs(phaseData.Sigs[szRCombined])
+						AggregatedSig, err := self.multiSigScheme.CombineSigs(szRCombined, phaseData.Sigs[szRCombined])
 						if err != nil {
 							return nil, err
 						}
@@ -252,6 +257,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 						fmt.Println("\n \n Block consensus reach", ValidatorsIdxR, ValidatorsIdxAggSig, AggregatedSig, "\n")
 
 						if layer == "beacon" {
+							self.pendingBlock.(*blockchain.BeaconBlock).R = self.multiSigScheme.combine.R
 							self.pendingBlock.(*blockchain.BeaconBlock).AggregatedSig = AggregatedSig
 							self.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx = make([][]int, 2)
 							self.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx[0] = make([]int, len(ValidatorsIdxR))
@@ -259,6 +265,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 							copy(self.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx[0], ValidatorsIdxR)
 							copy(self.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx[1], ValidatorsIdxAggSig)
 						} else {
+							self.pendingBlock.(*blockchain.ShardBlock).R = self.multiSigScheme.combine.R
 							self.pendingBlock.(*blockchain.ShardBlock).AggregatedSig = AggregatedSig
 							self.pendingBlock.(*blockchain.ShardBlock).ValidatorsIdx = make([][]int, 2)
 							self.pendingBlock.(*blockchain.ShardBlock).ValidatorsIdx[0] = make([]int, len(ValidatorsIdxR))

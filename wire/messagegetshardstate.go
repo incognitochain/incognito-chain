@@ -15,7 +15,9 @@ const (
 )
 
 type MessageGetShardState struct {
+	ShardID   byte
 	Timestamp time.Time
+	SenderID  string
 }
 
 func (self *MessageGetShardState) Hash() string {
@@ -45,7 +47,7 @@ func (self *MessageGetShardState) JsonDeserialize(jsonStr string) error {
 }
 
 func (self *MessageGetShardState) SetSenderID(senderID peer.ID) error {
-	// self.SenderID = senderID.Pretty()
+	self.SenderID = senderID.Pretty()
 	return nil
 }
 

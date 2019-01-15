@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
@@ -10,6 +11,7 @@ import (
 )
 
 type ShardBody struct {
+	Instructions    [][]string
 	CrossOutputCoin []CrossOutputCoin
 	Transactions    []metadata.Transaction
 }

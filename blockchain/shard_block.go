@@ -12,6 +12,7 @@ import (
 
 type ShardBlock struct {
 	AggregatedSig string  `json:"AggregatedSig"`
+	R             string  `json:"R"`
 	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
 	ProducerSig   string  `json:"ProducerSig"`
 	Body          ShardBody
@@ -20,6 +21,7 @@ type ShardBlock struct {
 
 type ShardToBeaconBlock struct {
 	AggregatedSig string  `json:"AggregatedSig"`
+	R             string  `json:"R"`
 	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
 	ProducerSig   string  `json:"ProducerSig"`
 
@@ -28,6 +30,7 @@ type ShardToBeaconBlock struct {
 
 type CrossShardBlock struct {
 	AggregatedSig string  `json:"AggregatedSig"`
+	R             string  `json:"R"`
 	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
 	ProducerSig   string  `json:"ProducerSig"`
 
@@ -49,6 +52,7 @@ func (self *ShardBlock) Hash() *common.Hash {
 func (self *ShardBlock) UnmarshalJSON(data []byte) error {
 	tempBlk := &struct {
 		AggregatedSig string
+		R             string `json:"R"`
 		ValidatorsIdx [][]int
 		ProducerSig   string
 		Header        ShardHeader
@@ -59,7 +63,9 @@ func (self *ShardBlock) UnmarshalJSON(data []byte) error {
 		return NewBlockChainError(UnmashallJsonBlockError, err)
 	}
 	self.AggregatedSig = tempBlk.AggregatedSig
+	self.R = tempBlk.R
 	self.ValidatorsIdx = tempBlk.ValidatorsIdx
+	self.ProducerSig = tempBlk.ProducerSig
 
 	blkBody := ShardBody{}
 	err = blkBody.UnmarshalJSON(*tempBlk.Body)

@@ -20,6 +20,7 @@ type PeerShardChainState struct {
 }
 type ShardChainState struct {
 	Height    uint64
+	ShardID   byte
 	BlockHash common.Hash
 }
 
@@ -45,7 +46,7 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 	newShardBlkCh = make(chan *ShardBlock)
 
 	self.ShardStateCh[shardID] = shardStateCh
-	self.newShardBlkCh[shardID] = newShardBlkCh
+	self.newShardBlkCh[shardID] = &newShardBlkCh
 	go func(shardID byte) {
 		//used for fancy block retriever but too lazy to implement that now :p
 		var peerChainState map[libp2p.ID]PeerShardChainState
@@ -64,13 +65,13 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 				delete(self.syncStatus.Shard, shardID)
 				return
 			case shardState := <-shardStateCh:
-				if self.BestState.Shard[shardID].Height < shardState.State.Height {
+				if self.BestState.Shard[shardID].ShardHeight < shardState.State.Height {
 					if self.knownChainState.Shards[shardID].Height < shardState.State.Height {
 						self.knownChainState.Shards[shardID] = *shardState.State
 						if getStateWaitTime > 5 {
 							getStateWaitTime -= 5
 						}
-						self.config.Server.PushMessageGetBlockShard(shardID, self.BestState.Shard[shardID].Height+1, shardState.State.Height, shardState.Peer)
+						self.config.Server.PushMessageGetBlockShard(shardID, self.BestState.Shard[shardID].ShardHeight+1, shardState.State.Height, shardState.Peer)
 					} else {
 						if getStateWaitTime < 10 {
 							getStateWaitTime += 5
@@ -83,14 +84,14 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 				}
 			case newBlk := <-newShardBlkCh:
 				fmt.Println("Shard block received")
-				if self.BestState.Shard[shardID].Height < newBlk.Header.Height {
+				if self.BestState.Shard[shardID].ShardHeight < newBlk.Header.Height {
 					blkHash := newBlk.Header.Hash()
 					err := cashec.ValidateDataB58(newBlk.Header.Producer, newBlk.ProducerSig, blkHash.GetBytes())
 					if err != nil {
 						Logger.log.Error(err)
 						continue
 					} else {
-						if self.BestState.Shard[shardID].Height == newBlk.Header.Height-1 {
+						if self.BestState.Shard[shardID].ShardHeight == newBlk.Header.Height-1 {
 							err = self.InsertShardBlock(newBlk)
 							if err != nil {
 								Logger.log.Error(err)

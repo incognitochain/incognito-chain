@@ -56,7 +56,7 @@ type BlockChain struct {
 	BeaconStateCh  chan *PeerBeaconChainState
 	newBeaconBlkCh chan *BeaconBlock
 	ShardStateCh   map[byte](chan *PeerShardChainState)
-	newShardBlkCh  map[byte](chan *ShardBlock)
+	newShardBlkCh  map[byte](*chan *ShardBlock)
 }
 type BestState struct {
 	Beacon *BestStateBeacon
@@ -137,8 +137,9 @@ func (self *BlockChain) Init(config *Config) error {
 	// }
 	self.cQuitSync = make(chan struct{})
 	self.ShardStateCh = make(map[byte](chan *PeerShardChainState))
-	self.newShardBlkCh = make(map[byte](chan *ShardBlock))
+	self.newShardBlkCh = make(map[byte](*chan *ShardBlock))
 	self.syncStatus.Shard = make(map[byte](chan struct{}))
+	self.knownChainState.Shards = make(map[byte]ShardChainState)
 	self.SyncBeacon()
 	for _, shardID := range self.config.RelayShards {
 		self.SyncShard(shardID)
@@ -313,7 +314,7 @@ func (self *BlockChain) initShardState(shardID byte) error {
 	self.BestState.Shard[shardID] = &BestStateShard{
 		ShardCommittee:        []string{},
 		ShardPendingValidator: []string{},
-		BestBlock:             &ShardBlock{},
+		BestShardBlock:        &ShardBlock{},
 	}
 
 	_, newShardCandidate := GetStakingCandidate(*self.config.ChainParams.GenesisBeaconBlock)
