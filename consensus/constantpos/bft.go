@@ -235,7 +235,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 							return nil, errors.New("Not enough sigs to combine")
 						}
 
-						AggregatedSig, err := self.multiSigScheme.CombineSigs(phaseData.Sigs[szRCombined])
+						AggregatedSig, err := self.multiSigScheme.CombineSigs(szRCombined, phaseData.Sigs[szRCombined])
 						if err != nil {
 							return nil, err
 						}
@@ -244,19 +244,29 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 						// ValidatorsIdx := make([]int, len(phaseData.Sigs[szRCombined][0].ValidatorsIdx))
 						// copy(ValidatorsIdx, phaseData.Sigs[szRCombined][0].ValidatorsIdx)
 
-						ValidatorsIdx := make([]int, len(self.multiSigScheme.combine.ValidatorsIdxAggSig))
-						copy(ValidatorsIdx, self.multiSigScheme.combine.ValidatorsIdxAggSig)
+						ValidatorsIdxAggSig := make([]int, len(self.multiSigScheme.combine.ValidatorsIdxAggSig))
+						ValidatorsIdxR := make([]int, len(self.multiSigScheme.combine.ValidatorsIdxR))
+						copy(ValidatorsIdxAggSig, self.multiSigScheme.combine.ValidatorsIdxAggSig)
+						copy(ValidatorsIdxR, self.multiSigScheme.combine.ValidatorsIdxR)
 
-						fmt.Println("\n \n Block consensus reach", ValidatorsIdx, AggregatedSig, "\n")
+						fmt.Println("\n \n Block consensus reach", ValidatorsIdxR, ValidatorsIdxAggSig, AggregatedSig, "\n")
 
 						if layer == "beacon" {
+							self.pendingBlock.(*blockchain.BeaconBlock).R = self.multiSigScheme.combine.R
 							self.pendingBlock.(*blockchain.BeaconBlock).AggregatedSig = AggregatedSig
-							self.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx = make([]int, len(ValidatorsIdx))
-							copy(self.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx, ValidatorsIdx)
+							self.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx = make([][]int, 2)
+							self.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx[0] = make([]int, len(ValidatorsIdxR))
+							self.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx[1] = make([]int, len(ValidatorsIdxAggSig))
+							copy(self.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx[0], ValidatorsIdxR)
+							copy(self.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx[1], ValidatorsIdxAggSig)
 						} else {
+							self.pendingBlock.(*blockchain.ShardBlock).R = self.multiSigScheme.combine.R
 							self.pendingBlock.(*blockchain.ShardBlock).AggregatedSig = AggregatedSig
-							self.pendingBlock.(*blockchain.ShardBlock).ValidatorsIdx = make([]int, len(ValidatorsIdx))
-							copy(self.pendingBlock.(*blockchain.ShardBlock).ValidatorsIdx, ValidatorsIdx)
+							self.pendingBlock.(*blockchain.ShardBlock).ValidatorsIdx = make([][]int, 2)
+							self.pendingBlock.(*blockchain.ShardBlock).ValidatorsIdx[0] = make([]int, len(ValidatorsIdxR))
+							self.pendingBlock.(*blockchain.ShardBlock).ValidatorsIdx[1] = make([]int, len(ValidatorsIdxAggSig))
+							copy(self.pendingBlock.(*blockchain.ShardBlock).ValidatorsIdx[0], ValidatorsIdxR)
+							copy(self.pendingBlock.(*blockchain.ShardBlock).ValidatorsIdx[1], ValidatorsIdxAggSig)
 						}
 
 						return self.pendingBlock, nil
@@ -297,6 +307,8 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 						}
 					}
 				}
+			case "reply":
+
 			}
 		}
 	}
