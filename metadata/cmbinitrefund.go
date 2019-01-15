@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const CMBInitRefundPeriod = 1000 // TODO(@0xbunyip): set appropriate value
+const CMBInitRefundPeriod = uint64(1000) // TODO(@0xbunyip): set appropriate value
 
 const (
 	CMBInvalid = uint8(iota)
@@ -43,9 +43,9 @@ func (cref *CMBInitRefund) ValidateTxWithBlockChain(txr Transaction, bcr Blockch
 	if err != nil {
 		return false, err
 	}
-	reqBlockHeight, _, err := bcr.GetBlockHeightByBlockHash(blockHash)
-	curBlockHeight := bcr.GetHeight()
-	if curBlockHeight-reqBlockHeight < uint64(CMBInitRefundPeriod) {
+	reqBlockHeight, _, _ := bcr.GetBlockHeightByBlockHash(blockHash)
+	curBlockHeight, err := bcr.GetTxChainHeight(txr)
+	if err != nil || curBlockHeight < CMBInitRefundPeriod+reqBlockHeight {
 		return false, errors.Errorf("still waiting for repsponses, cannot refund cmb init request now")
 	}
 	return state == CMBRequested, nil

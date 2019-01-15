@@ -33,7 +33,7 @@ func NewLoanRequest(data map[string]interface{}) (Metadata, error) {
 		Params: params.LoanParams{
 			InterestRate:     uint64(loanParams["InterestRate"].(float64)),
 			LiquidationStart: uint64(loanParams["LiquidationStart"].(float64)),
-			Maturity:         uint32(loanParams["Maturity"].(float64)),
+			Maturity:         uint64(loanParams["Maturity"].(float64)),
 		},
 		CollateralType: data["CollateralType"].(string),
 		LoanAmount:     uint64(data["LoanAmount"].(float64)),

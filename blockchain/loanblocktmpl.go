@@ -27,7 +27,7 @@ func (blockgen *BlkTmplGenerator) calculateInterestPaid(tx metadata.Transaction)
 		requestMeta.Params.InterestRate,
 		requestMeta.Params.Maturity,
 		deadline,
-		uint32(blockgen.chain.GetChainHeight(chainID)),
+		blockgen.chain.GetChainHeight(chainID),
 	)
 	interestPaid := amount
 	if amount > totalInterest {

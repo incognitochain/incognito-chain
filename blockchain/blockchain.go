@@ -516,7 +516,7 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 	// Pay interest
 	interestPerTerm := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
 	chainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
-	height := uint32(self.GetChainHeight(chainID))
+	height := self.GetChainHeight(chainID)
 	totalInterest := metadata.GetTotalInterest(
 		principle,
 		interest,
@@ -526,11 +526,11 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 		height,
 	)
 	fmt.Printf("[db]perTerm, totalInt: %d, %d\n", interestPerTerm, totalInterest)
-	termInc := uint32(0)
+	termInc := uint64(0)
 	if value <= totalInterest { // Pay all to cover interest
 		if interestPerTerm > 0 {
 			if value >= interest {
-				termInc = 1 + uint32((value-interest)/interestPerTerm)
+				termInc = 1 + uint64((value-interest)/interestPerTerm)
 				interest = interestPerTerm - (value-interest)%interestPerTerm
 			} else {
 				interest -= value
@@ -544,7 +544,7 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 		}
 		if totalInterest >= interest { // This payment pays for interest
 			if interestPerTerm > 0 {
-				termInc = 1 + uint32((totalInterest-interest)/interestPerTerm)
+				termInc = 1 + uint64((totalInterest-interest)/interestPerTerm)
 				interest = interestPerTerm
 			}
 		}
@@ -583,8 +583,8 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 				requestMeta, _ := self.GetLoanRequestMeta(meta.LoanID)
 				principle := requestMeta.LoanAmount
 				interest := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
-				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint32(block.Header.Height))
-				fmt.Printf("principle: %d\ninterest: %d\nblock: %d\n", principle, interest, int32(block.Header.Height))
+				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint64(block.Header.Height))
+				fmt.Printf("principle: %d\ninterest: %d\nblock: %d\n", principle, interest, uint64(block.Header.Height))
 			}
 		case metadata.LoanPaymentMeta:
 			{
@@ -743,11 +743,11 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 				// Store saledata in db
 				saleData := proposal.DCBParams.ListSaleData
 				for _, data := range saleData {
-					if _, _, _, _, _, err := self.config.DataBase.LoadCrowdsaleData(data.SaleID); err == nil {
+					if _, _, _, _, _, err := self.config.DataBase.GetCrowdsaleData(data.SaleID); err == nil {
 						// TODO(@0xbunyip): support update crowdsale data
 						continue
 					}
-					if err := self.config.DataBase.SaveCrowdsaleData(
+					if err := self.config.DataBase.StoreCrowdsaleData(
 						data.SaleID,
 						data.EndBlock,
 						data.BuyingAsset,
@@ -835,7 +835,7 @@ func (self *BlockChain) ProcessCMBTxs(block *Block) error {
 	}
 
 	// Penalize late response for cmb withdraw request
-	return self.findLateWithdrawResponse()
+	return self.findLateWithdrawResponse(uint64(block.Header.Height))
 }
 
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db

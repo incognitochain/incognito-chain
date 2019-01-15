@@ -264,20 +264,29 @@ func (self RpcServer) handleGetLoanPaymentInfo(params interface{}, closeChan <-c
 	}
 	for _, param := range arrayParams {
 		strLoanID := param.(string)
-		loanID, err := hex.DecodeString(strLoanID)
-		loanPaymentInfo := jsonresult.LoanPaymentInfo{}
-		if err == nil {
-			priciple, interest, deadline, err := (*self.config.Database).GetLoanPayment(loanID)
-			if err == nil {
-				reqMeta, err := (*self.config.BlockChain).GetLoanRequestMeta(loanID)
-				if err == nil {
+		result.Info[strLoanID] = self.calcLoanPaymentInfo(strLoanID)
+	}
+	return result, nil
+}
+
+func (self RpcServer) calcLoanPaymentInfo(strLoanID string) jsonresult.LoanPaymentInfo {
+	loanPaymentInfo := jsonresult.LoanPaymentInfo{}
+	if loanID, err := hex.DecodeString(strLoanID); err == nil {
+		if priciple, interest, deadline, err := (*self.config.Database).GetLoanPayment(loanID); err == nil {
+			if txReqHash, err := (*self.config.Database).GetLoanRequestTx(loanID); err == nil {
+				hash, _ := (&common.Hash{}).NewHash(txReqHash)
+				if _, _, _, txReq, err := (*self.config.BlockChain).GetTransactionByHash(hash); err == nil {
+					reqMeta, _ := txReq.GetMetadata().(*metadata.LoanRequest)
+					chainID, _ := common.GetTxSenderChain(txReq.GetSenderAddrLastByte())
+					height := self.config.BlockChain.GetChainHeight(chainID)
 					loanPaymentInfo.Principle = priciple
-					loanPaymentInfo.Interest = interest
+					if height >= deadline { // Current term interest is not fully paid
+						loanPaymentInfo.Interest = interest
+					}
 					loanPaymentInfo.Deadline = deadline + reqMeta.Params.Maturity
 				}
 			}
 		}
-		result.Info[strLoanID] = loanPaymentInfo
 	}
-	return result, nil
+	return loanPaymentInfo
 }

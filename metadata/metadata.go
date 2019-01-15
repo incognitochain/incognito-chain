@@ -82,7 +82,7 @@ type MempoolRetriever interface {
 }
 
 type BlockchainRetriever interface {
-	GetHeight() uint64
+	GetTxChainHeight(tx Transaction) (uint64, error)
 	GetChainHeight(byte) uint64
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
 	GetDCBParams() params.DCBParams
@@ -98,7 +98,7 @@ type BlockchainRetriever interface {
 	GetLoanTxs([]byte) ([][]byte, error)
 	GetNumberOfDCBGovernors() int
 	GetNumberOfGOVGovernors() int
-	GetLoanPayment([]byte) (uint64, uint64, uint32, error)
+	GetLoanPayment([]byte) (uint64, uint64, uint64, error)
 	GetLoanRequestMeta([]byte) (*LoanRequest, error)
 
 	// For validating dividend
