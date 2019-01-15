@@ -444,7 +444,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 	rt []byte,
 	chainID byte,
 	producerPrivateKey *privacy.SpendingKey,
-) ([]*transaction.TxCustomToken, []metadata.Transaction, error) {
+) ([]*transaction.TxCustomToken, []metadata.Transaction) {
 	txsToRemove := []metadata.Transaction{}
 	txsPayment := []*transaction.TxCustomToken{}
 
@@ -484,5 +484,5 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 		}
 
 	}
-	return txsPayment, txsToRemove, nil
+	return txsPayment, txsToRemove
 }

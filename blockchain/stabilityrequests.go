@@ -308,10 +308,7 @@ func (blockgen *BlkTmplGenerator) checkAndGroupTxs(
 	}
 
 	// Process crowdsale for DCB
-	dcbSaleTxs, removableTxs, err := blockgen.processCrowdsale(sourceTxns, rt, chainID, privatekey)
-	if err != nil {
-		return nil, nil, nil, err
-	}
+	dcbSaleTxs, removableTxs := blockgen.processCrowdsale(sourceTxns, rt, chainID, privatekey)
 	for _, tx := range dcbSaleTxs {
 		txsToAdd = append(txsToAdd, tx)
 	}
