@@ -101,3 +101,4 @@ func (pub *ElGamalPubKey) Encrypt(plaintext *EllipticPoint) *ElGamalCiphertext {
 func (priv *ElGamalPrivKey) Decrypt(ciphertext *ElGamalCiphertext) *EllipticPoint {
 	return ciphertext.C2.Sub(ciphertext.C1.ScalarMult(priv.X))
 }
+

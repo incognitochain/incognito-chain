@@ -15,6 +15,15 @@ func max(a uint64, b uint64) uint64 {
 func Knapsack(values []uint64, target uint64) []bool {
 	n := len(values)
 	choices := make([]bool, n)
+	if n == 1{
+		if target < values[0]{
+			choices[0] = false
+		} else{
+			choices[0] = true
+		}
+
+		return choices
+	}
 
 	K := make([][]uint64, n+1)
 
@@ -45,4 +54,17 @@ func Knapsack(values []uint64, target uint64) []bool {
 	}
 
 	return choices
+}
+
+func min (values []uint64) int{
+	min := values[0]
+	indexMin := 0
+	for i:=1; i<len(values); i++{
+		if values[i] < min{
+			min = values[i]
+			indexMin = i
+		}
+	}
+
+	return indexMin
 }
