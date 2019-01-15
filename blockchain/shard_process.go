@@ -19,7 +19,7 @@ func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte)
 	defer self.chainLock.Unlock()
 	//========Verify block only
 	Logger.log.Infof("Verify block for signing process %d, with hash %+v", block.Header.Height, *block.Hash())
-	if err := self.VerifyPreProcessingShardBlock(block); err != nil {
+	if err := self.VerifyPreProcessingShardBlock(block, shardID); err != nil {
 		return err
 	}
 	//========Verify block with previous best state
@@ -70,7 +70,7 @@ func (self *BlockChain) ValidateShardBlockSignature(block *ShardBlock) error {
 	bestStateShardCommittee := self.BestState.Shard[shardID].ShardCommittee
 
 	pubKeys := []*privacy.PublicKey{}
-	for _, index := range block.ValidatorsIdx {
+	for _, index := range block.ValidatorsIdx[1] {
 		pubkeyBytes, _, err := base58.Base58Check{}.Decode(bestStateShardCommittee[index])
 		if err != nil {
 			return errors.New("Error in convert Public key from string to byte")
