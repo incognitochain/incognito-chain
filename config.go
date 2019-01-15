@@ -39,7 +39,7 @@ const (
 	defaultGenerate           = false
 	sampleConfigFilename      = "sample-config.conf"
 	defaultDisableRpcTLS      = true
-	defaultFastMode           = true
+	defaultFastStartup        = true
 	defaultNodeMode           = "relay"
 	// For wallet
 	defaultWalletName = "wallet"
@@ -286,6 +286,7 @@ func loadConfig() (*config, []string, error) {
 		// Generate:             defaultGenerate,
 		WalletName:           defaultWalletName,
 		DisableTLS:           defaultDisableRpcTLS,
+		DisableRPC:           true,
 		RPCDisableAuth:       false,
 		DiscoverPeers:        true,
 		TestNet:              false,
