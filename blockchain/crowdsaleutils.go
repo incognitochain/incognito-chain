@@ -32,6 +32,9 @@ func getTxTokenValue(tokenData transaction.TxTokenData, tokenID []byte, pk []byt
 
 // getTxValue converts total Constants in a tx to another token
 func getTxValue(tx *transaction.Tx, tokenID []byte, pk []byte, prices map[string]uint64) (uint64, uint64) {
+	if tx.Proof == nil || len(tx.Proof.OutputCoins) == 0 {
+		return 0, 0
+	}
 	// Get amount of Constant user sent
 	value := uint64(0)
 	for _, coin := range tx.Proof.OutputCoins {
