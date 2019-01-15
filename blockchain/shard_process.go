@@ -232,11 +232,15 @@ func (self *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlock, sh
 }
 
 func (self *BestStateShard) Update(block *ShardBlock) error {
-	// self.BestBlock = block
-	// self.BestBlockHash = *block.Hash()
-	// self.Height = block.Header.Height
-	// self.TotalTxns += uint64(len(block.Body.Transactions))
-	// self.NumTxns = uint64(len(block.Body.Transactions))
+	self.BestBeaconHash = block.Header.BeaconHash
+	self.PrevShardBlockHash = self.BestShardBlockHash
+	self.BestShardBlockHash = *block.Hash()
+	self.ShardHeight = block.Header.Height
+	self.BeaconHeight = block.Header.BeaconHeight
+	self.ShardProposerIdx = common.IndexOfStr(block.Header.Producer, self.ShardCommittee)
+	self.BestBlock = block
+	//self.TotalTxns += uint64(len(block.Body.Transactions))
+	//self.NumTxns = uint64(len(block.Body.Transactions))
 	return nil
 }
 

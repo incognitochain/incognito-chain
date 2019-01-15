@@ -20,6 +20,7 @@ type PeerShardChainState struct {
 }
 type ShardChainState struct {
 	Height    uint64
+	ShardID   byte
 	BlockHash common.Hash
 }
 
@@ -45,7 +46,7 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 	newShardBlkCh = make(chan *ShardBlock)
 
 	self.ShardStateCh[shardID] = shardStateCh
-	self.newShardBlkCh[shardID] = newShardBlkCh
+	self.newShardBlkCh[shardID] = &newShardBlkCh
 	go func(shardID byte) {
 		//used for fancy block retriever but too lazy to implement that now :p
 		var peerChainState map[libp2p.ID]PeerShardChainState

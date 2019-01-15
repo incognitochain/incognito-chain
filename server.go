@@ -168,8 +168,8 @@ func (self *Server) NewServer(listenAddrs string, db database.DatabaseInterface,
 	if cfg.FastStartup {
 		Logger.log.Info("Load chain dependencies from DB")
 		self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
-		for _, bestState := range self.blockChain.BestState.Shard {
-			shardID := bestState.BestShardBlock.Header.ShardID
+		for shardID, bestState := range self.blockChain.BestState.Shard {
+			_ = bestState
 			feeEstimatorData, err := self.dataBase.GetFeeEstimator(shardID)
 			if err == nil && len(feeEstimatorData) > 0 {
 				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
@@ -561,6 +561,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnTx:             self.OnTx,
 			OnVersion:        self.OnVersion,
 			OnGetBlockBeacon: self.OnGetBlockBeacon,
+			OnGetBlockShard:  self.OnGetBlockShard,
 			OnVerAck:         self.OnVerAck,
 			OnGetAddr:        self.OnGetAddr,
 			OnAddr:           self.OnAddr,
@@ -641,6 +642,14 @@ func (self *Server) OnGetBlockBeacon(_ *peer.PeerConn, msg *wire.MessageGetBlock
 	Logger.log.Info("Receive a " + msg.MessageType() + " message START")
 	var txProcessed chan struct{}
 	self.netSync.QueueGetBlockBeacon(nil, msg, txProcessed)
+	//<-txProcessed
+
+	Logger.log.Info("Receive a " + msg.MessageType() + " message END")
+}
+func (self *Server) OnGetBlockShard(_ *peer.PeerConn, msg *wire.MessageGetBlockShard) {
+	Logger.log.Info("Receive a " + msg.MessageType() + " message START")
+	var txProcessed chan struct{}
+	self.netSync.QueueGetBlockShard(nil, msg, txProcessed)
 	//<-txProcessed
 
 	Logger.log.Info("Receive a " + msg.MessageType() + " message END")
@@ -1158,5 +1167,12 @@ func (self *Server) PushMessageGetBlockBeacon(from uint64, to uint64, peerID lib
 	return self.PushMessageToPeer(msg, peerID)
 }
 func (self *Server) PushMessageGetBlockShard(shardID byte, from uint64, to uint64, peerID libp2p.ID) error {
-	return nil
+	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockShard)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessageGetBlockShard).From = from
+	msg.(*wire.MessageGetBlockShard).To = to
+	msg.(*wire.MessageGetBlockShard).ShardID = shardID
+	return self.PushMessageToPeer(msg, peerID)
 }

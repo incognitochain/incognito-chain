@@ -121,7 +121,12 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 							} else {
 								pendingBlk := blockchain.ShardBlock{}
 								pendingBlk.UnmarshalJSON(msgPropose.(*wire.MessageBFTPropose).Block)
-								//TODO: should change to VerifyPreSignShardBlock
+								blkHash := pendingBlk.Header.Hash()
+								err := cashec.ValidateDataB58(pendingBlk.Header.Producer, pendingBlk.ProducerSig, blkHash.GetBytes())
+								if err != nil {
+									Logger.log.Error(err)
+									continue
+								}
 								self.Chain.VerifyPreSignShardBlock(&pendingBlk, self.RoleData.ShardID)
 								self.pendingBlock = &pendingBlk
 								self.multiSigScheme.dataToSig = pendingBlk.Header.Hash()

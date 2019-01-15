@@ -3,6 +3,8 @@ package wire
 import (
 	"encoding/json"
 
+	"github.com/ninjadotorg/constant/blockchain"
+
 	"time"
 
 	"github.com/libp2p/go-libp2p-peer"
@@ -16,7 +18,7 @@ const (
 
 type MessageShardState struct {
 	Timestamp time.Time
-	ChainInfo interface{}
+	ChainInfo blockchain.ShardChainState
 	SenderID  string
 }
 
