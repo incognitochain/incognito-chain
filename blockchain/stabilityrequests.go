@@ -27,10 +27,10 @@ func (blockgen *BlkTmplGenerator) checkIssuingReqTx(
 	issuingReq, ok := issuingReqMeta.(*metadata.IssuingRequest)
 	if !ok {
 		Logger.log.Error(errors.New("Could not parse IssuingRequest metadata"))
-		return false, dcbTokensSold
+		return common.FalseValue, dcbTokensSold
 	}
 	if !bytes.Equal(issuingReq.AssetType[:], common.DCBTokenID[:]) {
-		return true, dcbTokensSold
+		return common.TrueValue, dcbTokensSold
 	}
 	header := blockgen.chain.BestState[chainID].BestBlock.Header
 	saleDBCTOkensByUSDData := header.DCBConstitution.DCBParams.SaleDCBTokensByUSDData
@@ -41,9 +41,9 @@ func (blockgen *BlkTmplGenerator) checkIssuingReqTx(
 	}
 	dcbTokensReq := issuingReq.DepositedAmount / dcbTokenPrice
 	if dcbTokensSold+dcbTokensReq > saleDBCTOkensByUSDData.Amount {
-		return false, dcbTokensSold
+		return common.FalseValue, dcbTokensSold
 	}
-	return true, dcbTokensSold + dcbTokensReq
+	return common.TrueValue, dcbTokensSold + dcbTokensReq
 }
 
 func (blockgen *BlkTmplGenerator) checkBuyBackReqTx(
@@ -54,50 +54,50 @@ func (blockgen *BlkTmplGenerator) checkBuyBackReqTx(
 	buyBackReqTx, ok := tx.(*transaction.TxCustomToken)
 	if !ok {
 		Logger.log.Error(errors.New("Could not parse BuyBackRequest tx (custom token tx)."))
-		return nil, false
+		return nil, common.FalseValue
 	}
 	vins := buyBackReqTx.TxTokenData.Vins
 	if len(vins) == 0 {
 		Logger.log.Error(errors.New("No existed Vins from BuyBackRequest tx"))
-		return nil, false
+		return nil, common.FalseValue
 	}
 	priorTxID := vins[0].TxCustomTokenID
 	_, _, _, priorTx, err := blockgen.chain.GetTransactionByHash(&priorTxID)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil, false
+		return nil, common.FalseValue
 	}
 	priorCustomTokenTx, ok := priorTx.(*transaction.TxCustomToken)
 	if !ok {
 		Logger.log.Error(errors.New("Could not parse prior TxCustomToken."))
-		return nil, false
+		return nil, common.FalseValue
 	}
 
 	priorMeta := priorCustomTokenTx.GetMetadata()
 	if priorMeta == nil {
 		Logger.log.Error(errors.New("No existed metadata in priorCustomTokenTx"))
-		return nil, false
+		return nil, common.FalseValue
 	}
 	buySellResMeta, ok := priorMeta.(*metadata.BuySellResponse)
 	if !ok {
 		Logger.log.Error(errors.New("Could not parse BuySellResponse metadata."))
-		return nil, false
+		return nil, common.FalseValue
 	}
 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 	if buySellResMeta.StartSellingAt+buySellResMeta.Maturity > uint32(prevBlock.Header.Height)+1 {
 		Logger.log.Error("The token is not overdued yet.")
-		return nil, false
+		return nil, common.FalseValue
 	}
 	// check remaining constants in GOV fund is enough or not
 	buyBackReqMeta := buyBackReqTx.GetMetadata()
 	buyBackReq, ok := buyBackReqMeta.(*metadata.BuyBackRequest)
 	if !ok {
 		Logger.log.Error(errors.New("Could not parse BuyBackRequest metadata."))
-		return nil, false
+		return nil, common.FalseValue
 	}
 	buyBackValue := buyBackReq.Amount * buySellResMeta.BuyBackPrice
 	if buyBackConsts+buyBackValue > prevBlock.Header.SalaryFund {
-		return nil, false
+		return nil, common.FalseValue
 	}
 	buyBackFromInfo := &buyBackFromInfo{
 		paymentAddress: buyBackReq.PaymentAddress,
@@ -105,7 +105,7 @@ func (blockgen *BlkTmplGenerator) checkBuyBackReqTx(
 		value:          buyBackReq.Amount,
 		requestedTxID:  tx.Hash(),
 	}
-	return buyBackFromInfo, true
+	return buyBackFromInfo, common.TrueValue
 }
 
 func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
@@ -116,19 +116,19 @@ func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 	sellingBondsParams := prevBlock.Header.GOVConstitution.GOVParams.SellingBonds
 	if uint32(prevBlock.Header.Height)+1 > sellingBondsParams.StartSellingAt+sellingBondsParams.SellingWithin {
-		return 0, 0, false
+		return 0, 0, common.FalseValue
 	}
 
 	buySellReqMeta := tx.GetMetadata()
 	req, ok := buySellReqMeta.(*metadata.BuySellRequest)
 	if !ok {
-		return 0, 0, false
+		return 0, 0, common.FalseValue
 	}
 
 	if bondsSold+req.Amount > sellingBondsParams.BondsToSell { // run out of bonds for selling
-		return 0, 0, false
+		return 0, 0, common.FalseValue
 	}
-	return req.Amount * req.BuyPrice, req.Amount, true
+	return req.Amount * req.BuyPrice, req.Amount, common.TrueValue
 }
 
 func (blockgen *BlkTmplGenerator) processDividend(
@@ -139,7 +139,7 @@ func (blockgen *BlkTmplGenerator) processDividend(
 	payoutAmount := uint64(0)
 	// TODO(@0xbunyip): how to execute payout dividend proposal
 	dividendTxs := []*transaction.Tx{}
-	if false && blockHeight%metadata.PayoutFrequency == 0 { // only chain 0 process dividend proposals
+	if common.FalseValue && blockHeight%metadata.PayoutFrequency == 0 { // only chain 0 process dividend proposals
 		totalTokenSupply, tokenHolders, amounts, err := blockgen.chain.GetAmountPerAccount(proposal)
 		if err != nil {
 			return nil, 0, err
