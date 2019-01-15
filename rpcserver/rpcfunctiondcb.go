@@ -31,7 +31,7 @@ func (self RpcServer) handleGetDCBConstitution(params interface{}, closeChan <-c
 
 // handleGetListDCBBoard - return list payment address of DCB board
 func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPubKeys, nil
+	return self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress, nil
 }
 
 func (self RpcServer) handleCreateRawTxWithIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -145,7 +145,7 @@ func (self RpcServer) buildRawVoteDCBBoardTransaction(
 	arrayParams := common.InterfaceSlice(params)
 	candidatePaymentAddress := arrayParams[len(arrayParams)-1].(string)
 	account, _ := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-	metadata := metadata.NewVoteDCBBoardMetadata(account.KeySet.PaymentAddress.Pk)
+	metadata := metadata.NewVoteDCBBoardMetadata(account.KeySet.PaymentAddress)
 	tx, err := self.buildRawCustomTokenTransaction(params, metadata)
 	if err != nil {
 		return nil, err
@@ -241,12 +241,21 @@ func (self RpcServer) buildRawSubmitDCBProposalTransaction(
 	newParams["PaymentAddress"] = tmp
 
 	meta := metadata.NewSubmitDCBProposalMetadataFromJson(newParams)
+	params = setBuildRawBurnSubmitProposalTransactionParams(params)
 	tx, err1 := self.buildRawTransaction(params, meta)
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 
 	return tx, nil
+}
+
+func setBuildRawBurnSubmitProposalTransactionParams(params interface{}) interface{} {
+	arrayParams := common.InterfaceSlice(params)
+	x := make(map[string]interface{})
+	x[common.BurningAddress] = float64(common.SubmitProposalFee)
+	arrayParams[1] = x
+	return arrayParams
 }
 
 func (self RpcServer) handleCreateRawSubmitDCBProposalTransaction(

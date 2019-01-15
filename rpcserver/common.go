@@ -516,3 +516,13 @@ func GetPubKeyFromSenderKeyParams(senderKeyParam string) ([]byte, error) {
 	paymentAddr := senderKey.KeySet.PaymentAddress
 	return paymentAddr.Pk, nil
 }
+
+func GetPaymentAddressFromSenderKeyParams(senderKeyParam string) (*privacy.PaymentAddress, error) {
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam)
+	if err != nil {
+		return nil, err
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	paymentAddr := senderKey.KeySet.PaymentAddress
+	return &paymentAddr, nil
+}

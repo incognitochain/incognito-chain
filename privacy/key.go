@@ -125,6 +125,12 @@ func (addr *PaymentAddress) SetBytes(bytes []byte) *PaymentAddress {
 	return addr
 }
 
+func NewPaymentAddress(byte []byte) *PaymentAddress {
+	paymentAddress := PaymentAddress{}
+	paymentAddress.SetBytes(byte)
+	return &paymentAddress
+}
+
 // Size returns size of payment address
 func (addr *PaymentAddress) Size() int {
 	return len(addr.Pk) + len(addr.Tk)

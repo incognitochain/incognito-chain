@@ -3,20 +3,21 @@ package metadata
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 type Voter struct {
-	PubKey       []byte
-	AmountOfVote int32
+	PaymentAddress privacy.PaymentAddress
+	AmountOfVote   int32
 }
 
 func (voter *Voter) Greater(voter2 Voter) bool {
 	return voter.AmountOfVote > voter2.AmountOfVote ||
-		(voter.AmountOfVote == voter2.AmountOfVote && string(voter.PubKey) > string(voter2.PubKey))
+		(voter.AmountOfVote == voter2.AmountOfVote && string(voter.PaymentAddress.Bytes()) > string(voter2.PaymentAddress.Bytes()))
 }
 
 func (voter *Voter) Hash() *common.Hash {
-	record := string(voter.PubKey)
+	record := string(voter.PaymentAddress.Bytes())
 	record += string(voter.AmountOfVote)
 	hash := common.DoubleHashH([]byte(record))
 	return &hash

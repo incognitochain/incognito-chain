@@ -3,27 +3,28 @@ package metadata
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 type SendInitDCBVoteTokenMetadata struct {
-	Amount         uint32
-	ReceiverPubKey []byte
+	Amount                 uint32
+	ReceiverPaymentAddress privacy.PaymentAddress
 
 	MetadataBase
 }
 
-func NewSendInitDCBVoteTokenMetadata(amount uint32, receiverPubKey []byte) *SendInitDCBVoteTokenMetadata {
+func NewSendInitDCBVoteTokenMetadata(amount uint32, receiverPaymentAddress privacy.PaymentAddress) *SendInitDCBVoteTokenMetadata {
 	return &SendInitDCBVoteTokenMetadata{
-		Amount:         amount,
-		ReceiverPubKey: receiverPubKey,
-		MetadataBase:   *NewMetadataBase(SendInitDCBVoteTokenMeta),
+		Amount:                 amount,
+		ReceiverPaymentAddress: receiverPaymentAddress,
+		MetadataBase:           *NewMetadataBase(SendInitDCBVoteTokenMeta),
 	}
 
 }
 
 func (sendInitDCBVoteTokenMetadata *SendInitDCBVoteTokenMetadata) Hash() *common.Hash {
 	record := string(sendInitDCBVoteTokenMetadata.Amount)
-	record += string(sendInitDCBVoteTokenMetadata.ReceiverPubKey)
+	record += string(sendInitDCBVoteTokenMetadata.ReceiverPaymentAddress.Bytes())
 	record += string(sendInitDCBVoteTokenMetadata.MetadataBase.Hash().GetBytes())
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
@@ -34,9 +35,6 @@ func (sendInitDCBVoteTokenMetadata *SendInitDCBVoteTokenMetadata) ValidateTxWith
 }
 
 func (sendInitDCBVoteTokenMetadata *SendInitDCBVoteTokenMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
-	if len(sendInitDCBVoteTokenMetadata.ReceiverPubKey) != common.PubKeyLength {
-		return true, false, nil
-	}
 	return true, false, nil
 }
 
@@ -45,24 +43,24 @@ func (sendInitDCBVoteTokenMetadata *SendInitDCBVoteTokenMetadata) ValidateMetada
 }
 
 type SendInitGOVVoteTokenMetadata struct {
-	Amount         uint32
-	ReceiverPubKey []byte
+	Amount                 uint32
+	ReceiverPaymentAddress privacy.PaymentAddress
 
 	MetadataBase
 }
 
-func NewSendInitGOVVoteTokenMetadata(amount uint32, receiverPubKey []byte) *SendInitGOVVoteTokenMetadata {
+func NewSendInitGOVVoteTokenMetadata(amount uint32, receiverPaymentAddress privacy.PaymentAddress) *SendInitGOVVoteTokenMetadata {
 	return &SendInitGOVVoteTokenMetadata{
-		Amount:         amount,
-		ReceiverPubKey: receiverPubKey,
-		MetadataBase:   *NewMetadataBase(SendInitGOVVoteTokenMeta),
+		Amount:                 amount,
+		ReceiverPaymentAddress: receiverPaymentAddress,
+		MetadataBase:           *NewMetadataBase(SendInitGOVVoteTokenMeta),
 	}
 
 }
 
 func (sendInitGOVVoteTokenMetadata *SendInitGOVVoteTokenMetadata) Hash() *common.Hash {
 	record := string(sendInitGOVVoteTokenMetadata.Amount)
-	record += string(sendInitGOVVoteTokenMetadata.ReceiverPubKey)
+	record += string(sendInitGOVVoteTokenMetadata.ReceiverPaymentAddress.Bytes())
 	record += string(sendInitGOVVoteTokenMetadata.MetadataBase.Hash().GetBytes())
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
@@ -73,9 +71,6 @@ func (sendInitGOVVoteTokenMetadata *SendInitGOVVoteTokenMetadata) ValidateTxWith
 }
 
 func (sendInitGOVVoteTokenMetadata *SendInitGOVVoteTokenMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
-	if len(sendInitGOVVoteTokenMetadata.ReceiverPubKey) != common.PubKeyLength {
-		return true, false, nil
-	}
 	return true, false, nil
 }
 

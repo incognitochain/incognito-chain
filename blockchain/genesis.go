@@ -133,16 +133,19 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	}
 
 	// TODO(@0xjackalope): fill correct values
+	boardPayementAddress := []privacy.PaymentAddress{
+		{
+			Pk: []byte{3, 85, 237, 178, 30, 58, 190, 219, 126, 31, 9, 93, 40, 217, 109, 177, 70, 41, 64, 157, 2, 133, 2, 138, 23, 108, 228, 152, 234, 35, 101, 192, 173},
+			Tk: []byte{3, 116, 125, 158, 22, 126, 79, 50, 46, 119, 52, 133, 6, 246, 156, 94, 138, 244, 107, 147, 25, 78, 231, 105, 162, 185, 245, 152, 196, 116, 86, 15, 30},
+		},
+	}
 	genesisBlock.Header.DCBGovernor = DCBGovernor{
 		GovernorInfo: GovernorInfo{
-			boardIndex:   0,
-			StartedBlock: 1,
-			EndBlock:     1000, // = startedblock of decent governor
-			BoardPubKeys: [][]byte{
-				[]byte{3, 85, 237, 178, 30, 58, 190, 219, 126, 31, 9, 93, 40, 217, 109, 177, 70, 41, 64, 157, 2, 133, 2, 138, 23, 108, 228, 152, 234, 35, 101, 192, 173},
-				//				[]byte{3, 116, 125, 158, 22, 126, 79, 50, 46, 119, 52, 133, 6, 246, 156, 94, 138, 244, 107, 147, 25, 78, 231, 105, 162, 185, 245, 152, 196, 116, 86, 15, 30},
-			},
-			StartAmountToken: 0, //Sum of DCB token stack to all member of this board
+			boardIndex:          0,
+			StartedBlock:        1,
+			EndBlock:            1000, // = startedblock of decent governor
+			BoardPaymentAddress: boardPayementAddress,
+			StartAmountToken:    0, //Sum of DCB token stack to all member of this board
 		},
 	}
 

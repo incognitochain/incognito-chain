@@ -33,11 +33,28 @@ func (self *BlockChain) GetBoardPubKeys(boardType string) [][]byte {
 }
 
 func (self *BlockChain) GetDCBBoardPubKeys() [][]byte {
-	return self.BestState[0].BestBlock.Header.DCBGovernor.BoardPubKeys
+	return ListPubKeyFromListPayment(self.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress)
 }
 
 func (self *BlockChain) GetGOVBoardPubKeys() [][]byte {
-	return self.BestState[0].BestBlock.Header.GOVGovernor.BoardPubKeys
+	return ListPubKeyFromListPayment(self.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
+}
+
+func (self *BlockChain) GetBoardPaymentAddress(boardType string) []privacy.PaymentAddress {
+	if boardType == "dcb" {
+		return self.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress
+	} else {
+		return self.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress
+	}
+
+}
+
+func ListPubKeyFromListPayment(listPaymentAddresses []privacy.PaymentAddress) [][]byte {
+	pubKeys := make([][]byte, 0)
+	for _, i := range listPaymentAddresses {
+		pubKeys = append(pubKeys, i.Pk)
+	}
+	return pubKeys
 }
 
 func (self *BlockChain) GetDCBParams() params.DCBParams {
