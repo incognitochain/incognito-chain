@@ -169,7 +169,7 @@ func (self *Server) NewServer(listenAddrs string, db database.DatabaseInterface,
 		Logger.log.Info("Load chain dependencies from DB")
 		self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
 		for _, bestState := range self.blockChain.BestState.Shard {
-			shardID := bestState.BestBlock.Header.ShardID
+			shardID := bestState.BestShardBlock.Header.ShardID
 			feeEstimatorData, err := self.dataBase.GetFeeEstimator(shardID)
 			if err == nil && len(feeEstimatorData) > 0 {
 				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)

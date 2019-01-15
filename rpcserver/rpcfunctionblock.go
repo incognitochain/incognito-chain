@@ -23,8 +23,8 @@ func (self RpcServer) handleGetBestBlock(params interface{}, closeChan <-chan st
 	for shardID, best := range self.config.BlockChain.BestState.Shard {
 		// result.BestBlocks[strconv.Itoa(int(shardID))] = jsonresult.GetBestBlockItem{
 		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
-			Height:   best.BestBlock.Header.Height,
-			Hash:     best.BestBlockHash.String(),
+			Height:   best.BestShardBlock.Header.Height,
+			Hash:     best.BestShardBlockHash.String(),
 			TotalTxs: best.TotalTxns,
 		}
 	}
@@ -47,7 +47,7 @@ func (self RpcServer) handleGetBestBlockHash(params interface{}, closeChan <-cha
 		BestBlockHashes: make(map[int]string),
 	}
 	for shardID, best := range self.config.BlockChain.BestState.Shard {
-		result.BestBlockHashes[int(shardID)] = best.BestBlockHash.String()
+		result.BestBlockHashes[int(shardID)] = best.BestShardBlockHash.String()
 	}
 	beaconBestState := self.config.BlockChain.BestState.Beacon
 	if beaconBestState == nil {
@@ -87,7 +87,7 @@ func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan s
 			}
 			result.Data = hex.EncodeToString(data)
 		} else if verbosity == "1" {
-			best := self.config.BlockChain.BestState.Shard[shardID].BestBlock
+			best := self.config.BlockChain.BestState.Shard[shardID].BestShardBlock
 
 			// blockHeight := block.Header.GetHeight()
 			blockHeight := block.Header.Height
@@ -110,7 +110,7 @@ func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan s
 			// result.Version = block.Header.(*blockchain.BlockHeaderShard).Version
 			result.Version = block.Header.Version
 			// result.MerkleRoot = block.Header.(*blockchain.BlockHeaderShard).MerkleRoot.String()
-			result.MerkleRoot = block.Header.MerkleRoot.String()
+			result.MerkleRoot = block.Header.TxRoot.String()
 			// result.Time = block.Header.(*blockchain.BlockHeaderShard).Timestamp
 			result.Time = block.Header.Timestamp
 			// result.ShardID = block.Header.(*blockchain.BlockHeaderShard).ShardID
@@ -125,7 +125,7 @@ func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan s
 				result.TxHashes = append(result.TxHashes, tx.Hash().String())
 			}
 		} else if verbosity == "2" {
-			best := self.config.BlockChain.BestState.Shard[shardID].BestBlock
+			best := self.config.BlockChain.BestState.Shard[shardID].BestShardBlock
 
 			// blockHeight := block.Header.GetHeight()
 			blockHeight := block.Header.Height
@@ -151,7 +151,7 @@ func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan s
 			// result.ShardID = block.Header.(*blockchain.BlockHeaderShard).ShardID
 			// result.PreviousBlockHash = block.Header.(*blockchain.BlockHeaderShard).PrevBlockHash.String()
 			result.Version = block.Header.Version
-			result.MerkleRoot = block.Header.MerkleRoot.String()
+			result.MerkleRoot = block.Header.TxRoot.String()
 			result.Time = block.Header.Timestamp
 			result.ShardID = block.Header.ShardID
 			result.PreviousBlockHash = block.Header.PrevBlockHash.String()
@@ -189,7 +189,7 @@ func (self RpcServer) handleGetBlocks(params interface{}, closeChan <-chan struc
 	}
 	numBlock := int(arrayParams[0].(float64))
 	shardID := byte(arrayParams[1].(float64))
-	bestBlock := self.config.BlockChain.BestState.Shard[shardID].BestBlock
+	bestBlock := self.config.BlockChain.BestState.Shard[shardID].BestShardBlock
 	previousHash := bestBlock.Hash()
 	for numBlock > 0 {
 		numBlock--
@@ -222,14 +222,14 @@ func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-ch
 	for shardID, bestState := range self.config.BlockChain.BestState.Shard {
 		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
 			// Height:   bestState.BestBlock.Header.GetHeight(),
-			Height:     bestState.BestBlock.Header.Height,
-			Hash:       bestState.BestBlockHash.String(),
+			Height:     bestState.BestShardBlock.Header.Height,
+			Hash:       bestState.BestShardBlockHash.String(),
 			TotalTxs:   bestState.TotalTxns,
-			SalaryFund: bestState.BestBlock.Header.SalaryFund,
+			SalaryFund: bestState.BestShardBlock.Header.SalaryFund,
 			// BasicSalary:      bestState.BestBlock.Header.GOVConstitution.GOVParams.BasicSalary,
 			// SalaryPerTx:      bestState.BestBlock.Header.GOVConstitution.GOVParams.SalaryPerTx,
-			BlockProducer:    bestState.BestBlock.Header.Producer,
-			BlockProducerSig: bestState.BestBlock.ProducerSig,
+			BlockProducer:    bestState.BestShardBlock.Header.Producer,
+			BlockProducerSig: bestState.BestShardBlock.ProducerSig,
 		}
 	}
 	beaconBestState := self.config.BlockChain.BestState.Beacon
@@ -259,8 +259,8 @@ func (self RpcServer) handleGetBlockCount(params interface{}, closeChan <-chan s
 		}
 	}
 
-	if self.config.BlockChain.BestState != nil && self.config.BlockChain.BestState.Shard[shardID] != nil && self.config.BlockChain.BestState.Shard[shardID].BestBlock != nil {
-		return self.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height + 1, nil
+	if self.config.BlockChain.BestState != nil && self.config.BlockChain.BestState.Shard[shardID] != nil && self.config.BlockChain.BestState.Shard[shardID].BestShardBlock != nil {
+		return self.config.BlockChain.BestState.Shard[shardID].BestShardBlock.Header.Height + 1, nil
 	}
 	return 0, nil
 }
@@ -347,7 +347,7 @@ func (self RpcServer) handleGetBlockHeader(params interface{}, closeChan <-chan 
 		}
 		fmt.Println(shardID)
 		// if uint64(bnum-1) > self.config.BlockChain.BestState.Shard[uint8(shardID)].BestBlock.Header.GetHeight() || bnum <= 0 {
-		if uint64(bnum-1) > self.config.BlockChain.BestState.Shard[uint8(shardID)].BestBlock.Header.Height || bnum <= 0 {
+		if uint64(bnum-1) > self.config.BlockChain.BestState.Shard[uint8(shardID)].BestShardBlock.Header.Height || bnum <= 0 {
 			return nil, NewRPCError(ErrUnexpected, errors.New("Block not exist"))
 		}
 		block, _ := self.config.BlockChain.GetShardBlockByHeight(uint64(bnum-1), uint8(shardID))
