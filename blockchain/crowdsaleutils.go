@@ -400,6 +400,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 	if _, ok := saleDataMap[string(metaRequest.SaleID)]; !ok {
 		saleData, err := blockgen.chain.GetCrowdsaleData(metaRequest.SaleID)
 		if err != nil {
+			Logger.log.Error(err)
 			txsToRemove = append(txsToRemove, tx)
 			return
 		}
@@ -433,6 +434,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 		producerPrivateKey,
 	)
 	if err != nil {
+		Logger.log.Error(err)
 		txsToRemove = append(txsToRemove, tx)
 	} else if txPayment != nil {
 		txsPayment = append(txsPayment, txPayment)
