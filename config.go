@@ -286,7 +286,7 @@ func loadConfig() (*config, []string, error) {
 		// Generate:             defaultGenerate,
 		WalletName:           defaultWalletName,
 		DisableTLS:           defaultDisableRpcTLS,
-		DisableRPC:           true,
+		DisableRPC:           false,
 		RPCDisableAuth:       false,
 		DiscoverPeers:        true,
 		TestNet:              false,
