@@ -44,10 +44,10 @@ func (of *OracleFeed) ValidateTxWithBlockChain(
 	senderPubKey := txr.GetSigPubKey()
 	for _, oraclePubKey := range oraclePubKeys {
 		if bytes.Equal(oraclePubKey, senderPubKey) {
-			return true, nil
+			return common.TrueValue, nil
 		}
 	}
-	return true, errors.New("The oracle feeder is not belong to eligible oracles.")
+	return common.TrueValue, errors.New("The oracle feeder is not belong to eligible oracles.")
 }
 
 func (of *OracleFeed) ValidateSanityData(
@@ -55,23 +55,23 @@ func (of *OracleFeed) ValidateSanityData(
 	txr Transaction,
 ) (bool, bool, error) {
 	if len(of.FeederAddress.Pk) == 0 {
-		return false, false, errors.New("Wrong request info's payment address")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's payment address")
 	}
 	if len(of.FeederAddress.Tk) == 0 {
-		return false, false, errors.New("Wrong request info's payment address")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's payment address")
 	}
 	if of.Price == 0 {
-		return false, false, errors.New("Wrong oracle feed's price")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong oracle feed's price")
 	}
 	if len(of.AssetType) != common.HashSize {
-		return false, false, errors.New("Wrong oracle feed's asset type")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong oracle feed's asset type")
 	}
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (of *OracleFeed) ValidateMetadataByItself() bool {
 	if of.Type != OracleFeedMeta {
-		return false
+		return common.FalseValue
 	}
 	if !bytes.Equal(of.AssetType[:], common.DCBTokenID[:]) &&
 		!bytes.Equal(of.AssetType[:], common.GOVTokenID[:]) &&
@@ -80,9 +80,9 @@ func (of *OracleFeed) ValidateMetadataByItself() bool {
 		!bytes.Equal(of.AssetType[:], common.ETHAssetID[:]) &&
 		!bytes.Equal(of.AssetType[:], common.BTCAssetID[:]) &&
 		!bytes.Equal(of.AssetType[:8], common.BondTokenID[:8]) {
-		return false
+		return common.FalseValue
 	}
-	return true
+	return common.TrueValue
 }
 
 func (of *OracleFeed) Hash() *common.Hash {

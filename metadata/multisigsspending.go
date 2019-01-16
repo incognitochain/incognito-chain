@@ -46,9 +46,9 @@ func (msSpending *MultiSigsSpending) ValidateTxWithBlockChain(
 	// check spending address is already registered or not
 	_, err := getMultiSigsRegistration(txr, db)
 	if err != nil {
-		return false, err
+		return common.FalseValue, err
 	}
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (msSpending *MultiSigsSpending) ValidateSanityData(
@@ -56,24 +56,24 @@ func (msSpending *MultiSigsSpending) ValidateSanityData(
 	txr Transaction,
 ) (bool, bool, error) {
 	if len(msSpending.Signs) == 0 {
-		return false, false, errors.New("Wrong request info's signs")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's signs")
 	}
 	for pkStr, sign := range msSpending.Signs {
 		if len(pkStr) == 0 {
-			return false, false, errors.New("Wrong request info's public key string")
+			return common.FalseValue, common.FalseValue, errors.New("Wrong request info's public key string")
 		}
 		if len(sign) == 0 {
-			return false, false, errors.New("Wrong request info's signs")
+			return common.FalseValue, common.FalseValue, errors.New("Wrong request info's signs")
 		}
 	}
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (msSpending *MultiSigsSpending) ValidateMetadataByItself() bool {
 	if msSpending.Type != MultiSigsSpendingMeta {
-		return false
+		return common.FalseValue
 	}
-	return true
+	return common.TrueValue
 }
 
 func (msSpending *MultiSigsSpending) Hash() *common.Hash {
@@ -91,13 +91,13 @@ func (msSpending *MultiSigsSpending) VerifyMultiSigs(
 ) (bool, error) {
 	multiSigsRegBytes, err := getMultiSigsRegistration(txr, db)
 	if err != nil {
-		return false, err
+		return common.FalseValue, err
 	}
 
 	var multiSigsReg MultiSigsRegistration
 	err = json.Unmarshal(multiSigsRegBytes, &multiSigsReg)
 	if err != nil {
-		return false, err
+		return common.FalseValue, err
 	}
 
 	verifiedCount := 0
@@ -124,7 +124,7 @@ func (msSpending *MultiSigsSpending) VerifyMultiSigs(
 		}
 	}
 	if verifiedCount < (len(spendablePubKeys)/2)+1 {
-		return false, errors.New("There are not enough signatures in order to spend on the multisigs account")
+		return common.FalseValue, errors.New("There are not enough signatures in order to spend on the multisigs account")
 	}
-	return true, nil
+	return common.TrueValue, nil
 }
