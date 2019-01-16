@@ -8,7 +8,7 @@ import (
 
 var sentryClient *raven.Client
 
-func ValidateClient() error {
+func ValidateSentryClient() error {
 	if sentryClient == nil {
 		return errors.New("Sentry client not initialized")
 	}
@@ -45,7 +45,7 @@ func CreateSentryService(DNS string) error {
 }
 
 func CaptureSentryMessage(message string) error {
-	err := ValidateClient()
+	err := ValidateSentryClient()
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func CaptureSentryMessage(message string) error {
 }
 
 func CaptureSentryError(err error) error {
-	clientErr := ValidateClient()
+	clientErr := ValidateSentryClient()
 	if clientErr != nil {
 		return clientErr
 	}
