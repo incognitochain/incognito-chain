@@ -80,7 +80,7 @@ func (msReg *MultiSigsRegistration) Hash() *common.Hash {
 	for _, pk := range msReg.SpendableMembers {
 		record += string(pk)
 	}
-	record += string(msReg.MetadataBase.Hash()[:])
+	record += msReg.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

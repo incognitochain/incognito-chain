@@ -34,7 +34,7 @@ func (ds *CMBDepositSend) Hash() *common.Hash {
 	record := string(ds.ContractID[:])
 
 	// final hash
-	record += string(ds.MetadataBase.Hash()[:])
+	record += ds.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

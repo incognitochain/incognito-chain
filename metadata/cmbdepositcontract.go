@@ -59,7 +59,7 @@ func (dc *CMBDepositContract) Hash() *common.Hash {
 	record += string(dc.CMBAddress.Bytes())
 
 	// final hash
-	record += string(dc.MetadataBase.Hash()[:])
+	record += dc.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

@@ -133,7 +133,7 @@ func (uob UpdatingOracleBoard) Hash() *common.Hash {
 		record += string(pk)
 	}
 	// record += string(common.ToBytes(uob.Signs))
-	record += string(uob.MetadataBase.Hash()[:])
+	record += uob.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

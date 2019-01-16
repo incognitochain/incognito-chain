@@ -88,7 +88,7 @@ func (csReq *CrowdsaleRequest) Hash() *common.Hash {
 	record += string(csReq.AssetPrice)
 
 	// final hash
-	record += string(csReq.MetadataBase.Hash()[:])
+	record += csReq.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

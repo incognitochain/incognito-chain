@@ -17,7 +17,7 @@ func NewRewardDCBProposalSubmitterMetadata() *RewardDCBProposalSubmitterMetadata
 }
 
 func (rewardDCBProposalSubmitterMetadata *RewardDCBProposalSubmitterMetadata) Hash() *common.Hash {
-	record := string(rewardDCBProposalSubmitterMetadata.MetadataBase.Hash().GetBytes())
+	record := rewardDCBProposalSubmitterMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -45,7 +45,7 @@ func NewRewardGOVProposalSubmitterMetadata() *RewardGOVProposalSubmitterMetadata
 }
 
 func (rewardGOVProposalSubmitterMetadata *RewardGOVProposalSubmitterMetadata) Hash() *common.Hash {
-	record := string(rewardGOVProposalSubmitterMetadata.MetadataBase.Hash().GetBytes())
+	record := rewardGOVProposalSubmitterMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

@@ -29,7 +29,7 @@ func (voteDCBBoardMetadata *VoteDCBBoardMetadata) GetType() int {
 
 func (voteDCBBoardMetadata *VoteDCBBoardMetadata) Hash() *common.Hash {
 	record := string(voteDCBBoardMetadata.CandidatePaymentAddress.Bytes())
-	record += string(voteDCBBoardMetadata.MetadataBase.Hash().GetBytes())
+	record += voteDCBBoardMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -64,7 +64,7 @@ func (voteGOVBoardMetadata *VoteGOVBoardMetadata) GetType() int {
 }
 func (voteGOVBoardMetadata *VoteGOVBoardMetadata) Hash() *common.Hash {
 	record := string(voteGOVBoardMetadata.CandidatePaymentAddress.Bytes())
-	record += string(voteGOVBoardMetadata.MetadataBase.Hash().GetBytes())
+	record += voteGOVBoardMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

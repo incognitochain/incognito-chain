@@ -26,7 +26,7 @@ func (cref *CMBInitRefund) Hash() *common.Hash {
 	record := string(cref.MainAccount.Bytes())
 
 	// final hash
-	record += string(cref.MetadataBase.Hash()[:])
+	record += cref.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

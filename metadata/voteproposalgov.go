@@ -275,7 +275,7 @@ func NewPunishGOVDecryptMetadata(paymentAddress privacy.PaymentAddress) *PunishG
 
 func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) Hash() *common.Hash {
 	record := string(punishGOVDecryptMetadata.PunishDecryptMetadata.ToBytes())
-	record += string(punishGOVDecryptMetadata.MetadataBase.Hash().GetBytes())
+	record += punishGOVDecryptMetadata.MetadataBase.Hash().String()
 
 	hash := common.DoubleHashH([]byte(record))
 	return &hash

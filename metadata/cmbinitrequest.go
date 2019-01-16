@@ -54,7 +54,7 @@ func (creq *CMBInitRequest) Hash() *common.Hash {
 	}
 
 	// final hash
-	record += string(creq.MetadataBase.Hash()[:])
+	record += creq.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

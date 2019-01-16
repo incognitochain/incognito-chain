@@ -87,7 +87,7 @@ func (iReq *IssuingRequest) Hash() *common.Hash {
 	record := string(iReq.ReceiverAddress.Bytes())
 	record += iReq.AssetType.String()
 	record += string(iReq.DepositedAmount)
-	record += string(iReq.MetadataBase.Hash()[:])
+	record += iReq.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

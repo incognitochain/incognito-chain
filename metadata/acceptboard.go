@@ -27,7 +27,7 @@ func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) Hash() *common.Hash {
 		record += string(i.Bytes())
 	}
 	record += string(acceptDCBBoardMetadata.StartAmountDCBToken)
-	record += string(acceptDCBBoardMetadata.MetadataBase.Hash().GetBytes())
+	record += acceptDCBBoardMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -68,7 +68,7 @@ func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) Hash() *common.Hash {
 		record += string(i.Bytes())
 	}
 	record += string(acceptGOVBoardMetadata.StartAmountGOVToken)
-	record += string(acceptGOVBoardMetadata.MetadataBase.Hash().GetBytes())
+	record += acceptGOVBoardMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

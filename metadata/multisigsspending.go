@@ -78,7 +78,7 @@ func (msSpending *MultiSigsSpending) ValidateMetadataByItself() bool {
 
 func (msSpending *MultiSigsSpending) Hash() *common.Hash {
 	// record := string(common.ToBytes(msSpending.Signs))
-	record := string(msSpending.MetadataBase.Hash()[:])
+	record := msSpending.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

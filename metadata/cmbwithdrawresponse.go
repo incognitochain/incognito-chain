@@ -29,10 +29,10 @@ func NewCMBWithdrawResponse(data map[string]interface{}) *CMBWithdrawResponse {
 }
 
 func (cwres *CMBWithdrawResponse) Hash() *common.Hash {
-	record := string(cwres.RequestTxID[:])
+	record := cwres.RequestTxID.String()
 
 	// final hash
-	record += string(cwres.MetadataBase.Hash()[:])
+	record += cwres.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

@@ -57,11 +57,11 @@ func NewSubmitDCBProposalMetadataFromJson(data interface{}) *SubmitDCBProposalMe
 }
 
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) Hash() *common.Hash {
-	record := string(submitDCBProposalMetadata.DCBParams.Hash().GetBytes())
+	record := submitDCBProposalMetadata.DCBParams.Hash().String()
 	record += string(submitDCBProposalMetadata.ExecuteDuration)
 	record += submitDCBProposalMetadata.Explanation
 	record += string(submitDCBProposalMetadata.PaymentAddress.Bytes())
-	record += string(submitDCBProposalMetadata.MetadataBase.Hash().GetBytes())
+	record += submitDCBProposalMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -130,11 +130,11 @@ func NewSubmitGOVProposalMetadataFromJson(data interface{}) *SubmitGOVProposalMe
 }
 
 func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) Hash() *common.Hash {
-	record := string(submitGOVProposalMetadata.GOVParams.Hash().GetBytes())
+	record := submitGOVProposalMetadata.GOVParams.Hash().String()
 	record += string(submitGOVProposalMetadata.ExecuteDuration)
 	record += submitGOVProposalMetadata.Explanation
 	record += string(submitGOVProposalMetadata.PaymentAddress.Bytes())
-	record += string(submitGOVProposalMetadata.MetadataBase.Hash().GetBytes())
+	record += submitGOVProposalMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

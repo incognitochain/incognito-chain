@@ -39,7 +39,7 @@ func (cwr *CMBWithdrawRequest) Hash() *common.Hash {
 	record := string(cwr.ContractID[:])
 
 	// final hash
-	record += string(cwr.MetadataBase.Hash()[:])
+	record += cwr.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

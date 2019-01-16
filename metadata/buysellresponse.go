@@ -65,7 +65,7 @@ func (bsRes *BuySellResponse) Hash() *common.Hash {
 	record += strconv.FormatUint(uint64(bsRes.Maturity), 10)
 	record += strconv.FormatUint(bsRes.BuyBackPrice, 10)
 	record += string(bsRes.BondID)
-	record += string(bsRes.MetadataBase.Hash()[:])
+	record += bsRes.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

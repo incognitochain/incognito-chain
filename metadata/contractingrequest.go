@@ -44,7 +44,7 @@ func (cReq *ContractingRequest) ValidateMetadataByItself() bool {
 }
 
 func (cReq *ContractingRequest) Hash() *common.Hash {
-	record := string(cReq.MetadataBase.Hash()[:])
+	record := cReq.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

@@ -275,7 +275,7 @@ func NewPunishDCBDecryptMetadata(paymentAddress privacy.PaymentAddress) *PunishD
 
 func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) Hash() *common.Hash {
 	record := string(punishDCBDecryptMetadata.PunishDecryptMetadata.ToBytes())
-	record += string(punishDCBDecryptMetadata.MetadataBase.Hash().GetBytes())
+	record += punishDCBDecryptMetadata.MetadataBase.Hash().String()
 
 	hash := common.DoubleHashH([]byte(record))
 	return &hash

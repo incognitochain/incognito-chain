@@ -76,7 +76,7 @@ func (csRes *CrowdsalePayment) ValidateMetadataByItself() bool {
 }
 
 func (csRes *CrowdsalePayment) Hash() *common.Hash {
-	record := string(csRes.RequestedTxID[:])
+	record := csRes.RequestedTxID.String()
 	record += string(csRes.SaleID)
 
 	// final hash

@@ -37,7 +37,7 @@ func NewRewardShareOldBoardMetadata(
 func (rewardShareOldBoardMetadata *RewardShareOldBoardMetadata) Hash() *common.Hash {
 	record := string(rewardShareOldBoardMetadata.voterPaymentAddress.Bytes())
 	record += string(rewardShareOldBoardMetadata.candidatePaymentAddress.Bytes())
-	record += string(rewardShareOldBoardMetadata.MetadataBase.Hash().GetBytes())
+	record += rewardShareOldBoardMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
