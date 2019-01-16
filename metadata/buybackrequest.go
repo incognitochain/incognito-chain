@@ -71,7 +71,7 @@ func (bbReq *BuyBackRequest) Hash() *common.Hash {
 	record := string(bbReq.PaymentAddress.Bytes())
 	record += string(bbReq.Amount)
 	record += bbReq.TokenID.String()
-	record += string(bbReq.MetadataBase.Hash()[:])
+	record += bbReq.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

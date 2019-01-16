@@ -30,7 +30,7 @@ func (lp *LoanPayment) Hash() *common.Hash {
 	record := string(lp.LoanID)
 
 	// final hash
-	record += string(lp.MetadataBase.Hash()[:])
+	record += lp.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

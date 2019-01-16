@@ -31,11 +31,11 @@ type Dividend struct {
 
 func (div *Dividend) Hash() *common.Hash {
 	record := fmt.Sprintf("%d", div.PayoutID)
-	record += string(div.TokenID[:])
+	record += div.TokenID.String()
 	record += string(div.PaymentAddress.Bytes())
 
 	// final hash
-	record += string(div.MetadataBase.Hash()[:])
+	record += div.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

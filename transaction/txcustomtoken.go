@@ -270,7 +270,7 @@ func (tx TxCustomToken) Hash() *common.Hash {
 	txTokenDataHash, _ := tx.TxTokenData.Hash()
 	record += txTokenDataHash.String()
 	if tx.Metadata != nil {
-		record += string(tx.Metadata.Hash()[:])
+		record += tx.Metadata.Hash().String()
 	}
 
 	// final hash
