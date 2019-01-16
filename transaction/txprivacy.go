@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math"
 	"math/big"
 	"strconv"
@@ -103,7 +102,7 @@ func (tx *Tx) Init(
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
 	tx.Metadata = metaData
 	tx.Type = common.TxNormalType
-	fmt.Printf("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(inputCoins), fee, hasPrivacy)
+	Logger.log.Infof("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(inputCoins), fee, hasPrivacy)
 	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
 		Logger.log.Infof("CREATE TX CUSTOM TOKEN\n")
 		tx.Fee = fee
@@ -150,7 +149,7 @@ func (tx *Tx) Init(
 	for _, coin := range inputCoins {
 		sumInputValue += coin.CoinDetails.Value
 	}
-	fmt.Printf("sumInputValue: %d\n", sumInputValue)
+	Logger.log.Infof("sumInputValue: %d\n", sumInputValue)
 
 	// Calculate over balance, it will be returned to sender
 	overBalance := int(sumInputValue - sumOutputValue - fee)
@@ -314,6 +313,7 @@ func (tx *Tx) SignTx() error {
 	return nil
 }
 
+// VerifySigTx - verify signature on tx
 func (tx *Tx) VerifySigTx() (bool, error) {
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
@@ -348,7 +348,7 @@ func (tx *Tx) VerifySigTx() (bool, error) {
 	return res, nil
 }
 
-func (tx *Tx) validateMultiSigsTx(db database.DatabaseInterface) (bool, error) {
+func (tx *Tx) VerifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 	meta := tx.GetMetadata()
 	if meta == nil {
 		return false, nil
@@ -364,11 +364,11 @@ func (tx *Tx) validateMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Verify the payment proof
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
-	fmt.Printf("[db] Validating Transaction tx\n")
+	Logger.log.Infof("[db] Validating Transaction tx\n")
 	hasPrivacy = tx.IsPrivacy()
 	start := time.Now()
 	// Verify tx signature
-	fmt.Printf("tx.GetType(): %v\n", tx.GetType())
+	Logger.log.Infof("tx.GetType(): %v\n", tx.GetType())
 	if tx.GetType() == common.TxSalaryType {
 		return tx.ValidateTxSalary(db)
 	}
@@ -377,8 +377,9 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	var err error
 	senderPK := tx.GetJSPubKey()
 	_, getMSRErr := db.GetMultiSigsRegistration(senderPK)
-	fmt.Printf("getMSRErr: %v\n", getMSRErr)
+	Logger.log.Infof("getMSRErr: %v\n", getMSRErr)
 	if getMSRErr != nil {
+		// Single signature
 		if getMSRErr != lvdberr.ErrNotFound {
 			Logger.log.Infof("%+v", err)
 			return false
@@ -393,7 +394,8 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			}
 		}
 	} else { // found, spending on multisigs address
-		valid, err = tx.validateMultiSigsTx(db)
+		// Multi signatures
+		valid, err = tx.VerifyMultiSigsTx(db)
 		if err != nil {
 			Logger.log.Infof("%+v", err)
 		}
@@ -402,7 +404,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 	}
 
-	fmt.Printf("[db]tx.Proof: %+v\n", tx.Proof)
+	Logger.log.Infof("[db]tx.Proof: %+v\n", tx.Proof)
 	if tx.Proof != nil {
 		if tokenID == nil {
 			tokenID = &common.Hash{}
@@ -411,17 +413,16 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 			// Check output coins' input is not exists in input list (Database)
 			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, chainId, db); ok || err != nil {
-				fmt.Printf("snd existed: %d\n", i)
+				Logger.log.Infof("snd existed: %d\n", i)
 				return false
 			}
 		}
-
 		if !hasPrivacy {
 			// Check input coins' cm is exists in cm list (Database)
 			for i := 0; i < len(tx.Proof.InputCoins); i++ {
 				ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, chainId, tokenID)
 				if !ok || err != nil {
-					fmt.Printf("[db]cm existed: %d\n", i)
+					Logger.log.Infof("[db]cm existed: %d\n", i)
 					return false
 				}
 			}
@@ -429,7 +430,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 		// Verify the payment proof
 		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, chainId, tokenID)
-		fmt.Printf("proof valid: %v\n", valid)
+		Logger.log.Infof("proof valid: %v\n", valid)
 		if valid == false {
 			Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION PAYMENT PROOF")
 			return false
@@ -659,7 +660,7 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 }
 
 func (tx *Tx) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
-	fmt.Println("Validating sanity data!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", tx.Metadata)
+	Logger.log.Info("Validating sanity data!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", tx.Metadata)
 	if tx.Metadata != nil {
 		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, tx)
 		if err != nil || !ok || !isContinued {
@@ -678,12 +679,12 @@ func (tx *Tx) ValidateTxByItself(
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	ok := tx.ValidateTransaction(hasPrivacy, db, chainID, constantTokenID)
-	fmt.Printf("[db]ok validatetxbyitself: %v\n", ok)
+	Logger.log.Infof("[db]ok validatetxbyitself: %v\n", ok)
 	if !ok {
 		return false
 	}
 	if tx.Metadata != nil {
-		fmt.Printf("[db]validatetxbyitself metadata: %v\n", tx.Metadata.ValidateMetadataByItself())
+		Logger.log.Infof("[db]validatetxbyitself metadata: %v\n", tx.Metadata.ValidateMetadataByItself())
 		return tx.Metadata.ValidateMetadataByItself()
 	}
 	return true
