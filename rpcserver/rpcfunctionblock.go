@@ -12,6 +12,8 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
+
+	"github.com/ninjadotorg/constant/common/aggregatelog"
 )
 
 // handleGetBestBlock implements the getbestblock command.
@@ -214,6 +216,24 @@ func (self RpcServer) handleGetBlocks(params interface{}, closeChan <-chan struc
 getblockchaininfo RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	// raven.CaptureError(errors.New("test catch error raven from rpc server"), nil)
+	logService, _ := aggregatelog.GetService(aggregatelog.SENTRY_LOG_SERVICENAME)
+	logParams := map[string]interface{}{
+		"DSN": aggregatelog.SENTRY_DSN,
+	}
+	err := logService.InitService(logParams)
+	if err != nil {
+		log.Println("capture init err", err)
+	}
+	err = logService.CaptureMessage("test capture message raven from rpc server 1")
+	if err != nil {
+		log.Println("capture message err", err)
+	}
+	err = logService.CaptureError(errors.New("test capture error raven from rpc server 1"))
+	if err != nil {
+		log.Println("capture error err", err)
+	}
+
 	result := jsonresult.GetBlockChainInfoResult{
 		ChainName: self.config.ChainParams.Name,
 		// BestBlocks: make(map[byte]jsonresult.GetBestBlockItem),
