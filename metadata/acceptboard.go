@@ -22,7 +22,7 @@ func NewAcceptDCBBoardMetadata(DCBBoardPaymentAddress []privacy.PaymentAddress, 
 }
 
 func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) Hash() *common.Hash {
-	record := ""
+	record := common.EmptyString
 	for _, i := range acceptDCBBoardMetadata.DCBBoardPaymentAddress {
 		record += string(i.Bytes())
 	}
@@ -63,7 +63,7 @@ func NewAcceptGOVBoardMetadata(GOVBoardPaymentAddress []privacy.PaymentAddress, 
 }
 
 func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) Hash() *common.Hash {
-	record := ""
+	record := common.EmptyString
 	for _, i := range acceptGOVBoardMetadata.GOVBoardPaymentAddress {
 		record += string(i.Bytes())
 	}
