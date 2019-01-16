@@ -29,13 +29,13 @@ func (rewardProposalWinnerMetadata *RewardProposalWinnerMetadata) Hash() *common
 }
 
 func (rewardProposalWinnerMetadata *RewardProposalWinnerMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (rewardProposalWinnerMetadata *RewardProposalWinnerMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (rewardProposalWinnerMetadata *RewardProposalWinnerMetadata) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }

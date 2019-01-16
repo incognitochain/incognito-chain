@@ -67,25 +67,25 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) Hash() *common.Hash 
 }
 
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
 	if !submitDCBProposalMetadata.DCBParams.ValidateSanityData() {
-		return true, false, nil
+		return common.TrueValue, common.FalseValue, nil
 	}
 	if submitDCBProposalMetadata.ExecuteDuration < common.MinimumBlockOfProposalDuration ||
 		submitDCBProposalMetadata.ExecuteDuration > common.MaximumBlockOfProposalDuration {
-		return true, false, nil
+		return common.TrueValue, common.FalseValue, nil
 	}
 	if len(submitDCBProposalMetadata.Explanation) > common.MaximumProposalExplainationLength {
-		return true, false, nil
+		return common.TrueValue, common.FalseValue, nil
 	}
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }
 
 type SubmitGOVProposalMetadata struct {
@@ -140,23 +140,23 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) Hash() *common.Hash 
 }
 
 func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
 	if !submitGOVProposalMetadata.GOVParams.ValidateSanityData() {
-		return true, false, nil
+		return common.TrueValue, common.FalseValue, nil
 	}
 	if submitGOVProposalMetadata.ExecuteDuration < common.MinimumBlockOfProposalDuration ||
 		submitGOVProposalMetadata.ExecuteDuration > common.MaximumBlockOfProposalDuration {
-		return true, false, nil
+		return common.TrueValue, common.FalseValue, nil
 	}
 	if len(submitGOVProposalMetadata.Explanation) > common.MaximumProposalExplainationLength {
-		return true, false, nil
+		return common.TrueValue, common.FalseValue, nil
 	}
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }

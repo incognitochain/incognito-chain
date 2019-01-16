@@ -20,7 +20,7 @@ func NewVoteDCBBoardMetadata(candidatePaymentAddress privacy.PaymentAddress) *Vo
 }
 
 func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (voteDCBBoardMetadata *VoteDCBBoardMetadata) GetType() int {
@@ -35,11 +35,11 @@ func (voteDCBBoardMetadata *VoteDCBBoardMetadata) Hash() *common.Hash {
 }
 
 func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }
 
 type VoteGOVBoardMetadata struct {
@@ -56,7 +56,7 @@ func NewVoteGOVBoardMetadata(candidatePaymentAddress privacy.PaymentAddress) *Vo
 }
 
 func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (voteGOVBoardMetadata *VoteGOVBoardMetadata) GetType() int {
@@ -70,9 +70,9 @@ func (voteGOVBoardMetadata *VoteGOVBoardMetadata) Hash() *common.Hash {
 }
 
 func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }

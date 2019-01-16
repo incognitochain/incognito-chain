@@ -31,15 +31,15 @@ func (sendInitDCBVoteTokenMetadata *SendInitDCBVoteTokenMetadata) Hash() *common
 }
 
 func (sendInitDCBVoteTokenMetadata *SendInitDCBVoteTokenMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (sendInitDCBVoteTokenMetadata *SendInitDCBVoteTokenMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
-	return true, false, nil
+	return common.TrueValue, common.FalseValue, nil
 }
 
 func (sendInitDCBVoteTokenMetadata *SendInitDCBVoteTokenMetadata) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }
 
 type SendInitGOVVoteTokenMetadata struct {
@@ -67,13 +67,13 @@ func (sendInitGOVVoteTokenMetadata *SendInitGOVVoteTokenMetadata) Hash() *common
 }
 
 func (sendInitGOVVoteTokenMetadata *SendInitGOVVoteTokenMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (sendInitGOVVoteTokenMetadata *SendInitGOVVoteTokenMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
-	return true, false, nil
+	return common.TrueValue, common.FalseValue, nil
 }
 
 func (sendInitGOVVoteTokenMetadata *SendInitGOVVoteTokenMetadata) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }

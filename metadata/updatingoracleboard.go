@@ -45,9 +45,9 @@ func (uob UpdatingOracleBoard) CheckTransactionFee(
 	txFee := tr.GetTxFee()
 	fullFee := minFeePerKbTx * tr.GetTxActualSize()
 	if txFee < fullFee {
-		return false
+		return common.FalseValue
 	}
-	return true
+	return common.TrueValue
 }
 
 func (uob UpdatingOracleBoard) ValidateTxWithBlockChain(
@@ -59,7 +59,7 @@ func (uob UpdatingOracleBoard) ValidateTxWithBlockChain(
 	govBoardPubKeys := bcr.GetBoardPubKeys("gov")
 	boardLen := len(govBoardPubKeys)
 	if boardLen == 0 {
-		return false, errors.New("There is no one in GOV board yet.")
+		return common.FalseValue, errors.New("There is no one in GOV board yet.")
 	}
 	// verify signs
 	txBytes := txr.Hash()[:]
@@ -86,9 +86,9 @@ func (uob UpdatingOracleBoard) ValidateTxWithBlockChain(
 		}
 	}
 	if verifiedSignCount < int(math.Floor(float64(boardLen/2)))+1 {
-		return false, errors.New("Number of signatures is not enough.")
+		return common.FalseValue, errors.New("Number of signatures is not enough.")
 	}
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (uob UpdatingOracleBoard) ValidateSanityData(
@@ -96,35 +96,35 @@ func (uob UpdatingOracleBoard) ValidateSanityData(
 	txr Transaction,
 ) (bool, bool, error) {
 	if uob.Action == 0 {
-		return false, false, errors.New("Wrong request info's action")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's action")
 	}
 	if len(uob.OraclePubKeys) == 0 {
-		return false, false, errors.New("Wrong request info's OraclePubKeys")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's OraclePubKeys")
 	}
 	for _, pk := range uob.OraclePubKeys {
 		if len(pk) == 0 {
-			return false, false, errors.New("Wrong request info's OraclePubKey")
+			return common.FalseValue, common.FalseValue, errors.New("Wrong request info's OraclePubKey")
 		}
 	}
 	if len(uob.Signs) == 0 {
-		return false, false, errors.New("Wrong request info's Signs")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's Signs")
 	}
 	for pkStr, sign := range uob.Signs {
 		if len(pkStr) == 0 || len(sign) == 0 {
-			return false, false, errors.New("Wrong request info's Signs")
+			return common.FalseValue, common.FalseValue, errors.New("Wrong request info's Signs")
 		}
 	}
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (uob UpdatingOracleBoard) ValidateMetadataByItself() bool {
 	if uob.Type != UpdatingOracleBoardMeta {
-		return false
+		return common.FalseValue
 	}
 	if uob.Action != Add && uob.Action != Remove {
-		return false
+		return common.FalseValue
 	}
-	return true
+	return common.TrueValue
 }
 
 func (uob UpdatingOracleBoard) Hash() *common.Hash {
