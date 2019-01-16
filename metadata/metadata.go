@@ -77,11 +77,13 @@ type TxDesc struct {
 	FeePerKB int32
 }
 
+// Interface for mempool which is used in metadata
 type MempoolRetriever interface {
 	GetSerialNumbers() map[common.Hash][][]byte
 	GetTxsInMem() map[common.Hash]TxDesc
 }
 
+// Interface for blockchain which is used in metadata
 type BlockchainRetriever interface {
 	GetTxChainHeight(tx Transaction) (uint64, error)
 	GetChainHeight(byte) uint64
@@ -118,6 +120,7 @@ type BlockchainRetriever interface {
 	GetWithdrawRequest([]byte) ([]byte, uint8, error)
 }
 
+// Interface for all types of metadata in tx
 type Metadata interface {
 	GetType() int
 	Hash() *common.Hash
