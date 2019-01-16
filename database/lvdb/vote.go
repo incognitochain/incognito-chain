@@ -305,6 +305,22 @@ func (db *db) GetVoteTokenAmount(boardType string, boardIndex uint32, paymentAdd
 	return common.BytesToUint32(value), nil
 }
 
+func (db *db) SetVoteTokenAmount(boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress, newAmount uint32) error {
+	key := GetKeyVoteTokenAmount(boardType, boardIndex, paymentAddress)
+	ok, err := db.HasValue(key)
+	if !ok {
+		zeroInBytes := common.Uint32ToBytes(uint32(0))
+		db.Put(key, zeroInBytes)
+	}
+
+	newAmountInBytes := common.Uint32ToBytes(newAmount)
+	err = db.Put(key, newAmountInBytes)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func GetKeyThreePhraseCryptoOwner(boardType string, constitutionIndex uint32, txId *common.Hash) []byte {
 	txIdByte := make([]byte, 0)
 	if txId != nil {
@@ -328,8 +344,12 @@ func ParseKeyThreePhraseCryptoOwner(key []byte) (boardType string, constitutionI
 	txId = nil
 	txIdData := elements[3]
 	if len(txIdData) != 0 {
-		newHash := common.NewHash(txIdData)
-		txId = &newHash
+		newHash, err1 := common.NewHash(txIdData)
+		if err1 != nil {
+			err = err1
+			return
+		}
+		txId = newHash
 	}
 
 	err = nil
@@ -363,8 +383,12 @@ func ParseKeyThreePhraseCryptoSealer(key []byte) (boardType string, constitution
 	txId = nil
 	txIdData := elements[2]
 	if len(txIdData) != 0 {
-		newHash := common.NewHash(txIdData)
-		txId = &newHash
+		newHash, err1 := common.NewHash(txIdData)
+		if err1 != nil {
+			err = err1
+			return
+		}
+		txId = newHash
 	}
 	return
 }
@@ -396,8 +420,12 @@ func ParseKeyThreePhraseVoteValue(key []byte) (boardType string, constitutionInd
 	txId = nil
 	txIdData := elements[2]
 	if len(txIdData) != 0 {
-		newHash := common.NewHash(txIdData)
-		txId = &newHash
+		newHash, err1 := common.NewHash(txIdData)
+		if err1 != nil {
+			err = err1
+			return
+		}
+		txId = newHash
 	}
 	return
 }
@@ -440,16 +468,6 @@ func (db *db) SetEncryptionLastBlockHeight(boardType string, height uint32) {
 	key := GetKeyEncryptionLastBlockHeight(boardType)
 	value := common.Uint32ToBytes(height)
 	db.Put(key, value)
-}
-
-func (db *db) GetAmountVoteToken(boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress) (uint32, error) {
-	key := GetKeyVoteTokenAmount(boardType, boardIndex, paymentAddress)
-	currentAmountInBytes, err := db.Get(key)
-	if err != nil {
-		return 0, err
-	}
-	currentAmount := common.BytesToUint32(currentAmountInBytes)
-	return currentAmount, nil
 }
 
 func (db *db) TakeVoteTokenFromWinner(boardType string, boardIndex uint32, voterPaymentAddress privacy.PaymentAddress, amountOfVote int32) error {
