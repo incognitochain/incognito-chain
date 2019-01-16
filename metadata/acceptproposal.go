@@ -52,12 +52,12 @@ func NewAcceptDCBProposalMetadata(DCBProposalTXID common.Hash, voter Voter) *Acc
 func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	_, _, _, tx, err := bcr.GetTransactionByHash(&acceptDCBProposalMetadata.DCBProposalTXID)
 	if err != nil {
-		return false, err
+		return common.FalseValue, err
 	}
 	if tx == nil {
-		return false, nil
+		return common.FalseValue, nil
 	}
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) Hash() *common.Hash {
@@ -69,11 +69,11 @@ func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) Hash() *common.Hash 
 }
 
 func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }
 
 type AcceptGOVProposalMetadata struct {
@@ -93,12 +93,12 @@ func NewAcceptGOVProposalMetadata(GOVProposalTXID common.Hash, voter Voter) *Acc
 func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	_, _, _, tx, err := bcr.GetTransactionByHash(&acceptGOVProposalMetadata.GOVProposalTXID)
 	if err != nil {
-		return false, err
+		return common.FalseValue, err
 	}
 	if tx == nil {
-		return false, nil
+		return common.FalseValue, nil
 	}
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) GetType() int {
@@ -114,9 +114,9 @@ func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) Hash() *common.Hash 
 }
 
 func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }

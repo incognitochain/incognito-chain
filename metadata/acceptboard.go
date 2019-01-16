@@ -33,18 +33,18 @@ func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) Hash() *common.Hash {
 }
 
 func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
 	if len(acceptDCBBoardMetadata.DCBBoardPaymentAddress) != bcr.GetNumberOfDCBGovernors() {
-		return true, false, nil
+		return common.TrueValue, common.FalseValue, nil
 	}
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }
 
 type AcceptGOVBoardMetadata struct {
@@ -74,16 +74,16 @@ func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) Hash() *common.Hash {
 }
 
 func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
 	if len(acceptGOVBoardMetadata.GOVBoardPaymentAddress) != bcr.GetNumberOfGOVGovernors() {
-		return true, false, nil
+		return common.TrueValue, common.FalseValue, nil
 	}
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }
