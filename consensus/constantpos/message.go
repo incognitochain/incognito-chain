@@ -2,6 +2,7 @@ package constantpos
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/ninjadotorg/constant/blockchain"
 
@@ -305,12 +306,13 @@ func MakeMsgBFTCommit(commitSig string, R string, validatorsIdx []int, pubkey st
 	return msg, nil
 }
 
-func MakeMsgBFTReady(aggregatedSig string, validatorsIdx []int) (wire.Message, error) {
+func MakeMsgBFTReady() (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTReady)
 	if err != nil {
 		Logger.log.Error(err)
 		return msg, err
 	}
+	msg.(*wire.MessageBFTReady).Timestamp = time.Now().Unix()
 	return msg, nil
 }
 

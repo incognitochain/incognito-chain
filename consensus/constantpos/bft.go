@@ -69,7 +69,6 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 				})
 				var (
 					msg           wire.Message
-					shardID       byte
 					readyMsgCount int
 				)
 				if layer == "beacon" {
@@ -83,7 +82,6 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 					if err != nil {
 						return nil, err
 					}
-					go self.Server.PushMessageToBeacon(msg)
 					self.pendingBlock = newBlock
 					self.multiSigScheme.dataToSig = newBlock.Header.Hash()
 				} else {
@@ -96,18 +94,21 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 					if err != nil {
 						return nil, err
 					}
-					go self.Server.PushMessageToShard(msg, shardID)
 					self.pendingBlock = newBlock
 					fmt.Println("\n", newBlock.Header)
 					self.multiSigScheme.dataToSig = newBlock.Header.Hash()
 				}
 
+				fmt.Println()
+				fmt.Println("Listen for ready msg")
+				fmt.Println()
+			proposephase:
 				for {
 					select {
 					case msgReady := <-self.cBFTMsg:
 						if msgReady.MessageType() == wire.CmdBFTReady {
 							readyMsgCount++
-							if readyMsgCount > (2 * len(self.RoleData.Committee) / 3) {
+							if readyMsgCount >= (2*len(self.RoleData.Committee)/3)-1 {
 								timeout.Stop()
 								fmt.Println("Collected enough ready")
 								select {
@@ -119,10 +120,20 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 							}
 						}
 					case <-self.cTimeout:
-
+						if readyMsgCount >= (2*len(self.RoleData.Committee)/3)-1 {
+							<-time.After(2 * time.Second)
+							if layer == "beacon" {
+								go self.Server.PushMessageToBeacon(msg)
+							} else {
+								go self.Server.PushMessageToShard(msg, shardID)
+							}
+							self.phase = "prepare"
+						} else {
+							return nil, errors.New("Didn't received enough ready msg")
+						}
+						break proposephase
 					}
 				}
-				self.phase = "prepare"
 			case "listen":
 				fmt.Println("Listen phase")
 				timeout := time.AfterFunc(ListenTimeout*time.Second, func() {
@@ -323,7 +334,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 								return nil, err
 							}
 							phaseData.Sigs[R] = append(phaseData.Sigs[R], newSig)
-							if len(phaseData.Sigs[R]) > (2 * len(self.RoleData.Committee) / 3) {
+							if len(phaseData.Sigs[R]) >= (2 * len(self.RoleData.Committee) / 3) {
 								cmTimeout.Stop()
 								fmt.Println("Collected enough R")
 								select {
@@ -336,8 +347,6 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 						}
 					}
 				}
-			case "reply":
-
 			}
 		}
 	}

@@ -869,10 +869,10 @@ func (self *Server) OnBFTCommit(_ *peer.PeerConn, msg *wire.MessageBFTCommit) {
 }
 
 func (self *Server) OnBFTReady(_ *peer.PeerConn, msg *wire.MessageBFTReady) {
-	Logger.log.Info("Receive a BFTReply START")
+	Logger.log.Info("Receive a BFTReady START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a BFTReply END")
+	Logger.log.Info("Receive a BFTReady END")
 }
 
 // func (self *Server) OnInvalidBlock(_ *peer.PeerConn, msg *wire.MessageInvalidBlock) {

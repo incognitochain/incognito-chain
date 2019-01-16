@@ -95,20 +95,14 @@ func (self *Engine) Start() error {
 							)
 							switch role {
 							case "beacon-proposer":
-								// prevBlock := self.config.BlockChain.BestState.Beacon.BestBlock
-								// msg, errmsg := MakeMsgBeaconBlock(prevBlock)
-								// if errmsg != nil {
-								// 	Logger.log.Error("PBFT fatal error", err)
-								// 	continue
-								// }
-								// self.config.Server.PushMessageToAll(msg)
-								// self.config.Server.PushMessageToAll(prevBlock)
 								resBlk, err = bftProtocol.Start(true, "beacon", 0)
 								if err != nil {
 									Logger.log.Error("PBFT fatal error", err)
 									continue
 								}
 							case "beacon-validator":
+								msgReady, _ := MakeMsgBFTReady()
+								self.config.Server.PushMessageToBeacon(msgReady)
 								resBlk, err = bftProtocol.Start(false, "beacon", 0)
 								if err != nil {
 									Logger.log.Error("PBFT fatal error", err)
@@ -152,15 +146,15 @@ func (self *Engine) Start() error {
 								fmt.Println("My shard role", shardRole)
 								switch shardRole {
 								case "shard-proposer":
-									// prevBlock := self.config.BlockChain.BestState.Shard[shardID].BestBlock
-									// self.config.Server.PushMessageToAll(prevBlock)
 									resBlk, err = bftProtocol.Start(true, "shard", shardID)
 									if err != nil {
 										Logger.log.Error("PBFT fatal error", err)
 										continue
 									}
 								case "shard-validator":
-									resBlk, err = bftProtocol.Start(false, "shard", 0)
+									msgReady, _ := MakeMsgBFTReady()
+									self.config.Server.PushMessageToShard(msgReady, shardID)
+									resBlk, err = bftProtocol.Start(false, "shard", shardID)
 									if err != nil {
 										Logger.log.Error("PBFT fatal error", err)
 										continue
