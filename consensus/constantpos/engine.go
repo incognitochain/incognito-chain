@@ -52,6 +52,7 @@ func (self *Engine) Start() error {
 		return errors.New("Consensus engine is already started")
 	}
 	self.cQuit = make(chan struct{})
+	self.cBFTMsg = make(chan wire.Message)
 	self.started = true
 	Logger.log.Info("Start consensus with key", self.config.UserKeySet.GetPublicKeyB58())
 	fmt.Println(self.config.BlockChain.BestState.Beacon.BeaconCommittee)
@@ -77,7 +78,6 @@ func (self *Engine) Start() error {
 
 					fmt.Println(self.config.NodeMode, role, shardID)
 					if role != "" {
-						self.cBFTMsg = make(chan wire.Message)
 						bftProtocol := &BFTProtocol{
 							cQuit:      self.cQuit,
 							cBFTMsg:    self.cBFTMsg,

@@ -319,16 +319,6 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 								Sig:            msgCommit.(*wire.MessageBFTCommit).CommitSig,
 							}
 							R := msgCommit.(*wire.MessageBFTCommit).R
-
-							//Check that Validators Index array in newSig and Validators Index array in each of sig have the same R are equality
-							// for _, valSig := range phaseData.Sigs[R] {
-							// 	for i, value := range valSig.ValidatorsIdx {
-							// 		if value != newSig.ValidatorsIdx[i] {
-							// 			return
-							// 		}
-							// 	}
-							// }
-
 							err := self.multiSigScheme.VerifyCommitSig(newSig.Pubkey, newSig.Sig, R, newSig.ValidatorsIdxR)
 							if err != nil {
 								return nil, err
