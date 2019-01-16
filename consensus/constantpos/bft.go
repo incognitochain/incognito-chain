@@ -106,15 +106,9 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 				for {
 					select {
 					case msgReady := <-self.cBFTMsg:
-						fmt.Println()
-						fmt.Println(msgReady)
-						fmt.Println()
 						if msgReady.MessageType() == wire.CmdBFTReady {
-							fmt.Println()
-							fmt.Println("Collected ", readyMsgCount, " ready")
-							fmt.Println()
 							readyMsgCount++
-							if readyMsgCount >= (2 * len(self.RoleData.Committee) / 3) {
+							if readyMsgCount >= (2*len(self.RoleData.Committee)/3)-1 {
 								timeout.Stop()
 								fmt.Println("Collected enough ready")
 								select {
@@ -126,7 +120,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 							}
 						}
 					case <-self.cTimeout:
-						if readyMsgCount >= (2 * len(self.RoleData.Committee) / 3) {
+						if readyMsgCount >= (2*len(self.RoleData.Committee)/3)-1 {
 							<-time.After(2 * time.Second)
 							if layer == "beacon" {
 								go self.Server.PushMessageToBeacon(msg)

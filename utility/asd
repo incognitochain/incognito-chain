@@ -91,16 +91,18 @@ privAddr: 112t8rnfNhk6QAyQYGxLRTyuR7WTA9yCH4n8EHCSayyTS7KczuziPaVdYMqa5VKRNHKLUM
 
 
 
-./constant --spendingkey '112t8rnXDNYL1RyTuT85JXeX7mJg1Sc6tCby5akSM7pfEGApgAx83X8C46EDu6dFAK6MVcWfQv2sfTk5nV9HqU3jrkrWdhrmi9z34jEhgHak'
-./constant --spendingkey '112t8rnXZD2GmbVAP3xBefJaorCgebytpoRK1oAzcgoNNSVtXzoRTu21KeSmnRbzvd7qMJd1mTcsqFS1CGZ8UpY4mFRZzBa69aVcFWpLXuRv'
-./constant --spendingkey '112t8rnXmEeG5zsS7rExURJfqaRZhm6r4Pypkeag2gprdhtgDpen3LwV68x1nDPRYz2zhyhJTJCGvq1tUx4P1dvrdxF9W9DH7ME7PeGN2ohZ'
+go build && ./constant --spendingkey '112t8rnXDNYL1RyTuT85JXeX7mJg1Sc6tCby5akSM7pfEGApgAx83X8C46EDu6dFAK6MVcWfQv2sfTk5nV9HqU3jrkrWdhrmi9z34jEhgHak' --nodemode "auto" --datadir "data/node-1" --listen "127.0.0.1:9430" --externaladdress "127.0.0.1:9430"
+
+./constant --spendingkey '112t8rnXZD2GmbVAP3xBefJaorCgebytpoRK1oAzcgoNNSVtXzoRTu21KeSmnRbzvd7qMJd1mTcsqFS1CGZ8UpY4mFRZzBa69aVcFWpLXuRv' --nodemode "auto" --datadir "data/node-3" --listen "127.0.0.1:9432" --externaladdress "127.0.0.1:9432"
+
+./constant --spendingkey '112t8rnXmEeG5zsS7rExURJfqaRZhm6r4Pypkeag2gprdhtgDpen3LwV68x1nDPRYz2zhyhJTJCGvq1tUx4P1dvrdxF9W9DH7ME7PeGN2ohZ' --nodemode "auto" --datadir "data/node-2" --listen "127.0.0.1:9431" --externaladdress "127.0.0.1:9431"
 
 
 
 
-go build && ./constant --spendingkey "112t8rnXxR8GDWhm5Shn8GAaCHFNLXyFpz4Ln8wCcDCkmnJLNU4msYvCaXShxcp2mEoUxyVpGcyYtk2JzntZFZ4DNpwAc7QVif6r2oeLj2Qo" --nodemode "auto" --datadir "data/node-1" --listen "127.0.0.1:9430"
+go build && ./constant --spendingkey "112t8rnXxR8GDWhm5Shn8GAaCHFNLXyFpz4Ln8wCcDCkmnJLNU4msYvCaXShxcp2mEoUxyVpGcyYtk2JzntZFZ4DNpwAc7QVif6r2oeLj2Qo" --nodemode "auto" --datadir "data/node-1" --listen "127.0.0.1:9430" --externaladdress "127.0.0.1:9430"
 
-./constant --nodemode "auto" --spendingkey "112t8rnYY8UbXGVJ3PsrWxssjr1JXaTPNCPDrneXcQgVQs2MFYwgCzPmTsgqPPbeq8c4QxkrjpHYRaG39ZjtwCmHMJBNh2MxaQvKWw5eUGTM" --datadir "data/node-3" --listen "127.0.0.1:9432"
+./constant --nodemode "auto" --spendingkey "112t8rnYY8UbXGVJ3PsrWxssjr1JXaTPNCPDrneXcQgVQs2MFYwgCzPmTsgqPPbeq8c4QxkrjpHYRaG39ZjtwCmHMJBNh2MxaQvKWw5eUGTM" --datadir "data/node-3" --listen "127.0.0.1:9432" --externaladdress "127.0.0.1:9432"
 
 
-./constant --nodemode "auto" --spendingkey "112t8rnYBW9trs5rzxrMzLU5AnzngQhbp6X4c3xyamFkWU7PwWRq6gprDkm6mf3ZjxaeYQmSpe3xorpWHo3JLLZFHCHSgqd8u19XkVuMGz1M" --datadir "data/node-2" --listen "127.0.0.1:9431"
+./constant --nodemode "auto" --spendingkey "112t8rnYBW9trs5rzxrMzLU5AnzngQhbp6X4c3xyamFkWU7PwWRq6gprDkm6mf3ZjxaeYQmSpe3xorpWHo3JLLZFHCHSgqd8u19XkVuMGz1M" --datadir "data/node-2" --listen "127.0.0.1:9431" --externaladdress "127.0.0.1:9431"
