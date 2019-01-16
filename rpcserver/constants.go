@@ -92,9 +92,11 @@ const (
 	CreateRawVoteGOVBoardTx              = "createrawvotegovboardtx"
 	CreateAndSendVoteGOVBoardTransaction = "createandsendvotegovboardtransaction"
 	GetAmountVoteToken                   = "getamountvotetoken"
+	SetAmountVoteToken                   = "setamountvotetoken"
 
 	//vote propopsal
 	GetEncryptionFlag                        = "getencryptionflag"
+	SetEncryptionFlag                        = "testsetencryptionflag"
 	GetEncryptionLastBlockHeightFlag         = "getencryptionlastblockheightflag"
 	CreateAndSendSealLv3VoteProposal         = "createandsendseallv3voteproposal"
 	CreateAndSendSealLv2VoteProposal         = "createandsendseallv2voteproposal"

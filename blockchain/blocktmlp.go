@@ -63,15 +63,15 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 	prevBlockHash := blockgen.chain.BestState[chainID].BestBlock.Hash()
 	//prevCmTree := blockgen.chain.BestState[chainID].CmTree.MakeCopy()
 	sourceTxns := blockgen.txPool.MiningDescs()
-	txGroups, accumulativeValues, buyBackFromInfos, err := blockgen.checkAndGroupTxs(sourceTxns, chainID, privatekey)
-	if err != nil {
-		return nil, err
-	}
 
 	// Get salary per tx
 	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(chainID)
 	// Get basic salary on block
 	basicSalary := blockgen.rewardAgent.GetBasicSalary(chainID)
+	var accumulativeValues *accumulativeValues
+	var buyBackFromInfos []*buyBackFromInfo
+	var txGroups *txGroups
+	var err error
 
 	if len(sourceTxns) < common.MinTxsInBlock {
 		// if len of sourceTxns < MinTxsInBlock -> wait for more transactions
@@ -87,6 +87,10 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 				goto concludeBlock
 			}
 		}
+	}
+	txGroups, accumulativeValues, buyBackFromInfos, err = blockgen.checkAndGroupTxs(sourceTxns, chainID, privatekey)
+	if err != nil {
+		return nil, err
 	}
 
 	// check len of txs in block
@@ -168,7 +172,7 @@ concludeBlock:
 		Oracle:             prevBlock.Header.Oracle,
 	}
 
-	err = (&block).updateBlockHeader(blockgen, txGroups, accumulativeValues, updatedOracleValues)
+	err = (&block).updateBlock(blockgen, txGroups, accumulativeValues, updatedOracleValues)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
