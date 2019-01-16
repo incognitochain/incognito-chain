@@ -27,11 +27,11 @@ func (or *OracleReward) CheckTransactionFee(tr Transaction, minFee uint64) bool 
 
 func (or *OracleReward) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requeste tx (via OracleFeedTxID) in current block
-	return false, nil
+	return common.FalseValue, nil
 }
 
 func (or *OracleReward) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	return false, true, nil
+	return common.FalseValue, true, nil
 }
 
 func (or *OracleReward) ValidateMetadataByItself() bool {
