@@ -217,19 +217,19 @@ getblockchaininfo RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// raven.CaptureError(errors.New("test catch error raven from rpc server"), nil)
-	logService, _ := aggregatelog.GetService(aggregatelog.SENTRY_LOG_SERVICENAME)
+	logService, _ := aggregatelog.GetService(aggregatelog.ELASTIC_LOG_SERVICENAME)
 	logParams := map[string]interface{}{
-		"DSN": aggregatelog.SENTRY_DSN,
+		"elastic_url": aggregatelog.ELASTIC_URL,
 	}
 	err := logService.InitService(logParams)
 	if err != nil {
 		log.Println("capture init err", err)
 	}
-	err = logService.CaptureMessage("test capture message raven from rpc server 1")
+	err = logService.CaptureMessage("test capture message raven from rpc server 3")
 	if err != nil {
 		log.Println("capture message err", err)
 	}
-	err = logService.CaptureError(errors.New("test capture error raven from rpc server 1"))
+	err = logService.CaptureError(errors.New("test capture error raven from rpc server 3"))
 	if err != nil {
 		log.Println("capture error err", err)
 	}
