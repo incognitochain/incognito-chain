@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"bytes"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
@@ -13,11 +14,11 @@ type Voter struct {
 
 func (voter *Voter) Greater(voter2 Voter) bool {
 	return voter.AmountOfVote > voter2.AmountOfVote ||
-		(voter.AmountOfVote == voter2.AmountOfVote && string(voter.PaymentAddress.Bytes()) > string(voter2.PaymentAddress.Bytes()))
+		(voter.AmountOfVote == voter2.AmountOfVote && bytes.Compare(voter.PaymentAddress.Bytes(), voter2.PaymentAddress.Bytes()) > 0)
 }
 
 func (voter *Voter) Hash() *common.Hash {
-	record := string(voter.PaymentAddress.Bytes())
+	record := string(voter.PaymentAddress.String())
 	record += string(voter.AmountOfVote)
 	hash := common.DoubleHashH([]byte(record))
 	return &hash

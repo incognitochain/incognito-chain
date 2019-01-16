@@ -29,7 +29,7 @@ func NewCMBInitResponse(data map[string]interface{}) *CMBInitResponse {
 }
 
 func (cres *CMBInitResponse) Hash() *common.Hash {
-	record := string(cres.MainAccount.Bytes())
+	record := cres.MainAccount.String()
 
 	// final hash
 	record += cres.MetadataBase.Hash().String()

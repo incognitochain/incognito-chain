@@ -55,8 +55,8 @@ func (dc *CMBDepositContract) Hash() *common.Hash {
 	record += string(dc.TotalInterest)
 	record += string(dc.DepositValue)
 	record += string(dc.NoticePeriod)
-	record += string(dc.Receiver.Bytes())
-	record += string(dc.CMBAddress.Bytes())
+	record += dc.Receiver.String()
+	record += dc.CMBAddress.String()
 
 	// final hash
 	record += dc.MetadataBase.Hash().String()

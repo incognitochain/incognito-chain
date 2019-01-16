@@ -84,7 +84,7 @@ func (iReq *IssuingRequest) ValidateMetadataByItself() bool {
 }
 
 func (iReq *IssuingRequest) Hash() *common.Hash {
-	record := string(iReq.ReceiverAddress.Bytes())
+	record := iReq.ReceiverAddress.String()
 	record += iReq.AssetType.String()
 	record += string(iReq.DepositedAmount)
 	record += iReq.MetadataBase.Hash().String()

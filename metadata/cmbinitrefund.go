@@ -23,7 +23,7 @@ type CMBInitRefund struct {
 }
 
 func (cref *CMBInitRefund) Hash() *common.Hash {
-	record := string(cref.MainAccount.Bytes())
+	record := cref.MainAccount.String()
 
 	// final hash
 	record += cref.MetadataBase.Hash().String()

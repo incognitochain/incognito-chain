@@ -24,7 +24,7 @@ func NewAcceptDCBBoardMetadata(DCBBoardPaymentAddress []privacy.PaymentAddress, 
 func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) Hash() *common.Hash {
 	record := common.EmptyString
 	for _, i := range acceptDCBBoardMetadata.DCBBoardPaymentAddress {
-		record += string(i.Bytes())
+		record += i.String()
 	}
 	record += string(acceptDCBBoardMetadata.StartAmountDCBToken)
 	record += acceptDCBBoardMetadata.MetadataBase.Hash().String()
@@ -65,7 +65,7 @@ func NewAcceptGOVBoardMetadata(GOVBoardPaymentAddress []privacy.PaymentAddress, 
 func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) Hash() *common.Hash {
 	record := common.EmptyString
 	for _, i := range acceptGOVBoardMetadata.GOVBoardPaymentAddress {
-		record += string(i.Bytes())
+		record += i.String()
 	}
 	record += string(acceptGOVBoardMetadata.StartAmountGOVToken)
 	record += acceptGOVBoardMetadata.MetadataBase.Hash().String()

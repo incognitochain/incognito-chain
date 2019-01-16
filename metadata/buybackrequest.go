@@ -68,7 +68,7 @@ func (bbReq *BuyBackRequest) ValidateMetadataByItself() bool {
 }
 
 func (bbReq *BuyBackRequest) Hash() *common.Hash {
-	record := string(bbReq.PaymentAddress.Bytes())
+	record := bbReq.PaymentAddress.String()
 	record += string(bbReq.Amount)
 	record += bbReq.TokenID.String()
 	record += bbReq.MetadataBase.Hash().String()

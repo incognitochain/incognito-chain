@@ -47,10 +47,10 @@ func NewCMBInitRequest(data map[string]interface{}) *CMBInitRequest {
 }
 
 func (creq *CMBInitRequest) Hash() *common.Hash {
-	record := string(creq.MainAccount.Bytes())
-	record += string(creq.ReserveAccount.Bytes())
+	record := creq.MainAccount.String()
+	record += creq.ReserveAccount.String()
 	for _, member := range creq.Members {
-		record += string(member.Bytes())
+		record += member.String()
 	}
 
 	// final hash
