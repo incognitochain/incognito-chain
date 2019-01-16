@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/ninjadotorg/constant/common"
 )
@@ -80,8 +81,83 @@ func NewBestStateBeacon() *BestStateBeacon {
 }
 
 func (self *BestStateBeacon) Hash() common.Hash {
-	//TODO: hash of beststate
-	return common.DoubleHashH([]byte("test"))
+	var keys []int
+	var keyStrs []string
+	res := []byte{}
+	res = append(res, self.BestBlockHash.GetBytes()...)
+	res = append(res, self.BestBlock.Hash().GetBytes()...)
+	res = append(res, self.BestBlock.Hash().GetBytes()...)
+
+	for k, _ := range self.BestShardHash {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, shardID := range keys {
+		hash := self.BestShardHash[byte(shardID)]
+		res = append(res, hash.GetBytes()...)
+	}
+	keys = []int{}
+	for k, _ := range self.BestShardHeight {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, shardID := range keys {
+		height := self.BestShardHeight[byte(shardID)]
+		res = append(res, byte(height))
+	}
+	for _, value := range self.BeaconCommittee {
+		res = append(res, []byte(value)...)
+	}
+	for _, value := range self.BeaconPendingValidator {
+		res = append(res, []byte(value)...)
+	}
+	for _, value := range self.CandidateBeaconWaitingForCurrentRandom {
+		res = append(res, []byte(value)...)
+	}
+	for _, value := range self.CandidateBeaconWaitingForNextRandom {
+		res = append(res, []byte(value)...)
+	}
+	for _, value := range self.CandidateShardWaitingForCurrentRandom {
+		res = append(res, []byte(value)...)
+	}
+	for _, value := range self.CandidateShardWaitingForNextRandom {
+		res = append(res, []byte(value)...)
+	}
+	keys = []int{}
+	for k, _ := range self.ShardCommittee {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, shardID := range keys {
+		for _, value := range self.ShardCommittee[byte(shardID)] {
+			res = append(res, []byte(value)...)
+		}
+	}
+	keys = []int{}
+	for k, _ := range self.ShardPendingValidator {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, shardID := range keys {
+		for _, value := range self.ShardPendingValidator[byte(shardID)] {
+			res = append(res, []byte(value)...)
+		}
+	}
+	res = append(res, byte(self.CurrentRandomNumber))
+	res = append(res, byte(self.CurrentRandomTimeStamp))
+	if self.IsGetRandomNumber {
+		res = append(res, []byte("true")...)
+	} else {
+		res = append(res, []byte("false")...)
+	}
+	for k, _ := range self.Params {
+		keyStrs = append(keyStrs, k)
+	}
+	sort.Strings(keyStrs)
+	for _, key := range keyStrs {
+		res = append(res, []byte(self.Params[key])...)
+	}
+	return common.DoubleHashH(res)
 }
 
 // Get role of a public key base on best state beacond
