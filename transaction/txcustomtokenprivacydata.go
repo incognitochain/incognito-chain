@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
@@ -39,6 +40,15 @@ func (self TxTokenPrivacyData) String() string {
 		}
 	}
 	return record
+}
+
+func (self TxTokenPrivacyData) JSONString() string {
+	data, err := json.MarshalIndent(self, common.EmptyString, "\t")
+	if err != nil {
+		Logger.log.Error(err)
+		return common.EmptyString
+	}
+	return string(data)
 }
 
 // Hash - return hash of custom token data, be used as Token ID

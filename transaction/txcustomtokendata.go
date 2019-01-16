@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"strconv"
@@ -30,6 +31,15 @@ func (self TxTokenVin) String() string {
 	return record
 }
 
+func (self TxTokenVin) JSONString() string {
+	data, err := json.MarshalIndent(self, common.EmptyString, "\t")
+	if err != nil {
+		Logger.log.Error(err)
+		return common.EmptyString
+	}
+	return string(data)
+}
+
 // Hash - return hash data of TxTokenVin
 func (self TxTokenVin) Hash() *common.Hash {
 	// final hash
@@ -55,6 +65,15 @@ func (self TxTokenVout) String() string {
 	record += fmt.Sprintf("%d", self.Value)
 	record += base58.Base58Check{}.Encode(self.PaymentAddress.Pk[:], 0)
 	return record
+}
+
+func (self TxTokenVout) JSONString() string {
+	data, err := json.MarshalIndent(self, common.EmptyString, "\t")
+	if err != nil {
+		Logger.log.Error(err)
+		return common.EmptyString
+	}
+	return string(data)
 }
 
 // Hash - return hash data of TxTokenVout
@@ -98,11 +117,7 @@ type TxTokenData struct {
 	Vouts    []TxTokenVout
 }
 
-// Hash - return hash of token data, be used as Token ID
-func (self TxTokenData) Hash() (*common.Hash, error) {
-	if self.Vouts == nil {
-		return nil, errors.New("Vout is empty")
-	}
+func (self TxTokenData) String() string {
 	record := self.PropertyName
 	record += self.PropertySymbol
 	record += fmt.Sprintf("%d", self.Amount)
@@ -118,8 +133,25 @@ func (self TxTokenData) Hash() (*common.Hash, error) {
 		record += string(out.PaymentAddress.Pk[:])
 		record += strconv.FormatUint(out.Value, 10)
 	}
+	return record
+}
+
+func (self TxTokenData) JSONString() string {
+	data, err := json.MarshalIndent(self, common.EmptyString, "\t")
+	if err != nil {
+		Logger.log.Error(err)
+		return common.EmptyString
+	}
+	return string(data)
+}
+
+// Hash - return hash of token data, be used as Token ID
+func (self TxTokenData) Hash() (*common.Hash, error) {
+	if self.Vouts == nil {
+		return nil, errors.New("Vout is empty")
+	}
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.DoubleHashH([]byte(self.String()))
 	return &hash, nil
 }
 

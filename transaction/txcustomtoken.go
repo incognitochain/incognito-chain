@@ -274,6 +274,15 @@ func (tx TxCustomToken) String() string {
 	return record
 }
 
+func (self TxCustomToken) JSONString() string {
+	data, err := json.MarshalIndent(self, common.EmptyString, "\t")
+	if err != nil {
+		Logger.log.Error(err)
+		return common.EmptyString
+	}
+	return string(data)
+}
+
 // Hash returns the hash of all fields of the transaction
 func (tx TxCustomToken) Hash() *common.Hash {
 	// final hash

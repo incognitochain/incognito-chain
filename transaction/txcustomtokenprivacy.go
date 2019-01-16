@@ -51,6 +51,15 @@ func (tx *TxCustomTokenPrivacy) String() string {
 	return record
 }
 
+func (self TxCustomTokenPrivacy) JSONString() string {
+	data, err := json.MarshalIndent(self, common.EmptyString, "\t")
+	if err != nil {
+		Logger.log.Error(err)
+		return common.EmptyString
+	}
+	return string(data)
+}
+
 // Hash returns the hash of all fields of the transaction
 func (tx *TxCustomTokenPrivacy) Hash() *common.Hash {
 	// final hash
