@@ -40,6 +40,25 @@ type BestStateShard struct {
 // }
 
 // Get role of a public key base on best state shard
+func (self *BestStateShard) Hash() common.Hash {
+	res := []byte{}
+	res = append(res, self.PrevShardBlockHash.GetBytes()...)
+	res = append(res, self.BestShardBlockHash.GetBytes()...)
+	res = append(res, self.BestBeaconHash.GetBytes()...)
+	res = append(res, self.BestShardBlock.Hash().GetBytes()...)
+	res = append(res, byte(self.ShardHeight))
+	res = append(res, byte(self.BeaconHeight))
+	for _, value := range self.ShardCommittee {
+		res = append(res, []byte(value)...)
+	}
+	for _, value := range self.ShardPendingValidator {
+		res = append(res, []byte(value)...)
+	}
+	res = append(res, byte(self.ShardProposerIdx))
+	res = append(res, byte(self.NumTxns))
+	res = append(res, byte(self.TotalTxns))
+	return common.DoubleHashH(res)
+}
 func (self *BestStateShard) GetPubkeyRole(pubkey string) string {
 
 	found := common.IndexOfStr(pubkey, self.ShardCommittee)
