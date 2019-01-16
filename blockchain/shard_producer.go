@@ -73,7 +73,13 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 	prevBlock := self.chain.BestState.Shard[shardID].BestShardBlock
 	prevBlockHash := self.chain.BestState.Shard[shardID].BestShardBlock.Hash()
-	crossOutputCoinRoot, err := CreateMerkleCrossOutputCoin(block.Body.CrossOutputCoin)
+
+	crossOutputCoinRoot := &common.Hash{}
+
+	if len(block.Body.CrossOutputCoin) != 0 {
+		crossOutputCoinRoot, err = CreateMerkleCrossOutputCoin(block.Body.CrossOutputCoin)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -90,6 +96,7 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 		ShardID:             shardID,
 		CrossShards:         self.createCrossShardByteArray(txsToAdd),
 		CrossOutputCoinRoot: *crossOutputCoinRoot,
+
 		// TODO: create actions root
 		// ActionsRoot:       self.createShardAction(),
 	}
