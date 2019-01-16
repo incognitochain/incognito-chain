@@ -130,6 +130,7 @@ type DatabaseInterface interface {
 	TakeVoteTokenFromWinner(string, uint32, privacy.PaymentAddress, int32) error
 	SetNewProposalWinningVoter(string, uint32, privacy.PaymentAddress) error
 	GetVoteTokenAmount(boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress) (uint32, error)
+	SetVoteTokenAmount(boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress, amount uint32) error
 	GetEncryptFlag(boardType string) (uint32, error)
 	SetEncryptFlag(boardType string, flag uint32)
 	GetEncryptionLastBlockHeight(boardType string) (uint32, error)

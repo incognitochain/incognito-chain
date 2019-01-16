@@ -184,7 +184,7 @@ func (block *Block) updateGOVConstitution(tx metadata.Transaction, blockgen *Blk
 	return nil
 }
 
-func (block *Block) updateBlockHeader(
+func (block *Block) updateBlock(
 	blockgen *BlkTmplGenerator,
 	txGroups *txGroups,
 	accumulativeValues *accumulativeValues,

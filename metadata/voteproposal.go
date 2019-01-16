@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"encoding/hex"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
@@ -298,15 +299,15 @@ func (sealedLv3VoteProposalMetadata *SealedLv3VoteProposalMetadata) ValidataBefo
 }
 
 func (sealLv3VoteProposalMetadata *SealedLv3VoteProposalMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
-	return sealLv3VoteProposalMetadata.ValidateTxWithBlockChain(tx, bcr, b, db)
+	return true, nil
 }
 
 func (sealLv3VoteProposalMetadata *SealedLv3VoteProposalMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
-	return sealLv3VoteProposalMetadata.ValidateSanityData(bcr, tx)
+	return sealLv3VoteProposalMetadata.SealedVoteProposal.ValidateSanityData(bcr, tx)
 }
 
 func (sealLv3VoteProposalMetadata *SealedLv3VoteProposalMetadata) ValidateMetadataByItself() bool {
-	return sealLv3VoteProposalMetadata.ValidateMetadataByItself()
+	return sealLv3VoteProposalMetadata.SealedVoteProposal.ValidateMetadataByItself()
 }
 
 func NewSealedLv3VoteProposalMetadata(
@@ -330,8 +331,11 @@ func NewVoteProposalData(proposalTxID common.Hash, amountOfVote int32) *VoteProp
 
 func NewVoteProposalDataFromJson(data interface{}) *VoteProposalData {
 	voteProposalDataData := data.(map[string]interface{})
+
+	proposalTxIDData, _ := hex.DecodeString(voteProposalDataData["ProposalTxID"].(string))
+	proposalTxID, _ := common.NewHash(proposalTxIDData)
 	return NewVoteProposalData(
-		common.NewHash([]byte(voteProposalDataData["ProposalTxID"].(string))),
+		*proposalTxID,
 		int32(voteProposalDataData["AmountOfVote"].(float64)),
 	)
 }
@@ -344,8 +348,9 @@ func (voteProposalData VoteProposalData) ToBytes() []byte {
 
 func NewVoteProposalDataFromBytes(b []byte) *VoteProposalData {
 	lenB := len(b)
+	newHash, _ := common.NewHash(b[:lenB-4])
 	return NewVoteProposalData(
-		common.NewHash(b[:lenB-4]),
+		*newHash,
 		common.BytesToInt32(b[lenB-4:]),
 	)
 }

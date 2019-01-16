@@ -133,7 +133,19 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	}
 
 	// TODO(@0xjackalope): fill correct values
-	boardPayementAddress := []privacy.PaymentAddress{
+	boardPaymentAddress := []privacy.PaymentAddress{
+		{
+			Pk: []byte{3, 116, 183, 57, 32, 5, 157, 136, 217, 20, 89, 65, 18, 38, 23, 74, 7, 92, 219, 104, 208, 51, 28, 18, 72, 32, 190, 31, 120, 225, 206, 247, 71},
+			Tk: []byte{3, 254, 61, 147, 129, 25, 38, 50, 162, 131, 221, 110, 0, 110, 91, 168, 163, 227, 34, 128, 246, 132, 168, 152, 225, 203, 180, 23, 155, 0, 117, 36, 48},
+		},
+		{
+			Pk: []byte{3, 107, 44, 180, 170, 164, 107, 71, 126, 248, 38, 110, 212, 117, 79, 141, 188, 207, 244, 151, 226, 252, 47, 63, 69, 38, 11, 241, 199, 60, 85, 27, 74},
+			Tk: []byte{3, 11, 201, 172, 23, 228, 134, 220, 28, 65, 222, 228, 156, 206, 142, 39, 23, 215, 237, 7, 61, 197, 246, 119, 251, 30, 105, 107, 131, 36, 156, 134, 76},
+		},
+		{
+			Pk: []byte{3, 192, 159, 176, 226, 183, 190, 102, 43, 227, 172, 38, 53, 154, 235, 72, 106, 127, 1, 18, 213, 206, 25, 52, 72, 244, 29, 23, 130, 208, 138, 17, 170},
+			Tk: []byte{2, 185, 191, 213, 246, 102, 18, 67, 247, 17, 25, 74, 169, 237, 67, 141, 165, 76, 249, 209, 183, 215, 253, 118, 118, 55, 24, 99, 5, 95, 71, 233, 174},
+		},
 		{
 			Pk: []byte{3, 85, 237, 178, 30, 58, 190, 219, 126, 31, 9, 93, 40, 217, 109, 177, 70, 41, 64, 157, 2, 133, 2, 138, 23, 108, 228, 152, 234, 35, 101, 192, 173},
 			Tk: []byte{3, 116, 125, 158, 22, 126, 79, 50, 46, 119, 52, 133, 6, 246, 156, 94, 138, 244, 107, 147, 25, 78, 231, 105, 162, 185, 245, 152, 196, 116, 86, 15, 30},
@@ -144,7 +156,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 			boardIndex:          0,
 			StartedBlock:        1,
 			EndBlock:            1000, // = startedblock of decent governor
-			BoardPaymentAddress: boardPayementAddress,
+			BoardPaymentAddress: boardPaymentAddress,
 			StartAmountToken:    0, //Sum of DCB token stack to all member of this board
 		},
 	}
