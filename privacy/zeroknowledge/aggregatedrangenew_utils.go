@@ -11,6 +11,7 @@ import (
 type InnerProductWitness struct {
 	a []*big.Int
 	b []*big.Int
+
 	u *privacy.EllipticPoint
 	p *privacy.EllipticPoint
 }
@@ -103,6 +104,7 @@ func (wit *InnerProductWitness) Prove() (*InnerProductProof, error) {
 		}
 
 		xSquare := new(big.Int).Mul(x, x)
+		xSquare.Mod(xSquare, privacy.Curve.Params().N)
 		xSquareInverse := new(big.Int).ModInverse(xSquare, privacy.Curve.Params().N)
 
 		PPrime := L.ScalarMult(xSquare).Add(p).Add(R.ScalarMult(xSquareInverse)) // x^2 * L + P + xInverse^2 * R
@@ -130,15 +132,24 @@ func (wit *InnerProductWitness) Prove() (*InnerProductProof, error) {
 		n = nPrime
 	}
 
+	fmt.Printf("Prove p: %+v\n", p)
+
 	proof.a = a[0]
 	proof.b = b[0]
+
+	c := new(big.Int).Mul(proof.a, proof.b)
+	rightPoint := (G[0].ScalarMult(proof.a).Add(H[0].ScalarMult(proof.b))).Add(proof.u.ScalarMult(c))
+	if rightPoint.IsEqual(p) {
+		fmt.Printf("True")
+	}
+	fmt.Printf("False")
 
 	return proof, nil
 }
 
 func (proof *InnerProductProof) Verify() bool {
 
-	fmt.Printf("Proof.p: %v\n", proof.p)
+	//fmt.Printf("Proof.p: %v\n", proof.p)
 	p := new(privacy.EllipticPoint)
 	p.Set(proof.p.X, proof.p.Y)
 
@@ -169,6 +180,7 @@ func (proof *InnerProductProof) Verify() bool {
 		}
 
 		xSquare := new(big.Int).Mul(x, x)
+		xSquare.Mod(xSquare, privacy.Curve.Params().N)
 		xSquareInverse := new(big.Int).ModInverse(xSquare, privacy.Curve.Params().N)
 
 		PPrime := proof.L[i].ScalarMult(xSquare).Add(p).Add(proof.R[i].ScalarMult(xSquareInverse)) // x^2 * L + P + xInverse^2 * R
@@ -181,6 +193,8 @@ func (proof *InnerProductProof) Verify() bool {
 
 	fmt.Printf("Len G: %v\n", len(G))
 	fmt.Printf("Len H: %v\n", len(H))
+
+	fmt.Printf("Verify p: %+v\n", p)
 
 	c := new(big.Int).Mul(proof.a, proof.b)
 	rightPoint := (G[0].ScalarMult(proof.a).Add(H[0].ScalarMult(proof.b))).Add(proof.u.ScalarMult(c))
