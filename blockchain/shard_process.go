@@ -179,8 +179,8 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	- TxRoot
 	- ShardTxRoot
 	- CrossOutputCoinRoot
-	//TODO: define where to verify beacon info and Action root
 	- ActionsRoot
+	//TODO: define where to verify beacon info
 	- BeaconHeight
 	- BeaconHash
 	*/
@@ -224,6 +224,19 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	// Verify Crossoutput coin
 	if !VerifyMerkleCrossOutputCoin(block.Body.CrossOutputCoin, block.Header.CrossOutputCoinRoot) {
 		return NewBlockChainError(HashError, errors.New("Can't Verify CrossOutputCoin Root"))
+	}
+	// Verify Action
+	actions := CreateShardActionFromTransaction(self.config.DataBase, block.Body.Transactions, block.Header.ShardID)
+	action := []string{}
+	for _, value := range actions {
+		action = append(action, value...)
+	}
+	for _, value := range block.Body.Instructions {
+		action = append(action, value...)
+	}
+	isOk := VerifyHashFromStringArray(action, block.Header.ActionsRoot)
+	if !isOk {
+		return NewBlockChainError(HashError, errors.New("Error verify action root"))
 	}
 	return nil
 }
@@ -366,7 +379,18 @@ func (self *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBloc
 	return nil
 }
 func (self *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlock, shardId byte) error {
-	//TODO
+	var (
+		isOk bool
+	)
+	Logger.log.Infof("SHARD %+v | Begin VerifyPostProcessing Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
+	isOk = VerifyHashFromStringArray(self.ShardCommittee, block.Header.CommitteeRoot)
+	if !isOk {
+		return NewBlockChainError(HashError, errors.New("Error verify Committee root"))
+	}
+	isOk = VerifyHashFromStringArray(self.ShardPendingValidator, block.Header.PendingValidatorRoot)
+	if !isOk {
+		return NewBlockChainError(HashError, errors.New("Error verify Pendinging validator root"))
+	}
 	return nil
 }
 
