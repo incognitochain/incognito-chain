@@ -95,7 +95,7 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 						continue
 					} else {
 						if self.BestState.Shard[shardID].ShardHeight == newBlk.Header.Height-1 {
-							err = self.InsertShardBlock(newBlk)
+							err = self.InsertShardBlock(newBlk, shardID)
 							if err != nil {
 								Logger.log.Error(err)
 								continue
