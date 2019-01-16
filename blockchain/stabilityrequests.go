@@ -233,13 +233,13 @@ func (blockgen *BlkTmplGenerator) checkAndGroupTxs(
 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 	blockHeight := prevBlock.Header.Height + 1
 
-	var txsToAdd []metadata.Transaction
-	var txToRemove []metadata.Transaction
-	var buySellReqTxs []metadata.Transaction
-	var issuingReqTxs []metadata.Transaction
-	var updatingOracleBoardTxs []metadata.Transaction
-	var multiSigsRegistrationTxs []metadata.Transaction
-	var buyBackFromInfos []*buyBackFromInfo
+	txsToAdd := []metadata.Transaction{}
+	txToRemove := []metadata.Transaction{}
+	buySellReqTxs := []metadata.Transaction{}
+	issuingReqTxs := []metadata.Transaction{}
+	updatingOracleBoardTxs := []metadata.Transaction{}
+	multiSigsRegistrationTxs := []metadata.Transaction{}
+	buyBackFromInfos := []*buyBackFromInfo{}
 	bondsSold := uint64(0)
 	dcbTokensSold := uint64(0)
 	incomeFromBonds := uint64(0)
