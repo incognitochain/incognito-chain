@@ -62,13 +62,15 @@ func (creq *CMBInitRequest) Hash() *common.Hash {
 func (creq *CMBInitRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// TODO(@0xbunyip): check that MainAccount is multisig address and is unique
 	// TODO(@0xbunyip); check that ReserveAccount is unique
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (creq *CMBInitRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	return true, true, nil // continue to check for fee
+	// TODO(@0xbunyip)
+	return common.TrueValue, common.TrueValue, nil // continue to check for fee
 }
 
 func (creq *CMBInitRequest) ValidateMetadataByItself() bool {
-	return true
+	// TODO(@0xbunyip)
+	return common.TrueValue
 }
