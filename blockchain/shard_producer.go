@@ -2,33 +2,30 @@ package blockchain
 
 import (
 	"errors"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
 func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*ShardBlock, error) {
-
-	//Get user key set
-	userKeySet := cashec.KeySet{}
-	userKeySet.ImportFromPrivateKey(privatekey)
-
+	//============Build body=============
 	// Get valid transaction (add tx, remove tx, fee of add tx)
 	txsToAdd, txToRemove, totalFee := self.getPendingTransaction(shardID)
 	if len(txsToAdd) == 0 {
 		Logger.log.Info("Creating empty block...")
 	}
-
 	// Remove unrelated shard tx
 	// TODO: Check again Txpool should be remove after create block is successful
 	for _, tx := range txToRemove {
 		self.txPool.RemoveTx(tx)
 	}
-
 	// Calculate coinbases
 	salaryPerTx := self.rewardAgent.GetSalaryPerTx(shardID)
 	basicSalary := self.rewardAgent.GetBasicSalary(shardID)
@@ -39,22 +36,18 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 			salaryMULTP++
 		}
 	}
-
 	totalSalary := salaryMULTP*salaryPerTx + basicSalary
 	salaryTx, err := transaction.CreateTxSalary(totalSalary, payToAddress, privatekey, self.chain.config.DataBase)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
 	}
-
 	currentSalaryFund := uint64(0)
 	remainingFund := currentSalaryFund + totalFee + salaryFundAdd - totalSalary
 	coinbases := []metadata.Transaction{salaryTx}
 	txsToAdd = append(coinbases, txsToAdd...)
-
 	crossOutputCoin := self.getCrossOutputCoin(shardID)
-	instructions := self.createShardAction()
-	// Build block
+	instructions := CreateShardActionFromOthers()
 	block := &ShardBlock{
 		Body: ShardBody{
 			CrossOutputCoin: crossOutputCoin,
@@ -68,37 +61,62 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 			return nil, err
 		}
 	}
-
+	//============Build Header=============
+	//Get user key set
+	userKeySet := cashec.KeySet{}
+	userKeySet.ImportFromPrivateKey(privatekey)
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 	prevBlock := self.chain.BestState.Shard[shardID].BestShardBlock
 	prevBlockHash := self.chain.BestState.Shard[shardID].BestShardBlock.Hash()
-
 	crossOutputCoinRoot := &common.Hash{}
-
 	if len(block.Body.CrossOutputCoin) != 0 {
 		crossOutputCoinRoot, err = CreateMerkleCrossOutputCoin(block.Body.CrossOutputCoin)
 	}
-
 	if err != nil {
 		return nil, err
 	}
+	actions := CreateShardActionFromTransaction(self.chain.config.DataBase, block.Body.Transactions, shardID)
+	action := []string{}
+	for _, value := range actions {
+		action = append(action, value...)
+	}
+	for _, value := range instructions {
+		action = append(action, value...)
+	}
+	actionsHash, err := GenerateHashFromStringArray(action)
+	if err != nil {
+		return nil, NewBlockChainError(HashError, err)
+	}
+	committeeRoot, err := GenerateHashFromStringArray(self.chain.BestState.Shard[shardID].ShardCommittee)
+	if err != nil {
+		return nil, NewBlockChainError(HashError, err)
+	}
+	pendingValidatorRoot, err := GenerateHashFromStringArray(self.chain.BestState.Shard[shardID].ShardPendingValidator)
+	if err != nil {
+		return nil, NewBlockChainError(HashError, err)
+	}
+	//TODO: Where to get beacon???
 	block.Header = ShardHeader{
-		Producer: userKeySet.GetPublicKeyB58(),
-		//TODO: increase epoch if new block %epoch = 0
-		Epoch:               self.chain.BestState.Beacon.BeaconEpoch,
-		Height:              prevBlock.Header.Height + 1,
-		Version:             BlockVersion,
-		PrevBlockHash:       *prevBlockHash,
-		TxRoot:              *merkleRoot,
-		ShardTxRoot:         CreateMerkleRootShard(block.Body.Transactions),
-		Timestamp:           time.Now().Unix(),
-		ShardID:             shardID,
-		CrossShards:         self.createCrossShardByteArray(txsToAdd),
-		CrossOutputCoinRoot: *crossOutputCoinRoot,
-
-		// TODO: create actions root
-		// ActionsRoot:       self.createShardAction(),
+		Producer:      userKeySet.GetPublicKeyB58(),
+		ShardID:       shardID,
+		Version:       BlockVersion,
+		Epoch:         self.chain.BestState.Beacon.BeaconEpoch,
+		PrevBlockHash: *prevBlockHash,
+		Height:        prevBlock.Header.Height + 1,
+		Timestamp:     time.Now().Unix(),
+		//TODO: add salary fund
+		SalaryFund:           remainingFund,
+		TxRoot:               *merkleRoot,
+		ShardTxRoot:          CreateMerkleRootShard(block.Body.Transactions),
+		CrossOutputCoinRoot:  *crossOutputCoinRoot,
+		ActionsRoot:          actionsHash,
+		CrossShards:          CreateCrossShardByteArray(txsToAdd),
+		CommitteeRoot:        committeeRoot,
+		PendingValidatorRoot: pendingValidatorRoot,
+		//TODO: define where to get beaconstate
+		BeaconHeight: self.chain.BestState.Beacon.BeaconHeight,
+		BeaconHash:   self.chain.BestState.Beacon.BestBlockHash,
 	}
 
 	// Create producer signature
@@ -131,7 +149,7 @@ func (self *BlkTmplGenerator) getCrossOutputCoin(shardID byte) []CrossOutputCoin
 	return res
 }
 
-func (self *BlkTmplGenerator) createCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) {
+func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) {
 	byteMap := make([]byte, TestNetParams.ShardsNum)
 	for _, tx := range txList {
 		for _, outCoin := range tx.GetProof().OutputCoins {
@@ -149,8 +167,54 @@ func (self *BlkTmplGenerator) createCrossShardByteArray(txList []metadata.Transa
 	return crossIDs
 }
 
-func (self *BlkTmplGenerator) createShardAction() (actions [][]string) {
-	//TODO: create shard action and action hash (will be created some where else)
+/*
+	Action From Other Source:
+	- bpft protocol: swap
+	....
+*/
+func CreateShardActionFromOthers(v ...interface{}) (actions [][]string) {
+	//TODO: swap action
+	return
+}
+
+/*
+	Action Generate From Transaction:
+	- Stake
+	- Stable param: set, del,...
+*/
+func CreateShardActionFromTransaction(db database.DatabaseInterface, transactions []metadata.Transaction, shardId byte) (actions [][]string) {
+	// Generate stake action
+	stakeShardPubKey := []string{}
+	stakeBeaconPubKey := []string{}
+	for _, tx := range transactions {
+		tempTx, ok := tx.(*transaction.Tx)
+		if !ok {
+			panic("Can't create block")
+		}
+		//TODO: verify if transaction is staking transaction
+		//Discard auto FALSE to run real test
+		if false {
+			shardStaker, beaconStaker, isStake := tempTx.ProcessTxStake(db, shardId)
+			if !isStake {
+				continue
+			}
+			if strings.Compare(shardStaker, common.EmptyString) != 0 {
+				stakeShardPubKey = append(stakeShardPubKey, shardStaker)
+			}
+			if strings.Compare(beaconStaker, common.EmptyString) != 0 {
+				stakeBeaconPubKey = append(stakeBeaconPubKey, beaconStaker)
+			}
+		}
+	}
+	if !reflect.DeepEqual(stakeShardPubKey, []string{}) {
+		action := []string{"stake", strings.Join(stakeShardPubKey, ","), "shard"}
+		actions = append(actions, action)
+	}
+	if !reflect.DeepEqual(stakeBeaconPubKey, []string{}) {
+		action := []string{"stake", strings.Join(stakeBeaconPubKey, ","), "beacon"}
+		actions = append(actions, action)
+	}
+	//TODO: stable param
 	return actions
 }
 

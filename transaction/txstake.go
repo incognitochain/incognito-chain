@@ -52,11 +52,8 @@ var stakeBeaconAddress = privacy.PaymentInfo{
 // 	return nil
 // }
 
+//TODO: check again stake transaction
 func (tx *Tx) validateTxStake(db database.DatabaseInterface, shardID byte) bool {
-	// ValidateTransaction returns true if transaction is valid:
-	// - Verify tx signature
-	// - Verify the payment proof
-	// - Check double spendingComInputOpeningsWitnessval
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	valid := tx.ValidateTransaction(false, db, shardID, constantTokenID)

@@ -227,7 +227,7 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	return nil
 }
 func (self *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBlock, isSign bool, shardId byte) error {
-	//TODO
+
 	return nil
 }
 func (self *BestStateShard) Update(block *ShardBlock) error {
