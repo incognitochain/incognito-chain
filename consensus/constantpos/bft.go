@@ -106,7 +106,17 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 					select {
 					case msgReady := <-self.cBFTMsg:
 						if msgReady.MessageType() == wire.CmdBFTReady {
-
+							readyMsgCount++
+							if readyMsgCount > (2 * len(self.RoleData.Committee) / 3) {
+								timeout.Stop()
+								fmt.Println("Collected enough ready")
+								select {
+								case <-self.cTimeout:
+									continue
+								default:
+									close(self.cTimeout)
+								}
+							}
 						}
 					case <-self.cTimeout:
 

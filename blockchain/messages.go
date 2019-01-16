@@ -23,10 +23,10 @@ func (self *BlockChain) GetBeaconState() (*BeaconChainState, error) {
 	return state, nil
 }
 
-func (self *BlockChain) OnBeaconStateReceived(state *BeaconChainState, shardsPoolState map[byte][]uint64, peerID libp2p.ID) {
+func (self *BlockChain) OnBeaconStateReceived(state *BeaconChainState, peerID libp2p.ID) {
 	if self.syncStatus.Beacon {
 		self.BeaconStateCh <- &PeerBeaconChainState{
-			state, shardsPoolState, peerID,
+			state, peerID,
 		}
 	}
 }
@@ -40,10 +40,10 @@ func (self *BlockChain) GetShardState(shardID byte) *ShardChainState {
 	return state
 }
 
-func (self *BlockChain) OnShardStateReceived(state *ShardChainState, crossShardsPoolState map[byte][]uint64, peerID libp2p.ID) {
+func (self *BlockChain) OnShardStateReceived(state *ShardChainState, peerID libp2p.ID) {
 	if self.newShardBlkCh[state.ShardID] != nil {
 		self.ShardStateCh[state.ShardID] <- &PeerShardChainState{
-			state, crossShardsPoolState, peerID,
+			state, peerID,
 		}
 	}
 }

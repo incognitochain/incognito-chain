@@ -11,25 +11,25 @@ import (
 )
 
 type PeerBeaconChainState struct {
-	State           *BeaconChainState
-	ShardsPoolState map[byte][]uint64
-	Peer            libp2p.ID
+	State *BeaconChainState
+	Peer  libp2p.ID
 }
 type PeerShardChainState struct {
-	State                *ShardChainState
-	CrossShardsPoolState map[byte][]uint64
-	Peer                 libp2p.ID
+	State *ShardChainState
+	Peer  libp2p.ID
 }
 
 type ShardChainState struct {
-	Height    uint64
-	ShardID   byte
-	BlockHash common.Hash
+	Height               uint64
+	ShardID              byte
+	CrossShardsPoolState map[byte][]uint64
+	BlockHash            common.Hash
 }
 
 type BeaconChainState struct {
-	Height    uint64
-	BlockHash common.Hash
+	Height          uint64
+	ShardsPoolState map[byte][]uint64
+	BlockHash       common.Hash
 }
 
 func (self *BlockChain) SyncShard(shardID byte) error {
