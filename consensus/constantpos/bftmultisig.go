@@ -1,7 +1,6 @@
 package constantpos
 
 import (
-	"fmt"
 	"math/big"
 	"sort"
 
@@ -71,13 +70,11 @@ func (self *multiSigScheme) SignData(RiList map[string][]byte) error {
 		listPubkeyOfSigners[counter] = new(privacy.PublicKey)
 		*listPubkeyOfSigners[counter] = pubKeyTemp
 		if (err != nil) || (byteVersion != byte(0x00)) {
-			//Todo
 			return err
 		}
 		listROfSigners[counter] = new(privacy.EllipticPoint)
 		err = listROfSigners[counter].Decompress(bytesR)
 		if err != nil {
-			//Todo
 			return err
 		}
 		RCombined = RCombined.Add(listROfSigners[counter])
@@ -128,8 +125,6 @@ func (self *multiSigScheme) VerifyCommitSig(validatorPk string, commitSig string
 
 func (self *multiSigScheme) CombineSigs(R string, commitSigs []bftCommittedSig) (string, error) {
 
-	//TODO: Hy include valSig.ValidatorsIdxR in aggregatedSig
-
 	listSigOfSigners := make([]*privacy.SchnMultiSig, len(commitSigs))
 	for i, valSig := range commitSigs {
 		listSigOfSigners[i] = new(privacy.SchnMultiSig)
@@ -145,7 +140,5 @@ func (self *multiSigScheme) CombineSigs(R string, commitSigs []bftCommittedSig) 
 	self.combine.ValidatorsIdxR = make([]int, len(commitSigs[0].ValidatorsIdxR))
 	copy(self.combine.ValidatorsIdxR, commitSigs[0].ValidatorsIdxR)
 	aggregatedSig := self.cryptoScheme.CombineMultiSig(listSigOfSigners)
-	fmt.Println("aaaaaaaaaaaaaaaaaaaa", len(commitSigs))
-	// fmt.Println("bbbbbbbbbbbbbbbbbbbb", commitSigs[0], commitSigs[1], commitSigs[2])
 	return base58.Base58Check{}.Encode(aggregatedSig.Bytes(), byte(0x00)), nil
 }

@@ -11,13 +11,16 @@ import (
 )
 
 type PeerBeaconChainState struct {
-	State *BeaconChainState
-	Peer  libp2p.ID
+	State           *BeaconChainState
+	ShardsPoolState map[byte][]uint64
+	Peer            libp2p.ID
 }
 type PeerShardChainState struct {
-	State *ShardChainState
-	Peer  libp2p.ID
+	State                *ShardChainState
+	CrossShardsPoolState map[byte][]uint64
+	Peer                 libp2p.ID
 }
+
 type ShardChainState struct {
 	Height    uint64
 	ShardID   byte
