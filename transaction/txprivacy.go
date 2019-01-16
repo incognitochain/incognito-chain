@@ -109,7 +109,7 @@ func (tx *Tx) Init(
 		tx.sigPrivKey = *senderSK
 		tx.PubKeyLastByteSender = pkLastByteSender
 
-		err := tx.SignTx()
+		err := tx.signTx()
 		if err != nil {
 			return NewTransactionErr(UnexpectedErr, err)
 		}
@@ -270,7 +270,7 @@ func (tx *Tx) Init(
 
 	// sign tx
 	tx.PubKeyLastByteSender = pkLastByteSender
-	err = tx.SignTx()
+	err = tx.signTx()
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
@@ -282,8 +282,8 @@ func (tx *Tx) Init(
 	return nil
 }
 
-// SignTx - signs tx
-func (tx *Tx) SignTx() error {
+// signTx - signs tx
+func (tx *Tx) signTx() error {
 	//Check input transaction
 	if tx.Sig != nil {
 		return errors.New("input transaction must be an unsigned one")
@@ -313,8 +313,8 @@ func (tx *Tx) SignTx() error {
 	return nil
 }
 
-// VerifySigTx - verify signature on tx
-func (tx *Tx) VerifySigTx() (bool, error) {
+// verifySigTx - verify signature on tx
+func (tx *Tx) verifySigTx() (bool, error) {
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, errors.New("input transaction must be an signed one")
@@ -348,7 +348,7 @@ func (tx *Tx) VerifySigTx() (bool, error) {
 	return res, nil
 }
 
-func (tx *Tx) VerifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
+func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 	meta := tx.GetMetadata()
 	if meta == nil {
 		return false, nil
@@ -384,7 +384,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			Logger.log.Infof("%+v", err)
 			return false
 		} else {
-			valid, err = tx.VerifySigTx()
+			valid, err = tx.verifySigTx()
 			if valid == false {
 				if err != nil {
 					Logger.log.Infof("[PRIVACY LOG] - Error verifying signature of tx: %+v", err)
@@ -395,7 +395,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 	} else { // found, spending on multisigs address
 		// Multi signatures
-		valid, err = tx.VerifyMultiSigsTx(db)
+		valid, err = tx.verifyMultiSigsTx(db)
 		if err != nil {
 			Logger.log.Infof("%+v", err)
 		}
@@ -828,7 +828,7 @@ func (tx *Tx) InitTxSalary(
 	tx.SigPubKey = receiverAddr.Pk
 	tx.sigPrivKey = *privKey
 	tx.SetMetadata(metaData)
-	err = tx.SignTx()
+	err = tx.signTx()
 	if err != nil {
 		return err
 	}
@@ -840,7 +840,7 @@ func (tx Tx) ValidateTxSalary(
 	db database.DatabaseInterface,
 ) bool {
 	// verify signature
-	valid, err := tx.VerifySigTx()
+	valid, err := tx.verifySigTx()
 	if valid == false {
 		if err != nil {
 			Logger.log.Infof("Error verifying signature of tx: %+v", err)
