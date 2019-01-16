@@ -420,7 +420,7 @@ func (self *NetSync) HandleMessageBFTCommit(msg *wire.MessageBFTCommit) {
 }
 
 func (self *NetSync) HandleMessageBFTReady(msg *wire.MessageBFTReady) {
-	Logger.log.Info("Handling new message BFTReply")
+	Logger.log.Info("Handling new message BFTReady")
 	self.config.Consensus.OnBFTReady(msg)
 }
 
