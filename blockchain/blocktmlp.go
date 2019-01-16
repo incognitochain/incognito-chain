@@ -88,6 +88,8 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 			}
 		}
 	}
+
+concludeBlock:
 	txGroups, accumulativeValues, buyBackFromInfos, err = blockgen.checkAndGroupTxs(sourceTxns, chainID, privatekey)
 	if err != nil {
 		return nil, err
@@ -99,10 +101,9 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 		Logger.log.Info("Creating empty block...")
 	}
 
-concludeBlock:
-
 	// Get blocksalary fund from txs
 	salaryMULTP := uint64(0) //salary multiplier
+	fmt.Print(txGroups)
 	for _, blockTx := range txGroups.txsToAdd {
 		if blockTx.GetTxFee() > 0 {
 			salaryMULTP++
