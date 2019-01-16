@@ -47,6 +47,7 @@ func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte)
 		return err
 	}
 	//========Update best state with new block
+	//TODO: update beacon block
 	if err := shardBestState.Update(block, nil); err != nil {
 		return err
 	}
