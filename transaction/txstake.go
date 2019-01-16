@@ -9,13 +9,15 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 )
 
-// count in miliconstant
-// 100 *10^3 mili constant
-const stakeShardAmount = 100000
+const (
+	// count in miliconstant
+	// 100 *10^3 mili constant
+	stakeShardAmount = 100000
 
-// count in miliconstant
-// 10000 *10^3 mili constant
-const stakeBeaconAmount = 10000000
+	// count in miliconstant
+	// 10000 *10^3 mili constant
+	stakeBeaconAmount = 10000000
+)
 
 // Burning address
 // Using as receiver of staking transaction
