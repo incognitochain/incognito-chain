@@ -79,6 +79,11 @@ func NewBestStateBeacon() *BestStateBeacon {
 	return &bestStateBeacon
 }
 
+func (self *BestStateBeacon) Hash() common.Hash {
+	//TODO: hash of beststate
+	return common.DoubleHashH([]byte("test"))
+}
+
 // Get role of a public key base on best state beacond
 // return node-role, <shardID>
 func (self *BestStateBeacon) GetPubkeyRole(pubkey string) (string, byte) {

@@ -47,7 +47,7 @@ func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardId byte)
 		return err
 	}
 	//========Update best state with new block
-	if err := shardBestState.Update(block); err != nil {
+	if err := shardBestState.Update(block, nil); err != nil {
 		return err
 	}
 	//========Post verififcation: verify new beaconstate with corresponding block
@@ -111,7 +111,7 @@ func (self *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	blockHash := block.Hash().String()
 	Logger.log.Infof("Process store block %+v", blockHash)
 
-	if err := self.BestState.Shard[block.Header.ShardID].Update(block); err != nil {
+	if err := self.BestState.Shard[block.Header.ShardID].Update(block, nil); err != nil {
 		return err
 	}
 
@@ -169,6 +169,7 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	/* Verify Pre-prosessing data
 	This function DOES NOT verify new block with best state
 	DO NOT USE THIS with GENESIS BLOCK
+	- Producer
 	- ShardID: of received block same shardID with input
 	- Version
 	- Parent hash
@@ -226,21 +227,142 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	}
 	return nil
 }
-func (self *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBlock, isSign bool, shardId byte) error {
 
+/*
+	This function will verify the validation of a block with some best state in cache or current best state
+	Get beacon state of this block
+	For example, new blockHeight is 91 then beacon state of this block must have height 90
+	OR new block has previous has is beacon best block hash
+	- Producer
+	- committee length and validatorIndex length
+	- Producer + sig
+	- Has parent hash is current best state best blockshard hash (compatible with current beststate)
+	- Block Height
+	- Beacon Height
+*/
+func (self *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBlock, isVerifySig bool, shardId byte) error {
+	//TODO: define method to verify producer
+	// Cal next producer
+	// Verify next producer
+	//=============Verify producer signature
+	//==========TODO:UNCOMMENT to verify producer signature
+	// producerPubkey := self.ShardCommittee[self.ShardProposerIdx]
+	// blockHash := block.Header.Hash()
+	// if err := cashec.ValidateDataB58(producerPubkey, block.ProducerSig, blockHash.GetBytes()); err != nil {
+	// 	return NewBlockChainError(SignatureError, err)
+	// }
+	//=============End Verify producer signature
+	//=============Verify aggegrate signature
+	if len(block.ValidatorsIdx) < (len(self.ShardCommittee) >> 1) {
+		return NewBlockChainError(SignatureError, errors.New("Block validators and Beacon committee is not compatible"))
+	}
+	if isVerifySig {
+		pubKeysR := []*privacy.PublicKey{}
+		for _, index := range block.ValidatorsIdx[0] {
+			pubkeyBytes, _, err := base58.Base58Check{}.Decode(self.ShardCommittee[index])
+			if err != nil {
+				return errors.New("Error in convert Public key from string to byte")
+			}
+			pubKey := privacy.PublicKey{}
+			pubKey = pubkeyBytes
+			pubKeysR = append(pubKeysR, &pubKey)
+		}
+		pubKeysAggSig := []*privacy.PublicKey{}
+		for _, index := range block.ValidatorsIdx[1] {
+			pubkeyBytes, _, err := base58.Base58Check{}.Decode(self.ShardCommittee[index])
+			if err != nil {
+				return errors.New("Error in convert Public key from string to byte")
+			}
+			pubKey := privacy.PublicKey{}
+			pubKey = pubkeyBytes
+			pubKeysAggSig = append(pubKeysAggSig, &pubKey)
+		}
+		RCombined := new(privacy.EllipticPoint)
+		RCombined.Set(big.NewInt(0), big.NewInt(0))
+		Rbytesarr, byteVersion, err := base58.Base58Check{}.Decode(block.R)
+		if (err != nil) || (byteVersion != common.ZeroByte) {
+			return err
+		}
+		err = RCombined.Decompress(Rbytesarr)
+		if err != nil {
+			return err
+		}
+
+		aggSig, _, err := base58.Base58Check{}.Decode(block.AggregatedSig)
+		if err != nil {
+			return errors.New("Error in convert aggregated signature from string to byte")
+		}
+		schnMultiSig := &privacy.SchnMultiSig{}
+		schnMultiSig.SetBytes(aggSig)
+		blockHash := block.Header.Hash()
+		if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeysR, pubKeysAggSig, RCombined) == false {
+			return errors.New("Invalid Agg signature")
+		}
+	}
+	//=============End Verify Aggegrate signature
+	if self.ShardHeight+1 != block.Header.Height {
+		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be : "+strconv.Itoa(int(block.Header.Height+1))))
+	}
+	if bytes.Compare(self.BestShardBlockHash.GetBytes(), block.Header.PrevBlockHash.GetBytes()) != 0 {
+		return NewBlockChainError(BlockHeightError, errors.New("Previous us block should be : "+self.BestShardBlockHash.String()))
+	}
+	if block.Header.BeaconHeight < self.BeaconHeight {
+		return NewBlockChainError(BlockHeightError, errors.New("Block contain invalid beacon height"))
+	}
 	return nil
 }
-func (self *BestStateShard) Update(block *ShardBlock) error {
-	//TODO
-	self.BestBeaconHash = block.Header.BeaconHash
+
+/*
+	Update beststate with new block
+		PrevShardBlockHash
+		BestShardBlockHash
+		BestBeaconHash
+		BestShardBlock
+		ShardHeight
+		BeaconHeight
+		ShardProposerIdx
+
+		Add pending validator
+		Swap shard committee if detect new epoch of beacon
+*/
+func (self *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBlock) error {
+	Logger.log.Infof("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
+	var (
+		err                   error
+		shardSwapedCommittees []string
+		shardNewCommittees    []string
+	)
 	self.PrevShardBlockHash = self.BestShardBlockHash
 	self.BestShardBlockHash = *block.Hash()
+	self.BestBeaconHash = block.Header.BeaconHash
+	self.BestShardBlock = block
 	self.ShardHeight = block.Header.Height
+	prevBeaconHeight := self.BeaconHeight
 	self.BeaconHeight = block.Header.BeaconHeight
 	self.ShardProposerIdx = common.IndexOfStr(block.Header.Producer, self.ShardCommittee)
-	self.BestShardBlock = block
-	//self.TotalTxns += uint64(len(block.Body.Transactions))
-	//self.NumTxns = uint64(len(block.Body.Transactions))
+	// Add pending validator
+	for _, beaconBlock := range beaconBlocks {
+		for _, l := range beaconBlock.Body.Instructions {
+			if l[0] == "assign" && l[2] == "shard" {
+				if l[3] == strconv.Itoa(int(block.Header.ShardID)) {
+					Logger.log.Infof("SHARD %+v | Old ShardPendingValidatorList %+v", block.Header.ShardID, self.ShardPendingValidator)
+					self.ShardPendingValidator = append(self.ShardPendingValidator, strings.Split(l[1], ",")...)
+					Logger.log.Infof("SHARD %+v | New ShardPendingValidatorList %+v", block.Header.ShardID, self.ShardPendingValidator)
+				}
+			}
+		}
+	}
+	// Swap committee
+	if block.Header.BeaconHeight%EPOCH < prevBeaconHeight {
+		self.ShardPendingValidator, self.ShardCommittee, shardSwapedCommittees, shardNewCommittees, err = SwapValidator(self.ShardPendingValidator, self.ShardCommittee, COMMITEES, OFFSET)
+		if err != nil {
+			Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+			return NewBlockChainError(UnExpectedError, err)
+		}
+		Logger.log.Infof("SHARD %+v | Swap: Out committee %+v", block.Header.ShardID, shardSwapedCommittees)
+		Logger.log.Infof("SHARD %+v | Swap: In committee %+v", block.Header.ShardID, shardNewCommittees)
+	}
+	Logger.log.Infof("SHARD %+v | Finish update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	return nil
 }
 func (self *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlock, shardId byte) error {

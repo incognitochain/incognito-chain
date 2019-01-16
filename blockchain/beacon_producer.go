@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ninjadotorg/constant/cashec"
@@ -78,7 +79,7 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	beaconBlock.Header.Timestamp = time.Now().Unix()
 	beaconBlock.Header.PrevBlockHash = beaconBestState.BestBlockHash
 	tempShardState, staker, swap := self.GetShardState(&beaconBestState)
-	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap)
+	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, self.chain.BestState.Beacon.CandidateShardWaitingForCurrentRandom)
 	//==========Create Body
 	beaconBlock.Body.Instructions = tempInstruction
 	beaconBlock.Body.ShardState = tempShardState
@@ -211,9 +212,9 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 	+ ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
 	+ ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
 	- random instruction -> ok
-	- assign instruction -> ok
+	- stake instruction -> ok
 */
-func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, stakers [][]string, swap map[byte]interface{}) [][]string {
+func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, stakers [][]string, swap map[byte]interface{}, shardCandidates []string) [][]string {
 	instructions := [][]string{}
 	//=======Swap
 	// Shard Swap: both abnormal or normal swap
@@ -233,23 +234,14 @@ func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, stakers [][
 		swapBeaconInstructions = append(swapBeaconInstructions, "beacon")
 		instructions = append(instructions, swapBeaconInstructions)
 	}
-
-	//=======Assign
+	//=======Stake
 	// ["stake", "pubkey.....", "shard" or "beacon"]
 	// beaconStaker := []string{}
 	// shardStaker := []string{}
 	for _, assignInstruction := range stakers {
 		instructions = append(instructions, assignInstruction)
-		// assignInstructionTemp := assignInstruction.([]string)
-		// if assignInstructionTemp[0] == "stake" && assignInstructionTemp[2] == "beacon" {
-		// 	beaconStaker = append(beaconStaker, strings.Split(assignInstructionTemp[1], ",")...)
-		// }
-		// if assignInstructionTemp[0] == "stake" && assignInstructionTemp[2] == "shard" {
-		// 	shardStaker = append(shardStaker, strings.Split(assignInstructionTemp[1], ",")...)
-		// }
 	}
-
-	//=======Random
+	//=======Random and Assign if random number is detected
 	// Time to get random number and no block in this epoch get it
 	fmt.Printf("RandomTimestamp %+v \n", self.CurrentRandomTimeStamp)
 	fmt.Printf("============height epoch: %+v, RANDOM TIME: %+v \n", block.Header.Height%200, RANDOM_TIME)
@@ -260,18 +252,25 @@ func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, stakers [][
 		if err != nil {
 			panic(err)
 		}
+		var wg sync.WaitGroup
+		assignedCandidates := make(map[byte][]string)
 		if chainTimeStamp > self.CurrentRandomTimeStamp {
-			randomInstruction := GenerateRandomInstruction(self.CurrentRandomTimeStamp)
+			wg.Add(1)
+			randomInstruction, rand := GenerateRandomInstruction(self.CurrentRandomTimeStamp, &wg)
+			wg.Wait()
 			instructions = append(instructions, randomInstruction)
 			Logger.log.Infof("RandomNumber %+v", randomInstruction)
-
-			// beaconAssingInstruction := []string{"stake"}
-			// beaconAssingInstruction = append(beaconAssingInstruction, strings.Join(beaconStaker, ","))
-			// beaconAssingInstruction = append(beaconAssingInstruction, "beacon")
-
-			// shardAssingInstruction := []string{"stake"}
-			// shardAssingInstruction = append(shardAssingInstruction, strings.Join(shardStaker, ","))
-			// shardAssingInstruction = append(shardAssingInstruction, "shard")
+			for _, candidate := range shardCandidates {
+				shardID := calculateHash(candidate, rand)
+				assignedCandidates[shardID] = append(assignedCandidates[shardID], candidate)
+			}
+			for shardId, candidates := range assignedCandidates {
+				shardAssingInstruction := []string{"assign"}
+				shardAssingInstruction = append(shardAssingInstruction, strings.Join(candidates, ","))
+				shardAssingInstruction = append(shardAssingInstruction, "shard")
+				shardAssingInstruction = append(shardAssingInstruction, strconv.Itoa(int(shardId)))
+				instructions = append(instructions, shardAssingInstruction)
+			}
 		}
 	}
 	return instructions
@@ -295,9 +294,8 @@ func (self *BestStateBeacon) GetValidStakers(tempStaker []string) []string {
 //===================================Util for Beacon=============================
 
 // ["random" "{blockheight}" "{bitcointimestamp}" "{nonce}" "{timestamp}"]
-func GenerateRandomInstruction(timestamp int64) []string {
+func GenerateRandomInstruction(timestamp int64, wg *sync.WaitGroup) ([]string, int64) {
 	msg := make(chan string)
-
 	go btcapi.GenerateRandomNumber(timestamp, msg)
 	res := <-msg
 	reses := strings.Split(res, (","))
@@ -305,7 +303,9 @@ func GenerateRandomInstruction(timestamp int64) []string {
 	strs = append(strs, "random")
 	strs = append(strs, reses...)
 	strs = append(strs, strconv.Itoa(int(timestamp)))
-	return strs
+	nonce, _ := strconv.Atoi(reses[2])
+	wg.Done()
+	return strs, int64(nonce)
 }
 
 func GetValidStaker(committees []string, stakers []string) []string {

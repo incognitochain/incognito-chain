@@ -295,7 +295,7 @@ func IntArrayEquals(a []int, b []int) bool {
 
 func IndexOfStr(item string, list []string) int {
 	for k, v := range list {
-		if item == v {
+		if strings.Compare(item, v) == 0 {
 			return k
 		}
 	}
