@@ -102,7 +102,7 @@ func DecompressKey(pubKeyStr []byte) (pubkey *EllipticPoint, err error) {
 	if pubkey.X.Cmp(Curve.Params().P) >= 0 {
 		return nil, NewPrivacyErr(UnexpectedErr, errors.New("pubkey X parameter is >= to P"))
 	}
-	if pubkey.Y.Cmp(Curve.Params().P) >= 0 {h
+	if pubkey.Y.Cmp(Curve.Params().P) >= 0 {
 		return nil, NewPrivacyErr(UnexpectedErr, errors.New("pubkey Y parameter is >= to P"))
 	}
 	if !Curve.Params().IsOnCurve(pubkey.X, pubkey.Y) {
