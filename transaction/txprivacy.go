@@ -443,7 +443,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	return true
 }
 
-func (tx *Tx) Hash() *common.Hash {
+func (tx Tx) String() string {
 	record := strconv.Itoa(int(tx.Version))
 	record += strconv.FormatInt(tx.LockTime, 10)
 	record += strconv.FormatUint(tx.Fee, 10)
@@ -454,7 +454,11 @@ func (tx *Tx) Hash() *common.Hash {
 		metadata := tx.Metadata.Hash().String()
 		record += metadata
 	}
-	hash := common.DoubleHashH([]byte(record))
+	return record
+}
+
+func (tx *Tx) Hash() *common.Hash {
+	hash := common.DoubleHashH([]byte(tx.String()))
 	return &hash
 }
 

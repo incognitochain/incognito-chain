@@ -38,8 +38,7 @@ func (self *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Hash returns the hash of all fields of the transaction
-func (tx *TxCustomTokenPrivacy) Hash() *common.Hash {
+func (tx *TxCustomTokenPrivacy) String() string {
 	// get hash of tx
 	record := tx.Tx.Hash().String()
 
@@ -49,9 +48,13 @@ func (tx *TxCustomTokenPrivacy) Hash() *common.Hash {
 	if tx.Metadata != nil {
 		record += string(tx.Metadata.Hash()[:])
 	}
+	return record
+}
 
+// Hash returns the hash of all fields of the transaction
+func (tx *TxCustomTokenPrivacy) Hash() *common.Hash {
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.DoubleHashH([]byte(tx.String()))
 	return &hash
 }
 

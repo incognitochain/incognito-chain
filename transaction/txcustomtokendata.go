@@ -21,15 +21,19 @@ type TxTokenVin struct {
 	PaymentAddress  privacy.PaymentAddress // use to verify signature of pre-utxo of token
 }
 
-// Hash - return hash data of TxTokenVin
-func (self TxTokenVin) Hash() *common.Hash {
+func (self TxTokenVin) String() string {
 	record := common.EmptyString
 	record += self.TxCustomTokenID.String()
 	record += fmt.Sprintf("%d", self.VoutIndex)
 	record += self.Signature
 	record += base58.Base58Check{}.Encode(self.PaymentAddress.Pk[:], 0)
+	return record
+}
+
+// Hash - return hash data of TxTokenVin
+func (self TxTokenVin) Hash() *common.Hash {
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.DoubleHashH([]byte(self.String()))
 	return &hash
 }
 
@@ -46,13 +50,17 @@ type TxTokenVout struct {
 	// BuySellResponse *BuySellResponse
 }
 
-// Hash - return hash data of TxTokenVout
-func (self TxTokenVout) Hash() *common.Hash {
+func (self TxTokenVout) String() string {
 	record := common.EmptyString
 	record += fmt.Sprintf("%d", self.Value)
 	record += base58.Base58Check{}.Encode(self.PaymentAddress.Pk[:], 0)
+	return record
+}
+
+// Hash - return hash data of TxTokenVout
+func (self TxTokenVout) Hash() *common.Hash {
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.DoubleHashH([]byte(self.String()))
 	return &hash
 }
 
