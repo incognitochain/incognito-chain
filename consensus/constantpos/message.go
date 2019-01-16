@@ -102,7 +102,7 @@ func (self *Engine) OnBFTCommit(msg *wire.MessageBFTCommit) {
 
 }
 
-func (self *Engine) OnBFTReply(msg *wire.MessageBFTReply) {
+func (self *Engine) OnBFTReady(msg *wire.MessageBFTReady) {
 	self.cBFTMsg <- msg
 	return
 
@@ -305,14 +305,12 @@ func MakeMsgBFTCommit(commitSig string, R string, validatorsIdx []int, pubkey st
 	return msg, nil
 }
 
-func MakeMsgBFTReply(aggregatedSig string, validatorsIdx []int) (wire.Message, error) {
-	msg, err := wire.MakeEmptyMessage(wire.CmdBFTReply)
+func MakeMsgBFTReady(aggregatedSig string, validatorsIdx []int) (wire.Message, error) {
+	msg, err := wire.MakeEmptyMessage(wire.CmdBFTReady)
 	if err != nil {
 		Logger.log.Error(err)
 		return msg, err
 	}
-	msg.(*wire.MessageBFTReply).AggregatedSig = aggregatedSig
-	msg.(*wire.MessageBFTReply).ValidatorsIdx = validatorsIdx
 	return msg, nil
 }
 

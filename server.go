@@ -570,7 +570,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnBFTPropose: self.OnBFTPropose,
 			OnBFTPrepare: self.OnBFTPrepare,
 			OnBFTCommit:  self.OnBFTCommit,
-			OnBFTReply:   self.OnBFTReply,
+			OnBFTReady:   self.OnBFTReady,
 			// OnInvalidBlock:  self.OnInvalidBlock,
 			OnGetBeaconState: self.OnGetBeaconState,
 			OnBeaconState:    self.OnBeaconState,
@@ -868,7 +868,7 @@ func (self *Server) OnBFTCommit(_ *peer.PeerConn, msg *wire.MessageBFTCommit) {
 	Logger.log.Info("Receive a BFTCommit END")
 }
 
-func (self *Server) OnBFTReply(_ *peer.PeerConn, msg *wire.MessageBFTReply) {
+func (self *Server) OnBFTReady(_ *peer.PeerConn, msg *wire.MessageBFTReady) {
 	Logger.log.Info("Receive a BFTReply START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)

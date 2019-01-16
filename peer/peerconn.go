@@ -290,9 +290,9 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if self.Config.MessageListeners.OnBFTCommit != nil {
 						self.Config.MessageListeners.OnBFTCommit(self, message.(*wire.MessageBFTCommit))
 					}
-				case reflect.TypeOf(&wire.MessageBFTReply{}):
-					if self.Config.MessageListeners.OnBFTReply != nil {
-						self.Config.MessageListeners.OnBFTReply(self, message.(*wire.MessageBFTReply))
+				case reflect.TypeOf(&wire.MessageBFTReady{}):
+					if self.Config.MessageListeners.OnBFTReady != nil {
+						self.Config.MessageListeners.OnBFTReady(self, message.(*wire.MessageBFTReady))
 					}
 					// case reflect.TypeOf(&wire.MessageInvalidBlock{}):
 					// 	if self.Config.MessageListeners.OnInvalidBlock != nil {

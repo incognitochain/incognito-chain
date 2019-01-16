@@ -118,7 +118,7 @@ type MessageListeners struct {
 	OnBFTPropose func(p *PeerConn, msg *wire.MessageBFTPropose)
 	OnBFTPrepare func(p *PeerConn, msg *wire.MessageBFTPrepare)
 	OnBFTCommit  func(p *PeerConn, msg *wire.MessageBFTCommit)
-	OnBFTReply   func(p *PeerConn, msg *wire.MessageBFTReply)
+	OnBFTReady   func(p *PeerConn, msg *wire.MessageBFTReady)
 	// OnInvalidBlock  func(p *PeerConn, msg *wire.MessageInvalidBlock)
 	OnGetBeaconState func(p *PeerConn, msg *wire.MessageGetBeaconState)
 	OnBeaconState    func(p *PeerConn, msg *wire.MessageBeaconState)

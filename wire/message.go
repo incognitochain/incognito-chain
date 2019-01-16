@@ -42,7 +42,7 @@ const (
 	CmdBFTPropose     = "bftpropose"
 	CmdBFTPrepare     = "bftprepare"
 	CmdBFTCommit      = "bftcommit"
-	CmdBFTReply       = "bftreply"
+	CmdBFTReady       = "bftready"
 	CmdInvalidBlock   = "invalidblock"
 	CmdGetBeaconState = "getbcstate"
 	CmdBeaconState    = "beaconstate"
@@ -156,10 +156,8 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdBFTCommit:
 		msg = &MessageBFTCommit{}
 		break
-	case CmdBFTReply:
-		msg = &MessageBFTReply{}
-		// case CmdInvalidBlock:
-		// 	msg = &MessageInvalidBlock{}
+	case CmdBFTReady:
+		msg = &MessageBFTReady{}
 		break
 	case CmdGetBeaconState:
 		msg = &MessageGetBeaconState{
@@ -251,8 +249,8 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdBFTPrepare, nil
 	case reflect.TypeOf(&MessageBFTCommit{}):
 		return CmdBFTCommit, nil
-	case reflect.TypeOf(&MessageBFTReply{}):
-		return CmdBFTReply, nil
+	case reflect.TypeOf(&MessageBFTReady{}):
+		return CmdBFTReady, nil
 	case reflect.TypeOf(&MessageInvalidBlock{}):
 		return CmdInvalidBlock, nil
 	case reflect.TypeOf(&MessageGetBeaconState{}):

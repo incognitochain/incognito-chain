@@ -63,7 +63,15 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 		default:
 			switch self.phase {
 			case "propose":
-				time.Sleep(2 * time.Second)
+				timeout := time.AfterFunc(ListenTimeout*time.Second, func() {
+					fmt.Println("Propose phase timeout")
+					close(self.cTimeout)
+				})
+				var (
+					msg           wire.Message
+					shardID       byte
+					readyMsgCount int
+				)
 				if layer == "beacon" {
 					newBlock, err := self.BlockGen.NewBlockBeacon(&self.UserKeySet.PaymentAddress, &self.UserKeySet.PrivateKey)
 					if err != nil {
@@ -71,7 +79,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 					}
 					fmt.Println("Propose block")
 					jsonBlock, _ := json.Marshal(newBlock)
-					msg, err := MakeMsgBFTPropose(jsonBlock)
+					msg, err = MakeMsgBFTPropose(jsonBlock)
 					if err != nil {
 						return nil, err
 					}
@@ -84,7 +92,7 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 						return nil, err
 					}
 					jsonBlock, _ := json.Marshal(newBlock)
-					msg, err := MakeMsgBFTPropose(jsonBlock)
+					msg, err = MakeMsgBFTPropose(jsonBlock)
 					if err != nil {
 						return nil, err
 					}
@@ -92,6 +100,17 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 					self.pendingBlock = newBlock
 					fmt.Println("\n", newBlock.Header)
 					self.multiSigScheme.dataToSig = newBlock.Header.Hash()
+				}
+
+				for {
+					select {
+					case msgReady := <-self.cBFTMsg:
+						if msgReady.MessageType() == wire.CmdBFTReady {
+
+						}
+					case <-self.cTimeout:
+
+					}
 				}
 				self.phase = "prepare"
 			case "listen":
@@ -244,11 +263,6 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 						if err != nil {
 							return nil, err
 						}
-						// fmt.Println(AggregatedSig.VerifyMultiSig(blockData.GetBytes(), listPubkeyOfSigners, nil, nil))
-
-						// ValidatorsIdx := make([]int, len(phaseData.Sigs[szRCombined][0].ValidatorsIdx))
-						// copy(ValidatorsIdx, phaseData.Sigs[szRCombined][0].ValidatorsIdx)
-
 						ValidatorsIdxAggSig := make([]int, len(self.multiSigScheme.combine.ValidatorsIdxAggSig))
 						ValidatorsIdxR := make([]int, len(self.multiSigScheme.combine.ValidatorsIdxR))
 						copy(ValidatorsIdxAggSig, self.multiSigScheme.combine.ValidatorsIdxAggSig)

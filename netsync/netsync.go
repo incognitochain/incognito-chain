@@ -36,7 +36,7 @@ type NetSyncConfig struct {
 		OnBFTPropose(*wire.MessageBFTPropose)
 		OnBFTPrepare(*wire.MessageBFTPrepare)
 		OnBFTCommit(*wire.MessageBFTCommit)
-		OnBFTReply(*wire.MessageBFTReply)
+		OnBFTReady(*wire.MessageBFTReady)
 	}
 
 	FeeEstimator map[byte]*mempool.FeeEstimator
@@ -104,9 +104,9 @@ out:
 						{
 							self.HandleMessageBFTCommit(msg)
 						}
-					case *wire.MessageBFTReply:
+					case *wire.MessageBFTReady:
 						{
-							self.HandleMessageBFTReply(msg)
+							self.HandleMessageBFTReady(msg)
 						}
 					case *wire.MessageBlockBeacon:
 						{
@@ -419,9 +419,9 @@ func (self *NetSync) HandleMessageBFTCommit(msg *wire.MessageBFTCommit) {
 	self.config.Consensus.OnBFTCommit(msg)
 }
 
-func (self *NetSync) HandleMessageBFTReply(msg *wire.MessageBFTReply) {
+func (self *NetSync) HandleMessageBFTReady(msg *wire.MessageBFTReady) {
 	Logger.log.Info("Handling new message BFTReply")
-	self.config.Consensus.OnBFTReply(msg)
+	self.config.Consensus.OnBFTReady(msg)
 }
 
 // func (self *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
