@@ -32,4 +32,10 @@ func init() {
 		CaptureSentryMessage,
 		CaptureSentryError,
 	})
+
+	RegisterService(ELASTIC_LOG_SERVICENAME, &LogService{
+		InitElastic,
+		SendElasticMessage,
+		SendElasticError,
+	})
 }
