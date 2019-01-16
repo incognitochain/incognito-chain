@@ -38,6 +38,7 @@ func (mb *MetadataBase) Hash() *common.Hash {
 }
 
 func (mb *MetadataBase) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
+	// TODO: 0xjackalope
 	return true
 }
 
