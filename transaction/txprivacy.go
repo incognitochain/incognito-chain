@@ -375,6 +375,16 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 	var valid bool
 	var err error
+
+	valid, err = tx.verifySigTx()
+	if valid == false {
+		if err != nil {
+			Logger.log.Infof("[PRIVACY LOG] - Error verifying signature of tx: %+v", err)
+		}
+		Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION SIGNATURE")
+		return false
+	}
+
 	senderPK := tx.GetJSPubKey()
 	_, getMSRErr := db.GetMultiSigsRegistration(senderPK)
 	Logger.log.Infof("getMSRErr: %v\n", getMSRErr)
@@ -383,15 +393,6 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		if getMSRErr != lvdberr.ErrNotFound {
 			Logger.log.Infof("%+v", err)
 			return false
-		} else {
-			valid, err = tx.verifySigTx()
-			if valid == false {
-				if err != nil {
-					Logger.log.Infof("[PRIVACY LOG] - Error verifying signature of tx: %+v", err)
-				}
-				Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION SIGNATURE")
-				return false
-			}
 		}
 	} else { // found, spending on multisigs address
 		// Multi signatures
