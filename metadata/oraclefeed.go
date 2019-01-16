@@ -41,7 +41,7 @@ func (of *OracleFeed) ValidateTxWithBlockChain(
 ) (bool, error) {
 	govParams := bcr.GetGOVParams()
 	oraclePubKeys := govParams.OracleNetwork.OraclePubKeys
-	senderPubKey := txr.GetJSPubKey()
+	senderPubKey := txr.GetSigPubKey()
 	for _, oraclePubKey := range oraclePubKeys {
 		if bytes.Equal(oraclePubKey, senderPubKey) {
 			return true, nil

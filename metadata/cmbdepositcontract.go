@@ -73,7 +73,7 @@ func (dc *CMBDepositContract) ValidateTxWithBlockChain(txr Transaction, bcr Bloc
 	}
 
 	// CMBAddress must be valid
-	if !bytes.Equal(txr.GetJSPubKey(), dc.CMBAddress.Pk[:]) {
+	if !bytes.Equal(txr.GetSigPubKey(), dc.CMBAddress.Pk[:]) {
 		return false, errors.Errorf("CMBAddress must be the one creating this tx")
 	}
 	_, _, _, _, _, _, err = bcr.GetCMB(dc.CMBAddress.Bytes())

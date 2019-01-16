@@ -32,7 +32,7 @@ func getMultiSigsRegistration(
 	txr Transaction,
 	db database.DatabaseInterface,
 ) ([]byte, error) {
-	pk := txr.GetJSPubKey()
+	pk := txr.GetSigPubKey()
 	multiSigsReg, err := db.GetMultiSigsRegistration(pk)
 	return multiSigsReg, err
 }

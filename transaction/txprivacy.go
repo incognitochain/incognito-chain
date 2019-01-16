@@ -385,7 +385,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		return false
 	}
 
-	senderPK := tx.GetJSPubKey()
+	senderPK := tx.GetSigPubKey()
 	_, getMSRErr := db.GetMultiSigsRegistration(senderPK)
 	Logger.log.Infof("getMSRErr: %v\n", getMSRErr)
 	if getMSRErr != nil {
@@ -709,7 +709,7 @@ func (tx *Tx) SetMetadata(meta metadata.Metadata) {
 	tx.Metadata = meta
 }
 
-func (tx *Tx) GetJSPubKey() []byte {
+func (tx *Tx) GetSigPubKey() []byte {
 	return tx.SigPubKey
 }
 

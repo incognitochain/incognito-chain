@@ -42,7 +42,7 @@ func (cr *CrowdsaleResponse) ValidateTxWithBlockChain(txr Transaction, bcr Block
 	isBoard := false
 	for _, gov := range bcr.GetBoardPubKeys("dcb") {
 		// TODO(@0xbunyip): change gov to []byte or use Base58Decode for entire payment address of governors
-		if bytes.Equal([]byte(gov), txr.GetJSPubKey()) {
+		if bytes.Equal([]byte(gov), txr.GetSigPubKey()) {
 			isBoard = true
 		}
 	}
@@ -68,7 +68,7 @@ func (cr *CrowdsaleResponse) ValidateTxWithBlockChain(txr Transaction, bcr Block
 		case CrowdsaleResponseMeta:
 			{
 				// Check if the same user responses twice
-				if bytes.Equal(txOld.GetJSPubKey(), txr.GetJSPubKey()) {
+				if bytes.Equal(txOld.GetSigPubKey(), txr.GetSigPubKey()) {
 					return false, fmt.Errorf("Current board member already responded to crowdsale request")
 				}
 			}

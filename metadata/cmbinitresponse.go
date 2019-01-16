@@ -60,7 +60,7 @@ func (cres *CMBInitResponse) ValidateTxWithBlockChain(txr Transaction, bcr Block
 		return false, errors.Errorf("error getting list of old cmb init responses")
 	}
 	for _, member := range memberResponded {
-		if bytes.Equal(txr.GetJSPubKey(), member) {
+		if bytes.Equal(txr.GetSigPubKey(), member) {
 			return false, errors.Errorf("each board member can only response once to each cmb init request")
 		}
 	}

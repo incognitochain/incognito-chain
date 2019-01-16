@@ -46,7 +46,7 @@ func (cwr *CMBWithdrawRequest) Hash() *common.Hash {
 
 func (cwr *CMBWithdrawRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if request is made by receiver of the contract
-	sender := txr.GetJSPubKey()
+	sender := txr.GetSigPubKey()
 	_, _, _, txContract, err := bcr.GetTransactionByHash(&cwr.ContractID)
 	if err != nil {
 		return false, errors.Errorf("Error retrieving contract for withdrawal")

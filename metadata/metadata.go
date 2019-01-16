@@ -153,7 +153,7 @@ type Transaction interface {
 	SetMetadata(Metadata)
 	ValidateConstDoubleSpendWithBlockchain(BlockchainRetriever, byte, database.DatabaseInterface) error
 
-	GetJSPubKey() []byte
+	GetSigPubKey() []byte
 	GetReceivers() ([][]byte, []uint64)
 	GetUniqueReceiver() (bool, []byte, uint64)
 	IsPrivacy() bool

@@ -89,7 +89,7 @@ func (bc *BlockChain) processCMBInitRequest(tx metadata.Transaction) error {
 func (bc *BlockChain) processCMBInitResponse(tx metadata.Transaction) error {
 	// Store board member who approved this cmb init request
 	meta := tx.GetMetadata().(*metadata.CMBInitResponse)
-	sender := tx.GetJSPubKey()
+	sender := tx.GetSigPubKey()
 	err := bc.config.DataBase.StoreCMBResponse(meta.MainAccount.Bytes(), sender)
 	if err != nil {
 		return err

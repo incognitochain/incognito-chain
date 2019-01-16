@@ -51,7 +51,7 @@ func (lr *LoanResponse) Hash() *common.Hash {
 
 func txCreatedByDCBBoardMember(txr Transaction, bcr BlockchainRetriever) bool {
 	isBoard := false
-	txPubKey := txr.GetJSPubKey()
+	txPubKey := txr.GetSigPubKey()
 	fmt.Printf("check if created by dcb board: %v\n", txPubKey)
 	for _, member := range bcr.GetBoardPubKeys("dcb") {
 		fmt.Printf("member of board pubkey: %v\n", member)
@@ -92,7 +92,7 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 					continue
 				}
 				// Check if the same user responses twice
-				if bytes.Equal(txOld.GetJSPubKey(), txr.GetJSPubKey()) {
+				if bytes.Equal(txOld.GetSigPubKey(), txr.GetSigPubKey()) {
 					return false, fmt.Errorf("Current board member already responded to loan request")
 				}
 			}
@@ -148,7 +148,7 @@ func GetLoanResponses(txHashes [][]byte, bcr BlockchainRetriever) []ResponseData
 		if txOld.GetMetadataType() == LoanResponseMeta {
 			meta := txOld.GetMetadata().(*LoanResponse)
 			respData := ResponseData{
-				PublicKey: txOld.GetJSPubKey(),
+				PublicKey: txOld.GetSigPubKey(),
 				Response:  meta.Response,
 			}
 			data = append(data, respData)
