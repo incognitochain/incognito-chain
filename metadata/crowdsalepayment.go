@@ -41,38 +41,38 @@ func (csRes *CrowdsalePayment) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	// Check if sale exists
 	saleData, err := bcr.GetCrowdsaleData(csRes.SaleID)
 	if err != nil {
-		return false, err
+		return common.FalseValue, err
 	}
 
 	// Check if sending address is DCB's
 	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	if bytes.Equal(saleData.SellingAsset, common.ConstantID[:]) {
 		if !bytes.Equal(txr.GetSigPubKey(), accountDCB.KeySet.PaymentAddress.Pk[:]) {
-			return false, fmt.Errorf("Crowdsale payment must send Constant from DCB address")
+			return common.FalseValue, fmt.Errorf("Crowdsale payment must send Constant from DCB address")
 		}
 	} else if bytes.Equal(saleData.SellingAsset[:8], common.BondTokenID[:8]) {
 		// check double spending if selling bond
-		return true, nil
+		return common.TrueValue, nil
 	}
 
 	// TODO(@0xbunyip): validate amount of asset sent
-	return false, nil
+	return common.FalseValue, nil
 }
 
 func (csRes *CrowdsalePayment) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	ok, err := txr.ValidateSanityData(bcr)
 	if err != nil || !ok {
-		return false, ok, err
+		return common.FalseValue, ok, err
 	}
 	if len(csRes.SaleID) == 0 {
-		return false, false, errors.New("Wrong request info's SaleID")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's SaleID")
 	}
-	return false, true, nil
+	return common.FalseValue, common.TrueValue, nil
 }
 
 func (csRes *CrowdsalePayment) ValidateMetadataByItself() bool {
-	// The validation just need to check at tx level, so returning true here
-	return true
+	// The validation just need to check at tx level, so returning common.TrueValue here
+	return common.TrueValue
 }
 
 func (csRes *CrowdsalePayment) Hash() *common.Hash {

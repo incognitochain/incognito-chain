@@ -40,7 +40,7 @@ func (lp *LoanPayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 	// Check if loan is withdrawed
 	_, _, _, err := bcr.GetLoanPayment(lp.LoanID)
 	if err != nil {
-		return false, err
+		return common.FalseValue, err
 	}
 
 	// Check loan payment
@@ -49,22 +49,22 @@ func (lp *LoanPayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 	unique, receiver, amount := txr.GetUniqueReceiver()
 	fmt.Printf("unique, receiver, amount: %v, %x, %v\n", unique, receiver, amount)
 	if !unique || !bytes.Equal(receiver, burnPk) {
-		return false, fmt.Errorf("Loan payment must be sent to burn address")
+		return common.FalseValue, fmt.Errorf("Loan payment must be sent to burn address")
 	}
 
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (lp *LoanPayment) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	proof := txr.GetProof()
 	if proof == nil || len(proof.InputCoins) < 1 || len(proof.OutputCoins) < 1 {
-		return false, false, errors.Errorf("Loan payment must send Constant")
+		return common.FalseValue, common.FalseValue, errors.Errorf("Loan payment must send Constant")
 	}
-	return true, true, nil // continue checking for fee
+	return common.TrueValue, common.TrueValue, nil // continue checking for fee
 }
 
 func (lp *LoanPayment) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }
 
 func GetTotalInterest(principle, interest, interestRate, maturity, deadline, currentHeight uint64) uint64 {

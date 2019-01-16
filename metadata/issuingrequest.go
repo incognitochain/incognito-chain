@@ -45,42 +45,42 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 		saleDBCTOkensByUSDData := bcr.GetDCBParams().SaleDCBTokensByUSDData
 		height, err := bcr.GetTxChainHeight(txr)
 		if height+1 > saleDBCTOkensByUSDData.EndBlock {
-			return false, err
+			return common.FalseValue, err
 		}
 		oracleParams := bcr.GetOracleParams()
 		reqAmt := iReq.DepositedAmount / oracleParams.DCBToken
 		if saleDBCTOkensByUSDData.Amount < reqAmt {
-			return false, nil
+			return common.FalseValue, nil
 		}
 	}
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (iReq *IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if len(iReq.ReceiverAddress.Pk) == 0 {
-		return false, false, errors.New("Wrong request info's receiver address")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's receiver address")
 	}
 	if iReq.DepositedAmount == 0 {
-		return false, false, errors.New("Wrong request info's deposited amount")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's deposited amount")
 	}
 	if iReq.Type == IssuingRequestMeta {
-		return false, false, errors.New("Wrong request info's meta type")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's meta type")
 	}
 	if len(iReq.AssetType) != common.HashSize {
-		return false, false, errors.New("Wrong request info's asset type")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's asset type")
 	}
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (iReq *IssuingRequest) ValidateMetadataByItself() bool {
 	if iReq.Type != IssuingRequestMeta {
-		return false
+		return common.FalseValue
 	}
 	if !bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) &&
 		!bytes.Equal(iReq.AssetType[:], common.ConstantID[:]) {
-		return false
+		return common.FalseValue
 	}
-	return true
+	return common.TrueValue
 }
 
 func (iReq *IssuingRequest) Hash() *common.Hash {

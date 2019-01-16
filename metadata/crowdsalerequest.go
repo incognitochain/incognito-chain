@@ -7,7 +7,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	privacy "github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/pkg/errors"
 )
@@ -52,32 +52,32 @@ func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	// Check if sale exists and ongoing
 	saleData, err := bcr.GetCrowdsaleData(csReq.SaleID)
 	if err != nil {
-		return false, err
+		return common.FalseValue, err
 	}
 	// TODO(@0xbunyip): get height of beacon chain on new consensus
 	height, err := bcr.GetTxChainHeight(txr)
 	if err != nil || saleData.EndBlock >= height {
-		return false, errors.Errorf("Crowdsale ended")
+		return common.FalseValue, errors.Errorf("Crowdsale ended")
 	}
 
 	// Check if Payment address is DCB's
 	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	if !bytes.Equal(csReq.PaymentAddress.Pk[:], accountDCB.KeySet.PaymentAddress.Pk[:]) || !bytes.Equal(csReq.PaymentAddress.Tk[:], accountDCB.KeySet.PaymentAddress.Tk[:]) {
-		return false, errors.Errorf("Crowdsale request must send CST to DCBAddress")
+		return common.FalseValue, errors.Errorf("Crowdsale request must send CST to DCBAddress")
 	}
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (csReq *CrowdsaleRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if len(csReq.PaymentAddress.Pk) == 0 {
-		return false, false, errors.New("Wrong request info's payment address")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's payment address")
 	}
-	return false, true, nil
+	return common.FalseValue, common.TrueValue, nil
 }
 
 func (csReq *CrowdsaleRequest) ValidateMetadataByItself() bool {
-	// The validation just need to check at tx level, so returning true here
-	return true
+	// The validation just need to check at tx level, so returning common.TrueValue here
+	return common.TrueValue
 }
 
 func (csReq *CrowdsaleRequest) Hash() *common.Hash {
