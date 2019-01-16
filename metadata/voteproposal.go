@@ -23,7 +23,7 @@ func NewSealedVoteProposalMetadata(sealedVoteProposal []byte, lockerPubKeys []pr
 func (sealedVoteProposal *SealedVoteProposal) Hash2() *common.Hash {
 	record := string(sealedVoteProposal.SealVoteProposalData)
 	for _, i := range sealedVoteProposal.LockerPaymentAddress {
-		record += string(i.Bytes())
+		record += i.String()
 	}
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
@@ -406,7 +406,7 @@ func (normalVoteProposalFromSealerMetadata *NormalVoteProposalFromSealerMetadata
 func (normalVoteProposalFromSealerMetadata *NormalVoteProposalFromSealerMetadata) ToBytes() []byte {
 	record := string(normalVoteProposalFromSealerMetadata.VoteProposal.Hash2().GetBytes())
 	for _, i := range normalVoteProposalFromSealerMetadata.LockerPaymentAddress {
-		record += string(i.Bytes())
+		record += i.String()
 	}
 	record += string(normalVoteProposalFromSealerMetadata.PointerToLv1VoteProposal.GetBytes())
 	record += string(normalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal.GetBytes())
@@ -524,7 +524,7 @@ func (normalVoteProposalFromOwnerMetadata *NormalVoteProposalFromOwnerMetadata) 
 func (normalVoteProposalFromOwnerMetadata *NormalVoteProposalFromOwnerMetadata) ToBytes() []byte {
 	record := string(normalVoteProposalFromOwnerMetadata.VoteProposal.Hash2().GetBytes())
 	for _, i := range normalVoteProposalFromOwnerMetadata.LockerPaymentAddress {
-		record += string(i.Bytes())
+		record += i.String()
 	}
 	record += string(normalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal.GetBytes())
 	return []byte(record)

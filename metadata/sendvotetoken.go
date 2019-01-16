@@ -24,7 +24,7 @@ func NewSendInitDCBVoteTokenMetadata(amount uint32, receiverPaymentAddress priva
 
 func (sendInitDCBVoteTokenMetadata *SendInitDCBVoteTokenMetadata) Hash() *common.Hash {
 	record := string(sendInitDCBVoteTokenMetadata.Amount)
-	record += string(sendInitDCBVoteTokenMetadata.ReceiverPaymentAddress.Bytes())
+	record += sendInitDCBVoteTokenMetadata.ReceiverPaymentAddress.String()
 	record += sendInitDCBVoteTokenMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
@@ -60,7 +60,7 @@ func NewSendInitGOVVoteTokenMetadata(amount uint32, receiverPaymentAddress priva
 
 func (sendInitGOVVoteTokenMetadata *SendInitGOVVoteTokenMetadata) Hash() *common.Hash {
 	record := string(sendInitGOVVoteTokenMetadata.Amount)
-	record += string(sendInitGOVVoteTokenMetadata.ReceiverPaymentAddress.Bytes())
+	record += sendInitGOVVoteTokenMetadata.ReceiverPaymentAddress.String()
 	record += sendInitGOVVoteTokenMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash

@@ -87,7 +87,7 @@ func (of *OracleFeed) ValidateMetadataByItself() bool {
 
 func (of *OracleFeed) Hash() *common.Hash {
 	record := of.AssetType.String()
-	record += string(of.FeederAddress.Bytes())
+	record += of.FeederAddress.String()
 	record += string(of.Price)
 	record += of.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))

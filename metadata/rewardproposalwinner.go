@@ -21,7 +21,7 @@ func NewRewardProposalWinnerMetadata(paymentAddress privacy.PaymentAddress, priz
 }
 
 func (rewardProposalWinnerMetadata *RewardProposalWinnerMetadata) Hash() *common.Hash {
-	record := string(rewardProposalWinnerMetadata.PaymentAddress.Bytes())
+	record := rewardProposalWinnerMetadata.PaymentAddress.String()
 	record += common.Uint32ToString(rewardProposalWinnerMetadata.Prize)
 	record += rewardProposalWinnerMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))

@@ -76,7 +76,7 @@ func (msReg *MultiSigsRegistration) ValidateMetadataByItself() bool {
 }
 
 func (msReg *MultiSigsRegistration) Hash() *common.Hash {
-	record := string(msReg.PaymentAddress.Bytes())
+	record := msReg.PaymentAddress.String()
 	for _, pk := range msReg.SpendableMembers {
 		record += string(pk)
 	}
