@@ -118,7 +118,6 @@ func mainMaster(serverChan chan<- *Server) error {
 }
 
 func main() {
-	jackalope()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	// Block and transaction processing can cause bursty allocations.  This
