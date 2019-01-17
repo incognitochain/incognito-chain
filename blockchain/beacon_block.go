@@ -20,7 +20,7 @@ const (
 type ShardState struct {
 	Height     uint64
 	Hash       common.Hash
-	CrossShard map[byte]bool
+	CrossShard map[byte][]byte
 }
 type BeaconBody struct {
 	ShardState   map[byte][]ShardState
@@ -72,10 +72,6 @@ func NewBeaconBlock() BeaconBlock {
 	return BeaconBlock{}
 }
 func (self *BeaconBlock) Hash() *common.Hash {
-	// record := common.EmptyString
-	// record += self.Header.Hash().String() + self.AggregatedSig + common.IntArrayToString(self.ValidatorsIdx, ",")
-	// record += self.Header.Hash().String()
-	// hash := common.DoubleHashH([]byte(record))
 	hash := self.Header.Hash()
 	return &hash
 }

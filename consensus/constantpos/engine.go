@@ -169,7 +169,6 @@ func (self *Engine) Start() error {
 										Logger.log.Error("Insert beacon block error", err)
 										continue
 									}
-
 									//PUSH SHARD TO BEACON
 									shardBlk, ok := resBlk.(*blockchain.ShardBlock)
 									if !ok {

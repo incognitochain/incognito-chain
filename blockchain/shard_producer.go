@@ -647,6 +647,7 @@ func (self *ShardBlock) CreateShardToBeaconBlock() ShardToBeaconBlock {
 	copy(block.ValidatorsIdx, self.ValidatorsIdx)
 	block.ProducerSig = self.ProducerSig
 	block.Header = self.Header
+	block.Instructions = self.Body.Instructions
 	return block
 }
 

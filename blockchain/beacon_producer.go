@@ -153,16 +153,16 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 	stakers := make(map[byte][]string)
 	validStakers := [][]string{}
 	swap := make(map[byte]interface{})
+	//Get shard to beacon block from pool
 	shardsBlocks := self.shardToBeaconPool.GetFinalBlock()
+	//Shard block is a map ShardId -> array of shard block
 	for shardID, shardBlocks := range shardsBlocks {
 		for _, shardBlock := range shardBlocks {
+			// for each shard block, create a corresponding shard state
 			shardState := ShardState{}
-			// TODO:  Get crosshard map from shardtoBeaconblock
-			// shardState.CrossShard = shardBlock...
-			// Fake data for testing
-			shardState.CrossShard = make(map[byte]bool)
+			shardState.CrossShard = make(map[byte][]byte)
 			for shardStateShardID, _ := range shardState.CrossShard {
-				shardState.CrossShard[shardStateShardID] = false
+				shardState.CrossShard[shardStateShardID] = shardBlock.Header.CrossShards
 			}
 			shardState.Hash = shardBlock.Header.Hash()
 			shardState.Height = shardBlock.Header.Height

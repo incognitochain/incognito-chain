@@ -13,7 +13,7 @@ import (
 
 	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
 	"github.com/ninjadotorg/constant/common/base58"
-	privacy "github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy"
 
 	"github.com/ninjadotorg/constant/common"
 )
@@ -388,46 +388,9 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 	//=============End Verify producer signature
 	//=============Verify aggegrate signature
 	if isVerifySig {
-		pubKeysR := []*privacy.PublicKey{}
-		for _, index := range block.ValidatorsIdx[0] {
-			pubkeyBytes, _, err := base58.Base58Check{}.Decode(self.BeaconCommittee[index])
-			if err != nil {
-				return errors.New("Error in convert Public key from string to byte")
-			}
-			pubKey := privacy.PublicKey{}
-			pubKey = pubkeyBytes
-			pubKeysR = append(pubKeysR, &pubKey)
-		}
-		pubKeysAggSig := []*privacy.PublicKey{}
-		for _, index := range block.ValidatorsIdx[1] {
-			pubkeyBytes, _, err := base58.Base58Check{}.Decode(self.BeaconCommittee[index])
-			if err != nil {
-				return errors.New("Error in convert Public key from string to byte")
-			}
-			pubKey := privacy.PublicKey{}
-			pubKey = pubkeyBytes
-			pubKeysAggSig = append(pubKeysAggSig, &pubKey)
-		}
-		RCombined := new(privacy.EllipticPoint)
-		RCombined.Set(big.NewInt(0), big.NewInt(0))
-		Rbytesarr, byteVersion, err := base58.Base58Check{}.Decode(block.R)
-		if (err != nil) || (byteVersion != byte(0x00)) {
-			return err
-		}
-		err = RCombined.Decompress(Rbytesarr)
+		err := ValidateAggSignature(block.ValidatorsIdx, self.BeaconCommittee, block.AggregatedSig, block.R, block.Hash())
 		if err != nil {
-			return err
-		}
-
-		aggSig, _, err := base58.Base58Check{}.Decode(block.AggregatedSig)
-		if err != nil {
-			return errors.New("Error in convert aggregated signature from string to byte")
-		}
-		schnMultiSig := &privacy.SchnMultiSig{}
-		schnMultiSig.SetBytes(aggSig)
-		blockHash := block.Header.Hash()
-		if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeysR, pubKeysAggSig, RCombined) == false {
-			return errors.New("Invalid Agg signature")
+			return NewBlockChainError(SignatureError, err)
 		}
 	}
 	//=============End Verify Aggegrate signature
@@ -521,6 +484,50 @@ func (self *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock)
 				return NewBlockChainError(RandomError, errors.New("Error verify random number"))
 			}
 		}
+	}
+	return nil
+}
+
+func ValidateAggSignature(validatorIdx [][]int, committees []string, aggSig string, R string, blockHash *common.Hash) error {
+	pubKeysR := []*privacy.PublicKey{}
+	for _, index := range validatorIdx[0] {
+		pubkeyBytes, _, err := base58.Base58Check{}.Decode(committees[index])
+		if err != nil {
+			return errors.New("Error in convert Public key from string to byte")
+		}
+		pubKey := privacy.PublicKey{}
+		pubKey = pubkeyBytes
+		pubKeysR = append(pubKeysR, &pubKey)
+	}
+	pubKeysAggSig := []*privacy.PublicKey{}
+	for _, index := range validatorIdx[1] {
+		pubkeyBytes, _, err := base58.Base58Check{}.Decode(committees[index])
+		if err != nil {
+			return errors.New("Error in convert Public key from string to byte")
+		}
+		pubKey := privacy.PublicKey{}
+		pubKey = pubkeyBytes
+		pubKeysAggSig = append(pubKeysAggSig, &pubKey)
+	}
+	RCombined := new(privacy.EllipticPoint)
+	RCombined.Set(big.NewInt(0), big.NewInt(0))
+	Rbytesarr, byteVersion, err := base58.Base58Check{}.Decode(R)
+	if (err != nil) || (byteVersion != byte(0x00)) {
+		return err
+	}
+	err = RCombined.Decompress(Rbytesarr)
+	if err != nil {
+		return err
+	}
+
+	tempAggSig, _, err := base58.Base58Check{}.Decode(aggSig)
+	if err != nil {
+		return errors.New("Error in convert aggregated signature from string to byte")
+	}
+	schnMultiSig := &privacy.SchnMultiSig{}
+	schnMultiSig.SetBytes(tempAggSig)
+	if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeysR, pubKeysAggSig, RCombined) == false {
+		return errors.New("Invalid Agg signature")
 	}
 	return nil
 }
