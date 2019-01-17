@@ -547,7 +547,7 @@ func (rpcServer RpcServer) handleCreateSignatureOnCustomTokenTx(params interface
 
 	jsSignByteArray, err := tx.GetTxCustomTokenSignature(senderKey.KeySet)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, errors.New("Failed to sign the custom token"))
+		return nil, NewRPCError(ErrUnexpected, errors.New("failed to sign the custom token"))
 	}
 	return hex.EncodeToString(jsSignByteArray), nil
 }
