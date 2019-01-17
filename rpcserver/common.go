@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"fmt"
+	"github.com/ninjadotorg/constant/cashec"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -12,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (self RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.PaymentInfo, estimateFeeCoinPerKb int64, numBlock uint64, keyset *wallet.Key, chainIdSender byte) ([]*privacy.InputCoin, uint64, *RPCError) {
+func (self RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.PaymentInfo, estimateFeeCoinPerKb int64, numBlock uint64, keyset *cashec.KeySet, chainIdSender byte) ([]*privacy.InputCoin, uint64, *RPCError) {
 	if numBlock == 0 {
 		numBlock = 8
 	}
@@ -25,7 +26,7 @@ func (self RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.PaymentInfo
 	// get list outputcoins tx
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
-	outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&keyset.KeySet, chainIdSender, constantTokenID)
+	outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(keyset, chainIdSender, constantTokenID)
 	if err != nil {
 		return nil, 0, NewRPCError(ErrUnexpected, err)
 	}
@@ -69,17 +70,16 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 
 	// param #1: private key of sender
 	senderKeyParam := arrayParams[0]
-	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	senderKeySet, err := self.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
+	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	chainIdSender, err := common.GetTxSenderChain(lastByte)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	fmt.Printf("Done param #1: keyset: %+v\n", senderKey.KeySet)
+	fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
 
 	// param #2: list receiver
 	receiversParam := make(map[string]interface{})
@@ -107,7 +107,7 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 	/********* END Fetch all params to *******/
 
 	/******* START choose output coins constant, which is used to create tx *****/
-	inputCoins, realFee, err := self.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKey, chainIdSender)
+	inputCoins, realFee, err := self.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, chainIdSender)
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
@@ -119,7 +119,7 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 	fmt.Printf("#inputCoins: %d\n", len(inputCoins))
 	tx := transaction.Tx{}
 	err = tx.Init(
-		&senderKey.KeySet.PrivateKey,
+		&senderKeySet.PrivateKey,
 		paymentInfos,
 		inputCoins,
 		realFee,
@@ -146,12 +146,8 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 
 	// param #1: private key of sender
 	senderKeyParam := arrayParams[0]
-	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
-	if err != nil {
-		return nil, err
-	}
-	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
+	senderKeySet, err := self.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
+	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	chainIdSender, err := common.GetTxSenderChain(lastByte)
 	if err != nil {
 		return nil, err
@@ -206,7 +202,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 				return nil, NewRPCError(ErrUnexpected, errors.New("Invalid Token ID"))
 			}
 
-			unspentTxTokenOuts, err := self.config.BlockChain.GetUnspentTxCustomTokenVout(senderKey.KeySet, tokenID)
+			unspentTxTokenOuts, err := self.config.BlockChain.GetUnspentTxCustomTokenVout(*senderKeySet, tokenID)
 			Logger.log.Info("buildRawCustomTokenTransaction ", unspentTxTokenOuts)
 			if err != nil {
 				return nil, err
@@ -223,7 +219,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 					VoutIndex:       out.GetIndex(),
 				}
 				// create signature by keyset -> base58check.encode of txtokenout double hash
-				signature, err := senderKey.KeySet.Sign(out.Hash()[:])
+				signature, err := senderKeySet.Sign(out.Hash()[:])
 				if err != nil {
 					return nil, NewRPCError(ErrUnexpected, err)
 				}
@@ -248,7 +244,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	}
 
 	/******* START choose output coins constant, which is used to create tx *****/
-	inputCoins, realFee, err := self.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKey, chainIdSender)
+	inputCoins, realFee, err := self.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, chainIdSender)
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
@@ -259,7 +255,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 
 	tx := &transaction.TxCustomToken{}
 	err = tx.Init(
-		&senderKey.KeySet.PrivateKey,
+		&senderKeySet.PrivateKey,
 		nil,
 		inputCoins,
 		realFee,
@@ -284,12 +280,8 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 	/****** START FEtch data from params *********/
 	// param #1: private key of sender
 	senderKeyParam := arrayParams[0]
-	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
+	senderKeySet, err := self.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
+	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	chainIdSender, err := common.GetTxSenderChain(lastByte)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -345,7 +337,7 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 			if _, ok := listCustomTokens[*tokenID]; !ok {
 				return nil, NewRPCError(ErrUnexpected, errors.New("Invalid Token ID"))
 			}
-			outputTokens, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, tokenID)
+			outputTokens, err := self.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, chainIdSender, tokenID)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
@@ -363,7 +355,7 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 	/****** END FEtch data from params *********/
 
 	/******* START choose output coins constant, which is used to create tx *****/
-	inputCoins, realFee, err := self.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKey, chainIdSender)
+	inputCoins, realFee, err := self.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, chainIdSender)
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
@@ -374,7 +366,7 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 
 	tx := &transaction.TxCustomTokenPrivacy{}
 	err = tx.Init(
-		&senderKey.KeySet.PrivateKey,
+		&senderKeySet.PrivateKey,
 		nil,
 		inputCoins,
 		realFee,
@@ -494,11 +486,18 @@ func (self RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, 
 }
 
 func (self RpcServer) GetPaymentAddressFromPrivateKeyParams(senderKeyParam string) (*privacy.PaymentAddress, error) {
+	keyset, err := self.GetKeySetFromPrivateKeyParams(senderKeyParam)
+	if err != nil {
+		return nil, err
+	}
+	return &keyset.PaymentAddress, err
+}
+
+func (self RpcServer) GetKeySetFromPrivateKeyParams(senderKeyParam string) (*cashec.KeySet, error) {
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam)
 	if err != nil {
 		return nil, err
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	paymentAddr := senderKey.KeySet.PaymentAddress
-	return &paymentAddr, nil
+	return &senderKey.KeySet, nil
 }
