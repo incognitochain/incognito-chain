@@ -13,7 +13,8 @@ const (
 )
 
 type MessageBFTReady struct {
-	Timestamp int64
+	BestStateHash common.Hash
+	Timestamp     int64
 }
 
 func (self *MessageBFTReady) Hash() string {

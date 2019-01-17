@@ -107,15 +107,23 @@ func (self *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (int
 					select {
 					case msgReady := <-self.cBFTMsg:
 						if msgReady.MessageType() == wire.CmdBFTReady {
-							readyMsgCount++
-							if readyMsgCount >= (2*len(self.RoleData.Committee)/3)-1 {
-								timeout.Stop()
-								fmt.Println("Collected enough ready")
-								select {
-								case <-self.cTimeout:
-									continue
-								default:
-									close(self.cTimeout)
+							var bestStateHash common.Hash
+							if layer == "beacon" {
+								bestStateHash = self.Chain.BestState.Beacon.Hash()
+							} else {
+								bestStateHash = self.Chain.BestState.Shard[shardID].Hash()
+							}
+							if msgReady.(*wire.MessageBFTReady).BestStateHash == bestStateHash {
+								readyMsgCount++
+								if readyMsgCount >= (2*len(self.RoleData.Committee)/3)-1 {
+									timeout.Stop()
+									fmt.Println("Collected enough ready")
+									select {
+									case <-self.cTimeout:
+										continue
+									default:
+										close(self.cTimeout)
+									}
 								}
 							}
 						}
