@@ -66,6 +66,8 @@ const (
 	GetListDCBBoard                      = "getlistdcbboard"
 	GetListGOVBoard                      = "getlistgovboard"
 	GetListCBBoard                       = "getlistcbboard"
+	AppendListDCBBoard                   = "testappendlistdcbboard"
+	AppendListGOVBoard                   = "testappendlistgovboard"
 	GetGOVParams                         = "getgovparams"
 	GetDCBParams                         = "getdcbparams"
 	GetGOVConstitution                   = "getgovconstitution"
@@ -91,7 +93,7 @@ const (
 	CreateRawVoteGOVBoardTx              = "createrawvotegovboardtx"
 	CreateAndSendVoteGOVBoardTransaction = "createandsendvotegovboardtransaction"
 	GetAmountVoteToken                   = "getamountvotetoken"
-	SetAmountVoteToken                   = "setamountvotetoken"
+	SetAmountVoteToken                   = "testsetamountvotetoken"
 
 	//vote propopsal
 	GetEncryptionFlag                         = "getencryptionflag"
