@@ -9,13 +9,12 @@ import (
 	"sync"
 
 	"github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/constant/wire"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/wire"
 	"time"
 )
 
 type PeerConn struct {
-	connected      int32
 	connState      ConnState
 	stateMtx       sync.RWMutex
 	verAckReceived bool
@@ -53,26 +52,26 @@ type PeerConn struct {
 /*
 Handle all in message
 */
-func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
-	self.IsConnected = true
+func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
+	peerConn.IsConnected = true
 	for {
-		Logger.log.Infof("PEER %s (address: %s) Reading stream", self.RemotePeer.PeerID.Pretty(), self.RemotePeer.RawAddress)
+		Logger.log.Infof("PEER %s (address: %s) Reading stream", peerConn.RemotePeer.PeerID.Pretty(), peerConn.RemotePeer.RawAddress)
 		str, err := rw.ReadString(DelimMessageByte)
 		if err != nil {
-			self.IsConnected = false
+			peerConn.IsConnected = false
 			Logger.log.Error("---------------------------------------------------------------------")
-			Logger.log.Errorf("InMessageHandler ERROR %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
+			Logger.log.Errorf("InMessageHandler ERROR %s %s", peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
 			Logger.log.Error(err)
-			Logger.log.Errorf("InMessageHandler QUIT %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
+			Logger.log.Errorf("InMessageHandler QUIT %s %s", peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
 			Logger.log.Error("---------------------------------------------------------------------")
-			close(self.cWrite)
+			close(peerConn.cWrite)
 			return
 		}
 
 		// disconnect when received spam message
 		if len(str) >= SPAM_MESSAGE_SIZE {
 			Logger.log.Errorf("InMessageHandler received spam message")
-			self.ForceClose()
+			peerConn.ForceClose()
 			continue
 		}
 
@@ -99,7 +98,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
 				// cache message hash S
 				hashMsg := common.HashH(messageBody).String()
-				self.ListenerPeer.ReceivedHashMessage(hashMsg)
+				peerConn.ListenerPeer.ReceivedHashMessage(hashMsg)
 				// cache message hash E
 				err = json.Unmarshal(messageBody, &message)
 				if err != nil {
@@ -113,77 +112,77 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				// process message for each of message type
 				switch realType {
 				case reflect.TypeOf(&wire.MessageTx{}):
-					if self.Config.MessageListeners.OnTx != nil {
-						self.Config.MessageListeners.OnTx(self, message.(*wire.MessageTx))
+					if peerConn.Config.MessageListeners.OnTx != nil {
+						peerConn.Config.MessageListeners.OnTx(peerConn, message.(*wire.MessageTx))
 					}
 				case reflect.TypeOf(&wire.MessageBlock{}):
-					if self.Config.MessageListeners.OnBlock != nil {
-						self.Config.MessageListeners.OnBlock(self, message.(*wire.MessageBlock))
+					if peerConn.Config.MessageListeners.OnBlock != nil {
+						peerConn.Config.MessageListeners.OnBlock(peerConn, message.(*wire.MessageBlock))
 					}
 				case reflect.TypeOf(&wire.MessageGetBlocks{}):
-					if self.Config.MessageListeners.OnGetBlocks != nil {
-						self.Config.MessageListeners.OnGetBlocks(self, message.(*wire.MessageGetBlocks))
+					if peerConn.Config.MessageListeners.OnGetBlocks != nil {
+						peerConn.Config.MessageListeners.OnGetBlocks(peerConn, message.(*wire.MessageGetBlocks))
 					}
 				case reflect.TypeOf(&wire.MessageVersion{}):
-					if self.Config.MessageListeners.OnVersion != nil {
+					if peerConn.Config.MessageListeners.OnVersion != nil {
 						versionMessage := message.(*wire.MessageVersion)
-						self.Config.MessageListeners.OnVersion(self, versionMessage)
+						peerConn.Config.MessageListeners.OnVersion(peerConn, versionMessage)
 					}
 				case reflect.TypeOf(&wire.MessageVerAck{}):
-					self.verAckReceived = true
-					if self.Config.MessageListeners.OnVerAck != nil {
-						self.Config.MessageListeners.OnVerAck(self, message.(*wire.MessageVerAck))
+					peerConn.verAckReceived = true
+					if peerConn.Config.MessageListeners.OnVerAck != nil {
+						peerConn.Config.MessageListeners.OnVerAck(peerConn, message.(*wire.MessageVerAck))
 					}
 				case reflect.TypeOf(&wire.MessageGetAddr{}):
-					if self.Config.MessageListeners.OnGetAddr != nil {
-						self.Config.MessageListeners.OnGetAddr(self, message.(*wire.MessageGetAddr))
+					if peerConn.Config.MessageListeners.OnGetAddr != nil {
+						peerConn.Config.MessageListeners.OnGetAddr(peerConn, message.(*wire.MessageGetAddr))
 					}
 				case reflect.TypeOf(&wire.MessageAddr{}):
-					if self.Config.MessageListeners.OnGetAddr != nil {
-						self.Config.MessageListeners.OnAddr(self, message.(*wire.MessageAddr))
+					if peerConn.Config.MessageListeners.OnGetAddr != nil {
+						peerConn.Config.MessageListeners.OnAddr(peerConn, message.(*wire.MessageAddr))
 					}
 				case reflect.TypeOf(&wire.MessageBlockSigReq{}):
-					if self.Config.MessageListeners.OnRequestSign != nil {
-						self.Config.MessageListeners.OnRequestSign(self, message.(*wire.MessageBlockSigReq))
+					if peerConn.Config.MessageListeners.OnRequestSign != nil {
+						peerConn.Config.MessageListeners.OnRequestSign(peerConn, message.(*wire.MessageBlockSigReq))
 					}
 				case reflect.TypeOf(&wire.MessageInvalidBlock{}):
-					if self.Config.MessageListeners.OnInvalidBlock != nil {
-						self.Config.MessageListeners.OnInvalidBlock(self, message.(*wire.MessageInvalidBlock))
+					if peerConn.Config.MessageListeners.OnInvalidBlock != nil {
+						peerConn.Config.MessageListeners.OnInvalidBlock(peerConn, message.(*wire.MessageInvalidBlock))
 					}
 				case reflect.TypeOf(&wire.MessageBlockSig{}):
-					if self.Config.MessageListeners.OnBlockSig != nil {
-						self.Config.MessageListeners.OnBlockSig(self, message.(*wire.MessageBlockSig))
+					if peerConn.Config.MessageListeners.OnBlockSig != nil {
+						peerConn.Config.MessageListeners.OnBlockSig(peerConn, message.(*wire.MessageBlockSig))
 					}
 				case reflect.TypeOf(&wire.MessageGetChainState{}):
-					if self.Config.MessageListeners.OnGetChainState != nil {
-						self.Config.MessageListeners.OnGetChainState(self, message.(*wire.MessageGetChainState))
+					if peerConn.Config.MessageListeners.OnGetChainState != nil {
+						peerConn.Config.MessageListeners.OnGetChainState(peerConn, message.(*wire.MessageGetChainState))
 					}
 				case reflect.TypeOf(&wire.MessageChainState{}):
-					if self.Config.MessageListeners.OnChainState != nil {
-						self.Config.MessageListeners.OnChainState(self, message.(*wire.MessageChainState))
+					if peerConn.Config.MessageListeners.OnChainState != nil {
+						peerConn.Config.MessageListeners.OnChainState(peerConn, message.(*wire.MessageChainState))
 					}
 					/*case reflect.TypeOf(&wire.MessageRegistration{}):
-					  if self.Config.MessageListeners.OnRegistration != nil {
-						  self.Config.MessageListeners.OnRegistration(self, message.(*wire.MessageRegistration))
+					  if peerConn.Config.MessageListeners.OnRegistration != nil {
+						  peerConn.Config.MessageListeners.OnRegistration(peerConn, message.(*wire.MessageRegistration))
 					  }*/
 				case reflect.TypeOf(&wire.MessageSwapRequest{}):
-					if self.Config.MessageListeners.OnSwapRequest != nil {
-						self.Config.MessageListeners.OnSwapRequest(self, message.(*wire.MessageSwapRequest))
+					if peerConn.Config.MessageListeners.OnSwapRequest != nil {
+						peerConn.Config.MessageListeners.OnSwapRequest(peerConn, message.(*wire.MessageSwapRequest))
 					}
 				case reflect.TypeOf(&wire.MessageSwapSig{}):
-					if self.Config.MessageListeners.OnSwapSig != nil {
-						self.Config.MessageListeners.OnSwapSig(self, message.(*wire.MessageSwapSig))
+					if peerConn.Config.MessageListeners.OnSwapSig != nil {
+						peerConn.Config.MessageListeners.OnSwapSig(peerConn, message.(*wire.MessageSwapSig))
 					}
 				case reflect.TypeOf(&wire.MessageSwapUpdate{}):
-					if self.Config.MessageListeners.OnSwapUpdate != nil {
-						self.Config.MessageListeners.OnSwapUpdate(self, message.(*wire.MessageSwapUpdate))
+					if peerConn.Config.MessageListeners.OnSwapUpdate != nil {
+						peerConn.Config.MessageListeners.OnSwapUpdate(peerConn, message.(*wire.MessageSwapUpdate))
 					}
 				case reflect.TypeOf(&wire.MessageMsgCheck{}):
-					self.handleMsgCheck(message.(*wire.MessageMsgCheck))
+					peerConn.handleMsgCheck(message.(*wire.MessageMsgCheck))
 				case reflect.TypeOf(&wire.MessageMsgCheckResp{}):
-					self.handleMsgCheckResp(message.(*wire.MessageMsgCheckResp))
+					peerConn.handleMsgCheckResp(message.(*wire.MessageMsgCheckResp))
 				default:
-					Logger.log.Warnf("InMessageHandler Received unhandled message of type % from %v", realType, self)
+					Logger.log.Warnf("InMessageHandler Received unhandled message of type % from %v", realType, peerConn)
 				}
 			}(str)
 		}
@@ -196,10 +195,10 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 // handlers will not block on us sending a message.  That data is then passed on
 // to outHandler to be actually written.
 */
-func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
+func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 	for {
 		select {
-		case outMsg := <-self.sendMessageQueue:
+		case outMsg := <-peerConn.sendMessageQueue:
 			{
 				// Create and send message
 				messageByte, err := outMsg.message.JsonSerialize()
@@ -221,7 +220,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				message += DelimMessageStr
 
 				// send on p2p stream
-				Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.RemotePeer.PeerID.Pretty())
+				Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), peerConn.RemotePeer.PeerID.Pretty())
 				_, err = rw.Writer.WriteString(message)
 				if err != nil {
 					Logger.log.Critical("DM ERROR", err)
@@ -233,15 +232,15 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 					continue
 				}
 			}
-		case <-self.cWrite:
-			Logger.log.Infof("OutMessageHandler QUIT %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
+		case <-peerConn.cWrite:
+			Logger.log.Infof("OutMessageHandler QUIT %s %s", peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
 
-			self.IsConnected = false
+			peerConn.IsConnected = false
 
-			close(self.cDisconnect)
+			close(peerConn.cDisconnect)
 
-			if self.HandleDisconnected != nil {
-				go self.HandleDisconnected(self)
+			if peerConn.HandleDisconnected != nil {
+				go peerConn.HandleDisconnected(peerConn)
 			}
 
 			return
@@ -255,9 +254,9 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 // encoding/decoding blocks and transactions.
 //
 // This function is safe for concurrent access.
-func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
+func (peerConn *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
 	go func() {
-		if self.IsConnected {
+		if peerConn.IsConnected {
 			data, _ := msg.JsonSerialize()
 			if len(data) >= HEAVY_MESSAGE_SIZE && msg.MessageType() != wire.CmdMsgCheck && msg.MessageType() != wire.CmdMsgCheckResp {
 				hash := common.HashH(data).String()
@@ -269,19 +268,19 @@ func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<-
 				numRetries++
 				bTimeOut := false
 				// new model for received response
-				self.cMsgHash[hash] = make(chan bool)
+				peerConn.cMsgHash[hash] = make(chan bool)
 				cTimeOut := make(chan struct{})
 				bOk := false
 				// send msg for check has
 				go func() {
 					msgCheck, _ := wire.MakeEmptyMessage(wire.CmdMsgCheck)
 					msgCheck.(*wire.MessageMsgCheck).Hash = hash
-					self.QueueMessageWithEncoding(msgCheck, nil)
+					peerConn.QueueMessageWithEncoding(msgCheck, nil)
 				}()
 				Logger.log.Infof("QueueMessageWithEncoding WAIT result check hash %s", hash)
 				for {
 					select {
-					case accept := <-self.cMsgHash[hash]:
+					case accept := <-peerConn.cMsgHash[hash]:
 						Logger.log.Infof("QueueMessageWithEncoding RECEIVED hash %s accept %s", hash, accept)
 						bOk = accept
 						cTimeOut = nil
@@ -293,7 +292,7 @@ func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<-
 						break
 					}
 					if cTimeOut == nil {
-						delete(self.cMsgHash, hash)
+						delete(peerConn.cMsgHash, hash)
 						break
 					}
 				}
@@ -315,10 +314,10 @@ func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<-
 				}
 
 				if bOk {
-					self.sendMessageQueue <- outMsg{message: msg, doneChan: doneChan}
+					peerConn.sendMessageQueue <- outMsg{message: msg, doneChan: doneChan}
 				}
 			} else {
-				self.sendMessageQueue <- outMsg{message: msg, doneChan: doneChan}
+				peerConn.sendMessageQueue <- outMsg{message: msg, doneChan: doneChan}
 			}
 		}
 	}()
