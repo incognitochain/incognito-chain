@@ -46,19 +46,19 @@ var (
 
 var (
 	// ErrInvalidMnemonic is returned when trying to use a malformed Mnemonic.
-	ErrInvalidMnemonic = errors.New("Invalid menomic")
+	ErrInvalidMnemonic = errors.New("invalid menomic")
 
 	// ErrEntropyLengthInvalid is returned when trying to use an Entropy set with
 	// an invalid size.
-	ErrEntropyLengthInvalid = errors.New("Entropy length must be [128, 256] and a multiple of 32")
+	ErrEntropyLengthInvalid = errors.New("entropy length must be [128, 256] and a multiple of 32")
 
 	// ErrValidatedSeedLengthMismatch is returned when a validated Seed is not the
 	// same size as the given Seed. This should never happen is present only as a
 	// sanity assertion.
-	ErrValidatedSeedLengthMismatch = errors.New("Seed length does not match validated Seed length")
+	ErrValidatedSeedLengthMismatch = errors.New("seed length does not match validated Seed length")
 
 	// ErrChecksumIncorrect is returned when Entropy has the incorrect checksum.
-	ErrChecksumIncorrect = errors.New("Checksum incorrect")
+	ErrChecksumIncorrect = errors.New("checksum incorrect")
 )
 
 func init() {
@@ -96,7 +96,7 @@ func (mnemonicGen *MnemonicGenerator) NewEntropy(bitSize int) ([]byte, error) {
 func (mnemonicGen *MnemonicGenerator) EntropyFromMnemonic(mnemonic string) ([]byte, error) {
 	mnemonicSlice, isValid := mnemonicGen.splitMnemonicWords(mnemonic)
 	if !isValid {
-		return nil, errors.New("Invalid Mnemonic")
+		return nil, errors.New("invalid Mnemonic")
 	}
 
 	b := big.NewInt(0)
@@ -129,7 +129,7 @@ func (mnemonicGen *MnemonicGenerator) EntropyFromMnemonic(mnemonic string) ([]by
 	}
 
 	if checksum.Cmp(entropyChecksum) != 0 {
-		return nil, errors.New("Mnemonic's Entropy doesn't match its checksum")
+		return nil, errors.New("mnemonic's Entropy doesn't match its checksum")
 	}
 
 	// return (padded) Entropy
