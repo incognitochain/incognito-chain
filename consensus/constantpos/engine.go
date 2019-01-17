@@ -101,7 +101,7 @@ func (self *Engine) Start() error {
 									continue
 								}
 							case "beacon-validator":
-								msgReady, _ := MakeMsgBFTReady()
+								msgReady, _ := MakeMsgBFTReady(self.config.BlockChain.BestState.Beacon.Hash())
 								self.config.Server.PushMessageToBeacon(msgReady)
 								resBlk, err = bftProtocol.Start(false, "beacon", 0)
 								if err != nil {
@@ -152,7 +152,7 @@ func (self *Engine) Start() error {
 										continue
 									}
 								case "shard-validator":
-									msgReady, _ := MakeMsgBFTReady()
+									msgReady, _ := MakeMsgBFTReady(self.config.BlockChain.BestState.Shard[shardID].Hash())
 									self.config.Server.PushMessageToShard(msgReady, shardID)
 									resBlk, err = bftProtocol.Start(false, "shard", shardID)
 									if err != nil {

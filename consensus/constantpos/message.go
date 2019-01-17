@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/ninjadotorg/constant/common"
+
 	"github.com/ninjadotorg/constant/blockchain"
 
 	"github.com/ninjadotorg/constant/wire"
@@ -306,12 +308,13 @@ func MakeMsgBFTCommit(commitSig string, R string, validatorsIdx []int, pubkey st
 	return msg, nil
 }
 
-func MakeMsgBFTReady() (wire.Message, error) {
+func MakeMsgBFTReady(bestStateHash common.Hash) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTReady)
 	if err != nil {
 		Logger.log.Error(err)
 		return msg, err
 	}
+	msg.(*wire.MessageBFTReady).BestStateHash = bestStateHash
 	msg.(*wire.MessageBFTReady).Timestamp = time.Now().Unix()
 	return msg, nil
 }

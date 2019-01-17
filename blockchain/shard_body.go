@@ -143,3 +143,12 @@ func (self *ShardBody) CalcMerkleRootTx() *common.Hash {
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 	return merkleRoot
 }
+
+func (self *ShardBody) ExtractCrossShardMap() (map[byte][]common.Hash, error) {
+	var crossShardMap map[byte][]common.Hash
+	crossShardMap = make(map[byte][]common.Hash)
+	for _, crossblock := range self.CrossOutputCoin {
+		crossShardMap[crossblock.ShardID] = append(crossShardMap[crossblock.ShardID], crossblock.BlockHash)
+	}
+	return crossShardMap, nil
+}
