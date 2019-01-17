@@ -68,8 +68,8 @@ func (bc *BlockChain) processCMBInitRequest(tx metadata.Transaction) error {
 
 	// Capital of the CMB
 	txPrivacy := tx.(*transaction.Tx)
-	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	dcbPk := accountDCB.KeySet.PaymentAddress.Pk
+	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
 	capital := uint64(0)
 	for _, coin := range txPrivacy.Proof.OutputCoins {
 		if bytes.Equal(coin.CoinDetails.PublicKey.Compress(), dcbPk) {

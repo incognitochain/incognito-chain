@@ -12,7 +12,7 @@ func main() {
 
 	burnPubKeyE := privacy.PedCom.G[0].Hash(1000000)
 	burnPubKey := burnPubKeyE.Compress()
-	burnKey := wallet.Key{
+	burnKey := wallet.KeyWallet{
 		KeySet: cashec.KeySet{
 			PaymentAddress: privacy.PaymentAddress{
 				Pk: burnPubKey,

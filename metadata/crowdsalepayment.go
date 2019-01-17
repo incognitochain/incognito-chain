@@ -31,7 +31,7 @@ func NewCrowdsalePayment(csResData map[string]interface{}) *CrowdsalePayment {
 		RequestedTxID: &common.Hash{},
 		SaleID:        saleID,
 	}
-	result.Type = CrowdsalePaymentMeta
+	result.Type = CrowdSalePaymentMeta
 	copy(result.RequestedTxID[:], s)
 	return result
 }
@@ -45,9 +45,9 @@ func (csRes *CrowdsalePayment) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	}
 
 	// Check if sending address is DCB's
-	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	if bytes.Equal(saleData.SellingAsset, common.ConstantID[:]) {
-		if !bytes.Equal(txr.GetSigPubKey(), accountDCB.KeySet.PaymentAddress.Pk[:]) {
+	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	if saleData.SellingAsset.IsEqual(&common.ConstantID) {
+		if !bytes.Equal(txr.GetSigPubKey(), keyWalletDCBAccount.KeySet.PaymentAddress.Pk[:]) {
 			return common.FalseValue, fmt.Errorf("Crowdsale payment must send Constant from DCB address")
 		}
 	} else if bytes.Equal(saleData.SellingAsset[:8], common.BondTokenID[:8]) {

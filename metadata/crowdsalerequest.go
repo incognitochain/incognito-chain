@@ -44,7 +44,7 @@ func NewCrowdsaleRequest(csReqData map[string]interface{}) *CrowdsaleRequest {
 		Amount:         n,
 		AssetPrice:     0,
 	}
-	result.Type = CrowdsaleRequestMeta
+	result.Type = CrowdSaleRequestMeta
 	return result
 }
 
@@ -61,8 +61,8 @@ func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	}
 
 	// Check if Payment address is DCB's
-	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	if !bytes.Equal(csReq.PaymentAddress.Pk[:], accountDCB.KeySet.PaymentAddress.Pk[:]) || !bytes.Equal(csReq.PaymentAddress.Tk[:], accountDCB.KeySet.PaymentAddress.Tk[:]) {
+	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	if !bytes.Equal(csReq.PaymentAddress.Pk[:], keyWalletDCBAccount.KeySet.PaymentAddress.Pk[:]) || !bytes.Equal(csReq.PaymentAddress.Tk[:], keyWalletDCBAccount.KeySet.PaymentAddress.Tk[:]) {
 		return common.FalseValue, errors.Errorf("Crowdsale request must send CST to DCBAddress")
 	}
 	return common.TrueValue, nil

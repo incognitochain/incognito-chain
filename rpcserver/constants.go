@@ -65,8 +65,8 @@ const (
 	// multisig for board spending
 	CreateSignatureOnCustomTokenTx       = "createsignatureoncustomtokentx"
 	GetListDCBBoard                      = "getlistdcbboard"
-	GetListCBBoard                       = "getlistcbboard"
 	GetListGOVBoard                      = "getlistgovboard"
+	GetListCBBoard                       = "getlistcbboard"
 	GetGOVParams                         = "getgovparams"
 	GetDCBParams                         = "getdcbparams"
 	GetGOVConstitution                   = "getgovconstitution"
@@ -95,13 +95,14 @@ const (
 	SetAmountVoteToken                   = "setamountvotetoken"
 
 	//vote propopsal
-	GetEncryptionFlag                        = "getencryptionflag"
-	SetEncryptionFlag                        = "testsetencryptionflag"
-	GetEncryptionLastBlockHeightFlag         = "getencryptionlastblockheightflag"
-	CreateAndSendSealLv3VoteProposal         = "createandsendseallv3voteproposal"
-	CreateAndSendSealLv2VoteProposal         = "createandsendseallv2voteproposal"
-	CreateAndSendSealLv1VoteProposal         = "createandsendseallv1voteproposal"
-	CreateAndSendNormalVoteProposalFromOwner = "createandsendnormalvoteproposalfromowner"
+	GetEncryptionFlag                         = "getencryptionflag"
+	SetEncryptionFlag                         = "testsetencryptionflag"
+	GetEncryptionLastBlockHeightFlag          = "getencryptionlastblockheightflag"
+	CreateAndSendSealLv3VoteProposal          = "createandsendseallv3voteproposal"
+	CreateAndSendSealLv2VoteProposal          = "createandsendseallv2voteproposal"
+	CreateAndSendSealLv1VoteProposal          = "createandsendseallv1voteproposal"
+	CreateAndSendNormalVoteProposalFromOwner  = "createandsendnormalvoteproposalfromowner"
+	CreateAndSendNormalVoteProposalFromSealer = "createandsendnormalvoteproposalfromsealer"
 
 	// Submit Proposal
 	CreateAndSendSubmitDCBProposalTx = "createandsendsubmitdcbproposaltx"

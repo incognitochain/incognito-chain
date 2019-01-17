@@ -378,13 +378,13 @@ func BytesToUint8(b []byte) uint8 {
 }
 
 func BytesToInt32(b []byte) int32 {
-	i, _ := strconv.Atoi(string(b))
-	return int32(i)
+	return int32(binary.LittleEndian.Uint32(b))
 }
 
 func Int32ToBytes(value int32) []byte {
-	b := strconv.Itoa(int(value))
-	return []byte(b)
+	b := make([]byte, 4)
+	binary.LittleEndian.PutUint32(b, uint32(value))
+	return b
 }
 
 func BytesToUint64(b []byte) uint64 {
@@ -433,4 +433,16 @@ func BytesPlusOne(b []byte) []byte {
 		}
 	}
 	return res
+}
+
+func IsOffChainAsset(assetID *Hash) bool {
+	return bytes.Equal(assetID[:8], BTCAssetID[:8])
+}
+
+func IsBondAsset(assetID *Hash) bool {
+	return bytes.Equal(assetID[:8], BondTokenID[:8])
+}
+
+func IsDCBTokenAsset(assetID *Hash) bool {
+	return assetID.IsEqual(&ConstantID)
 }
