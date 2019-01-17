@@ -31,11 +31,11 @@ type Dividend struct {
 
 func (div *Dividend) Hash() *common.Hash {
 	record := fmt.Sprintf("%d", div.PayoutID)
-	record += string(div.TokenID[:])
-	record += string(div.PaymentAddress.Bytes())
+	record += div.TokenID.String()
+	record += div.PaymentAddress.String()
 
 	// final hash
-	record += string(div.MetadataBase.Hash()[:])
+	record += div.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -46,7 +46,7 @@ func (div *Dividend) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRet
 	proposal := &DividendProposal{}
 	_, tokenHolders, correctAmounts, err := bcr.GetAmountPerAccount(proposal)
 	if err != nil {
-		return false, err
+		return common.FalseValue, err
 	}
 
 	// Check if user is not rewarded and amount is correct
@@ -60,29 +60,29 @@ func (div *Dividend) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRet
 			if bytes.Equal(paymentAddress.Pk[:], rec) {
 				count += 1
 				if correctAmounts[i] != recAmounts[j] {
-					return false, fmt.Errorf("Payment amount for user %s incorrect, found %d instead of %d", holder, recAmounts[j], correctAmounts[i])
+					return common.FalseValue, fmt.Errorf("Payment amount for user %s incorrect, found %d instead of %d", holder, recAmounts[j], correctAmounts[i])
 				}
 			}
 		}
 
 		if count == 0 {
-			return false, fmt.Errorf("User %s isn't eligible for receiving dividend", rec)
+			return common.FalseValue, fmt.Errorf("User %s isn't eligible for receiving dividend", rec)
 		} else if count > 1 {
-			return false, fmt.Errorf("Multiple dividend payments found for user %s", rec)
+			return common.FalseValue, fmt.Errorf("Multiple dividend payments found for user %s", rec)
 		}
 	}
-	return false, nil
+	return common.FalseValue, nil
 }
 
 func (div *Dividend) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	return false, true, nil // No need to check for fee
+	return common.FalseValue, common.TrueValue, nil // No need to check for fee
 }
 
 func (div *Dividend) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }
 
-// CheckTransactionFee returns true since loan response tx doesn't have fee
+// CheckTransactionFee returns common.TrueValue since loan response tx doesn't have fee
 func (div *Dividend) CheckTransactionFee(tr Transaction, minFee uint64) bool {
-	return true
+	return common.TrueValue
 }

@@ -1,11 +1,12 @@
 package transaction
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/wallet"
 	"strconv"
 )
 
@@ -20,8 +21,7 @@ type TxTokenPrivacyData struct {
 	Amount   uint64 // init amount
 }
 
-// Hash - return hash of custom token data, be used as Token ID
-func (self TxTokenPrivacyData) Hash() (*common.Hash, error) {
+func (self TxTokenPrivacyData) String() string {
 	record := self.PropertyName
 	record += self.PropertySymbol
 	record += fmt.Sprintf("%d", self.Amount)
@@ -39,7 +39,21 @@ func (self TxTokenPrivacyData) Hash() (*common.Hash, error) {
 			}
 		}
 	}
-	hash := common.DoubleHashH([]byte(record))
+	return record
+}
+
+func (self TxTokenPrivacyData) JSONString() string {
+	data, err := json.MarshalIndent(self, common.EmptyString, "\t")
+	if err != nil {
+		Logger.log.Error(err)
+		return common.EmptyString
+	}
+	return string(data)
+}
+
+// Hash - return hash of custom token data, be used as Token ID
+func (self TxTokenPrivacyData) Hash() (*common.Hash, error) {
+	hash := common.DoubleHashH([]byte(self.String()))
 	return &hash, nil
 }
 

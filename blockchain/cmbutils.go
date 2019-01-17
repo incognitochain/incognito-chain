@@ -4,32 +4,12 @@ import (
 	"bytes"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/pkg/errors"
 )
-
-func buildRefundTx(
-	receiver privacy.PaymentAddress,
-	amount uint64,
-	producerPrivateKey *privacy.SpendingKey,
-	db database.DatabaseInterface,
-) (*transaction.Tx, error) {
-	meta := &metadata.CMBInitRefund{
-		MainAccount:  receiver,
-		MetadataBase: metadata.MetadataBase{Type: metadata.CMBInitRefundMeta},
-	}
-	metaList := []metadata.Metadata{meta}
-	amounts := []uint64{amount}
-	txs, err := transaction.BuildCoinbaseTxs([]*privacy.PaymentAddress{&receiver}, amounts, producerPrivateKey, db, metaList)
-	if err != nil {
-		return nil, err
-	}
-	return txs[0], nil // only one tx in slice
-}
 
 func (blockgen *BlkTmplGenerator) buildCMBRefund(
 	sourceTxns []*metadata.TxDesc,
@@ -39,19 +19,21 @@ func (blockgen *BlkTmplGenerator) buildCMBRefund(
 	// Get old block
 	refunds := []*transaction.Tx{}
 	header := blockgen.chain.BestState[chainID].BestBlock.Header
-	lookbackBlockHeight := header.Height - int32(metadata.CMBInitRefundPeriod)
-	if lookbackBlockHeight < 0 {
+	lookBackBlockHeight := header.Height - int32(metadata.CMBInitRefundPeriod)
+	if lookBackBlockHeight < 0 {
 		return refunds, nil
 	}
-	lookbackBlock, err := blockgen.chain.GetBlockByBlockHeight(lookbackBlockHeight, chainID)
+	lookBackBlock, err := blockgen.chain.GetBlockByBlockHeight(lookBackBlockHeight, chainID)
 	if err != nil {
 		Logger.log.Error(err)
 		return refunds, nil
 	}
 
 	// Build refund tx for each cmb init request that hasn't been approved
-	for _, tx := range lookbackBlock.Transactions {
-		if tx.GetMetadataType() != metadata.CMBInitRequestMeta {
+	for _, tx := range lookBackBlock.Transactions {
+		metaDataType := tx.GetMetadataType()
+		Logger.log.Infof("buildCMBRefund: Metadata type of tx: %d", metaDataType)
+		if metaDataType != metadata.CMBInitRequestMeta {
 			continue
 		}
 
@@ -59,12 +41,14 @@ func (blockgen *BlkTmplGenerator) buildCMBRefund(
 		meta := tx.GetMetadata().(*metadata.CMBInitRequest)
 		_, _, capital, _, state, _, err := blockgen.chain.GetCMB(meta.MainAccount.Bytes())
 		if err != nil {
+			Logger.log.Error(errors.Wrap(err, "buildCMBRefund"))
 			// Unexpected error, cannot create a block if CMB init request is not refundable
 			return nil, errors.Errorf("error retrieving cmb for building refund")
 		}
 		if state == metadata.CMBRequested {
-			refund, err := buildRefundTx(meta.MainAccount, capital, producerPrivateKey, blockgen.chain.GetDatabase())
+			refund, err := transaction.BuildRefundTx(meta.MainAccount, capital, producerPrivateKey, blockgen.chain.GetDatabase())
 			if err != nil {
+				Logger.log.Error(errors.Wrap(err, "buildCMBRefund"))
 				return nil, errors.Errorf("error building refund tx for cmb init request")
 			}
 			refunds = append(refunds, refund)
@@ -95,13 +79,17 @@ func (bc *BlockChain) processCMBInitRequest(tx metadata.Transaction) error {
 
 	// Store in DB
 	txHash := tx.Hash()
-	return bc.config.DataBase.StoreCMB(meta.MainAccount.Bytes(), meta.ReserveAccount.Bytes(), members, capital, txHash[:])
+	err := bc.config.DataBase.StoreCMB(meta.MainAccount.Bytes(), meta.ReserveAccount.Bytes(), members, capital, txHash[:])
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (bc *BlockChain) processCMBInitResponse(tx metadata.Transaction) error {
 	// Store board member who approved this cmb init request
 	meta := tx.GetMetadata().(*metadata.CMBInitResponse)
-	sender := tx.GetJSPubKey()
+	sender := tx.GetSigPubKey()
 	err := bc.config.DataBase.StoreCMBResponse(meta.MainAccount.Bytes(), sender)
 	if err != nil {
 		return err
@@ -111,20 +99,32 @@ func (bc *BlockChain) processCMBInitResponse(tx metadata.Transaction) error {
 	approvers, _ := bc.config.DataBase.GetCMBResponse(meta.MainAccount.Bytes())
 	minApproval := bc.GetDCBParams().MinCMBApprovalRequire
 	if len(approvers) == int(minApproval) {
-		return bc.config.DataBase.UpdateCMBState(meta.MainAccount.Bytes(), metadata.CMBApproved)
+		err := bc.config.DataBase.UpdateCMBState(meta.MainAccount.Bytes(), metadata.CMBApproved)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 	return nil
 }
 
 func (bc *BlockChain) processCMBInitRefund(tx metadata.Transaction) error {
 	meta := tx.GetMetadata().(*metadata.CMBInitRefund)
-	return bc.config.DataBase.UpdateCMBState(meta.MainAccount.Bytes(), metadata.CMBRefunded)
+	err := bc.config.DataBase.UpdateCMBState(meta.MainAccount.Bytes(), metadata.CMBRefunded)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (bc *BlockChain) processCMBDepositSend(tx metadata.Transaction) error {
 	meta := tx.GetMetadata().(*metadata.CMBDepositSend)
 	hash := tx.Hash()
-	return bc.config.DataBase.StoreDepositSend(meta.ContractID[:], hash[:])
+	err := bc.config.DataBase.StoreDepositSend(meta.ContractID[:], hash[:])
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (bc *BlockChain) processCMBWithdrawRequest(tx metadata.Transaction) error {
@@ -141,7 +141,11 @@ func (bc *BlockChain) processCMBWithdrawRequest(tx metadata.Transaction) error {
 	contractMeta := txContract.GetMetadata().(*metadata.CMBDepositContract)
 	height, _ := bc.GetTxChainHeight(tx)
 	endBlock := height + contractMeta.NoticePeriod
-	return bc.config.DataBase.StoreNoticePeriod(endBlock, hash[:])
+	err = bc.config.DataBase.StoreNoticePeriod(endBlock, hash[:])
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (bc *BlockChain) processCMBWithdrawResponse(tx metadata.Transaction) error {
@@ -153,7 +157,11 @@ func (bc *BlockChain) processCMBWithdrawResponse(tx metadata.Transaction) error 
 	}
 	metaReq := txRequest.GetMetadata().(*metadata.CMBWithdrawRequest)
 	state := metadata.WithdrawFulfilled
-	return bc.config.DataBase.UpdateWithdrawRequestState(metaReq.ContractID[:], state)
+	err = bc.config.DataBase.UpdateWithdrawRequestState(metaReq.ContractID[:], state)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (bc *BlockChain) findLateWithdrawResponse(blockHeight uint64) error {
