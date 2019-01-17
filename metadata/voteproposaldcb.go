@@ -151,20 +151,6 @@ func NewSealedLv3DCBVoteProposalMetadata(
 	}
 }
 
-func NewSealedLv3DCBVoteProposalMetadataFromJson(data interface{}) *SealedLv3DCBVoteProposalMetadata {
-	dataSealedLv3DCBVoteProposal := data.(map[string]interface{})
-
-	threePaymentBytes := common.SliceInterfaceToSliceSliceByte(dataSealedLv3DCBVoteProposal["LockerPaymentAddress"].([]interface{}))
-	listPaymentAddress := make([]privacy.PaymentAddress, 0)
-	for _, i := range threePaymentBytes {
-		listPaymentAddress = append(listPaymentAddress, *privacy.NewPaymentAddress(i))
-	}
-	return NewSealedLv3DCBVoteProposalMetadata(
-		[]byte(dataSealedLv3DCBVoteProposal["SealedVoteProposal"].(string)),
-		listPaymentAddress,
-	)
-}
-
 type NormalDCBVoteProposalFromSealerMetadata struct {
 	NormalVoteProposalFromSealerMetadata NormalVoteProposalFromSealerMetadata
 

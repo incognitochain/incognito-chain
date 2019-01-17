@@ -20,13 +20,16 @@ func iPlusPlus(x *int) int {
 
 func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	paymentAddressByte := []byte(arrayParams[0].(string))
-	paymentAddress := privacy.NewPaymentAddress(paymentAddressByte)
+	paymentAddressData := arrayParams[0].(string)
+	paymentAddress, err := self.GetPaymentAddressFromSenderKeyParams(paymentAddressData)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 	db := *self.config.Database
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 
 	// For DCB voting token
-	result.PaymentAddress = string(paymentAddressByte)
+	result.PaymentAddress = string(paymentAddressData)
 	item := jsonresult.CustomTokenBalance{}
 	item.Name = "DCB voting token"
 	item.Symbol = "DCB Voting Token"
@@ -61,8 +64,13 @@ func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-c
 
 func (self RpcServer) handleSetAmountVoteToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	paymentAddressByte := []byte(arrayParams[0].(string))
-	paymentAddress := privacy.NewPaymentAddress(paymentAddressByte)
+	paymentAddressSenderKey := arrayParams[0].(string)
+	paymentAddress, err1 := self.GetPaymentAddressFromSenderKeyParams(paymentAddressSenderKey)
+	if err1 != nil {
+		return nil, NewRPCError(ErrUnexpected, err1)
+	}
+	p2, _ := self.GetPaymentAddressFromSenderKeyParams(string(paymentAddressSenderKey))
+	_ = p2
 	db := *self.config.Database
 
 	amountDCBVote := uint32(arrayParams[1].(float64))
@@ -139,7 +147,7 @@ func (self RpcServer) buildRawSealLv3VoteProposalTransaction(
 func (self RpcServer) ListPaymentAddressFromListSenderKey(listSenderKey []string) []privacy.PaymentAddress {
 	paymentAddresses := make([]privacy.PaymentAddress, 0)
 	for i := 0; i < 3; i++ {
-		new, _ := self.GetPaymentAddressFromPrivateKeyParams(listSenderKey[i])
+		new, _ := self.GetPaymentAddressFromSenderKeyParams(listSenderKey[i])
 		paymentAddresses = append(paymentAddresses, *new)
 	}
 	return paymentAddresses
@@ -148,7 +156,7 @@ func (self RpcServer) ListPaymentAddressFromListSenderKey(listSenderKey []string
 func (self RpcServer) ListPubKeyFromListSenderKey(threePaymentAddress []string) ([][]byte, error) {
 	pubKeys := make([][]byte, len(threePaymentAddress))
 	for i := 0; i < len(threePaymentAddress); i++ {
-		paymentAddress, err := self.GetPaymentAddressFromPrivateKeyParams(threePaymentAddress[i])
+		paymentAddress, err := self.GetPaymentAddressFromSenderKeyParams(threePaymentAddress[i])
 		if err != nil {
 			return nil, err
 		}
