@@ -60,7 +60,6 @@ const (
 	GetBalanceByPaymentAddress = "getbalancebypaymentaddress"
 	GetReceivedByAccount       = "getreceivedbyaccount"
 	SetTxFee                   = "settxfee"
-	EncryptData                = "encryptdata"
 
 	// multisig for board spending
 	CreateSignatureOnCustomTokenTx       = "createsignatureoncustomtokentx"
