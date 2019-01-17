@@ -227,7 +227,7 @@ func (db *db) StoreCrossShard(shardID byte, crossShardID byte, blkHeight uint64,
 	binary.LittleEndian.PutUint64(buf, blkHeight)
 	prefix := append([]byte{shardID}, append([]byte{crossShardID}, crossBlkHash[:]...)...)
 	// csh-ShardID-CrossShardID-CrossShardBlockHash : ShardBlockHeight
-	key := db.GetKey(string(crossShardKeyPrefix), prefix)
+	key := append(crossShardKeyPrefix, prefix...)
 	if err := db.lvdb.Put(key, buf, nil); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
@@ -237,7 +237,7 @@ func (db *db) StoreCrossShard(shardID byte, crossShardID byte, blkHeight uint64,
 func (db *db) HasCrossShard(shardID byte, crossShardID byte, crossBlkHash *common.Hash) error {
 	prefix := append([]byte{shardID}, append([]byte{crossShardID}, crossBlkHash[:]...)...)
 	// csh-ShardID-CrossShardID-CrossShardBlockHash : ShardBlockHeight
-	key := db.GetKey(string(crossShardKeyPrefix), prefix)
+	key := append(crossShardKeyPrefix, prefix...)
 	if ok, _ := db.HasValue(key); ok {
 		return nil
 	}
