@@ -1,14 +1,14 @@
 package rpcserver
 
 import (
-	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
-	"strconv"
 	"encoding/hex"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/transaction"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
+	"github.com/ninjadotorg/constant/transaction"
+	"strconv"
 )
 
 // handleGetBestBlock implements the getbestblock command.
@@ -227,11 +227,11 @@ func (rpcServer RpcServer) handleGetBlockHeader(params interface{}, closeChan <-
 		err := bhash.Decode(&bhash, block)
 		Logger.log.Info(bhash)
 		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, errors.New("Invalid blockhash format"))
+			return nil, NewRPCError(ErrUnexpected, errors.New("invalid blockhash format"))
 		}
 		block, err := rpcServer.config.BlockChain.GetBlockByBlockHash(&bhash)
 		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, errors.New("Block not exist"))
+			return nil, NewRPCError(ErrUnexpected, errors.New("block not exist"))
 		}
 		result.Header = block.Header
 		result.BlockNum = int(block.Header.Height) + 1
@@ -240,11 +240,11 @@ func (rpcServer RpcServer) handleGetBlockHeader(params interface{}, closeChan <-
 	case "blocknum":
 		bnum, err := strconv.Atoi(block)
 		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, errors.New("Invalid blocknum format"))
+			return nil, NewRPCError(ErrUnexpected, errors.New("invalid blocknum format"))
 		}
 		fmt.Println(chainID)
 		if int32(bnum-1) > rpcServer.config.BlockChain.BestState[uint8(chainID)].Height || bnum <= 0 {
-			return nil, NewRPCError(ErrUnexpected, errors.New("Block not exist"))
+			return nil, NewRPCError(ErrUnexpected, errors.New("block not exist"))
 		}
 		block, _ := rpcServer.config.BlockChain.GetBlockByBlockHeight(int32(bnum-1), uint8(chainID))
 		result.Header = block.Header
@@ -252,7 +252,7 @@ func (rpcServer RpcServer) handleGetBlockHeader(params interface{}, closeChan <-
 		result.ChainID = uint8(chainID)
 		result.BlockHash = block.Hash().String()
 	default:
-		return nil, NewRPCError(ErrUnexpected, errors.New("Wrong request format"))
+		return nil, NewRPCError(ErrUnexpected, errors.New("wrong request format"))
 	}
 
 	return result, nil
