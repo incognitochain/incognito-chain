@@ -83,19 +83,19 @@ func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Meta
 	fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
 
 	// param #2: list receiver
-	receiversParam := make(map[string]interface{})
+	receiversPaymentAddressStrParam := make(map[string]interface{})
 	if arrayParams[1] != nil {
-		receiversParam = arrayParams[1].(map[string]interface{})
+		receiversPaymentAddressStrParam = arrayParams[1].(map[string]interface{})
 	}
 	paymentInfos := make([]*privacy.PaymentInfo, 0)
-	for pubKeyStr, amount := range receiversParam {
-		receiverPubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
+	for paymentAddressStr, amount := range receiversPaymentAddressStrParam {
+		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		paymentInfo := &privacy.PaymentInfo{
 			Amount:         uint64(amount.(float64)),
-			PaymentAddress: receiverPubKey.KeySet.PaymentAddress,
+			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
 		}
 		paymentInfos = append(paymentInfos, paymentInfo)
 	}
@@ -155,19 +155,19 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	}
 
 	// param #2: list receiver
-	receiversParam := make(map[string]interface{})
+	receiversPaymentAddressParam := make(map[string]interface{})
 	if arrayParams[1] != nil {
-		receiversParam = arrayParams[1].(map[string]interface{})
+		receiversPaymentAddressParam = arrayParams[1].(map[string]interface{})
 	}
 	paymentInfos := make([]*privacy.PaymentInfo, 0)
-	for pubKeyStr, amount := range receiversParam {
-		receiverPubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
+	for paymentAddressStr, amount := range receiversPaymentAddressParam {
+		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		paymentInfo := &privacy.PaymentInfo{
 			Amount:         uint64(amount.(float64)),
-			PaymentAddress: receiverPubKey.KeySet.PaymentAddress,
+			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
 		}
 		paymentInfos = append(paymentInfos, paymentInfo)
 	}
@@ -289,19 +289,19 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 	}
 
 	// param #2: list receiver
-	receiversParam := make(map[string]interface{})
+	receiversPaymentAddressStrParam := make(map[string]interface{})
 	if arrayParams[1] != nil {
-		receiversParam = arrayParams[1].(map[string]interface{})
+		receiversPaymentAddressStrParam = arrayParams[1].(map[string]interface{})
 	}
 	paymentInfos := make([]*privacy.PaymentInfo, 0)
-	for pubKeyStr, amount := range receiversParam {
-		receiverPubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
+	for paymentAddressStr, amount := range receiversPaymentAddressStrParam {
+		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		paymentInfo := &privacy.PaymentInfo{
 			Amount:         uint64(amount.(float64)),
-			PaymentAddress: receiverPubKey.KeySet.PaymentAddress,
+			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
 		}
 		paymentInfos = append(paymentInfos, paymentInfo)
 	}
