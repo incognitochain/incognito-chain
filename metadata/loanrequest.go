@@ -44,12 +44,12 @@ func NewLoanRequest(data map[string]interface{}) (Metadata, error) {
 		return nil, errors.Errorf("Collateral amount incorrect")
 	}
 	result.CollateralAmount = n
-	key, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
+	keyWallet, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
 	fmt.Printf("err receiveaddress: %v\n", err)
 	if err != nil {
 		return nil, errors.Errorf("ReceiveAddress incorrect")
 	}
-	result.ReceiveAddress = &key.KeySet.PaymentAddress
+	result.ReceiveAddress = &keyWallet.KeySet.PaymentAddress
 
 	s, err := hex.DecodeString(data["LoanID"].(string))
 	if err != nil {

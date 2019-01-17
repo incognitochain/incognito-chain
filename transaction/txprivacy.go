@@ -741,10 +741,12 @@ func (tx *Tx) IsCoinsBurning() bool {
 		return false
 	}
 	senderPKBytes := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
-	buringAcc, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
+	keyWalletBurningAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
+	keysetBurningAccount := keyWalletBurningAccount.KeySet
+	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
 	for _, outCoin := range tx.Proof.OutputCoins {
 		outPKBytes := outCoin.CoinDetails.PublicKey.Compress()
-		if !bytes.Equal(senderPKBytes, outPKBytes) && !bytes.Equal(outPKBytes, buringAcc.KeySet.PaymentAddress.Pk[:]) {
+		if !bytes.Equal(senderPKBytes, outPKBytes) && !bytes.Equal(outPKBytes, paymentAddressBurningAccount.Pk[:]) {
 			return false
 		}
 	}

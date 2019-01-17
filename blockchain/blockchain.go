@@ -753,16 +753,16 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 					if err := self.config.DataBase.StoreCrowdsaleData(
 						data.SaleID,
 						data.EndBlock,
-						data.BuyingAsset,
+						data.BuyingAsset[:],
 						data.BuyingAmount,
-						data.SellingAsset,
+						data.SellingAsset[:],
 						data.SellingAmount,
 					); err != nil {
 						return err
 					}
 				}
 			}
-		case metadata.CrowdsaleRequestMeta:
+		case metadata.CrowdSaleRequestMeta:
 			{
 				meta := tx.GetMetadata().(*metadata.CrowdsaleRequest)
 				hash := tx.Hash()
@@ -770,7 +770,7 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 					return err
 				}
 			}
-		case metadata.CrowdsaleResponseMeta:
+		case metadata.CrowdSaleResponseMeta:
 			{
 				meta := tx.GetMetadata().(*metadata.CrowdsaleResponse)
 				_, _, _, txRequest, err := self.GetTransactionByHash(meta.RequestedTxID)
@@ -961,7 +961,7 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 }
 
 // /*
-// 	Key: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
+// 	KeyWallet: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
 //   H: value-spent/unspent-rewarded/unreward
 // */
 func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxCustomToken) error {
