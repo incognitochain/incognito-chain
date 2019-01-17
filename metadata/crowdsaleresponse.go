@@ -23,7 +23,7 @@ func NewCrowdsaleResponse(data map[string]interface{}) *CrowdsaleResponse {
 	result := &CrowdsaleResponse{
 		RequestedTxID: &common.Hash{},
 	}
-	result.Type = CrowdsaleResponseMeta
+	result.Type = CrowdSaleResponseMeta
 	copy(result.RequestedTxID[:], s)
 	return result
 }
@@ -65,7 +65,7 @@ func (cr *CrowdsaleResponse) ValidateTxWithBlockChain(txr Transaction, bcr Block
 			return common.FalseValue, fmt.Errorf("Error finding corresponding loan request")
 		}
 		switch txOld.GetMetadataType() {
-		case CrowdsaleResponseMeta:
+		case CrowdSaleResponseMeta:
 			{
 				// Check if the same user responses twice
 				if bytes.Equal(txOld.GetSigPubKey(), txr.GetSigPubKey()) {
