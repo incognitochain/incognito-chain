@@ -45,9 +45,9 @@ func (csRes *CrowdsalePayment) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	}
 
 	// Check if sending address is DCB's
-	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	if bytes.Equal(saleData.SellingAsset, common.ConstantID[:]) {
-		if !bytes.Equal(txr.GetSigPubKey(), accountDCB.KeySet.PaymentAddress.Pk[:]) {
+		if !bytes.Equal(txr.GetSigPubKey(), keyWalletDCBAccount.KeySet.PaymentAddress.Pk[:]) {
 			return common.FalseValue, fmt.Errorf("Crowdsale payment must send Constant from DCB address")
 		}
 	} else if bytes.Equal(saleData.SellingAsset[:8], common.BondTokenID[:8]) {

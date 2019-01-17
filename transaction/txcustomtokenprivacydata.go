@@ -75,9 +75,10 @@ func CreateCustomTokenPrivacyReceiverArray(data interface{}) ([]*privacy.Payment
 	voutsAmount := int64(0)
 	receivers := data.(map[string]interface{})
 	for key, value := range receivers {
-		key, _ := wallet.Base58CheckDeserialize(key)
+		keyWallet, _ := wallet.Base58CheckDeserialize(key)
+		keySet := keyWallet.KeySet
 		temp := &privacy.PaymentInfo{
-			PaymentAddress: key.KeySet.PaymentAddress,
+			PaymentAddress: keySet.PaymentAddress,
 			Amount:         uint64(value.(float64)),
 		}
 		result = append(result, temp)
