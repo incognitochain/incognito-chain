@@ -18,13 +18,11 @@ func (wit *ComZeroWitness) randValue(testcase bool) {
 		index := byte(3)
 		commitmentRnd, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
 		wit.Set(commitmentValue, &index, commitmentRnd)
-		break
 	case true:
 		index := byte(3)
 		commitmentRnd, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
 		commitmentValue := privacy.PedCom.CommitAtIndex(big.NewInt(0), commitmentRnd, index)
 		wit.Set(commitmentValue, &index, commitmentRnd)
-		break
 	}
 }
 
