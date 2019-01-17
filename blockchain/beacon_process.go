@@ -359,6 +359,7 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 	if !VerifyHashFromStringArray(tempInstructionArr, block.Header.InstructionHash) {
 		return NewBlockChainError(InstructionHashError, errors.New("Instruction hash is not correct"))
 	}
+	//TODO: Verify shard state
 	return nil
 }
 
@@ -561,7 +562,6 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 
 	// update param
 	instructions := newBlock.Body.Instructions
-
 	for _, l := range instructions {
 		if l[0] == "set" {
 			self.Params[l[1]] = l[2]
@@ -652,7 +652,6 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		// Begin of each epoch
 	} else if self.BeaconHeight%EPOCH < RANDOM_TIME {
 		// Before get random from bitcoin
-
 	} else if self.BeaconHeight%EPOCH >= RANDOM_TIME {
 		// After get random from bitcoin
 		if self.BeaconHeight%EPOCH == RANDOM_TIME {

@@ -15,7 +15,6 @@ func CreateBeaconGenesisBlock(
 	basicSalary uint64,
 	randomnumber int,
 ) *BeaconBlock {
-	//TODO: build param
 	inst := [][]string{}
 	// build validator beacon
 	// test generate public key in utility/generateKeys
@@ -45,8 +44,6 @@ func CreateBeaconGenesisBlock(
 		Timestamp: time.Date(2018, 8, 1, 0, 0, 0, 0, time.UTC).Unix(),
 		Height:    1,
 		Version:   1,
-		//TODO:
-
 	}
 
 	block := &BeaconBlock{

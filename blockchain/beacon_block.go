@@ -21,7 +21,7 @@ type ShardState struct {
 	Height uint64
 	Hash   common.Hash
 	//In this state, shard i send cross shard tx to which shard
-	CrossShard map[byte][]byte
+	CrossShard map[byte]bool
 }
 type BeaconBody struct {
 	ShardState   map[byte][]ShardState
