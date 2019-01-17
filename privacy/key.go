@@ -126,9 +126,9 @@ func (addr *PaymentAddress) SetBytes(bytes []byte) *PaymentAddress {
 	return addr
 }
 
-func NewPaymentAddress(byte []byte) *PaymentAddress {
+func NewPaymentAddressFromByte(b []byte) *PaymentAddress {
 	paymentAddress := PaymentAddress{}
-	paymentAddress.SetBytes(byte)
+	paymentAddress.SetBytes(b)
 	return &paymentAddress
 }
 
