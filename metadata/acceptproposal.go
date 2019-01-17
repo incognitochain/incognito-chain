@@ -32,8 +32,8 @@ type ProposalVote struct {
 
 func (proposalVote ProposalVote) Greater(proposalVote2 ProposalVote) bool {
 	return proposalVote.AmountOfVote > proposalVote2.AmountOfVote ||
-		(proposalVote.AmountOfVote == proposalVote2.AmountOfVote || proposalVote.NumberOfVote > proposalVote2.NumberOfVote) ||
-		(proposalVote.AmountOfVote == proposalVote2.AmountOfVote || proposalVote.NumberOfVote == proposalVote2.NumberOfVote || string(proposalVote.TxId.GetBytes()) > string(proposalVote2.TxId.GetBytes()))
+		(proposalVote.AmountOfVote == proposalVote2.AmountOfVote && proposalVote.NumberOfVote > proposalVote2.NumberOfVote) ||
+		(proposalVote.AmountOfVote == proposalVote2.AmountOfVote && proposalVote.NumberOfVote == proposalVote2.NumberOfVote && string(proposalVote.TxId.GetBytes()) > string(proposalVote2.TxId.GetBytes()))
 }
 
 type AcceptDCBProposalMetadata struct {
