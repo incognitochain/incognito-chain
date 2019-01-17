@@ -152,12 +152,22 @@ func (self *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 		}
 		Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
 	}
+	err := self.StoreCrossShard(block)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
 	return nil
 }
 
-func (self *BlockChain) InsertShardBlock(block *ShardBlock, shardID byte) error {
+func (self *BlockChain) StoreCrossShard(block *ShardBlock) error {
+	crossShardMap, _ := block.Body.ExtractCrossShardMap()
+	return nil
+}
+
+func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
+	shardID := block.Header.ShardID
 	Logger.log.Infof("SHARD %+v | Begin Insert new block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	Logger.log.Infof("SHARD %+v | Verify Pre Processing  Block %+v \n", block.Header.ShardID, *block.Hash())
 	if err := self.VerifyPreProcessingShardBlock(block, shardID); err != nil {
