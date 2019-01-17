@@ -236,13 +236,13 @@ func (self RpcServer) handleListUnspentOutputCoins(params interface{}, closeChan
 
 		// get keyset only contain pri-key by deserializing
 		priKeyStr := keys["PrivateKey"].(string)
-		key, err := wallet.Base58CheckDeserialize(priKeyStr)
+		keyWallet, err := wallet.Base58CheckDeserialize(priKeyStr)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		tokenID := &common.Hash{}
 		tokenID.SetBytes(common.ConstantID[:])
-		outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&key.KeySet, 14, tokenID)
+		outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&keyWallet.KeySet, 14, tokenID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}

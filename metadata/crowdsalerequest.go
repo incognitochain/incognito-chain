@@ -52,32 +52,32 @@ func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	// Check if sale exists and ongoing
 	saleData, err := bcr.GetCrowdsaleData(csReq.SaleID)
 	if err != nil {
-		return common.FalseValue, err
+		return false, err
 	}
 	// TODO(@0xbunyip): get height of beacon chain on new consensus
 	height, err := bcr.GetTxChainHeight(txr)
 	if err != nil || saleData.EndBlock >= height {
-		return common.FalseValue, errors.Errorf("Crowdsale ended")
+		return false, errors.Errorf("Crowdsale ended")
 	}
 
 	// Check if Payment address is DCB's
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	if !bytes.Equal(csReq.PaymentAddress.Pk[:], keyWalletDCBAccount.KeySet.PaymentAddress.Pk[:]) || !bytes.Equal(csReq.PaymentAddress.Tk[:], keyWalletDCBAccount.KeySet.PaymentAddress.Tk[:]) {
-		return common.FalseValue, errors.Errorf("Crowdsale request must send CST to DCBAddress")
+		return false, errors.Errorf("Crowdsale request must send CST to DCBAddress")
 	}
-	return common.TrueValue, nil
+	return true, nil
 }
 
 func (csReq *CrowdsaleRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if len(csReq.PaymentAddress.Pk) == 0 {
-		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's payment address")
+		return false, false, errors.New("Wrong request info's payment address")
 	}
-	return common.FalseValue, common.TrueValue, nil
+	return false, true, nil
 }
 
 func (csReq *CrowdsaleRequest) ValidateMetadataByItself() bool {
-	// The validation just need to check at tx level, so returning common.TrueValue here
-	return common.TrueValue
+	// The validation just need to check at tx level, so returning true here
+	return true
 }
 
 func (csReq *CrowdsaleRequest) Hash() *common.Hash {

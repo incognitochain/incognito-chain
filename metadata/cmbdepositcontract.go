@@ -69,30 +69,30 @@ func (dc *CMBDepositContract) ValidateTxWithBlockChain(txr Transaction, bcr Bloc
 	chainID, err := common.GetTxSenderChain(lastByte)
 	receiverChainHeight := bcr.GetChainHeight(chainID)
 	if err != nil || receiverChainHeight+1 >= dc.ValidUntil {
-		return common.FalseValue, errors.Errorf("ValidUntil must be larger than block height")
+		return false, errors.Errorf("ValidUntil must be larger than block height")
 	}
 
 	// CMBAddress must be valid
 	if !bytes.Equal(txr.GetSigPubKey(), dc.CMBAddress.Pk[:]) {
-		return common.FalseValue, errors.Errorf("CMBAddress must be the one creating this tx")
+		return false, errors.Errorf("CMBAddress must be the one creating this tx")
 	}
 	_, _, _, _, _, _, err = bcr.GetCMB(dc.CMBAddress.Bytes())
 	if err != nil {
-		return common.FalseValue, err
+		return false, err
 	}
-	return common.TrueValue, nil
+	return true, nil
 }
 
 func (dc *CMBDepositContract) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if dc.ValidUntil >= dc.MaturityAt {
-		return common.FalseValue, common.FalseValue, errors.Errorf("Deposit maturity must be greater than ValidUntil")
+		return false, false, errors.Errorf("Deposit maturity must be greater than ValidUntil")
 	}
 	if len(dc.Receiver.Pk) <= 0 {
-		return common.FalseValue, common.FalseValue, errors.Errorf("Receiver must be set")
+		return false, false, errors.Errorf("Receiver must be set")
 	}
-	return common.TrueValue, common.TrueValue, nil // continue to check for fee
+	return true, true, nil // continue to check for fee
 }
 
 func (dc *CMBDepositContract) ValidateMetadataByItself() bool {
-	return common.TrueValue
+	return true
 }

@@ -23,22 +23,22 @@ func NewWithSenderAddress(senderAddress privacy.PaymentAddress, metaType int) *W
 
 func (wsa *WithSenderAddress) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requeste tx (via RequestedTxID) in current block
-	return common.FalseValue, nil
+	return false, nil
 }
 
 func (wsa *WithSenderAddress) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if len(wsa.SenderAddress.Pk) == 0 {
-		return common.FalseValue, common.FalseValue, nil
+		return false, false, nil
 	}
 	if len(wsa.SenderAddress.Tk) == 0 {
-		return common.FalseValue, common.FalseValue, nil
+		return false, false, nil
 	}
-	return common.TrueValue, common.TrueValue, nil
+	return true, true, nil
 }
 
 func (wsa *WithSenderAddress) ValidateMetadataByItself() bool {
-	// The validation just need to check at tx level, so returning common.TrueValue here
-	return common.TrueValue
+	// The validation just need to check at tx level, so returning true here
+	return true
 }
 
 func (wsa *WithSenderAddress) Hash() *common.Hash {

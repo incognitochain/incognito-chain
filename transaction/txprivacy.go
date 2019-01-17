@@ -689,6 +689,10 @@ func (tx *Tx) ValidateTxByItself(
 		return false
 	}
 	if tx.Metadata != nil {
+		if hasPrivacy {
+			Logger.log.Infof("[db]validatetxbyitself metadata: Transaction with metadata should not enable privacy feature.")
+			return false
+		}
 		Logger.log.Infof("[db]validatetxbyitself metadata: %v\n", tx.Metadata.ValidateMetadataByItself())
 		return tx.Metadata.ValidateMetadataByItself()
 	}

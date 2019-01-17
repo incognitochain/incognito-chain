@@ -79,7 +79,7 @@ func (self *KeySet) Sign(data []byte) ([]byte, error) {
 func (self *KeySet) SignBase58(data []byte) (string, error) {
 	signatureByte, err := self.Sign(data)
 	if err != nil {
-		return common.EmptyString, errors.New("Can't sign data. " + err.Error())
+		return "", errors.New("Can't sign data. " + err.Error())
 	}
 	return base58.Base58Check{}.Encode(signatureByte, common.ZeroByte), nil
 }
@@ -144,7 +144,7 @@ func ValidateDataB58(pbkB58 string, sigB58 string, data []byte) error {
 func (self *KeySet) SignDataB58(data []byte) (string, error) {
 	signatureByte, err := self.Sign(data)
 	if err != nil {
-		return common.EmptyString, errors.New("Can't sign data. " + err.Error())
+		return "", errors.New("Can't sign data. " + err.Error())
 	}
 	return base58.Base58Check{}.Encode(signatureByte, common.ZeroByte), nil
 }

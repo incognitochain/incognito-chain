@@ -1,13 +1,14 @@
 package rpcserver
 
 import (
+	"encoding/hex"
 	"errors"
 	"log"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/common/base58"
 )
 
 /*
@@ -107,6 +108,7 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 	}
 	return wallet.KeySerializedData{
 		PaymentAddress: account.Key.Base58CheckSerialize(wallet.PaymentAddressType),
+		Pubkey:         hex.EncodeToString(account.Key.KeySet.PaymentAddress.Pk),
 		ReadonlyKey:    account.Key.Base58CheckSerialize(wallet.ReadonlyKeyType),
 	}, nil
 }

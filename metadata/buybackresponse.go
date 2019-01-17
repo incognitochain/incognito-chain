@@ -22,21 +22,21 @@ func NewBuyBackResponse(requestedTxID common.Hash, metaType int) *BuyBackRespons
 
 func (bbRes *BuyBackResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	// no need to have fee for this tx
-	return common.TrueValue
+	return true
 }
 
 func (bbRes *BuyBackResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requeste tx (via RequestedTxID) in current block
-	return common.FalseValue, nil
+	return false, nil
 }
 
 func (bbRes *BuyBackResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	return common.FalseValue, common.TrueValue, nil
+	return false, true, nil
 }
 
 func (bbRes *BuyBackResponse) ValidateMetadataByItself() bool {
-	// The validation just need to check at tx level, so returning common.TrueValue here
-	return common.TrueValue
+	// The validation just need to check at tx level, so returning true here
+	return true
 }
 
 func (bbRes *BuyBackResponse) Hash() *common.Hash {

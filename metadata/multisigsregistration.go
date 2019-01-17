@@ -38,12 +38,12 @@ func (msReg *MultiSigsRegistration) ValidateTxWithBlockChain(
 ) (bool, error) {
 	_, err := db.GetMultiSigsRegistration(msReg.PaymentAddress.Pk)
 	if err == nil { // found
-		return common.FalseValue, errors.New("The payment address's public key is already existed.")
+		return false, errors.New("The payment address's public key is already existed.")
 	}
 	if err != lvdberr.ErrNotFound {
-		return common.FalseValue, err
+		return false, err
 	}
-	return common.TrueValue, nil
+	return true, nil
 }
 
 func (msReg *MultiSigsRegistration) ValidateSanityData(
@@ -51,28 +51,25 @@ func (msReg *MultiSigsRegistration) ValidateSanityData(
 	txr Transaction,
 ) (bool, bool, error) {
 	if len(msReg.PaymentAddress.Pk) == 0 {
-		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's payment address")
+		return false, false, errors.New("Wrong request info's payment address")
 	}
 	if len(msReg.PaymentAddress.Tk) == 0 {
-		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's payment address")
+		return false, false, errors.New("Wrong request info's payment address")
 	}
 	if len(msReg.SpendableMembers) == 0 {
-		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's spendable members")
+		return false, false, errors.New("Wrong request info's spendable members")
 	}
 	for _, pk := range msReg.SpendableMembers {
 		if len(pk) == 0 {
-			return common.FalseValue, common.FalseValue, errors.New("Wrong request info's spendable members")
+			return false, false, errors.New("Wrong request info's spendable members")
 		}
 	}
 
-	return common.TrueValue, common.TrueValue, nil
+	return true, true, nil
 }
 
 func (msReg *MultiSigsRegistration) ValidateMetadataByItself() bool {
-	if msReg.Type != MultiSigsRegistrationMeta {
-		return common.FalseValue
-	}
-	return common.TrueValue
+	return msReg.Type != MultiSigsRegistrationMeta
 }
 
 func (msReg *MultiSigsRegistration) Hash() *common.Hash {
