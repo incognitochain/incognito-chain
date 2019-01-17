@@ -1,11 +1,12 @@
 package wallet
 
 import (
+	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"github.com/pkg/errors"
-	"bytes"
+	"io/ioutil"
 )
 
 type Account struct {
@@ -201,6 +202,7 @@ func (self *Wallet) GetAccountAddress(accountParam string) (KeySerializedData) {
 		if account.Name == accountParam {
 			key := KeySerializedData{
 				PaymentAddress: account.Key.Base58CheckSerialize(PaymentAddressType),
+				Pubkey:         hex.EncodeToString(account.Key.KeySet.PaymentAddress.Pk),
 				ReadonlyKey:    account.Key.Base58CheckSerialize(ReadonlyKeyType),
 			}
 			return key
