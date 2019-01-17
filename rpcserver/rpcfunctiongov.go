@@ -96,7 +96,8 @@ func (self RpcServer) handleGetGOVConstitution(params interface{}, closeChan <-c
 }
 
 func (self RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress, nil
+	res := ListPaymentAddressToListString(self.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
+	return res, nil
 }
 
 func (self RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
