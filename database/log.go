@@ -8,8 +8,8 @@ type DbLogger struct {
 	log common.Logger
 }
 
-func (self *DbLogger) Init(inst common.Logger) {
-	self.log = inst
+func (dbLogger *DbLogger) Init(inst common.Logger) {
+	dbLogger.log = inst
 }
 
 // Global instant to use
