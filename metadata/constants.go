@@ -19,12 +19,12 @@ const (
 
 	// CMB
 	CMBInitRequestMeta
-	CMBInitResponseMeta // offchain multisig
-	CMBInitRefundMeta   // miner
+	CMBInitResponseMeta  // offchain multisig
+	CMBInitRefundMeta    // miner
 	CMBDepositContractMeta
 	CMBDepositSendMeta
 	CMBWithdrawRequestMeta
-	CMBWithdrawResponseMeta // offchain multisig
+	CMBWithdrawResponseMeta  // offchain multisig
 
 	BuyFromGOVRequestMeta
 	BuyFromGOVResponseMeta
@@ -81,6 +81,6 @@ const (
 
 // update oracle board actions
 const (
-	Add    = 1
-	Remove = 2
+	Add = iota + 1
+	Remove
 )
