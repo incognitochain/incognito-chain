@@ -223,7 +223,7 @@ func (db *db) FetchBeaconBlockChain() ([]*common.Hash, error) {
 }
 
 //StoreCrossShard store which crossShardBlk from which shard has been include in which block height
-func (db *db) StoreShardToBeacon(shardID byte, blkHeight uint64, shardBlkHash *common.Hash) error {
+func (db *db) StoreAcceptedShardToBeacon(shardID byte, blkHeight uint64, shardBlkHash *common.Hash) error {
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, blkHeight)
 	prefix := append([]byte{shardID}, shardBlkHash[:]...)
@@ -235,7 +235,7 @@ func (db *db) StoreShardToBeacon(shardID byte, blkHeight uint64, shardBlkHash *c
 	return nil
 }
 
-func (db *db) HasShardToBeacon(shardID byte, shardBlkHash *common.Hash) error {
+func (db *db) HasAcceptedShardToBeacon(shardID byte, shardBlkHash *common.Hash) error {
 	prefix := append([]byte{shardID}, shardBlkHash[:]...)
 	// stb-ShardID-ShardBlockHash : BeaconBlockHeight
 	key := append(shardToBeaconKeyPrefix, prefix...)
