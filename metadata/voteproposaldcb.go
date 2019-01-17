@@ -275,20 +275,20 @@ func NewPunishDCBDecryptMetadata(paymentAddress privacy.PaymentAddress) *PunishD
 
 func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) Hash() *common.Hash {
 	record := string(punishDCBDecryptMetadata.PunishDecryptMetadata.ToBytes())
-	record += string(punishDCBDecryptMetadata.MetadataBase.Hash().GetBytes())
+	record += punishDCBDecryptMetadata.MetadataBase.Hash().String()
 
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }

@@ -38,12 +38,12 @@ func (msReg *MultiSigsRegistration) ValidateTxWithBlockChain(
 ) (bool, error) {
 	_, err := db.GetMultiSigsRegistration(msReg.PaymentAddress.Pk)
 	if err == nil { // found
-		return false, errors.New("The payment address's public key is already existed.")
+		return common.FalseValue, errors.New("The payment address's public key is already existed.")
 	}
 	if err != lvdberr.ErrNotFound {
-		return false, err
+		return common.FalseValue, err
 	}
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (msReg *MultiSigsRegistration) ValidateSanityData(
@@ -51,36 +51,36 @@ func (msReg *MultiSigsRegistration) ValidateSanityData(
 	txr Transaction,
 ) (bool, bool, error) {
 	if len(msReg.PaymentAddress.Pk) == 0 {
-		return false, false, errors.New("Wrong request info's payment address")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's payment address")
 	}
 	if len(msReg.PaymentAddress.Tk) == 0 {
-		return false, false, errors.New("Wrong request info's payment address")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's payment address")
 	}
 	if len(msReg.SpendableMembers) == 0 {
-		return false, false, errors.New("Wrong request info's spendable members")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's spendable members")
 	}
 	for _, pk := range msReg.SpendableMembers {
 		if len(pk) == 0 {
-			return false, false, errors.New("Wrong request info's spendable members")
+			return common.FalseValue, common.FalseValue, errors.New("Wrong request info's spendable members")
 		}
 	}
 
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (msReg *MultiSigsRegistration) ValidateMetadataByItself() bool {
 	if msReg.Type != MultiSigsRegistrationMeta {
-		return false
+		return common.FalseValue
 	}
-	return true
+	return common.TrueValue
 }
 
 func (msReg *MultiSigsRegistration) Hash() *common.Hash {
-	record := string(msReg.PaymentAddress.Bytes())
+	record := msReg.PaymentAddress.String()
 	for _, pk := range msReg.SpendableMembers {
 		record += string(pk)
 	}
-	record += string(msReg.MetadataBase.Hash()[:])
+	record += msReg.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

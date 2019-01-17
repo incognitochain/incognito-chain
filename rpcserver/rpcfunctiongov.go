@@ -96,7 +96,8 @@ func (self RpcServer) handleGetGOVConstitution(params interface{}, closeChan <-c
 }
 
 func (self RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress, nil
+	res := ListPaymentAddressToListString(self.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
+	return res, nil
 }
 
 func (self RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -311,13 +312,13 @@ func (self RpcServer) buildRawSubmitGOVProposalTransaction(
 	NParams := len(arrayParams)
 
 	newParams := arrayParams[NParams-1].(map[string]interface{})
-	tmp, err := SenderKeyParamToMap(arrayParams[0])
+	tmp, err := self.GetPaymentAddressFromPrivateKeyParams(arrayParams[0].(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	newParams["PaymentAddress"] = tmp
 
-	meta := metadata.NewSubmitGOVProposalMetadataFromJson(arrayParams[NParams-1])
+	meta := metadata.NewSubmitGOVProposalMetadataFromJson(newParams)
 	params = setBuildRawBurnSubmitProposalTransactionParams(params)
 	tx, err1 := self.buildRawTransaction(params, meta)
 	if err1 != nil {

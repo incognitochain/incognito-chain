@@ -40,7 +40,7 @@ func (bbReq *BuyBackRequest) ValidateTxWithBlockChain(
 ) (bool, error) {
 
 	// TODO: need to check vin's amt and burning address in vout
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (bbReq *BuyBackRequest) ValidateSanityData(
@@ -48,30 +48,30 @@ func (bbReq *BuyBackRequest) ValidateSanityData(
 	txr Transaction,
 ) (bool, bool, error) {
 	if len(bbReq.PaymentAddress.Pk) == 0 {
-		return false, false, errors.New("Wrong request info's payment address")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's payment address")
 	}
 	if len(bbReq.PaymentAddress.Tk) == 0 {
-		return false, false, errors.New("Wrong request info's payment address")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's payment address")
 	}
 	if bbReq.Amount == 0 {
-		return false, false, errors.New("Wrong request info's amount")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's amount")
 	}
 	if len(bbReq.TokenID) != common.HashSize {
-		return false, false, errors.New("Wrong request info's token id")
+		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's token id")
 	}
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (bbReq *BuyBackRequest) ValidateMetadataByItself() bool {
-	// The validation just need to check at tx level, so returning true here
-	return true
+	// The validation just need to check at tx level, so returning common.TrueValue here
+	return common.TrueValue
 }
 
 func (bbReq *BuyBackRequest) Hash() *common.Hash {
-	record := string(bbReq.PaymentAddress.Bytes())
+	record := bbReq.PaymentAddress.String()
 	record += string(bbReq.Amount)
 	record += bbReq.TokenID.String()
-	record += string(bbReq.MetadataBase.Hash()[:])
+	record += bbReq.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

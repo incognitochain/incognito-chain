@@ -31,7 +31,16 @@ func (self RpcServer) handleGetDCBConstitution(params interface{}, closeChan <-c
 
 // handleGetListDCBBoard - return list payment address of DCB board
 func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress, nil
+	res := ListPaymentAddressToListString(self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress)
+	return res, nil
+}
+
+func ListPaymentAddressToListString(addresses []privacy.PaymentAddress) []string {
+	res := make([]string, 0)
+	for _, i := range addresses {
+		res = append(res, i.String())
+	}
+	return res
 }
 
 func (self RpcServer) handleCreateRawTxWithIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -234,7 +243,7 @@ func (self RpcServer) buildRawSubmitDCBProposalTransaction(
 	NParams := len(arrayParams)
 
 	newParams := arrayParams[NParams-1].(map[string]interface{})
-	tmp, err := SenderKeyParamToMap(arrayParams[0])
+	tmp, err := self.GetPaymentAddressFromPrivateKeyParams(arrayParams[0].(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}

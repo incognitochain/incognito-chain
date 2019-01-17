@@ -21,21 +21,21 @@ func NewRewardProposalWinnerMetadata(paymentAddress privacy.PaymentAddress, priz
 }
 
 func (rewardProposalWinnerMetadata *RewardProposalWinnerMetadata) Hash() *common.Hash {
-	record := string(rewardProposalWinnerMetadata.PaymentAddress.Bytes())
+	record := rewardProposalWinnerMetadata.PaymentAddress.String()
 	record += common.Uint32ToString(rewardProposalWinnerMetadata.Prize)
-	record += string(rewardProposalWinnerMetadata.MetadataBase.Hash().GetBytes())
+	record += rewardProposalWinnerMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func (rewardProposalWinnerMetadata *RewardProposalWinnerMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (rewardProposalWinnerMetadata *RewardProposalWinnerMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (rewardProposalWinnerMetadata *RewardProposalWinnerMetadata) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	privacy "github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 )
 
@@ -38,23 +38,24 @@ func (mb *MetadataBase) Hash() *common.Hash {
 }
 
 func (mb *MetadataBase) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
-	return true
+	// TODO: 0xjackalope
+	return common.TrueValue
 }
 
 func (mb *MetadataBase) CheckTransactionFee(tr Transaction, minFeePerKbTx uint64) bool {
 	txFee := tr.GetTxFee()
 	fullFee := minFeePerKbTx * tr.GetTxActualSize()
 	if txFee < fullFee {
-		return false
+		return common.FalseValue
 	}
-	return true
+	return common.TrueValue
 }
 
 func (mb *MetadataBase) VerifyMultiSigs(
 	txr Transaction,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	return true, nil
+	return common.TrueValue, nil
 }
 
 // TODO(@0xankylosaurus): move TxDesc to mempool DTO
@@ -76,11 +77,13 @@ type TxDesc struct {
 	FeePerKB int32
 }
 
+// Interface for mempool which is used in metadata
 type MempoolRetriever interface {
 	GetSerialNumbers() map[common.Hash][][]byte
 	GetTxsInMem() map[common.Hash]TxDesc
 }
 
+// Interface for blockchain which is used in metadata
 type BlockchainRetriever interface {
 	GetTxChainHeight(tx Transaction) (uint64, error)
 	GetChainHeight(byte) uint64
@@ -117,6 +120,7 @@ type BlockchainRetriever interface {
 	GetWithdrawRequest([]byte) ([]byte, uint8, error)
 }
 
+// Interface for all types of metadata in tx
 type Metadata interface {
 	GetType() int
 	Hash() *common.Hash
@@ -152,7 +156,7 @@ type Transaction interface {
 	SetMetadata(Metadata)
 	ValidateConstDoubleSpendWithBlockchain(BlockchainRetriever, byte, database.DatabaseInterface) error
 
-	GetJSPubKey() []byte
+	GetSigPubKey() []byte
 	GetReceivers() ([][]byte, []uint64)
 	GetUniqueReceiver() (bool, []byte, uint64)
 	IsPrivacy() bool

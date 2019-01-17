@@ -261,8 +261,7 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	return common.TrueValue
 }
 
-// Hash returns the hash of all fields of the transaction
-func (tx TxCustomToken) Hash() *common.Hash {
+func (tx TxCustomToken) String() string {
 	// get hash of tx
 	record := tx.Tx.Hash().String()
 
@@ -270,11 +269,24 @@ func (tx TxCustomToken) Hash() *common.Hash {
 	txTokenDataHash, _ := tx.TxTokenData.Hash()
 	record += txTokenDataHash.String()
 	if tx.Metadata != nil {
-		record += string(tx.Metadata.Hash()[:])
+		record += tx.Metadata.Hash().String()
 	}
+	return record
+}
 
+func (self TxCustomToken) JSONString() string {
+	data, err := json.MarshalIndent(self, common.EmptyString, "\t")
+	if err != nil {
+		Logger.log.Error(err)
+		return common.EmptyString
+	}
+	return string(data)
+}
+
+// Hash returns the hash of all fields of the transaction
+func (tx TxCustomToken) Hash() *common.Hash {
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.DoubleHashH([]byte(tx.String()))
 	return &hash
 }
 
