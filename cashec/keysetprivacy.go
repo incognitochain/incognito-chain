@@ -24,37 +24,37 @@ type KeySet struct {
 /*
 GenerateKey - generate key set from seed byte[]
 */
-func (self *KeySet) GenerateKey(seed []byte) *KeySet {
-	self.PrivateKey = privacy.GenerateSpendingKey(seed)
-	self.PaymentAddress = privacy.GeneratePaymentAddress(self.PrivateKey[:])
-	self.ReadonlyKey = privacy.GenerateViewingKey(self.PrivateKey[:])
-	return self
+func (keysetObj *KeySet) GenerateKey(seed []byte) *KeySet {
+	keysetObj.PrivateKey = privacy.GenerateSpendingKey(seed)
+	keysetObj.PaymentAddress = privacy.GeneratePaymentAddress(keysetObj.PrivateKey[:])
+	keysetObj.ReadonlyKey = privacy.GenerateViewingKey(keysetObj.PrivateKey[:])
+	return keysetObj
 }
 
 /*
 ImportFromPrivateKeyByte - from private-key byte[], regenerate pub-key and readonly-key
 */
-func (self *KeySet) ImportFromPrivateKeyByte(privateKey []byte) {
-	copy(self.PrivateKey[:], privateKey)
-	self.PaymentAddress = privacy.GeneratePaymentAddress(self.PrivateKey[:])
-	self.ReadonlyKey = privacy.GenerateViewingKey(self.PrivateKey[:])
+func (keysetObj *KeySet) ImportFromPrivateKeyByte(privateKey []byte) {
+	copy(keysetObj.PrivateKey[:], privateKey)
+	keysetObj.PaymentAddress = privacy.GeneratePaymentAddress(keysetObj.PrivateKey[:])
+	keysetObj.ReadonlyKey = privacy.GenerateViewingKey(keysetObj.PrivateKey[:])
 }
 
 /*
 ImportFromPrivateKeyByte - from private-key data, regenerate pub-key and readonly-key
 */
-func (self *KeySet) ImportFromPrivateKey(privateKey *privacy.SpendingKey) {
-	self.PrivateKey = *privateKey
-	self.PaymentAddress = privacy.GeneratePaymentAddress(self.PrivateKey[:])
-	self.ReadonlyKey = privacy.GenerateViewingKey(self.PrivateKey[:])
+func (keysetObj *KeySet) ImportFromPrivateKey(privateKey *privacy.SpendingKey) {
+	keysetObj.PrivateKey = *privateKey
+	keysetObj.PaymentAddress = privacy.GeneratePaymentAddress(keysetObj.PrivateKey[:])
+	keysetObj.ReadonlyKey = privacy.GenerateViewingKey(keysetObj.PrivateKey[:])
 }
 
-func (self *KeySet) Verify(data, signature []byte) (bool, error) {
+func (keysetObj *KeySet) Verify(data, signature []byte) (bool, error) {
 	hash := common.HashB(data)
 	isValid := false
 
 	pubKeySig := new(privacy.SchnPubKey)
-	PK, err := privacy.DecompressKey(self.PaymentAddress.Pk)
+	PK, err := privacy.DecompressKey(keysetObj.PaymentAddress.Pk)
 	if err != nil {
 		return false, err
 	}
@@ -67,54 +67,42 @@ func (self *KeySet) Verify(data, signature []byte) (bool, error) {
 	return isValid, nil
 }
 
-func (self *KeySet) Sign(data []byte) ([]byte, error) {
+func (keysetObj *KeySet) Sign(data []byte) ([]byte, error) {
 	hash := common.HashB(data)
 	privKeySig := new(privacy.SchnPrivKey)
-	privKeySig.Set(new(big.Int).SetBytes(self.PrivateKey), big.NewInt(0))
+	privKeySig.Set(new(big.Int).SetBytes(keysetObj.PrivateKey), big.NewInt(0))
 
 	signature, err := privKeySig.Sign(hash)
 	return signature.Bytes(), err
 }
 
-func (self *KeySet) SignBase58(data []byte) (string, error) {
-	signatureByte, err := self.Sign(data)
+func (keysetObj *KeySet) SignBase58(data []byte) (string, error) {
+	signatureByte, err := keysetObj.Sign(data)
 	if err != nil {
 		return "", errors.New("Can't sign data. " + err.Error())
 	}
 	return base58.Base58Check{}.Encode(signatureByte, common.ZeroByte), nil
 }
 
-func (self *KeySet) Encrypt(data []byte) ([]byte, error) {
-	// encryptText := client.Encrypt(self.PaymentAddress.Pk[:], data)
-	encryptText := []byte{0}
-	return encryptText, nil
-}
-
-func (self *KeySet) Decrypt(data []byte) ([]byte, error) {
-	// data, err := client.Decrypt(self.PrivateKey[:], data)
-	data = []byte{0}
-	return data, nil
-}
-
-func (self *KeySet) EncodeToString() string {
-	val, _ := json.Marshal(self)
+func (keysetObj *KeySet) EncodeToString() string {
+	val, _ := json.Marshal(keysetObj)
 	result := base58.Base58Check{}.Encode(val, common.ZeroByte)
 	return result
 }
 
-func (self *KeySet) DecodeToKeySet(keystring string) (*KeySet, error) {
+func (keysetObj *KeySet) DecodeToKeySet(keystring string) (*KeySet, error) {
 	base58C := base58.Base58Check{}
 	keyBytes, _, _ := base58C.Decode(keystring)
-	json.Unmarshal(keyBytes, self)
-	return self, nil
+	json.Unmarshal(keyBytes, keysetObj)
+	return keysetObj, nil
 }
 
-func (self *KeySet) GetViewingKey() (privacy.ViewingKey, error) {
-	return self.ReadonlyKey, nil
+func (keysetObj *KeySet) GetViewingKey() (privacy.ViewingKey, error) {
+	return keysetObj.ReadonlyKey, nil
 }
 
-func (self *KeySet) GetPublicKeyB58() string {
-	return base58.Base58Check{}.Encode(self.PaymentAddress.Pk, common.ZeroByte)
+func (keysetObj *KeySet) GetPublicKeyB58() string {
+	return base58.Base58Check{}.Encode(keysetObj.PaymentAddress.Pk, common.ZeroByte)
 }
 
 func ValidateDataB58(pbkB58 string, sigB58 string, data []byte) error {
@@ -136,15 +124,15 @@ func ValidateDataB58(pbkB58 string, sigB58 string, data []byte) error {
 		return errors.New("error when verify data: " + err.Error())
 	}
 	if !isValid {
-		return errors.New("Invalid signature")
+		return errors.New("invalid signature")
 	}
 	return nil
 }
 
-func (self *KeySet) SignDataB58(data []byte) (string, error) {
-	signatureByte, err := self.Sign(data)
+func (keysetObj *KeySet) SignDataB58(data []byte) (string, error) {
+	signatureByte, err := keysetObj.Sign(data)
 	if err != nil {
-		return "", errors.New("Can't sign data. " + err.Error())
+		return "", errors.New("can't sign data. " + err.Error())
 	}
 	return base58.Base58Check{}.Encode(signatureByte, common.ZeroByte), nil
 }
