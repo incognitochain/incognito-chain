@@ -25,7 +25,8 @@ type ShardToBeaconBlock struct {
 	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
 	ProducerSig   string  `json:"ProducerSig"`
 
-	Header ShardHeader
+	Instructions [][]string
+	Header       ShardHeader
 }
 
 type CrossShardBlock struct {

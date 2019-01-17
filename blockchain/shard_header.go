@@ -39,11 +39,25 @@ type ShardHeader struct {
 
 func (self ShardHeader) Hash() common.Hash {
 	record := common.EmptyString
-
+	crossShardHash, _ := common.Hash{}.NewHash(self.CrossShards)
 	// add data from header
 	record += strconv.FormatInt(self.Timestamp, 10) +
+		self.Producer +
 		string(self.ShardID) +
-		self.PrevBlockHash.String() + self.Producer
-	//TODO: add ALL information from header
+		strconv.Itoa(self.Version) +
+		self.PrevBlockHash.String() +
+		strconv.Itoa(int(self.Height)) +
+		strconv.Itoa(int(self.Epoch)) +
+		strconv.Itoa(int(self.Timestamp)) +
+		strconv.Itoa(int(self.SalaryFund)) +
+		self.TxRoot.String() +
+		self.ShardTxRoot.String() +
+		self.CrossOutputCoinRoot.String() +
+		self.ActionsRoot.String() +
+		self.CommitteeRoot.String() +
+		self.PendingValidatorRoot.String() +
+		self.BeaconHash.String() +
+		crossShardHash.String() +
+		strconv.Itoa(int(self.BeaconHeight))
 	return common.DoubleHashH([]byte(record))
 }

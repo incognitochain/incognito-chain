@@ -8,7 +8,6 @@ import (
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
@@ -76,7 +75,7 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 	if err != nil {
 		return nil, err
 	}
-	actions := CreateShardActionFromTransaction(self.chain.config.DataBase, block.Body.Transactions, shardID)
+	actions := CreateShardActionFromTransaction(block.Body.Transactions)
 	action := []string{}
 	for _, value := range actions {
 		action = append(action, value...)
@@ -96,7 +95,6 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
-	//TODO: Where to get beacon???
 	block.Header = ShardHeader{
 		Producer:      userKeySet.GetPublicKeyB58(),
 		ShardID:       shardID,
@@ -114,9 +112,8 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 		CrossShards:          CreateCrossShardByteArray(txsToAdd),
 		CommitteeRoot:        committeeRoot,
 		PendingValidatorRoot: pendingValidatorRoot,
-		//TODO: define where to get beaconstate
-		BeaconHeight: self.chain.BestState.Beacon.BeaconHeight,
-		BeaconHash:   self.chain.BestState.Beacon.BestBlockHash,
+		BeaconHeight:         self.chain.BestState.Beacon.BeaconHeight,
+		BeaconHash:           self.chain.BestState.Beacon.BestBlockHash,
 	}
 
 	// Create producer signature
@@ -182,7 +179,7 @@ func CreateShardActionFromOthers(v ...interface{}) (actions [][]string) {
 	- Stake
 	- Stable param: set, del,...
 */
-func CreateShardActionFromTransaction(db database.DatabaseInterface, transactions []metadata.Transaction, shardId byte) (actions [][]string) {
+func CreateShardActionFromTransaction(transactions []metadata.Transaction) (actions [][]string) {
 	// Generate stake action
 	stakeShardPubKey := []string{}
 	stakeBeaconPubKey := []string{}
@@ -191,13 +188,9 @@ func CreateShardActionFromTransaction(db database.DatabaseInterface, transaction
 		if !ok {
 			panic("Can't create block")
 		}
-		//TODO: verify if transaction is staking transaction
-		//Discard auto FALSE to run real test
-		if false {
-			shardStaker, beaconStaker, isStake := tempTx.ProcessTxStake(db, shardId)
-			if !isStake {
-				continue
-			}
+		// make sure transaction is valid before extract
+		shardStaker, beaconStaker, isStake := tempTx.GetStakerFromTransaction()
+		if isStake {
 			if strings.Compare(shardStaker, common.EmptyString) != 0 {
 				stakeShardPubKey = append(stakeShardPubKey, shardStaker)
 			}
@@ -251,6 +244,50 @@ func (self *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd []me
 		}
 	}
 	return txsToAdd, txToRemove, totalFee
+}
+
+func (self *ShardBlock) CreateShardToBeaconBlock() ShardToBeaconBlock {
+	block := ShardToBeaconBlock{}
+	block.AggregatedSig = self.AggregatedSig
+	copy(block.ValidatorsIdx, self.ValidatorsIdx)
+	block.ProducerSig = self.ProducerSig
+	block.Header = self.Header
+	block.Instructions = self.Body.Instructions
+	actions := CreateShardActionFromTransaction(self.Body.Transactions)
+	block.Instructions = append(block.Instructions, actions...)
+	return block
+}
+
+func (blk *ShardBlock) CreateAllCrossShardBlock() map[byte]*CrossShardBlock {
+	allCrossShard := make(map[byte]*CrossShardBlock)
+	for i := 0; i < TestNetParams.ShardsNum; i++ {
+		crossShard, err := blk.CreateCrossShardBlock(byte(i))
+		if crossShard != nil && err == nil {
+			allCrossShard[byte(i)] = crossShard
+		}
+	}
+	return allCrossShard
+}
+
+func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
+	crossShard := &CrossShardBlock{}
+	utxoList := getOutCoinCrossShard(block.Body.Transactions, shardID)
+	if len(utxoList) == 0 {
+		return nil, nil
+	}
+	merklePathShard, merkleShardRoot := GetMerklePathCrossShard(block.Body.Transactions, shardID)
+	if merkleShardRoot != block.Header.TxRoot {
+		return crossShard, NewBlockChainError(CrossShardBlockError, errors.New("MerkleRootShard mismatch"))
+	}
+
+	//Copy signature and header
+	crossShard.AggregatedSig = block.AggregatedSig
+	copy(crossShard.ValidatorsIdx, block.ValidatorsIdx)
+	crossShard.ProducerSig = block.ProducerSig
+	crossShard.Header = block.Header
+	crossShard.MerklePathShard = merklePathShard
+	crossShard.CrossOutputCoin = utxoList
+	return crossShard, nil
 }
 
 func (self *BlkTmplGenerator) _NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*ShardBlock, error) {
@@ -463,7 +500,6 @@ concludeBlock:
 	// }
 
 	// create refund txs
-	//TODO: get salary from beacon beststate
 	currentSalaryFund := uint64(0)
 	remainingFund := currentSalaryFund + totalFee + salaryFundAdd - totalSalary
 	// remainingFund := currentSalaryFund + totalFee + salaryFundAdd + incomeFromBonds - (totalSalary + buyBackCoins)
@@ -614,15 +650,13 @@ concludeBlock:
 	copy(block.Header.MerkleRootCommitments[:], rt)*/
 
 	block.Header = ShardHeader{
-		Producer: userKeySet.GetPublicKeyB58(),
-		//TODO: Epoch, RefBlockHash, Action
+		Producer:      userKeySet.GetPublicKeyB58(),
 		Height:        prevBlock.Header.Height + 1,
 		Version:       BlockVersion,
 		PrevBlockHash: *prevBlockHash,
-		//TxRoot:        *merkleRoot,
-		ShardTxRoot: CreateMerkleRootShard(block.Body.Transactions),
-		Timestamp:   time.Now().Unix(),
-		ShardID:     shardID,
+		ShardTxRoot:   CreateMerkleRootShard(block.Body.Transactions),
+		Timestamp:     time.Now().Unix(),
+		ShardID:       shardID,
 		//SalaryFund: remainingFund,
 		// BankFund:           prevBlock.Header.BankFund + loanPaymentAmount - bankPayoutAmount,
 		// GOVConstitution:    prevBlock.Header.GOVConstitution, // TODO: need get from gov-params tx
@@ -639,45 +673,4 @@ concludeBlock:
 
 	_ = remainingFund
 	return block, nil
-}
-
-func (self *ShardBlock) CreateShardToBeaconBlock() ShardToBeaconBlock {
-	block := ShardToBeaconBlock{}
-	block.AggregatedSig = self.AggregatedSig
-	copy(block.ValidatorsIdx, self.ValidatorsIdx)
-	block.ProducerSig = self.ProducerSig
-	block.Header = self.Header
-	return block
-}
-
-func (blk *ShardBlock) CreateAllCrossShardBlock() map[byte]*CrossShardBlock {
-	allCrossShard := make(map[byte]*CrossShardBlock)
-	for i := 0; i < TestNetParams.ShardsNum; i++ {
-		crossShard, err := blk.CreateCrossShardBlock(byte(i))
-		if crossShard != nil && err == nil {
-			allCrossShard[byte(i)] = crossShard
-		}
-	}
-	return allCrossShard
-}
-
-func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
-	crossShard := &CrossShardBlock{}
-	utxoList := getOutCoinCrossShard(block.Body.Transactions, shardID)
-	if len(utxoList) == 0 {
-		return nil, nil
-	}
-	merklePathShard, merkleShardRoot := GetMerklePathCrossShard(block.Body.Transactions, shardID)
-	if merkleShardRoot != block.Header.TxRoot {
-		return crossShard, NewBlockChainError(CrossShardBlockError, errors.New("MerkleRootShard mismatch"))
-	}
-
-	//Copy signature and header
-	crossShard.AggregatedSig = block.AggregatedSig
-	copy(crossShard.ValidatorsIdx, block.ValidatorsIdx)
-	crossShard.ProducerSig = block.ProducerSig
-	crossShard.Header = block.Header
-	crossShard.MerklePathShard = merklePathShard
-	crossShard.CrossOutputCoin = utxoList
-	return crossShard, nil
 }

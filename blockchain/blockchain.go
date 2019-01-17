@@ -332,7 +332,6 @@ func (self *BlockChain) initBeaconState() error {
 	self.BestState.Beacon = NewBestStateBeacon()
 	var initBlock *BeaconBlock
 	initBlock = self.config.ChainParams.GenesisBeaconBlock
-	//TODO: initiate first beacon state
 	self.BestState.Beacon.Update(initBlock)
 	// Insert new block into beacon chain
 

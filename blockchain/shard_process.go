@@ -47,8 +47,25 @@ func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte)
 		return err
 	}
 	//========Update best state with new block
-	//TODO: update beacon block
-	if err := shardBestState.Update(block, nil); err != nil {
+	prevBeaconHeight := shardBestState.BeaconHeight
+	beaconBlocks := []*BeaconBlock{}
+	for i := prevBeaconHeight + 1; i <= block.Header.BeaconHeight; i++ {
+		hash, err := self.config.DataBase.GetBeaconBlockHashByIndex(i)
+		if err != nil {
+			return err
+		}
+		beaconBlockByte, err := self.config.DataBase.FetchBeaconBlock(hash)
+		if err != nil {
+			return err
+		}
+		beaconBlock := BeaconBlock{}
+		err = json.Unmarshal(beaconBlockByte, &beaconBlock)
+		if err != nil {
+			return NewBlockChainError(UnmashallJsonBlockError, err)
+		}
+		beaconBlocks = append(beaconBlocks, &beaconBlock)
+	}
+	if err := shardBestState.Update(block, beaconBlocks); err != nil {
 		return err
 	}
 	//========Post verififcation: verify new beaconstate with corresponding block
@@ -216,7 +233,6 @@ DO NOT USE THIS with GENESIS BLOCK
 - ShardTxRoot
 - CrossOutputCoinRoot
 - ActionsRoot
-//TODO: define where to verify beacon info
 - BeaconHeight
 - BeaconHash
 */
@@ -264,7 +280,7 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 		return NewBlockChainError(HashError, errors.New("Can't Verify CrossOutputCoin Root"))
 	}
 	// Verify Action
-	actions := CreateShardActionFromTransaction(self.config.DataBase, block.Body.Transactions, block.Header.ShardID)
+	actions := CreateShardActionFromTransaction(block.Body.Transactions)
 	action := []string{}
 	for _, value := range actions {
 		action = append(action, value...)
@@ -275,6 +291,20 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	isOk := VerifyHashFromStringArray(action, block.Header.ActionsRoot)
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("Error verify action root"))
+	}
+	//Get beacon hash by height in db
+	//If hash not found then fail to verify
+	beaconHash, err := self.config.DataBase.GetBeaconBlockHashByIndex(block.Header.BeaconHeight)
+	if err != nil {
+		return err
+	}
+	//Hash in db must be equal to hash in shard block
+	newHash, err := common.Hash{}.NewHash(block.Header.BeaconHash.GetBytes())
+	if err != nil {
+		return NewBlockChainError(HashError, err)
+	}
+	if newHash.IsEqual(beaconHash) == false {
+		return NewBlockChainError(BeaconError, errors.New("Beacon block height and beacon block hash are not compatible in Database"))
 	}
 	Logger.log.Debugf("SHARD %+v | Finish VerifyPreProcessingShardBlock Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	return nil
