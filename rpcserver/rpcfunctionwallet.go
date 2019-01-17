@@ -225,10 +225,10 @@ func (rpcServer RpcServer) handleGetBalance(params interface{}, closeChan <-chan
 	balance := uint64(0)
 
 	if rpcServer.config.Wallet == nil {
-		return balance, NewRPCError(ErrUnexpected, errors.New("Wallet is not existed"))
+		return balance, NewRPCError(ErrUnexpected, errors.New("wallet is not existed"))
 	}
 	if len(rpcServer.config.Wallet.MasterAccount.Child) == 0 {
-		return balance, NewRPCError(ErrUnexpected, errors.New("No account is existed"))
+		return balance, NewRPCError(ErrUnexpected, errors.New("no account is existed"))
 	}
 
 	// convert params to array
@@ -245,7 +245,7 @@ func (rpcServer RpcServer) handleGetBalance(params interface{}, closeChan <-chan
 	passPhrase := arrayParams[2].(string)
 
 	if passPhrase != rpcServer.config.Wallet.PassPhrase {
-		return balance, NewRPCError(ErrUnexpected, errors.New("Password phrase is wrong for local wallet"))
+		return balance, NewRPCError(ErrUnexpected, errors.New("password phrase is wrong for local wallet"))
 	}
 
 	constantTokenID := &common.Hash{}
@@ -297,10 +297,10 @@ func (rpcServer RpcServer) handleGetReceivedByAccount(params interface{}, closeC
 	balance := uint64(0)
 
 	if rpcServer.config.Wallet == nil {
-		return balance, NewRPCError(ErrUnexpected, errors.New("Wallet is not existed"))
+		return balance, NewRPCError(ErrUnexpected, errors.New("wallet is not existed"))
 	}
 	if len(rpcServer.config.Wallet.MasterAccount.Child) == 0 {
-		return balance, NewRPCError(ErrUnexpected, errors.New("No account is existed"))
+		return balance, NewRPCError(ErrUnexpected, errors.New("no account is existed"))
 	}
 
 	// convert params to array
@@ -317,7 +317,7 @@ func (rpcServer RpcServer) handleGetReceivedByAccount(params interface{}, closeC
 	passPhrase := arrayParams[2].(string)
 
 	if passPhrase != rpcServer.config.Wallet.PassPhrase {
-		return balance, NewRPCError(ErrUnexpected, errors.New("Password phrase is wrong for local wallet"))
+		return balance, NewRPCError(ErrUnexpected, errors.New("password phrase is wrong for local wallet"))
 	}
 
 	for _, account := range rpcServer.config.Wallet.MasterAccount.Child {

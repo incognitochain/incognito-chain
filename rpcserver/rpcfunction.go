@@ -43,11 +43,11 @@ var RpcHandler = map[string]commandHandler{
 	GetMempoolInfo:           RpcServer.handleGetMempoolInfo,
 	GetTransactionByHash:     RpcServer.handleGetTransactionByHash,
 
-	GetCommitteeCandidateList:  RpcServer.handleGetCommitteeCandidateList,
-	GetBlockProducerList:       RpcServer.handleGetBlockProducerList,
+	GetCommitteeCandidateList: RpcServer.handleGetCommitteeCandidateList,
+	GetBlockProducerList:      RpcServer.handleGetBlockProducerList,
 
 	RandomCommitments: RpcServer.handleRandomCommitments,
-	HasSerialNumbers:  RpcServer.handleRandomCommitments,
+	HasSerialNumbers:  RpcServer.handleHasSerialNumbers,
 
 	// custom token
 	CreateRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
