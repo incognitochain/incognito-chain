@@ -32,19 +32,19 @@ type WalletConfig struct {
 	IncrementalFee uint64
 }
 
-func (self *Wallet) Init(passPhrase string, numOfAccount uint32, name string) (error) {
+func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) (error) {
 	mnemonicGen := MnemonicGenerator{}
-	self.Name = name
-	self.Entropy, _ = mnemonicGen.NewEntropy(128)
-	self.Mnemonic, _ = mnemonicGen.NewMnemonic(self.Entropy)
-	self.Seed = mnemonicGen.NewSeed(self.Mnemonic, passPhrase)
-	self.PassPhrase = passPhrase
+	wallet.Name = name
+	wallet.Entropy, _ = mnemonicGen.NewEntropy(128)
+	wallet.Mnemonic, _ = mnemonicGen.NewMnemonic(wallet.Entropy)
+	wallet.Seed = mnemonicGen.NewSeed(wallet.Mnemonic, passPhrase)
+	wallet.PassPhrase = passPhrase
 
-	masterKey, err := NewMasterKey(self.Seed)
+	masterKey, err := NewMasterKey(wallet.Seed)
 	if err != nil {
 		return err
 	}
-	self.MasterAccount = AccountWallet{
+	wallet.MasterAccount = AccountWallet{
 		Key:   *masterKey,
 		Child: make([]AccountWallet, 0),
 		Name:  "master",
@@ -55,58 +55,58 @@ func (self *Wallet) Init(passPhrase string, numOfAccount uint32, name string) (e
 	}
 
 	for i := uint32(0); i < numOfAccount; i++ {
-		childKey, _ := self.MasterAccount.Key.NewChildKey(i)
+		childKey, _ := wallet.MasterAccount.Key.NewChildKey(i)
 		account := AccountWallet{
 			Key:   *childKey,
 			Child: make([]AccountWallet, 0),
 			Name:  fmt.Sprintf("AccountWallet %d", i),
 		}
-		self.MasterAccount.Child = append(self.MasterAccount.Child, account)
+		wallet.MasterAccount.Child = append(wallet.MasterAccount.Child, account)
 	}
 
 	return nil
 }
 
-func (self *Wallet) CreateNewAccount(accountName string) *AccountWallet {
-	newIndex := uint32(len(self.MasterAccount.Child))
-	childKey, _ := self.MasterAccount.Key.NewChildKey(newIndex)
+func (wallet *Wallet) CreateNewAccount(accountName string) *AccountWallet {
+	newIndex := uint32(len(wallet.MasterAccount.Child))
+	childKey, _ := wallet.MasterAccount.Key.NewChildKey(newIndex)
 	if accountName == "" {
-		accountName = fmt.Sprintf("AccountWallet %d", len(self.MasterAccount.Child))
+		accountName = fmt.Sprintf("AccountWallet %d", len(wallet.MasterAccount.Child))
 	}
 	account := AccountWallet{
 		Key:   *childKey,
 		Child: make([]AccountWallet, 0),
 		Name:  accountName,
 	}
-	self.MasterAccount.Child = append(self.MasterAccount.Child, account)
-	self.Save(self.PassPhrase)
+	wallet.MasterAccount.Child = append(wallet.MasterAccount.Child, account)
+	wallet.Save(wallet.PassPhrase)
 	return &account
 }
 
-func (self *Wallet) ExportAccount(childIndex uint32) string {
-	return self.MasterAccount.Child[childIndex].Key.Base58CheckSerialize(PriKeyType)
+func (wallet *Wallet) ExportAccount(childIndex uint32) string {
+	return wallet.MasterAccount.Child[childIndex].Key.Base58CheckSerialize(PriKeyType)
 }
 
-func (self *Wallet) RemoveAccount(privateKeyStr string, accountName string, passPhrase string) error {
-	if passPhrase != self.PassPhrase {
+func (wallet *Wallet) RemoveAccount(privateKeyStr string, accountName string, passPhrase string) error {
+	if passPhrase != wallet.PassPhrase {
 		return NewWalletError(WrongPassphraseErr, nil)
 	}
-	for i, account := range self.MasterAccount.Child {
+	for i, account := range wallet.MasterAccount.Child {
 		if account.Key.Base58CheckSerialize(PriKeyType) == privateKeyStr {
-			self.MasterAccount.Child = append(self.MasterAccount.Child[:i], self.MasterAccount.Child[i+1:]...)
-			self.Save(passPhrase)
+			wallet.MasterAccount.Child = append(wallet.MasterAccount.Child[:i], wallet.MasterAccount.Child[i+1:]...)
+			wallet.Save(passPhrase)
 			return nil
 		}
 	}
 	return NewWalletError(UnexpectedErr, errors.New("Not found"))
 }
 
-func (self *Wallet) ImportAccount(privateKeyStr string, accountName string, passPhrase string) (*AccountWallet, error) {
-	if passPhrase != self.PassPhrase {
+func (wallet *Wallet) ImportAccount(privateKeyStr string, accountName string, passPhrase string) (*AccountWallet, error) {
+	if passPhrase != wallet.PassPhrase {
 		return nil, NewWalletError(WrongPassphraseErr, nil)
 	}
 
-	for _, account := range self.MasterAccount.Child {
+	for _, account := range wallet.MasterAccount.Child {
 		if account.Key.Base58CheckSerialize(PriKeyType) == privateKeyStr {
 			return nil, NewWalletError(ExistedAccountErr, nil)
 		}
@@ -130,21 +130,21 @@ func (self *Wallet) ImportAccount(privateKeyStr string, accountName string, pass
 		IsImported: true,
 		Name:       accountName,
 	}
-	self.MasterAccount.Child = append(self.MasterAccount.Child, account)
-	err = self.Save(self.PassPhrase)
+	wallet.MasterAccount.Child = append(wallet.MasterAccount.Child, account)
+	err = wallet.Save(wallet.PassPhrase)
 	if err != nil {
 		return nil, err
 	}
 	return &account, nil
 }
 
-func (self *Wallet) Save(password string) error {
+func (wallet *Wallet) Save(password string) error {
 	if password == "" {
-		password = self.PassPhrase
+		password = wallet.PassPhrase
 	}
 
 	// parse to byte[]
-	data, err := json.Marshal(*self)
+	data, err := json.Marshal(*wallet)
 	if err != nil {
 		Logger.log.Error(err)
 		return NewWalletError(UnexpectedErr, err)
@@ -158,16 +158,16 @@ func (self *Wallet) Save(password string) error {
 	}
 	// and
 	// save file
-	err = ioutil.WriteFile(self.Config.DataPath, []byte(cipherText), 0644)
+	err = ioutil.WriteFile(wallet.Config.DataPath, []byte(cipherText), 0644)
 	if err != nil {
 		return NewWalletError(UnexpectedErr, err)
 	}
 	return nil
 }
 
-func (self *Wallet) LoadWallet(password string) error {
+func (wallet *Wallet) LoadWallet(password string) error {
 	// read file and decrypt
-	bytesData, err := ioutil.ReadFile(self.Config.DataPath)
+	bytesData, err := ioutil.ReadFile(wallet.Config.DataPath)
 	if err != nil {
 		return NewWalletError(UnexpectedErr, err)
 	}
@@ -177,15 +177,15 @@ func (self *Wallet) LoadWallet(password string) error {
 	}
 
 	// read to struct
-	err = json.Unmarshal(bufBytes, &self)
+	err = json.Unmarshal(bufBytes, &wallet)
 	if err != nil {
 		return NewWalletError(UnexpectedErr, err)
 	}
 	return nil
 }
 
-func (self *Wallet) DumpPrivkey(addressP string) (KeySerializedData) {
-	for _, account := range self.MasterAccount.Child {
+func (wallet *Wallet) DumpPrivkey(addressP string) (KeySerializedData) {
+	for _, account := range wallet.MasterAccount.Child {
 		address := account.Key.Base58CheckSerialize(PaymentAddressType)
 		if address == addressP {
 			key := KeySerializedData{
@@ -197,8 +197,8 @@ func (self *Wallet) DumpPrivkey(addressP string) (KeySerializedData) {
 	return KeySerializedData{}
 }
 
-func (self *Wallet) GetAccountAddress(accountParam string) (KeySerializedData) {
-	for _, account := range self.MasterAccount.Child {
+func (wallet *Wallet) GetAccountAddress(accountParam string) (KeySerializedData) {
+	for _, account := range wallet.MasterAccount.Child {
 		if account.Name == accountParam {
 			key := KeySerializedData{
 				PaymentAddress: account.Key.Base58CheckSerialize(PaymentAddressType),
@@ -208,7 +208,7 @@ func (self *Wallet) GetAccountAddress(accountParam string) (KeySerializedData) {
 			return key
 		}
 	}
-	newAccount := self.CreateNewAccount(accountParam)
+	newAccount := wallet.CreateNewAccount(accountParam)
 	key := KeySerializedData{
 		PaymentAddress: newAccount.Key.Base58CheckSerialize(PaymentAddressType),
 		Pubkey:         hex.EncodeToString(newAccount.Key.KeySet.PaymentAddress.Pk),
@@ -217,9 +217,9 @@ func (self *Wallet) GetAccountAddress(accountParam string) (KeySerializedData) {
 	return key
 }
 
-func (self *Wallet) GetAddressesByAccount(accountParam string) ([]KeySerializedData) {
+func (wallet *Wallet) GetAddressesByAccount(accountParam string) ([]KeySerializedData) {
 	result := make([]KeySerializedData, 0)
-	for _, account := range self.MasterAccount.Child {
+	for _, account := range wallet.MasterAccount.Child {
 		if account.Name == accountParam {
 			item := KeySerializedData{
 				PaymentAddress: account.Key.Base58CheckSerialize(PaymentAddressType),
@@ -232,17 +232,17 @@ func (self *Wallet) GetAddressesByAccount(accountParam string) ([]KeySerializedD
 	return result
 }
 
-func (self *Wallet) ListAccounts() map[string]AccountWallet {
+func (wallet *Wallet) ListAccounts() map[string]AccountWallet {
 	result := make(map[string]AccountWallet)
-	for _, account := range self.MasterAccount.Child {
+	for _, account := range wallet.MasterAccount.Child {
 		result[account.Name] = account
 	}
 	return result
 }
 
-func (self *Wallet) ContainPubKey(pubKey []byte) bool {
-	for _, account := range self.MasterAccount.Child {
-		if bytes.Compare(account.Key.KeySet.PaymentAddress.Pk[:], pubKey) == 0 {
+func (wallet *Wallet) ContainPubKey(pubKey []byte) bool {
+	for _, account := range wallet.MasterAccount.Child {
+		if bytes.Equal(account.Key.KeySet.PaymentAddress.Pk[:], pubKey) {
 			return true
 		}
 	}
