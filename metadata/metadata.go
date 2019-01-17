@@ -39,23 +39,20 @@ func (mb *MetadataBase) Hash() *common.Hash {
 
 func (mb *MetadataBase) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
 	// TODO: 0xjackalope
-	return common.TrueValue
+	return true
 }
 
 func (mb *MetadataBase) CheckTransactionFee(tr Transaction, minFeePerKbTx uint64) bool {
 	txFee := tr.GetTxFee()
 	fullFee := minFeePerKbTx * tr.GetTxActualSize()
-	if txFee < fullFee {
-		return common.FalseValue
-	}
-	return common.TrueValue
+	return txFee < fullFee
 }
 
 func (mb *MetadataBase) VerifyMultiSigs(
 	txr Transaction,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	return common.TrueValue, nil
+	return true, nil
 }
 
 // TODO(@0xankylosaurus): move TxDesc to mempool DTO

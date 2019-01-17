@@ -43,13 +43,13 @@ func (rewardShareOldBoardMetadata *RewardShareOldBoardMetadata) Hash() *common.H
 }
 
 func (rewardShareOldBoardMetadata *RewardShareOldBoardMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
-	return common.TrueValue, nil
+	return true, nil
 }
 
 func (rewardShareOldBoardMetadata *RewardShareOldBoardMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
-	return common.TrueValue, common.TrueValue, nil
+	return true, true, nil
 }
 
 func (rewardShareOldBoardMetadata *RewardShareOldBoardMetadata) ValidateMetadataByItself() bool {
-	return common.TrueValue
+	return true
 }
