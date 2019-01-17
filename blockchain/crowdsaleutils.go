@@ -343,7 +343,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleResponse(
 	for _, txHash := range txHashes {
 		hash, _ := (&common.Hash{}).NewHash(txHash)
 		_, _, _, txOld, _ := blockgen.chain.GetTransactionByHash(hash)
-		if txOld.GetMetadataType() == metadata.CrowdsaleResponseMeta {
+		if txOld.GetMetadataType() == metadata.CrowdSaleResponseMeta {
 			count += 1
 		}
 	}
@@ -448,7 +448,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 	respCounter := map[string]int{}
 	for _, txDesc := range sourceTxns {
 		switch txDesc.Tx.GetMetadataType() {
-		case metadata.CrowdsaleRequestMeta:
+		case metadata.CrowdSaleRequestMeta:
 			{
 				blockgen.processCrowdsaleRequest(
 					txDesc.Tx,
@@ -460,7 +460,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 					producerPrivateKey,
 				)
 			}
-		case metadata.CrowdsaleResponseMeta:
+		case metadata.CrowdSaleResponseMeta:
 			{
 				blockgen.processCrowdsaleResponse(
 					txDesc.Tx,

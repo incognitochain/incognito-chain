@@ -44,7 +44,7 @@ func NewCrowdsaleRequest(csReqData map[string]interface{}) *CrowdsaleRequest {
 		Amount:         n,
 		AssetPrice:     0,
 	}
-	result.Type = CrowdsaleRequestMeta
+	result.Type = CrowdSaleRequestMeta
 	return result
 }
 

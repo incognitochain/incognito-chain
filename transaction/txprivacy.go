@@ -747,14 +747,11 @@ func (tx *Tx) IsCoinsBurning() bool {
 	return true
 }
 
-func (tx *Tx) CalculateTxValue() (*privacy.PaymentAddress, uint64) {
+func (tx *Tx) CalculateTxValue() uint64 {
 	if tx.Proof == nil || len(tx.Proof.InputCoins) == 0 || len(tx.Proof.OutputCoins) == 0 {
-		return nil, 0
+		return 0
 	}
 	senderPKBytes := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
-	senderAddr := &privacy.PaymentAddress{
-		Pk: senderPKBytes,
-	}
 	txValue := uint64(0)
 	for _, outCoin := range tx.Proof.OutputCoins {
 		outPKBytes := outCoin.CoinDetails.PublicKey.Compress()
@@ -763,7 +760,22 @@ func (tx *Tx) CalculateTxValue() (*privacy.PaymentAddress, uint64) {
 		}
 		txValue += outCoin.CoinDetails.Value
 	}
-	return senderAddr, txValue
+	return txValue
+}
+
+func (tx *Tx) GetSenderAddress() *privacy.PaymentAddress {
+	meta := tx.GetMetadata()
+	if meta == nil {
+		return nil
+	}
+	if meta.GetType() != metadata.WithSenderAddressMeta {
+		return nil
+	}
+	withSenderAddrMeta, ok := meta.(*metadata.WithSenderAddress)
+	if !ok {
+		return nil
+	}
+	return &withSenderAddrMeta.SenderAddress
 }
 
 func (tx *Tx) GetLockTime() int64 {

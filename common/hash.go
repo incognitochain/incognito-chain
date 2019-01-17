@@ -113,6 +113,15 @@ func (self Hash) NewHashFromStr(hash string) (*Hash, error) {
 	return &self, nil
 }
 
+func NewHashFromStr(s string) (*Hash, error) {
+	var h Hash
+	err := h.Decode(&h, s)
+	if err != nil {
+		return nil, err
+	}
+	return &h, err
+}
+
 /*
 // Decode decodes the byte-reversed hexadecimal string encoding of a Hash to a
 // destination.
