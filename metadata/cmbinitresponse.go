@@ -41,49 +41,49 @@ func (cres *CMBInitResponse) ValidateTxWithBlockChain(txr Transaction, bcr Block
 	// Check if cmb init request existed
 	_, _, _, txHash, state, _, err := bcr.GetCMB(cres.MainAccount.Bytes())
 	if err != nil {
-		return common.FalseValue, err
+		return false, err
 	}
 
 	// Check state of cmb
 	if state != CMBRequested {
-		return common.FalseValue, errors.Errorf("cmb state is not CMBRequested, cannot create response")
+		return false, errors.Errorf("cmb state is not CMBRequested, cannot create response")
 	}
 
 	// Check if only board members created this tx
 	if !txCreatedByDCBBoardMember(txr, bcr) {
-		return common.FalseValue, errors.Errorf("Tx must be created by DCB Governor")
+		return false, errors.Errorf("Tx must be created by DCB Governor")
 	}
 
 	// Check if this member hasn't responded to this request
 	memberResponded, err := bcr.GetCMBResponse(cres.MainAccount.Bytes())
 	if err != nil {
-		return common.FalseValue, errors.Errorf("error getting list of old cmb init responses")
+		return false, errors.Errorf("error getting list of old cmb init responses")
 	}
 	for _, member := range memberResponded {
 		if bytes.Equal(txr.GetSigPubKey(), member) {
-			return common.FalseValue, errors.Errorf("each board member can only response once to each cmb init request")
+			return false, errors.Errorf("each board member can only response once to each cmb init request")
 		}
 	}
 
 	// Check if response time is not over
 	_, blockHash, _, _, err := bcr.GetTransactionByHash(txHash)
 	if err != nil {
-		return common.FalseValue, err
+		return false, err
 	}
 	reqBlockHeight, _, _ := bcr.GetBlockHeightByBlockHash(blockHash)
 	curBlockHeight, err := bcr.GetTxChainHeight(txr)
 	if err != nil || curBlockHeight-reqBlockHeight >= CMBInitRefundPeriod {
-		return common.FalseValue, errors.Errorf("response time is over for this cmb init request")
+		return false, errors.Errorf("response time is over for this cmb init request")
 	}
-	return common.TrueValue, nil
+	return true, nil
 }
 
 func (cres *CMBInitResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	// TODO(@0xbunyip)
-	return common.TrueValue, common.FalseValue, nil // DCB takes care of fee
+	return true, false, nil // DCB takes care of fee
 }
 
 func (cres *CMBInitResponse) ValidateMetadataByItself() bool {
 	// TODO(@0xbunyip)
-	return common.TrueValue
+	return true
 }

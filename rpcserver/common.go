@@ -491,6 +491,15 @@ func (self RpcServer) GetPaymentAddressFromPrivateKeyParams(senderKeyParam strin
 	return &keySet.PaymentAddress, err
 }
 
+//
+func (self RpcServer) GetPaymentAddressFromSenderKeyParams(keyParam string) (*privacy.PaymentAddress, error) {
+	keyWallet, err := wallet.Base58CheckDeserialize(keyParam)
+	if err != nil {
+		return nil, err
+	}
+	return &keyWallet.KeySet.PaymentAddress, nil
+}
+
 // GetKeySetFromKeyParams - deserialize a key string(wallet serialized)
 // into keyWallet - this keywallet may contain
 func (self RpcServer) GetKeySetFromKeyParams(keyParam string) (*cashec.KeySet, error) {

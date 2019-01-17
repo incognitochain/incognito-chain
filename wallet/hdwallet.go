@@ -6,7 +6,6 @@ import (
 	"crypto/sha512"
 
 	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 )
 
@@ -129,7 +128,7 @@ func (key *KeyWallet) Serialize(keyType byte) ([]byte, error) {
 func (key *KeyWallet) Base58CheckSerialize(keyType byte) string {
 	serializedKey, err := key.Serialize(keyType)
 	if err != nil {
-		return common.EmptyString
+		return ""
 	}
 
 	return base58.Base58Check{}.Encode(serializedKey, byte(0x00))

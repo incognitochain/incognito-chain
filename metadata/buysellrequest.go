@@ -46,43 +46,43 @@ func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr Block
 	govParams := bcr.GetGOVParams()
 	sellingBondsParams := govParams.SellingBonds
 	if sellingBondsParams == nil {
-		return common.FalseValue, errors.New("SellingBonds params are not existed.")
+		return false, errors.New("SellingBonds params are not existed.")
 	}
 
 	bondID := sellingBondsParams.GetID()
 	if !bytes.Equal(bondID[:], bsReq.TokenID[:]) {
-		return common.FalseValue, errors.New("Requested tokenID has not been selling yet.")
+		return false, errors.New("Requested tokenID has not been selling yet.")
 	}
 
 	// check if buy price againsts SellingBonds params' BondPrice is correct or not
 	if bsReq.BuyPrice < sellingBondsParams.BondPrice {
-		return common.FalseValue, errors.New("Requested buy price is under SellingBonds params' buy price.")
+		return false, errors.New("Requested buy price is under SellingBonds params' buy price.")
 	}
-	return common.TrueValue, nil
+	return true, nil
 }
 
 func (bsReq *BuySellRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if len(bsReq.PaymentAddress.Pk) == 0 {
-		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's payment address")
+		return false, false, errors.New("Wrong request info's payment address")
 	}
 	if len(bsReq.PaymentAddress.Tk) == 0 {
-		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's payment address")
+		return false, false, errors.New("Wrong request info's payment address")
 	}
 	if bsReq.BuyPrice == 0 {
-		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's buy price")
+		return false, false, errors.New("Wrong request info's buy price")
 	}
 	if bsReq.Amount == 0 {
-		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's amount")
+		return false, false, errors.New("Wrong request info's amount")
 	}
 	if len(bsReq.TokenID) != common.HashSize {
-		return common.FalseValue, common.FalseValue, errors.New("Wrong request info's asset type")
+		return false, false, errors.New("Wrong request info's asset type")
 	}
-	return common.TrueValue, common.TrueValue, nil
+	return true, true, nil
 }
 
 func (bsReq *BuySellRequest) ValidateMetadataByItself() bool {
-	// The validation just need to check at tx level, so returning common.TrueValue here
-	return common.TrueValue
+	// The validation just need to check at tx level, so returning true here
+	return true
 }
 
 func (bsReq *BuySellRequest) Hash() *common.Hash {
