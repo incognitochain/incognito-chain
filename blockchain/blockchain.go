@@ -762,7 +762,7 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 					}
 				}
 			}
-		case metadata.CrowdsaleRequestMeta:
+		case metadata.CrowdSaleRequestMeta:
 			{
 				meta := tx.GetMetadata().(*metadata.CrowdsaleRequest)
 				hash := tx.Hash()
@@ -770,7 +770,7 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 					return err
 				}
 			}
-		case metadata.CrowdsaleResponseMeta:
+		case metadata.CrowdSaleResponseMeta:
 			{
 				meta := tx.GetMetadata().(*metadata.CrowdsaleResponse)
 				_, _, _, txRequest, err := self.GetTransactionByHash(meta.RequestedTxID)
