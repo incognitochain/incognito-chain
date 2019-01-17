@@ -11,7 +11,7 @@ import (
 )
 
 // KeySet represents a bip32 extended PubKey
-type Key struct {
+type KeyWallet struct {
 	Depth       byte   // 1 bytes
 	ChildNumber []byte // 4 bytes
 	ChainCode   []byte // 32 bytes
@@ -19,7 +19,7 @@ type Key struct {
 }
 
 // NewMasterKey creates a new master extended PubKey from a Seed
-func NewMasterKey(seed []byte) (*Key, error) {
+func NewMasterKey(seed []byte) (*KeyWallet, error) {
 	// Generate PubKey and chaincode
 	hmac := hmac.New(sha512.New, []byte("Constant Seed"))
 	_, err := hmac.Write(seed)
@@ -36,7 +36,7 @@ func NewMasterKey(seed []byte) (*Key, error) {
 	keySet := (&cashec.KeySet{}).GenerateKey(keyBytes)
 
 	// Create the PubKey struct
-	key := &Key{
+	key := &KeyWallet{
 		ChainCode:   chainCode,
 		KeySet:      *keySet,
 		Depth:       0x00,
@@ -47,7 +47,7 @@ func NewMasterKey(seed []byte) (*Key, error) {
 }
 
 // NewChildKey derives a Child PubKey from a given parent as outlined by bip32
-func (key *Key) NewChildKey(childIdx uint32) (*Key, error) {
+func (key *KeyWallet) NewChildKey(childIdx uint32) (*KeyWallet, error) {
 	intermediary, err := key.getIntermediary(childIdx)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (key *Key) NewChildKey(childIdx uint32) (*Key, error) {
 	newSeed = append(newSeed[:], intermediary[:32]...)
 	newKeyset := (&cashec.KeySet{}).GenerateKey(newSeed)
 	// Create Child KeySet with data common to all both scenarios
-	childKey := &Key{
+	childKey := &KeyWallet{
 		ChildNumber: uint32Bytes(childIdx),
 		ChainCode:   intermediary[32:],
 		Depth:       key.Depth + 1,
@@ -67,7 +67,7 @@ func (key *Key) NewChildKey(childIdx uint32) (*Key, error) {
 	return childKey, nil
 }
 
-func (key *Key) getIntermediary(childIdx uint32) ([]byte, error) {
+func (key *KeyWallet) getIntermediary(childIdx uint32) ([]byte, error) {
 	childIndexBytes := uint32Bytes(childIdx)
 
 	var data []byte
@@ -82,7 +82,7 @@ func (key *Key) getIntermediary(childIdx uint32) ([]byte, error) {
 }
 
 // Serialize a KeySet to a 78 byte byte slice
-func (key *Key) Serialize(keyType byte) ([]byte, error) {
+func (key *KeyWallet) Serialize(keyType byte) ([]byte, error) {
 	// Write fields to buffer in order
 	buffer := new(bytes.Buffer)
 	buffer.WriteByte(keyType)
@@ -126,7 +126,7 @@ func (key *Key) Serialize(keyType byte) ([]byte, error) {
 }
 
 // Base58CheckSerialize encodes the KeySet in the standard Constant base58 encoding
-func (key *Key) Base58CheckSerialize(keyType byte) string {
+func (key *KeyWallet) Base58CheckSerialize(keyType byte) string {
 	serializedKey, err := key.Serialize(keyType)
 	if err != nil {
 		return common.EmptyString
@@ -136,8 +136,8 @@ func (key *Key) Base58CheckSerialize(keyType byte) string {
 }
 
 // Deserialize a byte slice into a KeySet
-func Deserialize(data []byte) (*Key, error) {
-	var key = &Key{}
+func Deserialize(data []byte) (*KeyWallet, error) {
+	var key = &KeyWallet{}
 	keyType := data[0]
 	if keyType == PriKeyType {
 		key.Depth = data[1]
@@ -174,7 +174,7 @@ func Deserialize(data []byte) (*Key, error) {
 }
 
 // Base58CheckDeserialize deserializes a KeySet encoded in base58 encoding
-func Base58CheckDeserialize(data string) (*Key, error) {
+func Base58CheckDeserialize(data string) (*KeyWallet, error) {
 	b, _, err := base58.Base58Check{}.Decode(data)
 	if err != nil {
 		return nil, err

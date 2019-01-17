@@ -242,7 +242,7 @@ func (self RpcServer) getResponseAddresses(strLoanID string, respType metadata.V
 }
 
 func getPaymentAddressStrFromPubKey(pubkey []byte) string {
-	key := &wallet.Key{
+	key := &wallet.KeyWallet{
 		KeySet: cashec.KeySet{
 			PaymentAddress: privacy.PaymentAddress{
 				Pk: pubkey,
