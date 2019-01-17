@@ -36,8 +36,6 @@ func NewPaymentAddress(pk privacy.PublicKey, tk privacy.TransmissionKey) *privac
 
 func NewPaymentAddressFromJson(data interface{}) *privacy.PaymentAddress {
 	paymentAddressData := data.(map[string]interface{})
-	x := paymentAddressData["Pk"].(string)
-	_ = x
 	paymentAddress := NewPaymentAddress(
 		[]byte(paymentAddressData["Pk"].(string)),
 		[]byte(paymentAddressData["Tk"].(string)),
