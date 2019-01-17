@@ -39,13 +39,13 @@ type Tx struct {
 	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
 }
 
-func (self *Tx) UnmarshalJSON(data []byte) error {
+func (tx *Tx) UnmarshalJSON(data []byte) error {
 	type Alias Tx
 	temp := &struct {
 		Metadata interface{}
 		*Alias
 	}{
-		Alias: (*Alias)(self),
+		Alias: (*Alias)(tx),
 	}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -56,7 +56,7 @@ func (self *Tx) UnmarshalJSON(data []byte) error {
 		Logger.log.Error(parseErr)
 		return parseErr
 	}
-	self.SetMetadata(meta)
+	tx.SetMetadata(meta)
 
 	return nil
 }
@@ -137,15 +137,13 @@ func (tx *Tx) Init(
 	startPrivacy := time.Now()
 
 	// Calculate sum of all output coins' value
-	var sumOutputValue uint64
-	sumOutputValue = 0
+	sumOutputValue := uint64(0)
 	for _, p := range paymentInfo {
 		sumOutputValue += p.Amount
 	}
 
 	// Calculate sum of all input coins' value
-	var sumInputValue uint64
-	sumInputValue = 0
+	sumInputValue := uint64(0)
 	for _, coin := range inputCoins {
 		sumInputValue += coin.CoinDetails.Value
 	}
@@ -155,9 +153,6 @@ func (tx *Tx) Init(
 	overBalance := int(sumInputValue - sumOutputValue - fee)
 
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
-	valueMax := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(64)), nil)
-	valueMax = valueMax.Sub(valueMax, big.NewInt(1))
-
 	if overBalance < 0 {
 		return NewTransactionErr(WrongInput, errors.New("Input value less than output value"))
 	}
@@ -177,10 +172,10 @@ func (tx *Tx) Init(
 	ok := true
 	sndOuts := make([]*big.Int, 0)
 	for ok {
-		sndOut := new(big.Int)
+		var sndOut *big.Int
 		for i := 0; i < len(paymentInfo); i++ {
 			sndOut = privacy.RandInt()
-			for true {
+			for {
 
 				ok1, err := CheckSNDerivatorExistence(tokenID, sndOut, chainID, db)
 				if err != nil {
@@ -365,7 +360,6 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
 	Logger.log.Infof("[db] Validating Transaction tx\n")
-	hasPrivacy = tx.IsPrivacy()
 	start := time.Now()
 	// Verify tx signature
 	Logger.log.Infof("tx.GetType(): %v\n", tx.GetType())
@@ -377,7 +371,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	var err error
 
 	valid, err = tx.verifySigTx()
-	if valid == false {
+	if !valid {
 		if err != nil {
 			Logger.log.Infof("[PRIVACY LOG] - Error verifying signature of tx: %+v", err)
 		}
@@ -432,7 +426,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		// Verify the payment proof
 		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, chainId, tokenID)
 		Logger.log.Infof("proof valid: %v\n", valid)
-		if valid == false {
+		if !valid {
 			Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION PAYMENT PROOF")
 			return false
 		}
@@ -484,9 +478,9 @@ func (tx *Tx) GetTxActualSize() uint64 {
 	}
 
 	sizeTx += uint64(1)
-	// TODO 0xjackpolope
+
 	if tx.Metadata != nil {
-		//
+		// TODO 0xjackpolope
 	}
 
 	return uint64(math.Ceil(float64(sizeTx) / 1024))
@@ -514,10 +508,7 @@ func (tx Tx) CheckCMExistence(cm []byte, db database.DatabaseInterface, chainID 
 }
 
 func (tx *Tx) CheckTxVersion(maxTxVersion int8) bool {
-	if tx.Version > maxTxVersion {
-		return false
-	}
-	return true
+	return !(tx.Version > maxTxVersion)
 }
 
 func (tx *Tx) CheckTransactionFee(minFeePerKbTx uint64) bool {
@@ -528,10 +519,7 @@ func (tx *Tx) CheckTransactionFee(minFeePerKbTx uint64) bool {
 		return tx.Metadata.CheckTransactionFee(tx, minFeePerKbTx)
 	}
 	fullFee := minFeePerKbTx * tx.GetTxActualSize()
-	if tx.Fee < fullFee {
-		return false
-	}
-	return true
+	return !(tx.Fee < fullFee)
 }
 
 func (tx *Tx) IsSalaryTx() bool {
@@ -823,10 +811,12 @@ func (tx *Tx) InitTxSalary(
 	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandInt()
 
 	sndOut := privacy.RandInt()
-	for true {
+	for {
 		lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
 		chainIdSender, err := common.GetTxSenderChain(lastByte)
-
+		if err != nil {
+			return err
+		}
 		tokenID := &common.Hash{}
 		tokenID.SetBytes(common.ConstantID[:])
 		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, chainIdSender, db)
@@ -864,7 +854,7 @@ func (tx Tx) ValidateTxSalary(
 ) bool {
 	// verify signature
 	valid, err := tx.verifySigTx()
-	if valid == false {
+	if !valid {
 		if err != nil {
 			Logger.log.Infof("Error verifying signature of tx: %+v", err)
 		}
@@ -874,6 +864,9 @@ func (tx Tx) ValidateTxSalary(
 	// check whether output coin's input exists in input list or not
 	lastByte := tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress())-1]
 	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	if err != nil {
+		return false
+	}
 	tokenID := &common.Hash{}
 	tokenID.SetBytes(common.ConstantID[:])
 	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, chainIdSender, db); ok || err != nil {
@@ -886,9 +879,5 @@ func (tx Tx) ValidateTxSalary(
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMult(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator))
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{tx.Proof.OutputCoins[0].CoinDetails.GetPubKeyLastByte()})))
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(tx.Proof.OutputCoins[0].CoinDetails.Randomness))
-	if !cmTmp.IsEqual(tx.Proof.OutputCoins[0].CoinDetails.CoinCommitment) {
-		return false
-	}
-
-	return true
+	return cmTmp.IsEqual(tx.Proof.OutputCoins[0].CoinDetails.CoinCommitment)
 }
