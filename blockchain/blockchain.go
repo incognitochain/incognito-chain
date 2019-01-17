@@ -634,20 +634,20 @@ func (self *BlockChain) UpdateVoteCountBoard(block *Block) error {
 		switch tx.GetMetadataType() {
 		case metadata.VoteDCBBoardMeta:
 			{
-				tx := tx.(*transaction.TxCustomToken)
-				voteAmount := tx.GetAmountOfVote()
-				voteDCBBoardMetadata := tx.Metadata.(*metadata.VoteDCBBoardMetadata)
-				err := self.config.DataBase.AddVoteBoard("dcb", DCBBoardIndex, tx.TxTokenData.Vins[0].PaymentAddress.Bytes(), tx.TxTokenData.Vins[0].PaymentAddress, voteDCBBoardMetadata.CandidatePaymentAddress, voteAmount)
+				txCustomToken := tx.(*transaction.TxCustomToken)
+				voteAmount := txCustomToken.GetAmountOfVote()
+				voteDCBBoardMetadata := txCustomToken.Metadata.(*metadata.VoteDCBBoardMetadata)
+				err := self.config.DataBase.AddVoteBoard("dcb", DCBBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteDCBBoardMetadata.CandidatePaymentAddress, voteAmount)
 				if err != nil {
 					return err
 				}
 			}
 		case metadata.VoteGOVBoardMeta:
 			{
-				tx := tx.(*transaction.TxCustomToken)
-				voteAmount := tx.GetAmountOfVote()
-				voteGOVBoardMetadata := tx.Metadata.(*metadata.VoteGOVBoardMetadata)
-				err := self.config.DataBase.AddVoteBoard("gov", GOVBoardIndex, tx.TxTokenData.Vins[0].PaymentAddress.Bytes(), tx.TxTokenData.Vins[0].PaymentAddress, voteGOVBoardMetadata.CandidatePaymentAddress, voteAmount)
+				txCustomToken := tx.(*transaction.TxCustomToken)
+				voteAmount := txCustomToken.GetAmountOfVote()
+				voteGOVBoardMetadata := txCustomToken.Metadata.(*metadata.VoteGOVBoardMetadata)
+				err := self.config.DataBase.AddVoteBoard("gov", GOVBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteGOVBoardMetadata.CandidatePaymentAddress, voteAmount)
 				if err != nil {
 					return err
 				}

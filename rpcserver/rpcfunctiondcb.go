@@ -1,6 +1,7 @@
 package rpcserver
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -38,7 +39,8 @@ func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan
 func ListPaymentAddressToListString(addresses []privacy.PaymentAddress) []string {
 	res := make([]string, 0)
 	for _, i := range addresses {
-		res = append(res, i.String())
+		pk := hex.EncodeToString(i.Pk)
+		res = append(res, pk)
 	}
 	return res
 }
