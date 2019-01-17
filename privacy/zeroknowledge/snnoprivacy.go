@@ -217,9 +217,6 @@ func (pro *SNNoPrivacyProof) Verify() bool {
 	rightPoint4 := privacy.PedCom.G[privacy.SK].ScalarMult(x)
 	rightPoint4 = rightPoint4.Add(pro.tOutput)
 
-	if !leftPoint2.IsEqual(rightPoint4) {
-		return false
-	}
-
-	return true
+	result := leftPoint2.IsEqual(rightPoint4)
+	return result
 }
