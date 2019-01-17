@@ -753,9 +753,9 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 					if err := self.config.DataBase.StoreCrowdsaleData(
 						data.SaleID,
 						data.EndBlock,
-						data.BuyingAsset,
+						data.BuyingAsset[:],
 						data.BuyingAmount,
-						data.SellingAsset,
+						data.SellingAsset[:],
 						data.SellingAmount,
 					); err != nil {
 						return err
