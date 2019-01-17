@@ -34,7 +34,7 @@ func NewPaymentAddress(pk privacy.PublicKey, tk privacy.TransmissionKey) *privac
 	return &payment
 }
 
-func NewPaymentAddressFromJson(data interface{}) *privacy.PaymentAddress {
+/*func NewPaymentAddressFromJson(data interface{}) *privacy.PaymentAddress {
 	paymentAddressData := data.(map[string]interface{})
 	x := paymentAddressData["Pk"].(string)
 	_ = x
@@ -43,7 +43,7 @@ func NewPaymentAddressFromJson(data interface{}) *privacy.PaymentAddress {
 		[]byte(paymentAddressData["Tk"].(string)),
 	)
 	return paymentAddress
-}
+}*/
 
 func NewSubmitDCBProposalMetadataFromJson(data interface{}) *SubmitDCBProposalMetadata {
 	SubmitDCBProposalData := data.(map[string]interface{})
@@ -51,7 +51,7 @@ func NewSubmitDCBProposalMetadataFromJson(data interface{}) *SubmitDCBProposalMe
 		*params.NewDCBParamsFromJson(SubmitDCBProposalData["DCBParams"]),
 		uint64(SubmitDCBProposalData["ExecuteDuration"].(float64)),
 		SubmitDCBProposalData["Explanation"].(string),
-		NewPaymentAddressFromJson(SubmitDCBProposalData["PaymentAddress"]),
+		SubmitDCBProposalData["PaymentAddress"].(*privacy.PaymentAddress),
 	)
 	return meta
 }

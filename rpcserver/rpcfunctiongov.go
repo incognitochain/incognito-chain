@@ -311,13 +311,13 @@ func (self RpcServer) buildRawSubmitGOVProposalTransaction(
 	NParams := len(arrayParams)
 
 	newParams := arrayParams[NParams-1].(map[string]interface{})
-	tmp, err := SenderKeyParamToMap(arrayParams[0])
+	tmp, err := GetPaymentAddressFromSenderKeyParams(arrayParams[0].(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	newParams["PaymentAddress"] = tmp
 
-	meta := metadata.NewSubmitGOVProposalMetadataFromJson(arrayParams[NParams-1])
+	meta := metadata.NewSubmitGOVProposalMetadataFromJson(newParams)
 	params = setBuildRawBurnSubmitProposalTransactionParams(params)
 	tx, err1 := self.buildRawTransaction(params, meta)
 	if err1 != nil {
