@@ -137,7 +137,7 @@ func (peerObj *Peer) ReceivedHashMessage(hash string) {
 	}
 	peerObj.messagePool[hash] = true
 	if len(peerObj.messagePool) > MESSAGE_HASH_POOL_SIZE {
-		for k, _ := range peerObj.messagePool {
+		for k := range peerObj.messagePool {
 			delete(peerObj.messagePool, k)
 			break
 		}
@@ -148,7 +148,7 @@ func (peerObj *Peer) CheckHashMessage(hash string) (bool) {
 	if peerObj.messagePool == nil {
 		peerObj.messagePool = make(map[string]bool)
 	}
-	ok, _ := peerObj.messagePool[hash]
+	ok := peerObj.messagePool[hash]
 	return ok
 }
 
@@ -245,7 +245,6 @@ func (peerObj *Peer) Start() {
 		Logger.log.Warnf("PEER server shutdown complete %s", peerObj.PeerID)
 		break
 	}
-	return
 }
 
 func (peerObj *Peer) PushStream(stream net.Stream) {
@@ -298,7 +297,6 @@ func (peerObj *Peer) processConn() {
 			continue
 		}
 	}
-	return
 }
 
 func (peerObj *Peer) ConnPending(peer *Peer) {
