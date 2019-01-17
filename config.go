@@ -424,7 +424,7 @@ func loadConfig() (*config, []string, error) {
 	}
 
 	// --proxy or --connect without --listen disables listening.
-	if (cfg.Proxy != common.EmptyString || len(cfg.ConnectPeers) > 0) &&
+	if (cfg.Proxy != "" || len(cfg.ConnectPeers) > 0) &&
 		len(cfg.Listeners) == 0 {
 		cfg.DisableListen = true
 	}

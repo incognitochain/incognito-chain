@@ -145,32 +145,32 @@ func (txCustomToken *TxCustomToken) validateCustomTokenTxSanityData(bcr metadata
 	zeroHash := common.Hash{}
 	for _, vin := range vins {
 		if len(vin.PaymentAddress.Pk) == 0 {
-			return common.FalseValue, NewTransactionErr(WrongInput, nil)
+			return false, NewTransactionErr(WrongInput, nil)
 		}
 		// TODO: @0xbunyip - should move logic below to BuySellDCBResponse metadata's logic
 		// dbcAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 		// if bytes.Equal(vin.PaymentAddress.Pk, dbcAccount.KeySet.PaymentAddress.Pk) {
 		// 	if !allowToUseDCBFund {
-		// 		return common.FalseValue, errors.New("Cannot use DCB's fund here")
+		// 		return false, errors.New("Cannot use DCB's fund here")
 		// 	}
 		// }
 		if vin.Signature == "" {
-			return common.FalseValue, NewTransactionErr(WrongSig, nil)
+			return false, NewTransactionErr(WrongSig, nil)
 		}
 		if vin.TxCustomTokenID.String() == zeroHash.String() {
-			return common.FalseValue, NewTransactionErr(WrongInput, nil)
+			return false, NewTransactionErr(WrongInput, nil)
 		}
 	}
 	vouts := txCustomToken.TxTokenData.Vouts
 	for _, vout := range vouts {
 		if len(vout.PaymentAddress.Pk) == 0 {
-			return common.FalseValue, NewTransactionErr(WrongInput, nil)
+			return false, NewTransactionErr(WrongInput, nil)
 		}
 		if vout.Value == 0 {
-			return common.FalseValue, NewTransactionErr(WrongInput, nil)
+			return false, NewTransactionErr(WrongInput, nil)
 		}
 	}
-	return common.TrueValue, nil
+	return true, nil
 }
 
 func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
@@ -194,7 +194,7 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 	// validate for normal tx
 	if tx.Tx.ValidateTransaction(hasPrivacy, db, chainID, tokenID) {
 		if len(tx.listUtxo) == 0 {
-			return common.FalseValue
+			return false
 		}
 		for _, vin := range tx.TxTokenData.Vins {
 			keySet := cashec.KeySet{}
@@ -207,13 +207,13 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 			signature, _, _ := base58.Base58Check{}.Decode(vin.Signature)
 			ok, err := keySet.Verify(data[:], signature)
 			if err != nil {
-				return common.FalseValue
+				return false
 			}
 			return ok
 		}
-		return common.TrueValue
+		return true
 	}
-	return common.FalseValue
+	return false
 }
 
 func (customTokenTx *TxCustomToken) getListUTXOFromTxCustomToken(
@@ -224,16 +224,16 @@ func (customTokenTx *TxCustomToken) getListUTXOFromTxCustomToken(
 		_, _, _, utxo, err := bcr.GetTransactionByHash(&vin.TxCustomTokenID)
 		if err != nil {
 			// Logger.log.Error(err)
-			return common.FalseValue
+			return false
 		}
 		data[vin.TxCustomTokenID] = *(utxo.(*TxCustomToken))
 	}
 	if len(data) == 0 {
 		// Logger.log.Error(errors.New("Can not find any utxo for TxCustomToken"))
-		return common.FalseValue
+		return false
 	}
 	customTokenTx.SetListUtxo(data)
-	return common.TrueValue
+	return true
 }
 
 func (customTokenTx *TxCustomToken) ValidateTxByItself(
@@ -243,22 +243,22 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	chainID byte,
 ) bool {
 	if customTokenTx.TxTokenData.Type == CustomTokenInit {
-		return common.TrueValue
+		return true
 	}
 	ok := customTokenTx.getListUTXOFromTxCustomToken(bcr)
 	if !ok {
-		return common.FalseValue
+		return false
 	}
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	ok = customTokenTx.ValidateTransaction(hasPrivacy, db, chainID, constantTokenID)
 	if !ok {
-		return common.FalseValue
+		return false
 	}
 	if customTokenTx.Metadata != nil {
 		return customTokenTx.Metadata.ValidateMetadataByItself()
 	}
-	return common.TrueValue
+	return true
 }
 
 func (tx TxCustomToken) String() string {
@@ -275,10 +275,10 @@ func (tx TxCustomToken) String() string {
 }
 
 func (self TxCustomToken) JSONString() string {
-	data, err := json.MarshalIndent(self, common.EmptyString, "\t")
+	data, err := json.MarshalIndent(self, "", "\t")
 	if err != nil {
 		Logger.log.Error(err)
-		return common.EmptyString
+		return ""
 	}
 	return string(data)
 }
@@ -347,13 +347,13 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	txCustomToken.Tx = normalTx
 	txCustomToken.TxTokenData = TxTokenData{}
 
-	var handled = common.FalseValue
+	var handled = false
 
 	// Add token data params
 	switch tokenParams.TokenTxType {
 	case CustomTokenInit:
 		{
-			handled = common.TrueValue
+			handled = true
 			txCustomToken.TxTokenData = TxTokenData{
 				Type:           tokenParams.TokenTxType,
 				PropertyName:   tokenParams.PropertyName,
@@ -386,7 +386,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 
 		}
 	case CustomTokenTransfer:
-		handled = common.TrueValue
+		handled = true
 		paymentTokenAmount := uint64(0)
 		for _, receiver := range tokenParams.Receiver {
 			paymentTokenAmount += receiver.Value
@@ -422,7 +422,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 		txCustomToken.TxTokenData.Vouts = VoutsTemp
 	}
 
-	if handled != common.TrueValue {
+	if handled != true {
 		return NewTransactionErr(WrongTokenTxType, nil)
 	}
 	return nil
@@ -449,7 +449,7 @@ func (tx *TxCustomToken) GetAmountOfVote() uint64 {
 }
 
 func (tx *TxCustomToken) IsPrivacy() bool {
-	return common.FalseValue
+	return false
 }
 
 func (tx *TxCustomToken) ValidateType() bool {

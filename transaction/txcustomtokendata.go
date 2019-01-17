@@ -23,7 +23,7 @@ type TxTokenVin struct {
 }
 
 func (self TxTokenVin) String() string {
-	record := common.EmptyString
+	record := ""
 	record += self.TxCustomTokenID.String()
 	record += fmt.Sprintf("%d", self.VoutIndex)
 	record += self.Signature
@@ -32,10 +32,10 @@ func (self TxTokenVin) String() string {
 }
 
 func (self TxTokenVin) JSONString() string {
-	data, err := json.MarshalIndent(self, common.EmptyString, "\t")
+	data, err := json.MarshalIndent(self, "", "\t")
 	if err != nil {
 		Logger.log.Error(err)
-		return common.EmptyString
+		return ""
 	}
 	return string(data)
 }
@@ -61,17 +61,17 @@ type TxTokenVout struct {
 }
 
 func (self TxTokenVout) String() string {
-	record := common.EmptyString
+	record := ""
 	record += fmt.Sprintf("%d", self.Value)
 	record += base58.Base58Check{}.Encode(self.PaymentAddress.Pk[:], 0)
 	return record
 }
 
 func (self TxTokenVout) JSONString() string {
-	data, err := json.MarshalIndent(self, common.EmptyString, "\t")
+	data, err := json.MarshalIndent(self, "", "\t")
 	if err != nil {
 		Logger.log.Error(err)
-		return common.EmptyString
+		return ""
 	}
 	return string(data)
 }
@@ -137,10 +137,10 @@ func (self TxTokenData) String() string {
 }
 
 func (self TxTokenData) JSONString() string {
-	data, err := json.MarshalIndent(self, common.EmptyString, "\t")
+	data, err := json.MarshalIndent(self, "", "\t")
 	if err != nil {
 		Logger.log.Error(err)
-		return common.EmptyString
+		return ""
 	}
 	return string(data)
 }

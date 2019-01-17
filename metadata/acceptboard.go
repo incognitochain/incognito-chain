@@ -22,7 +22,7 @@ func NewAcceptDCBBoardMetadata(DCBBoardPaymentAddress []privacy.PaymentAddress, 
 }
 
 func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) Hash() *common.Hash {
-	record := common.EmptyString
+	record := ""
 	for _, i := range acceptDCBBoardMetadata.DCBBoardPaymentAddress {
 		record += i.String()
 	}
@@ -33,18 +33,18 @@ func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) Hash() *common.Hash {
 }
 
 func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
-	return common.TrueValue, nil
+	return true, nil
 }
 
 func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
 	if len(acceptDCBBoardMetadata.DCBBoardPaymentAddress) != bcr.GetNumberOfDCBGovernors() {
-		return common.TrueValue, common.FalseValue, nil
+		return true, false, nil
 	}
-	return common.TrueValue, common.TrueValue, nil
+	return true, true, nil
 }
 
 func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) ValidateMetadataByItself() bool {
-	return common.TrueValue
+	return true
 }
 
 type AcceptGOVBoardMetadata struct {
@@ -63,7 +63,7 @@ func NewAcceptGOVBoardMetadata(GOVBoardPaymentAddress []privacy.PaymentAddress, 
 }
 
 func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) Hash() *common.Hash {
-	record := common.EmptyString
+	record := ""
 	for _, i := range acceptGOVBoardMetadata.GOVBoardPaymentAddress {
 		record += i.String()
 	}
@@ -74,16 +74,16 @@ func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) Hash() *common.Hash {
 }
 
 func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
-	return common.TrueValue, nil
+	return true, nil
 }
 
 func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
 	if len(acceptGOVBoardMetadata.GOVBoardPaymentAddress) != bcr.GetNumberOfGOVGovernors() {
-		return common.TrueValue, common.FalseValue, nil
+		return true, false, nil
 	}
-	return common.TrueValue, common.TrueValue, nil
+	return true, true, nil
 }
 
 func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) ValidateMetadataByItself() bool {
-	return common.TrueValue
+	return true
 }
