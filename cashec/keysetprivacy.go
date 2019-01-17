@@ -11,6 +11,10 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 )
 
+// This is real raw data of wallet account, which user can use to
+// - spend and check double spend coin with private key
+// - receive coin with payment address
+// - read tx data with readonly key
 type KeySet struct {
 	PrivateKey     privacy.SpendingKey
 	PaymentAddress privacy.PaymentAddress
