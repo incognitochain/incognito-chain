@@ -282,13 +282,13 @@ func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) Hash() *common.Hash {
 }
 
 func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
-	return common.TrueValue, nil
+	return true, nil
 }
 
 func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
-	return common.TrueValue, common.TrueValue, nil
+	return true, true, nil
 }
 
 func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) ValidateMetadataByItself() bool {
-	return common.TrueValue
+	return true
 }

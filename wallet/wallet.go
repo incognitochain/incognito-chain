@@ -115,17 +115,17 @@ func (self *Wallet) ImportAccount(privateKeyStr string, accountName string, pass
 		}
 	}
 
-	priKey, err := Base58CheckDeserialize(privateKeyStr)
+	keyWallet, err := Base58CheckDeserialize(privateKeyStr)
 	if err != nil {
 		return nil, err
 	}
-	priKey.KeySet.ImportFromPrivateKey(&priKey.KeySet.PrivateKey)
+	keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 
-	Logger.log.Infof("Pub-key : %s", priKey.Base58CheckSerialize(PaymentAddressType))
-	Logger.log.Infof("Readonly-key : %s", priKey.Base58CheckSerialize(ReadonlyKeyType))
+	Logger.log.Infof("Pub-key : %s", keyWallet.Base58CheckSerialize(PaymentAddressType))
+	Logger.log.Infof("Readonly-key : %s", keyWallet.Base58CheckSerialize(ReadonlyKeyType))
 
 	account := AccountWallet{
-		Key:        *priKey,
+		Key:        *keyWallet,
 		Child:      make([]AccountWallet, 0),
 		IsImported: true,
 		Name:       accountName,
@@ -211,6 +211,7 @@ func (self *Wallet) GetAccountAddress(accountParam string) (KeySerializedData) {
 	newAccount := self.CreateNewAccount(accountParam)
 	key := KeySerializedData{
 		PaymentAddress: newAccount.Key.Base58CheckSerialize(PaymentAddressType),
+		Pubkey:         hex.EncodeToString(newAccount.Key.KeySet.PaymentAddress.Pk),
 		ReadonlyKey:    newAccount.Key.Base58CheckSerialize(ReadonlyKeyType),
 	}
 	return key
@@ -222,6 +223,7 @@ func (self *Wallet) GetAddressesByAccount(accountParam string) ([]KeySerializedD
 		if account.Name == accountParam {
 			item := KeySerializedData{
 				PaymentAddress: account.Key.Base58CheckSerialize(PaymentAddressType),
+				Pubkey:         hex.EncodeToString(account.Key.KeySet.PaymentAddress.Pk),
 				ReadonlyKey:    account.Key.Base58CheckSerialize(ReadonlyKeyType),
 			}
 			result = append(result, item)

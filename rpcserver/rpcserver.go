@@ -19,7 +19,6 @@ import (
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/addrmanager"
 	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/connmanager"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/mempool"
@@ -94,12 +93,12 @@ type RpcServerConfig struct {
 func (self *RpcServer) Init(config *RpcServerConfig) {
 	self.config = *config
 	self.statusLines = make(map[int]string)
-	if config.RPCUser != "" && config.RPCPass != common.EmptyString {
+	if config.RPCUser != "" && config.RPCPass != "" {
 		login := config.RPCUser + ":" + config.RPCPass
 		auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(login))
 		self.authSHA = sha256.Sum256([]byte(auth))
 	}
-	if config.RPCLimitUser != common.EmptyString && config.RPCLimitPass != common.EmptyString {
+	if config.RPCLimitUser != "" && config.RPCLimitPass != "" {
 		login := config.RPCLimitUser + ":" + config.RPCLimitPass
 		auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(login))
 		self.limitAuthSHA = sha256.Sum256([]byte(auth))
@@ -343,7 +342,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 		//
 		// RPC quirks can be enabled by the user to avoid compatibility issues
 		// with software relying on Core's behavior.
-		if request.Id == nil && !(self.config.RPCQuirks && request.Jsonrpc == common.EmptyString) {
+		if request.Id == nil && !(self.config.RPCQuirks && request.Jsonrpc == "") {
 			return
 		}
 
@@ -425,7 +424,7 @@ func (self RpcServer) createMarshalledReply(id, result interface{}, replyErr err
 		if jErr, ok := replyErr.(*RPCError); ok {
 			jsonErr = jErr
 		} else {
-			jsonErr = self.internalRPCError(replyErr.Error(), common.EmptyString)
+			jsonErr = self.internalRPCError(replyErr.Error(), "")
 		}
 	}
 
@@ -439,7 +438,7 @@ func (self RpcServer) createMarshalledReply(id, result interface{}, replyErr err
 // not needed.
 func (self RpcServer) internalRPCError(errStr, context string) *RPCError {
 	logStr := errStr
-	if context != common.EmptyString {
+	if context != "" {
 		logStr = context + ": " + errStr
 	}
 	Logger.log.Info(logStr)
@@ -470,7 +469,7 @@ func (self RpcServer) httpStatusLine(req *http.Request, code int) string {
 	}
 	codeStr := strconv.Itoa(code)
 	text := http.StatusText(code)
-	if text != common.EmptyString {
+	if text != "" {
 		line = proto + " " + codeStr + " " + text + "\r\n"
 		self.statusLock.Lock()
 		self.statusLines[key] = line

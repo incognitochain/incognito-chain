@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -201,15 +202,6 @@ func createDefaultConfigFile(destinationPath string) error {
 	}
 
 	return nil
-}
-
-// minUint32 is a helper function to return the minimum of two uint32s.
-// This avoids a math import and the need to cast to floats.
-func minUint32(a, b uint32) uint32 {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses
@@ -424,7 +416,7 @@ func loadConfig() (*config, []string, error) {
 	}
 
 	// --proxy or --connect without --listen disables listening.
-	if (cfg.Proxy != common.EmptyString || len(cfg.ConnectPeers) > 0) &&
+	if (cfg.Proxy != "" || len(cfg.ConnectPeers) > 0) &&
 		len(cfg.Listeners) == 0 {
 		cfg.DisableListen = true
 	}
@@ -546,7 +538,7 @@ func loadConfig() (*config, []string, error) {
 
 	if cfg.DiscoverPeers {
 		if cfg.DiscoverPeersAddress == "" {
-			err := fmt.Errorf("Discover peers server is empty")
+			err := errors.New("Discover peers server is empty")
 			return nil, nil, err
 		}
 	}

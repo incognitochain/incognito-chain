@@ -342,7 +342,7 @@ finalizing:
 			case blocksig := <-self.cBlockSig:
 
 				if idx := common.IndexOfStr(blocksig.Validator, committee); idx != -1 {
-					if finalBlock.Header.BlockCommitteeSigs[idx] == common.EmptyString {
+					if finalBlock.Header.BlockCommitteeSigs[idx] == "" {
 						err := cashec.ValidateDataB58(blocksig.Validator, blocksig.BlockSig, []byte(blockHash))
 
 						if err != nil {

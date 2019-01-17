@@ -49,32 +49,32 @@ func (cwr *CMBWithdrawRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	sender := txr.GetSigPubKey()
 	_, _, _, txContract, err := bcr.GetTransactionByHash(&cwr.ContractID)
 	if err != nil {
-		return common.FalseValue, errors.Errorf("Error retrieving contract for withdrawal")
+		return false, errors.Errorf("Error retrieving contract for withdrawal")
 	}
 	contractMeta := txContract.GetMetadata().(*CMBDepositContract)
 	if !bytes.Equal(sender, contractMeta.Receiver.Pk[:]) {
-		return common.FalseValue, errors.Errorf("Only contract receiver can initiate withdrawal")
+		return false, errors.Errorf("Only contract receiver can initiate withdrawal")
 	}
 
 	// Check if no withdrawal request for the same contract
 	_, _, err = bcr.GetWithdrawRequest(cwr.ContractID[:])
 	if err != leveldb.ErrNotFound {
 		if err != nil {
-			return common.FalseValue, err
+			return false, err
 		}
-		return common.FalseValue, errors.Errorf("Contract already had withdraw request")
+		return false, errors.Errorf("Contract already had withdraw request")
 	}
 
 	// TODO(@0xbunyip): validate that no 2 withdrawal requests of a contract in the same block
-	return common.TrueValue, nil
+	return true, nil
 }
 
 func (cwr *CMBWithdrawRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	// TODO(@0xbunyip)
-	return common.TrueValue, common.TrueValue, nil // continue to check for fee
+	return true, true, nil // continue to check for fee
 }
 
 func (cwr *CMBWithdrawRequest) ValidateMetadataByItself() bool {
 	// TODO(@0xbunyip)
-	return common.TrueValue
+	return true
 }

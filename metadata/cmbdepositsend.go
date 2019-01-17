@@ -43,46 +43,46 @@ func (ds *CMBDepositSend) ValidateTxWithBlockChain(txr Transaction, bcr Blockcha
 	// Check if contract is still valid
 	_, _, _, txContract, err := bcr.GetTransactionByHash(&ds.ContractID)
 	if err != nil {
-		return common.FalseValue, errors.Errorf("Error retrieving contract for sending deposit")
+		return false, errors.Errorf("Error retrieving contract for sending deposit")
 	}
 	contractMeta := txContract.GetMetadata().(*CMBDepositContract)
 	height, err := bcr.GetTxChainHeight(txr)
 	if err != nil || contractMeta.ValidUntil >= height {
-		return common.FalseValue, errors.Errorf("Deposit contract is not valid anymore")
+		return false, errors.Errorf("Deposit contract is not valid anymore")
 	}
 
 	// Check if the contract is not accepted
 	_, err = bcr.GetDepositSend(ds.ContractID[:])
 	if err != leveldb.ErrNotFound {
 		if err != nil {
-			return common.FalseValue, err
+			return false, err
 		}
-		return common.FalseValue, errors.Errorf("Deposit contract already had response")
+		return false, errors.Errorf("Deposit contract already had response")
 	}
 
 	// Check if contract is addressed to current user
 	sender := txr.GetSigPubKey()
 	if !bytes.Equal(sender, contractMeta.Receiver.Pk[:]) {
-		return common.FalseValue, errors.Errorf("Invalid sender for deposit contract")
+		return false, errors.Errorf("Invalid sender for deposit contract")
 	}
 
 	// Check if deposit amount is correct
 	cmbPubKey := txContract.GetSigPubKey()
 	unique, pubkey, amount := txContract.GetUniqueReceiver()
 	if !unique || !bytes.Equal(pubkey, cmbPubKey) {
-		return common.FalseValue, errors.Errorf("Deposit can only be send to CMB")
+		return false, errors.Errorf("Deposit can only be send to CMB")
 	}
 	if amount < contractMeta.DepositValue {
-		return common.FalseValue, errors.Errorf("Deposit not enough")
+		return false, errors.Errorf("Deposit not enough")
 	}
 
-	return common.TrueValue, nil
+	return true, nil
 }
 
 func (ds *CMBDepositSend) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	return common.TrueValue, common.TrueValue, nil // continue to check for fee
+	return true, true, nil // continue to check for fee
 }
 
 func (ds *CMBDepositSend) ValidateMetadataByItself() bool {
-	return common.TrueValue
+	return true
 }

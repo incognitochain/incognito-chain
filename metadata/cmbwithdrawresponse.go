@@ -41,7 +41,7 @@ func (cwres *CMBWithdrawResponse) ValidateTxWithBlockChain(txr Transaction, bcr 
 	// Check if request existed
 	_, _, _, txRequest, err := bcr.GetTransactionByHash(&cwres.RequestTxID)
 	if err != nil {
-		return common.FalseValue, errors.Errorf("Error retrieving request for withdraw response")
+		return false, errors.Errorf("Error retrieving request for withdraw response")
 	}
 
 	// Get contract of the deposit
@@ -50,13 +50,13 @@ func (cwres *CMBWithdrawResponse) ValidateTxWithBlockChain(txr Transaction, bcr 
 	metaContract := txContract.GetMetadata().(*CMBDepositContract)
 	blockHeight, err := bcr.GetTxChainHeight(txr)
 	if err != nil {
-		return common.FalseValue, errors.Errorf("Error retrieving block height of tx chain")
+		return false, errors.Errorf("Error retrieving block height of tx chain")
 	}
 
 	// Check if amount is enough
 	_, receiver, amount := txr.GetUniqueReceiver()
 	if !bytes.Equal(receiver, metaContract.Receiver.Pk[:]) {
-		return common.FalseValue, errors.Errorf("Withdraw response receiver incorrect")
+		return false, errors.Errorf("Withdraw response receiver incorrect")
 	}
 	if blockHeight < metaContract.MaturityAt {
 		// Early withdrawal
@@ -64,24 +64,24 @@ func (cwres *CMBWithdrawResponse) ValidateTxWithBlockChain(txr Transaction, bcr 
 		depositTerm := uint64(metaContract.MaturityAt - metaContract.ValidUntil)
 		expectedAmount := metaContract.TotalInterest*elapsed/depositTerm + metaContract.DepositValue
 		if amount < expectedAmount {
-			return common.FalseValue, errors.Errorf("Value of withdraw response is %s instead of %s", amount, expectedAmount)
+			return false, errors.Errorf("Value of withdraw response is %s instead of %s", amount, expectedAmount)
 		}
 	} else {
 		// Normal withdrawal
 		expectedAmount := metaContract.TotalInterest + metaContract.DepositValue
 		if amount < expectedAmount {
-			return common.FalseValue, errors.Errorf("Value of withdraw response is %s instead of %s", amount, expectedAmount)
+			return false, errors.Errorf("Value of withdraw response is %s instead of %s", amount, expectedAmount)
 		}
 	}
-	return common.TrueValue, nil
+	return true, nil
 }
 
 func (cwres *CMBWithdrawResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	// TODO(@0xbunyip)
-	return common.TrueValue, common.TrueValue, nil
+	return true, true, nil
 }
 
 func (cwres *CMBWithdrawResponse) ValidateMetadataByItself() bool {
 	// TODO(@0xbunyip)
-	return common.TrueValue
+	return true
 }
