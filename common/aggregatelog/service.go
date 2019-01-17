@@ -1,15 +1,24 @@
 package aggregatelog
 
-import "errors"
+import (
+	"errors"
+)
 
 type LogService struct {
 	InitService    InitService
 	CaptureMessage CaptureMessage
 	CaptureError   CaptureError
+	CaptureDebug   CaptureDebug
+	CaptureWarning CaptureWarning
+	CaptureFatal   CaptureFatal
 }
 
-type CaptureError func(err error) error
-type CaptureMessage func(message string) error
+type CaptureMessage func(message string, params ...interface{}) error
+type CaptureError func(err error, params ...interface{}) error
+type CaptureDebug func(message string, params ...interface{}) error
+type CaptureWarning func(message string, params ...interface{}) error
+type CaptureFatal func(message string, params ...interface{}) error
+
 type InitService func(params map[string]interface{}) error
 
 var LogServices = make(map[string]*LogService)
@@ -31,11 +40,17 @@ func init() {
 		InitSentry,
 		CaptureSentryMessage,
 		CaptureSentryError,
+		CaptureSentryDebug,
+		CaptureSentryWarning,
+		CaptureSentryFatal,
 	})
 
 	RegisterService(ELASTIC_LOG_SERVICENAME, &LogService{
 		InitElastic,
 		SendElasticMessage,
 		SendElasticError,
+		SendElasticDebug,
+		SendElasticWarning,
+		SendElasticFatal,
 	})
 }
