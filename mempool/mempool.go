@@ -259,7 +259,7 @@ func (tp *TxPool) GetTx(txHash *common.Hash) (metadata.Transaction, error) {
 		return txDesc.Desc.Tx, nil
 	}
 
-	return nil, fmt.Errorf("transaction is not in the pool")
+	return nil, errors.New("transaction is not in the pool")
 }
 
 // // MiningDescs returns a slice of mining descriptors for all the transactions

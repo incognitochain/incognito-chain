@@ -67,7 +67,7 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 		copy(hash[:], txHash)
 		_, _, _, txOld, err := bcr.GetTransactionByHash(hash)
 		if txOld == nil || err != nil {
-			return false, fmt.Errorf("Error finding corresponding loan request")
+			return false, errors.New("Error finding corresponding loan request")
 		}
 		switch txOld.GetMetadataType() {
 		case LoanRequestMeta:
@@ -75,11 +75,11 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 				// Check if key is correct
 				meta := txOld.GetMetadata()
 				if meta == nil {
-					return false, fmt.Errorf("Loan request metadata of tx loan withdraw is nil")
+					return false, errors.New("Loan request metadata of tx loan withdraw is nil")
 				}
 				requestMeta, ok := meta.(*LoanRequest)
 				if !ok {
-					return false, fmt.Errorf("Error parsing loan request of tx loan withdraw")
+					return false, errors.New("Error parsing loan request of tx loan withdraw")
 				}
 				hasher := sha3.NewLegacyKeccak256()
 				hasher.Write(lw.Key)
@@ -110,10 +110,10 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 
 	minResponse := bcr.GetDCBParams().MinLoanResponseRequire
 	if foundResponse < int(minResponse) {
-		return false, fmt.Errorf("Not enough loan accepted response")
+		return false, errors.New("Not enough loan accepted response")
 	}
 	if !keyCorrect {
-		return false, fmt.Errorf("Provided key is incorrect")
+		return false, errors.New("Provided key is incorrect")
 	}
 	return true, nil
 }
