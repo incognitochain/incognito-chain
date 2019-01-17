@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -546,7 +547,7 @@ func loadConfig() (*config, []string, error) {
 
 	if cfg.DiscoverPeers {
 		if cfg.DiscoverPeersAddress == "" {
-			err := fmt.Errorf("Discover peers server is empty")
+			err := errors.New("Discover peers server is empty")
 			return nil, nil, err
 		}
 	}

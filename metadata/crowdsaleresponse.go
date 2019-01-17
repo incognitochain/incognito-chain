@@ -3,8 +3,7 @@ package metadata
 import (
 	"bytes"
 	"encoding/hex"
-	"fmt"
-
+	"errors"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 )
@@ -47,7 +46,7 @@ func (cr *CrowdsaleResponse) ValidateTxWithBlockChain(txr Transaction, bcr Block
 		}
 	}
 	if !isBoard {
-		return false, fmt.Errorf("Tx must be created by DCB Governor")
+		return false, errors.New("Tx must be created by DCB Governor")
 	}
 
 	// Check if crowdsale request exists
@@ -56,20 +55,20 @@ func (cr *CrowdsaleResponse) ValidateTxWithBlockChain(txr Transaction, bcr Block
 		return false, err
 	}
 	if len(txHashes) == 0 {
-		return false, fmt.Errorf("Found no request for current crowdsale response")
+		return false, errors.New("Found no request for current crowdsale response")
 	}
 	for _, txHash := range txHashes {
 		hash, _ := (&common.Hash{}).NewHash(txHash)
 		_, _, _, txOld, err := bcr.GetTransactionByHash(hash)
 		if txOld == nil || err != nil {
-			return false, fmt.Errorf("Error finding corresponding loan request")
+			return false, errors.New("Error finding corresponding loan request")
 		}
 		switch txOld.GetMetadataType() {
 		case CrowdSaleResponseMeta:
 			{
 				// Check if the same user responses twice
 				if bytes.Equal(txOld.GetSigPubKey(), txr.GetSigPubKey()) {
-					return false, fmt.Errorf("Current board member already responded to crowdsale request")
+					return false, errors.New("Current board member already responded to crowdsale request")
 				}
 			}
 		}
@@ -86,7 +85,7 @@ func (cr *CrowdsaleResponse) ValidateTxWithBlockChain(txr Transaction, bcr Block
 		return false, err
 	}
 	if !saleData.SellingAsset.IsEqual(&common.ConstantID) && !bytes.Equal(saleData.SellingAsset[:8], common.BondTokenID[:8]) && !saleData.SellingAsset.IsEqual(&common.DCBTokenID) {
-		return false, fmt.Errorf("Selling asset of the crowdsale cannot have response tx")
+		return false, errors.New("Selling asset of the crowdsale cannot have response tx")
 	}
 	return true, nil
 }

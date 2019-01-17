@@ -49,7 +49,7 @@ func (lp *LoanPayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 	unique, receiver, amount := txr.GetUniqueReceiver()
 	fmt.Printf("unique, receiver, amount: %v, %x, %v\n", unique, receiver, amount)
 	if !unique || !bytes.Equal(receiver, burnPk) {
-		return false, fmt.Errorf("Loan payment must be sent to burn address")
+		return false, errors.New("Loan payment must be sent to burn address")
 	}
 
 	return true, nil

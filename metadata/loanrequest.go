@@ -96,7 +96,7 @@ func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 		}
 	}
 	if !ok {
-		return false, fmt.Errorf("LoanRequest has incorrect params")
+		return false, errors.New("LoanRequest has incorrect params")
 	}
 
 	txs, err := bcr.GetLoanTxs(lr.LoanID)
@@ -105,7 +105,7 @@ func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 	}
 
 	if len(txs) > 0 {
-		return false, fmt.Errorf("LoanID already existed")
+		return false, errors.New("LoanID already existed")
 	}
 	return true, nil
 }
