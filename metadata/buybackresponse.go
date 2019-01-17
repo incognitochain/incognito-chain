@@ -41,7 +41,6 @@ func (bbRes *BuyBackResponse) ValidateMetadataByItself() bool {
 
 func (bbRes *BuyBackResponse) Hash() *common.Hash {
 	record := bbRes.RequestedTxID.String()
-	record += bbRes.MetadataBase.Hash().String()
 	// final hash
 	record += bbRes.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))

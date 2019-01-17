@@ -39,6 +39,7 @@ const (
 	UpdatingOracleBoardMeta
 	MultiSigsRegistrationMeta
 	MultiSigsSpendingMeta
+	WithSenderAddressMeta
 
 	//Voting
 	SubmitDCBProposalMeta

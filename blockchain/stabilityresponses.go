@@ -139,8 +139,12 @@ func (blockgen *BlkTmplGenerator) buildRefundTxs(
 		if !ok {
 			continue
 		}
-		addr, txValue := lookbackTx.CalculateTxValue()
-		if addr == nil || txValue > refundInfo.ThresholdToLargeTx {
+		addr := lookbackTx.GetSenderAddress()
+		if addr == nil {
+			continue
+		}
+		txValue := lookbackTx.CalculateTxValue()
+		if txValue > refundInfo.ThresholdToLargeTx {
 			continue
 		}
 		addresses = append(addresses, addr)
