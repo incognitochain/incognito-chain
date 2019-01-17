@@ -753,9 +753,9 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 					if err := self.config.DataBase.StoreCrowdsaleData(
 						data.SaleID,
 						data.EndBlock,
-						data.BuyingAsset,
+						data.BuyingAsset[:],
 						data.BuyingAmount,
-						data.SellingAsset,
+						data.SellingAsset[:],
 						data.SellingAmount,
 					); err != nil {
 						return err
@@ -961,7 +961,7 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 }
 
 // /*
-// 	Key: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
+// 	KeyWallet: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
 //   H: value-spent/unspent-rewarded/unreward
 // */
 func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxCustomToken) error {

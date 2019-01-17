@@ -112,9 +112,9 @@ func transferTxToken(tokenAmount uint64, unspentTxTokenOuts []transaction.TxToke
 		},
 	}
 	if sumTokens > tokenAmount {
-		accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+		keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 		txTokenOuts = append(txTokenOuts, transaction.TxTokenVout{
-			PaymentAddress: accountDCB.KeySet.PaymentAddress,
+			PaymentAddress: keyWalletDCBAccount.KeySet.PaymentAddress,
 			Value:          sumTokens - tokenAmount,
 		})
 	}
@@ -204,8 +204,8 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	saleID []byte,
 	producerPrivateKey *privacy.SpendingKey,
 ) (*transaction.TxCustomToken, error) {
-	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	dcbPk := accountDCB.KeySet.PaymentAddress.Pk
+	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
 	saleData := saleDataMap[string(saleID)]
 
 	// Get price for asset
@@ -219,11 +219,10 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	// TODO(@0xbunyip): validate sale data in proposal to admit only valid pair of assets
 	txResponse := &transaction.TxCustomToken{}
 	err := errors.New("Incorrect assets for crowdsale")
-	sellingAsset := &common.Hash{}
-	copy(sellingAsset[:], saleData.SellingAsset)
+	sellingAsset := saleData.SellingAsset
 
-	if bytes.Equal(sellingAsset[:], common.ConstantID[:]) {
-		tokenAmount, valuesInConstant, err := getTxTokenValue(tx.TxTokenData, saleData.BuyingAsset, dcbPk, prices)
+	if sellingAsset.IsEqual(&common.ConstantID) {
+		tokenAmount, valuesInConstant, err := getTxTokenValue(tx.TxTokenData, saleData.BuyingAsset[:], dcbPk, prices)
 		if err != nil {
 			return nil, err
 		}
@@ -245,10 +244,10 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 			return nil, err
 		}
 
-	} else if bytes.Equal(sellingAsset[:8], common.BondTokenID[:8]) || bytes.Equal(sellingAsset[:], common.DCBTokenID[:]) {
+	} else if common.IsBondAsset(&sellingAsset) || common.IsDCBTokenAsset(&sellingAsset) {
 		// Get unspent token UTXO to send to user
 		if _, ok := unspentTokenMap[string(sellingAsset[:])]; !ok {
-			unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(accountDCB.KeySet, sellingAsset)
+			unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(keyWalletDCBAccount.KeySet, &sellingAsset)
 			if err == nil {
 				unspentTokenMap[string(sellingAsset[:])] = unspentTxTokenOuts
 			} else {
@@ -259,7 +258,7 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 		// Calculate amount of token to send
 		sentAmount := uint64(0)
 		tokensToSend := uint64(0)
-		if bytes.Equal(saleData.BuyingAsset[:8], common.OffchainAssetID[:8]) {
+		if common.IsOffChainAsset(&saleData.BuyingAsset) {
 			meta, ok := tx.GetMetadata().(*metadata.CrowdsaleResponse)
 			if !ok {
 				return nil, fmt.Errorf("Error parsing crowdsale response")
@@ -405,14 +404,14 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 
 	// Skip payment if either selling or buying asset is offchain (needs confirmation)
 	saleData := saleDataMap[string(metaRequest.SaleID)]
-	if bytes.Equal(saleData.SellingAsset[:8], common.OffchainAssetID[:8]) || bytes.Equal(saleData.BuyingAsset[:8], common.OffchainAssetID[:8]) {
+	if common.IsOffChainAsset(&saleData.SellingAsset) || common.IsOffChainAsset(&saleData.BuyingAsset) {
 		// Save asset price if the either buying or selling asset is offchain
 		// TODO(@0xbunyip): get price of offchain asset instead of bonds here
 		assetID := []byte{}
-		if bytes.Equal(saleData.SellingAsset[:8], common.OffchainAssetID[:8]) {
-			assetID = saleData.SellingAsset
+		if common.IsOffChainAsset(&saleData.SellingAsset) {
+			assetID = saleData.SellingAsset[:]
 		} else {
-			assetID = saleData.BuyingAsset
+			assetID = saleData.BuyingAsset[:]
 		}
 		metaRequest.AssetPrice = blockgen.chain.BestState[0].BestBlock.Header.Oracle.Bonds[string(assetID)]
 		return

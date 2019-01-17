@@ -17,12 +17,12 @@ type CMBInitResponse struct {
 }
 
 func NewCMBInitResponse(data map[string]interface{}) *CMBInitResponse {
-	mainKey, err := wallet.Base58CheckDeserialize(data["MainAccount"].(string))
+	keyWalletMainKey, err := wallet.Base58CheckDeserialize(data["MainAccount"].(string))
 	if err != nil {
 		return nil
 	}
 	result := CMBInitResponse{
-		MainAccount: mainKey.KeySet.PaymentAddress,
+		MainAccount: keyWalletMainKey.KeySet.PaymentAddress,
 	}
 	result.Type = CMBInitResponseMeta
 	return &result
