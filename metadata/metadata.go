@@ -45,10 +45,7 @@ func (mb *MetadataBase) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRet
 func (mb *MetadataBase) CheckTransactionFee(tr Transaction, minFeePerKbTx uint64) bool {
 	txFee := tr.GetTxFee()
 	fullFee := minFeePerKbTx * tr.GetTxActualSize()
-	if txFee < fullFee {
-		return false
-	}
-	return true
+	return txFee < fullFee
 }
 
 func (mb *MetadataBase) VerifyMultiSigs(
