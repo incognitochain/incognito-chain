@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/ninjadotorg/constant/metadata"
 	"fmt"
+	"sort"
 )
 
 func (self RpcServer) buildRawTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
@@ -366,19 +367,6 @@ func (self RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []*priv
 	return realFee
 }
 
-func min (values []uint64) int{
-	min := values[0]
-	indexMin := 0
-	for i:=1; i<len(values); i++{
-		if values[i] < min{
-			min = values[i]
-			indexMin = i
-		}
-	}
-
-	return indexMin
-}
-
 // getUnspentCoinToSpent returns list of unspent coins for spending with amount
 func getUnspentCoinToSpent(outCoins []*privacy.OutputCoin, amount uint64) (resultOutputCoins []*privacy.OutputCoin, remainOutputCoins []*privacy.OutputCoin, totalResultOutputCoinAmount uint64, err error) {
 	resultOutputCoins = make([]*privacy.OutputCoin, 0)
@@ -388,58 +376,66 @@ func getUnspentCoinToSpent(outCoins []*privacy.OutputCoin, amount uint64) (resul
 	// just choose output coins have value less than amount for Knapsack algorithm
 	sumValueKnapsack := uint64(0)
 	valuesKnapsack := make([]uint64, 0)
-	outCoinsKnapsack := make([]*privacy.OutputCoin, 0)
-
-	valuesUnknapsack := make([]uint64, 0)
-	outCoinsUnknapsack := make([]*privacy.OutputCoin, 0)
+	outCoinKnapsack := make([]*privacy.OutputCoin, 0)
+	outCoinUnknapsack := make([]*privacy.OutputCoin, 0)
 
 	for _, outCoin := range outCoins {
 		if outCoin.CoinDetails.Value > amount{
-			valuesUnknapsack = append(valuesUnknapsack, outCoin.CoinDetails.Value)
-			outCoinsUnknapsack = append(outCoinsUnknapsack, outCoin)
+			outCoinUnknapsack = append(outCoinUnknapsack, outCoin)
 		} else {
 			sumValueKnapsack += outCoin.CoinDetails.Value
 			valuesKnapsack = append(valuesKnapsack, outCoin.CoinDetails.Value)
-			outCoinsKnapsack = append(outCoinsKnapsack, outCoin)
+			outCoinKnapsack = append(outCoinKnapsack, outCoin)
 		}
 	}
 
 	// target
 	target := int64(sumValueKnapsack - amount)
 
-	// if target > 0, using Knapsack to choose coins
+	// if target > 1000, using Greedy algorithm
+	// if target > 0, using Knapsack algorithm to choose coins
 	// if target == 0, coins need to be spent is coins for Knapsack, we don't need to run Knapsack to find solution
 	// if target < 0, instead of using Knapsack, we get the coin that has value is minimum in list unKnapsack coins
-	if target > 0 {
+	if target > 1000{
+		choices := privacy.Greedy(outCoins, amount)
+		for i, choice := range choices {
+			if choice{
+				totalResultOutputCoinAmount += outCoins[i].CoinDetails.Value
+				resultOutputCoins = append(resultOutputCoins, outCoins[i])
+			} else{
+				remainOutputCoins = append(remainOutputCoins, outCoins[i])
+			}
+		}
+	} else if target > 0 {
 		choices := privacy.Knapsack(valuesKnapsack, uint64(target))
 		for i, choice := range choices {
 			if !choice {
-				totalResultOutputCoinAmount += outCoinsKnapsack[i].CoinDetails.Value
-				resultOutputCoins = append(resultOutputCoins, outCoinsKnapsack[i])
+				totalResultOutputCoinAmount += outCoinKnapsack[i].CoinDetails.Value
+				resultOutputCoins = append(resultOutputCoins, outCoinKnapsack[i])
 			} else {
-				remainOutputCoins = append(remainOutputCoins, outCoinsKnapsack[i])
+				remainOutputCoins = append(remainOutputCoins, outCoinKnapsack[i])
 			}
 		}
-		for _, outCoin := range outCoinsUnknapsack {
+		for _, outCoin := range outCoinUnknapsack{
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	} else if target == 0{
 		totalResultOutputCoinAmount = sumValueKnapsack
-		resultOutputCoins = outCoinsKnapsack
-		remainOutputCoins = outCoinsUnknapsack
+		resultOutputCoins = outCoinKnapsack
+		remainOutputCoins = outCoinUnknapsack
 	} else{
-		if len(outCoinsUnknapsack) == 0{
-			return nil, outCoins,0, errors.New("Not enough coin")
+		if len(outCoinUnknapsack) == 0{
+			return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, errors.New("Not enough coin")
 		} else{
-			indexMin := min(valuesUnknapsack)
-			resultOutputCoins = append(resultOutputCoins, outCoinsUnknapsack[indexMin])
-			totalResultOutputCoinAmount = valuesUnknapsack[indexMin]
-			for i, outCoin := range outCoinsUnknapsack {
-				if i != indexMin{
-					remainOutputCoins = append(remainOutputCoins, outCoin)
-				}
+			sort.Slice(outCoinUnknapsack, func(i, j int) bool {
+				return outCoinUnknapsack[i].CoinDetails.Value < outCoinUnknapsack[j].CoinDetails.Value
+			})
+			resultOutputCoins = append(resultOutputCoins, outCoinUnknapsack[0])
+			totalResultOutputCoinAmount = outCoinUnknapsack[0].CoinDetails.Value
+			for i:=1; i<len(outCoinUnknapsack); i++{
+				remainOutputCoins = append(remainOutputCoins, outCoinUnknapsack[i])
 			}
-			for _, outCoin := range outCoinsKnapsack {
+			for _, outCoin := range outCoinKnapsack{
 				remainOutputCoins = append(remainOutputCoins, outCoin)
 			}
 		}

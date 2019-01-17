@@ -220,10 +220,10 @@ package zkp
 //range proof for all the values.
 //
 //changes:
-// all values are concatenated
-// r(x) is computed differently
-// tau_x calculation is different
-// delta calculation is different
+//all values are concatenated
+//r(x) is computed differently
+//tau_x calculation is different
+//delta calculation is different
 //
 //{(g, h \in G, \textbf{V} \in G^m ; \textbf{v, \gamma} \in Z_p^m) :
 //	V_j = h^{\gamma_j}g^{v_j} \wedge v_j \in [0, 2^n - 1] \forall j \in [1, m]}

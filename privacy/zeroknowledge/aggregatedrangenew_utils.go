@@ -2,7 +2,6 @@ package zkp
 
 import (
 	"errors"
-	"fmt"
 	"github.com/ninjadotorg/constant/privacy"
 	"math"
 	"math/big"
@@ -47,8 +46,8 @@ func (wit *InnerProductWitness) Prove() (*InnerProductProof, error) {
 	p := new(privacy.EllipticPoint)
 	p.Set(wit.p.X, wit.p.Y)
 
-	G := make([]*privacy.EllipticPoint, privacy.MaxExp)
-	H := make([]*privacy.EllipticPoint, privacy.MaxExp)
+	G := make([]*privacy.EllipticPoint, n)
+	H := make([]*privacy.EllipticPoint, n)
 	for i := range G {
 		G[i] = new(privacy.EllipticPoint)
 		G[i].Set(AggParam.G[i].X, AggParam.G[i].Y)
@@ -99,14 +98,14 @@ func (wit *InnerProductWitness) Prove() (*InnerProductProof, error) {
 		HPrime := make([]*privacy.EllipticPoint, nPrime)
 
 		for i := range GPrime {
-			GPrime[i] = G[i+nPrime].ScalarMult(xInverse).Add(G[i].ScalarMult(x))
-			HPrime[i] = H[i+nPrime].ScalarMult(x).Add(H[i].ScalarMult(xInverse))
+			GPrime[i] = G[i].ScalarMult(xInverse).Add(G[i+nPrime].ScalarMult(x))
+			HPrime[i] = H[i].ScalarMult(x).Add(H[i+nPrime].ScalarMult(xInverse))
 		}
 
 		xSquare := new(big.Int).Mul(x, x)
-		xSquare.Mod(xSquare, privacy.Curve.Params().N)
 		xSquareInverse := new(big.Int).ModInverse(xSquare, privacy.Curve.Params().N)
 
+		//PPrime := L.ScalarMult(xSquare).Add(p).Add(R.ScalarMult(xSquareInverse)) // x^2 * L + P + xInverse^2 * R
 		PPrime := L.ScalarMult(xSquare).Add(p).Add(R.ScalarMult(xSquareInverse)) // x^2 * L + P + xInverse^2 * R
 
 		// calculate aPrime, bPrime
@@ -132,29 +131,20 @@ func (wit *InnerProductWitness) Prove() (*InnerProductProof, error) {
 		n = nPrime
 	}
 
-	fmt.Printf("Prove p: %+v\n", p)
-
 	proof.a = a[0]
 	proof.b = b[0]
-
-	c := new(big.Int).Mul(proof.a, proof.b)
-	rightPoint := (G[0].ScalarMult(proof.a).Add(H[0].ScalarMult(proof.b))).Add(proof.u.ScalarMult(c))
-	if rightPoint.IsEqual(p) {
-		fmt.Printf("True")
-	}
-	fmt.Printf("False")
 
 	return proof, nil
 }
 
 func (proof *InnerProductProof) Verify() bool {
-
-	//fmt.Printf("Proof.p: %v\n", proof.p)
 	p := new(privacy.EllipticPoint)
 	p.Set(proof.p.X, proof.p.Y)
 
-	G := make([]*privacy.EllipticPoint, privacy.MaxExp)
-	H := make([]*privacy.EllipticPoint, privacy.MaxExp)
+	n := privacy.MaxExp
+
+	G := make([]*privacy.EllipticPoint, n)
+	H := make([]*privacy.EllipticPoint, n)
 	for i := range G {
 		G[i] = new(privacy.EllipticPoint)
 		G[i].Set(AggParam.G[i].X, AggParam.G[i].Y)
@@ -162,7 +152,6 @@ func (proof *InnerProductProof) Verify() bool {
 		H[i] = new(privacy.EllipticPoint)
 		H[i].Set(AggParam.H[i].X, AggParam.H[i].Y)
 	}
-	n := 64
 
 	for i := range proof.L {
 		nPrime := n / 2
@@ -175,14 +164,14 @@ func (proof *InnerProductProof) Verify() bool {
 		HPrime := make([]*privacy.EllipticPoint, nPrime)
 
 		for i := range GPrime {
-			GPrime[i] = G[i+nPrime].ScalarMult(xInverse).Add(G[i].ScalarMult(x))
-			HPrime[i] = H[i+nPrime].ScalarMult(x).Add(H[i].ScalarMult(xInverse))
+			GPrime[i] = G[i].ScalarMult(xInverse).Add(G[i+nPrime].ScalarMult(x))
+			HPrime[i] = H[i].ScalarMult(x).Add(H[i+nPrime].ScalarMult(xInverse))
 		}
 
 		xSquare := new(big.Int).Mul(x, x)
-		xSquare.Mod(xSquare, privacy.Curve.Params().N)
 		xSquareInverse := new(big.Int).ModInverse(xSquare, privacy.Curve.Params().N)
 
+		//PPrime := L.ScalarMult(xSquare).Add(p).Add(R.ScalarMult(xSquareInverse)) // x^2 * L + P + xInverse^2 * R
 		PPrime := proof.L[i].ScalarMult(xSquare).Add(p).Add(proof.R[i].ScalarMult(xSquareInverse)) // x^2 * L + P + xInverse^2 * R
 
 		p = PPrime
@@ -191,13 +180,12 @@ func (proof *InnerProductProof) Verify() bool {
 		n = nPrime
 	}
 
-	fmt.Printf("Len G: %v\n", len(G))
-	fmt.Printf("Len H: %v\n", len(H))
-
-	fmt.Printf("Verify p: %+v\n", p)
-
 	c := new(big.Int).Mul(proof.a, proof.b)
-	rightPoint := (G[0].ScalarMult(proof.a).Add(H[0].ScalarMult(proof.b))).Add(proof.u.ScalarMult(c))
+
+	rightPoint := G[0].ScalarMult(proof.a)
+	rightPoint = rightPoint.Add(H[0].ScalarMult(proof.b))
+	rightPoint = rightPoint.Add(proof.u.ScalarMult(c))
+
 	if rightPoint.IsEqual(p) {
 		return true
 	}
@@ -245,16 +233,16 @@ func innerProduct(a []*big.Int, b []*big.Int) (*big.Int, error) {
 	return c, nil
 }
 
-func hadamardProduct(a []*big.Int, b []*big.Int) ([]*big.Int, error) {
-	if len(a) != len(b) {
-		return nil, errors.New("InnerProduct: Arrays not of the same length")
-	}
-
-	c := make([]*big.Int, len(a))
-	for i := 0; i < len(c); i++ {
-		c[i] = new(big.Int).Mul(a[i], b[i])
-		c[i].Mod(c[i], privacy.Curve.Params().N)
-	}
-
-	return c, nil
-}
+//func hadamardProduct(a []*big.Int, b []*big.Int) ([]*big.Int, error) {
+//	if len(a) != len(b) {
+//		return nil, errors.New("InnerProduct: Arrays not of the same length")
+//	}
+//
+//	c := make([]*big.Int, len(a))
+//	for i := 0; i < len(c); i++ {
+//		c[i] = new(big.Int).Mul(a[i], b[i])
+//		c[i].Mod(c[i], privacy.Curve.Params().N)
+//	}
+//
+//	return c, nil
+//}

@@ -34,9 +34,41 @@ func TestInnerProduct(t *testing.T) {
 	assert.Equal(t, num1Inverse, num2Inverse)
 }
 
+func TestEncodeVectors(t *testing.T){
+	n := 2
+	a := make([]*big.Int, n)
+	b := make([]*big.Int, n)
+	G := make([]*privacy.EllipticPoint, n)
+	H := make([]*privacy.EllipticPoint, n)
+
+	for i := range a{
+		a[i] = big.NewInt(10)
+		b[i] = big.NewInt(10)
+
+		G[i]= new(privacy.EllipticPoint)
+		G[i].Set(AggParam.G[i].X, AggParam.G[i].Y)
+
+		H[i]= new(privacy.EllipticPoint)
+		H[i].Set(AggParam.H[i].X, AggParam.H[i].Y)
+	}
+
+	actualRes, err := EncodeVectors(a,b, G, H)
+	if err != nil{
+		fmt.Printf("Err: %v\n", err)
+	}
+
+	expectedRes := new(privacy.EllipticPoint).Zero()
+	for i:=0; i<n; i++{
+		expectedRes = expectedRes.Add(G[i].ScalarMult(a[i]))
+		expectedRes = expectedRes.Add(H[i].ScalarMult(b[i]))
+	}
+
+	assert.Equal(t, expectedRes, actualRes)
+}
+
 func TestProve(t *testing.T){
 	wit := new(InnerProductWitness)
-	n := 64
+	n := privacy.MaxExp
 	wit.a = make([]*big.Int, n)
 	wit.b = make([]*big.Int, n)
 	for i := range wit.a{
@@ -64,7 +96,6 @@ func TestProve(t *testing.T){
 		fmt.Printf("Err: %v\n", err)
 	}
 
-	fmt.Printf("Proving done!!!")
 	res := proof.Verify()
 
 	assert.Equal(t, true, res)

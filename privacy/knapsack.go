@@ -1,5 +1,7 @@
 package privacy
 
+import "sort"
+
 //Todo: 0xKraken
 
 // max returns maximum of two unsigned integer 64 bits
@@ -47,15 +49,22 @@ func Knapsack(values []uint64, target uint64) []bool {
 	return choices
 }
 
-func min (values []uint64) int{
-	min := values[0]
-	indexMin := 0
-	for i:=1; i<len(values); i++{
-		if values[i] < min{
-			min = values[i]
-			indexMin = i
+// Greedy get output coins for spending with Greedy algorithm
+func Greedy(outCoins []*OutputCoin, amount uint64) []bool {
+	choices := make([]bool, len(outCoins))
+
+	sort.Slice(outCoins, func(i, j int) bool {
+		return outCoins[i].CoinDetails.Value < outCoins[j].CoinDetails.Value
+	})
+
+	sumAmount := uint64(0)
+	for i, coin := range outCoins {
+		sumAmount += coin.CoinDetails.Value
+		choices[i] = true
+		if sumAmount >= amount{
+			break
 		}
 	}
 
-	return indexMin
+	return choices
 }
