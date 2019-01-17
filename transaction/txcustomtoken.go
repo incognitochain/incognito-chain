@@ -71,7 +71,7 @@ func (customTokenTx *TxCustomToken) ValidateTxWithCurrentMempool(
 	mr metadata.MempoolRetriever,
 ) error {
 	if customTokenTx.Type == common.TxSalaryType {
-		return errors.New("Can not receive a salary tx from other node, this is a violation")
+		return errors.New("can not receive a salary tx from other node, this is a violation")
 	}
 
 	normalTx := customTokenTx.Tx
@@ -402,7 +402,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 		}
 		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 		if _, ok := listCustomTokens[*propertyID]; !ok {
-			return NewTransactionErr(UnexpectedErr, errors.New("Invalid Token ID"))
+			return NewTransactionErr(UnexpectedErr, errors.New("invalid Token ID"))
 		}
 		txCustomToken.TxTokenData.PropertyID = *propertyID
 		txCustomToken.TxTokenData.Vins = tokenParams.vins
