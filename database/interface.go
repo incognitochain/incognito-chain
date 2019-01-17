@@ -24,7 +24,16 @@ type DatabaseInterface interface {
 	FetchAllBlocks() (map[byte][]*common.Hash, error)
 	FetchChainBlocks(byte) ([]*common.Hash, error)
 	DeleteBlock(*common.Hash, uint64, byte) error
-	StoreCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlkHash *common.Hash) error
+
+	StoreIncomingCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlkHash *common.Hash) error
+	HasIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash *common.Hash) error
+	GetIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash *common.Hash) (uint64, error)
+	StoreOutgoingCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlk interface{}) error
+	HasOutgoingCrossShard(shardID byte, crossShardID byte, blkHeight uint64) error
+	GetOutgoingCrossShard(shardID byte, crossShardID byte, blkHeight uint64) ([]byte, error)
+
+	StoreShardToBeacon(shardID byte, blkHeight uint64, shardBlkHash *common.Hash) error
+	HasShardToBeacon(shardID byte, shardBlkHash *common.Hash) error
 
 	// Beacon
 	StoreBeaconBlock(interface{}) error

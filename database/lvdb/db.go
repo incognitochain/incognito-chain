@@ -18,11 +18,12 @@ type hasher interface {
 var (
 	beaconPrefix              = []byte("bea-")
 	beaconBestBlockkey        = []byte("bea-bestBlock")
-	shardIDPrefix             = []byte("c")
+	shardIDPrefix             = []byte("s")
 	blockKeyPrefix            = []byte("b-")
 	blockHeaderKeyPrefix      = []byte("bh-")
 	blockKeyIdxPrefix         = []byte("i-")
 	crossShardKeyPrefix       = []byte("csh-")
+	shardToBeaconKeyPrefix    = []byte("stb-")
 	transactionKeyPrefix      = []byte("tx-")
 	privateKeyPrefix          = []byte("prk-")
 	serialNumbersPrefix       = []byte("serinalnumbers-")

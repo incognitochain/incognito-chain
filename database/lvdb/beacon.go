@@ -221,3 +221,26 @@ func (db *db) FetchBeaconBlockChain() ([]*common.Hash, error) {
 	}
 	return keys, nil
 }
+
+//StoreCrossShard store which crossShardBlk from which shard has been include in which block height
+func (db *db) StoreShardToBeacon(shardID byte, blkHeight uint64, shardBlkHash *common.Hash) error {
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, blkHeight)
+	prefix := append([]byte{shardID}, shardBlkHash[:]...)
+	// stb-ShardID-ShardBlockHash : BeaconBlockHeight
+	key := append(shardToBeaconKeyPrefix, prefix...)
+	if err := db.lvdb.Put(key, buf, nil); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
+}
+
+func (db *db) HasShardToBeacon(shardID byte, shardBlkHash *common.Hash) error {
+	prefix := append([]byte{shardID}, shardBlkHash[:]...)
+	// stb-ShardID-ShardBlockHash : BeaconBlockHeight
+	key := append(shardToBeaconKeyPrefix, prefix...)
+	if ok, _ := db.HasValue(key); ok {
+		return nil
+	}
+	return database.NewDatabaseError(database.BlockExisted, errors.Errorf("Cross Shard Block doesn't exist"))
+}

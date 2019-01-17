@@ -152,19 +152,13 @@ func (self *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 		}
 		Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
 	}
-	err := self.StoreCrossShard(block)
+	err := self.StoreIncomingCrossShard(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
-	return nil
-}
-
-func (self *BlockChain) StoreCrossShard(block *ShardBlock) error {
-	crossShardMap, _ := block.Body.ExtractCrossShardMap()
-	for crossShard, crossBlks := range crossShardMap {
-		for _, crossBlk := range crossBlks {
-			self.config.DataBase.StoreCrossShard(block.Header.ShardID, crossShard, block.Header.Height, &crossBlk)
-		}
+	err = self.StoreOutgoingCrossShard(block)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
 	}
 	return nil
 }
@@ -487,4 +481,24 @@ func VerifyMerkleCrossOutputCoin(crossOutputCoins []CrossOutputCoin, rootHash co
 	hashByte := rootHash.GetBytes()
 	newHash, err := common.Hash{}.NewHash(hashByte)
 	return newHash.IsEqual(res)
+}
+
+func (self *BlockChain) StoreIncomingCrossShard(block *ShardBlock) error {
+	crossShardMap, _ := block.Body.ExtractIncomingCrossShardMap()
+	for crossShard, crossBlks := range crossShardMap {
+		for _, crossBlk := range crossBlks {
+			self.config.DataBase.StoreIncomingCrossShard(block.Header.ShardID, crossShard, block.Header.Height, &crossBlk)
+		}
+	}
+	return nil
+}
+
+func (self *BlockChain) StoreOutgoingCrossShard(block *ShardBlock) error {
+	crossShardMap, _ := block.Body.ExtractOutgoingCrossShardMap()
+	for crossShard, crossBlks := range crossShardMap {
+		for _, crossBlk := range crossBlks {
+			self.config.DataBase.StoreIncomingCrossShard(block.Header.ShardID, crossShard, block.Header.Height, &crossBlk)
+		}
+	}
+	return nil
 }
