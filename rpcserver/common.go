@@ -493,31 +493,7 @@ func (self RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, 
 	return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, nil
 }
 
-/*func SenderKeyParamToMap(senderKeyParam interface{}) (interface{}, error) {
-	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	paymentAddr := senderKey.KeySet.PaymentAddress
-	paymentAddressData := make(map[string]interface{})
-	paymentAddressData["Pk"] = string(paymentAddr.Pk)
-	paymentAddressData["Tk"] = string(paymentAddr.Tk)
-
-	return paymentAddressData, nil
-}*/
-
-/*func GetPubKeyFromSenderKeyParams(senderKeyParam string) ([]byte, error) {
-	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam)
-	if err != nil {
-		return nil, err
-	}
-	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	paymentAddr := senderKey.KeySet.PaymentAddress
-	return paymentAddr.Pk, nil
-}*/
-
-func GetPaymentAddressFromSenderKeyParams(senderKeyParam string) (*privacy.PaymentAddress, error) {
+func (self RpcServer) GetPaymentAddressFromPrivateKeyParams(senderKeyParam string) (*privacy.PaymentAddress, error) {
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam)
 	if err != nil {
 		return nil, err

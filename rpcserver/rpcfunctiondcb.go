@@ -234,7 +234,7 @@ func (self RpcServer) buildRawSubmitDCBProposalTransaction(
 	NParams := len(arrayParams)
 
 	newParams := arrayParams[NParams-1].(map[string]interface{})
-	tmp, err := GetPaymentAddressFromSenderKeyParams(arrayParams[0].(string))
+	tmp, err := self.GetPaymentAddressFromPrivateKeyParams(arrayParams[0].(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}

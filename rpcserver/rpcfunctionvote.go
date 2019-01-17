@@ -123,11 +123,11 @@ func (self RpcServer) buildRawSealLv3VoteProposalTransaction(
 	voteProposalData := metadata.NewVoteProposalDataFromJson(arrayParams[iPlusPlus(&index)])
 
 	threeSenderKey := common.SliceInterfaceToSliceString(arrayParams[iPlusPlus(&index)].([]interface{}))
-	pubKeys, err := ListPubKeyFromListSenderKey(threeSenderKey)
+	pubKeys, err := self.ListPubKeyFromListSenderKey(threeSenderKey)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	threePaymentAddress := ListPaymentAddressFromListSenderKey(threeSenderKey)
+	threePaymentAddress := self.ListPaymentAddressFromListSenderKey(threeSenderKey)
 
 	Seal3Data := CreateSealLv3Data(voteProposalData, pubKeys)
 	meta := NewSealedLv3VoteProposalMetadata(boardType, Seal3Data, threePaymentAddress)
@@ -136,19 +136,19 @@ func (self RpcServer) buildRawSealLv3VoteProposalTransaction(
 	return tx, NewRPCError(ErrUnexpected, err)
 }
 
-func ListPaymentAddressFromListSenderKey(listSenderKey []string) []privacy.PaymentAddress {
+func (self RpcServer) ListPaymentAddressFromListSenderKey(listSenderKey []string) []privacy.PaymentAddress {
 	paymentAddresses := make([]privacy.PaymentAddress, 0)
 	for i := 0; i < 3; i++ {
-		new, _ := GetPaymentAddressFromSenderKeyParams(listSenderKey[i])
+		new, _ := self.GetPaymentAddressFromPrivateKeyParams(listSenderKey[i])
 		paymentAddresses = append(paymentAddresses, *new)
 	}
 	return paymentAddresses
 }
 
-func ListPubKeyFromListSenderKey(threePaymentAddress []string) ([][]byte, error) {
+func (self RpcServer) ListPubKeyFromListSenderKey(threePaymentAddress []string) ([][]byte, error) {
 	pubKeys := make([][]byte, len(threePaymentAddress))
 	for i := 0; i < len(threePaymentAddress); i++ {
-		paymentAddress, err := GetPaymentAddressFromSenderKeyParams(threePaymentAddress[i])
+		paymentAddress, err := self.GetPaymentAddressFromPrivateKeyParams(threePaymentAddress[i])
 		if err != nil {
 			return nil, err
 		}
