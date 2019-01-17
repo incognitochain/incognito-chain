@@ -211,6 +211,7 @@ func (self *Wallet) GetAccountAddress(accountParam string) (KeySerializedData) {
 	newAccount := self.CreateNewAccount(accountParam)
 	key := KeySerializedData{
 		PaymentAddress: newAccount.Key.Base58CheckSerialize(PaymentAddressType),
+		Pubkey:         hex.EncodeToString(newAccount.Key.KeySet.PaymentAddress.Pk),
 		ReadonlyKey:    newAccount.Key.Base58CheckSerialize(ReadonlyKeyType),
 	}
 	return key
@@ -222,6 +223,7 @@ func (self *Wallet) GetAddressesByAccount(accountParam string) ([]KeySerializedD
 		if account.Name == accountParam {
 			item := KeySerializedData{
 				PaymentAddress: account.Key.Base58CheckSerialize(PaymentAddressType),
+				Pubkey:         hex.EncodeToString(account.Key.KeySet.PaymentAddress.Pk),
 				ReadonlyKey:    account.Key.Base58CheckSerialize(ReadonlyKeyType),
 			}
 			result = append(result, item)
