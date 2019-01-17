@@ -2,8 +2,6 @@ package rpcserver
 
 import (
 	"encoding/json"
-	"errors"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
@@ -541,12 +539,12 @@ func (rpcServer RpcServer) handleCreateAndSendTxWithUpdatingOracleBoard(params i
 	return result, nil
 }
 
-func (rpcServer RpcServer) handleCreateRawTxWithSenderAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+/*func (rpcServer RpcServer) handleCreateRawTxWithSenderAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
 	hasPrivacy := int(arrayParams[3].(float64)) > 0
 	if hasPrivacy {
-		return nil, NewRPCError(ErrUnexpected, errors.New("Could not stick sender address to metadata when enabling privacy feature."))
+		return nil, NewRPCError(ErrUnexpected, errors.New("could not stick sender address to metadata when enabling privacy feature"))
 	}
 
 	senderKeyParam := arrayParams[0]
@@ -597,4 +595,4 @@ func (rpcServer RpcServer) handleCreateAndSendTxWithSenderAddress(params interfa
 		TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
 	}
 	return result, nil
-}
+}*/

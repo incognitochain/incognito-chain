@@ -28,7 +28,7 @@ func (rpcServer RpcServer) handleCreateRawTxWithMultiSigsReg(params interface{},
 	for i, addrStr := range spendableMembersAddrStrs {
 		assertedAddrStr, ok := addrStr.(string)
 		if !ok {
-			return nil, NewRPCError(ErrUnexpected, errors.New("Wrong type on payment address string."))
+			return nil, NewRPCError(ErrUnexpected, errors.New("wrong type on payment address string"))
 		}
 		paymentAddrKey, err := wallet.Base58CheckDeserialize(assertedAddrStr)
 		if err != nil {
@@ -89,7 +89,7 @@ func (rpcServer RpcServer) handleCreateRawTxWithMultiSigsSpending(params interfa
 	// Req param #4: multisigs spending info
 	multiSigsSpending, ok := arrayParams[4].(map[string]interface{})
 	if !ok {
-		return nil, NewRPCError(ErrUnexpected, errors.New("Could not parse requesting multiSigsSpending metadata"))
+		return nil, NewRPCError(ErrUnexpected, errors.New("could not parse requesting multiSigsSpending metadata"))
 	}
 
 	signs := multiSigsSpending["Signs"].(map[string]interface{})
