@@ -115,17 +115,17 @@ func (self *Wallet) ImportAccount(privateKeyStr string, accountName string, pass
 		}
 	}
 
-	priKey, err := Base58CheckDeserialize(privateKeyStr)
+	keyWallet, err := Base58CheckDeserialize(privateKeyStr)
 	if err != nil {
 		return nil, err
 	}
-	priKey.KeySet.ImportFromPrivateKey(&priKey.KeySet.PrivateKey)
+	keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 
-	Logger.log.Infof("Pub-key : %s", priKey.Base58CheckSerialize(PaymentAddressType))
-	Logger.log.Infof("Readonly-key : %s", priKey.Base58CheckSerialize(ReadonlyKeyType))
+	Logger.log.Infof("Pub-key : %s", keyWallet.Base58CheckSerialize(PaymentAddressType))
+	Logger.log.Infof("Readonly-key : %s", keyWallet.Base58CheckSerialize(ReadonlyKeyType))
 
 	account := AccountWallet{
-		Key:        *priKey,
+		Key:        *keyWallet,
 		Child:      make([]AccountWallet, 0),
 		IsImported: true,
 		Name:       accountName,
