@@ -70,10 +70,7 @@ func (msSpending *MultiSigsSpending) ValidateSanityData(
 }
 
 func (msSpending *MultiSigsSpending) ValidateMetadataByItself() bool {
-	if msSpending.Type != MultiSigsSpendingMeta {
-		return false
-	}
-	return true
+	return msSpending.Type != MultiSigsSpendingMeta
 }
 
 func (msSpending *MultiSigsSpending) Hash() *common.Hash {

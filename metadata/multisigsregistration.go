@@ -69,10 +69,7 @@ func (msReg *MultiSigsRegistration) ValidateSanityData(
 }
 
 func (msReg *MultiSigsRegistration) ValidateMetadataByItself() bool {
-	if msReg.Type != MultiSigsRegistrationMeta {
-		return false
-	}
-	return true
+	return msReg.Type != MultiSigsRegistrationMeta
 }
 
 func (msReg *MultiSigsRegistration) Hash() *common.Hash {
