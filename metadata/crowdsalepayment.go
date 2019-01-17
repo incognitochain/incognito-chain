@@ -31,7 +31,7 @@ func NewCrowdsalePayment(csResData map[string]interface{}) *CrowdsalePayment {
 		RequestedTxID: &common.Hash{},
 		SaleID:        saleID,
 	}
-	result.Type = CrowdsalePaymentMeta
+	result.Type = CrowdSalePaymentMeta
 	copy(result.RequestedTxID[:], s)
 	return result
 }

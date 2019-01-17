@@ -2,10 +2,10 @@ package common
 
 // todo @0xjackalope; need to strictly specific data type to catch all used position
 func Encrypt(data []byte, pubKey []byte) []byte {
-	return nil
+	return data
 }
 func Decrypt(data []byte, privateKey []byte) []byte {
-	return nil
+	return data
 }
 
 func ByteEqual(a []byte, b []byte) bool {
