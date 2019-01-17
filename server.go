@@ -955,7 +955,7 @@ func (self *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerID
 	msg.(*wire.MessageVersion).ProtocolVersion = self.protocolVersion
 
-	// ValidateTransaction Public Key from ProducerPrvKey
+	// ValidateTransaction Public KeyWallet from ProducerPrvKey
 	if peerConn.ListenerPeer.Config.ProducerKeySet != nil {
 		msg.(*wire.MessageVersion).PublicKey = peerConn.ListenerPeer.Config.ProducerKeySet.GetPublicKeyB58()
 		signDataB58, err := peerConn.ListenerPeer.Config.ProducerKeySet.SignDataB58([]byte{0x00})

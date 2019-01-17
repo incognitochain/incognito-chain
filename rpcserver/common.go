@@ -2,8 +2,8 @@ package rpcserver
 
 import (
 	"fmt"
-	"sort"
 	"github.com/ninjadotorg/constant/cashec"
+	"sort"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -417,7 +417,7 @@ func (self RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, 
 	outCoinUnknapsack := make([]*privacy.OutputCoin, 0)
 
 	for _, outCoin := range outCoins {
-		if outCoin.CoinDetails.Value > amount{
+		if outCoin.CoinDetails.Value > amount {
 			outCoinUnknapsack = append(outCoinUnknapsack, outCoin)
 		} else {
 			sumValueKnapsack += outCoin.CoinDetails.Value
@@ -433,13 +433,13 @@ func (self RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, 
 	// if target > 0, using Knapsack algorithm to choose coins
 	// if target == 0, coins need to be spent is coins for Knapsack, we don't need to run Knapsack to find solution
 	// if target < 0, instead of using Knapsack, we get the coin that has value is minimum in list unKnapsack coins
-	if target > 1000{
+	if target > 1000 {
 		choices := privacy.Greedy(outCoins, amount)
 		for i, choice := range choices {
-			if choice{
+			if choice {
 				totalResultOutputCoinAmount += outCoins[i].CoinDetails.Value
 				resultOutputCoins = append(resultOutputCoins, outCoins[i])
-			} else{
+			} else {
 				remainOutputCoins = append(remainOutputCoins, outCoins[i])
 			}
 		}
@@ -453,26 +453,26 @@ func (self RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, 
 				remainOutputCoins = append(remainOutputCoins, outCoinKnapsack[i])
 			}
 		}
-		for _, outCoin := range outCoinUnknapsack{
+		for _, outCoin := range outCoinUnknapsack {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
-	} else if target == 0{
+	} else if target == 0 {
 		totalResultOutputCoinAmount = sumValueKnapsack
 		resultOutputCoins = outCoinKnapsack
 		remainOutputCoins = outCoinUnknapsack
-	} else{
-		if len(outCoinUnknapsack) == 0{
+	} else {
+		if len(outCoinUnknapsack) == 0 {
 			return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, errors.New("Not enough coin")
-		} else{
+		} else {
 			sort.Slice(outCoinUnknapsack, func(i, j int) bool {
 				return outCoinUnknapsack[i].CoinDetails.Value < outCoinUnknapsack[j].CoinDetails.Value
 			})
 			resultOutputCoins = append(resultOutputCoins, outCoinUnknapsack[0])
 			totalResultOutputCoinAmount = outCoinUnknapsack[0].CoinDetails.Value
-			for i:=1; i<len(outCoinUnknapsack); i++{
+			for i := 1; i < len(outCoinUnknapsack); i++ {
 				remainOutputCoins = append(remainOutputCoins, outCoinUnknapsack[i])
 			}
-			for _, outCoin := range outCoinKnapsack{
+			for _, outCoin := range outCoinKnapsack {
 				remainOutputCoins = append(remainOutputCoins, outCoin)
 			}
 		}
@@ -481,14 +481,18 @@ func (self RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, 
 	return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, nil
 }
 
+// GetPaymentAddressFromPrivateKeyParams- deserialize a private key string
+// and return paymentaddress object which relate to private key exactly
 func (self RpcServer) GetPaymentAddressFromPrivateKeyParams(senderKeyParam string) (*privacy.PaymentAddress, error) {
-	keyset, err := self.GetKeySetFromPrivateKeyParams(senderKeyParam)
+	keySet, err := self.GetKeySetFromPrivateKeyParams(senderKeyParam)
 	if err != nil {
 		return nil, err
 	}
-	return &keyset.PaymentAddress, err
+	return &keySet.PaymentAddress, err
 }
 
+// GetKeySetFromKeyParams - deserialize a key string(wallet serialized)
+// into keyWallet - this keywallet may contain
 func (self RpcServer) GetKeySetFromKeyParams(keyParam string) (*cashec.KeySet, error) {
 	key, err := wallet.Base58CheckDeserialize(keyParam)
 	if err != nil {
@@ -497,11 +501,15 @@ func (self RpcServer) GetKeySetFromKeyParams(keyParam string) (*cashec.KeySet, e
 	return &key.KeySet, nil
 }
 
-func (self RpcServer) GetKeySetFromPrivateKeyParams(senderKeyParam string) (*cashec.KeySet, error) {
-	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam)
+// GetKeySetFromPrivateKeyParams - deserialize a private key string
+// into keyWallet object and fill all keyset in keywallet with private key
+func (self RpcServer) GetKeySetFromPrivateKeyParams(privateKeyWalletStr string) (*cashec.KeySet, error) {
+	// deserialize to crate keywallet object which contain private key
+	keyWallet, err := wallet.Base58CheckDeserialize(privateKeyWalletStr)
 	if err != nil {
 		return nil, err
 	}
-	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	return &senderKey.KeySet, nil
+	// fill paymentaddress and readonly key with privatekey
+	keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	return &keyWallet.KeySet, nil
 }
