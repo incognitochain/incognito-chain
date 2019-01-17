@@ -18,14 +18,14 @@ func iPlusPlus(x *int) int {
 	return *x - 1
 }
 
-func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	paymentAddressData := arrayParams[0].(string)
-	paymentAddress, err := self.GetPaymentAddressFromSenderKeyParams(paymentAddressData)
+	paymentAddress, err := rpcServer.GetPaymentAddressFromSenderKeyParams(paymentAddressData)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	db := *self.config.Database
+	db := *rpcServer.config.Database
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 
 	// For DCB voting token
@@ -37,7 +37,7 @@ func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-c
 	TokenID.SetBytes(common.DCBVotingTokenID[:])
 	item.TokenID = TokenID.String()
 	item.TokenImage = common.Render([]byte(item.TokenID))
-	amount, err := db.GetVoteTokenAmount("dcb", self.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress)
+	amount, err := db.GetVoteTokenAmount("dcb", rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -52,7 +52,7 @@ func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-c
 	TokenID.SetBytes(common.GOVVotingTokenID[:])
 	item.TokenID = TokenID.String()
 	item.TokenImage = common.Render([]byte(item.TokenID))
-	amount, err = db.GetVoteTokenAmount("gov", self.config.BlockChain.GetCurrentBoardIndex(blockchain.GOVConstitutionHelper{}), *paymentAddress)
+	amount, err = db.GetVoteTokenAmount("gov", rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.GOVConstitutionHelper{}), *paymentAddress)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -62,25 +62,25 @@ func (self RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-c
 	return result, nil
 }
 
-func (self RpcServer) handleSetAmountVoteToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleSetAmountVoteToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	paymentAddressSenderKey := arrayParams[0].(string)
-	paymentAddress, err1 := self.GetPaymentAddressFromSenderKeyParams(paymentAddressSenderKey)
+	paymentAddress, err1 := rpcServer.GetPaymentAddressFromSenderKeyParams(paymentAddressSenderKey)
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
-	p2, _ := self.GetPaymentAddressFromSenderKeyParams(string(paymentAddressSenderKey))
+	p2, _ := rpcServer.GetPaymentAddressFromSenderKeyParams(string(paymentAddressSenderKey))
 	_ = p2
-	db := *self.config.Database
+	db := *rpcServer.config.Database
 
 	amountDCBVote := uint32(arrayParams[1].(float64))
 	amountGOVVote := uint32(arrayParams[2].(float64))
 
-	err := db.SetVoteTokenAmount("dcb", self.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress, amountDCBVote)
+	err := db.SetVoteTokenAmount("dcb", rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress, amountDCBVote)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	err = db.SetVoteTokenAmount("gov", self.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress, amountGOVVote)
+	err = db.SetVoteTokenAmount("gov", rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress, amountGOVVote)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -89,8 +89,8 @@ func (self RpcServer) handleSetAmountVoteToken(params interface{}, closeChan <-c
 
 // ============================== VOTE PROPOSAL
 
-func (self RpcServer) handleGetEncryptionFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	db := *self.config.Database
+func (rpcServer RpcServer) handleGetEncryptionFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	db := *rpcServer.config.Database
 	dcbEncryptionFlag, _ := db.GetEncryptFlag("dcb")
 	govEncryptionFlag, _ := db.GetEncryptFlag("gov")
 	return jsonresult.GetEncryptionFlagResult{
@@ -98,9 +98,9 @@ func (self RpcServer) handleGetEncryptionFlag(params interface{}, closeChan <-ch
 		GOVFlag: govEncryptionFlag,
 	}, nil
 }
-func (self RpcServer) handleSetEncryptionFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleSetEncryptionFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	fmt.Print("delete me, use only for test purpose!!!")
-	db := *self.config.Database
+	db := *rpcServer.config.Database
 	dcbEncryptionFlag, _ := db.GetEncryptFlag("dcb")
 	govEncryptionFlag, _ := db.GetEncryptFlag("gov")
 	db.SetEncryptFlag("dcb", (dcbEncryptionFlag+1)%4)
@@ -108,10 +108,10 @@ func (self RpcServer) handleSetEncryptionFlag(params interface{}, closeChan <-ch
 	return dcbEncryptionFlag, nil
 }
 
-func (self RpcServer) handleGetEncryptionLastBlockHeightFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleGetEncryptionLastBlockHeightFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	boardType := arrayParams[0].(string)
-	db := *self.config.Database
+	db := *rpcServer.config.Database
 	blockHeight, _ := db.GetEncryptionLastBlockHeight(boardType)
 	return jsonresult.GetEncryptionLastBlockHeightResult{blockHeight}, nil
 }
@@ -121,7 +121,7 @@ func CreateSealLv3Data(data *metadata.VoteProposalData, pubKeys [][]byte) []byte
 	return SealLv3
 }
 
-func (self RpcServer) buildRawSealLv3VoteProposalTransaction(
+func (rpcServer RpcServer) buildRawSealLv3VoteProposalTransaction(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
@@ -131,32 +131,32 @@ func (self RpcServer) buildRawSealLv3VoteProposalTransaction(
 	voteProposalData := metadata.NewVoteProposalDataFromJson(arrayParams[iPlusPlus(&index)])
 
 	threeSenderKey := common.SliceInterfaceToSliceString(arrayParams[iPlusPlus(&index)].([]interface{}))
-	pubKeys, err := self.ListPubKeyFromListSenderKey(threeSenderKey)
+	pubKeys, err := rpcServer.ListPubKeyFromListSenderKey(threeSenderKey)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	threePaymentAddress := self.ListPaymentAddressFromListSenderKey(threeSenderKey)
+	threePaymentAddress := rpcServer.ListPaymentAddressFromListSenderKey(threeSenderKey)
 
 	Seal3Data := CreateSealLv3Data(voteProposalData, pubKeys)
 	meta := NewSealedLv3VoteProposalMetadata(boardType, Seal3Data, threePaymentAddress)
 
-	tx, err := self.buildRawTransaction(params, meta)
+	tx, err := rpcServer.buildRawTransaction(params, meta)
 	return tx, NewRPCError(ErrUnexpected, err)
 }
 
-func (self RpcServer) ListPaymentAddressFromListSenderKey(listSenderKey []string) []privacy.PaymentAddress {
+func (rpcServer RpcServer) ListPaymentAddressFromListSenderKey(listSenderKey []string) []privacy.PaymentAddress {
 	paymentAddresses := make([]privacy.PaymentAddress, 0)
 	for i := 0; i < 3; i++ {
-		new, _ := self.GetPaymentAddressFromSenderKeyParams(listSenderKey[i])
+		new, _ := rpcServer.GetPaymentAddressFromSenderKeyParams(listSenderKey[i])
 		paymentAddresses = append(paymentAddresses, *new)
 	}
 	return paymentAddresses
 }
 
-func (self RpcServer) ListPubKeyFromListSenderKey(threePaymentAddress []string) ([][]byte, error) {
+func (rpcServer RpcServer) ListPubKeyFromListSenderKey(threePaymentAddress []string) ([][]byte, error) {
 	pubKeys := make([][]byte, len(threePaymentAddress))
 	for i := 0; i < len(threePaymentAddress); i++ {
-		paymentAddress, err := self.GetPaymentAddressFromSenderKeyParams(threePaymentAddress[i])
+		paymentAddress, err := rpcServer.GetPaymentAddressFromSenderKeyParams(threePaymentAddress[i])
 		if err != nil {
 			return nil, err
 		}
@@ -175,8 +175,8 @@ func NewSealedLv3VoteProposalMetadata(boardType string, Seal3Data []byte, paymen
 	return meta
 }
 
-func (self RpcServer) handleCreateRawSealLv3VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	tx, err := self.buildRawSealLv3VoteProposalTransaction(params)
+func (rpcServer RpcServer) handleCreateRawSealLv3VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	tx, err := rpcServer.buildRawSealLv3VoteProposalTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -195,8 +195,8 @@ func (self RpcServer) handleCreateRawSealLv3VoteProposalTransaction(params inter
 }
 
 //create lv3 vote by 3 layer encrypt
-func (self RpcServer) handleCreateAndSendSealLv3VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawSealLv3VoteProposalTransaction(params, closeChan)
+func (rpcServer RpcServer) handleCreateAndSendSealLv3VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := rpcServer.handleCreateRawSealLv3VoteProposalTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
@@ -207,11 +207,11 @@ func (self RpcServer) handleCreateAndSendSealLv3VoteProposalTransaction(params i
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	txId, err := self.handleSendRawTransaction(newParam, closeChan)
+	txId, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
 	return txId, err
 }
 
-func (self RpcServer) buildRawSealLv2VoteProposalTransaction(
+func (rpcServer RpcServer) buildRawSealLv2VoteProposalTransaction(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
@@ -225,7 +225,7 @@ func (self RpcServer) buildRawSealLv2VoteProposalTransaction(
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	_, _, _, lv3Tx, err := self.config.BlockChain.GetTransactionByHash(lv3txID)
+	_, _, _, lv3Tx, err := rpcServer.config.BlockChain.GetTransactionByHash(lv3txID)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -242,7 +242,7 @@ func (self RpcServer) buildRawSealLv2VoteProposalTransaction(
 		pubKeys,
 		*lv3txID,
 	)
-	tx, err1 := self.buildRawTransaction(params, meta)
+	tx, err1 := rpcServer.buildRawTransaction(params, meta)
 	return tx, err1
 }
 
@@ -287,8 +287,8 @@ func GetSealLv3Data(tx metadata.Transaction) ([]byte, error) {
 	return nil, errors.New("wrong type")
 }
 
-func (self RpcServer) handleCreateRawSealLv2VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	tx, err := self.buildRawSealLv2VoteProposalTransaction(params)
+func (rpcServer RpcServer) handleCreateRawSealLv2VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	tx, err := rpcServer.buildRawSealLv2VoteProposalTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -307,8 +307,8 @@ func (self RpcServer) handleCreateRawSealLv2VoteProposalTransaction(params inter
 }
 
 //create lv2 vote by decrypt A layer
-func (self RpcServer) handleCreateAndSendSealLv2VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawSealLv2VoteProposalTransaction(params, closeChan)
+func (rpcServer RpcServer) handleCreateAndSendSealLv2VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := rpcServer.handleCreateRawSealLv2VoteProposalTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
@@ -319,11 +319,11 @@ func (self RpcServer) handleCreateAndSendSealLv2VoteProposalTransaction(params i
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	txId, err := self.handleSendRawTransaction(newParam, closeChan)
+	txId, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
 	return txId, err
 }
 
-func (self RpcServer) buildRawSealLv1VoteProposalTransaction(
+func (rpcServer RpcServer) buildRawSealLv1VoteProposalTransaction(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
@@ -342,13 +342,13 @@ func (self RpcServer) buildRawSealLv1VoteProposalTransaction(
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
-	_, _, _, lv2tx, _ := self.config.BlockChain.GetTransactionByHash(lv2TxID)
+	_, _, _, lv2tx, _ := rpcServer.config.BlockChain.GetTransactionByHash(lv2TxID)
 	SealLv2Data, err1 := GetSealLv2Data(lv2tx)
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 
-	_, _, _, lv3tx, _ := self.config.BlockChain.GetTransactionByHash(lv3TxID)
+	_, _, _, lv3tx, _ := rpcServer.config.BlockChain.GetTransactionByHash(lv3TxID)
 	pubKeys := GetLockerPaymentAddress(lv3tx)
 
 	Seal1Data := common.Decrypt(SealLv2Data, secondPrivateKey)
@@ -360,7 +360,7 @@ func (self RpcServer) buildRawSealLv1VoteProposalTransaction(
 		*lv2TxID,
 		*lv3TxID,
 	)
-	tx, err := self.buildRawTransaction(params, meta)
+	tx, err := rpcServer.buildRawTransaction(params, meta)
 	return tx, err
 }
 
@@ -408,8 +408,8 @@ func GetSealLv1Data(lv1tx metadata.Transaction) ([]byte, error) {
 	return nil, errors.New("wrong type")
 }
 
-func (self RpcServer) handleCreateRawSealLv1VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	tx, err := self.buildRawSealLv1VoteProposalTransaction(params)
+func (rpcServer RpcServer) handleCreateRawSealLv1VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	tx, err := rpcServer.buildRawSealLv1VoteProposalTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -427,8 +427,8 @@ func (self RpcServer) handleCreateRawSealLv1VoteProposalTransaction(params inter
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendSealLv1VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawSealLv1VoteProposalTransaction(params, closeChan)
+func (rpcServer RpcServer) handleCreateAndSendSealLv1VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := rpcServer.handleCreateRawSealLv1VoteProposalTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
@@ -439,11 +439,11 @@ func (self RpcServer) handleCreateAndSendSealLv1VoteProposalTransaction(params i
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	txId, err := self.handleSendRawTransaction(newParam, closeChan)
+	txId, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
 	return txId, err
 }
 
-func (self RpcServer) buildRawNormalVoteProposalTransactionFromOwner(
+func (rpcServer RpcServer) buildRawNormalVoteProposalTransactionFromOwner(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
@@ -456,7 +456,7 @@ func (self RpcServer) buildRawNormalVoteProposalTransactionFromOwner(
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 
-	_, _, _, lv3tx, _ := self.config.BlockChain.GetTransactionByHash(lv3TxID)
+	_, _, _, lv3tx, _ := rpcServer.config.BlockChain.GetTransactionByHash(lv3TxID)
 	paymentAddresses := GetLockerPaymentAddress(lv3tx)
 
 	voteProposalData := metadata.NewVoteProposalDataFromJson(arrayParams[iPlusPlus(&index)])
@@ -467,7 +467,7 @@ func (self RpcServer) buildRawNormalVoteProposalTransactionFromOwner(
 		paymentAddresses,
 		*lv3TxID,
 	)
-	tx, err := self.buildRawTransaction(params, meta)
+	tx, err := rpcServer.buildRawTransaction(params, meta)
 	return tx, err
 }
 
@@ -489,8 +489,8 @@ func NewNormalVoteProposalFromOwnerMetadata(boardType string, voteProposalData *
 	return meta
 }
 
-func (self RpcServer) handleCreateRawNormalVoteProposalTransactionFromOwner(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	tx, err1 := self.buildRawNormalVoteProposalTransactionFromOwner(params)
+func (rpcServer RpcServer) handleCreateRawNormalVoteProposalTransactionFromOwner(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	tx, err1 := rpcServer.buildRawNormalVoteProposalTransactionFromOwner(params)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, NewRPCError(ErrUnexpected, err1)
@@ -508,8 +508,8 @@ func (self RpcServer) handleCreateRawNormalVoteProposalTransactionFromOwner(para
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendNormalVoteProposalFromOwnerTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawNormalVoteProposalTransactionFromOwner(params, closeChan)
+func (rpcServer RpcServer) handleCreateAndSendNormalVoteProposalFromOwnerTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := rpcServer.handleCreateRawNormalVoteProposalTransactionFromOwner(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
@@ -520,11 +520,11 @@ func (self RpcServer) handleCreateAndSendNormalVoteProposalFromOwnerTransaction(
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	txId, err := self.handleSendRawTransaction(newParam, closeChan)
+	txId, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
 	return txId, err
 }
 
-func (self RpcServer) buildRawNormalVoteProposalTransactionFromSealer(
+func (rpcServer RpcServer) buildRawNormalVoteProposalTransactionFromSealer(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
@@ -541,13 +541,13 @@ func (self RpcServer) buildRawNormalVoteProposalTransactionFromSealer(
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
-	_, _, _, lv1tx, _ := self.config.BlockChain.GetTransactionByHash(lv1TxID)
+	_, _, _, lv1tx, _ := rpcServer.config.BlockChain.GetTransactionByHash(lv1TxID)
 	SealLv1Data, err1 := GetSealLv1Data(lv1tx)
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 
-	_, _, _, lv3tx, _ := self.config.BlockChain.GetTransactionByHash(lv3TxID)
+	_, _, _, lv3tx, _ := rpcServer.config.BlockChain.GetTransactionByHash(lv3TxID)
 	paymentAddresses := GetLockerPaymentAddress(lv3tx)
 
 	thirdPrivateKey := []byte(arrayParams[iPlusPlus(&index)].(string))
@@ -562,7 +562,7 @@ func (self RpcServer) buildRawNormalVoteProposalTransactionFromSealer(
 		*lv1TxID,
 		*lv3TxID,
 	)
-	tx, err := self.buildRawTransaction(params, meta)
+	tx, err := rpcServer.buildRawTransaction(params, meta)
 	return tx, err
 }
 
@@ -586,8 +586,8 @@ func NewNormalVoteProposalFromSealerMetadata(boardType string, voteProposalData 
 	return meta
 }
 
-func (self RpcServer) handleCreateRawNormalVoteProposalTransactionFromSealer(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	tx, err := self.buildRawNormalVoteProposalTransactionFromSealer(params)
+func (rpcServer RpcServer) handleCreateRawNormalVoteProposalTransactionFromSealer(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	tx, err := rpcServer.buildRawNormalVoteProposalTransactionFromSealer(params)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -605,8 +605,8 @@ func (self RpcServer) handleCreateRawNormalVoteProposalTransactionFromSealer(par
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendNormalVoteProposalFromSealerTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawNormalVoteProposalTransactionFromSealer(params, closeChan)
+func (rpcServer RpcServer) handleCreateAndSendNormalVoteProposalFromSealerTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := rpcServer.handleCreateRawNormalVoteProposalTransactionFromSealer(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
@@ -617,6 +617,6 @@ func (self RpcServer) handleCreateAndSendNormalVoteProposalFromSealerTransaction
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	txId, err := self.handleSendRawTransaction(newParam, closeChan)
+	txId, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
 	return txId, err
 }

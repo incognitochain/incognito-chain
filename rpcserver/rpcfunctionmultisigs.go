@@ -11,7 +11,7 @@ import (
 	"github.com/ninjadotorg/constant/wallet"
 )
 
-func (self RpcServer) handleCreateRawTxWithMultiSigsReg(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateRawTxWithMultiSigsReg(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	var err error
 	arrayParams := common.InterfaceSlice(params)
 	// Req param #4: multisigs registration info
@@ -45,7 +45,7 @@ func (self RpcServer) handleCreateRawTxWithMultiSigsReg(params interface{}, clos
 		metaType,
 	)
 
-	normalTx, err := self.buildRawTransaction(params, meta)
+	normalTx, err := rpcServer.buildRawTransaction(params, meta)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -61,8 +61,8 @@ func (self RpcServer) handleCreateRawTxWithMultiSigsReg(params interface{}, clos
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendTxWithMultiSigsReg(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawTxWithMultiSigsReg(params, closeChan)
+func (rpcServer RpcServer) handleCreateAndSendTxWithMultiSigsReg(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := rpcServer.handleCreateRawTxWithMultiSigsReg(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (self RpcServer) handleCreateAndSendTxWithMultiSigsReg(params interface{}, 
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
+	sendResult, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -83,7 +83,7 @@ func (self RpcServer) handleCreateAndSendTxWithMultiSigsReg(params interface{}, 
 	return result, nil
 }
 
-func (self RpcServer) handleCreateRawTxWithMultiSigsSpending(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateRawTxWithMultiSigsSpending(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	var err error
 	arrayParams := common.InterfaceSlice(params)
 	// Req param #4: multisigs spending info
@@ -108,7 +108,7 @@ func (self RpcServer) handleCreateRawTxWithMultiSigsSpending(params interface{},
 		metaType,
 	)
 
-	normalTx, err := self.buildRawTransaction(params, meta)
+	normalTx, err := rpcServer.buildRawTransaction(params, meta)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -124,8 +124,8 @@ func (self RpcServer) handleCreateRawTxWithMultiSigsSpending(params interface{},
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendTxWithMultiSigsSpending(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawTxWithMultiSigsSpending(params, closeChan)
+func (rpcServer RpcServer) handleCreateAndSendTxWithMultiSigsSpending(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := rpcServer.handleCreateRawTxWithMultiSigsSpending(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func (self RpcServer) handleCreateAndSendTxWithMultiSigsSpending(params interfac
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
+	sendResult, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}

@@ -27,12 +27,12 @@ func createJSONResult(tx *transaction.Tx) (interface{}, *RPCError) {
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendTxWithCMBInitRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateAndSendTxWithCMBInitRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	// Req param #4: cmb init request
 	paramsMap := arrayParams[4].(map[string]interface{})
 	cmbInitRequest := metadata.NewCMBInitRequest(paramsMap)
-	normalTx, err := self.buildRawTransaction(params, cmbInitRequest)
+	normalTx, err := rpcServer.buildRawTransaction(params, cmbInitRequest)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -40,12 +40,12 @@ func (self RpcServer) handleCreateAndSendTxWithCMBInitRequest(params interface{}
 	return createJSONResult(normalTx)
 }
 
-func (self RpcServer) handleCreateAndSendTxWithCMBInitResponse(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateAndSendTxWithCMBInitResponse(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	// Req param #4: cmb init response
 	paramsMap := arrayParams[4].(map[string]interface{})
 	cmbInitResponse := metadata.NewCMBInitResponse(paramsMap)
-	normalTx, err := self.buildRawTransaction(params, cmbInitResponse)
+	normalTx, err := rpcServer.buildRawTransaction(params, cmbInitResponse)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -53,12 +53,12 @@ func (self RpcServer) handleCreateAndSendTxWithCMBInitResponse(params interface{
 	return createJSONResult(normalTx)
 }
 
-func (self RpcServer) handleCreateAndSendTxWithCMBDepositContract(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateAndSendTxWithCMBDepositContract(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	// Req param #4: cmb deposit contract
 	paramsMap := arrayParams[4].(map[string]interface{})
 	cmbDepositContract := metadata.NewCMBDepositContract(paramsMap)
-	normalTx, err := self.buildRawTransaction(params, cmbDepositContract)
+	normalTx, err := rpcServer.buildRawTransaction(params, cmbDepositContract)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -66,12 +66,12 @@ func (self RpcServer) handleCreateAndSendTxWithCMBDepositContract(params interfa
 	return createJSONResult(normalTx)
 }
 
-func (self RpcServer) handleCreateAndSendTxWithCMBDepositSend(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateAndSendTxWithCMBDepositSend(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	// Req param #4: cmb deposit send
 	paramsMap := arrayParams[4].(map[string]interface{})
 	cmbDepositSend := metadata.NewCMBDepositSend(paramsMap)
-	normalTx, err := self.buildRawTransaction(params, cmbDepositSend)
+	normalTx, err := rpcServer.buildRawTransaction(params, cmbDepositSend)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -79,12 +79,12 @@ func (self RpcServer) handleCreateAndSendTxWithCMBDepositSend(params interface{}
 	return createJSONResult(normalTx)
 }
 
-func (self RpcServer) handleCreateAndSendTxWithCMBWithdrawRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateAndSendTxWithCMBWithdrawRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	// Req param #4: cmb withdraw request
 	paramsMap := arrayParams[4].(map[string]interface{})
 	cmbWithdrawReq := metadata.NewCMBWithdrawRequest(paramsMap)
-	normalTx, err := self.buildRawTransaction(params, cmbWithdrawReq)
+	normalTx, err := rpcServer.buildRawTransaction(params, cmbWithdrawReq)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
