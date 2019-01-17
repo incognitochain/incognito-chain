@@ -27,7 +27,7 @@ type PedersenCommitment struct {
 func newPedersenCommitment() PedersenCommitment {
 	var pcm PedersenCommitment
 	const capacity = 5 // fixed value
-	pcm.G = make([]*EllipticPoint, capacity, capacity)
+	pcm.G = make([]*EllipticPoint, capacity)
 	pcm.G[0] = new(EllipticPoint)
 	pcm.G[0].X, pcm.G[0].Y = Curve.Params().Gx, Curve.Params().Gy
 
