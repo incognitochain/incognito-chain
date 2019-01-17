@@ -72,7 +72,7 @@ func EncryptBytes (msg []byte, publicKey *EllipticPoint) (ciphertext*  Ciphertex
 func DecryptBytes(ciphertext *Ciphertext, privateKey *big.Int) (msg []byte, err error){
 	// Validate ciphertext
 	if ciphertext.IsNil() {
-		return []byte{}, errors.New("Ciphertext must not be nil")
+		return []byte{}, errors.New("ciphertext must not be nil")
 	}
 
 	// Get receiving key, which is a private key of ElGamal cryptosystem

@@ -383,7 +383,7 @@ func (coin *OutputCoin) Encrypt(recipientTK TransmissionKey) error {
 func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 	// Validate ciphertext
 	if coin.CoinDetailsEncrypted.IsNil() {
-		return errors.New("Ciphertext must not be nil")
+		return errors.New("ciphertext must not be nil")
 	}
 
 	// Get receiving key, which is a private key of ElGamal cryptosystem
