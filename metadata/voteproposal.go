@@ -80,10 +80,7 @@ func (sealedLv1VoteProposalMetadata *SealedLv1VoteProposalMetadata) ValidataBefo
 	lv3Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
 	lv2Pivot := lv3Pivot - uint64(common.EncryptionOnePhraseDuration)
 	lv1Pivot := lv2Pivot - uint64(common.EncryptionOnePhraseDuration)
-	if !(currentBlockHeight < lv1Pivot && currentBlockHeight >= lv2Pivot) {
-		return false
-	}
-	return true
+	return !(currentBlockHeight < lv1Pivot && currentBlockHeight >= lv2Pivot)
 }
 
 func (sealedLv1VoteProposalMetadata *SealedLv1VoteProposalMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
@@ -197,10 +194,7 @@ func (sealedLv2VoteProposalMetadata *SealedLv2VoteProposalMetadata) ValidataBefo
 	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
 	lv3Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
 	lv2Pivot := lv3Pivot - uint64(common.EncryptionOnePhraseDuration)
-	if !(currentBlockHeight < lv2Pivot && currentBlockHeight >= lv3Pivot) {
-		return false
-	}
-	return true
+	return !(currentBlockHeight < lv2Pivot && currentBlockHeight >= lv3Pivot)
 }
 
 func (sealedLv2VoteProposalMetadata *SealedLv2VoteProposalMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
@@ -291,10 +285,7 @@ func (sealedLv3VoteProposalMetadata *SealedLv3VoteProposalMetadata) ValidataBefo
 	endedPivot := bcr.GetConstitutionEndHeight(boardType, chainID)
 	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
 	lv3Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
-	if !(currentBlockHeight < lv3Pivot && currentBlockHeight >= startedPivot) {
-		return false
-	}
-	return true
+	return !(currentBlockHeight < lv3Pivot && currentBlockHeight >= startedPivot)
 }
 
 func (sealLv3VoteProposalMetadata *SealedLv3VoteProposalMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
@@ -411,10 +402,7 @@ func (normalVoteProposalFromSealerMetadata *NormalVoteProposalFromSealerMetadata
 	lv3Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
 	lv2Pivot := lv3Pivot - uint64(common.EncryptionOnePhraseDuration)
 	lv1Pivot := lv2Pivot - uint64(common.EncryptionOnePhraseDuration)
-	if !(currentBlockHeight < endedPivot && currentBlockHeight >= lv1Pivot) {
-		return false
-	}
-	return true
+	return !(currentBlockHeight < endedPivot && currentBlockHeight >= lv1Pivot)
 }
 
 func (normalVoteProposalFromSealerMetadata *NormalVoteProposalFromSealerMetadata) ValidateTxWithBlockChain(boardType string,
@@ -506,10 +494,7 @@ func (normalVoteProposalFromOwnerMetadata *NormalVoteProposalFromOwnerMetadata) 
 	lv3Pivot := endedPivot - common.EncryptionOnePhraseDuration
 	lv2Pivot := lv3Pivot - common.EncryptionOnePhraseDuration
 	lv1Pivot := lv2Pivot - common.EncryptionOnePhraseDuration
-	if !(currentBlockHeight < endedPivot && currentBlockHeight >= lv1Pivot) {
-		return false
-	}
-	return true
+	return !(currentBlockHeight < endedPivot && currentBlockHeight >= lv1Pivot)
 }
 
 func (normalVoteProposalFromOwnerMetadata *NormalVoteProposalFromOwnerMetadata) ToBytes() []byte {

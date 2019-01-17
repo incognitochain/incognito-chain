@@ -108,7 +108,7 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 		}
 	}
 
-	if found == false {
+	if !found {
 		return false, errors.New("Corresponding loan request not found")
 	}
 	fmt.Printf("Validate returns true!!!\n")
