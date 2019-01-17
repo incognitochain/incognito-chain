@@ -13,10 +13,8 @@ const (
 )
 
 type MessageBFTPropose struct {
-	AggregatedSig string
-	ValidatorsIdx []int
-	Block         json.RawMessage
-	MsgSig        string
+	Block  json.RawMessage
+	MsgSig string
 }
 
 func (self *MessageBFTPropose) Hash() string {
