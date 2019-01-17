@@ -353,7 +353,10 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
-			candidateOutputTokens, outputTokens, _, err := rpcServer.chooseBestOutCoinsToSpent(outputTokens, uint64(voutsAmount))
+			candidateOutputTokens, _, _, err := rpcServer.chooseBestOutCoinsToSpent(outputTokens, uint64(voutsAmount))
+			if err != nil {
+				return nil, NewRPCError(ErrUnexpected, err)
+			}
 			intputToken := transaction.ConvertOutputCoinToInputCoin(candidateOutputTokens)
 			tokenParams.TokenInput = intputToken
 		}
@@ -464,9 +467,7 @@ func (rpcServer RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputC
 				remainOutputCoins = append(remainOutputCoins, outCoinKnapsack[i])
 			}
 		}
-		for _, outCoin := range outCoinUnknapsack {
-			remainOutputCoins = append(remainOutputCoins, outCoin)
-		}
+		remainOutputCoins = append(remainOutputCoins, outCoinUnknapsack...)
 	} else if target == 0 {
 		totalResultOutputCoinAmount = sumValueKnapsack
 		resultOutputCoins = outCoinKnapsack
@@ -483,9 +484,7 @@ func (rpcServer RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputC
 			for i := 1; i < len(outCoinUnknapsack); i++ {
 				remainOutputCoins = append(remainOutputCoins, outCoinUnknapsack[i])
 			}
-			for _, outCoin := range outCoinKnapsack {
-				remainOutputCoins = append(remainOutputCoins, outCoin)
-			}
+			remainOutputCoins = append(remainOutputCoins, outCoinKnapsack...)
 		}
 	}
 

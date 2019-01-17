@@ -452,6 +452,9 @@ func (rpcServer RpcServer) handleGetListPrivacyCustomTokenBalance(params interfa
 		// get balance for accountName in wallet
 		lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
 		chainIdSender, err := common.GetTxSenderChain(lastByte)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
 		constantTokenID := &common.Hash{}
 		constantTokenID.SetBytes(common.ConstantID[:])
 		outcoints, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, chainIdSender, &tokenID)
@@ -571,6 +574,9 @@ func (rpcServer RpcServer) handleRandomCommitments(params interface{}, closeChan
 	}
 	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
 	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 
 	// #2: available inputCoin from old outputcoin
 	data := jsonresult.ListUnspentResultItem{}
@@ -624,7 +630,9 @@ func (rpcServer RpcServer) handleHasSerialNumbers(params interface{}, closeChan 
 	}
 	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
 	chainIdSender, err := common.GetTxSenderChain(lastByte)
-
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 	//#2: list serialnumbers in base58check encode string
 	serialNumbersStr := arrayParams[1].([]interface{})
 
