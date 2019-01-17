@@ -26,6 +26,7 @@ func (db *db) AddVoteBoard(
 
 	currentVoteInBytes, err := db.lvdb.Get(key, nil)
 	if err != nil {
+		currentVoteInBytes = make([]byte, 8)
 		binary.LittleEndian.PutUint64(currentVoteInBytes, uint64(0))
 	}
 
@@ -43,7 +44,8 @@ func (db *db) AddVoteBoard(
 	key = GetKeyVoteBoardCount(boardType, boardIndex, CandidatePaymentAddress)
 	currentCountInBytes, err := db.lvdb.Get(key, nil)
 	if err != nil {
-		return err
+		currentCountInBytes = make([]byte, 4)
+		binary.LittleEndian.PutUint32(currentCountInBytes, uint32(0))
 	}
 	currentCount := binary.LittleEndian.Uint32(currentCountInBytes)
 	newCount := currentCount + 1
@@ -56,8 +58,11 @@ func (db *db) AddVoteBoard(
 
 	// add to list voter new voter base on count as index
 	key = GetKeyVoteBoardList(boardType, boardIndex, &CandidatePaymentAddress, &VoterPaymentAddress)
-	oldAmountInByte, _ := db.Get(key)
-	oldAmount := ParseValueVoteBoardList(oldAmountInByte)
+	oldAmountInByte, err := db.Get(key)
+	oldAmount := uint64(0)
+	if err == nil {
+		oldAmount = ParseValueVoteBoardList(oldAmountInByte)
+	}
 	newAmount := oldAmount + amount
 	newAmountInByte := GetValueVoteBoardList(newAmount)
 	err = db.Put(key, newAmountInByte)
