@@ -60,28 +60,28 @@ func CreateElasticClient(url string) error {
 	return nil
 }
 
-func SendElasticMessage(message string) error {
-	err := ValidateElasticClient()
-	if err != nil {
-		return err
-	}
-	err = SendMessageToElastic(message, "INFO")
-	if err != nil {
-		return err
-	}
-	return nil
+func SendElasticMessage(message string, params ...interface{}) error {
+	return SendMessageToElastic(message, INFO_LEVEL)
 }
 
-func SendElasticError(err error) error {
-	validErr := ValidateElasticClient()
-	if validErr != nil {
-		return validErr
+func SendElasticError(err error, params ...interface{}) error {
+	var message string
+	if err != nil {
+		message = err.Error()
+	} else {
+		message = "Something wrong :|"
 	}
-	sendError := SendMessageToElastic(err.Error(), "ERROR")
-	if sendError != nil {
-		return sendError
-	}
-	return nil
+	return SendMessageToElastic(message, ERROR_LEVEL)
+}
+
+func SendElasticDebug(message string, params ...interface{}) error {
+	return SendMessageToElastic(message, DEBUG_LEVEL)
+}
+func SendElasticWarning(message string, params ...interface{}) error {
+	return SendMessageToElastic(message, WARNING_LEVEL)
+}
+func SendElasticFatal(message string, params ...interface{}) error {
+	return SendMessageToElastic(message, FATAL_LEVEL)
 }
 
 // CHECK ELASTIC TABLE LOG INDEX EXIST
@@ -113,6 +113,11 @@ func CreateLogIndex(client *elastic.Client, index string) error {
 }
 
 func SendMessageToElastic(message, level string) error {
+	validErr := ValidateElasticClient()
+	if validErr != nil {
+		return validErr
+	}
+
 	messageObject := Message{
 		Time:     time.Now(),
 		Message:  message,

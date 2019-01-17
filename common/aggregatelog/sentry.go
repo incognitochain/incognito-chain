@@ -44,20 +44,56 @@ func CreateSentryService(DNS string) error {
 	return nil
 }
 
-func CaptureSentryMessage(message string) error {
-	err := ValidateSentryClient()
-	if err != nil {
-		return err
+func CaptureSentryMessage(message string, params ...interface{}) error {
+	tags := map[string]string{
+		"level": INFO_LEVEL,
+		"type":  INFO_LEVEL,
 	}
-	sentryClient.CaptureMessage(message, nil)
-	return nil
+	return sendMessageToSentry(message, tags)
 }
 
-func CaptureSentryError(err error) error {
+func CaptureSentryError(err error, params ...interface{}) error {
 	clientErr := ValidateSentryClient()
 	if clientErr != nil {
 		return clientErr
 	}
-	sentryClient.CaptureError(err, nil)
+	tags := map[string]string{
+		"level": ERROR_LEVEL,
+		"type":  INFO_LEVEL,
+	}
+	sentryClient.CaptureError(err, tags, nil)
+	return nil
+}
+
+func CaptureSentryDebug(message string, params ...interface{}) error {
+	tags := map[string]string{
+		"level": DEBUG_LEVEL,
+		"type":  DEBUG_LEVEL,
+	}
+	return sendMessageToSentry(message, tags)
+}
+
+func CaptureSentryWarning(message string, params ...interface{}) error {
+	tags := map[string]string{
+		"level": WARNING_LEVEL,
+		"type":  WARNING_LEVEL,
+	}
+	return sendMessageToSentry(message, tags)
+}
+
+func CaptureSentryFatal(message string, params ...interface{}) error {
+	tags := map[string]string{
+		"level": FATAL_LEVEL,
+		"type":  FATAL_LEVEL,
+	}
+	return sendMessageToSentry(message, tags)
+}
+
+func sendMessageToSentry(message string, tags map[string]string) error {
+	clientErr := ValidateSentryClient()
+	if clientErr != nil {
+		return clientErr
+	}
+	sentryClient.CaptureMessage(message, tags, nil)
 	return nil
 }
