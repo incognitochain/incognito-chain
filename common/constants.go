@@ -25,7 +25,7 @@ const (
 	MaxTxsInBlock         = 1000
 	MinTxsInBlock         = 10                    // minium txs for block to get immediate process (meaning no wait time)
 	MinBlockWaitTime      = 3                     // second
-	MaxBlockWaitTime      = 20 - MinBlockWaitTime // second
+	MaxBlockWaitTime      = 10 - MinBlockWaitTime // second
 	MaxSyncChainTime      = 5                     // second
 	MaxBlockSigWaitTime   = 5                     // second
 	MaxBlockPerTurn       = 100                   // maximum blocks that a validator can create per turn
@@ -49,6 +49,7 @@ const (
 	RewardProposalSubmitter           = 500
 	BasePercentage                    = 10000
 	PercentageBoardSalary             = 5
+	SubmitProposalFee                 = 100
 )
 
 //voting flag

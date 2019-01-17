@@ -3,38 +3,39 @@ package metadata
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 type RewardProposalWinnerMetadata struct {
-	PubKey []byte
-	Prize  uint32
+	PaymentAddress privacy.PaymentAddress
+	Prize          uint32
 	MetadataBase
 }
 
-func NewRewardProposalWinnerMetadata(pubKey []byte, prize uint32) *RewardProposalWinnerMetadata {
+func NewRewardProposalWinnerMetadata(paymentAddress privacy.PaymentAddress, prize uint32) *RewardProposalWinnerMetadata {
 	return &RewardProposalWinnerMetadata{
-		PubKey:       pubKey,
-		Prize:        prize,
-		MetadataBase: *NewMetadataBase(RewardProposalWinnerMeta),
+		PaymentAddress: paymentAddress,
+		Prize:          prize,
+		MetadataBase:   *NewMetadataBase(RewardProposalWinnerMeta),
 	}
 }
 
 func (rewardProposalWinnerMetadata *RewardProposalWinnerMetadata) Hash() *common.Hash {
-	record := string(rewardProposalWinnerMetadata.PubKey)
+	record := rewardProposalWinnerMetadata.PaymentAddress.String()
 	record += common.Uint32ToString(rewardProposalWinnerMetadata.Prize)
-	record += string(rewardProposalWinnerMetadata.MetadataBase.Hash().GetBytes())
+	record += rewardProposalWinnerMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func (rewardProposalWinnerMetadata *RewardProposalWinnerMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (rewardProposalWinnerMetadata *RewardProposalWinnerMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (rewardProposalWinnerMetadata *RewardProposalWinnerMetadata) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }

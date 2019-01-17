@@ -2,6 +2,7 @@ package lvdb
 
 import (
 	"encoding/binary"
+	"github.com/ninjadotorg/constant/privacy"
 	"sort"
 
 	"github.com/ninjadotorg/constant/common"
@@ -12,20 +13,22 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
-func (db *db) AddVoteBoard(boardType string, boardIndex uint32, paymentAddress []byte, VoterPubKey []byte, CandidatePubKey []byte, amount uint64) error {
+func (db *db) AddVoteBoard(
+	boardType string,
+	boardIndex uint32,
+	paymentAddress []byte,
+	VoterPaymentAddress privacy.PaymentAddress,
+	CandidatePaymentAddress privacy.PaymentAddress,
+	amount uint64,
+) error {
 	//add to sum amount of vote token to this candidate
-	key := GetKeyVoteBoardSum(boardType, boardIndex, CandidatePubKey)
-	ok, err := db.HasValue(key)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		zeroInBytes := make([]byte, 8)
-		binary.LittleEndian.PutUint64(zeroInBytes, uint64(0))
-		db.Put(key, zeroInBytes)
-	}
+	key := GetKeyVoteBoardSum(boardType, boardIndex, &CandidatePaymentAddress)
 
 	currentVoteInBytes, err := db.lvdb.Get(key, nil)
+	if err != nil {
+		binary.LittleEndian.PutUint64(currentVoteInBytes, uint64(0))
+	}
+
 	currentVote := binary.LittleEndian.Uint64(currentVoteInBytes)
 	newVote := currentVote + amount
 
@@ -37,7 +40,7 @@ func (db *db) AddVoteBoard(boardType string, boardIndex uint32, paymentAddress [
 	}
 
 	// add to count amount of vote to this candidate
-	key = GetKeyVoteBoardCount(boardType, boardIndex, CandidatePubKey)
+	key = GetKeyVoteBoardCount(boardType, boardIndex, CandidatePaymentAddress)
 	currentCountInBytes, err := db.lvdb.Get(key, nil)
 	if err != nil {
 		return err
@@ -52,16 +55,12 @@ func (db *db) AddVoteBoard(boardType string, boardIndex uint32, paymentAddress [
 	}
 
 	// add to list voter new voter base on count as index
-	key = GetKeyVoteBoardList(boardType, boardIndex, CandidatePubKey, VoterPubKey)
+	key = GetKeyVoteBoardList(boardType, boardIndex, &CandidatePaymentAddress, &VoterPaymentAddress)
 	oldAmountInByte, _ := db.Get(key)
 	oldAmount := ParseValueVoteBoardList(oldAmountInByte)
 	newAmount := oldAmount + amount
 	newAmountInByte := GetValueVoteBoardList(newAmount)
 	err = db.Put(key, newAmountInByte)
-
-	//add database to get paymentAddress from pubKey
-	key = GetPubKeyToPaymentAddressKey(VoterPubKey)
-	db.Put(key, paymentAddress)
 
 	return nil
 }
@@ -78,11 +77,11 @@ func (db *db) GetTopMostVoteGovernor(boardType string, currentBoardIndex uint32)
 	var candidateList database.CandidateList
 	//use prefix  as in file lvdb/block.go FetchChain
 	newBoardIndex := currentBoardIndex + 1
-	prefix := GetKeyVoteBoardSum(boardType, newBoardIndex, make([]byte, 0))
+	prefix := GetKeyVoteBoardSum(boardType, newBoardIndex, nil)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
-		_, _, pubKey, err := ParseKeyVoteBoardSum(iter.Key())
-		countKey := GetKeyVoteBoardCount(boardType, newBoardIndex, pubKey)
+		_, _, paymentAddress, err := ParseKeyVoteBoardSum(iter.Key())
+		countKey := GetKeyVoteBoardCount(boardType, newBoardIndex, paymentAddress)
 		if err != nil {
 			return nil, err
 		}
@@ -92,9 +91,9 @@ func (db *db) GetTopMostVoteGovernor(boardType string, currentBoardIndex uint32)
 		}
 		value := binary.LittleEndian.Uint64(iter.Value())
 		candidateList = append(candidateList, database.CandidateElement{
-			PubKey:       pubKey,
-			VoteAmount:   value,
-			NumberOfVote: common.BytesToUint32(countValue),
+			PaymentAddress: paymentAddress,
+			VoteAmount:     value,
+			NumberOfVote:   common.BytesToUint32(countValue),
 		})
 	}
 	sort.Sort(candidateList)
@@ -192,11 +191,6 @@ func (db *db) AddVoteNormalProposalFromOwner(boardType string, constitutionIndex
 	return nil
 }
 
-func GetPubKeyToPaymentAddressKey(pubKey []byte) []byte {
-	key := append(pubKeyToPaymentAddress, pubKey...)
-	return key
-}
-
 func GetPosFromLength(length []int) []int {
 	pos := []int{0}
 	for i := 0; i < len(length); i++ {
@@ -234,24 +228,28 @@ func ParseKeyToSlice(key []byte, length []int) (error, [][]byte) {
 	return nil, res
 }
 
-func GetKeyVoteBoardSum(boardType string, boardIndex uint32, candidatePubKey []byte) []byte {
-	key := GetKeyFromVariadic(voteBoardSumPrefix, []byte(boardType), common.Uint32ToBytes(boardIndex), candidatePubKey)
+func GetKeyVoteBoardSum(boardType string, boardIndex uint32, candidatePaymentAddress *privacy.PaymentAddress) []byte {
+	key := make([]byte, 0)
+	if candidatePaymentAddress == nil {
+		key = GetKeyFromVariadic(voteBoardSumPrefix, []byte(boardType), common.Uint32ToBytes(boardIndex))
+	}
+	key = GetKeyFromVariadic(voteBoardSumPrefix, []byte(boardType), common.Uint32ToBytes(boardIndex), candidatePaymentAddress.Bytes())
 	return key
 }
 
-func ParseKeyVoteBoardSum(key []byte) (boardType string, boardIndex uint32, candidatePubKey []byte, err error) {
+func ParseKeyVoteBoardSum(key []byte) (boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress, err error) {
 	length := []int{len(voteBoardSumPrefix), 3, 4, common.PubKeyLength}
 	err, elements := ParseKeyToSlice(key, length)
 
 	_ = elements[0]
 	boardType = string(elements[1])
 	boardIndex = common.BytesToUint32(elements[2])
-	candidatePubKey = elements[3]
+	paymentAddress = *privacy.NewPaymentAddress(elements[3])
 	return
 }
 
-func GetKeyVoteBoardCount(boardType string, boardIndex uint32, candidatePubKey []byte) []byte {
-	key := GetKeyFromVariadic(voteBoardCountPrefix, []byte(boardType), common.Uint32ToBytes(boardIndex), candidatePubKey)
+func GetKeyVoteBoardCount(boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress) []byte {
+	key := GetKeyFromVariadic(voteBoardCountPrefix, []byte(boardType), common.Uint32ToBytes(boardIndex), paymentAddress.Bytes())
 	return key
 }
 
@@ -267,12 +265,12 @@ func ParseKeyVoteBoardCount(key []byte) (boardType string, boardIndex uint32, ca
 	return
 }
 
-func GetKeyVoteBoardList(boardType string, boardIndex uint32, candidatePubKey []byte, voterPubKey []byte) []byte {
-	key := GetKeyFromVariadic(voteBoardListPrefix, []byte(boardType), common.Uint32ToBytes(boardIndex), candidatePubKey, voterPubKey)
+func GetKeyVoteBoardList(boardType string, boardIndex uint32, candidatePaymentAddress *privacy.PaymentAddress, voterPaymentAddress *privacy.PaymentAddress) []byte {
+	key := GetKeyFromVariadic(voteBoardListPrefix, []byte(boardType), common.Uint32ToBytes(boardIndex), candidatePaymentAddress.Bytes(), voterPaymentAddress.Bytes())
 	return key
 }
 
-func ParseKeyVoteBoardList(key []byte) (boardType string, boardIndex uint32, candidatePubKey []byte, voterPubKey []byte, err error) {
+func ParseKeyVoteBoardList(key []byte) (boardType string, boardIndex uint32, candidatePubKey []byte, voterPaymentAddress privacy.PaymentAddress, err error) {
 	length := []int{len(voteBoardListPrefix), 3, 4, common.PubKeyLength, common.PubKeyLength}
 	err, elements := ParseKeyToSlice(key, length)
 
@@ -280,7 +278,7 @@ func ParseKeyVoteBoardList(key []byte) (boardType string, boardIndex uint32, can
 	boardType = string(elements[1])
 	boardIndex = common.BytesToUint32(elements[2])
 	candidatePubKey = elements[3]
-	voterPubKey = elements[4]
+	voterPaymentAddress = *privacy.NewPaymentAddress(elements[4])
 	err = nil
 	return
 }
@@ -293,18 +291,34 @@ func ParseValueVoteBoardList(value []byte) uint64 {
 	return common.BytesToUint64(value)
 }
 
-func GetKeyVoteTokenAmount(boardType string, boardIndex uint32, pubKey []byte) []byte {
-	key := GetKeyFromVariadic(VoteTokenAmountPrefix, []byte(boardType), common.Uint32ToBytes(boardIndex), pubKey)
+func GetKeyVoteTokenAmount(boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress) []byte {
+	key := GetKeyFromVariadic(VoteTokenAmountPrefix, []byte(boardType), common.Uint32ToBytes(boardIndex), paymentAddress.Bytes())
 	return key
 }
 
-func (db *db) GetVoteTokenAmount(boardType string, boardIndex uint32, pubKey []byte) (uint32, error) {
-	key := GetKeyVoteTokenAmount(boardType, boardIndex, pubKey)
+func (db *db) GetVoteTokenAmount(boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress) (uint32, error) {
+	key := GetKeyVoteTokenAmount(boardType, boardIndex, paymentAddress)
 	value, err := db.Get(key)
 	if err != nil {
 		return 0, err
 	}
 	return common.BytesToUint32(value), nil
+}
+
+func (db *db) SetVoteTokenAmount(boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress, newAmount uint32) error {
+	key := GetKeyVoteTokenAmount(boardType, boardIndex, paymentAddress)
+	ok, err := db.HasValue(key)
+	if !ok {
+		zeroInBytes := common.Uint32ToBytes(uint32(0))
+		db.Put(key, zeroInBytes)
+	}
+
+	newAmountInBytes := common.Uint32ToBytes(newAmount)
+	err = db.Put(key, newAmountInBytes)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func GetKeyThreePhraseCryptoOwner(boardType string, constitutionIndex uint32, txId *common.Hash) []byte {
@@ -330,8 +344,12 @@ func ParseKeyThreePhraseCryptoOwner(key []byte) (boardType string, constitutionI
 	txId = nil
 	txIdData := elements[3]
 	if len(txIdData) != 0 {
-		newHash := common.NewHash(txIdData)
-		txId = &newHash
+		newHash, err1 := common.NewHash(txIdData)
+		if err1 != nil {
+			err = err1
+			return
+		}
+		txId = newHash
 	}
 
 	err = nil
@@ -365,8 +383,12 @@ func ParseKeyThreePhraseCryptoSealer(key []byte) (boardType string, constitution
 	txId = nil
 	txIdData := elements[2]
 	if len(txIdData) != 0 {
-		newHash := common.NewHash(txIdData)
-		txId = &newHash
+		newHash, err1 := common.NewHash(txIdData)
+		if err1 != nil {
+			err = err1
+			return
+		}
+		txId = newHash
 	}
 	return
 }
@@ -398,8 +420,12 @@ func ParseKeyThreePhraseVoteValue(key []byte) (boardType string, constitutionInd
 	txId = nil
 	txIdData := elements[2]
 	if len(txIdData) != 0 {
-		newHash := common.NewHash(txIdData)
-		txId = &newHash
+		newHash, err1 := common.NewHash(txIdData)
+		if err1 != nil {
+			err = err1
+			return
+		}
+		txId = newHash
 	}
 	return
 }
@@ -444,18 +470,8 @@ func (db *db) SetEncryptionLastBlockHeight(boardType string, height uint32) {
 	db.Put(key, value)
 }
 
-func (db *db) GetAmountVoteToken(boardType string, boardIndex uint32, pubKey []byte) (uint32, error) {
-	key := GetKeyVoteTokenAmount(boardType, boardIndex, pubKey)
-	currentAmountInBytes, err := db.Get(key)
-	if err != nil {
-		return 0, err
-	}
-	currentAmount := common.BytesToUint32(currentAmountInBytes)
-	return currentAmount, nil
-}
-
-func (db *db) TakeVoteTokenFromWinner(boardType string, boardIndex uint32, voterPubKey []byte, amountOfVote int32) error {
-	key := GetKeyVoteTokenAmount(boardType, boardIndex, voterPubKey)
+func (db *db) TakeVoteTokenFromWinner(boardType string, boardIndex uint32, voterPaymentAddress privacy.PaymentAddress, amountOfVote int32) error {
+	key := GetKeyVoteTokenAmount(boardType, boardIndex, voterPaymentAddress)
 	currentAmountInByte, err := db.Get(key)
 	if err != nil {
 		return err
@@ -466,32 +482,27 @@ func (db *db) TakeVoteTokenFromWinner(boardType string, boardIndex uint32, voter
 	return nil
 }
 
-func (db *db) SetNewProposalWinningVoter(boardType string, constitutionIndex uint32, voterPubKey []byte) error {
+func (db *db) SetNewProposalWinningVoter(boardType string, constitutionIndex uint32, voterPaymentAddress privacy.PaymentAddress) error {
 	key := GetKeyWinningVoter(boardType, constitutionIndex)
-	db.Put(key, voterPubKey)
+	db.Put(key, voterPaymentAddress.Bytes())
 	return nil
 }
 
-func (db *db) GetPaymentAddressFromPubKey(pubKey []byte) []byte {
-	key := GetPubKeyToPaymentAddressKey(pubKey)
-	value, _ := db.Get(key)
-	return value
-}
-
-func (db *db) GetBoardVoterList(boardType string, candidatePubKey []byte, boardIndex uint32) [][]byte {
-	begin := GetKeyVoteBoardList(boardType, boardIndex, candidatePubKey, make([]byte, common.PubKeyLength))
-	end := GetKeyVoteBoardList(boardType, boardIndex, common.BytesPlusOne(candidatePubKey), make([]byte, common.PubKeyLength))
+func (db *db) GetBoardVoterList(boardType string, candidatePaymentAddress privacy.PaymentAddress, boardIndex uint32) []privacy.PaymentAddress {
+	begin := GetKeyVoteBoardList(boardType, boardIndex, &candidatePaymentAddress, nil)
+	end := GetKeyVoteBoardList(boardType, boardIndex, &candidatePaymentAddress, nil)
+	end = common.BytesPlusOne(end)
 	searchRange := util.Range{
 		Start: begin,
 		Limit: end,
 	}
 
 	iter := db.NewIterator(&searchRange, nil)
-	listVoter := make([][]byte, 0)
+	listVoter := make([]privacy.PaymentAddress, 0)
 	for iter.Next() {
 		key := iter.Key()
-		_, _, _, pubKey, _ := ParseKeyVoteBoardList(key)
-		listVoter = append(listVoter, pubKey)
+		_, _, _, candidatePaymentAddress, _ := ParseKeyVoteBoardList(key)
+		listVoter = append(listVoter, candidatePaymentAddress)
 	}
 	return listVoter
 }

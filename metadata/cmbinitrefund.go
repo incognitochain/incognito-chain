@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const CMBInitRefundPeriod = 1000 // TODO(@0xbunyip): set appropriate value
+const CMBInitRefundPeriod = uint64(1000) // TODO(@0xbunyip): set appropriate value
 
 const (
 	CMBInvalid = uint8(iota)
@@ -23,10 +23,10 @@ type CMBInitRefund struct {
 }
 
 func (cref *CMBInitRefund) Hash() *common.Hash {
-	record := string(cref.MainAccount.Bytes())
+	record := cref.MainAccount.String()
 
 	// final hash
-	record += string(cref.MetadataBase.Hash()[:])
+	record += cref.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -35,26 +35,26 @@ func (cref *CMBInitRefund) ValidateTxWithBlockChain(txr Transaction, bcr Blockch
 	// Check if cmb init request existed
 	_, _, _, txHash, state, _, err := bcr.GetCMB(cref.MainAccount.Bytes())
 	if err != nil {
-		return false, err
+		return common.FalseValue, err
 	}
 
 	// Check if it's at least CMBInitRefundPeriod since request
 	_, blockHash, _, _, err := bcr.GetTransactionByHash(txHash)
 	if err != nil {
-		return false, err
+		return common.FalseValue, err
 	}
-	reqBlockHeight, _, err := bcr.GetBlockHeightByBlockHash(blockHash)
-	curBlockHeight := bcr.GetHeight()
-	if curBlockHeight-reqBlockHeight < uint64(CMBInitRefundPeriod) {
-		return false, errors.Errorf("still waiting for repsponses, cannot refund cmb init request now")
+	reqBlockHeight, _, _ := bcr.GetBlockHeightByBlockHash(blockHash)
+	curBlockHeight, err := bcr.GetTxChainHeight(txr)
+	if err != nil || curBlockHeight < CMBInitRefundPeriod+reqBlockHeight {
+		return common.FalseValue, errors.Errorf("still waiting for repsponses, cannot refund cmb init request now")
 	}
 	return state == CMBRequested, nil
 }
 
 func (cref *CMBInitRefund) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	return true, false, nil // DCB takes care of fee
+	return common.TrueValue, common.FalseValue, nil // DCB takes care of fee
 }
 
 func (cref *CMBInitRefund) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }

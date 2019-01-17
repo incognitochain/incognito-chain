@@ -139,8 +139,12 @@ func (blockgen *BlkTmplGenerator) buildRefundTxs(
 		if !ok {
 			continue
 		}
-		addr, txValue := lookbackTx.CalculateTxValue()
-		if addr == nil || txValue > refundInfo.ThresholdToLargeTx {
+		addr := lookbackTx.GetSenderAddress()
+		if addr == nil {
+			continue
+		}
+		txValue := lookbackTx.CalculateTxValue()
+		if txValue > refundInfo.ThresholdToLargeTx {
 			continue
 		}
 		addresses = append(addresses, addr)
@@ -292,14 +296,14 @@ func (blockgen *BlkTmplGenerator) buildResponseTxs(
 	chainID byte,
 	sourceTxns []*metadata.TxDesc,
 	privatekey *privacy.SpendingKey,
-	txGroups map[string][]metadata.Transaction,
-	accumulativeValues map[string]uint64,
+	txGroups *txGroups,
+	accumulativeValues *accumulativeValues,
 	buyBackFromInfos []*buyBackFromInfo,
-) (map[string][]metadata.Transaction, map[string]uint64, map[string]uint64, error) {
+) (*txGroups, *accumulativeValues, map[string]uint64, error) {
 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 	// create buy/sell response txs to distribute bonds/govs to requesters
 	buySellResTxs, err := blockgen.buildBuySellResponsesTx(
-		txGroups["buySellReqTxs"],
+		txGroups.buySellReqTxs,
 		blockgen.chain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.SellingBonds,
 	)
 	if err != nil {
@@ -321,10 +325,10 @@ func (blockgen *BlkTmplGenerator) buildResponseTxs(
 
 	// create refund txs
 	currentSalaryFund := prevBlock.Header.SalaryFund
-	remainingFund := currentSalaryFund + accumulativeValues["totalFee"] + accumulativeValues["incomeFromBonds"] - (accumulativeValues["totalSalary"] + accumulativeValues["buyBackCoins"] + totalOracleRewards)
+	remainingFund := currentSalaryFund + accumulativeValues.totalFee + accumulativeValues.incomeFromBonds - (accumulativeValues.totalSalary + accumulativeValues.buyBackCoins + totalOracleRewards)
 	refundTxs, totalRefundAmt := blockgen.buildRefundTxs(chainID, remainingFund, privatekey)
 
-	issuingResTxs, err := blockgen.buildIssuingResTxs(chainID, txGroups["issuingReqTxs"], privatekey)
+	issuingResTxs, err := blockgen.buildIssuingResTxs(chainID, txGroups.issuingReqTxs, privatekey)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, nil, nil, err
@@ -333,18 +337,18 @@ func (blockgen *BlkTmplGenerator) buildResponseTxs(
 	// Get loan payment amount to add to DCB fund
 	loanPaymentAmount, unlockTxs, removableTxs := blockgen.processLoan(sourceTxns, privatekey)
 	for _, tx := range removableTxs {
-		txGroups["txToRemove"] = append(txGroups["txToRemove"], tx)
+		txGroups.txToRemove = append(txGroups.txToRemove, tx)
 	}
-	txGroups["buySellResTxs"] = buySellResTxs
-	txGroups["buyBackResTxs"] = buyBackResTxs
-	txGroups["oracleRewardTxs"] = oracleRewardTxs
-	txGroups["refundTxs"] = refundTxs
-	txGroups["issuingResTxs"] = issuingResTxs
-	txGroups["unlockTxs"] = unlockTxs
+	txGroups.buySellResTxs = buySellResTxs
+	txGroups.buyBackResTxs = buyBackResTxs
+	txGroups.oracleRewardTxs = oracleRewardTxs
+	txGroups.refundTxs = refundTxs
+	txGroups.issuingResTxs = issuingResTxs
+	txGroups.unlockTxs = unlockTxs
 
-	accumulativeValues["totalOracleRewards"] = totalOracleRewards
-	accumulativeValues["totalRefundAmt"] = totalRefundAmt
-	accumulativeValues["loanPaymentAmount"] = loanPaymentAmount
-	accumulativeValues["currentSalaryFund"] = currentSalaryFund
+	accumulativeValues.totalOracleRewards = totalOracleRewards
+	accumulativeValues.totalRefundAmt = totalRefundAmt
+	accumulativeValues.loanPaymentAmount = loanPaymentAmount
+	accumulativeValues.currentSalaryFund = currentSalaryFund
 	return txGroups, accumulativeValues, updatedOracleValues, nil
 }

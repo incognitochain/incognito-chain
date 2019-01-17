@@ -31,7 +31,16 @@ func (self RpcServer) handleGetDCBConstitution(params interface{}, closeChan <-c
 
 // handleGetListDCBBoard - return list payment address of DCB board
 func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPubKeys, nil
+	res := ListPaymentAddressToListString(self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress)
+	return res, nil
+}
+
+func ListPaymentAddressToListString(addresses []privacy.PaymentAddress) []string {
+	res := make([]string, 0)
+	for _, i := range addresses {
+		res = append(res, i.String())
+	}
+	return res
 }
 
 func (self RpcServer) handleCreateRawTxWithIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -145,7 +154,7 @@ func (self RpcServer) buildRawVoteDCBBoardTransaction(
 	arrayParams := common.InterfaceSlice(params)
 	candidatePaymentAddress := arrayParams[len(arrayParams)-1].(string)
 	account, _ := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-	metadata := metadata.NewVoteDCBBoardMetadata(account.KeySet.PaymentAddress.Pk)
+	metadata := metadata.NewVoteDCBBoardMetadata(account.KeySet.PaymentAddress)
 	tx, err := self.buildRawCustomTokenTransaction(params, metadata)
 	if err != nil {
 		return nil, err
@@ -234,19 +243,28 @@ func (self RpcServer) buildRawSubmitDCBProposalTransaction(
 	NParams := len(arrayParams)
 
 	newParams := arrayParams[NParams-1].(map[string]interface{})
-	tmp, err := SenderKeyParamToMap(arrayParams[0])
+	tmp, err := self.GetPaymentAddressFromPrivateKeyParams(arrayParams[0].(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	newParams["PaymentAddress"] = tmp
 
 	meta := metadata.NewSubmitDCBProposalMetadataFromJson(newParams)
+	params = setBuildRawBurnSubmitProposalTransactionParams(params)
 	tx, err1 := self.buildRawTransaction(params, meta)
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 
 	return tx, nil
+}
+
+func setBuildRawBurnSubmitProposalTransactionParams(params interface{}) interface{} {
+	arrayParams := common.InterfaceSlice(params)
+	x := make(map[string]interface{})
+	x[common.BurningAddress] = float64(common.SubmitProposalFee)
+	arrayParams[1] = x
+	return arrayParams
 }
 
 func (self RpcServer) handleCreateRawSubmitDCBProposalTransaction(

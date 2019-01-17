@@ -22,26 +22,26 @@ func NewOracleReward(oracleFeedTxID common.Hash, metaType int) *OracleReward {
 
 func (or *OracleReward) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	// no need to have fee for this tx
-	return true
+	return common.TrueValue
 }
 
 func (or *OracleReward) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requeste tx (via OracleFeedTxID) in current block
-	return false, nil
+	return common.FalseValue, nil
 }
 
 func (or *OracleReward) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	return false, true, nil
+	return common.FalseValue, common.TrueValue, nil
 }
 
 func (or *OracleReward) ValidateMetadataByItself() bool {
-	// The validation just need to check at tx level, so returning true here
-	return true
+	// The validation just need to check at tx level, so returning common.TrueValue here
+	return common.TrueValue
 }
 
 func (or *OracleReward) Hash() *common.Hash {
 	record := or.OracleFeedTxID.String()
-	record += string(or.MetadataBase.Hash()[:])
+	record += or.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

@@ -26,25 +26,25 @@ func (cReq *ContractingRequest) ValidateTxWithBlockChain(
 	chainID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (cReq *ContractingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if !txr.IsCoinsBurning() {
-		return false, false, nil
+		return common.FalseValue, common.FalseValue, nil
 	}
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (cReq *ContractingRequest) ValidateMetadataByItself() bool {
 	if cReq.Type != ContractingRequestMeta {
-		return false
+		return common.FalseValue
 	}
-	return true
+	return common.TrueValue
 }
 
 func (cReq *ContractingRequest) Hash() *common.Hash {
-	record := string(cReq.MetadataBase.Hash()[:])
+	record := cReq.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

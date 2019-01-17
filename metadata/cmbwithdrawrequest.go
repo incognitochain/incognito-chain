@@ -39,40 +39,42 @@ func (cwr *CMBWithdrawRequest) Hash() *common.Hash {
 	record := string(cwr.ContractID[:])
 
 	// final hash
-	record += string(cwr.MetadataBase.Hash()[:])
+	record += cwr.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func (cwr *CMBWithdrawRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if request is made by receiver of the contract
-	sender := txr.GetJSPubKey()
+	sender := txr.GetSigPubKey()
 	_, _, _, txContract, err := bcr.GetTransactionByHash(&cwr.ContractID)
 	if err != nil {
-		return false, errors.Errorf("Error retrieving contract for withdrawal")
+		return common.FalseValue, errors.Errorf("Error retrieving contract for withdrawal")
 	}
 	contractMeta := txContract.GetMetadata().(*CMBDepositContract)
 	if !bytes.Equal(sender, contractMeta.Receiver.Pk[:]) {
-		return false, errors.Errorf("Only contract receiver can initiate withdrawal")
+		return common.FalseValue, errors.Errorf("Only contract receiver can initiate withdrawal")
 	}
 
 	// Check if no withdrawal request for the same contract
 	_, _, err = bcr.GetWithdrawRequest(cwr.ContractID[:])
 	if err != leveldb.ErrNotFound {
 		if err != nil {
-			return false, err
+			return common.FalseValue, err
 		}
-		return false, errors.Errorf("Contract already had withdraw request")
+		return common.FalseValue, errors.Errorf("Contract already had withdraw request")
 	}
 
 	// TODO(@0xbunyip): validate that no 2 withdrawal requests of a contract in the same block
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (cwr *CMBWithdrawRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	return true, true, nil // continue to check for fee
+	// TODO(@0xbunyip)
+	return common.TrueValue, common.TrueValue, nil // continue to check for fee
 }
 
 func (cwr *CMBWithdrawRequest) ValidateMetadataByItself() bool {
-	return true
+	// TODO(@0xbunyip)
+	return common.TrueValue
 }

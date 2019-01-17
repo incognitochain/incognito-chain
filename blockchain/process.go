@@ -69,7 +69,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 			Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
 			return NewBlockChainError(UnExpectedError, err)
 		}
-		Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
+		//Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
 	}
 
 	// TODO: @0xankylosaurus optimize for loop once instead of multiple times ; metadata.process
