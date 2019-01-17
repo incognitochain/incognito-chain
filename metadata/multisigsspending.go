@@ -100,8 +100,7 @@ func (msSpending *MultiSigsSpending) VerifyMultiSigs(
 	verifiedCount := 0
 	spendablePubKeys := multiSigsReg.SpendableMembers
 	for _, pk := range spendablePubKeys {
-		pkStr := string(pk)
-		sign, ok := msSpending.Signs[pkStr]
+		sign, ok := msSpending.Signs[string(pk)]
 		if !ok {
 			continue
 		}
