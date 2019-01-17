@@ -43,10 +43,10 @@ func (self TxTokenPrivacyData) String() string {
 }
 
 func (self TxTokenPrivacyData) JSONString() string {
-	data, err := json.MarshalIndent(self, common.EmptyString, "\t")
+	data, err := json.MarshalIndent(self, "", "\t")
 	if err != nil {
 		Logger.log.Error(err)
-		return common.EmptyString
+		return ""
 	}
 	return string(data)
 }

@@ -45,29 +45,29 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 	// Check if a loan response with the same id exists on any chain
 	txHashes, err := bcr.GetLoanTxs(lw.LoanID)
 	if err != nil {
-		return common.FalseValue, err
+		return false, err
 	}
 
 	// Check if loan hasn't been withdrawed
 	_, _, _, err = bcr.GetLoanPayment(lw.LoanID)
 	if err != leveldb.ErrNotFound {
 		if err == nil {
-			return common.FalseValue, errors.Errorf("Loan has been withdrawed")
+			return false, errors.Errorf("Loan has been withdrawed")
 		}
-		return common.FalseValue, err
+		return false, err
 	}
 
 	// TODO(@0xbunyip): validate that for a loan, there's only one withdraw in a single block
 
 	foundResponse := 0
-	keyCorrect := common.FalseValue
+	keyCorrect := false
 	// TODO(@0xbunyip): make sure withdraw is not too close to escrowDeadline in SimpleLoan smart contract
 	for _, txHash := range txHashes {
 		hash := &common.Hash{}
 		copy(hash[:], txHash)
 		_, _, _, txOld, err := bcr.GetTransactionByHash(hash)
 		if txOld == nil || err != nil {
-			return common.FalseValue, fmt.Errorf("Error finding corresponding loan request")
+			return false, fmt.Errorf("Error finding corresponding loan request")
 		}
 		switch txOld.GetMetadataType() {
 		case LoanRequestMeta:
@@ -75,18 +75,18 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 				// Check if key is correct
 				meta := txOld.GetMetadata()
 				if meta == nil {
-					return common.FalseValue, fmt.Errorf("Loan request metadata of tx loan withdraw is nil")
+					return false, fmt.Errorf("Loan request metadata of tx loan withdraw is nil")
 				}
 				requestMeta, ok := meta.(*LoanRequest)
 				if !ok {
-					return common.FalseValue, fmt.Errorf("Error parsing loan request of tx loan withdraw")
+					return false, fmt.Errorf("Error parsing loan request of tx loan withdraw")
 				}
 				hasher := sha3.NewLegacyKeccak256()
 				hasher.Write(lw.Key)
 				digest := hasher.Sum(nil)
 				fmt.Printf("Found committed digest, checking key and digest: %x\n%x\n%x\n", lw.Key, digest, requestMeta.KeyDigest)
 				if bytes.Equal(digest, requestMeta.KeyDigest) {
-					keyCorrect = common.TrueValue
+					keyCorrect = true
 				}
 			}
 		case LoanResponseMeta:
@@ -110,18 +110,18 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 
 	minResponse := bcr.GetDCBParams().MinLoanResponseRequire
 	if foundResponse < int(minResponse) {
-		return common.FalseValue, fmt.Errorf("Not enough loan accepted response")
+		return false, fmt.Errorf("Not enough loan accepted response")
 	}
 	if !keyCorrect {
-		return common.FalseValue, fmt.Errorf("Provided key is incorrect")
+		return false, fmt.Errorf("Provided key is incorrect")
 	}
-	return common.TrueValue, nil
+	return true, nil
 }
 
 func (lw *LoanWithdraw) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	return common.TrueValue, common.TrueValue, nil // continue checking for fee
+	return true, true, nil // continue checking for fee
 }
 
 func (lw *LoanWithdraw) ValidateMetadataByItself() bool {
-	return common.TrueValue
+	return true
 }

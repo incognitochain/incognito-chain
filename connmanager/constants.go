@@ -1,5 +1,0 @@
-package connmanager
-
-const (
-	EmptyString = ""
-)

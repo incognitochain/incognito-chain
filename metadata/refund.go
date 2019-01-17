@@ -22,21 +22,21 @@ func NewRefund(smallTxID common.Hash, metaType int) *Refund {
 
 func (rf *Refund) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	// no need to have fee for this tx
-	return common.TrueValue
+	return true
 }
 
 func (rf *Refund) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requeste tx (via SmallTxID) in current block
-	return common.FalseValue, nil
+	return false, nil
 }
 
 func (rf *Refund) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	return common.FalseValue, common.TrueValue, nil
+	return false, true, nil
 }
 
 func (rf *Refund) ValidateMetadataByItself() bool {
-	// The validation just need to check at tx level, so returning common.TrueValue here
-	return common.TrueValue
+	// The validation just need to check at tx level, so returning true here
+	return true
 }
 
 func (rf *Refund) Hash() *common.Hash {

@@ -50,13 +50,13 @@ func (lr *LoanResponse) Hash() *common.Hash {
 }
 
 func txCreatedByDCBBoardMember(txr Transaction, bcr BlockchainRetriever) bool {
-	isBoard := common.FalseValue
+	isBoard := false
 	txPubKey := txr.GetSigPubKey()
 	fmt.Printf("check if created by dcb board: %v\n", txPubKey)
 	for _, member := range bcr.GetBoardPubKeys("dcb") {
 		fmt.Printf("member of board pubkey: %v\n", member)
 		if bytes.Equal(member, txPubKey) {
-			isBoard = common.TrueValue
+			isBoard = true
 		}
 	}
 	return isBoard
@@ -66,23 +66,23 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 	fmt.Println("Validating LoanResponse with blockchain!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	// Check if only board members created this tx
 	if !txCreatedByDCBBoardMember(txr, bcr) {
-		return common.FalseValue, fmt.Errorf("Tx must be created by DCB Governor")
+		return false, fmt.Errorf("Tx must be created by DCB Governor")
 	}
 
 	// Check if a loan request with the same id exists on any chain
 	txHashes, err := bcr.GetLoanTxs(lr.LoanID)
 	if err != nil {
-		return common.FalseValue, err
+		return false, err
 	}
 	fmt.Printf("GetLoanTxs found:\n")
-	found := common.FalseValue
+	found := false
 	for _, txHash := range txHashes {
 		fmt.Printf("%x\n", txHash)
 		hash := &common.Hash{}
 		copy(hash[:], txHash)
 		_, _, _, txOld, err := bcr.GetTransactionByHash(hash)
 		if txOld == nil || err != nil {
-			return common.FalseValue, fmt.Errorf("Error finding corresponding loan request")
+			return false, fmt.Errorf("Error finding corresponding loan request")
 		}
 		switch txOld.GetMetadataType() {
 		case LoanResponseMeta:
@@ -93,7 +93,7 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 				}
 				// Check if the same user responses twice
 				if bytes.Equal(txOld.GetSigPubKey(), txr.GetSigPubKey()) {
-					return common.FalseValue, fmt.Errorf("Current board member already responded to loan request")
+					return false, fmt.Errorf("Current board member already responded to loan request")
 				}
 			}
 		case LoanRequestMeta:
@@ -102,32 +102,32 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 				if !ok {
 					continue
 				}
-				found = common.TrueValue
+				found = true
 			}
 		}
 	}
 
-	if found == common.FalseValue {
-		return common.FalseValue, fmt.Errorf("Corresponding loan request not found")
+	if found == false {
+		return false, fmt.Errorf("Corresponding loan request not found")
 	}
-	fmt.Printf("Validate returns common.TrueValue!!!\n")
-	return common.TrueValue, nil
+	fmt.Printf("Validate returns true!!!\n")
+	return true, nil
 }
 
 func (lr *LoanResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if lr.Response != Accept && lr.Response != Reject {
-		return common.FalseValue, common.FalseValue, nil
+		return false, false, nil
 	}
-	return common.FalseValue, common.TrueValue, nil // No need to check for fee
+	return false, true, nil // No need to check for fee
 }
 
 func (lr *LoanResponse) ValidateMetadataByItself() bool {
-	return common.TrueValue
+	return true
 }
 
-// CheckTransactionFee returns common.TrueValue since loan response tx doesn't have fee
+// CheckTransactionFee returns true since loan response tx doesn't have fee
 func (lr *LoanResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
-	return common.TrueValue
+	return true
 }
 
 // GetLoanResponses returns list of members who responded to a loan; input the hashes of request and response txs of the loan
