@@ -112,9 +112,9 @@ func transferTxToken(tokenAmount uint64, unspentTxTokenOuts []transaction.TxToke
 		},
 	}
 	if sumTokens > tokenAmount {
-		accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+		keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 		txTokenOuts = append(txTokenOuts, transaction.TxTokenVout{
-			PaymentAddress: accountDCB.KeySet.PaymentAddress,
+			PaymentAddress: keyWalletDCBAccount.KeySet.PaymentAddress,
 			Value:          sumTokens - tokenAmount,
 		})
 	}
@@ -204,8 +204,8 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	saleID []byte,
 	producerPrivateKey *privacy.SpendingKey,
 ) (*transaction.TxCustomToken, error) {
-	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	dcbPk := accountDCB.KeySet.PaymentAddress.Pk
+	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
 	saleData := saleDataMap[string(saleID)]
 
 	// Get price for asset
@@ -248,7 +248,7 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	} else if bytes.Equal(sellingAsset[:8], common.BondTokenID[:8]) || bytes.Equal(sellingAsset[:], common.DCBTokenID[:]) {
 		// Get unspent token UTXO to send to user
 		if _, ok := unspentTokenMap[string(sellingAsset[:])]; !ok {
-			unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(accountDCB.KeySet, sellingAsset)
+			unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(keyWalletDCBAccount.KeySet, sellingAsset)
 			if err == nil {
 				unspentTokenMap[string(sellingAsset[:])] = unspentTxTokenOuts
 			} else {

@@ -23,11 +23,11 @@ type CMBDepositContract struct {
 }
 
 func NewCMBDepositContract(data map[string]interface{}) *CMBDepositContract {
-	key, err := wallet.Base58CheckDeserialize(data["Receiver"].(string))
+	keyWalletReceiver, err := wallet.Base58CheckDeserialize(data["Receiver"].(string))
 	if err != nil {
 		return nil
 	}
-	keyCMB, err := wallet.Base58CheckDeserialize(data["CMBAddress"].(string))
+	keywalletCMBAccount, err := wallet.Base58CheckDeserialize(data["CMBAddress"].(string))
 	if err != nil {
 		return nil
 	}
@@ -41,8 +41,8 @@ func NewCMBDepositContract(data map[string]interface{}) *CMBDepositContract {
 		TotalInterest: interest,
 		DepositValue:  value,
 		NoticePeriod:  notice,
-		Receiver:      key.KeySet.PaymentAddress,
-		CMBAddress:    keyCMB.KeySet.PaymentAddress,
+		Receiver:      keyWalletReceiver.KeySet.PaymentAddress,
+		CMBAddress:    keywalletCMBAccount.KeySet.PaymentAddress,
 		ValidUntil:    validUntil,
 	}
 
