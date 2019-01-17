@@ -129,7 +129,7 @@ func (tx *Tx) Init(
 		}
 
 		if len(myCommitmentIndexs) != len(inputCoins) {
-			return NewTransactionErr(RandomCommitmentErr, errors.New("Number of list my commitment indices must be equal to number of input coins"))
+			return NewTransactionErr(RandomCommitmentErr, errors.New("number of list my commitment indices must be equal to number of input coins"))
 		}
 	}
 
@@ -154,7 +154,7 @@ func (tx *Tx) Init(
 
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	if overBalance < 0 {
-		return NewTransactionErr(WrongInput, errors.New("Input value less than output value"))
+		return NewTransactionErr(WrongInput, errors.New("input value less than output value"))
 	}
 
 	// if overBalance > 0, create a new payment info with pk is sender's pk and amount is overBalance
@@ -481,6 +481,7 @@ func (tx *Tx) GetTxActualSize() uint64 {
 
 	if tx.Metadata != nil {
 		// TODO 0xjackpolope
+		_ = 1
 	}
 
 	return uint64(math.Ceil(float64(sizeTx) / 1024))
@@ -580,7 +581,7 @@ func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.
 	for _, temp1 := range poolNullifiers {
 		for _, desc := range tx.Proof.InputCoins {
 			if ok, err := common.SliceBytesExists(temp1, desc.CoinDetails.SerialNumber.Compress()); ok > -1 || err != nil {
-				return errors.New("Double spend")
+				return errors.New("double spend")
 			}
 		}
 	}
@@ -589,7 +590,7 @@ func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.
 
 func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 	if tx.Type == common.TxSalaryType {
-		return errors.New("Can not receive a salary tx from other node, this is a violation")
+		return errors.New("can not receive a salary tx from other node, this is a violation")
 	}
 	poolNullifiers := mr.GetSerialNumbers()
 	return tx.validateDoubleSpendTxWithCurrentMempool(poolNullifiers)
@@ -608,7 +609,7 @@ func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(
 		serialNumber := tx.Proof.InputCoins[i].CoinDetails.SerialNumber.Compress()
 		ok, err := db.HasSerialNumber(constantTokenID, serialNumber, chainID)
 		if ok || err != nil {
-			return errors.New("Double spend")
+			return errors.New("double spend")
 		}
 	}
 	return nil
@@ -638,11 +639,11 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 	txN := tx
 	//check version
 	if txN.Version > TxVersion {
-		return false, errors.New("Wrong tx version")
+		return false, errors.New("wrong tx version")
 	}
 	// check LockTime before now
 	if int64(txN.LockTime) > time.Now().Unix() {
-		return false, errors.New("Wrong tx locktime")
+		return false, errors.New("wrong tx locktime")
 	}
 	// check Type is normal or salary tx
 	/*if len(txN.Type) != 1 || (txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType) { // only 1 byte

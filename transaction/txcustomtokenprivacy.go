@@ -154,18 +154,18 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			temp.sigPrivKey = *senderKey
 			err = temp.signTx()
 			if err != nil {
-				return NewTransactionErr(UnexpectedErr, errors.New("Can't handle this TokenTxType"))
+				return NewTransactionErr(UnexpectedErr, errors.New("can't handle this TokenTxType"))
 			}
 
 			txCustomToken.TxTokenPrivacyData.TxNormal = temp
 			hashInitToken, err := txCustomToken.TxTokenPrivacyData.Hash()
 			if err != nil {
-				return NewTransactionErr(UnexpectedErr, errors.New("Can't handle this TokenTxType"))
+				return NewTransactionErr(UnexpectedErr, errors.New("can't handle this TokenTxType"))
 			}
 			// validate PropertyID is the only one
 			for customTokenID := range listCustomTokens {
 				if hashInitToken.String() == customTokenID.String() {
-					return NewTransactionErr(UnexpectedErr, errors.New("This token is existed in network"))
+					return NewTransactionErr(UnexpectedErr, errors.New("this token is existed in network"))
 				}
 			}
 			txCustomToken.TxTokenPrivacyData.PropertyID = *hashInitToken
@@ -179,7 +179,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			temp := Tx{}
 			propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 			if _, ok := listCustomTokens[*propertyID]; !ok {
-				return NewTransactionErr(UnexpectedErr, errors.New("Invalid Token ID"))
+				return NewTransactionErr(UnexpectedErr, errors.New("invalid Token ID"))
 			}
 			Logger.log.Infof("Token %+v wil be transfered with", propertyID)
 			txCustomToken.TxTokenPrivacyData = TxTokenPrivacyData{
@@ -205,7 +205,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 	}
 
 	if !handled {
-		return NewTransactionErr(UnexpectedErr, errors.New("Can't handle this TokenTxType"))
+		return NewTransactionErr(UnexpectedErr, errors.New("can't handle this TokenTxType"))
 	}
 	return nil
 }
