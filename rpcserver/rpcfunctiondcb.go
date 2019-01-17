@@ -36,6 +36,15 @@ func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan
 	return res, nil
 }
 
+func (self RpcServer) handleAppendListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	senderKey := arrayParams[0].(string)
+	paymentAddress, _ := self.GetPaymentAddressFromSenderKeyParams(senderKey)
+	self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress = append(self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress, *paymentAddress)
+	res := ListPaymentAddressToListString(self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress)
+	return res, nil
+}
+
 func ListPaymentAddressToListString(addresses []privacy.PaymentAddress) []string {
 	res := make([]string, 0)
 	for _, i := range addresses {

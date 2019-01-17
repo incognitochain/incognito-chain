@@ -100,6 +100,15 @@ func (self RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan
 	return res, nil
 }
 
+func (self RpcServer) handleAppendListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	senderKey := arrayParams[0].(string)
+	paymentAddress, _ := self.GetPaymentAddressFromSenderKeyParams(senderKey)
+	self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress = append(self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress, *paymentAddress)
+	res := ListPaymentAddressToListString(self.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
+	return res, nil
+}
+
 func (self RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
