@@ -249,7 +249,7 @@ func ParseKeyVoteBoardSum(key []byte) (boardType string, boardIndex uint32, paym
 	_ = elements[0]
 	boardType = string(elements[1])
 	boardIndex = common.BytesToUint32(elements[2])
-	paymentAddress = *privacy.NewPaymentAddress(elements[3])
+	paymentAddress = *privacy.NewPaymentAddressFromByte(elements[3])
 	return
 }
 
@@ -283,7 +283,7 @@ func ParseKeyVoteBoardList(key []byte) (boardType string, boardIndex uint32, can
 	boardType = string(elements[1])
 	boardIndex = common.BytesToUint32(elements[2])
 	candidatePubKey = elements[3]
-	voterPaymentAddress = *privacy.NewPaymentAddress(elements[4])
+	voterPaymentAddress = *privacy.NewPaymentAddressFromByte(elements[4])
 	err = nil
 	return
 }
