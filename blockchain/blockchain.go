@@ -387,38 +387,6 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 }
 
 /*
-Uses an existing database to update the set of used tx by saving list nullifier of privacy,
-this is a list tx-out which are used by a new tx
-*/
-/*func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, chainId byte) error {
-	for _, nullifier := range nullifiers {
-		err := self.config.DataBase.StoreSerialNumbers(nullifier, chainId)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}*/
-
-/*
-Uses an existing database to update the set of used tx by saving list nullifier of privacy,
-this is a list tx-out which are used by a new tx
-*/
-/*func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
-	for _, desc := range tx.Proof.InputCoins {
-		chainId, err := common.GetTxSenderChain(tx.PubKeyLastByteSender)
-		if err != nil {
-			return err
-		}
-		err = self.config.DataBase.StoreSerialNumbers(desc.CoinDetails.SerialNumber.Compress(), chainId)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}*/
-
-/*
 Get all blocks in chain
 Return block array
 */
@@ -548,7 +516,7 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 	// Pay interest
 	interestPerTerm := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
 	chainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
-	height := uint32(self.GetChainHeight(chainID))
+	height := self.GetChainHeight(chainID)
 	totalInterest := metadata.GetTotalInterest(
 		principle,
 		interest,
@@ -558,11 +526,11 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 		height,
 	)
 	fmt.Printf("[db]perTerm, totalInt: %d, %d\n", interestPerTerm, totalInterest)
-	termInc := uint32(0)
+	termInc := uint64(0)
 	if value <= totalInterest { // Pay all to cover interest
 		if interestPerTerm > 0 {
 			if value >= interest {
-				termInc = 1 + uint32((value-interest)/interestPerTerm)
+				termInc = 1 + uint64((value-interest)/interestPerTerm)
 				interest = interestPerTerm - (value-interest)%interestPerTerm
 			} else {
 				interest -= value
@@ -576,7 +544,7 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 		}
 		if totalInterest >= interest { // This payment pays for interest
 			if interestPerTerm > 0 {
-				termInc = 1 + uint32((totalInterest-interest)/interestPerTerm)
+				termInc = 1 + uint64((totalInterest-interest)/interestPerTerm)
 				interest = interestPerTerm
 			}
 		}
@@ -615,8 +583,8 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 				requestMeta, _ := self.GetLoanRequestMeta(meta.LoanID)
 				principle := requestMeta.LoanAmount
 				interest := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
-				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint32(block.Header.Height))
-				fmt.Printf("principle: %d\ninterest: %d\nblock: %d\n", principle, interest, int32(block.Header.Height))
+				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint64(block.Header.Height))
+				fmt.Printf("principle: %d\ninterest: %d\nblock: %d\n", principle, interest, uint64(block.Header.Height))
 			}
 		case metadata.LoanPaymentMeta:
 			{
@@ -627,42 +595,6 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 	return nil
 }
 
-// parseCustomTokenUTXO helper method for parsing UTXO data for updating dividend payout
-/*func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash, pubkey []byte) ([]transaction.TxTokenVout, error) {
-	utxoData, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, pubkey)
-	if err != nil {
-		return nil, err
-	}
-	var finalErr error
-	vouts := []transaction.TxTokenVout{}
-	for key, value := range utxoData {
-		keys := strings.Split(key, string(lvdb.Splitter))
-		values := strings.Split(value, string(lvdb.Splitter))
-		// get unspent and unreward transaction output
-		if strings.Compare(values[1], string(lvdb.Unspent)) == 0 {
-			vout := transaction.TxTokenVout{}
-			vout.PaymentAddress = privacy.PaymentAddress{Pk: pubkey}
-			txHash, err := common.Hash{}.NewHash([]byte(keys[3]))
-			if err != nil {
-				finalErr = err
-				continue
-			}
-			vout.SetTxCustomTokenID(*txHash)
-			voutIndexByte := []byte(keys[4])[0]
-			voutIndex := int(voutIndexByte)
-			vout.SetIndex(voutIndex)
-			value, err := strconv.Atoi(values[0])
-			if err != nil {
-				finalErr = err
-				continue
-			}
-			vout.Value = uint64(value)
-			vouts = append(vouts, vout)
-		}
-	}
-	return vouts, finalErr
-}*/
-
 func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 	for _, tx := range block.Transactions {
 		switch tx.GetMetadataType() {
@@ -670,6 +602,9 @@ func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 			{
 				tx := tx.(*transaction.Tx)
 				meta := tx.Metadata.(*metadata.Dividend)
+				if tx.Proof == nil {
+					return errors.New("Miss output in tx")
+				}
 				for _, _ = range tx.Proof.OutputCoins {
 					keySet := cashec.KeySet{
 						PaymentAddress: meta.PaymentAddress,
@@ -702,7 +637,7 @@ func (self *BlockChain) UpdateVoteCountBoard(block *Block) error {
 				tx := tx.(*transaction.TxCustomToken)
 				voteAmount := tx.GetAmountOfVote()
 				voteDCBBoardMetadata := tx.Metadata.(*metadata.VoteDCBBoardMetadata)
-				err := self.config.DataBase.AddVoteBoard("dcb", DCBBoardIndex, tx.TxTokenData.Vins[0].PaymentAddress.Bytes(), tx.TxTokenData.Vins[0].PaymentAddress.Pk, voteDCBBoardMetadata.CandidatePubKey, voteAmount)
+				err := self.config.DataBase.AddVoteBoard("dcb", DCBBoardIndex, tx.TxTokenData.Vins[0].PaymentAddress.Bytes(), tx.TxTokenData.Vins[0].PaymentAddress, voteDCBBoardMetadata.CandidatePaymentAddress, voteAmount)
 				if err != nil {
 					return err
 				}
@@ -712,7 +647,7 @@ func (self *BlockChain) UpdateVoteCountBoard(block *Block) error {
 				tx := tx.(*transaction.TxCustomToken)
 				voteAmount := tx.GetAmountOfVote()
 				voteGOVBoardMetadata := tx.Metadata.(*metadata.VoteGOVBoardMetadata)
-				err := self.config.DataBase.AddVoteBoard("gov", GOVBoardIndex, tx.TxTokenData.Vins[0].PaymentAddress.Bytes(), tx.TxTokenData.Vins[0].PaymentAddress.Pk, voteGOVBoardMetadata.CandidatePubKey, voteAmount)
+				err := self.config.DataBase.AddVoteBoard("gov", GOVBoardIndex, tx.TxTokenData.Vins[0].PaymentAddress.Bytes(), tx.TxTokenData.Vins[0].PaymentAddress, voteGOVBoardMetadata.CandidatePaymentAddress, voteAmount)
 				if err != nil {
 					return err
 				}
@@ -728,7 +663,7 @@ func (self *BlockChain) UpdateVoteTokenHolder(block *Block) error {
 		case metadata.SendInitDCBVoteTokenMeta:
 			{
 				meta := tx.GetMetadata().(*metadata.SendInitDCBVoteTokenMetadata)
-				err := self.config.DataBase.SendInitVoteToken("dcb", self.GetCurrentBoardIndex(DCBConstitutionHelper{}), meta.ReceiverPubKey, meta.Amount)
+				err := self.config.DataBase.SendInitVoteToken("dcb", self.GetCurrentBoardIndex(DCBConstitutionHelper{}), meta.ReceiverPaymentAddress, meta.Amount)
 				if err != nil {
 					return err
 				}
@@ -736,7 +671,7 @@ func (self *BlockChain) UpdateVoteTokenHolder(block *Block) error {
 		case metadata.SendInitGOVVoteTokenMeta:
 			{
 				meta := tx.GetMetadata().(*metadata.SendInitGOVVoteTokenMetadata)
-				err := self.config.DataBase.SendInitVoteToken("gov", self.GetCurrentBoardIndex(GOVConstitutionHelper{}), meta.ReceiverPubKey, meta.Amount)
+				err := self.config.DataBase.SendInitVoteToken("gov", self.GetCurrentBoardIndex(GOVConstitutionHelper{}), meta.ReceiverPaymentAddress, meta.Amount)
 				if err != nil {
 					return err
 				}
@@ -755,42 +690,42 @@ func (self *BlockChain) ProcessVoteProposal(block *Block) error {
 		switch tx.GetMetadataType() {
 		case metadata.SealedLv3DCBVoteProposalMeta:
 			underlieMetadata := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
-			self.config.DataBase.AddVoteLv3Proposal("dcb", nextDCBConstitutionIndex, underlieMetadata.Hash2())
+			self.config.DataBase.AddVoteLv3Proposal("dcb", nextDCBConstitutionIndex, underlieMetadata.Hash())
 		case metadata.SealedLv2DCBVoteProposalMeta:
 			underlieMetadata := meta.(*metadata.SealedLv2DCBVoteProposalMetadata)
-			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
+			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
 		case metadata.SealedLv1DCBVoteProposalMeta:
 			underlieMetadata := meta.(*metadata.SealedLv1DCBVoteProposalMetadata)
-			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
+			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
 		case metadata.NormalDCBVoteProposalFromOwnerMeta:
 			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromOwnerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal.ToBytes())
+			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
 		case metadata.NormalDCBVoteProposalFromSealerMeta:
 			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromSealerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal.ToBytes())
+			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
 		case metadata.AcceptDCBProposalMeta:
 			underlieMetadata := meta.(*metadata.AcceptDCBProposalMetadata)
-			self.config.DataBase.TakeVoteTokenFromWinner("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PubKey, underlieMetadata.Voter.AmountOfVote)
-			self.config.DataBase.SetNewProposalWinningVoter("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PubKey)
+			self.config.DataBase.TakeVoteTokenFromWinner("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
+			self.config.DataBase.SetNewProposalWinningVoter("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
 		case metadata.SealedLv3GOVVoteProposalMeta:
 			underlieMetadata := meta.(*metadata.SealedLv3GOVVoteProposalMetadata)
-			self.config.DataBase.AddVoteLv3Proposal("gov", nextGOVConstitutionIndex, underlieMetadata.Hash2())
+			self.config.DataBase.AddVoteLv3Proposal("gov", nextGOVConstitutionIndex, underlieMetadata.Hash())
 		case metadata.SealedLv2GOVVoteProposalMeta:
 			underlieMetadata := meta.(*metadata.SealedLv2GOVVoteProposalMetadata)
-			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
+			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
 		case metadata.SealedLv1GOVVoteProposalMeta:
 			underlieMetadata := meta.(*metadata.SealedLv1GOVVoteProposalMetadata)
-			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal)
+			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
 		case metadata.NormalGOVVoteProposalFromOwnerMeta:
 			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromOwnerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromOwner("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal.ToBytes())
+			self.config.DataBase.AddVoteNormalProposalFromOwner("gov", nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
 		case metadata.NormalGOVVoteProposalFromSealerMeta:
 			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromSealerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromSealer("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3VoteProposal, underlieMetadata.VoteProposal.ToBytes())
+			self.config.DataBase.AddVoteNormalProposalFromSealer("gov", nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
 		case metadata.AcceptGOVProposalMeta:
 			underlieMetadata := meta.(*metadata.AcceptGOVProposalMetadata)
-			self.config.DataBase.TakeVoteTokenFromWinner("gov", nextGOVConstitutionIndex, underlieMetadata.Voter.PubKey, underlieMetadata.Voter.AmountOfVote)
-			self.config.DataBase.SetNewProposalWinningVoter("gov", nextGOVConstitutionIndex, underlieMetadata.Voter.PubKey)
+			self.config.DataBase.TakeVoteTokenFromWinner("gov", nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
+			self.config.DataBase.SetNewProposalWinningVoter("gov", nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
 		}
 	}
 	return nil
@@ -811,11 +746,11 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 				// Store saledata in db
 				saleData := proposal.DCBParams.ListSaleData
 				for _, data := range saleData {
-					if _, _, _, _, _, err := self.config.DataBase.LoadCrowdsaleData(data.SaleID); err == nil {
+					if _, _, _, _, _, err := self.config.DataBase.GetCrowdsaleData(data.SaleID); err == nil {
 						// TODO(@0xbunyip): support update crowdsale data
 						continue
 					}
-					if err := self.config.DataBase.SaveCrowdsaleData(
+					if err := self.config.DataBase.StoreCrowdsaleData(
 						data.SaleID,
 						data.EndBlock,
 						data.BuyingAsset,
@@ -827,7 +762,7 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 					}
 				}
 			}
-		case metadata.CrowdsaleRequestMeta:
+		case metadata.CrowdSaleRequestMeta:
 			{
 				meta := tx.GetMetadata().(*metadata.CrowdsaleRequest)
 				hash := tx.Hash()
@@ -835,7 +770,7 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 					return err
 				}
 			}
-		case metadata.CrowdsaleResponseMeta:
+		case metadata.CrowdSaleResponseMeta:
 			{
 				meta := tx.GetMetadata().(*metadata.CrowdsaleResponse)
 				_, _, _, txRequest, err := self.GetTransactionByHash(meta.RequestedTxID)
@@ -903,7 +838,7 @@ func (self *BlockChain) ProcessCMBTxs(block *Block) error {
 	}
 
 	// Penalize late response for cmb withdraw request
-	return self.findLateWithdrawResponse()
+	return self.findLateWithdrawResponse(uint64(block.Header.Height))
 }
 
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
@@ -1295,18 +1230,8 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 		Logger.log.Errorf("ERROR", err, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
 		return byte(255), nil, -1, nil, NewBlockChainError(UnExpectedError, err)
 	}
-	Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
+	//Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
 	return block.Header.ChainID, blockHash, index, block.Transactions[index], nil
-}
-
-func (self *BlockChain) GetTransactionSenderByHash(txHash *common.Hash) ([]byte, error) {
-	_, _, _, tx, err := self.GetTransactionByHash(txHash)
-	if err != nil {
-		return nil, err
-	}
-	key := tx.GetJSPubKey()
-
-	return key, nil
 }
 
 // ListCustomToken - return all custom token which existed in network

@@ -8,45 +8,35 @@ import (
 )
 
 func getLoanPaymentValue(
-	principle, interest uint64,
-	deadline uint32,
+	principle, interest, deadline uint64,
 ) []byte {
 	// Add principle
 	values := []byte{}
-	principleInBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(principleInBytes, principle)
-	values = append(values, principleInBytes...)
+	values = append(values, common.Uint64ToBytes(principle)...)
 
 	// Add interest
-	interestInBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(interestInBytes, interest)
-	values = append(values, interestInBytes...)
+	values = append(values, common.Uint64ToBytes(interest)...)
 
 	// Add deadline
-	values = append(values, common.Uint32ToBytes(deadline)...)
+	values = append(values, common.Uint64ToBytes(deadline)...)
 
 	return values
 }
 
-func parseLoanPaymentValue(value []byte) (uint64, uint64, uint32, error) {
-	// Get principle
-	if len(value) < 8 {
+func parseLoanPaymentValue(value []byte) (uint64, uint64, uint64, error) {
+	if len(value) < 8*3 { // priciple, interest and deadline
 		return 0, 0, 0, errors.Errorf("Error parsing loan payment value")
 	}
-	principle := binary.LittleEndian.Uint64(value)
+
+	// Get principle
+	principle := common.BytesToUint64(value)
 
 	// Get interest
 	value = value[8:]
-	if len(value) < 8 {
-		return 0, 0, 0, errors.Errorf("Error parsing loan payment value")
-	}
-	interest := binary.LittleEndian.Uint64(value)
+	interest := common.BytesToUint64(value)
 
 	// The rest: deadline
 	value = value[8:]
-	if len(value) < 4 {
-		return 0, 0, 0, errors.Errorf("Error parsing loan payment value")
-	}
-	deadline := common.BytesToUint32(value)
+	deadline := binary.LittleEndian.Uint64(value)
 	return principle, interest, deadline, nil
 }

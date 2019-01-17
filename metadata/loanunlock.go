@@ -14,20 +14,20 @@ func (lu *LoanUnlock) Hash() *common.Hash {
 	record := string(lu.LoanID)
 
 	// final hash
-	record += string(lu.MetadataBase.Hash()[:])
+	record += lu.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func (lu *LoanUnlock) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// TODO(@0xbunyip): validate that there's a corresponding TxLoanWithdraw in the same block
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (lu *LoanUnlock) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	return true, true, nil // continue checking for fee
+	return common.TrueValue, common.TrueValue, nil // continue checking for fee
 }
 
 func (lu *LoanUnlock) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }

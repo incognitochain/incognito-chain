@@ -67,10 +67,13 @@ func (hash *Hash) GetBytes() []byte {
 }
 
 // BytesToHash sets b to hash If b is larger than len(h), b will be cropped from the left.
-func NewHash(b []byte) Hash {
+func NewHash(b []byte) (*Hash, error) {
 	var h Hash
-	h.SetBytes(b)
-	return h
+	err := h.SetBytes(b)
+	if err != nil {
+		return nil, err
+	}
+	return &h, nil
 }
 
 /*
@@ -108,6 +111,15 @@ func (self Hash) NewHashFromStr(hash string) (*Hash, error) {
 		return nil, err
 	}
 	return &self, nil
+}
+
+func NewHashFromStr(s string) (*Hash, error) {
+	var h Hash
+	err := h.Decode(&h, s)
+	if err != nil {
+		return nil, err
+	}
+	return &h, err
 }
 
 /*

@@ -96,7 +96,8 @@ func (self RpcServer) handleGetGOVConstitution(params interface{}, closeChan <-c
 }
 
 func (self RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPubKeys, nil
+	res := ListPaymentAddressToListString(self.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
+	return res, nil
 }
 
 func (self RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -224,7 +225,7 @@ func (self RpcServer) buildRawVoteGOVBoardTransaction(
 	arrayParams := common.InterfaceSlice(params)
 	candidatePaymentAddress := arrayParams[len(arrayParams)-1].(string)
 	account, _ := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-	metadata := metadata.NewVoteGOVBoardMetadata(account.KeySet.PaymentAddress.Pk)
+	metadata := metadata.NewVoteGOVBoardMetadata(account.KeySet.PaymentAddress)
 	tx, err := self.buildRawCustomTokenTransaction(params, metadata)
 	return tx, err
 }
@@ -311,13 +312,14 @@ func (self RpcServer) buildRawSubmitGOVProposalTransaction(
 	NParams := len(arrayParams)
 
 	newParams := arrayParams[NParams-1].(map[string]interface{})
-	tmp, err := SenderKeyParamToMap(arrayParams[0])
+	tmp, err := self.GetPaymentAddressFromPrivateKeyParams(arrayParams[0].(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	newParams["PaymentAddress"] = tmp
 
-	meta := metadata.NewSubmitGOVProposalMetadataFromJson(arrayParams[NParams-1])
+	meta := metadata.NewSubmitGOVProposalMetadataFromJson(newParams)
+	params = setBuildRawBurnSubmitProposalTransactionParams(params)
 	tx, err1 := self.buildRawTransaction(params, meta)
 	if err1 != nil {
 		return nil, err1
@@ -403,6 +405,15 @@ func (self RpcServer) handleCreateAndSendSubmitGOVProposalTransaction(params int
 
 func (self RpcServer) handleCreateRawTxWithOracleFeed(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	feederAddr := senderKey.KeySet.PaymentAddress
+
 	// Req param #4: oracle feed
 	oracleFeed := arrayParams[4].(map[string]interface{})
 
@@ -411,10 +422,12 @@ func (self RpcServer) handleCreateRawTxWithOracleFeed(params interface{}, closeC
 	copy(assetType[:], assetTypeBytes)
 	price := uint64(oracleFeed["Price"].(float64))
 	metaType := metadata.OracleFeedMeta
+
 	meta := metadata.NewOracleFeed(
 		assetType,
 		price,
 		metaType,
+		feederAddr,
 	)
 
 	normalTx, err := self.buildRawTransaction(params, meta)

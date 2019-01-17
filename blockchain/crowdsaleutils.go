@@ -15,7 +15,7 @@ import (
 )
 
 // getTxTokenValue converts total tokens in a tx to Constant
-func getTxTokenValue(tokenData transaction.TxTokenData, tokenID []byte, pk []byte, prices map[string]uint64) (uint64, uint64) {
+func getTxTokenValue(tokenData transaction.TxTokenData, tokenID []byte, pk []byte, prices map[string]uint64) (uint64, uint64, error) {
 	amount := uint64(0)
 	if bytes.Equal(tokenData.PropertyID[:], tokenID) {
 		for _, vout := range tokenData.Vouts {
@@ -24,11 +24,17 @@ func getTxTokenValue(tokenData transaction.TxTokenData, tokenID []byte, pk []byt
 			}
 		}
 	}
-	return amount, amount * prices[string(tokenID)]
+	if price, ok := prices[string(tokenID)]; ok {
+		return amount, amount * price, nil
+	}
+	return 0, 0, errors.New("Miss price")
 }
 
 // getTxValue converts total Constants in a tx to another token
 func getTxValue(tx *transaction.Tx, tokenID []byte, pk []byte, prices map[string]uint64) (uint64, uint64) {
+	if tx.Proof == nil || len(tx.Proof.OutputCoins) == 0 {
+		return 0, 0
+	}
 	// Get amount of Constant user sent
 	value := uint64(0)
 	for _, coin := range tx.Proof.OutputCoins {
@@ -152,8 +158,6 @@ func buildPaymentForToken(
 	txRequest *transaction.TxCustomToken,
 	tokenAmount uint64,
 	tokenID []byte,
-	rt []byte,
-	chainID byte,
 	unspentTokenMap map[string]([]transaction.TxTokenVout),
 	saleID []byte,
 	mint bool,
@@ -196,7 +200,6 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	tx *transaction.TxCustomToken,
 	saleDataMap map[string]*params.SaleData,
 	unspentTokenMap map[string]([]transaction.TxTokenVout),
-	rt []byte,
 	chainID byte,
 	saleID []byte,
 	producerPrivateKey *privacy.SpendingKey,
@@ -206,7 +209,13 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	saleData := saleDataMap[string(saleID)]
 
 	// Get price for asset
-	prices := blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds
+	prices := make(map[string]uint64)
+	if blockgen.chain.BestState[chainID].BestBlock.Header.Oracle != nil && len(blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds) > 0 {
+		prices = blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds
+	}
+	if len(prices) == 0 {
+		return nil, errors.New("Missing bonds data in block")
+	}
 	// TODO(@0xbunyip): validate sale data in proposal to admit only valid pair of assets
 	txResponse := &transaction.TxCustomToken{}
 	err := errors.New("Incorrect assets for crowdsale")
@@ -214,7 +223,10 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	copy(sellingAsset[:], saleData.SellingAsset)
 
 	if bytes.Equal(sellingAsset[:], common.ConstantID[:]) {
-		tokenAmount, valuesInConstant := getTxTokenValue(tx.TxTokenData, saleData.BuyingAsset, dcbPk, prices)
+		tokenAmount, valuesInConstant, err := getTxTokenValue(tx.TxTokenData, saleData.BuyingAsset, dcbPk, prices)
+		if err != nil {
+			return nil, err
+		}
 		if tokenAmount > saleData.BuyingAmount || valuesInConstant > saleData.SellingAmount {
 			// User sent too many token, reject request
 			return nil, fmt.Errorf("Crowdsale reached limit")
@@ -229,6 +241,9 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 			producerPrivateKey,
 			blockgen.chain.GetDatabase(),
 		)
+		if err != nil {
+			return nil, err
+		}
 
 	} else if bytes.Equal(sellingAsset[:8], common.BondTokenID[:8]) || bytes.Equal(sellingAsset[:], common.DCBTokenID[:]) {
 		// Get unspent token UTXO to send to user
@@ -274,8 +289,6 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 			tx,
 			tokensToSend,
 			sellingAsset[:],
-			rt,
-			chainID,
 			unspentTokenMap,
 			saleData.SaleID,
 			mint,
@@ -290,7 +303,6 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleResponse(
 	txsToRemove []metadata.Transaction,
 	saleDataMap map[string]*params.SaleData,
 	unspentTokenMap map[string][]transaction.TxTokenVout,
-	rt []byte,
 	chainID byte,
 	producerPrivateKey *privacy.SpendingKey,
 	respCounter map[string]int,
@@ -332,7 +344,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleResponse(
 	for _, txHash := range txHashes {
 		hash, _ := (&common.Hash{}).NewHash(txHash)
 		_, _, _, txOld, _ := blockgen.chain.GetTransactionByHash(hash)
-		if txOld.GetMetadataType() == metadata.CrowdsaleResponseMeta {
+		if txOld.GetMetadataType() == metadata.CrowdSaleResponseMeta {
 			count += 1
 		}
 	}
@@ -346,7 +358,6 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleResponse(
 			txRequest,
 			saleDataMap,
 			unspentTokenMap,
-			rt,
 			chainID,
 			metaRequest.SaleID,
 			producerPrivateKey,
@@ -367,7 +378,6 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 	txsToRemove []metadata.Transaction,
 	saleDataMap map[string]*params.SaleData,
 	unspentTokenMap map[string][]transaction.TxTokenVout,
-	rt []byte,
 	chainID byte,
 	producerPrivateKey *privacy.SpendingKey,
 ) {
@@ -385,6 +395,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 	if _, ok := saleDataMap[string(metaRequest.SaleID)]; !ok {
 		saleData, err := blockgen.chain.GetCrowdsaleData(metaRequest.SaleID)
 		if err != nil {
+			Logger.log.Error(err)
 			txsToRemove = append(txsToRemove, tx)
 			return
 		}
@@ -412,12 +423,12 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 		txRequest,
 		saleDataMap,
 		unspentTokenMap,
-		rt,
 		chainID,
 		metaRequest.SaleID,
 		producerPrivateKey,
 	)
 	if err != nil {
+		Logger.log.Error(err)
 		txsToRemove = append(txsToRemove, tx)
 	} else if txPayment != nil {
 		txsPayment = append(txsPayment, txPayment)
@@ -426,10 +437,9 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 
 func (blockgen *BlkTmplGenerator) processCrowdsale(
 	sourceTxns []*metadata.TxDesc,
-	rt []byte,
 	chainID byte,
 	producerPrivateKey *privacy.SpendingKey,
-) ([]*transaction.TxCustomToken, []metadata.Transaction, error) {
+) ([]*transaction.TxCustomToken, []metadata.Transaction) {
 	txsToRemove := []metadata.Transaction{}
 	txsPayment := []*transaction.TxCustomToken{}
 
@@ -439,7 +449,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 	respCounter := map[string]int{}
 	for _, txDesc := range sourceTxns {
 		switch txDesc.Tx.GetMetadataType() {
-		case metadata.CrowdsaleRequestMeta:
+		case metadata.CrowdSaleRequestMeta:
 			{
 				blockgen.processCrowdsaleRequest(
 					txDesc.Tx,
@@ -447,12 +457,11 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 					txsToRemove,
 					saleDataMap,
 					unspentTokenMap,
-					rt,
 					chainID,
 					producerPrivateKey,
 				)
 			}
-		case metadata.CrowdsaleResponseMeta:
+		case metadata.CrowdSaleResponseMeta:
 			{
 				blockgen.processCrowdsaleResponse(
 					txDesc.Tx,
@@ -460,7 +469,6 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 					txsToRemove,
 					saleDataMap,
 					unspentTokenMap,
-					rt,
 					chainID,
 					producerPrivateKey,
 					respCounter,
@@ -469,5 +477,5 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 		}
 
 	}
-	return txsPayment, txsToRemove, nil
+	return txsPayment, txsToRemove
 }

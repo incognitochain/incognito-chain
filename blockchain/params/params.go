@@ -16,11 +16,11 @@ type Oracle struct {
 
 type LoanParams struct {
 	InterestRate     uint64 `json:"InterestRate"`     // basis points, e.g. 125 represents 1.25%
-	Maturity         uint32 `json:"Maturity"`         // in number of blocks
+	Maturity         uint64 `json:"Maturity"`         // in number of blocks
 	LiquidationStart uint64 `json:"LiquidationStart"` // ratio between collateral and debt to start auto-liquidation, stored in basis points
 }
 
-func NewLoanParams(interestRate uint64, maturity uint32, liquidationStart uint64) *LoanParams {
+func NewLoanParams(interestRate uint64, maturity uint64, liquidationStart uint64) *LoanParams {
 	return &LoanParams{InterestRate: interestRate, Maturity: maturity, LiquidationStart: liquidationStart}
 }
 
@@ -28,7 +28,7 @@ func NewLoanParamsFromJson(data interface{}) *LoanParams {
 	loanParamsData := data.(map[string]interface{})
 	loanParams := NewLoanParams(
 		uint64(loanParamsData["InterestRate"].(float64)),
-		uint32(loanParamsData["Maturity"].(float64)),
+		uint64(loanParamsData["Maturity"].(float64)),
 		uint64(loanParamsData["LiquidationStart"].(float64)),
 	)
 	return loanParams

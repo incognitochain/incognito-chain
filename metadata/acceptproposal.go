@@ -1,22 +1,24 @@
 package metadata
 
 import (
+	"bytes"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 type Voter struct {
-	PubKey       []byte
-	AmountOfVote int32
+	PaymentAddress privacy.PaymentAddress
+	AmountOfVote   int32
 }
 
 func (voter *Voter) Greater(voter2 Voter) bool {
 	return voter.AmountOfVote > voter2.AmountOfVote ||
-		(voter.AmountOfVote == voter2.AmountOfVote && string(voter.PubKey) > string(voter2.PubKey))
+		(voter.AmountOfVote == voter2.AmountOfVote && bytes.Compare(voter.PaymentAddress.Bytes(), voter2.PaymentAddress.Bytes()) > 0)
 }
 
 func (voter *Voter) Hash() *common.Hash {
-	record := string(voter.PubKey)
+	record := string(voter.PaymentAddress.String())
 	record += string(voter.AmountOfVote)
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
@@ -51,28 +53,28 @@ func NewAcceptDCBProposalMetadata(DCBProposalTXID common.Hash, voter Voter) *Acc
 func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	_, _, _, tx, err := bcr.GetTransactionByHash(&acceptDCBProposalMetadata.DCBProposalTXID)
 	if err != nil {
-		return false, err
+		return common.FalseValue, err
 	}
 	if tx == nil {
-		return false, nil
+		return common.FalseValue, nil
 	}
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) Hash() *common.Hash {
 	record := string(acceptDCBProposalMetadata.DCBProposalTXID.GetBytes())
-	record += string(acceptDCBProposalMetadata.Voter.Hash().GetBytes())
+	record += acceptDCBProposalMetadata.Voter.Hash().String()
 	record += string(acceptDCBProposalMetadata.MetadataBase.Hash().GetBytes())
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }
 
 type AcceptGOVProposalMetadata struct {
@@ -92,12 +94,12 @@ func NewAcceptGOVProposalMetadata(GOVProposalTXID common.Hash, voter Voter) *Acc
 func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	_, _, _, tx, err := bcr.GetTransactionByHash(&acceptGOVProposalMetadata.GOVProposalTXID)
 	if err != nil {
-		return false, err
+		return common.FalseValue, err
 	}
 	if tx == nil {
-		return false, nil
+		return common.FalseValue, nil
 	}
-	return true, nil
+	return common.TrueValue, nil
 }
 
 func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) GetType() int {
@@ -106,16 +108,16 @@ func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) GetType() int {
 
 func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) Hash() *common.Hash {
 	record := string(acceptGOVProposalMetadata.GOVProposalTXID.GetBytes())
-	record += string(acceptGOVProposalMetadata.Hash().GetBytes())
+	record += acceptGOVProposalMetadata.Hash().String()
 	record += string(acceptGOVProposalMetadata.MetadataBase.Hash().GetBytes())
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
-	return true, true, nil
+	return common.TrueValue, common.TrueValue, nil
 }
 
 func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }

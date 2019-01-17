@@ -44,19 +44,19 @@ func (lr *LoanResponse) Hash() *common.Hash {
 	record += string(lr.Response)
 
 	// final hash
-	record += string(lr.MetadataBase.Hash()[:])
+	record += lr.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func txCreatedByDCBBoardMember(txr Transaction, bcr BlockchainRetriever) bool {
-	isBoard := false
-	txPubKey := txr.GetJSPubKey()
+	isBoard := common.FalseValue
+	txPubKey := txr.GetSigPubKey()
 	fmt.Printf("check if created by dcb board: %v\n", txPubKey)
 	for _, member := range bcr.GetBoardPubKeys("dcb") {
 		fmt.Printf("member of board pubkey: %v\n", member)
 		if bytes.Equal(member, txPubKey) {
-			isBoard = true
+			isBoard = common.TrueValue
 		}
 	}
 	return isBoard
@@ -66,23 +66,23 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 	fmt.Println("Validating LoanResponse with blockchain!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	// Check if only board members created this tx
 	if !txCreatedByDCBBoardMember(txr, bcr) {
-		return false, fmt.Errorf("Tx must be created by DCB Governor")
+		return common.FalseValue, fmt.Errorf("Tx must be created by DCB Governor")
 	}
 
 	// Check if a loan request with the same id exists on any chain
 	txHashes, err := bcr.GetLoanTxs(lr.LoanID)
 	if err != nil {
-		return false, err
+		return common.FalseValue, err
 	}
 	fmt.Printf("GetLoanTxs found:\n")
-	found := false
+	found := common.FalseValue
 	for _, txHash := range txHashes {
 		fmt.Printf("%x\n", txHash)
 		hash := &common.Hash{}
 		copy(hash[:], txHash)
 		_, _, _, txOld, err := bcr.GetTransactionByHash(hash)
 		if txOld == nil || err != nil {
-			return false, fmt.Errorf("Error finding corresponding loan request")
+			return common.FalseValue, fmt.Errorf("Error finding corresponding loan request")
 		}
 		switch txOld.GetMetadataType() {
 		case LoanResponseMeta:
@@ -92,8 +92,8 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 					continue
 				}
 				// Check if the same user responses twice
-				if bytes.Equal(txOld.GetJSPubKey(), txr.GetJSPubKey()) {
-					return false, fmt.Errorf("Current board member already responded to loan request")
+				if bytes.Equal(txOld.GetSigPubKey(), txr.GetSigPubKey()) {
+					return common.FalseValue, fmt.Errorf("Current board member already responded to loan request")
 				}
 			}
 		case LoanRequestMeta:
@@ -102,32 +102,32 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 				if !ok {
 					continue
 				}
-				found = true
+				found = common.TrueValue
 			}
 		}
 	}
 
-	if found == false {
-		return false, fmt.Errorf("Corresponding loan request not found")
+	if found == common.FalseValue {
+		return common.FalseValue, fmt.Errorf("Corresponding loan request not found")
 	}
-	fmt.Printf("Validate returns true!!!\n")
-	return true, nil
+	fmt.Printf("Validate returns common.TrueValue!!!\n")
+	return common.TrueValue, nil
 }
 
 func (lr *LoanResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if lr.Response != Accept && lr.Response != Reject {
-		return false, false, nil
+		return common.FalseValue, common.FalseValue, nil
 	}
-	return false, true, nil // No need to check for fee
+	return common.FalseValue, common.TrueValue, nil // No need to check for fee
 }
 
 func (lr *LoanResponse) ValidateMetadataByItself() bool {
-	return true
+	return common.TrueValue
 }
 
-// CheckTransactionFee returns true since loan response tx doesn't have fee
+// CheckTransactionFee returns common.TrueValue since loan response tx doesn't have fee
 func (lr *LoanResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
-	return true
+	return common.TrueValue
 }
 
 // GetLoanResponses returns list of members who responded to a loan; input the hashes of request and response txs of the loan
@@ -148,7 +148,7 @@ func GetLoanResponses(txHashes [][]byte, bcr BlockchainRetriever) []ResponseData
 		if txOld.GetMetadataType() == LoanResponseMeta {
 			meta := txOld.GetMetadata().(*LoanResponse)
 			respData := ResponseData{
-				PublicKey: txOld.GetJSPubKey(),
+				PublicKey: txOld.GetSigPubKey(),
 				Response:  meta.Response,
 			}
 			data = append(data, respData)

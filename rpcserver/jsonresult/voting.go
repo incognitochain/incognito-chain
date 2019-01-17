@@ -1,7 +1,8 @@
 package jsonresult
 
 type GetEncryptionFlagResult struct {
-	Flag uint32 `json:"flag"`
+	DCBFlag uint32 `json:"DCBFlag"`
+	GOVFlag uint32 `json:"GOVFlag"`
 }
 
 type GetEncryptionLastBlockHeightResult struct {

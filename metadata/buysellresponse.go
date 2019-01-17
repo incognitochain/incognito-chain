@@ -42,21 +42,21 @@ func NewBuySellResponse(
 
 func (bsRes *BuySellResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	// no need to have fee for this tx
-	return true
+	return common.TrueValue
 }
 
 func (bsRes *BuySellResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requeste tx (via RequestedTxID) in current block
-	return false, nil
+	return common.FalseValue, nil
 }
 
 func (bsRes *BuySellResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	return false, true, nil
+	return common.FalseValue, common.TrueValue, nil
 }
 
 func (bsRes *BuySellResponse) ValidateMetadataByItself() bool {
-	// The validation just need to check at tx level, so returning true here
-	return true
+	// The validation just need to check at tx level, so returning common.TrueValue here
+	return common.TrueValue
 }
 
 func (bsRes *BuySellResponse) Hash() *common.Hash {
@@ -65,7 +65,7 @@ func (bsRes *BuySellResponse) Hash() *common.Hash {
 	record += strconv.FormatUint(uint64(bsRes.Maturity), 10)
 	record += strconv.FormatUint(bsRes.BuyBackPrice, 10)
 	record += string(bsRes.BondID)
-	record += string(bsRes.MetadataBase.Hash()[:])
+	record += bsRes.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
