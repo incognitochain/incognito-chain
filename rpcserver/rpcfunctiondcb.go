@@ -14,8 +14,8 @@ import (
 )
 
 // handleGetDCBParams - get dcb params
-func (self RpcServer) handleGetDCBParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	constitution := self.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution
+func (rpcServer RpcServer) handleGetDCBParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	constitution := rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution
 	dcbParam := constitution.DCBParams
 	results := make(map[string]interface{})
 	results["DCBParams"] = dcbParam
@@ -25,23 +25,23 @@ func (self RpcServer) handleGetDCBParams(params interface{}, closeChan <-chan st
 }
 
 // handleGetDCBConstitution - get dcb constitution
-func (self RpcServer) handleGetDCBConstitution(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	constitution := self.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution
+func (rpcServer RpcServer) handleGetDCBConstitution(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	constitution := rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution
 	return constitution, nil
 }
 
 // handleGetListDCBBoard - return list payment address of DCB board
-func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	res := ListPaymentAddressToListString(self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress)
+func (rpcServer RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress)
 	return res, nil
 }
 
-func (self RpcServer) handleAppendListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleAppendListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	senderKey := arrayParams[0].(string)
-	paymentAddress, _ := self.GetPaymentAddressFromSenderKeyParams(senderKey)
-	self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress = append(self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress, *paymentAddress)
-	res := ListPaymentAddressToListString(self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress)
+	paymentAddress, _ := rpcServer.GetPaymentAddressFromSenderKeyParams(senderKey)
+	rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress = append(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress, *paymentAddress)
+	res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress)
 	return res, nil
 }
 
@@ -54,7 +54,7 @@ func ListPaymentAddressToListString(addresses []privacy.PaymentAddress) []string
 	return res
 }
 
-func (self RpcServer) handleCreateRawTxWithIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateRawTxWithIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	// Req param #4: issuing request info
 	issuingReq := arrayParams[4].(map[string]interface{})
@@ -76,7 +76,7 @@ func (self RpcServer) handleCreateRawTxWithIssuingRequest(params interface{}, cl
 		metaType,
 	)
 
-	normalTx, err := self.buildRawTransaction(params, meta)
+	normalTx, err := rpcServer.buildRawTransaction(params, meta)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -94,8 +94,8 @@ func (self RpcServer) handleCreateRawTxWithIssuingRequest(params interface{}, cl
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendTxWithIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawTxWithIssuingRequest(params, closeChan)
+func (rpcServer RpcServer) handleCreateAndSendTxWithIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := rpcServer.handleCreateRawTxWithIssuingRequest(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func (self RpcServer) handleCreateAndSendTxWithIssuingRequest(params interface{}
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
+	sendResult, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -116,10 +116,10 @@ func (self RpcServer) handleCreateAndSendTxWithIssuingRequest(params interface{}
 	return result, nil
 }
 
-func (self RpcServer) handleCreateRawTxWithContractingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateRawTxWithContractingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	metaType := metadata.ContractingRequestMeta
 	meta := metadata.NewContractingRequest(metaType)
-	normalTx, err := self.buildRawTransaction(params, meta)
+	normalTx, err := rpcServer.buildRawTransaction(params, meta)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -137,8 +137,8 @@ func (self RpcServer) handleCreateRawTxWithContractingRequest(params interface{}
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendTxWithContractingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawTxWithContractingRequest(params, closeChan)
+func (rpcServer RpcServer) handleCreateAndSendTxWithContractingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := rpcServer.handleCreateRawTxWithContractingRequest(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (self RpcServer) handleCreateAndSendTxWithContractingRequest(params interfa
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
+	sendResult, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -159,21 +159,21 @@ func (self RpcServer) handleCreateAndSendTxWithContractingRequest(params interfa
 	return result, nil
 }
 
-func (self RpcServer) buildRawVoteDCBBoardTransaction(
+func (rpcServer RpcServer) buildRawVoteDCBBoardTransaction(
 	params interface{},
 ) (*transaction.TxCustomToken, error) {
 	arrayParams := common.InterfaceSlice(params)
 	candidatePaymentAddress := arrayParams[len(arrayParams)-1].(string)
 	account, _ := wallet.Base58CheckDeserialize(candidatePaymentAddress)
 	metadata := metadata.NewVoteDCBBoardMetadata(account.KeySet.PaymentAddress)
-	tx, err := self.buildRawCustomTokenTransaction(params, metadata)
+	tx, err := rpcServer.buildRawCustomTokenTransaction(params, metadata)
 	if err != nil {
 		return nil, err
 	}
 	return tx, err
 }
 
-func (self RpcServer) handleSendRawVoteBoardDCBTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleSendRawVoteBoardDCBTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckDate := arrayParams[0].(string)
@@ -189,7 +189,7 @@ func (self RpcServer) handleSendRawVoteBoardDCBTransaction(params interface{}, c
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	hash, txDesc, err := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, txDesc, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -204,16 +204,16 @@ func (self RpcServer) handleSendRawVoteBoardDCBTransaction(params interface{}, c
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
-	self.config.Server.PushMessageToAll(txMsg)
+	rpcServer.config.Server.PushMessageToAll(txMsg)
 
 	return tx.Hash(), nil
 }
 
-func (self RpcServer) handleCreateRawVoteDCBBoardTransaction(
+func (rpcServer RpcServer) handleCreateRawVoteDCBBoardTransaction(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *RPCError) {
-	tx, err := self.buildRawVoteDCBBoardTransaction(params)
+	tx, err := rpcServer.buildRawVoteDCBBoardTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -231,8 +231,8 @@ func (self RpcServer) handleCreateRawVoteDCBBoardTransaction(
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendVoteDCBBoardTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawVoteDCBBoardTransaction(params, closeChan)
+func (rpcServer RpcServer) handleCreateAndSendVoteDCBBoardTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := rpcServer.handleCreateRawVoteDCBBoardTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
@@ -243,18 +243,18 @@ func (self RpcServer) handleCreateAndSendVoteDCBBoardTransaction(params interfac
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	txId, err := self.handleSendRawVoteBoardDCBTransaction(newParam, closeChan)
+	txId, err := rpcServer.handleSendRawVoteBoardDCBTransaction(newParam, closeChan)
 	return txId, err
 }
 
-func (self RpcServer) buildRawSubmitDCBProposalTransaction(
+func (rpcServer RpcServer) buildRawSubmitDCBProposalTransaction(
 	params interface{},
 ) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	NParams := len(arrayParams)
 
 	newParams := arrayParams[NParams-1].(map[string]interface{})
-	tmp, err := self.GetPaymentAddressFromPrivateKeyParams(arrayParams[0].(string))
+	tmp, err := rpcServer.GetPaymentAddressFromPrivateKeyParams(arrayParams[0].(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -262,7 +262,7 @@ func (self RpcServer) buildRawSubmitDCBProposalTransaction(
 
 	meta := metadata.NewSubmitDCBProposalMetadataFromJson(newParams)
 	params = setBuildRawBurnSubmitProposalTransactionParams(params)
-	tx, err1 := self.buildRawTransaction(params, meta)
+	tx, err1 := rpcServer.buildRawTransaction(params, meta)
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
@@ -278,11 +278,11 @@ func setBuildRawBurnSubmitProposalTransactionParams(params interface{}) interfac
 	return arrayParams
 }
 
-func (self RpcServer) handleCreateRawSubmitDCBProposalTransaction(
+func (rpcServer RpcServer) handleCreateRawSubmitDCBProposalTransaction(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *RPCError) {
-	tx, err1 := self.buildRawSubmitDCBProposalTransaction(params)
+	tx, err1 := rpcServer.buildRawSubmitDCBProposalTransaction(params)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, NewRPCError(ErrUnexpected, err1)
@@ -300,7 +300,7 @@ func (self RpcServer) handleCreateRawSubmitDCBProposalTransaction(
 	return result, nil
 }
 
-func (self RpcServer) handleSendRawSubmitDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleSendRawSubmitDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckDate := arrayParams[0].(string)
@@ -316,7 +316,7 @@ func (self RpcServer) handleSendRawSubmitDCBProposalTransaction(params interface
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	hash, txDesc, err1 := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, txDesc, err1 := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
@@ -331,13 +331,13 @@ func (self RpcServer) handleSendRawSubmitDCBProposalTransaction(params interface
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
-	self.config.Server.PushMessageToAll(txMsg)
+	rpcServer.config.Server.PushMessageToAll(txMsg)
 
 	return tx.Hash(), nil
 }
 
-func (self RpcServer) handleCreateAndSendSubmitDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawSubmitDCBProposalTransaction(params, closeChan)
+func (rpcServer RpcServer) handleCreateAndSendSubmitDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := rpcServer.handleCreateRawSubmitDCBProposalTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
@@ -348,6 +348,6 @@ func (self RpcServer) handleCreateAndSendSubmitDCBProposalTransaction(params int
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	txId, err := self.handleSendRawSubmitDCBProposalTransaction(newParam, closeChan)
+	txId, err := rpcServer.handleSendRawSubmitDCBProposalTransaction(newParam, closeChan)
 	return txId, err
 }
