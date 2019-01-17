@@ -105,12 +105,12 @@ func (hash Hash) NewHash(newHash []byte) (*Hash, error) {
 // the hexadecimal string of a byte-reversed hash, but any missing characters
 // result in zero padding at the end of the Hash.
 */
-func (self Hash) NewHashFromStr(hash string) (*Hash, error) {
-	err := self.Decode(&self, hash)
+func (hashObj Hash) NewHashFromStr(hash string) (*Hash, error) {
+	err := hashObj.Decode(&hashObj, hash)
 	if err != nil {
 		return nil, err
 	}
-	return &self, nil
+	return &hashObj, nil
 }
 
 func NewHashFromStr(s string) (*Hash, error) {
@@ -126,7 +126,7 @@ func NewHashFromStr(s string) (*Hash, error) {
 // Decode decodes the byte-reversed hexadecimal string encoding of a Hash to a
 // destination.
 */
-func (self *Hash) Decode(dst *Hash, src string) error {
+func (hashObj *Hash) Decode(dst *Hash, src string) error {
 	// Return error if hash string is too long.
 	if len(src) > MaxHashStringSize {
 		return ErrHashStrSize
