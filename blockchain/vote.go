@@ -166,7 +166,7 @@ func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTxAndRewardSu
 		amountOfThisProposal := int64(0)
 		countOfThisProposal := uint32(0)
 		for voterPaymentAddressBytes, amount := range listVoter {
-			voterPaymentAddress := privacy.NewPaymentAddress([]byte(voterPaymentAddressBytes))
+			voterPaymentAddress := privacy.NewPaymentAddressFromByte([]byte(voterPaymentAddressBytes))
 			voterToken, _ := db.GetVoteTokenAmount(helper.GetBoardType(), NextConstitutionIndex, *voterPaymentAddress)
 			if int32(voterToken) < amount || amount < 0 {
 				listVoter[string(voterPaymentAddress.Bytes())] = 0
@@ -438,7 +438,7 @@ func (blockgen *BlkTmplGenerator) CreateSendRewardOldBoard(helper ConstitutionHe
 		percentageReward := voteAmount * common.BasePercentage / sumVoteTokenAmount
 		amountTokenReward := totalAmountOfTokenReward * uint64(percentageReward) / common.BasePercentage
 		amountCoinReward := totalAmountOfCoinReward * uint64(percentageReward) / common.BasePercentage
-		txs = append(txs, blockgen.CreateShareRewardOldBoard(helper, *privacy.NewPaymentAddress([]byte(payment)), amountCoinReward, amountTokenReward, voteAmount, minerPrivateKey)...)
+		txs = append(txs, blockgen.CreateShareRewardOldBoard(helper, *privacy.NewPaymentAddressFromByte([]byte(payment)), amountCoinReward, amountTokenReward, voteAmount, minerPrivateKey)...)
 		//todo @0xjackalope: reward for chair
 	}
 	return txs
