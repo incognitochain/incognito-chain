@@ -1,7 +1,6 @@
 package rpcserver
 
 import (
-	"encoding/hex"
 	"net"
 	"strconv"
 
@@ -156,7 +155,6 @@ var RpcLimited = map[string]commandHandler{
 	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
 	GetReceivedByAccount:       RpcServer.handleGetReceivedByAccount,
 	SetTxFee:                   RpcServer.handleSetTxFee,
-	EncryptData:                RpcServer.handleEncryptDataByPaymentAddress,
 }
 
 /*
@@ -407,21 +405,4 @@ func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan str
 		}
 	}
 	return result, nil
-}
-
-// handleEncryptDataByPaymentAddress - get payment address and make an encrypted data
-func (self RpcServer) handleEncryptDataByPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	paymentAddress := arrayParams[0].(string)
-	plainData := arrayParams[1].(string)
-	keySet, err := wallet.Base58CheckDeserialize(paymentAddress)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	encryptData, err := keySet.KeySet.Encrypt([]byte(plainData))
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	_ = encryptData
-	return hex.EncodeToString([]byte{}), nil
 }

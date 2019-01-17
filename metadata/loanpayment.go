@@ -44,8 +44,8 @@ func (lp *LoanPayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 	}
 
 	// Check loan payment
-	accountBurn, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
-	burnPk := accountBurn.KeySet.PaymentAddress.Pk
+	keyWalletBurningAdd, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
+	burnPk := keyWalletBurningAdd.KeySet.PaymentAddress.Pk
 	unique, receiver, amount := txr.GetUniqueReceiver()
 	fmt.Printf("unique, receiver, amount: %v, %x, %v\n", unique, receiver, amount)
 	if !unique || !bytes.Equal(receiver, burnPk) {

@@ -80,13 +80,13 @@ func NewHash(b []byte) (*Hash, error) {
 IsEqual returns true if target is the same as hash.
 */
 func (hash *Hash) IsEqual(target *Hash) bool {
-	if &hash == nil && target == nil {
+	if hash == nil && target == nil {
 		return true
 	}
-	if &hash == nil || target == nil {
+	if hash == nil || target == nil {
 		return false
 	}
-	return hash.String() == target.String()
+	return *hash == *target
 }
 
 /*
