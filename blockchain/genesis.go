@@ -115,9 +115,9 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	saleData := params.SaleData{
 		SaleID:        make([]byte, 32),
 		EndBlock:      1000,
-		BuyingAsset:   common.BondTokenID[:],
+		BuyingAsset:   common.BondTokenID,
 		BuyingAmount:  uint64(1000),
-		SellingAsset:  common.ConstantID[:],
+		SellingAsset:  common.ConstantID,
 		SellingAmount: uint64(2000),
 	}
 	genesisBlock.Header.DCBConstitution.DCBParams = params.DCBParams{

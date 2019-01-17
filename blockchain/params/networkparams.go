@@ -1,6 +1,7 @@
 package params
 
 import (
+	"encoding/hex"
 	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
@@ -74,32 +75,51 @@ type SaleData struct {
 	SaleID   []byte // Unique id of the crowdsale to store in db
 	EndBlock uint64
 
-	BuyingAsset  []byte
+	BuyingAsset  common.Hash
 	BuyingAmount uint64 // TODO(@0xbunyip): change to big.Int
 
-	SellingAsset  []byte
+	SellingAsset  common.Hash
 	SellingAmount uint64
 }
 
-func NewSaleData(saleID []byte, endBlock uint64, buyingAsset []byte, buyingAmount uint64, sellingAsset []byte, sellingAmount uint64) *SaleData {
+func NewSaleData(
+	saleID []byte,
+	endBlock uint64,
+	buyingAsset *common.Hash,
+	buyingAmount uint64,
+	sellingAsset *common.Hash,
+	sellingAmount uint64,
+) *SaleData {
 	return &SaleData{
 		SaleID:        saleID,
 		EndBlock:      endBlock,
-		BuyingAsset:   buyingAsset,
+		BuyingAsset:   *buyingAsset,
 		BuyingAmount:  buyingAmount,
-		SellingAsset:  sellingAsset,
+		SellingAsset:  *sellingAsset,
 		SellingAmount: sellingAmount,
 	}
 }
 
 func NewSaleDataFromJson(data interface{}) *SaleData {
 	saleDataData := data.(map[string]interface{})
+	saleIDStr := saleDataData["SaleID"].(string)
+	saleID, errSale := hex.DecodeString(saleIDStr)
+
+	buyingAssetStr := saleDataData["BuyingAsset"].(string)
+	buyingAsset, errBuy := common.Hash{}.NewHashFromStr(buyingAssetStr)
+
+	sellingAssetStr := saleDataData["SellingAsset"].(string)
+	sellingAsset, errSell := common.Hash{}.NewHashFromStr(sellingAssetStr)
+	if errSale != nil || errBuy != nil || errSell != nil {
+		return nil
+	}
+
 	saleData := NewSaleData(
-		[]byte(saleDataData["SaleID"].(string)),
+		saleID,
 		uint64(saleDataData["EndBlock"].(float64)),
-		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["BuyingAsset"])),
+		buyingAsset,
 		uint64(saleDataData["BuyingAmount"].(float64)),
-		common.SliceInterfaceToSliceByte(common.InterfaceSlice(saleDataData["SellingAsset"])),
+		sellingAsset,
 		uint64(saleDataData["SellingAmount"].(float64)),
 	)
 	return saleData
