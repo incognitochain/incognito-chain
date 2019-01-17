@@ -21,16 +21,16 @@ type TxTokenPrivacyData struct {
 	Amount   uint64 // init amount
 }
 
-func (self TxTokenPrivacyData) String() string {
-	record := self.PropertyName
-	record += self.PropertySymbol
-	record += fmt.Sprintf("%d", self.Amount)
-	if self.TxNormal.Proof != nil {
-		for _, out := range self.TxNormal.Proof.OutputCoins {
+func (txTokenPrivacyData TxTokenPrivacyData) String() string {
+	record := txTokenPrivacyData.PropertyName
+	record += txTokenPrivacyData.PropertySymbol
+	record += fmt.Sprintf("%d", txTokenPrivacyData.Amount)
+	if txTokenPrivacyData.TxNormal.Proof != nil {
+		for _, out := range txTokenPrivacyData.TxNormal.Proof.OutputCoins {
 			record += string(out.CoinDetails.PublicKey.Compress())
 			record += strconv.FormatUint(out.CoinDetails.Value, 10)
 		}
-		for _, in := range self.TxNormal.Proof.InputCoins {
+		for _, in := range txTokenPrivacyData.TxNormal.Proof.InputCoins {
 			if in.CoinDetails.PublicKey != nil {
 				record += string(in.CoinDetails.PublicKey.Compress())
 			}
@@ -42,8 +42,8 @@ func (self TxTokenPrivacyData) String() string {
 	return record
 }
 
-func (self TxTokenPrivacyData) JSONString() string {
-	data, err := json.MarshalIndent(self, "", "\t")
+func (txTokenPrivacyData TxTokenPrivacyData) JSONString() string {
+	data, err := json.MarshalIndent(txTokenPrivacyData, "", "\t")
 	if err != nil {
 		Logger.log.Error(err)
 		return ""
@@ -52,8 +52,8 @@ func (self TxTokenPrivacyData) JSONString() string {
 }
 
 // Hash - return hash of custom token data, be used as Token ID
-func (self TxTokenPrivacyData) Hash() (*common.Hash, error) {
-	hash := common.DoubleHashH([]byte(self.String()))
+func (txTokenPrivacyData TxTokenPrivacyData) Hash() (*common.Hash, error) {
+	hash := common.DoubleHashH([]byte(txTokenPrivacyData.String()))
 	return &hash, nil
 }
 

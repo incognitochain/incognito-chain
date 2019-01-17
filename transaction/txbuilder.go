@@ -16,7 +16,7 @@ func BuildCoinbaseTxs(
 	txs := []*Tx{}
 	for i, paymentAddress := range paymentAddresses {
 		var meta metadata.Metadata
-		if metaList == nil || len(metaList) == 0 {
+		if len(metaList) == 0 {
 			meta = nil
 		} else {
 			meta = metaList[i]

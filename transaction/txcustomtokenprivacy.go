@@ -20,10 +20,12 @@ type TxCustomTokenPrivacy struct {
 	TxTokenPrivacyData TxTokenPrivacyData // supporting privacy format
 }
 
-func (self *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) error {
+func (txObj *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) error {
 	tx := Tx{}
 	err := json.Unmarshal(data, &tx)
-
+	if err != nil {
+		return NewTransactionErr(UnexpectedErr, err)
+	}
 	temp := &struct {
 		TxTokenPrivacyData interface{}
 	}{
@@ -33,8 +35,8 @@ func (self *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) error {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
 	TxTokenPrivacyDataJson, _ := json.MarshalIndent(temp.TxTokenPrivacyData, "", "\t")
-	_ = json.Unmarshal(TxTokenPrivacyDataJson, &self.TxTokenPrivacyData)
-	self.Tx = tx
+	_ = json.Unmarshal(TxTokenPrivacyDataJson, &txObj.TxTokenPrivacyData)
+	txObj.Tx = tx
 	return nil
 }
 
@@ -51,8 +53,8 @@ func (tx *TxCustomTokenPrivacy) String() string {
 	return record
 }
 
-func (self TxCustomTokenPrivacy) JSONString() string {
-	data, err := json.MarshalIndent(self, "", "\t")
+func (txObj TxCustomTokenPrivacy) JSONString() string {
+	data, err := json.MarshalIndent(txObj, "", "\t")
 	if err != nil {
 		Logger.log.Error(err)
 		return ""
@@ -151,6 +153,9 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			temp.SigPubKey = tokenParams.Receiver[0].PaymentAddress.Pk
 			temp.sigPrivKey = *senderKey
 			err = temp.signTx()
+			if err != nil {
+				return NewTransactionErr(UnexpectedErr, errors.New("Can't handle this TokenTxType"))
+			}
 
 			txCustomToken.TxTokenPrivacyData.TxNormal = temp
 			hashInitToken, err := txCustomToken.TxTokenPrivacyData.Hash()
@@ -199,7 +204,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 		}
 	}
 
-	if handled != true {
+	if !handled {
 		return NewTransactionErr(UnexpectedErr, errors.New("Can't handle this TokenTxType"))
 	}
 	return nil
