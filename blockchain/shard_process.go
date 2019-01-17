@@ -160,7 +160,12 @@ func (self *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 }
 
 func (self *BlockChain) StoreCrossShard(block *ShardBlock) error {
-	// crossShardMap, _ := block.Body.ExtractCrossShardMap()
+	crossShardMap, _ := block.Body.ExtractCrossShardMap()
+	for crossShard, crossBlks := range crossShardMap {
+		for _, crossBlk := range crossBlks {
+			self.config.DataBase.StoreCrossShard(block.Header.ShardID, crossShard, block.Header.Height, &crossBlk)
+		}
+	}
 	return nil
 }
 

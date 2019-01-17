@@ -22,6 +22,7 @@ var (
 	blockKeyPrefix            = []byte("b-")
 	blockHeaderKeyPrefix      = []byte("bh-")
 	blockKeyIdxPrefix         = []byte("i-")
+	crossShardKeyPrefix       = []byte("csh-")
 	transactionKeyPrefix      = []byte("tx-")
 	privateKeyPrefix          = []byte("prk-")
 	serialNumbersPrefix       = []byte("serinalnumbers-")
