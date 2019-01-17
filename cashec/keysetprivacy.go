@@ -12,7 +12,6 @@ import (
 )
 
 type KeySet struct {
-	// ProducerKeyPair KeyPair
 	PrivateKey     privacy.SpendingKey
 	PaymentAddress privacy.PaymentAddress
 	ReadonlyKey    privacy.ViewingKey
@@ -52,7 +51,7 @@ func (self *KeySet) Verify(data, signature []byte) (bool, error) {
 
 	pubKeySig := new(privacy.SchnPubKey)
 	PK, err := privacy.DecompressKey(self.PaymentAddress.Pk)
-	if err != nil{
+	if err != nil {
 		return false, err
 	}
 	pubKeySig.Set(PK)
