@@ -46,32 +46,32 @@ type NetSyncConfig struct {
 	FeeEstimator map[byte]*mempool.FeeEstimator
 }
 
-func (self NetSync) New(cfg *NetSyncConfig) *NetSync {
-	self.config = cfg
-	self.cQuit = make(chan struct{})
-	self.cMessage = make(chan interface{})
-	return &self
+func (netSync NetSync) New(cfg *NetSyncConfig) *NetSync {
+	netSync.config = cfg
+	netSync.cQuit = make(chan struct{})
+	netSync.cMessage = make(chan interface{})
+	return &netSync
 }
 
-func (self *NetSync) Start() {
+func (netSync *NetSync) Start() {
 	// Already started?
-	if atomic.AddInt32(&self.started, 1) != 1 {
+	if atomic.AddInt32(&netSync.started, 1) != 1 {
 		return
 	}
 	Logger.log.Info("Starting sync manager")
-	self.waitgroup.Add(1)
-	go self.messageHandler()
+	netSync.waitgroup.Add(1)
+	go netSync.messageHandler()
 }
 
 // Stop gracefully shuts down the sync manager by stopping all asynchronous
 // handlers and waiting for them to finish.
-func (self *NetSync) Stop() {
-	if atomic.AddInt32(&self.shutdown, 1) != 1 {
+func (netSync *NetSync) Stop() {
+	if atomic.AddInt32(&netSync.shutdown, 1) != 1 {
 		Logger.log.Warn("Sync manager is already in the process of shutting down")
 	}
 
 	Logger.log.Warn("Sync manager shutting down")
-	close(self.cQuit)
+	close(netSync.cQuit)
 }
 
 // messageHandler is the main handler for the sync manager.  It must be run as a
@@ -80,66 +80,66 @@ func (self *NetSync) Stop() {
 // single thread without needing to lock memory data structures.  This is
 // important because the sync manager controls which blocks are needed and how
 // the fetching should proceed.
-func (self *NetSync) messageHandler() {
+func (netSync *NetSync) messageHandler() {
 out:
 	for {
 		select {
-		case msgChan := <-self.cMessage:
+		case msgChan := <-netSync.cMessage:
 			{
 				switch msg := msgChan.(type) {
 				case *wire.MessageTx:
 					{
-						self.HandleMessageTx(msg)
+						netSync.HandleMessageTx(msg)
 					}
 					//case *wire.MessageRegistration:
 					//	{
-					//		self.HandleMessageRegisteration(msg)
+					//		netSync.HandleMessageRegisteration(msg)
 					//	}
 				case *wire.MessageBlock:
 					{
-						self.HandleMessageBlock(msg)
+						netSync.HandleMessageBlock(msg)
 					}
 				case *wire.MessageGetBlocks:
 					{
-						self.HandleMessageGetBlocks(msg)
+						netSync.HandleMessageGetBlocks(msg)
 					}
 				case *wire.MessageBlockSig:
 					{
-						self.HandleMessageBlockSig(msg)
+						netSync.HandleMessageBlockSig(msg)
 					}
 				case *wire.MessageInvalidBlock:
 					{
-						self.HandleMessageInvalidBlock(msg)
+						netSync.HandleMessageInvalidBlock(msg)
 					}
 				case *wire.MessageBlockSigReq:
 					{
-						self.HandleMessageRequestSign(msg)
+						netSync.HandleMessageRequestSign(msg)
 					}
 				case *wire.MessageGetChainState:
 					{
-						self.HandleMessageGetChainState(msg)
+						netSync.HandleMessageGetChainState(msg)
 					}
 				case *wire.MessageChainState:
 					{
-						self.HandleMessageChainState(msg)
+						netSync.HandleMessageChainState(msg)
 					}
 				case *wire.MessageSwapRequest:
 					{
-						self.HandleMessageSwapRequest(msg)
+						netSync.HandleMessageSwapRequest(msg)
 					}
 				case *wire.MessageSwapSig:
 					{
-						self.HandleMessageSwapSig(msg)
+						netSync.HandleMessageSwapSig(msg)
 					}
 				case *wire.MessageSwapUpdate:
 					{
-						self.HandleMessageSwapUpdate(msg)
+						netSync.HandleMessageSwapUpdate(msg)
 					}
 				default:
 					Logger.log.Infof("Invalid message type in block "+"handler: %T", msg)
 				}
 			}
-		case msgChan := <-self.cQuit:
+		case msgChan := <-netSync.cQuit:
 			{
 				Logger.log.Warn(msgChan)
 				break out
@@ -147,35 +147,35 @@ out:
 		}
 	}
 
-	self.waitgroup.Done()
+	netSync.waitgroup.Done()
 	Logger.log.Info("Block handler done")
 }
 
 // QueueTx adds the passed transaction message and peer to the block handling
 // queue. Responds to the done channel argument after the tx message is
 // processed.
-/*func (self *NetSync) QueueRegisteration(peer *peer.Peer, msg *wire.MessageRegistration, done chan struct{}) {
+/*func (netSync *NetSync) QueueRegisteration(peer *peer.Peer, msg *wire.MessageRegistration, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
-	if atomic.LoadInt32(&self.shutdown) != 0 {
+	if atomic.LoadInt32(&netSync.shutdown) != 0 {
 		done <- struct{}{}
 		return
 	}
-	self.cMessage <- msg
+	netSync.cMessage <- msg
 }*/
 
-func (self *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan struct{}) {
+func (netSync *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
-	if atomic.LoadInt32(&self.shutdown) != 0 {
+	if atomic.LoadInt32(&netSync.shutdown) != 0 {
 		done <- struct{}{}
 		return
 	}
-	self.cMessage <- msg
+	netSync.cMessage <- msg
 }
 
 // handleTxMsg handles transaction messages from all peers.
-func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
+func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 	Logger.log.Info("Handling new message tx")
-	hash, txDesc, err := self.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
+	hash, txDesc, err := netSync.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
 
 	if err != nil {
 		Logger.log.Error(err)
@@ -184,7 +184,7 @@ func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 		Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 		// Broadcast to network
-		err := self.config.Server.PushMessageToAll(msg)
+		err := netSync.config.Server.PushMessageToAll(msg)
 		if err != nil {
 			Logger.log.Error(err)
 		}
@@ -192,9 +192,9 @@ func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 }
 
 // handleTxMsg handles transaction messages from all peers.
-/*func (self *NetSync) HandleMessageRegisteration(msg *wire.MessageRegistration) {
+/*func (netSync *NetSync) HandleMessageRegisteration(msg *wire.MessageRegistration) {
 	Logger.log.Info("Handling new message tx")
-	hash, txDesc, err := self.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
+	hash, txDesc, err := netSync.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
 
 	if err != nil {
 		Logger.log.Error(err)
@@ -203,7 +203,7 @@ func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 		Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 		// Broadcast to network
-		err := self.config.Server.PushMessageToAll(msg)
+		err := netSync.config.Server.PushMessageToAll(msg)
 		if err != nil {
 			Logger.log.Error(err)
 		}
@@ -213,48 +213,48 @@ func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 // QueueBlock adds the passed block message and peer to the block handling
 // queue. Responds to the done channel argument after the block message is
 // processed.
-func (self *NetSync) QueueBlock(_ *peer.Peer, msg *wire.MessageBlock, done chan struct{}) {
+func (netSync *NetSync) QueueBlock(_ *peer.Peer, msg *wire.MessageBlock, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
-	if atomic.LoadInt32(&self.shutdown) != 0 {
+	if atomic.LoadInt32(&netSync.shutdown) != 0 {
 		done <- struct{}{}
 		return
 	}
-	self.cMessage <- msg
+	netSync.cMessage <- msg
 }
 
-func (self *NetSync) QueueGetBlock(peer *peer.Peer, msg *wire.MessageGetBlocks, done chan struct{}) {
+func (netSync *NetSync) QueueGetBlock(peer *peer.Peer, msg *wire.MessageGetBlocks, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
-	if atomic.LoadInt32(&self.shutdown) != 0 {
+	if atomic.LoadInt32(&netSync.shutdown) != 0 {
 		done <- struct{}{}
 		return
 	}
-	self.cMessage <- msg
+	netSync.cMessage <- msg
 }
 
-func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan struct{}) {
+func (netSync *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
-	if atomic.LoadInt32(&self.shutdown) != 0 {
+	if atomic.LoadInt32(&netSync.shutdown) != 0 {
 		done <- struct{}{}
 		return
 	}
-	self.cMessage <- msg
+	netSync.cMessage <- msg
 }
 
-func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
+func (netSync *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	Logger.log.Info("Handling new message - " + wire.CmdGetBlocks)
 	blockHash, _ := common.Hash{}.NewHashFromStr(msg.LastBlockHash)
-	senderBlockHeaderIndex, chainID, err := self.config.BlockChain.GetBlockHeightByBlockHash(blockHash)
+	senderBlockHeaderIndex, chainID, err := netSync.config.BlockChain.GetBlockHeightByBlockHash(blockHash)
 	if err == nil {
-		bestHashStr := self.config.BlockChain.BestState[chainID].BestBlockHash.String()
+		bestHashStr := netSync.config.BlockChain.BestState[chainID].BestBlockHash.String()
 		Logger.log.Infof("Blockhash from message %s", blockHash.String())
 		Logger.log.Infof("Blockhash of bestChain in chainID %d - %s", chainID, bestHashStr)
 		Logger.log.Info("index of block %d \n", senderBlockHeaderIndex)
 		Logger.log.Info("chainId of block %d \n", chainID)
 		if bestHashStr != blockHash.String() {
 			// Send Blocks back to requestor
-			chainBlocks, _ := self.config.BlockChain.GetChainBlocks(chainID)
+			chainBlocks, _ := netSync.config.BlockChain.GetChainBlocks(chainID)
 			for index := int(senderBlockHeaderIndex) + 1; index <= len(chainBlocks); index++ {
-				block, _ := self.config.BlockChain.GetBlockByBlockHeight(int32(index), chainID)
+				block, _ := netSync.config.BlockChain.GetBlockByBlockHeight(int32(index), chainID)
 				Logger.log.Info("Send block %s \n", block.Hash().String())
 
 				blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
@@ -273,13 +273,13 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 					Logger.log.Error(err)
 					break
 				}
-				self.config.Server.PushMessageToPeer(blockMsg, peerID)
+				netSync.config.Server.PushMessageToPeer(blockMsg, peerID)
 			}
 		}
 	} else {
 		Logger.log.Error(blockHash.String(), "----------")
-		Logger.log.Error(self.config.BlockChain.BestState[9].BestBlockHash.String())
-		chainBlocks, err2 := self.config.BlockChain.GetChainBlocks(9)
+		Logger.log.Error(netSync.config.BlockChain.BestState[9].BestBlockHash.String())
+		chainBlocks, err2 := netSync.config.BlockChain.GetChainBlocks(9)
 		if err2 != nil {
 			Logger.log.Error(err2)
 		}
@@ -291,46 +291,46 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	}
 }
 
-func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
+func (netSync *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
 	Logger.log.Info("Handling new message BlockSig")
-	self.config.Consensus.OnBlockReceived(&msg.Block)
+	netSync.config.Consensus.OnBlockReceived(&msg.Block)
 }
 
-func (self *NetSync) HandleMessageBlockSig(msg *wire.MessageBlockSig) {
+func (netSync *NetSync) HandleMessageBlockSig(msg *wire.MessageBlockSig) {
 	Logger.log.Info("Handling new message BlockSig")
-	self.config.Consensus.OnBlockSigReceived(msg.Validator, msg.BlockSig)
+	netSync.config.Consensus.OnBlockSigReceived(msg.Validator, msg.BlockSig)
 }
-func (self *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
+func (netSync *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
 	Logger.log.Info("Handling new message invalidblock")
-	self.config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.ChainID, msg.Reason)
+	netSync.config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.ChainID, msg.Reason)
 }
 
-func (self *NetSync) HandleMessageRequestSign(msg *wire.MessageBlockSigReq) {
+func (netSync *NetSync) HandleMessageRequestSign(msg *wire.MessageBlockSigReq) {
 	Logger.log.Info("Handling new message requestsign")
-	self.config.Consensus.OnRequestSign(msg)
+	netSync.config.Consensus.OnRequestSign(msg)
 }
 
-func (self *NetSync) HandleMessageGetChainState(msg *wire.MessageGetChainState) {
+func (netSync *NetSync) HandleMessageGetChainState(msg *wire.MessageGetChainState) {
 	Logger.log.Info("Handling new message getchainstate")
-	self.config.Consensus.OnGetChainState(msg)
+	netSync.config.Consensus.OnGetChainState(msg)
 }
 
-func (self *NetSync) HandleMessageChainState(msg *wire.MessageChainState) {
+func (netSync *NetSync) HandleMessageChainState(msg *wire.MessageChainState) {
 	Logger.log.Info("Handling new message chainstate")
-	self.config.Consensus.OnChainStateReceived(msg)
+	netSync.config.Consensus.OnChainStateReceived(msg)
 }
 
-func (self *NetSync) HandleMessageSwapRequest(msg *wire.MessageSwapRequest) {
+func (netSync *NetSync) HandleMessageSwapRequest(msg *wire.MessageSwapRequest) {
 	Logger.log.Info("Handling new message requestswap")
-	self.config.Consensus.OnSwapRequest(msg)
+	netSync.config.Consensus.OnSwapRequest(msg)
 }
 
-func (self *NetSync) HandleMessageSwapSig(msg *wire.MessageSwapSig) {
+func (netSync *NetSync) HandleMessageSwapSig(msg *wire.MessageSwapSig) {
 	Logger.log.Info("Handling new message signswap")
-	self.config.Consensus.OnSwapSig(msg)
+	netSync.config.Consensus.OnSwapSig(msg)
 }
 
-func (self *NetSync) HandleMessageSwapUpdate(msg *wire.MessageSwapUpdate) {
+func (netSync *NetSync) HandleMessageSwapUpdate(msg *wire.MessageSwapUpdate) {
 	Logger.log.Info("Handling new message SwapUpdate")
-	self.config.Consensus.OnSwapUpdate(msg)
+	netSync.config.Consensus.OnSwapUpdate(msg)
 }
