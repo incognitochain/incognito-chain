@@ -68,20 +68,19 @@ const (
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	BondTokenID      = [HashSize]byte{0, 0, 0, 0, 0, 0, 0, 0}
-	DCBTokenID       = [HashSize]byte{1}
-	GOVTokenID       = [HashSize]byte{2}
-	CMBTokenID       = [HashSize]byte{3}
-	ConstantID       = [HashSize]byte{4} // To send Constant in custom token
-	DCBVotingTokenID = [HashSize]byte{5}
-	GOVVotingTokenID = [HashSize]byte{6}
-	OffchainAssetID  = [HashSize]byte{7, 7, 7, 7, 7, 7, 7, 7} // First 8 bytes of offchain asset
+	BondTokenID      = Hash{0, 0, 0, 0, 0, 0, 0, 0}
+	DCBTokenID       = Hash{1}
+	GOVTokenID       = Hash{2}
+	CMBTokenID       = Hash{3}
+	ConstantID       = Hash{4} // To send Constant in custom token
+	DCBVotingTokenID = Hash{5}
+	GOVVotingTokenID = Hash{6}
 )
 
-// asset IDs for oracle feed
+// asset IDs for oracle feed (must prefix with 99)
 var (
-	ETHAssetID = [HashSize]byte{99}
-	BTCAssetID = [HashSize]byte{88}
+	BTCAssetID = Hash{99, 99, 99, 99, 99, 99, 99, 99, 1}
+	ETHAssetID = Hash{99, 99, 99, 99, 99, 99, 99, 99, 2}
 )
 
 // board addresses

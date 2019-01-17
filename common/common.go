@@ -434,3 +434,15 @@ func BytesPlusOne(b []byte) []byte {
 	}
 	return res
 }
+
+func IsOffChainAsset(assetID *Hash) bool {
+	return bytes.Equal(assetID[:8], BTCAssetID[:8])
+}
+
+func IsBondAsset(assetID *Hash) bool {
+	return bytes.Equal(assetID[:8], BondTokenID[:8])
+}
+
+func IsDCBTokenAsset(assetID *Hash) bool {
+	return assetID.IsEqual(&ConstantID)
+}
