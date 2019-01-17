@@ -6,8 +6,8 @@ type RpcLogger struct {
 	log common.Logger
 }
 
-func (self *RpcLogger) Init(inst common.Logger) {
-	self.log = inst
+func (rpcLogger *RpcLogger) Init(inst common.Logger) {
+	rpcLogger.log = inst
 }
 
 // Global instant to use

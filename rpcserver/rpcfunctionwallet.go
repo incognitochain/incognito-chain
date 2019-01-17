@@ -28,6 +28,9 @@ func (rpcServer RpcServer) handleListAccounts(params interface{}, closeChan <-ch
 	for accountName, account := range accounts {
 		lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
 		chainIdSender, err := common.GetTxSenderChain(lastByte)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
 		constantTokenID := &common.Hash{}
 		constantTokenID.SetBytes(common.ConstantID[:])
 		outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, chainIdSender, constantTokenID)
@@ -164,6 +167,9 @@ func (rpcServer RpcServer) handleGetBalanceByPrivatekey(params interface{}, clos
 	// get balance for accountName in wallet
 	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
 	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	outcoints, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, constantTokenID)
