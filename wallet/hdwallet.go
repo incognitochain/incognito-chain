@@ -10,7 +10,7 @@ import (
 	"github.com/ninjadotorg/constant/common/base58"
 )
 
-// KeySet represents a bip32 extended PubKey
+// KeyWallet represents with bip32 standard
 type KeyWallet struct {
 	Depth       byte   // 1 bytes
 	ChildNumber []byte // 4 bytes
@@ -174,6 +174,7 @@ func Deserialize(data []byte) (*KeyWallet, error) {
 }
 
 // Base58CheckDeserialize deserializes a KeySet encoded in base58 encoding
+// because data contained serialized key type -> return object can contain data of keyset with only one of data keyset
 func Base58CheckDeserialize(data string) (*KeyWallet, error) {
 	b, _, err := base58.Base58Check{}.Decode(data)
 	if err != nil {
