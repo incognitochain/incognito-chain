@@ -44,7 +44,6 @@ var RpcHandler = map[string]commandHandler{
 	GetTransactionByHash:     RpcServer.handleGetTransactionByHash,
 
 	GetCommitteeCandidateList:  RpcServer.handleGetCommitteeCandidateList,
-	RetrieveCommitteeCandidate: RpcServer.handleRetrieveCommiteeCandidate,
 	GetBlockProducerList:       RpcServer.handleGetBlockProducerList,
 
 	RandomCommitments: RpcServer.handleRandomCommitments,

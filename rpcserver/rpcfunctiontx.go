@@ -289,16 +289,6 @@ func (rpcServer RpcServer) handleGetCommitteeCandidateList(params interface{}, c
 	return cndList, nil
 }
 
-func (rpcServer RpcServer) handleRetrieveCommiteeCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	candidateInfo := rpcServer.config.BlockChain.GetCommitteCandidate(params.(string))
-	if candidateInfo == nil {
-		return nil, nil
-	}
-	result := jsonresult.RetrieveCommitteecCandidateResult{}
-	result.Init(candidateInfo)
-	return result, nil
-}
-
 func (rpcServer RpcServer) handleGetBlockProducerList(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := make(map[string]string)
 	for chainID, bestState := range rpcServer.config.BlockChain.BestState {
