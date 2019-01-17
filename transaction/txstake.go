@@ -38,20 +38,6 @@ var stakeBeaconAddress = privacy.PaymentInfo{
 	Amount: stakeBeaconAmount,
 }
 
-// func (tx *Tx) CreateStakeTx(
-// 	senderSK *privacy.SpendingKey,
-// 	usableTx []*Tx,
-// 	fee uint64,
-// 	db database.DatabaseInterface,
-// ) error {
-// 	err := tx.CreateTx(senderSK, stakingInfo, usableTx, fee, false, db)
-// 	tx.Metadata = stakeTx{flag: "stake"}
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
-
 //TODO: check again stake transaction
 func (tx *Tx) validateTxStake(db database.DatabaseInterface, shardID byte) bool {
 	constantTokenID := &common.Hash{}
@@ -100,10 +86,10 @@ func (tx *Tx) ValidateTxStakeBeacon(db database.DatabaseInterface, shardID byte)
 	return true
 }
 
-// // return param:
-// // #param1: state shard Address
-// // #param2: state beacon Address
-// // #param3: has staker or not?
+// return param:
+// #param1: state shard Address
+// #param2: state beacon Address
+// #param3: has staker or not?
 
 //using b, _, err := base58.Base58Check{}.Decode(data) for decode base58 string
 func (tx *Tx) ProcessTxStake(db database.DatabaseInterface, shardID byte) (string, string, bool) {
@@ -117,6 +103,37 @@ func (tx *Tx) ProcessTxStake(db database.DatabaseInterface, shardID byte) (strin
 	if tx.ValidateTxStakeShard(db, shardID) == true {
 		// skip comparing all address in input coin
 		// ASSUME that all address are the same
+		res := base58.Base58Check{}.Encode(tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))
+		return res, common.EmptyString, true
+	}
+	return common.EmptyString, common.EmptyString, false
+}
+
+/*
+	This function only extract staker from a valid transaction
+	return param:
+		#param1: state shard Address
+		#param2: state beacon Address
+		#param3: has staker or not?
+*/
+func (tx *Tx) GetStakerFromTransaction() (string, string, bool) {
+	if len(tx.Proof.OutputCoins) != 1 {
+		return common.EmptyString, common.EmptyString, false
+	}
+	// No privacy
+	if tx.Proof.OutputCoins[0].CoinDetailsEncrypted.IsNil() == false {
+		return common.EmptyString, common.EmptyString, false
+	}
+	// Burning address (publickey are all zero)
+	if bytes.Compare(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress(), publicKey) != 0 {
+		return common.EmptyString, common.EmptyString, false
+	}
+	if tx.Proof.OutputCoins[0].CoinDetails.Value == stakeBeaconAmount {
+		res := base58.Base58Check{}.Encode(tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))
+		return common.EmptyString, res, true
+	}
+
+	if tx.Proof.OutputCoins[0].CoinDetails.Value == stakeShardAmount {
 		res := base58.Base58Check{}.Encode(tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))
 		return res, common.EmptyString, true
 	}
