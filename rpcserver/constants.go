@@ -123,6 +123,7 @@ const (
 	CreateAndSendTxWithBuySellRequest      = "createandsendtxwithbuysellrequest"
 	CreateAndSendTxWithOracleFeed          = "createandsendtxwithoraclefeed"
 	CreateAndSendTxWithUpdatingOracleBoard = "createandsendtxwithupdatingoracleboard"
+	CreateAndSendTxWithSenderAddress       = "createandsendtxwithsenderaddress"
 
 	// cmb
 	CreateAndSendTxWithCMBInitRequest     = "createandsendtxwithcmbinitrequest"
