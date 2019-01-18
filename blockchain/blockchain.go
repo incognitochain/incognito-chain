@@ -390,7 +390,7 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 Get all blocks in chain
 Return block array
 */
-func (self *BlockChain) GetAllBlocks() ([][]*Block, error) {
+/*func (self *BlockChain) GetAllBlocks() ([][]*Block, error) {
 	result := make([][]*Block, 0)
 	data, err := self.config.DataBase.FetchAllBlocks()
 	if err != nil {
@@ -423,7 +423,7 @@ func (self *BlockChain) GetAllBlocks() ([][]*Block, error) {
 	}
 
 	return result, nil
-}
+}*/
 
 func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
 	result := make([]*Block, 0)
@@ -465,13 +465,13 @@ func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
 Get all hash of blocks in chain
 Return hashes array
 */
-func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
-	data, err := self.config.DataBase.FetchAllBlocks()
-	if err != nil {
-		return nil, err
-	}
-	return data, err
-}
+//func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
+//	data, err := self.config.DataBase.FetchAllBlocks()
+//	if err != nil {
+//		return nil, err
+//	}
+//	return data, err
+//}
 
 func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
 	txs, err := self.config.DataBase.GetLoanTxs(loanID)
@@ -634,20 +634,20 @@ func (self *BlockChain) UpdateVoteCountBoard(block *Block) error {
 		switch tx.GetMetadataType() {
 		case metadata.VoteDCBBoardMeta:
 			{
-				tx := tx.(*transaction.TxCustomToken)
-				voteAmount := tx.GetAmountOfVote()
-				voteDCBBoardMetadata := tx.Metadata.(*metadata.VoteDCBBoardMetadata)
-				err := self.config.DataBase.AddVoteBoard("dcb", DCBBoardIndex, tx.TxTokenData.Vins[0].PaymentAddress.Bytes(), tx.TxTokenData.Vins[0].PaymentAddress, voteDCBBoardMetadata.CandidatePaymentAddress, voteAmount)
+				txCustomToken := tx.(*transaction.TxCustomToken)
+				voteAmount := txCustomToken.GetAmountOfVote()
+				voteDCBBoardMetadata := txCustomToken.Metadata.(*metadata.VoteDCBBoardMetadata)
+				err := self.config.DataBase.AddVoteBoard("dcb", DCBBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteDCBBoardMetadata.CandidatePaymentAddress, voteAmount)
 				if err != nil {
 					return err
 				}
 			}
 		case metadata.VoteGOVBoardMeta:
 			{
-				tx := tx.(*transaction.TxCustomToken)
-				voteAmount := tx.GetAmountOfVote()
-				voteGOVBoardMetadata := tx.Metadata.(*metadata.VoteGOVBoardMetadata)
-				err := self.config.DataBase.AddVoteBoard("gov", GOVBoardIndex, tx.TxTokenData.Vins[0].PaymentAddress.Bytes(), tx.TxTokenData.Vins[0].PaymentAddress, voteGOVBoardMetadata.CandidatePaymentAddress, voteAmount)
+				txCustomToken := tx.(*transaction.TxCustomToken)
+				voteAmount := txCustomToken.GetAmountOfVote()
+				voteGOVBoardMetadata := txCustomToken.Metadata.(*metadata.VoteGOVBoardMetadata)
+				err := self.config.DataBase.AddVoteBoard("gov", GOVBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteGOVBoardMetadata.CandidatePaymentAddress, voteAmount)
 				if err != nil {
 					return err
 				}

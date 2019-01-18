@@ -2,37 +2,50 @@ package rpcserver
 
 import (
 	"encoding/json"
+	"errors"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
-func (self RpcServer) handleCreateRawTxWithMultiSigsReg(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateRawTxWithMultiSigsReg(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	var err error
 	arrayParams := common.InterfaceSlice(params)
 	// Req param #4: multisigs registration info
 	multiSigsReg := arrayParams[4].(map[string]interface{})
-	paymentAddressMap := multiSigsReg["PaymentAddress"].(map[string]interface{})
-	paymentAddress := privacy.PaymentAddress{
-		Pk: []byte(paymentAddressMap["Pk"].(string)),
-		Tk: []byte(paymentAddressMap["Tk"].(string)),
+	registeringPaymentAddrStr := multiSigsReg["RegisteringPaymentAddressStr"].(string)
+	registeringPaymentAddrKey, err := wallet.Base58CheckDeserialize(registeringPaymentAddrStr)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	spendableMembers := multiSigsReg["SpendableMembers"].([]interface{})
-	assertedSpendableMembers := [][]byte{}
-	for _, pk := range spendableMembers {
-		assertedSpendableMembers = append(assertedSpendableMembers, []byte(pk.(string)))
+	registeringPaymentAddr := registeringPaymentAddrKey.KeySet.PaymentAddress
+
+	spendableMembersAddrStrs := multiSigsReg["SpendableMembersAddrStrs"].([]interface{})
+	spendableMembers := make([][]byte, len(spendableMembersAddrStrs))
+	for i, addrStr := range spendableMembersAddrStrs {
+		assertedAddrStr, ok := addrStr.(string)
+		if !ok {
+			return nil, NewRPCError(ErrUnexpected, errors.New("wrong type on payment address string"))
+		}
+		paymentAddrKey, err := wallet.Base58CheckDeserialize(assertedAddrStr)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		paymentAddr := paymentAddrKey.KeySet.PaymentAddress
+		spendableMembers[i] = paymentAddr.Pk
 	}
+
 	metaType := metadata.MultiSigsRegistrationMeta
 	meta := metadata.NewMultiSigsRegistration(
-		paymentAddress,
-		assertedSpendableMembers,
+		registeringPaymentAddr,
+		spendableMembers,
 		metaType,
 	)
 
-	normalTx, err := self.buildRawTransaction(params, meta)
+	normalTx, err := rpcServer.buildRawTransaction(params, meta)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -48,8 +61,8 @@ func (self RpcServer) handleCreateRawTxWithMultiSigsReg(params interface{}, clos
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendTxWithMultiSigsReg(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawTxWithMultiSigsReg(params, closeChan)
+func (rpcServer RpcServer) handleCreateAndSendTxWithMultiSigsReg(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := rpcServer.handleCreateRawTxWithMultiSigsReg(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +73,7 @@ func (self RpcServer) handleCreateAndSendTxWithMultiSigsReg(params interface{}, 
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
+	sendResult, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -70,15 +83,24 @@ func (self RpcServer) handleCreateAndSendTxWithMultiSigsReg(params interface{}, 
 	return result, nil
 }
 
-func (self RpcServer) handleCreateRawTxWithMultiSigsSpending(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateRawTxWithMultiSigsSpending(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	var err error
 	arrayParams := common.InterfaceSlice(params)
 	// Req param #4: multisigs spending info
-	multiSigsSpending := arrayParams[4].(map[string]interface{})
+	multiSigsSpending, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, NewRPCError(ErrUnexpected, errors.New("could not parse requesting multiSigsSpending metadata"))
+	}
+
 	signs := multiSigsSpending["Signs"].(map[string]interface{})
 	assertedSigns := map[string][]byte{}
-	for k, s := range signs {
-		assertedSigns[k] = []byte(s.(string))
+	for paymentAddrStr, sign := range signs {
+		signerPaymentAddrKey, err := wallet.Base58CheckDeserialize(paymentAddrStr)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		signerPaymentAddr := signerPaymentAddrKey.KeySet.PaymentAddress
+		assertedSigns[string(signerPaymentAddr.Pk)] = []byte(sign.(string))
 	}
 	metaType := metadata.MultiSigsSpendingMeta
 	meta := metadata.NewMultiSigsSpending(
@@ -86,7 +108,7 @@ func (self RpcServer) handleCreateRawTxWithMultiSigsSpending(params interface{},
 		metaType,
 	)
 
-	normalTx, err := self.buildRawTransaction(params, meta)
+	normalTx, err := rpcServer.buildRawTransaction(params, meta)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -102,8 +124,8 @@ func (self RpcServer) handleCreateRawTxWithMultiSigsSpending(params interface{},
 	return result, nil
 }
 
-func (self RpcServer) handleCreateAndSendTxWithMultiSigsSpending(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := self.handleCreateRawTxWithMultiSigsSpending(params, closeChan)
+func (rpcServer RpcServer) handleCreateAndSendTxWithMultiSigsSpending(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := rpcServer.handleCreateRawTxWithMultiSigsSpending(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +136,7 @@ func (self RpcServer) handleCreateAndSendTxWithMultiSigsSpending(params interfac
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
+	sendResult, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}

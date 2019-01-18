@@ -26,6 +26,7 @@ func (db *db) AddVoteBoard(
 
 	currentVoteInBytes, err := db.lvdb.Get(key, nil)
 	if err != nil {
+		currentVoteInBytes = make([]byte, 8)
 		binary.LittleEndian.PutUint64(currentVoteInBytes, uint64(0))
 	}
 
@@ -43,7 +44,8 @@ func (db *db) AddVoteBoard(
 	key = GetKeyVoteBoardCount(boardType, boardIndex, CandidatePaymentAddress)
 	currentCountInBytes, err := db.lvdb.Get(key, nil)
 	if err != nil {
-		return err
+		currentCountInBytes = make([]byte, 4)
+		binary.LittleEndian.PutUint32(currentCountInBytes, uint32(0))
 	}
 	currentCount := binary.LittleEndian.Uint32(currentCountInBytes)
 	newCount := currentCount + 1
@@ -56,13 +58,15 @@ func (db *db) AddVoteBoard(
 
 	// add to list voter new voter base on count as index
 	key = GetKeyVoteBoardList(boardType, boardIndex, &CandidatePaymentAddress, &VoterPaymentAddress)
-	oldAmountInByte, _ := db.Get(key)
-	oldAmount := ParseValueVoteBoardList(oldAmountInByte)
+	oldAmountInByte, err := db.Get(key)
+	oldAmount := uint64(0)
+	if err == nil {
+		oldAmount = ParseValueVoteBoardList(oldAmountInByte)
+	}
 	newAmount := oldAmount + amount
 	newAmountInByte := GetValueVoteBoardList(newAmount)
 	err = db.Put(key, newAmountInByte)
-
-	return nil
+	return err
 }
 
 func GetNumberOfGovernor(boardType string) int {
@@ -81,7 +85,7 @@ func (db *db) GetTopMostVoteGovernor(boardType string, currentBoardIndex uint32)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
 		_, _, paymentAddress, err := ParseKeyVoteBoardSum(iter.Key())
-		countKey := GetKeyVoteBoardCount(boardType, newBoardIndex, paymentAddress)
+		countKey := GetKeyVoteBoardCount(boardType, newBoardIndex, *paymentAddress)
 		if err != nil {
 			return nil, err
 		}
@@ -91,7 +95,7 @@ func (db *db) GetTopMostVoteGovernor(boardType string, currentBoardIndex uint32)
 		}
 		value := binary.LittleEndian.Uint64(iter.Value())
 		candidateList = append(candidateList, database.CandidateElement{
-			PaymentAddress: paymentAddress,
+			PaymentAddress: *paymentAddress,
 			VoteAmount:     value,
 			NumberOfVote:   common.BytesToUint32(countValue),
 		})
@@ -216,36 +220,45 @@ func GetKeyFromVariadic(args ...[]byte) []byte {
 	return key
 }
 
-func ParseKeyToSlice(key []byte, length []int) (error, [][]byte) {
+func ParseKeyToSlice(key []byte, length []int) ([][]byte, error) {
 	pos := GetPosFromLength(length)
 	if pos[len(pos)-1] != len(key) {
-		return errors.New("key and length of args not match"), nil
+		return nil, errors.New("key and length of args not match")
 	}
 	res := make([][]byte, 0)
 	for i := 0; i < len(pos)-1; i++ {
 		res = append(res, key[pos[i]:pos[i+1]])
 	}
-	return nil, res
+	return res, nil
 }
 
 func GetKeyVoteBoardSum(boardType string, boardIndex uint32, candidatePaymentAddress *privacy.PaymentAddress) []byte {
-	key := make([]byte, 0)
+	var key []byte
 	if candidatePaymentAddress == nil {
 		key = GetKeyFromVariadic(voteBoardSumPrefix, []byte(boardType), common.Uint32ToBytes(boardIndex))
+	} else {
+		key = GetKeyFromVariadic(voteBoardSumPrefix, []byte(boardType), common.Uint32ToBytes(boardIndex), candidatePaymentAddress.Bytes())
 	}
-	key = GetKeyFromVariadic(voteBoardSumPrefix, []byte(boardType), common.Uint32ToBytes(boardIndex), candidatePaymentAddress.Bytes())
 	return key
 }
 
-func ParseKeyVoteBoardSum(key []byte) (boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress, err error) {
-	length := []int{len(voteBoardSumPrefix), 3, 4, common.PubKeyLength}
-	err, elements := ParseKeyToSlice(key, length)
+func iPlusPlus(x *int) int {
+	*x += 1
+	return *x - 1
+}
 
-	_ = elements[0]
-	boardType = string(elements[1])
-	boardIndex = common.BytesToUint32(elements[2])
-	paymentAddress = *privacy.NewPaymentAddress(elements[3])
-	return
+func ParseKeyVoteBoardSum(key []byte) (boardType string, boardIndex uint32, paymentAddress *privacy.PaymentAddress, err error) {
+	length := []int{len(voteBoardSumPrefix), 3, 4, common.PubKeyLength}
+	elements, err := ParseKeyToSlice(key, length)
+	if err != nil {
+		return "", 0, nil, err
+	}
+	index := 1
+
+	boardType = string(elements[iPlusPlus(&index)])
+	boardIndex = common.BytesToUint32(elements[iPlusPlus(&index)])
+	paymentAddress = privacy.NewPaymentAddressFromByte(elements[iPlusPlus(&index)])
+	return boardType, boardIndex, paymentAddress, nil
 }
 
 func GetKeyVoteBoardCount(boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress) []byte {
@@ -255,14 +268,16 @@ func GetKeyVoteBoardCount(boardType string, boardIndex uint32, paymentAddress pr
 
 func ParseKeyVoteBoardCount(key []byte) (boardType string, boardIndex uint32, candidatePubKey []byte, err error) {
 	length := []int{len(voteBoardCountPrefix), 3, 4, common.PubKeyLength}
-	err, elements := ParseKeyToSlice(key, length)
+	elements, err := ParseKeyToSlice(key, length)
+	if err != nil {
+		return "", 0, nil, err
+	}
+	index := 1
 
-	_ = elements[0]
-	boardType = string(elements[1])
-	boardIndex = common.BytesToUint32(elements[2])
-	candidatePubKey = elements[3]
-	err = nil
-	return
+	boardType = string(elements[iPlusPlus(&index)])
+	boardIndex = common.BytesToUint32(elements[iPlusPlus(&index)])
+	candidatePubKey = elements[iPlusPlus(&index)]
+	return boardType, boardIndex, candidatePubKey, nil
 }
 
 func GetKeyVoteBoardList(boardType string, boardIndex uint32, candidatePaymentAddress *privacy.PaymentAddress, voterPaymentAddress *privacy.PaymentAddress) []byte {
@@ -270,17 +285,19 @@ func GetKeyVoteBoardList(boardType string, boardIndex uint32, candidatePaymentAd
 	return key
 }
 
-func ParseKeyVoteBoardList(key []byte) (boardType string, boardIndex uint32, candidatePubKey []byte, voterPaymentAddress privacy.PaymentAddress, err error) {
+func ParseKeyVoteBoardList(key []byte) (boardType string, boardIndex uint32, candidatePubKey []byte, voterPaymentAddress *privacy.PaymentAddress, err error) {
 	length := []int{len(voteBoardListPrefix), 3, 4, common.PubKeyLength, common.PubKeyLength}
-	err, elements := ParseKeyToSlice(key, length)
+	elements, err := ParseKeyToSlice(key, length)
+	if err != nil {
+		return "", 0, nil, nil, err
+	}
+	index := 1
 
-	_ = elements[0]
-	boardType = string(elements[1])
-	boardIndex = common.BytesToUint32(elements[2])
-	candidatePubKey = elements[3]
-	voterPaymentAddress = *privacy.NewPaymentAddress(elements[4])
-	err = nil
-	return
+	boardType = string(elements[iPlusPlus(&index)])
+	boardIndex = common.BytesToUint32(elements[iPlusPlus(&index)])
+	candidatePubKey = elements[iPlusPlus(&index)]
+	voterPaymentAddress = privacy.NewPaymentAddressFromByte(elements[iPlusPlus(&index)])
+	return boardType, boardIndex, candidatePubKey, voterPaymentAddress, nil
 }
 
 func GetValueVoteBoardList(amount uint64) []byte {
@@ -308,6 +325,9 @@ func (db *db) GetVoteTokenAmount(boardType string, boardIndex uint32, paymentAdd
 func (db *db) SetVoteTokenAmount(boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress, newAmount uint32) error {
 	key := GetKeyVoteTokenAmount(boardType, boardIndex, paymentAddress)
 	ok, err := db.HasValue(key)
+	if err != nil {
+		return err
+	}
 	if !ok {
 		zeroInBytes := common.Uint32ToBytes(uint32(0))
 		db.Put(key, zeroInBytes)
@@ -335,25 +355,26 @@ func ParseKeyThreePhraseCryptoOwner(key []byte) (boardType string, constitutionI
 	if CheckLength(key, length) {
 		length[len(length)-1] = 0
 	}
-	err, elements := ParseKeyToSlice(key, length)
+	elements, err := ParseKeyToSlice(key, length)
+	if err != nil {
+		return "", 0, nil, err
+	}
+	index := 1
 
-	_ = elements[0]
-	boardType = string(elements[1])
-	constitutionIndex = common.BytesToUint32(elements[2])
+	boardType = string(elements[iPlusPlus(&index)])
+	constitutionIndex = common.BytesToUint32(elements[iPlusPlus(&index)])
 
 	txId = nil
-	txIdData := elements[3]
+	txIdData := elements[iPlusPlus(&index)]
 	if len(txIdData) != 0 {
 		newHash, err1 := common.NewHash(txIdData)
 		if err1 != nil {
-			err = err1
-			return
+			return "", 0, nil, err1
 		}
 		txId = newHash
 	}
 
-	err = nil
-	return
+	return boardType, constitutionIndex, txId, nil
 }
 
 func ParseValueThreePhraseCryptoOwner(value []byte) (uint32, error) {
@@ -375,22 +396,25 @@ func ParseKeyThreePhraseCryptoSealer(key []byte) (boardType string, constitution
 	if CheckLength(key, length) {
 		length[len(length)-1] = 0
 	}
-	err, elements := ParseKeyToSlice(key, length)
+	elements, err := ParseKeyToSlice(key, length)
+	if err != nil {
+		return "", 0, nil, err
+	}
+	index := 1
 
-	boardType = string(elements[0])
-	constitutionIndex = common.BytesToUint32(elements[1])
+	boardType = string(elements[iPlusPlus(&index)])
+	constitutionIndex = common.BytesToUint32(elements[iPlusPlus(&index)])
 
 	txId = nil
-	txIdData := elements[2]
+	txIdData := elements[iPlusPlus(&index)]
 	if len(txIdData) != 0 {
 		newHash, err1 := common.NewHash(txIdData)
 		if err1 != nil {
-			err = err1
-			return
+			return "", 0, nil, err1
 		}
 		txId = newHash
 	}
-	return
+	return boardType, constitutionIndex, txId, nil
 }
 
 func GetKeyWinningVoter(boardType string, constitutionIndex uint32) []byte {
@@ -412,22 +436,25 @@ func ParseKeyThreePhraseVoteValue(key []byte) (boardType string, constitutionInd
 	if CheckLength(key, length) {
 		length[len(length)-1] = 0
 	}
-	err, elements := ParseKeyToSlice(key, length)
+	elements, err := ParseKeyToSlice(key, length)
+	if err != nil {
+		return "", 0, nil, err
+	}
+	index := 1
 
-	boardType = string(elements[0])
-	constitutionIndex = common.BytesToUint32(elements[1])
+	boardType = string(elements[iPlusPlus(&index)])
+	constitutionIndex = common.BytesToUint32(elements[iPlusPlus(&index)])
 
 	txId = nil
-	txIdData := elements[2]
+	txIdData := elements[iPlusPlus(&index)]
 	if len(txIdData) != 0 {
 		newHash, err1 := common.NewHash(txIdData)
 		if err1 != nil {
-			err = err1
-			return
+			return boardType, constitutionIndex, txId, err1
 		}
 		txId = newHash
 	}
-	return
+	return boardType, constitutionIndex, txId, err
 }
 
 func GetKeyEncryptFlag(boardType string) []byte {
@@ -502,7 +529,7 @@ func (db *db) GetBoardVoterList(boardType string, candidatePaymentAddress privac
 	for iter.Next() {
 		key := iter.Key()
 		_, _, _, candidatePaymentAddress, _ := ParseKeyVoteBoardList(key)
-		listVoter = append(listVoter, candidatePaymentAddress)
+		listVoter = append(listVoter, *candidatePaymentAddress)
 	}
 	return listVoter
 }

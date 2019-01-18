@@ -3,7 +3,6 @@ package mempool
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -93,7 +92,7 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height int32, fee uint64) *TxDe
 		},
 		StartingPriority: 1, //@todo we will apply calc function for it.
 	}
-	log.Printf(tx.Hash().String())
+	Logger.log.Info(tx.Hash().String())
 	tp.pool[*tx.Hash()] = txD
 	tp.poolSerialNumbers[*tx.Hash()] = txD.Desc.Tx.ListNullifiers()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
@@ -139,7 +138,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	ok := tx.CheckTxVersion(MaxVersion)
 	if !ok {
 		err := MempoolTxError{}
-		err.Init(RejectVersion, errors.New(fmt.Sprintf("%+v's version is invalid", txHash.String())))
+		err.Init(RejectVersion, fmt.Errorf("%+v's version is invalid", txHash.String()))
 		return nil, nil, err
 	}
 
@@ -149,7 +148,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	ok = tx.CheckTransactionFee(minFeePerKbTx)
 	if !ok {
 		err := MempoolTxError{}
-		err.Init(RejectVersion, errors.New(fmt.Sprintf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, minFeePerKbTx)))
+		err.Init(RejectVersion, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, minFeePerKbTx))
 		return nil, nil, err
 	}
 	// end check with policy
@@ -157,7 +156,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	ok = tx.ValidateType()
 	if !ok {
 		fmt.Printf("Type: %s\n", (tx.(*transaction.Tx).Type))
-		return nil, nil, errors.New("Wrong tx type")
+		return nil, nil, errors.New("wrong tx type")
 	}
 
 	// check tx with all txs in current mempool
@@ -170,16 +169,18 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	// if validate, errS := tp.ValidateSanityData(tx); !validate {
 	if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
 		err := MempoolTxError{}
-		err.Init(RejectSansityTx, errors.New(fmt.Sprintf("transaction's sansity %v is error %v", txHash.String(), errS.Error())))
+		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
 		return nil, nil, err
 	}
 
 	// ValidateTransaction tx by it self
 	// validate := tp.ValidateTxByItSelf(tx)
+	wtf := tx.IsPrivacy()
+	_ = wtf
 	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, chainID)
 	if !validated {
 		err := MempoolTxError{}
-		err.Init(RejectInvalidTx, errors.New("Invalid tx"))
+		err.Init(RejectInvalidTx, errors.New("invalid tx"))
 		return nil, nil, err
 	}
 
@@ -202,7 +203,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	// if tp.config.BlockChain.IsSalaryTx(tx) {
 	if tx.IsSalaryTx() {
 		err := MempoolTxError{}
-		err.Init(RejectSalaryTx, errors.New(fmt.Sprintf("%+v is salary tx", txHash.String())))
+		err.Init(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
 		return nil, nil, err
 	}
 
@@ -218,7 +219,7 @@ func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
 		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 		return nil
 	} else {
-		return errors.New("Not exist tx in pool")
+		return errors.New("not exist tx in pool")
 	}
 	return nil
 }
@@ -259,7 +260,7 @@ func (tp *TxPool) GetTx(txHash *common.Hash) (metadata.Transaction, error) {
 		return txDesc.Desc.Tx, nil
 	}
 
-	return nil, fmt.Errorf("transaction is not in the pool")
+	return nil, errors.New("transaction is not in the pool")
 }
 
 // // MiningDescs returns a slice of mining descriptors for all the transactions

@@ -215,7 +215,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, byte(0))
 	}
 
-		//fmt.Printf("BYTES ------------------ %v\n", proofbytes)
+	//fmt.Printf("BYTES ------------------ %v\n", proofbytes)
 
 	return proofbytes
 }
@@ -416,7 +416,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		offset += lenComInputShardID
 	}
 
-		//fmt.Printf("SETBYTES ------------------ %v\n", proof.Bytes())
+	//fmt.Printf("SETBYTES ------------------ %v\n", proof.Bytes())
 
 	return nil
 }
@@ -763,10 +763,8 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee ui
 		}
 
 		// check if sum of input values equal sum of output values
-		if sumInputValue != sumOutputValue+fee {
-			return false
-		}
-		return true
+		result := (sumInputValue == sumOutputValue+fee)
+		return result
 	}
 
 	// if hasPrivacy == true
@@ -786,13 +784,13 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee ui
 			commitmentBytes, err := db.GetCommitmentByIndex(tokenID, pro.OneOfManyProof[i].CommitmentIndices[j], chainId)
 			if err != nil {
 				fmt.Printf("err 1\n")
-				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("Zero knowledge verification error"))
+				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))
 				return false
 			}
 			commitments[j], err = privacy.DecompressKey(commitmentBytes)
 			if err != nil {
 				fmt.Printf("err 2\n")
-				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("Zero knowledge verification error"))
+				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))
 				return false
 			}
 

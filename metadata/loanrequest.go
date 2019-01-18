@@ -44,12 +44,12 @@ func NewLoanRequest(data map[string]interface{}) (Metadata, error) {
 		return nil, errors.Errorf("Collateral amount incorrect")
 	}
 	result.CollateralAmount = n
-	key, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
+	keyWallet, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
 	fmt.Printf("err receiveaddress: %v\n", err)
 	if err != nil {
 		return nil, errors.Errorf("ReceiveAddress incorrect")
 	}
-	result.ReceiveAddress = &key.KeySet.PaymentAddress
+	result.ReceiveAddress = &keyWallet.KeySet.PaymentAddress
 
 	s, err := hex.DecodeString(data["LoanID"].(string))
 	if err != nil {
@@ -89,34 +89,34 @@ func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 	// Check if loan's params are correct
 	dcbParams := bcr.GetDCBParams()
 	validLoanParams := dcbParams.LoanParams
-	ok := common.FalseValue
+	ok := false
 	for _, temp := range validLoanParams {
 		if lr.Params == temp {
-			ok = common.TrueValue
+			ok = true
 		}
 	}
 	if !ok {
-		return common.FalseValue, fmt.Errorf("LoanRequest has incorrect params")
+		return false, errors.New("LoanRequest has incorrect params")
 	}
 
 	txs, err := bcr.GetLoanTxs(lr.LoanID)
 	if err != nil {
-		return common.FalseValue, err
+		return false, err
 	}
 
 	if len(txs) > 0 {
-		return common.FalseValue, fmt.Errorf("LoanID already existed")
+		return false, errors.New("LoanID already existed")
 	}
-	return common.TrueValue, nil
+	return true, nil
 }
 
 func (lr *LoanRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if len(lr.KeyDigest) != LoanKeyDigestLength {
-		return common.FalseValue, common.FalseValue, errors.Errorf("KeyDigest is not 32 bytes")
+		return false, false, errors.Errorf("KeyDigest is not 32 bytes")
 	}
-	return common.TrueValue, common.TrueValue, nil // continue to check for fee
+	return true, true, nil // continue to check for fee
 }
 
 func (lr *LoanRequest) ValidateMetadataByItself() bool {
-	return common.TrueValue
+	return true
 }

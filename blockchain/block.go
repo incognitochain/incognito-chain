@@ -114,7 +114,7 @@ func (self Block) Hash() *common.Hash {
 		return self.blockHash
 	}
 
-	record := common.EmptyString
+	record := ""
 
 	// add data from header
 	record += strconv.FormatInt(self.Header.Timestamp, 10) +

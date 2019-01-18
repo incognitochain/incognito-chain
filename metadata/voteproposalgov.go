@@ -151,20 +151,6 @@ func NewSealedLv3GOVVoteProposalMetadata(
 	}
 }
 
-func NewSealedLv3GOVVoteProposalMetadataFromJson(data interface{}) *SealedLv3GOVVoteProposalMetadata {
-	dataSealedLv3GOVVoteProposal := data.(map[string]interface{})
-
-	threePaymentBytes := common.SliceInterfaceToSliceSliceByte(dataSealedLv3GOVVoteProposal["LockerPaymentAddress"].([]interface{}))
-	listPaymentAddress := make([]privacy.PaymentAddress, 0)
-	for _, i := range threePaymentBytes {
-		listPaymentAddress = append(listPaymentAddress, *privacy.NewPaymentAddress(i))
-	}
-	return NewSealedLv3GOVVoteProposalMetadata(
-		[]byte(dataSealedLv3GOVVoteProposal["SealedVoteProposal"].(string)),
-		listPaymentAddress,
-	)
-}
-
 type NormalGOVVoteProposalFromSealerMetadata struct {
 	NormalVoteProposalFromSealerMetadata NormalVoteProposalFromSealerMetadata
 
@@ -282,13 +268,13 @@ func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) Hash() *common.Hash {
 }
 
 func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
-	return common.TrueValue, nil
+	return true, nil
 }
 
 func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
-	return common.TrueValue, common.TrueValue, nil
+	return true, true, nil
 }
 
 func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) ValidateMetadataByItself() bool {
-	return common.TrueValue
+	return true
 }

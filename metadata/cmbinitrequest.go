@@ -16,11 +16,11 @@ type CMBInitRequest struct {
 }
 
 func NewCMBInitRequest(data map[string]interface{}) *CMBInitRequest {
-	mainKey, err := wallet.Base58CheckDeserialize(data["MainAccount"].(string))
+	keyWalletMainKey, err := wallet.Base58CheckDeserialize(data["MainAccount"].(string))
 	if err != nil {
 		return nil
 	}
-	reserveKey, err := wallet.Base58CheckDeserialize(data["ReserveAccount"].(string))
+	keyWalletReserveKey, err := wallet.Base58CheckDeserialize(data["ReserveAccount"].(string))
 	if err != nil {
 		return nil
 	}
@@ -30,15 +30,15 @@ func NewCMBInitRequest(data map[string]interface{}) *CMBInitRequest {
 	}
 	members := []privacy.PaymentAddress{}
 	for _, m := range memberData {
-		memberKey, err := wallet.Base58CheckDeserialize(m)
+		keyWalletMemberKey, err := wallet.Base58CheckDeserialize(m)
 		if err != nil {
 			return nil
 		}
-		members = append(members, memberKey.KeySet.PaymentAddress)
+		members = append(members, keyWalletMemberKey.KeySet.PaymentAddress)
 	}
 	result := CMBInitRequest{
-		MainAccount:    mainKey.KeySet.PaymentAddress,
-		ReserveAccount: reserveKey.KeySet.PaymentAddress,
+		MainAccount:    keyWalletMainKey.KeySet.PaymentAddress,
+		ReserveAccount: keyWalletReserveKey.KeySet.PaymentAddress,
 		Members:        members,
 	}
 
@@ -62,15 +62,15 @@ func (creq *CMBInitRequest) Hash() *common.Hash {
 func (creq *CMBInitRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// TODO(@0xbunyip): check that MainAccount is multisig address and is unique
 	// TODO(@0xbunyip); check that ReserveAccount is unique
-	return common.TrueValue, nil
+	return true, nil
 }
 
 func (creq *CMBInitRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	// TODO(@0xbunyip)
-	return common.TrueValue, common.TrueValue, nil // continue to check for fee
+	return true, true, nil // continue to check for fee
 }
 
 func (creq *CMBInitRequest) ValidateMetadataByItself() bool {
 	// TODO(@0xbunyip)
-	return common.TrueValue
+	return true
 }

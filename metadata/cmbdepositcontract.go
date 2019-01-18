@@ -23,11 +23,11 @@ type CMBDepositContract struct {
 }
 
 func NewCMBDepositContract(data map[string]interface{}) *CMBDepositContract {
-	key, err := wallet.Base58CheckDeserialize(data["Receiver"].(string))
+	keyWalletReceiver, err := wallet.Base58CheckDeserialize(data["Receiver"].(string))
 	if err != nil {
 		return nil
 	}
-	keyCMB, err := wallet.Base58CheckDeserialize(data["CMBAddress"].(string))
+	keywalletCMBAccount, err := wallet.Base58CheckDeserialize(data["CMBAddress"].(string))
 	if err != nil {
 		return nil
 	}
@@ -41,8 +41,8 @@ func NewCMBDepositContract(data map[string]interface{}) *CMBDepositContract {
 		TotalInterest: interest,
 		DepositValue:  value,
 		NoticePeriod:  notice,
-		Receiver:      key.KeySet.PaymentAddress,
-		CMBAddress:    keyCMB.KeySet.PaymentAddress,
+		Receiver:      keyWalletReceiver.KeySet.PaymentAddress,
+		CMBAddress:    keywalletCMBAccount.KeySet.PaymentAddress,
 		ValidUntil:    validUntil,
 	}
 
@@ -69,30 +69,30 @@ func (dc *CMBDepositContract) ValidateTxWithBlockChain(txr Transaction, bcr Bloc
 	chainID, err := common.GetTxSenderChain(lastByte)
 	receiverChainHeight := bcr.GetChainHeight(chainID)
 	if err != nil || receiverChainHeight+1 >= dc.ValidUntil {
-		return common.FalseValue, errors.Errorf("ValidUntil must be bigger than current block height of receiver")
+		return false, errors.Errorf("ValidUntil must be bigger than current block height of receiver")
 	}
 
 	// CMBAddress must be valid
 	if !bytes.Equal(txr.GetSigPubKey(), dc.CMBAddress.Pk[:]) {
-		return common.FalseValue, errors.Errorf("CMBAddress must be the one creating this tx")
+		return false, errors.Errorf("CMBAddress must be the one creating this tx")
 	}
 	_, _, _, _, _, _, err = bcr.GetCMB(dc.CMBAddress.Bytes())
 	if err != nil {
-		return common.FalseValue, err
+		return false, err
 	}
-	return common.TrueValue, nil
+	return true, nil
 }
 
 func (dc *CMBDepositContract) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if dc.ValidUntil >= dc.MaturityAt {
-		return common.FalseValue, common.FalseValue, errors.Errorf("Deposit maturity must be greater than ValidUntil")
+		return false, false, errors.Errorf("Deposit maturity must be greater than ValidUntil")
 	}
 	if len(dc.Receiver.Pk) <= 0 {
-		return common.FalseValue, common.FalseValue, errors.Errorf("Receiver must be set")
+		return false, false, errors.Errorf("Receiver must be set")
 	}
-	return common.TrueValue, common.TrueValue, nil // continue to check for fee
+	return true, true, nil // continue to check for fee
 }
 
 func (dc *CMBDepositContract) ValidateMetadataByItself() bool {
-	return common.TrueValue
+	return true
 }

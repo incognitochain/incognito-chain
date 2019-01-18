@@ -25,18 +25,18 @@ type GetBlockTxResult struct {
 	HexData  string `json:"HexData"`
 }
 
-func (self *GetBlockResult) Init(block *blockchain.Block) {
-	self.BlockProducerSign = block.BlockProducerSig
-	self.BlockProducer = block.BlockProducer
-	self.Hash = block.Hash().String()
-	self.PreviousBlockHash = block.Header.PrevBlockHash.String()
-	self.Version = block.Header.Version
-	self.Height = block.Header.Height
-	self.Time = block.Header.Timestamp
-	self.ChainID = block.Header.ChainID
-	self.MerkleRoot = block.Header.MerkleRoot.String()
-	self.TxHashes = make([]string, 0)
+func (getBlockResult *GetBlockResult) Init(block *blockchain.Block) {
+	getBlockResult.BlockProducerSign = block.BlockProducerSig
+	getBlockResult.BlockProducer = block.BlockProducer
+	getBlockResult.Hash = block.Hash().String()
+	getBlockResult.PreviousBlockHash = block.Header.PrevBlockHash.String()
+	getBlockResult.Version = block.Header.Version
+	getBlockResult.Height = block.Header.Height
+	getBlockResult.Time = block.Header.Timestamp
+	getBlockResult.ChainID = block.Header.ChainID
+	getBlockResult.MerkleRoot = block.Header.MerkleRoot.String()
+	getBlockResult.TxHashes = make([]string, 0)
 	for _, tx := range block.Transactions {
-		self.TxHashes = append(self.TxHashes, tx.Hash().String())
+		getBlockResult.TxHashes = append(getBlockResult.TxHashes, tx.Hash().String())
 	}
 }
