@@ -25,6 +25,7 @@ type Tx struct {
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
 	Fee      uint64 `json:"Fee"` // Fee applies: always consant
+	Info     []byte
 
 	// Sign and Privacy proof
 	SigPubKey []byte `json:"SigPubKey, omitempty"` // 33 bytes
@@ -100,7 +101,17 @@ func (tx *Tx) Init(
 	senderFullKey.ImportFromPrivateKey(senderSK)
 	// get public key last byte of sender
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
+	// init info of tx
+	aesAlgo := privacy.AES{
+		Key: (*senderSK)[:],
+	}
+	cipher, err := aesAlgo.Encrypt(senderFullKey.PaymentAddress.Pk)
+	if err == nil {
+		tx.Info = cipher
+	}
+	// set metadata
 	tx.Metadata = metaData
+	// set tx type
 	tx.Type = common.TxNormalType
 	Logger.log.Infof("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(inputCoins), fee, hasPrivacy)
 	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
