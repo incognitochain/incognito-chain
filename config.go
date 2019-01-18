@@ -538,7 +538,7 @@ func loadConfig() (*config, []string, error) {
 
 	if cfg.DiscoverPeers {
 		if cfg.DiscoverPeersAddress == "" {
-			err := errors.New("Discover peers server is empty")
+			err := errors.New("discover peers server is empty")
 			return nil, nil, err
 		}
 	}
@@ -597,7 +597,7 @@ func parseAndSetDebugLevels(debugLevel string) error {
 	if !strings.Contains(debugLevel, ",") && !strings.Contains(debugLevel, "=") {
 		// ValidateTransaction debug log level.
 		if !validLogLevel(debugLevel) {
-			str := "The specified debug level [%v] is invalid"
+			str := "the specified debug level [%v] is invalid"
 			return fmt.Errorf(str, debugLevel)
 		}
 
@@ -611,7 +611,7 @@ func parseAndSetDebugLevels(debugLevel string) error {
 	// issues and update the log levels accordingly.
 	for _, logLevelPair := range strings.Split(debugLevel, ",") {
 		if !strings.Contains(logLevelPair, "=") {
-			str := "The specified debug level contains an invalid subsystem/level pair [%v]"
+			str := "the specified debug level contains an invalid subsystem/level pair [%v]"
 			return fmt.Errorf(str, logLevelPair)
 		}
 
@@ -621,13 +621,13 @@ func parseAndSetDebugLevels(debugLevel string) error {
 
 		// ValidateTransaction subsystem.
 		if _, exists := subsystemLoggers[subsysID]; !exists {
-			str := "The specified subsystem [%v] is invalid -- supported subsytems %v"
+			str := "the specified subsystem [%v] is invalid -- supported subsytems %v"
 			return fmt.Errorf(str, subsysID, supportedSubsystems())
 		}
 
 		// ValidateTransaction log level.
 		if !validLogLevel(logLevel) {
-			str := "The specified debug level [%v] is invalid"
+			str := "the specified debug level [%v] is invalid"
 			return fmt.Errorf(str, logLevel)
 		}
 
@@ -636,15 +636,18 @@ func parseAndSetDebugLevels(debugLevel string) error {
 	return nil
 }
 
-func (self *config) GetProducerKeySet() (*cashec.KeySet, error) {
+func (config *config) GetProducerKeySet() (*cashec.KeySet, error) {
 	KeySetProducer := &cashec.KeySet{}
-	temp, err := wallet.Base58CheckDeserialize(self.ProducerSpendingKey)
+	temp, err := wallet.Base58CheckDeserialize(config.ProducerSpendingKey)
 	if err != nil {
-		return KeySetProducer, err
+		return nil, err
 	}
 	KeySetProducer.ImportFromPrivateKey(&temp.KeySet.PrivateKey)
 	lastByte := KeySetProducer.PaymentAddress.Pk[len(KeySetProducer.PaymentAddress.Pk)-1]
 	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	if err != nil {
+		return nil, err
+	}
 	Logger.log.Info("chainID: ", chainIdSender)
 	return KeySetProducer, nil
 }

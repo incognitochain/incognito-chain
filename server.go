@@ -756,14 +756,7 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 		return
 	}
 
-	addresses := []string{}
 	peers := self.addrManager.AddressCache()
-	for _, peer := range peers {
-		if peerConn.RemotePeerID.Pretty() != self.connManager.GetPeerId(peer.RawAddress) {
-			addresses = append(addresses, peer.RawAddress)
-		}
-	}
-
 	rawPeers := []wire.RawPeer{}
 	for _, peer := range peers {
 		if peerConn.RemotePeerID.Pretty() != self.connManager.GetPeerId(peer.RawAddress) {
@@ -900,7 +893,7 @@ func (self *Server) PushMessageToShard(msg wire.Message, shard byte) error {
 	var dc chan<- struct{}
 	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
 		peerConns := self.connManager.Config.ListenerPeers[index].GetListPeerConnByShard(shard)
-		if peerConns != nil && len(peerConns) > 0 {
+		if len(peerConns) > 0 {
 			for _, peerConn := range peerConns {
 				msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
 				peerConn.QueueMessageWithEncoding(msg, dc)
