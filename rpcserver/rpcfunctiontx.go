@@ -169,7 +169,7 @@ func (rpcServer RpcServer) handleCreateAndSendTx(params interface{}, closeChan <
 	var err error
 	data, err := rpcServer.handleCreateRawTransaction(params, closeChan)
 	if err.(*RPCError) != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
 	base58CheckData := tx.Base58CheckData
@@ -177,7 +177,7 @@ func (rpcServer RpcServer) handleCreateAndSendTx(params interface{}, closeChan <
 	newParam = append(newParam, base58CheckData)
 	sendResult, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
 	if err.(*RPCError) != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrSendTxData, err)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
