@@ -75,9 +75,6 @@ func (pool *CrossShardPool) AddCrossShardBlock(newBlock blockchain.CrossShardBlo
 	ShardID := blockHeader.ShardID
 	Height := blockHeader.Height
 
-	if ShardID <= 0 {
-		return errors.New("Invalid Shard ID")
-	}
 	if Height == 0 {
 		return errors.New("Invalid Block Heght")
 	}

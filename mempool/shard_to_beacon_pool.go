@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"sync"
 
@@ -22,12 +23,8 @@ func (pool *ShardToBeaconPool) GetFinalBlock() map[byte][]blockchain.ShardToBeac
 			continue
 		}
 		items := []blockchain.ShardToBeaconBlock{}
-		for i := 0; i < len(shardItems)-1; i++ {
-			item, ok := shardItems[uint64(i)]
-			if !ok || len(item) <= 0 {
-				continue
-			}
-			items = append(items, item[0])
+		for _, blks := range shardItems {
+			items = append(items, blks[0])
 		}
 		results[ShardId] = items
 	}
@@ -61,15 +58,14 @@ func (pool *ShardToBeaconPool) RemoveBlock(blockItems map[byte]uint64) error {
 }
 
 func (pool *ShardToBeaconPool) AddShardBeaconBlock(newBlock blockchain.ShardToBeaconBlock) error {
-
+	fmt.Println()
+	fmt.Println("BLAH BLAH aaaaaaaaa", beaconPool)
+	fmt.Println()
 	blockHeader := newBlock.Header
 	ShardID := blockHeader.ShardID
 	Height := blockHeader.Height
 	PrevBlockHash := blockHeader.PrevBlockHash
 
-	if ShardID <= 0 {
-		return errors.New("Invalid Shard ID")
-	}
 	if Height == 0 {
 		return errors.New("Invalid Block Heght")
 	}
@@ -102,9 +98,6 @@ func (pool *ShardToBeaconPool) AddShardBeaconBlock(newBlock blockchain.ShardToBe
 }
 
 func UpdateBeaconPool(shardID byte, blockHeight uint64, preBlockHash common.Hash) error {
-	if shardID <= 0 {
-		return errors.New("Invalid Shard ID")
-	}
 	if blockHeight == 0 {
 		return errors.New("Invalid Block Heght")
 	}

@@ -20,9 +20,6 @@ func (pool *NodeShardPool) PushBlock(block blockchain.ShardBlock) error {
 	blockHeader := block.Header
 	shardID := blockHeader.ShardID
 	height := blockHeader.Height
-	if shardID <= 0 {
-		return errors.New("Invalid ShardID")
-	}
 	if height == 0 {
 		return errors.New("Invalid Block Heght")
 	}
@@ -41,7 +38,7 @@ func (pool *NodeShardPool) PushBlock(block blockchain.ShardBlock) error {
 
 func (pool *NodeShardPool) GetBlocks(shardID byte, blockHeight uint64) ([]blockchain.ShardBlock, error) {
 
-	if shardID <= 0 || blockHeight == 0 {
+	if blockHeight == 0 {
 		return []blockchain.ShardBlock{}, errors.New("Invalid ShardId or block Height")
 	}
 	shardItems := nodeShardPool[shardID]
