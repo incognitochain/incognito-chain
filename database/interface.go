@@ -32,8 +32,9 @@ type DatabaseInterface interface {
 	HasOutgoingCrossShard(shardID byte, crossShardID byte, blkHeight uint64) error
 	GetOutgoingCrossShard(shardID byte, crossShardID byte, blkHeight uint64) ([]byte, error)
 
-	StoreShardToBeacon(shardID byte, blkHeight uint64, shardBlkHash *common.Hash) error
-	HasShardToBeacon(shardID byte, shardBlkHash *common.Hash) error
+	StoreAcceptedShardToBeacon(shardID byte, blkHeight uint64, shardBlkHash *common.Hash) error
+	HasAcceptedShardToBeacon(shardID byte, shardBlkHash *common.Hash) error
+	GetAcceptedShardToBeacon(shardID byte, shardBlkHash *common.Hash) (uint64, error)
 
 	// Beacon
 	StoreBeaconBlock(interface{}) error

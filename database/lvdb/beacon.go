@@ -222,7 +222,7 @@ func (db *db) FetchBeaconBlockChain() ([]*common.Hash, error) {
 	return keys, nil
 }
 
-//StoreCrossShard store which crossShardBlk from which shard has been include in which block height
+//StoreCrossShard store which crossShardBlk from which shard has been include in which beacon block height
 func (db *db) StoreAcceptedShardToBeacon(shardID byte, blkHeight uint64, shardBlkHash *common.Hash) error {
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, blkHeight)
@@ -243,4 +243,19 @@ func (db *db) HasAcceptedShardToBeacon(shardID byte, shardBlkHash *common.Hash) 
 		return nil
 	}
 	return database.NewDatabaseError(database.BlockExisted, errors.Errorf("Cross Shard Block doesn't exist"))
+}
+
+func (db *db) GetAcceptedShardToBeacon(shardID byte, shardBlkHash *common.Hash) (uint64, error) {
+	prefix := append([]byte{shardID}, shardBlkHash[:]...)
+	// stb-ShardID-ShardBlockHash : BeaconBlockHeight
+	key := append(shardToBeaconKeyPrefix, prefix...)
+	b, err := db.Get(key)
+	if err != nil {
+		return 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.get"))
+	}
+	var idx uint64
+	if err := binary.Read(bytes.NewReader(b[:]), binary.LittleEndian, &idx); err != nil {
+		return 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "binary.Read"))
+	}
+	return idx, nil
 }
