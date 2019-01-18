@@ -140,8 +140,11 @@ func (rpcServer RpcServer) buildRawSealLv3VoteProposalTransaction(
 	Seal3Data := CreateSealLv3Data(voteProposalData, pubKeys)
 	meta := NewSealedLv3VoteProposalMetadata(boardType, Seal3Data, threePaymentAddress)
 
-	tx, err := rpcServer.buildRawTransaction(params, meta)
-	return tx, NewRPCError(ErrUnexpected, err)
+	tx, err1 := rpcServer.buildRawTransaction(params, meta)
+	if err1 != nil {
+		return tx, NewRPCError(ErrUnexpected, err1)
+	}
+	return tx, nil
 }
 
 func (rpcServer RpcServer) ListPaymentAddressFromListSenderKey(listSenderKey []string) []privacy.PaymentAddress {
