@@ -16,8 +16,12 @@ const (
 	ErrRPCParse
 	ErrInvalidType
 	ErrAuthFail
+	ErrInvalidSenderPrivateKey
 	ErrInvalidReceiverPaymentAddress
 	ErrListCustomTokenNotFound
+	ErrCanNotSign
+	ErrGetOutputCoin
+	ErrCreateTxData
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -40,6 +44,10 @@ var ErrCodeMessage = map[int]struct {
 	ErrRPCInvalidMethodPermission:    {-1008, "Invalid method permission"},
 	ErrInvalidReceiverPaymentAddress: {-1009, "Invalid receiver paymentaddress"},
 	ErrListCustomTokenNotFound:       {-1010, "Can not find any custom token"},
+	ErrCanNotSign:                    {-1011, "Can not sign with key"},
+	ErrInvalidSenderPrivateKey:       {-1012, "Invalid sender's key"},
+	ErrGetOutputCoin:                 {-1013, "Can not get output coin"},
+	ErrCreateTxData:                  {-1014, "Can not create tx"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC Response
