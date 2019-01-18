@@ -354,7 +354,7 @@ func (blockgen *BlkTmplGenerator) CreateSendBackTokenAfterVoteFail(boardType str
 
 		_, found := setOfNewDCB[string(candidatePubKey)]
 		if boardIndex < uint32(currentBoardIndex) || !found {
-			listNewTx = append(listNewTx, createSingleSendDCBVoteTokenFail(voterPaymentAddress, amountOfDCBToken))
+			listNewTx = append(listNewTx, createSingleSendDCBVoteTokenFail(*voterPaymentAddress, amountOfDCBToken))
 		}
 	}
 	return listNewTx
