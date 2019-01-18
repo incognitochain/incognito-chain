@@ -64,7 +64,7 @@ const (
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	BondTokenID      = Hash{0, 0, 0, 0, 0, 0, 0, 0}
+	BondTokenID      = Hash{0, 0, 0, 0, 0, 0, 0, 0} // first 8 bytes must be 0
 	DCBTokenID       = Hash{1}
 	GOVTokenID       = Hash{2}
 	CMBTokenID       = Hash{3}

@@ -762,28 +762,29 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 					}
 				}
 			}
-		case metadata.CrowdSaleRequestMeta:
+		case metadata.CrowdsaleRequestMeta:
 			{
 				meta := tx.GetMetadata().(*metadata.CrowdsaleRequest)
 				hash := tx.Hash()
-				if err := self.config.DataBase.StoreCrowdsaleRequest(hash[:], meta.SaleID, meta.PaymentAddress.Pk[:], meta.PaymentAddress.Tk[:], meta.Info); err != nil {
+				if err := self.config.DataBase.StoreCrowdsaleRequest(hash[:], meta.SaleID, meta.PaymentAddress.Pk[:], meta.PaymentAddress.Tk[:]); err != nil {
 					return err
 				}
 			}
-		case metadata.CrowdSaleResponseMeta:
-			{
-				meta := tx.GetMetadata().(*metadata.CrowdsaleResponse)
-				_, _, _, txRequest, err := self.GetTransactionByHash(meta.RequestedTxID)
-				if err != nil {
-					return err
-				}
-				requestHash := txRequest.Hash()
-
-				hash := tx.Hash()
-				if err := self.config.DataBase.StoreCrowdsaleResponse(requestHash[:], hash[:]); err != nil {
-					return err
-				}
-			}
+			//		case metadata.ReserveResponseMeta:
+			//			{
+			//				// TODO(@0xbunyip): move to another func
+			//				meta := tx.GetMetadata().(*metadata.ReserveResponse)
+			//				_, _, _, txRequest, err := self.GetTransactionByHash(meta.RequestedTxID)
+			//				if err != nil {
+			//					return err
+			//				}
+			//				requestHash := txRequest.Hash()
+			//
+			//				hash := tx.Hash()
+			//				if err := self.config.DataBase.StoreCrowdsaleResponse(requestHash[:], hash[:]); err != nil {
+			//					return err
+			//				}
+			//			}
 		}
 	}
 	return nil

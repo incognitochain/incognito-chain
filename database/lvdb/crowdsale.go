@@ -17,7 +17,7 @@ func (db *db) GetCrowdsaleData(saleID []byte) (uint64, []byte, uint64, []byte, u
 	return 0, nil, 0, nil, 0, nil
 }
 
-func (db *db) StoreCrowdsaleRequest(requestTxHash, saleID, pk, tk, info []byte) error {
+func (db *db) StoreCrowdsaleRequest(requestTxHash, saleID, pk, tk []byte) error {
 	return nil
 }
 
