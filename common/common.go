@@ -228,7 +228,7 @@ func SliceBytesExists(slice interface{}, item interface{}) (int64, error) {
 
 	for i := 0; i < s.Len(); i++ {
 		interfacea := s.Index(i).Interface()
-		if bytes.Compare(interfacea.([]byte), item.([]byte)) == 0 {
+		if bytes.Equal(interfacea.([]byte), item.([]byte)) {
 			return int64(i), nil
 		}
 	}
@@ -283,11 +283,7 @@ func ValidateNodeAddress(nodeAddr string) bool {
 	}
 
 	_, err = peer.IDB58Decode(strs[1])
-	if err != nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }
 
 // cleanAndExpandPath expands environment variables and leading ~ in the

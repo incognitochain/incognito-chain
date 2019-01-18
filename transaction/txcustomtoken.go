@@ -27,10 +27,12 @@ type TxCustomToken struct {
 	listUtxo map[common.Hash]TxCustomToken
 }
 
-func (self *TxCustomToken) UnmarshalJSON(data []byte) error {
+func (txObj *TxCustomToken) UnmarshalJSON(data []byte) error {
 	tx := Tx{}
 	err := json.Unmarshal(data, &tx)
-
+	if err != nil {
+		return NewTransactionErr(UnexpectedErr, err)
+	}
 	temp := &struct {
 		TxTokenData interface{}
 	}{}
@@ -39,8 +41,8 @@ func (self *TxCustomToken) UnmarshalJSON(data []byte) error {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
 	txTokenDataJson, _ := json.MarshalIndent(temp.TxTokenData, "", "\t")
-	_ = json.Unmarshal(txTokenDataJson, &self.TxTokenData)
-	self.Tx = tx
+	_ = json.Unmarshal(txTokenDataJson, &txObj.TxTokenData)
+	txObj.Tx = tx
 	return nil
 }
 
@@ -69,7 +71,7 @@ func (customTokenTx *TxCustomToken) ValidateTxWithCurrentMempool(
 	mr metadata.MempoolRetriever,
 ) error {
 	if customTokenTx.Type == common.TxSalaryType {
-		return errors.New("Can not receive a salary tx from other node, this is a violation")
+		return errors.New("can not receive a salary tx from other node, this is a violation")
 	}
 
 	normalTx := customTokenTx.Tx
@@ -206,12 +208,11 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 			data := vout.Hash() // hash of vout in utxo
 			signature, _, _ := base58.Base58Check{}.Decode(vin.Signature)
 			ok, err := keySet.Verify(data[:], signature)
-			if err != nil {
+			if err != nil || !ok {
 				return false
 			}
-			return ok
 		}
-		return true
+		return false
 	}
 	return false
 }
@@ -274,8 +275,8 @@ func (tx TxCustomToken) String() string {
 	return record
 }
 
-func (self TxCustomToken) JSONString() string {
-	data, err := json.MarshalIndent(self, "", "\t")
+func (txObj TxCustomToken) JSONString() string {
+	data, err := json.MarshalIndent(txObj, "", "\t")
 	if err != nil {
 		Logger.log.Error(err)
 		return ""
@@ -401,7 +402,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 		}
 		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 		if _, ok := listCustomTokens[*propertyID]; !ok {
-			return NewTransactionErr(UnexpectedErr, errors.New("Invalid Token ID"))
+			return NewTransactionErr(UnexpectedErr, errors.New("invalid Token ID"))
 		}
 		txCustomToken.TxTokenData.PropertyID = *propertyID
 		txCustomToken.TxTokenData.Vins = tokenParams.vins
@@ -422,7 +423,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 		txCustomToken.TxTokenData.Vouts = VoutsTemp
 	}
 
-	if handled != true {
+	if !handled {
 		return NewTransactionErr(WrongTokenTxType, nil)
 	}
 	return nil

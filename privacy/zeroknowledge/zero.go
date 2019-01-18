@@ -94,13 +94,13 @@ func (pro *ComZeroProof) SetBytes(bytes []byte) error {
 	//}
 	//offset += privacy.CompressedPointSize
 
-	err := pro.commitmentZeroS.Decompress(bytes[offset: offset+privacy.CompressedPointSize])
+	err := pro.commitmentZeroS.Decompress(bytes[offset : offset+privacy.CompressedPointSize])
 	if err != nil {
-		return errors.New("Decompressed failed!")
+		return errors.New("decompressed failed")
 	}
 	offset += privacy.CompressedPointSize
 
-	pro.z.SetBytes(bytes[offset: offset+privacy.BigIntSize])
+	pro.z.SetBytes(bytes[offset : offset+privacy.BigIntSize])
 	offset += privacy.BigIntSize
 
 	*pro.index = bytes[offset]
@@ -159,9 +159,5 @@ func (pro *ComZeroProof) Verify() bool {
 	//Calculate comm_ck(0,z, Index)
 	commitmentZeroZ := privacy.PedCom.CommitAtIndex(zeroInt, pro.z, *pro.index)
 
-	if !commitmentZeroZ.IsEqual(verifyPoint) {
-		return false
-	}
-
-	return true
+	return commitmentZeroZ.IsEqual(verifyPoint)
 }

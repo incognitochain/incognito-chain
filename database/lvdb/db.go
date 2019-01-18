@@ -16,9 +16,9 @@ type hasher interface {
 }
 
 var (
-	chainIDPrefix             = []byte("c")
-	blockKeyPrefix            = []byte("b-")
-	blockHeaderKeyPrefix      = []byte("bh-")
+	chainIDPrefix  = []byte("c")
+	blockKeyPrefix = []byte("b-")
+	//blockHeaderKeyPrefix      = []byte("bh-")
 	blockKeyIdxPrefix         = []byte("i-")
 	transactionKeyPrefix      = []byte("tx-")
 	privateKeyPrefix          = []byte("prk-")
@@ -42,15 +42,15 @@ var (
 	rewared                   = []byte("reward")
 
 	//vote prefix
-	voteBoardSumPrefix              = []byte("votesumboard-")
-	voteBoardCountPrefix            = []byte("votecountboard-")
-	voteBoardListPrefix             = []byte("votelistboard-")
-	VoteTokenAmountPrefix           = []byte("votetokenamount-")
-	threePhraseCryptoOwnerPrefix    = []byte("threephrasecryptoownerprefix-")
-	threePhraseCryptoSealerPrefix   = []byte("threephrasecryptosealerprefix-")
-	threePhraseVoteValuePrefix      = []byte("threephrasevotevalueprefix-")
-	winningVoterPrefix              = []byte("winningvoterprefix-")
-	pubKeyToPaymentAddress          = []byte("pubkeytopaymentaddress")
+	voteBoardSumPrefix            = []byte("votesumboard-")
+	voteBoardCountPrefix          = []byte("votecountboard-")
+	voteBoardListPrefix           = []byte("votelistboard-")
+	VoteTokenAmountPrefix         = []byte("votetokenamount-")
+	threePhraseCryptoOwnerPrefix  = []byte("threephrasecryptoownerprefix-")
+	threePhraseCryptoSealerPrefix = []byte("threephrasecryptosealerprefix-")
+	threePhraseVoteValuePrefix    = []byte("threephrasevotevalueprefix-")
+	winningVoterPrefix            = []byte("winningvoterprefix-")
+	//pubKeyToPaymentAddress          = []byte("pubkeytopaymentaddress")
 	encryptFlagPrefix               = []byte("encryptFlagPrefix")
 	encryptionLastBlockHeightPrefix = []byte("encryptionlastblockheightprefix")
 

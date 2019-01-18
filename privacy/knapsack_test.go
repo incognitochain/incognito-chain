@@ -92,7 +92,7 @@ func TestKnapSack(t *testing.T) {
 			remainOutputCoins = append(remainOutputCoins, outCoinKnapsack...)
 		}
 	}
-
+	_ = totalResultOutputCoinAmount
 	fmt.Printf("output all : \n")
 	for _, coin := range outCoins {
 		fmt.Printf("%v, ", coin.CoinDetails.Value)
@@ -119,6 +119,7 @@ func TestGreedy(t *testing.T) {
 		outCoins[i].CoinDetails.Value = new(big.Int).Add(new(big.Int).SetBytes(RandBytes(1)), big.NewInt(1)).Uint64()
 		values = append(values, outCoins[i].CoinDetails.Value)
 	}
+	_ = values
 
 	amount := uint64(20)
 

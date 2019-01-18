@@ -8,8 +8,8 @@ type ConnManagerLogger struct {
 	log common.Logger
 }
 
-func (self *ConnManagerLogger) Init(inst common.Logger) {
-	self.log = inst
+func (connManagerLogger *ConnManagerLogger) Init(inst common.Logger) {
+	connManagerLogger.log = inst
 }
 
 // Global instant to use

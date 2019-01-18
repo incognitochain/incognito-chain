@@ -11,8 +11,8 @@ type AES struct {
 	key []byte
 }
 
-func (self *AES) Encrypt(plaintext []byte) ([]byte, error) {
-	block, err := aes.NewCipher(self.key)
+func (aesObj *AES) Encrypt(plaintext []byte) ([]byte, error) {
+	block, err := aes.NewCipher(aesObj.key)
 	if err != nil {
 		return nil, err
 	}
@@ -28,10 +28,10 @@ func (self *AES) Encrypt(plaintext []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
-func (self *AES) Decrypt(ciphertext []byte) ([]byte, error) {
+func (aesObj *AES) Decrypt(ciphertext []byte) ([]byte, error) {
 	plaintext := make([]byte, len(ciphertext[aes.BlockSize:]))
 
-	block, err := aes.NewCipher(self.key)
+	block, err := aes.NewCipher(aesObj.key)
 	if err != nil {
 		return nil, err
 	}
