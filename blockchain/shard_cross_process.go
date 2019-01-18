@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"errors"
 	"math"
 
 	"github.com/ninjadotorg/constant/common"
@@ -119,6 +120,17 @@ func getOutCoinCrossShard(txList []metadata.Transaction, shardID byte) []privacy
 	return coinList
 }
 
-func (self *CrossShardBlock) VerifyCrossShardBlock() {
-
+/*
+	Verify CrossShard Block
+	- Agg Signature
+	- MerklePath
+*/
+func (self *CrossShardBlock) VerifyCrossShardBlock(committees []string) error {
+	if err := ValidateAggSignature(self.ValidatorsIdx, committees, self.AggregatedSig, self.R, self.Hash()); err != nil {
+		return NewBlockChainError(SignatureError, err)
+	}
+	if err := VerifyCrossShardBlockUTXO(self, self.MerklePathShard); err == false {
+		return NewBlockChainError(HashError, errors.New("Verify Merkle Path Shard"))
+	}
+	return nil
 }

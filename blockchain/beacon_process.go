@@ -498,7 +498,7 @@ func (self *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock)
 func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	newBeaconCandidate := []string{}
 	newShardCandidate := []string{}
-	Logger.log.Infof("Start processing new block at height %d, with hash %+v", newBlock.Header.Height, *newBlock.Hash())
+	// Logger.log.Infof("Start processing new block at height %d, with hash %+v", newBlock.Header.Height, *newBlock.Hash())
 	if newBlock == nil {
 		return errors.New("Null pointer")
 	}
