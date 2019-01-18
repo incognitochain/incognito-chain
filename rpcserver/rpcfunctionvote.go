@@ -230,6 +230,7 @@ func (rpcServer RpcServer) buildRawSealLv2VoteProposalTransaction(
 	}
 	_, _, _, lv3Tx, err := rpcServer.config.BlockChain.GetTransactionByHash(lv3txID)
 	if err != nil {
+		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	SealLv3Data, err := GetSealLv3Data(lv3Tx)
@@ -294,7 +295,7 @@ func (rpcServer RpcServer) handleCreateRawSealLv2VoteProposalTransaction(params 
 	tx, err := rpcServer.buildRawSealLv2VoteProposalTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, err
 	}
 
 	byteArrays, err1 := json.Marshal(tx)
