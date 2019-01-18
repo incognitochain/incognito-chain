@@ -157,6 +157,7 @@ var RpcLimited = map[string]commandHandler{
 	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
 	GetReceivedByAccount:       RpcServer.handleGetReceivedByAccount,
 	SetTxFee:                   RpcServer.handleSetTxFee,
+	GetListTxByPrivatekey:      RpcServer.handleGetListTxByPrivatekey,
 }
 
 /*
