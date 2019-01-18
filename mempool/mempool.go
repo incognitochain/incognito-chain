@@ -175,6 +175,8 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 
 	// ValidateTransaction tx by it self
 	// validate := tp.ValidateTxByItSelf(tx)
+	wtf := tx.IsPrivacy()
+	_ = wtf
 	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, chainID)
 	if !validated {
 		err := MempoolTxError{}
