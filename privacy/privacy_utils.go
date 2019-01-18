@@ -62,6 +62,24 @@ func ConvertIntToBinary(inum int, n int) []byte {
 	return binary
 }
 
+// ConvertIntToBinary represents a integer number in binary
+func ConvertBigIntToBinary(number *big.Int, n int) []*big.Int {
+	binary := make([]*big.Int, n)
+	numberClone := new(big.Int)
+	numberClone.Set(number)
+
+	tmp := big.NewInt(0)
+	twoNumber := big.NewInt(2)
+
+	for i := n - 1; i >= 0; i-- {
+		tmp.Mod(numberClone, twoNumber)
+		binary[i] = new(big.Int).Set(tmp)
+		numberClone.Div(numberClone, twoNumber)
+	}
+
+	return binary
+}
+
 // AddPaddingBigInt adds padding to big int to it is fixed size
 func AddPaddingBigInt(numInt *big.Int, fixedSize int) []byte {
 	numBytes := numInt.Bytes()

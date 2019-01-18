@@ -216,6 +216,21 @@ func pad(l int) int {
 
 /*-----------------------------Vector Functions-----------------------------*/
 // The length here always has to be a power of two
+
+//vectorAdd adds two vector and returns result vector
+func vectorAdd(v []*big.Int, w []*big.Int) ([]*big.Int, error) {
+	if len(v) != len(w) {
+		return nil, errors.New("VectorAddPoint: Uh oh! Arrays not of the same length")
+	}
+
+	result := make([]*big.Int, len(v))
+	for i := range v {
+		result[i] = new(big.Int).Add(v[i], w[i])
+		result[i] = result[i].Mod(result[i],privacy.Curve.Params().N)
+	}
+	return result, nil
+}
+
 // innerProduct calculates inner product between two vectors a and b
 func innerProduct(a []*big.Int, b []*big.Int) (*big.Int, error) {
 	if len(a) != len(b) {
@@ -233,16 +248,48 @@ func innerProduct(a []*big.Int, b []*big.Int) (*big.Int, error) {
 	return c, nil
 }
 
-//func hadamardProduct(a []*big.Int, b []*big.Int) ([]*big.Int, error) {
-//	if len(a) != len(b) {
-//		return nil, errors.New("InnerProduct: Arrays not of the same length")
-//	}
-//
-//	c := make([]*big.Int, len(a))
-//	for i := 0; i < len(c); i++ {
-//		c[i] = new(big.Int).Mul(a[i], b[i])
-//		c[i].Mod(c[i], privacy.Curve.Params().N)
-//	}
-//
-//	return c, nil
-//}
+// hadamardProduct calculates hadamard product between two vectors a and b
+func hadamardProduct(a []*big.Int, b []*big.Int) ([]*big.Int, error) {
+	if len(a) != len(b) {
+		return nil, errors.New("InnerProduct: Arrays not of the same length")
+	}
+
+	c := make([]*big.Int, len(a))
+	for i := 0; i < len(c); i++ {
+		c[i] = new(big.Int).Mul(a[i], b[i])
+		c[i].Mod(c[i], privacy.Curve.Params().N)
+	}
+
+	return c, nil
+}
+
+// powerVector calculate base^n
+func powerVector(base *big.Int, n int) []*big.Int{
+	result := make([]*big.Int, n)
+	tmp := new(big.Int)
+
+	for i := 0; i < n; i++ {
+		result[i] = tmp.Exp(base, big.NewInt(int64(i)), privacy.Curve.Params().N)
+	}
+	return result
+}
+
+// vectorAddScalar adds a vector to a big int, returns big int array
+func vectorAddScalar(v []*big.Int, s *big.Int) []*big.Int {
+	result := make([]*big.Int, len(v))
+	for i := range v {
+		result[i] = new(big.Int).Add(v[i], s)
+		result[i].Mod(result[i], privacy.Curve.Params().N)
+	}
+	return result
+}
+
+// vectorMulScalar mul a vector to a big int, returns a vector
+func vectorMulScalar(v []*big.Int, s *big.Int) []*big.Int {
+	result := make([]*big.Int, len(v))
+	for i := range v {
+		result[i] = new(big.Int).Mul(v[i], s)
+		result[i].Mod(result[i], privacy.Curve.Params().N)
+	}
+	return result
+}

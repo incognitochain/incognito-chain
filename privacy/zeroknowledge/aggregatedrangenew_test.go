@@ -66,7 +66,7 @@ func TestEncodeVectors(t *testing.T){
 	assert.Equal(t, expectedRes, actualRes)
 }
 
-func TestProve(t *testing.T){
+func TestInnerProductProve(t *testing.T){
 	wit := new(InnerProductWitness)
 	n := privacy.MaxExp
 	wit.a = make([]*big.Int, n)
@@ -92,6 +92,23 @@ func TestProve(t *testing.T){
 	wit.p = wit.p.Add(wit.u.ScalarMult(c))
 
 	proof, err:= wit.Prove()
+	if err != nil{
+		fmt.Printf("Err: %v\n", err)
+	}
+
+	res := proof.Verify()
+
+	assert.Equal(t, true, res)
+}
+
+func TestSingleRangeProve(t *testing.T){
+	wit := new(SingleRangeWitness)
+	wit.value = big.NewInt(10)
+	wit.rand = privacy.RandInt()
+
+	wit.n = privacy.MaxExp
+
+	proof, err := wit.Prove()
 	if err != nil{
 		fmt.Printf("Err: %v\n", err)
 	}

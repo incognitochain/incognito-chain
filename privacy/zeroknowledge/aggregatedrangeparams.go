@@ -66,3 +66,45 @@ func generateChallengeForAggRange(values []*privacy.EllipticPoint) *big.Int {
 	res.Mod(res, privacy.Curve.Params().N)
 	return res
 }
+
+func generateChallengeForAggRangeFromBytes(values [][]byte) *big.Int {
+	bytes := AggParam.G[0].Compress()
+	for i := 1; i < len(AggParam.G); i++ {
+		bytes = append(bytes, AggParam.G[i].Compress()...)
+	}
+
+	for i := 0; i < len(AggParam.H); i++ {
+		bytes = append(bytes, AggParam.H[i].Compress()...)
+	}
+
+	for i := 0; i < len(values); i++ {
+		bytes = append(bytes, values[i]...)
+	}
+
+	hash := common.HashB(bytes)
+
+	res := new(big.Int).SetBytes(hash)
+	res.Mod(res, privacy.Curve.Params().N)
+	return res
+}
+
+//func generateChallengeForAggRangeFromBigInt(values []*big.Int) *big.Int {
+//	bytes := AggParam.G[0].Compress()
+//	for i := 1; i < len(AggParam.G); i++ {
+//		bytes = append(bytes, AggParam.G[i].Compress()...)
+//	}
+//
+//	for i := 0; i < len(AggParam.H); i++ {
+//		bytes = append(bytes, AggParam.H[i].Compress()...)
+//	}
+//
+//	for i := 0; i < len(values); i++ {
+//		bytes = append(bytes, values[i].Bytes()...)
+//	}
+//
+//	hash := common.HashB(bytes)
+//
+//	res := new(big.Int).SetBytes(hash)
+//	res.Mod(res, privacy.Curve.Params().N)
+//	return res
+//}
