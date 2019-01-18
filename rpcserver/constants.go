@@ -59,6 +59,7 @@ const (
 	GetBalanceByPaymentAddress = "getbalancebypaymentaddress"
 	GetReceivedByAccount       = "getreceivedbyaccount"
 	SetTxFee                   = "settxfee"
+	GetListTxByPrivatekey      = "getlisttxbyprivatekey"
 
 	// multisig for board spending
 	CreateSignatureOnCustomTokenTx       = "createsignatureoncustomtokentx"

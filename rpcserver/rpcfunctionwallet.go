@@ -392,3 +392,7 @@ func (rpcServer RpcServer) handleGetPublicKeyFromPaymentAddress(params interface
 
 	return base58.Base58Check{}.Encode(key.KeySet.PaymentAddress.Pk[:], common.ZeroByte), nil
 }
+
+func (rpcServer RpcServer) handleGetListTxByPrivatekey(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return nil, nil
+}
