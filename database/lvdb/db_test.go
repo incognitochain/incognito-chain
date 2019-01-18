@@ -40,7 +40,7 @@ func TestBlock(t *testing.T) {
 		Transactions: []metadata.Transaction{},
 	}
 
-	err := db.StoreBlock(block)
+	err := db.StoreBlock(block, byte(0x00))
 	if err != nil {
 		t.Errorf("db.StoreBlock returns err: %+v", err)
 	}
@@ -60,22 +60,5 @@ func TestBlock(t *testing.T) {
 	blockJSON, _ := json.Marshal(block)
 	if !bytes.Equal(blockJSON, fetched) {
 		t.Logf("should equal")
-	}
-}
-
-func TestStoreTxOut(t *testing.T) {
-	db, teardown := setup(t)
-	defer teardown()
-
-	tx := []byte("abcd")
-	err := db.StoreNullifiers(tx)
-	if err != nil {
-		t.Errorf("db.StoreNullifiers %+v", err)
-	}
-
-	tx = []byte("efgh")
-	err = db.StoreNullifiers(tx)
-	if err != nil {
-		t.Errorf("db.StoreNullifiers %+v", err)
 	}
 }
