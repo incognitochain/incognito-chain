@@ -59,7 +59,7 @@ type Server struct {
 // setupRPCListeners returns a slice of listeners that are configured for use
 // with the RPC server depending on the configuration settings for listen
 // addresses and TLS.
-func (self *Server) setupRPCListeners() ([]net.Listener, error) {
+func (serverObj *Server) setupRPCListeners() ([]net.Listener, error) {
 	// Setup TLS if not disabled.
 	listenFunc := net.Listen
 	if !cfg.DisableTLS {
@@ -111,32 +111,32 @@ func (self *Server) setupRPCListeners() ([]net.Listener, error) {
 /*
 NewServer - create server object which control all process of node
 */
-func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterface, chainParams *blockchain.Params, protocolVer string, interrupt <-chan struct{}) error {
+func (serverObj *Server) NewServer(listenAddrs []string, db database.DatabaseInterface, chainParams *blockchain.Params, protocolVer string, interrupt <-chan struct{}) error {
 	// Init data for Server
-	self.protocolVersion = protocolVer
-	self.chainParams = chainParams
-	self.cQuit = make(chan struct{})
-	self.cNewPeers = make(chan *peer.Peer)
-	self.dataBase = db
+	serverObj.protocolVersion = protocolVer
+	serverObj.chainParams = chainParams
+	serverObj.cQuit = make(chan struct{})
+	serverObj.cNewPeers = make(chan *peer.Peer)
+	serverObj.dataBase = db
 
 	var err error
 
 	// Create a new block chain instance with the appropriate configuration.9
 	if cfg.Light {
-		if self.wallet == nil {
+		if serverObj.wallet == nil {
 			return errors.New("wallet NOT FOUND. LightMode Mode required Wallet with at least one child account")
 		}
-		if len(self.wallet.MasterAccount.Child) < 1 {
+		if len(serverObj.wallet.MasterAccount.Child) < 1 {
 			return errors.New("no child account in wallet. LightMode Mode required Wallet with at least one child account")
 		}
 	}
-	self.blockChain = &blockchain.BlockChain{}
-	err = self.blockChain.Init(&blockchain.Config{
-		ChainParams: self.chainParams,
-		DataBase:    self.dataBase,
+	serverObj.blockChain = &blockchain.BlockChain{}
+	err = serverObj.blockChain.Init(&blockchain.Config{
+		ChainParams: serverObj.chainParams,
+		DataBase:    serverObj.dataBase,
 		Interrupt:   interrupt,
 		LightMode:   cfg.Light,
-		Wallet:      self.wallet,
+		Wallet:      serverObj.wallet,
 	})
 	if err != nil {
 		return err
@@ -146,93 +146,93 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	// or if it cannot be loaded, create a new one.
 	if cfg.FastMode {
 		Logger.log.Info("Load chain dependencies from DB")
-		self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
-		for _, bestState := range self.blockChain.BestState {
+		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
+		for _, bestState := range serverObj.blockChain.BestState {
 			chainID := bestState.BestBlock.Header.ChainID
-			feeEstimatorData, err := self.dataBase.GetFeeEstimator(chainID)
+			feeEstimatorData, err := serverObj.dataBase.GetFeeEstimator(chainID)
 			if err == nil && len(feeEstimatorData) > 0 {
 				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
 				if err != nil {
 					Logger.log.Errorf("Failed to restore fee estimator %v", err)
 					Logger.log.Info("Init NewFeeEstimator")
-					self.feeEstimator[chainID] = mempool.NewFeeEstimator(
+					serverObj.feeEstimator[chainID] = mempool.NewFeeEstimator(
 						mempool.DefaultEstimateFeeMaxRollback,
 						mempool.DefaultEstimateFeeMinRegisteredBlocks)
 				} else {
-					self.feeEstimator[chainID] = feeEstimator
+					serverObj.feeEstimator[chainID] = feeEstimator
 				}
 			}
 		}
 	} else {
-		err := self.dataBase.CleanCommitments()
+		err := serverObj.dataBase.CleanCommitments()
 		if err != nil {
 			Logger.log.Error(err)
 			return err
 		}
-		err = self.dataBase.CleanSerialNumbers()
+		err = serverObj.dataBase.CleanSerialNumbers()
 		if err != nil {
 			Logger.log.Error(err)
 			return err
 		}
-		err = self.dataBase.CleanFeeEstimator()
+		err = serverObj.dataBase.CleanFeeEstimator()
 		if err != nil {
 			Logger.log.Error(err)
 			return err
 		}
 
-		self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
+		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
 	}
 
 	// create mempool tx
-	self.memPool = &mempool.TxPool{}
-	self.memPool.Init(&mempool.Config{
-		BlockChain:   self.blockChain,
-		DataBase:     self.dataBase,
+	serverObj.memPool = &mempool.TxPool{}
+	serverObj.memPool.Init(&mempool.Config{
+		BlockChain:   serverObj.blockChain,
+		DataBase:     serverObj.dataBase,
 		ChainParams:  chainParams,
-		FeeEstimator: self.feeEstimator,
+		FeeEstimator: serverObj.feeEstimator,
 	})
 
-	self.addrManager = addrmanager.New(cfg.DataDir)
+	serverObj.addrManager = addrmanager.New(cfg.DataDir)
 
-	self.rewardAgent, err = rewardagent.RewardAgent{}.Init(&rewardagent.RewardAgentConfig{
-		BlockChain: self.blockChain,
+	serverObj.rewardAgent, err = rewardagent.RewardAgent{}.Init(&rewardagent.RewardAgentConfig{
+		BlockChain: serverObj.blockChain,
 	})
 	if err != nil {
 		return err
 	}
 
-	self.blockgen, err = blockchain.BlkTmplGenerator{}.Init(self.memPool, self.blockChain, self.rewardAgent)
+	serverObj.blockgen, err = blockchain.BlkTmplGenerator{}.Init(serverObj.memPool, serverObj.blockChain, serverObj.rewardAgent)
 	if err != nil {
 		return err
 	}
-	self.consensusEngine, err = ppos.Engine{}.Init(&ppos.EngineConfig{
-		ChainParams:  self.chainParams,
-		BlockChain:   self.blockChain,
-		ConnManager:  self.connManager,
-		MemPool:      self.memPool,
-		Server:       self,
-		FeeEstimator: self.feeEstimator,
-		BlockGen:     self.blockgen,
+	serverObj.consensusEngine, err = ppos.Engine{}.Init(&ppos.EngineConfig{
+		ChainParams:  serverObj.chainParams,
+		BlockChain:   serverObj.blockChain,
+		ConnManager:  serverObj.connManager,
+		MemPool:      serverObj.memPool,
+		Server:       serverObj,
+		FeeEstimator: serverObj.feeEstimator,
+		BlockGen:     serverObj.blockgen,
 	})
 	if err != nil {
 		return err
 	}
 
 	// Init Net Sync manager to process messages
-	self.netSync = netsync.NetSync{}.New(&netsync.NetSyncConfig{
-		BlockChain:   self.blockChain,
+	serverObj.netSync = netsync.NetSync{}.New(&netsync.NetSyncConfig{
+		BlockChain:   serverObj.blockChain,
 		ChainParam:   chainParams,
-		MemTxPool:    self.memPool,
-		Server:       self,
-		Consensus:    self.consensusEngine,
-		FeeEstimator: self.feeEstimator,
+		MemTxPool:    serverObj.memPool,
+		Server:       serverObj,
+		Consensus:    serverObj.consensusEngine,
+		FeeEstimator: serverObj.feeEstimator,
 	})
 
 	// Create a connection manager.
 	var peers []*peer.Peer
 	if !cfg.DisableListen {
 		var err error
-		peers, err = self.InitListenerPeers(self.addrManager, listenAddrs, cfg.MaxOutPeers, cfg.MaxInPeers)
+		peers, err = serverObj.InitListenerPeers(serverObj.addrManager, listenAddrs, cfg.MaxOutPeers, cfg.MaxInPeers)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
@@ -240,13 +240,13 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	}
 
 	connManager := connmanager.ConnManager{}.New(&connmanager.Config{
-		OnInboundAccept:      self.InboundPeerConnected,
-		OnOutboundConnection: self.OutboundPeerConnected,
-		GetCurrentPbk:        self.GetCurrentPbk,
-		//GetCurrentShard:      self.GetCurrentShard,
-		//GetPbksOfShard:       self.GetPbksOfShard,
-		//GetShardByPbk:        self.GetShardByPbk,
-		//GetPbksOfBeacon:      self.GetPbksOfBeacon,
+		OnInboundAccept:      serverObj.InboundPeerConnected,
+		OnOutboundConnection: serverObj.OutboundPeerConnected,
+		GetCurrentPbk:        serverObj.GetCurrentPbk,
+		//GetCurrentShard:      serverObj.GetCurrentShard,
+		//GetPbksOfShard:       serverObj.GetPbksOfShard,
+		//GetShardByPbk:        serverObj.GetShardByPbk,
+		//GetPbksOfBeacon:      serverObj.GetPbksOfBeacon,
 		ListenerPeers:        peers,
 		DiscoverPeers:        cfg.DiscoverPeers,
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
@@ -258,7 +258,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		MaxPeerNoShard:    cfg.MaxPeerNoShard,
 		MaxPeerBeacon:     cfg.MaxPeerBeacon,
 	})
-	self.connManager = connManager
+	serverObj.connManager = connManager
 
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
@@ -267,7 +267,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	}
 
 	for _, addr := range permanentPeers {
-		go self.connManager.Connect(addr, "")
+		go serverObj.connManager.Connect(addr, "")
 	}
 
 	fmt.Println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", cfg.DisableRPC)
@@ -275,7 +275,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		// Setup listeners for the configured RPC listen addresses and
 		// TLS settings.
 		fmt.Println("settingup RPCListeners")
-		rpcListeners, err := self.setupRPCListeners()
+		rpcListeners, err := serverObj.setupRPCListeners()
 		if err != nil {
 			return err
 		}
@@ -288,28 +288,28 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			RPCQuirks:     cfg.RPCQuirks,
 			RPCMaxClients: cfg.RPCMaxClients,
 			ChainParams:   chainParams,
-			BlockChain:    self.blockChain,
-			TxMemPool:     self.memPool,
-			Server:        self,
-			Wallet:        self.wallet,
-			ConnMgr:       self.connManager,
-			AddrMgr:       self.addrManager,
+			BlockChain:    serverObj.blockChain,
+			TxMemPool:     serverObj.memPool,
+			Server:        serverObj,
+			Wallet:        serverObj.wallet,
+			ConnMgr:       serverObj.connManager,
+			AddrMgr:       serverObj.addrManager,
 			RPCUser:       cfg.RPCUser,
 			RPCPass:       cfg.RPCPass,
 			RPCLimitUser:  cfg.RPCLimitUser,
 			RPCLimitPass:  cfg.RPCLimitPass,
 			DisableAuth:   cfg.RPCDisableAuth,
 			//IsGenerateNode:  cfg.Generate,
-			FeeEstimator:    self.feeEstimator,
-			ProtocolVersion: self.protocolVersion,
-			Database:        &self.dataBase,
+			FeeEstimator:    serverObj.feeEstimator,
+			ProtocolVersion: serverObj.protocolVersion,
+			Database:        &serverObj.dataBase,
 		}
-		self.rpcServer = &rpcserver.RpcServer{}
-		self.rpcServer.Init(&rpcConfig)
+		serverObj.rpcServer = &rpcserver.RpcServer{}
+		serverObj.rpcServer.Init(&rpcConfig)
 
 		// Signal process shutdown when the RPC server requests it.
 		go func() {
-			<-self.rpcServer.RequestedProcessShutdown()
+			<-serverObj.rpcServer.RequestedProcessShutdown()
 			shutdownRequestChannel <- struct{}{}
 		}()
 	}
@@ -321,7 +321,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 // InboundPeerConnected is invoked by the connection manager when a new
 // inbound connection is established.
 */
-func (self *Server) InboundPeerConnected(peerConn *peer.PeerConn) {
+func (serverObj *Server) InboundPeerConnected(peerConn *peer.PeerConn) {
 	Logger.log.Info("inbound connected")
 }
 
@@ -329,12 +329,12 @@ func (self *Server) InboundPeerConnected(peerConn *peer.PeerConn) {
 // outboundPeerConnected is invoked by the connection manager when a new
 // outbound connection is established.  It initializes a new outbound server
 // peer instance, associates it with the relevant state such as the connection
-// request instance and the connection itself, and finally notifies the address
+// request instance and the connection itserverObj, and finally notifies the address
 // manager of the attempt.
 */
-func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
+func (serverObj *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 	Logger.log.Info("Outbound PEER connected with PEER Id - " + peerConn.RemotePeerID.Pretty())
-	err := self.PushVersionMessage(peerConn)
+	err := serverObj.PushVersionMessage(peerConn)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -343,27 +343,27 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 /*
 // WaitForShutdown blocks until the main listener and peer handlers are stopped.
 */
-func (self *Server) WaitForShutdown() {
-	self.waitGroup.Wait()
+func (serverObj *Server) WaitForShutdown() {
+	serverObj.waitGroup.Wait()
 }
 
 /*
 // Stop gracefully shuts down the connection manager.
 */
-func (self *Server) Stop() error {
+func (serverObj *Server) Stop() error {
 	// stop connManager
-	self.connManager.Stop()
+	serverObj.connManager.Stop()
 
 	// Shutdown the RPC server if it's not disabled.
-	if !cfg.DisableRPC && self.rpcServer != nil {
-		self.rpcServer.Stop()
+	if !cfg.DisableRPC && serverObj.rpcServer != nil {
+		serverObj.rpcServer.Stop()
 	}
 
 	// Save fee estimator in the db
-	for chainId, feeEstimator := range self.feeEstimator {
+	for chainId, feeEstimator := range serverObj.feeEstimator {
 		feeEstimatorData := feeEstimator.Save()
 		if len(feeEstimatorData) > 0 {
-			err := self.dataBase.StoreFeeEstimator(feeEstimatorData, chainId)
+			err := serverObj.dataBase.StoreFeeEstimator(feeEstimatorData, chainId)
 			if err != nil {
 				Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", chainId, err)
 			} else {
@@ -372,10 +372,10 @@ func (self *Server) Stop() error {
 		}
 	}
 
-	self.consensusEngine.Stop()
+	serverObj.consensusEngine.Stop()
 
 	// Signal the remaining goroutines to cQuit.
-	close(self.cQuit)
+	close(serverObj.cQuit)
 	return nil
 }
 
@@ -384,47 +384,47 @@ func (self *Server) Stop() error {
 // peers to and from the server, banning peers, and broadcasting messages to
 // peers.  It must be run in a goroutine.
 */
-func (self *Server) peerHandler() {
+func (serverObj *Server) peerHandler() {
 	// Start the address manager and sync manager, both of which are needed
 	// by peers.  This is done here since their lifecycle is closely tied
 	// to this handler and rather than adding more channels to sychronize
 	// things, it's easier and slightly faster to simply start and stop them
 	// in this handler.
-	self.addrManager.Start()
-	self.netSync.Start()
+	serverObj.addrManager.Start()
+	serverObj.netSync.Start()
 
 	Logger.log.Info("Start peer handler")
 
 	if len(cfg.ConnectPeers) == 0 {
-		for _, addr := range self.addrManager.AddressCache() {
-			go self.connManager.Connect(addr.RawAddress, addr.PublicKey)
+		for _, addr := range serverObj.addrManager.AddressCache() {
+			go serverObj.connManager.Connect(addr.RawAddress, addr.PublicKey)
 		}
 	}
 
-	go self.connManager.Start(cfg.DiscoverPeersAddress)
+	go serverObj.connManager.Start(cfg.DiscoverPeersAddress)
 
 out:
 	for {
 		select {
-		case p := <-self.cNewPeers:
-			self.handleAddPeerMsg(p)
-		case <-self.cQuit:
+		case p := <-serverObj.cNewPeers:
+			serverObj.handleAddPeerMsg(p)
+		case <-serverObj.cQuit:
 			{
 				break out
 			}
 		}
 	}
-	self.netSync.Stop()
-	self.addrManager.Stop()
-	self.connManager.Stop()
+	serverObj.netSync.Stop()
+	serverObj.addrManager.Stop()
+	serverObj.connManager.Stop()
 }
 
 /*
 // Start begins accepting connections from peers.
 */
-func (self Server) Start() {
+func (serverObj Server) Start() {
 	// Already started?
-	if atomic.AddInt32(&self.started, 1) != 1 {
+	if atomic.AddInt32(&serverObj.started, 1) != 1 {
 		return
 	}
 
@@ -435,34 +435,34 @@ func (self Server) Start() {
 		Logger.log.Critical("************************")
 	}
 	// Server startup time. Used for the uptime command for uptime calculation.
-	self.startupTime = time.Now().Unix()
+	serverObj.startupTime = time.Now().Unix()
 
 	// Start the peer handler which in turn starts the address and block
 	// managers.
-	self.waitGroup.Add(1)
+	serverObj.waitGroup.Add(1)
 
-	go self.peerHandler()
+	go serverObj.peerHandler()
 
-	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", cfg.DisableRPC, self.rpcServer)
-	if !cfg.DisableRPC && self.rpcServer != nil {
-		self.waitGroup.Add(1)
+	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", cfg.DisableRPC, serverObj.rpcServer)
+	if !cfg.DisableRPC && serverObj.rpcServer != nil {
+		serverObj.waitGroup.Add(1)
 
 		// Start the rebroadcastHandler, which ensures user tx received by
 		// the RPC server are rebroadcast until being included in a block.
-		//go self.rebroadcastHandler()
+		//go serverObj.rebroadcastHandler()
 
 		fmt.Println("START !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-		self.rpcServer.Start()
+		serverObj.rpcServer.Start()
 	}
 
 	// //creat mining
 	// if cfg.Generate == true && (len(cfg.MiningAddrs) > 0) {
-	// 	self.Miner.Start()
+	// 	serverObj.Miner.Start()
 	// }
-	err := self.consensusEngine.Start()
+	err := serverObj.consensusEngine.Start()
 	if err != nil {
 		Logger.log.Error(err)
-		go self.Stop()
+		go serverObj.Stop()
 		return
 	}
 	if cfg.Generate && (len(cfg.ProducerSpendingKey) > 0) {
@@ -471,7 +471,7 @@ func (self Server) Start() {
 			Logger.log.Critical(err)
 			return
 		}
-		self.consensusEngine.StartProducer(*producerKeySet)
+		serverObj.consensusEngine.StartProducer(*producerKeySet)
 	}
 }
 
@@ -480,7 +480,7 @@ func (self Server) Start() {
 // addresses to the address manager. Returns the listeners and a NAT interface,
 // which is non-nil if UPnP is in use.
 */
-func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs []string, targetOutbound int, targetInbound int) ([]*peer.Peer, error) {
+func (serverObj *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs []string, targetOutbound int, targetInbound int) ([]*peer.Peer, error) {
 	netAddrs, err := common.ParseListeners(listenAddrs, "ip")
 	if err != nil {
 		return nil, err
@@ -511,7 +511,7 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 		peer, err := peer.Peer{
 			Seed:             seed,
 			ListeningAddress: addr,
-			Config:           *self.NewPeerConfig(),
+			Config:           *serverObj.NewPeerConfig(),
 			PeerConns:        make(map[string]*peer.PeerConn),
 			PendingPeers:     make(map[string]*peer.Peer),
 		}.NewPeer()
@@ -531,35 +531,35 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 /*
 // newPeerConfig returns the configuration for the listening RemotePeer.
 */
-func (self *Server) NewPeerConfig() *peer.Config {
+func (serverObj *Server) NewPeerConfig() *peer.Config {
 	producerKeySet, err := cfg.GetProducerKeySet()
 	if err != nil {
 		Logger.log.Critical("cfg GetProducerKeySet error", err)
 	}
 	config := &peer.Config{
 		MessageListeners: peer.MessageListeners{
-			OnBlock:     self.OnBlock,
-			OnTx:        self.OnTx,
-			OnVersion:   self.OnVersion,
-			OnGetBlocks: self.OnGetBlocks,
-			OnVerAck:    self.OnVerAck,
-			OnGetAddr:   self.OnGetAddr,
-			OnAddr:      self.OnAddr,
+			OnBlock:     serverObj.OnBlock,
+			OnTx:        serverObj.OnTx,
+			OnVersion:   serverObj.OnVersion,
+			OnGetBlocks: serverObj.OnGetBlocks,
+			OnVerAck:    serverObj.OnVerAck,
+			OnGetAddr:   serverObj.OnGetAddr,
+			OnAddr:      serverObj.OnAddr,
 
 			//ppos
-			OnRequestSign:   self.OnRequestSign,
-			OnInvalidBlock:  self.OnInvalidBlock,
-			OnBlockSig:      self.OnBlockSig,
-			OnGetChainState: self.OnGetChainState,
-			OnChainState:    self.OnChainState,
+			OnRequestSign:   serverObj.OnRequestSign,
+			OnInvalidBlock:  serverObj.OnInvalidBlock,
+			OnBlockSig:      serverObj.OnBlockSig,
+			OnGetChainState: serverObj.OnGetChainState,
+			OnChainState:    serverObj.OnChainState,
 			//
-			//OnRegistration: self.OnRegistration,
-			OnSwapRequest: self.OnSwapRequest,
-			OnSwapSig:     self.OnSwapSig,
-			OnSwapUpdate:  self.OnSwapUpdate,
+			//OnRegistration: serverObj.OnRegistration,
+			OnSwapRequest: serverObj.OnSwapRequest,
+			OnSwapSig:     serverObj.OnSwapSig,
+			OnSwapUpdate:  serverObj.OnSwapUpdate,
 		},
 
-		GetShardByPbk: self.GetShardByPbk,
+		GetShardByPbk: serverObj.GetShardByPbk,
 	}
 	config.ProducerKeySet = producerKeySet
 
@@ -568,21 +568,21 @@ func (self *Server) NewPeerConfig() *peer.Config {
 
 // OnBlock is invoked when a peer receives a block message.  It
 // blocks until the coin block has been fully processed.
-func (self *Server) OnBlock(p *peer.PeerConn,
+func (serverObj *Server) OnBlock(p *peer.PeerConn,
 	msg *wire.MessageBlock) {
 	Logger.log.Info("Receive a new block START")
 
 	var txProcessed chan struct{}
-	self.netSync.QueueBlock(nil, msg, txProcessed)
+	serverObj.netSync.QueueBlock(nil, msg, txProcessed)
 	//<-txProcessed
 
 	Logger.log.Info("Receive a new block END")
 }
 
-func (self *Server) OnGetBlocks(_ *peer.PeerConn, msg *wire.MessageGetBlocks) {
+func (serverObj *Server) OnGetBlocks(_ *peer.PeerConn, msg *wire.MessageGetBlocks) {
 	Logger.log.Info("Receive a " + msg.MessageType() + " message START")
 	var txProcessed chan struct{}
-	self.netSync.QueueGetBlock(nil, msg, txProcessed)
+	serverObj.netSync.QueueGetBlock(nil, msg, txProcessed)
 	//<-txProcessed
 
 	Logger.log.Info("Receive a " + msg.MessageType() + " message END")
@@ -592,42 +592,42 @@ func (self *Server) OnGetBlocks(_ *peer.PeerConn, msg *wire.MessageGetBlocks) {
 // until the transaction has been fully processed.  Unlock the block
 // handler this does not serialize all transactions through a single thread
 // transactions don't rely on the previous one in a linear fashion like blocks.
-func (self *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
+func (serverObj *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Info("Receive a new transaction START")
 	var txProcessed chan struct{}
-	self.netSync.QueueTx(nil, msg, txProcessed)
+	serverObj.netSync.QueueTx(nil, msg, txProcessed)
 	//<-txProcessed
 
 	Logger.log.Info("Receive a new transaction END")
 }
 
-/*func (self *Server) OnRegistration(peer *peer.PeerConn, msg *wire.MessageRegistration) {
+/*func (serverObj *Server) OnRegistration(peer *peer.PeerConn, msg *wire.MessageRegistration) {
 	Logger.log.Info("Receive a new registration START")
 	var txProcessed chan struct{}
-	self.netSync.QueueRegisteration(nil, msg, txProcessed)
+	serverObj.netSync.QueueRegisteration(nil, msg, txProcessed)
 	//<-txProcessed
 
 	Logger.log.Info("Receive a new registration END")
 }*/
 
-func (self *Server) OnSwapRequest(peer *peer.PeerConn, msg *wire.MessageSwapRequest) {
+func (serverObj *Server) OnSwapRequest(peer *peer.PeerConn, msg *wire.MessageSwapRequest) {
 	Logger.log.Info("Receive a new request swap START")
 	var txProcessed chan struct{}
-	self.netSync.QueueMessage(nil, msg, txProcessed)
+	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a new request swap END")
 }
 
-func (self *Server) OnSwapSig(peer *peer.PeerConn, msg *wire.MessageSwapSig) {
+func (serverObj *Server) OnSwapSig(peer *peer.PeerConn, msg *wire.MessageSwapSig) {
 	Logger.log.Info("Receive a new sign swap START")
 	var txProcessed chan struct{}
-	self.netSync.QueueMessage(nil, msg, txProcessed)
+	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a new sign swap END")
 }
 
-func (self *Server) OnSwapUpdate(peer *peer.PeerConn, msg *wire.MessageSwapUpdate) {
+func (serverObj *Server) OnSwapUpdate(peer *peer.PeerConn, msg *wire.MessageSwapUpdate) {
 	Logger.log.Info("Receive a new update swap START")
 	var txProcessed chan struct{}
-	self.netSync.QueueMessage(nil, msg, txProcessed)
+	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a new update swap END")
 }
 
@@ -636,7 +636,7 @@ func (self *Server) OnSwapUpdate(peer *peer.PeerConn, msg *wire.MessageSwapUpdat
 // and is used to negotiate the protocol version details as well as kick start
 // the communications.
 */
-func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion) {
+func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion) {
 	Logger.log.Info("Receive version message START")
 
 	pbk := ""
@@ -655,14 +655,14 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	}
 	peerConn.RemotePeer.PublicKey = pbk
 
-	self.cNewPeers <- remotePeer
+	serverObj.cNewPeers <- remotePeer
 	valid := false
-	if msg.ProtocolVersion == self.protocolVersion {
+	if msg.ProtocolVersion == serverObj.protocolVersion {
 		valid = true
 	}
 
 	// check for accept connection
-	if !self.connManager.CheckAcceptConn(peerConn) {
+	if !serverObj.connManager.CheckAcceptConn(peerConn) {
 		peerConn.ForceClose()
 		return
 	}
@@ -679,7 +679,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 
 	//	push version message again
 	if !peerConn.VerAckReceived() {
-		err := self.PushVersionMessage(peerConn)
+		err := serverObj.PushVersionMessage(peerConn)
 		if err != nil {
 			Logger.log.Error(err)
 		}
@@ -691,14 +691,14 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 /*
 OnVerAck is invoked when a peer receives a version acknowlege message
 */
-func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
+func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	Logger.log.Info("Receive verack message START")
 
 	if msg.Valid {
 		peerConn.VerValid = true
 
 		if peerConn.IsOutbound {
-			self.addrManager.Good(peerConn.RemotePeer)
+			serverObj.addrManager.Good(peerConn.RemotePeer)
 		}
 
 		// send message for get addr
@@ -710,16 +710,16 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 		peerConn.QueueMessageWithEncoding(msgS, dc)
 
 		//	broadcast addr to all peer
-		for _, listen := range self.connManager.ListeningPeers {
+		for _, listen := range serverObj.connManager.ListeningPeers {
 			msgS, err := wire.MakeEmptyMessage(wire.CmdAddr)
 			if err != nil {
 				return
 			}
 
 			rawPeers := []wire.RawPeer{}
-			peers := self.addrManager.AddressCache()
+			peers := serverObj.addrManager.AddressCache()
 			for _, peer := range peers {
-				if peerConn.RemotePeerID.Pretty() != self.connManager.GetPeerId(peer.RawAddress) {
+				if peerConn.RemotePeerID.Pretty() != serverObj.connManager.GetPeerId(peer.RawAddress) {
 					rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
 				}
 			}
@@ -733,7 +733,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 		// send message get blocks
 
 		//msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
-		//msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.blockChain.BestState.BestBlockHash
+		//msgNew.(*wire.MessageGetBlocks).LastBlockHash = *serverObj.blockChain.BestState.BestBlockHash
 		//println(peerConn.ListenerPeer.PeerId.String())
 		//msgNew.(*wire.MessageGetBlocks).SenderID = peerConn.ListenerPeer.PeerId.String()
 		//if err != nil {
@@ -747,7 +747,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	Logger.log.Info("Receive verack message END")
 }
 
-func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr) {
+func (serverObj *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr) {
 	Logger.log.Info("Receive getaddr message START")
 
 	// send message for addr
@@ -756,10 +756,10 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 		return
 	}
 
-	peers := self.addrManager.AddressCache()
+	peers := serverObj.addrManager.AddressCache()
 	rawPeers := []wire.RawPeer{}
 	for _, peer := range peers {
-		if peerConn.RemotePeerID.Pretty() != self.connManager.GetPeerId(peer.RawAddress) {
+		if peerConn.RemotePeerID.Pretty() != serverObj.connManager.GetPeerId(peer.RawAddress) {
 			rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
 		}
 	}
@@ -770,48 +770,48 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 	Logger.log.Info("Receive getaddr message END")
 }
 
-func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
+func (serverObj *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	Logger.log.Infof("Receive addr message %v", msg.RawPeers)
 }
 
-func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageBlockSigReq) {
+func (serverObj *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageBlockSigReq) {
 	Logger.log.Info("Receive a requestsign START")
 	var txProcessed chan struct{}
-	self.netSync.QueueMessage(nil, msg, txProcessed)
+	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a requestsign END")
 }
 
-func (self *Server) OnInvalidBlock(_ *peer.PeerConn, msg *wire.MessageInvalidBlock) {
+func (serverObj *Server) OnInvalidBlock(_ *peer.PeerConn, msg *wire.MessageInvalidBlock) {
 	Logger.log.Info("Receive a invalidblock START", msg)
 	var txProcessed chan struct{}
-	self.netSync.QueueMessage(nil, msg, txProcessed)
+	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a invalidblock END", msg)
 }
 
-func (self *Server) OnBlockSig(_ *peer.PeerConn, msg *wire.MessageBlockSig) {
+func (serverObj *Server) OnBlockSig(_ *peer.PeerConn, msg *wire.MessageBlockSig) {
 	Logger.log.Info("Receive a BlockSig")
 	var txProcessed chan struct{}
-	self.netSync.QueueMessage(nil, msg, txProcessed)
+	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
 }
 
-func (self *Server) OnGetChainState(_ *peer.PeerConn, msg *wire.MessageGetChainState) {
+func (serverObj *Server) OnGetChainState(_ *peer.PeerConn, msg *wire.MessageGetChainState) {
 	Logger.log.Info("Receive a getchainstate START")
 	var txProcessed chan struct{}
-	self.netSync.QueueMessage(nil, msg, txProcessed)
+	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a getchainstate END")
 }
 
-func (self *Server) OnChainState(_ *peer.PeerConn, msg *wire.MessageChainState) {
+func (serverObj *Server) OnChainState(_ *peer.PeerConn, msg *wire.MessageChainState) {
 	Logger.log.Info("Receive a chainstate START")
 	var txProcessed chan struct{}
-	self.netSync.QueueMessage(nil, msg, txProcessed)
+	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a chainstate END")
 }
 
-func (self *Server) GetPeerIDsFromPublicKey(pubKey string) []peer2.ID {
+func (serverObj *Server) GetPeerIDsFromPublicKey(pubKey string) []peer2.ID {
 	result := []peer2.ID{}
 
-	for _, listener := range self.connManager.Config.ListenerPeers {
+	for _, listener := range serverObj.connManager.Config.ListenerPeers {
 		for _, peerConn := range listener.PeerConns {
 			// Logger.log.Info("Test PeerConn", peerConn.RemotePeer.PaymentAddress)
 			if peerConn.RemotePeer.PublicKey == pubKey {
@@ -835,12 +835,12 @@ func (self *Server) GetPeerIDsFromPublicKey(pubKey string) []peer2.ID {
 /*
 PushMessageToAll broadcast msg
 */
-func (self *Server) PushMessageToAll(msg wire.Message) error {
+func (serverObj *Server) PushMessageToAll(msg wire.Message) error {
 	Logger.log.Info("Push msg to all peers")
 	var dc chan<- struct{}
-	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
-		msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
-		self.connManager.Config.ListenerPeers[index].QueueMessageWithEncoding(msg, dc)
+	for index := 0; index < len(serverObj.connManager.Config.ListenerPeers); index++ {
+		msg.SetSenderID(serverObj.connManager.Config.ListenerPeers[index].PeerID)
+		serverObj.connManager.Config.ListenerPeers[index].QueueMessageWithEncoding(msg, dc)
 	}
 	return nil
 }
@@ -848,13 +848,13 @@ func (self *Server) PushMessageToAll(msg wire.Message) error {
 /*
 PushMessageToPeer push msg to peer
 */
-func (self *Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
+func (serverObj *Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
 	Logger.log.Infof("Push msg to peer %s", peerId.Pretty())
 	var dc chan<- struct{}
-	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
-		peerConn := self.connManager.Config.ListenerPeers[index].GetPeerConnByPeerID(peerId.Pretty())
+	for index := 0; index < len(serverObj.connManager.Config.ListenerPeers); index++ {
+		peerConn := serverObj.connManager.Config.ListenerPeers[index].GetPeerConnByPeerID(peerId.Pretty())
 		if peerConn != nil {
-			msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
+			msg.SetSenderID(serverObj.connManager.Config.ListenerPeers[index].PeerID)
 			peerConn.QueueMessageWithEncoding(msg, dc)
 			Logger.log.Infof("Pushed peer %s", peerId.Pretty())
 			return nil
@@ -868,13 +868,13 @@ func (self *Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
 /*
 PushMessageToPeer push msg to pbk
 */
-func (self *Server) PushMessageToPbk(msg wire.Message, pbk string) error {
+func (serverObj *Server) PushMessageToPbk(msg wire.Message, pbk string) error {
 	Logger.log.Infof("Push msg to pbk %s", pbk)
 	var dc chan<- struct{}
-	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
-		peerConn := self.connManager.Config.ListenerPeers[index].GetPeerConnByPbk(pbk)
+	for index := 0; index < len(serverObj.connManager.Config.ListenerPeers); index++ {
+		peerConn := serverObj.connManager.Config.ListenerPeers[index].GetPeerConnByPbk(pbk)
 		if peerConn != nil {
-			msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
+			msg.SetSenderID(serverObj.connManager.Config.ListenerPeers[index].PeerID)
 			peerConn.QueueMessageWithEncoding(msg, dc)
 			Logger.log.Infof("Pushed pbk %s", pbk)
 			return nil
@@ -888,14 +888,14 @@ func (self *Server) PushMessageToPbk(msg wire.Message, pbk string) error {
 /*
 PushMessageToPeer push msg to pbk
 */
-func (self *Server) PushMessageToShard(msg wire.Message, shard byte) error {
+func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte) error {
 	Logger.log.Infof("Push msg to shard %d", shard)
 	var dc chan<- struct{}
-	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
-		peerConns := self.connManager.Config.ListenerPeers[index].GetListPeerConnByShard(shard)
+	for index := 0; index < len(serverObj.connManager.Config.ListenerPeers); index++ {
+		peerConns := serverObj.connManager.Config.ListenerPeers[index].GetListPeerConnByShard(shard)
 		if len(peerConns) > 0 {
 			for _, peerConn := range peerConns {
-				msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
+				msg.SetSenderID(serverObj.connManager.Config.ListenerPeers[index].PeerID)
 				peerConn.QueueMessageWithEncoding(msg, dc)
 			}
 			Logger.log.Infof("Pushed shard %d", shard)
@@ -909,7 +909,7 @@ func (self *Server) PushMessageToShard(msg wire.Message, shard byte) error {
 
 // handleAddPeerMsg deals with adding new peers.  It is invoked from the
 // peerHandler goroutine.
-func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
+func (serverObj *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 	if peer == nil {
 		return false
 	}
@@ -921,9 +921,9 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 /*
 GetChainState - send a getchainstate msg to connected peer
 */
-func (self *Server) PushMessageGetChainState() error {
+func (serverObj *Server) PushMessageGetChainState() error {
 	Logger.log.Infof("Send a GetChainState")
-	for _, listener := range self.connManager.Config.ListenerPeers {
+	for _, listener := range serverObj.connManager.Config.ListenerPeers {
 		msg, err := wire.MakeEmptyMessage(wire.CmdGetChainState)
 		if err != nil {
 			return err
@@ -936,7 +936,7 @@ func (self *Server) PushMessageGetChainState() error {
 	return nil
 }
 
-func (self *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
+func (serverObj *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	// push message version
 	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
 	msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
@@ -946,7 +946,7 @@ func (self *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	msg.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.ListeningAddress
 	msg.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.RawAddress
 	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerID
-	msg.(*wire.MessageVersion).ProtocolVersion = self.protocolVersion
+	msg.(*wire.MessageVersion).ProtocolVersion = serverObj.protocolVersion
 
 	// ValidateTransaction Public KeyWallet from ProducerPrvKey
 	if peerConn.ListenerPeer.Config.ProducerKeySet != nil {
@@ -963,7 +963,7 @@ func (self *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	return nil
 }
 
-func (self *Server) GetShardByPbk(pbk string) *byte {
+func (serverObj *Server) GetShardByPbk(pbk string) *byte {
 	if pbk == "" {
 		return nil
 	}
@@ -974,7 +974,7 @@ func (self *Server) GetShardByPbk(pbk string) *byte {
 	return nil
 }
 
-func (self *Server) GetCurrentPbk() string {
+func (serverObj *Server) GetCurrentPbk() string {
 	ks, err := cfg.GetProducerKeySet()
 	if err != nil {
 		return ""
@@ -983,7 +983,7 @@ func (self *Server) GetCurrentPbk() string {
 	return pbk
 }
 
-//func (self *Server) GetCurrentShard() *byte {
+//func (serverObj *Server) GetCurrentShard() *byte {
 //	ks, err := cfg.GetProducerKeySet()
 //	if err != nil {
 //		return nil
@@ -996,7 +996,7 @@ func (self *Server) GetCurrentPbk() string {
 //	return nil
 //}
 //
-//func (self *Server) GetPbksOfShard(shard byte) []string {
+//func (serverObj *Server) GetPbksOfShard(shard byte) []string {
 //	pBKs := make([]string, 0)
 //	for k, v := range mPBK {
 //		if v == shard {
@@ -1006,12 +1006,12 @@ func (self *Server) GetCurrentPbk() string {
 //	return pBKs
 //}
 //
-//func (self *Server) GetPbksOfBeacon() []string {
+//func (serverObj *Server) GetPbksOfBeacon() []string {
 //	pBKs := make([]string, 0)
 //	return pBKs
 //}
 //
-//func (self *Server) getCurrentShardInfoByPbk() (*byte, string) {
+//func (serverObj *Server) getCurrentShardInfoByPbk() (*byte, string) {
 //	ks, err := cfg.GetProducerKeySet()
 //	if err != nil {
 //		return nil, ""
@@ -1024,7 +1024,7 @@ func (self *Server) GetCurrentPbk() string {
 //	return nil, ""
 //}
 //
-//func (self *Server) getShardInfoByPbk(pbk string) (*byte, string) {
+//func (serverObj *Server) getShardInfoByPbk(pbk string) (*byte, string) {
 //	shard, ok := mPBK[pbk]
 //	if ok {
 //		return &shard, ""
@@ -1032,7 +1032,7 @@ func (self *Server) GetCurrentPbk() string {
 //	return nil, ""
 //}
 //
-//func (self *Server) shardChanged(oldShard *byte, newShard *byte) {
+//func (serverObj *Server) shardChanged(oldShard *byte, newShard *byte) {
 //	// update shard connection, random peers, drop peers and new peers
 //}
 
