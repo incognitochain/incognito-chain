@@ -326,7 +326,8 @@ func (self *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBloc
 	self.BestBeaconHash = block.Header.BeaconHash
 	self.BestShardBlock = block
 	self.ShardHeight = block.Header.Height
-	prevBeaconHeight := self.BeaconHeight
+	prevBeaconEpoch := self.Epoch
+	self.Epoch = block.Header.Epoch
 	self.BeaconHeight = block.Header.BeaconHeight
 	self.ShardProposerIdx = common.IndexOfStr(block.Header.Producer, self.ShardCommittee)
 	// Add pending validator
@@ -342,7 +343,8 @@ func (self *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBloc
 		}
 	}
 	// Swap committee
-	if block.Header.BeaconHeight%EPOCH < prevBeaconHeight {
+	//TODO: what if block.Header.Epoch - prevBeaconEpoch > 1
+	if prevBeaconEpoch < block.Header.Epoch {
 		self.ShardPendingValidator, self.ShardCommittee, shardSwapedCommittees, shardNewCommittees, err = SwapValidator(self.ShardPendingValidator, self.ShardCommittee, COMMITEES, OFFSET)
 		if err != nil {
 			Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
@@ -374,6 +376,10 @@ func (self *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlock, sh
 //=====================Util for shard====================
 func CreateMerkleRootShard(txList []metadata.Transaction) common.Hash {
 	//calculate output coin hash for each shard
+	if len(txList) == 0 {
+		res, _ := GenerateZeroValueHash()
+		return res
+	}
 	outputCoinHash := getOutCoinHashEachShard(txList)
 	// calculate merkle data : 1 2 3 4 12 34 1234
 	merkleData := outputCoinHash
@@ -396,6 +402,11 @@ func CreateMerkleRootShard(txList []metadata.Transaction) common.Hash {
 }
 
 func CreateMerkleCrossOutputCoin(crossOutputCoins []CrossOutputCoin) (*common.Hash, error) {
+	if len(crossOutputCoins) == 0 {
+		res, err := GenerateZeroValueHash()
+
+		return &res, err
+	}
 	crossOutputCoinHashes := []*common.Hash{}
 	for _, value := range crossOutputCoins {
 		hash := value.Hash()

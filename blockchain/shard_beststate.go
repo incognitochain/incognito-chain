@@ -21,6 +21,7 @@ type BestStateShard struct {
 	BestShardBlock        *ShardBlock // block data
 	ShardHeight           uint64
 	BeaconHeight          uint64
+	Epoch                 uint64
 	ShardCommittee        []string
 	ShardPendingValidator []string
 	ShardProposerIdx      int

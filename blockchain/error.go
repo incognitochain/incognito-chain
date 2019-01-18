@@ -31,6 +31,7 @@ const (
 	CrossShardBlockError
 	CandidateError
 	ShardIDError
+	ProducerError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -56,7 +57,8 @@ var ErrCodeMessage = map[int]struct {
 	SignatureError:                {-16, "Signature Error"},
 	CandidateError:                {-17, "Candidate Error"},
 	ShardIDError:                  {-18, "ShardID Error"},
-	NotSupportInLightMode:         {-5, "This features is not supported in light mode running"},
+	ProducerError:                 {-19, "Producer Error"},
+	NotSupportInLightMode:         {-20, "This features is not supported in light mode running"},
 }
 
 type BlockChainError struct {

@@ -73,7 +73,7 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	beaconBlock.Header.Version = VERSION
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	beaconBlock.Header.Epoch = beaconBestState.BeaconEpoch
-	if beaconBlock.Header.Height%200 == 0 {
+	if beaconBlock.Header.Height%EPOCH == 0 {
 		beaconBlock.Header.Epoch++
 	}
 	beaconBlock.Header.Timestamp = time.Now().Unix()
@@ -158,9 +158,17 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 	shardsBlocks := self.shardToBeaconPool.GetFinalBlock()
 	//Shard block is a map ShardId -> array of shard block
 	for shardID, shardBlocks := range shardsBlocks {
+		//TODO: Validate block
+		// for index, shardBlock := range shardBlocks {
+		// 	changed := 1
+		// 	currentCommittee := beaconBestState.ShardCommittee[shardID]
+		// 	currentPendingValidator := beaconBestState.ShardPendingValidator[shardID]
+		// 	if !ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, shardBlock.Header.Hash()) {
+		// 		currentCommittee
+		// 	}
+		// }
 		for _, shardBlock := range shardBlocks {
 			// for each shard block, create a corresponding shard state
-			//TODO: Validate block
 			instructions := shardBlock.Instructions
 			shardState := ShardState{}
 			shardState.CrossShard = make([]byte, len(shardBlock.Header.CrossShards))
@@ -262,7 +270,7 @@ func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, stakers [][
 	//=======Random and Assign if random number is detected
 	// Time to get random number and no block in this epoch get it
 	fmt.Printf("RandomTimestamp %+v \n", self.CurrentRandomTimeStamp)
-	fmt.Printf("============height epoch: %+v, RANDOM TIME: %+v \n", block.Header.Height%200, RANDOM_TIME)
+	fmt.Printf("============height epoch: %+v, RANDOM TIME: %+v \n", block.Header.Height%EPOCH, RANDOM_TIME)
 	fmt.Printf("============IsGetRandomNumber %+v \n", self.IsGetRandomNumber)
 	if block.Header.Height%EPOCH > RANDOM_TIME && self.IsGetRandomNumber == false {
 		chainTimeStamp, err := btcapi.GetCurrentChainTimeStamp()

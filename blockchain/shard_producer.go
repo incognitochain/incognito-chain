@@ -99,7 +99,6 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 		Producer:      userKeySet.GetPublicKeyB58(),
 		ShardID:       shardID,
 		Version:       BlockVersion,
-		Epoch:         self.chain.BestState.Beacon.BeaconEpoch,
 		PrevBlockHash: *prevBlockHash,
 		Height:        prevBlock.Header.Height + 1,
 		Timestamp:     time.Now().Unix(),
@@ -114,6 +113,7 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 		PendingValidatorRoot: pendingValidatorRoot,
 		BeaconHeight:         self.chain.BestState.Beacon.BeaconHeight,
 		BeaconHash:           self.chain.BestState.Beacon.BestBlockHash,
+		Epoch:                self.chain.BestState.Beacon.BeaconEpoch,
 	}
 
 	// Create producer signature

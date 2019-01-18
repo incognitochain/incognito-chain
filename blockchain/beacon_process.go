@@ -316,10 +316,7 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 	/* Verify Pre-prosessing data
 	This function DOES NOT verify new block with best state
 	DO NOT USE THIS with GENESIS BLOCK
-	- Sanity
-		+ Producer validity
-		+ Signature of producer
-		+ agg signature
+	- Producer validity
 	- version
 	- parent hash
 	- Height = parent hash + 1
@@ -328,6 +325,13 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 	- Instruction hash
 	- ShardStateHash
 	*/
+	//verify producer
+	producerPosition := (self.BestState.Beacon.BeaconProposerIdx + 1) % len(self.BestState.Beacon.BeaconCommittee)
+	tempProducer := self.BestState.Beacon.BeaconCommittee[producerPosition]
+	if strings.Compare(tempProducer, block.Header.Producer) != 0 {
+		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
+	}
+	//verify version
 	if block.Header.Version != VERSION {
 		return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
 	}
@@ -407,7 +411,6 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 	newBeaconCandidate, newShardCandidate := GetStakingCandidate(*block)
 	if !reflect.DeepEqual(newBeaconCandidate, []string{}) {
 		validBeaconCandidate := self.GetValidStakers(newBeaconCandidate)
-		// TODO: Debug to check deep equal function
 		if !reflect.DeepEqual(validBeaconCandidate, newBeaconCandidate) {
 			return NewBlockChainError(CandidateError, errors.New("Beacon candidate list is INVALID"))
 		}
@@ -509,7 +512,6 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	self.BestBlock = newBlock
 	self.BeaconEpoch = newBlock.Header.Epoch
 	self.BeaconHeight = newBlock.Header.Height
-	//TODO: verify producer is the right one
 	self.BeaconProposerIdx = common.IndexOfStr(newBlock.Header.Producer, self.BeaconCommittee)
 
 	allShardState := newBlock.Body.ShardState
