@@ -66,8 +66,7 @@ func (db *db) AddVoteBoard(
 	newAmount := oldAmount + amount
 	newAmountInByte := GetValueVoteBoardList(newAmount)
 	err = db.Put(key, newAmountInByte)
-
-	return nil
+	return err
 }
 
 func GetNumberOfGovernor(boardType string) int {
@@ -234,7 +233,7 @@ func ParseKeyToSlice(key []byte, length []int) ([][]byte, error) {
 }
 
 func GetKeyVoteBoardSum(boardType string, boardIndex uint32, candidatePaymentAddress *privacy.PaymentAddress) []byte {
-	key := make([]byte, 0)
+	var key []byte
 	if candidatePaymentAddress == nil {
 		key = GetKeyFromVariadic(voteBoardSumPrefix, []byte(boardType), common.Uint32ToBytes(boardIndex))
 	} else {
@@ -326,6 +325,9 @@ func (db *db) GetVoteTokenAmount(boardType string, boardIndex uint32, paymentAdd
 func (db *db) SetVoteTokenAmount(boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress, newAmount uint32) error {
 	key := GetKeyVoteTokenAmount(boardType, boardIndex, paymentAddress)
 	ok, err := db.HasValue(key)
+	if err != nil {
+		return err
+	}
 	if !ok {
 		zeroInBytes := common.Uint32ToBytes(uint32(0))
 		db.Put(key, zeroInBytes)
@@ -354,6 +356,9 @@ func ParseKeyThreePhraseCryptoOwner(key []byte) (boardType string, constitutionI
 		length[len(length)-1] = 0
 	}
 	elements, err := ParseKeyToSlice(key, length)
+	if err != nil {
+		return "", 0, nil, err
+	}
 	index := 1
 
 	boardType = string(elements[iPlusPlus(&index)])
@@ -364,8 +369,7 @@ func ParseKeyThreePhraseCryptoOwner(key []byte) (boardType string, constitutionI
 	if len(txIdData) != 0 {
 		newHash, err1 := common.NewHash(txIdData)
 		if err1 != nil {
-			err = err1
-			return
+			return "", 0, nil, err1
 		}
 		txId = newHash
 	}
