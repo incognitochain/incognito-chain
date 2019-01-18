@@ -32,7 +32,7 @@ func (rpcServer RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Paymen
 		return nil, 0, NewRPCError(ErrUnexpected, err)
 	}
 	if len(outCoins) == 0 && totalAmmount > 0 {
-		return nil, 0, NewRPCError(ErrUnexpected, nil)
+		return nil, 0, NewRPCError(ErrUnexpected, errors.New("not enough output coin"))
 	}
 	// Use Knapsack to get candiate output coin
 	candidateOutputCoins, outCoins, candidateOutputCoinAmount, err := rpcServer.chooseBestOutCoinsToSpent(outCoins, totalAmmount)
@@ -108,9 +108,9 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	/********* END Fetch all params to *******/
 
 	/******* START choose output coins constant, which is used to create tx *****/
-	inputCoins, realFee, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, chainIdSender)
-	if err.(*RPCError) != nil {
-		return nil, err.(*RPCError)
+	inputCoins, realFee, err1 := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, chainIdSender)
+	if err1 != nil {
+		return nil, err1
 	}
 	/******* END GET output coins constant, which is used to create tx *****/
 
