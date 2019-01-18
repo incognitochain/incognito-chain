@@ -277,7 +277,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 		}
 	default:
 		{
-
+			return nil, NewRPCError(ErrTxTypeInvalid, errors.New("Tx type is invalid"))
 		}
 	}
 	return result, nil

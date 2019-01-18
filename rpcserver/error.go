@@ -23,6 +23,7 @@ const (
 	ErrGetOutputCoin
 	ErrCreateTxData
 	ErrSendTxData
+	ErrTxTypeInvalid
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -48,6 +49,7 @@ var ErrCodeMessage = map[int]struct {
 	ErrCanNotSign:                    {-1011, "Can not sign with key"},
 	ErrInvalidSenderPrivateKey:       {-1012, "Invalid sender's key"},
 	ErrGetOutputCoin:                 {-1013, "Can not get output coin"},
+	ErrTxTypeInvalid:                 {-1014, "Invalid tx type"},
 
 	// processing -2xxx
 	ErrCreateTxData: {-2001, "Can not create tx"},
