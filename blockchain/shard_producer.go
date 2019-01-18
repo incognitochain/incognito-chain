@@ -130,12 +130,12 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 func (self *BlkTmplGenerator) getCrossOutputCoin(shardID byte) []CrossOutputCoin {
 	res := []CrossOutputCoin{}
 	// get cross shard block
+	//TODO: define process to get and verify crossShardBlock
 	bestShardHeight := self.chain.BestState.Beacon.BestShardHeight
 	crossBlock := self.crossShardPool.GetBlock(bestShardHeight)
 	// build CrossOutputCoin
 	shardCrossBlock := crossBlock[shardID]
 	for _, blk := range shardCrossBlock {
-		//TODO: validate blk
 		outputCoin := CrossOutputCoin{
 			OutputCoin: blk.CrossOutputCoin,
 			ShardID:    shardID,
