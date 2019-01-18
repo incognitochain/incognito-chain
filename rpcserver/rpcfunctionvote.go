@@ -142,7 +142,7 @@ func (rpcServer RpcServer) buildRawSealLv3VoteProposalTransaction(
 
 	tx, err1 := rpcServer.buildRawTransaction(params, meta)
 	if err1 != nil {
-		return tx, NewRPCError(ErrUnexpected, err1)
+		return tx, err1
 	}
 	return tx, nil
 }
@@ -182,7 +182,7 @@ func (rpcServer RpcServer) handleCreateRawSealLv3VoteProposalTransaction(params 
 	tx, err := rpcServer.buildRawSealLv3VoteProposalTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, err
 	}
 
 	byteArrays, err1 := json.Marshal(tx)
