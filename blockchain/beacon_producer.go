@@ -158,16 +158,32 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 	shardsBlocks := self.shardToBeaconPool.GetFinalBlock()
 	//Shard block is a map ShardId -> array of shard block
 	for shardID, shardBlocks := range shardsBlocks {
-		//TODO: Validate block
-		// for index, shardBlock := range shardBlocks {
-		// 	changed := 1
-		// 	currentCommittee := beaconBestState.ShardCommittee[shardID]
-		// 	currentPendingValidator := beaconBestState.ShardPendingValidator[shardID]
-		// 	if !ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, shardBlock.Header.Hash()) {
-		// 		currentCommittee
-		// 	}
-		// }
-		for _, shardBlock := range shardBlocks {
+		// Only accept block in one epoch
+		totalBlock := 0
+		for index, shardBlock := range shardBlocks {
+			currentCommittee := beaconBestState.ShardCommittee[shardID]
+			currentPendingValidator := beaconBestState.ShardPendingValidator[shardID]
+			hash := shardBlock.Header.Hash()
+			err := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
+			if index == 0 && err != nil {
+				currentCommittee, currentPendingValidator, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, COMMITEES, OFFSET)
+				if err != nil {
+					totalBlock = index
+					break
+				}
+				err = ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
+				if err != nil {
+					totalBlock = index
+					break
+				}
+			}
+			if index != 0 && err != nil {
+				totalBlock = index
+				break
+			}
+
+		}
+		for _, shardBlock := range shardBlocks[:totalBlock] {
 			// for each shard block, create a corresponding shard state
 			instructions := shardBlock.Instructions
 			shardState := ShardState{}
