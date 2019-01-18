@@ -151,13 +151,13 @@ func (bc *BlockChain) processCMBWithdrawRequest(tx metadata.Transaction) error {
 func (bc *BlockChain) processCMBWithdrawResponse(tx metadata.Transaction) error {
 	// Update state of withdraw request
 	meta := tx.GetMetadata().(*metadata.CMBWithdrawResponse)
-	_, _, _, txRequest, err := bc.GetTransactionByHash(&meta.RequestTxID)
-	if err != nil {
-		return err
+	_, _, _, txRequest, err0 := bc.GetTransactionByHash(&meta.RequestTxID)
+	if err0 != nil {
+		return err0
 	}
 	metaReq := txRequest.GetMetadata().(*metadata.CMBWithdrawRequest)
 	state := metadata.WithdrawFulfilled
-	err = bc.config.DataBase.UpdateWithdrawRequestState(metaReq.ContractID[:], state)
+	err := bc.config.DataBase.UpdateWithdrawRequestState(metaReq.ContractID[:], state)
 	if err != nil {
 		return err
 	}
@@ -172,9 +172,9 @@ func (bc *BlockChain) findLateWithdrawResponse(blockHeight uint64) error {
 	for _, txHash := range txHashes {
 		// Get request tx
 		hash, _ := (&common.Hash{}).NewHash(txHash)
-		_, _, _, txReq, err := bc.GetTransactionByHash(hash)
-		if err != nil {
-			return err
+		_, _, _, txReq, err0 := bc.GetTransactionByHash(hash)
+		if err0 != nil {
+			return err0
 		}
 		reqMeta := txReq.GetMetadata().(*metadata.CMBWithdrawRequest)
 

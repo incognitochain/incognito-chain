@@ -22,6 +22,7 @@ const (
 
 	//voting err
 	NotEnoughCandidate
+	ErrUnexpected
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -44,6 +45,7 @@ var ErrCodeMessage = map[int]struct {
 
 	// -4xxx voting
 	NotEnoughCandidate: {-4000, "Not enough candidate for DCB Board"},
+	ErrUnexpected:      {-4001, "unknown"},
 }
 
 type DatabaseError struct {

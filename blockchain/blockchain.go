@@ -1223,12 +1223,14 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common.Hash, int, metadata.Transaction, error) {
 	blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
 	if err != nil {
-		return byte(255), nil, -1, nil, err
+		abc := NewBlockChainError(UnExpectedError, err)
+		Logger.log.Error(abc)
+		return byte(255), nil, -1, nil, abc
 	}
-	block, err := self.GetBlockByBlockHash(blockHash)
-	if err != nil {
-		Logger.log.Errorf("ERROR", err, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
-		return byte(255), nil, -1, nil, NewBlockChainError(UnExpectedError, err)
+	block, err1 := self.GetBlockByBlockHash(blockHash)
+	if err1 != nil {
+		Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
+		return byte(255), nil, -1, nil, NewBlockChainError(UnExpectedError, err1)
 	}
 	//Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
 	return block.Header.ChainID, blockHash, index, block.Transactions[index], nil
