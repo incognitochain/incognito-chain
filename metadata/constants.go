@@ -13,9 +13,15 @@ const (
 	LoanUnlockMeta
 	LoanPaymentMeta
 	DividendMeta
-	CrowdSaleRequestMeta
-	CrowdSaleResponseMeta
-	CrowdSalePaymentMeta
+
+	// OMO
+	CrowdsaleRequestMeta
+	CrowdsalePaymentMeta
+
+	// Reserve
+	ReserveRequestMeta
+	ReserveResponseMeta
+	ReservePaymentMeta
 
 	// CMB
 	CMBInitRequestMeta

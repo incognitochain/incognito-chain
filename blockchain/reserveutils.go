@@ -54,8 +54,8 @@ func buildPaymentForCoin(
 	db database.DatabaseInterface,
 ) (*transaction.TxCustomToken, error) {
 	// Mint and send Constant
-	meta := txRequest.Metadata.(*metadata.CrowdsaleRequest)
-	metaPay := &metadata.CrowdsalePayment{
+	meta := txRequest.Metadata.(*metadata.ReserveRequest)
+	metaPay := &metadata.ReservePayment{
 		RequestedTxID: &common.Hash{},
 		SaleID:        make([]byte, len(saleID)),
 	}
@@ -179,7 +179,7 @@ func buildPaymentForToken(
 		}
 	}
 
-	metaPay := &metadata.CrowdsalePayment{
+	metaPay := &metadata.ReservePayment{
 		RequestedTxID: &common.Hash{},
 		SaleID:        make([]byte, len(saleID)),
 	}
@@ -195,7 +195,7 @@ func buildPaymentForToken(
 	return txToken, nil
 }
 
-func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
+func (blockgen *BlkTmplGenerator) buildPaymentForReserve(
 	tx *transaction.TxCustomToken,
 	saleDataMap map[string]*params.SaleData,
 	unspentTokenMap map[string]([]transaction.TxTokenVout),
@@ -227,7 +227,7 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 		}
 		if tokenAmount > saleData.BuyingAmount || valuesInConstant > saleData.SellingAmount {
 			// User sent too many token, reject request
-			return nil, errors.New("Crowdsale reached limit")
+			return nil, errors.New("Reserve reached limit")
 		}
 		// Update amount of buying/selling asset of the crowdsale
 		saleData.BuyingAmount -= tokenAmount
@@ -258,12 +258,12 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 		sentAmount := uint64(0)
 		tokensToSend := uint64(0)
 		if common.IsOffChainAsset(&saleData.BuyingAsset) {
-			meta, ok := tx.GetMetadata().(*metadata.CrowdsaleResponse)
+			meta, ok := tx.GetMetadata().(*metadata.ReserveResponse)
 			if !ok {
 				return nil, errors.New("Error parsing crowdsale response")
 			}
 			_, _, _, txReq, _ := blockgen.chain.GetTransactionByHash(meta.RequestedTxID)
-			metaReq, ok := txReq.GetMetadata().(*metadata.CrowdsaleRequest)
+			metaReq, ok := txReq.GetMetadata().(*metadata.ReserveRequest)
 			if !ok {
 				return nil, errors.New("Error getting crowdsale request")
 			}
@@ -279,7 +279,7 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 
 		mint := bytes.Equal(sellingAsset[:], common.DCBTokenID[:]) // Mint DCB token, transfer bonds
 		if sentAmount > saleData.BuyingAmount || tokensToSend > saleData.SellingAmount {
-			return nil, errors.New("Crowdsale reached limit")
+			return nil, errors.New("Reserve reached limit")
 		}
 		saleData.BuyingAmount -= sentAmount
 		saleData.SellingAmount -= tokensToSend
@@ -295,7 +295,7 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	return txResponse, err
 }
 
-func (blockgen *BlkTmplGenerator) processCrowdsaleResponse(
+func (blockgen *BlkTmplGenerator) processReserveResponse(
 	tx metadata.Transaction,
 	txsPayment []*transaction.TxCustomToken,
 	txsToRemove []metadata.Transaction,
@@ -312,7 +312,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleResponse(
 		txsToRemove = append(txsToRemove, tx)
 		return
 	}
-	metaResponse, ok := meta.(*metadata.CrowdsaleResponse)
+	metaResponse, ok := meta.(*metadata.ReserveResponse)
 	if !ok {
 		txsToRemove = append(txsToRemove, tx)
 		return
@@ -321,13 +321,13 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleResponse(
 	if err != nil {
 		return
 	}
-	metaRequest, ok := txReq.GetMetadata().(*metadata.CrowdsaleRequest)
+	metaRequest, ok := txReq.GetMetadata().(*metadata.ReserveRequest)
 	if !ok {
 		return
 	}
 
 	if _, ok := saleDataMap[string(metaRequest.SaleID)]; !ok {
-		saleData, err := blockgen.chain.GetCrowdsaleData(metaRequest.SaleID)
+		saleData, err := blockgen.chain.GetReserveData(metaRequest.SaleID)
 		if err != nil {
 			txsToRemove = append(txsToRemove, tx)
 			return
@@ -337,12 +337,12 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleResponse(
 	}
 
 	// Create payment if number of response is exactly enough
-	txHashes, err := blockgen.chain.GetCrowdsaleTxs(metaResponse.RequestedTxID[:])
+	txHashes, err := blockgen.chain.GetReserveTxs(metaResponse.RequestedTxID[:])
 	count := 0
 	for _, txHash := range txHashes {
 		hash, _ := (&common.Hash{}).NewHash(txHash)
 		_, _, _, txOld, _ := blockgen.chain.GetTransactionByHash(hash)
-		if txOld.GetMetadataType() == metadata.CrowdsaleResponseMeta {
+		if txOld.GetMetadataType() == metadata.ReserveResponseMeta {
 			count += 1
 		}
 	}
@@ -352,7 +352,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleResponse(
 	respFound := count + respCounter[string(metaResponse.RequestedTxID[:])] + 1
 	if respFound == int(responseRequired) {
 		txRequest, _ := tx.(*transaction.TxCustomToken)
-		txPayment, err := blockgen.buildPaymentForCrowdsale(
+		txPayment, err := blockgen.buildPaymentForReserve(
 			txRequest,
 			saleDataMap,
 			unspentTokenMap,
@@ -370,7 +370,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleResponse(
 	respCounter[string(metaResponse.RequestedTxID[:])] += 1
 }
 
-func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
+func (blockgen *BlkTmplGenerator) processReserveRequest(
 	tx metadata.Transaction,
 	txsPayment []*transaction.TxCustomToken,
 	txsToRemove []metadata.Transaction,
@@ -385,13 +385,13 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 		txsToRemove = append(txsToRemove, tx)
 		return
 	}
-	metaRequest, ok := meta.(*metadata.CrowdsaleRequest)
+	metaRequest, ok := meta.(*metadata.ReserveRequest)
 	if !ok {
 		txsToRemove = append(txsToRemove, tx)
 		return
 	}
 	if _, ok := saleDataMap[string(metaRequest.SaleID)]; !ok {
-		saleData, err := blockgen.chain.GetCrowdsaleData(metaRequest.SaleID)
+		saleData, err := blockgen.chain.GetReserveData(metaRequest.SaleID)
 		if err != nil {
 			Logger.log.Error(err)
 			txsToRemove = append(txsToRemove, tx)
@@ -417,7 +417,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 	}
 
 	txRequest, _ := tx.(*transaction.TxCustomToken)
-	txPayment, err := blockgen.buildPaymentForCrowdsale(
+	txPayment, err := blockgen.buildPaymentForReserve(
 		txRequest,
 		saleDataMap,
 		unspentTokenMap,
@@ -433,7 +433,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 	}
 }
 
-func (blockgen *BlkTmplGenerator) processCrowdsale(
+func (blockgen *BlkTmplGenerator) processReserve(
 	sourceTxns []*metadata.TxDesc,
 	chainID byte,
 	producerPrivateKey *privacy.SpendingKey,
@@ -447,9 +447,9 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 	respCounter := map[string]int{}
 	for _, txDesc := range sourceTxns {
 		switch txDesc.Tx.GetMetadataType() {
-		case metadata.CrowdsaleRequestMeta:
+		case metadata.ReserveRequestMeta:
 			{
-				blockgen.processCrowdsaleRequest(
+				blockgen.processReserveRequest(
 					txDesc.Tx,
 					txsPayment,
 					txsToRemove,
@@ -459,9 +459,9 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 					producerPrivateKey,
 				)
 			}
-		case metadata.CrowdsaleResponseMeta:
+		case metadata.ReserveResponseMeta:
 			{
-				blockgen.processCrowdsaleResponse(
+				blockgen.processReserveResponse(
 					txDesc.Tx,
 					txsPayment,
 					txsToRemove,
@@ -473,6 +473,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 				)
 			}
 		}
+
 	}
 	return txsPayment, txsToRemove
 }
