@@ -71,10 +71,10 @@ func (IPA *InnerProdArg) setBytes(IPA_byte []byte) {
 	LArr := IPA_byte[0:LArrLength]
 	offset = LArrLength
 
-	RArr := IPA_byte[offset:offset+RArrLength]
+	RArr := IPA_byte[offset : offset+RArrLength]
 	offset += RArrLength
 
-	CArr := IPA_byte[offset:offset+CArrLength]
+	CArr := IPA_byte[offset : offset+CArrLength]
 	offset += CArrLength
 	offsetL := 0
 
@@ -89,11 +89,11 @@ func (IPA *InnerProdArg) setBytes(IPA_byte []byte) {
 	}
 	offsetC := 0
 	for i := 0; i < l+1; i++ {
-		IPA.Challenges[i].SetBytes(CArr[offsetC:offsetC+privacy.BigIntSize])
+		IPA.Challenges[i].SetBytes(CArr[offsetC : offsetC+privacy.BigIntSize])
 		offsetC += privacy.BigIntSize
 	}
-	IPA.A.SetBytes(IPA_byte[offset:offset+privacy.BigIntSize])
-	IPA.B.SetBytes(IPA_byte[offset+privacy.BigIntSize:offset+2*privacy.BigIntSize])
+	IPA.A.SetBytes(IPA_byte[offset : offset+privacy.BigIntSize])
+	IPA.B.SetBytes(IPA_byte[offset+privacy.BigIntSize : offset+2*privacy.BigIntSize])
 }
 
 func generateNewParams(G, H []*privacy.EllipticPoint, x *big.Int, L, R, P *privacy.EllipticPoint) ([]*privacy.EllipticPoint, []*privacy.EllipticPoint, *privacy.EllipticPoint) {
@@ -178,9 +178,9 @@ func innerProductProve(a []*big.Int, b []*big.Int, c *big.Int, P, U *privacy.Ell
 	runningProof.Challenges[loglen] = new(big.Int).SetBytes(x[:])
 
 	//Pprime := P.Add(U.ScalarMult(new(big.Int).Mul(new(big.Int).SetBytes(x[:]), c)))
-	tmp:= new(big.Int).SetBytes(x[:])
-	tmp.Mul(tmp,c)
-	Pprime:=P.Add(U.ScalarMult(tmp))
+	tmp := new(big.Int).SetBytes(x[:])
+	tmp.Mul(tmp, c)
+	Pprime := P.Add(U.ScalarMult(tmp))
 
 	ux := U.ScalarMult(new(big.Int).SetBytes(x[:]))
 	//fmt.Printf("Prover Pprime value to run sub off of: %s\n", Pprime)
@@ -239,21 +239,18 @@ func innerProductVerifyFast(c *big.Int, P *privacy.EllipticPoint, H []*privacy.E
 				chal = new(big.Int).ModInverse(chal, privacy.Curve.Params().N)
 			}
 			si = new(big.Int).Mul(si, chal)
-			si = si.Mod(si,privacy.Curve.Params().N)
+			si = si.Mod(si, privacy.Curve.Params().N)
 		}
 		sScalars[i] = si
 		invsScalars[i] = new(big.Int).ModInverse(si, privacy.Curve.Params().N)
 	}
 
 	ccalc := new(big.Int).Mul(ipp.A, ipp.B)
-	ccalc = ccalc.Mod(ccalc,privacy.Curve.Params().N)
+	ccalc = ccalc.Mod(ccalc, privacy.Curve.Params().N)
 
 	lhs := twoVectorPCommitWithGens(rangeProofParams.BPG, H, scalarVectorMul(sScalars, ipp.A), scalarVectorMul(invsScalars, ipp.B)).Add(ux.ScalarMult(ccalc))
 
-	if !rhs.IsEqual(lhs) {
-		return false
-	}
-	return true
+	return rhs.IsEqual(lhs)
 }
 
 /*-----------------------------Vector Functions-----------------------------*/
@@ -280,7 +277,7 @@ func vectorAdd(v []*big.Int, w []*big.Int) []*big.Int {
 	result := make([]*big.Int, len(v))
 	for i := range v {
 		result[i] = new(big.Int).Add(v[i], w[i])
-		result[i] = result[i].Mod(result[i],privacy.Curve.Params().N)
+		result[i] = result[i].Mod(result[i], privacy.Curve.Params().N)
 	}
 	return result
 }
@@ -294,7 +291,7 @@ func vectorHadamard(v, w []*big.Int) []*big.Int {
 
 	for i := range v {
 		result[i] = new(big.Int).Mul(v[i], w[i])
-		result[i].Mod(result[i],privacy.Curve.Params().N)
+		result[i].Mod(result[i], privacy.Curve.Params().N)
 	}
 	return result
 }
@@ -312,7 +309,7 @@ func scalarVectorMul(v []*big.Int, s *big.Int) []*big.Int {
 	result := make([]*big.Int, len(v))
 	for i := range v {
 		result[i] = new(big.Int).Mul(v[i], s)
-		result[i].Mod(result[i],privacy.Curve.Params().N)
+		result[i].Mod(result[i], privacy.Curve.Params().N)
 	}
 	return result
 }
@@ -459,7 +456,7 @@ func calculateRMRP(aR, sR, y, zTimesTwo []*big.Int, z, x *big.Int) []*big.Int {
 		return nil
 	}
 
-	return vectorAdd(vectorHadamard(y, vectorAdd( vectorAddScalar(aR, z), scalarVectorMul(sR, x))), zTimesTwo)
+	return vectorAdd(vectorHadamard(y, vectorAdd(vectorAddScalar(aR, z), scalarVectorMul(sR, x))), zTimesTwo)
 }
 
 /*
@@ -468,18 +465,17 @@ DeltaMRP is a helper function that is used in the multi range proof
 \delta(y, z) = (z-z^2)<1^n, y^n> - \sum_j z^3+j<1^n, 2^n>
 */
 func deltaMRP(y []*big.Int, z *big.Int, m int, rangeProofParams *CryptoParams) *big.Int {
-	result := big.NewInt(0)
 	// (z-z^2)<1^n, y^n>
 	z2 := new(big.Int).Mul(z, z)
 	z2 = z2.Mod(z2, privacy.Curve.Params().N)
 	t1 := new(big.Int).Sub(z, z2)
-	t1 = t1.Mod(t1,privacy.Curve.Params().N)
+	t1 = t1.Mod(t1, privacy.Curve.Params().N)
 	t2 := new(big.Int).Mul(t1, vectorSum(y))
-	t2 = t2.Mod(t2,privacy.Curve.Params().N)
+	t2 = t2.Mod(t2, privacy.Curve.Params().N)
 	// \sum_j z^3+j<1^n, 2^n>
 	// <1^n, 2^n> = 2^n - 1
 	po2sum := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(rangeProofParams.V/m)), privacy.Curve.Params().N)
-	po2sum.Sub(po2sum,big.NewInt(1))
+	po2sum.Sub(po2sum, big.NewInt(1))
 	t3 := big.NewInt(0)
 	for j := 0; j < m; j++ {
 		//zp := new(big.Int).Exp(z, big.NewInt(3+int64(j)), privacy.Curve.Params().N)
@@ -490,8 +486,9 @@ func deltaMRP(y []*big.Int, z *big.Int, m int, rangeProofParams *CryptoParams) *
 		t3.Add(t3, tmp)
 	}
 	t3.Mod(t3, privacy.Curve.Params().N)
-	result = new(big.Int).Sub(t2, t3)
-	result.Mod(result,privacy.Curve.Params().N)
+	//result := big.NewInt(0)
+	result := new(big.Int).Sub(t2, t3)
+	result.Mod(result, privacy.Curve.Params().N)
 	return result
 }
 

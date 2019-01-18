@@ -4,22 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"sync"
 )
 
 /*
 This is a utility to save data key-value into file
 */
 type KeyCache struct {
-	mtx       sync.Mutex
-	cacheFile string
-	filePath  string
-	data      map[string]interface{}
+	filePath string
+	data     map[string]interface{}
 }
 
-func (self *KeyCache) Load(filePath string) error {
-	self.data = map[string]interface{}{}
-	self.filePath = filePath
+func (keyCache *KeyCache) Load(filePath string) error {
+	keyCache.data = map[string]interface{}{}
+	keyCache.filePath = filePath
 
 	_, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
@@ -32,7 +29,7 @@ func (self *KeyCache) Load(filePath string) error {
 	defer r.Close()
 
 	dec := json.NewDecoder(r)
-	err = dec.Decode(&self.data)
+	err = dec.Decode(&keyCache.data)
 	if err != nil {
 		return fmt.Errorf("error reading %s: %v", filePath, err)
 	}
@@ -40,30 +37,30 @@ func (self *KeyCache) Load(filePath string) error {
 	return nil
 }
 
-func (self *KeyCache) Save() error {
-	w, err := os.Create(self.filePath)
+func (keyCache *KeyCache) Save() error {
+	w, err := os.Create(keyCache.filePath)
 	if err != nil {
-		Logger.log.Infof("Error opening file %s: %v", self.filePath, err)
+		Logger.log.Infof("Error opening file %s: %v", keyCache.filePath, err)
 		return err
 	}
 
 	enc := json.NewEncoder(w)
 	defer w.Close()
-	if err := enc.Encode(&self.data); err != nil {
-		Logger.log.Infof("Failed to encode file %s: %v", self.filePath, err)
+	if err := enc.Encode(&keyCache.data); err != nil {
+		Logger.log.Infof("Failed to encode file %s: %v", keyCache.filePath, err)
 		return err
 	}
 
 	return nil
 }
 
-func (self *KeyCache) Set(key string, value interface{}) error {
-	self.data[key] = value
+func (keyCache *KeyCache) Set(key string, value interface{}) error {
+	keyCache.data[key] = value
 	return nil
 }
 
-func (self *KeyCache) Get(key string) interface{} {
-	value, ok := self.data[key]
+func (keyCache *KeyCache) Get(key string) interface{} {
+	value, ok := keyCache.data[key]
 	if ok {
 		return value
 	} else {

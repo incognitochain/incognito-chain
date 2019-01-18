@@ -66,6 +66,9 @@ func (db *db) UpdateCMBState(mainAccount []byte, state uint8) error {
 		return err
 	}
 	reserve, members, capital, txHash, _, fine, err := parseCMBInitValue(cmbInitValue)
+	if err != nil {
+		return err
+	}
 	return db.updateCMB(cmbInitKey, reserve, members, capital, txHash, state, fine)
 }
 
@@ -76,6 +79,9 @@ func (db *db) UpdateCMBFine(mainAccount []byte, fine uint64) error {
 		return err
 	}
 	reserve, members, capital, txHash, state, _, err := parseCMBInitValue(cmbInitValue)
+	if err != nil {
+		return err
+	}
 	return db.updateCMB(cmbInitKey, reserve, members, capital, txHash, state, fine)
 }
 

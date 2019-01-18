@@ -31,7 +31,6 @@ const (
 	CreateAndSendPrivacyCustomTokenTransaction = "createandsendprivacycustomtokentransaction"
 	GetMempoolInfo                             = "getmempoolinfo"
 	GetCommitteeCandidateList                  = "getcommitteecandidate"
-	RetrieveCommitteeCandidate                 = "retrievecommitteecandidate"
 	GetBlockProducerList                       = "getblockproducer"
 	ListUnspentCustomToken                     = "listunspentcustomtoken"
 	GetTransactionByHash                       = "gettransactionbyhash"
@@ -124,6 +123,7 @@ const (
 	CreateAndSendTxWithBuySellRequest      = "createandsendtxwithbuysellrequest"
 	CreateAndSendTxWithOracleFeed          = "createandsendtxwithoraclefeed"
 	CreateAndSendTxWithUpdatingOracleBoard = "createandsendtxwithupdatingoracleboard"
+	CreateAndSendTxWithSenderAddress       = "createandsendtxwithsenderaddress"
 
 	// cmb
 	CreateAndSendTxWithCMBInitRequest     = "createandsendtxwithcmbinitrequest"

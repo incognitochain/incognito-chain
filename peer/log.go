@@ -6,8 +6,8 @@ type PeerLoger struct {
 	log common.Logger
 }
 
-func (self *PeerLoger) Init(inst common.Logger) {
-	self.log = inst
+func (peerLogger *PeerLoger) Init(inst common.Logger) {
+	peerLogger.log = inst
 }
 
 // Global instant to use

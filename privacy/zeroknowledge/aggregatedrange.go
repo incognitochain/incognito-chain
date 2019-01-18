@@ -94,7 +94,7 @@ func (pro *AggregatedRangeProof) IsNil() bool {
 func (pro AggregatedRangeProof) Bytes() []byte {
 	var res []byte
 
-	if pro.IsNil() == true {
+	if pro.IsNil() {
 		return []byte{}
 	}
 
@@ -137,7 +137,7 @@ func (pro *AggregatedRangeProof) SetBytes(proofbytes []byte) error {
 	pro.Comms = make([]*privacy.EllipticPoint, pro.Counter)
 	for i := 0; i < int(pro.Counter); i++ {
 		pro.Comms[i] = new(privacy.EllipticPoint)
-		err := pro.Comms[i].Decompress(proofbytes[offset: offset+privacy.CompressedPointSize])
+		err := pro.Comms[i].Decompress(proofbytes[offset : offset+privacy.CompressedPointSize])
 		if err != nil {
 			return err
 		}
@@ -172,22 +172,22 @@ func (pro *AggregatedRangeProof) SetBytes(proofbytes []byte) error {
 	}
 	offset += privacy.CompressedPointSize
 
-	pro.Tau = new(big.Int).SetBytes(proofbytes[offset: offset+privacy.BigIntSize])
+	pro.Tau = new(big.Int).SetBytes(proofbytes[offset : offset+privacy.BigIntSize])
 	offset += privacy.BigIntSize
 
-	pro.Th = new(big.Int).SetBytes(proofbytes[offset: offset+privacy.BigIntSize])
+	pro.Th = new(big.Int).SetBytes(proofbytes[offset : offset+privacy.BigIntSize])
 	offset += privacy.BigIntSize
 
-	pro.Mu = new(big.Int).SetBytes(proofbytes[offset: offset+privacy.BigIntSize])
+	pro.Mu = new(big.Int).SetBytes(proofbytes[offset : offset+privacy.BigIntSize])
 	offset += privacy.BigIntSize
 
-	pro.Cx = new(big.Int).SetBytes(proofbytes[offset: offset+privacy.BigIntSize])
+	pro.Cx = new(big.Int).SetBytes(proofbytes[offset : offset+privacy.BigIntSize])
 	offset += privacy.BigIntSize
 
-	pro.Cy = new(big.Int).SetBytes(proofbytes[offset: offset+privacy.BigIntSize])
+	pro.Cy = new(big.Int).SetBytes(proofbytes[offset : offset+privacy.BigIntSize])
 	offset += privacy.BigIntSize
 
-	pro.Cz = new(big.Int).SetBytes(proofbytes[offset: offset+privacy.BigIntSize])
+	pro.Cz = new(big.Int).SetBytes(proofbytes[offset : offset+privacy.BigIntSize])
 	offset += privacy.BigIntSize
 
 	end := len(proofbytes)
@@ -334,10 +334,10 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	}
 
 	t0 := new(big.Int).Add(vz2, deltaMRP(PowerOfCY, cz, m, rangeProofParams))
-	t0.Mod(t0,privacy.Curve.Params().N)
+	t0.Mod(t0, privacy.Curve.Params().N)
 
 	t1 := new(big.Int).Add(innerProduct(l1, r0), innerProduct(l0, r1))
-	t1.Mod(t1,privacy.Curve.Params().N)
+	t1.Mod(t1, privacy.Curve.Params().N)
 	t2 := innerProduct(l1, r1)
 	if (t2 == nil) {
 		return nil, errors.New("Creating multi-range proof failed")
@@ -375,27 +375,26 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		zp := new(big.Int).Exp(cz, big.NewInt(2+int64(j)), privacy.Curve.Params().N)
 		tmp1 := new(big.Int).Mul(gammas[j], zp)
 		vecRandomnessTotal = new(big.Int).Add(vecRandomnessTotal, tmp1)
-		vecRandomnessTotal.Mod(vecRandomnessTotal,privacy.Curve.Params().N)
+		vecRandomnessTotal.Mod(vecRandomnessTotal, privacy.Curve.Params().N)
 	}
 	//taux1 := new(big.Int).Mod(new(big.Int).Mul(tau2, new(big.Int).Mul(cx, cx)), privacy.Curve.Params().N)
 	taux1 := new(big.Int).Mul(cx, cx)
-	taux1.Mul(taux1,tau2)
-	taux1.Mod(taux1,privacy.Curve.Params().N)
+	taux1.Mul(taux1, tau2)
+	taux1.Mod(taux1, privacy.Curve.Params().N)
 
 	taux2 := new(big.Int).Mul(tau1, cx)
-	taux2.Mod(taux2,privacy.Curve.Params().N)
+	taux2.Mod(taux2, privacy.Curve.Params().N)
 
 	//taux := new(big.Int).Mod(new(big.Int).Add(taux1, new(big.Int).Add(taux2, vecRandomnessTotal)), privacy.Curve.Params().N)
 	taux := new(big.Int).Add(taux2, vecRandomnessTotal)
-	taux.Add(taux,taux1)
-	taux.Mod(taux,privacy.Curve.Params().N)
-
+	taux.Add(taux, taux1)
+	taux.Mod(taux, privacy.Curve.Params().N)
 
 	MRProof.Tau = taux
 	//mu := new(big.Int).Mod(new(big.Int).Add(alpha, new(big.Int).Mul(rho, cx)), privacy.Curve.Params().N)
-	mu:= new(big.Int).Mul(rho, cx)
-	mu.Add(mu,alpha)
-	mu.Mod(mu,privacy.Curve.Params().N)
+	mu := new(big.Int).Mul(rho, cx)
+	mu.Add(mu, alpha)
+	mu.Mod(mu, privacy.Curve.Params().N)
 	MRProof.Mu = mu
 	HPrime := make([]*privacy.EllipticPoint, len(rangeProofParams.BPH))
 	for i := range HPrime {
@@ -483,14 +482,11 @@ func (pro *AggregatedRangeProof) Verify() bool {
 			val1 := new(big.Int).Mul(cz, PowersOfY[j*bitsPerValue+i])
 			zp := new(big.Int).Exp(cz, big.NewInt(2+int64(j)), privacy.Curve.Params().N)
 			val2 := new(big.Int).Mul(zp, PowerOfTwos[i])
-			val2.Mod(val2,privacy.Curve.Params().N)
+			val2.Mod(val2, privacy.Curve.Params().N)
 			tmp2 = tmp2.Add(HPrime[j*bitsPerValue+i].ScalarMult(new(big.Int).Add(val1, val2)))
 		}
 	}
 
 	P := pro.A.Add(pro.S.ScalarMult(cx)).Add(tmp1).Add(tmp2).Sub(rangeProofParams.H.ScalarMult(pro.Mu))
-	if !innerProductVerifyFast(pro.Th, P, HPrime, pro.IPP, rangeProofParams) {
-		return false
-	}
-	return true
+	return innerProductVerifyFast(pro.Th, P, HPrime, pro.IPP, rangeProofParams)
 }
