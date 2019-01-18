@@ -2,6 +2,8 @@ package rpcserver
 
 import (
 	"encoding/json"
+	"errors"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
@@ -530,6 +532,64 @@ func (rpcServer RpcServer) handleCreateAndSendTxWithUpdatingOracleBoard(params i
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	sendResult, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
+	}
+	return result, nil
+}
+
+func (self RpcServer) handleCreateRawTxWithSenderAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+
+	hasPrivacy := int(arrayParams[3].(float64)) > 0
+	if hasPrivacy {
+		return nil, NewRPCError(ErrUnexpected, errors.New("Could not stick sender address to metadata when enabling privacy feature."))
+	}
+
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	senderAddr := senderKey.KeySet.PaymentAddress
+	metaType := metadata.WithSenderAddressMeta
+
+	meta := metadata.NewWithSenderAddress(senderAddr, metaType)
+	normalTx, err := self.buildRawTransaction(params, meta)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	byteArrays, err1 := json.Marshal(normalTx)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, NewRPCError(ErrUnexpected, err1)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            normalTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (self RpcServer) handleCreateAndSendTxWithSenderAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := self.handleCreateRawTxWithSenderAddress(params, closeChan)
+	if err != nil {
+		return nil, err
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
