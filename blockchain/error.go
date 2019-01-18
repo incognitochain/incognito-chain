@@ -32,6 +32,7 @@ const (
 	CandidateError
 	ShardIDError
 	ProducerError
+	ShardStateError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -58,6 +59,7 @@ var ErrCodeMessage = map[int]struct {
 	CandidateError:                {-17, "Candidate Error"},
 	ShardIDError:                  {-18, "ShardID Error"},
 	ProducerError:                 {-19, "Producer Error"},
+	ShardStateError:               {-21, "Shard State Error"},
 	NotSupportInLightMode:         {-20, "This features is not supported in light mode running"},
 }
 

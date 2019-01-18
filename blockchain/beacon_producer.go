@@ -186,7 +186,6 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 				totalBlock = index
 				break
 			}
-
 		}
 		for _, shardBlock := range shardBlocks[:totalBlock] {
 			// for each shard block, create a corresponding shard state
