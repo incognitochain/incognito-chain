@@ -3,8 +3,6 @@ package blockchain
 import (
 	"bytes"
 	"errors"
-	"fmt"
-
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -90,7 +88,7 @@ func transferTxToken(tokenAmount uint64, unspentTxTokenOuts []transaction.TxToke
 	}
 
 	if sumTokens < tokenAmount {
-		return nil, 0, fmt.Errorf("Not enough tokens to pay in this block")
+		return nil, 0, errors.New("Not enough tokens to pay in this block")
 	}
 
 	txTokenIns := []transaction.TxTokenVin{}
@@ -112,9 +110,9 @@ func transferTxToken(tokenAmount uint64, unspentTxTokenOuts []transaction.TxToke
 		},
 	}
 	if sumTokens > tokenAmount {
-		accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+		keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 		txTokenOuts = append(txTokenOuts, transaction.TxTokenVout{
-			PaymentAddress: accountDCB.KeySet.PaymentAddress,
+			PaymentAddress: keyWalletDCBAccount.KeySet.PaymentAddress,
 			Value:          sumTokens - tokenAmount,
 		})
 	}
@@ -167,7 +165,7 @@ func buildPaymentForToken(
 	unspentTxTokenOuts := unspentTokenMap[string(tokenID)]
 	usedID := -1
 	if len(txRequest.Tx.Proof.InputCoins) == 0 {
-		return nil, fmt.Errorf("Found no sender in request tx")
+		return nil, errors.New("Found no sender in request tx")
 	}
 	pubkey := txRequest.Tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
 
@@ -204,8 +202,8 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	saleID []byte,
 	producerPrivateKey *privacy.SpendingKey,
 ) (*transaction.TxCustomToken, error) {
-	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	dcbPk := accountDCB.KeySet.PaymentAddress.Pk
+	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
 	saleData := saleDataMap[string(saleID)]
 
 	// Get price for asset
@@ -228,7 +226,7 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 		}
 		if tokenAmount > saleData.BuyingAmount || valuesInConstant > saleData.SellingAmount {
 			// User sent too many token, reject request
-			return nil, fmt.Errorf("Crowdsale reached limit")
+			return nil, errors.New("Crowdsale reached limit")
 		}
 		// Update amount of buying/selling asset of the crowdsale
 		saleData.BuyingAmount -= tokenAmount
@@ -247,7 +245,7 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	} else if common.IsBondAsset(&sellingAsset) || common.IsDCBTokenAsset(&sellingAsset) {
 		// Get unspent token UTXO to send to user
 		if _, ok := unspentTokenMap[string(sellingAsset[:])]; !ok {
-			unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(accountDCB.KeySet, &sellingAsset)
+			unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(keyWalletDCBAccount.KeySet, &sellingAsset)
 			if err == nil {
 				unspentTokenMap[string(sellingAsset[:])] = unspentTxTokenOuts
 			} else {
@@ -261,12 +259,12 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 		if common.IsOffChainAsset(&saleData.BuyingAsset) {
 			meta, ok := tx.GetMetadata().(*metadata.CrowdsaleResponse)
 			if !ok {
-				return nil, fmt.Errorf("Error parsing crowdsale response")
+				return nil, errors.New("Error parsing crowdsale response")
 			}
 			_, _, _, txReq, _ := blockgen.chain.GetTransactionByHash(meta.RequestedTxID)
 			metaReq, ok := txReq.GetMetadata().(*metadata.CrowdsaleRequest)
 			if !ok {
-				return nil, fmt.Errorf("Error getting crowdsale request")
+				return nil, errors.New("Error getting crowdsale request")
 			}
 			if metaReq.Amount.IsUint64() {
 				sentAmount = metaReq.Amount.Uint64() // TODO(@0xbunyip): support buy and sell amount as big.Int
@@ -280,7 +278,7 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 
 		mint := bytes.Equal(sellingAsset[:], common.DCBTokenID[:]) // Mint DCB token, transfer bonds
 		if sentAmount > saleData.BuyingAmount || tokensToSend > saleData.SellingAmount {
-			return nil, fmt.Errorf("Crowdsale reached limit")
+			return nil, errors.New("Crowdsale reached limit")
 		}
 		saleData.BuyingAmount -= sentAmount
 		saleData.SellingAmount -= tokensToSend

@@ -31,7 +31,6 @@ const (
 	CreateAndSendPrivacyCustomTokenTransaction = "createandsendprivacycustomtokentransaction"
 	GetMempoolInfo                             = "getmempoolinfo"
 	GetCommitteeCandidateList                  = "getcommitteecandidate"
-	RetrieveCommitteeCandidate                 = "retrievecommitteecandidate"
 	GetBlockProducerList                       = "getblockproducer"
 	ListUnspentCustomToken                     = "listunspentcustomtoken"
 	GetTransactionByHash                       = "gettransactionbyhash"
@@ -60,13 +59,14 @@ const (
 	GetBalanceByPaymentAddress = "getbalancebypaymentaddress"
 	GetReceivedByAccount       = "getreceivedbyaccount"
 	SetTxFee                   = "settxfee"
-	EncryptData                = "encryptdata"
 
 	// multisig for board spending
 	CreateSignatureOnCustomTokenTx       = "createsignatureoncustomtokentx"
 	GetListDCBBoard                      = "getlistdcbboard"
 	GetListGOVBoard                      = "getlistgovboard"
 	GetListCBBoard                       = "getlistcbboard"
+	AppendListDCBBoard                   = "testappendlistdcbboard"
+	AppendListGOVBoard                   = "testappendlistgovboard"
 	GetGOVParams                         = "getgovparams"
 	GetDCBParams                         = "getdcbparams"
 	GetGOVConstitution                   = "getgovconstitution"
@@ -92,7 +92,7 @@ const (
 	CreateRawVoteGOVBoardTx              = "createrawvotegovboardtx"
 	CreateAndSendVoteGOVBoardTransaction = "createandsendvotegovboardtransaction"
 	GetAmountVoteToken                   = "getamountvotetoken"
-	SetAmountVoteToken                   = "setamountvotetoken"
+	SetAmountVoteToken                   = "testsetamountvotetoken"
 
 	//vote propopsal
 	GetEncryptionFlag                         = "getencryptionflag"
@@ -123,6 +123,7 @@ const (
 	CreateAndSendTxWithBuySellRequest      = "createandsendtxwithbuysellrequest"
 	CreateAndSendTxWithOracleFeed          = "createandsendtxwithoraclefeed"
 	CreateAndSendTxWithUpdatingOracleBoard = "createandsendtxwithupdatingoracleboard"
+	CreateAndSendTxWithSenderAddress       = "createandsendtxwithsenderaddress"
 
 	// cmb
 	CreateAndSendTxWithCMBInitRequest     = "createandsendtxwithcmbinitrequest"

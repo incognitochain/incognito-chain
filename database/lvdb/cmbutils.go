@@ -130,7 +130,7 @@ func getCMBWithdrawRequestValue(txHash []byte, state uint8) []byte {
 	values := make([]byte, len(txHash), len(txHash)+1)
 	copy(values, txHash)
 	values = append(values, common.Uint8ToBytes(state)...)
-	return txHash
+	return values
 }
 
 func parseWithdrawRequestValue(values []byte) ([]byte, uint8, error) {

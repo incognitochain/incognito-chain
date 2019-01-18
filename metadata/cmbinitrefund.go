@@ -35,26 +35,26 @@ func (cref *CMBInitRefund) ValidateTxWithBlockChain(txr Transaction, bcr Blockch
 	// Check if cmb init request existed
 	_, _, _, txHash, state, _, err := bcr.GetCMB(cref.MainAccount.Bytes())
 	if err != nil {
-		return common.FalseValue, err
+		return false, err
 	}
 
 	// Check if it's at least CMBInitRefundPeriod since request
 	_, blockHash, _, _, err := bcr.GetTransactionByHash(txHash)
 	if err != nil {
-		return common.FalseValue, err
+		return false, err
 	}
 	reqBlockHeight, _, _ := bcr.GetBlockHeightByBlockHash(blockHash)
 	curBlockHeight, err := bcr.GetTxChainHeight(txr)
 	if err != nil || curBlockHeight < CMBInitRefundPeriod+reqBlockHeight {
-		return common.FalseValue, errors.Errorf("still waiting for repsponses, cannot refund cmb init request now")
+		return false, errors.Errorf("still waiting for repsponses, cannot refund cmb init request now")
 	}
 	return state == CMBRequested, nil
 }
 
 func (cref *CMBInitRefund) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	return common.TrueValue, common.FalseValue, nil // DCB takes care of fee
+	return true, false, nil // DCB takes care of fee
 }
 
 func (cref *CMBInitRefund) ValidateMetadataByItself() bool {
-	return common.TrueValue
+	return true
 }

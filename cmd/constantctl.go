@@ -27,7 +27,7 @@ func main() {
 		switch cfg.Command {
 		case CreateWalletCmd:
 			{
-				if cfg.WalletPassphrase == common.EmptyString || cfg.WalletName == common.EmptyString {
+				if cfg.WalletPassphrase == "" || cfg.WalletName == "" {
 					log.Println("Wrong param")
 					return
 				}
@@ -39,7 +39,7 @@ func main() {
 			}
 		case ListWalletAccountCmd:
 			{
-				if cfg.WalletPassphrase == common.EmptyString || cfg.WalletName == common.EmptyString {
+				if cfg.WalletPassphrase == "" || cfg.WalletName == "" {
 					log.Println("Wrong param")
 					return
 				}
@@ -57,7 +57,7 @@ func main() {
 			}
 		case GetWalletAccountCmd:
 			{
-				if cfg.WalletPassphrase == common.EmptyString || cfg.WalletName == common.EmptyString || cfg.WalletAccountName == common.EmptyString {
+				if cfg.WalletPassphrase == "" || cfg.WalletName == "" || cfg.WalletAccountName == "" {
 					log.Println("Wrong param")
 					return
 				}
@@ -75,7 +75,7 @@ func main() {
 			}
 		case CreateWalletAccountCmd:
 			{
-				if cfg.WalletPassphrase == common.EmptyString || cfg.WalletName == common.EmptyString || cfg.WalletAccountName == common.EmptyString {
+				if cfg.WalletPassphrase == "" || cfg.WalletName == "" || cfg.WalletAccountName == "" {
 					log.Println("Wrong param")
 					return
 				}
@@ -98,7 +98,7 @@ func main() {
 }
 
 func parseToJsonString(data interface{}) ([]byte, error) {
-	result, err := json.MarshalIndent(data, common.EmptyString, "\t")
+	result, err := json.MarshalIndent(data, "", "\t")
 	if err != nil {
 		log.Println(err)
 		return nil, err

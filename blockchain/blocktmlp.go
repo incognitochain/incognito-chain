@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -141,12 +142,12 @@ concludeBlock:
 
 	// Check for final balance of DCB and GOV
 	if accumulativeValues.currentSalaryFund+accumulativeValues.totalFee+accumulativeValues.incomeFromBonds < accumulativeValues.totalSalary+accumulativeValues.govPayoutAmount+accumulativeValues.buyBackCoins+accumulativeValues.totalRefundAmt+accumulativeValues.totalOracleRewards {
-		return nil, fmt.Errorf("Gov fund is not enough for salary and dividend payout")
+		return nil, errors.New("Gov fund is not enough for salary and dividend payout")
 	}
 
 	currentBankFund := prevBlock.Header.BankFund
 	if currentBankFund < accumulativeValues.bankPayoutAmount { // Can't spend loan payment just received in this block
-		return nil, fmt.Errorf("Bank fund is not enough for dividend payout")
+		return nil, errors.New("Bank fund is not enough for dividend payout")
 	}
 
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(txGroups.txsToAdd)
