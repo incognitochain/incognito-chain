@@ -16,7 +16,6 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"github.com/ninjadotorg/constant/wallet"
-	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 type Tx struct {
@@ -395,10 +394,10 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	Logger.log.Infof("getMSRErr: %v\n", getMSRErr)
 	if getMSRErr != nil {
 		// Single signature
-		if getMSRErr != lvdberr.ErrNotFound {
-			Logger.log.Infof("%+v", err)
-			return false
-		}
+		//if getMSRErr != lvdberr.ErrNotFound {
+		//	Logger.log.Infof("%+v", err)
+		//	return false
+		//}
 	} else { // found, spending on multisigs address
 		// Multi signatures
 		valid, err = tx.verifyMultiSigsTx(db)
