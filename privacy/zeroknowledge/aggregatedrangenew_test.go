@@ -103,7 +103,7 @@ func TestInnerProductProve(t *testing.T){
 
 func TestSingleRangeProve(t *testing.T){
 	wit := new(SingleRangeWitness)
-	wit.value = big.NewInt(10)
+	wit.value = big.NewInt(11)
 	wit.rand = privacy.RandInt()
 
 	wit.n = privacy.MaxExp

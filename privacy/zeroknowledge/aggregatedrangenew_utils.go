@@ -242,8 +242,8 @@ func innerProduct(a []*big.Int, b []*big.Int) (*big.Int, error) {
 
 	for i := range a {
 		c.Add(c, tmp.Mul(a[i], b[i]))
+		c.Mod(c, privacy.Curve.Params().N)
 	}
-	c.Mod(c, privacy.Curve.Params().N)
 
 	return c, nil
 }
@@ -264,6 +264,7 @@ func hadamardProduct(a []*big.Int, b []*big.Int) ([]*big.Int, error) {
 }
 
 // powerVector calculate base^n
+// todo:
 func powerVector(base *big.Int, n int) []*big.Int{
 	result := make([]*big.Int, n)
 	tmp := new(big.Int)

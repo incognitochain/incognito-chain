@@ -68,13 +68,18 @@ func ConvertBigIntToBinary(number *big.Int, n int) []*big.Int {
 	numberClone := new(big.Int)
 	numberClone.Set(number)
 
-	tmp := big.NewInt(0)
-	twoNumber := big.NewInt(2)
+	//tmp := big.NewInt(0)
+	//twoNumber := big.NewInt(2)
+	oneNumber := big.NewInt(1)
 
-	for i := n - 1; i >= 0; i-- {
-		tmp.Mod(numberClone, twoNumber)
-		binary[i] = new(big.Int).Set(tmp)
-		numberClone.Div(numberClone, twoNumber)
+	for i := 0; i < n; i++ {
+		binary[i] = new(big.Int)
+		binary[i].And(numberClone, oneNumber)
+		numberClone.Rsh(numberClone, 1)
+
+		//tmp.Mod(numberClone, twoNumber)
+		//binary[i] = new(big.Int).Set(tmp)
+		//numberClone.Div(numberClone, twoNumber)
 	}
 
 	return binary

@@ -33,7 +33,6 @@ type SingleRangeWitness struct {
 	value *big.Int
 	rand *big.Int
 
-	//commitments []*privacy.EllipticPoint
 	n byte
 }
 
@@ -50,9 +49,7 @@ type SingleRangeProof struct {
 	rVector []*big.Int
 	mu *big.Int
 
-
 	n byte
-
 }
 
 
@@ -66,39 +63,32 @@ func (wit * SingleRangeWitness) Prove() (*SingleRangeProof, error){
 	// Convert value to binary array
 	aL := privacy.ConvertBigIntToBinary(wit.value, n)
 
-	fmt.Printf("aL: %v\n", aL)
+	//fmt.Printf("aL: %v\n", aL)
+	//fmt.Printf("aL0: %v\n", aL[0])
 
 	oneNumber := big.NewInt(1)
 	twoNumber := big.NewInt(2)
+	oneVector := powerVector(oneNumber, n)
+	twoVector := powerVector(twoNumber, n)
 
 	// aR = aL - 1
 	aR := make([]*big.Int, n)
 	for i:= range aR{
-		aR[i] = new(big.Int).Sub(aL[i], oneNumber)
-		aR[i].Mod(aR[i], twoNumber)
+		aR[i] = new(big.Int).Xor(aL[i], oneNumber)
 	}
 
-	fmt.Printf("aR: %v\n", aR)
-
-	aLConcatAR := make([]*big.Int, 0)
-	for i := range aL{
-		aLConcatAR = append(aLConcatAR, aL[i])
-		aLConcatAR = append(aLConcatAR, aR[i])
-	}
-
-	fmt.Printf("Len ALconcatAR : %v\n", len(aLConcatAR))
+	//fmt.Printf("aR: %v\n", aR)
 
 	// random alpha
 	alpha := privacy.RandInt()
 
-	// Commitment to aL, aR: A = h^x * G^aL * H^aR
+	// Commitment to aL, aR: A = h^alpha * G^aL * H^aR
 	A, err := EncodeVectors(aL, aR, AggParam.G, AggParam.H)
 	if err != nil{
 		return nil, err
 	}
 	A = A.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(alpha))
 	proof.A = A
-
 
 	// Random blinding vectors sL, sR
 	sL := make([]*big.Int, n)
@@ -123,28 +113,25 @@ func (wit * SingleRangeWitness) Prove() (*SingleRangeProof, error){
 	y := generateChallengeForAggRange([]*privacy.EllipticPoint{A, S})
 	z := generateChallengeForAggRangeFromBytes([][]byte{A.Compress(), S.Compress(), y.Bytes()})
 
+	fmt.Printf("Prove y: %v\n", y)
+	fmt.Printf("Prove z: %v\n", z)
+
 	// l(X) = (aL -z*1^n) + sL*X
 	yVector := powerVector(y, n)
 	l0 := vectorAddScalar(aL, new(big.Int).Neg(z))
 	l1 := sL
 
 	// r(X) = y^n hada (aR +z*1^n + sR*X) + z^2 * 2^n
-
 	zSquare := new(big.Int).Exp(z, twoNumber, privacy.Curve.Params().N)
 	zCube := new(big.Int).Exp(z, big.NewInt(3), privacy.Curve.Params().N)
-	tmp := new(big.Int)
+	//tmp := new(big.Int)
 
-	zSquareMulTwoVec := make([]*big.Int, n)
-	for i := 0; i < n; i++ {
-		zSquareMulTwoVec[i] = new(big.Int).Set(zSquare)
-		zSquareMulTwoVec[i].Mul(zSquareMulTwoVec[i], tmp.Exp(twoNumber, big.NewInt(int64(i)), nil))
-	}
 	hadaProduct, err := hadamardProduct(yVector,  vectorAddScalar(aR, z))
 	if err != nil{
 		return nil, err
 	}
 
-	r0, err := vectorAdd(hadaProduct, zSquareMulTwoVec)
+	r0, err := vectorAdd(hadaProduct, vectorMulScalar(twoVector, zSquare))
 	if err != nil{
 		return nil, err
 	}
@@ -157,10 +144,6 @@ func (wit * SingleRangeWitness) Prove() (*SingleRangeProof, error){
 	//t(X) = <l(X), r(X)> = t0 + t1*X + t2*X^2
 
 	//calculate t0 = v*z^2 + delta(y, z)
-	vMulZSquare := new(big.Int).Mul(wit.value, zSquare)
-
-	oneVector := powerVector(oneNumber, n)
-	twoVector := powerVector(twoNumber, n)
 	deltaYZ := new(big.Int).Sub(z, zSquare)
 
 	// innerProduct1 = <1^n, y^n>
@@ -179,8 +162,21 @@ func (wit * SingleRangeWitness) Prove() (*SingleRangeProof, error){
 	deltaYZ.Sub(deltaYZ, new(big.Int).Mul(zCube, innerProduct2))
 	deltaYZ.Mod(deltaYZ, privacy.Curve.Params().N)
 
-	t0 := new(big.Int).Add(vMulZSquare, deltaYZ)
+	fmt.Printf("Prove delta: %v\n", deltaYZ)
+
+	t0 := new(big.Int).Add(new(big.Int).Mul(wit.value, zSquare), deltaYZ)
 	t0.Mod(t0,privacy.Curve.Params().N)
+
+	testt0, err := innerProduct(l0, r0)
+	if err != nil{
+		return nil, err
+	}
+
+	if testt0.Cmp(t0) ==0{
+		fmt.Printf("t0 right!!!!!!!")
+	} else{
+		fmt.Printf("t0 wrong!!!!!!!")
+	}
 
 	// t1 = <l1, r0> + <l0, r1>
 	innerProduct3, err := innerProduct(l1, r0)
@@ -197,12 +193,10 @@ func (wit * SingleRangeWitness) Prove() (*SingleRangeProof, error){
 	t1.Mod(t1,privacy.Curve.Params().N)
 
 	// t2 = <l1, r1>
-	innerProduct5, err := innerProduct(l1, r1)
+	t2, err := innerProduct(l1, r1)
 	if err != nil{
 		return nil, err
 	}
-
-	t2 := new(big.Int).Set(innerProduct5)
 
 	// commitment to t1, t2
 	tau1 := privacy.RandInt()
@@ -213,8 +207,7 @@ func (wit * SingleRangeWitness) Prove() (*SingleRangeProof, error){
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
 	x := generateChallengeForAggRange([]*privacy.EllipticPoint{proof.A, proof.S, proof.T1, proof.T2})
-	xSquare := new(big.Int).Mul(x, x)
-	xSquare.Mod(xSquare, privacy.Curve.Params().N)
+	xSquare := new(big.Int).Exp(x, twoNumber, privacy.Curve.Params().N)
 
 	// lVector = aL - z*1^n + sL*x
 	proof.lVector, err = vectorAdd(vectorAddScalar(aL, new(big.Int).Neg(z)), vectorMulScalar(sL, x))
@@ -269,17 +262,20 @@ func (proof *SingleRangeProof) Verify() bool{
 	zSquare := new(big.Int).Exp(z, twoNumber, privacy.Curve.Params().N)
 	zCube := new(big.Int).Exp(z, big.NewInt(3), privacy.Curve.Params().N)
 
+	fmt.Printf("Verify y: %v\n", y)
+	fmt.Printf("Verify z: %v\n", z)
+
 	// challenge x = hash(G || H || A || S || T1 || T2)
 	x := generateChallengeForAggRange([]*privacy.EllipticPoint{proof.A, proof.S, proof.T1, proof.T2})
-	xSquare := new(big.Int).Mul(x, x)
-	xSquare.Mod(xSquare, privacy.Curve.Params().N)
+	xSquare := new(big.Int).Exp(x, twoNumber, privacy.Curve.Params().N)
 
 	yVector := powerVector(y, n)
 
 	// HPrime = H^(y^(1-i)
+	tmp := new(big.Int)
 	HPrime := make([]*privacy.EllipticPoint, n)
 	for i := range HPrime{
-		HPrime[i] = AggParam.H[i].ScalarMult(new(big.Int).Exp(y, big.NewInt(int64(1-i)), nil))
+		HPrime[i] = AggParam.H[i].ScalarMult(tmp.Exp(y, big.NewInt(int64(1-i)), nil))
 	}
 
 	// g^tHat * h^tauX = V^(z^2) * g^delta(y,z) * T1^x * T2^(x^2)
@@ -288,7 +284,6 @@ func (proof *SingleRangeProof) Verify() bool{
 	// innerProduct1 = <1^n, y^n>
 	innerProduct1, err := innerProduct(oneVector, yVector)
 	if err != nil{
-		fmt.Printf("Err 1\n")
 		return false
 	}
 	deltaYZ.Mul(deltaYZ, innerProduct1)
@@ -296,12 +291,13 @@ func (proof *SingleRangeProof) Verify() bool{
 	// innerProduct2 = <1^n, 2^n>
 	innerProduct2, err := innerProduct(oneVector, twoVector)
 	if err != nil{
-		fmt.Printf("Err 2\n")
 		return false
 	}
 
 	deltaYZ.Sub(deltaYZ, new(big.Int).Mul(zCube, innerProduct2))
 	deltaYZ.Mod(deltaYZ, privacy.Curve.Params().N)
+
+	fmt.Printf("Verify delta: %v\n", deltaYZ)
 
 
 	left1 := privacy.PedCom.CommitAtIndex(proof.tHat, proof.tauX, privacy.VALUE)
@@ -313,7 +309,6 @@ func (proof *SingleRangeProof) Verify() bool{
 	}
 
 	// A * S^x * G^(-z) * HPrime^(z*y^n + z^2*2^n) = h^mu * G^l * HPrime^r
-	zNeg := new(big.Int).Neg(z)
 	expVector, err := vectorAdd(vectorMulScalar(yVector, z), vectorMulScalar(twoVector, zSquare))
 	if err != nil{
 		fmt.Printf("Err 4\n")
@@ -322,7 +317,7 @@ func (proof *SingleRangeProof) Verify() bool{
 
 	left2 := proof.A.Add(proof.S.ScalarMult(x))
 	for i:= range HPrime{
-		left2 = left2.Add(AggParam.G[i].ScalarMult(zNeg)).Add(HPrime[i].ScalarMult(expVector[i]))
+		left2 = left2.Add(AggParam.G[i].ScalarMult(new(big.Int).Neg(z))).Add(HPrime[i].ScalarMult(expVector[i]))
 	}
 
 	right2 := privacy.PedCom.G[privacy.RAND].ScalarMult(proof.mu)
