@@ -165,7 +165,7 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 			shardState := ShardState{}
 			shardState.CrossShard = make([]byte, len(shardBlock.Header.CrossShards))
 
-			copy(shardState.CrossShard, shardBlock.Header.CrossShards[:])
+			copy(shardState.CrossShard, shardBlock.Header.CrossShards)
 			shardState.Hash = shardBlock.Header.Hash()
 			shardState.Height = shardBlock.Header.Height
 			shardStates[shardID] = append(shardStates[shardID], shardState)

@@ -36,28 +36,28 @@ type multiSigScheme struct {
 	cryptoScheme *privacy.MultiSigScheme
 }
 
-func (self *multiSigScheme) Init(userKeySet *cashec.KeySet, committee []string) {
-	self.combine.SigningCommittee = make([]string, len(committee))
-	copy(self.combine.SigningCommittee, committee)
-	self.cryptoScheme = new(privacy.MultiSigScheme)
-	self.cryptoScheme.Init()
-	self.cryptoScheme.Keyset.Set(&userKeySet.PrivateKey, &userKeySet.PaymentAddress.Pk)
+func (multiSig *multiSigScheme) Init(userKeySet *cashec.KeySet, committee []string) {
+	multiSig.combine.SigningCommittee = make([]string, len(committee))
+	copy(multiSig.combine.SigningCommittee, committee)
+	multiSig.cryptoScheme = new(privacy.MultiSigScheme)
+	multiSig.cryptoScheme.Init()
+	multiSig.cryptoScheme.Keyset.Set(&userKeySet.PrivateKey, &userKeySet.PaymentAddress.Pk)
 }
 
-func (self *multiSigScheme) Prepare() error {
-	myRiECCPoint, myrBigInt := self.cryptoScheme.GenerateRandom()
+func (multiSig *multiSigScheme) Prepare() error {
+	myRiECCPoint, myrBigInt := multiSig.cryptoScheme.GenerateRandom()
 	myRi := myRiECCPoint.Compress()
 	myr := myrBigInt.Bytes()
 	for len(myr) < privacy.BigIntSize {
 		myr = append([]byte{0}, myr...)
 	}
 
-	self.personal.Ri = myRi
-	self.personal.r = myr
+	multiSig.personal.Ri = myRi
+	multiSig.personal.r = myr
 	return nil
 }
 
-func (self *multiSigScheme) SignData(RiList map[string][]byte) error {
+func (multiSig *multiSigScheme) SignData(RiList map[string][]byte) error {
 	numbOfSigners := len(RiList)
 	listPubkeyOfSigners := make([]*privacy.PublicKey, numbOfSigners)
 	listROfSigners := make([]*privacy.EllipticPoint, numbOfSigners)
@@ -78,22 +78,22 @@ func (self *multiSigScheme) SignData(RiList map[string][]byte) error {
 			return err
 		}
 		RCombined = RCombined.Add(listROfSigners[counter])
-		// phaseData.ValidatorsIdx[counter] = sort.SearchStrings(self.Committee, szPubKey)
-		self.combine.ValidatorsIdxR = append(self.combine.ValidatorsIdxR, common.IndexOfStr(szPubKey, self.combine.SigningCommittee))
+		// phaseData.ValidatorsIdx[counter] = sort.SearchStrings(multiSig.Committee, szPubKey)
+		multiSig.combine.ValidatorsIdxR = append(multiSig.combine.ValidatorsIdxR, common.IndexOfStr(szPubKey, multiSig.combine.SigningCommittee))
 		counter++
 	}
-	sort.Ints(self.combine.ValidatorsIdxR)
+	sort.Ints(multiSig.combine.ValidatorsIdxR)
 	//Todo Sig block with R Here
 
-	commitSig := self.cryptoScheme.Keyset.SignMultiSig(self.dataToSig.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(self.personal.r))
+	commitSig := multiSig.cryptoScheme.Keyset.SignMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(multiSig.personal.r))
 
-	self.combine.R = base58.Base58Check{}.Encode(RCombined.Compress(), byte(0x00))
-	self.combine.CommitSig = base58.Base58Check{}.Encode(commitSig.Bytes(), byte(0x00))
+	multiSig.combine.R = base58.Base58Check{}.Encode(RCombined.Compress(), byte(0x00))
+	multiSig.combine.CommitSig = base58.Base58Check{}.Encode(commitSig.Bytes(), byte(0x00))
 
 	return nil
 }
 
-func (self *multiSigScheme) VerifyCommitSig(validatorPk string, commitSig string, R string, validatorsIdx []int) error {
+func (multiSig *multiSigScheme) VerifyCommitSig(validatorPk string, commitSig string, R string, validatorsIdx []int) error {
 	RCombined := new(privacy.EllipticPoint)
 	RCombined.Set(big.NewInt(0), big.NewInt(0))
 	Rbytesarr, byteVersion, err := base58.Base58Check{}.Decode(R)
@@ -104,7 +104,7 @@ func (self *multiSigScheme) VerifyCommitSig(validatorPk string, commitSig string
 	if err != nil {
 		return err
 	}
-	listPubkeyOfSigners := GetPubKeysFromIdx(self.combine.SigningCommittee, validatorsIdx)
+	listPubkeyOfSigners := GetPubKeysFromIdx(multiSig.combine.SigningCommittee, validatorsIdx)
 	validatorPubkey := new(privacy.PublicKey)
 	pubKeyTemp, byteVersion, err := base58.Base58Check{}.Decode(validatorPk)
 	if (err != nil) || (byteVersion != byte(0x00)) {
@@ -116,14 +116,14 @@ func (self *multiSigScheme) VerifyCommitSig(validatorPk string, commitSig string
 	valSig := new(privacy.SchnMultiSig)
 	valSig.SetBytes(valSigbytesarr)
 
-	resValidateEachSigOfSigners := valSig.VerifyMultiSig(self.dataToSig.GetBytes(), listPubkeyOfSigners, []*privacy.PublicKey{validatorPubkey}, RCombined)
+	resValidateEachSigOfSigners := valSig.VerifyMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, []*privacy.PublicKey{validatorPubkey}, RCombined)
 	if !resValidateEachSigOfSigners {
 		return errors.New("Validator's sig is invalid " + validatorPk)
 	}
 	return nil
 }
 
-func (self *multiSigScheme) CombineSigs(R string, commitSigs []bftCommittedSig) (string, error) {
+func (multiSig *multiSigScheme) CombineSigs(R string, commitSigs []bftCommittedSig) (string, error) {
 
 	listSigOfSigners := make([]*privacy.SchnMultiSig, len(commitSigs))
 	for i, valSig := range commitSigs {
@@ -133,12 +133,12 @@ func (self *multiSigScheme) CombineSigs(R string, commitSigs []bftCommittedSig) 
 			return "", err
 		}
 		listSigOfSigners[i].SetBytes(bytesSig)
-		self.combine.ValidatorsIdxAggSig = append(self.combine.ValidatorsIdxAggSig, common.IndexOfStr(valSig.Pubkey, self.combine.SigningCommittee))
+		multiSig.combine.ValidatorsIdxAggSig = append(multiSig.combine.ValidatorsIdxAggSig, common.IndexOfStr(valSig.Pubkey, multiSig.combine.SigningCommittee))
 	}
-	sort.Ints(self.combine.ValidatorsIdxAggSig)
-	self.combine.R = R
-	self.combine.ValidatorsIdxR = make([]int, len(commitSigs[0].ValidatorsIdxR))
-	copy(self.combine.ValidatorsIdxR, commitSigs[0].ValidatorsIdxR)
-	aggregatedSig := self.cryptoScheme.CombineMultiSig(listSigOfSigners)
+	sort.Ints(multiSig.combine.ValidatorsIdxAggSig)
+	multiSig.combine.R = R
+	multiSig.combine.ValidatorsIdxR = make([]int, len(commitSigs[0].ValidatorsIdxR))
+	copy(multiSig.combine.ValidatorsIdxR, commitSigs[0].ValidatorsIdxR)
+	aggregatedSig := multiSig.cryptoScheme.CombineMultiSig(listSigOfSigners)
 	return base58.Base58Check{}.Encode(aggregatedSig.Bytes(), byte(0x00)), nil
 }
