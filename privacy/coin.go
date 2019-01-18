@@ -346,7 +346,7 @@ func (coin *OutputCoin) Encrypt(recipientTK TransmissionKey) error {
 
 	// Encrypt coin details using aesKeyByte
 	aesScheme := &AES{
-		key: aesKeyByte,
+		Key: aesKeyByte,
 	}
 
 	// Encrypt coin randomness
@@ -402,7 +402,7 @@ func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 
 	// Get AES key
 	aesScheme := &AES{
-		key: aesKeyPoint.X.Bytes(),
+		Key: aesKeyPoint.X.Bytes(),
 	}
 
 	// Decrypt encrypted coin randomness using AES key
