@@ -61,7 +61,7 @@ func mainMaster(serverChan chan<- *Server) error {
 
 	// Check wallet and start it
 	var walletObj *wallet.Wallet
-	if cfg.Wallet == true {
+	if cfg.Wallet {
 		walletObj = &wallet.Wallet{}
 		walletObj.Config = &wallet.WalletConfig{
 			DataDir:        cfg.DataDir,

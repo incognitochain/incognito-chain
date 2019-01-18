@@ -15,10 +15,10 @@ import (
 	"github.com/ninjadotorg/constant/mempool"
 	"github.com/ninjadotorg/constant/netsync"
 	"github.com/ninjadotorg/constant/peer"
-	"github.com/ninjadotorg/constant/rpcserver"
-	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/rpcserver"
+	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 var (
@@ -135,30 +135,12 @@ func setLogLevels(logLevel string) {
 	}
 }
 
-// directionString is a helper function that returns a string that represents
-// the direction of a connection (inbound or outbound).
-func directionString(inbound bool) string {
-	if inbound {
-		return "inbound"
-	}
-	return "outbound"
-}
-
-// pickNoun returns the singular or plural form of a noun depending
-// on the count n.
-func pickNoun(n uint64, singular, plural string) string {
-	if n == 1 {
-		return singular
-	}
-	return plural
-}
-
 type MainLogger struct {
 	log common.Logger
 }
 
-func (self *MainLogger) Init(inst common.Logger) {
-	self.log = inst
+func (mainLogger *MainLogger) Init(inst common.Logger) {
+	mainLogger.log = inst
 }
 
 // Global instant to use
