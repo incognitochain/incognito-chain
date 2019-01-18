@@ -166,7 +166,9 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 			hash := shardBlock.Header.Hash()
 			err := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
 			if index == 0 && err != nil {
-				currentCommittee, currentPendingValidator, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, COMMITEES, OFFSET)
+				shardSwapedCommittees := []string{}
+				shardNewCommittees := []string{}
+				currentCommittee, currentPendingValidator, shardSwapedCommittees, shardNewCommittees, err = SwapValidator(currentPendingValidator, currentCommittee, COMMITEES, OFFSET)
 				if err != nil {
 					totalBlock = index
 					break
@@ -176,6 +178,9 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 					totalBlock = index
 					break
 				}
+				// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "shard" "shardID"]
+				swapInstruction := []string{"swap", strings.Join(shardNewCommittees, ","), strings.Join(shardSwapedCommittees, ","), "shard", strconv.Itoa(int(shardID))}
+				validSwap[shardID] = append(validSwap[shardID], swapInstruction)
 			}
 			if index != 0 && err != nil {
 				totalBlock = index
@@ -200,8 +205,8 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 					swaps = append(swaps, l)
 				}
 			}
-			// ["stake" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "shard"]
-			// ["stake" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "beacon"]
+			// ["stake" "pubkey1,pubkey2,..." "shard"]
+			// ["stake" "pubkey1,pubkey2,..." "beacon"]
 			for _, staker := range stakers {
 				tempStaker := []string{}
 				newBeaconCandidate, newShardCandidate := GetStakeValidatorArrayString(staker)

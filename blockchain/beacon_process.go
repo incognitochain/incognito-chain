@@ -669,7 +669,6 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		Logger.log.Info("Swap: Out committee %+v", beaconSwapedCommittees)
 		Logger.log.Info("Swap: In committee %+v", beaconNewCommittees)
 	}
-	//TODO: swap committess for shard
 	return nil
 }
 
