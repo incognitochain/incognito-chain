@@ -45,7 +45,12 @@ const (
 	RewardProposalSubmitter           = 500
 	BasePercentage                    = 10000
 	PercentageBoardSalary             = 5
-	SubmitProposalFee                 = 100
+)
+
+//Fee of specific transaction
+const (
+	FeeSubmitProposal = 100
+	FeeVoteProposal   = 0
 )
 
 //voting flag

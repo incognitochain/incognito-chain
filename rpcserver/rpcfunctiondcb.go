@@ -261,7 +261,7 @@ func (rpcServer RpcServer) buildRawSubmitDCBProposalTransaction(
 	newParams["PaymentAddress"] = tmp
 
 	meta := metadata.NewSubmitDCBProposalMetadataFromJson(newParams)
-	params = setBuildRawBurnSubmitProposalTransactionParams(params)
+	params = setBuildRawBurnTransactionParams(params, common.FeeSubmitProposal)
 	tx, err1 := rpcServer.buildRawTransaction(params, meta)
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
@@ -270,10 +270,10 @@ func (rpcServer RpcServer) buildRawSubmitDCBProposalTransaction(
 	return tx, nil
 }
 
-func setBuildRawBurnSubmitProposalTransactionParams(params interface{}) interface{} {
+func setBuildRawBurnTransactionParams(params interface{}, fee float64) interface{} {
 	arrayParams := common.InterfaceSlice(params)
 	x := make(map[string]interface{})
-	x[common.BurningAddress] = float64(common.SubmitProposalFee)
+	x[common.BurningAddress] = fee
 	arrayParams[1] = x
 	return arrayParams
 }

@@ -56,6 +56,10 @@ type DatabaseError struct {
 	message string
 }
 
+func (e DatabaseError) GetErrorCode() int {
+	return e.code
+}
+
 func (e DatabaseError) Error() string {
 	return fmt.Sprintf("%d: %+v", e.code, e.err)
 }
