@@ -49,10 +49,15 @@ func (self *BlockChain) OnShardStateReceived(state *ShardChainState, peerID libp
 }
 
 func (self *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
-	self.config.ShardToBeaconPool.AddShardBeaconBlock(block)
+	err := self.config.ShardToBeaconPool.AddShardBeaconBlock(block)
+	if err != nil {
+		Logger.log.Error(err)
+	}
 }
 
 func (self *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {
-	self.config.CrossShardPool.AddCrossShardBlock(block)
-
+	err := self.config.CrossShardPool.AddCrossShardBlock(block)
+	if err != nil {
+		Logger.log.Error(err)
+	}
 }

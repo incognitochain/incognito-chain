@@ -188,16 +188,20 @@ func CreateShardActionFromTransaction(transactions []metadata.Transaction) (acti
 		if !ok {
 			panic("Can't create block")
 		}
-		// make sure transaction is valid before extract
-		shardStaker, beaconStaker, isStake := tempTx.GetStakerFromTransaction()
-		if isStake {
-			if strings.Compare(shardStaker, common.EmptyString) != 0 {
-				stakeShardPubKey = append(stakeShardPubKey, shardStaker)
-			}
-			if strings.Compare(beaconStaker, common.EmptyString) != 0 {
-				stakeBeaconPubKey = append(stakeBeaconPubKey, beaconStaker)
-			}
+		_ = tempTx
+		switch tx.GetMetadataType() {
+		// case metadata.BuyFromGOVRequestMeta:
 		}
+
+		// shardStaker, beaconStaker, isStake := tempTx.GetStakerFromTransaction()
+		// if isStake {
+		// 	if strings.Compare(shardStaker, common.EmptyString) != 0 {
+		// 		stakeShardPubKey = append(stakeShardPubKey, shardStaker)
+		// 	}
+		// 	if strings.Compare(beaconStaker, common.EmptyString) != 0 {
+		// 		stakeBeaconPubKey = append(stakeBeaconPubKey, beaconStaker)
+		// 	}
+		// }
 	}
 	if !reflect.DeepEqual(stakeShardPubKey, []string{}) {
 		action := []string{"stake", strings.Join(stakeShardPubKey, ","), "shard"}

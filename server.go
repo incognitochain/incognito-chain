@@ -42,6 +42,7 @@ type Server struct {
 	rpcServer       *rpcserver.RpcServer
 
 	memPool           *mempool.TxPool
+	beaconPool        *mempool.NodeBeaconPool
 	shardToBeaconPool *mempool.ShardToBeaconPool
 	crossShardPool    *mempool.CrossShardPool
 
@@ -139,6 +140,7 @@ func (self *Server) NewServer(listenAddrs string, db database.DatabaseInterface,
 		Logger.log.Error(err)
 		return err
 	}
+	self.beaconPool = &mempool.NodeBeaconPool{}
 	self.shardToBeaconPool = &mempool.ShardToBeaconPool{}
 	self.crossShardPool = &mempool.CrossShardPool{}
 
@@ -155,6 +157,7 @@ func (self *Server) NewServer(listenAddrs string, db database.DatabaseInterface,
 		RelayShards: relayShards,
 		// Light:       cfg.Light,
 		Wallet:            self.wallet,
+		NodeBeaconPool:    self.beaconPool,
 		ShardToBeaconPool: self.shardToBeaconPool,
 		CrossShardPool:    self.crossShardPool,
 		Server:            self,

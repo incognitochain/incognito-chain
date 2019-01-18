@@ -166,7 +166,7 @@ func (engine *Engine) Start() error {
 									fmt.Println(resBlk.(*blockchain.ShardBlock))
 									err = engine.config.BlockChain.InsertShardBlock(resBlk.(*blockchain.ShardBlock))
 									if err != nil {
-										Logger.log.Error("Insert beacon block error", err)
+										Logger.log.Error("Insert shard block error", err)
 										continue
 									}
 									//PUSH SHARD TO BEACON
