@@ -184,7 +184,7 @@ func (db *db) GetBlockByIndex(idx int32, chainID byte) (*common.Hash, error) {
 	return h, nil
 }
 
-func (db *db) FetchAllBlocks() (map[byte][]*common.Hash, error) {
+/*func (db *db) FetchAllBlocks() (map[byte][]*common.Hash, error) {
 	var keys map[byte][]*common.Hash
 	for chainID := byte(0); chainID < 20; chainID++ {
 		prefix := append(append(chainIDPrefix, chainID), blockKeyPrefix...)
@@ -201,7 +201,7 @@ func (db *db) FetchAllBlocks() (map[byte][]*common.Hash, error) {
 		}
 	}
 	return keys, nil
-}
+}*/
 
 func (db *db) FetchChainBlocks(chainID byte) ([]*common.Hash, error) {
 	var keys []*common.Hash

@@ -390,7 +390,7 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 Get all blocks in chain
 Return block array
 */
-func (self *BlockChain) GetAllBlocks() ([][]*Block, error) {
+/*func (self *BlockChain) GetAllBlocks() ([][]*Block, error) {
 	result := make([][]*Block, 0)
 	data, err := self.config.DataBase.FetchAllBlocks()
 	if err != nil {
@@ -423,7 +423,7 @@ func (self *BlockChain) GetAllBlocks() ([][]*Block, error) {
 	}
 
 	return result, nil
-}
+}*/
 
 func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
 	result := make([]*Block, 0)
@@ -465,13 +465,13 @@ func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
 Get all hash of blocks in chain
 Return hashes array
 */
-func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
-	data, err := self.config.DataBase.FetchAllBlocks()
-	if err != nil {
-		return nil, err
-	}
-	return data, err
-}
+//func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
+//	data, err := self.config.DataBase.FetchAllBlocks()
+//	if err != nil {
+//		return nil, err
+//	}
+//	return data, err
+//}
 
 func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
 	txs, err := self.config.DataBase.GetLoanTxs(loanID)
