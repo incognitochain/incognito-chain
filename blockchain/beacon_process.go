@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
+	"github.com/ninjadotorg/constant/cashec"
 
 	"github.com/ninjadotorg/constant/common"
 )
@@ -382,14 +383,6 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 	if len(block.ValidatorsIdx) < (len(self.BeaconCommittee) >> 1) {
 		return NewBlockChainError(SignatureError, errors.New("Block validators and Beacon committee is not compatible"))
 	}
-	//=============Verify producer signature
-	//==========TODO:UNCOMMENT to verify producer signature
-	// producerPubkey := self.BeaconCommittee[self.BeaconProposerIdx]
-	// blockHash := block.Header.Hash()
-	// if err := cashec.ValidateDataB58(producerPubkey, block.ProducerSig, blockHash.GetBytes()); err != nil {
-	// 	return NewBlockChainError(SignatureError, err)
-	// }
-	//=============End Verify producer signature
 	//=============Verify aggegrate signature
 	if isVerifySig {
 		err := ValidateAggSignature(block.ValidatorsIdx, self.BeaconCommittee, block.AggregatedSig, block.R, block.Hash())
@@ -441,6 +434,13 @@ func (self *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock)
 		strs []string
 		isOk bool
 	)
+	//=============Verify producer signature
+	producerPubkey := self.BeaconCommittee[self.BeaconProposerIdx]
+	blockHash := block.Header.Hash()
+	if err := cashec.ValidateDataB58(producerPubkey, block.ProducerSig, blockHash.GetBytes()); err != nil {
+		return NewBlockChainError(SignatureError, err)
+	}
+	//=============End Verify producer signature
 	strs = append(strs, self.BeaconCommittee...)
 	strs = append(strs, self.BeaconPendingValidator...)
 	isOk = VerifyHashFromStringArray(strs, block.Header.ValidatorsRoot)
@@ -509,6 +509,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	self.BestBlock = newBlock
 	self.BeaconEpoch = newBlock.Header.Epoch
 	self.BeaconHeight = newBlock.Header.Height
+	//TODO: verify producer is the right one
 	self.BeaconProposerIdx = common.IndexOfStr(newBlock.Header.Producer, self.BeaconCommittee)
 
 	allShardState := newBlock.Body.ShardState
