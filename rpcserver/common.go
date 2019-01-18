@@ -166,7 +166,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	for paymentAddressStr, amount := range receiversPaymentAddressParam {
 		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
+			return nil, NewRPCError(ErrInvalidReceiverPaymentAddress, err)
 		}
 		paymentInfo := &privacy.PaymentInfo{
 			Amount:         uint64(amount.(float64)),
@@ -195,18 +195,18 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	// get list custom token
 	listCustomTokens, err := rpcServer.config.BlockChain.ListCustomToken()
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrListCustomTokenNotFound, err)
 	}
 	switch tokenParams.TokenTxType {
 	case transaction.CustomTokenTransfer:
 		{
 			tokenID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 			if err != nil {
-				return nil, NewRPCError(ErrUnexpected, err)
+				return nil, NewRPCError(ErrRPCInvalidParams, errors.Wrap(err, "Token ID is invalid"))
 			}
 
 			if _, ok := listCustomTokens[*tokenID]; !ok {
-				return nil, NewRPCError(ErrUnexpected, errors.New("Invalid Token ID"))
+				return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
 			}
 
 			unspentTxTokenOuts, err := rpcServer.config.BlockChain.GetUnspentTxCustomTokenVout(*senderKeySet, tokenID)

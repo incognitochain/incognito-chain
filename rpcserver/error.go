@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	ErrUnexpected                 = iota
+	ErrUnexpected = iota
 	ErrAlreadyStarted
 	ErrRPCInvalidRequest
 	ErrRPCMethodNotFound
@@ -16,6 +16,8 @@ const (
 	ErrRPCParse
 	ErrInvalidType
 	ErrAuthFail
+	ErrInvalidReceiverPaymentAddress
+	ErrListCustomTokenNotFound
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -28,14 +30,16 @@ var ErrCodeMessage = map[int]struct {
 	ErrAlreadyStarted: {-2, "RPC server is already started"},
 
 	// rpc api error
-	ErrRPCInvalidRequest:          {-1001, "Invalid request"},
-	ErrRPCMethodNotFound:          {-1002, "Method not found"},
-	ErrRPCInvalidParams:           {-1003, "Invalid parameters"},
-	ErrRPCInternal:                {-1004, "Internal error"},
-	ErrRPCParse:                   {-1005, "Parse error"},
-	ErrInvalidType:                {-1006, "Invalid type"},
-	ErrAuthFail:                   {-1007, "Auth failure"},
-	ErrRPCInvalidMethodPermission: {-1008, "Invalid method permission"},
+	ErrRPCInvalidRequest:             {-1001, "Invalid request"},
+	ErrRPCMethodNotFound:             {-1002, "Method not found"},
+	ErrRPCInvalidParams:              {-1003, "Invalid parameters"},
+	ErrRPCInternal:                   {-1004, "Internal error"},
+	ErrRPCParse:                      {-1005, "Parse error"},
+	ErrInvalidType:                   {-1006, "Invalid type"},
+	ErrAuthFail:                      {-1007, "Auth failure"},
+	ErrRPCInvalidMethodPermission:    {-1008, "Invalid method permission"},
+	ErrInvalidReceiverPaymentAddress: {-1009, "Invalid receiver paymentaddress"},
+	ErrListCustomTokenNotFound:       {-1010, "Can not find any custom token"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC Response
