@@ -118,3 +118,7 @@ func getOutCoinCrossShard(txList []metadata.Transaction, shardID byte) []privacy
 	}
 	return coinList
 }
+
+func (self *CrossShardBlock) VerifyCrossShardBlock() {
+
+}

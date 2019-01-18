@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"math/big"
 	"reflect"
 	"strconv"
 	"strings"
@@ -12,8 +11,6 @@ import (
 	"github.com/ninjadotorg/constant/metadata"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/privacy"
 )
 
 func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte) error {
@@ -73,55 +70,6 @@ func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte)
 		return err
 	}
 	Logger.log.Infof("Block %d, with hash %+v is VALID for signing", block.Header.Height, *block.Hash())
-	return nil
-}
-func (self *BlockChain) ValidateShardBlockSignature(block *ShardBlock) error {
-	// get shard id
-	shardID := block.Header.ShardID
-	// get best state shard committee corresponding to shardID
-	bestStateShardCommittee := self.BestState.Shard[shardID].ShardCommittee
-
-	pubKeysR := []*privacy.PublicKey{}
-	for _, index := range block.ValidatorsIdx[0] {
-		pubkeyBytes, _, err := base58.Base58Check{}.Decode(bestStateShardCommittee[index])
-		if err != nil {
-			return errors.New("Error in convert Public key from string to byte")
-		}
-		pubKey := privacy.PublicKey{}
-		pubKey = pubkeyBytes
-		pubKeysR = append(pubKeysR, &pubKey)
-	}
-	pubKeysAggSig := []*privacy.PublicKey{}
-	for _, index := range block.ValidatorsIdx[1] {
-		pubkeyBytes, _, err := base58.Base58Check{}.Decode(bestStateShardCommittee[index])
-		if err != nil {
-			return errors.New("Error in convert Public key from string to byte")
-		}
-		pubKey := privacy.PublicKey{}
-		pubKey = pubkeyBytes
-		pubKeysAggSig = append(pubKeysAggSig, &pubKey)
-	}
-	RCombined := new(privacy.EllipticPoint)
-	RCombined.Set(big.NewInt(0), big.NewInt(0))
-	Rbytesarr, byteVersion, err := base58.Base58Check{}.Decode(block.R)
-	if (err != nil) || (byteVersion != byte(0x00)) {
-		return err
-	}
-	err = RCombined.Decompress(Rbytesarr)
-	if err != nil {
-		return err
-	}
-
-	aggSig, _, err := base58.Base58Check{}.Decode(block.AggregatedSig)
-	if err != nil {
-		return errors.New("Error in convert aggregated signature from string to byte")
-	}
-	schnMultiSig := &privacy.SchnMultiSig{}
-	schnMultiSig.SetBytes(aggSig)
-	blockHash := block.Header.Hash()
-	if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeysR, pubKeysAggSig, RCombined) == false {
-		return errors.New("Invalid Agg signature")
-	}
 	return nil
 }
 
@@ -340,47 +288,7 @@ func (self *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBlock, isV
 		return NewBlockChainError(SignatureError, errors.New("Block validators and Beacon committee is not compatible"))
 	}
 	if isVerifySig {
-		pubKeysR := []*privacy.PublicKey{}
-		for _, index := range block.ValidatorsIdx[0] {
-			pubkeyBytes, _, err := base58.Base58Check{}.Decode(self.ShardCommittee[index])
-			if err != nil {
-				return errors.New("Error in convert Public key from string to byte")
-			}
-			pubKey := privacy.PublicKey{}
-			pubKey = pubkeyBytes
-			pubKeysR = append(pubKeysR, &pubKey)
-		}
-		pubKeysAggSig := []*privacy.PublicKey{}
-		for _, index := range block.ValidatorsIdx[1] {
-			pubkeyBytes, _, err := base58.Base58Check{}.Decode(self.ShardCommittee[index])
-			if err != nil {
-				return errors.New("Error in convert Public key from string to byte")
-			}
-			pubKey := privacy.PublicKey{}
-			pubKey = pubkeyBytes
-			pubKeysAggSig = append(pubKeysAggSig, &pubKey)
-		}
-		RCombined := new(privacy.EllipticPoint)
-		RCombined.Set(big.NewInt(0), big.NewInt(0))
-		Rbytesarr, byteVersion, err := base58.Base58Check{}.Decode(block.R)
-		if (err != nil) || (byteVersion != common.ZeroByte) {
-			return err
-		}
-		err = RCombined.Decompress(Rbytesarr)
-		if err != nil {
-			return err
-		}
-
-		aggSig, _, err := base58.Base58Check{}.Decode(block.AggregatedSig)
-		if err != nil {
-			return errors.New("Error in convert aggregated signature from string to byte")
-		}
-		schnMultiSig := &privacy.SchnMultiSig{}
-		schnMultiSig.SetBytes(aggSig)
-		blockHash := block.Header.Hash()
-		if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeysR, pubKeysAggSig, RCombined) == false {
-			return errors.New("Invalid Agg signature")
-		}
+		ValidateAggSignature(block.ValidatorsIdx, self.ShardCommittee, block.AggregatedSig, block.R, block.Hash())
 	}
 	//=============End Verify Aggegrate signature
 	if self.ShardHeight+1 != block.Header.Height {

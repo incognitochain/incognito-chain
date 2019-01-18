@@ -163,9 +163,9 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 			//TODO: Validate block
 			instructions := shardBlock.Instructions
 			shardState := ShardState{}
-			shardState.CrossShard = make([]byte, len(shardBlock.Header.CrossShards))
+			shardState.CrossShard = []byte{}
 
-			copy(shardState.CrossShard, shardBlock.Header.CrossShards)
+			copy(shardState.CrossShard, shardBlock.Header.CrossShards[:])
 			shardState.Hash = shardBlock.Header.Hash()
 			shardState.Height = shardBlock.Header.Height
 			shardStates[shardID] = append(shardStates[shardID], shardState)
@@ -195,6 +195,7 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 					validStakers = append(validStakers, []string{"stake", strings.Join(tempStaker, ","), "beacon"})
 				}
 			}
+			// format
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "shard" "shardID"]
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "beacon"]
 			// Validate swap instruction => extract only valid swap instruction
