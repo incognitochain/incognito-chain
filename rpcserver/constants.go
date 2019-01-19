@@ -84,6 +84,9 @@ const (
 	GetLoanParams             = "loanparams"
 	GetLoanPaymentInfo        = "getloanpaymentinfo"
 
+	// crowdsale
+	GetListOngoingCrowdsale = "getlistongoingcrowdsale"
+
 	// vote
 	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"
 	CreateRawVoteDCBBoardTx              = "createrawvotedcbboardtx"

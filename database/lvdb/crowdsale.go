@@ -3,6 +3,7 @@ package lvdb
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/pkg/errors"
+	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 func getCrowdsaleDataKey(saleID []byte) []byte {
@@ -62,4 +63,32 @@ func (db *db) GetCrowdsaleData(saleID []byte) (uint64, common.Hash, uint64, comm
 		return 0, common.Hash{}, 0, common.Hash{}, 0, err
 	}
 	return parseCrowdsaleDataValue(value)
+}
+
+func (db *db) GetAllCrowdsales() ([]uint64, []common.Hash, []uint64, []common.Hash, []uint64, error) {
+	saleID := []byte{} // Empty id to get all
+	key := getCrowdsaleDataKey(saleID)
+
+	endBlocks := []uint64{}
+	buyingAssets := []common.Hash{}
+	buyingAmounts := []uint64{}
+	sellingAssets := []common.Hash{}
+	sellingAmounts := []uint64{}
+
+	iter := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
+	defer iter.Release()
+	for iter.Next() {
+		value := make([]byte, len(iter.Value()))
+		copy(value, iter.Value())
+		endBlock, buyingAsset, buyingAmount, sellingAsset, sellingAmount, err := parseCrowdsaleDataValue(value)
+		if err != nil {
+			return nil, nil, nil, nil, nil, err
+		}
+		endBlocks = append(endBlocks, endBlock)
+		buyingAssets = append(buyingAssets, buyingAsset)
+		buyingAmounts = append(buyingAmounts, buyingAmount)
+		sellingAssets = append(sellingAssets, sellingAsset)
+		sellingAmounts = append(sellingAmounts, sellingAmount)
+	}
+	return endBlocks, buyingAssets, buyingAmounts, sellingAssets, sellingAmounts, nil
 }
