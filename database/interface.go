@@ -96,10 +96,9 @@ type DatabaseInterface interface {
 	GetLoanRequestTx(loanID []byte) ([]byte, error)
 
 	// Crowdsale
-	StoreCrowdsaleData([]byte, uint64, []byte, uint64, []byte, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
-	GetCrowdsaleData([]byte) (uint64, []byte, uint64, []byte, uint64, error)
+	StoreCrowdsaleData([]byte, uint64, common.Hash, uint64, common.Hash, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
+	GetCrowdsaleData([]byte) (uint64, common.Hash, uint64, common.Hash, uint64, error)
 	StoreCrowdsaleRequest([]byte, []byte, []byte, []byte) error
-	StoreCrowdsaleResponse([]byte, []byte) error
 	GetCrowdsaleTxs([]byte) ([][]byte, error)
 
 	// CMB
