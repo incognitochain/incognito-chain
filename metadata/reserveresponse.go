@@ -50,30 +50,30 @@ func (cr *ReserveResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockch
 		return false, errors.New("Tx must be created by DCB Governor")
 	}
 
-	// Check if crowdsale request exists
-	txHashes, err := bcr.GetCrowdsaleTxs(cr.RequestedTxID[:])
-	if err != nil {
-		return false, err
-	}
-	if len(txHashes) == 0 {
-		return false, errors.New("Found no request for current crowdsale response")
-	}
-	for _, txHash := range txHashes {
-		hash, _ := (&common.Hash{}).NewHash(txHash)
-		_, _, _, txOld, err := bcr.GetTransactionByHash(hash)
-		if txOld == nil || err != nil {
-			return false, errors.New("Error finding corresponding loan request")
-		}
-		switch txOld.GetMetadataType() {
-		case ReserveResponseMeta:
-			{
-				// Check if the same user responses twice
-				if bytes.Equal(txOld.GetSigPubKey(), txr.GetSigPubKey()) {
-					return false, errors.New("Current board member already responded to crowdsale request")
-				}
-			}
-		}
-	}
+	//	// Check if crowdsale request exists
+	//	txHashes, err := bcr.GetCrowdsaleTxs(cr.RequestedTxID[:])
+	//	if err != nil {
+	//		return false, err
+	//	}
+	//	if len(txHashes) == 0 {
+	//		return false, errors.New("Found no request for current crowdsale response")
+	//	}
+	//	for _, txHash := range txHashes {
+	//		hash, _ := (&common.Hash{}).NewHash(txHash)
+	//		_, _, _, txOld, err := bcr.GetTransactionByHash(hash)
+	//		if txOld == nil || err != nil {
+	//			return false, errors.New("Error finding corresponding loan request")
+	//		}
+	//		switch txOld.GetMetadataType() {
+	//		case ReserveResponseMeta:
+	//			{
+	//				// Check if the same user responses twice
+	//				if bytes.Equal(txOld.GetSigPubKey(), txr.GetSigPubKey()) {
+	//					return false, errors.New("Current board member already responded to crowdsale request")
+	//				}
+	//			}
+	//		}
+	//	}
 
 	// Check if selling asset is of the right type
 	_, _, _, txRequest, err := bcr.GetTransactionByHash(cr.RequestedTxID)
