@@ -765,14 +765,6 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 					}
 				}
 			}
-		case metadata.CrowdsaleRequestMeta:
-			{
-				meta := tx.GetMetadata().(*metadata.CrowdsaleRequest)
-				hash := tx.Hash()
-				if err := self.config.DataBase.StoreCrowdsaleRequest(hash[:], meta.SaleID, meta.PaymentAddress.Pk[:], meta.PaymentAddress.Tk[:]); err != nil {
-					return err
-				}
-			}
 		case metadata.CrowdsalePaymentMeta:
 			{
 				err := self.updateCrowdsalePaymentData(tx, saleDataMap)

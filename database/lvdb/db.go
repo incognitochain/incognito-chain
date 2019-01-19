@@ -64,6 +64,9 @@ var (
 	cmbWithdrawRequestPrefix = []byte("cmbwithdrawreq-")
 	cmbNoticePrefix          = []byte("cmbnotice-")
 
+	// crowdsale
+	crowdsalePrefix = []byte("crowdsale-")
+
 	// dividend
 	Unreward = []byte("unreward")
 	Spent    = []byte("spent")
