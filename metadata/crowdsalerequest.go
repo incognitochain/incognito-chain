@@ -80,6 +80,7 @@ func (csReq *CrowdsaleRequest) ValidateSanityData(bcr BlockchainRetriever, txr T
 
 func (csReq *CrowdsaleRequest) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
+	// TODO(@0xbunyip): accept only some pairs of assets
 	return true
 }
 
