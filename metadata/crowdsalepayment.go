@@ -25,7 +25,7 @@ func (csRes *CrowdsalePayment) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 		return false, err
 	}
 
-	// TODO(@0xbunyip): validate amount of asset sent
+	// TODO(@0xbunyip): validate amount of asset sent and if price limit is not violated
 
 	// Check if sending address is DCB's
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
