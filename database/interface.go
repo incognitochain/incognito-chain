@@ -98,6 +98,7 @@ type DatabaseInterface interface {
 	// Crowdsale
 	StoreCrowdsaleData([]byte, uint64, common.Hash, uint64, common.Hash, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
 	GetCrowdsaleData([]byte) (uint64, common.Hash, uint64, common.Hash, uint64, error)
+	GetAllCrowdsales() ([]uint64, []common.Hash, []uint64, []common.Hash, []uint64, error)
 
 	// CMB
 	StoreCMB([]byte, []byte, [][]byte, uint64, []byte) error
