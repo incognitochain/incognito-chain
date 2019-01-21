@@ -50,3 +50,11 @@ func TestIsPowerOfTwo(t *testing.T) {
 
 
 }
+
+func TestConvertBigIntToBinary(t *testing.T) {
+	num := big.NewInt(100)
+	binary := ConvertBigIntToBinary(num, 10)
+	for i:=0; i<len(binary); i++{
+		fmt.Printf("%v ", binary[i])
+	}
+}
