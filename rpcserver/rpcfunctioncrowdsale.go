@@ -9,8 +9,16 @@ import (
 	"github.com/ninjadotorg/constant/wallet"
 )
 
-func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequestToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	//rpcServer.buildRawCustomTokenTransaction(params, metadata)
+	_ = arrayParams
+	return nil, nil
+}
+
+func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequestConstant(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	//rpcServer.buildRawTransaction(params, metadata)
 	_ = arrayParams
 	return nil, nil
 }
