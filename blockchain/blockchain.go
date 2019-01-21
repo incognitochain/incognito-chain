@@ -386,45 +386,6 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 	return nil
 }
 
-/*
-Get all blocks in chain
-Return block array
-*/
-/*func (self *BlockChain) GetAllBlocks() ([][]*Block, error) {
-	result := make([][]*Block, 0)
-	data, err := self.config.DataBase.FetchAllBlocks()
-	if err != nil {
-		return nil, err
-	}
-
-	for chainID, chain := range data {
-		for _, item := range chain {
-			blockBytes, err := self.config.DataBase.FetchBlock(item)
-			if err != nil {
-				return nil, err
-			}
-			block := Block{}
-			blockHeader := BlockHeader{}
-			if self.config.LightMode {
-				// with light node, we can only get data of header of block
-				err = json.Unmarshal(blockBytes, &blockHeader)
-				if err != nil {
-					return nil, err
-				}
-				block.Header = blockHeader
-			} else {
-				err = json.Unmarshal(blockBytes, &block)
-				if err != nil {
-					return nil, err
-				}
-			}
-			result[chainID] = append(result[chainID], &block)
-		}
-	}
-
-	return result, nil
-}*/
-
 func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
 	result := make([]*Block, 0)
 	data, err := self.config.DataBase.FetchChainBlocks(chainID)
@@ -460,18 +421,6 @@ func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
 
 	return result, nil
 }
-
-/*
-Get all hash of blocks in chain
-Return hashes array
-*/
-//func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
-//	data, err := self.config.DataBase.FetchAllBlocks()
-//	if err != nil {
-//		return nil, err
-//	}
-//	return data, err
-//}
 
 func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
 	txs, err := self.config.DataBase.GetLoanTxs(loanID)
