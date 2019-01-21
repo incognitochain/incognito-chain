@@ -22,7 +22,7 @@ func (db *db) GetMultiSigsRegistration(
 	pubKey []byte,
 ) ([]byte, error) {
 	key := append(multisigsPrefix, pubKey...)
-	multisigsRegBytes, err := db.Get(key)
+	multisigsRegBytes, err := db.lvdb.Get(key, nil)
 	if err != nil {
 		if err != lvdberr.ErrNotFound {
 			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
