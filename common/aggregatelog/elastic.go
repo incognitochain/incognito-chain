@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"os"
 	"time"
 
 	"github.com/olivere/elastic"
@@ -15,6 +16,8 @@ type Message struct {
 	Time     time.Time `json:"time"`
 	LogLevel string    `json:"level"`
 	Message  string    `json:"message"`
+	NodeID   string    `json:"nodeid,omitempty"`
+	TestName string    `json:"testname,omitempty"`
 }
 
 var elasticClient *elastic.Client
@@ -122,6 +125,8 @@ func SendMessageToElastic(message, level string) error {
 		Time:     time.Now(),
 		Message:  message,
 		LogLevel: level,
+		NodeID:   os.Getenv("NodeID"),
+		TestName: os.Getenv("TestName"),
 	}
 	putResult, err := elasticClient.Index().
 		Index(LOG_AGGREGATION_INDEX).
