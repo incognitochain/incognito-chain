@@ -54,7 +54,7 @@ func EncryptBytes(msg []byte, publicKey *EllipticPoint) (ciphertext *Ciphertext,
 		Key: aesKeyByte,
 	}
 
-	ciphertext.msgEncrypted, err = aesScheme.Encrypt(msg)
+	ciphertext.msgEncrypted, err = aesScheme.encrypt(msg)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func DecryptBytes(ciphertext *Ciphertext, privateKey *big.Int) (msg []byte, err 
 	}
 
 	// Decrypt encrypted coin randomness using AES key
-	msg, err = aesScheme.Decrypt(ciphertext.msgEncrypted)
+	msg, err = aesScheme.decrypt(ciphertext.msgEncrypted)
 	if err != nil {
 		return []byte{}, err
 	}
