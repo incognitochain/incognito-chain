@@ -15,6 +15,7 @@ type ShardToBeaconPool interface {
 	RemoveBlock(map[byte]uint64) error
 	GetFinalBlock() map[byte][]ShardToBeaconBlock
 	AddShardBeaconBlock(ShardToBeaconBlock) error
+	GetDistinctBlockMap() map[byte]map[uint64][]common.Hash
 }
 
 type CrossShardPool interface {

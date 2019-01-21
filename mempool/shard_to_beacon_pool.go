@@ -131,6 +131,28 @@ func UpdateBeaconPool(shardID byte, blockHeight uint64, preBlockHash common.Hash
 	return nil
 }
 
+func (pool *ShardToBeaconPool) GetDistinctBlockMap() map[byte]map[uint64][]common.Hash {
+	var poolBlksMap map[byte]map[uint64][]common.Hash
+	poolBlksMap = make(map[byte]map[uint64][]common.Hash)
+	beaconPoolLock.Lock()
+	defer beaconPoolLock.Unlock()
+	for ShardId, shardItems := range beaconPool {
+		if shardItems == nil || len(shardItems) <= 0 {
+			continue
+		}
+		items := map[uint64][]common.Hash{}
+		items = make(map[uint64][]common.Hash)
+		for height, blks := range shardItems {
+			for _, blk := range blks {
+				items[height] = append(items[height], *blk.Hash())
+			}
+
+		}
+		poolBlksMap[ShardId] = items
+	}
+	return poolBlksMap
+}
+
 // func GetBeaconBlock(ShardId byte, BlockHeight uint64) (blockchain.ShardToBeaconBlock, error) {
 // 	result := blockchain.ShardToBeaconBlock{}
 // 	if ShardId < 0 || BlockHeight < 0 {
