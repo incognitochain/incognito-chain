@@ -34,6 +34,36 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case BuyBackResponseMeta:
 		md = &BuyBackResponse{}
 
+	case IssuingRequestMeta:
+		md = &IssuingRequest{}
+
+	case IssuingResponseMeta:
+		md = &IssuingResponse{}
+
+	case ContractingRequestMeta:
+		md = &ContractingRequest{}
+
+	case OracleFeedMeta:
+		md = &OracleFeed{}
+
+	case OracleRewardMeta:
+		md = &OracleReward{}
+
+	case RefundMeta:
+		md = &Refund{}
+
+	case UpdatingOracleBoardMeta:
+		md = &UpdatingOracleBoard{}
+
+	case MultiSigsRegistrationMeta:
+		md = &MultiSigsRegistration{}
+
+	case MultiSigsSpendingMeta:
+		md = &MultiSigsSpending{}
+
+	case WithSenderAddressMeta:
+		md = &WithSenderAddress{}
+
 	case LoanRequestMeta:
 		md = &LoanRequest{}
 

@@ -59,6 +59,9 @@ func (blockgen *BlkTmplGenerator) buildCoinbases(
 	for _, resTx := range txGroups.buySellResTxs {
 		coinbases = append(coinbases, resTx)
 	}
+	for _, resTx := range txGroups.buyGOVTokensResTxs {
+		coinbases = append(coinbases, resTx)
+	}
 	for _, resTx := range txGroups.buyBackResTxs {
 		coinbases = append(coinbases, resTx)
 	}

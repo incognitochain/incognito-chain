@@ -105,12 +105,13 @@ func NewDCBParamsFromJson(rawData interface{}) *DCBParams {
 }
 
 type GOVParams struct {
-	SalaryPerTx   uint64 // salary for each tx in block(mili constant)
-	BasicSalary   uint64 // basic salary per block(mili constant)
-	FeePerKbTx    uint64
-	SellingBonds  *SellingBonds
-	RefundInfo    *RefundInfo
-	OracleNetwork *OracleNetwork
+	SalaryPerTx      uint64 // salary for each tx in block(mili constant)
+	BasicSalary      uint64 // basic salary per block(mili constant)
+	FeePerKbTx       uint64
+	SellingBonds     *SellingBonds
+	SellingGOVTokens *SellingGOVTokens
+	RefundInfo       *RefundInfo
+	OracleNetwork    *OracleNetwork
 }
 
 func NewGOVParams(
@@ -118,16 +119,18 @@ func NewGOVParams(
 	basicSalary uint64,
 	feePerKbTx uint64,
 	sellingBonds *SellingBonds,
+	sellingGOVTokens *SellingGOVTokens,
 	refundInfo *RefundInfo,
 	oracleNetwork *OracleNetwork,
 ) *GOVParams {
 	return &GOVParams{
-		SalaryPerTx:   salaryPerTx,
-		BasicSalary:   basicSalary,
-		FeePerKbTx:    feePerKbTx,
-		SellingBonds:  sellingBonds,
-		RefundInfo:    refundInfo,
-		OracleNetwork: oracleNetwork,
+		SalaryPerTx:      salaryPerTx,
+		BasicSalary:      basicSalary,
+		FeePerKbTx:       feePerKbTx,
+		SellingBonds:     sellingBonds,
+		SellingGOVTokens: sellingGOVTokens,
+		RefundInfo:       refundInfo,
+		OracleNetwork:    oracleNetwork,
 	}
 }
 
@@ -138,10 +141,11 @@ func NewGOVParamsFromJson(data interface{}) *GOVParams {
 	basicSalary := uint64(arrayParams["BasicSalary"].(float64))
 	feePerKbTx := uint64(arrayParams["FeePerKbTx"].(float64))
 	sellingBonds := NewSellingBondsFromJson(arrayParams["SellingBonds"])
+	sellingGOVTokens := NewSellingGOVTokensFromJson(arrayParams["SellingGOVTokens"])
 	refundInfo := NewRefundInfoFromJson(arrayParams["RefundInfo"])
 	oracleNetwork := NewOracleNetworkFromJson(arrayParams["OracleNetwork"])
 
-	return NewGOVParams(salaryPerTx, basicSalary, feePerKbTx, sellingBonds, refundInfo, oracleNetwork)
+	return NewGOVParams(salaryPerTx, basicSalary, feePerKbTx, sellingBonds, sellingGOVTokens, refundInfo, oracleNetwork)
 }
 
 func (dcbParams *DCBParams) Hash() *common.Hash {
@@ -167,6 +171,7 @@ func (govParams *GOVParams) Hash() *common.Hash {
 	record += string(govParams.BasicSalary)
 	record += string(govParams.FeePerKbTx)
 	record += string(govParams.SellingBonds.Hash().GetBytes())
+	record += string(govParams.SellingGOVTokens.Hash().GetBytes())
 	record += string(govParams.RefundInfo.Hash().GetBytes())
 	record += string(govParams.OracleNetwork.Hash().GetBytes())
 	hash := common.DoubleHashH([]byte(record))

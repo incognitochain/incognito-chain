@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
@@ -104,7 +103,6 @@ concludeBlock:
 
 	// Get blocksalary fund from txs
 	salaryMULTP := uint64(0) //salary multiplier
-	fmt.Print(txGroups)
 	for _, blockTx := range txGroups.txsToAdd {
 		if blockTx.GetTxFee() > 0 {
 			salaryMULTP++
@@ -141,7 +139,7 @@ concludeBlock:
 	}
 
 	// Check for final balance of DCB and GOV
-	if accumulativeValues.currentSalaryFund+accumulativeValues.totalFee+accumulativeValues.incomeFromBonds < accumulativeValues.totalSalary+accumulativeValues.govPayoutAmount+accumulativeValues.buyBackCoins+accumulativeValues.totalRefundAmt+accumulativeValues.totalOracleRewards {
+	if accumulativeValues.currentSalaryFund+accumulativeValues.totalFee+accumulativeValues.incomeFromBonds+accumulativeValues.incomeFromGOVTokens < accumulativeValues.totalSalary+accumulativeValues.govPayoutAmount+accumulativeValues.buyBackCoins+accumulativeValues.totalRefundAmt+accumulativeValues.totalOracleRewards {
 		return nil, errors.New("Gov fund is not enough for salary and dividend payout")
 	}
 
@@ -167,7 +165,7 @@ concludeBlock:
 		BlockCommitteeSigs: make([]string, common.TotalValidators),
 		Committee:          make([]string, common.TotalValidators),
 		ChainID:            chainID,
-		SalaryFund:         accumulativeValues.currentSalaryFund + accumulativeValues.incomeFromBonds + accumulativeValues.totalFee - accumulativeValues.totalSalary - accumulativeValues.govPayoutAmount - accumulativeValues.buyBackCoins - accumulativeValues.totalRefundAmt - accumulativeValues.totalOracleRewards,
+		SalaryFund:         accumulativeValues.currentSalaryFund + accumulativeValues.incomeFromBonds + accumulativeValues.totalFee + accumulativeValues.incomeFromGOVTokens - accumulativeValues.totalSalary - accumulativeValues.govPayoutAmount - accumulativeValues.buyBackCoins - accumulativeValues.totalRefundAmt - accumulativeValues.totalOracleRewards,
 		BankFund:           prevBlock.Header.BankFund + accumulativeValues.loanPaymentAmount - accumulativeValues.bankPayoutAmount,
 		GOVConstitution:    prevBlock.Header.GOVConstitution, // TODO: 0xbunyip need get from gov-params tx
 		DCBConstitution:    prevBlock.Header.DCBConstitution, // TODO: 0xbunyip need get from dcb-params tx
@@ -179,16 +177,5 @@ concludeBlock:
 		Logger.log.Error(err)
 		return nil, err
 	}
-
-	// Add new commitments to merkle tree and save the root
-	/*newTree := prevCmTree
-	err = UpdateMerkleTreeForBlock(newTree, &block)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, err
-	}
-	rt = newTree.GetRoot(common.IncMerkleTreeHeight)
-	copy(block.Header.MerkleRootCommitments[:], rt)*/
-
 	return &block, nil
 }

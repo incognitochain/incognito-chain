@@ -193,6 +193,9 @@ func (block *Block) updateBlock(
 	if block.Header.GOVConstitution.GOVParams.SellingBonds != nil {
 		block.Header.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= accumulativeValues.bondsSold
 	}
+	if block.Header.GOVConstitution.GOVParams.SellingGOVTokens != nil {
+		block.Header.GOVConstitution.GOVParams.SellingGOVTokens.GOVTokensToSell -= accumulativeValues.govTokensSold
+	}
 	if block.Header.DCBConstitution.DCBParams.SaleDCBTokensByUSDData != nil {
 		block.Header.DCBConstitution.DCBParams.SaleDCBTokensByUSDData.Amount -= accumulativeValues.dcbTokensSold
 	}
