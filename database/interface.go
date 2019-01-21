@@ -33,7 +33,7 @@ type DatabaseInterface interface {
 
 	// Transaction index
 	StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, indexInBlock int) error
-	GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, error)
+	GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, *DatabaseError)
 
 	// Best state of chain
 	StoreBestState(interface{}, byte) error
