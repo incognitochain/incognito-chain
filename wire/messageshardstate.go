@@ -5,8 +5,6 @@ import (
 
 	"github.com/ninjadotorg/constant/blockchain"
 
-	"time"
-
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -17,7 +15,7 @@ const (
 )
 
 type MessageShardState struct {
-	Timestamp time.Time
+	Timestamp int64
 	ChainInfo blockchain.ShardChainState
 	SenderID  string
 }

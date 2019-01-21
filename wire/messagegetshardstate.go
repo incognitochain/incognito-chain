@@ -3,8 +3,6 @@ package wire
 import (
 	"encoding/json"
 
-	"time"
-
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -16,7 +14,7 @@ const (
 
 type MessageGetShardState struct {
 	ShardID   byte
-	Timestamp time.Time
+	Timestamp int64
 	SenderID  string
 }
 

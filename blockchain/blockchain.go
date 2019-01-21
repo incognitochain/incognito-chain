@@ -107,6 +107,7 @@ type Config struct {
 		PushMessageGetShardState(byte) error
 		PushMessageGetBlockBeacon(from uint64, to uint64, peerID libp2p.ID) error
 		PushMessageGetBlockShard(shardID byte, from uint64, to uint64, peerID libp2p.ID) error
+		PushMessageGetShardToBeacon(shardID byte, blkHash common.Hash) error
 	}
 }
 

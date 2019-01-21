@@ -1091,7 +1091,7 @@ func (self *Server) PushMessageGetBeaconState() error {
 	if err != nil {
 		return err
 	}
-	// msg.(*wire.MessageGetBeaconState).Timestamp = time.Unix(time.Now().Unix(), 0)
+	msg.(*wire.MessageGetBeaconState).Timestamp = time.Now().Unix()
 	msg.SetSenderID(listener.PeerID)
 	Logger.log.Infof("Send a GetBeaconState from %s", listener.RawAddress)
 	listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_PEER, nil)
@@ -1108,10 +1108,14 @@ func (self *Server) PushMessageGetShardState(shardID byte) error {
 	if err != nil {
 		return err
 	}
-	msg.(*wire.MessageGetShardState).Timestamp = time.Unix(time.Now().Unix(), 0)
+	msg.(*wire.MessageGetShardState).Timestamp = time.Now().Unix()
 	msg.SetSenderID(listener.PeerID)
 	Logger.log.Infof("Send a GetShardState from %s", listener.RawAddress)
 	listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_PEER, nil)
+	return nil
+}
+
+func (self *Server) PushMessageGetShardToBeacon(shardID byte, blkHash common.Hash) error {
 	return nil
 }
 

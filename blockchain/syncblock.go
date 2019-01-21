@@ -148,40 +148,42 @@ func (self *BlockChain) SyncBeacon() error {
 							getStateWaitTime += 5
 						}
 					}
-
-					if len(beaconState.State.ShardsPoolState) > 0 {
-						myPoolState := self.config.ShardToBeaconPool.GetDistinctBlockMap()
-						for shardID, poolState := range beaconState.State.ShardsPoolState {
-							myShardPoolState, ok := myPoolState[shardID]
-							if ok {
-								for height, blks := range poolState {
+				} else {
+					if getStateWaitTime < 10 {
+						getStateWaitTime += 5
+					}
+				}
+				if len(beaconState.State.ShardsPoolState) > 0 {
+					myPoolState := self.config.ShardToBeaconPool.GetDistinctBlockMap()
+					for shardID, poolState := range beaconState.State.ShardsPoolState {
+						myShardPoolState, ok := myPoolState[shardID]
+						if ok {
+							for height, blks := range poolState {
+								if height > self.BestState.Beacon.BestShardHeight[shardID] {
 									myBlks, ok := myShardPoolState[height]
 									if ok {
 										blksNeedToSync := GetDiffHashesOf(blks, myBlks)
 										for _, blkHash := range blksNeedToSync {
-											_ = blkHash
+											go self.config.Server.PushMessageGetShardToBeacon(shardID, blkHash)
 										}
 									} else {
 										// sync all blks of this height
 										for _, blkHash := range blks {
-											_ = blkHash
+											go self.config.Server.PushMessageGetShardToBeacon(shardID, blkHash)
 										}
 									}
 								}
-							} else {
-								// sync all blks of this shard
-								for height, blks := range poolState {
-									_ = height
+							}
+						} else {
+							// sync all blks of this shard
+							for height, blks := range poolState {
+								if height > self.BestState.Beacon.BestShardHeight[shardID] {
 									for _, blkHash := range blks {
-										_ = blkHash
+										go self.config.Server.PushMessageGetShardToBeacon(shardID, blkHash)
 									}
 								}
 							}
 						}
-					}
-				} else {
-					if getStateWaitTime < 10 {
-						getStateWaitTime += 5
 					}
 				}
 			case newBlk := <-self.newBeaconBlkCh:
