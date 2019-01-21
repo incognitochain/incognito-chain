@@ -681,6 +681,9 @@ func (self *BlockChain) ProcessVoteProposal(block *Block) error {
 }
 
 func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
+	// Temp storage to update crowdsale data
+	saleDataMap := make(map[string]params.SaleData)
+
 	for _, tx := range block.Transactions {
 		switch tx.GetMetadataType() {
 		case metadata.AcceptDCBProposalMeta:
@@ -702,39 +705,109 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 					if err := self.config.DataBase.StoreCrowdsaleData(
 						data.SaleID,
 						data.EndBlock,
-						data.BuyingAsset[:],
+						data.BuyingAsset,
 						data.BuyingAmount,
-						data.SellingAsset[:],
+						data.SellingAsset,
 						data.SellingAmount,
 					); err != nil {
 						return err
 					}
 				}
 			}
-		case metadata.CrowdSaleRequestMeta:
+		case metadata.CrowdsalePaymentMeta:
 			{
-				meta := tx.GetMetadata().(*metadata.CrowdsaleRequest)
-				hash := tx.Hash()
-				if err := self.config.DataBase.StoreCrowdsaleRequest(hash[:], meta.SaleID, meta.PaymentAddress.Pk[:], meta.PaymentAddress.Tk[:], meta.Info); err != nil {
-					return err
-				}
-			}
-		case metadata.CrowdSaleResponseMeta:
-			{
-				meta := tx.GetMetadata().(*metadata.CrowdsaleResponse)
-				_, _, _, txRequest, err := self.GetTransactionByHash(meta.RequestedTxID)
+				err := self.updateCrowdsalePaymentData(tx, saleDataMap)
 				if err != nil {
 					return err
 				}
-				requestHash := txRequest.Hash()
-
-				hash := tx.Hash()
-				if err := self.config.DataBase.StoreCrowdsaleResponse(requestHash[:], hash[:]); err != nil {
-					return err
-				}
 			}
+			//		case metadata.ReserveResponseMeta:
+			//			{
+			//				// TODO(@0xbunyip): move to another func
+			//				meta := tx.GetMetadata().(*metadata.ReserveResponse)
+			//				_, _, _, txRequest, err := self.GetTransactionByHash(meta.RequestedTxID)
+			//				if err != nil {
+			//					return err
+			//				}
+			//				requestHash := txRequest.Hash()
+			//
+			//				hash := tx.Hash()
+			//				if err := self.config.DataBase.StoreCrowdsaleResponse(requestHash[:], hash[:]); err != nil {
+			//					return err
+			//				}
+			//			}
 		}
 	}
+
+	// Save crowdsale data back into db
+	for _, data := range saleDataMap {
+		if err := self.config.DataBase.StoreCrowdsaleData(
+			data.SaleID,
+			data.EndBlock,
+			data.BuyingAsset,
+			data.BuyingAmount,
+			data.SellingAsset,
+			data.SellingAmount,
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (self *BlockChain) updateCrowdsalePaymentData(tx metadata.Transaction, saleDataMap map[string]params.SaleData) error {
+	// Get current sale status from db
+	meta := tx.GetMetadata().(*metadata.CrowdsalePayment)
+	saleData, ok := saleDataMap[string(meta.SaleID)]
+	if !ok {
+		_, buyingAsset, buyingAmount, sellingAsset, sellingAmount, err := self.config.DataBase.GetCrowdsaleData(meta.SaleID)
+		if err != nil {
+			return err
+		}
+		saleData = params.SaleData{
+			BuyingAsset:   buyingAsset,
+			BuyingAmount:  buyingAmount,
+			SellingAsset:  sellingAsset,
+			SellingAmount: sellingAmount,
+		}
+		saleDataMap[string(meta.SaleID)] = saleData
+	}
+
+	// Update selling asset status
+	amount := uint64(0)
+	if saleData.SellingAsset.IsEqual(&common.ConstantID) {
+		_, _, amount = tx.GetUniqueReceiver()
+	} else {
+		txToken, ok := tx.(*transaction.TxCustomToken)
+		if !ok {
+			return errors.New("Error parsing crowdsale payment as TxCustomToken")
+		}
+		_, _, amount = txToken.GetTokenUniqueReceiver()
+	}
+	if amount > saleData.SellingAmount {
+		return errors.New("Sold too much asset")
+	}
+	saleData.SellingAmount -= amount
+
+	// Update buying asset status
+	_, _, _, txRequest, err := self.GetTransactionByHash(meta.RequestedTxID)
+	if err != nil {
+		return err
+	}
+	amount = uint64(0)
+	if saleData.BuyingAsset.IsEqual(&common.ConstantID) {
+		_, _, amount = txRequest.GetUniqueReceiver()
+	} else {
+		txToken, ok := txRequest.(*transaction.TxCustomToken)
+		if !ok {
+			return errors.New("Error parsing crowdsale request as TxCustomToken")
+		}
+		_, _, amount = txToken.GetTokenUniqueReceiver()
+	}
+	if amount > saleData.BuyingAmount {
+		return errors.New("Bought too much asset")
+	}
+	saleData.BuyingAmount -= amount
 	return nil
 }
 

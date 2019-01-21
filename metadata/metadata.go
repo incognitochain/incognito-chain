@@ -107,7 +107,6 @@ type BlockchainRetriever interface {
 
 	// For validating crowdsale
 	GetCrowdsaleData([]byte) (*params.SaleData, error)
-	GetCrowdsaleTxs([]byte) ([][]byte, error)
 
 	// For validating cmb
 	GetCMB([]byte) (privacy.PaymentAddress, []privacy.PaymentAddress, uint64, *common.Hash, uint8, uint64, error)

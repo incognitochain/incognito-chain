@@ -3,7 +3,6 @@ package metadata
 import (
 	"bytes"
 	"encoding/hex"
-	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -12,40 +11,39 @@ import (
 	"github.com/pkg/errors"
 )
 
+// CrowdsaleRequest represents a buying request created by user to send to DCB
 type CrowdsaleRequest struct {
 	PaymentAddress privacy.PaymentAddress
 	SaleID         []byte
-	Info           []byte // offchain payment info (e.g. ETH/BTC txhash)
 
-	Amount     *big.Int // amount of offchain asset (ignored if buying asset is not offchain)
-	AssetPrice uint64   // ignored if buying asset is not offchain; otherwise, represents the price of buying asset; set by miner at mining time
-
+	PriceLimit uint64 // max buy price set by user
+	ValidUntil uint64
 	MetadataBase
 }
 
-func NewCrowdsaleRequest(csReqData map[string]interface{}) *CrowdsaleRequest {
-	saleID, err := hex.DecodeString(csReqData["SaleId"].(string))
-	if err != nil {
-		return nil
+func NewCrowdsaleRequest(csReqData map[string]interface{}) (*CrowdsaleRequest, error) {
+	errSaver := &ErrorSaver{}
+	saleID, errSale := hex.DecodeString(csReqData["SaleId"].(string))
+	priceLimit, okPrice := csReqData["PriceLimit"].(float64)
+	validUntil, okValid := csReqData["ValidUntil"].(float64)
+	paymentAddressStr, okAddr := csReqData["PaymentAddress"].(string)
+	keyWallet, errPayment := wallet.Base58CheckDeserialize(paymentAddressStr)
+
+	if !okPrice || !okValid || !okAddr {
+		return nil, errors.Errorf("Error parsing crowdsale request data")
 	}
-	info, err := hex.DecodeString(csReqData["Info"].(string))
-	if err != nil {
-		return nil
+	if errSaver.Save(errSale, errPayment) != nil {
+		return nil, errSaver.Get()
 	}
-	n := big.NewInt(0)
-	n, ok := n.SetString(csReqData["Amount"].(string), 10)
-	if !ok {
-		n = big.NewInt(0)
-	}
+
 	result := &CrowdsaleRequest{
-		PaymentAddress: csReqData["PaymentAddress"].(privacy.PaymentAddress),
+		PaymentAddress: keyWallet.KeySet.PaymentAddress,
 		SaleID:         saleID,
-		Info:           info,
-		Amount:         n,
-		AssetPrice:     0,
+		PriceLimit:     uint64(priceLimit),
+		ValidUntil:     uint64(validUntil),
 	}
-	result.Type = CrowdSaleRequestMeta
-	return result
+	result.Type = CrowdsaleRequestMeta
+	return result, nil
 }
 
 func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
@@ -58,6 +56,11 @@ func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	height, err := bcr.GetTxChainHeight(txr)
 	if err != nil || saleData.EndBlock >= height {
 		return false, errors.Errorf("Crowdsale ended")
+	}
+
+	// Check if request is still valid
+	if height >= csReq.ValidUntil {
+		return false, errors.Errorf("Crowdsale request is not valid anymore")
 	}
 
 	// Check if Payment address is DCB's
@@ -77,15 +80,15 @@ func (csReq *CrowdsaleRequest) ValidateSanityData(bcr BlockchainRetriever, txr T
 
 func (csReq *CrowdsaleRequest) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
+	// TODO(@0xbunyip): accept only some pairs of assets
 	return true
 }
 
 func (csReq *CrowdsaleRequest) Hash() *common.Hash {
 	record := csReq.PaymentAddress.String()
 	record += string(csReq.SaleID)
-	record += string(csReq.Info)
-	record += string(csReq.Amount.String())
-	record += string(csReq.AssetPrice)
+	record += string(csReq.PriceLimit)
+	record += string(csReq.ValidUntil)
 
 	// final hash
 	record += csReq.MetadataBase.Hash().String()
