@@ -26,7 +26,7 @@ var constructors = map[string]metaConstructor{
 }
 
 func (rpcServer RpcServer) handleGetLoanParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution.DCBParams.LoanParams, nil
+	return rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution.DCBParams.ListLoanParams, nil
 }
 
 func (rpcServer RpcServer) createRawLoanTx(params interface{}, closeChan <-chan struct{}, metaConstructor metaConstructor) (interface{}, *RPCError) {
