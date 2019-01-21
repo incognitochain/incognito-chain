@@ -6,6 +6,7 @@ type CustomTokenBalance struct {
 	Amount     uint64 `json:"Amount"`
 	TokenID    string `json:"TokenID"`
 	TokenImage string `json:"TokenImage"`
+	IsPrivacy  bool   `json:"IsPrivacy"`
 }
 
 type ListCustomTokenBalance struct {
