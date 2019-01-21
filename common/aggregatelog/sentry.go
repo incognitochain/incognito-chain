@@ -59,7 +59,7 @@ func CaptureSentryError(err error, params ...interface{}) error {
 	}
 	tags := map[string]string{
 		"level": ERROR_LEVEL,
-		"type":  INFO_LEVEL,
+		"type":  ERROR_LEVEL,
 	}
 	sentryClient.CaptureError(err, tags, nil)
 	return nil
