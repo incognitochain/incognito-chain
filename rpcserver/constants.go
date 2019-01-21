@@ -86,8 +86,9 @@ const (
 	GetLoanPaymentInfo        = "getloanpaymentinfo"
 
 	// crowdsale
-	GetListOngoingCrowdsale = "getlistongoingcrowdsale"
-	TestStoreCrowdsale      = "teststorecrowdsale"
+	GetListOngoingCrowdsale       = "getlistongoingcrowdsale"
+	CreateAndSendCrowdsaleRequest = "createandsendcrowdsalerequest"
+	TestStoreCrowdsale            = "teststorecrowdsale"
 
 	// vote
 	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"
