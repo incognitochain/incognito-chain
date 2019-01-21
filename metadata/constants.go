@@ -13,18 +13,25 @@ const (
 	LoanUnlockMeta
 	LoanPaymentMeta
 	DividendMeta
-	CrowdSaleRequestMeta
-	CrowdSaleResponseMeta
-	CrowdSalePaymentMeta
+
+	// OMO
+	CrowdsaleRequestMeta
+	CrowdsalePaymentMeta
+
+	// Reserve
+	ReserveRequestMeta
+	ReserveResponseMeta
+	ReservePaymentMeta
 
 	// CMB
 	CMBInitRequestMeta
-	CMBInitResponseMeta  // offchain multisig
-	CMBInitRefundMeta    // miner
+	CMBInitResponseMeta // offchain multisig
+	CMBInitRefundMeta   // miner
 	CMBDepositContractMeta
 	CMBDepositSendMeta
 	CMBWithdrawRequestMeta
-	CMBWithdrawResponseMeta  // offchain multisig
+	CMBWithdrawResponseMeta // offchain multisig
+	CMBLoanContractMeta
 
 	BuyFromGOVRequestMeta
 	BuyFromGOVResponseMeta

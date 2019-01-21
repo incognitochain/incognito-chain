@@ -1,10 +1,10 @@
 package database
 
 import (
-	"github.com/ninjadotorg/constant/privacy"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -96,11 +96,9 @@ type DatabaseInterface interface {
 	GetLoanRequestTx(loanID []byte) ([]byte, error)
 
 	// Crowdsale
-	StoreCrowdsaleData([]byte, uint64, []byte, uint64, []byte, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
-	GetCrowdsaleData([]byte) (uint64, []byte, uint64, []byte, uint64, error)
-	StoreCrowdsaleRequest([]byte, []byte, []byte, []byte, []byte) error
-	StoreCrowdsaleResponse([]byte, []byte) error
-	GetCrowdsaleTxs([]byte) ([][]byte, error)
+	StoreCrowdsaleData([]byte, uint64, common.Hash, uint64, common.Hash, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
+	GetCrowdsaleData([]byte) (uint64, common.Hash, uint64, common.Hash, uint64, error)
+	GetAllCrowdsales() ([]uint64, []common.Hash, []uint64, []common.Hash, []uint64, error)
 
 	// CMB
 	StoreCMB([]byte, []byte, [][]byte, uint64, []byte) error
