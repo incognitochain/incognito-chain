@@ -808,7 +808,7 @@ func (tx *Tx) InitTxSalary(
 	tx.Type = common.TxSalaryType
 
 	if tx.LockTime == 0 {
-		tx.LockTime = time.Now().Unix()
+		tx.LockTime = time.Now().UnixNano()
 	}
 
 	var err error
