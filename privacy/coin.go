@@ -398,7 +398,7 @@ func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 	}
 
 	// Decrypt encryptedAESKey using recipient's receiving key
-	aesKeyPoint := receivingKey.Decrypt(encryptedAESKey)
+	aesKeyPoint, _ := receivingKey.Decrypt(encryptedAESKey)
 
 	// Get AES key
 	aesScheme := &AES{

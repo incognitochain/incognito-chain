@@ -87,7 +87,7 @@ func DecryptBytes(ciphertext *Ciphertext, privateKey *big.Int) (msg []byte, err 
 	}
 
 	// Decrypt encryptedAESKey using recipient's receiving key
-	aesKeyPoint := privKey.Decrypt(encryptedAESKey)
+	aesKeyPoint, _ := privKey.Decrypt(encryptedAESKey)
 
 	// Get AES key
 	aesScheme := &AES{
