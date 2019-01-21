@@ -151,6 +151,7 @@ type Transaction interface {
 	ValidateType() bool
 	GetMetadata() Metadata
 	SetMetadata(Metadata)
+	GetInfo() []byte
 	ValidateConstDoubleSpendWithBlockchain(BlockchainRetriever, byte, database.DatabaseInterface) error
 
 	GetSigPubKey() []byte

@@ -17,6 +17,7 @@ const (
 	ErrInvalidType
 	ErrAuthFail
 	ErrInvalidSenderPrivateKey
+	ErrInvalidSenderViewingKey
 	ErrInvalidReceiverPaymentAddress
 	ErrListCustomTokenNotFound
 	ErrCanNotSign
@@ -50,6 +51,7 @@ var ErrCodeMessage = map[int]struct {
 	ErrInvalidSenderPrivateKey:       {-1012, "Invalid sender's key"},
 	ErrGetOutputCoin:                 {-1013, "Can not get output coin"},
 	ErrTxTypeInvalid:                 {-1014, "Invalid tx type"},
+	ErrInvalidSenderViewingKey:       {-1015, "Invalid viewing key"},
 
 	// processing -2xxx
 	ErrCreateTxData: {-2001, "Can not create tx"},

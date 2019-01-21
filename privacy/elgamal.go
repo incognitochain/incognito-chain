@@ -42,6 +42,7 @@ func (priv *ElGamalPrivKey) Set(
 	priv.X = Value
 }
 
+// Bytes -  returned value always is 66 bytes
 func (ciphertext *ElGamalCiphertext) Bytes() []byte {
 	if ciphertext.C1.IsEqual(new(EllipticPoint).Zero()) {
 		return []byte{}
@@ -103,7 +104,9 @@ func (priv *ElGamalPrivKey) Decrypt(ciphertext *ElGamalCiphertext) (*EllipticPoi
 }
 
 func ElGamalEncrypt(pubKey []byte, data *EllipticPoint) ([]byte, error) {
-	elgamalPub := ElGamalPubKey{}
+	elgamalPub := ElGamalPubKey{
+		H: new(EllipticPoint),
+	}
 	err := elgamalPub.H.Decompress(pubKey)
 	if err != nil {
 		return nil, err
