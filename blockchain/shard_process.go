@@ -125,6 +125,7 @@ func (self *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
+	//TODO: store most recent proccess cross shard block
 	return nil
 }
 
@@ -163,6 +164,8 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	}
 	//========Store new Beaconblock and new Beacon bestState
 	self.ProcessStoreShardBlock(block)
+
+	//TODO: Remove cross shard block in pool
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %x", block.Header.ShardID, block.Header.Height, *block.Hash())
 	return nil
 }
@@ -253,6 +256,23 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	}
 	if newHash.IsEqual(beaconHash) == false {
 		return NewBlockChainError(BeaconError, errors.New("Beacon block height and beacon block hash are not compatible in Database"))
+	}
+
+	//TODO: Verify with cross map
+	bestShardHeight := self.BestState.Beacon.BestShardHeight
+	crossBlock := self.config.CrossShardPool.GetBlock(bestShardHeight)
+	shardCrossBlock := crossBlock[shardID]
+	for _, blk := range shardCrossBlock {
+		temp, err := self.config.DataBase.FetchBeaconCommitteeByHeight(blk.Header.BeaconHeight)
+		if err != nil {
+			return NewBlockChainError(UnmashallJsonBlockError, err)
+		}
+		shardCommittee := make(map[byte][]string)
+		json.Unmarshal(temp, &shardCommittee)
+		err = blk.VerifyCrossShardBlock(shardCommittee[shardID])
+		if err != nil {
+			return NewBlockChainError(SignatureError, err)
+		}
 	}
 	Logger.log.Debugf("SHARD %+v | Finish VerifyPreProcessingShardBlock Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	return nil
@@ -374,6 +394,7 @@ func (self *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlock, sh
 }
 
 //=====================Util for shard====================
+
 func CreateMerkleRootShard(txList []metadata.Transaction) common.Hash {
 	//calculate output coin hash for each shard
 	if len(txList) == 0 {

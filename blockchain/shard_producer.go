@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"encoding/json"
 	"errors"
 	"reflect"
 	"strings"
@@ -130,12 +131,31 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 func (self *BlkTmplGenerator) getCrossOutputCoin(shardID byte) []CrossOutputCoin {
 	res := []CrossOutputCoin{}
 	// get cross shard block
-	//TODO: define process to get and verify crossShardBlock
 	bestShardHeight := self.chain.BestState.Beacon.BestShardHeight
 	crossBlock := self.crossShardPool.GetBlock(bestShardHeight)
 	// build CrossOutputCoin
+	// TODO: Verify with cross map
+	// TODO: Make sure cross shard pool begin with most recent proccessed block
+	/*
+		1. Get Previous most recent proccess cross shard block
+		2. Get beacon height of previous shard block
+		3. Search from preBeaconHeight to currentBeaconHeight for cross shard via cross shard byte
+		4. Detect in pool
+		5. if miss then stop or sync block
+		6. Update new most recent proccess cross shard block
+	*/
 	shardCrossBlock := crossBlock[shardID]
 	for _, blk := range shardCrossBlock {
+		temp, err := self.chain.config.DataBase.FetchBeaconCommitteeByHeight(blk.Header.BeaconHeight)
+		if err != nil {
+			break
+		}
+		shardCommittee := make(map[byte][]string)
+		json.Unmarshal(temp, &shardCommittee)
+		err = blk.VerifyCrossShardBlock(shardCommittee[shardID])
+		if err != nil {
+			break
+		}
 		outputCoin := CrossOutputCoin{
 			OutputCoin: blk.CrossOutputCoin,
 			ShardID:    shardID,

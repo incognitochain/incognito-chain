@@ -173,7 +173,9 @@ func (self *BlockChain) InsertBeaconBlock(block *BeaconBlock) error {
 			self.config.DataBase.StoreAcceptedShardToBeacon(shardID, block.Header.Height, &shardState.Hash)
 		}
 	}
-
+	if err := self.config.DataBase.StoreBeaconCommitteeByHeight(block.Header.Height, self.BestState.Beacon.ShardCommittee); err != nil {
+		return err
+	}
 	//=========Remove shard block in beacon pool
 	Logger.log.Infof("Remove block from pool %+v \n", *block.Hash())
 	self.config.ShardToBeaconPool.RemoveBlock(self.BestState.Beacon.BestShardHeight)
