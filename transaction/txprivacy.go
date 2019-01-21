@@ -388,17 +388,16 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		return false
 	}
 
-	/*senderPK := tx.GetSigPubKey()
-	_, getMSRErr := db.GetMultiSigsRegistration(senderPK)
-	//Logger.log.Infof("getMSRErr: %v\n", getMSRErr)
+	senderPK := tx.GetSigPubKey()
+	multisigsRegBytes, getMSRErr := db.GetMultiSigsRegistration(senderPK)
 	if getMSRErr != nil {
-		// Single signature
-		//if getMSRErr != lvdberr.ErrNotFound {
-		//	Logger.log.Infof("%+v", err)
-		//	return false
-		//}
-	} else { // found, spending on multisigs address
-		// Multi signatures
+		Logger.log.Infof("getMSRErr: %v\n", getMSRErr)
+		return false
+	}
+
+	// found, spending on multisigs address
+	// Multi signatures
+	if len(multisigsRegBytes) > 0 {
 		valid, err = tx.verifyMultiSigsTx(db)
 		if err != nil {
 			Logger.log.Infof("%+v", err)
@@ -406,7 +405,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		if !valid {
 			return false
 		}
-	}*/
+	}
 
 	Logger.log.Infof("[db]tx.Proof: %+v\n", tx.Proof)
 	if tx.Proof != nil {
