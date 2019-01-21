@@ -427,6 +427,7 @@ func (rpcServer RpcServer) handleGetRecentTransactionsByBlockNumber(params inter
 			result.Txs[txId] = jsonresult.TransactionDetail{
 				Hash:     txId,
 				LockTime: time.Unix(tx.GetLockTime(), 0).Format(common.DateOutputFormat),
+				Image:    common.Render([]byte(txId)),
 			}
 		}
 	}

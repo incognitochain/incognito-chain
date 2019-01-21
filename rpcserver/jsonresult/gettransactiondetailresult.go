@@ -13,6 +13,7 @@ type TransactionDetail struct {
 	Type      string `json:"Type"` // Transaction type
 	LockTime  string `json:"LockTime"`
 	Fee       uint64 `json:"Fee"` // Fee applies: always consant
+	Image     string `json:"Image"`
 
 	Proof     *zkp.PaymentProof `json:"Proof"`
 	SigPubKey []byte            `json:"SigPubKey,omitempty"` // 64 bytes
