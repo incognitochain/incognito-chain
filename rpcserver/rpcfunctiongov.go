@@ -3,7 +3,6 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"

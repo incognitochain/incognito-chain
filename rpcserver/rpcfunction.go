@@ -77,9 +77,10 @@ var RpcHandler = map[string]commandHandler{
 	GetLoanPaymentInfo:        RpcServer.handleGetLoanPaymentInfo,
 
 	// Crowdsale
-	GetListOngoingCrowdsale:       RpcServer.handleGetListOngoingCrowdsale,
-	CreateAndSendCrowdsaleRequest: RpcServer.handleCreateAndSendCrowdsaleRequest,
-	TestStoreCrowdsale:            RpcServer.handleTESTStoreCrowdsale,
+	GetListOngoingCrowdsale:               RpcServer.handleGetListOngoingCrowdsale,
+	CreateAndSendCrowdsaleRequestToken:    RpcServer.handleCreateAndSendCrowdsaleRequestToken,
+	CreateAndSendCrowdsaleRequestConstant: RpcServer.handleCreateAndSendCrowdsaleRequestConstant,
+	TestStoreCrowdsale:                    RpcServer.handleTESTStoreCrowdsale,
 
 	// multisig
 	CreateSignatureOnCustomTokenTx:       RpcServer.handleCreateSignatureOnCustomTokenTx,
