@@ -37,14 +37,11 @@ func (cReq *ContractingRequest) ValidateSanityData(bcr BlockchainRetriever, txr 
 }
 
 func (cReq *ContractingRequest) ValidateMetadataByItself() bool {
-	if cReq.Type != ContractingRequestMeta {
-		return false
-	}
-	return true
+	return cReq.Type != ContractingRequestMeta
 }
 
 func (cReq *ContractingRequest) Hash() *common.Hash {
-	record := string(cReq.MetadataBase.Hash()[:])
+	record := cReq.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

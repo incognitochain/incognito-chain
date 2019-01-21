@@ -41,7 +41,7 @@ func (rf *Refund) ValidateMetadataByItself() bool {
 
 func (rf *Refund) Hash() *common.Hash {
 	record := rf.SmallTxID.String()
-	record += string(rf.MetadataBase.Hash()[:])
+	record += rf.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

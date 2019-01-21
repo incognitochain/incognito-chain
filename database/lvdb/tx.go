@@ -41,8 +41,8 @@ func (db *db) StoreSerialNumbers(tokenID *common.Hash, serialNumber []byte, shar
 	if lenData == 0 {
 		newIndex = []byte{0}
 	}
-	keySpec1 := make([]byte, len(key))
-	keySpec1 = append(key, serialNumber...)
+	//keySpec1 := make([]byte, len(key))
+	keySpec1 := append(key, serialNumber...)
 	if err := db.lvdb.Put(keySpec1, newIndex, nil); err != nil {
 		return err
 	}
@@ -151,6 +151,9 @@ func (db *db) StoreOutputCoins(tokenID *common.Hash, pubkey []byte, outputcoin [
 	}
 	arrDatabyPubkey = append(arrDatabyPubkey, outputcoin)
 	resByPubkey, err = json.Marshal(arrDatabyPubkey)
+	if err != nil {
+		return err
+	}
 	if err := db.lvdb.Put(key, resByPubkey, nil); err != nil {
 		return err
 	}
@@ -180,29 +183,29 @@ func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments 
 	if lenData == 0 {
 		newIndex = []byte{0}
 	}
-	keySpec1 := make([]byte, len(key))
-	keySpec1 = append(key, newIndex...)
+	//keySpec1 := make([]byte, len(key))
+	keySpec1 := append(key, newIndex...)
 	if err := db.lvdb.Put(keySpec1, commitments, nil); err != nil {
 		return err
 	}
 
 	// use for validate
-	keySpec2 := make([]byte, len(key))
-	keySpec2 = append(key, commitments...)
+	//keySpec2 := make([]byte, len(key))
+	keySpec2 := append(key, commitments...)
 	if err := db.lvdb.Put(keySpec2, newIndex, nil); err != nil {
 		return err
 	}
 
 	// store length of array commitment
-	keySpec3 := make([]byte, len(key))
-	keySpec3 = append(key, []byte("len")...)
+	//keySpec3 := make([]byte, len(key))
+	keySpec3 := append(key, []byte("len")...)
 	if err := db.lvdb.Put(keySpec3, newIndex, nil); err != nil {
 		return err
 	}
 
 	// store for pubkey:[newindex1, newindex2]
-	keySpec4 := make([]byte, len(key))
-	keySpec4 = append(key, pubkey...)
+	//keySpec4 := make([]byte, len(key))
+	keySpec4 := append(key, pubkey...)
 	var arrDatabyPubkey [][]byte
 	resByPubkey, err := db.lvdb.Get(keySpec4, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -215,6 +218,9 @@ func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments 
 	}
 	arrDatabyPubkey = append(arrDatabyPubkey, newIndex)
 	resByPubkey, err = json.Marshal(arrDatabyPubkey)
+	if err != nil {
+		return err
+	}
 	if err := db.lvdb.Put(keySpec4, resByPubkey, nil); err != nil {
 		return err
 	}
@@ -278,7 +284,8 @@ func (db *db) HasCommitmentIndex(tokenID *common.Hash, commitmentIndex uint64, s
 func (db *db) GetCommitmentByIndex(tokenID *common.Hash, commitmentIndex uint64, shardID byte) ([]byte, error) {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
-	keySpec := make([]byte, len(key))
+	//keySpec := make([]byte, len(key))
+	var keySpec []byte
 	if commitmentIndex == 0 {
 		keySpec = append(key, byte(0))
 	} else {
@@ -327,8 +334,8 @@ func (db *db) GetCommitmentIndexsByPubkey(tokenID *common.Hash, pubkey []byte, s
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 
-	keySpec4 := make([]byte, len(key))
-	keySpec4 = append(key, pubkey...)
+	//keySpec4 := make([]byte, len(key))
+	keySpec4 := append(key, pubkey...)
 	var arrDatabyPubkey [][]byte
 	resByPubkey, err := db.lvdb.Get(keySpec4, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -387,8 +394,8 @@ func (db *db) StoreSNDerivators(tokenID *common.Hash, data big.Int, shardID byte
 
 	// "snderivator-data:data"
 	snderivatorData := data.Bytes()
-	keySpec := make([]byte, len(key))
-	keySpec = append(key, snderivatorData...)
+	//keySpec := make([]byte, len(key))
+	keySpec := append(key, snderivatorData...)
 	if err := db.lvdb.Put(keySpec, snderivatorData, nil); err != nil {
 		return err
 	}
@@ -518,25 +525,25 @@ func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, i
   Get Transaction by ID
 */
 
-func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, error) {
+func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, *database.DatabaseError) {
 	key := string(transactionKeyPrefix) + txId.String()
 	_, err := db.HasValue([]byte(key))
 	if err != nil {
-		return nil, -1, err
+		return nil, -1, database.NewDatabaseError(database.ErrUnexpected, err)
 	}
 
-	res, err := db.lvdb.Get([]byte(key), nil)
+	res, err := db.Get([]byte(key))
 	if err != nil {
-		return nil, -1, err
+		return nil, -1, database.NewDatabaseError(database.ErrUnexpected, err)
 	}
 	reses := strings.Split(string(res), (string(Splitter)))
 	hash, err := common.Hash{}.NewHashFromStr(reses[0])
 	if err != nil {
-		return nil, -1, err
+		return nil, -1, database.NewDatabaseError(database.ErrUnexpected, err)
 	}
 	index, err := strconv.Atoi(reses[1])
 	if err != nil {
-		return nil, -1, err
+		return nil, -1, database.NewDatabaseError(database.ErrUnexpected, err)
 	}
 	return hash, index, nil
 }
@@ -548,11 +555,11 @@ func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, err
 
 */
 func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, shardID byte, blockHeight int32, txIndex int, unspentTxHash common.Hash, unspentTx []byte) error {
-	tempshardID := []byte{}
-	tempshardID = append(tempshardID, shardID)
-	temp3shardID := int(shardID)
-	temp2shardID := string(int(shardID))
-	fmt.Println("StoreTransactionLightMode", privateKey, temp3shardID, temp2shardID, blockHeight, txIndex)
+	//tempShardID := []byte{}
+	//tempShardID = append(tempShardID, shardID)
+	temp3ShardID := int(shardID)
+	temp2ShardID := string(int(shardID))
+	fmt.Println("StoreTransactionLightMode", privateKey, temp3ShardID, temp2ShardID, blockHeight, txIndex)
 	reverseBlockHeight := make([]byte, 4)
 	binary.LittleEndian.PutUint32(reverseBlockHeight, uint32(bigNumber-blockHeight))
 

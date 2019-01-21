@@ -215,7 +215,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, byte(0))
 	}
 
-		//fmt.Printf("BYTES ------------------ %v\n", proofbytes)
+	//fmt.Printf("BYTES ------------------ %v\n", proofbytes)
 
 	return proofbytes
 }
@@ -416,7 +416,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		offset += lenComInputShardID
 	}
 
-		//fmt.Printf("SETBYTES ------------------ %v\n", proof.Bytes())
+	//fmt.Printf("SETBYTES ------------------ %v\n", proof.Bytes())
 
 	return nil
 }
@@ -540,7 +540,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 
 		for j := 0; j < privacy.CMRingSize; j++ {
 			commitmentTemps[i][j] = new(privacy.EllipticPoint).Zero()
-			commitmentTemps[i][j] = commitments[preIndex+j].Sub(cmInputSum[i])
+			commitmentTemps[i][j], _ = commitments[preIndex+j].Sub(cmInputSum[i])
 			//commitmentTemps[i][j].X, commitmentTemps[i][j].Y = privacy.Curve.Add(commitments[preIndex+j].X, commitments[preIndex+j].Y, cmInputSumInverse[i].X, cmInputSumInverse[i].Y)
 		}
 
@@ -633,7 +633,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 	}
 
 	//cmEqualCoinValue := new(privacy.EllipticPoint)
-	cmEqualCoinValue := cmInputValueAll.Sub(cmOutputValueAll)
+	cmEqualCoinValue, _ := cmInputValueAll.Sub(cmOutputValueAll)
 
 	randEqualCoinValue := big.NewInt(0)
 	randEqualCoinValue.Sub(randInputValueAll, randOutputValueAll)
@@ -763,10 +763,8 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee ui
 		}
 
 		// check if sum of input values equal sum of output values
-		if sumInputValue != sumOutputValue+fee {
-			return false
-		}
-		return true
+		result := (sumInputValue == sumOutputValue+fee)
+		return result
 	}
 
 	// if hasPrivacy == true
@@ -786,17 +784,17 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee ui
 			commitmentBytes, err := db.GetCommitmentByIndex(tokenID, pro.OneOfManyProof[i].CommitmentIndices[j], shardID)
 			if err != nil {
 				fmt.Printf("err 1\n")
-				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("Zero knowledge verification error"))
+				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))
 				return false
 			}
 			commitments[j], err = privacy.DecompressKey(commitmentBytes)
 			if err != nil {
 				fmt.Printf("err 2\n")
-				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("Zero knowledge verification error"))
+				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))
 				return false
 			}
 
-			commitments[j] = commitments[j].Sub(cmInputSum[i])
+			commitments[j], _ = commitments[j].Sub(cmInputSum[i])
 		}
 
 		pro.OneOfManyProof[i].Commitments = commitments
@@ -844,7 +842,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee ui
 		comOutputValueSum = comOutputValueSum.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(fee))))
 	}
 
-	comZero := comInputValueSum.Sub(comOutputValueSum)
+	comZero, _ := comInputValueSum.Sub(comOutputValueSum)
 	pro.ComZeroProof.commitmentValue = comZero
 
 	if !pro.ComZeroProof.Verify() {

@@ -81,10 +81,21 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 
 	// Gov param
 	genesisBlock.Header.GOVConstitution.GOVParams = params.GOVParams{
-		SalaryPerTx:  salaryPerTx,
-		BasicSalary:  basicSalary,
-		SellingBonds: &params.SellingBonds{},
-		RefundInfo:   &params.RefundInfo{},
+		SalaryPerTx: salaryPerTx,
+		BasicSalary: basicSalary,
+		SellingBonds: &params.SellingBonds{
+			BondName:       "Bonds have 2 blocks maturity",
+			BondSymbol:     "BND2",
+			TotalIssue:     10000,
+			BondsToSell:    10000,
+			BondPrice:      100,
+			Maturity:       2,
+			BuyBackPrice:   120,
+			StartSellingAt: 1,
+			SellingWithin:  500,
+		},
+
+		RefundInfo: &params.RefundInfo{},
 		OracleNetwork: &params.OracleNetwork{
 			OraclePubKeys:         [][]byte{},
 			WrongTimesAllowed:     2,
@@ -101,24 +112,40 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 			LiquidationStart: 15000, // 150%
 		},
 	}
+	saleData := params.SaleData{
+		SaleID:        make([]byte, 32),
+		EndBlock:      1000,
+		BuyingAsset:   common.BondTokenID,
+		BuyingAmount:  uint64(1000),
+		SellingAsset:  common.ConstantID,
+		SellingAmount: uint64(2000),
+	}
 	genesisBlock.Header.DCBConstitution.DCBParams = params.DCBParams{
-		LoanParams:               loanParams,
+		ListSaleData:             []params.SaleData{saleData},
+		ListLoanParams:           loanParams,
 		MinLoanResponseRequire:   1,
 		MinCMBApprovalRequire:    1,
 		LateWithdrawResponseFine: 1000,
-		SaleDBCTOkensByUSDData:   &params.SaleDBCTOkensByUSDData{},
+		SaleDCBTokensByUSDData: &params.SaleDCBTokensByUSDData{
+			Amount:   0,
+			EndBlock: 0,
+		},
 	}
 
 	// TODO(@0xjackalope): fill correct values
+	boardPaymentAddress := []privacy.PaymentAddress{
+		{
+			Pk: []byte{3, 85, 237, 178, 30, 58, 190, 219, 126, 31, 9, 93, 40, 217, 109, 177, 70, 41, 64, 157, 2, 133, 2, 138, 23, 108, 228, 152, 234, 35, 101, 192, 173},
+			Tk: []byte{3, 116, 125, 158, 22, 126, 79, 50, 46, 119, 52, 133, 6, 246, 156, 94, 138, 244, 107, 147, 25, 78, 231, 105, 162, 185, 245, 152, 196, 116, 86, 15, 30},
+		},
+	}
 	genesisBlock.Header.DCBGovernor = DCBGovernor{
 		GovernorInfo: GovernorInfo{
-			boardIndex:   0,
-			StartedBlock: 1,
-			EndBlock:     1000, // = startedblock of decent governor
-			BoardPubKeys: [][]byte{
-				[]byte{3, 85, 237, 178, 30, 58, 190, 219, 126, 31, 9, 93, 40, 217, 109, 177, 70, 41, 64, 157, 2, 133, 2, 138, 23, 108, 228, 152, 234, 35, 101, 192, 173},
-			},
-			StartAmountToken: 0, //Sum of DCB token stack to all member of this board
+			boardIndex:          0,
+			StartedBlock:        1,
+			EndBlock:            1000, // = startedblock of decent governor
+			BoardPaymentAddress: boardPaymentAddress,
+			StartAmountToken:    0, //Sum of DCB token stack to all member of this board
 		},
 	}
 
@@ -136,7 +163,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 
 	// Get Ico payment address
 	log.Printf("Ico payment address:", icoParams.InitialPaymentAddress)
-	key, err := wallet.Base58CheckDeserialize(icoParams.InitialPaymentAddress)
+	keyWallet, err := wallet.Base58CheckDeserialize(icoParams.InitialPaymentAddress)
 	if err != nil {
 		panic(err)
 	}
@@ -146,7 +173,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 		"Decentralized central bank token",
 		"DCB",
 		icoParams.InitialDCBToken,
-		key.KeySet.PaymentAddress,
+		keyWallet.KeySet.PaymentAddress,
 	)
 	genesisBlock.AddTransaction(&dcbTokenTx)
 
@@ -156,7 +183,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 		"Government token",
 		"GOV",
 		icoParams.InitialGOVToken,
-		key.KeySet.PaymentAddress,
+		keyWallet.KeySet.PaymentAddress,
 	)
 	genesisBlock.AddTransaction(&govTokenTx)
 
@@ -166,17 +193,17 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 		"Commercial bank token",
 		"CMB",
 		icoParams.InitialCMBToken,
-		key.KeySet.PaymentAddress,
+		keyWallet.KeySet.PaymentAddress,
 	)
 	genesisBlock.AddTransaction(&cmbTokenTx)
 
 	// Create genesis token tx for BOND test
 	bondTokenTx := createSpecialTokenTx(
-		common.Hash([common.HashSize]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
+		common.Hash([common.HashSize]byte{0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
 		"BondTest",
 		"BONTest",
 		icoParams.InitialBondToken,
-		key.KeySet.PaymentAddress,
+		keyWallet.KeySet.PaymentAddress,
 	)
 	genesisBlock.AddTransaction(&bondTokenTx)
 

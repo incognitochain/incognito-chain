@@ -14,21 +14,21 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 )
 
-func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*ShardBlock, error) {
+func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*ShardBlock, error) {
 	//============Build body=============
 	// Get valid transaction (add tx, remove tx, fee of add tx)
-	txsToAdd, txToRemove, totalFee := self.getPendingTransaction(shardID)
+	txsToAdd, txToRemove, totalFee := blockgen.getPendingTransaction(shardID)
 	if len(txsToAdd) == 0 {
 		Logger.log.Info("Creating empty block...")
 	}
 	// Remove unrelated shard tx
 	// TODO: Check again Txpool should be remove after create block is successful
 	for _, tx := range txToRemove {
-		self.txPool.RemoveTx(tx)
+		blockgen.txPool.RemoveTx(tx)
 	}
 	// Calculate coinbases
-	salaryPerTx := self.rewardAgent.GetSalaryPerTx(shardID)
-	basicSalary := self.rewardAgent.GetBasicSalary(shardID)
+	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(shardID)
+	basicSalary := blockgen.rewardAgent.GetBasicSalary(shardID)
 	salaryFundAdd := uint64(0)
 	salaryMULTP := uint64(0) //salary multiplier
 	for _, blockTx := range txsToAdd {
@@ -37,7 +37,8 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 		}
 	}
 	totalSalary := salaryMULTP*salaryPerTx + basicSalary
-	salaryTx, err := transaction.CreateTxSalary(totalSalary, payToAddress, privatekey, self.chain.config.DataBase)
+	salaryTx := new(transaction.Tx)
+	err := salaryTx.InitTxSalary(totalSalary, payToAddress, privatekey, blockgen.chain.config.DataBase, nil)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -46,7 +47,7 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 	remainingFund := currentSalaryFund + totalFee + salaryFundAdd - totalSalary
 	coinbases := []metadata.Transaction{salaryTx}
 	txsToAdd = append(coinbases, txsToAdd...)
-	crossOutputCoin := self.getCrossOutputCoin(shardID)
+	crossOutputCoin := blockgen.getCrossOutputCoin(shardID)
 	instructions := CreateShardActionFromOthers()
 	block := &ShardBlock{
 		Body: ShardBody{
@@ -67,8 +68,8 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 	userKeySet.ImportFromPrivateKey(privatekey)
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
-	prevBlock := self.chain.BestState.Shard[shardID].BestShardBlock
-	prevBlockHash := self.chain.BestState.Shard[shardID].BestShardBlock.Hash()
+	prevBlock := blockgen.chain.BestState.Shard[shardID].BestShardBlock
+	prevBlockHash := blockgen.chain.BestState.Shard[shardID].BestShardBlock.Hash()
 	crossOutputCoinRoot := &common.Hash{}
 	if len(block.Body.CrossOutputCoin) != 0 {
 		crossOutputCoinRoot, err = CreateMerkleCrossOutputCoin(block.Body.CrossOutputCoin)
@@ -88,11 +89,11 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
-	committeeRoot, err := GenerateHashFromStringArray(self.chain.BestState.Shard[shardID].ShardCommittee)
+	committeeRoot, err := GenerateHashFromStringArray(blockgen.chain.BestState.Shard[shardID].ShardCommittee)
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
-	pendingValidatorRoot, err := GenerateHashFromStringArray(self.chain.BestState.Shard[shardID].ShardPendingValidator)
+	pendingValidatorRoot, err := GenerateHashFromStringArray(blockgen.chain.BestState.Shard[shardID].ShardPendingValidator)
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
@@ -112,9 +113,9 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 		CrossShards:          CreateCrossShardByteArray(txsToAdd),
 		CommitteeRoot:        committeeRoot,
 		PendingValidatorRoot: pendingValidatorRoot,
-		BeaconHeight:         self.chain.BestState.Beacon.BeaconHeight,
-		BeaconHash:           self.chain.BestState.Beacon.BestBlockHash,
-		Epoch:                self.chain.BestState.Beacon.BeaconEpoch,
+		BeaconHeight:         blockgen.chain.BestState.Beacon.BeaconHeight,
+		BeaconHash:           blockgen.chain.BestState.Beacon.BestBlockHash,
+		Epoch:                blockgen.chain.BestState.Beacon.BeaconEpoch,
 	}
 
 	// Create producer signature
@@ -128,11 +129,11 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 	return block, nil
 }
 
-func (self *BlkTmplGenerator) getCrossOutputCoin(shardID byte) []CrossOutputCoin {
+func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte) []CrossOutputCoin {
 	res := []CrossOutputCoin{}
 	// get cross shard block
-	bestShardHeight := self.chain.BestState.Beacon.BestShardHeight
-	crossBlock := self.crossShardPool.GetBlock(bestShardHeight)
+	bestShardHeight := blockgen.chain.BestState.Beacon.BestShardHeight
+	crossBlock := blockgen.crossShardPool.GetBlock(bestShardHeight)
 	// build CrossOutputCoin
 	// TODO: Verify with cross map
 	// TODO: Make sure cross shard pool begin with most recent proccessed block
@@ -146,7 +147,7 @@ func (self *BlkTmplGenerator) getCrossOutputCoin(shardID byte) []CrossOutputCoin
 	*/
 	shardCrossBlock := crossBlock[shardID]
 	for _, blk := range shardCrossBlock {
-		temp, err := self.chain.config.DataBase.FetchBeaconCommitteeByHeight(blk.Header.BeaconHeight)
+		temp, err := blockgen.chain.config.DataBase.FetchBeaconCommitteeByHeight(blk.Header.BeaconHeight)
 		if err != nil {
 			break
 		}
@@ -236,16 +237,16 @@ func CreateShardActionFromTransaction(transactions []metadata.Transaction) (acti
 }
 
 // get valid tx for specific shard and their fee, also return unvalid tx
-func (self *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
-	sourceTxns := self.txPool.MiningDescs()
+func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
+	sourceTxns := blockgen.txPool.MiningDescs()
 
 	// get tx and wait for more if not enough
 	if len(sourceTxns) < common.MinTxsInBlock {
 		<-time.Tick(common.MinBlockWaitTime * time.Second)
-		sourceTxns = self.txPool.MiningDescs()
+		sourceTxns = blockgen.txPool.MiningDescs()
 		if len(sourceTxns) == 0 {
 			<-time.Tick(common.MaxBlockWaitTime * time.Second)
-			sourceTxns = self.txPool.MiningDescs()
+			sourceTxns = blockgen.txPool.MiningDescs()
 		}
 	}
 
@@ -257,7 +258,7 @@ func (self *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd []me
 			continue
 		}
 		// TODO: need to determine a tx is in privacy format or not
-		if !tx.ValidateTxByItself(tx.IsPrivacy(), self.chain.config.DataBase, self.chain, shardID) {
+		if !tx.ValidateTxByItself(tx.IsPrivacy(), blockgen.chain.config.DataBase, blockgen.chain, shardID) {
 			txToRemove = append(txToRemove, metadata.Transaction(tx))
 			continue
 		}
@@ -270,14 +271,14 @@ func (self *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd []me
 	return txsToAdd, txToRemove, totalFee
 }
 
-func (self *ShardBlock) CreateShardToBeaconBlock() ShardToBeaconBlock {
+func (blockgen *ShardBlock) CreateShardToBeaconBlock() ShardToBeaconBlock {
 	block := ShardToBeaconBlock{}
-	block.AggregatedSig = self.AggregatedSig
-	copy(block.ValidatorsIdx, self.ValidatorsIdx)
-	block.ProducerSig = self.ProducerSig
-	block.Header = self.Header
-	block.Instructions = self.Body.Instructions
-	actions := CreateShardActionFromTransaction(self.Body.Transactions)
+	block.AggregatedSig = blockgen.AggregatedSig
+	copy(block.ValidatorsIdx, blockgen.ValidatorsIdx)
+	block.ProducerSig = blockgen.ProducerSig
+	block.Header = blockgen.Header
+	block.Instructions = blockgen.Body.Instructions
+	actions := CreateShardActionFromTransaction(blockgen.Body.Transactions)
 	block.Instructions = append(block.Instructions, actions...)
 	return block
 }

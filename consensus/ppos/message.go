@@ -135,7 +135,7 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 	}
 	newMsg.(*wire.MessageChainState).ChainInfo = ChainInfo{
 		CurrentCommittee:        self.GetCommittee(),
-		CandidateListMerkleHash: common.EmptyString,
+		CandidateListMerkleHash: "",
 		ChainsHeight:            self.validatedChainsHeight.Heights,
 	}
 	newMsg.(*wire.MessageChainState).Timestamp = time.Unix(time.Now().Unix(), 0)

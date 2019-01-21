@@ -3,7 +3,6 @@ require('babel-register');
 require('babel-polyfill');
 
 var HDWalletProvider = require("truffle-hdwallet-provider");
-var MNEMONIC = ""
 
 module.exports = {
   networks: {
@@ -31,7 +30,7 @@ module.exports = {
     },
     rinkeby: {
       provider: function() {
-        return new HDWalletProvider("", "")
+        return new HDWalletProvider(process.env.MNEMONIC, process.env.INFURA_KEY)
       },
       network_id: 4,
       gas: 6500000,

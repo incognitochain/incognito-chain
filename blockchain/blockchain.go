@@ -3,7 +3,6 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -21,6 +20,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -356,8 +356,8 @@ func (self *BlockChain) initBeaconState() error {
 /*
 Get block index(height) of block
 */
-func (self *BlockChain) GetBeaconBlockHeightByHash(hash *common.Hash) (uint64, error) {
-	return self.config.DataBase.GetIndexOfBeaconBlock(hash)
+func (self *BlockChain) GetBlockHeightByBlockHash(hash *common.Hash) (uint64, byte, error) {
+	return self.config.DataBase.GetIndexOfBlock(hash)
 }
 
 /*
@@ -571,102 +571,29 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 	return nil
 }
 
-/*
-Uses an existing database to update the set of used tx by saving list nullifier of privacy,
-this is a list tx-out which are used by a new tx
-*/
-/*func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, shardID byte) error {
-	for _, nullifier := range nullifiers {
-		err := self.config.DataBase.StoreSerialNumbers(nullifier, shardID)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}*/
+// func (self *BlockChain) GetChainBlocks(shardID byte) ([]*Block, error) {
+// 	result := make([]*Block, 0)
+// 	data, err := self.config.DataBase.FetchChainBlocks(shardID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-/*
-Uses an existing database to update the set of used tx by saving list nullifier of privacy,
-this is a list tx-out which are used by a new tx
-*/
-/*func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
-	for _, desc := range tx.Proof.InputCoins {
-		shardID, err := common.GetTxSenderChain(tx.PubKeyLastByteSender)
-		if err != nil {
-			return err
-		}
-		err = self.config.DataBase.StoreSerialNumbers(desc.CoinDetails.SerialNumber.Compress(), shardID)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}*/
+// 	for _, item := range data {
+// 		_, err := self.config.DataBase.FetchBlock(item)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		block := ShardBlock{}
+// 		//TODO:
+// 		//err = block.UnmarshalJSON()
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		result = append(result, &block)
+// 	}
 
-/*
-Get all blocks in chain
-Return block array
-*/
-func (self *BlockChain) GetAllShardBlocks() ([][]*ShardBlock, error) {
-	result := make([][]*ShardBlock, 0)
-	data, err := self.config.DataBase.FetchAllBlocks()
-	if err != nil {
-		return nil, err
-	}
-
-	for shardID, shard := range data {
-		for _, item := range shard {
-			blockBytes, err := self.config.DataBase.FetchBlock(item)
-			if err != nil {
-				return nil, err
-			}
-			block := ShardBlock{}
-			err = json.Unmarshal(blockBytes, &block)
-			if err != nil {
-				return nil, err
-			}
-			result[shardID] = append(result[shardID], &block)
-		}
-	}
-
-	return result, nil
-}
-
-func (self *BlockChain) GetShardBlocks(shardID byte) ([]*ShardBlock, error) {
-	result := make([]*ShardBlock, 0)
-	data, err := self.config.DataBase.FetchChainBlocks(shardID)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, item := range data {
-		_, err := self.config.DataBase.FetchBlock(item)
-		if err != nil {
-			return nil, err
-		}
-		block := ShardBlock{}
-		//TODO:
-		//err = block.UnmarshalJSON()
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, &block)
-	}
-
-	return result, nil
-}
-
-/*
-Get all hash of blocks in chain
-Return hashes array
-*/
-func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
-	data, err := self.config.DataBase.FetchAllBlocks()
-	if err != nil {
-		return nil, err
-	}
-	return data, err
-}
+// 	return result, nil
+// }
 
 func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
 	txs, err := self.config.DataBase.GetLoanTxs(loanID)
@@ -699,40 +626,54 @@ func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest
 }
 
 func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
-	txNormal := tx.(*transaction.Tx)
-	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	dcbPk := accountDCB.KeySet.PaymentAddress.Pk
-	value := uint64(0)
-	for _, coin := range txNormal.Proof.OutputCoins {
-		if bytes.Equal(coin.CoinDetails.PublicKey.Compress(), dcbPk) {
-			value += coin.CoinDetails.Value
-		}
-	}
+	_, _, value := tx.GetUniqueReceiver()
 	meta := tx.GetMetadata().(*metadata.LoanPayment)
 	principle, interest, deadline, err := self.config.DataBase.GetLoanPayment(meta.LoanID)
-	if meta.PayPrinciple {
-		if err != nil {
-			return err
-		}
-		if principle < value {
-			value = principle
-		}
-		principle -= value
-	} else {
-		requestMeta, err := self.GetLoanRequestMeta(meta.LoanID)
-		if err != nil {
-			return err
-		}
-		interestPerPeriod := GetInterestAmount(principle, requestMeta.Params.InterestRate)
-		periodInc := uint64(0)
-		if value < interest {
-			interest -= value
-		} else {
-			periodInc = 1 + uint64((value-interest)/interestPerPeriod)
-			interest = interestPerPeriod - (value-interest)%interestPerPeriod
-		}
-		deadline = deadline + periodInc*requestMeta.Params.Maturity
+	requestMeta, err := self.GetLoanRequestMeta(meta.LoanID)
+	if err != nil {
+		return err
 	}
+	fmt.Printf("[db]pid: %d, %d, %d\n", principle, interest, deadline)
+
+	// Pay interest
+	interestPerTerm := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
+	shardID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+	height := self.GetChainHeight(shardID)
+	totalInterest := metadata.GetTotalInterest(
+		principle,
+		interest,
+		requestMeta.Params.InterestRate,
+		requestMeta.Params.Maturity,
+		deadline,
+		height,
+	)
+	fmt.Printf("[db]perTerm, totalInt: %d, %d\n", interestPerTerm, totalInterest)
+	termInc := uint64(0)
+	if value <= totalInterest { // Pay all to cover interest
+		if interestPerTerm > 0 {
+			if value >= interest {
+				termInc = 1 + uint64((value-interest)/interestPerTerm)
+				interest = interestPerTerm - (value-interest)%interestPerTerm
+			} else {
+				interest -= value
+			}
+		}
+	} else { // Pay enough to cover interest, the rest go to principle
+		if value-totalInterest > principle {
+			principle = 0
+		} else {
+			principle -= value - totalInterest
+		}
+		if totalInterest >= interest { // This payment pays for interest
+			if interestPerTerm > 0 {
+				termInc = 1 + uint64((totalInterest-interest)/interestPerTerm)
+				interest = interestPerTerm
+			}
+		}
+	}
+	fmt.Printf("termInc: %d\n", termInc)
+	deadline = deadline + termInc*requestMeta.Params.Maturity
+
 	return self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, deadline)
 }
 
@@ -763,8 +704,9 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 				fmt.Printf("LoanID: %x\n", meta.LoanID)
 				requestMeta, _ := self.GetLoanRequestMeta(meta.LoanID)
 				principle := requestMeta.LoanAmount
-				interest := GetInterestAmount(principle, requestMeta.Params.InterestRate)
-				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, block.Header.Height)
+				interest := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
+				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint64(block.Header.Height))
+				fmt.Printf("principle: %d\ninterest: %d\nblock: %d\n", principle, interest, uint64(block.Header.Height))
 			}
 		case metadata.LoanPaymentMeta:
 			{
@@ -775,42 +717,6 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 	return nil
 }
 
-// parseCustomTokenUTXO helper method for parsing UTXO data for updating dividend payout
-/*func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash, pubkey []byte) ([]transaction.TxTokenVout, error) {
-	utxoData, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, pubkey)
-	if err != nil {
-		return nil, err
-	}
-	var finalErr error
-	vouts := []transaction.TxTokenVout{}
-	for key, value := range utxoData {
-		keys := strings.Split(key, string(lvdb.Splitter))
-		values := strings.Split(value, string(lvdb.Splitter))
-		// get unspent and unreward transaction output
-		if strings.Compare(values[1], string(lvdb.Unspent)) == 0 {
-			vout := transaction.TxTokenVout{}
-			vout.PaymentAddress = privacy.PaymentAddress{Pk: pubkey}
-			txHash, err := common.Hash{}.NewHash([]byte(keys[3]))
-			if err != nil {
-				finalErr = err
-				continue
-			}
-			vout.SetTxCustomTokenID(*txHash)
-			voutIndexByte := []byte(keys[4])[0]
-			voutIndex := int(voutIndexByte)
-			vout.SetIndex(voutIndex)
-			value, err := strconv.Atoi(values[0])
-			if err != nil {
-				finalErr = err
-				continue
-			}
-			vout.Value = uint64(value)
-			vouts = append(vouts, vout)
-		}
-	}
-	return vouts, finalErr
-}*/
-
 // func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 // 	for _, tx := range block.Transactions {
 // 		switch tx.GetMetadataType() {
@@ -818,6 +724,9 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 // 			{
 // 				tx := tx.(*transaction.Tx)
 // 				meta := tx.Metadata.(*metadata.Dividend)
+// 				if tx.Proof == nil {
+// 					return errors.New("Miss output in tx")
+// 				}
 // 				for _, _ = range tx.Proof.OutputCoins {
 // 					keySet := cashec.KeySet{
 // 						PaymentAddress: meta.PaymentAddress,
@@ -840,27 +749,27 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 // 	return nil
 // }
 
-// func (self *BlockChain) UpdateVoteCountBoard(block *ShardBlock) error {
+// func (self *BlockChain) UpdateVoteCountBoard(block *Block) error {
 // 	DCBBoardIndex := self.GetCurrentBoardIndex(DCBConstitutionHelper{})
 // 	GOVBoardIndex := self.GetCurrentBoardIndex(GOVConstitutionHelper{})
-// 	for _, tx := range block.Body.Transactions {
+// 	for _, tx := range block.Transactions {
 // 		switch tx.GetMetadataType() {
 // 		case metadata.VoteDCBBoardMeta:
 // 			{
-// 				tx := tx.(*transaction.TxCustomToken)
-// 				voteAmount := tx.GetAmountOfVote()
-// 				voteDCBBoardMetadata := tx.Metadata.(*metadata.VoteDCBBoardMetadata)
-// 				err := self.config.DataBase.AddVoteDCBBoard(DCBBoardIndex, tx.TxTokenData.Vins[0].PaymentAddress.Bytes(), tx.TxTokenData.Vins[0].PaymentAddress.Pk, voteDCBBoardMetadata.CandidatePubKey, voteAmount)
+// 				txCustomToken := tx.(*transaction.TxCustomToken)
+// 				voteAmount := txCustomToken.GetAmountOfVote()
+// 				voteDCBBoardMetadata := txCustomToken.Metadata.(*metadata.VoteDCBBoardMetadata)
+// 				err := self.config.DataBase.AddVoteBoard("dcb", DCBBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteDCBBoardMetadata.CandidatePaymentAddress, voteAmount)
 // 				if err != nil {
 // 					return err
 // 				}
 // 			}
 // 		case metadata.VoteGOVBoardMeta:
 // 			{
-// 				tx := tx.(*transaction.TxCustomToken)
-// 				voteAmount := tx.GetAmountOfVote()
-// 				voteGOVBoardMetadata := tx.Metadata.(*metadata.VoteGOVBoardMetadata)
-// 				err := self.config.DataBase.AddVoteGOVBoard(GOVBoardIndex, tx.TxTokenData.Vins[0].PaymentAddress.Bytes(), tx.TxTokenData.Vins[0].PaymentAddress.Pk, voteGOVBoardMetadata.CandidatePubKey, voteAmount)
+// 				txCustomToken := tx.(*transaction.TxCustomToken)
+// 				voteAmount := txCustomToken.GetAmountOfVote()
+// 				voteGOVBoardMetadata := txCustomToken.Metadata.(*metadata.VoteGOVBoardMetadata)
+// 				err := self.config.DataBase.AddVoteBoard("gov", GOVBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteGOVBoardMetadata.CandidatePaymentAddress, voteAmount)
 // 				if err != nil {
 // 					return err
 // 				}
@@ -870,13 +779,13 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 // 	return nil
 // }
 
-// func (self *BlockChain) UpdateVoteTokenHolder(block *ShardBlock) error {
-// 	for _, tx := range block.Body.Transactions {
+// func (self *BlockChain) UpdateVoteTokenHolder(block *Block) error {
+// 	for _, tx := range block.Transactions {
 // 		switch tx.GetMetadataType() {
 // 		case metadata.SendInitDCBVoteTokenMeta:
 // 			{
 // 				meta := tx.GetMetadata().(*metadata.SendInitDCBVoteTokenMetadata)
-// 				err := self.config.DataBase.SendInitDCBVoteToken(self.GetCurrentBoardIndex(DCBConstitutionHelper{}), meta.ReceiverPubKey, meta.Amount)
+// 				err := self.config.DataBase.SendInitVoteToken("dcb", self.GetCurrentBoardIndex(DCBConstitutionHelper{}), meta.ReceiverPaymentAddress, meta.Amount)
 // 				if err != nil {
 // 					return err
 // 				}
@@ -884,7 +793,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 // 		case metadata.SendInitGOVVoteTokenMeta:
 // 			{
 // 				meta := tx.GetMetadata().(*metadata.SendInitGOVVoteTokenMetadata)
-// 				err := self.config.DataBase.SendInitGOVVoteToken(self.GetCurrentBoardIndex(GOVConstitutionHelper{}), meta.ReceiverPubKey, meta.Amount)
+// 				err := self.config.DataBase.SendInitVoteToken("gov", self.GetCurrentBoardIndex(GOVConstitutionHelper{}), meta.ReceiverPaymentAddress, meta.Amount)
 // 				if err != nil {
 // 					return err
 // 				}
@@ -895,57 +804,60 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 // 	return nil
 // }
 
-// func (self *BlockChain) ProcessVoteProposal(block *ShardBlock) error {
+// func (self *BlockChain) ProcessVoteProposal(block *Block) error {
 // 	nextDCBConstitutionIndex := uint32(block.Header.DCBConstitution.GetConstitutionIndex() + 1)
 // 	nextGOVConstitutionIndex := uint32(block.Header.GOVConstitution.GetConstitutionIndex() + 1)
-// 	for _, tx := range block.Body.Transactions {
+// 	for _, tx := range block.Transactions {
 // 		meta := tx.GetMetadata()
 // 		switch tx.GetMetadataType() {
-// 		case metadata.SealedLv3DCBBallotMeta:
-// 			underlieMetadata := meta.(*metadata.SealedLv3DCBBallotMetadata)
+// 		case metadata.SealedLv3DCBVoteProposalMeta:
+// 			underlieMetadata := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
 // 			self.config.DataBase.AddVoteLv3Proposal("dcb", nextDCBConstitutionIndex, underlieMetadata.Hash())
-// 		case metadata.SealedLv2DCBBallotMeta:
-// 			underlieMetadata := meta.(*metadata.SealedLv2DCBBallotMetadata)
-// 			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3Ballot)
-// 		case metadata.SealedLv1DCBBallotMeta:
-// 			underlieMetadata := meta.(*metadata.SealedLv1DCBBallotMetadata)
-// 			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3Ballot)
-// 		case metadata.NormalDCBBallotMetaFromOwnerMeta:
-// 			underlieMetadata := meta.(*metadata.NormalDCBBallotFromOwnerMetadata)
-// 			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
-// 		case metadata.NormalDCBBallotMetaFromSealerMeta:
-// 			underlieMetadata := meta.(*metadata.NormalDCBBallotFromSealerMetadata)
-// 			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionIndex, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
+// 		case metadata.SealedLv2DCBVoteProposalMeta:
+// 			underlieMetadata := meta.(*metadata.SealedLv2DCBVoteProposalMetadata)
+// 			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
+// 		case metadata.SealedLv1DCBVoteProposalMeta:
+// 			underlieMetadata := meta.(*metadata.SealedLv1DCBVoteProposalMetadata)
+// 			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
+// 		case metadata.NormalDCBVoteProposalFromOwnerMeta:
+// 			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromOwnerMetadata)
+// 			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
+// 		case metadata.NormalDCBVoteProposalFromSealerMeta:
+// 			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromSealerMetadata)
+// 			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
 // 		case metadata.AcceptDCBProposalMeta:
 // 			underlieMetadata := meta.(*metadata.AcceptDCBProposalMetadata)
-// 			self.config.DataBase.TakeVoteTokenFromWinner("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PubKey, underlieMetadata.Voter.AmountOfVote)
-// 			self.config.DataBase.SetNewProposalWinningVoter("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PubKey)
-// 		case metadata.SealedLv3GOVBallotMeta:
-// 			underlieMetadata := meta.(*metadata.SealedLv3GOVBallotMetadata)
+// 			self.config.DataBase.TakeVoteTokenFromWinner("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
+// 			self.config.DataBase.SetNewProposalWinningVoter("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
+// 		case metadata.SealedLv3GOVVoteProposalMeta:
+// 			underlieMetadata := meta.(*metadata.SealedLv3GOVVoteProposalMetadata)
 // 			self.config.DataBase.AddVoteLv3Proposal("gov", nextGOVConstitutionIndex, underlieMetadata.Hash())
-// 		case metadata.SealedLv2GOVBallotMeta:
-// 			underlieMetadata := meta.(*metadata.SealedLv2GOVBallotMetadata)
-// 			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3Ballot)
-// 		case metadata.SealedLv1GOVBallotMeta:
-// 			underlieMetadata := meta.(*metadata.SealedLv1GOVBallotMetadata)
-// 			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3Ballot)
-// 		case metadata.NormalGOVBallotMetaFromOwnerMeta:
-// 			underlieMetadata := meta.(*metadata.NormalGOVBallotFromOwnerMetadata)
-// 			self.config.DataBase.AddVoteNormalProposalFromOwner("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
-// 		case metadata.NormalGOVBallotMetaFromSealerMeta:
-// 			underlieMetadata := meta.(*metadata.NormalGOVBallotFromSealerMetadata)
-// 			self.config.DataBase.AddVoteNormalProposalFromSealer("gov", nextGOVConstitutionIndex, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
+// 		case metadata.SealedLv2GOVVoteProposalMeta:
+// 			underlieMetadata := meta.(*metadata.SealedLv2GOVVoteProposalMetadata)
+// 			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
+// 		case metadata.SealedLv1GOVVoteProposalMeta:
+// 			underlieMetadata := meta.(*metadata.SealedLv1GOVVoteProposalMetadata)
+// 			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
+// 		case metadata.NormalGOVVoteProposalFromOwnerMeta:
+// 			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromOwnerMetadata)
+// 			self.config.DataBase.AddVoteNormalProposalFromOwner("gov", nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
+// 		case metadata.NormalGOVVoteProposalFromSealerMeta:
+// 			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromSealerMetadata)
+// 			self.config.DataBase.AddVoteNormalProposalFromSealer("gov", nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
 // 		case metadata.AcceptGOVProposalMeta:
 // 			underlieMetadata := meta.(*metadata.AcceptGOVProposalMetadata)
-// 			self.config.DataBase.TakeVoteTokenFromWinner("gov", nextGOVConstitutionIndex, underlieMetadata.Voter.PubKey, underlieMetadata.Voter.AmountOfVote)
-// 			self.config.DataBase.SetNewProposalWinningVoter("gov", nextGOVConstitutionIndex, underlieMetadata.Voter.PubKey)
+// 			self.config.DataBase.TakeVoteTokenFromWinner("gov", nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
+// 			self.config.DataBase.SetNewProposalWinningVoter("gov", nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
 // 		}
 // 	}
 // 	return nil
 // }
 
-// func (self *BlockChain) ProcessCrowdsaleTxs(block *ShardBlock) error {
-// 	for _, tx := range block.Body.Transactions {
+// func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
+// 	// Temp storage to update crowdsale data
+// 	saleDataMap := make(map[string]params.SaleData)
+
+// 	for _, tx := range block.Transactions {
 // 		switch tx.GetMetadataType() {
 // 		case metadata.AcceptDCBProposalMeta:
 // 			{
@@ -956,53 +868,124 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 // 					return err
 // 				}
 
-// 				// Store saledata in db if needed
-// 				if proposal.DCBParams.SaleData != nil {
-// 					saleData := proposal.DCBParams.SaleData
-// 					if _, _, _, _, _, err := self.config.DataBase.LoadCrowdsaleData(saleData.SaleID); err == nil {
-// 						return fmt.Errorf("SaleID not unique")
+// 				// Store saledata in db
+// 				saleData := proposal.DCBParams.ListSaleData
+// 				for _, data := range saleData {
+// 					if _, _, _, _, _, err := self.config.DataBase.GetCrowdsaleData(data.SaleID); err == nil {
+// 						// TODO(@0xbunyip): support update crowdsale data
+// 						continue
 // 					}
-// 					if err := self.config.DataBase.SaveCrowdsaleData(
-// 						saleData.SaleID,
-// 						saleData.EndBlock,
-// 						saleData.BuyingAsset,
-// 						saleData.BuyingAmount,
-// 						saleData.SellingAsset,
-// 						saleData.SellingAmount,
+// 					if err := self.config.DataBase.StoreCrowdsaleData(
+// 						data.SaleID,
+// 						data.EndBlock,
+// 						data.BuyingAsset,
+// 						data.BuyingAmount,
+// 						data.SellingAsset,
+// 						data.SellingAmount,
 // 					); err != nil {
 // 						return err
 // 					}
 // 				}
 // 			}
-// 		case metadata.CrowdsaleRequestMeta:
+// 		case metadata.CrowdsalePaymentMeta:
 // 			{
-// 				meta := tx.GetMetadata().(*metadata.CrowdsaleRequest)
-// 				hash := tx.Hash()
-// 				if err := self.config.DataBase.StoreCrowdsaleRequest(hash[:], meta.SaleID, meta.PaymentAddress.Pk[:], meta.PaymentAddress.Tk[:], meta.Info); err != nil {
-// 					return err
-// 				}
-// 			}
-// 		case metadata.CrowdsaleResponseMeta:
-// 			{
-// 				meta := tx.GetMetadata().(*metadata.CrowdsaleResponse)
-// 				_, _, _, txRequest, err := self.GetTransactionByHash(meta.RequestedTxID)
+// 				err := self.updateCrowdsalePaymentData(tx, saleDataMap)
 // 				if err != nil {
 // 					return err
 // 				}
-// 				requestHash := txRequest.Hash()
-
-// 				hash := tx.Hash()
-// 				if err := self.config.DataBase.StoreCrowdsaleResponse(requestHash[:], hash[:]); err != nil {
-// 					return err
-// 				}
 // 			}
+// 			//		case metadata.ReserveResponseMeta:
+// 			//			{
+// 			//				// TODO(@0xbunyip): move to another func
+// 			//				meta := tx.GetMetadata().(*metadata.ReserveResponse)
+// 			//				_, _, _, txRequest, err := self.GetTransactionByHash(meta.RequestedTxID)
+// 			//				if err != nil {
+// 			//					return err
+// 			//				}
+// 			//				requestHash := txRequest.Hash()
+// 			//
+// 			//				hash := tx.Hash()
+// 			//				if err := self.config.DataBase.StoreCrowdsaleResponse(requestHash[:], hash[:]); err != nil {
+// 			//					return err
+// 			//				}
+// 			//			}
+// 		}
+// 	}
+
+// 	// Save crowdsale data back into db
+// 	for _, data := range saleDataMap {
+// 		if err := self.config.DataBase.StoreCrowdsaleData(
+// 			data.SaleID,
+// 			data.EndBlock,
+// 			data.BuyingAsset,
+// 			data.BuyingAmount,
+// 			data.SellingAsset,
+// 			data.SellingAmount,
+// 		); err != nil {
+// 			return err
 // 		}
 // 	}
 // 	return nil
 // }
 
-// func (self *BlockChain) ProcessCMBTxs(block *ShardBlock) error {
-// 	for _, tx := range block.Body.Transactions {
+func (self *BlockChain) updateCrowdsalePaymentData(tx metadata.Transaction, saleDataMap map[string]params.SaleData) error {
+	// Get current sale status from db
+	meta := tx.GetMetadata().(*metadata.CrowdsalePayment)
+	saleData, ok := saleDataMap[string(meta.SaleID)]
+	if !ok {
+		_, buyingAsset, buyingAmount, sellingAsset, sellingAmount, err := self.config.DataBase.GetCrowdsaleData(meta.SaleID)
+		if err != nil {
+			return err
+		}
+		saleData = params.SaleData{
+			BuyingAsset:   buyingAsset,
+			BuyingAmount:  buyingAmount,
+			SellingAsset:  sellingAsset,
+			SellingAmount: sellingAmount,
+		}
+		saleDataMap[string(meta.SaleID)] = saleData
+	}
+
+	// Update selling asset status
+	amount := uint64(0)
+	if saleData.SellingAsset.IsEqual(&common.ConstantID) {
+		_, _, amount = tx.GetUniqueReceiver()
+	} else {
+		txToken, ok := tx.(*transaction.TxCustomToken)
+		if !ok {
+			return errors.New("Error parsing crowdsale payment as TxCustomToken")
+		}
+		_, _, amount = txToken.GetTokenUniqueReceiver()
+	}
+	if amount > saleData.SellingAmount {
+		return errors.New("Sold too much asset")
+	}
+	saleData.SellingAmount -= amount
+
+	// Update buying asset status
+	_, _, _, txRequest, err := self.GetTransactionByHash(meta.RequestedTxID)
+	if err != nil {
+		return err
+	}
+	amount = uint64(0)
+	if saleData.BuyingAsset.IsEqual(&common.ConstantID) {
+		_, _, amount = txRequest.GetUniqueReceiver()
+	} else {
+		txToken, ok := txRequest.(*transaction.TxCustomToken)
+		if !ok {
+			return errors.New("Error parsing crowdsale request as TxCustomToken")
+		}
+		_, _, amount = txToken.GetTokenUniqueReceiver()
+	}
+	if amount > saleData.BuyingAmount {
+		return errors.New("Bought too much asset")
+	}
+	saleData.BuyingAmount -= amount
+	return nil
+}
+
+// func (self *BlockChain) ProcessCMBTxs(block *Block) error {
+// 	for _, tx := range block.Transactions {
 // 		switch tx.GetMetadataType() {
 // 		case metadata.CMBInitRequestMeta:
 // 			{
@@ -1050,7 +1033,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 // 	}
 
 // 	// Penalize late response for cmb withdraw request
-// 	return self.findLateWithdrawResponse()
+// 	return self.findLateWithdrawResponse(uint64(block.Header.Height))
 // }
 
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
@@ -1167,7 +1150,7 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBlock) err
 }
 
 // /*
-// 	Key: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
+// 	KeyWallet: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
 //   H: value-spent/unspent-rewarded/unreward
 // */
 func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxCustomToken) error {
@@ -1434,26 +1417,17 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common.Hash, int, metadata.Transaction, error) {
 	blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
 	if err != nil {
-		return byte(255), nil, -1, nil, err
+		abc := NewBlockChainError(UnExpectedError, err)
+		Logger.log.Error(abc)
+		return byte(255), nil, -1, nil, abc
 	}
-
-	block, err := self.GetShardBlockByHash(blockHash)
-	if err != nil {
-		Logger.log.Errorf("ERROR", err, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
-		return byte(255), nil, -1, nil, NewBlockChainError(UnExpectedError, err)
+	block, err1 := self.GetShardBlockByHash(blockHash)
+	if err1 != nil {
+		Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
+		return byte(255), nil, -1, nil, NewBlockChainError(UnExpectedError, err1)
 	}
-	Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
+	//Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
 	return block.Header.ShardID, blockHash, index, block.Body.Transactions[index], nil
-}
-
-func (self *BlockChain) GetTransactionSenderByHash(txHash *common.Hash) ([]byte, error) {
-	_, _, _, tx, err := self.GetTransactionByHash(txHash)
-	if err != nil {
-		return nil, err
-	}
-	key := tx.GetJSPubKey()
-
-	return key, nil
 }
 
 // ListCustomToken - return all custom token which existed in network
@@ -1551,29 +1525,44 @@ func (self *BlockChain) GetNumberOfGOVGovernors() int {
 // 	return self.BestState[shardID].BestBlock
 // }
 
-func (self *BlockChain) GetDCBConstitutionStartHeight(shardID byte) uint32 {
-	return 0
+func (self *BlockChain) GetConstitutionStartHeight(boardType string, shardID byte) uint64 {
+	if boardType == "dcb" {
+		return self.GetDCBConstitutionStartHeight(shardID)
+	} else {
+		return self.GetGOVConstitutionStartHeight(shardID)
+	}
+}
+
+func (self *BlockChain) GetDCBConstitutionStartHeight(shardID byte) uint64 {
 	// return self.GetBestBlock(shardID).Header.DCBConstitution.StartedBlockHeight
-}
-
-func (self *BlockChain) GetDCBConstitutionEndHeight(shardID byte) uint32 {
 	return 0
-	// return self.GetBestBlock(shardID).Header.DCBConstitution.GetEndedBlockHeight()
 }
-
-func (self *BlockChain) GetGOVConstitutionStartHeight(shardID byte) uint32 {
-	return 0
+func (self *BlockChain) GetGOVConstitutionStartHeight(shardID byte) uint64 {
 	// return self.GetBestBlock(shardID).Header.GOVConstitution.StartedBlockHeight
+	return 0
 }
 
-func (self *BlockChain) GetGOVConstitutionEndHeight(shardID byte) uint32 {
+func (self *BlockChain) GetConstitutionEndHeight(boardType string, shardID byte) uint64 {
+	if boardType == "dcb" {
+		return self.GetDCBConstitutionEndHeight(shardID)
+	} else {
+		return self.GetGOVConstitutionEndHeight(shardID)
+	}
+}
+
+func (self *BlockChain) GetDCBConstitutionEndHeight(shardID byte) uint64 {
+	// return self.GetBestBlock(shardID).Header.DCBConstitution.GetEndedBlockHeight()
 	return 0
+}
+
+func (self *BlockChain) GetGOVConstitutionEndHeight(shardID byte) uint64 {
 	// return self.GetBestBlock(shardID).Header.GOVConstitution.GetEndedBlockHeight()
+	return 0
 }
 
-func (self *BlockChain) GetCurrentBlockHeight(shardID byte) uint32 {
+func (self *BlockChain) GetCurrentBlockHeight(shardID byte) uint64 {
+	// return uint64(self.GetBestBlock(shardID).Header.Height)
 	return 0
-	// return uint32(self.GetBestBlock(shardID).Header.Height)
 }
 
 func (self BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
@@ -1590,15 +1579,140 @@ func (self BlockChain) GetFeePerKbTx() uint64 {
 	return 0
 }
 
-// func (self BlockChain) GetCurrentBoardIndex(helper ConstitutionHelper) uint32 {
-// 	board := helper.GetBoard(self)
-// 	return board.BoardIndex()
-// }
+func (self *BlockChain) GetCurrentBoardIndex(helper ConstitutionHelper) uint32 {
+	board := helper.GetBoard(self)
+	return board.BoardIndex()
+}
 
-// func (self BlockChain) GetConstitutionIndex(helper ConstitutionHelper) uint32 {
-// 	constitutionInfo := helper.GetConstitutionInfo(self)
-// 	return constitutionInfo.ConstitutionIndex
-// }
+func (self *BlockChain) GetConstitutionIndex(helper ConstitutionHelper) uint32 {
+	constitutionInfo := helper.GetConstitutionInfo(self)
+	return constitutionInfo.ConstitutionIndex
+}
+
+//1. Current National welfare (NW)  < lastNW * 0.9 (Emergency case)
+//2. Block height == last constitution start time + last constitution window
+//This function is called after successful connect block => block height is block height of best state
+func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) bool {
+	// BestBlock := self.BestState[0].BestBlock
+	// thisBlockHeight := BestBlock.Header.Height
+	// newNationalWelfare := helper.GetCurrentNationalWelfare(self)
+	// oldNationalWelfare := helper.GetOldNationalWelfare(self)
+	// thresholdNationalWelfare := oldNationalWelfare * helper.GetThresholdRatioOfCrisis() / common.BasePercentage
+
+	// constitutionInfo := helper.GetConstitutionInfo(self)
+	// endedOfConstitution := constitutionInfo.StartedBlockHeight + constitutionInfo.ExecuteDuration
+	// pivotOfStart := endedOfConstitution - 3*uint64(common.EncryptionOnePhraseDuration)
+
+	// rightTime := newNationalWelfare < thresholdNationalWelfare || pivotOfStart == uint64(thisBlockHeight)
+
+	// encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
+	// rightFlag := encryptFlag == common.Lv3EncryptionFlag
+	// if rightTime && rightFlag {
+	// 	return true
+	// }
+	return false
+}
+
+//This function is called after successful connect block => block height is block height of best state
+func (self *BlockChain) NeedEnterEncryptLv1(helper ConstitutionHelper) bool {
+	// BestBlock := self.BestState[0].BestBlock
+	// thisBlockHeight := BestBlock.Header.Height
+	// lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
+	// encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
+	// if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
+	// 	encryptFlag == common.Lv2EncryptionFlag {
+	// 	return true
+	// }
+	return false
+}
+
+//This function is called after successful connect block => block height is block height of best state
+func (self *BlockChain) NeedEnterEncryptNormal(helper ConstitutionHelper) bool {
+	// BestBlock := self.BestState[0].BestBlock
+	// thisBlockHeight := BestBlock.Header.Height
+	// lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
+	// encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
+	// if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
+	// 	encryptFlag == common.Lv1EncryptionFlag {
+	// 	return true
+	// }
+	return false
+}
+
+//This function is called after successful connect block => block height is block height of best state
+func (self *BlockChain) SetEncryptPhrase(helper ConstitutionHelper) {
+	// flag := 0
+	// boardType := helper.GetBoardType()
+	// if self.NeedToEnterEncryptionPhrase(helper) {
+	// 	flag = common.Lv2EncryptionFlag
+	// 	self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[0].BestBlock.Header.Height))
+	// 	self.config.DataBase.SetEncryptFlag(boardType, uint32(flag))
+	// } else if self.NeedEnterEncryptLv1(helper) {
+	// 	flag = common.Lv1EncryptionFlag
+	// 	self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[0].BestBlock.Header.Height))
+	// 	self.config.DataBase.SetEncryptFlag(boardType, uint32(flag))
+	// } else if self.NeedEnterEncryptNormal(helper) {
+	// 	flag = common.NormalEncryptionFlag
+	// 	self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[0].BestBlock.Header.Height))
+	// 	self.config.DataBase.SetEncryptFlag(boardType, uint32(flag))
+	// }
+}
+
+//This function is called when new block => block height is block height of best state + 1
+func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
+	// BestBlock := self.BestState[0].BestBlock
+	// thisBlockHeight := BestBlock.Header.Height + 1
+	// lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
+	// encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
+	// if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
+	// 	encryptFlag == common.NormalEncryptionFlag {
+	// 	return true
+	// }
+	return false
+}
+
+// GetRecentTransactions - find all recent history txs which are created by user
+// by number of block, maximum is 100 newest blocks
+func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privacy.ViewingKey, shardID byte) (map[string]metadata.Transaction, error) {
+	if numBlock > 100 { // maximum is 100
+		numBlock = 100
+	}
+	// var err error
+	result := make(map[string]metadata.Transaction)
+	// bestBlock := blockchain.BestState[shardID].BestBlock
+	// for {
+	// 	for _, tx := range bestBlock.Transactions {
+	// 		info := tx.GetInfo()
+	// 		if info == nil {
+	// 			continue
+	// 		}
+	// 		// info of tx with contain encrypted pubkey of creator in 1st 64bytes
+	// 		lenInfo := 66
+	// 		if len(info) < lenInfo {
+	// 			continue
+	// 		}
+	// 		// decrypt to get pubkey data from info
+	// 		pubkeyData, err1 := privacy.ElGamalDecrypt(key.Rk[:], info[0:lenInfo])
+	// 		if err1 != nil {
+	// 			continue
+	// 		}
+	// 		// compare to check pubkey
+	// 		if !bytes.Equal(pubkeyData.Compress(), key.Pk[:]) {
+	// 			continue
+	// 		}
+	// 		result[tx.Hash().String()] = tx
+	// 	}
+	// 	numBlock--
+	// 	if numBlock == 0 {
+	// 		break
+	// 	}
+	// 	bestBlock, err = blockchain.GetBlockByBlockHash(&bestBlock.Header.PrevBlockHash)
+	// 	if err != nil {
+	// 		break
+	// 	}
+	// }
+	return result, nil
+}
 
 func (self *BlockChain) IsReady(shard bool, shardID byte) bool {
 

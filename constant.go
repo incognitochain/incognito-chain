@@ -61,7 +61,7 @@ func mainMaster(serverChan chan<- *Server) error {
 
 	// Check wallet and start it
 	var walletObj *wallet.Wallet
-	if cfg.Wallet == true {
+	if cfg.Wallet {
 		walletObj = &wallet.Wallet{}
 		walletObj.Config = &wallet.WalletConfig{
 			DataDir:        cfg.DataDir,
@@ -76,9 +76,15 @@ func mainMaster(serverChan chan<- *Server) error {
 			// 	walletObj.Init(cfg.WalletPassphrase, 0, cfg.WalletName)
 			// 	walletObj.Save(cfg.WalletPassphrase)
 			// } else {
-			// write log and exit when can not load wallet
-			Logger.log.Criticalf("Can not load wallet with %s. Please use constantctl to create a new wallet", walletObj.Config.DataPath)
-			return err
+			// 	if cfg.WalletAutoInit {
+			// 		Logger.log.Critical("\n **** Auto init wallet flag is TRUE ****\n")
+			// 		walletObj.Init(cfg.WalletPassphrase, 0, cfg.WalletName)
+			// 		walletObj.Save(cfg.WalletPassphrase)
+			// 	} else {
+			// 		// write log and exit when can not load wallet
+			// 		Logger.log.Criticalf("Can not load wallet with %s. Please use constantctl to create a new wallet", walletObj.Config.DataPath)
+			// 		return err
+			// 	}
 			// }
 		}
 	}
@@ -139,6 +145,7 @@ func main() {
 			os.Exit(0)
 		}
 	}
+
 	// Work around defer not working after os.Exit()
 	if err := mainMaster(nil); err != nil {
 		os.Exit(1)

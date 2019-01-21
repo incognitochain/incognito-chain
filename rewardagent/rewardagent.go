@@ -1,18 +1,12 @@
 package rewardagent
 
 import (
-	"sync"
-
 	"github.com/ninjadotorg/constant/blockchain"
 )
 
 type RewardAgent struct {
-	started  int32
-	shutdown int32
-
-	msgChan   chan interface{}
-	waitgroup sync.WaitGroup
-	quit      chan struct{}
+	msgChan chan interface{}
+	quit    chan struct{}
 
 	config *RewardAgentConfig
 }
@@ -21,11 +15,11 @@ type RewardAgentConfig struct {
 	BlockChain *blockchain.BlockChain
 }
 
-func (self RewardAgent) Init(cfg *RewardAgentConfig) (*RewardAgent, error) {
-	self.config = cfg
-	self.quit = make(chan struct{})
-	self.msgChan = make(chan interface{})
-	return &self, nil
+func (rewardAgent RewardAgent) Init(cfg *RewardAgentConfig) (*RewardAgent, error) {
+	rewardAgent.config = cfg
+	rewardAgent.quit = make(chan struct{})
+	rewardAgent.msgChan = make(chan interface{})
+	return &rewardAgent, nil
 }
 
 func (self *RewardAgent) GetBasicSalary(shardID byte) uint64 {

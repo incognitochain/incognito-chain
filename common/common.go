@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math"
 	"math/big"
 	"net"
 	"os"
@@ -32,7 +31,7 @@ import (
 // primarily to enable the testing package to properly test the function by
 // forcing an operating system that is not the currently one.
 func appDataDir(goos, appName string, roaming bool) string {
-	if appName == EmptyString || appName == "." {
+	if appName == "" || appName == "." {
 		return "."
 	}
 
@@ -52,7 +51,7 @@ func appDataDir(goos, appName string, roaming bool) string {
 	// Fall back to standard HOME environment variable that works
 	// for most POSIX OSes if the directory from the Go standard
 	// lib failed.
-	if err != nil || homeDir == EmptyString {
+	if err != nil || homeDir == "" {
 		homeDir = os.Getenv("HOME")
 	}
 
@@ -63,27 +62,27 @@ func appDataDir(goos, appName string, roaming bool) string {
 		// Windows XP and before didn't have a LOCALAPPDATA, so fallback
 		// to regular APPDATA when LOCALAPPDATA is not set.
 		appData := os.Getenv("LOCALAPPDATA")
-		if roaming || appData == EmptyString {
+		if roaming || appData == "" {
 			appData = os.Getenv("APPDATA")
 		}
 
-		if appData != EmptyString {
+		if appData != "" {
 			return filepath.Join(appData, appNameUpper)
 		}
 
 	case "darwin":
-		if homeDir != EmptyString {
+		if homeDir != "" {
 			return filepath.Join(homeDir, "Library",
 				"Application Support", appNameUpper)
 		}
 
 	case "plan9":
-		if homeDir != EmptyString {
+		if homeDir != "" {
 			return filepath.Join(homeDir, appNameLower)
 		}
 
 	default:
-		if homeDir != EmptyString {
+		if homeDir != "" {
 			return filepath.Join(homeDir, "."+appNameLower)
 		}
 	}
@@ -152,7 +151,7 @@ func ParseListeners(addrs []string, netType string) ([]SimpleAddr, error) {
 		}
 
 		// Empty host or host of * on plan9 is both IPv4 and IPv6.
-		if host == EmptyString || (host == "*" && runtime.GOOS == "plan9") {
+		if host == "" || (host == "*" && runtime.GOOS == "plan9") {
 			netAddrs = append(netAddrs, SimpleAddr{Net: netType + "4", Addr: addr})
 			//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
 			continue
@@ -266,7 +265,7 @@ func SliceBytesExists(slice interface{}, item interface{}) (int64, error) {
 
 	for i := 0; i < s.Len(); i++ {
 		interfacea := s.Index(i).Interface()
-		if bytes.Compare(interfacea.([]byte), item.([]byte)) == 0 {
+		if bytes.Equal(interfacea.([]byte), item.([]byte)) {
 			return int64(i), nil
 		}
 	}
@@ -276,8 +275,8 @@ func SliceBytesExists(slice interface{}, item interface{}) (int64, error) {
 
 func GetTxSenderChain(senderLastByte byte) (byte, error) {
 	//TODO: cycle import blockchain!!! -> cannot use shardnum
-	//chainID := uint(senderLastByte) % uint(blockchain.TestNetShardsNum)
-	//return byte(chainID), nil
+	//shardID := uint(senderLastByte) % uint(blockchain.TestNetShardsNum)
+	//return byte(shardID), nil
 	return senderLastByte, nil
 }
 
@@ -318,11 +317,7 @@ func ValidateNodeAddress(nodeAddr string) bool {
 	}
 
 	_, err = peer.IDB58Decode(strs[1])
-	if err != nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }
 
 // cleanAndExpandPath expands environment variables and leading ~ in the
@@ -339,9 +334,9 @@ func CleanAndExpandPath(path string, defaultHomeDir string) string {
 	return filepath.Clean(os.ExpandEnv(path))
 }
 
-func ConstantToMiliConstant(constant uint64) uint64 {
+/*func ConstantToMiliConstant(constant uint64) uint64 {
 	return constant * uint64(math.Pow(10, NanoConstant))
-}
+}*/
 
 func Max(x, y int) int {
 	if x > y {
@@ -438,8 +433,13 @@ func CompareStringArray(src []string, dst []string) bool {
 }
 
 func BytesToInt32(b []byte) int32 {
-	i, _ := strconv.Atoi(string(b))
-	return int32(i)
+	return int32(binary.LittleEndian.Uint32(b))
+}
+
+func Int32ToBytes(value int32) []byte {
+	b := make([]byte, 4)
+	binary.LittleEndian.PutUint32(b, uint32(value))
+	return b
 }
 
 func BytesToUint64(b []byte) uint64 {
@@ -472,6 +472,22 @@ func SliceInterfaceToSliceByte(Arr []interface{}) []byte {
 	return res
 }
 
+func SliceInterfaceToSliceSliceByte(Arr []interface{}) [][]byte {
+	res := make([][]byte, 0)
+	for _, element := range Arr {
+		res = append(res, element.([]byte))
+	}
+	return res
+}
+
+func SliceInterfaceToSliceString(Arr []interface{}) []string {
+	res := make([]string, 0)
+	for _, element := range Arr {
+		res = append(res, element.(string))
+	}
+	return res
+}
+
 func BytesPlusOne(b []byte) []byte {
 	res := make([]byte, len(b))
 	for i := len(b); i >= 0; i-- {
@@ -484,4 +500,16 @@ func BytesPlusOne(b []byte) []byte {
 		}
 	}
 	return res
+}
+
+func IsOffChainAsset(assetID *Hash) bool {
+	return bytes.Equal(assetID[:8], BTCAssetID[:8])
+}
+
+func IsBondAsset(assetID *Hash) bool {
+	return bytes.Equal(assetID[:8], BondTokenID[:8])
+}
+
+func IsDCBTokenAsset(assetID *Hash) bool {
+	return assetID.IsEqual(&ConstantID)
 }

@@ -44,10 +44,7 @@ func (uob UpdatingOracleBoard) CheckTransactionFee(
 ) bool {
 	txFee := tr.GetTxFee()
 	fullFee := minFeePerKbTx * tr.GetTxActualSize()
-	if txFee < fullFee {
-		return false
-	}
-	return true
+	return !(txFee < fullFee)
 }
 
 func (uob UpdatingOracleBoard) ValidateTxWithBlockChain(
@@ -56,7 +53,7 @@ func (uob UpdatingOracleBoard) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	govBoardPubKeys := bcr.GetGOVBoardPubKeys()
+	govBoardPubKeys := bcr.GetBoardPubKeys("gov")
 	boardLen := len(govBoardPubKeys)
 	if boardLen == 0 {
 		return false, errors.New("There is no one in GOV board yet.")
@@ -133,7 +130,7 @@ func (uob UpdatingOracleBoard) Hash() *common.Hash {
 		record += string(pk)
 	}
 	// record += string(common.ToBytes(uob.Signs))
-	record += string(uob.MetadataBase.Hash()[:])
+	record += uob.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

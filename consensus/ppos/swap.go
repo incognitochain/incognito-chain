@@ -39,7 +39,7 @@ func (self *Engine) StartSwap() {
 				}
 
 				committeeCandidateList := self.config.BlockChain.GetCommitteeCandidateList()
-				nextProducerPbk := common.EmptyString
+				nextProducerPbk := ""
 				for _, committeeCandidatePbk := range committeeCandidateList {
 					peerIDs := self.config.Server.GetPeerIDsFromPublicKey(committeeCandidatePbk)
 					if len(peerIDs) == 0 {
@@ -47,11 +47,11 @@ func (self *Engine) StartSwap() {
 					}
 					nextProducerPbk = committeeCandidatePbk
 				}
-				//if producerPbk == common.EmptyString {
+				//if producerPbk == "" {
 				//	//TODO for testing
 				//	producerPbk = "1q4iCdtqb67DcNYyCE8FvMZKrDRE8KHW783VoYm5LXvds7vpsi"
 				//}
-				if nextProducerPbk == common.EmptyString {
+				if nextProducerPbk == "" {
 					continue
 				}
 

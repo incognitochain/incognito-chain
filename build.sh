@@ -1,7 +1,9 @@
 echo "Start build Constant"
 
-echo "go get"
-go get -d
+git pull
+
+echo "Package install"
+dep ensure -v
 
 APP_NAME="constant"
 

@@ -4,6 +4,8 @@ package blockchain
 // 	"bytes"
 // 	"encoding/json"
 // 	"errors"
+// 	"math"
+// 	"sort"
 
 // 	"github.com/ninjadotorg/constant/common"
 // 	"github.com/ninjadotorg/constant/metadata"
@@ -11,12 +13,12 @@ package blockchain
 // 	"github.com/ninjadotorg/constant/transaction"
 // )
 
-// // type Evaluation struct {
-// // 	Tx               *transaction.Tx
-// // 	OracleFeederAddr *privacy.PaymentAddress
-// // 	OracleFeed       *metadata.OracleFeed
-// // 	Reward           uint64
-// // }
+// type Evaluation struct {
+// 	Tx               *transaction.Tx
+// 	OracleFeederAddr *privacy.PaymentAddress
+// 	OracleFeed       *metadata.OracleFeed
+// 	Reward           uint64
+// }
 
 // func sortEvalsByPrice(evals []*Evaluation, isDesc bool) []*Evaluation {
 // 	sort.Slice(evals, func(i, j int) bool {
@@ -92,41 +94,39 @@ package blockchain
 // 	return selectedPrice, rewardedEvals
 // }
 
-// // func getSenderAddress(tx *transaction.Tx) *privacy.PaymentAddress {
-// // 	if tx.Proof == nil || len(tx.Proof.InputCoins) == 0 {
-// // 		return nil
-// // 	}
-// // 	coin := tx.Proof.InputCoins[0].CoinDetails
-// // 	if coin == nil {
-// // 		return nil
-// // 	}
-// // 	pk := coin.PublicKey.Compress()
-// // 	return &privacy.PaymentAddress{
-// // 		Pk: pk,
-// // 	}
-// // }
+// func getSenderAddress(tx *transaction.Tx) (*privacy.PaymentAddress, error) {
+// 	meta := tx.GetMetadata()
+// 	if meta == nil || meta.GetType() != metadata.OracleFeedMeta {
+// 		return nil, errors.New("Metadata from tx is not OracleFeedMeta type.")
+// 	}
+// 	oracleFeed, ok := meta.(*metadata.OracleFeed)
+// 	if !ok {
+// 		return nil, errors.New("Could not parse OracleFeedMeta metadata.")
+// 	}
+// 	return &oracleFeed.FeederAddress, nil
+// }
 
-// // func refundOracleFeeders(txs []metadata.Transaction) []*Evaluation {
-// // 	evals := []*Evaluation{}
-// // 	for _, tx := range txs {
-// // 		normalTx, ok := tx.(*transaction.Tx)
-// // 		if !ok {
-// // 			continue
-// // 		}
-// // 		senderAddr := getSenderAddress(normalTx)
-// // 		if senderAddr == nil {
-// // 			continue
-// // 		}
-// // 		eval := &Evaluation{
-// // 			Tx:               normalTx,
-// // 			OracleFeederAddr: senderAddr,
-// // 			OracleFeed:       nil,
-// // 			Reward:           normalTx.GetTxFee(),
-// // 		}
-// // 		evals = append(evals, eval)
-// // 	}
-// // 	return evals
-// // }
+// func refundOracleFeeders(txs []metadata.Transaction) []*Evaluation {
+// 	evals := []*Evaluation{}
+// 	for _, tx := range txs {
+// 		normalTx, ok := tx.(*transaction.Tx)
+// 		if !ok {
+// 			continue
+// 		}
+// 		senderAddr, err := getSenderAddress(normalTx)
+// 		if err != nil {
+// 			continue
+// 		}
+// 		eval := &Evaluation{
+// 			Tx:               normalTx,
+// 			OracleFeederAddr: senderAddr,
+// 			OracleFeed:       nil,
+// 			Reward:           normalTx.GetTxFee(),
+// 		}
+// 		evals = append(evals, eval)
+// 	}
+// 	return evals
+// }
 
 // func (blockGen *BlkTmplGenerator) updateOracleValues(
 // 	newBlock *Block,
@@ -191,10 +191,6 @@ package blockchain
 // 			if !ok {
 // 				continue
 // 			}
-// 			senderAddr := getSenderAddress(normalTx)
-// 			if senderAddr == nil {
-// 				continue
-// 			}
 // 			meta := tx.GetMetadata()
 // 			oracleFeed, ok := meta.(*metadata.OracleFeed)
 // 			if !ok {
@@ -203,7 +199,7 @@ package blockchain
 // 			eval := &Evaluation{
 // 				Tx:               normalTx,
 // 				OracleFeed:       oracleFeed,
-// 				OracleFeederAddr: senderAddr,
+// 				OracleFeederAddr: &oracleFeed.FeederAddress,
 // 			}
 // 			evals = append(evals, eval)
 // 		}
@@ -222,21 +218,21 @@ package blockchain
 // func (blockGen *BlkTmplGenerator) buildOracleRewardTxs(
 // 	shardID byte,
 // 	privatekey *privacy.SpendingKey,
-// ) ([]*transaction.Tx, uint64, map[string]uint64, error) {
+// ) ([]metadata.Transaction, uint64, map[string]uint64, error) {
 // 	bestBlock := blockGen.chain.BestState[shardID].BestBlock
 // 	evals, updatedOracleValues, err := blockGen.buildRewardAndRefundEvals(bestBlock, shardID)
 // 	if err != nil {
-// 		return []*transaction.Tx{}, 0, map[string]uint64{}, err
+// 		return []metadata.Transaction{}, 0, map[string]uint64{}, err
 // 	}
 
 // 	totalRewards := uint64(0)
-// 	oracleRewardTxs := []*transaction.Tx{}
+// 	oracleRewardTxs := []metadata.Transaction{}
 // 	for _, eval := range evals {
 // 		oracleReward := metadata.NewOracleReward(*eval.Tx.Hash(), metadata.OracleRewardMeta)
 // 		oracleRewardTx := new(transaction.Tx)
 // 		err := oracleRewardTx.InitTxSalary(eval.Reward, eval.OracleFeederAddr, privatekey, blockGen.chain.GetDatabase(), oracleReward)
 // 		if err != nil {
-// 			return []*transaction.Tx{}, 0, map[string]uint64{}, err
+// 			return []metadata.Transaction{}, 0, map[string]uint64{}, err
 // 		}
 // 		oracleRewardTxs = append(oracleRewardTxs, oracleRewardTx)
 // 		totalRewards += eval.Reward

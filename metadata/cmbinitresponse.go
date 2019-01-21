@@ -17,22 +17,22 @@ type CMBInitResponse struct {
 }
 
 func NewCMBInitResponse(data map[string]interface{}) *CMBInitResponse {
-	mainKey, err := wallet.Base58CheckDeserialize(data["MainAccount"].(string))
+	keyWalletMainKey, err := wallet.Base58CheckDeserialize(data["MainAccount"].(string))
 	if err != nil {
 		return nil
 	}
 	result := CMBInitResponse{
-		MainAccount: mainKey.KeySet.PaymentAddress,
+		MainAccount: keyWalletMainKey.KeySet.PaymentAddress,
 	}
 	result.Type = CMBInitResponseMeta
 	return &result
 }
 
 func (cres *CMBInitResponse) Hash() *common.Hash {
-	record := string(cres.MainAccount.Bytes())
+	record := cres.MainAccount.String()
 
 	// final hash
-	record += string(cres.MetadataBase.Hash()[:])
+	record += cres.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -60,7 +60,7 @@ func (cres *CMBInitResponse) ValidateTxWithBlockChain(txr Transaction, bcr Block
 		return false, errors.Errorf("error getting list of old cmb init responses")
 	}
 	for _, member := range memberResponded {
-		if bytes.Equal(txr.GetJSPubKey(), member) {
+		if bytes.Equal(txr.GetSigPubKey(), member) {
 			return false, errors.Errorf("each board member can only response once to each cmb init request")
 		}
 	}
@@ -70,18 +70,20 @@ func (cres *CMBInitResponse) ValidateTxWithBlockChain(txr Transaction, bcr Block
 	if err != nil {
 		return false, err
 	}
-	reqBlockHeight, _, err := bcr.GetShardBlockHeightByHash(blockHash)
-	curBlockHeight := bcr.GetHeight(shardID)
-	if curBlockHeight-reqBlockHeight >= CMBInitRefundPeriod {
+	reqBlockHeight, _, _ := bcr.GetBlockHeightByBlockHash(blockHash)
+	curBlockHeight, err := bcr.GetTxChainHeight(txr)
+	if err != nil || curBlockHeight-reqBlockHeight >= CMBInitRefundPeriod {
 		return false, errors.Errorf("response time is over for this cmb init request")
 	}
 	return true, nil
 }
 
 func (cres *CMBInitResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+	// TODO(@0xbunyip)
 	return true, false, nil // DCB takes care of fee
 }
 
 func (cres *CMBInitResponse) ValidateMetadataByItself() bool {
+	// TODO(@0xbunyip)
 	return true
 }
