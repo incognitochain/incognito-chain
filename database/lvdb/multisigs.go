@@ -3,6 +3,7 @@ package lvdb
 import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/pkg/errors"
+	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 func (db *db) StoreMultiSigsRegistration(
@@ -22,5 +23,11 @@ func (db *db) GetMultiSigsRegistration(
 ) ([]byte, error) {
 	key := append(multisigsPrefix, pubKey...)
 	multisigsRegBytes, err := db.Get(key)
-	return multisigsRegBytes, err
+	if err != nil {
+		if err != lvdberr.ErrNotFound {
+			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+		return []byte{}, nil
+	}
+	return multisigsRegBytes, nil
 }
