@@ -460,3 +460,41 @@ func (tx *TxCustomToken) ValidateType() bool {
 func (tx *TxCustomToken) GetProof() *zkp.PaymentProof {
 	return tx.Proof
 }
+
+func (tx *TxCustomToken) GetTokenReceivers() ([][]byte, []uint64) {
+	pubkeys := [][]byte{}
+	amounts := []uint64{}
+	for _, vout := range tx.TxTokenData.Vouts {
+		added := false
+		coinPubKey := vout.PaymentAddress.Pk
+		for i, key := range pubkeys {
+			if bytes.Equal(coinPubKey, key) {
+				added = true
+				amounts[i] += vout.Value
+				break
+			}
+		}
+		if !added {
+			pubkeys = append(pubkeys, coinPubKey)
+			amounts = append(amounts, vout.Value)
+		}
+	}
+	return pubkeys, amounts
+}
+
+func (tx *TxCustomToken) GetTokenUniqueReceiver() (bool, []byte, uint64) {
+	sender := tx.GetSigPubKey()
+	pubkeys, amounts := tx.GetTokenReceivers()
+	pubkey := []byte{}
+	amount := uint64(0)
+	count := 0
+	for i, pk := range pubkeys {
+		if !bytes.Equal(pk, sender) {
+			pubkey = pk
+			amount = amounts[i]
+			count += 1
+		}
+	}
+	return count == 1, pubkey, amount
+
+}

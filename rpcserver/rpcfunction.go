@@ -76,6 +76,12 @@ var RpcHandler = map[string]commandHandler{
 	GetLoanResponseRejected:   RpcServer.handleGetLoanResponseRejected,
 	GetLoanPaymentInfo:        RpcServer.handleGetLoanPaymentInfo,
 
+	// Crowdsale
+	GetListOngoingCrowdsale:               RpcServer.handleGetListOngoingCrowdsale,
+	CreateAndSendCrowdsaleRequestToken:    RpcServer.handleCreateAndSendCrowdsaleRequestToken,
+	CreateAndSendCrowdsaleRequestConstant: RpcServer.handleCreateAndSendCrowdsaleRequestConstant,
+	TestStoreCrowdsale:                    RpcServer.handleTESTStoreCrowdsale,
+
 	// multisig
 	CreateSignatureOnCustomTokenTx:       RpcServer.handleCreateSignatureOnCustomTokenTx,
 	GetListDCBBoard:                      RpcServer.handleGetListDCBBoard,
@@ -159,6 +165,7 @@ var RpcLimited = map[string]commandHandler{
 	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
 	GetReceivedByAccount:       RpcServer.handleGetReceivedByAccount,
 	SetTxFee:                   RpcServer.handleSetTxFee,
+	GetRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
 }
 
 /*

@@ -46,19 +46,20 @@ const (
 	HasSerialNumbers                           = "hasserialnumbers"
 
 	// Wallet rpc cmd
-	ListAccounts               = "listaccounts"
-	GetAccount                 = "getaccount"
-	GetAddressesByAccount      = "getaddressesbyaccount"
-	GetAccountAddress          = "getaccountaddress"
-	DumpPrivkey                = "dumpprivkey"
-	ImportAccount              = "importaccount"
-	RemoveAccount              = "removeaccount"
-	ListUnspentOutputCoins     = "listunspentoutputcoins"
-	GetBalance                 = "getbalance"
-	GetBalanceByPrivatekey     = "getbalancebyprivatekey"
-	GetBalanceByPaymentAddress = "getbalancebypaymentaddress"
-	GetReceivedByAccount       = "getreceivedbyaccount"
-	SetTxFee                   = "settxfee"
+	ListAccounts                       = "listaccounts"
+	GetAccount                         = "getaccount"
+	GetAddressesByAccount              = "getaddressesbyaccount"
+	GetAccountAddress                  = "getaccountaddress"
+	DumpPrivkey                        = "dumpprivkey"
+	ImportAccount                      = "importaccount"
+	RemoveAccount                      = "removeaccount"
+	ListUnspentOutputCoins             = "listunspentoutputcoins"
+	GetBalance                         = "getbalance"
+	GetBalanceByPrivatekey             = "getbalancebyprivatekey"
+	GetBalanceByPaymentAddress         = "getbalancebypaymentaddress"
+	GetReceivedByAccount               = "getreceivedbyaccount"
+	SetTxFee                           = "settxfee"
+	GetRecentTransactionsByBlockNumber = "getrecenttransactionsbyblocknumber"
 
 	// multisig for board spending
 	CreateSignatureOnCustomTokenTx       = "createsignatureoncustomtokentx"
@@ -83,6 +84,12 @@ const (
 	GetLoanResponseRejected   = "getloanresponserejected"
 	GetLoanParams             = "loanparams"
 	GetLoanPaymentInfo        = "getloanpaymentinfo"
+
+	// crowdsale
+	GetListOngoingCrowdsale               = "getlistongoingcrowdsale"
+	CreateAndSendCrowdsaleRequestToken    = "createandsendcrowdsalerequesttoken"
+	CreateAndSendCrowdsaleRequestConstant = "createandsendcrowdsalerequestconstant"
+	TestStoreCrowdsale                    = "teststorecrowdsale"
 
 	// vote
 	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"

@@ -36,6 +36,9 @@ func NewLoanParamsFromJson(data interface{}) *LoanParams {
 
 func NewListLoanParamsFromJson(data interface{}) []LoanParams {
 	listLoanParamsData := common.InterfaceSlice(data)
+	if listLoanParamsData == nil {
+		panic("listLoanParamsData")
+	}
 	listLoanParams := make([]LoanParams, 0)
 
 	for _, loanParamsData := range listLoanParamsData {
@@ -52,7 +55,7 @@ type DCBParams struct {
 	SaleDCBTokensByUSDData   *SaleDCBTokensByUSDData
 
 	// TODO(@0xbunyip): read loan params from proposal instead of storing and reading separately
-	LoanParams []LoanParams // params for collateralized loans of Constant
+	ListLoanParams []LoanParams // params for collateralized loans of Constant
 }
 
 func NewDCBParams(
@@ -69,12 +72,15 @@ func NewDCBParams(
 		MinCMBApprovalRequire:    minCMBApprovalRequire,
 		LateWithdrawResponseFine: lateWithdrawResponseFine,
 		SaleDCBTokensByUSDData:   saleDCBTokensByUSDData,
-		LoanParams:               listLoanParams,
+		ListLoanParams:           listLoanParams,
 	}
 }
 
 func NewListSaleDataFromJson(data interface{}) []SaleData {
 	listSaleDataData := common.InterfaceSlice(data)
+	if listSaleDataData == nil {
+		panic("list sale data")
+	}
 	listSaleData := make([]SaleData, 0)
 	for _, i := range listSaleDataData {
 		listSaleData = append(listSaleData, *NewSaleDataFromJson(i))
@@ -157,7 +163,7 @@ func (dcbParams *DCBParams) Hash() *common.Hash {
 	record += string(dcbParams.MinLoanResponseRequire)
 	record += string(dcbParams.MinCMBApprovalRequire)
 	record += string(dcbParams.LateWithdrawResponseFine)
-	for _, i := range dcbParams.LoanParams {
+	for _, i := range dcbParams.ListLoanParams {
 		record += string(i.InterestRate)
 		record += string(i.Maturity)
 		record += string(i.LiquidationStart)

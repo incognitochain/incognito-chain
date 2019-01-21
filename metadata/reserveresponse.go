@@ -4,30 +4,31 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 )
 
-type CrowdsaleResponse struct {
+type ReserveResponse struct {
 	RequestedTxID *common.Hash
 
 	MetadataBase
 }
 
-func NewCrowdsaleResponse(data map[string]interface{}) *CrowdsaleResponse {
+func NewReserveResponse(data map[string]interface{}) *ReserveResponse {
 	s, err := hex.DecodeString(data["RequestedTxID"].(string))
 	if err != nil {
 		return nil
 	}
-	result := &CrowdsaleResponse{
+	result := &ReserveResponse{
 		RequestedTxID: &common.Hash{},
 	}
-	result.Type = CrowdSaleResponseMeta
+	result.Type = ReserveResponseMeta
 	copy(result.RequestedTxID[:], s)
 	return result
 }
 
-func (cr *CrowdsaleResponse) Hash() *common.Hash {
+func (cr *ReserveResponse) Hash() *common.Hash {
 	record := string(cr.RequestedTxID[:])
 
 	// final hash
@@ -36,7 +37,7 @@ func (cr *CrowdsaleResponse) Hash() *common.Hash {
 	return &hash
 }
 
-func (cr *CrowdsaleResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (cr *ReserveResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if only board members created this tx
 	isBoard := false
 	for _, gov := range bcr.GetBoardPubKeys("dcb") {
@@ -49,30 +50,30 @@ func (cr *CrowdsaleResponse) ValidateTxWithBlockChain(txr Transaction, bcr Block
 		return false, errors.New("Tx must be created by DCB Governor")
 	}
 
-	// Check if crowdsale request exists
-	txHashes, err := bcr.GetCrowdsaleTxs(cr.RequestedTxID[:])
-	if err != nil {
-		return false, err
-	}
-	if len(txHashes) == 0 {
-		return false, errors.New("Found no request for current crowdsale response")
-	}
-	for _, txHash := range txHashes {
-		hash, _ := (&common.Hash{}).NewHash(txHash)
-		_, _, _, txOld, err := bcr.GetTransactionByHash(hash)
-		if txOld == nil || err != nil {
-			return false, errors.New("Error finding corresponding loan request")
-		}
-		switch txOld.GetMetadataType() {
-		case CrowdSaleResponseMeta:
-			{
-				// Check if the same user responses twice
-				if bytes.Equal(txOld.GetSigPubKey(), txr.GetSigPubKey()) {
-					return false, errors.New("Current board member already responded to crowdsale request")
-				}
-			}
-		}
-	}
+	//	// Check if crowdsale request exists
+	//	txHashes, err := bcr.GetCrowdsaleTxs(cr.RequestedTxID[:])
+	//	if err != nil {
+	//		return false, err
+	//	}
+	//	if len(txHashes) == 0 {
+	//		return false, errors.New("Found no request for current crowdsale response")
+	//	}
+	//	for _, txHash := range txHashes {
+	//		hash, _ := (&common.Hash{}).NewHash(txHash)
+	//		_, _, _, txOld, err := bcr.GetTransactionByHash(hash)
+	//		if txOld == nil || err != nil {
+	//			return false, errors.New("Error finding corresponding loan request")
+	//		}
+	//		switch txOld.GetMetadataType() {
+	//		case ReserveResponseMeta:
+	//			{
+	//				// Check if the same user responses twice
+	//				if bytes.Equal(txOld.GetSigPubKey(), txr.GetSigPubKey()) {
+	//					return false, errors.New("Current board member already responded to crowdsale request")
+	//				}
+	//			}
+	//		}
+	//	}
 
 	// Check if selling asset is of the right type
 	_, _, _, txRequest, err := bcr.GetTransactionByHash(cr.RequestedTxID)
@@ -90,15 +91,15 @@ func (cr *CrowdsaleResponse) ValidateTxWithBlockChain(txr Transaction, bcr Block
 	return true, nil
 }
 
-func (cr *CrowdsaleResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (cr *ReserveResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	return false, true, nil // No need to check for fee
 }
 
-func (cr *CrowdsaleResponse) ValidateMetadataByItself() bool {
+func (cr *ReserveResponse) ValidateMetadataByItself() bool {
 	return true
 }
 
 // CheckTransactionFee returns true since loan response tx doesn't have fee
-func (cr *CrowdsaleResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+func (cr *ReserveResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	return true
 }

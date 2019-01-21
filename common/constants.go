@@ -1,9 +1,10 @@
 package common
 
 const (
-	RefundPeriod = 1000 // after 1000 blocks since a tx (small & no-privacy) happens, the network will refund an amount of constants to tx initiator automatically
-	PubKeyLength = 33
-	ZeroByte     = byte(0x00)
+	RefundPeriod     = 1000 // after 1000 blocks since a tx (small & no-privacy) happens, the network will refund an amount of constants to tx initiator automatically
+	PubKeyLength     = 33
+	ZeroByte         = byte(0x00)
+	DateOutputFormat = "2006-01-02T15:04:05.999999"
 )
 
 const (
@@ -45,7 +46,12 @@ const (
 	RewardProposalSubmitter           = 500
 	BasePercentage                    = 10000
 	PercentageBoardSalary             = 5
-	SubmitProposalFee                 = 100
+)
+
+//Fee of specific transaction
+const (
+	FeeSubmitProposal = 100
+	FeeVoteProposal   = 100
 )
 
 //voting flag
@@ -64,7 +70,7 @@ const (
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	BondTokenID      = Hash{0, 0, 0, 0, 0, 0, 0, 0}
+	BondTokenID      = Hash{0, 0, 0, 0, 0, 0, 0, 0} // first 8 bytes must be 0
 	DCBTokenID       = Hash{1}
 	GOVTokenID       = Hash{2}
 	CMBTokenID       = Hash{3}

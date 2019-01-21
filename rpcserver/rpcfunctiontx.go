@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"time"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -99,12 +100,12 @@ func (rpcServer RpcServer) handleCreateRawTransaction(params interface{}, closeC
 	tx, err := rpcServer.buildRawTransaction(params, nil)
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
 		// return hex for a new tx
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
@@ -126,18 +127,18 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrSendTxData, err)
 	}
 	var tx transaction.Tx
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
 	hash, txDesc, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
@@ -146,13 +147,13 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 	// broadcast Message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
 	err = rpcServer.config.Server.PushMessageToAll(txMsg)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
 	txID := tx.Hash().String()
@@ -169,7 +170,7 @@ func (rpcServer RpcServer) handleCreateAndSendTx(params interface{}, closeChan <
 	var err error
 	data, err := rpcServer.handleCreateRawTransaction(params, closeChan)
 	if err.(*RPCError) != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
 	base58CheckData := tx.Base58CheckData
@@ -177,7 +178,7 @@ func (rpcServer RpcServer) handleCreateAndSendTx(params interface{}, closeChan <
 	newParam = append(newParam, base58CheckData)
 	sendResult, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
 	if err.(*RPCError) != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrSendTxData, err)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
@@ -220,7 +221,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 				Hash:      tx.Hash().String(),
 				Version:   tempTx.Version,
 				Type:      tempTx.Type,
-				LockTime:  tempTx.LockTime,
+				LockTime:  time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
 				Fee:       tempTx.Fee,
 				Proof:     tempTx.Proof,
 				SigPubKey: tempTx.SigPubKey,
@@ -239,7 +240,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 				Hash:      tx.Hash().String(),
 				Version:   tempTx.Version,
 				Type:      tempTx.Type,
-				LockTime:  tempTx.LockTime,
+				LockTime:  time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
 				Fee:       tempTx.Fee,
 				Proof:     tempTx.Proof,
 				SigPubKey: tempTx.SigPubKey,
@@ -262,7 +263,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 				Hash:      tx.Hash().String(),
 				Version:   tempTx.Version,
 				Type:      tempTx.Type,
-				LockTime:  tempTx.LockTime,
+				LockTime:  time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
 				Fee:       tempTx.Fee,
 				Proof:     tempTx.Proof,
 				SigPubKey: tempTx.SigPubKey,
@@ -277,7 +278,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 		}
 	default:
 		{
-
+			return nil, NewRPCError(ErrTxTypeInvalid, errors.New("Tx type is invalid"))
 		}
 	}
 	return result, nil
@@ -310,13 +311,13 @@ func (rpcServer RpcServer) handleCreateRawCustomTokenTransaction(
 	tx, err := rpcServer.buildRawCustomTokenTransaction(params, nil)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
@@ -333,19 +334,19 @@ func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrSendTxData, err)
 	}
 	tx := transaction.TxCustomToken{}
 	//tx := transaction.TxCustomToken{}
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
 	hash, txDesc, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
@@ -354,7 +355,7 @@ func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{
 	// broadcast message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
@@ -459,6 +460,7 @@ func (rpcServer RpcServer) handleGetListPrivacyCustomTokenBalance(params interfa
 		if item.Amount == 0 {
 			continue
 		}
+		item.IsPrivacy = true
 		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
 		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	}
@@ -527,27 +529,27 @@ func (rpcServer RpcServer) handleCreateSignatureOnCustomTokenTx(params interface
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
 
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 	tx := transaction.TxCustomToken{}
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 	senderKeyParam := arrayParams[1]
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 
 	jsSignByteArray, err := tx.GetTxCustomTokenSignature(senderKey.KeySet)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, errors.New("failed to sign the custom token"))
+		return nil, NewRPCError(ErrCreateTxData, errors.New("failed to sign the custom token"))
 	}
 	return hex.EncodeToString(jsSignByteArray), nil
 }
@@ -654,13 +656,13 @@ func (rpcServer RpcServer) handleCreateRawPrivacyCustomTokenTransaction(
 	tx, err := rpcServer.buildRawPrivacyCustomTokenTransaction(params)
 	if err.(*transaction.TransactionError) != nil {
 		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
@@ -677,17 +679,17 @@ func (rpcServer RpcServer) handleSendRawPrivacyCustomTokenTransaction(params int
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrSendTxData, err)
 	}
 	tx := transaction.TxCustomTokenPrivacy{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
 	hash, txDesc, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
@@ -696,7 +698,7 @@ func (rpcServer RpcServer) handleSendRawPrivacyCustomTokenTransaction(params int
 	// broadcast message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
