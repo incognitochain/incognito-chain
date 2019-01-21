@@ -101,9 +101,9 @@ func (tx *Tx) Init(
 	// get public key last byte of sender
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
 	// init info of tx
-	pubKeyPoint := &privacy.EllipticPoint{}
-	pubKeyPoint.Decompress(senderFullKey.PaymentAddress.Pk)
-	tx.Info, err = privacy.ElGamalEncrypt(senderFullKey.PaymentAddress.Tk[:], pubKeyPoint)
+	pubKeyData := &privacy.EllipticPoint{}
+	pubKeyData.Decompress(senderFullKey.PaymentAddress.Pk)
+	tx.Info, err = privacy.ElGamalEncrypt(senderFullKey.PaymentAddress.Tk[:], pubKeyData)
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
