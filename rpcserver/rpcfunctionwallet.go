@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"log"
+	"time"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -418,5 +419,16 @@ func (rpcServer RpcServer) handleGetRecentTransactionsByBlockNumber(params inter
 		return nil, NewRPCError(ErrInvalidSenderViewingKey, err)
 	}
 
-	return txs, nil
+	result := jsonresult.GetRecentTransactions{
+		Txs: make(map[string]jsonresult.TransactionDetail),
+	}
+	if len(txs) > 0 {
+		for txId, tx := range txs {
+			result.Txs[txId] = jsonresult.TransactionDetail{
+				Hash:     txId,
+				LockTime: time.Unix(tx.GetLockTime(), 0).Format(common.DateOutputFormat),
+			}
+		}
+	}
+	return result, nil
 }

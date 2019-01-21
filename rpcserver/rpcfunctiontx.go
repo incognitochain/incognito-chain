@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"time"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -220,7 +221,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 				Hash:      tx.Hash().String(),
 				Version:   tempTx.Version,
 				Type:      tempTx.Type,
-				LockTime:  tempTx.LockTime,
+				LockTime:  time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
 				Fee:       tempTx.Fee,
 				Proof:     tempTx.Proof,
 				SigPubKey: tempTx.SigPubKey,
@@ -239,7 +240,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 				Hash:      tx.Hash().String(),
 				Version:   tempTx.Version,
 				Type:      tempTx.Type,
-				LockTime:  tempTx.LockTime,
+				LockTime:  time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
 				Fee:       tempTx.Fee,
 				Proof:     tempTx.Proof,
 				SigPubKey: tempTx.SigPubKey,
@@ -262,7 +263,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 				Hash:      tx.Hash().String(),
 				Version:   tempTx.Version,
 				Type:      tempTx.Type,
-				LockTime:  tempTx.LockTime,
+				LockTime:  time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
 				Fee:       tempTx.Fee,
 				Proof:     tempTx.Proof,
 				SigPubKey: tempTx.SigPubKey,

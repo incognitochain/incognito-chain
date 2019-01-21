@@ -720,6 +720,10 @@ func (tx *Tx) GetInfo() []byte {
 	return tx.Info
 }
 
+func (tx *Tx) GetLockTime() int64 {
+	return tx.LockTime
+}
+
 func (tx *Tx) GetSigPubKey() []byte {
 	return tx.SigPubKey
 }
@@ -785,10 +789,6 @@ func (tx *Tx) GetSenderAddress() *privacy.PaymentAddress {
 		return nil
 	}
 	return &withSenderAddrMeta.SenderAddress
-}
-
-func (tx *Tx) GetLockTime() int64 {
-	return tx.LockTime
 }
 
 // InitTxSalary
