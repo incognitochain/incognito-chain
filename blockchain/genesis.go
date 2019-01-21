@@ -122,7 +122,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	}
 	genesisBlock.Header.DCBConstitution.DCBParams = params.DCBParams{
 		ListSaleData:             []params.SaleData{saleData},
-		LoanParams:               loanParams,
+		ListLoanParams:           loanParams,
 		MinLoanResponseRequire:   1,
 		MinCMBApprovalRequire:    1,
 		LateWithdrawResponseFine: 1000,
