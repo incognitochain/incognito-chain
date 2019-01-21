@@ -32,9 +32,9 @@ func parseCrowdsaleDataValue(value []byte) (uint64, common.Hash, uint64, common.
 		return 0, common.Hash{}, 0, common.Hash{}, 0, errors.New("Length of crowdsale data is incorrect")
 	}
 	endBlock := common.BytesToUint64(value)
-	buyingAsset, _ := common.NewHash(value[8:])
+	buyingAsset, _ := common.NewHash(value[8 : 8+common.HashSize])
 	buyingAmount := common.BytesToUint64(value[8+common.HashSize:])
-	sellingAsset, _ := common.NewHash(value[16+common.HashSize:])
+	sellingAsset, _ := common.NewHash(value[16+common.HashSize : 16+2*common.HashSize])
 	sellingAmount := common.BytesToUint64(value[16+2*common.HashSize:])
 	return endBlock, *buyingAsset, buyingAmount, *sellingAsset, sellingAmount, nil
 }
