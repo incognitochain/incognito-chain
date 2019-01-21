@@ -460,6 +460,7 @@ func (rpcServer RpcServer) handleGetListPrivacyCustomTokenBalance(params interfa
 		if item.Amount == 0 {
 			continue
 		}
+		item.IsPrivacy = true
 		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
 		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	}
