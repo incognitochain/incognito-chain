@@ -208,7 +208,7 @@ func (db *db) GetBeaconBlockHashByIndex(idx uint64) (*common.Hash, error) {
 func (db *db) FetchBeaconBlockChain() ([]*common.Hash, error) {
 	keys := []*common.Hash{}
 	prefix := append(beaconPrefix, blockKeyPrefix...)
-	// prefix: be-b-...
+	// prefix: bea-b-...
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
 		h := new(common.Hash)
@@ -258,4 +258,38 @@ func (db *db) GetAcceptedShardToBeacon(shardID byte, shardBlkHash *common.Hash) 
 		return 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "binary.Read"))
 	}
 	return idx, nil
+}
+
+func (db *db) StoreBeaconCommitteeByHeight(blkHeight uint64, v interface{}) error {
+	//key: bea-s-com-{height}
+	//value: all shard committee
+	key := append(beaconPrefix, shardIDPrefix...)
+	key = append(key, committeePrefix...)
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, blkHeight)
+	key = append(key, buf[:]...)
+
+	val, err := json.Marshal(v)
+	if err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+	}
+
+	if err := db.lvdb.Put(key, val, nil); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
+}
+
+func (db *db) FetchBeaconCommitteeByHeight(blkHeight uint64) ([]byte, error) {
+	key := append(beaconPrefix, shardIDPrefix...)
+	key = append(key, committeePrefix...)
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, blkHeight)
+	key = append(key, buf[:]...)
+
+	b, err := db.lvdb.Get(key, nil)
+	if err != nil {
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.get"))
+	}
+	return b, nil
 }
