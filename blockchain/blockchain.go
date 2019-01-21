@@ -1420,9 +1420,14 @@ func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
 	return false
 }
 
-func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privacy.ViewingKey, chainID byte) ([]*metadata.Transaction, error) {
+// GetRecentTransactions - find all recent history txs which are created by user
+// by number of block, maximum is 100 newest blocks
+func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privacy.ViewingKey, chainID byte) (map[string]metadata.Transaction, error) {
+	if numBlock > 100 { // maximum is 100
+		numBlock = 100
+	}
 	var err error
-	var result []*metadata.Transaction
+	result := make(map[string]metadata.Transaction)
 	bestBlock := blockchain.BestState[chainID].BestBlock
 	for {
 		for _, tx := range bestBlock.Transactions {
@@ -1444,7 +1449,7 @@ func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privac
 			if !bytes.Equal(pubkeyData.Compress(), key.Pk[:]) {
 				continue
 			}
-			result = append(result, &tx)
+			result[tx.Hash().String()] = tx
 		}
 		numBlock --
 		if numBlock == 0 {

@@ -11,7 +11,7 @@ type TransactionDetail struct {
 	Hash      string `json:"Hash"`
 	Version   int8   `json:"Version"`
 	Type      string `json:"Type"` // Transaction type
-	LockTime  int64  `json:"LockTime"`
+	LockTime  string `json:"LockTime"`
 	Fee       uint64 `json:"Fee"` // Fee applies: always consant
 
 	Proof     *zkp.PaymentProof `json:"Proof"`
