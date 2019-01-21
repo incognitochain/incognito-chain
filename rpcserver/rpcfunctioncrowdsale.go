@@ -1,18 +1,81 @@
 package rpcserver
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
 	chainParams "github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
+	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/wire"
 )
 
-func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) sendRawCrowdsaleTx(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
-	_ = arrayParams
-	return nil, nil
+	base58CheckDate := arrayParams[0].(string)
+	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
+
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	tx := transaction.Tx{}
+	err = json.Unmarshal(rawTxBytes, &tx)
+	fmt.Printf("%+v\n", tx)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	hash, txDesc, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
+	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
+
+	// broadcast message
+	txMsg, err := wire.MakeEmptyMessage(wire.CmdCLoanRequestToken)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	txMsg.(*wire.MessageTx).Transaction = &tx
+	rpcServer.config.Server.PushMessageToAll(txMsg)
+
+	result := jsonresult.CreateTransactionResult{
+		TxID: tx.Hash().String(),
+	}
+	return result, nil
+}
+
+func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Info(params)
+	arrayParams := common.InterfaceSlice(params)
+	crowdsaleDataRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
+	meta, err := metadata.NewCrowdsaleRequest(crowdsaleDataRaw)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	tx, err := rpcServer.buildRawCustomTokenTransaction(params, meta)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	byteArrays, errMarshal := json.Marshal(tx)
+	if errMarshal != nil {
+		// return hex for a new tx
+		return nil, NewRPCError(ErrUnexpected, errMarshal)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
 }
 
 // handleGetListOngoingCrowdsale receives a payment address and find all ongoing crowdsales on the chain that handles that address
