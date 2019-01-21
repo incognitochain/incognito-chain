@@ -54,7 +54,7 @@ func (rpcServer RpcServer) sendRawCrowdsaleTx(params interface{}, closeChan <-ch
 	return result, nil
 }
 
-func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequestToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	crowdsaleDataRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
@@ -75,7 +75,15 @@ func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequest(params interface{
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
+	//rpcServer.buildRawCustomTokenTransaction(params, metadata)
 	return result, nil
+}
+
+func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequestConstant(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	//rpcServer.buildRawTransaction(params, metadata)
+	_ = arrayParams
+	return nil, nil
 }
 
 // handleGetListOngoingCrowdsale receives a payment address and find all ongoing crowdsales on the chain that handles that address
