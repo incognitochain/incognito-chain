@@ -487,6 +487,7 @@ func (tx *Tx) GetTxActualSize() uint64 {
 	}
 
 	sizeTx += uint64(1)
+	sizeTx += uint64(len(tx.Info))
 
 	if tx.Metadata != nil {
 		// TODO 0xjackpolope
