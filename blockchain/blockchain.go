@@ -1419,3 +1419,41 @@ func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
 	}
 	return false
 }
+
+func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privacy.ViewingKey, chainID byte) ([]*metadata.Transaction, error) {
+	var err error
+	var result []*metadata.Transaction
+	bestBlock := blockchain.BestState[chainID].BestBlock
+	for {
+		for _, tx := range bestBlock.Transactions {
+			info := tx.GetInfo()
+			if info == nil {
+				continue
+			}
+			// info of tx with contain encrypted pubkey of creator in 1st 64bytes
+			lenInfo := 66
+			if len(info) < lenInfo {
+				continue
+			}
+			// decrypt to get pubkey data from info
+			pubkeyData, err1 := privacy.ElGamalDecrypt(key.Rk[:], info[0:lenInfo])
+			if err1 != nil {
+				continue
+			}
+			// compare to check pubkey
+			if !bytes.Equal(pubkeyData.Compress(), key.Pk[:]) {
+				continue
+			}
+			result = append(result, &tx)
+		}
+		numBlock --
+		if numBlock == 0 {
+			break
+		}
+		bestBlock, err = blockchain.GetBlockByBlockHash(&bestBlock.Header.PrevBlockHash)
+		if err != nil {
+			break
+		}
+	}
+	return result, nil
+}

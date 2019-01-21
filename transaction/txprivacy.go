@@ -388,7 +388,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		return false
 	}
 
-	senderPK := tx.GetSigPubKey()
+	/*senderPK := tx.GetSigPubKey()
 	_, getMSRErr := db.GetMultiSigsRegistration(senderPK)
 	Logger.log.Infof("getMSRErr: %v\n", getMSRErr)
 	if getMSRErr != nil {
@@ -406,7 +406,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		if !valid {
 			return false
 		}
-	}
+	}*/
 
 	Logger.log.Infof("[db]tx.Proof: %+v\n", tx.Proof)
 	if tx.Proof != nil {
@@ -713,6 +713,11 @@ func (tx *Tx) GetMetadata() metadata.Metadata {
 // SetMetadata sets metadata to tx
 func (tx *Tx) SetMetadata(meta metadata.Metadata) {
 	tx.Metadata = meta
+}
+
+// GetMetadata returns metadata of tx is existed
+func (tx *Tx) GetInfo() []byte {
+	return tx.Info
 }
 
 func (tx *Tx) GetSigPubKey() []byte {

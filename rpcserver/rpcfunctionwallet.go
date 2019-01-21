@@ -291,7 +291,8 @@ func (rpcServer RpcServer) handleGetBalance(params interface{}, closeChan <-chan
 }
 
 /*
-handleGetReceivedByAccount -  RPC returns the total amount received by addresses in a particular account from transactions with the specified number of confirmations. It does not count salary transactions.
+handleGetReceivedByAccount -  RPC returns the total amount received by addresses in a
+particular account from transactions with the specified number of confirmations. It does not count salary transactions.
 */
 func (rpcServer RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	balance := uint64(0)
@@ -393,6 +394,29 @@ func (rpcServer RpcServer) handleGetPublicKeyFromPaymentAddress(params interface
 	return base58.Base58Check{}.Encode(key.KeySet.PaymentAddress.Pk[:], common.ZeroByte), nil
 }
 
-func (rpcServer RpcServer) handleGetListTxByPrivatekey(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return nil, nil
+// handleGetRecentTransactionsByBlockNumber - RPC return list rencent txs by number of confirmed blocks
+func (rpcServer RpcServer) handleGetRecentTransactionsByBlockNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	// #param 1: number of confirmed blocks
+	numberOfBlock := uint64(arrayParams[0].(float64))
+
+	// #param 2: viewing key
+	senderKeySet, err := rpcServer.GetKeySetFromKeyParams(arrayParams[1].(string))
+	if err != nil {
+		return nil, NewRPCError(ErrInvalidSenderViewingKey, err)
+	}
+	readOnlyKey := senderKeySet.ReadonlyKey
+
+	// get chain from pubkey
+	chainID, err := common.GetTxSenderChain(readOnlyKey.Pk[len(readOnlyKey.Pk)-1])
+	if err != nil {
+		return nil, NewRPCError(ErrInvalidSenderViewingKey, err)
+	}
+
+	txs, err := rpcServer.config.BlockChain.GetRecentTransactions(numberOfBlock, &readOnlyKey, chainID)
+	if err != nil {
+		return nil, NewRPCError(ErrInvalidSenderViewingKey, err)
+	}
+
+	return txs, nil
 }
