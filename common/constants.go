@@ -50,7 +50,7 @@ const (
 //Fee of specific transaction
 const (
 	FeeSubmitProposal = 100
-	FeeVoteProposal   = 0
+	FeeVoteProposal   = 100
 )
 
 //voting flag
