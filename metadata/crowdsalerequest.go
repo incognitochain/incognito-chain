@@ -23,13 +23,14 @@ type CrowdsaleRequest struct {
 
 func NewCrowdsaleRequest(csReqData map[string]interface{}) (*CrowdsaleRequest, error) {
 	errSaver := &ErrorSaver{}
-	saleID, errSale := hex.DecodeString(csReqData["SaleId"].(string))
+	saleIDStr, okID := csReqData["SaleID"].(string)
+	saleID, errSale := hex.DecodeString(saleIDStr)
 	priceLimit, okPrice := csReqData["PriceLimit"].(float64)
 	validUntil, okValid := csReqData["ValidUntil"].(float64)
 	paymentAddressStr, okAddr := csReqData["PaymentAddress"].(string)
 	keyWallet, errPayment := wallet.Base58CheckDeserialize(paymentAddressStr)
 
-	if !okPrice || !okValid || !okAddr {
+	if !okID || !okPrice || !okValid || !okAddr {
 		return nil, errors.Errorf("Error parsing crowdsale request data")
 	}
 	if errSaver.Save(errSale, errPayment) != nil {

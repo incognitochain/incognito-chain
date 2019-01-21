@@ -1524,7 +1524,7 @@ func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privac
 			}
 			result[tx.Hash().String()] = tx
 		}
-		numBlock --
+		numBlock--
 		if numBlock == 0 {
 			break
 		}
