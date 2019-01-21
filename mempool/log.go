@@ -6,8 +6,8 @@ type MempoolLogger struct {
 	log common.Logger
 }
 
-func (self *MempoolLogger) Init(inst common.Logger) {
-	self.log = inst
+func (mempoolLogger *MempoolLogger) Init(inst common.Logger) {
+	mempoolLogger.log = inst
 }
 
 // Global instant to use

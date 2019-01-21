@@ -32,7 +32,6 @@ Customize UnmarshalJSON to parse list TxNormal
 because we have many types of block, so we can need to customize data from marshal from json string to build a block
 */
 func (self *Block) UnmarshalJSON(data []byte) error {
-	Logger.log.Info("UnmarshalJSON of block")
 	type Alias Block
 	temp := &struct {
 		Transactions []map[string]interface{}
@@ -115,7 +114,7 @@ func (self Block) Hash() *common.Hash {
 		return self.blockHash
 	}
 
-	record := common.EmptyString
+	record := ""
 
 	// add data from header
 	record += strconv.FormatInt(self.Header.Timestamp, 10) +
@@ -156,8 +155,9 @@ func (block *Block) updateDCBConstitution(tx metadata.Transaction, blockgen *Blk
 	}
 	constitutionInfo := NewConstitutionInfo(
 		newConstitutionIndex,
-		uint32(block.Header.Height),
+		uint64(block.Header.Height),
 		DCBProposal.ExecuteDuration,
+		DCBProposal.Explanation,
 		*metadataAcceptDCBProposal.Hash(),
 	)
 	block.Header.DCBConstitution = *NewDCBConstitution(constitutionInfo, GetOracleDCBNationalWelfare(), &DCBProposal.DCBParams)
@@ -175,10 +175,69 @@ func (block *Block) updateGOVConstitution(tx metadata.Transaction, blockgen *Blk
 	}
 	constitutionInfo := NewConstitutionInfo(
 		newConstitutionIndex,
-		uint32(block.Header.Height),
+		uint64(block.Header.Height),
 		GOVProposal.ExecuteDuration,
+		GOVProposal.Explanation,
 		*metadataAcceptGOVProposal.Hash(),
 	)
 	block.Header.GOVConstitution = *NewGOVConstitution(constitutionInfo, GetOracleGOVNationalWelfare(), &GOVProposal.GOVParams)
+	return nil
+}
+
+func (block *Block) updateBlock(
+	blockgen *BlkTmplGenerator,
+	txGroups *txGroups,
+	accumulativeValues *accumulativeValues,
+	updatedOracleValues map[string]uint64,
+) error {
+	if block.Header.GOVConstitution.GOVParams.SellingBonds != nil {
+		block.Header.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= accumulativeValues.bondsSold
+	}
+	if block.Header.GOVConstitution.GOVParams.SellingGOVTokens != nil {
+		block.Header.GOVConstitution.GOVParams.SellingGOVTokens.GOVTokensToSell -= accumulativeValues.govTokensSold
+	}
+	if block.Header.DCBConstitution.DCBParams.SaleDCBTokensByUSDData != nil {
+		block.Header.DCBConstitution.DCBParams.SaleDCBTokensByUSDData.Amount -= accumulativeValues.dcbTokensSold
+	}
+
+	blockgen.updateOracleValues(block, updatedOracleValues)
+	err := blockgen.updateOracleBoard(block, txGroups.updatingOracleBoardTxs)
+	if err != nil {
+		Logger.log.Error(err)
+		return err
+	}
+
+	for _, tx := range txGroups.txsToAdd {
+		if err := block.AddTransaction(tx); err != nil {
+			panic("add transaction failed")
+			return err
+		}
+		// Handle if this transaction change something in block header or database
+		if tx.GetMetadataType() == metadata.AcceptDCBProposalMeta {
+			block.updateDCBConstitution(tx, blockgen)
+		}
+		if tx.GetMetadataType() == metadata.AcceptGOVProposalMeta {
+			block.updateGOVConstitution(tx, blockgen)
+		}
+		if tx.GetMetadataType() == metadata.AcceptDCBBoardMeta {
+			block.UpdateDCBBoard(tx)
+		}
+		if tx.GetMetadataType() == metadata.AcceptGOVBoardMeta {
+			block.UpdateGOVBoard(tx)
+		}
+		if tx.GetMetadataType() == metadata.RewardDCBProposalSubmitterMeta {
+			block.UpdateDCBFund(tx)
+		}
+		if tx.GetMetadataType() == metadata.RewardGOVProposalSubmitterMeta {
+			block.UpdateGOVFund(tx)
+		}
+	}
+
+	// register multisigs addresses
+	err = blockgen.registerMultiSigsAddresses(txGroups.multiSigsRegistrationTxs)
+	if err != nil {
+		Logger.log.Error(err)
+		return err
+	}
 	return nil
 }

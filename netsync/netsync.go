@@ -42,32 +42,32 @@ type NetSyncConfig struct {
 	FeeEstimator map[byte]*mempool.FeeEstimator
 }
 
-func (self NetSync) New(cfg *NetSyncConfig) *NetSync {
-	self.config = cfg
-	self.cQuit = make(chan struct{})
-	self.cMessage = make(chan interface{})
-	return &self
+func (netSync NetSync) New(cfg *NetSyncConfig) *NetSync {
+	netSync.config = cfg
+	netSync.cQuit = make(chan struct{})
+	netSync.cMessage = make(chan interface{})
+	return &netSync
 }
 
-func (self *NetSync) Start() {
+func (netSync *NetSync) Start() {
 	// Already started?
-	if atomic.AddInt32(&self.started, 1) != 1 {
+	if atomic.AddInt32(&netSync.started, 1) != 1 {
 		return
 	}
 	Logger.log.Info("Starting sync manager")
-	self.waitgroup.Add(1)
-	go self.messageHandler()
+	netSync.waitgroup.Add(1)
+	go netSync.messageHandler()
 }
 
 // Stop gracefully shuts down the sync manager by stopping all asynchronous
 // handlers and waiting for them to finish.
-func (self *NetSync) Stop() {
-	if atomic.AddInt32(&self.shutdown, 1) != 1 {
+func (netSync *NetSync) Stop() {
+	if atomic.AddInt32(&netSync.shutdown, 1) != 1 {
 		Logger.log.Warn("Sync manager is already in the process of shutting down")
 	}
 
 	Logger.log.Warn("Sync manager shutting down")
-	close(self.cQuit)
+	close(netSync.cQuit)
 }
 
 // messageHandler is the main handler for the sync manager.  It must be run as a
@@ -76,101 +76,101 @@ func (self *NetSync) Stop() {
 // single thread without needing to lock memory data structures.  This is
 // important because the sync manager controls which blocks are needed and how
 // the fetching should proceed.
-func (self *NetSync) messageHandler() {
+func (netSync *NetSync) messageHandler() {
 out:
 	for {
 		select {
-		case msgChan := <-self.cMessage:
+		case msgChan := <-netSync.cMessage:
 			{
 				go func(msgC interface{}) {
 					switch msg := msgC.(type) {
 					case *wire.MessageTx:
 						{
-							self.HandleMessageTx(msg)
+							netSync.HandleMessageTx(msg)
 						}
 						//case *wire.MessageRegistration:
 						//	{
-						//		self.HandleMessageRegisteration(msg)
+						//		netSync.HandleMessageRegisteration(msg)
 						//	}
 					case *wire.MessageBFTPropose:
 						{
-							self.HandleMessageBFTPropose(msg)
+							netSync.HandleMessageBFTPropose(msg)
 						}
 					case *wire.MessageBFTPrepare:
 						{
-							self.HandleMessageBFTPrepare(msg)
+							netSync.HandleMessageBFTPrepare(msg)
 						}
 					case *wire.MessageBFTCommit:
 						{
-							self.HandleMessageBFTCommit(msg)
+							netSync.HandleMessageBFTCommit(msg)
 						}
 					case *wire.MessageBFTReady:
 						{
-							self.HandleMessageBFTReady(msg)
+							netSync.HandleMessageBFTReady(msg)
 						}
 					case *wire.MessageBlockBeacon:
 						{
-							self.HandleMessageBlockBeacon(msg)
+							netSync.HandleMessageBlockBeacon(msg)
 						}
 					case *wire.MessageBlockShard:
 						{
-							self.HandleMessageBlockShard(msg)
+							netSync.HandleMessageBlockShard(msg)
 						}
 					case *wire.MessageCrossShard:
 						{
-							self.HandleMessageCrossShard(msg)
+							netSync.HandleMessageCrossShard(msg)
 						}
 					case *wire.MessageShardToBeacon:
 						{
-							self.HandleMessageShardToBeacon(msg)
+							netSync.HandleMessageShardToBeacon(msg)
 						}
 					case *wire.MessageGetBlockBeacon:
 						{
-							self.HandleMessageGetBlockBeacon(msg)
+							netSync.HandleMessageGetBlockBeacon(msg)
 						}
 					case *wire.MessageGetBlockShard:
 						{
-							self.HandleMessageGetBlockShard(msg)
+							netSync.HandleMessageGetBlockShard(msg)
 						}
 
 					// case *wire.MessageInvalidBlock:
 					// 	{
-					// 		self.HandleMessageInvalidBlock(msg)
+					// 		netSync.HandleMessageInvalidBlock(msg)
 					// 	}
 					case *wire.MessageGetBeaconState:
 						{
-							self.HandleMessageGetBeaconState(msg)
+							netSync.HandleMessageGetBeaconState(msg)
 						}
 					case *wire.MessageBeaconState:
 						{
-							self.HandleMessageBeaconState(msg)
+							netSync.HandleMessageBeaconState(msg)
 						}
 					case *wire.MessageGetShardState:
 						{
-							self.HandleMessageGetShardState(msg)
+							netSync.HandleMessageGetShardState(msg)
 						}
 					case *wire.MessageShardState:
 						{
-							self.HandleMessageShardState(msg)
+							netSync.HandleMessageShardState(msg)
 						}
 					// case *wire.MessageSwapRequest:
 					// 	{
-					// 		self.HandleMessageSwapRequest(msg)
+					// 		netSync.HandleMessageSwapRequest(msg)
 					// 	}
 					// case *wire.MessageSwapSig:
 					// 	{
-					// 		self.HandleMessageSwapSig(msg)
+					// 		netSync.HandleMessageSwapSig(msg)
 					// 	}
 					// case *wire.MessageSwapUpdate:
 					// 	{
-					// 		self.HandleMessageSwapUpdate(msg)
+					// 		netSync.HandleMessageSwapUpdate(msg)
 					// 	}
 					default:
 						Logger.log.Infof("Invalid message type in block "+"handler: %T", msg)
 					}
 				}(msgChan)
 			}
-		case msgChan := <-self.cQuit:
+		case msgChan := <-netSync.cQuit:
 			{
 				Logger.log.Warn(msgChan)
 				break out
@@ -178,35 +178,35 @@ out:
 		}
 	}
 
-	self.waitgroup.Done()
+	netSync.waitgroup.Done()
 	Logger.log.Info("Block handler done")
 }
 
 // QueueTx adds the passed transaction message and peer to the block handling
 // queue. Responds to the done channel argument after the tx message is
 // processed.
-/*func (self *NetSync) QueueRegisteration(peer *peer.Peer, msg *wire.MessageRegistration, done chan struct{}) {
+/*func (netSync *NetSync) QueueRegisteration(peer *peer.Peer, msg *wire.MessageRegistration, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
-	if atomic.LoadInt32(&self.shutdown) != 0 {
+	if atomic.LoadInt32(&netSync.shutdown) != 0 {
 		done <- struct{}{}
 		return
 	}
-	self.cMessage <- msg
+	netSync.cMessage <- msg
 }*/
 
-func (self *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan struct{}) {
+func (netSync *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
-	if atomic.LoadInt32(&self.shutdown) != 0 {
+	if atomic.LoadInt32(&netSync.shutdown) != 0 {
 		done <- struct{}{}
 		return
 	}
-	self.cMessage <- msg
+	netSync.cMessage <- msg
 }
 
 // handleTxMsg handles transaction messages from all peers.
-func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
+func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 	Logger.log.Info("Handling new message tx")
-	hash, txDesc, err := self.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
+	hash, txDesc, err := netSync.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
 
 	if err != nil {
 		Logger.log.Error(err)
@@ -215,7 +215,7 @@ func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 		Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 		// Broadcast to network
-		err := self.config.Server.PushMessageToAll(msg)
+		err := netSync.config.Server.PushMessageToAll(msg)
 		if err != nil {
 			Logger.log.Error(err)
 		}
@@ -223,9 +223,9 @@ func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 }
 
 // handleTxMsg handles transaction messages from all peers.
-/*func (self *NetSync) HandleMessageRegisteration(msg *wire.MessageRegistration) {
+/*func (netSync *NetSync) HandleMessageRegisteration(msg *wire.MessageRegistration) {
 	Logger.log.Info("Handling new message tx")
-	hash, txDesc, err := self.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
+	hash, txDesc, err := netSync.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
 
 	if err != nil {
 		Logger.log.Error(err)
@@ -234,7 +234,7 @@ func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 		Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 		// Broadcast to network
-		err := self.config.Server.PushMessageToAll(msg)
+		err := netSync.config.Server.PushMessageToAll(msg)
 		if err != nil {
 			Logger.log.Error(err)
 		}
@@ -244,42 +244,42 @@ func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 // QueueBlock adds the passed block message and peer to the block handling
 // queue. Responds to the done channel argument after the block message is
 // processed.
-func (self *NetSync) QueueBlock(_ *peer.Peer, msg wire.Message, done chan struct{}) {
+func (netSync *NetSync) QueueBlock(_ *peer.Peer, msg wire.Message, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
-	if atomic.LoadInt32(&self.shutdown) != 0 {
+	if atomic.LoadInt32(&netSync.shutdown) != 0 {
 		done <- struct{}{}
 		return
 	}
-	self.cMessage <- msg
+	netSync.cMessage <- msg
 }
-func (self *NetSync) QueueGetBlockShard(peer *peer.Peer, msg *wire.MessageGetBlockShard, done chan struct{}) {
+func (netSync *NetSync) QueueGetBlockShard(peer *peer.Peer, msg *wire.MessageGetBlockShard, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
-	if atomic.LoadInt32(&self.shutdown) != 0 {
+	if atomic.LoadInt32(&netSync.shutdown) != 0 {
 		done <- struct{}{}
 		return
 	}
-	self.cMessage <- msg
-}
-
-func (self *NetSync) QueueGetBlockBeacon(peer *peer.Peer, msg *wire.MessageGetBlockBeacon, done chan struct{}) {
-	// Don't accept more transactions if we're shutting down.
-	if atomic.LoadInt32(&self.shutdown) != 0 {
-		done <- struct{}{}
-		return
-	}
-	self.cMessage <- msg
+	netSync.cMessage <- msg
 }
 
-func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan struct{}) {
+func (netSync *NetSync) QueueGetBlockBeacon(peer *peer.Peer, msg *wire.MessageGetBlockBeacon, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
-	if atomic.LoadInt32(&self.shutdown) != 0 {
+	if atomic.LoadInt32(&netSync.shutdown) != 0 {
 		done <- struct{}{}
 		return
 	}
-	self.cMessage <- msg
+	netSync.cMessage <- msg
 }
 
-func (self *NetSync) HandleMessageGetBlockShard(msg *wire.MessageGetBlockShard) {
+func (netSync *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan struct{}) {
+	// Don't accept more transactions if we're shutting down.
+	if atomic.LoadInt32(&netSync.shutdown) != 0 {
+		done <- struct{}{}
+		return
+	}
+	netSync.cMessage <- msg
+}
+
+func (netSync *NetSync) HandleMessageGetBlockShard(msg *wire.MessageGetBlockShard) {
 	fmt.Println()
 	Logger.log.Info("Handling new message - " + wire.CmdGetBlockShard)
 	fmt.Println()
@@ -292,7 +292,7 @@ func (self *NetSync) HandleMessageGetBlockShard(msg *wire.MessageGetBlockShard) 
 		fmt.Println()
 		fmt.Println("GET BLOCK", index)
 		fmt.Println()
-		blk, err := self.config.BlockChain.GetShardBlockByHeight(index, msg.ShardID)
+		blk, err := netSync.config.BlockChain.GetShardBlockByHeight(index, msg.ShardID)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -303,14 +303,14 @@ func (self *NetSync) HandleMessageGetBlockShard(msg *wire.MessageGetBlockShard) 
 			return
 		}
 		msgShardBlk.(*wire.MessageBlockShard).Block = *blk
-		err = self.config.Server.PushMessageToPeer(msgShardBlk, peerID)
+		err = netSync.config.Server.PushMessageToPeer(msgShardBlk, peerID)
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
 
 }
-func (self *NetSync) HandleMessageGetBlockBeacon(msg *wire.MessageGetBlockBeacon) {
+func (netSync *NetSync) HandleMessageGetBlockBeacon(msg *wire.MessageGetBlockBeacon) {
 	fmt.Println()
 	Logger.log.Info("Handling new message - " + wire.CmdGetBlockBeacon)
 	fmt.Println()
@@ -320,7 +320,7 @@ func (self *NetSync) HandleMessageGetBlockBeacon(msg *wire.MessageGetBlockBeacon
 		return
 	}
 	for index := msg.From; index <= msg.To; index++ {
-		blk, err := self.config.BlockChain.GetBeaconBlockByHeight(index)
+		blk, err := netSync.config.BlockChain.GetBeaconBlockByHeight(index)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -331,25 +331,25 @@ func (self *NetSync) HandleMessageGetBlockBeacon(msg *wire.MessageGetBlockBeacon
 			return
 		}
 		msgBeaconBlk.(*wire.MessageBlockBeacon).Block = *blk
-		err = self.config.Server.PushMessageToPeer(msgBeaconBlk, peerID)
+		err = netSync.config.Server.PushMessageToPeer(msgBeaconBlk, peerID)
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
 
 	// blockHash, _ := common.Hash{}.NewHashFromStr(msg.LastBlockHash)
-	// senderBlockHeaderIndex, shardID, err := self.config.BlockChain.GetShardBlockHeightByHash(blockHash)
+	// senderBlockHeaderIndex, shardID, err := netSync.config.BlockChain.GetShardBlockHeightByHash(blockHash)
 	// if err == nil {
-	// 	bestHashStr := self.config.BlockChain.BestState[shardID].BestBlockHash.String()
+	// 	bestHashStr := netSync.config.BlockChain.BestState[shardID].BestBlockHash.String()
 	// 	Logger.log.Infof("Blockhash from message %s", blockHash.String())
 	// 	Logger.log.Infof("Blockhash of bestChain in shardID %d - %s", shardID, bestHashStr)
 	// 	Logger.log.Info("index of block %d \n", senderBlockHeaderIndex)
 	// 	Logger.log.Info("shardID of block %d \n", shardID)
 	// 	if bestHashStr != blockHash.String() {
 	// 		// Send Blocks back to requestor
-	// 		chainBlocks, _ := self.config.BlockChain.GetShardBlocks(shardID)
+	// 		chainBlocks, _ := netSync.config.BlockChain.GetShardBlocks(shardID)
 	// 		for index := int(senderBlockHeaderIndex) + 1; index <= len(chainBlocks); index++ {
-	// 			block, _ := self.config.BlockChain.GetShardBlockByHeight(int32(index), shardID)
+	// 			block, _ := netSync.config.BlockChain.GetShardBlockByHeight(int32(index), shardID)
 	// 			Logger.log.Info("Send block %s \n", block.Hash().String())
 
 	// 			blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
@@ -368,13 +368,13 @@ func (self *NetSync) HandleMessageGetBlockBeacon(msg *wire.MessageGetBlockBeacon
 	// 				Logger.log.Error(err)
 	// 				break
 	// 			}
-	// 			self.config.Server.PushMessageToPeer(blockMsg, peerID)
+	// 			netSync.config.Server.PushMessageToPeer(blockMsg, peerID)
 	// 		}
 	// 	}
 	// } else {
 	// 	Logger.log.Error(blockHash.String(), "----------")
-	// 	Logger.log.Error(self.config.BlockChain.BestState[9].BestBlockHash.String())
-	// 	chainBlocks, err2 := self.config.BlockChain.GetShardBlocks(9)
+	// 	Logger.log.Error(netSync.config.BlockChain.BestState[9].BestBlockHash.String())
+	// 	chainBlocks, err2 := netSync.config.BlockChain.GetShardBlocks(9)
 	// 	if err2 != nil {
 	// 		Logger.log.Error(err2)
 	// 	}
@@ -386,57 +386,57 @@ func (self *NetSync) HandleMessageGetBlockBeacon(msg *wire.MessageGetBlockBeacon
 	// }
 }
 
-func (self *NetSync) HandleMessageBlockBeacon(msg *wire.MessageBlockBeacon) {
+func (netSync *NetSync) HandleMessageBlockBeacon(msg *wire.MessageBlockBeacon) {
 	Logger.log.Info("Handling new message BlockBeacon")
-	self.config.BlockChain.OnBlockBeaconReceived(&msg.Block)
+	netSync.config.BlockChain.OnBlockBeaconReceived(&msg.Block)
 }
-func (self *NetSync) HandleMessageBlockShard(msg *wire.MessageBlockShard) {
+func (netSync *NetSync) HandleMessageBlockShard(msg *wire.MessageBlockShard) {
 	Logger.log.Info("Handling new message BlockShard")
-	self.config.BlockChain.OnBlockShardReceived(&msg.Block)
+	netSync.config.BlockChain.OnBlockShardReceived(&msg.Block)
 }
-func (self *NetSync) HandleMessageCrossShard(msg *wire.MessageCrossShard) {
+func (netSync *NetSync) HandleMessageCrossShard(msg *wire.MessageCrossShard) {
 	Logger.log.Info("Handling new message CrossShard")
-	self.config.BlockChain.OnCrossShardBlockReceived(msg.Block)
+	netSync.config.BlockChain.OnCrossShardBlockReceived(msg.Block)
 
 }
-func (self *NetSync) HandleMessageShardToBeacon(msg *wire.MessageShardToBeacon) {
+func (netSync *NetSync) HandleMessageShardToBeacon(msg *wire.MessageShardToBeacon) {
 	Logger.log.Info("Handling new message ShardToBeacon")
-	self.config.BlockChain.OnShardToBeaconBlockReceived(msg.Block)
+	netSync.config.BlockChain.OnShardToBeaconBlockReceived(msg.Block)
 }
 
-func (self *NetSync) HandleMessageBFTPropose(msg *wire.MessageBFTPropose) {
+func (netSync *NetSync) HandleMessageBFTPropose(msg *wire.MessageBFTPropose) {
 	Logger.log.Info("Handling new message BFTPropose")
-	self.config.Consensus.OnBFTPropose(msg)
+	netSync.config.Consensus.OnBFTPropose(msg)
 }
 
-func (self *NetSync) HandleMessageBFTPrepare(msg *wire.MessageBFTPrepare) {
+func (netSync *NetSync) HandleMessageBFTPrepare(msg *wire.MessageBFTPrepare) {
 	Logger.log.Info("Handling new message BFTPrepare")
-	self.config.Consensus.OnBFTPrepare(msg)
+	netSync.config.Consensus.OnBFTPrepare(msg)
 }
 
-func (self *NetSync) HandleMessageBFTCommit(msg *wire.MessageBFTCommit) {
+func (netSync *NetSync) HandleMessageBFTCommit(msg *wire.MessageBFTCommit) {
 	Logger.log.Info("Handling new message BFTCommit")
-	self.config.Consensus.OnBFTCommit(msg)
+	netSync.config.Consensus.OnBFTCommit(msg)
 }
 
-func (self *NetSync) HandleMessageBFTReady(msg *wire.MessageBFTReady) {
+func (netSync *NetSync) HandleMessageBFTReady(msg *wire.MessageBFTReady) {
 	Logger.log.Info("Handling new message BFTReady")
-	self.config.Consensus.OnBFTReady(msg)
+	netSync.config.Consensus.OnBFTReady(msg)
 }
 
-// func (self *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
+// func (netSync *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
 // 	Logger.log.Info("Handling new message invalidblock")
-// 	self.config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.shardID, msg.Reason)
+// 	netSync.config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.shardID, msg.Reason)
 // }
 
-func (self *NetSync) HandleMessageGetBeaconState(msg *wire.MessageGetBeaconState) {
+func (netSync *NetSync) HandleMessageGetBeaconState(msg *wire.MessageGetBeaconState) {
 	Logger.log.Info("Handling new message getbeaconstate")
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
 	if err != nil {
 		Logger.log.Error(err)
 		return
 	}
-	beaconState, e := self.config.BlockChain.GetBeaconState()
+	beaconState, e := netSync.config.BlockChain.GetBeaconState()
 	if e != nil {
 		Logger.log.Error(e)
 		return
@@ -447,27 +447,27 @@ func (self *NetSync) HandleMessageGetBeaconState(msg *wire.MessageGetBeaconState
 		return
 	}
 	msgBeaconState.(*wire.MessageBeaconState).ChainInfo = *beaconState
-	self.config.Server.PushMessageToPeer(msgBeaconState, peerID)
+	netSync.config.Server.PushMessageToPeer(msgBeaconState, peerID)
 }
 
-func (self *NetSync) HandleMessageBeaconState(msg *wire.MessageBeaconState) {
+func (netSync *NetSync) HandleMessageBeaconState(msg *wire.MessageBeaconState) {
 	Logger.log.Info("Handling new message beaconstate")
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
 	if err != nil {
 		Logger.log.Error(err)
 		return
 	}
-	self.config.BlockChain.OnBeaconStateReceived(&msg.ChainInfo, peerID)
+	netSync.config.BlockChain.OnBeaconStateReceived(&msg.ChainInfo, peerID)
 }
 
-func (self *NetSync) HandleMessageGetShardState(msg *wire.MessageGetShardState) {
+func (netSync *NetSync) HandleMessageGetShardState(msg *wire.MessageGetShardState) {
 	Logger.log.Info("Handling new message getshardstate")
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
 	if err != nil {
 		Logger.log.Error(err)
 		return
 	}
-	shardState := self.config.BlockChain.GetShardState(msg.ShardID)
+	shardState := netSync.config.BlockChain.GetShardState(msg.ShardID)
 
 	msgShardState, err := wire.MakeEmptyMessage(wire.CmdShardState)
 	if err != nil {
@@ -475,30 +475,30 @@ func (self *NetSync) HandleMessageGetShardState(msg *wire.MessageGetShardState) 
 		return
 	}
 	msgShardState.(*wire.MessageShardState).ChainInfo = *shardState
-	self.config.Server.PushMessageToPeer(msgShardState, peerID)
+	netSync.config.Server.PushMessageToPeer(msgShardState, peerID)
 }
 
-func (self *NetSync) HandleMessageShardState(msg *wire.MessageShardState) {
+func (netSync *NetSync) HandleMessageShardState(msg *wire.MessageShardState) {
 	Logger.log.Info("Handling new message shardstate")
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
 	if err != nil {
 		Logger.log.Error(err)
 		return
 	}
-	self.config.BlockChain.OnShardStateReceived(&msg.ChainInfo, peerID)
+	netSync.config.BlockChain.OnShardStateReceived(&msg.ChainInfo, peerID)
 }
 
-// func (self *NetSync) HandleMessageSwapRequest(msg *wire.MessageSwapRequest) {
+// func (netSync *NetSync) HandleMessageSwapRequest(msg *wire.MessageSwapRequest) {
 // 	Logger.log.Info("Handling new message requestswap")
-// 	self.config.Consensus.OnSwapRequest(msg)
+// 	netSync.config.Consensus.OnSwapRequest(msg)
 // }
 
-// func (self *NetSync) HandleMessageSwapSig(msg *wire.MessageSwapSig) {
+// func (netSync *NetSync) HandleMessageSwapSig(msg *wire.MessageSwapSig) {
 // 	Logger.log.Info("Handling new message signswap")
-// 	self.config.Consensus.OnSwapSig(msg)
+// 	netSync.config.Consensus.OnSwapSig(msg)
 // }
 
-// func (self *NetSync) HandleMessageSwapUpdate(msg *wire.MessageSwapUpdate) {
+// func (netSync *NetSync) HandleMessageSwapUpdate(msg *wire.MessageSwapUpdate) {
 // 	Logger.log.Info("Handling new message SwapUpdate")
-// 	self.config.Consensus.OnSwapUpdate(msg)
+// 	netSync.config.Consensus.OnSwapUpdate(msg)
 // }

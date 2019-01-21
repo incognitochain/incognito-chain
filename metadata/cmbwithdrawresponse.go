@@ -29,10 +29,10 @@ func NewCMBWithdrawResponse(data map[string]interface{}) *CMBWithdrawResponse {
 }
 
 func (cwres *CMBWithdrawResponse) Hash() *common.Hash {
-	record := string(cwres.RequestTxID[:])
+	record := cwres.RequestTxID.String()
 
 	// final hash
-	record += string(cwres.MetadataBase.Hash()[:])
+	record += cwres.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -48,7 +48,10 @@ func (cwres *CMBWithdrawResponse) ValidateTxWithBlockChain(txr Transaction, bcr 
 	metaReq := txRequest.GetMetadata().(*CMBWithdrawRequest)
 	_, _, _, txContract, err := bcr.GetTransactionByHash(&metaReq.ContractID)
 	metaContract := txContract.GetMetadata().(*CMBDepositContract)
-	blockHeight := bcr.GetHeight(shardID)
+	blockHeight, err := bcr.GetTxChainHeight(txr)
+	if err != nil {
+		return false, errors.Errorf("Error retrieving block height of tx chain")
+	}
 
 	// Check if amount is enough
 	_, receiver, amount := txr.GetUniqueReceiver()
@@ -57,7 +60,7 @@ func (cwres *CMBWithdrawResponse) ValidateTxWithBlockChain(txr Transaction, bcr 
 	}
 	if blockHeight < metaContract.MaturityAt {
 		// Early withdrawal
-		elapsed := uint64(blockHeight - metaContract.ValidUntil)
+		elapsed := uint64(blockHeight) - metaContract.ValidUntil
 		depositTerm := uint64(metaContract.MaturityAt - metaContract.ValidUntil)
 		expectedAmount := metaContract.TotalInterest*elapsed/depositTerm + metaContract.DepositValue
 		if amount < expectedAmount {
@@ -74,9 +77,11 @@ func (cwres *CMBWithdrawResponse) ValidateTxWithBlockChain(txr Transaction, bcr 
 }
 
 func (cwres *CMBWithdrawResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+	// TODO(@0xbunyip)
 	return true, true, nil
 }
 
 func (cwres *CMBWithdrawResponse) ValidateMetadataByItself() bool {
+	// TODO(@0xbunyip)
 	return true
 }

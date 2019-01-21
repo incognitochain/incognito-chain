@@ -20,7 +20,6 @@ import (
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/addrmanager"
 	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/connmanager"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/mempool"
@@ -92,36 +91,36 @@ type RpcServerConfig struct {
 	FeeEstimator map[byte]*mempool.FeeEstimator
 }
 
-func (self *RpcServer) Init(config *RpcServerConfig) {
-	self.config = *config
-	self.statusLines = make(map[int]string)
-	if config.RPCUser != "" && config.RPCPass != common.EmptyString {
+func (rpcServer *RpcServer) Init(config *RpcServerConfig) {
+	rpcServer.config = *config
+	rpcServer.statusLines = make(map[int]string)
+	if config.RPCUser != "" && config.RPCPass != "" {
 		login := config.RPCUser + ":" + config.RPCPass
 		auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(login))
-		self.authSHA = sha256.Sum256([]byte(auth))
+		rpcServer.authSHA = sha256.Sum256([]byte(auth))
 	}
-	if config.RPCLimitUser != common.EmptyString && config.RPCLimitPass != common.EmptyString {
+	if config.RPCLimitUser != "" && config.RPCLimitPass != "" {
 		login := config.RPCLimitUser + ":" + config.RPCLimitPass
 		auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(login))
-		self.limitAuthSHA = sha256.Sum256([]byte(auth))
+		rpcServer.limitAuthSHA = sha256.Sum256([]byte(auth))
 	}
 }
 
 // RequestedProcessShutdown returns a channel that is sent to when an authorized
 // RPC client requests the process to shutdown.  If the request can not be read
 // immediately, it is dropped.
-func (self RpcServer) RequestedProcessShutdown() <-chan struct{} {
-	return self.cRequestProcessShutdown
+func (rpcServer RpcServer) RequestedProcessShutdown() <-chan struct{} {
+	return rpcServer.cRequestProcessShutdown
 }
 
 // limitConnections responds with a 503 service unavailable and returns true if
 // adding another client would exceed the maximum allow RPC clients.
 //
 // This function is safe for concurrent access.
-func (self RpcServer) limitConnections(w http.ResponseWriter, remoteAddr string) bool {
-	if int(atomic.LoadInt32(&self.numClients)+1) > self.config.RPCMaxClients {
+func (rpcServer RpcServer) limitConnections(w http.ResponseWriter, remoteAddr string) bool {
+	if int(atomic.LoadInt32(&rpcServer.numClients)+1) > rpcServer.config.RPCMaxClients {
 		Logger.log.Infof("Max RPC clients exceeded [%d] - "+
-			"disconnecting client %s", self.config.RPCMaxClients,
+			"disconnecting client %s", rpcServer.config.RPCMaxClients,
 			remoteAddr)
 		http.Error(w, "503 Too busy.  Try again later.",
 			http.StatusServiceUnavailable)
@@ -131,12 +130,12 @@ func (self RpcServer) limitConnections(w http.ResponseWriter, remoteAddr string)
 }
 
 // Start is used by server.go to start the rpc listener.
-func (self *RpcServer) Start() error {
-	if atomic.AddInt32(&self.started, 1) != 1 {
+func (rpcServer *RpcServer) Start() error {
+	if atomic.AddInt32(&rpcServer.started, 1) != 1 {
 		return NewRPCError(ErrAlreadyStarted, nil)
 	}
 	rpcServeMux := http.NewServeMux()
-	self.httpServer = &http.Server{
+	rpcServer.httpServer = &http.Server{
 		Handler: rpcServeMux,
 
 		// Timeout connections which don't complete the initial
@@ -145,40 +144,40 @@ func (self *RpcServer) Start() error {
 	}
 
 	rpcServeMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		self.RpcHandleRequest(w, r)
+		rpcServer.RpcHandleRequest(w, r)
 	})
-	for _, listen := range self.config.Listenters {
+	for _, listen := range rpcServer.config.Listenters {
 		go func(listen net.Listener) {
-			log.Printf("RPC server listening on %s\n", listen.Addr().String())
-			go self.httpServer.Serve(listen)
-			log.Printf("RPC listener done for %s\n", listen.Addr().String())
+			Logger.log.Infof("RPC server listening on %s", listen.Addr())
+			go rpcServer.httpServer.Serve(listen)
+			Logger.log.Infof("RPC listener done for %s", listen.Addr())
 		}(listen)
 	}
-	self.started = 1
+	rpcServer.started = 1
 	return nil
 }
 
 // Stop is used by server.go to stop the rpc listener.
-func (self RpcServer) Stop() {
-	if atomic.AddInt32(&self.shutdown, 1) != 1 {
+func (rpcServer RpcServer) Stop() {
+	if atomic.AddInt32(&rpcServer.shutdown, 1) != 1 {
 		Logger.log.Info("RPC server is already in the process of shutting down")
 	}
 	Logger.log.Info("RPC server shutting down")
-	if self.started != 0 {
-		self.httpServer.Close()
+	if rpcServer.started != 0 {
+		rpcServer.httpServer.Close()
 	}
-	for _, listen := range self.config.Listenters {
+	for _, listen := range rpcServer.config.Listenters {
 		listen.Close()
 	}
 	Logger.log.Warn("RPC server shutdown complete")
-	self.started = 0
-	self.shutdown = 1
+	rpcServer.started = 0
+	rpcServer.shutdown = 1
 }
 
 /*
 Handle all request to rpcserver
 */
-func (self RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Request) {
+func (rpcServer RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "close")
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -187,22 +186,22 @@ func (self RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Request) {
 	r.Close = true
 
 	// Limit the number of connections to max allowed.
-	if self.limitConnections(w, r.RemoteAddr) {
+	if rpcServer.limitConnections(w, r.RemoteAddr) {
 		return
 	}
 
 	// Keep track of the number of connected clients.
-	self.IncrementClients()
-	defer self.DecrementClients()
+	rpcServer.IncrementClients()
+	defer rpcServer.DecrementClients()
 	// Check authentication for rpc user
-	ok, isLimitUser, err := self.checkAuth(r, true)
+	ok, isLimitUser, err := rpcServer.checkAuth(r, true)
 	if err != nil || !ok {
 		Logger.log.Error(err)
-		self.AuthFail(w)
+		rpcServer.AuthFail(w)
 		return
 	}
 
-	self.ProcessRpcRequest(w, r, isLimitUser)
+	rpcServer.ProcessRpcRequest(w, r, isLimitUser)
 }
 
 // checkAuth checks the HTTP Basic authentication supplied by a wallet
@@ -216,8 +215,8 @@ func (self RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Request) {
 // the second bool return value specifies whether the user can change the state
 // of the server (true) or whether the user is limited (false). The second is
 // always false if the first is.
-func (self RpcServer) checkAuth(r *http.Request, require bool) (bool, bool, error) {
-	if self.config.DisableAuth == true {
+func (rpcServer RpcServer) checkAuth(r *http.Request, require bool) (bool, bool, error) {
+	if rpcServer.config.DisableAuth {
 		return true, true, nil
 	}
 	authhdr := r.Header["Authorization"]
@@ -235,13 +234,13 @@ func (self RpcServer) checkAuth(r *http.Request, require bool) (bool, bool, erro
 
 	// Check for limited auth first as in environments with limited users, those
 	// are probably expected to have a higher volume of calls
-	limitcmp := subtle.ConstantTimeCompare(authsha[:], self.limitAuthSHA[:])
+	limitcmp := subtle.ConstantTimeCompare(authsha[:], rpcServer.limitAuthSHA[:])
 	if limitcmp == 1 {
 		return true, true, nil
 	}
 
 	// Check for admin-level auth
-	cmp := subtle.ConstantTimeCompare(authsha[:], self.authSHA[:])
+	cmp := subtle.ConstantTimeCompare(authsha[:], rpcServer.authSHA[:])
 	if cmp == 1 {
 		return true, false, nil
 	}
@@ -255,20 +254,20 @@ func (self RpcServer) checkAuth(r *http.Request, require bool) (bool, bool, erro
 // this only applies to standard clients.
 //
 // This function is safe for concurrent access.
-func (self *RpcServer) IncrementClients() {
-	atomic.AddInt32(&self.numClients, 1)
+func (rpcServer *RpcServer) IncrementClients() {
+	atomic.AddInt32(&rpcServer.numClients, 1)
 }
 
 // DecrementClients subtracts one from the number of connected RPC clients.
 // Note this only applies to standard clients.
 //
 // This function is safe for concurrent access.
-func (self *RpcServer) DecrementClients() {
-	atomic.AddInt32(&self.numClients, -1)
+func (rpcServer *RpcServer) DecrementClients() {
+	atomic.AddInt32(&rpcServer.numClients, -1)
 }
 
 // AuthFail sends a Message back to the client if the http auth is rejected.
-func (self RpcServer) AuthFail(w http.ResponseWriter) {
+func (rpcServer RpcServer) AuthFail(w http.ResponseWriter) {
 	w.Header().Add("WWW-Authenticate", `Basic realm="RPC"`)
 	http.Error(w, "401 Unauthorized.", http.StatusUnauthorized)
 }
@@ -276,8 +275,8 @@ func (self RpcServer) AuthFail(w http.ResponseWriter) {
 /*
 handles reading and responding to RPC messages.
 */
-func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, isLimitedUser bool) {
-	if atomic.LoadInt32(&self.shutdown) != 0 {
+func (rpcServer RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, isLimitedUser bool) {
+	if atomic.LoadInt32(&rpcServer.shutdown) != 0 {
 		return
 	}
 	// Read and close the JSON-RPC request body from the caller.
@@ -345,7 +344,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 		//
 		// RPC quirks can be enabled by the user to avoid compatibility issues
 		// with software relying on Core's behavior.
-		if request.Id == nil && !(self.config.RPCQuirks && request.Jsonrpc == common.EmptyString) {
+		if request.Id == nil && !(rpcServer.config.RPCQuirks && request.Jsonrpc == "") {
 			return
 		}
 
@@ -367,7 +366,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 		if !isLimitedUser {
 			if function, ok := RpcLimited[request.Method]; ok {
 				_ = function
-				jsonErr = NewRPCError(ErrRPCInvalidMethodPermission, errors.New(fmt.Sprintf("")))
+				jsonErr = NewRPCError(ErrRPCInvalidMethodPermission, errors.New(""))
 			}
 		}
 		if jsonErr == nil {
@@ -383,7 +382,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 				}
 			}
 			if command != nil {
-				result, jsonErr = command(self, request.Params, closeChan)
+				result, jsonErr = command(rpcServer, request.Params, closeChan)
 			} else {
 				jsonErr = NewRPCError(ErrRPCMethodNotFound, nil)
 			}
@@ -394,7 +393,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 		log.Printf("RPC function process with err \n %+v", jsonErr)
 	}
 	// Marshal the response.
-	msg, err := self.createMarshalledReply(responseID, result, jsonErr)
+	msg, err := rpcServer.createMarshalledReply(responseID, result, jsonErr)
 	if err != nil {
 		Logger.log.Errorf("Failed to marshal reply: %s", err.Error())
 		Logger.log.Error(err)
@@ -402,7 +401,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 	}
 
 	// Write the response.
-	err = self.writeHTTPResponseHeaders(r, w.Header(), http.StatusOK, buf)
+	err = rpcServer.writeHTTPResponseHeaders(r, w.Header(), http.StatusOK, buf)
 	if err != nil {
 		Logger.log.Error(err)
 		return
@@ -422,13 +421,13 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 // createMarshalledReply returns a new marshalled JSON-RPC response given the
 // passed parameters.  It will automatically convert errors that are not of
 // the type *btcjson.RPCError to the appropriate type as needed.
-func (self RpcServer) createMarshalledReply(id, result interface{}, replyErr error) ([]byte, error) {
+func (rpcServer RpcServer) createMarshalledReply(id, result interface{}, replyErr error) ([]byte, error) {
 	var jsonErr *RPCError
 	if replyErr != nil {
 		if jErr, ok := replyErr.(*RPCError); ok {
 			jsonErr = jErr
 		} else {
-			jsonErr = self.internalRPCError(replyErr.Error(), common.EmptyString)
+			jsonErr = rpcServer.internalRPCError(replyErr.Error(), "")
 		}
 	}
 
@@ -440,9 +439,9 @@ func (self RpcServer) createMarshalledReply(id, result interface{}, replyErr err
 // RPC server subsystem since internal errors really should not occur.  The
 // context parameter is only used in the log Message and may be empty if it's
 // not needed.
-func (self RpcServer) internalRPCError(errStr, context string) *RPCError {
+func (rpcServer RpcServer) internalRPCError(errStr, context string) *RPCError {
 	logStr := errStr
-	if context != common.EmptyString {
+	if context != "" {
 		logStr = context + ": " + errStr
 	}
 	Logger.log.Info(logStr)
@@ -452,16 +451,16 @@ func (self RpcServer) internalRPCError(errStr, context string) *RPCError {
 // httpStatusLine returns a response Status-Line (RFC 2616 Section 6.1)
 // for the given request and response status Code.  This function was lifted and
 // adapted from the standard library HTTP server Code since it's not exported.
-func (self RpcServer) httpStatusLine(req *http.Request, code int) string {
+func (rpcServer RpcServer) httpStatusLine(req *http.Request, code int) string {
 	// Fast path:
 	key := code
 	proto11 := req.ProtoAtLeast(1, 1)
 	if !proto11 {
 		key = -key
 	}
-	self.statusLock.RLock()
-	line, ok := self.statusLines[key]
-	self.statusLock.RUnlock()
+	rpcServer.statusLock.RLock()
+	line, ok := rpcServer.statusLines[key]
+	rpcServer.statusLock.RUnlock()
 	if ok {
 		return line
 	}
@@ -473,11 +472,11 @@ func (self RpcServer) httpStatusLine(req *http.Request, code int) string {
 	}
 	codeStr := strconv.Itoa(code)
 	text := http.StatusText(code)
-	if text != common.EmptyString {
+	if text != "" {
 		line = proto + " " + codeStr + " " + text + "\r\n"
-		self.statusLock.Lock()
-		self.statusLines[key] = line
-		self.statusLock.Unlock()
+		rpcServer.statusLock.Lock()
+		rpcServer.statusLines[key] = line
+		rpcServer.statusLock.Unlock()
 	} else {
 		text = "status Code " + codeStr
 		line = proto + " " + codeStr + " " + text + "\r\n"
@@ -489,8 +488,8 @@ func (self RpcServer) httpStatusLine(req *http.Request, code int) string {
 // writeHTTPResponseHeaders writes the necessary response headers prior to
 // writing an HTTP body given a request to use for protocol negotiation, headers
 // to write, a status Code, and a writer.
-func (self RpcServer) writeHTTPResponseHeaders(req *http.Request, headers http.Header, code int, w io.Writer) error {
-	_, err := io.WriteString(w, self.httpStatusLine(req, code))
+func (rpcServer RpcServer) writeHTTPResponseHeaders(req *http.Request, headers http.Header, code int, w io.Writer) error {
+	_, err := io.WriteString(w, rpcServer.httpStatusLine(req, code))
 	if err != nil {
 		return err
 	}

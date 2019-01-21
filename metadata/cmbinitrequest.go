@@ -16,11 +16,11 @@ type CMBInitRequest struct {
 }
 
 func NewCMBInitRequest(data map[string]interface{}) *CMBInitRequest {
-	mainKey, err := wallet.Base58CheckDeserialize(data["MainAccount"].(string))
+	keyWalletMainKey, err := wallet.Base58CheckDeserialize(data["MainAccount"].(string))
 	if err != nil {
 		return nil
 	}
-	reserveKey, err := wallet.Base58CheckDeserialize(data["ReserveAccount"].(string))
+	keyWalletReserveKey, err := wallet.Base58CheckDeserialize(data["ReserveAccount"].(string))
 	if err != nil {
 		return nil
 	}
@@ -30,15 +30,15 @@ func NewCMBInitRequest(data map[string]interface{}) *CMBInitRequest {
 	}
 	members := []privacy.PaymentAddress{}
 	for _, m := range memberData {
-		memberKey, err := wallet.Base58CheckDeserialize(m)
+		keyWalletMemberKey, err := wallet.Base58CheckDeserialize(m)
 		if err != nil {
 			return nil
 		}
-		members = append(members, memberKey.KeySet.PaymentAddress)
+		members = append(members, keyWalletMemberKey.KeySet.PaymentAddress)
 	}
 	result := CMBInitRequest{
-		MainAccount:    mainKey.KeySet.PaymentAddress,
-		ReserveAccount: reserveKey.KeySet.PaymentAddress,
+		MainAccount:    keyWalletMainKey.KeySet.PaymentAddress,
+		ReserveAccount: keyWalletReserveKey.KeySet.PaymentAddress,
 		Members:        members,
 	}
 
@@ -47,14 +47,14 @@ func NewCMBInitRequest(data map[string]interface{}) *CMBInitRequest {
 }
 
 func (creq *CMBInitRequest) Hash() *common.Hash {
-	record := string(creq.MainAccount.Bytes())
-	record += string(creq.ReserveAccount.Bytes())
+	record := creq.MainAccount.String()
+	record += creq.ReserveAccount.String()
 	for _, member := range creq.Members {
-		record += string(member.Bytes())
+		record += member.String()
 	}
 
 	// final hash
-	record += string(creq.MetadataBase.Hash()[:])
+	record += creq.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -66,9 +66,11 @@ func (creq *CMBInitRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blockc
 }
 
 func (creq *CMBInitRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+	// TODO(@0xbunyip)
 	return true, true, nil // continue to check for fee
 }
 
 func (creq *CMBInitRequest) ValidateMetadataByItself() bool {
+	// TODO(@0xbunyip)
 	return true
 }

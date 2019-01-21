@@ -41,7 +41,7 @@ func (iRes *IssuingResponse) ValidateMetadataByItself() bool {
 
 func (iRes *IssuingResponse) Hash() *common.Hash {
 	record := iRes.RequestedTxID.String()
-	record += string(iRes.MetadataBase.Hash()[:])
+	record += iRes.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

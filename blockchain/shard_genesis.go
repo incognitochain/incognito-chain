@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/wallet"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy"
@@ -111,16 +110,16 @@ func CreateShardGenesisBlock(
 	block.Body.Transactions = append(block.Body.Transactions, &bondTokenTx)
 
 	// ---- test RPC api data --- remove after
-	testUserKey, _ := wallet.Base58CheckDeserialize("112t8rnXG4egdXQawnE4rkRfguDfKAyUYkjzns9JvEbJmGSwUhyFqafHQT6iKLC9iSphvErFqGFUiRgdKy97jnHFYj9pRw84qRnxUG2hQgTu")
-	testUserKey.KeySet.ImportFromPrivateKey(&testUserKey.KeySet.PrivateKey)
+	// testUserKey, _ := wallet.Base58CheckDeserialize("112t8rnXG4egdXQawnE4rkRfguDfKAyUYkjzns9JvEbJmGSwUhyFqafHQT6iKLC9iSphvErFqGFUiRgdKy97jnHFYj9pRw84qRnxUG2hQgTu")
+	// testUserKey.KeySet.ImportFromPrivateKey(&testUserKey.KeySet.PrivateKey)
 
-	testSpendingKey := privacy.SpendingKey([]byte("112t8rnXG4egdXQawnE4rkRfguDfKAyUYkjzns9JvEbJmGSwUhyFqafHQT6iKLC9iSphvErFqGFUiRgdKy97jnHFYj9pRw84qRnxUG2hQgTu"))
-	testSalaryTX := transaction.Tx{}
-	testSalaryTX.InitTxSalary(10000, &testUserKey.KeySet.PaymentAddress, &testSpendingKey,
-		nil,
-		nil,
-	)
-	block.Body.Transactions = append(block.Body.Transactions, &testSalaryTX)
+	// testSpendingKey := privacy.SpendingKey([]byte("112t8rnXG4egdXQawnE4rkRfguDfKAyUYkjzns9JvEbJmGSwUhyFqafHQT6iKLC9iSphvErFqGFUiRgdKy97jnHFYj9pRw84qRnxUG2hQgTu"))
+	// testSalaryTX := transaction.Tx{}
+	// testSalaryTX.InitTxSalary(10000, &testUserKey.KeySet.PaymentAddress, &testSpendingKey,
+	// 	nil,
+	// 	nil,
+	// )
+	// block.Body.Transactions = append(block.Body.Transactions, &testSalaryTX)
 	// ---- -------- ---
 
 	// Create genesis vote token tx for DCB

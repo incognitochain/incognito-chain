@@ -112,6 +112,7 @@ type config struct {
 	Wallet           bool   `long:"enablewallet" description:"Enable wallet"`
 	WalletName       string `long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
 	WalletPassphrase string `long:"walletpassphrase" description:"Wallet passphrase"`
+	WalletAutoInit   bool   `long:"walletautoinit" description:"Init wallet automatically if not exist"`
 
 	FastStartup bool `long:"faststartup" description:"Load existed shard/chain dependencies instead of rebuild from block data"`
 }
@@ -206,15 +207,6 @@ func createDefaultConfigFile(destinationPath string) error {
 	}
 
 	return nil
-}
-
-// minUint32 is a helper function to return the minimum of two uint32s.
-// This avoids a math import and the need to cast to floats.
-func minUint32(a, b uint32) uint32 {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses
@@ -557,7 +549,7 @@ func loadConfig() (*config, []string, error) {
 
 	if cfg.DiscoverPeers {
 		if cfg.DiscoverPeersAddress == "" {
-			err := fmt.Errorf("Discover peers server is empty")
+			err := errors.New("discover peers server is empty")
 			return nil, nil, err
 		}
 	}
@@ -613,7 +605,7 @@ func parseAndSetDebugLevels(debugLevel string) error {
 	if !strings.Contains(debugLevel, ",") && !strings.Contains(debugLevel, "=") {
 		// ValidateTransaction debug log level.
 		if !validLogLevel(debugLevel) {
-			str := "The specified debug level [%v] is invalid"
+			str := "the specified debug level [%v] is invalid"
 			return fmt.Errorf(str, debugLevel)
 		}
 
@@ -627,7 +619,7 @@ func parseAndSetDebugLevels(debugLevel string) error {
 	// issues and update the log levels accordingly.
 	for _, logLevelPair := range strings.Split(debugLevel, ",") {
 		if !strings.Contains(logLevelPair, "=") {
-			str := "The specified debug level contains an invalid subsystem/level pair [%v]"
+			str := "the specified debug level contains an invalid subsystem/level pair [%v]"
 			return fmt.Errorf(str, logLevelPair)
 		}
 
@@ -637,13 +629,13 @@ func parseAndSetDebugLevels(debugLevel string) error {
 
 		// ValidateTransaction subsystem.
 		if _, exists := subsystemLoggers[subsysID]; !exists {
-			str := "The specified subsystem [%v] is invalid -- supported subsytems %v"
+			str := "the specified subsystem [%v] is invalid -- supported subsytems %v"
 			return fmt.Errorf(str, subsysID, supportedSubsystems())
 		}
 
 		// ValidateTransaction log level.
 		if !validLogLevel(logLevel) {
-			str := "The specified debug level [%v] is invalid"
+			str := "the specified debug level [%v] is invalid"
 			return fmt.Errorf(str, logLevel)
 		}
 

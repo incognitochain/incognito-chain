@@ -30,7 +30,7 @@ func (self RpcServer) handleGetLoanParams(params interface{}, closeChan <-chan s
 	return nil, nil
 }
 
-func (self RpcServer) createRawLoanTx(params interface{}, closeChan <-chan struct{}, metaConstructor metaConstructor) (interface{}, *RPCError) {
+func (rpcServer RpcServer) createRawLoanTx(params interface{}, closeChan <-chan struct{}, metaConstructor metaConstructor) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	loanDataRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
@@ -38,7 +38,7 @@ func (self RpcServer) createRawLoanTx(params interface{}, closeChan <-chan struc
 	if errCons != nil {
 		return nil, NewRPCError(ErrUnexpected, errCons)
 	}
-	tx, err := self.buildRawTransaction(params, loanMeta)
+	tx, err := rpcServer.buildRawTransaction(params, loanMeta)
 	fmt.Printf("sigPubKey after build: %v\n", tx.SigPubKey)
 	if err != nil {
 		return nil, err
@@ -48,6 +48,7 @@ func (self RpcServer) createRawLoanTx(params interface{}, closeChan <-chan struc
 		// return hex for a new tx
 		return nil, NewRPCError(ErrUnexpected, errMarshal)
 	}
+	fmt.Printf("Created raw loan tx: %+v\n", tx)
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
@@ -55,7 +56,7 @@ func (self RpcServer) createRawLoanTx(params interface{}, closeChan <-chan struc
 	return result, nil
 }
 
-func (self RpcServer) sendRawLoanTx(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) sendRawLoanTx(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckDate := arrayParams[0].(string)
@@ -66,11 +67,12 @@ func (self RpcServer) sendRawLoanTx(params interface{}, closeChan <-chan struct{
 	}
 	tx := transaction.Tx{}
 	err = json.Unmarshal(rawTxBytes, &tx)
+	fmt.Printf("%+v\n", tx)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	hash, txDesc, err := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, txDesc, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -85,7 +87,7 @@ func (self RpcServer) sendRawLoanTx(params interface{}, closeChan <-chan struct{
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
-	self.config.Server.PushMessageToAll(txMsg)
+	rpcServer.config.Server.PushMessageToAll(txMsg)
 
 	result := jsonresult.CreateTransactionResult{
 		TxID: tx.Hash().String(),
@@ -93,8 +95,8 @@ func (self RpcServer) sendRawLoanTx(params interface{}, closeChan <-chan struct{
 	return result, nil
 }
 
-func (self RpcServer) createAndSendLoanTx(params interface{}, closeChan <-chan struct{}, createHandler, sendHandler commandHandler) (interface{}, *RPCError) {
-	data, err := createHandler(self, params, closeChan)
+func (rpcServer RpcServer) createAndSendLoanTx(params interface{}, closeChan <-chan struct{}, createHandler, sendHandler commandHandler) (interface{}, *RPCError) {
+	data, err := createHandler(rpcServer, params, closeChan)
 	fmt.Printf("err create handler: %v\n", err)
 	if err != nil {
 		return nil, err
@@ -103,20 +105,20 @@ func (self RpcServer) createAndSendLoanTx(params interface{}, closeChan <-chan s
 	base58CheckData := tx.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	return sendHandler(self, newParam, closeChan)
+	return sendHandler(rpcServer, newParam, closeChan)
 }
 
-func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	constructor := constructors[CreateAndSendLoanRequest]
-	return self.createRawLoanTx(params, closeChan, constructor)
+	return rpcServer.createRawLoanTx(params, closeChan, constructor)
 }
 
-func (self RpcServer) handleSendRawLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return self.sendRawLoanTx(params, closeChan)
+func (rpcServer RpcServer) handleSendRawLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return rpcServer.sendRawLoanTx(params, closeChan)
 }
 
-func (self RpcServer) handleCreateAndSendLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return self.createAndSendLoanTx(
+func (rpcServer RpcServer) handleCreateAndSendLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return rpcServer.createAndSendLoanTx(
 		params,
 		closeChan,
 		RpcServer.handleCreateRawLoanRequest,
@@ -124,17 +126,17 @@ func (self RpcServer) handleCreateAndSendLoanRequest(params interface{}, closeCh
 	)
 }
 
-func (self RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	constructor := constructors[CreateAndSendLoanResponse]
-	return self.createRawLoanTx(params, closeChan, constructor)
+	return rpcServer.createRawLoanTx(params, closeChan, constructor)
 }
 
-func (self RpcServer) handleSendRawLoanResponse(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return self.sendRawLoanTx(params, closeChan)
+func (rpcServer RpcServer) handleSendRawLoanResponse(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return rpcServer.sendRawLoanTx(params, closeChan)
 }
 
-func (self RpcServer) handleCreateAndSendLoanResponse(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return self.createAndSendLoanTx(
+func (rpcServer RpcServer) handleCreateAndSendLoanResponse(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return rpcServer.createAndSendLoanTx(
 		params,
 		closeChan,
 		RpcServer.handleCreateRawLoanResponse,
@@ -142,17 +144,17 @@ func (self RpcServer) handleCreateAndSendLoanResponse(params interface{}, closeC
 	)
 }
 
-func (self RpcServer) handleCreateRawLoanWithdraw(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateRawLoanWithdraw(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	constructor := constructors[CreateAndSendLoanWithdraw]
-	return self.createRawLoanTx(params, closeChan, constructor)
+	return rpcServer.createRawLoanTx(params, closeChan, constructor)
 }
 
-func (self RpcServer) handleSendRawLoanWithdraw(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return self.sendRawLoanTx(params, closeChan)
+func (rpcServer RpcServer) handleSendRawLoanWithdraw(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return rpcServer.sendRawLoanTx(params, closeChan)
 }
 
-func (self RpcServer) handleCreateAndSendLoanWithdraw(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return self.createAndSendLoanTx(
+func (rpcServer RpcServer) handleCreateAndSendLoanWithdraw(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return rpcServer.createAndSendLoanTx(
 		params,
 		closeChan,
 		RpcServer.handleCreateRawLoanWithdraw,
@@ -160,17 +162,17 @@ func (self RpcServer) handleCreateAndSendLoanWithdraw(params interface{}, closeC
 	)
 }
 
-func (self RpcServer) handleCreateRawLoanPayment(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateRawLoanPayment(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	constructor := constructors[CreateAndSendLoanPayment]
-	return self.createRawLoanTx(params, closeChan, constructor)
+	return rpcServer.createRawLoanTx(params, closeChan, constructor)
 }
 
-func (self RpcServer) handleSendRawLoanPayment(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return self.sendRawLoanTx(params, closeChan)
+func (rpcServer RpcServer) handleSendRawLoanPayment(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return rpcServer.sendRawLoanTx(params, closeChan)
 }
 
-func (self RpcServer) handleCreateAndSendLoanPayment(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return self.createAndSendLoanTx(
+func (rpcServer RpcServer) handleCreateAndSendLoanPayment(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return rpcServer.createAndSendLoanTx(
 		params,
 		closeChan,
 		RpcServer.handleCreateRawLoanPayment,
@@ -182,7 +184,7 @@ func (self RpcServer) handleCreateAndSendLoanPayment(params interface{}, closeCh
 // Output: for each loan:
 //  - approved (bool)
 //  - approvers (list pubkeys)
-func (self RpcServer) handleGetLoanResponseApproved(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleGetLoanResponseApproved(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	result := jsonresult.ListLoanResponseApproved{
 		Approvers: make(map[string][]string),
@@ -190,8 +192,8 @@ func (self RpcServer) handleGetLoanResponseApproved(params interface{}, closeCha
 	}
 	for _, param := range arrayParams {
 		strLoanID := param.(string)
-		approvers := self.getResponseAddresses(strLoanID, metadata.Accept)
-		approveReq := self.config.BlockChain.GetDCBParams().MinLoanResponseRequire
+		approvers := rpcServer.getResponseAddresses(strLoanID, metadata.Accept)
+		approveReq := rpcServer.config.BlockChain.GetDCBParams().MinLoanResponseRequire
 		approved := len(approvers) >= int(approveReq)
 		result.Approvers[strLoanID] = approvers
 		result.Approved[strLoanID] = approved
@@ -203,7 +205,7 @@ func (self RpcServer) handleGetLoanResponseApproved(params interface{}, closeCha
 // Output: for each loan:
 //  - rejected (bool)
 //  - rejectors (list pubkeys)
-func (self RpcServer) handleGetLoanResponseRejected(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleGetLoanResponseRejected(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	result := jsonresult.ListLoanResponseRejected{
 		Rejectors: make(map[string][]string),
@@ -211,8 +213,8 @@ func (self RpcServer) handleGetLoanResponseRejected(params interface{}, closeCha
 	}
 	for _, param := range arrayParams {
 		strLoanID := param.(string)
-		rejectors := self.getResponseAddresses(strLoanID, metadata.Reject)
-		approveReq := self.config.BlockChain.GetDCBParams().MinLoanResponseRequire
+		rejectors := rpcServer.getResponseAddresses(strLoanID, metadata.Reject)
+		approveReq := rpcServer.config.BlockChain.GetDCBParams().MinLoanResponseRequire
 		rejectReq := common.NumberOfDCBGovernors - approveReq
 		rejected := len(rejectors) > int(rejectReq)
 		result.Rejectors[strLoanID] = rejectors
@@ -221,14 +223,14 @@ func (self RpcServer) handleGetLoanResponseRejected(params interface{}, closeCha
 	return result, nil
 }
 
-func (self RpcServer) getResponseAddresses(strLoanID string, respType metadata.ValidLoanResponse) []string {
+func (rpcServer RpcServer) getResponseAddresses(strLoanID string, respType metadata.ValidLoanResponse) []string {
 	addresses := []string{}
 	loanID, err := hex.DecodeString(strLoanID)
 	if err == nil {
-		txHashes, err := (*self.config.Database).GetLoanTxs(loanID)
+		txHashes, err := (*rpcServer.config.Database).GetLoanTxs(loanID)
 		fmt.Printf("GetLoanTxs found: %x\n", txHashes)
 		if err == nil {
-			respData := metadata.GetLoanResponses(txHashes, self.config.BlockChain)
+			respData := metadata.GetLoanResponses(txHashes, rpcServer.config.BlockChain)
 			for _, resp := range respData {
 				if resp.Response == respType {
 					address := getPaymentAddressStrFromPubKey(resp.PublicKey)
@@ -241,7 +243,7 @@ func (self RpcServer) getResponseAddresses(strLoanID string, respType metadata.V
 }
 
 func getPaymentAddressStrFromPubKey(pubkey []byte) string {
-	key := &wallet.Key{
+	key := &wallet.KeyWallet{
 		KeySet: cashec.KeySet{
 			PaymentAddress: privacy.PaymentAddress{
 				Pk: pubkey,
@@ -256,25 +258,36 @@ func getPaymentAddressStrFromPubKey(pubkey []byte) string {
 // Output: for each loan:
 //  - rejected (bool)
 //  - rejectors (list pubkeys)
-func (self RpcServer) handleGetLoanPaymentInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleGetLoanPaymentInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	result := jsonresult.ListLoanPaymentInfo{
 		Info: make(map[string]jsonresult.LoanPaymentInfo),
 	}
 	for _, param := range arrayParams {
 		strLoanID := param.(string)
-		loanID, err := hex.DecodeString(strLoanID)
-		loanPaymentInfo := jsonresult.LoanPaymentInfo{}
-		if err == nil {
-			priciple, interest, deadline, err := (*self.config.Database).GetLoanPayment(loanID)
-			if err == nil {
-				loanPaymentInfo.Principle = priciple
-				loanPaymentInfo.Interest = interest
-				// loanPaymentInfo.Deadline = deadline
-				loanPaymentInfo.Deadline = uint32(deadline)
-			}
-		}
-		result.Info[strLoanID] = loanPaymentInfo
+		result.Info[strLoanID] = rpcServer.calcLoanPaymentInfo(strLoanID)
 	}
 	return result, nil
+}
+
+func (rpcServer RpcServer) calcLoanPaymentInfo(strLoanID string) jsonresult.LoanPaymentInfo {
+	loanPaymentInfo := jsonresult.LoanPaymentInfo{}
+	if loanID, err := hex.DecodeString(strLoanID); err == nil {
+		if priciple, interest, deadline, err := (*rpcServer.config.Database).GetLoanPayment(loanID); err == nil {
+			if txReqHash, err := (*rpcServer.config.Database).GetLoanRequestTx(loanID); err == nil {
+				hash, _ := (&common.Hash{}).NewHash(txReqHash)
+				if _, _, _, txReq, err := (*rpcServer.config.BlockChain).GetTransactionByHash(hash); err == nil {
+					reqMeta, _ := txReq.GetMetadata().(*metadata.LoanRequest)
+					shardID, _ := common.GetTxSenderChain(txReq.GetSenderAddrLastByte())
+					height := rpcServer.config.BlockChain.GetChainHeight(shardID)
+					loanPaymentInfo.Principle = priciple
+					if height >= deadline { // Current term interest is not fully paid
+						loanPaymentInfo.Interest = interest
+					}
+					loanPaymentInfo.Deadline = deadline + reqMeta.Params.Maturity
+				}
+			}
+		}
+	}
+	return loanPaymentInfo
 }

@@ -1,8 +1,9 @@
 package privacy
 
 import (
-	"math/big"
 	"sync"
+
+	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
 )

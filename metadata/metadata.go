@@ -7,7 +7,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	privacy "github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 )
 
@@ -38,16 +38,14 @@ func (mb *MetadataBase) Hash() *common.Hash {
 }
 
 func (mb *MetadataBase) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+	// TODO: 0xjackalope
 	return true
 }
 
 func (mb *MetadataBase) CheckTransactionFee(tr Transaction, minFeePerKbTx uint64) bool {
 	txFee := tr.GetTxFee()
 	fullFee := minFeePerKbTx * tr.GetTxActualSize()
-	if txFee < fullFee {
-		return false
-	}
-	return true
+	return !(txFee < fullFee)
 }
 
 func (mb *MetadataBase) VerifyMultiSigs(
@@ -76,25 +74,26 @@ type TxDesc struct {
 	FeePerKB int32
 }
 
+// Interface for mempool which is used in metadata
 type MempoolRetriever interface {
 	GetSerialNumbers() map[common.Hash][][]byte
 	GetTxsInMem() map[common.Hash]TxDesc
 }
 
+// Interface for blockchain which is used in metadata
 type BlockchainRetriever interface {
-	GetHeight(byte) uint64
+	GetTxChainHeight(tx Transaction) (uint64, error)
+	GetChainHeight(byte) uint64
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
 	GetDCBParams() params.DCBParams
-	GetDCBBoardPubKeys() [][]byte
+	GetBoardPubKeys(boardType string) [][]byte
+	GetBoardPaymentAddress(boardType string) []privacy.PaymentAddress
 	GetGOVParams() params.GOVParams
-	GetGOVBoardPubKeys() [][]byte
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
 	GetOracleParams() *params.Oracle
-	GetDCBConstitutionStartHeight(byte) uint32
-	GetGOVConstitutionStartHeight(byte) uint32
-	GetDCBConstitutionEndHeight(byte) uint32
-	GetGOVConstitutionEndHeight(byte) uint32
-	GetCurrentBlockHeight(byte) uint32
+	GetConstitutionStartHeight(boardType string, shardID byte) uint64
+	GetConstitutionEndHeight(boardType string, shardID byte) uint64
+	GetCurrentBlockHeight(byte) uint64
 
 	// For validating loan metadata
 	GetLoanTxs([]byte) ([][]byte, error)
@@ -104,20 +103,20 @@ type BlockchainRetriever interface {
 	GetLoanRequestMeta([]byte) (*LoanRequest, error)
 
 	// For validating dividend
-	// GetAmountPerAccount(*DividendProposal) (uint64, []string, []uint64, error)
+	GetAmountPerAccount(*DividendProposal) (uint64, []string, []uint64, error)
 
 	// For validating crowdsale
 	GetCrowdsaleData([]byte) (*params.SaleData, error)
-	GetCrowdsaleTxs([]byte) ([][]byte, error)
 
 	// For validating cmb
 	GetCMB([]byte) (privacy.PaymentAddress, []privacy.PaymentAddress, uint64, *common.Hash, uint8, uint64, error)
-	GetShardBlockHeightByHash(*common.Hash) (uint64, byte, error)
+	GetBlockHeightByBlockHash(*common.Hash) (uint64, byte, error)
 	GetCMBResponse([]byte) ([][]byte, error)
 	GetDepositSend([]byte) ([]byte, error)
 	GetWithdrawRequest([]byte) ([]byte, uint8, error)
 }
 
+// Interface for all types of metadata in tx
 type Metadata interface {
 	GetType() int
 	Hash() *common.Hash
@@ -151,9 +150,10 @@ type Transaction interface {
 	ValidateType() bool
 	GetMetadata() Metadata
 	SetMetadata(Metadata)
+	GetInfo() []byte
 	ValidateConstDoubleSpendWithBlockchain(BlockchainRetriever, byte, database.DatabaseInterface) error
 
-	GetJSPubKey() []byte
+	GetSigPubKey() []byte
 	GetReceivers() ([][]byte, []uint64)
 	GetUniqueReceiver() (bool, []byte, uint64)
 	IsPrivacy() bool
