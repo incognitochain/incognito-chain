@@ -220,6 +220,9 @@ func NewOracleNetworkFromJson(data interface{}) *OracleNetwork {
 	oracleNetworkData := data.(map[string]interface{})
 
 	oraclePubKeysInterface := common.InterfaceSlice(oracleNetworkData["OraclePubKeys"])
+	if oraclePubKeysInterface == nil {
+		panic("oraclePubKey")
+	}
 	oraclePubKeys := make([][]byte, 0)
 	for _, i := range oraclePubKeysInterface {
 		oraclePubKeys = append(oraclePubKeys, common.SliceInterfaceToSliceByte(common.InterfaceSlice(i)))

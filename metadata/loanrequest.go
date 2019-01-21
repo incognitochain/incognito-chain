@@ -88,7 +88,7 @@ func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 	fmt.Println("Validating LoanRequest with blockchain!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	// Check if loan's params are correct
 	dcbParams := bcr.GetDCBParams()
-	validLoanParams := dcbParams.LoanParams
+	validLoanParams := dcbParams.ListLoanParams
 	ok := false
 	for _, temp := range validLoanParams {
 		if lr.Params == temp {

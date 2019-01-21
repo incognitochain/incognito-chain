@@ -3,7 +3,6 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
@@ -329,7 +328,7 @@ func (rpcServer RpcServer) buildRawSubmitGOVProposalTransaction(
 	newParams["PaymentAddress"] = tmp
 
 	meta := metadata.NewSubmitGOVProposalMetadataFromJson(newParams)
-	params = setBuildRawBurnSubmitProposalTransactionParams(params)
+	params = setBuildRawBurnTransactionParams(params, common.FeeSubmitProposal)
 	tx, err1 := rpcServer.buildRawTransaction(params, meta)
 	if err1 != nil {
 		return nil, err1

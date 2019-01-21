@@ -540,7 +540,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 
 		for j := 0; j < privacy.CMRingSize; j++ {
 			commitmentTemps[i][j] = new(privacy.EllipticPoint).Zero()
-			commitmentTemps[i][j] = commitments[preIndex+j].Sub(cmInputSum[i])
+			commitmentTemps[i][j], _ = commitments[preIndex+j].Sub(cmInputSum[i])
 			//commitmentTemps[i][j].X, commitmentTemps[i][j].Y = privacy.Curve.Add(commitments[preIndex+j].X, commitments[preIndex+j].Y, cmInputSumInverse[i].X, cmInputSumInverse[i].Y)
 		}
 
@@ -633,7 +633,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 	}
 
 	//cmEqualCoinValue := new(privacy.EllipticPoint)
-	cmEqualCoinValue := cmInputValueAll.Sub(cmOutputValueAll)
+	cmEqualCoinValue, _ := cmInputValueAll.Sub(cmOutputValueAll)
 
 	randEqualCoinValue := big.NewInt(0)
 	randEqualCoinValue.Sub(randInputValueAll, randOutputValueAll)
@@ -794,7 +794,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee ui
 				return false
 			}
 
-			commitments[j] = commitments[j].Sub(cmInputSum[i])
+			commitments[j], _ = commitments[j].Sub(cmInputSum[i])
 		}
 
 		pro.OneOfManyProof[i].Commitments = commitments
@@ -842,7 +842,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee ui
 		comOutputValueSum = comOutputValueSum.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(fee))))
 	}
 
-	comZero := comInputValueSum.Sub(comOutputValueSum)
+	comZero, _ := comInputValueSum.Sub(comOutputValueSum)
 	pro.ComZeroProof.commitmentValue = comZero
 
 	if !pro.ComZeroProof.Verify() {

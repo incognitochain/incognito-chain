@@ -44,10 +44,7 @@ func (uob UpdatingOracleBoard) CheckTransactionFee(
 ) bool {
 	txFee := tr.GetTxFee()
 	fullFee := minFeePerKbTx * tr.GetTxActualSize()
-	if txFee < fullFee {
-		return false
-	}
-	return true
+	return !(txFee < fullFee)
 }
 
 func (uob UpdatingOracleBoard) ValidateTxWithBlockChain(

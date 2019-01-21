@@ -209,6 +209,7 @@ func (block *Block) updateBlock(
 
 	for _, tx := range txGroups.txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
+			panic("add transaction failed")
 			return err
 		}
 		// Handle if this transaction change something in block header or database

@@ -346,7 +346,7 @@ func (coin *OutputCoin) Encrypt(recipientTK TransmissionKey) error {
 
 	// Encrypt coin details using aesKeyByte
 	aesScheme := &AES{
-		key: aesKeyByte,
+		Key: aesKeyByte,
 	}
 
 	// Encrypt coin randomness
@@ -354,14 +354,14 @@ func (coin *OutputCoin) Encrypt(recipientTK TransmissionKey) error {
 	var err error
 
 	randomnessBytes := coin.CoinDetails.Randomness.Bytes()
-	coin.CoinDetailsEncrypted.EncryptedRandomness, err = aesScheme.Encrypt(randomnessBytes)
+	coin.CoinDetailsEncrypted.EncryptedRandomness, err = aesScheme.encrypt(randomnessBytes)
 	if err != nil {
 		return err
 	}
 
 	// Encrypt coin value
 	valueBytes := new(big.Int).SetUint64(coin.CoinDetails.Value).Bytes()
-	coin.CoinDetailsEncrypted.EncryptedValue, err = aesScheme.Encrypt(valueBytes)
+	coin.CoinDetailsEncrypted.EncryptedValue, err = aesScheme.encrypt(valueBytes)
 	if err != nil {
 		return err
 	}
@@ -398,21 +398,21 @@ func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 	}
 
 	// Decrypt encryptedAESKey using recipient's receiving key
-	aesKeyPoint := receivingKey.Decrypt(encryptedAESKey)
+	aesKeyPoint, _ := receivingKey.Decrypt(encryptedAESKey)
 
 	// Get AES key
 	aesScheme := &AES{
-		key: aesKeyPoint.X.Bytes(),
+		Key: aesKeyPoint.X.Bytes(),
 	}
 
 	// Decrypt encrypted coin randomness using AES key
-	randomness, err := aesScheme.Decrypt(coin.CoinDetailsEncrypted.EncryptedRandomness)
+	randomness, err := aesScheme.decrypt(coin.CoinDetailsEncrypted.EncryptedRandomness)
 	if err != nil {
 		return err
 	}
 
 	// Decrypt encrypted coin value using AES key
-	value, err := aesScheme.Decrypt(coin.CoinDetailsEncrypted.EncryptedValue)
+	value, err := aesScheme.decrypt(coin.CoinDetailsEncrypted.EncryptedValue)
 	if err != nil {
 		return err
 	}

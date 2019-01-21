@@ -55,7 +55,7 @@ func (sealedVoteProposal *SealedVoteProposal) ValidateMetadataByItself() bool {
 		pub1 := sealedVoteProposal.LockerPaymentAddress[index1]
 		for index2 := index1 + 1; index2 < len(sealedVoteProposal.LockerPaymentAddress); index2++ {
 			pub2 := sealedVoteProposal.LockerPaymentAddress[index2]
-			if !common.ByteEqual(pub1.Bytes(), pub2.Bytes()) {
+			if common.ByteEqual(pub1.Bytes(), pub2.Bytes()) {
 				return false
 			}
 		}

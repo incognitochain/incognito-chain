@@ -69,7 +69,7 @@ func (dc *CMBDepositContract) ValidateTxWithBlockChain(txr Transaction, bcr Bloc
 	chainID, err := common.GetTxSenderChain(lastByte)
 	receiverChainHeight := bcr.GetChainHeight(chainID)
 	if err != nil || receiverChainHeight+1 >= dc.ValidUntil {
-		return false, errors.Errorf("ValidUntil must be larger than block height")
+		return false, errors.Errorf("ValidUntil must be bigger than current block height of receiver")
 	}
 
 	// CMBAddress must be valid
