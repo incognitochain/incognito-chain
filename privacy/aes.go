@@ -8,11 +8,11 @@ import (
 )
 
 type AES struct {
-	key []byte
+	Key []byte
 }
 
-func (aesObj *AES) Encrypt(plaintext []byte) ([]byte, error) {
-	block, err := aes.NewCipher(aesObj.key)
+func (aesObj *AES) encrypt(plaintext []byte) ([]byte, error) {
+	block, err := aes.NewCipher(aesObj.Key)
 	if err != nil {
 		return nil, err
 	}
@@ -28,10 +28,10 @@ func (aesObj *AES) Encrypt(plaintext []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
-func (aesObj *AES) Decrypt(ciphertext []byte) ([]byte, error) {
+func (aesObj *AES) decrypt(ciphertext []byte) ([]byte, error) {
 	plaintext := make([]byte, len(ciphertext[aes.BlockSize:]))
 
-	block, err := aes.NewCipher(aesObj.key)
+	block, err := aes.NewCipher(aesObj.Key)
 	if err != nil {
 		return nil, err
 	}

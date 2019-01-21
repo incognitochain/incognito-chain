@@ -236,15 +236,15 @@ func (point EllipticPoint) Add(targetPoint *EllipticPoint) *EllipticPoint {
 	return res
 }
 
-func (point EllipticPoint) Sub(targetPoint *EllipticPoint) *EllipticPoint {
+func (point EllipticPoint) Sub(targetPoint *EllipticPoint) (*EllipticPoint, error) {
 	invPoint, err := targetPoint.Inverse()
 
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	res := point.Add(invPoint)
-	return res
+	return res, nil
 }
 
 func (point EllipticPoint) IsEqual(p *EllipticPoint) bool {

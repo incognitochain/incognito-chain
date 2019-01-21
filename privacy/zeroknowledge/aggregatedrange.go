@@ -487,6 +487,6 @@ func (pro *AggregatedRangeProof) Verify() bool {
 		}
 	}
 
-	P := pro.A.Add(pro.S.ScalarMult(cx)).Add(tmp1).Add(tmp2).Sub(rangeProofParams.H.ScalarMult(pro.Mu))
+	P, _ := pro.A.Add(pro.S.ScalarMult(cx)).Add(tmp1).Add(tmp2).Sub(rangeProofParams.H.ScalarMult(pro.Mu))
 	return innerProductVerifyFast(pro.Th, P, HPrime, pro.IPP, rangeProofParams)
 }

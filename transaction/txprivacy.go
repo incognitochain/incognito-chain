@@ -16,7 +16,6 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"github.com/ninjadotorg/constant/wallet"
-	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 type Tx struct {
@@ -25,6 +24,7 @@ type Tx struct {
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
 	Fee      uint64 `json:"Fee"` // Fee applies: always consant
+	Info     []byte
 
 	// Sign and Privacy proof
 	SigPubKey []byte `json:"SigPubKey, omitempty"` // 33 bytes
@@ -100,7 +100,16 @@ func (tx *Tx) Init(
 	senderFullKey.ImportFromPrivateKey(senderSK)
 	// get public key last byte of sender
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
+	// init info of tx
+	pubKeyData := &privacy.EllipticPoint{}
+	pubKeyData.Decompress(senderFullKey.PaymentAddress.Pk)
+	tx.Info, err = privacy.ElGamalEncrypt(senderFullKey.PaymentAddress.Tk[:], pubKeyData)
+	if err != nil {
+		return NewTransactionErr(UnexpectedErr, err)
+	}
+	// set metadata
 	tx.Metadata = metaData
+	// set tx type
 	tx.Type = common.TxNormalType
 	Logger.log.Infof("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(inputCoins), fee, hasPrivacy)
 	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
@@ -379,15 +388,15 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		return false
 	}
 
-	senderPK := tx.GetSigPubKey()
+	/*senderPK := tx.GetSigPubKey()
 	_, getMSRErr := db.GetMultiSigsRegistration(senderPK)
-	Logger.log.Infof("getMSRErr: %v\n", getMSRErr)
+	//Logger.log.Infof("getMSRErr: %v\n", getMSRErr)
 	if getMSRErr != nil {
 		// Single signature
-		if getMSRErr != lvdberr.ErrNotFound {
-			Logger.log.Infof("%+v", err)
-			return false
-		}
+		//if getMSRErr != lvdberr.ErrNotFound {
+		//	Logger.log.Infof("%+v", err)
+		//	return false
+		//}
 	} else { // found, spending on multisigs address
 		// Multi signatures
 		valid, err = tx.verifyMultiSigsTx(db)
@@ -397,7 +406,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		if !valid {
 			return false
 		}
-	}
+	}*/
 
 	Logger.log.Infof("[db]tx.Proof: %+v\n", tx.Proof)
 	if tx.Proof != nil {
@@ -478,6 +487,7 @@ func (tx *Tx) GetTxActualSize() uint64 {
 	}
 
 	sizeTx += uint64(1)
+	sizeTx += uint64(len(tx.Info))
 
 	if tx.Metadata != nil {
 		// TODO 0xjackpolope
@@ -706,6 +716,15 @@ func (tx *Tx) SetMetadata(meta metadata.Metadata) {
 	tx.Metadata = meta
 }
 
+// GetMetadata returns metadata of tx is existed
+func (tx *Tx) GetInfo() []byte {
+	return tx.Info
+}
+
+func (tx *Tx) GetLockTime() int64 {
+	return tx.LockTime
+}
+
 func (tx *Tx) GetSigPubKey() []byte {
 	return tx.SigPubKey
 }
@@ -773,10 +792,6 @@ func (tx *Tx) GetSenderAddress() *privacy.PaymentAddress {
 	return &withSenderAddrMeta.SenderAddress
 }
 
-func (tx *Tx) GetLockTime() int64 {
-	return tx.LockTime
-}
-
 // InitTxSalary
 // Blockchain use this tx to pay a reward(salary) to miner of chain
 // #1 - salary:
@@ -794,7 +809,7 @@ func (tx *Tx) InitTxSalary(
 	tx.Type = common.TxSalaryType
 
 	if tx.LockTime == 0 {
-		tx.LockTime = time.Now().Unix()
+		tx.LockTime = time.Now().UnixNano()
 	}
 
 	var err error

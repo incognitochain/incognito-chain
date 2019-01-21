@@ -386,45 +386,6 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 	return nil
 }
 
-/*
-Get all blocks in chain
-Return block array
-*/
-/*func (self *BlockChain) GetAllBlocks() ([][]*Block, error) {
-	result := make([][]*Block, 0)
-	data, err := self.config.DataBase.FetchAllBlocks()
-	if err != nil {
-		return nil, err
-	}
-
-	for chainID, chain := range data {
-		for _, item := range chain {
-			blockBytes, err := self.config.DataBase.FetchBlock(item)
-			if err != nil {
-				return nil, err
-			}
-			block := Block{}
-			blockHeader := BlockHeader{}
-			if self.config.LightMode {
-				// with light node, we can only get data of header of block
-				err = json.Unmarshal(blockBytes, &blockHeader)
-				if err != nil {
-					return nil, err
-				}
-				block.Header = blockHeader
-			} else {
-				err = json.Unmarshal(blockBytes, &block)
-				if err != nil {
-					return nil, err
-				}
-			}
-			result[chainID] = append(result[chainID], &block)
-		}
-	}
-
-	return result, nil
-}*/
-
 func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
 	result := make([]*Block, 0)
 	data, err := self.config.DataBase.FetchChainBlocks(chainID)
@@ -460,18 +421,6 @@ func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
 
 	return result, nil
 }
-
-/*
-Get all hash of blocks in chain
-Return hashes array
-*/
-//func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
-//	data, err := self.config.DataBase.FetchAllBlocks()
-//	if err != nil {
-//		return nil, err
-//	}
-//	return data, err
-//}
 
 func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
 	txs, err := self.config.DataBase.GetLoanTxs(loanID)
@@ -1296,12 +1245,14 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common.Hash, int, metadata.Transaction, error) {
 	blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
 	if err != nil {
-		return byte(255), nil, -1, nil, err
+		abc := NewBlockChainError(UnExpectedError, err)
+		Logger.log.Error(abc)
+		return byte(255), nil, -1, nil, abc
 	}
-	block, err := self.GetBlockByBlockHash(blockHash)
-	if err != nil {
-		Logger.log.Errorf("ERROR", err, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
-		return byte(255), nil, -1, nil, NewBlockChainError(UnExpectedError, err)
+	block, err1 := self.GetBlockByBlockHash(blockHash)
+	if err1 != nil {
+		Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
+		return byte(255), nil, -1, nil, NewBlockChainError(UnExpectedError, err1)
 	}
 	//Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
 	return block.Header.ChainID, blockHash, index, block.Transactions[index], nil
@@ -1540,4 +1491,47 @@ func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
 		return true
 	}
 	return false
+}
+
+// GetRecentTransactions - find all recent history txs which are created by user
+// by number of block, maximum is 100 newest blocks
+func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privacy.ViewingKey, chainID byte) (map[string]metadata.Transaction, error) {
+	if numBlock > 100 { // maximum is 100
+		numBlock = 100
+	}
+	var err error
+	result := make(map[string]metadata.Transaction)
+	bestBlock := blockchain.BestState[chainID].BestBlock
+	for {
+		for _, tx := range bestBlock.Transactions {
+			info := tx.GetInfo()
+			if info == nil {
+				continue
+			}
+			// info of tx with contain encrypted pubkey of creator in 1st 64bytes
+			lenInfo := 66
+			if len(info) < lenInfo {
+				continue
+			}
+			// decrypt to get pubkey data from info
+			pubkeyData, err1 := privacy.ElGamalDecrypt(key.Rk[:], info[0:lenInfo])
+			if err1 != nil {
+				continue
+			}
+			// compare to check pubkey
+			if !bytes.Equal(pubkeyData.Compress(), key.Pk[:]) {
+				continue
+			}
+			result[tx.Hash().String()] = tx
+		}
+		numBlock --
+		if numBlock == 0 {
+			break
+		}
+		bestBlock, err = blockchain.GetBlockByBlockHash(&bestBlock.Header.PrevBlockHash)
+		if err != nil {
+			break
+		}
+	}
+	return result, nil
 }

@@ -329,7 +329,7 @@ func (rpcServer RpcServer) buildRawSubmitGOVProposalTransaction(
 	newParams["PaymentAddress"] = tmp
 
 	meta := metadata.NewSubmitGOVProposalMetadataFromJson(newParams)
-	params = setBuildRawBurnSubmitProposalTransactionParams(params)
+	params = setBuildRawBurnTransactionParams(params, common.FeeSubmitProposal)
 	tx, err1 := rpcServer.buildRawTransaction(params, meta)
 	if err1 != nil {
 		return nil, err1

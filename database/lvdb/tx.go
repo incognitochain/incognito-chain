@@ -525,25 +525,25 @@ func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, i
   Get Transaction by ID
 */
 
-func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, error) {
+func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, *database.DatabaseError) {
 	key := string(transactionKeyPrefix) + txId.String()
 	_, err := db.HasValue([]byte(key))
 	if err != nil {
-		return nil, -1, err
+		return nil, -1, database.NewDatabaseError(database.ErrUnexpected, err)
 	}
 
-	res, err := db.lvdb.Get([]byte(key), nil)
+	res, err := db.Get([]byte(key))
 	if err != nil {
-		return nil, -1, err
+		return nil, -1, database.NewDatabaseError(database.ErrUnexpected, err)
 	}
 	reses := strings.Split(string(res), (string(Splitter)))
 	hash, err := common.Hash{}.NewHashFromStr(reses[0])
 	if err != nil {
-		return nil, -1, err
+		return nil, -1, database.NewDatabaseError(database.ErrUnexpected, err)
 	}
 	index, err := strconv.Atoi(reses[1])
 	if err != nil {
-		return nil, -1, err
+		return nil, -1, database.NewDatabaseError(database.ErrUnexpected, err)
 	}
 	return hash, index, nil
 }
@@ -611,22 +611,22 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 
 */
 /*func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKey) (map[byte]([]([]byte)), error) {
-	prefix := []byte(string(privateKeyPrefix) + privateKey.String())
-	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
+prefix := []byte(string(privateKeyPrefix) + privateKey.String())
+iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 
-	results := make(map[byte]([]([]byte)))
-	for iter.Next() {
-		key := iter.Key()
-		value := iter.Value()
+results := make(map[byte]([]([]byte)))
+for iter.Next() {
+	key := iter.Key()
+	value := iter.Value()
 
-		reses := strings.Split(string(key), string(Splitter))
-		tempChainId, _ := strconv.Atoi(reses[2])
-		chainId := byte(tempChainId)
-		*//*tx := transaction.Tx{}
-		err := json.Unmarshal(value, &tx)
-		if err != nil {
-			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
-		}*//*
+	reses := strings.Split(string(key), string(Splitter))
+	tempChainId, _ := strconv.Atoi(reses[2])
+	chainId := byte(tempChainId)
+*/ /*tx := transaction.Tx{}
+err := json.Unmarshal(value, &tx)
+if err != nil {
+	return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+}*/ /*
 		data := make([]byte, len(value))
 		copy(data[:], value[:])
 		results[chainId] = append(results[chainId], data)
