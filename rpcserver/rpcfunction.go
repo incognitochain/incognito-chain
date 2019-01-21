@@ -129,6 +129,8 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendTxWithOracleFeed:          RpcServer.handleCreateAndSendTxWithOracleFeed,
 	CreateAndSendTxWithUpdatingOracleBoard: RpcServer.handleCreateAndSendTxWithUpdatingOracleBoard,
 	CreateAndSendTxWithSenderAddress:       RpcServer.handleCreateAndSendTxWithSenderAddress,
+	CreateAndSendTxWithBuyGOVTokensRequest: RpcServer.handleCreateAndSendTxWithBuyGOVTokensRequest,
+	GetCurrentSellingGOVTokens:             RpcServer.handleGetCurrentSellingGOVTokens,
 
 	// cmb
 	CreateAndSendTxWithCMBInitRequest:     RpcServer.handleCreateAndSendTxWithCMBInitRequest,

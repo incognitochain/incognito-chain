@@ -22,11 +22,13 @@ type txGroups struct {
 	txsToAdd                 []metadata.Transaction
 	txToRemove               []metadata.Transaction
 	buySellReqTxs            []metadata.Transaction
+	buyGOVTokensReqTxs       []metadata.Transaction
 	issuingReqTxs            []metadata.Transaction
 	updatingOracleBoardTxs   []metadata.Transaction
 	multiSigsRegistrationTxs []metadata.Transaction
 	unlockTxs                []metadata.Transaction
 	buySellResTxs            []metadata.Transaction
+	buyGOVTokensResTxs       []metadata.Transaction
 	buyBackResTxs            []metadata.Transaction
 	issuingResTxs            []metadata.Transaction
 	refundTxs                []metadata.Transaction
@@ -34,18 +36,20 @@ type txGroups struct {
 }
 
 type accumulativeValues struct {
-	bondsSold          uint64
-	dcbTokensSold      uint64
-	incomeFromBonds    uint64
-	totalFee           uint64
-	buyBackCoins       uint64
-	govPayoutAmount    uint64
-	bankPayoutAmount   uint64
-	totalSalary        uint64
-	currentSalaryFund  uint64
-	totalRefundAmt     uint64
-	totalOracleRewards uint64
-	loanPaymentAmount  uint64
+	bondsSold           uint64
+	govTokensSold       uint64
+	dcbTokensSold       uint64
+	incomeFromBonds     uint64
+	incomeFromGOVTokens uint64
+	totalFee            uint64
+	buyBackCoins        uint64
+	govPayoutAmount     uint64
+	bankPayoutAmount    uint64
+	totalSalary         uint64
+	currentSalaryFund   uint64
+	totalRefundAmt      uint64
+	totalOracleRewards  uint64
+	loanPaymentAmount   uint64
 }
 
 func (blockgen *BlkTmplGenerator) checkIssuingReqTx(
@@ -161,6 +165,29 @@ func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
 	return req.Amount * req.BuyPrice, req.Amount, true
 }
 
+func (blockgen *BlkTmplGenerator) checkBuyGOVTokensReqTx(
+	chainID byte,
+	tx metadata.Transaction,
+	govTokensSold uint64,
+) (uint64, uint64, bool) {
+	prevBlock := blockgen.chain.BestState[chainID].BestBlock
+	sellingGOVTokensParams := prevBlock.Header.GOVConstitution.GOVParams.SellingGOVTokens
+	if uint64(prevBlock.Header.Height)+1 > sellingGOVTokensParams.StartSellingAt+sellingGOVTokensParams.SellingWithin {
+		return 0, 0, false
+	}
+
+	buyGOVTokensReqMeta := tx.GetMetadata()
+	req, ok := buyGOVTokensReqMeta.(*metadata.BuyGOVTokenRequest)
+	if !ok {
+		return 0, 0, false
+	}
+
+	if govTokensSold+req.Amount > sellingGOVTokensParams.GOVTokensToSell { // run out of gov tokens for selling
+		return 0, 0, false
+	}
+	return req.Amount * req.BuyPrice, req.Amount, true
+}
+
 func (blockgen *BlkTmplGenerator) processDividend(
 	proposal *metadata.DividendProposal,
 	blockHeight int32,
@@ -236,13 +263,16 @@ func (blockgen *BlkTmplGenerator) checkAndGroupTxs(
 	txsToAdd := []metadata.Transaction{}
 	txToRemove := []metadata.Transaction{}
 	buySellReqTxs := []metadata.Transaction{}
+	buyGOVTokensReqTxs := []metadata.Transaction{}
 	issuingReqTxs := []metadata.Transaction{}
 	updatingOracleBoardTxs := []metadata.Transaction{}
 	multiSigsRegistrationTxs := []metadata.Transaction{}
 	buyBackFromInfos := []*buyBackFromInfo{}
 	bondsSold := uint64(0)
+	govTokensSold := uint64(0)
 	dcbTokensSold := uint64(0)
 	incomeFromBonds := uint64(0)
+	incomeFromGOVTokens := uint64(0)
 	totalFee := uint64(0)
 	buyBackCoins := uint64(0)
 	bankPayoutAmount := uint64(0)
@@ -279,6 +309,17 @@ func (blockgen *BlkTmplGenerator) checkAndGroupTxs(
 				bondsSold += soldAmt
 				incomeFromBonds += income
 				buySellReqTxs = append(buySellReqTxs, tx)
+			}
+		case metadata.BuyGOVTokenRequestMeta:
+			{
+				income, soldAmt, addable := blockgen.checkBuyGOVTokensReqTx(chainID, tx, govTokensSold)
+				if !addable {
+					txToRemove = append(txToRemove, tx)
+					continue
+				}
+				govTokensSold += soldAmt
+				incomeFromGOVTokens += income
+				buyGOVTokensReqTxs = append(buyGOVTokensReqTxs, tx)
 			}
 		case metadata.BuyBackRequestMeta:
 			{
@@ -358,18 +399,21 @@ func (blockgen *BlkTmplGenerator) checkAndGroupTxs(
 		txsToAdd:                 txsToAdd,
 		txToRemove:               txToRemove,
 		buySellReqTxs:            buySellReqTxs,
+		buyGOVTokensReqTxs:       buyGOVTokensReqTxs,
 		issuingReqTxs:            issuingReqTxs,
 		updatingOracleBoardTxs:   updatingOracleBoardTxs,
 		multiSigsRegistrationTxs: multiSigsRegistrationTxs,
 	}
 	accumulativeValues := &accumulativeValues{
-		bondsSold:        bondsSold,
-		dcbTokensSold:    dcbTokensSold,
-		incomeFromBonds:  incomeFromBonds,
-		totalFee:         totalFee,
-		buyBackCoins:     buyBackCoins,
-		govPayoutAmount:  govPayoutAmount,
-		bankPayoutAmount: bankPayoutAmount,
+		bondsSold:           bondsSold,
+		govTokensSold:       govTokensSold,
+		dcbTokensSold:       dcbTokensSold,
+		incomeFromBonds:     incomeFromBonds,
+		incomeFromGOVTokens: incomeFromGOVTokens,
+		totalFee:            totalFee,
+		buyBackCoins:        buyBackCoins,
+		govPayoutAmount:     govPayoutAmount,
+		bankPayoutAmount:    bankPayoutAmount,
 	}
 	return txGroups, accumulativeValues, buyBackFromInfos, nil
 }

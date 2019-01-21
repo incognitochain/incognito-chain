@@ -124,6 +124,8 @@ const (
 	CreateAndSendTxWithOracleFeed          = "createandsendtxwithoraclefeed"
 	CreateAndSendTxWithUpdatingOracleBoard = "createandsendtxwithupdatingoracleboard"
 	CreateAndSendTxWithSenderAddress       = "createandsendtxwithsenderaddress"
+	CreateAndSendTxWithBuyGOVTokensRequest = "createandsendtxwithbuygovtokensrequest"
+	GetCurrentSellingGOVTokens             = "getcurrentsellinggovtokens"
 
 	// cmb
 	CreateAndSendTxWithCMBInitRequest     = "createandsendtxwithcmbinitrequest"

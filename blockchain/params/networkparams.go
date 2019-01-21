@@ -20,6 +20,14 @@ type SellingBonds struct {
 	SellingWithin  uint64 // selling bonds within n blocks
 }
 
+type SellingGOVTokens struct {
+	TotalIssue      uint64
+	GOVTokensToSell uint64
+	GOVTokenPrice   uint64 // in Constant unit
+	StartSellingAt  uint64 // start selling gov tokens at block height
+	SellingWithin   uint64 // selling tokens within n blocks
+}
+
 func (self SellingBonds) GetID() *common.Hash {
 	record := fmt.Sprintf("%d", self.Maturity)
 	record += fmt.Sprintf("%d", self.BuyBackPrice)
@@ -55,6 +63,22 @@ func NewSellingBonds(
 	}
 }
 
+func NewSellingGOVTokens(
+	totalIssue uint64,
+	govTokensToSell uint64,
+	govTokenPrice uint64,
+	startSellingAt uint64,
+	sellingWithin uint64,
+) *SellingGOVTokens {
+	return &SellingGOVTokens{
+		TotalIssue:      totalIssue,
+		GOVTokensToSell: govTokensToSell,
+		GOVTokenPrice:   govTokenPrice,
+		StartSellingAt:  startSellingAt,
+		SellingWithin:   sellingWithin,
+	}
+}
+
 func NewSellingBondsFromJson(data interface{}) *SellingBonds {
 	sellingBondsData := data.(map[string]interface{})
 	sellingBonds := NewSellingBonds(
@@ -69,6 +93,18 @@ func NewSellingBondsFromJson(data interface{}) *SellingBonds {
 		uint64(sellingBondsData["SellingWithin"].(float64)),
 	)
 	return sellingBonds
+}
+
+func NewSellingGOVTokensFromJson(data interface{}) *SellingGOVTokens {
+	sellingGOVTokensData := data.(map[string]interface{})
+	sellingGOVTokens := NewSellingGOVTokens(
+		uint64(sellingGOVTokensData["TotalIssue"].(float64)),
+		uint64(sellingGOVTokensData["GOVTokensToSell"].(float64)),
+		uint64(sellingGOVTokensData["GOVTokenPrice"].(float64)),
+		uint64(sellingGOVTokensData["StartSellingAt"].(float64)),
+		uint64(sellingGOVTokensData["SellingWithin"].(float64)),
+	)
+	return sellingGOVTokens
 }
 
 type SaleData struct {
@@ -223,6 +259,16 @@ func (sellingBonds *SellingBonds) Hash() *common.Hash {
 	record += string(sellingBonds.StartSellingAt)
 	record += string(sellingBonds.SellingWithin)
 	record += string(sellingBonds.TotalIssue)
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
+
+func (sellingGOVTokens *SellingGOVTokens) Hash() *common.Hash {
+	record := string(sellingGOVTokens.TotalIssue)
+	record += string(sellingGOVTokens.GOVTokensToSell)
+	record += string(sellingGOVTokens.GOVTokenPrice)
+	record += string(sellingGOVTokens.StartSellingAt)
+	record += string(sellingGOVTokens.SellingWithin)
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
