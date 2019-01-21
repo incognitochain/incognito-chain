@@ -391,7 +391,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 	senderPK := tx.GetSigPubKey()
 	_, getMSRErr := db.GetMultiSigsRegistration(senderPK)
-	Logger.log.Infof("getMSRErr: %v\n", getMSRErr)
+	//Logger.log.Infof("getMSRErr: %v\n", getMSRErr)
 	if getMSRErr != nil {
 		// Single signature
 		//if getMSRErr != lvdberr.ErrNotFound {
