@@ -3,9 +3,10 @@ package aggregatelog
 import (
 	"context"
 	"fmt"
-	"github.com/olivere/elastic"
 	"log"
 	"time"
+
+	"github.com/olivere/elastic"
 )
 
 type Message struct {

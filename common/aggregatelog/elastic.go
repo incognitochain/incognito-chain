@@ -128,7 +128,8 @@ func SendMessageToElastic(message, level string) error {
 		NodeID:   os.Getenv("NodeID"),
 		TestName: os.Getenv("TestName"),
 	}
-	putResult, err := elasticClient.Index().
+	// putResult, err := elasticClient.Index().
+	_, err := elasticClient.Index().
 		Index(LOG_AGGREGATION_INDEX).
 		Type("log").
 		BodyJson(messageObject).
@@ -136,6 +137,6 @@ func SendMessageToElastic(message, level string) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Indexed tweet %s to index %s, type %s\n", putResult.Id, putResult.Index, putResult.Type)
+	// log.Printf("Indexed tweet %s to index %s, type %s\n", putResult.Id, putResult.Index, putResult.Type)
 	return nil
 }
