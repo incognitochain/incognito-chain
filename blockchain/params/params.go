@@ -36,6 +36,9 @@ func NewLoanParamsFromJson(data interface{}) *LoanParams {
 
 func NewListLoanParamsFromJson(data interface{}) []LoanParams {
 	listLoanParamsData := common.InterfaceSlice(data)
+	if listLoanParamsData == nil {
+		panic("listLoanParamsData")
+	}
 	listLoanParams := make([]LoanParams, 0)
 
 	for _, loanParamsData := range listLoanParamsData {
@@ -75,6 +78,9 @@ func NewDCBParams(
 
 func NewListSaleDataFromJson(data interface{}) []SaleData {
 	listSaleDataData := common.InterfaceSlice(data)
+	if listSaleDataData == nil {
+		panic("list sale data")
+	}
 	listSaleData := make([]SaleData, 0)
 	for _, i := range listSaleDataData {
 		listSaleData = append(listSaleData, *NewSaleDataFromJson(i))
