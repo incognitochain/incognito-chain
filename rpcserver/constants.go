@@ -86,6 +86,7 @@ const (
 
 	// crowdsale
 	GetListOngoingCrowdsale = "getlistongoingcrowdsale"
+	TestStoreCrowdsale      = "teststorecrowdsale"
 
 	// vote
 	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"
