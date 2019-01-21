@@ -45,6 +45,11 @@ func (self *CrossShardBlock) Hash() *common.Hash {
 	return &hash
 }
 
+func (self *ShardToBeaconBlock) Hash() *common.Hash {
+	hash := self.Header.Hash()
+	return &hash
+}
+
 func (self *ShardBlock) Hash() *common.Hash {
 	hash := self.Header.Hash()
 	return &hash

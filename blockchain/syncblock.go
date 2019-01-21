@@ -22,13 +22,13 @@ type PeerShardChainState struct {
 type ShardChainState struct {
 	Height               uint64
 	ShardID              byte
-	CrossShardsPoolState map[byte][]uint64
+	CrossShardsPoolState map[byte]map[uint64][]common.Hash // how many distinct block of each height of each shard
 	BlockHash            common.Hash
 }
 
 type BeaconChainState struct {
 	Height          uint64
-	ShardsPoolState map[byte][]uint64
+	ShardsPoolState map[byte]map[uint64][]common.Hash // how many distinct block of each height of each shard
 	BlockHash       common.Hash
 }
 
@@ -74,7 +74,7 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 						if getStateWaitTime > 5 {
 							getStateWaitTime -= 5
 						}
-						self.config.Server.PushMessageGetBlockShard(shardID, self.BestState.Shard[shardID].ShardHeight+1, shardState.State.Height, shardState.Peer)
+						go self.config.Server.PushMessageGetBlockShard(shardID, self.BestState.Shard[shardID].ShardHeight+1, shardState.State.Height, shardState.Peer)
 					} else {
 						if getStateWaitTime < 10 {
 							getStateWaitTime += 5
@@ -142,10 +142,41 @@ func (self *BlockChain) SyncBeacon() error {
 						if getStateWaitTime > 5 {
 							getStateWaitTime -= 5
 						}
-						self.config.Server.PushMessageGetBlockBeacon(self.BestState.Beacon.BeaconHeight+1, beaconState.State.Height, beaconState.Peer)
+						go self.config.Server.PushMessageGetBlockBeacon(self.BestState.Beacon.BeaconHeight+1, beaconState.State.Height, beaconState.Peer)
 					} else {
 						if getStateWaitTime < 10 {
 							getStateWaitTime += 5
+						}
+					}
+
+					if len(beaconState.State.ShardsPoolState) > 0 {
+						myPoolState := self.config.ShardToBeaconPool.GetDistinctBlockMap()
+						for shardID, poolState := range beaconState.State.ShardsPoolState {
+							myShardPoolState, ok := myPoolState[shardID]
+							if ok {
+								for height, blks := range poolState {
+									myBlks, ok := myShardPoolState[height]
+									if ok {
+										blksNeedToSync := GetDiffHashesOf(blks, myBlks)
+										for _, blkHash := range blksNeedToSync {
+											_ = blkHash
+										}
+									} else {
+										// sync all blks of this height
+										for _, blkHash := range blks {
+											_ = blkHash
+										}
+									}
+								}
+							} else {
+								// sync all blks of this shard
+								for height, blks := range poolState {
+									_ = height
+									for _, blkHash := range blks {
+										_ = blkHash
+									}
+								}
+							}
 						}
 					}
 				} else {
@@ -182,10 +213,6 @@ func (self *BlockChain) SyncBeacon() error {
 	return nil
 }
 
-func (self *BlockChain) RequestSyncShard(shardID byte) {
-
-}
-
 func (self *BlockChain) StopSyncShard(shardID byte) {
 	self.syncStatus.Lock()
 	defer self.syncStatus.Unlock()
@@ -202,4 +229,24 @@ func (self *BlockChain) GetCurrentSyncShards() []byte {
 
 func (self *BlockChain) StopSync() error {
 	return nil
+}
+
+//GetDiffHashesOf Get unique hashes of 1st slice compare to 2nd slice
+func GetDiffHashesOf(slice1 []common.Hash, slice2 []common.Hash) []common.Hash {
+	var diff []common.Hash
+
+	for _, s1 := range slice1 {
+		found := false
+		for _, s2 := range slice2 {
+			if s1 == s2 {
+				found = true
+				break
+			}
+		}
+		if !found {
+			diff = append(diff, s1)
+		}
+	}
+
+	return diff
 }
