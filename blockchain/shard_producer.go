@@ -168,11 +168,12 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte) []CrossOutput
 }
 
 func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) {
-	byteMap := make([]byte, TestNetParams.ShardsNum)
+	byteMap := make([]byte, ChainParam.ShardsNum)
 	for _, tx := range txList {
 		for _, outCoin := range tx.GetProof().OutputCoins {
 			lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-			byteMap[lastByte] = 1
+			shardID := GetShardIDFromLastByte(lastByte)
+			byteMap[GetShardIDFromLastByte(shardID)] = 1
 		}
 	}
 
@@ -285,7 +286,7 @@ func (blockgen *ShardBlock) CreateShardToBeaconBlock() ShardToBeaconBlock {
 
 func (blk *ShardBlock) CreateAllCrossShardBlock() map[byte]*CrossShardBlock {
 	allCrossShard := make(map[byte]*CrossShardBlock)
-	for i := 0; i < TestNetParams.ShardsNum; i++ {
+	for i := 0; i < ChainParam.ShardsNum; i++ {
 		crossShard, err := blk.CreateCrossShardBlock(byte(i))
 		if crossShard != nil && err == nil {
 			allCrossShard[byte(i)] = crossShard
