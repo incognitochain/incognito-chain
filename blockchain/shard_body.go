@@ -78,6 +78,11 @@ func (self *ShardBody) UnmarshalJSON(data []byte) error {
 				tx = &transaction.TxCustomToken{}
 				parseErr = json.Unmarshal(txTempJson, &tx)
 			}
+		case common.TxCustomTokenPrivacyType:
+			{
+				tx = &transaction.TxCustomTokenPrivacy{}
+				parseErr = json.Unmarshal(txTempJson, &tx)
+			}
 		default:
 			{
 				return NewBlockChainError(UnmashallJsonBlockError, errors.New("Can not parse a wrong tx"))
@@ -87,11 +92,11 @@ func (self *ShardBody) UnmarshalJSON(data []byte) error {
 		if parseErr != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, parseErr)
 		}
-		meta, parseErr := parseMetadata(txTemp["Metadata"])
+		/*meta, parseErr := metadata.ParseMetadata(txTemp["Metadata"])
 		if parseErr != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, parseErr)
 		}
-		tx.SetMetadata(meta)
+		tx.SetMetadata(meta)*/
 		self.Transactions = append(self.Transactions, tx)
 	}
 
