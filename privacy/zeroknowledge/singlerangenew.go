@@ -29,14 +29,14 @@ import (
 //	return proof, nil
 //}
 
-type AggregatedRangeWitness struct {
+type SingleRangeWitness struct {
 	value *big.Int
 	rand  *big.Int
 
 	n byte
 }
 
-type AggregatedRangeProof struct {
+type SingleRangeProof struct {
 	cmValue *privacy.EllipticPoint
 	A       *privacy.EllipticPoint
 	S       *privacy.EllipticPoint
@@ -52,7 +52,7 @@ type AggregatedRangeProof struct {
 	n byte
 }
 
-func (wit *AggregatedRangeWitness) Prove() (*SingleRangeProof, error) {
+func (wit *SingleRangeWitness) Prove() (*SingleRangeProof, error) {
 	proof := new(SingleRangeProof)
 	proof.n = wit.n
 
@@ -244,7 +244,7 @@ func (wit *AggregatedRangeWitness) Prove() (*SingleRangeProof, error) {
 	return proof, nil
 }
 
-func (proof *AggregatedRangeProof) Verify() bool {
+func (proof *SingleRangeProof) Verify() bool {
 	n := int(proof.n)
 	oneNumber := big.NewInt(1)
 	twoNumber := big.NewInt(2)

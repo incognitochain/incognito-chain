@@ -25,7 +25,7 @@ type Tx struct {
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
-	Fee      uint64 `json:"Fee"` // Fee applies: always consant
+	Fee      uint64 `json:"Fee"` // Fee applies: always constant
 
 	// Sign and Privacy proof
 	SigPubKey []byte `json:"SigPubKey, omitempty"` // 33 bytes

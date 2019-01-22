@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
+	"time"
 )
 
 //TestInnerProduct test inner product calculation
@@ -71,13 +72,15 @@ func TestInnerProductProve(t *testing.T){
 	n := privacy.MaxExp
 	wit.a = make([]*big.Int, n)
 	wit.b = make([]*big.Int, n)
-	for i := range wit.a{
-		wit.a[i] = big.NewInt(10)
-		wit.b[i] = big.NewInt(10)
-	}
 
-	wit.u = new(privacy.EllipticPoint)
-	wit.u.Randomize()
+	for i := range wit.a{
+		//wit.a[i] = privacy.RandInt()
+		//wit.b[i] = privacy.RandInt()
+		tmp := privacy.RandBytes(3)
+
+		wit.a[i] = new(big.Int).SetBytes(tmp)
+		wit.b[i] = new(big.Int).SetBytes(tmp)
+	}
 
 	wit.p = new(privacy.EllipticPoint).Zero()
 	c, err := innerProduct(wit.a, wit.b)
@@ -89,7 +92,7 @@ func TestInnerProductProve(t *testing.T){
 		wit.p = wit.p.Add(AggParam.G[i].ScalarMult(wit.a[i]))
 		wit.p = wit.p.Add(AggParam.H[i].ScalarMult(wit.b[i]))
 	}
-	wit.p = wit.p.Add(wit.u.ScalarMult(c))
+	wit.p = wit.p.Add(AggParam.U.ScalarMult(c))
 
 	proof, err:= wit.Prove()
 	if err != nil{
@@ -99,21 +102,36 @@ func TestInnerProductProve(t *testing.T){
 	res := proof.Verify()
 
 	assert.Equal(t, true, res)
+
+
+	values := big.NewInt(10)
+	binary := privacy.ConvertBigIntToBinary(values, 5)
+	twoVector := powerVector(big.NewInt(2), 5)
+	fmt.Printf("two vector: %v\n", twoVector)
+
+	value2, err := innerProduct(binary, twoVector)
+	assert.Equal(t, values, value2)
 }
 
-func TestSingleRangeProve(t *testing.T){
-	wit := new(SingleRangeWitness)
+func TestAggregatedRangeProve(t *testing.T){
+	wit := new(AggregatedRangeWitness)
 	wit.value = big.NewInt(11)
 	wit.rand = privacy.RandInt()
 
 	wit.n = privacy.MaxExp
 
+	start := time.Now()
 	proof, err := wit.Prove()
+	end:= time.Since(start)
+	fmt.Printf("Single range proving time: %v\n", end)
+
 	if err != nil{
 		fmt.Printf("Err: %v\n", err)
 	}
-
+	start = time.Now()
 	res := proof.Verify()
+	end = time.Since(start)
+	fmt.Printf("Single range verification time: %v\n", end)
 
 	assert.Equal(t, true, res)
 }
