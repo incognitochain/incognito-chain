@@ -265,22 +265,68 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 		return NewBlockChainError(BeaconError, errors.New("Beacon block height and beacon block hash are not compatible in Database"))
 	}
 
-	//TODO: Verify with cross map
-	bestShardHeight := self.BestState.Beacon.BestShardHeight
-	crossBlock := self.config.CrossShardPool.GetBlock(bestShardHeight)
-	shardCrossBlock := crossBlock[shardID]
-	for _, blk := range shardCrossBlock {
-		temp, err := self.config.DataBase.FetchBeaconCommitteeByHeight(blk.Header.BeaconHeight)
-		if err != nil {
-			return NewBlockChainError(UnmashallJsonBlockError, err)
-		}
-		shardCommittee := make(map[byte][]string)
-		json.Unmarshal(temp, &shardCommittee)
-		err = blk.VerifyCrossShardBlock(shardCommittee[shardID])
-		if err != nil {
-			return NewBlockChainError(SignatureError, err)
-		}
-	}
+	//TODO: UNCOMMENT To verify Cross Shard Block
+	// // Get cross shard block from pool
+	// crossShardMap := make(map[byte][]CrossShardBlock)
+	// bestShardHeight := self.BestState.Beacon.BestShardHeight
+	// allCrossShardBlock := self.config.CrossShardPool.GetBlock(bestShardHeight)
+	// oneShardCrossShardBlocks := allCrossShardBlock[shardID]
+	// currentBestCrossShard := self.BestState.Shard[shardID].BestCrossShard
+	// for _, blk := range oneShardCrossShardBlocks {
+	// 	crossShardMap[blk.Header.ShardID] = append(crossShardMap[blk.Header.ShardID], blk)
+	// }
+	// for crossShardID, crossShardBlocks := range crossShardMap {
+	// 	slice.Sort(crossShardBlocks[:], func(i, j int) bool {
+	// 		return crossShardBlocks[i].Header.Height < crossShardBlocks[j].Header.Height
+	// 	})
+	// 	// compare cross shard block with received cross output coin
+	// 	crossOutputCoins := block.Body.CrossOutputCoin[crossShardID]
+	// 	for _, crossOutputCoin := range crossOutputCoins {
+	// 		found := false
+	// 		for _, crossShardBlock := range crossShardBlocks {
+	// 			if crossOutputCoin.BlockHeight == crossShardBlock.Header.Height {
+	// 				found = true
+	// 				break
+	// 			}
+	// 		}
+	// 		if !found {
+	// 			return NewBlockChainError(ShardStateError, errors.New("No CrossOutputCoin can't be found from any CrossShardBlock in pool"))
+	// 		}
+	// 	}
+	// 	currentBestCrossShardForThisBlock := currentBestCrossShard[crossShardID]
+	// 	for _, blk := range crossShardBlocks {
+	// 		temp, err := self.config.DataBase.FetchBeaconCommitteeByHeight(blk.Header.BeaconHeight)
+	// 		if err != nil {
+	// 			return NewBlockChainError(UnmashallJsonBlockError, err)
+	// 		}
+	// 		shardCommittee := make(map[byte][]string)
+	// 		json.Unmarshal(temp, &shardCommittee)
+	// 		err = blk.VerifyCrossShardBlock(shardCommittee[shardID])
+	// 		if err != nil {
+	// 			return NewBlockChainError(SignatureError, err)
+	// 		}
+	// 		// Verify with bytemap in beacon
+	// 		passed := false
+	// 		for i := self.BestState.Shard[shardID].BeaconHeight + 1; i <= block.Header.BeaconHeight; i++ {
+	// 			for shardToBeaconID, shardStates := range self.BestState.Beacon.AllShardState {
+	// 				if crossShardID == shardToBeaconID {
+	// 					// compare crossoutputcoin with bytemap in beacon
+	// 					for i := int(currentBestCrossShardForThisBlock); i < len(shardStates); i++ {
+	// 						if bytes.Contains(shardStates[i].CrossShard, []byte{shardID}) {
+	// 							if shardStates[i].Height == blk.Header.Height {
+	// 								continue
+	// 							}
+	// 							return NewBlockChainError(ShardStateError, errors.New("CrossOutput coin not in bytemap"))
+	// 						}
+	// 					}
+	// 				}
+	// 				if passed {
+	// 					break
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 	Logger.log.Debugf("SHARD %+v | Finish VerifyPreProcessingShardBlock Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	return nil
 }
