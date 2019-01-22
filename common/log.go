@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"runtime"
 	"strings"
@@ -318,7 +319,14 @@ func (b *Backend) print(lvl, tag string, args ...interface{}) {
 	*bytebuf = buf.Bytes()
 
 	b.colorPrint(lvl, *bytebuf)
-
+	// @hunghd SEND LOG TO AGGREGATION LOG SERVER
+	if isAggregationLogMode() {
+		loggerSeparator := "[" + lvl + "]"
+		mes := bytes.Split(*bytebuf, []byte(loggerSeparator))
+		if len(mes) >= 2 {
+			HandleCaptureMessage(string(mes[1]), lvl)
+		}
+	}
 	recycleBuffer(bytebuf)
 }
 
@@ -336,14 +344,20 @@ func (b *Backend) printf(lvl, tag string, format string, args ...interface{}) {
 	if b.flag&(Lshortfile|Llongfile) != 0 {
 		file, line = callsite(b.flag)
 	}
-
 	formatHeader(bytebuf, t, lvl, tag, file, line)
 	buf := bytes.NewBuffer(*bytebuf)
 	fmt.Fprintf(buf, format, args...)
 	*bytebuf = append(buf.Bytes(), '\n')
 
 	b.colorPrint(lvl, *bytebuf)
-
+	// @hunghd SEND LOG TO AGGREGATION LOG SERVER
+	if isAggregationLogMode() {
+		loggerSeparator := "[" + lvl + "]"
+		mes := bytes.Split(*bytebuf, []byte(loggerSeparator))
+		if len(mes) >= 2 {
+			HandleCaptureMessage(string(mes[1]), lvl)
+		}
+	}
 	recycleBuffer(bytebuf)
 }
 
@@ -541,4 +555,15 @@ var Disabled Logger
 
 func init() {
 	Disabled = &slog{lvl: LevelOff, b: NewBackend(ioutil.Discard)}
+
+	// @hunghd SEND LOG TO AGGREGATION LOG SERVER
+	if isAggregationLogMode() {
+		log.Println("init aggreation log mode")
+		AggregationLogInit()
+	}
+}
+
+func isAggregationLogMode() bool {
+	aggreLogMode := os.Getenv("AGGRE_LOG_MODE")
+	return aggreLogMode == "true"
 }
