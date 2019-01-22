@@ -25,6 +25,8 @@ type BestStateShard struct {
 	ShardCommittee        []string
 	ShardPendingValidator []string
 	ShardProposerIdx      int
+	// Best cross shard block by height
+	BestCrossShard map[byte]uint64
 	//TODO: verify if these information are needed or not
 	NumTxns   uint64 // The number of txns in the block.
 	TotalTxns uint64 // The total number of txns in the chain.

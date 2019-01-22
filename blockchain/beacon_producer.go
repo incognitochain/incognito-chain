@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/bradfitz/slice"
 	"github.com/ninjadotorg/constant/cashec"
 
 	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
@@ -160,6 +161,9 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 	for shardID, shardBlocks := range shardsBlocks {
 		// Only accept block in one epoch
 		totalBlock := 0
+		slice.Sort(shardBlocks[:], func(i, j int) bool {
+			return shardBlocks[i].Header.Height < shardBlocks[j].Header.Height
+		})
 		for index, shardBlock := range shardBlocks {
 			currentCommittee := beaconBestState.ShardCommittee[shardID]
 			currentPendingValidator := beaconBestState.ShardPendingValidator[shardID]

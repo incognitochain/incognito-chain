@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
@@ -12,22 +13,25 @@ import (
 
 type ShardBody struct {
 	Instructions    [][]string
-	CrossOutputCoin []CrossOutputCoin
+	CrossOutputCoin map[byte][]CrossOutputCoin
 	Transactions    []metadata.Transaction
 }
 type CrossOutputCoin struct {
-	ShardID    byte
-	BlockHash  common.Hash
-	OutputCoin []privacy.OutputCoin
+	BlockHeight uint64
+	BlockHash   common.Hash
+	OutputCoin  []privacy.OutputCoin
 }
 
 func (self *ShardBody) Hash() common.Hash {
 	record := []byte{}
-	for _, ref := range self.CrossOutputCoin {
-		record = append(record, ref.ShardID)
-		record = append(record, ref.BlockHash.GetBytes()...)
-		for _, coins := range ref.OutputCoin {
-			record = append(record, coins.Bytes()...)
+	for shardID, refs := range self.CrossOutputCoin {
+		record = append(record, shardID)
+		for _, ref := range refs {
+			record = append(record, []byte(strconv.Itoa(int(ref.BlockHeight)))...)
+			record = append(record, ref.BlockHash.GetBytes()...)
+			for _, coins := range ref.OutputCoin {
+				record = append(record, coins.Bytes()...)
+			}
 		}
 	}
 	for _, tx := range self.Transactions {
@@ -104,7 +108,6 @@ func (self *ShardBody) UnmarshalJSON(data []byte) error {
 }
 func (self *CrossOutputCoin) Hash() common.Hash {
 	record := []byte{}
-	record = append(record, self.ShardID)
 	record = append(record, self.BlockHash.GetBytes()...)
 	for _, coins := range self.OutputCoin {
 		record = append(record, coins.Bytes()...)
@@ -152,8 +155,11 @@ func (self *ShardBody) CalcMerkleRootTx() *common.Hash {
 func (self *ShardBody) ExtractIncomingCrossShardMap() (map[byte][]common.Hash, error) {
 	var crossShardMap map[byte][]common.Hash
 	crossShardMap = make(map[byte][]common.Hash)
-	for _, crossblock := range self.CrossOutputCoin {
-		crossShardMap[crossblock.ShardID] = append(crossShardMap[crossblock.ShardID], crossblock.BlockHash)
+	for shardID, crossblocks := range self.CrossOutputCoin {
+		for _, crossblock := range crossblocks {
+			crossShardMap[shardID] = append(crossShardMap[shardID], crossblock.BlockHash)
+		}
+
 	}
 	return crossShardMap, nil
 }

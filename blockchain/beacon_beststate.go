@@ -21,11 +21,13 @@ type BestStateBeacon struct {
 	BestBlock       *BeaconBlock // The block.
 	BestShardHash   map[byte]common.Hash
 	BestShardHeight map[byte]uint64
+	// New field
+	//TODO: calculate hash
+	AllShardState map[byte][]ShardState
 
-	BeaconEpoch       uint64
-	BeaconHeight      uint64
-	BeaconProposerIdx int
-
+	BeaconEpoch            uint64
+	BeaconHeight           uint64
+	BeaconProposerIdx      int
 	BeaconCommittee        []string
 	BeaconPendingValidator []string
 

@@ -326,6 +326,8 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 	- Timestamp can not excess some limit
 	- Instruction hash
 	- ShardStateHash
+	- ShardState is sorted?
+	- Is shardState existed in pool?
 	*/
 	//verify producer
 	producerPosition := (self.BestState.Beacon.BeaconProposerIdx + 1) % len(self.BestState.Beacon.BeaconCommittee)
@@ -368,6 +370,18 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 	}
 	if !VerifyHashFromStringArray(tempInstructionArr, block.Header.InstructionHash) {
 		return NewBlockChainError(InstructionHashError, errors.New("Instruction hash is not correct"))
+	}
+	// Shard state must in right format
+	// state[i].Height must less than state[i+1].Height and state[i+1].Height - state[i].Height = 1
+	for _, shardStates := range block.Body.ShardState {
+		for i := 0; i < len(shardStates)-2; i++ {
+			// if shardStates[i].Height >= shardStates[i+1].Height {
+			// 	return NewBlockChainError(ShardStateError, errors.New("Shardstates are not in right format"))
+			// }
+			if shardStates[i+1].Height-shardStates[i].Height != 1 {
+				return NewBlockChainError(ShardStateError, errors.New("Shardstates are not in right format"))
+			}
+		}
 	}
 	// if pool does not have one of needed block, fail to verify
 	allShardBlocks := self.config.ShardToBeaconPool.GetFinalBlock()
@@ -421,6 +435,7 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 	- Height
 	- Epoch
 	- staker
+	- ShardState
 */
 func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, isVerifySig bool) error {
 	if len(block.ValidatorsIdx) < (len(self.BeaconCommittee) >> 1) {
@@ -461,6 +476,12 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 		}
 	}
 	//=============End Verify Stakers
+	// Verify shard state
+	for shardID, shardStates := range block.Body.ShardState {
+		if self.AllShardState[shardID][len(self.AllShardState[shardID])-1].Height-shardStates[0].Height != 1 {
+			return NewBlockChainError(ShardStateError, errors.New("Shardstates are not compatible with beacon best state"))
+		}
+	}
 	return nil
 }
 
@@ -559,6 +580,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	for shardID, shardStates := range allShardState {
 		self.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
 		self.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
+		self.AllShardState[shardID] = append(self.AllShardState[shardID], shardStates...)
 	}
 
 	// update param
