@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bradfitz/slice"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
@@ -17,6 +19,9 @@ import (
 
 func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*ShardBlock, error) {
 	//============Build body=============
+	beaconHeight := blockgen.chain.BestState.Beacon.BeaconHeight
+	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
+	epoch := blockgen.chain.BestState.Beacon.BeaconEpoch
 	// Get valid transaction (add tx, remove tx, fee of add tx)
 	txsToAdd, txToRemove, totalFee := blockgen.getPendingTransaction(shardID)
 	if len(txsToAdd) == 0 {
@@ -48,7 +53,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	remainingFund := currentSalaryFund + totalFee + salaryFundAdd - totalSalary
 	coinbases := []metadata.Transaction{salaryTx}
 	txsToAdd = append(coinbases, txsToAdd...)
-	crossOutputCoin := blockgen.getCrossOutputCoin(shardID)
+	crossOutputCoin := blockgen.getCrossOutputCoin(shardID, beaconHeight)
 	instructions := CreateShardActionFromOthers()
 	block := &ShardBlock{
 		Body: ShardBody{
@@ -118,9 +123,9 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		CrossShards:          CreateCrossShardByteArray(txsToAdd),
 		CommitteeRoot:        committeeRoot,
 		PendingValidatorRoot: pendingValidatorRoot,
-		BeaconHeight:         blockgen.chain.BestState.Beacon.BeaconHeight,
-		BeaconHash:           blockgen.chain.BestState.Beacon.BestBlockHash,
-		Epoch:                blockgen.chain.BestState.Beacon.BeaconEpoch,
+		BeaconHeight:         beaconHeight,
+		BeaconHash:           beaconHash,
+		Epoch:                epoch,
 	}
 
 	// Create producer signature
@@ -134,12 +139,14 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	return block, nil
 }
 
-func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte) []CrossOutputCoin {
-	res := []CrossOutputCoin{}
+// build CrossOutputCoin
+func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, currentBeaconHeight uint64) map[byte][]CrossOutputCoin {
+	res := make(map[byte][]CrossOutputCoin)
+	crossShardMap := make(map[byte][]CrossShardBlock)
+	passed := false
 	// get cross shard block
 	bestShardHeight := blockgen.chain.BestState.Beacon.BestShardHeight
-	crossBlock := blockgen.crossShardPool.GetBlock(bestShardHeight)
-	// build CrossOutputCoin
+	allCrossShardBlock := blockgen.crossShardPool.GetBlock(bestShardHeight)
 	// TODO: Verify with cross map
 	// TODO: Make sure cross shard pool begin with most recent proccessed block
 	/*
@@ -150,24 +157,71 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte) []CrossOutput
 		5. if miss then stop or sync block
 		6. Update new most recent proccess cross shard block
 	*/
-	shardCrossBlock := crossBlock[shardID]
-	for _, blk := range shardCrossBlock {
-		temp, err := blockgen.chain.config.DataBase.FetchBeaconCommitteeByHeight(blk.Header.BeaconHeight)
-		if err != nil {
-			break
+	crossShardBlocks := allCrossShardBlock[shardID]
+	// Sort by height
+	for _, blk := range crossShardBlocks {
+		crossShardMap[blk.Header.ShardID] = append(crossShardMap[blk.Header.ShardID], blk)
+	}
+	// Get Cross Shard Block
+	for crossShardID, crossShardBlock := range crossShardMap {
+		slice.Sort(crossShardBlock[:], func(i, j int) bool {
+			return crossShardBlock[i].Header.Height < crossShardBlock[j].Header.Height
+		})
+		for _, blk := range crossShardBlock {
+			currentBestCrossShard := blockgen.chain.BestState.Shard[shardID].BestCrossShard
+			currentBestCrossShardForThisBlock := currentBestCrossShard[crossShardID]
+			temp, err := blockgen.chain.config.DataBase.FetchBeaconCommitteeByHeight(blk.Header.BeaconHeight)
+			if err != nil {
+				break
+			}
+			shardCommittee := make(map[byte][]string)
+			json.Unmarshal(temp, &shardCommittee)
+			err = blk.VerifyCrossShardBlock(shardCommittee[crossShardID])
+			if err != nil {
+				break
+			}
+			lastBeaconHeight := blockgen.chain.BestState.Shard[shardID].BeaconHeight
+			for i := lastBeaconHeight + 1; i <= currentBeaconHeight; i++ {
+				// Get shard state from beacon best state
+				/*
+					When a shard block is created (ex: shard 1 create block A), it will
+					- Send ShardToBeacon Block (A1) to beacon,
+						=> ShardToBeacon Block then will be executed and store as ShardState in beacon
+					- Send CrossShard Block (A2) to other shard if existed
+						=> CrossShard Will be process into CrossOutputCoin
+					=> A1 and A2 must have the same header
+					- Check if A1 indicates that if A2 is exist or not via CrossShardByteMap
+
+					AND ALSO, check A2 is the only cross shard block after the most recent processed cross shard block
+				*/
+				for shardToBeaconID, shardStates := range blockgen.chain.BestState.Beacon.AllShardState {
+					if crossShardID == shardToBeaconID {
+						// if the first crossShardblock is not current block then discard current block
+						for i := int(currentBestCrossShardForThisBlock); i < len(shardStates); i++ {
+							if bytes.Contains(shardStates[i].CrossShard, []byte{shardID}) {
+								if shardStates[i].Height == blk.Header.Height {
+									passed = true
+								}
+								break
+							}
+						}
+					}
+					if passed {
+						break
+					}
+				}
+			}
+			if !passed {
+				break
+			}
+			outputCoin := CrossOutputCoin{
+				OutputCoin:  blk.CrossOutputCoin,
+				BlockHash:   *blk.Hash(),
+				BlockHeight: blk.Header.Height,
+			}
+			res[blk.Header.ShardID] = append(res[blk.Header.ShardID], outputCoin)
 		}
-		shardCommittee := make(map[byte][]string)
-		json.Unmarshal(temp, &shardCommittee)
-		err = blk.VerifyCrossShardBlock(shardCommittee[shardID])
-		if err != nil {
-			break
-		}
-		outputCoin := CrossOutputCoin{
-			OutputCoin: blk.CrossOutputCoin,
-			ShardID:    shardID,
-			BlockHash:  *blk.Hash(),
-		}
-		res = append(res, outputCoin)
+
 	}
 	return res
 }

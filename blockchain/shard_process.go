@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -379,6 +380,10 @@ func (self *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBloc
 		Logger.log.Infof("SHARD %+v | Swap: Out committee %+v", block.Header.ShardID, shardSwapedCommittees)
 		Logger.log.Infof("SHARD %+v | Swap: In committee %+v", block.Header.ShardID, shardNewCommittees)
 	}
+	//Update best cross shard
+	// for shardID, crossShardBlock := range block.Body.CrossOutputCoin {
+
+	// }
 	Logger.log.Debugf("SHARD %+v | Finish update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	return nil
 }
@@ -428,28 +433,35 @@ func CreateMerkleRootShard(txList []metadata.Transaction) common.Hash {
 	return merkleShardRoot
 }
 
-func CreateMerkleCrossOutputCoin(crossOutputCoins []CrossOutputCoin) (*common.Hash, error) {
+func CreateMerkleCrossOutputCoin(crossOutputCoins map[byte][]CrossOutputCoin) (*common.Hash, error) {
 	if len(crossOutputCoins) == 0 {
 		res, err := GenerateZeroValueHash()
 
 		return &res, err
 	}
+	keys := []int{}
 	crossOutputCoinHashes := []*common.Hash{}
-	for _, value := range crossOutputCoins {
-		hash := value.Hash()
-		hashByte := hash.GetBytes()
-		newHash, err := common.Hash{}.NewHash(hashByte)
-		if err != nil {
-			return &common.Hash{}, NewBlockChainError(HashError, err)
+	for k, _ := range crossOutputCoins {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, shardID := range keys {
+		for _, value := range crossOutputCoins[byte(shardID)] {
+			hash := value.Hash()
+			hashByte := hash.GetBytes()
+			newHash, err := common.Hash{}.NewHash(hashByte)
+			if err != nil {
+				return &common.Hash{}, NewBlockChainError(HashError, err)
+			}
+			crossOutputCoinHashes = append(crossOutputCoinHashes, newHash)
 		}
-		crossOutputCoinHashes = append(crossOutputCoinHashes, newHash)
 	}
 	merkle := Merkle{}
 	merkleTree := merkle.BuildMerkleTreeOfHashs(crossOutputCoinHashes)
 	return merkleTree[len(merkleTree)-1], nil
 }
 
-func VerifyMerkleCrossOutputCoin(crossOutputCoins []CrossOutputCoin, rootHash common.Hash) bool {
+func VerifyMerkleCrossOutputCoin(crossOutputCoins map[byte][]CrossOutputCoin, rootHash common.Hash) bool {
 	res, err := CreateMerkleCrossOutputCoin(crossOutputCoins)
 	if err != nil {
 		return false
