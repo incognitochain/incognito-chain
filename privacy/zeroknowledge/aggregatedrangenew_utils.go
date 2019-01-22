@@ -23,8 +23,8 @@ type InnerProductProof struct {
 	p *privacy.EllipticPoint
 }
 
-func (wit *InnerProductWitness) Prove() (*InnerProductProof, error) {
-	var AggParam = newBulletproofParams(1)
+func (wit *InnerProductWitness) Prove(AggParam *BulletproofParams) (*InnerProductProof, error) {
+	//var AggParam = newBulletproofParams(1)
 	if len(wit.a) != len(wit.b) {
 		return nil, errors.New("invalid inputs")
 	}

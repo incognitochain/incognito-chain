@@ -23,7 +23,6 @@ func newBulletproofParams(m int ) *BulletproofParams {
 	gen.H = make([]*privacy.EllipticPoint, capacity, capacity)
 
 	for i := 0; i < capacity; i++ {
-		//gen.G[i] = new(privacy.EllipticPoint)
 		gen.G[i] = privacy.PedCom.G[0].Hash(5 + i)
 		gen.H[i] = privacy.PedCom.G[0].Hash(5 + i+ capacity)
 	}

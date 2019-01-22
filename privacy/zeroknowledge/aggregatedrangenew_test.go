@@ -96,7 +96,7 @@ func TestInnerProductProve(t *testing.T){
 	}
 	wit.p = wit.p.Add(AggParam.U.ScalarMult(c))
 
-	proof, err:= wit.Prove()
+	proof, err:= wit.Prove(AggParam)
 	if err != nil{
 		fmt.Printf("Err: %v\n", err)
 	}

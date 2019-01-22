@@ -235,7 +235,7 @@ func (wit *SingleRangeWitness) Prove() (*SingleRangeProof, error) {
 	}
 	innerProductWit.p = innerProductWit.p.Add(AggParam.U.ScalarMult(proof.tHat))
 
-	proof.innerProductProof, err = innerProductWit.Prove()
+	proof.innerProductProof, err = innerProductWit.Prove(AggParam)
 	if err != nil {
 		return nil, err
 	}
