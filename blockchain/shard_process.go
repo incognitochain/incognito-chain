@@ -427,9 +427,9 @@ func (self *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBloc
 		Logger.log.Infof("SHARD %+v | Swap: In committee %+v", block.Header.ShardID, shardNewCommittees)
 	}
 	//Update best cross shard
-	// for shardID, crossShardBlock := range block.Body.CrossOutputCoin {
-
-	// }
+	for shardID, crossShardBlock := range block.Body.CrossOutputCoin {
+		self.BestCrossShard[shardID] = crossShardBlock[len(crossShardBlock)-1].BlockHeight
+	}
 	Logger.log.Debugf("SHARD %+v | Finish update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	return nil
 }
