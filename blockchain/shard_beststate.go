@@ -32,16 +32,6 @@ type BestStateShard struct {
 	TotalTxns uint64 // The total number of txns in the chain.
 }
 
-// func (self *BestStateShard) Init(block *ShardBlock) {
-
-// 	self.BestBlock = block
-// 	self.BestBlockHash = *block.Hash()
-
-// 	// self.  += uint64(len(block.Transactions))
-// 	self.NumTxns = uint64(len(block.Body.Transactions))
-// 	self.TotalTxns = self.NumTxns
-// }
-
 // Get role of a public key base on best state shard
 func (self *BestStateShard) Hash() common.Hash {
 	res := []byte{}
