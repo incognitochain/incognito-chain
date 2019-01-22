@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"time"
@@ -66,8 +67,12 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	//Get user key set
 	userKeySet := cashec.KeySet{}
 	userKeySet.ImportFromPrivateKey(privatekey)
-	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
+	merkleRoots := Merkle{}.BuildMerkleTreeStore(block.Body.Transactions)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
+	fmt.Println()
+	test, _ := json.Marshal(block.Body.Transactions[0])
+	fmt.Println(len(block.Body.Transactions), string(test))
+	fmt.Println()
 	prevBlock := blockgen.chain.BestState.Shard[shardID].BestShardBlock
 	prevBlockHash := blockgen.chain.BestState.Shard[shardID].BestShardBlock.Hash()
 	crossOutputCoinRoot := &common.Hash{}

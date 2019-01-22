@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -27,8 +28,8 @@ func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte)
 	shardBestState := BestStateShard{}
 	// check with current final best state
 	// New block must be compatible with current best state
-	if strings.Compare(self.BestState.Beacon.BestBlockHash.String(), block.Header.PrevBlockHash.String()) == 0 {
-		tempMarshal, err := json.Marshal(self.BestState.Beacon)
+	if strings.Compare(self.BestState.Shard[shardID].BestShardBlockHash.String(), block.Header.PrevBlockHash.String()) == 0 {
+		tempMarshal, err := json.Marshal(self.BestState.Shard[shardID])
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
 		}
@@ -36,7 +37,7 @@ func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte)
 	}
 	// if no match best state found then block is unknown
 	if reflect.DeepEqual(shardBestState, BestStateShard{}) {
-		return NewBlockChainError(BeaconError, errors.New("Beacon Block does not match with any Beacon State in cache or in Database"))
+		return NewBlockChainError(ShardError, errors.New("Shard Block does not match with any Shard State in cache or in Database"))
 	}
 	// Verify block with previous best state
 	// not verify agg signature in this function
@@ -218,7 +219,12 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	// Verify transaction root
 	txMerkle := Merkle{}.BuildMerkleTreeStore(block.Body.Transactions)
 	txRoot := txMerkle[len(txMerkle)-1]
+
 	if bytes.Compare(block.Header.TxRoot.GetBytes(), txRoot.GetBytes()) != 0 {
+		fmt.Println()
+		test, _ := json.Marshal(block.Body.Transactions[0])
+		fmt.Println(len(block.Body.Transactions), string(test))
+		fmt.Println()
 		return NewBlockChainError(HashError, errors.New("Can't Verify Transaction Root"))
 	}
 	// Verify ShardTx Root
@@ -304,15 +310,15 @@ func (self *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBlock, isV
 	// }
 	//=============End Verify producer signature
 	//=============Verify aggegrate signature
-	if len(block.ValidatorsIdx) < (len(self.ShardCommittee) >> 1) {
-		return NewBlockChainError(SignatureError, errors.New("Block validators and Beacon committee is not compatible"))
-	}
 	if isVerifySig {
+		if len(block.ValidatorsIdx) < (len(self.ShardCommittee) >> 1) {
+			return NewBlockChainError(SignatureError, errors.New("Block validators and Beacon committee is not compatible"))
+		}
 		ValidateAggSignature(block.ValidatorsIdx, self.ShardCommittee, block.AggregatedSig, block.R, block.Hash())
 	}
 	//=============End Verify Aggegrate signature
 	if self.ShardHeight+1 != block.Header.Height {
-		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be : "+strconv.Itoa(int(block.Header.Height+1))))
+		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be : "+strconv.Itoa(int(self.ShardHeight+1))))
 	}
 	if block.Header.BeaconHeight < self.BeaconHeight {
 		return NewBlockChainError(BlockHeightError, errors.New("Block contain invalid beacon height"))
@@ -335,7 +341,7 @@ func (self *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBlock, isV
 		Swap shard committee if detect new epoch of beacon
 */
 func (self *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBlock) error {
-	Logger.log.Debugf("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
+	Logger.log.Infof("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	var (
 		err                   error
 		shardSwapedCommittees []string

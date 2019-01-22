@@ -25,6 +25,7 @@ const (
 	ShardStateHashError
 	RandomError
 	VerificationError
+	ShardError
 	BeaconError
 	SignatureError
 	NotSupportInLightMode
