@@ -71,13 +71,15 @@ func TestInnerProductProve(t *testing.T){
 	n := privacy.MaxExp
 	wit.a = make([]*big.Int, n)
 	wit.b = make([]*big.Int, n)
-	for i := range wit.a{
-		wit.a[i] = big.NewInt(10)
-		wit.b[i] = big.NewInt(10)
-	}
 
-	wit.u = new(privacy.EllipticPoint)
-	wit.u.Randomize()
+	for i := range wit.a{
+		//wit.a[i] = privacy.RandInt()
+		//wit.b[i] = privacy.RandInt()
+		tmp := privacy.RandBytes(3)
+
+		wit.a[i] = new(big.Int).SetBytes(tmp)
+		wit.b[i] = new(big.Int).SetBytes(tmp)
+	}
 
 	wit.p = new(privacy.EllipticPoint).Zero()
 	c, err := innerProduct(wit.a, wit.b)
@@ -89,7 +91,7 @@ func TestInnerProductProve(t *testing.T){
 		wit.p = wit.p.Add(AggParam.G[i].ScalarMult(wit.a[i]))
 		wit.p = wit.p.Add(AggParam.H[i].ScalarMult(wit.b[i]))
 	}
-	wit.p = wit.p.Add(wit.u.ScalarMult(c))
+	wit.p = wit.p.Add(AggParam.U.ScalarMult(c))
 
 	proof, err:= wit.Prove()
 	if err != nil{

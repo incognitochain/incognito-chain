@@ -11,7 +11,6 @@ type InnerProductWitness struct {
 	a []*big.Int
 	b []*big.Int
 
-	u *privacy.EllipticPoint
 	p *privacy.EllipticPoint
 }
 
@@ -21,7 +20,6 @@ type InnerProductProof struct {
 	a *big.Int
 	b *big.Int
 
-	u *privacy.EllipticPoint
 	p *privacy.EllipticPoint
 }
 
@@ -59,7 +57,6 @@ func (wit *InnerProductWitness) Prove() (*InnerProductProof, error) {
 	proof := new(InnerProductProof)
 	proof.L = make([]*privacy.EllipticPoint, 0)
 	proof.R = make([]*privacy.EllipticPoint, 0)
-	proof.u = wit.u
 	proof.p = wit.p
 
 	for n > 1 {
@@ -79,18 +76,18 @@ func (wit *InnerProductWitness) Prove() (*InnerProductProof, error) {
 		if err != nil {
 			return nil, err
 		}
-		L = L.Add(wit.u.ScalarMult(cL))
+		L = L.Add(AggParam.U.ScalarMult(cL))
 		proof.L = append(proof.L, L)
 
 		R, err := EncodeVectors(a[nPrime:], b[:nPrime], G[:nPrime], H[nPrime:])
 		if err != nil {
 			return nil, err
 		}
-		R = R.Add(wit.u.ScalarMult(cR))
+		R = R.Add(AggParam.U.ScalarMult(cR))
 		proof.R = append(proof.R, R)
 
 		// calculate challenge x = hash(G || H || u || p ||  L || R)
-		x := generateChallengeForAggRange([]*privacy.EllipticPoint{wit.u, p, L, R})
+		x := generateChallengeForAggRange([]*privacy.EllipticPoint{p, L, R})
 		xInverse := new(big.Int).ModInverse(x, privacy.Curve.Params().N)
 
 		// calculate GPrime, HPrime, PPrime for the next loop
@@ -111,15 +108,15 @@ func (wit *InnerProductWitness) Prove() (*InnerProductProof, error) {
 		// calculate aPrime, bPrime
 		aPrime := make([]*big.Int, nPrime)
 		bPrime := make([]*big.Int, nPrime)
-		tmp := new(big.Int)
+		//tmp := new(big.Int)
 
 		for i := range aPrime {
-			aPrime[i] = new(big.Int).Mul(a[i+nPrime], x)
-			aPrime[i].Add(aPrime[i], tmp.Mul(a[i], xInverse))
+			aPrime[i] = new(big.Int).Mul(a[i], x)
+			aPrime[i].Add(aPrime[i], new(big.Int).Mul(a[i+nPrime], xInverse))
 			aPrime[i].Mod(aPrime[i], privacy.Curve.Params().N)
 
-			bPrime[i] = new(big.Int).Mul(b[i+nPrime], xInverse)
-			bPrime[i].Add(bPrime[i], tmp.Mul(b[i], x))
+			bPrime[i] = new(big.Int).Mul(b[i], xInverse)
+			bPrime[i].Add(bPrime[i],  new(big.Int).Mul(b[i+nPrime], x))
 			bPrime[i].Mod(bPrime[i], privacy.Curve.Params().N)
 		}
 
@@ -156,7 +153,7 @@ func (proof *InnerProductProof) Verify() bool {
 	for i := range proof.L {
 		nPrime := n / 2
 		// calculate challenge x = hash(G || H || u || p ||  L || R)
-		x := generateChallengeForAggRange([]*privacy.EllipticPoint{proof.u, p, proof.L[i], proof.R[i]})
+		x := generateChallengeForAggRange([]*privacy.EllipticPoint{p, proof.L[i], proof.R[i]})
 		xInverse := new(big.Int).ModInverse(x, privacy.Curve.Params().N)
 
 		// calculate GPrime, HPrime, PPrime for the next loop
@@ -184,12 +181,9 @@ func (proof *InnerProductProof) Verify() bool {
 
 	rightPoint := G[0].ScalarMult(proof.a)
 	rightPoint = rightPoint.Add(H[0].ScalarMult(proof.b))
-	rightPoint = rightPoint.Add(proof.u.ScalarMult(c))
+	rightPoint = rightPoint.Add(AggParam.U.ScalarMult(c))
 
-	if rightPoint.IsEqual(p) {
-		return true
-	}
-	return false
+	return rightPoint.IsEqual(p)
 }
 
 func pad(l int) int {

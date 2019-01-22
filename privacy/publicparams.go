@@ -18,7 +18,7 @@ type PublicParams struct {
 // newPedersenCommitment creates new generators
 func newPublicParams() PublicParams {
 	var params PublicParams
-	const capacity = 133 // fixed value = 5+128
+	const capacity = 134 // fixed value = 5 + 128 + 1
 	params.G = make([]*EllipticPoint, capacity, capacity)
 	params.G[0] = new(EllipticPoint)
 	params.G[0].X, params.G[0].Y = Curve.Params().Gx, Curve.Params().Gy
