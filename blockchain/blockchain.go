@@ -232,32 +232,6 @@ func (self *BlockChain) initChainState() error {
 		beacon: make(map[string][]byte),
 	}
 
-	for shard := 1; shard <= self.config.ChainParams.ShardsNum; shard++ {
-		shardID := byte(shard - 1)
-		bestStateBytes, err := self.config.DataBase.FetchBestState(shardID)
-		if err == nil {
-			self.BestState.Shard[shardID] = &BestStateShard{}
-			err = json.Unmarshal(bestStateBytes, self.BestState.Shard[shardID])
-			if err != nil {
-				initialized = false
-			} else {
-				initialized = true
-			}
-		} else {
-			initialized = false
-		}
-
-		if !initialized {
-			// At this point the database has not already been initialized, so
-			// initialize both it and the chain state to the genesis block.
-			err := self.initShardState(shardID)
-			if err != nil {
-				return err
-			}
-
-		}
-	}
-
 	bestStateBeaconBytes, err := self.config.DataBase.FetchBeaconBestState()
 	if err == nil {
 		err = json.Unmarshal(bestStateBeaconBytes, self.BestState.Beacon)
@@ -289,6 +263,32 @@ func (self *BlockChain) initChainState() error {
 		}
 	}
 
+	for shard := 1; shard <= self.config.ChainParams.ShardsNum; shard++ {
+		shardID := byte(shard - 1)
+		bestStateBytes, err := self.config.DataBase.FetchBestState(shardID)
+		if err == nil {
+			self.BestState.Shard[shardID] = &BestStateShard{}
+			err = json.Unmarshal(bestStateBytes, self.BestState.Shard[shardID])
+			if err != nil {
+				initialized = false
+			} else {
+				initialized = true
+			}
+		} else {
+			initialized = false
+		}
+
+		if !initialized {
+			// At this point the database has not already been initialized, so
+			// initialize both it and the chain state to the genesis block.
+			err := self.initShardState(shardID)
+			if err != nil {
+				return err
+			}
+
+		}
+	}
+
 	return nil
 }
 
@@ -298,6 +298,7 @@ func (self *BlockChain) initChainState() error {
 // the genesis block, so it must only be called on an uninitialized database.
 */
 func (self *BlockChain) initShardState(shardID byte) error {
+
 	// Create a new block from genesis block and set it as best block of chain
 	initBlock := &ShardBlock{
 		Header: ShardHeader{},
@@ -322,8 +323,14 @@ func (self *BlockChain) initShardState(shardID byte) error {
 
 	self.BestState.Shard[shardID].ShardCommittee = append(self.BestState.Shard[shardID].ShardCommittee, newShardCandidate[int(shardID)*self.config.ChainParams.ShardCommitteeSize:(int(shardID)*self.config.ChainParams.ShardCommitteeSize)+self.config.ChainParams.ShardCommitteeSize]...)
 
-	// self.BestState.Shard[shardID].Init(initBlock)
-
+	genesisBeaconBlk, err := self.GetBeaconBlockByHeight(1)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
+	err = self.BestState.Shard[shardID].Update(initBlock, []*BeaconBlock{genesisBeaconBlk})
+	if err != nil {
+		return err
+	}
 	self.ProcessStoreShardBlock(initBlock)
 
 	return nil

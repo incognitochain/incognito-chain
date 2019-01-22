@@ -164,7 +164,11 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 									Logger.log.Error(err)
 									continue
 								}
-								protocol.Chain.VerifyPreSignBeaconBlock(&pendingBlk)
+								err = protocol.Chain.VerifyPreSignBeaconBlock(&pendingBlk)
+								if err != nil {
+									Logger.log.Error(err)
+									continue
+								}
 								protocol.pendingBlock = &pendingBlk
 								protocol.multiSigScheme.dataToSig = pendingBlk.Header.Hash()
 							} else {
@@ -176,7 +180,11 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 									Logger.log.Error(err)
 									continue
 								}
-								protocol.Chain.VerifyPreSignShardBlock(&pendingBlk, protocol.RoleData.ShardID)
+								err = protocol.Chain.VerifyPreSignShardBlock(&pendingBlk, protocol.RoleData.ShardID)
+								if err != nil {
+									Logger.log.Error(err)
+									continue
+								}
 								protocol.pendingBlock = &pendingBlk
 								protocol.multiSigScheme.dataToSig = pendingBlk.Header.Hash()
 							}
