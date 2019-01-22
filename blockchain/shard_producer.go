@@ -52,7 +52,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	remainingFund := currentSalaryFund + totalFee + salaryFundAdd - totalSalary
 	coinbases := []metadata.Transaction{salaryTx}
 	txsToAdd = append(coinbases, txsToAdd...)
-	crossOutputCoin := blockgen.getCrossOutputCoin(shardID, beaconHeight)
+	crossOutputCoin := blockgen.getCrossOutputCoin(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight)
 	instructions := CreateShardActionFromOthers()
 	block := &ShardBlock{
 		Body: ShardBody{
@@ -134,25 +134,23 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	return block, nil
 }
 
-// build CrossOutputCoin
-func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, currentBeaconHeight uint64) map[byte][]CrossOutputCoin {
-	res := make(map[byte][]CrossOutputCoin)
-	crossShardMap := make(map[byte][]CrossShardBlock)
-	passed := false
-	// get cross shard block
-	bestShardHeight := blockgen.chain.BestState.Beacon.BestShardHeight
-	allCrossShardBlock := blockgen.crossShardPool.GetBlock(bestShardHeight)
-	// TODO: Verify with cross map
-	// TODO: Make sure cross shard pool begin with most recent proccessed block
-	/*
+/*
+	build CrossOutputCoin
 		1. Get Previous most recent proccess cross shard block
 		2. Get beacon height of previous shard block
 		3. Search from preBeaconHeight to currentBeaconHeight for cross shard via cross shard byte
 		4. Detect in pool
 		5. if miss then stop or sync block
 		6. Update new most recent proccess cross shard block
-	*/
+*/
+func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHeight uint64, currentBeaconHeight uint64) map[byte][]CrossOutputCoin {
+	res := make(map[byte][]CrossOutputCoin)
+	crossShardMap := make(map[byte][]CrossShardBlock)
+	// get cross shard block
+	bestShardHeight := blockgen.chain.BestState.Beacon.BestShardHeight
+	allCrossShardBlock := blockgen.crossShardPool.GetBlock(bestShardHeight)
 	crossShardBlocks := allCrossShardBlock[shardID]
+	currentBestCrossShard := blockgen.chain.BestState.Shard[shardID].BestCrossShard
 	// Sort by height
 	for _, blk := range crossShardBlocks {
 		crossShardMap[blk.Header.ShardID] = append(crossShardMap[blk.Header.ShardID], blk)
@@ -162,9 +160,8 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, currentBeacon
 		slice.Sort(crossShardBlock[:], func(i, j int) bool {
 			return crossShardBlock[i].Header.Height < crossShardBlock[j].Header.Height
 		})
+		currentBestCrossShardForThisBlock := currentBestCrossShard[crossShardID]
 		for _, blk := range crossShardBlock {
-			currentBestCrossShard := blockgen.chain.BestState.Shard[shardID].BestCrossShard
-			currentBestCrossShardForThisBlock := currentBestCrossShard[crossShardID]
 			temp, err := blockgen.chain.config.DataBase.FetchBeaconCommitteeByHeight(blk.Header.BeaconHeight)
 			if err != nil {
 				break
@@ -176,19 +173,20 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, currentBeacon
 				break
 			}
 			lastBeaconHeight := blockgen.chain.BestState.Shard[shardID].BeaconHeight
-			for i := lastBeaconHeight + 1; i <= currentBeaconHeight; i++ {
-				// Get shard state from beacon best state
-				/*
-					When a shard block is created (ex: shard 1 create block A), it will
-					- Send ShardToBeacon Block (A1) to beacon,
-						=> ShardToBeacon Block then will be executed and store as ShardState in beacon
-					- Send CrossShard Block (A2) to other shard if existed
-						=> CrossShard Will be process into CrossOutputCoin
-					=> A1 and A2 must have the same header
-					- Check if A1 indicates that if A2 is exist or not via CrossShardByteMap
+			// Get shard state from beacon best state
+			/*
+				When a shard block is created (ex: shard 1 create block A), it will
+				- Send ShardToBeacon Block (A1) to beacon,
+					=> ShardToBeacon Block then will be executed and store as ShardState in beacon
+				- Send CrossShard Block (A2) to other shard if existed
+					=> CrossShard Will be process into CrossOutputCoin
+				=> A1 and A2 must have the same header
+				- Check if A1 indicates that if A2 is exist or not via CrossShardByteMap
 
-					AND ALSO, check A2 is the only cross shard block after the most recent processed cross shard block
-				*/
+				AND ALSO, check A2 is the only cross shard block after the most recent processed cross shard block
+			*/
+			passed := false
+			for i := lastBeaconHeight + 1; i <= currentBeaconHeight; i++ {
 				for shardToBeaconID, shardStates := range blockgen.chain.BestState.Beacon.AllShardState {
 					if crossShardID == shardToBeaconID {
 						// if the first crossShardblock is not current block then discard current block
@@ -216,7 +214,11 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, currentBeacon
 			}
 			res[blk.Header.ShardID] = append(res[blk.Header.ShardID], outputCoin)
 		}
-
+	}
+	for _, crossOutputcoin := range res {
+		slice.Sort(crossOutputcoin[:], func(i, j int) bool {
+			return crossOutputcoin[i].BlockHeight < crossOutputcoin[j].BlockHeight
+		})
 	}
 	return res
 }
