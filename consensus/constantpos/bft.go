@@ -94,7 +94,6 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 						return nil, err
 					}
 					protocol.pendingBlock = newBlock
-					fmt.Println("\n", newBlock.Header)
 					protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
 				}
 

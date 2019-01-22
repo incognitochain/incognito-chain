@@ -551,10 +551,7 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			OnAddr:           serverObj.OnAddr,
 
 			//constantpos
-			OnBFTPropose: serverObj.OnBFTPropose,
-			OnBFTPrepare: serverObj.OnBFTPrepare,
-			OnBFTCommit:  serverObj.OnBFTCommit,
-			OnBFTReady:   serverObj.OnBFTReady,
+			OnBFTMsg: serverObj.OnBFTMsg,
 			// OnInvalidBlock:  serverObj.OnInvalidBlock,
 			OnGetBeaconState: serverObj.OnGetBeaconState,
 			OnBeaconState:    serverObj.OnBeaconState,
@@ -824,32 +821,11 @@ func (serverObj *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) 
 	Logger.log.Infof("Receive addr message %v", msg.RawPeers)
 }
 
-func (serverObj *Server) OnBFTPropose(_ *peer.PeerConn, msg *wire.MessageBFTPropose) {
-	Logger.log.Info("Receive a BFTPropose START")
+func (serverObj *Server) OnBFTMsg(_ *peer.PeerConn, msg wire.Message) {
+	Logger.log.Info("Receive a BFTMsg START")
 	var txProcessed chan struct{}
 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a BFTPropose END")
-}
-
-func (serverObj *Server) OnBFTPrepare(_ *peer.PeerConn, msg *wire.MessageBFTPrepare) {
-	Logger.log.Info("Receive a BFTPrepare START")
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a BFTPrepare END")
-}
-
-func (serverObj *Server) OnBFTCommit(_ *peer.PeerConn, msg *wire.MessageBFTCommit) {
-	Logger.log.Info("Receive a BFTCommit START")
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a BFTCommit END")
-}
-
-func (serverObj *Server) OnBFTReady(_ *peer.PeerConn, msg *wire.MessageBFTReady) {
-	Logger.log.Info("Receive a BFTReady START")
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a BFTReady END")
+	Logger.log.Info("Receive a BFTMsg END")
 }
 
 // func (serverObj *Server) OnInvalidBlock(_ *peer.PeerConn, msg *wire.MessageInvalidBlock) {

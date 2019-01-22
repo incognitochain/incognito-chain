@@ -33,10 +33,7 @@ type NetSyncConfig struct {
 		PushMessageToAll(wire.Message) error
 	}
 	Consensus interface {
-		OnBFTPropose(*wire.MessageBFTPropose)
-		OnBFTPrepare(*wire.MessageBFTPrepare)
-		OnBFTCommit(*wire.MessageBFTCommit)
-		OnBFTReady(*wire.MessageBFTReady)
+		OnBFTMsg(wire.Message)
 	}
 
 	FeeEstimator map[byte]*mempool.FeeEstimator
@@ -94,19 +91,19 @@ out:
 						//	}
 					case *wire.MessageBFTPropose:
 						{
-							netSync.HandleMessageBFTPropose(msg)
+							netSync.HandleMessageBFTMsg(msg)
 						}
 					case *wire.MessageBFTPrepare:
 						{
-							netSync.HandleMessageBFTPrepare(msg)
+							netSync.HandleMessageBFTMsg(msg)
 						}
 					case *wire.MessageBFTCommit:
 						{
-							netSync.HandleMessageBFTCommit(msg)
+							netSync.HandleMessageBFTMsg(msg)
 						}
 					case *wire.MessageBFTReady:
 						{
-							netSync.HandleMessageBFTReady(msg)
+							netSync.HandleMessageBFTMsg(msg)
 						}
 					case *wire.MessageBlockBeacon:
 						{
@@ -404,24 +401,9 @@ func (netSync *NetSync) HandleMessageShardToBeacon(msg *wire.MessageShardToBeaco
 	netSync.config.BlockChain.OnShardToBeaconBlockReceived(msg.Block)
 }
 
-func (netSync *NetSync) HandleMessageBFTPropose(msg *wire.MessageBFTPropose) {
-	Logger.log.Info("Handling new message BFTPropose")
-	netSync.config.Consensus.OnBFTPropose(msg)
-}
-
-func (netSync *NetSync) HandleMessageBFTPrepare(msg *wire.MessageBFTPrepare) {
-	Logger.log.Info("Handling new message BFTPrepare")
-	netSync.config.Consensus.OnBFTPrepare(msg)
-}
-
-func (netSync *NetSync) HandleMessageBFTCommit(msg *wire.MessageBFTCommit) {
-	Logger.log.Info("Handling new message BFTCommit")
-	netSync.config.Consensus.OnBFTCommit(msg)
-}
-
-func (netSync *NetSync) HandleMessageBFTReady(msg *wire.MessageBFTReady) {
-	Logger.log.Info("Handling new message BFTReady")
-	netSync.config.Consensus.OnBFTReady(msg)
+func (netSync *NetSync) HandleMessageBFTMsg(msg wire.Message) {
+	Logger.log.Info("Handling new message BFTMsg")
+	netSync.config.Consensus.OnBFTMsg(msg)
 }
 
 // func (netSync *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
