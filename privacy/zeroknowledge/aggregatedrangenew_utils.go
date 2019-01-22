@@ -24,6 +24,7 @@ type InnerProductProof struct {
 }
 
 func (wit *InnerProductWitness) Prove() (*InnerProductProof, error) {
+	var AggParam = newBulletproofParams(1)
 	if len(wit.a) != len(wit.b) {
 		return nil, errors.New("invalid inputs")
 	}
@@ -87,7 +88,7 @@ func (wit *InnerProductWitness) Prove() (*InnerProductProof, error) {
 		proof.R = append(proof.R, R)
 
 		// calculate challenge x = hash(G || H || u || p ||  L || R)
-		x := generateChallengeForAggRange([]*privacy.EllipticPoint{p, L, R})
+		x := generateChallengeForAggRange(AggParam, []*privacy.EllipticPoint{p, L, R})
 		xInverse := new(big.Int).ModInverse(x, privacy.Curve.Params().N)
 
 		// calculate GPrime, HPrime, PPrime for the next loop
@@ -135,6 +136,7 @@ func (wit *InnerProductWitness) Prove() (*InnerProductProof, error) {
 }
 
 func (proof *InnerProductProof) Verify() bool {
+	var AggParam = newBulletproofParams(1)
 	p := new(privacy.EllipticPoint)
 	p.Set(proof.p.X, proof.p.Y)
 
@@ -153,7 +155,7 @@ func (proof *InnerProductProof) Verify() bool {
 	for i := range proof.L {
 		nPrime := n / 2
 		// calculate challenge x = hash(G || H || u || p ||  L || R)
-		x := generateChallengeForAggRange([]*privacy.EllipticPoint{p, proof.L[i], proof.R[i]})
+		x := generateChallengeForAggRange(AggParam, []*privacy.EllipticPoint{p, proof.L[i], proof.R[i]})
 		xInverse := new(big.Int).ModInverse(x, privacy.Curve.Params().N)
 
 		// calculate GPrime, HPrime, PPrime for the next loop

@@ -16,26 +16,22 @@ type BulletproofParams struct {
 	U *privacy.EllipticPoint
 }
 
-func setBulletproofParams() BulletproofParams {
-	var gen BulletproofParams
-	const capacity = 64 // fixed value
+func newBulletproofParams(m int ) *BulletproofParams {
+	gen := new(BulletproofParams)
+	capacity := 64*m // fixed value
 	gen.G = make([]*privacy.EllipticPoint, capacity, capacity)
 	gen.H = make([]*privacy.EllipticPoint, capacity, capacity)
 
 	for i := 0; i < capacity; i++ {
-		gen.G[i] = new(privacy.EllipticPoint)
-		gen.G[i].Set(privacy.PubParams.G[5 + i].X, privacy.PubParams.G[5 + i].Y)
-
-		gen.H[i] = new(privacy.EllipticPoint)
-		gen.H[i].Set(privacy.PubParams.G[69 + i].X, privacy.PubParams.G[69 + i].Y)
+		//gen.G[i] = new(privacy.EllipticPoint)
+		gen.G[i] = privacy.PedCom.G[0].Hash(5 + i)
+		gen.H[i] = privacy.PedCom.G[0].Hash(5 + i+ capacity)
 	}
 	gen.U = new(privacy.EllipticPoint)
-	gen.U.Set(privacy.PubParams.G[len(privacy.PubParams.G) - 1].X, privacy.PubParams.G[len(privacy.PubParams.G) - 1].Y)
+	gen.U = gen.H[0].Hash(5+2*capacity)
 
 	return gen
 }
-
-var AggParam = setBulletproofParams()
 
 // CommitAll commits a list of PCM_CAPACITY value(s)
 func EncodeVectors(a []*big.Int, b []*big.Int, g[]*privacy.EllipticPoint, h[]*privacy.EllipticPoint) (*privacy.EllipticPoint, error) {
@@ -50,7 +46,7 @@ func EncodeVectors(a []*big.Int, b []*big.Int, g[]*privacy.EllipticPoint, h[]*pr
 	return res, nil
 }
 
-func generateChallengeForAggRange(values []*privacy.EllipticPoint) *big.Int {
+func generateChallengeForAggRange(AggParam *BulletproofParams, values []*privacy.EllipticPoint) *big.Int {
 	bytes := AggParam.G[0].Compress()
 	for i := 1; i < len(AggParam.G); i++ {
 		bytes = append(bytes, AggParam.G[i].Compress()...)
@@ -74,7 +70,7 @@ func generateChallengeForAggRange(values []*privacy.EllipticPoint) *big.Int {
 	return res
 }
 
-func generateChallengeForAggRangeFromBytes(values [][]byte) *big.Int {
+func generateChallengeForAggRangeFromBytes(AggParam *BulletproofParams, values [][]byte) *big.Int {
 	bytes := AggParam.G[0].Compress()
 	for i := 1; i < len(AggParam.G); i++ {
 		bytes = append(bytes, AggParam.G[i].Compress()...)
