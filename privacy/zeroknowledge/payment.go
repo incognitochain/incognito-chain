@@ -588,7 +588,10 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 
 		cmOutputValue[i] = privacy.PedCom.CommitAtIndex(new(big.Int).SetUint64(outputCoin.CoinDetails.Value), randOutputValue[i], privacy.VALUE)
 		cmOutputSND[i] = privacy.PedCom.CommitAtIndex(outputCoin.CoinDetails.SNDerivator, randOutputSND[i], privacy.SND)
-		cmOutputShardID[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(outputCoins[i].CoinDetails.GetPubKeyLastByte())), randOutputShardID[i], privacy.SHARDID)
+
+		//TODO: refactor this hardcode, shardnum
+		shardID := byte(int(outputCoins[i].CoinDetails.GetPubKeyLastByte()) % 4)
+		cmOutputShardID[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(shardID)), randOutputShardID[i], privacy.SHARDID)
 
 		randOutputSum[i] = big.NewInt(0)
 		randOutputSum[i].Add(randOutputValue[i], randOutputSND[i])
@@ -752,7 +755,9 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee ui
 			cmTmp := pro.OutputCoins[i].CoinDetails.PublicKey
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(pro.OutputCoins[i].CoinDetails.Value))))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMult(pro.OutputCoins[i].CoinDetails.SNDerivator))
-			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{pro.OutputCoins[i].CoinDetails.GetPubKeyLastByte()})))
+			//TODO: refactor this hard code
+			shardID := byte(int(pro.OutputCoins[i].CoinDetails.GetPubKeyLastByte()) % 4)
+			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(pro.OutputCoins[i].CoinDetails.Randomness))
 			if !cmTmp.IsEqual(pro.OutputCoins[i].CoinDetails.CoinCommitment) {
 				return false

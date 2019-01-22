@@ -26,7 +26,7 @@ type Params struct {
 
 // FOR TESTNET
 const (
-	TestNetShardsNum           = 256
+	TestNetShardsNum           = 4
 	TestNetShardCommitteeSize  = 3
 	TestNetBeaconCommitteeSize = 3
 )
@@ -84,7 +84,7 @@ var icoParamsTestnetNew = IcoParams{
 	InitialGOVToken:       TestnetInitGovToken,
 }
 
-var TestNetParams = Params{
+var ChainParam = Params{
 	Name:                TestnetName,
 	Net:                 Testnet,
 	DefaultPort:         TestnetDefaultPort,
