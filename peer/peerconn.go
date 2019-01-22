@@ -278,20 +278,20 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 						peerConn.Config.MessageListeners.OnAddr(peerConn, message.(*wire.MessageAddr))
 					}
 				case reflect.TypeOf(&wire.MessageBFTPropose{}):
-					if peerConn.Config.MessageListeners.OnBFTPropose != nil {
-						peerConn.Config.MessageListeners.OnBFTPropose(peerConn, message.(*wire.MessageBFTPropose))
+					if peerConn.Config.MessageListeners.OnBFTMsg != nil {
+						peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTPropose))
 					}
 				case reflect.TypeOf(&wire.MessageBFTPrepare{}):
-					if peerConn.Config.MessageListeners.OnBFTPrepare != nil {
-						peerConn.Config.MessageListeners.OnBFTPrepare(peerConn, message.(*wire.MessageBFTPrepare))
+					if peerConn.Config.MessageListeners.OnBFTMsg != nil {
+						peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTPrepare))
 					}
 				case reflect.TypeOf(&wire.MessageBFTCommit{}):
-					if peerConn.Config.MessageListeners.OnBFTCommit != nil {
-						peerConn.Config.MessageListeners.OnBFTCommit(peerConn, message.(*wire.MessageBFTCommit))
+					if peerConn.Config.MessageListeners.OnBFTMsg != nil {
+						peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTCommit))
 					}
 				case reflect.TypeOf(&wire.MessageBFTReady{}):
-					if peerConn.Config.MessageListeners.OnBFTReady != nil {
-						peerConn.Config.MessageListeners.OnBFTReady(peerConn, message.(*wire.MessageBFTReady))
+					if peerConn.Config.MessageListeners.OnBFTMsg != nil {
+						peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTReady))
 					}
 					// case reflect.TypeOf(&wire.MessageInvalidBlock{}):
 					// 	if peerConn.Config.MessageListeners.OnInvalidBlock != nil {
