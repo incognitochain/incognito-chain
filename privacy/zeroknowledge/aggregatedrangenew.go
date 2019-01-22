@@ -177,21 +177,21 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	deltaYZ.Sub(deltaYZ, product)
 	deltaYZ.Mod(deltaYZ, privacy.Curve.Params().N)
 
-	t0 := new(big.Int).Set(deltaYZ)
-	zTmp = new(big.Int).Set(z)
-	for i:= range wit.values{
-		zTmp.Mul(zTmp, z)
-		t0.Add(t0, new(big.Int).Mul(wit.values[i], zTmp))
-	}
-	t0.Mod(t0, privacy.Curve.Params().N)
-
-	tmp, _ := innerProduct(l0, r0)
-
-	if t0.Cmp(tmp) ==0{
-		fmt.Printf("AAAAAAAAAAA\n")
-	} else{
-		fmt.Printf("BBBBBBBBBBB\n")
-	}
+	//t0 := new(big.Int).Set(deltaYZ)
+	//zTmp = new(big.Int).Set(z)
+	//for i:= range wit.values{
+	//	zTmp.Mul(zTmp, z)
+	//	t0.Add(t0, new(big.Int).Mul(wit.values[i], zTmp))
+	//}
+	//t0.Mod(t0, privacy.Curve.Params().N)
+	//
+	//tmp, _ := innerProduct(l0, r0)
+	//
+	//if t0.Cmp(tmp) ==0{
+	//	fmt.Printf("AAAAAAAAAAA\n")
+	//} else{
+	//	fmt.Printf("BBBBBBBBBBB\n")
+	//}
 
 	// t1 = <l1, r0> + <l0, r1>
 	innerProduct3, err := innerProduct(l1, r0)
@@ -239,7 +239,28 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	if err != nil {
 		return nil, err
 	}
-	rVector, err = vectorAdd(rVector, vectorMulScalar(twoVector, zSquare))
+
+	vectorSum = oneVector
+
+	zTmp = new(big.Int).Set(z)
+	for j := 1; j <= numValue; j++ {
+		zTmp.Mul(zTmp, z)
+		zTmp.Mod(zTmp, privacy.Curve.Params().N)
+
+		zeroVector1 := powerVector(big.NewInt(0), (j-1)*n)
+		zeroVector2 := powerVector(big.NewInt(0), (numValue-j)*n)
+		concatVector := make([]*big.Int, 0)
+		concatVector = append(concatVector, zeroVector1...)
+		concatVector = append(concatVector, twoVectorN...)
+		concatVector = append(concatVector, zeroVector2...)
+
+		vectorSum, err = vectorAdd(vectorSum, vectorMulScalar(concatVector, zTmp))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	rVector, err = vectorAdd(rVector, vectorSum)
 	if err != nil {
 		return nil, err
 	}
