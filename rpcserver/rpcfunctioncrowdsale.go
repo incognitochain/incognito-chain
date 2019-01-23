@@ -54,10 +54,16 @@ func (rpcServer RpcServer) sendRawCrowdsaleTx(params interface{}, closeChan <-ch
 	return result, nil
 }
 
+// handleCreateAndSendCrowdsaleRequestToken for user to sell bonds to DCB
 func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequestToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	crowdsaleDataRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
+
+	// Convert limit token price (min cst per bond) to limit cst price (max bond per cst)
+	tokenPrice := uint64(crowdsaleDataRaw["PriceLimit"].(float64))
+	cstPrice := float64(100) / float64(tokenPrice)
+	crowdsaleDataRaw["PriceLimit"] = uint64(cstPrice * 100)
 	meta, err := metadata.NewCrowdsaleRequest(crowdsaleDataRaw)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -79,6 +85,7 @@ func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequestToken(params inter
 	return result, nil
 }
 
+// handleCreateAndSendCrowdsaleRequestToken for user to buy bonds from DCB
 func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequestConstant(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	//rpcServer.buildRawTransaction(params, metadata)
