@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"bytes"
-	"errors"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
@@ -11,6 +10,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/pkg/errors"
 )
 
 // getTxTokenValue converts total tokens in a tx to Constant
@@ -154,21 +154,22 @@ func mintTxToken(tokenAmount uint64, tokenID, receiverPk []byte) *transaction.Tx
 }
 
 func buildPaymentForToken(
-	txRequest *transaction.TxCustomToken,
+	txRequest *transaction.Tx,
 	tokenAmount uint64,
-	tokenID []byte,
+	tokenID common.Hash,
 	unspentTokenMap map[string]([]transaction.TxTokenVout),
 	saleID []byte,
 	mint bool,
+	change uint64,
 ) (*transaction.TxCustomToken, error) {
 	var txToken *transaction.TxCustomToken
 	var err error
-	unspentTxTokenOuts := unspentTokenMap[string(tokenID)]
+	unspentTxTokenOuts := unspentTokenMap[tokenID.String()]
 	usedID := -1
-	if len(txRequest.Tx.Proof.InputCoins) == 0 {
+	if len(txRequest.Proof.InputCoins) == 0 {
 		return nil, errors.New("Found no sender in request tx")
 	}
-	pubkey := txRequest.Tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	pubkey := txRequest.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
 
 	if mint {
 		txToken = mintTxToken(tokenAmount, tokenID, pubkey)
@@ -190,14 +191,14 @@ func buildPaymentForToken(
 
 	// Update list of token available for next request
 	if usedID >= 0 && !mint {
-		unspentTokenMap[string(tokenID)] = unspentTxTokenOuts[usedID:]
+		unspentTokenMap[tokenID.String()] = unspentTxTokenOuts[usedID:]
 	}
 	return txToken, nil
 }
 
 // buildPaymentForCrowdsale builds CrowdsalePayment tx sending either CST or Token
 func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
-	tx *transaction.TxCustomToken,
+	tx metadata.Transaction,
 	saleDataMap map[string]*params.SaleData,
 	unspentTokenMap map[string]([]transaction.TxTokenVout),
 	chainID byte,
@@ -209,19 +210,42 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	saleData := saleDataMap[string(saleID)]
 	metaReq := tx.Metadata.(*metadata.CrowdsaleRequest)
 	priceLimit := metaReq.PriceLimit
+	sellingAsset := saleData.SellingAsset
+	buyingAsset := saleData.BuyingAsset
 
 	// Get price for asset
-	prices := make(map[string]uint64)
-	if blockgen.chain.BestState[chainID].BestBlock.Header.Oracle != nil && len(blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds) > 0 {
-		prices = blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds
-	}
-	if len(prices) == 0 {
-		return nil, errors.New("Missing bonds data in block")
+	buyPrice := blockgen.getAssetPrice(chainID, buyingAsset)
+	sellPrice := blockgen.getAssetPrice(chainID, sellingAsset)
+	if buyPrice == 0 || sellPrice == 0 {
+		return nil, errors.New("Missing price data in block")
 	}
 	// TODO(@0xbunyip): validate sale data in proposal to admit only valid pair of assets
 	var txResponse *transaction.TxCustomToken
 	err := errors.New("Incorrect assets for crowdsale")
-	sellingAsset := saleData.SellingAsset
+
+	// Calculate amount of asset to trade for both sides
+	// 1 user buy bond => sellingAsset == Bond && buyingAsset == CST
+	// 2 user sell bond => sellingAsset == CST && buyingAsset == Bond
+	requestAmount := metaReq.Amount
+	buyingAmount := uint64(0)
+	sellingAmount := uint64(0)
+	if metaReq.LimitSellingAsset {
+		// TODO(@0xbunyip): check for overflow
+		sellingAmount = requestAmount // user requested buying (DCB selling) exactly this amount of asset
+		buyingAmount = sellingAmount * sellPrice / buyPrice
+	} else {
+		buyingAmount = requestAmount // user requested selling (DCB buying) exactly this amount of asset
+		sellingAmount = buyingAmount * buyPrice / sellPrice
+	}
+
+	// Calculate value of asset sent in request tx
+	sentAmount := uint64(0)
+	if buyingAsset.IsEqual(&common.ConstantID) {
+		_, _, sentAmount = tx.GetUniqueReceiver()
+	} else if common.IsBondAsset(&buyingAsset) {
+		_, _, sentAmount = tx.GetTokenUniqueReceiver()
+	}
+	sentAssetValue := sentAmount * buyPrice // in USD
 
 	if sellingAsset.IsEqual(&common.ConstantID) {
 		tokenAmount, valuesInConstant, err := getTxTokenValue(tx.TxTokenData, saleData.BuyingAsset[:], dcbPk, prices)
@@ -256,38 +280,45 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 		}
 	} else if common.IsBondAsset(&sellingAsset) {
 		// Get unspent token UTXO to send to user
-		if _, ok := unspentTokenMap[string(sellingAsset[:])]; !ok {
+		if _, ok := unspentTokenMap[sellingAsset.String()]; !ok {
 			unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(keyWalletDCBAccount.KeySet, &sellingAsset)
 			if err == nil {
-				unspentTokenMap[string(sellingAsset[:])] = unspentTxTokenOuts
+				unspentTokenMap[sellingAsset.String()] = unspentTxTokenOuts
 			} else {
-				unspentTokenMap[string(sellingAsset[:])] = []transaction.TxTokenVout{}
+				unspentTokenMap[sellingAsset.String()] = []transaction.TxTokenVout{}
 			}
 		}
 
-		// Calculate amount of token to send
-		sentAmount, tokensToSend := getTxValue(&tx.Tx, sellingAsset[:], dcbPk, prices)
-		// Check if price limit is not violated
-		if sentAmount > saleData.BuyingAmount || tokensToSend > saleData.SellingAmount {
+		// Check if there's still enough asset to trade
+		if buyingAmount > saleData.BuyingAmount || sellingAmount > saleData.SellingAmount {
 			return nil, errors.New("Crowdsale reached limit")
 		}
-		if sentAmount <= 0 || tokensToSend <= 0 {
+
+		// Check if amount if asset sending is enough
+		if buyingAmount > sentAmount {
 			return nil, errors.New("Values sent in request is too low")
 		}
-		if sentAmount/tokensToSend > priceLimit {
-			return nil, errors.New("Price limit violated")
+		change := sentAmount - buyingAmount
+
+		// Check if price limit is not violated
+		if reqMeta.LimitSellingAsset && sellPrice > priceLimit {
+			return nil, errors.Errorf("Price limit violated: %d %d", sellPrice, priceLimit)
+		} else if !reqMeta.LimitSellingAsset && buyPrice < priceLimit {
+			return nil, errors.Errorf("Price limit violated: %d %d", buyPrice, priceLimit)
 		}
 
 		mint := false // Mint DCB token, transfer bonds
-		saleData.BuyingAmount -= sentAmount
-		saleData.SellingAmount -= tokensToSend
+		saleData.BuyingAmount -= buyingAmount
+		saleData.SellingAmount -= sellingAmount
+		txNormal := tx.(*transaction.Tx)
 		txResponse, err = buildPaymentForToken(
-			tx,
+			txNormal,
 			tokensToSend,
-			sellingAsset[:],
+			sellingAsset,
 			unspentTokenMap,
 			saleData.SaleID,
 			mint,
+			change,
 		)
 	}
 	return txResponse, err
@@ -327,9 +358,8 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 		return
 	}
 
-	txRequest, _ := tx.(*transaction.TxCustomToken)
 	txPayment, err := blockgen.buildPaymentForCrowdsale(
-		txRequest,
+		tx,
 		saleDataMap,
 		unspentTokenMap,
 		chainID,
@@ -373,4 +403,27 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 		}
 	}
 	return txsPayment, txsToRemove
+}
+
+func (blockgen *BlkTmplGenerator) getAssetPrice(chainID byte, assetID common.Hash) uint64 {
+	price := uint64(0)
+	if common.IsBondAsset(&assetID) {
+		if blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds != nil {
+			price = blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds[assetID.String()]
+		}
+	} else if blockgen.chain.BestState[chainID].BestBlock.Header.Oracle != nil {
+		oracle := blockgen.chain.BestState[chainID].BestBlock.Header.Oracle
+		if assetID.IsEqual(&common.ConstantID) {
+			price = oracle.Constant
+		} else if assetID.IsEqual(&common.DCBTokenID) {
+			price = oracle.DCBToken
+		} else if assetID.IsEqual(&common.GOVTokenID) {
+			price = oracle.GOVToken
+		} else if assetID.IsEqual(&common.ETHAssetID) {
+			price = oracle.ETH
+		} else if assetID.IsEqual(&common.BTCAssetID) {
+			price = oracle.BTC
+		}
+	}
+	return price
 }

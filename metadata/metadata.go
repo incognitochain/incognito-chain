@@ -154,9 +154,15 @@ type Transaction interface {
 	ValidateConstDoubleSpendWithBlockchain(BlockchainRetriever, byte, database.DatabaseInterface) error
 
 	GetSigPubKey() []byte
-	GetReceivers() ([][]byte, []uint64)
-	GetUniqueReceiver() (bool, []byte, uint64)
 	IsPrivacy() bool
 	IsCoinsBurning() bool
 	GetProof() *zkp.PaymentProof
+
+	// Get receivers' data for tx
+	GetReceivers() ([][]byte, []uint64)
+	GetUniqueReceiver() (bool, []byte, uint64)
+
+	// Get receivers' data for custom token tx (nil for normal tx)
+	GetTokenReceivers() ([][]byte, []uint64)
+	GetTokenUniqueReceiver() (bool, []byte, uint64)
 }
