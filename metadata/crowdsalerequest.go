@@ -20,7 +20,7 @@ type CrowdsaleRequest struct {
 	PriceLimit uint64 // max price set by user
 
 	// PriceLimit and Amount is in selling asset: i.e., tx is valid only when price(SellingAsset)/price(BuyingAsset) <= PriceLimit
-	LimitSellingAsset bool
+	LimitSellingAssetPrice bool
 
 	ValidUntil uint64
 	MetadataBase
@@ -33,7 +33,7 @@ func NewCrowdsaleRequest(csReqData map[string]interface{}) (*CrowdsaleRequest, e
 	priceLimit, okPrice := csReqData["PriceLimit"].(float64)
 	validUntil, okValid := csReqData["ValidUntil"].(float64)
 	paymentAddressStr, okAddr := csReqData["PaymentAddress"].(string)
-	limitSellingAsset, okLimit := csReqData["LimitSellingAsset"].(bool)
+	limitSellingAsset, okLimit := csReqData["LimitSellingAssetPrice"].(bool)
 	keyWallet, errPayment := wallet.Base58CheckDeserialize(paymentAddressStr)
 
 	if !okID || !okPrice || !okValid || !okAddr || !okLimit {
@@ -44,11 +44,11 @@ func NewCrowdsaleRequest(csReqData map[string]interface{}) (*CrowdsaleRequest, e
 	}
 
 	result := &CrowdsaleRequest{
-		PaymentAddress:    keyWallet.KeySet.PaymentAddress,
-		SaleID:            saleID,
-		PriceLimit:        uint64(priceLimit),
-		ValidUntil:        uint64(validUntil),
-		LimitSellingAsset: limitSellingAsset,
+		PaymentAddress:         keyWallet.KeySet.PaymentAddress,
+		SaleID:                 saleID,
+		PriceLimit:             uint64(priceLimit),
+		ValidUntil:             uint64(validUntil),
+		LimitSellingAssetPrice: limitSellingAsset,
 	}
 	result.Type = CrowdsaleRequestMeta
 	return result, nil
@@ -108,7 +108,7 @@ func (csReq *CrowdsaleRequest) Hash() *common.Hash {
 	record += string(csReq.SaleID)
 	record += string(csReq.PriceLimit)
 	record += string(csReq.ValidUntil)
-	record += strconv.FormatBool(csReq.LimitSellingAsset)
+	record += strconv.FormatBool(csReq.LimitSellingAssetPrice)
 
 	// final hash
 	record += csReq.MetadataBase.Hash().String()
