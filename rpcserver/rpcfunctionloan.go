@@ -80,6 +80,7 @@ func (rpcServer RpcServer) sendRawLoanTx(params interface{}, closeChan <-chan st
 	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 	// broadcast message
+	// TODO(@0xbunyip): use different wire.CmdCLoanRequestToken?
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdCLoanRequestToken)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)

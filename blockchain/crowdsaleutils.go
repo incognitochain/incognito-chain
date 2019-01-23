@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"fmt"
+
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -278,6 +280,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 	// Skip payment if either selling or buying asset is offchain (needs confirmation)
 	saleData := saleDataMap[string(metaRequest.SaleID)]
 	if common.IsOffChainAsset(&saleData.SellingAsset) || common.IsOffChainAsset(&saleData.BuyingAsset) {
+		fmt.Println("[db] crowdsale offchain asset")
 		return
 	}
 
@@ -289,6 +292,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 		metaRequest.SaleID,
 		producerPrivateKey,
 	)
+	fmt.Printf("[db] txpayment err: %v\n", err)
 	if err != nil {
 		Logger.log.Error(err)
 		txsToRemove = append(txsToRemove, tx)
