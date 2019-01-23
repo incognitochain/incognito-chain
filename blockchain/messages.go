@@ -17,8 +17,9 @@ func (self *BlockChain) OnBlockBeaconReceived(block *BeaconBlock) {
 
 func (self *BlockChain) GetBeaconState() (*BeaconChainState, error) {
 	state := &BeaconChainState{
-		Height:    self.BestState.Beacon.BeaconHeight,
-		BlockHash: self.BestState.Beacon.BestBlockHash,
+		Height:          self.BestState.Beacon.BeaconHeight,
+		BlockHash:       self.BestState.Beacon.BestBlockHash,
+		ShardsPoolState: self.config.ShardToBeaconPool.GetPendingBlockHashes(),
 	}
 	return state, nil
 }
