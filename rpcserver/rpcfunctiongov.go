@@ -104,7 +104,7 @@ func (rpcServer RpcServer) handleAppendListGOVBoard(params interface{}, closeCha
 	arrayParams := common.InterfaceSlice(params)
 	senderKey := arrayParams[0].(string)
 	paymentAddress, _ := rpcServer.GetPaymentAddressFromSenderKeyParams(senderKey)
-	rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress = append(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress, *paymentAddress)
+	rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress = append(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress, *paymentAddress)
 	res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
 	return res, nil
 }

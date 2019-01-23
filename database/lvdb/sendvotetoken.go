@@ -9,7 +9,7 @@ import (
 func (db *db) SendInitVoteToken(boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress, amount uint32) error {
 	oldAmount, err := db.GetVoteTokenAmount(boardType, boardIndex, paymentAddress)
 	if err != nil {
-		return err
+		oldAmount = 0
 	}
 	newAmount := oldAmount + amount
 	err = db.SetVoteTokenAmount(boardType, boardIndex, paymentAddress, newAmount)
