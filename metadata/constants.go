@@ -52,16 +52,15 @@ const (
 
 	//Voting
 	SubmitDCBProposalMeta
-	VoteDCBProposalMeta
 	VoteDCBBoardMeta
 	AcceptDCBProposalMeta
 	AcceptDCBBoardMeta
 
 	SubmitGOVProposalMeta
-	VoteGOVProposalMeta
 	VoteGOVBoardMeta
 	AcceptGOVProposalMeta
 	AcceptGOVBoardMeta
+
 	SendInitDCBVoteTokenMeta
 	SendInitGOVVoteTokenMeta
 	SealedLv1DCBVoteProposalMeta
