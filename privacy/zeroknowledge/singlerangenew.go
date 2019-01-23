@@ -156,6 +156,11 @@ func (wit *SingleRangeWitness) Prove() (*SingleRangeProof, error) {
 	t0.Add(t0, deltaYZ)
 	t0.Mod(t0, privacy.Curve.Params().N)
 
+	test, _ := innerProduct(l0, r0)
+	if test.Cmp(t0) ==0 {
+		fmt.Printf("t0 is right!!!!\n")
+	}
+
 	// t1 = <l1, r0> + <l0, r1>
 	innerProduct3, err := innerProduct(l1, r0)
 	if err != nil {
@@ -268,8 +273,8 @@ func (proof *SingleRangeProof) Verify() bool {
 	// HPrime = H^(y^(1-i)
 	tmp := new(big.Int)
 	HPrime := make([]*privacy.EllipticPoint, n)
-	for i :=1; i<=n; i++ {
-		HPrime[i-1] = AggParam.H[i-1].ScalarMult(tmp.Exp(y, big.NewInt(int64(1-i)), privacy.Curve.Params().N))
+	for i :=0; i<n; i++ {
+		HPrime[i] = AggParam.H[i].ScalarMult(tmp.Exp(y, big.NewInt(int64(-i)), privacy.Curve.Params().N))
 	}
 
 	// g^tHat * h^tauX = V^(z^2) * g^delta(y,z) * T1^x * T2^(x^2)
