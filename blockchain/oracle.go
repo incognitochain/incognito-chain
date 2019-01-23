@@ -45,6 +45,9 @@ func (blockGen *BlkTmplGenerator) groupOracleFeedTxsByOracleType(
 		if err != nil {
 			return nil, err
 		}
+		if len(blockBytes) == 0 {
+			continue
+		}
 		block := Block{}
 		err = json.Unmarshal(blockBytes, &block)
 		if err != nil {
