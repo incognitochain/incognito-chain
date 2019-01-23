@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"time"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -200,89 +201,88 @@ func (rpcServer RpcServer) handleGetMempoolInfo(params interface{}, closeChan <-
 
 // Get transaction by Hash
 func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// arrayParams := common.InterfaceSlice(params)
-	// // param #1: transaction Hash
-	// Logger.log.Infof("Get TransactionByHash input Param %+v", arrayParams[0].(string))
-	// txHash, _ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
-	// Logger.log.Infof("Get Transaction By Hash %+v", txHash)
-	// shardID, blockHash, index, tx, err := self.config.BlockChain.GetTransactionByHash(txHash)
-	// if err != nil {
-	// 	return nil, NewRPCError(ErrUnexpected, err)
-	// }
-	// result := jsonresult.TransactionDetail{}
-	// switch tx.GetType() {
-	// case common.TxNormalType, common.TxSalaryType:
-	// 	{
-	// 		tempTx := tx.(*transaction.Tx)
-	// 		result = jsonresult.TransactionDetail{
-	// 			BlockHash: blockHash.String(),
-	// 			Index:     uint64(index),
-	// 			ShardID:   shardID,
-	// 			Hash:      tx.Hash().String(),
-	// 			Version:   tempTx.Version,
-	// 			Type:      tempTx.Type,
-	// 			LockTime:  time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
-	// 			Fee:       tempTx.Fee,
-	// 			Proof:     tempTx.Proof,
-	// 			SigPubKey: tempTx.SigPubKey,
-	// 			Sig:       tempTx.Sig,
-	// 		}
-	// 		metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
-	// 		result.Metadata = string(metaData)
-	// 	}
-	// case common.TxCustomTokenType:
-	// 	{
-	// 		tempTx := tx.(*transaction.TxCustomToken)
-	// 		result = jsonresult.TransactionDetail{
-	// 			BlockHash: blockHash.String(),
-	// 			Index:     uint64(index),
-	// 			ShardID:   shardID,
-	// 			Hash:      tx.Hash().String(),
-	// 			Version:   tempTx.Version,
-	// 			Type:      tempTx.Type,
-	// 			LockTime:  time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
-	// 			Fee:       tempTx.Fee,
-	// 			Proof:     tempTx.Proof,
-	// 			SigPubKey: tempTx.SigPubKey,
-	// 			Sig:       tempTx.Sig,
-	// 		}
-	// 		txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
-	// 		result.CustomTokenData = string(txCustomData)
-	// 		if tempTx.Metadata != nil {
-	// 			metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
-	// 			result.Metadata = string(metaData)
-	// 		}
-	// 	}
-	// case common.TxCustomTokenPrivacyType:
-	// 	{
-	// 		tempTx := tx.(*transaction.TxCustomTokenPrivacy)
-	// 		result = jsonresult.TransactionDetail{
-	// 			BlockHash: blockHash.String(),
-	// 			Index:     uint64(index),
-	// 			ShardID:   shardID,
-	// 			Hash:      tx.Hash().String(),
-	// 			Version:   tempTx.Version,
-	// 			Type:      tempTx.Type,
-	// 			LockTime:  time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
-	// 			Fee:       tempTx.Fee,
-	// 			Proof:     tempTx.Proof,
-	// 			SigPubKey: tempTx.SigPubKey,
-	// 			Sig:       tempTx.Sig,
-	// 		}
-	// 		tokenData, _ := json.MarshalIndent(tempTx.TxTokenPrivacyData, "", "\t")
-	// 		result.PrivacyCustomTokenData = string(tokenData)
-	// 		if tempTx.Metadata != nil {
-	// 			metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
-	// 			result.Metadata = string(metaData)
-	// 		}
-	// 	}
-	// default:
-	// 	{
-	// 		return nil, NewRPCError(ErrTxTypeInvalid, errors.New("Tx type is invalid"))
-	// 	}
-	// }
-	// return result, nil
-	return nil, nil
+	arrayParams := common.InterfaceSlice(params)
+	// param #1: transaction Hash
+	Logger.log.Infof("Get TransactionByHash input Param %+v", arrayParams[0].(string))
+	txHash, _ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
+	Logger.log.Infof("Get Transaction By Hash %+v", txHash)
+	shardID, blockHash, index, tx, err := rpcServer.config.BlockChain.GetTransactionByHash(txHash)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	result := jsonresult.TransactionDetail{}
+	switch tx.GetType() {
+	case common.TxNormalType, common.TxSalaryType:
+		{
+			tempTx := tx.(*transaction.Tx)
+			result = jsonresult.TransactionDetail{
+				BlockHash: blockHash.String(),
+				Index:     uint64(index),
+				ShardID:   shardID,
+				Hash:      tx.Hash().String(),
+				Version:   tempTx.Version,
+				Type:      tempTx.Type,
+				LockTime:  time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
+				Fee:       tempTx.Fee,
+				Proof:     tempTx.Proof,
+				SigPubKey: tempTx.SigPubKey,
+				Sig:       tempTx.Sig,
+			}
+			metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
+			result.Metadata = string(metaData)
+		}
+	case common.TxCustomTokenType:
+		{
+			tempTx := tx.(*transaction.TxCustomToken)
+			result = jsonresult.TransactionDetail{
+				BlockHash: blockHash.String(),
+				Index:     uint64(index),
+				ShardID:   shardID,
+				Hash:      tx.Hash().String(),
+				Version:   tempTx.Version,
+				Type:      tempTx.Type,
+				LockTime:  time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
+				Fee:       tempTx.Fee,
+				Proof:     tempTx.Proof,
+				SigPubKey: tempTx.SigPubKey,
+				Sig:       tempTx.Sig,
+			}
+			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
+			result.CustomTokenData = string(txCustomData)
+			if tempTx.Metadata != nil {
+				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
+				result.Metadata = string(metaData)
+			}
+		}
+	case common.TxCustomTokenPrivacyType:
+		{
+			tempTx := tx.(*transaction.TxCustomTokenPrivacy)
+			result = jsonresult.TransactionDetail{
+				BlockHash: blockHash.String(),
+				Index:     uint64(index),
+				ShardID:   shardID,
+				Hash:      tx.Hash().String(),
+				Version:   tempTx.Version,
+				Type:      tempTx.Type,
+				LockTime:  time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
+				Fee:       tempTx.Fee,
+				Proof:     tempTx.Proof,
+				SigPubKey: tempTx.SigPubKey,
+				Sig:       tempTx.Sig,
+			}
+			tokenData, _ := json.MarshalIndent(tempTx.TxTokenPrivacyData, "", "\t")
+			result.PrivacyCustomTokenData = string(tokenData)
+			if tempTx.Metadata != nil {
+				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
+				result.Metadata = string(metaData)
+			}
+		}
+	default:
+		{
+			return nil, NewRPCError(ErrTxTypeInvalid, errors.New("Tx type is invalid"))
+		}
+	}
+	return result, nil
 }
 
 func (rpcServer RpcServer) handleGetCommitteeCandidateList(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
