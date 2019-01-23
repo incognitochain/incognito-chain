@@ -362,7 +362,7 @@ func (blockgen *BlkTmplGenerator) buildResponseTxs(
 	// create buy/sell response txs to distribute bonds/govs to requesters
 	buySellResTxs, err := blockgen.buildBuySellResponsesTx(
 		txGroups.buySellReqTxs,
-		blockgen.chain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.SellingBonds,
+		blockgen.chain.BestState[14].BestBlock.Header.GOVConstitution.GOVParams.SellingBonds,
 	)
 	if err != nil {
 		Logger.log.Error(err)
@@ -370,7 +370,7 @@ func (blockgen *BlkTmplGenerator) buildResponseTxs(
 	}
 	buyGOVTokensResTxs, err := blockgen.buildBuyGOVTokensResTxs(
 		txGroups.buyGOVTokensReqTxs,
-		blockgen.chain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.SellingGOVTokens,
+		blockgen.chain.BestState[14].BestBlock.Header.GOVConstitution.GOVParams.SellingGOVTokens,
 	)
 	if err != nil {
 		Logger.log.Error(err)
