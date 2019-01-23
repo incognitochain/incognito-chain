@@ -1073,7 +1073,8 @@ func (self *BlockChain) updateCrowdsalePaymentData(tx metadata.Transaction, sale
 func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBlock) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
-	err := view.fetchTxViewPointFromBlock(self.config.DataBase, block, self.config.Wallet)
+	// TODO: 0xsirrush check lightmode turn off
+	err := view.fetchTxViewPointFromBlock(self.config.DataBase, block, nil)
 	if err != nil {
 		return err
 	}
