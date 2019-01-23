@@ -8,6 +8,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/pkg/errors"
+	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
@@ -73,9 +74,12 @@ func (db *db) HasBlock(hash *common.Hash) (bool, error) {
 }
 
 func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
-	block, err := db.Get(db.GetKey(string(blockKeyPrefix), hash))
+	block, err := db.lvdb.Get(db.GetKey(string(blockKeyPrefix), hash), nil)
 	if err != nil {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		if err != lvdberr.ErrNotFound {
+			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+		return []byte{}, nil
 	}
 	ret := make([]byte, len(block))
 	copy(ret, block)
