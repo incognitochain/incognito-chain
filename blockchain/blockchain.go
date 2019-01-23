@@ -304,14 +304,36 @@ func (self *BlockChain) initShardState(shardID byte) error {
 		Header: ShardHeader{},
 		Body:   ShardBody{},
 	}
-	if shardID == 6 {
-		initBlock = self.config.ChainParams.GenesisShardBlock
-		initBlock.Header.ShardID = shardID
-	} else {
-		initBlock.Header = self.config.ChainParams.GenesisShardBlock.Header
-		initBlock.Header.ShardID = shardID
-		initBlock.Header.PrevBlockHash = common.Hash{}
+	initBlock = self.config.ChainParams.GenesisShardBlock
+	initBlock.Header.ShardID = shardID
+
+	// ---- test RPC api data --- remove after
+	testUserkeyList := []string{
+		"112t8rnXDsjg61BQbRFTrxGF1L5zMhZUoCRC6f9emQiJb6Npey6FetQeqcxuQQuXy3cHCRmtq1uX2CeBNXTJHVxnof1UZd79ys2D226QkcZG",
+		"112t8rnXatk5YUE1hGKAo1VFXunjZfRbsyAvhzH3LkhpxvSrDmvC9jcmRBgsM78RF9Sc1QckrAhAiCsvSQVnyrxzLF9FzLrKA9zdukUFWKit",
+		"112t8rnXgUHXeFewj6GSunZNcVcqbzQ8ZNyXeGbZ91ts6xSe4uYRD6T4zE7k1HZEZYWUEtsjdxtLbrM61QC8kuXXrFWS5sGWFgWaCDPukZDn",
 	}
+	for _, val := range testUserkeyList {
+
+		testUserKey, _ := wallet.Base58CheckDeserialize(val)
+		testUserKey.KeySet.ImportFromPrivateKey(&testUserKey.KeySet.PrivateKey)
+
+		testSalaryTX := transaction.Tx{}
+		testSalaryTX.InitTxSalary(10000, &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey,
+			self.config.DataBase,
+			nil,
+		)
+		initBlock.Body.Transactions = append(initBlock.Body.Transactions, &testSalaryTX)
+	}
+	// ---- -------- ---
+
+	// if shardID == 6 {
+
+	// } else {
+	// 	initBlock.Header = self.config.ChainParams.GenesisShardBlock.Header
+	// 	initBlock.Header.ShardID = shardID
+	// 	initBlock.Header.PrevBlockHash = common.Hash{}
+	// }
 
 	self.BestState.Shard[shardID] = &BestStateShard{
 		ShardCommittee:        []string{},
