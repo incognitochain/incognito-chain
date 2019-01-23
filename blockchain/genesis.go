@@ -148,7 +148,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	}
 	genesisBlock.Header.DCBGovernor = DCBGovernor{
 		GovernorInfo: GovernorInfo{
-			boardIndex:          0,
+			BoardIndex:          0,
 			StartedBlock:        1,
 			EndBlock:            3, // = startedblock of decent governor
 			BoardPaymentAddress: boardPaymentAddress,

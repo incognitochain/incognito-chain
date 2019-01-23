@@ -17,7 +17,6 @@ import (
 type ConstitutionHelper interface {
 	GetStartedNormalVote(generator *BlkTmplGenerator, chainID byte) uint64
 	CheckSubmitProposalType(tx metadata.Transaction) bool
-	CheckVotingProposalType(tx metadata.Transaction) bool
 	GetAmountVoteTokenOfTx(tx metadata.Transaction) uint64
 	TxAcceptProposal(txId *common.Hash, voter metadata.Voter, minerPrivateKey *privacy.SpendingKey, db database.DatabaseInterface) metadata.Transaction
 	GetBoardType() string
@@ -303,6 +302,7 @@ func (blockgen *BlkTmplGenerator) createAcceptBoardTx(
 
 func (block *Block) UpdateDCBBoard(thisTx metadata.Transaction) error {
 	meta := thisTx.GetMetadata().(*metadata.AcceptDCBBoardMetadata)
+	block.Header.DCBGovernor.BoardIndex += 1
 	block.Header.DCBGovernor.BoardPaymentAddress = meta.DCBBoardPaymentAddress
 	block.Header.DCBGovernor.StartedBlock = uint32(block.Header.Height)
 	block.Header.DCBGovernor.EndBlock = block.Header.DCBGovernor.StartedBlock + common.DurationOfTermDCB
@@ -518,9 +518,6 @@ func (blockgen *BlkTmplGenerator) neededNewDCBGovernor(chainID byte) bool {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	endGovernorBlock := int32(BestBlock.Header.DCBGovernor.EndBlock)
 	currentHeight := BestBlock.Header.Height + 1
-	if currentHeight == 6 {
-		fmt.Print("wtf")
-	}
 	wtf := endGovernorBlock == currentHeight
 	return wtf
 }
