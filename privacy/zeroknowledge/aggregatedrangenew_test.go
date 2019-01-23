@@ -36,6 +36,7 @@ func TestInnerProduct(t *testing.T) {
 }
 
 func TestEncodeVectors(t *testing.T){
+	var AggParam = newBulletproofParams(1)
 	n := 2
 	a := make([]*big.Int, n)
 	b := make([]*big.Int, n)
@@ -68,6 +69,7 @@ func TestEncodeVectors(t *testing.T){
 }
 
 func TestInnerProductProve(t *testing.T){
+	var AggParam = newBulletproofParams(1)
 	wit := new(InnerProductWitness)
 	n := privacy.MaxExp
 	wit.a = make([]*big.Int, n)
@@ -94,7 +96,7 @@ func TestInnerProductProve(t *testing.T){
 	}
 	wit.p = wit.p.Add(AggParam.U.ScalarMult(c))
 
-	proof, err:= wit.Prove()
+	proof, err:= wit.Prove(AggParam)
 	if err != nil{
 		fmt.Printf("Err: %v\n", err)
 	}
@@ -115,15 +117,20 @@ func TestInnerProductProve(t *testing.T){
 
 func TestAggregatedRangeProve(t *testing.T){
 	wit := new(AggregatedRangeWitness)
-	wit.value = big.NewInt(11)
-	wit.rand = privacy.RandInt()
+	wit.values = make([]*big.Int, 2)
+	wit.rands = make([]*big.Int, 2)
+
+	for i := range wit.values{
+		wit.values[i] = big.NewInt(10)
+		wit.rands[i] = privacy.RandInt()
+	}
 
 	wit.n = privacy.MaxExp
 
 	start := time.Now()
 	proof, err := wit.Prove()
 	end:= time.Since(start)
-	fmt.Printf("Single range proving time: %v\n", end)
+	fmt.Printf("Aggregated range proving time: %v\n", end)
 
 	if err != nil{
 		fmt.Printf("Err: %v\n", err)
@@ -131,7 +138,7 @@ func TestAggregatedRangeProve(t *testing.T){
 	start = time.Now()
 	res := proof.Verify()
 	end = time.Since(start)
-	fmt.Printf("Single range verification time: %v\n", end)
+	fmt.Printf("Aggregated range verification time: %v\n", end)
 
 	assert.Equal(t, true, res)
 }

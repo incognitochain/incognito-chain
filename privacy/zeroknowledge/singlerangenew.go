@@ -44,8 +44,6 @@ type SingleRangeProof struct {
 	T2      *privacy.EllipticPoint
 	tauX    *big.Int
 	tHat    *big.Int
-	lVector []*big.Int
-	rVector []*big.Int
 	mu      *big.Int
 	innerProductProof *InnerProductProof
 
@@ -53,6 +51,7 @@ type SingleRangeProof struct {
 }
 
 func (wit *SingleRangeWitness) Prove() (*SingleRangeProof, error) {
+	var AggParam = newBulletproofParams(1)
 	proof := new(SingleRangeProof)
 	proof.n = wit.n
 
@@ -103,8 +102,8 @@ func (wit *SingleRangeWitness) Prove() (*SingleRangeProof, error) {
 	proof.S = S
 
 	// challenge y, z
-	y := generateChallengeForAggRange([]*privacy.EllipticPoint{A, S})
-	z := generateChallengeForAggRangeFromBytes([][]byte{A.Compress(), S.Compress(), y.Bytes()})
+	y := generateChallengeForAggRange(AggParam, []*privacy.EllipticPoint{A, S})
+	z := generateChallengeForAggRangeFromBytes(AggParam, [][]byte{A.Compress(), S.Compress(), y.Bytes()})
 	zNeg := new(big.Int).Neg(z)
 	zNeg.Mod(zNeg, privacy.Curve.Params().N)
 	zSquare := new(big.Int).Exp(z, twoNumber, privacy.Curve.Params().N)
@@ -185,7 +184,7 @@ func (wit *SingleRangeWitness) Prove() (*SingleRangeProof, error) {
 	proof.T2 = privacy.PedCom.CommitAtIndex(t2, tau2, privacy.VALUE)
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
-	x := generateChallengeForAggRange([]*privacy.EllipticPoint{proof.A, proof.S, proof.T1, proof.T2})
+	x := generateChallengeForAggRange(AggParam, []*privacy.EllipticPoint{proof.A, proof.S, proof.T1, proof.T2})
 	xSquare := new(big.Int).Exp(x, twoNumber, privacy.Curve.Params().N)
 
 	// lVector = aL - z*1^n + sL*x
@@ -236,7 +235,7 @@ func (wit *SingleRangeWitness) Prove() (*SingleRangeProof, error) {
 	}
 	innerProductWit.p = innerProductWit.p.Add(AggParam.U.ScalarMult(proof.tHat))
 
-	proof.innerProductProof, err = innerProductWit.Prove()
+	proof.innerProductProof, err = innerProductWit.Prove(AggParam)
 	if err != nil {
 		return nil, err
 	}
@@ -245,6 +244,7 @@ func (wit *SingleRangeWitness) Prove() (*SingleRangeProof, error) {
 }
 
 func (proof *SingleRangeProof) Verify() bool {
+	var AggParam = newBulletproofParams(1)
 	n := int(proof.n)
 	oneNumber := big.NewInt(1)
 	twoNumber := big.NewInt(2)
@@ -252,15 +252,15 @@ func (proof *SingleRangeProof) Verify() bool {
 	twoVector := powerVector(twoNumber, n)
 
 	// recalculate challenge y, z
-	y := generateChallengeForAggRange([]*privacy.EllipticPoint{proof.A, proof.S})
-	z := generateChallengeForAggRangeFromBytes([][]byte{proof.A.Compress(), proof.S.Compress(), y.Bytes()})
+	y := generateChallengeForAggRange(AggParam, []*privacy.EllipticPoint{proof.A, proof.S})
+	z := generateChallengeForAggRangeFromBytes(AggParam, [][]byte{proof.A.Compress(), proof.S.Compress(), y.Bytes()})
 	zNeg := new(big.Int).Neg(z)
 	zNeg.Mod(zNeg, privacy.Curve.Params().N)
 	zSquare := new(big.Int).Exp(z, twoNumber, privacy.Curve.Params().N)
 	zCube := new(big.Int).Exp(z, big.NewInt(3), privacy.Curve.Params().N)
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
-	x := generateChallengeForAggRange([]*privacy.EllipticPoint{proof.A, proof.S, proof.T1, proof.T2})
+	x := generateChallengeForAggRange(AggParam, []*privacy.EllipticPoint{proof.A, proof.S, proof.T1, proof.T2})
 	xSquare := new(big.Int).Exp(x, twoNumber, privacy.Curve.Params().N)
 
 	yVector := powerVector(y, n)
