@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
-	"github.com/bradfitz/slice"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
@@ -157,7 +157,7 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 	}
 	// Get Cross Shard Block
 	for crossShardID, crossShardBlock := range crossShardMap {
-		slice.Sort(crossShardBlock[:], func(i, j int) bool {
+		sort.SliceStable(crossShardBlock[:], func(i, j int) bool {
 			return crossShardBlock[i].Header.Height < crossShardBlock[j].Header.Height
 		})
 		currentBestCrossShardForThisBlock := currentBestCrossShard[crossShardID]
@@ -216,7 +216,7 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 		}
 	}
 	for _, crossOutputcoin := range res {
-		slice.Sort(crossOutputcoin[:], func(i, j int) bool {
+		sort.SliceStable(crossOutputcoin[:], func(i, j int) bool {
 			return crossOutputcoin[i].BlockHeight < crossOutputcoin[j].BlockHeight
 		})
 	}

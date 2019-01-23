@@ -276,7 +276,7 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	// 	crossShardMap[blk.Header.ShardID] = append(crossShardMap[blk.Header.ShardID], blk)
 	// }
 	// for crossShardID, crossShardBlocks := range crossShardMap {
-	// 	slice.Sort(crossShardBlocks[:], func(i, j int) bool {
+	// 	sort.SliceStable(crossShardBlocks[:], func(i, j int) bool {
 	// 		return crossShardBlocks[i].Header.Height < crossShardBlocks[j].Header.Height
 	// 	})
 	// 	// compare cross shard block with received cross output coin
