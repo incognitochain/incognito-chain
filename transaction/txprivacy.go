@@ -791,6 +791,18 @@ func (tx *Tx) GetSenderAddress() *privacy.PaymentAddress {
 	return &withSenderAddrMeta.SenderAddress
 }
 
+func NewEmptyTx(minerPrivateKey *privacy.SpendingKey, db database.DatabaseInterface, meta metadata.Metadata) metadata.Transaction {
+	tx := Tx{}
+	keyWalletBurningAdd, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
+	tx.InitTxSalary(0,
+		&keyWalletBurningAdd.KeySet.PaymentAddress,
+		minerPrivateKey,
+		db,
+		meta,
+	)
+	return &tx
+}
+
 // InitTxSalary
 // Blockchain use this tx to pay a reward(salary) to miner of chain
 // #1 - salary:
