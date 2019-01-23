@@ -407,8 +407,10 @@ func (rpcServer RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []
 	var realFee uint64
 	estimateFeeCoinPerKb := uint64(0)
 	if defaultFee == -1 {
-		temp, _ := rpcServer.config.FeeEstimator[shardID].EstimateFee(numBlock)
-		estimateFeeCoinPerKb = uint64(temp)
+		if _, ok := rpcServer.config.FeeEstimator[shardID]; ok {
+			temp, _ := rpcServer.config.FeeEstimator[shardID].EstimateFee(numBlock)
+			estimateFeeCoinPerKb = uint64(temp)
+		}
 	}
 	if estimateFeeCoinPerKb == 0 {
 		estimateFeeCoinPerKb = rpcServer.config.BlockChain.GetFeePerKbTx()

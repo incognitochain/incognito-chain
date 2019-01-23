@@ -74,7 +74,8 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(block.Body.Transactions)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 	prevBlock := blockgen.chain.BestState.Shard[shardID].BestShardBlock
-	prevBlockHash := blockgen.chain.BestState.Shard[shardID].BestShardBlock.Hash()
+	prevBlockHash := prevBlock.Hash()
+
 	crossOutputCoinRoot := &common.Hash{}
 	if len(block.Body.CrossOutputCoin) != 0 {
 		crossOutputCoinRoot, err = CreateMerkleCrossOutputCoin(block.Body.CrossOutputCoin)
