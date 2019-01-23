@@ -171,28 +171,36 @@ func contains(s []blockchain.ShardToBeaconBlock, e uint64) (blockchain.ShardToBe
 	}
 	return blockchain.ShardToBeaconBlock{}, false
 }
-func (pool *ShardToBeaconPool) AddShardBeaconBlock(newBlock blockchain.ShardToBeaconBlock) error {
+
+func (pool *ShardToBeaconPool) AddShardBeaconBlock(block blockchain.ShardToBeaconBlock) error {
 	Logger.log.Debugf("Current pending shard to beacon block %+v \n", pool.pending)
-	blockHeader := newBlock.Header
-	shardID := blockHeader.ShardID
-	height := blockHeader.Height
+	blockHeight := block.Header.Height
+	shardID := block.Header.ShardID
 
-	if height == 0 {
-		err := MempoolTxError{}
-		err.Init(ShardToBeaconBoolError, fmt.Errorf("Add Invalid Block Heght to pool, height %+v in Shard %+v", 0, shardID))
-		return err
-	}
 	pool.mu.Lock()
-	beaconPoolShardItem, ok := pool.pending[shardID]
-	if beaconPoolShardItem == nil || !ok {
-		beaconPoolShardItem = []blockchain.ShardToBeaconBlock{}
+	defer pool.mu.Unlock()
+	pendingShardBlocks, ok := pool.pending[shardID]
+	if pendingShardBlocks == nil || !ok {
+		pendingShardBlocks = []blockchain.ShardToBeaconBlock{}
+
 	}
-	beaconPoolShardItem = append(beaconPoolShardItem, newBlock)
-	pool.pending[shardID] = beaconPoolShardItem
-	Logger.log.Info("Update previous block items with same height")
-
-	pool.mu.Unlock()
-
+	if blockHeight-pool.shardState[shardID] == 1 {
+		pendingShardBlocks = append(pendingShardBlocks, block)
+		pool.pending[shardID] = pendingShardBlocks
+		// TODO: Promote executbale block from queue to pending
+	} else if _, isOk := contains(pool.pending[shardID], blockHeight-1); isOk {
+		pendingShardBlocks = append(pendingShardBlocks, block)
+		pool.pending[shardID] = pendingShardBlocks
+		// TODO: Promote executbale block from queue to pending
+	} else {
+		queueShardBlocks, ok := pool.pending[shardID]
+		if queueShardBlocks == nil || !ok {
+			queueShardBlocks = []blockchain.ShardToBeaconBlock{}
+		}
+		queueShardBlocks = append(queueShardBlocks, block)
+		pool.queue[shardID] = queueShardBlocks
+		// TODO: find out the structure of queue
+	}
 	return nil
 }
 func (pool *ShardToBeaconPool) GetPendingBlockHashes() map[byte][]common.Hash {
