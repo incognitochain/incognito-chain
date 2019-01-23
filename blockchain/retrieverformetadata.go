@@ -33,18 +33,18 @@ func (self *BlockChain) GetBoardPubKeys(boardType string) [][]byte {
 }
 
 func (self *BlockChain) GetDCBBoardPubKeys() [][]byte {
-	return ListPubKeyFromListPayment(self.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress)
+	return ListPubKeyFromListPayment(self.BestState[14].BestBlock.Header.DCBGovernor.BoardPaymentAddress)
 }
 
 func (self *BlockChain) GetGOVBoardPubKeys() [][]byte {
-	return ListPubKeyFromListPayment(self.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
+	return ListPubKeyFromListPayment(self.BestState[14].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
 }
 
 func (self *BlockChain) GetBoardPaymentAddress(boardType string) []privacy.PaymentAddress {
 	if boardType == "dcb" {
-		return self.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress
+		return self.BestState[14].BestBlock.Header.DCBGovernor.BoardPaymentAddress
 	} else {
-		return self.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress
+		return self.BestState[14].BestBlock.Header.GOVGovernor.BoardPaymentAddress
 	}
 
 }
@@ -58,11 +58,11 @@ func ListPubKeyFromListPayment(listPaymentAddresses []privacy.PaymentAddress) []
 }
 
 func (self *BlockChain) GetDCBParams() params.DCBParams {
-	return self.BestState[0].BestBlock.Header.DCBConstitution.DCBParams
+	return self.BestState[14].BestBlock.Header.DCBConstitution.DCBParams
 }
 
 func (self *BlockChain) GetGOVParams() params.GOVParams {
-	return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams
+	return self.BestState[14].BestBlock.Header.GOVConstitution.GOVParams
 }
 
 func (self *BlockChain) GetLoanTxs(loanID []byte) ([][]byte, error) {
