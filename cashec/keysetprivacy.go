@@ -4,6 +4,7 @@ import (
 	// "github.com/ninjadotorg/constant/privacy/client"
 	"encoding/json"
 	"errors"
+	errors2 "github.com/pkg/errors"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
@@ -34,10 +35,17 @@ func (keysetObj *KeySet) GenerateKey(seed []byte) *KeySet {
 /*
 ImportFromPrivateKeyByte - from private-key byte[], regenerate pub-key and readonly-key
 */
-func (keysetObj *KeySet) ImportFromPrivateKeyByte(privateKey []byte) {
+func (keysetObj *KeySet) ImportFromPrivateKeyByte(privateKey []byte) (error) {
+	if privateKey == nil {
+		return errors2.Wrap(nil, "Priv key is invalid")
+	}
+	if len(privateKey) != 32 {
+		return errors2.Wrap(nil, "Priv key is invalid")
+	}
 	copy(keysetObj.PrivateKey[:], privateKey)
 	keysetObj.PaymentAddress = privacy.GeneratePaymentAddress(keysetObj.PrivateKey[:])
 	keysetObj.ReadonlyKey = privacy.GenerateViewingKey(keysetObj.PrivateKey[:])
+	return nil
 }
 
 /*
