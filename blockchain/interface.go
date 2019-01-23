@@ -12,10 +12,11 @@ type BFTBlockInterface interface {
 }
 
 type ShardToBeaconPool interface {
-	RemoveBlock(map[byte]uint64) error
+	RemovePendingBlock(map[byte]uint64) error
 	GetFinalBlock() map[byte][]ShardToBeaconBlock
 	AddShardBeaconBlock(ShardToBeaconBlock) error
-	GetDistinctBlockMap() map[byte]map[uint64][]common.Hash
+	ValidateShardToBeaconBlock(ShardToBeaconBlock) error
+	GetPendingBlockHashes() map[byte][]common.Hash
 }
 
 type CrossShardPool interface {
