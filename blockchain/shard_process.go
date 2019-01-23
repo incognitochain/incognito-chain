@@ -237,6 +237,12 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	if !VerifyMerkleCrossOutputCoin(block.Body.CrossOutputCoin, block.Header.CrossOutputCoinRoot) {
 		return NewBlockChainError(HashError, errors.New("Can't Verify CrossOutputCoin Root"))
 	}
+	//Verify transaction
+	for _, tx := range block.Body.Transactions {
+		if !tx.ValidateTxByItself(tx.IsPrivacy(), self.config.DataBase, self, shardID) {
+			return NewBlockChainError(TransactionError, errors.New("Can't Validate transaction"))
+		}
+	}
 	// Verify Action
 	actions := CreateShardActionFromTransaction(block.Body.Transactions)
 	action := []string{}
