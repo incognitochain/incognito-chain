@@ -1,10 +1,11 @@
 package common
 
 const (
-	RefundPeriod     = 1000 // after 1000 blocks since a tx (small & no-privacy) happens, the network will refund an amount of constants to tx initiator automatically
-	PubKeyLength     = 33
-	ZeroByte         = byte(0x00)
-	DateOutputFormat = "2006-01-02T15:04:05.999999"
+	RefundPeriod         = 1000 // after 1000 blocks since a tx (small & no-privacy) happens, the network will refund an amount of constants to tx initiator automatically
+	PubKeyLength         = 33
+	PaymentAddressLength = 66
+	ZeroByte             = byte(0x00)
+	DateOutputFormat     = "2006-01-02T15:04:05.999999"
 )
 
 const (
@@ -40,7 +41,7 @@ const (
 	MinimumBlockOfProposalDuration    = 50
 	MaximumBlockOfProposalDuration    = 200
 	MaximumProposalExplainationLength = 1000
-	NumberOfDCBGovernors              = 3
+	NumberOfDCBGovernors              = 1
 	NumberOfGOVGovernors              = 3
 	EncryptionOnePhraseDuration       = 5
 	RewardProposalSubmitter           = 500

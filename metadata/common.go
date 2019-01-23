@@ -109,6 +109,14 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &NormalGOVVoteProposalFromOwnerMetadata{}
 	case NormalGOVVoteProposalFromSealerMeta:
 		md = &NormalGOVVoteProposalFromSealerMetadata{}
+	case AcceptDCBProposalMeta:
+		md = &AcceptDCBProposalMetadata{}
+	case AcceptGOVProposalMeta:
+		md = &AcceptGOVProposalMetadata{}
+	case AcceptDCBBoardMeta:
+		md = &AcceptDCBBoardMetadata{}
+	case AcceptGOVBoardMeta:
+		md = &AcceptGOVBoardMetadata{}
 
 	default:
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
