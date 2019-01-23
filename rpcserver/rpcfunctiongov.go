@@ -104,7 +104,7 @@ func (rpcServer RpcServer) handleAppendListGOVBoard(params interface{}, closeCha
 	arrayParams := common.InterfaceSlice(params)
 	senderKey := arrayParams[0].(string)
 	paymentAddress, _ := rpcServer.GetPaymentAddressFromSenderKeyParams(senderKey)
-	rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress = append(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress, *paymentAddress)
+	rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress = append(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress, *paymentAddress)
 	res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
 	return res, nil
 }
@@ -589,6 +589,95 @@ func (self RpcServer) handleCreateAndSendTxWithSenderAddress(params interface{},
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
+	}
+	return result, nil
+}
+
+func (rpcServer RpcServer) handleGetCurrentSellingGOVTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	paymentAddressStr := arrayParams[0].(string)
+	senderKey, _ := wallet.Base58CheckDeserialize(paymentAddressStr)
+	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
+	chainIdSender, _ := common.GetTxSenderChain(lastByte)
+
+	bestBlock := rpcServer.config.BlockChain.BestState[chainIdSender].BestBlock
+	blockHeader := bestBlock.Header
+	sellingGOVTokensParam := bestBlock.Header.GOVConstitution.GOVParams.SellingGOVTokens
+	buyPrice := uint64(0)
+	govTokenPriceFromOracle := blockHeader.Oracle.GOVToken
+	if govTokenPriceFromOracle == 0 {
+		buyPrice = sellingGOVTokensParam.GOVTokenPrice
+	} else {
+		buyPrice = govTokenPriceFromOracle
+	}
+
+	result := jsonresult.GetCurrentSellingGOVTokens{
+		GOVTokenID:     common.GOVTokenID.String(),
+		StartSellingAt: sellingGOVTokensParam.StartSellingAt,
+		EndSellingAt:   sellingGOVTokensParam.StartSellingAt + sellingGOVTokensParam.SellingWithin,
+		BuyPrice:       buyPrice, // in constant
+		TotalIssue:     sellingGOVTokensParam.TotalIssue,
+		Available:      sellingGOVTokensParam.GOVTokensToSell,
+	}
+	return result, nil
+}
+
+func (rpcServer RpcServer) handleCreateRawTxWithBuyGOVTokensRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+
+	// Req param #5: buy gov tokens request info
+	buyGOVTokensReq := arrayParams[4].(map[string]interface{})
+
+	paymentAddressP := buyGOVTokensReq["PaymentAddress"].(string)
+	key, _ := wallet.Base58CheckDeserialize(paymentAddressP)
+	tokenIDStr := buyGOVTokensReq["TokenID"].(string)
+	tokenID, _ := common.Hash{}.NewHashFromStr(tokenIDStr)
+	amount := uint64(buyGOVTokensReq["Amount"].(float64))
+	buyPrice := uint64(buyGOVTokensReq["BuyPrice"].(float64))
+	metaType := metadata.BuyGOVTokenRequestMeta
+	meta := metadata.NewBuyGOVTokenRequest(
+		key.KeySet.PaymentAddress,
+		*tokenID,
+		amount,
+		buyPrice,
+		metaType,
+	)
+	normalTx, err := rpcServer.buildRawTransaction(params, meta)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	byteArrays, err1 := json.Marshal(normalTx)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, NewRPCError(ErrUnexpected, err1)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            normalTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (rpcServer RpcServer) handleCreateAndSendTxWithBuyGOVTokensRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := rpcServer.handleCreateRawTxWithBuyGOVTokensRequest(params, closeChan)
+	if err != nil {
+		return nil, err
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}

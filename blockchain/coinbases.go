@@ -8,7 +8,7 @@ import (
 
 func (blockgen *BlkTmplGenerator) buildCoinbases(
 	chainID byte,
-	privatekey *privacy.SpendingKey,
+	minerPrivateKey *privacy.SpendingKey,
 	txGroups *txGroups,
 	salaryTx metadata.Transaction,
 ) ([]metadata.Transaction, error) {
@@ -24,39 +24,42 @@ func (blockgen *BlkTmplGenerator) buildCoinbases(
 	if blockgen.chain.readyNewConstitution(dcbHelper) {
 		blockgen.chain.config.DataBase.SetEncryptionLastBlockHeight(dcbHelper.GetBoardType(), uint32(prevBlock.Header.Height+1))
 		blockgen.chain.config.DataBase.SetEncryptFlag(dcbHelper.GetBoardType(), uint32(common.Lv3EncryptionFlag))
-		tx, err := blockgen.createAcceptConstitutionAndPunishTxAndRewardSubmitter(chainID, DCBConstitutionHelper{}, privatekey)
+		tx, err := blockgen.createAcceptConstitutionAndPunishTxAndRewardSubmitter(chainID, DCBConstitutionHelper{}, minerPrivateKey)
 		coinbases = append(coinbases, tx...)
 		if err != nil {
 			Logger.log.Error(err)
 			return nil, err
 		}
-		rewardTx, err := blockgen.createRewardProposalWinnerTx(chainID, DCBConstitutionHelper{})
+		rewardTx, err := blockgen.createRewardProposalWinnerTx(chainID, DCBConstitutionHelper{}, minerPrivateKey)
 		coinbases = append(coinbases, rewardTx)
 	}
 	if blockgen.chain.readyNewConstitution(govHelper) {
 		blockgen.chain.config.DataBase.SetEncryptionLastBlockHeight(govHelper.GetBoardType(), uint32(prevBlock.Header.Height+1))
 		blockgen.chain.config.DataBase.SetEncryptFlag(govHelper.GetBoardType(), uint32(common.Lv3EncryptionFlag))
-		tx, err := blockgen.createAcceptConstitutionAndPunishTxAndRewardSubmitter(chainID, GOVConstitutionHelper{}, privatekey)
+		tx, err := blockgen.createAcceptConstitutionAndPunishTxAndRewardSubmitter(chainID, GOVConstitutionHelper{}, minerPrivateKey)
 		coinbases = append(coinbases, tx...)
 		if err != nil {
 			Logger.log.Error(err)
 			return nil, err
 		}
-		rewardTx, err := blockgen.createRewardProposalWinnerTx(chainID, GOVConstitutionHelper{})
+		rewardTx, err := blockgen.createRewardProposalWinnerTx(chainID, GOVConstitutionHelper{}, minerPrivateKey)
 		coinbases = append(coinbases, rewardTx)
 	}
 
 	if blockgen.neededNewDCBGovernor(chainID) {
-		coinbases = append(coinbases, blockgen.UpdateNewGovernor(DCBConstitutionHelper{}, chainID, privatekey)...)
+		coinbases = append(coinbases, blockgen.UpdateNewGovernor(DCBConstitutionHelper{}, chainID, minerPrivateKey)...)
 	}
 	if blockgen.neededNewGOVGovernor(chainID) {
-		coinbases = append(coinbases, blockgen.UpdateNewGovernor(GOVConstitutionHelper{}, chainID, privatekey)...)
+		coinbases = append(coinbases, blockgen.UpdateNewGovernor(GOVConstitutionHelper{}, chainID, minerPrivateKey)...)
 	}
 
 	for _, tx := range txGroups.unlockTxs {
 		coinbases = append(coinbases, tx)
 	}
 	for _, resTx := range txGroups.buySellResTxs {
+		coinbases = append(coinbases, resTx)
+	}
+	for _, resTx := range txGroups.buyGOVTokensResTxs {
 		coinbases = append(coinbases, resTx)
 	}
 	for _, resTx := range txGroups.buyBackResTxs {

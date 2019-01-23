@@ -47,6 +47,8 @@ const (
 	MultiSigsRegistrationMeta
 	MultiSigsSpendingMeta
 	WithSenderAddressMeta
+	ResponseBaseMeta
+	BuyGOVTokenRequestMeta
 
 	//Voting
 	SubmitDCBProposalMeta
