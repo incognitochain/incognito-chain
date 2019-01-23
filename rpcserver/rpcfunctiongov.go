@@ -81,7 +81,7 @@ func (rpcServer RpcServer) handleGetCurrentSellingBondTypes(params interface{}, 
 }
 
 func (rpcServer RpcServer) handleGetGOVParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	constitution := rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution
+	constitution := rpcServer.config.BlockChain.BestState[14].BestBlock.Header.GOVConstitution
 	govParams := constitution.GOVParams
 	results := make(map[string]interface{})
 	results["GOVParams"] = govParams
@@ -91,12 +91,12 @@ func (rpcServer RpcServer) handleGetGOVParams(params interface{}, closeChan <-ch
 }
 
 func (rpcServer RpcServer) handleGetGOVConstitution(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	constitution := rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution
+	constitution := rpcServer.config.BlockChain.BestState[14].BestBlock.Header.GOVConstitution
 	return constitution, nil
 }
 
 func (rpcServer RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
+	res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState[14].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
 	return res, nil
 }
 
@@ -104,8 +104,8 @@ func (rpcServer RpcServer) handleAppendListGOVBoard(params interface{}, closeCha
 	arrayParams := common.InterfaceSlice(params)
 	senderKey := arrayParams[0].(string)
 	paymentAddress, _ := rpcServer.GetPaymentAddressFromSenderKeyParams(senderKey)
-	rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress = append(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress, *paymentAddress)
-	res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
+	rpcServer.config.BlockChain.BestState[14].BestBlock.Header.GOVGovernor.BoardPaymentAddress = append(rpcServer.config.BlockChain.BestState[14].BestBlock.Header.GOVGovernor.BoardPaymentAddress, *paymentAddress)
+	res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState[14].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
 	return res, nil
 }
 

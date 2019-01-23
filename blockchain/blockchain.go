@@ -120,7 +120,7 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 
 // GetOracleParams returns oracle params
 func (self *BlockChain) GetOracleParams() *params.Oracle {
-	return self.BestState[0].BestBlock.Header.Oracle
+	return self.BestState[14].BestBlock.Header.Oracle
 }
 
 // -------------- End of Blockchain retriever's implementation --------------
@@ -1398,12 +1398,12 @@ func (self BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.
 
 // GetFeePerKbTx - return fee (per kb of tx) from GOV params data
 func (self BlockChain) GetFeePerKbTx() uint64 {
-	return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
+	return self.BestState[14].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
 }
 
 func (self *BlockChain) GetCurrentBoardIndex(helper ConstitutionHelper) uint32 {
 	board := helper.GetBoard(self)
-	return board.BoardIndex()
+	return board.GetBoardIndex()
 }
 
 func (self *BlockChain) GetConstitutionIndex(helper ConstitutionHelper) uint32 {
@@ -1415,7 +1415,7 @@ func (self *BlockChain) GetConstitutionIndex(helper ConstitutionHelper) uint32 {
 //2. Block height == last constitution start time + last constitution window
 //This function is called after successful connect block => block height is block height of best state
 func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) bool {
-	BestBlock := self.BestState[0].BestBlock
+	BestBlock := self.BestState[14].BestBlock
 	thisBlockHeight := BestBlock.Header.Height
 	newNationalWelfare := helper.GetCurrentNationalWelfare(self)
 	oldNationalWelfare := helper.GetOldNationalWelfare(self)
@@ -1437,7 +1437,7 @@ func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) b
 
 //This function is called after successful connect block => block height is block height of best state
 func (self *BlockChain) NeedEnterEncryptLv1(helper ConstitutionHelper) bool {
-	BestBlock := self.BestState[0].BestBlock
+	BestBlock := self.BestState[14].BestBlock
 	thisBlockHeight := BestBlock.Header.Height
 	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
 	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
@@ -1450,7 +1450,7 @@ func (self *BlockChain) NeedEnterEncryptLv1(helper ConstitutionHelper) bool {
 
 //This function is called after successful connect block => block height is block height of best state
 func (self *BlockChain) NeedEnterEncryptNormal(helper ConstitutionHelper) bool {
-	BestBlock := self.BestState[0].BestBlock
+	BestBlock := self.BestState[14].BestBlock
 	thisBlockHeight := BestBlock.Header.Height
 	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
 	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
@@ -1467,22 +1467,22 @@ func (self *BlockChain) SetEncryptPhrase(helper ConstitutionHelper) {
 	boardType := helper.GetBoardType()
 	if self.NeedToEnterEncryptionPhrase(helper) {
 		flag = common.Lv2EncryptionFlag
-		self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[0].BestBlock.Header.Height))
+		self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[14].BestBlock.Header.Height))
 		self.config.DataBase.SetEncryptFlag(boardType, uint32(flag))
 	} else if self.NeedEnterEncryptLv1(helper) {
 		flag = common.Lv1EncryptionFlag
-		self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[0].BestBlock.Header.Height))
+		self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[14].BestBlock.Header.Height))
 		self.config.DataBase.SetEncryptFlag(boardType, uint32(flag))
 	} else if self.NeedEnterEncryptNormal(helper) {
 		flag = common.NormalEncryptionFlag
-		self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[0].BestBlock.Header.Height))
+		self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[14].BestBlock.Header.Height))
 		self.config.DataBase.SetEncryptFlag(boardType, uint32(flag))
 	}
 }
 
 //This function is called when new block => block height is block height of best state + 1
 func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
-	BestBlock := self.BestState[0].BestBlock
+	BestBlock := self.BestState[14].BestBlock
 	thisBlockHeight := BestBlock.Header.Height + 1
 	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
 	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
