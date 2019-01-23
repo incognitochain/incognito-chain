@@ -6,29 +6,6 @@ import (
 	"math/big"
 )
 
-//type AggregatedRangeWitness struct {
-//	values []*big.Int
-//	randomnesses []*big.Int
-//
-//	commitments []*privacy.EllipticPoint
-//	n byte
-//
-//
-//}
-//
-//
-//type AggregatedRangeProof struct {
-//
-//}
-//
-//
-//func (wit * AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error){
-//	aL :=
-//
-//	proof:= new(AggregatedRangeProof)
-//	return proof, nil
-//}
-
 type SingleRangeWitness struct {
 	value *big.Int
 	rand  *big.Int
@@ -107,7 +84,8 @@ func (wit *SingleRangeWitness) Prove() (*SingleRangeProof, error) {
 	zNeg := new(big.Int).Neg(z)
 	zNeg.Mod(zNeg, privacy.Curve.Params().N)
 	zSquare := new(big.Int).Exp(z, twoNumber, privacy.Curve.Params().N)
-	zCube := new(big.Int).Exp(z, big.NewInt(3), privacy.Curve.Params().N)
+	zCube := new(big.Int).Mul(z, zSquare)
+	//zCube.Mod(zCube, privacy.Curve.Params().N)
 
 	// l(X) = (aL -z*1^n) + sL*X
 	yVector := powerVector(y, n)
@@ -152,14 +130,14 @@ func (wit *SingleRangeWitness) Prove() (*SingleRangeProof, error) {
 	deltaYZ.Sub(deltaYZ, new(big.Int).Mul(zCube, innerProduct2))
 	deltaYZ.Mod(deltaYZ, privacy.Curve.Params().N)
 
-	t0 := new(big.Int).Mul(wit.value, zSquare)
-	t0.Add(t0, deltaYZ)
-	t0.Mod(t0, privacy.Curve.Params().N)
-
-	test, _ := innerProduct(l0, r0)
-	if test.Cmp(t0) ==0 {
-		fmt.Printf("t0 is right!!!!\n")
-	}
+	//t0 := new(big.Int).Mul(wit.value, zSquare)
+	//t0.Add(t0, deltaYZ)
+	//t0.Mod(t0, privacy.Curve.Params().N)
+	//
+	//test, _ := innerProduct(l0, r0)
+	//if test.Cmp(t0) ==0 {
+	//	fmt.Printf("t0 is right!!!!\n")
+	//}
 
 	// t1 = <l1, r0> + <l0, r1>
 	innerProduct3, err := innerProduct(l1, r0)

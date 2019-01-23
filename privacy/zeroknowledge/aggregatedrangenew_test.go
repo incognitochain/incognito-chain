@@ -15,9 +15,9 @@ func TestInnerProduct(t *testing.T) {
 	a := make([]*big.Int, n)
 	b := make([]*big.Int, n)
 
-	for i:=0; i<n; i++{
-		a[i]= big.NewInt(10)
-		b[i]= big.NewInt(20)
+	for i := 0; i < n; i++ {
+		a[i] = big.NewInt(10)
+		b[i] = big.NewInt(20)
 	}
 
 	c, _ := innerProduct(a, b)
@@ -35,7 +35,7 @@ func TestInnerProduct(t *testing.T) {
 	assert.Equal(t, num1Inverse, num2Inverse)
 }
 
-func TestEncodeVectors(t *testing.T){
+func TestEncodeVectors(t *testing.T) {
 	var AggParam = newBulletproofParams(1)
 	n := 2
 	a := make([]*big.Int, n)
@@ -43,24 +43,24 @@ func TestEncodeVectors(t *testing.T){
 	G := make([]*privacy.EllipticPoint, n)
 	H := make([]*privacy.EllipticPoint, n)
 
-	for i := range a{
+	for i := range a {
 		a[i] = big.NewInt(10)
 		b[i] = big.NewInt(10)
 
-		G[i]= new(privacy.EllipticPoint)
+		G[i] = new(privacy.EllipticPoint)
 		G[i].Set(AggParam.G[i].X, AggParam.G[i].Y)
 
-		H[i]= new(privacy.EllipticPoint)
+		H[i] = new(privacy.EllipticPoint)
 		H[i].Set(AggParam.H[i].X, AggParam.H[i].Y)
 	}
 
-	actualRes, err := EncodeVectors(a,b, G, H)
-	if err != nil{
+	actualRes, err := EncodeVectors(a, b, G, H)
+	if err != nil {
 		fmt.Printf("Err: %v\n", err)
 	}
 
 	expectedRes := new(privacy.EllipticPoint).Zero()
-	for i:=0; i<n; i++{
+	for i := 0; i < n; i++ {
 		expectedRes = expectedRes.Add(G[i].ScalarMult(a[i]))
 		expectedRes = expectedRes.Add(H[i].ScalarMult(b[i]))
 	}
@@ -68,14 +68,14 @@ func TestEncodeVectors(t *testing.T){
 	assert.Equal(t, expectedRes, actualRes)
 }
 
-func TestInnerProductProve(t *testing.T){
+func TestInnerProductProve(t *testing.T) {
 	var AggParam = newBulletproofParams(1)
 	wit := new(InnerProductWitness)
 	n := privacy.MaxExp
 	wit.a = make([]*big.Int, n)
 	wit.b = make([]*big.Int, n)
 
-	for i := range wit.a{
+	for i := range wit.a {
 		//wit.a[i] = privacy.RandInt()
 		//wit.b[i] = privacy.RandInt()
 		tmp := privacy.RandBytes(3)
@@ -86,25 +86,24 @@ func TestInnerProductProve(t *testing.T){
 
 	wit.p = new(privacy.EllipticPoint).Zero()
 	c, err := innerProduct(wit.a, wit.b)
-	if err != nil{
+	if err != nil {
 		fmt.Printf("Err: %v\n", err)
 	}
 
-	for i := range wit.a{
+	for i := range wit.a {
 		wit.p = wit.p.Add(AggParam.G[i].ScalarMult(wit.a[i]))
 		wit.p = wit.p.Add(AggParam.H[i].ScalarMult(wit.b[i]))
 	}
 	wit.p = wit.p.Add(AggParam.U.ScalarMult(c))
 
-	proof, err:= wit.Prove(AggParam)
-	if err != nil{
+	proof, err := wit.Prove(AggParam)
+	if err != nil {
 		fmt.Printf("Err: %v\n", err)
 	}
 
 	res := proof.Verify()
 
 	assert.Equal(t, true, res)
-
 
 	values := big.NewInt(10)
 	binary := privacy.ConvertBigIntToBinary(values, 5)
@@ -115,12 +114,12 @@ func TestInnerProductProve(t *testing.T){
 	assert.Equal(t, values, value2)
 }
 
-func TestAggregatedRangeProve(t *testing.T){
+func TestAggregatedRangeProve(t *testing.T) {
 	wit := new(AggregatedRangeWitness)
 	wit.values = make([]*big.Int, 1)
 	wit.rands = make([]*big.Int, 1)
 
-	for i := range wit.values{
+	for i := range wit.values {
 		wit.values[i] = big.NewInt(10)
 		wit.rands[i] = privacy.RandInt()
 	}
@@ -129,10 +128,10 @@ func TestAggregatedRangeProve(t *testing.T){
 
 	start := time.Now()
 	proof, err := wit.Prove()
-	end:= time.Since(start)
+	end := time.Since(start)
 	fmt.Printf("Aggregated range proving time: %v\n", end)
 
-	if err != nil{
+	if err != nil {
 		fmt.Printf("Err: %v\n", err)
 	}
 	start = time.Now()
