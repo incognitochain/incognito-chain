@@ -178,7 +178,7 @@ func (self *BlockChain) InsertBeaconBlock(block *BeaconBlock) error {
 	}
 	//=========Remove shard block in beacon pool
 	Logger.log.Infof("Remove block from pool %+v \n", *block.Hash())
-	self.config.ShardToBeaconPool.RemoveBlock(self.BestState.Beacon.BestShardHeight)
+	self.config.ShardToBeaconPool.RemovePendingBlock(self.BestState.Beacon.BestShardHeight)
 
 	Logger.log.Infof("Finish Insert new block %d, with hash %x", block.Header.Height, *block.Hash())
 	return nil
@@ -261,7 +261,7 @@ func (self *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, erro
 		return "", err
 	}
 	//=========Remove beacon block
-	self.config.ShardToBeaconPool.RemoveBlock(beaconBestState.BestShardHeight)
+	self.config.ShardToBeaconPool.RemovePendingBlock(beaconBestState.BestShardHeight)
 	//=========Accept previous if new block is valid
 	if err := self.AcceptBeaconBlock(&block.Header.PrevBlockHash); err != nil {
 		return "", err
