@@ -154,6 +154,9 @@ func (rpcServer RpcServer) handleGetBalanceByPrivatekey(params interface{}, clos
 	// all params
 	arrayParams := common.InterfaceSlice(params)
 
+	if len(arrayParams) != 1 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("key params invalid"))
+	}
 	// param #1: private key of sender
 	log.Println("importing")
 	senderKeyParam := arrayParams[0]

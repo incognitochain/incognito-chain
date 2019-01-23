@@ -203,6 +203,9 @@ func (rpcServer RpcServer) handleGetMempoolInfo(params interface{}, closeChan <-
 func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	// param #1: transaction Hash
+	if len(arrayParams) < 1 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Tx hash is empty"))
+	}
 	Logger.log.Infof("Get TransactionByHash input Param %+v", arrayParams[0].(string))
 	txHash, _ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
 	Logger.log.Infof("Get Transaction By Hash %+v", txHash)
