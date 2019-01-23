@@ -300,31 +300,46 @@ func (self *BlockChain) initChainState() error {
 func (self *BlockChain) initShardState(shardID byte) error {
 
 	// Create a new block from genesis block and set it as best block of chain
-	initBlock := &ShardBlock{
-		Header: ShardHeader{},
-		Body:   ShardBody{},
-	}
-	initBlock = self.config.ChainParams.GenesisShardBlock
+	initBlock := ShardBlock{}
+	initBlock = *self.config.ChainParams.GenesisShardBlock
 	initBlock.Header.ShardID = shardID
 
 	// ---- test RPC api data --- remove after
-	testUserkeyList := []string{
-		"112t8rnXDsjg61BQbRFTrxGF1L5zMhZUoCRC6f9emQiJb6Npey6FetQeqcxuQQuXy3cHCRmtq1uX2CeBNXTJHVxnof1UZd79ys2D226QkcZG",
-		"112t8rnXatk5YUE1hGKAo1VFXunjZfRbsyAvhzH3LkhpxvSrDmvC9jcmRBgsM78RF9Sc1QckrAhAiCsvSQVnyrxzLF9FzLrKA9zdukUFWKit",
-		"112t8rnXgUHXeFewj6GSunZNcVcqbzQ8ZNyXeGbZ91ts6xSe4uYRD6T4zE7k1HZEZYWUEtsjdxtLbrM61QC8kuXXrFWS5sGWFgWaCDPukZDn",
-	}
-	for _, val := range testUserkeyList {
+	// testUserkeyList := []string{
+	// 	"112t8rqnMrtPkJ4YWzXfG82pd9vCe2jvWGxqwniPM5y4hnimki6LcVNfXxN911ViJS8arTozjH4rTpfaGo5i1KKcG1ayjiMsa4E3nABGAqQh",
+	// 	"112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNhc33pzChmJRvikZNc3Dt5V7quhdzjWW9Z4BrB2BxdK5VtHzsG9JZdZ5M7yYYGidKKZV",
+	// }
+	initTxs := []string{`{"Version":1,"Type":"s","LockTime":1548234650,"Fee":0,"Info":null,"SigPubKey":"A7GGbCnosNljq25A5o4VIGs7r6WOcs3OrDBJUFd28eEA","Sig":"pBKEqssajv6+hljC9KvNb7orPBfLpRCBLyG4cY8Vb0DTKhlUT+sDmTdPi5mkcIGYRr4asFHkj8hGAoe3CvjEjA==","Proof":"111111116WGHqpGSLR21nkwRaRVR2vJBD6DR8wKQfB5VCC4TNEXz1XeskmWDegVonjFht25ktqi8JJhgPF7dsWRt8GyoVjkPz7mVZJksdQF7NaW6GnruwZFHkoharAad4W41569CKFL7D8vsTn5zDbzrEDcLNcwzSUryGidyj5z5MKPV2mYDqjYmPTe7QbrF7cUNKoU4fpDBam3jZRk49yJdtqU","PubKeyLastByteSender":0,"Metadata":null}`, `{"Version":1,"Type":"s","LockTime":1548234650,"Fee":0,"Info":null,"SigPubKey":"AySFA7ksPnDE7zG+ZKwyk8SaadPLOfJuIn5k4kqUgKcA","Sig":"L+NSIayMrl/mTfo5t1tLI2ORcP37LlURAUjsvRVNRlFFZWOxA+lXoA9VfCjnvGnU05eYuukuMGs5sJQQobKfWA==","Proof":"111111116WGHqpGNRGpV3VBz1rndCx6TP4A8eLYeocjg8izynA2YAkx7x38mCj3GsbnZ7TRKG7acNtpRYRP9fCEJPQCBiS3hjcDvd7aikVhj4uGgkRMnXsNW6MidUW83MMyhGem7CQE8qNyYRax3mFFjYKm6RPPHkkHGMdaao24ybehPuYLREmSShr7F7XKMPMM9aVURzLkS6wxoskJ4bXNnTng","PubKeyLastByteSender":0,"Metadata":null}`}
+	// for _, val := range testUserkeyList {
 
-		testUserKey, _ := wallet.Base58CheckDeserialize(val)
-		testUserKey.KeySet.ImportFromPrivateKey(&testUserKey.KeySet.PrivateKey)
+	// 	testUserKey, _ := wallet.Base58CheckDeserialize(val)
+	// 	testUserKey.KeySet.ImportFromPrivateKey(&testUserKey.KeySet.PrivateKey)
 
+	// 	testSalaryTX := transaction.Tx{}
+	// 	testSalaryTX.InitTxSalary(1000000, &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey,
+	// 		self.config.DataBase,
+	// 		nil,
+	// 	)
+	// 	initTx, _ := json.Marshal(testSalaryTX)
+	// 	initTxs = append(initTxs, string(initTx))
+	// 	initBlock.Body.Transactions = append(initBlock.Body.Transactions, &testSalaryTX)
+	// }
+	// fmt.Println(initTxs)
+
+	// testSalaryTXs := []transaction.Tx{}
+	for _, tx := range initTxs {
 		testSalaryTX := transaction.Tx{}
-		testSalaryTX.InitTxSalary(10000, &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey,
-			self.config.DataBase,
-			nil,
-		)
+		testSalaryTX.UnmarshalJSON([]byte(tx))
 		initBlock.Body.Transactions = append(initBlock.Body.Transactions, &testSalaryTX)
+		// fmt.Println()
+		// fmt.Println("test", len(testSalaryTX.Proof.OutputCoins), testSalaryTX.Proof.OutputCoins[0].CoinDetails.CoinCommitment.Compress())
+		// fmt.Println()
+		// testSalaryTXs = append(testSalaryTXs, testSalaryTX)
 	}
+	// for _, tx := range testSalaryTXs {
+	// 	fmt.Println(tx.Hash().String())
+	// }
+	// os.Exit(1)
 	// ---- -------- ---
 
 	// if shardID == 6 {
@@ -349,12 +364,16 @@ func (self *BlockChain) initShardState(shardID byte) error {
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
-	err = self.BestState.Shard[shardID].Update(initBlock, []*BeaconBlock{genesisBeaconBlk})
+	err = self.BestState.Shard[shardID].Update(&initBlock, []*BeaconBlock{genesisBeaconBlk})
 	if err != nil {
 		return err
 	}
-	self.ProcessStoreShardBlock(initBlock)
+	self.ProcessStoreShardBlock(&initBlock)
 
+	// fmt.Println()
+	// fmt.Println(*initBlock.Hash())
+	// fmt.Println()
+	// os.Exit(1)
 	return nil
 }
 
@@ -1606,7 +1625,7 @@ func (self BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.
 // GetFeePerKbTx - return fee (per kb of tx) from GOV params data
 func (self BlockChain) GetFeePerKbTx() uint64 {
 	// return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
-	return 0
+	return 1
 }
 
 func (self *BlockChain) GetCurrentBoardIndex(helper ConstitutionHelper) uint32 {
