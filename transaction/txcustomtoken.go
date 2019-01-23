@@ -198,6 +198,9 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 		if len(tx.listUtxo) == 0 {
 			return false
 		}
+		if len(tx.TxTokenData.Vins) == 0 {
+			return false
+		}
 		for _, vin := range tx.TxTokenData.Vins {
 			keySet := cashec.KeySet{}
 			keySet.PaymentAddress = vin.PaymentAddress
@@ -212,7 +215,7 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 				return false
 			}
 		}
-		return false
+		return true
 	}
 	return false
 }
