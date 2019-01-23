@@ -49,9 +49,17 @@ func (self *BlockChain) OnShardStateReceived(state *ShardChainState, peerID libp
 }
 
 func (self *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
-	err := self.config.ShardToBeaconPool.AddShardBeaconBlock(block)
+	err := self.config.ShardToBeaconPool.ValidateShardToBeaconBlock(block)
 	if err != nil {
 		Logger.log.Error(err)
+	} else {
+		// Add to pending or queue
+		// Add into pending?
+		// Add into queue?
+		err = self.config.ShardToBeaconPool.AddShardBeaconBlock(block)
+		if err != nil {
+			Logger.log.Error(err)
+		}
 	}
 }
 

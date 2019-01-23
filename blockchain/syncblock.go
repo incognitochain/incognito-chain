@@ -153,39 +153,39 @@ func (self *BlockChain) SyncBeacon() error {
 						getStateWaitTime += 5
 					}
 				}
-				if len(beaconState.State.ShardsPoolState) > 0 {
-					myPoolState := self.config.ShardToBeaconPool.GetDistinctBlockMap()
-					for shardID, poolState := range beaconState.State.ShardsPoolState {
-						myShardPoolState, ok := myPoolState[shardID]
-						if ok {
-							for height, blks := range poolState {
-								if height > self.BestState.Beacon.BestShardHeight[shardID] {
-									myBlks, ok := myShardPoolState[height]
-									if ok {
-										blksNeedToSync := GetDiffHashesOf(blks, myBlks)
-										for _, blkHash := range blksNeedToSync {
-											go self.config.Server.PushMessageGetShardToBeacon(shardID, blkHash)
-										}
-									} else {
-										// sync all blks of this height
-										for _, blkHash := range blks {
-											go self.config.Server.PushMessageGetShardToBeacon(shardID, blkHash)
-										}
-									}
-								}
-							}
-						} else {
-							// sync all blks of this shard
-							for height, blks := range poolState {
-								if height > self.BestState.Beacon.BestShardHeight[shardID] {
-									for _, blkHash := range blks {
-										go self.config.Server.PushMessageGetShardToBeacon(shardID, blkHash)
-									}
-								}
-							}
-						}
-					}
-				}
+				// if len(beaconState.State.ShardsPoolState) > 0 {
+				// 	myPoolState := self.config.ShardToBeaconPool.GetDistinctBlockMap()
+				// 	for shardID, poolState := range beaconState.State.ShardsPoolState {
+				// 		myShardPoolState, ok := myPoolState[shardID]
+				// 		if ok {
+				// 			for height, blks := range poolState {
+				// 				if height > self.BestState.Beacon.BestShardHeight[shardID] {
+				// 					myBlks, ok := myShardPoolState[height]
+				// 					if ok {
+				// 						blksNeedToSync := GetDiffHashesOf(blks, myBlks)
+				// 						for _, blkHash := range blksNeedToSync {
+				// 							go self.config.Server.PushMessageGetShardToBeacon(shardID, blkHash)
+				// 						}
+				// 					} else {
+				// 						// sync all blks of this height
+				// 						for _, blkHash := range blks {
+				// 							go self.config.Server.PushMessageGetShardToBeacon(shardID, blkHash)
+				// 						}
+				// 					}
+				// 				}
+				// 			}
+				// 		} else {
+				// 			// sync all blks of this shard
+				// 			for height, blks := range poolState {
+				// 				if height > self.BestState.Beacon.BestShardHeight[shardID] {
+				// 					for _, blkHash := range blks {
+				// 						go self.config.Server.PushMessageGetShardToBeacon(shardID, blkHash)
+				// 					}
+				// 				}
+				// 			}
+				// 		}
+				// 	}
+				// }
 			case newBlk := <-self.newBeaconBlkCh:
 				fmt.Println("Beacon block received")
 				if self.BestState.Beacon.BeaconHeight < newBlk.Header.Height {
