@@ -155,22 +155,28 @@ concludeBlock:
 		Transactions: make([]metadata.Transaction, 0),
 	}
 
-	block.Header = BlockHeader{
-		Height:        prevBlock.Header.Height + 1,
-		Version:       BlockVersion,
-		PrevBlockHash: *prevBlockHash,
-		MerkleRoot:    *merkleRoot,
+	// @0xducdinh
+	block.Header = *NewBlockHeader(
+		BlockVersion,
+		*prevBlockHash,
+		*merkleRoot,
 		// MerkleRootCommitments: common.Hash{},
-		Timestamp:          time.Now().Unix(),
-		BlockCommitteeSigs: make([]string, common.TotalValidators),
-		Committee:          make([]string, common.TotalValidators),
-		ChainID:            chainID,
-		SalaryFund:         accumulativeValues.currentSalaryFund + accumulativeValues.incomeFromBonds + accumulativeValues.totalFee + accumulativeValues.incomeFromGOVTokens - accumulativeValues.totalSalary - accumulativeValues.govPayoutAmount - accumulativeValues.buyBackCoins - accumulativeValues.totalRefundAmt - accumulativeValues.totalOracleRewards,
-		BankFund:           prevBlock.Header.BankFund + accumulativeValues.loanPaymentAmount - accumulativeValues.bankPayoutAmount,
-		GOVConstitution:    prevBlock.Header.GOVConstitution, // TODO: 0xbunyip need get from gov-params tx
-		DCBConstitution:    prevBlock.Header.DCBConstitution, // TODO: 0xbunyip need get from dcb-params tx
-		Oracle:             prevBlock.Header.Oracle,
-	}
+		time.Now().Unix(),
+		make([]string, common.TotalValidators),
+		make([]string, common.TotalValidators),
+		chainID,
+		make([]int, 0),
+		common.Hash{},
+		accumulativeValues.currentSalaryFund+accumulativeValues.incomeFromBonds+accumulativeValues.totalFee+accumulativeValues.incomeFromGOVTokens-accumulativeValues.totalSalary-accumulativeValues.govPayoutAmount-accumulativeValues.buyBackCoins-accumulativeValues.totalRefundAmt-accumulativeValues.totalOracleRewards,
+		prevBlock.Header.BankFund+accumulativeValues.loanPaymentAmount-accumulativeValues.bankPayoutAmount,
+		prevBlock.Header.GOVConstitution, // TODO: 0xbunyip need get from gov-params tx
+		prevBlock.Header.DCBConstitution, // TODO: 0xbunyip need get from dcb-params tx
+		CBParams{},
+		prevBlock.Header.DCBGovernor,
+		prevBlock.Header.GOVGovernor,
+		prevBlock.Header.Height+1,
+		prevBlock.Header.Oracle,
+	)
 
 	err = (&block).updateBlock(blockgen, txGroups, accumulativeValues, updatedOracleValues)
 	if err != nil {
