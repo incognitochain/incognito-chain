@@ -3,6 +3,7 @@ package metadata
 import (
 	"bytes"
 	"errors"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
@@ -13,9 +14,6 @@ type BuySellRequest struct {
 	TokenID        common.Hash
 	Amount         uint64
 	BuyPrice       uint64 // in Constant unit
-
-	SaleID []byte // only when requesting to DCB
-
 	MetadataBase
 }
 
@@ -90,7 +88,6 @@ func (bsReq *BuySellRequest) Hash() *common.Hash {
 	record += bsReq.TokenID.String()
 	record += string(bsReq.Amount)
 	record += string(bsReq.BuyPrice)
-	record += string(bsReq.SaleID)
 	record += bsReq.MetadataBase.Hash().String()
 
 	// final hash

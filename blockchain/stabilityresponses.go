@@ -292,6 +292,64 @@ func buildSingleBuySellResponseTx(
 	return resTx, nil
 }
 
+func buildSingleBuyGOVTokensResTx(
+	buyGOVTokensReqTx metadata.Transaction,
+	sellingGOVTokensParams *params.SellingGOVTokens,
+) (*transaction.TxCustomToken, error) {
+	buyGOVTokensRes := metadata.NewResponseBase(
+		*buyGOVTokensReqTx.Hash(),
+		metadata.ResponseBaseMeta,
+	)
+
+	buyGOVTokensReqMeta := buyGOVTokensReqTx.GetMetadata()
+	buyGOVTokensReq, ok := buyGOVTokensReqMeta.(*metadata.BuyGOVTokenRequest)
+	if !ok {
+		return nil, errors.New("Could not assert BuyGOVTokenRequest metadata.")
+	}
+	txTokenVout := transaction.TxTokenVout{
+		Value:          buyGOVTokensReq.Amount,
+		PaymentAddress: buyGOVTokensReq.BuyerAddress,
+	}
+
+	var propertyID [common.HashSize]byte
+	copy(propertyID[:], buyGOVTokensReq.TokenID[:])
+	txTokenData := transaction.TxTokenData{
+		Type:       transaction.CustomTokenInit,
+		Mintable:   true,
+		Amount:     buyGOVTokensReq.Amount,
+		PropertyID: common.Hash(propertyID),
+		Vins:       []transaction.TxTokenVin{},
+		Vouts:      []transaction.TxTokenVout{txTokenVout},
+	}
+	txTokenData.PropertyName = txTokenData.PropertyID.String()
+	txTokenData.PropertySymbol = txTokenData.PropertyID.String()
+
+	resTx := &transaction.TxCustomToken{
+		TxTokenData: txTokenData,
+	}
+	resTx.Type = common.TxCustomTokenType
+	resTx.SetMetadata(buyGOVTokensRes)
+	return resTx, nil
+}
+
+func (blockgen *BlkTmplGenerator) buildBuyGOVTokensResTxs(
+	buyGOVTokensReqTxs []metadata.Transaction,
+	sellingGOVTokensParams *params.SellingGOVTokens,
+) ([]metadata.Transaction, error) {
+	if len(buyGOVTokensReqTxs) == 0 {
+		return []metadata.Transaction{}, nil
+	}
+	var resTxs []metadata.Transaction
+	for _, reqTx := range buyGOVTokensReqTxs {
+		resTx, err := buildSingleBuyGOVTokensResTx(reqTx, sellingGOVTokensParams)
+		if err != nil {
+			return []metadata.Transaction{}, err
+		}
+		resTxs = append(resTxs, resTx)
+	}
+	return resTxs, nil
+}
+
 func (blockgen *BlkTmplGenerator) buildResponseTxs(
 	chainID byte,
 	sourceTxns []*metadata.TxDesc,
@@ -310,6 +368,15 @@ func (blockgen *BlkTmplGenerator) buildResponseTxs(
 		Logger.log.Error(err)
 		return nil, nil, nil, err
 	}
+	buyGOVTokensResTxs, err := blockgen.buildBuyGOVTokensResTxs(
+		txGroups.buyGOVTokensReqTxs,
+		blockgen.chain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.SellingGOVTokens,
+	)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, nil, nil, err
+	}
+
 	// create buy-back response txs to distribute constants to buy-back requesters
 	buyBackResTxs, err := blockgen.buildBuyBackResponseTxs(buyBackFromInfos, chainID, privatekey)
 	if err != nil {
@@ -325,7 +392,7 @@ func (blockgen *BlkTmplGenerator) buildResponseTxs(
 
 	// create refund txs
 	currentSalaryFund := prevBlock.Header.SalaryFund
-	remainingFund := currentSalaryFund + accumulativeValues.totalFee + accumulativeValues.incomeFromBonds - (accumulativeValues.totalSalary + accumulativeValues.buyBackCoins + totalOracleRewards)
+	remainingFund := currentSalaryFund + accumulativeValues.totalFee + accumulativeValues.incomeFromBonds + accumulativeValues.incomeFromGOVTokens - (accumulativeValues.totalSalary + accumulativeValues.buyBackCoins + totalOracleRewards)
 	refundTxs, totalRefundAmt := blockgen.buildRefundTxs(chainID, remainingFund, privatekey)
 
 	issuingResTxs, err := blockgen.buildIssuingResTxs(chainID, txGroups.issuingReqTxs, privatekey)
@@ -340,6 +407,7 @@ func (blockgen *BlkTmplGenerator) buildResponseTxs(
 		txGroups.txToRemove = append(txGroups.txToRemove, tx)
 	}
 	txGroups.buySellResTxs = buySellResTxs
+	txGroups.buyGOVTokensResTxs = buyGOVTokensResTxs
 	txGroups.buyBackResTxs = buyBackResTxs
 	txGroups.oracleRewardTxs = oracleRewardTxs
 	txGroups.refundTxs = refundTxs

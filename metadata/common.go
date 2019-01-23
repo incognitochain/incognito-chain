@@ -34,6 +34,36 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case BuyBackResponseMeta:
 		md = &BuyBackResponse{}
 
+	case IssuingRequestMeta:
+		md = &IssuingRequest{}
+
+	case IssuingResponseMeta:
+		md = &IssuingResponse{}
+
+	case ContractingRequestMeta:
+		md = &ContractingRequest{}
+
+	case OracleFeedMeta:
+		md = &OracleFeed{}
+
+	case OracleRewardMeta:
+		md = &OracleReward{}
+
+	case RefundMeta:
+		md = &Refund{}
+
+	case UpdatingOracleBoardMeta:
+		md = &UpdatingOracleBoard{}
+
+	case MultiSigsRegistrationMeta:
+		md = &MultiSigsRegistration{}
+
+	case MultiSigsSpendingMeta:
+		md = &MultiSigsSpending{}
+
+	case WithSenderAddressMeta:
+		md = &WithSenderAddress{}
+
 	case LoanRequestMeta:
 		md = &LoanRequest{}
 
@@ -79,6 +109,14 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &NormalGOVVoteProposalFromOwnerMetadata{}
 	case NormalGOVVoteProposalFromSealerMeta:
 		md = &NormalGOVVoteProposalFromSealerMetadata{}
+	case AcceptDCBProposalMeta:
+		md = &AcceptDCBProposalMetadata{}
+	case AcceptGOVProposalMeta:
+		md = &AcceptGOVProposalMetadata{}
+	case AcceptDCBBoardMeta:
+		md = &AcceptDCBBoardMetadata{}
+	case AcceptGOVBoardMeta:
+		md = &AcceptGOVBoardMetadata{}
 
 	default:
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))

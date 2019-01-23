@@ -577,8 +577,8 @@ func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 }
 
 func (self *BlockChain) UpdateVoteCountBoard(block *Block) error {
-	DCBBoardIndex := self.GetCurrentBoardIndex(DCBConstitutionHelper{})
-	GOVBoardIndex := self.GetCurrentBoardIndex(GOVConstitutionHelper{})
+	DCBBoardIndex := self.GetCurrentBoardIndex(DCBConstitutionHelper{}) + 1
+	GOVBoardIndex := self.GetCurrentBoardIndex(GOVConstitutionHelper{}) + 1
 	for _, tx := range block.Transactions {
 		switch tx.GetMetadataType() {
 		case metadata.VoteDCBBoardMeta:

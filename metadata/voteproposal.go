@@ -377,7 +377,7 @@ func (normalVoteProposalFromSealerMetadata *NormalVoteProposalFromSealerMetadata
 		pub1 := normalVoteProposalFromSealerMetadata.LockerPaymentAddress[index1]
 		for index2 := index1 + 1; index2 < len(normalVoteProposalFromSealerMetadata.LockerPaymentAddress); index2++ {
 			pub2 := normalVoteProposalFromSealerMetadata.LockerPaymentAddress[index2]
-			if !common.ByteEqual(pub1.Bytes(), pub2.Bytes()) {
+			if common.ByteEqual(pub1.Bytes(), pub2.Bytes()) {
 				return false
 			}
 		}
@@ -515,7 +515,7 @@ func (normalVoteProposalFromOwnerMetadata *NormalVoteProposalFromOwnerMetadata) 
 		pub1 := normalVoteProposalFromOwnerMetadata.LockerPaymentAddress[index1]
 		for index2 := index1 + 1; index2 < len(normalVoteProposalFromOwnerMetadata.LockerPaymentAddress); index2++ {
 			pub2 := normalVoteProposalFromOwnerMetadata.LockerPaymentAddress[index2]
-			if !common.ByteEqual(pub1.Bytes(), pub2.Bytes()) {
+			if common.ByteEqual(pub1.Bytes(), pub2.Bytes()) {
 				return false
 			}
 		}
