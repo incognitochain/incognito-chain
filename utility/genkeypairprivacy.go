@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/privacy"
 
@@ -45,11 +46,13 @@ func main() {
 		child, _ := key.NewChildKey(uint32(i))
 		// pubAddr := child.Base58CheckSerialize(wallet.PaymentAddressType)
 		privAddr := child.Base58CheckSerialize(wallet.PriKeyType)
+		paymentAddress := child.Base58CheckSerialize(wallet.PaymentAddressType)
 		//readAddr := child.Base58CheckSerialize(wallet.ReadonlyKeyType)
 		fmt.Printf("Acc %d:\n ", i)
-		fmt.Printf("pubKey: %v\n", child.KeySet.GetPublicKeyB58())
+		// fmt.Printf("pubKey: %v\n", child.KeySet.GetPublicKeyB58())
+		fmt.Printf("paymentAddress: %v\n", paymentAddress)
 		// fmt.Printf("pubAddr: %x\n\n", pubAddr)
-		fmt.Printf("spendingKey: %v\n", privAddr)
+		fmt.Printf("privateKey: %v\n", privAddr)
 		// fmt.Printf("privAddr: %x\n", privAddr)
 		/*fmt.Printf("readAddr: %v\n", readAddr)
 		fmt.Printf("readAddr: %x\n\n", readAddr)*/
