@@ -54,8 +54,7 @@ func (rpcServer RpcServer) sendRawCrowdsaleTx(params interface{}, closeChan <-ch
 	return result, nil
 }
 
-// handleCreateAndSendCrowdsaleRequestToken for user to sell bonds to DCB
-func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequestToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateCrowdsaleRequestToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	crowdsaleDataRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
@@ -77,8 +76,62 @@ func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequestToken(params inter
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
-	//rpcServer.buildRawCustomTokenTransaction(params, metadata)
 	return result, nil
+}
+
+func (rpcServer RpcServer) handleSendCrowdsaleRequestToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Info(params)
+	arrayParams := common.InterfaceSlice(params)
+	base58CheckDate := arrayParams[0].(string)
+	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
+
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	tx := transaction.TxCustomToken{}
+	err = json.Unmarshal(rawTxBytes, &tx)
+	fmt.Printf("%+v\n", tx)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	hash, txDesc, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
+	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
+
+	// broadcast message
+	// TODO(@0xbunyip): use different wire.CmdCLoanRequestToken?
+	txMsg, err := wire.MakeEmptyMessage(wire.CmdCLoanRequestToken)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	txMsg.(*wire.MessageTx).Transaction = &tx
+	rpcServer.config.Server.PushMessageToAll(txMsg)
+
+	result := jsonresult.CreateTransactionResult{
+		TxID: tx.Hash().String(),
+	}
+	return result, nil
+}
+
+// handleCreateAndSendCrowdsaleRequestToken for user to sell bonds to DCB
+func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequestToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Info(params)
+	data, err := rpcServer.handleCreateCrowdsaleRequestToken(params, closeChan)
+	fmt.Printf("[db] err create: %v\n", err)
+	if err != nil {
+		return nil, err
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	return rpcServer.handleSendCrowdsaleRequestToken(params, closeChan)
 }
 
 // handleCreateAndSendCrowdsaleRequestToken for user to buy bonds from DCB
