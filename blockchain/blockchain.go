@@ -577,8 +577,12 @@ func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 }
 
 func (self *BlockChain) UpdateVoteCountBoard(block *Block) error {
-	DCBBoardIndex := self.GetCurrentBoardIndex(DCBConstitutionHelper{}) + 1
-	GOVBoardIndex := self.GetCurrentBoardIndex(GOVConstitutionHelper{}) + 1
+	DCBBoardIndex := uint32(0)
+	GOVBoardIndex := uint32(0)
+	if block.Header.Height != 1 {
+		DCBBoardIndex = self.GetCurrentBoardIndex(DCBConstitutionHelper{}) + 1
+		GOVBoardIndex = self.GetCurrentBoardIndex(GOVConstitutionHelper{}) + 1
+	}
 	for _, tx := range block.Transactions {
 		switch tx.GetMetadataType() {
 		case metadata.VoteDCBBoardMeta:
@@ -1415,6 +1419,9 @@ func (self *BlockChain) GetConstitutionIndex(helper ConstitutionHelper) uint32 {
 //2. Block height == last constitution start time + last constitution window
 //This function is called after successful connect block => block height is block height of best state
 func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) bool {
+	if self.BestState[14] == nil {
+		return false
+	}
 	BestBlock := self.BestState[14].BestBlock
 	thisBlockHeight := BestBlock.Header.Height
 	newNationalWelfare := helper.GetCurrentNationalWelfare(self)
@@ -1437,6 +1444,9 @@ func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) b
 
 //This function is called after successful connect block => block height is block height of best state
 func (self *BlockChain) NeedEnterEncryptLv1(helper ConstitutionHelper) bool {
+	if self.BestState[14] == nil {
+		return false
+	}
 	BestBlock := self.BestState[14].BestBlock
 	thisBlockHeight := BestBlock.Header.Height
 	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
@@ -1450,6 +1460,9 @@ func (self *BlockChain) NeedEnterEncryptLv1(helper ConstitutionHelper) bool {
 
 //This function is called after successful connect block => block height is block height of best state
 func (self *BlockChain) NeedEnterEncryptNormal(helper ConstitutionHelper) bool {
+	if self.BestState[14] == nil {
+		return false
+	}
 	BestBlock := self.BestState[14].BestBlock
 	thisBlockHeight := BestBlock.Header.Height
 	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
