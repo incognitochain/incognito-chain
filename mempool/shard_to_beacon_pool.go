@@ -1,157 +1,171 @@
 package mempool
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
-	"log"
 	"sync"
+	"time"
 
 	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 )
 
-var beaconPoolLock sync.RWMutex
-var beaconPool = map[byte]map[uint64][]blockchain.ShardToBeaconBlock{}
+type ShardToBeaconPoolConfig struct {
+	MaxPending uint
+	MaxQueue   uint
+	LifeTime   time.Duration
+}
+type ShardToBeaconPool struct {
+	config     ShardToBeaconPoolConfig
+	pending    map[byte][]blockchain.ShardToBeaconBlock
+	queue      map[byte][]blockchain.ShardToBeaconBlock
+	mu         sync.RWMutex
+	shardState map[byte]uint64
+	db         database.DatabaseInterface
+}
 
-type ShardToBeaconPool struct{}
+var DefaultShardToBeaconPoolConfig = ShardToBeaconPoolConfig{
+	MaxPending: 1000,
+	MaxQueue:   1000,
+	LifeTime:   10 * time.Hour,
+}
 
+func NewShardToBeaconPool(shardToBeaconPoolConfig ShardToBeaconPoolConfig, db database.DatabaseInterface) *ShardToBeaconPool {
+	temp, err := db.FetchBeaconBestState()
+	if err != nil {
+		Logger.log.Error(DatabaseError, err)
+		panic("Fail to get state from db")
+	}
+	beaconBestState := blockchain.BestStateBeacon{}
+	if err := json.Unmarshal(temp, &beaconBestState); err != nil {
+		Logger.log.Error(DatabaseError, err)
+		panic("Can't Unmarshal beacon beststate")
+	}
+	pool := &ShardToBeaconPool{
+		config:     shardToBeaconPoolConfig,
+		pending:    make(map[byte][]blockchain.ShardToBeaconBlock),
+		queue:      make(map[byte][]blockchain.ShardToBeaconBlock),
+		shardState: beaconBestState.BestShardHeight,
+		db:         db,
+	}
+	return pool
+}
 func (pool *ShardToBeaconPool) GetFinalBlock() map[byte][]blockchain.ShardToBeaconBlock {
 	results := map[byte][]blockchain.ShardToBeaconBlock{}
-
-	for ShardId, shardItems := range beaconPool {
-		if shardItems == nil || len(shardItems) <= 0 {
-			continue
-		}
-		items := []blockchain.ShardToBeaconBlock{}
-		for _, blks := range shardItems {
-			items = append(items, blks[0])
-		}
-		results[ShardId] = items
+	for shardID, shardItems := range pool.pending {
+		results[shardID] = shardItems
 	}
 	return results
 
 }
 
-func (pool *ShardToBeaconPool) RemoveBlock(blockItems map[byte]uint64) error {
+func (pool *ShardToBeaconPool) RemovePendingBlock(blockItems map[byte]uint64) error {
 	if len(blockItems) <= 0 {
-		log.Println("ShardToBeaconPool: Block items empty")
+		Logger.log.Infof("ShardToBeaconPool: Remove Block items but got empty")
 		return nil
 	}
-
-	beaconPoolLock.Lock()
+	pool.mu.Lock()
 	for shardID, blockHeight := range blockItems {
-		shardItems, ok := beaconPool[shardID]
+		shardItems, ok := pool.pending[shardID]
 		if !ok || len(shardItems) <= 0 {
-			log.Println("Shard is not exist")
+			Logger.log.Infof("ShardToBeaconPool: No pending block in shard %+v exsit", shardID)
 			continue
 		}
-
-		items := map[uint64][]blockchain.ShardToBeaconBlock{}
-		for i := blockHeight + 1; i < uint64(len(shardItems)); i++ {
-			items[i] = shardItems[i]
+		for index, block := range pool.pending[shardID] {
+			if block.Header.Height <= blockHeight {
+				continue
+			} else {
+				pool.pending[shardID] = pool.pending[shardID][index:]
+				break
+			}
 		}
-
-		beaconPool[shardID] = items
+		pool.shardState[shardID] = blockHeight
 	}
-	beaconPoolLock.Unlock()
+	pool.mu.Unlock()
 	return nil
 }
 
 func (pool *ShardToBeaconPool) AddShardBeaconBlock(newBlock blockchain.ShardToBeaconBlock) error {
-	fmt.Println()
-	fmt.Println("BLAH BLAH aaaaaaaaa", beaconPool)
-	fmt.Println()
+	Logger.log.Debugf("Current pending shard to beacon block %+v \n", pool.pending)
 	blockHeader := newBlock.Header
 	ShardID := blockHeader.ShardID
 	Height := blockHeader.Height
-	PrevBlockHash := blockHeader.PrevBlockHash
 
 	if Height == 0 {
-		return errors.New("Invalid Block Heght")
+		err := MempoolTxError{}
+		err.Init(ShardToBeaconBoolError, fmt.Errorf("Add Invalid Block Heght to pool, height :%+v", 0))
+		return err
 	}
-
-	beaconPoolLock.Lock()
+	pool.mu.Lock()
 	// TODO validate block pool item
-	beaconPoolShardItem, ok := beaconPool[ShardID]
+	beaconPoolShardItem, ok := pool.pending[ShardID]
 	if beaconPoolShardItem == nil || !ok {
-		beaconPoolShardItem = map[uint64][]blockchain.ShardToBeaconBlock{}
+		beaconPoolShardItem = []blockchain.ShardToBeaconBlock{}
 	}
+	beaconPoolShardItem = append(beaconPoolShardItem, newBlock)
+	pool.pending[ShardID] = beaconPoolShardItem
+	Logger.log.Info("Update previous block items with same height")
 
-	items, ok := beaconPoolShardItem[Height]
-	if len(items) <= 0 || !ok {
-		items = []blockchain.ShardToBeaconBlock{}
-	}
-	items = append(items, newBlock)
-	beaconPoolShardItem[Height] = items
-
-	beaconPool[ShardID] = beaconPoolShardItem
-
-	err := UpdateBeaconPool(ShardID, Height, PrevBlockHash)
-	if err != nil {
-		log.Println("update beacon pool err: ", err)
-	}
-	log.Println("update previous block items with same height")
-
-	beaconPoolLock.Unlock()
+	pool.mu.Unlock()
 
 	return nil
 }
 
-func UpdateBeaconPool(shardID byte, blockHeight uint64, preBlockHash common.Hash) error {
-	if blockHeight == 0 {
-		return errors.New("Invalid Block Heght")
-	}
-	if len(preBlockHash) <= 0 {
-		return errors.New("Invalid Previous Block Hash")
-	}
-	shardItems, ok := beaconPool[shardID]
-	if !ok || len(shardItems) <= 0 {
-		log.Println("pool shard items not exists")
-		return nil
-	}
-	prevBlockHeight := blockHeight - 1
-	if prevBlockHeight < 0 {
-		return nil
-	}
-	blocks, ok := shardItems[prevBlockHeight]
-	if !ok || len(blocks) <= 0 {
-		return nil
-	}
+// func UpdateBeaconPool(shardID byte, blockHeight uint64, preBlockHash common.Hash) error {
+// 	if blockHeight == 0 {
+// 		return errors.New("Invalid Block Heght")
+// 	}
+// 	if len(preBlockHash) <= 0 {
+// 		return errors.New("Invalid Previous Block Hash")
+// 	}
+// 	shardItems, ok := beaconPool[shardID]
+// 	if !ok || len(shardItems) <= 0 {
+// 		log.Println("pool shard items not exists")
+// 		return nil
+// 	}
+// 	prevBlockHeight := blockHeight - 1
+// 	if prevBlockHeight < 0 {
+// 		return nil
+// 	}
+// 	blocks, ok := shardItems[prevBlockHeight]
+// 	if !ok || len(blocks) <= 0 {
+// 		return nil
+// 	}
 
-	for _, block := range blocks {
-		header := block.Header
-		hash := header.Hash()
-		if hash == preBlockHash {
-			shardItems[prevBlockHeight] = []blockchain.ShardToBeaconBlock{block}
-			beaconPool[shardID] = shardItems
-			break
-		}
-	}
+// 	for _, block := range blocks {
+// 		header := block.Header
+// 		hash := header.Hash()
+// 		if hash == preBlockHash {
+// 			shardItems[prevBlockHeight] = []blockchain.ShardToBeaconBlock{block}
+// 			beaconPool[shardID] = shardItems
+// 			break
+// 		}
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func (pool *ShardToBeaconPool) GetDistinctBlockMap() map[byte]map[uint64][]common.Hash {
-	var poolBlksMap map[byte]map[uint64][]common.Hash
-	poolBlksMap = make(map[byte]map[uint64][]common.Hash)
-	beaconPoolLock.Lock()
-	defer beaconPoolLock.Unlock()
-	for ShardId, shardItems := range beaconPool {
-		if shardItems == nil || len(shardItems) <= 0 {
-			continue
-		}
-		items := map[uint64][]common.Hash{}
-		items = make(map[uint64][]common.Hash)
-		for height, blks := range shardItems {
-			for _, blk := range blks {
-				items[height] = append(items[height], *blk.Hash())
-			}
+// func (pool *ShardToBeaconPool) GetDistinctBlockMap() map[byte]map[uint64][]common.Hash {
+// 	var poolBlksMap map[byte]map[uint64][]common.Hash
+// 	poolBlksMap = make(map[byte]map[uint64][]common.Hash)
+// 	beaconPoolLock.Lock()
+// 	defer beaconPoolLock.Unlock()
+// 	for ShardId, shardItems := range beaconPool {
+// 		if shardItems == nil || len(shardItems) <= 0 {
+// 			continue
+// 		}
+// 		items := map[uint64][]common.Hash{}
+// 		items = make(map[uint64][]common.Hash)
+// 		for height, blks := range shardItems {
+// 			for _, blk := range blks {
+// 				items[height] = append(items[height], *blk.Hash())
+// 			}
 
-		}
-		poolBlksMap[ShardId] = items
-	}
-	return poolBlksMap
-}
+// 		}
+// 		poolBlksMap[ShardId] = items
+// 	}
+// 	return poolBlksMap
+// }
 
 // func GetBeaconBlock(ShardId byte, BlockHeight uint64) (blockchain.ShardToBeaconBlock, error) {
 // 	result := blockchain.ShardToBeaconBlock{}

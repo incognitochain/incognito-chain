@@ -141,7 +141,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		return err
 	}
 	serverObj.beaconPool = &mempool.NodeBeaconPool{}
-	serverObj.shardToBeaconPool = &mempool.ShardToBeaconPool{}
+	serverObj.shardToBeaconPool = mempool.NewShardToBeaconPool(mempool.DefaultShardToBeaconPoolConfig, db)
 	serverObj.crossShardPool = &mempool.CrossShardPool{}
 
 	serverObj.blockChain = &blockchain.BlockChain{}
