@@ -94,6 +94,13 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 			StartSellingAt: 1,
 			SellingWithin:  500,
 		},
+		SellingGOVTokens: &params.SellingGOVTokens{
+			TotalIssue:      0,
+			GOVTokensToSell: 0,
+			GOVTokenPrice:   0,
+			StartSellingAt:  0,
+			SellingWithin:   0,
+		},
 
 		RefundInfo: &params.RefundInfo{},
 		OracleNetwork: &params.OracleNetwork{
