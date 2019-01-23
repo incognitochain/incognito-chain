@@ -119,18 +119,26 @@ func (helper GOVConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transacti
 	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
 }
 
-func (helper DCBConstitutionHelper) TxAcceptProposal(txId *common.Hash, voter metadata.Voter) metadata.Transaction {
-	acceptTx := transaction.Tx{
-		Metadata: metadata.NewAcceptDCBProposalMetadata(*txId, voter),
-	}
-	return &acceptTx
+func (helper DCBConstitutionHelper) TxAcceptProposal(
+	txId *common.Hash,
+	voter metadata.Voter,
+	minerPrivateKey *privacy.SpendingKey,
+	db database.DatabaseInterface,
+) metadata.Transaction {
+	meta := metadata.NewAcceptDCBProposalMetadata(*txId, voter)
+	acceptTx := transaction.NewEmptyTx(minerPrivateKey, db, meta)
+	return acceptTx
 }
 
-func (helper GOVConstitutionHelper) TxAcceptProposal(txId *common.Hash, voter metadata.Voter) metadata.Transaction {
-	acceptTx := transaction.Tx{
-		Metadata: metadata.NewAcceptGOVProposalMetadata(*txId, voter),
-	}
-	return &acceptTx
+func (helper GOVConstitutionHelper) TxAcceptProposal(
+	txId *common.Hash,
+	voter metadata.Voter,
+	minerPrivateKey *privacy.SpendingKey,
+	db database.DatabaseInterface,
+) metadata.Transaction {
+	meta := metadata.NewAcceptGOVProposalMetadata(*txId, voter)
+	acceptTx := transaction.NewEmptyTx(minerPrivateKey, db, meta)
+	return acceptTx
 }
 
 func (helper DCBConstitutionHelper) GetBoardType() string {
