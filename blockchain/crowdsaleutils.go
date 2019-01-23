@@ -180,9 +180,9 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	}
 
 	// Check if price limit is not violated
-	if metaReq.LimitSellingAsset && sellPrice > priceLimit {
+	if metaReq.LimitSellingAssetPrice && sellPrice > priceLimit {
 		return nil, errors.Errorf("Price limit violated: %d %d", sellPrice, priceLimit)
-	} else if !metaReq.LimitSellingAsset && buyPrice < priceLimit {
+	} else if !metaReq.LimitSellingAssetPrice && buyPrice < priceLimit {
 		return nil, errors.Errorf("Price limit violated: %d %d", buyPrice, priceLimit)
 	}
 

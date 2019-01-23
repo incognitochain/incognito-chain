@@ -60,10 +60,6 @@ func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequestToken(params inter
 	arrayParams := common.InterfaceSlice(params)
 	crowdsaleDataRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
 
-	// Convert limit token price (min cst per bond) to limit cst price (max bond per cst)
-	tokenPrice := uint64(crowdsaleDataRaw["PriceLimit"].(float64))
-	cstPrice := float64(100) / float64(tokenPrice)
-	crowdsaleDataRaw["PriceLimit"] = uint64(cstPrice * 100)
 	meta, err := metadata.NewCrowdsaleRequest(crowdsaleDataRaw)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
