@@ -476,10 +476,12 @@ func (blockgen *BlkTmplGenerator) UpdateNewGovernor(helper ConstitutionHelper, c
 
 func (blockgen *BlkTmplGenerator) neededNewDCBGovernor(chainID byte) bool {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
-	return int32(BestBlock.Header.DCBGovernor.EndBlock) == BestBlock.Header.Height+2
+	endGovernorBlock := int32(BestBlock.Header.DCBGovernor.EndBlock)
+	currentHeight := BestBlock.Header.Height + 1
+	return endGovernorBlock == currentHeight
 }
 
 func (blockgen *BlkTmplGenerator) neededNewGOVGovernor(chainID byte) bool {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
-	return int32(BestBlock.Header.GOVGovernor.EndBlock) == BestBlock.Header.Height+2
+	return int32(BestBlock.Header.GOVGovernor.EndBlock) == BestBlock.Header.Height+1
 }
