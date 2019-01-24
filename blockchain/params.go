@@ -89,8 +89,8 @@ var ChainParam = Params{
 	Net:                 Testnet,
 	DefaultPort:         TestnetDefaultPort,
 	ShardsNum:           TestNetShardsNum,
-	ShardCommitteeSize:  3,
-	BeaconCommitteeSize: 3,
+	ShardCommitteeSize:  TestNetShardCommitteeSize,
+	BeaconCommitteeSize: TestNetBeaconCommitteeSize,
 	// blockChain parameters
 	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnetSerializedPubkey[:], icoParamsTestnetNew, 1000, 1000, 0),
 	GenesisShardBlock:  CreateShardGenesisBlock(1, preSelectShardNodeTestnetSerializedPubkey[:], icoParamsTestnetNew),
