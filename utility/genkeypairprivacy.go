@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/ninjadotorg/constant/common/base58"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/privacy"
@@ -10,6 +11,10 @@ import (
 )
 
 func main() {
+
+	a, _ := wallet.Base58CheckDeserialize("1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba")
+	k1 := base58.Base58Check{}.Encode(a.KeySet.PaymentAddress.Pk, 0x00)
+	_ = k1
 
 	burnPubKeyE := privacy.PedCom.G[0].Hash(1000000)
 	burnPubKey := burnPubKeyE.Compress()
