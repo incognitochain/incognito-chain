@@ -123,7 +123,6 @@ func (rpcServer RpcServer) handleSendCrowdsaleRequestToken(params interface{}, c
 func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequestToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	data, err := rpcServer.handleCreateCrowdsaleRequestToken(params, closeChan)
-	fmt.Printf("[db] err create: %v\n", err)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +130,7 @@ func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequestToken(params inter
 	base58CheckData := tx.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	return rpcServer.handleSendCrowdsaleRequestToken(params, closeChan)
+	return rpcServer.handleSendCrowdsaleRequestToken(newParam, closeChan)
 }
 
 // handleCreateAndSendCrowdsaleRequestToken for user to buy bonds from DCB

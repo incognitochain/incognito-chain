@@ -338,6 +338,7 @@ func (blockgen *BlkTmplGenerator) getAssetPrice(chainID byte, assetID common.Has
 		if blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds != nil {
 			price = blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds[assetID.String()]
 		}
+		fmt.Printf("[db] asset is bond, price = %d\n", price)
 	} else if blockgen.chain.BestState[chainID].BestBlock.Header.Oracle != nil {
 		oracle := blockgen.chain.BestState[chainID].BestBlock.Header.Oracle
 		if assetID.IsEqual(&common.ConstantID) {
@@ -351,6 +352,7 @@ func (blockgen *BlkTmplGenerator) getAssetPrice(chainID byte, assetID common.Has
 		} else if assetID.IsEqual(&common.BTCAssetID) {
 			price = oracle.BTC
 		}
+		fmt.Printf("[db] asset is not bond, price = %d\n", price)
 	}
 	return price
 }
