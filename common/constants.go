@@ -41,7 +41,7 @@ const (
 	MinimumBlockOfProposalDuration    = 50
 	MaximumBlockOfProposalDuration    = 200
 	MaximumProposalExplainationLength = 1000
-	NumberOfDCBGovernors              = 1
+	NumberOfDCBGovernors              = 3
 	NumberOfGOVGovernors              = 3
 	EncryptionOnePhraseDuration       = 5
 	RewardProposalSubmitter           = 500
