@@ -54,10 +54,7 @@ func (self *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
 	if err != nil {
 		Logger.log.Error(err)
 	} else {
-		// Add to pending or queue
-		// Add into pending?
-		// Add into queue?
-		err = self.config.ShardToBeaconPool.AddShardBeaconBlock(block)
+		err = self.config.ShardToBeaconPool.AddShardBeaconBlock(block, self.BestState.Beacon.ShardCommittee[block.Header.ShardID])
 		if err != nil {
 			Logger.log.Error(err)
 		}
