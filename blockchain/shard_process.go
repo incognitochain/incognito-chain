@@ -403,7 +403,11 @@ func (self *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBloc
 	)
 	self.PrevShardBlockHash = self.BestShardBlockHash
 	self.BestShardBlockHash = *block.Hash()
-	self.BestBeaconHash = block.Header.BeaconHash
+	if block.Header.BeaconHeight == 1 {
+		self.BestBeaconHash = *ChainTestParam.GenesisBeaconBlock.Hash()
+	} else {
+		self.BestBeaconHash = block.Header.BeaconHash
+	}
 	self.BestShardBlock = block
 	self.ShardHeight = block.Header.Height
 	self.Epoch = block.Header.Epoch

@@ -21,12 +21,14 @@ import (
 func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*ShardBlock, error) {
 	//============Build body=============
 	beaconHeight := blockgen.chain.BestState.Beacon.BeaconHeight
+
 	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
 	epoch := blockgen.chain.BestState.Beacon.BeaconEpoch
 	if epoch-blockgen.chain.BestState.Shard[shardID].Epoch > 1 {
 		beaconHeight = blockgen.chain.BestState.Shard[shardID].Epoch * EPOCH
 		epoch = blockgen.chain.BestState.Shard[shardID].Epoch + 1
 	}
+
 	// Get valid transaction (add tx, remove tx, fee of add tx)
 	txsToAdd, txToRemove, totalFee := blockgen.getPendingTransaction(shardID)
 	if len(txsToAdd) == 0 {
