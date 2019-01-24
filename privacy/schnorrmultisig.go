@@ -1,8 +1,8 @@
 package privacy
 
 import (
-	"math/big"
 	"github.com/ninjadotorg/constant/common"
+	"math/big"
 )
 
 // SchnMultiSig is struct of EC Schnorr Signature which is combinable
@@ -15,7 +15,7 @@ type SchnMultiSig struct {
 func (multiSig *SchnMultiSig) SetBytes(sigByte []byte) {
 	multiSig.R.Decompress(sigByte[0:CompressedPointSize])
 	multiSig.S = big.NewInt(0)
-	multiSig.S.SetBytes(sigByte[CompressedPointSize: CompressedPointSize+BigIntSize])
+	multiSig.S.SetBytes(sigByte[CompressedPointSize : CompressedPointSize+BigIntSize])
 }
 
 // Set - Constructing multiSig
@@ -108,7 +108,7 @@ func (multiSig *SchnMultiSig) VerifyMultiSig(data []byte, listPK []*PublicKey, p
 	return GSPoint.IsEqual(RXCPoint)
 }
 
-func generateRandom() (*EllipticPoint, *big.Int) {
+/*func generateRandom() (*EllipticPoint, *big.Int) {
 	r := RandInt()
 	GPoint := new(EllipticPoint)
 	GPoint.X, GPoint.Y = big.NewInt(0), big.NewInt(0)
@@ -116,7 +116,7 @@ func generateRandom() (*EllipticPoint, *big.Int) {
 	GPoint.Y.Set(Curve.Params().Gy)
 	R := GPoint.ScalarMult(r)
 	return R, r
-}
+}*/
 
 func generateCommonParams(pubKey *PublicKey, listPubkey []*PublicKey, R *EllipticPoint, data []byte) (*EllipticPoint, *big.Int, *EllipticPoint) {
 	aggPubkey := new(EllipticPoint)

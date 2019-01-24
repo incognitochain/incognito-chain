@@ -13,6 +13,7 @@ const (
 	// LevelDB
 	OpenDbErr
 	NotExistValue
+	LvDbNotFound
 
 	// BlockChain err
 	NotImplHashMethod
@@ -21,8 +22,8 @@ const (
 	KeyExisted
 
 	//voting err
-	NotEnoughCandidateDCB
-	NotEnoughCandidateGOV
+	NotEnoughCandidate
+	ErrUnexpected
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -36,6 +37,7 @@ var ErrCodeMessage = map[int]struct {
 	// -2xxx levelDb
 	OpenDbErr:     {-2000, "Open database error"},
 	NotExistValue: {-2001, "H is not existed"},
+	LvDbNotFound:  {-2002, "lvdb not found"},
 
 	// -3xxx blockchain
 	NotImplHashMethod: {-3000, "Data does not implement Hash() method"},
@@ -44,8 +46,8 @@ var ErrCodeMessage = map[int]struct {
 	KeyExisted:        {-3003, "PubKey already existed in database"},
 
 	// -4xxx voting
-	NotEnoughCandidateDCB: {-4000, "Not enough candidate for DCB Board"},
-	NotEnoughCandidateGOV: {-4001, "Not enough candidate for GOV Board"},
+	NotEnoughCandidate: {-4000, "Not enough candidate for DCB Board"},
+	ErrUnexpected:      {-4001, "unknown"},
 }
 
 type DatabaseError struct {
@@ -54,8 +56,12 @@ type DatabaseError struct {
 	message string
 }
 
+func (e DatabaseError) GetErrorCode() int {
+	return e.code
+}
+
 func (e DatabaseError) Error() string {
-	return fmt.Sprintf("%+v: %+v", e.code, e.message)
+	return fmt.Sprintf("%d: %+v", e.code, e.err)
 }
 
 func NewDatabaseError(key int, err error) *DatabaseError {

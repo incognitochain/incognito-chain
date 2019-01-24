@@ -42,7 +42,6 @@ const (
 	// it will provide fee estimations.
 	DefaultEstimateFeeMinRegisteredBlocks = 3
 
-	bytePerKb = 1000
 )
 
 var (
@@ -243,8 +242,8 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.Block) error {
 		// This shouldn't happen if the fee estimator works correctly,
 		// but return an error if it does.
 		if o.mined != UnminedHeight {
-			Logger.log.Error("Estimate fee: transaction ", hash.String(), " has already been mined")
-			return errors.New("Transaction has already been mined")
+			Logger.log.Error("estimate fee: transaction ", hash.String(), " has already been mined")
+			return errors.New("transaction has already been mined")
 		}
 
 		// This shouldn't happen but check just in case to avoid
@@ -661,7 +660,7 @@ func RestoreFeeEstimator(data FeeEstimatorState) (*FeeEstimator, error) {
 		return nil, err
 	}
 	if version != estimateFeeSaveVersion {
-		return nil, fmt.Errorf("Incorrect version: expected %d found %d", estimateFeeSaveVersion, version)
+		return nil, fmt.Errorf("incorrect version: expected %d found %d", estimateFeeSaveVersion, version)
 	}
 
 	ef := &FeeEstimator{
@@ -701,7 +700,7 @@ func RestoreFeeEstimator(data FeeEstimatorState) (*FeeEstimator, error) {
 			var exists bool
 			bin[j], exists = observed[index]
 			if !exists {
-				return nil, fmt.Errorf("Invalid transaction reference %d", index)
+				return nil, fmt.Errorf("invalid transaction reference %d", index)
 			}
 		}
 		ef.bin[i] = bin

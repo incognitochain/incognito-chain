@@ -1,15 +1,17 @@
 package blockchain
 
+import "github.com/ninjadotorg/constant/privacy"
+
 type GovernorInfo struct {
-	boardIndex       uint32
-	StartedBlock     uint32
-	EndBlock         uint32 // = startedblock of decent governor
-	BoardPubKeys     [][]byte
-	StartAmountToken uint64 //Sum of DCB token stack to all member of this board
+	BoardIndex          uint32
+	StartedBlock        uint32
+	EndBlock            uint32 // = startedblock of decent governor
+	BoardPaymentAddress []privacy.PaymentAddress
+	StartAmountToken    uint64 //Sum of DCB token stack to all member of this board
 }
 
-func (governorInfo GovernorInfo) BoardIndex() uint32 {
-	return governorInfo.boardIndex
+func (governorInfo GovernorInfo) GetBoardIndex() uint32 {
+	return governorInfo.BoardIndex
 }
 
 type DCBGovernor struct {
@@ -21,5 +23,5 @@ type GOVGovernor struct {
 }
 
 type Governor interface {
-	BoardIndex() uint32
+	GetBoardIndex() uint32
 }

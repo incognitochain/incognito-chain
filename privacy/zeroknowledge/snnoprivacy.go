@@ -203,7 +203,6 @@ func (wit *SNNoPrivacyWitness) Prove() (*SNNoPrivacyProof, error) {
 }
 
 func (pro *SNNoPrivacyProof) Verify() bool {
-	start := time.Now()
 	// re-calculate x = hash(tSeed || tOutput)
 	x := generateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSeed, pro.tOutput})
 
@@ -220,15 +219,8 @@ func (pro *SNNoPrivacyProof) Verify() bool {
 	// Check SN^(zSeed + x*input) = gSK^x * tOutput
 	leftPoint2 := pro.output.ScalarMult(new(big.Int).Add(pro.zSeed, new(big.Int).Mul(x, pro.input)))
 
-	rightPoint4 := privacy.PedCom.G[privacy.SK].ScalarMult(x)
-	rightPoint4 = rightPoint4.Add(pro.tOutput)
+	rightPoint2 := privacy.PedCom.G[privacy.SK].ScalarMult(x)
+	rightPoint2 = rightPoint2.Add(pro.tOutput)
 
-	if !leftPoint2.IsEqual(rightPoint4) {
-		return false
-	}
-	end := time.Since(start)
-	fmt.Printf("Serial number no privacy verification time: %v\n", end)
-
-
-	return true
+	return leftPoint2.IsEqual(rightPoint2)
 }

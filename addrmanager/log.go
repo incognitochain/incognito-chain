@@ -6,8 +6,8 @@ type AddrManagerLogger struct {
 	log common.Logger
 }
 
-func (self *AddrManagerLogger) Init(inst common.Logger) {
-	self.log = inst
+func (addrManagerLogger *AddrManagerLogger) Init(inst common.Logger) {
+	addrManagerLogger.log = inst
 }
 
 // Global instant to use

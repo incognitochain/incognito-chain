@@ -1,8 +1,9 @@
 package jsonresult
 
 import (
-	"math/big"
 	"encoding/json"
+	"log"
+	"math/big"
 )
 
 type ListUnspentResult struct {
@@ -13,12 +14,12 @@ type ListUnspentResultItem struct {
 	OutCoins []OutCoin `json:"OutCoins"`
 }
 
-func (self *ListUnspentResultItem) Init(data interface{}) {
-	self.OutCoins = []OutCoin{}
+func (listUnspentResultItem *ListUnspentResultItem) Init(data interface{}) {
+	listUnspentResultItem.OutCoins = []OutCoin{}
 	for _, item := range data.([]interface{}) {
 		i := OutCoin{}
 		i.Init(item)
-		self.OutCoins = append(self.OutCoins, i)
+		listUnspentResultItem.OutCoins = append(listUnspentResultItem.OutCoins, i)
 	}
 }
 
@@ -32,10 +33,15 @@ type OutCoin struct {
 	Info           string
 }
 
-func (self *OutCoin) Init(data interface{}) {
+func (outcoin *OutCoin) Init(data interface{}) {
 	temp, err := json.Marshal(data)
 	if err != nil {
+		log.Print(err)
 		return
 	}
-	err = json.Unmarshal(temp, self)
+	err = json.Unmarshal(temp, outcoin)
+	if err != nil {
+		log.Print(err)
+		return
+	}
 }
