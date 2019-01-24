@@ -9,8 +9,6 @@ import (
 type SingleRangeWitness struct {
 	value *big.Int
 	rand  *big.Int
-
-	n byte
 }
 
 type SingleRangeProof struct {
@@ -23,18 +21,15 @@ type SingleRangeProof struct {
 	tHat    *big.Int
 	mu      *big.Int
 	innerProductProof *InnerProductProof
-
-	n byte
 }
 
 func (wit *SingleRangeWitness) Prove() (*SingleRangeProof, error) {
 	var AggParam = newBulletproofParams(1)
 	proof := new(SingleRangeProof)
-	proof.n = wit.n
 
 	proof.cmValue = privacy.PedCom.CommitAtIndex(wit.value, wit.rand, privacy.VALUE)
 
-	n := int(wit.n)
+	n := privacy.MaxExp
 	// Convert value to binary array
 	aL := privacy.ConvertBigIntToBinary(wit.value, n)
 
@@ -228,7 +223,7 @@ func (wit *SingleRangeWitness) Prove() (*SingleRangeProof, error) {
 
 func (proof *SingleRangeProof) Verify() bool {
 	var AggParam = newBulletproofParams(1)
-	n := int(proof.n)
+	n := privacy.MaxExp
 	oneNumber := big.NewInt(1)
 	twoNumber := big.NewInt(2)
 	oneVector := powerVector(oneNumber, n)

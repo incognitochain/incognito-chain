@@ -14,8 +14,6 @@ func TestSingleRangeProve(t *testing.T){
 	wit.value = big.NewInt(11)
 	wit.rand = privacy.RandInt()
 
-	wit.n = privacy.MaxExp
-
 	start := time.Now()
 	proof, err := wit.Prove()
 	end:= time.Since(start)
@@ -56,7 +54,6 @@ func BenchmarkSingleRangeProve(b *testing.B){
 		wit.value = big.NewInt(11)
 		wit.rand = privacy.RandInt()
 
-		wit.n = privacy.MaxExp
 		//for n := 0; n < 1000; n++ {
 		//	start := time.Now()
 			proof, err := wit.Prove()
