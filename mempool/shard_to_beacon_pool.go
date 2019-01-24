@@ -35,8 +35,8 @@ type ShardToBeaconPoolConfig struct {
 */
 type ShardToBeaconPool struct {
 	config     ShardToBeaconPoolConfig
-	pending    map[byte][]blockchain.ShardToBeaconBlock //executable
-	queue      map[byte][]blockchain.ShardToBeaconBlock //non-executable
+	pending    map[byte][]blockchain.ShardToBeaconBlock          //executable
+	queue      map[byte]map[uint64]blockchain.ShardToBeaconBlock //non-executable
 	mu         sync.RWMutex
 	shardState map[byte]uint64
 	db         database.DatabaseInterface
@@ -62,7 +62,7 @@ func NewShardToBeaconPool(shardToBeaconPoolConfig ShardToBeaconPoolConfig, db da
 	pool := &ShardToBeaconPool{
 		config:     shardToBeaconPoolConfig,
 		pending:    make(map[byte][]blockchain.ShardToBeaconBlock),
-		queue:      make(map[byte][]blockchain.ShardToBeaconBlock),
+		queue:      make(map[byte]map[uint64]blockchain.ShardToBeaconBlock),
 		shardState: beaconBestState.BestShardHeight,
 		db:         db,
 	}
@@ -137,24 +137,24 @@ func (pool *ShardToBeaconPool) ValidateShardToBeaconBlock(block blockchain.Shard
 		err.Init(ShardToBeaconBoolError, fmt.Errorf("Block Height is too low, block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID))
 		return err
 	}
-	if _, isOk := contains(pool.pending[block.Header.ShardID], block.Header.Height); isOk {
+	if _, isOk := contains1(pool.pending[block.Header.ShardID], block.Header.Height); isOk {
 		err := MempoolTxError{}
 		err.Init(ShardToBeaconBoolError, fmt.Errorf("Block Height already in pending list, block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID))
 		return err
 	}
-	if _, isOk := contains(pool.queue[block.Header.ShardID], block.Header.Height); isOk {
+	if _, isOk := contains2(pool.queue[block.Header.ShardID], block.Header.Height); isOk {
 		err := MempoolTxError{}
 		err.Init(ShardToBeaconBoolError, fmt.Errorf("Block Height already in queue list, block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID))
 		return err
 	}
-	if prevBlock, isOk := contains(pool.pending[block.Header.ShardID], block.Header.Height-1); isOk {
+	if prevBlock, isOk := contains1(pool.pending[block.Header.ShardID], block.Header.Height-1); isOk {
 		if bytes.Compare(prevBlock.Hash().GetBytes(), block.Header.PrevBlockHash.GetBytes()) != 0 {
 			err := MempoolTxError{}
 			err.Init(ShardToBeaconBoolError, fmt.Errorf("Block PreviousHash not compatible with pending list, block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID))
 			return err
 		}
 	}
-	if prevBlock, isOk := contains(pool.queue[block.Header.ShardID], block.Header.Height-1); isOk {
+	if prevBlock, isOk := contains2(pool.queue[block.Header.ShardID], block.Header.Height-1); isOk {
 		if bytes.Compare(prevBlock.Hash().GetBytes(), block.Header.PrevBlockHash.GetBytes()) != 0 {
 			err := MempoolTxError{}
 			err.Init(ShardToBeaconBoolError, fmt.Errorf("Block PreviousHash not compatible with pending list, block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID))
@@ -163,7 +163,7 @@ func (pool *ShardToBeaconPool) ValidateShardToBeaconBlock(block blockchain.Shard
 	}
 	return nil
 }
-func contains(s []blockchain.ShardToBeaconBlock, e uint64) (blockchain.ShardToBeaconBlock, bool) {
+func contains1(s []blockchain.ShardToBeaconBlock, e uint64) (blockchain.ShardToBeaconBlock, bool) {
 	for _, a := range s {
 		if a.Header.Height == e {
 			return a, true
@@ -171,7 +171,27 @@ func contains(s []blockchain.ShardToBeaconBlock, e uint64) (blockchain.ShardToBe
 	}
 	return blockchain.ShardToBeaconBlock{}, false
 }
-
+func contains2(s map[uint64]blockchain.ShardToBeaconBlock, e uint64) (blockchain.ShardToBeaconBlock, bool) {
+	for _, a := range s {
+		if a.Header.Height == e {
+			return a, true
+		}
+	}
+	return blockchain.ShardToBeaconBlock{}, false
+}
+func (pool *ShardToBeaconPool) PromoteExecutable(block blockchain.ShardToBeaconBlock) error {
+	shardID := block.Header.ShardID
+	lastBlockHeight := pool.pending[shardID][len(pool.pending[shardID])-1].Header.Height
+	for {
+		newBlock, isHas := pool.queue[shardID][lastBlockHeight+1]
+		if isHas {
+			pool.pending[shardID] = append(pool.pending[shardID], newBlock)
+		} else {
+			break
+		}
+	}
+	return nil
+}
 func (pool *ShardToBeaconPool) AddShardBeaconBlock(block blockchain.ShardToBeaconBlock) error {
 	Logger.log.Debugf("Current pending shard to beacon block %+v \n", pool.pending)
 	blockHeight := block.Header.Height
@@ -179,27 +199,30 @@ func (pool *ShardToBeaconPool) AddShardBeaconBlock(block blockchain.ShardToBeaco
 
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
+	//Get pending shard block
 	pendingShardBlocks, ok := pool.pending[shardID]
 	if pendingShardBlocks == nil || !ok {
 		pendingShardBlocks = []blockchain.ShardToBeaconBlock{}
 
 	}
+	// if new block is expected block to be added in pending
+	// 1. Next block after shard state
+	// 2. Next block height after last block
 	if blockHeight-pool.shardState[shardID] == 1 {
 		pendingShardBlocks = append(pendingShardBlocks, block)
 		pool.pending[shardID] = pendingShardBlocks
-		// TODO: Promote executbale block from queue to pending
-	} else if _, isOk := contains(pool.pending[shardID], blockHeight-1); isOk {
+		pool.PromoteExecutable(block)
+	} else if pool.pending[shardID][len(pool.pending[shardID])-1].Header.Height == blockHeight {
 		pendingShardBlocks = append(pendingShardBlocks, block)
 		pool.pending[shardID] = pendingShardBlocks
-		// TODO: Promote executbale block from queue to pending
+		pool.PromoteExecutable(block)
 	} else {
-		queueShardBlocks, ok := pool.pending[shardID]
+		queueShardBlocks, ok := pool.queue[shardID]
 		if queueShardBlocks == nil || !ok {
-			queueShardBlocks = []blockchain.ShardToBeaconBlock{}
+			queueShardBlocks = make(map[uint64]blockchain.ShardToBeaconBlock)
 		}
-		queueShardBlocks = append(queueShardBlocks, block)
+		queueShardBlocks[block.Header.Height] = block
 		pool.queue[shardID] = queueShardBlocks
-		// TODO: find out the structure of queue
 	}
 	return nil
 }
