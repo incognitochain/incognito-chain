@@ -16,6 +16,9 @@ func TestSingleRangeProve(t *testing.T){
 
 	start := time.Now()
 	proof, err := wit.Prove()
+	if err != nil{
+		fmt.Printf("Err: %v\n", err)
+	}
 	end:= time.Since(start)
 	fmt.Printf("Single range proving time: %v\n", end)
 
@@ -37,9 +40,7 @@ func TestSingleRangeProve(t *testing.T){
 	//fmt.Printf("IPA.p: %v\n", len(proof.innerProductProof.p.Compress()))
 	//fmt.Printf("n: %v\n", 1)
 
-	if err != nil{
-		fmt.Printf("Err: %v\n", err)
-	}
+
 	start = time.Now()
 	res := proof.Verify()
 	end = time.Since(start)

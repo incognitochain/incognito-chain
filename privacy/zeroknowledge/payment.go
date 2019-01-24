@@ -25,7 +25,7 @@ type PaymentWitness struct {
 	SerialNumberWitness []*PKSNPrivacyWitness
 	SNNoPrivacyWitness  []*SNNoPrivacyWitness
 
-	//ComOutputMultiRangeWitness *AggregatedRangeWitness
+	ComOutputMultiRangeWitness *AggregatedRangeWitness
 	ComZeroWitness             *ComZeroWitness
 
 	ComOutputValue   []*privacy.EllipticPoint
@@ -48,7 +48,7 @@ type PaymentProof struct {
 
 	// for output coins
 	// for proving each value and sum of them are less than a threshold value
-	//ComOutputMultiRangeProof *AggregatedRangeProof
+	ComOutputMultiRangeProof *AggregatedRangeProof
 	// for input = output
 	ComZeroProof *ComZeroProof
 
@@ -129,14 +129,14 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, snNoPrivacyProof...)
 	}
 
-	// ComOutputMultiRangeProofSize
-	//if hasPrivacy {
-	//	comOutputMultiRangeProof := paymentProof.ComOutputMultiRangeProof.Bytes()
-	//	proofbytes = append(proofbytes, privacy.IntToByteArr(len(comOutputMultiRangeProof))...)
-	//	proofbytes = append(proofbytes, comOutputMultiRangeProof...)
-	//} else {
-	//	proofbytes = append(proofbytes, []byte{0, 0}...)
-	//}
+	//ComOutputMultiRangeProofSize
+	if hasPrivacy {
+		comOutputMultiRangeProof := paymentProof.ComOutputMultiRangeProof.Bytes()
+		proofbytes = append(proofbytes, privacy.IntToByteArr(len(comOutputMultiRangeProof))...)
+		proofbytes = append(proofbytes, comOutputMultiRangeProof...)
+	} else {
+		proofbytes = append(proofbytes, []byte{0, 0}...)
+	}
 
 	if hasPrivacy {
 		comZeroProof := paymentProof.ComZeroProof.Bytes()
@@ -269,16 +269,16 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	}
 
 	//ComOutputMultiRangeProofSize *AggregatedRangeProof
-	//lenComOutputMultiRangeProof := privacy.ByteArrToInt(proofbytes[offset : offset+2])
-	//offset += 2
-	//if lenComOutputMultiRangeProof > 0 {
-	//	proof.ComOutputMultiRangeProof = new(AggregatedRangeProof).Init()
-	//	err := proof.ComOutputMultiRangeProof.SetBytes(proofbytes[offset : offset+lenComOutputMultiRangeProof])
-	//	if err != nil {
-	//		return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
-	//	}
-	//	offset += lenComOutputMultiRangeProof
-	//}
+	lenComOutputMultiRangeProof := privacy.ByteArrToInt(proofbytes[offset : offset+2])
+	offset += 2
+	if lenComOutputMultiRangeProof > 0 {
+		proof.ComOutputMultiRangeProof = new(AggregatedRangeProof).Init()
+		err := proof.ComOutputMultiRangeProof.SetBytes(proofbytes[offset : offset+lenComOutputMultiRangeProof])
+		if err != nil {
+			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+		}
+		offset += lenComOutputMultiRangeProof
+	}
 
 	//ComZeroProof *ComZeroProof
 	lenComZeroProof := int(proofbytes[offset])
@@ -621,10 +621,10 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 			return privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("output coin's value is less than 0"))
 		}
 	}
-	//if wit.ComOutputMultiRangeWitness == nil {
-	//	wit.ComOutputMultiRangeWitness = new(AggregatedRangeWitness)
-	//}
-	//wit.ComOutputMultiRangeWitness.Set(outputValue, 64)
+	if wit.ComOutputMultiRangeWitness == nil {
+		wit.ComOutputMultiRangeWitness = new(AggregatedRangeWitness)
+	}
+	wit.ComOutputMultiRangeWitness.Set(outputValue, randOutputValue)
 	// ---------------------------------------------------
 
 	// Build witness for proving Sum(Input's value) == Sum(Output's Value)
@@ -703,10 +703,10 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 	}
 
 	// Proving that each output values and sum of them does not exceed v_max
-	//proof.ComOutputMultiRangeProof, err = wit.ComOutputMultiRangeWitness.Prove()
-	//if err != nil {
-	//	return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
-	//}
+	proof.ComOutputMultiRangeProof, err = wit.ComOutputMultiRangeWitness.Prove()
+	if err != nil {
+		return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
+	}
 
 	// Proving that sum of all input values is equal to sum of all output values
 	proof.ComZeroProof, err = wit.ComZeroWitness.Prove()
@@ -823,10 +823,11 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee ui
 	}
 
 	// Verify the proof that output values and sum of them do not exceed v_max
-	//if !pro.ComOutputMultiRangeProof.Verify() {
-	//	fmt.Printf("err 6\n")s
-	//	return false
-	//}
+	if !pro.ComOutputMultiRangeProof.Verify() {
+		fmt.Printf("err 6\n")
+		return false
+	}
+
 	// Verify the proof that sum of all input values is equal to sum of all output values
 	comInputValueSum := new(privacy.EllipticPoint).Zero()
 	for i := 0; i < len(pro.ComInputValue); i++ {
