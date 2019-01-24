@@ -660,11 +660,16 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	if self.BeaconHeight == 1 {
 		// Assign committee with genesis block
 		Logger.log.Infof("Proccessing Genesis Block")
-		self.BeaconCommittee = append(self.BeaconCommittee, newBeaconCandidate...)
-		self.ShardCommittee[byte(0)] = append(self.ShardCommittee[byte(0)], newShardCandidate[:3]...)
-		self.ShardCommittee[byte(1)] = append(self.ShardCommittee[byte(1)], newShardCandidate[3:6]...)
-		self.ShardCommittee[byte(2)] = append(self.ShardCommittee[byte(2)], newShardCandidate[6:9]...)
-		self.ShardCommittee[byte(3)] = append(self.ShardCommittee[byte(3)], newShardCandidate[9:12]...)
+		//Test with 1 member
+		self.BeaconCommittee = append(self.BeaconCommittee, newBeaconCandidate[0])
+		self.ShardCommittee[byte(0)] = append(self.ShardCommittee[byte(0)], newShardCandidate[0])
+
+		//Test with 4 member
+		//self.BeaconCommittee = append(self.BeaconCommittee, newBeaconCandidate...)
+		//self.ShardCommittee[byte(0)] = append(self.ShardCommittee[byte(0)], newShardCandidate[:3]...)
+		//self.ShardCommittee[byte(1)] = append(self.ShardCommittee[byte(1)], newShardCandidate[3:6]...)
+		//self.ShardCommittee[byte(2)] = append(self.ShardCommittee[byte(2)], newShardCandidate[6:9]...)
+		//self.ShardCommittee[byte(3)] = append(self.ShardCommittee[byte(3)], newShardCandidate[9:12]...)
 	} else {
 		self.CandidateBeaconWaitingForNextRandom = append(self.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
 		self.CandidateShardWaitingForNextRandom = append(self.CandidateShardWaitingForNextRandom, newShardCandidate...)
