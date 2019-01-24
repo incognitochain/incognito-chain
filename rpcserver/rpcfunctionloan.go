@@ -278,7 +278,7 @@ func (rpcServer RpcServer) calcLoanPaymentInfo(strLoanID string) jsonresult.Loan
 				hash, _ := (&common.Hash{}).NewHash(txReqHash)
 				if _, _, _, txReq, err := (*rpcServer.config.BlockChain).GetTransactionByHash(hash); err == nil {
 					reqMeta, _ := txReq.GetMetadata().(*metadata.LoanRequest)
-					shardID, _ := common.GetTxSenderChain(txReq.GetSenderAddrLastByte())
+					shardID := common.GetShardIDFromLastByte(txReq.GetSenderAddrLastByte())
 					height := rpcServer.config.BlockChain.GetChainHeight(shardID)
 					loanPaymentInfo.Principle = priciple
 					if height >= deadline { // Current term interest is not fully paid

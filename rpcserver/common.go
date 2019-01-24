@@ -77,10 +77,7 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 		return nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
-	shardIDSender, err := common.GetTxSenderChain(lastByte)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
+	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 	fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
 
 	// param #2: list receiver
@@ -153,10 +150,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 		return nil, err
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
-	shardIDSender, err := common.GetTxSenderChain(lastByte)
-	if err != nil {
-		return nil, err
-	}
+	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 
 	// param #2: list receiver
 	receiversPaymentAddressParam := make(map[string]interface{})
@@ -294,10 +288,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 		return nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
-	shardIDSender, err := common.GetTxSenderChain(lastByte)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
+	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 
 	// param #2: list receiver
 	receiversPaymentAddressStrParam := make(map[string]interface{})

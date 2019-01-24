@@ -125,7 +125,7 @@ func (tx *Tx) Init(
 		return nil
 	}
 
-	shardID, _ := common.GetTxSenderChain(pkLastByteSender)
+	shardID := common.GetShardIDFromLastByte(pkLastByteSender)
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
@@ -840,10 +840,7 @@ func (tx *Tx) InitTxSalary(
 	sndOut := privacy.RandInt()
 	for {
 		lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
-		shardIDSender, err := common.GetTxSenderChain(lastByte)
-		if err != nil {
-			return err
-		}
+		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 		tokenID := &common.Hash{}
 		tokenID.SetBytes(common.ConstantID[:])
 		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, shardIDSender, db)
@@ -890,10 +887,7 @@ func (tx Tx) ValidateTxSalary(
 
 	// check whether output coin's input exists in input list or not
 	lastByte := tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress())-1]
-	shardIDSender, err := common.GetTxSenderChain(lastByte)
-	if err != nil {
-		return false
-	}
+	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 	tokenID := &common.Hash{}
 	tokenID.SetBytes(common.ConstantID[:])
 	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, shardIDSender, db); ok || err != nil {

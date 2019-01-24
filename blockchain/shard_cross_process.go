@@ -87,7 +87,7 @@ func getOutCoinHashEachShard(txList []metadata.Transaction) []common.Hash {
 	for _, tx := range txList {
 		for _, outCoin := range tx.GetProof().OutputCoins {
 			lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-			shardID := GetShardIDFromLastByte(lastByte)
+			shardID := common.GetShardIDFromLastByte(lastByte)
 			outCoinEachShard[shardID] = append(outCoinEachShard[shardID], outCoin)
 		}
 	}
