@@ -49,3 +49,43 @@ type BlockHeader struct {
 	// Price feeds through Oracle
 	Oracle *params.Oracle
 }
+
+func NewBlockHeader(
+	version int,
+	prevBlockHash common.Hash,
+	merkleRoot common.Hash,
+	timestamp int64,
+	blockCommitteeSigs []string,
+	committee []string,
+	chainID byte,
+	chainsHeight []int,
+	candidateHash common.Hash,
+	salaryFund uint64,
+	bankFund uint64,
+	GOVConstitution GOVConstitution,
+	DCBConstitution DCBConstitution,
+	CBParams CBParams,
+	DCBGovernor DCBGovernor,
+	GOVGovernor GOVGovernor,
+	height int32,
+	oracle *params.Oracle) *BlockHeader {
+	return &BlockHeader{
+		Version:            version,
+		PrevBlockHash:      prevBlockHash,
+		MerkleRoot:         merkleRoot,
+		Timestamp:          timestamp,
+		BlockCommitteeSigs: blockCommitteeSigs,
+		Committee:          committee,
+		ChainID:            chainID,
+		ChainsHeight:       chainsHeight,
+		CandidateHash:      candidateHash,
+		SalaryFund:         salaryFund,
+		BankFund:           bankFund,
+		GOVConstitution:    GOVConstitution,
+		DCBConstitution:    DCBConstitution,
+		CBParams:           CBParams,
+		DCBGovernor:        DCBGovernor,
+		GOVGovernor:        GOVGovernor,
+		Height:             height,
+		Oracle:             oracle}
+}

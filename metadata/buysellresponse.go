@@ -13,16 +13,16 @@ type BuySellResponse struct {
 	RequestedTxID common.Hash
 
 	// for buying bonds requested tx
-	StartSellingAt uint32
-	Maturity       uint32
+	StartSellingAt uint64
+	Maturity       uint64
 	BuyBackPrice   uint64 // in Constant unit
 	BondID         []byte // 24 bytes as compound value of (Maturity + BuyBackPrice + StartSellingAt) from SellingBonds param
 }
 
 func NewBuySellResponse(
 	requestedTxID common.Hash,
-	startSellingAt uint32,
-	maturity uint32,
+	startSellingAt uint64,
+	maturity uint64,
 	buyBackPrice uint64,
 	bondID []byte,
 	metaType int,
@@ -65,7 +65,7 @@ func (bsRes *BuySellResponse) Hash() *common.Hash {
 	record += strconv.FormatUint(uint64(bsRes.Maturity), 10)
 	record += strconv.FormatUint(bsRes.BuyBackPrice, 10)
 	record += string(bsRes.BondID)
-	record += string(bsRes.MetadataBase.Hash()[:])
+	record += bsRes.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

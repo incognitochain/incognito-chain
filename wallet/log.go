@@ -6,8 +6,8 @@ type WalletLogger struct {
 	log common.Logger
 }
 
-func (self *WalletLogger) Init(inst common.Logger) {
-	self.log = inst
+func (walletLogger *WalletLogger) Init(inst common.Logger) {
+	walletLogger.log = inst
 }
 
 // Global instant to use

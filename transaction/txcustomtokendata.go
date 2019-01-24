@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"strconv"
@@ -21,15 +22,28 @@ type TxTokenVin struct {
 	PaymentAddress  privacy.PaymentAddress // use to verify signature of pre-utxo of token
 }
 
+func (txObj TxTokenVin) String() string {
+	record := ""
+	record += txObj.TxCustomTokenID.String()
+	record += fmt.Sprintf("%d", txObj.VoutIndex)
+	record += txObj.Signature
+	record += base58.Base58Check{}.Encode(txObj.PaymentAddress.Pk[:], 0)
+	return record
+}
+
+func (txObj TxTokenVin) JSONString() string {
+	data, err := json.MarshalIndent(txObj, "", "\t")
+	if err != nil {
+		Logger.log.Error(err)
+		return ""
+	}
+	return string(data)
+}
+
 // Hash - return hash data of TxTokenVin
-func (self TxTokenVin) Hash() *common.Hash {
-	record := common.EmptyString
-	record += self.TxCustomTokenID.String()
-	record += fmt.Sprintf("%d", self.VoutIndex)
-	record += self.Signature
-	record += base58.Base58Check{}.Encode(self.PaymentAddress.Pk[:], 0)
+func (txObj TxTokenVin) Hash() *common.Hash {
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.DoubleHashH([]byte(txObj.String()))
 	return &hash
 }
 
@@ -39,41 +53,54 @@ type TxTokenVout struct {
 	Value          uint64                 // Amount to transfer
 	PaymentAddress privacy.PaymentAddress // payment address of receiver
 
-	// temp variable to determine position of itself in vouts arrays of tx which contain itself
+	// temp variable to determine position of itself in vouts arrays of tx which contain ittxObj
 	index int
 	// temp variable to know what is id of tx which contain itself
 	txCustomTokenID common.Hash
 	// BuySellResponse *BuySellResponse
 }
 
+func (txObj TxTokenVout) String() string {
+	record := ""
+	record += fmt.Sprintf("%d", txObj.Value)
+	record += base58.Base58Check{}.Encode(txObj.PaymentAddress.Pk[:], 0)
+	return record
+}
+
+func (txObj TxTokenVout) JSONString() string {
+	data, err := json.MarshalIndent(txObj, "", "\t")
+	if err != nil {
+		Logger.log.Error(err)
+		return ""
+	}
+	return string(data)
+}
+
 // Hash - return hash data of TxTokenVout
-func (self TxTokenVout) Hash() *common.Hash {
-	record := common.EmptyString
-	record += fmt.Sprintf("%d", self.Value)
-	record += base58.Base58Check{}.Encode(self.PaymentAddress.Pk[:], 0)
+func (txObj TxTokenVout) Hash() *common.Hash {
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.DoubleHashH([]byte(txObj.String()))
 	return &hash
 }
 
 // Set index temp variable
-func (self *TxTokenVout) SetIndex(index int) {
-	self.index = index
+func (txObj *TxTokenVout) SetIndex(index int) {
+	txObj.index = index
 }
 
 // Get index temp variable
-func (self TxTokenVout) GetIndex() int {
-	return self.index
+func (txObj TxTokenVout) GetIndex() int {
+	return txObj.index
 }
 
 // Set tx id temp variable
-func (self *TxTokenVout) SetTxCustomTokenID(txCustomTokenID common.Hash) {
-	self.txCustomTokenID = txCustomTokenID
+func (txObj *TxTokenVout) SetTxCustomTokenID(txCustomTokenID common.Hash) {
+	txObj.txCustomTokenID = txCustomTokenID
 }
 
 // Get tx id temp variable
-func (self TxTokenVout) GetTxCustomTokenID() common.Hash {
-	return self.txCustomTokenID
+func (txObj TxTokenVout) GetTxCustomTokenID() common.Hash {
+	return txObj.txCustomTokenID
 }
 
 // TxTokenData - main struct which contain vin and vout array for transferring or issuing custom token
@@ -90,28 +117,41 @@ type TxTokenData struct {
 	Vouts    []TxTokenVout
 }
 
-// Hash - return hash of token data, be used as Token ID
-func (self TxTokenData) Hash() (*common.Hash, error) {
-	if self.Vouts == nil {
-		return nil, errors.New("Vout is empty")
-	}
-	record := self.PropertyName
-	record += self.PropertySymbol
-	record += fmt.Sprintf("%d", self.Amount)
-	if len(self.Vins) > 0 {
-		for _, in := range self.Vins {
+func (txObj TxTokenData) String() string {
+	record := txObj.PropertyName
+	record += txObj.PropertySymbol
+	record += fmt.Sprintf("%d", txObj.Amount)
+	if len(txObj.Vins) > 0 {
+		for _, in := range txObj.Vins {
 			record += in.TxCustomTokenID.String()
 			record += strconv.Itoa(in.VoutIndex)
 			record += base58.Base58Check{}.Encode(in.PaymentAddress.Pk, 0x00)
 			record += in.Signature
 		}
 	}
-	for _, out := range self.Vouts {
+	for _, out := range txObj.Vouts {
 		record += string(out.PaymentAddress.Pk[:])
 		record += strconv.FormatUint(out.Value, 10)
 	}
+	return record
+}
+
+func (txObj TxTokenData) JSONString() string {
+	data, err := json.MarshalIndent(txObj, "", "\t")
+	if err != nil {
+		Logger.log.Error(err)
+		return ""
+	}
+	return string(data)
+}
+
+// Hash - return hash of token data, be used as Token ID
+func (txObj TxTokenData) Hash() (*common.Hash, error) {
+	if txObj.Vouts == nil {
+		return nil, errors.New("Vout is empty")
+	}
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.DoubleHashH([]byte(txObj.String()))
 	return &hash, nil
 }
 
@@ -129,12 +169,12 @@ type CustomTokenParamTx struct {
 	vinsAmount uint64
 }
 
-func (self *CustomTokenParamTx) SetVins(vins []TxTokenVin) {
-	self.vins = vins
+func (txObj *CustomTokenParamTx) SetVins(vins []TxTokenVin) {
+	txObj.vins = vins
 }
 
-func (self *CustomTokenParamTx) SetVinsAmount(vinsAmount uint64) {
-	self.vinsAmount = vinsAmount
+func (txObj *CustomTokenParamTx) SetVinsAmount(vinsAmount uint64) {
+	txObj.vinsAmount = vinsAmount
 }
 
 // CreateCustomTokenReceiverArray - parse data frm rpc request to create a list vout for preparing to create a custom token tx
@@ -144,9 +184,10 @@ func CreateCustomTokenReceiverArray(data interface{}) ([]TxTokenVout, int64) {
 	voutsAmount := int64(0)
 	receivers := data.(map[string]interface{})
 	for key, value := range receivers {
-		key, _ := wallet.Base58CheckDeserialize(key)
+		keyWallet, _ := wallet.Base58CheckDeserialize(key)
+		keySet := keyWallet.KeySet
 		temp := TxTokenVout{
-			PaymentAddress: key.KeySet.PaymentAddress,
+			PaymentAddress: keySet.PaymentAddress,
 			Value:          uint64(value.(float64)),
 		}
 		result = append(result, temp)

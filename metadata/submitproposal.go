@@ -9,14 +9,14 @@ import (
 
 type SubmitDCBProposalMetadata struct {
 	DCBParams       params.DCBParams
-	ExecuteDuration uint32
+	ExecuteDuration uint64
 	Explanation     string
 	PaymentAddress  privacy.PaymentAddress
 
 	MetadataBase
 }
 
-func NewSubmitDCBProposalMetadata(DCBParams params.DCBParams, executeDuration uint32, explanation string, address *privacy.PaymentAddress) *SubmitDCBProposalMetadata {
+func NewSubmitDCBProposalMetadata(DCBParams params.DCBParams, executeDuration uint64, explanation string, address *privacy.PaymentAddress) *SubmitDCBProposalMetadata {
 	return &SubmitDCBProposalMetadata{
 		DCBParams:       DCBParams,
 		ExecuteDuration: executeDuration,
@@ -26,12 +26,23 @@ func NewSubmitDCBProposalMetadata(DCBParams params.DCBParams, executeDuration ui
 	}
 }
 
+func NewSubmitDCBProposalMetadataFromJson(data interface{}) *SubmitDCBProposalMetadata {
+	SubmitDCBProposalData := data.(map[string]interface{})
+	meta := NewSubmitDCBProposalMetadata(
+		*params.NewDCBParamsFromJson(SubmitDCBProposalData["DCBParams"]),
+		uint64(SubmitDCBProposalData["ExecuteDuration"].(float64)),
+		SubmitDCBProposalData["Explanation"].(string),
+		SubmitDCBProposalData["PaymentAddress"].(*privacy.PaymentAddress),
+	)
+	return meta
+}
+
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) Hash() *common.Hash {
-	record := string(submitDCBProposalMetadata.DCBParams.Hash().GetBytes())
+	record := submitDCBProposalMetadata.DCBParams.Hash().String()
 	record += string(submitDCBProposalMetadata.ExecuteDuration)
 	record += submitDCBProposalMetadata.Explanation
-	record += string(submitDCBProposalMetadata.PaymentAddress.Bytes())
-	record += string(submitDCBProposalMetadata.MetadataBase.Hash().GetBytes())
+	record += submitDCBProposalMetadata.PaymentAddress.String()
+	record += submitDCBProposalMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -60,29 +71,45 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateMetadataByIt
 
 type SubmitGOVProposalMetadata struct {
 	GOVParams       params.GOVParams
-	ExecuteDuration uint32
+	ExecuteDuration uint64
 	Explanation     string
 	PaymentAddress  privacy.PaymentAddress
 
 	MetadataBase
 }
 
-func NewSubmitGOVProposalMetadata(GOVParams params.GOVParams, executeDuration uint32, explaination string, address *privacy.PaymentAddress) *SubmitGOVProposalMetadata {
+func NewSubmitGOVProposalMetadata(
+	govParams params.GOVParams,
+	executeDuration uint64,
+	explanation string,
+	address *privacy.PaymentAddress,
+) *SubmitGOVProposalMetadata {
 	return &SubmitGOVProposalMetadata{
-		GOVParams:       GOVParams,
+		GOVParams:       govParams,
 		ExecuteDuration: executeDuration,
-		Explanation:     explaination,
+		Explanation:     explanation,
 		PaymentAddress:  *address,
 		MetadataBase:    *NewMetadataBase(SubmitGOVProposalMeta),
 	}
 }
 
+func NewSubmitGOVProposalMetadataFromJson(data interface{}) *SubmitGOVProposalMetadata {
+	submitGOVProposalData := data.(map[string]interface{})
+
+	return NewSubmitGOVProposalMetadata(
+		*params.NewGOVParamsFromJson(submitGOVProposalData["GOVParams"]),
+		uint64(submitGOVProposalData["ExecuteDuration"].(float64)),
+		submitGOVProposalData["Explanation"].(string),
+		submitGOVProposalData["PaymentAddress"].(*privacy.PaymentAddress),
+	)
+}
+
 func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) Hash() *common.Hash {
-	record := string(submitGOVProposalMetadata.GOVParams.Hash().GetBytes())
+	record := submitGOVProposalMetadata.GOVParams.Hash().String()
 	record += string(submitGOVProposalMetadata.ExecuteDuration)
 	record += submitGOVProposalMetadata.Explanation
-	record += string(submitGOVProposalMetadata.PaymentAddress.Bytes())
-	record += string(submitGOVProposalMetadata.MetadataBase.Hash().GetBytes())
+	record += submitGOVProposalMetadata.PaymentAddress.String()
+	record += submitGOVProposalMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

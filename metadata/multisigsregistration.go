@@ -69,18 +69,15 @@ func (msReg *MultiSigsRegistration) ValidateSanityData(
 }
 
 func (msReg *MultiSigsRegistration) ValidateMetadataByItself() bool {
-	if msReg.Type != MultiSigsRegistrationMeta {
-		return false
-	}
-	return true
+	return msReg.Type != MultiSigsRegistrationMeta
 }
 
 func (msReg *MultiSigsRegistration) Hash() *common.Hash {
-	record := string(msReg.PaymentAddress.Bytes())
+	record := msReg.PaymentAddress.String()
 	for _, pk := range msReg.SpendableMembers {
 		record += string(pk)
 	}
-	record += string(msReg.MetadataBase.Hash()[:])
+	record += msReg.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

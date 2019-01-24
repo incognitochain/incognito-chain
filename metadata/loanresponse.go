@@ -3,6 +3,7 @@ package metadata
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
@@ -44,16 +45,16 @@ func (lr *LoanResponse) Hash() *common.Hash {
 	record += string(lr.Response)
 
 	// final hash
-	record += string(lr.MetadataBase.Hash()[:])
+	record += lr.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func txCreatedByDCBBoardMember(txr Transaction, bcr BlockchainRetriever) bool {
 	isBoard := false
-	txPubKey := txr.GetJSPubKey()
+	txPubKey := txr.GetSigPubKey()
 	fmt.Printf("check if created by dcb board: %v\n", txPubKey)
-	for _, member := range bcr.GetDCBBoardPubKeys() {
+	for _, member := range bcr.GetBoardPubKeys("dcb") {
 		fmt.Printf("member of board pubkey: %v\n", member)
 		if bytes.Equal(member, txPubKey) {
 			isBoard = true
@@ -66,7 +67,7 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 	fmt.Println("Validating LoanResponse with blockchain!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	// Check if only board members created this tx
 	if !txCreatedByDCBBoardMember(txr, bcr) {
-		return false, fmt.Errorf("Tx must be created by DCB Governor")
+		return false, errors.New("Tx must be created by DCB Governor")
 	}
 
 	// Check if a loan request with the same id exists on any chain
@@ -82,7 +83,7 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 		copy(hash[:], txHash)
 		_, _, _, txOld, err := bcr.GetTransactionByHash(hash)
 		if txOld == nil || err != nil {
-			return false, fmt.Errorf("Error finding corresponding loan request")
+			return false, errors.New("Error finding corresponding loan request")
 		}
 		switch txOld.GetMetadataType() {
 		case LoanResponseMeta:
@@ -92,8 +93,8 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 					continue
 				}
 				// Check if the same user responses twice
-				if bytes.Equal(txOld.GetJSPubKey(), txr.GetJSPubKey()) {
-					return false, fmt.Errorf("Current board member already responded to loan request")
+				if bytes.Equal(txOld.GetSigPubKey(), txr.GetSigPubKey()) {
+					return false, errors.New("Current board member already responded to loan request")
 				}
 			}
 		case LoanRequestMeta:
@@ -107,8 +108,8 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 		}
 	}
 
-	if found == false {
-		return false, fmt.Errorf("Corresponding loan request not found")
+	if !found {
+		return false, errors.New("Corresponding loan request not found")
 	}
 	fmt.Printf("Validate returns true!!!\n")
 	return true, nil
@@ -148,7 +149,7 @@ func GetLoanResponses(txHashes [][]byte, bcr BlockchainRetriever) []ResponseData
 		if txOld.GetMetadataType() == LoanResponseMeta {
 			meta := txOld.GetMetadata().(*LoanResponse)
 			respData := ResponseData{
-				PublicKey: txOld.GetJSPubKey(),
+				PublicKey: txOld.GetSigPubKey(),
 				Response:  meta.Response,
 			}
 			data = append(data, respData)

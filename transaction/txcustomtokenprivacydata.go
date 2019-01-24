@@ -1,11 +1,12 @@
 package transaction
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/wallet"
 	"strconv"
 )
 
@@ -20,17 +21,16 @@ type TxTokenPrivacyData struct {
 	Amount   uint64 // init amount
 }
 
-// Hash - return hash of custom token data, be used as Token ID
-func (self TxTokenPrivacyData) Hash() (*common.Hash, error) {
-	record := self.PropertyName
-	record += self.PropertySymbol
-	record += fmt.Sprintf("%d", self.Amount)
-	if self.TxNormal.Proof != nil {
-		for _, out := range self.TxNormal.Proof.OutputCoins {
+func (txTokenPrivacyData TxTokenPrivacyData) String() string {
+	record := txTokenPrivacyData.PropertyName
+	record += txTokenPrivacyData.PropertySymbol
+	record += fmt.Sprintf("%d", txTokenPrivacyData.Amount)
+	if txTokenPrivacyData.TxNormal.Proof != nil {
+		for _, out := range txTokenPrivacyData.TxNormal.Proof.OutputCoins {
 			record += string(out.CoinDetails.PublicKey.Compress())
 			record += strconv.FormatUint(out.CoinDetails.Value, 10)
 		}
-		for _, in := range self.TxNormal.Proof.InputCoins {
+		for _, in := range txTokenPrivacyData.TxNormal.Proof.InputCoins {
 			if in.CoinDetails.PublicKey != nil {
 				record += string(in.CoinDetails.PublicKey.Compress())
 			}
@@ -39,7 +39,21 @@ func (self TxTokenPrivacyData) Hash() (*common.Hash, error) {
 			}
 		}
 	}
-	hash := common.DoubleHashH([]byte(record))
+	return record
+}
+
+func (txTokenPrivacyData TxTokenPrivacyData) JSONString() string {
+	data, err := json.MarshalIndent(txTokenPrivacyData, "", "\t")
+	if err != nil {
+		Logger.log.Error(err)
+		return ""
+	}
+	return string(data)
+}
+
+// Hash - return hash of custom token data, be used as Token ID
+func (txTokenPrivacyData TxTokenPrivacyData) Hash() (*common.Hash, error) {
+	hash := common.DoubleHashH([]byte(txTokenPrivacyData.String()))
 	return &hash, nil
 }
 
@@ -61,9 +75,10 @@ func CreateCustomTokenPrivacyReceiverArray(data interface{}) ([]*privacy.Payment
 	voutsAmount := int64(0)
 	receivers := data.(map[string]interface{})
 	for key, value := range receivers {
-		key, _ := wallet.Base58CheckDeserialize(key)
+		keyWallet, _ := wallet.Base58CheckDeserialize(key)
+		keySet := keyWallet.KeySet
 		temp := &privacy.PaymentInfo{
-			PaymentAddress: key.KeySet.PaymentAddress,
+			PaymentAddress: keySet.PaymentAddress,
 			Amount:         uint64(value.(float64)),
 		}
 		result = append(result, temp)

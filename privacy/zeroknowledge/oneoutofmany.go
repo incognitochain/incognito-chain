@@ -266,7 +266,7 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	n := privacy.CMRingSizeExp
 
 	// Check indexIsZero
-	if wit.indexIsZero > uint64(N) || wit.indexIsZero < 0 {
+	if wit.indexIsZero > uint64(N) {
 		return nil, errors.New("Index is zero must be Index in list of commitments")
 	}
 
@@ -383,7 +383,6 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 }
 
 func (pro *OneOutOfManyProof) Verify() bool {
-	start := time.Now()
 	N := len(pro.Commitments)
 	//N := 8
 
@@ -455,13 +454,7 @@ func (pro *OneOutOfManyProof) Verify() bool {
 
 	rightPoint3 := privacy.PedCom.CommitAtIndex(big.NewInt(0), pro.zd, pro.index)
 
-	if !leftPoint3.IsEqual(rightPoint3) {
-		return false
-	}
-	end := time.Since(start)
-	fmt.Printf("One out of many verification time: %v\n", end)
-
-	return true
+	return leftPoint3.IsEqual(rightPoint3)
 }
 
 // Get coefficient of x^k in polynomial pi(x)

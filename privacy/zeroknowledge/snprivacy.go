@@ -291,7 +291,6 @@ func (wit *PKSNPrivacyWitness) Prove() (*PKSNPrivacyProof, error){
 }
 
 func (pro *PKSNPrivacyProof) Verify() bool{
-	start := time.Now()
 	// re-calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 	x := generateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSeed, pro.tInput, pro.tOutput})
 
@@ -321,12 +320,5 @@ func (pro *PKSNPrivacyProof) Verify() bool{
 	rightPoint4 := privacy.PedCom.G[privacy.SK].ScalarMult(x)
 	rightPoint4 = rightPoint4.Add(pro.tOutput)
 
-	if !leftPoint4.IsEqual(rightPoint4){
-		return false
-	}
-
-	end := time.Since(start)
-	fmt.Printf("Serial number verification time: %v\n", end)
-
-	return true
+	return leftPoint4.IsEqual(rightPoint4)
 }

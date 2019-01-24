@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"encoding/hex"
 	"github.com/pkg/errors"
 	"math/big"
 
@@ -125,7 +126,18 @@ func (addr *PaymentAddress) SetBytes(bytes []byte) *PaymentAddress {
 	return addr
 }
 
+func NewPaymentAddressFromByte(b []byte) *PaymentAddress {
+	paymentAddress := PaymentAddress{}
+	paymentAddress.SetBytes(b)
+	return &paymentAddress
+}
+
 // Size returns size of payment address
 func (addr *PaymentAddress) Size() int {
 	return len(addr.Pk) + len(addr.Tk)
+}
+
+func (addr PaymentAddress) String() string {
+	byteArrays := addr.Bytes()
+	return hex.EncodeToString(byteArrays[:])
 }

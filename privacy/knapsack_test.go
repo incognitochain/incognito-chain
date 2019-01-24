@@ -8,11 +8,12 @@ import (
 	"time"
 )
 
-func TestKnapSack(t *testing.T){
+
+func TestKnapSack(t *testing.T) {
 	n := 100
 
 	outCoins := make([]*OutputCoin, n)
-	for i:=0; i < n - 3 ; i++{
+	for i := 0; i < n-3; i++ {
 		outCoins[i] = new(OutputCoin).Init()
 		//outCoins[i].CoinDetails.Value = new(big.Int).SetBytes(RandBytes(1)).Uint64()
 		outCoins[i].CoinDetails.Value = 1
@@ -24,7 +25,6 @@ func TestKnapSack(t *testing.T){
 	outCoins[n-2].CoinDetails.Value = 230
 	outCoins[n-1] = new(OutputCoin).Init()
 	outCoins[n-1].CoinDetails.Value = 300
-
 
 	amount := uint64(200)
 
@@ -39,7 +39,7 @@ func TestKnapSack(t *testing.T){
 	outCoinUnknapsack := make([]*OutputCoin, 0)
 
 	for _, outCoin := range outCoins {
-		if outCoin.CoinDetails.Value > amount{
+		if outCoin.CoinDetails.Value > amount {
 			outCoinUnknapsack = append(outCoinUnknapsack, outCoin)
 		} else {
 			sumValueKnapsack += outCoin.CoinDetails.Value
@@ -53,13 +53,14 @@ func TestKnapSack(t *testing.T){
 
 	fmt.Printf("Target: %v\n", target)
 
-	if target > 1000{
+
+	if target > 1000 {
 		choices := Greedy(outCoins, amount)
 		for i, choice := range choices {
-			if choice{
+			if choice {
 				totalResultOutputCoinAmount += outCoins[i].CoinDetails.Value
 				resultOutputCoins = append(resultOutputCoins, outCoins[i])
-			} else{
+			} else {
 				remainOutputCoins = append(remainOutputCoins, outCoins[i])
 			}
 		}
@@ -73,41 +74,37 @@ func TestKnapSack(t *testing.T){
 				remainOutputCoins = append(remainOutputCoins, outCoinKnapsack[i])
 			}
 		}
-		for _, outCoin := range outCoinUnknapsack{
-			remainOutputCoins = append(remainOutputCoins, outCoin)
-		}
-	} else if target == 0{
+		remainOutputCoins = append(remainOutputCoins, outCoinUnknapsack...)
+	} else if target == 0 {
 		totalResultOutputCoinAmount = sumValueKnapsack
 		resultOutputCoins = outCoinKnapsack
 		remainOutputCoins = outCoinUnknapsack
-	} else{
-		if len(outCoinUnknapsack) == 0{
+	} else {
+		if len(outCoinUnknapsack) == 0 {
 			fmt.Printf("Not enough coin")
-		} else{
+		} else {
 			sort.Slice(outCoinUnknapsack, func(i, j int) bool {
 				return outCoinUnknapsack[i].CoinDetails.Value < outCoinUnknapsack[j].CoinDetails.Value
 			})
 			resultOutputCoins = append(resultOutputCoins, outCoinUnknapsack[0])
 			totalResultOutputCoinAmount = outCoinUnknapsack[0].CoinDetails.Value
-			for i:=1; i<len(outCoinUnknapsack); i++{
+			for i := 1; i < len(outCoinUnknapsack); i++ {
 				remainOutputCoins = append(remainOutputCoins, outCoinUnknapsack[i])
 			}
-			for _, outCoin := range outCoinKnapsack{
-				remainOutputCoins = append(remainOutputCoins, outCoin)
-			}
+			remainOutputCoins = append(remainOutputCoins, outCoinKnapsack...)
 		}
 	}
-
+	_ = totalResultOutputCoinAmount
 	fmt.Printf("output all : \n")
-	for _, coin := range outCoins{
+	for _, coin := range outCoins {
 		fmt.Printf("%v, ", coin.CoinDetails.Value)
 	}
 	fmt.Printf("\n res: \n")
-	for _, coin := range resultOutputCoins{
+	for _, coin := range resultOutputCoins {
 		fmt.Printf("%v, ", coin.CoinDetails.Value)
 	}
 	fmt.Printf("\n remain output coin: \n")
-	for _, coin := range remainOutputCoins{
+	for _, coin := range remainOutputCoins {
 		fmt.Printf("%v, ", coin.CoinDetails.Value)
 	}
 	fmt.Printf("\n \n")
@@ -118,12 +115,14 @@ func TestGreedy(t *testing.T) {
 
 	outCoins := make([]*OutputCoin, n)
 	values := make([]uint64, 0)
-	for i:=0; i<n ; i++{
+
+	for i := 0; i < n; i++ {
 		outCoins[i] = new(OutputCoin).Init()
 		//outCoins[i].CoinDetails.Value = new(big.Int).SetBytes(RandBytes(1)).Uint64()
 		outCoins[i].CoinDetails.Value = new(big.Int).Add(new(big.Int).SetBytes(RandBytes(1)), big.NewInt(1)).Uint64()
 		values = append(values, outCoins[i].CoinDetails.Value)
 	}
+	_ = values
 
 	amount := uint64(20)
 
@@ -137,7 +136,7 @@ func TestGreedy(t *testing.T) {
 	for i, choice := range choices {
 		if choice {
 			fmt.Printf("%v ", outCoins[i].CoinDetails.Value)
-		} else{
+		} else {
 			break
 		}
 	}

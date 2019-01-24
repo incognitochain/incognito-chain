@@ -500,3 +500,4 @@ package zkp
 //	rangeProofParams := newECPrimeGroupKey(vecLength)
 //	return &rangeProofParams
 //}
+

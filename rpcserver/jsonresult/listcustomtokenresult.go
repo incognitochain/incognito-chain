@@ -11,19 +11,19 @@ type CustomToken struct {
 	ListTxs   []string `json:"ListTxs"`
 }
 
-func (self *CustomToken) Init(obj transaction.TxCustomToken) {
-	self.ID = obj.TxTokenData.PropertyID.String()
-	self.Symbol = obj.TxTokenData.PropertySymbol
-	self.Name = obj.TxTokenData.PropertyName
-	self.Amount = obj.TxTokenData.Amount
+func (customToken *CustomToken) Init(obj transaction.TxCustomToken) {
+	customToken.ID = obj.TxTokenData.PropertyID.String()
+	customToken.Symbol = obj.TxTokenData.PropertySymbol
+	customToken.Name = obj.TxTokenData.PropertyName
+	customToken.Amount = obj.TxTokenData.Amount
 }
 
-func (self *CustomToken) InitPrivacy(obj transaction.TxCustomTokenPrivacy) {
-	self.ID = obj.TxTokenPrivacyData.PropertyID.String()
-	self.Symbol = obj.TxTokenPrivacyData.PropertySymbol
-	self.Name = obj.TxTokenPrivacyData.PropertyName
-	self.Amount = obj.TxTokenPrivacyData.Amount
-	self.IsPrivacy = true
+func (customToken *CustomToken) InitPrivacy(obj transaction.TxCustomTokenPrivacy) {
+	customToken.ID = obj.TxTokenPrivacyData.PropertyID.String()
+	customToken.Symbol = obj.TxTokenPrivacyData.PropertySymbol
+	customToken.Name = obj.TxTokenPrivacyData.PropertyName
+	customToken.Amount = obj.TxTokenPrivacyData.Amount
+	customToken.IsPrivacy = true
 }
 
 type ListCustomToken struct {

@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -21,18 +22,18 @@ type DatabaseInterface interface {
 	StoreBlockHeader(interface{}, *common.Hash, byte) error
 	FetchBlock(*common.Hash) ([]byte, error)
 	HasBlock(*common.Hash) (bool, error)
-	FetchAllBlocks() (map[byte][]*common.Hash, error)
+	//FetchAllBlocks() (map[byte][]*common.Hash, error)
 	FetchChainBlocks(byte) ([]*common.Hash, error)
 	DeleteBlock(*common.Hash, int32, byte) error
 
 	// Block index
-	StoreBlockIndex(*common.Hash, int32, byte) error
-	GetIndexOfBlock(*common.Hash) (int32, byte, error)
+	StoreBlockIndex(*common.Hash, uint64, byte) error
+	GetIndexOfBlock(*common.Hash) (uint64, byte, error)
 	GetBlockByIndex(int32, byte) (*common.Hash, error)
 
 	// Transaction index
 	StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, indexInBlock int) error
-	GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, error)
+	GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, *DatabaseError)
 
 	// Best state of chain
 	StoreBestState(interface{}, byte) error
@@ -90,15 +91,14 @@ type DatabaseInterface interface {
 	StoreLoanRequest([]byte, []byte) error                 // param: loanID, tx hash
 	StoreLoanResponse([]byte, []byte) error                // param: loanID, tx hash
 	GetLoanTxs([]byte) ([][]byte, error)                   // param: loanID
-	StoreLoanPayment([]byte, uint64, uint64, uint32) error // param: loanID, principle, interest, deadline
-	GetLoanPayment([]byte) (uint64, uint64, uint32, error) // param: loanID; return: principle, interest, deadline
+	StoreLoanPayment([]byte, uint64, uint64, uint64) error // param: loanID, principle, interest, deadline
+	GetLoanPayment([]byte) (uint64, uint64, uint64, error) // param: loanID; return: principle, interest, deadline
+	GetLoanRequestTx(loanID []byte) ([]byte, error)
 
 	// Crowdsale
-	SaveCrowdsaleData([]byte, int32, []byte, uint64, []byte, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
-	LoadCrowdsaleData([]byte) (int32, []byte, uint64, []byte, uint64, error)
-	StoreCrowdsaleRequest([]byte, []byte, []byte, []byte, []byte) error
-	StoreCrowdsaleResponse([]byte, []byte) error
-	GetCrowdsaleTxs([]byte) ([][]byte, error)
+	StoreCrowdsaleData([]byte, uint64, common.Hash, uint64, common.Hash, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
+	GetCrowdsaleData([]byte) (uint64, common.Hash, uint64, common.Hash, uint64, error)
+	GetAllCrowdsales() ([]uint64, []common.Hash, []uint64, []common.Hash, []uint64, error)
 
 	// CMB
 	StoreCMB([]byte, []byte, [][]byte, uint64, []byte) error
@@ -112,33 +112,32 @@ type DatabaseInterface interface {
 	StoreWithdrawRequest(contractID []byte, txHash []byte) error
 	GetWithdrawRequest(contractID []byte) ([]byte, uint8, error)
 	UpdateWithdrawRequestState(contractID []byte, state uint8) error
-	StoreNoticePeriod(blockHeight int32, txReqHash []byte) error
-	GetNoticePeriod(blockHeight int32) ([][]byte, error)
+	StoreNoticePeriod(blockHeight uint64, txReqHash []byte) error
+	GetNoticePeriod(blockHeight uint64) ([][]byte, error)
 
 	//Vote
-	AddVoteDCBBoard(uint32, []byte, []byte, []byte, uint64) error
-	AddVoteGOVBoard(uint32, []byte, []byte, []byte, uint64) error
-	GetTopMostVoteDCBGovernor(currentBoardIndex uint32) (CandidateList, error)
-	GetTopMostVoteGOVGovernor(uint32) (CandidateList, error)
+	AddVoteBoard(string, uint32, []byte, privacy.PaymentAddress, privacy.PaymentAddress, uint64) error
+	GetTopMostVoteGovernor(boardType string, currentBoardIndex uint32) (CandidateList, error)
 	NewIterator(*util.Range, *opt.ReadOptions) iterator.Iterator
 	GetKey(string, interface{}) []byte
-	SendInitDCBVoteToken(uint32, []byte, uint32) error
-	SendInitGOVVoteToken(uint32, []byte, uint32) error
+	SendInitVoteToken(boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress, amount uint32) error
 	AddVoteLv3Proposal(string, uint32, *common.Hash) error
 	AddVoteLv1or2Proposal(string, uint32, *common.Hash) error
 	AddVoteNormalProposalFromOwner(string, uint32, *common.Hash, []byte) error
 	AddVoteNormalProposalFromSealer(string, uint32, *common.Hash, []byte) error
-	GetAmountVoteToken(string, uint32, []byte) (uint32, error)
-	TakeVoteTokenFromWinner(string, uint32, []byte, int32) error
-	SetNewProposalWinningVoter(string, uint32, []byte) error
-	GetDCBVoteTokenAmount(boardIndex uint32, pubKey []byte) (uint32, error)
-	GetGOVVoteTokenAmount(boardIndex uint32, pubKey []byte) (uint32, error)
+	TakeVoteTokenFromWinner(string, uint32, privacy.PaymentAddress, int32) error
+	SetNewProposalWinningVoter(string, uint32, privacy.PaymentAddress) error
+	GetVoteTokenAmount(boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress) (uint32, error)
+	SetVoteTokenAmount(boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress, amount uint32) error
+	GetEncryptFlag(boardType string) (uint32, error)
+	SetEncryptFlag(boardType string, flag uint32)
+	GetEncryptionLastBlockHeight(boardType string) (uint32, error)
+	SetEncryptionLastBlockHeight(boardType string, height uint32)
 
 	// Multisigs
 	StoreMultiSigsRegistration([]byte, []byte) error
 	GetMultiSigsRegistration([]byte) ([]byte, error)
-	GetPaymentAddressFromPubKey(pubKey []byte) []byte
-	GetBoardVoterList(chairPubKey []byte, boardIndex uint32) [][]byte
+	GetBoardVoterList(boardType string, chairPaymentAddress privacy.PaymentAddress, boardIndex uint32) []privacy.PaymentAddress
 
 	Close() error
 }

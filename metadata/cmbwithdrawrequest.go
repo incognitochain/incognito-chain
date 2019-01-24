@@ -39,14 +39,14 @@ func (cwr *CMBWithdrawRequest) Hash() *common.Hash {
 	record := string(cwr.ContractID[:])
 
 	// final hash
-	record += string(cwr.MetadataBase.Hash()[:])
+	record += cwr.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func (cwr *CMBWithdrawRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if request is made by receiver of the contract
-	sender := txr.GetJSPubKey()
+	sender := txr.GetSigPubKey()
 	_, _, _, txContract, err := bcr.GetTransactionByHash(&cwr.ContractID)
 	if err != nil {
 		return false, errors.Errorf("Error retrieving contract for withdrawal")
@@ -70,9 +70,11 @@ func (cwr *CMBWithdrawRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 }
 
 func (cwr *CMBWithdrawRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+	// TODO(@0xbunyip)
 	return true, true, nil // continue to check for fee
 }
 
 func (cwr *CMBWithdrawRequest) ValidateMetadataByItself() bool {
+	// TODO(@0xbunyip)
 	return true
 }
