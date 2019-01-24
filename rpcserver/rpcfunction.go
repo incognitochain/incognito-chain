@@ -400,6 +400,9 @@ handleMempoolEntry - RPC fetch a specific transaction from the mempool
 */
 func (rpcServer RpcServer) handleMempoolEntry(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// Param #1: hash string of tx(tx id)
+	if params == nil {
+		params = ""
+	}
 	txID, err := common.Hash{}.NewHashFromStr(params.(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
