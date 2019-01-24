@@ -54,16 +54,19 @@ var DefaultShardToBeaconPoolConfig = ShardToBeaconPoolConfig{
 }
 
 func NewShardToBeaconPool(shardToBeaconPoolConfig ShardToBeaconPoolConfig, db database.DatabaseInterface) *ShardToBeaconPool {
+	beaconBestState := blockchain.BestStateBeacon{}
 	temp, err := db.FetchBeaconBestState()
 	if err != nil {
 		Logger.log.Error(DatabaseError, err)
-		panic("Fail to get state from db")
+		//TODO db is empty when there not db folder? :)
+		// panic("Fail to get state from db")
+	} else {
+		if err := json.Unmarshal(temp, &beaconBestState); err != nil {
+			Logger.log.Error(DatabaseError, err)
+			panic("Can't Unmarshal beacon beststate")
+		}
 	}
-	beaconBestState := blockchain.BestStateBeacon{}
-	if err := json.Unmarshal(temp, &beaconBestState); err != nil {
-		Logger.log.Error(DatabaseError, err)
-		panic("Can't Unmarshal beacon beststate")
-	}
+
 	pool := &ShardToBeaconPool{
 		config:     shardToBeaconPoolConfig,
 		pending:    make(map[byte][]blockchain.ShardToBeaconBlock),

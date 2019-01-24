@@ -20,8 +20,6 @@ import (
 	"github.com/ninjadotorg/constant/wire"
 )
 
-var SHARD_NUMBER = 256
-
 // ConnState represents the state of the requested connection.
 type ConnState uint8
 
@@ -362,7 +360,7 @@ func (connManager *ConnManager) handleFailed(peerConn *peer.PeerConn) {
 
 func (connManager *ConnManager) DiscoverPeers(discoverPeerAddress string) {
 	Logger.log.Infof("Start Discover Peers : %s", discoverPeerAddress)
-	connManager.randShards = connManager.makeRandShards(SHARD_NUMBER)
+	connManager.randShards = connManager.makeRandShards(common.SHARD_NUMBER)
 	connManager.discoverPeerAddress = discoverPeerAddress
 	for {
 		connManager.processDiscoverPeers()
@@ -648,7 +646,7 @@ func (connManager *ConnManager) handleRandPeersOfNoShard(maxPeers int, mPeers ma
 
 func (connManager *ConnManager) makeRandShards(maxShards int) []byte {
 	shardBytes := make([]byte, 0)
-	for i := 0; i < SHARD_NUMBER; i++ {
+	for i := 0; i < common.SHARD_NUMBER; i++ {
 		shardBytes = append(shardBytes, byte(i))
 	}
 	shardsRet := make([]byte, 0)
