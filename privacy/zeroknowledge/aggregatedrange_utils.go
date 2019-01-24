@@ -23,6 +23,63 @@ type InnerProductProof struct {
 	p *privacy.EllipticPoint
 }
 
+func (proof *InnerProductProof) Bytes() []byte {
+	var res []byte
+
+	res = append(res, byte(len(proof.L)))
+	for _, l := range proof.L {
+		res = append(res, l.Compress()...)
+	}
+
+	for _, r := range proof.R {
+		res = append(res, r.Compress()...)
+	}
+
+	res = append(res, privacy.AddPaddingBigInt(proof.a, privacy.BigIntSize)...)
+	res = append(res, privacy.AddPaddingBigInt(proof.b, privacy.BigIntSize)...)
+	res = append(res, proof.p.Compress()...)
+
+	return res
+}
+
+func (proof *InnerProductProof) SetBytes(bytes []byte) error{
+	if len(bytes) ==0{
+		return nil
+	}
+
+	lenLArray := int(bytes[0])
+	offset := 1
+
+	proof.L = make([]*privacy.EllipticPoint, lenLArray)
+	for i:= 0; i<lenLArray; i++{
+		proof.L[i] = new(privacy.EllipticPoint)
+		proof.L[i].Decompress(bytes[offset: offset+privacy.CompressedPointSize])
+		offset += privacy.CompressedPointSize
+	}
+
+	proof.R = make([]*privacy.EllipticPoint, lenLArray)
+	for i:= 0; i<lenLArray; i++{
+		proof.R[i] = new(privacy.EllipticPoint)
+		proof.R[i].Decompress(bytes[offset: offset+privacy.CompressedPointSize])
+		offset += privacy.CompressedPointSize
+	}
+
+	proof.a = new(big.Int).SetBytes(bytes[offset: offset+privacy.BigIntSize])
+	offset += privacy.BigIntSize
+
+	proof.b = new(big.Int).SetBytes(bytes[offset: offset+privacy.BigIntSize])
+	offset += privacy.BigIntSize
+
+	proof.p = new(privacy.EllipticPoint)
+	proof.p.Decompress(bytes[offset: offset+privacy.CompressedPointSize])
+
+
+
+
+	return nil
+}
+
+
 func (wit *InnerProductWitness) Prove(AggParam *BulletproofParams) (*InnerProductProof, error) {
 	//var AggParam = newBulletproofParams(1)
 	if len(wit.a) != len(wit.b) {
@@ -117,7 +174,7 @@ func (wit *InnerProductWitness) Prove(AggParam *BulletproofParams) (*InnerProduc
 			aPrime[i].Mod(aPrime[i], privacy.Curve.Params().N)
 
 			bPrime[i] = new(big.Int).Mul(b[i], xInverse)
-			bPrime[i].Add(bPrime[i],  new(big.Int).Mul(b[i+nPrime], x))
+			bPrime[i].Add(bPrime[i], new(big.Int).Mul(b[i+nPrime], x))
 			bPrime[i].Mod(bPrime[i], privacy.Curve.Params().N)
 		}
 
@@ -222,11 +279,10 @@ func vectorAdd(a []*big.Int, b []*big.Int) ([]*big.Int, error) {
 	result := make([]*big.Int, len(a))
 	for i := range a {
 		result[i] = new(big.Int).Add(a[i], b[i])
-		result[i] = result[i].Mod(result[i],privacy.Curve.Params().N)
+		result[i] = result[i].Mod(result[i], privacy.Curve.Params().N)
 	}
 	return result, nil
 }
-
 
 //vectorAdd adds two vector and returns result vector
 func vectorSub(a []*big.Int, b []*big.Int) ([]*big.Int, error) {
@@ -237,7 +293,7 @@ func vectorSub(a []*big.Int, b []*big.Int) ([]*big.Int, error) {
 	result := make([]*big.Int, len(a))
 	for i := range a {
 		result[i] = new(big.Int).Sub(a[i], b[i])
-		result[i].Mod(result[i],privacy.Curve.Params().N)
+		result[i].Mod(result[i], privacy.Curve.Params().N)
 	}
 	return result, nil
 }
@@ -276,7 +332,7 @@ func hadamardProduct(a []*big.Int, b []*big.Int) ([]*big.Int, error) {
 
 // powerVector calculate base^n
 // todo:
-func powerVector(base *big.Int, n int) []*big.Int{
+func powerVector(base *big.Int, n int) []*big.Int {
 	result := make([]*big.Int, n)
 
 	for i := 0; i < n; i++ {
