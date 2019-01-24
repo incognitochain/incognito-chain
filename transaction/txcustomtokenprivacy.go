@@ -103,7 +103,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 		inputCoin,
 		fee,
 		hasPrivacyConst,
-		nil,
+		db,
 		nil,
 		nil)
 	if err.(*TransactionError) != nil {

@@ -13,10 +13,7 @@ func (self *BlockChain) GetDatabase() database.DatabaseInterface {
 }
 
 func (self *BlockChain) GetTxChainHeight(tx metadata.Transaction) (uint64, error) {
-	shardID, err := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
-	if err != nil {
-		return 0, err
-	}
+	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	return self.GetChainHeight(shardID), nil
 }
 

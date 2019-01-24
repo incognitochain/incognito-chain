@@ -107,14 +107,11 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 	// Record this tx for fee estimation if enabled. only apply for normal tx
 	if tx.GetType() == common.TxNormalType {
 		if tp.config.FeeEstimator != nil {
-			shardID, err := common.GetTxSenderChain(tx.(*transaction.Tx).PubKeyLastByteSender)
-			if err == nil {
-				if temp, ok := tp.config.FeeEstimator[shardID]; ok {
-					temp.ObserveTransaction(txD)
-				}
-			} else {
-				Logger.log.Error(err)
+			shardID := common.GetShardIDFromLastByte(tx.(*transaction.Tx).PubKeyLastByteSender)
+			if temp, ok := tp.config.FeeEstimator[shardID]; ok {
+				temp.ObserveTransaction(txD)
 			}
+
 		}
 	}
 
@@ -136,11 +133,8 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	var err error
 
 	// get shardID of tx
-	shardID, err = common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 
-	if err != nil {
-		return nil, nil, err
-	}
 	bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestShardBlock.Header.Height
 	// nextBlockHeight := bestHeight + 1
 	// check version
