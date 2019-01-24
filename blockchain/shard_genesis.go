@@ -1,10 +1,9 @@
 package blockchain
 
 import (
+	"github.com/ninjadotorg/constant/wallet"
 	"log"
 	"time"
-
-	"github.com/ninjadotorg/constant/cashec"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy"
@@ -48,11 +47,10 @@ func CreateShardGenesisBlock(
 	icoParams IcoParams,
 ) *ShardBlock {
 
-	ks := &cashec.KeySet{}
-
-	initialKeySet, err := ks.DecodeToKeySet(icoParams.InitialPaymentAddress)
+	log.Printf("Ico payment address:", icoParams.InitialPaymentAddress)
+	keyWallet, err := wallet.Base58CheckDeserialize(icoParams.InitialPaymentAddress)
 	if err != nil {
-		return nil
+		panic(err)
 	}
 
 	body := ShardBody{}
@@ -76,7 +74,7 @@ func CreateShardGenesisBlock(
 		"Decentralized central bank token",
 		"DCB",
 		icoParams.InitialDCBToken,
-		initialKeySet.PaymentAddress,
+		keyWallet.KeySet.PaymentAddress,
 	)
 	block.Body.Transactions = append(block.Body.Transactions, &dcbTokenTx)
 
@@ -86,7 +84,7 @@ func CreateShardGenesisBlock(
 		"Government token",
 		"GOV",
 		icoParams.InitialGOVToken,
-		initialKeySet.PaymentAddress,
+		keyWallet.KeySet.PaymentAddress,
 	)
 	block.Body.Transactions = append(block.Body.Transactions, &govTokenTx)
 
@@ -96,7 +94,7 @@ func CreateShardGenesisBlock(
 		"Commercial bank token",
 		"CMB",
 		icoParams.InitialCMBToken,
-		initialKeySet.PaymentAddress,
+		keyWallet.KeySet.PaymentAddress,
 	)
 	block.Body.Transactions = append(block.Body.Transactions, &cmbTokenTx)
 
@@ -106,7 +104,7 @@ func CreateShardGenesisBlock(
 		"BondTest",
 		"BONTest",
 		icoParams.InitialBondToken,
-		initialKeySet.PaymentAddress,
+		keyWallet.KeySet.PaymentAddress,
 	)
 	block.Body.Transactions = append(block.Body.Transactions, &bondTokenTx)
 
