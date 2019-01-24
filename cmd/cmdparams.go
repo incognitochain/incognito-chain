@@ -61,7 +61,7 @@ func loadParams() (*params, error) {
 	}
 	cfg.DataDir = common.CleanAndExpandPath(cfg.DataDir, defaultHomeDir)
 	if cfg.TestNet {
-		cfg.DataDir = filepath.Join(cfg.DataDir, blockchain.ChainParam.Name)
+		cfg.DataDir = filepath.Join(cfg.DataDir, blockchain.ChainTestParam.Name)
 	} else {
 		cfg.DataDir = filepath.Join(cfg.DataDir, blockchain.MainNetParams.Name)
 	}

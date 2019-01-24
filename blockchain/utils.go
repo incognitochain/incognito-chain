@@ -10,7 +10,7 @@ import (
 const Decimals = uint64(10000) // Each float number is multiplied by this value to store as uint64
 
 func GetShardIDFromLastByte(b byte) byte {
-	return byte(int(b) % ChainParam.ShardsNum)
+	return byte(int(b) % ChainTestParam.ShardsNum)
 }
 
 func GetInterestAmount(principle, interestRate uint64) uint64 {

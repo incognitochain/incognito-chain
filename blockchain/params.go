@@ -88,7 +88,7 @@ var icoParamsTestnetNew = IcoParams{
 	InitialGOVToken:       TestnetInitGovToken,
 }
 
-var ChainParam = Params{
+var ChainTestParam = Params{
 	Name:                TestnetName,
 	Net:                 Testnet,
 	DefaultPort:         TestnetDefaultPort,
@@ -101,6 +101,18 @@ var ChainParam = Params{
 }
 
 // END TESTNET
+
+var ChainMainParam = Params{
+	Name:                TestnetName,
+	Net:                 Testnet,
+	DefaultPort:         TestnetDefaultPort,
+	ShardsNum:           1, //TestNetShardsNum,
+	ShardCommitteeSize:  1, //TestNetShardCommitteeSize,
+	BeaconCommitteeSize: 1, //TestNetBeaconCommitteeSize,
+	// blockChain parameters
+	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnetSerializedPubkey[:], icoParamsTestnetNew, 1000, 1000, 0),
+	GenesisShardBlock:  CreateShardGenesisBlock(1, preSelectShardNodeTestnetSerializedPubkey[:], icoParamsTestnetNew),
+}
 
 type IcoParams struct {
 	InitialPaymentAddress string

@@ -281,7 +281,7 @@ func loadConfig() (*config, []string, error) {
 		DisableRPC:           false,
 		RPCDisableAuth:       false,
 		DiscoverPeers:        true,
-		TestNet:              false,
+		TestNet:              true,
 		DiscoverPeersAddress: "127.0.0.1:9330", //"35.230.8.182:9339",
 		NodeMode:             defaultNodeMode,
 		SpendingKey:          common.EmptyString,

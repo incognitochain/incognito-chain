@@ -9,7 +9,7 @@ import (
 
 func main() {
 
-	beaconBlock := blockchain.ChainParam.GenesisBlockBeacon
+	beaconBlock := blockchain.ChainTestParam.GenesisBlockBeacon
 	beaconStakingCandidate, shardStakingCandidate := candidate.GetStakingCandidate(beaconBlock)
 
 	fmt.Println(beaconStakingCandidate)
