@@ -34,6 +34,9 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 
 	// get params
 	paramsArray := common.InterfaceSlice(params)
+	if len(paramsArray) < 1 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key params"))
+	}
 	listKeyParams := common.InterfaceSlice(paramsArray[0])
 	for _, keyParam := range listKeyParams {
 		keys := keyParam.(map[string]interface{})
