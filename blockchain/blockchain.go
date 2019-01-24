@@ -1630,7 +1630,7 @@ func (self BlockChain) GetFeePerKbTx() uint64 {
 
 func (self *BlockChain) GetCurrentBoardIndex(helper ConstitutionHelper) uint32 {
 	board := helper.GetBoard(self)
-	return board.BoardIndex()
+	return board.GetBoardIndex()
 }
 
 func (self *BlockChain) GetConstitutionIndex(helper ConstitutionHelper) uint32 {

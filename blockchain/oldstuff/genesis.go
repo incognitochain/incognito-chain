@@ -94,6 +94,13 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 			StartSellingAt: 1,
 			SellingWithin:  500,
 		},
+		SellingGOVTokens: &params.SellingGOVTokens{
+			TotalIssue:      0,
+			GOVTokensToSell: 0,
+			GOVTokenPrice:   0,
+			StartSellingAt:  0,
+			SellingWithin:   0,
+		},
 
 		RefundInfo: &params.RefundInfo{},
 		OracleNetwork: &params.OracleNetwork{
@@ -134,16 +141,16 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 
 	// TODO(@0xjackalope): fill correct values
 	boardPaymentAddress := []privacy.PaymentAddress{
-		{
-			Pk: []byte{3, 85, 237, 178, 30, 58, 190, 219, 126, 31, 9, 93, 40, 217, 109, 177, 70, 41, 64, 157, 2, 133, 2, 138, 23, 108, 228, 152, 234, 35, 101, 192, 173},
-			Tk: []byte{3, 116, 125, 158, 22, 126, 79, 50, 46, 119, 52, 133, 6, 246, 156, 94, 138, 244, 107, 147, 25, 78, 231, 105, 162, 185, 245, 152, 196, 116, 86, 15, 30},
-		},
+		//{
+		//	Pk: []byte{3, 85, 237, 178, 30, 58, 190, 219, 126, 31, 9, 93, 40, 217, 109, 177, 70, 41, 64, 157, 2, 133, 2, 138, 23, 108, 228, 152, 234, 35, 101, 192, 173},
+		//	Tk: []byte{3, 116, 125, 158, 22, 126, 79, 50, 46, 119, 52, 133, 6, 246, 156, 94, 138, 244, 107, 147, 25, 78, 231, 105, 162, 185, 245, 152, 196, 116, 86, 15, 30},
+		//},
 	}
 	genesisBlock.Header.DCBGovernor = DCBGovernor{
 		GovernorInfo: GovernorInfo{
-			boardIndex:          0,
+			BoardIndex:          0,
 			StartedBlock:        1,
-			EndBlock:            1000, // = startedblock of decent governor
+			EndBlock:            3, // = startedblock of decent governor
 			BoardPaymentAddress: boardPaymentAddress,
 			StartAmountToken:    0, //Sum of DCB token stack to all member of this board
 		},

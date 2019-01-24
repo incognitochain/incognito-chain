@@ -79,36 +79,62 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case LoanUnlockMeta:
 		md = &LoanUnlock{}
 
-	case VoteDCBBoardMeta:
-		md = &VoteDCBBoardMetadata{}
-
-	case VoteGOVBoardMeta:
-		md = &VoteGOVBoardMetadata{}
 	case SubmitDCBProposalMeta:
 		md = &SubmitDCBProposalMetadata{}
+	case VoteDCBBoardMeta:
+		md = &VoteDCBBoardMetadata{}
+	case AcceptDCBProposalMeta:
+		md = &AcceptDCBProposalMetadata{}
+	case AcceptDCBBoardMeta:
+		md = &AcceptDCBBoardMetadata{}
+
 	case SubmitGOVProposalMeta:
 		md = &SubmitGOVProposalMetadata{}
+	case VoteGOVBoardMeta:
+		md = &VoteGOVBoardMetadata{}
+	case AcceptGOVProposalMeta:
+		md = &AcceptGOVProposalMetadata{}
+	case AcceptGOVBoardMeta:
+		md = &AcceptGOVBoardMetadata{}
 
-	case SealedLv3DCBVoteProposalMeta:
-		md = &SealedLv3DCBVoteProposalMetadata{}
-	case SealedLv2DCBVoteProposalMeta:
-		md = &SealedLv2DCBVoteProposalMetadata{}
+	case SendInitDCBVoteTokenMeta:
+		md = &SendInitDCBVoteTokenMetadata{}
+	case SendInitGOVVoteTokenMeta:
+		md = &SendInitGOVVoteTokenMetadata{}
 	case SealedLv1DCBVoteProposalMeta:
 		md = &SealedLv1DCBVoteProposalMetadata{}
-	case SealedLv3GOVVoteProposalMeta:
-		md = &SealedLv3GOVVoteProposalMetadata{}
-	case SealedLv2GOVVoteProposalMeta:
-		md = &SealedLv2GOVVoteProposalMetadata{}
-	case SealedLv1GOVVoteProposalMeta:
-		md = &SealedLv1GOVVoteProposalMetadata{}
-	case NormalDCBVoteProposalFromOwnerMeta:
-		md = &NormalDCBVoteProposalFromOwnerMetadata{}
+	case SealedLv2DCBVoteProposalMeta:
+		md = &SealedLv2DCBVoteProposalMetadata{}
+	case SealedLv3DCBVoteProposalMeta:
+		md = &SealedLv3DCBVoteProposalMetadata{}
 	case NormalDCBVoteProposalFromSealerMeta:
 		md = &NormalDCBVoteProposalFromSealerMetadata{}
-	case NormalGOVVoteProposalFromOwnerMeta:
-		md = &NormalGOVVoteProposalFromOwnerMetadata{}
+	case NormalDCBVoteProposalFromOwnerMeta:
+		md = &NormalDCBVoteProposalFromOwnerMetadata{}
+	case SealedLv1GOVVoteProposalMeta:
+		md = &SealedLv1GOVVoteProposalMetadata{}
+	case SealedLv2GOVVoteProposalMeta:
+		md = &SealedLv2GOVVoteProposalMetadata{}
+	case SealedLv3GOVVoteProposalMeta:
+		md = &SealedLv3GOVVoteProposalMetadata{}
 	case NormalGOVVoteProposalFromSealerMeta:
 		md = &NormalGOVVoteProposalFromSealerMetadata{}
+	case NormalGOVVoteProposalFromOwnerMeta:
+		md = &NormalGOVVoteProposalFromOwnerMetadata{}
+	case RewardProposalWinnerMeta:
+		md = &RewardProposalWinnerMetadata{}
+	case RewardDCBProposalSubmitterMeta:
+		md = &RewardDCBProposalSubmitterMetadata{}
+	case RewardGOVProposalSubmitterMeta:
+		md = &RewardGOVProposalSubmitterMetadata{}
+	case RewardShareOldDCBBoardMeta:
+		md = &RewardShareOldBoardMetadata{}
+	case RewardShareOldGOVBoardMeta:
+		md = &RewardShareOldBoardMetadata{}
+	case PunishDCBDecryptMeta:
+		md = &PunishDCBDecryptMetadata{}
+	case PunishGOVDecryptMeta:
+		md = &PunishGOVDecryptMetadata{}
 
 	default:
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))

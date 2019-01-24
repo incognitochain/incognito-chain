@@ -45,8 +45,8 @@ type TxPool interface {
 }
 
 type RewardAgent interface {
-	GetBasicSalary(shardID byte) uint64
-	GetSalaryPerTx(shardID byte) uint64
+	GetBasicSalary(chainID byte) uint64
+	GetSalaryPerTx(chainID byte) uint64
 }
 
 func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent RewardAgent) (*BlkTmplGenerator, error) {
@@ -57,17 +57,17 @@ func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent 
 	}, nil
 }
 
-func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*Block, error) {
+func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, chainID byte) (*Block, error) {
 
-	prevBlock := blockgen.chain.BestState[shardID].BestBlock
-	prevBlockHash := blockgen.chain.BestState[shardID].BestBlock.Hash()
-	//prevCmTree := blockgen.chain.BestState[shardID].CmTree.MakeCopy()
+	prevBlock := blockgen.chain.BestState[chainID].BestBlock
+	prevBlockHash := blockgen.chain.BestState[chainID].BestBlock.Hash()
+	//prevCmTree := blockgen.chain.BestState[chainID].CmTree.MakeCopy()
 	sourceTxns := blockgen.txPool.MiningDescs()
 
 	// Get salary per tx
-	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(shardID)
+	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(chainID)
 	// Get basic salary on block
-	basicSalary := blockgen.rewardAgent.GetBasicSalary(shardID)
+	basicSalary := blockgen.rewardAgent.GetBasicSalary(chainID)
 	var accumulativeValues *accumulativeValues
 	var buyBackFromInfos []*buyBackFromInfo
 	var txGroups *txGroups
@@ -90,7 +90,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 	}
 
 concludeBlock:
-	txGroups, accumulativeValues, buyBackFromInfos, err = blockgen.checkAndGroupTxs(sourceTxns, shardID, privatekey)
+	txGroups, accumulativeValues, buyBackFromInfos, err = blockgen.checkAndGroupTxs(sourceTxns, chainID, privatekey)
 	if err != nil {
 		return nil, err
 	}
@@ -121,13 +121,13 @@ concludeBlock:
 		return nil, err
 	}
 	accumulativeValues.totalSalary = totalSalary
-	txGroups, accumulativeValues, updatedOracleValues, err := blockgen.buildResponseTxs(shardID, sourceTxns, privatekey, txGroups, accumulativeValues, buyBackFromInfos)
+	txGroups, accumulativeValues, updatedOracleValues, err := blockgen.buildResponseTxs(chainID, sourceTxns, privatekey, txGroups, accumulativeValues, buyBackFromInfos)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
 	}
 
-	coinbases, err := blockgen.buildCoinbases(shardID, privatekey, txGroups, salaryTx)
+	coinbases, err := blockgen.buildCoinbases(chainID, privatekey, txGroups, salaryTx)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -155,22 +155,28 @@ concludeBlock:
 		Transactions: make([]metadata.Transaction, 0),
 	}
 
-	block.Header = BlockHeader{
-		Height:        prevBlock.Header.Height + 1,
-		Version:       BlockVersion,
-		PrevBlockHash: *prevBlockHash,
-		MerkleRoot:    *merkleRoot,
+	// @0xducdinh
+	block.Header = *NewBlockHeader(
+		BlockVersion,
+		*prevBlockHash,
+		*merkleRoot,
 		// MerkleRootCommitments: common.Hash{},
-		Timestamp:          time.Now().Unix(),
-		BlockCommitteeSigs: make([]string, common.TotalValidators),
-		Committee:          make([]string, common.TotalValidators),
-		ShardID:            shardID,
-		SalaryFund:         accumulativeValues.currentSalaryFund + accumulativeValues.incomeFromBonds + accumulativeValues.totalFee + accumulativeValues.incomeFromGOVTokens - accumulativeValues.totalSalary - accumulativeValues.govPayoutAmount - accumulativeValues.buyBackCoins - accumulativeValues.totalRefundAmt - accumulativeValues.totalOracleRewards,
-		BankFund:           prevBlock.Header.BankFund + accumulativeValues.loanPaymentAmount - accumulativeValues.bankPayoutAmount,
-		GOVConstitution:    prevBlock.Header.GOVConstitution, // TODO: 0xbunyip need get from gov-params tx
-		DCBConstitution:    prevBlock.Header.DCBConstitution, // TODO: 0xbunyip need get from dcb-params tx
-		Oracle:             prevBlock.Header.Oracle,
-	}
+		time.Now().Unix(),
+		make([]string, common.TotalValidators),
+		make([]string, common.TotalValidators),
+		chainID,
+		make([]int, 0),
+		common.Hash{},
+		accumulativeValues.currentSalaryFund+accumulativeValues.incomeFromBonds+accumulativeValues.totalFee+accumulativeValues.incomeFromGOVTokens-accumulativeValues.totalSalary-accumulativeValues.govPayoutAmount-accumulativeValues.buyBackCoins-accumulativeValues.totalRefundAmt-accumulativeValues.totalOracleRewards,
+		prevBlock.Header.BankFund+accumulativeValues.loanPaymentAmount-accumulativeValues.bankPayoutAmount,
+		prevBlock.Header.GOVConstitution, // TODO: 0xbunyip need get from gov-params tx
+		prevBlock.Header.DCBConstitution, // TODO: 0xbunyip need get from dcb-params tx
+		CBParams{},
+		prevBlock.Header.DCBGovernor,
+		prevBlock.Header.GOVGovernor,
+		prevBlock.Header.Height+1,
+		prevBlock.Header.Oracle,
+	)
 
 	err = (&block).updateBlock(blockgen, txGroups, accumulativeValues, updatedOracleValues)
 	if err != nil {

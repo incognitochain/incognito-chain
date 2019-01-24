@@ -96,10 +96,6 @@ func (helper DCBConstitutionHelper) CheckSubmitProposalType(tx metadata.Transact
 	return tx.GetMetadataType() == metadata.SubmitDCBProposalMeta
 }
 
-func (helper DCBConstitutionHelper) CheckVotingProposalType(tx metadata.Transaction) bool {
-	return tx.GetMetadataType() == metadata.VoteDCBProposalMeta
-}
-
 func (helper DCBConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transaction) uint64 {
 	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
 }
@@ -115,26 +111,30 @@ func (helper GOVConstitutionHelper) CheckSubmitProposalType(tx metadata.Transact
 	return tx.GetMetadataType() == metadata.SubmitGOVProposalMeta
 }
 
-func (helper GOVConstitutionHelper) CheckVotingProposalType(tx metadata.Transaction) bool {
-	return tx.GetMetadataType() == metadata.VoteGOVProposalMeta
-}
-
 func (helper GOVConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transaction) uint64 {
 	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
 }
 
-func (helper DCBConstitutionHelper) TxAcceptProposal(txId *common.Hash, voter metadata.Voter) metadata.Transaction {
-	acceptTx := transaction.Tx{
-		Metadata: metadata.NewAcceptDCBProposalMetadata(*txId, voter),
-	}
-	return &acceptTx
+func (helper DCBConstitutionHelper) TxAcceptProposal(
+	txId *common.Hash,
+	voter metadata.Voter,
+	minerPrivateKey *privacy.SpendingKey,
+	db database.DatabaseInterface,
+) metadata.Transaction {
+	meta := metadata.NewAcceptDCBProposalMetadata(*txId, voter)
+	acceptTx := transaction.NewEmptyTx(minerPrivateKey, db, meta)
+	return acceptTx
 }
 
-func (helper GOVConstitutionHelper) TxAcceptProposal(txId *common.Hash, voter metadata.Voter) metadata.Transaction {
-	acceptTx := transaction.Tx{
-		Metadata: metadata.NewAcceptGOVProposalMetadata(*txId, voter),
-	}
-	return &acceptTx
+func (helper GOVConstitutionHelper) TxAcceptProposal(
+	txId *common.Hash,
+	voter metadata.Voter,
+	minerPrivateKey *privacy.SpendingKey,
+	db database.DatabaseInterface,
+) metadata.Transaction {
+	meta := metadata.NewAcceptGOVProposalMetadata(*txId, voter)
+	acceptTx := transaction.NewEmptyTx(minerPrivateKey, db, meta)
+	return acceptTx
 }
 
 func (helper DCBConstitutionHelper) GetBoardType() string {
