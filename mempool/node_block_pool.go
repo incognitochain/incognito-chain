@@ -27,7 +27,7 @@ func (pool *NodeShardPool) PushBlock(block blockchain.ShardBlock) error {
 	nodeShardPoolLock.Lock()
 	shardItems := nodeShardPool[shardID]
 	if shardItems == nil {
-		shardItems = map[uint64][]blockchain.ShardBlock{}
+		shardItems = make(map[uint64][]blockchain.ShardBlock)
 	}
 	shardItems[height] = append(shardItems[height], block)
 	nodeShardPool[shardID] = shardItems
