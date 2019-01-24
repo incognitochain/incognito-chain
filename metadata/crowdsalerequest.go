@@ -3,6 +3,7 @@ package metadata
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
@@ -57,12 +58,13 @@ func NewCrowdsaleRequest(csReqData map[string]interface{}) (*CrowdsaleRequest, e
 func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if sale exists and ongoing
 	saleData, err := bcr.GetCrowdsaleData(csReq.SaleID)
+	fmt.Printf("[db] saleData: %+v\n", saleData)
 	if err != nil {
 		return false, err
 	}
 	// TODO(@0xbunyip): get height of beacon chain on new consensus
 	height, err := bcr.GetTxChainHeight(txr)
-	if err != nil || saleData.EndBlock >= height {
+	if err != nil || height >= saleData.EndBlock {
 		return false, errors.Errorf("Crowdsale ended")
 	}
 
@@ -77,13 +79,14 @@ func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 		keyWalletBurnAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 		unique, pubkey, _ := txr.GetUniqueReceiver()
 		if !unique || !bytes.Equal(pubkey, keyWalletBurnAccount.KeySet.PaymentAddress.Pk[:]) {
-			return false, errors.Errorf("Crowdsale request must send CST to DCBAddress")
+			return false, errors.Errorf("Crowdsale request must send CST to Burning address")
 		}
 	} else {
 		keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 		unique, pubkey, _ := txr.GetTokenUniqueReceiver()
+		fmt.Printf("[db] keywallet and pubkey: \n%x\n%x\n", keyWalletDCBAccount.KeySet.PaymentAddress.Pk[:], pubkey)
 		if !unique || !bytes.Equal(pubkey, keyWalletDCBAccount.KeySet.PaymentAddress.Pk[:]) {
-			return false, errors.Errorf("Crowdsale request must send tokens to BurningAddress")
+			return false, errors.Errorf("Crowdsale request must send tokens to DCB address")
 		}
 	}
 

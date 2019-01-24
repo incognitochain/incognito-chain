@@ -111,11 +111,13 @@ type SaleData struct {
 	SaleID   []byte // Unique id of the crowdsale to store in db
 	EndBlock uint64
 
-	BuyingAsset  common.Hash
-	BuyingAmount uint64 // TODO(@0xbunyip): change to big.Int
+	BuyingAsset     common.Hash
+	BuyingAmount    uint64
+	DefaultBuyPrice uint64
 
-	SellingAsset  common.Hash
-	SellingAmount uint64
+	SellingAsset     common.Hash
+	SellingAmount    uint64
+	DefaultSellPrice uint64
 }
 
 func NewSaleData(
@@ -123,16 +125,20 @@ func NewSaleData(
 	endBlock uint64,
 	buyingAsset *common.Hash,
 	buyingAmount uint64,
+	defaultBuyPrice uint64,
 	sellingAsset *common.Hash,
 	sellingAmount uint64,
+	defaultSellPrice uint64,
 ) *SaleData {
 	return &SaleData{
-		SaleID:        saleID,
-		EndBlock:      endBlock,
-		BuyingAsset:   *buyingAsset,
-		BuyingAmount:  buyingAmount,
-		SellingAsset:  *sellingAsset,
-		SellingAmount: sellingAmount,
+		SaleID:           saleID,
+		EndBlock:         endBlock,
+		BuyingAsset:      *buyingAsset,
+		BuyingAmount:     buyingAmount,
+		DefaultBuyPrice:  defaultBuyPrice,
+		SellingAsset:     *sellingAsset,
+		SellingAmount:    sellingAmount,
+		DefaultSellPrice: defaultSellPrice,
 	}
 }
 
@@ -155,8 +161,10 @@ func NewSaleDataFromJson(data interface{}) *SaleData {
 		uint64(saleDataData["EndBlock"].(float64)),
 		buyingAsset,
 		uint64(saleDataData["BuyingAmount"].(float64)),
+		uint64(saleDataData["DefaultBuyPrice"].(float64)),
 		sellingAsset,
 		uint64(saleDataData["SellingAmount"].(float64)),
+		uint64(saleDataData["DefaultSellPrice"].(float64)),
 	)
 	return saleData
 }
@@ -240,14 +248,14 @@ func NewOracleNetworkFromJson(data interface{}) *OracleNetwork {
 }
 
 func (saleData *SaleData) Hash() *common.Hash {
-	record := ""
-	for _, i := range saleData.SaleID {
-		record += string(i)
-	}
-	for _, i := range saleData.BuyingAsset {
-		record += string(i)
-	}
+	record := string(saleData.SaleID)
 	record += string(saleData.EndBlock)
+	record += saleData.BuyingAsset.String()
+	record += string(saleData.BuyingAmount)
+	record += string(saleData.DefaultBuyPrice)
+	record += saleData.SellingAsset.String()
+	record += string(saleData.SellingAmount)
+	record += string(saleData.DefaultSellPrice)
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

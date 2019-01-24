@@ -76,7 +76,7 @@ func (self *BlockChain) GetLoanPayment(loanID []byte) (uint64, uint64, uint64, e
 func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*params.SaleData, error) {
 	endBlock, buyingAsset, buyingAmount, sellingAsset, sellingAmount, err := self.config.DataBase.GetCrowdsaleData(saleID)
 	var saleData *params.SaleData
-	if err != nil {
+	if err == nil {
 		saleData = &params.SaleData{
 			SaleID:        saleID,
 			EndBlock:      endBlock,
