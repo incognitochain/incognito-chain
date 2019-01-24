@@ -42,28 +42,15 @@ func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte)
 	}
 	// Verify block with previous best state
 	// not verify agg signature in this function
+	prevBeaconHeight := shardBestState.BeaconHeight
+	beaconBlocks, err := FetchBeaconBlockFromHeight(self.config.DataBase, prevBeaconHeight, block.Header.BeaconHeight)
+	if err != nil {
+		return err
+	}
 	if err := shardBestState.VerifyBestStateWithShardBlock(block, false, shardID); err != nil {
 		return err
 	}
 	//========Update best state with new block
-	prevBeaconHeight := shardBestState.BeaconHeight
-	beaconBlocks := []*BeaconBlock{}
-	for i := prevBeaconHeight + 1; i <= block.Header.BeaconHeight; i++ {
-		hash, err := self.config.DataBase.GetBeaconBlockHashByIndex(i)
-		if err != nil {
-			return err
-		}
-		beaconBlockByte, err := self.config.DataBase.FetchBeaconBlock(hash)
-		if err != nil {
-			return err
-		}
-		beaconBlock := BeaconBlock{}
-		err = json.Unmarshal(beaconBlockByte, &beaconBlock)
-		if err != nil {
-			return NewBlockChainError(UnmashallJsonBlockError, err)
-		}
-		beaconBlocks = append(beaconBlocks, &beaconBlock)
-	}
 	if err := shardBestState.Update(block, beaconBlocks); err != nil {
 		return err
 	}
@@ -155,7 +142,12 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 
 	Logger.log.Infof("SHARD %+v | Update BestState with Block %+v \n", block.Header.ShardID, *block.Hash())
 	//========Update best state with new block
-	if err := self.BestState.Shard[shardID].Update(block, nil); err != nil {
+	prevBeaconHeight := self.BestState.Shard[shardID].BeaconHeight
+	beaconBlocks, err := FetchBeaconBlockFromHeight(self.config.DataBase, prevBeaconHeight, block.Header.BeaconHeight)
+	if err != nil {
+		return err
+	}
+	if err := self.BestState.Shard[shardID].Update(block, beaconBlocks); err != nil {
 		return err
 	}
 
@@ -188,6 +180,7 @@ DO NOT USE THIS with GENESIS BLOCK
 - ActionsRoot
 - BeaconHeight
 - BeaconHash
+- Swap instruction
 */
 func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID byte) error {
 	Logger.log.Debugf("SHARD %+v | Begin VerifyPreProcessingShardBlock Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
@@ -270,7 +263,14 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	if newHash.IsEqual(beaconHash) == false {
 		return NewBlockChainError(BeaconError, errors.New("Beacon block height and beacon block hash are not compatible in Database"))
 	}
-
+	// Swap instruction
+	for _, l := range block.Body.Instructions {
+		if l[0] == "swap" {
+			if l[3] != "shard" || l[4] != strconv.Itoa(int(shardID)) {
+				return NewBlockChainError(InstructionError, errors.New("Swap instruction is invalid"))
+			}
+		}
+	}
 	//TODO: UNCOMMENT To verify Cross Shard Block
 	// // Get cross shard block from pool
 	// crossShardMap := make(map[byte][]CrossShardBlock)
@@ -348,6 +348,7 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	- Has parent hash is current best state best blockshard hash (compatible with current beststate)
 	- Block Height
 	- Beacon Height
+	- Action root
 */
 func (self *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBlock, isVerifySig bool, shardID byte) error {
 	Logger.log.Debugf("SHARD %+v | Begin VerifyBestStateWithShardBlock Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
@@ -405,7 +406,6 @@ func (self *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBloc
 	self.BestBeaconHash = block.Header.BeaconHash
 	self.BestShardBlock = block
 	self.ShardHeight = block.Header.Height
-	prevBeaconEpoch := self.Epoch
 	self.Epoch = block.Header.Epoch
 	self.BeaconHeight = block.Header.BeaconHeight
 	self.ShardProposerIdx = common.IndexOfStr(block.Header.Producer, self.ShardCommittee)
@@ -422,15 +422,24 @@ func (self *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBloc
 		}
 	}
 	// Swap committee
-	//TODO: what if block.Header.Epoch - prevBeaconEpoch > 1
-	if prevBeaconEpoch < block.Header.Epoch {
-		self.ShardPendingValidator, self.ShardCommittee, shardSwapedCommittees, shardNewCommittees, err = SwapValidator(self.ShardPendingValidator, self.ShardCommittee, COMMITEES, OFFSET)
-		if err != nil {
-			Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-			return NewBlockChainError(UnExpectedError, err)
+	for _, l := range block.Body.Instructions {
+		if l[0] == "swap" {
+			self.ShardPendingValidator, self.ShardCommittee, shardSwapedCommittees, shardNewCommittees, err = SwapValidator(self.ShardPendingValidator, self.ShardCommittee, COMMITEES, OFFSET)
+			if err != nil {
+				Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+				return NewBlockChainError(UnExpectedError, err)
+			}
+			swapedCommittees := strings.Split(l[2], ",")
+			newCommittees := strings.Split(l[1], ",")
+			if !reflect.DeepEqual(swapedCommittees, shardSwapedCommittees) {
+				return NewBlockChainError(SwapError, errors.New("Invalid shard swapped committees"))
+			}
+			if !reflect.DeepEqual(newCommittees, shardNewCommittees) {
+				return NewBlockChainError(SwapError, errors.New("Invalid shard new committees"))
+			}
+			Logger.log.Infof("SHARD %+v | Swap: Out committee %+v", block.Header.ShardID, shardSwapedCommittees)
+			Logger.log.Infof("SHARD %+v | Swap: In committee %+v", block.Header.ShardID, shardNewCommittees)
 		}
-		Logger.log.Infof("SHARD %+v | Swap: Out committee %+v", block.Header.ShardID, shardSwapedCommittees)
-		Logger.log.Infof("SHARD %+v | Swap: In committee %+v", block.Header.ShardID, shardNewCommittees)
 	}
 	//Update best cross shard
 	for shardID, crossShardBlock := range block.Body.CrossOutputCoin {
@@ -439,6 +448,12 @@ func (self *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBloc
 	Logger.log.Debugf("SHARD %+v | Finish update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	return nil
 }
+
+/*
+	VerifyPostProcessingShardBlock
+	- commitee root
+	- pending validator root
+*/
 func (self *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlock, shardID byte) error {
 	var (
 		isOk bool

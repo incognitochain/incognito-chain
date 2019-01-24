@@ -663,7 +663,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		//Test with 1 member
 		self.BeaconCommittee = append(self.BeaconCommittee, newBeaconCandidate[0])
 		self.ShardCommittee[byte(0)] = append(self.ShardCommittee[byte(0)], newShardCandidate[0])
-
+		self.BeaconEpoch = 1
 		//Test with 4 member
 		//self.BeaconCommittee = append(self.BeaconCommittee, newBeaconCandidate...)
 		//self.ShardCommittee[byte(0)] = append(self.ShardCommittee[byte(0)], newShardCandidate[:3]...)
@@ -675,7 +675,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		self.CandidateShardWaitingForNextRandom = append(self.CandidateShardWaitingForNextRandom, newShardCandidate...)
 	}
 
-	if self.BeaconHeight%EPOCH == 0 && self.BeaconHeight != 1 {
+	if self.BeaconHeight%EPOCH == 1 && self.BeaconHeight != 1 {
 		self.IsGetRandomNumber = false
 		// Begin of each epoch
 	} else if self.BeaconHeight%EPOCH < RANDOM_TIME {
@@ -717,8 +717,8 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 				return err
 			}
 		}
-	} else if self.BeaconHeight%EPOCH == EPOCH-1 {
-		// At the end of each epoch, eg: block 199, 399, 599 with epoch is 200
+	} else if self.BeaconHeight%EPOCH == EPOCH {
+		// At the end of each epoch, eg: block 200, 400, 600 with epoch is 200 blocks
 		// Swap pending validator in committees, pop some of public key in committees out
 		// ONLY SWAP FOR BEACON
 		// SHARD WILL SWAP ITSELF
