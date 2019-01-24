@@ -6,11 +6,13 @@ import (
 	"errors"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
@@ -21,6 +23,10 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	beaconHeight := blockgen.chain.BestState.Beacon.BeaconHeight
 	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
 	epoch := blockgen.chain.BestState.Beacon.BeaconEpoch
+	if epoch-blockgen.chain.BestState.Shard[shardID].Epoch > 1 {
+		beaconHeight = blockgen.chain.BestState.Shard[shardID].Epoch * EPOCH
+		epoch = blockgen.chain.BestState.Shard[shardID].Epoch + 1
+	}
 	// Get valid transaction (add tx, remove tx, fee of add tx)
 	txsToAdd, txToRemove, totalFee := blockgen.getPendingTransaction(shardID)
 	if len(txsToAdd) == 0 {
@@ -52,8 +58,36 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	remainingFund := currentSalaryFund + totalFee + salaryFundAdd - totalSalary
 	coinbases := []metadata.Transaction{salaryTx}
 	txsToAdd = append(coinbases, txsToAdd...)
+	//Crossoutputcoint
 	crossOutputCoin := blockgen.getCrossOutputCoin(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight)
-	instructions := CreateShardActionFromOthers()
+	//Assign Instruction
+	//Fetch beacon block from height
+	beaconBlocks, err := FetchBeaconBlockFromHeight(blockgen.chain.config.DataBase, blockgen.chain.BestState.Shard[shardID].BeaconHeight+1, beaconHeight)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
+	}
+	assignInstructions := GetAssingInstructionFromBeaconBlock(beaconBlocks, shardID)
+	shardPendingValidator := blockgen.chain.BestState.Shard[shardID].ShardPendingValidator
+	shardCommittees := blockgen.chain.BestState.Shard[shardID].ShardCommittee
+	for _, assignInstruction := range assignInstructions {
+		shardPendingValidator = append(shardPendingValidator, strings.Split(assignInstruction[1], ",")...)
+	}
+	//Swap instruction
+	instructions := [][]string{}
+	swapInstruction := []string{}
+	// Swap instruction only appear when reach the last block in an epoch
+	//@NOTICE: In this block, only pending validator change, shard committees will change in the next block
+	if beaconHeight%EPOCH == 0 {
+		swapInstruction, err = CreateSwapAction(shardPendingValidator, shardCommittees, shardID)
+		if err != nil {
+			Logger.log.Error(err)
+			return nil, err
+		}
+	}
+	if !reflect.DeepEqual(swapInstruction, []string{}) {
+		instructions = append(instructions, swapInstruction)
+	}
 	block := &ShardBlock{
 		Body: ShardBody{
 			CrossOutputCoin: crossOutputCoin,
@@ -99,7 +133,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
-	pendingValidatorRoot, err := GenerateHashFromStringArray(blockgen.chain.BestState.Shard[shardID].ShardPendingValidator)
+	pendingValidatorRoot, err := GenerateHashFromStringArray(shardPendingValidator)
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
@@ -223,7 +257,39 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 	}
 	return res
 }
-
+func GetAssingInstructionFromBeaconBlock(beaconBlocks []*BeaconBlock, shardID byte) [][]string {
+	assignInstruction := [][]string{}
+	for _, beaconBlock := range beaconBlocks {
+		for _, l := range beaconBlock.Body.Instructions {
+			if l[0] == "assign" && l[2] == "shard" {
+				if strings.Compare(l[3], strconv.Itoa(int(shardID))) == 0 {
+					assignInstruction = append(assignInstruction, l)
+				}
+			}
+		}
+	}
+	return assignInstruction
+}
+func FetchBeaconBlockFromHeight(db database.DatabaseInterface, from uint64, to uint64) ([]*BeaconBlock, error) {
+	beaconBlocks := []*BeaconBlock{}
+	for i := from; i <= to; i++ {
+		hash, err := db.GetBeaconBlockHashByIndex(i)
+		if err != nil {
+			return beaconBlocks, err
+		}
+		beaconBlockByte, err := db.FetchBeaconBlock(hash)
+		if err != nil {
+			return beaconBlocks, err
+		}
+		beaconBlock := BeaconBlock{}
+		err = json.Unmarshal(beaconBlockByte, &beaconBlock)
+		if err != nil {
+			return beaconBlocks, NewBlockChainError(UnmashallJsonBlockError, err)
+		}
+		beaconBlocks = append(beaconBlocks, &beaconBlock)
+	}
+	return beaconBlocks, nil
+}
 func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) {
 	byteMap := make([]byte, common.SHARD_NUMBER)
 	for _, tx := range txList {
@@ -248,9 +314,13 @@ func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) 
 	- bpft protocol: swap
 	....
 */
-func CreateShardActionFromOthers(v ...interface{}) (actions [][]string) {
-	//TODO: swap action
-	return
+func CreateSwapAction(commitees []string, pendingValidator []string, shardID byte) ([]string, error) {
+	_, _, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, COMMITEES, OFFSET)
+	if err != nil {
+		return nil, err
+	}
+	swapInstruction := []string{"swap", strings.Join(shardNewCommittees, ","), strings.Join(shardSwapedCommittees, ","), "shard", strconv.Itoa(int(shardID))}
+	return swapInstruction, nil
 }
 
 /*

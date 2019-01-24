@@ -35,6 +35,8 @@ const (
 	ProducerError
 	ShardStateError
 	TransactionError
+	InstructionError
+	SwapError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -53,18 +55,19 @@ var ErrCodeMessage = map[int]struct {
 	TimestampError:                {-10, "Timestamp Error"},
 	InstructionHashError:          {-11, "Instruction Hash Error"},
 	ShardStateHashError:           {-12, "ShardState Hash Error"},
-
-	RandomError:           {-13, "Random Number Error"},
-	VerificationError:     {-14, "Verify Block Error"},
-	BeaconError:           {-15, "Beacon Error"},
-	CrossShardBlockError:  {-17, "CrossShardBlockError"},
-	SignatureError:        {-16, "Signature Error"},
-	CandidateError:        {-17, "Candidate Error"},
-	ShardIDError:          {-18, "ShardID Error"},
-	ProducerError:         {-19, "Producer Error"},
-	ShardStateError:       {-21, "Shard State Error"},
-	NotSupportInLightMode: {-20, "This features is not supported in light mode running"},
-	TransactionError:      {-22, "Transaction invalid"},
+	RandomError:                   {-13, "Random Number Error"},
+	VerificationError:             {-14, "Verify Block Error"},
+	BeaconError:                   {-15, "Beacon Error"},
+	CrossShardBlockError:          {-17, "CrossShardBlockError"},
+	SignatureError:                {-16, "Signature Error"},
+	CandidateError:                {-17, "Candidate Error"},
+	ShardIDError:                  {-18, "ShardID Error"},
+	ProducerError:                 {-19, "Producer Error"},
+	ShardStateError:               {-21, "Shard State Error"},
+	NotSupportInLightMode:         {-20, "This features is not supported in light mode running"},
+	TransactionError:              {-22, "Transaction invalid"},
+	InstructionError:              {-23, "Instruction Error"},
+	SwapError:                     {-24, "Swap Error"},
 }
 
 type BlockChainError struct {

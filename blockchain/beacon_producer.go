@@ -74,7 +74,8 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	beaconBlock.Header.Version = VERSION
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	beaconBlock.Header.Epoch = beaconBestState.BeaconEpoch
-	if beaconBlock.Header.Height%EPOCH == 0 {
+	// Eg: Epoch is 200 blocks then increase epoch at block 201, 401, 601
+	if beaconBlock.Header.Height%EPOCH == 1 {
 		beaconBlock.Header.Epoch++
 	}
 	beaconBlock.Header.Timestamp = time.Now().Unix()
@@ -160,31 +161,31 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 	//Shard block is a map ShardId -> array of shard block
 	for shardID, shardBlocks := range shardsBlocks {
 		// Only accept block in one epoch
+		tempShardBlocks := make([]ShardToBeaconBlock, len(shardBlocks))
+		copy(tempShardBlocks, shardBlocks)
 		totalBlock := 0
-		slice.Sort(shardBlocks[:], func(i, j int) bool {
-			return shardBlocks[i].Header.Height < shardBlocks[j].Header.Height
+		slice.Sort(tempShardBlocks[:], func(i, j int) bool {
+			return tempShardBlocks[i].Header.Height < tempShardBlocks[j].Header.Height
 		})
+		if !reflect.DeepEqual(tempShardBlocks, shardBlocks) {
+			panic("Shard To Beacon block not in right format of increasing height")
+		}
 		for index, shardBlock := range shardBlocks {
 			currentCommittee := beaconBestState.ShardCommittee[shardID]
-			currentPendingValidator := beaconBestState.ShardPendingValidator[shardID]
 			hash := shardBlock.Header.Hash()
 			err := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
-			if index == 0 && err != nil {
-				shardSwapedCommittees := []string{}
-				shardNewCommittees := []string{}
-				currentCommittee, currentPendingValidator, shardSwapedCommittees, shardNewCommittees, err = SwapValidator(currentPendingValidator, currentCommittee, COMMITEES, OFFSET)
-				if err != nil {
-					totalBlock = index
-					break
+			if err != nil {
+				totalBlock = index
+				break
+			}
+			for _, l := range shardBlock.Instructions {
+				if l[0] == "swap" {
+					if l[3] != "shard" || l[4] != strconv.Itoa(int(shardID)) {
+						panic("Swap instruction is invalid")
+					} else {
+						validSwap[shardID] = append(validSwap[shardID], l)
+					}
 				}
-				err = ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
-				if err != nil {
-					totalBlock = index
-					break
-				}
-				// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "shard" "shardID"]
-				swapInstruction := []string{"swap", strings.Join(shardNewCommittees, ","), strings.Join(shardSwapedCommittees, ","), "shard", strconv.Itoa(int(shardID))}
-				validSwap[shardID] = append(validSwap[shardID], swapInstruction)
 			}
 			if index != 0 && err != nil {
 				totalBlock = index
@@ -288,8 +289,8 @@ func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, stakers [][
 	// ["stake", "pubkey.....", "shard" or "beacon"]
 	// beaconStaker := []string{}
 	// shardStaker := []string{}
-	for _, assignInstruction := range stakers {
-		instructions = append(instructions, assignInstruction)
+	for _, stakeInstruction := range stakers {
+		instructions = append(instructions, stakeInstruction)
 	}
 	//=======Random and Assign if random number is detected
 	// Time to get random number and no block in this epoch get it
