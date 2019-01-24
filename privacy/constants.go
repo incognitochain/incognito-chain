@@ -35,5 +35,5 @@ const (
 	EncryptedSymKeySize     = 66 //bytes
 
 	//Tech debt, this param is change with blockchain package
-	SHARD_NUMBER = 4
+	SHARD_NUMBER = 1
 )
