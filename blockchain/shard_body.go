@@ -122,7 +122,7 @@ func (self *ShardBody) CalcMerkleRootShard() *common.Hash {
 		shardTxs[shardID] = append(shardTxs[shardID], tx.Hash())
 	}
 
-	shardsHash := make([]*common.Hash, ChainTestParam.ShardsNum)
+	shardsHash := make([]*common.Hash, common.SHARD_NUMBER)
 	for idx, _ := range shardsHash {
 		h := &common.Hash{}
 		shardsHash[idx], _ = h.NewHashFromStr("")

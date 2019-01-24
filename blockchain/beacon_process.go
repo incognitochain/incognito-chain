@@ -796,7 +796,7 @@ func calculateHash(candidate string, rand int64) (shardID byte) {
 	// fmt.Println("Hash of candidate serialized pubkey and random number", hash)
 	// fmt.Printf("\"%d\",\n", hash[len(hash)-1])
 	// fmt.Println("Shard to be assign", hash[len(hash)-1])
-	shardID = byte(int(hash[len(hash)-1]) % ChainTestParam.ShardsNum)
+	shardID = byte(int(hash[len(hash)-1]) % common.SHARD_NUMBER)
 	return shardID
 }
 
