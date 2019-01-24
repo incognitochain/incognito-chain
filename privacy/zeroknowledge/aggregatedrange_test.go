@@ -113,7 +113,7 @@ func TestInnerProductProve(t *testing.T) {
 
 func TestAggregatedRangeProve(t *testing.T) {
 	wit := new(AggregatedRangeWitness)
-	numValue := 13
+	numValue := 1
 	wit.values = make([]*big.Int, numValue)
 	wit.rands = make([]*big.Int, numValue)
 
