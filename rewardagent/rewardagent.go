@@ -25,7 +25,7 @@ func (rewardAgent RewardAgent) Init(cfg *RewardAgentConfig) (*RewardAgent, error
 func (self *RewardAgent) GetBasicSalary(shardID byte) uint64 {
 	// TODO: 0xbahamoot
 	// return self.config.BlockChain.BestState.Beacon.BestBlock.Header.(*blockchain.BlockHeaderBeacon).GOVConstitution.GOVParams.BasicSalary
-	return 1
+	return 1000
 }
 
 func (self *RewardAgent) GetSalaryPerTx(shardID byte) uint64 {
