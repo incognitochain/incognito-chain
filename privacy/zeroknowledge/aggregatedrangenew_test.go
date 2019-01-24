@@ -101,7 +101,7 @@ func TestInnerProductProve(t *testing.T) {
 		fmt.Printf("Err: %v\n", err)
 	}
 
-	res := proof.Verify()
+	res := proof.Verify(AggParam)
 
 	assert.Equal(t, true, res)
 
@@ -116,8 +116,9 @@ func TestInnerProductProve(t *testing.T) {
 
 func TestAggregatedRangeProve(t *testing.T) {
 	wit := new(AggregatedRangeWitness)
-	wit.values = make([]*big.Int, 1)
-	wit.rands = make([]*big.Int, 1)
+	numValue := 1
+	wit.values = make([]*big.Int, numValue)
+	wit.rands = make([]*big.Int, numValue)
 
 	for i := range wit.values {
 		wit.values[i] = big.NewInt(10)

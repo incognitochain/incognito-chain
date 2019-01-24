@@ -135,12 +135,12 @@ func (wit *InnerProductWitness) Prove(AggParam *BulletproofParams) (*InnerProduc
 	return proof, nil
 }
 
-func (proof *InnerProductProof) Verify() bool {
-	var AggParam = newBulletproofParams(1)
+func (proof *InnerProductProof) Verify(AggParam *BulletproofParams) bool {
+	//var AggParam = newBulletproofParams(1)
 	p := new(privacy.EllipticPoint)
 	p.Set(proof.p.X, proof.p.Y)
 
-	n := privacy.MaxExp
+	n := len(AggParam.G)
 
 	G := make([]*privacy.EllipticPoint, n)
 	H := make([]*privacy.EllipticPoint, n)

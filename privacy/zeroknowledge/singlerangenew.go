@@ -311,5 +311,5 @@ func (proof *SingleRangeProof) Verify() bool {
 	//	return false
 	//}
 
-	return proof.innerProductProof.Verify()
+	return proof.innerProductProof.Verify(AggParam)
 }
