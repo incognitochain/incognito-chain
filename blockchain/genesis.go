@@ -150,7 +150,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 		GovernorInfo: GovernorInfo{
 			BoardIndex:          0,
 			StartedBlock:        1,
-			EndBlock:            3, // = startedblock of decent governor
+			EndBlock:            5, // = startedblock of decent governor
 			BoardPaymentAddress: boardPaymentAddress,
 			StartAmountToken:    0, //Sum of DCB token stack to all member of this board
 		},

@@ -127,8 +127,10 @@ func (addr *PaymentAddress) SetBytes(bytes []byte) *PaymentAddress {
 }
 
 func NewPaymentAddressFromByte(b []byte) *PaymentAddress {
+	tmp := make([]byte, len(b))
+	copy(tmp, b)
 	paymentAddress := PaymentAddress{}
-	paymentAddress.SetBytes(b)
+	paymentAddress.SetBytes(tmp)
 	return &paymentAddress
 }
 
