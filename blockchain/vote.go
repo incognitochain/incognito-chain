@@ -305,16 +305,17 @@ func (block *Block) UpdateDCBBoard(thisTx metadata.Transaction) error {
 	block.Header.DCBGovernor.BoardIndex += 1
 	block.Header.DCBGovernor.BoardPaymentAddress = meta.DCBBoardPaymentAddress
 	block.Header.DCBGovernor.StartedBlock = uint32(block.Header.Height)
-	block.Header.DCBGovernor.EndBlock = block.Header.DCBGovernor.StartedBlock + common.DurationOfTermDCB
+	block.Header.DCBGovernor.EndBlock = block.Header.DCBGovernor.StartedBlock + common.DurationOfDCBBoard
 	block.Header.DCBGovernor.StartAmountToken = meta.StartAmountDCBToken
 	return nil
 }
 
 func (block *Block) UpdateGOVBoard(thisTx metadata.Transaction) error {
 	meta := thisTx.GetMetadata().(*metadata.AcceptGOVBoardMetadata)
+	block.Header.GOVGovernor.BoardIndex += 1
 	block.Header.GOVGovernor.BoardPaymentAddress = meta.GOVBoardPaymentAddress
 	block.Header.GOVGovernor.StartedBlock = uint32(block.Header.Height)
-	block.Header.GOVGovernor.EndBlock = block.Header.GOVGovernor.StartedBlock + common.DurationOfTermGOV
+	block.Header.GOVGovernor.EndBlock = block.Header.GOVGovernor.StartedBlock + common.DurationOfGOVBoard
 	block.Header.GOVGovernor.StartAmountToken = meta.StartAmountGOVToken
 	return nil
 }
@@ -518,8 +519,7 @@ func (blockgen *BlkTmplGenerator) neededNewDCBGovernor(chainID byte) bool {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	endGovernorBlock := int32(BestBlock.Header.DCBGovernor.EndBlock)
 	currentHeight := BestBlock.Header.Height + 1
-	wtf := endGovernorBlock == currentHeight
-	return wtf
+	return endGovernorBlock == currentHeight
 }
 
 func (blockgen *BlkTmplGenerator) neededNewGOVGovernor(chainID byte) bool {

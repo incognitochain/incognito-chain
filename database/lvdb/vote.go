@@ -82,15 +82,14 @@ func GetNumberOfGovernor(boardType string) int {
 	return numberOfGovernors
 }
 
-func (db *db) GetTopMostVoteGovernor(boardType string, currentBoardIndex uint32) (database.CandidateList, error) {
+func (db *db) GetTopMostVoteGovernor(boardType string, boardIndex uint32) (database.CandidateList, error) {
 	var candidateList database.CandidateList
 	//use prefix  as in file lvdb/block.go FetchChain
-	newBoardIndex := currentBoardIndex + 1
-	prefix := GetKeyVoteBoardSum(boardType, newBoardIndex, nil)
+	prefix := GetKeyVoteBoardSum(boardType, boardIndex, nil)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
 		_, _, paymentAddress, err := ParseKeyVoteBoardSum(iter.Key())
-		countKey := GetKeyVoteBoardCount(boardType, newBoardIndex, *paymentAddress)
+		countKey := GetKeyVoteBoardCount(boardType, boardIndex, *paymentAddress)
 		if err != nil {
 			return nil, err
 		}

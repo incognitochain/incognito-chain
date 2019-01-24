@@ -580,8 +580,8 @@ func (self *BlockChain) UpdateVoteCountBoard(block *Block) error {
 	DCBBoardIndex := uint32(0)
 	GOVBoardIndex := uint32(0)
 	if block.Header.Height != 1 {
-		DCBBoardIndex = self.GetCurrentBoardIndex(DCBConstitutionHelper{}) + 1
-		GOVBoardIndex = self.GetCurrentBoardIndex(GOVConstitutionHelper{}) + 1
+		DCBBoardIndex = block.Header.DCBGovernor.BoardIndex + 1
+		GOVBoardIndex = block.Header.GOVGovernor.BoardIndex + 1
 	}
 	for _, tx := range block.Transactions {
 		switch tx.GetMetadataType() {
@@ -610,13 +610,13 @@ func (self *BlockChain) UpdateVoteCountBoard(block *Block) error {
 	return nil
 }
 
-func (self *BlockChain) UpdateVoteTokenHolder(block *Block) error {
+func (self *BlockChain) UpdateVoteTokenHolderDB(block *Block) error {
 	for _, tx := range block.Transactions {
 		switch tx.GetMetadataType() {
 		case metadata.SendInitDCBVoteTokenMeta:
 			{
 				meta := tx.GetMetadata().(*metadata.SendInitDCBVoteTokenMetadata)
-				err := self.config.DataBase.SendInitVoteToken("dcb", self.GetCurrentBoardIndex(DCBConstitutionHelper{}), meta.ReceiverPaymentAddress, meta.Amount)
+				err := self.config.DataBase.SendInitVoteToken("dcb", block.Header.DCBGovernor.BoardIndex, meta.ReceiverPaymentAddress, meta.Amount)
 				if err != nil {
 					return err
 				}
@@ -624,7 +624,7 @@ func (self *BlockChain) UpdateVoteTokenHolder(block *Block) error {
 		case metadata.SendInitGOVVoteTokenMeta:
 			{
 				meta := tx.GetMetadata().(*metadata.SendInitGOVVoteTokenMetadata)
-				err := self.config.DataBase.SendInitVoteToken("gov", self.GetCurrentBoardIndex(GOVConstitutionHelper{}), meta.ReceiverPaymentAddress, meta.Amount)
+				err := self.config.DataBase.SendInitVoteToken("gov", block.Header.GOVGovernor.BoardIndex, meta.ReceiverPaymentAddress, meta.Amount)
 				if err != nil {
 					return err
 				}

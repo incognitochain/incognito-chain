@@ -3,7 +3,6 @@ package ppos
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -242,7 +241,6 @@ func (self *Engine) StartProducer(producerKeySet cashec.KeySet) {
 				return
 			default:
 				if self.started {
-					fmt.Print("wtf")
 					if common.IntArrayEquals(self.knownChainsHeight.Heights, self.validatedChainsHeight.Heights) {
 						chainID := self.getMyChain()
 						if chainID >= 0 && chainID < common.TotalValidators {
