@@ -269,6 +269,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 		realFee,
 		tokenParams,
 		listCustomTokens,
+		*rpcServer.config.Database,
 		metaData,
 		hasPrivacy,
 	)
