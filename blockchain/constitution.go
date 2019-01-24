@@ -210,10 +210,10 @@ func (helper GOVConstitutionHelper) GetPrizeProposal() uint32 {
 }
 
 func (helper DCBConstitutionHelper) GetTopMostVoteGovernor(blockgen *BlkTmplGenerator) (database.CandidateList, error) {
-	return blockgen.chain.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), blockgen.chain.GetCurrentBoardIndex(helper))
+	return blockgen.chain.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), blockgen.chain.GetCurrentBoardIndex(helper)+1)
 }
 func (helper GOVConstitutionHelper) GetTopMostVoteGovernor(blockgen *BlkTmplGenerator) (database.CandidateList, error) {
-	return blockgen.chain.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), blockgen.chain.GetCurrentBoardIndex(helper))
+	return blockgen.chain.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), blockgen.chain.GetCurrentBoardIndex(helper)+1)
 }
 
 func (helper DCBConstitutionHelper) GetBoardSumToken(blockgen *BlkTmplGenerator) uint64 {
