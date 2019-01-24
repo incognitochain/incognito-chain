@@ -108,6 +108,17 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 			default:
 				time.Sleep(getStateWaitTime * time.Second)
 				self.config.Server.PushMessageGetShardState(shardID)
+				blks, err := self.config.NodeShardPool.GetBlocks(shardID, self.BestState.Shard[shardID].ShardHeight+1)
+				if err != nil {
+					continue
+				}
+				for _, newBlk := range blks {
+					err = self.InsertShardBlock(&newBlk)
+					if err != nil {
+						Logger.log.Error(err)
+						continue
+					}
+				}
 			}
 		}
 	}(shardID)
