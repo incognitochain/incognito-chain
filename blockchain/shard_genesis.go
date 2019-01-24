@@ -1,9 +1,10 @@
 package blockchain
 
 import (
-	"github.com/ninjadotorg/constant/wallet"
 	"log"
 	"time"
+
+	"github.com/ninjadotorg/constant/wallet"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy"
@@ -59,6 +60,8 @@ func CreateShardGenesisBlock(
 		Height:        1,
 		Version:       1,
 		PrevBlockHash: common.Hash{},
+		BeaconHeight:  1,
+
 		//TODO:
 		SalaryFund: icoParams.InitFundSalary,
 	}
