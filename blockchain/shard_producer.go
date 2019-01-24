@@ -297,8 +297,8 @@ func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) 
 	for _, tx := range txList {
 		for _, outCoin := range tx.GetProof().OutputCoins {
 			lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-			shardID := GetShardIDFromLastByte(lastByte)
-			byteMap[GetShardIDFromLastByte(shardID)] = 1
+			shardID := common.GetShardIDFromLastByte(lastByte)
+			byteMap[common.GetShardIDFromLastByte(shardID)] = 1
 		}
 	}
 
@@ -380,7 +380,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 	// validate tx and calculate total fee
 	for _, txDesc := range sourceTxns {
 		tx := txDesc.Tx
-		txShardID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		if txShardID != shardID {
 			continue
 		}

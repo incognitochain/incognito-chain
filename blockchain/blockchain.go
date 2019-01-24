@@ -609,7 +609,7 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 		}
 		for _, com := range item1 {
 			lastByte := pubkeyBytes[len(pubkeyBytes)-1]
-			shardID, err := common.GetTxSenderChain(lastByte)
+			shardID := common.GetShardIDFromLastByte(lastByte)
 			err = self.config.DataBase.StoreOutputCoins(view.tokenID, pubkeyBytes, com.Bytes(), shardID)
 			if err != nil {
 				return err
@@ -685,7 +685,7 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 
 	// Pay interest
 	interestPerTerm := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
-	shardID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	height := self.GetChainHeight(shardID)
 	totalInterest := metadata.GetTotalInterest(
 		principle,
