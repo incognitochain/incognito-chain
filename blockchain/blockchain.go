@@ -263,7 +263,7 @@ func (self *BlockChain) initChainState() error {
 		}
 	}
 
-	for shard := 1; shard <= self.config.ChainParams.ShardsNum; shard++ {
+	for shard := 1; shard <= common.SHARD_NUMBER; shard++ {
 		shardID := byte(shard - 1)
 		bestStateBytes, err := self.config.DataBase.FetchBestState(shardID)
 		if err == nil {
