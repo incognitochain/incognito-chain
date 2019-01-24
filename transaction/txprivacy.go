@@ -892,8 +892,8 @@ func (tx Tx) ValidateTxSalary(
 	cmTmp := tx.Proof.OutputCoins[0].CoinDetails.PublicKey
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(tx.Proof.OutputCoins[0].CoinDetails.Value))))
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMult(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator))
-	//TODO: refactor this hardcode Shard_Number
-	shardID := byte(int(tx.Proof.OutputCoins[0].CoinDetails.GetPubKeyLastByte()) % 4)
+
+	shardID := byte(int(tx.Proof.OutputCoins[0].CoinDetails.GetPubKeyLastByte()) % common.SHARD_NUMBER)
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(tx.Proof.OutputCoins[0].CoinDetails.Randomness))
 	return cmTmp.IsEqual(tx.Proof.OutputCoins[0].CoinDetails.CoinCommitment)
