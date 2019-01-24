@@ -113,7 +113,7 @@ func TestInnerProductProve(t *testing.T) {
 
 func TestAggregatedRangeProve(t *testing.T) {
 	wit := new(AggregatedRangeWitness)
-	numValue := 1
+	numValue := 13
 	wit.values = make([]*big.Int, numValue)
 	wit.rands = make([]*big.Int, numValue)
 
@@ -134,10 +134,10 @@ func TestAggregatedRangeProve(t *testing.T) {
 	fmt.Printf("Len byte proof: %v\n", len(bytes))
 
 	proof2 := new(AggregatedRangeProof)
-
 	proof2.SetBytes(bytes)
+
 	start = time.Now()
-	res := proof2.Verify()
+	res := proof.Verify()
 	end = time.Since(start)
 	fmt.Printf("Aggregated range verification time: %v\n", end)
 

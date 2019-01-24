@@ -73,9 +73,6 @@ func (proof *InnerProductProof) SetBytes(bytes []byte) error{
 	proof.p = new(privacy.EllipticPoint)
 	proof.p.Decompress(bytes[offset: offset+privacy.CompressedPointSize])
 
-
-
-
 	return nil
 }
 
