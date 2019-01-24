@@ -21,60 +21,31 @@ func main() {
 		},
 	}
 	burnPaymentAddress := burnKey.Base58CheckSerialize(wallet.PaymentAddressType)
-	fmt.Printf("Burn payment address : %s", burnPaymentAddress)
+	fmt.Printf("Burn payment address : %s \n", burnPaymentAddress)
 
 	mnemonicGen := wallet.MnemonicGenerator{}
 	Entropy, _ := mnemonicGen.NewEntropy(128)
 	Mnemonic, _ := mnemonicGen.NewMnemonic(Entropy)
+	fmt.Printf("Mnemonic: %s\n", Mnemonic)
 	Seed := mnemonicGen.NewSeed(Mnemonic, "123456")
 
 	key, _ := wallet.NewMasterKey(Seed)
-	fmt.Printf("PubKey: %v\n\n", *key)
-	fmt.Printf("PubKey: %x\n\n", *key)
-
-	/*pubAddr := key.Base58CheckSerialize(wallet.PaymentAddressType)
-	privAddr := key.Base58CheckSerialize(wallet.PriKeyType)
-	readAddr := key.Base58CheckSerialize(wallet.ReadonlyKeyType)
-	fmt.Printf("pubAddr: %v\n", pubAddr)
-	fmt.Printf("pubAddr: %x\n\n", pubAddr)
-	fmt.Printf("privAddr: %v\n", privAddr)
-	fmt.Printf("privAddr: %x\n\n", privAddr)
-	fmt.Printf("readAddr: %v\n", readAddr)
-	fmt.Printf("readAddr: %x\n\n", readAddr)*/
-
-	// for i := 0; i < 30; i++ {
-	// 	child, _ := key.NewChildKey(uint32(i))
-	// 	// pubAddr := child.Base58CheckSerialize(wallet.PaymentAddressType)
-	// 	privAddr := child.Base58CheckSerialize(wallet.PriKeyType)
-	// 	paymentAddress := child.Base58CheckSerialize(wallet.PaymentAddressType)
-	// 	//readAddr := child.Base58CheckSerialize(wallet.ReadonlyKeyType)
-	// 	fmt.Printf("Acc %d:\n ", i)
-	// 	// fmt.Printf("pubKey: %v\n", child.KeySet.GetPublicKeyB58())
-	// 	fmt.Printf("paymentAddress: %v\n", paymentAddress)
-	// 	// fmt.Printf("pubAddr: %x\n\n", pubAddr)
-	// 	fmt.Printf("privateKey: %v\n", privAddr)
-	// 	// fmt.Printf("privAddr: %x\n", privAddr)
-	// 	/*fmt.Printf("readAddr: %v\n", readAddr)
-	// 	fmt.Printf("readAddr: %x\n\n", readAddr)*/
-	// }
 	var i int
+	var k = 0
 	for {
+		i++
 		child, _ := key.NewChildKey(uint32(i))
-		// pubAddr := child.Base58CheckSerialize(wallet.PaymentAddressType)
 		privAddr := child.Base58CheckSerialize(wallet.PriKeyType)
 		paymentAddress := child.Base58CheckSerialize(wallet.PaymentAddressType)
-		//readAddr := child.Base58CheckSerialize(wallet.ReadonlyKeyType)
 		if child.KeySet.PaymentAddress.Pk[len(child.KeySet.PaymentAddress.Pk)-1] == 0 {
 			fmt.Printf("Acc %d:\n ", i)
-			// fmt.Printf("pubKey: %v\n", child.KeySet.GetPublicKeyB58())
 			fmt.Printf("paymentAddress: %v\n", paymentAddress)
-			// fmt.Printf("pubAddr: %x\n\n", pubAddr)
 			fmt.Printf("privateKey: %v\n", privAddr)
-			break
+			k ++
+			if k == 3 {
+				break
+			}
 		}
-		// fmt.Printf("privAddr: %x\n", privAddr)
-		/*fmt.Printf("readAddr: %v\n", readAddr)
-		fmt.Printf("readAddr: %x\n\n", readAddr)*/
 		i++
 	}
 }

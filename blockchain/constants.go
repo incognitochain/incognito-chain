@@ -28,7 +28,7 @@ const (
 	//board and proposal parameters
 	TestnetInitCmBToken               = 10000
 	TestnetInitBondToken              = 10000
-	TestnetGenesisBlockPaymentAddress = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"
+	TestnetGenesisBlockPaymentAddress = "1Uv43AXTCrrPyRqaG57hfzPFpdTyugfEANdgjiLxj3GdVKpqfJ1nUKYQCuVP1tqLBLwN9rNXKVsCguYfseL5n2cp1dKeri7wkZt6TnVVT"
 )
 
 const (

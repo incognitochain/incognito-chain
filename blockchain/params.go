@@ -31,6 +31,7 @@ const (
 	TestNetBeaconCommitteeSize = 3
 )
 
+// for beacon
 // public key
 var preSelectBeaconNodeTestnetSerializedPubkey = [TestNetBeaconCommitteeSize]string{
 	"16QMc6ARYki7eL3p8cj8T8b54ZAhPrnBcfaTY9CgPBDKEtwcm2u",
@@ -38,13 +39,15 @@ var preSelectBeaconNodeTestnetSerializedPubkey = [TestNetBeaconCommitteeSize]str
 	"16S3Db9V2kqmmogfggKAD2bpJjXcveJcdUQmx9S3ewEGQBE3rrv",
 }
 
-// spendingKey
+// privatekey
 var preSelectBeaconNodeTestnet = [TestNetBeaconCommitteeSize]string{
 	"112t8rnXDNYL1RyTuT85JXeX7mJg1Sc6tCby5akSM7pfEGApgAx83X8C46EDu6dFAK6MVcWfQv2sfTk5nV9HqU3jrkrWdhrmi9z34jEhgHak",
 	"112t8rnXZD2GmbVAP3xBefJaorCgebytpoRK1oAzcgoNNSVtXzoRTu21KeSmnRbzvd7qMJd1mTcsqFS1CGZ8UpY4mFRZzBa69aVcFWpLXuRv",
 	"112t8rnXmEeG5zsS7rExURJfqaRZhm6r4Pypkeag2gprdhtgDpen3LwV68x1nDPRYz2zhyhJTJCGvq1tUx4P1dvrdxF9W9DH7ME7PeGN2ohZ",
 }
 
+// For shard
+// public key
 var preSelectShardNodeTestnetSerializedPubkey = [TestNetShardsNum * TestNetShardCommitteeSize]string{
 	"177ZHyh2WpZeVcFPJULigwkH6dahem4jDHkXQMZGNgVDijyKjKJ",
 	"1671hBGTAT1ui2BQGqpzYyy3pVLPvdDTPEMLfoLix7igUyzG6sE",
@@ -60,6 +63,7 @@ var preSelectShardNodeTestnetSerializedPubkey = [TestNetShardsNum * TestNetShard
 	"17bgRBWmoNUCRZFAtmRKo7af98t53AWWmVagB5cwPj26Ri7ipPg",
 }
 
+// privatekey
 var preSelectShardNodeTestnet = [TestNetShardsNum * TestNetShardCommitteeSize]string{
 	"112t8rnXxR8GDWhm5Shn8GAaCHFNLXyFpz4Ln8wCcDCkmnJLNU4msYvCaXShxcp2mEoUxyVpGcyYtk2JzntZFZ4DNpwAc7QVif6r2oeLj2Qo",
 	"112t8rnYBW9trs5rzxrMzLU5AnzngQhbp6X4c3xyamFkWU7PwWRq6gprDkm6mf3ZjxaeYQmSpe3xorpWHo3JLLZFHCHSgqd8u19XkVuMGz1M",
