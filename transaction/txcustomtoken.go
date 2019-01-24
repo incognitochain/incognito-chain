@@ -328,6 +328,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	fee uint64,
 	tokenParams *CustomTokenParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
+	db database.DatabaseInterface,
 	metaData metadata.Metadata,
 	hasPrivacy bool,
 ) *TransactionError {
@@ -339,7 +340,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 		inputCoin,
 		fee,
 		hasPrivacy,
-		nil,
+		db,
 		nil,
 		metaData)
 	if err.(*TransactionError) != nil {
