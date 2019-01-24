@@ -87,77 +87,67 @@ func (proof AggregatedRangeProof) Bytes() []byte {
 
 }
 
-func (proof *AggregatedRangeProof) SetBytes(proofbytes []byte) error {
+func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	if proof.IsNil() {
 		proof = proof.Init()
 	}
 
-	//if len(proofbytes) == 0 {
-	//	return nil
-	//}
-	//
-	//proof.Counter = proofbytes[0]
-	//proof.maxExp = proofbytes[1]
-	//offset := 2
-	//
-	//proof.Comms = make([]*privacy.EllipticPoint, proof.Counter)
-	//for i := 0; i < int(proof.Counter); i++ {
-	//	proof.Comms[i] = new(privacy.EllipticPoint)
-	//	err := proof.Comms[i].Decompress(proofbytes[offset: offset+privacy.CompressedPointSize])
-	//	if err != nil {
-	//		return err
-	//	}
-	//	offset += privacy.CompressedPointSize
-	//}
-	//
-	//proof.A = new(privacy.EllipticPoint)
-	//err := proof.A.Decompress(proofbytes[offset:])
-	//if err != nil {
-	//	return err
-	//}
-	//offset += privacy.CompressedPointSize
-	//
-	//proof.S = new(privacy.EllipticPoint)
-	//err = proof.S.Decompress(proofbytes[offset:])
-	//if err != nil {
-	//	return err
-	//}
-	//offset += privacy.CompressedPointSize
-	//
-	//proof.T1 = new(privacy.EllipticPoint)
-	//err = proof.T1.Decompress(proofbytes[offset:])
-	//if err != nil {
-	//	return err
-	//}
-	//offset += privacy.CompressedPointSize
-	//
-	//proof.T2 = new(privacy.EllipticPoint)
-	//err = proof.T2.Decompress(proofbytes[offset:])
-	//if err != nil {
-	//	return err
-	//}
-	//offset += privacy.CompressedPointSize
-	//
-	//proof.Tau = new(big.Int).SetBytes(proofbytes[offset: offset+privacy.BigIntSize])
-	//offset += privacy.BigIntSize
-	//
-	//proof.Th = new(big.Int).SetBytes(proofbytes[offset: offset+privacy.BigIntSize])
-	//offset += privacy.BigIntSize
-	//
-	//proof.Mu = new(big.Int).SetBytes(proofbytes[offset: offset+privacy.BigIntSize])
-	//offset += privacy.BigIntSize
-	//
-	//proof.Cx = new(big.Int).SetBytes(proofbytes[offset: offset+privacy.BigIntSize])
-	//offset += privacy.BigIntSize
-	//
-	//proof.Cy = new(big.Int).SetBytes(proofbytes[offset: offset+privacy.BigIntSize])
-	//offset += privacy.BigIntSize
-	//
-	//proof.Cz = new(big.Int).SetBytes(proofbytes[offset: offset+privacy.BigIntSize])
-	//offset += privacy.BigIntSize
-	//
-	//end := len(proofbytes)
-	//proof.IPP.setBytes(proofbytes[offset:end])
+	if len(bytes) == 0 {
+		return nil
+	}
+
+	lenValues := int(bytes[0])
+	offset := 1
+
+	proof.cmsValue = make([]*privacy.EllipticPoint, lenValues)
+	for i := 0; i < lenValues; i++ {
+		proof.cmsValue[i] = new(privacy.EllipticPoint)
+		err := proof.cmsValue[i].Decompress(bytes[offset: offset+privacy.CompressedPointSize])
+		if err != nil {
+			return err
+		}
+		offset += privacy.CompressedPointSize
+	}
+
+	proof.A = new(privacy.EllipticPoint)
+	err := proof.A.Decompress(bytes[offset:])
+	if err != nil {
+		return err
+	}
+	offset += privacy.CompressedPointSize
+
+	proof.S = new(privacy.EllipticPoint)
+	err = proof.S.Decompress(bytes[offset:])
+	if err != nil {
+		return err
+	}
+	offset += privacy.CompressedPointSize
+
+	proof.T1 = new(privacy.EllipticPoint)
+	err = proof.T1.Decompress(bytes[offset:])
+	if err != nil {
+		return err
+	}
+	offset += privacy.CompressedPointSize
+
+	proof.T2 = new(privacy.EllipticPoint)
+	err = proof.T2.Decompress(bytes[offset:])
+	if err != nil {
+		return err
+	}
+	offset += privacy.CompressedPointSize
+
+	proof.tauX = new(big.Int).SetBytes(bytes[offset: offset+privacy.BigIntSize])
+	offset += privacy.BigIntSize
+
+	proof.tHat = new(big.Int).SetBytes(bytes[offset: offset+privacy.BigIntSize])
+	offset += privacy.BigIntSize
+
+	proof.mu = new(big.Int).SetBytes(bytes[offset: offset+privacy.BigIntSize])
+	offset += privacy.BigIntSize
+
+	proof.innerProductProof = new(InnerProductProof)
+	proof.innerProductProof.SetBytes(bytes[offset:])
 	return nil
 }
 

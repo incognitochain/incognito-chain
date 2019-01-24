@@ -124,14 +124,20 @@ func TestAggregatedRangeProve(t *testing.T) {
 
 	start := time.Now()
 	proof, err := wit.Prove()
-	end := time.Since(start)
-	fmt.Printf("Aggregated range proving time: %v\n", end)
-
 	if err != nil {
 		fmt.Printf("Err: %v\n", err)
 	}
+	end := time.Since(start)
+	fmt.Printf("Aggregated range proving time: %v\n", end)
+
+	bytes := proof.Bytes()
+	fmt.Printf("Len byte proof: %v\n", len(bytes))
+
+	proof2 := new(AggregatedRangeProof)
+
+	proof2.SetBytes(bytes)
 	start = time.Now()
-	res := proof.Verify()
+	res := proof2.Verify()
 	end = time.Since(start)
 	fmt.Printf("Aggregated range verification time: %v\n", end)
 
