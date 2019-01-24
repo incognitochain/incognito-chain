@@ -2,8 +2,9 @@ package lvdb
 
 import (
 	"encoding/binary"
-	"github.com/ninjadotorg/constant/privacy"
 	"sort"
+
+	"github.com/ninjadotorg/constant/privacy"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -12,6 +13,11 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
+
+func iPlusPlus(x *int) int {
+	*x += 1
+	return *x - 1
+}
 
 func (db *db) AddVoteBoard(
 	boardType string,
@@ -242,13 +248,8 @@ func GetKeyVoteBoardSum(boardType string, boardIndex uint32, candidatePaymentAdd
 	return key
 }
 
-func iPlusPlus(x *int) int {
-	*x += 1
-	return *x - 1
-}
-
 func ParseKeyVoteBoardSum(key []byte) (boardType string, boardIndex uint32, paymentAddress *privacy.PaymentAddress, err error) {
-	length := []int{len(voteBoardSumPrefix), 3, 4, common.PubKeyLength}
+	length := []int{len(voteBoardSumPrefix), 3, 4, common.PaymentAddressLength}
 	elements, err := ParseKeyToSlice(key, length)
 	if err != nil {
 		return "", 0, nil, err
@@ -280,8 +281,27 @@ func ParseKeyVoteBoardCount(key []byte) (boardType string, boardIndex uint32, ca
 	return boardType, boardIndex, candidatePubKey, nil
 }
 
-func GetKeyVoteBoardList(boardType string, boardIndex uint32, candidatePaymentAddress *privacy.PaymentAddress, voterPaymentAddress *privacy.PaymentAddress) []byte {
-	key := GetKeyFromVariadic(voteBoardListPrefix, []byte(boardType), common.Uint32ToBytes(boardIndex), candidatePaymentAddress.Bytes(), voterPaymentAddress.Bytes())
+func GetKeyVoteBoardList(
+	boardType string,
+	boardIndex uint32,
+	candidatePaymentAddress *privacy.PaymentAddress,
+	voterPaymentAddress *privacy.PaymentAddress,
+) []byte {
+	candidateBytes := make([]byte, 0)
+	voterBytes := make([]byte, 0)
+	if candidatePaymentAddress != nil {
+		candidateBytes = candidatePaymentAddress.Bytes()
+	}
+	if voterPaymentAddress != nil {
+		voterBytes = voterPaymentAddress.Bytes()
+	}
+	key := GetKeyFromVariadic(
+		voteBoardListPrefix,
+		[]byte(boardType),
+		common.Uint32ToBytes(boardIndex),
+		candidateBytes,
+		voterBytes,
+	)
 	return key
 }
 

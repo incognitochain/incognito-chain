@@ -14,6 +14,13 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 )
 
+// TODO: 0xsirrush need to optimize with some features:
+// 1. store paymentaddress - outputcoin on meme
+// 2. load data in db on mem and using to validate tx
+// 3. cancel tx
+// 4. remove mem when mined block and cancel tx
+// 5. priority data in mem
+
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
 	// Block chain of node

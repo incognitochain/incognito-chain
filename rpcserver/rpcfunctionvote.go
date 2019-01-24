@@ -276,7 +276,7 @@ func GetLockerPaymentAddress(tx metadata.Transaction) []privacy.PaymentAddress {
 		newMeta := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
 		return newMeta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddress
 	} else {
-		newMeta := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
+		newMeta := meta.(*metadata.SealedLv3GOVVoteProposalMetadata)
 		return newMeta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddress
 	}
 }

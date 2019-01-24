@@ -1,11 +1,22 @@
 package blockchain
 
+// import (
+// 	"errors"
+
+// 	"github.com/ninjadotorg/constant/blockchain/params"
+// 	"github.com/ninjadotorg/constant/common"
+// 	"github.com/ninjadotorg/constant/database"
+// 	"github.com/ninjadotorg/constant/metadata"
+// 	"github.com/ninjadotorg/constant/privacy"
+// 	"github.com/ninjadotorg/constant/transaction"
+// )
+
 // func (blockgen *BlkTmplGenerator) buildIssuingResTxs(
-// 	shardID byte,
+// 	chainID byte,
 // 	issuingReqTxs []metadata.Transaction,
 // 	privatekey *privacy.SpendingKey,
 // ) ([]metadata.Transaction, error) {
-// 	prevBlock := blockgen.chain.BestState[shardID].BestBlock
+// 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 // 	oracleParams := prevBlock.Header.Oracle
 
 // 	issuingResTxs := []metadata.Transaction{}
@@ -92,7 +103,7 @@ package blockchain
 // }
 
 // func (blockgen *BlkTmplGenerator) buildRefundTxs(
-// 	shardID byte,
+// 	chainID byte,
 // 	remainingFund uint64,
 // 	privatekey *privacy.SpendingKey,
 // ) ([]metadata.Transaction, uint64) {
@@ -100,7 +111,7 @@ package blockchain
 // 		Logger.log.Info("GOV fund is not enough for refund.")
 // 		return []metadata.Transaction{}, 0
 // 	}
-// 	prevBlock := blockgen.chain.BestState[shardID].BestBlock
+// 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 // 	header := prevBlock.Header
 // 	govParams := header.GOVConstitution.GOVParams
 // 	refundInfo := govParams.RefundInfo
@@ -112,7 +123,7 @@ package blockchain
 // 	if lookbackBlockHeight < 0 {
 // 		return []metadata.Transaction{}, 0
 // 	}
-// 	lookbackBlock, err := blockgen.chain.GetBlockByBlockHeight(lookbackBlockHeight, shardID)
+// 	lookbackBlock, err := blockgen.chain.GetBlockByBlockHeight(lookbackBlockHeight, chainID)
 // 	if err != nil {
 // 		Logger.log.Error(err)
 // 		return []metadata.Transaction{}, 0
@@ -194,14 +205,14 @@ package blockchain
 
 // func (blockgen *BlkTmplGenerator) buildBuyBackResponseTxs(
 // 	buyBackFromInfos []*buyBackFromInfo,
-// 	shardID byte,
+// 	chainID byte,
 // 	privatekey *privacy.SpendingKey,
 // ) ([]metadata.Transaction, error) {
 // 	if len(buyBackFromInfos) == 0 {
 // 		return []metadata.Transaction{}, nil
 // 	}
 
-// 	// prevBlock := blockgen.chain.BestState[shardID].BestBlock
+// 	// prevBlock := blockgen.chain.BestState[chainID].BestBlock
 // 	var buyBackResTxs []metadata.Transaction
 // 	for _, buyBackFromInfo := range buyBackFromInfos {
 // 		buyBackAmount := buyBackFromInfo.value * buyBackFromInfo.buyBackPrice
@@ -340,18 +351,18 @@ package blockchain
 // }
 
 // func (blockgen *BlkTmplGenerator) buildResponseTxs(
-// 	shardID byte,
+// 	chainID byte,
 // 	sourceTxns []*metadata.TxDesc,
 // 	privatekey *privacy.SpendingKey,
 // 	txGroups *txGroups,
 // 	accumulativeValues *accumulativeValues,
 // 	buyBackFromInfos []*buyBackFromInfo,
 // ) (*txGroups, *accumulativeValues, map[string]uint64, error) {
-// 	prevBlock := blockgen.chain.BestState[shardID].BestBlock
+// 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 // 	// create buy/sell response txs to distribute bonds/govs to requesters
 // 	buySellResTxs, err := blockgen.buildBuySellResponsesTx(
 // 		txGroups.buySellReqTxs,
-// 		blockgen.chain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.SellingBonds,
+// 		blockgen.chain.BestState[14].BestBlock.Header.GOVConstitution.GOVParams.SellingBonds,
 // 	)
 // 	if err != nil {
 // 		Logger.log.Error(err)
@@ -359,7 +370,7 @@ package blockchain
 // 	}
 // 	buyGOVTokensResTxs, err := blockgen.buildBuyGOVTokensResTxs(
 // 		txGroups.buyGOVTokensReqTxs,
-// 		blockgen.chain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.SellingGOVTokens,
+// 		blockgen.chain.BestState[14].BestBlock.Header.GOVConstitution.GOVParams.SellingGOVTokens,
 // 	)
 // 	if err != nil {
 // 		Logger.log.Error(err)
@@ -367,13 +378,13 @@ package blockchain
 // 	}
 
 // 	// create buy-back response txs to distribute constants to buy-back requesters
-// 	buyBackResTxs, err := blockgen.buildBuyBackResponseTxs(buyBackFromInfos, shardID, privatekey)
+// 	buyBackResTxs, err := blockgen.buildBuyBackResponseTxs(buyBackFromInfos, chainID, privatekey)
 // 	if err != nil {
 // 		Logger.log.Error(err)
 // 		return nil, nil, nil, err
 // 	}
 
-// 	oracleRewardTxs, totalOracleRewards, updatedOracleValues, err := blockgen.buildOracleRewardTxs(shardID, privatekey)
+// 	oracleRewardTxs, totalOracleRewards, updatedOracleValues, err := blockgen.buildOracleRewardTxs(chainID, privatekey)
 // 	if err != nil {
 // 		Logger.log.Error(err)
 // 		return nil, nil, nil, err
@@ -382,9 +393,9 @@ package blockchain
 // 	// create refund txs
 // 	currentSalaryFund := prevBlock.Header.SalaryFund
 // 	remainingFund := currentSalaryFund + accumulativeValues.totalFee + accumulativeValues.incomeFromBonds + accumulativeValues.incomeFromGOVTokens - (accumulativeValues.totalSalary + accumulativeValues.buyBackCoins + totalOracleRewards)
-// 	refundTxs, totalRefundAmt := blockgen.buildRefundTxs(shardID, remainingFund, privatekey)
+// 	refundTxs, totalRefundAmt := blockgen.buildRefundTxs(chainID, remainingFund, privatekey)
 
-// 	issuingResTxs, err := blockgen.buildIssuingResTxs(shardID, txGroups.issuingReqTxs, privatekey)
+// 	issuingResTxs, err := blockgen.buildIssuingResTxs(chainID, txGroups.issuingReqTxs, privatekey)
 // 	if err != nil {
 // 		Logger.log.Error(err)
 // 		return nil, nil, nil, err
