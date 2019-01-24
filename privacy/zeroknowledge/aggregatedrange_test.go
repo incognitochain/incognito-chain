@@ -101,17 +101,14 @@ func TestInnerProductProve(t *testing.T) {
 		fmt.Printf("Err: %v\n", err)
 	}
 
-	res := proof.Verify(AggParam)
+	bytes := proof.Bytes()
+
+	proof2 := new(InnerProductProof)
+	proof2.SetBytes(bytes)
+
+	res := proof2.Verify(AggParam)
 
 	assert.Equal(t, true, res)
-
-	values := big.NewInt(10)
-	binary := privacy.ConvertBigIntToBinary(values, 5)
-	twoVector := powerVector(big.NewInt(2), 5)
-	fmt.Printf("two vector: %v\n", twoVector)
-
-	value2, err := innerProduct(binary, twoVector)
-	assert.Equal(t, values, value2)
 }
 
 func TestAggregatedRangeProve(t *testing.T) {

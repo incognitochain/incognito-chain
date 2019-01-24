@@ -65,26 +65,24 @@ func (proof *AggregatedRangeProof) IsNil() bool {
 func (proof AggregatedRangeProof) Bytes() []byte {
 	var res []byte
 
-	//if proof.IsNil() == true {
-	//	return []byte{}
-	//}
-	//
-	//for i := 0; i < int(proof.Counter); i++ {
-	//	res = append(res, proof.Comms[i].Compress()...)
-	//}
-	//
-	//res = append(res, proof.A.Compress()...)
-	//res = append(res, proof.S.Compress()...)
-	//res = append(res, proof.T1.Compress()...)
-	//res = append(res, proof.T2.Compress()...)
-	//
-	//res = append(res, privacy.AddPaddingBigInt(proof.Tau, privacy.BigIntSize)...)
-	//res = append(res, privacy.AddPaddingBigInt(proof.Th, privacy.BigIntSize)...)
-	//res = append(res, privacy.AddPaddingBigInt(proof.Mu, privacy.BigIntSize)...)
-	//res = append(res, privacy.AddPaddingBigInt(proof.Cx, privacy.BigIntSize)...)
-	//res = append(res, privacy.AddPaddingBigInt(proof.Cy, privacy.BigIntSize)...)
-	//res = append(res, privacy.AddPaddingBigInt(proof.Cz, privacy.BigIntSize)...)
-	//res = append(res, proof.IPP.bytes()...)
+	if proof.IsNil() == true {
+		return []byte{}
+	}
+
+	res = append(res, byte(len(proof.cmsValue)))
+	for i := 0; i < len(proof.cmsValue); i++ {
+		res = append(res, proof.cmsValue[i].Compress()...)
+	}
+
+	res = append(res, proof.A.Compress()...)
+	res = append(res, proof.S.Compress()...)
+	res = append(res, proof.T1.Compress()...)
+	res = append(res, proof.T2.Compress()...)
+
+	res = append(res, privacy.AddPaddingBigInt(proof.tauX, privacy.BigIntSize)...)
+	res = append(res, privacy.AddPaddingBigInt(proof.tHat, privacy.BigIntSize)...)
+	res = append(res, privacy.AddPaddingBigInt(proof.mu, privacy.BigIntSize)...)
+	res = append(res, proof.innerProductProof.Bytes()...)
 	return res
 
 }
