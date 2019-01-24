@@ -3,6 +3,7 @@ package mempool
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -42,6 +43,10 @@ type ShardToBeaconPool struct {
 	db         database.DatabaseInterface
 }
 
+var (
+	ReachMaxPendingError = "Pending reach limit"
+	ReachMaxQueueError   = "Queue reach limit"
+)
 var DefaultShardToBeaconPoolConfig = ShardToBeaconPoolConfig{
 	MaxPending: 1000,
 	MaxQueue:   1000,
@@ -179,20 +184,31 @@ func contains2(s map[uint64]blockchain.ShardToBeaconBlock, e uint64) (blockchain
 	}
 	return blockchain.ShardToBeaconBlock{}, false
 }
-func (pool *ShardToBeaconPool) PromoteExecutable(block blockchain.ShardToBeaconBlock) error {
+func (pool *ShardToBeaconPool) PromoteExecutable(block blockchain.ShardToBeaconBlock, committees []string) error {
 	shardID := block.Header.ShardID
 	lastBlockHeight := pool.pending[shardID][len(pool.pending[shardID])-1].Header.Height
 	for {
 		newBlock, isHas := pool.queue[shardID][lastBlockHeight+1]
 		if isHas {
-			pool.pending[shardID] = append(pool.pending[shardID], newBlock)
+			err := blockchain.ValidateAggSignature(block.ValidatorsIdx, committees, block.AggregatedSig, block.R, block.Hash())
+			if err == nil {
+				if err := pool.IsEnough(true, shardID); err == nil {
+					pool.pending[shardID] = append(pool.pending[shardID], newBlock)
+					delete(pool.queue[shardID], lastBlockHeight+1)
+				} else {
+					break
+				}
+			} else {
+				break
+			}
 		} else {
 			break
 		}
+		lastBlockHeight++
 	}
 	return nil
 }
-func (pool *ShardToBeaconPool) AddShardBeaconBlock(block blockchain.ShardToBeaconBlock) error {
+func (pool *ShardToBeaconPool) AddShardBeaconBlock(block blockchain.ShardToBeaconBlock, committees []string) error {
 	Logger.log.Debugf("Current pending shard to beacon block %+v \n", pool.pending)
 	blockHeight := block.Header.Height
 	shardID := block.Header.ShardID
@@ -208,21 +224,40 @@ func (pool *ShardToBeaconPool) AddShardBeaconBlock(block blockchain.ShardToBeaco
 	// if new block is expected block to be added in pending
 	// 1. Next block after shard state
 	// 2. Next block height after last block
-	if blockHeight-pool.shardState[shardID] == 1 {
-		pendingShardBlocks = append(pendingShardBlocks, block)
-		pool.pending[shardID] = pendingShardBlocks
-		pool.PromoteExecutable(block)
-	} else if pool.pending[shardID][len(pool.pending[shardID])-1].Header.Height == blockHeight {
-		pendingShardBlocks = append(pendingShardBlocks, block)
-		pool.pending[shardID] = pendingShardBlocks
-		pool.PromoteExecutable(block)
+
+	// Pending block should be able to verified multisignature
+	err := blockchain.ValidateAggSignature(block.ValidatorsIdx, committees, block.AggregatedSig, block.R, block.Hash())
+	if err == nil {
+		if blockHeight-pool.shardState[shardID] == 1 {
+			pendingShardBlocks = append(pendingShardBlocks, block)
+			pool.pending[shardID] = pendingShardBlocks
+			pool.PromoteExecutable(block, committees)
+		} else if pool.pending[shardID][len(pool.pending[shardID])-1].Header.Height == blockHeight {
+			if err := pool.IsEnough(true, shardID); err == nil {
+				pendingShardBlocks = append(pendingShardBlocks, block)
+				pool.pending[shardID] = pendingShardBlocks
+				pool.PromoteExecutable(block, committees)
+			} else {
+				Logger.log.Error(ShardToBeaconBoolError, err)
+				err := MempoolTxError{}
+				err.Init(ShardToBeaconBoolError, fmt.Errorf("Error %+v in block height %+v of shard %+v", err, block.Header.Height, block.Header.ShardID))
+				return err
+			}
+		}
 	} else {
 		queueShardBlocks, ok := pool.queue[shardID]
 		if queueShardBlocks == nil || !ok {
 			queueShardBlocks = make(map[uint64]blockchain.ShardToBeaconBlock)
 		}
-		queueShardBlocks[block.Header.Height] = block
-		pool.queue[shardID] = queueShardBlocks
+		if err := pool.IsEnough(false, shardID); err == nil {
+			queueShardBlocks[block.Header.Height] = block
+			pool.queue[shardID] = queueShardBlocks
+		} else {
+			Logger.log.Error(ShardToBeaconBoolError, err)
+			err := MempoolTxError{}
+			err.Init(ShardToBeaconBoolError, fmt.Errorf("Error %+v in block height %+v of shard %+v", err, block.Header.Height, block.Header.ShardID))
+			return err
+		}
 	}
 	return nil
 }
@@ -241,6 +276,22 @@ func (pool *ShardToBeaconPool) GetPendingBlockHashes() map[byte][]common.Hash {
 		pendingBlockHashes[shardID] = items
 	}
 	return pendingBlockHashes
+}
+
+func (pool *ShardToBeaconPool) IsEnough(isPending bool, shardID byte) error {
+	if isPending {
+		if uint(len(pool.pending[shardID])) < pool.config.MaxPending {
+			return nil
+		} else {
+			return errors.New(ReachMaxPendingError)
+		}
+	} else {
+		if uint(len(pool.queue[shardID])) < pool.config.MaxQueue {
+			return nil
+		} else {
+			return errors.New(ReachMaxQueueError)
+		}
+	}
 }
 
 // func UpdateBeaconPool(shardID byte, blockHeight uint64, preBlockHash common.Hash) error {
