@@ -335,15 +335,11 @@ func CreateShardActionFromTransaction(transactions []metadata.Transaction) (acti
 	stakeShardPubKey := []string{}
 	stakeBeaconPubKey := []string{}
 	for _, tx := range transactions {
-		tempTx, ok := tx.(*transaction.Tx)
-		if !ok {
-			panic("Can't create block")
-		}
-		_ = tempTx
 		switch tx.GetMetadataType() {
+		//TODO: stable param 0xsancurasolus
 		// case metadata.BuyFromGOVRequestMeta:
 		}
-
+		// TODO
 		// shardStaker, beaconStaker, isStake := tempTx.GetStakerFromTransaction()
 		// if isStake {
 		// 	if strings.Compare(shardStaker, common.EmptyString) != 0 {
@@ -362,7 +358,6 @@ func CreateShardActionFromTransaction(transactions []metadata.Transaction) (acti
 		action := []string{"stake", strings.Join(stakeBeaconPubKey, ","), "beacon"}
 		actions = append(actions, action)
 	}
-	//TODO: stable param
 	return actions
 }
 
