@@ -20,7 +20,7 @@ func (blockgen *BlkTmplGenerator) calculateInterestPaid(tx metadata.Transaction)
 
 	// Only keep interest
 	_, _, amount := tx.GetUniqueReceiver() // Receiver is unique and is burn address
-	shardID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	totalInterest := metadata.GetTotalInterest(
 		principle,
 		interest,

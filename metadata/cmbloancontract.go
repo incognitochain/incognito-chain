@@ -206,15 +206,13 @@ func (lc *CMBLoanContract) Hash() *common.Hash {
 }
 
 func (lc *CMBLoanContract) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-	lastByte := lc.CMBAddress.Pk[len(lc.CMBAddress.Pk)-1]
-	shardID, err := common.GetTxSenderChain(lastByte)
 	cmbChainHeight := bcr.GetChainHeight(shardID)
-	if err != nil || cmbChainHeight+1 >= lc.ValidUntil {
+	if cmbChainHeight+1 >= lc.ValidUntil {
 		return false, errors.Errorf("ValidUntil must be bigger than current block height of CMB")
 	}
 
 	// Check if CMB existed
-	_, _, _, _, _, _, err = bcr.GetCMB(lc.CMBAddress.Bytes())
+	_, _, _, _, _, _, err := bcr.GetCMB(lc.CMBAddress.Bytes())
 	if err != nil {
 		return false, err
 	}

@@ -260,7 +260,7 @@ func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, clos
 		}
 
 		keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-		shardID, _ := common.GetTxSenderChain(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
+		shardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
