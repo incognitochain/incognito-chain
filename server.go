@@ -43,6 +43,7 @@ type Server struct {
 
 	memPool           *mempool.TxPool
 	beaconPool        *mempool.NodeBeaconPool
+	shardPool         *mempool.NodeShardPool
 	shardToBeaconPool *mempool.ShardToBeaconPool
 	crossShardPool    *mempool.CrossShardPool
 
@@ -141,6 +142,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		return err
 	}
 	serverObj.beaconPool = &mempool.NodeBeaconPool{}
+	serverObj.shardPool = &mempool.NodeShardPool{}
 	serverObj.shardToBeaconPool = mempool.NewShardToBeaconPool(mempool.DefaultShardToBeaconPoolConfig, db)
 	serverObj.crossShardPool = &mempool.CrossShardPool{}
 
@@ -158,6 +160,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		// Light:       cfg.Light,
 		Wallet:            serverObj.wallet,
 		NodeBeaconPool:    serverObj.beaconPool,
+		NodeShardPool:     serverObj.shardPool,
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		CrossShardPool:    serverObj.crossShardPool,
 		Server:            serverObj,
@@ -165,7 +168,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	if err != nil {
 		return err
 	}
-
 	// TODO: 0xbahamooth Search for a feeEstimator state in the database. If none can be found
 	// or if it cannot be loaded, create a new one.
 	if cfg.FastStartup {
