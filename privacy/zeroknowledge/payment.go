@@ -590,7 +590,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 		cmOutputSND[i] = privacy.PedCom.CommitAtIndex(outputCoin.CoinDetails.SNDerivator, randOutputSND[i], privacy.SND)
 
 		//TODO: refactor this hardcode, shardnum
-		shardID := byte(int(outputCoins[i].CoinDetails.GetPubKeyLastByte()) % privacy.SHARD_NUMBER)
+		shardID := byte(int(outputCoins[i].CoinDetails.GetPubKeyLastByte()) % common.SHARD_NUMBER)
 		cmOutputShardID[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(shardID)), randOutputShardID[i], privacy.SHARDID)
 
 		randOutputSum[i] = big.NewInt(0)
@@ -756,7 +756,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee ui
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(pro.OutputCoins[i].CoinDetails.Value))))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMult(pro.OutputCoins[i].CoinDetails.SNDerivator))
 			//TODO: refactor this hard code
-			shardID := byte(int(pro.OutputCoins[i].CoinDetails.GetPubKeyLastByte()) % privacy.SHARD_NUMBER)
+			shardID := byte(int(pro.OutputCoins[i].CoinDetails.GetPubKeyLastByte()) % common.SHARD_NUMBER)
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(pro.OutputCoins[i].CoinDetails.Randomness))
 			if !cmTmp.IsEqual(pro.OutputCoins[i].CoinDetails.CoinCommitment) {
@@ -787,6 +787,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee ui
 		commitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
 		for j := 0; j < privacy.CMRingSize; j++ {
 			commitmentBytes, err := db.GetCommitmentByIndex(tokenID, pro.OneOfManyProof[i].CommitmentIndices[j], shardID)
+
 			if err != nil {
 				fmt.Printf("err 1\n")
 				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))
@@ -801,7 +802,12 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee ui
 
 			commitments[j], _ = commitments[j].Sub(cmInputSum[i])
 		}
-
+		fmt.Println()
+		fmt.Println()
+		bInt, _ := db.GetCommitmentLength(tokenID, shardID)
+		fmt.Println("test", bInt.Bytes())
+		fmt.Println()
+		fmt.Println()
 		pro.OneOfManyProof[i].Commitments = commitments
 
 		if !pro.OneOfManyProof[i].Verify() {
