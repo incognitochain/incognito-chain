@@ -72,6 +72,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 					readyMsgCount int
 				)
 				if layer == "beacon" {
+					time.Sleep(5 * time.Second) //single-node
 					newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey)
 					if err != nil {
 						return nil, err
