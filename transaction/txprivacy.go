@@ -305,7 +305,7 @@ func (tx *Tx) signTx() error {
 	tx.SigPubKey = sigKey.PubKey.PK.Compress()
 
 	// signing
-	Logger.log.Infof(tx.Hash().String())
+	Logger.log.Debugf(tx.Hash().String())
 	signature, err := sigKey.Sign(tx.Hash()[:])
 	if err != nil {
 		return err
@@ -346,7 +346,7 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	signature.SetBytes(tx.Sig)
 
 	// verify signature
-	Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
+	Logger.log.Debugf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
 	res = verKey.Verify(signature, tx.Hash()[:])
 
 	return res, nil
@@ -368,10 +368,10 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Verify the payment proof
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
-	Logger.log.Infof("[db] Validating Transaction tx\n")
+	Logger.log.Debugf("[db] Validating Transaction tx\n")
 	start := time.Now()
 	// Verify tx signature
-	Logger.log.Infof("tx.GetType(): %v\n", tx.GetType())
+	Logger.log.Debugf("tx.GetType(): %v\n", tx.GetType())
 	if tx.GetType() == common.TxSalaryType {
 		return tx.ValidateTxSalary(db)
 	}
@@ -682,7 +682,7 @@ func (tx *Tx) ValidateTxByItself(
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	ok := tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
-	Logger.log.Infof("[db]ok validatetxbyitself: %v\n", ok)
+	Logger.log.Debugf("[db]ok validatetxbyitself: %v\n", ok)
 	if !ok {
 		return false
 	}
@@ -691,7 +691,7 @@ func (tx *Tx) ValidateTxByItself(
 			Logger.log.Infof("[db]validatetxbyitself metadata: Transaction with metadata should not enable privacy feature.")
 			return false
 		}
-		Logger.log.Infof("[db]validatetxbyitself metadata: %v\n", tx.Metadata.ValidateMetadataByItself())
+		Logger.log.Debugf("[db]validatetxbyitself metadata: %v\n", tx.Metadata.ValidateMetadataByItself())
 		return tx.Metadata.ValidateMetadataByItself()
 	}
 	return true

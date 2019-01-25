@@ -47,7 +47,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 	if isProposer {
 		protocol.phase = "propose"
 	}
-	fmt.Println("Starting PBFT protocol for " + layer)
+	Logger.log.Info("Starting PBFT protocol for " + layer)
 	protocol.multiSigScheme = new(multiSigScheme)
 	protocol.multiSigScheme.Init(protocol.UserKeySet, protocol.RoleData.Committee)
 	err := protocol.multiSigScheme.Prepare()
