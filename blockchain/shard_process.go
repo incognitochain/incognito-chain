@@ -64,7 +64,7 @@ func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte)
 
 func (self *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	blockHash := block.Hash().String()
-	Logger.log.Infof("Process store block %+v", blockHash)
+	Logger.log.Debugf("Process store block %+v", blockHash)
 
 	if err := self.BestState.Shard[block.Header.ShardID].Update(block, nil); err != nil {
 		return err
@@ -104,7 +104,7 @@ func (self *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 			Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
 			return NewBlockChainError(UnExpectedError, err)
 		}
-		Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
+		Logger.log.Debugf("Transaction in block with hash", blockHash, "and index", index)
 	}
 	err := self.StoreIncomingCrossShard(block)
 	if err != nil {
@@ -123,7 +123,7 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	defer self.chainLock.Unlock()
 	shardID := block.Header.ShardID
 	Logger.log.Infof("SHARD %+v | Begin Insert new block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
-	Logger.log.Infof("SHARD %+v | Verify Pre Processing  Block %+v \n", block.Header.ShardID, *block.Hash())
+	Logger.log.Debugf("SHARD %+v | Verify Pre Processing  Block %+v \n", block.Header.ShardID, *block.Hash())
 	if err := self.VerifyPreProcessingShardBlock(block, shardID); err != nil {
 		return err
 	}
@@ -134,13 +134,13 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 		return NewBlockChainError(BeaconError, errors.New("Beacon Block does not match with any Beacon State in cache or in Database"))
 	}
 	// fmt.Printf("BeaconBest state %+v \n", self.BestState.Beacon)
-	Logger.log.Infof("SHARD %+v | Verify BestState with Block %+v \n", block.Header.ShardID, *block.Hash())
+	Logger.log.Debugf("SHARD %+v | Verify BestState with Block %+v \n", block.Header.ShardID, *block.Hash())
 	// Verify block with previous best state
 	if err := self.BestState.Shard[shardID].VerifyBestStateWithShardBlock(block, true, shardID); err != nil {
 		return err
 	}
 
-	Logger.log.Infof("SHARD %+v | Update BestState with Block %+v \n", block.Header.ShardID, *block.Hash())
+	Logger.log.Debugf("SHARD %+v | Update BestState with Block %+v \n", block.Header.ShardID, *block.Hash())
 	//========Update best state with new block
 	prevBeaconHeight := self.BestState.Shard[shardID].BeaconHeight
 	beaconBlocks, err := FetchBeaconBlockFromHeight(self.config.DataBase, prevBeaconHeight, block.Header.BeaconHeight)
@@ -151,7 +151,7 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 		return err
 	}
 
-	Logger.log.Infof("SHARD %+v | Verify Post Processing Block %+v \n", block.Header.ShardID, *block.Hash())
+	Logger.log.Debugf("SHARD %+v | Verify Post Processing Block %+v \n", block.Header.ShardID, *block.Hash())
 	//========Post verififcation: verify new beaconstate with corresponding block
 	if err := self.BestState.Shard[shardID].VerifyPostProcessingShardBlock(block, shardID); err != nil {
 		return err
@@ -395,7 +395,7 @@ func (self *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBlock, isV
 		Swap shard committee if detect new epoch of beacon
 */
 func (self *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBlock) error {
-	Logger.log.Infof("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
+	Logger.log.Debugf("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	var (
 		err                   error
 		shardSwapedCommittees []string
