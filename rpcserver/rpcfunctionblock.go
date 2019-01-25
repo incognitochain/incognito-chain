@@ -246,7 +246,12 @@ func (rpcServer RpcServer) handleGetBlockChainInfo(params interface{}, closeChan
 getblockcount RPC return information fo blockchain node
 */
 func (rpcServer RpcServer) handleGetBlockCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	params, ok := params.(float64)
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("params empty"))
+	}
+	params, ok := arrayParams[0].(float64)
+	// params, ok := params.(float64)
 	if !ok {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected get float number params"))
 	}
