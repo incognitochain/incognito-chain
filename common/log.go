@@ -78,7 +78,7 @@ type Logger interface {
 // defaultFlags specifies changes to the default logger behavior.  It is set
 // during package init and configured using the LOGFLAGS environment variable.
 // Zero logger backends can override these default flags using WithFlags.
-var defaultFlags uint32
+var defaultFlags uint32 = 2
 
 // Flags to modify Backend's behavior.
 const (
@@ -259,16 +259,19 @@ func formatHeader(buf *[]byte, t time.Time, lvl, tag string, file string, line i
 	itoa(buf, sec, 2)
 	*buf = append(*buf, '.')
 	itoa(buf, ms, 3)
-	*buf = append(*buf, " ["...)
-	*buf = append(*buf, lvl...)
-	*buf = append(*buf, "] "...)
-	*buf = append(*buf, tag...)
+
 	if file != "" {
 		*buf = append(*buf, ' ')
 		*buf = append(*buf, file...)
 		*buf = append(*buf, ':')
 		itoa(buf, line, -1)
 	}
+
+	*buf = append(*buf, " ["...)
+	*buf = append(*buf, lvl...)
+	*buf = append(*buf, "] "...)
+	*buf = append(*buf, tag...)
+
 	*buf = append(*buf, ": "...)
 }
 

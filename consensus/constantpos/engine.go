@@ -3,7 +3,6 @@ package constantpos
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
@@ -75,7 +74,6 @@ func (engine *Engine) Start() error {
 					}
 					go engine.config.Server.UpdateConsensusState(nodeRole, engine.config.UserKeySet.GetPublicKeyB58(), nil, engine.config.BlockChain.BestState.Beacon.BeaconCommittee, engine.config.BlockChain.BestState.Beacon.ShardCommittee)
 					time.Sleep(2 * time.Second)
-
 					fmt.Println(engine.config.NodeMode, role, shardID)
 					if role != "" {
 						bftProtocol := &BFTProtocol{
@@ -163,7 +161,7 @@ func (engine *Engine) Start() error {
 									err = errors.New("Not your turn yet")
 								}
 								if err == nil {
-									fmt.Println(resBlk.(*blockchain.ShardBlock))
+									//fmt.Println(resBlk.(*blockchain.ShardBlock))
 									err = engine.config.BlockChain.InsertShardBlock(resBlk.(*blockchain.ShardBlock))
 									if err != nil {
 										Logger.log.Error("Insert shard block error", err)
@@ -172,7 +170,7 @@ func (engine *Engine) Start() error {
 									//PUSH SHARD TO BEACON
 									shardBlk, ok := resBlk.(*blockchain.ShardBlock)
 									if !ok {
-										log.Printf("Got data of type %T but wanted blockchain.ShardBlock", resBlk)
+										Logger.log.Debug("Got data of type %T but wanted blockchain.ShardBlock", resBlk)
 										continue
 									}
 
