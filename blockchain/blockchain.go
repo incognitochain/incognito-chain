@@ -148,6 +148,9 @@ func (self *BlockChain) Init(config *Config) error {
 	}
 	return nil
 }
+func (self *BlockChain) SetShardToBeaconPool(db database.DatabaseInterface) {
+	self.config.ShardToBeaconPool.SetDatabase(db)
+}
 
 // Before call store and get block from cache or db, call chain.lock()
 func (self *BlockChain) StoreMaybeAcceptBeaconBeststate(beaconBestState BestStateBeacon) (string, error) {

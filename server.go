@@ -143,7 +143,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	}
 	serverObj.beaconPool = &mempool.NodeBeaconPool{}
 	serverObj.shardPool = &mempool.NodeShardPool{}
-	serverObj.shardToBeaconPool = mempool.NewShardToBeaconPool(mempool.DefaultShardToBeaconPoolConfig, db)
+	serverObj.shardToBeaconPool = mempool.InitShardToBeaconPool(mempool.DefaultShardToBeaconPoolConfig)
 	serverObj.crossShardPool = &mempool.CrossShardPool{}
 
 	serverObj.blockChain = &blockchain.BlockChain{}
@@ -153,18 +153,19 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		relayShards = append(relayShards, byte(s))
 	}
 	err = serverObj.blockChain.Init(&blockchain.Config{
-		ChainParams: serverObj.chainParams,
-		DataBase:    serverObj.dataBase,
-		Interrupt:   interrupt,
-		RelayShards: relayShards,
-		// Light:       cfg.Light,
+		ChainParams:       serverObj.chainParams,
+		DataBase:          serverObj.dataBase,
+		Interrupt:         interrupt,
+		RelayShards:       relayShards,
 		Wallet:            serverObj.wallet,
 		NodeBeaconPool:    serverObj.beaconPool,
 		NodeShardPool:     serverObj.shardPool,
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		CrossShardPool:    serverObj.crossShardPool,
 		Server:            serverObj,
+		// Light:       cfg.Light,
 	})
+	serverObj.blockChain.SetShardToBeaconPool(db)
 	if err != nil {
 		return err
 	}

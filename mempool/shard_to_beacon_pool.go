@@ -53,30 +53,29 @@ var DefaultShardToBeaconPoolConfig = ShardToBeaconPoolConfig{
 	LifeTime:   10 * time.Hour,
 }
 
-func NewShardToBeaconPool(shardToBeaconPoolConfig ShardToBeaconPoolConfig, db database.DatabaseInterface) *ShardToBeaconPool {
+func InitShardToBeaconPool(shardToBeaconPoolConfig ShardToBeaconPoolConfig) *ShardToBeaconPool {
+	return &ShardToBeaconPool{
+		config:  shardToBeaconPoolConfig,
+		pending: make(map[byte][]blockchain.ShardToBeaconBlock),
+		queue:   make(map[byte]map[uint64]blockchain.ShardToBeaconBlock),
+	}
+}
+func (pool *ShardToBeaconPool) SetDatabase(db database.DatabaseInterface) {
 	beaconBestState := blockchain.BestStateBeacon{}
 	temp, err := db.FetchBeaconBestState()
 	if err != nil {
 		Logger.log.Error(DatabaseError, err)
-		//TODO db is empty when there not db folder? :)
-		// panic("Fail to get state from db")
+		//TODO db is empty when there not db folder?
+		panic("Fail to get state from db")
 	} else {
 		if err := json.Unmarshal(temp, &beaconBestState); err != nil {
 			Logger.log.Error(DatabaseError, err)
 			panic("Can't Unmarshal beacon beststate")
 		}
 	}
-
-	pool := &ShardToBeaconPool{
-		config:     shardToBeaconPoolConfig,
-		pending:    make(map[byte][]blockchain.ShardToBeaconBlock),
-		queue:      make(map[byte]map[uint64]blockchain.ShardToBeaconBlock),
-		shardState: beaconBestState.BestShardHeight,
-		db:         db,
-	}
-	return pool
+	pool.shardState = beaconBestState.BestShardHeight
+	pool.db = db
 }
-
 func (pool *ShardToBeaconPool) GetFinalBlock() map[byte][]blockchain.ShardToBeaconBlock {
 	results := map[byte][]blockchain.ShardToBeaconBlock{}
 	for shardID, shardItems := range pool.pending {
