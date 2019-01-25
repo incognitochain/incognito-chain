@@ -1037,7 +1037,7 @@ func (serverObj *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 GetChainState - send a getchainstate msg to connected peer
 */
 func (serverObj *Server) PushMessageGetBeaconState() error {
-	Logger.log.Infof("Send a GetBeaconState")
+	Logger.log.Debugf("Send a GetBeaconState")
 	listener := serverObj.connManager.Config.ListenerPeer
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetBeaconState)
 	if err != nil {
@@ -1045,7 +1045,7 @@ func (serverObj *Server) PushMessageGetBeaconState() error {
 	}
 	msg.(*wire.MessageGetBeaconState).Timestamp = time.Now().Unix()
 	msg.SetSenderID(listener.PeerID)
-	Logger.log.Infof("Send a GetBeaconState from %s", listener.RawAddress)
+	Logger.log.Debugf("Send a GetBeaconState from %s", listener.RawAddress)
 	listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_PEER, nil)
 	return nil
 }
@@ -1054,7 +1054,7 @@ func (serverObj *Server) PushMessageGetBeaconState() error {
 GetChainState - send a getchainstate msg to connected peer
 */
 func (serverObj *Server) PushMessageGetShardState(shardID byte) error {
-	Logger.log.Infof("Send a GetShardState")
+	Logger.log.Debugf("Send a GetShardState")
 	listener := serverObj.connManager.Config.ListenerPeer
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetShardState)
 	if err != nil {
@@ -1062,7 +1062,7 @@ func (serverObj *Server) PushMessageGetShardState(shardID byte) error {
 	}
 	msg.(*wire.MessageGetShardState).Timestamp = time.Now().Unix()
 	msg.SetSenderID(listener.PeerID)
-	Logger.log.Infof("Send a GetShardState from %s", listener.RawAddress)
+	Logger.log.Debugf("Send a GetShardState from %s", listener.RawAddress)
 	listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_PEER, nil)
 	return nil
 }
