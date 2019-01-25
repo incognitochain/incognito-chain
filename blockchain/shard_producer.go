@@ -21,7 +21,6 @@ import (
 func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*ShardBlock, error) {
 	//============Build body=============
 	beaconHeight := blockgen.chain.BestState.Beacon.BeaconHeight
-
 	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
 	epoch := blockgen.chain.BestState.Beacon.BeaconEpoch
 	if epoch-blockgen.chain.BestState.Shard[shardID].Epoch > 1 {
