@@ -203,9 +203,9 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
 	// Verify epoch with parent block
-	if block.Header.Height%EPOCH == 0 && parentBlock.Header.Epoch != block.Header.Epoch-1 {
-		return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
-	}
+	// if block.Header.Height%EPOCH == 0 && parentBlock.Header.Epoch != block.Header.Epoch-1 {
+	// 	return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
+	// }
 	// Verify timestamp with parent block
 	if block.Header.Timestamp <= parentBlock.Header.Timestamp {
 		return NewBlockChainError(TimestampError, errors.New("Timestamp of new block can't equal to parent block"))
