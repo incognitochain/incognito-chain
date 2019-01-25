@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 )
 
@@ -17,6 +18,7 @@ type ShardToBeaconPool interface {
 	AddShardBeaconBlock(ShardToBeaconBlock, []string) error
 	ValidateShardToBeaconBlock(ShardToBeaconBlock) error
 	GetPendingBlockHashes() map[byte][]common.Hash
+	SetDatabase(database.DatabaseInterface)
 }
 
 type CrossShardPool interface {
