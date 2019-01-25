@@ -2,9 +2,10 @@ package zkp
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/privacy"
 	"math/big"
 	"time"
+
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 // OneOutOfManyWitness is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
@@ -125,7 +126,7 @@ func (pro *PKSNPrivacyProof) Set(
 	zSeed *big.Int,
 	zRSeed *big.Int,
 	zInput *big.Int,
-	zRInput *big.Int ) {
+	zRInput *big.Int) {
 
 	if pro == nil {
 		pro = new(PKSNPrivacyProof)
@@ -180,69 +181,69 @@ func (pro *PKSNPrivacyProof) SetBytes(bytes []byte) error {
 	offset := 0
 	var err error
 
-	pro.output, err = privacy.DecompressKey(bytes[offset: offset + privacy.CompressedPointSize])
-	if err != nil{
+	pro.output, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
 
-	pro.comSeed, err = privacy.DecompressKey(bytes[offset: offset + privacy.CompressedPointSize])
-	if err != nil{
+	pro.comSeed, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
 
-	pro.comInput, err = privacy.DecompressKey(bytes[offset: offset + privacy.CompressedPointSize])
-	if err != nil{
+	pro.comInput, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
 
-	pro.tSeed, err = privacy.DecompressKey(bytes[offset: offset + privacy.CompressedPointSize])
-	if err != nil{
+	pro.tSeed, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
 
-	pro.tInput, err = privacy.DecompressKey(bytes[offset: offset + privacy.CompressedPointSize])
-	if err != nil{
+	pro.tInput, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
 
-	pro.tOutput, err = privacy.DecompressKey(bytes[offset: offset + privacy.CompressedPointSize])
-	if err != nil{
+	pro.tOutput, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
 
-	pro.zSeed.SetBytes(bytes[offset: offset + privacy.BigIntSize])
-	if err != nil{
+	pro.zSeed.SetBytes(bytes[offset : offset+privacy.BigIntSize])
+	if err != nil {
 		return err
 	}
 	offset += privacy.BigIntSize
 
-	pro.zRSeed.SetBytes(bytes[offset: offset + privacy.BigIntSize])
-	if err != nil{
+	pro.zRSeed.SetBytes(bytes[offset : offset+privacy.BigIntSize])
+	if err != nil {
 		return err
 	}
 	offset += privacy.BigIntSize
 
-	pro.zInput.SetBytes(bytes[offset: offset + privacy.BigIntSize])
-	if err != nil{
+	pro.zInput.SetBytes(bytes[offset : offset+privacy.BigIntSize])
+	if err != nil {
 		return err
 	}
 	offset += privacy.BigIntSize
 
-	pro.zRInput.SetBytes(bytes[offset: offset + privacy.BigIntSize])
-	if err != nil{
+	pro.zRInput.SetBytes(bytes[offset : offset+privacy.BigIntSize])
+	if err != nil {
 		return err
 	}
 	offset += privacy.BigIntSize
 	return nil
 }
 
-func (wit *PKSNPrivacyWitness) Prove() (*PKSNPrivacyProof, error){
+func (wit *PKSNPrivacyWitness) Prove(mess []byte) (*PKSNPrivacyProof, error) {
 	start := time.Now()
 
 	// randomness
@@ -261,7 +262,12 @@ func (wit *PKSNPrivacyWitness) Prove() (*PKSNPrivacyProof, error){
 	tOutput := wit.output.ScalarMult(new(big.Int).Add(eSK, eSND))
 
 	// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-	x := generateChallengeFromPoint([]*privacy.EllipticPoint{tSeed, tInput, tOutput})
+	x := new(big.Int)
+	if mess == nil {
+		x = generateChallengeFromPoint([]*privacy.EllipticPoint{tSeed, tInput, tOutput})
+	} else {
+		x = big.NewInt(0).SetBytes(mess)
+	}
 
 	// Calculate zSeed = SK * x + eSK
 	zSeed := new(big.Int).Mul(wit.seed, x)
@@ -290,10 +296,15 @@ func (wit *PKSNPrivacyWitness) Prove() (*PKSNPrivacyProof, error){
 	return proof, nil
 }
 
-func (pro *PKSNPrivacyProof) Verify() bool{
+func (pro *PKSNPrivacyProof) Verify(mess []byte) bool {
 	start := time.Now()
 	// re-calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-	x := generateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSeed, pro.tInput, pro.tOutput})
+	x := new(big.Int)
+	if mess == nil {
+		x = generateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSeed, pro.tInput, pro.tOutput})
+	} else {
+		x = big.NewInt(0).SetBytes(mess)
+	}
 
 	// Check gSND^zInput * h^zRInput = input^x * tInput
 	leftPoint1 := privacy.PedCom.CommitAtIndex(pro.zInput, pro.zRInput, privacy.SND)
@@ -301,7 +312,7 @@ func (pro *PKSNPrivacyProof) Verify() bool{
 	rightPoint1 := pro.comInput.ScalarMult(x)
 	rightPoint1 = rightPoint1.Add(pro.tInput)
 
-	if !leftPoint1.IsEqual(rightPoint1){
+	if !leftPoint1.IsEqual(rightPoint1) {
 		return false
 	}
 
@@ -311,7 +322,7 @@ func (pro *PKSNPrivacyProof) Verify() bool{
 	rightPoint3 := pro.comSeed.ScalarMult(x)
 	rightPoint3 = rightPoint3.Add(pro.tSeed)
 
-	if !leftPoint3.IsEqual(rightPoint3){
+	if !leftPoint3.IsEqual(rightPoint3) {
 		return false
 	}
 
@@ -321,7 +332,7 @@ func (pro *PKSNPrivacyProof) Verify() bool{
 	rightPoint4 := privacy.PedCom.G[privacy.SK].ScalarMult(x)
 	rightPoint4 = rightPoint4.Add(pro.tOutput)
 
-	if !leftPoint4.IsEqual(rightPoint4){
+	if !leftPoint4.IsEqual(rightPoint4) {
 		return false
 	}
 

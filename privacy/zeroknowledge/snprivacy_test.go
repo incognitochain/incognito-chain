@@ -2,10 +2,11 @@ package zkp
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
+
+	"github.com/ninjadotorg/constant/privacy"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPKSNPrivacy(t *testing.T) {
@@ -24,8 +25,8 @@ func TestPKSNPrivacy(t *testing.T) {
 	witness := new(PKSNPrivacyWitness)
 	witness.Set(serialNumber, comSK, comSND1, skInt, rSK, SND, rSND1)
 
-	proof, err := witness.Prove()
-	if err != nil{
+	proof, err := witness.Prove(nil)
+	if err != nil {
 		return
 	}
 

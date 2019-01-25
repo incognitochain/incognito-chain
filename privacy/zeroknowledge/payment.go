@@ -26,7 +26,7 @@ type PaymentWitness struct {
 	SNNoPrivacyWitness  []*SNNoPrivacyWitness
 
 	//ComOutputMultiRangeWitness *AggregatedRangeWitness
-	ComZeroWitness             *ComZeroWitness
+	ComZeroWitness *ComZeroWitness
 
 	ComOutputValue   []*privacy.EllipticPoint
 	ComOutputSND     []*privacy.EllipticPoint
@@ -67,19 +67,19 @@ type PaymentProof struct {
 
 func (proof *PaymentProof) Init() *PaymentProof {
 	proof = &PaymentProof{
-		OneOfManyProof:           []*OneOutOfManyProof{},
-		SerialNumberProof:        []*PKSNPrivacyProof{},
+		OneOfManyProof:    []*OneOutOfManyProof{},
+		SerialNumberProof: []*PKSNPrivacyProof{},
 		//ComOutputMultiRangeProof: new(AggregatedRangeProof).Init(),
-		ComZeroProof:             new(ComZeroProof).Init(),
-		InputCoins:               []*privacy.InputCoin{},
-		OutputCoins:              []*privacy.OutputCoin{},
-		ComOutputValue:           []*privacy.EllipticPoint{},
-		ComOutputSND:             []*privacy.EllipticPoint{},
-		ComOutputShardID:         []*privacy.EllipticPoint{},
-		ComInputSK:               new(privacy.EllipticPoint),
-		ComInputValue:            []*privacy.EllipticPoint{},
-		ComInputSND:              []*privacy.EllipticPoint{},
-		ComInputShardID:          new(privacy.EllipticPoint),
+		ComZeroProof:     new(ComZeroProof).Init(),
+		InputCoins:       []*privacy.InputCoin{},
+		OutputCoins:      []*privacy.OutputCoin{},
+		ComOutputValue:   []*privacy.EllipticPoint{},
+		ComOutputSND:     []*privacy.EllipticPoint{},
+		ComOutputShardID: []*privacy.EllipticPoint{},
+		ComInputSK:       new(privacy.EllipticPoint),
+		ComInputValue:    []*privacy.EllipticPoint{},
+		ComInputSND:      []*privacy.EllipticPoint{},
+		ComInputShardID:  new(privacy.EllipticPoint),
 	}
 	return proof
 }
@@ -215,7 +215,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, byte(0))
 	}
 
-		//fmt.Printf("BYTES ------------------ %v\n", proofbytes)
+	//fmt.Printf("BYTES ------------------ %v\n", proofbytes)
 
 	return proofbytes
 }
@@ -416,7 +416,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		offset += lenComInputShardID
 	}
 
-		//fmt.Printf("SETBYTES ------------------ %v\n", proof.Bytes())
+	//fmt.Printf("SETBYTES ------------------ %v\n", proof.Bytes())
 
 	return nil
 }
@@ -695,7 +695,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 		proof.OneOfManyProof = append(proof.OneOfManyProof, oneOfManyProof)
 
 		// Proving that serial number is derived from the committed derivator
-		serialNumberProof, err := wit.SerialNumberWitness[i].Prove()
+		serialNumberProof, err := wit.SerialNumberWitness[i].Prove(nil)
 		if err != nil {
 			return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
 		}
@@ -806,7 +806,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee ui
 			return false
 		}
 		// Verify for the Proof that input coins' serial number is derived from the committed derivator
-		if !pro.SerialNumberProof[i].Verify() {
+		if !pro.SerialNumberProof[i].Verify(nil) {
 			fmt.Printf("err 4\n")
 			return false
 		}

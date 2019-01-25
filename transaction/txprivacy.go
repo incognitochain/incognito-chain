@@ -15,7 +15,7 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
+	zkp "github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"github.com/ninjadotorg/constant/wallet"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )
@@ -29,7 +29,7 @@ type Tx struct {
 
 	// Sign and Privacy proof
 	SigPubKey []byte `json:"SigPubKey, omitempty"` // 33 bytes
-	Sig       []byte `json:"Sig, omitempty"`       // 64 bytes
+	Sig       []byte `json:"Sig, omitempty"`       //
 	Proof     *zkp.PaymentProof
 
 	PubKeyLastByteSender byte
@@ -61,6 +61,8 @@ func (self *Tx) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
+
+var SNPrivacyWitness []*zkp.PKSNPrivacyWitness
 
 // Init - init value for tx from inputcoin(old output coin from old tx)
 // create new outputcoin and build privacy proof
@@ -233,7 +235,7 @@ func (tx *Tx) Init(
 	if err.(*privacy.PrivacyError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
-
+	SNPrivacyWitness = witness.SerialNumberWitness
 	tx.Proof, err = witness.Prove(hasPrivacy)
 	if err.(*privacy.PrivacyError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
@@ -303,13 +305,22 @@ func (tx *Tx) SignTx() error {
 
 	// signing
 	Logger.log.Infof(tx.Hash().String())
-	signature, err := sigKey.Sign(tx.Hash()[:])
-	if err != nil {
-		return err
+	SerialSignature := make([]byte, privacy.SNPrivacyProofSize*len(tx.Proof.InputCoins))
+	for i := 0; i < len(tx.Proof.InputCoins); i++ {
+		proof, snerr := SNPrivacyWitness[i].Prove(tx.Hash()[:])
+		if snerr != nil {
+			return snerr
+		}
+		copy(SerialSignature[i*privacy.SNPrivacyProofSize:(i+1)*privacy.SNPrivacyProofSize], proof.Bytes())
 	}
+	// signature, err := sigKey.Sign(tx.Hash()[:])
+	// if err != nil {
+	// 	return err
+	// }
 
-	// convert signature to byte array
-	tx.Sig = signature.Bytes()
+	// // convert signature to byte array
+	// tx.Sig = signature.Bytes()
+	tx.Sig = SerialSignature
 
 	return nil
 }
@@ -320,31 +331,43 @@ func (tx *Tx) VerifySigTx() (bool, error) {
 		return false, errors.New("input transaction must be an signed one")
 	}
 
-	var err error
-	res := false
+	// var err error
+	res := true
 
 	/****** verify Schnorr signature *****/
 	// prepare Public key for verification
-	verKey := new(privacy.SchnPubKey)
-	verKey.PK, err = privacy.DecompressKey(tx.SigPubKey)
-	if err != nil {
-		return false, err
-	}
+	// verKey := new(privacy.SchnPubKey)
+	// verKey.PK, err = privacy.DecompressKey(tx.SigPubKey)
+	// if err != nil {
+	// 	return false, err
+	// }
 
-	verKey.G = new(privacy.EllipticPoint)
-	verKey.G.Set(privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y)
+	// verKey.G = new(privacy.EllipticPoint)
+	// verKey.G.Set(privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y)
 
-	verKey.H = new(privacy.EllipticPoint)
-	verKey.H.Set(privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y)
+	// verKey.H = new(privacy.EllipticPoint)
+	// verKey.H.Set(privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y)
 
-	// convert signature from byte array to SchnorrSign
-	signature := new(privacy.SchnSignature)
-	signature.SetBytes(tx.Sig)
+	// // convert signature from byte array to SchnorrSign
+	// signature := new(privacy.SchnSignature)
+	// signature.SetBytes(tx.Sig)
 
 	// verify signature
-	Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
-	res = verKey.Verify(signature, tx.Hash()[:])
+	// Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
+	// res = verKey.Verify(signature, tx.Hash()[:])
+	fmt.Println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", tx.Sig)
+	SNPrivacyProof := make([]*zkp.PKSNPrivacyProof, len(tx.Proof.InputCoins))
+	for i := 0; i < len(tx.Proof.InputCoins); i++ {
+		SNPrivacyProof[i] = new(zkp.PKSNPrivacyProof).Init()
+		SNPrivacyProof[i].SetBytes(tx.Sig[i*privacy.SNPrivacyProofSize : (i+1)*privacy.SNPrivacyProofSize])
+		if !SNPrivacyProof[i].Verify(tx.Hash()[:]) {
+			fmt.Println("Falseeeeeeeeeeeeeeeeeeeeeeeee")
+			return false, nil
+		}
+	}
 
+	// SNPrivacyProof.SetBytes(tx.Sig)
+	// res = SNPrivacyProof.Verify(tx.Hash()[:])
 	return res, nil
 }
 
