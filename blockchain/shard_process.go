@@ -160,7 +160,7 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	self.ProcessStoreShardBlock(block)
 
 	//TODO: Remove cross shard block in pool
-	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %x", block.Header.ShardID, block.Header.Height, *block.Hash())
+	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 	return nil
 }
 
