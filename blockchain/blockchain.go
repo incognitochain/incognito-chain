@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -590,7 +591,17 @@ Uses an existing database to update the set of not used tx by saving list commit
 this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
-	for pubkey, item1 := range view.mapCommitments {
+
+	// commitment
+	keys := make([]string, 0, len(view.mapCommitments))
+	for k := range view.mapCommitments {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		pubkey := k
+		item1 := view.mapCommitments[k]
 		pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
 		if err != nil {
 			return err
@@ -602,7 +613,18 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 			}
 		}
 	}
-	for pubkey, item1 := range view.mapOutputCoins {
+
+	// outputs
+	keys = make([]string, 0, len(view.mapOutputCoins))
+	for k := range view.mapOutputCoins {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		pubkey := k
+		item1 := view.mapOutputCoins[k]
+
 		pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
 		if err != nil {
 			return err
