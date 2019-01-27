@@ -304,7 +304,7 @@ func (block *Block) UpdateDCBBoard(thisTx metadata.Transaction) error {
 	meta := thisTx.GetMetadata().(*metadata.AcceptDCBBoardMetadata)
 	block.Header.DCBGovernor.BoardIndex += 1
 	block.Header.DCBGovernor.BoardPaymentAddress = meta.DCBBoardPaymentAddress
-	block.Header.DCBGovernor.StartedBlock = uint32(block.Header.Height)
+	block.Header.DCBGovernor.StartedBlock = uint64(block.Header.Height)
 	block.Header.DCBGovernor.EndBlock = block.Header.DCBGovernor.StartedBlock + common.DurationOfDCBBoard
 	block.Header.DCBGovernor.StartAmountToken = meta.StartAmountDCBToken
 	return nil
@@ -314,7 +314,7 @@ func (block *Block) UpdateGOVBoard(thisTx metadata.Transaction) error {
 	meta := thisTx.GetMetadata().(*metadata.AcceptGOVBoardMetadata)
 	block.Header.GOVGovernor.BoardIndex += 1
 	block.Header.GOVGovernor.BoardPaymentAddress = meta.GOVBoardPaymentAddress
-	block.Header.GOVGovernor.StartedBlock = uint32(block.Header.Height)
+	block.Header.GOVGovernor.StartedBlock = uint64(block.Header.Height)
 	block.Header.GOVGovernor.EndBlock = block.Header.GOVGovernor.StartedBlock + common.DurationOfGOVBoard
 	block.Header.GOVGovernor.StartAmountToken = meta.StartAmountGOVToken
 	return nil
