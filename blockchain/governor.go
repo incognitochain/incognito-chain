@@ -4,8 +4,8 @@ import "github.com/ninjadotorg/constant/privacy"
 
 type GovernorInfo struct {
 	BoardIndex          uint32
-	StartedBlock        uint32
-	EndBlock            uint32 // = startedblock of decent governor
+	StartedBlock        uint64
+	EndBlock            uint64 // = startedblock of decent governor
 	BoardPaymentAddress []privacy.PaymentAddress
 	StartAmountToken    uint64 //Sum of DCB token stack to all member of this board
 }

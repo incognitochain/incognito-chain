@@ -3,7 +3,6 @@ package params
 import (
 	"encoding/hex"
 	"fmt"
-
 	"github.com/ninjadotorg/constant/common"
 )
 

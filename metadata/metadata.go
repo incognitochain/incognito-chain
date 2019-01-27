@@ -94,6 +94,7 @@ type BlockchainRetriever interface {
 	GetConstitutionStartHeight(boardType string, chainID byte) uint64
 	GetConstitutionEndHeight(boardType string, chainID byte) uint64
 	GetCurrentBlockHeight(byte) uint64
+	GetBoardEndHeight(boardType string, chainID byte) uint64
 
 	// For validating loan metadata
 	GetLoanTxs([]byte) ([][]byte, error)
