@@ -1380,12 +1380,27 @@ func (self *BlockChain) GetConstitutionEndHeight(boardType string, chainID byte)
 	}
 }
 
+func (self *BlockChain) GetBoardEndHeight(boardType string, chainID byte) uint64 {
+	if boardType == "dcb" {
+		return self.GetDCBBoardEndHeight(chainID)
+	} else {
+		return self.GetGOVBoardEndHeight(chainID)
+	}
+}
+
 func (self *BlockChain) GetDCBConstitutionEndHeight(chainID byte) uint64 {
 	return self.GetBestBlock(chainID).Header.DCBConstitution.GetEndedBlockHeight()
 }
 
 func (self *BlockChain) GetGOVConstitutionEndHeight(chainID byte) uint64 {
 	return self.GetBestBlock(chainID).Header.GOVConstitution.GetEndedBlockHeight()
+}
+func (self *BlockChain) GetDCBBoardEndHeight(chainID byte) uint64 {
+	return self.GetBestBlock(chainID).Header.DCBGovernor.EndBlock
+}
+
+func (self *BlockChain) GetGOVBoardEndHeight(chainID byte) uint64 {
+	return self.GetBestBlock(chainID).Header.GOVGovernor.EndBlock
 }
 
 func (self *BlockChain) GetCurrentBlockHeight(chainID byte) uint64 {
