@@ -181,11 +181,11 @@ func (helper GOVConstitutionHelper) NewTxRewardProposalSubmitter(blockgen *BlkTm
 
 func (helper DCBConstitutionHelper) GetPaymentAddressFromSubmitProposalMetadata(tx metadata.Transaction) *privacy.PaymentAddress {
 	meta := tx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
-	return &meta.PaymentAddress
+	return &meta.SubmitProposalInfo.PaymentAddress
 }
 func (helper GOVConstitutionHelper) GetPaymentAddressFromSubmitProposalMetadata(tx metadata.Transaction) *privacy.PaymentAddress {
 	meta := tx.GetMetadata().(*metadata.SubmitGOVProposalMetadata)
-	return &meta.PaymentAddress
+	return &meta.SubmitProposalInfo.PaymentAddress
 }
 
 func (helper DCBConstitutionHelper) GetPaymentAddressVoter(blockgen *BlkTmplGenerator, chainID byte) (privacy.PaymentAddress, error) {
