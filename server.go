@@ -1067,6 +1067,10 @@ func (serverObj *Server) PushMessageGetShardState(shardID byte) error {
 	return nil
 }
 
+func (serverObj *Server) PushMessageGetCrossShard(FromShardID byte, ToShardID byte, blkHash common.Hash) error {
+	return nil
+}
+
 func (serverObj *Server) PushMessageGetShardToBeacon(shardID byte, blkHash common.Hash) error {
 	return nil
 }

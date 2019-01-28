@@ -111,9 +111,17 @@ out:
 						{
 							netSync.HandleMessageBlockShard(msg)
 						}
+					case *wire.MessageGetCrossShard:
+						{
+							netSync.HandleMessageGetCrossShard(msg)
+						}
 					case *wire.MessageCrossShard:
 						{
 							netSync.HandleMessageCrossShard(msg)
+						}
+					case *wire.MessageGetShardToBeacon:
+						{
+							netSync.HandleMessageGetShardToBeacon(msg)
 						}
 					case *wire.MessageShardToBeacon:
 						{
@@ -421,6 +429,14 @@ func (netSync *NetSync) HandleMessageShardState(msg *wire.MessageShardState) {
 		return
 	}
 	netSync.config.BlockChain.OnShardStateReceived(&msg.ChainInfo, peerID)
+}
+
+func (netsync *NetSync) HandleMessageGetCrossShard(msg *wire.MessageGetCrossShard) {
+
+}
+
+func (netsync *NetSync) HandleMessageGetShardToBeacon(msg *wire.MessageGetShardToBeacon) {
+
 }
 
 // func (netSync *NetSync) HandleMessageSwapRequest(msg *wire.MessageSwapRequest) {
