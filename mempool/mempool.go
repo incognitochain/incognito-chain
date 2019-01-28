@@ -1,10 +1,8 @@
 package mempool
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ninjadotorg/constant/privacy"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -401,16 +399,4 @@ func (tp *TxPool) removeTxCoinHashH(txHash common.Hash) error {
 		delete(tp.txCoinHPool, txHash)
 	}
 	return nil
-}
-
-func (tp *TxPool) hashHCoin(inCoin *privacy.Coin) *common.Hash {
-	if inCoin == nil {
-		return nil
-	}
-	b, err := json.Marshal(inCoin)
-	if err != nil {
-		return nil
-	}
-	hash := common.HashH(b)
-	return &hash
 }
