@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -146,6 +147,9 @@ func (self *BlockChain) Init(config *Config) error {
 		self.SyncShard(shardID)
 	}
 	return nil
+}
+func (self *BlockChain) SetShardToBeaconPool(db database.DatabaseInterface) {
+	self.config.ShardToBeaconPool.SetDatabase(db)
 }
 
 // Before call store and get block from cache or db, call chain.lock()
@@ -590,7 +594,17 @@ Uses an existing database to update the set of not used tx by saving list commit
 this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
-	for pubkey, item1 := range view.mapCommitments {
+
+	// commitment
+	keys := make([]string, 0, len(view.mapCommitments))
+	for k := range view.mapCommitments {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		pubkey := k
+		item1 := view.mapCommitments[k]
 		pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
 		if err != nil {
 			return err
@@ -602,7 +616,18 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 			}
 		}
 	}
-	for pubkey, item1 := range view.mapOutputCoins {
+
+	// outputs
+	keys = make([]string, 0, len(view.mapOutputCoins))
+	for k := range view.mapOutputCoins {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		pubkey := k
+		item1 := view.mapOutputCoins[k]
+
 		pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
 		if err != nil {
 			return err
@@ -1624,6 +1649,7 @@ func (self BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.
 
 // GetFeePerKbTx - return fee (per kb of tx) from GOV params data
 func (self BlockChain) GetFeePerKbTx() uint64 {
+	// TODO: stability
 	// return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
 	return 1
 }

@@ -53,23 +53,7 @@ func (self Merkle) BuildMerkleTreeStore(transactions []metadata.Transaction) []*
 
 	// Create the base transaction hashes and populate the array with them.
 	for i, tx := range transactions {
-		// If we're computing a witness merkle root, instead of the
-		// regular txid, we use the modified wtxid which includes a
-		// transaction's witness data within the digest. Additionally,
-		// the salary's wtxid is all zeroes.
-		witness := false
-		switch {
-		case witness && i == 0:
-			var zeroHash common.Hash
-			merkles[i] = &zeroHash
-		case witness:
-			//wSha := tx.MsgTx().WitnessHash()
-			//merkles[i] = &wSha
-			continue
-		default:
-			merkles[i] = tx.Hash()
-		}
-
+		merkles[i] = tx.Hash()
 	}
 
 	// Start the array offset after the last transaction and adjusted to the
@@ -108,23 +92,7 @@ func (self Merkle) BuildMerkleTreeOfHashs(shardsHash []*common.Hash) []*common.H
 
 	// Create the base transaction hashes and populate the array with them.
 	for i, hash := range shardsHash {
-		// If we're computing a witness merkle root, instead of the
-		// regular txid, we use the modified wtxid which includes a
-		// transaction's witness data within the digest. Additionally,
-		// the salary's wtxid is all zeroes.
-		witness := false
-		switch {
-		case witness && i == 0:
-			var zeroHash common.Hash
-			merkles[i] = &zeroHash
-		case witness:
-			//wSha := tx.MsgTx().WitnessHash()
-			//merkles[i] = &wSha
-			continue
-		default:
-			merkles[i] = hash
-		}
-
+		merkles[i] = hash
 	}
 
 	// Start the array offset after the last transaction and adjusted to the

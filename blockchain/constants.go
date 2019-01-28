@@ -34,4 +34,6 @@ const (
 const (
 	// BlockVersion is the current latest supported block version.
 	BlockVersion = 1
+
+	defaultGetStateWaitTime = 5
 )

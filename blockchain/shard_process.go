@@ -10,8 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ninjadotorg/constant/metadata"
-
 	"github.com/ninjadotorg/constant/common"
 )
 
@@ -64,7 +62,7 @@ func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte)
 
 func (self *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	blockHash := block.Hash().String()
-	Logger.log.Infof("Process store block %+v", blockHash)
+	Logger.log.Debugf("Process store block %+v", blockHash)
 
 	if err := self.BestState.Shard[block.Header.ShardID].Update(block, nil); err != nil {
 		return err
@@ -104,7 +102,7 @@ func (self *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 			Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
 			return NewBlockChainError(UnExpectedError, err)
 		}
-		Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
+		Logger.log.Debugf("Transaction in block with hash", blockHash, "and index", index)
 	}
 	err := self.StoreIncomingCrossShard(block)
 	if err != nil {
@@ -123,7 +121,7 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	defer self.chainLock.Unlock()
 	shardID := block.Header.ShardID
 	Logger.log.Infof("SHARD %+v | Begin Insert new block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
-	Logger.log.Infof("SHARD %+v | Verify Pre Processing  Block %+v \n", block.Header.ShardID, *block.Hash())
+	Logger.log.Debugf("SHARD %+v | Verify Pre Processing  Block %+v \n", block.Header.ShardID, *block.Hash())
 	if err := self.VerifyPreProcessingShardBlock(block, shardID); err != nil {
 		return err
 	}
@@ -134,13 +132,13 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 		return NewBlockChainError(BeaconError, errors.New("Beacon Block does not match with any Beacon State in cache or in Database"))
 	}
 	// fmt.Printf("BeaconBest state %+v \n", self.BestState.Beacon)
-	Logger.log.Infof("SHARD %+v | Verify BestState with Block %+v \n", block.Header.ShardID, *block.Hash())
+	Logger.log.Debugf("SHARD %+v | Verify BestState with Block %+v \n", block.Header.ShardID, *block.Hash())
 	// Verify block with previous best state
 	if err := self.BestState.Shard[shardID].VerifyBestStateWithShardBlock(block, true, shardID); err != nil {
 		return err
 	}
 
-	Logger.log.Infof("SHARD %+v | Update BestState with Block %+v \n", block.Header.ShardID, *block.Hash())
+	Logger.log.Debugf("SHARD %+v | Update BestState with Block %+v \n", block.Header.ShardID, *block.Hash())
 	//========Update best state with new block
 	prevBeaconHeight := self.BestState.Shard[shardID].BeaconHeight
 	beaconBlocks, err := FetchBeaconBlockFromHeight(self.config.DataBase, prevBeaconHeight, block.Header.BeaconHeight)
@@ -151,7 +149,7 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 		return err
 	}
 
-	Logger.log.Infof("SHARD %+v | Verify Post Processing Block %+v \n", block.Header.ShardID, *block.Hash())
+	Logger.log.Debugf("SHARD %+v | Verify Post Processing Block %+v \n", block.Header.ShardID, *block.Hash())
 	//========Post verififcation: verify new beaconstate with corresponding block
 	if err := self.BestState.Shard[shardID].VerifyPostProcessingShardBlock(block, shardID); err != nil {
 		return err
@@ -160,7 +158,7 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	self.ProcessStoreShardBlock(block)
 
 	//TODO: Remove cross shard block in pool
-	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %x", block.Header.ShardID, block.Header.Height, *block.Hash())
+	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 	return nil
 }
 
@@ -203,9 +201,9 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
 	// Verify epoch with parent block
-	if block.Header.Height%EPOCH == 0 && parentBlock.Header.Epoch != block.Header.Epoch-1 {
-		return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
-	}
+	// if block.Header.Height%EPOCH == 0 && parentBlock.Header.Epoch != block.Header.Epoch-1 {
+	// 	return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
+	// }
 	// Verify timestamp with parent block
 	if block.Header.Timestamp <= parentBlock.Header.Timestamp {
 		return NewBlockChainError(TimestampError, errors.New("Timestamp of new block can't equal to parent block"))
@@ -222,7 +220,8 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 		return NewBlockChainError(HashError, errors.New("Can't Verify Transaction Root"))
 	}
 	// Verify ShardTx Root
-	shardTxRoot := CreateMerkleRootShard(block.Body.Transactions)
+	shardTxRoot := block.Body.CalcMerkleRootShard()
+
 	if bytes.Compare(block.Header.ShardTxRoot.GetBytes(), shardTxRoot.GetBytes()) != 0 {
 		return NewBlockChainError(HashError, errors.New("Can't Verify CrossShardTransaction Root"))
 	}
@@ -395,7 +394,7 @@ func (self *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBlock, isV
 		Swap shard committee if detect new epoch of beacon
 */
 func (self *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBlock) error {
-	Logger.log.Infof("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
+	Logger.log.Debugf("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	var (
 		err                   error
 		shardSwapedCommittees []string
@@ -476,33 +475,33 @@ func (self *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlock, sh
 }
 
 //=====================Util for shard====================
-
-func CreateMerkleRootShard(txList []metadata.Transaction) common.Hash {
-	//calculate output coin hash for each shard
-	if len(txList) == 0 {
-		res, _ := GenerateZeroValueHash()
-		return res
-	}
-	outputCoinHash := getOutCoinHashEachShard(txList)
-	// calculate merkle data : 1 2 3 4 12 34 1234
-	merkleData := outputCoinHash
-	if len(merkleData)%2 == 1 {
-		merkleData = append(merkleData, common.HashH([]byte{}))
-	}
-
-	cursor := 0
-	for {
-		v1 := merkleData[cursor]
-		v2 := merkleData[cursor+1]
-		merkleData = append(merkleData, common.HashH(append(v1.GetBytes(), v2.GetBytes()...)))
-		cursor += 2
-		if cursor >= len(merkleData)-1 {
-			break
-		}
-	}
-	merkleShardRoot := merkleData[len(merkleData)-1]
-	return merkleShardRoot
-}
+//TODO: remove
+//func CreateMerkleRootShard(txList []metadata.Transaction) common.Hash {
+//	//calculate output coin hash for each shard
+//	if len(txList) == 0 {
+//		res, _ := GenerateZeroValueHash()
+//		return res
+//	}
+//	outputCoinHash := getOutCoinHashEachShard(txList)
+//	// calculate merkle data : 1 2 3 4 12 34 1234
+//	merkleData := outputCoinHash
+//	if len(merkleData)%2 == 1 {
+//		merkleData = append(merkleData, common.HashH([]byte{}))
+//	}
+//
+//	cursor := 0
+//	for {
+//		v1 := merkleData[cursor]
+//		v2 := merkleData[cursor+1]
+//		merkleData = append(merkleData, common.HashH(append(v1.GetBytes(), v2.GetBytes()...)))
+//		cursor += 2
+//		if cursor >= len(merkleData)-1 {
+//			break
+//		}
+//	}
+//	merkleShardRoot := merkleData[len(merkleData)-1]
+//	return merkleShardRoot
+//}
 
 func CreateMerkleCrossOutputCoin(crossOutputCoins map[byte][]CrossOutputCoin) (*common.Hash, error) {
 	if len(crossOutputCoins) == 0 {

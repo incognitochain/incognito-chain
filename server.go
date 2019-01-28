@@ -143,7 +143,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	}
 	serverObj.beaconPool = &mempool.NodeBeaconPool{}
 	serverObj.shardPool = &mempool.NodeShardPool{}
-	serverObj.shardToBeaconPool = mempool.NewShardToBeaconPool(mempool.DefaultShardToBeaconPoolConfig, db)
+	serverObj.shardToBeaconPool = mempool.InitShardToBeaconPool(mempool.DefaultShardToBeaconPoolConfig)
 	serverObj.crossShardPool = &mempool.CrossShardPool{}
 
 	serverObj.blockChain = &blockchain.BlockChain{}
@@ -153,18 +153,19 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		relayShards = append(relayShards, byte(s))
 	}
 	err = serverObj.blockChain.Init(&blockchain.Config{
-		ChainParams: serverObj.chainParams,
-		DataBase:    serverObj.dataBase,
-		Interrupt:   interrupt,
-		RelayShards: relayShards,
-		// Light:       cfg.Light,
+		ChainParams:       serverObj.chainParams,
+		DataBase:          serverObj.dataBase,
+		Interrupt:         interrupt,
+		RelayShards:       relayShards,
 		Wallet:            serverObj.wallet,
 		NodeBeaconPool:    serverObj.beaconPool,
 		NodeShardPool:     serverObj.shardPool,
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		CrossShardPool:    serverObj.crossShardPool,
 		Server:            serverObj,
+		// Light:       cfg.Light,
 	})
+	serverObj.blockChain.SetShardToBeaconPool(db)
 	if err != nil {
 		return err
 	}
@@ -245,12 +246,11 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	// Init Net Sync manager to process messages
 	serverObj.netSync = netsync.NetSync{}.New(&netsync.NetSyncConfig{
-		BlockChain:   serverObj.blockChain,
-		ChainParam:   chainParams,
-		MemTxPool:    serverObj.memPool,
-		Server:       serverObj,
-		Consensus:    serverObj.consensusEngine,
-		FeeEstimator: serverObj.feeEstimator,
+		BlockChain: serverObj.blockChain,
+		ChainParam: chainParams,
+		MemTxPool:  serverObj.memPool,
+		Server:     serverObj,
+		Consensus:  serverObj.consensusEngine,
 	})
 	// Create a connection manager.
 	var peer *peer.Peer
@@ -1037,7 +1037,7 @@ func (serverObj *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 GetChainState - send a getchainstate msg to connected peer
 */
 func (serverObj *Server) PushMessageGetBeaconState() error {
-	Logger.log.Infof("Send a GetBeaconState")
+	Logger.log.Debugf("Send a GetBeaconState")
 	listener := serverObj.connManager.Config.ListenerPeer
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetBeaconState)
 	if err != nil {
@@ -1045,7 +1045,7 @@ func (serverObj *Server) PushMessageGetBeaconState() error {
 	}
 	msg.(*wire.MessageGetBeaconState).Timestamp = time.Now().Unix()
 	msg.SetSenderID(listener.PeerID)
-	Logger.log.Infof("Send a GetBeaconState from %s", listener.RawAddress)
+	Logger.log.Debugf("Send a GetBeaconState from %s", listener.RawAddress)
 	listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_PEER, nil)
 	return nil
 }
@@ -1054,7 +1054,7 @@ func (serverObj *Server) PushMessageGetBeaconState() error {
 GetChainState - send a getchainstate msg to connected peer
 */
 func (serverObj *Server) PushMessageGetShardState(shardID byte) error {
-	Logger.log.Infof("Send a GetShardState")
+	Logger.log.Debugf("Send a GetShardState")
 	listener := serverObj.connManager.Config.ListenerPeer
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetShardState)
 	if err != nil {
@@ -1062,8 +1062,12 @@ func (serverObj *Server) PushMessageGetShardState(shardID byte) error {
 	}
 	msg.(*wire.MessageGetShardState).Timestamp = time.Now().Unix()
 	msg.SetSenderID(listener.PeerID)
-	Logger.log.Infof("Send a GetShardState from %s", listener.RawAddress)
+	Logger.log.Debugf("Send a GetShardState from %s", listener.RawAddress)
 	listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_PEER, nil)
+	return nil
+}
+
+func (serverObj *Server) PushMessageGetCrossShard(FromShardID byte, ToShardID byte, blkHash common.Hash) error {
 	return nil
 }
 

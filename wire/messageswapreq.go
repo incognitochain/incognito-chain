@@ -1,4 +1,5 @@
 package wire
+
 //
 //import (
 //	"encoding/binary"
@@ -22,52 +23,52 @@ package wire
 //	SenderID     string
 //}
 //
-//func (self *MessageSwapRequest) Hash() string {
-//	rawBytes, err := self.JsonSerialize()
+//func (msg *MessageSwapRequest) Hash() string {
+//	rawBytes, err := msg.JsonSerialize()
 //	if err != nil {
 //		return ""
 //	}
 //	return common.HashH(rawBytes).String()
 //}
 //
-//func (self *MessageSwapRequest) MessageType() string {
+//func (msg *MessageSwapRequest) MessageType() string {
 //	return CmdSwapRequest
 //}
 //
-//func (self *MessageSwapRequest) MaxPayloadLength(pver int) int {
+//func (msg *MessageSwapRequest) MaxPayloadLength(pver int) int {
 //	return MaxSwapRequestPayload
 //}
 //
-//func (self *MessageSwapRequest) JsonSerialize() ([]byte, error) {
-//	jsonBytes, err := json.Marshal(self)
+//func (msg *MessageSwapRequest) JsonSerialize() ([]byte, error) {
+//	jsonBytes, err := json.Marshal(msg)
 //	return jsonBytes, err
 //}
 //
-//func (self *MessageSwapRequest) JsonDeserialize(jsonStr string) error {
-//	err := json.Unmarshal([]byte(jsonStr), self)
+//func (msg *MessageSwapRequest) JsonDeserialize(jsonStr string) error {
+//	err := json.Unmarshal([]byte(jsonStr), msg)
 //	return err
 //}
 //
-//func (self *MessageSwapRequest) SetSenderID(senderID peer.ID) error {
-//	self.SenderID = senderID.Pretty()
+//func (msg *MessageSwapRequest) SetSenderID(senderID peer.ID) error {
+//	msg.SenderID = senderID.Pretty()
 //	return nil
 //}
 //
-//func (self *MessageSwapRequest) GetMsgByte() []byte {
+//func (msg *MessageSwapRequest) GetMsgByte() []byte {
 //	rawBytes := []byte{}
 //	bLTime := make([]byte, 8)
-//	binary.LittleEndian.PutUint64(bLTime, uint64(self.LockTime))
+//	binary.LittleEndian.PutUint64(bLTime, uint64(msg.LockTime))
 //	rawBytes = append(rawBytes, bLTime...)
-//	rawBytes = append(rawBytes, self.shardID)
-//	rawBytes = append(rawBytes, []byte(self.Candidate)...)
-//	rawBytes = append(rawBytes, []byte(self.Requester)...)
-//	rawBytes = append(rawBytes, []byte(self.SenderID)...)
+//	rawBytes = append(rawBytes, msg.shardID)
+//	rawBytes = append(rawBytes, []byte(msg.Candidate)...)
+//	rawBytes = append(rawBytes, []byte(msg.Requester)...)
+//	rawBytes = append(rawBytes, []byte(msg.SenderID)...)
 //	return rawBytes
 //}
 //
-//func (self *MessageSwapRequest) Verify() error {
-//	msgBytes := self.GetMsgByte()
-//	err := cashec.ValidateDataB58(self.Requester, self.RequesterSig, msgBytes)
+//func (msg *MessageSwapRequest) Verify() error {
+//	msgBytes := msg.GetMsgByte()
+//	err := cashec.ValidateDataB58(msg.Requester, msg.RequesterSig, msgBytes)
 //
 //	if err != nil {
 //		return err

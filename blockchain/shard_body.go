@@ -45,7 +45,6 @@ Customize UnmarshalJSON to parse list TxNormal
 because we have many types of block, so we can need to customize data from marshal from json string to build a block
 */
 func (self *ShardBody) UnmarshalJSON(data []byte) error {
-	Logger.log.Info("UnmarshalJSON of block")
 	type Alias ShardBody
 	temp := &struct {
 		Transactions []map[string]interface{}
@@ -115,7 +114,7 @@ func (self *CrossOutputCoin) Hash() common.Hash {
 	return common.DoubleHashH(record)
 }
 func (self *ShardBody) CalcMerkleRootShard() *common.Hash {
-	var shardTxs map[int][]*common.Hash
+	var shardTxs = make(map[int][]*common.Hash)
 
 	for _, tx := range self.Transactions {
 		shardID := int(tx.GetSenderAddrLastByte())

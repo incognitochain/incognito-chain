@@ -19,6 +19,7 @@ const (
 
 	CmdBlockShard         = "blockshard"
 	CmdBlockBeacon        = "blockbeacon"
+	CmdGetCrossShard      = "getcrossshd"
 	CmdCrossShard         = "crossshard"
 	CmdGetShardToBeacon   = "getshdtobcn"
 	CmdBlkShardToBeacon   = "blkshdtobcn"
@@ -84,6 +85,9 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		break
 	case CmdBlockShard:
 		msg = &MessageBlockShard{}
+		break
+	case CmdGetCrossShard:
+		msg = &MessageGetCrossShard{}
 		break
 	case CmdCrossShard:
 		msg = &MessageCrossShard{}
@@ -225,6 +229,8 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdBlockBeacon, nil
 	case reflect.TypeOf(&MessageBlockShard{}):
 		return CmdBlockShard, nil
+	case reflect.TypeOf(&MessageGetCrossShard{}):
+		return CmdGetCrossShard, nil
 	case reflect.TypeOf(&MessageCrossShard{}):
 		return CmdCrossShard, nil
 	case reflect.TypeOf(&MessageGetShardToBeacon{}):
