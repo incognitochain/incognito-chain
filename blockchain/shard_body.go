@@ -114,6 +114,10 @@ func (self *CrossOutputCoin) Hash() common.Hash {
 	return common.DoubleHashH(record)
 }
 func (self *ShardBody) CalcMerkleRootShard() *common.Hash {
+	if common.SHARD_NUMBER == 1 {
+		merkleRoot := common.HashH([]byte{})
+		return &merkleRoot
+	}
 	var shardTxs = make(map[int][]*common.Hash)
 
 	for _, tx := range self.Transactions {
