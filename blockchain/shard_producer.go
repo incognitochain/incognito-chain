@@ -148,7 +148,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		//TODO: add salary fund
 		SalaryFund:           remainingFund,
 		TxRoot:               *merkleRoot,
-		ShardTxRoot:          CreateMerkleRootShard(block.Body.Transactions),
+		ShardTxRoot:          *block.Body.CalcMerkleRootShard(),
 		CrossOutputCoinRoot:  *crossOutputCoinRoot,
 		ActionsRoot:          actionsHash,
 		CrossShards:          CreateCrossShardByteArray(txsToAdd),
@@ -411,6 +411,9 @@ func (blockgen *ShardBlock) CreateShardToBeaconBlock() ShardToBeaconBlock {
 
 func (blk *ShardBlock) CreateAllCrossShardBlock() map[byte]*CrossShardBlock {
 	allCrossShard := make(map[byte]*CrossShardBlock)
+	if common.SHARD_NUMBER == 1 {
+		return allCrossShard
+	}
 	for i := 0; i < common.SHARD_NUMBER; i++ {
 		crossShard, err := blk.CreateCrossShardBlock(byte(i))
 		if crossShard != nil && err == nil {
