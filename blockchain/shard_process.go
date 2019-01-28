@@ -10,8 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ninjadotorg/constant/metadata"
-
 	"github.com/ninjadotorg/constant/common"
 )
 
@@ -222,7 +220,8 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 		return NewBlockChainError(HashError, errors.New("Can't Verify Transaction Root"))
 	}
 	// Verify ShardTx Root
-	shardTxRoot := CreateMerkleRootShard(block.Body.Transactions)
+	shardTxRoot := block.Body.CalcMerkleRootShard()
+
 	if bytes.Compare(block.Header.ShardTxRoot.GetBytes(), shardTxRoot.GetBytes()) != 0 {
 		return NewBlockChainError(HashError, errors.New("Can't Verify CrossShardTransaction Root"))
 	}
@@ -476,33 +475,33 @@ func (self *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlock, sh
 }
 
 //=====================Util for shard====================
-
-func CreateMerkleRootShard(txList []metadata.Transaction) common.Hash {
-	//calculate output coin hash for each shard
-	if len(txList) == 0 {
-		res, _ := GenerateZeroValueHash()
-		return res
-	}
-	outputCoinHash := getOutCoinHashEachShard(txList)
-	// calculate merkle data : 1 2 3 4 12 34 1234
-	merkleData := outputCoinHash
-	if len(merkleData)%2 == 1 {
-		merkleData = append(merkleData, common.HashH([]byte{}))
-	}
-
-	cursor := 0
-	for {
-		v1 := merkleData[cursor]
-		v2 := merkleData[cursor+1]
-		merkleData = append(merkleData, common.HashH(append(v1.GetBytes(), v2.GetBytes()...)))
-		cursor += 2
-		if cursor >= len(merkleData)-1 {
-			break
-		}
-	}
-	merkleShardRoot := merkleData[len(merkleData)-1]
-	return merkleShardRoot
-}
+//TODO: remove
+//func CreateMerkleRootShard(txList []metadata.Transaction) common.Hash {
+//	//calculate output coin hash for each shard
+//	if len(txList) == 0 {
+//		res, _ := GenerateZeroValueHash()
+//		return res
+//	}
+//	outputCoinHash := getOutCoinHashEachShard(txList)
+//	// calculate merkle data : 1 2 3 4 12 34 1234
+//	merkleData := outputCoinHash
+//	if len(merkleData)%2 == 1 {
+//		merkleData = append(merkleData, common.HashH([]byte{}))
+//	}
+//
+//	cursor := 0
+//	for {
+//		v1 := merkleData[cursor]
+//		v2 := merkleData[cursor+1]
+//		merkleData = append(merkleData, common.HashH(append(v1.GetBytes(), v2.GetBytes()...)))
+//		cursor += 2
+//		if cursor >= len(merkleData)-1 {
+//			break
+//		}
+//	}
+//	merkleShardRoot := merkleData[len(merkleData)-1]
+//	return merkleShardRoot
+//}
 
 func CreateMerkleCrossOutputCoin(crossOutputCoins map[byte][]CrossOutputCoin) (*common.Hash, error) {
 	if len(crossOutputCoins) == 0 {
