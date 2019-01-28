@@ -16,41 +16,41 @@ type MessageGetBlockShard struct {
 	Timestamp int64
 }
 
-func (self *MessageGetBlockShard) Hash() string {
-	rawBytes, err := self.JsonSerialize()
+func (msg *MessageGetBlockShard) Hash() string {
+	rawBytes, err := msg.JsonSerialize()
 	if err != nil {
 		return ""
 	}
 	return common.HashH(rawBytes).String()
 }
 
-func (self *MessageGetBlockShard) MessageType() string {
+func (msg *MessageGetBlockShard) MessageType() string {
 	return CmdGetBlockShard
 }
 
-func (self *MessageGetBlockShard) MaxPayloadLength(pver int) int {
+func (msg *MessageGetBlockShard) MaxPayloadLength(pver int) int {
 	return MaxBlockPayload
 }
 
-func (self *MessageGetBlockShard) JsonSerialize() ([]byte, error) {
-	jsonBytes, err := json.Marshal(self)
+func (msg *MessageGetBlockShard) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(msg)
 	return jsonBytes, err
 }
 
-func (self *MessageGetBlockShard) JsonDeserialize(jsonStr string) error {
-	err := json.Unmarshal([]byte(jsonStr), self)
+func (msg *MessageGetBlockShard) JsonDeserialize(jsonStr string) error {
+	err := json.Unmarshal([]byte(jsonStr), msg)
 	return err
 }
 
-func (self *MessageGetBlockShard) SetSenderID(senderID peer.ID) error {
-	self.SenderID = senderID.Pretty()
+func (msg *MessageGetBlockShard) SetSenderID(senderID peer.ID) error {
+	msg.SenderID = senderID.Pretty()
 	return nil
 }
 
-func (self *MessageGetBlockShard) SignMsg(_ *cashec.KeySet) error {
+func (msg *MessageGetBlockShard) SignMsg(_ *cashec.KeySet) error {
 	return nil
 }
 
-func (self *MessageGetBlockShard) VerifyMsgSanity() error {
+func (msg *MessageGetBlockShard) VerifyMsgSanity() error {
 	return nil
 }

@@ -17,40 +17,40 @@ type MessageShardToBeacon struct {
 	Block blockchain.ShardToBeaconBlock
 }
 
-func (self *MessageShardToBeacon) Hash() string {
-	rawBytes, err := self.JsonSerialize()
+func (msg *MessageShardToBeacon) Hash() string {
+	rawBytes, err := msg.JsonSerialize()
 	if err != nil {
 		return ""
 	}
 	return common.HashH(rawBytes).String()
 }
 
-func (self *MessageShardToBeacon) MessageType() string {
+func (msg *MessageShardToBeacon) MessageType() string {
 	return CmdBlkShardToBeacon
 }
 
-func (self *MessageShardToBeacon) MaxPayloadLength(pver int) int {
+func (msg *MessageShardToBeacon) MaxPayloadLength(pver int) int {
 	return MaxBlockPayload
 }
 
-func (self *MessageShardToBeacon) JsonSerialize() ([]byte, error) {
-	jsonBytes, err := json.Marshal(self)
+func (msg *MessageShardToBeacon) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(msg)
 	return jsonBytes, err
 }
 
-func (self *MessageShardToBeacon) JsonDeserialize(jsonStr string) error {
-	err := json.Unmarshal([]byte(jsonStr), self)
+func (msg *MessageShardToBeacon) JsonDeserialize(jsonStr string) error {
+	err := json.Unmarshal([]byte(jsonStr), msg)
 	return err
 }
 
-func (self *MessageShardToBeacon) SetSenderID(senderID peer.ID) error {
+func (msg *MessageShardToBeacon) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (self *MessageShardToBeacon) SignMsg(_ *cashec.KeySet) error {
+func (msg *MessageShardToBeacon) SignMsg(_ *cashec.KeySet) error {
 	return nil
 }
 
-func (self *MessageShardToBeacon) VerifyMsgSanity() error {
+func (msg *MessageShardToBeacon) VerifyMsgSanity() error {
 	return nil
 }

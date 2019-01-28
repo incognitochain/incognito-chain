@@ -20,40 +20,40 @@ type MessageBFTCommit struct {
 	MsgSig        string
 }
 
-func (self *MessageBFTCommit) Hash() string {
-	rawBytes, err := self.JsonSerialize()
+func (msg *MessageBFTCommit) Hash() string {
+	rawBytes, err := msg.JsonSerialize()
 	if err != nil {
 		return ""
 	}
 	return common.HashH(rawBytes).String()
 }
 
-func (self *MessageBFTCommit) MessageType() string {
+func (msg *MessageBFTCommit) MessageType() string {
 	return CmdBFTCommit
 }
 
-func (self *MessageBFTCommit) MaxPayloadLength(pver int) int {
+func (msg *MessageBFTCommit) MaxPayloadLength(pver int) int {
 	return MaxBFTCommitPayload
 }
 
-func (self *MessageBFTCommit) JsonSerialize() ([]byte, error) {
-	jsonBytes, err := json.Marshal(self)
+func (msg *MessageBFTCommit) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(msg)
 	return jsonBytes, err
 }
 
-func (self *MessageBFTCommit) JsonDeserialize(jsonStr string) error {
-	err := json.Unmarshal([]byte(jsonStr), self)
+func (msg *MessageBFTCommit) JsonDeserialize(jsonStr string) error {
+	err := json.Unmarshal([]byte(jsonStr), msg)
 	return err
 }
 
-func (self *MessageBFTCommit) SetSenderID(senderID peer.ID) error {
+func (msg *MessageBFTCommit) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (self *MessageBFTCommit) SignMsg(_ *cashec.KeySet) error {
+func (msg *MessageBFTCommit) SignMsg(_ *cashec.KeySet) error {
 	return nil
 }
 
-func (self *MessageBFTCommit) VerifyMsgSanity() error {
+func (msg *MessageBFTCommit) VerifyMsgSanity() error {
 	return nil
 }

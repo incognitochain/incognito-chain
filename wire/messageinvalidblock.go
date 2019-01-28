@@ -19,32 +19,32 @@ type MessageInvalidBlock struct {
 	ValidatorSig string
 }
 
-func (self *MessageInvalidBlock) Hash() string {
-	rawBytes, err := self.JsonSerialize()
+func (msg *MessageInvalidBlock) Hash() string {
+	rawBytes, err := msg.JsonSerialize()
 	if err != nil {
 		return ""
 	}
 	return common.HashH(rawBytes).String()
 }
 
-func (self *MessageInvalidBlock) MessageType() string {
+func (msg *MessageInvalidBlock) MessageType() string {
 	return CmdInvalidBlock
 }
 
-func (self *MessageInvalidBlock) MaxPayloadLength(pver int) int {
+func (msg *MessageInvalidBlock) MaxPayloadLength(pver int) int {
 	return MaxInvalidBlockPayload
 }
 
-func (self *MessageInvalidBlock) JsonSerialize() ([]byte, error) {
-	jsonBytes, err := json.Marshal(self)
+func (msg *MessageInvalidBlock) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(msg)
 	return jsonBytes, err
 }
 
-func (self *MessageInvalidBlock) JsonDeserialize(jsonStr string) error {
-	err := json.Unmarshal([]byte(jsonStr), self)
+func (msg *MessageInvalidBlock) JsonDeserialize(jsonStr string) error {
+	err := json.Unmarshal([]byte(jsonStr), msg)
 	return err
 }
 
-func (self *MessageInvalidBlock) SetSenderID(senderID peer.ID) error {
+func (msg *MessageInvalidBlock) SetSenderID(senderID peer.ID) error {
 	return nil
 }

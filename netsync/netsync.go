@@ -35,8 +35,6 @@ type NetSyncConfig struct {
 	Consensus interface {
 		OnBFTMsg(wire.Message)
 	}
-
-	FeeEstimator map[byte]*mempool.FeeEstimator
 }
 
 func (netSync NetSync) New(cfg *NetSyncConfig) *NetSync {
@@ -113,9 +111,17 @@ out:
 						{
 							netSync.HandleMessageBlockShard(msg)
 						}
+					case *wire.MessageGetCrossShard:
+						{
+							netSync.HandleMessageGetCrossShard(msg)
+						}
 					case *wire.MessageCrossShard:
 						{
 							netSync.HandleMessageCrossShard(msg)
+						}
+					case *wire.MessageGetShardToBeacon:
+						{
+							netSync.HandleMessageGetShardToBeacon(msg)
 						}
 					case *wire.MessageShardToBeacon:
 						{
@@ -333,54 +339,6 @@ func (netSync *NetSync) HandleMessageGetBlockBeacon(msg *wire.MessageGetBlockBea
 			fmt.Println(err)
 		}
 	}
-
-	// blockHash, _ := common.Hash{}.NewHashFromStr(msg.LastBlockHash)
-	// senderBlockHeaderIndex, shardID, err := netSync.config.BlockChain.GetShardBlockHeightByHash(blockHash)
-	// if err == nil {
-	// 	bestHashStr := netSync.config.BlockChain.BestState[shardID].BestBlockHash.String()
-	// 	Logger.log.Infof("Blockhash from message %s", blockHash.String())
-	// 	Logger.log.Infof("Blockhash of bestChain in shardID %d - %s", shardID, bestHashStr)
-	// 	Logger.log.Info("index of block %d \n", senderBlockHeaderIndex)
-	// 	Logger.log.Info("shardID of block %d \n", shardID)
-	// 	if bestHashStr != blockHash.String() {
-	// 		// Send Blocks back to requestor
-	// 		chainBlocks, _ := netSync.config.BlockChain.GetShardBlocks(shardID)
-	// 		for index := int(senderBlockHeaderIndex) + 1; index <= len(chainBlocks); index++ {
-	// 			block, _ := netSync.config.BlockChain.GetShardBlockByHeight(int32(index), shardID)
-	// 			Logger.log.Info("Send block %s \n", block.Hash().String())
-
-	// 			blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
-	// 			if err != nil {
-	// 				Logger.log.Error(err)
-	// 				break
-	// 			}
-
-	// 			blockMsg.(*wire.MessageBlock).Block = *block
-	// 			if msg.SenderID == "" {
-	// 				Logger.log.Error("Sender ID is empty")
-	// 				break
-	// 			}
-	// 			peerID, err := libp2p.IDB58Decode(msg.SenderID)
-	// 			if err != nil {
-	// 				Logger.log.Error(err)
-	// 				break
-	// 			}
-	// 			netSync.config.Server.PushMessageToPeer(blockMsg, peerID)
-	// 		}
-	// 	}
-	// } else {
-	// 	Logger.log.Error(blockHash.String(), "----------")
-	// 	Logger.log.Error(netSync.config.BlockChain.BestState[9].BestBlockHash.String())
-	// 	chainBlocks, err2 := netSync.config.BlockChain.GetShardBlocks(9)
-	// 	if err2 != nil {
-	// 		Logger.log.Error(err2)
-	// 	}
-	// 	for _, block := range chainBlocks {
-	// 		Logger.log.Error(block.Hash().String())
-	// 	}
-	// 	Logger.log.Error(err)
-	// 	Logger.log.Error("No new blocks to return")
-	// }
 }
 
 func (netSync *NetSync) HandleMessageBlockBeacon(msg *wire.MessageBlockBeacon) {
@@ -449,8 +407,11 @@ func (netSync *NetSync) HandleMessageGetShardState(msg *wire.MessageGetShardStat
 		Logger.log.Error(err)
 		return
 	}
-	shardState := netSync.config.BlockChain.GetShardState(msg.ShardID)
-
+	shardState, err := netSync.config.BlockChain.GetShardState(msg.ShardID)
+	if err != nil {
+		Logger.log.Error(err)
+		return
+	}
 	msgShardState, err := wire.MakeEmptyMessage(wire.CmdShardState)
 	if err != nil {
 		Logger.log.Error(err)
@@ -468,6 +429,14 @@ func (netSync *NetSync) HandleMessageShardState(msg *wire.MessageShardState) {
 		return
 	}
 	netSync.config.BlockChain.OnShardStateReceived(&msg.ChainInfo, peerID)
+}
+
+func (netsync *NetSync) HandleMessageGetCrossShard(msg *wire.MessageGetCrossShard) {
+
+}
+
+func (netsync *NetSync) HandleMessageGetShardToBeacon(msg *wire.MessageGetShardToBeacon) {
+
 }
 
 // func (netSync *NetSync) HandleMessageSwapRequest(msg *wire.MessageSwapRequest) {
