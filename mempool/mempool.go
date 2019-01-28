@@ -359,7 +359,7 @@ func (tp *TxPool) ListTxs() []string {
 	return result
 }
 
-func (tp *TxPool) PoolTxCoinHashH(txHash common.Hash, inCoinHs []common.Hash) error {
+func (tp *TxPool) PrePoolTxCoinHashH(txHash common.Hash, inCoinHs []common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
 	tp.txCoinHPool[txHash] = inCoinHs
