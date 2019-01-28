@@ -290,7 +290,7 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	cb := make([]*privacy.EllipticPoint, n)
 	cd := make([]*privacy.EllipticPoint, n)
 
-	for j := n - 1; j >= 0; j-- {
+	for j := 0; j <n; j++ {
 		// Generate random numbers
 		r[j] = privacy.RandInt()
 		a[j] = privacy.RandInt()
@@ -340,7 +340,7 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	zd := new(big.Int)
 	f := make([]*big.Int, n)
 
-	for j := n - 1; j >= 0; j-- {
+	for j := 0; j < n; j++ {
 		// f = lx + a
 		f[j] = new(big.Int).Mul(big.NewInt(int64(indexIsZeroBinary[j])), x)
 		f[j].Add(f[j], a[j])
@@ -395,7 +395,7 @@ func (pro *OneOutOfManyProof) Verify() bool {
 	//Calculate x
 	x := big.NewInt(0)
 
-	for j := 0; j <= n-1; j++ {
+	for j := 0 ; j <= n-1; j++ {
 		x = generateChallengeFromByte([][]byte{x.Bytes(), pro.cl[j].Compress(), pro.ca[j].Compress(), pro.cb[j].Compress(), pro.cd[j].Compress()})
 	}
 
@@ -428,7 +428,7 @@ func (pro *OneOutOfManyProof) Verify() bool {
 
 		exp := big.NewInt(1)
 		fji := big.NewInt(1)
-		for j := n - 1; j >= 0; j-- {
+		for j := 0; j < n; j++ {
 			if iBinary[j] == 1 {
 				fji.Set(pro.f[j])
 			} else {

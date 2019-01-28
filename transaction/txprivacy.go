@@ -14,7 +14,7 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
-	zkp "github.com/ninjadotorg/constant/privacy/zeroknowledge"
+	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
@@ -360,13 +360,13 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	// verify signature
 	// Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
 	// res = verKey.Verify(signature, tx.Hash()[:])
-	fmt.Println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", tx.Sig)
+	//fmt.Println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", tx.Sig)
 	SNPrivacyProof := make([]*zkp.PKSNPrivacyProof, len(tx.Proof.InputCoins))
 	for i := 0; i < len(tx.Proof.InputCoins); i++ {
 		SNPrivacyProof[i] = new(zkp.PKSNPrivacyProof).Init()
 		SNPrivacyProof[i].SetBytes(tx.Sig[i*privacy.SNPrivacyProofSize : (i+1)*privacy.SNPrivacyProofSize])
 		if !SNPrivacyProof[i].Verify(tx.Hash()[:]) {
-			fmt.Println("Falseeeeeeeeeeeeeeeeeeeeeeeee")
+			//fmt.Println("Falseeeeeeeeeeeeeeeeeeeeeeeee")
 			return false, nil
 		}
 	}
@@ -392,6 +392,7 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Verify the payment proof
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
+	//hasPrivacy = falsenite
 	Logger.log.Infof("[db] Validating Transaction tx\n")
 	start := time.Now()
 	// Verify tx signature

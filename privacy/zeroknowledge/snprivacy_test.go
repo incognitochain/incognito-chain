@@ -37,7 +37,7 @@ func TestPKSNPrivacy(t *testing.T) {
 	proof2 := new(PKSNPrivacyProof).Init()
 	proof2.SetBytes(proofBytes)
 
-	res := proof2.Verify()
+	res := proof2.Verify(nil)
 
 	assert.Equal(t, true, res)
 }
