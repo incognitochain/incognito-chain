@@ -143,3 +143,74 @@ func TestAggregatedRangeProve(t *testing.T) {
 
 	assert.Equal(t, true, res)
 }
+
+func BenchmarkAggregatedRangeProve(b *testing.B) {
+	wit := new(AggregatedRangeWitness)
+	numValue := 1
+	wit.values = make([]*big.Int, numValue)
+	wit.rands = make([]*big.Int, numValue)
+
+	for i := range wit.values {
+		wit.values[i] = big.NewInt(10)
+		wit.rands[i] = privacy.RandInt()
+	}
+
+	for i:=0; i<b.N; i++ {
+		start := time.Now()
+		proof, err := wit.Prove()
+		if err != nil {
+			fmt.Printf("Err: %v\n", err)
+		}
+		end := time.Since(start)
+		fmt.Printf("Aggregated range proving time: %v\n", end)
+
+		bytes := proof.Bytes()
+		fmt.Printf("Len byte proof: %v\n", len(bytes))
+
+		proof2 := new(AggregatedRangeProof)
+		proof2.SetBytes(bytes)
+
+		start = time.Now()
+		res := proof.Verify()
+		end = time.Since(start)
+		fmt.Printf("Aggregated range verification time: %v\n", end)
+
+		assert.Equal(b, true, res)
+	}
+}
+
+func TestMultiExponentiation(t *testing.T){
+	//exponents := []*big.Int{big.NewInt(5), big.NewInt(10),big.NewInt(5),big.NewInt(7), big.NewInt(5)}
+
+	exponents := make([]*big.Int, 64)
+	for i:= range exponents{
+		exponents[i] = new(big.Int).SetBytes(privacy.RandBytes(2))
+	}
+
+	bases := newBulletproofParams(1)
+	//fmt.Printf("Values: %v\n", exponents[0])
+
+	start1 := time.Now()
+	expectedRes := new(privacy.EllipticPoint).Zero()
+	for i:= range exponents{
+		expectedRes = expectedRes.Add(bases.G[i].ScalarMult(exponents[i]))
+	}
+	end1 := time.Since(start1)
+	fmt.Printf("normal calculation time: %v\n", end1)
+	fmt.Printf("Res from normal calculation: %+v\n", expectedRes)
+
+
+	start2 := time.Now()
+	testcase4, err := privacy.MultiScalarmult(bases.G, exponents)
+	end2 := time.Since(start2)
+	fmt.Printf("multi scalarmult time: %v\n", end2)
+
+
+	if err != nil{
+		fmt.Printf("Error of multi-exponentiation algorithm")
+	}
+	fmt.Printf("Res from multi exponentiation alg: %+v\n", testcase4)
+
+	assert.Equal(t, expectedRes, testcase4)
+}
+

@@ -2,7 +2,6 @@ package privacy
 
 import (
 	"errors"
-	"fmt"
 	"math/big"
 	rand2 "math/rand"
 	"time"
@@ -276,7 +275,7 @@ func MaxBitLen(values []*big.Int) int {
 //	return xTmp.Add(y)
 //}
 
-func multiScalarmult(bases []*EllipticPoint, exponents []*big.Int) (*EllipticPoint, error) {
+func MultiScalarmult(bases []*EllipticPoint, exponents []*big.Int) (*EllipticPoint, error) {
 	n := len(bases)
 	if n != len(exponents) {
 		return nil, errors.New("wrong inputs")
@@ -295,7 +294,7 @@ func multiScalarmult(bases []*EllipticPoint, exponents []*big.Int) (*EllipticPoi
 		expTmp[i] = new(big.Int)
 		expTmp[i].Set(exponents[i])
 	}
-	start1 := time.Now()
+	//start1 := time.Now()
 
 	result := new(EllipticPoint).Zero()
 
@@ -310,8 +309,8 @@ func multiScalarmult(bases []*EllipticPoint, exponents []*big.Int) (*EllipticPoi
 		}
 	}
 
-	end1 := time.Since(start1)
-	fmt.Printf(" time faster: %v\n", end1)
+	//end1 := time.Since(start1)
+	//fmt.Printf(" time faster: %v\n", end1)
 
 	return result, nil
 }
