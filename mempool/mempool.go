@@ -52,6 +52,10 @@ type TxPool struct {
 	config            Config
 	pool              map[common.Hash]*TxDesc
 	poolSerialNumbers map[common.Hash][][]byte
+
+	txCoinHPool map[common.Hash][]common.Hash
+	coinHPool   map[common.Hash]bool
+	cMtx        sync.RWMutex
 }
 
 /*
@@ -61,6 +65,10 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.config = *cfg
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbers = make(map[common.Hash][][]byte)
+
+	tp.txCoinHPool = make(map[common.Hash][]common.Hash)
+	tp.coinHPool = make(map[common.Hash]bool)
+	tp.cMtx = sync.RWMutex{}
 }
 
 // ----------- transaction.MempoolRetriever's implementation -----------------
@@ -114,7 +122,10 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 
 		}
 	}
-
+	txHash := tx.Hash()
+	if txHash != nil {
+		tp.addTxCoinHashH(*txHash)
+	}
 	return txD
 }
 
@@ -149,7 +160,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	minFeePerKbTx := tp.config.BlockChain.GetFeePerKbTx()
 	txFee := tx.GetTxFee()
 	ok = tx.CheckTransactionFee(minFeePerKbTx)
-	if !ok {
+	if ok {
 		err := MempoolTxError{}
 		err.Init(RejectVersion, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, minFeePerKbTx))
 		return nil, nil, err
@@ -247,6 +258,11 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 func (tp *TxPool) RemoveTx(tx metadata.Transaction) error {
 	tp.mtx.Lock()
 	err := tp.removeTx(&tx)
+	// remove tx coin hash from pool
+	txHash := tx.Hash()
+	if txHash != nil {
+		tp.removeTxCoinHashH(*txHash)
+	}
 	tp.mtx.Unlock()
 	return err
 }
@@ -341,4 +357,46 @@ func (tp *TxPool) ListTxs() []string {
 		result = append(result, tx.Desc.Tx.Hash().String())
 	}
 	return result
+}
+
+func (tp *TxPool) PrePoolTxCoinHashH(txHash common.Hash, inCoinHs []common.Hash) error {
+	tp.cMtx.Lock()
+	defer tp.cMtx.Unlock()
+	tp.txCoinHPool[txHash] = inCoinHs
+	return nil
+}
+
+func (tp *TxPool) addTxCoinHashH(txHash common.Hash) error {
+	tp.cMtx.Lock()
+	defer tp.cMtx.Unlock()
+	inCoinHs, ok := tp.txCoinHPool[txHash]
+	if ok {
+		for _, inCoinH := range inCoinHs {
+			tp.coinHPool[inCoinH] = true
+		}
+	}
+	return nil
+}
+
+func (tp *TxPool) ValidateCoinHashH(inCoinH common.Hash) error {
+	tp.cMtx.Lock()
+	defer tp.cMtx.Unlock()
+	_, ok := tp.coinHPool[inCoinH]
+	if ok {
+		return errors.New("Coin is in used")
+	}
+	return nil
+}
+
+func (tp *TxPool) removeTxCoinHashH(txHash common.Hash) error {
+	tp.cMtx.Lock()
+	defer tp.cMtx.Unlock()
+	inCoinHs, ok := tp.txCoinHPool[txHash]
+	if ok {
+		for _, inCoinH := range inCoinHs {
+			delete(tp.coinHPool, inCoinH)
+		}
+		delete(tp.txCoinHPool, txHash)
+	}
+	return nil
 }
