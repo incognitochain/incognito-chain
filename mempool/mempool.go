@@ -367,7 +367,7 @@ func (tp *TxPool) PoolTxCoinHashH(txHash common.Hash, inCoins []*privacy.Coin) e
 			return errors.New("coin is nil")
 		}
 		inCoinH := tp.hashHCoin(inCoin)
-		if inCoin == nil {
+		if inCoinH == nil {
 			return errors.New("hash coin err")
 		}
 		inCoinHs = append(inCoinHs, *inCoinH)
@@ -395,7 +395,7 @@ func (tp *TxPool) ValidateCoinHashH(inCoin *privacy.Coin) error {
 		return errors.New("coin is nil")
 	}
 	inCoinH := tp.hashHCoin(inCoin)
-	if inCoin == nil {
+	if inCoinH == nil {
 		return errors.New("hash coin err")
 	}
 	_, ok := tp.coinHPool[*inCoinH]
