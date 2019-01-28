@@ -32,7 +32,7 @@ func getMultiSigsRegistration(
 	txr Transaction,
 	db database.DatabaseInterface,
 ) ([]byte, error) {
-	pk := txr.GetJSPubKey()
+	pk := txr.GetSigPubKey()
 	multiSigsReg, err := db.GetMultiSigsRegistration(pk)
 	return multiSigsReg, err
 }
@@ -70,15 +70,12 @@ func (msSpending *MultiSigsSpending) ValidateSanityData(
 }
 
 func (msSpending *MultiSigsSpending) ValidateMetadataByItself() bool {
-	if msSpending.Type != MultiSigsSpendingMeta {
-		return false
-	}
-	return true
+	return msSpending.Type != MultiSigsSpendingMeta
 }
 
 func (msSpending *MultiSigsSpending) Hash() *common.Hash {
 	// record := string(common.ToBytes(msSpending.Signs))
-	record := string(msSpending.MetadataBase.Hash()[:])
+	record := msSpending.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
@@ -103,8 +100,7 @@ func (msSpending *MultiSigsSpending) VerifyMultiSigs(
 	verifiedCount := 0
 	spendablePubKeys := multiSigsReg.SpendableMembers
 	for _, pk := range spendablePubKeys {
-		pkStr := string(pk)
-		sign, ok := msSpending.Signs[pkStr]
+		sign, ok := msSpending.Signs[string(pk)]
 		if !ok {
 			continue
 		}

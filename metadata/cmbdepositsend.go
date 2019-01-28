@@ -34,7 +34,7 @@ func (ds *CMBDepositSend) Hash() *common.Hash {
 	record := string(ds.ContractID[:])
 
 	// final hash
-	record += string(ds.MetadataBase.Hash()[:])
+	record += ds.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -46,7 +46,8 @@ func (ds *CMBDepositSend) ValidateTxWithBlockChain(txr Transaction, bcr Blockcha
 		return false, errors.Errorf("Error retrieving contract for sending deposit")
 	}
 	contractMeta := txContract.GetMetadata().(*CMBDepositContract)
-	if contractMeta.ValidUntil >= bcr.GetHeight() {
+	height, err := bcr.GetTxChainHeight(txr)
+	if err != nil || contractMeta.ValidUntil >= height {
 		return false, errors.Errorf("Deposit contract is not valid anymore")
 	}
 
@@ -60,13 +61,13 @@ func (ds *CMBDepositSend) ValidateTxWithBlockChain(txr Transaction, bcr Blockcha
 	}
 
 	// Check if contract is addressed to current user
-	sender := txr.GetJSPubKey()
+	sender := txr.GetSigPubKey()
 	if !bytes.Equal(sender, contractMeta.Receiver.Pk[:]) {
 		return false, errors.Errorf("Invalid sender for deposit contract")
 	}
 
 	// Check if deposit amount is correct
-	cmbPubKey := txContract.GetJSPubKey()
+	cmbPubKey := txContract.GetSigPubKey()
 	unique, pubkey, amount := txContract.GetUniqueReceiver()
 	if !unique || !bytes.Equal(pubkey, cmbPubKey) {
 		return false, errors.Errorf("Deposit can only be send to CMB")

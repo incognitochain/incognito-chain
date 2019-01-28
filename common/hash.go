@@ -67,23 +67,26 @@ func (hash *Hash) GetBytes() []byte {
 }
 
 // BytesToHash sets b to hash If b is larger than len(h), b will be cropped from the left.
-func NewHash(b []byte) Hash {
+func NewHash(b []byte) (*Hash, error) {
 	var h Hash
-	h.SetBytes(b)
-	return h
+	err := h.SetBytes(b)
+	if err != nil {
+		return nil, err
+	}
+	return &h, nil
 }
 
 /*
 IsEqual returns true if target is the same as hash.
 */
 func (hash *Hash) IsEqual(target *Hash) bool {
-	if &hash == nil && target == nil {
+	if hash == nil && target == nil {
 		return true
 	}
-	if &hash == nil || target == nil {
+	if hash == nil || target == nil {
 		return false
 	}
-	return hash.String() == target.String()
+	return *hash == *target
 }
 
 /*
@@ -102,19 +105,28 @@ func (hash Hash) NewHash(newHash []byte) (*Hash, error) {
 // the hexadecimal string of a byte-reversed hash, but any missing characters
 // result in zero padding at the end of the Hash.
 */
-func (self Hash) NewHashFromStr(hash string) (*Hash, error) {
-	err := self.Decode(&self, hash)
+func (hashObj Hash) NewHashFromStr(hash string) (*Hash, error) {
+	err := hashObj.Decode(&hashObj, hash)
 	if err != nil {
 		return nil, err
 	}
-	return &self, nil
+	return &hashObj, nil
+}
+
+func NewHashFromStr(s string) (*Hash, error) {
+	var h Hash
+	err := h.Decode(&h, s)
+	if err != nil {
+		return nil, err
+	}
+	return &h, err
 }
 
 /*
 // Decode decodes the byte-reversed hexadecimal string encoding of a Hash to a
 // destination.
 */
-func (self *Hash) Decode(dst *Hash, src string) error {
+func (hashObj *Hash) Decode(dst *Hash, src string) error {
 	// Return error if hash string is too long.
 	if len(src) > MaxHashStringSize {
 		return ErrHashStrSize

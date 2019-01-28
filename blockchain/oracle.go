@@ -45,6 +45,9 @@ func (blockGen *BlkTmplGenerator) groupOracleFeedTxsByOracleType(
 		if err != nil {
 			return nil, err
 		}
+		if len(blockBytes) == 0 {
+			continue
+		}
 		block := Block{}
 		err = json.Unmarshal(blockBytes, &block)
 		if err != nil {
@@ -94,18 +97,16 @@ func computeRewards(
 	return selectedPrice, rewardedEvals
 }
 
-func getSenderAddress(tx *transaction.Tx) *privacy.PaymentAddress {
-	if tx.Proof == nil || len(tx.Proof.InputCoins) == 0 {
-		return nil
+func getSenderAddress(tx *transaction.Tx) (*privacy.PaymentAddress, error) {
+	meta := tx.GetMetadata()
+	if meta == nil || meta.GetType() != metadata.OracleFeedMeta {
+		return nil, errors.New("Metadata from tx is not OracleFeedMeta type.")
 	}
-	coin := tx.Proof.InputCoins[0].CoinDetails
-	if coin == nil {
-		return nil
+	oracleFeed, ok := meta.(*metadata.OracleFeed)
+	if !ok {
+		return nil, errors.New("Could not parse OracleFeedMeta metadata.")
 	}
-	pk := coin.PublicKey.Compress()
-	return &privacy.PaymentAddress{
-		Pk: pk,
-	}
+	return &oracleFeed.FeederAddress, nil
 }
 
 func refundOracleFeeders(txs []metadata.Transaction) []*Evaluation {
@@ -115,8 +116,8 @@ func refundOracleFeeders(txs []metadata.Transaction) []*Evaluation {
 		if !ok {
 			continue
 		}
-		senderAddr := getSenderAddress(normalTx)
-		if senderAddr == nil {
+		senderAddr, err := getSenderAddress(normalTx)
+		if err != nil {
 			continue
 		}
 		eval := &Evaluation{
@@ -193,10 +194,6 @@ func (blockGen *BlkTmplGenerator) buildRewardAndRefundEvals(
 			if !ok {
 				continue
 			}
-			senderAddr := getSenderAddress(normalTx)
-			if senderAddr == nil {
-				continue
-			}
 			meta := tx.GetMetadata()
 			oracleFeed, ok := meta.(*metadata.OracleFeed)
 			if !ok {
@@ -205,7 +202,7 @@ func (blockGen *BlkTmplGenerator) buildRewardAndRefundEvals(
 			eval := &Evaluation{
 				Tx:               normalTx,
 				OracleFeed:       oracleFeed,
-				OracleFeederAddr: senderAddr,
+				OracleFeederAddr: &oracleFeed.FeederAddress,
 			}
 			evals = append(evals, eval)
 		}
@@ -224,21 +221,21 @@ func (blockGen *BlkTmplGenerator) buildRewardAndRefundEvals(
 func (blockGen *BlkTmplGenerator) buildOracleRewardTxs(
 	chainID byte,
 	privatekey *privacy.SpendingKey,
-) ([]*transaction.Tx, uint64, map[string]uint64, error) {
+) ([]metadata.Transaction, uint64, map[string]uint64, error) {
 	bestBlock := blockGen.chain.BestState[chainID].BestBlock
 	evals, updatedOracleValues, err := blockGen.buildRewardAndRefundEvals(bestBlock, chainID)
 	if err != nil {
-		return []*transaction.Tx{}, 0, map[string]uint64{}, err
+		return []metadata.Transaction{}, 0, map[string]uint64{}, err
 	}
 
 	totalRewards := uint64(0)
-	oracleRewardTxs := []*transaction.Tx{}
+	oracleRewardTxs := []metadata.Transaction{}
 	for _, eval := range evals {
 		oracleReward := metadata.NewOracleReward(*eval.Tx.Hash(), metadata.OracleRewardMeta)
 		oracleRewardTx := new(transaction.Tx)
 		err := oracleRewardTx.InitTxSalary(eval.Reward, eval.OracleFeederAddr, privatekey, blockGen.chain.GetDatabase(), oracleReward)
 		if err != nil {
-			return []*transaction.Tx{}, 0, map[string]uint64{}, err
+			return []metadata.Transaction{}, 0, map[string]uint64{}, err
 		}
 		oracleRewardTxs = append(oracleRewardTxs, oracleRewardTx)
 		totalRewards += eval.Reward

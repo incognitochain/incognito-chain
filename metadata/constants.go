@@ -13,9 +13,15 @@ const (
 	LoanUnlockMeta
 	LoanPaymentMeta
 	DividendMeta
+
+	// OMO
 	CrowdsaleRequestMeta
-	CrowdsaleResponseMeta
 	CrowdsalePaymentMeta
+
+	// Reserve
+	ReserveRequestMeta
+	ReserveResponseMeta
+	ReservePaymentMeta
 
 	// CMB
 	CMBInitRequestMeta
@@ -25,6 +31,7 @@ const (
 	CMBDepositSendMeta
 	CMBWithdrawRequestMeta
 	CMBWithdrawResponseMeta // offchain multisig
+	CMBLoanContractMeta
 
 	BuyFromGOVRequestMeta
 	BuyFromGOVResponseMeta
@@ -39,31 +46,33 @@ const (
 	UpdatingOracleBoardMeta
 	MultiSigsRegistrationMeta
 	MultiSigsSpendingMeta
+	WithSenderAddressMeta
+	ResponseBaseMeta
+	BuyGOVTokenRequestMeta
 
 	//Voting
 	SubmitDCBProposalMeta
-	VoteDCBProposalMeta
 	VoteDCBBoardMeta
 	AcceptDCBProposalMeta
 	AcceptDCBBoardMeta
 
 	SubmitGOVProposalMeta
-	VoteGOVProposalMeta
 	VoteGOVBoardMeta
 	AcceptGOVProposalMeta
 	AcceptGOVBoardMeta
+
 	SendInitDCBVoteTokenMeta
 	SendInitGOVVoteTokenMeta
-	SealedLv1DCBBallotMeta
-	SealedLv2DCBBallotMeta
-	SealedLv3DCBBallotMeta
-	NormalDCBBallotMetaFromSealerMeta
-	NormalDCBBallotMetaFromOwnerMeta
-	SealedLv1GOVBallotMeta
-	SealedLv2GOVBallotMeta
-	SealedLv3GOVBallotMeta
-	NormalGOVBallotMetaFromSealerMeta
-	NormalGOVBallotMetaFromOwnerMeta
+	SealedLv1DCBVoteProposalMeta
+	SealedLv2DCBVoteProposalMeta
+	SealedLv3DCBVoteProposalMeta
+	NormalDCBVoteProposalFromSealerMeta
+	NormalDCBVoteProposalFromOwnerMeta
+	SealedLv1GOVVoteProposalMeta
+	SealedLv2GOVVoteProposalMeta
+	SealedLv3GOVVoteProposalMeta
+	NormalGOVVoteProposalFromSealerMeta
+	NormalGOVVoteProposalFromOwnerMeta
 	RewardProposalWinnerMeta
 	RewardDCBProposalSubmitterMeta
 	RewardGOVProposalSubmitterMeta
@@ -80,6 +89,6 @@ const (
 
 // update oracle board actions
 const (
-	Add    = 1
-	Remove = 2
+	Add = iota + 1
+	Remove
 )

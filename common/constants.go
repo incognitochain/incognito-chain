@@ -1,13 +1,11 @@
 package common
 
 const (
-	EmptyString  = ""
-	TrueValue    = true
-	FalseValue   = false
-	NanoConstant = 2    // 1 constant = 10^2 nano constant, we will use 1 miliconstant as minimum unit constant in tx
-	RefundPeriod = 1000 // after 1000 blocks since a tx (small & no-privacy) happens, the network will refund an amount of constants to tx initiator automatically
-	PubKeyLength = 33
-	ZeroByte     = byte(0x00)
+	RefundPeriod         = 1000 // after 1000 blocks since a tx (small & no-privacy) happens, the network will refund an amount of constants to tx initiator automatically
+	PubKeyLength         = 33
+	PaymentAddressLength = 66
+	ZeroByte             = byte(0x00)
+	DateOutputFormat     = "2006-01-02T15:04:05.999999"
 )
 
 const (
@@ -25,7 +23,7 @@ const (
 	MaxTxsInBlock         = 1000
 	MinTxsInBlock         = 10                    // minium txs for block to get immediate process (meaning no wait time)
 	MinBlockWaitTime      = 3                     // second
-	MaxBlockWaitTime      = 20 - MinBlockWaitTime // second
+	MaxBlockWaitTime      = 10 - MinBlockWaitTime // second
 	MaxSyncChainTime      = 5                     // second
 	MaxBlockSigWaitTime   = 5                     // second
 	MaxBlockPerTurn       = 100                   // maximum blocks that a validator can create per turn
@@ -43,12 +41,26 @@ const (
 	MinimumBlockOfProposalDuration    = 50
 	MaximumBlockOfProposalDuration    = 200
 	MaximumProposalExplainationLength = 1000
-	NumberOfDCBGovernors              = 50
-	NumberOfGOVGovernors              = 50
-	EncryptionPhaseDuration           = uint32(5)
+	NumberOfDCBGovernors              = 1
+	NumberOfGOVGovernors              = 3
+	EncryptionOnePhraseDuration       = 5
 	RewardProposalSubmitter           = 500
 	BasePercentage                    = 10000
 	PercentageBoardSalary             = 5
+)
+
+//Fee of specific transaction
+const (
+	FeeSubmitProposal = 100
+	FeeVoteProposal   = 100
+)
+
+//voting flag
+const (
+	Lv3EncryptionFlag = iota
+	Lv2EncryptionFlag
+	Lv1EncryptionFlag
+	NormalEncryptionFlag
 )
 
 // board types
@@ -59,25 +71,24 @@ const (
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	BondTokenID      = [HashSize]byte{0, 0, 0, 0, 0, 0, 0, 0}
-	DCBTokenID       = [HashSize]byte{1}
-	GOVTokenID       = [HashSize]byte{2}
-	CMBTokenID       = [HashSize]byte{3}
-	ConstantID       = [HashSize]byte{4} // To send Constant in custom token
-	DCBVotingTokenID = [HashSize]byte{5}
-	GOVVotingTokenID = [HashSize]byte{6}
-	OffchainAssetID  = [HashSize]byte{7, 7, 7, 7, 7, 7, 7, 7} // First 8 bytes of offchain asset
+	BondTokenID      = Hash{0, 0, 0, 0, 0, 0, 0, 0} // first 8 bytes must be 0
+	DCBTokenID       = Hash{1}
+	GOVTokenID       = Hash{2}
+	CMBTokenID       = Hash{3}
+	ConstantID       = Hash{4} // To send Constant in custom token
+	DCBVotingTokenID = Hash{5}
+	GOVVotingTokenID = Hash{6}
 )
 
-// asset IDs for oracle feed
+// asset IDs for oracle feed (must prefix with 99)
 var (
-	ETHAssetID = [HashSize]byte{99}
-	BTCAssetID = [HashSize]byte{88}
+	BTCAssetID = Hash{99, 99, 99, 99, 99, 99, 99, 99, 1}
+	ETHAssetID = Hash{99, 99, 99, 99, 99, 99, 99, 99, 2}
 )
 
 // board addresses
 const (
 	DCBAddress     = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"
 	GOVAddress     = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"
-	BurningAddress = "1UuyVqB8YeYfTHJEmA1BBYSupdbrejr1ZAusnwSUuohUFZYmD6Q8b1C7mtk9ydN2GAY7ebSDyMcB1om8DJKbDRRW3QbGNhkyoLfYo9wcQ"
+	BurningAddress = "1NHp16Y29xjc1PoXb1qwr65BfVVoHZuCbtTkVyucRzbeydgQHs2wPu5PC1hD"
 )

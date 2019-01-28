@@ -6,34 +6,9 @@ import (
 	"math/big"
 )
 
-//type AggregatedRangeWitness struct {
-//	values []*big.Int
-//	randomnesses []*big.Int
-//
-//	commitments []*privacy.EllipticPoint
-//	n byte
-//
-//
-//}
-//
-//
-//type AggregatedRangeProof struct {
-//
-//}
-//
-//
-//func (wit * AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error){
-//	aL :=
-//
-//	proof:= new(AggregatedRangeProof)
-//	return proof, nil
-//}
-
 type SingleRangeWitness struct {
 	value *big.Int
 	rand  *big.Int
-
-	n byte
 }
 
 type SingleRangeProof struct {
@@ -46,18 +21,15 @@ type SingleRangeProof struct {
 	tHat    *big.Int
 	mu      *big.Int
 	innerProductProof *InnerProductProof
-
-	n byte
 }
 
 func (wit *SingleRangeWitness) Prove() (*SingleRangeProof, error) {
 	var AggParam = newBulletproofParams(1)
 	proof := new(SingleRangeProof)
-	proof.n = wit.n
 
 	proof.cmValue = privacy.PedCom.CommitAtIndex(wit.value, wit.rand, privacy.VALUE)
 
-	n := int(wit.n)
+	n := privacy.MaxExp
 	// Convert value to binary array
 	aL := privacy.ConvertBigIntToBinary(wit.value, n)
 
@@ -107,7 +79,8 @@ func (wit *SingleRangeWitness) Prove() (*SingleRangeProof, error) {
 	zNeg := new(big.Int).Neg(z)
 	zNeg.Mod(zNeg, privacy.Curve.Params().N)
 	zSquare := new(big.Int).Exp(z, twoNumber, privacy.Curve.Params().N)
-	zCube := new(big.Int).Exp(z, big.NewInt(3), privacy.Curve.Params().N)
+	zCube := new(big.Int).Mul(z, zSquare)
+	//zCube.Mod(zCube, privacy.Curve.Params().N)
 
 	// l(X) = (aL -z*1^n) + sL*X
 	yVector := powerVector(y, n)
@@ -152,9 +125,14 @@ func (wit *SingleRangeWitness) Prove() (*SingleRangeProof, error) {
 	deltaYZ.Sub(deltaYZ, new(big.Int).Mul(zCube, innerProduct2))
 	deltaYZ.Mod(deltaYZ, privacy.Curve.Params().N)
 
-	t0 := new(big.Int).Mul(wit.value, zSquare)
-	t0.Add(t0, deltaYZ)
-	t0.Mod(t0, privacy.Curve.Params().N)
+	//t0 := new(big.Int).Mul(wit.value, zSquare)
+	//t0.Add(t0, deltaYZ)
+	//t0.Mod(t0, privacy.Curve.Params().N)
+	//
+	//test, _ := innerProduct(l0, r0)
+	//if test.Cmp(t0) ==0 {
+	//	fmt.Printf("t0 is right!!!!\n")
+	//}
 
 	// t1 = <l1, r0> + <l0, r1>
 	innerProduct3, err := innerProduct(l1, r0)
@@ -245,7 +223,7 @@ func (wit *SingleRangeWitness) Prove() (*SingleRangeProof, error) {
 
 func (proof *SingleRangeProof) Verify() bool {
 	var AggParam = newBulletproofParams(1)
-	n := int(proof.n)
+	n := privacy.MaxExp
 	oneNumber := big.NewInt(1)
 	twoNumber := big.NewInt(2)
 	oneVector := powerVector(oneNumber, n)
@@ -268,8 +246,8 @@ func (proof *SingleRangeProof) Verify() bool {
 	// HPrime = H^(y^(1-i)
 	tmp := new(big.Int)
 	HPrime := make([]*privacy.EllipticPoint, n)
-	for i :=1; i<=n; i++ {
-		HPrime[i-1] = AggParam.H[i-1].ScalarMult(tmp.Exp(y, big.NewInt(int64(1-i)), privacy.Curve.Params().N))
+	for i :=0; i<n; i++ {
+		HPrime[i] = AggParam.H[i].ScalarMult(tmp.Exp(y, big.NewInt(int64(-i)), privacy.Curve.Params().N))
 	}
 
 	// g^tHat * h^tauX = V^(z^2) * g^delta(y,z) * T1^x * T2^(x^2)
@@ -328,5 +306,5 @@ func (proof *SingleRangeProof) Verify() bool {
 	//	return false
 	//}
 
-	return proof.innerProductProof.Verify()
+	return proof.innerProductProof.Verify(AggParam)
 }

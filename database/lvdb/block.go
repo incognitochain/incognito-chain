@@ -8,6 +8,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/pkg/errors"
+	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
@@ -73,9 +74,12 @@ func (db *db) HasBlock(hash *common.Hash) (bool, error) {
 }
 
 func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
-	block, err := db.Get(db.GetKey(string(blockKeyPrefix), hash))
+	block, err := db.lvdb.Get(db.GetKey(string(blockKeyPrefix), hash), nil)
 	if err != nil {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		if err != lvdberr.ErrNotFound {
+			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+		return []byte{}, nil
 	}
 	ret := make([]byte, len(block))
 	copy(ret, block)
@@ -136,7 +140,7 @@ func (db *db) CleanBestState() error {
 	return nil
 }
 
-func (db *db) StoreBlockIndex(h *common.Hash, idx int32, chainID byte) error {
+func (db *db) StoreBlockIndex(h *common.Hash, idx uint64, chainID byte) error {
 	buf := make([]byte, 5)
 	binary.LittleEndian.PutUint32(buf, uint32(idx))
 	buf[4] = chainID
@@ -151,14 +155,14 @@ func (db *db) StoreBlockIndex(h *common.Hash, idx int32, chainID byte) error {
 	return nil
 }
 
-func (db *db) GetIndexOfBlock(h *common.Hash) (int32, byte, error) {
+func (db *db) GetIndexOfBlock(h *common.Hash) (uint64, byte, error) {
 	b, err := db.lvdb.Get(db.GetKey(string(blockKeyIdxPrefix), h), nil)
 	//{i-[hash]}:index-chainid
 	if err != nil {
 		return 0, 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.get"))
 	}
 
-	var idx int32
+	var idx uint64
 	var chainID byte
 	if err := binary.Read(bytes.NewReader(b[:4]), binary.LittleEndian, &idx); err != nil {
 		return 0, 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "binary.Read"))
@@ -184,7 +188,7 @@ func (db *db) GetBlockByIndex(idx int32, chainID byte) (*common.Hash, error) {
 	return h, nil
 }
 
-func (db *db) FetchAllBlocks() (map[byte][]*common.Hash, error) {
+/*func (db *db) FetchAllBlocks() (map[byte][]*common.Hash, error) {
 	var keys map[byte][]*common.Hash
 	for chainID := byte(0); chainID < 20; chainID++ {
 		prefix := append(append(chainIDPrefix, chainID), blockKeyPrefix...)
@@ -201,7 +205,7 @@ func (db *db) FetchAllBlocks() (map[byte][]*common.Hash, error) {
 		}
 	}
 	return keys, nil
-}
+}*/
 
 func (db *db) FetchChainBlocks(chainID byte) ([]*common.Hash, error) {
 	var keys []*common.Hash

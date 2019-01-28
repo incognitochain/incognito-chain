@@ -1,11 +1,11 @@
 package common
 
 // todo @0xjackalope; need to strictly specific data type to catch all used position
-func Encrypt(data interface{}, pubKey interface{}) interface{} {
-	return nil
+func Encrypt(data []byte, pubKey []byte) []byte {
+	return data
 }
-func Decrypt(data interface{}, privateKey interface{}) interface{} {
-	return nil
+func Decrypt(data []byte, privateKey []byte) []byte {
+	return data
 }
 
 func ByteEqual(a []byte, b []byte) bool {

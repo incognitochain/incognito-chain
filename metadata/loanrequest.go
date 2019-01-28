@@ -33,7 +33,7 @@ func NewLoanRequest(data map[string]interface{}) (Metadata, error) {
 		Params: params.LoanParams{
 			InterestRate:     uint64(loanParams["InterestRate"].(float64)),
 			LiquidationStart: uint64(loanParams["LiquidationStart"].(float64)),
-			Maturity:         uint32(loanParams["Maturity"].(float64)),
+			Maturity:         uint64(loanParams["Maturity"].(float64)),
 		},
 		CollateralType: data["CollateralType"].(string),
 		LoanAmount:     uint64(data["LoanAmount"].(float64)),
@@ -44,12 +44,12 @@ func NewLoanRequest(data map[string]interface{}) (Metadata, error) {
 		return nil, errors.Errorf("Collateral amount incorrect")
 	}
 	result.CollateralAmount = n
-	key, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
+	keyWallet, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
 	fmt.Printf("err receiveaddress: %v\n", err)
 	if err != nil {
 		return nil, errors.Errorf("ReceiveAddress incorrect")
 	}
-	result.ReceiveAddress = &key.KeySet.PaymentAddress
+	result.ReceiveAddress = &keyWallet.KeySet.PaymentAddress
 
 	s, err := hex.DecodeString(data["LoanID"].(string))
 	if err != nil {
@@ -75,7 +75,7 @@ func (lr *LoanRequest) Hash() *common.Hash {
 	record += lr.CollateralType
 	record += lr.CollateralAmount.String()
 	record += string(lr.LoanAmount)
-	record += string(lr.ReceiveAddress.Bytes())
+	record += lr.ReceiveAddress.String()
 	record += string(lr.KeyDigest)
 
 	// final hash
@@ -88,7 +88,7 @@ func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 	fmt.Println("Validating LoanRequest with blockchain!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	// Check if loan's params are correct
 	dcbParams := bcr.GetDCBParams()
-	validLoanParams := dcbParams.LoanParams
+	validLoanParams := dcbParams.ListLoanParams
 	ok := false
 	for _, temp := range validLoanParams {
 		if lr.Params == temp {
@@ -96,7 +96,7 @@ func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 		}
 	}
 	if !ok {
-		return false, fmt.Errorf("LoanRequest has incorrect params")
+		return false, errors.New("LoanRequest has incorrect params")
 	}
 
 	txs, err := bcr.GetLoanTxs(lr.LoanID)
@@ -105,7 +105,7 @@ func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 	}
 
 	if len(txs) > 0 {
-		return false, fmt.Errorf("LoanID already existed")
+		return false, errors.New("LoanID already existed")
 	}
 	return true, nil
 }

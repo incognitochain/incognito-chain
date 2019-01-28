@@ -123,10 +123,7 @@ func (point EllipticPoint) IsSafe() bool {
 	doublePoint.X, doublePoint.Y = Curve.Double(point.X, point.Y)
 
 	zeroPoint := new(EllipticPoint).Zero()
-	if doublePoint.IsEqual(zeroPoint) {
-		return false
-	}
-	return true
+	return !doublePoint.IsEqual(zeroPoint)
 }
 
 // Compress compresses key from 64 bytes to PointBytesLenCompressed bytes
@@ -246,16 +243,15 @@ func (point EllipticPoint) Add(targetPoint *EllipticPoint) *EllipticPoint {
 	return res
 }
 
-func (point EllipticPoint) Sub(targetPoint *EllipticPoint) *EllipticPoint {
+func (point EllipticPoint) Sub(targetPoint *EllipticPoint) (*EllipticPoint, error) {
 	invPoint, err := targetPoint.Inverse()
 
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
-	res := new(EllipticPoint).Zero()
-	res = point.Add(invPoint)
-	return res
+	res := point.Add(invPoint)
+	return res, nil
 }
 
 func (point EllipticPoint) IsEqual(p *EllipticPoint) bool {
