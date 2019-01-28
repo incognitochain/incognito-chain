@@ -125,7 +125,7 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 		}
 	}
 	if tx.Hash() != nil {
-		tp.addTxCoinHashH(*tx.Hash())
+		go tp.addTxCoinHashH(*tx.Hash())
 	}
 	return txD
 }
@@ -260,7 +260,7 @@ func (tp *TxPool) RemoveTx(tx metadata.Transaction) error {
 	tp.mtx.Lock()
 	err := tp.removeTx(&tx)
 	if tx.Hash() != nil {
-		tp.removeTxCoinHashH(*tx.Hash())
+		go tp.removeTxCoinHashH(*tx.Hash())
 	}
 	tp.mtx.Unlock()
 	return err
@@ -358,7 +358,7 @@ func (tp *TxPool) ListTxs() []string {
 	return result
 }
 
-func (tp *TxPool) PoolTxCoinHashH(txH common.Hash, inCoins []*privacy.Coin) error {
+func (tp *TxPool) PoolTxCoinHashH(txHash common.Hash, inCoins []*privacy.Coin) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
 	inCoinHs := make([]common.Hash, 0)
@@ -372,14 +372,14 @@ func (tp *TxPool) PoolTxCoinHashH(txH common.Hash, inCoins []*privacy.Coin) erro
 		}
 		inCoinHs = append(inCoinHs, *inCoinH)
 	}
-	tp.txCoinHPool[txH] = inCoinHs
+	tp.txCoinHPool[txHash] = inCoinHs
 	return nil
 }
 
-func (tp *TxPool) addTxCoinHashH(txH common.Hash) error {
+func (tp *TxPool) addTxCoinHashH(txHash common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
-	inCoinHs, ok := tp.txCoinHPool[txH]
+	inCoinHs, ok := tp.txCoinHPool[txHash]
 	if ok {
 		for _, inCoinH := range inCoinHs {
 			tp.coinHPool[inCoinH] = true
@@ -405,15 +405,15 @@ func (tp *TxPool) ValidateCoinHashH(inCoin *privacy.Coin) error {
 	return nil
 }
 
-func (tp *TxPool) removeTxCoinHashH(txH common.Hash) error {
+func (tp *TxPool) removeTxCoinHashH(txHash common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
-	inCoinHs, ok := tp.txCoinHPool[txH]
+	inCoinHs, ok := tp.txCoinHPool[txHash]
 	if ok {
 		for _, inCoinH := range inCoinHs {
 			delete(tp.coinHPool, inCoinH)
 		}
-		delete(tp.txCoinHPool, txH)
+		delete(tp.txCoinHPool, txHash)
 	}
 	return nil
 }
