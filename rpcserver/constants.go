@@ -31,7 +31,6 @@ const (
 	CreateAndSendPrivacyCustomTokenTransaction = "createandsendprivacycustomtokentransaction"
 	GetMempoolInfo                             = "getmempoolinfo"
 	GetCommitteeCandidateList                  = "getcommitteecandidate"
-	RetrieveCommitteeCandidate                 = "retrievecommitteecandidate"
 	GetBlockProducerList                       = "getblockproducer"
 	ListUnspentCustomToken                     = "listunspentcustomtoken"
 	GetTransactionByHash                       = "gettransactionbyhash"
@@ -47,26 +46,28 @@ const (
 	HasSerialNumbers                           = "hasserialnumbers"
 
 	// Wallet rpc cmd
-	ListAccounts               = "listaccounts"
-	GetAccount                 = "getaccount"
-	GetAddressesByAccount      = "getaddressesbyaccount"
-	GetAccountAddress          = "getaccountaddress"
-	DumpPrivkey                = "dumpprivkey"
-	ImportAccount              = "importaccount"
-	RemoveAccount              = "removeaccount"
-	ListUnspentOutputCoins     = "listunspentoutputcoins"
-	GetBalance                 = "getbalance"
-	GetBalanceByPrivatekey     = "getbalancebyprivatekey"
-	GetBalanceByPaymentAddress = "getbalancebypaymentaddress"
-	GetReceivedByAccount       = "getreceivedbyaccount"
-	SetTxFee                   = "settxfee"
-	EncryptData                = "encryptdata"
+	ListAccounts                       = "listaccounts"
+	GetAccount                         = "getaccount"
+	GetAddressesByAccount              = "getaddressesbyaccount"
+	GetAccountAddress                  = "getaccountaddress"
+	DumpPrivkey                        = "dumpprivkey"
+	ImportAccount                      = "importaccount"
+	RemoveAccount                      = "removeaccount"
+	ListUnspentOutputCoins             = "listunspentoutputcoins"
+	GetBalance                         = "getbalance"
+	GetBalanceByPrivatekey             = "getbalancebyprivatekey"
+	GetBalanceByPaymentAddress         = "getbalancebypaymentaddress"
+	GetReceivedByAccount               = "getreceivedbyaccount"
+	SetTxFee                           = "settxfee"
+	GetRecentTransactionsByBlockNumber = "getrecenttransactionsbyblocknumber"
 
 	// multisig for board spending
 	CreateSignatureOnCustomTokenTx       = "createsignatureoncustomtokentx"
 	GetListDCBBoard                      = "getlistdcbboard"
-	GetListCBBoard                       = "getlistcbboard"
 	GetListGOVBoard                      = "getlistgovboard"
+	GetListCBBoard                       = "getlistcbboard"
+	AppendListDCBBoard                   = "testappendlistdcbboard"
+	AppendListGOVBoard                   = "testappendlistgovboard"
 	GetGOVParams                         = "getgovparams"
 	GetDCBParams                         = "getdcbparams"
 	GetGOVConstitution                   = "getgovconstitution"
@@ -84,6 +85,12 @@ const (
 	GetLoanParams             = "loanparams"
 	GetLoanPaymentInfo        = "getloanpaymentinfo"
 
+	// crowdsale
+	GetListOngoingCrowdsale               = "getlistongoingcrowdsale"
+	CreateAndSendCrowdsaleRequestToken    = "createandsendcrowdsalerequesttoken"
+	CreateAndSendCrowdsaleRequestConstant = "createandsendcrowdsalerequestconstant"
+	TestStoreCrowdsale                    = "teststorecrowdsale"
+
 	// vote
 	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"
 	CreateRawVoteDCBBoardTx              = "createrawvotedcbboardtx"
@@ -92,6 +99,17 @@ const (
 	CreateRawVoteGOVBoardTx              = "createrawvotegovboardtx"
 	CreateAndSendVoteGOVBoardTransaction = "createandsendvotegovboardtransaction"
 	GetAmountVoteToken                   = "getamountvotetoken"
+	SetAmountVoteToken                   = "testsetamountvotetoken"
+
+	//vote propopsal
+	GetEncryptionFlag                         = "getencryptionflag"
+	SetEncryptionFlag                         = "testsetencryptionflag"
+	GetEncryptionLastBlockHeightFlag          = "getencryptionlastblockheightflag"
+	CreateAndSendSealLv3VoteProposal          = "createandsendseallv3voteproposal"
+	CreateAndSendSealLv2VoteProposal          = "createandsendseallv2voteproposal"
+	CreateAndSendSealLv1VoteProposal          = "createandsendseallv1voteproposal"
+	CreateAndSendNormalVoteProposalFromOwner  = "createandsendnormalvoteproposalfromowner"
+	CreateAndSendNormalVoteProposalFromSealer = "createandsendnormalvoteproposalfromsealer"
 
 	// Submit Proposal
 	CreateAndSendSubmitDCBProposalTx = "createandsendsubmitdcbproposaltx"
@@ -107,10 +125,14 @@ const (
 
 	// gov
 	GetBondTypes                           = "getbondtypes"
+	GetCurrentSellingBondTypes             = "getcurrentsellingbondtypes"
 	CreateAndSendTxWithBuyBackRequest      = "createandsendtxwithbuybackrequest"
 	CreateAndSendTxWithBuySellRequest      = "createandsendtxwithbuysellrequest"
 	CreateAndSendTxWithOracleFeed          = "createandsendtxwithoraclefeed"
 	CreateAndSendTxWithUpdatingOracleBoard = "createandsendtxwithupdatingoracleboard"
+	CreateAndSendTxWithSenderAddress       = "createandsendtxwithsenderaddress"
+	CreateAndSendTxWithBuyGOVTokensRequest = "createandsendtxwithbuygovtokensrequest"
+	GetCurrentSellingGOVTokens             = "getcurrentsellinggovtokens"
 
 	// cmb
 	CreateAndSendTxWithCMBInitRequest     = "createandsendtxwithcmbinitrequest"

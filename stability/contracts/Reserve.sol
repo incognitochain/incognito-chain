@@ -22,6 +22,7 @@ contract Reserve {
         manager = _manager;
     }
 
+    // TODO(@0xbunyip): add SaleID to separate different on-going sales
     function raise(bytes memory coinReceiver, bytes32 offchain) public payable {
         emit __raise(msg.sender, msg.value, coinReceiver, offchain);
     }

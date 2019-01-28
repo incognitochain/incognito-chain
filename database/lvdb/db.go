@@ -16,9 +16,9 @@ type hasher interface {
 }
 
 var (
-	chainIDPrefix             = []byte("c")
-	blockKeyPrefix            = []byte("b-")
-	blockHeaderKeyPrefix      = []byte("bh-")
+	chainIDPrefix  = []byte("c")
+	blockKeyPrefix = []byte("b-")
+	//blockHeaderKeyPrefix      = []byte("bh-")
 	blockKeyIdxPrefix         = []byte("i-")
 	transactionKeyPrefix      = []byte("tx-")
 	privateKeyPrefix          = []byte("prk-")
@@ -42,19 +42,17 @@ var (
 	rewared                   = []byte("reward")
 
 	//vote prefix
-	voteDCBBoardSumPrefix         = []byte("votedcbsumboard-")
-	voteDCBBoardCountPrefix       = []byte("votedcbcountboard-")
-	VoteDCBBoardListPrefix        = []byte("votedcblistboard-")
-	DCBVoteTokenAmountPrefix      = []byte("dcbvotetokenamount-")
-	voteGOVBoardSumPrefix         = []byte("votegovsumboard-")
-	voteGOVBoardCountPrefix       = []byte("votegovcountboard-")
-	VoteGOVBoardListPrefix        = []byte("votegovlistboard-")
-	GOVVoteTokenAmountPrefix      = []byte("govvotetokenamount-")
+	voteBoardSumPrefix            = []byte("votesumboard-")
+	voteBoardCountPrefix          = []byte("votecountboard-")
+	voteBoardListPrefix           = []byte("votelistboard-")
+	VoteTokenAmountPrefix         = []byte("votetokenamount-")
 	threePhraseCryptoOwnerPrefix  = []byte("threephrasecryptoownerprefix-")
 	threePhraseCryptoSealerPrefix = []byte("threephrasecryptosealerprefix-")
 	threePhraseVoteValuePrefix    = []byte("threephrasevotevalueprefix-")
 	winningVoterPrefix            = []byte("winningvoterprefix-")
-	pubKeyToPaymentAddress        = []byte("pubkeytopaymentaddress")
+	//pubKeyToPaymentAddress          = []byte("pubkeytopaymentaddress")
+	encryptFlagPrefix               = []byte("encryptFlagPrefix")
+	encryptionLastBlockHeightPrefix = []byte("encryptionlastblockheightprefix")
 
 	// multisigs
 	multisigsPrefix = []byte("multisigs")
@@ -65,6 +63,9 @@ var (
 	cmbDepositSendKeyPrefix  = []byte("cmbdepositsend-")
 	cmbWithdrawRequestPrefix = []byte("cmbwithdrawreq-")
 	cmbNoticePrefix          = []byte("cmbnotice-")
+
+	// crowdsale
+	crowdsalePrefix = []byte("crowdsale-")
 
 	// dividend
 	Unreward = []byte("unreward")
@@ -110,7 +111,7 @@ func (db *db) Delete(key []byte) error {
 func (db *db) Get(key []byte) ([]byte, error) {
 	value, err := db.lvdb.Get(key, nil)
 	if err != nil {
-		return nil, err
+		return nil, database.NewDatabaseError(database.LvDbNotFound, errors.Wrap(err, "db.lvdb.Get"))
 	}
 	return value, nil
 }

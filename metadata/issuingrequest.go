@@ -42,9 +42,10 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 	db database.DatabaseInterface,
 ) (bool, error) {
 	if bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) {
-		saleDBCTOkensByUSDData := bcr.GetDCBParams().SaleDBCTOkensByUSDData
-		if bcr.GetHeight()+1 > saleDBCTOkensByUSDData.EndBlock {
-			return false, nil
+		saleDBCTOkensByUSDData := bcr.GetDCBParams().SaleDCBTokensByUSDData
+		height, err := bcr.GetTxChainHeight(txr)
+		if height+1 > saleDBCTOkensByUSDData.EndBlock {
+			return false, err
 		}
 		oracleParams := bcr.GetOracleParams()
 		reqAmt := iReq.DepositedAmount / oracleParams.DCBToken
@@ -83,10 +84,10 @@ func (iReq *IssuingRequest) ValidateMetadataByItself() bool {
 }
 
 func (iReq *IssuingRequest) Hash() *common.Hash {
-	record := string(iReq.ReceiverAddress.Bytes())
+	record := iReq.ReceiverAddress.String()
 	record += iReq.AssetType.String()
 	record += string(iReq.DepositedAmount)
-	record += string(iReq.MetadataBase.Hash()[:])
+	record += iReq.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

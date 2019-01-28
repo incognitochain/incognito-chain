@@ -6,8 +6,8 @@ type NetSyncLogger struct {
 	log common.Logger
 }
 
-func (self *NetSyncLogger) Init(inst common.Logger) {
-	self.log = inst
+func (netSyncLogger *NetSyncLogger) Init(inst common.Logger) {
+	netSyncLogger.log = inst
 }
 
 // Global instant to use

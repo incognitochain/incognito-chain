@@ -18,7 +18,7 @@ func TestEncryptionBytes (t*testing.T){
 		fmt.Printf("ERR: %v\n", err)
 	}
 
-	ciphertext, err := EncryptBytes(msg, publicKey)
+	ciphertext, err := AdvanceEncrypt(msg, publicKey)
 	if err != nil{
 		fmt.Printf("ERR: %v\n", err)
 	}
@@ -27,7 +27,7 @@ func TestEncryptionBytes (t*testing.T){
 	ciphertext2 := new(Ciphertext)
 	ciphertext2.SetBytes(ciphertextBytes)
 
-	msg2, err := DecryptBytes(ciphertext2, privateKey)
+	msg2, err := AdvanceDecrypt(ciphertext2, privateKey)
 	if err != nil{
 		fmt.Printf("ERR: %v\n", err)
 	}
