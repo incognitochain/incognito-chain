@@ -144,7 +144,8 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 		for _, inCoin := range inputCoins {
 			inCoins = append(inCoins, inCoin.CoinDetails)
 		}
-		rpcServer.config.TxMemPool.PoolTxCoinHashH(*tx.Hash(), inCoins)
+		txHash := *tx.Hash()
+		go rpcServer.config.TxMemPool.PoolTxCoinHashH(txHash, inCoins)
 	}
 
 	return &tx, nil
