@@ -1651,7 +1651,7 @@ func (self BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.
 func (self BlockChain) GetFeePerKbTx() uint64 {
 	// TODO: stability
 	// return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
-	return 1
+	return 0
 }
 
 func (self *BlockChain) GetCurrentBoardIndex(helper ConstitutionHelper) uint32 {
