@@ -134,11 +134,12 @@ func (pool *ShardToBeaconPool) ValidateShardToBeaconBlock(block blockchain.Shard
 		err.Init(ShardToBeaconBoolError, fmt.Errorf("Invalid Verion of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID))
 		return err
 	}
-	if block.Header.Epoch != uint64(block.Header.BeaconHeight/blockchain.EPOCH) {
-		err := MempoolTxError{}
-		err.Init(ShardToBeaconBoolError, fmt.Errorf("Invalid Epoch of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID))
-		return err
-	}
+	//TODO: @merman review logic
+	// if block.Header.Epoch != uint64(block.Header.BeaconHeight/blockchain.EPOCH) {
+	// 	err := MempoolTxError{}
+	// 	err.Init(ShardToBeaconBoolError, fmt.Errorf("Invalid Epoch of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID))
+	// 	return err
+	// }
 	if block.Header.Height <= pool.shardState[block.Header.ShardID] {
 		err := MempoolTxError{}
 		err.Init(ShardToBeaconBoolError, fmt.Errorf("Block Height is too low, block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID))
@@ -192,7 +193,7 @@ func (pool *ShardToBeaconPool) PromoteExecutable(block blockchain.ShardToBeaconB
 	for {
 		newBlock, isHas := pool.queue[shardID][lastBlockHeight+1]
 		if isHas {
-			err := blockchain.ValidateAggSignature(block.ValidatorsIdx, committees, block.AggregatedSig, block.R, block.Hash())
+			err := blockchain.ValidateAggSignature(newBlock.ValidatorsIdx, committees, newBlock.AggregatedSig, newBlock.R, newBlock.Hash())
 			if err == nil {
 				if err := pool.IsEnough(true, shardID); err == nil {
 					pool.pending[shardID] = append(pool.pending[shardID], newBlock)
@@ -234,16 +235,23 @@ func (pool *ShardToBeaconPool) AddShardBeaconBlock(block blockchain.ShardToBeaco
 			pendingShardBlocks = append(pendingShardBlocks, block)
 			pool.pending[shardID] = pendingShardBlocks
 			pool.PromoteExecutable(block, committees)
-		} else if pool.pending[shardID][len(pool.pending[shardID])-1].Header.Height == blockHeight {
-			if err := pool.IsEnough(true, shardID); err == nil {
-				pendingShardBlocks = append(pendingShardBlocks, block)
-				pool.pending[shardID] = pendingShardBlocks
-				pool.PromoteExecutable(block, committees)
+		} else {
+			if len(pool.pending[shardID]) > 0 {
+				if pool.pending[shardID][len(pool.pending[shardID])-1].Header.Height == blockHeight {
+					if err := pool.IsEnough(true, shardID); err == nil {
+						pendingShardBlocks = append(pendingShardBlocks, block)
+						pool.pending[shardID] = pendingShardBlocks
+						pool.PromoteExecutable(block, committees)
+					} else {
+						Logger.log.Error(ShardToBeaconBoolError, err)
+						err := MempoolTxError{}
+						err.Init(ShardToBeaconBoolError, fmt.Errorf("Error %+v in block height %+v of shard %+v", err, block.Header.Height, block.Header.ShardID))
+						return err
+					}
+				}
 			} else {
-				Logger.log.Error(ShardToBeaconBoolError, err)
-				err := MempoolTxError{}
-				err.Init(ShardToBeaconBoolError, fmt.Errorf("Error %+v in block height %+v of shard %+v", err, block.Header.Height, block.Header.ShardID))
-				return err
+				pool.pending[shardID] = append(pool.pending[shardID], block)
+				pool.PromoteExecutable(block, committees)
 			}
 		}
 	} else {
