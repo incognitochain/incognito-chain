@@ -4,8 +4,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"github.com/ninjadotorg/constant/privacy"
 	"time"
+
+	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/privacy"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -734,4 +736,63 @@ func (rpcServer RpcServer) handleCreateAndSendPrivacyCustomTokenTransaction(para
 	newParam = append(newParam, base58CheckData)
 	txId, err := rpcServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
 	return txId, err
+}
+
+/*
+// handleCreateRawStakingTransaction handles create staking
+*/
+func (rpcServer RpcServer) handleCreateRawStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	// get params
+	paramsArray := common.InterfaceSlice(params)
+	if len(paramsArray) < 5 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Empty staking type params"))
+	}
+	stakingType, ok := paramsArray[4].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid staking type params"))
+	}
+
+	var err error
+	metadata, err := metadata.NewStakingMetadata(int(stakingType))
+	tx, err := rpcServer.buildRawTransaction(params, metadata)
+	if err.(*RPCError) != nil {
+		Logger.log.Critical(err)
+		return nil, NewRPCError(ErrCreateTxData, err)
+	}
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		// return hex for a new tx
+		return nil, NewRPCError(ErrCreateTxData, err)
+	}
+	txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+		ShardID:         txShardID,
+	}
+	return result, nil
+}
+
+/*
+handleCreateAndSendStakingTx - RPC creates staking transaction and send to network
+*/
+func (rpcServer RpcServer) handleCreateAndSendStakingTx(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	var err error
+	data, err := rpcServer.handleCreateRawStakingTransaction(params, closeChan)
+	if err.(*RPCError) != nil {
+		return nil, NewRPCError(ErrCreateTxData, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
+	if err.(*RPCError) != nil {
+		return nil, NewRPCError(ErrSendTxData, err)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:    sendResult.(jsonresult.CreateTransactionResult).TxID,
+		ShardID: tx.ShardID,
+	}
+	return result, nil
 }

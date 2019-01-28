@@ -51,6 +51,8 @@ var RpcHandler = map[string]commandHandler{
 	RandomCommitments: RpcServer.handleRandomCommitments,
 	HasSerialNumbers:  RpcServer.handleHasSerialNumbers,
 
+	CreateAndSendStakingTransaction: RpcServer.handleCreateAndSendStakingTx,
+
 	// custom token
 	CreateRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
 	SendRawCustomTokenTransaction:       RpcServer.handleSendRawCustomTokenTransaction,
