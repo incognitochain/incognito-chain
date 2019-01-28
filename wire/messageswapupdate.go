@@ -19,32 +19,32 @@ package wire
 //	Signatures map[string]string
 //}
 //
-//func (self *MessageSwapUpdate) Hash() string {
-//	rawBytes, err := self.JsonSerialize()
+//func (msg *MessageSwapUpdate) Hash() string {
+//	rawBytes, err := msg.JsonSerialize()
 //	if err != nil {
 //		return ""
 //	}
 //	return common.HashH(rawBytes).String()
 //}
 //
-//func (self *MessageSwapUpdate) MessageType() string {
+//func (msg *MessageSwapUpdate) MessageType() string {
 //	return CmdSwapUpdate
 //}
 //
-//func (self *MessageSwapUpdate) MaxPayloadLength(pver int) int {
+//func (msg *MessageSwapUpdate) MaxPayloadLength(pver int) int {
 //	return MaxSwapUpdatePayload
 //}
 //
-//func (self *MessageSwapUpdate) JsonSerialize() ([]byte, error) {
-//	jsonBytes, err := json.Marshal(self)
+//func (msg *MessageSwapUpdate) JsonSerialize() ([]byte, error) {
+//	jsonBytes, err := json.Marshal(msg)
 //	return jsonBytes, err
 //}
 //
-//func (self *MessageSwapUpdate) JsonDeserialize(jsonStr string) error {
-//	err := json.Unmarshal([]byte(jsonStr), self)
+//func (msg *MessageSwapUpdate) JsonDeserialize(jsonStr string) error {
+//	err := json.Unmarshal([]byte(jsonStr), msg)
 //	return err
 //}
 //
-//func (self *MessageSwapUpdate) SetSenderID(senderID peer.ID) error {
+//func (msg *MessageSwapUpdate) SetSenderID(senderID peer.ID) error {
 //	return nil
 //}

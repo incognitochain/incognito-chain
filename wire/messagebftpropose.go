@@ -17,40 +17,40 @@ type MessageBFTPropose struct {
 	MsgSig string
 }
 
-func (self *MessageBFTPropose) Hash() string {
-	rawBytes, err := self.JsonSerialize()
+func (msg *MessageBFTPropose) Hash() string {
+	rawBytes, err := msg.JsonSerialize()
 	if err != nil {
 		return ""
 	}
 	return common.HashH(rawBytes).String()
 }
 
-func (self *MessageBFTPropose) MessageType() string {
+func (msg *MessageBFTPropose) MessageType() string {
 	return CmdBFTPropose
 }
 
-func (self *MessageBFTPropose) MaxPayloadLength(pver int) int {
+func (msg *MessageBFTPropose) MaxPayloadLength(pver int) int {
 	return MaxBFTProposePayload
 }
 
-func (self *MessageBFTPropose) JsonSerialize() ([]byte, error) {
-	jsonBytes, err := json.Marshal(self)
+func (msg *MessageBFTPropose) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(msg)
 	return jsonBytes, err
 }
 
-func (self *MessageBFTPropose) JsonDeserialize(jsonStr string) error {
-	err := json.Unmarshal([]byte(jsonStr), self)
+func (msg *MessageBFTPropose) JsonDeserialize(jsonStr string) error {
+	err := json.Unmarshal([]byte(jsonStr), msg)
 	return err
 }
 
-func (self *MessageBFTPropose) SetSenderID(senderID peer.ID) error {
+func (msg *MessageBFTPropose) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (self *MessageBFTPropose) SignMsg(_ *cashec.KeySet) error {
+func (msg *MessageBFTPropose) SignMsg(_ *cashec.KeySet) error {
 	return nil
 }
 
-func (self *MessageBFTPropose) VerifyMsgSanity() error {
+func (msg *MessageBFTPropose) VerifyMsgSanity() error {
 	return nil
 }

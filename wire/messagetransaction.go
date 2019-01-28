@@ -6,8 +6,8 @@ import (
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 )
 
 const (
@@ -18,41 +18,41 @@ type MessageTx struct {
 	Transaction metadata.Transaction
 }
 
-func (self *MessageTx) Hash() string {
-	rawBytes, err := self.JsonSerialize()
+func (msg *MessageTx) Hash() string {
+	rawBytes, err := msg.JsonSerialize()
 	if err != nil {
 		return ""
 	}
 	return common.HashH(rawBytes).String()
 }
 
-func (self *MessageTx) MessageType() string {
+func (msg *MessageTx) MessageType() string {
 	return CmdTx
 }
 
-func (self *MessageTx) MaxPayloadLength(pver int) int {
+func (msg *MessageTx) MaxPayloadLength(pver int) int {
 	return MaxTxPayload
 }
 
-func (self *MessageTx) JsonSerialize() ([]byte, error) {
-	jsonBytes, err := json.Marshal(self)
+func (msg *MessageTx) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(msg)
 	return jsonBytes, err
 }
 
-func (self *MessageTx) JsonDeserialize(jsonStr string) error {
+func (msg *MessageTx) JsonDeserialize(jsonStr string) error {
 	jsonDecodeString, _ := hex.DecodeString(jsonStr)
-	err := json.Unmarshal([]byte(jsonDecodeString), self)
+	err := json.Unmarshal([]byte(jsonDecodeString), msg)
 	return err
 }
 
-func (self *MessageTx) SetSenderID(senderID peer.ID) error {
+func (msg *MessageTx) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (self *MessageTx) SignMsg(_ *cashec.KeySet) error {
+func (msg *MessageTx) SignMsg(_ *cashec.KeySet) error {
 	return nil
 }
 
-func (self *MessageTx) VerifyMsgSanity() error {
+func (msg *MessageTx) VerifyMsgSanity() error {
 	return nil
 }

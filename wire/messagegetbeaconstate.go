@@ -17,41 +17,41 @@ type MessageGetBeaconState struct {
 	SenderID  string
 }
 
-func (self *MessageGetBeaconState) Hash() string {
-	rawBytes, err := self.JsonSerialize()
+func (msg *MessageGetBeaconState) Hash() string {
+	rawBytes, err := msg.JsonSerialize()
 	if err != nil {
 		return ""
 	}
 	return common.HashH(rawBytes).String()
 }
 
-func (self *MessageGetBeaconState) MessageType() string {
+func (msg *MessageGetBeaconState) MessageType() string {
 	return CmdGetBeaconState
 }
 
-func (self *MessageGetBeaconState) MaxPayloadLength(pver int) int {
+func (msg *MessageGetBeaconState) MaxPayloadLength(pver int) int {
 	return MaxGetBeaconStatePayload
 }
 
-func (self *MessageGetBeaconState) JsonSerialize() ([]byte, error) {
-	jsonBytes, err := json.Marshal(self)
+func (msg *MessageGetBeaconState) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(msg)
 	return jsonBytes, err
 }
 
-func (self *MessageGetBeaconState) JsonDeserialize(jsonStr string) error {
-	err := json.Unmarshal([]byte(jsonStr), self)
+func (msg *MessageGetBeaconState) JsonDeserialize(jsonStr string) error {
+	err := json.Unmarshal([]byte(jsonStr), msg)
 	return err
 }
 
-func (self *MessageGetBeaconState) SetSenderID(senderID peer.ID) error {
-	self.SenderID = senderID.Pretty()
+func (msg *MessageGetBeaconState) SetSenderID(senderID peer.ID) error {
+	msg.SenderID = senderID.Pretty()
 	return nil
 }
 
-func (self *MessageGetBeaconState) SignMsg(_ *cashec.KeySet) error {
+func (msg *MessageGetBeaconState) SignMsg(_ *cashec.KeySet) error {
 	return nil
 }
 
-func (self *MessageGetBeaconState) VerifyMsgSanity() error {
+func (msg *MessageGetBeaconState) VerifyMsgSanity() error {
 	return nil
 }
