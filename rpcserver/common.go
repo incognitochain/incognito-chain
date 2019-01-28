@@ -32,6 +32,11 @@ func (rpcServer RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Paymen
 	if err != nil {
 		return nil, 0, NewRPCError(ErrGetOutputCoin, err)
 	}
+	// remove out coin in mem pool
+	outCoins, err = rpcServer.filterMemPoolOutCoinsToSpent(outCoins)
+	if err != nil {
+		return nil, 0, NewRPCError(ErrGetOutputCoin, err)
+	}
 	if len(outCoins) == 0 && totalAmmount > 0 {
 		return nil, 0, NewRPCError(ErrGetOutputCoin, errors.New("not enough output coin"))
 	}
@@ -132,6 +137,16 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	if err.(*transaction.TransactionError) != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
+
+	// pool inCoinsH
+	if tx.Hash() != nil {
+		inCoins := make([]*privacy.Coin, 0)
+		for _, inCoin := range inputCoins {
+			inCoins = append(inCoins, inCoin.CoinDetails)
+		}
+		rpcServer.config.TxMemPool.PoolTxCoinH(*tx.Hash(), inCoins)
+	}
+
 	return &tx, nil
 }
 
@@ -411,6 +426,16 @@ func (rpcServer RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []
 	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, nil)
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	return realFee
+}
+
+func (rpcServer RpcServer) filterMemPoolOutCoinsToSpent(outCoins []*privacy.OutputCoin) (remainOutputCoins []*privacy.OutputCoin, err error) {
+	remainOutputCoins = make([]*privacy.OutputCoin, 0)
+	for _, outCoin := range outCoins {
+		if rpcServer.config.TxMemPool.ValidateCoinH(outCoin.CoinDetails) == nil {
+			remainOutputCoins = append(remainOutputCoins, outCoin)
+		}
+	}
+	return remainOutputCoins, nil
 }
 
 // chooseBestOutCoinsToSpent returns list of unspent coins for spending with amount

@@ -1,8 +1,10 @@
 package mempool
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ninjadotorg/constant/privacy"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -52,6 +54,10 @@ type TxPool struct {
 	config            Config
 	pool              map[common.Hash]*TxDesc
 	poolSerialNumbers map[common.Hash][][]byte
+
+	txCoinHPool map[common.Hash][]common.Hash
+	coinHPool   map[common.Hash]bool
+	cMtx        sync.RWMutex
 }
 
 /*
@@ -61,6 +67,10 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.config = *cfg
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbers = make(map[common.Hash][][]byte)
+
+	tp.txCoinHPool = make(map[common.Hash][]common.Hash)
+	tp.coinHPool = make(map[common.Hash]bool)
+	tp.cMtx = sync.RWMutex{}
 }
 
 // ----------- transaction.MempoolRetriever's implementation -----------------
@@ -114,7 +124,9 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 
 		}
 	}
-
+	if tx.Hash() != nil {
+		tp.addTxCoinH(*tx.Hash())
+	}
 	return txD
 }
 
@@ -247,6 +259,9 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 func (tp *TxPool) RemoveTx(tx metadata.Transaction) error {
 	tp.mtx.Lock()
 	err := tp.removeTx(&tx)
+	if tx.Hash() != nil {
+		tp.removeTxCoinH(*tx.Hash())
+	}
 	tp.mtx.Unlock()
 	return err
 }
@@ -341,4 +356,66 @@ func (tp *TxPool) ListTxs() []string {
 		result = append(result, tx.Desc.Tx.Hash().String())
 	}
 	return result
+}
+
+func (tp *TxPool) PoolTxCoinH(txH common.Hash, inCoins []*privacy.Coin) error {
+	tp.cMtx.Lock()
+	defer tp.cMtx.Unlock()
+	inCoinHs := make([]common.Hash, 0)
+	for _, inCoin := range inCoins {
+		if inCoin == nil {
+			return errors.New("coin is nil")
+		}
+		b, err := json.Marshal(inCoin)
+		if err != nil {
+			return err
+		}
+		inCoinH := common.HashH(b)
+		inCoinHs = append(inCoinHs, inCoinH)
+	}
+	tp.txCoinHPool[txH] = inCoinHs
+	return nil
+}
+
+func (tp *TxPool) addTxCoinH(txH common.Hash) error {
+	tp.cMtx.Lock()
+	defer tp.cMtx.Unlock()
+	inCoinHs, ok := tp.txCoinHPool[txH]
+	if ok {
+		for _, inCoinH := range inCoinHs {
+			tp.coinHPool[inCoinH] = true
+		}
+	}
+	return nil
+}
+
+func (tp *TxPool) ValidateCoinH(inCoin *privacy.Coin) error {
+	tp.cMtx.Lock()
+	defer tp.cMtx.Unlock()
+	if inCoin == nil {
+		return errors.New("coin is nil")
+	}
+	b, err := json.Marshal(inCoin)
+	if err != nil {
+		return err
+	}
+	inCoinH := common.HashH(b)
+	_, ok := tp.coinHPool[inCoinH]
+	if ok {
+		return errors.New("Coin is in used")
+	}
+	return nil
+}
+
+func (tp *TxPool) removeTxCoinH(txH common.Hash) error {
+	tp.cMtx.Lock()
+	defer tp.cMtx.Unlock()
+	inCoinHs, ok := tp.txCoinHPool[txH]
+	if ok {
+		for _, inCoinH := range inCoinHs {
+			delete(tp.coinHPool, inCoinH)
+		}
+		delete(tp.txCoinHPool, txH)
+	}
+	return nil
 }
