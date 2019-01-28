@@ -151,7 +151,7 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	// pool inCoinsH
 	txHash := tx.Hash()
 	if txHash != nil {
-		rpcServer.config.TxMemPool.PoolTxCoinHashH(*txHash, inCoinHs)
+		rpcServer.config.TxMemPool.PrePoolTxCoinHashH(*txHash, inCoinHs)
 	}
 
 	return &tx, nil
