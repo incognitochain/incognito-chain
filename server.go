@@ -246,12 +246,11 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	// Init Net Sync manager to process messages
 	serverObj.netSync = netsync.NetSync{}.New(&netsync.NetSyncConfig{
-		BlockChain:   serverObj.blockChain,
-		ChainParam:   chainParams,
-		MemTxPool:    serverObj.memPool,
-		Server:       serverObj,
-		Consensus:    serverObj.consensusEngine,
-		FeeEstimator: serverObj.feeEstimator,
+		BlockChain: serverObj.blockChain,
+		ChainParam: chainParams,
+		MemTxPool:  serverObj.memPool,
+		Server:     serverObj,
+		Consensus:  serverObj.consensusEngine,
 	})
 	// Create a connection manager.
 	var peer *peer.Peer
