@@ -80,6 +80,10 @@ const (
 	RewardShareOldGOVBoardMeta
 	PunishDCBDecryptMeta
 	PunishGOVDecryptMeta
+
+	// STAKING
+	ShardStakingMeta
+	BeaconStakingMeta
 )
 
 const (
