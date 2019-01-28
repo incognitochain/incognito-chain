@@ -45,12 +45,19 @@ func TestMultiExponentiation(t *testing.T){
 	testcase4, err := MultiScalarmult(PedCom.G, exponents)
 	end2 := time.Since(start2)
 	fmt.Printf("multi scalarmult: %v\n", end2)
+	fmt.Printf("Res from multi exponentiation alg: %+v\n", testcase4)
+
+	start3 := time.Now()
+	testcase5, err := MultiScalar2(PedCom.G, exponents)
+	end3 := time.Since(start3)
+	fmt.Printf("multi scalarmult 2: %v\n", end3)
+	fmt.Printf("Res from multi exponentiation 2 alg: %+v\n", testcase5)
 
 
 	if err != nil{
 		Logger.Log.Errorf("Error of multi-exponentiation algorithm")
 	}
-	fmt.Printf("Res from multi exponentiation alg: %+v\n", testcase4)
+
 
 	assert.Equal(t, expectedRes, testcase4)
 }
