@@ -283,18 +283,13 @@ func (netSync *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done cha
 }
 
 func (netSync *NetSync) HandleMessageGetBlockShard(msg *wire.MessageGetBlockShard) {
-	fmt.Println()
 	Logger.log.Info("Handling new message - " + wire.CmdGetBlockShard)
-	fmt.Println()
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
 	if err != nil {
 		Logger.log.Error(err)
 		return
 	}
 	for index := msg.From; index <= msg.To; index++ {
-		fmt.Println()
-		fmt.Println("GET BLOCK", index)
-		fmt.Println()
 		blk, err := netSync.config.BlockChain.GetShardBlockByHeight(index, msg.ShardID)
 		if err != nil {
 			fmt.Println(err)
