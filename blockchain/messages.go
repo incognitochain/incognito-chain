@@ -32,13 +32,14 @@ func (self *BlockChain) OnBeaconStateReceived(state *BeaconChainState, peerID li
 	}
 }
 
-func (self *BlockChain) GetShardState(shardID byte) *ShardChainState {
+func (self *BlockChain) GetShardState(shardID byte) (*ShardChainState, error) {
+	//TODO: check node mode -> node role
 	state := &ShardChainState{
 		Height:    self.BestState.Shard[shardID].ShardHeight,
 		ShardID:   shardID,
 		BlockHash: self.BestState.Shard[shardID].BestShardBlockHash,
 	}
-	return state
+	return state, nil
 }
 
 func (self *BlockChain) OnShardStateReceived(state *ShardChainState, peerID libp2p.ID) {
