@@ -449,8 +449,11 @@ func (netSync *NetSync) HandleMessageGetShardState(msg *wire.MessageGetShardStat
 		Logger.log.Error(err)
 		return
 	}
-	shardState := netSync.config.BlockChain.GetShardState(msg.ShardID)
-
+	shardState, err := netSync.config.BlockChain.GetShardState(msg.ShardID)
+	if err != nil {
+		Logger.log.Error(err)
+		return
+	}
 	msgShardState, err := wire.MakeEmptyMessage(wire.CmdShardState)
 	if err != nil {
 		Logger.log.Error(err)
