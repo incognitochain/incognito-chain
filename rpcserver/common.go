@@ -115,6 +115,16 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	if err1 != nil {
 		return nil, err1
 	}
+
+	// build hash array for input coin
+	inCoinHs := make([]common.Hash, 0)
+	for _, inCoin := range inputCoins {
+		hash := inCoin.CoinDetails.HashH()
+		if hash != nil {
+			inCoinHs = append(inCoinHs, *hash)
+		}
+	}
+
 	/******* END GET output coins constant, which is used to create tx *****/
 
 	// START create tx
@@ -139,13 +149,9 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	}
 
 	// pool inCoinsH
-	if tx.Hash() != nil {
-		inCoins := make([]*privacy.Coin, 0)
-		for _, inCoin := range inputCoins {
-			inCoins = append(inCoins, inCoin.CoinDetails)
-		}
-		txHash := *tx.Hash()
-		go rpcServer.config.TxMemPool.PoolTxCoinHashH(txHash, inCoins)
+	txHash := tx.Hash()
+	if txHash != nil {
+		rpcServer.config.TxMemPool.PoolTxCoinHashH(*txHash, inCoinHs)
 	}
 
 	return &tx, nil
@@ -435,8 +441,11 @@ func (rpcServer RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []
 func (rpcServer RpcServer) filterMemPoolOutCoinsToSpent(outCoins []*privacy.OutputCoin) (remainOutputCoins []*privacy.OutputCoin, err error) {
 	remainOutputCoins = make([]*privacy.OutputCoin, 0)
 	for _, outCoin := range outCoins {
-		if rpcServer.config.TxMemPool.ValidateCoinHashH(outCoin.CoinDetails) == nil {
-			remainOutputCoins = append(remainOutputCoins, outCoin)
+		hash := outCoin.CoinDetails.HashH()
+		if hash != nil {
+			if rpcServer.config.TxMemPool.ValidateCoinHashH(*hash) == nil {
+				remainOutputCoins = append(remainOutputCoins, outCoin)
+			}
 		}
 	}
 	return remainOutputCoins, nil
