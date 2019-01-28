@@ -359,17 +359,17 @@ func (tp *TxPool) ListTxs() []string {
 	return result
 }
 
-func (tp *TxPool) PrePoolTxCoinHashH(txHash common.Hash, inCoinHs []common.Hash) error {
+func (tp *TxPool) PrePoolTxCoinHashH(txHashH common.Hash, coinHashHs []common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
-	tp.txCoinHPool[txHash] = inCoinHs
+	tp.txCoinHPool[txHashH] = coinHashHs
 	return nil
 }
 
-func (tp *TxPool) addTxCoinHashH(txHash common.Hash) error {
+func (tp *TxPool) addTxCoinHashH(txHashH common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
-	inCoinHs, ok := tp.txCoinHPool[txHash]
+	inCoinHs, ok := tp.txCoinHPool[txHashH]
 	if ok {
 		for _, inCoinH := range inCoinHs {
 			tp.coinHPool[inCoinH] = true
@@ -378,25 +378,25 @@ func (tp *TxPool) addTxCoinHashH(txHash common.Hash) error {
 	return nil
 }
 
-func (tp *TxPool) ValidateCoinHashH(inCoinH common.Hash) error {
+func (tp *TxPool) ValidateCoinHashH(coinHashH common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
-	_, ok := tp.coinHPool[inCoinH]
+	_, ok := tp.coinHPool[coinHashH]
 	if ok {
 		return errors.New("Coin is in used")
 	}
 	return nil
 }
 
-func (tp *TxPool) removeTxCoinHashH(txHash common.Hash) error {
+func (tp *TxPool) removeTxCoinHashH(txHashH common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
-	inCoinHs, ok := tp.txCoinHPool[txHash]
+	inCoinHs, ok := tp.txCoinHPool[txHashH]
 	if ok {
 		for _, inCoinH := range inCoinHs {
 			delete(tp.coinHPool, inCoinH)
 		}
-		delete(tp.txCoinHPool, txHash)
+		delete(tp.txCoinHPool, txHashH)
 	}
 	return nil
 }
