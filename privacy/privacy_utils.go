@@ -68,13 +68,16 @@ func ConvertBigIntToBinary(number *big.Int, n int) []*big.Int {
 	numberClone.Set(number)
 
 	//tmp := big.NewInt(0)
-	//twoNumber := big.NewInt(2)
-	oneNumber := big.NewInt(1)
+	twoNumber := big.NewInt(2)
+	//oneNumber := big.NewInt(1)
 
 	for i := 0; i < n; i++ {
 		binary[i] = new(big.Int)
-		binary[i].And(numberClone, oneNumber)
-		numberClone.Rsh(numberClone, 1)
+		binary[i] = new(big.Int).Mod(numberClone, twoNumber)
+		numberClone.Div(numberClone, twoNumber)
+
+		//binary[i].And(numberClone, oneNumber)
+		//numberClone.Rsh(numberClone, 1)
 
 		//tmp.Mod(numberClone, twoNumber)
 		//binary[i] = new(big.Int).Set(tmp)
@@ -168,85 +171,37 @@ func MaxBitLen(values []*big.Int) int {
 	return res
 }
 
-//func multiExp(g []*EllipticPoint, values []*big.Int) (*EllipticPoint, error) {
-//	// Check inputs
-//	if len(g) != len(values) {
-//		return nil, errors.New("wrong inputs")
-//	}
-//
-//	maxBitLen := MaxBitLen(values)
-//
-//	// save values
-//	valuesTmp := make([]*big.Int, len(values))
-//	for i := 0; i < len(valuesTmp); i++ {
-//		valuesTmp[i] = new(big.Int)
-//		valuesTmp[i].Set(values[i])
-//	}
-//
-//	// generator result point
-//	res := new(EllipticPoint).Zero()
-//
-//	for i := maxBitLen -1; i >= 0; i-- {
-//		// res = 2*res
-//		res = res.ScalarMult(big.NewInt(2))
-//
-//		// res = res + e1,i*g1 + ... + en,i*gn
-//		for j := 0; j < len(valuesTmp); j++ {
-//			r := valuesTmp[i].Bit(i)
-//			if r == 1{
-//				res = res.Add(g[j])
-//			}
-//			//valuesTmp[j].Div(valuesTmp[j], big.NewInt(2))
-//		}
-//
-//		//if checkZeroArray(valuesTmp){
-//		//	//res = res.ScalarMult(big.NewInt(2))
-//		//	break
-//		//}
-//	}
-//	return res, nil
-//}
+// MultiScalar2 uses Shamir's simultanenous Squaring Multi-Exponentiation Algorithm
+func MultiScalar2(g []*EllipticPoint, values []*big.Int) (*EllipticPoint, error) {
+	// Check inputs
+	if len(g) != len(values) {
+		return nil, errors.New("wrong inputs")
+	}
 
-//func multiExp2(g []*EllipticPoint, values []*big.Int) (*EllipticPoint, error) {
-//	// Check inputs
-//	if len(g) != len(values) {
-//		return nil, errors.New("wrong inputs")
-//	}
-//
-//	// save values
-//	valuesTmp := make([]*big.Int, len(values))
-//	for i := 0; i < len(valuesTmp); i++ {
-//		valuesTmp[i] = new(big.Int)
-//		valuesTmp[i].Set(values[i])
-//	}
-//
-//	// generator result point
-//	r := new(big.Int)
-//	res := new(EllipticPoint).Zero()
-//
-//	y := big.NewInt(1)
-//	for values
-//
-//	//for i := 0; i < Curve.Params().BitSize; i++ {
-//	//	// res = 2*res
-//	//	res = res.ScalarMult(big.NewInt(2))
-//	//
-//	//	// res = res + e1,i*g1 + ... + en,i*gn
-//	//	for j := 0; j < len(valuesTmp); j++ {
-//	//		r.Mod(valuesTmp[j], big.NewInt(2))
-//	//		if r.Cmp(big.NewInt(1)) ==0{
-//	//			res = res.Add(g[j])
-//	//		}
-//	//		valuesTmp[j].Div(valuesTmp[j], big.NewInt(2))
-//	//	}
-//	//
-//	//	if checkZeroArray(valuesTmp){
-//	//		//res = res.ScalarMult(big.NewInt(2))
-//	//		break
-//	//	}
-//	//}
-//	return res, nil
-//}
+	//convert value array to binary array
+	maxBitLen := MaxBitLen(values)
+	valueBinary := make([][]*big.Int, len(values))
+	for i := range values{
+		valueBinary[i] = ConvertBigIntToBinary(values[i], maxBitLen)
+	}
+
+	// generator result point
+	res := new(EllipticPoint).Zero()
+
+	oneNumber := big.NewInt(1)
+
+	for i := maxBitLen -1 ; i >= 0; i-- {
+		// res = 2*res
+		res = res.ScalarMult(big.NewInt(2))
+
+		for j := 0; j<len(values); j++{
+			if valueBinary[j][i].Cmp(oneNumber) == 0{
+				res = res.Add(g[j])
+			}
+		}
+	}
+	return res, nil
+}
 
 //func exp (x * EllipticPoint, n *big.Int) *EllipticPoint{
 //	if n.Cmp(big.NewInt(0)) == 0{
