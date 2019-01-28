@@ -45,6 +45,8 @@ const (
 	RandomCommitments                          = "randomcommitments"
 	HasSerialNumbers                           = "hasserialnumbers"
 
+	CreateAndSendStakingTransaction = "createandsendstakingtransaction"
+
 	// Wallet rpc cmd
 	ListAccounts                       = "listaccounts"
 	GetAccount                         = "getaccount"
