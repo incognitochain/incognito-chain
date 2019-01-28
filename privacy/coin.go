@@ -43,6 +43,15 @@ func (coin *Coin) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (coin *Coin) HashH() *common.Hash {
+	b, err := coin.MarshalJSON()
+	if err != nil {
+		return nil
+	}
+	hash := common.HashH(b)
+	return &hash
+}
+
 // Init initializes a coin
 func (coin *Coin) Init() *Coin {
 	coin.PublicKey = new(EllipticPoint).Zero()
