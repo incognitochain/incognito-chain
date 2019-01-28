@@ -3,6 +3,7 @@ package wire
 import (
 	"encoding/hex"
 	"encoding/json"
+
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -25,41 +26,41 @@ type MessageVersion struct {
 	SignDataB58      string
 }
 
-func (self *MessageVersion) Hash() string {
-	rawBytes, err := self.JsonSerialize()
+func (msg *MessageVersion) Hash() string {
+	rawBytes, err := msg.JsonSerialize()
 	if err != nil {
 		return ""
 	}
 	return common.HashH(rawBytes).String()
 }
 
-func (self *MessageVersion) MessageType() string {
+func (msg *MessageVersion) MessageType() string {
 	return CmdVersion
 }
 
-func (self *MessageVersion) MaxPayloadLength(pver int) int {
+func (msg *MessageVersion) MaxPayloadLength(pver int) int {
 	return MaxVersionPayload
 }
 
-func (self *MessageVersion) JsonSerialize() ([]byte, error) {
-	jsonBytes, err := json.Marshal(self)
+func (msg *MessageVersion) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(msg)
 	return jsonBytes, err
 }
 
-func (self *MessageVersion) JsonDeserialize(jsonStr string) error {
+func (msg *MessageVersion) JsonDeserialize(jsonStr string) error {
 	jsonDecodeString, _ := hex.DecodeString(jsonStr)
-	err := json.Unmarshal([]byte(jsonDecodeString), self)
+	err := json.Unmarshal([]byte(jsonDecodeString), msg)
 	return err
 }
 
-func (self *MessageVersion) SetSenderID(senderID peer.ID) error {
+func (msg *MessageVersion) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (self *MessageVersion) SignMsg(_ *cashec.KeySet) error {
+func (msg *MessageVersion) SignMsg(_ *cashec.KeySet) error {
 	return nil
 }
 
-func (self *MessageVersion) VerifyMsgSanity() error {
+func (msg *MessageVersion) VerifyMsgSanity() error {
 	return nil
 }

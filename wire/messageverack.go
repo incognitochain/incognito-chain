@@ -16,41 +16,41 @@ type MessageVerAck struct {
 	Timestamp time.Time
 }
 
-func (self *MessageVerAck) Hash() string {
-	rawBytes, err := self.JsonSerialize()
+func (msg *MessageVerAck) Hash() string {
+	rawBytes, err := msg.JsonSerialize()
 	if err != nil {
 		return ""
 	}
 	return common.HashH(rawBytes).String()
 }
 
-func (self *MessageVerAck) MessageType() string {
+func (msg *MessageVerAck) MessageType() string {
 	return CmdVerack
 }
 
-func (self *MessageVerAck) MaxPayloadLength(pver int) int {
+func (msg *MessageVerAck) MaxPayloadLength(pver int) int {
 	return MaxBlockPayload
 }
 
-func (self *MessageVerAck) JsonSerialize() ([]byte, error) {
-	jsonBytes, err := json.Marshal(self)
+func (msg *MessageVerAck) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(msg)
 	return jsonBytes, err
 }
 
-func (self *MessageVerAck) JsonDeserialize(jsonStr string) error {
+func (msg *MessageVerAck) JsonDeserialize(jsonStr string) error {
 	jsonDecodeString, _ := hex.DecodeString(jsonStr)
-	err := json.Unmarshal([]byte(jsonDecodeString), self)
+	err := json.Unmarshal([]byte(jsonDecodeString), msg)
 	return err
 }
 
-func (self *MessageVerAck) SetSenderID(senderID peer.ID) error {
+func (msg *MessageVerAck) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (self *MessageVerAck) SignMsg(_ *cashec.KeySet) error {
+func (msg *MessageVerAck) SignMsg(_ *cashec.KeySet) error {
 	return nil
 }
 
-func (self *MessageVerAck) VerifyMsgSanity() error {
+func (msg *MessageVerAck) VerifyMsgSanity() error {
 	return nil
 }

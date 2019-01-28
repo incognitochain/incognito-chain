@@ -20,41 +20,41 @@ type MessageShardState struct {
 	SenderID  string
 }
 
-func (self *MessageShardState) Hash() string {
-	rawBytes, err := self.JsonSerialize()
+func (msg *MessageShardState) Hash() string {
+	rawBytes, err := msg.JsonSerialize()
 	if err != nil {
 		return ""
 	}
 	return common.HashH(rawBytes).String()
 }
 
-func (self *MessageShardState) MessageType() string {
+func (msg *MessageShardState) MessageType() string {
 	return CmdShardState
 }
 
-func (self *MessageShardState) MaxPayloadLength(pver int) int {
+func (msg *MessageShardState) MaxPayloadLength(pver int) int {
 	return MaxShardStatePayload
 }
 
-func (self *MessageShardState) JsonSerialize() ([]byte, error) {
-	jsonBytes, err := json.Marshal(self)
+func (msg *MessageShardState) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(msg)
 	return jsonBytes, err
 }
 
-func (self *MessageShardState) JsonDeserialize(jsonStr string) error {
-	err := json.Unmarshal([]byte(jsonStr), self)
+func (msg *MessageShardState) JsonDeserialize(jsonStr string) error {
+	err := json.Unmarshal([]byte(jsonStr), msg)
 	return err
 }
 
-func (self *MessageShardState) SetSenderID(senderID peer.ID) error {
-	self.SenderID = senderID.Pretty()
+func (msg *MessageShardState) SetSenderID(senderID peer.ID) error {
+	msg.SenderID = senderID.Pretty()
 	return nil
 }
 
-func (self *MessageShardState) SignMsg(_ *cashec.KeySet) error {
+func (msg *MessageShardState) SignMsg(_ *cashec.KeySet) error {
 	return nil
 }
 
-func (self *MessageShardState) VerifyMsgSanity() error {
+func (msg *MessageShardState) VerifyMsgSanity() error {
 	return nil
 }

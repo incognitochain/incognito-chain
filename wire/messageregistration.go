@@ -16,25 +16,25 @@ type MessageRegistration struct {
 	Transaction metadata.Transaction
 }
 
-func (self MessageRegistration) MessageType() string {
+func (msg MessageRegistration) MessageType() string {
 	return CmdRegisteration
 }
 
-func (self MessageRegistration) MaxPayloadLength(pver int) int {
+func (msg MessageRegistration) MaxPayloadLength(pver int) int {
 	return MaxTxRegisterationPayload
 }
 
-func (self MessageRegistration) JsonSerialize() ([]byte, error) {
-	jsonBytes, err := json.Marshal(self)
+func (msg MessageRegistration) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(msg)
 	return jsonBytes, err
 }
 
-func (self MessageRegistration) JsonDeserialize(jsonStr string) error {
+func (msg MessageRegistration) JsonDeserialize(jsonStr string) error {
 	jsonDecodeString, _ := hex.DecodeString(jsonStr)
-	err := json.Unmarshal([]byte(jsonDecodeString), self)
+	err := json.Unmarshal([]byte(jsonDecodeString), msg)
 	return err
 }
 
-func (self MessageRegistration) SetSenderID(senderID peer.ID) error {
+func (msg MessageRegistration) SetSenderID(senderID peer.ID) error {
 	return nil
 }*/

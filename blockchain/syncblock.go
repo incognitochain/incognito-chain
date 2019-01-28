@@ -51,11 +51,11 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 	self.ShardStateCh[shardID] = shardStateCh
 	self.newShardBlkCh[shardID] = &newShardBlkCh
 	go func(shardID byte) {
-		//used for fancy block retriever but too lazy to implement that now :p
+		//used for fancy block retriever but not implement that now :p
 		var peerChainState map[libp2p.ID]PeerShardChainState
 		peerChainState = make(map[libp2p.ID]PeerShardChainState)
 		_ = peerChainState
-		getStateWaitTime := time.Duration(5)
+		getStateWaitTime := time.Duration(defaultGetStateWaitTime)
 		for {
 			select {
 			case <-self.cQuitSync:
@@ -71,19 +71,38 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 				if self.BestState.Shard[shardID].ShardHeight < shardState.State.Height {
 					if self.knownChainState.Shards[shardID].Height < shardState.State.Height {
 						self.knownChainState.Shards[shardID] = *shardState.State
-						if getStateWaitTime > 5 {
-							getStateWaitTime -= 5
+						if getStateWaitTime == defaultGetStateWaitTime*2 {
+							getStateWaitTime -= defaultGetStateWaitTime
 						}
 						go self.config.Server.PushMessageGetBlockShard(shardID, self.BestState.Shard[shardID].ShardHeight+1, shardState.State.Height, shardState.Peer)
 					} else {
-						if getStateWaitTime < 10 {
-							getStateWaitTime += 5
+						if getStateWaitTime == defaultGetStateWaitTime {
+							getStateWaitTime += defaultGetStateWaitTime
 						}
 					}
 				} else {
-					if getStateWaitTime < 10 {
-						getStateWaitTime += 5
+					if getStateWaitTime == defaultGetStateWaitTime {
+						getStateWaitTime += defaultGetStateWaitTime
 					}
+				}
+
+				// check shardToBeacon pool state
+				if len(shardState.State.CrossShardsPoolState) > 0 {
+					// myPoolPending := self.config.CrossShardPool.GetPendingBlockHashes()
+					// for shardID, peerPoolBlks := range shardState.State.CrossShardsPoolState {
+					// 	myShardPoolBlks, ok := myPoolPending[shardID]
+					// 	if ok {
+					// 		blksNeedToSync := GetDiffHashesOf(peerPoolBlks, myShardPoolBlks)
+					// 		for _, blkHash := range blksNeedToSync {
+					// 			go self.config.Server.PushMessageGetShardToBeacon(shardID, blkHash)
+					// 		}
+					// 	} else {
+					// 		// sync all blks of this shard
+					// 		for _, blkHash := range peerPoolBlks {
+					// 			go self.config.Server.PushMessageGetShardToBeacon(shardID, blkHash)
+					// 		}
+					// 	}
+					// }
 				}
 			case newBlk := <-newShardBlkCh:
 				fmt.Println("Shard block received")
@@ -96,11 +115,6 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 					} else {
 						if self.BestState.Shard[shardID].ShardHeight == newBlk.Header.Height-1 {
 							err = self.InsertShardBlock(newBlk)
-							fmt.Println()
-							fmt.Println()
-							fmt.Println("newblk", newBlk.Header.Height)
-							fmt.Println()
-							fmt.Println()
 							if err != nil {
 								Logger.log.Error(err)
 								continue
@@ -115,15 +129,11 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 				self.config.Server.PushMessageGetShardState(shardID)
 				blks, err := self.config.NodeShardPool.GetBlocks(shardID, self.BestState.Shard[shardID].ShardHeight+1)
 				if err != nil {
+					Logger.log.Error(err)
 					continue
 				}
 				for _, newBlk := range blks {
 					err = self.InsertShardBlock(&newBlk)
-					fmt.Println()
-					fmt.Println()
-					fmt.Println("newblk", newBlk.Header.Height)
-					fmt.Println()
-					fmt.Println()
 					if err != nil {
 						Logger.log.Error(err)
 						continue
@@ -151,29 +161,32 @@ func (self *BlockChain) SyncBeacon() error {
 		peerChainState = make(map[libp2p.ID]PeerBeaconChainState)
 		_ = peerChainState
 
-		getStateWaitTime := time.Duration(5)
+		getStateWaitTime := time.Duration(defaultGetStateWaitTime)
 		for {
 			select {
 			case <-self.cQuitSync:
 				return
 			case beaconState := <-self.BeaconStateCh:
+
 				if self.BestState.Beacon.BeaconHeight < beaconState.State.Height {
 					if self.knownChainState.Beacon.Height < beaconState.State.Height {
 						self.knownChainState.Beacon = *beaconState.State
-						if getStateWaitTime > 5 {
-							getStateWaitTime -= 5
+						if getStateWaitTime == defaultGetStateWaitTime*2 {
+							getStateWaitTime -= defaultGetStateWaitTime
 						}
 						go self.config.Server.PushMessageGetBlockBeacon(self.BestState.Beacon.BeaconHeight+1, beaconState.State.Height, beaconState.Peer)
 					} else {
-						if getStateWaitTime < 10 {
-							getStateWaitTime += 5
+						if getStateWaitTime == defaultGetStateWaitTime {
+							getStateWaitTime += defaultGetStateWaitTime
 						}
 					}
 				} else {
-					if getStateWaitTime < 10 {
-						getStateWaitTime += 5
+					if getStateWaitTime == defaultGetStateWaitTime {
+						getStateWaitTime += defaultGetStateWaitTime
 					}
 				}
+
+				// check shardToBeacon pool state
 				if len(beaconState.State.ShardsPoolState) > 0 {
 					myPoolPending := self.config.ShardToBeaconPool.GetPendingBlockHashes()
 					for shardID, peerPoolBlks := range beaconState.State.ShardsPoolState {

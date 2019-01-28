@@ -19,40 +19,40 @@ type MessageBFTPrepare struct {
 	MsgSig  string
 }
 
-func (self *MessageBFTPrepare) Hash() string {
-	rawBytes, err := self.JsonSerialize()
+func (msg *MessageBFTPrepare) Hash() string {
+	rawBytes, err := msg.JsonSerialize()
 	if err != nil {
 		return ""
 	}
 	return common.HashH(rawBytes).String()
 }
 
-func (self *MessageBFTPrepare) MessageType() string {
+func (msg *MessageBFTPrepare) MessageType() string {
 	return CmdBFTPrepare
 }
 
-func (self *MessageBFTPrepare) MaxPayloadLength(pver int) int {
+func (msg *MessageBFTPrepare) MaxPayloadLength(pver int) int {
 	return MaxBFTPreparePayload
 }
 
-func (self *MessageBFTPrepare) JsonSerialize() ([]byte, error) {
-	jsonBytes, err := json.Marshal(self)
+func (msg *MessageBFTPrepare) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(msg)
 	return jsonBytes, err
 }
 
-func (self *MessageBFTPrepare) JsonDeserialize(jsonStr string) error {
-	err := json.Unmarshal([]byte(jsonStr), self)
+func (msg *MessageBFTPrepare) JsonDeserialize(jsonStr string) error {
+	err := json.Unmarshal([]byte(jsonStr), msg)
 	return err
 }
 
-func (self *MessageBFTPrepare) SetSenderID(senderID peer.ID) error {
+func (msg *MessageBFTPrepare) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (self *MessageBFTPrepare) SignMsg(_ *cashec.KeySet) error {
+func (msg *MessageBFTPrepare) SignMsg(_ *cashec.KeySet) error {
 	return nil
 }
 
-func (self *MessageBFTPrepare) VerifyMsgSanity() error {
+func (msg *MessageBFTPrepare) VerifyMsgSanity() error {
 	return nil
 }
