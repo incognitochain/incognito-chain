@@ -1068,10 +1068,35 @@ func (serverObj *Server) PushMessageGetShardState(shardID byte) error {
 }
 
 func (serverObj *Server) PushMessageGetCrossShard(FromShardID byte, ToShardID byte, blkHash common.Hash) error {
+	Logger.log.Debugf("Send a GetCrossShard")
+	listener := serverObj.connManager.Config.ListenerPeer
+	msg, err := wire.MakeEmptyMessage(wire.CmdGetCrossShard)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessageGetCrossShard).FromShardID = FromShardID
+	msg.(*wire.MessageGetCrossShard).ToShardID = ToShardID
+	msg.(*wire.MessageGetCrossShard).BlockHash = blkHash
+	msg.(*wire.MessageGetCrossShard).Timestamp = time.Now().Unix()
+	msg.SetSenderID(listener.PeerID)
+	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
+	serverObj.PushMessageToShard(msg, FromShardID)
 	return nil
 }
 
 func (serverObj *Server) PushMessageGetShardToBeacon(shardID byte, blkHash common.Hash) error {
+	Logger.log.Debugf("Send a GetShardToBeacon")
+	listener := serverObj.connManager.Config.ListenerPeer
+	msg, err := wire.MakeEmptyMessage(wire.CmdGetShardToBeacon)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessageGetShardToBeacon).ShardID = shardID
+	msg.(*wire.MessageGetShardToBeacon).BlockHash = blkHash
+	msg.(*wire.MessageGetShardToBeacon).Timestamp = time.Now().Unix()
+	msg.SetSenderID(listener.PeerID)
+	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
+	serverObj.PushMessageToShard(msg, shardID)
 	return nil
 }
 
