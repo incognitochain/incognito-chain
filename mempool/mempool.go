@@ -125,7 +125,7 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 		}
 	}
 	if tx.Hash() != nil {
-		tp.addTxCoinH(*tx.Hash())
+		tp.addTxCoinHashH(*tx.Hash())
 	}
 	return txD
 }
@@ -260,7 +260,7 @@ func (tp *TxPool) RemoveTx(tx metadata.Transaction) error {
 	tp.mtx.Lock()
 	err := tp.removeTx(&tx)
 	if tx.Hash() != nil {
-		tp.removeTxCoinH(*tx.Hash())
+		tp.removeTxCoinHashH(*tx.Hash())
 	}
 	tp.mtx.Unlock()
 	return err
@@ -358,7 +358,7 @@ func (tp *TxPool) ListTxs() []string {
 	return result
 }
 
-func (tp *TxPool) PoolTxCoinH(txH common.Hash, inCoins []*privacy.Coin) error {
+func (tp *TxPool) PoolTxCoinHashH(txH common.Hash, inCoins []*privacy.Coin) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
 	inCoinHs := make([]common.Hash, 0)
@@ -366,18 +366,17 @@ func (tp *TxPool) PoolTxCoinH(txH common.Hash, inCoins []*privacy.Coin) error {
 		if inCoin == nil {
 			return errors.New("coin is nil")
 		}
-		b, err := json.Marshal(inCoin)
-		if err != nil {
-			return err
+		inCoinH := tp.hashHCoin(inCoin)
+		if inCoin == nil {
+			return errors.New("hash coin err")
 		}
-		inCoinH := common.HashH(b)
-		inCoinHs = append(inCoinHs, inCoinH)
+		inCoinHs = append(inCoinHs, *inCoinH)
 	}
 	tp.txCoinHPool[txH] = inCoinHs
 	return nil
 }
 
-func (tp *TxPool) addTxCoinH(txH common.Hash) error {
+func (tp *TxPool) addTxCoinHashH(txH common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
 	inCoinHs, ok := tp.txCoinHPool[txH]
@@ -389,25 +388,24 @@ func (tp *TxPool) addTxCoinH(txH common.Hash) error {
 	return nil
 }
 
-func (tp *TxPool) ValidateCoinH(inCoin *privacy.Coin) error {
+func (tp *TxPool) ValidateCoinHashH(inCoin *privacy.Coin) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
 	if inCoin == nil {
 		return errors.New("coin is nil")
 	}
-	b, err := json.Marshal(inCoin)
-	if err != nil {
-		return err
+	inCoinH := tp.hashHCoin(inCoin)
+	if inCoin == nil {
+		return errors.New("hash coin err")
 	}
-	inCoinH := common.HashH(b)
-	_, ok := tp.coinHPool[inCoinH]
+	_, ok := tp.coinHPool[*inCoinH]
 	if ok {
 		return errors.New("Coin is in used")
 	}
 	return nil
 }
 
-func (tp *TxPool) removeTxCoinH(txH common.Hash) error {
+func (tp *TxPool) removeTxCoinHashH(txH common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
 	inCoinHs, ok := tp.txCoinHPool[txH]
@@ -418,4 +416,16 @@ func (tp *TxPool) removeTxCoinH(txH common.Hash) error {
 		delete(tp.txCoinHPool, txH)
 	}
 	return nil
+}
+
+func (tp *TxPool) hashHCoin(inCoin *privacy.Coin) *common.Hash {
+	if inCoin == nil {
+		return nil
+	}
+	b, err := json.Marshal(inCoin)
+	if err != nil {
+		return nil
+	}
+	hash := common.HashH(b)
+	return &hash
 }
