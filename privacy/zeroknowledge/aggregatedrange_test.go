@@ -37,7 +37,7 @@ func TestInnerProduct(t *testing.T) {
 
 func TestEncodeVectors(t *testing.T) {
 	var AggParam = newBulletproofParams(1)
-	n := 2
+	n := 64
 	a := make([]*big.Int, n)
 	b := make([]*big.Int, n)
 	G := make([]*privacy.EllipticPoint, n)
@@ -53,17 +53,22 @@ func TestEncodeVectors(t *testing.T) {
 		H[i] = new(privacy.EllipticPoint)
 		H[i].Set(AggParam.H[i].X, AggParam.H[i].Y)
 	}
-
+	start := time.Now()
 	actualRes, err := EncodeVectors(a, b, G, H)
+	end := time.Since(start)
+	fmt.Printf("Time encode vector: %v\n", end)
 	if err != nil {
 		fmt.Printf("Err: %v\n", err)
 	}
-
+	start = time.Now()
 	expectedRes := new(privacy.EllipticPoint).Zero()
 	for i := 0; i < n; i++ {
 		expectedRes = expectedRes.Add(G[i].ScalarMult(a[i]))
 		expectedRes = expectedRes.Add(H[i].ScalarMult(b[i]))
 	}
+
+	end = time.Since(start)
+	fmt.Printf("Time normal encode vector: %v\n", end)
 
 	assert.Equal(t, expectedRes, actualRes)
 }
@@ -142,6 +147,18 @@ func TestAggregatedRangeProve(t *testing.T) {
 	fmt.Printf("Aggregated range verification time: %v\n", end)
 
 	assert.Equal(t, true, res)
+
+	start = time.Now()
+	g1 := privacy.PedCom.G[0].ScalarMult(big.NewInt(1))
+	end = time.Since(start)
+	fmt.Printf("Time 1: %v\n", end)
+	fmt.Printf("G 1: %v\n", g1)
+
+	start = time.Now()
+	g2 := privacy.PedCom.G[0].ScalarMult(privacy.RandInt())
+	end = time.Since(start)
+	fmt.Printf("Time 2: %v\n", end)
+	fmt.Printf("G 2: %v\n", g2)
 }
 
 func BenchmarkAggregatedRangeProve(b *testing.B) {
