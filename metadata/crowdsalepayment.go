@@ -18,7 +18,7 @@ type CrowdsalePayment struct {
 }
 
 func (csRes *CrowdsalePayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
-	fmt.Printf("[db] Validating tx crowdsale payment with blockchain %s\n", txr.Hash().String())
+	fmt.Printf("***************************************[db] Validating tx crowdsale payment with blockchain %s\n", txr.Hash().String())
 	// TODO(@0xbunyip): check if there's a corresponding request in the same block
 	// Check if sale exists
 	saleData, err := bcr.GetCrowdsaleData(csRes.SaleID)

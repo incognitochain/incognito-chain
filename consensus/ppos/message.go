@@ -1,6 +1,7 @@
 package ppos
 
 import (
+	"fmt"
 	"time"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
@@ -69,6 +70,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageBlockSigReq) {
 }
 
 func (self *Engine) OnBlockReceived(block *blockchain.Block) {
+	fmt.Println("OnBlockReceived")
 	if self.config.BlockChain.BestState[block.Header.ChainID].Height < block.Header.Height {
 		exists, err := self.config.BlockChain.BlockExists(block.Hash())
 		if err != nil {

@@ -81,6 +81,8 @@ var RpcHandler = map[string]commandHandler{
 	CreateCrowdsaleRequestToken:           RpcServer.handleCreateCrowdsaleRequestToken,
 	SendCrowdsaleRequestToken:             RpcServer.handleSendCrowdsaleRequestToken,
 	CreateAndSendCrowdsaleRequestToken:    RpcServer.handleCreateAndSendCrowdsaleRequestToken,
+	CreateCrowdsaleRequestConstant:        RpcServer.handleCreateCrowdsaleRequestConstant,
+	SendCrowdsaleRequestConstant:          RpcServer.handleSendCrowdsaleRequestConstant,
 	CreateAndSendCrowdsaleRequestConstant: RpcServer.handleCreateAndSendCrowdsaleRequestConstant,
 	TestStoreCrowdsale:                    RpcServer.handleTESTStoreCrowdsale,
 

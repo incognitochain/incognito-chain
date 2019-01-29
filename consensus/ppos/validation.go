@@ -2,6 +2,7 @@ package ppos
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/ninjadotorg/constant/blockchain"
@@ -158,6 +159,7 @@ func (self *Engine) IsEnoughData(block *blockchain.Block) error {
 }
 
 func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
+	fmt.Printf("[db] validateBlockSanity\n")
 	// 1. Check whether we acquire enough data to validate this block
 	err := self.IsEnoughData(block)
 	if err != nil {

@@ -27,7 +27,7 @@ type CrowdsaleRequest struct {
 	MetadataBase
 }
 
-func NewCrowdsaleRequest(csReqData map[string]interface{}) (*CrowdsaleRequest, error) {
+func NewCrowdsaleRequest(csReqData map[string]interface{}) (Metadata, error) {
 	errSaver := &ErrorSaver{}
 	saleIDStr, okID := csReqData["SaleID"].(string)
 	saleID, errSale := hex.DecodeString(saleIDStr)

@@ -784,7 +784,7 @@ func (self *BlockChain) updateCrowdsalePaymentData(tx metadata.Transaction, sale
 	if amount > saleData.SellingAmount {
 		return errors.New("Sold too much asset")
 	}
-	fmt.Printf("[db] selling CST: %d\n", amount)
+	fmt.Printf("[db] selling amount: %d\n", amount)
 	saleData.SellingAmount -= amount
 
 	// Update buying asset status
@@ -805,7 +805,7 @@ func (self *BlockChain) updateCrowdsalePaymentData(tx metadata.Transaction, sale
 	if amount > saleData.BuyingAmount {
 		return errors.New("Bought too much asset")
 	}
-	fmt.Printf("[db] buying bond: %d\n", amount)
+	fmt.Printf("[db] buying amount: %d\n", amount)
 	saleData.BuyingAmount -= amount
 	return nil
 }
