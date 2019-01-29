@@ -282,6 +282,9 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	}
 	/******* END GET output coins constant, which is used to create tx *****/
 
+	// build hash array for input coin
+	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
+
 	tx := &transaction.TxCustomToken{}
 	err = tx.Init(
 		&senderKeySet.PrivateKey,
@@ -297,6 +300,13 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	if err.(*transaction.TransactionError) != nil {
 		return nil, err
 	}
+
+	// pool inCoinsH
+	txHash := tx.Hash()
+	if txHash != nil {
+		rpcServer.config.TxMemPool.PrePoolTxCoinHashH(*txHash, inputCoinHs)
+	}
+
 	return tx, nil
 }
 
@@ -399,6 +409,9 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	}
 	/******* END GET output coins constant, which is used to create tx *****/
 
+	// build hash array for input coin
+	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
+
 	tx := &transaction.TxCustomTokenPrivacy{}
 	err = tx.Init(
 		&senderKeySet.PrivateKey,
@@ -413,6 +426,12 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 
 	if err.(*transaction.TransactionError) != nil {
 		return nil, err
+	}
+
+	// pool inCoinsH
+	txHash := tx.Hash()
+	if txHash != nil {
+		rpcServer.config.TxMemPool.PrePoolTxCoinHashH(*txHash, inputCoinHs)
 	}
 
 	return tx, err
