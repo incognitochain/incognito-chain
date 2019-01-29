@@ -557,8 +557,9 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 		if wit.SerialNumberWitness[i] == nil {
 			wit.SerialNumberWitness[i] = new(PKSNPrivacyWitness)
 		}
-		wit.SerialNumberWitness[i].Set(inputCoin.CoinDetails.SerialNumber, cmInputSK, wit.ComInputSND[i],
-			spendingKey, randInputSK, inputCoin.CoinDetails.SNDerivator, randInputSND[i])
+		stmt := new(PKSNPrivacyStatement)
+		stmt.Set(inputCoin.CoinDetails.SerialNumber, cmInputSK, wit.ComInputSND[i])
+		wit.SerialNumberWitness[i].Set(stmt, spendingKey, randInputSK, inputCoin.CoinDetails.SNDerivator, randInputSND[i])
 		// ---------------------------------------------------
 	}
 
