@@ -189,7 +189,7 @@ func (wit *SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
 	// calculate tSeed = g_SK^eSK
 	tSK := privacy.PedCom.G[privacy.SK].ScalarMult(eSK)
 
-	// calculate tOutput = SN^eSK
+	// calculate tOutput = sn^eSK
 	tE := wit.stmt.output.ScalarMult(eSK)
 	x := big.NewInt(0)
 	if mess == nil {
@@ -231,7 +231,7 @@ func (pro *SNNoPrivacyProof) Verify(mess []byte) bool {
 		return false
 	}
 
-	// Check SN^(zSeed + x*input) = gSK^x * tOutput
+	// Check sn^(zSeed + x*input) = gSK^x * tOutput
 	leftPoint2 := pro.stmt.output.ScalarMult(new(big.Int).Add(pro.zSeed, new(big.Int).Mul(x, pro.stmt.input)))
 
 	rightPoint2 := privacy.PedCom.G[privacy.SK].ScalarMult(x)
