@@ -68,18 +68,18 @@ type PaymentProof struct {
 
 func (proof *PaymentProof) Init() *PaymentProof {
 	proof = &PaymentProof{
-		OneOfManyProof:    []*OneOutOfManyProof{},
-		SerialNumberProof: []*SNPrivacyProof{},
+		OneOfManyProof:           []*OneOutOfManyProof{},
+		SerialNumberProof:        []*SNPrivacyProof{},
 		ComOutputMultiRangeProof: new(AggregatedRangeProof).Init(),
-		InputCoins:       []*privacy.InputCoin{},
-		OutputCoins:      []*privacy.OutputCoin{},
-		ComOutputValue:   []*privacy.EllipticPoint{},
-		ComOutputSND:     []*privacy.EllipticPoint{},
-		ComOutputShardID: []*privacy.EllipticPoint{},
-		ComInputSK:       new(privacy.EllipticPoint),
-		ComInputValue:    []*privacy.EllipticPoint{},
-		ComInputSND:      []*privacy.EllipticPoint{},
-		ComInputShardID:  new(privacy.EllipticPoint),
+		InputCoins:               []*privacy.InputCoin{},
+		OutputCoins:              []*privacy.OutputCoin{},
+		ComOutputValue:           []*privacy.EllipticPoint{},
+		ComOutputSND:             []*privacy.EllipticPoint{},
+		ComOutputShardID:         []*privacy.EllipticPoint{},
+		ComInputSK:               new(privacy.EllipticPoint),
+		ComInputValue:            []*privacy.EllipticPoint{},
+		ComInputSND:              []*privacy.EllipticPoint{},
+		ComInputShardID:          new(privacy.EllipticPoint),
 	}
 	return proof
 }
@@ -575,10 +575,10 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 	cmOutputShardID := make([]*privacy.EllipticPoint, numOutputCoin)
 
 	for i, outputCoin := range wit.outputCoins {
-		if i == len(outputCoins) - 1 {
+		if i == len(outputCoins)-1 {
 			randOutputValue[i] = new(big.Int).Sub(randInputValueAll, randOutputValueAll)
 			randOutputValue[i].Mod(randOutputValue[i], privacy.Curve.Params().N)
-		} else{
+		} else {
 			randOutputValue[i] = privacy.RandInt()
 		}
 
@@ -656,7 +656,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 	if !hasPrivacy {
 		// Proving that serial number is derived from the committed derivator
 		for i := 0; i < len(wit.inputCoins); i++ {
-			snNoPrivacyProof, err := wit.SNNoPrivacyWitness[i].Prove()
+			snNoPrivacyProof, err := wit.SNNoPrivacyWitness[i].Prove(nil)
 			if err != nil {
 				return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
 			}
@@ -703,7 +703,7 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 
 		for i := 0; i < len(proof.InputCoins); i++ {
 			// Check input coins' Serial number is created from input coins' input and sender's spending key
-			if !proof.SNNoPrivacyProof[i].Verify() {
+			if !proof.SNNoPrivacyProof[i].Verify(nil) {
 				return false
 			}
 
@@ -739,7 +739,7 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 		}
 
 		// check if sum of input values equal sum of output values
-		return sumInputValue == sumOutputValue + fee
+		return sumInputValue == sumOutputValue+fee
 	}
 
 	// if hasPrivacy == true
