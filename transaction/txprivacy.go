@@ -14,9 +14,15 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
+	zkp "github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"github.com/ninjadotorg/constant/wallet"
 )
+
+type sigWitness struct {
+	// hasPrivacy bool
+	SNPrivacyWitness   []*zkp.SNPrivacyWitness
+	SNNoPrivacyWitness []*zkp.SNNoPrivacyWitness
+}
 
 type Tx struct {
 	// Basic data
@@ -24,8 +30,8 @@ type Tx struct {
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
 
-	Fee      uint64 `json:"Fee"` // Fee applies: always consant
-	Info     []byte
+	Fee  uint64 `json:"Fee"` // Fee applies: always consant
+	Info []byte
 
 	// Sign and Privacy proof
 	SigPubKey []byte `json:"SigPubKey, omitempty"` // 33 bytes
@@ -37,8 +43,10 @@ type Tx struct {
 	// Metadata
 	Metadata metadata.Metadata
 
-	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
+	sigPrivKey *sigWitness // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
 }
+
+// func (sigWit * sigWitness) get
 
 func (tx *Tx) UnmarshalJSON(data []byte) error {
 	type Alias Tx
@@ -61,8 +69,6 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
-
-var SNPrivacyWitness []*zkp.SNPrivacyWitness
 
 // Init - init value for tx from inputcoin(old output coin from old tx)
 // create new outputcoin and build privacy proof
@@ -115,13 +121,15 @@ func (tx *Tx) Init(
 	// set tx type
 	tx.Type = common.TxNormalType
 	Logger.log.Infof("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(inputCoins), fee, hasPrivacy)
+	tx.sigPrivKey = new(sigWitness)
+	tx.sigPrivKey.SNNoPrivacyWitness = nil
+	tx.sigPrivKey.SNPrivacyWitness = nil
 	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
 		Logger.log.Infof("CREATE TX CUSTOM TOKEN\n")
 		tx.Fee = fee
-		tx.sigPrivKey = *senderSK
 		tx.PubKeyLastByteSender = pkLastByteSender
 
-		err := tx.signTx()
+		err := tx.signTx(hasPrivacy)
 		if err != nil {
 			return NewTransactionErr(UnexpectedErr, err)
 		}
@@ -239,7 +247,7 @@ func (tx *Tx) Init(
 	if err.(*privacy.PrivacyError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
-	SNPrivacyWitness = witness.SerialNumberWitness
+
 	tx.Proof, err = witness.Prove(hasPrivacy)
 	if err.(*privacy.PrivacyError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
@@ -247,9 +255,7 @@ func (tx *Tx) Init(
 
 	// set private key for signing tx
 	if hasPrivacy {
-		tx.sigPrivKey = make([]byte, 64)
-		randSK := witness.RandSK
-		tx.sigPrivKey = append(*senderSK, randSK.Bytes()...)
+		tx.sigPrivKey.SNPrivacyWitness = witness.SerialNumberWitness
 
 		// encrypt coin details (Randomness)
 		// hide information of output coins except coin commitments, public key, snDerivators
@@ -270,14 +276,12 @@ func (tx *Tx) Init(
 		}
 
 	} else {
-		tx.sigPrivKey = []byte{}
-		randSK := big.NewInt(0)
-		tx.sigPrivKey = append(*senderSK, randSK.Bytes()...)
+		tx.sigPrivKey.SNNoPrivacyWitness = witness.SNNoPrivacyWitness
 	}
 
 	// sign tx
 	tx.PubKeyLastByteSender = pkLastByteSender
-	err = tx.signTx()
+	err = tx.signTx(hasPrivacy)
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
@@ -290,7 +294,7 @@ func (tx *Tx) Init(
 }
 
 // signTx - signs tx
-func (tx *Tx) signTx() error {
+func (tx *Tx) signTx(hasPrivacy bool) error {
 	//Check input transaction
 	if tx.Sig != nil {
 		return errors.New("input transaction must be an unsigned one")
@@ -298,24 +302,37 @@ func (tx *Tx) signTx() error {
 
 	/****** using Schnorr signature *******/
 	// sign with sigPrivKey
-	// prepare private key for Schnorr
-	sk := new(big.Int).SetBytes(tx.sigPrivKey[:privacy.BigIntSize])
-	r := new(big.Int).SetBytes(tx.sigPrivKey[privacy.BigIntSize:])
-	sigKey := new(privacy.SchnPrivKey)
-	sigKey.Set(sk, r)
+	// // prepare private key for Schnorr
+	// sk := new(big.Int).SetBytes(tx.sigPrivKey[:privacy.BigIntSize])
+	// r := new(big.Int).SetBytes(tx.sigPrivKey[privacy.BigIntSize:])
+	// sigKey := new(privacy.SchnPrivKey)
+	// sigKey.Set(sk, r)
 
-	// save public key for verification signature tx
-	tx.SigPubKey = sigKey.PubKey.PK.Compress()
+	// // save public key for verification signature tx
+	// tx.SigPubKey = sigKey.PubKey.PK.Compress()
 
 	// signing
 	Logger.log.Infof(tx.Hash().String())
-	SerialSignature := make([]byte, privacy.SNPrivacyProofSize*len(tx.Proof.InputCoins))
-	for i := 0; i < len(tx.Proof.InputCoins); i++ {
-		proof, snerr := SNPrivacyWitness[i].Prove(tx.Hash()[:])
-		if snerr != nil {
-			return snerr
+	if hasPrivacy {
+		SerialSignature := make([]byte, privacy.SNPrivacyProofSize*len(tx.Proof.InputCoins))
+		for i := 0; i < len(tx.Proof.InputCoins); i++ {
+			proof, snerr := tx.sigPrivKey.SNPrivacyWitness[i].Prove(tx.Hash()[:])
+			if snerr != nil {
+				return snerr
+			}
+			copy(SerialSignature[i*privacy.SNPrivacyProofSize:(i+1)*privacy.SNPrivacyProofSize], proof.Bytes())
 		}
-		copy(SerialSignature[i*privacy.SNPrivacyProofSize:(i+1)*privacy.SNPrivacyProofSize], proof.Bytes())
+		tx.Sig = SerialSignature
+	} else {
+		SerialSignature := make([]byte, privacy.SNNoPrivacyProofSize*len(tx.Proof.InputCoins))
+		for i := 0; i < len(tx.Proof.InputCoins); i++ {
+			proof, snerr := tx.sigPrivKey.SNNoPrivacyWitness[i].Prove(tx.Hash()[:])
+			if snerr != nil {
+				return snerr
+			}
+			copy(SerialSignature[i*privacy.SNPrivacyProofSize:(i+1)*privacy.SNPrivacyProofSize], proof.Bytes())
+		}
+		tx.Sig = SerialSignature
 	}
 	// signature, err := sigKey.Sign(tx.Hash()[:])
 	// if err != nil {
@@ -324,15 +341,14 @@ func (tx *Tx) signTx() error {
 
 	// // convert signature to byte array
 	// tx.Sig = signature.Bytes()
-	tx.Sig = SerialSignature
 
 	return nil
 }
 
 // verifySigTx - verify signature on tx
-func (tx *Tx) verifySigTx() (bool, error) {
+func (tx *Tx) verifySigTx(hasPrivacy bool) (bool, error) {
 	// check input transaction
-	if tx.Sig == nil || tx.SigPubKey == nil {
+	if tx.Sig == nil { //|| tx.SigPubKey == nil {
 		return false, errors.New("input transaction must be an signed one")
 	}
 
@@ -361,16 +377,27 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	// Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
 	// res = verKey.Verify(signature, tx.Hash()[:])
 	//fmt.Println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", tx.Sig)
-	SNPrivacyProof := make([]*zkp.SNPrivacyProof, len(tx.Proof.InputCoins))
-	for i := 0; i < len(tx.Proof.InputCoins); i++ {
-		SNPrivacyProof[i] = new(zkp.SNPrivacyProof).Init()
-		SNPrivacyProof[i].SetBytes(tx.Sig[i*privacy.SNPrivacyProofSize : (i+1)*privacy.SNPrivacyProofSize])
-		if !SNPrivacyProof[i].Verify(tx.Hash()[:]) {
-			//fmt.Println("Falseeeeeeeeeeeeeeeeeeeeeeeee")
-			return false, nil
+	if hasPrivacy {
+		SNPrivacyProof := make([]*zkp.SNPrivacyProof, len(tx.Proof.InputCoins))
+		for i := 0; i < len(tx.Proof.InputCoins); i++ {
+			SNPrivacyProof[i] = new(zkp.SNPrivacyProof).Init()
+			SNPrivacyProof[i].SetBytes(tx.Sig[i*privacy.SNPrivacyProofSize : (i+1)*privacy.SNPrivacyProofSize])
+			if !SNPrivacyProof[i].Verify(tx.Hash()[:]) {
+				//fmt.Println("Falseeeeeeeeeeeeeeeeeeeeeeeee")
+				return false, nil
+			}
+		}
+	} else {
+		SNPrivacyProof := make([]*zkp.SNNoPrivacyProof, len(tx.Proof.InputCoins))
+		for i := 0; i < len(tx.Proof.InputCoins); i++ {
+			SNPrivacyProof[i] = new(zkp.SNNoPrivacyProof).Init()
+			SNPrivacyProof[i].SetBytes(tx.Sig[i*privacy.SNNoPrivacyProofSize : (i+1)*privacy.SNNoPrivacyProofSize])
+			if !SNPrivacyProof[i].Verify(tx.Hash()[:]) {
+				//fmt.Println("Falseeeeeeeeeeeeeeeeeeeeeeeee")
+				return false, nil
+			}
 		}
 	}
-
 	// SNPrivacyProof.SetBytes(tx.Sig)
 	// res = SNPrivacyProof.Verify(tx.Hash()[:])
 	return res, nil
@@ -404,7 +431,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	var valid bool
 	var err error
 
-	valid, err = tx.verifySigTx()
+	valid, err = tx.verifySigTx(hasPrivacy)
 	if !valid {
 		if err != nil {
 			Logger.log.Infof("[PRIVACY LOG] - Error verifying signature of tx: %+v", err)
@@ -891,9 +918,9 @@ func (tx *Tx) InitTxSalary(
 
 	// sign Tx
 	tx.SigPubKey = receiverAddr.Pk
-	tx.sigPrivKey = *privKey
+	// tx.sigPrivKey = *privKey
 	tx.SetMetadata(metaData)
-	err = tx.signTx()
+	err = tx.signTx(false)
 	if err != nil {
 		return err
 	}
@@ -905,7 +932,7 @@ func (tx Tx) ValidateTxSalary(
 	db database.DatabaseInterface,
 ) bool {
 	// verify signature
-	valid, err := tx.verifySigTx()
+	valid, err := tx.verifySigTx(false)
 	if !valid {
 		if err != nil {
 			Logger.log.Infof("Error verifying signature of tx: %+v", err)
