@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/ninjadotorg/constant/common/base58"
 	"reflect"
 	"sort"
 	"strconv"
@@ -335,20 +336,19 @@ func CreateShardActionFromTransaction(transactions []metadata.Transaction) (acti
 	stakeBeaconPubKey := []string{}
 	for _, tx := range transactions {
 		switch tx.GetMetadataType() {
-		//TODO: stable param 0xsancurasolus
-		// case metadata.BuyFromGOVRequestMeta:
+		case metadata.ShardStakingMeta:
+			pk := tx.GetProof().InputCoins[0].CoinDetails.PublicKey.Compress()
+			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
+			stakeShardPubKey = append(stakeShardPubKey, pkb58)
+		case metadata.BeaconStakingMeta:
+			pk := tx.GetProof().InputCoins[0].CoinDetails.PublicKey.Compress()
+			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
+			stakeBeaconPubKey = append(stakeBeaconPubKey, pkb58)
+			//TODO: stable param 0xsancurasolus
+			// case metadata.BuyFromGOVRequestMeta:
 		}
-		// TODO
-		// shardStaker, beaconStaker, isStake := tempTx.GetStakerFromTransaction()
-		// if isStake {
-		// 	if strings.Compare(shardStaker, common.EmptyString) != 0 {
-		// 		stakeShardPubKey = append(stakeShardPubKey, shardStaker)
-		// 	}
-		// 	if strings.Compare(beaconStaker, common.EmptyString) != 0 {
-		// 		stakeBeaconPubKey = append(stakeBeaconPubKey, beaconStaker)
-		// 	}
-		// }
 	}
+
 	if !reflect.DeepEqual(stakeShardPubKey, []string{}) {
 		action := []string{"stake", strings.Join(stakeShardPubKey, ","), "shard"}
 		actions = append(actions, action)
@@ -397,7 +397,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 	return txsToAdd, txToRemove, totalFee
 }
 
-func (blockgen *ShardBlock) CreateShardToBeaconBlock() ShardToBeaconBlock {
+func (blockgen *ShardBlock) CreateShardToBeaconBlock() *ShardToBeaconBlock {
 	block := ShardToBeaconBlock{}
 	block.AggregatedSig = blockgen.AggregatedSig
 	copy(block.ValidatorsIdx, blockgen.ValidatorsIdx)
@@ -406,7 +406,7 @@ func (blockgen *ShardBlock) CreateShardToBeaconBlock() ShardToBeaconBlock {
 	block.Instructions = blockgen.Body.Instructions
 	actions := CreateShardActionFromTransaction(blockgen.Body.Transactions)
 	block.Instructions = append(block.Instructions, actions...)
-	return block
+	return &block
 }
 
 func (blk *ShardBlock) CreateAllCrossShardBlock() map[byte]*CrossShardBlock {
