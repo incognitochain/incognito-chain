@@ -30,7 +30,8 @@ func TestGenerateKey(t *testing.T){
 	copy(publicKeyBytes, publicKey[:])
 
 	// decompress public key
-	publicKeyPoint, err := DecompressKey(publicKey)
+	publicKeyPoint := new(EllipticPoint)
+	err := publicKeyPoint.Decompress(publicKey)
 	if err != nil {
 		return
 	}
@@ -43,7 +44,8 @@ func TestGenerateKey(t *testing.T){
 	transmissionKeyBytes := make([]byte, CompressedPointSize)
 	copy(transmissionKeyBytes, transmissionKey[:])
 
-	transmissionKeyPoint, err := DecompressKey(transmissionKey)
+	transmissionKeyPoint := new(EllipticPoint)
+	err = transmissionKeyPoint.Decompress(transmissionKey)
 	if err != nil {
 		return
 	}

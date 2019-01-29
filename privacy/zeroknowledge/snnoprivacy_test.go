@@ -13,7 +13,9 @@ func TestPKSNNoPrivacy(t *testing.T) {
 	skInt := new(big.Int).SetBytes(sk)
 
 	pk := privacy.GeneratePublicKey(sk)
-	pkPoint, err := privacy.DecompressKey(pk)
+	pkPoint :=new(privacy.EllipticPoint)
+
+	err := pkPoint.Decompress(pk)
 	if err != nil{
 		return
 	}
@@ -25,7 +27,7 @@ func TestPKSNNoPrivacy(t *testing.T) {
 	witness := new(SNNoPrivacyWitness)
 	witness.Set(serialNumber, pkPoint, SND, skInt)
 
-	proof, err := witness.Prove()
+	proof, err := witness.Prove(nil)
 	if err != nil{
 		return
 	}
@@ -37,7 +39,7 @@ func TestPKSNNoPrivacy(t *testing.T) {
 	proof2 := new(SNNoPrivacyProof).Init()
 	proof2.SetBytes(proofBytes)
 
-	res := proof2.Verify()
+	res := proof2.Verify(nil)
 
 	assert.Equal(t, true, res)
 }

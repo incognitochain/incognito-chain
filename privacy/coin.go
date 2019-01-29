@@ -129,7 +129,8 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField := coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.PublicKey, err = DecompressKey(coinBytes[offset: offset+int(lenField)])
+		coin.PublicKey = new(EllipticPoint)
+		err = coin.PublicKey.Decompress(coinBytes[offset: offset+int(lenField)])
 		if err != nil {
 			return err
 		}
@@ -140,7 +141,8 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.CoinCommitment, err = DecompressKey(coinBytes[offset: offset+int(lenField)])
+		coin.CoinCommitment = new(EllipticPoint)
+		err = coin.CoinCommitment.Decompress(coinBytes[offset: offset+int(lenField)])
 		if err != nil {
 			return err
 		}
@@ -160,7 +162,8 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.SerialNumber, err = DecompressKey(coinBytes[offset: offset+int(lenField)])
+		coin.SerialNumber = new(EllipticPoint)
+		err = coin.SerialNumber.Decompress(coinBytes[offset: offset+int(lenField)])
 		if err != nil {
 			return err
 		}

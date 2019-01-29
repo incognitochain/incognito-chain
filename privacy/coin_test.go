@@ -19,9 +19,13 @@ func TestEncryptionCoin(t *testing.T){
 
 	fmt.Printf("viewing key: %+v\n", viewingKey)
 
-	coin.CoinDetails.PublicKey, _ = DecompressKey(paymentAddress.Pk)
+	coin.CoinDetails.PublicKey = new(EllipticPoint)
+	err := coin.CoinDetails.PublicKey.Decompress(paymentAddress.Pk)
+	if err != nil {
+		Logger.Log.Error(err)
+	}
 
-	err := coin.Encrypt(paymentAddress.Tk)
+	err = coin.Encrypt(paymentAddress.Tk)
 	if err != nil {
 		Logger.Log.Error(err)
 	}

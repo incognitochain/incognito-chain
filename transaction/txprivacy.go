@@ -215,7 +215,8 @@ func (tx *Tx) Init(
 		outputCoins[i] = new(privacy.OutputCoin)
 		outputCoins[i].CoinDetails = new(privacy.Coin)
 		outputCoins[i].CoinDetails.Value = pInfo.Amount
-		outputCoins[i].CoinDetails.PublicKey, _ = privacy.DecompressKey(pInfo.PaymentAddress.Pk)
+		outputCoins[i].CoinDetails.PublicKey = new(privacy.EllipticPoint)
+		outputCoins[i].CoinDetails.PublicKey.Decompress(pInfo.PaymentAddress.Pk)
 		outputCoins[i].CoinDetails.SNDerivator = sndOuts[i]
 	}
 
@@ -230,7 +231,7 @@ func (tx *Tx) Init(
 	for i, cmIndex := range commitmentIndexs {
 		commitmentProving[i] = new(privacy.EllipticPoint)
 		temp, _ := db.GetCommitmentByIndex(tokenID, cmIndex, chainID)
-		commitmentProving[i], _ = privacy.DecompressKey(temp)
+		commitmentProving[i].Decompress(temp)
 	}
 
 	// prepare witness for proving
@@ -333,7 +334,8 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	/****** verify Schnorr signature *****/
 	// prepare Public key for verification
 	verKey := new(privacy.SchnPubKey)
-	verKey.PK, err = privacy.DecompressKey(tx.SigPubKey)
+	verKey.PK = new(privacy.EllipticPoint)
+	err = verKey.PK.Decompress(tx.SigPubKey)
 	if err != nil {
 		return false, err
 	}
@@ -835,7 +837,8 @@ func (tx *Tx) InitTxSalary(
 	//tx.Proof.OutputCoins[0].CoinDetailsEncrypted = new(privacy.CoinDetailsEncrypted).Init()
 	tx.Proof.OutputCoins[0].CoinDetails = new(privacy.Coin)
 	tx.Proof.OutputCoins[0].CoinDetails.Value = salary
-	tx.Proof.OutputCoins[0].CoinDetails.PublicKey, err = privacy.DecompressKey(receiverAddr.Pk)
+	tx.Proof.OutputCoins[0].CoinDetails.PublicKey = new(privacy.EllipticPoint)
+	err = tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Decompress(receiverAddr.Pk)
 	if err != nil {
 		return err
 	}
