@@ -153,6 +153,7 @@ func (self *BlockChain) SyncBeacon() error {
 	Logger.log.Info("Beacon synchronzation started")
 	self.BeaconStateCh = make(chan *PeerBeaconChainState)
 	self.newBeaconBlkCh = make(chan *BeaconBlock)
+	self.knownChainState.Beacon.Height = self.BestState.Beacon.BeaconHeight
 	self.syncStatus.Beacon = true
 
 	go func() {
@@ -228,7 +229,7 @@ func (self *BlockChain) SyncBeacon() error {
 				time.Sleep(getStateWaitTime * time.Second)
 				self.config.Server.PushMessageGetBeaconState()
 				needToSync := self.knownChainState.Beacon.Height - self.BestState.Beacon.BeaconHeight
-				for offset := uint64(1); offset <= needToSync; offset++ {
+				for offset := uint64(0); offset <= needToSync; offset++ {
 					blks, err := self.config.NodeBeaconPool.GetBlocks(self.BestState.Beacon.BeaconHeight + 1)
 					if err != nil {
 						Logger.log.Error(err)
