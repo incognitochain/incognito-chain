@@ -1,11 +1,11 @@
 package rpcserver
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 
-	chainParams "github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
@@ -158,30 +158,33 @@ func (rpcServer RpcServer) handleGetListOngoingCrowdsale(params interface{}, clo
 
 	// Get all ongoing crowdsales for that chain
 	type CrowdsaleInfo struct {
-		SaleID        string
-		EndBlock      uint64
-		BuyingAsset   string
-		BuyingAmount  uint64
-		SellingAsset  string
-		SellingAmount uint64
+		SaleID           string
+		EndBlock         uint64
+		BuyingAsset      string
+		BuyingAmount     uint64
+		DefaultBuyPrice  uint64
+		SellingAsset     string
+		SellingAmount    uint64
+		DefaultSellPrice uint64
 	}
 	result := []CrowdsaleInfo{}
-	endBlocks, buyingAssets, buyingAmounts, sellingAssets, sellingAmounts, err := (*rpcServer.config.Database).GetAllCrowdsales()
-	fmt.Println("[db] endBlocks:", endBlocks)
+	saleDataList, err := rpcServer.config.BlockChain.GetAllCrowdsales()
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, errors.New("Error querying crowdsales"))
 	}
-	for i, endBlock := range endBlocks {
-		if height >= endBlock {
+	for _, saleData := range saleDataList {
+		if height >= saleData.EndBlock {
 			continue
 		}
 		info := CrowdsaleInfo{
-			SaleID:        "",
-			EndBlock:      endBlock,
-			BuyingAsset:   buyingAssets[i].String(),
-			BuyingAmount:  buyingAmounts[i],
-			SellingAsset:  sellingAssets[i].String(),
-			SellingAmount: sellingAmounts[i],
+			SaleID:           hex.EncodeToString(saleData.SaleID),
+			EndBlock:         saleData.EndBlock,
+			BuyingAsset:      saleData.BuyingAsset.String(),
+			BuyingAmount:     saleData.BuyingAmount,
+			DefaultBuyPrice:  saleData.DefaultBuyPrice,
+			SellingAsset:     saleData.SellingAsset.String(),
+			SellingAmount:    saleData.SellingAmount,
+			DefaultSellPrice: saleData.DefaultSellPrice,
 		}
 		result = append(result, info)
 	}
@@ -194,18 +197,23 @@ func (rpcServer RpcServer) handleTESTStoreCrowdsale(params interface{}, closeCha
 
 	// Store saledata in db
 	for _, param := range arrayParams {
-		data := chainParams.NewSaleDataFromJson(param)
-		if _, _, _, _, _, err := (*rpcServer.config.Database).GetCrowdsaleData(data.SaleID); err == nil {
+		saleData := param.(map[string]interface{})
+		saleID, _ := hex.DecodeString(saleData["SaleID"].(string))
+		proposalTxHash, _ := common.NewHashFromStr(saleData["ProposalTxHash"].(string))
+		fmt.Printf("[db] proposalTxHash: %+v\n", proposalTxHash)
+		buyingAmount := uint64(saleData["BuyingAmount"].(float64))
+		sellingAmount := uint64(saleData["SellingAmount"].(float64))
+		if _, _, _, err := (*rpcServer.config.Database).GetCrowdsaleData(saleID); err == nil {
+			fmt.Printf("[db] cs existed\n")
 			continue
 		}
 		if err := (*rpcServer.config.Database).StoreCrowdsaleData(
-			data.SaleID,
-			data.EndBlock,
-			data.BuyingAsset,
-			data.BuyingAmount,
-			data.SellingAsset,
-			data.SellingAmount,
+			saleID,
+			*proposalTxHash,
+			buyingAmount,
+			sellingAmount,
 		); err != nil {
+			fmt.Printf("[db] fail store crowdsale data %+v\n", err)
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 	}

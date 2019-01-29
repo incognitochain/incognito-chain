@@ -702,16 +702,14 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 				// Store saledata in db
 				saleData := proposal.DCBParams.ListSaleData
 				for _, data := range saleData {
-					if _, _, _, _, _, err := self.config.DataBase.GetCrowdsaleData(data.SaleID); err == nil {
+					if _, _, _, err := self.config.DataBase.GetCrowdsaleData(data.SaleID); err == nil {
 						// TODO(@0xbunyip): support update crowdsale data
 						continue
 					}
 					if err := self.config.DataBase.StoreCrowdsaleData(
 						data.SaleID,
-						data.EndBlock,
-						data.BuyingAsset,
+						meta.DCBProposalTXID,
 						data.BuyingAmount,
-						data.SellingAsset,
 						data.SellingAmount,
 					); err != nil {
 						return err
@@ -747,10 +745,8 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 	for _, data := range saleDataMap {
 		if err := self.config.DataBase.StoreCrowdsaleData(
 			data.SaleID,
-			data.EndBlock,
-			data.BuyingAsset,
+			data.GetProposalTxHash(),
 			data.BuyingAmount,
-			data.SellingAsset,
 			data.SellingAmount,
 		); err != nil {
 			return err
@@ -760,20 +756,17 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 }
 
 func (self *BlockChain) updateCrowdsalePaymentData(tx metadata.Transaction, saleDataMap map[string]params.SaleData) error {
+	fmt.Printf("[db] update cs data\n")
+
 	// Get current sale status from db
 	meta := tx.GetMetadata().(*metadata.CrowdsalePayment)
 	saleData, ok := saleDataMap[string(meta.SaleID)]
 	if !ok {
-		_, buyingAsset, buyingAmount, sellingAsset, sellingAmount, err := self.config.DataBase.GetCrowdsaleData(meta.SaleID)
+		data, err := self.GetCrowdsaleData(meta.SaleID)
 		if err != nil {
 			return err
 		}
-		saleData = params.SaleData{
-			BuyingAsset:   buyingAsset,
-			BuyingAmount:  buyingAmount,
-			SellingAsset:  sellingAsset,
-			SellingAmount: sellingAmount,
-		}
+		saleData = *data
 		saleDataMap[string(meta.SaleID)] = saleData
 	}
 
@@ -791,6 +784,7 @@ func (self *BlockChain) updateCrowdsalePaymentData(tx metadata.Transaction, sale
 	if amount > saleData.SellingAmount {
 		return errors.New("Sold too much asset")
 	}
+	fmt.Printf("[db] selling CST: %d\n", amount)
 	saleData.SellingAmount -= amount
 
 	// Update buying asset status
@@ -811,6 +805,7 @@ func (self *BlockChain) updateCrowdsalePaymentData(tx metadata.Transaction, sale
 	if amount > saleData.BuyingAmount {
 		return errors.New("Bought too much asset")
 	}
+	fmt.Printf("[db] buying bond: %d\n", amount)
 	saleData.BuyingAmount -= amount
 	return nil
 }
