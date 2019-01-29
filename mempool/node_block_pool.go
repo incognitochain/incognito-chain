@@ -83,6 +83,8 @@ func (pool *NodeBeaconPool) PushBlock(block blockchain.BeaconBlock) error {
 		if isNew {
 			nodeBeaconPool[height] = append(nodeBeaconPool[height], block)
 		}
+	} else {
+		nodeBeaconPool[height] = append(nodeBeaconPool[height], block)
 	}
 	return nil
 }
