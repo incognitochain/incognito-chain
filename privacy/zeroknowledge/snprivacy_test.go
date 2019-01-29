@@ -15,15 +15,17 @@ func TestPKSNPrivacy(t *testing.T) {
 	SND := privacy.RandInt()
 
 	rSK := privacy.RandInt()
-	rSND1 := privacy.RandInt()
+	rSND := privacy.RandInt()
 
 	serialNumber := privacy.PedCom.G[privacy.SK].Derive(skInt, SND)
 
 	comSK := privacy.PedCom.CommitAtIndex(skInt, rSK, privacy.SK)
-	comSND1 := privacy.PedCom.CommitAtIndex(SND, rSND1, privacy.SND)
+	comSND := privacy.PedCom.CommitAtIndex(SND, rSND, privacy.SND)
 
+	stmt := new(PKSNPrivacyStatement)
+	stmt.Set(serialNumber, comSK, comSND)
 	witness := new(PKSNPrivacyWitness)
-	witness.Set(serialNumber, comSK, comSND1, skInt, rSK, SND, rSND1)
+	witness.Set(stmt, skInt, rSK, SND, rSND)
 
 	proof, err := witness.Prove(nil)
 	if err != nil {
