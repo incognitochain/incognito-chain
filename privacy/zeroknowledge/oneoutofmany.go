@@ -1,13 +1,9 @@
 package zkp
 
 import (
-	"encoding/binary"
-	"fmt"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/pkg/errors"
 	"math/big"
-	"time"
-
-	"github.com/ninjadotorg/constant/privacy"
 )
 
 // This protocol proves in zero-knowledge that one-out-of-N commitments contains 0
@@ -15,7 +11,6 @@ import (
 // Statement to be proved
 type OneOutOfManyStatement struct {
 	commitments       []*privacy.EllipticPoint
-	commitmentIndices []uint64
 }
 
 // Statement's witness
@@ -72,20 +67,17 @@ func (proof *OneOutOfManyProof) Init() *OneOutOfManyProof {
 
 // Set sets Statement
 func (stmt *OneOutOfManyStatement) Set(
-	commitments []*privacy.EllipticPoint,
-	commitmentIndices []uint64) {
+	commitments []*privacy.EllipticPoint) {
 	stmt.commitments = commitments
-	stmt.commitmentIndices = commitmentIndices
 }
 
 // Set sets Witness
 func (wit *OneOutOfManyWitness) Set(
 	commitments []*privacy.EllipticPoint,
-	commitmentIndices []uint64,
 	rand *big.Int,
 	indexIsZero uint64) {
 	wit.stmt = new(OneOutOfManyStatement)
-	wit.stmt.Set(commitments, commitmentIndices)
+	wit.stmt.Set(commitments)
 
 	wit.indexIsZero = indexIsZero
 	wit.rand = rand
@@ -93,14 +85,13 @@ func (wit *OneOutOfManyWitness) Set(
 
 // Set sets Proof
 func (proof *OneOutOfManyProof) Set(
-	commitmentIndexs []uint64,
 	commitments []*privacy.EllipticPoint,
 	cl, ca, cb, cd []*privacy.EllipticPoint,
 	f, za, zb []*big.Int,
 	zd *big.Int) {
 
 	proof.stmt = new(OneOutOfManyStatement)
-	proof.stmt.Set(commitments, commitmentIndexs)
+	proof.stmt.Set(commitments)
 
 	proof.cl, proof.ca, proof.cb, proof.cd = cl, ca, cb, cd
 	proof.f, proof.za, proof.zb = f, za, zb
@@ -115,7 +106,6 @@ func (proof *OneOutOfManyProof) Bytes() []byte {
 	}
 
 	// N = 2^n
-	N := privacy.CMRingSize
 	n := privacy.CMRingSizeExp
 
 	var bytes []byte
@@ -157,13 +147,6 @@ func (proof *OneOutOfManyProof) Bytes() []byte {
 	// convert array zd to bytes array
 	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zd, privacy.BigIntSize)...)
 
-	// convert commitment index to bytes array
-	for i := 0; i < N; i++ {
-		commitmentIndexBytes := make([]byte, privacy.Uint64Size)
-		binary.LittleEndian.PutUint64(commitmentIndexBytes, proof.stmt.commitmentIndices[i])
-		bytes = append(bytes, commitmentIndexBytes...)
-	}
-
 	return bytes
 }
 
@@ -173,7 +156,6 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 		return nil
 	}
 
-	N := privacy.CMRingSize
 	n := privacy.CMRingSizeExp
 
 	offset := 0
@@ -243,19 +225,12 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 	// get zd
 	proof.zd = new(big.Int).SetBytes(bytes[offset : offset+privacy.BigIntSize])
 	offset = offset + privacy.BigIntSize
-	// get commitments list
-	proof.stmt.commitmentIndices = make([]uint64, N)
-	for i := 0; i < N; i++ {
-		proof.stmt.commitmentIndices[i] = binary.LittleEndian.Uint64(bytes[offset : offset+privacy.Uint64Size])
-		offset = offset + privacy.Uint64Size
-	}
 
 	return nil
 }
 
 // Prove produces a proof for the statement
 func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
-	start := time.Now()
 	// Check the number of Commitment list's elements
 	N := len(wit.stmt.commitments)
 	if N != privacy.CMRingSize {
@@ -369,10 +344,8 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	zd.Mod(zd, privacy.Curve.Params().N)
 
 	proof := new(OneOutOfManyProof).Init()
-	proof.Set(wit.stmt.commitmentIndices, wit.stmt.commitments, cl, ca, cb, cd, f, za, zb, zd)
+	proof.Set(wit.stmt.commitments, cl, ca, cb, cd, f, za, zb, zd)
 
-	end := time.Since(start)
-	fmt.Printf("One out of many proving time: %v\n", end)
 	return proof, nil
 }
 
