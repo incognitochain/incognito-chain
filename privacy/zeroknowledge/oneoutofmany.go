@@ -13,7 +13,6 @@ import (
 type OneOutOfManyStatement struct {
 	commitments       []*privacy.EllipticPoint
 	commitmentIndices []uint64
-	index             byte
 }
 
 // OneOutOfManyWitness is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
@@ -72,11 +71,9 @@ func (proof *OneOutOfManyProof) Init() *OneOutOfManyProof {
 // Set sets Statement
 func (stmt *OneOutOfManyStatement) Set(
 	commitments       []*privacy.EllipticPoint,
-	commitmentIndices []uint64,
-	index             byte) {
+	commitmentIndices []uint64) {
 	stmt.commitments = commitments
 	stmt.commitmentIndices = commitmentIndices
-	stmt.index = index
 }
 
 // Set sets Witness
@@ -84,10 +81,9 @@ func (wit *OneOutOfManyWitness) Set(
 	commitments []*privacy.EllipticPoint,
 	commitmentIndices []uint64,
 	rand *big.Int,
-	indexIsZero uint64,
-	index byte) {
+	indexIsZero uint64) {
 	wit.stmt = new(OneOutOfManyStatement)
-	wit.stmt.Set(commitments, commitmentIndices, index)
+	wit.stmt.Set(commitments, commitmentIndices)
 
 	wit.indexIsZero = indexIsZero
 	wit.rand = rand
@@ -99,11 +95,10 @@ func (proof *OneOutOfManyProof) Set(
 	commitments []*privacy.EllipticPoint,
 	cl, ca, cb, cd []*privacy.EllipticPoint,
 	f, za, zb []*big.Int,
-	zd *big.Int,
-	index byte) {
+	zd *big.Int) {
 
 	proof.stmt = new(OneOutOfManyStatement)
-	proof.stmt.Set(commitments, commitmentIndexs, index)
+	proof.stmt.Set(commitments, commitmentIndexs)
 
 	proof.cl, proof.ca, proof.cb, proof.cd = cl, ca, cb, cd
 	proof.f, proof.za, proof.zb = f, za, zb
@@ -166,9 +161,6 @@ func (proof *OneOutOfManyProof) Bytes() []byte {
 		binary.LittleEndian.PutUint64(commitmentIndexBytes, proof.stmt.commitmentIndices[i])
 		bytes = append(bytes, commitmentIndexBytes...)
 	}
-
-	// append index
-	bytes = append(bytes, proof.stmt.index)
 
 	return bytes
 }
@@ -256,8 +248,6 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 		offset = offset + privacy.Uint64Size
 	}
 
-	//get index
-	proof.stmt.index = bytes[len(bytes)-1]
 	return nil
 }
 
@@ -275,11 +265,6 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	// Check indexIsZero
 	if wit.indexIsZero > uint64(N) {
 		return nil, errors.New("Index is zero must be Index in list of commitments")
-	}
-
-	// Check Index
-	if wit.stmt.index < privacy.SK || wit.stmt.index > privacy.RAND {
-		return nil, errors.New("Index must be between index sk and index RAND")
 	}
 
 	// represent indexIsZero in binary
@@ -310,15 +295,15 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 
 		// Calculate cl, ca, cb, cd
 		// cl = Com(l, r)
-		cl[j] = privacy.PedCom.CommitAtIndex(indexInt, r[j], wit.stmt.index)
+		cl[j] = privacy.PedCom.CommitAtIndex(indexInt, r[j], privacy.SK)
 
 		// ca = Com(a, s)
-		ca[j] = privacy.PedCom.CommitAtIndex(a[j], s[j], wit.stmt.index)
+		ca[j] = privacy.PedCom.CommitAtIndex(a[j], s[j], privacy.SK)
 
 		// cb = Com(la, t)
 		la := new(big.Int).Mul(indexInt, a[j])
 		la.Mod(la, privacy.Curve.Params().N)
-		cb[j] = privacy.PedCom.CommitAtIndex(la, t[j], wit.stmt.index)
+		cb[j] = privacy.PedCom.CommitAtIndex(la, t[j], privacy.SK)
 	}
 
 	// Calculate: cd_k = ci^pi,k
@@ -332,7 +317,7 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 			cd[k] = cd[k].Add(wit.stmt.commitments[i].ScalarMult(pik))
 		}
 
-		cd[k] = cd[k].Add(privacy.PedCom.CommitAtIndex(big.NewInt(0), u[k], wit.stmt.index))
+		cd[k] = cd[k].Add(privacy.PedCom.CommitAtIndex(big.NewInt(0), u[k], privacy.SK))
 	}
 
 	// Calculate x
@@ -382,7 +367,7 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	zd.Mod(zd, privacy.Curve.Params().N)
 
 	proof := new(OneOutOfManyProof).Init()
-	proof.Set(wit.stmt.commitmentIndices, wit.stmt.commitments, cl, ca, cb, cd, f, za, zb, zd, wit.stmt.index)
+	proof.Set(wit.stmt.commitmentIndices, wit.stmt.commitments, cl, ca, cb, cd, f, za, zb, zd)
 
 	end := time.Since(start)
 	fmt.Printf("One out of many proving time: %v\n", end)
@@ -408,7 +393,7 @@ func (proof *OneOutOfManyProof) Verify() bool {
 	for i := 0; i < n; i++ {
 		// Check cl^x * ca = Com(f, za)
 		leftPoint1 := proof.cl[i].ScalarMult(x).Add(proof.ca[i])
-		rightPoint1 := privacy.PedCom.CommitAtIndex(proof.f[i], proof.za[i], proof.stmt.index)
+		rightPoint1 := privacy.PedCom.CommitAtIndex(proof.f[i], proof.za[i], privacy.SK)
 
 		if !leftPoint1.IsEqual(rightPoint1) {
 			return false
@@ -419,7 +404,7 @@ func (proof *OneOutOfManyProof) Verify() bool {
 		xSubF.Mod(xSubF, privacy.Curve.Params().N)
 
 		leftPoint2 := proof.cl[i].ScalarMult(xSubF).Add(proof.cb[i])
-		rightPoint2 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zb[i], proof.stmt.index)
+		rightPoint2 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zb[i], privacy.SK)
 
 		if !leftPoint2.IsEqual(rightPoint2) {
 			return false
@@ -458,7 +443,7 @@ func (proof *OneOutOfManyProof) Verify() bool {
 
 	leftPoint3 = leftPoint3.Add(leftPoint32)
 
-	rightPoint3 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zd, proof.stmt.index)
+	rightPoint3 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zd, privacy.SK)
 
 	return leftPoint3.IsEqual(rightPoint3)
 }
