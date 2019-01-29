@@ -145,4 +145,5 @@ const (
 
 	// wallet
 	GetPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
+	DefragmentAccount              = "defragmentaccount"
 )

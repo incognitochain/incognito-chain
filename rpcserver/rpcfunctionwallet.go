@@ -2,7 +2,12 @@ package rpcserver
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/transaction"
 	"log"
 	"time"
 
@@ -418,4 +423,155 @@ func (rpcServer RpcServer) handleGetRecentTransactionsByBlockNumber(params inter
 		}
 	}
 	return result, nil
+}
+
+/*
+handleImportAccount - import a new account by private-key
+- Param #1: private-key string
+- Param #2: account name
+- Param #3: passPhrase of wallet
+*/
+func (rpcServer RpcServer) handleDefragmentAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	var err error
+	data, err := rpcServer.handleCreateRawDefragmentAccountTransaction(params, closeChan)
+	if err.(*RPCError) != nil {
+		return nil, NewRPCError(ErrCreateTxData, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
+	if err.(*RPCError) != nil {
+		return nil, NewRPCError(ErrSendTxData, err)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:    sendResult.(jsonresult.CreateTransactionResult).TxID,
+		ShardID: tx.ShardID,
+	}
+	return result, nil
+}
+
+/*
+// handleCreateTransaction handles createtransaction commands.
+*/
+func (rpcServer RpcServer) handleCreateRawDefragmentAccountTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	var err error
+	tx, err := rpcServer.handleBuildRawDefragmentAccountTransaction(params, nil)
+	if err.(*RPCError) != nil {
+		Logger.log.Critical(err)
+		return nil, NewRPCError(ErrCreateTxData, err)
+	}
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		// return hex for a new tx
+		return nil, NewRPCError(ErrCreateTxData, err)
+	}
+	txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+		ShardID:         txShardID,
+	}
+	return result, nil
+}
+
+func (rpcServer RpcServer) handleBuildRawDefragmentAccountTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	senderKeyParam := arrayParams[0].(string)
+	minValue := uint64(arrayParams[1].(float64))
+
+	// param #1: private key of sender
+	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam)
+	if err != nil {
+		return nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
+	}
+	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
+	shardIDSender := common.GetShardIDFromLastByte(lastByte)
+	fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
+
+	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
+	// param #4: hasPrivacy flag: 1 or -1
+	hasPrivacy := int(arrayParams[3].(float64)) > 0
+	/********* END Fetch all params to *******/
+
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
+	outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, constantTokenID)
+	if err != nil {
+		return nil, NewRPCError(ErrGetOutputCoin, err)
+	}
+	// remove out coin in mem pool
+	outCoins, err = rpcServer.filterMemPoolOutCoinsToSpent(outCoins)
+	if err != nil {
+		return nil, NewRPCError(ErrGetOutputCoin, err)
+	}
+	outCoins, amount := rpcServer.calculateOutputCoinsByMinValue(outCoins, minValue)
+	if len(outCoins) == 0 {
+		return nil, NewRPCError(ErrGetOutputCoin, nil)
+	}
+	if amount < uint64(estimateFeeCoinPerKb) {
+		return nil, NewRPCError(ErrGetOutputCoin, err)
+	}
+	paymentInfo := &privacy.PaymentInfo{
+		Amount:         uint64(amount),
+		PaymentAddress: senderKeySet.PaymentAddress,
+	}
+	paymentInfos := []*privacy.PaymentInfo{paymentInfo}
+	// check real fee(nano constant) per tx
+	realFee := rpcServer.estimateFee(estimateFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8)
+	if len(outCoins) == 0 {
+		realFee = 0
+	}
+
+	if uint64(amount) < realFee {
+		return nil, NewRPCError(ErrGetOutputCoin, err)
+	}
+	paymentInfo.Amount = uint64(amount) - realFee
+
+	inputCoins := transaction.ConvertOutputCoinToInputCoin(outCoins)
+	// build hash array for input coin
+	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
+
+	/******* END GET output coins constant, which is used to create tx *****/
+	// START create tx
+	// missing flag for privacy
+	// false by default
+	fmt.Printf("#inputCoins: %d\n", len(inputCoins))
+	tx := transaction.Tx{}
+	err = tx.Init(
+		&senderKeySet.PrivateKey,
+		paymentInfos,
+		inputCoins,
+		realFee,
+		hasPrivacy,
+		*rpcServer.config.Database,
+		nil, // use for constant coin -> nil is valid
+		meta,
+	)
+	// END create tx
+
+	if err.(*transaction.TransactionError) != nil {
+		return nil, NewRPCError(ErrCreateTxData, err)
+	}
+
+	// pool inCoinsH
+	txHash := tx.Hash()
+	if txHash != nil {
+		rpcServer.config.TxMemPool.PrePoolTxCoinHashH(*txHash, inputCoinHs)
+	}
+
+	return &tx, nil
+}
+
+func (rpcServer RpcServer) calculateOutputCoinsByMinValue(outCoins []*privacy.OutputCoin, minValue uint64) ([]*privacy.OutputCoin, uint64) {
+	outCoinsTmp := make([]*privacy.OutputCoin, 0)
+	amount := uint64(0)
+	for _, outCoin := range outCoins {
+		if outCoin.CoinDetails.Value <= minValue {
+			outCoinsTmp = append(outCoinsTmp, outCoin)
+			amount += outCoin.CoinDetails.Value
+		}
+	}
+	return outCoinsTmp, amount
 }
