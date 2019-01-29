@@ -42,17 +42,21 @@ func (mb *MetadataBase) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRet
 	return true
 }
 
-func (mb *MetadataBase) CheckTransactionFee(tr Transaction, minFeePerKbTx uint64) bool {
-	txFee := tr.GetTxFee()
-	fullFee := minFeePerKbTx * tr.GetTxActualSize()
+func (mb *MetadataBase) CheckTransactionFee(tx Transaction, minFeePerKbTx uint64) bool {
+	txFee := tx.GetTxFee()
+	fullFee := minFeePerKbTx * tx.GetTxActualSize()
 	return !(txFee < fullFee)
 }
 
 func (mb *MetadataBase) VerifyMultiSigs(
-	txr Transaction,
+	tx Transaction,
 	db database.DatabaseInterface,
 ) (bool, error) {
 	return true, nil
+}
+
+func (mb *MetadataBase) BuildReqActions(tx Transaction) [][]string {
+	return [][]string{}
 }
 
 // TODO(@0xankylosaurus): move TxDesc to mempool DTO
@@ -127,6 +131,7 @@ type Metadata interface {
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
 	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool
 	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
+	BuildReqActions(Transaction) [][]string
 }
 
 // Interface for all type of transaction
