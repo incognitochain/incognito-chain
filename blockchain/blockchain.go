@@ -686,7 +686,7 @@ func (self *BlockChain) ProcessVoteProposal(block *Block) error {
 
 func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 	// Temp storage to update crowdsale data
-	saleDataMap := make(map[string]params.SaleData)
+	saleDataMap := make(map[string]*params.SaleData)
 
 	for _, tx := range block.Transactions {
 		switch tx.GetMetadataType() {
@@ -755,7 +755,7 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 	return nil
 }
 
-func (self *BlockChain) updateCrowdsalePaymentData(tx metadata.Transaction, saleDataMap map[string]params.SaleData) error {
+func (self *BlockChain) updateCrowdsalePaymentData(tx metadata.Transaction, saleDataMap map[string]*params.SaleData) error {
 	fmt.Printf("[db] update cs data\n")
 
 	// Get current sale status from db
@@ -766,7 +766,7 @@ func (self *BlockChain) updateCrowdsalePaymentData(tx metadata.Transaction, sale
 		if err != nil {
 			return err
 		}
-		saleData = *data
+		saleData = data
 		saleDataMap[string(meta.SaleID)] = saleData
 	}
 

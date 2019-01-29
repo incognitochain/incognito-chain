@@ -78,6 +78,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 
 	case CrowdsaleRequestMeta:
 		md = &CrowdsaleRequest{}
+	case CrowdsalePaymentMeta:
+		md = &CrowdsalePayment{}
 
 	case SubmitDCBProposalMeta:
 		md = &SubmitDCBProposalMetadata{}
