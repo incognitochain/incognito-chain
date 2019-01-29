@@ -53,9 +53,9 @@ type TxPool struct {
 	pool              map[common.Hash]*TxDesc
 	poolSerialNumbers map[common.Hash][][]byte
 
-	txCoinHPool map[common.Hash][]common.Hash
-	coinHPool   map[common.Hash]bool
-	cMtx        sync.RWMutex
+	txCoinHashHPool map[common.Hash][]common.Hash
+	coinHashHPool   map[common.Hash]bool
+	cMtx            sync.RWMutex
 }
 
 /*
@@ -66,8 +66,8 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbers = make(map[common.Hash][][]byte)
 
-	tp.txCoinHPool = make(map[common.Hash][]common.Hash)
-	tp.coinHPool = make(map[common.Hash]bool)
+	tp.txCoinHashHPool = make(map[common.Hash][]common.Hash)
+	tp.coinHashHPool = make(map[common.Hash]bool)
 	tp.cMtx = sync.RWMutex{}
 }
 
@@ -362,17 +362,17 @@ func (tp *TxPool) ListTxs() []string {
 func (tp *TxPool) PrePoolTxCoinHashH(txHashH common.Hash, coinHashHs []common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
-	tp.txCoinHPool[txHashH] = coinHashHs
+	tp.txCoinHashHPool[txHashH] = coinHashHs
 	return nil
 }
 
 func (tp *TxPool) addTxCoinHashH(txHashH common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
-	inCoinHs, ok := tp.txCoinHPool[txHashH]
+	inCoinHs, ok := tp.txCoinHashHPool[txHashH]
 	if ok {
 		for _, inCoinH := range inCoinHs {
-			tp.coinHPool[inCoinH] = true
+			tp.coinHashHPool[inCoinH] = true
 		}
 	}
 	return nil
@@ -381,7 +381,7 @@ func (tp *TxPool) addTxCoinHashH(txHashH common.Hash) error {
 func (tp *TxPool) ValidateCoinHashH(coinHashH common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
-	_, ok := tp.coinHPool[coinHashH]
+	_, ok := tp.coinHashHPool[coinHashH]
 	if ok {
 		return errors.New("Coin is in used")
 	}
@@ -391,12 +391,13 @@ func (tp *TxPool) ValidateCoinHashH(coinHashH common.Hash) error {
 func (tp *TxPool) removeTxCoinHashH(txHashH common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
-	inCoinHs, ok := tp.txCoinHPool[txHashH]
-	if ok {
-		for _, inCoinH := range inCoinHs {
-			delete(tp.coinHPool, inCoinH)
+	if coinHashHs, okTxHashH := tp.txCoinHashHPool[txHashH]; okTxHashH {
+		for _, coinHashH := range coinHashHs {
+			if _, okCoinHashH := tp.coinHashHPool[coinHashH]; okCoinHashH {
+				delete(tp.coinHashHPool, coinHashH)
+			}
 		}
-		delete(tp.txCoinHPool, txHashH)
+		delete(tp.txCoinHashHPool, txHashH)
 	}
 	return nil
 }
