@@ -84,7 +84,7 @@ func (tx *Tx) Init(
 	tokenID *common.Hash, // default is nil -> use for constant coin
 	metaData metadata.Metadata,
 ) *TransactionError {
-	//hasPrivacy = false
+	hasPrivacy = false
 	tx.Version = TxVersion
 	var err error
 	if tokenID == nil {
@@ -330,7 +330,7 @@ func (tx *Tx) signTx(hasPrivacy bool) error {
 			if snerr != nil {
 				return snerr
 			}
-			copy(SerialSignature[i*privacy.SNPrivacyProofSize:(i+1)*privacy.SNPrivacyProofSize], proof.Bytes())
+			copy(SerialSignature[i*privacy.SNNoPrivacyProofSize:(i+1)*privacy.SNNoPrivacyProofSize], proof.Bytes())
 		}
 		tx.Sig = SerialSignature
 	}
@@ -419,7 +419,7 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Verify the payment proof
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
-	//hasPrivacy = false
+	hasPrivacy = false
 	Logger.log.Infof("[db] Validating Transaction tx\n")
 	start := time.Now()
 	// Verify tx signature
