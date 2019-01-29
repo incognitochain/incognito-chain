@@ -583,6 +583,14 @@ func (tx *Tx) GetUniqueReceiver() (bool, []byte, uint64) {
 	return count == 1, pubkey, amount
 }
 
+func (tx *Tx) GetTokenReceivers() ([][]byte, []uint64) {
+	return nil, nil
+}
+
+func (tx *Tx) GetTokenUniqueReceiver() (bool, []byte, uint64) {
+	return false, nil, 0
+}
+
 func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.Hash][][]byte) error {
 	if tx.Proof == nil {
 		return nil
