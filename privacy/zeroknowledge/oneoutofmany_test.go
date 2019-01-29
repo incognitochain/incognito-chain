@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
+	"time"
 )
 
 //TestPKOneOfMany test protocol for one of many Commitment is Commitment to zero
@@ -29,9 +30,11 @@ func TestPKOneOfMany(t *testing.T) {
 	snDerivators[indexIsZero] = big.NewInt(0)
 	commitments[indexIsZero] = privacy.PedCom.CommitAtIndex(snDerivators[indexIsZero], randoms[indexIsZero], privacy.SND)
 
-	witness.Set(commitments, []uint64{1,4,5,8,9,10,23,45}, randoms[indexIsZero], uint64(indexIsZero))
-
+	witness.Set(commitments, randoms[indexIsZero], uint64(indexIsZero))
+	start := time.Now()
 	proof, err := witness.Prove()
+	end := time.Since(start)
+	fmt.Printf("One out of many proving time: %v\n", end)
 	if err != nil {
 		privacy.Logger.Log.Error(err)
 	}
@@ -46,7 +49,11 @@ func TestPKOneOfMany(t *testing.T) {
 	proof2.SetBytes(proofBytes)
 	proof2.stmt.commitments = commitments
 
+	start = time.Now()
+
 	res := proof2.Verify()
+	end = time.Since(start)
+	fmt.Printf("One out of many verification time: %v\n", end)
 
 	assert.Equal(t, true, res)
 }
