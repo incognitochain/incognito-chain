@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ninjadotorg/constant/common/base58"
+
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -243,6 +245,7 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 			if !passed {
 				break
 			}
+
 			outputCoin := CrossOutputCoin{
 				OutputCoin:  blk.CrossOutputCoin,
 				BlockHash:   *blk.Hash(),
@@ -258,6 +261,7 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 	}
 	return res
 }
+
 func GetAssingInstructionFromBeaconBlock(beaconBlocks []*BeaconBlock, shardID byte) [][]string {
 	assignInstruction := [][]string{}
 	for _, beaconBlock := range beaconBlocks {
@@ -271,6 +275,7 @@ func GetAssingInstructionFromBeaconBlock(beaconBlocks []*BeaconBlock, shardID by
 	}
 	return assignInstruction
 }
+
 func FetchBeaconBlockFromHeight(db database.DatabaseInterface, from uint64, to uint64) ([]*BeaconBlock, error) {
 	beaconBlocks := []*BeaconBlock{}
 	for i := from; i <= to; i++ {
@@ -335,22 +340,21 @@ func CreateShardActionFromTransaction(transactions []metadata.Transaction) (acti
 	stakeBeaconPubKey := []string{}
 	actions = buildStabilityActions(transactions)
 
-	// for _, tx := range transactions {
-	// 	switch tx.GetMetadataType() {
-	// 	//TODO: stable param 0xsancurasolus
-	// 	// case metadata.BuySellRequestMeta:
-	// 	}
-	// 	// TODO
-	// 	// shardStaker, beaconStaker, isStake := tempTx.GetStakerFromTransaction()
-	// 	// if isStake {
-	// 	// 	if strings.Compare(shardStaker, common.EmptyString) != 0 {
-	// 	// 		stakeShardPubKey = append(stakeShardPubKey, shardStaker)
-	// 	// 	}
-	// 	// 	if strings.Compare(beaconStaker, common.EmptyString) != 0 {
-	// 	// 		stakeBeaconPubKey = append(stakeBeaconPubKey, beaconStaker)
-	// 	// 	}
-	// 	// }
-	// }
+	for _, tx := range transactions {
+		switch tx.GetMetadataType() {
+		case metadata.ShardStakingMeta:
+			pk := tx.GetProof().InputCoins[0].CoinDetails.PublicKey.Compress()
+			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
+			stakeShardPubKey = append(stakeShardPubKey, pkb58)
+		case metadata.BeaconStakingMeta:
+			pk := tx.GetProof().InputCoins[0].CoinDetails.PublicKey.Compress()
+			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
+			stakeBeaconPubKey = append(stakeBeaconPubKey, pkb58)
+			//TODO: stable param 0xsancurasolus
+			// case metadata.BuyFromGOVRequestMeta:
+		}
+	}
+
 	if !reflect.DeepEqual(stakeShardPubKey, []string{}) {
 		action := []string{"stake", strings.Join(stakeShardPubKey, ","), "shard"}
 		actions = append(actions, action)
@@ -359,6 +363,7 @@ func CreateShardActionFromTransaction(transactions []metadata.Transaction) (acti
 		action := []string{"stake", strings.Join(stakeBeaconPubKey, ","), "beacon"}
 		actions = append(actions, action)
 	}
+
 	return actions
 }
 
@@ -399,7 +404,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 	return txsToAdd, txToRemove, totalFee
 }
 
-func (blockgen *ShardBlock) CreateShardToBeaconBlock() ShardToBeaconBlock {
+func (blockgen *ShardBlock) CreateShardToBeaconBlock() *ShardToBeaconBlock {
 	block := ShardToBeaconBlock{}
 	block.AggregatedSig = blockgen.AggregatedSig
 	copy(block.ValidatorsIdx, blockgen.ValidatorsIdx)
@@ -408,7 +413,7 @@ func (blockgen *ShardBlock) CreateShardToBeaconBlock() ShardToBeaconBlock {
 	block.Instructions = blockgen.Body.Instructions
 	actions := CreateShardActionFromTransaction(blockgen.Body.Transactions)
 	block.Instructions = append(block.Instructions, actions...)
-	return block
+	return &block
 }
 
 func (blk *ShardBlock) CreateAllCrossShardBlock() map[byte]*CrossShardBlock {

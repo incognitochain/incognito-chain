@@ -68,6 +68,17 @@ func (rpcServer RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Paymen
 	return inputCoins, realFee, nil
 }
 
+func (rpcServer RpcServer) makeArrayInputCoinHashHs(inputCoins []*privacy.InputCoin) []common.Hash {
+	inCoinHs := make([]common.Hash, 0)
+	for _, inCoin := range inputCoins {
+		hash := inCoin.CoinDetails.HashH()
+		if hash != nil {
+			inCoinHs = append(inCoinHs, *hash)
+		}
+	}
+	return inCoinHs
+}
+
 func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
 	Logger.log.Infof("Params: \n%+v\n\n\n", params)
 
@@ -117,13 +128,7 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	}
 
 	// build hash array for input coin
-	inCoinHs := make([]common.Hash, 0)
-	for _, inCoin := range inputCoins {
-		hash := inCoin.CoinDetails.HashH()
-		if hash != nil {
-			inCoinHs = append(inCoinHs, *hash)
-		}
-	}
+	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
 
 	/******* END GET output coins constant, which is used to create tx *****/
 
@@ -151,7 +156,7 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	// pool inCoinsH
 	txHash := tx.Hash()
 	if txHash != nil {
-		rpcServer.config.TxMemPool.PrePoolTxCoinHashH(*txHash, inCoinHs)
+		rpcServer.config.TxMemPool.PrePoolTxCoinHashH(*txHash, inputCoinHs)
 	}
 
 	return &tx, nil
@@ -277,6 +282,9 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	}
 	/******* END GET output coins constant, which is used to create tx *****/
 
+	// build hash array for input coin
+	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
+
 	tx := &transaction.TxCustomToken{}
 	err = tx.Init(
 		&senderKeySet.PrivateKey,
@@ -292,6 +300,13 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	if err.(*transaction.TransactionError) != nil {
 		return nil, err
 	}
+
+	// pool inCoinsH
+	txHash := tx.Hash()
+	if txHash != nil {
+		rpcServer.config.TxMemPool.PrePoolTxCoinHashH(*txHash, inputCoinHs)
+	}
+
 	return tx, nil
 }
 
@@ -394,6 +409,9 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	}
 	/******* END GET output coins constant, which is used to create tx *****/
 
+	// build hash array for input coin
+	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
+
 	tx := &transaction.TxCustomTokenPrivacy{}
 	err = tx.Init(
 		&senderKeySet.PrivateKey,
@@ -408,6 +426,12 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 
 	if err.(*transaction.TransactionError) != nil {
 		return nil, err
+	}
+
+	// pool inCoinsH
+	txHash := tx.Hash()
+	if txHash != nil {
+		rpcServer.config.TxMemPool.PrePoolTxCoinHashH(*txHash, inputCoinHs)
 	}
 
 	return tx, err
