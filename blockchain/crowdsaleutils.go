@@ -27,6 +27,7 @@ func buildPaymentForCoin(
 		SaleID:        make([]byte, len(saleID)),
 	}
 	hash := txRequest.Hash()
+	metaPay.Type = metadata.CrowdsalePaymentMeta
 	copy(metaPay.RequestedTxID[:], hash[:])
 	copy(metaPay.SaleID, saleID)
 	metaPayList := []metadata.Metadata{metaPay}

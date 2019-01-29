@@ -569,7 +569,10 @@ func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 }
 
 func (tx *Tx) GetUniqueReceiver() (bool, []byte, uint64) {
-	sender := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	sender := []byte{} // Empty byte slice for coinbase tx
+	if tx.Proof != nil && len(tx.Proof.InputCoins) > 0 {
+		sender = tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	}
 	pubkeys, amounts := tx.GetReceivers()
 	pubkey := []byte{}
 	amount := uint64(0)
