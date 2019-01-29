@@ -3,6 +3,7 @@ package blockchain
 import (
 	"sort"
 
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 )
 
@@ -53,9 +54,29 @@ type BestStateBeacon struct {
 	CurrentRandomTimeStamp int64 `json:"CurrentRandomTimeStamp"`
 	IsGetRandomNumber      bool  `json:"IsGetRandomNumber"`
 
-	Params map[string]string `json:"Params,omitempty"`
+	StabilityInfo StabilityInfo     `json:"StabilityInfo"`
+	Params        map[string]string `json:"Params,omitempty"`
 
 	// lock sync.RWMutex
+}
+
+type StabilityInfo struct {
+	SalaryFund uint64 // use to pay salary for miners(block producer or current leader) in chain
+	BankFund   uint64 // for DBank
+
+	GOVConstitution GOVConstitution // params which get from governance for network
+	DCBConstitution DCBConstitution
+
+	// BOARD
+	DCBGovernor DCBGovernor
+	GOVGovernor GOVGovernor
+
+	// Price feeds through Oracle
+	Oracle params.Oracle
+}
+
+func (si StabilityInfo) GetBytes() []byte {
+	return common.GetBytes(si)
 }
 
 func NewBestStateBeacon() *BestStateBeacon {
@@ -78,6 +99,7 @@ func NewBestStateBeacon() *BestStateBeacon {
 	bestStateBeacon.ShardPendingValidator = make(map[byte][]string)
 	bestStateBeacon.Params = make(map[string]string)
 	bestStateBeacon.CurrentRandomNumber = -1
+	bestStateBeacon.StabilityInfo = StabilityInfo{}
 	return &bestStateBeacon
 }
 
@@ -158,6 +180,7 @@ func (self *BestStateBeacon) Hash() common.Hash {
 	for _, key := range keyStrs {
 		res = append(res, []byte(self.Params[key])...)
 	}
+	res = append(res, self.StabilityInfo.GetBytes()...)
 	return common.DoubleHashH(res)
 }
 

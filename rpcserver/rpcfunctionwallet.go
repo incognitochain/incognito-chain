@@ -478,8 +478,15 @@ func (rpcServer RpcServer) handleCreateRawDefragmentAccountTransaction(params in
 
 func (rpcServer RpcServer) handleBuildRawDefragmentAccountTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 4 {
+		return nil, NewRPCError(ErrRPCInvalidParams, nil)
+	}
 	senderKeyParam := arrayParams[0].(string)
 	minValue := uint64(arrayParams[1].(float64))
+	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
+	// param #4: hasPrivacy flag: 1 or -1
+	hasPrivacy := int(arrayParams[3].(float64)) > 0
+	/********* END Fetch all params to *******/
 
 	// param #1: private key of sender
 	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam)
@@ -489,11 +496,6 @@ func (rpcServer RpcServer) handleBuildRawDefragmentAccountTransaction(params int
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 	fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
-
-	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
-	// param #4: hasPrivacy flag: 1 or -1
-	hasPrivacy := int(arrayParams[3].(float64)) > 0
-	/********* END Fetch all params to *******/
 
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
