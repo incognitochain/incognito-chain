@@ -205,10 +205,11 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	start2 = time.Now()
 
 	n := privacy.MaxExp
+	tmp := make([]* big.Int, n)
 	// Convert values to binary array
 	aL := make([]*big.Int, numValuePad*n, numValuePad*n)
 	for i, value := range values {
-		tmp := privacy.ConvertBigIntToBinary(value, n)
+		tmp = privacy.ConvertBigIntToBinary(value, n)
 
 		for j := 0; j<n; j++{
 			aL[i*n + j] = tmp[j]
@@ -448,12 +449,12 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	proof.tauX = new(big.Int).Mul(tau2, xSquare)
 	proof.tauX.Add(proof.tauX, new(big.Int).Mul(tau1, x))
 	zTmp = new(big.Int).Set(z)
-	tmp := new(big.Int)
+	tmpBN := new(big.Int)
 	for j := 0; j < numValuePad; j++ {
 		zTmp.Mul(zTmp, z)
 		zTmp.Mod(zTmp, privacy.Curve.Params().N)
 
-		proof.tauX.Add(proof.tauX, tmp.Mul(zTmp, rands[j]))
+		proof.tauX.Add(proof.tauX, tmpBN.Mul(zTmp, rands[j]))
 	}
 	proof.tauX.Mod(proof.tauX, privacy.Curve.Params().N)
 
