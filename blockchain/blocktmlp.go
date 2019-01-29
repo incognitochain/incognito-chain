@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
@@ -133,6 +134,7 @@ concludeBlock:
 		return nil, err
 	}
 	txGroups.txsToAdd = append(coinbases, txGroups.txsToAdd...)
+	fmt.Printf("[db] txsToAdd: %d\n", len(txGroups.txsToAdd))
 
 	for _, tx := range txGroups.txToRemove {
 		blockgen.txPool.RemoveTx(tx)

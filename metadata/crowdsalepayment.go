@@ -18,6 +18,7 @@ type CrowdsalePayment struct {
 }
 
 func (csRes *CrowdsalePayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+	fmt.Printf("[db] Validating tx crowdsale payment with blockchain %s\n", txr.Hash().String())
 	// TODO(@0xbunyip): check if there's a corresponding request in the same block
 	// Check if sale exists
 	saleData, err := bcr.GetCrowdsaleData(csRes.SaleID)
@@ -29,11 +30,13 @@ func (csRes *CrowdsalePayment) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 
 	// Check if sending address is DCB's
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	if saleData.SellingAsset.IsEqual(&common.ConstantID) {
-		if !bytes.Equal(txr.GetSigPubKey(), keyWalletDCBAccount.KeySet.PaymentAddress.Pk[:]) {
-			return false, fmt.Errorf("Crowdsale payment must send Constant from DCB address")
-		}
-	} else if common.IsBondAsset(&saleData.SellingAsset) {
+	if !bytes.Equal(txr.GetSigPubKey(), keyWalletDCBAccount.KeySet.PaymentAddress.Pk[:]) {
+		return false, fmt.Errorf("Crowdsale payment must send asset from DCB address")
+	}
+
+	// TODO(@0xbunyip): check double spending for coinbase CST tx?
+	if common.IsBondAsset(&saleData.SellingAsset) {
+		// Check if sent from DCB address
 		// check double spending if selling bond
 		return true, nil
 	}

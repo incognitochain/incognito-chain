@@ -383,7 +383,7 @@ func (blockgen *BlkTmplGenerator) checkAndGroupTxs(
 		txsToAdd = append(txsToAdd, tx)
 	}
 	for _, tx := range removableTxs {
-		txsToAdd = append(txsToAdd, tx)
+		txToRemove = append(txToRemove, tx)
 	}
 
 	// Build CMB responses
