@@ -259,6 +259,18 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if peerConn.Config.MessageListeners.OnGetBlockShard != nil {
 						peerConn.Config.MessageListeners.OnGetBlockShard(peerConn, message.(*wire.MessageGetBlockShard))
 					}
+				case reflect.TypeOf(&wire.MessageGetCrossShard{}):
+					if peerConn.Config.MessageListeners.OnGetCrossShard != nil {
+						peerConn.Config.MessageListeners.OnGetCrossShard(peerConn, message.(*wire.MessageGetCrossShard))
+					}
+				case reflect.TypeOf(&wire.MessageGetShardToBeacon{}):
+					if peerConn.Config.MessageListeners.OnGetShardToBeacon != nil {
+						peerConn.Config.MessageListeners.OnGetShardToBeacon(peerConn, message.(*wire.MessageGetShardToBeacon))
+					}
+				case reflect.TypeOf(&wire.MessageGetShardToBeacons{}):
+					if peerConn.Config.MessageListeners.OnGetShardToBeacons != nil {
+						peerConn.Config.MessageListeners.OnGetShardToBeacons(peerConn, message.(*wire.MessageGetShardToBeacons))
+					}
 				case reflect.TypeOf(&wire.MessageVersion{}):
 					if peerConn.Config.MessageListeners.OnVersion != nil {
 						versionMessage := message.(*wire.MessageVersion)

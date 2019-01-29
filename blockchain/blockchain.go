@@ -90,7 +90,7 @@ type Config struct {
 	// This field is required.
 	ChainParams *Params
 	RelayShards []byte
-	NodeRole    string
+	NodeMode    string
 	//Light mode flag
 	// Light bool
 	//Wallet for light mode
@@ -109,7 +109,9 @@ type Config struct {
 		PushMessageGetBlockBeacon(from uint64, to uint64, peerID libp2p.ID) error
 		PushMessageGetBlockShard(shardID byte, from uint64, to uint64, peerID libp2p.ID) error
 		PushMessageGetShardToBeacon(shardID byte, blkHash common.Hash) error
+		PushMessageGetShardToBeacons(shardID byte, from uint64, to uint64) error
 	}
+	UserKeySet *cashec.KeySet
 }
 
 /*
@@ -256,15 +258,9 @@ func (self *BlockChain) initChainState() error {
 		}
 
 	} else {
+		test, _ := json.Marshal(self.BestState.Beacon)
+		fmt.Println(string(test))
 
-		for index := uint64(1); index <= self.BestState.Beacon.BeaconHeight; index++ {
-			blk, err := self.GetBeaconBlockByHeight(index)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			fmt.Println(blk)
-		}
 	}
 
 	for shard := 1; shard <= common.SHARD_NUMBER; shard++ {

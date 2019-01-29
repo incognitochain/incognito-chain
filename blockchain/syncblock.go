@@ -42,7 +42,10 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 	var cSyncShardQuit chan struct{}
 	cSyncShardQuit = make(chan struct{})
 	self.syncStatus.Shard[shardID] = cSyncShardQuit
-
+	self.knownChainState.Shards[shardID] = ShardChainState{
+		Height:  self.BestState.Shard[shardID].ShardHeight,
+		ShardID: shardID,
+	}
 	var shardStateCh chan *PeerShardChainState
 	var newShardBlkCh chan *ShardBlock
 	shardStateCh = make(chan *PeerShardChainState)
@@ -127,16 +130,21 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 			default:
 				time.Sleep(getStateWaitTime * time.Second)
 				self.config.Server.PushMessageGetShardState(shardID)
-				blks, err := self.config.NodeShardPool.GetBlocks(shardID, self.BestState.Shard[shardID].ShardHeight+1)
-				if err != nil {
-					Logger.log.Error(err)
-					continue
-				}
-				for _, newBlk := range blks {
-					err = self.InsertShardBlock(&newBlk)
-					if err != nil {
-						Logger.log.Error(err)
-						continue
+				if self.knownChainState.Shards[shardID].Height > self.BestState.Shard[shardID].ShardHeight {
+					needToSync := self.knownChainState.Beacon.Height - self.BestState.Beacon.BeaconHeight
+					for offset := uint64(0); offset <= needToSync; offset++ {
+						blks, err := self.config.NodeShardPool.GetBlocks(shardID, self.BestState.Shard[shardID].ShardHeight+1)
+						if err != nil {
+							Logger.log.Error(err)
+							continue
+						}
+						for _, newBlk := range blks {
+							err = self.InsertShardBlock(&newBlk)
+							if err != nil {
+								Logger.log.Error(err)
+								continue
+							}
+						}
 					}
 				}
 			}
@@ -144,6 +152,15 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 	}(shardID)
 
 	return nil
+}
+
+func (self *BlockChain) SyncShardToBeacon() {
+	for {
+		select {
+		case <-self.cQuitSync:
+			return
+		}
+	}
 }
 
 func (self *BlockChain) SyncBeacon() error {
@@ -155,6 +172,23 @@ func (self *BlockChain) SyncBeacon() error {
 	self.newBeaconBlkCh = make(chan *BeaconBlock)
 	self.knownChainState.Beacon.Height = self.BestState.Beacon.BeaconHeight
 	self.syncStatus.Beacon = true
+
+	// go func() {
+	// 	for {
+	// 		select {
+	// 		case <-self.cQuitSync:
+	// 			return
+	// 		default:
+	// 			if self.config.NodeMode == "auto" || self.config.NodeMode == "beacon" {
+	// 				if role, _ := self.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58()); role == "beacon-proposer" || role == "beacon-validator" {
+	// 					for shardID := 0; shardID < common.SHARD_NUMBER; shardID++ {
+
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }()
 
 	go func() {
 		//used for fancy block retriever but too lazy to implement that now :p
@@ -168,7 +202,6 @@ func (self *BlockChain) SyncBeacon() error {
 			case <-self.cQuitSync:
 				return
 			case beaconState := <-self.BeaconStateCh:
-
 				if self.BestState.Beacon.BeaconHeight < beaconState.State.Height {
 					if self.knownChainState.Beacon.Height < beaconState.State.Height {
 						self.knownChainState.Beacon = *beaconState.State
@@ -242,9 +275,9 @@ func (self *BlockChain) SyncBeacon() error {
 								Logger.log.Error(err)
 								continue
 							}
+						}
 					}
 				}
-			}
 			}
 		}
 	}()

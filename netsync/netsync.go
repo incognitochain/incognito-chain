@@ -123,6 +123,10 @@ out:
 						{
 							netSync.HandleMessageGetShardToBeacon(msg)
 						}
+					case *wire.MessageGetShardToBeacons:
+						{
+							netSync.HandleMessageGetShardToBeacons(msg)
+						}
 					case *wire.MessageShardToBeacon:
 						{
 							netSync.HandleMessageShardToBeacon(msg)
@@ -473,6 +477,31 @@ func (netsync *NetSync) HandleMessageGetShardToBeacon(msg *wire.MessageGetShardT
 	}
 	newMsg.(*wire.MessageShardToBeacon).Block = *shardToBeaconBlk
 	netsync.config.Server.PushMessageToPeer(newMsg, peerID)
+}
+
+func (netsync *NetSync) HandleMessageGetShardToBeacons(msg *wire.MessageGetShardToBeacons) {
+	Logger.log.Info("Handling new message getshardtobeaconS")
+	peerID, err := libp2p.IDB58Decode(msg.SenderID)
+	if err != nil {
+		Logger.log.Error(err)
+		return
+	}
+	for height := msg.From; height <= msg.To; height++ {
+		blk, err := netsync.config.BlockChain.GetShardBlockByHeight(height, msg.ShardID)
+		if err != nil {
+			Logger.log.Error(err)
+			return
+		}
+		shardToBeaconBlk := blk.CreateShardToBeaconBlock()
+		newMsg, err := wire.MakeEmptyMessage(wire.CmdBlkShardToBeacon)
+		if err != nil {
+			Logger.log.Error(err)
+			return
+		}
+		newMsg.(*wire.MessageShardToBeacon).Block = *shardToBeaconBlk
+		netsync.config.Server.PushMessageToPeer(newMsg, peerID)
+	}
+
 }
 
 // func (netSync *NetSync) HandleMessageSwapRequest(msg *wire.MessageSwapRequest) {

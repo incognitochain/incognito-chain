@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"sort"
 
 	"github.com/ninjadotorg/constant/common"
@@ -183,7 +182,6 @@ func (self *BestStateBeacon) GetPubkeyRole(pubkey string) (string, byte) {
 	found := common.IndexOfStr(pubkey, self.BeaconCommittee)
 	if found > -1 {
 		tmpID := (self.BeaconProposerIdx + 1) % len(self.BeaconCommittee)
-		fmt.Println("Producer idx:", tmpID, self.BeaconCommittee)
 		if found == tmpID {
 			return "beacon-proposer", 0
 		}
