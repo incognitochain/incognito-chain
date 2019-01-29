@@ -225,16 +225,12 @@ func (inputCoin *InputCoin) SetBytes(bytes []byte) error {
 
 type OutputCoin struct {
 	CoinDetails          *Coin
-	CoinDetailsEncrypted *CoinDetailsEncrypted
+	CoinDetailsEncrypted *Ciphertext
 }
 
 func (outputCoin *OutputCoin) Init() *OutputCoin {
-	if outputCoin.CoinDetails == nil {
-		outputCoin.CoinDetails = new(Coin)
-		outputCoin.CoinDetails.Init()
-	}
-
-	outputCoin.CoinDetailsEncrypted = new(CoinDetailsEncrypted)
+	outputCoin.CoinDetails = new(Coin).Init()
+	outputCoin.CoinDetailsEncrypted = new(Ciphertext)
 	return outputCoin
 }
 
@@ -257,7 +253,7 @@ func (outputCoin *OutputCoin) Bytes() []byte {
 
 func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
-		return errors.New("Bytes array is empty")
+		return errors.New("bytes array is empty")
 	}
 
 	offset := 0
@@ -265,7 +261,7 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 	offset += 1
 
 	if lenCoinDetailEncrypted > 0 {
-		outputCoin.CoinDetailsEncrypted = new(CoinDetailsEncrypted)
+		outputCoin.CoinDetailsEncrypted = new(Ciphertext)
 		err := outputCoin.CoinDetailsEncrypted.SetBytes(bytes[offset: offset+lenCoinDetailEncrypted])
 		if err != nil {
 			return err
@@ -287,139 +283,36 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 	return nil
 }
 
-type CoinDetailsEncrypted struct {
-	EncryptedRandomness []byte // 48 bytes
-	EncryptedValue      []byte // 17 -> 24 bytes
-	EncryptedSymKey     []byte // 66 bytes
-}
-
-func (coinDetailsEncrypted *CoinDetailsEncrypted) Init() *CoinDetailsEncrypted {
-	coinDetailsEncrypted.EncryptedRandomness = []byte{}
-	coinDetailsEncrypted.EncryptedValue = []byte{}
-	coinDetailsEncrypted.EncryptedSymKey = []byte{}
-	return coinDetailsEncrypted
-}
-func (coinDetailsEncrypted *CoinDetailsEncrypted) IsNil() bool {
-	if coinDetailsEncrypted.EncryptedSymKey == nil {
-		return true
-	}
-	if coinDetailsEncrypted.EncryptedRandomness == nil {
-		return true
-	}
-	if coinDetailsEncrypted.EncryptedValue == nil {
-		return true
-	}
-	return false
-}
-
-func (coinDetailsEncrypted *CoinDetailsEncrypted) Bytes() []byte {
-	if coinDetailsEncrypted.IsNil() {
-		return []byte{}
-	}
-
-	var res []byte
-	res = append(res, coinDetailsEncrypted.EncryptedRandomness...)
-	res = append(res, coinDetailsEncrypted.EncryptedSymKey...)
-	res = append(res, coinDetailsEncrypted.EncryptedValue...)
-
-	return res
-}
-func (coinDetailsEncrypted *CoinDetailsEncrypted) SetBytes(bytes []byte) error {
-	if len(bytes) == 0 {
-		return nil
-	}
-
-	coinDetailsEncrypted.EncryptedRandomness = bytes[0:EncryptedRandomnessSize]
-	coinDetailsEncrypted.EncryptedSymKey = bytes[EncryptedRandomnessSize : EncryptedRandomnessSize + EncryptedSymKeySize]
-	coinDetailsEncrypted.EncryptedValue = bytes[EncryptedRandomnessSize + EncryptedSymKeySize:]
-	return nil
-}
-
 // Encrypt returns a ciphertext encrypting for a coin using a hybrid cryptosystem,
 // in which AES encryption scheme is used as a data encapsulation scheme,
 // and ElGamal cryptosystem is used as a key encapsulation scheme.
-func (coin *OutputCoin) Encrypt(recipientTK TransmissionKey) error {
-	// Generate a AES key as the abscissa of a random elliptic point
-	aesKeyPoint := new(EllipticPoint)
-	aesKeyPoint.Randomize()
-	aesKeyByte := aesKeyPoint.X.Bytes()
+func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) error {
+	// 32 byte first: Randomness
+	msg := append(outputCoin.CoinDetails.Randomness.Bytes(), new(big.Int).SetUint64(outputCoin.CoinDetails.Value).Bytes()...)
 
-	// Encrypt coin details using aesKeyByte
-	aesScheme := &AES{
-		Key: aesKeyByte,
-	}
-
-	// Encrypt coin randomness
-	coin.CoinDetailsEncrypted = new(CoinDetailsEncrypted)
-	var err error
-
-	randomnessBytes := coin.CoinDetails.Randomness.Bytes()
-	coin.CoinDetailsEncrypted.EncryptedRandomness, err = aesScheme.encrypt(randomnessBytes)
-	if err != nil {
+	PubKeyPoint := new(EllipticPoint)
+	err := PubKeyPoint.Decompress(recipientTK)
+	if err != nil{
 		return err
 	}
-
-	// Encrypt coin value
-	valueBytes := new(big.Int).SetUint64(coin.CoinDetails.Value).Bytes()
-	coin.CoinDetailsEncrypted.EncryptedValue, err = aesScheme.encrypt(valueBytes)
-	if err != nil {
+	outputCoin.CoinDetailsEncrypted, err = AdvanceEncrypt(msg, PubKeyPoint)
+	if err != nil{
 		return err
 	}
-
-	// Get transmission key, which is a public key of ElGamal cryptosystem
-	transmissionKey := new(ElGamalPubKey)
-	transmissionKey.H, err = DecompressKey(recipientTK)
-	if err != nil {
-		return err
-	}
-
-	// Encrypt aesKeyByte under recipient's transmission key using ElGamal cryptosystem
-	coin.CoinDetailsEncrypted.EncryptedSymKey = transmissionKey.Encrypt(aesKeyPoint).Bytes()
 
 	return nil
 }
 
 // Decrypt decrypts a ciphertext encrypting for coin with recipient's receiving key
-func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
-	// Validate ciphertext
-	if coin.CoinDetailsEncrypted.IsNil() {
-		return errors.New("ciphertext must not be nil")
-	}
-
-	// Get receiving key, which is a private key of ElGamal cryptosystem
-	receivingKey := new(ElGamalPrivKey)
-	receivingKey.Set(new(big.Int).SetBytes(viewingKey.Rk))
-
-	// Parse encrypted AES key encoded as an elliptic point from EncryptedSymKey
-	encryptedAESKey := new(ElGamalCiphertext)
-	err := encryptedAESKey.SetBytes(coin.CoinDetailsEncrypted.EncryptedSymKey)
-	if err != nil {
+func (outputCoin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
+	msg, err := AdvanceDecrypt(outputCoin.CoinDetailsEncrypted, new(big.Int).SetBytes(viewingKey.Rk))
+	if err != nil{
 		return err
 	}
 
-	// Decrypt encryptedAESKey using recipient's receiving key
-	aesKeyPoint, _ := receivingKey.Decrypt(encryptedAESKey)
-
-	// Get AES key
-	aesScheme := &AES{
-		Key: aesKeyPoint.X.Bytes(),
-	}
-
-	// Decrypt encrypted coin randomness using AES key
-	randomness, err := aesScheme.decrypt(coin.CoinDetailsEncrypted.EncryptedRandomness)
-	if err != nil {
-		return err
-	}
-
-	// Decrypt encrypted coin value using AES key
-	value, err := aesScheme.decrypt(coin.CoinDetailsEncrypted.EncryptedValue)
-	if err != nil {
-		return err
-	}
-
-	// Assign randomness and value to coin details
-	coin.CoinDetails.Randomness = new(big.Int).SetBytes(randomness)
-	coin.CoinDetails.Value = new(big.Int).SetBytes(value).Uint64()
+	// Assign randomness and value to outputCoin details
+	outputCoin.CoinDetails.Randomness = new(big.Int).SetBytes(msg[0:32])
+	outputCoin.CoinDetails.Value = new(big.Int).SetBytes(msg[32:]).Uint64()
 
 	return nil
 }
