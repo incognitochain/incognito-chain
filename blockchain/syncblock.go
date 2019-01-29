@@ -245,6 +245,7 @@ func (self *BlockChain) SyncBeacon() error {
 					}
 				}
 			}
+			}
 		}
 	}()
 	return nil
