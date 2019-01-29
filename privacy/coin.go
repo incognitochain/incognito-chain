@@ -311,8 +311,8 @@ func (outputCoin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 	}
 
 	// Assign randomness and value to outputCoin details
-	outputCoin.CoinDetails.Randomness = new(big.Int).SetBytes(msg[0:32])
-	outputCoin.CoinDetails.Value = new(big.Int).SetBytes(msg[32:]).Uint64()
+	outputCoin.CoinDetails.Randomness = new(big.Int).SetBytes(msg[0:BigIntSize])
+	outputCoin.CoinDetails.Value = new(big.Int).SetBytes(msg[BigIntSize:]).Uint64()
 
 	return nil
 }
