@@ -209,7 +209,7 @@ func (proof *PaymentProof) Bytes() []byte {
 	}
 
 	// convert commitment index to bytes array
-	for i := 0; i < len(proof.InputCoins)* privacy.CMRingSize; i++ {
+	for i := 0; i < len(proof.CommitmentIndices); i++ {
 		commitmentIndexBytes := make([]byte, privacy.Uint64Size)
 		binary.LittleEndian.PutUint64(commitmentIndexBytes, proof.CommitmentIndices[i])
 		proofbytes = append(proofbytes, commitmentIndexBytes...)

@@ -419,7 +419,7 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Verify the payment proof
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
-	//hasPrivacy = falsenite
+	//hasPrivacy = false
 	Logger.log.Infof("[db] Validating Transaction tx\n")
 	start := time.Now()
 	// Verify tx signature
