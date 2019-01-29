@@ -260,20 +260,21 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 	unspentTokenMap map[string][]transaction.TxTokenVout,
 	chainID byte,
 	producerPrivateKey *privacy.SpendingKey,
-) {
+) ([]metadata.Transaction, []metadata.Transaction) {
+	fmt.Printf("[db] inside txsPayment addr: %p\n", &txsPayment)
 	// Create corresponding payment to send selling asset
 	meta := tx.GetMetadata()
 	metaRequest, ok := meta.(*metadata.CrowdsaleRequest)
 	if !ok {
 		txsToRemove = append(txsToRemove, tx)
-		return
+		return txsPayment, txsToRemove
 	}
 	if _, ok := saleDataMap[string(metaRequest.SaleID)]; !ok {
 		saleData, err := blockgen.chain.GetCrowdsaleData(metaRequest.SaleID)
 		if err != nil {
 			Logger.log.Error(err)
 			txsToRemove = append(txsToRemove, tx)
-			return
+			return txsPayment, txsToRemove
 		}
 
 		saleDataMap[string(metaRequest.SaleID)] = saleData
@@ -283,7 +284,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 	saleData := saleDataMap[string(metaRequest.SaleID)]
 	if common.IsOffChainAsset(&saleData.SellingAsset) || common.IsOffChainAsset(&saleData.BuyingAsset) {
 		fmt.Println("[db] crowdsale offchain asset")
-		return
+		return txsPayment, txsToRemove
 	}
 
 	txPayment, err := blockgen.buildPaymentForCrowdsale(
@@ -300,7 +301,10 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 		txsToRemove = append(txsToRemove, tx)
 	} else if txPayment != nil {
 		txsPayment = append(txsPayment, txPayment)
+		fmt.Printf("[db] len(txsPayment) after append: %d\n", len(txsPayment))
+		fmt.Printf("[db] after append txsPayment addr: %p\n", &txsPayment)
 	}
+	return txsPayment, txsToRemove
 }
 
 // processCrowdsale finds all CrowdsaleRequests and creates Payments for them
@@ -311,6 +315,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 ) ([]metadata.Transaction, []metadata.Transaction) {
 	txsToRemove := []metadata.Transaction{}
 	txsPayment := []metadata.Transaction{}
+	fmt.Printf("[db] outside txsPayment addr: %p\n", &txsPayment)
 
 	// Get unspent bond tx to spend if needed
 	unspentTokenMap := map[string]([]transaction.TxTokenVout){}
@@ -319,7 +324,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 		switch txDesc.Tx.GetMetadataType() {
 		case metadata.CrowdsaleRequestMeta:
 			{
-				blockgen.processCrowdsaleRequest(
+				txsPayment, txsToRemove = blockgen.processCrowdsaleRequest(
 					txDesc.Tx,
 					txsPayment,
 					txsToRemove,
@@ -328,11 +333,13 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 					chainID,
 					producerPrivateKey,
 				)
+				fmt.Printf("[db] len(txsPayment) after process: %d\n", len(txsPayment))
 			}
 		}
 	}
-	fmt.Printf("[db] process crowdsale len(txsPayment) :%d\n", len(txsPayment))
-	fmt.Printf("[db] process crowdsale len(txsToRemove) :%d\n", len(txsToRemove))
+	txsPayment = txsPayment[:cap(txsPayment)]
+	fmt.Printf("[db] process crowdsale len(txsPayment): %d\n", len(txsPayment))
+	fmt.Printf("[db] process crowdsale len(txsToRemove): %d\n", len(txsToRemove))
 	return txsPayment, txsToRemove
 }
 

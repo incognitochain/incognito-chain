@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 )
@@ -136,6 +137,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PunishGOVDecryptMetadata{}
 
 	default:
+		fmt.Printf("[db] meta: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
 	}
 
