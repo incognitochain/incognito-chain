@@ -80,8 +80,8 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	}
 	beaconBlock.Header.Timestamp = time.Now().Unix()
 	beaconBlock.Header.PrevBlockHash = beaconBestState.BestBlockHash
-	tempShardState, staker, swap := self.GetShardState(&beaconBestState)
-	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, self.chain.BestState.Beacon.CandidateShardWaitingForCurrentRandom)
+	tempShardState, staker, swap, stabilityInstructions := self.GetShardState(&beaconBestState)
+	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, self.chain.BestState.Beacon.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
 	//==========Create Body
 	beaconBlock.Body.Instructions = tempInstruction
 	beaconBlock.Body.ShardState = tempShardState
@@ -150,7 +150,7 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 // #1: shard state
 // #2: valid stakers
 // #3: swap validator => map[byte][][]string
-func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (map[byte][]ShardState, [][]string, map[byte][][]string) {
+func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (map[byte][]ShardState, [][]string, map[byte][][]string, [][]string) {
 	shardStates := make(map[byte][]ShardState)
 	stakers := [][]string{}
 	swaps := [][]string{}
@@ -159,6 +159,8 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 	//Get shard to beacon block from pool
 	shardsBlocks := self.shardToBeaconPool.GetFinalBlock()
 	//Shard block is a map ShardId -> array of shard block
+
+	stabilityInstructions := [][]string{}
 	for shardID, shardBlocks := range shardsBlocks {
 		// Only accept block in one epoch
 		tempShardBlocks := make([]ShardToBeaconBlock, len(shardBlocks))
@@ -178,6 +180,14 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 				totalBlock = index
 				break
 			}
+			stabilityInstructionsPerBlock, err := buildStabilityInstructions(
+				shardBlock.Instructions,
+				beaconBestState,
+			)
+			if err != nil {
+				panic(fmt.Sprintf("Build stability instructions failed: %s", err.Error()))
+			}
+			stabilityInstructions = append(stabilityInstructions, stabilityInstructionsPerBlock...)
 			for _, l := range shardBlock.Instructions {
 				if l[0] == "swap" {
 					if l[3] != "shard" || l[4] != strconv.Itoa(int(shardID)) {
@@ -252,7 +262,7 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 			}
 		}
 	}
-	return shardStates, validStakers, validSwap
+	return shardStates, validStakers, validSwap, stabilityInstructions
 }
 
 /*
@@ -265,8 +275,15 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 	- random instruction -> ok
 	- stake instruction -> ok
 */
-func (self *BestStateBeacon) GenerateInstruction(block *BeaconBlock, stakers [][]string, swap map[byte][][]string, shardCandidates []string) [][]string {
+func (self *BestStateBeacon) GenerateInstruction(
+	block *BeaconBlock,
+	stakers [][]string,
+	swap map[byte][][]string,
+	shardCandidates []string,
+	stabilityInstructions [][]string,
+) [][]string {
 	instructions := [][]string{}
+	instructions = append(instructions, stabilityInstructions...)
 	//=======Swap
 	// Shard Swap: both abnormal or normal swap
 	for _, swapInstruction := range swap {

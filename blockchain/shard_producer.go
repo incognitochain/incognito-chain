@@ -333,22 +333,24 @@ func CreateShardActionFromTransaction(transactions []metadata.Transaction) (acti
 	// Generate stake action
 	stakeShardPubKey := []string{}
 	stakeBeaconPubKey := []string{}
-	for _, tx := range transactions {
-		switch tx.GetMetadataType() {
-		//TODO: stable param 0xsancurasolus
-		// case metadata.BuyFromGOVRequestMeta:
-		}
-		// TODO
-		// shardStaker, beaconStaker, isStake := tempTx.GetStakerFromTransaction()
-		// if isStake {
-		// 	if strings.Compare(shardStaker, common.EmptyString) != 0 {
-		// 		stakeShardPubKey = append(stakeShardPubKey, shardStaker)
-		// 	}
-		// 	if strings.Compare(beaconStaker, common.EmptyString) != 0 {
-		// 		stakeBeaconPubKey = append(stakeBeaconPubKey, beaconStaker)
-		// 	}
-		// }
-	}
+	actions = buildStabilityActions(transactions)
+
+	// for _, tx := range transactions {
+	// 	switch tx.GetMetadataType() {
+	// 	//TODO: stable param 0xsancurasolus
+	// 	// case metadata.BuySellRequestMeta:
+	// 	}
+	// 	// TODO
+	// 	// shardStaker, beaconStaker, isStake := tempTx.GetStakerFromTransaction()
+	// 	// if isStake {
+	// 	// 	if strings.Compare(shardStaker, common.EmptyString) != 0 {
+	// 	// 		stakeShardPubKey = append(stakeShardPubKey, shardStaker)
+	// 	// 	}
+	// 	// 	if strings.Compare(beaconStaker, common.EmptyString) != 0 {
+	// 	// 		stakeBeaconPubKey = append(stakeBeaconPubKey, beaconStaker)
+	// 	// 	}
+	// 	// }
+	// }
 	if !reflect.DeepEqual(stakeShardPubKey, []string{}) {
 		action := []string{"stake", strings.Join(stakeShardPubKey, ","), "shard"}
 		actions = append(actions, action)
