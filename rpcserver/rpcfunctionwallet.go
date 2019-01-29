@@ -510,9 +510,6 @@ func (rpcServer RpcServer) handleBuildRawDefragmentAccountTransaction(params int
 	if len(outCoins) == 0 {
 		return nil, NewRPCError(ErrGetOutputCoin, nil)
 	}
-	if amount < uint64(estimateFeeCoinPerKb) {
-		return nil, NewRPCError(ErrGetOutputCoin, err)
-	}
 	paymentInfo := &privacy.PaymentInfo{
 		Amount:         uint64(amount),
 		PaymentAddress: senderKeySet.PaymentAddress,
