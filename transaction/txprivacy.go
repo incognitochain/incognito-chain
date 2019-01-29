@@ -364,7 +364,7 @@ func (tx *Tx) verifySigTx(hasPrivacy bool) (bool, error) {
 	// }
 
 	// verKey.G = new(privacy.EllipticPoint)
-	// verKey.G.Set(privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y)
+	// verKey.G.Set(privacy.PedCom.G[privacy.sk].X, privacy.PedCom.G[privacy.sk].Y)
 
 	// verKey.H = new(privacy.EllipticPoint)
 	// verKey.H.Set(privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y)
