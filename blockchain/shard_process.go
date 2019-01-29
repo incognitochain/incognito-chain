@@ -108,10 +108,10 @@ func (self *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
-	err = self.StoreOutgoingCrossShard(block)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
-	}
+	// err = self.StoreOutgoingCrossShard(block)
+	// if err != nil {
+	// 	return NewBlockChainError(UnExpectedError, err)
+	// }
 	//TODO: store most recent proccess cross shard block
 	return nil
 }
@@ -551,12 +551,12 @@ func (self *BlockChain) StoreIncomingCrossShard(block *ShardBlock) error {
 	return nil
 }
 
-func (self *BlockChain) StoreOutgoingCrossShard(block *ShardBlock) error {
-	crossShardMap, _ := block.Body.ExtractOutgoingCrossShardMap()
-	for crossShard, crossBlks := range crossShardMap {
-		for _, crossBlk := range crossBlks {
-			self.config.DataBase.StoreIncomingCrossShard(block.Header.ShardID, crossShard, block.Header.Height, &crossBlk)
-		}
-	}
-	return nil
-}
+// func (self *BlockChain) StoreOutgoingCrossShard(block *ShardBlock) error {
+// 	crossShardMap, _ := block.Body.ExtractOutgoingCrossShardMap()
+// 	for crossShard, crossBlks := range crossShardMap {
+// 		for _, crossBlk := range crossBlks {
+// 			self.config.DataBase.StoreIncomingCrossShard(block.Header.ShardID, crossShard, block.Header.Height, &crossBlk)
+// 		}
+// 	}
+// 	return nil
+// }
