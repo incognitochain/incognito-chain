@@ -10,13 +10,15 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 )
 
+// This protocol proves in zero-knowledge that one-out-of-N commitments contains 0
+
+// Statement to be proved
 type OneOutOfManyStatement struct {
 	commitments       []*privacy.EllipticPoint
 	commitmentIndices []uint64
 }
 
-// OneOutOfManyWitness is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
-// include Witness: CommitedValue, r []byte
+// Statement's witness
 type OneOutOfManyWitness struct {
 	stmt *OneOutOfManyStatement
 
@@ -24,7 +26,7 @@ type OneOutOfManyWitness struct {
 	indexIsZero uint64
 }
 
-// OneOutOfManyProof contains Proof's value
+// Statement's proof
 type OneOutOfManyProof struct {
 	stmt *OneOutOfManyStatement
 
@@ -70,7 +72,7 @@ func (proof *OneOutOfManyProof) Init() *OneOutOfManyProof {
 
 // Set sets Statement
 func (stmt *OneOutOfManyStatement) Set(
-	commitments       []*privacy.EllipticPoint,
+	commitments []*privacy.EllipticPoint,
 	commitmentIndices []uint64) {
 	stmt.commitments = commitments
 	stmt.commitmentIndices = commitmentIndices
@@ -165,7 +167,7 @@ func (proof *OneOutOfManyProof) Bytes() []byte {
 	return bytes
 }
 
-// SetBytes convert from bytes array to OneOutOfManyProof
+// SetBytes converts an array of bytes to an object of OneOutOfManyProof
 func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return nil
@@ -251,9 +253,9 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 	return nil
 }
 
-// Prove creates proof for one out of many commitments containing 0
+// Prove produces a proof for the statement
 func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
-	start :=time.Now()
+	start := time.Now()
 	// Check the number of Commitment list's elements
 	N := len(wit.stmt.commitments)
 	if N != privacy.CMRingSize {
@@ -282,7 +284,7 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	cb := make([]*privacy.EllipticPoint, n)
 	cd := make([]*privacy.EllipticPoint, n)
 
-	for j := 0; j <n; j++ {
+	for j := 0; j < n; j++ {
 		// Generate random numbers
 		r[j] = privacy.RandInt()
 		a[j] = privacy.RandInt()
@@ -374,6 +376,7 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	return proof, nil
 }
 
+// Verify verifies a proof output by Prove
 func (proof *OneOutOfManyProof) Verify() bool {
 	N := len(proof.stmt.commitments)
 
@@ -386,7 +389,7 @@ func (proof *OneOutOfManyProof) Verify() bool {
 	//Calculate x
 	x := big.NewInt(0)
 
-	for j := 0 ; j <= n-1; j++ {
+	for j := 0; j <= n-1; j++ {
 		x = generateChallengeFromByte([][]byte{x.Bytes(), proof.cl[j].Compress(), proof.ca[j].Compress(), proof.cb[j].Compress(), proof.cd[j].Compress()})
 	}
 
@@ -448,7 +451,7 @@ func (proof *OneOutOfManyProof) Verify() bool {
 	return leftPoint3.IsEqual(rightPoint3)
 }
 
-// Get coefficient of x^k in polynomial pi(x)
+// Get coefficient of x^k in the polynomial p_i(x)
 func GetCoefficient(iBinary []byte, k int, n int, a []*big.Int, l []byte) *big.Int {
 	res := privacy.Poly{big.NewInt(1)}
 	var fji privacy.Poly
