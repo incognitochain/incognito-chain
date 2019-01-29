@@ -12,24 +12,23 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Curve P256
-// We only use P256 Curve in our protocol
+// The NIST curve P-256 will be used in the whole protocol
+// https://csrc.nist.gov/publications/detail/fips/186/3/archive/2009-06-25
 var Curve = elliptic.P256()
 
-// EllipticPoint represents an point of elliptic curve,
-// which contains X, Y. X is Abscissa, Y is Ordinate
+// EllipticPoint represents a point (X, y) on the elliptic curve
 type EllipticPoint struct {
 	X, Y *big.Int
 }
 
-// Zero initializes elliptic point with X = 0, Y = 0
+// Zero returns the elliptic point (0, 0)
 func (point *EllipticPoint) Zero() *EllipticPoint {
 	point.X = big.NewInt(0)
 	point.Y = big.NewInt(0)
 	return point
 }
 
-// UnmarshalJSON unmarshal from byte array to elliptic point
+// UnmarshalJSON returns an elliptic point from a byte array encoding for that point
 func (point *EllipticPoint) UnmarshalJSON(data []byte) error {
 	dataStr := ""
 	_ = json.Unmarshal(data, &dataStr)
@@ -41,14 +40,14 @@ func (point *EllipticPoint) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON marshal from elliptic point to byte array
+// MarshalJSON returns a byte array encoding for an elliptic point
 func (point EllipticPoint) MarshalJSON() ([]byte, error) {
 	data := point.Compress()
 	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
 	return json.Marshal(temp)
 }
 
-//ComputeYCoord calculates Y coord from X
+// ComputeYCoord returns Y-coordinate from X-coordinate
 func (point *EllipticPoint) ComputeYCoord() error {
 	if point.Y == nil {
 		point.Y = big.NewInt(0)
@@ -61,33 +60,31 @@ func (point *EllipticPoint) ComputeYCoord() error {
 	xCube.Sub(xCube, new(big.Int).Mul(point.X, big.NewInt(3)))
 	xCube.Mod(xCube, Curve.Params().P)
 
-	// Now calculate sqrt mod p of x^3 - 3*x + B
-	// This code used to do a full sqrt based on tonelli/shanks,
-	// but this was replaced by the algorithms referenced in
+	// compute sqrt(x^3 - 3*x + B) mod p
 	// https://bitcointalk.org/index.php?topic=162805.msg1712294#msg1712294
 	point.Y = new(big.Int).Exp(xCube, PAdd1Div4(Curve.Params().P), Curve.Params().P)
 
-	// Check that y is a square root of x^3  - 3*x + B.
+	// check if y is a square root of x^3 - 3*x + B.
 	ySquared := new(big.Int).Mul(point.Y, point.Y)
 	ySquared.Mod(ySquared, Curve.Params().P)
 
+	// check if (X, Y) is a point on the curve
 	if ySquared.Cmp(xCube) != 0 {
-		return errors.New("Cant compute y")
+		return errors.New("X is not an abscissa of a point on the elliptic curve")
 	}
 	return nil
 }
 
-// Inverse return inverse point of ECC Point input
+// Inverse returns the inverse point of an input elliptic point
 func (point EllipticPoint) Inverse() (*EllipticPoint, error) {
-	//Check that input is ECC point
+	// check if point is on the curve
 	if !Curve.IsOnCurve(point.X, point.Y) {
-		return nil, errors.New("Input is not ECC Point")
+		return nil, errors.New("The input point is not an elliptic point")
 	}
 
-	//Create result point
 	resPoint := new(EllipticPoint).Zero()
 
-	//inverse point of A(x,y) in ECC is A'(x, P - y) with P is order of Curve
+	// the inverse of the point (x, y) mod P is the point (x, -y) mod P
 	resPoint.X.Set(point.X)
 	resPoint.Y.Sub(Curve.Params().P, point.Y)
 	resPoint.Y.Mod(resPoint.Y, Curve.Params().P)
@@ -95,7 +92,7 @@ func (point EllipticPoint) Inverse() (*EllipticPoint, error) {
 	return resPoint, nil
 }
 
-// Randomize make object's value to random
+// Randomize generates a random elliptic point
 func (point *EllipticPoint) Randomize() {
 	if point.X == nil {
 		point.X = big.NewInt(0)
@@ -113,7 +110,7 @@ func (point *EllipticPoint) Randomize() {
 	}
 }
 
-// IsSafe return true if point*point has not order 2 and point is on curve
+// IsSafe returns true if an input elliptic point is on the curve and has order not equal to 2
 func (point EllipticPoint) IsSafe() bool {
 	if !Curve.IsOnCurve(point.X, point.Y) {
 		return false
@@ -160,7 +157,7 @@ func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 	return err
 }
 
-// DecompPoint decompresses a point on the given curve given the X point and
+// decompPoint decompresses a point on the given curve given the X point and
 // the solution to use.
 func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
 	Q := Curve.Params().P
@@ -200,7 +197,7 @@ func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
 	return y, nil
 }
 
-// Hash derives new elliptic point from another elliptic point and index using hash function
+// Hash derives a new elliptic point from an elliptic point and an index using hash function
 func (point EllipticPoint) Hash(index int) *EllipticPoint {
 	// res.X = hash(g.X || index), res.Y = sqrt(res.X^3 - 3X + B)
 	res := new(EllipticPoint).Zero()
@@ -225,6 +222,7 @@ func (point EllipticPoint) Hash(index int) *EllipticPoint {
 	return res
 }
 
+// Set sets two coordinates to an elliptic point
 func (point *EllipticPoint) Set(x, y *big.Int) {
 	if point.X == nil {
 		point.X = big.NewInt(0)
@@ -237,12 +235,14 @@ func (point *EllipticPoint) Set(x, y *big.Int) {
 	point.Y.Set(y)
 }
 
+// Add adds an elliptic point to another elliptic point
 func (point EllipticPoint) Add(targetPoint *EllipticPoint) *EllipticPoint {
 	res := new(EllipticPoint)
 	res.X, res.Y = Curve.Add(point.X, point.Y, targetPoint.X, targetPoint.Y)
 	return res
 }
 
+// Sub subtracts an elliptic point to another elliptic point
 func (point EllipticPoint) Sub(targetPoint *EllipticPoint) (*EllipticPoint, error) {
 	invPoint, err := targetPoint.Inverse()
 
@@ -254,6 +254,7 @@ func (point EllipticPoint) Sub(targetPoint *EllipticPoint) (*EllipticPoint, erro
 	return res, nil
 }
 
+// IsEqual returns true if two input elliptic points are equal, false otherwise
 func (point EllipticPoint) IsEqual(p *EllipticPoint) bool {
 	if point.X.Cmp(p.X) == 0 && point.Y.Cmp(p.Y) == 0 {
 		return true
@@ -261,6 +262,7 @@ func (point EllipticPoint) IsEqual(p *EllipticPoint) bool {
 	return false
 }
 
+// ScalarMult returns x*P for x in Z_N and P in E(Z_P)
 func (point EllipticPoint) ScalarMult(factor *big.Int) *EllipticPoint {
 	res := new(EllipticPoint).Zero()
 	res.X, res.Y = Curve.ScalarMult(point.X, point.Y, factor.Bytes())
