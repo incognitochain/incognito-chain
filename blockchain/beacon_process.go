@@ -575,11 +575,16 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	self.BeaconProposerIdx = common.IndexOfStr(newBlock.Header.Producer, self.BeaconCommittee)
 
 	allShardState := newBlock.Body.ShardState
-
+	if self.AllShardState == nil {
+		self.AllShardState = make(map[byte][]ShardState)
+	}
 	// Update new best new block hash
 	for shardID, shardStates := range allShardState {
 		self.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
 		self.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
+		if _, ok := self.AllShardState[shardID]; !ok {
+			self.AllShardState[shardID] = []ShardState{}
+		}
 		self.AllShardState[shardID] = append(self.AllShardState[shardID], shardStates...)
 	}
 
