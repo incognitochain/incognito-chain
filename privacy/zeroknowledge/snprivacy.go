@@ -8,22 +8,22 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 )
 
-type PKSNPrivacyStatement struct {
+type SNPrivacyStatement struct {
 	SN       *privacy.EllipticPoint // serial number
 	comSK    *privacy.EllipticPoint // commitment to private key
 	comInput *privacy.EllipticPoint // commitment to input of the pseudo-random function
 }
 
-type PKSNPrivacyWitness struct {
-	stmt   *PKSNPrivacyStatement // statement to be proved
-	SK     *big.Int              // private key
-	rSK    *big.Int              // blinding factor in the commitment to private key
-	input  *big.Int              // input of pseudo-random function
-	rInput *big.Int              // blinding factor in the commitment to input
+type SNPrivacyWitness struct {
+	stmt   *SNPrivacyStatement // statement to be proved
+	SK     *big.Int            // private key
+	rSK    *big.Int            // blinding factor in the commitment to private key
+	input  *big.Int            // input of pseudo-random function
+	rInput *big.Int            // blinding factor in the commitment to input
 }
 
-type PKSNPrivacyProof struct {
-	stmt   *PKSNPrivacyStatement  // statement to be proved
+type SNPrivacyProof struct {
+	stmt   *SNPrivacyStatement    // statement to be proved
 	tSK    *privacy.EllipticPoint // random commitment related to private key
 	tInput *privacy.EllipticPoint // random commitment related to input
 	tSN    *privacy.EllipticPoint // random commitment related to serial number
@@ -34,58 +34,57 @@ type PKSNPrivacyProof struct {
 	zRInput *big.Int // second challenge-dependent information to open the commitment to input
 }
 
-func (pi *PKSNPrivacyProof) isNil() bool {
-	if pi.stmt.SN == nil {
+func (proof *SNPrivacyProof) isNil() bool {
+	if proof.stmt.SN == nil {
 		return true
 	}
-	if pi.stmt.SN == nil {
+	if proof.stmt.SN == nil {
 		return true
 	}
-	if pi.stmt.comInput == nil {
+	if proof.stmt.comInput == nil {
 		return true
 	}
-
-	if pi.tSK == nil {
+	if proof.tSK == nil {
 		return true
 	}
-	if pi.tInput == nil {
+	if proof.tInput == nil {
 		return true
 	}
-	if pi.tSN == nil {
+	if proof.tSN == nil {
 		return true
 	}
-	if pi.zSK == nil {
+	if proof.zSK == nil {
 		return true
 	}
-	if pi.zRSK == nil {
+	if proof.zRSK == nil {
 		return true
 	}
-	if pi.zInput == nil {
+	if proof.zInput == nil {
 		return true
 	}
-	if pi.zRInput == nil {
+	if proof.zRInput == nil {
 		return true
 	}
 	return false
 }
 
 // Init inits Proof
-func (pi *PKSNPrivacyProof) Init() *PKSNPrivacyProof {
-	pi.stmt = new(PKSNPrivacyStatement)
-	pi.tSK = new(privacy.EllipticPoint)
-	pi.tInput = new(privacy.EllipticPoint)
-	pi.tSN = new(privacy.EllipticPoint)
+func (proof *SNPrivacyProof) Init() *SNPrivacyProof {
+	proof.stmt = new(SNPrivacyStatement)
+	proof.tSK = new(privacy.EllipticPoint)
+	proof.tInput = new(privacy.EllipticPoint)
+	proof.tSN = new(privacy.EllipticPoint)
 
-	pi.zSK = new(big.Int)
-	pi.zRSK = new(big.Int)
-	pi.zInput = new(big.Int)
-	pi.zRInput = new(big.Int)
+	proof.zSK = new(big.Int)
+	proof.zRSK = new(big.Int)
+	proof.zInput = new(big.Int)
+	proof.zRInput = new(big.Int)
 
-	return pi
+	return proof
 }
 
 // Set sets Statement
-func (stmt *PKSNPrivacyStatement) Set(
+func (stmt *SNPrivacyStatement) Set(
 	SN *privacy.EllipticPoint,
 	comSK *privacy.EllipticPoint,
 	comInput *privacy.EllipticPoint) {
@@ -95,15 +94,15 @@ func (stmt *PKSNPrivacyStatement) Set(
 }
 
 // Set sets Witness
-func (wit *PKSNPrivacyWitness) Set(
-	stmt *PKSNPrivacyStatement,
+func (wit *SNPrivacyWitness) Set(
+	stmt *SNPrivacyStatement,
 	SK *big.Int,
 	rSK *big.Int,
 	input *big.Int,
 	rInput *big.Int) {
 
 	if wit == nil {
-		wit = new(PKSNPrivacyWitness)
+		wit = new(SNPrivacyWitness)
 	}
 
 	wit.stmt = stmt
@@ -114,8 +113,8 @@ func (wit *PKSNPrivacyWitness) Set(
 }
 
 // Set sets Proof
-func (pi *PKSNPrivacyProof) Set(
-	stmt *PKSNPrivacyStatement,
+func (proof *SNPrivacyProof) Set(
+	stmt *SNPrivacyStatement,
 	tSK *privacy.EllipticPoint,
 	tInput *privacy.EllipticPoint,
 	tSN *privacy.EllipticPoint,
@@ -124,47 +123,47 @@ func (pi *PKSNPrivacyProof) Set(
 	zInput *big.Int,
 	zRInput *big.Int) {
 
-	if pi == nil {
-		pi = new(PKSNPrivacyProof)
+	if proof == nil {
+		proof = new(SNPrivacyProof)
 	}
 
-	pi.stmt = stmt
-	pi.tSK = tSK
-	pi.tInput = tInput
-	pi.tSN = tSN
+	proof.stmt = stmt
+	proof.tSK = tSK
+	proof.tInput = tInput
+	proof.tSN = tSN
 
-	pi.zSK = zSK
-	pi.zRSK = zRSK
-	pi.zInput = zInput
-	pi.zRInput = zRInput
+	proof.zSK = zSK
+	proof.zRSK = zRSK
+	proof.zInput = zInput
+	proof.zRInput = zRInput
 }
 
-func (pi *PKSNPrivacyProof) Bytes() []byte {
+func (proof *SNPrivacyProof) Bytes() []byte {
 	// if proof is nil, return an empty array
-	if pi.isNil() {
+	if proof.isNil() {
 		return []byte{}
 	}
 
 	var bytes []byte
-	bytes = append(bytes, pi.stmt.SN.Compress()...)
-	bytes = append(bytes, pi.stmt.comSK.Compress()...)
-	bytes = append(bytes, pi.stmt.comInput.Compress()...)
+	bytes = append(bytes, proof.stmt.SN.Compress()...)
+	bytes = append(bytes, proof.stmt.comSK.Compress()...)
+	bytes = append(bytes, proof.stmt.comInput.Compress()...)
 
-	bytes = append(bytes, pi.tSK.Compress()...)
-	bytes = append(bytes, pi.tInput.Compress()...)
-	bytes = append(bytes, pi.tSN.Compress()...)
+	bytes = append(bytes, proof.tSK.Compress()...)
+	bytes = append(bytes, proof.tInput.Compress()...)
+	bytes = append(bytes, proof.tSN.Compress()...)
 
-	bytes = append(bytes, privacy.AddPaddingBigInt(pi.zSK, privacy.BigIntSize)...)
-	bytes = append(bytes, privacy.AddPaddingBigInt(pi.zRSK, privacy.BigIntSize)...)
-	bytes = append(bytes, privacy.AddPaddingBigInt(pi.zInput, privacy.BigIntSize)...)
-	bytes = append(bytes, privacy.AddPaddingBigInt(pi.zRInput, privacy.BigIntSize)...)
+	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zSK, privacy.BigIntSize)...)
+	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zRSK, privacy.BigIntSize)...)
+	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zInput, privacy.BigIntSize)...)
+	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zRInput, privacy.BigIntSize)...)
 
 	return bytes
 }
 
-func (pi *PKSNPrivacyProof) SetBytes(bytes []byte) error {
-	if pi == nil {
-		pi = pi.Init()
+func (proof *SNPrivacyProof) SetBytes(bytes []byte) error {
+	if proof == nil {
+		proof = proof.Init()
 	}
 
 	if len(bytes) == 0 {
@@ -174,61 +173,61 @@ func (pi *PKSNPrivacyProof) SetBytes(bytes []byte) error {
 	offset := 0
 	var err error
 
-	pi.stmt.SN, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	proof.stmt.SN, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
 
-	pi.stmt.comSK, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	proof.stmt.comSK, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
 
-	pi.stmt.comInput, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	proof.stmt.comInput, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
 
-	pi.tSK, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	proof.tSK, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
 
-	pi.tInput, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	proof.tInput, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
 
-	pi.tSN, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	proof.tSN, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
 
-	pi.zSK.SetBytes(bytes[offset : offset+privacy.BigIntSize])
+	proof.zSK.SetBytes(bytes[offset : offset+privacy.BigIntSize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.BigIntSize
 
-	pi.zRSK.SetBytes(bytes[offset : offset+privacy.BigIntSize])
+	proof.zRSK.SetBytes(bytes[offset : offset+privacy.BigIntSize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.BigIntSize
 
-	pi.zInput.SetBytes(bytes[offset : offset+privacy.BigIntSize])
+	proof.zInput.SetBytes(bytes[offset : offset+privacy.BigIntSize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.BigIntSize
 
-	pi.zRInput.SetBytes(bytes[offset : offset+privacy.BigIntSize])
+	proof.zRInput.SetBytes(bytes[offset : offset+privacy.BigIntSize])
 	if err != nil {
 		return err
 	}
@@ -236,7 +235,7 @@ func (pi *PKSNPrivacyProof) SetBytes(bytes []byte) error {
 	return nil
 }
 
-func (wit *PKSNPrivacyWitness) Prove(mess []byte) (*PKSNPrivacyProof, error) {
+func (wit *SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 	start := time.Now()
 
 	// randomness
@@ -282,48 +281,48 @@ func (wit *PKSNPrivacyWitness) Prove(mess []byte) (*PKSNPrivacyProof, error) {
 	zRInput.Add(zRInput, dSND)
 	zRInput.Mod(zRInput, privacy.Curve.Params().N)
 
-	proof := new(PKSNPrivacyProof).Init()
+	proof := new(SNPrivacyProof).Init()
 	proof.Set(wit.stmt, tSeed, tInput, tOutput, zSeed, zRSeed, zInput, zRInput)
 	end := time.Since(start)
 	fmt.Printf("Serial number proving time: %v\n", end)
 	return proof, nil
 }
 
-func (pi *PKSNPrivacyProof) Verify(mess []byte) bool {
+func (proof *SNPrivacyProof) Verify(mess []byte) bool {
 	start := time.Now()
 	// re-calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 	x := new(big.Int)
 	if mess == nil {
-		x = generateChallengeFromPoint([]*privacy.EllipticPoint{pi.tSK, pi.tInput, pi.tSN})
+		x = generateChallengeFromPoint([]*privacy.EllipticPoint{proof.tSK, proof.tInput, proof.tSN})
 	} else {
 		x = big.NewInt(0).SetBytes(mess)
 	}
 
 	// Check gSND^zInput * h^zRInput = input^x * tInput
-	leftPoint1 := privacy.PedCom.CommitAtIndex(pi.zInput, pi.zRInput, privacy.SND)
+	leftPoint1 := privacy.PedCom.CommitAtIndex(proof.zInput, proof.zRInput, privacy.SND)
 
-	rightPoint1 := pi.stmt.comInput.ScalarMult(x)
-	rightPoint1 = rightPoint1.Add(pi.tInput)
+	rightPoint1 := proof.stmt.comInput.ScalarMult(x)
+	rightPoint1 = rightPoint1.Add(proof.tInput)
 
 	if !leftPoint1.IsEqual(rightPoint1) {
 		return false
 	}
 
 	// Check gSK^zSeed * h^zRSeed = vKey^x * tSeed
-	leftPoint3 := privacy.PedCom.CommitAtIndex(pi.zSK, pi.zRSK, privacy.SK)
+	leftPoint3 := privacy.PedCom.CommitAtIndex(proof.zSK, proof.zRSK, privacy.SK)
 
-	rightPoint3 := pi.stmt.comSK.ScalarMult(x)
-	rightPoint3 = rightPoint3.Add(pi.tSK)
+	rightPoint3 := proof.stmt.comSK.ScalarMult(x)
+	rightPoint3 = rightPoint3.Add(proof.tSK)
 
 	if !leftPoint3.IsEqual(rightPoint3) {
 		return false
 	}
 
 	// Check SN^(zSeed + zInput) = gSK^x * tOutput
-	leftPoint4 := pi.stmt.SN.ScalarMult(new(big.Int).Add(pi.zSK, pi.zInput))
+	leftPoint4 := proof.stmt.SN.ScalarMult(new(big.Int).Add(proof.zSK, proof.zInput))
 
 	rightPoint4 := privacy.PedCom.G[privacy.SK].ScalarMult(x)
-	rightPoint4 = rightPoint4.Add(pi.tSN)
+	rightPoint4 = rightPoint4.Add(proof.tSN)
 
 	if !leftPoint4.IsEqual(rightPoint4) {
 		return false

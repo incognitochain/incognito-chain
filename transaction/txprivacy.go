@@ -62,7 +62,7 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-var SNPrivacyWitness []*zkp.PKSNPrivacyWitness
+var SNPrivacyWitness []*zkp.SNPrivacyWitness
 
 // Init - init value for tx from inputcoin(old output coin from old tx)
 // create new outputcoin and build privacy proof
@@ -361,9 +361,9 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	// Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
 	// res = verKey.Verify(signature, tx.Hash()[:])
 	//fmt.Println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", tx.Sig)
-	SNPrivacyProof := make([]*zkp.PKSNPrivacyProof, len(tx.Proof.InputCoins))
+	SNPrivacyProof := make([]*zkp.SNPrivacyProof, len(tx.Proof.InputCoins))
 	for i := 0; i < len(tx.Proof.InputCoins); i++ {
-		SNPrivacyProof[i] = new(zkp.PKSNPrivacyProof).Init()
+		SNPrivacyProof[i] = new(zkp.SNPrivacyProof).Init()
 		SNPrivacyProof[i].SetBytes(tx.Sig[i*privacy.SNPrivacyProofSize : (i+1)*privacy.SNPrivacyProofSize])
 		if !SNPrivacyProof[i].Verify(tx.Hash()[:]) {
 			//fmt.Println("Falseeeeeeeeeeeeeeeeeeeeeeeee")
