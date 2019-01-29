@@ -49,10 +49,6 @@ func (point EllipticPoint) MarshalJSON() ([]byte, error) {
 
 // ComputeYCoord returns Y-coordinate from X-coordinate
 func (point *EllipticPoint) ComputeYCoord() error {
-	if point.Y == nil {
-		point.Y = big.NewInt(0)
-	}
-
 	// Y = +-sqrt(x^3 - 3*x + B)
 	xCube := new(big.Int).Mul(point.X, point.X)
 	xCube.Mul(xCube, point.X)
@@ -141,60 +137,29 @@ func (point EllipticPoint) Compress() []byte {
 // to a point on the given curve.
 func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 	format := compressPointBytes[0]
-	ybit := (format & 0x1) == 0x1
+	yBit := (format & 0x1) == 0x1
 	format &= ^byte(0x1)
 
 	if format != PointCompressed {
 		return errors.New("invalid magic in compressed compressPoint bytes")
 	}
-	var err error
+
 	if point.X == nil {
 		point.X = new(big.Int).SetBytes(compressPointBytes[1:33])
 	} else {
 		point.X.SetBytes(compressPointBytes[1:33])
 	}
-	point.Y, err = decompPoint(point.X, ybit)
-	return err
-}
 
-// decompPoint decompresses a point on the given curve given the X point and
-// the solution to use.
-func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
-	Q := Curve.Params().P
-	// temp := new(big.Int)
-	xTemp := new(big.Int)
-
-	// Y = +-sqrt(x^3 - 3*x + B)
-	xCube := new(big.Int).Mul(x, x)
-	xCube.Mul(xCube, x)
-	xCube.Add(xCube, Curve.Params().B)
-	xCube.Mod(xCube, Curve.Params().P)
-	xCube.Sub(xCube, xTemp.Mul(x, new(big.Int).SetInt64(3)))
-	xCube.Mod(xCube, Curve.Params().P)
-
-	// Now calculate sqrt mod p of x^3 - 3*x + B
-	// This code used to do a full sqrt based on tonelli/shanks,
-	// but this was replaced by the algorithms referenced in
-	// https://bitcointalk.org/index.php?topic=162805.msg1712294#msg1712294
-	y := new(big.Int).Exp(xCube, PAdd1Div4(Q), Q)
-
-	if ybit != isOdd(y) {
-		y.Sub(Curve.Params().P, y)
+	err := point.ComputeYCoord()
+	if err!= nil{
+		return err
 	}
 
-	// Check that y is a square root of x^3  - 3*x + B.
-	ySquared := new(big.Int).Mul(y, y)
-	ySquared.Mod(ySquared, Curve.Params().P)
-	if ySquared.Cmp(xCube) != 0 {
-		return nil, errors.New("invalid square root")
+	if yBit != isOdd(point.Y) {
+		point.Y.Sub(Curve.Params().P, point.Y)
 	}
 
-	// Verify that y-coord has expected parity.
-	if ybit != isOdd(y) {
-		return nil, errors.New("ybit doesn't match oddness")
-	}
-
-	return y, nil
+	return nil
 }
 
 // Hash derives a new elliptic point from an elliptic point and an index using hash function
