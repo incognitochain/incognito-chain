@@ -189,13 +189,13 @@ func (wit *SNNoPrivacyWitness) Prove() (*SNNoPrivacyProof, error) {
 	// calculate tSeed = g_SK^eSK
 	tSK := privacy.PedCom.G[privacy.SK].ScalarMult(eSK)
 
-	// calculate tOutput = SN^eSK
+	// calculate tOutput = sn^eSK
 	tE := wit.stmt.output.ScalarMult(eSK)
 
 	// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 	x := generateChallengeFromPoint([]*privacy.EllipticPoint{tSK, tE})
 
-	// Calculate zSeed = SK * x + eSK
+	// Calculate zSeed = sk * x + eSK
 	zSK := new(big.Int).Mul(wit.seed, x)
 	zSK.Add(zSK, eSK)
 	zSK.Mod(zSK, privacy.Curve.Params().N)
@@ -221,7 +221,7 @@ func (pro *SNNoPrivacyProof) Verify() bool {
 		return false
 	}
 
-	// Check SN^(zSeed + x*input) = gSK^x * tOutput
+	// Check sn^(zSeed + x*input) = gSK^x * tOutput
 	leftPoint2 := pro.stmt.output.ScalarMult(new(big.Int).Add(pro.zSeed, new(big.Int).Mul(x, pro.stmt.input)))
 
 	rightPoint2 := privacy.PedCom.G[privacy.SK].ScalarMult(x)

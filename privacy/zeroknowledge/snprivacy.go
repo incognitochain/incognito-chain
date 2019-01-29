@@ -1,22 +1,20 @@
 package zkp
 
 import (
-	"fmt"
-	"math/big"
-	"time"
-
 	"github.com/ninjadotorg/constant/privacy"
+	"math/big"
 )
 
 type SNPrivacyStatement struct {
-	SN       *privacy.EllipticPoint // serial number
+	sn       *privacy.EllipticPoint // serial number
 	comSK    *privacy.EllipticPoint // commitment to private key
 	comInput *privacy.EllipticPoint // commitment to input of the pseudo-random function
 }
 
 type SNPrivacyWitness struct {
 	stmt   *SNPrivacyStatement // statement to be proved
-	SK     *big.Int            // private key
+
+	sk     *big.Int            // private key
 	rSK    *big.Int            // blinding factor in the commitment to private key
 	input  *big.Int            // input of pseudo-random function
 	rInput *big.Int            // blinding factor in the commitment to input
@@ -24,6 +22,7 @@ type SNPrivacyWitness struct {
 
 type SNPrivacyProof struct {
 	stmt   *SNPrivacyStatement    // statement to be proved
+
 	tSK    *privacy.EllipticPoint // random commitment related to private key
 	tInput *privacy.EllipticPoint // random commitment related to input
 	tSN    *privacy.EllipticPoint // random commitment related to serial number
@@ -35,10 +34,10 @@ type SNPrivacyProof struct {
 }
 
 func (proof *SNPrivacyProof) isNil() bool {
-	if proof.stmt.SN == nil {
+	if proof.stmt.sn == nil {
 		return true
 	}
-	if proof.stmt.SN == nil {
+	if proof.stmt.comSK == nil {
 		return true
 	}
 	if proof.stmt.comInput == nil {
@@ -62,15 +61,13 @@ func (proof *SNPrivacyProof) isNil() bool {
 	if proof.zInput == nil {
 		return true
 	}
-	if proof.zRInput == nil {
-		return true
-	}
-	return false
+	return proof.zRInput == nil
 }
 
 // Init inits Proof
 func (proof *SNPrivacyProof) Init() *SNPrivacyProof {
 	proof.stmt = new(SNPrivacyStatement)
+
 	proof.tSK = new(privacy.EllipticPoint)
 	proof.tInput = new(privacy.EllipticPoint)
 	proof.tSN = new(privacy.EllipticPoint)
@@ -88,7 +85,7 @@ func (stmt *SNPrivacyStatement) Set(
 	SN *privacy.EllipticPoint,
 	comSK *privacy.EllipticPoint,
 	comInput *privacy.EllipticPoint) {
-	stmt.SN = SN
+	stmt.sn = SN
 	stmt.comSK = comSK
 	stmt.comInput = comInput
 }
@@ -101,12 +98,8 @@ func (wit *SNPrivacyWitness) Set(
 	input *big.Int,
 	rInput *big.Int) {
 
-	if wit == nil {
-		wit = new(SNPrivacyWitness)
-	}
-
 	wit.stmt = stmt
-	wit.SK = SK
+	wit.sk = SK
 	wit.rSK = rSK
 	wit.input = input
 	wit.rInput = rInput
@@ -122,11 +115,6 @@ func (proof *SNPrivacyProof) Set(
 	zRSK *big.Int,
 	zInput *big.Int,
 	zRInput *big.Int) {
-
-	if proof == nil {
-		proof = new(SNPrivacyProof)
-	}
-
 	proof.stmt = stmt
 	proof.tSK = tSK
 	proof.tInput = tInput
@@ -145,7 +133,7 @@ func (proof *SNPrivacyProof) Bytes() []byte {
 	}
 
 	var bytes []byte
-	bytes = append(bytes, proof.stmt.SN.Compress()...)
+	bytes = append(bytes, proof.stmt.sn.Compress()...)
 	bytes = append(bytes, proof.stmt.comSK.Compress()...)
 	bytes = append(bytes, proof.stmt.comInput.Compress()...)
 
@@ -162,10 +150,6 @@ func (proof *SNPrivacyProof) Bytes() []byte {
 }
 
 func (proof *SNPrivacyProof) SetBytes(bytes []byte) error {
-	if proof == nil {
-		proof = proof.Init()
-	}
-
 	if len(bytes) == 0 {
 		return nil
 	}
@@ -173,7 +157,7 @@ func (proof *SNPrivacyProof) SetBytes(bytes []byte) error {
 	offset := 0
 	var err error
 
-	proof.stmt.SN, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	proof.stmt.sn, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
 	if err != nil {
 		return err
 	}
@@ -236,8 +220,6 @@ func (proof *SNPrivacyProof) SetBytes(bytes []byte) error {
 }
 
 func (wit *SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
-	start := time.Now()
-
 	// randomness
 	eSK := privacy.RandInt()
 	eSND := privacy.RandInt()
@@ -251,7 +233,7 @@ func (wit *SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 	tInput := privacy.PedCom.CommitAtIndex(eSND, dSND, privacy.SND)
 
 	// calculate tSND = g_SK^eSND * h^dSND2
-	tOutput := wit.stmt.SN.ScalarMult(new(big.Int).Add(eSK, eSND))
+	tOutput := wit.stmt.sn.ScalarMult(new(big.Int).Add(eSK, eSND))
 
 	// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 	x := new(big.Int)
@@ -261,8 +243,8 @@ func (wit *SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 		x = big.NewInt(0).SetBytes(mess)
 	}
 
-	// Calculate zSeed = SK * x + eSK
-	zSeed := new(big.Int).Mul(wit.SK, x)
+	// Calculate zSeed = sk * x + eSK
+	zSeed := new(big.Int).Mul(wit.sk, x)
 	zSeed.Add(zSeed, eSK)
 	zSeed.Mod(zSeed, privacy.Curve.Params().N)
 
@@ -283,13 +265,10 @@ func (wit *SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 
 	proof := new(SNPrivacyProof).Init()
 	proof.Set(wit.stmt, tSeed, tInput, tOutput, zSeed, zRSeed, zInput, zRInput)
-	end := time.Since(start)
-	fmt.Printf("Serial number proving time: %v\n", end)
 	return proof, nil
 }
 
 func (proof *SNPrivacyProof) Verify(mess []byte) bool {
-	start := time.Now()
 	// re-calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 	x := new(big.Int)
 	if mess == nil {
@@ -309,27 +288,20 @@ func (proof *SNPrivacyProof) Verify(mess []byte) bool {
 	}
 
 	// Check gSK^zSeed * h^zRSeed = vKey^x * tSeed
-	leftPoint3 := privacy.PedCom.CommitAtIndex(proof.zSK, proof.zRSK, privacy.SK)
+	leftPoint2 := privacy.PedCom.CommitAtIndex(proof.zSK, proof.zRSK, privacy.SK)
 
-	rightPoint3 := proof.stmt.comSK.ScalarMult(x)
-	rightPoint3 = rightPoint3.Add(proof.tSK)
+	rightPoint2 := proof.stmt.comSK.ScalarMult(x)
+	rightPoint2 = rightPoint2.Add(proof.tSK)
 
-	if !leftPoint3.IsEqual(rightPoint3) {
+	if !leftPoint2.IsEqual(rightPoint2) {
 		return false
 	}
 
-	// Check SN^(zSeed + zInput) = gSK^x * tOutput
-	leftPoint4 := proof.stmt.SN.ScalarMult(new(big.Int).Add(proof.zSK, proof.zInput))
+	// Check sn^(zSeed + zInput) = gSK^x * tOutput
+	leftPoint3 := proof.stmt.sn.ScalarMult(new(big.Int).Add(proof.zSK, proof.zInput))
 
-	rightPoint4 := privacy.PedCom.G[privacy.SK].ScalarMult(x)
-	rightPoint4 = rightPoint4.Add(proof.tSN)
+	rightPoint3 := privacy.PedCom.G[privacy.SK].ScalarMult(x)
+	rightPoint3 = rightPoint3.Add(proof.tSN)
 
-	if !leftPoint4.IsEqual(rightPoint4) {
-		return false
-	}
-
-	end := time.Since(start)
-	fmt.Printf("Serial number verification time: %v\n", end)
-
-	return true
+	return leftPoint3.IsEqual(rightPoint3)
 }

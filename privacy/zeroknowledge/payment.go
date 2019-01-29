@@ -465,7 +465,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 	numInputCoin := len(wit.inputCoins)
 
 	randInputSK := privacy.RandInt()
-	// set rand SK for Schnorr signature
+	// set rand sk for Schnorr signature
 	wit.RandSK = new(big.Int).Set(randInputSK)
 
 	cmInputSK := privacy.PedCom.CommitAtIndex(wit.spendingKey, randInputSK, privacy.SK)

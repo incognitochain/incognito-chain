@@ -8,7 +8,7 @@ import (
 
 //SchnPubKey denoted Schnorr Publickey
 type SchnPubKey struct {
-	PK, G, H *EllipticPoint // vKey = G^SK + H^Randomness
+	PK, G, H *EllipticPoint // vKey = G^sk + H^Randomness
 }
 
 //SchnPrivKey denoted Schnorr Privatekey
@@ -110,7 +110,7 @@ func (priKey SchnPrivKey) Sign(data []byte) (*SchnSignature, error) {
 	// E is the hash of elliptic point t and data need to be signed
 	signature.E = Hash(*t, data)
 
-	// Z1 = s - e*SK
+	// Z1 = s - e*sk
 	signature.Z1 = new(big.Int).Sub(s, new(big.Int).Mul(priKey.SK, signature.E))
 	signature.Z1.Mod(signature.Z1, Curve.Params().N)
 

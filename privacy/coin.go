@@ -156,7 +156,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 		offset += int(lenField)
 	}
 
-	//Parse SN
+	//Parse sn
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
