@@ -20,7 +20,7 @@ import (
 
 type sigWitness struct {
 	// hasPrivacy bool
-	SNPrivacyWitness   []*zkp.PKSNPrivacyWitness
+	SNPrivacyWitness   []*zkp.SNPrivacyWitness
 	SNNoPrivacyWitness []*zkp.SNNoPrivacyWitness
 }
 
@@ -378,9 +378,9 @@ func (tx *Tx) verifySigTx(hasPrivacy bool) (bool, error) {
 	// res = verKey.Verify(signature, tx.Hash()[:])
 	//fmt.Println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", tx.Sig)
 	if hasPrivacy {
-		SNPrivacyProof := make([]*zkp.PKSNPrivacyProof, len(tx.Proof.InputCoins))
+		SNPrivacyProof := make([]*zkp.SNPrivacyProof, len(tx.Proof.InputCoins))
 		for i := 0; i < len(tx.Proof.InputCoins); i++ {
-			SNPrivacyProof[i] = new(zkp.PKSNPrivacyProof).Init()
+			SNPrivacyProof[i] = new(zkp.SNPrivacyProof).Init()
 			SNPrivacyProof[i].SetBytes(tx.Sig[i*privacy.SNPrivacyProofSize : (i+1)*privacy.SNPrivacyProofSize])
 			if !SNPrivacyProof[i].Verify(tx.Hash()[:]) {
 				//fmt.Println("Falseeeeeeeeeeeeeeeeeeeeeeeee")
