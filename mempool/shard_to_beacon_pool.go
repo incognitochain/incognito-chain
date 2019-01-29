@@ -73,7 +73,11 @@ func (pool *ShardToBeaconPool) SetDatabase(db database.DatabaseInterface) {
 			panic("Can't Unmarshal beacon beststate")
 		}
 	}
-	pool.shardState = beaconBestState.BestShardHeight
+	if len(beaconBestState.BestShardHeight) == 0 {
+		pool.shardState = make(map[byte]uint64)
+	} else {
+		pool.shardState = beaconBestState.BestShardHeight
+	}
 	pool.db = db
 }
 func (pool *ShardToBeaconPool) GetFinalBlock() map[byte][]blockchain.ShardToBeaconBlock {

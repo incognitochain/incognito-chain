@@ -476,12 +476,13 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 		}
 	}
 	//=============End Verify Stakers
+	//TODO @merman logic check you must
 	// Verify shard state
-	for shardID, shardStates := range block.Body.ShardState {
-		if self.AllShardState[shardID][len(self.AllShardState[shardID])-1].Height-shardStates[0].Height != 1 {
-			return NewBlockChainError(ShardStateError, errors.New("Shardstates are not compatible with beacon best state"))
-		}
-	}
+	// for shardID, shardStates := range block.Body.ShardState {
+	// if self.AllShardState[shardID][len(self.AllShardState[shardID])-1].Height-shardStates[0].Height != 1 {
+	// 	return NewBlockChainError(ShardStateError, errors.New("Shardstates are not compatible with beacon best state"))
+	// }
+	// }
 	return nil
 }
 
