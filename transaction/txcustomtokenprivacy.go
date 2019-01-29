@@ -3,11 +3,12 @@ package transaction
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
+	zkp "github.com/ninjadotorg/constant/privacy/zeroknowledge"
 )
 
 // TxCustomTokenPrivacy is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -28,8 +29,7 @@ func (txObj *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) error {
 	}
 	temp := &struct {
 		TxTokenPrivacyData interface{}
-	}{
-	}
+	}{}
 	err = json.Unmarshal(data, &temp)
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
@@ -151,8 +151,8 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 
 			// sign Tx
 			temp.SigPubKey = tokenParams.Receiver[0].PaymentAddress.Pk
-			temp.sigPrivKey = *senderKey
-			err = temp.signTx()
+			// temp.sigPrivKey = *senderKey
+			err = temp.signTx(hasPrivacyConst)
 			if err != nil {
 				return NewTransactionErr(UnexpectedErr, errors.New("can't handle this TokenTxType"))
 			}
