@@ -338,6 +338,8 @@ func CreateShardActionFromTransaction(transactions []metadata.Transaction) (acti
 	// Generate stake action
 	stakeShardPubKey := []string{}
 	stakeBeaconPubKey := []string{}
+	actions = buildStabilityActions(transactions)
+
 	for _, tx := range transactions {
 		switch tx.GetMetadataType() {
 		case metadata.ShardStakingMeta:
