@@ -135,7 +135,8 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			temp.Proof.OutputCoins[0] = new(privacy.OutputCoin)
 			temp.Proof.OutputCoins[0].CoinDetails = new(privacy.Coin)
 			temp.Proof.OutputCoins[0].CoinDetails.Value = tokenParams.Amount
-			temp.Proof.OutputCoins[0].CoinDetails.PublicKey, err = privacy.DecompressKey(tokenParams.Receiver[0].PaymentAddress.Pk)
+			temp.Proof.OutputCoins[0].CoinDetails.PublicKey = new(privacy.EllipticPoint)
+			err := temp.Proof.OutputCoins[0].CoinDetails.PublicKey.Decompress(tokenParams.Receiver[0].PaymentAddress.Pk)
 			if err != nil {
 				return NewTransactionErr(UnexpectedErr, err)
 			}

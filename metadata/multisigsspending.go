@@ -106,7 +106,7 @@ func (msSpending *MultiSigsSpending) VerifyMultiSigs(
 		}
 		verKey := new(ecdsa.PublicKey)
 		point := new(privacy.EllipticPoint)
-		point, _ = privacy.DecompressKey(pk)
+		_ = point.Decompress(pk)
 		verKey.X, verKey.Y = point.X, point.Y
 		verKey.Curve = privacy.Curve
 

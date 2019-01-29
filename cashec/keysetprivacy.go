@@ -62,7 +62,8 @@ func (keysetObj *KeySet) Verify(data, signature []byte) (bool, error) {
 	isValid := false
 
 	pubKeySig := new(privacy.SchnPubKey)
-	PK, err := privacy.DecompressKey(keysetObj.PaymentAddress.Pk)
+	PK := new(privacy.EllipticPoint)
+	err := PK.Decompress(keysetObj.PaymentAddress.Pk)
 	if err != nil {
 		return false, err
 	}

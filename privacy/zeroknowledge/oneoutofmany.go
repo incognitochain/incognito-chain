@@ -159,12 +159,12 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 	n := privacy.CMRingSizeExp
 
 	offset := 0
-	var err error
 
 	// get cl array
 	proof.cl = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
-		proof.cl[i], err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+		proof.cl[i] = new(privacy.EllipticPoint)
+		err := proof.cl[i].Decompress(bytes[offset : offset+privacy.CompressedPointSize])
 		if err != nil {
 			return err
 		}
@@ -174,7 +174,8 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 	// get ca array
 	proof.ca = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
-		proof.ca[i], err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+		proof.ca[i] = new(privacy.EllipticPoint)
+		err := proof.ca[i].Decompress(bytes[offset : offset+privacy.CompressedPointSize])
 		if err != nil {
 			return err
 		}
@@ -184,7 +185,9 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 	// get cb array
 	proof.cb = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
-		proof.cb[i], err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+		proof.cb[i] = new(privacy.EllipticPoint)
+		err := proof.cb[i].Decompress(bytes[offset : offset+privacy.CompressedPointSize])
+
 		if err != nil {
 			return err
 		}
@@ -194,7 +197,8 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 	// get cd array
 	proof.cd = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
-		proof.cd[i], err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+		proof.cd[i] = new(privacy.EllipticPoint)
+		err := proof.cd[i].Decompress(bytes[offset : offset+privacy.CompressedPointSize])
 		if err != nil {
 			return err
 		}

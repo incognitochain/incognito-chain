@@ -310,7 +310,6 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		offset += lenOutputCoin
 	}
 	//ComOutputValue   []*privacy.EllipticPoint
-	var err error
 	lenComOutputValueArray := int(proofbytes[offset])
 	offset += 1
 	proof.ComOutputValue = make([]*privacy.EllipticPoint, lenComOutputValueArray)
@@ -318,7 +317,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		lenComOutputValue := int(proofbytes[offset])
 		offset += 1
 		proof.ComOutputValue[i] = new(privacy.EllipticPoint)
-		proof.ComOutputValue[i], err = privacy.DecompressKey(proofbytes[offset : offset+lenComOutputValue])
+		err := proof.ComOutputValue[i].Decompress(proofbytes[offset : offset+lenComOutputValue])
 		if err != nil {
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
@@ -332,7 +331,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		lenComOutputSND := int(proofbytes[offset])
 		offset += 1
 		proof.ComOutputSND[i] = new(privacy.EllipticPoint)
-		proof.ComOutputSND[i], err = privacy.DecompressKey(proofbytes[offset : offset+lenComOutputSND])
+		err := proof.ComOutputSND[i].Decompress(proofbytes[offset : offset+lenComOutputSND])
 		if err != nil {
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
@@ -346,7 +345,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		lenComOutputShardId := int(proofbytes[offset])
 		offset += 1
 		proof.ComOutputShardID[i] = new(privacy.EllipticPoint)
-		proof.ComOutputShardID[i], err = privacy.DecompressKey(proofbytes[offset : offset+lenComOutputShardId])
+		err := proof.ComOutputShardID[i].Decompress(proofbytes[offset : offset+lenComOutputShardId])
 		if err != nil {
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
@@ -358,7 +357,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	offset += 1
 	if lenComInputSK > 0 {
 		proof.ComInputSK = new(privacy.EllipticPoint)
-		proof.ComInputSK, err = privacy.DecompressKey(proofbytes[offset : offset+lenComInputSK])
+		err := proof.ComInputSK.Decompress(proofbytes[offset : offset+lenComInputSK])
 		if err != nil {
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
@@ -372,7 +371,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		lenComInputValue := int(proofbytes[offset])
 		offset += 1
 		proof.ComInputValue[i] = new(privacy.EllipticPoint)
-		proof.ComInputValue[i], err = privacy.DecompressKey(proofbytes[offset : offset+lenComInputValue])
+		err := proof.ComInputValue[i].Decompress(proofbytes[offset : offset+lenComInputValue])
 		if err != nil {
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
@@ -386,7 +385,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		lenComInputSND := int(proofbytes[offset])
 		offset += 1
 		proof.ComInputSND[i] = new(privacy.EllipticPoint)
-		proof.ComInputSND[i], err = privacy.DecompressKey(proofbytes[offset : offset+lenComInputSND])
+		err := proof.ComInputSND[i].Decompress(proofbytes[offset : offset+lenComInputSND])
 		if err != nil {
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
@@ -397,7 +396,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	offset += 1
 	if lenComInputShardID > 0 {
 		proof.ComInputShardID = new(privacy.EllipticPoint)
-		proof.ComInputShardID, err = privacy.DecompressKey(proofbytes[offset : offset+lenComInputShardID])
+		err := proof.ComInputShardID.Decompress(proofbytes[offset : offset+lenComInputShardID])
 		if err != nil {
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
@@ -763,14 +762,20 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))
 				return false
 			}
-			commitments[j], err = privacy.DecompressKey(commitmentBytes)
+			commitments[j] = new(privacy.EllipticPoint)
+			err = commitments[j].Decompress(commitmentBytes)
 			if err != nil {
 				fmt.Printf("err 2\n")
 				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))
 				return false
 			}
 
-			commitments[j], _ = commitments[j].Sub(cmInputSum[i])
+			commitments[j], err = commitments[j].Sub(cmInputSum[i])
+			if err != nil {
+				fmt.Printf("err 2\n")
+				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))
+				return false
+			}
 		}
 
 		proof.OneOfManyProof[i].stmt.commitments = commitments
