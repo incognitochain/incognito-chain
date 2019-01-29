@@ -90,9 +90,7 @@ func ConvertBigIntToBinary(number *big.Int, n int) []*big.Int {
 			}
 			break
 		}
-
 	}
-
 	return binary
 }
 
