@@ -279,7 +279,7 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 
 	// Check Index
 	if wit.stmt.index < privacy.SK || wit.stmt.index > privacy.RAND {
-		return nil, errors.New("Index must be between index SK and index RAND")
+		return nil, errors.New("Index must be between index sk and index RAND")
 	}
 
 	// represent indexIsZero in binary
