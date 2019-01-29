@@ -47,6 +47,9 @@ const (
 
 	CreateAndSendStakingTransaction = "createandsendstakingtransaction"
 
+	GetShardBestState  = "getshardbeststate"
+	GetBeaconBestState = "getbeaconbeststate"
+
 	// Wallet rpc cmd
 	ListAccounts                       = "listaccounts"
 	GetAccount                         = "getaccount"
