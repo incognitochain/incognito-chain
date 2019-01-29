@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/ninjadotorg/constant/common/base58"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ninjadotorg/constant/common/base58"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -357,6 +358,7 @@ func CreateShardActionFromTransaction(transactions []metadata.Transaction) (acti
 		action := []string{"stake", strings.Join(stakeBeaconPubKey, ","), "beacon"}
 		actions = append(actions, action)
 	}
+
 	return actions
 }
 
