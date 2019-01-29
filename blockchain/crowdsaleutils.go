@@ -19,7 +19,7 @@ func buildPaymentForCoin(
 	saleID []byte,
 	producerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
-) (*transaction.TxCustomToken, error) {
+) (*transaction.Tx, error) {
 	// Mint and send Constant
 	meta := txRequest.Metadata.(*metadata.CrowdsaleRequest)
 	metaPay := &metadata.CrowdsalePayment{
@@ -31,17 +31,14 @@ func buildPaymentForCoin(
 	copy(metaPay.SaleID, saleID)
 	metaPayList := []metadata.Metadata{metaPay}
 
+	fmt.Printf("[db] build CST payment: %d\n", amount)
+
 	amounts := []uint64{amount}
 	txs, err := transaction.BuildCoinbaseTxs([]*privacy.PaymentAddress{&meta.PaymentAddress}, amounts, producerPrivateKey, db, metaPayList) // There's only one tx in txs
 	if err != nil {
 		return nil, err
 	}
-
-	txToken := &transaction.TxCustomToken{
-		Tx:          *(txs[0]),
-		TxTokenData: transaction.TxTokenData{},
-	}
-	return txToken, nil
+	return txs[0], nil
 }
 
 func transferTxToken(tokenAmount uint64, unspentTxTokenOuts []transaction.TxTokenVout, tokenID common.Hash, receiverPk []byte) (*transaction.TxCustomToken, int, error) {
@@ -178,8 +175,13 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	buyPrice := blockgen.getAssetPrice(chainID, buyingAsset)
 	sellPrice := blockgen.getAssetPrice(chainID, sellingAsset)
 	if buyPrice == 0 || sellPrice == 0 {
-		return nil, errors.New("Missing price data in block")
+		buyPrice = saleData.DefaultBuyPrice
+		sellPrice = saleData.DefaultSellPrice
+		if buyPrice == 0 || sellPrice == 0 {
+			return nil, errors.New("Missing price data in block")
+		}
 	}
+	fmt.Printf("[db] buy and sell price: %d %d\n", buyPrice, sellPrice)
 
 	// Check if price limit is not violated
 	if metaReq.LimitSellingAssetPrice && sellPrice > priceLimit {
@@ -329,6 +331,8 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 			}
 		}
 	}
+	fmt.Printf("[db] process crowdsale len(txsPayment) :%d\n", len(txsPayment))
+	fmt.Printf("[db] process crowdsale len(txsToRemove) :%d\n", len(txsToRemove))
 	return txsPayment, txsToRemove
 }
 
@@ -338,7 +342,6 @@ func (blockgen *BlkTmplGenerator) getAssetPrice(chainID byte, assetID common.Has
 		if blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds != nil {
 			price = blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds[assetID.String()]
 		}
-		fmt.Printf("[db] asset is bond, price = %d\n", price)
 	} else if blockgen.chain.BestState[chainID].BestBlock.Header.Oracle != nil {
 		oracle := blockgen.chain.BestState[chainID].BestBlock.Header.Oracle
 		if assetID.IsEqual(&common.ConstantID) {
@@ -352,7 +355,6 @@ func (blockgen *BlkTmplGenerator) getAssetPrice(chainID byte, assetID common.Has
 		} else if assetID.IsEqual(&common.BTCAssetID) {
 			price = oracle.BTC
 		}
-		fmt.Printf("[db] asset is not bond, price = %d\n", price)
 	}
 	return price
 }
