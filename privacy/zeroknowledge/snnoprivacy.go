@@ -181,7 +181,7 @@ func (pro *SNNoPrivacyProof) SetBytes(bytes []byte) error {
 	return nil
 }
 
-func (wit *SNNoPrivacyWitness) Prove() (*SNNoPrivacyProof, error) {
+func (wit *SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
 	start := time.Now()
 	// randomness
 	eSK := privacy.RandInt()
@@ -191,10 +191,13 @@ func (wit *SNNoPrivacyWitness) Prove() (*SNNoPrivacyProof, error) {
 
 	// calculate tOutput = SN^eSK
 	tE := wit.stmt.output.ScalarMult(eSK)
-
-	// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-	x := generateChallengeFromPoint([]*privacy.EllipticPoint{tSK, tE})
-
+	x := big.NewInt(0)
+	if mess == nil {
+		// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
+		x.Set(generateChallengeFromPoint([]*privacy.EllipticPoint{tSK, tE}))
+	} else {
+		x.SetBytes(mess)
+	}
 	// Calculate zSeed = SK * x + eSK
 	zSK := new(big.Int).Mul(wit.seed, x)
 	zSK.Add(zSK, eSK)
@@ -207,9 +210,16 @@ func (wit *SNNoPrivacyWitness) Prove() (*SNNoPrivacyProof, error) {
 	return proof, nil
 }
 
-func (pro *SNNoPrivacyProof) Verify() bool {
+func (pro *SNNoPrivacyProof) Verify(mess []byte) bool {
 	// re-calculate x = hash(tSeed || tOutput)
-	x := generateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSeed, pro.tOutput})
+	x := big.NewInt(0)
+	if mess == nil {
+		// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
+		x.Set(generateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSeed, pro.tOutput}))
+	} else {
+		x.SetBytes(mess)
+	}
+	// x := generateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSeed, pro.tOutput})
 
 	// Check gSK^zSeed = vKey^x * tSeed
 	leftPoint1 := privacy.PedCom.G[privacy.SK].ScalarMult(pro.zSeed)

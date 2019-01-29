@@ -675,7 +675,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 	if !hasPrivacy {
 		// Proving that serial number is derived from the committed derivator
 		for i := 0; i < len(wit.inputCoins); i++ {
-			snNoPrivacyProof, err := wit.SNNoPrivacyWitness[i].Prove()
+			snNoPrivacyProof, err := wit.SNNoPrivacyWitness[i].Prove(nil)
 			if err != nil {
 				return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
 			}
@@ -728,7 +728,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee ui
 
 		for i := 0; i < len(pro.InputCoins); i++ {
 			// Check input coins' Serial number is created from input coins' input and sender's spending key
-			if !pro.SNNoPrivacyProof[i].Verify() {
+			if !pro.SNNoPrivacyProof[i].Verify(nil) {
 				return false
 			}
 
