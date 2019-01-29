@@ -227,6 +227,18 @@ func (self *BlockChain) SyncBeacon() error {
 			default:
 				time.Sleep(getStateWaitTime * time.Second)
 				self.config.Server.PushMessageGetBeaconState()
+				blks, err := self.config.NodeBeaconPool.GetBlocks(self.BestState.Beacon.BeaconHeight + 1)
+				if err != nil {
+					Logger.log.Error(err)
+					continue
+				}
+				for _, newBlk := range blks {
+					err = self.InsertBeaconBlock(&newBlk)
+					if err != nil {
+						Logger.log.Error(err)
+						continue
+					}
+				}
 			}
 		}
 	}()
