@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"time"
 )
+// This protocol proves in zero-knowledge that a list of committed values falls in [0, 2^64)
 
 type AggregatedRangeWitness struct {
 	values []*big.Int
