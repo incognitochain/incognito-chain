@@ -651,7 +651,7 @@ func (self *config) GetUserKeySet() (*cashec.KeySet, error) {
 	KeySetUser := &cashec.KeySet{}
 	temp, err := wallet.Base58CheckDeserialize(self.SpendingKey)
 	if err != nil {
-		return KeySetUser, err
+		return nil, err
 	}
 	KeySetUser.ImportFromPrivateKey(&temp.KeySet.PrivateKey)
 	// lastByte := KeySetUser.PaymentAddress.Pk[len(KeySetUser.PaymentAddress.Pk)-1]
