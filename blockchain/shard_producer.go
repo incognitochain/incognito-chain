@@ -245,6 +245,7 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 			if !passed {
 				break
 			}
+
 			outputCoin := CrossOutputCoin{
 				OutputCoin:  blk.CrossOutputCoin,
 				BlockHash:   *blk.Hash(),
@@ -260,6 +261,7 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 	}
 	return res
 }
+
 func GetAssingInstructionFromBeaconBlock(beaconBlocks []*BeaconBlock, shardID byte) [][]string {
 	assignInstruction := [][]string{}
 	for _, beaconBlock := range beaconBlocks {
@@ -273,6 +275,7 @@ func GetAssingInstructionFromBeaconBlock(beaconBlocks []*BeaconBlock, shardID by
 	}
 	return assignInstruction
 }
+
 func FetchBeaconBlockFromHeight(db database.DatabaseInterface, from uint64, to uint64) ([]*BeaconBlock, error) {
 	beaconBlocks := []*BeaconBlock{}
 	for i := from; i <= to; i++ {
