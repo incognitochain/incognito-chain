@@ -2,28 +2,33 @@ package zkp
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/privacy"
 	"math/big"
 	"time"
+
+	"github.com/ninjadotorg/constant/privacy"
 )
+
+type SNNoPrivacyStatement struct {
+	output *privacy.EllipticPoint
+	vKey   *privacy.EllipticPoint
+	input  *big.Int
+}
 
 // SNNoPrivacyWitness is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
 // include Witness: CommitedValue, r []byte
 type SNNoPrivacyWitness struct {
 	// general info
-	output *privacy.EllipticPoint
-	vKey   *privacy.EllipticPoint
-	input  *big.Int
-
+	// output *privacy.EllipticPoint
+	// vKey   *privacy.EllipticPoint
+	// input  *big.Int
+	stmt SNNoPrivacyStatement
 	seed *big.Int
 }
 
 // SNNoPrivacyProof contains Proof's value
 type SNNoPrivacyProof struct {
 	// general info
-	output *privacy.EllipticPoint
-	vKey   *privacy.EllipticPoint
-	input  *big.Int
+	stmt SNNoPrivacyStatement
 
 	tSeed   *privacy.EllipticPoint
 	tOutput *privacy.EllipticPoint
@@ -32,13 +37,13 @@ type SNNoPrivacyProof struct {
 }
 
 func (pro *SNNoPrivacyProof) isNil() bool {
-	if pro.output == nil {
+	if pro.stmt.output == nil {
 		return true
 	}
-	if pro.vKey == nil {
+	if pro.stmt.vKey == nil {
 		return true
 	}
-	if pro.input == nil {
+	if pro.stmt.input == nil {
 		return true
 	}
 	if pro.tSeed == nil {
@@ -54,9 +59,9 @@ func (pro *SNNoPrivacyProof) isNil() bool {
 }
 
 func (pro *SNNoPrivacyProof) Init() *SNNoPrivacyProof {
-	pro.output = new(privacy.EllipticPoint)
-	pro.vKey = new(privacy.EllipticPoint)
-	pro.input = new(big.Int)
+	pro.stmt.output = new(privacy.EllipticPoint)
+	pro.stmt.vKey = new(privacy.EllipticPoint)
+	pro.stmt.input = new(big.Int)
 
 	pro.tSeed = new(privacy.EllipticPoint)
 	pro.tOutput = new(privacy.EllipticPoint)
@@ -77,9 +82,9 @@ func (wit *SNNoPrivacyWitness) Set(
 		wit = new(SNNoPrivacyWitness)
 	}
 
-	wit.output = output
-	wit.vKey = vKey
-	wit.input = input
+	wit.stmt.output = output
+	wit.stmt.vKey = vKey
+	wit.stmt.input = input
 
 	wit.seed = seed
 }
@@ -97,9 +102,9 @@ func (pro *SNNoPrivacyProof) Set(
 		pro = new(SNNoPrivacyProof)
 	}
 
-	pro.output = output
-	pro.vKey = vKey
-	pro.input = input
+	pro.stmt.output = output
+	pro.stmt.vKey = vKey
+	pro.stmt.input = input
 
 	pro.tSeed = tSeed
 	pro.tOutput = tOutput
@@ -114,9 +119,9 @@ func (pro *SNNoPrivacyProof) Bytes() []byte {
 	}
 
 	var bytes []byte
-	bytes = append(bytes, pro.output.Compress()...)
-	bytes = append(bytes, pro.vKey.Compress()...)
-	bytes = append(bytes, privacy.AddPaddingBigInt(pro.input, privacy.BigIntSize)...)
+	bytes = append(bytes, pro.stmt.output.Compress()...)
+	bytes = append(bytes, pro.stmt.vKey.Compress()...)
+	bytes = append(bytes, privacy.AddPaddingBigInt(pro.stmt.input, privacy.BigIntSize)...)
 
 	bytes = append(bytes, pro.tSeed.Compress()...)
 	bytes = append(bytes, pro.tOutput.Compress()...)
@@ -138,19 +143,19 @@ func (pro *SNNoPrivacyProof) SetBytes(bytes []byte) error {
 	offset := 0
 	var err error
 
-	pro.output, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	pro.stmt.output, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
 
-	pro.vKey, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
+	pro.stmt.vKey, err = privacy.DecompressKey(bytes[offset : offset+privacy.CompressedPointSize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.CompressedPointSize
 
-	pro.input.SetBytes(bytes[offset : offset+privacy.BigIntSize])
+	pro.stmt.input.SetBytes(bytes[offset : offset+privacy.BigIntSize])
 	if err != nil {
 		return err
 	}
@@ -185,7 +190,7 @@ func (wit *SNNoPrivacyWitness) Prove() (*SNNoPrivacyProof, error) {
 	tSK := privacy.PedCom.G[privacy.SK].ScalarMult(eSK)
 
 	// calculate tOutput = SN^eSK
-	tE := wit.output.ScalarMult(eSK)
+	tE := wit.stmt.output.ScalarMult(eSK)
 
 	// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 	x := generateChallengeFromPoint([]*privacy.EllipticPoint{tSK, tE})
@@ -196,7 +201,7 @@ func (wit *SNNoPrivacyWitness) Prove() (*SNNoPrivacyProof, error) {
 	zSK.Mod(zSK, privacy.Curve.Params().N)
 
 	proof := new(SNNoPrivacyProof).Init()
-	proof.Set(wit.output, wit.vKey, wit.input, tSK, tE, zSK)
+	proof.Set(wit.stmt.output, wit.stmt.vKey, wit.stmt.input, tSK, tE, zSK)
 	end := time.Since(start)
 	fmt.Printf("Serial number no privacy proving time: %v\n", end)
 	return proof, nil
@@ -209,7 +214,7 @@ func (pro *SNNoPrivacyProof) Verify() bool {
 	// Check gSK^zSeed = vKey^x * tSeed
 	leftPoint1 := privacy.PedCom.G[privacy.SK].ScalarMult(pro.zSeed)
 
-	rightPoint1 := pro.vKey.ScalarMult(x)
+	rightPoint1 := pro.stmt.vKey.ScalarMult(x)
 	rightPoint1 = rightPoint1.Add(pro.tSeed)
 
 	if !leftPoint1.IsEqual(rightPoint1) {
@@ -217,7 +222,7 @@ func (pro *SNNoPrivacyProof) Verify() bool {
 	}
 
 	// Check SN^(zSeed + x*input) = gSK^x * tOutput
-	leftPoint2 := pro.output.ScalarMult(new(big.Int).Add(pro.zSeed, new(big.Int).Mul(x, pro.input)))
+	leftPoint2 := pro.stmt.output.ScalarMult(new(big.Int).Add(pro.zSeed, new(big.Int).Mul(x, pro.stmt.input)))
 
 	rightPoint2 := privacy.PedCom.G[privacy.SK].ScalarMult(x)
 	rightPoint2 = rightPoint2.Add(pro.tOutput)
