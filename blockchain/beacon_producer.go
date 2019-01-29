@@ -158,6 +158,7 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 	validSwap := make(map[byte][][]string)
 	//Get shard to beacon block from pool
 	shardsBlocks := self.shardToBeaconPool.GetFinalBlock()
+
 	//Shard block is a map ShardId -> array of shard block
 
 	stabilityInstructions := [][]string{}
@@ -202,16 +203,16 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 				break
 			}
 		}
-		for _, shardBlock := range shardBlocks[:totalBlock] {
+		for _, shardBlock := range shardBlocks[:totalBlock+1] {
 			// for each shard block, create a corresponding shard state
 			instructions := shardBlock.Instructions
 			shardState := ShardState{}
 			shardState.CrossShard = make([]byte, len(shardBlock.Header.CrossShards))
-
 			copy(shardState.CrossShard, shardBlock.Header.CrossShards)
 			shardState.Hash = shardBlock.Header.Hash()
 			shardState.Height = shardBlock.Header.Height
 			shardStates[shardID] = append(shardStates[shardID], shardState)
+
 			for _, l := range instructions {
 				if l[0] == "stake" {
 					stakers = append(stakers, l)
@@ -226,9 +227,11 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 				newBeaconCandidate, newShardCandidate := GetStakeValidatorArrayString(staker)
 				assignShard := true
 				if !reflect.DeepEqual(newBeaconCandidate, []string{}) {
+					tempStaker = make([]string, len(newBeaconCandidate))
 					copy(tempStaker, newBeaconCandidate[:])
 					assignShard = false
 				} else {
+					tempStaker = make([]string, len(newShardCandidate))
 					copy(tempStaker, newShardCandidate[:])
 				}
 				tempStaker = self.chain.BestState.Beacon.GetValidStakers(tempStaker)

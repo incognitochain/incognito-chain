@@ -476,12 +476,13 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 		}
 	}
 	//=============End Verify Stakers
+	//TODO @merman logic check you must
 	// Verify shard state
-	for shardID, shardStates := range block.Body.ShardState {
-		if self.AllShardState[shardID][len(self.AllShardState[shardID])-1].Height-shardStates[0].Height != 1 {
-			return NewBlockChainError(ShardStateError, errors.New("Shardstates are not compatible with beacon best state"))
-		}
-	}
+	// for shardID, shardStates := range block.Body.ShardState {
+	// if self.AllShardState[shardID][len(self.AllShardState[shardID])-1].Height-shardStates[0].Height != 1 {
+	// 	return NewBlockChainError(ShardStateError, errors.New("Shardstates are not compatible with beacon best state"))
+	// }
+	// }
 	return nil
 }
 
@@ -575,11 +576,22 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	self.BeaconProposerIdx = common.IndexOfStr(newBlock.Header.Producer, self.BeaconCommittee)
 
 	allShardState := newBlock.Body.ShardState
-
+	if self.AllShardState == nil {
+		self.AllShardState = make(map[byte][]ShardState)
+	}
+	if self.BestShardHash == nil {
+		self.BestShardHash = make(map[byte]common.Hash)
+	}
+	if self.BestShardHeight == nil {
+		self.BestShardHeight = make(map[byte]uint64)
+	}
 	// Update new best new block hash
 	for shardID, shardStates := range allShardState {
 		self.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
 		self.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
+		if _, ok := self.AllShardState[shardID]; !ok {
+			self.AllShardState[shardID] = []ShardState{}
+		}
 		self.AllShardState[shardID] = append(self.AllShardState[shardID], shardStates...)
 	}
 

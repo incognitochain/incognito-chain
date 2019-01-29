@@ -18,45 +18,45 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 type BestStateBeacon struct {
-	BestBlockHash   common.Hash  // The hash of the block.
-	BestBlock       *BeaconBlock // The block.
-	BestShardHash   map[byte]common.Hash
-	BestShardHeight map[byte]uint64
+	BestBlockHash   common.Hash          `json:"BestBlockHash"` // The hash of the block.
+	BestBlock       *BeaconBlock         `json:"BestBlock"`     // The block.
+	BestShardHash   map[byte]common.Hash `json:"BestShardHash"`
+	BestShardHeight map[byte]uint64      `json:"BestShardHeight"`
 	// New field
 	//TODO: calculate hash
-	AllShardState map[byte][]ShardState
+	AllShardState map[byte][]ShardState `json:"AllShardState"`
 
-	BeaconEpoch            uint64
-	BeaconHeight           uint64
-	BeaconProposerIdx      int
-	BeaconCommittee        []string
-	BeaconPendingValidator []string
+	BeaconEpoch            uint64   `json:"BeaconEpoch"`
+	BeaconHeight           uint64   `json:"BeaconHeight"`
+	BeaconProposerIdx      int      `json:"BeaconProposerIdx"`
+	BeaconCommittee        []string `json:"BeaconCommittee"`
+	BeaconPendingValidator []string `json:"BeaconPendingValidator"`
 
 	// assigned candidate
 	// function as a snapshot list, waiting for random
-	CandidateShardWaitingForCurrentRandom  []string
-	CandidateBeaconWaitingForCurrentRandom []string
+	CandidateShardWaitingForCurrentRandom  []string `json:"CandidateBeaconWaitingForCurrentRandom"`
+	CandidateBeaconWaitingForCurrentRandom []string `json:"CandidateBeaconWaitingForCurrentRandom"`
 
 	// assigned candidate
-	CandidateShardWaitingForNextRandom  []string
-	CandidateBeaconWaitingForNextRandom []string
+	CandidateShardWaitingForNextRandom  []string `json:"CandidateShardWaitingForNextRandom"`
+	CandidateBeaconWaitingForNextRandom []string `json:"CandidateBeaconWaitingForNextRandom"`
 
 	// ShardCommittee && ShardPendingValidator will be verify from shardBlock
 	// validator of shards
-	ShardCommittee map[byte][]string
+	ShardCommittee map[byte][]string `json:"ShardCommittee"`
 	// pending validator of shards
-	ShardPendingValidator map[byte][]string
+	ShardPendingValidator map[byte][]string `json:"ShardPendingValidator"`
 
 	// UnassignBeaconCandidate []strings
 	// UnassignShardCandidate  []string
 
-	CurrentRandomNumber int64
+	CurrentRandomNumber int64 `json:"CurrentRandomNumber"`
 	// random timestamp for this epoch
-	CurrentRandomTimeStamp int64
-	IsGetRandomNumber      bool
+	CurrentRandomTimeStamp int64 `json:"CurrentRandomTimeStamp"`
+	IsGetRandomNumber      bool  `json:"IsGetRandomNumber"`
 
-	Params        map[string]string
-	StabilityInfo StabilityInfo
+	StabilityInfo StabilityInfo     `json:"StabilityInfo"`
+	Params        map[string]string `json:"Params,omitempty"`
 
 	// lock sync.RWMutex
 }
