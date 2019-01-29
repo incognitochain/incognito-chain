@@ -397,7 +397,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 	return txsToAdd, txToRemove, totalFee
 }
 
-func (blockgen *ShardBlock) CreateShardToBeaconBlock() ShardToBeaconBlock {
+func (blockgen *ShardBlock) CreateShardToBeaconBlock() *ShardToBeaconBlock {
 	block := ShardToBeaconBlock{}
 	block.AggregatedSig = blockgen.AggregatedSig
 	copy(block.ValidatorsIdx, blockgen.ValidatorsIdx)
@@ -406,7 +406,7 @@ func (blockgen *ShardBlock) CreateShardToBeaconBlock() ShardToBeaconBlock {
 	block.Instructions = blockgen.Body.Instructions
 	actions := CreateShardActionFromTransaction(blockgen.Body.Transactions)
 	block.Instructions = append(block.Instructions, actions...)
-	return block
+	return &block
 }
 
 func (blk *ShardBlock) CreateAllCrossShardBlock() map[byte]*CrossShardBlock {
