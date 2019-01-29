@@ -63,11 +63,19 @@ func ConvertIntToBinary(inum int, n int) []byte {
 
 // ConvertIntToBinary represents a integer number in binary
 func ConvertBigIntToBinary(number *big.Int, n int) []*big.Int {
+	if number.Cmp(big.NewInt(0)) ==0 {
+		res := make([]*big.Int, n)
+		for i:= 0; i<n; i++{
+			res[i] = big.NewInt(0)
+		}
+		return res
+	}
+
 	binary := make([]*big.Int, n)
 	numberClone := new(big.Int)
 	numberClone.Set(number)
 
-	//tmp := big.NewInt(0)
+	zeroNumber := big.NewInt(0)
 	twoNumber := big.NewInt(2)
 	//oneNumber := big.NewInt(1)
 
@@ -76,16 +84,54 @@ func ConvertBigIntToBinary(number *big.Int, n int) []*big.Int {
 		binary[i] = new(big.Int).Mod(numberClone, twoNumber)
 		numberClone.Div(numberClone, twoNumber)
 
-		//binary[i].And(numberClone, oneNumber)
-		//numberClone.Rsh(numberClone, 1)
+		if numberClone.Cmp(zeroNumber) == 0 && i != n-1{
+			for j := i + 1; j < n; j++ {
+				binary[j] = zeroNumber
+			}
+			break
+		}
 
-		//tmp.Mod(numberClone, twoNumber)
-		//binary[i] = new(big.Int).Set(tmp)
-		//numberClone.Div(numberClone, twoNumber)
 	}
 
 	return binary
 }
+
+//func ConvertBigIntToBinary(number *big.Int, n int) ([]*big.Int, int) {
+//	if number.Cmp(big.NewInt(0)) ==0 {
+//		res := make([]*big.Int, n)
+//		for i:= 0; i<n; i++{
+//			res[i] = big.NewInt(0)
+//		}
+//		numBit := 0
+//		return res, numBit
+//	}
+//
+//	binary := make([]*big.Int, n)
+//	numberClone := new(big.Int)
+//	numberClone.Set(number)
+//
+//	zeroNumber := big.NewInt(0)
+//	twoNumber := big.NewInt(2)
+//	//oneNumber := big.NewInt(1)
+//	numBit := n
+//
+//	for i := 0; i < n; i++ {
+//		binary[i] = new(big.Int)
+//		binary[i] = new(big.Int).Mod(numberClone, twoNumber)
+//		numberClone.Div(numberClone, twoNumber)
+//
+//		if numberClone.Cmp(zeroNumber) == 0 && i != n-1{
+//			numBit = i+1
+//			for j := i + 1; j < n; j++ {
+//				binary[j] = big.NewInt(0)
+//			}
+//			break
+//		}
+//
+//	}
+//
+//	return binary, numBit
+//}
 
 // AddPaddingBigInt adds padding to big int to it is fixed size
 func AddPaddingBigInt(numInt *big.Int, fixedSize int) []byte {
