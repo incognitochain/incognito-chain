@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
@@ -80,10 +81,13 @@ func (self *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.Hash, 
 	_, _, _, proposalTx, err := self.GetTransactionByHash(proposalTxHash)
 	if err == nil {
 		proposalMeta := proposalTx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
+		fmt.Printf("[db] proposal cs data: %+v\n", proposalMeta)
 		for _, data := range proposalMeta.DCBParams.ListSaleData {
+			fmt.Printf("[db] data ptr: %p, data: %+v\n", &data, data)
 			if bytes.Equal(data.SaleID, saleID) {
 				saleData = &data
 				saleData.SetProposalTxHash(*proposalTxHash)
+				break
 			}
 		}
 	}

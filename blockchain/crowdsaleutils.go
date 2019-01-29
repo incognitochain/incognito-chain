@@ -42,7 +42,13 @@ func buildPaymentForCoin(
 	return txs[0], nil
 }
 
-func transferTxToken(tokenAmount uint64, unspentTxTokenOuts []transaction.TxTokenVout, tokenID common.Hash, receiverPk []byte) (*transaction.TxCustomToken, int, error) {
+func transferTxToken(
+	tokenAmount uint64,
+	unspentTxTokenOuts []transaction.TxTokenVout,
+	tokenID common.Hash,
+	receiverPk []byte,
+	meta metadata.Metadata,
+) (*transaction.TxCustomToken, int, error) {
 	sumTokens := uint64(0)
 	usedID := 0
 	for _, out := range unspentTxTokenOuts {
@@ -92,10 +98,17 @@ func transferTxToken(tokenAmount uint64, unspentTxTokenOuts []transaction.TxToke
 			Vouts:      txTokenOuts,
 		},
 	}
+	txToken.Metadata = meta
+	txToken.Type = common.TxCustomTokenType
 	return txToken, usedID, nil
 }
 
-func mintTxToken(tokenAmount uint64, tokenID common.Hash, receiverPk []byte) *transaction.TxCustomToken {
+func mintTxToken(
+	tokenAmount uint64,
+	tokenID common.Hash,
+	receiverPk []byte,
+	meta metadata.Metadata,
+) *transaction.TxCustomToken {
 	txTokenOuts := []transaction.TxTokenVout{
 		transaction.TxTokenVout{
 			PaymentAddress: privacy.PaymentAddress{Pk: receiverPk}, // TODO(@0xbunyip): send to payment address
@@ -111,6 +124,8 @@ func mintTxToken(tokenAmount uint64, tokenID common.Hash, receiverPk []byte) *tr
 			Vouts:      txTokenOuts,
 		},
 	}
+	txToken.Metadata = meta
+	txToken.Type = common.TxCustomTokenType
 	return txToken
 }
 
@@ -131,15 +146,7 @@ func buildPaymentForToken(
 	}
 	pubkey := txRequest.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
 
-	if mint {
-		txToken = mintTxToken(tokenAmount, tokenID, pubkey)
-	} else {
-		txToken, usedID, err = transferTxToken(tokenAmount, unspentTxTokenOuts, tokenID, pubkey)
-		if err != nil {
-			return nil, err
-		}
-	}
-
+	// Create metadata for crowdsale payment
 	metaPay := &metadata.CrowdsalePayment{
 		RequestedTxID: &common.Hash{},
 		SaleID:        make([]byte, len(saleID)),
@@ -147,7 +154,18 @@ func buildPaymentForToken(
 	hash := txRequest.Hash()
 	copy(metaPay.RequestedTxID[:], hash[:])
 	copy(metaPay.SaleID, saleID)
-	txToken.Metadata = metaPay
+	metaPay.Type = metadata.CrowdsalePaymentMeta
+
+	// Build txcustomtoken
+	if mint {
+		txToken = mintTxToken(tokenAmount, tokenID, pubkey, metaPay)
+	} else {
+		fmt.Printf("[db] transferTxToken with unspentTxTokenOuts && tokenAmount:\n%+v\n%d\n", unspentTxTokenOuts, tokenAmount)
+		txToken, usedID, err = transferTxToken(tokenAmount, unspentTxTokenOuts, tokenID, pubkey, metaPay)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	// Update list of token available for next request
 	if usedID >= 0 && !mint {
@@ -231,6 +249,7 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 		// Get unspent token UTXO to send to user
 		if _, ok := unspentTokenMap[sellingAsset.String()]; !ok {
 			unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(keyWalletDCBAccount.KeySet, &sellingAsset)
+			fmt.Printf("[db] unspentTxTokenOuts: %+v\n%v\n", unspentTxTokenOuts, err)
 			if err == nil {
 				unspentTokenMap[sellingAsset.String()] = unspentTxTokenOuts
 			} else {
