@@ -471,7 +471,7 @@ func (netsync *NetSync) HandleMessageGetShardToBeacon(msg *wire.MessageGetShardT
 		Logger.log.Error(err)
 		return
 	}
-	newMsg.(*wire.MessageShardToBeacon).Block = shardToBeaconBlk
+	newMsg.(*wire.MessageShardToBeacon).Block = *shardToBeaconBlk
 	netsync.config.Server.PushMessageToPeer(newMsg, peerID)
 }
 
