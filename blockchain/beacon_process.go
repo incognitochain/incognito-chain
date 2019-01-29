@@ -578,6 +578,12 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	if self.AllShardState == nil {
 		self.AllShardState = make(map[byte][]ShardState)
 	}
+	if self.BestShardHash == nil {
+		self.BestShardHash = make(map[byte]common.Hash)
+	}
+	if self.BestShardHeight == nil {
+		self.BestShardHeight = make(map[byte]uint64)
+	}
 	// Update new best new block hash
 	for shardID, shardStates := range allShardState {
 		self.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
