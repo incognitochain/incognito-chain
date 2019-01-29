@@ -53,6 +53,9 @@ var RpcHandler = map[string]commandHandler{
 
 	CreateAndSendStakingTransaction: RpcServer.handleCreateAndSendStakingTx,
 
+	GetShardBestState:  RpcServer.handleGetShardBestState,
+	GetBeaconBestState: RpcServer.handleGetBeaconBestState,
+
 	// custom token
 	CreateRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
 	SendRawCustomTokenTransaction:       RpcServer.handleSendRawCustomTokenTransaction,
