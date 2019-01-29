@@ -15,21 +15,21 @@ import (
 // shared by all callers.
 
 type BestStateShard struct {
-	PrevShardBlockHash    common.Hash
-	BestShardBlockHash    common.Hash // hash of block.
-	BestBeaconHash        common.Hash
-	BestShardBlock        *ShardBlock // block data
-	ShardHeight           uint64
-	BeaconHeight          uint64
-	Epoch                 uint64
-	ShardCommittee        []string
-	ShardPendingValidator []string
-	ShardProposerIdx      int
+	PrevShardBlockHash    common.Hash `json:"PrevShardBlockHash,omitempty"`
+	BestShardBlockHash    common.Hash `json:"BestShardBlockHash,omitempty"` // hash of block.
+	BestBeaconHash        common.Hash `json:"BestBeaconHash,omitempty"`
+	BestShardBlock        *ShardBlock `json:"BestShardBlock,omitempty"` // block data
+	ShardHeight           uint64      `json:"ShardHeight,omitempty"`
+	BeaconHeight          uint64      `json:"BeaconHeight,omitempty"`
+	Epoch                 uint64      `json:"Epoch,omitempty"`
+	ShardCommittee        []string    `json:"ShardCommittee,omitempty"`
+	ShardPendingValidator []string    `json:"ShardPendingValidator,omitempty"`
+	ShardProposerIdx      int         `json:"ShardProposerIdx,omitempty"`
 	// Best cross shard block by height
-	BestCrossShard map[byte]uint64
+	BestCrossShard map[byte]uint64 `json:"BestCrossShard,omitempty"`
 	//TODO: verify if these information are needed or not
-	NumTxns   uint64 // The number of txns in the block.
-	TotalTxns uint64 // The total number of txns in the chain.
+	NumTxns   uint64 `json:"NumTxns,omitempty"`   // The number of txns in the block.
+	TotalTxns uint64 `json:"TotalTxns,omitempty"` // The total number of txns in the chain.
 }
 
 // Get role of a public key base on best state shard
