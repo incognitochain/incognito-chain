@@ -1250,7 +1250,7 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 	}
 	block, err1 := self.GetBlockByBlockHash(blockHash)
 	if err1 != nil {
-		Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
+		//		Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
 		return byte(255), nil, -1, nil, NewBlockChainError(UnExpectedError, err1)
 	}
 	//Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])

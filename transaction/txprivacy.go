@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"math/big"
 	"strconv"
@@ -640,6 +641,7 @@ func (tx *Tx) ValidateTxWithBlockChain(
 	if tx.GetType() == common.TxSalaryType {
 		return nil
 	}
+	fmt.Printf("[db] validating tx with blockchain tx level\n")
 	if tx.Metadata != nil {
 		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(tx, bcr, chainID, db)
 		if err != nil {
@@ -887,6 +889,7 @@ func (tx *Tx) InitTxSalary(
 func (tx Tx) ValidateTxSalary(
 	db database.DatabaseInterface,
 ) bool {
+	fmt.Printf("[db] validating tx salary: %s\n", tx.Hash())
 	// verify signature
 	valid, err := tx.verifySigTx()
 	if !valid {
