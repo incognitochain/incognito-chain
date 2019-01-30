@@ -58,6 +58,9 @@ type BestStateBeacon struct {
 	Params        map[string]string `json:"Params,omitempty"`
 
 	// lock sync.RWMutex
+	ShardHandle map[byte]bool `json:"ShardHandle"`
+
+	StabilityInstructions [][]string `json:"StabilityInstructions"`
 }
 
 type StabilityInfo struct {
@@ -77,6 +80,15 @@ type StabilityInfo struct {
 
 func (si StabilityInfo) GetBytes() []byte {
 	return common.GetBytes(si)
+}
+
+func (bsb *BestStateBeacon) GetCurrentShard() byte {
+	for shardID, isCurrent := range bsb.ShardHandle {
+		if isCurrent {
+			return shardID
+		}
+	}
+	return 0
 }
 
 func NewBestStateBeacon() *BestStateBeacon {
