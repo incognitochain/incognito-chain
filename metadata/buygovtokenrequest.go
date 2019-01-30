@@ -39,7 +39,7 @@ func NewBuyGOVTokenRequest(
 func (bgtr *BuyGOVTokenRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
 	govParams := bcr.GetGOVParams()

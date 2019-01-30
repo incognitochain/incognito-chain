@@ -118,20 +118,20 @@ func (customTokenTx *TxCustomToken) validateDoubleSpendCustomTokenWithBlockchain
 
 func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 	bcr metadata.BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface,
 ) error {
 	if customTokenTx.GetType() == common.TxSalaryType {
 		return nil
 	}
 	if customTokenTx.Metadata != nil {
-		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(customTokenTx, bcr, chainID, db)
+		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(customTokenTx, bcr, shardID, db)
 		if err != nil || !isContinued {
 			return NewTransactionErr(UnexpectedErr, err)
 		}
 	}
 
-	err := customTokenTx.Tx.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
+	err := customTokenTx.Tx.ValidateConstDoubleSpendWithBlockchain(bcr, shardID, db)
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
@@ -192,9 +192,9 @@ func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRe
 
 // ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by constant
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
-func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainID byte, tokenID *common.Hash) bool {
+func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	// validate for normal tx
-	if tx.Tx.ValidateTransaction(hasPrivacy, db, chainID, tokenID) {
+	if tx.Tx.ValidateTransaction(hasPrivacy, db, shardID, tokenID) {
 		if len(tx.listUtxo) == 0 {
 			return false
 		}
@@ -244,7 +244,7 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 ) bool {
 	if customTokenTx.TxTokenData.Type == CustomTokenInit {
 		return true
@@ -255,7 +255,7 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	}
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
-	ok = customTokenTx.ValidateTransaction(hasPrivacy, db, chainID, constantTokenID)
+	ok = customTokenTx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
 	if !ok {
 		return false
 	}
@@ -328,6 +328,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	fee uint64,
 	tokenParams *CustomTokenParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
+	db database.DatabaseInterface,
 	metaData metadata.Metadata,
 	hasPrivacy bool,
 ) *TransactionError {
@@ -339,7 +340,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 		inputCoin,
 		fee,
 		hasPrivacy,
-		nil,
+		db,
 		nil,
 		metaData)
 	if err.(*TransactionError) != nil {

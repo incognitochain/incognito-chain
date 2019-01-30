@@ -40,7 +40,7 @@ func (lw *LoanWithdraw) Hash() *common.Hash {
 	return &hash
 }
 
-func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	fmt.Println("Validating LoanWithdraw with blockchain!!!")
 	// Check if a loan response with the same id exists on any chain
 	txHashes, err := bcr.GetLoanTxs(lw.LoanID)

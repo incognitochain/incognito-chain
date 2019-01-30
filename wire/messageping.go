@@ -4,7 +4,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
+	"time"
+
 	"github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
 )
 
 const (
@@ -12,26 +16,43 @@ const (
 )
 
 type MessagePing struct {
+	Timestamp time.Time
 }
 
-func (self MessagePing) MessageType() string {
+func (msg MessagePing) MessageType() string {
 	return CmdPing
 }
 
-func (self MessagePing) MaxPayloadLength(pver int) int {
+func (msg *MessagePing) Hash() string {
+	rawBytes, err := msg.JsonSerialize()
+	if err != nil {
+		return ""
+	}
+	return common.HashH(rawBytes).String()
+}
+
+func (msg *MessagePing) MaxPayloadLength(pver int) int {
 	return MaxPingPayload
 }
 
-func (self MessagePing) JsonSerialize() ([]byte, error) {
-	jsonBytes, err := json.Marshal(self)
+func (msg *MessagePing) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(msg)
 	return jsonBytes, err
 }
 
-func (self MessagePing) JsonDeserialize(jsonStr string) error {
+func (msg *MessagePing) JsonDeserialize(jsonStr string) error {
 	jsonDecodeString, _ := hex.DecodeString(jsonStr)
-	err := json.Unmarshal([]byte(jsonDecodeString), self)
+	err := json.Unmarshal([]byte(jsonDecodeString), msg)
 	return err
 }
-func (self MessagePing) SetSenderID(senderID peer.ID) error {
+func (msg *MessagePing) SetSenderID(senderID peer.ID) error {
+	return nil
+}
+
+func (msg *MessagePing) SignMsg(_ *cashec.KeySet) error {
+	return nil
+}
+
+func (msg *MessagePing) VerifyMsgSanity() error {
 	return nil
 }

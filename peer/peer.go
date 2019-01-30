@@ -18,24 +18,29 @@ import (
 	"github.com/libp2p/go-libp2p-net"
 	"github.com/libp2p/go-libp2p-peer"
 	ma "github.com/multiformats/go-multiaddr"
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/wire"
-	"github.com/ninjadotorg/constant/cashec"
 )
 
 // ConnState represents the state of the requested connection.
 type ConnState uint8
 
 var MAX_RETRIES_CHECK_HASH_MESSAGE = 5
-var HEAVY_MESSAGE_SIZE = 512 * 1024
+var MAX_TIMEOUT_CHECK_HASH_MESSAGE = time.Duration(10)
+var HEAVY_MESSAGE_SIZE = 5 * 1024 * 1024
 var SPAM_MESSAGE_SIZE = 50 * 1024 * 1024
 var MESSAGE_HASH_POOL_SIZE = 1000
 
+var MESSAGE_TO_ALL = byte('a')
+var MESSAGE_TO_SHARD = byte('s')
+var MESSAGE_TO_PEER = byte('p')
+var MESSAGE_TO_BEACON = byte('b')
+
 // RemotePeer is present for libp2p node data
 type Peer struct {
-	messagePool       map[string]bool
-	peerConnMutex     sync.Mutex
-	pendingPeersMutex sync.Mutex
+	messagePool    map[string]bool
+	messagePoolMtx sync.Mutex
 
 	// channel
 	cStop           chan struct{}
@@ -56,8 +61,10 @@ type Peer struct {
 	Config Config
 	Shard  byte
 
-	PeerConns    map[string]*PeerConn
-	PendingPeers map[string]*Peer
+	PeerConns       map[string]*PeerConn
+	peerConnsMtx    sync.Mutex
+	PendingPeers    map[string]*Peer
+	pendingPeersMtx sync.Mutex
 
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
@@ -77,17 +84,10 @@ type NewStreamMsg struct {
 // config is the struct to hold configuration options useful to RemotePeer.
 type Config struct {
 	MessageListeners MessageListeners
-	ProducerKeySet   *cashec.KeySet
-	MaxOutbound      int
-	MaxInbound       int
-
-	GetShardByPbk func(pbk string) *byte
-}
-
-type WrappedStream struct {
-	Stream net.Stream
-	Writer *bufio.Writer
-	Reader *bufio.Reader
+	UserKeySet       *cashec.KeySet
+	MaxOutPeers      int
+	MaxInPeers       int
+	MaxPeers         int
 }
 
 /*
@@ -102,49 +102,72 @@ type WrappedStream struct {
 // result in a deadlock.
 */
 type MessageListeners struct {
-	OnTx        func(p *PeerConn, msg *wire.MessageTx)
-	OnBlock     func(p *PeerConn, msg *wire.MessageBlock)
-	OnGetBlocks func(p *PeerConn, msg *wire.MessageGetBlocks)
-	OnVersion   func(p *PeerConn, msg *wire.MessageVersion)
-	OnVerAck    func(p *PeerConn, msg *wire.MessageVerAck)
-	OnGetAddr   func(p *PeerConn, msg *wire.MessageGetAddr)
-	OnAddr      func(p *PeerConn, msg *wire.MessageAddr)
+	OnTx                func(p *PeerConn, msg *wire.MessageTx)
+	OnBlockShard        func(p *PeerConn, msg *wire.MessageBlockShard)
+	OnBlockBeacon       func(p *PeerConn, msg *wire.MessageBlockBeacon)
+	OnCrossShard        func(p *PeerConn, msg *wire.MessageCrossShard)
+	OnShardToBeacon     func(p *PeerConn, msg *wire.MessageShardToBeacon)
+	OnGetBlockBeacon    func(p *PeerConn, msg *wire.MessageGetBlockBeacon)
+	OnGetBlockShard     func(p *PeerConn, msg *wire.MessageGetBlockShard)
+	OnGetCrossShard     func(p *PeerConn, msg *wire.MessageGetCrossShard)
+	OnGetShardToBeacon  func(p *PeerConn, msg *wire.MessageGetShardToBeacon)
+	OnGetShardToBeacons func(p *PeerConn, msg *wire.MessageGetShardToBeacons)
+	OnVersion           func(p *PeerConn, msg *wire.MessageVersion)
+	OnVerAck            func(p *PeerConn, msg *wire.MessageVerAck)
+	OnGetAddr           func(p *PeerConn, msg *wire.MessageGetAddr)
+	OnAddr              func(p *PeerConn, msg *wire.MessageAddr)
 
-	//PoS
-	OnRequestSign   func(p *PeerConn, msg *wire.MessageBlockSigReq)
-	OnInvalidBlock  func(p *PeerConn, msg *wire.MessageInvalidBlock)
-	OnBlockSig      func(p *PeerConn, msg *wire.MessageBlockSig)
-	OnGetChainState func(p *PeerConn, msg *wire.MessageGetChainState)
-	OnChainState    func(p *PeerConn, msg *wire.MessageChainState)
+	//PBFT
+	OnBFTMsg func(p *PeerConn, msg wire.Message)
+	// OnInvalidBlock  func(p *PeerConn, msg *wire.MessageInvalidBlock)
+	OnGetBeaconState func(p *PeerConn, msg *wire.MessageGetBeaconState)
+	OnBeaconState    func(p *PeerConn, msg *wire.MessageBeaconState)
+	OnGetShardState  func(p *PeerConn, msg *wire.MessageGetShardState)
+	OnShardState     func(p *PeerConn, msg *wire.MessageShardState)
 	//OnRegistration  func(p *PeerConn, msg *wire.MessageRegistration)
-	OnSwapRequest func(p *PeerConn, msg *wire.MessageSwapRequest)
-	OnSwapSig     func(p *PeerConn, msg *wire.MessageSwapSig)
-	OnSwapUpdate  func(p *PeerConn, msg *wire.MessageSwapUpdate)
+	// OnSwapRequest func(p *PeerConn, msg *wire.MessageSwapRequest)
+	// OnSwapSig     func(p *PeerConn, msg *wire.MessageSwapSig)
+	// OnSwapUpdate  func(p *PeerConn, msg *wire.MessageSwapUpdate)
+	PushRawBytesToShard  func(p *PeerConn, msgBytes *[]byte, shard byte) error
+	PushRawBytesToBeacon func(p *PeerConn, msgBytes *[]byte) error
+	GetCurrentRoleShard  func() (string, *byte)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal
 // when the message has been sent (or won't be sent due to things such as
 // shutdown)
 type outMsg struct {
-	message  wire.Message
-	doneChan chan<- struct{}
+	forwardType  byte // a all, s shard, p  peer, b beacon
+	forwardValue *byte
+	rawBytes     *[]byte
+	message      wire.Message
+	doneChan     chan<- struct{}
 	//encoding wire.MessageEncoding
 }
 
-func (peerObj *Peer) ReceivedHashMessage(hash string) {
+func (peerObj *Peer) HashToPool(hash string) {
+	peerObj.messagePoolMtx.Lock()
+	defer peerObj.messagePoolMtx.Unlock()
+
 	if peerObj.messagePool == nil {
 		peerObj.messagePool = make(map[string]bool)
 	}
-	peerObj.messagePool[hash] = true
-	if len(peerObj.messagePool) > MESSAGE_HASH_POOL_SIZE {
-		for k := range peerObj.messagePool {
+	ok, _ := peerObj.messagePool[hash]
+	if ok {
+		return
+	}
+	if len(peerObj.messagePool) >= MESSAGE_HASH_POOL_SIZE {
+		for k, _ := range peerObj.messagePool {
 			delete(peerObj.messagePool, k)
 			break
 		}
 	}
+	peerObj.messagePool[hash] = true
 }
 
-func (peerObj *Peer) CheckHashMessage(hash string) (bool) {
+func (peerObj *Peer) CheckHashPool(hash string) bool {
+	peerObj.messagePoolMtx.Lock()
+	defer peerObj.messagePoolMtx.Unlock()
 	if peerObj.messagePool == nil {
 		peerObj.messagePool = make(map[string]bool)
 	}
@@ -203,7 +226,8 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 	// by encapsulating both addresses:
 	addr := basicHost.Addrs()[0]
 	fullAddr := addr.Encapsulate(hostAddr)
-	Logger.log.Infof("I am listening on %s with PEER Id - %s", fullAddr, basicHost.ID().String())
+	rawAddress := fmt.Sprintf("%s%s", listeningAddressString, mulAddrStr)
+	Logger.log.Infof("I am listening on %s with PEER Id - %s", rawAddress, basicHost.ID().Pretty())
 	pid, err := fullAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
 		return &peerObj, NewPeerError(GetPeerIdFromProtocolErr, err, &peerObj)
@@ -214,7 +238,7 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 		return &peerObj, NewPeerError(GetPeerIdFromProtocolErr, err, &peerObj)
 	}
 
-	peerObj.RawAddress = fmt.Sprintf("%s%s", listeningAddressString, mulAddrStr)
+	peerObj.RawAddress = rawAddress
 	peerObj.Host = basicHost
 	peerObj.TargetAddress = fullAddr
 	peerObj.PeerID = peerID
@@ -224,7 +248,7 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 	peerObj.cNewStream = make(chan *NewStreamMsg)
 	peerObj.cStopConn = make(chan struct{})
 
-	peerObj.peerConnMutex = sync.Mutex{}
+	peerObj.peerConnsMtx = sync.Mutex{}
 	return &peerObj, nil
 }
 
@@ -248,19 +272,23 @@ func (peerObj *Peer) Start() {
 }
 
 func (peerObj *Peer) PushStream(stream net.Stream) {
-	newStreamMsg := NewStreamMsg{
-		Stream: stream,
-		CConn:  nil,
-	}
-	peerObj.cNewStream <- &newStreamMsg
+	go func(stream net.Stream) {
+		newStreamMsg := NewStreamMsg{
+			Stream: stream,
+			CConn:  nil,
+		}
+		peerObj.cNewStream <- &newStreamMsg
+	}(stream)
 }
 
 func (peerObj *Peer) PushConn(peer *Peer, cConn chan *PeerConn) {
-	newPeerMsg := NewPeerMsg{
-		Peer:  peer,
-		CConn: cConn,
-	}
-	peerObj.cNewConn <- &newPeerMsg
+	go func(peer *Peer, cConn chan *PeerConn) {
+		newPeerMsg := NewPeerMsg{
+			Peer:  peer,
+			CConn: cConn,
+		}
+		peerObj.cNewConn <- &newPeerMsg
+	}(peer, cConn)
 }
 
 func (peerObj *Peer) processConn() {
@@ -270,85 +298,90 @@ func (peerObj *Peer) processConn() {
 			Logger.log.Info("ProcessConn QUIT")
 			return
 		case newPeerMsg := <-peerObj.cNewConn:
-			Logger.log.Infof("ProcessConn START CONN %s %s", newPeerMsg.Peer.PeerID, newPeerMsg.Peer.RawAddress)
-			cDone := make(chan *PeerConn)
+			Logger.log.Infof("ProcessConn START CONN %s %s", newPeerMsg.Peer.PeerID.Pretty(), newPeerMsg.Peer.RawAddress)
+			cConn := make(chan *PeerConn)
 			go func(peerObj *Peer) {
-				peerConn, err := peerObj.handleConn(newPeerMsg.Peer, cDone)
+				peerConn, err := peerObj.handleConn(newPeerMsg.Peer, cConn)
 				if err != nil && peerConn == nil {
 					Logger.log.Errorf("Fail in opening stream from PEER Id - %s with err: %s", peerObj.PeerID.Pretty(), err.Error())
 				}
 			}(peerObj)
-			p := <-cDone
+			p := <-cConn
 			if newPeerMsg.CConn != nil {
 				newPeerMsg.CConn <- p
 			}
-			Logger.log.Infof("ProcessConn END CONN %s %s", newPeerMsg.Peer.PeerID, newPeerMsg.Peer.RawAddress)
+			Logger.log.Infof("ProcessConn END CONN %s %s", newPeerMsg.Peer.PeerID.Pretty(), newPeerMsg.Peer.RawAddress)
 			continue
 		case newStreamMsg := <-peerObj.cNewStream:
 			remotePeerID := newStreamMsg.Stream.Conn().RemotePeer()
-			Logger.log.Infof("ProcessConn START STREAM %s", remotePeerID)
+			Logger.log.Infof("ProcessConn START STREAM %s", remotePeerID.Pretty())
 			cConn := make(chan *PeerConn)
 			go peerObj.handleStream(newStreamMsg.Stream, cConn)
 			p := <-cConn
 			if newStreamMsg.CConn != nil {
 				newStreamMsg.CConn <- p
 			}
-			Logger.log.Infof("ProcessConn END STREAM %s", remotePeerID)
+			Logger.log.Infof("ProcessConn END STREAM %s", remotePeerID.Pretty())
 			continue
 		}
 	}
 }
 
 func (peerObj *Peer) ConnPending(peer *Peer) {
-	peerObj.pendingPeersMutex.Lock()
-	peerObj.PendingPeers[peer.PeerID.Pretty()] = peer
-	peerObj.pendingPeersMutex.Unlock()
+	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
+	peerIDStr := peer.PeerID.Pretty()
+	peerObj.PendingPeers[peerIDStr] = peer
 }
 
 func (peerObj *Peer) ConnEstablished(peer *Peer) {
-	peerObj.pendingPeersMutex.Lock()
-	_, ok := peerObj.PendingPeers[peer.PeerID.Pretty()]
+	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
+	peerIDStr := peer.PeerID.Pretty()
+	_, ok := peerObj.PendingPeers[peerIDStr]
 	if ok {
-		delete(peerObj.PendingPeers, peer.PeerID.Pretty())
+		delete(peerObj.PendingPeers, peerIDStr)
 	}
-	peerObj.pendingPeersMutex.Unlock()
 }
 
 func (peerObj *Peer) ConnCanceled(peer *Peer) {
-	_, ok := peerObj.PeerConns[peer.PeerID.Pretty()]
+	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
+	peerIDStr := peer.PeerID.Pretty()
+	_, ok := peerObj.PeerConns[peerIDStr]
 	if ok {
-		delete(peerObj.PeerConns, peer.PeerID.Pretty())
+		delete(peerObj.PeerConns, peerIDStr)
 	}
-	peerObj.pendingPeersMutex.Lock()
-	peerObj.PendingPeers[peer.PeerID.Pretty()] = peer
-	peerObj.pendingPeersMutex.Unlock()
+	peerObj.PendingPeers[peerIDStr] = peer
 }
 
-func (peerObj *Peer) NumInbound() int {
+func (peerObj *Peer) CountOfInboundConn() int {
+	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
 	ret := int(0)
-	peerObj.peerConnMutex.Lock()
 	for _, peerConn := range peerObj.PeerConns {
-		if !peerConn.IsOutbound {
+		if !peerConn.GetIsOutbound() {
 			ret++
 		}
 	}
-	peerObj.peerConnMutex.Unlock()
 	return ret
 }
 
-func (peerObj *Peer) NumOutbound() int {
+func (peerObj *Peer) CountOfOutboundConn() int {
+	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
 	ret := int(0)
-	peerObj.peerConnMutex.Lock()
 	for _, peerConn := range peerObj.PeerConns {
-		if peerConn.IsOutbound {
+		if peerConn.GetIsOutbound() {
 			ret++
 		}
 	}
-	peerObj.peerConnMutex.Unlock()
 	return ret
 }
 
-func (peerObj *Peer) GetPeerConnByPeerID(peerID string) (*PeerConn) {
+func (peerObj *Peer) GetPeerConnByPeerID(peerID string) *PeerConn {
+	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
 	peerConn, ok := peerObj.PeerConns[peerID]
 	if ok {
 		return peerConn
@@ -356,7 +389,9 @@ func (peerObj *Peer) GetPeerConnByPeerID(peerID string) (*PeerConn) {
 	return nil
 }
 
-func (peerObj *Peer) GetPeerConnByPbk(pbk string) (*PeerConn) {
+func (peerObj *Peer) GetPeerConnByPbk(pbk string) *PeerConn {
+	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
 	for _, peerConn := range peerObj.PeerConns {
 		if peerConn.RemotePeer.PublicKey == pbk {
 			return peerConn
@@ -365,49 +400,40 @@ func (peerObj *Peer) GetPeerConnByPbk(pbk string) (*PeerConn) {
 	return nil
 }
 
-func (peerObj *Peer) GetListPeerConnByShard(shard byte) ([]*PeerConn) {
-	peerConns := make([]*PeerConn, 0)
-	for _, peerConn := range peerObj.PeerConns {
-		shardT := peerObj.Config.GetShardByPbk(peerConn.RemotePeer.PublicKey)
-		if shardT != nil && *shardT == shard {
-			peerConns = append(peerConns, peerConn)
-		}
-	}
-	return peerConns
-}
-
-func (peerObj *Peer) UpdateShardForPeerConn() {
-	for _, peerConn := range peerObj.PeerConns {
-		_ = peerConn
-	}
-}
-
 func (peerObj *Peer) SetPeerConn(peerConn *PeerConn) {
-	internalConnPeer, ok := peerObj.PeerConns[peerConn.RemotePeer.PeerID.Pretty()]
-	if ok && internalConnPeer != peerConn {
-		if internalConnPeer.IsConnected {
+	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
+	peerIDStr := peerConn.RemotePeer.PeerID.Pretty()
+	internalConnPeer, ok := peerObj.PeerConns[peerIDStr]
+	if ok {
+		if internalConnPeer.GetIsConnected() {
 			internalConnPeer.Close()
 		}
-		Logger.log.Infof("SetPeerConn and Remove %s %s", internalConnPeer.RemotePeer.PeerID, internalConnPeer.RemotePeer.RawAddress)
+		Logger.log.Infof("SetPeerConn and Remove %s %s", peerIDStr, internalConnPeer.RemotePeer.RawAddress)
 	}
-	peerObj.PeerConns[peerConn.RemotePeer.PeerID.Pretty()] = peerConn
+	peerObj.PeerConns[peerIDStr] = peerConn
 }
 
 func (peerObj *Peer) RemovePeerConn(peerConn *PeerConn) {
-	internalConnPeer, ok := peerObj.PeerConns[peerConn.RemotePeer.PeerID.Pretty()]
+	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
+	peerIDStr := peerConn.RemotePeer.PeerID.Pretty()
+	internalConnPeer, ok := peerObj.PeerConns[peerIDStr]
 	if ok {
-		if internalConnPeer.IsConnected {
+		if internalConnPeer.GetIsConnected() {
 			internalConnPeer.Close()
 		}
-		delete(peerObj.PeerConns, peerConn.RemotePeer.PeerID.Pretty())
-		Logger.log.Infof("RemovePeerConn %s %s", peerConn.RemotePeer.PeerID, peerConn.RemotePeer.RawAddress)
+		delete(peerObj.PeerConns, peerIDStr)
+		Logger.log.Infof("RemovePeerConn %s %s", peerIDStr, peerConn.RemotePeer.RawAddress)
 	}
 }
 
 func (peerObj *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error) {
 	Logger.log.Infof("Opening stream to PEER Id - %s", peer.RawAddress)
 
-	_, ok := peerObj.PeerConns[peer.PeerID.Pretty()]
+	peerIDStr := peer.PeerID.Pretty()
+
+	_, ok := peerObj.PeerConns[peerIDStr]
 	if ok {
 		Logger.log.Infof("Checked Existed PEER Id - %s", peer.RawAddress)
 
@@ -417,7 +443,7 @@ func (peerObj *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, er
 		return nil, nil
 	}
 
-	if peer.PeerID.Pretty() == peerObj.PeerID.Pretty() {
+	if peerIDStr == peerObj.PeerID.Pretty() {
 		Logger.log.Infof("Checked MypeerObj PEER Id - %s", peer.RawAddress)
 		//peerObj.newPeerConnectionMutex.Unlock()
 
@@ -427,7 +453,7 @@ func (peerObj *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, er
 		return nil, nil
 	}
 
-	if peerObj.NumOutbound() >= peerObj.Config.MaxOutbound && peerObj.Config.MaxOutbound > 0 && !ok {
+	if peerObj.CountOfOutboundConn() >= peerObj.Config.MaxOutPeers && peerObj.Config.MaxOutPeers > 0 && !ok {
 		Logger.log.Infof("Checked Max Outbound Connection PEER Id - %s", peer.RawAddress)
 
 		//push to pending peers
@@ -448,20 +474,18 @@ func (peerObj *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, er
 		return nil, NewPeerError(OpeningStreamP2PErr, err, peerObj)
 	}
 
-	defer stream.Close()
-
 	remotePeerID := stream.Conn().RemotePeer()
 
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
 	peerConn := PeerConn{
-		IsOutbound:         true,
+		isOutbound:         true,
 		RemotePeer:         peer,
 		RemotePeerID:       remotePeerID,
 		RemoteRawAddress:   peer.RawAddress,
 		ListenerPeer:       peerObj,
 		Config:             peerObj.Config,
-		ReaderWriterStream: rw,
+		RWStream:           rw,
 		cDisconnect:        make(chan struct{}),
 		cClose:             make(chan struct{}),
 		cRead:              make(chan struct{}),
@@ -473,10 +497,14 @@ func (peerObj *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, er
 		HandleFailed:       peerObj.handleFailed,
 	}
 
-	peerObj.SetPeerConn(&peerConn)
-
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
+
+	peerObj.SetPeerConn(&peerConn)
+	defer func() {
+		stream.Close()
+		peerObj.RemovePeerConn(&peerConn)
+	}()
 
 	peerConn.RetryCount = 0
 	peerConn.updateConnState(ConnEstablished)
@@ -504,7 +532,6 @@ func (peerObj *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, er
 			return &peerConn, nil
 		}
 	}
-
 	return &peerConn, nil
 }
 
@@ -512,7 +539,7 @@ func (peerObj *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
-	if peerObj.NumInbound() >= peerObj.Config.MaxInbound && peerObj.Config.MaxInbound > 0 {
+	if peerObj.CountOfInboundConn() >= peerObj.Config.MaxInPeers && peerObj.Config.MaxInPeers > 0 {
 		Logger.log.Infof("Max RemotePeer Inbound Connection")
 
 		if cDone != nil {
@@ -537,14 +564,14 @@ func (peerObj *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
 	peerConn := PeerConn{
-		IsOutbound:   false,
+		isOutbound:   false,
 		ListenerPeer: peerObj,
 		RemotePeer: &Peer{
 			PeerID: remotePeerID,
 		},
 		Config:             peerObj.Config,
 		RemotePeerID:       remotePeerID,
-		ReaderWriterStream: rw,
+		RWStream:           rw,
 		cDisconnect:        make(chan struct{}),
 		cClose:             make(chan struct{}),
 		cRead:              make(chan struct{}),
@@ -569,6 +596,11 @@ func (peerObj *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 	if cDone != nil {
 		close(cDone)
 	}
+
+	defer func() {
+		stream.Close()
+		peerObj.RemovePeerConn(&peerConn)
+	}()
 
 	for {
 		select {
@@ -595,9 +627,15 @@ func (peerObj *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 // encoding/decoding blocks and transactions.
 //
 // This function is safe for concurrent access.
-func (peerObj *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
+func (peerObj *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}, msgType byte, msgShard *byte) {
 	for _, peerConnection := range peerObj.PeerConns {
-		go peerConnection.QueueMessageWithEncoding(msg, doneChan)
+		go peerConnection.QueueMessageWithEncoding(msg, doneChan, msgType, msgShard)
+	}
+}
+
+func (peerObj *Peer) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<- struct{}) {
+	for _, peerConnection := range peerObj.PeerConns {
+		go peerConnection.QueueMessageWithBytes(msgBytes, doneChan)
 	}
 }
 
@@ -605,11 +643,11 @@ func (peerObj *Peer) Stop() {
 	Logger.log.Infof("Stopping PEER %s", peerObj.PeerID.Pretty())
 
 	peerObj.Host.Close()
-	peerObj.peerConnMutex.Lock()
+	peerObj.peerConnsMtx.Lock()
 	for _, peerConn := range peerObj.PeerConns {
 		peerConn.updateConnState(ConnCanceled)
 	}
-	peerObj.peerConnMutex.Unlock()
+	peerObj.peerConnsMtx.Unlock()
 
 	close(peerObj.cStop)
 	Logger.log.Infof("PEER %s stopped", peerObj.PeerID.Pretty())
@@ -636,8 +674,7 @@ handleDisconnected - handle connected peer when it is disconnected, remove and r
 func (peerObj *Peer) handleDisconnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleDisconnected %s", peerConn.RemotePeerID.Pretty())
 	peerConn.updateConnState(ConnCanceled)
-	peerObj.RemovePeerConn(peerConn)
-	if peerConn.IsOutbound && !peerConn.isForceClose {
+	if peerConn.GetIsOutbound() && !peerConn.GetIsForceClose() {
 		go peerObj.retryPeerConnection(peerConn)
 	}
 
@@ -676,11 +713,6 @@ func (peerObj *Peer) retryPeerConnection(peerConn *PeerConn) {
 				peerConn.RetryCount++
 				go peerObj.retryPeerConnection(peerConn)
 			}
-		} else {
-			peerConn.updateConnState(ConnCanceled)
-			peerObj.ConnCanceled(peerConn.RemotePeer)
-			peerObj.renewPeerConnection()
-			peerObj.ConnPending(peerConn.RemotePeer)
 		}
 	})
 }
@@ -689,45 +721,24 @@ func (peerObj *Peer) retryPeerConnection(peerConn *PeerConn) {
 renewPeerConnection - create peer conn by goroutines for pending peers(reconnect)
 */
 func (peerObj *Peer) renewPeerConnection() {
+	peerObj.pendingPeersMtx.Lock()
+	defer peerObj.pendingPeersMtx.Unlock()
 	if len(peerObj.PendingPeers) > 0 {
-		peerObj.pendingPeersMutex.Lock()
 		Logger.log.Infof("*start - Creating peer conn to %d pending peers", len(peerObj.PendingPeers))
 		for _, peer := range peerObj.PendingPeers {
 			Logger.log.Infof("---> RemotePeer: ", peer.RawAddress)
-			go peerObj.PushConn(peer, nil)
+			peerObj.PushConn(peer, nil)
 		}
 		Logger.log.Infof("*end - Creating peer conn to %d pending peers", len(peerObj.PendingPeers))
-		peerObj.pendingPeersMutex.Unlock()
 	}
 }
 
-func (peerObj *Peer) ClosePeerConnsOfShard(shard byte) {
+func (peerObj *Peer) GetPeerConnOfAll() []*PeerConn {
+	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
+	peerConns := make([]*PeerConn, 0)
 	for _, peerConn := range peerObj.PeerConns {
-		sh := peerObj.Config.GetShardByPbk(peerConn.RemotePeer.PublicKey)
-		if sh != nil && *sh == shard {
-			peerConn.ForceClose()
-		}
+		peerConns = append(peerConns, peerConn)
 	}
-}
-
-func (peerObj *Peer) CountPeerConnOfShard(shard *byte) int {
-	c := 0
-	for _, peerConn := range peerObj.PeerConns {
-		sh := peerObj.Config.GetShardByPbk(peerConn.RemotePeer.PublicKey)
-		if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
-			c++
-		}
-	}
-	return c
-}
-
-func (peerObj *Peer) GetPeerConnOfShard(shard *byte) []*PeerConn {
-	c := make([]*PeerConn, 0)
-	for _, peerConn := range peerObj.PeerConns {
-		sh := peerObj.Config.GetShardByPbk(peerConn.RemotePeer.PublicKey)
-		if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
-			c = append(c, peerConn)
-		}
-	}
-	return c
+	return peerConns
 }

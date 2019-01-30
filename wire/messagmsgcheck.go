@@ -5,31 +5,50 @@ import (
 	"encoding/json"
 
 	"github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
 )
 
 type MessageMsgCheck struct {
-	Hash string
+	HashStr   string
+	Timestamp int64
 }
 
-func (self MessageMsgCheck) MessageType() string {
+func (msg *MessageMsgCheck) Hash() string {
+	rawBytes := make([]byte, 0)
+	rawBytes = append(rawBytes, []byte(msg.MessageType())...)
+	rawBytes = append(rawBytes, []byte(msg.HashStr)...)
+	rawBytes = append(rawBytes, common.Int64ToBytes(msg.Timestamp)...)
+	return common.HashH(rawBytes).String()
+}
+
+func (msg *MessageMsgCheck) MessageType() string {
 	return CmdMsgCheck
 }
 
-func (self MessageMsgCheck) MaxPayloadLength(pver int) int {
+func (msg *MessageMsgCheck) MaxPayloadLength(pver int) int {
 	return MaxBlockPayload
 }
 
-func (self MessageMsgCheck) JsonSerialize() ([]byte, error) {
-	jsonBytes, err := json.Marshal(self)
+func (msg *MessageMsgCheck) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(msg)
 	return jsonBytes, err
 }
 
-func (self MessageMsgCheck) JsonDeserialize(jsonStr string) error {
+func (msg *MessageMsgCheck) JsonDeserialize(jsonStr string) error {
 	jsonDecodeString, _ := hex.DecodeString(jsonStr)
-	err := json.Unmarshal([]byte(jsonDecodeString), self)
+	err := json.Unmarshal([]byte(jsonDecodeString), msg)
 	return err
 }
 
-func (self MessageMsgCheck) SetSenderID(senderID peer.ID) error {
+func (msg *MessageMsgCheck) SetSenderID(senderID peer.ID) error {
+	return nil
+}
+
+func (msg *MessageMsgCheck) SignMsg(_ *cashec.KeySet) error {
+	return nil
+}
+
+func (msg *MessageMsgCheck) VerifyMsgSanity() error {
 	return nil
 }

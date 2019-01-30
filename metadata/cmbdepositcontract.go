@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"bytes"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
@@ -64,11 +63,9 @@ func (dc *CMBDepositContract) Hash() *common.Hash {
 	return &hash
 }
 
-func (dc *CMBDepositContract) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
-	lastByte := dc.Receiver.Pk[len(dc.Receiver.Pk)-1]
-	chainID, err := common.GetTxSenderChain(lastByte)
-	receiverChainHeight := bcr.GetChainHeight(chainID)
-	if err != nil || receiverChainHeight+1 >= dc.ValidUntil {
+func (dc *CMBDepositContract) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+	receiverChainHeight := bcr.GetChainHeight(shardID)
+	if receiverChainHeight+1 >= dc.ValidUntil {
 		return false, errors.Errorf("ValidUntil must be bigger than current block height of receiver")
 	}
 
@@ -76,7 +73,7 @@ func (dc *CMBDepositContract) ValidateTxWithBlockChain(txr Transaction, bcr Bloc
 	if !bytes.Equal(txr.GetSigPubKey(), dc.CMBAddress.Pk[:]) {
 		return false, errors.Errorf("CMBAddress must be the one creating this tx")
 	}
-	_, _, _, _, _, _, err = bcr.GetCMB(dc.CMBAddress.Bytes())
+	_, _, _, _, _, _, err := bcr.GetCMB(dc.CMBAddress.Bytes())
 	if err != nil {
 		return false, err
 	}

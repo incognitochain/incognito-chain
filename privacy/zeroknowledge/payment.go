@@ -584,7 +584,10 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 
 		cmOutputValue[i] = privacy.PedCom.CommitAtIndex(new(big.Int).SetUint64(outputCoin.CoinDetails.Value), randOutputValue[i], privacy.VALUE)
 		cmOutputSND[i] = privacy.PedCom.CommitAtIndex(outputCoin.CoinDetails.SNDerivator, randOutputSND[i], privacy.SND)
-		cmOutputShardID[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(outputCoins[i].CoinDetails.GetPubKeyLastByte())), randOutputShardID[i], privacy.SHARDID)
+
+		//TODO: refactor this hardcode, shardnum
+		shardID := byte(int(outputCoins[i].CoinDetails.GetPubKeyLastByte()) % common.SHARD_NUMBER)
+		cmOutputShardID[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(shardID)), randOutputShardID[i], privacy.SHARDID)
 
 		randOutputSum[i] = big.NewInt(0)
 		randOutputSum[i].Add(randOutputValue[i], randOutputSND[i])
@@ -691,7 +694,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 	return proof, nil
 }
 
-func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
+func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	// has no privacy
 	if !hasPrivacy {
 		var sumInputValue, sumOutputValue uint64
@@ -725,7 +728,9 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 			cmTmp := proof.OutputCoins[i].CoinDetails.PublicKey
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(proof.OutputCoins[i].CoinDetails.Value))))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMult(proof.OutputCoins[i].CoinDetails.SNDerivator))
-			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{proof.OutputCoins[i].CoinDetails.GetPubKeyLastByte()})))
+			//TODO: refactor this hard code
+			shardID := byte(int(proof.OutputCoins[i].CoinDetails.GetPubKeyLastByte()) % common.SHARD_NUMBER)
+			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(proof.OutputCoins[i].CoinDetails.Randomness))
 			if !cmTmp.IsEqual(proof.OutputCoins[i].CoinDetails.CoinCommitment) {
 				return false
@@ -753,7 +758,8 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 		// get commitments list from CommitmentIndices
 		commitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
 		for j := 0; j < privacy.CMRingSize; j++ {
-			commitmentBytes, err := db.GetCommitmentByIndex(tokenID, proof.CommitmentIndices[i*privacy.CMRingSize + j], chainId)
+			commitmentBytes, err := db.GetCommitmentByIndex(tokenID, proof.CommitmentIndices[i*privacy.CMRingSize + j], shardID)
+
 			if err != nil {
 				privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Error when get commitment by index from database")
 				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))

@@ -37,7 +37,7 @@ func (cres *CMBInitResponse) Hash() *common.Hash {
 	return &hash
 }
 
-func (cres *CMBInitResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (cres *CMBInitResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if cmb init request existed
 	_, _, _, txHash, state, _, err := bcr.GetCMB(cres.MainAccount.Bytes())
 	if err != nil {

@@ -25,8 +25,9 @@ var constructors = map[string]metaConstructor{
 	CreateAndSendLoanPayment:  metadata.NewLoanPayment,
 }
 
-func (rpcServer RpcServer) handleGetLoanParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return rpcServer.config.BlockChain.BestState[14].BestBlock.Header.DCBConstitution.DCBParams.ListLoanParams, nil
+func (self RpcServer) handleGetLoanParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	// return self.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution.DCBParams.LoanParams, nil
+	return nil, nil
 }
 
 func (rpcServer RpcServer) createRawLoanTx(params interface{}, closeChan <-chan struct{}, metaConstructor metaConstructor) (interface{}, *RPCError) {
@@ -277,8 +278,8 @@ func (rpcServer RpcServer) calcLoanPaymentInfo(strLoanID string) jsonresult.Loan
 				hash, _ := (&common.Hash{}).NewHash(txReqHash)
 				if _, _, _, txReq, err := (*rpcServer.config.BlockChain).GetTransactionByHash(hash); err == nil {
 					reqMeta, _ := txReq.GetMetadata().(*metadata.LoanRequest)
-					chainID, _ := common.GetTxSenderChain(txReq.GetSenderAddrLastByte())
-					height := rpcServer.config.BlockChain.GetChainHeight(chainID)
+					shardID := common.GetShardIDFromLastByte(txReq.GetSenderAddrLastByte())
+					height := rpcServer.config.BlockChain.GetChainHeight(shardID)
 					loanPaymentInfo.Principle = priciple
 					if height >= deadline { // Current term interest is not fully paid
 						loanPaymentInfo.Interest = interest

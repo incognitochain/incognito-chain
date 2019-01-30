@@ -8,9 +8,10 @@ import (
 	"github.com/jrick/logrotate/rotator"
 	"github.com/ninjadotorg/constant/addrmanager"
 	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/connmanager"
-	"github.com/ninjadotorg/constant/consensus/ppos"
+	"github.com/ninjadotorg/constant/consensus/constantpos"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/mempool"
 	"github.com/ninjadotorg/constant/netsync"
@@ -40,6 +41,7 @@ var (
 	mempoolLogger     = backendLog.Logger("Mempool log")
 	transactionLogger = backendLog.Logger("Transaction log")
 	privacyLogger     = backendLog.Logger("Privacy log")
+	randomLogger      = backendLog.Logger("RandomAPI log")
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -65,8 +67,9 @@ func init() {
 	database.Logger.Init(dbLogger)
 	wallet.Logger.Init(walletLogger)
 	blockchain.Logger.Init(blockchainLogger)
-	ppos.Logger.Init(consensusLogger)
+	constantpos.Logger.Init(consensusLogger)
 	mempool.Logger.Init(mempoolLogger)
+	btcapi.Logger.Init(randomLogger)
 	transaction.Logger.Init(transactionLogger)
 	privacy.Logger.Init(privacyLogger)
 
@@ -86,6 +89,7 @@ var subsystemLoggers = map[string]common.Logger{
 	"BLOC": blockchainLogger,
 	"CONS": consensusLogger,
 	"MEMP": mempoolLogger,
+	"RAND": randomLogger,
 	"TRAN": transactionLogger,
 	"PRIV": privacyLogger,
 }

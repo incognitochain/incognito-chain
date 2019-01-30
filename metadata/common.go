@@ -136,6 +136,11 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case PunishGOVDecryptMeta:
 		md = &PunishGOVDecryptMetadata{}
 
+	case ShardStakingMeta:
+		md = &StakingMetadata{}
+	case BeaconStakingMeta:
+		md = &StakingMetadata{}
+
 	default:
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
 	}

@@ -16,10 +16,15 @@ type hasher interface {
 }
 
 var (
-	chainIDPrefix  = []byte("c")
-	blockKeyPrefix = []byte("b-")
-	//blockHeaderKeyPrefix      = []byte("bh-")
+	beaconPrefix              = []byte("bea-")
+	beaconBestBlockkey        = []byte("bea-bestBlock")
+	committeePrefix           = []byte("com-")
+	shardIDPrefix             = []byte("s")
+	blockKeyPrefix            = []byte("b-")
+	blockHeaderKeyPrefix      = []byte("bh-")
 	blockKeyIdxPrefix         = []byte("i-")
+	crossShardKeyPrefix       = []byte("csh-")
+	shardToBeaconKeyPrefix    = []byte("stb-")
 	transactionKeyPrefix      = []byte("tx-")
 	privateKeyPrefix          = []byte("prk-")
 	serialNumbersPrefix       = []byte("serinalnumbers-")

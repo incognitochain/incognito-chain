@@ -5,8 +5,8 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 )
 
 // Coin represents a coin
@@ -41,6 +41,15 @@ func (coin *Coin) UnmarshalJSON(data []byte) error {
 	}
 	coin.SetBytes(temp)
 	return nil
+}
+
+func (coin *Coin) HashH() *common.Hash {
+	b, err := coin.MarshalJSON()
+	if err != nil {
+		return nil
+	}
+	hash := common.HashH(b)
+	return &hash
 }
 
 // Init initializes a coin
@@ -154,7 +163,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if lenField != 0 {
 		coin.SNDerivator = new(big.Int)
-		coin.SNDerivator.SetBytes(coinBytes[offset: offset+int(lenField)])
+		coin.SNDerivator.SetBytes(coinBytes[offset : offset+int(lenField)])
 		offset += int(lenField)
 	}
 
@@ -175,7 +184,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if lenField != 0 {
 		coin.Randomness = new(big.Int)
-		coin.Randomness.SetBytes(coinBytes[offset: offset+int(lenField)])
+		coin.Randomness.SetBytes(coinBytes[offset : offset+int(lenField)])
 		offset += int(lenField)
 	}
 
@@ -184,7 +193,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if lenField != 0 {
 		x := new(big.Int)
-		x.SetBytes(coinBytes[offset: offset+int(lenField)])
+		x.SetBytes(coinBytes[offset : offset+int(lenField)])
 		coin.Value = x.Uint64()
 		offset += int(lenField)
 	}
@@ -278,7 +287,7 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 	if lenCoinDetail > 0 {
 		outputCoin.CoinDetails = new(Coin)
 		err := outputCoin.CoinDetails.SetBytes(bytes[offset : offset+lenCoinDetail])
-		if err != nil{
+		if err != nil {
 			return err
 		}
 	}
@@ -322,7 +331,8 @@ func (outputCoin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 
 //CommitAll commits a coin with 5 attributes (public key, value, serial number derivator, last byte pk, r)
 func (coin *Coin) CommitAll() {
-	values := []*big.Int{big.NewInt(0), new(big.Int).SetUint64(coin.Value), coin.SNDerivator, new(big.Int).SetBytes([]byte{coin.GetPubKeyLastByte()}), coin.Randomness}
+	shardID := byte(int(coin.GetPubKeyLastByte()) % common.SHARD_NUMBER)
+	values := []*big.Int{big.NewInt(0), new(big.Int).SetUint64(coin.Value), coin.SNDerivator, new(big.Int).SetBytes([]byte{shardID}), coin.Randomness}
 	coin.CoinCommitment = PedCom.CommitAll(values)
 	coin.CoinCommitment = coin.CoinCommitment.Add(coin.PublicKey)
 }

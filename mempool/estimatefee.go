@@ -42,6 +42,7 @@ const (
 	// it will provide fee estimations.
 	DefaultEstimateFeeMinRegisteredBlocks = 3
 
+	bytePerKb = 1000
 )
 
 var (
@@ -69,11 +70,11 @@ type observedTransaction struct {
 	feeRate CoinPerKilobyte
 
 	// The block height when it was observed.
-	observed int32
+	observed uint64
 
 	// The height of the block in which it was mined.
 	// If the transaction has not yet been mined, it is zero.
-	mined int32
+	mined uint64
 }
 
 func (o *observedTransaction) Serialize(w io.Writer) {
@@ -132,7 +133,7 @@ type FeeEstimator struct {
 	minRegisteredBlocks uint32
 
 	// The last known height.
-	lastKnownHeight int32
+	lastKnownHeight uint64
 
 	// The number of blocks that have been registered.
 	numBlocksRegistered uint32
@@ -188,7 +189,7 @@ func (ef *FeeEstimator) ObserveTransaction(t *TxDesc) {
 }
 
 // RegisterBlock informs the fee estimator of a new block to take into account.
-func (ef *FeeEstimator) RegisterBlock(block *blockchain.Block) error {
+func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 	ef.mtx.Lock()
 	defer ef.mtx.Unlock()
 
@@ -207,7 +208,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.Block) error {
 
 	// Randomly order txs in block.
 	transactions := make(map[*transaction.Tx]struct{})
-	for _, t := range block.Transactions {
+	for _, t := range block.Body.Transactions {
 		switch t.GetType() {
 		case common.TxNormalType, common.TxSalaryType:
 			{
@@ -242,8 +243,8 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.Block) error {
 		// This shouldn't happen if the fee estimator works correctly,
 		// but return an error if it does.
 		if o.mined != UnminedHeight {
-			Logger.log.Error("estimate fee: transaction ", hash.String(), " has already been mined")
-			return errors.New("transaction has already been mined")
+			Logger.log.Error("Estimate fee: transaction ", hash.String(), " has already been mined")
+			return errors.New("Transaction has already been mined")
 		}
 
 		// This shouldn't happen but check just in case to avoid
@@ -300,7 +301,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.Block) error {
 }
 
 // LastKnownHeight returns the height of the last block which was registered.
-func (ef *FeeEstimator) LastKnownHeight() int32 {
+func (ef *FeeEstimator) LastKnownHeight() uint64 {
 	ef.mtx.Lock()
 	defer ef.mtx.Unlock()
 
@@ -660,7 +661,7 @@ func RestoreFeeEstimator(data FeeEstimatorState) (*FeeEstimator, error) {
 		return nil, err
 	}
 	if version != estimateFeeSaveVersion {
-		return nil, fmt.Errorf("incorrect version: expected %d found %d", estimateFeeSaveVersion, version)
+		return nil, fmt.Errorf("Incorrect version: expected %d found %d", estimateFeeSaveVersion, version)
 	}
 
 	ef := &FeeEstimator{
@@ -700,7 +701,7 @@ func RestoreFeeEstimator(data FeeEstimatorState) (*FeeEstimator, error) {
 			var exists bool
 			bin[j], exists = observed[index]
 			if !exists {
-				return nil, fmt.Errorf("invalid transaction reference %d", index)
+				return nil, fmt.Errorf("Invalid transaction reference %d", index)
 			}
 		}
 		ef.bin[i] = bin

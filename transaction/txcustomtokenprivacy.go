@@ -103,7 +103,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 		inputCoin,
 		fee,
 		hasPrivacyConst,
-		nil,
+		db,
 		nil,
 		nil)
 	if err.(*TransactionError) != nil {
@@ -226,10 +226,10 @@ func (tx *TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(mr metadata.Mempool
 
 func (tx *TxCustomTokenPrivacy) ValidateTxWithBlockChain(
 	bcr metadata.BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface,
 ) error {
-	err := tx.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
+	err := tx.ValidateConstDoubleSpendWithBlockchain(bcr, shardID, db)
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
@@ -248,14 +248,14 @@ func (customTokenTx *TxCustomTokenPrivacy) ValidateTxByItself(
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 ) bool {
 	if customTokenTx.TxTokenPrivacyData.Type == CustomTokenInit {
 		return true
 	}
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
-	ok := customTokenTx.ValidateTransaction(hasPrivacy, db, chainID, constantTokenID)
+	ok := customTokenTx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
 	if !ok {
 		return false
 	}
@@ -266,12 +266,12 @@ func (customTokenTx *TxCustomTokenPrivacy) ValidateTxByItself(
 	return true
 }
 
-func (customTokenTx *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainID byte, tokenID *common.Hash) bool {
-	if customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, chainID, tokenID) {
+func (customTokenTx *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
+	if customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, tokenID) {
 		if customTokenTx.TxTokenPrivacyData.Type == CustomTokenInit {
-			return customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(false, db, chainID, &customTokenTx.TxTokenPrivacyData.PropertyID)
+			return customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(false, db, shardID, &customTokenTx.TxTokenPrivacyData.PropertyID)
 		} else {
-			return customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(true, db, chainID, &customTokenTx.TxTokenPrivacyData.PropertyID)
+			return customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(true, db, shardID, &customTokenTx.TxTokenPrivacyData.PropertyID)
 		}
 	}
 	return false

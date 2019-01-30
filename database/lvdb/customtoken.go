@@ -30,11 +30,11 @@ func (db *db) StorePrivacyCustomToken(tokenID *common.Hash, txHash []byte) error
 	return nil
 }
 
-func (db *db) StoreCustomTokenTx(tokenID *common.Hash, chainID byte, blockHeight int32, txIndex int32, txHash []byte) error {
-	key := db.GetKey(string(TokenPrefix), tokenID) // token-{tokenID}-chainID-(999999999-blockHeight)-(999999999-txIndex)
-	key = append(key, chainID)
-	bs := make([]byte, 4)
-	binary.LittleEndian.PutUint32(bs, uint32(bigNumber-blockHeight))
+func (db *db) StoreCustomTokenTx(tokenID *common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error {
+	key := db.GetKey(string(TokenPrefix), tokenID) // token-{tokenID}-shardID-(999999999-blockHeight)-(999999999-txIndex)
+	key = append(key, shardID)
+	bs := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bs, bigNumber-blockHeight)
 	key = append(key, bs...)
 	bs = make([]byte, 4)
 	binary.LittleEndian.PutUint32(bs, uint32(bigNumber-txIndex))
@@ -46,11 +46,11 @@ func (db *db) StoreCustomTokenTx(tokenID *common.Hash, chainID byte, blockHeight
 	return nil
 }
 
-func (db *db) StorePrivacyCustomTokenTx(tokenID *common.Hash, chainID byte, blockHeight int32, txIndex int32, txHash []byte) error {
-	key := db.GetKey(string(PrivacyTokenPrefix), tokenID) // token-{tokenID}-chainID-(999999999-blockHeight)-(999999999-txIndex)
-	key = append(key, chainID)
-	bs := make([]byte, 4)
-	binary.LittleEndian.PutUint32(bs, uint32(bigNumber-blockHeight))
+func (db *db) StorePrivacyCustomTokenTx(tokenID *common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error {
+	key := db.GetKey(string(PrivacyTokenPrefix), tokenID) // token-{tokenID}-shardID-(999999999-blockHeight)-(999999999-txIndex)
+	key = append(key, shardID)
+	bs := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bs, bigNumber-blockHeight)
 	key = append(key, bs...)
 	bs = make([]byte, 4)
 	binary.LittleEndian.PutUint32(bs, uint32(bigNumber-txIndex))
