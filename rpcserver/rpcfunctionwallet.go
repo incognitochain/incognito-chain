@@ -482,7 +482,7 @@ func (rpcServer RpcServer) handleBuildRawDefragmentAccountTransaction(params int
 		return nil, NewRPCError(ErrRPCInvalidParams, nil)
 	}
 	senderKeyParam := arrayParams[0].(string)
-	minValue := uint64(arrayParams[1].(float64))
+	maxVal := uint64(arrayParams[1].(float64))
 	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
 	// param #4: hasPrivacy flag: 1 or -1
 	hasPrivacy := int(arrayParams[3].(float64)) > 0
@@ -508,7 +508,7 @@ func (rpcServer RpcServer) handleBuildRawDefragmentAccountTransaction(params int
 	if err != nil {
 		return nil, NewRPCError(ErrGetOutputCoin, err)
 	}
-	outCoins, amount := rpcServer.calculateOutputCoinsByMinValue(outCoins, minValue)
+	outCoins, amount := rpcServer.calculateOutputCoinsByMinValue(outCoins, maxVal)
 	if len(outCoins) == 0 {
 		return nil, NewRPCError(ErrGetOutputCoin, nil)
 	}
