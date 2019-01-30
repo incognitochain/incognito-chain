@@ -14,57 +14,6 @@ func buildStabilityActions(txs []metadata.Transaction) [][]string {
 			actions = append(actions, actionPairs...)
 		}
 	}
-	for _, tx := range bankDivTxs {
-		txsToAdd = append(txsToAdd, tx)
-	}
-
-	// Process dividend payout for GOV if needed
-	govDivTxs, govPayoutAmount, err := blockgen.processGovDividend(blockHeight, privatekey)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	for _, tx := range govDivTxs {
-		txsToAdd = append(txsToAdd, tx)
-	}
-
-	// Process crowdsale for DCB
-	dcbSaleTxs, removableTxs := blockgen.processCrowdsale(sourceTxns, chainID, privatekey)
-	for _, tx := range dcbSaleTxs {
-		txsToAdd = append(txsToAdd, tx)
-	}
-	for _, tx := range removableTxs {
-		txToRemove = append(txToRemove, tx)
-	}
-
-	// Build CMB responses
-	cmbInitRefundTxs, err := blockgen.buildCMBRefund(sourceTxns, chainID, privatekey)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	for _, tx := range cmbInitRefundTxs {
-		txsToAdd = append(txsToAdd, tx)
-	}
-
-	txGroups := &txGroups{
-		txsToAdd:                 txsToAdd,
-		txToRemove:               txToRemove,
-		buySellReqTxs:            buySellReqTxs,
-		buyGOVTokensReqTxs:       buyGOVTokensReqTxs,
-		issuingReqTxs:            issuingReqTxs,
-		updatingOracleBoardTxs:   updatingOracleBoardTxs,
-		multiSigsRegistrationTxs: multiSigsRegistrationTxs,
-	}
-	accumulativeValues := &accumulativeValues{
-		bondsSold:           bondsSold,
-		govTokensSold:       govTokensSold,
-		dcbTokensSold:       dcbTokensSold,
-		incomeFromBonds:     incomeFromBonds,
-		incomeFromGOVTokens: incomeFromGOVTokens,
-		totalFee:            totalFee,
-		buyBackCoins:        buyBackCoins,
-		govPayoutAmount:     govPayoutAmount,
-		bankPayoutAmount:    bankPayoutAmount,
-	}
 	return actions
 }
 
