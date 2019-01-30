@@ -15,7 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (rpcServer RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.PaymentInfo, estimateFeeCoinPerKb int64, numBlock uint64, keyset *cashec.KeySet, shardIDSender byte) ([]*privacy.InputCoin, uint64, *RPCError) {
+func (rpcServer RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.PaymentInfo, estimateFeeCoinPerKb int64, numBlock uint64, keyset *cashec.KeySet, shardIDSender byte, hasPrivacy bool) ([]*privacy.InputCoin, uint64, *RPCError) {
 	if numBlock == 0 {
 		numBlock = 8
 	}
@@ -47,7 +47,7 @@ func (rpcServer RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Paymen
 	}
 
 	// check real fee(nano constant) per tx
-	realFee := rpcServer.estimateFee(estimateFeeCoinPerKb, candidateOutputCoins, paymentInfos, shardIDSender, numBlock)
+	realFee := rpcServer.estimateFee(estimateFeeCoinPerKb, candidateOutputCoins, paymentInfos, shardIDSender, numBlock, hasPrivacy)
 	if len(outCoins) == 0 {
 		realFee = 0
 	}
@@ -122,7 +122,7 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	/********* END Fetch all params to *******/
 
 	/******* START choose output coins constant, which is used to create tx *****/
-	inputCoins, realFee, err1 := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, shardIDSender)
+	inputCoins, realFee, err1 := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, shardIDSender, hasPrivacy)
 	if err1 != nil {
 		return nil, err1
 	}
@@ -273,7 +273,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	}
 
 	/******* START choose output coins constant, which is used to create tx *****/
-	inputCoins, realFee, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, shardIDSender)
+	inputCoins, realFee, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, shardIDSender, hasPrivacy)
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
@@ -400,7 +400,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	/****** END FEtch data from params *********/
 
 	/******* START choose output coins constant, which is used to create tx *****/
-	inputCoins, realFee, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, shardIDSender)
+	inputCoins, realFee, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, shardIDSender, hasPrivacyConst)
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
@@ -437,7 +437,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	return tx, err
 }
 
-func (rpcServer RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []*privacy.OutputCoin, paymentInfos []*privacy.PaymentInfo, shardID byte, numBlock uint64) uint64 {
+func (rpcServer RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []*privacy.OutputCoin, paymentInfos []*privacy.PaymentInfo, shardID byte, numBlock uint64, hasPrivacy bool) uint64 {
 	if numBlock == 0 {
 		numBlock = 10
 	}
@@ -457,7 +457,7 @@ func (rpcServer RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []
 	}
 
 	estimateFeeCoinPerKb += uint64(rpcServer.config.Wallet.Config.IncrementalFee)
-	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, nil)
+	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacy)
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	return realFee
 }
