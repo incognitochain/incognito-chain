@@ -15,7 +15,7 @@ import (
 
 	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
 	"github.com/ninjadotorg/constant/common/base58"
-	privacy "github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 /*
@@ -82,6 +82,11 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	beaconBlock.Header.PrevBlockHash = beaconBestState.BestBlockHash
 	tempShardState, staker, swap, stabilityInstructions := self.GetShardState(&beaconBestState)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, self.chain.BestState.Beacon.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
+	votingInstruction, err := self.chain.generateVotingInstruction(privateKey)
+	if err != nil {
+		return nil, NewBlockChainError(BeaconError, err)
+	}
+	tempInstruction = append(tempInstruction, votingInstruction...)
 	//==========Create Body
 	beaconBlock.Body.Instructions = tempInstruction
 	beaconBlock.Body.ShardState = tempShardState
@@ -346,6 +351,7 @@ func (self *BestStateBeacon) GenerateInstruction(
 	}
 	return instructions
 }
+
 func (self *BestStateBeacon) GetValidStakers(tempStaker []string) []string {
 	for _, committees := range self.ShardCommittee {
 		tempStaker = GetValidStaker(committees, tempStaker)
