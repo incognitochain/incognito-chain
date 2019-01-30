@@ -69,7 +69,7 @@ func (uob UpdatingOracleBoard) ValidateTxWithBlockChain(
 		}
 		verKey := new(ecdsa.PublicKey)
 		point := new(privacy.EllipticPoint)
-		point, _ = privacy.DecompressKey(pubKey)
+		_ = point.Decompress(pubKey)
 		verKey.X, verKey.Y = point.X, point.Y
 		verKey.Curve = privacy.Curve
 
