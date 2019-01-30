@@ -170,6 +170,7 @@ func (point EllipticPoint) Hash(index int) *EllipticPoint {
 	for len(temp) < BigIntSize {
 		temp = append([]byte{0}, temp...)
 	}
+
 	res.X.SetBytes(temp)
 	res.X.Add(res.X, big.NewInt(int64(index)))
 	for {
@@ -177,10 +178,10 @@ func (point EllipticPoint) Hash(index int) *EllipticPoint {
 		for len(temp) < BigIntSize {
 			temp = append([]byte{0}, temp...)
 		}
-		res.X.SetBytes(common.DoubleHashB(temp))
+		res.X.SetBytes(common.HashB(temp))
 		err := res.ComputeYCoord()
 
-		if (err == nil) && (Curve.IsOnCurve(res.X, res.Y)) && (res.IsSafe()) {
+		if (err == nil) && (res.IsSafe()) {
 			break
 		}
 	}
@@ -190,10 +191,10 @@ func (point EllipticPoint) Hash(index int) *EllipticPoint {
 // Set sets two coordinates to an elliptic point
 func (point *EllipticPoint) Set(x, y *big.Int) {
 	if point.X == nil {
-		point.X = big.NewInt(0)
+		point.X = new(big.Int)
 	}
 	if point.Y == nil {
-		point.Y = big.NewInt(0)
+		point.Y = new(big.Int)
 	}
 
 	point.X.Set(x)

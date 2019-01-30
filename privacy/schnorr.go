@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"errors"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
@@ -22,30 +23,7 @@ type SchnSignature struct {
 	E, Z1, Z2 *big.Int
 }
 
-//GenKey generates PriKey and PubKey
-func (priKey *SchnPrivKey) GenKey() {
-	if priKey == nil {
-		priKey = new(SchnPrivKey)
-	}
-	hasprivacy := false
-	priKey.SK = RandInt()
-	if hasprivacy {
-		priKey.R = RandInt()
-	} else {
-		priKey.R = big.NewInt(0)
-	}
-
-	priKey.PubKey = new(SchnPubKey)
-
-	priKey.PubKey.G = new(EllipticPoint)
-	priKey.PubKey.G.Set(Curve.Params().Gx, Curve.Params().Gy)
-
-	priKey.PubKey.H = priKey.PubKey.G.ScalarMult(RandInt())
-	rH := priKey.PubKey.H.ScalarMult(priKey.R)
-
-	priKey.PubKey.PK = priKey.PubKey.G.ScalarMult(priKey.SK).Add(rH)
-}
-
+// Set sets Schnorr private key
 func (priKey *SchnPrivKey) Set(sk *big.Int, r *big.Int) {
 	priKey.SK = sk
 	priKey.R = r
@@ -58,6 +36,7 @@ func (priKey *SchnPrivKey) Set(sk *big.Int, r *big.Int) {
 	priKey.PubKey.PK = PedCom.G[SK].ScalarMult(sk).Add(PedCom.G[RAND].ScalarMult(r))
 }
 
+// Set sets Schnorr public key
 func (pubKey *SchnPubKey) Set(pk *EllipticPoint) {
 	pubKey.PK = new(EllipticPoint)
 	pubKey.PK.Set(pk.X, pk.Y)
@@ -71,9 +50,9 @@ func (pubKey *SchnPubKey) Set(pk *EllipticPoint) {
 
 //Sign is function which using for sign on hash array by private key
 func (priKey SchnPrivKey) Sign(data []byte) (*SchnSignature, error) {
-	//if len(hash) != common.HashSize {
-	//	return nil, NewPrivacyErr(UnexpectedErr, errors.New("Hash length must be 32 bytes"))
-	//}
+	if len(data) != common.HashSize {
+		return nil, NewPrivacyErr(UnexpectedErr, errors.New("Hash length must be 32 bytes"))
+	}
 
 	genPoint := new(EllipticPoint)
 	genPoint.Set(Curve.Params().Gx, Curve.Params().Gy)
