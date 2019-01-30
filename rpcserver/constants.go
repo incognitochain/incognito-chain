@@ -50,6 +50,9 @@ const (
 	GetShardBestState  = "getshardbeststate"
 	GetBeaconBestState = "getbeaconbeststate"
 
+	GetShardToBeaconPoolState = "getshardtobeaconpoolstate"
+	GetCrossShardPoolState    = "getcrossshardpoolstate"
+
 	// Wallet rpc cmd
 	ListAccounts                       = "listaccounts"
 	GetAccount                         = "getaccount"
