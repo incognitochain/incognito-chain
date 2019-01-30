@@ -3,6 +3,7 @@ package metadata
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"strconv"
 
@@ -97,9 +98,12 @@ func (bsReq *BuySellRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (bsReq *BuySellRequest) BuildReqActions(tx Transaction) [][]string {
-	bsReqBytes := common.GetBytes(*bsReq)
+func (bsReq *BuySellRequest) BuildReqActions(tx Transaction) ([][]string, error) {
+	bsReqBytes, err := json.Marshal(*bsReq)
+	if err != nil {
+		return [][]string{}, err
+	}
 	bsReqBase64Str := base64.StdEncoding.EncodeToString(bsReqBytes)
 	bsReqAction := []string{strconv.Itoa(BuyFromGOVRequestMeta), bsReqBase64Str}
-	return [][]string{bsReqAction}
+	return [][]string{bsReqAction}, nil
 }
