@@ -225,3 +225,19 @@ func TestMultiExponentiation(t *testing.T){
 	assert.Equal(t, expectedRes, testcase4)
 }
 
+func TestPad (t*testing.T){
+	num := 1000
+	testcase1 := 1024
+
+	start := time.Now()
+	padNum := pad(num)
+	end := time.Since(start)
+	fmt.Printf("Pad 1: %v\n", end)
+
+	assert.Equal(t, testcase1, padNum)
+}
+
+func TestPowerVector(t*testing.T){
+	twoVector := powerVector(big.NewInt(2), 5)
+	fmt.Printf("two vector : %v\n", twoVector)
+}
