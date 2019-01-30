@@ -17,8 +17,7 @@ type CrowdsalePayment struct {
 	MetadataBase
 }
 
-func (csRes *CrowdsalePayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
-	fmt.Printf("***************************************[db] Validating tx crowdsale payment with blockchain %s\n", txr.Hash().String())
+func (csRes *CrowdsalePayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// TODO(@0xbunyip): check if there's a corresponding request in the same block
 	// Check if sale exists
 	saleData, err := bcr.GetCrowdsaleData(csRes.SaleID)

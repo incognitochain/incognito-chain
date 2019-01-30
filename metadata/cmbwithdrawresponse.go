@@ -37,7 +37,7 @@ func (cwres *CMBWithdrawResponse) Hash() *common.Hash {
 	return &hash
 }
 
-func (cwres *CMBWithdrawResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (cwres *CMBWithdrawResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if request existed
 	_, _, _, txRequest, err := bcr.GetTransactionByHash(&cwres.RequestTxID)
 	if err != nil {

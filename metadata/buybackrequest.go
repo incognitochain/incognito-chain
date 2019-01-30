@@ -35,7 +35,7 @@ func NewBuyBackRequest(
 func (bbReq *BuyBackRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
 

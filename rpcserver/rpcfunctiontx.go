@@ -4,13 +4,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"strconv"
 	"time"
+
+	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/privacy"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
@@ -36,6 +37,9 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 
 	// get params
 	paramsArray := common.InterfaceSlice(params)
+	if len(paramsArray) < 1 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key params"))
+	}
 	listKeyParams := common.InterfaceSlice(paramsArray[0])
 	for _, keyParam := range listKeyParams {
 		keys := keyParam.(map[string]interface{})
@@ -60,13 +64,10 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 			PaymentAddress: pubKey.KeySet.PaymentAddress,
 		}
 		lastByte := keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1]
-		chainIdSender, err := common.GetTxSenderChain(lastByte)
-		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
-		}
+		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 		constantTokenID := &common.Hash{}
 		constantTokenID.SetBytes(common.ConstantID[:])
-		outputCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&keySet, chainIdSender, constantTokenID)
+		outputCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&keySet, shardIDSender, constantTokenID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -107,9 +108,11 @@ func (rpcServer RpcServer) handleCreateRawTransaction(params interface{}, closeC
 		// return hex for a new tx
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
+	txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+		ShardID:         txShardID,
 	}
 	return result, nil
 }
@@ -181,7 +184,8 @@ func (rpcServer RpcServer) handleCreateAndSendTx(params interface{}, closeChan <
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 	result := jsonresult.CreateTransactionResult{
-		TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
+		TxID:    sendResult.(jsonresult.CreateTransactionResult).TxID,
+		ShardID: tx.ShardID,
 	}
 	return result, nil
 }
@@ -202,10 +206,13 @@ func (rpcServer RpcServer) handleGetMempoolInfo(params interface{}, closeChan <-
 func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	// param #1: transaction Hash
+	if len(arrayParams) < 1 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Tx hash is empty"))
+	}
 	Logger.log.Infof("Get TransactionByHash input Param %+v", arrayParams[0].(string))
 	txHash, _ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
 	Logger.log.Infof("Get Transaction By Hash %+v", txHash)
-	chainId, blockHash, index, tx, err := rpcServer.config.BlockChain.GetTransactionByHash(txHash)
+	shardID, blockHash, index, tx, err := rpcServer.config.BlockChain.GetTransactionByHash(txHash)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -217,7 +224,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 			result = jsonresult.TransactionDetail{
 				BlockHash: blockHash.String(),
 				Index:     uint64(index),
-				ChainId:   chainId,
+				ShardID:   shardID,
 				Hash:      tx.Hash().String(),
 				Version:   tempTx.Version,
 				Type:      tempTx.Type,
@@ -236,7 +243,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 			result = jsonresult.TransactionDetail{
 				BlockHash: blockHash.String(),
 				Index:     uint64(index),
-				ChainId:   chainId,
+				ShardID:   shardID,
 				Hash:      tx.Hash().String(),
 				Version:   tempTx.Version,
 				Type:      tempTx.Type,
@@ -259,7 +266,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 			result = jsonresult.TransactionDetail{
 				BlockHash: blockHash.String(),
 				Index:     uint64(index),
-				ChainId:   chainId,
+				ShardID:   shardID,
 				Hash:      tx.Hash().String(),
 				Version:   tempTx.Version,
 				Type:      tempTx.Type,
@@ -286,19 +293,31 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 
 func (rpcServer RpcServer) handleGetCommitteeCandidateList(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// param #1: private key of sender
-	cndList := rpcServer.config.BlockChain.GetCommitteeCandidateList()
-	return cndList, nil
+	// cndList := self.config.BlockChain.GetCommitteeCandidateList()
+	// return cndList, nil
+	return nil, nil
 }
 
-func (rpcServer RpcServer) handleGetBlockProducerList(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (self RpcServer) handleRetrieveCommiteeCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	// candidateInfo := self.config.BlockChain.GetCommitteCandidate(params.(string))
+	// if candidateInfo == nil {
+	// 	return nil, nil
+	// }
+	// result := jsonresult.RetrieveCommitteecCandidateResult{}
+	// result.Init(candidateInfo)
+	// return result, nil
+	return nil, nil
+}
+
+func (self RpcServer) handleGetBlockProducerList(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := make(map[string]string)
-	for chainID, bestState := range rpcServer.config.BlockChain.BestState {
-		if bestState.BestBlock.BlockProducer != "" {
-			result[strconv.Itoa(chainID)] = bestState.BestBlock.BlockProducer
-		} else {
-			result[strconv.Itoa(chainID)] = rpcServer.config.ChainParams.GenesisBlock.Header.Committee[chainID]
-		}
-	}
+	// for shardID, bestState := range self.config.BlockChain.BestState {
+	// 	if bestState.BestBlock.BlockProducer != "" {
+	// 		result[strconv.Itoa(shardID)] = bestState.BestBlock.BlockProducer
+	// 	} else {
+	// 		result[strconv.Itoa(shardID)] = self.config.ChainParams.GenesisBlock.Header.Committee[shardID]
+	// 	}
+	// }
 	return result, nil
 }
 
@@ -442,13 +461,10 @@ func (rpcServer RpcServer) handleGetListPrivacyCustomTokenBalance(params interfa
 		balance := uint64(0)
 		// get balance for accountName in wallet
 		lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
-		chainIdSender, err := common.GetTxSenderChain(lastByte)
-		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
-		}
+		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 		constantTokenID := &common.Hash{}
 		constantTokenID.SetBytes(common.ConstantID[:])
-		outcoints, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, chainIdSender, &tokenID)
+		outcoints, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tokenID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -565,10 +581,7 @@ func (rpcServer RpcServer) handleRandomCommitments(params interface{}, closeChan
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
-	chainIdSender, err := common.GetTxSenderChain(lastByte)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
+	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 
 	// #2: available inputCoin from old outputcoin
 	data := jsonresult.ListUnspentResultItem{}
@@ -602,7 +615,7 @@ func (rpcServer RpcServer) handleRandomCommitments(params interface{}, closeChan
 	usableInputCoins := transaction.ConvertOutputCoinToInputCoin(usableOutputCoins)
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
-	commitmentIndexs, myCommitmentIndexs := rpcServer.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, chainIdSender, constantTokenID)
+	commitmentIndexs, myCommitmentIndexs := rpcServer.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, shardIDSender, constantTokenID)
 	result := make(map[string]interface{})
 	result["CommitmentIndices"] = commitmentIndexs
 	result["MyCommitmentIndexs"] = myCommitmentIndexs
@@ -612,39 +625,40 @@ func (rpcServer RpcServer) handleRandomCommitments(params interface{}, closeChan
 
 // handleHasSerialNumbers - check list serial numbers existed in db of node
 func (rpcServer RpcServer) handleHasSerialNumbers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
+	// arrayParams := common.InterfaceSlice(params)
 
-	// #1: payment address
-	paymentAddressStr := arrayParams[0].(string)
-	key, err := wallet.Base58CheckDeserialize(paymentAddressStr)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
-	chainIdSender, err := common.GetTxSenderChain(lastByte)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	//#2: list serialnumbers in base58check encode string
-	serialNumbersStr := arrayParams[1].([]interface{})
+	// // #1: payment address
+	// paymentAddressStr := arrayParams[0].(string)
+	// key, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+	// if err != nil {
+	// 	return nil, NewRPCError(ErrUnexpected, err)
+	// }
+	// lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
+	// shardIDSender, err := common.GetTxSenderShard(lastByte)
+	// if err != nil {
+	// 	return nil, NewRPCError(ErrUnexpected, err)
+	// }
+	// //#2: list serialnumbers in base58check encode string
+	// serialNumbersStr := arrayParams[1].([]interface{})
 
-	result := make(map[byte][]string)
-	result[0] = []string{}
-	result[1] = []string{}
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
-	for _, item := range serialNumbersStr {
-		serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
-		db := *(rpcServer.config.Database)
-		ok, err := db.HasSerialNumber(constantTokenID, serialNumber, chainIdSender)
-		if ok && err != nil {
-			result[0] = append(result[0], item.(string))
-		} else {
-			result[1] = append(result[1], item.(string))
-		}
-	}
+	// result := make(map[byte][]string)
+	// result[0] = []string{}
+	// result[1] = []string{}
+	// constantTokenID := &common.Hash{}
+	// constantTokenID.SetBytes(common.ConstantID[:])
+	// for _, item := range serialNumbersStr {
+	// 	serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
+	// 	db := *(rpcServer.config.Database)
+	// 	ok, err := db.HasSerialNumber(constantTokenID, serialNumber, shardIDSender)
+	// 	if ok && err != nil {
+	// 		result[0] = append(result[0], item.(string))
+	// 	} else {
+	// 		result[1] = append(result[1], item.(string))
+	// 	}
+	// }
 
-	return result, nil
+	// return result, nil
+	return nil, nil
 }
 
 // handleCreateRawCustomTokenTransaction - handle create a custom token command and return in hex string format.
@@ -722,4 +736,63 @@ func (rpcServer RpcServer) handleCreateAndSendPrivacyCustomTokenTransaction(para
 	newParam = append(newParam, base58CheckData)
 	txId, err := rpcServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
 	return txId, err
+}
+
+/*
+// handleCreateRawStakingTransaction handles create staking
+*/
+func (rpcServer RpcServer) handleCreateRawStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	// get params
+	paramsArray := common.InterfaceSlice(params)
+	if len(paramsArray) < 5 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Empty staking type params"))
+	}
+	stakingType, ok := paramsArray[4].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid staking type params"))
+	}
+
+	var err error
+	metadata, err := metadata.NewStakingMetadata(int(stakingType))
+	tx, err := rpcServer.buildRawTransaction(params, metadata)
+	if err.(*RPCError) != nil {
+		Logger.log.Critical(err)
+		return nil, NewRPCError(ErrCreateTxData, err)
+	}
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		// return hex for a new tx
+		return nil, NewRPCError(ErrCreateTxData, err)
+	}
+	txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+		ShardID:         txShardID,
+	}
+	return result, nil
+}
+
+/*
+handleCreateAndSendStakingTx - RPC creates staking transaction and send to network
+*/
+func (rpcServer RpcServer) handleCreateAndSendStakingTx(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	var err error
+	data, err := rpcServer.handleCreateRawStakingTransaction(params, closeChan)
+	if err.(*RPCError) != nil {
+		return nil, NewRPCError(ErrCreateTxData, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
+	if err.(*RPCError) != nil {
+		return nil, NewRPCError(ErrSendTxData, err)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:    sendResult.(jsonresult.CreateTransactionResult).TxID,
+		ShardID: tx.ShardID,
+	}
+	return result, nil
 }

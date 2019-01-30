@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"reflect"
 
+	"time"
+
 	"github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
 )
@@ -15,16 +17,22 @@ const (
 	MessageHeaderSize  = 24
 	MessageCmdTypeSize = 12
 
-	CmdBlock              = "block"
+	CmdBlockShard         = "blockshard"
+	CmdBlockBeacon        = "blockbeacon"
+	CmdGetCrossShard      = "getcrossshd"
+	CmdCrossShard         = "crossshard"
+	CmdGetShardToBeacon   = "getshdtobcn"
+	CmdGetShardToBeacons  = "getshdtobcns"
+	CmdBlkShardToBeacon   = "blkshdtobcn"
 	CmdTx                 = "tx"
-	CmdRegisteration      = "registeration"
 	CmdCustomToken        = "txtoken"
 	CmdPrivacyCustomToken = "txprivacytok"
 	CmdCLoanRequestToken  = "txloanreq"
 	CmdCLoanResponseToken = "txloanres"
 	CmdCLoanWithdrawToken = "txloanwith"
 	CmdCLoanPayToken      = "txloanpay"
-	CmdGetBlocks          = "getblocks"
+	CmdGetBlockBeacon     = "getblkbeacon"
+	CmdGetBlockShard      = "getblkshard"
 	CmdInv                = "inv"
 	CmdGetData            = "getdata"
 	CmdVersion            = "version"
@@ -34,16 +42,20 @@ const (
 	CmdPing               = "ping"
 
 	// POS Cmd
-	CmdBlockSigReq   = "blocksigreq"
-	CmdBlockSig      = "blocksig"
-	CmdInvalidBlock  = "invalidblock"
-	CmdGetChainState = "getchstate"
-	CmdChainState    = "chainstate"
+	CmdBFTPropose     = "bftpropose"
+	CmdBFTPrepare     = "bftprepare"
+	CmdBFTCommit      = "bftcommit"
+	CmdBFTReady       = "bftready"
+	CmdInvalidBlock   = "invalidblock"
+	CmdGetBeaconState = "getbcstate"
+	CmdBeaconState    = "beaconstate"
+	CmdGetShardState  = "getshdstate"
+	CmdShardState     = "shardstate"
 
 	// SWAP Cmd
-	CmdSwapRequest = "swaprequest"
-	CmdSwapSig     = "swapsig"
-	CmdSwapUpdate  = "swapupdate"
+	//CmdSwapRequest = "swaprequest"
+	//CmdSwapSig     = "swapsig"
+	//CmdSwapUpdate  = "swapupdate"
 
 	// heavy message check cmd
 	CmdMsgCheck     = "msgcheck"
@@ -52,22 +64,43 @@ const (
 
 // Interface for message wire on P2P network
 type Message interface {
+	Hash() string
 	MessageType() string
 	MaxPayloadLength(int) int
 	JsonSerialize() ([]byte, error)
 	JsonDeserialize(string) error
 	SetSenderID(peer.ID) error
+
+	//SignMsg sig this msg with a keyset
+	SignMsg(*cashec.KeySet) error
+
+	//VerifyMsgSanity verify msg before push it to final handler
+	VerifyMsgSanity() error
 }
 
 func MakeEmptyMessage(messageType string) (Message, error) {
 	var msg Message
 	switch messageType {
-	case CmdBlock:
-		msg = &MessageBlock{
-			Block: blockchain.Block{
-				Transactions: make([]metadata.Transaction, 0),
-			},
-		}
+	case CmdBlockBeacon:
+		msg = &MessageBlockBeacon{}
+		break
+	case CmdBlockShard:
+		msg = &MessageBlockShard{}
+		break
+	case CmdGetCrossShard:
+		msg = &MessageGetCrossShard{}
+		break
+	case CmdCrossShard:
+		msg = &MessageCrossShard{}
+		break
+	case CmdGetShardToBeacon:
+		msg = &MessageGetShardToBeacon{}
+		break
+	case CmdGetShardToBeacons:
+		msg = &MessageGetShardToBeacons{}
+		break
+	case CmdBlkShardToBeacon:
+		msg = &MessageShardToBeacon{}
 		break
 	case CmdCustomToken:
 		msg = &MessageTx{
@@ -107,8 +140,13 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 			},
 		}
 		break
-	case CmdGetBlocks:
-		msg = &MessageGetBlocks{}
+	case CmdGetBlockBeacon:
+		msg = &MessageGetBlockBeacon{
+			Timestamp: time.Now().Unix(),
+		}
+		break
+	case CmdGetBlockShard:
+		msg = &MessageGetBlockShard{}
 		break
 	case CmdTx:
 		msg = &MessageTx{
@@ -121,44 +159,67 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdVerack:
 		msg = &MessageVerAck{}
 		break
-	case CmdBlockSig:
-		msg = &MessageBlockSig{}
+	case CmdBFTPropose:
+		msg = &MessageBFTPropose{}
 		break
-	case CmdBlockSigReq:
-		msg = &MessageBlockSigReq{}
+	case CmdBFTPrepare:
+		msg = &MessageBFTPrepare{}
 		break
-	case CmdInvalidBlock:
-		msg = &MessageInvalidBlock{}
+	case CmdBFTCommit:
+		msg = &MessageBFTCommit{}
 		break
-	case CmdGetChainState:
-		msg = &MessageGetChainState{}
-	case CmdChainState:
-		msg = &MessageChainState{}
+	case CmdBFTReady:
+		msg = &MessageBFTReady{}
+		break
+	case CmdGetBeaconState:
+		msg = &MessageGetBeaconState{
+			Timestamp: time.Now().Unix(),
+		}
+		break
+	case CmdBeaconState:
+		msg = &MessageBeaconState{
+			Timestamp: time.Now().Unix(),
+		}
+		break
+	case CmdGetShardState:
+		msg = &MessageGetShardState{}
+		break
+	case CmdShardState:
+		msg = &MessageShardState{}
+		break
 	case CmdGetAddr:
-		msg = &MessageGetAddr{}
+		msg = &MessageGetAddr{
+			Timestamp: time.Now(),
+		}
 		break
 	case CmdAddr:
-		msg = &MessageAddr{}
+		msg = &MessageAddr{
+			Timestamp: time.Now(),
+		}
 		break
 	case CmdPing:
 		msg = &MessagePing{}
 		break
-	case CmdSwapRequest:
-		msg = &MessageSwapRequest{}
-		break
-	case CmdSwapSig:
-		msg = &MessageSwapSig{}
-		break
-	case CmdSwapUpdate:
-		msg = &MessageSwapUpdate{
-			Signatures: make(map[string]string),
+		// case CmdSwapRequest:
+		// 	msg = &MessageSwapRequest{}
+		// 	break
+		// case CmdSwapSig:
+		// 	msg = &MessageSwapSig{}
+		// 	break
+		// case CmdSwapUpdate:
+		// 	msg = &MessageSwapUpdate{
+		// 		Signatures: make(map[string]string),
+		// 	}
+		// 	break
+	case CmdMsgCheck:
+		msg = &MessageMsgCheck{
+			Timestamp: time.Now().UnixNano(),
 		}
 		break
-	case CmdMsgCheck:
-		msg = &MessageMsgCheck{}
-		break
 	case CmdMsgCheckResp:
-		msg = &MessageMsgCheckResp{}
+		msg = &MessageMsgCheckResp{
+			Timestamp: time.Now().UnixNano(),
+		}
 		break
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
@@ -168,10 +229,24 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 
 func GetCmdType(msgType reflect.Type) (string, error) {
 	switch msgType {
-	case reflect.TypeOf(&MessageBlock{}):
-		return CmdBlock, nil
-	case reflect.TypeOf(&MessageGetBlocks{}):
-		return CmdGetBlocks, nil
+	case reflect.TypeOf(&MessageBlockBeacon{}):
+		return CmdBlockBeacon, nil
+	case reflect.TypeOf(&MessageBlockShard{}):
+		return CmdBlockShard, nil
+	case reflect.TypeOf(&MessageGetCrossShard{}):
+		return CmdGetCrossShard, nil
+	case reflect.TypeOf(&MessageCrossShard{}):
+		return CmdCrossShard, nil
+	case reflect.TypeOf(&MessageGetShardToBeacon{}):
+		return CmdGetShardToBeacon, nil
+	case reflect.TypeOf(&MessageGetShardToBeacons{}):
+		return CmdGetShardToBeacons, nil
+	case reflect.TypeOf(&MessageShardToBeacon{}):
+		return CmdBlkShardToBeacon, nil
+	case reflect.TypeOf(&MessageGetBlockBeacon{}):
+		return CmdGetBlockBeacon, nil
+	case reflect.TypeOf(&MessageGetBlockShard{}):
+		return CmdGetBlockShard, nil
 	case reflect.TypeOf(&MessageTx{}):
 		return CmdTx, nil
 		/*case reflect.TypeOf(&MessageRegistration{}):
@@ -186,22 +261,30 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdAddr, nil
 	case reflect.TypeOf(&MessagePing{}):
 		return CmdPing, nil
-	case reflect.TypeOf(&MessageBlockSig{}):
-		return CmdBlockSig, nil
-	case reflect.TypeOf(&MessageBlockSigReq{}):
-		return CmdBlockSigReq, nil
+	case reflect.TypeOf(&MessageBFTPropose{}):
+		return CmdBFTPropose, nil
+	case reflect.TypeOf(&MessageBFTPrepare{}):
+		return CmdBFTPrepare, nil
+	case reflect.TypeOf(&MessageBFTCommit{}):
+		return CmdBFTCommit, nil
+	case reflect.TypeOf(&MessageBFTReady{}):
+		return CmdBFTReady, nil
 	case reflect.TypeOf(&MessageInvalidBlock{}):
 		return CmdInvalidBlock, nil
-	case reflect.TypeOf(&MessageGetChainState{}):
-		return CmdGetChainState, nil
-	case reflect.TypeOf(&MessageChainState{}):
-		return CmdChainState, nil
-	case reflect.TypeOf(&MessageSwapRequest{}):
-		return CmdSwapRequest, nil
-	case reflect.TypeOf(&MessageSwapSig{}):
-		return CmdSwapSig, nil
-	case reflect.TypeOf(&MessageSwapUpdate{}):
-		return CmdSwapUpdate, nil
+	case reflect.TypeOf(&MessageGetBeaconState{}):
+		return CmdGetBeaconState, nil
+	case reflect.TypeOf(&MessageBeaconState{}):
+		return CmdBeaconState, nil
+	case reflect.TypeOf(&MessageGetShardState{}):
+		return CmdGetShardState, nil
+	case reflect.TypeOf(&MessageShardState{}):
+		return CmdShardState, nil
+		//case reflect.TypeOf(&MessageSwapRequest{}):
+		//	return CmdSwapRequest, nil
+		//case reflect.TypeOf(&MessageSwapSig{}):
+		//	return CmdSwapSig, nil
+		//case reflect.TypeOf(&MessageSwapUpdate{}):
+		//	return CmdSwapUpdate, nil
 	case reflect.TypeOf(&MessageMsgCheck{}):
 		return CmdMsgCheck, nil
 	case reflect.TypeOf(&MessageMsgCheckResp{}):

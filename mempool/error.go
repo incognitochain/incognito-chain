@@ -1,18 +1,21 @@
 package mempool
 
 import (
-	"github.com/pkg/errors"
 	"fmt"
+
+	"github.com/pkg/errors"
 )
 
 const (
-	RejectDuplicateTx      = iota
+	RejectDuplicateTx = iota
 	RejectInvalidTx
 	RejectSansityTx
 	RejectSalaryTx
 	RejectVersion
 	RejectInvalidFee
 	CanNotCheckDoubleSpend
+	DatabaseError
+	ShardToBeaconBoolError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -26,6 +29,8 @@ var ErrCodeMessage = map[int]struct {
 	RejectInvalidFee:       {-1004, "Reject invalid fee"},
 	RejectVersion:          {-1005, "Reject invalid version"},
 	CanNotCheckDoubleSpend: {-1006, "Can not check double spend"},
+	DatabaseError:          {-1007, "Database Error"},
+	ShardToBeaconBoolError: {-1007, "ShardToBeaconBool Error"},
 }
 
 type MempoolTxError struct {

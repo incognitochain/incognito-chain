@@ -55,7 +55,7 @@ func NewCrowdsaleRequest(csReqData map[string]interface{}) (Metadata, error) {
 	return result, nil
 }
 
-func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if sale exists and ongoing
 	saleData, err := bcr.GetCrowdsaleData(csReq.SaleID)
 	fmt.Printf("[db] saleData: %+v\n", saleData)

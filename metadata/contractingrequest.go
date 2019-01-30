@@ -23,7 +23,7 @@ func NewContractingRequest(
 func (cReq *ContractingRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
 	return true, nil

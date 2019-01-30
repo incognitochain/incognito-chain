@@ -35,7 +35,7 @@ func (lp *LoanPayment) Hash() *common.Hash {
 	return &hash
 }
 
-func (lp *LoanPayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (lp *LoanPayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	fmt.Println("Start validating LoanPayment tx with blockchain!!!")
 	// Check if loan is withdrawed
 	_, _, _, err := bcr.GetLoanPayment(lp.LoanID)

@@ -1,9 +1,5 @@
 package blockchain
 
-import (
-	"time"
-)
-
 /*
 Params defines a network by its params. These params may be used by Applications
 to differentiate network as well as addresses and keys for one network
@@ -17,44 +13,102 @@ type Params struct {
 	Net uint32
 
 	// DefaultPort defines the default peer-to-peer port for the network.
-	DefaultPort string
+	DefaultPort         string
+	ShardCommitteeSize  int
+	BeaconCommitteeSize int
+	// GenesisBlock defines the first block of the chain.
+	GenesisBeaconBlock *BeaconBlock
 
 	// GenesisBlock defines the first block of the chain.
-	GenesisBlock *Block
+	GenesisShardBlock *ShardBlock
+}
 
-	// SubsidyReductionInterval is the interval of blocks before the subsidy
-	// is reduced.
-	SubsidyReductionInterval int32
+// FOR TESTNET
+const (
+	TestNetShardsNum           = 4
+	TestNetShardCommitteeSize  = 3
+	TestNetBeaconCommitteeSize = 3
+)
 
-	// TargetTimespan is the desired amount of time that should elapse
-	// before the block difficulty requirement is examined to determine how
-	// it should be changed in order to maintain the desired block
-	// generation rate.
-	TargetTimespan time.Duration
+// for beacon
+// public key
+var preSelectBeaconNodeTestnetSerializedPubkey = [TestNetBeaconCommitteeSize]string{
+	"16QMc6ARYki7eL3p8cj8T8b54ZAhPrnBcfaTY9CgPBDKEtwcm2u",
+	"158haewyeNr4WXGk4Bao2MUonNNaAjSpYeUTJ8JoD4at2AjVS45",
+	"16S3Db9V2kqmmogfggKAD2bpJjXcveJcdUQmx9S3ewEGQBE3rrv",
+}
 
-	// TargetTimePerBlock is the desired amount of time to generate each
-	// block.
-	TargetTimePerBlock time.Duration
+// privatekey
+var preSelectBeaconNodeTestnet = [TestNetBeaconCommitteeSize]string{
+	"112t8rnXDNYL1RyTuT85JXeX7mJg1Sc6tCby5akSM7pfEGApgAx83X8C46EDu6dFAK6MVcWfQv2sfTk5nV9HqU3jrkrWdhrmi9z34jEhgHak",
+	"112t8rnXZD2GmbVAP3xBefJaorCgebytpoRK1oAzcgoNNSVtXzoRTu21KeSmnRbzvd7qMJd1mTcsqFS1CGZ8UpY4mFRZzBa69aVcFWpLXuRv",
+	"112t8rnXmEeG5zsS7rExURJfqaRZhm6r4Pypkeag2gprdhtgDpen3LwV68x1nDPRYz2zhyhJTJCGvq1tUx4P1dvrdxF9W9DH7ME7PeGN2ohZ",
+}
 
-	// RetargetAdjustmentFactor is the adjustment factor used to limit
-	// the minimum and maximum amount of adjustment that can occur between
-	// difficulty retargets.
-	RetargetAdjustmentFactor int64
+// For shard
+// public key
+var preSelectShardNodeTestnetSerializedPubkey = [TestNetShardsNum * TestNetShardCommitteeSize]string{
+	"177KNe6pRhi97hD9LqjUvGxLoNeKh9F5oSeh99V6Td2sQcm7qEu",
+	"1671hBGTAT1ui2BQGqpzYyy3pVLPvdDTPEMLfoLix7igUyzG6sE",
+	"17zmxXqnwTK1YE42eNqVJ51mvRaCFoqzm6HogpQQBBt8dWwaUgV",
+	"17S44aXG7y9yEmb932MWQrrRT4Rc6pehK2UMC5np84QB2UYZdZM",
+	"17E9zkHtf495WBkdo47vDB2AVTLLtSq5QtpFU2X7sQcEgHSLmfB",
+	"18YNhMumBmeWE8GJJGbW19esqtB22zUiQx73Rwifxkyt1YKCp1s",
+	"15QYRykFuiFhoU56EAJYFRXn5UWurSuyGiZox9y7rCoSzpKW62H",
+	"16zsNt8d4UEtGR5c5gLfW4GvhWe3NXQv9K3tBEfom8FTYKNDeim",
+	"173HS3C7RFGJDWH8YwtDvMG1s9tgrHu69DtMxVi9NsunwWnrWjk",
+	"16uYeyZyRe3pzpWsyjJvqVGsa65R3A4myCzYYX9qr2Gw6L4YBnu",
+	"18eckf9WNsj4hrm9goesUqeXgDzracNbr7m86qpHDLbB3jEC4wt",
+	"17bgRBWmoNUCRZFAtmRKo7af98t53AWWmVagB5cwPj26Ri7ipPg",
+}
 
-	// ReduceMinDifficulty defines whether the network should reduce the
-	// minimum required difficulty after a long enough period of time has
-	// passed without finding a block.  This is really only useful for test
-	// networks and should not be set on a main network.
-	ReduceMinDifficulty bool
+// privatekey
+var preSelectShardNodeTestnet = [TestNetShardsNum * TestNetShardCommitteeSize]string{
+	"112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNhc33pzChmJRvikZNc3Dt5V7quhdzjWW9Z4BrB2BxdK5VtHzsG9JZdZ5M7yYYGidKKZV",
+	"112t8rnYBW9trs5rzxrMzLU5AnzngQhbp6X4c3xyamFkWU7PwWRq6gprDkm6mf3ZjxaeYQmSpe3xorpWHo3JLLZFHCHSgqd8u19XkVuMGz1M",
+	"112t8rnYY8UbXGVJ3PsrWxssjr1JXaTPNCPDrneXcQgVQs2MFYwgCzPmTsgqPPbeq8c4QxkrjpHYRaG39ZjtwCmHMJBNh2MxaQvKWw5eUGTM",
+	"112t8rnYoj4LesSwRsseGCCYi4J2Py5QxytKKF2WixwEYP4opKUNL2Av9bR2zjfLewf3PQeKcNnuRTTPKgZSJaZH8dfoqY2rmHNekmGMBNDX",
+	"112t8rnZ5aGQqJw9bg6fR8AiGe9NFRtSmn73Scd4oNJcE5BNY4Rbju2amkTRW5PUaFpETkKAdSJUMqptjFYb3B8PVAcQhrqooieNFXe5jzTj",
+	"112t8rnZUKcW5CBDojVmMD6PmDJzR3VtfqFGWG6HRT9PocB6aewekjebWMm9aQnSncgwDV2GMqAWzspzFYL2vs3C3KnZB9H5YSE4s1SdotHb",
+	"112t8rnZdou7TJBdGsWUJ3jWxuQYHdEKndzmKHhHzjdHzckLf7dAz4uBr2oVPF3ChNjs9owpobjaySzPrK3nUsZukVWv2MybKiajw6kD6M69",
+	"112t8rna913eNyB7uyfi6Nbpg9Fqv4ic8uyCyC79S8MhkTgVQYnxpEJFBQZsEveNa3AGWqHoBiEp1dgMH5e2UUpcN6XLvbVo6jaiy3UiiaUY",
+	"112t8rnaTDoXRzYbiB5BZKdZcxjEEKoZ7W4h5QFJ7iwgQ1MqDALCL5c7sexj42GvMLHsXbCmMcjx4JZEUW2UramvgrTwVr9TCp16obmuwTCs",
+	"112t8rnaet4nhVpq517eXmCNnE4JAd2EsTZgfzn6SVKgfSQ6rS7h6AYETMBUNkiZ8PpXqRwCYjpGCLk5DpPhHQNqa8tcRacMKffbYoTWGK9W",
+	"112t8rnb1VhdWUR4SwVNTAokxntpNT5EcLFg6w6DovD9ZptT1DFsAXfrorLofP9uzCZC3JechZowMnc7fcXJ8nvsjdSEr3M6tzWVYBdLJmNW",
+	"112t8rnbDuvxqCrnzQbRkBLrrGoaqTHnvKSBa4tdt4585gJHJHcsm4shE4yBardCsLkXV2Rtogom6Gy8rn4Z5vQXXmanBoVPn2wQhFLTYz4E",
+}
 
-	// MinDiffReductionTime is the amount of time after which the minimum
-	// required difficulty should be reduced when a block hasn't been found.
-	//
-	// NOTE: This only applies if ReduceMinDifficulty is true.
-	MinDiffReductionTime time.Duration
+var icoParamsTestnetNew = IcoParams{
+	InitialPaymentAddress: TestnetGenesisBlockPaymentAddress,
+	InitFundSalary:        TestnetInitFundSalary,
+	InitialBondToken:      TestnetInitBondToken,
+	InitialCMBToken:       TestnetInitCmBToken,
+	InitialDCBToken:       TestnetInitDCBToken,
+	InitialGOVToken:       TestnetInitGovToken,
+}
 
-	// GenerateSupported specifies whether or not CPU mining is allowed.
-	GenerateSupported bool
+var ChainTestParam = Params{
+	Name:                TestnetName,
+	Net:                 Testnet,
+	DefaultPort:         TestnetDefaultPort,
+	ShardCommitteeSize:  1, //TestNetShardCommitteeSize,
+	BeaconCommitteeSize: 1, //TestNetBeaconCommitteeSize,
+	// blockChain parameters
+	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnetSerializedPubkey[:], icoParamsTestnetNew, 1000, 1000, 0),
+	GenesisShardBlock:  CreateShardGenesisBlock(1, preSelectShardNodeTestnetSerializedPubkey[:], icoParamsTestnetNew),
+}
+
+// END TESTNET
+
+var ChainMainParam = Params{
+	Name:                TestnetName,
+	Net:                 Testnet,
+	DefaultPort:         TestnetDefaultPort,
+	ShardCommitteeSize:  1, //TestNetShardCommitteeSize,
+	BeaconCommitteeSize: 1, //TestNetBeaconCommitteeSize,
+	// blockChain parameters
+	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnetSerializedPubkey[:], icoParamsTestnetNew, 1000, 1000, 0),
+	GenesisShardBlock:  CreateShardGenesisBlock(1, preSelectShardNodeTestnetSerializedPubkey[:], icoParamsTestnetNew),
 }
 
 type IcoParams struct {
@@ -66,66 +120,4 @@ type IcoParams struct {
 	InitialBondToken      uint64
 	InitialVoteDCBToken   uint64
 	InitialVoteGOVToken   uint64
-}
-
-var preSelectValidatorsMainnet = []string{}
-var icoParamsMainnet = IcoParams{
-	InitialPaymentAddress: MainnetGenesisblockPaymentAddress,
-	InitFundSalary:        MainnetInitFundSalary,
-	InitialBondToken:      MainnetInitBondToken,
-	InitialCMBToken:       MainnetInitCmBToken,
-	InitialDCBToken:       MainnetInitDCBToken,
-	InitialGOVToken:       MainnetInitGovToken,
-}
-
-// MainNetParams defines the network parameters for the main coin network.
-var MainNetParams = Params{
-	Name:        MainetName,
-	Net:         Mainnet,
-	DefaultPort: MainnetDefaultPort,
-
-	// blockChain parameters
-	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, preSelectValidatorsMainnet, icoParamsMainnet, 0, 0),
-}
-
-var preSelectValidatorsTestnet = []string{
-	"124sf2tJ4K6iVD6PS4dZzs3BNYuYmHmup3Q9MfhorDrJ6aiSr46",
-	"1WG3ys2tsZKpAYV7UEMirmALrMe7wDijnZfTp2Nnd9Ei6upGhc",
-	"12K2poTdqzStNZjKdvYzdTBihhigTRWimHWVd7nZ5wRjEPVEZ8n",
-	"12VGen58VjKC8cT3hGhSohdb8n4kz3huXka9UNcYFbUzGdgnXKZ",
-	"12nVJxbZnexTmkbqcs9huztH9kN4DBCbjZewHgoyH6kHsLnf9uE",
-	"12TZJQbucHA97TJNVtp8xud2BUbrzt1Mgq8Kif1BEdf51BVPFwR",
-	"112hmH8nGFpJoqbevB7pmXGqyHenzxuP67tSyh4jfGqr5PbC4yNQ",
-	"12ixtJSwVqvLrB4x14ux9c3h2DyUgdfvyjt5XooHkxh6vbcZomW",
-	"1cizgU9GeDuEiH7GddwnV2YhPBB3aD1DMir3dynDQahjwQyqTk",
-	"17EMNk6W3QpgmjxdtCaZAYmG7sBqN4XxC9bo6YfnAu587ASGv9g",
-	"1Jd94JYrqLGLUV6wEa43gdsDGc6JGcy2hYbsNptRuSS3iPz24e",
-	"1Q7P7QZGfJSrzC3US1Eqw2iPYDX5rqEG2T8ADsjrML5cQbSaU8",
-	"12mZfvHfV5h92TTF45EQgsKU7SkLNRZXLUf6WGLf24EcKfU5Xb6",
-	"1n7Zch76tzjdQVLpJxeBmPkimBTWbFmQkSsDsvGAE7GMyUYmuh",
-	"17V5TXkUr12JvDrChUQ1kHaQPVFUoVCGGQji9qphTS8asVJBwdF", // me
-	"1YX8vFm8zkQEyHLMRSdr8LG4TS7Ua1xq7pWp8dzsbWkDZjsoZY",
-	"12ts69QMg83g2v8tutoFPxaKbbxPzpSCCQ12k6XTtDxHzr4d46S",
-	"1AH2pPWpF9TjmMaaAUT26WgfSJw31EhdyssHUecxKCmCzZGMB3",
-	"12obfKTP2yTtQVx3mcHk2pKBZBoZEeyjmmcfA7SgtNwCFhHKLrB",
-	"12k5BfodMQLMDZXmKNwd9gj7eqek3WQqmwYxyj37HBtJpMx1djR",
-}
-
-var icoParamsTestnet = IcoParams{
-	InitialPaymentAddress: TestnetGenesisBlockPaymentAddress,
-	InitFundSalary:        TestnetInitFundSalary,
-	InitialBondToken:      TestnetInitBondToken,
-	InitialCMBToken:       TestnetInitCmBToken,
-	InitialDCBToken:       TestnetInitDCBToken,
-	InitialGOVToken:       TestnetInitGovToken,
-}
-
-// TestNetParams defines the network parameters for the test coin network.
-var TestNetParams = Params{
-	Name:        TestnetName,
-	Net:         Testnet,
-	DefaultPort: TestnetDefaultPort,
-
-	// blockChain parameters
-	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, preSelectValidatorsTestnet, icoParamsTestnet, 1000, 1000),
 }

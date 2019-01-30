@@ -1,7 +1,6 @@
 package ppos
 
 import (
-	"fmt"
 	"time"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
@@ -29,7 +28,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageBlockSigReq) {
 		invalidBlockMsg := &wire.MessageInvalidBlock{
 			Reason:    err.Error(),
 			BlockHash: block.Hash().String(),
-			ChainID:   block.Header.ChainID,
+			shardID:   block.Header.shardID,
 			Validator: base58.Base58Check{}.Encode(self.config.ProducerKeySet.PaymentAddress.Pk, byte(0x00)),
 		}
 		dataByte, _ := invalidBlockMsg.JsonSerialize()
@@ -70,7 +69,6 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageBlockSigReq) {
 }
 
 func (self *Engine) OnBlockReceived(block *blockchain.Block) {
-	fmt.Println("OnBlockReceived")
 	if self.config.BlockChain.BestState[block.Header.ChainID].Height < block.Header.Height {
 		exists, err := self.config.BlockChain.BlockExists(block.Hash())
 		if err != nil {
@@ -99,9 +97,9 @@ func (self *Engine) OnBlockSigReceived(validator string, sig string) {
 	return
 }
 
-func (self *Engine) OnInvalidBlockReceived(blockHash string, chainID byte, reason string) {
+func (self *Engine) OnInvalidBlockReceived(blockHash string, shardID byte, reason string) {
 	// leave empty for now
-	Logger.log.Error(blockHash, chainID, reason)
+	Logger.log.Error(blockHash, shardID, reason)
 	return
 }
 
@@ -161,7 +159,7 @@ func (self *Engine) OnSwapRequest(msg *wire.MessageSwapRequest) {
 		return
 	}
 
-	// rawBytes := self.getRawBytesForSwap(msg.LockTime, msg.Requester, msg.ChainID, msg.Candidate)
+	// rawBytes := self.getRawBytesForSwap(msg.LockTime, msg.Requester, msg.shardID, msg.Candidate)
 	// // TODO check requester signature
 	// err := cashec.ValidateDataB58(msg.RequesterPbk, msg.RequesterSig, rawBytes)
 	// if err != nil {
@@ -191,7 +189,7 @@ func (self *Engine) OnSwapRequest(msg *wire.MessageSwapRequest) {
 	}
 	// messageSigMsg.(*wire.MessageSwapSig).LockTime = msg.LockTime
 	// messageSigMsg.(*wire.MessageSwapSig).RequesterPbk = msg.RequesterPbk
-	// messageSigMsg.(*wire.MessageSwapSig).ChainID = msg.ChainID
+	// messageSigMsg.(*wire.MessageSwapSig).shardID = msg.shardID
 	// messageSigMsg.(*wire.MessageSwapSig).ProducerPbk = msg.ProducerPbk
 	messageSigMsg.(*wire.MessageSwapSig).Validator = base58.Base58Check{}.Encode(self.config.ProducerKeySet.PaymentAddress.Pk, byte(0x00))
 	messageSigMsg.(*wire.MessageSwapSig).SwapSig = sig
@@ -230,7 +228,7 @@ func (self *Engine) OnSwapUpdate(msg *wire.MessageSwapUpdate) {
 	}
 
 	//verify signatures
-	rawBytes := self.getRawBytesForSwap(msg.LockTime, msg.Requester, msg.ChainID, msg.Candidate)
+	rawBytes := self.getRawBytesForSwap(msg.LockTime, msg.Requester, msg.shardID, msg.Candidate)
 	cLeader := 0
 	for leaderPbk, leaderSig := range msg.Signatures {
 		if common.IndexOfStr(leaderPbk, committee) >= 0 {
@@ -249,7 +247,7 @@ func (self *Engine) OnSwapUpdate(msg *wire.MessageSwapUpdate) {
 		return
 	}
 	//TODO update committee list
-	self.updateCommittee(msg.Candidate, msg.ChainID)
+	self.updateCommittee(msg.Candidate, msg.shardID)
 
 	return
 }

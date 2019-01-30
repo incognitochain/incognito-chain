@@ -50,7 +50,7 @@ func NewAcceptDCBProposalMetadata(DCBProposalTXID common.Hash, voter Voter) *Acc
 	}
 }
 
-func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	_, _, _, tx, err := bcr.GetTransactionByHash(&acceptDCBProposalMetadata.DCBProposalTXID)
 	if err != nil {
 		return false, err
@@ -91,7 +91,7 @@ func NewAcceptGOVProposalMetadata(GOVProposalTXID common.Hash, voter Voter) *Acc
 	}
 }
 
-func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	_, _, _, tx, err := bcr.GetTransactionByHash(&acceptGOVProposalMetadata.GOVProposalTXID)
 	if err != nil {
 		return false, err

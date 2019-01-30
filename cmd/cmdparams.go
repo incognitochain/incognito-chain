@@ -1,13 +1,13 @@
 package main
 
 import (
-	"github.com/jessevdk/go-flags"
-	"path/filepath"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/blockchain"
-	"os"
 	"fmt"
 	"github.com/fatih/color"
+	"github.com/jessevdk/go-flags"
+	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/common"
+	"os"
+	"path/filepath"
 )
 
 const (
@@ -61,9 +61,9 @@ func loadParams() (*params, error) {
 	}
 	cfg.DataDir = common.CleanAndExpandPath(cfg.DataDir, defaultHomeDir)
 	if cfg.TestNet {
-		cfg.DataDir = filepath.Join(cfg.DataDir, blockchain.TestNetParams.Name)
+		cfg.DataDir = filepath.Join(cfg.DataDir, blockchain.ChainTestParam.Name)
 	} else {
-		cfg.DataDir = filepath.Join(cfg.DataDir, blockchain.MainNetParams.Name)
+		cfg.DataDir = filepath.Join(cfg.DataDir, blockchain.ChainMainParam.Name)
 	}
 
 	return &cfg, nil

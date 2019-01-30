@@ -2,8 +2,9 @@ package lvdb
 
 import (
 	"encoding/binary"
-	"github.com/ninjadotorg/constant/privacy"
 	"sort"
+
+	"github.com/ninjadotorg/constant/privacy"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"

@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
@@ -43,70 +44,76 @@ func (rpcServer RpcServer) handleGetBondTypes(params interface{}, closeChan <-ch
 }
 
 func (rpcServer RpcServer) handleGetCurrentSellingBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	paymentAddressStr := arrayParams[0].(string)
-	senderKey, _ := wallet.Base58CheckDeserialize(paymentAddressStr)
-	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
-	chainIdSender, _ := common.GetTxSenderChain(lastByte)
+	// arrayParams := common.InterfaceSlice(params)
+	// paymentAddressStr := arrayParams[0].(string)
+	// senderKey, _ := wallet.Base58CheckDeserialize(paymentAddressStr)
+	// lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
+	// shardIDSender, _ := common.GetTxSenderChain(lastByte)
 
-	bestBlock := rpcServer.config.BlockChain.BestState[chainIdSender].BestBlock
-	blockHeader := bestBlock.Header
-	sellingBondsParam := bestBlock.Header.GOVConstitution.GOVParams.SellingBonds
-	buyPrice := uint64(0)
-	bondID := sellingBondsParam.GetID()
-	bondPriceFromOracle := blockHeader.Oracle.Bonds[bondID.String()]
-	if bondPriceFromOracle == 0 {
-		buyPrice = sellingBondsParam.BondPrice
-	} else {
-		buyPrice = bondPriceFromOracle
-	}
+	// bestBlock := rpcServer.config.BlockChain.BestState[shardIDSender].BestBlock
+	// blockHeader := bestBlock.Header
+	// sellingBondsParam := bestBlock.Header.GOVConstitution.GOVParams.SellingBonds
+	// buyPrice := uint64(0)
+	// bondID := sellingBondsParam.GetID()
+	// bondPriceFromOracle := blockHeader.Oracle.Bonds[bondID.String()]
+	// if bondPriceFromOracle == 0 {
+	// 	buyPrice = sellingBondsParam.BondPrice
+	// } else {
+	// 	buyPrice = bondPriceFromOracle
+	// }
 
-	bondTypeRes := jsonresult.GetBondTypeResultItem{
-		BondName:       sellingBondsParam.BondName,
-		BondSymbol:     sellingBondsParam.BondSymbol,
-		BondID:         bondID.String(),
-		StartSellingAt: sellingBondsParam.StartSellingAt,
-		EndSellingAt:   sellingBondsParam.StartSellingAt + sellingBondsParam.SellingWithin,
-		Maturity:       sellingBondsParam.Maturity,
-		BuyBackPrice:   sellingBondsParam.BuyBackPrice, // in constant
-		BuyPrice:       buyPrice,                       // in constant
-		TotalIssue:     sellingBondsParam.TotalIssue,
-		Available:      sellingBondsParam.BondsToSell,
-	}
-	result := jsonresult.GetBondTypeResult{
-		BondTypes: make(map[string]jsonresult.GetBondTypeResultItem),
-	}
-	result.BondTypes[bondID.String()] = bondTypeRes
-	return result, nil
+	// bondTypeRes := jsonresult.GetBondTypeResultItem{
+	// 	BondName:       sellingBondsParam.BondName,
+	// 	BondSymbol:     sellingBondsParam.BondSymbol,
+	// 	BondID:         bondID.String(),
+	// 	StartSellingAt: sellingBondsParam.StartSellingAt,
+	// 	EndSellingAt:   sellingBondsParam.StartSellingAt + sellingBondsParam.SellingWithin,
+	// 	Maturity:       sellingBondsParam.Maturity,
+	// 	BuyBackPrice:   sellingBondsParam.BuyBackPrice, // in constant
+	// 	BuyPrice:       buyPrice,                       // in constant
+	// 	TotalIssue:     sellingBondsParam.TotalIssue,
+	// 	Available:      sellingBondsParam.BondsToSell,
+	// }
+	// result := jsonresult.GetBondTypeResult{
+	// 	BondTypes: make(map[string]jsonresult.GetBondTypeResultItem),
+	// }
+	// result.BondTypes[bondID.String()] = bondTypeRes
+	// return result, nil
+
+	return nil, nil
 }
 
 func (rpcServer RpcServer) handleGetGOVParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	constitution := rpcServer.config.BlockChain.BestState[14].BestBlock.Header.GOVConstitution
-	govParams := constitution.GOVParams
-	results := make(map[string]interface{})
-	results["GOVParams"] = govParams
-	results["ExecuteDuration"] = constitution.ExecuteDuration
-	results["Explanation"] = constitution.Explanation
-	return results, nil
+	// constitution := rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution
+	// govParams := constitution.GOVParams
+	// results := make(map[string]interface{})
+	// results["GOVParams"] = govParams
+	// results["ExecuteDuration"] = constitution.ExecuteDuration
+	// results["Explanation"] = constitution.Explanation
+	// return results, nil
+	return nil, nil
 }
 
 func (rpcServer RpcServer) handleGetGOVConstitution(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	constitution := rpcServer.config.BlockChain.BestState[14].BestBlock.Header.GOVConstitution
-	return constitution, nil
+	// constitution := rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution
+	// return constitution, nil
+	return nil, nil
 }
 
 func (rpcServer RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState[14].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
-	return res, nil
+	// res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
+	// return res, nil
+	return nil, nil
 }
 
 func (rpcServer RpcServer) handleAppendListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	senderKey := arrayParams[0].(string)
-	paymentAddress, _ := rpcServer.GetPaymentAddressFromSenderKeyParams(senderKey)
-	rpcServer.config.BlockChain.BestState[14].BestBlock.Header.GOVGovernor.BoardPaymentAddress = append(rpcServer.config.BlockChain.BestState[14].BestBlock.Header.GOVGovernor.BoardPaymentAddress, *paymentAddress)
-	res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState[14].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
-	return res, nil
+	// arrayParams := common.InterfaceSlice(params)
+	// senderKey := arrayParams[0].(string)
+	// paymentAddress, _ := rpcServer.GetPaymentAddressFromSenderKeyParams(senderKey)
+	// rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress = append(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress, *paymentAddress)
+	// res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
+	// return res, nil
+	return nil, nil
 }
 
 func (rpcServer RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -599,32 +606,33 @@ func (self RpcServer) handleCreateAndSendTxWithSenderAddress(params interface{},
 }
 
 func (rpcServer RpcServer) handleGetCurrentSellingGOVTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	paymentAddressStr := arrayParams[0].(string)
-	senderKey, _ := wallet.Base58CheckDeserialize(paymentAddressStr)
-	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
-	chainIdSender, _ := common.GetTxSenderChain(lastByte)
+	// arrayParams := common.InterfaceSlice(params)
+	// paymentAddressStr := arrayParams[0].(string)
+	// senderKey, _ := wallet.Base58CheckDeserialize(paymentAddressStr)
+	// lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
+	// shardIDSender, _ := common.GetTxSenderChain(lastByte)
 
-	bestBlock := rpcServer.config.BlockChain.BestState[chainIdSender].BestBlock
-	blockHeader := bestBlock.Header
-	sellingGOVTokensParam := bestBlock.Header.GOVConstitution.GOVParams.SellingGOVTokens
-	buyPrice := uint64(0)
-	govTokenPriceFromOracle := blockHeader.Oracle.GOVToken
-	if govTokenPriceFromOracle == 0 {
-		buyPrice = sellingGOVTokensParam.GOVTokenPrice
-	} else {
-		buyPrice = govTokenPriceFromOracle
-	}
+	// bestBlock := rpcServer.config.BlockChain.BestState[shardIDSender].BestBlock
+	// blockHeader := bestBlock.Header
+	// sellingGOVTokensParam := bestBlock.Header.GOVConstitution.GOVParams.SellingGOVTokens
+	// buyPrice := uint64(0)
+	// govTokenPriceFromOracle := blockHeader.Oracle.GOVToken
+	// if govTokenPriceFromOracle == 0 {
+	// 	buyPrice = sellingGOVTokensParam.GOVTokenPrice
+	// } else {
+	// 	buyPrice = govTokenPriceFromOracle
+	// }
 
-	result := jsonresult.GetCurrentSellingGOVTokens{
-		GOVTokenID:     common.GOVTokenID.String(),
-		StartSellingAt: sellingGOVTokensParam.StartSellingAt,
-		EndSellingAt:   sellingGOVTokensParam.StartSellingAt + sellingGOVTokensParam.SellingWithin,
-		BuyPrice:       buyPrice, // in constant
-		TotalIssue:     sellingGOVTokensParam.TotalIssue,
-		Available:      sellingGOVTokensParam.GOVTokensToSell,
-	}
-	return result, nil
+	// result := jsonresult.GetCurrentSellingGOVTokens{
+	// 	GOVTokenID:     common.GOVTokenID.String(),
+	// 	StartSellingAt: sellingGOVTokensParam.StartSellingAt,
+	// 	EndSellingAt:   sellingGOVTokensParam.StartSellingAt + sellingGOVTokensParam.SellingWithin,
+	// 	BuyPrice:       buyPrice, // in constant
+	// 	TotalIssue:     sellingGOVTokensParam.TotalIssue,
+	// 	Available:      sellingGOVTokensParam.GOVTokensToSell,
+	// }
+	// return result, nil
+	return nil, nil
 }
 
 func (rpcServer RpcServer) handleCreateRawTxWithBuyGOVTokensRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {

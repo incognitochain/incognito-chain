@@ -15,10 +15,8 @@ import (
 )
 
 // TODO: 0xsirrush need to optimize with some features:
-// 1. store paymentaddress - outputcoin on meme
 // 2. load data in db on mem and using to validate tx
 // 3. cancel tx
-// 4. remove mem when mined block and cancel tx
 // 5. priority data in mem
 
 // config is a descriptor containing the memory pool configuration.
@@ -52,6 +50,10 @@ type TxPool struct {
 	config            Config
 	pool              map[common.Hash]*TxDesc
 	poolSerialNumbers map[common.Hash][][]byte
+
+	txCoinHashHPool map[common.Hash][]common.Hash
+	coinHashHPool   map[common.Hash]bool
+	cMtx            sync.RWMutex
 }
 
 /*
@@ -61,6 +63,10 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.config = *cfg
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbers = make(map[common.Hash][][]byte)
+
+	tp.txCoinHashHPool = make(map[common.Hash][]common.Hash)
+	tp.coinHashHPool = make(map[common.Hash]bool)
+	tp.cMtx = sync.RWMutex{}
 }
 
 // ----------- transaction.MempoolRetriever's implementation -----------------
@@ -89,7 +95,7 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 /*
 // add transaction into pool
 */
-func (tp *TxPool) addTx(tx metadata.Transaction, height int32, fee uint64) *TxDesc {
+func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxDesc {
 	txD := &TxDesc{
 		Desc: metadata.TxDesc{
 			Tx:     tx,
@@ -107,15 +113,17 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height int32, fee uint64) *TxDe
 	// Record this tx for fee estimation if enabled. only apply for normal tx
 	if tx.GetType() == common.TxNormalType {
 		if tp.config.FeeEstimator != nil {
-			chainId, err := common.GetTxSenderChain(tx.(*transaction.Tx).PubKeyLastByteSender)
-			if err == nil {
-				tp.config.FeeEstimator[chainId].ObserveTransaction(txD)
-			} else {
-				Logger.log.Error(err)
+			shardID := common.GetShardIDFromLastByte(tx.(*transaction.Tx).PubKeyLastByteSender)
+			if temp, ok := tp.config.FeeEstimator[shardID]; ok {
+				temp.ObserveTransaction(txD)
 			}
+
 		}
 	}
-
+	txHash := tx.Hash()
+	if txHash != nil {
+		tp.addTxCoinHashH(*txHash)
+	}
 	return txD
 }
 
@@ -130,16 +138,13 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	txHash := tx.Hash()
 
 	// that make sure transaction is accepted when passed any rules
-	var chainID byte
+	var shardID byte
 	var err error
 
-	// get chainID of tx
-	chainID, err = common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+	// get shardID of tx
+	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 
-	if err != nil {
-		return nil, nil, err
-	}
-	bestHeight := tp.config.BlockChain.BestState[chainID].BestBlock.Header.Height
+	bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestShardBlock.Header.Height
 	// nextBlockHeight := bestHeight + 1
 	// check version
 	ok := tx.CheckTxVersion(MaxVersion)
@@ -182,7 +187,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 
 	// ValidateTransaction tx by it self
 	// validate := tp.ValidateTxByItSelf(tx)
-	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, chainID)
+	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
 	if !validated {
 		err := MempoolTxError{}
 		err.Init(RejectInvalidTx, errors.New("invalid tx"))
@@ -190,8 +195,8 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 
 	// validate tx with data of blockchain
-	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, chainID, tp.config.BlockChain.GetDatabase())
-	// err = tp.ValidateTxWithBlockChain(tx, chainID)
+	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardID, tp.config.BlockChain.GetDatabase())
+	// err = tp.ValidateTxWithBlockChain(tx, shardID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -251,6 +256,11 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 func (tp *TxPool) RemoveTx(tx metadata.Transaction) error {
 	tp.mtx.Lock()
 	err := tp.removeTx(&tx)
+	// remove tx coin hash from pool
+	txHash := tx.Hash()
+	if txHash != nil {
+		tp.removeTxCoinHashH(*txHash)
+	}
 	tp.mtx.Unlock()
 	return err
 }
@@ -345,4 +355,47 @@ func (tp *TxPool) ListTxs() []string {
 		result = append(result, tx.Desc.Tx.Hash().String())
 	}
 	return result
+}
+
+func (tp *TxPool) PrePoolTxCoinHashH(txHashH common.Hash, coinHashHs []common.Hash) error {
+	tp.cMtx.Lock()
+	defer tp.cMtx.Unlock()
+	tp.txCoinHashHPool[txHashH] = coinHashHs
+	return nil
+}
+
+func (tp *TxPool) addTxCoinHashH(txHashH common.Hash) error {
+	tp.cMtx.Lock()
+	defer tp.cMtx.Unlock()
+	inCoinHs, ok := tp.txCoinHashHPool[txHashH]
+	if ok {
+		for _, inCoinH := range inCoinHs {
+			tp.coinHashHPool[inCoinH] = true
+		}
+	}
+	return nil
+}
+
+func (tp *TxPool) ValidateCoinHashH(coinHashH common.Hash) error {
+	tp.cMtx.Lock()
+	defer tp.cMtx.Unlock()
+	_, ok := tp.coinHashHPool[coinHashH]
+	if ok {
+		return errors.New("Coin is in used")
+	}
+	return nil
+}
+
+func (tp *TxPool) removeTxCoinHashH(txHashH common.Hash) error {
+	tp.cMtx.Lock()
+	defer tp.cMtx.Unlock()
+	if coinHashHs, okTxHashH := tp.txCoinHashHPool[txHashH]; okTxHashH {
+		for _, coinHashH := range coinHashHs {
+			if _, okCoinHashH := tp.coinHashHPool[coinHashH]; okCoinHashH {
+				delete(tp.coinHashHPool, coinHashH)
+			}
+		}
+		delete(tp.txCoinHashHPool, txHashH)
+	}
+	return nil
 }
