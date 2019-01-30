@@ -191,8 +191,8 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	buyingAsset := saleData.BuyingAsset
 
 	// Get price for asset
-	buyPrice := blockgen.getAssetPrice(chainID, buyingAsset)
-	sellPrice := blockgen.getAssetPrice(chainID, sellingAsset)
+	buyPrice := blockgen.getAssetPrice(shardID, buyingAsset)
+	sellPrice := blockgen.getAssetPrice(shardID, sellingAsset)
 	if buyPrice == 0 || sellPrice == 0 {
 		buyPrice = saleData.DefaultBuyPrice
 		sellPrice = saleData.DefaultSellPrice
@@ -363,25 +363,25 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 	return txsPayment, txsToRemove
 }
 
-func (blockgen *BlkTmplGenerator) getAssetPrice(chainID byte, assetID common.Hash) uint64 {
+func (blockgen *BlkTmplGenerator) getAssetPrice(shardID byte, assetID common.Hash) uint64 {
 	price := uint64(0)
-	if common.IsBondAsset(&assetID) {
-		if blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds != nil {
-			price = blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds[assetID.String()]
-		}
-	} else if blockgen.chain.BestState[chainID].BestBlock.Header.Oracle != nil {
-		oracle := blockgen.chain.BestState[chainID].BestBlock.Header.Oracle
-		if assetID.IsEqual(&common.ConstantID) {
-			price = oracle.Constant
-		} else if assetID.IsEqual(&common.DCBTokenID) {
-			price = oracle.DCBToken
-		} else if assetID.IsEqual(&common.GOVTokenID) {
-			price = oracle.GOVToken
-		} else if assetID.IsEqual(&common.ETHAssetID) {
-			price = oracle.ETH
-		} else if assetID.IsEqual(&common.BTCAssetID) {
-			price = oracle.BTC
-		}
-	}
+	//if common.IsBondAsset(&assetID) {
+	//	if blockgen.chain.BestState[shardID].BestBlock.Header.Oracle.Bonds != nil {
+	//		price = blockgen.chain.BestState[shardID].BestBlock.Header.Oracle.Bonds[assetID.String()]
+	//	}
+	//} else if blockgen.chain.BestState[shardID].BestBlock.Header.Oracle != nil {
+	//	oracle := blockgen.chain.BestState[shardID].BestBlock.Header.Oracle
+	//	if assetID.IsEqual(&common.ConstantID) {
+	//		price = oracle.Constant
+	//	} else if assetID.IsEqual(&common.DCBTokenID) {
+	//		price = oracle.DCBToken
+	//	} else if assetID.IsEqual(&common.GOVTokenID) {
+	//		price = oracle.GOVToken
+	//	} else if assetID.IsEqual(&common.ETHAssetID) {
+	//		price = oracle.ETH
+	//	} else if assetID.IsEqual(&common.BTCAssetID) {
+	//		price = oracle.BTC
+	//	}
+	//}
 	return price
 }
