@@ -1733,19 +1733,6 @@ func (self *BlockChain) SetEncryptPhrase(helper ConstitutionHelper) {
 	// }
 }
 
-//This function is called when new block => block height is block height of best state + 1
-func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
-	// BestBlock := self.BestState[0].BestBlock
-	// thisBlockHeight := BestBlock.Header.Height + 1
-	// lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
-	// encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
-	// if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
-	// 	encryptFlag == common.NormalEncryptionFlag {
-	// 	return true
-	// }
-	return false
-}
-
 // GetRecentTransactions - find all recent history txs which are created by user
 // by number of block, maximum is 100 newest blocks
 func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privacy.ViewingKey, shardID byte) (map[string]metadata.Transaction, error) {
