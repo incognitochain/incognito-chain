@@ -13,7 +13,8 @@ func TestEncryptionBytes (t*testing.T){
 	publicKeyBytes := GeneratePublicKey(spendingKey)
 
 	privateKey := new(big.Int).SetBytes(spendingKey)
-	publicKey, err := DecompressKey(publicKeyBytes)
+	publicKey := new(EllipticPoint)
+	err := publicKey.Decompress(publicKeyBytes)
 	if err != nil{
 		fmt.Printf("ERR: %v\n", err)
 	}

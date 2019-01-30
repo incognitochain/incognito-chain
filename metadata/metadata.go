@@ -55,8 +55,8 @@ func (mb *MetadataBase) VerifyMultiSigs(
 	return true, nil
 }
 
-func (mb *MetadataBase) BuildReqActions(tx Transaction) [][]string {
-	return [][]string{}
+func (mb *MetadataBase) BuildReqActions(tx Transaction) ([][]string, error) {
+	return [][]string{}, nil
 }
 
 // TODO(@0xankylosaurus): move TxDesc to mempool DTO
@@ -132,7 +132,7 @@ type Metadata interface {
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
 	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool
 	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
-	BuildReqActions(Transaction) [][]string
+	BuildReqActions(Transaction) ([][]string, error)
 }
 
 // Interface for all type of transaction

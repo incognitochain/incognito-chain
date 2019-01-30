@@ -7,7 +7,10 @@ func buildStabilityActions(txs []metadata.Transaction) [][]string {
 	for _, tx := range txs {
 		meta := tx.GetMetadata()
 		if meta != nil {
-			actionPairs := meta.BuildReqActions(tx)
+			actionPairs, err := meta.BuildReqActions(tx)
+			if err != nil {
+				continue
+			}
 			actions = append(actions, actionPairs...)
 		}
 	}
