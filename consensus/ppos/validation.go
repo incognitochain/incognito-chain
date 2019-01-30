@@ -29,21 +29,21 @@ func (self *Engine) ValidateTxList(txList []metadata.Transaction) error {
 
 // Check tx with blockchain
 func (self *Engine) ValidateSpecTxWithBlockChain(tx metadata.Transaction) error {
-	// get chainID of tx
-	chainID, err := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+	// get shardID of tx
+	shardID, err := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
 	if err != nil {
 		return err
 	}
-	// return self.config.MemPool.ValidateTxWithBlockChain(tx, chainID)
-	return tx.ValidateTxWithBlockChain(self.config.BlockChain, chainID, self.config.BlockChain.GetDatabase())
+	// return self.config.MemPool.ValidateTxWithBlockChain(tx, shardID)
+	return tx.ValidateTxWithBlockChain(self.config.BlockChain, shardID, self.config.BlockChain.GetDatabase())
 }
 
 // Checl spec tx by it self
 func (self *Engine) ValidateSpecTxByItSelf(tx metadata.Transaction) bool {
-	// get chainID of tx
+	// get shardID of tx
 	// return self.config.MemPool.ValidateTxByItSelf(tx)
-	chainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
-	return tx.ValidateTxByItself(tx.IsPrivacy(), self.config.BlockChain.GetDatabase(), self.config.BlockChain, chainID)
+	shardID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+	return tx.ValidateTxByItself(tx.IsPrivacy(), self.config.BlockChain.GetDatabase(), self.config.BlockChain, shardID)
 }
 
 func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, sigs []string) error {
@@ -82,8 +82,8 @@ func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, 
 }
 
 /*func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error {
-	rtOld := self.config.BlockChain.BestState[block.Header.ChainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
-	newTree := self.config.BlockChain.BestState[block.Header.ChainID].CmTree.MakeCopy()
+	rtOld := self.config.BlockChain.BestState[block.Header.shardID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
+	newTree := self.config.BlockChain.BestState[block.Header.shardID].CmTree.MakeCopy()
 	Logger.log.Infof("[validateblock] old tree rt: %x\n", newTree.GetRoot(common.IncMerkleTreeHeight))
 	err := blockchain.UpdateMerkleTreeForBlock(newTree, block)
 	if err != nil {
@@ -124,10 +124,10 @@ func (self *Engine) CheckBlockSize(block *blockchain.Block) error {
 }
 
 func (self *Engine) IsEnoughData(block *blockchain.Block) error {
-	if self.validatedChainsHeight.Heights[block.Header.ChainID] == (int(block.Header.Height) - 1) {
+	if self.validatedChainsHeight.Heights[block.Header.shardID] == (int(block.Header.Height) - 1) {
 		notFullySync := false
 		for i := 0; i < common.TotalValidators; i++ {
-			if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
+			if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.shardID)) {
 				notFullySync = true
 				getBlkMsg := &wire.MessageGetBlocks{
 					LastBlockHash: self.config.BlockChain.BestState[i].BestBlockHash.String(),
@@ -147,7 +147,7 @@ func (self *Engine) IsEnoughData(block *blockchain.Block) error {
 			timer := time.NewTimer(common.MaxSyncChainTime * time.Second)
 			<-timer.C
 			for i := 0; i < common.TotalValidators; i++ {
-				if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
+				if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.shardID)) {
 					return NewConsensusError(ErrChainNotFullySynced, nil)
 				}
 			}
@@ -210,7 +210,7 @@ func (self *Engine) validatePreSignBlockSanity(block *blockchain.Block) error {
 	}
 
 	// 3. Check signature of the block leader for block hash
-	err = cashec.ValidateDataB58(block.BlockProducer, block.Header.BlockCommitteeSigs[block.Header.ChainID], []byte(block.Hash().String()))
+	err = cashec.ValidateDataB58(block.BlockProducer, block.Header.BlockCommitteeSigs[block.Header.shardID], []byte(block.Hash().String()))
 	if err != nil {
 		return err
 	}

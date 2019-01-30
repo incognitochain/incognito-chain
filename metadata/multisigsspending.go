@@ -40,7 +40,7 @@ func getMultiSigsRegistration(
 func (msSpending *MultiSigsSpending) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
 	// check spending address is already registered or not

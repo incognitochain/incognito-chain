@@ -37,22 +37,26 @@ func (mb *MetadataBase) Hash() *common.Hash {
 	return &hash
 }
 
-func (mb *MetadataBase) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
+func (mb *MetadataBase) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
 	// TODO: 0xjackalope
 	return true
 }
 
-func (mb *MetadataBase) CheckTransactionFee(tr Transaction, minFeePerKbTx uint64) bool {
-	txFee := tr.GetTxFee()
-	fullFee := minFeePerKbTx * tr.GetTxActualSize()
+func (mb *MetadataBase) CheckTransactionFee(tx Transaction, minFeePerKbTx uint64) bool {
+	txFee := tx.GetTxFee()
+	fullFee := minFeePerKbTx * tx.GetTxActualSize()
 	return !(txFee < fullFee)
 }
 
 func (mb *MetadataBase) VerifyMultiSigs(
-	txr Transaction,
+	tx Transaction,
 	db database.DatabaseInterface,
 ) (bool, error) {
 	return true, nil
+}
+
+func (mb *MetadataBase) BuildReqActions(tx Transaction) [][]string {
+	return [][]string{}
 }
 
 // TODO(@0xankylosaurus): move TxDesc to mempool DTO
@@ -65,7 +69,7 @@ type TxDesc struct {
 	Added time.Time
 
 	// Height is the best block's height when the entry was added to the the source pool.
-	Height int32
+	Height uint64
 
 	// Fee is the total fee the transaction associated with the entry pays.
 	Fee uint64
@@ -91,8 +95,8 @@ type BlockchainRetriever interface {
 	GetGOVParams() params.GOVParams
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
 	GetOracleParams() *params.Oracle
-	GetConstitutionStartHeight(boardType string, chainID byte) uint64
-	GetConstitutionEndHeight(boardType string, chainID byte) uint64
+	GetConstitutionStartHeight(boardType string, shardID byte) uint64
+	GetConstitutionEndHeight(boardType string, shardID byte) uint64
 	GetCurrentBlockHeight(byte) uint64
 	GetBoardEndHeight(boardType string, chainID byte) uint64
 
@@ -126,8 +130,9 @@ type Metadata interface {
 	// isContinue, ok, err
 	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
-	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool
+	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool
 	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
+	BuildReqActions(Transaction) [][]string
 }
 
 // Interface for all type of transaction

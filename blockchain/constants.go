@@ -28,10 +28,12 @@ const (
 	//board and proposal parameters
 	TestnetInitCmBToken               = 10000
 	TestnetInitBondToken              = 10000
-	TestnetGenesisBlockPaymentAddress = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"
+	TestnetGenesisBlockPaymentAddress = "1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba"
 )
 
 const (
 	// BlockVersion is the current latest supported block version.
 	BlockVersion = 1
+
+	defaultGetStateWaitTime = 5
 )

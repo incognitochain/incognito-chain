@@ -181,6 +181,43 @@ func ParseListeners(addrs []string, netType string) ([]SimpleAddr, error) {
 	return netAddrs, nil
 }
 
+func ParseListener(addr string, netType string) (*SimpleAddr, error) {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		// Shouldn't happen due to already being normalized.
+		return nil, err
+	}
+	var netAddr *SimpleAddr
+	// Empty host or host of * on plan9 is both IPv4 and IPv6.
+	if host == EmptyString || (host == "*" && runtime.GOOS == "plan9") {
+		netAddr = &SimpleAddr{Net: netType + "4", Addr: addr}
+		//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
+		return netAddr, nil
+	}
+
+	// Strip IPv6 zone id if present since net.ParseIP does not
+	// handle it.
+	zoneIndex := strings.LastIndex(host, "%")
+	if zoneIndex > 0 {
+		host = host[:zoneIndex]
+	}
+
+	// Parse the IP.
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return nil, fmt.Errorf("'%s' is not a valid IP address", host)
+	}
+
+	// To4 returns nil when the IP is not an IPv4 address, so use
+	// this determine the address type.
+	if ip.To4() == nil {
+		//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
+	} else {
+		netAddr = &SimpleAddr{Net: netType + "4", Addr: addr}
+	}
+	return netAddr, nil
+}
+
 /*
 JsonUnmarshallByteArray - because golang default base64 encode for byte[] data
 */
@@ -236,14 +273,8 @@ func SliceBytesExists(slice interface{}, item interface{}) (int64, error) {
 	return -1, nil
 }
 
-func GetTxSenderChain(senderLastByte byte) (byte, error) {
-	modResult := senderLastByte % 100
-	for index := byte(0); index < 5; index++ {
-		if (modResult-index)%5 == 0 {
-			return byte((modResult - index) / 5), nil
-		}
-	}
-	return 0, errors.New("can't get sender's chainID")
+func GetShardIDFromLastByte(b byte) byte {
+	return byte(int(b) % SHARD_NUMBER)
 }
 
 func IntArrayEquals(a []int, b []int) bool {
@@ -260,7 +291,7 @@ func IntArrayEquals(a []int, b []int) bool {
 
 func IndexOfStr(item string, list []string) int {
 	for k, v := range list {
-		if item == v {
+		if strings.Compare(item, v) == 0 {
 			return k
 		}
 	}
@@ -334,6 +365,19 @@ func RandBigIntN(max *big.Int) (*big.Int, error) {
 	return rand.Int(rand.Reader, max)
 }
 
+func IntArrayToString(A []int, delim string) string {
+
+	var buffer bytes.Buffer
+	for i := 0; i < len(A); i++ {
+		buffer.WriteString(strconv.Itoa(A[i]))
+		if i != len(A)-1 {
+			buffer.WriteString(delim)
+		}
+	}
+
+	return buffer.String()
+}
+
 // ECDSASigToByteArray converts signature to byte array
 func ECDSASigToByteArray(r, s *big.Int) (sig []byte) {
 	sig = append(sig, r.Bytes()...)
@@ -373,6 +417,18 @@ func BytesToUint8(b []byte) uint8 {
 	return uint8(b[0])
 }
 
+func CompareStringArray(src []string, dst []string) bool {
+	if len(src) != len(dst) {
+		return false
+	}
+	for idx, val := range src {
+		if dst[idx] != val {
+			return false
+		}
+	}
+	return true
+}
+
 func BytesToInt32(b []byte) int32 {
 	return int32(binary.LittleEndian.Uint32(b))
 }
@@ -391,6 +447,18 @@ func Uint64ToBytes(value uint64) []byte {
 	b := make([]byte, 8)
 	binary.LittleEndian.PutUint64(b, value)
 	return b
+}
+
+func Int64ToBytes(value int64) []byte {
+	return Uint64ToBytes(uint64(value))
+}
+
+func BoolToByte(value bool) byte {
+	var bitSetVar byte
+	if value {
+		bitSetVar = 1
+	}
+	return bitSetVar
 }
 
 func SliceInterfaceToSliceByte(Arr []interface{}) []byte {

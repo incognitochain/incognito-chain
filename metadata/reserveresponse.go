@@ -37,7 +37,7 @@ func (cr *ReserveResponse) Hash() *common.Hash {
 	return &hash
 }
 
-func (cr *ReserveResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (cr *ReserveResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if only board members created this tx
 	isBoard := false
 	for _, gov := range bcr.GetBoardPubKeys("dcb") {

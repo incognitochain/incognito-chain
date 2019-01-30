@@ -38,7 +38,7 @@ func NewIssuingRequest(
 func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
 	if bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) {

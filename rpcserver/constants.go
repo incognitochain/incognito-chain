@@ -45,6 +45,11 @@ const (
 	RandomCommitments                          = "randomcommitments"
 	HasSerialNumbers                           = "hasserialnumbers"
 
+	CreateAndSendStakingTransaction = "createandsendstakingtransaction"
+
+	GetShardBestState  = "getshardbeststate"
+	GetBeaconBestState = "getbeaconbeststate"
+
 	// Wallet rpc cmd
 	ListAccounts                       = "listaccounts"
 	GetAccount                         = "getaccount"
@@ -147,4 +152,5 @@ const (
 
 	// wallet
 	GetPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
+	DefragmentAccount              = "defragmentaccount"
 )

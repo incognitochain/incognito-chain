@@ -35,10 +35,17 @@ KEY27="112t8rneiv2xvHXng8VhXjay7v9MaJymHfMbM3V7c4a49enCwRUw9WkSgznumHitGY8NEtfz4
 KEY28="112t8rneqrrphFTmBeyC4su8PKXhUxHMi1N4C7tuFnwedjJU2ZZY7cuB5HCrnTFU8Ec9PqsjJRWmVYToaRYPgp8Rx73bfzz6DUkwSPQW47Tk"
 KEY29="112t8rnfJxsavj8ax3sZuEbPH7ahXDZ27gQGhUfCv9YCacNbeNYumkpwb6Gvxq6NhCgaMSpVv8x4omBjqfanLNMf8hM8n7KYPXh8qZkPuoCz"
 KEY30="112t8rnfTWNh9GXz9v9WW2CSYxHVj7LTEBx4sesGBRswmHTtPz5GsxenheDcu1ETa4TvcY7qWXV6ftrJiNqRzePRAgNBzKcmNjnFwk4eSTsc"
+KEY31="112t8rnXDNYL1RyTuT85JXeX7mJg1Sc6tCby5akSM7pfEGApgAx83X8C46EDu6dFAK6MVcWfQv2sfTk5nV9HqU3jrkrWdhrmi9z34jEhgHak"
+KEY32="112t8rnXZD2GmbVAP3xBefJaorCgebytpoRK1oAzcgoNNSVtXzoRTu21KeSmnRbzvd7qMJd1mTcsqFS1CGZ8UpY4mFRZzBa69aVcFWpLXuRv"
+KEY33="112t8rnXmEeG5zsS7rExURJfqaRZhm6r4Pypkeag2gprdhtgDpen3LwV68x1nDPRYz2zhyhJTJCGvq1tUx4P1dvrdxF9W9DH7ME7PeGN2ohZ"
 
 rm -rf ./data/node-$1/mainnet/block
-#rm -rf ./data/node-$1/mainnet/wallet
-#rm -rf ./data/node-$1/mainnet/peer.json
+rm -rf ./data/node-$1/mainnet/wallet
+rm -rf ./data/node-$1/mainnet/peer.json
+
+rm -rf ./data/node-$1/testnet/block
+rm -rf ./data/node-$1/testnet/wallet
+rm -rf ./data/node-$1/testnet/peer.json
 
 mkdir -p ./data/node-$1
 rm -rf ./constant-$1
@@ -51,7 +58,7 @@ export EXTERNAL_ADDRESS="127.0.0.1:$PORT"
 
 if [ $1 != 1 ]
 then
-    ./constant-$1 --listen "127.0.0.1:$PORT" --externaladdress "127.0.0.1:$PORT" --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --generate --producerspendingkey $KEY --norpc
+    ./constant-$1 --nodemode "beacon" --listen "127.0.0.1:$PORT" --externaladdress $EXTERNAL_ADDRESS --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --spendingkey $KEY --norpc
 else
-    ./constant-$1 --listen "127.0.0.1:$PORT" --externaladdress "127.0.0.1:$PORT" --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --generate --producerspendingkey $KEY --rpcuser "ad" --rpcpass "123" --enablewallet --walletpassphrase "12345678"
+    ./constant-$1 --listen "127.0.0.1:$PORT" --externaladdress $EXTERNAL_ADDRESS --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --spendingkey $KEY --rpcuser "ad" --rpcpass "123" --enablewallet --walletpassphrase "12345678"
 fi

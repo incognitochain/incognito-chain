@@ -18,18 +18,42 @@ type DatabaseInterface interface {
 	HasValue(key []byte) (bool, error)
 
 	// Block
-	StoreBlock(interface{}, byte) error
-	StoreBlockHeader(interface{}, *common.Hash, byte) error
+	StoreShardBlock(interface{}, byte) error
+	StoreShardBlockHeader(interface{}, *common.Hash, byte) error
 	FetchBlock(*common.Hash) ([]byte, error)
 	HasBlock(*common.Hash) (bool, error)
 	//FetchAllBlocks() (map[byte][]*common.Hash, error)
 	FetchChainBlocks(byte) ([]*common.Hash, error)
-	DeleteBlock(*common.Hash, int32, byte) error
+	DeleteBlock(*common.Hash, uint64, byte) error
+
+	StoreIncomingCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlkHash *common.Hash) error
+	HasIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash *common.Hash) error
+	GetIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash *common.Hash) (uint64, error)
+	// StoreOutgoingCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlk interface{}) error
+	// HasOutgoingCrossShard(shardID byte, crossShardID byte, blkHeight uint64) error
+	// GetOutgoingCrossShard(shardID byte, crossShardID byte, blkHeight uint64) ([]byte, error)
+
+	StoreAcceptedShardToBeacon(shardID byte, blkHeight uint64, shardBlkHash *common.Hash) error
+	HasAcceptedShardToBeacon(shardID byte, shardBlkHash *common.Hash) error
+	GetAcceptedShardToBeacon(shardID byte, shardBlkHash *common.Hash) (uint64, error)
+
+	// Beacon
+	StoreBeaconBlock(interface{}) error
+	StoreBeaconBlockHeader(interface{}, *common.Hash) error
+	FetchBeaconBlock(*common.Hash) ([]byte, error)
+	HasBeaconBlock(*common.Hash) (bool, error)
+	FetchBeaconBlockChain() ([]*common.Hash, error)
+	DeleteBeaconBlock(*common.Hash, uint64) error
 
 	// Block index
-	StoreBlockIndex(*common.Hash, uint64, byte) error
+	StoreShardBlockIndex(*common.Hash, uint64, byte) error
 	GetIndexOfBlock(*common.Hash) (uint64, byte, error)
-	GetBlockByIndex(int32, byte) (*common.Hash, error)
+	GetBlockByIndex(uint64, byte) (*common.Hash, error)
+
+	// Block index
+	StoreBeaconBlockIndex(*common.Hash, uint64) error
+	GetIndexOfBeaconBlock(*common.Hash) (uint64, error)
+	GetBeaconBlockHashByIndex(uint64) (*common.Hash, error)
 
 	// Transaction index
 	StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, indexInBlock int) error
@@ -40,29 +64,36 @@ type DatabaseInterface interface {
 	FetchBestState(byte) ([]byte, error)
 	CleanBestState() error
 
+	// Best state of chain
+	StoreBeaconBestState(interface{}) error
+	StoreBeaconCommitteeByHeight(uint64, interface{}) error
+	FetchBeaconCommitteeByHeight(uint64) ([]byte, error)
+	FetchBeaconBestState() ([]byte, error)
+	CleanBeaconBestState() error
+
 	// SerialNumber
-	StoreSerialNumbers(tokenID *common.Hash, data []byte, chainID byte) error
-	FetchSerialNumbers(tokenID *common.Hash, chainID byte) ([][]byte, error)
-	HasSerialNumber(tokenID *common.Hash, data []byte, chainID byte) (bool, error)
+	StoreSerialNumbers(tokenID *common.Hash, data []byte, shardID byte) error
+	FetchSerialNumbers(tokenID *common.Hash, shardID byte) ([][]byte, error)
+	HasSerialNumber(tokenID *common.Hash, data []byte, shardID byte) (bool, error)
 	CleanSerialNumbers() error
 
 	// PedersenCommitment
-	StoreCommitments(tokenID *common.Hash, pubkey []byte, commitment []byte, chainID byte) error
-	StoreOutputCoins(tokenID *common.Hash, pubkey []byte, outputcoin []byte, chainID byte) error
-	FetchCommitments(tokenID *common.Hash, chainID byte) ([][]byte, error)
-	HasCommitment(tokenID *common.Hash, commitment []byte, chainID byte) (bool, error)
-	HasCommitmentIndex(tokenID *common.Hash, commitmentIndex uint64, chainID byte) (bool, error)
-	GetCommitmentByIndex(tokenID *common.Hash, commitmentIndex uint64, chainID byte) ([]byte, error)
-	GetCommitmentIndex(tokenID *common.Hash, commitment []byte, chainId byte) (*big.Int, error)
-	GetCommitmentLength(tokenID *common.Hash, chainId byte) (*big.Int, error)
-	GetCommitmentIndexsByPubkey(tokenID *common.Hash, pubkey []byte, chainID byte) ([][]byte, error)
-	GetOutcoinsByPubkey(tokenID *common.Hash, pubkey []byte, chainID byte) ([][]byte, error)
+	StoreCommitments(tokenID *common.Hash, pubkey []byte, commitment []byte, shardID byte) error
+	StoreOutputCoins(tokenID *common.Hash, pubkey []byte, outputcoin []byte, shardID byte) error
+	FetchCommitments(tokenID *common.Hash, shardID byte) ([][]byte, error)
+	HasCommitment(tokenID *common.Hash, commitment []byte, shardID byte) (bool, error)
+	HasCommitmentIndex(tokenID *common.Hash, commitmentIndex uint64, shardID byte) (bool, error)
+	GetCommitmentByIndex(tokenID *common.Hash, commitmentIndex uint64, shardID byte) ([]byte, error)
+	GetCommitmentIndex(tokenID *common.Hash, commitment []byte, shardID byte) (*big.Int, error)
+	GetCommitmentLength(tokenID *common.Hash, shardID byte) (*big.Int, error)
+	GetCommitmentIndexsByPubkey(tokenID *common.Hash, pubkey []byte, shardID byte) ([][]byte, error)
+	GetOutcoinsByPubkey(tokenID *common.Hash, pubkey []byte, shardID byte) ([][]byte, error)
 	CleanCommitments() error
 
 	// SNDerivator
 	StoreSNDerivators(tokenID *common.Hash, data big.Int, shardID byte) error
-	FetchSNDerivator(tokenID *common.Hash, chainID byte) ([]big.Int, error)
-	HasSNDerivator(tokenID *common.Hash, data big.Int, chainID byte) (bool, error)
+	FetchSNDerivator(tokenID *common.Hash, shardID byte) ([]big.Int, error)
+	HasSNDerivator(tokenID *common.Hash, data big.Int, shardID byte) (bool, error)
 	CleanSNDerivator() error
 
 	// Fee estimator
@@ -71,19 +102,19 @@ type DatabaseInterface interface {
 	CleanFeeEstimator() error
 
 	// Custom token
-	StoreCustomToken(tokenID *common.Hash, data []byte) error                                                   // store custom token. Param: tokenID, txInitToken-id, data tx
-	StoreCustomTokenTx(tokenID *common.Hash, chainID byte, blockHeight int32, txIndex int32, data []byte) error // store custom token tx. Param: tokenID, chainID, block height, tx-id, data tx
-	ListCustomToken() ([][]byte, error)                                                                         // get list all custom token which issued in network
-	CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error)                                                // from token id get all custom txs
-	GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []byte) (map[string]string, error)            // get list of utxo of an paymentaddress.pubkey of a token
-	GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error)                      // get balance of all paymentaddress of a token (only return payment address with balance > 0)
+	StoreCustomToken(tokenID *common.Hash, data []byte) error                                                    // store custom token. Param: tokenID, txInitToken-id, data tx
+	StoreCustomTokenTx(tokenID *common.Hash, shardID byte, blockHeight uint64, txIndex int32, data []byte) error // store custom token tx. Param: tokenID, shardID, block height, tx-id, data tx
+	ListCustomToken() ([][]byte, error)                                                                          // get list all custom token which issued in network
+	CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error)                                                 // from token id get all custom txs
+	GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []byte) (map[string]string, error)             // get list of utxo of an paymentaddress.pubkey of a token
+	GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error)                       // get balance of all paymentaddress of a token (only return payment address with balance > 0)
 	UpdateRewardAccountUTXO(*common.Hash, []byte, *common.Hash, int) error
 	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error) // get all paymentaddress owner that have balance > 0 of a custom token
 	GetCustomTokenPaymentAddressesBalanceUnreward(tokenID *common.Hash) (map[string]uint64, error)
 
 	// privacy Custom token
 	StorePrivacyCustomToken(tokenID *common.Hash, data []byte) error // store custom token. Param: tokenID, txInitToken-id, data tx
-	StorePrivacyCustomTokenTx(tokenID *common.Hash, chainID byte, blockHeight int32, txIndex int32, txHash []byte) error
+	StorePrivacyCustomTokenTx(tokenID *common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error
 	ListPrivacyCustomToken() ([][]byte, error)                          // get list all custom token which issued in network
 	PrivacyCustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) // from token id get all custom txs
 

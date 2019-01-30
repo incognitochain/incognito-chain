@@ -300,33 +300,32 @@ func (blockgen *BlkTmplGenerator) createAcceptBoardTx(
 	return tx
 }
 
-func (block *Block) UpdateDCBBoard(thisTx metadata.Transaction) error {
-	meta := thisTx.GetMetadata().(*metadata.AcceptDCBBoardMetadata)
-	block.Header.DCBGovernor.BoardIndex += 1
-	block.Header.DCBGovernor.BoardPaymentAddress = meta.DCBBoardPaymentAddress
-	block.Header.DCBGovernor.StartedBlock = uint64(block.Header.Height)
-	block.Header.DCBGovernor.EndBlock = block.Header.DCBGovernor.StartedBlock + common.DurationOfDCBBoard
-	block.Header.DCBGovernor.StartAmountToken = meta.StartAmountDCBToken
+func (block *BeaconBlock) UpdateDCBBoard(thisTx metadata.Transaction) error {
+	// meta := thisTx.GetMetadata().(*metadata.AcceptDCBBoardMetadata)
+	// block.Header.DCBGovernor.BoardIndex += 1
+	// block.Header.DCBGovernor.BoardPaymentAddress = meta.DCBBoardPaymentAddress
+	// block.Header.DCBGovernor.StartedBlock = uint32(block.Header.Height)
+	// block.Header.DCBGovernor.EndBlock = block.Header.DCBGovernor.StartedBlock + common.DurationOfTermDCB
+	// block.Header.DCBGovernor.StartAmountToken = meta.StartAmountDCBToken
 	return nil
 }
 
-func (block *Block) UpdateGOVBoard(thisTx metadata.Transaction) error {
-	meta := thisTx.GetMetadata().(*metadata.AcceptGOVBoardMetadata)
-	block.Header.GOVGovernor.BoardIndex += 1
-	block.Header.GOVGovernor.BoardPaymentAddress = meta.GOVBoardPaymentAddress
-	block.Header.GOVGovernor.StartedBlock = uint64(block.Header.Height)
-	block.Header.GOVGovernor.EndBlock = block.Header.GOVGovernor.StartedBlock + common.DurationOfGOVBoard
-	block.Header.GOVGovernor.StartAmountToken = meta.StartAmountGOVToken
+func (block *BeaconBlock) UpdateGOVBoard(thisTx metadata.Transaction) error {
+	// meta := thisTx.GetMetadata().(*metadata.AcceptGOVBoardMetadata)
+	// block.Header.GOVGovernor.BoardPaymentAddress = meta.GOVBoardPaymentAddress
+	// block.Header.GOVGovernor.StartedBlock = uint32(block.Header.Height)
+	// block.Header.GOVGovernor.EndBlock = block.Header.GOVGovernor.StartedBlock + common.DurationOfTermGOV
+	// block.Header.GOVGovernor.StartAmountToken = meta.StartAmountGOVToken
 	return nil
 }
 
-func (block *Block) UpdateDCBFund(tx metadata.Transaction) error {
-	block.Header.BankFund -= common.RewardProposalSubmitter
+func (block *BeaconBlock) UpdateDCBFund(tx metadata.Transaction) error {
+	// block.Header.BankFund -= common.RewardProposalSubmitter
 	return nil
 }
 
-func (block *Block) UpdateGOVFund(tx metadata.Transaction) error {
-	block.Header.SalaryFund -= common.RewardProposalSubmitter
+func (block *BeaconBlock) UpdateGOVFund(tx metadata.Transaction) error {
+	// block.Header.SalaryFund -= common.RewardProposalSubmitter
 	return nil
 }
 
@@ -515,14 +514,17 @@ func (blockgen *BlkTmplGenerator) UpdateNewGovernor(
 	return txs
 }
 
-func (blockgen *BlkTmplGenerator) neededNewDCBGovernor(chainID byte) bool {
-	BestBlock := blockgen.chain.BestState[chainID].BestBlock
-	endGovernorBlock := int32(BestBlock.Header.DCBGovernor.EndBlock)
-	currentHeight := BestBlock.Header.Height + 1
-	return endGovernorBlock == currentHeight
+func (blockgen *BlkTmplGenerator) neededNewDCBGovernor(shardID byte) bool {
+	// BestBlock := blockgen.chain.BestState[shardID].BestBlock
+	// endGovernorBlock := int32(BestBlock.Header.DCBGovernor.EndBlock)
+	// currentHeight := BestBlock.Header.Height + 1
+	// wtf := endGovernorBlock == currentHeight
+	// return wtf
+	return false
 }
 
-func (blockgen *BlkTmplGenerator) neededNewGOVGovernor(chainID byte) bool {
-	BestBlock := blockgen.chain.BestState[chainID].BestBlock
-	return int32(BestBlock.Header.GOVGovernor.EndBlock) == BestBlock.Header.Height+1
+func (blockgen *BlkTmplGenerator) neededNewGOVGovernor(shardID byte) bool {
+	// BestBlock := blockgen.chain.BestState[shardID].BestBlock
+	// return int32(BestBlock.Header.GOVGovernor.EndBlock) == BestBlock.Header.Height+1
+	return false
 }

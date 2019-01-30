@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/hex"
 	"encoding/json"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
@@ -15,35 +16,38 @@ import (
 
 // handleGetDCBParams - get dcb params
 func (rpcServer RpcServer) handleGetDCBParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	constitution := rpcServer.config.BlockChain.BestState[14].BestBlock.Header.DCBConstitution
-	dcbParam := constitution.DCBParams
-	results := make(map[string]interface{})
-	results["DCBParams"] = dcbParam
-	results["ExecuteDuration"] = constitution.ExecuteDuration
-	results["Explanation"] = constitution.Explanation
-	return results, nil
+	// constitution := rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution
+	// dcbParam := constitution.DCBParams
+	// results := make(map[string]interface{})
+	// results["DCBParams"] = dcbParam
+	// results["ExecuteDuration"] = constitution.ExecuteDuration
+	// results["Explanation"] = constitution.Explanation
+	// return results, nil
+	return nil, nil
 }
 
 // handleGetDCBConstitution - get dcb constitution
 func (rpcServer RpcServer) handleGetDCBConstitution(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	constitution := rpcServer.config.BlockChain.BestState[14].BestBlock.Header.DCBConstitution
-	return constitution, nil
+	// constitution := rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution
+	// return constitution, nil
+	return nil, nil
 }
 
 // handleGetListDCBBoard - return list payment address of DCB board
 func (rpcServer RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState[14].BestBlock.Header.DCBGovernor.BoardPaymentAddress)
-	return res, nil
+	// res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress)
+	// return res, nil
+	return nil, nil
 }
 
 func (rpcServer RpcServer) handleAppendListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	senderKey := arrayParams[0].(string)
-	paymentAddress, _ := rpcServer.GetPaymentAddressFromSenderKeyParams(senderKey)
-	rpcServer.config.BlockChain.BestState[14].BestBlock.Header.DCBGovernor.BoardPaymentAddress =
-		append(rpcServer.config.BlockChain.BestState[14].BestBlock.Header.DCBGovernor.BoardPaymentAddress, *paymentAddress)
-	res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState[14].BestBlock.Header.DCBGovernor.BoardPaymentAddress)
-	return res, nil
+	// arrayParams := common.InterfaceSlice(params)
+	// senderKey := arrayParams[0].(string)
+	// paymentAddress, _ := rpcServer.GetPaymentAddressFromSenderKeyParams(senderKey)
+	// rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress = append(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress, *paymentAddress)
+	// res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress)
+	// return res, nil
+	return nil, nil
 }
 
 func ListPaymentAddressToListString(addresses []privacy.PaymentAddress) []string {

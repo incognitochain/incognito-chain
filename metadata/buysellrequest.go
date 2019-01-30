@@ -2,7 +2,9 @@ package metadata
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
+	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -37,7 +39,7 @@ func NewBuySellRequest(
 	return result
 }
 
-func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 
 	// TODO: support and validate for either bonds or govs buy requests
 
@@ -93,4 +95,11 @@ func (bsReq *BuySellRequest) Hash() *common.Hash {
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
+}
+
+func (bsReq *BuySellRequest) BuildReqActions(tx Transaction) [][]string {
+	bsReqBytes := common.GetBytes(*bsReq)
+	bsReqBase64Str := base64.StdEncoding.EncodeToString(bsReqBytes)
+	bsReqAction := []string{strconv.Itoa(BuyFromGOVRequestMeta), bsReqBase64Str}
+	return [][]string{bsReqAction}
 }

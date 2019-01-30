@@ -71,20 +71,29 @@ func mainMaster(serverChan chan<- *Server) error {
 		}
 		err = walletObj.LoadWallet(cfg.WalletPassphrase)
 		if err != nil {
-			if cfg.Light {
-				// in case light mode, create wallet automatically if it not exist
+			// if cfg.Light {
+			// 	// in case light mode, create wallet automatically if it not exist
+			// 	walletObj.Init(cfg.WalletPassphrase, 0, cfg.WalletName)
+			// 	walletObj.Save(cfg.WalletPassphrase)
+			// } else {
+			// 	if cfg.WalletAutoInit {
+			// 		Logger.log.Critical("\n **** Auto init wallet flag is TRUE ****\n")
+			// 		walletObj.Init(cfg.WalletPassphrase, 0, cfg.WalletName)
+			// 		walletObj.Save(cfg.WalletPassphrase)
+			// 	} else {
+			// 		// write log and exit when can not load wallet
+			// 		Logger.log.Criticalf("Can not load wallet with %s. Please use constantctl to create a new wallet", walletObj.Config.DataPath)
+			// 		return err
+			// 	}
+			// }
+			if cfg.WalletAutoInit {
+				Logger.log.Critical("\n **** Auto init wallet flag is TRUE ****\n")
 				walletObj.Init(cfg.WalletPassphrase, 0, cfg.WalletName)
 				walletObj.Save(cfg.WalletPassphrase)
 			} else {
-				if cfg.WalletAutoInit {
-					Logger.log.Critical("\n **** Auto init wallet flag is TRUE ****\n")
-					walletObj.Init(cfg.WalletPassphrase, 0, cfg.WalletName)
-					walletObj.Save(cfg.WalletPassphrase)
-				} else {
-					// write log and exit when can not load wallet
-					Logger.log.Criticalf("Can not load wallet with %s. Please use constantctl to create a new wallet", walletObj.Config.DataPath)
-					return err
-				}
+				// write log and exit when can not load wallet
+				Logger.log.Criticalf("Can not load wallet with %s. Please use constantctl to create a new wallet", walletObj.Config.DataPath)
+				return err
 			}
 		}
 	}
@@ -92,9 +101,9 @@ func mainMaster(serverChan chan<- *Server) error {
 	// Create server and start it.
 	server := Server{}
 	server.wallet = walletObj
-	err = server.NewServer(cfg.Listeners, db, activeNetParams.Params, version, interrupt)
+	err = server.NewServer(cfg.Listener, db, activeNetParams.Params, version, interrupt)
 	if err != nil {
-		Logger.log.Errorf("Unable to start server on %+v", cfg.Listeners)
+		Logger.log.Errorf("Unable to start server on %+v", cfg.Listener)
 		Logger.log.Error(err)
 		return err
 	}

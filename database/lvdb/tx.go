@@ -20,10 +20,10 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
-// StoreSerialNumbers - store list serialNumbers by chainID
-func (db *db) StoreSerialNumbers(tokenID *common.Hash, serialNumber []byte, chainId byte) error {
+// StoreSerialNumbers - store list serialNumbers by shardID
+func (db *db) StoreSerialNumbers(tokenID *common.Hash, serialNumber []byte, shardID byte) error {
 	key := db.GetKey(string(serialNumbersPrefix), tokenID)
-	key = append(key, chainId)
+	key = append(key, shardID)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
@@ -58,10 +58,10 @@ func (db *db) StoreSerialNumbers(tokenID *common.Hash, serialNumber []byte, chai
 	return nil
 }
 
-// FetchSerialNumbers - Get list SerialNumbers by chainID
-func (db *db) FetchSerialNumbers(tokenID *common.Hash, chainID byte) ([][]byte, error) {
+// FetchSerialNumbers - Get list SerialNumbers by shardID
+func (db *db) FetchSerialNumbers(tokenID *common.Hash, shardID byte) ([][]byte, error) {
 	key := db.GetKey(string(serialNumbersPrefix), tokenID)
-	key = append(key, chainID)
+	key = append(key, shardID)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
 		return make([][]byte, 0), database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
@@ -76,10 +76,10 @@ func (db *db) FetchSerialNumbers(tokenID *common.Hash, chainID byte) ([][]byte, 
 	return arrayData, nil
 }
 
-// HasSerialNumber - Check serialNumber in list SerialNumbers by chainID
-func (db *db) HasSerialNumber(tokenID *common.Hash, serialNumber []byte, chainID byte) (bool, error) {
+// HasSerialNumber - Check serialNumber in list SerialNumbers by shardID
+func (db *db) HasSerialNumber(tokenID *common.Hash, serialNumber []byte, shardID byte) (bool, error) {
 	key := db.GetKey(string(serialNumbersPrefix), tokenID)
-	key = append(key, chainID)
+	key = append(key, shardID)
 	keySpec := append(key, serialNumber...)
 	_, err := db.Get(keySpec)
 	if err != nil {
@@ -90,10 +90,10 @@ func (db *db) HasSerialNumber(tokenID *common.Hash, serialNumber []byte, chainID
 	return false, nil
 }
 
-// HasSerialNumberIndex - Check serialNumber in list SerialNumbers by chainID
-/*func (db *db) HasSerialNumberIndex(serialNumberIndex int64, chainID byte) (bool, error) {
+// HasSerialNumberIndex - Check serialNumber in list SerialNumbers by shardID
+/*func (db *db) HasSerialNumberIndex(serialNumberIndex int64, shardID byte) (bool, error) {
 	key := db.GetKey(string(serialNumbersPrefix), "")
-	key = append(key, chainID)
+	key = append(key, shardID)
 	keySpec := append(key, big.NewInt(serialNumberIndex).Bytes()...)
 	_, err := db.Get(keySpec)
 	if err != nil {
@@ -104,9 +104,9 @@ func (db *db) HasSerialNumber(tokenID *common.Hash, serialNumber []byte, chainID
 	return false, nil
 }*/
 
-/*func (db *db) GetSerialNumberByIndex(serialNumberIndex int64, chainID byte) ([]byte, error) {
+/*func (db *db) GetSerialNumberByIndex(serialNumberIndex int64, shardID byte) ([]byte, error) {
 	key := db.GetKey(string(serialNumbersPrefix), "")
-	key = append(key, chainID)
+	key = append(key, shardID)
 	keySpec := append(key, big.NewInt(serialNumberIndex).Bytes()...)
 	data, err := db.Get(keySpec)
 	if err != nil {
@@ -133,9 +133,9 @@ func (db *db) CleanSerialNumbers() error {
 	return nil
 }
 
-func (db *db) StoreOutputCoins(tokenID *common.Hash, pubkey []byte, outputcoin []byte, chainID byte) error {
+func (db *db) StoreOutputCoins(tokenID *common.Hash, pubkey []byte, outputcoin []byte, shardID byte) error {
 	key := db.GetKey(string(outcoinsPrefix), tokenID)
-	key = append(key, chainID)
+	key = append(key, shardID)
 
 	// store for pubkey:[outcoint1, outcoint2, ...]
 	key = append(key, pubkey...)
@@ -161,10 +161,10 @@ func (db *db) StoreOutputCoins(tokenID *common.Hash, pubkey []byte, outputcoin [
 	return nil
 }
 
-// StoreCommitments - store list commitments by chainID
-func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments []byte, chainId byte) error {
+// StoreCommitments - store list commitments by shardID
+func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments []byte, shardID byte) error {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
-	key = append(key, chainId)
+	key = append(key, shardID)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
@@ -236,10 +236,10 @@ func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments 
 	return nil
 }
 
-// FetchCommitments - Get list commitments by chainID
-func (db *db) FetchCommitments(tokenID *common.Hash, chainId byte) ([][]byte, error) {
+// FetchCommitments - Get list commitments by shardID
+func (db *db) FetchCommitments(tokenID *common.Hash, shardID byte) ([][]byte, error) {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
-	key = append(key, chainId)
+	key = append(key, shardID)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
 		return make([][]byte, 0), database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
@@ -254,10 +254,10 @@ func (db *db) FetchCommitments(tokenID *common.Hash, chainId byte) ([][]byte, er
 	return txs, nil
 }
 
-// HasCommitment - Check commitment in list commitments by chainID
-func (db *db) HasCommitment(tokenID *common.Hash, commitment []byte, chainId byte) (bool, error) {
+// HasCommitment - Check commitment in list commitments by shardID
+func (db *db) HasCommitment(tokenID *common.Hash, commitment []byte, shardID byte) (bool, error) {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
-	key = append(key, chainId)
+	key = append(key, shardID)
 	keySpec := append(key, commitment...)
 	_, err := db.Get(keySpec)
 	if err != nil {
@@ -268,9 +268,9 @@ func (db *db) HasCommitment(tokenID *common.Hash, commitment []byte, chainId byt
 	return false, nil
 }
 
-func (db *db) HasCommitmentIndex(tokenID *common.Hash, commitmentIndex uint64, chainId byte) (bool, error) {
+func (db *db) HasCommitmentIndex(tokenID *common.Hash, commitmentIndex uint64, shardID byte) (bool, error) {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
-	key = append(key, chainId)
+	key = append(key, shardID)
 	keySpec := append(key, new(big.Int).SetUint64(commitmentIndex).Bytes()...)
 	_, err := db.Get(keySpec)
 	if err != nil {
@@ -281,9 +281,9 @@ func (db *db) HasCommitmentIndex(tokenID *common.Hash, commitmentIndex uint64, c
 	return false, nil
 }
 
-func (db *db) GetCommitmentByIndex(tokenID *common.Hash, commitmentIndex uint64, chainId byte) ([]byte, error) {
+func (db *db) GetCommitmentByIndex(tokenID *common.Hash, commitmentIndex uint64, shardID byte) ([]byte, error) {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
-	key = append(key, chainId)
+	key = append(key, shardID)
 	//keySpec := make([]byte, len(key))
 	var keySpec []byte
 	if commitmentIndex == 0 {
@@ -301,9 +301,9 @@ func (db *db) GetCommitmentByIndex(tokenID *common.Hash, commitmentIndex uint64,
 }
 
 // GetCommitmentIndex - return index of commitment in db list
-func (db *db) GetCommitmentIndex(tokenID *common.Hash, commitment []byte, chainId byte) (*big.Int, error) {
+func (db *db) GetCommitmentIndex(tokenID *common.Hash, commitment []byte, shardID byte) (*big.Int, error) {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
-	key = append(key, chainId)
+	key = append(key, shardID)
 	keySpec := append(key, commitment...)
 	data, err := db.Get(keySpec)
 	if err != nil {
@@ -315,9 +315,9 @@ func (db *db) GetCommitmentIndex(tokenID *common.Hash, commitment []byte, chainI
 }
 
 // GetCommitmentIndex - return index of commitment in db list
-func (db *db) GetCommitmentLength(tokenID *common.Hash, chainId byte) (*big.Int, error) {
+func (db *db) GetCommitmentLength(tokenID *common.Hash, shardID byte) (*big.Int, error) {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
-	key = append(key, chainId)
+	key = append(key, shardID)
 	keySpec := append(key, []byte("len")...)
 	data, err := db.Get(keySpec)
 	if err != nil {
@@ -330,9 +330,9 @@ func (db *db) GetCommitmentLength(tokenID *common.Hash, chainId byte) (*big.Int,
 	return nil, nil
 }
 
-func (db *db) GetCommitmentIndexsByPubkey(tokenID *common.Hash, pubkey []byte, chainID byte) ([][]byte, error) {
+func (db *db) GetCommitmentIndexsByPubkey(tokenID *common.Hash, pubkey []byte, shardID byte) ([][]byte, error) {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
-	key = append(key, chainID)
+	key = append(key, shardID)
 
 	//keySpec4 := make([]byte, len(key))
 	keySpec4 := append(key, pubkey...)
@@ -349,9 +349,9 @@ func (db *db) GetCommitmentIndexsByPubkey(tokenID *common.Hash, pubkey []byte, c
 	return arrDatabyPubkey, nil
 }
 
-func (db *db) GetOutcoinsByPubkey(tokenID *common.Hash, pubkey []byte, chainID byte) ([][]byte, error) {
+func (db *db) GetOutcoinsByPubkey(tokenID *common.Hash, pubkey []byte, shardID byte) ([][]byte, error) {
 	key := db.GetKey(string(outcoinsPrefix), tokenID)
-	key = append(key, chainID)
+	key = append(key, shardID)
 
 	key = append(key, pubkey...)
 	var arrDatabyPubkey [][]byte
@@ -383,10 +383,10 @@ func (db *db) CleanCommitments() error {
 	return nil
 }
 
-// StoreSNDerivators - store list serialNumbers by chainID
-func (db *db) StoreSNDerivators(tokenID *common.Hash, data big.Int, chainID byte) error {
+// StoreSNDerivators - store list serialNumbers by shardID
+func (db *db) StoreSNDerivators(tokenID *common.Hash, data big.Int, shardID byte) error {
 	key := db.GetKey(string(snderivatorsPrefix), tokenID)
-	key = append(key, chainID)
+	key = append(key, shardID)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
@@ -417,10 +417,10 @@ func (db *db) StoreSNDerivators(tokenID *common.Hash, data big.Int, chainID byte
 	return nil
 }
 
-// FetchSerialNumbers - Get list all SnDerivators by chainID
-func (db *db) FetchSNDerivator(tokenID *common.Hash, chainID byte) ([]big.Int, error) {
+// FetchSerialNumbers - Get list all SnDerivators by shardID
+func (db *db) FetchSNDerivator(tokenID *common.Hash, shardID byte) ([]big.Int, error) {
 	key := db.GetKey(string(snderivatorsPrefix), tokenID)
-	key = append(key, chainID)
+	key = append(key, shardID)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
 		return make([]big.Int, 0), database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
@@ -441,10 +441,10 @@ func (db *db) FetchSNDerivator(tokenID *common.Hash, chainID byte) ([]big.Int, e
 	return result, nil
 }
 
-// HasSNDerivator - Check SnDerivator in list SnDerivators by chainID
-func (db *db) HasSNDerivator(tokenID *common.Hash, data big.Int, chainID byte) (bool, error) {
+// HasSNDerivator - Check SnDerivator in list SnDerivators by shardID
+func (db *db) HasSNDerivator(tokenID *common.Hash, data big.Int, shardID byte) (bool, error) {
 	key := db.GetKey(string(snderivatorsPrefix), tokenID)
-	key = append(key, chainID)
+	key = append(key, shardID)
 	snderivatorData := data.Bytes()
 	keySpec := append(key, snderivatorData...)
 	_, err := db.Get(keySpec)
@@ -473,16 +473,16 @@ func (db *db) CleanSNDerivator() error {
 }
 
 // StoreFeeEstimator - Store data for FeeEstimator object
-func (db *db) StoreFeeEstimator(val []byte, chainId byte) error {
-	if err := db.Put(append(feeEstimator, chainId), val); err != nil {
+func (db *db) StoreFeeEstimator(val []byte, shardID byte) error {
+	if err := db.Put(append(feeEstimator, shardID), val); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
 	return nil
 }
 
 // GetFeeEstimator - Get data for FeeEstimator object as a json in byte format
-func (db *db) GetFeeEstimator(chainId byte) ([]byte, error) {
-	b, err := db.lvdb.Get(append(feeEstimator, chainId), nil)
+func (db *db) GetFeeEstimator(shardID byte) ([]byte, error) {
+	b, err := db.lvdb.Get(append(feeEstimator, shardID), nil)
 	if err != nil {
 		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
@@ -549,17 +549,17 @@ func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, *da
 }
 
 /*
-	Store Transaction in LightMode mode
-	1. Key -> value : prefix(privateky)privateKey-[-]-chainId-[-]-(999999999 - blockHeight)-[-]-(999999999 - txIndex) 		-> 		tx
-	2. Key -> value :							prefix(transaction)txHash 												->  	privateKey-chainId-blockHeight-txIndex
+	Store Transaction in Light mode
+	1. Key -> value : prefix(privateky)privateKey-[-]-shardID-[-]-(999999999 - blockHeight)-[-]-(999999999 - txIndex) 		-> 		tx
+	2. Key -> value :							prefix(transaction)txHash 												->  	privateKey-shardID-blockHeight-txIndex
 
 */
-func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, unspentTxHash common.Hash, unspentTx []byte) error {
-	//tempChainId := []byte{}
-	//tempChainId = append(tempChainId, chainId)
-	temp3ChainId := int(chainId)
-	temp2ChainId := string(int(chainId))
-	fmt.Println("StoreTransactionLightMode", privateKey, temp3ChainId, temp2ChainId, blockHeight, txIndex)
+func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, shardID byte, blockHeight int32, txIndex int, unspentTxHash common.Hash, unspentTx []byte) error {
+	//tempShardID := []byte{}
+	//tempShardID = append(tempShardID, shardID)
+	temp3ShardID := int(shardID)
+	temp2ShardID := string(int(shardID))
+	fmt.Println("StoreTransactionLightMode", privateKey, temp3ShardID, temp2ShardID, blockHeight, txIndex)
 	reverseBlockHeight := make([]byte, 4)
 	binary.LittleEndian.PutUint32(reverseBlockHeight, uint32(bigNumber-blockHeight))
 
@@ -579,7 +579,7 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 	reverseTxIndex := make([]byte, 4)
 	binary.LittleEndian.PutUint32(reverseTxIndex, uint32(bigNumberTx-int32(txIndex)))
 
-	key1 := string(privateKeyPrefix) + base58.Base58Check{}.Encode((*privateKey)[:], 0x00) + string(Splitter) + string(int(chainId)) + string(Splitter) + string(reverseBlockHeight) + string(Splitter) + string(reverseTxIndex)
+	key1 := string(privateKeyPrefix) + base58.Base58Check{}.Encode((*privateKey)[:], 0x00) + string(Splitter) + string(int(shardID)) + string(Splitter) + string(reverseBlockHeight) + string(Splitter) + string(reverseTxIndex)
 	key2 := string(transactionKeyPrefix) + unspentTxHash.String()
 
 	if ok, _ := db.HasValue([]byte(key1)); ok {
@@ -607,7 +607,7 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 /*
 	Get Transaction in LightMode mode
 	Get transaction by prefix(privateKey)privateKey, this prefix help to get all transaction belong to that privatekey
-	1. Key -> value : prefix(privateky)-privateKey-chainId-(999999999 - blockHeight)-(999999999 - txIndex) 		-> 		tx
+	1. Key -> value : prefix(privateky)-privateKey-shardID-(999999999 - blockHeight)-(999999999 - txIndex) 		-> 		tx
 
 */
 /*func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKey) (map[byte]([]([]byte)), error) {
@@ -620,16 +620,16 @@ for iter.Next() {
 	value := iter.Value()
 
 	reses := strings.Split(string(key), string(Splitter))
-	tempChainId, _ := strconv.Atoi(reses[2])
-	chainId := byte(tempChainId)
-*/ /*tx := transaction.Tx{}
-err := json.Unmarshal(value, &tx)
-if err != nil {
-	return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
-}*/ /*
+	tempShardID, _ := strconv.Atoi(reses[2])
+	shardID := byte(tempShardID)
+	/*tx := transaction.Tx{}
+	err := json.Unmarshal(value, &tx)
+	if err != nil {
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+	}*/ /*
 		data := make([]byte, len(value))
 		copy(data[:], value[:])
-		results[chainId] = append(results[chainId], data)
+		results[shardID] = append(results[shardID], data)
 	}
 
 	iter.Release()

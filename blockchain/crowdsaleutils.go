@@ -179,7 +179,7 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	tx metadata.Transaction,
 	saleDataMap map[string]*params.SaleData,
 	unspentTokenMap map[string]([]transaction.TxTokenVout),
-	chainID byte,
+	shardID byte,
 	saleID []byte,
 	producerPrivateKey *privacy.SpendingKey,
 ) (metadata.Transaction, error) {
@@ -278,7 +278,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 	txsToRemove []metadata.Transaction,
 	saleDataMap map[string]*params.SaleData,
 	unspentTokenMap map[string][]transaction.TxTokenVout,
-	chainID byte,
+	shardID byte,
 	producerPrivateKey *privacy.SpendingKey,
 ) ([]metadata.Transaction, []metadata.Transaction) {
 	fmt.Printf("[db] inside txsPayment addr: %p\n", &txsPayment)
@@ -311,7 +311,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 		tx,
 		saleDataMap,
 		unspentTokenMap,
-		chainID,
+		shardID,
 		metaRequest.SaleID,
 		producerPrivateKey,
 	)
@@ -330,7 +330,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 // processCrowdsale finds all CrowdsaleRequests and creates Payments for them
 func (blockgen *BlkTmplGenerator) processCrowdsale(
 	sourceTxns []*metadata.TxDesc,
-	chainID byte,
+	shardID byte,
 	producerPrivateKey *privacy.SpendingKey,
 ) ([]metadata.Transaction, []metadata.Transaction) {
 	txsToRemove := []metadata.Transaction{}
@@ -350,7 +350,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 					txsToRemove,
 					saleDataMap,
 					unspentTokenMap,
-					chainID,
+					shardID,
 					producerPrivateKey,
 				)
 				fmt.Printf("[db] len(txsPayment) after process: %d\n", len(txsPayment))

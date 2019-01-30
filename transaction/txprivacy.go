@@ -126,12 +126,12 @@ func (tx *Tx) Init(
 		return nil
 	}
 
-	chainID, _ := common.GetTxSenderChain(pkLastByteSender)
+	shardID := common.GetShardIDFromLastByte(pkLastByteSender)
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
 	if hasPrivacy {
-		commitmentIndexs, myCommitmentIndexs = RandomCommitmentsProcess(inputCoins, privacy.CMRingSize, db, chainID, tokenID)
+		commitmentIndexs, myCommitmentIndexs = RandomCommitmentsProcess(inputCoins, privacy.CMRingSize, db, shardID, tokenID)
 
 		// Check number of list of random commitments, list of random commitment indices
 		if len(commitmentIndexs) != len(inputCoins)*privacy.CMRingSize {
@@ -187,7 +187,7 @@ func (tx *Tx) Init(
 			sndOut = privacy.RandInt()
 			for {
 
-				ok1, err := CheckSNDerivatorExistence(tokenID, sndOut, chainID, db)
+				ok1, err := CheckSNDerivatorExistence(tokenID, sndOut, shardID, db)
 				if err != nil {
 					Logger.log.Error(err)
 				}
@@ -227,7 +227,7 @@ func (tx *Tx) Init(
 	commitmentProving := make([]*privacy.EllipticPoint, len(commitmentIndexs))
 	for i, cmIndex := range commitmentIndexs {
 		commitmentProving[i] = new(privacy.EllipticPoint)
-		temp, _ := db.GetCommitmentByIndex(tokenID, cmIndex, chainID)
+		temp, _ := db.GetCommitmentByIndex(tokenID, cmIndex, shardID)
 		commitmentProving[i], _ = privacy.DecompressKey(temp)
 	}
 
@@ -306,7 +306,7 @@ func (tx *Tx) signTx() error {
 	tx.SigPubKey = sigKey.PubKey.PK.Compress()
 
 	// signing
-	Logger.log.Infof(tx.Hash().String())
+	Logger.log.Debugf(tx.Hash().String())
 	signature, err := sigKey.Sign(tx.Hash()[:])
 	if err != nil {
 		return err
@@ -347,7 +347,7 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	signature.SetBytes(tx.Sig)
 
 	// verify signature
-	Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
+	Logger.log.Debugf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
 	res = verKey.Verify(signature, tx.Hash()[:])
 
 	return res, nil
@@ -368,11 +368,11 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Verify tx signature
 // - Verify the payment proof
 // - Check double spendingComInputOpeningsWitnessval
-func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
-	Logger.log.Infof("[db] Validating Transaction tx\n")
+func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
+	Logger.log.Debugf("[db] Validating Transaction tx\n")
 	start := time.Now()
 	// Verify tx signature
-	Logger.log.Infof("tx.GetType(): %v\n", tx.GetType())
+	Logger.log.Debugf("tx.GetType(): %v\n", tx.GetType())
 	if tx.GetType() == common.TxSalaryType {
 		return tx.ValidateTxSalary(db)
 	}
@@ -416,7 +416,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 			// Check output coins' input is not exists in input list (Database)
-			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, chainId, db); ok || err != nil {
+			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, shardID, db); ok || err != nil {
 				Logger.log.Infof("snd existed: %d\n", i)
 				return false
 			}
@@ -424,7 +424,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		if !hasPrivacy {
 			// Check input coins' cm is exists in cm list (Database)
 			for i := 0; i < len(tx.Proof.InputCoins); i++ {
-				ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, chainId, tokenID)
+				ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, shardID, tokenID)
 				if !ok || err != nil {
 					Logger.log.Infof("[db]cm existed: %d\n", i)
 					return false
@@ -433,7 +433,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 
 		// Verify the payment proof
-		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, chainId, tokenID)
+		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, shardID, tokenID)
 		Logger.log.Infof("proof valid: %v\n", valid)
 		if !valid {
 			Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION PAYMENT PROOF")
@@ -513,8 +513,8 @@ func (tx *Tx) ListNullifiers() [][]byte {
 }
 
 // CheckCMExistence returns true if cm exists in cm list
-func (tx Tx) CheckCMExistence(cm []byte, db database.DatabaseInterface, chainID byte, tokenID *common.Hash) (bool, error) {
-	ok, err := db.HasCommitment(tokenID, cm, chainID)
+func (tx Tx) CheckCMExistence(cm []byte, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
+	ok, err := db.HasCommitment(tokenID, cm, shardID)
 	return ok, err
 }
 
@@ -620,7 +620,7 @@ func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 // ValidateDoubleSpend - check double spend for any transaction type
 func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(
 	bcr metadata.BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface,
 ) error {
 
@@ -628,7 +628,7 @@ func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(
 	constantTokenID.SetBytes(common.ConstantID[:])
 	for i := 0; tx.Proof != nil && i < len(tx.Proof.InputCoins); i++ {
 		serialNumber := tx.Proof.InputCoins[i].CoinDetails.SerialNumber.Compress()
-		ok, err := db.HasSerialNumber(constantTokenID, serialNumber, chainID)
+		ok, err := db.HasSerialNumber(constantTokenID, serialNumber, shardID)
 		if ok || err != nil {
 			return errors.New("double spend")
 		}
@@ -638,7 +638,7 @@ func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(
 
 func (tx *Tx) ValidateTxWithBlockChain(
 	bcr metadata.BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface,
 ) error {
 	if tx.GetType() == common.TxSalaryType {
@@ -646,7 +646,7 @@ func (tx *Tx) ValidateTxWithBlockChain(
 	}
 	fmt.Printf("[db] validating tx with blockchain tx level\n")
 	if tx.Metadata != nil {
-		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(tx, bcr, chainID, db)
+		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(tx, bcr, shardID, db)
 		if err != nil {
 			return err
 		}
@@ -654,7 +654,7 @@ func (tx *Tx) ValidateTxWithBlockChain(
 			return nil
 		}
 	}
-	return tx.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
+	return tx.ValidateConstDoubleSpendWithBlockchain(bcr, shardID, db)
 }
 
 func (tx *Tx) validateNormalTxSanityData() (bool, error) {
@@ -690,12 +690,12 @@ func (tx *Tx) ValidateTxByItself(
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 ) bool {
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
-	ok := tx.ValidateTransaction(hasPrivacy, db, chainID, constantTokenID)
-	Logger.log.Infof("[db]ok validatetxbyitself: %v\n", ok)
+	ok := tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
+	Logger.log.Debugf("[db]ok validatetxbyitself: %v\n", ok)
 	if !ok {
 		return false
 	}
@@ -704,7 +704,7 @@ func (tx *Tx) ValidateTxByItself(
 			Logger.log.Infof("[db]validatetxbyitself metadata: Transaction with metadata should not enable privacy feature.")
 			return false
 		}
-		Logger.log.Infof("[db]validatetxbyitself metadata: %v\n", tx.Metadata.ValidateMetadataByItself())
+		Logger.log.Debugf("[db]validatetxbyitself metadata: %v\n", tx.Metadata.ValidateMetadataByItself())
 		return tx.Metadata.ValidateMetadataByItself()
 	}
 	return true
@@ -833,7 +833,7 @@ func (tx *Tx) InitTxSalary(
 	tx.Type = common.TxSalaryType
 
 	if tx.LockTime == 0 {
-		tx.LockTime = time.Now().UnixNano()
+		tx.LockTime = time.Now().Unix()
 	}
 
 	var err error
@@ -853,13 +853,10 @@ func (tx *Tx) InitTxSalary(
 	sndOut := privacy.RandInt()
 	for {
 		lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
-		chainIdSender, err := common.GetTxSenderChain(lastByte)
-		if err != nil {
-			return err
-		}
+		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 		tokenID := &common.Hash{}
 		tokenID.SetBytes(common.ConstantID[:])
-		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, chainIdSender, db)
+		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, shardIDSender, db)
 		if err != nil {
 			return err
 		}
@@ -904,13 +901,10 @@ func (tx Tx) ValidateTxSalary(
 
 	// check whether output coin's input exists in input list or not
 	lastByte := tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress())-1]
-	chainIdSender, err := common.GetTxSenderChain(lastByte)
-	if err != nil {
-		return false
-	}
+	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 	tokenID := &common.Hash{}
 	tokenID.SetBytes(common.ConstantID[:])
-	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, chainIdSender, db); ok || err != nil {
+	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, shardIDSender, db); ok || err != nil {
 		return false
 	}
 
@@ -918,7 +912,9 @@ func (tx Tx) ValidateTxSalary(
 	cmTmp := tx.Proof.OutputCoins[0].CoinDetails.PublicKey
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(tx.Proof.OutputCoins[0].CoinDetails.Value))))
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMult(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator))
-	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{tx.Proof.OutputCoins[0].CoinDetails.GetPubKeyLastByte()})))
+
+	shardID := byte(int(tx.Proof.OutputCoins[0].CoinDetails.GetPubKeyLastByte()) % common.SHARD_NUMBER)
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(tx.Proof.OutputCoins[0].CoinDetails.Randomness))
 	return cmTmp.IsEqual(tx.Proof.OutputCoins[0].CoinDetails.CoinCommitment)
 }
