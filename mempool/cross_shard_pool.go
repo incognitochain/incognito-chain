@@ -3,6 +3,7 @@ package mempool
 import (
 	"errors"
 	"log"
+	"sort"
 	"sync"
 
 	"github.com/ninjadotorg/constant/blockchain"
@@ -98,4 +99,40 @@ func (pool *CrossShardPool) AddCrossShardBlock(newBlock blockchain.CrossShardBlo
 	shardPoolLock.Unlock()
 
 	return nil
+}
+
+func GetCrossShardPoolState() map[byte][]uint64 {
+	// map[byte]map[uint64][]blockchain.CrossShardBlock{}
+	result := map[byte][]uint64{}
+
+	poolState := map[byte]map[uint64]bool{}
+
+	for k, val := range shardPool {
+		items, ok := poolState[k]
+		if !ok || len(items) <= 0 {
+			items = map[uint64]bool{}
+		}
+
+		if len(val) <= 0 {
+			continue
+		}
+
+		for h, _ := range val {
+			items[h] = true
+		}
+		poolState[k] = items
+	}
+
+	for k, val := range poolState {
+		items := []uint64{}
+		for h, _ := range val {
+			items = append(items, h)
+		}
+		sort.Slice(items, func(i, j int) bool {
+			return items[i] < items[j]
+		})
+
+		result[k] = items
+	}
+	return result
 }

@@ -8,37 +8,38 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
-// SpendingKey 32 bytes
+// 32-byte spending key
 type SpendingKey []byte
 
-// Pk 33 bytes
+// 33-byte public key
 type PublicKey []byte
 
-// Rk 32 bytes
+// 32-byte receiving key
 type ReceivingKey []byte
 
-// Tk 33 bytes
+// 33-byte transmission key
 type TransmissionKey []byte
 
-// ViewingKey represents an key that be used to view transactions
+// ViewingKey is a public/private key pair to encrypt coins in an outgoing transaction
+// and decrypt coins in an incoming transaction
 type ViewingKey struct {
 	Pk PublicKey    // 33 bytes, use to receive coin
 	Rk ReceivingKey // 32 bytes, use to decrypt pointByte
 }
 
-// PaymentAddress represents an payment address of receiver
+// PaymentAddress is an address of a payee
 type PaymentAddress struct {
 	Pk PublicKey       // 33 bytes, use to receive coin
 	Tk TransmissionKey // 33 bytes, use to encrypt pointByte
 }
 
+// PaymentInfo contains an address of a payee and a value of coins he/she will receive
 type PaymentInfo struct {
 	PaymentAddress PaymentAddress
 	Amount         uint64
 }
 
-// GenerateSpendingKey generates a random SpendingKey
-// SpendingKey: 32 bytes
+// GenerateSpendingKey generates a random 32-byte spending key
 func GenerateSpendingKey(seed []byte) SpendingKey {
 	spendingKey := common.HashB(seed)
 
@@ -49,29 +50,26 @@ func GenerateSpendingKey(seed []byte) SpendingKey {
 	return spendingKey[:]
 }
 
-// GeneratePublicKey computes an public key corresponding with spendingKey
-// Pk : 33 bytes
+// GeneratePublicKey computes a 33-byte public-key corresponding to a spending key
 func GeneratePublicKey(spendingKey []byte) PublicKey {
 	var publicKey EllipticPoint
 	publicKey.X, publicKey.Y = Curve.ScalarBaseMult(spendingKey)
 	return publicKey.Compress()
 }
 
-// GenerateReceivingKey computes a receiving key corresponding with spendingKey
-// Rk : 32 bytes
+// GenerateReceivingKey generates a 32-byte receiving key
 func GenerateReceivingKey(spendingKey []byte) ReceivingKey {
 	return common.HashB(spendingKey)
 }
 
-// GenerateTransmissionKey computes a transmission key corresponding with receivingKey
-// Tk : 33 bytes
+// GenerateTransmissionKey computes a 33-byte transmission key corresponding to a receiving key
 func GenerateTransmissionKey(receivingKey []byte) TransmissionKey {
 	var transmissionKey EllipticPoint
 	transmissionKey.X, transmissionKey.Y = Curve.ScalarBaseMult(receivingKey)
 	return transmissionKey.Compress()
 }
 
-// GenerateViewingKey generates a viewingKey corresponding with spendingKey
+// GenerateViewingKey generates a viewingKey corresponding to a spending key
 func GenerateViewingKey(spendingKey []byte) ViewingKey {
 	var viewingKey ViewingKey
 	viewingKey.Pk = GeneratePublicKey(spendingKey)
@@ -79,7 +77,7 @@ func GenerateViewingKey(spendingKey []byte) ViewingKey {
 	return viewingKey
 }
 
-// GeneratePaymentAddress generates a payment address corresponding with spendingKey
+// GeneratePaymentAddress generates a payment address corresponding to a spending key
 func GeneratePaymentAddress(spendingKey []byte) PaymentAddress {
 	var paymentAddress PaymentAddress
 	paymentAddress.Pk = GeneratePublicKey(spendingKey)
@@ -87,7 +85,7 @@ func GeneratePaymentAddress(spendingKey []byte) PaymentAddress {
 	return paymentAddress
 }
 
-// DecompressKey decompress public key to elliptic point
+// DecompressKey reverts a byte array of a public key to an elliptic point
 func DecompressKey(pubKeyStr []byte) (pubkey *EllipticPoint, err error) {
 	if len(pubKeyStr) == 0 || len(pubKeyStr) != CompressedPointSize {
 		return nil, NewPrivacyErr(UnexpectedErr, errors.New("pubkey string len is wrong"))
@@ -119,24 +117,26 @@ func (addr *PaymentAddress) Bytes() []byte {
 
 // SetBytes reverts bytes array to payment address
 func (addr *PaymentAddress) SetBytes(bytes []byte) *PaymentAddress {
-	// First 33 bytes are public key
+	// the first 33 bytes are public key
 	addr.Pk = bytes[:CompressedPointSize]
-	// Last 33 bytes are transmission key
+	// the last 33 bytes are transmission key
 	addr.Tk = bytes[CompressedPointSize:]
 	return addr
 }
 
+// NewPaymentAddressFromByte reverts a byte array to a payment address
 func NewPaymentAddressFromByte(b []byte) *PaymentAddress {
 	paymentAddress := PaymentAddress{}
 	paymentAddress.SetBytes(b)
 	return &paymentAddress
 }
 
-// Size returns size of payment address
+// Size returns the size of a payment address
 func (addr *PaymentAddress) Size() int {
 	return len(addr.Pk) + len(addr.Tk)
 }
 
+// String encodes a payment address as a hex string
 func (addr PaymentAddress) String() string {
 	byteArrays := addr.Bytes()
 	return hex.EncodeToString(byteArrays[:])
