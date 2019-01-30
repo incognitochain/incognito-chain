@@ -563,11 +563,11 @@ func (rpcServer RpcServer) handleBuildRawDefragmentAccountTransaction(params int
 	return &tx, nil
 }
 
-func (rpcServer RpcServer) calculateOutputCoinsByMinValue(outCoins []*privacy.OutputCoin, minValue uint64) ([]*privacy.OutputCoin, uint64) {
+func (rpcServer RpcServer) calculateOutputCoinsByMinValue(outCoins []*privacy.OutputCoin, maxVal uint64) ([]*privacy.OutputCoin, uint64) {
 	outCoinsTmp := make([]*privacy.OutputCoin, 0)
 	amount := uint64(0)
 	for _, outCoin := range outCoins {
-		if outCoin.CoinDetails.Value <= minValue {
+		if outCoin.CoinDetails.Value <= maxVal {
 			outCoinsTmp = append(outCoinsTmp, outCoin)
 			amount += outCoin.CoinDetails.Value
 		}
