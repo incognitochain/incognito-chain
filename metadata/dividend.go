@@ -40,7 +40,7 @@ func (div *Dividend) Hash() *common.Hash {
 	return &hash
 }
 
-func (div *Dividend) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (div *Dividend) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if there's a proposal to pay dividend
 	// TODO(@0xbunyip): get current proposal and check if it is dividend payout
 	proposal := &DividendProposal{}

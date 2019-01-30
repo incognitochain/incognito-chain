@@ -98,8 +98,8 @@ func (rpcServer RpcServer) handleGetListOngoingCrowdsale(params interface{}, clo
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, errors.New("Payment address invalid"))
 	}
-	chainID, _ := common.GetTxSenderChain(paymentAddr.KeySet.PaymentAddress.Pk[len(paymentAddr.KeySet.PaymentAddress.Pk)-1])
-	height := rpcServer.config.BlockChain.GetChainHeight(chainID)
+	shardID := common.GetShardIDFromLastByte(paymentAddr.KeySet.PaymentAddress.Pk[len(paymentAddr.KeySet.PaymentAddress.Pk)-1])
+	height := rpcServer.config.BlockChain.GetChainHeight(shardID)
 
 	// Get all ongoing crowdsales for that chain
 	type CrowdsaleInfo struct {

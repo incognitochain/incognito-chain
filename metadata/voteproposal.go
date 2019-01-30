@@ -73,10 +73,10 @@ func (sealedLv1VoteProposalMetadata *SealedLv1VoteProposalMetadata) GetBoardType
 	// TODO: @0xjackalope
 	panic("override me")
 }
-func (sealedLv1VoteProposalMetadata *SealedLv1VoteProposalMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
+func (sealedLv1VoteProposalMetadata *SealedLv1VoteProposalMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
 	boardType := sealedLv1VoteProposalMetadata.GetBoardType()
-	endedPivot := bcr.GetConstitutionEndHeight(boardType, chainID)
-	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+	endedPivot := bcr.GetConstitutionEndHeight(boardType, shardID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(shardID) + 1
 	lv3Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
 	lv2Pivot := lv3Pivot - uint64(common.EncryptionOnePhraseDuration)
 	lv1Pivot := lv2Pivot - uint64(common.EncryptionOnePhraseDuration)
@@ -95,7 +95,7 @@ func (sealedLv1VoteProposalMetadata *SealedLv1VoteProposalMetadata) ValidateMeta
 	return true
 }
 
-func (sealedLv1VoteProposalMetadata *SealedLv1VoteProposalMetadata) ValidateTxWithBlockChain(boardType string, transaction Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (sealedLv1VoteProposalMetadata *SealedLv1VoteProposalMetadata) ValidateTxWithBlockChain(boardType string, transaction Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	//Check base seal metadata
 	ok, err := sealedLv1VoteProposalMetadata.SealedVoteProposal.ValidateLockerPubKeys(bcr, boardType)
 	if err != nil || !ok {
@@ -188,10 +188,10 @@ func (sealedLv2VoteProposalMetadata *SealedLv2VoteProposalMetadata) ToBytes() []
 func (sealedLv2VoteProposalMetadata *SealedLv2VoteProposalMetadata) GetBoardType() string {
 	panic("overwrite me")
 }
-func (sealedLv2VoteProposalMetadata *SealedLv2VoteProposalMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
+func (sealedLv2VoteProposalMetadata *SealedLv2VoteProposalMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
 	boardType := sealedLv2VoteProposalMetadata.GetBoardType()
-	endedPivot := bcr.GetConstitutionEndHeight(boardType, chainID)
-	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+	endedPivot := bcr.GetConstitutionEndHeight(boardType, shardID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(shardID) + 1
 	lv3Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
 	lv2Pivot := lv3Pivot - uint64(common.EncryptionOnePhraseDuration)
 	return !(currentBlockHeight < lv2Pivot && currentBlockHeight >= lv3Pivot)
@@ -213,7 +213,7 @@ func (sealedLv2VoteProposalMetadata *SealedLv2VoteProposalMetadata) ValidateTxWi
 	boardType string,
 	transaction Transaction,
 	bcr BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
 	//Check base seal metadata
@@ -280,10 +280,10 @@ type SealedLv3VoteProposalMetadata struct {
 	SealedVoteProposal SealedVoteProposal
 }
 
-func (sealedLv3VoteProposalMetadata *SealedLv3VoteProposalMetadata) ValidataBeforeNewBlock(boardType string, tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
-	startedPivot := bcr.GetConstitutionStartHeight(boardType, chainID)
-	endedPivot := bcr.GetConstitutionEndHeight(boardType, chainID)
-	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+func (sealedLv3VoteProposalMetadata *SealedLv3VoteProposalMetadata) ValidataBeforeNewBlock(boardType string, tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+	startedPivot := bcr.GetConstitutionStartHeight(boardType, shardID)
+	endedPivot := bcr.GetConstitutionEndHeight(boardType, shardID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(shardID) + 1
 	lv3Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
 	return !(currentBlockHeight < lv3Pivot && currentBlockHeight >= startedPivot)
 }
@@ -395,10 +395,10 @@ func (normalVoteProposalFromSealerMetadata *NormalVoteProposalFromSealerMetadata
 	return []byte(record)
 }
 
-func (normalVoteProposalFromSealerMetadata *NormalVoteProposalFromSealerMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
+func (normalVoteProposalFromSealerMetadata *NormalVoteProposalFromSealerMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
 	boardType := normalVoteProposalFromSealerMetadata.GetBoardType()
-	endedPivot := bcr.GetConstitutionEndHeight(boardType, chainID)
-	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+	endedPivot := bcr.GetConstitutionEndHeight(boardType, shardID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(shardID) + 1
 	lv3Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
 	lv2Pivot := lv3Pivot - uint64(common.EncryptionOnePhraseDuration)
 	lv1Pivot := lv2Pivot - uint64(common.EncryptionOnePhraseDuration)
@@ -408,7 +408,7 @@ func (normalVoteProposalFromSealerMetadata *NormalVoteProposalFromSealerMetadata
 func (normalVoteProposalFromSealerMetadata *NormalVoteProposalFromSealerMetadata) ValidateTxWithBlockChain(boardType string,
 	transaction Transaction,
 	bcr BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface) (bool, error) {
 	boardPubKeys := bcr.GetBoardPaymentAddress(boardType)
 	for _, j := range normalVoteProposalFromSealerMetadata.LockerPaymentAddress {
@@ -488,9 +488,9 @@ func NewNormalVoteProposalFromOwnerMetadata(
 	}
 }
 
-func (normalVoteProposalFromOwnerMetadata *NormalVoteProposalFromOwnerMetadata) ValidataBeforeNewBlock(boardType string, tx Transaction, bcr BlockchainRetriever, chainID byte) bool {
-	endedPivot := bcr.GetConstitutionEndHeight(boardType, chainID)
-	currentBlockHeight := bcr.GetCurrentBlockHeight(chainID) + 1
+func (normalVoteProposalFromOwnerMetadata *NormalVoteProposalFromOwnerMetadata) ValidataBeforeNewBlock(boardType string, tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+	endedPivot := bcr.GetConstitutionEndHeight(boardType, shardID)
+	currentBlockHeight := bcr.GetCurrentBlockHeight(shardID) + 1
 	lv3Pivot := endedPivot - common.EncryptionOnePhraseDuration
 	lv2Pivot := lv3Pivot - common.EncryptionOnePhraseDuration
 	lv1Pivot := lv2Pivot - common.EncryptionOnePhraseDuration
@@ -527,7 +527,7 @@ func (normalVoteProposalFromOwnerMetadata *NormalVoteProposalFromOwnerMetadata) 
 	boardType string,
 	transaction Transaction,
 	bcr BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface) (bool,
 	error) {
 	boardPaymentAddress := bcr.GetBoardPaymentAddress(boardType)

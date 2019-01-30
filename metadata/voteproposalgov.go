@@ -52,7 +52,7 @@ func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) Hash()
 func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) ValidateTxWithBlockChain(
 	tx Transaction,
 	bcr BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
 	boardType := "gov"
@@ -60,7 +60,7 @@ func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) Valida
 		boardType,
 		tx,
 		bcr,
-		chainID,
+		shardID,
 		db,
 	)
 }
@@ -105,13 +105,13 @@ func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) Hash()
 	return &hash
 }
 
-func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	boardType := sealedLv2GOVVoteProposalMetadata.GetBoardType()
 	return sealedLv2GOVVoteProposalMetadata.SealedLv2VoteProposalMetadata.ValidateTxWithBlockChain(
 		boardType,
 		tx,
 		bcr,
-		chainID,
+		shardID,
 		db,
 	)
 
@@ -186,14 +186,14 @@ func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMe
 	return "gov"
 }
 
-func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	//Validate these pubKeys are in board
 	boardType := normalGOVVoteProposalFromSealerMetadata.GetBoardType()
 	return normalGOVVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.ValidateTxWithBlockChain(
 		boardType,
 		tx,
 		bcr,
-		chainID,
+		shardID,
 		db,
 	)
 }
@@ -233,14 +233,14 @@ func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMeta
 	return &hash
 }
 
-func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	//Validate these pubKeys are in board
 	boardType := "gov"
 	return normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.ValidateTxWithBlockChain(
 		boardType,
 		tx,
 		bcr,
-		chainID,
+		shardID,
 		db,
 	)
 }

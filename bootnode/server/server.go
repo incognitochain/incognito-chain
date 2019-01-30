@@ -61,7 +61,7 @@ func (self *RpcServer) Start() {
 
 func (self *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 string, signDataB58 string) {
 	if signDataB58 != "" && publicKeyB58 != "" && rawAddress != "" {
-		err := cashec.ValidateDataB58(publicKeyB58, signDataB58, []byte{0x00})
+		err := cashec.ValidateDataB58(publicKeyB58, signDataB58, []byte(rawAddress))
 		if err == nil {
 			self.Peers[publicKeyB58] = &Peer{
 				ID:         self.CombineID(rawAddress, publicKeyB58),

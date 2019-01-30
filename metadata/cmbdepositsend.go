@@ -39,7 +39,7 @@ func (ds *CMBDepositSend) Hash() *common.Hash {
 	return &hash
 }
 
-func (ds *CMBDepositSend) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (ds *CMBDepositSend) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if contract is still valid
 	_, _, _, txContract, err := bcr.GetTransactionByHash(&ds.ContractID)
 	if err != nil {

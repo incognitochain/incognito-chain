@@ -40,9 +40,9 @@ func TestBlock(t *testing.T) {
 		Transactions: []metadata.Transaction{},
 	}
 
-	err := db.StoreBlock(block, byte(0x00))
+	err := db.StoreShardBlock(block)
 	if err != nil {
-		t.Errorf("db.StoreBlock returns err: %+v", err)
+		t.Errorf("db.StoreShardBlock returns err: %+v", err)
 	}
 
 	exists, err := db.HasBlock(block.Hash())

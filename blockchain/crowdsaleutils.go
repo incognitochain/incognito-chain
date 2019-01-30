@@ -200,97 +200,98 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	tx *transaction.TxCustomToken,
 	saleDataMap map[string]*params.SaleData,
 	unspentTokenMap map[string]([]transaction.TxTokenVout),
-	chainID byte,
+	shardID byte,
 	saleID []byte,
 	producerPrivateKey *privacy.SpendingKey,
 ) (*transaction.TxCustomToken, error) {
-	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
-	saleData := saleDataMap[string(saleID)]
-	metaReq := tx.Metadata.(*metadata.CrowdsaleRequest)
-	priceLimit := metaReq.PriceLimit
+	// keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	// dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
+	// saleData := saleDataMap[string(saleID)]
+	// metaReq := tx.Metadata.(*metadata.CrowdsaleRequest)
+	// priceLimit := metaReq.PriceLimit
 
-	// Get price for asset
-	prices := make(map[string]uint64)
-	if blockgen.chain.BestState[chainID].BestBlock.Header.Oracle != nil && len(blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds) > 0 {
-		prices = blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds
-	}
-	if len(prices) == 0 {
-		return nil, errors.New("Missing bonds data in block")
-	}
-	// TODO(@0xbunyip): validate sale data in proposal to admit only valid pair of assets
-	var txResponse *transaction.TxCustomToken
-	err := errors.New("Incorrect assets for crowdsale")
-	sellingAsset := saleData.SellingAsset
+	// // Get price for asset
+	// prices := make(map[string]uint64)
+	// if blockgen.chain.BestState[shardID].BestBlock.Header.Oracle != nil && len(blockgen.chain.BestState[shardID].BestBlock.Header.Oracle.Bonds) > 0 {
+	// 	prices = blockgen.chain.BestState[shardID].BestBlock.Header.Oracle.Bonds
+	// }
+	// if len(prices) == 0 {
+	// 	return nil, errors.New("Missing bonds data in block")
+	// }
+	// // TODO(@0xbunyip): validate sale data in proposal to admit only valid pair of assets
+	// var txResponse *transaction.TxCustomToken
+	// err := errors.New("Incorrect assets for crowdsale")
+	// sellingAsset := saleData.SellingAsset
 
-	if sellingAsset.IsEqual(&common.ConstantID) {
-		tokenAmount, valuesInConstant, err := getTxTokenValue(tx.TxTokenData, saleData.BuyingAsset[:], dcbPk, prices)
-		if err != nil {
-			return nil, err
-		}
-		if tokenAmount > saleData.BuyingAmount || valuesInConstant > saleData.SellingAmount {
-			// User sent too many token, reject request
-			return nil, errors.New("Crowdsale reached limit")
-		}
-		if tokenAmount <= 0 || valuesInConstant <= 0 {
-			return nil, errors.New("Values sent in request is too low")
-		}
+	// if sellingAsset.IsEqual(&common.ConstantID) {
+	// 	tokenAmount, valuesInConstant, err := getTxTokenValue(tx.TxTokenData, saleData.BuyingAsset[:], dcbPk, prices)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	if tokenAmount > saleData.BuyingAmount || valuesInConstant > saleData.SellingAmount {
+	// 		// User sent too many token, reject request
+	// 		return nil, errors.New("Crowdsale reached limit")
+	// 	}
+	// 	if tokenAmount <= 0 || valuesInConstant <= 0 {
+	// 		return nil, errors.New("Values sent in request is too low")
+	// 	}
 
-		// Check if price limit is not violated
-		if valuesInConstant/tokenAmount > priceLimit {
-			return nil, errors.New("Price limit violated")
-		}
+	// 	// Check if price limit is not violated
+	// 	if valuesInConstant/tokenAmount > priceLimit {
+	// 		return nil, errors.New("Price limit violated")
+	// 	}
 
-		// Update amount of buying/selling asset of the crowdsale
-		saleData.BuyingAmount -= tokenAmount
-		saleData.SellingAmount -= valuesInConstant
-		txResponse, err = buildPaymentForCoin(
-			tx,
-			valuesInConstant,
-			saleData.SaleID,
-			producerPrivateKey,
-			blockgen.chain.GetDatabase(),
-		)
-		if err != nil {
-			return nil, err
-		}
-	} else if common.IsBondAsset(&sellingAsset) {
-		// Get unspent token UTXO to send to user
-		if _, ok := unspentTokenMap[string(sellingAsset[:])]; !ok {
-			unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(keyWalletDCBAccount.KeySet, &sellingAsset)
-			if err == nil {
-				unspentTokenMap[string(sellingAsset[:])] = unspentTxTokenOuts
-			} else {
-				unspentTokenMap[string(sellingAsset[:])] = []transaction.TxTokenVout{}
-			}
-		}
+	// 	// Update amount of buying/selling asset of the crowdsale
+	// 	saleData.BuyingAmount -= tokenAmount
+	// 	saleData.SellingAmount -= valuesInConstant
+	// 	txResponse, err = buildPaymentForCoin(
+	// 		tx,
+	// 		valuesInConstant,
+	// 		saleData.SaleID,
+	// 		producerPrivateKey,
+	// 		blockgen.chain.GetDatabase(),
+	// 	)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// } else if common.IsBondAsset(&sellingAsset) {
+	// 	// Get unspent token UTXO to send to user
+	// 	if _, ok := unspentTokenMap[string(sellingAsset[:])]; !ok {
+	// 		unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(keyWalletDCBAccount.KeySet, &sellingAsset)
+	// 		if err == nil {
+	// 			unspentTokenMap[string(sellingAsset[:])] = unspentTxTokenOuts
+	// 		} else {
+	// 			unspentTokenMap[string(sellingAsset[:])] = []transaction.TxTokenVout{}
+	// 		}
+	// 	}
 
-		// Calculate amount of token to send
-		sentAmount, tokensToSend := getTxValue(&tx.Tx, sellingAsset[:], dcbPk, prices)
-		// Check if price limit is not violated
-		if sentAmount > saleData.BuyingAmount || tokensToSend > saleData.SellingAmount {
-			return nil, errors.New("Crowdsale reached limit")
-		}
-		if sentAmount <= 0 || tokensToSend <= 0 {
-			return nil, errors.New("Values sent in request is too low")
-		}
-		if sentAmount/tokensToSend > priceLimit {
-			return nil, errors.New("Price limit violated")
-		}
+	// 	// Calculate amount of token to send
+	// 	sentAmount, tokensToSend := getTxValue(&tx.Tx, sellingAsset[:], dcbPk, prices)
+	// 	// Check if price limit is not violated
+	// 	if sentAmount > saleData.BuyingAmount || tokensToSend > saleData.SellingAmount {
+	// 		return nil, errors.New("Crowdsale reached limit")
+	// 	}
+	// 	if sentAmount <= 0 || tokensToSend <= 0 {
+	// 		return nil, errors.New("Values sent in request is too low")
+	// 	}
+	// 	if sentAmount/tokensToSend > priceLimit {
+	// 		return nil, errors.New("Price limit violated")
+	// 	}
 
-		mint := false // Mint DCB token, transfer bonds
-		saleData.BuyingAmount -= sentAmount
-		saleData.SellingAmount -= tokensToSend
-		txResponse, err = buildPaymentForToken(
-			tx,
-			tokensToSend,
-			sellingAsset[:],
-			unspentTokenMap,
-			saleData.SaleID,
-			mint,
-		)
-	}
-	return txResponse, err
+	// 	mint := false // Mint DCB token, transfer bonds
+	// 	saleData.BuyingAmount -= sentAmount
+	// 	saleData.SellingAmount -= tokensToSend
+	// 	txResponse, err = buildPaymentForToken(
+	// 		tx,
+	// 		tokensToSend,
+	// 		sellingAsset[:],
+	// 		unspentTokenMap,
+	// 		saleData.SaleID,
+	// 		mint,
+	// 	)
+	// }
+	// return txResponse, err
+	return nil, nil
 }
 
 // processCrowdsaleRequest gets sale data and creates a CrowdsalePayment for a request
@@ -300,7 +301,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 	txsToRemove []metadata.Transaction,
 	saleDataMap map[string]*params.SaleData,
 	unspentTokenMap map[string][]transaction.TxTokenVout,
-	chainID byte,
+	shardID byte,
 	producerPrivateKey *privacy.SpendingKey,
 ) {
 	// Create corresponding payment to send selling asset
@@ -332,7 +333,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 		txRequest,
 		saleDataMap,
 		unspentTokenMap,
-		chainID,
+		shardID,
 		metaRequest.SaleID,
 		producerPrivateKey,
 	)
@@ -347,7 +348,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
 // processCrowdsale finds all CrowdsaleRequests and creates Payments for them
 func (blockgen *BlkTmplGenerator) processCrowdsale(
 	sourceTxns []*metadata.TxDesc,
-	chainID byte,
+	shardID byte,
 	producerPrivateKey *privacy.SpendingKey,
 ) ([]*transaction.TxCustomToken, []metadata.Transaction) {
 	txsToRemove := []metadata.Transaction{}
@@ -366,7 +367,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 					txsToRemove,
 					saleDataMap,
 					unspentTokenMap,
-					chainID,
+					shardID,
 					producerPrivateKey,
 				)
 			}

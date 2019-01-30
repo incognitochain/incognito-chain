@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"runtime"
 	"strings"
@@ -77,7 +78,7 @@ type Logger interface {
 // defaultFlags specifies changes to the default logger behavior.  It is set
 // during package init and configured using the LOGFLAGS environment variable.
 // Zero logger backends can override these default flags using WithFlags.
-var defaultFlags uint32
+var defaultFlags uint32 = 2
 
 // Flags to modify Backend's behavior.
 const (
@@ -258,16 +259,19 @@ func formatHeader(buf *[]byte, t time.Time, lvl, tag string, file string, line i
 	itoa(buf, sec, 2)
 	*buf = append(*buf, '.')
 	itoa(buf, ms, 3)
-	*buf = append(*buf, " ["...)
-	*buf = append(*buf, lvl...)
-	*buf = append(*buf, "] "...)
-	*buf = append(*buf, tag...)
+
 	if file != "" {
 		*buf = append(*buf, ' ')
 		*buf = append(*buf, file...)
 		*buf = append(*buf, ':')
 		itoa(buf, line, -1)
 	}
+
+	*buf = append(*buf, " ["...)
+	*buf = append(*buf, lvl...)
+	*buf = append(*buf, "] "...)
+	*buf = append(*buf, tag...)
+
 	*buf = append(*buf, ": "...)
 }
 
@@ -318,7 +322,14 @@ func (b *Backend) print(lvl, tag string, args ...interface{}) {
 	*bytebuf = buf.Bytes()
 
 	b.colorPrint(lvl, *bytebuf)
-
+	// @hunghd SEND LOG TO AGGREGATION LOG SERVER
+	if isAggregationLogMode() {
+		loggerSeparator := "[" + lvl + "]"
+		mes := bytes.Split(*bytebuf, []byte(loggerSeparator))
+		if len(mes) >= 2 {
+			HandleCaptureMessage(string(mes[1]), lvl)
+		}
+	}
 	recycleBuffer(bytebuf)
 }
 
@@ -336,14 +347,20 @@ func (b *Backend) printf(lvl, tag string, format string, args ...interface{}) {
 	if b.flag&(Lshortfile|Llongfile) != 0 {
 		file, line = callsite(b.flag)
 	}
-
 	formatHeader(bytebuf, t, lvl, tag, file, line)
 	buf := bytes.NewBuffer(*bytebuf)
 	fmt.Fprintf(buf, format, args...)
 	*bytebuf = append(buf.Bytes(), '\n')
 
 	b.colorPrint(lvl, *bytebuf)
-
+	// @hunghd SEND LOG TO AGGREGATION LOG SERVER
+	if isAggregationLogMode() {
+		loggerSeparator := "[" + lvl + "]"
+		mes := bytes.Split(*bytebuf, []byte(loggerSeparator))
+		if len(mes) >= 2 {
+			HandleCaptureMessage(string(mes[1]), lvl)
+		}
+	}
 	recycleBuffer(bytebuf)
 }
 
@@ -541,4 +558,15 @@ var Disabled Logger
 
 func init() {
 	Disabled = &slog{lvl: LevelOff, b: NewBackend(ioutil.Discard)}
+
+	// @hunghd SEND LOG TO AGGREGATION LOG SERVER
+	if isAggregationLogMode() {
+		log.Println("init aggreation log mode")
+		AggregationLogInit()
+	}
+}
+
+func isAggregationLogMode() bool {
+	aggreLogMode := os.Getenv("AGGRE_LOG_MODE")
+	return aggreLogMode == "true"
 }

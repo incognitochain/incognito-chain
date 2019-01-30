@@ -19,7 +19,7 @@ func (lu *LoanUnlock) Hash() *common.Hash {
 	return &hash
 }
 
-func (lu *LoanUnlock) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (lu *LoanUnlock) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// TODO(@0xbunyip): validate that there's a corresponding TxLoanWithdraw in the same block
 	return true, nil
 }

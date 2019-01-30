@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -34,10 +35,35 @@ this struct has a array best state with len = 20,
 every beststate present for a best block in every chain
 */
 type BlockChain struct {
-	BestState []*BestState //BestState of 20 chain.
-
+	BestState *BestState
 	config    Config
 	chainLock sync.RWMutex
+
+	//=====cache
+	beaconBlock        map[string][]byte
+	highestBeaconBlock string
+
+	//channel
+	cQuitSync  chan struct{}
+	syncStatus struct {
+		Beacon bool
+		Shard  map[byte](chan struct{})
+		sync.Mutex
+	}
+	knownChainState struct {
+		Shards map[byte]ShardChainState
+		Beacon BeaconChainState
+	}
+	BeaconStateCh  chan *PeerBeaconChainState
+	newBeaconBlkCh chan *BeaconBlock
+	ShardStateCh   map[byte](chan *PeerShardChainState)
+	newShardBlkCh  map[byte](*chan *ShardBlock)
+}
+type BestState struct {
+	Beacon *BestStateBeacon
+	Shard  map[byte]*BestStateShard
+
+	beacon map[string][]byte
 }
 
 // config is a descriptor which specifies the blockchain instance configuration.
@@ -48,6 +74,9 @@ type Config struct {
 	// This field is required.
 	DataBase database.DatabaseInterface
 
+	// shardBlock *lru.Cache
+	// shardBody  *lru.Cache
+	//======
 	// Interrupt specifies a channel the caller can close to signal that
 	// long running operations, such as catching up indexes or performing
 	// database migrations, should be interrupted.
@@ -60,15 +89,29 @@ type Config struct {
 	//
 	// This field is required.
 	ChainParams *Params
-
-	//LightMode mode flag
-	LightMode bool
-
+	RelayShards []byte
+	NodeMode    string
+	//Light mode flag
+	// Light bool
 	//Wallet for light mode
 	Wallet *wallet.Wallet
 
 	//snapshot reward
 	customTokenRewardSnapshot map[string]uint64
+
+	ShardToBeaconPool ShardToBeaconPool
+	CrossShardPool    CrossShardPool
+	NodeBeaconPool    NodeBeaconPool
+	NodeShardPool     NodeShardPool
+	Server            interface {
+		PushMessageGetBeaconState() error
+		PushMessageGetShardState(byte) error
+		PushMessageGetBlockBeacon(from uint64, to uint64, peerID libp2p.ID) error
+		PushMessageGetBlockShard(shardID byte, from uint64, to uint64, peerID libp2p.ID) error
+		PushMessageGetShardToBeacon(shardID byte, blkHash common.Hash) error
+		PushMessageGetShardToBeacons(shardID byte, from uint64, to uint64) error
+	}
+	UserKeySet *cashec.KeySet
 }
 
 /*
@@ -92,12 +135,66 @@ func (self *BlockChain) Init(config *Config) error {
 		return err
 	}
 
-	for chainIndex, bestState := range self.BestState {
-		Logger.log.Infof("BlockChain state for chain #%d (Height %d, Best block hash %+v, Total tx %d, Salary fund %d, Gov Param %+v)",
-			chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns, bestState.BestBlock.Header.SalaryFund, bestState.BestBlock.Header.GOVConstitution)
+	// for chainIndex, bestState := range self.BestState {
+	// 	Logger.log.Infof("BlockChain state for chain #%d (Height %d, Best block hash %+v, Total tx %d, Salary fund %d, Gov Param %+v)",
+	// 		chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns, bestState.BestBlock.Header.SalaryFund, bestState.BestBlock.Header.GOVConstitution)
+	// }
+	self.cQuitSync = make(chan struct{})
+	self.ShardStateCh = make(map[byte](chan *PeerShardChainState))
+	self.newShardBlkCh = make(map[byte](*chan *ShardBlock))
+	self.syncStatus.Shard = make(map[byte](chan struct{}))
+	self.knownChainState.Shards = make(map[byte]ShardChainState)
+	self.SyncBeacon()
+	for _, shardID := range self.config.RelayShards {
+		self.SyncShard(shardID)
 	}
-
 	return nil
+}
+func (self *BlockChain) SetShardToBeaconPool(db database.DatabaseInterface) {
+	self.config.ShardToBeaconPool.SetDatabase(db)
+}
+
+// Before call store and get block from cache or db, call chain.lock()
+func (self *BlockChain) StoreMaybeAcceptBeaconBeststate(beaconBestState BestStateBeacon) (string, error) {
+	res, err := json.Marshal(beaconBestState)
+	if err != nil {
+		return "", NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	key := beaconBestState.BestBlockHash.String()
+	self.BestState.beacon[key] = res
+	return key, nil
+}
+func (self *BlockChain) StoreMaybeAcceptBeaconBlock(block BeaconBlock) (string, error) {
+	res, err := json.Marshal(block)
+	if err != nil {
+		return "", NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	key := block.Hash().String()
+	self.beaconBlock[key] = res
+	// Update heightest block
+	// Ignore error
+	heightBeaconBlock, _ := self.GetMaybeAcceptBeaconBlock(self.highestBeaconBlock)
+	if err != nil || heightBeaconBlock.Header.Height < block.Header.Height {
+		self.highestBeaconBlock = block.Hash().String()
+	}
+	return key, nil
+}
+func (self *BlockChain) GetMaybeAcceptBeaconBlock(key string) (BeaconBlock, error) {
+	res := self.beaconBlock[key]
+	beaconBlock := BeaconBlock{}
+	if err := json.Unmarshal(res, beaconBlock); err != nil {
+		return beaconBlock, NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	return beaconBlock, nil
+}
+
+func (self *BlockChain) GetMaybeAcceptBeaconBestState(key string) (BestStateBeacon, error) {
+	res := self.BestState.beacon[key]
+	beaconBestState := BestStateBeacon{}
+	if err := json.Unmarshal(res, beaconBestState); err != nil {
+		return beaconBestState, NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	return beaconBestState, nil
 }
 
 // -------------- Blockchain retriever's implementation --------------
@@ -120,7 +217,8 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 
 // GetOracleParams returns oracle params
 func (self *BlockChain) GetOracleParams() *params.Oracle {
-	return self.BestState[14].BestBlock.Header.Oracle
+	return &params.Oracle{}
+	// return self.BestState[0].BestBlock.Header.Oracle
 }
 
 // -------------- End of Blockchain retriever's implementation --------------
@@ -134,11 +232,43 @@ func (self *BlockChain) initChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	var initialized bool
-	self.BestState = make([]*BestState, ChainCount)
-	for chainId := byte(0); chainId < ChainCount; chainId++ {
-		bestStateBytes, err := self.config.DataBase.FetchBestState(chainId)
+	self.BestState = &BestState{
+		Beacon: &BestStateBeacon{},
+		Shard:  make(map[byte]*BestStateShard),
+		beacon: make(map[string][]byte),
+	}
+
+	bestStateBeaconBytes, err := self.config.DataBase.FetchBeaconBestState()
+	if err == nil {
+		err = json.Unmarshal(bestStateBeaconBytes, self.BestState.Beacon)
+		if err != nil {
+			initialized = false
+		} else {
+			initialized = true
+		}
+	} else {
+		initialized = false
+	}
+	if !initialized {
+		// At this point the database has not already been initialized, so
+		// initialize both it and the chain state to the genesis block.
+		err := self.initBeaconState()
+		if err != nil {
+			return err
+		}
+
+	} else {
+		test, _ := json.Marshal(self.BestState.Beacon)
+		fmt.Println(string(test))
+
+	}
+
+	for shard := 1; shard <= common.SHARD_NUMBER; shard++ {
+		shardID := byte(shard - 1)
+		bestStateBytes, err := self.config.DataBase.FetchBestState(shardID)
 		if err == nil {
-			err = json.Unmarshal(bestStateBytes, &self.BestState[chainId])
+			self.BestState.Shard[shardID] = &BestStateShard{}
+			err = json.Unmarshal(bestStateBytes, self.BestState.Shard[shardID])
 			if err != nil {
 				initialized = false
 			} else {
@@ -151,7 +281,7 @@ func (self *BlockChain) initChainState() error {
 		if !initialized {
 			// At this point the database has not already been initialized, so
 			// initialize both it and the chain state to the genesis block.
-			err := self.createChainState(chainId)
+			err := self.initShardState(shardID)
 			if err != nil {
 				return err
 			}
@@ -167,34 +297,107 @@ func (self *BlockChain) initChainState() error {
 // genesis block.  This includes creating the necessary buckets and inserting
 // the genesis block, so it must only be called on an uninitialized database.
 */
-func (self *BlockChain) createChainState(chainId byte) error {
+func (self *BlockChain) initShardState(shardID byte) error {
+
 	// Create a new block from genesis block and set it as best block of chain
-	var initBlock *Block
-	if chainId == 0 {
-		initBlock = self.config.ChainParams.GenesisBlock
-	} else {
-		initBlock = &Block{}
-		initBlock.Header = self.config.ChainParams.GenesisBlock.Header
-		initBlock.Header.ChainID = chainId
-		initBlock.Header.PrevBlockHash = common.Hash{}
+	initBlock := ShardBlock{}
+	initBlock = *self.config.ChainParams.GenesisShardBlock
+	initBlock.Header.ShardID = shardID
+
+	// ---- test RPC api data --- remove after
+	// testUserkeyList := []string{
+	// 	"112t8rqnMrtPkJ4YWzXfG82pd9vCe2jvWGxqwniPM5y4hnimki6LcVNfXxN911ViJS8arTozjH4rTpfaGo5i1KKcG1ayjiMsa4E3nABGAqQh",
+	// 	"112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNhc33pzChmJRvikZNc3Dt5V7quhdzjWW9Z4BrB2BxdK5VtHzsG9JZdZ5M7yYYGidKKZV",
+	// }
+	initTxs := []string{`{"Version":1,"Type":"s","LockTime":1548234650,"Fee":0,"Info":null,"SigPubKey":"A7GGbCnosNljq25A5o4VIGs7r6WOcs3OrDBJUFd28eEA","Sig":"pBKEqssajv6+hljC9KvNb7orPBfLpRCBLyG4cY8Vb0DTKhlUT+sDmTdPi5mkcIGYRr4asFHkj8hGAoe3CvjEjA==","Proof":"111111116WGHqpGSLR21nkwRaRVR2vJBD6DR8wKQfB5VCC4TNEXz1XeskmWDegVonjFht25ktqi8JJhgPF7dsWRt8GyoVjkPz7mVZJksdQF7NaW6GnruwZFHkoharAad4W41569CKFL7D8vsTn5zDbzrEDcLNcwzSUryGidyj5z5MKPV2mYDqjYmPTe7QbrF7cUNKoU4fpDBam3jZRk49yJdtqU","PubKeyLastByteSender":0,"Metadata":null}`, `{"Version":1,"Type":"s","LockTime":1548234650,"Fee":0,"Info":null,"SigPubKey":"AySFA7ksPnDE7zG+ZKwyk8SaadPLOfJuIn5k4kqUgKcA","Sig":"L+NSIayMrl/mTfo5t1tLI2ORcP37LlURAUjsvRVNRlFFZWOxA+lXoA9VfCjnvGnU05eYuukuMGs5sJQQobKfWA==","Proof":"111111116WGHqpGNRGpV3VBz1rndCx6TP4A8eLYeocjg8izynA2YAkx7x38mCj3GsbnZ7TRKG7acNtpRYRP9fCEJPQCBiS3hjcDvd7aikVhj4uGgkRMnXsNW6MidUW83MMyhGem7CQE8qNyYRax3mFFjYKm6RPPHkkHGMdaao24ybehPuYLREmSShr7F7XKMPMM9aVURzLkS6wxoskJ4bXNnTng","PubKeyLastByteSender":0,"Metadata":null}`}
+	// for _, val := range testUserkeyList {
+
+	// 	testUserKey, _ := wallet.Base58CheckDeserialize(val)
+	// 	testUserKey.KeySet.ImportFromPrivateKey(&testUserKey.KeySet.PrivateKey)
+
+	// 	testSalaryTX := transaction.Tx{}
+	// 	testSalaryTX.InitTxSalary(1000000, &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey,
+	// 		self.config.DataBase,
+	// 		nil,
+	// 	)
+	// 	initTx, _ := json.Marshal(testSalaryTX)
+	// 	initTxs = append(initTxs, string(initTx))
+	// 	initBlock.Body.Transactions = append(initBlock.Body.Transactions, &testSalaryTX)
+	// }
+	// fmt.Println(initTxs)
+
+	// testSalaryTXs := []transaction.Tx{}
+	for _, tx := range initTxs {
+		testSalaryTX := transaction.Tx{}
+		testSalaryTX.UnmarshalJSON([]byte(tx))
+		initBlock.Body.Transactions = append(initBlock.Body.Transactions, &testSalaryTX)
+		// fmt.Println()
+		// fmt.Println("test", len(testSalaryTX.Proof.OutputCoins), testSalaryTX.Proof.OutputCoins[0].CoinDetails.CoinCommitment.Compress())
+		// fmt.Println()
+		// testSalaryTXs = append(testSalaryTXs, testSalaryTX)
 	}
-	initBlock.Header.Height = 1
+	// for _, tx := range testSalaryTXs {
+	// 	fmt.Println(tx.Hash().String())
+	// }
+	// os.Exit(1)
+	// ---- -------- ---
 
-	self.BestState[chainId] = &BestState{}
-	self.BestState[chainId].Init(initBlock /*, tree*/)
+	// if shardID == 6 {
 
-	err := self.ConnectBlock(initBlock)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
+	// } else {
+	// 	initBlock.Header = self.config.ChainParams.GenesisShardBlock.Header
+	// 	initBlock.Header.ShardID = shardID
+	// 	initBlock.Header.PrevBlockHash = common.Hash{}
+	// }
+
+	self.BestState.Shard[shardID] = &BestStateShard{
+		ShardCommittee:        []string{},
+		ShardPendingValidator: []string{},
+		BestShardBlock:        &ShardBlock{},
 	}
 
-	// store best state
-	err = self.StoreBestState(chainId)
+	_, newShardCandidate := GetStakingCandidate(*self.config.ChainParams.GenesisBeaconBlock)
+
+	self.BestState.Shard[shardID].ShardCommittee = append(self.BestState.Shard[shardID].ShardCommittee, newShardCandidate[int(shardID)*self.config.ChainParams.ShardCommitteeSize:(int(shardID)*self.config.ChainParams.ShardCommitteeSize)+self.config.ChainParams.ShardCommitteeSize]...)
+
+	genesisBeaconBlk, err := self.GetBeaconBlockByHeight(1)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
+	err = self.BestState.Shard[shardID].Update(&initBlock, []*BeaconBlock{genesisBeaconBlk})
+	if err != nil {
+		return err
+	}
+	self.ProcessStoreShardBlock(&initBlock)
 
+	// fmt.Println()
+	// fmt.Println(*initBlock.Hash())
+	// fmt.Println()
+	// os.Exit(1)
+	return nil
+}
+
+func (self *BlockChain) initBeaconState() error {
+	self.BestState.Beacon = NewBestStateBeacon()
+	var initBlock *BeaconBlock
+	initBlock = self.config.ChainParams.GenesisBeaconBlock
+	self.BestState.Beacon.Update(initBlock)
+	// Insert new block into beacon chain
+
+	if err := self.StoreBeaconBestState(); err != nil {
+		Logger.log.Error("Error Store best state for block", self.BestState.Beacon.BestBlockHash, "in beacon chain")
+		return NewBlockChainError(UnExpectedError, err)
+	}
+	if err := self.config.DataBase.StoreBeaconBlock(self.BestState.Beacon.BestBlock); err != nil {
+		Logger.log.Error("Error store beacon block", self.BestState.Beacon.BestBlockHash, "in beacon chain")
+		return err
+	}
+	blockHash := initBlock.Hash()
+	if err := self.config.DataBase.StoreBeaconBlockIndex(blockHash, initBlock.Header.Height); err != nil {
+		return err
+	}
+	//=======================Init cache data==========================
+	self.BestState.beacon = make(map[string][]byte)
 	return nil
 }
 
@@ -208,69 +411,81 @@ func (self *BlockChain) GetBlockHeightByBlockHash(hash *common.Hash) (uint64, by
 /*
 Get block hash by block index(height)
 */
-func (self *BlockChain) GetBlockHashByBlockHeight(height int32, chainId byte) (*common.Hash, error) {
-	return self.config.DataBase.GetBlockByIndex(height, chainId)
+func (self *BlockChain) GetBeaconBlockHashByHeight(height uint64) (*common.Hash, error) {
+	return self.config.DataBase.GetBeaconBlockHashByIndex(height)
 }
 
 /*
 Fetch DatabaseInterface and get block by index(height) of block
 */
-func (self *BlockChain) GetBlockByBlockHeight(height int32, chainId byte) (*Block, error) {
-	hashBlock, err := self.config.DataBase.GetBlockByIndex(height, chainId)
+func (self *BlockChain) GetBeaconBlockByHeight(height uint64) (*BeaconBlock, error) {
+	hashBlock, err := self.config.DataBase.GetBeaconBlockHashByIndex(height)
 	if err != nil {
 		return nil, err
 	}
-	blockBytes, err := self.config.DataBase.FetchBlock(hashBlock)
+	block, err := self.GetBeaconBlockByHash(hashBlock)
 	if err != nil {
 		return nil, err
 	}
-
-	block := Block{}
-	blockHeader := BlockHeader{}
-	if self.config.LightMode {
-		err = json.Unmarshal(blockBytes, &block)
-		if err != nil {
-			// with light node, block data can only contain block header
-			err = json.Unmarshal(blockBytes, &blockHeader)
-			if err != nil {
-				return nil, err
-			}
-			block.Header = blockHeader
-		}
-	} else {
-		err = json.Unmarshal(blockBytes, &block)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return &block, nil
+	return block, nil
 }
 
 /*
 Fetch DatabaseInterface and get block data by block hash
 */
-func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
+func (self *BlockChain) GetBeaconBlockByHash(hash *common.Hash) (*BeaconBlock, error) {
+	blockBytes, err := self.config.DataBase.FetchBeaconBlock(hash)
+	if err != nil {
+		return nil, err
+	}
+	block := BeaconBlock{}
+	err = json.Unmarshal(blockBytes, &block)
+	if err != nil {
+		return nil, err
+	}
+	return &block, nil
+}
+
+/*
+Get block index(height) of block
+*/
+func (self *BlockChain) GetShardBlockHeightByHash(hash *common.Hash) (uint64, byte, error) {
+	return self.config.DataBase.GetIndexOfBlock(hash)
+}
+
+/*
+Get block hash by block index(height)
+*/
+func (self *BlockChain) GetShardBlockHashByHeight(height uint64, shardID byte) (*common.Hash, error) {
+	return self.config.DataBase.GetBlockByIndex(height, shardID)
+}
+
+/*
+Fetch DatabaseInterface and get block by index(height) of block
+*/
+func (self *BlockChain) GetShardBlockByHeight(height uint64, shardID byte) (*ShardBlock, error) {
+	hashBlock, err := self.config.DataBase.GetBlockByIndex(height, shardID)
+	if err != nil {
+		return nil, err
+	}
+	block, err := self.GetShardBlockByHash(hashBlock)
+
+	return block, nil
+}
+
+/*
+Fetch DatabaseInterface and get block data by block hash
+*/
+func (self *BlockChain) GetShardBlockByHash(hash *common.Hash) (*ShardBlock, error) {
 	blockBytes, err := self.config.DataBase.FetchBlock(hash)
 	if err != nil {
 		return nil, err
 	}
-	block := Block{}
-	blockHeader := BlockHeader{}
-	if self.config.LightMode {
-		err = json.Unmarshal(blockBytes, &block)
-		if err != nil {
-			// with light node, block data can only contain block header
-			err = json.Unmarshal(blockBytes, &blockHeader)
-			if err != nil {
-				return nil, err
-			}
-			block.Header = blockHeader
-		}
-	} else {
-		err = json.Unmarshal(blockBytes, &block)
-		if err != nil {
-			return nil, err
-		}
+
+	block := ShardBlock{}
+	err = json.Unmarshal(blockBytes, &block)
+	if err != nil {
+		return nil, err
 	}
 	return &block, nil
 }
@@ -278,17 +493,24 @@ func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 /*
 Store best state of block(best block, num of tx, ...) into Database
 */
-func (self *BlockChain) StoreBestState(chainId byte) error {
-	return self.config.DataBase.StoreBestState(self.BestState[chainId], chainId)
+func (self *BlockChain) StoreBeaconBestState() error {
+	return self.config.DataBase.StoreBeaconBestState(self.BestState.Beacon)
+}
+
+/*
+Store best state of block(best block, num of tx, ...) into Database
+*/
+func (self *BlockChain) StoreShardBestState(shardID byte) error {
+	return self.config.DataBase.StoreBestState(self.BestState.Shard[shardID], shardID)
 }
 
 /*
 GetBestState - return a best state from a chain
 */
-// #1 - chainID - index of chain
-func (self *BlockChain) GetBestState(chainId byte) (*BestState, error) {
-	bestState := BestState{}
-	bestStateBytes, err := self.config.DataBase.FetchBestState(chainId)
+// #1 - shardID - index of chain
+func (self *BlockChain) GetShardBestState(shardID byte) (*BestStateShard, error) {
+	bestState := BestStateShard{}
+	bestStateBytes, err := self.config.DataBase.FetchBestState(shardID)
 	if err == nil {
 		err = json.Unmarshal(bestStateBytes, &bestState)
 	}
@@ -298,25 +520,36 @@ func (self *BlockChain) GetBestState(chainId byte) (*BestState, error) {
 /*
 Store block into Database
 */
-func (self *BlockChain) StoreBlock(block *Block) error {
-	return self.config.DataBase.StoreBlock(block, block.Header.ChainID)
+func (self *BlockChain) StoreShardBlock(block *ShardBlock) error {
+	return self.config.DataBase.StoreShardBlock(block, block.Header.ShardID)
 }
 
 /*
 	Store Only Block Header into database
 */
-func (self *BlockChain) StoreBlockHeader(block *Block) error {
-	//Logger.log.Infof("Store Block Header, block header %+v, block hash %+v, chain id %+v",block.Header, block.blockHash, block.Header.ChainID)
-	return self.config.DataBase.StoreBlockHeader(block.Header, block.Hash(), block.Header.ChainID)
+func (self *BlockChain) StoreShardBlockHeader(block *ShardBlock) error {
+	//Logger.log.Infof("Store Block Header, block header %+v, block hash %+v, chain id %+v",block.Header, block.blockHash, block.Header.shardID)
+	return self.config.DataBase.StoreShardBlockHeader(block.Header, block.Hash(), block.Header.ShardID)
 }
+
+/*
+	Store Transaction in Light mode
+*/
+// func (self *BlockChain) StoreUnspentTransactionLightMode(privatKey *privacy.SpendingKey, shardID byte, blockHeight int32, txIndex int, tx *transaction.Tx) error {
+// 	txJsonBytes, err := json.Marshal(tx)
+// 	if err != nil {
+// 		return NewBlockChainError(UnExpectedError, errors.New("json.Marshal"))
+// 	}
+// 	return self.config.DataBase.StoreTransactionLightMode(privatKey, shardID, blockHeight, txIndex, *(tx.Hash()), txJsonBytes)
+// }
 
 /*
 Save index(height) of block by block hash
 and
 Save block hash by index(height) of block
 */
-func (self *BlockChain) StoreBlockIndex(block *Block) error {
-	return self.config.DataBase.StoreBlockIndex(block.Hash(), uint64(block.Header.Height), block.Header.ChainID)
+func (self *BlockChain) StoreShardBlockIndex(block *ShardBlock) error {
+	return self.config.DataBase.StoreShardBlockIndex(block.Hash(), block.Header.Height, block.Header.ShardID)
 }
 
 func (self *BlockChain) StoreTransactionIndex(txHash *common.Hash, blockHash *common.Hash, index int) error {
@@ -329,7 +562,7 @@ this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreSerialNumbersFromTxViewPoint(view TxViewPoint) error {
 	for _, item1 := range view.listSerialNumbers {
-		err := self.config.DataBase.StoreSerialNumbers(view.tokenID, item1, view.chainID)
+		err := self.config.DataBase.StoreSerialNumbers(view.tokenID, item1, view.shardID)
 		if err != nil {
 			return err
 		}
@@ -343,7 +576,7 @@ this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint) error {
 	for _, item1 := range view.listSnD {
-		err := self.config.DataBase.StoreSNDerivators(view.tokenID, item1, view.chainID)
+		err := self.config.DataBase.StoreSNDerivators(view.tokenID, item1, view.shardID)
 
 		if err != nil {
 			return err
@@ -357,27 +590,48 @@ Uses an existing database to update the set of not used tx by saving list commit
 this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
-	for pubkey, item1 := range view.mapCommitments {
+
+	// commitment
+	keys := make([]string, 0, len(view.mapCommitments))
+	for k := range view.mapCommitments {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		pubkey := k
+		item1 := view.mapCommitments[k]
 		pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
 		if err != nil {
 			return err
 		}
 		for _, com := range item1 {
-			err = self.config.DataBase.StoreCommitments(view.tokenID, pubkeyBytes, com, view.chainID)
+			err = self.config.DataBase.StoreCommitments(view.tokenID, pubkeyBytes, com, view.shardID)
 			if err != nil {
 				return err
 			}
 		}
 	}
-	for pubkey, item1 := range view.mapOutputCoins {
+
+	// outputs
+	keys = make([]string, 0, len(view.mapOutputCoins))
+	for k := range view.mapOutputCoins {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		pubkey := k
+		item1 := view.mapOutputCoins[k]
+
 		pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
 		if err != nil {
 			return err
 		}
 		for _, com := range item1 {
 			lastByte := pubkeyBytes[len(pubkeyBytes)-1]
-			chainID, err := common.GetTxSenderChain(lastByte)
-			err = self.config.DataBase.StoreOutputCoins(view.tokenID, pubkeyBytes, com.Bytes(), chainID)
+			shardID := common.GetShardIDFromLastByte(lastByte)
+			err = self.config.DataBase.StoreOutputCoins(view.tokenID, pubkeyBytes, com.Bytes(), shardID)
 			if err != nil {
 				return err
 			}
@@ -386,41 +640,29 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 	return nil
 }
 
-func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
-	result := make([]*Block, 0)
-	data, err := self.config.DataBase.FetchChainBlocks(chainID)
-	if err != nil {
-		return nil, err
-	}
+// func (self *BlockChain) GetChainBlocks(shardID byte) ([]*Block, error) {
+// 	result := make([]*Block, 0)
+// 	data, err := self.config.DataBase.FetchChainBlocks(shardID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	for _, item := range data {
-		blockBytes, err := self.config.DataBase.FetchBlock(item)
-		if err != nil {
-			return nil, err
-		}
-		block := Block{}
-		blockHeader := BlockHeader{}
-		if self.config.LightMode {
-			err = json.Unmarshal(blockBytes, &block)
-			if err != nil {
-				// with light node, block data can only contain block header
-				err = json.Unmarshal(blockBytes, &blockHeader)
-				if err != nil {
-					return nil, err
-				}
-				block.Header = blockHeader
-			}
-		} else {
-			err = json.Unmarshal(blockBytes, &block)
-			if err != nil {
-				return nil, err
-			}
-		}
-		result = append(result, &block)
-	}
+// 	for _, item := range data {
+// 		_, err := self.config.DataBase.FetchBlock(item)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		block := ShardBlock{}
+// 		//TODO:
+// 		//err = block.UnmarshalJSON()
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		result = append(result, &block)
+// 	}
 
-	return result, nil
-}
+// 	return result, nil
+// }
 
 func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
 	txs, err := self.config.DataBase.GetLoanTxs(loanID)
@@ -464,8 +706,8 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 
 	// Pay interest
 	interestPerTerm := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
-	chainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
-	height := self.GetChainHeight(chainID)
+	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	height := self.GetChainHeight(shardID)
 	totalInterest := metadata.GetTotalInterest(
 		principle,
 		interest,
@@ -504,8 +746,8 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 	return self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, deadline)
 }
 
-func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
-	for _, tx := range block.Transactions {
+func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
+	for _, tx := range block.Body.Transactions {
 		switch tx.GetMetadataType() {
 		case metadata.LoanRequestMeta:
 			{
@@ -544,220 +786,216 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 	return nil
 }
 
-func (self *BlockChain) UpdateDividendPayout(block *Block) error {
-	for _, tx := range block.Transactions {
-		switch tx.GetMetadataType() {
-		case metadata.DividendMeta:
-			{
-				tx := tx.(*transaction.Tx)
-				meta := tx.Metadata.(*metadata.Dividend)
-				if tx.Proof == nil {
-					return errors.New("Miss output in tx")
-				}
-				for _, _ = range tx.Proof.OutputCoins {
-					keySet := cashec.KeySet{
-						PaymentAddress: meta.PaymentAddress,
-					}
-					vouts, err := self.GetUnspentTxCustomTokenVout(keySet, meta.TokenID)
-					if err != nil {
-						return err
-					}
-					for _, vout := range vouts {
-						txHash := vout.GetTxCustomTokenID()
-						err := self.config.DataBase.UpdateRewardAccountUTXO(meta.TokenID, keySet.PaymentAddress.Pk, &txHash, vout.GetIndex())
-						if err != nil {
-							return err
-						}
-					}
-				}
-			}
-		}
-	}
-	return nil
-}
+// func (self *BlockChain) UpdateDividendPayout(block *Block) error {
+// 	for _, tx := range block.Transactions {
+// 		switch tx.GetMetadataType() {
+// 		case metadata.DividendMeta:
+// 			{
+// 				tx := tx.(*transaction.Tx)
+// 				meta := tx.Metadata.(*metadata.Dividend)
+// 				if tx.Proof == nil {
+// 					return errors.New("Miss output in tx")
+// 				}
+// 				for _, _ = range tx.Proof.OutputCoins {
+// 					keySet := cashec.KeySet{
+// 						PaymentAddress: meta.PaymentAddress,
+// 					}
+// 					vouts, err := self.GetUnspentTxCustomTokenVout(keySet, meta.TokenID)
+// 					if err != nil {
+// 						return err
+// 					}
+// 					for _, vout := range vouts {
+// 						txHash := vout.GetTxCustomTokenID()
+// 						err := self.config.DataBase.UpdateRewardAccountUTXO(meta.TokenID, keySet.PaymentAddress.Pk, &txHash, vout.GetIndex())
+// 						if err != nil {
+// 							return err
+// 						}
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return nil
+// }
 
-func (self *BlockChain) UpdateVoteCountBoard(block *Block) error {
-	DCBBoardIndex := uint32(0)
-	GOVBoardIndex := uint32(0)
-	if block.Header.Height != 1 {
-		DCBBoardIndex = self.GetCurrentBoardIndex(DCBConstitutionHelper{}) + 1
-		GOVBoardIndex = self.GetCurrentBoardIndex(GOVConstitutionHelper{}) + 1
-	}
-	for _, tx := range block.Transactions {
-		switch tx.GetMetadataType() {
-		case metadata.VoteDCBBoardMeta:
-			{
-				txCustomToken := tx.(*transaction.TxCustomToken)
-				voteAmount := txCustomToken.GetAmountOfVote()
-				voteDCBBoardMetadata := txCustomToken.Metadata.(*metadata.VoteDCBBoardMetadata)
-				err := self.config.DataBase.AddVoteBoard("dcb", DCBBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteDCBBoardMetadata.CandidatePaymentAddress, voteAmount)
-				if err != nil {
-					return err
-				}
-			}
-		case metadata.VoteGOVBoardMeta:
-			{
-				txCustomToken := tx.(*transaction.TxCustomToken)
-				voteAmount := txCustomToken.GetAmountOfVote()
-				voteGOVBoardMetadata := txCustomToken.Metadata.(*metadata.VoteGOVBoardMetadata)
-				err := self.config.DataBase.AddVoteBoard("gov", GOVBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteGOVBoardMetadata.CandidatePaymentAddress, voteAmount)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return nil
-}
+// func (self *BlockChain) UpdateVoteCountBoard(block *Block) error {
+// 	DCBBoardIndex := self.GetCurrentBoardIndex(DCBConstitutionHelper{})
+// 	GOVBoardIndex := self.GetCurrentBoardIndex(GOVConstitutionHelper{})
+// 	for _, tx := range block.Transactions {
+// 		switch tx.GetMetadataType() {
+// 		case metadata.VoteDCBBoardMeta:
+// 			{
+// 				txCustomToken := tx.(*transaction.TxCustomToken)
+// 				voteAmount := txCustomToken.GetAmountOfVote()
+// 				voteDCBBoardMetadata := txCustomToken.Metadata.(*metadata.VoteDCBBoardMetadata)
+// 				err := self.config.DataBase.AddVoteBoard("dcb", DCBBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteDCBBoardMetadata.CandidatePaymentAddress, voteAmount)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 		case metadata.VoteGOVBoardMeta:
+// 			{
+// 				txCustomToken := tx.(*transaction.TxCustomToken)
+// 				voteAmount := txCustomToken.GetAmountOfVote()
+// 				voteGOVBoardMetadata := txCustomToken.Metadata.(*metadata.VoteGOVBoardMetadata)
+// 				err := self.config.DataBase.AddVoteBoard("gov", GOVBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteGOVBoardMetadata.CandidatePaymentAddress, voteAmount)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return nil
+// }
 
-func (self *BlockChain) UpdateVoteTokenHolder(block *Block) error {
-	for _, tx := range block.Transactions {
-		switch tx.GetMetadataType() {
-		case metadata.SendInitDCBVoteTokenMeta:
-			{
-				meta := tx.GetMetadata().(*metadata.SendInitDCBVoteTokenMetadata)
-				err := self.config.DataBase.SendInitVoteToken("dcb", self.GetCurrentBoardIndex(DCBConstitutionHelper{}), meta.ReceiverPaymentAddress, meta.Amount)
-				if err != nil {
-					return err
-				}
-			}
-		case metadata.SendInitGOVVoteTokenMeta:
-			{
-				meta := tx.GetMetadata().(*metadata.SendInitGOVVoteTokenMetadata)
-				err := self.config.DataBase.SendInitVoteToken("gov", self.GetCurrentBoardIndex(GOVConstitutionHelper{}), meta.ReceiverPaymentAddress, meta.Amount)
-				if err != nil {
-					return err
-				}
-			}
+// func (self *BlockChain) UpdateVoteTokenHolder(block *Block) error {
+// 	for _, tx := range block.Transactions {
+// 		switch tx.GetMetadataType() {
+// 		case metadata.SendInitDCBVoteTokenMeta:
+// 			{
+// 				meta := tx.GetMetadata().(*metadata.SendInitDCBVoteTokenMetadata)
+// 				err := self.config.DataBase.SendInitVoteToken("dcb", self.GetCurrentBoardIndex(DCBConstitutionHelper{}), meta.ReceiverPaymentAddress, meta.Amount)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 		case metadata.SendInitGOVVoteTokenMeta:
+// 			{
+// 				meta := tx.GetMetadata().(*metadata.SendInitGOVVoteTokenMetadata)
+// 				err := self.config.DataBase.SendInitVoteToken("gov", self.GetCurrentBoardIndex(GOVConstitutionHelper{}), meta.ReceiverPaymentAddress, meta.Amount)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
 
-		}
-	}
-	return nil
-}
+// 		}
+// 	}
+// 	return nil
+// }
 
-func (self *BlockChain) ProcessVoteProposal(block *Block) error {
-	nextDCBConstitutionIndex := uint32(block.Header.DCBConstitution.GetConstitutionIndex() + 1)
-	nextGOVConstitutionIndex := uint32(block.Header.GOVConstitution.GetConstitutionIndex() + 1)
-	for _, tx := range block.Transactions {
-		meta := tx.GetMetadata()
-		switch tx.GetMetadataType() {
-		case metadata.SealedLv3DCBVoteProposalMeta:
-			underlieMetadata := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
-			self.config.DataBase.AddVoteLv3Proposal("dcb", nextDCBConstitutionIndex, underlieMetadata.Hash())
-		case metadata.SealedLv2DCBVoteProposalMeta:
-			underlieMetadata := meta.(*metadata.SealedLv2DCBVoteProposalMetadata)
-			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
-		case metadata.SealedLv1DCBVoteProposalMeta:
-			underlieMetadata := meta.(*metadata.SealedLv1DCBVoteProposalMetadata)
-			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
-		case metadata.NormalDCBVoteProposalFromOwnerMeta:
-			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromOwnerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
-		case metadata.NormalDCBVoteProposalFromSealerMeta:
-			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromSealerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
-		case metadata.AcceptDCBProposalMeta:
-			underlieMetadata := meta.(*metadata.AcceptDCBProposalMetadata)
-			self.config.DataBase.TakeVoteTokenFromWinner("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
-			self.config.DataBase.SetNewProposalWinningVoter("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
-		case metadata.SealedLv3GOVVoteProposalMeta:
-			underlieMetadata := meta.(*metadata.SealedLv3GOVVoteProposalMetadata)
-			self.config.DataBase.AddVoteLv3Proposal("gov", nextGOVConstitutionIndex, underlieMetadata.Hash())
-		case metadata.SealedLv2GOVVoteProposalMeta:
-			underlieMetadata := meta.(*metadata.SealedLv2GOVVoteProposalMetadata)
-			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
-		case metadata.SealedLv1GOVVoteProposalMeta:
-			underlieMetadata := meta.(*metadata.SealedLv1GOVVoteProposalMetadata)
-			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
-		case metadata.NormalGOVVoteProposalFromOwnerMeta:
-			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromOwnerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromOwner("gov", nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
-		case metadata.NormalGOVVoteProposalFromSealerMeta:
-			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromSealerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromSealer("gov", nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
-		case metadata.AcceptGOVProposalMeta:
-			underlieMetadata := meta.(*metadata.AcceptGOVProposalMetadata)
-			self.config.DataBase.TakeVoteTokenFromWinner("gov", nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
-			self.config.DataBase.SetNewProposalWinningVoter("gov", nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
-		}
-	}
-	return nil
-}
+// func (self *BlockChain) ProcessVoteProposal(block *Block) error {
+// 	nextDCBConstitutionIndex := uint32(block.Header.DCBConstitution.GetConstitutionIndex() + 1)
+// 	nextGOVConstitutionIndex := uint32(block.Header.GOVConstitution.GetConstitutionIndex() + 1)
+// 	for _, tx := range block.Transactions {
+// 		meta := tx.GetMetadata()
+// 		switch tx.GetMetadataType() {
+// 		case metadata.SealedLv3DCBVoteProposalMeta:
+// 			underlieMetadata := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
+// 			self.config.DataBase.AddVoteLv3Proposal("dcb", nextDCBConstitutionIndex, underlieMetadata.Hash())
+// 		case metadata.SealedLv2DCBVoteProposalMeta:
+// 			underlieMetadata := meta.(*metadata.SealedLv2DCBVoteProposalMetadata)
+// 			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
+// 		case metadata.SealedLv1DCBVoteProposalMeta:
+// 			underlieMetadata := meta.(*metadata.SealedLv1DCBVoteProposalMetadata)
+// 			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
+// 		case metadata.NormalDCBVoteProposalFromOwnerMeta:
+// 			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromOwnerMetadata)
+// 			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
+// 		case metadata.NormalDCBVoteProposalFromSealerMeta:
+// 			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromSealerMetadata)
+// 			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
+// 		case metadata.AcceptDCBProposalMeta:
+// 			underlieMetadata := meta.(*metadata.AcceptDCBProposalMetadata)
+// 			self.config.DataBase.TakeVoteTokenFromWinner("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
+// 			self.config.DataBase.SetNewProposalWinningVoter("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
+// 		case metadata.SealedLv3GOVVoteProposalMeta:
+// 			underlieMetadata := meta.(*metadata.SealedLv3GOVVoteProposalMetadata)
+// 			self.config.DataBase.AddVoteLv3Proposal("gov", nextGOVConstitutionIndex, underlieMetadata.Hash())
+// 		case metadata.SealedLv2GOVVoteProposalMeta:
+// 			underlieMetadata := meta.(*metadata.SealedLv2GOVVoteProposalMetadata)
+// 			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
+// 		case metadata.SealedLv1GOVVoteProposalMeta:
+// 			underlieMetadata := meta.(*metadata.SealedLv1GOVVoteProposalMetadata)
+// 			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
+// 		case metadata.NormalGOVVoteProposalFromOwnerMeta:
+// 			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromOwnerMetadata)
+// 			self.config.DataBase.AddVoteNormalProposalFromOwner("gov", nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
+// 		case metadata.NormalGOVVoteProposalFromSealerMeta:
+// 			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromSealerMetadata)
+// 			self.config.DataBase.AddVoteNormalProposalFromSealer("gov", nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
+// 		case metadata.AcceptGOVProposalMeta:
+// 			underlieMetadata := meta.(*metadata.AcceptGOVProposalMetadata)
+// 			self.config.DataBase.TakeVoteTokenFromWinner("gov", nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
+// 			self.config.DataBase.SetNewProposalWinningVoter("gov", nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
+// 		}
+// 	}
+// 	return nil
+// }
 
-func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
-	// Temp storage to update crowdsale data
-	saleDataMap := make(map[string]params.SaleData)
+// func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
+// 	// Temp storage to update crowdsale data
+// 	saleDataMap := make(map[string]params.SaleData)
 
-	for _, tx := range block.Transactions {
-		switch tx.GetMetadataType() {
-		case metadata.AcceptDCBProposalMeta:
-			{
-				meta := tx.GetMetadata().(*metadata.AcceptDCBProposalMetadata)
-				_, _, _, getTx, err := self.GetTransactionByHash(&meta.DCBProposalTXID)
-				proposal := getTx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
-				if err != nil {
-					return err
-				}
+// 	for _, tx := range block.Transactions {
+// 		switch tx.GetMetadataType() {
+// 		case metadata.AcceptDCBProposalMeta:
+// 			{
+// 				meta := tx.GetMetadata().(*metadata.AcceptDCBProposalMetadata)
+// 				_, _, _, getTx, err := self.GetTransactionByHash(&meta.DCBProposalTXID)
+// 				proposal := getTx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
+// 				if err != nil {
+// 					return err
+// 				}
 
-				// Store saledata in db
-				saleData := proposal.DCBParams.ListSaleData
-				for _, data := range saleData {
-					if _, _, _, _, _, err := self.config.DataBase.GetCrowdsaleData(data.SaleID); err == nil {
-						// TODO(@0xbunyip): support update crowdsale data
-						continue
-					}
-					if err := self.config.DataBase.StoreCrowdsaleData(
-						data.SaleID,
-						data.EndBlock,
-						data.BuyingAsset,
-						data.BuyingAmount,
-						data.SellingAsset,
-						data.SellingAmount,
-					); err != nil {
-						return err
-					}
-				}
-			}
-		case metadata.CrowdsalePaymentMeta:
-			{
-				err := self.updateCrowdsalePaymentData(tx, saleDataMap)
-				if err != nil {
-					return err
-				}
-			}
-			//		case metadata.ReserveResponseMeta:
-			//			{
-			//				// TODO(@0xbunyip): move to another func
-			//				meta := tx.GetMetadata().(*metadata.ReserveResponse)
-			//				_, _, _, txRequest, err := self.GetTransactionByHash(meta.RequestedTxID)
-			//				if err != nil {
-			//					return err
-			//				}
-			//				requestHash := txRequest.Hash()
-			//
-			//				hash := tx.Hash()
-			//				if err := self.config.DataBase.StoreCrowdsaleResponse(requestHash[:], hash[:]); err != nil {
-			//					return err
-			//				}
-			//			}
-		}
-	}
+// 				// Store saledata in db
+// 				saleData := proposal.DCBParams.ListSaleData
+// 				for _, data := range saleData {
+// 					if _, _, _, _, _, err := self.config.DataBase.GetCrowdsaleData(data.SaleID); err == nil {
+// 						// TODO(@0xbunyip): support update crowdsale data
+// 						continue
+// 					}
+// 					if err := self.config.DataBase.StoreCrowdsaleData(
+// 						data.SaleID,
+// 						data.EndBlock,
+// 						data.BuyingAsset,
+// 						data.BuyingAmount,
+// 						data.SellingAsset,
+// 						data.SellingAmount,
+// 					); err != nil {
+// 						return err
+// 					}
+// 				}
+// 			}
+// 		case metadata.CrowdsalePaymentMeta:
+// 			{
+// 				err := self.updateCrowdsalePaymentData(tx, saleDataMap)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 			//		case metadata.ReserveResponseMeta:
+// 			//			{
+// 			//				// TODO(@0xbunyip): move to another func
+// 			//				meta := tx.GetMetadata().(*metadata.ReserveResponse)
+// 			//				_, _, _, txRequest, err := self.GetTransactionByHash(meta.RequestedTxID)
+// 			//				if err != nil {
+// 			//					return err
+// 			//				}
+// 			//				requestHash := txRequest.Hash()
+// 			//
+// 			//				hash := tx.Hash()
+// 			//				if err := self.config.DataBase.StoreCrowdsaleResponse(requestHash[:], hash[:]); err != nil {
+// 			//					return err
+// 			//				}
+// 			//			}
+// 		}
+// 	}
 
-	// Save crowdsale data back into db
-	for _, data := range saleDataMap {
-		if err := self.config.DataBase.StoreCrowdsaleData(
-			data.SaleID,
-			data.EndBlock,
-			data.BuyingAsset,
-			data.BuyingAmount,
-			data.SellingAsset,
-			data.SellingAmount,
-		); err != nil {
-			return err
-		}
-	}
-	return nil
-}
+// 	// Save crowdsale data back into db
+// 	for _, data := range saleDataMap {
+// 		if err := self.config.DataBase.StoreCrowdsaleData(
+// 			data.SaleID,
+// 			data.EndBlock,
+// 			data.BuyingAsset,
+// 			data.BuyingAmount,
+// 			data.SellingAsset,
+// 			data.SellingAmount,
+// 		); err != nil {
+// 			return err
+// 		}
+// 	}
+// 	return nil
+// }
 
 func (self *BlockChain) updateCrowdsalePaymentData(tx metadata.Transaction, saleDataMap map[string]params.SaleData) error {
 	// Get current sale status from db
@@ -815,73 +1053,68 @@ func (self *BlockChain) updateCrowdsalePaymentData(tx metadata.Transaction, sale
 	return nil
 }
 
-func (self *BlockChain) ProcessCMBTxs(block *Block) error {
-	for _, tx := range block.Transactions {
-		switch tx.GetMetadataType() {
-		case metadata.CMBInitRequestMeta:
-			{
-				err := self.processCMBInitRequest(tx)
-				if err != nil {
-					return err
-				}
-			}
-		case metadata.CMBInitResponseMeta:
-			{
-				err := self.processCMBInitResponse(tx)
-				if err != nil {
-					return err
-				}
-			}
-		case metadata.CMBInitRefundMeta:
-			{
-				err := self.processCMBInitRefund(tx)
-				if err != nil {
-					return err
-				}
-			}
-		case metadata.CMBDepositSendMeta:
-			{
-				err := self.processCMBDepositSend(tx)
-				if err != nil {
-					return err
-				}
-			}
-		case metadata.CMBWithdrawRequestMeta:
-			{
-				err := self.processCMBWithdrawRequest(tx)
-				if err != nil {
-					return err
-				}
-			}
-		case metadata.CMBWithdrawResponseMeta:
-			{
-				err := self.processCMBWithdrawResponse(tx)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
+// func (self *BlockChain) ProcessCMBTxs(block *Block) error {
+// 	for _, tx := range block.Transactions {
+// 		switch tx.GetMetadataType() {
+// 		case metadata.CMBInitRequestMeta:
+// 			{
+// 				err := self.processCMBInitRequest(tx)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 		case metadata.CMBInitResponseMeta:
+// 			{
+// 				err := self.processCMBInitResponse(tx)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 		case metadata.CMBInitRefundMeta:
+// 			{
+// 				err := self.processCMBInitRefund(tx)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 		case metadata.CMBDepositSendMeta:
+// 			{
+// 				err := self.processCMBDepositSend(tx)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 		case metadata.CMBWithdrawRequestMeta:
+// 			{
+// 				err := self.processCMBWithdrawRequest(tx)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 		case metadata.CMBWithdrawResponseMeta:
+// 			{
+// 				err := self.processCMBWithdrawResponse(tx)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 		}
+// 	}
 
-	// Penalize late response for cmb withdraw request
-	return self.findLateWithdrawResponse(uint64(block.Header.Height))
-}
+// 	// Penalize late response for cmb withdraw request
+// 	return self.findLateWithdrawResponse(uint64(block.Header.Height))
+// }
 
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
 // need to check light or not light mode
 // with light mode - node only fetch outputcoins of account in local wallet -> smaller data
 // with not light mode - node fetch all outputcoins of all accounts in network -> big data
 // (note: still storage full data of commitments, serialnumbersm snderivator to check double spend)
-func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
+func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBlock) error {
 	// Fetch data from block into tx View point
-	view := NewTxViewPoint(block.Header.ChainID)
-	var err error
-	if !self.config.LightMode {
-		// skip local wallet -> store full data
-		err = view.fetchTxViewPointFromBlock(self.config.DataBase, block, nil)
-	} else {
-		err = view.fetchTxViewPointFromBlock(self.config.DataBase, block, self.config.Wallet)
-	}
+	view := NewTxViewPoint(block.Header.ShardID)
+	// TODO: 0xsirrush check lightmode turn off
+	err := view.fetchTxViewPointFromBlock(self.config.DataBase, block, nil)
 	if err != nil {
 		return err
 	}
@@ -909,7 +1142,7 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 			// Skip double spend
 			return err
 		}
-		err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxTokenData.PropertyID, block.Header.ChainID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
+		err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxTokenData.PropertyID, block.Header.ShardID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
 		if err != nil {
 			return err
 		}
@@ -944,7 +1177,7 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 				Logger.log.Info("Transfer custom token %+v", privacyCustomTokenTx)
 			}
 		}
-		err = self.config.DataBase.StorePrivacyCustomTokenTx(&privacyCustomTokenTx.TxTokenPrivacyData.PropertyID, block.Header.ChainID, block.Header.Height, indexTx, privacyCustomTokenTx.Hash()[:])
+		err = self.config.DataBase.StorePrivacyCustomTokenTx(&privacyCustomTokenTx.TxTokenPrivacyData.PropertyID, block.Header.ShardID, block.Header.Height, indexTx, privacyCustomTokenTx.Hash()[:])
 		if err != nil {
 			return err
 		}
@@ -1060,7 +1293,7 @@ func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *tr
 }
 
 // DecryptTxByKey - process outputcoin to get outputcoin data which relate to keyset
-func (self *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.OutputCoin, keySet *cashec.KeySet, chainID byte, tokenID *common.Hash) *privacy.OutputCoin {
+func (self *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.OutputCoin, keySet *cashec.KeySet, shardID byte, tokenID *common.Hash) *privacy.OutputCoin {
 	/*
 		- Param keyset - (priv-key, payment-address, readonlykey)
 		in case priv-key: return unspent outputcoin tx
@@ -1086,7 +1319,7 @@ func (self *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.OutputCoin, 
 			// check spent with private-key
 			result.CoinDetails.SerialNumber = privacy.PedCom.G[privacy.SK].Derive(new(big.Int).SetBytes(keySet.PrivateKey),
 				result.CoinDetails.SNDerivator)
-			ok, err := self.config.DataBase.HasSerialNumber(tokenID, result.CoinDetails.SerialNumber.Compress(), chainID)
+			ok, err := self.config.DataBase.HasSerialNumber(tokenID, result.CoinDetails.SerialNumber.Compress(), shardID)
 			if ok || err != nil {
 				return nil
 			}
@@ -1105,13 +1338,18 @@ in case readonly-key: return all outputcoin tx with amount value
 in case payment-address: return all outputcoin tx with no amount value
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, chainID byte, tokenID *common.Hash) ([]*privacy.OutputCoin, error) {
+func (self *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, shardID byte, tokenID *common.Hash) ([]*privacy.OutputCoin, error) {
 	// lock chain
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 
+	// if self.config.Light {
+	// 	// Get unspent tx with light mode
+	// 	// TODO
+	// }
 	// get list outputcoin of pubkey from db
-	outCointsInBytes, err := self.config.DataBase.GetOutcoinsByPubkey(tokenID, keyset.PaymentAddress.Pk[:], chainID)
+
+	outCointsInBytes, err := self.config.DataBase.GetOutcoinsByPubkey(tokenID, keyset.PaymentAddress.Pk[:], shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -1129,7 +1367,7 @@ func (self *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, chainI
 	for _, out := range outCoints {
 		pubkeyCompress := out.CoinDetails.PublicKey.Compress()
 		if bytes.Equal(pubkeyCompress, keyset.PaymentAddress.Pk[:]) {
-			out = self.DecryptOutputCoinByKey(out, keyset, chainID, tokenID)
+			out = self.DecryptOutputCoinByKey(out, keyset, shardID, tokenID)
 			if out == nil {
 				continue
 			} else {
@@ -1144,68 +1382,68 @@ func (self *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, chainI
 	return results, nil
 }
 
-func (self *BlockChain) GetCommitteCandidate(pubkeyParam string) *CommitteeCandidateInfo {
-	for _, bestState := range self.BestState {
-		for pubkey, candidateInfo := range bestState.Candidates {
-			if pubkey == pubkeyParam {
-				return &candidateInfo
-			}
-		}
-	}
-	return nil
-}
+// func (self *BlockChain) GetCommitteCandidate(pubkeyParam string) *CommitteeCandidateInfo {
+// 	for _, bestState := range self.BestState {
+// 		for pubkey, candidateInfo := range bestState.Candidates {
+// 			if pubkey == pubkeyParam {
+// 				return &candidateInfo
+// 			}
+// 		}
+// 	}
+// 	return nil
+// }
 
-/*
-Get Candidate List from all chain and merge all to one - return pubkey of them
-*/
-func (self *BlockChain) GetCommitteeCandidateList() []string {
-	candidatePubkeyList := []string{}
-	for _, bestState := range self.BestState {
-		for pubkey, _ := range bestState.Candidates {
-			if common.IndexOfStr(pubkey, candidatePubkeyList) < 0 {
-				candidatePubkeyList = append(candidatePubkeyList, pubkey)
-			}
-		}
-	}
-	sort.Slice(candidatePubkeyList, func(i, j int) bool {
-		cndInfoi := self.GetCommitteeCandidateInfo(candidatePubkeyList[i])
-		cndInfoj := self.GetCommitteeCandidateInfo(candidatePubkeyList[j])
-		if cndInfoi.Value == cndInfoj.Value {
-			if cndInfoi.Timestamp < cndInfoj.Timestamp {
-				return true
-			} else if cndInfoi.Timestamp > cndInfoj.Timestamp {
-				return false
-			} else {
-				if cndInfoi.ChainID <= cndInfoj.ChainID {
-					return true
-				} else if cndInfoi.ChainID < cndInfoj.ChainID {
-					return false
-				}
-			}
-		} else if cndInfoi.Value > cndInfoj.Value {
-			return true
-		} else {
-			return false
-		}
-		return false
-	})
-	return candidatePubkeyList
-}
+// /*
+// Get Candidate List from all chain and merge all to one - return pubkey of them
+// */
+// func (self *BlockChain) GetCommitteeCandidateList() []string {
+// 	candidatePubkeyList := []string{}
+// 	for _, bestState := range self.BestState {
+// 		for pubkey, _ := range bestState.Candidates {
+// 			if common.IndexOfStr(pubkey, candidatePubkeyList) < 0 {
+// 				candidatePubkeyList = append(candidatePubkeyList, pubkey)
+// 			}
+// 		}
+// 	}
+// 	sort.Slice(candidatePubkeyList, func(i, j int) bool {
+// 		cndInfoi := self.GetCommitteeCandidateInfo(candidatePubkeyList[i])
+// 		cndInfoj := self.GetCommitteeCandidateInfo(candidatePubkeyList[j])
+// 		if cndInfoi.Value == cndInfoj.Value {
+// 			if cndInfoi.Timestamp < cndInfoj.Timestamp {
+// 				return true
+// 			} else if cndInfoi.Timestamp > cndInfoj.Timestamp {
+// 				return false
+// 			} else {
+// 				if cndInfoi.shardID <= cndInfoj.shardID {
+// 					return true
+// 				} else if cndInfoi.shardID < cndInfoj.shardID {
+// 					return false
+// 				}
+// 			}
+// 		} else if cndInfoi.Value > cndInfoj.Value {
+// 			return true
+// 		} else {
+// 			return false
+// 		}
+// 		return false
+// 	})
+// 	return candidatePubkeyList
+// }
 
-func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCandidateInfo {
-	var cndVal CommitteeCandidateInfo
-	for _, bestState := range self.BestState {
-		cndValTmp, ok := bestState.Candidates[nodeAddr]
-		if ok {
-			cndVal.Value += cndValTmp.Value
-			if cndValTmp.Timestamp > cndVal.Timestamp {
-				cndVal.Timestamp = cndValTmp.Timestamp
-				cndVal.ChainID = cndValTmp.ChainID
-			}
-		}
-	}
-	return cndVal
-}
+// func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCandidateInfo {
+// 	var cndVal CommitteeCandidateInfo
+// 	for _, bestState := range self.BestState {
+// 		cndValTmp, ok := bestState.Candidates[nodeAddr]
+// 		if ok {
+// 			cndVal.Value += cndValTmp.Value
+// 			if cndValTmp.Timestamp > cndVal.Timestamp {
+// 				cndVal.Timestamp = cndValTmp.Timestamp
+// 				cndVal.shardID = cndValTmp.shardID
+// 			}
+// 		}
+// 	}
+// 	return cndVal
+// }
 
 // GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
 func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
@@ -1253,13 +1491,13 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 		Logger.log.Error(abc)
 		return byte(255), nil, -1, nil, abc
 	}
-	block, err1 := self.GetBlockByBlockHash(blockHash)
+	block, err1 := self.GetShardBlockByHash(blockHash)
 	if err1 != nil {
-		Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
+		Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
 		return byte(255), nil, -1, nil, NewBlockChainError(UnExpectedError, err1)
 	}
 	//Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
-	return block.Header.ChainID, blockHash, index, block.Transactions[index], nil
+	return block.Header.ShardID, blockHash, index, block.Body.Transactions[index], nil
 }
 
 // ListCustomToken - return all custom token which existed in network
@@ -1353,56 +1591,63 @@ func (self *BlockChain) GetNumberOfGOVGovernors() int {
 	return common.NumberOfGOVGovernors
 }
 
-func (self *BlockChain) GetBestBlock(chainID byte) *Block {
-	return self.BestState[chainID].BestBlock
-}
+// func (self *BlockChain) GetBestBlock(shardID byte) *Block {
+// 	return self.BestState[shardID].BestBlock
+// }
 
-func (self *BlockChain) GetConstitutionStartHeight(boardType string, chainID byte) uint64 {
+func (self *BlockChain) GetConstitutionStartHeight(boardType string, shardID byte) uint64 {
 	if boardType == "dcb" {
-		return self.GetDCBConstitutionStartHeight(chainID)
+		return self.GetDCBConstitutionStartHeight(shardID)
 	} else {
-		return self.GetGOVConstitutionStartHeight(chainID)
+		return self.GetGOVConstitutionStartHeight(shardID)
 	}
 }
 
-func (self *BlockChain) GetDCBConstitutionStartHeight(chainID byte) uint64 {
-	return self.GetBestBlock(chainID).Header.DCBConstitution.StartedBlockHeight
+func (self *BlockChain) GetDCBConstitutionStartHeight(shardID byte) uint64 {
+	// return self.GetBestBlock(shardID).Header.DCBConstitution.StartedBlockHeight
+	return 0
 }
-func (self *BlockChain) GetGOVConstitutionStartHeight(chainID byte) uint64 {
-	return self.GetBestBlock(chainID).Header.GOVConstitution.StartedBlockHeight
+func (self *BlockChain) GetGOVConstitutionStartHeight(shardID byte) uint64 {
+	// return self.GetBestBlock(shardID).Header.GOVConstitution.StartedBlockHeight
+	return 0
 }
 
-func (self *BlockChain) GetConstitutionEndHeight(boardType string, chainID byte) uint64 {
+func (self *BlockChain) GetConstitutionEndHeight(boardType string, shardID byte) uint64 {
 	if boardType == "dcb" {
-		return self.GetDCBConstitutionEndHeight(chainID)
+		return self.GetDCBConstitutionEndHeight(shardID)
 	} else {
-		return self.GetGOVConstitutionEndHeight(chainID)
+		return self.GetGOVConstitutionEndHeight(shardID)
 	}
 }
 
-func (self *BlockChain) GetDCBConstitutionEndHeight(chainID byte) uint64 {
-	return self.GetBestBlock(chainID).Header.DCBConstitution.GetEndedBlockHeight()
+func (self *BlockChain) GetDCBConstitutionEndHeight(shardID byte) uint64 {
+	// return self.GetBestBlock(shardID).Header.DCBConstitution.GetEndedBlockHeight()
+	return 0
 }
 
-func (self *BlockChain) GetGOVConstitutionEndHeight(chainID byte) uint64 {
-	return self.GetBestBlock(chainID).Header.GOVConstitution.GetEndedBlockHeight()
+func (self *BlockChain) GetGOVConstitutionEndHeight(shardID byte) uint64 {
+	// return self.GetBestBlock(shardID).Header.GOVConstitution.GetEndedBlockHeight()
+	return 0
 }
 
-func (self *BlockChain) GetCurrentBlockHeight(chainID byte) uint64 {
-	return uint64(self.GetBestBlock(chainID).Header.Height)
+func (self *BlockChain) GetCurrentBlockHeight(shardID byte) uint64 {
+	// return uint64(self.GetBestBlock(shardID).Header.Height)
+	return 0
 }
 
-func (self BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, chainID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
-	return transaction.RandomCommitmentsProcess(usableInputCoins, randNum, self.config.DataBase, chainID, tokenID)
+func (self BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
+	return transaction.RandomCommitmentsProcess(usableInputCoins, randNum, self.config.DataBase, shardID, tokenID)
 }
 
-func (self BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, chainID byte) (bool, error) {
-	return transaction.CheckSNDerivatorExistence(tokenID, snd, chainID, self.config.DataBase)
+func (self BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, shardID byte) (bool, error) {
+	return transaction.CheckSNDerivatorExistence(tokenID, snd, shardID, self.config.DataBase)
 }
 
 // GetFeePerKbTx - return fee (per kb of tx) from GOV params data
 func (self BlockChain) GetFeePerKbTx() uint64 {
-	return self.BestState[14].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
+	// TODO: stability
+	// return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
+	return 0
 }
 
 func (self *BlockChain) GetCurrentBoardIndex(helper ConstitutionHelper) uint32 {
@@ -1419,132 +1664,134 @@ func (self *BlockChain) GetConstitutionIndex(helper ConstitutionHelper) uint32 {
 //2. Block height == last constitution start time + last constitution window
 //This function is called after successful connect block => block height is block height of best state
 func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) bool {
-	if self.BestState[14] == nil {
-		return false
-	}
-	BestBlock := self.BestState[14].BestBlock
-	thisBlockHeight := BestBlock.Header.Height
-	newNationalWelfare := helper.GetCurrentNationalWelfare(self)
-	oldNationalWelfare := helper.GetOldNationalWelfare(self)
-	thresholdNationalWelfare := oldNationalWelfare * helper.GetThresholdRatioOfCrisis() / common.BasePercentage
+	// BestBlock := self.BestState[0].BestBlock
+	// thisBlockHeight := BestBlock.Header.Height
+	// newNationalWelfare := helper.GetCurrentNationalWelfare(self)
+	// oldNationalWelfare := helper.GetOldNationalWelfare(self)
+	// thresholdNationalWelfare := oldNationalWelfare * helper.GetThresholdRatioOfCrisis() / common.BasePercentage
 
-	constitutionInfo := helper.GetConstitutionInfo(self)
-	endedOfConstitution := constitutionInfo.StartedBlockHeight + constitutionInfo.ExecuteDuration
-	pivotOfStart := endedOfConstitution - 3*uint64(common.EncryptionOnePhraseDuration)
+	// constitutionInfo := helper.GetConstitutionInfo(self)
+	// endedOfConstitution := constitutionInfo.StartedBlockHeight + constitutionInfo.ExecuteDuration
+	// pivotOfStart := endedOfConstitution - 3*uint64(common.EncryptionOnePhraseDuration)
 
-	rightTime := newNationalWelfare < thresholdNationalWelfare || pivotOfStart == uint64(thisBlockHeight)
+	// rightTime := newNationalWelfare < thresholdNationalWelfare || pivotOfStart == uint64(thisBlockHeight)
 
-	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
-	rightFlag := encryptFlag == common.Lv3EncryptionFlag
-	if rightTime && rightFlag {
-		return true
-	}
+	// encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
+	// rightFlag := encryptFlag == common.Lv3EncryptionFlag
+	// if rightTime && rightFlag {
+	// 	return true
+	// }
 	return false
 }
 
 //This function is called after successful connect block => block height is block height of best state
 func (self *BlockChain) NeedEnterEncryptLv1(helper ConstitutionHelper) bool {
-	if self.BestState[14] == nil {
-		return false
-	}
-	BestBlock := self.BestState[14].BestBlock
-	thisBlockHeight := BestBlock.Header.Height
-	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
-	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
-	if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
-		encryptFlag == common.Lv2EncryptionFlag {
-		return true
-	}
+	// BestBlock := self.BestState[0].BestBlock
+	// thisBlockHeight := BestBlock.Header.Height
+	// lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
+	// encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
+	// if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
+	// 	encryptFlag == common.Lv2EncryptionFlag {
+	// 	return true
+	// }
 	return false
 }
 
 //This function is called after successful connect block => block height is block height of best state
 func (self *BlockChain) NeedEnterEncryptNormal(helper ConstitutionHelper) bool {
-	if self.BestState[14] == nil {
-		return false
-	}
-	BestBlock := self.BestState[14].BestBlock
-	thisBlockHeight := BestBlock.Header.Height
-	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
-	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
-	if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
-		encryptFlag == common.Lv1EncryptionFlag {
-		return true
-	}
+	// BestBlock := self.BestState[0].BestBlock
+	// thisBlockHeight := BestBlock.Header.Height
+	// lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
+	// encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
+	// if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
+	// 	encryptFlag == common.Lv1EncryptionFlag {
+	// 	return true
+	// }
 	return false
 }
 
 //This function is called after successful connect block => block height is block height of best state
 func (self *BlockChain) SetEncryptPhrase(helper ConstitutionHelper) {
-	flag := 0
-	boardType := helper.GetBoardType()
-	if self.NeedToEnterEncryptionPhrase(helper) {
-		flag = common.Lv2EncryptionFlag
-		self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[14].BestBlock.Header.Height))
-		self.config.DataBase.SetEncryptFlag(boardType, uint32(flag))
-	} else if self.NeedEnterEncryptLv1(helper) {
-		flag = common.Lv1EncryptionFlag
-		self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[14].BestBlock.Header.Height))
-		self.config.DataBase.SetEncryptFlag(boardType, uint32(flag))
-	} else if self.NeedEnterEncryptNormal(helper) {
-		flag = common.NormalEncryptionFlag
-		self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[14].BestBlock.Header.Height))
-		self.config.DataBase.SetEncryptFlag(boardType, uint32(flag))
-	}
+	// flag := 0
+	// boardType := helper.GetBoardType()
+	// if self.NeedToEnterEncryptionPhrase(helper) {
+	// 	flag = common.Lv2EncryptionFlag
+	// 	self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[0].BestBlock.Header.Height))
+	// 	self.config.DataBase.SetEncryptFlag(boardType, uint32(flag))
+	// } else if self.NeedEnterEncryptLv1(helper) {
+	// 	flag = common.Lv1EncryptionFlag
+	// 	self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[0].BestBlock.Header.Height))
+	// 	self.config.DataBase.SetEncryptFlag(boardType, uint32(flag))
+	// } else if self.NeedEnterEncryptNormal(helper) {
+	// 	flag = common.NormalEncryptionFlag
+	// 	self.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(self.BestState[0].BestBlock.Header.Height))
+	// 	self.config.DataBase.SetEncryptFlag(boardType, uint32(flag))
+	// }
 }
 
 //This function is called when new block => block height is block height of best state + 1
 func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
-	BestBlock := self.BestState[14].BestBlock
-	thisBlockHeight := BestBlock.Header.Height + 1
-	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
-	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
-	if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
-		encryptFlag == common.NormalEncryptionFlag {
-		return true
-	}
+	// BestBlock := self.BestState[0].BestBlock
+	// thisBlockHeight := BestBlock.Header.Height + 1
+	// lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
+	// encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
+	// if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
+	// 	encryptFlag == common.NormalEncryptionFlag {
+	// 	return true
+	// }
 	return false
 }
 
 // GetRecentTransactions - find all recent history txs which are created by user
 // by number of block, maximum is 100 newest blocks
-func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privacy.ViewingKey, chainID byte) (map[string]metadata.Transaction, error) {
+func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privacy.ViewingKey, shardID byte) (map[string]metadata.Transaction, error) {
 	if numBlock > 100 { // maximum is 100
 		numBlock = 100
 	}
-	var err error
+	// var err error
 	result := make(map[string]metadata.Transaction)
-	bestBlock := blockchain.BestState[chainID].BestBlock
-	for {
-		for _, tx := range bestBlock.Transactions {
-			info := tx.GetInfo()
-			if info == nil {
-				continue
-			}
-			// info of tx with contain encrypted pubkey of creator in 1st 64bytes
-			lenInfo := 66
-			if len(info) < lenInfo {
-				continue
-			}
-			// decrypt to get pubkey data from info
-			pubkeyData, err1 := privacy.ElGamalDecrypt(key.Rk[:], info[0:lenInfo])
-			if err1 != nil {
-				continue
-			}
-			// compare to check pubkey
-			if !bytes.Equal(pubkeyData.Compress(), key.Pk[:]) {
-				continue
-			}
-			result[tx.Hash().String()] = tx
-		}
-		numBlock--
-		if numBlock == 0 {
-			break
-		}
-		bestBlock, err = blockchain.GetBlockByBlockHash(&bestBlock.Header.PrevBlockHash)
-		if err != nil {
-			break
-		}
-	}
+	// bestBlock := blockchain.BestState[shardID].BestBlock
+	// for {
+	// 	for _, tx := range bestBlock.Transactions {
+	// 		info := tx.GetInfo()
+	// 		if info == nil {
+	// 			continue
+	// 		}
+	// 		// info of tx with contain encrypted pubkey of creator in 1st 64bytes
+	// 		lenInfo := 66
+	// 		if len(info) < lenInfo {
+	// 			continue
+	// 		}
+	// 		// decrypt to get pubkey data from info
+	// 		pubkeyData, err1 := privacy.ElGamalDecrypt(key.Rk[:], info[0:lenInfo])
+	// 		if err1 != nil {
+	// 			continue
+	// 		}
+	// 		// compare to check pubkey
+	// 		if !bytes.Equal(pubkeyData.Compress(), key.Pk[:]) {
+	// 			continue
+	// 		}
+	// 		result[tx.Hash().String()] = tx
+	// 	}
+	// 	numBlock--
+	// 	if numBlock == 0 {
+	// 		break
+	// 	}
+	// 	bestBlock, err = blockchain.GetBlockByBlockHash(&bestBlock.Header.PrevBlockHash)
+	// 	if err != nil {
+	// 		break
+	// 	}
+	// }
 	return result, nil
+}
+
+func (self *BlockChain) IsReady(shard bool, shardID byte) bool {
+
+	if shard {
+		//TODO check shardChain ready
+	} else {
+		//TODO check beaconChain ready
+	}
+
+	return true
 }

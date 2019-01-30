@@ -36,7 +36,7 @@ func NewReservePayment(rpayData map[string]interface{}) *ReservePayment {
 	return result
 }
 
-func (rpay *ReservePayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (rpay *ReservePayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// TODO: check if there's a corresponding request in the same block
 	// Check if sale exists
 	saleData, err := bcr.GetCrowdsaleData(rpay.SaleID)

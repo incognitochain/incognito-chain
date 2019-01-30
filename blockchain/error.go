@@ -6,15 +6,37 @@ package blockchain
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 )
 
 const (
-	UnExpectedError               = iota
+	UnExpectedError = iota
 	UpdateMerkleTreeForBlockError
 	UnmashallJsonBlockError
 	CanNotCheckDoubleSpendError
+	HashError
+	VersionError
+	BlockHeightError
+	DBError
+	EpochError
+	TimestampError
+	InstructionHashError
+	ShardStateHashError
+	RandomError
+	VerificationError
+	ShardError
+	BeaconError
+	SignatureError
 	NotSupportInLightMode
+	CrossShardBlockError
+	CandidateError
+	ShardIDError
+	ProducerError
+	ShardStateError
+	TransactionError
+	InstructionError
+	SwapError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -25,7 +47,27 @@ var ErrCodeMessage = map[int]struct {
 	UpdateMerkleTreeForBlockError: {-2, "Update Merkle Commitments Tree For Block is failed"},
 	UnmashallJsonBlockError:       {-3, "Unmarshall json block is failed"},
 	CanNotCheckDoubleSpendError:   {-4, "Unmarshall json block is failed"},
-	NotSupportInLightMode:         {-5, "This features is not supported in light mode running"},
+	HashError:                     {-5, "Hash error"},
+	VersionError:                  {-6, "Version error"},
+	BlockHeightError:              {-7, "Block height error"},
+	DBError:                       {-8, "Database Error"},
+	EpochError:                    {-9, "Epoch Error"},
+	TimestampError:                {-10, "Timestamp Error"},
+	InstructionHashError:          {-11, "Instruction Hash Error"},
+	ShardStateHashError:           {-12, "ShardState Hash Error"},
+	RandomError:                   {-13, "Random Number Error"},
+	VerificationError:             {-14, "Verify Block Error"},
+	BeaconError:                   {-15, "Beacon Error"},
+	CrossShardBlockError:          {-17, "CrossShardBlockError"},
+	SignatureError:                {-16, "Signature Error"},
+	CandidateError:                {-17, "Candidate Error"},
+	ShardIDError:                  {-18, "ShardID Error"},
+	ProducerError:                 {-19, "Producer Error"},
+	ShardStateError:               {-21, "Shard State Error"},
+	NotSupportInLightMode:         {-20, "This features is not supported in light mode running"},
+	TransactionError:              {-22, "Transaction invalid"},
+	InstructionError:              {-23, "Instruction Error"},
+	SwapError:                     {-24, "Swap Error"},
 }
 
 type BlockChainError struct {

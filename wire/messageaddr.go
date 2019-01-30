@@ -2,7 +2,13 @@ package wire
 
 import (
 	"encoding/json"
+
+	"github.com/ninjadotorg/constant/cashec"
+
+	"time"
+
 	"github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/constant/common"
 )
 
 const (
@@ -15,27 +21,44 @@ type RawPeer struct {
 }
 
 type MessageAddr struct {
-	RawPeers []RawPeer
+	Timestamp time.Time
+	RawPeers  []RawPeer
 }
 
-func (self MessageAddr) MessageType() string {
+func (msg *MessageAddr) Hash() string {
+	rawBytes, err := msg.JsonSerialize()
+	if err != nil {
+		return ""
+	}
+	return common.HashH(rawBytes).String()
+}
+
+func (msg *MessageAddr) MessageType() string {
 	return CmdAddr
 }
 
-func (self MessageAddr) MaxPayloadLength(pver int) int {
+func (msg *MessageAddr) MaxPayloadLength(pver int) int {
 	return MaxGetAddressPayload
 }
 
-func (self MessageAddr) JsonSerialize() ([]byte, error) {
-	jsonBytes, err := json.Marshal(self)
+func (msg *MessageAddr) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(msg)
 	return jsonBytes, err
 }
 
-func (self MessageAddr) JsonDeserialize(jsonStr string) error {
-	err := json.Unmarshal([]byte(jsonStr), self)
+func (msg *MessageAddr) JsonDeserialize(jsonStr string) error {
+	err := json.Unmarshal([]byte(jsonStr), msg)
 	return err
 }
 
-func (self MessageAddr) SetSenderID(senderID peer.ID) error {
+func (msg *MessageAddr) SetSenderID(senderID peer.ID) error {
+	return nil
+}
+
+func (msg *MessageAddr) SignMsg(_ *cashec.KeySet) error {
+	return nil
+}
+
+func (msg *MessageAddr) VerifyMsgSanity() error {
 	return nil
 }

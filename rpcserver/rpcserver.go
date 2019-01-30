@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -67,7 +68,7 @@ type RpcServerConfig struct {
 	Wallet          *wallet.Wallet
 	ConnMgr         *connmanager.ConnManager
 	AddrMgr         *addrmanager.AddrManager
-	NodeRole        string
+	NodeMode        string
 	Server          interface {
 		// Push TxNormal Message
 		PushMessageToAll(message wire.Message) error
@@ -286,7 +287,8 @@ func (rpcServer RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Requ
 		http.Error(w, fmt.Sprintf("%d error reading JSON Message: %+v", errCode, err), errCode)
 		return
 	}
-	Logger.log.Info(string(body))
+	// Logger.log.Info(string(body))
+	log.Println(string(body))
 
 	// Unfortunately, the http server doesn't provide the ability to
 	// change the read deadline for the new connection and having one breaks
@@ -387,7 +389,8 @@ func (rpcServer RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Requ
 		}
 	}
 	if jsonErr.(*RPCError) != nil && r.Method != "OPTIONS" {
-		Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
+		// Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
+		log.Printf("RPC function process with err \n %+v", jsonErr)
 	}
 	// Marshal the response.
 	msg, err := rpcServer.createMarshalledReply(responseID, result, jsonErr)
