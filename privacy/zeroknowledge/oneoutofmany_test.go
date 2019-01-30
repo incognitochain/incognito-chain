@@ -1,10 +1,12 @@
 package zkp
 
 import (
+	"fmt"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
+	"time"
 )
 
 //TestPKOneOfMany test protocol for one of many Commitment is Commitment to zero
@@ -15,21 +17,24 @@ func TestPKOneOfMany(t *testing.T) {
 
 	// list of commitments
 	commitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
-	SNDerivators := make([]*big.Int, privacy.CMRingSize)
+	snDerivators := make([]*big.Int, privacy.CMRingSize)
 	randoms := make([]*big.Int, privacy.CMRingSize)
+
 	for i := 0; i < privacy.CMRingSize; i++ {
-		SNDerivators[i] = privacy.RandInt()
+		snDerivators[i] = privacy.RandInt()
 		randoms[i] = privacy.RandInt()
-		commitments[i] = privacy.PedCom.CommitAtIndex(SNDerivators[i], randoms[i], privacy.SND)
+		commitments[i] = privacy.PedCom.CommitAtIndex(snDerivators[i], randoms[i], privacy.SND)
 	}
 
 	// create Commitment to zero at indexIsZero
-	SNDerivators[indexIsZero] = big.NewInt(0)
-	commitments[indexIsZero] = privacy.PedCom.CommitAtIndex(SNDerivators[indexIsZero], randoms[indexIsZero], privacy.SND)
+	snDerivators[indexIsZero] = big.NewInt(0)
+	commitments[indexIsZero] = privacy.PedCom.CommitAtIndex(snDerivators[indexIsZero], randoms[indexIsZero], privacy.SND)
 
-	witness.Set(commitments, nil, randoms[indexIsZero], uint64(indexIsZero), privacy.SND)
-
+	witness.Set(commitments, randoms[indexIsZero], uint64(indexIsZero))
+	start := time.Now()
 	proof, err := witness.Prove()
+	end := time.Since(start)
+	fmt.Printf("One out of many proving time: %v\n", end)
 	if err != nil {
 		privacy.Logger.Log.Error(err)
 	}
@@ -37,11 +42,18 @@ func TestPKOneOfMany(t *testing.T) {
 	//Convert proof to bytes array
 	proofBytes := proof.Bytes()
 
-	//revert bytes array to proof
-	proof2 := new(OneOutOfManyProof)
-	proof2.SetBytes(proofBytes)
+	fmt.Printf("One out of many proof size: %v\n", len(proofBytes))
 
-	res := proof.Verify()
+	//revert bytes array to proof
+	proof2 := new(OneOutOfManyProof).Init()
+	proof2.SetBytes(proofBytes)
+	proof2.stmt.commitments = commitments
+
+	start = time.Now()
+
+	res := proof2.Verify()
+	end = time.Since(start)
+	fmt.Printf("One out of many verification time: %v\n", end)
 
 	assert.Equal(t, true, res)
 }
