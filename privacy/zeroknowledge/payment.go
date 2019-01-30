@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
@@ -187,7 +186,6 @@ func (proof *PaymentProof) Bytes() []byte {
 	//ComInputValue 		[]*privacy.EllipticPoint
 	proofbytes = append(proofbytes, byte(len(proof.ComInputValue)))
 	for i := 0; i < len(proof.ComInputValue); i++ {
-		fmt.Printf("comInputValue: %v\n", proof.ComInputValue[i])
 		comInputValue := proof.ComInputValue[i].Compress()
 		proofbytes = append(proofbytes, byte(privacy.CompressedPointSize))
 		proofbytes = append(proofbytes, comInputValue...)
@@ -706,7 +704,6 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 				return false
 			}
 
-			fmt.Printf("******************************************** Public key: %v\n", pubKey)
 			pubKeyLastByteSender := pubKey[len(pubKey)-1]
 
 			// Check input coins' cm is calculated correctly
@@ -758,21 +755,21 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 		for j := 0; j < privacy.CMRingSize; j++ {
 			commitmentBytes, err := db.GetCommitmentByIndex(tokenID, proof.CommitmentIndices[i*privacy.CMRingSize + j], chainId)
 			if err != nil {
-				fmt.Printf("err 1\n")
+				privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Error when get commitment by index from database")
 				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))
 				return false
 			}
 			commitments[j] = new(privacy.EllipticPoint)
 			err = commitments[j].Decompress(commitmentBytes)
 			if err != nil {
-				fmt.Printf("err 2\n")
+				privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Cannot decompress commitment from database")
 				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))
 				return false
 			}
 
 			commitments[j], err = commitments[j].Sub(cmInputSum[i])
 			if err != nil {
-				fmt.Printf("err 2\n")
+				privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Cannot sub commitment to sum of commitment inputs")
 				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))
 				return false
 			}
@@ -781,12 +778,12 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 		proof.OneOfManyProof[i].stmt.commitments = commitments
 
 		if !proof.OneOfManyProof[i].Verify() {
-			fmt.Printf("err 3\n")
+			privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: One out of many failed")
 			return false
 		}
 		// Verify for the Proof that input coins' serial number is derived from the committed derivator
 		if !proof.SerialNumberProof[i].Verify(nil) {
-			fmt.Printf("err 4\n")
+			privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
 			return false
 		}
 	}
@@ -798,14 +795,14 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 		cmTmp = cmTmp.Add(proof.ComOutputShardID[i])
 
 		if !cmTmp.IsEqual(proof.OutputCoins[i].CoinDetails.CoinCommitment) {
-			fmt.Printf("err 5\n")
+			privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Commitment for output coins are not computed correctly")
 			return false
 		}
 	}
 
 	// Verify the proof that output values and sum of them do not exceed v_max
 	if !proof.ComOutputMultiRangeProof.Verify() {
-		fmt.Printf("err 6\n")
+		privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Multi-range failed")
 		return false
 	}
 
@@ -824,5 +821,10 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 		comOutputValueSum = comOutputValueSum.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(fee))))
 	}
 
-	return comInputValueSum.IsEqual(comOutputValueSum)
+	if !comInputValueSum.IsEqual(comOutputValueSum){
+		privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Sum of input coins' value is not equal to sum of output coins' value")
+		return false
+	}
+
+	return true
 }

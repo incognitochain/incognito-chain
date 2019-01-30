@@ -1,11 +1,8 @@
 package zkp
 
 import (
-	"fmt"
-	"math/big"
-	"time"
-
 	"github.com/ninjadotorg/constant/privacy"
+	"math/big"
 )
 
 type SNNoPrivacyStatement struct {
@@ -183,7 +180,6 @@ func (pro *SNNoPrivacyProof) SetBytes(bytes []byte) error {
 }
 
 func (wit *SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
-	start := time.Now()
 	// randomness
 	eSK := privacy.RandInt()
 
@@ -206,8 +202,6 @@ func (wit *SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
 
 	proof := new(SNNoPrivacyProof).Init()
 	proof.Set(wit.stmt.output, wit.stmt.vKey, wit.stmt.input, tSK, tE, zSK)
-	end := time.Since(start)
-	fmt.Printf("Serial number no privacy proving time: %v\n", end)
 	return proof, nil
 }
 
