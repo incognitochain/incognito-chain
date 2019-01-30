@@ -136,7 +136,7 @@ func TestAggregatedRangeProve(t *testing.T) {
 	fmt.Printf("Aggregated range proving time: %v\n", end)
 
 	bytes := proof.Bytes()
-	fmt.Printf("Len byte proof: %v\n", len(bytes))
+	fmt.Printf("Aggregated range proof size: %v\n", len(bytes))
 
 	proof2 := new(AggregatedRangeProof)
 	proof2.SetBytes(bytes)
@@ -147,18 +147,6 @@ func TestAggregatedRangeProve(t *testing.T) {
 	fmt.Printf("Aggregated range verification time: %v\n", end)
 
 	assert.Equal(t, true, res)
-
-	start = time.Now()
-	g1 := privacy.PedCom.G[0].ScalarMult(big.NewInt(1))
-	end = time.Since(start)
-	fmt.Printf("Time 1: %v\n", end)
-	fmt.Printf("G 1: %v\n", g1)
-
-	start = time.Now()
-	g2 := privacy.PedCom.G[0].ScalarMult(privacy.RandInt())
-	end = time.Since(start)
-	fmt.Printf("Time 2: %v\n", end)
-	fmt.Printf("G 2: %v\n", g2)
 }
 
 func BenchmarkAggregatedRangeProve(b *testing.B) {
@@ -233,7 +221,6 @@ func TestMultiExponentiation(t *testing.T){
 	if err != nil{
 		fmt.Printf("Error of multi-exponentiation algorithm")
 	}
-
 
 	assert.Equal(t, expectedRes, testcase4)
 }

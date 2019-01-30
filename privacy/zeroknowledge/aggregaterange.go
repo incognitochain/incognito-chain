@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/ninjadotorg/constant/privacy"
 	"math/big"
-	"time"
 )
 // This protocol proves in zero-knowledge that a list of committed values falls in [0, 2^64)
 
@@ -167,8 +166,6 @@ func (wit *AggregatedRangeWitness) Set(values []*big.Int, rands []*big.Int) {
 func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	proof := new(AggregatedRangeProof)
 
-	start1 := time.Now()
-
 	numValue := len(wit.values)
 	numValuePad := pad(numValue)
 	values := make([]*big.Int, numValuePad)
@@ -186,11 +183,6 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 	AggParam := newBulletproofParams(numValuePad)
 
-	end1 := time.Since(start1)
-	fmt.Printf("Time generation: %v\n", end1)
-
-	start2 := time.Now()
-
 	proof.cmsValue = make([]*privacy.EllipticPoint, numValuePad)
 	for i := 0; i < numValue; i++ {
 		proof.cmsValue[i] = privacy.PedCom.CommitAtIndex(values[i], rands[i], privacy.VALUE)
@@ -199,11 +191,6 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	for i:= numValue; i<numValuePad; i++{
 		proof.cmsValue[i] = new(privacy.EllipticPoint).Zero()
 	}
-
-	end2 := time.Since(start2)
-	fmt.Printf("commitment calculation time: %v\n", end2)
-
-	start2 = time.Now()
 
 	n := privacy.MaxExp
 	tmp := make([]* big.Int, n)
@@ -215,12 +202,7 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		for j := 0; j<n; j++{
 			aL[i*n + j] = tmp[j]
 		}
-		//copy(aL[i*n:(i+1)*n], tmp[:])
-
-		//aL = append(aL, tmp...)
 	}
-
-	//fmt.Printf("aL: %v\n", aL)
 
 	oneNumber := big.NewInt(1)
 	twoNumber := big.NewInt(2)
@@ -233,14 +215,7 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		return nil, err
 	}
 
-	end2 = time.Since(start2)
-	fmt.Printf("aL, aR time: %v\n", end2)
-
-	//fmt.Printf("aR: %v\n", aR)
-
 	// random alpha
-
-	start2 = time.Now()
 	alpha := privacy.RandInt()
 
 	// Commitment to aL, aR: A = h^alpha * G^aL * H^aR
@@ -270,28 +245,15 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	S = S.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(rho))
 	proof.S = S
 
-	end2 = time.Since(start2)
-	fmt.Printf("A, S time: %v\n", end2)
-
 	// challenge y, z
-	start2 = time.Now()
 	y := generateChallengeForAggRange(AggParam, []*privacy.EllipticPoint{A, S})
 	z := generateChallengeForAggRangeFromBytes(AggParam, [][]byte{A.Compress(), S.Compress(), y.Bytes()})
 	zNeg := new(big.Int).Neg(z)
 	zNeg.Mod(zNeg, privacy.Curve.Params().N)
 	zSquare := new(big.Int).Mul(z, z)
 	zSquare.Mod(zSquare, privacy.Curve.Params().N)
-	//zSquare := new(big.Int).Exp(z, twoNumber, privacy.Curve.Params().N)
-
-	end2 = time.Since(start2)
-	fmt.Printf("challenge1 time: %v\n", end2)
-
-	//fmt.Printf("Prove y: %v\n", y)
-	//fmt.Printf("Prove z: %v\n", z)
 
 	// l(X) = (aL -z*1^n) + sL*X
-
-	start2 = time.Now()
 	yVector := powerVector(y, n*numValuePad)
 
 	l0 := vectorAddScalar(aL, zNeg)
@@ -355,8 +317,7 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	deltaYZ.Sub(deltaYZ, sum)
 	deltaYZ.Mod(deltaYZ, privacy.Curve.Params().N)
 
-	//fmt.Printf("Prove delta: %v\n", deltaYZ)
-
+	// Check whether t0 is computed correctedly or not
 	//t0 := new(big.Int).Set(deltaYZ)
 	//zTmp = new(big.Int).Set(z)
 	//for i := range wit.values {
@@ -368,9 +329,9 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	//tmp, _ := innerProduct(l0, r0)
 	//
 	//if t0.Cmp(tmp) == 0 {
-	//	fmt.Printf("AAAAAAAAAAA\n")
+	//	fmt.Printf("t0 is right\n")
 	//} else {
-	//	fmt.Printf("BBBBBBBBBBB\n")
+	//	fmt.Printf("t0 is wrong\n")
 	//}
 
 	// t1 = <l1, r0> + <l0, r1>
@@ -393,9 +354,6 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		return nil, err
 	}
 
-	end2 = time.Since(start2)
-	fmt.Printf("ti time: %v\n", end2)
-
 	// commitment to t1, t2
 	tau1 := privacy.RandInt()
 	tau2 := privacy.RandInt()
@@ -408,7 +366,6 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	xSquare := new(big.Int).Exp(x, twoNumber, privacy.Curve.Params().N)
 
 	// lVector = aL - z*1^n + sL*x
-	start2 = time.Now()
 	lVector, err := vectorAdd(vectorAddScalar(aL, zNeg), vectorMulScalar(sL, x))
 	if err != nil {
 		return nil, err
@@ -464,11 +421,8 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	proof.mu = new(big.Int).Mul(rho, x)
 	proof.mu.Add(proof.mu, alpha)
 	proof.mu.Mod(proof.mu, privacy.Curve.Params().N)
-	end2 = time.Since(start2)
-	fmt.Printf("tauX, mu time: %v\n", end2)
 
 	// instead of sending left vector and right vector, we use inner sum argument to reduce proof size from 2*n to 2(log2(n)) + 2
-	start2 = time.Now()
 	innerProductWit := new(InnerProductWitness)
 	innerProductWit.a = lVector
 	innerProductWit.b = rVector
@@ -482,9 +436,6 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	end2 = time.Since(start2)
-	fmt.Printf("inner product time: %v\n", end2)
 
 	return proof, nil
 }
@@ -567,40 +518,6 @@ func (proof *AggregatedRangeProof) Verify() bool {
 		fmt.Printf("Err 3\n")
 		return false
 	}
-
-	//A * S^x * G^(-z) * HPrime^(z*y^n + z^2*2^n) = h^mu * G^l * HPrime^r
-	//expVector = vectorMulScalar(yVector, z)
-	//left2 := proof.A.Add(proof.S.ScalarMult(x))
-	//for i := range AggParam.G {
-	//	left2 = left2.Add(AggParam.G[i].ScalarMult(zNeg)).Add(HPrime[i].ScalarMult(expVector[i]))
-	//}
-	//
-	//twoVectorN := powerVector(twoNumber, n)
-	//sum := new(privacy.EllipticPoint).Zero()
-	//for i := range proof.cmsValue{
-	//	for j:=0; j<n; j++{
-	//		tmp := HPrime[i*n + j].ScalarMult(new(big.Int).Mul(new(big.Int).Exp(z, big.NewInt(int64(i+2)), privacy.Curve.Params().N), twoVectorN[j]))
-	//		sum = sum.Add( tmp)
-	//	}
-	//}
-	//
-	//left2 = left2.Add(sum)
-	//
-	//right2 := privacy.PedCom.G[privacy.RAND].ScalarMult(proof.mu)
-	//for i := range AggParam.G {
-	//	right2 = right2.Add(AggParam.G[i].ScalarMult(proof.lVector[i])).Add(HPrime[i].ScalarMult(proof.rVector[i]))
-	//}
-	//
-	//if !left2.IsEqual(right2) {
-	//	fmt.Printf("Err 5\n")
-	//	return false
-	//}
-
-	//right3, err := innerProduct(proof.lVector, proof.rVector)
-	//if err != nil {
-	//	fmt.Printf("Err 6\n")
-	//	return false
-	//}
 
 	return proof.innerProductProof.Verify(AggParam)
 }
