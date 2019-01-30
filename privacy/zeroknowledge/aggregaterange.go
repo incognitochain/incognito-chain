@@ -216,7 +216,7 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	}
 
 	// random alpha
-	alpha := privacy.RandInt()
+	alpha := privacy.RandBigInt()
 
 	// Commitment to aL, aR: A = h^alpha * G^aL * H^aR
 	A, err := EncodeVectors(aL, aR, AggParam.G, AggParam.H)
@@ -230,12 +230,12 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	sL := make([]*big.Int, n*numValuePad)
 	sR := make([]*big.Int, n*numValuePad)
 	for i := range sL {
-		sL[i] = privacy.RandInt()
-		sR[i] = privacy.RandInt()
+		sL[i] = privacy.RandBigInt()
+		sR[i] = privacy.RandBigInt()
 	}
 
 	// random rho
-	rho := privacy.RandInt()
+	rho := privacy.RandBigInt()
 
 	// Commitment to sL, sR : S = h^rho * G^sL * H^sR
 	S, err := EncodeVectors(sL, sR, AggParam.G, AggParam.H)
@@ -355,8 +355,8 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	}
 
 	// commitment to t1, t2
-	tau1 := privacy.RandInt()
-	tau2 := privacy.RandInt()
+	tau1 := privacy.RandBigInt()
+	tau2 := privacy.RandBigInt()
 
 	proof.T1 = privacy.PedCom.CommitAtIndex(t1, tau1, privacy.VALUE)
 	proof.T2 = privacy.PedCom.CommitAtIndex(t2, tau2, privacy.VALUE)

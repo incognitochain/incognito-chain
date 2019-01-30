@@ -97,21 +97,31 @@ func CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, shardID byte,
 }
 
 // EstimateTxSize returns the estimated size of the tx in kilobyte
-func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo) uint64 {
+func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo, hasPrivacy bool) uint64 {
 	sizeVersion := uint64(1)  // int8
 	sizeType := uint64(5)     // string, max : 5
 	sizeLockTime := uint64(8) // int64
 	sizeFee := uint64(8)      // uint64
 
+	sizeInfo := uint64(0)
+	if hasPrivacy{
+		sizeInfo = uint64(64)
+	}
+
 	sizeSigPubKey := uint64(privacy.SigPubKeySize)
-	sizeSig := uint64(privacy.SigSize)
-	sizeProof := zkp.EstimateProofSize(len(inputCoins), len(payments))
+	sizeSig := uint64(privacy.SigNoPrivacySize)
+	if hasPrivacy{
+		sizeSig = uint64(privacy.SigPrivacySize)
+	}
+
+	sizeProof := zkp.EstimateProofSize(len(inputCoins), len(payments), hasPrivacy)
 
 	sizePubKeyLastByte := uint64(1)
-	// TODO 0xjackpolope
-	//sizeMetadata :=
 
-	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte
+	// TODO 0xjackpolope
+	sizeMetadata := uint64(0)
+
+	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee  + sizeInfo + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte + sizeMetadata
 
 	return uint64(math.Ceil(float64(sizeTx) / 1024))
 }

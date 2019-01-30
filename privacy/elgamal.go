@@ -86,7 +86,7 @@ func (priv *ElGamalPrivKey) GenPubKey() *ElGamalPubKey {
 }
 
 func (pub *ElGamalPubKey) Encrypt(plaintext *EllipticPoint) *ElGamalCiphertext {
-	randomness := RandInt()
+	randomness := RandBigInt()
 
 	ciphertext := new(ElGamalCiphertext)
 

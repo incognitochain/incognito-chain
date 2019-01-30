@@ -10,7 +10,7 @@ import (
 func TestEncryptionCoin(t *testing.T){
 	coin := new(OutputCoin)
 	coin.CoinDetails = new(Coin)
-	coin.CoinDetails.Randomness = RandInt()
+	coin.CoinDetails.Randomness = RandBigInt()
 	coin.CoinDetails.Value = 10
 
 	spendingKey := GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())

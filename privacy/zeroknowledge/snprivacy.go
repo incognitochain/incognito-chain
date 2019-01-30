@@ -227,10 +227,10 @@ func (proof *SNPrivacyProof) SetBytes(bytes []byte) error {
 
 func (wit *SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 	// randomness
-	eSK := privacy.RandInt()
-	eSND := privacy.RandInt()
-	dSK := privacy.RandInt()
-	dSND := privacy.RandInt()
+	eSK := privacy.RandBigInt()
+	eSND := privacy.RandBigInt()
+	dSK := privacy.RandBigInt()
+	dSND := privacy.RandBigInt()
 
 	// calculate tSeed = g_SK^eSK * h^dSK
 	tSeed := privacy.PedCom.CommitAtIndex(eSK, dSK, privacy.SK)

@@ -181,7 +181,7 @@ func (pro *SNNoPrivacyProof) SetBytes(bytes []byte) error {
 
 func (wit *SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
 	// randomness
-	eSK := privacy.RandInt()
+	eSK := privacy.RandBigInt()
 
 	// calculate tSeed = g_SK^eSK
 	tSK := privacy.PedCom.G[privacy.SK].ScalarMult(eSK)
