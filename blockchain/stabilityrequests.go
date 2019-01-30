@@ -1,5 +1,19 @@
 package blockchain
 
+import "github.com/ninjadotorg/constant/metadata"
+
+func buildStabilityActions(txs []metadata.Transaction) [][]string {
+	actions := [][]string{}
+	for _, tx := range txs {
+		meta := tx.GetMetadata()
+		if meta != nil {
+			actionPairs := meta.BuildReqActions(tx)
+			actions = append(actions, actionPairs...)
+		}
+	}
+	return actions
+}
+
 // type buyBackFromInfo struct {
 // 	paymentAddress privacy.PaymentAddress
 // 	buyBackPrice   uint64
