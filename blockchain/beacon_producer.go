@@ -146,6 +146,11 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	return beaconBlock, nil
 }
 
+type accumulativeValues struct {
+	bondsSold       uint64
+	incomeFromBonds uint64
+}
+
 // return param:
 // #1: shard state
 // #2: valid stakers
@@ -162,6 +167,7 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 	//Shard block is a map ShardId -> array of shard block
 
 	stabilityInstructions := [][]string{}
+	accumulativeValues := &accumulativeValues{}
 	for shardID, shardBlocks := range shardsBlocks {
 		// Only accept block in one epoch
 		tempShardBlocks := make([]ShardToBeaconBlock, len(shardBlocks))
@@ -184,6 +190,7 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 			stabilityInstructionsPerBlock, err := buildStabilityInstructions(
 				shardBlock.Instructions,
 				beaconBestState,
+				accumulativeValues,
 			)
 			if err != nil {
 				panic(fmt.Sprintf("Build stability instructions failed: %s", err.Error()))
