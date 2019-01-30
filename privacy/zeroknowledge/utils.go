@@ -53,7 +53,7 @@ func EstimateProofSize(nInput int, nOutput int) uint64 {
 	sizeOneOfManyProof := nInput * privacy.OneOfManyProofSize
 	sizeSNPrivacyProof := nInput * privacy.SNPrivacyProofSize
 
-	sizeComOutputMultiRangeProof := int(estimateMultiRangeProof(nOutput))
+	sizeComOutputMultiRangeProof := int(estimateMultiRangeProofSize(nOutput))
 	sizeSumOutRangeProof := privacy.SumOutRangeProofSize
 	sizeComZeroProof := privacy.ComZeroProofSize
 
@@ -79,27 +79,4 @@ func EstimateProofSize(nInput int, nOutput int) uint64 {
 	return uint64(math.Ceil(float64(sizeProof) / 1024))
 }
 
-func estimateMultiRangeProof(nOutput int) uint64 {
-	sizeCounter := uint64(1)                                        // byte
-	sizeComms := uint64(pad(nOutput) * privacy.CompressedPointSize) //  []*privacy.EllipticPoint
-	sizeA := uint64(privacy.CompressedPointSize)                    //    *privacy.EllipticPoint
-	sizeS := uint64(privacy.CompressedPointSize)                    //       *privacy.EllipticPoint
-	sizeT1 := uint64(privacy.CompressedPointSize)                   //    *privacy.EllipticPoint
-	sizeT2 := uint64(privacy.CompressedPointSize)                   //       *privacy.EllipticPoint
 
-	sizeTau := uint64(privacy.BigIntSize) //    *big.Int
-	sizeTh := uint64(privacy.BigIntSize)  //    *big.Int
-	sizeMu := uint64(privacy.BigIntSize)  //    *big.Int
-
-	a := privacy.MaxExp * pad(nOutput)
-	a = int(math.Log2(float64(a)))
-	sizeIPP := uint64(a*privacy.CompressedPointSize + a*privacy.CompressedPointSize + 2*privacy.BigIntSize + (a+1)*privacy.BigIntSize)
-
-	sizeMaxExp := uint64(1)
-
-	sizeCy := uint64(privacy.BigIntSize) //*big.Int
-	sizeCz := uint64(privacy.BigIntSize) //*big.Int
-	sizeCx := uint64(privacy.BigIntSize) //*big.Int
-
-	return uint64(sizeCounter + sizeComms + sizeA + sizeS + sizeT1 + sizeT2 + sizeTau + sizeTh + sizeMu + sizeIPP + sizeMaxExp + sizeCy + sizeCz + sizeCx)
-}

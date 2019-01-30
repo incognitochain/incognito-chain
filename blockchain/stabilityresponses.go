@@ -20,6 +20,7 @@ import (
 // )
 
 func buildInstructionsForBuyBondsFromGOVReq(
+	shardID byte,
 	contentStr string,
 	beaconBestState *BestStateBeacon,
 	accumulativeValues *accumulativeValues,
@@ -50,6 +51,7 @@ func buildInstructionsForBuyBondsFromGOVReq(
 	}
 	returnedInst := []string{
 		strconv.Itoa(metadata.BuyFromGOVRequestMeta),
+		strconv.Itoa(int(shardID)),
 		instType,
 		contentStr,
 	}
@@ -58,6 +60,7 @@ func buildInstructionsForBuyBondsFromGOVReq(
 }
 
 func buildStabilityInstructions(
+	shardID byte,
 	shardBlockInstructions [][]string,
 	beaconBestState *BestStateBeacon,
 	accumulativeValues *accumulativeValues,
@@ -71,7 +74,7 @@ func buildStabilityInstructions(
 		contentStr := inst[1]
 		switch metaType {
 		case metadata.BuyFromGOVRequestMeta:
-			buyBondsInst, err := buildInstructionsForBuyBondsFromGOVReq(contentStr, beaconBestState, accumulativeValues)
+			buyBondsInst, err := buildInstructionsForBuyBondsFromGOVReq(shardID, contentStr, beaconBestState, accumulativeValues)
 			if err != nil {
 				return [][]string{}, err
 			}
@@ -82,6 +85,17 @@ func buildStabilityInstructions(
 		}
 	}
 	return instructions, nil
+}
+
+func (bsb *BestStateBeacon) pickInstructionsOfCurrentShard(
+	instructions [][]string,
+) {
+	shardID := bsb.GetCurrentShard()
+	for _, inst := range instructions {
+		if strconv.Itoa(int(shardID)) == inst[1] {
+			bsb.StabilityInstructions = append(bsb.StabilityInstructions, inst)
+		}
+	}
 }
 
 // func (blockgen *BlkTmplGenerator) buildIssuingResTxs(

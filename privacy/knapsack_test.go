@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+
 func TestKnapSack(t *testing.T) {
 	n := 100
 
@@ -51,6 +52,7 @@ func TestKnapSack(t *testing.T) {
 	target := int64(sumValueKnapsack - amount)
 
 	fmt.Printf("Target: %v\n", target)
+
 
 	if target > 1000 {
 		choices := Greedy(outCoins, amount)
@@ -113,6 +115,7 @@ func TestGreedy(t *testing.T) {
 
 	outCoins := make([]*OutputCoin, n)
 	values := make([]uint64, 0)
+
 	for i := 0; i < n; i++ {
 		outCoins[i] = new(OutputCoin).Init()
 		//outCoins[i].CoinDetails.Value = new(big.Int).SetBytes(RandBytes(1)).Uint64()
