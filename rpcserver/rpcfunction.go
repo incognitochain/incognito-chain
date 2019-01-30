@@ -434,6 +434,11 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 	arrayParams := common.InterfaceSlice(params)
 	// param #1: private key of sender
 	senderKeyParam := arrayParams[0]
+	// param #3: estimation fee coin per kb
+	estimateFeeCoinPerKb := uint64(arrayParams[2].(float64))
+	// param #4: hasPrivacy flag for constant
+	hasPrivacy := int(arrayParams[3].(float64)) > 0
+
 	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
 	if err != nil {
 		return nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
@@ -454,11 +459,7 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 		return nil, NewRPCError(ErrGetOutputCoin, err)
 	}
 
-	// param #4: hasPrivacy flag for constant
-	hasPrivacy := int(arrayParams[3].(float64)) > 0
-
 	govFeePerKbTx := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.FeePerKbTx
-	estimateFeeCoinPerKb := uint64(0)
 	estimateTxSizeInKb := uint64(0)
 	if len(outCoins) > 0 {
 		// param #2: list receiver
@@ -479,7 +480,7 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 			paymentInfos = append(paymentInfos, paymentInfo)
 		}
 		// check real fee(nano constant) per tx
-		_, estimateFeeCoinPerKb, estimateTxSizeInKb = rpcServer.estimateFee(-1, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy)
+		_, estimateFeeCoinPerKb, estimateTxSizeInKb = rpcServer.estimateFee(estimateFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy)
 	}
 	result := jsonresult.EstimateFeeResult{
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
