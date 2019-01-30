@@ -251,7 +251,7 @@ func (outputCoin *OutputCoin) Bytes() []byte {
 
 	if outputCoin.CoinDetailsEncrypted != nil {
 		coinDetailsEncryptedBytes := outputCoin.CoinDetailsEncrypted.Bytes()
-		outCoinBytes = append(outCoinBytes, byte(len(coinDetailsEncryptedBytes))) //114 + ? bytes
+		outCoinBytes = append(outCoinBytes, byte(len(coinDetailsEncryptedBytes)))
 		outCoinBytes = append(outCoinBytes, coinDetailsEncryptedBytes...)
 	} else {
 		outCoinBytes = append(outCoinBytes, byte(0))

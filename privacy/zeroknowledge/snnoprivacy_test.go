@@ -20,7 +20,7 @@ func TestPKSNNoPrivacy(t *testing.T) {
 		return
 	}
 
-	SND := privacy.RandInt()
+	SND := privacy.RandBigInt()
 
 	serialNumber := privacy.PedCom.G[privacy.SK].Derive(skInt, SND)
 

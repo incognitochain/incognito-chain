@@ -265,11 +265,11 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 
 	for j := 0; j < n; j++ {
 		// Generate random numbers
-		r[j] = privacy.RandInt()
-		a[j] = privacy.RandInt()
-		s[j] = privacy.RandInt()
-		t[j] = privacy.RandInt()
-		u[j] = privacy.RandInt()
+		r[j] = privacy.RandBigInt()
+		a[j] = privacy.RandBigInt()
+		s[j] = privacy.RandBigInt()
+		t[j] = privacy.RandBigInt()
+		u[j] = privacy.RandBigInt()
 
 		// convert indexIsZeroBinary[j] to big.Int
 		indexInt := big.NewInt(int64(indexIsZeroBinary[j]))
