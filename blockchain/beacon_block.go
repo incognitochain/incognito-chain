@@ -61,8 +61,8 @@ type BeaconHeader struct {
 
 type BeaconBlock struct {
 	AggregatedSig string  `json:"AggregatedSig"`
-	R             string  `json:"R"`
-	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
+	R             string  `json:"r"`
+	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
 	ProducerSig   string  `json:"ProducerSig"`
 
 	Body   BeaconBody
@@ -82,7 +82,7 @@ func (self *BeaconBlock) UnmarshalJSON(data []byte) error {
 		AggregatedSig string  `json:"AggregatedSig"`
 		ValidatorsIdx [][]int `json:"ValidatorsIdx"`
 		ProducerSig   string  `json:"ProducerSig"`
-		R             string  `json:"R"`
+		R             string  `json:"r"`
 		Header        BeaconHeader
 		Body          BeaconBody
 	}{}

@@ -1,10 +1,10 @@
 package zkp
 
 import (
-	"fmt"
 	"github.com/ninjadotorg/constant/privacy"
 	"math/big"
 )
+
 // This protocol proves in zero-knowledge that a list of committed values falls in [0, 2^64)
 
 type AggregatedRangeWitness struct {
@@ -13,15 +13,13 @@ type AggregatedRangeWitness struct {
 }
 
 type AggregatedRangeProof struct {
-	cmsValue []*privacy.EllipticPoint
-	A        *privacy.EllipticPoint
-	S        *privacy.EllipticPoint
-	T1       *privacy.EllipticPoint
-	T2       *privacy.EllipticPoint
-	tauX     *big.Int
-	tHat     *big.Int
-	//lVector           []*big.Int
-	//rVector           []*big.Int
+	cmsValue          []*privacy.EllipticPoint
+	A                 *privacy.EllipticPoint
+	S                 *privacy.EllipticPoint
+	T1                *privacy.EllipticPoint
+	T2                *privacy.EllipticPoint
+	tauX              *big.Int
+	tHat              *big.Int
 	mu                *big.Int
 	innerProductProof *InnerProductProof
 }
@@ -89,10 +87,6 @@ func (proof AggregatedRangeProof) Bytes() []byte {
 }
 
 func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
-	if proof.IsNil() {
-		proof = proof.Init()
-	}
-
 	if len(bytes) == 0 {
 		return nil
 	}
@@ -157,7 +151,7 @@ func (wit *AggregatedRangeWitness) Set(values []*big.Int, rands []*big.Int) {
 	wit.values = make([]*big.Int, numValue)
 	wit.rands = make([]*big.Int, numValue)
 
-	for i := range values{
+	for i := range values {
 		wit.values[i] = new(big.Int).Set(values[i])
 		wit.rands[i] = new(big.Int).Set(rands[i])
 	}
@@ -188,19 +182,18 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		proof.cmsValue[i] = privacy.PedCom.CommitAtIndex(values[i], rands[i], privacy.VALUE)
 	}
 
-	for i:= numValue; i<numValuePad; i++{
+	for i := numValue; i < numValuePad; i++ {
 		proof.cmsValue[i] = new(privacy.EllipticPoint).Zero()
 	}
 
 	n := privacy.MaxExp
-	tmp := make([]* big.Int, n)
+	tmp := make([]*big.Int, n)
 	// Convert values to binary array
 	aL := make([]*big.Int, numValuePad*n, numValuePad*n)
 	for i, value := range values {
 		tmp = privacy.ConvertBigIntToBinary(value, n)
-
-		for j := 0; j<n; j++{
-			aL[i*n + j] = tmp[j]
+		for j := 0; j < n; j++ {
+			aL[i*n+j] = tmp[j]
 		}
 	}
 
@@ -495,8 +488,7 @@ func (proof *AggregatedRangeProof) Verify() bool {
 
 	sum := big.NewInt(0)
 	zTmp := new(big.Int).Set(zSquare)
-
-	for j := 1; j <= numValuePad; j++ {
+	for j := 0; j < numValuePad; j++ {
 		zTmp.Mul(zTmp, z)
 		zTmp.Mod(zTmp, privacy.Curve.Params().N)
 
@@ -515,7 +507,6 @@ func (proof *AggregatedRangeProof) Verify() bool {
 	}
 
 	if !left1.IsEqual(right1) {
-		fmt.Printf("Err 3\n")
 		return false
 	}
 

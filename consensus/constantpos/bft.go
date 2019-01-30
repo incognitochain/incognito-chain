@@ -235,8 +235,8 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 							}
 						}
 					case <-protocol.cTimeout:
-						//Use collected Ri to calc R & get ValidatorsIdx if len(Ri) > 1/2size(committee)
-						// then sig block with this R
+						//Use collected Ri to calc r & get ValidatorsIdx if len(Ri) > 1/2size(committee)
+						// then sig block with this r
 						if len(collectedRiList) < (len(protocol.RoleData.Committee) >> 1) {
 							return nil, errors.New("Didn't receive enough Ri to continue")
 						}
@@ -283,7 +283,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 				for {
 					select {
 					case <-protocol.cTimeout:
-						//Combine collected Sigs with the same R that has the longest list must has size > 1/2size(committee)
+						//Combine collected Sigs with the same r that has the longest list must has size > 1/2size(committee)
 						var szRCombined string
 						szRCombined = "1"
 						for szR := range phaseData.Sigs {
@@ -347,7 +347,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 							phaseData.Sigs[R] = append(phaseData.Sigs[R], newSig)
 							if len(phaseData.Sigs[R]) >= (2 * len(protocol.RoleData.Committee) / 3) {
 								cmTimeout.Stop()
-								fmt.Println("Collected enough R")
+								fmt.Println("Collected enough r")
 								select {
 								case <-protocol.cTimeout:
 									continue
