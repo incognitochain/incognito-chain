@@ -2,14 +2,14 @@ package rpcserver
 
 import (
 	"errors"
-	"log"
-	"net"
-	"strconv"
-
+	"fmt"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/wallet"
+	"log"
+	"net"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, *RPCError)
@@ -55,6 +55,9 @@ var RpcHandler = map[string]commandHandler{
 
 	GetShardBestState:  RpcServer.handleGetShardBestState,
 	GetBeaconBestState: RpcServer.handleGetBeaconBestState,
+
+	GetShardToBeaconPoolState: RpcServer.handleGetShardToBeaconPoolState,
+	GetCrossShardPoolState:    RpcServer.handleGetCrossShardPoolState,
 
 	// custom token
 	CreateRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
@@ -160,19 +163,19 @@ var RpcHandler = map[string]commandHandler{
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	ListAccounts:                       RpcServer.handleListAccounts,
-	GetAccount:                         RpcServer.handleGetAccount,
-	GetAddressesByAccount:              RpcServer.handleGetAddressesByAccount,
-	GetAccountAddress:                  RpcServer.handleGetAccountAddress,
-	DumpPrivkey:                        RpcServer.handleDumpPrivkey,
-	ImportAccount:                      RpcServer.handleImportAccount,
-	RemoveAccount:                      RpcServer.handleRemoveAccount,
-	ListUnspentOutputCoins:             RpcServer.handleListUnspentOutputCoins,
-	GetBalance:                         RpcServer.handleGetBalance,
-	GetBalanceByPrivatekey:             RpcServer.handleGetBalanceByPrivatekey,
-	GetBalanceByPaymentAddress:         RpcServer.handleGetBalanceByPaymentAddress,
-	GetReceivedByAccount:               RpcServer.handleGetReceivedByAccount,
-	SetTxFee:                           RpcServer.handleSetTxFee,
+	ListAccounts:               RpcServer.handleListAccounts,
+	GetAccount:                 RpcServer.handleGetAccount,
+	GetAddressesByAccount:      RpcServer.handleGetAddressesByAccount,
+	GetAccountAddress:          RpcServer.handleGetAccountAddress,
+	DumpPrivkey:                RpcServer.handleDumpPrivkey,
+	ImportAccount:              RpcServer.handleImportAccount,
+	RemoveAccount:              RpcServer.handleRemoveAccount,
+	ListUnspentOutputCoins:     RpcServer.handleListUnspentOutputCoins,
+	GetBalance:                 RpcServer.handleGetBalance,
+	GetBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
+	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
+	GetReceivedByAccount:       RpcServer.handleGetReceivedByAccount,
+	SetTxFee:                   RpcServer.handleSetTxFee,
 	GetRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
 }
 
@@ -426,30 +429,62 @@ func (rpcServer RpcServer) handleMempoolEntry(params interface{}, closeChan <-ch
 handleEstimateFee - RPC estimates the transaction fee per kilobyte that needs to be paid for a transaction to be included within a certain number of blocks.
 */
 func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// Param #1: —how many blocks the transaction may wait before being included
+	/******* START Fetch all params to ******/
+	// all params
 	arrayParams := common.InterfaceSlice(params)
-	if arrayParams == nil {
-		arrayParams = []interface{}{}
-		arrayParams = append(arrayParams, float64(0))
+	// param #1: private key of sender
+	senderKeyParam := arrayParams[0]
+	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
 	}
-	numBlock := uint64(arrayParams[0].(float64))
+	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
+	shardIDSender := common.GetShardIDFromLastByte(lastByte)
+	fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
+
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
+	outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, constantTokenID)
+	if err != nil {
+		return nil, NewRPCError(ErrGetOutputCoin, err)
+	}
+	// remove out coin in mem pool
+	outCoins, err = rpcServer.filterMemPoolOutCoinsToSpent(outCoins)
+	if err != nil {
+		return nil, NewRPCError(ErrGetOutputCoin, err)
+	}
+
+	// param #4: hasPrivacy flag for constant
+	hasPrivacy := int(arrayParams[3].(float64)) > 0
+
+	govFeePerKbTx := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.FeePerKbTx
+	estimateFeeCoinPerKb := uint64(0)
+	estimateTxSizeInKb := uint64(0)
+	if len(outCoins) > 0 {
+		// param #2: list receiver
+		receiversPaymentAddressStrParam := make(map[string]interface{})
+		if arrayParams[1] != nil {
+			receiversPaymentAddressStrParam = arrayParams[1].(map[string]interface{})
+		}
+		paymentInfos := make([]*privacy.PaymentInfo, 0)
+		for paymentAddressStr, amount := range receiversPaymentAddressStrParam {
+			keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+			if err != nil {
+				return nil, NewRPCError(ErrInvalidReceiverPaymentAddress, err)
+			}
+			paymentInfo := &privacy.PaymentInfo{
+				Amount:         uint64(amount.(float64)),
+				PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
+			}
+			paymentInfos = append(paymentInfos, paymentInfo)
+		}
+		// check real fee(nano constant) per tx
+		_, estimateFeeCoinPerKb, estimateTxSizeInKb = rpcServer.estimateFee(-1, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy)
+	}
 	result := jsonresult.EstimateFeeResult{
-		FeeRate: make(map[string]uint64),
-	}
-	for shardID, feeEstimator := range rpcServer.config.FeeEstimator {
-		var feeRate uint64
-		var err error
-		temp, err := feeEstimator.EstimateFee(numBlock)
-		if err != nil {
-			feeRate = uint64(temp)
-		}
-		if feeRate == 0 {
-			feeRate = rpcServer.config.BlockChain.GetFeePerKbTx()
-		}
-		result.FeeRate[strconv.Itoa(int(shardID))] = feeRate
-		if err != nil {
-			return -1, NewRPCError(ErrUnexpected, err)
-		}
+		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
+		EstimateTxSizeInKb:   estimateTxSizeInKb,
+		GOVFeePerKbTx:        govFeePerKbTx,
 	}
 	return result, nil
 }

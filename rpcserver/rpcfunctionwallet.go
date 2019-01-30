@@ -518,7 +518,7 @@ func (rpcServer RpcServer) handleBuildRawDefragmentAccountTransaction(params int
 	}
 	paymentInfos := []*privacy.PaymentInfo{paymentInfo}
 	// check real fee(nano constant) per tx
-	realFee := rpcServer.estimateFee(estimateFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy)
+	realFee, _, _ := rpcServer.estimateFee(estimateFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy)
 	if len(outCoins) == 0 {
 		realFee = 0
 	}
