@@ -592,7 +592,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		if _, ok := self.AllShardState[shardID]; !ok {
 			self.AllShardState[shardID] = []ShardState{}
 		}
-		self.AllShardState[shardID] = append(self.AllShardState[shardID], shardStates...)
+		//self.AllShardState[shardID] = append(self.AllShardState[shardID], shardStates...)
 	}
 
 	// update param
