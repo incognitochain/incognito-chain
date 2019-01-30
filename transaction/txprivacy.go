@@ -187,7 +187,7 @@ func (tx *Tx) Init(
 	for ok {
 		var sndOut *big.Int
 		for i := 0; i < len(paymentInfo); i++ {
-			sndOut = privacy.RandInt()
+			sndOut = privacy.RandBigInt()
 			for {
 
 				ok1, err := CheckSNDerivatorExistence(tokenID, sndOut, shardID, db)
@@ -196,7 +196,7 @@ func (tx *Tx) Init(
 				}
 				// if sndOut existed, then re-random it
 				if ok1 {
-					sndOut = privacy.RandInt()
+					sndOut = privacy.RandBigInt()
 				} else {
 					break
 				}
@@ -374,6 +374,7 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Verify the payment proof
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
+	//hasPrivacy = false
 	Logger.log.Debugf("[db] Validating Transaction tx\n")
 	start := time.Now()
 	// Verify tx signature
@@ -854,9 +855,9 @@ func (tx *Tx) InitTxSalary(
 	if err != nil {
 		return err
 	}
-	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandInt()
+	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandBigInt()
 
-	sndOut := privacy.RandInt()
+	sndOut := privacy.RandBigInt()
 	for {
 		lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
@@ -867,7 +868,7 @@ func (tx *Tx) InitTxSalary(
 			return err
 		}
 		if ok {
-			sndOut = privacy.RandInt()
+			sndOut = privacy.RandBigInt()
 		} else {
 			break
 		}
