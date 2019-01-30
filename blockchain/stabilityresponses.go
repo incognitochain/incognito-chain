@@ -1,5 +1,13 @@
 package blockchain
 
+import (
+	"encoding/base64"
+	"encoding/json"
+	"strconv"
+
+	"github.com/ninjadotorg/constant/metadata"
+)
+
 // import (
 // 	"errors"
 
@@ -10,6 +18,61 @@ package blockchain
 // 	"github.com/ninjadotorg/constant/privacy"
 // 	"github.com/ninjadotorg/constant/transaction"
 // )
+
+func buildInstructionsForBuyBondsFromGOVReq(
+	contentStr string,
+	beaconBestState *BestStateBeacon,
+) ([][]string, error) {
+	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		return [][]string{}, err
+	}
+
+	instructions := [][]string{}
+	md := &metadata.BuySellRequest{}
+	err = json.Unmarshal(contentBytes, &md)
+	if err != nil {
+		return [][]string{}, err
+	}
+	stabilityInfo := beaconBestState.StabilityInfo
+	sellingBondsParams := stabilityInfo.GOVConstitution.GOVParams.SellingBonds
+	if uint64(beaconBestState.BestBlock.Header.Height)+1 > sellingBondsParams.StartSellingAt+sellingBondsParams.SellingWithin {
+		refundInst := []string{
+			strconv.Itoa(metadata.BuyFromGOVRequestMeta),
+			"refund",
+			contentStr,
+		}
+		instructions = append(instructions, refundInst)
+	}
+	// TODO: add more logic here
+	return instructions, nil
+}
+
+func buildStabilityInstructions(
+	shardBlockInstructions [][]string,
+	beaconBestState *BestStateBeacon,
+) ([][]string, error) {
+	instructions := [][]string{}
+	for _, inst := range shardBlockInstructions {
+		metaType, err := strconv.Atoi(inst[0])
+		if err != nil {
+			return [][]string{}, err
+		}
+		contentStr := inst[1]
+		switch metaType {
+		case metadata.BuyFromGOVRequestMeta:
+			buyBondsInst, err := buildInstructionsForBuyBondsFromGOVReq(contentStr, beaconBestState)
+			if err != nil {
+				return [][]string{}, err
+			}
+			instructions = append(instructions, buyBondsInst...)
+
+		default:
+			continue
+		}
+	}
+	return instructions, nil
+}
 
 // func (blockgen *BlkTmplGenerator) buildIssuingResTxs(
 // 	chainID byte,
