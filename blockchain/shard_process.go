@@ -11,7 +11,14 @@ import (
 	"strings"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 )
+
+func (self *BlockChain) StoreMetadata(tx metadata.Transaction) error {
+	switch tx.GetMetadataType() {
+	}
+	return nil
+}
 
 func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte) error {
 	self.chainLock.Lock()
@@ -103,6 +110,13 @@ func (self *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 			return NewBlockChainError(UnExpectedError, err)
 		}
 		Logger.log.Debugf("Transaction in block with hash", blockHash, "and index", index)
+
+		// Store metadata if needed
+		if tx.GetMetadata() != nil {
+			if err := self.StoreMetadata(tx); err != nil {
+				return err
+			}
+		}
 	}
 	err := self.StoreIncomingCrossShard(block)
 	if err != nil {
