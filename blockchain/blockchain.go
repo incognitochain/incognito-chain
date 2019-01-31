@@ -90,7 +90,7 @@ type Config struct {
 	// This field is required.
 	ChainParams *Params
 	RelayShards []byte
-	NodeRole    string
+	NodeMode    string
 	//Light mode flag
 	// Light bool
 	//Wallet for light mode
@@ -109,7 +109,9 @@ type Config struct {
 		PushMessageGetBlockBeacon(from uint64, to uint64, peerID libp2p.ID) error
 		PushMessageGetBlockShard(shardID byte, from uint64, to uint64, peerID libp2p.ID) error
 		PushMessageGetShardToBeacon(shardID byte, blkHash common.Hash) error
+		PushMessageGetShardToBeacons(shardID byte, from uint64, to uint64) error
 	}
+	UserKeySet *cashec.KeySet
 }
 
 /*
@@ -256,15 +258,9 @@ func (self *BlockChain) initChainState() error {
 		}
 
 	} else {
+		test, _ := json.Marshal(self.BestState.Beacon)
+		fmt.Println(string(test))
 
-		for index := uint64(1); index <= self.BestState.Beacon.BeaconHeight; index++ {
-			blk, err := self.GetBeaconBlockByHeight(index)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			fmt.Println(blk)
-		}
 	}
 
 	for shard := 1; shard <= common.SHARD_NUMBER; shard++ {
@@ -313,7 +309,8 @@ func (self *BlockChain) initShardState(shardID byte) error {
 	// 	"112t8rqnMrtPkJ4YWzXfG82pd9vCe2jvWGxqwniPM5y4hnimki6LcVNfXxN911ViJS8arTozjH4rTpfaGo5i1KKcG1ayjiMsa4E3nABGAqQh",
 	// 	"112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNhc33pzChmJRvikZNc3Dt5V7quhdzjWW9Z4BrB2BxdK5VtHzsG9JZdZ5M7yYYGidKKZV",
 	// }
-	initTxs := []string{`{"Version":1,"Type":"s","LockTime":1548234650,"Fee":0,"Info":null,"SigPubKey":"A7GGbCnosNljq25A5o4VIGs7r6WOcs3OrDBJUFd28eEA","Sig":"pBKEqssajv6+hljC9KvNb7orPBfLpRCBLyG4cY8Vb0DTKhlUT+sDmTdPi5mkcIGYRr4asFHkj8hGAoe3CvjEjA==","Proof":"111111116WGHqpGSLR21nkwRaRVR2vJBD6DR8wKQfB5VCC4TNEXz1XeskmWDegVonjFht25ktqi8JJhgPF7dsWRt8GyoVjkPz7mVZJksdQF7NaW6GnruwZFHkoharAad4W41569CKFL7D8vsTn5zDbzrEDcLNcwzSUryGidyj5z5MKPV2mYDqjYmPTe7QbrF7cUNKoU4fpDBam3jZRk49yJdtqU","PubKeyLastByteSender":0,"Metadata":null}`, `{"Version":1,"Type":"s","LockTime":1548234650,"Fee":0,"Info":null,"SigPubKey":"AySFA7ksPnDE7zG+ZKwyk8SaadPLOfJuIn5k4kqUgKcA","Sig":"L+NSIayMrl/mTfo5t1tLI2ORcP37LlURAUjsvRVNRlFFZWOxA+lXoA9VfCjnvGnU05eYuukuMGs5sJQQobKfWA==","Proof":"111111116WGHqpGNRGpV3VBz1rndCx6TP4A8eLYeocjg8izynA2YAkx7x38mCj3GsbnZ7TRKG7acNtpRYRP9fCEJPQCBiS3hjcDvd7aikVhj4uGgkRMnXsNW6MidUW83MMyhGem7CQE8qNyYRax3mFFjYKm6RPPHkkHGMdaao24ybehPuYLREmSShr7F7XKMPMM9aVURzLkS6wxoskJ4bXNnTng","PubKeyLastByteSender":0,"Metadata":null}`}
+	initTxs := []string{`{"Version":1,"Type":"s","LockTime":1548234650,"Fee":0,"Info":null,"SigPubKey":"A7GGbCnosNljq25A5o4VIGs7r6WOcs3OrDBJUFd28eEA","Sig":"pBKEqssajv6+hljC9KvNb7orPBfLpRCBLyG4cY8Vb0DTKhlUT+sDmTdPi5mkcIGYRr4asFHkj8hGAoe3CvjEjA==","Proof":"111111116WGHqpGSLR21nkwRaRVR2vJBD6DR8wKQfB5VCC4TNEXz1XeskmWDegVonjFht25ktqi8JJhgPF7dsWRt8GyoVjkPz7mVZJksdQF7NaW6GnruwZFHkoharAad4W41569CKFL7D8vsTn5zDbzrEDcLNcwzSUryGidyj5z5MKPV2mYDqjYmPTe7QbrF7cUNKoU4fpDBam3jZRk49yJdtqU","PubKeyLastByteSender":0,"Metadata":null}`, `{"Version":1,"Type":"s","LockTime":1548234650,"Fee":0,"Info":null,"SigPubKey":"AySFA7ksPnDE7zG+ZKwyk8SaadPLOfJuIn5k4kqUgKcA","Sig":"l+NSIayMrl/mTfo5t1tLI2ORcP37LlURAUjsvRVNRlFFZWOxA+lXoA9VfCjnvGnU05eYuukuMGs5sJQQobKfWA==","Proof":"111111116WGHqpGNRGpV3VBz1rndCx6TP4A8eLYeocjg8izynA2YAkx7x38mCj3GsbnZ7TRKG7acNtpRYRP9fCEJPQCBiS3hjcDvd7aikVhj4uGgkRMnXsNW6MidUW83MMyhGem7CQE8qNyYRax3mFFjYKm6RPPHkkHGMdaao24ybehPuYLREmSShr7F7XKMPMM9aVURzLkS6wxoskJ4bXNnTng","PubKeyLastByteSender":0,"Metadata":null}`}
+	initTxs = []string{} // TODO: 0xbahamoot, change with a new data for updating on privacy
 	// for _, val := range testUserkeyList {
 
 	// 	testUserKey, _ := wallet.Base58CheckDeserialize(val)

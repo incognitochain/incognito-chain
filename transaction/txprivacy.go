@@ -23,12 +23,13 @@ type Tx struct {
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
+
 	Fee      uint64 `json:"Fee"` // Fee applies: always consant
 	Info     []byte
 
 	// Sign and Privacy proof
 	SigPubKey []byte `json:"SigPubKey, omitempty"` // 33 bytes
-	Sig       []byte `json:"Sig, omitempty"`       // 64 bytes
+	Sig       []byte `json:"Sig, omitempty"`       //
 	Proof     *zkp.PaymentProof
 
 	PubKeyLastByteSender byte
@@ -60,6 +61,8 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
+
+var SNPrivacyWitness []*zkp.SNPrivacyWitness
 
 // Init - init value for tx from inputcoin(old output coin from old tx)
 // create new outputcoin and build privacy proof
@@ -183,7 +186,7 @@ func (tx *Tx) Init(
 	for ok {
 		var sndOut *big.Int
 		for i := 0; i < len(paymentInfo); i++ {
-			sndOut = privacy.RandInt()
+			sndOut = privacy.RandBigInt()
 			for {
 
 				ok1, err := CheckSNDerivatorExistence(tokenID, sndOut, shardID, db)
@@ -192,7 +195,7 @@ func (tx *Tx) Init(
 				}
 				// if sndOut existed, then re-random it
 				if ok1 {
-					sndOut = privacy.RandInt()
+					sndOut = privacy.RandBigInt()
 				} else {
 					break
 				}
@@ -212,7 +215,8 @@ func (tx *Tx) Init(
 		outputCoins[i] = new(privacy.OutputCoin)
 		outputCoins[i].CoinDetails = new(privacy.Coin)
 		outputCoins[i].CoinDetails.Value = pInfo.Amount
-		outputCoins[i].CoinDetails.PublicKey, _ = privacy.DecompressKey(pInfo.PaymentAddress.Pk)
+		outputCoins[i].CoinDetails.PublicKey = new(privacy.EllipticPoint)
+		outputCoins[i].CoinDetails.PublicKey.Decompress(pInfo.PaymentAddress.Pk)
 		outputCoins[i].CoinDetails.SNDerivator = sndOuts[i]
 	}
 
@@ -236,7 +240,7 @@ func (tx *Tx) Init(
 	if err.(*privacy.PrivacyError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
-
+	SNPrivacyWitness = witness.SerialNumberWitness
 	tx.Proof, err = witness.Prove(hasPrivacy)
 	if err.(*privacy.PrivacyError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
@@ -330,7 +334,8 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	/****** verify Schnorr signature *****/
 	// prepare Public key for verification
 	verKey := new(privacy.SchnPubKey)
-	verKey.PK, err = privacy.DecompressKey(tx.SigPubKey)
+	verKey.PK = new(privacy.EllipticPoint)
+	err = verKey.PK.Decompress(tx.SigPubKey)
 	if err != nil {
 		return false, err
 	}
@@ -368,6 +373,7 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Verify the payment proof
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
+	//hasPrivacy = false
 	Logger.log.Debugf("[db] Validating Transaction tx\n")
 	start := time.Now()
 	// Verify tx signature
@@ -831,13 +837,14 @@ func (tx *Tx) InitTxSalary(
 	//tx.Proof.OutputCoins[0].CoinDetailsEncrypted = new(privacy.CoinDetailsEncrypted).Init()
 	tx.Proof.OutputCoins[0].CoinDetails = new(privacy.Coin)
 	tx.Proof.OutputCoins[0].CoinDetails.Value = salary
-	tx.Proof.OutputCoins[0].CoinDetails.PublicKey, err = privacy.DecompressKey(receiverAddr.Pk)
+	tx.Proof.OutputCoins[0].CoinDetails.PublicKey = new(privacy.EllipticPoint)
+	err = tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Decompress(receiverAddr.Pk)
 	if err != nil {
 		return err
 	}
-	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandInt()
+	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandBigInt()
 
-	sndOut := privacy.RandInt()
+	sndOut := privacy.RandBigInt()
 	for {
 		lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
@@ -848,7 +855,7 @@ func (tx *Tx) InitTxSalary(
 			return err
 		}
 		if ok {
-			sndOut = privacy.RandInt()
+			sndOut = privacy.RandBigInt()
 		} else {
 			break
 		}

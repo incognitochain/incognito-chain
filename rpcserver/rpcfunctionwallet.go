@@ -482,7 +482,7 @@ func (rpcServer RpcServer) handleBuildRawDefragmentAccountTransaction(params int
 		return nil, NewRPCError(ErrRPCInvalidParams, nil)
 	}
 	senderKeyParam := arrayParams[0].(string)
-	minValue := uint64(arrayParams[1].(float64))
+	maxVal := uint64(arrayParams[1].(float64))
 	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
 	// param #4: hasPrivacy flag: 1 or -1
 	hasPrivacy := int(arrayParams[3].(float64)) > 0
@@ -508,7 +508,7 @@ func (rpcServer RpcServer) handleBuildRawDefragmentAccountTransaction(params int
 	if err != nil {
 		return nil, NewRPCError(ErrGetOutputCoin, err)
 	}
-	outCoins, amount := rpcServer.calculateOutputCoinsByMinValue(outCoins, minValue)
+	outCoins, amount := rpcServer.calculateOutputCoinsByMinValue(outCoins, maxVal)
 	if len(outCoins) == 0 {
 		return nil, NewRPCError(ErrGetOutputCoin, nil)
 	}
@@ -518,7 +518,7 @@ func (rpcServer RpcServer) handleBuildRawDefragmentAccountTransaction(params int
 	}
 	paymentInfos := []*privacy.PaymentInfo{paymentInfo}
 	// check real fee(nano constant) per tx
-	realFee := rpcServer.estimateFee(estimateFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8)
+	realFee, _, _ := rpcServer.estimateFee(estimateFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy)
 	if len(outCoins) == 0 {
 		realFee = 0
 	}
@@ -563,11 +563,11 @@ func (rpcServer RpcServer) handleBuildRawDefragmentAccountTransaction(params int
 	return &tx, nil
 }
 
-func (rpcServer RpcServer) calculateOutputCoinsByMinValue(outCoins []*privacy.OutputCoin, minValue uint64) ([]*privacy.OutputCoin, uint64) {
+func (rpcServer RpcServer) calculateOutputCoinsByMinValue(outCoins []*privacy.OutputCoin, maxVal uint64) ([]*privacy.OutputCoin, uint64) {
 	outCoinsTmp := make([]*privacy.OutputCoin, 0)
 	amount := uint64(0)
 	for _, outCoin := range outCoins {
-		if outCoin.CoinDetails.Value <= minValue {
+		if outCoin.CoinDetails.Value <= maxVal {
 			outCoinsTmp = append(outCoinsTmp, outCoin)
 			amount += outCoin.CoinDetails.Value
 		}

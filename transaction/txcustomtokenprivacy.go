@@ -8,7 +8,7 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
+	zkp "github.com/ninjadotorg/constant/privacy/zeroknowledge"
 )
 
 // TxCustomTokenPrivacy is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -135,13 +135,14 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			temp.Proof.OutputCoins[0] = new(privacy.OutputCoin)
 			temp.Proof.OutputCoins[0].CoinDetails = new(privacy.Coin)
 			temp.Proof.OutputCoins[0].CoinDetails.Value = tokenParams.Amount
-			temp.Proof.OutputCoins[0].CoinDetails.PublicKey, err = privacy.DecompressKey(tokenParams.Receiver[0].PaymentAddress.Pk)
+			temp.Proof.OutputCoins[0].CoinDetails.PublicKey = new(privacy.EllipticPoint)
+			err := temp.Proof.OutputCoins[0].CoinDetails.PublicKey.Decompress(tokenParams.Receiver[0].PaymentAddress.Pk)
 			if err != nil {
 				return NewTransactionErr(UnexpectedErr, err)
 			}
-			temp.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandInt()
+			temp.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandBigInt()
 
-			sndOut := privacy.RandInt()
+			sndOut := privacy.RandBigInt()
 			temp.Proof.OutputCoins[0].CoinDetails.SNDerivator = sndOut
 
 			// create coin commitment
@@ -151,7 +152,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 
 			// sign Tx
 			temp.SigPubKey = tokenParams.Receiver[0].PaymentAddress.Pk
-			temp.sigPrivKey = *senderKey
+			// temp.sigPrivKey = *senderKey
 			err = temp.signTx()
 			if err != nil {
 				return NewTransactionErr(UnexpectedErr, errors.New("can't handle this TokenTxType"))

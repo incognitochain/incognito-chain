@@ -10,7 +10,9 @@ func TestGenerateSpendingKey(t *testing.T) {
 	spendingKey := GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
 	expectedResult := []byte{2, 31, 181, 150, 219, 129, 230, 208, 43, 243, 210, 88, 110, 227, 152, 31, 229, 25, 242, 117, 192, 172, 156, 167, 107, 188, 242, 235, 180, 9, 125, 150}
 
-	assert.Equal(t, expectedResult, spendingKey)
+	spendingKeyArray := make([]uint8, SpendingKeySize)
+	copy(spendingKeyArray, spendingKey)
+	assert.Equal(t, expectedResult, spendingKeyArray)
 }
 
 func TestPAdd1Div4(t *testing.T) {
@@ -28,7 +30,8 @@ func TestGenerateKey(t *testing.T){
 	copy(publicKeyBytes, publicKey[:])
 
 	// decompress public key
-	publicKeyPoint, err := DecompressKey(publicKey)
+	publicKeyPoint := new(EllipticPoint)
+	err := publicKeyPoint.Decompress(publicKey)
 	if err != nil {
 		return
 	}
@@ -41,7 +44,8 @@ func TestGenerateKey(t *testing.T){
 	transmissionKeyBytes := make([]byte, CompressedPointSize)
 	copy(transmissionKeyBytes, transmissionKey[:])
 
-	transmissionKeyPoint, err := DecompressKey(transmissionKey)
+	transmissionKeyPoint := new(EllipticPoint)
+	err = transmissionKeyPoint.Decompress(transmissionKey)
 	if err != nil {
 		return
 	}
