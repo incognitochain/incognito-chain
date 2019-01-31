@@ -581,7 +581,7 @@ func (self *BlockChain) generateVotingInstruction(minerPrivateKey *privacy.Spend
 	if self.neededNewGovernor(common.GOVBoard) {
 		//coinbases = append(coinbases, blockgen.UpdateNewGovernor(GOVConstitutionHelper{}, shardID, privatekey)...)
 	}
-	panic("not done")
+
 	return nil, nil
 }
 
