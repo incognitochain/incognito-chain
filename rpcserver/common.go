@@ -437,7 +437,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	return tx, err
 }
 
-func (rpcServer RpcServer) estimateFee(defaultFee uint64, candidateOutputCoins []*privacy.OutputCoin, paymentInfos []*privacy.PaymentInfo, shardID byte, numBlock uint64, hasPrivacy bool) (uint64, uint64, uint64) {
+func (rpcServer RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []*privacy.OutputCoin, paymentInfos []*privacy.PaymentInfo, shardID byte, numBlock uint64, hasPrivacy bool) (uint64, uint64, uint64) {
 	if numBlock == 0 {
 		numBlock = 10
 	}
@@ -453,7 +453,7 @@ func (rpcServer RpcServer) estimateFee(defaultFee uint64, candidateOutputCoins [
 			estimateFeeCoinPerKb = rpcServer.config.BlockChain.GetFeePerKbTx()
 		}
 	} else {
-		estimateFeeCoinPerKb = defaultFee
+		estimateFeeCoinPerKb = uint64(defaultFee)
 	}
 
 	estimateFeeCoinPerKb += uint64(rpcServer.config.Wallet.Config.IncrementalFee)
