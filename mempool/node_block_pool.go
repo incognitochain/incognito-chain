@@ -134,13 +134,13 @@ func (pool *NodeShardPool) IsEnough(isPending bool, shardID byte) error {
 		if uint(len(pool.pending[shardID])) <= pool.config.MaxPending {
 			return nil
 		} else {
-			return errors.New(ReachMaxPendingError)
+			return errors.New("")
 		}
 	} else {
 		if uint(len(pool.queue[shardID])) <= pool.config.MaxQueue {
 			return nil
 		} else {
-			return errors.New(ReachMaxQueueError)
+			return errors.New("")
 		}
 	}
 }
