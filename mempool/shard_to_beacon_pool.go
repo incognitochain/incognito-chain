@@ -23,11 +23,11 @@ type ShardToBeaconPoolConfig struct {
 
 /*
 	ShardState: will be init when running node by fetching bestShardHeight in beaconBestState
-	Pending Shard To Beacon Block:
+	Pending Shard To Beacon Block List
 		- Valid block
 		- Begin with current shard state in pool
 		- Can be validate with current shard committee stored in beacon best state
-	Queue Shard To Beacon Block:
+	Queue Shard To Beacon Block Map
 		- Valid block
 		- Greater than current shard state in pool but
 			+ Not consecutive with current shard state in pool
@@ -238,7 +238,6 @@ func (pool *ShardToBeaconPool) AddShardBeaconBlock(block blockchain.ShardToBeaco
 	pendingShardBlocks, ok := pool.pending[shardID]
 	if pendingShardBlocks == nil || !ok {
 		pendingShardBlocks = []blockchain.ShardToBeaconBlock{}
-
 	}
 	// if new block is expected block to be added in pending
 	// 1. Next block after shard state

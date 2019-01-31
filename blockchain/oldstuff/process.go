@@ -106,7 +106,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	}
 
 	//Update amount of token of each holder
-	err = self.UpdateVoteTokenHolder(block)
+	err = self.UpdateVoteTokenHolderDB(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}

@@ -7,22 +7,75 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 )
 
-type SubmitDCBProposalMetadata struct {
-	DCBParams       params.DCBParams
+type SubmitProposalInfo struct {
 	ExecuteDuration uint64
 	Explanation     string
 	PaymentAddress  privacy.PaymentAddress
+}
+
+func (submitProposalInfo SubmitProposalInfo) ToBytes() []byte {
+	record := string(common.Uint64ToBytes(submitProposalInfo.ExecuteDuration))
+	record += submitProposalInfo.Explanation
+	record += string(submitProposalInfo.PaymentAddress.Bytes())
+	return []byte(record)
+}
+
+func (submitProposalInfo SubmitProposalInfo) ValidateSanityData(
+	br BlockchainRetriever,
+	tx Transaction,
+) bool {
+	if submitProposalInfo.ExecuteDuration < common.MinimumBlockOfProposalDuration ||
+		submitProposalInfo.ExecuteDuration > common.MaximumBlockOfProposalDuration {
+		return false
+	}
+	if len(submitProposalInfo.Explanation) > common.MaximumProposalExplainationLength {
+		return false
+	}
+	return true
+}
+
+func (submitProposalInfo SubmitProposalInfo) ValidateTxWithBlockChain(
+	boardType string,
+	tx Transaction,
+	br BlockchainRetriever,
+	chainID byte,
+	db database.DatabaseInterface,
+) bool {
+	if br.GetConstitutionEndHeight("dcb", chainID)+submitProposalInfo.ExecuteDuration+common.MinimumBlockOfProposalDuration >
+		br.GetBoardEndHeight(boardType, chainID) {
+		return false
+	}
+	return true
+}
+
+func NewSubmitProposalInfo(
+	executeDuration uint64,
+	explanation string,
+	paymentAddress privacy.PaymentAddress,
+) *SubmitProposalInfo {
+	return &SubmitProposalInfo{
+		ExecuteDuration: executeDuration,
+		Explanation:     explanation,
+		PaymentAddress:  paymentAddress,
+	}
+}
+
+type SubmitDCBProposalMetadata struct {
+	DCBParams          params.DCBParams
+	SubmitProposalInfo SubmitProposalInfo
 
 	MetadataBase
 }
 
 func NewSubmitDCBProposalMetadata(DCBParams params.DCBParams, executeDuration uint64, explanation string, address *privacy.PaymentAddress) *SubmitDCBProposalMetadata {
 	return &SubmitDCBProposalMetadata{
-		DCBParams:       DCBParams,
-		ExecuteDuration: executeDuration,
-		Explanation:     explanation,
-		PaymentAddress:  *address,
-		MetadataBase:    *NewMetadataBase(SubmitDCBProposalMeta),
+		DCBParams: DCBParams,
+		SubmitProposalInfo: *NewSubmitProposalInfo(
+			executeDuration,
+			explanation,
+			*address,
+		),
+		MetadataBase: *NewMetadataBase(SubmitDCBProposalMeta),
 	}
 }
 
@@ -39,27 +92,30 @@ func NewSubmitDCBProposalMetadataFromJson(data interface{}) *SubmitDCBProposalMe
 
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) Hash() *common.Hash {
 	record := submitDCBProposalMetadata.DCBParams.Hash().String()
-	record += string(submitDCBProposalMetadata.ExecuteDuration)
-	record += submitDCBProposalMetadata.Explanation
-	record += submitDCBProposalMetadata.PaymentAddress.String()
+	record += string(submitDCBProposalMetadata.SubmitProposalInfo.ToBytes())
+
 	record += submitDCBProposalMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
-func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
+func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockChain(
+	tx Transaction,
+	br BlockchainRetriever,
+	chainID byte,
+	db database.DatabaseInterface,
+) (bool, error) {
+	if !submitDCBProposalMetadata.SubmitProposalInfo.ValidateTxWithBlockChain("dcb", tx, br, chainID, db) {
+		return false, nil
+	}
 	return true, nil
 }
 
-func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
+func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateSanityData(br BlockchainRetriever, tx Transaction) (bool, bool, error) {
 	if !submitDCBProposalMetadata.DCBParams.ValidateSanityData() {
 		return true, false, nil
 	}
-	if submitDCBProposalMetadata.ExecuteDuration < common.MinimumBlockOfProposalDuration ||
-		submitDCBProposalMetadata.ExecuteDuration > common.MaximumBlockOfProposalDuration {
-		return true, false, nil
-	}
-	if len(submitDCBProposalMetadata.Explanation) > common.MaximumProposalExplainationLength {
+	if !submitDCBProposalMetadata.SubmitProposalInfo.ValidateSanityData(br, tx) {
 		return true, false, nil
 	}
 	return true, true, nil
@@ -70,10 +126,8 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateMetadataByIt
 }
 
 type SubmitGOVProposalMetadata struct {
-	GOVParams       params.GOVParams
-	ExecuteDuration uint64
-	Explanation     string
-	PaymentAddress  privacy.PaymentAddress
+	GOVParams          params.GOVParams
+	SubmitProposalInfo SubmitProposalInfo
 
 	MetadataBase
 }
@@ -85,11 +139,13 @@ func NewSubmitGOVProposalMetadata(
 	address *privacy.PaymentAddress,
 ) *SubmitGOVProposalMetadata {
 	return &SubmitGOVProposalMetadata{
-		GOVParams:       govParams,
-		ExecuteDuration: executeDuration,
-		Explanation:     explanation,
-		PaymentAddress:  *address,
-		MetadataBase:    *NewMetadataBase(SubmitGOVProposalMeta),
+		GOVParams: govParams,
+		SubmitProposalInfo: *NewSubmitProposalInfo(
+			executeDuration,
+			explanation,
+			*address,
+		),
+		MetadataBase: *NewMetadataBase(SubmitGOVProposalMeta),
 	}
 }
 
@@ -106,9 +162,8 @@ func NewSubmitGOVProposalMetadataFromJson(data interface{}) *SubmitGOVProposalMe
 
 func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) Hash() *common.Hash {
 	record := submitGOVProposalMetadata.GOVParams.Hash().String()
-	record += string(submitGOVProposalMetadata.ExecuteDuration)
-	record += submitGOVProposalMetadata.Explanation
-	record += submitGOVProposalMetadata.PaymentAddress.String()
+	record += string(submitGOVProposalMetadata.SubmitProposalInfo.ToBytes())
+
 	record += submitGOVProposalMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
@@ -118,15 +173,11 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateTxWithBlockC
 	return true, nil
 }
 
-func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
+func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateSanityData(br BlockchainRetriever, tx Transaction) (bool, bool, error) {
 	if !submitGOVProposalMetadata.GOVParams.ValidateSanityData() {
 		return true, false, nil
 	}
-	if submitGOVProposalMetadata.ExecuteDuration < common.MinimumBlockOfProposalDuration ||
-		submitGOVProposalMetadata.ExecuteDuration > common.MaximumBlockOfProposalDuration {
-		return true, false, nil
-	}
-	if len(submitGOVProposalMetadata.Explanation) > common.MaximumProposalExplainationLength {
+	if !submitGOVProposalMetadata.SubmitProposalInfo.ValidateSanityData(br, tx) {
 		return true, false, nil
 	}
 	return true, true, nil
