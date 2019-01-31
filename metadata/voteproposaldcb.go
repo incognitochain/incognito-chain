@@ -19,8 +19,8 @@ func (sealedLv1DCBVoteProposalMetadata *SealedLv1DCBVoteProposalMetadata) Valida
 	return sealedLv1DCBVoteProposalMetadata.SealedLv1VoteProposalMetadata.ValidateMetadataByItself()
 }
 
-func (sealedLv1DCBVoteProposalMetadata *SealedLv1DCBVoteProposalMetadata) GetBoardType() string {
-	return "dcb"
+func (sealedLv1DCBVoteProposalMetadata *SealedLv1DCBVoteProposalMetadata) GetBoardType() byte {
+	return common.DCBBoard
 }
 
 func NewSealedLv1DCBVoteProposalMetadata(
@@ -55,7 +55,7 @@ func (sealedLv1DCBVoteProposalMetadata *SealedLv1DCBVoteProposalMetadata) Valida
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	boardType := "dcb"
+	boardType := common.DCBBoard
 	return sealedLv1DCBVoteProposalMetadata.SealedLv1VoteProposalMetadata.ValidateTxWithBlockChain(
 		boardType,
 		tx,
@@ -79,8 +79,8 @@ func (sealedLv2DCBVoteProposalMetadata *SealedLv2DCBVoteProposalMetadata) Valida
 	return sealedLv2DCBVoteProposalMetadata.SealedLv2VoteProposalMetadata.ValidateMetadataByItself()
 }
 
-func (sealedLv2DCBVoteProposalMetadata *SealedLv2DCBVoteProposalMetadata) GetBoardType() string {
-	return "dcb"
+func (sealedLv2DCBVoteProposalMetadata *SealedLv2DCBVoteProposalMetadata) GetBoardType() byte {
+	return common.DCBBoard
 }
 
 func NewSealedLv2DCBVoteProposalMetadata(
@@ -135,8 +135,8 @@ func (sealedLv3DCBVoteProposalMetadata *SealedLv3DCBVoteProposalMetadata) Valida
 	return sealedLv3DCBVoteProposalMetadata.SealedLv3VoteProposalMetadata.ValidateMetadataByItself()
 }
 
-func (sealedLv3DCBVoteProposalMetadata *SealedLv3DCBVoteProposalMetadata) GetBoardType() string {
-	return "dcb"
+func (sealedLv3DCBVoteProposalMetadata *SealedLv3DCBVoteProposalMetadata) GetBoardType() byte {
+	return common.DCBBoard
 }
 
 func NewSealedLv3DCBVoteProposalMetadata(
@@ -182,8 +182,8 @@ func NewNormalDCBVoteProposalFromSealerMetadata(
 	}
 }
 
-func (normalDCBVoteProposalFromSealerMetadata *NormalDCBVoteProposalFromSealerMetadata) GetBoardType() string {
-	return "dcb"
+func (normalDCBVoteProposalFromSealerMetadata *NormalDCBVoteProposalFromSealerMetadata) GetBoardType() byte {
+	return common.DCBBoard
 }
 
 func (normalDCBVoteProposalFromSealerMetadata *NormalDCBVoteProposalFromSealerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
@@ -235,7 +235,7 @@ func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMeta
 
 func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	//Validate these pubKeys are in board
-	boardType := "dcb"
+	boardType := common.DCBBoard
 	return normalDCBVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.ValidateTxWithBlockChain(
 		boardType,
 		tx,
