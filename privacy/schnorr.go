@@ -62,8 +62,8 @@ func (priKey SchnPrivKey) Sign(data []byte) (*SchnSignature, error) {
 	// has privacy
 	if priKey.R.Cmp(big.NewInt(0)) != 0 {
 		// generates random numbers s1, s2 in [0, Curve.Params().N - 1]
-		s1 := RandBigInt()
-		s2 := RandBigInt()
+		s1 := RandScalar()
+		s2 := RandScalar()
 
 		// t = s1*G + s2*H
 		t := priKey.PubKey.G.ScalarMult(s1).Add(priKey.PubKey.H.ScalarMult(s2))
@@ -81,7 +81,7 @@ func (priKey SchnPrivKey) Sign(data []byte) (*SchnSignature, error) {
 	}
 
 	// generates random numbers s, k2 in [0, Curve.Params().N - 1]
-	s := RandBigInt()
+	s := RandScalar()
 
 	// t = s*G
 	t := priKey.PubKey.G.ScalarMult(s)
@@ -148,7 +148,7 @@ func (priKey *SchnPrivKey) GenKeyFromExistedSPKey(spKey SpendingKey) {
 	priKey.PubKey.G = new(EllipticPoint)
 	priKey.PubKey.G.Set(Curve.Params().Gx, Curve.Params().Gy)
 
-	priKey.PubKey.H = priKey.PubKey.G.ScalarMult(RandBigInt())
+	priKey.PubKey.H = priKey.PubKey.G.ScalarMult(RandScalar())
 	rH := priKey.PubKey.H.ScalarMult(priKey.R)
 
 	priKey.PubKey.PK = priKey.PubKey.G.ScalarMult(priKey.SK).Add(rH)

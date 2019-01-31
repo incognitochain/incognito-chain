@@ -90,7 +90,7 @@ func (point EllipticPoint) Inverse() (*EllipticPoint, error) {
 // Randomize generates a random elliptic point
 func (point *EllipticPoint) Randomize() {
 	for {
-		point.X = RandBigInt()
+		point.X = RandScalar()
 		err := point.ComputeYCoord()
 		if (err == nil) && (point.IsSafe()) {
 			break

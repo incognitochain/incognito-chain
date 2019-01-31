@@ -2,7 +2,6 @@ package privacy
 
 import (
 	"encoding/hex"
-	"github.com/pkg/errors"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
@@ -85,31 +84,6 @@ func GeneratePaymentAddress(spendingKey []byte) PaymentAddress {
 	return paymentAddress
 }
 
-// DecompressKey reverts a byte array of a public key to an elliptic point
-func DecompressKey(pubKeyStr []byte) (pubkey *EllipticPoint, err error) {
-	if len(pubKeyStr) == 0 || len(pubKeyStr) != CompressedPointSize {
-		return nil, NewPrivacyErr(UnexpectedErr, errors.New("pubkey string len is wrong"))
-	}
-
-	pubkey = new(EllipticPoint)
-
-	err = pubkey.Decompress(pubKeyStr)
-	if err != nil {
-		return nil, err
-	}
-
-	if pubkey.X.Cmp(Curve.Params().P) >= 0 {
-		return nil, NewPrivacyErr(UnexpectedErr, errors.New("pubkey X parameter is >= to P"))
-	}
-	if pubkey.Y.Cmp(Curve.Params().P) >= 0 {
-		return nil, NewPrivacyErr(UnexpectedErr, errors.New("pubkey Y parameter is >= to P"))
-	}
-	if !Curve.Params().IsOnCurve(pubkey.X, pubkey.Y) {
-		return nil, NewPrivacyErr(UnexpectedErr, errors.New("pubkey isn't on P256 curve"))
-	}
-	return pubkey, nil
-}
-
 // Bytes converts payment address to bytes array
 func (addr *PaymentAddress) Bytes() []byte {
 	return append(addr.Pk, addr.Tk...)
@@ -141,3 +115,5 @@ func (addr PaymentAddress) String() string {
 	byteArrays := addr.Bytes()
 	return hex.EncodeToString(byteArrays[:])
 }
+
+
