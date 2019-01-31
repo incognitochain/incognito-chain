@@ -19,7 +19,7 @@ type ConstitutionHelper interface {
 	CheckSubmitProposalType(tx metadata.Transaction) bool
 	GetAmountVoteTokenOfTx(tx metadata.Transaction) uint64
 	TxAcceptProposal(txId *common.Hash, voter metadata.Voter, minerPrivateKey *privacy.SpendingKey, db database.DatabaseInterface) metadata.Transaction
-	GetBoardType() string
+	GetBoardType() byte
 	GetConstitutionEndedBlockHeight(generator *BlkTmplGenerator, chainID byte) uint64
 	CreatePunishDecryptTx(address privacy.PaymentAddress) metadata.Metadata
 	GetSealerPaymentAddress(metadata.Transaction) []privacy.PaymentAddress
@@ -284,13 +284,13 @@ func (blockgen *BlkTmplGenerator) CreateSendGOVVoteTokenToGovernorTx(
 }
 
 func (blockgen *BlkTmplGenerator) createAcceptBoardTx(
-	boardType string,
+	boardType byte,
 	DCBBoardPaymentAddress []privacy.PaymentAddress,
 	sumOfVote uint64,
 	minerPrivateKey *privacy.SpendingKey,
 ) metadata.Transaction {
 	var meta metadata.Metadata
-	if boardType == "dcb" {
+	if boardType == common.DCBBoard {
 		meta = metadata.NewAcceptDCBBoardMetadata(DCBBoardPaymentAddress, sumOfVote)
 	} else {
 		meta = metadata.NewAcceptGOVBoardMetadata(DCBBoardPaymentAddress, sumOfVote)
@@ -363,7 +363,7 @@ func createSingleSendGOVVoteTokenFail(paymentAddress privacy.PaymentAddress, amo
 }
 
 //Send back vote token to voters who have vote to lose candidate
-func (blockgen *BlkTmplGenerator) CreateSendBackTokenAfterVoteFail(boardType string, chainID byte, newDCBList []privacy.PaymentAddress) []metadata.Transaction {
+func (blockgen *BlkTmplGenerator) CreateSendBackTokenAfterVoteFail(boardType byte, chainID byte, newDCBList []privacy.PaymentAddress) []metadata.Transaction {
 	setOfNewDCB := make(map[string]bool, 0)
 	for _, i := range newDCBList {
 		setOfNewDCB[string(i.Bytes())] = true
@@ -513,25 +513,27 @@ func (blockgen *BlkTmplGenerator) UpdateNewGovernor(
 	return txs
 }
 
-func (chain *BlockChain) neededNewDCBGovernor() bool {
+func (chain *BlockChain) neededNewGovernor(boardType byte) bool {
 	BestBlock := chain.BestState.Beacon.BestBlock
-	endGovernorBlock := chain.BestState.Beacon.StabilityInfo.DCBGovernor.EndBlock
-	currentHeight := BestBlock.Header.Height + 1
-	return endGovernorBlock == currentHeight
-}
-
-func (chain *BlockChain) neededNewGOVGovernor() bool {
-	BestBlock := chain.BestState.Beacon.BestBlock
-	endGovernorBlock := chain.BestState.Beacon.StabilityInfo.GOVGovernor.EndBlock
+	var endGovernorBlock uint64
+	if boardType == common.DCBBoard {
+		endGovernorBlock = chain.BestState.Beacon.StabilityInfo.DCBGovernor.EndBlock
+	} else {
+		endGovernorBlock = chain.BestState.Beacon.StabilityInfo.GOVGovernor.EndBlock
+	}
 	currentHeight := BestBlock.Header.Height + 1
 	return endGovernorBlock == currentHeight
 }
 
 func (self *BlockChain) generateVotingInstruction(minerPrivateKey *privacy.SpendingKey) ([][]string, error) {
+	//todo 0xjackalope
+
 	// 	prevBlock := blockgen.chain.BestState[shardID].BestBlock
 	dcbHelper := DCBConstitutionHelper{}
 	govHelper := GOVConstitutionHelper{}
 	db := self.config.DataBase
+
+	//============================ VOTE PROPOSAL
 	//coinbases := []metadata.Transaction{salaryTx}
 	// 	// Voting transaction
 	// 	// Check if it is the case we need to apply a new proposal
@@ -571,10 +573,12 @@ func (self *BlockChain) generateVotingInstruction(minerPrivateKey *privacy.Spend
 		//coinbases = append(coinbases, rewardTx)
 	}
 
-	if self.neededNewDCBGovernor() {
+	//============================ VOTE BOARD
+
+	if self.neededNewGovernor(common.DCBBoard) {
 		//coinbases = append(coinbases, blockgen.UpdateNewGovernor(DCBConstitutionHelper{}, shardID, privatekey)...)
 	}
-	if self.neededNewGOVGovernor() {
+	if self.neededNewGovernor(common.GOVBoard) {
 		//coinbases = append(coinbases, blockgen.UpdateNewGovernor(GOVConstitutionHelper{}, shardID, privatekey)...)
 	}
 	panic("not done")

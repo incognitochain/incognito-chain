@@ -40,7 +40,7 @@ func (cr *ReserveResponse) Hash() *common.Hash {
 func (cr *ReserveResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if only board members created this tx
 	isBoard := false
-	for _, gov := range bcr.GetBoardPubKeys("dcb") {
+	for _, gov := range bcr.GetBoardPubKeys(common.DCBBoard) {
 		// TODO(@0xbunyip): change gov to []byte or use Base58Decode for entire payment address of governors
 		if bytes.Equal([]byte(gov), txr.GetSigPubKey()) {
 			isBoard = true

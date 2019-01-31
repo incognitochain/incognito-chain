@@ -66,8 +66,8 @@ const (
 
 // board types
 const (
-	DCB = 1
-	GOV = 2
+	DCBBoard = byte(1)
+	GOVBoard = byte(2)
 )
 
 // special token ids (aka. PropertyID in custom token)
