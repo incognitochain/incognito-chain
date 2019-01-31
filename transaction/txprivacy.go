@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"math/big"
 	"strconv"
@@ -580,7 +581,10 @@ func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 }
 
 func (tx *Tx) GetUniqueReceiver() (bool, []byte, uint64) {
-	sender := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	sender := []byte{} // Empty byte slice for coinbase tx
+	if tx.Proof != nil && len(tx.Proof.InputCoins) > 0 {
+		sender = tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	}
 	pubkeys, amounts := tx.GetReceivers()
 	pubkey := []byte{}
 	amount := uint64(0)
@@ -593,6 +597,14 @@ func (tx *Tx) GetUniqueReceiver() (bool, []byte, uint64) {
 		}
 	}
 	return count == 1, pubkey, amount
+}
+
+func (tx *Tx) GetTokenReceivers() ([][]byte, []uint64) {
+	return nil, nil
+}
+
+func (tx *Tx) GetTokenUniqueReceiver() (bool, []byte, uint64) {
+	return false, nil, 0
 }
 
 func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.Hash][][]byte) error {
@@ -644,6 +656,7 @@ func (tx *Tx) ValidateTxWithBlockChain(
 	if tx.GetType() == common.TxSalaryType {
 		return nil
 	}
+	fmt.Printf("[db] validating tx with blockchain tx level\n")
 	if tx.Metadata != nil {
 		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(tx, bcr, shardID, db)
 		if err != nil {
@@ -889,6 +902,7 @@ func (tx *Tx) InitTxSalary(
 func (tx Tx) ValidateTxSalary(
 	db database.DatabaseInterface,
 ) bool {
+	fmt.Printf("[db] validating tx salary: %s\n", tx.Hash())
 	// verify signature
 	valid, err := tx.verifySigTx()
 	if !valid {

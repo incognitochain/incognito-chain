@@ -55,7 +55,7 @@ func (mb *MetadataBase) VerifyMultiSigs(
 	return true, nil
 }
 
-func (mb *MetadataBase) BuildReqActions(tx Transaction) ([][]string, error) {
+func (mb *MetadataBase) BuildReqActions(tx Transaction, shardID byte) ([][]string, error) {
 	return [][]string{}, nil
 }
 
@@ -98,6 +98,7 @@ type BlockchainRetriever interface {
 	GetConstitutionStartHeight(boardType string, shardID byte) uint64
 	GetConstitutionEndHeight(boardType string, shardID byte) uint64
 	GetCurrentBlockHeight(byte) uint64
+	GetBoardEndHeight(boardType string, chainID byte) uint64
 
 	// For validating loan metadata
 	GetLoanTxs([]byte) ([][]byte, error)
@@ -131,7 +132,7 @@ type Metadata interface {
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
 	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool
 	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
-	BuildReqActions(Transaction) ([][]string, error)
+	BuildReqActions(tx Transaction, shardID byte) ([][]string, error)
 }
 
 // Interface for all type of transaction
@@ -159,9 +160,15 @@ type Transaction interface {
 	ValidateConstDoubleSpendWithBlockchain(BlockchainRetriever, byte, database.DatabaseInterface) error
 
 	GetSigPubKey() []byte
-	GetReceivers() ([][]byte, []uint64)
-	GetUniqueReceiver() (bool, []byte, uint64)
 	IsPrivacy() bool
 	IsCoinsBurning() bool
 	GetProof() *zkp.PaymentProof
+
+	// Get receivers' data for tx
+	GetReceivers() ([][]byte, []uint64)
+	GetUniqueReceiver() (bool, []byte, uint64)
+
+	// Get receivers' data for custom token tx (nil for normal tx)
+	GetTokenReceivers() ([][]byte, []uint64)
+	GetTokenUniqueReceiver() (bool, []byte, uint64)
 }
