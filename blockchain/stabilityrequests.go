@@ -2,12 +2,12 @@ package blockchain
 
 import "github.com/ninjadotorg/constant/metadata"
 
-func buildStabilityActions(txs []metadata.Transaction) [][]string {
+func buildStabilityActions(txs []metadata.Transaction, shardID byte) [][]string {
 	actions := [][]string{}
 	for _, tx := range txs {
 		meta := tx.GetMetadata()
 		if meta != nil {
-			actionPairs, err := meta.BuildReqActions(tx)
+			actionPairs, err := meta.BuildReqActions(tx, shardID)
 			if err != nil {
 				continue
 			}

@@ -55,7 +55,7 @@ func (mb *MetadataBase) VerifyMultiSigs(
 	return true, nil
 }
 
-func (mb *MetadataBase) BuildReqActions(tx Transaction) ([][]string, error) {
+func (mb *MetadataBase) BuildReqActions(tx Transaction, shardID byte) ([][]string, error) {
 	return [][]string{}, nil
 }
 
@@ -132,7 +132,7 @@ type Metadata interface {
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
 	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool
 	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
-	BuildReqActions(Transaction) ([][]string, error)
+	BuildReqActions(tx Transaction, shardID byte) ([][]string, error)
 }
 
 // Interface for all type of transaction
