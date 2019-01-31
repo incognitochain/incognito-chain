@@ -20,18 +20,18 @@ type ShardToBeaconPool struct {
 	latestValidHeightMutex *sync.RWMutex
 }
 
-var shardToBeaconPool_v2 *ShardToBeaconPool = nil
+var shardToBeaconPool *ShardToBeaconPool = nil
 
 // get singleton instance of ShardToBeacon pool
 func GetShardToBeaconPool() *ShardToBeaconPool {
-	if shardToBeaconPool_v2 == nil {
-		shardToBeaconPool_v2 = new(ShardToBeaconPool)
-		shardToBeaconPool_v2.pool = make(map[byte][]*blockchain.ShardToBeaconBlock)
-		shardToBeaconPool_v2.poolMutex = new(sync.RWMutex)
-		shardToBeaconPool_v2.latestValidHeight = make(map[byte]uint64)
-		shardToBeaconPool_v2.latestValidHeightMutex = new(sync.RWMutex)
+	if shardToBeaconPool == nil {
+		shardToBeaconPool = new(ShardToBeaconPool)
+		shardToBeaconPool.pool = make(map[byte][]*blockchain.ShardToBeaconBlock)
+		shardToBeaconPool.poolMutex = new(sync.RWMutex)
+		shardToBeaconPool.latestValidHeight = make(map[byte]uint64)
+		shardToBeaconPool.latestValidHeightMutex = new(sync.RWMutex)
 	}
-	return shardToBeaconPool_v2
+	return shardToBeaconPool
 }
 
 func (self *ShardToBeaconPool) SetShardState(latestShardState map[byte]uint64) {
