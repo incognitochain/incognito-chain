@@ -60,8 +60,6 @@ type BestStateBeacon struct {
 
 	// lock sync.RWMutex
 	ShardHandle map[byte]bool `json:"ShardHandle"`
-
-	StabilityInstructions [][]string `json:"StabilityInstructions"`
 }
 
 type StabilityInfo struct {
