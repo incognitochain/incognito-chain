@@ -14,10 +14,8 @@ func (ciphertext *Ciphertext) IsNil() bool {
 	if len(ciphertext.msgEncrypted) == 0 {
 		return true
 	}
-	if len(ciphertext.symKeyEncrypted) == 0 {
-		return true
-	}
-	return false
+
+	return len(ciphertext.symKeyEncrypted) == 0
 }
 
 func (ciphertext *Ciphertext) Bytes() []byte {
@@ -87,7 +85,10 @@ func AdvanceDecrypt(ciphertext *Ciphertext, privateKey *big.Int) (msg []byte, er
 	}
 
 	// Decrypt encryptedAESKey using recipient's receiving key
-	aesKeyPoint, _ := privKey.Decrypt(encryptedAESKey)
+	aesKeyPoint, err := privKey.Decrypt(encryptedAESKey)
+	if err != nil {
+		return []byte{}, err
+	}
 
 	// Get AES key
 	aesScheme := &AES{
