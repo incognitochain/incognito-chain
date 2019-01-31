@@ -186,7 +186,7 @@ func (tx *Tx) Init(
 	for ok {
 		var sndOut *big.Int
 		for i := 0; i < len(paymentInfo); i++ {
-			sndOut = privacy.RandBigInt()
+			sndOut = privacy.RandScalar()
 			for {
 
 				ok1, err := CheckSNDerivatorExistence(tokenID, sndOut, shardID, db)
@@ -195,7 +195,7 @@ func (tx *Tx) Init(
 				}
 				// if sndOut existed, then re-random it
 				if ok1 {
-					sndOut = privacy.RandBigInt()
+					sndOut = privacy.RandScalar()
 				} else {
 					break
 				}
@@ -230,8 +230,14 @@ func (tx *Tx) Init(
 	commitmentProving := make([]*privacy.EllipticPoint, len(commitmentIndexs))
 	for i, cmIndex := range commitmentIndexs {
 		commitmentProving[i] = new(privacy.EllipticPoint)
-		temp, _ := db.GetCommitmentByIndex(tokenID, cmIndex, shardID)
-		commitmentProving[i], _ = privacy.DecompressKey(temp)
+		temp, err := db.GetCommitmentByIndex(tokenID, cmIndex, shardID)
+		if err != nil{
+			return NewTransactionErr(UnexpectedErr, err)
+		}
+		err = commitmentProving[i].Decompress(temp)
+		if err != nil{
+			return NewTransactionErr(UnexpectedErr, err)
+		}
 	}
 
 	// prepare witness for proving
@@ -842,9 +848,9 @@ func (tx *Tx) InitTxSalary(
 	if err != nil {
 		return err
 	}
-	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandBigInt()
+	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandScalar()
 
-	sndOut := privacy.RandBigInt()
+	sndOut := privacy.RandScalar()
 	for {
 		lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
@@ -855,7 +861,7 @@ func (tx *Tx) InitTxSalary(
 			return err
 		}
 		if ok {
-			sndOut = privacy.RandBigInt()
+			sndOut = privacy.RandScalar()
 		} else {
 			break
 		}
