@@ -51,7 +51,7 @@ func (self *BlockChain) OnShardStateReceived(state *ShardChainState, peerID libp
 }
 
 func (self *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
-	//TODO: check node mode -> node role before add block to pool
+	//TODO: check node mode -> node mode & role before add block to pool
 	err := self.config.ShardToBeaconPool.ValidateShardToBeaconBlock(block)
 	if err != nil {
 		Logger.log.Error(err)
@@ -59,6 +59,9 @@ func (self *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
 		err = self.config.ShardToBeaconPool.AddShardBeaconBlock(block, self.BestState.Beacon.ShardCommittee[block.Header.ShardID])
 		if err != nil {
 			Logger.log.Error(err)
+		}
+		if self.BestState.Beacon.BestShardHeight[block.Header.ShardID] < block.Header.Height-1 {
+			self.config.Server.PushMessageGetShardToBeacons(block.Header.ShardID, self.BestState.Beacon.BestShardHeight[block.Header.ShardID]+1, block.Header.Height)
 		}
 	}
 }

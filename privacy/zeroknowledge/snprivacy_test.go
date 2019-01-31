@@ -1,39 +1,52 @@
 package zkp
 
 import (
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/stretchr/testify/assert"
+	"fmt"
 	"math/big"
 	"testing"
+	"time"
+
+	"github.com/ninjadotorg/constant/privacy"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPKSNPrivacy(t *testing.T) {
 	sk := privacy.GenerateSpendingKey([]byte{123})
 	skInt := new(big.Int).SetBytes(sk)
-	SND := privacy.RandInt()
+	SND := privacy.RandBigInt()
 
-	rSK := privacy.RandInt()
-	rSND1 := privacy.RandInt()
+	rSK := privacy.RandBigInt()
+	rSND := privacy.RandBigInt()
 
 	serialNumber := privacy.PedCom.G[privacy.SK].Derive(skInt, SND)
 
 	comSK := privacy.PedCom.CommitAtIndex(skInt, rSK, privacy.SK)
-	comSND1 := privacy.PedCom.CommitAtIndex(SND, rSND1, privacy.SND)
+	comSND := privacy.PedCom.CommitAtIndex(SND, rSND, privacy.SND)
 
-	witness := new(PKSNPrivacyWitness)
-	witness.Set(serialNumber, comSK, comSND1, skInt, rSK, SND, rSND1)
+	stmt := new(SNPrivacyStatement)
+	stmt.Set(serialNumber, comSK, comSND)
+	witness := new(SNPrivacyWitness)
+	witness.Set(stmt, skInt, rSK, SND, rSND)
 
-	proof, err := witness.Prove()
-	if err != nil{
+	start := time.Now()
+	proof, err := witness.Prove(nil)
+	if err != nil {
 		return
 	}
+	end := time.Since(start)
+	fmt.Printf("Serial number proving time: %v\n", end)
 
 	proofBytes := proof.Bytes()
 
-	proof2 := new(PKSNPrivacyProof).Init()
+	fmt.Printf("Serial number proof size: %v\n", len(proofBytes))
+
+	proof2 := new(SNPrivacyProof).Init()
 	proof2.SetBytes(proofBytes)
 
-	res := proof2.Verify()
+	start = time.Now()
+	res := proof2.Verify(nil)
+	end = time.Since(start)
+	fmt.Printf("Serial number verification time: %v\n", end)
 
 	assert.Equal(t, true, res)
 }

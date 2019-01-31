@@ -1,5 +1,8 @@
 package jsonresult
 
 type EstimateFeeResult struct {
-	FeeRate map[string]uint64 `json:"FeeRate"`
+	EstimateFeeCoin      uint64
+	EstimateFeeCoinPerKb uint64
+	EstimateTxSizeInKb   uint64
+	GOVFeePerKbTx        uint64
 }

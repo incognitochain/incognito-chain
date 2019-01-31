@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -53,12 +54,23 @@ var DefaultShardToBeaconPoolConfig = ShardToBeaconPoolConfig{
 	LifeTime:   10 * time.Hour,
 }
 
+var shardToBeaconPool = &ShardToBeaconPool{}
+
 func InitShardToBeaconPool(shardToBeaconPoolConfig ShardToBeaconPoolConfig) *ShardToBeaconPool {
-	return &ShardToBeaconPool{
+	if shardToBeaconPool != nil {
+		return shardToBeaconPool
+	}
+	// return &ShardToBeaconPool{
+	// 	config:  shardToBeaconPoolConfig,
+	// 	pending: make(map[byte][]blockchain.ShardToBeaconBlock),
+	// 	queue:   make(map[byte]map[uint64]blockchain.ShardToBeaconBlock),
+	// }
+	shardToBeaconPool = &ShardToBeaconPool{
 		config:  shardToBeaconPoolConfig,
 		pending: make(map[byte][]blockchain.ShardToBeaconBlock),
 		queue:   make(map[byte]map[uint64]blockchain.ShardToBeaconBlock),
 	}
+	return shardToBeaconPool
 }
 func (pool *ShardToBeaconPool) SetDatabase(db database.DatabaseInterface) {
 	beaconBestState := blockchain.BestStateBeacon{}
@@ -306,6 +318,58 @@ func (pool *ShardToBeaconPool) IsEnough(isPending bool, shardID byte) error {
 			return errors.New(ReachMaxQueueError)
 		}
 	}
+}
+
+func GetShardToBeaconPoolInstance() *ShardToBeaconPool {
+	return shardToBeaconPool
+}
+func (pool *ShardToBeaconPool) GetShardToBeaconPoolState() map[byte][]uint64 {
+	result := map[byte][]uint64{}
+	pending := pool.pending
+	queue := pool.queue
+
+	poolState := map[byte]map[uint64]bool{}
+
+	for k, val := range queue {
+		if len(val) <= 0 {
+			continue
+		}
+		items := map[uint64]bool{}
+
+		for h, _ := range val {
+			items[h] = true
+		}
+		poolState[k] = items
+	}
+
+	for k, val := range pending {
+		items, ok := poolState[k]
+		if !ok || len(items) <= 0 {
+			items = map[uint64]bool{}
+		}
+
+		if len(val) <= 0 {
+			continue
+		}
+
+		for _, block := range val {
+			items[block.Header.Height] = true
+		}
+		poolState[k] = items
+	}
+
+	for k, val := range poolState {
+		items := []uint64{}
+		for h, _ := range val {
+			items = append(items, h)
+		}
+		sort.Slice(items, func(i, j int) bool {
+			return items[i] < items[j]
+		})
+
+		result[k] = items
+	}
+	return result
 }
 
 // func UpdateBeaconPool(shardID byte, blockHeight uint64, preBlockHash common.Hash) error {

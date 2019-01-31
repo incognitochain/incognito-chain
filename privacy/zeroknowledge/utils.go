@@ -49,13 +49,23 @@ func generateChallengeFromByte(values [][]byte) *big.Int {
 }
 
 // EstimateProofSize returns the estimated size of the proof in kilobyte
-func EstimateProofSize(nInput int, nOutput int) uint64 {
+func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
+	if !hasPrivacy{
+		FlagSize := 1 + 1 + 1 + nInput + 2 + 1 + nInput + 1 + nOutput + 1 + 1 + 1 + 1 + 1 + 1 + 1
+		sizeSNNoPrivacyProof := nInput * privacy.SNNoPrivacyProofSize
+		sizeInputCoins := nInput * privacy.InputCoinsNoPrivacySize
+		sizeOutputCoins := nOutput * privacy.OutputCoinsNoPrivacySize
+
+		sizeProof := uint64(FlagSize + sizeSNNoPrivacyProof + sizeInputCoins + sizeOutputCoins)
+		return uint64(math.Ceil(float64(sizeProof) / 1024))
+	}
+
+	FlagSize := 1 + 2*nInput + 1 + 2*nInput + 1 + 2 + 1 + nInput + 1 + nOutput + 1 + nOutput + 1 + nOutput + 1 + nOutput + 1 + 1 + nInput + 1 + nInput + 1
+
 	sizeOneOfManyProof := nInput * privacy.OneOfManyProofSize
 	sizeSNPrivacyProof := nInput * privacy.SNPrivacyProofSize
+	sizeComOutputMultiRangeProof := int(estimateMultiRangeProofSize(nOutput))
 
-	sizeComOutputMultiRangeProof := int(estimateMultiRangeProof(nOutput))
-	sizeSumOutRangeProof := privacy.SumOutRangeProofSize
-	sizeComZeroProof := privacy.ComZeroProofSize
 
 	sizeInputCoins := nInput * privacy.InputCoinsPrivacySize
 	sizeOutputCoins := nOutput * privacy.OutputCoinsPrivacySize
@@ -64,42 +74,20 @@ func EstimateProofSize(nInput int, nOutput int) uint64 {
 	sizeComOutputSND := nOutput * privacy.CompressedPointSize
 	sizeComOutputShardID := nOutput * privacy.CompressedPointSize
 
-	sizeComInputSK := nInput * privacy.CompressedPointSize
+	sizeComInputSK := privacy.CompressedPointSize
 	sizeComInputValue := nInput * privacy.CompressedPointSize
 	sizeComInputSND := nInput * privacy.CompressedPointSize
-	sizeComInputShardID := nInput * privacy.CompressedPointSize
+	sizeComInputShardID := privacy.CompressedPointSize
 
-	// sizeBytes = NumArr + SizeProof
-	sizeBytes := 11 + 9*nInput + 4*nOutput + 4
+	sizeCommitmentIndices := nInput * privacy.CMRingSize * privacy.Uint64Size
 
 	sizeProof := sizeOneOfManyProof + sizeSNPrivacyProof +
-		sizeComOutputMultiRangeProof + sizeSumOutRangeProof + sizeComZeroProof + sizeInputCoins + sizeOutputCoins +
-		sizeComOutputValue + sizeComOutputSND + sizeComOutputShardID + sizeComInputSK + sizeComInputValue + sizeComInputSND + sizeComInputShardID + sizeBytes
+		sizeComOutputMultiRangeProof + sizeInputCoins + sizeOutputCoins +
+		sizeComOutputValue + sizeComOutputSND + sizeComOutputShardID +
+		sizeComInputSK + sizeComInputValue + sizeComInputSND + sizeComInputShardID +
+		sizeCommitmentIndices + FlagSize
 
 	return uint64(math.Ceil(float64(sizeProof) / 1024))
 }
 
-func estimateMultiRangeProof(nOutput int) uint64 {
-	sizeCounter := uint64(1)                                        // byte
-	sizeComms := uint64(pad(nOutput) * privacy.CompressedPointSize) //  []*privacy.EllipticPoint
-	sizeA := uint64(privacy.CompressedPointSize)                    //    *privacy.EllipticPoint
-	sizeS := uint64(privacy.CompressedPointSize)                    //       *privacy.EllipticPoint
-	sizeT1 := uint64(privacy.CompressedPointSize)                   //    *privacy.EllipticPoint
-	sizeT2 := uint64(privacy.CompressedPointSize)                   //       *privacy.EllipticPoint
 
-	sizeTau := uint64(privacy.BigIntSize) //    *big.Int
-	sizeTh := uint64(privacy.BigIntSize)  //    *big.Int
-	sizeMu := uint64(privacy.BigIntSize)  //    *big.Int
-
-	a := privacy.MaxExp * pad(nOutput)
-	a = int(math.Log2(float64(a)))
-	sizeIPP := uint64(a*privacy.CompressedPointSize + a*privacy.CompressedPointSize + 2*privacy.BigIntSize + (a+1)*privacy.BigIntSize)
-
-	sizeMaxExp := uint64(1)
-
-	sizeCy := uint64(privacy.BigIntSize) //*big.Int
-	sizeCz := uint64(privacy.BigIntSize) //*big.Int
-	sizeCx := uint64(privacy.BigIntSize) //*big.Int
-
-	return uint64(sizeCounter + sizeComms + sizeA + sizeS + sizeT1 + sizeT2 + sizeTau + sizeTh + sizeMu + sizeIPP + sizeMaxExp + sizeCy + sizeCz + sizeCx)
-}

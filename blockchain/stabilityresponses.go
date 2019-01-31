@@ -20,8 +20,10 @@ import (
 // )
 
 func buildInstructionsForBuyBondsFromGOVReq(
+	shardID byte,
 	contentStr string,
 	beaconBestState *BestStateBeacon,
+	accumulativeValues *accumulativeValues,
 ) ([][]string, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -36,21 +38,32 @@ func buildInstructionsForBuyBondsFromGOVReq(
 	}
 	stabilityInfo := beaconBestState.StabilityInfo
 	sellingBondsParams := stabilityInfo.GOVConstitution.GOVParams.SellingBonds
-	if uint64(beaconBestState.BestBlock.Header.Height)+1 > sellingBondsParams.StartSellingAt+sellingBondsParams.SellingWithin {
-		refundInst := []string{
-			strconv.Itoa(metadata.BuyFromGOVRequestMeta),
-			"refund",
-			contentStr,
-		}
-		instructions = append(instructions, refundInst)
+	bestBlockHeight := beaconBestState.BestBlock.Header.Height
+	instType := ""
+	if (bestBlockHeight+1 < sellingBondsParams.StartSellingAt) ||
+		(bestBlockHeight+1 > sellingBondsParams.StartSellingAt+sellingBondsParams.SellingWithin) ||
+		(accumulativeValues.bondsSold+md.Amount > sellingBondsParams.BondsToSell) {
+		instType = "refund"
+	} else {
+		accumulativeValues.incomeFromBonds += (md.Amount + md.BuyPrice)
+		accumulativeValues.bondsSold += md.Amount
+		instType = "accepted"
 	}
-	// TODO: add more logic here
+	returnedInst := []string{
+		strconv.Itoa(metadata.BuyFromGOVRequestMeta),
+		strconv.Itoa(int(shardID)),
+		instType,
+		contentStr,
+	}
+	instructions = append(instructions, returnedInst)
 	return instructions, nil
 }
 
 func buildStabilityInstructions(
+	shardID byte,
 	shardBlockInstructions [][]string,
 	beaconBestState *BestStateBeacon,
+	accumulativeValues *accumulativeValues,
 ) ([][]string, error) {
 	instructions := [][]string{}
 	for _, inst := range shardBlockInstructions {
@@ -61,7 +74,7 @@ func buildStabilityInstructions(
 		contentStr := inst[1]
 		switch metaType {
 		case metadata.BuyFromGOVRequestMeta:
-			buyBondsInst, err := buildInstructionsForBuyBondsFromGOVReq(contentStr, beaconBestState)
+			buyBondsInst, err := buildInstructionsForBuyBondsFromGOVReq(shardID, contentStr, beaconBestState, accumulativeValues)
 			if err != nil {
 				return [][]string{}, err
 			}
@@ -72,6 +85,17 @@ func buildStabilityInstructions(
 		}
 	}
 	return instructions, nil
+}
+
+func (bsb *BestStateBeacon) pickInstructionsOfCurrentShard(
+	instructions [][]string,
+) {
+	shardID := bsb.GetCurrentShard()
+	for _, inst := range instructions {
+		if strconv.Itoa(int(shardID)) == inst[1] {
+			bsb.StabilityInstructions = append(bsb.StabilityInstructions, inst)
+		}
+	}
 }
 
 // func (blockgen *BlkTmplGenerator) buildIssuingResTxs(

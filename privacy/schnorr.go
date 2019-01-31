@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"errors"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
@@ -8,7 +9,7 @@ import (
 
 //SchnPubKey denoted Schnorr Publickey
 type SchnPubKey struct {
-	PK, G, H *EllipticPoint // vKey = G^SK + H^Randomness
+	PK, G, H *EllipticPoint // vKey = G^sk + H^Randomness
 }
 
 //SchnPrivKey denoted Schnorr Privatekey
@@ -22,31 +23,7 @@ type SchnSignature struct {
 	E, Z1, Z2 *big.Int
 }
 
-//GenKey generates PriKey and PubKey
-func (priKey *SchnPrivKey) GenKey() {
-	if priKey == nil {
-		priKey = new(SchnPrivKey)
-	}
-
-	xBytes := RandBytes(SpendingKeySize)
-	priKey.SK = new(big.Int).SetBytes(xBytes)
-	priKey.SK.Mod(priKey.SK, Curve.Params().N)
-
-	rBytes := RandBytes(SpendingKeySize)
-	priKey.R = new(big.Int).SetBytes(rBytes)
-	priKey.R.Mod(priKey.R, Curve.Params().N)
-
-	priKey.PubKey = new(SchnPubKey)
-
-	priKey.PubKey.G = new(EllipticPoint)
-	priKey.PubKey.G.Set(Curve.Params().Gx, Curve.Params().Gy)
-
-	priKey.PubKey.H = priKey.PubKey.G.ScalarMult(RandInt())
-	rH := priKey.PubKey.H.ScalarMult(priKey.R)
-
-	priKey.PubKey.PK = priKey.PubKey.G.ScalarMult(priKey.SK).Add(rH)
-}
-
+// Set sets Schnorr private key
 func (priKey *SchnPrivKey) Set(sk *big.Int, r *big.Int) {
 	priKey.SK = sk
 	priKey.R = r
@@ -59,6 +36,7 @@ func (priKey *SchnPrivKey) Set(sk *big.Int, r *big.Int) {
 	priKey.PubKey.PK = PedCom.G[SK].ScalarMult(sk).Add(PedCom.G[RAND].ScalarMult(r))
 }
 
+// Set sets Schnorr public key
 func (pubKey *SchnPubKey) Set(pk *EllipticPoint) {
 	pubKey.PK = new(EllipticPoint)
 	pubKey.PK.Set(pk.X, pk.Y)
@@ -72,9 +50,9 @@ func (pubKey *SchnPubKey) Set(pk *EllipticPoint) {
 
 //Sign is function which using for sign on hash array by private key
 func (priKey SchnPrivKey) Sign(data []byte) (*SchnSignature, error) {
-	//if len(hash) != common.HashSize {
-	//	return nil, NewPrivacyErr(UnexpectedErr, errors.New("Hash length must be 32 bytes"))
-	//}
+	if len(data) != common.HashSize {
+		return nil, NewPrivacyErr(UnexpectedErr, errors.New("Hash length must be 32 bytes"))
+	}
 
 	genPoint := new(EllipticPoint)
 	genPoint.Set(Curve.Params().Gx, Curve.Params().Gy)
@@ -84,8 +62,8 @@ func (priKey SchnPrivKey) Sign(data []byte) (*SchnSignature, error) {
 	// has privacy
 	if priKey.R.Cmp(big.NewInt(0)) != 0 {
 		// generates random numbers s1, s2 in [0, Curve.Params().N - 1]
-		s1 := RandInt()
-		s2 := RandInt()
+		s1 := RandBigInt()
+		s2 := RandBigInt()
 
 		// t = s1*G + s2*H
 		t := priKey.PubKey.G.ScalarMult(s1).Add(priKey.PubKey.H.ScalarMult(s2))
@@ -103,7 +81,7 @@ func (priKey SchnPrivKey) Sign(data []byte) (*SchnSignature, error) {
 	}
 
 	// generates random numbers s, k2 in [0, Curve.Params().N - 1]
-	s := RandInt()
+	s := RandBigInt()
 
 	// t = s*G
 	t := priKey.PubKey.G.ScalarMult(s)
@@ -111,7 +89,7 @@ func (priKey SchnPrivKey) Sign(data []byte) (*SchnSignature, error) {
 	// E is the hash of elliptic point t and data need to be signed
 	signature.E = Hash(*t, data)
 
-	// Z1 = s - e*SK
+	// Z1 = s - e*sk
 	signature.Z1 = new(big.Int).Sub(s, new(big.Int).Mul(priKey.SK, signature.E))
 	signature.Z1.Mod(signature.Z1, Curve.Params().N)
 
@@ -170,7 +148,7 @@ func (priKey *SchnPrivKey) GenKeyFromExistedSPKey(spKey SpendingKey) {
 	priKey.PubKey.G = new(EllipticPoint)
 	priKey.PubKey.G.Set(Curve.Params().Gx, Curve.Params().Gy)
 
-	priKey.PubKey.H = priKey.PubKey.G.ScalarMult(RandInt())
+	priKey.PubKey.H = priKey.PubKey.G.ScalarMult(RandBigInt())
 	rH := priKey.PubKey.H.ScalarMult(priKey.R)
 
 	priKey.PubKey.PK = priKey.PubKey.G.ScalarMult(priKey.SK).Add(rH)

@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"errors"
 	"math/big"
 	rand2 "math/rand"
 	"time"
@@ -23,10 +24,11 @@ func RandBytes(length int) []byte {
 	return b
 }
 
-// RandInt generates a big int with value less than order of group of elliptic points
-func RandInt() *big.Int {
+// RandBigInt generates a big int with value less than order of group of elliptic points
+func RandBigInt() *big.Int {
+	randNum := new(big.Int)
 	for {
-		randNum := new(big.Int).SetBytes(RandBytes(BigIntSize))
+		randNum.SetBytes(RandBytes(BigIntSize))
 		if randNum.Cmp(Curve.Params().N) == -1 {
 			return randNum
 		}
@@ -52,11 +54,44 @@ func IsPowerOfTwo(n int) bool {
 func ConvertIntToBinary(inum int, n int) []byte {
 	binary := make([]byte, n)
 
-	for i := n - 1; i >= 0; i-- {
+	for i := 0; i < n ; i++ {
 		binary[i] = byte(inum % 2)
 		inum = inum / 2
 	}
 
+	return binary
+}
+
+// ConvertIntToBinary represents a integer number in binary
+func ConvertBigIntToBinary(number *big.Int, n int) []*big.Int {
+	if number.Cmp(big.NewInt(0)) ==0 {
+		res := make([]*big.Int, n)
+		for i:= 0; i<n; i++{
+			res[i] = big.NewInt(0)
+		}
+		return res
+	}
+
+	binary := make([]*big.Int, n)
+	numberClone := new(big.Int)
+	numberClone.Set(number)
+
+	zeroNumber := big.NewInt(0)
+	twoNumber := big.NewInt(2)
+	//oneNumber := big.NewInt(1)
+
+	for i := 0; i < n; i++ {
+		binary[i] = new(big.Int)
+		binary[i] = new(big.Int).Mod(numberClone, twoNumber)
+		numberClone.Div(numberClone, twoNumber)
+
+		if numberClone.Cmp(zeroNumber) == 0 && i != n-1{
+			for j := i + 1; j < n; j++ {
+				binary[j] = zeroNumber
+			}
+			break
+		}
+	}
 	return binary
 }
 
@@ -122,3 +157,124 @@ func paddedAppend(size uint, dst, src []byte) []byte {
 	}
 	return append(dst, src...)
 }
+
+// checkZeroArray check whether all ellement of values array are zero value or not
+func checkZeroArray(values []*big.Int) bool {
+	for i := 0; i < len(values); i++ {
+		if values[i].Cmp(big.NewInt(0)) != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func MaxBitLen(values []*big.Int) int {
+	res := 0
+	for i := 0; i < len(values); i++ {
+		if values[i].BitLen() > res {
+			res = values[i].BitLen()
+		}
+	}
+
+	return res
+}
+
+// MultiScalar2 uses Shamir's simultanenous Squaring Multi-Exponentiation Algorithm
+func MultiScalar2(g []*EllipticPoint, values []*big.Int) (*EllipticPoint, error) {
+	// Check inputs
+	if len(g) != len(values) {
+		return nil, errors.New("wrong inputs")
+	}
+
+	//convert value array to binary array
+	maxBitLen := MaxBitLen(values)
+	valueBinary := make([][]*big.Int, len(values))
+	for i := range values{
+		valueBinary[i] = ConvertBigIntToBinary(values[i], maxBitLen)
+	}
+
+	// generator result point
+	res := new(EllipticPoint).Zero()
+
+	oneNumber := big.NewInt(1)
+
+	for i := maxBitLen -1 ; i >= 0; i-- {
+		// res = 2*res
+		res = res.ScalarMult(big.NewInt(2))
+
+		for j := 0; j<len(values); j++{
+			if valueBinary[j][i].Cmp(oneNumber) == 0{
+				res = res.Add(g[j])
+			}
+		}
+	}
+	return res, nil
+}
+
+//func exp (x * EllipticPoint, n *big.Int) *EllipticPoint{
+//	if n.Cmp(big.NewInt(0)) == 0{
+//		return x
+//	}
+//
+//	nTmp := new(big.Int)
+//	nTmp.Set(n)
+//
+//	xTmp := new(EllipticPoint)
+//	xTmp.Set(x.X, x.Y)
+//
+//	y := new(EllipticPoint).Zero()
+//
+//	r := big.NewInt(0)
+//
+//	for nTmp.Cmp(big.NewInt(1)) == 1{
+//		// nTmp is even
+//		if r.Mod(nTmp, big.NewInt(2)).Cmp(big.NewInt(1)) == 0 {
+//			y = xTmp.Add(y)
+//		}
+//		xTmp = xTmp.Add(xTmp)
+//		nTmp.Div(nTmp, big.NewInt(2))
+//	}
+//
+//	return xTmp.Add(y)
+//}
+
+func MultiScalarmult(bases []*EllipticPoint, exponents []*big.Int) (*EllipticPoint, error) {
+	n := len(bases)
+	if n != len(exponents) {
+		return nil, errors.New("wrong inputs")
+	}
+
+	//count := 0
+
+	baseTmp := make([]*EllipticPoint, n)
+	for i:=0; i<n; i++{
+		baseTmp[i] = new(EllipticPoint)
+		baseTmp[i].Set(bases[i].X, bases[i].Y)
+	}
+
+	expTmp := make([]*big.Int, n)
+	for i:=0; i<n; i++{
+		expTmp[i] = new(big.Int)
+		expTmp[i].Set(exponents[i])
+	}
+	//start1 := time.Now()
+
+	result := new(EllipticPoint).Zero()
+
+	for !checkZeroArray(expTmp) {
+		for i := 0; i < n; i++ {
+			if new(big.Int).And(expTmp[i], big.NewInt(1)).Cmp(big.NewInt(1)) ==0 {
+				result = result.Add(baseTmp[i])
+			}
+
+			expTmp[i].Rsh(expTmp[i], uint(1))
+			baseTmp[i] = baseTmp[i].Add(baseTmp[i])
+		}
+	}
+
+	//end1 := time.Since(start1)
+	//fmt.Printf(" time faster: %v\n", end1)
+
+	return result, nil
+}
+
