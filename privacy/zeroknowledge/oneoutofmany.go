@@ -228,7 +228,6 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 
 	// get zd
 	proof.zd = new(big.Int).SetBytes(bytes[offset : offset+privacy.BigIntSize])
-	offset = offset + privacy.BigIntSize
 
 	return nil
 }

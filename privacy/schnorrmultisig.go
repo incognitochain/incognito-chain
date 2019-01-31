@@ -1,25 +1,10 @@
 package privacy
 
 import (
-	"sync"
-
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
 )
-
-var isTesting bool
-
-//#if isTesting
-var pubkeyTest []*PublicKey
-var RTest []*EllipticPoint
-var mutex sync.Mutex
-var counter int
-var wg sync.WaitGroup
-var wgchild sync.WaitGroup
-var Numbs int
-
-//#endif
 
 // MultiSigSchemeInterface define all of function for create EC Schnorr signature which could be combine by adding with another EC Schnorr Signature
 type MultiSigSchemeInterface interface {

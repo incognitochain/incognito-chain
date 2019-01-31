@@ -242,7 +242,7 @@ func (wit *SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 	tOutput := wit.stmt.sn.ScalarMult(new(big.Int).Add(eSK, eSND))
 
 	// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-	x := new(big.Int)
+	var x *big.Int
 	if mess == nil {
 		x = generateChallengeFromPoint([]*privacy.EllipticPoint{tSeed, tInput, tOutput})
 	} else {
@@ -276,7 +276,7 @@ func (wit *SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 
 func (proof *SNPrivacyProof) Verify(mess []byte) bool {
 	// re-calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-	x := new(big.Int)
+	var x *big.Int
 	if mess == nil {
 		x = generateChallengeFromPoint([]*privacy.EllipticPoint{proof.tSK, proof.tInput, proof.tSN})
 	} else {
