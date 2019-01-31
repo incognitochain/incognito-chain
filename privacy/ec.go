@@ -90,7 +90,7 @@ func (point EllipticPoint) Inverse() (*EllipticPoint, error) {
 // Randomize generates a random elliptic point
 func (point *EllipticPoint) Randomize() {
 	for {
-		point.X = RandBigInt()
+		point.X = RandScalar()
 		err := point.ComputeYCoord()
 		if (err == nil) && (point.IsSafe()) {
 			break
@@ -151,27 +151,20 @@ func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 
 // Hash derives a new elliptic point from an elliptic point and an index using hash function
 func (point EllipticPoint) Hash(index int) *EllipticPoint {
-	// res.X = hash(g.X || index), res.Y = sqrt(res.X^3 - 3X + B)
 	res := new(EllipticPoint).Zero()
-	temp := point.X.Bytes()
-	for len(temp) < BigIntSize {
-		temp = append([]byte{0}, temp...)
-	}
+	tmp := AddPaddingBigInt(point.X, BigIntSize)
+	tmp = append(tmp, byte(index))
 
-	res.X.SetBytes(temp)
-	res.X.Add(res.X, big.NewInt(int64(index)))
 	for {
-		temp = res.X.Bytes()
-		for len(temp) < BigIntSize {
-			temp = append([]byte{0}, temp...)
-		}
-		res.X.SetBytes(common.HashB(temp))
+		tmp = common.HashB(tmp)
+		res.X.SetBytes(tmp)
 		err := res.ComputeYCoord()
 
 		if (err == nil) && (res.IsSafe()) {
 			break
 		}
 	}
+
 	return res
 }
 
