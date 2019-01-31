@@ -9,7 +9,7 @@ import (
 
 //SchnPubKey denoted Schnorr Publickey
 type SchnPubKey struct {
-	PK, G, H *EllipticPoint // vKey = G^sk + H^Randomness
+	PK, G, H *EllipticPoint // PK = G^SK + H^R
 }
 
 //SchnPrivKey denoted Schnorr Privatekey
@@ -51,19 +51,16 @@ func (pubKey *SchnPubKey) Set(pk *EllipticPoint) {
 //Sign is function which using for sign on hash array by private key
 func (priKey SchnPrivKey) Sign(data []byte) (*SchnSignature, error) {
 	if len(data) != common.HashSize {
-		return nil, NewPrivacyErr(UnexpectedErr, errors.New("Hash length must be 32 bytes"))
+		return nil, NewPrivacyErr(UnexpectedErr, errors.New("hash length must be 32 bytes"))
 	}
-
-	genPoint := new(EllipticPoint)
-	genPoint.Set(Curve.Params().Gx, Curve.Params().Gy)
 
 	signature := new(SchnSignature)
 
 	// has privacy
 	if priKey.R.Cmp(big.NewInt(0)) != 0 {
 		// generates random numbers s1, s2 in [0, Curve.Params().N - 1]
-		s1 := RandBigInt()
-		s2 := RandBigInt()
+		s1 := RandScalar()
+		s2 := RandScalar()
 
 		// t = s1*G + s2*H
 		t := priKey.PubKey.G.ScalarMult(s1).Add(priKey.PubKey.H.ScalarMult(s2))
@@ -81,7 +78,7 @@ func (priKey SchnPrivKey) Sign(data []byte) (*SchnSignature, error) {
 	}
 
 	// generates random numbers s, k2 in [0, Curve.Params().N - 1]
-	s := RandBigInt()
+	s := RandScalar()
 
 	// t = s*G
 	t := priKey.PubKey.G.ScalarMult(s)
@@ -97,13 +94,13 @@ func (priKey SchnPrivKey) Sign(data []byte) (*SchnSignature, error) {
 }
 
 //Verify is function which using for verify that the given signature was signed by by privatekey of the public key
-func (pub SchnPubKey) Verify(signature *SchnSignature, data []byte) bool {
+func (pubKey SchnPubKey) Verify(signature *SchnSignature, data []byte) bool {
 	if signature == nil {
 		return false
 	}
 
-	rv := pub.G.ScalarMult(signature.Z1).Add(pub.H.ScalarMult(signature.Z2))
-	rv = rv.Add(pub.PK.ScalarMult(signature.E))
+	rv := pubKey.G.ScalarMult(signature.Z1).Add(pubKey.H.ScalarMult(signature.Z2))
+	rv = rv.Add(pubKey.PK.ScalarMult(signature.E))
 
 	ev := Hash(*rv, data)
 	return ev.Cmp(signature.E) == 0
@@ -130,26 +127,4 @@ func Hash(p EllipticPoint, m []byte) *big.Int {
 	b = append(b, m...)
 
 	return new(big.Int).SetBytes(common.HashB(b))
-}
-
-func (priKey *SchnPrivKey) GenKeyFromExistedSPKey(spKey SpendingKey) {
-	if priKey == nil {
-		priKey = new(SchnPrivKey)
-	}
-
-	priKey.SK = new(big.Int).SetBytes(spKey)
-
-	rBytes := common.HashB(spKey)
-	priKey.R = new(big.Int).SetBytes(rBytes)
-	priKey.R.Mod(priKey.R, Curve.Params().N)
-
-	priKey.PubKey = new(SchnPubKey)
-
-	priKey.PubKey.G = new(EllipticPoint)
-	priKey.PubKey.G.Set(Curve.Params().Gx, Curve.Params().Gy)
-
-	priKey.PubKey.H = priKey.PubKey.G.ScalarMult(RandBigInt())
-	rH := priKey.PubKey.H.ScalarMult(priKey.R)
-
-	priKey.PubKey.PK = priKey.PubKey.G.ScalarMult(priKey.SK).Add(rH)
 }

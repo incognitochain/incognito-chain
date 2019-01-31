@@ -10,7 +10,7 @@ const (
 	MaxExp = 64
 
 	// size of zero knowledge proof corresponding one input
-	OneOfManyProofSize = 716 // corresponding to CMRingSize = 4: 521
+	OneOfManyProofSize = 716
 
 	SNPrivacyProofSize   = 326
 	SNNoPrivacyProofSize = 196
@@ -18,7 +18,6 @@ const (
 	InputCoinsPrivacySize  = 40  // serial number + 7 for flag
 	OutputCoinsPrivacySize = 223 // PublicKey + coin commitment + SND + Ciphertext (122 bytes) + 9 bytes flag
 
-	//todo
 	InputCoinsNoPrivacySize = 178 // PublicKey + coin commitment + SND + Serial number + Randomness + Value + 7 flag
 	OutputCoinsNoPrivacySize = 147 // PublicKey + coin commitment + SND + Randomness + Value + 9 flag
 

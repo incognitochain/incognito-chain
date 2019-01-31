@@ -2,8 +2,6 @@ package privacy
 
 import "sort"
 
-//Todo: 0xKraken
-
 // max returns maximum of two unsigned integer 64 bits
 func max(a uint64, b uint64) uint64 {
 	if a > b {

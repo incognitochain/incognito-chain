@@ -1,8 +1,6 @@
 package params
 
-import (
-	"github.com/ninjadotorg/constant/common"
-)
+import "github.com/ninjadotorg/constant/common"
 
 type Oracle struct {
 	// TODO(@0xankylosaurus): generic prices (ETH, BTC, ...) instead of just bonds
@@ -152,7 +150,15 @@ func NewGOVParamsFromJson(data interface{}) *GOVParams {
 	refundInfo := NewRefundInfoFromJson(arrayParams["RefundInfo"])
 	oracleNetwork := NewOracleNetworkFromJson(arrayParams["OracleNetwork"])
 
-	return NewGOVParams(salaryPerTx, basicSalary, feePerKbTx, sellingBonds, sellingGOVTokens, refundInfo, oracleNetwork)
+	return NewGOVParams(
+		salaryPerTx,
+		basicSalary,
+		feePerKbTx,
+		sellingBonds,
+		sellingGOVTokens,
+		refundInfo,
+		oracleNetwork,
+	)
 }
 
 func (dcbParams *DCBParams) Hash() *common.Hash {

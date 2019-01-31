@@ -137,12 +137,12 @@ func (helper GOVConstitutionHelper) TxAcceptProposal(
 	return acceptTx
 }
 
-func (helper DCBConstitutionHelper) GetBoardType() string {
-	return "dcb"
+func (helper DCBConstitutionHelper) GetBoardType() byte {
+	return common.DCBBoard
 }
 
-func (helper GOVConstitutionHelper) GetBoardType() string {
-	return "gov"
+func (helper GOVConstitutionHelper) GetBoardType() byte {
+	return common.GOVBoard
 }
 
 func (helper DCBConstitutionHelper) CreatePunishDecryptTx(paymentAddress privacy.PaymentAddress) metadata.Metadata {
@@ -163,20 +163,20 @@ func (helper GOVConstitutionHelper) GetSealerPaymentAddress(tx metadata.Transact
 	return meta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddress
 }
 
-func (helper DCBConstitutionHelper) NewTxRewardProposalSubmitter(blockgen *BlkTmplGenerator, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
+func (helper DCBConstitutionHelper) NewTxRewardProposalSubmitter(chain *BlockChain, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
 	meta := metadata.NewRewardDCBProposalSubmitterMetadata()
 	tx := transaction.Tx{}
-	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, blockgen.chain.config.DataBase, meta)
+	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, chain.config.DataBase, meta)
 	if err != nil {
 		return nil, err
 	}
 	return &tx, nil
 }
 
-func (helper GOVConstitutionHelper) NewTxRewardProposalSubmitter(blockgen *BlkTmplGenerator, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
+func (helper GOVConstitutionHelper) NewTxRewardProposalSubmitter(chain *BlockChain, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
 	meta := metadata.NewRewardGOVProposalSubmitterMetadata()
 	tx := transaction.Tx{}
-	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, blockgen.chain.config.DataBase, meta)
+	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, chain.config.DataBase, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -185,11 +185,11 @@ func (helper GOVConstitutionHelper) NewTxRewardProposalSubmitter(blockgen *BlkTm
 
 func (helper DCBConstitutionHelper) GetPaymentAddressFromSubmitProposalMetadata(tx metadata.Transaction) *privacy.PaymentAddress {
 	meta := tx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
-	return &meta.PaymentAddress
+	return &meta.SubmitProposalInfo.PaymentAddress
 }
 func (helper GOVConstitutionHelper) GetPaymentAddressFromSubmitProposalMetadata(tx metadata.Transaction) *privacy.PaymentAddress {
 	meta := tx.GetMetadata().(*metadata.SubmitGOVProposalMetadata)
-	return &meta.PaymentAddress
+	return &meta.SubmitProposalInfo.PaymentAddress
 }
 
 func (helper DCBConstitutionHelper) GetPaymentAddressVoter(blockgen *BlkTmplGenerator, shardID byte) (privacy.PaymentAddress, error) {
@@ -216,10 +216,10 @@ func (helper GOVConstitutionHelper) GetPrizeProposal() uint32 {
 }
 
 func (helper DCBConstitutionHelper) GetTopMostVoteGovernor(blockgen *BlkTmplGenerator) (database.CandidateList, error) {
-	return blockgen.chain.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), blockgen.chain.GetCurrentBoardIndex(helper))
+	return blockgen.chain.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), blockgen.chain.GetCurrentBoardIndex(helper)+1)
 }
 func (helper GOVConstitutionHelper) GetTopMostVoteGovernor(blockgen *BlkTmplGenerator) (database.CandidateList, error) {
-	return blockgen.chain.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), blockgen.chain.GetCurrentBoardIndex(helper))
+	return blockgen.chain.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), blockgen.chain.GetCurrentBoardIndex(helper)+1)
 }
 
 func (helper DCBConstitutionHelper) GetBoardSumToken(blockgen *BlkTmplGenerator) uint64 {

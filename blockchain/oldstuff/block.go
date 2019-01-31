@@ -156,8 +156,8 @@ func (block *Block) updateDCBConstitution(tx metadata.Transaction, blockgen *Blk
 	constitutionInfo := NewConstitutionInfo(
 		newConstitutionIndex,
 		uint64(block.Header.Height),
-		DCBProposal.ExecuteDuration,
-		DCBProposal.Explanation,
+		DCBProposal.SubmitProposalInfo.ExecuteDuration,
+		DCBProposal.SubmitProposalInfo.Explanation,
 		*metadataAcceptDCBProposal.Hash(),
 	)
 	block.Header.DCBConstitution = *NewDCBConstitution(constitutionInfo, GetOracleDCBNationalWelfare(), &DCBProposal.DCBParams)
@@ -176,8 +176,8 @@ func (block *Block) updateGOVConstitution(tx metadata.Transaction, blockgen *Blk
 	constitutionInfo := NewConstitutionInfo(
 		newConstitutionIndex,
 		uint64(block.Header.Height),
-		GOVProposal.ExecuteDuration,
-		GOVProposal.Explanation,
+		GOVProposal.SubmitProposalInfo.ExecuteDuration,
+		GOVProposal.SubmitProposalInfo.Explanation,
 		*metadataAcceptGOVProposal.Hash(),
 	)
 	block.Header.GOVConstitution = *NewGOVConstitution(constitutionInfo, GetOracleGOVNationalWelfare(), &GOVProposal.GOVParams)

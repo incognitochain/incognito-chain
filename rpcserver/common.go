@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	"github.com/ninjadotorg/constant/cashec"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"

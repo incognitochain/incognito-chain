@@ -44,11 +44,7 @@ func (coin *Coin) UnmarshalJSON(data []byte) error {
 }
 
 func (coin *Coin) HashH() *common.Hash {
-	b, err := coin.MarshalJSON()
-	if err != nil {
-		return nil
-	}
-	hash := common.HashH(b)
+	hash := common.HashH(coin.Bytes())
 	return &hash
 }
 
@@ -139,7 +135,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if lenField != 0 {
 		coin.PublicKey = new(EllipticPoint)
-		err = coin.PublicKey.Decompress(coinBytes[offset: offset+int(lenField)])
+		err = coin.PublicKey.Decompress(coinBytes[offset : offset+int(lenField)])
 		if err != nil {
 			return err
 		}
@@ -151,7 +147,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if lenField != 0 {
 		coin.CoinCommitment = new(EllipticPoint)
-		err = coin.CoinCommitment.Decompress(coinBytes[offset: offset+int(lenField)])
+		err = coin.CoinCommitment.Decompress(coinBytes[offset : offset+int(lenField)])
 		if err != nil {
 			return err
 		}
@@ -172,7 +168,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if lenField != 0 {
 		coin.SerialNumber = new(EllipticPoint)
-		err = coin.SerialNumber.Decompress(coinBytes[offset: offset+int(lenField)])
+		err = coin.SerialNumber.Decompress(coinBytes[offset : offset+int(lenField)])
 		if err != nil {
 			return err
 		}
@@ -192,9 +188,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		x := new(big.Int)
-		x.SetBytes(coinBytes[offset : offset+int(lenField)])
-		coin.Value = x.Uint64()
+		coin.Value = new(big.Int).SetBytes(coinBytes[offset:offset+int(lenField)]).Uint64()
 		offset += int(lenField)
 	}
 
@@ -216,8 +210,7 @@ type InputCoin struct {
 
 func (inputCoin *InputCoin) Init() *InputCoin {
 	if inputCoin.CoinDetails == nil {
-		inputCoin.CoinDetails = new(Coin)
-		inputCoin.CoinDetails.Init()
+		inputCoin.CoinDetails = new(Coin).Init()
 	}
 	return inputCoin
 }
@@ -228,7 +221,7 @@ func (inputCoin *InputCoin) Bytes() []byte {
 
 func (inputCoin *InputCoin) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
-		return errors.New("Bytes array is empty")
+		return errors.New("bytes array is empty")
 	}
 
 	inputCoin.CoinDetails = new(Coin)
@@ -274,7 +267,7 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 
 	if lenCoinDetailEncrypted > 0 {
 		outputCoin.CoinDetailsEncrypted = new(Ciphertext)
-		err := outputCoin.CoinDetailsEncrypted.SetBytes(bytes[offset: offset+lenCoinDetailEncrypted])
+		err := outputCoin.CoinDetailsEncrypted.SetBytes(bytes[offset : offset+lenCoinDetailEncrypted])
 		if err != nil {
 			return err
 		}
@@ -302,13 +295,13 @@ func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) error {
 	// 32 byte first: Randomness
 	msg := append(outputCoin.CoinDetails.Randomness.Bytes(), new(big.Int).SetUint64(outputCoin.CoinDetails.Value).Bytes()...)
 
-	PubKeyPoint := new(EllipticPoint)
-	err := PubKeyPoint.Decompress(recipientTK)
-	if err != nil{
+	pubKeyPoint := new(EllipticPoint)
+	err := pubKeyPoint.Decompress(recipientTK)
+	if err != nil {
 		return err
 	}
-	outputCoin.CoinDetailsEncrypted, err = AdvanceEncrypt(msg, PubKeyPoint)
-	if err != nil{
+	outputCoin.CoinDetailsEncrypted, err = AdvanceEncrypt(msg, pubKeyPoint)
+	if err != nil {
 		return err
 	}
 
@@ -318,7 +311,7 @@ func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) error {
 // Decrypt decrypts a ciphertext encrypting for coin with recipient's receiving key
 func (outputCoin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 	msg, err := AdvanceDecrypt(outputCoin.CoinDetailsEncrypted, new(big.Int).SetBytes(viewingKey.Rk))
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
