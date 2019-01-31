@@ -163,20 +163,20 @@ func (helper GOVConstitutionHelper) GetSealerPaymentAddress(tx metadata.Transact
 	return meta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddress
 }
 
-func (helper DCBConstitutionHelper) NewTxRewardProposalSubmitter(blockgen *BlkTmplGenerator, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
+func (helper DCBConstitutionHelper) NewTxRewardProposalSubmitter(chain *BlockChain, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
 	meta := metadata.NewRewardDCBProposalSubmitterMetadata()
 	tx := transaction.Tx{}
-	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, blockgen.chain.config.DataBase, meta)
+	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, chain.config.DataBase, meta)
 	if err != nil {
 		return nil, err
 	}
 	return &tx, nil
 }
 
-func (helper GOVConstitutionHelper) NewTxRewardProposalSubmitter(blockgen *BlkTmplGenerator, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
+func (helper GOVConstitutionHelper) NewTxRewardProposalSubmitter(chain *BlockChain, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
 	meta := metadata.NewRewardGOVProposalSubmitterMetadata()
 	tx := transaction.Tx{}
-	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, blockgen.chain.config.DataBase, meta)
+	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, chain.config.DataBase, meta)
 	if err != nil {
 		return nil, err
 	}
