@@ -1,25 +1,10 @@
 package privacy
 
 import (
-	"sync"
-
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
 )
-
-var isTesting bool
-
-//#if isTesting
-var pubkeyTest []*PublicKey
-var RTest []*EllipticPoint
-var mutex sync.Mutex
-var counter int
-var wg sync.WaitGroup
-var wgchild sync.WaitGroup
-var Numbs int
-
-//#endif
 
 // MultiSigSchemeInterface define all of function for create EC Schnorr signature which could be combine by adding with another EC Schnorr Signature
 type MultiSigSchemeInterface interface {
@@ -96,7 +81,7 @@ func (multisigScheme *MultiSigScheme) Init() {
 */
 // SignMultiSig ...
 func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicKey, listR []*EllipticPoint, r *big.Int) *SchnMultiSig {
-	//R = R0+R1+R2+R3+...+Rn
+	//r = R0+R1+R2+R3+...+Rn
 	R := new(EllipticPoint)
 	R.X = big.NewInt(0)
 	R.Y = big.NewInt(0)
@@ -107,7 +92,7 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 	//Calculate common params:
 	//	aggKey = PK0+PK1+PK2+...+PKn
 	//	X = (PK0*a0) + (PK1*a1) + ... + (PKn*an)
-	//	C = Hash(X||R||data)
+	//	C = Hash(X||r||data)
 	aggKey, C, _ := generateCommonParams(listPK, listPK, R, data)
 	//recalculate a0
 	selfPK := new(EllipticPoint)
@@ -146,14 +131,14 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 		#1: data need to be signed
 		#2: List of public key join phase 1 (create RCombine)
 		#3: List of public key of signer who create multi signature
-		#4: R combine in phase 1
+		#4: r combine in phase 1
 	return: true or false
 */
 func (multiSig *SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicKey, listCombinePK []*PublicKey, RCombine *EllipticPoint) bool {
 	//Calculate common params:
 	//	aggKey = PK0+PK1+PK2+...+PKn, PK0 is selfPK
 	//	X = (PK0*a0) + (PK1*a1) + ... + (PKn*an)
-	//	C = Hash(X||R||data)
+	//	C = Hash(X||r||data)
 	//for verify signature of a Signer, which wasn't combined, |listPK| = 1 and contain publickey of the Signer
 	var C *big.Int
 	var X *EllipticPoint
@@ -170,7 +155,7 @@ func (multiSig *SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*Public
 	GSPoint.Y.Set(Curve.Params().Gy)
 	GSPoint = GSPoint.ScalarMult(multiSig.S)
 
-	//RXCPoint is R.X^C
+	//RXCPoint is r.X^C
 	RXCPoint := X.ScalarMult(C)
 	RXCPoint = RXCPoint.Add(multiSig.R)
 	return GSPoint.IsEqual(RXCPoint)
