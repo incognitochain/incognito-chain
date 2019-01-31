@@ -54,7 +54,7 @@ func txCreatedByDCBBoardMember(txr Transaction, bcr BlockchainRetriever) bool {
 	isBoard := false
 	txPubKey := txr.GetSigPubKey()
 	fmt.Printf("check if created by dcb board: %v\n", txPubKey)
-	for _, member := range bcr.GetBoardPubKeys("dcb") {
+	for _, member := range bcr.GetBoardPubKeys(common.DCBBoard) {
 		fmt.Printf("member of board pubkey: %v\n", member)
 		if bytes.Equal(member, txPubKey) {
 			isBoard = true
