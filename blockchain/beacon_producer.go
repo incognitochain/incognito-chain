@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/bradfitz/slice"
 	"github.com/ninjadotorg/constant/cashec"
 
 	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
@@ -178,7 +178,7 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 		tempShardBlocks := make([]ShardToBeaconBlock, len(shardBlocks))
 		copy(tempShardBlocks, shardBlocks)
 		totalBlock := 0
-		slice.Sort(tempShardBlocks[:], func(i, j int) bool {
+		sort.SliceStable(tempShardBlocks[:], func(i, j int) bool {
 			return tempShardBlocks[i].Header.Height < tempShardBlocks[j].Header.Height
 		})
 		if !reflect.DeepEqual(tempShardBlocks, shardBlocks) {
