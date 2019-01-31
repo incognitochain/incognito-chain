@@ -4,6 +4,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"strconv"
+	"strings"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
@@ -12,6 +14,8 @@ import (
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/pkg/errors"
 )
+
+const actionValueSep = "-"
 
 type LoanRequest struct {
 	Params           params.LoanParams `json:"Params"`
@@ -119,4 +123,23 @@ func (lr *LoanRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transacti
 
 func (lr *LoanRequest) ValidateMetadataByItself() bool {
 	return true
+}
+
+func (lr *LoanRequest) BuildReqActions(txr Transaction, shardID byte) ([][]string, error) {
+	lrActionValue := getLoanRequestActionValue(lr.LoanID, shardID, txr.Hash())
+	lrAction := []string{strconv.Itoa(LoanRequestMeta), lrActionValue}
+	return [][]string{lrAction}, nil
+}
+
+func getLoanRequestActionValue(loanID []byte, shardID byte, txHash *common.Hash) string {
+	return strings.Join([]string{string(loanID), string(shardID), txHash.String()}, actionValueSep)
+}
+
+func parseLoanRequestActionValue(values string) ([]byte, byte, *common.Hash, error) {
+	s := strings.Split(values, actionValueSep)
+	if len(s) != 3 {
+		return nil, 0, nil, errors.Errorf("LoanRequest value invalid")
+	}
+	txHash, err := common.NewHashFromStr(s[2])
+	return []byte(s[0]), byte(s[1][0]), txHash, err
 }
