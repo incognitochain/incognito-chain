@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bradfitz/slice"
 	"github.com/ninjadotorg/constant/cashec"
 
 	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
@@ -167,7 +166,7 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 	validStakers := [][]string{}
 	validSwap := make(map[byte][][]string)
 	//Get shard to beacon block from pool
-	shardsBlocks := self.shardToBeaconPool.GetFinalBlock()
+	shardsBlocks := self.shardToBeaconPool.GetValidPendingBlock()
 
 	//Shard block is a map ShardId -> array of shard block
 
@@ -175,15 +174,15 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 	accumulativeValues := &accumulativeValues{}
 	for shardID, shardBlocks := range shardsBlocks {
 		// Only accept block in one epoch
-		tempShardBlocks := make([]ShardToBeaconBlock, len(shardBlocks))
-		copy(tempShardBlocks, shardBlocks)
+		//tempShardBlocks := make([]ShardToBeaconBlock, len(shardBlocks))
+		//copy(tempShardBlocks, shardBlocks)
 		totalBlock := 0
-		slice.Sort(tempShardBlocks[:], func(i, j int) bool {
-			return tempShardBlocks[i].Header.Height < tempShardBlocks[j].Header.Height
-		})
-		if !reflect.DeepEqual(tempShardBlocks, shardBlocks) {
-			panic("Shard To Beacon block not in right format of increasing height")
-		}
+		//sort.SliceStable(tempShardBlocks[:], func(i, j int) bool {
+		//	return tempShardBlocks[i].Header.Height < tempShardBlocks[j].Header.Height
+		//})
+		//if !reflect.DeepEqual(tempShardBlocks, shardBlocks) {
+		//	panic("Shard To Beacon block not in right format of increasing height")
+		//}
 		for index, shardBlock := range shardBlocks {
 			currentCommittee := beaconBestState.ShardCommittee[shardID]
 			hash := shardBlock.Header.Hash()

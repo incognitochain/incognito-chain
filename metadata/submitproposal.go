@@ -35,13 +35,13 @@ func (submitProposalInfo SubmitProposalInfo) ValidateSanityData(
 }
 
 func (submitProposalInfo SubmitProposalInfo) ValidateTxWithBlockChain(
-	boardType string,
+	boardType byte,
 	tx Transaction,
 	br BlockchainRetriever,
 	chainID byte,
 	db database.DatabaseInterface,
 ) bool {
-	if br.GetConstitutionEndHeight("dcb", chainID)+submitProposalInfo.ExecuteDuration+common.MinimumBlockOfProposalDuration >
+	if br.GetConstitutionEndHeight(common.DCBBoard, chainID)+submitProposalInfo.ExecuteDuration+common.MinimumBlockOfProposalDuration >
 		br.GetBoardEndHeight(boardType, chainID) {
 		return false
 	}
@@ -105,7 +105,7 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockC
 	chainID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	if !submitDCBProposalMetadata.SubmitProposalInfo.ValidateTxWithBlockChain("dcb", tx, br, chainID, db) {
+	if !submitDCBProposalMetadata.SubmitProposalInfo.ValidateTxWithBlockChain(common.DCBBoard, tx, br, chainID, db) {
 		return false, nil
 	}
 	return true, nil

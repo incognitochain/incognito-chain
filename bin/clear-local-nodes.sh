@@ -1,4 +1,4 @@
-tmux kill-session -t cash-prototype
+tmux kill-session -t constant
 
 
 rm -rf data1
@@ -22,6 +22,6 @@ rm -rf data18
 rm -rf data19
 rm -rf data20
 
-rm -f cash-prototype
+rm -f constant
 rm -f bootnode/bootnode
 rm -f benchmark/benchmark

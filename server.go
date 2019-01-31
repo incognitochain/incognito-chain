@@ -147,7 +147,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	}
 	serverObj.beaconPool = &mempool.NodeBeaconPool{}
 	serverObj.shardPool = &mempool.NodeShardPool{}
-	serverObj.shardToBeaconPool = mempool.InitShardToBeaconPool(mempool.DefaultShardToBeaconPoolConfig)
+	serverObj.shardToBeaconPool = mempool.GetShardToBeaconPool()
 	serverObj.crossShardPool = &mempool.CrossShardPool{}
 
 	serverObj.blockChain = &blockchain.BlockChain{}
@@ -171,7 +171,9 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		NodeMode:          cfg.NodeMode,
 		// Light:       cfg.Light,
 	})
-	serverObj.blockChain.SetShardToBeaconPool(db)
+
+	serverObj.blockChain.InitShardToBeaconPool(db)
+
 	if err != nil {
 		return err
 	}

@@ -90,15 +90,15 @@ type BlockchainRetriever interface {
 	GetChainHeight(byte) uint64
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
 	GetDCBParams() params.DCBParams
-	GetBoardPubKeys(boardType string) [][]byte
-	GetBoardPaymentAddress(boardType string) []privacy.PaymentAddress
+	GetBoardPubKeys(boardType byte) [][]byte
+	GetBoardPaymentAddress(boardType byte) []privacy.PaymentAddress
 	GetGOVParams() params.GOVParams
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
 	GetOracleParams() *params.Oracle
-	GetConstitutionStartHeight(boardType string, shardID byte) uint64
-	GetConstitutionEndHeight(boardType string, shardID byte) uint64
+	GetConstitutionStartHeight(boardType byte, shardID byte) uint64
+	GetConstitutionEndHeight(boardType byte, shardID byte) uint64
 	GetCurrentBlockHeight(byte) uint64
-	GetBoardEndHeight(boardType string, chainID byte) uint64
+	GetBoardEndHeight(boardType byte, chainID byte) uint64
 
 	// For validating loan metadata
 	GetLoanTxs([]byte) ([][]byte, error)

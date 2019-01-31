@@ -25,8 +25,8 @@ func (self *BlockChain) GetChainHeight(shardID byte) uint64 {
 	return 0
 }
 
-func (self *BlockChain) GetBoardPubKeys(boardType string) [][]byte {
-	if boardType == "dcb" {
+func (self *BlockChain) GetBoardPubKeys(boardType byte) [][]byte {
+	if boardType == common.DCBBoard {
 		return self.GetDCBBoardPubKeys()
 	} else {
 		return self.GetGOVBoardPubKeys()
@@ -42,8 +42,8 @@ func (self *BlockChain) GetGOVBoardPubKeys() [][]byte {
 	// return self.BestState[0].BestBlock.Header.GOVGovernor.BoardPubKeys
 	return nil
 }
-func (self *BlockChain) GetBoardPaymentAddress(boardType string) []privacy.PaymentAddress {
-	if boardType == "dcb" {
+func (self *BlockChain) GetBoardPaymentAddress(boardType byte) []privacy.PaymentAddress {
+	if boardType == common.DCBBoard {
 		// return self.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress
 		return []privacy.PaymentAddress{}
 	} else {
