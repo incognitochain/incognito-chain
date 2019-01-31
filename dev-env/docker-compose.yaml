@@ -1,8 +1,8 @@
 version: '2.1'
 services:
-  cash-dev:
+  constant-dev:
     image: golang:1.11rc1-alpine
-    container_name: cash-prototype-dev
+    container_name: constant-prototype-dev
     volumes:
       - "../:/go/src/github.com/ninjadotorg/constant"
     command: > 
@@ -16,9 +16,9 @@ services:
     ports:
       - 9333:9333
     networks:
-      - cash-net
+      - constant-net
 networks:
-  cash-net:
+  constant-net:
     driver: bridge
     enable_ipv6: true
     ipam:
