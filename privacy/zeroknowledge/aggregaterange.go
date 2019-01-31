@@ -64,7 +64,7 @@ func (proof *AggregatedRangeProof) IsNil() bool {
 func (proof AggregatedRangeProof) Bytes() []byte {
 	var res []byte
 
-	if proof.IsNil() == true {
+	if proof.IsNil() {
 		return []byte{}
 	}
 
@@ -187,11 +187,10 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	}
 
 	n := privacy.MaxExp
-	tmp := make([]*big.Int, n)
 	// Convert values to binary array
-	aL := make([]*big.Int, numValuePad*n, numValuePad*n)
+	aL := make([]*big.Int, numValuePad*n)
 	for i, value := range values {
-		tmp = privacy.ConvertBigIntToBinary(value, n)
+		tmp := privacy.ConvertBigIntToBinary(value, n)
 		for j := 0; j < n; j++ {
 			aL[i*n+j] = tmp[j]
 		}
