@@ -13,19 +13,19 @@ const (
 	MAX_INVALID_SHARD_TO_BEACON_BLK_IN_POOL = 200
 )
 
-type ShardToBeaconPool_v2 struct {
+type ShardToBeaconPool struct {
 	pool                   map[byte][]*blockchain.ShardToBeaconBlock // shardID -> height -> block
 	poolMutex              *sync.RWMutex
 	latestValidHeight      map[byte]uint64
 	latestValidHeightMutex *sync.RWMutex
 }
 
-var shardToBeaconPool_v2 *ShardToBeaconPool_v2 = nil
+var shardToBeaconPool_v2 *ShardToBeaconPool = nil
 
 // get singleton instance of ShardToBeacon pool
-func GetShardToBeaconPool() *ShardToBeaconPool_v2 {
+func GetShardToBeaconPool() *ShardToBeaconPool {
 	if shardToBeaconPool_v2 == nil {
-		shardToBeaconPool_v2 = new(ShardToBeaconPool_v2)
+		shardToBeaconPool_v2 = new(ShardToBeaconPool)
 		shardToBeaconPool_v2.pool = make(map[byte][]*blockchain.ShardToBeaconBlock)
 		shardToBeaconPool_v2.poolMutex = new(sync.RWMutex)
 		shardToBeaconPool_v2.latestValidHeight = make(map[byte]uint64)
@@ -34,7 +34,7 @@ func GetShardToBeaconPool() *ShardToBeaconPool_v2 {
 	return shardToBeaconPool_v2
 }
 
-func (self *ShardToBeaconPool_v2) SetShardState(latestShardState map[byte]uint64) {
+func (self *ShardToBeaconPool) SetShardState(latestShardState map[byte]uint64) {
 	self.latestValidHeightMutex.Lock()
 	self.latestValidHeightMutex.Unlock()
 
@@ -49,12 +49,12 @@ func (self *ShardToBeaconPool_v2) SetShardState(latestShardState map[byte]uint64
 	self.RemovePendingBlock(latestShardState)
 }
 
-func (self *ShardToBeaconPool_v2) GetShardState() map[byte]uint64 {
+func (self *ShardToBeaconPool) GetShardState() map[byte]uint64 {
 	return self.latestValidHeight
 }
 
 //Add Shard to Beacon block to the pool, if it is new block and not yet in the pool, and satisfy pool capacity (for valid and invalid; also swap for better invalid block)
-func (self *ShardToBeaconPool_v2) AddShardToBeaconBlock(blk blockchain.ShardToBeaconBlock) error {
+func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaconBlock) error {
 	blkShardID := blk.Header.ShardID
 	blkHeight := blk.Header.Height
 	self.poolMutex.Lock()
@@ -114,7 +114,7 @@ func (self *ShardToBeaconPool_v2) AddShardToBeaconBlock(blk blockchain.ShardToBe
 	return nil
 }
 
-func (self *ShardToBeaconPool_v2) RemovePendingBlock(blockItems map[byte]uint64) {
+func (self *ShardToBeaconPool) RemovePendingBlock(blockItems map[byte]uint64) {
 	self.poolMutex.Lock()
 	defer self.poolMutex.Unlock()
 	for shardID, blockHeight := range blockItems {
@@ -129,7 +129,7 @@ func (self *ShardToBeaconPool_v2) RemovePendingBlock(blockItems map[byte]uint64)
 	}
 }
 
-func (self *ShardToBeaconPool_v2) GetValidPendingBlock() map[byte][]*blockchain.ShardToBeaconBlock {
+func (self *ShardToBeaconPool) GetValidPendingBlock() map[byte][]*blockchain.ShardToBeaconBlock {
 
 	self.poolMutex.RLock()
 	defer self.poolMutex.RUnlock()
@@ -156,7 +156,7 @@ func (self *ShardToBeaconPool_v2) GetValidPendingBlock() map[byte][]*blockchain.
 	return finalBlocks
 }
 
-func (self *ShardToBeaconPool_v2) GetValidPendingBlockHash() map[byte][]common.Hash {
+func (self *ShardToBeaconPool) GetValidPendingBlockHash() map[byte][]common.Hash {
 	finalBlocks := make(map[byte][]common.Hash)
 	blks := self.GetValidPendingBlock()
 	for shardID, blkItems := range blks {
@@ -167,7 +167,7 @@ func (self *ShardToBeaconPool_v2) GetValidPendingBlockHash() map[byte][]common.H
 	return finalBlocks
 }
 
-func (self *ShardToBeaconPool_v2) GetValidPendingBlockHeight() map[byte][]uint64 {
+func (self *ShardToBeaconPool) GetValidPendingBlockHeight() map[byte][]uint64 {
 	finalBlocks := make(map[byte][]uint64)
 	blks := self.GetValidPendingBlock()
 	for shardID, blkItems := range blks {

@@ -44,7 +44,7 @@ type Server struct {
 	memPool           *mempool.TxPool
 	beaconPool        *mempool.NodeBeaconPool
 	shardPool         *mempool.NodeShardPool
-	shardToBeaconPool *mempool.ShardToBeaconPool_v2
+	shardToBeaconPool *mempool.ShardToBeaconPool
 	crossShardPool    *mempool.CrossShardPool
 
 	waitGroup       sync.WaitGroup
