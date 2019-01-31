@@ -88,7 +88,11 @@ var RpcHandler = map[string]commandHandler{
 
 	// Crowdsale
 	GetListOngoingCrowdsale:               RpcServer.handleGetListOngoingCrowdsale,
+	CreateCrowdsaleRequestToken:           RpcServer.handleCreateCrowdsaleRequestToken,
+	SendCrowdsaleRequestToken:             RpcServer.handleSendCrowdsaleRequestToken,
 	CreateAndSendCrowdsaleRequestToken:    RpcServer.handleCreateAndSendCrowdsaleRequestToken,
+	CreateCrowdsaleRequestConstant:        RpcServer.handleCreateCrowdsaleRequestConstant,
+	SendCrowdsaleRequestConstant:          RpcServer.handleSendCrowdsaleRequestConstant,
 	CreateAndSendCrowdsaleRequestConstant: RpcServer.handleCreateAndSendCrowdsaleRequestConstant,
 	TestStoreCrowdsale:                    RpcServer.handleTESTStoreCrowdsale,
 

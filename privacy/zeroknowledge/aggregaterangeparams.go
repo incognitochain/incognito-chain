@@ -19,8 +19,8 @@ type BulletproofParams struct {
 func newBulletproofParams(m int) *BulletproofParams {
 	gen := new(BulletproofParams)
 	capacity := 64 * m // fixed value
-	gen.G = make([]*privacy.EllipticPoint, capacity, capacity)
-	gen.H = make([]*privacy.EllipticPoint, capacity, capacity)
+	gen.G = make([]*privacy.EllipticPoint, capacity)
+	gen.H = make([]*privacy.EllipticPoint, capacity)
 
 	for i := 0; i < capacity; i++ {
 		gen.G[i] = privacy.PedCom.G[0].Hash(5 + i)
@@ -45,30 +45,7 @@ func EncodeVectors(a []*big.Int, b []*big.Int, g []*privacy.EllipticPoint, h []*
 	return res, nil
 }
 
-func generateChallengeForAggRange(AggParam *BulletproofParams, values []*privacy.EllipticPoint) *big.Int {
-	bytes := AggParam.G[0].Compress()
-	for i := 1; i < len(AggParam.G); i++ {
-		bytes = append(bytes, AggParam.G[i].Compress()...)
-	}
-
-	for i := 0; i < len(AggParam.H); i++ {
-		bytes = append(bytes, AggParam.H[i].Compress()...)
-	}
-
-	bytes = append(bytes, AggParam.U.Compress()...)
-
-	for i := 0; i < len(values); i++ {
-		bytes = append(bytes, values[i].Compress()...)
-	}
-
-	hash := common.HashB(bytes)
-
-	res := new(big.Int).SetBytes(hash)
-	res.Mod(res, privacy.Curve.Params().N)
-	return res
-}
-
-func generateChallengeForAggRangeFromBytes(AggParam *BulletproofParams, values [][]byte) *big.Int {
+func generateChallengeForAggRange(AggParam *BulletproofParams, values [][]byte) *big.Int {
 	bytes := AggParam.G[0].Compress()
 	for i := 1; i < len(AggParam.G); i++ {
 		bytes = append(bytes, AggParam.G[i].Compress()...)

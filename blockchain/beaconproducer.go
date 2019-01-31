@@ -81,6 +81,11 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	beaconBlock.Header.PrevBlockHash = beaconBestState.BestBlockHash
 	tempShardState, staker, swap, stabilityInstructions := self.GetShardState(&beaconBestState)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, self.chain.BestState.Beacon.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
+	votingInstruction, err := self.chain.generateVotingInstruction(privateKey)
+	if err != nil {
+		return nil, NewBlockChainError(BeaconError, err)
+	}
+	tempInstruction = append(tempInstruction, votingInstruction...)
 	//==========Create Body
 	beaconBlock.Body.Instructions = tempInstruction
 	beaconBlock.Body.ShardState = tempShardState
@@ -171,14 +176,13 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 		// Only accept block in one epoch
 		//tempShardBlocks := make([]ShardToBeaconBlock, len(shardBlocks))
 		//copy(tempShardBlocks, shardBlocks)
-		//
-		//slice.Sort(tempShardBlocks[:], func(i, j int) bool {
+		totalBlock := 0
+		//sort.SliceStable(tempShardBlocks[:], func(i, j int) bool {
 		//	return tempShardBlocks[i].Header.Height < tempShardBlocks[j].Header.Height
 		//})
 		//if !reflect.DeepEqual(tempShardBlocks, shardBlocks) {
 		//	panic("Shard To Beacon block not in right format of increasing height")
 		//}
-		totalBlock := 0
 		for index, shardBlock := range shardBlocks {
 			currentCommittee := beaconBestState.ShardCommittee[shardID]
 			hash := shardBlock.Header.Hash()
@@ -354,6 +358,7 @@ func (self *BestStateBeacon) GenerateInstruction(
 	}
 	return instructions
 }
+
 func (self *BestStateBeacon) GetValidStakers(tempStaker []string) []string {
 	for _, committees := range self.ShardCommittee {
 		tempStaker = GetValidStaker(committees, tempStaker)

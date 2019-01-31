@@ -10,7 +10,6 @@ const (
 	SND     = byte(0x02)
 	SHARDID = byte(0x03)
 	RAND    = byte(0x04)
-	FULL    = byte(0x05)
 )
 
 // PedersenCommitment represents the parameters for the commitment
@@ -26,9 +25,9 @@ type PedersenCommitment struct {
 func newPedersenParams() PedersenCommitment {
 	var pcm PedersenCommitment
 	const capacity = 5 // fixed value = 5
-	pcm.G = make([]*EllipticPoint, capacity, capacity)
+	pcm.G = make([]*EllipticPoint, capacity)
 	pcm.G[0] = new(EllipticPoint)
-	pcm.G[0].X, pcm.G[0].Y = Curve.Params().Gx, Curve.Params().Gy
+	pcm.G[0].Set(Curve.Params().Gx, Curve.Params().Gy)
 
 	for i := 1; i < len(pcm.G); i++ {
 		pcm.G[i] = pcm.G[0].Hash(i)
@@ -53,6 +52,6 @@ func (com PedersenCommitment) CommitAll(openings []*big.Int) *EllipticPoint {
 
 // CommitAtIndex commits specific value with index and returns 34 bytes
 func (com PedersenCommitment) CommitAtIndex(value, rand *big.Int, index byte) *EllipticPoint {
-	commitment := com.G[len(com.G)-1].ScalarMult(rand).Add(com.G[index].ScalarMult(value))
+	commitment := com.G[RAND].ScalarMult(rand).Add(com.G[index].ScalarMult(value))
 	return commitment
 }

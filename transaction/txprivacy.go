@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"math/big"
 	"strconv"
@@ -186,7 +187,7 @@ func (tx *Tx) Init(
 	for ok {
 		var sndOut *big.Int
 		for i := 0; i < len(paymentInfo); i++ {
-			sndOut = privacy.RandBigInt()
+			sndOut = privacy.RandScalar()
 			for {
 
 				ok1, err := CheckSNDerivatorExistence(tokenID, sndOut, shardID, db)
@@ -195,7 +196,7 @@ func (tx *Tx) Init(
 				}
 				// if sndOut existed, then re-random it
 				if ok1 {
-					sndOut = privacy.RandBigInt()
+					sndOut = privacy.RandScalar()
 				} else {
 					break
 				}
@@ -230,8 +231,14 @@ func (tx *Tx) Init(
 	commitmentProving := make([]*privacy.EllipticPoint, len(commitmentIndexs))
 	for i, cmIndex := range commitmentIndexs {
 		commitmentProving[i] = new(privacy.EllipticPoint)
-		temp, _ := db.GetCommitmentByIndex(tokenID, cmIndex, shardID)
-		commitmentProving[i], _ = privacy.DecompressKey(temp)
+		temp, err := db.GetCommitmentByIndex(tokenID, cmIndex, shardID)
+		if err != nil{
+			return NewTransactionErr(UnexpectedErr, err)
+		}
+		err = commitmentProving[i].Decompress(temp)
+		if err != nil{
+			return NewTransactionErr(UnexpectedErr, err)
+		}
 	}
 
 	// prepare witness for proving
@@ -574,7 +581,10 @@ func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 }
 
 func (tx *Tx) GetUniqueReceiver() (bool, []byte, uint64) {
-	sender := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	sender := []byte{} // Empty byte slice for coinbase tx
+	if tx.Proof != nil && len(tx.Proof.InputCoins) > 0 {
+		sender = tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	}
 	pubkeys, amounts := tx.GetReceivers()
 	pubkey := []byte{}
 	amount := uint64(0)
@@ -587,6 +597,14 @@ func (tx *Tx) GetUniqueReceiver() (bool, []byte, uint64) {
 		}
 	}
 	return count == 1, pubkey, amount
+}
+
+func (tx *Tx) GetTokenReceivers() ([][]byte, []uint64) {
+	return nil, nil
+}
+
+func (tx *Tx) GetTokenUniqueReceiver() (bool, []byte, uint64) {
+	return false, nil, 0
 }
 
 func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.Hash][][]byte) error {
@@ -638,6 +656,7 @@ func (tx *Tx) ValidateTxWithBlockChain(
 	if tx.GetType() == common.TxSalaryType {
 		return nil
 	}
+	fmt.Printf("[db] validating tx with blockchain tx level\n")
 	if tx.Metadata != nil {
 		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(tx, bcr, shardID, db)
 		if err != nil {
@@ -842,9 +861,9 @@ func (tx *Tx) InitTxSalary(
 	if err != nil {
 		return err
 	}
-	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandBigInt()
+	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandScalar()
 
-	sndOut := privacy.RandBigInt()
+	sndOut := privacy.RandScalar()
 	for {
 		lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
@@ -855,7 +874,7 @@ func (tx *Tx) InitTxSalary(
 			return err
 		}
 		if ok {
-			sndOut = privacy.RandBigInt()
+			sndOut = privacy.RandScalar()
 		} else {
 			break
 		}
@@ -883,6 +902,7 @@ func (tx *Tx) InitTxSalary(
 func (tx Tx) ValidateTxSalary(
 	db database.DatabaseInterface,
 ) bool {
+	fmt.Printf("[db] validating tx salary: %s\n", tx.Hash())
 	// verify signature
 	valid, err := tx.verifySigTx()
 	if !valid {

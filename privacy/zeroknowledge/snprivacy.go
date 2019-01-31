@@ -227,10 +227,10 @@ func (proof *SNPrivacyProof) SetBytes(bytes []byte) error {
 
 func (wit *SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 	// randomness
-	eSK := privacy.RandBigInt()
-	eSND := privacy.RandBigInt()
-	dSK := privacy.RandBigInt()
-	dSND := privacy.RandBigInt()
+	eSK := privacy.RandScalar()
+	eSND := privacy.RandScalar()
+	dSK := privacy.RandScalar()
+	dSND := privacy.RandScalar()
 
 	// calculate tSeed = g_SK^eSK * h^dSK
 	tSeed := privacy.PedCom.CommitAtIndex(eSK, dSK, privacy.SK)
@@ -242,9 +242,9 @@ func (wit *SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 	tOutput := wit.stmt.sn.ScalarMult(new(big.Int).Add(eSK, eSND))
 
 	// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-	x := new(big.Int)
+	var x *big.Int
 	if mess == nil {
-		x = generateChallengeFromPoint([]*privacy.EllipticPoint{tSeed, tInput, tOutput})
+		x = generateChallenge([][]byte{tSeed.Compress(), tInput.Compress(), tOutput.Compress()})
 	} else {
 		x = big.NewInt(0).SetBytes(mess)
 	}
@@ -276,9 +276,9 @@ func (wit *SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 
 func (proof *SNPrivacyProof) Verify(mess []byte) bool {
 	// re-calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-	x := new(big.Int)
+	var x *big.Int
 	if mess == nil {
-		x = generateChallengeFromPoint([]*privacy.EllipticPoint{proof.tSK, proof.tInput, proof.tSN})
+		x = generateChallenge([][]byte{proof.tSK.Compress(), proof.tInput.Compress(), proof.tSN.Compress()})
 	} else {
 		x = big.NewInt(0).SetBytes(mess)
 	}

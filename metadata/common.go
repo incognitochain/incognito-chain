@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 )
@@ -66,18 +67,19 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 
 	case LoanRequestMeta:
 		md = &LoanRequest{}
-
 	case LoanResponseMeta:
 		md = &LoanResponse{}
-
 	case LoanWithdrawMeta:
 		md = &LoanWithdraw{}
-
 	case LoanPaymentMeta:
 		md = &LoanPayment{}
-
 	case LoanUnlockMeta:
 		md = &LoanUnlock{}
+
+	case CrowdsaleRequestMeta:
+		md = &CrowdsaleRequest{}
+	case CrowdsalePaymentMeta:
+		md = &CrowdsalePayment{}
 
 	case SubmitDCBProposalMeta:
 		md = &SubmitDCBProposalMetadata{}
@@ -142,6 +144,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &StakingMetadata{}
 
 	default:
+		fmt.Printf("[db] meta: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
 	}
 
