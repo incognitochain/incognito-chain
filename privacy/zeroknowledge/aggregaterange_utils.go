@@ -141,7 +141,7 @@ func (wit *InnerProductWitness) Prove(AggParam *BulletproofParams) (*InnerProduc
 		proof.r = append(proof.r, R)
 
 		// calculate challenge x = hash(G || H || u || p ||  l || r)
-		x := generateChallengeForAggRange(AggParam, []*privacy.EllipticPoint{p, L, R})
+		x := generateChallengeForAggRange(AggParam, [][]byte{p.Compress(), L.Compress(), R.Compress()})
 		xInverse := new(big.Int).ModInverse(x, privacy.Curve.Params().N)
 
 		// calculate GPrime, HPrime, PPrime for the next loop
@@ -207,7 +207,7 @@ func (proof *InnerProductProof) Verify(AggParam *BulletproofParams) bool {
 	for i := range proof.l {
 		nPrime := n / 2
 		// calculate challenge x = hash(G || H || u || p ||  l || r)
-		x := generateChallengeForAggRange(AggParam, []*privacy.EllipticPoint{p, proof.l[i], proof.r[i]})
+		x := generateChallengeForAggRange(AggParam, [][]byte{p.Compress(), proof.l[i].Compress(), proof.r[i].Compress()})
 		xInverse := new(big.Int).ModInverse(x, privacy.Curve.Params().N)
 
 		// calculate GPrime, HPrime, PPrime for the next loop

@@ -140,9 +140,9 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			if err != nil {
 				return NewTransactionErr(UnexpectedErr, err)
 			}
-			temp.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandBigInt()
+			temp.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandScalar()
 
-			sndOut := privacy.RandBigInt()
+			sndOut := privacy.RandScalar()
 			temp.Proof.OutputCoins[0].CoinDetails.SNDerivator = sndOut
 
 			// create coin commitment

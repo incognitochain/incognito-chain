@@ -32,14 +32,12 @@ func (ciphertext *ElGamalCiphertext) Set(C1, C2 *EllipticPoint) {
 	ciphertext.C2 = C2
 }
 
-func (pub *ElGamalPubKey) Set(
-	H *EllipticPoint) {
+func (pub *ElGamalPubKey) Set(H *EllipticPoint) {
 	pub.H = H
 }
 
-func (priv *ElGamalPrivKey) Set(
-	Value *big.Int) {
-	priv.X = Value
+func (priv *ElGamalPrivKey) Set(x *big.Int) {
+	priv.X = x
 }
 
 // Bytes -  returned value always is 66 bytes
@@ -51,23 +49,19 @@ func (ciphertext *ElGamalCiphertext) Bytes() []byte {
 	return res
 }
 
-func (ciphertext *ElGamalCiphertext) SetBytes(bytearr []byte) error {
-	if len(bytearr) == 0 {
+func (ciphertext *ElGamalCiphertext) SetBytes(bytes []byte) error {
+	if len(bytes) == 0 {
 		return nil
 	}
 
-	if ciphertext.C2 == nil {
-		ciphertext.C2 = new(EllipticPoint)
-	}
-	if ciphertext.C1 == nil {
-		ciphertext.C1 = new(EllipticPoint)
-	}
+	ciphertext.C1 = new(EllipticPoint)
+	ciphertext.C2 = new(EllipticPoint)
 
-	err := ciphertext.C1.Decompress(bytearr[:33])
+	err := ciphertext.C1.Decompress(bytes[:CompressedPointSize])
 	if err != nil {
 		return err
 	}
-	err = ciphertext.C2.Decompress(bytearr[33:])
+	err = ciphertext.C2.Decompress(bytes[CompressedPointSize:])
 	if err != nil {
 		return err
 	}
@@ -86,7 +80,7 @@ func (priv *ElGamalPrivKey) GenPubKey() *ElGamalPubKey {
 }
 
 func (pub *ElGamalPubKey) Encrypt(plaintext *EllipticPoint) *ElGamalCiphertext {
-	randomness := RandBigInt()
+	randomness := RandScalar()
 
 	ciphertext := new(ElGamalCiphertext)
 
@@ -94,7 +88,7 @@ func (pub *ElGamalPubKey) Encrypt(plaintext *EllipticPoint) *ElGamalCiphertext {
 	ciphertext.C1.Set(Curve.Params().Gx, Curve.Params().Gy)
 	ciphertext.C1 = ciphertext.C1.ScalarMult(randomness)
 
-	ciphertext.C2 = plaintext.Add((*pub.H).ScalarMult(randomness))
+	ciphertext.C2 = plaintext.Add(pub.H.ScalarMult(randomness))
 
 	return ciphertext
 }
@@ -107,10 +101,12 @@ func ElGamalEncrypt(pubKey []byte, data *EllipticPoint) ([]byte, error) {
 	elgamalPub := ElGamalPubKey{
 		H: new(EllipticPoint),
 	}
+
 	err := elgamalPub.H.Decompress(pubKey)
 	if err != nil {
 		return nil, err
 	}
+
 	cipher := elgamalPub.Encrypt(data)
 	return cipher.Bytes(), nil
 }
@@ -120,8 +116,10 @@ func ElGamalDecrypt(privKey []byte, cipher []byte) (*EllipticPoint, error) {
 		X: new(big.Int),
 	}
 	elgamalPri.X.SetBytes(privKey)
+
 	ciphertext := &ElGamalCiphertext{}
 	ciphertext.SetBytes(cipher)
+
 	result, err := elgamalPri.Decrypt(ciphertext)
 	return result, err
 }

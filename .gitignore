@@ -37,7 +37,7 @@ privacy/server/verifying\.key
 .env
 datadirs/data**
 data/**
-cash-*
+constant-*
 constant-*
 
 pkg
