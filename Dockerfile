@@ -33,4 +33,4 @@ RUN go build
 
 EXPOSE 9333:9333
 
-CMD [ "./cash-prototype" ]
+CMD [ "./constant" ]
