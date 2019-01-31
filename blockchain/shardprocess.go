@@ -131,6 +131,7 @@ func (self *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 }
 
 func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
+
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 	shardID := block.Header.ShardID

@@ -13,10 +13,10 @@ import (
 func TestPKSNPrivacy(t *testing.T) {
 	sk := privacy.GenerateSpendingKey([]byte{123})
 	skInt := new(big.Int).SetBytes(sk)
-	SND := privacy.RandBigInt()
+	SND := privacy.RandScalar()
 
-	rSK := privacy.RandBigInt()
-	rSND := privacy.RandBigInt()
+	rSK := privacy.RandScalar()
+	rSND := privacy.RandScalar()
 
 	serialNumber := privacy.PedCom.G[privacy.SK].Derive(skInt, SND)
 

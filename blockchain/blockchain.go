@@ -150,8 +150,19 @@ func (self *BlockChain) Init(config *Config) error {
 	}
 	return nil
 }
-func (self *BlockChain) SetShardToBeaconPool(db database.DatabaseInterface) {
-	self.config.ShardToBeaconPool.SetDatabase(db)
+func (self *BlockChain) InitShardToBeaconPool(db database.DatabaseInterface) {
+	beaconBestState := BestStateBeacon{}
+	temp, err := db.FetchBeaconBestState()
+	if err != nil {
+		panic("Fail to get state from db")
+	} else {
+		if err := json.Unmarshal(temp, &beaconBestState); err != nil {
+			Logger.log.Error(err)
+			panic("Can't Unmarshal beacon beststate")
+		}
+		self.config.ShardToBeaconPool.SetShardState(beaconBestState.BestShardHeight)
+	}
+
 }
 
 // Before call store and get block from cache or db, call chain.lock()
@@ -833,7 +844,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 //				txCustomToken := tx.(*transaction.TxCustomToken)
 //				voteAmount := txCustomToken.GetAmountOfVote()
 //				voteDCBBoardMetadata := txCustomToken.Metadata.(*metadata.VoteDCBBoardMetadata)
-//				err := self.config.DataBase.AddVoteBoard("dcb", DCBBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteDCBBoardMetadata.CandidatePaymentAddress, voteAmount)
+//				err := self.config.DataBase.AddVoteBoard(common.DCBBoard, DCBBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteDCBBoardMetadata.CandidatePaymentAddress, voteAmount)
 //				if err != nil {
 //					return err
 //				}
@@ -843,7 +854,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 //				txCustomToken := tx.(*transaction.TxCustomToken)
 //				voteAmount := txCustomToken.GetAmountOfVote()
 //				voteGOVBoardMetadata := txCustomToken.Metadata.(*metadata.VoteGOVBoardMetadata)
-//				err := self.config.DataBase.AddVoteBoard("gov", GOVBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteGOVBoardMetadata.CandidatePaymentAddress, voteAmount)
+//				err := self.config.DataBase.AddVoteBoard(common.GOVBoard, GOVBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteGOVBoardMetadata.CandidatePaymentAddress, voteAmount)
 //				if err != nil {
 //					return err
 //				}
@@ -859,7 +870,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 //		case metadata.SendInitDCBVoteTokenMeta:
 //			{
 //				meta := tx.GetMetadata().(*metadata.SendInitDCBVoteTokenMetadata)
-//				err := self.config.DataBase.SendInitVoteToken("dcb", block.Header.DCBGovernor.BoardIndex, meta.ReceiverPaymentAddress, meta.Amount)
+//				err := self.config.DataBase.SendInitVoteToken(common.DCBBoard, block.Header.DCBGovernor.BoardIndex, meta.ReceiverPaymentAddress, meta.Amount)
 //				if err != nil {
 //					return err
 //				}
@@ -867,7 +878,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 //		case metadata.SendInitGOVVoteTokenMeta:
 //			{
 //				meta := tx.GetMetadata().(*metadata.SendInitGOVVoteTokenMetadata)
-//				err := self.config.DataBase.SendInitVoteToken("gov", block.Header.GOVGovernor.BoardIndex, meta.ReceiverPaymentAddress, meta.Amount)
+//				err := self.config.DataBase.SendInitVoteToken(common.GOVBoard, block.Header.GOVGovernor.BoardIndex, meta.ReceiverPaymentAddress, meta.Amount)
 //				if err != nil {
 //					return err
 //				}
@@ -886,42 +897,42 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 //		switch tx.GetMetadataType() {
 //		case metadata.SealedLv3DCBVoteProposalMeta:
 //			underlieMetadata := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
-//			self.config.DataBase.AddVoteLv3Proposal("dcb", nextDCBConstitutionIndex, underlieMetadata.Hash())
+//			self.config.DataBase.AddVoteLv3Proposal(common.DCBBoard, nextDCBConstitutionIndex, underlieMetadata.Hash())
 //		case metadata.SealedLv2DCBVoteProposalMeta:
 //			underlieMetadata := meta.(*metadata.SealedLv2DCBVoteProposalMetadata)
-//			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
+//			self.config.DataBase.AddVoteLv1or2Proposal(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
 //		case metadata.SealedLv1DCBVoteProposalMeta:
 //			underlieMetadata := meta.(*metadata.SealedLv1DCBVoteProposalMetadata)
-//			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
+//			self.config.DataBase.AddVoteLv1or2Proposal(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
 //		case metadata.NormalDCBVoteProposalFromOwnerMeta:
 //			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromOwnerMetadata)
-//			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
+//			self.config.DataBase.AddVoteNormalProposalFromOwner(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
 //		case metadata.NormalDCBVoteProposalFromSealerMeta:
 //			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromSealerMetadata)
-//			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
+//			self.config.DataBase.AddVoteNormalProposalFromSealer(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
 //		case metadata.AcceptDCBProposalMeta:
 //			underlieMetadata := meta.(*metadata.AcceptDCBProposalMetadata)
-//			self.config.DataBase.TakeVoteTokenFromWinner("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
-//			self.config.DataBase.SetNewProposalWinningVoter("dcb", nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
+//			self.config.DataBase.TakeVoteTokenFromWinner(common.DCBBoard, nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
+//			self.config.DataBase.SetNewProposalWinningVoter(common.DCBBoard, nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
 //		case metadata.SealedLv3GOVVoteProposalMeta:
 //			underlieMetadata := meta.(*metadata.SealedLv3GOVVoteProposalMetadata)
-//			self.config.DataBase.AddVoteLv3Proposal("gov", nextGOVConstitutionIndex, underlieMetadata.Hash())
+//			self.config.DataBase.AddVoteLv3Proposal(common.GOVBoard, nextGOVConstitutionIndex, underlieMetadata.Hash())
 //		case metadata.SealedLv2GOVVoteProposalMeta:
 //			underlieMetadata := meta.(*metadata.SealedLv2GOVVoteProposalMetadata)
-//			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
+//			self.config.DataBase.AddVoteLv1or2Proposal(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
 //		case metadata.SealedLv1GOVVoteProposalMeta:
 //			underlieMetadata := meta.(*metadata.SealedLv1GOVVoteProposalMetadata)
-//			self.config.DataBase.AddVoteLv1or2Proposal("gov", nextGOVConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
+//			self.config.DataBase.AddVoteLv1or2Proposal(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
 //		case metadata.NormalGOVVoteProposalFromOwnerMeta:
 //			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromOwnerMetadata)
-//			self.config.DataBase.AddVoteNormalProposalFromOwner("gov", nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
+//			self.config.DataBase.AddVoteNormalProposalFromOwner(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
 //		case metadata.NormalGOVVoteProposalFromSealerMeta:
 //			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromSealerMetadata)
-//			self.config.DataBase.AddVoteNormalProposalFromSealer("gov", nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
+//			self.config.DataBase.AddVoteNormalProposalFromSealer(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
 //		case metadata.AcceptGOVProposalMeta:
 //			underlieMetadata := meta.(*metadata.AcceptGOVProposalMetadata)
-//			self.config.DataBase.TakeVoteTokenFromWinner("gov", nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
-//			self.config.DataBase.SetNewProposalWinningVoter("gov", nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
+//			self.config.DataBase.TakeVoteTokenFromWinner(common.GOVBoard, nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
+//			self.config.DataBase.SetNewProposalWinningVoter(common.GOVBoard, nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
 //		}
 //	}
 //	return nil
@@ -1595,8 +1606,8 @@ func (self *BlockChain) GetNumberOfGOVGovernors() int {
 // 	return self.BestState[shardID].BestBlock
 // }
 
-func (self *BlockChain) GetConstitutionStartHeight(boardType string, shardID byte) uint64 {
-	if boardType == "dcb" {
+func (self *BlockChain) GetConstitutionStartHeight(boardType byte, shardID byte) uint64 {
+	if boardType == common.DCBBoard {
 		return self.GetDCBConstitutionStartHeight(shardID)
 	} else {
 		return self.GetGOVConstitutionStartHeight(shardID)
@@ -1612,16 +1623,16 @@ func (self *BlockChain) GetGOVConstitutionStartHeight(shardID byte) uint64 {
 	return 0
 }
 
-func (self *BlockChain) GetConstitutionEndHeight(boardType string, shardID byte) uint64 {
-	if boardType == "dcb" {
+func (self *BlockChain) GetConstitutionEndHeight(boardType byte, shardID byte) uint64 {
+	if boardType == common.DCBBoard {
 		return self.GetDCBConstitutionEndHeight(shardID)
 	} else {
 		return self.GetGOVConstitutionEndHeight(shardID)
 	}
 }
 
-func (self *BlockChain) GetBoardEndHeight(boardType string, chainID byte) uint64 {
-	if boardType == "dcb" {
+func (self *BlockChain) GetBoardEndHeight(boardType byte, chainID byte) uint64 {
+	if boardType == common.DCBBoard {
 		return self.GetDCBBoardEndHeight(chainID)
 	} else {
 		return self.GetGOVBoardEndHeight(chainID)

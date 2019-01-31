@@ -42,7 +42,7 @@ NOTE: The GOROOT and GOPATH above must not be the same path. It is recommended t
 ### Run with docker-compose
 * To start dev container
     `
-    $ docker-compose -p cashdev -f dev-env/docker-compose.yaml up -d
+    $ docker-compose -p constantdev -f dev-env/docker-compose.yaml up -d
     `
 * To stop dev container
     `
@@ -50,7 +50,7 @@ NOTE: The GOROOT and GOPATH above must not be the same path. It is recommended t
     `
 * To start developing
     `
-    $ docker exec -it cash-prototype-dev sh
+    $ docker exec -it constant-prototype-dev sh
     `
     `
     $ glide install
@@ -59,11 +59,11 @@ NOTE: The GOROOT and GOPATH above must not be the same path. It is recommended t
     $ go build
     `
     `
-    $ ./cash-prototype
+    $ ./constant
     `
 * To start other nodes (these nodes will start will config file in dev-env/nodes-data/node-<NODE_NUMBER>)
     `
-    $ docker run -i -t --net cashdev_cash-net --mount type=bind,src=$PWD/cash-prototype,dst=/cash-prototype --mount type=bind,src=$PWD/dev-env/nodes-data/node<REPLACE THIS WILL NODE_NUMBER>,dst=/nodedata --expose 9333 alpine:3.7 /cash-prototype --configfile /nodedata/config.conf
+    $ docker run -i -t --net constantdev_constant-net --mount type=bind,src=$PWD/constant,dst=/constant --mount type=bind,src=$PWD/dev-env/nodes-data/node<REPLACE THIS WILL NODE_NUMBER>,dst=/nodedata --expose 9333 alpine:3.7 /constant --configfile /nodedata/config.conf
     `
 ## Config values
 ### How to use config
