@@ -188,6 +188,7 @@ func (wit *SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
 
 	// calculate tOutput = sn^eSK
 	tE := wit.stmt.output.ScalarMult(eSK)
+
 	x := big.NewInt(0)
 	if mess == nil {
 		// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
@@ -195,6 +196,7 @@ func (wit *SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
 	} else {
 		x.SetBytes(mess)
 	}
+
 	// Calculate zSeed = SK * x + eSK
 	zSK := new(big.Int).Mul(wit.seed, x)
 	zSK.Add(zSK, eSK)
@@ -214,7 +216,6 @@ func (pro *SNNoPrivacyProof) Verify(mess []byte) bool {
 	} else {
 		x.SetBytes(mess)
 	}
-	// x := generateChallengeFromPoint([]*privacy.EllipticPoint{pro.tSeed, pro.tOutput})
 
 	// Check gSK^zSeed = vKey^x * tSeed
 	leftPoint1 := privacy.PedCom.G[privacy.SK].ScalarMult(pro.zSeed)
