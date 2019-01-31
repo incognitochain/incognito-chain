@@ -125,9 +125,12 @@ func (addr *PaymentAddress) SetBytes(bytes []byte) *PaymentAddress {
 }
 
 // NewPaymentAddressFromByte reverts a byte array to a payment address
+// TODO: remove this function 0xjacklope
 func NewPaymentAddressFromByte(b []byte) *PaymentAddress {
+	tmp := make([]byte, len(b))
+	copy(tmp, b)
 	paymentAddress := PaymentAddress{}
-	paymentAddress.SetBytes(b)
+	paymentAddress.SetBytes(tmp)
 	return &paymentAddress
 }
 

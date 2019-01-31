@@ -18,8 +18,8 @@ const (
 
 // for mining consensus
 const (
-	DurationOfTermDCB     = 1000    //number of block one DCB board in charge
-	DurationOfTermGOV     = 1000    //number of block one GOV board in charge
+	DurationOfDCBBoard    = 6       //number of block one DCB board in charge
+	DurationOfGOVBoard    = 1000    //number of block one GOV board in charge
 	MaxBlockSize          = 5000000 //byte 5MB
 	MaxTxsInBlock         = 1000
 	MinTxsInBlock         = 10                    // minium txs for block to get immediate process (meaning no wait time)
@@ -42,7 +42,7 @@ const (
 	MinimumBlockOfProposalDuration    = 50
 	MaximumBlockOfProposalDuration    = 200
 	MaximumProposalExplainationLength = 1000
-	NumberOfDCBGovernors              = 1
+	NumberOfDCBGovernors              = 3
 	NumberOfGOVGovernors              = 3
 	EncryptionOnePhraseDuration       = 5
 	RewardProposalSubmitter           = 500
