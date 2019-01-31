@@ -215,8 +215,6 @@ func MultiScalarmult(bases []*EllipticPoint, exponents []*big.Int) (*EllipticPoi
 		return nil, errors.New("wrong inputs")
 	}
 
-	//count := 0
-
 	baseTmp := make([]*EllipticPoint, n)
 	for i := 0; i < n; i++ {
 		baseTmp[i] = new(EllipticPoint)
@@ -228,7 +226,6 @@ func MultiScalarmult(bases []*EllipticPoint, exponents []*big.Int) (*EllipticPoi
 		expTmp[i] = new(big.Int)
 		expTmp[i].Set(exponents[i])
 	}
-	//start1 := time.Now()
 
 	result := new(EllipticPoint).Zero()
 
@@ -242,9 +239,6 @@ func MultiScalarmult(bases []*EllipticPoint, exponents []*big.Int) (*EllipticPoi
 			baseTmp[i] = baseTmp[i].Add(baseTmp[i])
 		}
 	}
-
-	//end1 := time.Since(start1)
-	//fmt.Printf(" time faster: %v\n", end1)
 
 	return result, nil
 }
