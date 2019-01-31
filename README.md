@@ -63,7 +63,7 @@ NOTE: The GOROOT and GOPATH above must not be the same path. It is recommended t
     `
 * To start other nodes (these nodes will start will config file in dev-env/nodes-data/node-<NODE_NUMBER>)
     `
-    $ docker run -i -t --net constantdev_constant-net --mount type=bind,src=$PWD/cash-prototype,dst=/cash-prototype --mount type=bind,src=$PWD/dev-env/nodes-data/node<REPLACE THIS WILL NODE_NUMBER>,dst=/nodedata --expose 9333 alpine:3.7 /constant --configfile /nodedata/config.conf
+    $ docker run -i -t --net constantdev_constant-net --mount type=bind,src=$PWD/constant,dst=/constant --mount type=bind,src=$PWD/dev-env/nodes-data/node<REPLACE THIS WILL NODE_NUMBER>,dst=/nodedata --expose 9333 alpine:3.7 /constant --configfile /nodedata/config.conf
     `
 ## Config values
 ### How to use config
