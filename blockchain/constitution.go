@@ -137,12 +137,12 @@ func (helper GOVConstitutionHelper) TxAcceptProposal(
 	return acceptTx
 }
 
-func (helper DCBConstitutionHelper) GetBoardType() string {
-	return "dcb"
+func (helper DCBConstitutionHelper) GetBoardType() byte {
+	return common.DCBBoard
 }
 
-func (helper GOVConstitutionHelper) GetBoardType() string {
-	return "gov"
+func (helper GOVConstitutionHelper) GetBoardType() byte {
+	return common.GOVBoard
 }
 
 func (helper DCBConstitutionHelper) CreatePunishDecryptTx(paymentAddress privacy.PaymentAddress) metadata.Metadata {
