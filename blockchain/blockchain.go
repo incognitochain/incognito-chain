@@ -150,8 +150,19 @@ func (self *BlockChain) Init(config *Config) error {
 	}
 	return nil
 }
-func (self *BlockChain) SetShardToBeaconPool(db database.DatabaseInterface) {
-	self.config.ShardToBeaconPool.SetDatabase(db)
+func (self *BlockChain) InitShardToBeaconPool(db database.DatabaseInterface) {
+	beaconBestState := BestStateBeacon{}
+	temp, err := db.FetchBeaconBestState()
+	if err != nil {
+		panic("Fail to get state from db")
+	} else {
+		if err := json.Unmarshal(temp, &beaconBestState); err != nil {
+			Logger.log.Error(err)
+			panic("Can't Unmarshal beacon beststate")
+		}
+		self.config.ShardToBeaconPool.SetShardState(beaconBestState.BestShardHeight)
+	}
+
 }
 
 // Before call store and get block from cache or db, call chain.lock()

@@ -384,7 +384,7 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 		}
 	}
 	// if pool does not have one of needed block, fail to verify
-	allShardBlocks := self.config.ShardToBeaconPool.GetFinalBlock()
+	allShardBlocks := self.config.ShardToBeaconPool.GetValidPendingBlock()
 	for shardID, shardBlocks := range allShardBlocks {
 		shardBlocks = shardBlocks[:len(block.Body.ShardState[shardID])]
 		shardStates := block.Body.ShardState[shardID]
