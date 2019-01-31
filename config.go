@@ -64,7 +64,7 @@ type config struct {
 	ConfigFile  string `short:"C" long:"configfile" description:"Path to configuratio\n file"`
 	DataDir     string `short:"D" long:"datadir" description:"Directory to store data"`
 	DatabaseDir string `short:"d" long:"datapre" description:"Database dir"`
-	LogDir      string `short:"L" long:"logdir" description:"Directory to log output."`
+	LogDir      string `short:"l" long:"logdir" description:"Directory to log output."`
 	LogLevel    string `short:"l" long:"loglevel" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical} -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems -- Use show to list available subsystems"`
 
 	AddPeers             []string `short:"a" long:"addpeer" description:"Add a peer to connect with at startup"`

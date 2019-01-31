@@ -15,8 +15,8 @@ type InnerProductWitness struct {
 }
 
 type InnerProductProof struct {
-	L []*privacy.EllipticPoint
-	R []*privacy.EllipticPoint
+	l []*privacy.EllipticPoint
+	r []*privacy.EllipticPoint
 	a *big.Int
 	b *big.Int
 
@@ -26,12 +26,12 @@ type InnerProductProof struct {
 func (proof *InnerProductProof) Bytes() []byte {
 	var res []byte
 
-	res = append(res, byte(len(proof.L)))
-	for _, l := range proof.L {
+	res = append(res, byte(len(proof.l)))
+	for _, l := range proof.l {
 		res = append(res, l.Compress()...)
 	}
 
-	for _, r := range proof.R {
+	for _, r := range proof.r {
 		res = append(res, r.Compress()...)
 	}
 
@@ -42,40 +42,39 @@ func (proof *InnerProductProof) Bytes() []byte {
 	return res
 }
 
-func (proof *InnerProductProof) SetBytes(bytes []byte) error{
-	if len(bytes) ==0{
+func (proof *InnerProductProof) SetBytes(bytes []byte) error {
+	if len(bytes) == 0 {
 		return nil
 	}
 
 	lenLArray := int(bytes[0])
 	offset := 1
 
-	proof.L = make([]*privacy.EllipticPoint, lenLArray)
-	for i:= 0; i<lenLArray; i++{
-		proof.L[i] = new(privacy.EllipticPoint)
-		proof.L[i].Decompress(bytes[offset: offset+privacy.CompressedPointSize])
+	proof.l = make([]*privacy.EllipticPoint, lenLArray)
+	for i := 0; i < lenLArray; i++ {
+		proof.l[i] = new(privacy.EllipticPoint)
+		proof.l[i].Decompress(bytes[offset : offset+privacy.CompressedPointSize])
 		offset += privacy.CompressedPointSize
 	}
 
-	proof.R = make([]*privacy.EllipticPoint, lenLArray)
-	for i:= 0; i<lenLArray; i++{
-		proof.R[i] = new(privacy.EllipticPoint)
-		proof.R[i].Decompress(bytes[offset: offset+privacy.CompressedPointSize])
+	proof.r = make([]*privacy.EllipticPoint, lenLArray)
+	for i := 0; i < lenLArray; i++ {
+		proof.r[i] = new(privacy.EllipticPoint)
+		proof.r[i].Decompress(bytes[offset : offset+privacy.CompressedPointSize])
 		offset += privacy.CompressedPointSize
 	}
 
-	proof.a = new(big.Int).SetBytes(bytes[offset: offset+privacy.BigIntSize])
+	proof.a = new(big.Int).SetBytes(bytes[offset : offset+privacy.BigIntSize])
 	offset += privacy.BigIntSize
 
-	proof.b = new(big.Int).SetBytes(bytes[offset: offset+privacy.BigIntSize])
+	proof.b = new(big.Int).SetBytes(bytes[offset : offset+privacy.BigIntSize])
 	offset += privacy.BigIntSize
 
 	proof.p = new(privacy.EllipticPoint)
-	proof.p.Decompress(bytes[offset: offset+privacy.CompressedPointSize])
+	proof.p.Decompress(bytes[offset : offset+privacy.CompressedPointSize])
 
 	return nil
 }
-
 
 func (wit *InnerProductWitness) Prove(AggParam *BulletproofParams) (*InnerProductProof, error) {
 	//var AggParam = newBulletproofParams(1)
@@ -110,8 +109,8 @@ func (wit *InnerProductWitness) Prove(AggParam *BulletproofParams) (*InnerProduc
 	}
 
 	proof := new(InnerProductProof)
-	proof.L = make([]*privacy.EllipticPoint, 0)
-	proof.R = make([]*privacy.EllipticPoint, 0)
+	proof.l = make([]*privacy.EllipticPoint, 0)
+	proof.r = make([]*privacy.EllipticPoint, 0)
 	proof.p = wit.p
 
 	for n > 1 {
@@ -132,16 +131,16 @@ func (wit *InnerProductWitness) Prove(AggParam *BulletproofParams) (*InnerProduc
 			return nil, err
 		}
 		L = L.Add(AggParam.U.ScalarMult(cL))
-		proof.L = append(proof.L, L)
+		proof.l = append(proof.l, L)
 
 		R, err := EncodeVectors(a[nPrime:], b[:nPrime], G[:nPrime], H[nPrime:])
 		if err != nil {
 			return nil, err
 		}
 		R = R.Add(AggParam.U.ScalarMult(cR))
-		proof.R = append(proof.R, R)
+		proof.r = append(proof.r, R)
 
-		// calculate challenge x = hash(G || H || u || p ||  L || R)
+		// calculate challenge x = hash(G || H || u || p ||  l || r)
 		x := generateChallengeForAggRange(AggParam, []*privacy.EllipticPoint{p, L, R})
 		xInverse := new(big.Int).ModInverse(x, privacy.Curve.Params().N)
 
@@ -157,13 +156,12 @@ func (wit *InnerProductWitness) Prove(AggParam *BulletproofParams) (*InnerProduc
 		xSquare := new(big.Int).Mul(x, x)
 		xSquareInverse := new(big.Int).ModInverse(xSquare, privacy.Curve.Params().N)
 
-		//PPrime := L.ScalarMult(xSquare).Add(p).Add(R.ScalarMult(xSquareInverse)) // x^2 * L + P + xInverse^2 * R
-		PPrime := L.ScalarMult(xSquare).Add(p).Add(R.ScalarMult(xSquareInverse)) // x^2 * L + P + xInverse^2 * R
+		// x^2 * l + P + xInverse^2 * r
+		PPrime := L.ScalarMult(xSquare).Add(p).Add(R.ScalarMult(xSquareInverse))
 
 		// calculate aPrime, bPrime
 		aPrime := make([]*big.Int, nPrime)
 		bPrime := make([]*big.Int, nPrime)
-		//tmp := new(big.Int)
 
 		for i := range aPrime {
 			aPrime[i] = new(big.Int).Mul(a[i], x)
@@ -206,10 +204,10 @@ func (proof *InnerProductProof) Verify(AggParam *BulletproofParams) bool {
 		H[i].Set(AggParam.H[i].X, AggParam.H[i].Y)
 	}
 
-	for i := range proof.L {
+	for i := range proof.l {
 		nPrime := n / 2
-		// calculate challenge x = hash(G || H || u || p ||  L || R)
-		x := generateChallengeForAggRange(AggParam, []*privacy.EllipticPoint{p, proof.L[i], proof.R[i]})
+		// calculate challenge x = hash(G || H || u || p ||  l || r)
+		x := generateChallengeForAggRange(AggParam, []*privacy.EllipticPoint{p, proof.l[i], proof.r[i]})
 		xInverse := new(big.Int).ModInverse(x, privacy.Curve.Params().N)
 
 		// calculate GPrime, HPrime, PPrime for the next loop
@@ -224,8 +222,8 @@ func (proof *InnerProductProof) Verify(AggParam *BulletproofParams) bool {
 		xSquare := new(big.Int).Mul(x, x)
 		xSquareInverse := new(big.Int).ModInverse(xSquare, privacy.Curve.Params().N)
 
-		//PPrime := L.ScalarMult(xSquare).Add(p).Add(R.ScalarMult(xSquareInverse)) // x^2 * L + P + xInverse^2 * R
-		PPrime := proof.L[i].ScalarMult(xSquare).Add(p).Add(proof.R[i].ScalarMult(xSquareInverse)) // x^2 * L + P + xInverse^2 * R
+		//PPrime := l.ScalarMult(xSquare).Add(p).Add(r.ScalarMult(xSquareInverse)) // x^2 * l + P + xInverse^2 * r
+		PPrime := proof.l[i].ScalarMult(xSquare).Add(p).Add(proof.r[i].ScalarMult(xSquareInverse)) // x^2 * l + P + xInverse^2 * r
 
 		p = PPrime
 		G = GPrime
@@ -242,26 +240,20 @@ func (proof *InnerProductProof) Verify(AggParam *BulletproofParams) bool {
 	return rightPoint.IsEqual(p)
 }
 
-func pad(l int) int {
-	deg := 0
-	for l > 0 {
-		if l%2 == 0 {
-			deg++
-			l = l / 2
-		} else {
+// pad returns number has format 2^k that it is the nearest number to num
+func pad(num int) int {
+	if num == 1 || num == 2 {
+		return num
+	}
+	tmp := 2
+	for i := 2; ; i++ {
+		tmp *= 2
+		if tmp >= num {
+			num = tmp
 			break
 		}
 	}
-	i := 0
-	for {
-		if math.Pow(2, float64(i)) < float64(l) {
-			i++
-		} else {
-			l = int(math.Pow(2, float64(i+deg)))
-			break
-		}
-	}
-	return l
+	return num
 }
 
 /*-----------------------------Vector Functions-----------------------------*/
@@ -273,12 +265,12 @@ func vectorAdd(a []*big.Int, b []*big.Int) ([]*big.Int, error) {
 		return nil, errors.New("VectorAdd: Arrays not of the same length")
 	}
 
-	result := make([]*big.Int, len(a))
+	res := make([]*big.Int, len(a))
 	for i := range a {
-		result[i] = new(big.Int).Add(a[i], b[i])
-		result[i] = result[i].Mod(result[i], privacy.Curve.Params().N)
+		res[i] = new(big.Int).Add(a[i], b[i])
+		res[i] = res[i].Mod(res[i], privacy.Curve.Params().N)
 	}
-	return result, nil
+	return res, nil
 }
 
 //vectorAdd adds two vector and returns result vector
@@ -287,12 +279,12 @@ func vectorSub(a []*big.Int, b []*big.Int) ([]*big.Int, error) {
 		return nil, errors.New("VectorSub: Arrays not of the same length")
 	}
 
-	result := make([]*big.Int, len(a))
+	res := make([]*big.Int, len(a))
 	for i := range a {
-		result[i] = new(big.Int).Sub(a[i], b[i])
-		result[i].Mod(result[i], privacy.Curve.Params().N)
+		res[i] = new(big.Int).Sub(a[i], b[i])
+		res[i].Mod(res[i], privacy.Curve.Params().N)
 	}
-	return result, nil
+	return res, nil
 }
 
 // innerProduct calculates inner product between two vectors a and b
@@ -301,15 +293,15 @@ func innerProduct(a []*big.Int, b []*big.Int) (*big.Int, error) {
 		return nil, errors.New("InnerProduct: Arrays not of the same length")
 	}
 
-	c := big.NewInt(0)
+	res := big.NewInt(0)
 	tmp := new(big.Int)
 
 	for i := range a {
-		c.Add(c, tmp.Mul(a[i], b[i]))
-		c.Mod(c, privacy.Curve.Params().N)
+		res.Add(res, tmp.Mul(a[i], b[i]))
+		res.Mod(res, privacy.Curve.Params().N)
 	}
 
-	return c, nil
+	return res, nil
 }
 
 // hadamardProduct calculates hadamard product between two vectors a and b
@@ -318,47 +310,50 @@ func hadamardProduct(a []*big.Int, b []*big.Int) ([]*big.Int, error) {
 		return nil, errors.New("InnerProduct: Arrays not of the same length")
 	}
 
-	c := make([]*big.Int, len(a))
-	for i := 0; i < len(c); i++ {
-		c[i] = new(big.Int).Mul(a[i], b[i])
-		c[i].Mod(c[i], privacy.Curve.Params().N)
+	res := make([]*big.Int, len(a))
+	for i := 0; i < len(res); i++ {
+		res[i] = new(big.Int).Mul(a[i], b[i])
+		res[i].Mod(res[i], privacy.Curve.Params().N)
 	}
 
-	return c, nil
+	return res, nil
 }
 
-// powerVector calculate base^n
-// todo:
+// powerVector calculates base^n
 func powerVector(base *big.Int, n int) []*big.Int {
-	result := make([]*big.Int, n)
+	res := make([]*big.Int, n)
+	res[0] = big.NewInt(1)
 
-	for i := 0; i < n; i++ {
-		result[i] = new(big.Int).Exp(base, big.NewInt(int64(i)), privacy.Curve.Params().N)
+	for i := 1; i < n; i++ {
+		res[i] = new(big.Int).Mul(res[i-1], base)
+		res[i].Mod(res[i], privacy.Curve.Params().N)
 	}
-	return result
+	return res
 }
 
 // vectorAddScalar adds a vector to a big int, returns big int array
 func vectorAddScalar(v []*big.Int, s *big.Int) []*big.Int {
-	result := make([]*big.Int, len(v))
+	res := make([]*big.Int, len(v))
+
 	for i := range v {
-		result[i] = new(big.Int).Add(v[i], s)
-		result[i].Mod(result[i], privacy.Curve.Params().N)
+		res[i] = new(big.Int).Add(v[i], s)
+		res[i].Mod(res[i], privacy.Curve.Params().N)
 	}
-	return result
+	return res
 }
 
 // vectorMulScalar mul a vector to a big int, returns a vector
 func vectorMulScalar(v []*big.Int, s *big.Int) []*big.Int {
-	result := make([]*big.Int, len(v))
+	res := make([]*big.Int, len(v))
+
 	for i := range v {
-		result[i] = new(big.Int).Mul(v[i], s)
-		result[i].Mod(result[i], privacy.Curve.Params().N)
+		res[i] = new(big.Int).Mul(v[i], s)
+		res[i].Mod(res[i], privacy.Curve.Params().N)
 	}
-	return result
+	return res
 }
 
 // estimateMultiRangeProofSize estimate multi range proof size
 func estimateMultiRangeProofSize(nOutput int) uint64 {
-	return uint64((nOutput + 2*int(math.Log2(float64(privacy.MaxExp*pad(nOutput)))) + 5)*privacy.CompressedPointSize + 5*privacy.BigIntSize + 2)
+	return uint64((nOutput + 2*int(math.Log2(float64(privacy.MaxExp * pad(nOutput)))) + 5) * privacy.CompressedPointSize + 5*privacy.BigIntSize + 2)
 }
