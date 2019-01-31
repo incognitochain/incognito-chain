@@ -16,25 +16,25 @@ type BulletproofParams struct {
 	U *privacy.EllipticPoint
 }
 
-func newBulletproofParams(m int ) *BulletproofParams {
+func newBulletproofParams(m int) *BulletproofParams {
 	gen := new(BulletproofParams)
-	capacity := 64*m // fixed value
+	capacity := 64 * m // fixed value
 	gen.G = make([]*privacy.EllipticPoint, capacity, capacity)
 	gen.H = make([]*privacy.EllipticPoint, capacity, capacity)
 
 	for i := 0; i < capacity; i++ {
 		gen.G[i] = privacy.PedCom.G[0].Hash(5 + i)
-		gen.H[i] = privacy.PedCom.G[0].Hash(5 + i+ capacity)
+		gen.H[i] = privacy.PedCom.G[0].Hash(5 + i + capacity)
 	}
 	gen.U = new(privacy.EllipticPoint)
-	gen.U = gen.H[0].Hash(5+2*capacity)
+	gen.U = gen.H[0].Hash(5 + 2*capacity)
 
 	return gen
 }
 
 // CommitAll commits a list of PCM_CAPACITY value(s)
-func EncodeVectors(a []*big.Int, b []*big.Int, g[]*privacy.EllipticPoint, h[]*privacy.EllipticPoint) (*privacy.EllipticPoint, error) {
-	if len(a) != len(b) || len(g) != len(h) || len(a)!= len(g){
+func EncodeVectors(a []*big.Int, b []*big.Int, g []*privacy.EllipticPoint, h []*privacy.EllipticPoint) (*privacy.EllipticPoint, error) {
+	if len(a) != len(b) || len(g) != len(h) || len(a) != len(g) {
 		return nil, errors.New("invalid input")
 	}
 
@@ -56,7 +56,6 @@ func generateChallengeForAggRange(AggParam *BulletproofParams, values []*privacy
 	}
 
 	bytes = append(bytes, AggParam.U.Compress()...)
-
 
 	for i := 0; i < len(values); i++ {
 		bytes = append(bytes, values[i].Compress()...)
