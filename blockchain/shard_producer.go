@@ -10,10 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ninjadotorg/constant/common/base58"
-
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
@@ -120,7 +119,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	if err != nil {
 		return nil, err
 	}
-	actions := CreateShardActionFromTransaction(block.Body.Transactions)
+	actions := CreateShardActionFromTransaction(block.Body.Transactions, shardID)
 	action := []string{}
 	for _, value := range actions {
 		action = append(action, value...)
@@ -334,11 +333,11 @@ func CreateSwapAction(commitees []string, pendingValidator []string, shardID byt
 	- Stake
 	- Stable param: set, del,...
 */
-func CreateShardActionFromTransaction(transactions []metadata.Transaction) (actions [][]string) {
+func CreateShardActionFromTransaction(transactions []metadata.Transaction, shardID byte) (actions [][]string) {
 	// Generate stake action
 	stakeShardPubKey := []string{}
 	stakeBeaconPubKey := []string{}
-	actions = buildStabilityActions(transactions)
+	actions = buildStabilityActions(transactions, shardID)
 
 	for _, tx := range transactions {
 		switch tx.GetMetadataType() {
@@ -411,7 +410,7 @@ func (blockgen *ShardBlock) CreateShardToBeaconBlock() *ShardToBeaconBlock {
 	block.ProducerSig = blockgen.ProducerSig
 	block.Header = blockgen.Header
 	block.Instructions = blockgen.Body.Instructions
-	actions := CreateShardActionFromTransaction(blockgen.Body.Transactions)
+	actions := CreateShardActionFromTransaction(blockgen.Body.Transactions, blockgen.Header.ShardID)
 	block.Instructions = append(block.Instructions, actions...)
 	return &block
 }

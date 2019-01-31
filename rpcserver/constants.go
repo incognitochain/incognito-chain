@@ -95,7 +95,11 @@ const (
 
 	// crowdsale
 	GetListOngoingCrowdsale               = "getlistongoingcrowdsale"
+	CreateCrowdsaleRequestToken           = "createcrowdsalerequesttoken"
+	SendCrowdsaleRequestToken             = "sendcrowdsalerequesttoken"
 	CreateAndSendCrowdsaleRequestToken    = "createandsendcrowdsalerequesttoken"
+	CreateCrowdsaleRequestConstant        = "createcrowdsalerequestconstant"
+	SendCrowdsaleRequestConstant          = "sendcrowdsalerequestconstant"
 	CreateAndSendCrowdsaleRequestConstant = "createandsendcrowdsalerequestconstant"
 	TestStoreCrowdsale                    = "teststorecrowdsale"
 

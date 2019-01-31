@@ -185,11 +185,11 @@ func (helper GOVConstitutionHelper) NewTxRewardProposalSubmitter(chain *BlockCha
 
 func (helper DCBConstitutionHelper) GetPaymentAddressFromSubmitProposalMetadata(tx metadata.Transaction) *privacy.PaymentAddress {
 	meta := tx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
-	return &meta.PaymentAddress
+	return &meta.SubmitProposalInfo.PaymentAddress
 }
 func (helper GOVConstitutionHelper) GetPaymentAddressFromSubmitProposalMetadata(tx metadata.Transaction) *privacy.PaymentAddress {
 	meta := tx.GetMetadata().(*metadata.SubmitGOVProposalMetadata)
-	return &meta.PaymentAddress
+	return &meta.SubmitProposalInfo.PaymentAddress
 }
 
 func (helper DCBConstitutionHelper) GetPaymentAddressVoter(blockgen *BlkTmplGenerator, shardID byte) (privacy.PaymentAddress, error) {
@@ -216,10 +216,10 @@ func (helper GOVConstitutionHelper) GetPrizeProposal() uint32 {
 }
 
 func (helper DCBConstitutionHelper) GetTopMostVoteGovernor(blockgen *BlkTmplGenerator) (database.CandidateList, error) {
-	return blockgen.chain.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), blockgen.chain.GetCurrentBoardIndex(helper))
+	return blockgen.chain.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), blockgen.chain.GetCurrentBoardIndex(helper)+1)
 }
 func (helper GOVConstitutionHelper) GetTopMostVoteGovernor(blockgen *BlkTmplGenerator) (database.CandidateList, error) {
-	return blockgen.chain.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), blockgen.chain.GetCurrentBoardIndex(helper))
+	return blockgen.chain.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), blockgen.chain.GetCurrentBoardIndex(helper)+1)
 }
 
 func (helper DCBConstitutionHelper) GetBoardSumToken(blockgen *BlkTmplGenerator) uint64 {

@@ -119,16 +119,8 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 			LiquidationStart: 15000, // 150%
 		},
 	}
-	saleData := params.SaleData{
-		SaleID:        make([]byte, 32),
-		EndBlock:      1000,
-		BuyingAsset:   common.BondTokenID,
-		BuyingAmount:  uint64(1000),
-		SellingAsset:  common.ConstantID,
-		SellingAmount: uint64(2000),
-	}
 	genesisBlock.Header.DCBConstitution.DCBParams = params.DCBParams{
-		ListSaleData:             []params.SaleData{saleData},
+		ListSaleData:             []params.SaleData{},
 		ListLoanParams:           loanParams,
 		MinLoanResponseRequire:   1,
 		MinCMBApprovalRequire:    1,
@@ -150,7 +142,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 		GovernorInfo: GovernorInfo{
 			BoardIndex:          0,
 			StartedBlock:        1,
-			EndBlock:            3, // = startedblock of decent governor
+			EndBlock:            5, // = startedblock of decent governor
 			BoardPaymentAddress: boardPaymentAddress,
 			StartAmountToken:    0, //Sum of DCB token stack to all member of this board
 		},
