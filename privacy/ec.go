@@ -50,8 +50,7 @@ func (point EllipticPoint) MarshalJSON() ([]byte, error) {
 // ComputeYCoord returns Y-coordinate from X-coordinate
 func (point *EllipticPoint) ComputeYCoord() error {
 	// Y = +-sqrt(x^3 - 3*x + B)
-	xCube := new(big.Int).Mul(point.X, point.X)
-	xCube.Mul(xCube, point.X)
+	xCube := new(big.Int).Exp(point.X, big.NewInt(3), Curve.Params().P)
 	xCube.Add(xCube, Curve.Params().B)
 	xCube.Sub(xCube, new(big.Int).Mul(point.X, big.NewInt(3)))
 	xCube.Mod(xCube, Curve.Params().P)
@@ -90,17 +89,10 @@ func (point EllipticPoint) Inverse() (*EllipticPoint, error) {
 
 // Randomize generates a random elliptic point
 func (point *EllipticPoint) Randomize() {
-	if point.X == nil {
-		point.X = big.NewInt(0)
-	}
-	if point.Y == nil {
-		point.Y = big.NewInt(0)
-	}
-
 	for {
 		point.X = RandBigInt()
 		err := point.ComputeYCoord()
-		if Curve.IsOnCurve(point.X, point.Y) && (err == nil) && (point.IsSafe()) {
+		if (err == nil) && (point.IsSafe()) {
 			break
 		}
 	}
@@ -115,8 +107,7 @@ func (point EllipticPoint) IsSafe() bool {
 	var doublePoint EllipticPoint
 	doublePoint.X, doublePoint.Y = Curve.Double(point.X, point.Y)
 
-	zeroPoint := new(EllipticPoint).Zero()
-	return !doublePoint.IsEqual(zeroPoint)
+	return !doublePoint.IsEqual(new(EllipticPoint).Zero())
 }
 
 // Compress compresses key from 64 bytes to PointBytesLenCompressed bytes
@@ -128,7 +119,7 @@ func (point EllipticPoint) Compress() []byte {
 			format |= 0x1
 		}
 		b = append(b, format)
-		return paddedAppend(32, b, point.X.Bytes())
+		return paddedAppend(BigIntSize, b, point.X.Bytes())
 	}
 	return nil
 }
@@ -144,11 +135,7 @@ func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 		return errors.New("invalid magic in compressed compressPoint bytes")
 	}
 
-	if point.X == nil {
-		point.X = new(big.Int).SetBytes(compressPointBytes[1:33])
-	} else {
-		point.X.SetBytes(compressPointBytes[1:33])
-	}
+	point.X = new(big.Int).SetBytes(compressPointBytes[1:33])
 
 	err := point.ComputeYCoord()
 	if err!= nil{
@@ -211,7 +198,6 @@ func (point EllipticPoint) Add(targetPoint *EllipticPoint) *EllipticPoint {
 // Sub subtracts an elliptic point to another elliptic point
 func (point EllipticPoint) Sub(targetPoint *EllipticPoint) (*EllipticPoint, error) {
 	invPoint, err := targetPoint.Inverse()
-
 	if err != nil {
 		return nil, err
 	}
@@ -222,10 +208,7 @@ func (point EllipticPoint) Sub(targetPoint *EllipticPoint) (*EllipticPoint, erro
 
 // IsEqual returns true if two input elliptic points are equal, false otherwise
 func (point EllipticPoint) IsEqual(p *EllipticPoint) bool {
-	if point.X.Cmp(p.X) == 0 && point.Y.Cmp(p.Y) == 0 {
-		return true
-	}
-	return false
+	return point.X.Cmp(p.X) == 0 && point.Y.Cmp(p.Y) == 0
 }
 
 // ScalarMult returns x*P for x in Z_N and P in E(Z_P)

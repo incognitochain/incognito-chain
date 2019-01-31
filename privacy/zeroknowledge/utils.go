@@ -51,7 +51,7 @@ func generateChallengeFromByte(values [][]byte) *big.Int {
 // EstimateProofSize returns the estimated size of the proof in kilobyte
 func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 	if !hasPrivacy{
-		FlagSize := 1 + 1 + 1 + nInput + 2 + 1 + nInput + 1 + nOutput + 1 + 1 + 1 + 1 + 1 + 1 + 1
+		FlagSize := 14 + 2*nInput + nOutput
 		sizeSNNoPrivacyProof := nInput * privacy.SNNoPrivacyProofSize
 		sizeInputCoins := nInput * privacy.InputCoinsNoPrivacySize
 		sizeOutputCoins := nOutput * privacy.OutputCoinsNoPrivacySize
@@ -60,7 +60,7 @@ func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 		return uint64(math.Ceil(float64(sizeProof) / 1024))
 	}
 
-	FlagSize := 1 + 2*nInput + 1 + 2*nInput + 1 + 2 + 1 + nInput + 1 + nOutput + 1 + nOutput + 1 + nOutput + 1 + nOutput + 1 + 1 + nInput + 1 + nInput + 1
+	FlagSize := 14 + 7*nInput + 4*nOutput
 
 	sizeOneOfManyProof := nInput * privacy.OneOfManyProofSize
 	sizeSNPrivacyProof := nInput * privacy.SNPrivacyProofSize
