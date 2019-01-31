@@ -81,8 +81,8 @@ func TestInnerProductProve(t *testing.T) {
 	wit.b = make([]*big.Int, n)
 
 	for i := range wit.a {
-		//wit.a[i] = privacy.RandBigInt()
-		//wit.b[i] = privacy.RandBigInt()
+		//wit.a[i] = privacy.RandScalar()
+		//wit.b[i] = privacy.RandScalar()
 		tmp := privacy.RandBytes(3)
 
 		wit.a[i] = new(big.Int).SetBytes(tmp)
@@ -124,7 +124,7 @@ func TestAggregatedRangeProve(t *testing.T) {
 
 	for i := range wit.values {
 		wit.values[i] = big.NewInt(10)
-		wit.rands[i] = privacy.RandBigInt()
+		wit.rands[i] = privacy.RandScalar()
 	}
 
 	start := time.Now()
@@ -157,7 +157,7 @@ func BenchmarkAggregatedRangeProve(b *testing.B) {
 
 	for i := range wit.values {
 		wit.values[i] = big.NewInt(10)
-		wit.rands[i] = privacy.RandBigInt()
+		wit.rands[i] = privacy.RandScalar()
 	}
 
 	for i:=0; i<b.N; i++ {
@@ -207,20 +207,21 @@ func TestMultiExponentiation(t *testing.T){
 
 	start2 := time.Now()
 	testcase4, err := privacy.MultiScalarmult(bases.G, exponents)
+	if err != nil{
+		fmt.Printf("Error of multi-exponentiation algorithm")
+	}
 	end2 := time.Since(start2)
 	fmt.Printf("multi scalarmult time: %v\n", end2)
 	fmt.Printf("Res from multi exponentiation alg: %+v\n", testcase4)
 
 	start3 := time.Now()
 	testcase5, err := privacy.MultiScalar2(bases.G, exponents)
-	end3 := time.Since(start3)
-	fmt.Printf("multi scalarmult 2 time: %v\n", end3)
-	fmt.Printf("Res from multi exponentiation alg: %+v\n", testcase5)
-
-
 	if err != nil{
 		fmt.Printf("Error of multi-exponentiation algorithm")
 	}
+	end3 := time.Since(start3)
+	fmt.Printf("multi scalarmult 2 time: %v\n", end3)
+	fmt.Printf("Res from multi exponentiation alg: %+v\n", testcase5)
 
 	assert.Equal(t, expectedRes, testcase4)
 }
