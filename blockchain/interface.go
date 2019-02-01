@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 )
 
@@ -13,12 +12,14 @@ type BFTBlockInterface interface {
 }
 
 type ShardToBeaconPool interface {
-	RemovePendingBlock(map[byte]uint64) error
-	GetFinalBlock() map[byte][]ShardToBeaconBlock
-	AddShardBeaconBlock(ShardToBeaconBlock, []string) error
-	ValidateShardToBeaconBlock(ShardToBeaconBlock) error
-	GetPendingBlockHashes() map[byte][]common.Hash
-	SetDatabase(database.DatabaseInterface)
+	RemovePendingBlock(map[byte]uint64)
+	//GetFinalBlock() map[byte][]ShardToBeaconBlock
+	AddShardToBeaconBlock(ShardToBeaconBlock) error
+	//ValidateShardToBeaconBlock(ShardToBeaconBlock) error
+	GetValidPendingBlockHash() map[byte][]common.Hash
+	GetValidPendingBlock() map[byte][]*ShardToBeaconBlock
+	GetValidPendingBlockHeight() map[byte][]uint64
+	SetShardState(map[byte]uint64)
 }
 
 type CrossShardPool interface {
