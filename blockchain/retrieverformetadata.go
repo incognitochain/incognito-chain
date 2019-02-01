@@ -21,8 +21,7 @@ func (self *BlockChain) GetTxChainHeight(tx metadata.Transaction) (uint64, error
 }
 
 func (self *BlockChain) GetChainHeight(shardID byte) uint64 {
-	// return uint64(self.BestState[shardID].BestBlock.Header.Height)
-	return 0
+	return self.BestState.Shard[shardID].ShardHeight
 }
 
 func (self *BlockChain) GetBoardPubKeys(boardType byte) [][]byte {
@@ -34,23 +33,25 @@ func (self *BlockChain) GetBoardPubKeys(boardType byte) [][]byte {
 }
 
 func (self *BlockChain) GetDCBBoardPubKeys() [][]byte {
-	// return self.BestState[0].BestBlock.Header.DCBGovernor.BoardPubKeys
-	return nil
+	pubkeys := [][]byte{}
+	for _, addr := range self.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress {
+		pubkeys = append(pubkeys, addr.Pk[:])
+	}
+	return pubkeys
 }
 
 func (self *BlockChain) GetGOVBoardPubKeys() [][]byte {
-	// return self.BestState[0].BestBlock.Header.GOVGovernor.BoardPubKeys
-	return nil
+	pubkeys := [][]byte{}
+	for _, addr := range self.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress {
+		pubkeys = append(pubkeys, addr.Pk[:])
+	}
+	return pubkeys
 }
 func (self *BlockChain) GetBoardPaymentAddress(boardType byte) []privacy.PaymentAddress {
 	if boardType == common.DCBBoard {
-		// return self.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress
-		return []privacy.PaymentAddress{}
-	} else {
-		// return self.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress
-		return []privacy.PaymentAddress{}
+		return self.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress
 	}
-
+	return self.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress
 }
 
 func ListPubKeyFromListPayment(listPaymentAddresses []privacy.PaymentAddress) [][]byte {
@@ -62,13 +63,11 @@ func ListPubKeyFromListPayment(listPaymentAddresses []privacy.PaymentAddress) []
 }
 
 func (self *BlockChain) GetDCBParams() params.DCBParams {
-	// return self.BestState[0].BestBlock.Header.DCBConstitution.DCBParams
-	return params.DCBParams{}
+	return self.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams
 }
 
 func (self *BlockChain) GetGOVParams() params.GOVParams {
-	// return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams
-	return params.GOVParams{}
+	return self.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams
 }
 
 func (self *BlockChain) GetLoanTxs(loanID []byte) ([][]byte, error) {

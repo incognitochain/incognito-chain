@@ -3,11 +3,13 @@ package metadata
 import (
 	"bytes"
 	"encoding/hex"
-	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/pkg/errors"
 )
 
 type ValidLoanResponse int
@@ -64,7 +66,7 @@ func txCreatedByDCBBoardMember(txr Transaction, bcr BlockchainRetriever) bool {
 }
 
 func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-	fmt.Println("Validating LoanResponse with blockchain!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	fmt.Println("Validating LoanResponse with blockchain!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	// Check if only board members created this tx
 	if !txCreatedByDCBBoardMember(txr, bcr) {
 		return false, errors.New("Tx must be created by DCB Governor")
@@ -156,4 +158,23 @@ func GetLoanResponses(txHashes [][]byte, bcr BlockchainRetriever) []ResponseData
 		}
 	}
 	return data
+}
+
+func (lr *LoanResponse) BuildReqActions(txr Transaction, shardID byte) ([][]string, error) {
+	lrActionValue := getLoanResponseActionValue(lr.LoanID, lr.Response)
+	lrAction := []string{strconv.Itoa(LoanResponseMeta), lrActionValue}
+	return [][]string{lrAction}, nil
+}
+
+func getLoanResponseActionValue(loanID []byte, response ValidLoanResponse) string {
+	return strings.Join([]string{string(loanID), string(response)}, actionValueSep)
+}
+
+func parseLoanResponseActionValue(values string) ([]byte, ValidLoanResponse, error) {
+	s := strings.Split(values, actionValueSep)
+	if len(s) != 2 {
+		return nil, 0, errors.Errorf("LoanResponse value invalid")
+	}
+	resp, err := strconv.Atoi(s[1])
+	return []byte(s[0]), ValidLoanResponse(resp), err
 }
