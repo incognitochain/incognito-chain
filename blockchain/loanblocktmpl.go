@@ -35,3 +35,7 @@ func (blockgen *BlkTmplGenerator) calculateInterestPaid(tx metadata.Transaction)
 	}
 	return interestPaid, nil
 }
+
+func buildInstructionsForLoanRequest(contentStr string) [][]string {
+	return nil
+}
