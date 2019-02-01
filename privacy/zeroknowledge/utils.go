@@ -8,30 +8,10 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 )
 
-// GenerateChallengeFromPoint get hash of n points in G append with input values
-// return blake_2b(G[0]||G[1]||...||G[CM_CAPACITY-1]||<values>)
-// G[i] is list of all generator point of Curve
-func generateChallengeFromPoint(values []*privacy.EllipticPoint) *big.Int {
-	bytes := privacy.PedCom.G[0].Compress()
-	for i := 1; i < len(privacy.PedCom.G); i++ {
-		bytes = append(bytes, privacy.PedCom.G[i].Compress()...)
-	}
-
-	for i := 0; i < len(values); i++ {
-		bytes = append(bytes, values[i].Compress()...)
-	}
-
-	hash := common.HashB(bytes)
-
-	res := new(big.Int).SetBytes(hash)
-	res.Mod(res, privacy.Curve.Params().N)
-	return res
-}
-
 // GenerateChallengeFromByte get hash of n points in G append with input values
 // return blake_2b(G[0]||G[1]||...||G[CM_CAPACITY-1]||<values>)
 // G[i] is list of all generator point of Curve
-func generateChallengeFromByte(values [][]byte) *big.Int {
+func generateChallenge(values [][]byte) *big.Int {
 	bytes := privacy.PedCom.G[0].Compress()
 	for i := 1; i < len(privacy.PedCom.G); i++ {
 		bytes = append(bytes, privacy.PedCom.G[i].Compress()...)
