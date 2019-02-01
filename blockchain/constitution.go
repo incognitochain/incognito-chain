@@ -209,13 +209,6 @@ func (helper GOVConstitutionHelper) GetPrizeProposal() uint32 {
 	return uint32(common.Maxint32(GetOracleGOVNationalWelfare(), int32(0)))
 }
 
-func (helper DCBConstitutionHelper) GetTopMostVoteGovernor(chain *BlockChain) (database.CandidateList, error) {
-	return chain.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), chain.GetCurrentBoardIndex(helper)+1)
-}
-func (helper GOVConstitutionHelper) GetTopMostVoteGovernor(chain *BlockChain) (database.CandidateList, error) {
-	return chain.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), chain.GetCurrentBoardIndex(helper)+1)
-}
-
 func (helper DCBConstitutionHelper) GetBoardSumToken(chain *BlockChain) uint64 {
 	return chain.BestState.Beacon.StabilityInfo.DCBGovernor.StartAmountToken
 }
@@ -307,4 +300,12 @@ func (helper DCBConstitutionHelper) GetOldNationalWelfare(chain *BlockChain) int
 
 func (helper GOVConstitutionHelper) GetOldNationalWelfare(chain *BlockChain) int32 {
 	return chain.BestState.Beacon.StabilityInfo.GOVConstitution.CurrentGOVNationalWelfare
+}
+
+func (helper DCBConstitutionHelper) GetNumberOfGovernor() int32 {
+	return common.NumberOfDCBGovernors
+}
+
+func (helper GOVConstitutionHelper) GetNumberOfGovernor() int32 {
+	return common.NumberOfGOVGovernors
 }
