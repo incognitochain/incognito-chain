@@ -15,25 +15,25 @@ import (
 )
 
 type ConstitutionHelper interface {
-	GetStartedNormalVote(generator *BlkTmplGenerator, chainID byte) uint64
+	GetStartedNormalVote(chain *BlockChain) uint64
 	CheckSubmitProposalType(tx metadata.Transaction) bool
 	GetAmountVoteTokenOfTx(tx metadata.Transaction) uint64
 	TxAcceptProposal(txId *common.Hash, voter metadata.Voter, minerPrivateKey *privacy.SpendingKey, db database.DatabaseInterface) metadata.Transaction
 	GetBoardType() byte
-	GetConstitutionEndedBlockHeight(generator *BlkTmplGenerator, chainID byte) uint64
+	GetConstitutionEndedBlockHeight(chain *BlockChain) uint64
 	CreatePunishDecryptTx(address privacy.PaymentAddress) metadata.Metadata
 	GetSealerPaymentAddress(metadata.Transaction) []privacy.PaymentAddress
 	NewTxRewardProposalSubmitter(blockgen *BlockChain, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error)
 	GetPaymentAddressFromSubmitProposalMetadata(tx metadata.Transaction) *privacy.PaymentAddress
-	GetPaymentAddressVoter(blockgen *BlkTmplGenerator, chainID byte) (privacy.PaymentAddress, error)
+	GetPaymentAddressVoter(chain *BlockChain) (privacy.PaymentAddress, error)
 	GetPrizeProposal() uint32
-	GetTopMostVoteGovernor(blockgen *BlkTmplGenerator) (database.CandidateList, error)
-	GetCurrentBoardPaymentAddress(blockgen *BlkTmplGenerator) []privacy.PaymentAddress
-	GetAmountVoteTokenOfBoard(blockgen *BlkTmplGenerator, paymentAddress privacy.PaymentAddress, boardIndex uint32) uint64
-	GetBoardSumToken(blockgen *BlkTmplGenerator) uint64
-	GetBoardFund(blockgen *BlkTmplGenerator) uint64
+	GetTopMostVoteGovernor(chain *BlockChain) (database.CandidateList, error)
+	GetCurrentBoardPaymentAddress(chain *BlockChain) []privacy.PaymentAddress
+	GetAmountVoteTokenOfBoard(chain *BlockChain, paymentAddress privacy.PaymentAddress, boardIndex uint32) uint64
+	GetBoardSumToken(chain *BlockChain) uint64
+	GetBoardFund(chain *BlockChain) uint64
 	GetTokenID() *common.Hash
-	GetAmountOfVoteToBoard(blockgen *BlkTmplGenerator, candidatePaymentAddress privacy.PaymentAddress, voterPaymentAddress privacy.PaymentAddress, boardIndex uint32) uint64
+	GetAmountOfVoteToBoard(chain *BlockChain, candidatePaymentAddress privacy.PaymentAddress, voterPaymentAddress privacy.PaymentAddress, boardIndex uint32) uint64
 	GetBoard(chain *BlockChain) Governor
 	GetConstitutionInfo(chain *BlockChain) ConstitutionInfo
 	GetCurrentNationalWelfare(chain *BlockChain) int32
@@ -46,7 +46,7 @@ func (blockgen *BlkTmplGenerator) createRewardProposalWinnerTx(
 	constitutionHelper ConstitutionHelper,
 	minerPrivateKey *privacy.SpendingKey,
 ) (metadata.Transaction, error) {
-	paymentAddress, err := constitutionHelper.GetPaymentAddressVoter(blockgen, chainID)
+	paymentAddress, err := constitutionHelper.GetPaymentAddressVoter(blockgen.chain)
 	if err != nil {
 		return nil, err
 	}
@@ -216,14 +216,13 @@ func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 	return resTx, nil
 }
 
-func (blockgen *BlkTmplGenerator) createSingleSendDCBVoteTokenTx(
-	chainID byte,
+func (self *BlockChain) createSingleSendDCBVoteTokenTx(
 	paymentAddress privacy.PaymentAddress,
 	amount uint32,
 	minerPrivateKey *privacy.SpendingKey,
 ) metadata.Transaction {
 	meta := metadata.NewSendInitDCBVoteTokenMetadata(amount, paymentAddress)
-	sendDCBVoteTokenTransaction := transaction.NewEmptyTx(minerPrivateKey, blockgen.chain.config.DataBase, meta)
+	sendDCBVoteTokenTransaction := transaction.NewEmptyTx(minerPrivateKey, self.config.DataBase, meta)
 	return sendDCBVoteTokenTransaction
 }
 
@@ -244,8 +243,7 @@ func getAmountOfVoteToken(sumAmount uint64, voteAmount uint64) uint64 {
 	return voteAmount * common.SumOfVoteDCBToken / sumAmount
 }
 
-func (blockgen *BlkTmplGenerator) CreateSendDCBVoteTokenToGovernorTx(
-	chainID byte,
+func (self *BlockChain) CreateSendDCBVoteTokenToGovernorTx(
 	newDCBList database.CandidateList,
 	sumAmountDCB uint64,
 	minerPrivateKey *privacy.SpendingKey,
@@ -253,8 +251,7 @@ func (blockgen *BlkTmplGenerator) CreateSendDCBVoteTokenToGovernorTx(
 	var SendVoteTx []metadata.Transaction
 	var newTx metadata.Transaction
 	for i := 0; i < common.NumberOfDCBGovernors; i++ {
-		newTx = blockgen.createSingleSendDCBVoteTokenTx(
-			chainID,
+		newTx = self.createSingleSendDCBVoteTokenTx(
 			newDCBList[i].PaymentAddress,
 			uint32(getAmountOfVoteToken(sumAmountDCB, newDCBList[i].VoteAmount)),
 			minerPrivateKey,
@@ -283,7 +280,7 @@ func (blockgen *BlkTmplGenerator) CreateSendGOVVoteTokenToGovernorTx(
 	return SendVoteTx
 }
 
-func (blockgen *BlkTmplGenerator) createAcceptBoardTx(
+func (self *BlockChain) createAcceptBoardTx(
 	boardType byte,
 	DCBBoardPaymentAddress []privacy.PaymentAddress,
 	sumOfVote uint64,
@@ -295,7 +292,7 @@ func (blockgen *BlkTmplGenerator) createAcceptBoardTx(
 	} else {
 		meta = metadata.NewAcceptGOVBoardMetadata(DCBBoardPaymentAddress, sumOfVote)
 	}
-	tx := transaction.NewEmptyTx(minerPrivateKey, blockgen.chain.config.DataBase, meta)
+	tx := transaction.NewEmptyTx(minerPrivateKey, self.config.DataBase, meta)
 	return tx
 }
 
@@ -363,12 +360,15 @@ func createSingleSendGOVVoteTokenFail(paymentAddress privacy.PaymentAddress, amo
 }
 
 //Send back vote token to voters who have vote to lose candidate
-func (blockgen *BlkTmplGenerator) CreateSendBackTokenAfterVoteFail(boardType byte, chainID byte, newDCBList []privacy.PaymentAddress) []metadata.Transaction {
+func (self *BlockChain) CreateSendBackTokenAfterVoteFail(
+	boardType byte,
+	newDCBList []privacy.PaymentAddress,
+) []metadata.Transaction {
 	setOfNewDCB := make(map[string]bool, 0)
 	for _, i := range newDCBList {
 		setOfNewDCB[string(i.Bytes())] = true
 	}
-	currentBoardIndex := blockgen.chain.GetCurrentBoardIndex(DCBConstitutionHelper{})
+	currentBoardIndex := self.GetCurrentBoardIndex(DCBConstitutionHelper{})
 	begin := lvdb.GetKeyVoteBoardList(boardType, 0, nil, nil)
 	end := lvdb.GetKeyVoteBoardList(boardType, currentBoardIndex+1, nil, nil)
 	searchRange := util.Range{
@@ -376,7 +376,7 @@ func (blockgen *BlkTmplGenerator) CreateSendBackTokenAfterVoteFail(boardType byt
 		Limit: end,
 	}
 
-	iter := blockgen.chain.config.DataBase.NewIterator(&searchRange, nil)
+	iter := self.config.DataBase.NewIterator(&searchRange, nil)
 	listNewTx := make([]metadata.Transaction, 0)
 	for iter.Next() {
 		key := iter.Key()
@@ -401,7 +401,7 @@ func GetOracleGOVNationalWelfare() int32 {
 	return 1234
 }
 
-func (blockgen *BlkTmplGenerator) CreateSingleShareRewardOldBoard(
+func (chain *BlockChain) CreateSingleShareRewardOldBoard(
 	helper ConstitutionHelper,
 	chairPaymentAddress privacy.PaymentAddress,
 	voterPaymentAddress privacy.PaymentAddress,
@@ -411,7 +411,7 @@ func (blockgen *BlkTmplGenerator) CreateSingleShareRewardOldBoard(
 ) metadata.Transaction {
 	tx := transaction.Tx{}
 	rewardShareOldBoardMeta := metadata.NewRewardShareOldBoardMetadata(chairPaymentAddress, voterPaymentAddress, helper.GetBoardType())
-	tx.InitTxSalary(amountOfCoin, &voterPaymentAddress, minerPrivateKey, blockgen.chain.config.DataBase, rewardShareOldBoardMeta)
+	tx.InitTxSalary(amountOfCoin, &voterPaymentAddress, minerPrivateKey, chain.config.DataBase, rewardShareOldBoardMeta)
 	txTokenData := transaction.TxTokenData{
 		Type:       transaction.CustomTokenInit,
 		Amount:     amountOfToken,
@@ -427,7 +427,7 @@ func (blockgen *BlkTmplGenerator) CreateSingleShareRewardOldBoard(
 	return &txCustomToken
 }
 
-func (blockgen *BlkTmplGenerator) CreateShareRewardOldBoard(
+func (chain *BlockChain) CreateShareRewardOldBoard(
 	helper ConstitutionHelper,
 	chairPaymentAddress privacy.PaymentAddress,
 	totalAmountCoinReward uint64,
@@ -437,32 +437,32 @@ func (blockgen *BlkTmplGenerator) CreateShareRewardOldBoard(
 ) []metadata.Transaction {
 	txs := make([]metadata.Transaction, 0)
 
-	voterList := blockgen.chain.config.DataBase.GetBoardVoterList(helper.GetBoardType(), chairPaymentAddress, blockgen.chain.GetCurrentBoardIndex(helper))
-	boardIndex := blockgen.chain.GetCurrentBoardIndex(helper)
+	voterList := chain.config.DataBase.GetBoardVoterList(helper.GetBoardType(), chairPaymentAddress, chain.GetCurrentBoardIndex(helper))
+	boardIndex := chain.GetCurrentBoardIndex(helper)
 	for _, pubKey := range voterList {
-		amountOfVote := helper.GetAmountOfVoteToBoard(blockgen, chairPaymentAddress, pubKey, boardIndex)
+		amountOfVote := helper.GetAmountOfVoteToBoard(chain, chairPaymentAddress, pubKey, boardIndex)
 		amountOfCoin := amountOfVote * totalAmountCoinReward / totalVoteAmount
 		amountOfToken := amountOfVote * totalAmountTokenReward / totalVoteAmount
-		blockgen.CreateSingleShareRewardOldBoard(helper, chairPaymentAddress, pubKey, amountOfCoin, amountOfToken, minerPrivateKey)
+		chain.CreateSingleShareRewardOldBoard(helper, chairPaymentAddress, pubKey, amountOfCoin, amountOfToken, minerPrivateKey)
 	}
 	return txs
 }
 
-func (blockgen *BlkTmplGenerator) GetCoinTermReward(helper ConstitutionHelper) uint64 {
-	return helper.GetBoardFund(blockgen) * common.PercentageBoardSalary / common.BasePercentage
+func (chain *BlockChain) GetCoinTermReward(helper ConstitutionHelper) uint64 {
+	return helper.GetBoardFund(chain) * common.PercentageBoardSalary / common.BasePercentage
 }
 
-func (blockgen *BlkTmplGenerator) CreateSendRewardOldBoard(helper ConstitutionHelper, minerPrivateKey *privacy.SpendingKey) []metadata.Transaction {
+func (self *BlockChain) CreateSendRewardOldBoard(helper ConstitutionHelper, minerPrivateKey *privacy.SpendingKey) []metadata.Transaction {
 	txs := make([]metadata.Transaction, 0)
 	voteTokenAmount := make(map[string]uint64)
 	sumVoteTokenAmount := uint64(0)
-	paymentAddresses := helper.GetCurrentBoardPaymentAddress(blockgen)
-	totalAmountOfTokenReward := helper.GetBoardSumToken(blockgen) // Total amount of token
-	totalAmountOfCoinReward := blockgen.GetCoinTermReward(helper)
-	helper.GetBoardFund(blockgen)
+	paymentAddresses := helper.GetCurrentBoardPaymentAddress(self)
+	totalAmountOfTokenReward := helper.GetBoardSumToken(self) // Total amount of token
+	totalAmountOfCoinReward := self.GetCoinTermReward(helper)
+	helper.GetBoardFund(self)
 	//reward for each by voteDCBList
 	for _, i := range paymentAddresses {
-		amount := helper.GetAmountVoteTokenOfBoard(blockgen, i, blockgen.chain.GetCurrentBoardIndex(helper))
+		amount := helper.GetAmountVoteTokenOfBoard(self, i, self.GetCurrentBoardIndex(helper))
 		voteTokenAmount[string(i.Bytes())] = amount
 		sumVoteTokenAmount += amount
 	}
@@ -473,23 +473,22 @@ func (blockgen *BlkTmplGenerator) CreateSendRewardOldBoard(helper ConstitutionHe
 		percentageReward := voteAmount * common.BasePercentage / sumVoteTokenAmount
 		amountTokenReward := totalAmountOfTokenReward * uint64(percentageReward) / common.BasePercentage
 		amountCoinReward := totalAmountOfCoinReward * uint64(percentageReward) / common.BasePercentage
-		txs = append(txs, blockgen.CreateShareRewardOldBoard(helper, *privacy.NewPaymentAddressFromByte([]byte(payment)), amountCoinReward, amountTokenReward, voteAmount, minerPrivateKey)...)
+		txs = append(txs, self.CreateShareRewardOldBoard(helper, *privacy.NewPaymentAddressFromByte([]byte(payment)), amountCoinReward, amountTokenReward, voteAmount, minerPrivateKey)...)
 		//todo @0xjackalope: reward for chair
 	}
 	return txs
 }
 
-func (blockgen *BlkTmplGenerator) UpdateNewGovernor(
+func (self *BlockChain) CreateUpdateNewGovernorInstruction(
 	helper ConstitutionHelper,
-	chainID byte,
 	minerPrivateKey *privacy.SpendingKey,
-) []metadata.Transaction {
-	txs := make([]metadata.Transaction, 0)
-	newBoardList, err := helper.GetTopMostVoteGovernor(blockgen)
+) [][]string {
+	instructions := make([][]string, 0)
+	newBoardList, err := helper.GetTopMostVoteGovernor(self)
 	if err != nil || len(newBoardList) == 0 {
 		Logger.log.Error(err)
 		// return empty array
-		return txs
+		return instructions
 	}
 
 	sort.Sort(newBoardList)
@@ -502,15 +501,22 @@ func (blockgen *BlkTmplGenerator) UpdateNewGovernor(
 	if sumOfVote == 0 {
 		sumOfVote = 1
 	}
+	CreateSendDCBVoteTokenToGovernorTx := self.CreateSendDCBVoteTokenToGovernorTx(newBoardList, sumOfVote, minerPrivateKey)
+	instructions = append(instructions, ListTxToListIns(CreateSendDCBVoteTokenToGovernorTx)...)
+	CreateSendBackTokenAfterVoteFailTx := self.CreateSendBackTokenAfterVoteFail(helper.GetBoardType(), newBoardPaymentAddress)
+	instructions = append(instructions, ListTxToListIns(CreateSendBackTokenAfterVoteFailTx)...)
+	CreateSendRewardOldBoardTx := self.CreateSendRewardOldBoard(helper, minerPrivateKey)
+	instructions = append(instructions, ListTxToListIns(CreateSendRewardOldBoardTx)...)
 
-	txs = append(txs, blockgen.createAcceptBoardTx(helper.GetBoardType(), newBoardPaymentAddress, sumOfVote, minerPrivateKey))
-	txs = append(txs, blockgen.CreateSendDCBVoteTokenToGovernorTx(chainID, newBoardList, sumOfVote, minerPrivateKey)...)
+	return instructions
+}
 
-	txs = append(txs, blockgen.CreateSendBackTokenAfterVoteFail(helper.GetBoardType(), chainID, newBoardPaymentAddress)...)
-
-	txs = append(txs, blockgen.CreateSendRewardOldBoard(helper, minerPrivateKey)...)
-
-	return txs
+func ListTxToListIns(listTx []metadata.Transaction) [][]string {
+	listIns := make([][]string, 0)
+	for _, tx := range listTx {
+		listIns = append(listIns, transaction.TxToIns(tx))
+	}
+	return listIns
 }
 
 func (chain *BlockChain) neededNewGovernor(boardType byte) bool {
@@ -532,6 +538,7 @@ func (self *BlockChain) generateVotingInstruction(minerPrivateKey *privacy.Spend
 	dcbHelper := DCBConstitutionHelper{}
 	govHelper := GOVConstitutionHelper{}
 	db := self.config.DataBase
+	instruction := make([][]string, 0)
 
 	//============================ VOTE PROPOSAL
 	//coinbases := []metadata.Transaction{salaryTx}
@@ -576,13 +583,12 @@ func (self *BlockChain) generateVotingInstruction(minerPrivateKey *privacy.Spend
 	//============================ VOTE BOARD
 
 	if self.neededNewGovernor(common.DCBBoard) {
-		//coinbases = append(coinbases, blockgen.UpdateNewGovernor(DCBConstitutionHelper{}, shardID, privatekey)...)
+		instruction = append(instruction, self.CreateUpdateNewGovernorInstruction(DCBConstitutionHelper{}, minerPrivateKey)...)
 	}
 	if self.neededNewGovernor(common.GOVBoard) {
-		//coinbases = append(coinbases, blockgen.UpdateNewGovernor(GOVConstitutionHelper{}, shardID, privatekey)...)
+		instruction = append(instruction, self.CreateUpdateNewGovernorInstruction(GOVConstitutionHelper{}, minerPrivateKey)...)
 	}
-	panic("not done")
-	return nil, nil
+	return instruction, nil
 }
 
 func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
