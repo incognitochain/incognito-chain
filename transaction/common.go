@@ -104,13 +104,13 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 	sizeFee := uint64(8)      // uint64
 
 	sizeInfo := uint64(0)
-	if hasPrivacy{
+	if hasPrivacy {
 		sizeInfo = uint64(64)
 	}
 
 	sizeSigPubKey := uint64(privacy.SigPubKeySize)
 	sizeSig := uint64(privacy.SigNoPrivacySize)
-	if hasPrivacy{
+	if hasPrivacy {
 		sizeSig = uint64(privacy.SigPrivacySize)
 	}
 
@@ -121,7 +121,7 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 	// TODO 0xjackpolope
 	sizeMetadata := uint64(0)
 
-	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee  + sizeInfo + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte + sizeMetadata
+	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeInfo + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte + sizeMetadata
 
 	return uint64(math.Ceil(float64(sizeTx) / 1024))
 }
@@ -135,4 +135,10 @@ func SortTxsByLockTime(txs []metadata.Transaction, isDesc bool) []metadata.Trans
 		return txs[i].GetLockTime() <= txs[j].GetLockTime()
 	})
 	return txs
+}
+
+func TxToIns(tx metadata.Transaction) []string {
+	//todo @0xjackalope
+	a := []string{""}
+	return a
 }
