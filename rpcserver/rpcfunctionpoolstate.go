@@ -2,7 +2,6 @@ package rpcserver
 
 import (
 	"errors"
-
 	"github.com/ninjadotorg/constant/mempool"
 )
 
@@ -13,11 +12,11 @@ func (rpcServer RpcServer) handleGetShardToBeaconPoolState(params interface{}, c
 	// if rpcServer.config.BlockChain.BestState.Beacon == nil {
 	// 	return nil, NewRPCError(ErrUnexpected, errors.New("Best State beacon not existed"))
 	// }
-	shardToBeaconPool := mempool.GetShardToBeaconPoolInstance()
+	shardToBeaconPool := mempool.GetShardToBeaconPool()
 	if shardToBeaconPool == nil {
 		return nil, NewRPCError(ErrUnexpected, errors.New("Shard to Beacon Pool not init"))
 	}
-	result := shardToBeaconPool.GetShardToBeaconPoolState()
+	result := shardToBeaconPool.GetValidPendingBlockHeight()
 	// result.BestBlock = nil
 	return result, nil
 }
