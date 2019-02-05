@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"strconv"
@@ -67,53 +68,33 @@ func txCreatedByDCBBoardMember(txr Transaction, bcr BlockchainRetriever) bool {
 
 func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	fmt.Println("Validating LoanResponse with blockchain!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	// TODO(@0xbunyip): check that only one response for this loan request in this block
 	// Check if only board members created this tx
 	if !txCreatedByDCBBoardMember(txr, bcr) {
 		return false, errors.New("Tx must be created by DCB Governor")
 	}
 
 	// Check if the loan request is accepted on beacon shard
-	txHashes, err := bcr.GetLoanTxs(lr.LoanID)
+	reqHash, err := bcr.GetLoanReq(lr.LoanID)
 	if err != nil {
 		return false, err
 	}
-	fmt.Printf("GetLoanTxs found:\n")
-	found := false
-	for _, txHash := range txHashes {
-		fmt.Printf("%x\n", txHash)
-		hash := &common.Hash{}
-		copy(hash[:], txHash)
-		_, _, _, txOld, err := bcr.GetTransactionByHash(hash)
-		if txOld == nil || err != nil {
-			return false, errors.New("Error finding corresponding loan request")
-		}
-		switch txOld.GetMetadataType() {
-		case LoanResponseMeta:
-			{
-				_, ok := txOld.GetMetadata().(*LoanResponse)
-				if !ok {
-					continue
-				}
-				// Check if the same user responses twice
-				if bytes.Equal(txOld.GetSigPubKey(), txr.GetSigPubKey()) {
-					return false, errors.New("Current board member already responded to loan request")
-				}
-			}
-		case LoanRequestMeta:
-			{
-				_, ok := txOld.GetMetadata().(*LoanRequest)
-				if !ok {
-					continue
-				}
-				found = true
-			}
+	if len(reqHash) == 0 {
+		// Request and response needn't be on the same shard
+		return false, errors.New("Error finding corresponding loan request")
+	}
+
+	// Check if current board member responded
+	senders, _, err := bcr.GetLoanResps(lr.LoanID)
+	if err != nil {
+		return false, errors.New("Error finding corresponding loan response")
+	}
+	for _, sender := range senders {
+		if bytes.Equal(txr.GetSigPubKey(), sender) {
+			return false, errors.New("Current board member already responded to loan request")
 		}
 	}
 
-	if !found {
-		return false, errors.New("Corresponding loan request not found")
-	}
-	fmt.Printf("Validate returns true!!!\n")
 	return true, nil
 }
 
@@ -161,20 +142,26 @@ func GetLoanResponses(txHashes [][]byte, bcr BlockchainRetriever) []ResponseData
 }
 
 func (lr *LoanResponse) BuildReqActions(txr Transaction, shardID byte) ([][]string, error) {
-	lrActionValue := getLoanResponseActionValue(lr.LoanID, lr.Response)
+	lrActionValue := getLoanResponseActionValue(lr.LoanID, txr.GetSigPubKey(), lr.Response)
 	lrAction := []string{strconv.Itoa(LoanResponseMeta), lrActionValue}
 	return [][]string{lrAction}, nil
 }
 
-func getLoanResponseActionValue(loanID []byte, response ValidLoanResponse) string {
-	return strings.Join([]string{string(loanID), string(response)}, actionValueSep)
+func getLoanResponseActionValue(loanID, sender []byte, response ValidLoanResponse) string {
+	return strings.Join([]string{base64.StdEncoding.EncodeToString(loanID), base64.StdEncoding.EncodeToString(sender), string(response)}, actionValueSep)
 }
 
-func parseLoanResponseActionValue(values string) ([]byte, ValidLoanResponse, error) {
+func ParseLoanResponseActionValue(values string) ([]byte, []byte, ValidLoanResponse, error) {
 	s := strings.Split(values, actionValueSep)
-	if len(s) != 2 {
-		return nil, 0, errors.Errorf("LoanResponse value invalid")
+	if len(s) != 3 {
+		return nil, nil, 0, errors.Errorf("LoanResponse value invalid")
 	}
-	resp, err := strconv.Atoi(s[1])
-	return []byte(s[0]), ValidLoanResponse(resp), err
+	errSaver := &ErrorSaver{}
+	loanID, errID := base64.StdEncoding.DecodeString(s[0])
+	sender, errSender := base64.StdEncoding.DecodeString(s[1])
+	resp, errResp := strconv.Atoi(s[2])
+	if errSaver.Save(errID, errSender, errResp) != nil {
+		return nil, nil, 0, errSaver.Get()
+	}
+	return loanID, sender, ValidLoanResponse(resp), nil
 }

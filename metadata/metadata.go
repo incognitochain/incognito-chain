@@ -101,7 +101,9 @@ type BlockchainRetriever interface {
 	GetBoardEndHeight(boardType byte, chainID byte) uint64
 
 	// For validating loan metadata
-	GetLoanTxs([]byte) ([][]byte, error)
+	// GetLoanTxs([]byte) ([][]byte, error)
+	GetLoanReq(loanID []byte) (*common.Hash, error)
+	GetLoanResps(loanID []byte) ([][]byte, []ValidLoanResponse, error)
 	GetNumberOfDCBGovernors() int
 	GetNumberOfGOVGovernors() int
 	GetLoanPayment([]byte) (uint64, uint64, uint64, error)
