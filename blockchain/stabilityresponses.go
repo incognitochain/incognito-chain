@@ -80,10 +80,6 @@ func buildStabilityInstructions(
 			}
 			instructions = append(instructions, buyBondsInst...)
 
-		case metadata.LoanRequestMeta:
-			loanRequestInst := buildInstructionsForLoanRequest(contentStr)
-			instructions = append(instructions, loanRequestInst...)
-
 		default:
 			continue
 		}
