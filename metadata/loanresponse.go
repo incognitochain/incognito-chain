@@ -72,7 +72,7 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 		return false, errors.New("Tx must be created by DCB Governor")
 	}
 
-	// Check if a loan request with the same id exists on any chain
+	// Check if the loan request is accepted on beacon shard
 	txHashes, err := bcr.GetLoanTxs(lr.LoanID)
 	if err != nil {
 		return false, err
