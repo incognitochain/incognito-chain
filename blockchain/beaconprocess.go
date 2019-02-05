@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
 	"github.com/ninjadotorg/constant/cashec"
-
 	"github.com/ninjadotorg/constant/common"
 )
 
@@ -599,6 +599,12 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	instructions := newBlock.Body.Instructions
 	self.pickInstructionsOfCurrentShard(instructions)
 	for _, l := range instructions {
+		// For stability instructions
+		err := self.processLoanInstruction(l)
+		if err != nil {
+			fmt.Println(err)
+		}
+
 		if l[0] == "set" {
 			self.Params[l[1]] = l[2]
 		}
