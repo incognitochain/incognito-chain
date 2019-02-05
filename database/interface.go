@@ -119,9 +119,6 @@ type DatabaseInterface interface {
 	PrivacyCustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) // from token id get all custom txs
 
 	// Loans
-	StoreLoanRequest([]byte, []byte) error                 // param: loanID, tx hash
-	StoreLoanResponse([]byte, []byte) error                // param: loanID, tx hash
-	GetLoanTxs([]byte) ([][]byte, error)                   // param: loanID
 	StoreLoanPayment([]byte, uint64, uint64, uint64) error // param: loanID, principle, interest, deadline
 	GetLoanPayment([]byte) (uint64, uint64, uint64, error) // param: loanID; return: principle, interest, deadline
 	GetLoanRequestTx(loanID []byte) ([]byte, error)

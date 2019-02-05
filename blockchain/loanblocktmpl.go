@@ -17,7 +17,8 @@ func (blockgen *BlkTmplGenerator) calculateInterestPaid(tx metadata.Transaction)
 	}
 
 	// Get loan params
-	requestMeta, err := blockgen.chain.GetLoanRequestMeta(paymentMeta.LoanID)
+	requestMeta := &metadata.LoanRequest{}
+	// requestMeta, err := blockgen.chain.GetLoanRequestMeta(paymentMeta.LoanID)
 	if err != nil {
 		return 0, err
 	}
