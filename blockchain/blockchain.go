@@ -710,8 +710,7 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 	_, _, value := tx.GetUniqueReceiver()
 	meta := tx.GetMetadata().(*metadata.LoanPayment)
 	principle, interest, deadline, err := self.config.DataBase.GetLoanPayment(meta.LoanID)
-	requestMeta := &metadata.LoanRequest{}
-	// requestMeta, err := self.GetLoanRequestMeta(meta.LoanID)
+	requestMeta, err := self.GetLoanRequestMeta(meta.LoanID)
 	if err != nil {
 		return err
 	}
@@ -769,16 +768,10 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 				meta := tx.GetMetadata().(*metadata.LoanUnlock)
 				fmt.Printf("Found tx %x of type loan unlock\n", tx.Hash()[:])
 				fmt.Printf("LoanID: %x\n", meta.LoanID)
-				reqHash, err := self.GetLoanReq(meta.LoanID)
+				requestMeta, err := self.GetLoanRequestMeta(meta.LoanID)
 				if err != nil {
 					return err
 				}
-				_, _, _, txReq, err := self.GetTransactionByHash(reqHash)
-				if err != nil {
-					return err
-				}
-
-				requestMeta := txReq.GetMetadata().(*metadata.LoanRequest)
 				principle := requestMeta.LoanAmount
 				interest := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
 				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint64(block.Header.Height))
