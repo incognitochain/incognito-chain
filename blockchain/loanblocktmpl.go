@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bytes"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
@@ -46,6 +47,8 @@ func (bsb *BestStateBeacon) processLoanInstruction(inst []string) error {
 	switch inst[0] {
 	case strconv.Itoa(metadata.LoanRequestMeta):
 		return bsb.processLoanRequestInstruction(inst)
+	case strconv.Itoa(metadata.LoanResponseMeta):
+		return bsb.processLoanResponseInstruction(inst)
 	}
 	return nil
 }
@@ -67,6 +70,42 @@ func (bsb *BestStateBeacon) processLoanRequestInstruction(inst []string) error {
 	return nil
 }
 
-func getLoanRequestKeyBeacon(loanID []byte) string {
-	return string(loanIDKeyPrefix) + string(loanID)
+func (bsb *BestStateBeacon) processLoanResponseInstruction(inst []string) error {
+	loanID, sender, resp, err := metadata.ParseLoanResponseActionValue(inst[1])
+	if err != nil {
+		return err
+	}
+
+	// For safety, beacon shard checks if loan request existed
+	key := getLoanRequestKeyBeacon(loanID)
+	if _, ok := bsb.Params[key]; !ok {
+		return errors.Errorf("LoanID not existed: %x", loanID)
+	}
+
+	// Get current list of responses
+	lrds := []*LoanRespData{}
+	key = getLoanResponseKeyBeacon(loanID)
+	if value, ok := bsb.Params[key]; ok {
+		lrds, err = parseLoanResponseValueBeacon(value)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Check if same member doesn't respond twice
+	for _, resp := range lrds {
+		if bytes.Equal(resp.SenderPubkey, sender) {
+			return errors.Errorf("Sender %x already responded to loanID %x", sender, loanID)
+		}
+	}
+
+	// Update list of responses
+	lrd := &LoanRespData{
+		SenderPubkey: sender,
+		Response:     resp,
+	}
+	lrds = append(lrds, lrd)
+	value := getLoanResponseValueBeacon(lrds)
+	bsb.Params[key] = value
+	return nil
 }

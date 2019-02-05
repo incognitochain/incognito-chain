@@ -9,6 +9,7 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	privacy "github.com/ninjadotorg/constant/privacy"
+	"github.com/pkg/errors"
 )
 
 func (self *BlockChain) GetDatabase() database.DatabaseInterface {
@@ -70,9 +71,37 @@ func (self *BlockChain) GetGOVParams() params.GOVParams {
 	return self.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams
 }
 
-func (self *BlockChain) GetLoanTxs(loanID []byte) ([][]byte, error) {
-	// return self.config.DataBase.GetLoanTxs(loanID)
-	return nil, nil
+// func (self *BlockChain) GetLoanTxs(loanID []byte) ([][]byte, error) {
+// return self.config.DataBase.GetLoanTxs(loanID)
+// return nil, nil
+// }
+
+func (self *BlockChain) GetLoanReq(loanID []byte) (*common.Hash, error) {
+	key := getLoanRequestKeyBeacon(loanID)
+	reqHash, ok := self.BestState.Beacon.Params[key]
+	if !ok {
+		return nil, errors.Errorf("Loan request with ID %x not found", loanID)
+	}
+	resp, err := common.NewHashFromStr(reqHash)
+	return resp, err
+}
+
+// GetLoanResps returns all responses of a given loanID
+func (self *BlockChain) GetLoanResps(loanID []byte) ([][]byte, []metadata.ValidLoanResponse, error) {
+	key := getLoanResponseKeyBeacon(loanID)
+	senders := [][]byte{}
+	responses := []metadata.ValidLoanResponse{}
+	if data, ok := self.BestState.Beacon.Params[key]; ok {
+		lrds, err := parseLoanResponseValueBeacon(data)
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, lrd := range lrds {
+			senders = append(senders, lrd.SenderPubkey)
+			responses = append(responses, lrd.Response)
+		}
+	}
+	return senders, responses, nil
 }
 
 func (self *BlockChain) GetLoanPayment(loanID []byte) (uint64, uint64, uint64, error) {
