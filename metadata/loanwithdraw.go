@@ -43,7 +43,9 @@ func (lw *LoanWithdraw) Hash() *common.Hash {
 func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	fmt.Println("Validating LoanWithdraw with blockchain!!!")
 	// Check if a loan response with the same id exists on any chain
-	txHashes, err := bcr.GetLoanTxs(lw.LoanID)
+	txHashes := [][]byte{}
+	var err error
+	// txHashes, err := bcr.GetLoanTxs(lw.LoanID)
 	if err != nil {
 		return false, err
 	}
