@@ -55,7 +55,7 @@ func (mb *MetadataBase) VerifyMultiSigs(
 	return true, nil
 }
 
-func (mb *MetadataBase) BuildReqActions(tx Transaction, shardID byte) ([][]string, error) {
+func (mb *MetadataBase) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
 	return [][]string{}, nil
 }
 
@@ -107,6 +107,7 @@ type BlockchainRetriever interface {
 	GetNumberOfDCBGovernors() int
 	GetNumberOfGOVGovernors() int
 	GetLoanPayment([]byte) (uint64, uint64, uint64, error)
+	GetLoanRequestMeta(loanID []byte) (*LoanRequest, error)
 
 	// For validating dividend
 	GetAmountPerAccount(*DividendProposal) (uint64, []string, []uint64, error)
@@ -133,7 +134,7 @@ type Metadata interface {
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
 	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool
 	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
-	BuildReqActions(tx Transaction, shardID byte) ([][]string, error)
+	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
 }
 
 // Interface for all type of transaction

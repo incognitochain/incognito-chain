@@ -122,7 +122,7 @@ func (lr *LoanRequest) ValidateMetadataByItself() bool {
 	return true
 }
 
-func (lr *LoanRequest) BuildReqActions(txr Transaction, shardID byte) ([][]string, error) {
+func (lr *LoanRequest) BuildReqActions(txr Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
 	lrActionValue := getLoanRequestActionValue(lr.LoanID, txr.Hash())
 	lrAction := []string{strconv.Itoa(LoanRequestMeta), lrActionValue}
 	return [][]string{lrAction}, nil

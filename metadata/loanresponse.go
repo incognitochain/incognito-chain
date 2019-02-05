@@ -141,7 +141,7 @@ func GetLoanResponses(txHashes [][]byte, bcr BlockchainRetriever) []ResponseData
 	return data
 }
 
-func (lr *LoanResponse) BuildReqActions(txr Transaction, shardID byte) ([][]string, error) {
+func (lr *LoanResponse) BuildReqActions(txr Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
 	lrActionValue := getLoanResponseActionValue(lr.LoanID, txr.GetSigPubKey(), lr.Response)
 	lrAction := []string{strconv.Itoa(LoanResponseMeta), lrActionValue}
 	return [][]string{lrAction}, nil

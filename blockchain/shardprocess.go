@@ -257,7 +257,7 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 		}
 	}
 	// Verify Action
-	actions := CreateShardActionFromTransaction(block.Body.Transactions, shardID)
+	actions := CreateShardActionFromTransaction(block.Body.Transactions, self, shardID)
 	action := []string{}
 	for _, value := range actions {
 		action = append(action, value...)
