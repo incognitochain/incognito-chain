@@ -107,7 +107,6 @@ type BlockchainRetriever interface {
 	GetNumberOfDCBGovernors() int
 	GetNumberOfGOVGovernors() int
 	GetLoanPayment([]byte) (uint64, uint64, uint64, error)
-	GetLoanRequestMeta([]byte) (*LoanRequest, error)
 
 	// For validating dividend
 	GetAmountPerAccount(*DividendProposal) (uint64, []string, []uint64, error)
