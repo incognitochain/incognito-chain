@@ -4,42 +4,9 @@ import (
 	"bytes"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/pkg/errors"
 )
-
-func (blockgen *BlkTmplGenerator) calculateInterestPaid(tx metadata.Transaction) (uint64, error) {
-	paymentMeta := tx.GetMetadata().(*metadata.LoanPayment)
-	principle, interest, deadline, err := blockgen.chain.config.DataBase.GetLoanPayment(paymentMeta.LoanID)
-	if err != nil {
-		return 0, err
-	}
-
-	// Get loan params
-	requestMeta := &metadata.LoanRequest{}
-	// requestMeta, err := blockgen.chain.GetLoanRequestMeta(paymentMeta.LoanID)
-	if err != nil {
-		return 0, err
-	}
-
-	// Only keep interest
-	_, _, amount := tx.GetUniqueReceiver() // Receiver is unique and is burn address
-	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	totalInterest := metadata.GetTotalInterest(
-		principle,
-		interest,
-		requestMeta.Params.InterestRate,
-		requestMeta.Params.Maturity,
-		deadline,
-		blockgen.chain.GetChainHeight(shardID),
-	)
-	interestPaid := amount
-	if amount > totalInterest {
-		interestPaid = totalInterest
-	}
-	return interestPaid, nil
-}
 
 func (bsb *BestStateBeacon) processLoanInstruction(inst []string) error {
 	if len(inst) < 2 {
@@ -50,6 +17,8 @@ func (bsb *BestStateBeacon) processLoanInstruction(inst []string) error {
 		return bsb.processLoanRequestInstruction(inst)
 	case strconv.Itoa(metadata.LoanResponseMeta):
 		return bsb.processLoanResponseInstruction(inst)
+	case strconv.Itoa(metadata.LoanPaymentMeta):
+		return bsb.processLoanPaymentInstruction(inst)
 	}
 	return nil
 }
@@ -108,5 +77,16 @@ func (bsb *BestStateBeacon) processLoanResponseInstruction(inst []string) error 
 	lrds = append(lrds, lrd)
 	value := getLoanResponseValueBeacon(lrds)
 	bsb.Params[key] = value
+	return nil
+}
+
+func (bsb *BestStateBeacon) processLoanPaymentInstruction(inst []string) error {
+	_, amount, err := metadata.ParseLoanPaymentActionValue(inst[1])
+	if err != nil {
+		return err
+	}
+
+	// Update fund of DCB
+	bsb.StabilityInfo.BankFund += amount
 	return nil
 }

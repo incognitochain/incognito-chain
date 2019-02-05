@@ -128,7 +128,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	if err != nil {
 		return nil, err
 	}
-	actions := CreateShardActionFromTransaction(block.Body.Transactions, shardID)
+	actions := CreateShardActionFromTransaction(block.Body.Transactions, blockgen.chain, shardID)
 	action := []string{}
 	for _, value := range actions {
 		action = append(action, value...)
@@ -183,15 +183,10 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, producerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
 	// Get loan request
 	withdrawMeta := tx.GetMetadata().(*metadata.LoanWithdraw)
-	reqHash, err := blockgen.chain.GetLoanReq(withdrawMeta.LoanID)
+	meta, err := blockgen.chain.GetLoanRequestMeta(withdrawMeta.LoanID)
 	if err != nil {
-		return nil, errors.Errorf("Error parsing loan request for loan withdraw tx id %x", withdrawMeta.LoanID)
+		return nil, err
 	}
-	_, _, _, txReq, err := blockgen.chain.GetTransactionByHash(reqHash)
-	if err != nil {
-		return nil, errors.Errorf("Error getting loan request for loan withdraw tx id %x", withdrawMeta.LoanID)
-	}
-	meta := txReq.GetMetadata().(*metadata.LoanRequest)
 
 	// Build loan unlock tx
 	unlockMeta := &metadata.LoanUnlock{
@@ -395,11 +390,11 @@ func CreateSwapAction(commitees []string, pendingValidator []string, shardID byt
 	- Stake
 	- Stable param: set, del,...
 */
-func CreateShardActionFromTransaction(transactions []metadata.Transaction, shardID byte) (actions [][]string) {
+func CreateShardActionFromTransaction(transactions []metadata.Transaction, bcr metadata.BlockchainRetriever, shardID byte) (actions [][]string) {
 	// Generate stake action
 	stakeShardPubKey := []string{}
 	stakeBeaconPubKey := []string{}
-	actions = buildStabilityActions(transactions, shardID)
+	actions = buildStabilityActions(transactions, bcr, shardID)
 
 	for _, tx := range transactions {
 		switch tx.GetMetadataType() {
@@ -465,14 +460,15 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 	return txsToAdd, txToRemove, totalFee
 }
 
-func (blockgen *ShardBlock) CreateShardToBeaconBlock() *ShardToBeaconBlock {
+func (blk *ShardBlock) CreateShardToBeaconBlock() *ShardToBeaconBlock {
 	block := ShardToBeaconBlock{}
-	block.AggregatedSig = blockgen.AggregatedSig
-	copy(block.ValidatorsIdx, blockgen.ValidatorsIdx)
-	block.ProducerSig = blockgen.ProducerSig
-	block.Header = blockgen.Header
-	block.Instructions = blockgen.Body.Instructions
-	actions := CreateShardActionFromTransaction(blockgen.Body.Transactions, blockgen.Header.ShardID)
+	block.AggregatedSig = blk.AggregatedSig
+	copy(block.ValidatorsIdx, blk.ValidatorsIdx)
+	block.ProducerSig = blk.ProducerSig
+	block.Header = blk.Header
+	block.Instructions = blk.Body.Instructions
+	// TODO(@0xbunyip): provide BlockchainRetriever instead of nil
+	actions := CreateShardActionFromTransaction(blk.Body.Transactions, nil, blk.Header.ShardID)
 	block.Instructions = append(block.Instructions, actions...)
 	return &block
 }

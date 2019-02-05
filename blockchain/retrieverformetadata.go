@@ -71,11 +71,6 @@ func (self *BlockChain) GetGOVParams() params.GOVParams {
 	return self.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams
 }
 
-// func (self *BlockChain) GetLoanTxs(loanID []byte) ([][]byte, error) {
-// return self.config.DataBase.GetLoanTxs(loanID)
-// return nil, nil
-// }
-
 func (self *BlockChain) GetLoanReq(loanID []byte) (*common.Hash, error) {
 	key := getLoanRequestKeyBeacon(loanID)
 	reqHash, ok := self.BestState.Beacon.Params[key]
@@ -105,8 +100,20 @@ func (self *BlockChain) GetLoanResps(loanID []byte) ([][]byte, []metadata.ValidL
 }
 
 func (self *BlockChain) GetLoanPayment(loanID []byte) (uint64, uint64, uint64, error) {
-	// return self.config.DataBase.GetLoanPayment(loanID)
-	return 0, 0, 0, nil
+	return self.config.DataBase.GetLoanPayment(loanID)
+}
+
+func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
+	reqHash, err := self.GetLoanReq(loanID)
+	if err != nil {
+		return nil, err
+	}
+	_, _, _, txReq, err := self.GetTransactionByHash(reqHash)
+	if err != nil {
+		return nil, err
+	}
+	requestMeta := txReq.GetMetadata().(*metadata.LoanRequest)
+	return requestMeta, nil
 }
 
 func (self *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.Hash, saleID []byte) *params.SaleData {
