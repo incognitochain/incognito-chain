@@ -3,7 +3,6 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"reflect"
 	"sort"
 	"strconv"
@@ -17,6 +16,7 @@ import (
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/pkg/errors"
 )
 
 func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*ShardBlock, error) {
@@ -98,6 +98,15 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		},
 	}
 
+	// Process stability tx, create response if needed
+	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxs(txsToAdd, privatekey)
+	if err != nil {
+		return nil, err
+	}
+	for _, tx := range stabilityResponseTxs {
+		txsToAdd = append(txsToAdd, tx)
+	}
+
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
 			return nil, err
@@ -169,6 +178,58 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	block.ProducerSig = sig
 	_ = remainingFund
 	return block, nil
+}
+
+func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, producerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
+	// Get loan request
+	withdrawMeta := tx.GetMetadata().(*metadata.LoanWithdraw)
+	reqHash, err := blockgen.chain.GetLoanReq(withdrawMeta.LoanID)
+	if err != nil {
+		return nil, errors.Errorf("Error parsing loan request for loan withdraw tx id %x", withdrawMeta.LoanID)
+	}
+	_, _, _, txReq, err := blockgen.chain.GetTransactionByHash(reqHash)
+	if err != nil {
+		return nil, errors.Errorf("Error getting loan request for loan withdraw tx id %x", withdrawMeta.LoanID)
+	}
+	meta := txReq.GetMetadata().(*metadata.LoanRequest)
+
+	// Build loan unlock tx
+	unlockMeta := &metadata.LoanUnlock{
+		LoanID:       make([]byte, len(withdrawMeta.LoanID)),
+		MetadataBase: metadata.MetadataBase{Type: metadata.LoanUnlockMeta},
+	}
+	copy(unlockMeta.LoanID, withdrawMeta.LoanID)
+	unlockMetaList := []metadata.Metadata{unlockMeta}
+	amounts := []uint64{meta.LoanAmount}
+	txNormals, err := transaction.BuildCoinbaseTxs([]*privacy.PaymentAddress{meta.ReceiveAddress}, amounts, producerPrivateKey, blockgen.chain.GetDatabase(), unlockMetaList)
+	if err != nil {
+		return nil, errors.Errorf("Error building unlock tx for loan id %x", withdrawMeta.LoanID)
+	}
+	return txNormals[0], nil
+}
+
+func (blockgen *BlkTmplGenerator) buildStabilityResponseTxs(txs []metadata.Transaction, producerPrivateKey *privacy.SpendingKey) ([]metadata.Transaction, error) {
+	respTxs := []metadata.Transaction{}
+	removeIds := []int{}
+	for i, tx := range txs {
+		var respTx metadata.Transaction
+		var err error
+
+		switch tx.GetMetadataType() {
+		case metadata.LoanWithdrawMeta:
+			respTx, err = blockgen.buildLoanResponseTx(tx, producerPrivateKey)
+		}
+
+		if err != nil {
+			// Remove this tx if cannot create corresponding response
+			removeIds = append(removeIds, i)
+		} else {
+			respTxs = append(respTxs, respTx)
+		}
+	}
+
+	// TODO(@0xbunyip): remove tx from txsToAdd?
+	return respTxs, nil
 }
 
 /*
@@ -295,6 +356,7 @@ func FetchBeaconBlockFromHeight(db database.DatabaseInterface, from uint64, to u
 	}
 	return beaconBlocks, nil
 }
+
 func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) {
 	byteMap := make([]byte, common.SHARD_NUMBER)
 	for _, tx := range txList {

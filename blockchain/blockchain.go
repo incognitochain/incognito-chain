@@ -676,41 +676,42 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 // 	return result, nil
 // }
 
-func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
-	txs, err := self.config.DataBase.GetLoanTxs(loanID)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, txHash := range txs {
-		hash := &common.Hash{}
-		copy(hash[:], txHash)
-		_, _, _, tx, err := self.GetTransactionByHash(hash)
-		if err != nil {
-			return nil, err
-		}
-		if tx.GetMetadataType() == metadata.LoanRequestMeta {
-			meta := tx.GetMetadata()
-			if meta == nil {
-				continue
-			}
-			requestMeta, ok := meta.(*metadata.LoanRequest)
-			if !ok {
-				continue
-			}
-			if bytes.Equal(requestMeta.LoanID, loanID) {
-				return requestMeta, nil
-			}
-		}
-	}
-	return nil, nil
-}
+//func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
+//	txs, err := self.config.DataBase.GetLoanTxs(loanID)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	for _, txHash := range txs {
+//		hash := &common.Hash{}
+//		copy(hash[:], txHash)
+//		_, _, _, tx, err := self.GetTransactionByHash(hash)
+//		if err != nil {
+//			return nil, err
+//		}
+//		if tx.GetMetadataType() == metadata.LoanRequestMeta {
+//			meta := tx.GetMetadata()
+//			if meta == nil {
+//				continue
+//			}
+//			requestMeta, ok := meta.(*metadata.LoanRequest)
+//			if !ok {
+//				continue
+//			}
+//			if bytes.Equal(requestMeta.LoanID, loanID) {
+//				return requestMeta, nil
+//			}
+//		}
+//	}
+//	return nil, nil
+//}
 
 func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 	_, _, value := tx.GetUniqueReceiver()
 	meta := tx.GetMetadata().(*metadata.LoanPayment)
 	principle, interest, deadline, err := self.config.DataBase.GetLoanPayment(meta.LoanID)
-	requestMeta, err := self.GetLoanRequestMeta(meta.LoanID)
+	requestMeta := &metadata.LoanRequest{}
+	// requestMeta, err := self.GetLoanRequestMeta(meta.LoanID)
 	if err != nil {
 		return err
 	}
@@ -763,18 +764,9 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 		switch tx.GetMetadataType() {
 		case metadata.LoanRequestMeta:
 			{
-				tx := tx.(*transaction.Tx)
-				meta := tx.Metadata.(*metadata.LoanRequest)
-				fmt.Printf("Found tx %x of type loan request: %x\n", tx.Hash()[:], meta.LoanID)
-				self.config.DataBase.StoreLoanRequest(meta.LoanID, tx.Hash()[:])
 			}
 		case metadata.LoanResponseMeta:
 			{
-				tx := tx.(*transaction.Tx)
-				meta := tx.Metadata.(*metadata.LoanResponse)
-				// TODO(@0xbunyip): store multiple responses with different suffixes
-				fmt.Printf("Found tx %x of type loan response\n", tx.Hash()[:])
-				self.config.DataBase.StoreLoanResponse(meta.LoanID, tx.Hash()[:])
 			}
 		case metadata.LoanUnlockMeta:
 			{
@@ -783,7 +775,8 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 				meta := tx.GetMetadata().(*metadata.LoanUnlock)
 				fmt.Printf("Found tx %x of type loan unlock\n", tx.Hash()[:])
 				fmt.Printf("LoanID: %x\n", meta.LoanID)
-				requestMeta, _ := self.GetLoanRequestMeta(meta.LoanID)
+				requestMeta := &metadata.LoanRequest{}
+				// requestMeta, _ := self.GetLoanRequestMeta(meta.LoanID)
 				principle := requestMeta.LoanAmount
 				interest := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
 				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint64(block.Header.Height))
