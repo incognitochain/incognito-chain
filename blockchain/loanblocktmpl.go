@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (bsb *BestStateBeacon) processLoanInstruction(inst []string) error {
+func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 	if len(inst) < 2 {
 		return nil // Not error, just not loan instruction
 	}
@@ -19,6 +19,9 @@ func (bsb *BestStateBeacon) processLoanInstruction(inst []string) error {
 		return bsb.processLoanResponseInstruction(inst)
 	case strconv.Itoa(metadata.LoanPaymentMeta):
 		return bsb.processLoanPaymentInstruction(inst)
+
+	case strconv.Itoa(metadata.AcceptDCBProposalMeta):
+		return bsb.processAcceptDCBProposalInstruction(inst)
 	}
 	return nil
 }
@@ -88,5 +91,46 @@ func (bsb *BestStateBeacon) processLoanPaymentInstruction(inst []string) error {
 
 	// Update fund of DCB
 	bsb.StabilityInfo.BankFund += amount
+	return nil
+}
+
+func (bsb *BestStateBeacon) processLoanPaymentInstruction(inst []string) error {
+	_, amount, err := metadata.ParseLoanPaymentActionValue(inst[1])
+	if err != nil {
+		return err
+	}
+
+	// Update fund of DCB
+	bsb.StabilityInfo.BankFund += amount
+	return nil
+}
+
+func (bsb *BestStateBeacon) processLoanPaymentInstruction(inst []string) error {
+	_, amount, err := metadata.ParseLoanPaymentActionValue(inst[1])
+	if err != nil {
+		return err
+	}
+
+	// Update fund of DCB
+	bsb.StabilityInfo.BankFund += amount
+	return nil
+}
+
+func (bsb *BestStateBeacon) processAcceptDCBProposalInstruction(inst []string) error {
+	// TODO(@0xjackalope): process other dcb params here
+	dcbParams, err := metadata.ParseAcceptDCBProposalMetadataActionValue(inst[1])
+	if err != nil {
+		return err
+	}
+	// Store saledata in db
+	for _, data := range dcbParams.ListSaleData {
+		key := getSaleDataKeyBeacon(data.SaleID)
+		if _, ok := bsb.Params[key]; ok {
+			// TODO(@0xbunyip): support update crowdsale data
+			continue
+		}
+		value := getSaleDataValueBeacon(data)
+		bsb.Params[key] = value
+	}
 	return nil
 }
