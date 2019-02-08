@@ -25,6 +25,10 @@ func (self *BlockChain) GetChainHeight(shardID byte) uint64 {
 	return self.BestState.Shard[shardID].ShardHeight
 }
 
+func (self *BlockChain) GetBeaconHeight() uint64 {
+	return self.BestState.Beacon.BeaconHeight
+}
+
 func (self *BlockChain) GetBoardPubKeys(boardType byte) [][]byte {
 	if boardType == common.DCBBoard {
 		return self.GetDCBBoardPubKeys()
@@ -136,16 +140,16 @@ func (self *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.Hash, 
 
 func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*params.SaleData, error) {
 	var saleData *params.SaleData
-	proposalTxHash, buyingAmount, sellingAmount, err := self.config.DataBase.GetCrowdsaleData(saleID)
-	if err == nil {
-		saleData = self.parseProposalCrowdsaleData(&proposalTxHash, saleID)
-		// Get fixed params of sale data in tx
-		if saleData != nil {
-			saleData.BuyingAmount = buyingAmount
-			saleData.SellingAmount = sellingAmount
+	key := getSaleDataKeyBeacon(saleID)
+	if value, ok := self.BestState.Beacon.Params[key]; ok {
+		saleData, err := parseSaleDataValueBeacon(value)
+		if err != nil {
+			return nil, err
 		}
+		return saleData, nil
+	} else {
+		return nil, errors.New("Error getting SaleData from beacon best state")
 	}
-	return saleData, err
 }
 
 func (self *BlockChain) GetAllCrowdsales() ([]*params.SaleData, error) {

@@ -2,9 +2,11 @@ package blockchain
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"strconv"
 	"strings"
 
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/pkg/errors"
 )
@@ -17,6 +19,7 @@ const (
 var (
 	loanIDKeyPrefix   = []byte("loanID-")
 	loanRespKeyPrefix = []byte("loanResp-")
+	saleDataPrefix    = []byte("sale-")
 )
 
 func getLoanRequestKeyBeacon(loanID []byte) string {
@@ -73,4 +76,22 @@ func parseLoanResponseValueBeacon(data string) ([]*LoanRespData, error) {
 		lrds = append(lrds, lrd)
 	}
 	return lrds, nil
+}
+
+func getSaleDataKeyBeacon(saleID []byte) string {
+	return string(saleDataPrefix) + string(saleID)
+}
+
+func getSaleDataValueBeacon(data *params.SaleData) string {
+	value, _ := json.Marshal(data)
+	return value
+}
+
+func parseSaleDataValueBeacon(value string) (*params.SaleData, error) {
+	data := &params.SaleData{}
+	err := json.Unmarshal(value, data)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }

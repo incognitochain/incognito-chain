@@ -934,29 +934,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 //		switch tx.GetMetadataType() {
 //		case metadata.AcceptDCBProposalMeta:
 //			{
-//				meta := tx.GetMetadata().(*metadata.AcceptDCBProposalMetadata)
-//				_, _, _, getTx, err := self.GetTransactionByHash(&meta.DCBProposalTXID)
-//				proposal := getTx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
-//				if err != nil {
-//					return err
-//				}
-//
-//				// Store saledata in db
-//				saleData := proposal.DCBParams.ListSaleData
-//				for _, data := range saleData {
-//					if _, _, _, err := self.config.DataBase.GetCrowdsaleData(data.SaleID); err == nil {
-//						// TODO(@0xbunyip): support update crowdsale data
-//						continue
-//					}
-//					if err := self.config.DataBase.StoreCrowdsaleData(
-//						data.SaleID,
-//						meta.DCBProposalTXID,
-//						data.BuyingAmount,
-//						data.SellingAmount,
-//					); err != nil {
-//						return err
-//					}
-//				}
+//             DONE
 //			}
 //		case metadata.CrowdsalePaymentMeta:
 //			{

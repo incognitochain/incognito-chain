@@ -2,9 +2,11 @@ package metadata
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -23,7 +25,7 @@ type CrowdsaleRequest struct {
 	// PriceLimit and Amount is in selling asset: i.e., tx is valid only when price(SellingAsset)/price(BuyingAsset) <= PriceLimit
 	LimitSellingAssetPrice bool
 
-	ValidUntil uint64
+	ValidUntil uint64 // in original shard, not beacon or payment shard
 	MetadataBase
 }
 
@@ -62,19 +64,20 @@ func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	if err != nil {
 		return false, err
 	}
+
 	// TODO(@0xbunyip): get height of beacon chain on new consensus
-	height, err := bcr.GetTxChainHeight(txr)
-	if err != nil || height >= saleData.EndBlock {
+	beaconHeight := bcr.GetBeaconHeight(txr)
+	if beaconHeight >= saleData.EndBlock {
 		return false, errors.Errorf("Crowdsale ended")
 	}
 
 	// Check if request is still valid
-	if height >= csReq.ValidUntil {
+	shardHeight := bcr.GetChainHeight(shardID)
+	if shardHeight >= csReq.ValidUntil {
 		return false, errors.Errorf("Crowdsale request is not valid anymore")
 	}
 
 	// Check if asset is sent to correct address
-	// TODO(@0xbunyip): validate type and amount of asset sent and if price limit is not violated
 	if saleData.BuyingAsset.IsEqual(&common.ConstantID) {
 		keyWalletBurnAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 		unique, pubkey, _ := txr.GetUniqueReceiver()
@@ -117,4 +120,62 @@ func (csReq *CrowdsaleRequest) Hash() *common.Hash {
 	record += csReq.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
+}
+
+func (csReq *CrowdsaleRequest) BuildReqActions(txr Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+	// Calculate value of asset sent in request tx
+	saleData, err := bcr.GetCrowdsaleData(csReq.SaleID)
+	if err != nil {
+		return [][]string{}, err
+	}
+	sentAmount := uint64(0)
+	if saleData.BuyingAsset.IsEqual(&common.ConstantID) {
+		_, _, sentAmount = tx.GetUniqueReceiver()
+	} else if common.IsBondAsset(&saleData.BuyingAsset) {
+		_, _, sentAmount = tx.GetTokenUniqueReceiver()
+	}
+	lrActionValue := getCrowdsaleRequestActionValue(
+		csReq.SaleID,
+		csReq.PriceLimit,
+		csReq.LimitSellingAssetPrice,
+		csReq.PaymentAddress,
+		sentAmount,
+	)
+	lrAction := []string{strconv.Itoa(CrowdsaleRequestMeta), lrActionValue}
+	// TODO(@0xbunyip): BuildReqActions should return []string only?
+	return [][]string{lrAction}, nil
+}
+
+func getCrowdsaleRequestActionValue(
+	saleID []byte,
+	priceLimit uint64,
+	limitSell bool,
+	paymentAddress privacy.PaymentAddress,
+	sentAmount uint64,
+) string {
+	return strings.Join([]string{
+		base64.StdEncoding.EncodeToString(saleID),
+		strconv.FormatUint(priceLimit),
+		strconv.FormatBool(limitSell),
+		paymentAddress.String(),
+		strconv.FormatUint(sentAmount),
+	}, actionValueSep)
+}
+
+func ParseCrowdsaleRequestActionValue(values string) ([]byte, uint64, bool, privacy.PaymentAddress, uint64, error) {
+	s := strings.Split(values, actionValueSep)
+	if len(s) != 5 {
+		return nil, nil, errors.Errorf("CrowdsaleRequest value invalid")
+	}
+	saleID, errID := base64.StdEncoding.DecodeString(s[0])
+	priceLimit, errPrice := strconv.ParseUint(s[1], 10, 64)
+	limitSell, errSell := strconv.ParseBool(s[2], 10, 64)
+	paymentAddressBytes, errPay := hex.DecodeString(s[3])
+	sentAmount, errAmount := strconv.ParseUint(s[4], 10, 64)
+	errSaver := &ErrorSaver{}
+	if errSaver.Save(errID, errPrice, errSell, errPay, errAmount) != nil {
+		return nil, 0, false, privacy.PaymentAddress{}, 0, errSaver.Get()
+	}
+	paymentAddress := privacy.NewPaymentAddressFromByte(paymentAddressBytes)
+	return saleID, priceLimit, limitSell, *paymentAddress, sentAmount
 }
