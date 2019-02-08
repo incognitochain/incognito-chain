@@ -600,7 +600,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	self.pickInstructionsOfCurrentShard(instructions)
 	for _, l := range instructions {
 		// For stability instructions
-		err := self.processLoanInstruction(l)
+		err := self.processStabilityInstruction(l)
 		if err != nil {
 			fmt.Println(err)
 		}
