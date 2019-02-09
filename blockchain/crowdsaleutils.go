@@ -321,11 +321,21 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(
 	return txsPayment, txsToRemove
 }
 
-func generateCrowdsalePaymentInstruction(paymentAddress privacy.PaymentAddress, amount uint64, assetID common.Hash) ([][]string, error) {
+func generateCrowdsalePaymentInstruction(
+	paymentAddress privacy.PaymentAddress,
+	amount uint64,
+	assetID common.Hash,
+	saleID []byte,
+	sentAmount uint64,
+	updateSale bool,
+) ([][]string, error) {
 	inst := &CrowdsalePaymentInstruction{
 		PaymentAddress: paymentAddress,
 		Amount:         amount,
 		AssetID:        AssetID,
+		SaleID:         saleID,
+		SentAmount:     sentAmount,
+		UpdateSale:     updateSale,
 	}
 	instStr, err := inst.String()
 	if err != nil {

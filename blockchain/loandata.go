@@ -102,6 +102,11 @@ type CrowdsalePaymentInstruction struct {
 	PaymentAddress privacy.PaymentAddress
 	Amount         uint64
 	AssetID        common.Hash
+
+	// Data for updating crowdsale on beacon params
+	SaleID     []byte
+	SentAmount uint64
+	UpdateSale bool
 }
 
 func (inst *CrowdsalePaymentInstruction) String() (string, error) {
