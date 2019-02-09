@@ -229,3 +229,27 @@ func (self *BestStateBeacon) GetPubkeyRole(pubkey string) (string, byte) {
 
 	return "", 0
 }
+
+// getAssetPrice returns price stored in Oracle
+func (self *BestStateBeacon) getAssetPrice(assetID common.Hash) uint64 {
+	price := uint64(0)
+	if common.IsBondAsset(&assetID) {
+		if self.StabilityInfo.Oracle.Bonds != nil {
+			price = self.StabilityInfo.Oracle.Bonds[assetID.String()]
+		}
+	} else if self.StabilityInfo.Oracle != nil {
+		oracle := self.StabilityInfo.Oracle
+		if assetID.IsEqual(&common.ConstantID) {
+			price = oracle.Constant
+		} else if assetID.IsEqual(&common.DCBTokenID) {
+			price = oracle.DCBToken
+		} else if assetID.IsEqual(&common.GOVTokenID) {
+			price = oracle.GOVToken
+		} else if assetID.IsEqual(&common.ETHAssetID) {
+			price = oracle.ETH
+		} else if assetID.IsEqual(&common.BTCAssetID) {
+			price = oracle.BTC
+		}
+	}
+	return price
+}
