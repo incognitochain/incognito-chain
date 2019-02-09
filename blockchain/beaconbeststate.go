@@ -1,11 +1,11 @@
 package blockchain
 
 import (
-	"errors"
 	"sort"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/pkg/errors"
 )
 
 // BestState houses information about the current best block and other info
@@ -238,7 +238,7 @@ func (self *BestStateBeacon) getAssetPrice(assetID common.Hash) uint64 {
 		if self.StabilityInfo.Oracle.Bonds != nil {
 			price = self.StabilityInfo.Oracle.Bonds[assetID.String()]
 		}
-	} else if self.StabilityInfo.Oracle != nil {
+	} else {
 		oracle := self.StabilityInfo.Oracle
 		if assetID.IsEqual(&common.ConstantID) {
 			price = oracle.Constant

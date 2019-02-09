@@ -83,13 +83,16 @@ func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ValidateMetadataByIt
 }
 
 func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) BuildReqActions(txr Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	actionValue := getSaleDataActionValue()
-	action := []string{strconv.Itoa(AcceptDCBProposalMetadataMeta), actionValue}
+	actionValue, err := getSaleDataActionValue(acceptDCBProposalMetadata, bcr)
+	if err != nil {
+		return nil, err
+	}
+	action := []string{strconv.Itoa(AcceptDCBProposalMeta), actionValue}
 	return [][]string{action}, nil
 }
 
 func getSaleDataActionValue(meta *AcceptDCBProposalMetadata, bcr BlockchainRetriever) (string, error) {
-	_, _, _, txProposal, err := bcr.GetTransactionByHash(meta.DCBProposalTXID)
+	_, _, _, txProposal, err := bcr.GetTransactionByHash(&meta.DCBProposalTXID)
 	if err != nil {
 		return "", err
 	}
@@ -97,7 +100,11 @@ func getSaleDataActionValue(meta *AcceptDCBProposalMetadata, bcr BlockchainRetri
 	if !ok {
 		return "", errors.New("Error parsing proposal metadata")
 	}
-	return json.Marshal(metaProposal.DCBParams)
+	value, err := json.Marshal(metaProposal.DCBParams)
+	if err != nil {
+		return "", err
+	}
+	return string(value), nil
 }
 
 func ParseAcceptDCBProposalMetadataActionValue(values string) (*params.DCBParams, error) {
