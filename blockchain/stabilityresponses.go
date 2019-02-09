@@ -80,6 +80,13 @@ func buildStabilityInstructions(
 			}
 			instructions = append(instructions, buyBondsInst...)
 
+		case metadata.CrowdsaleRequestMeta:
+			saleInst, err := buildInstructionsForCrowdsaleRequest(shardID, contentStr, beaconBestState, accumulativeValues)
+			if err != nil {
+				return [][]string{}, err
+			}
+			instructions = append(instructions, saleInst...)
+
 		default:
 			continue
 		}
