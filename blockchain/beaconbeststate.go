@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"errors"
 	"sort"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
@@ -252,4 +253,13 @@ func (self *BestStateBeacon) getAssetPrice(assetID common.Hash) uint64 {
 		}
 	}
 	return price
+}
+
+// GetSaleData returns latest data of a crowdsale
+func (self *BestStateBeacon) GetSaleData(saleID []byte) (*params.SaleData, error) {
+	key := getSaleDataKeyBeacon(saleID)
+	if value, ok := self.Params[key]; ok {
+		return parseSaleDataValueBeacon(value)
+	}
+	return nil, errors.Errorf("SaleID not exist: %x", saleID)
 }

@@ -26,6 +26,9 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 
 	case strconv.Itoa(metadata.AcceptDCBProposalMeta):
 		return bsb.processAcceptDCBProposalInstruction(inst)
+
+	case strconv.Itoa(metadata.CrowdsalePaymentMeta):
+		return bsb.processCrowdsalePaymentInstruction(inst)
 	}
 	return nil
 }
@@ -139,6 +142,24 @@ func (bsb *BestStateBeacon) processAcceptDCBProposalInstruction(inst []string) e
 	return nil
 }
 
+func (bsb *BestStateBeacon) processCrowdsalePaymentInstruction(inst []string) error {
+	// All shard update bsb, only DCB shard creates payment txs
+	paymentInst, err := ParseCrowdsalePaymentInstruction(inst[2])
+	if err != nil {
+		return err
+	}
+	if paymentInst.UpdateSale {
+		saleData, err := bsb.GetSaleData(bsb.SaleID)
+		if err != nil {
+			return err
+		}
+		saleData.BuyingAmount -= paymentInst.SentAmount
+		saleData.SellingAmount -= paymentInst.Amount
+		bsb.Params[key] = getSaleDataValueBeacon(saleData)
+	}
+	return nil
+}
+
 func buildInstructionsForCrowdsaleRequest(
 	shardID byte,
 	contentStr string,
@@ -200,7 +221,7 @@ func buildPaymentInstructionForCrowdsale(
 		buyPrice = saleData.DefaultBuyPrice
 		sellPrice = saleData.DefaultSellPrice
 		if buyPrice == 0 || sellPrice == 0 {
-			return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset) // refund
+			return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, false) // refund
 		}
 	}
 	fmt.Printf("[db] buy and sell price: %d %d\n", buyPrice, sellPrice)
@@ -208,10 +229,10 @@ func buildPaymentInstructionForCrowdsale(
 	// Check if price limit is not violated
 	if limitSell && sellPrice > priceLimit {
 		fmt.Printf("Price limit violated: %d %d\n", sellPrice, priceLimit)
-		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset) // refund
+		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
 	} else if !limitSell && buyPrice < priceLimit {
 		fmt.Printf("Price limit violated: %d %d\n", buyPrice, priceLimit)
-		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset) // refund
+		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
 	}
 
 	// Calculate value of asset sent in request tx
@@ -223,7 +244,7 @@ func buildPaymentInstructionForCrowdsale(
 	// Check if there's still enough asset to trade
 	if sentAmount > saleData.BuyingAmount || paymentAmount > saleData.SellingAmount {
 		fmt.Printf("Crowdsale reached limit\n")
-		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset) // refund
+		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
 	}
 
 	// Update amount of buying/selling asset of the crowdsale
@@ -231,5 +252,5 @@ func buildPaymentInstructionForCrowdsale(
 	saleData.SellingAmount -= paymentAmount
 
 	// Build instructions
-	return generateCrowdsalePaymentInstruction(paymentAddress, paymentAmount, sellingAsset)
+	return generateCrowdsalePaymentInstruction(paymentAddress, paymentAmount, sellingAsset, saleData.SaleID, sentAmount, true)
 }
