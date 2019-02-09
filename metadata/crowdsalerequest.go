@@ -177,5 +177,5 @@ func ParseCrowdsaleRequestActionValue(values string) ([]byte, uint64, bool, priv
 		return nil, 0, false, privacy.PaymentAddress{}, 0, errSaver.Get()
 	}
 	paymentAddress := privacy.NewPaymentAddressFromByte(paymentAddressBytes)
-	return saleID, priceLimit, limitSell, *paymentAddress, sentAmount
+	return saleID, priceLimit, limitSell, *paymentAddress, sentAmount, nil
 }

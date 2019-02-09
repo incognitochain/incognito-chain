@@ -7,7 +7,9 @@ import (
 	"strings"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/privacy"
 	"github.com/pkg/errors"
 )
 
@@ -94,4 +96,24 @@ func parseSaleDataValueBeacon(value string) (*params.SaleData, error) {
 		return nil, err
 	}
 	return data, nil
+}
+
+type CrowdsalePaymentInstruction struct {
+	PaymentAddress privacy.PaymentAddress
+	Amount         uint64
+	AssetID        common.Hash
+}
+
+func (inst *CrowdsalePaymentInstruction) String() (string, error) {
+	data, err := json.Marshal(inst)
+	return string(data), err
+}
+
+func ParseCrowdsalePaymentInstruction(data string) (*CrowdsalePaymentInstruction, error) {
+	inst := &CrowdsalePaymentInstruction{}
+	err := json.Unmarshal(data, inst)
+	if err != nil {
+		return nil, err
+	}
+	return inst, nil
 }
