@@ -98,8 +98,17 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		},
 	}
 
-	// Process stability tx, create response if needed
+	// Process stability tx, create response txs if needed
 	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxs(txsToAdd, privatekey)
+	if err != nil {
+		return nil, err
+	}
+	for _, tx := range stabilityResponseTxs {
+		txsToAdd = append(txsToAdd, tx)
+	}
+
+	// Process stability instructions, create response txs if needed
+	stabilityResponseTxs, err = blockgen.buildStabilityResponseTxsFromInstructions(beaconBlocks, privatekey, shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -225,6 +234,39 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxs(txs []metadata.Trans
 
 	// TODO(@0xbunyip): remove tx from txsToAdd?
 	return respTxs, nil
+}
+
+func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.SpendingKey, shardID byte) ([]metadata.Transaction, error) {
+	// TODO(@0xbunyip): refund bonds in multiple blocks since many refund instructions might come at once and UTXO picking order is not perfect
+	unspentTokenMap := map[string]([]transaction.TxTokenVout){}
+	responses := []metadata.Transaction{}
+	for _, beaconBlock := range beaconBlocks {
+		for _, l := range beaconBlock.Body.Instructions {
+			if len(l) <= 2 {
+				continue
+			}
+			shardToProcess, err := strconv.Atoi(l[1])
+			if err == nil && shardToProcess == int(shardID) {
+				instType, err := strconv.Atoi(l[0])
+				if err != nil {
+					continue
+				}
+				switch instType {
+				case metadata.CrowdsalePaymentMeta:
+					paymentInst, err := ParseCrowdsalePaymentInstruction(l[2])
+					if err != nil {
+						continue
+					}
+
+					tx, err := blockgen.buildPaymentForCrowdsale(paymentInst, unspentTokenMap, producerPrivateKey)
+					if err != nil {
+						responses = append(responses, tx)
+					}
+				}
+			}
+		}
+	}
+	return nil, nil
 }
 
 /*

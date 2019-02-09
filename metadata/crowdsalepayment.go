@@ -11,21 +11,17 @@ import (
 )
 
 type CrowdsalePayment struct {
-	RequestedTxID *common.Hash
-	SaleID        []byte
+	SaleID []byte
 
 	MetadataBase
 }
 
 func (csRes *CrowdsalePayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-	// TODO(@0xbunyip): check if there's a corresponding request in the same block
 	// Check if sale exists
 	saleData, err := bcr.GetCrowdsaleData(csRes.SaleID)
 	if err != nil {
 		return false, err
 	}
-
-	// TODO(@0xbunyip): validate amount of asset sent and if price limit is not violated
 
 	// Check if sending address is DCB's
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
@@ -55,8 +51,7 @@ func (csRes *CrowdsalePayment) ValidateMetadataByItself() bool {
 }
 
 func (csRes *CrowdsalePayment) Hash() *common.Hash {
-	record := csRes.RequestedTxID.String()
-	record += string(csRes.SaleID)
+	record := string(csRes.SaleID)
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

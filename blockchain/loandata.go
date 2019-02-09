@@ -86,12 +86,12 @@ func getSaleDataKeyBeacon(saleID []byte) string {
 
 func getSaleDataValueBeacon(data *params.SaleData) string {
 	value, _ := json.Marshal(data)
-	return value
+	return string(value)
 }
 
 func parseSaleDataValueBeacon(value string) (*params.SaleData, error) {
 	data := &params.SaleData{}
-	err := json.Unmarshal(value, data)
+	err := json.Unmarshal([]byte(value), data)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func (inst *CrowdsalePaymentInstruction) String() (string, error) {
 
 func ParseCrowdsalePaymentInstruction(data string) (*CrowdsalePaymentInstruction, error) {
 	inst := &CrowdsalePaymentInstruction{}
-	err := json.Unmarshal(data, inst)
+	err := json.Unmarshal([]byte(data), inst)
 	if err != nil {
 		return nil, err
 	}
