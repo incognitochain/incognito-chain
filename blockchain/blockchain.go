@@ -975,61 +975,6 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 //	return nil
 //}
 
-func (self *BlockChain) updateCrowdsalePaymentData(tx metadata.Transaction, saleDataMap map[string]*params.SaleData) error {
-	fmt.Printf("[db] update cs data\n")
-
-	// Get current sale status from db
-	meta := tx.GetMetadata().(*metadata.CrowdsalePayment)
-	saleData, ok := saleDataMap[string(meta.SaleID)]
-	if !ok {
-		data, err := self.GetCrowdsaleData(meta.SaleID)
-		if err != nil {
-			return err
-		}
-		saleData = data
-		saleDataMap[string(meta.SaleID)] = saleData
-	}
-
-	// Update selling asset status
-	amount := uint64(0)
-	if saleData.SellingAsset.IsEqual(&common.ConstantID) {
-		_, _, amount = tx.GetUniqueReceiver()
-	} else {
-		txToken, ok := tx.(*transaction.TxCustomToken)
-		if !ok {
-			return errors.New("Error parsing crowdsale payment as TxCustomToken")
-		}
-		_, _, amount = txToken.GetTokenUniqueReceiver()
-	}
-	if amount > saleData.SellingAmount {
-		return errors.New("Sold too much asset")
-	}
-	fmt.Printf("[db] selling amount: %d\n", amount)
-	saleData.SellingAmount -= amount
-
-	// Update buying asset status
-	_, _, _, txRequest, err := self.GetTransactionByHash(meta.RequestedTxID)
-	if err != nil {
-		return err
-	}
-	amount = uint64(0)
-	if saleData.BuyingAsset.IsEqual(&common.ConstantID) {
-		_, _, amount = txRequest.GetUniqueReceiver()
-	} else {
-		txToken, ok := txRequest.(*transaction.TxCustomToken)
-		if !ok {
-			return errors.New("Error parsing crowdsale request as TxCustomToken")
-		}
-		_, _, amount = txToken.GetTokenUniqueReceiver()
-	}
-	if amount > saleData.BuyingAmount {
-		return errors.New("Bought too much asset")
-	}
-	fmt.Printf("[db] buying amount: %d\n", amount)
-	saleData.BuyingAmount -= amount
-	return nil
-}
-
 // func (self *BlockChain) ProcessCMBTxs(block *Block) error {
 // 	for _, tx := range block.Transactions {
 // 		switch tx.GetMetadataType() {

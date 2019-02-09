@@ -66,7 +66,7 @@ func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	}
 
 	// TODO(@0xbunyip): get height of beacon chain on new consensus
-	beaconHeight := bcr.GetBeaconHeight(txr)
+	beaconHeight := bcr.GetBeaconHeight()
 	if beaconHeight >= saleData.EndBlock {
 		return false, errors.Errorf("Crowdsale ended")
 	}
@@ -130,9 +130,9 @@ func (csReq *CrowdsaleRequest) BuildReqActions(txr Transaction, bcr BlockchainRe
 	}
 	sentAmount := uint64(0)
 	if saleData.BuyingAsset.IsEqual(&common.ConstantID) {
-		_, _, sentAmount = tx.GetUniqueReceiver()
+		_, _, sentAmount = txr.GetUniqueReceiver()
 	} else if common.IsBondAsset(&saleData.BuyingAsset) {
-		_, _, sentAmount = tx.GetTokenUniqueReceiver()
+		_, _, sentAmount = txr.GetTokenUniqueReceiver()
 	}
 	lrActionValue := getCrowdsaleRequestActionValue(
 		csReq.SaleID,
@@ -155,21 +155,21 @@ func getCrowdsaleRequestActionValue(
 ) string {
 	return strings.Join([]string{
 		base64.StdEncoding.EncodeToString(saleID),
-		strconv.FormatUint(priceLimit),
+		strconv.FormatUint(priceLimit, 10),
 		strconv.FormatBool(limitSell),
 		paymentAddress.String(),
-		strconv.FormatUint(sentAmount),
+		strconv.FormatUint(sentAmount, 10),
 	}, actionValueSep)
 }
 
 func ParseCrowdsaleRequestActionValue(values string) ([]byte, uint64, bool, privacy.PaymentAddress, uint64, error) {
 	s := strings.Split(values, actionValueSep)
 	if len(s) != 5 {
-		return nil, nil, errors.Errorf("CrowdsaleRequest value invalid")
+		return nil, 0, false, privacy.PaymentAddress{}, 0, errors.Errorf("CrowdsaleRequest value invalid")
 	}
 	saleID, errID := base64.StdEncoding.DecodeString(s[0])
 	priceLimit, errPrice := strconv.ParseUint(s[1], 10, 64)
-	limitSell, errSell := strconv.ParseBool(s[2], 10, 64)
+	limitSell, errSell := strconv.ParseBool(s[2])
 	paymentAddressBytes, errPay := hex.DecodeString(s[3])
 	sentAmount, errAmount := strconv.ParseUint(s[4], 10, 64)
 	errSaver := &ErrorSaver{}

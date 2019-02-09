@@ -139,7 +139,6 @@ func (self *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.Hash, 
 }
 
 func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*params.SaleData, error) {
-	var saleData *params.SaleData
 	key := getSaleDataKeyBeacon(saleID)
 	if value, ok := self.BestState.Beacon.Params[key]; ok {
 		saleData, err := parseSaleDataValueBeacon(value)

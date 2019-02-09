@@ -101,28 +101,6 @@ func (bsb *BestStateBeacon) processLoanPaymentInstruction(inst []string) error {
 	return nil
 }
 
-func (bsb *BestStateBeacon) processLoanPaymentInstruction(inst []string) error {
-	_, amount, err := metadata.ParseLoanPaymentActionValue(inst[1])
-	if err != nil {
-		return err
-	}
-
-	// Update fund of DCB
-	bsb.StabilityInfo.BankFund += amount
-	return nil
-}
-
-func (bsb *BestStateBeacon) processLoanPaymentInstruction(inst []string) error {
-	_, amount, err := metadata.ParseLoanPaymentActionValue(inst[1])
-	if err != nil {
-		return err
-	}
-
-	// Update fund of DCB
-	bsb.StabilityInfo.BankFund += amount
-	return nil
-}
-
 func (bsb *BestStateBeacon) processAcceptDCBProposalInstruction(inst []string) error {
 	// TODO(@0xjackalope): process other dcb params here
 	dcbParams, err := metadata.ParseAcceptDCBProposalMetadataActionValue(inst[1])
@@ -136,7 +114,7 @@ func (bsb *BestStateBeacon) processAcceptDCBProposalInstruction(inst []string) e
 			// TODO(@0xbunyip): support update crowdsale data
 			continue
 		}
-		value := getSaleDataValueBeacon(data)
+		value := getSaleDataValueBeacon(&data)
 		bsb.Params[key] = value
 	}
 	return nil
@@ -149,12 +127,14 @@ func (bsb *BestStateBeacon) processCrowdsalePaymentInstruction(inst []string) er
 		return err
 	}
 	if paymentInst.UpdateSale {
-		saleData, err := bsb.GetSaleData(bsb.SaleID)
+		saleData, err := bsb.GetSaleData(paymentInst.SaleID)
 		if err != nil {
 			return err
 		}
 		saleData.BuyingAmount -= paymentInst.SentAmount
 		saleData.SellingAmount -= paymentInst.Amount
+
+		key := getSaleDataKeyBeacon(paymentInst.SaleID)
 		bsb.Params[key] = getSaleDataValueBeacon(saleData)
 	}
 	return nil
@@ -221,7 +201,7 @@ func buildPaymentInstructionForCrowdsale(
 		buyPrice = saleData.DefaultBuyPrice
 		sellPrice = saleData.DefaultSellPrice
 		if buyPrice == 0 || sellPrice == 0 {
-			return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, false) // refund
+			return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
 		}
 	}
 	fmt.Printf("[db] buy and sell price: %d %d\n", buyPrice, sellPrice)
