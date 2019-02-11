@@ -407,7 +407,7 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 			hash := shardBlock.Header.Hash()
 			err := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
 			if index == 0 && err != nil {
-				currentCommittee, currentPendingValidator, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, COMMITEES, OFFSET)
+				currentCommittee, currentPendingValidator, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, common.COMMITEES, common.OFFSET)
 				if err != nil {
 					return NewBlockChainError(ShardStateError, errors.New("Shardstate fail to verify with ShardToBeacon Block in pool"))
 				}
@@ -613,31 +613,33 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		}
 		if l[0] == "swap" {
 			// format
-			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "shard" "shardID"]
-			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "beacon"]
+			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
+			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
 			inPubkeys := strings.Split(l[1], ",")
 			outPubkeys := strings.Split(l[2], ",")
-			if l[3] == "shard" {
-				temp, err := strconv.Atoi(l[4])
-				if err != nil {
-					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err)
+			if len(l) > 4 {
+				if l[3] == "shard" {
+					temp, err := strconv.Atoi(l[4])
+					if err != nil {
+						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+						return NewBlockChainError(UnExpectedError, err)
+					}
+					shardID := byte(temp)
+					// delete in public key out of sharding pending validator list
+					self.ShardPendingValidator[shardID], err = RemoveValidator(self.ShardPendingValidator[shardID], inPubkeys)
+					if err != nil {
+						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+						return NewBlockChainError(UnExpectedError, err)
+					}
+					// delete out public key out of current committees
+					self.ShardCommittee[shardID], err = RemoveValidator(self.ShardPendingValidator[shardID], outPubkeys)
+					if err != nil {
+						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+						return NewBlockChainError(UnExpectedError, err)
+					}
+					// append in public key to committees
+					self.ShardCommittee[shardID] = append(self.ShardCommittee[shardID], inPubkeys...)
 				}
-				shardID := byte(temp)
-				// delete in public key out of sharding pending validator list
-				self.ShardPendingValidator[shardID], err = RemoveValidator(self.ShardPendingValidator[shardID], inPubkeys)
-				if err != nil {
-					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err)
-				}
-				// delete out public key out of current committees
-				self.ShardCommittee[shardID], err = RemoveValidator(self.ShardPendingValidator[shardID], outPubkeys)
-				if err != nil {
-					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err)
-				}
-				// append in public key to committees
-				self.ShardCommittee[shardID] = append(self.ShardCommittee[shardID], inPubkeys...)
 			} else if l[3] == "beacon" {
 				var err error
 				self.BeaconPendingValidator, err = RemoveValidator(self.BeaconPendingValidator, inPubkeys)
@@ -746,7 +748,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			beaconNewCommittees    []string
 			err                    error
 		)
-		self.BeaconPendingValidator, self.BeaconCommittee, beaconSwapedCommittees, beaconNewCommittees, err = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, COMMITEES, OFFSET)
+		self.BeaconPendingValidator, self.BeaconCommittee, beaconSwapedCommittees, beaconNewCommittees, err = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, common.COMMITEES, common.OFFSET)
 		if err != nil {
 			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 			return NewBlockChainError(UnExpectedError, err)

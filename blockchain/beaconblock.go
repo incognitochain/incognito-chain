@@ -9,8 +9,6 @@ import (
 )
 
 const (
-	COMMITEES     = 3
-	OFFSET        = 1
 	VERSION       = 1
 	RANDOM_NUMBER = 3
 )
