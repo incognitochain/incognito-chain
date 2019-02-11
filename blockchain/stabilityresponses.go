@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
@@ -22,18 +23,23 @@ func buildInstructionsForBuyBondsFromGOVReq(
 	if err != nil {
 		return [][]string{}, err
 	}
+	buyBondsFromGOVActionContent := map[string]interface{}{}
+	err = json.Unmarshal(contentBytes, &buyBondsFromGOVActionContent)
+	if err != nil {
+		return nil, err
+	}
+	md, ok := buyBondsFromGOVActionContent["meta"].(metadata.BuySellRequest)
+	if !ok {
+		return nil, errors.New("Could not parse BuySellRequest metadata.")
+	}
 
 	instructions := [][]string{}
-	md := &metadata.BuySellRequest{}
-	err = json.Unmarshal(contentBytes, &md)
-	if err != nil {
-		return [][]string{}, err
-	}
 	stabilityInfo := beaconBestState.StabilityInfo
 	sellingBondsParams := stabilityInfo.GOVConstitution.GOVParams.SellingBonds
 	bestBlockHeight := beaconBestState.BestBlock.Header.Height
 	instType := ""
-	if (bestBlockHeight+1 < sellingBondsParams.StartSellingAt) ||
+	if (sellingBondsParams == nil) ||
+		(bestBlockHeight+1 < sellingBondsParams.StartSellingAt) ||
 		(bestBlockHeight+1 > sellingBondsParams.StartSellingAt+sellingBondsParams.SellingWithin) ||
 		(accumulativeValues.bondsSold+md.Amount > sellingBondsParams.BondsToSell) {
 		instType = "refund"
@@ -42,11 +48,16 @@ func buildInstructionsForBuyBondsFromGOVReq(
 		accumulativeValues.bondsSold += md.Amount
 		instType = "accepted"
 	}
+	sellingBondsParamsBytes, err := json.Marshal(sellingBondsParams)
+	if err != nil {
+		return nil, err
+	}
 	returnedInst := []string{
 		strconv.Itoa(metadata.BuyFromGOVRequestMeta),
 		strconv.Itoa(int(shardID)),
 		instType,
 		contentStr,
+		string(sellingBondsParamsBytes),
 	}
 	instructions = append(instructions, returnedInst)
 	return instructions, nil
@@ -117,8 +128,16 @@ func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, p
 func (blockgen *BlkTmplGenerator) buildBuyBondsFromGOVRes(
 	instType string,
 	contentStr string,
+	sellingBondsParamsStr string,
 	blkProducerPrivateKey *privacy.SpendingKey,
 ) ([]metadata.Transaction, error) {
+	sellingBondsParamsBytes := []byte(sellingBondsParamsStr)
+	var sellingBondsParams params.SellingBonds
+	err := json.Unmarshal(sellingBondsParamsBytes, &sellingBondsParams)
+	if err != nil {
+		return nil, err
+	}
+
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
 		return nil, err
@@ -150,9 +169,9 @@ func (blockgen *BlkTmplGenerator) buildBuyBondsFromGOVRes(
 		bondID := reqMeta.TokenID
 		buySellRes := metadata.NewBuySellResponse(
 			txReqID,
-			0, //sellingBondsParam.StartSellingAt,
-			0, //sellingBondsParam.Maturity,
-			0, //sellingBondsParam.BuyBackPrice,
+			sellingBondsParams.StartSellingAt,
+			sellingBondsParams.Maturity,
+			sellingBondsParams.BuyBackPrice,
 			bondID[:],
 			metadata.BuyFromGOVResponseMeta,
 		)
@@ -215,7 +234,8 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(beac
 					resTxs = append(resTxs, tx)
 				case metadata.BuyFromGOVRequestMeta:
 					contentStr := l[3]
-					txs, err := blockgen.buildBuyBondsFromGOVRes(l[2], contentStr, producerPrivateKey)
+					sellingBondsParamsStr := l[4]
+					txs, err := blockgen.buildBuyBondsFromGOVRes(l[2], contentStr, sellingBondsParamsStr, producerPrivateKey)
 					if err != nil {
 						return nil, err
 					}
