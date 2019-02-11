@@ -49,15 +49,23 @@ type BlockChain struct {
 		Beacon bool
 		Shard  map[byte](chan struct{})
 		sync.Mutex
+
+		CurrentlySyncShardBlk         sync.Map
+		CurrentlySyncBeaconBlk        sync.Map
+		CurrentlySyncCrossShardBlk    sync.Map
+		CurrentlySyncShardToBeaconBlk sync.Map
+
+		PeersState map[libp2p.ID]struct {
+			Shard  *ShardChainState
+			Beacon *BeaconChainState
+		}
 	}
 	knownChainState struct {
 		Shards map[byte]ShardChainState
 		Beacon BeaconChainState
 	}
-	BeaconStateCh  chan *PeerBeaconChainState
-	newBeaconBlkCh chan *BeaconBlock
-	ShardStateCh   map[byte](chan *PeerShardChainState)
-	newShardBlkCh  map[byte](*chan *ShardBlock)
+	BeaconStateCh chan *PeerBeaconChainState
+	ShardStateCh  map[byte](chan *PeerShardChainState)
 }
 type BestState struct {
 	Beacon *BestStateBeacon
@@ -103,13 +111,24 @@ type Config struct {
 	CrossShardPool    CrossShardPool
 	NodeBeaconPool    NodeBeaconPool
 	NodeShardPool     NodeShardPool
-	Server            interface {
+
+	Server interface {
+		BoardcastBeaconState()
+		BoardcastShardState()
+
 		PushMessageGetBeaconState() error
-		PushMessageGetShardState(byte) error
-		PushMessageGetBlockBeacon(from uint64, to uint64, peerID libp2p.ID) error
-		PushMessageGetBlockShard(shardID byte, from uint64, to uint64, peerID libp2p.ID) error
-		PushMessageGetShardToBeacon(shardID byte, blkHash common.Hash) error
-		PushMessageGetShardToBeacons(shardID byte, from uint64, to uint64) error
+		PushMessageGetShardState(shardID byte) error
+
+		PushMessageGetBlockBeaconByHeight(from uint64, to uint64, peerID libp2p.ID) error
+		PushMessageGetBlockBeaconByHash(blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
+
+		PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error
+		PushMessageGetBlockShardByHash(shardID byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
+
+		PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error
+		PushMessageGetBlockShardToBeaconByHash(shardID byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
+
+		PushMessageGetBlockCrossShardByHash(fromShard byte, toShard byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
 	}
 	UserKeySet *cashec.KeySet
 }
@@ -141,7 +160,6 @@ func (self *BlockChain) Init(config *Config) error {
 	// }
 	self.cQuitSync = make(chan struct{})
 	self.ShardStateCh = make(map[byte](chan *PeerShardChainState))
-	self.newShardBlkCh = make(map[byte](*chan *ShardBlock))
 	self.syncStatus.Shard = make(map[byte](chan struct{}))
 	self.knownChainState.Shards = make(map[byte]ShardChainState)
 	self.SyncBeacon()
