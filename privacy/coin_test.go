@@ -57,17 +57,19 @@ func TestEncryptionCoin(t *testing.T){
 	//fmt.Printf("input: %v\n", coin3.SNDerivator.Bytes())
 	////fmt.Printf("Public key: %v\n", coin3.PublicKey)
 
-	//outCoin := new(OutputCoin)
-	//outCoin.CoinDetails = new(Coin)
-	//outCoin.CoinDetailsEncrypted = new(Ciphertext)
-	//outCoin.CoinDetailsEncrypted.SetBytes([]byte{223, 198, 8, 136, 78, 57, 73, 132, 70, 137, 192, 152, 232, 168, 205, 40, 83, 235, 96, 71, 95, 216, 33, 195, 251, 59, 58, 26, 204, 71, 148, 31, 21, 47, 1, 168, 194, 71, 248, 147, 195, 146, 44, 151, 55, 116, 68, 95, 2, 50, 67, 64, 175, 218, 141, 69, 113, 134, 11, 130, 200, 66, 73, 237, 36, 91, 63, 149, 193, 47, 14, 42, 61, 122, 81, 183, 222, 92, 100, 125, 170, 3, 123, 246, 152, 211, 39, 110, 93, 59, 0, 95, 92, 44, 249, 195, 145, 1, 55, 136, 18, 233, 125, 7, 81, 37, 12, 177, 93, 35, 99, 241, 215, 199, 12, 114, 95, 83, 164, 137, 229, 9, 170, 21, 65, 111, 97, 26, 18, 17, 8})
-	//fmt.Printf("Out coin set byte: %+v\n", outCoin.CoinDetailsEncrypted)
-	////fmt.Printf("Out coin set byte randomness: %+v\n", len(outCoin.CoinDetailsEncrypted.EncryptedRandomness))
-	////fmt.Printf("Out coin set byte value: %+v\n", len(outCoin.CoinDetailsEncrypted.EncryptedValue))
-	////fmt.Printf("Out coin set byte sym key: %+v\n", len(outCoin.CoinDetailsEncrypted.EncryptedSymKey))
-	//
-	//outCoin.Decrypt(viewingKey)
+	outCoin := new(OutputCoin)
+	outCoin.CoinDetails = new(Coin)
+	outCoin.CoinDetailsEncrypted = new(Ciphertext)
+	outCoin.CoinDetailsEncrypted.SetBytes([]byte{2, 131, 97, 41, 144, 247, 106, 3, 226, 241, 47, 187, 150, 165, 59, 10, 227, 28, 185, 225, 90, 168, 114, 15, 47, 68, 43, 50, 97, 192, 228, 245, 248, 2, 20, 32, 124, 237, 116, 13, 204, 165, 88, 71, 244, 236, 240, 252, 180, 59, 28, 125, 60, 83, 10, 130, 164, 148, 229, 217, 133, 66, 237, 224, 158, 29, 131, 185, 142, 253, 236, 201, 14, 248, 104, 214, 180, 90, 184, 68, 217, 247, 119, 202, 142, 18, 76, 34, 180, 35, 8, 138, 76, 191, 65, 26, 252, 143, 170, 226, 218, 169, 114, 229, 214, 32, 156, 82, 99, 123, 120, 105, 218, 252, 87})
+	fmt.Printf("Out coin set byte: %+v\n", outCoin.CoinDetailsEncrypted)
+	//fmt.Printf("Out coin set byte randomness: %+v\n", len(outCoin.CoinDetailsEncrypted.EncryptedRandomness))
+	//fmt.Printf("Out coin set byte value: %+v\n", len(outCoin.CoinDetailsEncrypted.EncryptedValue))
+	//fmt.Printf("Out coin set byte sym key: %+v\n", len(outCoin.CoinDetailsEncrypted.EncryptedSymKey))
 
+	outCoin.Decrypt(viewingKey)
+
+	fmt.Printf("Outcoin value: %v\n", outCoin.CoinDetails.Value)
+	fmt.Printf("Outcoin randomness: %v\n", outCoin.CoinDetails.Randomness.Bytes())
 
 
 
