@@ -97,6 +97,8 @@ const (
 const (
 	// SHARD_NUMBER = 4
 	SHARD_NUMBER = 1 //single-node mode
-	EPOCH        = 200
-	RANDOM_TIME  = 100
+	EPOCH        = 100
+	RANDOM_TIME  = 20
+	COMMITEES    = 1
+	OFFSET       = 1
 )
