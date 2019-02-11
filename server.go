@@ -548,20 +548,19 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 	}
 	config := &peer.Config{
 		MessageListeners: peer.MessageListeners{
-			OnBlockShard:        serverObj.OnBlockShard,
-			OnBlockBeacon:       serverObj.OnBlockBeacon,
-			OnCrossShard:        serverObj.OnCrossShard,
-			OnShardToBeacon:     serverObj.OnShardToBeacon,
-			OnTx:                serverObj.OnTx,
-			OnVersion:           serverObj.OnVersion,
-			OnGetBlockBeacon:    serverObj.OnGetBlockBeacon,
-			OnGetBlockShard:     serverObj.OnGetBlockShard,
-			OnGetCrossShard:     serverObj.OnGetCrossShard,
-			OnGetShardToBeacon:  serverObj.OnGetShardToBeacon,
-			OnGetShardToBeacons: serverObj.OnGetShardToBeacons,
-			OnVerAck:            serverObj.OnVerAck,
-			OnGetAddr:           serverObj.OnGetAddr,
-			OnAddr:              serverObj.OnAddr,
+			OnBlockShard:       serverObj.OnBlockShard,
+			OnBlockBeacon:      serverObj.OnBlockBeacon,
+			OnCrossShard:       serverObj.OnCrossShard,
+			OnShardToBeacon:    serverObj.OnShardToBeacon,
+			OnTx:               serverObj.OnTx,
+			OnVersion:          serverObj.OnVersion,
+			OnGetBlockBeacon:   serverObj.OnGetBlockBeacon,
+			OnGetBlockShard:    serverObj.OnGetBlockShard,
+			OnGetCrossShard:    serverObj.OnGetCrossShard,
+			OnGetShardToBeacon: serverObj.OnGetShardToBeacon,
+			OnVerAck:           serverObj.OnVerAck,
+			OnGetAddr:          serverObj.OnGetAddr,
+			OnAddr:             serverObj.OnAddr,
 
 			//constantpos
 			OnBFTMsg: serverObj.OnBFTMsg,
@@ -661,13 +660,6 @@ func (serverObj *Server) OnGetShardToBeacon(_ *peer.PeerConn, msg *wire.MessageG
 	var txProcessed chan struct{}
 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a getshardtobeacon END")
-}
-
-func (serverObj *Server) OnGetShardToBeacons(_ *peer.PeerConn, msg *wire.MessageGetShardToBeacons) {
-	Logger.log.Info("Receive a getshardtobeaconS START")
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a getshardtobeaconS END")
 }
 
 // OnTx is invoked when a peer receives a tx message.  It blocks
@@ -1099,56 +1091,6 @@ func (serverObj *Server) PushMessageGetShardState(shardID byte) error {
 	return nil
 }
 
-func (serverObj *Server) PushMessageGetCrossShard(FromShardID byte, ToShardID byte, blkHash common.Hash) error {
-	Logger.log.Debugf("Send a GetCrossShard")
-	listener := serverObj.connManager.Config.ListenerPeer
-	msg, err := wire.MakeEmptyMessage(wire.CmdGetCrossShard)
-	if err != nil {
-		return err
-	}
-	msg.(*wire.MessageGetCrossShard).FromShardID = FromShardID
-	msg.(*wire.MessageGetCrossShard).ToShardID = ToShardID
-	msg.(*wire.MessageGetCrossShard).BlockHash = blkHash
-	msg.(*wire.MessageGetCrossShard).Timestamp = time.Now().Unix()
-	msg.SetSenderID(listener.PeerID)
-	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
-	serverObj.PushMessageToShard(msg, FromShardID)
-	return nil
-}
-
-func (serverObj *Server) PushMessageGetShardToBeacon(shardID byte, blkHash common.Hash) error {
-	Logger.log.Debugf("Send a GetShardToBeacon")
-	listener := serverObj.connManager.Config.ListenerPeer
-	msg, err := wire.MakeEmptyMessage(wire.CmdGetShardToBeacon)
-	if err != nil {
-		return err
-	}
-	msg.(*wire.MessageGetShardToBeacon).ShardID = shardID
-	msg.(*wire.MessageGetShardToBeacon).BlockHash = blkHash
-	msg.(*wire.MessageGetShardToBeacon).Timestamp = time.Now().Unix()
-	msg.SetSenderID(listener.PeerID)
-	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
-	serverObj.PushMessageToShard(msg, shardID)
-	return nil
-}
-
-func (serverObj *Server) PushMessageGetShardToBeacons(shardID byte, from uint64, to uint64) error {
-	Logger.log.Debugf("Send a GetShardToBeacon")
-	listener := serverObj.connManager.Config.ListenerPeer
-	msg, err := wire.MakeEmptyMessage(wire.CmdGetShardToBeacons)
-	if err != nil {
-		return err
-	}
-	msg.(*wire.MessageGetShardToBeacons).ShardID = shardID
-	msg.(*wire.MessageGetShardToBeacons).From = from
-	msg.(*wire.MessageGetShardToBeacons).To = to
-	msg.(*wire.MessageGetShardToBeacons).Timestamp = time.Now().Unix()
-	msg.SetSenderID(listener.PeerID)
-	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
-	serverObj.PushMessageToShard(msg, shardID)
-	return nil
-}
-
 func (serverObj *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	// push message version
 	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
@@ -1194,22 +1136,116 @@ func (serverObj *Server) UpdateConsensusState(role string, userPbk string, curre
 	serverObj.connManager.UpdateConsensusState(role, userPbk, currentShard, beaconCommittee, shardCommittee)
 }
 
-func (serverObj *Server) PushMessageGetBlockBeacon(from uint64, to uint64, peerID libp2p.ID) error {
+func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint64, peerID libp2p.ID) error {
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockBeacon)
 	if err != nil {
 		return err
 	}
+	msg.(*wire.MessageGetBlockBeacon).ByHash = false
 	msg.(*wire.MessageGetBlockBeacon).From = from
 	msg.(*wire.MessageGetBlockBeacon).To = to
-	return serverObj.PushMessageToPeer(msg, peerID)
+	if peerID != "" {
+		return serverObj.PushMessageToPeer(msg, peerID)
+	}
+	return serverObj.PushMessageToAll(msg)
 }
-func (serverObj *Server) PushMessageGetBlockShard(shardID byte, from uint64, to uint64, peerID libp2p.ID) error {
+
+func (serverObj *Server) PushMessageGetBlockBeaconByHash(blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error {
+	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockBeacon)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessageGetBlockBeacon).ByHash = true
+	msg.(*wire.MessageGetBlockBeacon).FromPool = getFromPool
+	msg.(*wire.MessageGetBlockBeacon).BlksHash = blksHash
+	if peerID != "" {
+		return serverObj.PushMessageToPeer(msg, peerID)
+	}
+	return serverObj.PushMessageToAll(msg)
+}
+
+func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error {
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockShard)
 	if err != nil {
 		return err
 	}
+	msg.(*wire.MessageGetBlockShard).ByHash = false
 	msg.(*wire.MessageGetBlockShard).From = from
 	msg.(*wire.MessageGetBlockShard).To = to
 	msg.(*wire.MessageGetBlockShard).ShardID = shardID
 	return serverObj.PushMessageToPeer(msg, peerID)
+}
+
+func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error {
+	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockShard)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessageGetBlockShard).ByHash = true
+	msg.(*wire.MessageGetBlockShard).FromPool = getFromPool
+	msg.(*wire.MessageGetBlockShard).BlksHash = blksHash
+	msg.(*wire.MessageGetBlockShard).ShardID = shardID
+	return serverObj.PushMessageToPeer(msg, peerID)
+}
+
+func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error {
+	Logger.log.Debugf("Send a GetShardToBeacon")
+	listener := serverObj.connManager.Config.ListenerPeer
+	msg, err := wire.MakeEmptyMessage(wire.CmdGetShardToBeacon)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessageGetShardToBeacon).ByHash = false
+	msg.(*wire.MessageGetShardToBeacon).From = from
+	msg.(*wire.MessageGetShardToBeacon).To = to
+	msg.(*wire.MessageGetShardToBeacon).ShardID = shardID
+	msg.(*wire.MessageGetShardToBeacon).Timestamp = time.Now().Unix()
+	msg.SetSenderID(listener.PeerID)
+	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
+	serverObj.PushMessageToShard(msg, shardID)
+	return nil
+}
+
+func (serverObj *Server) PushMessageGetBlockShardToBeaconByHash(shardID byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error {
+	Logger.log.Debugf("Send a GetShardToBeacon")
+	listener := serverObj.connManager.Config.ListenerPeer
+	msg, err := wire.MakeEmptyMessage(wire.CmdGetShardToBeacon)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessageGetShardToBeacon).ByHash = true
+	msg.(*wire.MessageGetShardToBeacon).FromPool = getFromPool
+	msg.(*wire.MessageGetShardToBeacon).BlksHash = blksHash
+	msg.(*wire.MessageGetShardToBeacon).ShardID = shardID
+	msg.(*wire.MessageGetShardToBeacon).Timestamp = time.Now().Unix()
+	msg.SetSenderID(listener.PeerID)
+	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
+	serverObj.PushMessageToShard(msg, shardID)
+	return nil
+}
+
+func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toShard byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error {
+	Logger.log.Debugf("Send a GetCrossShard")
+	listener := serverObj.connManager.Config.ListenerPeer
+	msg, err := wire.MakeEmptyMessage(wire.CmdGetCrossShard)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessageGetCrossShard).FromPool = getFromPool
+	msg.(*wire.MessageGetCrossShard).FromShardID = fromShard
+	msg.(*wire.MessageGetCrossShard).ToShardID = toShard
+	msg.(*wire.MessageGetCrossShard).BlksHash = blksHash
+	msg.(*wire.MessageGetCrossShard).Timestamp = time.Now().Unix()
+	msg.SetSenderID(listener.PeerID)
+	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
+	serverObj.PushMessageToShard(msg, fromShard)
+	return nil
+}
+
+func (serverObj *Server) BoardcastBeaconState() {
+
+}
+
+func (serverObj *Server) BoardcastShardState() {
+
 }

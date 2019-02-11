@@ -1,18 +1,38 @@
 package blockchain
 
 import (
+	"fmt"
+
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
 )
 
 func (self *BlockChain) OnBlockShardReceived(block *ShardBlock) {
-	if self.newShardBlkCh[block.Header.ShardID] != nil {
-		*self.newShardBlkCh[block.Header.ShardID] <- block
+	if _, ok := self.syncStatus.Shard[block.Header.ShardID]; ok {
+
 	}
 }
-func (self *BlockChain) OnBlockBeaconReceived(block *BeaconBlock) {
+func (self *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 	if self.syncStatus.Beacon {
-		self.newBeaconBlkCh <- block
+		fmt.Println("Beacon block received")
+		if self.BestState.Beacon.BeaconHeight < newBlk.Header.Height {
+			blkHash := newBlk.Header.Hash()
+			err := cashec.ValidateDataB58(newBlk.Header.Producer, newBlk.ProducerSig, blkHash.GetBytes())
+			if err != nil {
+				Logger.log.Error(err)
+				return
+			} else {
+				if self.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
+					err = self.InsertBeaconBlock(newBlk)
+					if err != nil {
+						Logger.log.Error(err)
+						return
+					}
+				} else {
+					self.config.NodeBeaconPool.PushBlock(*newBlk)
+				}
+			}
+		}
 	}
 }
 
@@ -44,7 +64,7 @@ func (self *BlockChain) GetShardState(shardID byte) (*ShardChainState, error) {
 }
 
 func (self *BlockChain) OnShardStateReceived(state *ShardChainState, peerID libp2p.ID) {
-	if self.newShardBlkCh[state.ShardID] != nil {
+	if _, ok := self.syncStatus.Shard[state.ShardID]; ok {
 		self.ShardStateCh[state.ShardID] <- &PeerShardChainState{
 			state, peerID,
 		}
