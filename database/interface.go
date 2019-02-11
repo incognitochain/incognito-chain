@@ -119,9 +119,6 @@ type DatabaseInterface interface {
 	PrivacyCustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) // from token id get all custom txs
 
 	// Loans
-	StoreLoanRequest([]byte, []byte) error                 // param: loanID, tx hash
-	StoreLoanResponse([]byte, []byte) error                // param: loanID, tx hash
-	GetLoanTxs([]byte) ([][]byte, error)                   // param: loanID
 	StoreLoanPayment([]byte, uint64, uint64, uint64) error // param: loanID, principle, interest, deadline
 	GetLoanPayment([]byte) (uint64, uint64, uint64, error) // param: loanID; return: principle, interest, deadline
 	GetLoanRequestTx(loanID []byte) ([]byte, error)
@@ -147,28 +144,28 @@ type DatabaseInterface interface {
 	GetNoticePeriod(blockHeight uint64) ([][]byte, error)
 
 	//Vote
-	AddVoteBoard(string, uint32, []byte, privacy.PaymentAddress, privacy.PaymentAddress, uint64) error
-	GetTopMostVoteGovernor(boardType string, currentBoardIndex uint32) (CandidateList, error)
+	AddVoteBoard(boardType byte, boardIndex uint32, paymentAddress []byte, VoterPaymentAddress privacy.PaymentAddress, CandidatePaymentAddress privacy.PaymentAddress, amount uint64) error
+	GetTopMostVoteGovernor(boardType byte, currentBoardIndex uint32) (CandidateList, error)
 	NewIterator(*util.Range, *opt.ReadOptions) iterator.Iterator
 	GetKey(string, interface{}) []byte
-	SendInitVoteToken(boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress, amount uint32) error
-	AddVoteLv3Proposal(string, uint32, *common.Hash) error
-	AddVoteLv1or2Proposal(string, uint32, *common.Hash) error
-	AddVoteNormalProposalFromOwner(string, uint32, *common.Hash, []byte) error
-	AddVoteNormalProposalFromSealer(string, uint32, *common.Hash, []byte) error
-	TakeVoteTokenFromWinner(string, uint32, privacy.PaymentAddress, int32) error
-	SetNewProposalWinningVoter(string, uint32, privacy.PaymentAddress) error
-	GetVoteTokenAmount(boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress) (uint32, error)
-	SetVoteTokenAmount(boardType string, boardIndex uint32, paymentAddress privacy.PaymentAddress, amount uint32) error
-	GetEncryptFlag(boardType string) (uint32, error)
-	SetEncryptFlag(boardType string, flag uint32)
-	GetEncryptionLastBlockHeight(boardType string) (uint32, error)
-	SetEncryptionLastBlockHeight(boardType string, height uint32)
+	SendInitVoteToken(boardType byte, boardIndex uint32, paymentAddress privacy.PaymentAddress, amount uint32) error
+	AddVoteLv3Proposal(byte, uint32, *common.Hash) error
+	AddVoteLv1or2Proposal(byte, uint32, *common.Hash) error
+	AddVoteNormalProposalFromOwner(byte, uint32, *common.Hash, []byte) error
+	AddVoteNormalProposalFromSealer(byte, uint32, *common.Hash, []byte) error
+	TakeVoteTokenFromWinner(boardType byte, boardIndex uint32, voterPaymentAddress privacy.PaymentAddress, amountOfVote int32) error
+	SetNewProposalWinningVoter(byte, uint32, privacy.PaymentAddress) error
+	GetVoteTokenAmount(boardType byte, boardIndex uint32, paymentAddress privacy.PaymentAddress) (uint32, error)
+	SetVoteTokenAmount(boardType byte, boardIndex uint32, paymentAddress privacy.PaymentAddress, amount uint32) error
+	GetEncryptFlag(boardType byte) (uint32, error)
+	SetEncryptFlag(boardType byte, flag uint32)
+	GetEncryptionLastBlockHeight(boardType byte) (uint32, error)
+	SetEncryptionLastBlockHeight(boardType byte, height uint32)
 
 	// Multisigs
 	StoreMultiSigsRegistration([]byte, []byte) error
 	GetMultiSigsRegistration([]byte) ([]byte, error)
-	GetBoardVoterList(boardType string, chairPaymentAddress privacy.PaymentAddress, boardIndex uint32) []privacy.PaymentAddress
+	GetBoardVoterList(boardType byte, chairPaymentAddress privacy.PaymentAddress, boardIndex uint32) []privacy.PaymentAddress
 
 	Close() error
 }

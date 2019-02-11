@@ -5,6 +5,7 @@ import (
 
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/pkg/errors"
 )
 
 // BestState houses information about the current best block and other info
@@ -228,4 +229,37 @@ func (self *BestStateBeacon) GetPubkeyRole(pubkey string) (string, byte) {
 	}
 
 	return "", 0
+}
+
+// getAssetPrice returns price stored in Oracle
+func (self *BestStateBeacon) getAssetPrice(assetID common.Hash) uint64 {
+	price := uint64(0)
+	if common.IsBondAsset(&assetID) {
+		if self.StabilityInfo.Oracle.Bonds != nil {
+			price = self.StabilityInfo.Oracle.Bonds[assetID.String()]
+		}
+	} else {
+		oracle := self.StabilityInfo.Oracle
+		if assetID.IsEqual(&common.ConstantID) {
+			price = oracle.Constant
+		} else if assetID.IsEqual(&common.DCBTokenID) {
+			price = oracle.DCBToken
+		} else if assetID.IsEqual(&common.GOVTokenID) {
+			price = oracle.GOVToken
+		} else if assetID.IsEqual(&common.ETHAssetID) {
+			price = oracle.ETH
+		} else if assetID.IsEqual(&common.BTCAssetID) {
+			price = oracle.BTC
+		}
+	}
+	return price
+}
+
+// GetSaleData returns latest data of a crowdsale
+func (self *BestStateBeacon) GetSaleData(saleID []byte) (*params.SaleData, error) {
+	key := getSaleDataKeyBeacon(saleID)
+	if value, ok := self.Params[key]; ok {
+		return parseSaleDataValueBeacon(value)
+	}
+	return nil, errors.Errorf("SaleID not exist: %x", saleID)
 }

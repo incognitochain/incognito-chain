@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	libp2p "github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/constant/cashec"
 )
 
 func (self *BlockChain) OnBlockShardReceived(block *ShardBlock) {
@@ -19,7 +20,7 @@ func (self *BlockChain) GetBeaconState() (*BeaconChainState, error) {
 	state := &BeaconChainState{
 		Height:          self.BestState.Beacon.BeaconHeight,
 		BlockHash:       self.BestState.Beacon.BestBlockHash,
-		ShardsPoolState: self.config.ShardToBeaconPool.GetPendingBlockHashes(),
+		ShardsPoolState: self.config.ShardToBeaconPool.GetValidPendingBlockHash(),
 	}
 	return state, nil
 }
@@ -52,18 +53,34 @@ func (self *BlockChain) OnShardStateReceived(state *ShardChainState, peerID libp
 
 func (self *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
 	//TODO: check node mode -> node mode & role before add block to pool
-	err := self.config.ShardToBeaconPool.ValidateShardToBeaconBlock(block)
+
+	blkHash := block.Header.Hash()
+	err := cashec.ValidateDataB58(block.Header.Producer, block.ProducerSig, blkHash.GetBytes())
+
 	if err != nil {
-		Logger.log.Error(err)
-	} else {
-		err = self.config.ShardToBeaconPool.AddShardBeaconBlock(block, self.BestState.Beacon.ShardCommittee[block.Header.ShardID])
-		if err != nil {
-			Logger.log.Error(err)
-		}
-		if self.BestState.Beacon.BestShardHeight[block.Header.ShardID] < block.Header.Height-1 {
-			self.config.Server.PushMessageGetShardToBeacons(block.Header.ShardID, self.BestState.Beacon.BestShardHeight[block.Header.ShardID]+1, block.Header.Height)
-		}
+		Logger.log.Debugf("Invalid Producer Signature of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
+		return
 	}
+	if block.Header.Version != VERSION {
+		Logger.log.Debugf("Invalid Verion of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
+		return
+	}
+
+	//TODO: what if shard to beacon from old committee
+	if err = ValidateAggSignature(block.ValidatorsIdx, self.BestState.Beacon.ShardCommittee[block.Header.ShardID], block.AggregatedSig, block.R, block.Hash()); err != nil {
+		Logger.log.Error(err)
+		return
+	}
+
+	if err = self.config.ShardToBeaconPool.AddShardToBeaconBlock(block); err != nil {
+		Logger.log.Error(err)
+		return
+	}
+
+	//TODO review: synblock already find?
+	//if self.BestState.Beacon.BestShardHeight[block.Header.ShardID] < block.Header.Height-1 {
+	//	self.config.Server.PushMessageGetShardToBeacons(block.Header.ShardID, self.BestState.Beacon.BestShardHeight[block.Header.ShardID]+1, block.Header.Height)
+	//}
 }
 
 func (self *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {

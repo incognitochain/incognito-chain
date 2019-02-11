@@ -208,7 +208,7 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	}
 
 	// random alpha
-	alpha := privacy.RandBigInt()
+	alpha := privacy.RandScalar()
 
 	// Commitment to aL, aR: A = h^alpha * G^aL * H^aR
 	A, err := EncodeVectors(aL, aR, AggParam.G, AggParam.H)
@@ -222,12 +222,12 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	sL := make([]*big.Int, n*numValuePad)
 	sR := make([]*big.Int, n*numValuePad)
 	for i := range sL {
-		sL[i] = privacy.RandBigInt()
-		sR[i] = privacy.RandBigInt()
+		sL[i] = privacy.RandScalar()
+		sR[i] = privacy.RandScalar()
 	}
 
 	// random rho
-	rho := privacy.RandBigInt()
+	rho := privacy.RandScalar()
 
 	// Commitment to sL, sR : S = h^rho * G^sL * H^sR
 	S, err := EncodeVectors(sL, sR, AggParam.G, AggParam.H)
@@ -238,8 +238,8 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	proof.S = S
 
 	// challenge y, z
-	y := generateChallengeForAggRange(AggParam, []*privacy.EllipticPoint{A, S})
-	z := generateChallengeForAggRangeFromBytes(AggParam, [][]byte{A.Compress(), S.Compress(), y.Bytes()})
+	y := generateChallengeForAggRange(AggParam, [][]byte{A.Compress(), S.Compress()})
+	z := generateChallengeForAggRange(AggParam, [][]byte{A.Compress(), S.Compress(), y.Bytes()})
 	zNeg := new(big.Int).Neg(z)
 	zNeg.Mod(zNeg, privacy.Curve.Params().N)
 	zSquare := new(big.Int).Mul(z, z)
@@ -347,14 +347,14 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	}
 
 	// commitment to t1, t2
-	tau1 := privacy.RandBigInt()
-	tau2 := privacy.RandBigInt()
+	tau1 := privacy.RandScalar()
+	tau2 := privacy.RandScalar()
 
 	proof.T1 = privacy.PedCom.CommitAtIndex(t1, tau1, privacy.VALUE)
 	proof.T2 = privacy.PedCom.CommitAtIndex(t2, tau2, privacy.VALUE)
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
-	x := generateChallengeForAggRange(AggParam, []*privacy.EllipticPoint{proof.A, proof.S, proof.T1, proof.T2})
+	x := generateChallengeForAggRange(AggParam, [][]byte{proof.A.Compress(), proof.S.Compress(), proof.T1.Compress(), proof.T2.Compress()})
 	xSquare := new(big.Int).Exp(x, twoNumber, privacy.Curve.Params().N)
 
 	// lVector = aL - z*1^n + sL*x
@@ -449,14 +449,14 @@ func (proof *AggregatedRangeProof) Verify() bool {
 	twoVectorN := powerVector(twoNumber, n)
 
 	// recalculate challenge y, z
-	y := generateChallengeForAggRange(AggParam, []*privacy.EllipticPoint{proof.A, proof.S})
-	z := generateChallengeForAggRangeFromBytes(AggParam, [][]byte{proof.A.Compress(), proof.S.Compress(), y.Bytes()})
+	y := generateChallengeForAggRange(AggParam, [][]byte{proof.A.Compress(), proof.S.Compress()})
+	z := generateChallengeForAggRange(AggParam, [][]byte{proof.A.Compress(), proof.S.Compress(), y.Bytes()})
 	zNeg := new(big.Int).Neg(z)
 	zNeg.Mod(zNeg, privacy.Curve.Params().N)
 	zSquare := new(big.Int).Exp(z, twoNumber, privacy.Curve.Params().N)
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
-	x := generateChallengeForAggRange(AggParam, []*privacy.EllipticPoint{proof.A, proof.S, proof.T1, proof.T2})
+	x := generateChallengeForAggRange(AggParam, [][]byte{proof.A.Compress(), proof.S.Compress(), proof.T1.Compress(), proof.T2.Compress()})
 	xSquare := new(big.Int).Exp(x, twoNumber, privacy.Curve.Params().N)
 
 	yVector := powerVector(y, n*numValuePad)

@@ -9,7 +9,7 @@ import (
 
 func TestElGamalEncryption(t *testing.T) {
 	privKey := new(ElGamalPrivKey)
-	privKey.X = RandBigInt()
+	privKey.X = RandScalar()
 
 	pubKey := privKey.GenPubKey()
 

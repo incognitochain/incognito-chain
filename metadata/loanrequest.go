@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -89,7 +90,7 @@ func (lr *LoanRequest) Hash() *common.Hash {
 }
 
 func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-	fmt.Println("Validating LoanRequest with blockchain!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	fmt.Println("Validating LoanRequest with blockchain!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	// Check if loan's params are correct
 	dcbParams := bcr.GetDCBParams()
 	validLoanParams := dcbParams.ListLoanParams
@@ -103,12 +104,8 @@ func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 		return false, errors.New("LoanRequest has incorrect params")
 	}
 
-	txs, err := bcr.GetLoanTxs(lr.LoanID)
-	if err != nil {
-		return false, err
-	}
-
-	if len(txs) > 0 {
+	txHash, _ := bcr.GetLoanReq(lr.LoanID)
+	if len(txHash) > 0 {
 		return false, errors.New("LoanID already existed")
 	}
 	return true, nil
@@ -125,21 +122,27 @@ func (lr *LoanRequest) ValidateMetadataByItself() bool {
 	return true
 }
 
-func (lr *LoanRequest) BuildReqActions(txr Transaction, shardID byte) ([][]string, error) {
-	lrActionValue := getLoanRequestActionValue(lr.LoanID, shardID, txr.Hash())
+func (lr *LoanRequest) BuildReqActions(txr Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+	lrActionValue := getLoanRequestActionValue(lr.LoanID, txr.Hash())
 	lrAction := []string{strconv.Itoa(LoanRequestMeta), lrActionValue}
 	return [][]string{lrAction}, nil
 }
 
-func getLoanRequestActionValue(loanID []byte, shardID byte, txHash *common.Hash) string {
-	return strings.Join([]string{string(loanID), string(shardID), txHash.String()}, actionValueSep)
+func getLoanRequestActionValue(loanID []byte, txHash *common.Hash) string {
+	// TODO(@0xbunyip): optimize base64.Encode and hash.String() by using more efficient encoder
+	// Encode to prevent appearance of seperator in loanID
+	return strings.Join([]string{base64.StdEncoding.EncodeToString(loanID), txHash.String()}, actionValueSep)
 }
 
-func parseLoanRequestActionValue(values string) ([]byte, byte, *common.Hash, error) {
+func ParseLoanRequestActionValue(values string) ([]byte, *common.Hash, error) {
 	s := strings.Split(values, actionValueSep)
-	if len(s) != 3 {
-		return nil, 0, nil, errors.Errorf("LoanRequest value invalid")
+	if len(s) != 2 {
+		return nil, nil, errors.Errorf("LoanRequest value invalid")
 	}
-	txHash, err := common.NewHashFromStr(s[2])
-	return []byte(s[0]), byte(s[1][0]), txHash, err
+	loanID, err := base64.StdEncoding.DecodeString(s[0])
+	if err != nil {
+		return nil, nil, err
+	}
+	txHash, err := common.NewHashFromStr(s[1])
+	return loanID, txHash, err
 }

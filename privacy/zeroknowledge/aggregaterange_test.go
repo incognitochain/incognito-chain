@@ -81,8 +81,8 @@ func TestInnerProductProve(t *testing.T) {
 	wit.b = make([]*big.Int, n)
 
 	for i := range wit.a {
-		//wit.a[i] = privacy.RandBigInt()
-		//wit.b[i] = privacy.RandBigInt()
+		//wit.a[i] = privacy.RandScalar()
+		//wit.b[i] = privacy.RandScalar()
 		tmp := privacy.RandBytes(3)
 
 		wit.a[i] = new(big.Int).SetBytes(tmp)
@@ -124,7 +124,7 @@ func TestAggregatedRangeProve(t *testing.T) {
 
 	for i := range wit.values {
 		wit.values[i] = big.NewInt(10)
-		wit.rands[i] = privacy.RandBigInt()
+		wit.rands[i] = privacy.RandScalar()
 	}
 
 	start := time.Now()
@@ -157,7 +157,7 @@ func BenchmarkAggregatedRangeProve(b *testing.B) {
 
 	for i := range wit.values {
 		wit.values[i] = big.NewInt(10)
-		wit.rands[i] = privacy.RandBigInt()
+		wit.rands[i] = privacy.RandScalar()
 	}
 
 	for i:=0; i<b.N; i++ {
