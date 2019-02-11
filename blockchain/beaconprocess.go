@@ -596,7 +596,6 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 
 	// update param
 	instructions := newBlock.Body.Instructions
-	self.pickInstructionsOfCurrentShard(instructions)
 	for _, l := range instructions {
 		// For stability instructions
 		err := self.processStabilityInstruction(l)

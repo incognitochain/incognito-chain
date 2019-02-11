@@ -91,17 +91,6 @@ func buildStabilityInstructions(
 	return instructions, nil
 }
 
-func (bsb *BestStateBeacon) pickInstructionsOfCurrentShard(
-	instructions [][]string,
-) {
-	shardID := bsb.GetCurrentShard()
-	for _, inst := range instructions {
-		if strconv.Itoa(int(shardID)) == inst[1] {
-			bsb.StabilityInstructions = append(bsb.StabilityInstructions, inst)
-		}
-	}
-}
-
 func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, producerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
 	// Get loan request
 	withdrawMeta := tx.GetMetadata().(*metadata.LoanWithdraw)
