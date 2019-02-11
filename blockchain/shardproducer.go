@@ -3,7 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -17,6 +17,7 @@ import (
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/pkg/errors"
 )
 
 func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*ShardBlock, error) {
@@ -25,7 +26,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
 	epoch := blockgen.chain.BestState.Beacon.BeaconEpoch
 	if epoch-blockgen.chain.BestState.Shard[shardID].Epoch > 1 {
-		beaconHeight = blockgen.chain.BestState.Shard[shardID].Epoch * EPOCH
+		beaconHeight = blockgen.chain.BestState.Shard[shardID].Epoch * common.EPOCH
 		epoch = blockgen.chain.BestState.Shard[shardID].Epoch + 1
 	}
 
@@ -60,6 +61,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	remainingFund := currentSalaryFund + totalFee + salaryFundAdd - totalSalary
 	coinbases := []metadata.Transaction{salaryTx}
 	txsToAdd = append(coinbases, txsToAdd...)
+
 	//Crossoutputcoint
 	crossOutputCoin := blockgen.getCrossOutputCoin(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight)
 	//Assign Instruction
@@ -80,7 +82,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	swapInstruction := []string{}
 	// Swap instruction only appear when reach the last block in an epoch
 	//@NOTICE: In this block, only pending validator change, shard committees will change in the next block
-	if beaconHeight%EPOCH == 0 {
+	if beaconHeight%common.EPOCH == 0 {
 		swapInstruction, err = CreateSwapAction(shardPendingValidator, shardCommittees, shardID)
 		if err != nil {
 			Logger.log.Error(err)
@@ -98,12 +100,31 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		},
 	}
 
+	// Process stability tx, create response txs if needed
+	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey)
+	if err != nil {
+		return nil, err
+	}
+	for _, tx := range stabilityResponseTxs {
+		txsToAdd = append(txsToAdd, tx)
+	}
+
+	// Process stability instructions, create response txs if needed
+	stabilityResponseTxs, err = blockgen.buildStabilityResponseTxsFromInstructions(beaconBlocks, privatekey, shardID)
+	if err != nil {
+		return nil, err
+	}
+	for _, tx := range stabilityResponseTxs {
+		txsToAdd = append(txsToAdd, tx)
+	}
+
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
 			return nil, err
 		}
 	}
 	//============Build Header=============
+	fmt.Printf("Number of Transaction in blocks %+v \n", len(block.Body.Transactions))
 	//Get user key set
 	userKeySet := cashec.KeySet{}
 	userKeySet.ImportFromPrivateKey(privatekey)
@@ -119,7 +140,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	if err != nil {
 		return nil, err
 	}
-	actions := CreateShardActionFromTransaction(block.Body.Transactions, shardID)
+	actions := CreateShardActionFromTransaction(block.Body.Transactions, blockgen.chain, shardID)
 	action := []string{}
 	for _, value := range actions {
 		action = append(action, value...)
@@ -295,6 +316,7 @@ func FetchBeaconBlockFromHeight(db database.DatabaseInterface, from uint64, to u
 	}
 	return beaconBlocks, nil
 }
+
 func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) {
 	byteMap := make([]byte, common.SHARD_NUMBER)
 	for _, tx := range txList {
@@ -320,7 +342,7 @@ func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) 
 	....
 */
 func CreateSwapAction(commitees []string, pendingValidator []string, shardID byte) ([]string, error) {
-	_, _, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, COMMITEES, OFFSET)
+	_, _, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, common.COMMITEES, common.OFFSET)
 	if err != nil {
 		return nil, err
 	}
@@ -333,11 +355,11 @@ func CreateSwapAction(commitees []string, pendingValidator []string, shardID byt
 	- Stake
 	- Stable param: set, del,...
 */
-func CreateShardActionFromTransaction(transactions []metadata.Transaction, shardID byte) (actions [][]string) {
+func CreateShardActionFromTransaction(transactions []metadata.Transaction, bcr metadata.BlockchainRetriever, shardID byte) (actions [][]string) {
 	// Generate stake action
 	stakeShardPubKey := []string{}
 	stakeBeaconPubKey := []string{}
-	actions = buildStabilityActions(transactions, shardID)
+	actions = buildStabilityActions(transactions, bcr, shardID)
 
 	for _, tx := range transactions {
 		switch tx.GetMetadataType() {
@@ -403,14 +425,14 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 	return txsToAdd, txToRemove, totalFee
 }
 
-func (blockgen *ShardBlock) CreateShardToBeaconBlock() *ShardToBeaconBlock {
+func (blk *ShardBlock) CreateShardToBeaconBlock(bcr metadata.BlockchainRetriever) *ShardToBeaconBlock {
 	block := ShardToBeaconBlock{}
-	block.AggregatedSig = blockgen.AggregatedSig
-	copy(block.ValidatorsIdx, blockgen.ValidatorsIdx)
-	block.ProducerSig = blockgen.ProducerSig
-	block.Header = blockgen.Header
-	block.Instructions = blockgen.Body.Instructions
-	actions := CreateShardActionFromTransaction(blockgen.Body.Transactions, blockgen.Header.ShardID)
+	block.AggregatedSig = blk.AggregatedSig
+	copy(block.ValidatorsIdx, blk.ValidatorsIdx)
+	block.ProducerSig = blk.ProducerSig
+	block.Header = blk.Header
+	block.Instructions = blk.Body.Instructions
+	actions := CreateShardActionFromTransaction(blk.Body.Transactions, bcr, blk.Header.ShardID)
 	block.Instructions = append(block.Instructions, actions...)
 	return &block
 }

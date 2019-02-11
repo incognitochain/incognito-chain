@@ -59,10 +59,5 @@ func TestMultiExponentiation(t *testing.T){
 	end3 := time.Since(start3)
 	fmt.Printf("multi scalarmult 2: %v\n", end3)
 	fmt.Printf("Res from multi exponentiation 2 alg: %+v\n", testcase5)
-
-
-
-
-
 	assert.Equal(t, expectedRes, testcase4)
 }

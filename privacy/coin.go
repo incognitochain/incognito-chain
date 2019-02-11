@@ -80,9 +80,8 @@ func (coin *Coin) Bytes() []byte {
 	}
 
 	if coin.SNDerivator != nil {
-		snDerivator := coin.SNDerivator.Bytes()
-		coinBytes = append(coinBytes, byte(len(snDerivator)))
-		coinBytes = append(coinBytes, snDerivator...)
+		coinBytes = append(coinBytes, byte(BigIntSize))
+		coinBytes = append(coinBytes, AddPaddingBigInt(coin.SNDerivator, BigIntSize)...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
@@ -96,9 +95,8 @@ func (coin *Coin) Bytes() []byte {
 	}
 
 	if coin.Randomness != nil {
-		randomness := coin.Randomness.Bytes()
-		coinBytes = append(coinBytes, byte(len(randomness)))
-		coinBytes = append(coinBytes, randomness...)
+		coinBytes = append(coinBytes, byte(BigIntSize))
+		coinBytes = append(coinBytes, AddPaddingBigInt(coin.Randomness, BigIntSize)...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
@@ -300,7 +298,7 @@ func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) error {
 	if err != nil {
 		return err
 	}
-	outputCoin.CoinDetailsEncrypted, err = AdvanceEncrypt(msg, pubKeyPoint)
+	outputCoin.CoinDetailsEncrypted, err = HybridEncrypt(msg, pubKeyPoint)
 	if err != nil {
 		return err
 	}
@@ -310,7 +308,7 @@ func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) error {
 
 // Decrypt decrypts a ciphertext encrypting for coin with recipient's receiving key
 func (outputCoin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
-	msg, err := AdvanceDecrypt(outputCoin.CoinDetailsEncrypted, new(big.Int).SetBytes(viewingKey.Rk))
+	msg, err := HybridDecrypt(outputCoin.CoinDetailsEncrypted, new(big.Int).SetBytes(viewingKey.Rk))
 	if err != nil {
 		return err
 	}
