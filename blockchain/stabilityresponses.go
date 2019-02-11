@@ -5,19 +5,13 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/transaction"
+	"github.com/pkg/errors"
 )
-
-// import (
-// 	"errors"
-
-// 	"github.com/ninjadotorg/constant/blockchain/params"
-// 	"github.com/ninjadotorg/constant/common"
-// 	"github.com/ninjadotorg/constant/database"
-// 	"github.com/ninjadotorg/constant/metadata"
-// 	"github.com/ninjadotorg/constant/privacy"
-// 	"github.com/ninjadotorg/constant/transaction"
-// )
 
 func buildInstructionsForBuyBondsFromGOVReq(
 	shardID byte,
@@ -29,18 +23,23 @@ func buildInstructionsForBuyBondsFromGOVReq(
 	if err != nil {
 		return [][]string{}, err
 	}
+	buyBondsFromGOVActionContent := map[string]interface{}{}
+	err = json.Unmarshal(contentBytes, &buyBondsFromGOVActionContent)
+	if err != nil {
+		return nil, err
+	}
+	md, ok := buyBondsFromGOVActionContent["meta"].(metadata.BuySellRequest)
+	if !ok {
+		return nil, errors.New("Could not parse BuySellRequest metadata.")
+	}
 
 	instructions := [][]string{}
-	md := &metadata.BuySellRequest{}
-	err = json.Unmarshal(contentBytes, &md)
-	if err != nil {
-		return [][]string{}, err
-	}
 	stabilityInfo := beaconBestState.StabilityInfo
 	sellingBondsParams := stabilityInfo.GOVConstitution.GOVParams.SellingBonds
 	bestBlockHeight := beaconBestState.BestBlock.Header.Height
 	instType := ""
-	if (bestBlockHeight+1 < sellingBondsParams.StartSellingAt) ||
+	if (sellingBondsParams == nil) ||
+		(bestBlockHeight+1 < sellingBondsParams.StartSellingAt) ||
 		(bestBlockHeight+1 > sellingBondsParams.StartSellingAt+sellingBondsParams.SellingWithin) ||
 		(accumulativeValues.bondsSold+md.Amount > sellingBondsParams.BondsToSell) {
 		instType = "refund"
@@ -49,11 +48,16 @@ func buildInstructionsForBuyBondsFromGOVReq(
 		accumulativeValues.bondsSold += md.Amount
 		instType = "accepted"
 	}
+	sellingBondsParamsBytes, err := json.Marshal(sellingBondsParams)
+	if err != nil {
+		return nil, err
+	}
 	returnedInst := []string{
 		strconv.Itoa(metadata.BuyFromGOVRequestMeta),
 		strconv.Itoa(int(shardID)),
 		instType,
 		contentStr,
+		string(sellingBondsParamsBytes),
 	}
 	instructions = append(instructions, returnedInst)
 	return instructions, nil
@@ -67,6 +71,10 @@ func buildStabilityInstructions(
 ) ([][]string, error) {
 	instructions := [][]string{}
 	for _, inst := range shardBlockInstructions {
+		// TODO: will improve the condition later
+		if inst[0] == "stake" || inst[0] == "swap" || inst[0] == "random" {
+			continue
+		}
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {
 			return [][]string{}, err
@@ -80,9 +88,12 @@ func buildStabilityInstructions(
 			}
 			instructions = append(instructions, buyBondsInst...)
 
-		case metadata.LoanRequestMeta:
-			loanRequestInst := buildInstructionsForLoanRequest(contentStr)
-			instructions = append(instructions, loanRequestInst...)
+		case metadata.CrowdsaleRequestMeta:
+			saleInst, err := buildInstructionsForCrowdsaleRequest(shardID, contentStr, beaconBestState, accumulativeValues)
+			if err != nil {
+				return [][]string{}, err
+			}
+			instructions = append(instructions, saleInst...)
 
 		default:
 			continue
@@ -91,15 +102,173 @@ func buildStabilityInstructions(
 	return instructions, nil
 }
 
-func (bsb *BestStateBeacon) pickInstructionsOfCurrentShard(
-	instructions [][]string,
-) {
-	shardID := bsb.GetCurrentShard()
-	for _, inst := range instructions {
-		if strconv.Itoa(int(shardID)) == inst[1] {
-			bsb.StabilityInstructions = append(bsb.StabilityInstructions, inst)
+func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, producerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
+	// Get loan request
+	withdrawMeta := tx.GetMetadata().(*metadata.LoanWithdraw)
+	meta, err := blockgen.chain.GetLoanRequestMeta(withdrawMeta.LoanID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build loan unlock tx
+	unlockMeta := &metadata.LoanUnlock{
+		LoanID:       make([]byte, len(withdrawMeta.LoanID)),
+		MetadataBase: metadata.MetadataBase{Type: metadata.LoanUnlockMeta},
+	}
+	copy(unlockMeta.LoanID, withdrawMeta.LoanID)
+	unlockMetaList := []metadata.Metadata{unlockMeta}
+	amounts := []uint64{meta.LoanAmount}
+	txNormals, err := transaction.BuildCoinbaseTxs([]*privacy.PaymentAddress{meta.ReceiveAddress}, amounts, producerPrivateKey, blockgen.chain.GetDatabase(), unlockMetaList)
+	if err != nil {
+		return nil, errors.Errorf("Error building unlock tx for loan id %x", withdrawMeta.LoanID)
+	}
+	return txNormals[0], nil
+}
+
+func (blockgen *BlkTmplGenerator) buildBuyBondsFromGOVRes(
+	instType string,
+	contentStr string,
+	sellingBondsParamsStr string,
+	blkProducerPrivateKey *privacy.SpendingKey,
+) ([]metadata.Transaction, error) {
+	sellingBondsParamsBytes := []byte(sellingBondsParamsStr)
+	var sellingBondsParams params.SellingBonds
+	err := json.Unmarshal(sellingBondsParamsBytes, &sellingBondsParams)
+	if err != nil {
+		return nil, err
+	}
+
+	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		return nil, err
+	}
+	buyBondsFromGOVActionContent := map[string]interface{}{}
+	err = json.Unmarshal(contentBytes, &buyBondsFromGOVActionContent)
+	if err != nil {
+		return nil, err
+	}
+	txReqID := buyBondsFromGOVActionContent["txReqId"].(common.Hash)
+	reqMeta := buyBondsFromGOVActionContent["meta"].(metadata.BuySellRequest)
+	if instType == "refund" {
+		refundMeta := metadata.NewResponseBase(txReqID, metadata.ResponseBaseMeta)
+		refundTx := new(transaction.Tx)
+		err := refundTx.InitTxSalary(
+			reqMeta.Amount*reqMeta.BuyPrice,
+			&reqMeta.PaymentAddress,
+			blkProducerPrivateKey,
+			blockgen.chain.config.DataBase,
+			nil,
+		)
+		if err != nil {
+			Logger.log.Error(err)
+			return nil, err
+		}
+		refundTx.SetMetadata(refundMeta)
+		return []metadata.Transaction{refundTx}, nil
+	} else if instType == "accepted" {
+		bondID := reqMeta.TokenID
+		buySellRes := metadata.NewBuySellResponse(
+			txReqID,
+			sellingBondsParams.StartSellingAt,
+			sellingBondsParams.Maturity,
+			sellingBondsParams.BuyBackPrice,
+			bondID[:],
+			metadata.BuyFromGOVResponseMeta,
+		)
+		txTokenVout := transaction.TxTokenVout{
+			Value:          reqMeta.Amount,
+			PaymentAddress: reqMeta.PaymentAddress,
+		}
+		var propertyID [common.HashSize]byte
+		copy(propertyID[:], bondID[:])
+		txTokenData := transaction.TxTokenData{
+			Type:       transaction.CustomTokenInit,
+			Mintable:   true,
+			Amount:     reqMeta.Amount,
+			PropertyID: common.Hash(propertyID),
+			Vins:       []transaction.TxTokenVin{},
+			Vouts:      []transaction.TxTokenVout{txTokenVout},
+		}
+		txTokenData.PropertyName = txTokenData.PropertyID.String()
+		txTokenData.PropertySymbol = txTokenData.PropertyID.String()
+
+		resTx := &transaction.TxCustomToken{
+			TxTokenData: txTokenData,
+		}
+		resTx.Type = common.TxCustomTokenType
+		resTx.SetMetadata(buySellRes)
+		return []metadata.Transaction{resTx}, nil
+	}
+	return []metadata.Transaction{}, nil
+}
+
+func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.SpendingKey, shardID byte) ([]metadata.Transaction, error) {
+	// TODO(@0xbunyip): refund bonds in multiple blocks since many refund instructions might come at once and UTXO picking order is not perfect
+	unspentTokenMap := map[string]([]transaction.TxTokenVout){}
+	resTxs := []metadata.Transaction{}
+	for _, beaconBlock := range beaconBlocks {
+		for _, l := range beaconBlock.Body.Instructions {
+			// TODO: will improve the condition later
+			if l[0] == "stake" || l[0] == "swap" || l[0] == "random" {
+				continue
+			}
+			if len(l) <= 2 {
+				continue
+			}
+			shardToProcess, err := strconv.Atoi(l[1])
+			if err == nil && shardToProcess == int(shardID) {
+				metaType, err := strconv.Atoi(l[0])
+				if err != nil {
+					return nil, err
+				}
+				switch metaType {
+				case metadata.CrowdsalePaymentMeta:
+					paymentInst, err := ParseCrowdsalePaymentInstruction(l[2])
+					if err != nil {
+						return nil, err
+					}
+					tx, err := blockgen.buildPaymentForCrowdsale(paymentInst, unspentTokenMap, producerPrivateKey)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, tx)
+				case metadata.BuyFromGOVRequestMeta:
+					contentStr := l[3]
+					sellingBondsParamsStr := l[4]
+					txs, err := blockgen.buildBuyBondsFromGOVRes(l[2], contentStr, sellingBondsParamsStr, producerPrivateKey)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, txs...)
+				}
+			}
 		}
 	}
+	return resTxs, nil
+}
+
+func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []metadata.Transaction, producerPrivateKey *privacy.SpendingKey) ([]metadata.Transaction, error) {
+	respTxs := []metadata.Transaction{}
+	removeIds := []int{}
+	for i, tx := range txs {
+		var respTx metadata.Transaction
+		var err error
+
+		switch tx.GetMetadataType() {
+		case metadata.LoanWithdrawMeta:
+			respTx, err = blockgen.buildLoanResponseTx(tx, producerPrivateKey)
+		}
+
+		if err != nil {
+			// Remove this tx if cannot create corresponding response
+			removeIds = append(removeIds, i)
+		} else if respTx != nil {
+			respTxs = append(respTxs, respTx)
+		}
+	}
+
+	// TODO(@0xbunyip): remove tx from txsToAdd?
+	return respTxs, nil
 }
 
 // func (blockgen *BlkTmplGenerator) buildIssuingResTxs(
@@ -269,6 +438,7 @@ func (bsb *BestStateBeacon) pickInstructionsOfCurrentShard(
 // 			}
 // 			amount += paymentAmount
 // 		} else if txDesc.Tx.GetMetadataType() == metadata.LoanWithdrawMeta {
+//          DONE
 // 			withdrawMeta := txDesc.Tx.GetMetadata().(*metadata.LoanWithdraw)
 // 			meta, err := blockgen.chain.GetLoanRequestMeta(withdrawMeta.LoanID)
 // 			if err != nil {

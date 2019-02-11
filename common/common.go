@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -356,8 +357,17 @@ func ToBytes(obj interface{}) []byte {
 }
 
 // CheckDuplicate returns true if there are at least 2 elements in an array have same values
-// todo:
 func CheckDuplicateBigIntArray(arr []*big.Int) bool {
+	sort.Slice(arr, func(i, j int) bool {
+		return arr[i].Cmp(arr[j]) == -1
+	})
+
+	for i := 0; i < len(arr)-1; i++ {
+		if arr[i].Cmp(arr[i+1]) == 0 {
+			return true
+		}
+	}
+
 	return false
 }
 
@@ -366,7 +376,6 @@ func RandBigIntN(max *big.Int) (*big.Int, error) {
 }
 
 func IntArrayToString(A []int, delim string) string {
-
 	var buffer bytes.Buffer
 	for i := 0; i < len(A); i++ {
 		buffer.WriteString(strconv.Itoa(A[i]))

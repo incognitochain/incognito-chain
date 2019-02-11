@@ -172,6 +172,12 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	//========Store new Beaconblock and new Beacon bestState
 	self.ProcessStoreShardBlock(block)
 
+	// Process stability tx
+	err = self.ProcessLoanForBlock(block)
+	if err != nil {
+		return err
+	}
+
 	//TODO: Remove cross shard block in pool
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 	return nil
@@ -251,7 +257,7 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 		}
 	}
 	// Verify Action
-	actions := CreateShardActionFromTransaction(block.Body.Transactions, shardID)
+	actions := CreateShardActionFromTransaction(block.Body.Transactions, self, shardID)
 	action := []string{}
 	for _, value := range actions {
 		action = append(action, value...)
@@ -442,7 +448,7 @@ func (self *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBloc
 	// Swap committee
 	for _, l := range block.Body.Instructions {
 		if l[0] == "swap" {
-			self.ShardPendingValidator, self.ShardCommittee, shardSwapedCommittees, shardNewCommittees, err = SwapValidator(self.ShardPendingValidator, self.ShardCommittee, COMMITEES, OFFSET)
+			self.ShardPendingValidator, self.ShardCommittee, shardSwapedCommittees, shardNewCommittees, err = SwapValidator(self.ShardPendingValidator, self.ShardCommittee, common.COMMITEES, common.OFFSET)
 			if err != nil {
 				Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 				return NewBlockChainError(UnExpectedError, err)
