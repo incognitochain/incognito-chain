@@ -469,7 +469,7 @@ func (netsync *NetSync) HandleMessageGetShardToBeacon(msg *wire.MessageGetShardT
 		Logger.log.Error(err)
 		return
 	}
-	shardToBeaconBlk := blk.CreateShardToBeaconBlock()
+	shardToBeaconBlk := blk.CreateShardToBeaconBlock(netsync.config.BlockChain)
 	newMsg, err := wire.MakeEmptyMessage(wire.CmdBlkShardToBeacon)
 	if err != nil {
 		Logger.log.Error(err)
@@ -492,7 +492,7 @@ func (netsync *NetSync) HandleMessageGetShardToBeacons(msg *wire.MessageGetShard
 			Logger.log.Error(err)
 			return
 		}
-		shardToBeaconBlk := blk.CreateShardToBeaconBlock()
+		shardToBeaconBlk := blk.CreateShardToBeaconBlock(netsync.config.BlockChain)
 		newMsg, err := wire.MakeEmptyMessage(wire.CmdBlkShardToBeacon)
 		if err != nil {
 			Logger.log.Error(err)

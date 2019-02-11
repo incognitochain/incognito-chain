@@ -423,15 +423,14 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 	return txsToAdd, txToRemove, totalFee
 }
 
-func (blk *ShardBlock) CreateShardToBeaconBlock() *ShardToBeaconBlock {
+func (blk *ShardBlock) CreateShardToBeaconBlock(bcr metadata.BlockchainRetriever) *ShardToBeaconBlock {
 	block := ShardToBeaconBlock{}
 	block.AggregatedSig = blk.AggregatedSig
 	copy(block.ValidatorsIdx, blk.ValidatorsIdx)
 	block.ProducerSig = blk.ProducerSig
 	block.Header = blk.Header
 	block.Instructions = blk.Body.Instructions
-	// TODO(@0xbunyip): provide BlockchainRetriever instead of nil
-	actions := CreateShardActionFromTransaction(blk.Body.Transactions, nil, blk.Header.ShardID)
+	actions := CreateShardActionFromTransaction(blk.Body.Transactions, bcr, blk.Header.ShardID)
 	block.Instructions = append(block.Instructions, actions...)
 	return &block
 }
