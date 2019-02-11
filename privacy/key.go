@@ -46,7 +46,7 @@ func GenerateSpendingKey(seed []byte) SpendingKey {
 	for temp.SetBytes(spendingKey).Cmp(Curve.Params().N) == 1 {
 		spendingKey = common.HashB(spendingKey)
 	}
-	return spendingKey[:]
+	return spendingKey
 }
 
 // GeneratePublicKey computes a 33-byte public-key corresponding to a spending key
@@ -58,7 +58,13 @@ func GeneratePublicKey(spendingKey []byte) PublicKey {
 
 // GenerateReceivingKey generates a 32-byte receiving key
 func GenerateReceivingKey(spendingKey []byte) ReceivingKey {
-	return common.HashB(spendingKey)
+	receivingKey := common.HashB(spendingKey)
+
+	temp := new(big.Int)
+	for temp.SetBytes(receivingKey).Cmp(Curve.Params().N) == 1 {
+		receivingKey = common.HashB(receivingKey)
+	}
+	return receivingKey
 }
 
 // GenerateTransmissionKey computes a 33-byte transmission key corresponding to a receiving key
