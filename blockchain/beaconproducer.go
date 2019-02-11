@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ninjadotorg/constant/cashec"
-
 	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
+	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/privacy"
 )
@@ -153,6 +153,7 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 type accumulativeValues struct {
 	bondsSold       uint64
 	incomeFromBonds uint64
+	saleDataMap     map[string]*params.SaleData
 }
 
 // return param:

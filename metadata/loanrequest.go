@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -103,12 +104,8 @@ func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 		return false, errors.New("LoanRequest has incorrect params")
 	}
 
-	txs, err := bcr.GetLoanTxs(lr.LoanID)
-	if err != nil {
-		return false, err
-	}
-
-	if len(txs) > 0 {
+	txHash, _ := bcr.GetLoanReq(lr.LoanID)
+	if len(txHash) > 0 {
 		return false, errors.New("LoanID already existed")
 	}
 	return true, nil
@@ -125,14 +122,16 @@ func (lr *LoanRequest) ValidateMetadataByItself() bool {
 	return true
 }
 
-func (lr *LoanRequest) BuildReqActions(txr Transaction, shardID byte) ([][]string, error) {
+func (lr *LoanRequest) BuildReqActions(txr Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
 	lrActionValue := getLoanRequestActionValue(lr.LoanID, txr.Hash())
 	lrAction := []string{strconv.Itoa(LoanRequestMeta), lrActionValue}
 	return [][]string{lrAction}, nil
 }
 
 func getLoanRequestActionValue(loanID []byte, txHash *common.Hash) string {
-	return strings.Join([]string{string(loanID), txHash.String()}, actionValueSep)
+	// TODO(@0xbunyip): optimize base64.Encode and hash.String() by using more efficient encoder
+	// Encode to prevent appearance of seperator in loanID
+	return strings.Join([]string{base64.StdEncoding.EncodeToString(loanID), txHash.String()}, actionValueSep)
 }
 
 func ParseLoanRequestActionValue(values string) ([]byte, *common.Hash, error) {
@@ -140,6 +139,10 @@ func ParseLoanRequestActionValue(values string) ([]byte, *common.Hash, error) {
 	if len(s) != 2 {
 		return nil, nil, errors.Errorf("LoanRequest value invalid")
 	}
+	loanID, err := base64.StdEncoding.DecodeString(s[0])
+	if err != nil {
+		return nil, nil, err
+	}
 	txHash, err := common.NewHashFromStr(s[1])
-	return []byte(s[0]), txHash, err
+	return loanID, txHash, err
 }
