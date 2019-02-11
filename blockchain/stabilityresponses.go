@@ -76,6 +76,13 @@ func buildStabilityInstructions(
 			}
 			instructions = append(instructions, buyBondsInst...)
 
+		case metadata.CrowdsaleRequestMeta:
+			saleInst, err := buildInstructionsForCrowdsaleRequest(shardID, contentStr, beaconBestState, accumulativeValues)
+			if err != nil {
+				return [][]string{}, err
+			}
+			instructions = append(instructions, saleInst...)
+
 		default:
 			continue
 		}
@@ -362,6 +369,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityTxsFromInstructions(
 // 			}
 // 			amount += paymentAmount
 // 		} else if txDesc.Tx.GetMetadataType() == metadata.LoanWithdrawMeta {
+//          DONE
 // 			withdrawMeta := txDesc.Tx.GetMetadata().(*metadata.LoanWithdraw)
 // 			meta, err := blockgen.chain.GetLoanRequestMeta(withdrawMeta.LoanID)
 // 			if err != nil {

@@ -162,7 +162,7 @@ func (multiSig *SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*Public
 }
 
 func (multisigScheme *MultiSigScheme) GenerateRandom() (*EllipticPoint, *big.Int) {
-	r := RandBigInt()
+	r := RandScalar()
 	GPoint := new(EllipticPoint)
 	GPoint.X, GPoint.Y = big.NewInt(0), big.NewInt(0)
 	GPoint.X.Set(Curve.Params().Gx)

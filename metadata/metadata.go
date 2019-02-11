@@ -55,7 +55,7 @@ func (mb *MetadataBase) VerifyMultiSigs(
 	return true, nil
 }
 
-func (mb *MetadataBase) BuildReqActions(tx Transaction, shardID byte) ([][]string, error) {
+func (mb *MetadataBase) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
 	return [][]string{}, nil
 }
 
@@ -88,24 +88,27 @@ type MempoolRetriever interface {
 type BlockchainRetriever interface {
 	GetTxChainHeight(tx Transaction) (uint64, error)
 	GetChainHeight(byte) uint64
+	GetBeaconHeight() uint64
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
 	GetDCBParams() params.DCBParams
-	GetBoardPubKeys(boardType string) [][]byte
-	GetBoardPaymentAddress(boardType string) []privacy.PaymentAddress
+	GetBoardPubKeys(boardType byte) [][]byte
+	GetBoardPaymentAddress(boardType byte) []privacy.PaymentAddress
 	GetGOVParams() params.GOVParams
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
 	GetOracleParams() *params.Oracle
-	GetConstitutionStartHeight(boardType string, shardID byte) uint64
-	GetConstitutionEndHeight(boardType string, shardID byte) uint64
+	GetConstitutionStartHeight(boardType byte, shardID byte) uint64
+	GetConstitutionEndHeight(boardType byte, shardID byte) uint64
 	GetCurrentBlockHeight(byte) uint64
-	GetBoardEndHeight(boardType string, chainID byte) uint64
+	GetBoardEndHeight(boardType byte, chainID byte) uint64
 
 	// For validating loan metadata
-	GetLoanTxs([]byte) ([][]byte, error)
+	// GetLoanTxs([]byte) ([][]byte, error)
+	GetLoanReq(loanID []byte) (*common.Hash, error)
+	GetLoanResps(loanID []byte) ([][]byte, []ValidLoanResponse, error)
 	GetNumberOfDCBGovernors() int
 	GetNumberOfGOVGovernors() int
 	GetLoanPayment([]byte) (uint64, uint64, uint64, error)
-	GetLoanRequestMeta([]byte) (*LoanRequest, error)
+	GetLoanRequestMeta(loanID []byte) (*LoanRequest, error)
 
 	// For validating dividend
 	GetAmountPerAccount(*DividendProposal) (uint64, []string, []uint64, error)
@@ -132,7 +135,7 @@ type Metadata interface {
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
 	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool
 	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
-	BuildReqActions(tx Transaction, shardID byte) ([][]string, error)
+	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
 }
 
 // Interface for all type of transaction

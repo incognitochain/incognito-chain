@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bradfitz/slice"
-	"github.com/ninjadotorg/constant/cashec"
-
 	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
+	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/privacy"
 )
@@ -75,7 +75,7 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	beaconBlock.Header.Epoch = beaconBestState.BeaconEpoch
 	// Eg: Epoch is 200 blocks then increase epoch at block 201, 401, 601
-	if beaconBlock.Header.Height%EPOCH == 1 {
+	if beaconBlock.Header.Height%common.EPOCH == 1 {
 		beaconBlock.Header.Epoch++
 	}
 	beaconBlock.Header.Timestamp = time.Now().Unix()
@@ -154,6 +154,7 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 type accumulativeValues struct {
 	bondsSold       uint64
 	incomeFromBonds uint64
+	saleDataMap     map[string]*params.SaleData
 }
 
 // return param:
@@ -167,7 +168,7 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 	validStakers := [][]string{}
 	validSwap := make(map[byte][][]string)
 	//Get shard to beacon block from pool
-	shardsBlocks := self.shardToBeaconPool.GetFinalBlock()
+	shardsBlocks := self.shardToBeaconPool.GetValidPendingBlock()
 
 	//Shard block is a map ShardId -> array of shard block
 
@@ -175,15 +176,15 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 	accumulativeValues := &accumulativeValues{}
 	for shardID, shardBlocks := range shardsBlocks {
 		// Only accept block in one epoch
-		tempShardBlocks := make([]ShardToBeaconBlock, len(shardBlocks))
-		copy(tempShardBlocks, shardBlocks)
+		//tempShardBlocks := make([]ShardToBeaconBlock, len(shardBlocks))
+		//copy(tempShardBlocks, shardBlocks)
 		totalBlock := 0
-		slice.Sort(tempShardBlocks[:], func(i, j int) bool {
-			return tempShardBlocks[i].Header.Height < tempShardBlocks[j].Header.Height
-		})
-		if !reflect.DeepEqual(tempShardBlocks, shardBlocks) {
-			panic("Shard To Beacon block not in right format of increasing height")
-		}
+		//sort.SliceStable(tempShardBlocks[:], func(i, j int) bool {
+		//	return tempShardBlocks[i].Header.Height < tempShardBlocks[j].Header.Height
+		//})
+		//if !reflect.DeepEqual(tempShardBlocks, shardBlocks) {
+		//	panic("Shard To Beacon block not in right format of increasing height")
+		//}
 		for index, shardBlock := range shardBlocks {
 			currentCommittee := beaconBestState.ShardCommittee[shardID]
 			hash := shardBlock.Header.Hash()
@@ -307,11 +308,11 @@ func (self *BestStateBeacon) GenerateInstruction(
 	}
 	// TODO: beacon unexpeted swap -> pbft
 	// Beacon normal swap
-	if block.Header.Height%EPOCH == EPOCH-1 {
+	if block.Header.Height%common.EPOCH == common.EPOCH-1 {
 		swapBeaconInstructions := []string{}
 		swappedValidator := []string{}
 		beaconNextCommittee := []string{}
-		_, _, swappedValidator, beaconNextCommittee, _ = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, COMMITEES, OFFSET)
+		_, _, swappedValidator, beaconNextCommittee, _ = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, common.COMMITEES, common.OFFSET)
 		swapBeaconInstructions = append(swapBeaconInstructions, "swap")
 		swapBeaconInstructions = append(swapBeaconInstructions, beaconNextCommittee...)
 		swapBeaconInstructions = append(swapBeaconInstructions, swappedValidator...)
@@ -328,9 +329,9 @@ func (self *BestStateBeacon) GenerateInstruction(
 	//=======Random and Assign if random number is detected
 	// Time to get random number and no block in this epoch get it
 	fmt.Printf("RandomTimestamp %+v \n", self.CurrentRandomTimeStamp)
-	fmt.Printf("============height epoch: %+v, RANDOM TIME: %+v \n", block.Header.Height%EPOCH, RANDOM_TIME)
+	fmt.Printf("============height epoch: %+v, RANDOM TIME: %+v \n", block.Header.Height%common.EPOCH, common.RANDOM_TIME*block.Header.Epoch)
 	fmt.Printf("============IsGetRandomNumber %+v \n", self.IsGetRandomNumber)
-	if block.Header.Height%EPOCH > RANDOM_TIME && self.IsGetRandomNumber == false {
+	if block.Header.Height%common.EPOCH > common.RANDOM_TIME && self.IsGetRandomNumber == false {
 		chainTimeStamp, err := btcapi.GetCurrentChainTimeStamp()
 		fmt.Printf("============chainTimeStamp %+v \n", chainTimeStamp)
 		if err != nil {

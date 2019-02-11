@@ -264,11 +264,11 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 
 	for j := 0; j < n; j++ {
 		// Generate random numbers
-		r[j] = privacy.RandBigInt()
-		a[j] = privacy.RandBigInt()
-		s[j] = privacy.RandBigInt()
-		t[j] = privacy.RandBigInt()
-		u[j] = privacy.RandBigInt()
+		r[j] = privacy.RandScalar()
+		a[j] = privacy.RandScalar()
+		s[j] = privacy.RandScalar()
+		t[j] = privacy.RandScalar()
+		u[j] = privacy.RandScalar()
 
 		// convert indexIsZeroBinary[j] to big.Int
 		indexInt := big.NewInt(int64(indexIsZeroBinary[j]))
@@ -303,7 +303,7 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	// Calculate x
 	x := big.NewInt(0)
 	for j := 0; j <= n-1; j++ {
-		x = generateChallengeFromByte([][]byte{x.Bytes(), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
+		x = generateChallenge([][]byte{x.Bytes(), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
 	}
 
 	// Calculate za, zb zd
@@ -366,7 +366,7 @@ func (proof *OneOutOfManyProof) Verify() bool {
 	x := big.NewInt(0)
 
 	for j := 0; j <= n-1; j++ {
-		x = generateChallengeFromByte([][]byte{x.Bytes(), proof.cl[j].Compress(), proof.ca[j].Compress(), proof.cb[j].Compress(), proof.cd[j].Compress()})
+		x = generateChallenge([][]byte{x.Bytes(), proof.cl[j].Compress(), proof.ca[j].Compress(), proof.cb[j].Compress(), proof.cd[j].Compress()})
 	}
 
 	for i := 0; i < n; i++ {
