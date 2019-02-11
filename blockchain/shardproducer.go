@@ -62,14 +62,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	coinbases := []metadata.Transaction{salaryTx}
 	txsToAdd = append(coinbases, txsToAdd...)
 
-	// adding stability response txs
-	stabilityResTxs, err := blockgen.buildStabilityTxsFromInstructions(privatekey)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, err
-	}
-	txsToAdd = append(txsToAdd, stabilityResTxs...)
-
 	//Crossoutputcoint
 	crossOutputCoin := blockgen.getCrossOutputCoin(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight)
 	//Assign Instruction
@@ -109,7 +101,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	}
 
 	// Process stability tx, create response txs if needed
-	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxs(txsToAdd, privatekey)
+	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +215,7 @@ func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, p
 	return txNormals[0], nil
 }
 
-func (blockgen *BlkTmplGenerator) buildStabilityResponseTxs(txs []metadata.Transaction, producerPrivateKey *privacy.SpendingKey) ([]metadata.Transaction, error) {
+func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []metadata.Transaction, producerPrivateKey *privacy.SpendingKey) ([]metadata.Transaction, error) {
 	respTxs := []metadata.Transaction{}
 	removeIds := []int{}
 	for i, tx := range txs {
@@ -250,7 +242,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxs(txs []metadata.Trans
 func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.SpendingKey, shardID byte) ([]metadata.Transaction, error) {
 	// TODO(@0xbunyip): refund bonds in multiple blocks since many refund instructions might come at once and UTXO picking order is not perfect
 	unspentTokenMap := map[string]([]transaction.TxTokenVout){}
-	responses := []metadata.Transaction{}
+	resTxs := []metadata.Transaction{}
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
 			if len(l) <= 2 {
@@ -258,26 +250,33 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(beac
 			}
 			shardToProcess, err := strconv.Atoi(l[1])
 			if err == nil && shardToProcess == int(shardID) {
-				instType, err := strconv.Atoi(l[0])
+				metaType, err := strconv.Atoi(l[0])
 				if err != nil {
-					continue
+					return nil, err
 				}
-				switch instType {
+				switch metaType {
 				case metadata.CrowdsalePaymentMeta:
 					paymentInst, err := ParseCrowdsalePaymentInstruction(l[2])
 					if err != nil {
-						continue
+						return nil, err
 					}
-
 					tx, err := blockgen.buildPaymentForCrowdsale(paymentInst, unspentTokenMap, producerPrivateKey)
 					if err != nil {
-						responses = append(responses, tx)
+						return nil, err
 					}
+					resTxs = append(resTxs, tx)
+				case metadata.BuyFromGOVRequestMeta:
+					contentStr := l[3]
+					txs, err := blockgen.buildBuyBondsFromGOVRes(l[2], contentStr, producerPrivateKey)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, txs...)
 				}
 			}
 		}
 	}
-	return nil, nil
+	return resTxs, nil
 }
 
 /*

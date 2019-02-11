@@ -170,37 +170,37 @@ func (blockgen *BlkTmplGenerator) buildBuyBondsFromGOVRes(
 	return []metadata.Transaction{}, nil
 }
 
-func (blockgen *BlkTmplGenerator) buildStabilityTxsFromInstructions(
-	blkProducerPrivateKey *privacy.SpendingKey,
-) ([]metadata.Transaction, error) {
-	bestBeaconState := blockgen.chain.BestState.Beacon
-	stabilityInsts := bestBeaconState.StabilityInstructions
-	resTxs := []metadata.Transaction{}
-	for _, inst := range stabilityInsts {
-		// TODO: will improve the condition later
-		if inst[0] == "stake" || inst[0] == "swap" || inst[0] == "random" {
-			continue
-		}
-		metaType, err := strconv.Atoi(inst[0])
-		if err != nil {
-			return nil, err
-		}
-		instType := inst[2]
-		contentStr := inst[3]
-		txs := []metadata.Transaction{}
-		switch metaType {
-		case metadata.BuyFromGOVRequestMeta:
-			txs, err = blockgen.buildBuyBondsFromGOVRes(instType, contentStr, blkProducerPrivateKey)
-		default:
-			continue
-		}
-		if err != nil {
-			return nil, err
-		}
-		resTxs = append(resTxs, txs...)
-	}
-	return resTxs, nil
-}
+// func (blockgen *BlkTmplGenerator) buildStabilityTxsFromInstructions(
+// 	blkProducerPrivateKey *privacy.SpendingKey,
+// ) ([]metadata.Transaction, error) {
+// 	bestBeaconState := blockgen.chain.BestState.Beacon
+// 	stabilityInsts := bestBeaconState.StabilityInstructions
+// 	resTxs := []metadata.Transaction{}
+// 	for _, inst := range stabilityInsts {
+// 		// TODO: will improve the condition later
+// 		if inst[0] == "stake" || inst[0] == "swap" || inst[0] == "random" {
+// 			continue
+// 		}
+// 		metaType, err := strconv.Atoi(inst[0])
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		instType := inst[2]
+// 		contentStr := inst[3]
+// 		txs := []metadata.Transaction{}
+// 		switch metaType {
+// 		case metadata.BuyFromGOVRequestMeta:
+// 			txs, err = blockgen.buildBuyBondsFromGOVRes(instType, contentStr, blkProducerPrivateKey)
+// 		default:
+// 			continue
+// 		}
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		resTxs = append(resTxs, txs...)
+// 	}
+// 	return resTxs, nil
+// }
 
 // func (blockgen *BlkTmplGenerator) buildIssuingResTxs(
 // 	chainID byte,
