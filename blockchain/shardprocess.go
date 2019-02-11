@@ -448,7 +448,7 @@ func (self *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBloc
 	// Swap committee
 	for _, l := range block.Body.Instructions {
 		if l[0] == "swap" {
-			self.ShardPendingValidator, self.ShardCommittee, shardSwapedCommittees, shardNewCommittees, err = SwapValidator(self.ShardPendingValidator, self.ShardCommittee, COMMITEES, OFFSET)
+			self.ShardPendingValidator, self.ShardCommittee, shardSwapedCommittees, shardNewCommittees, err = SwapValidator(self.ShardPendingValidator, self.ShardCommittee, common.COMMITEES, common.OFFSET)
 			if err != nil {
 				Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 				return NewBlockChainError(UnExpectedError, err)

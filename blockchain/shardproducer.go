@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -25,7 +26,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
 	epoch := blockgen.chain.BestState.Beacon.BeaconEpoch
 	if epoch-blockgen.chain.BestState.Shard[shardID].Epoch > 1 {
-		beaconHeight = blockgen.chain.BestState.Shard[shardID].Epoch * EPOCH
+		beaconHeight = blockgen.chain.BestState.Shard[shardID].Epoch * common.EPOCH
 		epoch = blockgen.chain.BestState.Shard[shardID].Epoch + 1
 	}
 
@@ -80,7 +81,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	swapInstruction := []string{}
 	// Swap instruction only appear when reach the last block in an epoch
 	//@NOTICE: In this block, only pending validator change, shard committees will change in the next block
-	if beaconHeight%EPOCH == 0 {
+	if beaconHeight%common.EPOCH == 0 {
 		swapInstruction, err = CreateSwapAction(shardPendingValidator, shardCommittees, shardID)
 		if err != nil {
 			Logger.log.Error(err)
@@ -125,6 +126,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	//Get user key set
 	userKeySet := cashec.KeySet{}
 	userKeySet.ImportFromPrivateKey(privatekey)
+	fmt.Println("------------------", block.Body.Transactions)
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(block.Body.Transactions)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 	prevBlock := blockgen.chain.BestState.Shard[shardID].BestShardBlock
@@ -227,7 +229,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxs(txs []metadata.Trans
 		if err != nil {
 			// Remove this tx if cannot create corresponding response
 			removeIds = append(removeIds, i)
-		} else {
+		} else if respTx != nil {
 			respTxs = append(respTxs, respTx)
 		}
 	}
@@ -419,7 +421,7 @@ func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) 
 	....
 */
 func CreateSwapAction(commitees []string, pendingValidator []string, shardID byte) ([]string, error) {
-	_, _, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, COMMITEES, OFFSET)
+	_, _, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, common.COMMITEES, common.OFFSET)
 	if err != nil {
 		return nil, err
 	}
