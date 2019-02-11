@@ -3,11 +3,11 @@
 apt update
 apt -y upgrade
 
-echo "Install git"
+echo "Install wget git"
+apt install wget
 apt install git
 
 echo "Install golang..."
-apt install wget
 wget https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz
 tar -xvf go1.11.5.linux-amd64.tar.gz
 mv go /usr/local
