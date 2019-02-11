@@ -27,7 +27,7 @@ export GOROOT=/usr/local/go
 export GOPATH=$HOME/go
 export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 
-if [ ! -f $HOME/go/bin/dep ]; then
+if [ ! -f ~/go/bin/dep ]; then
     echo "Install dep..."
     go get -u github.com/golang/dep/cmd/dep
 else
