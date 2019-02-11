@@ -13,6 +13,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/privacy"
 )
@@ -74,7 +75,7 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	beaconBlock.Header.Epoch = beaconBestState.BeaconEpoch
 	// Eg: Epoch is 200 blocks then increase epoch at block 201, 401, 601
-	if beaconBlock.Header.Height%EPOCH == 1 {
+	if beaconBlock.Header.Height%common.EPOCH == 1 {
 		beaconBlock.Header.Epoch++
 	}
 	beaconBlock.Header.Timestamp = time.Now().Unix()
@@ -307,11 +308,11 @@ func (self *BestStateBeacon) GenerateInstruction(
 	}
 	// TODO: beacon unexpeted swap -> pbft
 	// Beacon normal swap
-	if block.Header.Height%EPOCH == EPOCH-1 {
+	if block.Header.Height%common.EPOCH == common.EPOCH-1 {
 		swapBeaconInstructions := []string{}
 		swappedValidator := []string{}
 		beaconNextCommittee := []string{}
-		_, _, swappedValidator, beaconNextCommittee, _ = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, COMMITEES, OFFSET)
+		_, _, swappedValidator, beaconNextCommittee, _ = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, common.COMMITEES, common.OFFSET)
 		swapBeaconInstructions = append(swapBeaconInstructions, "swap")
 		swapBeaconInstructions = append(swapBeaconInstructions, beaconNextCommittee...)
 		swapBeaconInstructions = append(swapBeaconInstructions, swappedValidator...)
@@ -328,9 +329,9 @@ func (self *BestStateBeacon) GenerateInstruction(
 	//=======Random and Assign if random number is detected
 	// Time to get random number and no block in this epoch get it
 	fmt.Printf("RandomTimestamp %+v \n", self.CurrentRandomTimeStamp)
-	fmt.Printf("============height epoch: %+v, RANDOM TIME: %+v \n", block.Header.Height%EPOCH, RANDOM_TIME)
+	fmt.Printf("============height epoch: %+v, RANDOM TIME: %+v \n", block.Header.Height%common.EPOCH, common.RANDOM_TIME*block.Header.Epoch)
 	fmt.Printf("============IsGetRandomNumber %+v \n", self.IsGetRandomNumber)
-	if block.Header.Height%EPOCH > RANDOM_TIME && self.IsGetRandomNumber == false {
+	if block.Header.Height%common.EPOCH > common.RANDOM_TIME && self.IsGetRandomNumber == false {
 		chainTimeStamp, err := btcapi.GetCurrentChainTimeStamp()
 		fmt.Printf("============chainTimeStamp %+v \n", chainTimeStamp)
 		if err != nil {
