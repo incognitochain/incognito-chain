@@ -29,6 +29,12 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case BuyBackRequestMeta:
 		md = &BuyBackRequest{}
 
+	case BuyGOVTokenRequestMeta:
+		md = &BuyGOVTokenRequest{}
+
+	case ResponseBaseMeta:
+		md = &ResponseBase{}
+
 	case BuyFromGOVResponseMeta:
 		md = &BuySellResponse{}
 
