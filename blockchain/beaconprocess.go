@@ -5,14 +5,13 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
 	"github.com/ninjadotorg/constant/cashec"
-
 	"github.com/ninjadotorg/constant/common"
 )
 
@@ -352,7 +351,7 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
 	// Verify epoch with parent block
-	if block.Header.Height%EPOCH == 0 && parentBlockInterface.Header.Epoch != block.Header.Epoch-1 {
+	if (block.Header.Height != 1) && (block.Header.Height%common.EPOCH == 1) && (parentBlockInterface.Header.Epoch != block.Header.Epoch-1) {
 		return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
 	}
 	// Verify timestamp with parent block
@@ -407,7 +406,7 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 			hash := shardBlock.Header.Hash()
 			err := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
 			if index == 0 && err != nil {
-				currentCommittee, currentPendingValidator, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, COMMITEES, OFFSET)
+				currentCommittee, currentPendingValidator, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, common.COMMITEES, common.OFFSET)
 				if err != nil {
 					return NewBlockChainError(ShardStateError, errors.New("Shardstate fail to verify with ShardToBeacon Block in pool"))
 				}
@@ -455,10 +454,10 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 	if bytes.Compare(self.BestBlockHash.GetBytes(), block.Header.PrevBlockHash.GetBytes()) != 0 {
 		return NewBlockChainError(BlockHeightError, errors.New("Previous us block should be :"+self.BestBlockHash.String()))
 	}
-	if block.Header.Height%EPOCH == 0 && self.BeaconEpoch+1 != block.Header.Epoch {
+	if block.Header.Height%common.EPOCH == 1 && self.BeaconEpoch+1 != block.Header.Epoch {
 		return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
 	}
-	if block.Header.Height%EPOCH != 0 && self.BeaconEpoch != block.Header.Epoch {
+	if block.Header.Height%common.EPOCH != 1 && self.BeaconEpoch != block.Header.Epoch {
 		return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
 	}
 	//=============Verify Stakers
@@ -533,26 +532,26 @@ func (self *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock)
 		return NewBlockChainError(HashError, errors.New("Error verify shard validator root"))
 	}
 
-	instructions := block.Body.Instructions
-
-	for _, l := range instructions {
-		if l[0] == "random" {
-			temp, err := strconv.Atoi(l[3])
-			if err != nil {
-				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-				return NewBlockChainError(UnExpectedError, err)
-			}
-			isOk, err = btcapi.VerifyNonceWithTimestamp(self.CurrentRandomTimeStamp, int64(temp))
-			Logger.log.Infof("Verify Random number %+v", isOk)
-			if err != nil {
-				Logger.log.Error("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-				return NewBlockChainError(UnExpectedError, err)
-			}
-			if !isOk {
-				return NewBlockChainError(RandomError, errors.New("Error verify random number"))
-			}
-		}
-	}
+	// COMMENT FOR TESTING
+	// instructions := block.Body.Instructions
+	// for _, l := range instructions {
+	// 	if l[0] == "random" {
+	// 		temp, err := strconv.Atoi(l[3])
+	// 		if err != nil {
+	// 			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+	// 			return NewBlockChainError(UnExpectedError, err)
+	// 		}
+	// 		isOk, err = btcapi.VerifyNonceWithTimestamp(self.CurrentRandomTimeStamp, int64(temp))
+	// 		Logger.log.Infof("Verify Random number %+v", isOk)
+	// 		if err != nil {
+	// 			Logger.log.Error("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+	// 			return NewBlockChainError(UnExpectedError, err)
+	// 		}
+	// 		if !isOk {
+	// 			return NewBlockChainError(RandomError, errors.New("Error verify random number"))
+	// 		}
+	// 	}
+	// }
 	return nil
 }
 
@@ -597,8 +596,13 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 
 	// update param
 	instructions := newBlock.Body.Instructions
-	self.pickInstructionsOfCurrentShard(instructions)
 	for _, l := range instructions {
+		// For stability instructions
+		err := self.processStabilityInstruction(l)
+		if err != nil {
+			fmt.Println(err)
+		}
+
 		if l[0] == "set" {
 			self.Params[l[1]] = l[2]
 		}
@@ -606,11 +610,14 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			delete(self.Params, l[1])
 		}
 		if l[0] == "swap" {
+			fmt.Println("---------------============= SWAP", l)
 			// format
-			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "shard" "shardID"]
-			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "beacon"]
+			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
+			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
 			inPubkeys := strings.Split(l[1], ",")
 			outPubkeys := strings.Split(l[2], ",")
+			fmt.Println("---------------============= SWAP inPubkeys", inPubkeys)
+			fmt.Println("---------------============= SWAP outPubkeys", outPubkeys)
 			if l[3] == "shard" {
 				temp, err := strconv.Atoi(l[4])
 				if err != nil {
@@ -619,32 +626,40 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 				}
 				shardID := byte(temp)
 				// delete in public key out of sharding pending validator list
-				self.ShardPendingValidator[shardID], err = RemoveValidator(self.ShardPendingValidator[shardID], inPubkeys)
-				if err != nil {
-					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err)
+				if len(l[1]) > 0 {
+					self.ShardPendingValidator[shardID], err = RemoveValidator(self.ShardPendingValidator[shardID], inPubkeys)
+					if err != nil {
+						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+						return NewBlockChainError(UnExpectedError, err)
+					}
+					// append in public key to committees
+					self.ShardCommittee[shardID] = append(self.ShardCommittee[shardID], inPubkeys...)
 				}
 				// delete out public key out of current committees
-				self.ShardCommittee[shardID], err = RemoveValidator(self.ShardPendingValidator[shardID], outPubkeys)
-				if err != nil {
-					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err)
+				if len(l[2]) > 0 {
+					self.ShardCommittee[shardID], err = RemoveValidator(self.ShardPendingValidator[shardID], outPubkeys)
+					if err != nil {
+						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+						return NewBlockChainError(UnExpectedError, err)
+					}
 				}
-				// append in public key to committees
-				self.ShardCommittee[shardID] = append(self.ShardCommittee[shardID], inPubkeys...)
 			} else if l[3] == "beacon" {
 				var err error
-				self.BeaconPendingValidator, err = RemoveValidator(self.BeaconPendingValidator, inPubkeys)
-				if err != nil {
-					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err)
+				if len(l[1]) > 0 {
+					self.BeaconPendingValidator, err = RemoveValidator(self.BeaconPendingValidator, inPubkeys)
+					if err != nil {
+						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+						return NewBlockChainError(UnExpectedError, err)
+					}
+					self.BeaconCommittee = append(self.BeaconCommittee, inPubkeys...)
 				}
-				self.BeaconCommittee, err = RemoveValidator(self.BeaconCommittee, outPubkeys)
-				if err != nil {
-					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err)
+				if len(l[2]) > 0 {
+					self.BeaconCommittee, err = RemoveValidator(self.BeaconCommittee, outPubkeys)
+					if err != nil {
+						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+						return NewBlockChainError(UnExpectedError, err)
+					}
 				}
-				self.BeaconCommittee = append(self.BeaconCommittee, inPubkeys...)
 			}
 		}
 		// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
@@ -688,14 +703,14 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		self.CandidateShardWaitingForNextRandom = append(self.CandidateShardWaitingForNextRandom, newShardCandidate...)
 	}
 
-	if self.BeaconHeight%EPOCH == 1 && self.BeaconHeight != 1 {
+	if self.BeaconHeight%common.EPOCH == 1 && self.BeaconHeight != 1 {
 		self.IsGetRandomNumber = false
 		// Begin of each epoch
-	} else if self.BeaconHeight%EPOCH < RANDOM_TIME {
+	} else if self.BeaconHeight%common.EPOCH < common.RANDOM_TIME {
 		// Before get random from bitcoin
-	} else if self.BeaconHeight%EPOCH >= RANDOM_TIME {
+	} else if self.BeaconHeight%common.EPOCH >= common.RANDOM_TIME {
 		// After get random from bitcoin
-		if self.BeaconHeight%EPOCH == RANDOM_TIME {
+		if self.BeaconHeight%common.EPOCH == common.RANDOM_TIME {
 			// snapshot candidate list
 			self.CandidateShardWaitingForCurrentRandom = self.CandidateShardWaitingForNextRandom
 			self.CandidateBeaconWaitingForCurrentRandom = self.CandidateBeaconWaitingForNextRandom
@@ -730,7 +745,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 				return err
 			}
 		}
-	} else if self.BeaconHeight%EPOCH == EPOCH {
+	} else if self.BeaconHeight%common.EPOCH == 0 {
 		// At the end of each epoch, eg: block 200, 400, 600 with epoch is 200 blocks
 		// Swap pending validator in committees, pop some of public key in committees out
 		// ONLY SWAP FOR BEACON
@@ -740,7 +755,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			beaconNewCommittees    []string
 			err                    error
 		)
-		self.BeaconPendingValidator, self.BeaconCommittee, beaconSwapedCommittees, beaconNewCommittees, err = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, COMMITEES, OFFSET)
+		self.BeaconPendingValidator, self.BeaconCommittee, beaconSwapedCommittees, beaconNewCommittees, err = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, common.COMMITEES, common.OFFSET)
 		if err != nil {
 			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 			return NewBlockChainError(UnExpectedError, err)
@@ -822,7 +837,7 @@ func SwapValidator(pendingValidators []string, currentValidators []string, maxCo
 		panic("Committee can't be zero")
 	}
 	if offset == 0 {
-		return nil, pendingValidators, currentValidators, nil, errors.New("Can't not swap 0 validator")
+		return []string{}, pendingValidators, currentValidators, []string{}, errors.New("Can't not swap 0 validator")
 	}
 	// if number of pending validator is less or equal than offset, set offset equal to number of pending validator
 	if offset > len(pendingValidators) {
@@ -830,10 +845,10 @@ func SwapValidator(pendingValidators []string, currentValidators []string, maxCo
 	}
 	// if swap offset = 0 then do nothing
 	if offset == 0 {
-		return nil, pendingValidators, currentValidators, nil, errors.New("No pending validator for swapping")
+		return pendingValidators, currentValidators, []string{}, []string{}, errors.New("No pending validator for swapping")
 	}
 	if offset > maxCommittee {
-		return nil, pendingValidators, currentValidators, nil, errors.New("Trying to swap too many validator")
+		return pendingValidators, currentValidators, []string{}, []string{}, errors.New("Trying to swap too many validator")
 	}
 	tempValidators := []string{}
 	swapValidator := []string{}

@@ -98,12 +98,16 @@ func (bsReq *BuySellRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (bsReq *BuySellRequest) BuildReqActions(tx Transaction, shardID byte) ([][]string, error) {
-	bsReqBytes, err := json.Marshal(*bsReq)
+func (bsReq *BuySellRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+	actionContent := map[string]interface{}{
+		"txReqId": *(tx.Hash()),
+		"meta":    *bsReq,
+	}
+	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
 		return [][]string{}, err
 	}
-	bsReqBase64Str := base64.StdEncoding.EncodeToString(bsReqBytes)
-	bsReqAction := []string{strconv.Itoa(BuyFromGOVRequestMeta), bsReqBase64Str}
-	return [][]string{bsReqAction}, nil
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	action := []string{strconv.Itoa(BuyFromGOVRequestMeta), actionContentBase64Str}
+	return [][]string{action}, nil
 }
