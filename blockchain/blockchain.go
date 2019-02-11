@@ -676,35 +676,35 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 // 	return result, nil
 // }
 
-func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
-	txs, err := self.config.DataBase.GetLoanTxs(loanID)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, txHash := range txs {
-		hash := &common.Hash{}
-		copy(hash[:], txHash)
-		_, _, _, tx, err := self.GetTransactionByHash(hash)
-		if err != nil {
-			return nil, err
-		}
-		if tx.GetMetadataType() == metadata.LoanRequestMeta {
-			meta := tx.GetMetadata()
-			if meta == nil {
-				continue
-			}
-			requestMeta, ok := meta.(*metadata.LoanRequest)
-			if !ok {
-				continue
-			}
-			if bytes.Equal(requestMeta.LoanID, loanID) {
-				return requestMeta, nil
-			}
-		}
-	}
-	return nil, nil
-}
+//func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
+//	txs, err := self.config.DataBase.GetLoanTxs(loanID)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	for _, txHash := range txs {
+//		hash := &common.Hash{}
+//		copy(hash[:], txHash)
+//		_, _, _, tx, err := self.GetTransactionByHash(hash)
+//		if err != nil {
+//			return nil, err
+//		}
+//		if tx.GetMetadataType() == metadata.LoanRequestMeta {
+//			meta := tx.GetMetadata()
+//			if meta == nil {
+//				continue
+//			}
+//			requestMeta, ok := meta.(*metadata.LoanRequest)
+//			if !ok {
+//				continue
+//			}
+//			if bytes.Equal(requestMeta.LoanID, loanID) {
+//				return requestMeta, nil
+//			}
+//		}
+//	}
+//	return nil, nil
+//}
 
 func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 	_, _, value := tx.GetUniqueReceiver()
@@ -761,21 +761,6 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 	for _, tx := range block.Body.Transactions {
 		switch tx.GetMetadataType() {
-		case metadata.LoanRequestMeta:
-			{
-				tx := tx.(*transaction.Tx)
-				meta := tx.Metadata.(*metadata.LoanRequest)
-				fmt.Printf("Found tx %x of type loan request: %x\n", tx.Hash()[:], meta.LoanID)
-				self.config.DataBase.StoreLoanRequest(meta.LoanID, tx.Hash()[:])
-			}
-		case metadata.LoanResponseMeta:
-			{
-				tx := tx.(*transaction.Tx)
-				meta := tx.Metadata.(*metadata.LoanResponse)
-				// TODO(@0xbunyip): store multiple responses with different suffixes
-				fmt.Printf("Found tx %x of type loan response\n", tx.Hash()[:])
-				self.config.DataBase.StoreLoanResponse(meta.LoanID, tx.Hash()[:])
-			}
 		case metadata.LoanUnlockMeta:
 			{
 				// Update loan payment info after withdrawing Constant
@@ -783,7 +768,10 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 				meta := tx.GetMetadata().(*metadata.LoanUnlock)
 				fmt.Printf("Found tx %x of type loan unlock\n", tx.Hash()[:])
 				fmt.Printf("LoanID: %x\n", meta.LoanID)
-				requestMeta, _ := self.GetLoanRequestMeta(meta.LoanID)
+				requestMeta, err := self.GetLoanRequestMeta(meta.LoanID)
+				if err != nil {
+					return err
+				}
 				principle := requestMeta.LoanAmount
 				interest := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
 				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint64(block.Header.Height))
@@ -946,29 +934,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 //		switch tx.GetMetadataType() {
 //		case metadata.AcceptDCBProposalMeta:
 //			{
-//				meta := tx.GetMetadata().(*metadata.AcceptDCBProposalMetadata)
-//				_, _, _, getTx, err := self.GetTransactionByHash(&meta.DCBProposalTXID)
-//				proposal := getTx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
-//				if err != nil {
-//					return err
-//				}
-//
-//				// Store saledata in db
-//				saleData := proposal.DCBParams.ListSaleData
-//				for _, data := range saleData {
-//					if _, _, _, err := self.config.DataBase.GetCrowdsaleData(data.SaleID); err == nil {
-//						// TODO(@0xbunyip): support update crowdsale data
-//						continue
-//					}
-//					if err := self.config.DataBase.StoreCrowdsaleData(
-//						data.SaleID,
-//						meta.DCBProposalTXID,
-//						data.BuyingAmount,
-//						data.SellingAmount,
-//					); err != nil {
-//						return err
-//					}
-//				}
+//             DONE
 //			}
 //		case metadata.CrowdsalePaymentMeta:
 //			{
@@ -1008,61 +974,6 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 //	}
 //	return nil
 //}
-
-func (self *BlockChain) updateCrowdsalePaymentData(tx metadata.Transaction, saleDataMap map[string]*params.SaleData) error {
-	fmt.Printf("[db] update cs data\n")
-
-	// Get current sale status from db
-	meta := tx.GetMetadata().(*metadata.CrowdsalePayment)
-	saleData, ok := saleDataMap[string(meta.SaleID)]
-	if !ok {
-		data, err := self.GetCrowdsaleData(meta.SaleID)
-		if err != nil {
-			return err
-		}
-		saleData = data
-		saleDataMap[string(meta.SaleID)] = saleData
-	}
-
-	// Update selling asset status
-	amount := uint64(0)
-	if saleData.SellingAsset.IsEqual(&common.ConstantID) {
-		_, _, amount = tx.GetUniqueReceiver()
-	} else {
-		txToken, ok := tx.(*transaction.TxCustomToken)
-		if !ok {
-			return errors.New("Error parsing crowdsale payment as TxCustomToken")
-		}
-		_, _, amount = txToken.GetTokenUniqueReceiver()
-	}
-	if amount > saleData.SellingAmount {
-		return errors.New("Sold too much asset")
-	}
-	fmt.Printf("[db] selling amount: %d\n", amount)
-	saleData.SellingAmount -= amount
-
-	// Update buying asset status
-	_, _, _, txRequest, err := self.GetTransactionByHash(meta.RequestedTxID)
-	if err != nil {
-		return err
-	}
-	amount = uint64(0)
-	if saleData.BuyingAsset.IsEqual(&common.ConstantID) {
-		_, _, amount = txRequest.GetUniqueReceiver()
-	} else {
-		txToken, ok := txRequest.(*transaction.TxCustomToken)
-		if !ok {
-			return errors.New("Error parsing crowdsale request as TxCustomToken")
-		}
-		_, _, amount = txToken.GetTokenUniqueReceiver()
-	}
-	if amount > saleData.BuyingAmount {
-		return errors.New("Bought too much asset")
-	}
-	fmt.Printf("[db] buying amount: %d\n", amount)
-	saleData.BuyingAmount -= amount
-	return nil
-}
 
 // func (self *BlockChain) ProcessCMBTxs(block *Block) error {
 // 	for _, tx := range block.Transactions {
