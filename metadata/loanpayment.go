@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -85,4 +87,62 @@ func GetTotalDebt(principle, interest, interestRate, maturity, deadline, current
 
 func GetInterestPerTerm(principle, interestRate uint64) uint64 {
 	return principle * interestRate / Decimals
+}
+
+func (lp *LoanPayment) BuildReqActions(txr Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+	amount, err := lp.calculateInterestPaid(txr, bcr)
+	if err != nil {
+		return [][]string{}, err
+	}
+	lrActionValue := getLoanPaymentActionValue(txr.Hash(), amount)
+	lrAction := []string{strconv.Itoa(LoanPaymentMeta), lrActionValue}
+	return [][]string{lrAction}, nil
+}
+
+func getLoanPaymentActionValue(txHash *common.Hash, amount uint64) string {
+	return strings.Join([]string{txHash.String(), strconv.FormatUint(amount, 10)}, actionValueSep)
+}
+
+func ParseLoanPaymentActionValue(values string) (*common.Hash, uint64, error) {
+	s := strings.Split(values, actionValueSep)
+	if len(s) != 2 {
+		return nil, 0, errors.Errorf("LoanPayment value invalid")
+	}
+	txHash, errHash := common.NewHashFromStr(s[0])
+	amount, errAmount := strconv.ParseUint(s[1], 10, 64)
+	errSaver := &ErrorSaver{}
+	if errSaver.Save(errHash, errAmount) != nil {
+		return nil, 0, errSaver.Get()
+	}
+	return txHash, amount, nil
+}
+
+func (lp *LoanPayment) calculateInterestPaid(tx Transaction, bcr BlockchainRetriever) (uint64, error) {
+	principle, interest, deadline, err := bcr.GetLoanPayment(lp.LoanID)
+	if err != nil {
+		return 0, err
+	}
+
+	// Get loan params
+	requestMeta, err := bcr.GetLoanRequestMeta(lp.LoanID)
+	if err != nil {
+		return 0, err
+	}
+
+	// Only keep interest
+	_, _, amount := tx.GetUniqueReceiver() // Receiver is unique and is burn address
+	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	totalInterest := GetTotalInterest(
+		principle,
+		interest,
+		requestMeta.Params.InterestRate,
+		requestMeta.Params.Maturity,
+		deadline,
+		bcr.GetChainHeight(shardID),
+	)
+	interestPaid := amount
+	if amount > totalInterest {
+		interestPaid = totalInterest
+	}
+	return interestPaid, nil
 }
