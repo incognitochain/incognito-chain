@@ -426,13 +426,26 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			tokenID = &common.Hash{}
 			tokenID.SetBytes(common.ConstantID[:])
 		}
+
+		sndOutputs := make([]*big.Int, len(tx.Proof.OutputCoins))
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
-			// Check output coins' input is not exists in input list (Database)
+			sndOutputs[i] = tx.Proof.OutputCoins[i].CoinDetails.SNDerivator
+		}
+
+		if common.CheckDuplicateBigIntArray(sndOutputs){
+			Logger.log.Infof("Duplicate output coins' snd\n")
+			return false
+		}
+
+
+		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
+			// Check output coins' SND is not exists in SND list (Database)
 			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, shardID, db); ok || err != nil {
 				Logger.log.Infof("snd existed: %d\n", i)
 				return false
 			}
 		}
+
 		if !hasPrivacy {
 			// Check input coins' cm is exists in cm list (Database)
 			for i := 0; i < len(tx.Proof.InputCoins); i++ {
