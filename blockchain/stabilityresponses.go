@@ -5,19 +5,11 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/transaction"
 )
-
-// import (
-// 	"errors"
-
-// 	"github.com/ninjadotorg/constant/blockchain/params"
-// 	"github.com/ninjadotorg/constant/common"
-// 	"github.com/ninjadotorg/constant/database"
-// 	"github.com/ninjadotorg/constant/metadata"
-// 	"github.com/ninjadotorg/constant/privacy"
-// 	"github.com/ninjadotorg/constant/transaction"
-// )
 
 func buildInstructionsForBuyBondsFromGOVReq(
 	shardID byte,
@@ -67,6 +59,10 @@ func buildStabilityInstructions(
 ) ([][]string, error) {
 	instructions := [][]string{}
 	for _, inst := range shardBlockInstructions {
+		// TODO: will improve the condition later
+		if inst[0] == "stake" || inst[0] == "swap" || inst[0] == "random" {
+			continue
+		}
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {
 			return [][]string{}, err
@@ -96,6 +92,107 @@ func (bsb *BestStateBeacon) pickInstructionsOfCurrentShard(
 			bsb.StabilityInstructions = append(bsb.StabilityInstructions, inst)
 		}
 	}
+}
+
+func (blockgen *BlkTmplGenerator) buildBuyBondsFromGOVRes(
+	instType string,
+	contentStr string,
+	blkProducerPrivateKey *privacy.SpendingKey,
+) ([]metadata.Transaction, error) {
+	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		return nil, err
+	}
+	buyBondsFromGOVActionContent := map[string]interface{}{}
+	err = json.Unmarshal(contentBytes, &buyBondsFromGOVActionContent)
+	if err != nil {
+		return nil, err
+	}
+	txReqID := buyBondsFromGOVActionContent["txReqId"].(common.Hash)
+	reqMeta := buyBondsFromGOVActionContent["meta"].(metadata.BuySellRequest)
+	if instType == "refund" {
+		refundMeta := metadata.NewResponseBase(txReqID, metadata.ResponseBaseMeta)
+		refundTx := new(transaction.Tx)
+		err := refundTx.InitTxSalary(
+			reqMeta.Amount*reqMeta.BuyPrice,
+			&reqMeta.PaymentAddress,
+			blkProducerPrivateKey,
+			blockgen.chain.config.DataBase,
+			nil,
+		)
+		if err != nil {
+			Logger.log.Error(err)
+			return nil, err
+		}
+		refundTx.SetMetadata(refundMeta)
+		return []metadata.Transaction{refundTx}, nil
+	} else if instType == "accepted" {
+		bondID := reqMeta.TokenID
+		buySellRes := metadata.NewBuySellResponse(
+			txReqID,
+			0, //sellingBondsParam.StartSellingAt,
+			0, //sellingBondsParam.Maturity,
+			0, //sellingBondsParam.BuyBackPrice,
+			bondID[:],
+			metadata.BuyFromGOVResponseMeta,
+		)
+		txTokenVout := transaction.TxTokenVout{
+			Value:          reqMeta.Amount,
+			PaymentAddress: reqMeta.PaymentAddress,
+		}
+		var propertyID [common.HashSize]byte
+		copy(propertyID[:], bondID[:])
+		txTokenData := transaction.TxTokenData{
+			Type:       transaction.CustomTokenInit,
+			Mintable:   true,
+			Amount:     reqMeta.Amount,
+			PropertyID: common.Hash(propertyID),
+			Vins:       []transaction.TxTokenVin{},
+			Vouts:      []transaction.TxTokenVout{txTokenVout},
+		}
+		txTokenData.PropertyName = txTokenData.PropertyID.String()
+		txTokenData.PropertySymbol = txTokenData.PropertyID.String()
+
+		resTx := &transaction.TxCustomToken{
+			TxTokenData: txTokenData,
+		}
+		resTx.Type = common.TxCustomTokenType
+		resTx.SetMetadata(buySellRes)
+		return []metadata.Transaction{resTx}, nil
+	}
+	return []metadata.Transaction{}, nil
+}
+
+func (blockgen *BlkTmplGenerator) buildStabilityTxsFromInstructions(
+	blkProducerPrivateKey *privacy.SpendingKey,
+) ([]metadata.Transaction, error) {
+	bestBeaconState := blockgen.chain.BestState.Beacon
+	stabilityInsts := bestBeaconState.StabilityInstructions
+	resTxs := []metadata.Transaction{}
+	for _, inst := range stabilityInsts {
+		// TODO: will improve the condition later
+		if inst[0] == "stake" || inst[0] == "swap" || inst[0] == "random" {
+			continue
+		}
+		metaType, err := strconv.Atoi(inst[0])
+		if err != nil {
+			return nil, err
+		}
+		instType := inst[2]
+		contentStr := inst[3]
+		txs := []metadata.Transaction{}
+		switch metaType {
+		case metadata.BuyFromGOVRequestMeta:
+			txs, err = blockgen.buildBuyBondsFromGOVRes(instType, contentStr, blkProducerPrivateKey)
+		default:
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		resTxs = append(resTxs, txs...)
+	}
+	return resTxs, nil
 }
 
 // func (blockgen *BlkTmplGenerator) buildIssuingResTxs(

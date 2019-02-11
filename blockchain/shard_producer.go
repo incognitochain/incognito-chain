@@ -60,6 +60,15 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	remainingFund := currentSalaryFund + totalFee + salaryFundAdd - totalSalary
 	coinbases := []metadata.Transaction{salaryTx}
 	txsToAdd = append(coinbases, txsToAdd...)
+
+	// adding stability response txs
+	stabilityResTxs, err := blockgen.buildStabilityTxsFromInstructions(privatekey)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
+	}
+	txsToAdd = append(txsToAdd, stabilityResTxs...)
+
 	//Crossoutputcoint
 	crossOutputCoin := blockgen.getCrossOutputCoin(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight)
 	//Assign Instruction
