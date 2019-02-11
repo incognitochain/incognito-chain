@@ -330,7 +330,7 @@ func (self *BestStateBeacon) GenerateInstruction(
 	//=======Random and Assign if random number is detected
 	// Time to get random number and no block in this epoch get it
 	fmt.Printf("RandomTimestamp %+v \n", self.CurrentRandomTimeStamp)
-	fmt.Printf("============height epoch: %+v, RANDOM TIME: %+v \n", block.Header.Height%common.EPOCH, common.RANDOM_TIME*block.Header.Epoch)
+	fmt.Printf("============height epoch: %+v, RANDOM TIME: %+v \n", block.Header.Height%common.EPOCH, common.RANDOM_TIME)
 	fmt.Printf("============IsGetRandomNumber %+v \n", self.IsGetRandomNumber)
 	if block.Header.Height%common.EPOCH > common.RANDOM_TIME && self.IsGetRandomNumber == false {
 		var err error
