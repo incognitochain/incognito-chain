@@ -55,9 +55,8 @@ type BestStateBeacon struct {
 	CurrentRandomTimeStamp int64 `json:"CurrentRandomTimeStamp"`
 	IsGetRandomNumber      bool  `json:"IsGetRandomNumber"`
 
-	Params                map[string]string `json:"Params,omitempty"`
-	StabilityInfo         StabilityInfo     `json:"StabilityInfo"`
-	StabilityInstructions [][]string        `json:"StabilityInstructions"`
+	Params        map[string]string `json:"Params,omitempty"`
+	StabilityInfo StabilityInfo     `json:"StabilityInfo"`
 
 	// lock sync.RWMutex
 	ShardHandle map[byte]bool `json:"ShardHandle"`
