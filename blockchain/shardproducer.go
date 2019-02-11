@@ -62,14 +62,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	coinbases := []metadata.Transaction{salaryTx}
 	txsToAdd = append(coinbases, txsToAdd...)
 
-	// adding stability response txs
-	stabilityResTxs, err := blockgen.buildStabilityTxsFromInstructions(privatekey)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, err
-	}
-	txsToAdd = append(txsToAdd, stabilityResTxs...)
-
 	//Crossoutputcoint
 	crossOutputCoin := blockgen.getCrossOutputCoin(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight)
 	//Assign Instruction
@@ -109,7 +101,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	}
 
 	// Process stability tx, create response txs if needed
-	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxs(txsToAdd, privatekey)
+	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey)
 	if err != nil {
 		return nil, err
 	}
@@ -198,86 +190,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	block.ProducerSig = sig
 	_ = remainingFund
 	return block, nil
-}
-
-func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, producerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
-	// Get loan request
-	withdrawMeta := tx.GetMetadata().(*metadata.LoanWithdraw)
-	meta, err := blockgen.chain.GetLoanRequestMeta(withdrawMeta.LoanID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Build loan unlock tx
-	unlockMeta := &metadata.LoanUnlock{
-		LoanID:       make([]byte, len(withdrawMeta.LoanID)),
-		MetadataBase: metadata.MetadataBase{Type: metadata.LoanUnlockMeta},
-	}
-	copy(unlockMeta.LoanID, withdrawMeta.LoanID)
-	unlockMetaList := []metadata.Metadata{unlockMeta}
-	amounts := []uint64{meta.LoanAmount}
-	txNormals, err := transaction.BuildCoinbaseTxs([]*privacy.PaymentAddress{meta.ReceiveAddress}, amounts, producerPrivateKey, blockgen.chain.GetDatabase(), unlockMetaList)
-	if err != nil {
-		return nil, errors.Errorf("Error building unlock tx for loan id %x", withdrawMeta.LoanID)
-	}
-	return txNormals[0], nil
-}
-
-func (blockgen *BlkTmplGenerator) buildStabilityResponseTxs(txs []metadata.Transaction, producerPrivateKey *privacy.SpendingKey) ([]metadata.Transaction, error) {
-	respTxs := []metadata.Transaction{}
-	removeIds := []int{}
-	for i, tx := range txs {
-		var respTx metadata.Transaction
-		var err error
-
-		switch tx.GetMetadataType() {
-		case metadata.LoanWithdrawMeta:
-			respTx, err = blockgen.buildLoanResponseTx(tx, producerPrivateKey)
-		}
-
-		if err != nil {
-			// Remove this tx if cannot create corresponding response
-			removeIds = append(removeIds, i)
-		} else if respTx != nil {
-			respTxs = append(respTxs, respTx)
-		}
-	}
-
-	// TODO(@0xbunyip): remove tx from txsToAdd?
-	return respTxs, nil
-}
-
-func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.SpendingKey, shardID byte) ([]metadata.Transaction, error) {
-	// TODO(@0xbunyip): refund bonds in multiple blocks since many refund instructions might come at once and UTXO picking order is not perfect
-	unspentTokenMap := map[string]([]transaction.TxTokenVout){}
-	responses := []metadata.Transaction{}
-	for _, beaconBlock := range beaconBlocks {
-		for _, l := range beaconBlock.Body.Instructions {
-			if len(l) <= 2 {
-				continue
-			}
-			shardToProcess, err := strconv.Atoi(l[1])
-			if err == nil && shardToProcess == int(shardID) {
-				instType, err := strconv.Atoi(l[0])
-				if err != nil {
-					continue
-				}
-				switch instType {
-				case metadata.CrowdsalePaymentMeta:
-					paymentInst, err := ParseCrowdsalePaymentInstruction(l[2])
-					if err != nil {
-						continue
-					}
-
-					tx, err := blockgen.buildPaymentForCrowdsale(paymentInst, unspentTokenMap, producerPrivateKey)
-					if err != nil {
-						responses = append(responses, tx)
-					}
-				}
-			}
-		}
-	}
-	return nil, nil
 }
 
 /*
@@ -513,15 +425,14 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 	return txsToAdd, txToRemove, totalFee
 }
 
-func (blk *ShardBlock) CreateShardToBeaconBlock() *ShardToBeaconBlock {
+func (blk *ShardBlock) CreateShardToBeaconBlock(bcr metadata.BlockchainRetriever) *ShardToBeaconBlock {
 	block := ShardToBeaconBlock{}
 	block.AggregatedSig = blk.AggregatedSig
 	copy(block.ValidatorsIdx, blk.ValidatorsIdx)
 	block.ProducerSig = blk.ProducerSig
 	block.Header = blk.Header
 	block.Instructions = blk.Body.Instructions
-	// TODO(@0xbunyip): provide BlockchainRetriever instead of nil
-	actions := CreateShardActionFromTransaction(blk.Body.Transactions, nil, blk.Header.ShardID)
+	actions := CreateShardActionFromTransaction(blk.Body.Transactions, bcr, blk.Header.ShardID)
 	block.Instructions = append(block.Instructions, actions...)
 	return &block
 }

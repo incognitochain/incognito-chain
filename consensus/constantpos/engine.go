@@ -174,7 +174,7 @@ func (engine *Engine) Start() error {
 										continue
 									}
 
-									newShardToBeaconBlock := shardBlk.CreateShardToBeaconBlock()
+									newShardToBeaconBlock := shardBlk.CreateShardToBeaconBlock(engine.config.BlockChain)
 									newShardToBeaconMsg, err := MakeMsgShardToBeaconBlock(newShardToBeaconBlock)
 									if err == nil {
 										engine.config.Server.PushMessageToBeacon(newShardToBeaconMsg)
