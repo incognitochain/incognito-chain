@@ -25,7 +25,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
 	epoch := blockgen.chain.BestState.Beacon.BeaconEpoch
 	if epoch-blockgen.chain.BestState.Shard[shardID].Epoch > 1 {
-		beaconHeight = blockgen.chain.BestState.Shard[shardID].Epoch * EPOCH
+		beaconHeight = blockgen.chain.BestState.Shard[shardID].Epoch * common.EPOCH
 		epoch = blockgen.chain.BestState.Shard[shardID].Epoch + 1
 	}
 
@@ -80,7 +80,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	swapInstruction := []string{}
 	// Swap instruction only appear when reach the last block in an epoch
 	//@NOTICE: In this block, only pending validator change, shard committees will change in the next block
-	if beaconHeight%EPOCH == 0 {
+	if beaconHeight%common.EPOCH == 0 {
 		swapInstruction, err = CreateSwapAction(shardPendingValidator, shardCommittees, shardID)
 		if err != nil {
 			Logger.log.Error(err)

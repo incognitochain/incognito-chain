@@ -242,3 +242,4 @@ func MultiScalarmult(bases []*EllipticPoint, exponents []*big.Int) (*EllipticPoi
 
 	return result, nil
 }
+
