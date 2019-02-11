@@ -172,6 +172,12 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	//========Store new Beaconblock and new Beacon bestState
 	self.ProcessStoreShardBlock(block)
 
+	// Process stability tx
+	err = self.ProcessLoanForBlock(block)
+	if err != nil {
+		return err
+	}
+
 	//TODO: Remove cross shard block in pool
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 	return nil
@@ -251,7 +257,7 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 		}
 	}
 	// Verify Action
-	actions := CreateShardActionFromTransaction(block.Body.Transactions, shardID)
+	actions := CreateShardActionFromTransaction(block.Body.Transactions, self, shardID)
 	action := []string{}
 	for _, value := range actions {
 		action = append(action, value...)
