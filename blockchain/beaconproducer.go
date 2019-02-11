@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -227,6 +226,7 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 			shardState.Height = shardBlock.Header.Height
 			shardStates[shardID] = append(shardStates[shardID], shardState)
 
+			fmt.Printf("\n \n Instruction in shardBlock %+v, %+v \n \n", shardBlock.Header.Height, instructions)
 			for _, l := range instructions {
 				if l[0] == "stake" {
 					stakers = append(stakers, l)
@@ -249,7 +249,8 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 					copy(tempStaker, newShardCandidate[:])
 				}
 				tempStaker = self.chain.BestState.Beacon.GetValidStakers(tempStaker)
-				if assignShard {
+
+				if len(tempStaker) > 0 && assignShard {
 					validStakers = append(validStakers, []string{"stake", strings.Join(tempStaker, ","), "shard"})
 				} else {
 					validStakers = append(validStakers, []string{"stake", strings.Join(tempStaker, ","), "beacon"})
@@ -308,14 +309,16 @@ func (self *BestStateBeacon) GenerateInstruction(
 	}
 	// TODO: beacon unexpeted swap -> pbft
 	// Beacon normal swap
-	if block.Header.Height%common.EPOCH == common.EPOCH-1 {
+	if block.Header.Height%common.EPOCH == 0 {
 		swapBeaconInstructions := []string{}
 		swappedValidator := []string{}
 		beaconNextCommittee := []string{}
 		_, _, swappedValidator, beaconNextCommittee, _ = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, common.COMMITEES, common.OFFSET)
+		fmt.Println("-------========SwappedValidator", swappedValidator)
+		fmt.Println("-------========beaconNextCommittee", beaconNextCommittee)
 		swapBeaconInstructions = append(swapBeaconInstructions, "swap")
-		swapBeaconInstructions = append(swapBeaconInstructions, beaconNextCommittee...)
-		swapBeaconInstructions = append(swapBeaconInstructions, swappedValidator...)
+		swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(beaconNextCommittee, ","))
+		swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(swappedValidator, ","))
 		swapBeaconInstructions = append(swapBeaconInstructions, "beacon")
 		instructions = append(instructions, swapBeaconInstructions)
 	}
@@ -329,10 +332,14 @@ func (self *BestStateBeacon) GenerateInstruction(
 	//=======Random and Assign if random number is detected
 	// Time to get random number and no block in this epoch get it
 	fmt.Printf("RandomTimestamp %+v \n", self.CurrentRandomTimeStamp)
-	fmt.Printf("============height epoch: %+v, RANDOM TIME: %+v \n", block.Header.Height%common.EPOCH, common.RANDOM_TIME*block.Header.Epoch)
+	fmt.Printf("============height epoch: %+v, RANDOM TIME: %+v \n", block.Header.Height%common.EPOCH, common.RANDOM_TIME)
 	fmt.Printf("============IsGetRandomNumber %+v \n", self.IsGetRandomNumber)
 	if block.Header.Height%common.EPOCH > common.RANDOM_TIME && self.IsGetRandomNumber == false {
-		chainTimeStamp, err := btcapi.GetCurrentChainTimeStamp()
+		var err error
+		// COMMENT FOR TESTING
+		// chainTimeStamp, err := btcapi.GetCurrentChainTimeStamp()
+		// UNCOMMENT FOR TESTING
+		chainTimeStamp := self.CurrentRandomTimeStamp + 1
 		fmt.Printf("============chainTimeStamp %+v \n", chainTimeStamp)
 		if err != nil {
 			panic(err)
@@ -381,11 +388,14 @@ func (self *BestStateBeacon) GetValidStakers(tempStaker []string) []string {
 
 // ["random" "{blockheight}" "{bitcointimestamp}" "{nonce}" "{timestamp}"]
 func GenerateRandomInstruction(timestamp int64, wg *sync.WaitGroup) ([]string, int64) {
-	msg := make(chan string)
-	go btcapi.GenerateRandomNumber(timestamp, msg)
-	res := <-msg
-	reses := strings.Split(res, (","))
+	//COMMENT FOR TESTING
+	// msg := make(chan string)
+	// go btcapi.GenerateRandomNumber(timestamp, msg)
+	// res := <-msg
+	// reses := strings.Split(res, (","))
 	strs := []string{}
+	//UNCOMMENT FOR TESTTING
+	reses := []string{"1000", strconv.Itoa(int(timestamp) + 1), "1000"}
 	strs = append(strs, "random")
 	strs = append(strs, reses...)
 	strs = append(strs, strconv.Itoa(int(timestamp)))
