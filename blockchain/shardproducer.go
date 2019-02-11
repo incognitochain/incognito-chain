@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -125,6 +126,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	//Get user key set
 	userKeySet := cashec.KeySet{}
 	userKeySet.ImportFromPrivateKey(privatekey)
+	fmt.Println("------------------", block.Body.Transactions)
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(block.Body.Transactions)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 	prevBlock := blockgen.chain.BestState.Shard[shardID].BestShardBlock
@@ -419,7 +421,7 @@ func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) 
 	....
 */
 func CreateSwapAction(commitees []string, pendingValidator []string, shardID byte) ([]string, error) {
-	_, _, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, COMMITEES, OFFSET)
+	_, _, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, common.COMMITEES, common.OFFSET)
 	if err != nil {
 		return nil, err
 	}
