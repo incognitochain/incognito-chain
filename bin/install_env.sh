@@ -14,6 +14,7 @@ mv go /usr/local
 
 mkdir ~/go/bin -p
 
+echo "Setup env GOROOT GOPATH..."
 if !(grep -q "GOROOT" ~/.bashrc); then
     echo 'export GOROOT=/usr/local/go' >> ~/.bashrc
     echo 'export GOPATH=$HOME/go' >> ~/.bashrc
