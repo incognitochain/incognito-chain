@@ -352,7 +352,7 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
 	// Verify epoch with parent block
-	if block.Header.Height%EPOCH == 0 && parentBlockInterface.Header.Epoch != block.Header.Epoch-1 {
+	if block.Header.Height%common.EPOCH == 0 && parentBlockInterface.Header.Epoch != block.Header.Epoch-1 {
 		return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
 	}
 	// Verify timestamp with parent block
@@ -455,10 +455,10 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 	if bytes.Compare(self.BestBlockHash.GetBytes(), block.Header.PrevBlockHash.GetBytes()) != 0 {
 		return NewBlockChainError(BlockHeightError, errors.New("Previous us block should be :"+self.BestBlockHash.String()))
 	}
-	if block.Header.Height%EPOCH == 0 && self.BeaconEpoch+1 != block.Header.Epoch {
+	if block.Header.Height%common.EPOCH == 0 && self.BeaconEpoch+1 != block.Header.Epoch {
 		return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
 	}
-	if block.Header.Height%EPOCH != 0 && self.BeaconEpoch != block.Header.Epoch {
+	if block.Header.Height%common.EPOCH != 0 && self.BeaconEpoch != block.Header.Epoch {
 		return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
 	}
 	//=============Verify Stakers
@@ -694,14 +694,14 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		self.CandidateShardWaitingForNextRandom = append(self.CandidateShardWaitingForNextRandom, newShardCandidate...)
 	}
 
-	if self.BeaconHeight%EPOCH == 1 && self.BeaconHeight != 1 {
+	if self.BeaconHeight%common.EPOCH == 1 && self.BeaconHeight != 1 {
 		self.IsGetRandomNumber = false
 		// Begin of each epoch
-	} else if self.BeaconHeight%EPOCH < RANDOM_TIME {
+	} else if self.BeaconHeight%common.EPOCH < common.RANDOM_TIME {
 		// Before get random from bitcoin
-	} else if self.BeaconHeight%EPOCH >= RANDOM_TIME {
+	} else if self.BeaconHeight%common.EPOCH >= common.RANDOM_TIME {
 		// After get random from bitcoin
-		if self.BeaconHeight%EPOCH == RANDOM_TIME {
+		if self.BeaconHeight%common.EPOCH == common.RANDOM_TIME {
 			// snapshot candidate list
 			self.CandidateShardWaitingForCurrentRandom = self.CandidateShardWaitingForNextRandom
 			self.CandidateBeaconWaitingForCurrentRandom = self.CandidateBeaconWaitingForNextRandom
@@ -736,7 +736,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 				return err
 			}
 		}
-	} else if self.BeaconHeight%EPOCH == EPOCH {
+	} else if self.BeaconHeight%common.EPOCH == 0 {
 		// At the end of each epoch, eg: block 200, 400, 600 with epoch is 200 blocks
 		// Swap pending validator in committees, pop some of public key in committees out
 		// ONLY SWAP FOR BEACON
