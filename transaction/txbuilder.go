@@ -33,7 +33,7 @@ func BuildCoinbaseTxs(
 }
 
 func BuildDividendTxs(
-	infos []metadata.DividendInfo,
+	infos []metadata.DividendPayment,
 	proposal *metadata.DividendProposal,
 	producerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
