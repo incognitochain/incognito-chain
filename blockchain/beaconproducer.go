@@ -226,6 +226,7 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 			shardState.Height = shardBlock.Header.Height
 			shardStates[shardID] = append(shardStates[shardID], shardState)
 
+			fmt.Printf("\n \n Instruction in shardBlock %+v, %+v \n \n", shardBlock.Header.Height, instructions)
 			for _, l := range instructions {
 				if l[0] == "stake" {
 					stakers = append(stakers, l)
@@ -248,7 +249,8 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 					copy(tempStaker, newShardCandidate[:])
 				}
 				tempStaker = self.chain.BestState.Beacon.GetValidStakers(tempStaker)
-				if assignShard {
+
+				if len(tempStaker) > 0 && assignShard {
 					validStakers = append(validStakers, []string{"stake", strings.Join(tempStaker, ","), "shard"})
 				} else {
 					validStakers = append(validStakers, []string{"stake", strings.Join(tempStaker, ","), "beacon"})
@@ -307,7 +309,7 @@ func (self *BestStateBeacon) GenerateInstruction(
 	}
 	// TODO: beacon unexpeted swap -> pbft
 	// Beacon normal swap
-	if block.Header.Height%common.EPOCH == common.EPOCH-1 {
+	if block.Header.Height%common.EPOCH == 0 {
 		swapBeaconInstructions := []string{}
 		swappedValidator := []string{}
 		beaconNextCommittee := []string{}
