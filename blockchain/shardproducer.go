@@ -227,7 +227,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxs(txs []metadata.Trans
 		if err != nil {
 			// Remove this tx if cannot create corresponding response
 			removeIds = append(removeIds, i)
-		} else {
+		} else if respTx != nil {
 			respTxs = append(respTxs, respTx)
 		}
 	}
