@@ -136,7 +136,9 @@ func (rpcServer RpcServer) getResponseAddresses(strLoanID string, respType metad
 	addresses := []string{}
 	loanID, err := hex.DecodeString(strLoanID)
 	if err == nil {
-		txHashes, err := (*rpcServer.config.Database).GetLoanTxs(loanID)
+		txHashes := [][]byte{}
+		_ = loanID
+		// txHashes, err := (*rpcServer.config.Database).GetLoanTxs(loanID)
 		fmt.Printf("GetLoanTxs found: %x\n", txHashes)
 		if err == nil {
 			respData := metadata.GetLoanResponses(txHashes, rpcServer.config.BlockChain)

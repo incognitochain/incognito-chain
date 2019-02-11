@@ -21,8 +21,8 @@ func TestPKOneOfMany(t *testing.T) {
 	randoms := make([]*big.Int, privacy.CMRingSize)
 
 	for i := 0; i < privacy.CMRingSize; i++ {
-		snDerivators[i] = privacy.RandBigInt()
-		randoms[i] = privacy.RandBigInt()
+		snDerivators[i] = privacy.RandScalar()
+		randoms[i] = privacy.RandScalar()
 		commitments[i] = privacy.PedCom.CommitAtIndex(snDerivators[i], randoms[i], privacy.SND)
 	}
 

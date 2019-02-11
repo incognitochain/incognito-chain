@@ -222,7 +222,7 @@ func (self *BlockChain) SyncBeacon() error {
 
 				// check shardToBeacon pool state
 				if len(beaconState.State.ShardsPoolState) > 0 {
-					myPoolPending := self.config.ShardToBeaconPool.GetPendingBlockHashes()
+					myPoolPending := self.config.ShardToBeaconPool.GetValidPendingBlockHash()
 					for shardID, peerPoolBlks := range beaconState.State.ShardsPoolState {
 						myShardPoolBlks, ok := myPoolPending[shardID]
 						if ok {

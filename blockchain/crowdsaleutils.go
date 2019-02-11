@@ -2,8 +2,8 @@ package blockchain
 
 import (
 	"fmt"
+	"strconv"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
@@ -14,28 +14,24 @@ import (
 )
 
 func buildPaymentForCoin(
-	txRequest *transaction.TxCustomToken,
+	receiverAddress privacy.PaymentAddress,
 	amount uint64,
 	saleID []byte,
 	producerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
 ) (*transaction.Tx, error) {
 	// Mint and send Constant
-	meta := txRequest.Metadata.(*metadata.CrowdsaleRequest)
 	metaPay := &metadata.CrowdsalePayment{
-		RequestedTxID: &common.Hash{},
-		SaleID:        make([]byte, len(saleID)),
+		SaleID: make([]byte, len(saleID)),
 	}
-	hash := txRequest.Hash()
 	metaPay.Type = metadata.CrowdsalePaymentMeta
-	copy(metaPay.RequestedTxID[:], hash[:])
 	copy(metaPay.SaleID, saleID)
 	metaPayList := []metadata.Metadata{metaPay}
 
 	fmt.Printf("[db] build CST payment: %d\n", amount)
 
 	amounts := []uint64{amount}
-	txs, err := transaction.BuildCoinbaseTxs([]*privacy.PaymentAddress{&meta.PaymentAddress}, amounts, producerPrivateKey, db, metaPayList) // There's only one tx in txs
+	txs, err := transaction.BuildCoinbaseTxs([]*privacy.PaymentAddress{&receiverAddress}, amounts, producerPrivateKey, db, metaPayList) // There's only one tx in txs
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +42,7 @@ func transferTxToken(
 	tokenAmount uint64,
 	unspentTxTokenOuts []transaction.TxTokenVout,
 	tokenID common.Hash,
-	receiverPk []byte,
+	receiverAddress privacy.PaymentAddress,
 	meta metadata.Metadata,
 ) (*transaction.TxCustomToken, int, error) {
 	sumTokens := uint64(0)
@@ -77,7 +73,7 @@ func transferTxToken(
 	}
 	txTokenOuts := []transaction.TxTokenVout{
 		transaction.TxTokenVout{
-			PaymentAddress: privacy.PaymentAddress{Pk: receiverPk}, // TODO(@0xbunyip): send to payment address
+			PaymentAddress: receiverAddress,
 			Value:          tokenAmount,
 		},
 	}
@@ -106,12 +102,12 @@ func transferTxToken(
 func mintTxToken(
 	tokenAmount uint64,
 	tokenID common.Hash,
-	receiverPk []byte,
+	receiverAddress privacy.PaymentAddress,
 	meta metadata.Metadata,
 ) *transaction.TxCustomToken {
 	txTokenOuts := []transaction.TxTokenVout{
 		transaction.TxTokenVout{
-			PaymentAddress: privacy.PaymentAddress{Pk: receiverPk}, // TODO(@0xbunyip): send to payment address
+			PaymentAddress: receiverAddress,
 			Value:          tokenAmount,
 		},
 	}
@@ -130,7 +126,7 @@ func mintTxToken(
 }
 
 func buildPaymentForToken(
-	txRequest *transaction.Tx,
+	receiverAddress privacy.PaymentAddress,
 	tokenAmount uint64,
 	tokenID common.Hash,
 	unspentTokenMap map[string]([]transaction.TxTokenVout),
@@ -141,27 +137,20 @@ func buildPaymentForToken(
 	var err error
 	unspentTxTokenOuts := unspentTokenMap[tokenID.String()]
 	usedID := -1
-	if len(txRequest.Proof.InputCoins) == 0 {
-		return nil, errors.New("Found no sender in request tx")
-	}
-	pubkey := txRequest.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
 
 	// Create metadata for crowdsale payment
 	metaPay := &metadata.CrowdsalePayment{
-		RequestedTxID: &common.Hash{},
-		SaleID:        make([]byte, len(saleID)),
+		SaleID: make([]byte, len(saleID)),
 	}
-	hash := txRequest.Hash()
-	copy(metaPay.RequestedTxID[:], hash[:])
 	copy(metaPay.SaleID, saleID)
 	metaPay.Type = metadata.CrowdsalePaymentMeta
 
 	// Build txcustomtoken
 	if mint {
-		txToken = mintTxToken(tokenAmount, tokenID, pubkey, metaPay)
+		txToken = mintTxToken(tokenAmount, tokenID, receiverAddress, metaPay)
 	} else {
 		fmt.Printf("[db] transferTxToken with unspentTxTokenOuts && tokenAmount:\n%+v\n%d\n", unspentTxTokenOuts, tokenAmount)
-		txToken, usedID, err = transferTxToken(tokenAmount, unspentTxTokenOuts, tokenID, pubkey, metaPay)
+		txToken, usedID, err = transferTxToken(tokenAmount, unspentTxTokenOuts, tokenID, receiverAddress, metaPay)
 		if err != nil {
 			return nil, err
 		}
@@ -176,68 +165,23 @@ func buildPaymentForToken(
 
 // buildPaymentForCrowdsale builds CrowdsalePayment tx sending either CST or Token
 func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
-	tx metadata.Transaction,
-	saleDataMap map[string]*params.SaleData,
+	paymentInst *CrowdsalePaymentInstruction,
 	unspentTokenMap map[string]([]transaction.TxTokenVout),
-	shardID byte,
-	saleID []byte,
 	producerPrivateKey *privacy.SpendingKey,
 ) (metadata.Transaction, error) {
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	saleData := saleDataMap[string(saleID)]
-	metaReq := tx.GetMetadata().(*metadata.CrowdsaleRequest)
-	priceLimit := metaReq.PriceLimit
+	saleID := paymentInst.SaleID
+	saleData, err := blockgen.chain.BestState.Beacon.GetSaleData(saleID)
+	if err != nil {
+		return nil, err
+	}
 	sellingAsset := saleData.SellingAsset
-	buyingAsset := saleData.BuyingAsset
-
-	// Get price for asset
-	buyPrice := blockgen.getAssetPrice(shardID, buyingAsset)
-	sellPrice := blockgen.getAssetPrice(shardID, sellingAsset)
-	if buyPrice == 0 || sellPrice == 0 {
-		buyPrice = saleData.DefaultBuyPrice
-		sellPrice = saleData.DefaultSellPrice
-		if buyPrice == 0 || sellPrice == 0 {
-			return nil, errors.New("Missing price data in block")
-		}
-	}
-	fmt.Printf("[db] buy and sell price: %d %d\n", buyPrice, sellPrice)
-
-	// Check if price limit is not violated
-	if metaReq.LimitSellingAssetPrice && sellPrice > priceLimit {
-		return nil, errors.Errorf("Price limit violated: %d %d", sellPrice, priceLimit)
-	} else if !metaReq.LimitSellingAssetPrice && buyPrice < priceLimit {
-		return nil, errors.Errorf("Price limit violated: %d %d", buyPrice, priceLimit)
-	}
 
 	var txResponse metadata.Transaction
-	err := errors.New("Incorrect assets for crowdsale")
-
-	// Calculate value of asset sent in request tx
-	sentAmount := uint64(0)
-	if buyingAsset.IsEqual(&common.ConstantID) {
-		_, _, sentAmount = tx.GetUniqueReceiver()
-	} else if common.IsBondAsset(&buyingAsset) {
-		_, _, sentAmount = tx.GetTokenUniqueReceiver()
-	}
-	sentAssetValue := sentAmount * buyPrice // in USD
-
-	// Number of asset must pay to user
-	paymentAmount := sentAssetValue / sellPrice
-
-	// Check if there's still enough asset to trade
-	if sentAmount > saleData.BuyingAmount || paymentAmount > saleData.SellingAmount {
-		return nil, errors.New("Crowdsale reached limit")
-	}
-
-	// Update amount of buying/selling asset of the crowdsale
-	saleData.BuyingAmount -= sentAmount
-	saleData.SellingAmount -= paymentAmount
-
 	if sellingAsset.IsEqual(&common.ConstantID) {
-		txToken := tx.(*transaction.TxCustomToken)
 		txResponse, err = buildPaymentForCoin(
-			txToken,
-			sentAmount,
+			paymentInst.PaymentAddress,
+			paymentInst.Amount,
 			saleData.SaleID,
 			producerPrivateKey,
 			blockgen.chain.GetDatabase(),
@@ -258,10 +202,9 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 		}
 
 		mint := false // Mint DCB token, transfer bonds
-		txNormal := tx.(*transaction.Tx)
 		txResponse, err = buildPaymentForToken(
-			txNormal,
-			sentAmount,
+			paymentInst.PaymentAddress,
+			paymentInst.Amount,
 			sellingAsset,
 			unspentTokenMap,
 			saleData.SaleID,
@@ -271,117 +214,29 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	return txResponse, err
 }
 
-// processCrowdsaleRequest gets sale data and creates a CrowdsalePayment for a request
-func (blockgen *BlkTmplGenerator) processCrowdsaleRequest(
-	tx metadata.Transaction,
-	txsPayment []metadata.Transaction,
-	txsToRemove []metadata.Transaction,
-	saleDataMap map[string]*params.SaleData,
-	unspentTokenMap map[string][]transaction.TxTokenVout,
-	shardID byte,
-	producerPrivateKey *privacy.SpendingKey,
-) ([]metadata.Transaction, []metadata.Transaction) {
-	fmt.Printf("[db] inside txsPayment addr: %p\n", &txsPayment)
-	// Create corresponding payment to send selling asset
-	meta := tx.GetMetadata()
-	metaRequest, ok := meta.(*metadata.CrowdsaleRequest)
-	if !ok {
-		txsToRemove = append(txsToRemove, tx)
-		return txsPayment, txsToRemove
+func generateCrowdsalePaymentInstruction(
+	paymentAddress privacy.PaymentAddress,
+	amount uint64,
+	assetID common.Hash,
+	saleID []byte,
+	sentAmount uint64,
+	updateSale bool,
+) ([][]string, error) {
+	inst := &CrowdsalePaymentInstruction{
+		PaymentAddress: paymentAddress,
+		Amount:         amount,
+		AssetID:        assetID,
+		SaleID:         saleID,
+		SentAmount:     sentAmount,
+		UpdateSale:     updateSale,
 	}
-	if _, ok := saleDataMap[string(metaRequest.SaleID)]; !ok {
-		saleData, err := blockgen.chain.GetCrowdsaleData(metaRequest.SaleID)
-		if err != nil {
-			Logger.log.Error(err)
-			txsToRemove = append(txsToRemove, tx)
-			return txsPayment, txsToRemove
-		}
-
-		saleDataMap[string(metaRequest.SaleID)] = saleData
-	}
-
-	// Skip payment if either selling or buying asset is offchain (needs confirmation)
-	saleData := saleDataMap[string(metaRequest.SaleID)]
-	if common.IsOffChainAsset(&saleData.SellingAsset) || common.IsOffChainAsset(&saleData.BuyingAsset) {
-		fmt.Println("[db] crowdsale offchain asset")
-		return txsPayment, txsToRemove
-	}
-
-	txPayment, err := blockgen.buildPaymentForCrowdsale(
-		tx,
-		saleDataMap,
-		unspentTokenMap,
-		shardID,
-		metaRequest.SaleID,
-		producerPrivateKey,
-	)
-	fmt.Printf("[db] txpayment err: %v\n", err)
+	instStr, err := inst.String()
 	if err != nil {
-		Logger.log.Error(err)
-		txsToRemove = append(txsToRemove, tx)
-	} else if txPayment != nil {
-		txsPayment = append(txsPayment, txPayment)
-		fmt.Printf("[db] len(txsPayment) after append: %d\n", len(txsPayment))
-		fmt.Printf("[db] after append txsPayment addr: %p\n", &txsPayment)
+		return nil, err
 	}
-	return txsPayment, txsToRemove
-}
-
-// processCrowdsale finds all CrowdsaleRequests and creates Payments for them
-func (blockgen *BlkTmplGenerator) processCrowdsale(
-	sourceTxns []*metadata.TxDesc,
-	shardID byte,
-	producerPrivateKey *privacy.SpendingKey,
-) ([]metadata.Transaction, []metadata.Transaction) {
-	txsToRemove := []metadata.Transaction{}
-	txsPayment := []metadata.Transaction{}
-	fmt.Printf("[db] outside txsPayment addr: %p\n", &txsPayment)
-
-	// Get unspent bond tx to spend if needed
-	unspentTokenMap := map[string]([]transaction.TxTokenVout){}
-	saleDataMap := map[string]*params.SaleData{}
-	for _, txDesc := range sourceTxns {
-		switch txDesc.Tx.GetMetadataType() {
-		case metadata.CrowdsaleRequestMeta:
-			{
-				txsPayment, txsToRemove = blockgen.processCrowdsaleRequest(
-					txDesc.Tx,
-					txsPayment,
-					txsToRemove,
-					saleDataMap,
-					unspentTokenMap,
-					shardID,
-					producerPrivateKey,
-				)
-				fmt.Printf("[db] len(txsPayment) after process: %d\n", len(txsPayment))
-			}
-		}
-	}
-	txsPayment = txsPayment[:cap(txsPayment)]
-	fmt.Printf("[db] process crowdsale len(txsPayment): %d\n", len(txsPayment))
-	fmt.Printf("[db] process crowdsale len(txsToRemove): %d\n", len(txsToRemove))
-	return txsPayment, txsToRemove
-}
-
-func (blockgen *BlkTmplGenerator) getAssetPrice(shardID byte, assetID common.Hash) uint64 {
-	price := uint64(0)
-	//if common.IsBondAsset(&assetID) {
-	//	if blockgen.chain.BestState[shardID].BestBlock.Header.Oracle.Bonds != nil {
-	//		price = blockgen.chain.BestState[shardID].BestBlock.Header.Oracle.Bonds[assetID.String()]
-	//	}
-	//} else if blockgen.chain.BestState[shardID].BestBlock.Header.Oracle != nil {
-	//	oracle := blockgen.chain.BestState[shardID].BestBlock.Header.Oracle
-	//	if assetID.IsEqual(&common.ConstantID) {
-	//		price = oracle.Constant
-	//	} else if assetID.IsEqual(&common.DCBTokenID) {
-	//		price = oracle.DCBToken
-	//	} else if assetID.IsEqual(&common.GOVTokenID) {
-	//		price = oracle.GOVToken
-	//	} else if assetID.IsEqual(&common.ETHAssetID) {
-	//		price = oracle.ETH
-	//	} else if assetID.IsEqual(&common.BTCAssetID) {
-	//		price = oracle.BTC
-	//	}
-	//}
-	return price
+	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
+	dcbShardID := common.GetShardIDFromLastByte(dcbPk[len(dcbPk)-1])
+	paymentInst := []string{strconv.Itoa(metadata.CrowdsalePaymentMeta), strconv.Itoa(int(dcbShardID)), instStr}
+	return [][]string{paymentInst}, nil
 }

@@ -98,7 +98,7 @@ func (bsReq *BuySellRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (bsReq *BuySellRequest) BuildReqActions(tx Transaction, shardID byte) ([][]string, error) {
+func (bsReq *BuySellRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
 	actionContent := map[string]interface{}{
 		"txReqId": *(tx.Hash()),
 		"meta":    *bsReq,

@@ -66,8 +66,8 @@ const (
 
 // board types
 const (
-	DCB = 1
-	GOV = 2
+	DCBBoard = byte(1)
+	GOVBoard = byte(2)
 )
 
 // special token ids (aka. PropertyID in custom token)
@@ -97,4 +97,8 @@ const (
 const (
 	// SHARD_NUMBER = 4
 	SHARD_NUMBER = 1 //single-node mode
+	EPOCH        = 100
+	RANDOM_TIME  = 20
+	COMMITEES    = 1
+	OFFSET       = 1
 )
