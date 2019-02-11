@@ -3,7 +3,6 @@ package params
 import "github.com/ninjadotorg/constant/common"
 
 type Oracle struct {
-	// TODO(@0xankylosaurus): generic prices (ETH, BTC, ...) instead of just bonds
 	Bonds    map[string]uint64 // key: bondTypeID, value: price
 	DCBToken uint64            // against USD
 	GOVToken uint64            // against USD
@@ -51,6 +50,7 @@ type DCBParams struct {
 	MinCMBApprovalRequire    uint8
 	LateWithdrawResponseFine uint64 // CST penalty for each CMB's late withdraw response
 	SaleDCBTokensByUSDData   *SaleDCBTokensByUSDData
+	DividendAmount           uint64 // maximum total Constant to pay dividend; might be less if Institution's fund ran out
 
 	// TODO(@0xbunyip): read loan params from proposal instead of storing and reading separately
 	ListLoanParams []LoanParams // params for collateralized loans of Constant
@@ -62,6 +62,7 @@ func NewDCBParams(
 	minCMBApprovalRequire uint8,
 	lateWithdrawResponseFine uint64,
 	saleDCBTokensByUSDData *SaleDCBTokensByUSDData,
+	dividendAmount uint64,
 	listLoanParams []LoanParams,
 ) *DCBParams {
 	return &DCBParams{
@@ -70,6 +71,7 @@ func NewDCBParams(
 		MinCMBApprovalRequire:    minCMBApprovalRequire,
 		LateWithdrawResponseFine: lateWithdrawResponseFine,
 		SaleDCBTokensByUSDData:   saleDCBTokensByUSDData,
+		DividendAmount:           dividendAmount,
 		ListLoanParams:           listLoanParams,
 	}
 }
@@ -94,6 +96,7 @@ func NewDCBParamsFromJson(rawData interface{}) *DCBParams {
 	minLoanResponseRequire := uint8(DCBParams["MinLoanResponseRequire"].(float64))
 	minCMBApprovalRequire := uint8(DCBParams["MinCMBApprovalRequire"].(float64))
 	lateWithdrawResponseFine := uint64(DCBParams["LateWithdrawResponseFine"].(float64))
+	dividendAmount := uint64(DCBParams["DividendAmount"].(float64))
 
 	saleDCBTokensByUSDData := NewSaleDCBTokensByUSDDataFromJson(DCBParams["SaleDCBTokensByUSDData"])
 
@@ -104,6 +107,7 @@ func NewDCBParamsFromJson(rawData interface{}) *DCBParams {
 		minCMBApprovalRequire,
 		lateWithdrawResponseFine,
 		saleDCBTokensByUSDData,
+		dividendAmount,
 		listLoanParams,
 	)
 }
@@ -170,6 +174,7 @@ func (dcbParams *DCBParams) Hash() *common.Hash {
 	record += string(dcbParams.MinLoanResponseRequire)
 	record += string(dcbParams.MinCMBApprovalRequire)
 	record += string(dcbParams.LateWithdrawResponseFine)
+	record += string(dcbParams.DividendAmount)
 	for _, i := range dcbParams.ListLoanParams {
 		record += string(i.InterestRate)
 		record += string(i.Maturity)

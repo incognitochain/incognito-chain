@@ -10,13 +10,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 )
 
-type DividendProposal struct {
-	TotalAmount uint64 // total Constant to pay dividend
-	PayoutID    uint64 // increasing ID for each type of token
-	TokenID     *common.Hash
-}
-
-type DividendInfo struct {
+type DividendPayment struct {
 	TokenHolder privacy.PaymentAddress
 	Amount      uint64
 }

@@ -208,7 +208,7 @@ func buildStabilityActions(txs []metadata.Transaction, bcr metadata.BlockchainRe
 // 			return nil, 0, err
 // 		}
 
-// 		infos := []metadata.DividendInfo{}
+// 		infos := []metadata.DividendPayment{}
 // 		// Build tx to pay dividend to each holder
 // 		for i, holder := range tokenHolders {
 // 			holderAddrInBytes, _, err := base58.Base58Check{}.Decode(holder)
@@ -216,7 +216,7 @@ func buildStabilityActions(txs []metadata.Transaction, bcr metadata.BlockchainRe
 // 				return nil, 0, err
 // 			}
 // 			holderAddress := (&privacy.PaymentAddress{}).SetBytes(holderAddrInBytes)
-// 			info := metadata.DividendInfo{
+// 			info := metadata.DividendPayment{
 // 				TokenHolder: *holderAddress,
 // 				Amount:      amounts[i] / totalTokenSupply,
 // 			}

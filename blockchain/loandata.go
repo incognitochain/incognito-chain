@@ -22,6 +22,8 @@ var (
 	loanIDKeyPrefix   = []byte("loanID-")
 	loanRespKeyPrefix = []byte("loanResp-")
 	saleDataPrefix    = []byte("sale-")
+	dividendPrefixDCB = []byte("divDCB")
+	dividendPrefixGOV = []byte("divGOV")
 )
 
 func getLoanRequestKeyBeacon(loanID []byte) string {
@@ -121,4 +123,23 @@ func ParseCrowdsalePaymentInstruction(data string) (*CrowdsalePaymentInstruction
 		return nil, err
 	}
 	return inst, nil
+}
+
+func getDCBDividendKeyBeacon() string {
+	key := dividendPrefixDCB
+	return key
+}
+
+func getDividendValueBeacon(amounts []uint64) string {
+	value, _ := json.Marshal(amounts)
+	return string(value)
+}
+
+func parseDividendValueBeacon(value string) ([]uint64, error) {
+	data := []uint64{}
+	err := json.Unmarshal([]byte(value), &data)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }

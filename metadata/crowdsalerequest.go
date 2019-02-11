@@ -142,7 +142,6 @@ func (csReq *CrowdsaleRequest) BuildReqActions(txr Transaction, bcr BlockchainRe
 		sentAmount,
 	)
 	lrAction := []string{strconv.Itoa(CrowdsaleRequestMeta), lrActionValue}
-	// TODO(@0xbunyip): BuildReqActions should return []string only?
 	return [][]string{lrAction}, nil
 }
 

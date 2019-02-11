@@ -107,7 +107,8 @@ func (bsb *BestStateBeacon) processAcceptDCBProposalInstruction(inst []string) e
 	if err != nil {
 		return err
 	}
-	// Store saledata in db
+
+	// Store saledata in state
 	for _, data := range dcbParams.ListSaleData {
 		key := getSaleDataKeyBeacon(data.SaleID)
 		if _, ok := bsb.Params[key]; ok {
@@ -115,6 +116,21 @@ func (bsb *BestStateBeacon) processAcceptDCBProposalInstruction(inst []string) e
 			continue
 		}
 		value := getSaleDataValueBeacon(&data)
+		bsb.Params[key] = value
+	}
+
+	// Start dividend payments if needed
+	if dcbParams.DividendAmount > 0 {
+		key := getDCBDividendKeyBeacon()
+		dividendAmounts := []uint64{}
+		if value, ok := bsb.Params[key]; ok {
+			dividendAmounts, err = parseDividendValueBeacon(value)
+			if err != nil {
+				return err
+			}
+		}
+		dividendAmounts = append(dividendAmounts, dcbParams.DividendAmount)
+		value := getDividendValueBeacon(dividendAmounts)
 		bsb.Params[key] = value
 	}
 	return nil
