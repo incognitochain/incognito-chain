@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -313,9 +312,11 @@ func (self *BestStateBeacon) GenerateInstruction(
 		swappedValidator := []string{}
 		beaconNextCommittee := []string{}
 		_, _, swappedValidator, beaconNextCommittee, _ = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, common.COMMITEES, common.OFFSET)
+		fmt.Println("-------========SwappedValidator", swappedValidator)
+		fmt.Println("-------========beaconNextCommittee", beaconNextCommittee)
 		swapBeaconInstructions = append(swapBeaconInstructions, "swap")
-		swapBeaconInstructions = append(swapBeaconInstructions, beaconNextCommittee...)
-		swapBeaconInstructions = append(swapBeaconInstructions, swappedValidator...)
+		swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(beaconNextCommittee, ","))
+		swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(swappedValidator, ","))
 		swapBeaconInstructions = append(swapBeaconInstructions, "beacon")
 		instructions = append(instructions, swapBeaconInstructions)
 	}
@@ -332,7 +333,11 @@ func (self *BestStateBeacon) GenerateInstruction(
 	fmt.Printf("============height epoch: %+v, RANDOM TIME: %+v \n", block.Header.Height%common.EPOCH, common.RANDOM_TIME*block.Header.Epoch)
 	fmt.Printf("============IsGetRandomNumber %+v \n", self.IsGetRandomNumber)
 	if block.Header.Height%common.EPOCH > common.RANDOM_TIME && self.IsGetRandomNumber == false {
-		chainTimeStamp, err := btcapi.GetCurrentChainTimeStamp()
+		var err error
+		// COMMENT FOR TESTING
+		// chainTimeStamp, err := btcapi.GetCurrentChainTimeStamp()
+		// UNCOMMENT FOR TESTING
+		chainTimeStamp := self.CurrentRandomTimeStamp + 1
 		fmt.Printf("============chainTimeStamp %+v \n", chainTimeStamp)
 		if err != nil {
 			panic(err)
@@ -381,11 +386,14 @@ func (self *BestStateBeacon) GetValidStakers(tempStaker []string) []string {
 
 // ["random" "{blockheight}" "{bitcointimestamp}" "{nonce}" "{timestamp}"]
 func GenerateRandomInstruction(timestamp int64, wg *sync.WaitGroup) ([]string, int64) {
-	msg := make(chan string)
-	go btcapi.GenerateRandomNumber(timestamp, msg)
-	res := <-msg
-	reses := strings.Split(res, (","))
+	//COMMENT FOR TESTING
+	// msg := make(chan string)
+	// go btcapi.GenerateRandomNumber(timestamp, msg)
+	// res := <-msg
+	// reses := strings.Split(res, (","))
 	strs := []string{}
+	//UNCOMMENT FOR TESTTING
+	reses := []string{"1000", strconv.Itoa(int(timestamp) + 1), "1000"}
 	strs = append(strs, "random")
 	strs = append(strs, reses...)
 	strs = append(strs, strconv.Itoa(int(timestamp)))

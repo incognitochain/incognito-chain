@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 )
@@ -533,26 +532,26 @@ func (self *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock)
 		return NewBlockChainError(HashError, errors.New("Error verify shard validator root"))
 	}
 
-	instructions := block.Body.Instructions
-
-	for _, l := range instructions {
-		if l[0] == "random" {
-			temp, err := strconv.Atoi(l[3])
-			if err != nil {
-				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-				return NewBlockChainError(UnExpectedError, err)
-			}
-			isOk, err = btcapi.VerifyNonceWithTimestamp(self.CurrentRandomTimeStamp, int64(temp))
-			Logger.log.Infof("Verify Random number %+v", isOk)
-			if err != nil {
-				Logger.log.Error("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-				return NewBlockChainError(UnExpectedError, err)
-			}
-			if !isOk {
-				return NewBlockChainError(RandomError, errors.New("Error verify random number"))
-			}
-		}
-	}
+	// COMMENT FOR TESTING
+	// instructions := block.Body.Instructions
+	// for _, l := range instructions {
+	// 	if l[0] == "random" {
+	// 		temp, err := strconv.Atoi(l[3])
+	// 		if err != nil {
+	// 			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+	// 			return NewBlockChainError(UnExpectedError, err)
+	// 		}
+	// 		isOk, err = btcapi.VerifyNonceWithTimestamp(self.CurrentRandomTimeStamp, int64(temp))
+	// 		Logger.log.Infof("Verify Random number %+v", isOk)
+	// 		if err != nil {
+	// 			Logger.log.Error("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+	// 			return NewBlockChainError(UnExpectedError, err)
+	// 		}
+	// 		if !isOk {
+	// 			return NewBlockChainError(RandomError, errors.New("Error verify random number"))
+	// 		}
+	// 	}
+	// }
 	return nil
 }
 
@@ -612,27 +611,27 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			delete(self.Params, l[1])
 		}
 		if l[0] == "swap" {
+			fmt.Println("---------------============= SWAP", l)
 			// format
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
 			inPubkeys := strings.Split(l[1], ",")
 			outPubkeys := strings.Split(l[2], ",")
-			if len(l) > 4 {
-				if l[3] == "shard" {
-					temp, err := strconv.Atoi(l[4])
-					if err != nil {
-						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-						return NewBlockChainError(UnExpectedError, err)
-					}
-					shardID := byte(temp)
-					// delete in public key out of sharding pending validator list
+			fmt.Println("---------------============= SWAP inPubkeys", inPubkeys)
+			fmt.Println("---------------============= SWAP outPubkeys", outPubkeys)
+
+			fmt.Println("---------------============= SWAP len inPubkeys", len(inPubkeys))
+			fmt.Println("---------------============= SWAP len outPubkeys", len(outPubkeys))
+			if l[3] == "shard" {
+				temp, err := strconv.Atoi(l[4])
+				if err != nil {
+					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+					return NewBlockChainError(UnExpectedError, err)
+				}
+				shardID := byte(temp)
+				// delete in public key out of sharding pending validator list
+				if len(inPubkeys) > 0 {
 					self.ShardPendingValidator[shardID], err = RemoveValidator(self.ShardPendingValidator[shardID], inPubkeys)
-					if err != nil {
-						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-						return NewBlockChainError(UnExpectedError, err)
-					}
-					// delete out public key out of current committees
-					self.ShardCommittee[shardID], err = RemoveValidator(self.ShardPendingValidator[shardID], outPubkeys)
 					if err != nil {
 						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 						return NewBlockChainError(UnExpectedError, err)
@@ -640,19 +639,31 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 					// append in public key to committees
 					self.ShardCommittee[shardID] = append(self.ShardCommittee[shardID], inPubkeys...)
 				}
+				// delete out public key out of current committees
+				if len(outPubkeys) > 0 {
+					self.ShardCommittee[shardID], err = RemoveValidator(self.ShardPendingValidator[shardID], outPubkeys)
+					if err != nil {
+						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+						return NewBlockChainError(UnExpectedError, err)
+					}
+				}
 			} else if l[3] == "beacon" {
 				var err error
-				self.BeaconPendingValidator, err = RemoveValidator(self.BeaconPendingValidator, inPubkeys)
-				if err != nil {
-					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err)
+				if len(inPubkeys) > 0 {
+					self.BeaconPendingValidator, err = RemoveValidator(self.BeaconPendingValidator, inPubkeys)
+					if err != nil {
+						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+						return NewBlockChainError(UnExpectedError, err)
+					}
+					self.BeaconCommittee = append(self.BeaconCommittee, inPubkeys...)
 				}
-				self.BeaconCommittee, err = RemoveValidator(self.BeaconCommittee, outPubkeys)
-				if err != nil {
-					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err)
+				if len(outPubkeys) > 0 {
+					self.BeaconCommittee, err = RemoveValidator(self.BeaconCommittee, outPubkeys)
+					if err != nil {
+						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+						return NewBlockChainError(UnExpectedError, err)
+					}
 				}
-				self.BeaconCommittee = append(self.BeaconCommittee, inPubkeys...)
 			}
 		}
 		// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
@@ -830,7 +841,7 @@ func SwapValidator(pendingValidators []string, currentValidators []string, maxCo
 		panic("Committee can't be zero")
 	}
 	if offset == 0 {
-		return nil, pendingValidators, currentValidators, nil, errors.New("Can't not swap 0 validator")
+		return []string{}, pendingValidators, currentValidators, []string{}, errors.New("Can't not swap 0 validator")
 	}
 	// if number of pending validator is less or equal than offset, set offset equal to number of pending validator
 	if offset > len(pendingValidators) {
@@ -838,10 +849,10 @@ func SwapValidator(pendingValidators []string, currentValidators []string, maxCo
 	}
 	// if swap offset = 0 then do nothing
 	if offset == 0 {
-		return nil, pendingValidators, currentValidators, nil, errors.New("No pending validator for swapping")
+		return pendingValidators, currentValidators, []string{}, []string{}, errors.New("No pending validator for swapping")
 	}
 	if offset > maxCommittee {
-		return nil, pendingValidators, currentValidators, nil, errors.New("Trying to swap too many validator")
+		return pendingValidators, currentValidators, []string{}, []string{}, errors.New("Trying to swap too many validator")
 	}
 	tempValidators := []string{}
 	swapValidator := []string{}
