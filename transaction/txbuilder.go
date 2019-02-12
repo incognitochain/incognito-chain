@@ -34,7 +34,7 @@ func BuildCoinbaseTxs(
 
 func BuildDividendTxs(
 	infos []metadata.DividendPayment,
-	proposal *metadata.DividendProposal,
+	// proposal *metadata.DividendProposal,
 	producerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
 ) ([]*Tx, error) {
@@ -46,8 +46,8 @@ func BuildDividendTxs(
 		paymentAddress := info.TokenHolder
 		paymentAddresses = append(paymentAddresses, &paymentAddress)
 		dividendMeta := &metadata.Dividend{
-			PayoutID:       proposal.PayoutID,
-			TokenID:        proposal.TokenID,
+			// PayoutID:       proposal.PayoutID,
+			// TokenID:        proposal.TokenID,
 			PaymentAddress: paymentAddress,
 			MetadataBase:   metadata.MetadataBase{Type: metadata.DividendMeta},
 		}

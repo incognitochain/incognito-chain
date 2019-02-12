@@ -73,9 +73,10 @@ var (
 	crowdsalePrefix = []byte("crowdsale-")
 
 	// dividend
-	Unreward = []byte("unreward")
-	Spent    = []byte("spent")
-	Unspent  = []byte("unspent")
+	dividendReceiversPrefix = []byte("divRec")
+	Unreward                = []byte("unreward")
+	Spent                   = []byte("spent")
+	Unspent                 = []byte("unspent")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {
