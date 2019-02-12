@@ -72,6 +72,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		return nil, err
 	}
 	assignInstructions := GetAssingInstructionFromBeaconBlock(beaconBlocks, shardID)
+	fmt.Println("Shard Block Producer AssignInstructions ", assignInstructions)
 	shardPendingValidator := blockgen.chain.BestState.Shard[shardID].ShardPendingValidator
 	shardCommittees := blockgen.chain.BestState.Shard[shardID].ShardCommittee
 	for _, assignInstruction := range assignInstructions {
