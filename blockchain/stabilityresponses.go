@@ -153,17 +153,21 @@ func buildStabilityInstructions(
 		}
 	}
 	// update params in beststate
-	updateParamsInBestState(beaconBestState, accumulativeValues)
+	updateParamsFromBeaconBestState(beaconBestState, accumulativeValues)
 	return instructions, nil
 }
 
-func updateParamsInBestState(
+func updateParamsFromBeaconBestState(
 	beaconBestState *BestStateBeacon,
 	accumulativeValues *accumulativeValues,
 ) {
 	beaconBestState.StabilityInfo.SalaryFund += (accumulativeValues.incomeFromBonds + accumulativeValues.incomeFromGOVTokens)
-	beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= accumulativeValues.bondsSold
-	beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens.GOVTokensToSell -= accumulativeValues.govTokensSold
+	if beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SellingBonds != nil {
+		beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= accumulativeValues.bondsSold
+	}
+	if beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens != nil {
+		beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens.GOVTokensToSell -= accumulativeValues.govTokensSold
+	}
 
 	// reset gov values
 	accumulativeValues.govTokensSold = 0
