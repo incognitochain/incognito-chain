@@ -15,8 +15,8 @@ const (
 )
 
 type MessagePeerState struct {
-	Beacon    blockchain.BeaconChainState
-	Shards    map[byte]blockchain.ShardChainState
+	Beacon    blockchain.ChainState
+	Shards    map[byte]blockchain.ChainState
 	Timestamp int64
 	SenderID  string
 }
