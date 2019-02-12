@@ -72,21 +72,27 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		return nil, err
 	}
 	assignInstructions := GetAssingInstructionFromBeaconBlock(beaconBlocks, shardID)
+	fmt.Println("Shard Block Producer AssignInstructions ", assignInstructions)
 	shardPendingValidator := blockgen.chain.BestState.Shard[shardID].ShardPendingValidator
 	shardCommittees := blockgen.chain.BestState.Shard[shardID].ShardCommittee
 	for _, assignInstruction := range assignInstructions {
 		shardPendingValidator = append(shardPendingValidator, strings.Split(assignInstruction[1], ",")...)
 	}
+	fmt.Println("Shard Producer: shardPendingValidator", shardPendingValidator)
+	fmt.Println("Shard Producer: shardCommitee", shardCommittees)
 	//Swap instruction
 	instructions := [][]string{}
 	swapInstruction := []string{}
 	// Swap instruction only appear when reach the last block in an epoch
 	//@NOTICE: In this block, only pending validator change, shard committees will change in the next block
 	if beaconHeight%common.EPOCH == 0 {
-		swapInstruction, err = CreateSwapAction(shardPendingValidator, shardCommittees, shardID)
-		if err != nil {
-			Logger.log.Error(err)
-			return nil, err
+		if len(shardPendingValidator) > 0 {
+			swapInstruction, err = CreateSwapAction(shardPendingValidator, shardCommittees, shardID)
+			fmt.Println("Shard Producer: swapInstruction", swapInstruction)
+			if err != nil {
+				Logger.log.Error(err)
+				return nil, err
+			}
 		}
 	}
 	if !reflect.DeepEqual(swapInstruction, []string{}) {
@@ -341,7 +347,9 @@ func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) 
 	- bpft protocol: swap
 	....
 */
-func CreateSwapAction(commitees []string, pendingValidator []string, shardID byte) ([]string, error) {
+func CreateSwapAction(pendingValidator []string, commitees []string, shardID byte) ([]string, error) {
+	fmt.Println("Shard Producer/Create Swap Action: pendingValidator", pendingValidator)
+	fmt.Println("Shard Producer/Create Swap Action: commitees", commitees)
 	_, _, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, common.COMMITEES, common.OFFSET)
 	if err != nil {
 		return nil, err
