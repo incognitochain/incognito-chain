@@ -39,8 +39,8 @@ func (ciphertext *Ciphertext) SetBytes(bytes []byte) error {
 	return nil
 }
 
-// AdvanceEncrypt encrypts message with any size, using Publickey to encrypt
-func AdvanceEncrypt(msg []byte, publicKey *EllipticPoint) (ciphertext *Ciphertext, err error) {
+// HybridEncrypt encrypts message with any size, using Publickey to encrypt
+func HybridEncrypt(msg []byte, publicKey *EllipticPoint) (ciphertext *Ciphertext, err error) {
 	ciphertext = new(Ciphertext)
 	// Generate a AES key as the abscissa of a random elliptic point
 	aesKeyPoint := new(EllipticPoint)
@@ -67,7 +67,7 @@ func AdvanceEncrypt(msg []byte, publicKey *EllipticPoint) (ciphertext *Ciphertex
 	return ciphertext, nil
 }
 
-func AdvanceDecrypt(ciphertext *Ciphertext, privateKey *big.Int) (msg []byte, err error) {
+func HybridDecrypt(ciphertext *Ciphertext, privateKey *big.Int) (msg []byte, err error) {
 	// Validate ciphertext
 	if ciphertext.IsNil() {
 		return []byte{}, errors.New("ciphertext must not be nil")

@@ -251,11 +251,12 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 					copy(tempStaker, newShardCandidate[:])
 				}
 				tempStaker = self.chain.BestState.Beacon.GetValidStakers(tempStaker)
-
-				if len(tempStaker) > 0 && assignShard {
-					validStakers = append(validStakers, []string{"stake", strings.Join(tempStaker, ","), "shard"})
-				} else {
-					validStakers = append(validStakers, []string{"stake", strings.Join(tempStaker, ","), "beacon"})
+				if len(tempStaker) > 0 {
+					if assignShard {
+						validStakers = append(validStakers, []string{"stake", strings.Join(tempStaker, ","), "shard"})
+					} else {
+						validStakers = append(validStakers, []string{"stake", strings.Join(tempStaker, ","), "beacon"})
+					}
 				}
 			}
 			// format
