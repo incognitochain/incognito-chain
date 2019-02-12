@@ -22,8 +22,6 @@ RUN cd /root/go/src/github.com/ninjadotorg/constant && \
     dep ensure -v
 RUN cd /root/go/src/github.com/ninjadotorg/constant && \
     /usr/local/go/bin/go build -o constant
-RUN cd /root/go/src/github.com/ninjadotorg/constant/bootnode && \
-    /usr/local/go/bin/go build -o bootnode *.go
 
 COPY ./run_constant.sh /
 RUN chmod +x /run_constant.sh
