@@ -9,4 +9,4 @@ ADD ./run_constant.sh /
 RUN chmod +x /run_bootnode.sh
 RUN chmod +x /run_constant.sh
 
-CMD ["/bin/bash"]
+CMD ["/bin/sh"]
