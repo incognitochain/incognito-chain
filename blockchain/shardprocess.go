@@ -71,10 +71,6 @@ func (self *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	blockHash := block.Hash().String()
 	Logger.log.Debugf("Process store block %+v", blockHash)
 
-	if err := self.BestState.Shard[block.Header.ShardID].Update(block, nil); err != nil {
-		return err
-	}
-
 	if err := self.StoreShardBlock(block); err != nil {
 		return err
 	}
@@ -446,9 +442,13 @@ func (self *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBloc
 			}
 		}
 	}
+	fmt.Println("Shard Process/Update: ALL Instruction", block.Body.Instructions)
 	// Swap committee
 	for _, l := range block.Body.Instructions {
+		fmt.Println("Shard Process/Update: Instruction", l)
 		if l[0] == "swap" {
+			fmt.Println("Shard Process/Update: ShardPendingValidator", self.ShardPendingValidator)
+			fmt.Println("Shard Process/Update: ShardCommittee", self.ShardCommittee)
 			self.ShardPendingValidator, self.ShardCommittee, shardSwapedCommittees, shardNewCommittees, err = SwapValidator(self.ShardPendingValidator, self.ShardCommittee, common.COMMITEES, common.OFFSET)
 			if err != nil {
 				Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
@@ -490,7 +490,7 @@ func (self *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlock, sh
 	}
 	isOk = VerifyHashFromStringArray(self.ShardPendingValidator, block.Header.PendingValidatorRoot)
 	if !isOk {
-		return NewBlockChainError(HashError, errors.New("Error verify Pendinging validator root"))
+		return NewBlockChainError(HashError, errors.New("Error verify Pending validator root"))
 	}
 	Logger.log.Debugf("SHARD %+v | Finish VerifyPostProcessing Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	return nil
