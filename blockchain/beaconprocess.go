@@ -508,7 +508,7 @@ func (self *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock)
 	strs = append(strs, self.BeaconPendingValidator...)
 	isOk = VerifyHashFromStringArray(strs, block.Header.ValidatorsRoot)
 	if !isOk {
-		return NewBlockChainError(HashError, errors.New("Error verify Validator root"))
+		return NewBlockChainError(HashError, errors.New("Error verify Beacon Validator root"))
 	}
 
 	strs = []string{}
@@ -695,6 +695,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	} else {
 		self.CandidateBeaconWaitingForNextRandom = append(self.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
 		self.CandidateShardWaitingForNextRandom = append(self.CandidateShardWaitingForNextRandom, newShardCandidate...)
+		fmt.Println("Beacon Process/Before: CandidateShardWaitingForNextRandom: ", self.CandidateShardWaitingForNextRandom)
 	}
 
 	if self.BeaconHeight%common.EPOCH == 1 && self.BeaconHeight != 1 {
@@ -708,9 +709,12 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			// snapshot candidate list
 			self.CandidateShardWaitingForCurrentRandom = self.CandidateShardWaitingForNextRandom
 			self.CandidateBeaconWaitingForCurrentRandom = self.CandidateBeaconWaitingForNextRandom
+			fmt.Println("==================Beacon Process: Snapshot candidate====================")
+			fmt.Println("Beacon Process: CandidateShardWaitingForCurrentRandom: ", self.CandidateShardWaitingForCurrentRandom)
 			// reset candidate list
 			self.CandidateShardWaitingForNextRandom = []string{}
 			self.CandidateBeaconWaitingForNextRandom = []string{}
+			fmt.Println("Beacon Process/After: CandidateShardWaitingForNextRandom: ", self.CandidateShardWaitingForNextRandom)
 			// assign random timestamp
 			self.CurrentRandomTimeStamp = newBlock.Header.Timestamp
 		}
@@ -719,6 +723,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		// assign CandidateShardWaitingForCurrentRandom to ShardPendingValidator with CurrentRandom
 		if randomFlag {
 			self.IsGetRandomNumber = true
+			fmt.Println("Beacon Process/Update/RandomFlag: Shard Candidate Waiting for Current Random Number", self.CandidateShardWaitingForCurrentRandom)
 			err := AssignValidatorShard(self.ShardPendingValidator, self.CandidateShardWaitingForCurrentRandom, self.CurrentRandomNumber)
 			if err != nil {
 				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
@@ -726,6 +731,7 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			}
 			// delete CandidateShardWaitingForCurrentRandom list
 			self.CandidateShardWaitingForCurrentRandom = []string{}
+			fmt.Println("Beacon Process/Update/RandomFalg: Shard Pending Validator", self.ShardPendingValidator)
 			// Shuffle candidate
 			// shuffle CandidateBeaconWaitingForCurrentRandom with current random number
 			newBeaconPendingValidator, err := ShuffleCandidate(self.CandidateBeaconWaitingForCurrentRandom, self.CurrentRandomNumber)
