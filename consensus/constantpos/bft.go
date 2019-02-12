@@ -42,7 +42,6 @@ type BFTProtocol struct {
 }
 
 func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (interface{}, error) {
-
 	protocol.phase = "listen"
 	if isProposer {
 		protocol.phase = "propose"
