@@ -20,10 +20,14 @@ RUN cd /root/go/src/github.com/ninjadotorg && \
     git clone https://github.com/ninjadotorg/constant -b master
 RUN cd /root/go/src/github.com/ninjadotorg/constant && \
     dep ensure -v
+RUN cd /root/go/src/github.com/ninjadotorg/constant/bootnode && \
+    /usr/local/go/bin/go build -o bootnode *.go
 RUN cd /root/go/src/github.com/ninjadotorg/constant && \
     /usr/local/go/bin/go build -o constant
 
-COPY ./run_constant.sh /
+ADD ./run_bootnode.sh /
+ADD ./run_constant.sh /
+RUN chmod +x /run_bootnode.sh
 RUN chmod +x /run_constant.sh
 
-CMD ["/run_constant.sh"]
+CMD ["/bin/bash"]
