@@ -52,3 +52,5 @@ echo "Install constant packages..."
 cd constant
 dep ensure -v
 echo "Install constant packages... DONE"
+
+cd ~/go/src/github.com/ninjadotorg/constant/bin
