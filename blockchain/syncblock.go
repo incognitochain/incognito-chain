@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"errors"
 	"time"
 
 	libp2p "github.com/libp2p/go-libp2p-peer"
@@ -9,34 +8,107 @@ import (
 )
 
 type peerState struct {
-	Shard  map[byte]*ShardChainState
-	Beacon *BeaconChainState
+	Shard             map[byte]*ChainState
+	Beacon            *ChainState
+	ShardToBeaconPool *map[byte][]common.Hash
+	CrossShardPool    *map[byte][]common.Hash
+	Peer              libp2p.ID
 }
 
 type peerSyncTimestamp struct {
 	Time   int64
 	PeerID libp2p.ID
 }
-type PeerBeaconChainState struct {
-	State *BeaconChainState
-	Peer  libp2p.ID
-}
-type PeerShardChainState struct {
-	State *ShardChainState
-	Peer  libp2p.ID
+
+type ChainState struct {
+	Height        uint64
+	BlockHash     common.Hash
+	BestStateHash common.Hash
 }
 
-type ShardChainState struct {
-	Height               uint64
-	ShardID              byte
-	CrossShardsPoolState map[byte]map[uint64][]common.Hash // how many distinct block of each height of each shard
-	BlockHash            common.Hash
-}
+func (self *BlockChain) StartSyncBlk() {
+	self.knownChainState.Beacon.Height = self.BestState.Beacon.BeaconHeight
+	self.syncStatus.Beacon = true
+	go func() {
+		for {
+			select {
+			case <-self.cQuitSync:
+				return
+			case <-time.Tick(defaultBroadcastStateTime):
+				needToSync := self.knownChainState.Beacon.Height - self.BestState.Beacon.BeaconHeight
+				for offset := uint64(0); offset <= needToSync; offset++ {
+					blks, err := self.config.NodeBeaconPool.GetBlocks(self.BestState.Beacon.BeaconHeight + 1)
+					if err != nil {
+						Logger.log.Error(err)
+						continue
+					}
+					for _, newBlk := range blks {
+						err = self.InsertBeaconBlock(&newBlk)
+						if err != nil {
+							Logger.log.Error(err)
+							continue
+						}
+					}
+				}
+				go self.config.Server.BoardcastBeaconState()
+			}
+		}
+	}()
 
-type BeaconChainState struct {
-	Height          uint64
-	ShardsPoolState map[byte][]common.Hash // how many distinct block of each height of each shard
-	BlockHash       common.Hash
+	go func() {
+		for {
+			select {
+			case <-self.cQuitSync:
+				return
+			case <-time.Tick(defaultProcessPeerStateTime):
+				self.syncStatus.PeersStateLock.Lock()
+				for _, peerState := range self.syncStatus.PeersState {
+					_ = peerState
+				}
+				self.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
+				self.syncStatus.PeersStateLock.Unlock()
+			}
+		}
+	}()
+
+	for {
+		select {
+		case <-self.cQuitSync:
+			return
+		case pState := <-self.PeerStateCh:
+			userRole, shardID := self.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
+			if self.BestState.Beacon.BeaconHeight < pState.Beacon.Height {
+				if self.knownChainState.Beacon.Height < pState.Beacon.Height {
+					self.knownChainState.Beacon = *pState.Beacon
+				}
+				self.syncStatus.PeersStateLock.Lock()
+				self.syncStatus.PeersState[pState.Peer] = pState
+				self.syncStatus.PeersStateLock.Unlock()
+			} else {
+				if self.BestState.Beacon.BeaconHeight == pState.Beacon.Height {
+					// check shardToBeacon pool state
+					if userRole == "beacon-proposer" || userRole == "beacon-validator" {
+						if len(beaconState.State.ShardsPoolState) > 0 {
+							myPoolPending := self.config.ShardToBeaconPool.GetValidPendingBlockHash()
+							for shardID, peerPoolBlks := range beaconState.State.ShardsPoolState {
+								myShardPoolBlks, ok := myPoolPending[shardID]
+								if ok {
+									blksNeedToSync := GetDiffHashesOf(peerPoolBlks, myShardPoolBlks)
+									self.SyncBlkShardToBeacon(true, true, blks9NeedToSync, 0, 0, beaconState.Peer)
+								} else {
+									// sync all blks of this shard
+									self.SyncBlkShardToBeacon(true, true, peerPoolBlks, 0, 0, beaconState.Peer)
+								}
+							}
+						}
+					}
+				}
+			}
+			if self.config.NodeMode == "auto" || self.config.NodeMode == "shard" {
+
+			}
+		}
+	}
 }
 
 func (self *BlockChain) SyncShard(shardID byte) error {
@@ -159,103 +231,100 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 	return nil
 }
 
-func (self *BlockChain) SyncBeacon() error {
-	if self.syncStatus.Beacon {
-		return errors.New("Beacon synchronzation is already started")
-	}
-	Logger.log.Info("Beacon synchronzation started")
-	self.BeaconStateCh = make(chan *PeerBeaconChainState)
-	self.knownChainState.Beacon.Height = self.BestState.Beacon.BeaconHeight
-	self.syncStatus.Beacon = true
+// func (self *BlockChain) SyncBeacon() error {
+// 	if self.syncStatus.Beacon {
+// 		return errors.New("Beacon synchronzation is already started")
+// 	}
+// 	Logger.log.Info("Beacon synchronzation started")
+// 	self.BeaconStateCh = make(chan *PeerBeaconChainState)
+// 	self.knownChainState.Beacon.Height = self.BestState.Beacon.BeaconHeight
+// 	self.syncStatus.Beacon = true
 
-	go func() {
-		//used for fancy block retriever but too lazy to implement that now :p
-		var peerChainState map[libp2p.ID]PeerBeaconChainState
-		peerChainState = make(map[libp2p.ID]PeerBeaconChainState)
-		_ = peerChainState
+// 	go func() {
 
-		go func() {
-			for {
-				select {
-				case <-self.cQuitSync:
-					return
-				case <-time.Tick(defaultBroadcastStateTime):
-					needToSync := self.knownChainState.Beacon.Height - self.BestState.Beacon.BeaconHeight
-					for offset := uint64(0); offset <= needToSync; offset++ {
-						blks, err := self.config.NodeBeaconPool.GetBlocks(self.BestState.Beacon.BeaconHeight + 1)
-						if err != nil {
-							Logger.log.Error(err)
-							continue
-						}
-						for _, newBlk := range blks {
-							err = self.InsertBeaconBlock(&newBlk)
-							if err != nil {
-								Logger.log.Error(err)
-								continue
-							}
-						}
-					}
-					go self.config.Server.BoardcastBeaconState()
-				}
-			}
-		}()
+// 		go func() {
+// 			for {
+// 				select {
+// 				case <-self.cQuitSync:
+// 					return
+// 				case <-time.Tick(defaultBroadcastStateTime):
+// 					needToSync := self.knownChainState.Beacon.Height - self.BestState.Beacon.BeaconHeight
+// 					for offset := uint64(0); offset <= needToSync; offset++ {
+// 						blks, err := self.config.NodeBeaconPool.GetBlocks(self.BestState.Beacon.BeaconHeight + 1)
+// 						if err != nil {
+// 							Logger.log.Error(err)
+// 							continue
+// 						}
+// 						for _, newBlk := range blks {
+// 							err = self.InsertBeaconBlock(&newBlk)
+// 							if err != nil {
+// 								Logger.log.Error(err)
+// 								continue
+// 							}
+// 						}
+// 					}
+// 					go self.config.Server.BoardcastBeaconState()
+// 				}
+// 			}
+// 		}()
 
-		go func() {
-			for {
-				select {
-				case <-self.cQuitSync:
-					return
-				case <-time.Tick(defaultProcessPeerStateTime):
-					self.syncStatus.PeersStateLock.Lock()
-					for _, peerState := range self.syncStatus.PeersState {
-						_ = peerState
-					}
-					self.syncStatus.PeersStateLock.Unlock()
-				}
-			}
-		}()
+// 		go func() {
+// 			for {
+// 				select {
+// 				case <-self.cQuitSync:
+// 					return
+// 				case <-time.Tick(defaultProcessPeerStateTime):
+// 					self.syncStatus.PeersStateLock.Lock()
+// 					for _, peerState := range self.syncStatus.PeersState {
+// 						_ = peerState
+// 					}
+// 					self.syncStatus.PeersState
+// 					self.syncStatus.PeersStateLock.Unlock()
+// 				}
+// 			}
+// 		}()
 
-		for {
-			select {
-			case <-self.cQuitSync:
-				return
-			case beaconState := <-self.BeaconStateCh:
-				if self.BestState.Beacon.BeaconHeight < beaconState.State.Height {
-					if self.knownChainState.Beacon.Height < beaconState.State.Height {
-						self.knownChainState.Beacon = *beaconState.State
-					}
-					self.syncStatus.PeersStateLock.Lock()
-					self.syncStatus.PeersState[beaconState.Peer] = peerState{
-						Beacon: beaconState.State,
-					}
-					self.syncStatus.PeersStateLock.Unlock()
-				} else {
-					if self.BestState.Beacon.BeaconHeight == beaconState.State.Height {
-						// check shardToBeacon pool state
-						userRole, _ := self.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
-						if userRole == "beacon-proposer" || userRole == "beacon-validator" {
-							if len(beaconState.State.ShardsPoolState) > 0 {
-								myPoolPending := self.config.ShardToBeaconPool.GetValidPendingBlockHash()
-								for shardID, peerPoolBlks := range beaconState.State.ShardsPoolState {
-									myShardPoolBlks, ok := myPoolPending[shardID]
-									if ok {
-										blksNeedToSync := GetDiffHashesOf(peerPoolBlks, myShardPoolBlks)
-										self.SyncBlkShardToBeacon(true, true, blksNeedToSync, 0, 0, beaconState.Peer)
-									} else {
-										// sync all blks of this shard
-										self.SyncBlkShardToBeacon(true, true, peerPoolBlks, 0, 0, beaconState.Peer)
-									}
-								}
-							}
-						}
-					}
+// 		for {
+// 			select {
+// 			case <-self.cQuitSync:
+// 				return
+// 			case beaconState := <-self.BeaconStateCh:
+// 				if self.BestState.Beacon.BeaconHeight < beaconState.State.Height {
+// 					if self.knownChainState.Beacon.Height < beaconState.State.Height {
+// 						self.knownChainState.Beacon = *beaconState.State
+// 					}
+// 					self.syncStatus.PeersStateLock.Lock()
+// 					self.syncStatus.PeersState[beaconState.Peer] = peerState{
+// 						Beacon: beaconState.State,
+// 					}
+// 					self.syncStatus.PeersStateLock.Unlock()
+// 				} else {
+// 					if self.BestState.Beacon.BeaconHeight == beaconState.State.Height {
+// 						// check shardToBeacon pool state
+// 						userRole, _ := self.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
+// 						if userRole == "beacon-proposer" || userRole == "beacon-validator" {
+// 							if len(beaconState.State.ShardsPoolState) > 0 {
+// 								myPoolPending := self.config.ShardToBeaconPool.GetValidPendingBlockHash()
+// 								for shardID, peerPoolBlks := range beaconState.State.ShardsPoolState {
+// 									myShardPoolBlks, ok := myPoolPending[shardID]
+// 									if ok {
+// 										blksNeedToSync := GetDiffHashesOf(peerPoolBlks, myShardPoolBlks)
+// 										self.SyncBlkShardToBeacon(true, true, blksNeedToSync, 0, 0, beaconState.Peer)
+// 									} else {
+// 										// sync all blks of this shard
+// 										self.SyncBlkShardToBeacon(true, true, peerPoolBlks, 0, 0, beaconState.Peer)
+// 									}
+// 								}
+// 							}
+// 						}
+// 					}
 
-				}
-			}
-		}
-	}()
-	return nil
-}
+// 				}
+// 			}
+// 		}
+// 	}()
+// 	return nil
+// }
 
 func (self *BlockChain) StopSyncShard(shardID byte) {
 	self.syncStatus.Lock()
@@ -297,6 +366,7 @@ func GetDiffHashesOf(slice1 []common.Hash, slice2 []common.Hash) []common.Hash {
 
 func (self *BlockChain) SyncBlkBeacon(byHash bool, getFromPool bool, blksHash []common.Hash, from uint64, to uint64, peerID libp2p.ID) {
 	if byHash {
+		//Sync block by hash
 		var blksNeedToGet []common.Hash
 		var blksSyncByHash *map[string]peerSyncTimestamp
 		tempInterface, ok := self.syncStatus.CurrentlySyncBeaconBlk.Load("byhash")
@@ -334,7 +404,7 @@ func (self *BlockChain) SyncBlkBeacon(byHash bool, getFromPool bool, blksHash []
 			go self.config.Server.PushMessageGetBlockBeaconByHash(blksNeedToGet, getFromPool, peerID)
 		}
 	} else {
-
+		//Sync by height
 	}
 }
 
