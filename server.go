@@ -1161,7 +1161,7 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHash(blksHash []common.Hash,
 	if peerID != "" {
 		return serverObj.PushMessageToPeer(msg, peerID)
 	}
-	return serverObj.PushMessageToAll(msg)
+	return serverObj.PushMessageToBeacon(msg)
 }
 
 func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error {
