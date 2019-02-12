@@ -786,6 +786,29 @@ func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 	return nil
 }
 
+func (self *BlockChain) ProcessDividendForBlock(block *ShardBlock) error {
+	for _, tx := range block.Body.Transactions {
+		switch tx.GetMetadataType() {
+		case metadata.DividendSubmitMeta:
+			{
+				// Store current list of token holders to local state
+				tx := tx.(*transaction.Tx)
+				meta := tx.GetMetadata().(*metadata.DividendSubmit)
+				_, holders, amounts, err := self.GetAmountPerAccount(meta.TokenID)
+				if err != nil {
+					return err
+				}
+				forDCB := meta.TokenID.IsEqual(&common.DCBTokenID)
+				err = self.config.DataBase.StoreDividendReceiversForID(meta.DividendID, forDCB, holders, amounts)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
 //func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 //	for _, tx := range block.Transactions {
 //		switch tx.GetMetadataType() {

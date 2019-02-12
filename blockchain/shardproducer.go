@@ -99,6 +99,17 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		},
 	}
 
+	// Process new dividend proposal if exist
+	divSubmitTxs, err := blockgen.buildDividendSubmitTx()
+	if err != nil {
+		return nil, err
+	}
+	for _, tx := range divSubmitTxs {
+		if tx != nil {
+			txsToAdd = append(txsToAdd, tx)
+		}
+	}
+
 	// Process stability tx, create response txs if needed
 	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey)
 	if err != nil {

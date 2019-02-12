@@ -262,3 +262,22 @@ func (self *BestStateBeacon) GetSaleData(saleID []byte) (*params.SaleData, error
 	}
 	return nil, errors.Errorf("SaleID not exist: %x", saleID)
 }
+
+func (self *BestStateBeacon) GetLatestDividendProposal(forDCB bool) (id, amount uint64) {
+	key := ""
+	if forDCB {
+		key = getDCBDividendKeyBeacon()
+	} else {
+		// TODO: GOV
+	}
+	dividendAmounts := []uint64{}
+	if value, ok := self.Params[key]; ok {
+		var err error
+		dividendAmounts, err = parseDividendValueBeacon(value)
+		if len(dividendAmounts) > 0 {
+			id = uint64(len(dividendAmounts))
+			amount = dividendAmounts[len(dividendAmounts)-1]
+		}
+	}
+	return id, amount
+}
