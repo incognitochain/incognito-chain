@@ -610,14 +610,14 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			delete(self.Params, l[1])
 		}
 		if l[0] == "swap" {
-			fmt.Println("---------------============= SWAP", l)
+			// fmt.Println("---------------============= SWAP", l)
 			// format
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
 			inPubkeys := strings.Split(l[1], ",")
 			outPubkeys := strings.Split(l[2], ",")
-			fmt.Println("---------------============= SWAP inPubkeys", inPubkeys)
-			fmt.Println("---------------============= SWAP outPubkeys", outPubkeys)
+			// fmt.Println("---------------============= SWAP inPubkeys", inPubkeys)
+			// fmt.Println("---------------============= SWAP outPubkeys", outPubkeys)
 			if l[3] == "shard" {
 				temp, err := strconv.Atoi(l[4])
 				if err != nil {
@@ -692,12 +692,6 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		self.BeaconCommittee = append(self.BeaconCommittee, newBeaconCandidate[0])
 		self.ShardCommittee[byte(0)] = append(self.ShardCommittee[byte(0)], newShardCandidate[0])
 		self.BeaconEpoch = 1
-		//Test with 4 member
-		//self.BeaconCommittee = append(self.BeaconCommittee, newBeaconCandidate...)
-		//self.ShardCommittee[byte(0)] = append(self.ShardCommittee[byte(0)], newShardCandidate[:3]...)
-		//self.ShardCommittee[byte(1)] = append(self.ShardCommittee[byte(1)], newShardCandidate[3:6]...)
-		//self.ShardCommittee[byte(2)] = append(self.ShardCommittee[byte(2)], newShardCandidate[6:9]...)
-		//self.ShardCommittee[byte(3)] = append(self.ShardCommittee[byte(3)], newShardCandidate[9:12]...)
 	} else {
 		self.CandidateBeaconWaitingForNextRandom = append(self.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
 		self.CandidateShardWaitingForNextRandom = append(self.CandidateShardWaitingForNextRandom, newShardCandidate...)
