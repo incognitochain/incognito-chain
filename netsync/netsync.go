@@ -140,21 +140,9 @@ out:
 					// 	{
 					// 		netSync.HandleMessageInvalidBlock(msg)
 					// 	}
-					case *wire.MessageGetBeaconState:
+					case *wire.MessagePeerState:
 						{
-							netSync.HandleMessageGetBeaconState(msg)
-						}
-					case *wire.MessageBeaconState:
-						{
-							netSync.HandleMessageBeaconState(msg)
-						}
-					case *wire.MessageGetShardState:
-						{
-							netSync.HandleMessageGetShardState(msg)
-						}
-					case *wire.MessageShardState:
-						{
-							netSync.HandleMessageShardState(msg)
+							netSync.HandleMessagePeerState(msg)
 						}
 					// case *wire.MessageSwapRequest:
 					// 	{
@@ -310,25 +298,15 @@ func (netSync *NetSync) HandleMessageBFTMsg(msg wire.Message) {
 // 	netSync.config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.shardID, msg.Reason)
 // }
 
-func (netSync *NetSync) HandleMessageGetBeaconState(msg *wire.MessageGetBeaconState) {
-	Logger.log.Info("Handling new message getbeaconstate")
+func (netSync *NetSync) HandleMessagePeerState(msg *wire.MessagePeerState) {
+	Logger.log.Info("Handling new message peerstate")
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
 	if err != nil {
 		Logger.log.Error(err)
 		return
 	}
-	beaconState, e := netSync.config.BlockChain.GetBeaconState()
-	if e != nil {
-		Logger.log.Error(e)
-		return
-	}
-	msgBeaconState, err := wire.MakeEmptyMessage(wire.CmdBeaconState)
-	if err != nil {
-		Logger.log.Error(err)
-		return
-	}
-	msgBeaconState.(*wire.MessageBeaconState).ChainInfo = *beaconState
-	netSync.config.Server.PushMessageToPeer(msgBeaconState, peerID)
+
+	netSync.config.BlockChain.OnPeerStateReceived(&msg.Beacon, &msg.Shards, peerID)
 }
 
 func (netSync *NetSync) HandleMessageBeaconState(msg *wire.MessageBeaconState) {
