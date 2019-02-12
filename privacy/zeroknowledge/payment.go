@@ -25,7 +25,7 @@ type PaymentWitness struct {
 	SerialNumberWitness []*SNPrivacyWitness
 	SNNoPrivacyWitness  []*SNNoPrivacyWitness
 
-	ComOutputMultiRangeWitness *AggregatedRangeWitness
+	AggregatedRangeWitness *AggregatedRangeWitness
 
 	ComOutputValue   []*privacy.EllipticPoint
 	ComOutputSND     []*privacy.EllipticPoint
@@ -47,7 +47,7 @@ type PaymentProof struct {
 
 	// for output coins
 	// for proving each value and sum of them are less than a threshold value
-	ComOutputMultiRangeProof *AggregatedRangeProof
+	AggregatedRangeProof *AggregatedRangeProof
 
 	InputCoins  []*privacy.InputCoin
 	OutputCoins []*privacy.OutputCoin
@@ -67,18 +67,18 @@ type PaymentProof struct {
 
 func (proof *PaymentProof) Init() *PaymentProof {
 	proof = &PaymentProof{
-		OneOfManyProof:           []*OneOutOfManyProof{},
-		SerialNumberProof:        []*SNPrivacyProof{},
-		ComOutputMultiRangeProof: new(AggregatedRangeProof).Init(),
-		InputCoins:               []*privacy.InputCoin{},
-		OutputCoins:              []*privacy.OutputCoin{},
-		ComOutputValue:           []*privacy.EllipticPoint{},
-		ComOutputSND:             []*privacy.EllipticPoint{},
-		ComOutputShardID:         []*privacy.EllipticPoint{},
-		ComInputSK:               new(privacy.EllipticPoint),
-		ComInputValue:            []*privacy.EllipticPoint{},
-		ComInputSND:              []*privacy.EllipticPoint{},
-		ComInputShardID:          new(privacy.EllipticPoint),
+		OneOfManyProof:       []*OneOutOfManyProof{},
+		SerialNumberProof:    []*SNPrivacyProof{},
+		AggregatedRangeProof: new(AggregatedRangeProof).Init(),
+		InputCoins:           []*privacy.InputCoin{},
+		OutputCoins:          []*privacy.OutputCoin{},
+		ComOutputValue:       []*privacy.EllipticPoint{},
+		ComOutputSND:         []*privacy.EllipticPoint{},
+		ComOutputShardID:     []*privacy.EllipticPoint{},
+		ComInputSK:           new(privacy.EllipticPoint),
+		ComInputValue:        []*privacy.EllipticPoint{},
+		ComInputSND:          []*privacy.EllipticPoint{},
+		ComInputShardID:      new(privacy.EllipticPoint),
 	}
 	return proof
 }
@@ -131,7 +131,7 @@ func (proof *PaymentProof) Bytes() []byte {
 
 	//ComOutputMultiRangeProofSize
 	if hasPrivacy {
-		comOutputMultiRangeProof := proof.ComOutputMultiRangeProof.Bytes()
+		comOutputMultiRangeProof := proof.AggregatedRangeProof.Bytes()
 		bytes = append(bytes, privacy.IntToByteArr(len(comOutputMultiRangeProof))...)
 		bytes = append(bytes, comOutputMultiRangeProof...)
 	} else {
@@ -277,8 +277,8 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	lenComOutputMultiRangeProof := privacy.ByteArrToInt(proofbytes[offset : offset+2])
 	offset += 2
 	if lenComOutputMultiRangeProof > 0 {
-		proof.ComOutputMultiRangeProof = new(AggregatedRangeProof).Init()
-		err := proof.ComOutputMultiRangeProof.SetBytes(proofbytes[offset : offset+lenComOutputMultiRangeProof])
+		proof.AggregatedRangeProof = new(AggregatedRangeProof).Init()
+		err := proof.AggregatedRangeProof.SetBytes(proofbytes[offset : offset+lenComOutputMultiRangeProof])
 		if err != nil {
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
 		}
@@ -475,11 +475,11 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 	wit.ComInputValue = make([]*privacy.EllipticPoint, numInputCoin)
 	wit.ComInputSND = make([]*privacy.EllipticPoint, numInputCoin)
 	// It is used for proving 2 commitments commit to the same value (input)
-	cmInputSNDIndexSK := make([]*privacy.EllipticPoint, numInputCoin)
+	//cmInputSNDIndexSK := make([]*privacy.EllipticPoint, numInputCoin)
 
 	randInputValue := make([]*big.Int, numInputCoin)
 	randInputSND := make([]*big.Int, numInputCoin)
-	randInputSNDIndexSK := make([]*big.Int, numInputCoin)
+	//randInputSNDIndexSK := make([]*big.Int, numInputCoin)
 
 	// cmInputValueAll is sum of all input coins' value commitments
 	cmInputValueAll := new(privacy.EllipticPoint).Zero()
@@ -503,11 +503,9 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 		// commit each component of coin commitment
 		randInputValue[i] = privacy.RandScalar()
 		randInputSND[i] = privacy.RandScalar()
-		randInputSNDIndexSK[i] = privacy.RandScalar()
 
 		wit.ComInputValue[i] = privacy.PedCom.CommitAtIndex(new(big.Int).SetUint64(inputCoin.CoinDetails.Value), randInputValue[i], privacy.VALUE)
 		wit.ComInputSND[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.SNDerivator, randInputSND[i], privacy.SND)
-		cmInputSNDIndexSK[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.SNDerivator, randInputSNDIndexSK[i], privacy.SK)
 
 		cmInputValueAll = cmInputValueAll.Add(wit.ComInputValue[i])
 
@@ -534,10 +532,13 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 		randInputIsZero[i] = big.NewInt(0)
 		randInputIsZero[i].Sub(inputCoin.CoinDetails.Randomness, randInputSum[i])
 		randInputIsZero[i].Mod(randInputIsZero[i], privacy.Curve.Params().N)
-
+		var err error
 		for j := 0; j < privacy.CMRingSize; j++ {
-			commitmentTemps[i][j] = new(privacy.EllipticPoint).Zero()
-			commitmentTemps[i][j], _ = commitments[preIndex+j].Sub(cmInputSum[i])
+			commitmentTemps[i][j], err = commitments[preIndex+j].Sub(cmInputSum[i])
+			if err != nil{
+				return privacy.NewPrivacyErr(privacy.UnexpectedErr, err)
+
+			}
 		}
 
 		if wit.OneOfManyWitness[i] == nil {
@@ -627,10 +628,10 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 			return privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("output coin's value is less than 0"))
 		}
 	}
-	if wit.ComOutputMultiRangeWitness == nil {
-		wit.ComOutputMultiRangeWitness = new(AggregatedRangeWitness)
+	if wit.AggregatedRangeWitness == nil {
+		wit.AggregatedRangeWitness = new(AggregatedRangeWitness)
 	}
-	wit.ComOutputMultiRangeWitness.Set(outputValue, randOutputValue)
+	wit.AggregatedRangeWitness.Set(outputValue, randOutputValue)
 	// ---------------------------------------------------
 
 	// save partial commitments (value, input, shardID)
@@ -692,7 +693,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 	}
 
 	// Proving that each output values and sum of them does not exceed v_max
-	proof.ComOutputMultiRangeProof, err = wit.ComOutputMultiRangeWitness.Prove()
+	proof.AggregatedRangeProof, err = wit.AggregatedRangeWitness.Prove()
 	if err != nil {
 		return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
 	}
@@ -814,7 +815,7 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 	}
 
 	// Verify the proof that output values and sum of them do not exceed v_max
-	if !proof.ComOutputMultiRangeProof.Verify() {
+	if !proof.AggregatedRangeProof.Verify() {
 		privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Multi-range failed")
 		return false
 	}
