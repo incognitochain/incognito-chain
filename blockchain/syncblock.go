@@ -8,6 +8,15 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
+type peerState struct {
+	Shard  map[byte]*ShardChainState
+	Beacon *BeaconChainState
+}
+
+type peerSyncTimestamp struct {
+	Time   int64
+	PeerID libp2p.ID
+}
 type PeerBeaconChainState struct {
 	State *BeaconChainState
 	Peer  libp2p.ID
@@ -159,23 +168,6 @@ func (self *BlockChain) SyncBeacon() error {
 	self.knownChainState.Beacon.Height = self.BestState.Beacon.BeaconHeight
 	self.syncStatus.Beacon = true
 
-	// go func() {
-	// 	for {
-	// 		select {
-	// 		case <-self.cQuitSync:
-	// 			return
-	// 		default:
-	// 			if self.config.NodeMode == "auto" || self.config.NodeMode == "beacon" {
-	// 				if role, _ := self.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58()); role == "beacon-proposer" || role == "beacon-validator" {
-	// 					for shardID := 0; shardID < common.SHARD_NUMBER; shardID++ {
-
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }()
-
 	go func() {
 		//used for fancy block retriever but too lazy to implement that now :p
 		var peerChainState map[libp2p.ID]PeerBeaconChainState
@@ -208,6 +200,21 @@ func (self *BlockChain) SyncBeacon() error {
 			}
 		}()
 
+		go func() {
+			for {
+				select {
+				case <-self.cQuitSync:
+					return
+				case <-time.Tick(defaultProcessPeerStateTime):
+					self.syncStatus.PeersStateLock.Lock()
+					for _, peerState := range self.syncStatus.PeersState {
+						_ = peerState
+					}
+					self.syncStatus.PeersStateLock.Unlock()
+				}
+			}
+		}()
+
 		for {
 			select {
 			case <-self.cQuitSync:
@@ -216,10 +223,12 @@ func (self *BlockChain) SyncBeacon() error {
 				if self.BestState.Beacon.BeaconHeight < beaconState.State.Height {
 					if self.knownChainState.Beacon.Height < beaconState.State.Height {
 						self.knownChainState.Beacon = *beaconState.State
-						// self.
-					} else {
-
 					}
+					self.syncStatus.PeersStateLock.Lock()
+					self.syncStatus.PeersState[beaconState.Peer] = peerState{
+						Beacon: beaconState.State,
+					}
+					self.syncStatus.PeersStateLock.Unlock()
 				} else {
 					if self.BestState.Beacon.BeaconHeight == beaconState.State.Height {
 						// check shardToBeacon pool state
@@ -286,6 +295,49 @@ func GetDiffHashesOf(slice1 []common.Hash, slice2 []common.Hash) []common.Hash {
 	return diff
 }
 
+func (self *BlockChain) SyncBlkBeacon(byHash bool, getFromPool bool, blksHash []common.Hash, from uint64, to uint64, peerID libp2p.ID) {
+	if byHash {
+		var blksNeedToGet []common.Hash
+		var blksSyncByHash *map[string]peerSyncTimestamp
+		tempInterface, ok := self.syncStatus.CurrentlySyncBeaconBlk.Load("byhash")
+		if ok {
+			blksSyncByHash = tempInterface.(*map[string]peerSyncTimestamp)
+			for _, blkHash := range blksHash {
+				if timeStamp, ok := (*blksSyncByHash)[blkHash.String()]; ok {
+					if time.Since(time.Unix(timeStamp.Time, 0)) > defaultMaxBlockSyncTime {
+						(*blksSyncByHash)[blkHash.String()] = peerSyncTimestamp{
+							Time:   time.Now().Unix(),
+							PeerID: peerID,
+						}
+						blksNeedToGet = append(blksNeedToGet, blkHash)
+					}
+				} else {
+					(*blksSyncByHash)[blkHash.String()] = peerSyncTimestamp{
+						Time:   time.Now().Unix(),
+						PeerID: peerID,
+					}
+					blksNeedToGet = append(blksNeedToGet, blkHash)
+				}
+			}
+		} else {
+			blksSyncByHash = &map[string]peerSyncTimestamp{}
+			for _, blkHash := range blksHash {
+				(*blksSyncByHash)[blkHash.String()] = peerSyncTimestamp{
+					Time:   time.Now().Unix(),
+					PeerID: peerID,
+				}
+			}
+			blksNeedToGet = append(blksNeedToGet, blksHash...)
+		}
+
+		if len(blksNeedToGet) > 0 {
+			go self.config.Server.PushMessageGetBlockBeaconByHash(blksNeedToGet, getFromPool, peerID)
+		}
+	} else {
+
+	}
+}
+
 func (self *BlockChain) SyncBlkShard(byHash bool, getFromPool bool, shardID byte, blkHash []common.Hash, from uint64, to uint64, peerID libp2p.ID) {
 	// if byHash {
 	// 	var blkSyncByHash *map[string]int64
@@ -304,39 +356,6 @@ func (self *BlockChain) SyncBlkShard(byHash bool, getFromPool bool, shardID byte
 	// } else {
 
 	// }
-}
-
-func (self *BlockChain) SyncBlkBeacon(byHash bool, getFromPool bool, blksHash []common.Hash, from uint64, to uint64, peerID libp2p.ID) {
-	if byHash {
-		type peerSyncTimestamp struct {
-			Time   int64
-			PeerID libp2p.ID
-		}
-		// blkSyncByHash = make(map[string]int64)
-		tempInterface, ok := self.syncStatus.CurrentlySyncShardBlk.Load("0")
-		var blksNeedToGet []common.Hash
-		var blksSyncByHash *map[string]peerSyncTimestamp
-		if ok {
-			blksSyncByHash = tempInterface.(*map[string]peerSyncTimestamp)
-			for _, blkHash := range blksHash {
-				if timeStamp, ok := (*blksSyncByHash)[blkHash.String()]; ok {
-					if time.Since(time.Unix(timeStamp.Time, 0)) > defaultMaxBlockSyncTime {
-
-					}
-				} else {
-
-				}
-			}
-		} else {
-
-		}
-
-		if len(blksNeedToGet) > 0 {
-			go self.config.Server.PushMessageGetBlockBeaconByHash(blksNeedToGet, getFromPool, peerID)
-		}
-	} else {
-
-	}
 }
 
 func (self *BlockChain) SyncBlkShardToBeacon(byHash bool, getFromPool bool, blkHash []common.Hash, from uint64, to uint64, peerID libp2p.ID) {
