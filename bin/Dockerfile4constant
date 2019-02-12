@@ -5,9 +5,9 @@ RUN apt -y upgrade
 
 RUN apt install -y wget git
 
-RUN wget https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz
-RUN tar -xvf go1.11.5.linux-amd64.tar.gz
-RUN mv go /usr/local
+RUN wget https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz && \
+    tar -xvf go1.11.5.linux-amd64.tar.gz && \
+    mv go /usr/local
 
 ENV GOROOT=/usr/local/go
 ENV GOPATH=/root/go
@@ -25,6 +25,7 @@ RUN cd /root/go/src/github.com/ninjadotorg/constant && \
 RUN cd /root/go/src/github.com/ninjadotorg/constant/bootnode && \
     /usr/local/go/bin/go build -o bootnode *.go
 
-WORKDIR /root/go/src/github.com/ninjadotorg/constant
+COPY ./run_constant.sh /
+RUN chmod +x /run_constant.sh
 
-CMD ["/bin/bash"]
+CMD ["/run_constant.sh"]
