@@ -151,9 +151,11 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 }
 
 type accumulativeValues struct {
-	bondsSold       uint64
-	incomeFromBonds uint64
-	saleDataMap     map[string]*params.SaleData
+	bondsSold           uint64
+	govTokensSold       uint64
+	incomeFromBonds     uint64
+	incomeFromGOVTokens uint64
+	saleDataMap         map[string]*params.SaleData
 }
 
 // return param:
