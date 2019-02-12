@@ -110,8 +110,7 @@ type Config struct {
 	NodeShardPool     NodeShardPool
 
 	Server interface {
-		BoardcastBeaconState()
-		BoardcastShardState()
+		BoardcastNodeState()
 
 		PushMessageGetBlockBeaconByHeight(from uint64, to uint64, peerID libp2p.ID) error
 		PushMessageGetBlockBeaconByHash(blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error

@@ -61,7 +61,10 @@ func (self *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]
 			pState.Shard[shardID] = &state
 		}
 	}
-	self.PeerStateCh <- pState
+	self.syncStatus.PeersStateLock.Lock()
+	self.syncStatus.PeersState[pState.Peer] = pState
+	self.syncStatus.PeersStateLock.Unlock()
+
 }
 
 func (self *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {

@@ -565,10 +565,7 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			//constantpos
 			OnBFTMsg: serverObj.OnBFTMsg,
 			// OnInvalidBlock:  serverObj.OnInvalidBlock,
-			OnGetBeaconState: serverObj.OnGetBeaconState,
-			OnBeaconState:    serverObj.OnBeaconState,
-			OnGetShardState:  serverObj.OnGetShardState,
-			OnShardState:     serverObj.OnShardState,
+			OnPeerState: serverObj.OnPeerState,
 			//
 			//OnRegistration: serverObj.OnRegistration,
 			// OnSwapRequest: serverObj.OnSwapRequest,
@@ -861,32 +858,11 @@ func (serverObj *Server) OnBFTMsg(_ *peer.PeerConn, msg wire.Message) {
 // 	Logger.log.Info("Receive a invalidblock END", msg)
 // }
 
-func (serverObj *Server) OnGetBeaconState(_ *peer.PeerConn, msg *wire.MessageGetBeaconState) {
-	Logger.log.Info("Receive a getbeaconstate START")
+func (serverObj *Server) OnPeerState(_ *peer.PeerConn, msg *wire.MessagePeerState) {
+	Logger.log.Info("Receive a peerstate START")
 	var txProcessed chan struct{}
 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a getbeaconstate END")
-}
-
-func (serverObj *Server) OnBeaconState(_ *peer.PeerConn, msg *wire.MessageBeaconState) {
-	Logger.log.Info("Receive a beacontate START")
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a beaconstate END")
-}
-
-func (serverObj *Server) OnGetShardState(_ *peer.PeerConn, msg *wire.MessageGetShardState) {
-	Logger.log.Info("Receive a getshardstate START")
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a getshardstate END")
-}
-
-func (serverObj *Server) OnShardState(_ *peer.PeerConn, msg *wire.MessageShardState) {
-	Logger.log.Info("Receive a shardstate START")
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a shardstate END")
+	Logger.log.Info("Receive a peerstate END")
 }
 
 func (serverObj *Server) GetPeerIDsFromPublicKey(pubKey string) []libp2p.ID {
@@ -1242,10 +1218,6 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 	return nil
 }
 
-func (serverObj *Server) BoardcastBeaconState() {
-
-}
-
-func (serverObj *Server) BoardcastShardState() {
+func (serverObj *Server) BoardcastNodeState() {
 
 }
