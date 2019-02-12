@@ -342,6 +342,7 @@ func (self *BestStateBeacon) GenerateInstruction(
 	//=======Random and Assign if random number is detected
 	// Time to get random number and no block in this epoch get it
 	fmt.Printf("RandomTimestamp %+v \n", self.CurrentRandomTimeStamp)
+	fmt.Printf("=========Epoch %+v \n", block.Header.Epoch)
 	fmt.Printf("============height epoch: %+v, RANDOM TIME: %+v \n", block.Header.Height%common.EPOCH+1, common.RANDOM_TIME)
 	fmt.Printf("============IsGetRandomNumber %+v \n", self.IsGetRandomNumber)
 	fmt.Printf("===================ShardCandidate %+v \n", shardCandidates)
