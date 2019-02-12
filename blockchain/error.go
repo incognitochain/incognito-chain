@@ -14,6 +14,7 @@ const (
 	UnExpectedError = iota
 	UpdateMerkleTreeForBlockError
 	UnmashallJsonBlockError
+	MashallJsonError
 	CanNotCheckDoubleSpendError
 	HashError
 	VersionError
@@ -46,7 +47,7 @@ var ErrCodeMessage = map[int]struct {
 	UnExpectedError:               {-1, "Unexpected error"},
 	UpdateMerkleTreeForBlockError: {-2, "Update Merkle Commitments Tree For Block is failed"},
 	UnmashallJsonBlockError:       {-3, "Unmarshall json block is failed"},
-	CanNotCheckDoubleSpendError:   {-4, "Unmarshall json block is failed"},
+	CanNotCheckDoubleSpendError:   {-4, "CanNotCheckDoubleSpend Error"},
 	HashError:                     {-5, "Hash error"},
 	VersionError:                  {-6, "Version error"},
 	BlockHeightError:              {-7, "Block height error"},
@@ -68,6 +69,7 @@ var ErrCodeMessage = map[int]struct {
 	TransactionError:              {-22, "Transaction invalid"},
 	InstructionError:              {-23, "Instruction Error"},
 	SwapError:                     {-24, "Swap Error"},
+	MashallJsonError:              {-25, "MashallJson Error"},
 }
 
 type BlockChainError struct {
