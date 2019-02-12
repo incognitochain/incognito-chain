@@ -179,7 +179,7 @@ func (self *BlockChain) InsertBeaconBlock(block *BeaconBlock) error {
 	Logger.log.Infof("Remove block from pool %+v \n", *block.Hash())
 	self.config.ShardToBeaconPool.RemovePendingBlock(self.BestState.Beacon.BestShardHeight)
 
-	Logger.log.Infof("Finish Insert new block %d, with hash %x", block.Header.Height, *block.Hash())
+	Logger.log.Infof("Finish Insert new block %d, with hash %+v", block.Header.Height, *block.Hash())
 	return nil
 }
 
@@ -867,16 +867,23 @@ func SwapValidator(pendingValidators []string, currentValidators []string, maxCo
 			currentValidators = append(currentValidators, tempValidators...)
 		}
 	}
+	fmt.Println("Swap Validator/Before: pendingValidators", pendingValidators)
+	fmt.Println("Swap Validator/Before: currentValidators", currentValidators)
+	fmt.Println("Swap Validator: offset", offset)
 	// out pubkey: swapped out validator
 	swapValidator = append(swapValidator, currentValidators[:offset]...)
 	// unqueue validator with index from 0 to offset-1 from currentValidators list
 	currentValidators = currentValidators[offset:]
 	// in pubkey: unqueue validator with index from 0 to offset-1 from pendingValidators list
 	tempValidators = append(tempValidators, pendingValidators[:offset]...)
-	// save new pending validators list
-	pendingValidators = pendingValidators[offset:]
 	// enqueue new validator to the remaning of current validators list
 	currentValidators = append(currentValidators, pendingValidators[:offset]...)
+	// save new pending validators list
+	pendingValidators = pendingValidators[offset:]
+	fmt.Println("Swap Validator: pendingValidators", pendingValidators)
+	fmt.Println("Swap Validator: currentValidators", currentValidators)
+	fmt.Println("Swap Validator: swapValidator", swapValidator)
+	fmt.Println("Swap Validator: tempValidators", tempValidators)
 	if len(currentValidators) > maxCommittee {
 		panic("Length of current validator greater than max committee in Swap validator ")
 	}
