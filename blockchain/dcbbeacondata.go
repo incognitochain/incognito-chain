@@ -19,15 +19,17 @@ const (
 )
 
 var (
-	loanIDKeyPrefix   = []byte("loanID-")
-	loanRespKeyPrefix = []byte("loanResp-")
-	saleDataPrefix    = []byte("sale-")
-	dividendPrefixDCB = []byte("divDCB")
-	dividendPrefixGOV = []byte("divGOV")
+	loanIDKeyPrefix         = "loanID-"
+	loanRespKeyPrefix       = "loanResp-"
+	saleDataPrefix          = "sale-"
+	dividendPrefixDCB       = "divDCB"
+	dividendPrefixGOV       = "divGOV"
+	dividendSubmitPrefix    = "divSub"
+	dividendAggregatePrefix = "divAgg"
 )
 
 func getLoanRequestKeyBeacon(loanID []byte) string {
-	return string(loanIDKeyPrefix) + string(loanID)
+	return loanIDKeyPrefix + string(loanID)
 }
 
 type LoanRespData struct {
@@ -58,7 +60,7 @@ func parseLoanRespData(data string) (*LoanRespData, error) {
 }
 
 func getLoanResponseKeyBeacon(loanID []byte) string {
-	return string(loanRespKeyPrefix) + string(loanID)
+	return loanRespKeyPrefix + string(loanID)
 }
 
 func getLoanResponseValueBeacon(data []*LoanRespData) string {
@@ -83,7 +85,7 @@ func parseLoanResponseValueBeacon(data string) ([]*LoanRespData, error) {
 }
 
 func getSaleDataKeyBeacon(saleID []byte) string {
-	return string(saleDataPrefix) + string(saleID)
+	return saleDataPrefix + string(saleID)
 }
 
 func getSaleDataValueBeacon(data *params.SaleData) string {
@@ -126,8 +128,7 @@ func ParseCrowdsalePaymentInstruction(data string) (*CrowdsalePaymentInstruction
 }
 
 func getDCBDividendKeyBeacon() string {
-	key := dividendPrefixDCB
-	return key
+	return dividendPrefixDCB
 }
 
 func getDividendValueBeacon(amounts []uint64) string {
@@ -142,4 +143,30 @@ func parseDividendValueBeacon(value string) ([]uint64, error) {
 		return nil, err
 	}
 	return data, nil
+}
+
+func getDividendSubmitKeyBeacon(shardID byte, dividendID uint64, tokenID *common.Hash) string {
+	return strings.Join([]string{dividendSubmitPrefix, string(shardID), strconv.FormatUint(dividendID, 10), tokenID.String()}, "")
+}
+
+func getDividendSubmitValueBeacon(shardTokenAmount uint64) string {
+	return strconv.FormatUint(shardTokenAmount, 10)
+}
+
+func parseDividendSubmitValueBeacon(value string) uint64 {
+	shardTokenAmount, _ := strconv.ParseUint(value, 10, 64)
+	return shardTokenAmount
+}
+
+func getDividendAggregatedKeyBeacon(dividendID uint64, tokenID *common.Hash) string {
+	return strings.Join([]string{dividendAggregatePrefix, strconv.FormatUint(dividendID, 10), tokenID.String()}, "")
+}
+
+func getDividendAggregatedValueBeacon(totalTokenAmount uint64) string {
+	return strconv.FormatUint(totalTokenAmount, 10)
+}
+
+func parseDividendAggregatedValueBeacon(value string) uint64 {
+	totalTokenAmount, _ := strconv.ParseUint(value, 10, 64)
+	return totalTokenAmount
 }

@@ -12,9 +12,10 @@ const (
 	LoanWithdrawMeta
 	LoanUnlockMeta
 	LoanPaymentMeta
-	DividendMeta
 
-	// OMO
+	DividendMeta
+	DividendSubmitMeta
+
 	CrowdsaleRequestMeta
 	CrowdsalePaymentMeta
 
