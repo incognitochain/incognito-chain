@@ -316,12 +316,12 @@ func (self *BlockChain) initShardState(shardID byte) error {
 	initBlock.Header.ShardID = shardID
 
 	// ---- test RPC api data --- remove after
+	initTxs := []string{`{"Version":1,"Type":"s","LockTime":1549889112,"Fee":0,"Info":null,"SigPubKey":"A7GGbCnosNljq25A5o4VIGs7r6WOcs3OrDBJUFd28eEA","Sig":"4gzqBc1TnROMjEdGW1DdIlLRA6pAwbcC3r1macAVy8OaOQaWxcSQXubEgm3oKcJAyE7OnEckV35pwAWD4vr7+A==","Proof":"11111116WGHqpGSLR21nkwRaRVR2vJBD6DR8wKQfB5VCC4TNEXz1XeskmWDehJbmDvr4EeC8x5vGFSrNq4KRs4GoDgn85t7CHJPQWu6s8QWhQVRd621qqT5mBofPcB9WGgQPsD7i4WPxoPKVYhS3jaRXbT2C9S1tHQbW9TytbZKbASDgKygqeijEoWsLW4RXct1oGn2wat2Q1kdPX35AKW1B2R","PubKeyLastByteSender":0,"Metadata":null}`, `{"Version":1,"Type":"s","LockTime":1549889112,"Fee":0,"Info":null,"SigPubKey":"AySFA7ksPnDE7zG+ZKwyk8SaadPLOfJuIn5k4kqUgKcA","Sig":"0jcALduldAkey/6EmKW3EyUQGpJCZ5Vr1lmc7QlzOL3FYEHVwF3kXcDkuPXqqjaH8ueJjDGDqx4N8KpWDfSi7Q==","Proof":"11111116WGHqpGNRGpV3VBz1rndCx6TP4A8eLYeocjg8izynA2YAkx7x38mCir9Nm3oCubXdn25F4sj4jHryBtSbdwJj6o4X43YDftZ9nPsrw4m8DyF6NkxNXbvGj9egkUtypup34hdCXv2L8j5tB9cVUCXVqWeC9axqLLoibXEay4fLrroeRnfNhJ1moNDoQqyRVLrcC7yUjDQz6AUsdd3uFB","PubKeyLastByteSender":0,"Metadata":null}`}
+	// var initTxs []string
 	// testUserkeyList := []string{
 	// 	"112t8rqnMrtPkJ4YWzXfG82pd9vCe2jvWGxqwniPM5y4hnimki6LcVNfXxN911ViJS8arTozjH4rTpfaGo5i1KKcG1ayjiMsa4E3nABGAqQh",
 	// 	"112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNhc33pzChmJRvikZNc3Dt5V7quhdzjWW9Z4BrB2BxdK5VtHzsG9JZdZ5M7yYYGidKKZV",
 	// }
-	initTxs := []string{`{"Version":1,"Type":"s","LockTime":1548234650,"Fee":0,"Info":null,"SigPubKey":"A7GGbCnosNljq25A5o4VIGs7r6WOcs3OrDBJUFd28eEA","Sig":"pBKEqssajv6+hljC9KvNb7orPBfLpRCBLyG4cY8Vb0DTKhlUT+sDmTdPi5mkcIGYRr4asFHkj8hGAoe3CvjEjA==","Proof":"111111116WGHqpGSLR21nkwRaRVR2vJBD6DR8wKQfB5VCC4TNEXz1XeskmWDegVonjFht25ktqi8JJhgPF7dsWRt8GyoVjkPz7mVZJksdQF7NaW6GnruwZFHkoharAad4W41569CKFL7D8vsTn5zDbzrEDcLNcwzSUryGidyj5z5MKPV2mYDqjYmPTe7QbrF7cUNKoU4fpDBam3jZRk49yJdtqU","PubKeyLastByteSender":0,"Metadata":null}`, `{"Version":1,"Type":"s","LockTime":1548234650,"Fee":0,"Info":null,"SigPubKey":"AySFA7ksPnDE7zG+ZKwyk8SaadPLOfJuIn5k4kqUgKcA","Sig":"l+NSIayMrl/mTfo5t1tLI2ORcP37LlURAUjsvRVNRlFFZWOxA+lXoA9VfCjnvGnU05eYuukuMGs5sJQQobKfWA==","Proof":"111111116WGHqpGNRGpV3VBz1rndCx6TP4A8eLYeocjg8izynA2YAkx7x38mCj3GsbnZ7TRKG7acNtpRYRP9fCEJPQCBiS3hjcDvd7aikVhj4uGgkRMnXsNW6MidUW83MMyhGem7CQE8qNyYRax3mFFjYKm6RPPHkkHGMdaao24ybehPuYLREmSShr7F7XKMPMM9aVURzLkS6wxoskJ4bXNnTng","PubKeyLastByteSender":0,"Metadata":null}`}
-	initTxs = []string{} // TODO: 0xbahamoot, change with a new data for updating on privacy
 	// for _, val := range testUserkeyList {
 
 	// 	testUserKey, _ := wallet.Base58CheckDeserialize(val)
@@ -337,30 +337,13 @@ func (self *BlockChain) initShardState(shardID byte) error {
 	// 	initBlock.Body.Transactions = append(initBlock.Body.Transactions, &testSalaryTX)
 	// }
 	// fmt.Println(initTxs)
+	// os.Exit(1)
 
-	// testSalaryTXs := []transaction.Tx{}
 	for _, tx := range initTxs {
 		testSalaryTX := transaction.Tx{}
 		testSalaryTX.UnmarshalJSON([]byte(tx))
 		initBlock.Body.Transactions = append(initBlock.Body.Transactions, &testSalaryTX)
-		// fmt.Println()
-		// fmt.Println("test", len(testSalaryTX.Proof.OutputCoins), testSalaryTX.Proof.OutputCoins[0].CoinDetails.CoinCommitment.Compress())
-		// fmt.Println()
-		// testSalaryTXs = append(testSalaryTXs, testSalaryTX)
 	}
-	// for _, tx := range testSalaryTXs {
-	// 	fmt.Println(tx.Hash().String())
-	// }
-	// os.Exit(1)
-	// ---- -------- ---
-
-	// if shardID == 6 {
-
-	// } else {
-	// 	initBlock.Header = self.config.ChainParams.GenesisShardBlock.Header
-	// 	initBlock.Header.ShardID = shardID
-	// 	initBlock.Header.PrevBlockHash = common.Hash{}
-	// }
 
 	self.BestState.Shard[shardID] = &BestStateShard{
 		ShardCommittee:        []string{},
