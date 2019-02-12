@@ -5,6 +5,7 @@ import (
 
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
 )
 
 func (self *BlockChain) OnBlockShardReceived(block *ShardBlock) {
@@ -36,39 +37,31 @@ func (self *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 	}
 }
 
-func (self *BlockChain) GetBeaconState() (*BeaconChainState, error) {
-	state := &BeaconChainState{
-		Height:          self.BestState.Beacon.BeaconHeight,
-		BlockHash:       self.BestState.Beacon.BestBlockHash,
-		ShardsPoolState: self.config.ShardToBeaconPool.GetValidPendingBlockHash(),
+func (self *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]ChainState, shardToBeaconPool *map[byte][]common.Hash, crossShardPool *map[byte]map[byte][]common.Hash, peerID libp2p.ID) {
+	var pState *peerState
+	pState.Beacon = beacon
+	userRole, shardID := self.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
+	nodeMode := self.config.NodeMode
+	if userRole == "beacon-proposer" || userRole == "beacon-validator" {
+		pState.ShardToBeaconPool = shardToBeaconPool
 	}
-	return state, nil
-}
-
-func (self *BlockChain) OnBeaconStateReceived(state *BeaconChainState, peerID libp2p.ID) {
-	if self.syncStatus.Beacon {
-		self.BeaconStateCh <- &PeerBeaconChainState{
-			state, peerID,
+	if userRole == "shard" && (nodeMode == "auto" || nodeMode == "shard") {
+		userRole = self.BestState.Shard[shardID].GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
+		if userRole == "shard-proposer" || userRole == "shard-validator" {
+			if state, ok := (*shard)[shardID]; ok {
+				pState.Shard[shardID] = &state
+				if pool, ok := (*crossShardPool)[shardID]; ok {
+					pState.CrossShardPool = &pool
+				}
+			}
 		}
 	}
-}
-
-func (self *BlockChain) GetShardState(shardID byte) (*ShardChainState, error) {
-	//TODO: check node mode -> node role
-	state := &ShardChainState{
-		Height:    self.BestState.Shard[shardID].ShardHeight,
-		ShardID:   shardID,
-		BlockHash: self.BestState.Shard[shardID].BestShardBlockHash,
-	}
-	return state, nil
-}
-
-func (self *BlockChain) OnShardStateReceived(state *ShardChainState, peerID libp2p.ID) {
-	if _, ok := self.syncStatus.Shard[state.ShardID]; ok {
-		self.ShardStateCh[state.ShardID] <- &PeerShardChainState{
-			state, peerID,
+	for _, shardID := range self.config.RelayShards {
+		if state, ok := (*shard)[shardID]; ok {
+			pState.Shard[shardID] = &state
 		}
 	}
+	self.PeerStateCh <- pState
 }
 
 func (self *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {

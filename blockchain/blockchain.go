@@ -55,15 +55,14 @@ type BlockChain struct {
 		CurrentlySyncCrossShardBlk    sync.Map
 		CurrentlySyncShardToBeaconBlk sync.Map
 
-		PeersState     map[libp2p.ID]peerState
+		PeersState     map[libp2p.ID]*peerState
 		PeersStateLock sync.Mutex
 	}
 	knownChainState struct {
-		Shards map[byte]ShardChainState
-		Beacon BeaconChainState
+		Shards map[byte]ChainState
+		Beacon ChainState
 	}
-	BeaconStateCh chan *PeerBeaconChainState
-	ShardStateCh  map[byte](chan *PeerShardChainState)
+	PeerStateCh chan *peerState
 }
 type BestState struct {
 	Beacon *BestStateBeacon
@@ -114,9 +113,6 @@ type Config struct {
 		BoardcastBeaconState()
 		BoardcastShardState()
 
-		PushMessageGetBeaconState() error
-		PushMessageGetShardState(shardID byte) error
-
 		PushMessageGetBlockBeaconByHeight(from uint64, to uint64, peerID libp2p.ID) error
 		PushMessageGetBlockBeaconByHash(blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
 
@@ -157,11 +153,10 @@ func (self *BlockChain) Init(config *Config) error {
 	// 		chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns, bestState.BestBlock.Header.SalaryFund, bestState.BestBlock.Header.GOVConstitution)
 	// }
 	self.cQuitSync = make(chan struct{})
-	self.ShardStateCh = make(map[byte](chan *PeerShardChainState))
 	self.syncStatus.Shard = make(map[byte](chan struct{}))
-	self.knownChainState.Shards = make(map[byte]ShardChainState)
-	self.syncStatus.PeersState = make(map[libp2p.ID]peerState)
-	self.SyncBeacon()
+	self.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
+	self.knownChainState.Shards = make(map[byte]ChainState)
+	self.StartSyncBlk()
 	for _, shardID := range self.config.RelayShards {
 		self.SyncShard(shardID)
 	}

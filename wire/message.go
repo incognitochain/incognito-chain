@@ -42,15 +42,12 @@ const (
 	CmdPing               = "ping"
 
 	// POS Cmd
-	CmdBFTPropose     = "bftpropose"
-	CmdBFTPrepare     = "bftprepare"
-	CmdBFTCommit      = "bftcommit"
-	CmdBFTReady       = "bftready"
-	CmdInvalidBlock   = "invalidblock"
-	CmdGetBeaconState = "getbcstate"
-	CmdBeaconState    = "beaconstate"
-	CmdGetShardState  = "getshdstate"
-	CmdShardState     = "shardstate"
+	CmdBFTPropose   = "bftpropose"
+	CmdBFTPrepare   = "bftprepare"
+	CmdBFTCommit    = "bftcommit"
+	CmdBFTReady     = "bftready"
+	CmdInvalidBlock = "invalidblock"
+	CmdPeerState    = "peerstate"
 
 	// SWAP Cmd
 	//CmdSwapRequest = "swaprequest"
@@ -168,21 +165,10 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdBFTReady:
 		msg = &MessageBFTReady{}
 		break
-	case CmdGetBeaconState:
-		msg = &MessageGetBeaconState{
+	case CmdPeerState:
+		msg = &MessagePeerState{
 			Timestamp: time.Now().Unix(),
 		}
-		break
-	case CmdBeaconState:
-		msg = &MessageBeaconState{
-			Timestamp: time.Now().Unix(),
-		}
-		break
-	case CmdGetShardState:
-		msg = &MessageGetShardState{}
-		break
-	case CmdShardState:
-		msg = &MessageShardState{}
 		break
 	case CmdGetAddr:
 		msg = &MessageGetAddr{
@@ -266,14 +252,8 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdBFTReady, nil
 	case reflect.TypeOf(&MessageInvalidBlock{}):
 		return CmdInvalidBlock, nil
-	case reflect.TypeOf(&MessageGetBeaconState{}):
-		return CmdGetBeaconState, nil
-	case reflect.TypeOf(&MessageBeaconState{}):
-		return CmdBeaconState, nil
-	case reflect.TypeOf(&MessageGetShardState{}):
-		return CmdGetShardState, nil
-	case reflect.TypeOf(&MessageShardState{}):
-		return CmdShardState, nil
+	case reflect.TypeOf(&MessagePeerState{}):
+		return CmdPeerState, nil
 		//case reflect.TypeOf(&MessageSwapRequest{}):
 		//	return CmdSwapRequest, nil
 		//case reflect.TypeOf(&MessageSwapSig{}):
