@@ -12,51 +12,51 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (self *BlockChain) GetDatabase() database.DatabaseInterface {
-	return self.config.DataBase
+func (bc *BlockChain) GetDatabase() database.DatabaseInterface {
+	return bc.config.DataBase
 }
 
-func (self *BlockChain) GetTxChainHeight(tx metadata.Transaction) (uint64, error) {
+func (bc *BlockChain) GetTxChainHeight(tx metadata.Transaction) (uint64, error) {
 	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	return self.GetChainHeight(shardID), nil
+	return bc.GetChainHeight(shardID), nil
 }
 
-func (self *BlockChain) GetChainHeight(shardID byte) uint64 {
-	return self.BestState.Shard[shardID].ShardHeight
+func (bc *BlockChain) GetChainHeight(shardID byte) uint64 {
+	return bc.BestState.Shard[shardID].ShardHeight
 }
 
-func (self *BlockChain) GetBeaconHeight() uint64 {
-	return self.BestState.Beacon.BeaconHeight
+func (bc *BlockChain) GetBeaconHeight() uint64 {
+	return bc.BestState.Beacon.BeaconHeight
 }
 
-func (self *BlockChain) GetBoardPubKeys(boardType byte) [][]byte {
+func (bc *BlockChain) GetBoardPubKeys(boardType byte) [][]byte {
 	if boardType == common.DCBBoard {
-		return self.GetDCBBoardPubKeys()
+		return bc.GetDCBBoardPubKeys()
 	} else {
-		return self.GetGOVBoardPubKeys()
+		return bc.GetGOVBoardPubKeys()
 	}
 }
 
-func (self *BlockChain) GetDCBBoardPubKeys() [][]byte {
+func (bc *BlockChain) GetDCBBoardPubKeys() [][]byte {
 	pubkeys := [][]byte{}
-	for _, addr := range self.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress {
+	for _, addr := range bc.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress {
 		pubkeys = append(pubkeys, addr.Pk[:])
 	}
 	return pubkeys
 }
 
-func (self *BlockChain) GetGOVBoardPubKeys() [][]byte {
+func (bc *BlockChain) GetGOVBoardPubKeys() [][]byte {
 	pubkeys := [][]byte{}
-	for _, addr := range self.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress {
+	for _, addr := range bc.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress {
 		pubkeys = append(pubkeys, addr.Pk[:])
 	}
 	return pubkeys
 }
-func (self *BlockChain) GetBoardPaymentAddress(boardType byte) []privacy.PaymentAddress {
+func (bc *BlockChain) GetBoardPaymentAddress(boardType byte) []privacy.PaymentAddress {
 	if boardType == common.DCBBoard {
-		return self.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress
+		return bc.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress
 	}
-	return self.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress
+	return bc.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress
 }
 
 func ListPubKeyFromListPayment(listPaymentAddresses []privacy.PaymentAddress) [][]byte {
@@ -67,17 +67,18 @@ func ListPubKeyFromListPayment(listPaymentAddresses []privacy.PaymentAddress) []
 	return pubKeys
 }
 
-func (self *BlockChain) GetDCBParams() params.DCBParams {
-	return self.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams
+func (bc *BlockChain) GetDCBParams() params.DCBParams {
+	return bc.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams
 }
 
-func (self *BlockChain) GetGOVParams() params.GOVParams {
-	return self.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams
+func (bc *BlockChain) GetGOVParams() params.GOVParams {
+	return bc.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams
 }
 
-func (self *BlockChain) GetLoanReq(loanID []byte) (*common.Hash, error) {
+//// Loan
+func (bc *BlockChain) GetLoanReq(loanID []byte) (*common.Hash, error) {
 	key := getLoanRequestKeyBeacon(loanID)
-	reqHash, ok := self.BestState.Beacon.Params[key]
+	reqHash, ok := bc.BestState.Beacon.Params[key]
 	if !ok {
 		return nil, errors.Errorf("Loan request with ID %x not found", loanID)
 	}
@@ -86,11 +87,11 @@ func (self *BlockChain) GetLoanReq(loanID []byte) (*common.Hash, error) {
 }
 
 // GetLoanResps returns all responses of a given loanID
-func (self *BlockChain) GetLoanResps(loanID []byte) ([][]byte, []metadata.ValidLoanResponse, error) {
+func (bc *BlockChain) GetLoanResps(loanID []byte) ([][]byte, []metadata.ValidLoanResponse, error) {
 	key := getLoanResponseKeyBeacon(loanID)
 	senders := [][]byte{}
 	responses := []metadata.ValidLoanResponse{}
-	if data, ok := self.BestState.Beacon.Params[key]; ok {
+	if data, ok := bc.BestState.Beacon.Params[key]; ok {
 		lrds, err := parseLoanResponseValueBeacon(data)
 		if err != nil {
 			return nil, nil, err
@@ -103,16 +104,16 @@ func (self *BlockChain) GetLoanResps(loanID []byte) ([][]byte, []metadata.ValidL
 	return senders, responses, nil
 }
 
-func (self *BlockChain) GetLoanPayment(loanID []byte) (uint64, uint64, uint64, error) {
-	return self.config.DataBase.GetLoanPayment(loanID)
+func (bc *BlockChain) GetLoanPayment(loanID []byte) (uint64, uint64, uint64, error) {
+	return bc.config.DataBase.GetLoanPayment(loanID)
 }
 
-func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
-	reqHash, err := self.GetLoanReq(loanID)
+func (bc *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
+	reqHash, err := bc.GetLoanReq(loanID)
 	if err != nil {
 		return nil, err
 	}
-	_, _, _, txReq, err := self.GetTransactionByHash(reqHash)
+	_, _, _, txReq, err := bc.GetTransactionByHash(reqHash)
 	if err != nil {
 		return nil, err
 	}
@@ -120,9 +121,19 @@ func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest
 	return requestMeta, nil
 }
 
-func (self *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.Hash, saleID []byte) *params.SaleData {
+//// Dividends
+func (bc *BlockChain) GetLatestDividendProposal(forDCB bool) (id, amount uint64) {
+	return bc.BestState.Beacon.GetLatestDividendProposal(forDCB)
+}
+
+func (bc *BlockChain) GetDividendReceiversForID(dividendID uint64, forDCB bool) ([]privacy.PaymentAddress, []uint64, bool, error) {
+	return bc.config.DataBase.GetDividendReceiversForID(dividendID, forDCB)
+}
+
+//// Crowdsales
+func (bc *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.Hash, saleID []byte) *params.SaleData {
 	var saleData *params.SaleData
-	_, _, _, proposalTx, err := self.GetTransactionByHash(proposalTxHash)
+	_, _, _, proposalTx, err := bc.GetTransactionByHash(proposalTxHash)
 	if err == nil {
 		proposalMeta := proposalTx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
 		fmt.Printf("[db] proposal cs data: %+v\n", proposalMeta)
@@ -138,9 +149,9 @@ func (self *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.Hash, 
 	return saleData
 }
 
-func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*params.SaleData, error) {
+func (bc *BlockChain) GetCrowdsaleData(saleID []byte) (*params.SaleData, error) {
 	key := getSaleDataKeyBeacon(saleID)
-	if value, ok := self.BestState.Beacon.Params[key]; ok {
+	if value, ok := bc.BestState.Beacon.Params[key]; ok {
 		saleData, err := parseSaleDataValueBeacon(value)
 		if err != nil {
 			return nil, err
@@ -151,12 +162,12 @@ func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*params.SaleData, error
 	}
 }
 
-func (self *BlockChain) GetAllCrowdsales() ([]*params.SaleData, error) {
+func (bc *BlockChain) GetAllCrowdsales() ([]*params.SaleData, error) {
 	saleDataList := []*params.SaleData{}
-	saleIDs, proposalTxHashes, buyingAmounts, sellingAmounts, err := self.config.DataBase.GetAllCrowdsales()
+	saleIDs, proposalTxHashes, buyingAmounts, sellingAmounts, err := bc.config.DataBase.GetAllCrowdsales()
 	if err == nil {
 		for i, hash := range proposalTxHashes {
-			saleData := self.parseProposalCrowdsaleData(&hash, saleIDs[i])
+			saleData := bc.parseProposalCrowdsaleData(&hash, saleIDs[i])
 			if saleData != nil {
 				saleData.BuyingAmount = buyingAmounts[i]
 				saleData.SellingAmount = sellingAmounts[i]
@@ -167,8 +178,9 @@ func (self *BlockChain) GetAllCrowdsales() ([]*params.SaleData, error) {
 	return saleDataList, err
 }
 
-func (self *BlockChain) GetCMB(mainAccount []byte) (privacy.PaymentAddress, []privacy.PaymentAddress, uint64, *common.Hash, uint8, uint64, error) {
-	reserveAcc, members, capital, hash, state, fine, err := self.config.DataBase.GetCMB(mainAccount)
+//// CMB
+func (bc *BlockChain) GetCMB(mainAccount []byte) (privacy.PaymentAddress, []privacy.PaymentAddress, uint64, *common.Hash, uint8, uint64, error) {
+	reserveAcc, members, capital, hash, state, fine, err := bc.config.DataBase.GetCMB(mainAccount)
 	if err != nil {
 		return privacy.PaymentAddress{}, nil, 0, nil, 0, 0, err
 	}
@@ -184,14 +196,14 @@ func (self *BlockChain) GetCMB(mainAccount []byte) (privacy.PaymentAddress, []pr
 	return *reserve, memberAddresses, capital, txHash, state, fine, nil
 }
 
-func (self *BlockChain) GetCMBResponse(mainAccount []byte) ([][]byte, error) {
-	return self.config.DataBase.GetCMBResponse(mainAccount)
+func (bc *BlockChain) GetCMBResponse(mainAccount []byte) ([][]byte, error) {
+	return bc.config.DataBase.GetCMBResponse(mainAccount)
 }
 
-func (self *BlockChain) GetDepositSend(contractID []byte) ([]byte, error) {
-	return self.config.DataBase.GetDepositSend(contractID)
+func (bc *BlockChain) GetDepositSend(contractID []byte) ([]byte, error) {
+	return bc.config.DataBase.GetDepositSend(contractID)
 }
 
-func (self *BlockChain) GetWithdrawRequest(contractID []byte) ([]byte, uint8, error) {
-	return self.config.DataBase.GetWithdrawRequest(contractID)
+func (bc *BlockChain) GetWithdrawRequest(contractID []byte) ([]byte, uint8, error) {
+	return bc.config.DataBase.GetWithdrawRequest(contractID)
 }
