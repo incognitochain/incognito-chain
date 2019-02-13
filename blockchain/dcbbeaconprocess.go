@@ -27,6 +27,9 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 	case strconv.Itoa(metadata.AcceptDCBProposalMeta):
 		return bsb.processAcceptDCBProposalInstruction(inst)
 
+	case strconv.Itoa(metadata.DividendSubmitMeta):
+		return bsb.processDividendSubmitInstruction(inst)
+
 	case strconv.Itoa(metadata.CrowdsalePaymentMeta):
 		return bsb.processCrowdsalePaymentInstruction(inst)
 	}
@@ -107,7 +110,8 @@ func (bsb *BestStateBeacon) processAcceptDCBProposalInstruction(inst []string) e
 	if err != nil {
 		return err
 	}
-	// Store saledata in db
+
+	// Store saledata in state
 	for _, data := range dcbParams.ListSaleData {
 		key := getSaleDataKeyBeacon(data.SaleID)
 		if _, ok := bsb.Params[key]; ok {
@@ -116,6 +120,64 @@ func (bsb *BestStateBeacon) processAcceptDCBProposalInstruction(inst []string) e
 		}
 		value := getSaleDataValueBeacon(&data)
 		bsb.Params[key] = value
+	}
+
+	// Store dividend payments if needed
+	if dcbParams.DividendAmount > 0 {
+		key := getDCBDividendKeyBeacon()
+		dividendAmounts := []uint64{}
+		if value, ok := bsb.Params[key]; ok {
+			dividendAmounts, err = parseDividendValueBeacon(value)
+			if err != nil {
+				return err
+			}
+		}
+		dividendAmounts = append(dividendAmounts, dcbParams.DividendAmount)
+		value := getDividendValueBeacon(dividendAmounts)
+		bsb.Params[key] = value
+	}
+	return nil
+}
+
+func (bsb *BestStateBeacon) processDividendSubmitInstruction(inst []string) error {
+	ds, err := metadata.ParseDividendSubmitActionValue(inst[1])
+	if err != nil {
+		return err
+	}
+
+	// Save number of token for this shard
+	key := getDividendSubmitKeyBeacon(ds.ShardID, ds.DividendID, ds.TokenID)
+	value := getDividendSubmitValueBeacon(ds.TotalTokenAmount)
+	bsb.Params[key] = value
+
+	// If enough shard submitted token amounts, aggregate total and save to params to initiate dividend payments
+	totalTokenOnAllShards := uint64(0)
+	for i := byte(0); i <= byte(255); i++ {
+		key := getDividendSubmitKeyBeacon(i, ds.DividendID, ds.TokenID)
+		if value, ok := bsb.Params[key]; ok {
+			shardTokenAmount := parseDividendSubmitValueBeacon(value)
+			totalTokenOnAllShards += shardTokenAmount
+		} else {
+			return nil
+		}
+	}
+	forDCB := ds.TokenID.IsEqual(&common.DCBTokenID)
+	_, cstToPayout := bsb.GetLatestDividendProposal(forDCB)
+	if forDCB && cstToPayout > bsb.StabilityInfo.BankFund {
+		cstToPayout = bsb.StabilityInfo.BankFund
+	} else if !forDCB && cstToPayout > bsb.StabilityInfo.SalaryFund {
+		cstToPayout = bsb.StabilityInfo.SalaryFund
+	}
+
+	key = getDividendAggregatedKeyBeacon(ds.DividendID, ds.TokenID)
+	value = getDividendAggregatedValueBeacon(totalTokenOnAllShards, cstToPayout)
+	bsb.Params[key] = value
+
+	// Update institution's fund
+	if forDCB {
+		bsb.StabilityInfo.BankFund -= cstToPayout
+	} else {
+		bsb.StabilityInfo.SalaryFund -= cstToPayout
 	}
 	return nil
 }
