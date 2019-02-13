@@ -102,6 +102,7 @@ func (tx *Tx) Init(
 	senderFullKey.ImportFromPrivateKey(senderSK)
 	// get public key last byte of sender
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
+
 	// init info of tx
 	pubKeyData := &privacy.EllipticPoint{}
 	pubKeyData.Decompress(senderFullKey.PaymentAddress.Pk)
@@ -109,6 +110,7 @@ func (tx *Tx) Init(
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
+
 	// set metadata
 	tx.Metadata = metaData
 
@@ -486,7 +488,7 @@ func (tx Tx) String() string {
 }
 
 func (tx *Tx) Hash() *common.Hash {
-	hash := common.DoubleHashH([]byte(tx.String()))
+	hash := common.HashH([]byte(tx.String()))
 	return &hash
 }
 
