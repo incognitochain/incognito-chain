@@ -15,10 +15,12 @@ const (
 )
 
 type MessagePeerState struct {
-	Beacon    blockchain.ChainState
-	Shards    map[byte]blockchain.ChainState
-	Timestamp int64
-	SenderID  string
+	Beacon            blockchain.ChainState
+	Shards            map[byte]blockchain.ChainState
+	ShardToBeaconPool map[byte][]common.Hash
+	CrossShardPool    map[byte]map[byte][]common.Hash
+	Timestamp         int64
+	SenderID          string
 }
 
 func (msg *MessagePeerState) Hash() string {
