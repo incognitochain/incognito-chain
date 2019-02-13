@@ -50,6 +50,7 @@ type Server struct {
 	waitGroup       sync.WaitGroup
 	netSync         *netsync.NetSync
 	addrManager     *addrmanager.AddrManager
+	userKeySet      *cashec.KeySet
 	wallet          *wallet.Wallet
 	consensusEngine *constantpos.Engine
 	blockgen        *blockchain.BlkTmplGenerator
@@ -136,7 +137,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	// 		return errors.New("No child account in wallet. Light Mode required Wallet with at least one child account")
 	// 	}
 	// }
-	userKeySet, err := cfg.GetUserKeySet()
+	serverObj.userKeySet, err = cfg.GetUserKeySet()
 	if err != nil {
 		if cfg.NodeMode == "auto" || cfg.NodeMode == "beacon" || cfg.NodeMode == "shard" {
 			Logger.log.Critical(err)
@@ -167,7 +168,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		CrossShardPool:    serverObj.crossShardPool,
 		Server:            serverObj,
-		UserKeySet:        userKeySet,
+		UserKeySet:        serverObj.userKeySet,
 		NodeMode:          cfg.NodeMode,
 		// Light:       cfg.Light,
 	})
@@ -246,7 +247,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		Server:      serverObj,
 		BlockGen:    serverObj.blockgen,
 		NodeMode:    cfg.NodeMode,
-		UserKeySet:  userKeySet,
+		UserKeySet:  serverObj.userKeySet,
 	})
 	if err != nil {
 		return err
@@ -542,10 +543,7 @@ func (serverObj *Server) InitListenerPeer(amgr *addrmanager.AddrManager, listenA
 // newPeerConfig returns the configuration for the listening RemotePeer.
 */
 func (serverObj *Server) NewPeerConfig() *peer.Config {
-	KeySetUser, err := cfg.GetUserKeySet()
-	if err != nil {
-		Logger.log.Critical(err)
-	}
+	KeySetUser := serverObj.userKeySet
 	config := &peer.Config{
 		MessageListeners: peer.MessageListeners{
 			OnBlockShard:       serverObj.OnBlockShard,
@@ -1033,40 +1031,6 @@ func (serverObj *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 	return true
 }
 
-/*
-GetChainState - send a getchainstate msg to connected peer
-*/
-func (serverObj *Server) PushMessageGetBeaconState() error {
-	Logger.log.Debugf("Send a GetBeaconState")
-	listener := serverObj.connManager.Config.ListenerPeer
-	msg, err := wire.MakeEmptyMessage(wire.CmdGetBeaconState)
-	if err != nil {
-		return err
-	}
-	msg.(*wire.MessageGetBeaconState).Timestamp = time.Now().Unix()
-	msg.SetSenderID(listener.PeerID)
-	Logger.log.Debugf("Send a GetBeaconState from %s", listener.RawAddress)
-	listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_PEER, nil)
-	return nil
-}
-
-/*
-GetChainState - send a getchainstate msg to connected peer
-*/
-func (serverObj *Server) PushMessageGetShardState(shardID byte) error {
-	Logger.log.Debugf("Send a GetShardState")
-	listener := serverObj.connManager.Config.ListenerPeer
-	msg, err := wire.MakeEmptyMessage(wire.CmdGetShardState)
-	if err != nil {
-		return err
-	}
-	msg.(*wire.MessageGetShardState).Timestamp = time.Now().Unix()
-	msg.SetSenderID(listener.PeerID)
-	Logger.log.Debugf("Send a GetShardState from %s", listener.RawAddress)
-	listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_PEER, nil)
-	return nil
-}
-
 func (serverObj *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	// push message version
 	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
@@ -1218,6 +1182,35 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 	return nil
 }
 
-func (serverObj *Server) BoardcastNodeState() {
+func (serverObj *Server) BoardcastNodeState() error {
+	listener := serverObj.connManager.Config.ListenerPeer
+	msg, err := wire.MakeEmptyMessage(wire.CmdPeerState)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessagePeerState).Beacon = blockchain.ChainState{
+		serverObj.blockChain.BestState.Beacon.BeaconHeight,
+		serverObj.blockChain.BestState.Beacon.BestBlockHash,
+		serverObj.blockChain.BestState.Beacon.Hash(),
+	}
+	for _, shardID := range serverObj.blockChain.GetCurrentSyncShards() {
+		msg.(*wire.MessagePeerState).Shards[shardID] = blockchain.ChainState{
+			serverObj.blockChain.BestState.Shard[shardID].ShardHeight,
+			serverObj.blockChain.BestState.Shard[shardID].BestShardBlockHash,
+			serverObj.blockChain.BestState.Shard[shardID].Hash(),
+		}
+	}
+	msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidPendingBlockHash()
 
+	userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58())
+	if (cfg.NodeMode == "auto" || cfg.NodeMode == "shard") && userRole == "shard" {
+		userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58())
+		if userRole == "shard-proposer" || userRole == "shard-validator" {
+			// msg.(*wire.MessagePeerState).CrossShardPool = serverObj.crossShardPool.
+		}
+	}
+	msg.SetSenderID(listener.PeerID)
+	Logger.log.Debugf("Boardcast peerstate from %s", listener.RawAddress)
+	serverObj.PushMessageToAll(msg)
+	return nil
 }
