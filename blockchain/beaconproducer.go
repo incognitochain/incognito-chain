@@ -218,7 +218,7 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 					if l[3] != "shard" || l[4] != strconv.Itoa(int(shardID)) {
 						panic("Swap instruction is invalid")
 					} else {
-						validSwap[shardID] = append(validSwap[shardID], l)
+						// validSwap[shardID] = append(validSwap[shardID], l)
 					}
 				}
 			}
