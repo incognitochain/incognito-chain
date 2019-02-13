@@ -425,8 +425,8 @@ func (rpcServer RpcServer) handleGetListCustomTokenBalance(params interface{}, c
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		pubkey := base58.Base58Check{}.Encode(accountPaymentAddress.Pk, 0x00)
-		item.Amount = res[pubkey]
+		paymentAddressInStr := base58.Base58Check{}.Encode(accountPaymentAddress.Bytes(), 0x00)
+		item.Amount = res[paymentAddressInStr]
 		if item.Amount == 0 {
 			continue
 		}

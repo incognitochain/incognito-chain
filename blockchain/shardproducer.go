@@ -336,10 +336,33 @@ func FetchBeaconBlockFromHeight(db database.DatabaseInterface, from uint64, to u
 func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) {
 	byteMap := make([]byte, common.SHARD_NUMBER)
 	for _, tx := range txList {
-		for _, outCoin := range tx.GetProof().OutputCoins {
-			lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-			shardID := common.GetShardIDFromLastByte(lastByte)
-			byteMap[common.GetShardIDFromLastByte(shardID)] = 1
+		switch tx.GetType() {
+		case common.TxNormalType, common.TxSalaryType:
+			{
+				for _, outCoin := range tx.GetProof().OutputCoins {
+					lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+					shardID := common.GetShardIDFromLastByte(lastByte)
+					byteMap[common.GetShardIDFromLastByte(shardID)] = 1
+				}
+			}
+		case common.TxCustomTokenType:
+			{
+				customTokenTx := tx.(*transaction.TxCustomToken)
+				for _, out := range customTokenTx.TxTokenData.Vouts {
+					lastByte := out.PaymentAddress.Pk[len(out.PaymentAddress.Pk)-1]
+					shardID := common.GetShardIDFromLastByte(lastByte)
+					byteMap[common.GetShardIDFromLastByte(shardID)] = 1
+				}
+			}
+		case common.TxCustomTokenPrivacyType:
+			{
+				customTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
+				for _, outCoin := range customTokenTx.TxTokenPrivacyData.TxNormal.GetProof().OutputCoins {
+					lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+					shardID := common.GetShardIDFromLastByte(lastByte)
+					byteMap[common.GetShardIDFromLastByte(shardID)] = 1
+				}
+			}
 		}
 	}
 
