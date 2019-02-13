@@ -162,11 +162,13 @@ func getDividendAggregatedKeyBeacon(dividendID uint64, tokenID *common.Hash) str
 	return strings.Join([]string{dividendAggregatePrefix, strconv.FormatUint(dividendID, 10), tokenID.String()}, "")
 }
 
-func getDividendAggregatedValueBeacon(totalTokenAmount uint64) string {
-	return strconv.FormatUint(totalTokenAmount, 10)
+func getDividendAggregatedValueBeacon(totalTokenAmount, cstToPayout uint64) string {
+	return strings.Join([]string{strconv.FormatUint(totalTokenAmount, 10), strconv.FormatUint(cstToPayout, 10)}, dataSep)
 }
 
-func parseDividendAggregatedValueBeacon(value string) uint64 {
-	totalTokenAmount, _ := strconv.ParseUint(value, 10, 64)
-	return totalTokenAmount
+func parseDividendAggregatedValueBeacon(value string) (uint64, uint64) {
+	splits := strings.Split(value, dataSep)
+	totalTokenAmount, _ := strconv.ParseUint(splits[0], 10, 64)
+	cstToPayout, _ := strconv.ParseUint(splits[1], 10, 64)
+	return totalTokenAmount, cstToPayout
 }
