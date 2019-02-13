@@ -123,6 +123,10 @@ type DatabaseInterface interface {
 	GetLoanPayment([]byte) (uint64, uint64, uint64, error) // param: loanID; return: principle, interest, deadline
 	GetLoanRequestTx(loanID []byte) ([]byte, error)
 
+	// Dividends
+	GetDividendReceiversForID(id uint64, forDCB bool) (receivers []privacy.PaymentAddress, amounts []uint64, hasValue bool, err error)
+	StoreDividendReceiversForID(id uint64, forDCB bool, receivers []privacy.PaymentAddress, amounts []uint64) error
+
 	// Crowdsale
 	StoreCrowdsaleData(saleID []byte, proposalTxHash common.Hash, buyingAmount uint64, sellingAmount uint64) error
 	GetCrowdsaleData([]byte) (common.Hash, uint64, uint64, error)
