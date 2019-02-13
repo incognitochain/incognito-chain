@@ -21,6 +21,16 @@ type buyBackInfo struct {
 	tokenID        common.Hash
 }
 
+type BuyGOVTokenReqAction struct {
+	TxReqID common.Hash                 `json:"txReqId"`
+	Meta    metadata.BuyGOVTokenRequest `json:"meta"`
+}
+
+type BuySellReqAction struct {
+	TxReqID common.Hash             `json:"txReqId"`
+	Meta    metadata.BuySellRequest `json:"meta"`
+}
+
 func buildInstructionsForBuyBackBondsReq(
 	shardID byte,
 	contentStr string,
@@ -31,17 +41,13 @@ func buildInstructionsForBuyBackBondsReq(
 	if err != nil {
 		return [][]string{}, err
 	}
-	buyBackBondsActionContent := map[string]interface{}{}
-	err = json.Unmarshal(contentBytes, &buyBackBondsActionContent)
+	var buyBackReqTx transaction.TxCustomToken
+	err = json.Unmarshal(contentBytes, &buyBackReqTx)
 	if err != nil {
 		return nil, err
 	}
-
-	buyBackReqTx, ok := buyBackBondsActionContent["reqTx"].(*transaction.TxCustomToken)
-	if !ok {
-		return nil, errors.New("Could not parse TxCustomToken.")
-	}
-	buyBackReqMeta, ok := buyBackBondsActionContent["buyBackMeta"].(metadata.BuyBackRequest)
+	meta := buyBackReqTx.GetMetadata()
+	buyBackReqMeta, ok := meta.(*metadata.BuyBackRequest)
 	if !ok {
 		return nil, errors.New("Could not parse BuyBackRequest metadata.")
 	}
@@ -107,16 +113,12 @@ func buildInstructionsForBuyBondsFromGOVReq(
 	if err != nil {
 		return [][]string{}, err
 	}
-	buyBondsFromGOVActionContent := map[string]interface{}{}
-	err = json.Unmarshal(contentBytes, &buyBondsFromGOVActionContent)
+	var buySellReqAction BuySellReqAction
+	err = json.Unmarshal(contentBytes, &buySellReqAction)
 	if err != nil {
 		return nil, err
 	}
-	md, ok := buyBondsFromGOVActionContent["meta"].(metadata.BuySellRequest)
-	if !ok {
-		return nil, errors.New("Could not parse BuySellRequest metadata.")
-	}
-
+	md := buySellReqAction.Meta
 	instructions := [][]string{}
 	stabilityInfo := beaconBestState.StabilityInfo
 	sellingBondsParams := stabilityInfo.GOVConstitution.GOVParams.SellingBonds
@@ -157,16 +159,12 @@ func buildInstructionsForBuyGOVTokensReq(
 	if err != nil {
 		return [][]string{}, err
 	}
-	buyGOVTokensActionContent := map[string]interface{}{}
-	err = json.Unmarshal(contentBytes, &buyGOVTokensActionContent)
+	var buyGOVTokenReqAction BuyGOVTokenReqAction
+	err = json.Unmarshal(contentBytes, &buyGOVTokenReqAction)
 	if err != nil {
 		return nil, err
 	}
-	md, ok := buyGOVTokensActionContent["meta"].(metadata.BuyGOVTokenRequest)
-	if !ok {
-		return nil, errors.New("Could not parse BuyGOVTokenRequest metadata.")
-	}
-
+	md := buyGOVTokenReqAction.Meta
 	instructions := [][]string{}
 	stabilityInfo := beaconBestState.StabilityInfo
 	sellingGOVTokensParams := stabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens
@@ -356,13 +354,13 @@ func (blockgen *BlkTmplGenerator) buildBuyGOVTokensRes(
 	if err != nil {
 		return nil, err
 	}
-	buyGOVTokensActionContent := map[string]interface{}{}
-	err = json.Unmarshal(contentBytes, &buyGOVTokensActionContent)
+	var buyGOVTokenReqAction BuyGOVTokenReqAction
+	err = json.Unmarshal(contentBytes, &buyGOVTokenReqAction)
 	if err != nil {
 		return nil, err
 	}
-	txReqID := buyGOVTokensActionContent["txReqId"].(common.Hash)
-	reqMeta := buyGOVTokensActionContent["meta"].(metadata.BuyGOVTokenRequest)
+	txReqID := buyGOVTokenReqAction.TxReqID
+	reqMeta := buyGOVTokenReqAction.Meta
 	if instType == "refund" {
 		refundMeta := metadata.NewResponseBase(txReqID, metadata.ResponseBaseMeta)
 		refundTx := new(transaction.Tx)
@@ -426,13 +424,13 @@ func (blockgen *BlkTmplGenerator) buildBuyBondsFromGOVRes(
 	if err != nil {
 		return nil, err
 	}
-	buyBondsFromGOVActionContent := map[string]interface{}{}
-	err = json.Unmarshal(contentBytes, &buyBondsFromGOVActionContent)
+	var buySellReqAction BuySellReqAction
+	err = json.Unmarshal(contentBytes, &buySellReqAction)
 	if err != nil {
 		return nil, err
 	}
-	txReqID := buyBondsFromGOVActionContent["txReqId"].(common.Hash)
-	reqMeta := buyBondsFromGOVActionContent["meta"].(metadata.BuySellRequest)
+	txReqID := buySellReqAction.TxReqID
+	reqMeta := buySellReqAction.Meta
 	if instType == "refund" {
 		refundMeta := metadata.NewResponseBase(txReqID, metadata.ResponseBaseMeta)
 		refundTx := new(transaction.Tx)
