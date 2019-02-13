@@ -112,7 +112,7 @@ type BlockchainRetriever interface {
 
 	// For validating dividend
 	GetLatestDividendProposal(bool) (uint64, uint64)
-	GetAmountPerAccount(*common.Hash) (uint64, []string, []uint64, error)
+	GetAmountPerAccount(*common.Hash) (uint64, []privacy.PaymentAddress, []uint64, error)
 
 	// For validating crowdsale
 	GetCrowdsaleData([]byte) (*params.SaleData, error)
