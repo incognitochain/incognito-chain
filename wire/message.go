@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/common"
+
 	"time"
 
 	"github.com/libp2p/go-libp2p-peer"
@@ -167,7 +170,10 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		break
 	case CmdPeerState:
 		msg = &MessagePeerState{
-			Timestamp: time.Now().Unix(),
+			Timestamp:         time.Now().Unix(),
+			Shards:            make(map[byte]blockchain.ChainState),
+			ShardToBeaconPool: make(map[byte][]common.Hash),
+			CrossShardPool:    make(map[byte]map[byte][]common.Hash),
 		}
 		break
 	case CmdGetAddr:

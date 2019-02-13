@@ -35,19 +35,16 @@ func (self *BlockChain) StartSyncBlk() {
 			case <-self.cQuitSync:
 				return
 			case <-time.Tick(defaultBroadcastStateTime):
-				needToSync := self.knownChainState.Beacon.Height - self.BestState.Beacon.BeaconHeight
-				for offset := uint64(0); offset <= needToSync; offset++ {
-					blks, err := self.config.NodeBeaconPool.GetBlocks(self.BestState.Beacon.BeaconHeight + 1)
+				blks, err := self.config.NodeBeaconPool.GetBlocks(self.BestState.Beacon.BeaconHeight + 1)
+				if err != nil {
+					Logger.log.Error(err)
+					continue
+				}
+				for _, newBlk := range blks {
+					err = self.InsertBeaconBlock(&newBlk)
 					if err != nil {
 						Logger.log.Error(err)
 						continue
-					}
-					for _, newBlk := range blks {
-						err = self.InsertBeaconBlock(&newBlk)
-						if err != nil {
-							Logger.log.Error(err)
-							continue
-						}
 					}
 				}
 				go self.config.Server.BoardcastNodeState()
@@ -224,14 +221,18 @@ func (self *BlockChain) StopSyncShard(shardID byte) {
 	self.syncStatus.Lock()
 	defer self.syncStatus.Unlock()
 	if _, ok := self.syncStatus.Shard[shardID]; ok {
-		close(self.syncStatus.Shard[shardID])
 		delete(self.syncStatus.Shard, shardID)
 	}
 }
 
 func (self *BlockChain) GetCurrentSyncShards() []byte {
-
-	return []byte{}
+	self.syncStatus.Lock()
+	defer self.syncStatus.Unlock()
+	var currentSyncShards []byte
+	for shardID, _ := range self.syncStatus.Shard {
+		currentSyncShards = append(currentSyncShards, shardID)
+	}
+	return currentSyncShards
 }
 
 func (self *BlockChain) StopSync() error {
@@ -300,6 +301,65 @@ func (self *BlockChain) SyncBlkBeacon(byHash bool, getFromPool bool, blksHash []
 		}
 	} else {
 		//Sync by height
+		var blkBatchsNeedToGet map[uint64]uint64
+		blkBatchsNeedToGet = make(map[uint64]uint64)
+		var blksSyncByHeight *map[uint64]peerSyncTimestamp
+		tempInterface, ok := self.syncStatus.CurrentlySyncBeaconBlk.Load("byheight")
+		if ok {
+			blksSyncByHeight = tempInterface.(*map[uint64]peerSyncTimestamp)
+			latestBatchBegin := uint64(0)
+			for blkHeight := from; blkHeight <= to; blkHeight++ {
+				if timeStamp, ok := (*blksSyncByHeight)[blkHeight]; ok {
+					if time.Since(time.Unix(timeStamp.Time, 0)) > defaultMaxBlockSyncTime {
+						(*blksSyncByHeight)[blkHeight] = peerSyncTimestamp{
+							Time:   time.Now().Unix(),
+							PeerID: peerID,
+						}
+						if latestBatchEnd, ok := blkBatchsNeedToGet[latestBatchBegin]; !ok {
+							blkBatchsNeedToGet[blkHeight] = blkHeight
+							latestBatchBegin = blkHeight
+						} else {
+							if latestBatchEnd+1 == blkHeight {
+								blkBatchsNeedToGet[latestBatchBegin] = blkHeight
+							} else {
+								blkBatchsNeedToGet[blkHeight] = blkHeight
+								latestBatchBegin = blkHeight
+							}
+						}
+					}
+				} else {
+					(*blksSyncByHeight)[blkHeight] = peerSyncTimestamp{
+						Time:   time.Now().Unix(),
+						PeerID: peerID,
+					}
+					if latestBatchEnd, ok := blkBatchsNeedToGet[latestBatchBegin]; !ok {
+						blkBatchsNeedToGet[blkHeight] = blkHeight
+						latestBatchBegin = blkHeight
+					} else {
+						if latestBatchEnd+1 == blkHeight {
+							blkBatchsNeedToGet[latestBatchBegin] = blkHeight
+						} else {
+							blkBatchsNeedToGet[blkHeight] = blkHeight
+							latestBatchBegin = blkHeight
+						}
+					}
+				}
+			}
+		} else {
+			blksSyncByHeight = &map[uint64]peerSyncTimestamp{}
+			for blkHeight := from; blkHeight <= to; blkHeight++ {
+				(*blksSyncByHeight)[blkHeight] = peerSyncTimestamp{
+					Time:   time.Now().Unix(),
+					PeerID: peerID,
+				}
+			}
+			blkBatchsNeedToGet[from] = to
+		}
+		if len(blkBatchsNeedToGet) > 0 {
+			for fromHeight, toHeight := range blkBatchsNeedToGet {
+				go self.config.Server.PushMessageGetBlockBeaconByHeight(fromHeight, toHeight, peerID)
+			}
+		}
 	}
 }
 
@@ -328,5 +388,13 @@ func (self *BlockChain) SyncBlkShardToBeacon(byHash bool, getFromPool bool, blkH
 }
 
 func (self *BlockChain) SyncBlkCrossShard(getFromPool bool, blkHash common.Hash, fromShard uint64, toShard uint64, peerID libp2p.ID) {
+
+}
+
+func getBlkNeedToGetByHash() {
+
+}
+
+func getBlkNeedToGetByHeight() {
 
 }

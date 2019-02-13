@@ -306,7 +306,7 @@ func (netSync *NetSync) HandleMessagePeerState(msg *wire.MessagePeerState) {
 		return
 	}
 
-	netSync.config.BlockChain.OnPeerStateReceived(&msg.Beacon, &msg.Shards, peerID)
+	netSync.config.BlockChain.OnPeerStateReceived(&msg.Beacon, &msg.Shards, &msg.ShardToBeaconPool, &msg.CrossShardPool, peerID)
 }
 
 func (netSync *NetSync) HandleMessageGetBlockShard(msg *wire.MessageGetBlockShard) {
