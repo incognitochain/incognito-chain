@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
@@ -33,27 +34,23 @@ func BuildCoinbaseTxs(
 }
 
 func BuildDividendTxs(
-	infos []metadata.DividendPayment,
-	// proposal *metadata.DividendProposal,
+	dividendID uint64,
+	tokenID *common.Hash,
+	receivers []*privacy.PaymentAddress,
+	amounts []uint64,
 	producerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
 ) ([]*Tx, error) {
-	amounts := []uint64{}
-	dividendMetaList := []metadata.Metadata{}
-	paymentAddresses := []*privacy.PaymentAddress{}
-	for _, info := range infos {
-		amounts = append(amounts, info.Amount)
-		paymentAddress := info.TokenHolder
-		paymentAddresses = append(paymentAddresses, &paymentAddress)
-		dividendMeta := &metadata.Dividend{
-			// PayoutID:       proposal.PayoutID,
-			// TokenID:        proposal.TokenID,
-			PaymentAddress: paymentAddress,
-			MetadataBase:   metadata.MetadataBase{Type: metadata.DividendMeta},
+	metas := []metadata.Metadata{}
+	for i := 0; i < len(receivers); i++ {
+		dividendMeta := &metadata.DividendPayment{
+			DividendID:   dividendID,
+			TokenID:      tokenID,
+			MetadataBase: metadata.MetadataBase{Type: metadata.DividendPaymentMeta},
 		}
-		dividendMetaList = append(dividendMetaList, dividendMeta)
+		metas = append(metas, dividendMeta)
 	}
-	return BuildCoinbaseTxs(paymentAddresses, amounts, producerPrivateKey, db, dividendMetaList)
+	return BuildCoinbaseTxs(receivers, amounts, producerPrivateKey, db, metas)
 }
 
 // BuildRefundTx - build a coinbase tx to refund constant with CMB policies

@@ -161,9 +161,24 @@ func (bsb *BestStateBeacon) processDividendSubmitInstruction(inst []string) erro
 			return nil
 		}
 	}
+	forDCB := ds.TokenID.IsEqual(&common.DCBTokenID)
+	_, cstToPayout := bsb.GetLatestDividendProposal(forDCB)
+	if forDCB && cstToPayout > bsb.StabilityInfo.BankFund {
+		cstToPayout = bsb.StabilityInfo.BankFund
+	} else if !forDCB && cstToPayout > bsb.StabilityInfo.SalaryFund {
+		cstToPayout = bsb.StabilityInfo.SalaryFund
+	}
+
 	key = getDividendAggregatedKeyBeacon(ds.DividendID, ds.TokenID)
-	value = getDividendAggregatedValueBeacon(totalTokenOnAllShards)
+	value = getDividendAggregatedValueBeacon(totalTokenOnAllShards, cstToPayout)
 	bsb.Params[key] = value
+
+	// Update institution's fund
+	if forDCB {
+		bsb.StabilityInfo.BankFund -= cstToPayout
+	} else {
+		bsb.StabilityInfo.SalaryFund -= cstToPayout
+	}
 	return nil
 }
 

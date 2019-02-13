@@ -126,6 +126,10 @@ func (bc *BlockChain) GetLatestDividendProposal(forDCB bool) (id, amount uint64)
 	return bc.BestState.Beacon.GetLatestDividendProposal(forDCB)
 }
 
+func (bc *BlockChain) GetDividendReceiversForID(dividendID uint64, forDCB bool) ([]privacy.PaymentAddress, []uint64, bool, error) {
+	return bc.config.DataBase.GetDividendReceiversForID(dividendID, forDCB)
+}
+
 //// Crowdsales
 func (bc *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.Hash, saleID []byte) *params.SaleData {
 	var saleData *params.SaleData

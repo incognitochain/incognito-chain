@@ -6,6 +6,7 @@ import (
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 func (bc *BlockChain) GetAmountPerAccount(tokenID *common.Hash) (uint64, []privacy.PaymentAddress, []uint64, error) {
@@ -71,40 +72,88 @@ func (blockgen *BlkTmplGenerator) buildInstitutionDividendSubmitTx(forDCB bool) 
 	}
 
 	return nil, nil
-	//infos := []metadata.DividendPayment{}
-	//// Build tx to pay dividend to each holder
-	//for i, holder := range tokenHolders {
-	//	holderAddrInBytes, _, err := base58.Base58Check{}.Decode(holder)
-	//	if err != nil {
-	//		return nil, 0, err
-	//	}
-	//	holderAddress := (&privacy.PaymentAddress{}).SetBytes(holderAddrInBytes)
-	//	info := metadata.DividendPayment{
-	//		TokenHolder: *holderAddress,
-	//		Amount:      amounts[i] / totalTokenAmount,
-	//	}
-	//	payoutAmount += info.Amount
-	//	infos = append(infos, info)
-
-	//	if len(infos) > metadata.MaxDivTxsPerBlock {
-	//		break // Pay dividend to only some token holders in this block
-	//	}
-	//}
-
-	//dividendTxs, err = transaction.BuildDividendTxs(infos, proposal, producerPrivateKey, blockgen.chain.GetDatabase())
-	//if err != nil {
-	//	return nil, 0, err
-	//}
 }
 
-func (blockgen *BlkTmplGenerator) buildDividendSubmitTx() ([]metadata.Transaction, error) {
-	// For DCB
-	dcbDividendSubmitTx, err := blockgen.buildInstitutionDividendSubmitTx(true)
+func (blockgen *BlkTmplGenerator) buildInstitutionDividendPaymentTxs(forDCB bool, producerPrivateKey *privacy.SpendingKey) ([]*transaction.Tx, error) {
+	// Get latest dividend proposal id and amount
+	id, cstToPayout := blockgen.chain.BestState.Beacon.GetLatestDividendProposal(forDCB)
+	if id == 0 {
+		return nil, nil // No Dividend proposal found
+	}
+
+	// Check in shard state if DividendSubmit tx has been included in chain
+	receivers, amounts, hasValue, err := blockgen.chain.config.DataBase.GetDividendReceiversForID(id, forDCB)
+	if err != nil {
+		return nil, err
+	}
+	if !hasValue {
+		return nil, nil // Waiting for Dividend submit tx to be included in block
+	}
+
+	if len(receivers) == 0 || len(amounts) == 0 {
+		return nil, nil // Paid to all receivers for the latest dividend proposal
+	}
+
+	// Get dividend info
+	tokenID := &common.DCBTokenID
+	if !forDCB {
+		tokenID = &common.GOVTokenID
+	}
+	totalTokenOnAllShards, cstToPayout, err := blockgen.chain.BestState.Beacon.GetDividendAggregatedInfo(id, tokenID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Make dividend payments to token holders
+	paymentAddresses := []*privacy.PaymentAddress{}
+	payoutAmounts := []uint64{}
+	for i, receiver := range receivers {
+		if i > metadata.MaxDivTxsPerBlock {
+			break
+		}
+		amount := amounts[i]
+
+		receiverCstAmount := amount * cstToPayout / totalTokenOnAllShards
+		paymentAddresses = append(paymentAddresses, &receiver)
+		payoutAmounts = append(payoutAmounts, receiverCstAmount)
+	}
+
+	txs, err := transaction.BuildDividendTxs(
+		id,
+		tokenID,
+		paymentAddresses,
+		payoutAmounts,
+		producerPrivateKey,
+		blockgen.chain.GetDatabase(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return txs, nil
+}
+
+func (blockgen *BlkTmplGenerator) buildDividendTxs(producerPrivateKey *privacy.SpendingKey) ([]metadata.Transaction, error) {
+	// Process dividend proposals for DCB
+	forDCB := true
+	dcbDividendSubmitTx, err := blockgen.buildInstitutionDividendSubmitTx(forDCB)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO: For GOV
+	forDCB = false
 
-	return []metadata.Transaction{dcbDividendSubmitTx}, nil
+	// Build dividend payments for DCB
+	forDCB = true
+	dcbDividendPaymentTxs, err := blockgen.buildInstitutionDividendPaymentTxs(forDCB, producerPrivateKey)
+
+	// TODO: Build dividend payments for GOV
+	forDCB = false
+
+	txs := []metadata.Transaction{dcbDividendSubmitTx}
+	for _, tx := range dcbDividendPaymentTxs {
+		txs = append(txs, tx)
+	}
+
+	return txs, nil
 }

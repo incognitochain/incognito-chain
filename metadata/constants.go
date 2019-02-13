@@ -13,7 +13,7 @@ const (
 	LoanUnlockMeta
 	LoanPaymentMeta
 
-	DividendMeta
+	DividendPaymentMeta
 	DividendSubmitMeta
 
 	CrowdsaleRequestMeta
@@ -89,7 +89,6 @@ const (
 
 const (
 	MaxDivTxsPerBlock = 1000
-	PayoutFrequency   = 1000 // Payout dividend every 1000 blocks
 )
 
 // update oracle board actions
