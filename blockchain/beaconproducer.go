@@ -212,6 +212,9 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 			if err != nil {
 				panic(fmt.Sprintf("Build stability instructions failed: %s", err.Error()))
 			}
+			if err != nil {
+				panic(fmt.Sprintf("Process stability instructions failed: %s", err.Error()))
+			}
 			stabilityInstructions = append(stabilityInstructions, stabilityInstructionsPerBlock...)
 			for _, l := range shardBlock.Instructions {
 				if l[0] == "swap" {
@@ -220,6 +223,8 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 					} else {
 						validSwap[shardID] = append(validSwap[shardID], l)
 					}
+				} else { // process voting instruction
+					processInstruction(l)
 				}
 			}
 			if index != 0 && err != nil {
@@ -293,6 +298,21 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 		}
 	}
 	return shardStates, validStakers, validSwap, stabilityInstructions
+}
+
+//todo @0xjackalope process instruction without create new tx (eg: update db)
+//should be merge with buildStabilityInstruction
+func processInstruction(Instruction []string) error {
+	switch Instruction[0] {
+	case "voteboard":
+		{
+
+		}
+	case "voteproposal":
+		{
+
+		}
+	}
 }
 
 /*
