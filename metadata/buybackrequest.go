@@ -1,7 +1,10 @@
 package metadata
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -76,16 +79,16 @@ func (bbReq *BuyBackRequest) Hash() *common.Hash {
 	return &hash
 }
 
-// func (bbReq *BuyBackRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-// 	actionContent := map[string]interface{}{
-// 		"txReqId": *(tx.Hash()),
-// 		"meta":    *bsReq,
-// 	}
-// 	actionContentBytes, err := json.Marshal(actionContent)
-// 	if err != nil {
-// 		return [][]string{}, err
-// 	}
-// 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-// 	action := []string{strconv.Itoa(BuyFromGOVRequestMeta), actionContentBase64Str}
-// 	return [][]string{action}, nil
-// }
+func (bbReq *BuyBackRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+	actionContent := map[string]interface{}{
+		"reqTx":       tx,
+		"buyBackMeta": *bbReq,
+	}
+	actionContentBytes, err := json.Marshal(actionContent)
+	if err != nil {
+		return [][]string{}, err
+	}
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	action := []string{strconv.Itoa(BuyBackRequestMeta), actionContentBase64Str}
+	return [][]string{action}, nil
+}
