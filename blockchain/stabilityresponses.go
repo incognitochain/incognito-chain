@@ -13,6 +13,90 @@ import (
 	"github.com/pkg/errors"
 )
 
+type buyBackInfo struct {
+	paymentAddress privacy.PaymentAddress
+	buyBackPrice   uint64
+	value          uint64
+	requestedTxID  common.Hash
+	tokenID        common.Hash
+}
+
+func buildInstructionsForBuyBackBondsReq(
+	shardID byte,
+	contentStr string,
+	beaconBestState *BestStateBeacon,
+	bc *BlockChain,
+) ([][]string, error) {
+	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		return [][]string{}, err
+	}
+	buyBackBondsActionContent := map[string]interface{}{}
+	err = json.Unmarshal(contentBytes, &buyBackBondsActionContent)
+	if err != nil {
+		return nil, err
+	}
+
+	buyBackReqTx, ok := buyBackBondsActionContent["reqTx"].(*transaction.TxCustomToken)
+	if !ok {
+		return nil, errors.New("Could not parse TxCustomToken.")
+	}
+	buyBackReqMeta, ok := buyBackBondsActionContent["buyBackMeta"].(metadata.BuyBackRequest)
+	if !ok {
+		return nil, errors.New("Could not parse BuyBackRequest metadata.")
+	}
+	vins := buyBackReqTx.TxTokenData.Vins
+	if len(vins) == 0 {
+		return nil, errors.New("No existed Vins from BuyBackRequest tx")
+	}
+	priorTxID := vins[0].TxCustomTokenID
+	_, _, _, priorTx, err := bc.GetTransactionByHash(&priorTxID)
+	if err != nil {
+		return nil, err
+	}
+	priorCustomTokenTx, ok := priorTx.(*transaction.TxCustomToken)
+	if !ok {
+		return nil, errors.New("Could not parse prior TxCustomToken.")
+	}
+	priorMeta := priorCustomTokenTx.GetMetadata()
+	if priorMeta == nil {
+		return nil, errors.New("Not existed metadata in priorCustomTokenTx")
+	}
+	buySellResMeta, ok := priorMeta.(*metadata.BuySellResponse)
+	if !ok {
+		return nil, errors.New("Could not parse BuySellResponse metadata.")
+	}
+
+	instType := ""
+	bestBlockHeight := beaconBestState.BestBlock.Header.Height
+	if (buySellResMeta.StartSellingAt+buySellResMeta.Maturity > bestBlockHeight+1) ||
+		(buyBackReqMeta.Amount*buySellResMeta.BuyBackPrice > beaconBestState.StabilityInfo.SalaryFund) {
+		instType = "refund"
+	} else {
+		instType = "accepted"
+		beaconBestState.StabilityInfo.SalaryFund -= buyBackReqMeta.Amount * buySellResMeta.BuyBackPrice
+	}
+
+	buyBackInfo := buyBackInfo{
+		paymentAddress: buyBackReqMeta.PaymentAddress,
+		buyBackPrice:   buySellResMeta.BuyBackPrice,
+		value:          buyBackReqMeta.Amount,
+		requestedTxID:  *(buyBackReqTx.Hash()),
+		tokenID:        buyBackReqMeta.TokenID,
+	}
+	buyBackInfoBytes, err := json.Marshal(buyBackInfo)
+	if err != nil {
+		return nil, err
+	}
+	returnedInst := []string{
+		strconv.Itoa(metadata.BuyBackRequestMeta),
+		strconv.Itoa(int(shardID)),
+		instType,
+		string(buyBackInfoBytes),
+	}
+	return [][]string{returnedInst}, nil
+}
+
 func buildInstructionsForBuyBondsFromGOVReq(
 	shardID byte,
 	contentStr string,
@@ -109,7 +193,7 @@ func buildInstructionsForBuyGOVTokensReq(
 }
 
 // build instructions at beacon chain before syncing to shards
-func buildStabilityInstructions(
+func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 	shardID byte,
 	shardBlockInstructions [][]string,
 	beaconBestState *BestStateBeacon,
@@ -147,6 +231,13 @@ func buildStabilityInstructions(
 				return [][]string{}, err
 			}
 			instructions = append(instructions, saleInst...)
+
+		case metadata.BuyBackRequestMeta:
+			buyBackInst, err := buildInstructionsForBuyBackBondsReq(shardID, contentStr, beaconBestState, blkTmpGen.chain)
+			if err != nil {
+				return [][]string{}, err
+			}
+			instructions = append(instructions, buyBackInst...)
 
 		default:
 			continue
@@ -199,6 +290,63 @@ func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, p
 	return txNormals[0], nil
 }
 
+func (blockgen *BlkTmplGenerator) buildBuyBackRes(
+	instType string,
+	buyBackInfoStr string,
+	blkProducerPrivateKey *privacy.SpendingKey,
+) ([]metadata.Transaction, error) {
+	var buyBackInfo buyBackInfo
+	err := json.Unmarshal([]byte(buyBackInfoStr), &buyBackInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	if instType == "refund" {
+		bondID := buyBackInfo.tokenID
+		buyBackRes := metadata.NewResponseBase(buyBackInfo.requestedTxID, metadata.ResponseBaseMeta)
+		txTokenVout := transaction.TxTokenVout{
+			Value:          buyBackInfo.value,
+			PaymentAddress: buyBackInfo.paymentAddress,
+		}
+		var propertyID [common.HashSize]byte
+		copy(propertyID[:], bondID[:])
+		txTokenData := transaction.TxTokenData{
+			Type:       transaction.CustomTokenInit,
+			Mintable:   true,
+			Amount:     buyBackInfo.value,
+			PropertyID: common.Hash(propertyID),
+			Vins:       []transaction.TxTokenVin{},
+			Vouts:      []transaction.TxTokenVout{txTokenVout},
+		}
+		txTokenData.PropertyName = txTokenData.PropertyID.String()
+		txTokenData.PropertySymbol = txTokenData.PropertyID.String()
+
+		refundTx := &transaction.TxCustomToken{
+			TxTokenData: txTokenData,
+		}
+		refundTx.Type = common.TxCustomTokenType
+		refundTx.SetMetadata(buyBackRes)
+		return []metadata.Transaction{refundTx}, nil
+
+	} else if instType == "accepted" {
+		buyBackAmount := buyBackInfo.value * buyBackInfo.buyBackPrice
+		buyBackRes := metadata.NewBuyBackResponse(buyBackInfo.requestedTxID, metadata.BuyBackResponseMeta)
+		buyBackResTx := new(transaction.Tx)
+		err := buyBackResTx.InitTxSalary(
+			buyBackAmount,
+			&buyBackInfo.paymentAddress,
+			blkProducerPrivateKey,
+			blockgen.chain.GetDatabase(),
+			buyBackRes,
+		)
+		if err != nil {
+			return nil, err
+		}
+		return []metadata.Transaction{buyBackResTx}, nil
+	}
+	return nil, nil
+}
+
 func (blockgen *BlkTmplGenerator) buildBuyGOVTokensRes(
 	instType string,
 	contentStr string,
@@ -223,14 +371,14 @@ func (blockgen *BlkTmplGenerator) buildBuyGOVTokensRes(
 			&reqMeta.BuyerAddress,
 			blkProducerPrivateKey,
 			blockgen.chain.config.DataBase,
-			nil,
+			refundMeta,
 		)
 		if err != nil {
 			Logger.log.Error(err)
 			return nil, err
 		}
-		refundTx.SetMetadata(refundMeta)
 		return []metadata.Transaction{refundTx}, nil
+
 	} else if instType == "accepted" {
 		govTokenID := reqMeta.TokenID
 		buyGOVTokensRes := metadata.NewResponseBase(txReqID, metadata.ResponseBaseMeta)
@@ -293,13 +441,12 @@ func (blockgen *BlkTmplGenerator) buildBuyBondsFromGOVRes(
 			&reqMeta.PaymentAddress,
 			blkProducerPrivateKey,
 			blockgen.chain.config.DataBase,
-			nil,
+			refundMeta,
 		)
 		if err != nil {
 			Logger.log.Error(err)
 			return nil, err
 		}
-		refundTx.SetMetadata(refundMeta)
 		return []metadata.Transaction{refundTx}, nil
 	} else if instType == "accepted" {
 		bondID := reqMeta.TokenID
@@ -381,6 +528,14 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(beac
 				case metadata.BuyGOVTokenRequestMeta:
 					contentStr := l[3]
 					txs, err := blockgen.buildBuyGOVTokensRes(l[2], contentStr, producerPrivateKey)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, txs...)
+
+				case metadata.BuyBackRequestMeta:
+					buyBackInfoStr := l[3]
+					txs, err := blockgen.buildBuyBackRes(l[2], buyBackInfoStr, producerPrivateKey)
 					if err != nil {
 						return nil, err
 					}
