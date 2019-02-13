@@ -24,12 +24,21 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	//============Build body=============
 	beaconHeight := blockgen.chain.BestState.Beacon.BeaconHeight
 	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
+	fmt.Println("Shard Producer/NewBlockShard, Beacon Height / Before", beaconHeight)
+	fmt.Println("Shard Producer/NewBlockShard, Beacon Hash / Before", beaconHash)
 	epoch := blockgen.chain.BestState.Beacon.BeaconEpoch
 	if epoch-blockgen.chain.BestState.Shard[shardID].Epoch > 1 {
 		beaconHeight = blockgen.chain.BestState.Shard[shardID].Epoch * common.EPOCH
+		newBeaconHash, err := blockgen.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
+		if err != nil {
+			return nil, err
+		}
+		copy(beaconHash[:], newBeaconHash.GetBytes())
 		epoch = blockgen.chain.BestState.Shard[shardID].Epoch + 1
 	}
-
+	fmt.Println("Shard Producer/NewBlockShard, Beacon Height / After", beaconHeight)
+	fmt.Println("Shard Producer/NewBlockShard, Beacon Hash / After", beaconHash)
+	fmt.Println("Shard Producer/NewBlockShard, Beacon Epoch", epoch)
 	// Get valid transaction (add tx, remove tx, fee of add tx)
 	txsToAdd, txToRemove, totalFee := blockgen.getPendingTransaction(shardID)
 	if len(txsToAdd) == 0 {
