@@ -63,8 +63,6 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-var SNPrivacyWitness []*zkp.SNPrivacyWitness
-
 // Init - init value for tx from inputcoin(old output coin from old tx)
 // create new outputcoin and build privacy proof
 // if not want to create a privacy tx proof, set hashPrivacy = false
@@ -113,9 +111,11 @@ func (tx *Tx) Init(
 	}
 	// set metadata
 	tx.Metadata = metaData
+
 	// set tx type
 	tx.Type = common.TxNormalType
 	Logger.log.Infof("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(inputCoins), fee, hasPrivacy)
+
 	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
 		Logger.log.Infof("CREATE TX CUSTOM TOKEN\n")
 		tx.Fee = fee
@@ -247,7 +247,7 @@ func (tx *Tx) Init(
 	if err.(*privacy.PrivacyError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
-	SNPrivacyWitness = witness.SerialNumberWitness
+
 	tx.Proof, err = witness.Prove(hasPrivacy)
 	if err.(*privacy.PrivacyError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
