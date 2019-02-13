@@ -352,14 +352,13 @@ func (self *BestStateBeacon) GenerateInstruction(
 		// chainTimeStamp, err := btcapi.GetCurrentChainTimeStamp()
 		// UNCOMMENT FOR TESTING
 		chainTimeStamp := self.CurrentRandomTimeStamp + 1
-
 		fmt.Printf("============chainTimeStamp %+v \n", chainTimeStamp)
 		if err != nil {
 			panic(err)
 		}
-		var wg sync.WaitGroup
 		assignedCandidates := make(map[byte][]string)
 		if chainTimeStamp > self.CurrentRandomTimeStamp {
+			var wg sync.WaitGroup
 			wg.Add(1)
 			randomInstruction, rand := GenerateRandomInstruction(self.CurrentRandomTimeStamp, &wg)
 			wg.Wait()
