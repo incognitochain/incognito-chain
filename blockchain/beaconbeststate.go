@@ -272,8 +272,7 @@ func (self *BestStateBeacon) GetLatestDividendProposal(forDCB bool) (id, amount 
 	}
 	dividendAmounts := []uint64{}
 	if value, ok := self.Params[key]; ok {
-		var err error
-		dividendAmounts, err = parseDividendValueBeacon(value)
+		dividendAmounts, _ = parseDividendValueBeacon(value)
 		if len(dividendAmounts) > 0 {
 			id = uint64(len(dividendAmounts))
 			amount = dividendAmounts[len(dividendAmounts)-1]

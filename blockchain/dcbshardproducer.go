@@ -8,7 +8,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 )
 
-func (bc *BlockChain) GetAmountPerAccount(tokenID *common.Hash) (uint64, []string, []uint64, error) {
+func (bc *BlockChain) GetAmountPerAccount(tokenID *common.Hash) (uint64, []privacy.PaymentAddress, []uint64, error) {
 	tokenHoldersMap, err := bc.config.DataBase.GetCustomTokenPaymentAddressesBalanceUnreward(tokenID)
 	if err != nil {
 		return 0, nil, nil, err
@@ -21,24 +21,24 @@ func (bc *BlockChain) GetAmountPerAccount(tokenID *common.Hash) (uint64, []strin
 	}
 
 	// Get amount per account (only count unrewarded utxo)
-	tokenHolders := []string{}
+	tokenHolders := []privacy.PaymentAddress{}
 	amounts := []uint64{}
-	for holder, _ := range tokenHoldersMap {
+	for holder, amount := range tokenHoldersMap {
 		paymentAddressInBytes, _, _ := base58.Base58Check{}.Decode(holder)
 		keySet := cashec.KeySet{}
 		keySet.PaymentAddress = privacy.PaymentAddress{}
 		keySet.PaymentAddress.SetBytes(paymentAddressInBytes)
-		vouts, err := bc.GetUnspentTxCustomTokenVout(keySet, tokenID)
-		if err != nil {
-			return 0, nil, nil, err
-		}
-		amount := uint64(0)
-		for _, vout := range vouts {
-			amount += vout.Value
-		}
+		//vouts, err := bc.GetUnspentTxCustomTokenVout(keySet, tokenID)
+		//if err != nil {
+		//	return 0, nil, nil, err
+		//}
+		//amount := uint64(0)
+		//for _, vout := range vouts {
+		//	amount += vout.Value
+		//}
 
 		if amount > 0 {
-			tokenHolders = append(tokenHolders, holder)
+			tokenHolders = append(tokenHolders, keySet.PaymentAddress)
 			amounts = append(amounts, amount)
 		}
 	}
@@ -47,7 +47,7 @@ func (bc *BlockChain) GetAmountPerAccount(tokenID *common.Hash) (uint64, []strin
 
 func (blockgen *BlkTmplGenerator) buildInstitutionDividendSubmitTx(forDCB bool) (metadata.Transaction, error) {
 	// Get latest dividend proposal id and amount
-	id, constantAmount := blockgen.chain.BestState.Beacon.GetLatestDividendProposal(forDCB)
+	id, _ := blockgen.chain.BestState.Beacon.GetLatestDividendProposal(forDCB)
 	if id == 0 {
 		return nil, nil // No Dividend proposal found
 	}
@@ -65,7 +65,7 @@ func (blockgen *BlkTmplGenerator) buildInstitutionDividendSubmitTx(forDCB bool) 
 	if !forDCB {
 		tokenID = &common.GOVTokenID
 	}
-	totalTokenAmount, _, _, err := blockgen.chain.GetAmountPerAccount(tokenID)
+	_, _, _, err = blockgen.chain.GetAmountPerAccount(tokenID)
 	if err != nil {
 		return nil, err
 	}
