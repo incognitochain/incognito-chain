@@ -206,7 +206,7 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 				totalBlock = index
 				break
 			}
-			stabilityInstructionsPerBlock, err := buildStabilityInstructions(
+			stabilityInstructionsPerBlock, err := self.buildStabilityInstructions(
 				shardID,
 				shardBlock.Instructions,
 				beaconBestState,
