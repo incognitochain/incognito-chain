@@ -99,12 +99,12 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		},
 	}
 
-	// Process new dividend proposal if exist
-	divSubmitTxs, err := blockgen.buildDividendSubmitTx()
+	// Process new dividend proposal and build new dividend payment txs
+	divTxs, err := blockgen.buildDividendTxs(privatekey)
 	if err != nil {
 		return nil, err
 	}
-	for _, tx := range divSubmitTxs {
+	for _, tx := range divTxs {
 		if tx != nil {
 			txsToAdd = append(txsToAdd, tx)
 		}
