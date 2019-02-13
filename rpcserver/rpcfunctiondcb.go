@@ -164,14 +164,32 @@ func (rpcServer RpcServer) handleCreateAndSendTxWithContractingRequest(params in
 	return result, nil
 }
 
+func getAmountVote(receiversPaymentAddressParam map[string]interface{}) int64 {
+	sumAmount := int64(0)
+	for paymentAddressStr, amount := range receiversPaymentAddressParam {
+		if paymentAddressStr == common.BurningAddress {
+			sumAmount += int64(amount.(float64))
+		}
+	}
+	return sumAmount
+}
+
 func (rpcServer RpcServer) buildRawVoteDCBBoardTransaction(
 	params interface{},
 ) (*transaction.TxCustomToken, error) {
 	arrayParams := common.InterfaceSlice(params)
 	candidatePaymentAddress := arrayParams[len(arrayParams)-1].(string)
 	account, _ := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-	metadata := metadata.NewVoteDCBBoardMetadata(account.KeySet.PaymentAddress)
+
+	receiversPaymentAddressParam := make(map[string]interface{})
+	if arrayParams[1] != nil {
+		receiversPaymentAddressParam = arrayParams[1].(map[string]interface{})
+	}
+	amount := getAmountVote(receiversPaymentAddressParam)
+
+	metadata := metadata.NewVoteDCBBoardMetadata(account.KeySet.PaymentAddress, amount)
 	tx, err := rpcServer.buildRawCustomTokenTransaction(params, metadata)
+
 	if err != nil {
 		return nil, err
 	}
