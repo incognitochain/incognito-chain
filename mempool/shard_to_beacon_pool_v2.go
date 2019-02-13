@@ -36,7 +36,7 @@ func GetShardToBeaconPool() *ShardToBeaconPool {
 
 func (self *ShardToBeaconPool) SetShardState(latestShardState map[byte]uint64) {
 	self.latestValidHeightMutex.Lock()
-	self.latestValidHeightMutex.Unlock()
+	defer self.latestValidHeightMutex.Unlock()
 
 	for shardID, latestHeight := range latestShardState {
 		if latestHeight < 1 {
@@ -59,6 +59,9 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaco
 	blkHeight := blk.Header.Height
 	self.poolMutex.Lock()
 	self.latestValidHeightMutex.RLock()
+
+	defer self.poolMutex.Unlock()
+	defer self.latestValidHeightMutex.RUnlock()
 
 	if self.latestValidHeight[blkShardID] == 0 {
 		self.latestValidHeight[blkShardID] = 1
@@ -107,11 +110,25 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaco
 		return self.pool[blkShardID][i].Header.Height < self.pool[blkShardID][j].Header.Height
 	})
 
-	self.poolMutex.Unlock()
-	self.latestValidHeightMutex.RUnlock()
-	//update lastestShardState
-	self.GetValidPendingBlock()
+	//update last valid pending ShardState
+	self.UpdateLatestShardState()
 	return nil
+}
+
+func (self *ShardToBeaconPool) UpdateLatestShardState() {
+	for shardID, blks := range self.pool {
+		if self.latestValidHeight[shardID] == 0 {
+			self.latestValidHeight[shardID] = 1
+		}
+		lastHeight := self.latestValidHeight[shardID]
+		for i, blk := range blks {
+			if blks[i].Header.Height > lastHeight && lastHeight+1 != blk.Header.Height {
+				break
+			}
+			lastHeight = blk.Header.Height
+		}
+		self.latestValidHeight[shardID] = lastHeight
+	}
 }
 
 func (self *ShardToBeaconPool) RemovePendingBlock(blockItems map[byte]uint64) {
@@ -142,16 +159,12 @@ func (self *ShardToBeaconPool) GetValidPendingBlock() map[byte][]*blockchain.Sha
 		if self.latestValidHeight[shardID] == 0 {
 			self.latestValidHeight[shardID] = 1
 		}
-		startHeight := self.latestValidHeight[shardID]
-		lastHeight := startHeight
 		for i, blk := range blks {
-			if blks[i].Header.Height > self.latestValidHeight[shardID] && lastHeight+1 != blk.Header.Height {
+			if blks[i].Header.Height > self.latestValidHeight[shardID] {
 				break
 			}
 			finalBlocks[shardID] = append(finalBlocks[shardID], blk)
-			lastHeight = blk.Header.Height
 		}
-		self.latestValidHeight[shardID] = lastHeight
 	}
 	return finalBlocks
 }
