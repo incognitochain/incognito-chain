@@ -152,7 +152,28 @@ func buildStabilityInstructions(
 			continue
 		}
 	}
+	// update params in beststate
+	updateParamsFromBeaconBestState(beaconBestState, accumulativeValues)
 	return instructions, nil
+}
+
+func updateParamsFromBeaconBestState(
+	beaconBestState *BestStateBeacon,
+	accumulativeValues *accumulativeValues,
+) {
+	beaconBestState.StabilityInfo.SalaryFund += (accumulativeValues.incomeFromBonds + accumulativeValues.incomeFromGOVTokens)
+	if beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SellingBonds != nil {
+		beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= accumulativeValues.bondsSold
+	}
+	if beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens != nil {
+		beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens.GOVTokensToSell -= accumulativeValues.govTokensSold
+	}
+
+	// reset gov values
+	accumulativeValues.govTokensSold = 0
+	accumulativeValues.bondsSold = 0
+	accumulativeValues.incomeFromBonds = 0
+	accumulativeValues.incomeFromGOVTokens = 0
 }
 
 func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, producerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
