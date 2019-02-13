@@ -111,7 +111,9 @@ type BlockchainRetriever interface {
 	GetLoanRequestMeta(loanID []byte) (*LoanRequest, error)
 
 	// For validating dividend
-	GetAmountPerAccount(*DividendProposal) (uint64, []string, []uint64, error)
+	GetLatestDividendProposal(bool) (uint64, uint64)
+	GetAmountPerAccount(*common.Hash) (uint64, []privacy.PaymentAddress, []uint64, error)
+	GetDividendReceiversForID(dividendID uint64, forDCB bool) ([]privacy.PaymentAddress, []uint64, bool, error)
 
 	// For validating crowdsale
 	GetCrowdsaleData([]byte) (*params.SaleData, error)
