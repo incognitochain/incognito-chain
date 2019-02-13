@@ -2,10 +2,12 @@ package mempool
 
 import (
 	"errors"
-	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/common"
+	"fmt"
 	"sort"
 	"sync"
+
+	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/common"
 )
 
 const (
@@ -137,8 +139,14 @@ func (self *ShardToBeaconPool) RemovePendingBlock(blockItems map[byte]uint64) {
 	for shardID, blockHeight := range blockItems {
 		for index, block := range self.pool[shardID] {
 			if block.Header.Height <= blockHeight {
+				fmt.Println("ShardToBeaconPool: RemovePendingBlock, Remove Shard Block", block.Header.Height)
+				if index == len(self.pool[shardID])-1 {
+					fmt.Println("ShardToBeaconPool: RemovePendingBlock, Update Shard Height", block.Header.Height)
+					self.pool[shardID] = self.pool[shardID][index+1:]
+				}
 				continue
 			} else {
+				fmt.Println("ShardToBeaconPool: RemovePendingBlock, Update Shard Height", block.Header.Height)
 				self.pool[shardID] = self.pool[shardID][index:]
 				break
 			}
