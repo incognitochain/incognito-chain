@@ -1,9 +1,11 @@
 package blockchain
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ninjadotorg/constant/metadata"
 	"reflect"
 	"strconv"
 	"strings"
@@ -86,6 +88,7 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	beaconBlock.Header.Timestamp = time.Now().Unix()
 	beaconBlock.Header.PrevBlockHash = beaconBestState.BestBlockHash
 	tempShardState, staker, swap, stabilityInstructions := self.GetShardState(&beaconBestState)
+
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
 	votingInstruction, err := self.chain.generateVotingInstruction(privateKey)
 	if err != nil {
@@ -223,8 +226,8 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 					} else {
 						validSwap[shardID] = append(validSwap[shardID], l)
 					}
-				} else { // process voting instruction
-					processInstruction(l)
+				} else {
+					self.processInstruction(beaconBestState, l)
 				}
 			}
 			if index != 0 && err != nil {
@@ -302,17 +305,40 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 
 //todo @0xjackalope process instruction without create new tx (eg: update db)
 //should be merge with buildStabilityInstruction
-func processInstruction(Instruction []string) error {
-	switch Instruction[0] {
-	case "voteboard":
-		{
-
-		}
-	case "voteproposal":
-		{
-
-		}
+func (self *BlkTmplGenerator) processInstruction(beaconBestState *BestStateBeacon, instruction []string) error {
+	bestBlock := beaconBestState.BestBlock
+	metaType, err := strconv.Atoi(instruction[0])
+	if err != nil {
+		return err
 	}
+	contentBytes, err := base64.StdEncoding.DecodeString(instruction[1])
+	if err != nil {
+		return err
+	}
+	switch metaType {
+	case metadata.VoteDCBBoardMeta:
+		{
+			meta := &metadata.VoteDCBBoardMetadata{}
+			err := json.Unmarshal([]byte(contentBytes), meta)
+			if err != nil {
+				return err
+			}
+			boardIndex := beaconBestState.StabilityInfo.DCBGovernor.BoardIndex
+			self.chain.config.DataBase.AddVoteBoard(common.DCBBoard, boardIndex)
+		}
+	case metadata.VoteGOVBoardMeta:
+		{
+			meta := &metadata.VoteGOVBoardMetadata{}
+			err := json.Unmarshal([]byte(contentBytes), meta)
+			if err != nil {
+				return err
+			}
+		}
+	default:
+		return nil
+	}
+
+	return nil
 }
 
 /*
