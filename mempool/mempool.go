@@ -14,11 +14,6 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 )
 
-// TODO: 0xsirrush need to optimize with some features:
-// 2. load data in db on mem and using to validate tx
-// 3. cancel tx
-// 5. priority data in mem
-
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
 	// Block chain of node
