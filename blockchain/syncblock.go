@@ -155,17 +155,14 @@ func (self *BlockChain) SyncShard(shardID byte) error {
 }
 
 func (self *BlockChain) SyncShardToBeacon() {
-	for {
-		select {
-		case <-self.cQuitSync:
-			return
-		}
+	for range self.cQuitSync {
+		return
 	}
 }
 
 func (self *BlockChain) SyncBeacon() error {
 	if self.syncStatus.Beacon {
-		return errors.New("Beacon synchronzation is already started")
+		return errors.New("beacon synchronzation is already started")
 	}
 	Logger.log.Info("Beacon synchronzation started")
 	self.BeaconStateCh = make(chan *PeerBeaconChainState)

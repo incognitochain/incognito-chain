@@ -53,7 +53,7 @@ func (self *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock, isCommittee
 	}
 	// if no match best state found then block is unknown
 	if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
-		return NewBlockChainError(BeaconError, errors.New("Beacon Block does not match with any Beacon State in cache or in Database"))
+		return NewBlockChainError(BeaconError, errors.New("beacon Block does not match with any Beacon State in cache or in Database"))
 	}
 	// Verify block with previous best state
 	// not verify agg signature in this function
@@ -86,7 +86,7 @@ func (self *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee bool) 
 	// check with current final best state
 	// block can only be insert if it match the current best state
 	if strings.Compare(self.BestState.Beacon.BestBlockHash.String(), block.Header.PrevBlockHash.String()) != 0 {
-		return NewBlockChainError(BeaconError, errors.New("Beacon Block does not match with any Beacon State in cache or in Database"))
+		return NewBlockChainError(BeaconError, errors.New("beacon Block does not match with any Beacon State in cache or in Database"))
 	}
 	// fmt.Printf("BeaconBest state %+v \n", self.BestState.Beacon)
 	Logger.log.Infof("Verify BestState with Beacon Block %+v \n", *block.Hash())

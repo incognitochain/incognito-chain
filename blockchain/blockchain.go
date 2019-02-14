@@ -374,8 +374,7 @@ func (self *BlockChain) initShardState(shardID byte) error {
 
 func (self *BlockChain) initBeaconState() error {
 	self.BestState.Beacon = NewBestStateBeacon()
-	var initBlock *BeaconBlock
-	initBlock = self.config.ChainParams.GenesisBeaconBlock
+	initBlock := self.config.ChainParams.GenesisBeaconBlock
 	self.BestState.Beacon.Update(initBlock)
 	// Insert new block into beacon chain
 
@@ -465,7 +464,7 @@ func (self *BlockChain) GetShardBlockByHeight(height uint64, shardID byte) (*Sha
 	}
 	block, err := self.GetShardBlockByHash(hashBlock)
 
-	return block, nil
+	return block, err
 }
 
 /*
