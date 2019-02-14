@@ -955,7 +955,7 @@ PushMessageToPeer push msg to pbk
 func (serverObj *Server) PushMessageToPbk(msg wire.Message, pbk string) error {
 	Logger.log.Infof("Push msg to pbk %s", pbk)
 	peerConns := serverObj.connManager.GetPeerConnOfPbk(pbk)
-	if peerConns != nil && len(peerConns) > 0 {
+	if len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
 			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
 			peerConn.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_PEER, nil)
@@ -974,7 +974,7 @@ PushMessageToPeer push msg to pbk
 func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte) error {
 	Logger.log.Infof("Push msg to shard %d", shard)
 	peerConns := serverObj.connManager.GetPeerConnOfShard(shard)
-	if peerConns != nil && len(peerConns) > 0 {
+	if len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
 			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
 			peerConn.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_SHARD, &shard)
@@ -991,7 +991,7 @@ func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte) error 
 func (serverObj *Server) PushRawBytesToShard(p *peer.PeerConn, msgBytes *[]byte, shard byte) error {
 	Logger.log.Infof("Push raw bytes to shard %d", shard)
 	peerConns := serverObj.connManager.GetPeerConnOfShard(shard)
-	if peerConns != nil && len(peerConns) > 0 {
+	if len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
 			if p == nil || peerConn != p {
 				peerConn.QueueMessageWithBytes(msgBytes, nil)
@@ -1016,7 +1016,7 @@ PushMessageToPeer push msg to beacon node
 func (serverObj *Server) PushMessageToBeacon(msg wire.Message) error {
 	Logger.log.Infof("Push msg to beacon")
 	peerConns := serverObj.connManager.GetPeerConnOfBeacon()
-	if peerConns != nil && len(peerConns) > 0 {
+	if len(peerConns) > 0 {
 		// fmt.Println(len(peerConns))
 		for _, peerConn := range peerConns {
 			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
@@ -1035,7 +1035,7 @@ func (serverObj *Server) PushMessageToBeacon(msg wire.Message) error {
 func (serverObj *Server) PushRawBytesToBeacon(p *peer.PeerConn, msgBytes *[]byte) error {
 	Logger.log.Infof("Push raw bytes to beacon")
 	peerConns := serverObj.connManager.GetPeerConnOfBeacon()
-	if peerConns != nil && len(peerConns) > 0 {
+	if len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
 			if p == nil || peerConn != p {
 				peerConn.QueueMessageWithBytes(msgBytes, nil)
