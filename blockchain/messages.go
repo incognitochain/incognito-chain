@@ -8,9 +8,27 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
-func (self *BlockChain) OnBlockShardReceived(block *ShardBlock) {
-	if _, ok := self.syncStatus.Shard[block.Header.ShardID]; ok {
-
+func (self *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
+	if _, ok := self.syncStatus.Shards[newBlk.Header.ShardID]; ok {
+		fmt.Println("Shard block received")
+		if self.BestState.Shard[newBlk.Header.ShardID].ShardHeight < newBlk.Header.Height {
+			blkHash := newBlk.Header.Hash()
+			err := cashec.ValidateDataB58(newBlk.Header.Producer, newBlk.ProducerSig, blkHash.GetBytes())
+			if err != nil {
+				Logger.log.Error(err)
+				return
+			} else {
+				if self.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
+					err = self.InsertShardBlock(newBlk)
+					if err != nil {
+						Logger.log.Error(err)
+						return
+					}
+				} else {
+					self.config.NodeShardPool.PushBlock(*newBlk)
+				}
+			}
+		}
 	}
 }
 func (self *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
@@ -38,33 +56,36 @@ func (self *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 }
 
 func (self *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]ChainState, shardToBeaconPool *map[byte][]common.Hash, crossShardPool *map[byte]map[byte][]common.Hash, peerID libp2p.ID) {
-	var pState *peerState
-	pState.Beacon = beacon
-	userRole, shardID := self.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
-	nodeMode := self.config.NodeMode
-	if userRole == "beacon-proposer" || userRole == "beacon-validator" {
-		pState.ShardToBeaconPool = shardToBeaconPool
-	}
-	if userRole == "shard" && (nodeMode == "auto" || nodeMode == "shard") {
-		userRole = self.BestState.Shard[shardID].GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
-		if userRole == "shard-proposer" || userRole == "shard-validator" {
-			if state, ok := (*shard)[shardID]; ok {
-				pState.Shard[shardID] = &state
-				if pool, ok := (*crossShardPool)[shardID]; ok {
-					pState.CrossShardPool = &pool
+	if beacon.Height >= self.BestState.Beacon.BeaconHeight {
+		var pState *peerState
+		pState.Beacon = beacon
+		userRole, userShardID := self.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
+		nodeMode := self.config.NodeMode
+		if userRole == "beacon-proposer" || userRole == "beacon-validator" {
+			pState.ShardToBeaconPool = shardToBeaconPool
+		}
+		if userRole == "shard" && (nodeMode == "auto" || nodeMode == "shard") {
+			userRole = self.BestState.Shard[userShardID].GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
+			if userRole == "shard-proposer" || userRole == "shard-validator" {
+				if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= self.BestState.Shard[userShardID].ShardHeight {
+					pState.Shard[userShardID] = &shardState
+					if pool, ok := (*crossShardPool)[userShardID]; ok {
+						pState.CrossShardPool = &pool
+					}
 				}
 			}
 		}
-	}
-	for _, shardID := range self.config.RelayShards {
-		if state, ok := (*shard)[shardID]; ok {
-			pState.Shard[shardID] = &state
+		for shardID := range self.syncStatus.Shards {
+			if shardState, ok := (*shard)[shardID]; ok && shardID != userShardID {
+				if shardState.Height > self.BestState.Shard[shardID].ShardHeight {
+					pState.Shard[shardID] = &shardState
+				}
+			}
 		}
+		self.syncStatus.PeersStateLock.Lock()
+		self.syncStatus.PeersState[pState.Peer] = pState
+		self.syncStatus.PeersStateLock.Unlock()
 	}
-	self.syncStatus.PeersStateLock.Lock()
-	self.syncStatus.PeersState[pState.Peer] = pState
-	self.syncStatus.PeersStateLock.Unlock()
-
 }
 
 func (self *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
