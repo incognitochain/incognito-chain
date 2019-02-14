@@ -352,7 +352,7 @@ func (self *BestStateBeacon) GenerateInstruction(
 	fmt.Printf("============height epoch: %+v, RANDOM TIME: %+v \n", block.Header.Height%common.EPOCH+1, common.RANDOM_TIME)
 	fmt.Printf("============IsGetRandomNumber %+v \n", self.IsGetRandomNumber)
 	fmt.Printf("===================ShardCandidate %+v \n", shardCandidates)
-	if block.Header.Height%common.EPOCH > common.RANDOM_TIME && self.IsGetRandomNumber == false {
+	if block.Header.Height%common.EPOCH > common.RANDOM_TIME && !self.IsGetRandomNumber {
 		var err error
 		// COMMENT FOR TESTING
 		// chainTimeStamp, err := btcapi.GetCurrentChainTimeStamp()
