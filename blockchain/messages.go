@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"fmt"
+
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
 )
@@ -53,7 +55,7 @@ func (self *BlockChain) OnShardStateReceived(state *ShardChainState, peerID libp
 
 func (self *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
 	//TODO: check node mode -> node mode & role before add block to pool
-
+	fmt.Println("Blockchain Message/OnShardToBeaconBlockReceived: Block Height", block.Header.Height)
 	blkHash := block.Header.Hash()
 	err := cashec.ValidateDataB58(block.Header.Producer, block.ProducerSig, blkHash.GetBytes())
 

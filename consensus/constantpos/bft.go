@@ -167,7 +167,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 									Logger.log.Error(err)
 									continue
 								}
-								err = protocol.Chain.VerifyPreSignBeaconBlock(&pendingBlk)
+								err = protocol.Chain.VerifyPreSignBeaconBlock(&pendingBlk, true)
 								if err != nil {
 									Logger.log.Error(err)
 									continue
@@ -178,6 +178,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 								pendingBlk := blockchain.ShardBlock{}
 								pendingBlk.UnmarshalJSON(msgPropose.(*wire.MessageBFTPropose).Block)
 								blkHash := pendingBlk.Header.Hash()
+								//TODO: Check Shard ID
 								err := cashec.ValidateDataB58(pendingBlk.Header.Producer, pendingBlk.ProducerSig, blkHash.GetBytes())
 								if err != nil {
 									Logger.log.Error(err)
