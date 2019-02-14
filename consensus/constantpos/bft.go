@@ -70,7 +70,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 					msg           wire.Message
 					readyMsgCount int
 				)
-				if layer == "beacon" {
+				if layer == common.BEACON_ROLE {
 					time.Sleep(5 * time.Second) //single-node
 					newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey)
 					if err != nil {
@@ -110,7 +110,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 					case msgReady := <-protocol.cBFTMsg:
 						if msgReady.MessageType() == wire.CmdBFTReady {
 							var bestStateHash common.Hash
-							if layer == "beacon" {
+							if layer == common.BEACON_ROLE {
 								bestStateHash = protocol.Chain.BestState.Beacon.Hash()
 							} else {
 								bestStateHash = protocol.Chain.BestState.Shard[shardID].Hash()
@@ -134,7 +134,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 							<-time.After(2 * time.Second)
 
 							fmt.Println("Propose block")
-							if layer == "beacon" {
+							if layer == common.BEACON_ROLE {
 								go protocol.Server.PushMessageToBeacon(msg)
 							} else {
 								go protocol.Server.PushMessageToShard(msg, shardID)
@@ -158,7 +158,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 					case msgPropose := <-protocol.cBFTMsg:
 						if msgPropose.MessageType() == wire.CmdBFTPropose {
 							fmt.Println("Propose block received")
-							if layer == "beacon" {
+							if layer == common.BEACON_ROLE {
 								pendingBlk := blockchain.BeaconBlock{}
 								pendingBlk.UnmarshalJSON(msgPropose.(*wire.MessageBFTPropose).Block)
 								blkHash := pendingBlk.Header.Hash()
@@ -213,7 +213,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 						Logger.log.Error(err)
 						return
 					}
-					if layer == "beacon" {
+					if layer == common.BEACON_ROLE {
 						protocol.Server.PushMessageToBeacon(msg)
 					} else {
 						protocol.Server.PushMessageToShard(msg, shardID)
@@ -262,7 +262,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 						return
 					}
 					fmt.Println("Sending out commit msg")
-					if layer == "beacon" {
+					if layer == common.BEACON_ROLE {
 						protocol.Server.PushMessageToBeacon(msg)
 					} else {
 						protocol.Server.PushMessageToShard(msg, shardID)
@@ -311,7 +311,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 
 						fmt.Println("\n \n Block consensus reach", ValidatorsIdxR, ValidatorsIdxAggSig, AggregatedSig)
 
-						if layer == "beacon" {
+						if layer == common.BEACON_ROLE {
 							protocol.pendingBlock.(*blockchain.BeaconBlock).R = protocol.multiSigScheme.combine.R
 							protocol.pendingBlock.(*blockchain.BeaconBlock).AggregatedSig = AggregatedSig
 							protocol.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx = make([][]int, 2)
