@@ -202,7 +202,7 @@ func (self *BlockChain) GetMaybeAcceptBeaconBlock(key string) (BeaconBlock, erro
 func (self *BlockChain) GetMaybeAcceptBeaconBestState(key string) (BestStateBeacon, error) {
 	res := self.BestState.beacon[key]
 	beaconBestState := BestStateBeacon{}
-	if err := json.Unmarshal(res, beaconBestState); err != nil {
+	if err := json.Unmarshal(res, &beaconBestState); err != nil {
 		return beaconBestState, NewBlockChainError(UnmashallJsonBlockError, err)
 	}
 	return beaconBestState, nil
