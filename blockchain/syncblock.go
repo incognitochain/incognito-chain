@@ -263,39 +263,8 @@ func GetDiffHashesOf(slice1 []common.Hash, slice2 []common.Hash) []common.Hash {
 func (self *BlockChain) SyncBlkBeacon(byHash bool, getFromPool bool, blksHash []common.Hash, from uint64, to uint64, peerID libp2p.ID) {
 	if byHash {
 		//Sync block by hash
-		var blksNeedToGet []common.Hash
-		var blksSyncByHash *map[string]peerSyncTimestamp
-		tempInterface, ok := self.syncStatus.CurrentlySyncBeaconBlk.Load("byhash")
-		if ok {
-			blksSyncByHash = tempInterface.(*map[string]peerSyncTimestamp)
-			for _, blkHash := range blksHash {
-				if timeStamp, ok := (*blksSyncByHash)[blkHash.String()]; ok {
-					if time.Since(time.Unix(timeStamp.Time, 0)) > defaultMaxBlockSyncTime {
-						(*blksSyncByHash)[blkHash.String()] = peerSyncTimestamp{
-							Time:   time.Now().Unix(),
-							PeerID: peerID,
-						}
-						blksNeedToGet = append(blksNeedToGet, blkHash)
-					}
-				} else {
-					(*blksSyncByHash)[blkHash.String()] = peerSyncTimestamp{
-						Time:   time.Now().Unix(),
-						PeerID: peerID,
-					}
-					blksNeedToGet = append(blksNeedToGet, blkHash)
-				}
-			}
-		} else {
-			blksSyncByHash = &map[string]peerSyncTimestamp{}
-			for _, blkHash := range blksHash {
-				(*blksSyncByHash)[blkHash.String()] = peerSyncTimestamp{
-					Time:   time.Now().Unix(),
-					PeerID: peerID,
-				}
-			}
-			blksNeedToGet = append(blksNeedToGet, blksHash...)
-		}
-
+		tempInterface, init := self.syncStatus.CurrentlySyncBeaconBlk.Load("byhash")
+		blksNeedToGet := getBlkNeedToGetByHash(blksHash, peerID, tempInterface, init)
 		if len(blksNeedToGet) > 0 {
 			go self.config.Server.PushMessageGetBlockBeaconByHash(blksNeedToGet, getFromPool, peerID)
 		}
@@ -391,10 +360,41 @@ func (self *BlockChain) SyncBlkCrossShard(getFromPool bool, blkHash common.Hash,
 
 }
 
-func getBlkNeedToGetByHash() {
-
+func getBlkNeedToGetByHash(blksHash []common.Hash, peerID libp2p.ID, loadedData interface{}, init bool) []common.Hash {
+	var blksNeedToGet []common.Hash
+	var blksSyncByHash *map[string]peerSyncTimestamp
+	if init {
+		blksSyncByHash = loadedData.(*map[string]peerSyncTimestamp)
+		for _, blkHash := range blksHash {
+			if timeStamp, ok := (*blksSyncByHash)[blkHash.String()]; ok {
+				if time.Since(time.Unix(timeStamp.Time, 0)) > defaultMaxBlockSyncTime {
+					(*blksSyncByHash)[blkHash.String()] = peerSyncTimestamp{
+						Time:   time.Now().Unix(),
+						PeerID: peerID,
+					}
+					blksNeedToGet = append(blksNeedToGet, blkHash)
+				}
+			} else {
+				(*blksSyncByHash)[blkHash.String()] = peerSyncTimestamp{
+					Time:   time.Now().Unix(),
+					PeerID: peerID,
+				}
+				blksNeedToGet = append(blksNeedToGet, blkHash)
+			}
+		}
+	} else {
+		blksSyncByHash = &map[string]peerSyncTimestamp{}
+		for _, blkHash := range blksHash {
+			(*blksSyncByHash)[blkHash.String()] = peerSyncTimestamp{
+				Time:   time.Now().Unix(),
+				PeerID: peerID,
+			}
+		}
+		blksNeedToGet = append(blksNeedToGet, blksHash...)
+	}
+	return blksNeedToGet
 }
 
-func getBlkNeedToGetByHeight() {
+func getBlkNeedToGetByHeight(blkBatchsNeedToGet map[uint64]uint64, blksSyncByHash *map[string]peerSyncTimestamp) {
 
 }
