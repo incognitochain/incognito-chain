@@ -342,7 +342,7 @@ func (self *BlockChain) CreateSendBackTokenAfterVoteFail(
 	boardType byte,
 	newDCBList []privacy.PaymentAddress,
 ) []metadata.Transaction {
-	setOfNewDCB := make(map[string]bool, 0)
+	setOfNewDCB := make(map[string]bool)
 	for _, i := range newDCBList {
 		setOfNewDCB[string(i.Bytes())] = true
 	}
