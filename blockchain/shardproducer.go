@@ -447,6 +447,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 	}
 
 	//TODO: sort transaction base on fee and check limit block size
+	// StartingPriority, fee, size, time
 
 	// validate tx and calculate total fee
 	for _, txDesc := range sourceTxns {
