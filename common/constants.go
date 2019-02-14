@@ -113,3 +113,11 @@ const (
 	BEACON_PENDING_ROLE   = "beacon-pending"
 	AUTO_ROLE             = "auto"
 )
+
+//PBFT
+const (
+	PBFT_LISTEN  = "listen"
+	PBFT_PROPOSE = "propose"
+	PBFT_PREPARE = "prepare"
+	PBFT_COMMIT  = "commit"
+)
