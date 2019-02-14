@@ -249,6 +249,7 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 	peerObj.cStopConn = make(chan struct{})
 
 	peerObj.peerConnsMtx = sync.Mutex{}
+	peerObj.pendingPeersMtx = sync.Mutex{}
 	return &peerObj, nil
 }
 
@@ -328,15 +329,15 @@ func (peerObj *Peer) processConn() {
 }
 
 func (peerObj *Peer) ConnPending(peer *Peer) {
-	peerObj.peerConnsMtx.Lock()
-	defer peerObj.peerConnsMtx.Unlock()
+	peerObj.pendingPeersMtx.Lock()
+	defer peerObj.pendingPeersMtx.Unlock()
 	peerIDStr := peer.PeerID.Pretty()
 	peerObj.PendingPeers[peerIDStr] = peer
 }
 
 func (peerObj *Peer) ConnEstablished(peer *Peer) {
-	peerObj.peerConnsMtx.Lock()
-	defer peerObj.peerConnsMtx.Unlock()
+	peerObj.pendingPeersMtx.Lock()
+	defer peerObj.pendingPeersMtx.Unlock()
 	peerIDStr := peer.PeerID.Pretty()
 	_, ok := peerObj.PendingPeers[peerIDStr]
 	if ok {
@@ -346,7 +347,11 @@ func (peerObj *Peer) ConnEstablished(peer *Peer) {
 
 func (peerObj *Peer) ConnCanceled(peer *Peer) {
 	peerObj.peerConnsMtx.Lock()
-	defer peerObj.peerConnsMtx.Unlock()
+	peerObj.pendingPeersMtx.Lock()
+	defer func() {
+		peerObj.peerConnsMtx.Unlock()
+		peerObj.pendingPeersMtx.Unlock()
+	}()
 	peerIDStr := peer.PeerID.Pretty()
 	_, ok := peerObj.PeerConns[peerIDStr]
 	if ok {
@@ -644,10 +649,10 @@ func (peerObj *Peer) Stop() {
 
 	peerObj.Host.Close()
 	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
 	for _, peerConn := range peerObj.PeerConns {
 		peerConn.updateConnState(ConnCanceled)
 	}
-	peerObj.peerConnsMtx.Unlock()
 
 	close(peerObj.cStop)
 	Logger.log.Infof("PEER %s stopped", peerObj.PeerID.Pretty())
