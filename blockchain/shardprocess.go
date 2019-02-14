@@ -56,9 +56,13 @@ func (self *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte)
 		return err
 	}
 	//========Update best state with new block
+	fmt.Println("Shard Process/Insert Shard Block: BEFORE", shardBestState)
+	fmt.Println("|=========================================================|")
+	fmt.Println("|=========================================================|")
 	if err := shardBestState.Update(block, beaconBlocks); err != nil {
 		return err
 	}
+	fmt.Println("Shard Process/Insert Shard Block: AFTER", shardBestState)
 	//========Post verififcation: verify new beaconstate with corresponding block
 	if err := shardBestState.VerifyPostProcessingShardBlock(block, shardID); err != nil {
 		return err
