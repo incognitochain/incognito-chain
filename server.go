@@ -570,10 +570,6 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			OnGetShardState:  serverObj.OnGetShardState,
 			OnShardState:     serverObj.OnShardState,
 			//
-			//OnRegistration: serverObj.OnRegistration,
-			// OnSwapRequest: serverObj.OnSwapRequest,
-			// OnSwapSig:     serverObj.OnSwapSig,
-			// OnSwapUpdate:  serverObj.OnSwapUpdate,
 			PushRawBytesToShard:  serverObj.PushRawBytesToShard,
 			PushRawBytesToBeacon: serverObj.PushRawBytesToBeacon,
 			GetCurrentRoleShard:  serverObj.GetCurrentRoleShard,
@@ -681,36 +677,6 @@ func (serverObj *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 
 	Logger.log.Info("Receive a new transaction END")
 }
-
-/*func (serverObj *Server) OnRegistration(peer *peer.PeerConn, msg *wire.MessageRegistration) {
-	Logger.log.Info("Receive a new registration START")
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueRegisteration(nil, msg, txProcessed)
-	//<-txProcessed
-
-	Logger.log.Info("Receive a new registration END")
-}*/
-
-// func (serverObj *Server) OnSwapRequest(peer *peer.PeerConn, msg *wire.MessageSwapRequest) {
-// 	Logger.log.Info("Receive a new request swap START")
-// 	var txProcessed chan struct{}
-// 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-// 	Logger.log.Info("Receive a new request swap END")
-// }
-
-// func (serverObj *Server) OnSwapSig(peer *peer.PeerConn, msg *wire.MessageSwapSig) {
-// 	Logger.log.Info("Receive a new sign swap START")
-// 	var txProcessed chan struct{}
-// 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-// 	Logger.log.Info("Receive a new sign swap END")
-// }
-
-// func (serverObj *Server) OnSwapUpdate(peer *peer.PeerConn, msg *wire.MessageSwapUpdate) {
-// 	Logger.log.Info("Receive a new update swap START")
-// 	var txProcessed chan struct{}
-// 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-// 	Logger.log.Info("Receive a new update swap END")
-// }
 
 /*
 // OnVersion is invoked when a peer receives a version message
