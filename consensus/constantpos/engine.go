@@ -113,7 +113,7 @@ func (engine *Engine) Start() error {
 
 							if err == nil {
 								fmt.Println(resBlk.(*blockchain.BeaconBlock))
-								err = engine.config.BlockChain.InsertBeaconBlock(resBlk.(*blockchain.BeaconBlock))
+								err = engine.config.BlockChain.InsertBeaconBlock(resBlk.(*blockchain.BeaconBlock), false)
 								if err != nil {
 									Logger.log.Error("Insert beacon block error", err)
 									continue
@@ -162,37 +162,41 @@ func (engine *Engine) Start() error {
 									err = errors.New("Not your turn yet")
 								}
 								if err == nil {
-									//fmt.Println(resBlk.(*blockchain.ShardBlock))
+									fmt.Println("========NEW SHARD BLOCK=======", resBlk.(*blockchain.ShardBlock).Header.Height)
 									err = engine.config.BlockChain.InsertShardBlock(resBlk.(*blockchain.ShardBlock))
 									if err != nil {
 										Logger.log.Error("Insert shard block error", err)
 										continue
 									}
+									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 1")
 									//PUSH SHARD TO BEACON
 									shardBlk, ok := resBlk.(*blockchain.ShardBlock)
 									if !ok {
 										Logger.log.Debug("Got data of type %T but wanted blockchain.ShardBlock", resBlk)
 										continue
 									}
-
+									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 2")
 									newShardToBeaconBlock := shardBlk.CreateShardToBeaconBlock(engine.config.BlockChain)
+									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 3")
 									newShardToBeaconMsg, err := MakeMsgShardToBeaconBlock(newShardToBeaconBlock)
 									if err == nil {
-										engine.config.Server.PushMessageToBeacon(newShardToBeaconMsg)
+										go engine.config.Server.PushMessageToBeacon(newShardToBeaconMsg)
 									}
+									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 4")
 									//PUSH CROSS-SHARD
 									newCrossShardBlocks := shardBlk.CreateAllCrossShardBlock()
+									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 5")
 									for sID, newCrossShardBlock := range newCrossShardBlocks {
 										newCrossShardMsg, err := MakeMsgCrossShardBlock(newCrossShardBlock)
 										if err == nil {
 											engine.config.Server.PushMessageToShard(newCrossShardMsg, sID)
 										}
 									}
-
+									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 6")
 									if err != nil {
 										Logger.log.Error("Make new block message error", err)
 									}
-
+									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 7")
 								} else {
 									Logger.log.Error(err)
 								}
