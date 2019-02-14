@@ -234,6 +234,8 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 				SigPubKey: tempTx.SigPubKey,
 				Sig:       tempTx.Sig,
 			}
+			inputCoinsJson, _ := json.MarshalIndent(result.Proof.InputCoins, "", "\t")
+			result.InputCoinsJson = string(inputCoinsJson)
 			metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
 			result.Metadata = string(metaData)
 		}
@@ -255,6 +257,8 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 			}
 			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
 			result.CustomTokenData = string(txCustomData)
+			inputCoinsJson, _ := json.MarshalIndent(result.Proof.InputCoins, "", "\t")
+			result.InputCoinsJson = string(inputCoinsJson)
 			if tempTx.Metadata != nil {
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
 				result.Metadata = string(metaData)
