@@ -40,4 +40,7 @@ const (
 	defaultBroadcastStateTime   = 3 * time.Second
 	defaultProcessPeerStateTime = 5 * time.Second
 	defaultMaxBlockSyncTime     = 8 * time.Second
+	SyncByHashKey               = "byhash"
+	SyncByHeightKey             = "byheight"
+	defaultMaxBlkReqPerPeer     = 5
 )

@@ -47,7 +47,7 @@ type BlockChain struct {
 	cQuitSync  chan struct{}
 	syncStatus struct {
 		Beacon bool
-		Shard  map[byte](chan struct{})
+		Shards map[byte]struct{}
 		sync.Mutex
 
 		CurrentlySyncShardBlk         sync.Map
@@ -152,7 +152,7 @@ func (self *BlockChain) Init(config *Config) error {
 	// 		chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns, bestState.BestBlock.Header.SalaryFund, bestState.BestBlock.Header.GOVConstitution)
 	// }
 	self.cQuitSync = make(chan struct{})
-	self.syncStatus.Shard = make(map[byte](chan struct{}))
+	self.syncStatus.Shards = make(map[byte]struct{})
 	self.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
 	self.knownChainState.Shards = make(map[byte]ChainState)
 	self.StartSyncBlk()

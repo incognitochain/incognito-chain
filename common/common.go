@@ -519,3 +519,12 @@ func IsBondAsset(assetID *Hash) bool {
 func IsDCBTokenAsset(assetID *Hash) bool {
 	return assetID.IsEqual(&ConstantID)
 }
+
+func IndexOfByte(item byte, arrays []byte) int {
+	for k, v := range arrays {
+		if v == item {
+			return k
+		}
+	}
+	return -1
+}
