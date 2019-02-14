@@ -133,6 +133,7 @@ func (engine *Engine) Start() error {
 						}
 						if (engine.config.NodeMode == "shard" || engine.config.NodeMode == "auto") && role == "shard" {
 							engine.config.BlockChain.SyncShard(shardID)
+							engine.config.BlockChain.StopSyncUnnecessaryShard()
 							bftProtocol.RoleData.Committee = make([]string, len(engine.config.BlockChain.BestState.Shard[shardID].ShardCommittee))
 							copy(bftProtocol.RoleData.Committee, engine.config.BlockChain.BestState.Shard[shardID].ShardCommittee)
 							var (
