@@ -103,7 +103,7 @@ func (peerConn *PeerConn) ReadString(rw *bufio.ReadWriter, delim byte, maxReadBy
 		buf = append(buf, b)
 		bufL++
 		if bufL > maxReadBytes {
-			return "", errors.New("Limit bytes for message")
+			return "", errors.New("limit bytes for message")
 		}
 	}
 
