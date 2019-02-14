@@ -248,7 +248,7 @@ func (self *BlockChain) SyncBeacon() error {
 						continue
 					} else {
 						if self.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
-							err = self.InsertBeaconBlock(newBlk)
+							err = self.InsertBeaconBlock(newBlk, false)
 							if err != nil {
 								Logger.log.Error(err)
 								continue
@@ -270,7 +270,7 @@ func (self *BlockChain) SyncBeacon() error {
 							continue
 						}
 						for _, newBlk := range blks {
-							err = self.InsertBeaconBlock(&newBlk)
+							err = self.InsertBeaconBlock(&newBlk, false)
 							if err != nil {
 								Logger.log.Error(err)
 								continue

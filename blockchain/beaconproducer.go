@@ -233,6 +233,9 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 			}
 		}
 		for _, shardBlock := range shardBlocks[:totalBlock+1] {
+			fmt.Println("")
+			fmt.Println("Becon Produce: Got Shard Block", shardBlock.Header.Height)
+			fmt.Println("")
 			// for each shard block, create a corresponding shard state
 			instructions := shardBlock.Instructions
 			shardState := ShardState{}
