@@ -280,8 +280,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 				SigPubKey: tempTx.SigPubKey,
 				Sig:       tempTx.Sig,
 			}
-			inputCoinsJson, _ := json.MarshalIndent(result.Proof.InputCoins, "", "\t")
-			result.InputCoinsJson = string(inputCoinsJson)
+			result.InputCoinPubKey = result.Proof.InputCoins[0].Bytes()
 			tokenData, _ := json.MarshalIndent(tempTx.TxTokenPrivacyData, "", "\t")
 			result.PrivacyCustomTokenData = string(tokenData)
 			if tempTx.Metadata != nil {
