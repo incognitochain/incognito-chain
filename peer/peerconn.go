@@ -305,10 +305,6 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if peerConn.Config.MessageListeners.OnBFTMsg != nil {
 						peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTReady))
 					}
-					// case reflect.TypeOf(&wire.MessageInvalidBlock{}):
-					// 	if peerConn.Config.MessageListeners.OnInvalidBlock != nil {
-					// 		peerConn.Config.MessageListeners.OnInvalidBlock(peerConn, message.(*wire.MessageInvalidBlock))
-					// 	}
 				case reflect.TypeOf(&wire.MessageGetBeaconState{}):
 					if peerConn.Config.MessageListeners.OnGetBeaconState != nil {
 						peerConn.Config.MessageListeners.OnGetBeaconState(peerConn, message.(*wire.MessageGetBeaconState))

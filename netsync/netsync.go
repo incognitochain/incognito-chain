@@ -363,11 +363,6 @@ func (netSync *NetSync) HandleMessageBFTMsg(msg wire.Message) {
 	netSync.config.Consensus.OnBFTMsg(msg)
 }
 
-// func (netSync *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
-// 	Logger.log.Info("Handling new message invalidblock")
-// 	netSync.config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.shardID, msg.Reason)
-// }
-
 func (netSync *NetSync) HandleMessageGetBeaconState(msg *wire.MessageGetBeaconState) {
 	Logger.log.Info("Handling new message getbeaconstate")
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)

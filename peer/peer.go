@@ -119,7 +119,6 @@ type MessageListeners struct {
 
 	//PBFT
 	OnBFTMsg func(p *PeerConn, msg wire.Message)
-	// OnInvalidBlock  func(p *PeerConn, msg *wire.MessageInvalidBlock)
 	OnGetBeaconState func(p *PeerConn, msg *wire.MessageGetBeaconState)
 	OnBeaconState    func(p *PeerConn, msg *wire.MessageBeaconState)
 	OnGetShardState  func(p *PeerConn, msg *wire.MessageGetShardState)
