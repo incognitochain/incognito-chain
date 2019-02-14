@@ -456,8 +456,8 @@ BeginCheckHashMessage:
 	}()
 	// set time out for check message
 	go func() {
-		select {
-		case <-time.NewTimer(MAX_TIMEOUT_CHECK_HASH_MESSAGE * time.Second).C:
+		_, ok := <-time.NewTimer(MAX_TIMEOUT_CHECK_HASH_MESSAGE * time.Second).C
+		if !ok {
 			if cTimeOut != nil {
 				Logger.log.Infof("checkMessageHashBeforeSend TIMER time out %s", hash)
 				bTimeOut = true
