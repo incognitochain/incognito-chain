@@ -896,12 +896,12 @@ func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *tr
 	tokenKey = append(tokenKey, Splitter...)
 	tokenKey = append(tokenKey, []byte((customTokenTx.TxTokenData.PropertyID).String())...)
 	for _, vin := range customTokenTx.TxTokenData.Vins {
-		paymentAddressPubkey := base58.Base58Check{}.Encode(vin.PaymentAddress.Pk, 0x00)
+		paymentAddressBytes := base58.Base58Check{}.Encode(vin.PaymentAddress.Bytes(), 0x00)
 		utxoHash := []byte(vin.TxCustomTokenID.String())
 		voutIndex := vin.VoutIndex
 		paymentAddressKey := tokenKey
 		paymentAddressKey = append(paymentAddressKey, Splitter...)
-		paymentAddressKey = append(paymentAddressKey, paymentAddressPubkey...)
+		paymentAddressKey = append(paymentAddressKey, paymentAddressBytes...)
 		paymentAddressKey = append(paymentAddressKey, Splitter...)
 		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
 		paymentAddressKey = append(paymentAddressKey, Splitter...)
@@ -926,13 +926,13 @@ func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *tr
 		}
 	}
 	for index, vout := range customTokenTx.TxTokenData.Vouts {
-		paymentAddressPubkey := base58.Base58Check{}.Encode(vout.PaymentAddress.Pk, 0x00)
+		paymentAddressBytes := base58.Base58Check{}.Encode(vout.PaymentAddress.Bytes(), 0x00)
 		utxoHash := []byte(customTokenTx.Hash().String())
 		voutIndex := index
 		value := vout.Value
 		paymentAddressKey := tokenKey
 		paymentAddressKey = append(paymentAddressKey, Splitter...)
-		paymentAddressKey = append(paymentAddressKey, paymentAddressPubkey...)
+		paymentAddressKey = append(paymentAddressKey, paymentAddressBytes...)
 		paymentAddressKey = append(paymentAddressKey, Splitter...)
 		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
 		paymentAddressKey = append(paymentAddressKey, Splitter...)

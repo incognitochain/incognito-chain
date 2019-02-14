@@ -97,13 +97,18 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	beaconBlock.Body.ShardState = tempShardState
 	//==========End Create Body
 	//============Process new block with beststate
+	fmt.Println("Beacon Candidate", beaconBestState.CandidateBeaconWaitingForCurrentRandom)
 	fmt.Println("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
+	fmt.Printf("Beacon Produce/AfterUpdate: Beacon Pending Validator %+v \n, Beacon Committee %+v \n, Beacon Validator Root %+v \n", beaconBestState.BeaconPendingValidator, beaconBestState.BeaconCommittee, beaconBlock.Header.ValidatorsRoot)
+	fmt.Println("=======================================")
+	fmt.Printf("Beacon Produce/Before Update: Shard Pending Validator %+v \n, ShardCommitee %+v \n, Shard Validator Root %+v \n", beaconBestState.ShardPendingValidator, beaconBestState.ShardCommittee, beaconBlock.Header.ShardValidatorsRoot)
 	beaconBestState.Update(beaconBlock)
 	//============End Process new block with beststate
 	//==========Create Hash in Header
 	// BeaconValidator root: beacon committee + beacon pending committee
 	validatorArr := append(beaconBestState.BeaconCommittee, beaconBestState.BeaconPendingValidator...)
 	beaconBlock.Header.ValidatorsRoot, err = GenerateHashFromStringArray(validatorArr)
+	fmt.Printf("Beacon Produce/AfterUpdate: Beacon Pending Validator %+v , Beacon Committee %+v, Beacon Validator Root %+v \n", beaconBestState.BeaconPendingValidator, beaconBestState.BeaconCommittee, beaconBlock.Header.ValidatorsRoot)
 	if err != nil {
 		panic(err)
 	}
@@ -121,7 +126,7 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	}
 	// Shard Validator root
 	beaconBlock.Header.ShardValidatorsRoot, err = GenerateHashFromMapByteString(beaconBestState.ShardPendingValidator, beaconBestState.ShardCommittee)
-	fmt.Printf("Beacon Produce: Shard Pending Validator %+v , ShardCommitee %+v, Shard Validator Root %+v \n", beaconBestState.ShardPendingValidator, beaconBestState.ShardCommittee, beaconBlock.Header.ShardValidatorsRoot)
+	fmt.Printf("Beacon Produce/AfterUpdate: Shard Pending Validator %+v , ShardCommitee %+v, Shard Validator Root %+v \n", beaconBestState.ShardPendingValidator, beaconBestState.ShardCommittee, beaconBlock.Header.ShardValidatorsRoot)
 	if err != nil {
 		panic(err)
 	}
@@ -218,7 +223,7 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 					if l[3] != "shard" || l[4] != strconv.Itoa(int(shardID)) {
 						panic("Swap instruction is invalid")
 					} else {
-						validSwap[shardID] = append(validSwap[shardID], l)
+						// validSwap[shardID] = append(validSwap[shardID], l)
 					}
 				}
 			}
@@ -269,15 +274,15 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 				}
 			}
 			// format
-			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "shard" "shardID"]
-			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "beacon"]
+			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
+			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
 			// Validate swap instruction => extract only valid swap instruction
 			//TODO: define error handler scheme
 			for _, swap := range swaps {
-				if swap[2] == "beacon" {
+				if swap[3] == "beacon" {
 					continue
-				} else if swap[2] == "shard" {
-					temp, err := strconv.Atoi(swap[3])
+				} else if swap[3] == "shard" {
+					temp, err := strconv.Atoi(swap[4])
 					if err != nil {
 						continue
 					}
@@ -326,11 +331,13 @@ func (self *BestStateBeacon) GenerateInstruction(
 		swappedValidator := []string{}
 		beaconNextCommittee := []string{}
 		_, _, swappedValidator, beaconNextCommittee, _ = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, common.COMMITEES, common.OFFSET)
-		swapBeaconInstructions = append(swapBeaconInstructions, "swap")
-		swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(beaconNextCommittee, ","))
-		swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(swappedValidator, ","))
-		swapBeaconInstructions = append(swapBeaconInstructions, "beacon")
-		instructions = append(instructions, swapBeaconInstructions)
+		if len(swappedValidator) > 0 || len(beaconNextCommittee) > 0 {
+			swapBeaconInstructions = append(swapBeaconInstructions, "swap")
+			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(beaconNextCommittee, ","))
+			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(swappedValidator, ","))
+			swapBeaconInstructions = append(swapBeaconInstructions, "beacon")
+			instructions = append(instructions, swapBeaconInstructions)
+		}
 	}
 	//=======Stake
 	// ["stake", "pubkey.....", "shard" or "beacon"]
@@ -352,14 +359,13 @@ func (self *BestStateBeacon) GenerateInstruction(
 		// chainTimeStamp, err := btcapi.GetCurrentChainTimeStamp()
 		// UNCOMMENT FOR TESTING
 		chainTimeStamp := self.CurrentRandomTimeStamp + 1
-
 		fmt.Printf("============chainTimeStamp %+v \n", chainTimeStamp)
 		if err != nil {
 			panic(err)
 		}
-		var wg sync.WaitGroup
 		assignedCandidates := make(map[byte][]string)
 		if chainTimeStamp > self.CurrentRandomTimeStamp {
+			var wg sync.WaitGroup
 			wg.Add(1)
 			randomInstruction, rand := GenerateRandomInstruction(self.CurrentRandomTimeStamp, &wg)
 			wg.Wait()
