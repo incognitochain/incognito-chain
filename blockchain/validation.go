@@ -26,7 +26,7 @@ func (self *BlockChain) GetAmountPerAccount(proposal *metadata.DividendProposal)
 	// Get amount per account (only count unrewarded utxo)
 	rewardHolders := []string{}
 	amounts := []uint64{}
-	for holder, _ := range tokenHolders {
+	for holder := range tokenHolders {
 		paymentAddressInBytes, _, _ := base58.Base58Check{}.Decode(holder)
 		keySet := cashec.KeySet{}
 		keySet.PaymentAddress = privacy.PaymentAddress{}

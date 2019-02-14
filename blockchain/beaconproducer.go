@@ -222,8 +222,6 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 				if l[0] == "swap" {
 					if l[3] != "shard" || l[4] != strconv.Itoa(int(shardID)) {
 						panic("Swap instruction is invalid")
-					} else {
-						// validSwap[shardID] = append(validSwap[shardID], l)
 					}
 				}
 			}
@@ -346,9 +344,7 @@ func (self *BestStateBeacon) GenerateInstruction(
 	// ["stake", "pubkey.....", "shard" or "beacon"]
 	// beaconStaker := []string{}
 	// shardStaker := []string{}
-	for _, stakeInstruction := range stakers {
-		instructions = append(instructions, stakeInstruction)
-	}
+	instructions = append(instructions, stakers...)
 	//=======Random and Assign if random number is detected
 	// Time to get random number and no block in this epoch get it
 	fmt.Printf("RandomTimestamp %+v \n", self.CurrentRandomTimeStamp)
