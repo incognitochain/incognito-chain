@@ -565,7 +565,6 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 
 			//constantpos
 			OnBFTMsg: serverObj.OnBFTMsg,
-			// OnInvalidBlock:  serverObj.OnInvalidBlock,
 			OnGetBeaconState: serverObj.OnGetBeaconState,
 			OnBeaconState:    serverObj.OnBeaconState,
 			OnGetShardState:  serverObj.OnGetShardState,
@@ -861,13 +860,6 @@ func (serverObj *Server) OnBFTMsg(_ *peer.PeerConn, msg wire.Message) {
 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a BFTMsg END")
 }
-
-// func (serverObj *Server) OnInvalidBlock(_ *peer.PeerConn, msg *wire.MessageInvalidBlock) {
-// 	Logger.log.Info("Receive a invalidblock START", msg)
-// 	var txProcessed chan struct{}
-// 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-// 	Logger.log.Info("Receive a invalidblock END", msg)
-// }
 
 func (serverObj *Server) OnGetBeaconState(_ *peer.PeerConn, msg *wire.MessageGetBeaconState) {
 	Logger.log.Info("Receive a getbeaconstate START")
@@ -1203,6 +1195,7 @@ func (serverObj *Server) PushMessageGetBlockBeacon(from uint64, to uint64, peerI
 	msg.(*wire.MessageGetBlockBeacon).To = to
 	return serverObj.PushMessageToPeer(msg, peerID)
 }
+
 func (serverObj *Server) PushMessageGetBlockShard(shardID byte, from uint64, to uint64, peerID libp2p.ID) error {
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockShard)
 	if err != nil {
