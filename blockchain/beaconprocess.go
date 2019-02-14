@@ -30,12 +30,12 @@ import (
 	- No error: valid and can be sign
 	- Error: invalid new block
 */
-func (self *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock) error {
+func (self *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock, isCommittee bool) error {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 	//========Verify block only
 	Logger.log.Infof("Verify block for signing process %d, with hash %+v", block.Header.Height, *block.Hash())
-	if err := self.VerifyPreProcessingBeaconBlock(block); err != nil {
+	if err := self.VerifyPreProcessingBeaconBlock(block, isCommittee); err != nil {
 		return err
 	}
 	//========Verify block with previous best state
@@ -73,13 +73,13 @@ func (self *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock) error {
 	return nil
 }
 
-func (self *BlockChain) InsertBeaconBlock(block *BeaconBlock) error {
+func (self *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee bool) error {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 	Logger.log.Infof("Begin Insert new block %d, with hash %+v \n", block.Header.Height, *block.Hash())
 	// fmt.Printf("Beacon block %+v \n", block)
 	Logger.log.Infof("Verify Pre Processing Beacon Block %+v \n", *block.Hash())
-	if err := self.VerifyPreProcessingBeaconBlock(block); err != nil {
+	if err := self.VerifyPreProcessingBeaconBlock(block, isCommittee); err != nil {
 		return err
 	}
 	//========Verify block with previous best state
@@ -131,26 +131,28 @@ func (self *BlockChain) InsertBeaconBlock(block *BeaconBlock) error {
 	}
 	//=========Remove shard block in beacon pool
 	Logger.log.Infof("Remove block from pool %+v \n", *block.Hash())
-	self.config.ShardToBeaconPool.RemovePendingBlock(self.BestState.Beacon.BestShardHeight)
+	self.config.ShardToBeaconPool.SetShardState(self.BestState.Beacon.BestShardHeight)
 
 	Logger.log.Infof("Finish Insert new block %d, with hash %+v", block.Header.Height, *block.Hash())
 	return nil
 }
-func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error {
-	/* Verify Pre-prosessing data
-	This function DOES NOT verify new block with best state
-	DO NOT USE THIS with GENESIS BLOCK
-	- Producer validity
-	- version
-	- parent hash
-	- Height = parent hash + 1
-	- Epoch = blockHeight % Epoch ? Parent Epoch + 1
-	- Timestamp can not excess some limit
-	- Instruction hash
-	- ShardStateHash
-	- ShardState is sorted?
-	- Is shardState existed in pool?
-	*/
+
+/* Verify Pre-prosessing data
+This function DOES NOT verify new block with best state
+DO NOT USE THIS with GENESIS BLOCK
+- Producer validity
+- version
+- parent hash
+- Height = parent hash + 1
+- Epoch = blockHeight % Epoch ? Parent Epoch + 1
+- Timestamp can not excess some limit
+- Instruction hash
+- ShardStateHash
+- ShardState is sorted?
+FOR CURRENT COMMITTEES ONLY
+	- Is shardState existed in pool
+*/
+func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock, isCommittee bool) error {
 	//verify producer
 	producerPosition := (self.BestState.Beacon.BeaconProposerIdx + 1) % len(self.BestState.Beacon.BeaconCommittee)
 	tempProducer := self.BestState.Beacon.BeaconCommittee[producerPosition]
@@ -206,43 +208,46 @@ func (self *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock) error
 		}
 	}
 	// if pool does not have one of needed block, fail to verify
-	allShardBlocks := self.config.ShardToBeaconPool.GetValidPendingBlock()
-	for shardID, shardBlocks := range allShardBlocks {
-		shardBlocks = shardBlocks[:len(block.Body.ShardState[shardID])]
-		shardStates := block.Body.ShardState[shardID]
-		for index, shardState := range shardStates {
-			if shardBlocks[index].Header.Height != shardState.Height {
-				return NewBlockChainError(ShardStateError, errors.New("Shardstate fail to verify with ShardToBeacon Block in pool"))
-			}
-			blockHash := shardBlocks[index].Header.Hash()
-			if strings.Compare(blockHash.String(), shardState.Hash.String()) != 0 {
-				return NewBlockChainError(ShardStateError, errors.New("Shardstate fail to verify with ShardToBeacon Block in pool"))
-			}
-			if !reflect.DeepEqual(shardBlocks[index].Header.CrossShards, shardState.CrossShard) {
-				return NewBlockChainError(ShardStateError, errors.New("Shardstate fail to verify with ShardToBeacon Block in pool"))
-			}
-		}
-		// Only accept block in one epoch
-		for index, shardBlock := range shardBlocks {
-			currentCommittee := self.BestState.Beacon.ShardCommittee[shardID]
-			currentPendingValidator := self.BestState.Beacon.ShardPendingValidator[shardID]
-			hash := shardBlock.Header.Hash()
-			err := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
-			if index == 0 && err != nil {
-				currentCommittee, currentPendingValidator, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, common.COMMITEES, common.OFFSET)
-				if err != nil {
+	if isCommittee {
+		allShardBlocks := self.config.ShardToBeaconPool.GetValidPendingBlock()
+		for shardID, shardBlocks := range allShardBlocks {
+			shardBlocks = shardBlocks[:len(block.Body.ShardState[shardID])]
+			shardStates := block.Body.ShardState[shardID]
+			for index, shardState := range shardStates {
+				if shardBlocks[index].Header.Height != shardState.Height {
 					return NewBlockChainError(ShardStateError, errors.New("Shardstate fail to verify with ShardToBeacon Block in pool"))
 				}
-				err = ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
-				if err != nil {
+				blockHash := shardBlocks[index].Header.Hash()
+				if strings.Compare(blockHash.String(), shardState.Hash.String()) != 0 {
+					return NewBlockChainError(ShardStateError, errors.New("Shardstate fail to verify with ShardToBeacon Block in pool"))
+				}
+				if !reflect.DeepEqual(shardBlocks[index].Header.CrossShards, shardState.CrossShard) {
 					return NewBlockChainError(ShardStateError, errors.New("Shardstate fail to verify with ShardToBeacon Block in pool"))
 				}
 			}
-			if index != 0 && err != nil {
-				return NewBlockChainError(ShardStateError, errors.New("Shardstate fail to verify with ShardToBeacon Block in pool"))
+			// Only accept block in one epoch
+			for index, shardBlock := range shardBlocks {
+				currentCommittee := self.BestState.Beacon.ShardCommittee[shardID]
+				currentPendingValidator := self.BestState.Beacon.ShardPendingValidator[shardID]
+				hash := shardBlock.Header.Hash()
+				err := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
+				if index == 0 && err != nil {
+					currentCommittee, currentPendingValidator, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, common.COMMITEES, common.OFFSET)
+					if err != nil {
+						return NewBlockChainError(ShardStateError, errors.New("Shardstate fail to verify with ShardToBeacon Block in pool"))
+					}
+					err = ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
+					if err != nil {
+						return NewBlockChainError(ShardStateError, errors.New("Shardstate fail to verify with ShardToBeacon Block in pool"))
+					}
+				}
+				if index != 0 && err != nil {
+					return NewBlockChainError(ShardStateError, errors.New("Shardstate fail to verify with ShardToBeacon Block in pool"))
+				}
 			}
 		}
 	}
+
 	return nil
 }
 
