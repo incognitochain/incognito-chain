@@ -15,10 +15,10 @@ type TransactionDetail struct {
 	Fee       uint64 `json:"Fee"` // Fee applies: always consant
 	Image     string `json:"Image"`
 
-	Proof          *zkp.PaymentProof `json:"Proof"`
-	InputCoinsJson string            `json:"InputCoinsJson"`
-	SigPubKey      []byte            `json:"SigPubKey,omitempty"` // 64 bytes
-	Sig            []byte            `json:"Sig,omitempty"`       // 64 bytes
+	Proof           *zkp.PaymentProof `json:"Proof"`
+	InputCoinPubKey []byte            `json:"InputCoinPubKey"`
+	SigPubKey       []byte            `json:"SigPubKey,omitempty"` // 64 bytes
+	Sig             []byte            `json:"Sig,omitempty"`       // 64 bytes
 
 	Metadata               string `json:"Metadata"`
 	CustomTokenData        string `json:"CustomTokenData"`
