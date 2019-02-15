@@ -57,9 +57,11 @@ func (self *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 
 func (self *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]ChainState, shardToBeaconPool *map[byte][]common.Hash, crossShardPool *map[byte]map[byte][]common.Hash, peerID libp2p.ID) {
 	if beacon.Height >= self.BestState.Beacon.BeaconHeight {
-		var pState *peerState
-		pState.Shard = make(map[byte]*ChainState)
-		pState.Beacon = beacon
+		pState := &peerState{
+			Shard:  make(map[byte]*ChainState),
+			Beacon: beacon,
+			Peer:   peerID,
+		}
 		userRole, userShardID := self.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
 		nodeMode := self.config.NodeMode
 		if userRole == "beacon-proposer" || userRole == "beacon-validator" {
