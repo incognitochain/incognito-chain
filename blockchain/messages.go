@@ -33,7 +33,7 @@ func (self *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]
 			}
 		}
 		for shardID := range self.syncStatus.Shards {
-			if shardState, ok := (*shard)[shardID]; ok && shardID != userShardID {
+			if shardState, ok := (*shard)[shardID]; ok {
 				if shardState.Height > self.BestState.Shard[shardID].ShardHeight {
 					pState.Shard[shardID] = &shardState
 				}
