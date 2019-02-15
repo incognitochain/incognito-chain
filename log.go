@@ -28,12 +28,12 @@ var (
 	logRotator *rotator.Rotator
 
 	backendLog        = common.NewBackend(logWriter{})
-	addrManagerLoger  = backendLog.Logger("Address Log", false)
-	connManagerLogger = backendLog.Logger("Connection Manager Log", false)
-	mainLogger        = backendLog.Logger("Server Log", false)
+	addrManagerLoger  = backendLog.Logger("Address Log", true)
+	connManagerLogger = backendLog.Logger("Connection Manager Log", true)
+	mainLogger        = backendLog.Logger("Server Log", true)
 	rpcLogger         = backendLog.Logger("RPC Log", false)
-	netsyncLogger     = backendLog.Logger("Netsync Log", false)
-	peerLogger        = backendLog.Logger("Peer Log", false)
+	netsyncLogger     = backendLog.Logger("Netsync Log", true)
+	peerLogger        = backendLog.Logger("Peer Log", true)
 	dbLogger          = backendLog.Logger("Database Log", false)
 	walletLogger      = backendLog.Logger("Wallet log", false)
 	blockchainLogger  = backendLog.Logger("BlockChain log", false)
