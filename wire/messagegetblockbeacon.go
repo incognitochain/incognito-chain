@@ -13,6 +13,9 @@ const (
 )
 
 type MessageGetBlockBeacon struct {
+	FromPool  bool
+	ByHash    bool
+	BlksHash  []common.Hash
 	From      uint64
 	To        uint64
 	SenderID  string

@@ -67,10 +67,10 @@ func (engine *Engine) Start() error {
 				if engine.config.BlockChain.IsReady(false, 0) {
 					role, shardID := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.config.UserKeySet.GetPublicKeyB58())
 					nodeRole := common.EmptyString
-					if (engine.config.NodeMode == common.BEACON_ROLE || engine.config.NodeMode == common.AUTO_ROLE) && role != common.SHARD_ROLE {
+					if (engine.config.NodeMode == common.NODEMODE_BEACON || engine.config.NodeMode == common.NODEMODE_AUTO) && role != common.SHARD_ROLE {
 						nodeRole = common.BEACON_ROLE
 					}
-					if (engine.config.NodeMode == common.SHARD_ROLE || engine.config.NodeMode == common.AUTO_ROLE) && role == common.SHARD_ROLE {
+					if (engine.config.NodeMode == common.NODEMODE_SHARD || engine.config.NodeMode == common.NODEMODE_AUTO) && role == common.SHARD_ROLE {
 						nodeRole = common.SHARD_ROLE
 					}
 					go engine.config.Server.UpdateConsensusState(nodeRole, engine.config.UserKeySet.GetPublicKeyB58(), nil, engine.config.BlockChain.BestState.Beacon.BeaconCommittee, engine.config.BlockChain.BestState.Beacon.ShardCommittee)
@@ -85,7 +85,7 @@ func (engine *Engine) Start() error {
 							Chain:      engine.config.BlockChain,
 							Server:     engine.config.Server,
 						}
-						if (engine.config.NodeMode == common.BEACON_ROLE || engine.config.NodeMode == common.AUTO_ROLE) && role != common.SHARD_ROLE {
+						if (engine.config.NodeMode == common.NODEMODE_BEACON || engine.config.NodeMode == common.NODEMODE_AUTO) && role != common.SHARD_ROLE {
 							bftProtocol.RoleData.Committee = make([]string, len(engine.config.BlockChain.BestState.Beacon.BeaconCommittee))
 							copy(bftProtocol.RoleData.Committee, engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
 							var (
@@ -132,8 +132,9 @@ func (engine *Engine) Start() error {
 							}
 							continue
 						}
-						if (engine.config.NodeMode == common.SHARD_ROLE || engine.config.NodeMode == common.AUTO_ROLE) && role == common.SHARD_ROLE {
+						if (engine.config.NodeMode == common.NODEMODE_BEACON || engine.config.NodeMode == common.NODEMODE_AUTO) && role == common.SHARD_ROLE {
 							engine.config.BlockChain.SyncShard(shardID)
+							engine.config.BlockChain.StopSyncUnnecessaryShard()
 							bftProtocol.RoleData.Committee = make([]string, len(engine.config.BlockChain.BestState.Shard[shardID].ShardCommittee))
 							copy(bftProtocol.RoleData.Committee, engine.config.BlockChain.BestState.Shard[shardID].ShardCommittee)
 							var (

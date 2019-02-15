@@ -267,10 +267,6 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if peerConn.Config.MessageListeners.OnGetShardToBeacon != nil {
 						peerConn.Config.MessageListeners.OnGetShardToBeacon(peerConn, message.(*wire.MessageGetShardToBeacon))
 					}
-				case reflect.TypeOf(&wire.MessageGetShardToBeacons{}):
-					if peerConn.Config.MessageListeners.OnGetShardToBeacons != nil {
-						peerConn.Config.MessageListeners.OnGetShardToBeacons(peerConn, message.(*wire.MessageGetShardToBeacons))
-					}
 				case reflect.TypeOf(&wire.MessageVersion{}):
 					if peerConn.Config.MessageListeners.OnVersion != nil {
 						versionMessage := message.(*wire.MessageVersion)
@@ -305,22 +301,30 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if peerConn.Config.MessageListeners.OnBFTMsg != nil {
 						peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTReady))
 					}
-				case reflect.TypeOf(&wire.MessageGetBeaconState{}):
-					if peerConn.Config.MessageListeners.OnGetBeaconState != nil {
-						peerConn.Config.MessageListeners.OnGetBeaconState(peerConn, message.(*wire.MessageGetBeaconState))
+					// case reflect.TypeOf(&wire.MessageInvalidBlock{}):
+					// 	if peerConn.Config.MessageListeners.OnInvalidBlock != nil {
+					// 		peerConn.Config.MessageListeners.OnInvalidBlock(peerConn, message.(*wire.MessageInvalidBlock))
+					// 	}
+				case reflect.TypeOf(&wire.MessagePeerState{}):
+					if peerConn.Config.MessageListeners.OnPeerState != nil {
+						peerConn.Config.MessageListeners.OnPeerState(peerConn, message.(*wire.MessagePeerState))
 					}
-				case reflect.TypeOf(&wire.MessageBeaconState{}):
-					if peerConn.Config.MessageListeners.OnBeaconState != nil {
-						peerConn.Config.MessageListeners.OnBeaconState(peerConn, message.(*wire.MessageBeaconState))
-					}
-				case reflect.TypeOf(&wire.MessageGetShardState{}):
-					if peerConn.Config.MessageListeners.OnGetShardState != nil {
-						peerConn.Config.MessageListeners.OnGetShardState(peerConn, message.(*wire.MessageGetShardState))
-					}
-				case reflect.TypeOf(&wire.MessageShardState{}):
-					if peerConn.Config.MessageListeners.OnShardState != nil {
-						peerConn.Config.MessageListeners.OnShardState(peerConn, message.(*wire.MessageShardState))
-					}
+					/*case reflect.TypeOf(&wire.MessageRegistration{}):
+					  if peerConn.Config.MessageListeners.OnRegistration != nil {
+						  peerConn.Config.MessageListeners.OnRegistration(peerConn, message.(*wire.MessageRegistration))
+					  }*/
+					// case reflect.TypeOf(&wire.MessageSwapRequest{}):
+					// 	if peerConn.Config.MessageListeners.OnSwapRequest != nil {
+					// 		peerConn.Config.MessageListeners.OnSwapRequest(peerConn, message.(*wire.MessageSwapRequest))
+					// 	}
+					// case reflect.TypeOf(&wire.MessageSwapSig{}):
+					// 	if peerConn.Config.MessageListeners.OnSwapSig != nil {
+					// 		peerConn.Config.MessageListeners.OnSwapSig(peerConn, message.(*wire.MessageSwapSig))
+					// 	}
+					// case reflect.TypeOf(&wire.MessageSwapUpdate{}):
+					// 	if peerConn.Config.MessageListeners.OnSwapUpdate != nil {
+					// 		peerConn.Config.MessageListeners.OnSwapUpdate(peerConn, message.(*wire.MessageSwapUpdate))
+					// 	}
 				case reflect.TypeOf(&wire.MessageMsgCheck{}):
 					peerConn.handleMsgCheck(message.(*wire.MessageMsgCheck))
 				case reflect.TypeOf(&wire.MessageMsgCheckResp{}):
