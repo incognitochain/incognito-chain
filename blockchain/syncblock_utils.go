@@ -43,8 +43,7 @@ func getBlkNeedToGetByHash(blksHash []common.Hash, loadedData interface{}, init 
 }
 
 func getBlkNeedToGetByHeight(fromHeight uint64, toHeight uint64, loadedData interface{}, init bool, peerID libp2p.ID) (map[uint64]uint64, interface{}) {
-	var blkBatchsNeedToGet map[uint64]uint64
-	blkBatchsNeedToGet = make(map[uint64]uint64)
+	blkBatchsNeedToGet := make(map[uint64]uint64)
 	var blksSyncByHeight *map[uint64]peerSyncTimestamp
 	if init {
 		blksSyncByHeight = loadedData.(*map[uint64]peerSyncTimestamp)

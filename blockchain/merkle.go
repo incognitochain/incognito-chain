@@ -91,9 +91,7 @@ func (merkle Merkle) BuildMerkleTreeOfHashs(shardsHash []*common.Hash) []*common
 	merkles := make([]*common.Hash, arraySize)
 
 	// Create the base transaction hashes and populate the array with them.
-	for i, hash := range shardsHash {
-		merkles[i] = hash
-	}
+	copy(merkles, shardsHash)
 
 	// Start the array offset after the last transaction and adjusted to the
 	// next power of two.
@@ -163,9 +161,7 @@ func CalcMerkleRoot(txns []metadata.Transaction) common.Hash {
 	}
 
 	utilTxns := make([]metadata.Transaction, 0, len(txns))
-	for _, tx := range txns {
-		utilTxns = append(utilTxns, tx)
-	}
+	utilTxns = append(utilTxns, txns...)
 	merkles := Merkle{}.BuildMerkleTreeStore(utilTxns)
 	return *merkles[len(merkles)-1]
 }
