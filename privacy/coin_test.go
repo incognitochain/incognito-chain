@@ -2,9 +2,9 @@ package privacy
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCoin(t *testing.T){
