@@ -15,9 +15,9 @@ type VoteDCBBoardMetadata struct {
 	MetadataBase
 }
 
-func NewVoteDCBBoardMetadata(candidatePaymentAddress privacy.PaymentAddress, amount int64) *VoteDCBBoardMetadata {
+func NewVoteDCBBoardMetadata(candidatePaymentAddress privacy.PaymentAddress) *VoteDCBBoardMetadata {
 	return &VoteDCBBoardMetadata{
-		VoteBoardMetadata: *NewVoteBoardMetadata(candidatePaymentAddress, amount),
+		VoteBoardMetadata: *NewVoteBoardMetadata(candidatePaymentAddress),
 		MetadataBase:      *NewMetadataBase(VoteDCBBoardMeta),
 	}
 }
@@ -46,7 +46,9 @@ func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ValidateMetadataByItself() boo
 }
 
 func (voteDCBBoardMetadata *VoteDCBBoardMetadata) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	actionContent := *voteDCBBoardMetadata
+	actionContent := map[string]interface{}{
+		"reqTx": tx,
+	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
 		return [][]string{}, err

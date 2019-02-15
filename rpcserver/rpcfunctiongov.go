@@ -233,13 +233,7 @@ func (rpcServer RpcServer) buildRawVoteGOVBoardTransaction(
 	candidatePaymentAddress := arrayParams[len(arrayParams)-1].(string)
 	account, _ := wallet.Base58CheckDeserialize(candidatePaymentAddress)
 
-	receiversPaymentAddressParam := make(map[string]interface{})
-	if arrayParams[1] != nil {
-		receiversPaymentAddressParam = arrayParams[1].(map[string]interface{})
-	}
-	amount := getAmountVote(receiversPaymentAddressParam)
-
-	metadata := metadata.NewVoteGOVBoardMetadata(account.KeySet.PaymentAddress, amount)
+	metadata := metadata.NewVoteGOVBoardMetadata(account.KeySet.PaymentAddress)
 	tx, err := rpcServer.buildRawCustomTokenTransaction(params, metadata)
 	return tx, err
 }

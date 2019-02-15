@@ -15,9 +15,9 @@ type VoteGOVBoardMetadata struct {
 	MetadataBase
 }
 
-func NewVoteGOVBoardMetadata(candidatePaymentAddress privacy.PaymentAddress, amount int64) *VoteGOVBoardMetadata {
+func NewVoteGOVBoardMetadata(candidatePaymentAddress privacy.PaymentAddress) *VoteGOVBoardMetadata {
 	return &VoteGOVBoardMetadata{
-		VoteBoardMetadata: *NewVoteBoardMetadata(candidatePaymentAddress, amount),
+		VoteBoardMetadata: *NewVoteBoardMetadata(candidatePaymentAddress),
 		MetadataBase:      *NewMetadataBase(VoteGOVBoardMeta),
 	}
 }
@@ -46,7 +46,9 @@ func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ValidateMetadataByItself() boo
 }
 
 func (voteGOVBoardMetadata *VoteGOVBoardMetadata) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	actionContent := *voteGOVBoardMetadata
+	actionContent := map[string]interface{}{
+		"reqTx": tx,
+	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
 		return [][]string{}, err
