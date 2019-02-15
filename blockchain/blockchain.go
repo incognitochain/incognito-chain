@@ -47,17 +47,22 @@ type BlockChain struct {
 	cQuitSync  chan struct{}
 	syncStatus struct {
 		Beacon bool
-		Shard  map[byte](chan struct{})
+		Shards map[byte]struct{}
 		sync.Mutex
+
+		CurrentlySyncShardBlk         sync.Map
+		CurrentlySyncBeaconBlk        sync.Map
+		CurrentlySyncCrossShardBlk    sync.Map
+		CurrentlySyncShardToBeaconBlk sync.Map
+
+		PeersState     map[libp2p.ID]*peerState
+		PeersStateLock sync.Mutex
 	}
 	knownChainState struct {
-		Shards map[byte]ShardChainState
-		Beacon BeaconChainState
+		Shards map[byte]ChainState
+		Beacon ChainState
 	}
-	BeaconStateCh  chan *PeerBeaconChainState
-	newBeaconBlkCh chan *BeaconBlock
-	ShardStateCh   map[byte](chan *PeerShardChainState)
-	newShardBlkCh  map[byte](*chan *ShardBlock)
+	PeerStateCh chan *peerState
 }
 type BestState struct {
 	Beacon *BestStateBeacon
@@ -103,13 +108,20 @@ type Config struct {
 	CrossShardPool    CrossShardPool
 	NodeBeaconPool    NodeBeaconPool
 	NodeShardPool     NodeShardPool
-	Server            interface {
-		PushMessageGetBeaconState() error
-		PushMessageGetShardState(byte) error
-		PushMessageGetBlockBeacon(from uint64, to uint64, peerID libp2p.ID) error
-		PushMessageGetBlockShard(shardID byte, from uint64, to uint64, peerID libp2p.ID) error
-		PushMessageGetShardToBeacon(shardID byte, blkHash common.Hash) error
-		PushMessageGetShardToBeacons(shardID byte, from uint64, to uint64) error
+
+	Server interface {
+		BoardcastNodeState() error
+
+		PushMessageGetBlockBeaconByHeight(from uint64, to uint64, peerID libp2p.ID) error
+		PushMessageGetBlockBeaconByHash(blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
+
+		PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error
+		PushMessageGetBlockShardByHash(shardID byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
+
+		PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error
+		PushMessageGetBlockShardToBeaconByHash(shardID byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
+
+		PushMessageGetBlockCrossShardByHash(fromShard byte, toShard byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
 	}
 	UserKeySet *cashec.KeySet
 }
@@ -140,11 +152,10 @@ func (self *BlockChain) Init(config *Config) error {
 	// 		chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns, bestState.BestBlock.Header.SalaryFund, bestState.BestBlock.Header.GOVConstitution)
 	// }
 	self.cQuitSync = make(chan struct{})
-	self.ShardStateCh = make(map[byte](chan *PeerShardChainState))
-	self.newShardBlkCh = make(map[byte](*chan *ShardBlock))
-	self.syncStatus.Shard = make(map[byte](chan struct{}))
-	self.knownChainState.Shards = make(map[byte]ShardChainState)
-	self.SyncBeacon()
+	self.syncStatus.Shards = make(map[byte]struct{})
+	self.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
+	self.knownChainState.Shards = make(map[byte]ChainState)
+	go self.StartSyncBlk()
 	for _, shardID := range self.config.RelayShards {
 		self.SyncShard(shardID)
 	}
@@ -294,6 +305,12 @@ func (self *BlockChain) initShardState(shardID byte) error {
 
 	// ---- test RPC api data --- remove after
 	initTxs := []string{`{"Version":1,"Type":"s","LockTime":1549889112,"Fee":0,"Info":null,"SigPubKey":"A7GGbCnosNljq25A5o4VIGs7r6WOcs3OrDBJUFd28eEA","Sig":"4gzqBc1TnROMjEdGW1DdIlLRA6pAwbcC3r1macAVy8OaOQaWxcSQXubEgm3oKcJAyE7OnEckV35pwAWD4vr7+A==","Proof":"11111116WGHqpGSLR21nkwRaRVR2vJBD6DR8wKQfB5VCC4TNEXz1XeskmWDehJbmDvr4EeC8x5vGFSrNq4KRs4GoDgn85t7CHJPQWu6s8QWhQVRd621qqT5mBofPcB9WGgQPsD7i4WPxoPKVYhS3jaRXbT2C9S1tHQbW9TytbZKbASDgKygqeijEoWsLW4RXct1oGn2wat2Q1kdPX35AKW1B2R","PubKeyLastByteSender":0,"Metadata":null}`, `{"Version":1,"Type":"s","LockTime":1549889112,"Fee":0,"Info":null,"SigPubKey":"AySFA7ksPnDE7zG+ZKwyk8SaadPLOfJuIn5k4kqUgKcA","Sig":"0jcALduldAkey/6EmKW3EyUQGpJCZ5Vr1lmc7QlzOL3FYEHVwF3kXcDkuPXqqjaH8ueJjDGDqx4N8KpWDfSi7Q==","Proof":"11111116WGHqpGNRGpV3VBz1rndCx6TP4A8eLYeocjg8izynA2YAkx7x38mCir9Nm3oCubXdn25F4sj4jHryBtSbdwJj6o4X43YDftZ9nPsrw4m8DyF6NkxNXbvGj9egkUtypup34hdCXv2L8j5tB9cVUCXVqWeC9axqLLoibXEay4fLrroeRnfNhJ1moNDoQqyRVLrcC7yUjDQz6AUsdd3uFB","PubKeyLastByteSender":0,"Metadata":null}`}
+
+	for _, tx := range initTxs {
+		testSalaryTX := transaction.Tx{}
+		testSalaryTX.UnmarshalJSON([]byte(tx))
+		initBlock.Body.Transactions = append(initBlock.Body.Transactions, &testSalaryTX)
+	}
 	// var initTxs []string
 	// testUserkeyList := []string{
 	// 	"112t8rqnMrtPkJ4YWzXfG82pd9vCe2jvWGxqwniPM5y4hnimki6LcVNfXxN911ViJS8arTozjH4rTpfaGo5i1KKcG1ayjiMsa4E3nABGAqQh",
@@ -315,12 +332,6 @@ func (self *BlockChain) initShardState(shardID byte) error {
 	// }
 	// fmt.Println(initTxs)
 	// os.Exit(1)
-
-	for _, tx := range initTxs {
-		testSalaryTX := transaction.Tx{}
-		testSalaryTX.UnmarshalJSON([]byte(tx))
-		initBlock.Body.Transactions = append(initBlock.Body.Transactions, &testSalaryTX)
-	}
 
 	self.BestState.Shard[shardID] = &BestStateShard{
 		ShardCommittee:        []string{},
