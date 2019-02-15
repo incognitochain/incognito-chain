@@ -2,8 +2,6 @@ package blockchain
 
 import (
 	"errors"
-	"math"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
@@ -41,13 +39,13 @@ func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merkl
 		} else {
 			merklePathShard = append(merklePathShard, merkleData[cursor+i-1])
 		}
-		i = int(math.Floor(float64(i / 2)))
+		i = i / 2
 
 		if cursor == 0 {
 			cursor += len(outputCoinHash)
 		} else {
 			tmp := cursor
-			cursor += int(math.Floor(float64((cursor - lastCursor) / 2)))
+			cursor += (cursor - lastCursor) / 2
 			lastCursor = tmp
 		}
 	}
