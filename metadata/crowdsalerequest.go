@@ -65,7 +65,6 @@ func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 		return false, err
 	}
 
-	// TODO(@0xbunyip): get height of beacon chain on new consensus
 	beaconHeight := bcr.GetBeaconHeight()
 	if beaconHeight >= saleData.EndBlock {
 		return false, errors.Errorf("Crowdsale ended")
@@ -78,7 +77,7 @@ func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	}
 
 	// Check if asset is sent to correct address
-	if saleData.BuyingAsset.IsEqual(&common.ConstantID) {
+	if common.IsConstantAsset(&saleData.BuyingAsset) {
 		keyWalletBurnAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 		unique, pubkey, _ := txr.GetUniqueReceiver()
 		if !unique || !bytes.Equal(pubkey, keyWalletBurnAccount.KeySet.PaymentAddress.Pk[:]) {
@@ -129,7 +128,7 @@ func (csReq *CrowdsaleRequest) BuildReqActions(txr Transaction, bcr BlockchainRe
 		return [][]string{}, err
 	}
 	sentAmount := uint64(0)
-	if saleData.BuyingAsset.IsEqual(&common.ConstantID) {
+	if common.IsConstantAsset(&saleData.BuyingAsset) {
 		_, _, sentAmount = txr.GetUniqueReceiver()
 	} else if common.IsBondAsset(&saleData.BuyingAsset) {
 		_, _, sentAmount = txr.GetTokenUniqueReceiver()

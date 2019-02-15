@@ -199,16 +199,40 @@ func (govParams *GOVParams) Hash() *common.Hash {
 func (GOVParams GOVParams) Validate() bool {
 	return true
 }
-func (DCBParams DCBParams) Validate() bool {
+func (dcbParams DCBParams) Validate() bool {
 	return true
 }
 
-func (DCBParams DCBParams) ValidateSanityData() bool {
-	// Todo: @0xbunyip
+func (dcbParams DCBParams) ValidateSanityData() bool {
+	for _, saleData := range dcbParams.ListSaleData {
+		if !validAssetPair(saleData.BuyingAsset, saleData.SellingAsset) {
+			return false
+		}
+	}
 	return true
 }
 
 func (GOVParams GOVParams) ValidateSanityData() bool {
 	// Todo: @0xankylosaurus
 	return true
+}
+
+func validAssetPair(buyingAsset common.Hash, sellingAsset common.Hash) bool {
+	// DCB Bond crowdsales
+	if common.IsBondAsset(&buyingAsset) && common.IsConstantAsset(&sellingAsset) {
+		return true
+	} else if common.IsConstantAsset(&buyingAsset) && common.IsBondAsset(&sellingAsset) {
+		return true
+	}
+
+	// DCB Reserve
+	if common.IsConstantAsset(&buyingAsset) && common.IsOffChainAsset(&sellingAsset) {
+		return true // Redeem
+	} else if common.IsOffChainAsset(&buyingAsset) && common.IsDCBTokenAsset(&sellingAsset) {
+		return true // Reserve
+	} else if common.IsUSDAsset(&buyingAsset) && common.IsConstantAsset(&sellingAsset) {
+		return true // Buy Constant
+	}
+
+	return false
 }
