@@ -1,7 +1,7 @@
 package params
 
 import (
-	"encoding/hex"
+	"crypto/rand"
 	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
@@ -133,7 +133,6 @@ func (sd *SaleData) GetProposalTxHash() common.Hash {
 }
 
 func NewSaleData(
-	saleID []byte,
 	endBlock uint64,
 	buyingAsset *common.Hash,
 	buyingAmount uint64,
@@ -143,7 +142,6 @@ func NewSaleData(
 	defaultSellPrice uint64,
 ) *SaleData {
 	return &SaleData{
-		SaleID:           saleID,
 		EndBlock:         endBlock,
 		BuyingAsset:      *buyingAsset,
 		BuyingAmount:     buyingAmount,
@@ -156,20 +154,17 @@ func NewSaleData(
 
 func NewSaleDataFromJson(data interface{}) *SaleData {
 	saleDataData := data.(map[string]interface{})
-	saleIDStr := saleDataData["SaleID"].(string)
-	saleID, errSale := hex.DecodeString(saleIDStr)
 
 	buyingAssetStr := saleDataData["BuyingAsset"].(string)
 	buyingAsset, errBuy := common.Hash{}.NewHashFromStr(buyingAssetStr)
 
 	sellingAssetStr := saleDataData["SellingAsset"].(string)
 	sellingAsset, errSell := common.Hash{}.NewHashFromStr(sellingAssetStr)
-	if errSale != nil || errBuy != nil || errSell != nil {
+	if errBuy != nil || errSell != nil {
 		return nil
 	}
 
 	saleData := NewSaleData(
-		saleID,
 		uint64(saleDataData["EndBlock"].(float64)),
 		buyingAsset,
 		uint64(saleDataData["BuyingAmount"].(float64)),
@@ -178,6 +173,16 @@ func NewSaleDataFromJson(data interface{}) *SaleData {
 		uint64(saleDataData["SellingAmount"].(float64)),
 		uint64(saleDataData["DefaultSellPrice"].(float64)),
 	)
+
+	// Generate SaleID randomly
+	saleDataHash := saleData.Hash()
+	salt := make([]byte, 32)
+	rand.Read(salt)
+	saleDataHashWithSalt := []byte{}
+	saleDataHashWithSalt = append(saleDataHashWithSalt, saleDataHash[:]...)
+	saleDataHashWithSalt = append(saleDataHashWithSalt, salt...)
+	saleID := common.DoubleHashH(saleDataHashWithSalt)
+	saleData.SaleID = saleID[:]
 	return saleData
 }
 
@@ -260,8 +265,7 @@ func NewOracleNetworkFromJson(data interface{}) *OracleNetwork {
 }
 
 func (saleData *SaleData) Hash() *common.Hash {
-	record := string(saleData.SaleID)
-	record += string(saleData.EndBlock)
+	record := string(saleData.EndBlock)
 	record += saleData.BuyingAsset.String()
 	record += string(saleData.BuyingAmount)
 	record += string(saleData.DefaultBuyPrice)
