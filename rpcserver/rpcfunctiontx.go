@@ -624,10 +624,15 @@ func (rpcServer RpcServer) handleRandomCommitments(params interface{}, closeChan
 	usableInputCoins := transaction.ConvertOutputCoinToInputCoin(usableOutputCoins)
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
-	commitmentIndexs, myCommitmentIndexs := rpcServer.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, shardIDSender, constantTokenID)
+	commitmentIndexs, myCommitmentIndexs, commitments := rpcServer.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, shardIDSender, constantTokenID)
 	result := make(map[string]interface{})
 	result["CommitmentIndices"] = commitmentIndexs
 	result["MyCommitmentIndexs"] = myCommitmentIndexs
+	temp := []string{}
+	for _, commitment := range commitments {
+		temp = append(temp, base58.Base58Check{}.Encode(commitment, byte(0x00)))
+	}
+	result["Commitments"] = temp
 
 	return result, nil
 }
