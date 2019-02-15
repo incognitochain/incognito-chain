@@ -233,7 +233,7 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	txMerkle := Merkle{}.BuildMerkleTreeStore(block.Body.Transactions)
 	txRoot := txMerkle[len(txMerkle)-1]
 
-	if bytes.Compare(block.Header.TxRoot.GetBytes(), txRoot.GetBytes()) != 0 {
+	if !bytes.Equal(block.Header.TxRoot.GetBytes(), txRoot.GetBytes()) {
 		fmt.Println()
 		test, _ := json.Marshal(block.Body.Transactions[0])
 		fmt.Println(len(block.Body.Transactions), string(test))
@@ -243,7 +243,7 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	// Verify ShardTx Root
 	shardTxRoot := block.Body.CalcMerkleRootShard()
 
-	if bytes.Compare(block.Header.ShardTxRoot.GetBytes(), shardTxRoot.GetBytes()) != 0 {
+	if !bytes.Equal(block.Header.ShardTxRoot.GetBytes(), shardTxRoot.GetBytes()) {
 		return NewBlockChainError(HashError, errors.New("Can't Verify CrossShardTransaction Root"))
 	}
 	// Verify Crossoutput coin
@@ -280,7 +280,7 @@ func (self *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID
 	if err != nil {
 		return NewBlockChainError(HashError, err)
 	}
-	if newHash.IsEqual(beaconHash) == false {
+	if !newHash.IsEqual(beaconHash) {
 		return NewBlockChainError(BeaconError, errors.New("Beacon block height and beacon block hash are not compatible in Database"))
 	}
 	// Swap instruction
@@ -537,7 +537,7 @@ func CreateMerkleCrossOutputCoin(crossOutputCoins map[byte][]CrossOutputCoin) (*
 	}
 	keys := []int{}
 	crossOutputCoinHashes := []*common.Hash{}
-	for k, _ := range crossOutputCoins {
+	for k := range crossOutputCoins {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
@@ -564,6 +564,9 @@ func VerifyMerkleCrossOutputCoin(crossOutputCoins map[byte][]CrossOutputCoin, ro
 	}
 	hashByte := rootHash.GetBytes()
 	newHash, err := common.Hash{}.NewHash(hashByte)
+	if err != nil {
+		return false
+	}
 	return newHash.IsEqual(res)
 }
 

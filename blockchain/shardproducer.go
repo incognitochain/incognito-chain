@@ -119,18 +119,14 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	if err != nil {
 		return nil, err
 	}
-	for _, tx := range stabilityResponseTxs {
-		txsToAdd = append(txsToAdd, tx)
-	}
+	txsToAdd = append(txsToAdd, stabilityResponseTxs...)
 
 	// Process stability instructions, create response txs if needed
 	stabilityResponseTxs, err = blockgen.buildStabilityResponseTxsFromInstructions(beaconBlocks, privatekey, shardID)
 	if err != nil {
 		return nil, err
 	}
-	for _, tx := range stabilityResponseTxs {
-		txsToAdd = append(txsToAdd, tx)
-	}
+	txsToAdd = append(txsToAdd, stabilityResponseTxs...)
 
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
@@ -366,7 +362,7 @@ func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) 
 		}
 	}
 
-	for k, _ := range byteMap {
+	for k := range byteMap {
 		if byteMap[k] == 1 {
 			crossIDs = append(crossIDs, byte(k))
 		}
