@@ -191,8 +191,8 @@ func (self *ShardToBeaconPool) GetValidPendingBlock() map[byte][]*blockchain.Sha
 	}
 	//UNCOMMENT FOR TESTING
 	fmt.Println()
+	fmt.Print("ShardToBeaconPool/ValidPendingBlock ")
 	for _, block := range finalBlocks[byte(0)] {
-		fmt.Print("ShardToBeaconPool/ValidPendingBlock ")
 		fmt.Printf(" %+v ", block.Header.Height)
 	}
 	fmt.Println()
