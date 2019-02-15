@@ -279,7 +279,7 @@ func (self *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, 
 	if self.BeaconHeight+1 != block.Header.Height {
 		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
-	if bytes.Compare(self.BestBlockHash.GetBytes(), block.Header.PrevBlockHash.GetBytes()) != 0 {
+	if !bytes.Equal(self.BestBlockHash.GetBytes(), block.Header.PrevBlockHash.GetBytes()) {
 		return NewBlockChainError(BlockHeightError, errors.New("Previous us block should be :"+self.BestBlockHash.String()))
 	}
 	if block.Header.Height%common.EPOCH == 1 && self.BeaconEpoch+1 != block.Header.Epoch {
