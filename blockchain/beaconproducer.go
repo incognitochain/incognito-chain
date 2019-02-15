@@ -68,7 +68,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	// fmt.Printf("Beacon Produce: BeaconBestState Copy %+v \n", beaconBestState)
 	// fmt.Printf("Beacon Produce: BeaconBestState Compare %+v \n", reflect.DeepEqual(beaconBestState, *blkTmplGenerator.chain.BestState.Beacon))
 	if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
-		panic(NewBlockChainError(BeaconError, errors.New("Problem with beststate in producing new block")))
+		panic(NewBlockChainError(BeaconError, errors.New("problem with beststate in producing new block")))
 	}
 
 	// unlock blockchain
@@ -254,7 +254,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			// ["stake" "pubkey1,pubkey2,..." "shard"]
 			// ["stake" "pubkey1,pubkey2,..." "beacon"]
 			for _, staker := range stakers {
-				tempStaker := []string{}
+				var tempStaker []string
 				newBeaconCandidate, newShardCandidate := GetStakeValidatorArrayString(staker)
 				assignShard := true
 				if !reflect.DeepEqual(newBeaconCandidate, []string{}) {
@@ -329,9 +329,7 @@ func (blkTmplGenerator *BestStateBeacon) GenerateInstruction(
 	// Beacon normal swap
 	if block.Header.Height%common.EPOCH == 0 {
 		swapBeaconInstructions := []string{}
-		swappedValidator := []string{}
-		beaconNextCommittee := []string{}
-		_, _, swappedValidator, beaconNextCommittee, _ = SwapValidator(blkTmplGenerator.BeaconPendingValidator, blkTmplGenerator.BeaconCommittee, common.COMMITEES, common.OFFSET)
+		_, _, swappedValidator, beaconNextCommittee, _ := SwapValidator(blkTmplGenerator.BeaconPendingValidator, blkTmplGenerator.BeaconCommittee, common.COMMITEES, common.OFFSET)
 		if len(swappedValidator) > 0 || len(beaconNextCommittee) > 0 {
 			swapBeaconInstructions = append(swapBeaconInstructions, "swap")
 			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(beaconNextCommittee, ","))
