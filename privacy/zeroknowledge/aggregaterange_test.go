@@ -117,8 +117,11 @@ func TestInnerProductProve(t *testing.T) {
 }
 
 func TestAggregatedRangeProve(t *testing.T) {
+
+	point := new(privacy.EllipticPoint).Zero()
+	fmt.Printf("testt: %v\n", point.Compress())
 	wit := new(AggregatedRangeWitness)
-	numValue := 1
+	numValue := 5
 	wit.values = make([]*big.Int, numValue)
 	wit.rands = make([]*big.Int, numValue)
 
@@ -142,7 +145,7 @@ func TestAggregatedRangeProve(t *testing.T) {
 	proof2.SetBytes(bytes)
 
 	start = time.Now()
-	res := proof.Verify()
+	res := proof2.Verify()
 	end = time.Since(start)
 	fmt.Printf("Aggregated range verification time: %v\n", end)
 
