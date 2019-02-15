@@ -1206,6 +1206,7 @@ func (serverObj *Server) BoardcastNodeState() error {
 	if (cfg.NodeMode == "auto" || cfg.NodeMode == "shard") && userRole == "shard" {
 		userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58())
 		if userRole == "shard-proposer" || userRole == "shard-validator" {
+			// TODO: waiting for crossShardPool to be rewrite
 			// msg.(*wire.MessagePeerState).CrossShardPool = serverObj.crossShardPool.
 		}
 	}

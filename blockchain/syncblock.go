@@ -14,7 +14,7 @@ type peerState struct {
 	Shard             map[byte]*ChainState
 	Beacon            *ChainState
 	ShardToBeaconPool *map[byte][]common.Hash
-	CrossShardPool    *map[byte][]common.Hash
+	CrossShardPool    map[byte]*map[byte][]common.Hash
 	Peer              libp2p.ID
 }
 
@@ -51,16 +51,78 @@ func (self *BlockChain) StartSyncBlk() {
 			self.InsertBlockFromPool()
 			self.syncStatus.PeersStateLock.Lock()
 
-			userRole, shardID := self.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
+			userRole, userShardID := self.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
+			userShardRole := self.BestState.Shard[userShardID].GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
 			type reportedChainState struct {
 				ClosestBeaconState ChainState
 				ClosestShardsState map[byte]ChainState
-				ShardToBeaconBlks  map[byte]map[common.Hash][]libp2p.ID
-				CrossShardBlks     map[common.Hash][]libp2p.ID
+				ShardToBeaconBlks  map[byte]map[libp2p.ID][]common.Hash
+				CrossShardBlks     map[byte]map[libp2p.ID][]common.Hash
 			}
-			var RCS reportedChainState
-			for _, peerState := range self.syncStatus.PeersState {
-
+			RCS := reportedChainState{
+				ClosestShardsState: make(map[byte]ChainState),
+				ShardToBeaconBlks:  make(map[byte]map[libp2p.ID][]common.Hash),
+				CrossShardBlks:     make(map[byte]map[libp2p.ID][]common.Hash),
+			}
+			for peerID, peerState := range self.syncStatus.PeersState {
+				if peerState.Beacon.Height > self.BestState.Beacon.BeaconHeight {
+					if RCS.ClosestBeaconState.Height == 0 {
+						RCS.ClosestBeaconState = *peerState.Beacon
+					} else {
+						if peerState.Beacon.Height < RCS.ClosestBeaconState.Height {
+							RCS.ClosestBeaconState = *peerState.Beacon
+						}
+					}
+					for shardID := range self.syncStatus.Shards {
+						if shardState, ok := peerState.Shard[shardID]; ok {
+							if shardState.Height > self.BestState.Shard[shardID].ShardHeight {
+								if RCS.ClosestShardsState[shardID].Height == 0 {
+									RCS.ClosestShardsState[shardID] = *shardState
+								} else {
+									if shardState.Height < RCS.ClosestShardsState[shardID].Height {
+										RCS.ClosestShardsState[shardID] = *shardState
+									}
+								}
+							}
+						}
+					}
+					// record pool state
+					switch self.config.NodeMode {
+					case "auto":
+						switch userRole {
+						case "beacon-proposer", "beacon-validator":
+							if peerState.ShardToBeaconPool != nil {
+								for shardID, blksHash := range *peerState.ShardToBeaconPool {
+									RCS.ShardToBeaconBlks[shardID][peerID] = blksHash
+								}
+							}
+						case "shard":
+							if userShardRole == "shard-proposer" || userShardRole == "shard-validator" {
+								if pool, ok := peerState.CrossShardPool[userShardID]; ok {
+									for shardID, blks := range *pool {
+										RCS.CrossShardBlks[shardID][peerID] = blks
+									}
+								}
+							}
+						}
+					case "beacon":
+						if userRole == "beacon-proposer" || userRole == "beacon-validator" {
+							if peerState.ShardToBeaconPool != nil {
+								for shardID, blksHash := range *peerState.ShardToBeaconPool {
+									RCS.ShardToBeaconBlks[shardID][peerID] = blksHash
+								}
+							}
+						}
+					case "shard":
+						if userShardRole == "shard-proposer" || userShardRole == "shard-validator" {
+							if pool, ok := peerState.CrossShardPool[userShardID]; ok {
+								for shardID, blks := range *pool {
+									RCS.CrossShardBlks[shardID][peerID] = blks
+								}
+							}
+						}
+					}
+				}
 			}
 			currentBcnReqHeight := self.BestState.Beacon.BeaconHeight + 1
 			for peerID := range self.syncStatus.PeersState {
@@ -76,36 +138,54 @@ func (self *BlockChain) StartSyncBlk() {
 			case "auto":
 				switch userRole {
 				case "beacon-proposer", "beacon-validator":
-					for shardID := 0; shardID < common.SHARD_NUMBER; shardID++ {
-						self.SyncBlkShardToBeacon(shardID, true, true)
+					for shardID, peer := range RCS.ShardToBeaconBlks {
+						for peerID, blks := range peer {
+							self.SyncBlkShardToBeacon(shardID, true, true, blks, 0, 0, peerID)
+						}
 					}
 				case "shard":
-					if _, ok := self.syncStatus.Shards[shardID]; !ok {
-						self.SyncShard(shardID)
-					}
-					userShardRole := self.BestState.Shard[shardID].GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
-					if userShardRole == "shard-proposer" || userShardRole == "shard-validator" {
+					if userShardRole == "shard-pending" || userShardRole == "shard-proposer" || userShardRole == "shard-validator" {
+						if _, ok := self.syncStatus.Shards[userShardID]; !ok {
+							self.SyncShard(userShardID)
+						}
+						if userShardRole == "shard-proposer" || userShardRole == "shard-validator" {
 
+						}
+					}
+				}
+			case "beacon":
+				if userRole == "beacon-proposer" || userRole == "beacon-validator" {
+					for shardID, peer := range RCS.ShardToBeaconBlks {
+						for peerID, blks := range peer {
+							self.SyncBlkShardToBeacon(shardID, true, true, blks, 0, 0, peerID)
+						}
 					}
 				}
 			case "shard":
-				if _, ok := self.syncStatus.Shards[shardID]; !ok {
-					self.SyncShard(shardID)
-				}
-				userShardRole := self.BestState.Shard[shardID].GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
-				if userShardRole == "shard-proposer" || userShardRole == "shard-validator" {
-
+				if userShardRole == "shard-pending" || userShardRole == "shard-proposer" || userShardRole == "shard-validator" {
+					if _, ok := self.syncStatus.Shards[userShardID]; !ok {
+						self.SyncShard(userShardID)
+					}
+					if userShardRole == "shard-proposer" || userShardRole == "shard-validator" {
+						for shardID, peer := range RCS.CrossShardBlks {
+							for peerID, blks := range peer {
+								self.SyncBlkCrossShard(true, blks, shardID, userShardID, peerID)
+							}
+						}
+					}
 				}
 			}
 
 			for shardID := range self.syncStatus.Shards {
 				currentShardReqHeight := self.BestState.Shard[shardID].ShardHeight + 1
 				for peerID := range self.syncStatus.PeersState {
-					if currentBcnReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
-						self.SyncBlkShard(shardID, false, false, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height, peerID)
-					} else {
-						self.SyncBlkShard(shardID, false, false, nil, currentShardReqHeight, currentShardReqHeight+defaultMaxBlkReqPerPeer-1, peerID)
-						currentBcnReqHeight += defaultMaxBlkReqPerPeer - 1
+					if _, ok := self.syncStatus.PeersState[peerID].Shard[shardID]; ok {
+						if currentBcnReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
+							self.SyncBlkShard(shardID, false, false, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height, peerID)
+						} else {
+							self.SyncBlkShard(shardID, false, false, nil, currentShardReqHeight, currentShardReqHeight+defaultMaxBlkReqPerPeer-1, peerID)
+							currentBcnReqHeight += defaultMaxBlkReqPerPeer - 1
+						}
 					}
 				}
 			}
