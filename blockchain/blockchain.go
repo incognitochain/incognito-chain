@@ -676,6 +676,9 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 	_, _, value := tx.GetUniqueReceiver()
 	meta := tx.GetMetadata().(*metadata.LoanPayment)
 	principle, interest, deadline, err := self.config.DataBase.GetLoanPayment(meta.LoanID)
+	if err != nil {
+		return err
+	}
 	requestMeta, err := self.GetLoanRequestMeta(meta.LoanID)
 	if err != nil {
 		return err
