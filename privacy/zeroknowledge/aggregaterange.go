@@ -1,6 +1,7 @@
 package zkp
 
 import (
+	"fmt"
 	"github.com/ninjadotorg/constant/privacy"
 	"math/big"
 )
@@ -82,6 +83,8 @@ func (proof AggregatedRangeProof) Bytes() []byte {
 	res = append(res, privacy.AddPaddingBigInt(proof.tHat, privacy.BigIntSize)...)
 	res = append(res, privacy.AddPaddingBigInt(proof.mu, privacy.BigIntSize)...)
 	res = append(res, proof.innerProductProof.Bytes()...)
+
+	//fmt.Printf("BYTES ------------ %v\n", res)
 	return res
 
 }
@@ -90,6 +93,8 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return nil
 	}
+
+	//fmt.Printf("BEFORE SETBYTES ------------ %v\n", bytes)
 
 	lenValues := int(bytes[0])
 	offset := 1
@@ -143,6 +148,8 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 
 	proof.innerProductProof = new(InnerProductProof)
 	proof.innerProductProof.SetBytes(bytes[offset:])
+
+	//fmt.Printf("AFTER SETBYTES ------------ %v\n", proof.Bytes())
 	return nil
 }
 
@@ -177,13 +184,14 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 	AggParam := newBulletproofParams(numValuePad)
 
-	proof.cmsValue = make([]*privacy.EllipticPoint, numValuePad)
+	proof.cmsValue = make([]*privacy.EllipticPoint, numValue)
 	for i := 0; i < numValue; i++ {
 		proof.cmsValue[i] = privacy.PedCom.CommitAtIndex(values[i], rands[i], privacy.VALUE)
 	}
 
-	for i := numValue; i < numValuePad; i++ {
-		proof.cmsValue[i] = new(privacy.EllipticPoint).Zero()
+	cmValuePad := make([]*privacy.EllipticPoint, numValuePad)
+	for i := 0; i < numValuePad; i++ {
+		cmValuePad[i] = privacy.PedCom.CommitAtIndex(values[i], rands[i], privacy.VALUE)
 	}
 
 	n := privacy.MaxExp
@@ -456,6 +464,7 @@ func (proof *AggregatedRangeProof) Verify() bool {
 	zSquare := new(big.Int).Exp(z, twoNumber, privacy.Curve.Params().N)
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
+	fmt.Printf("T2: %v\n", proof.T2)
 	x := generateChallengeForAggRange(AggParam, [][]byte{proof.A.Compress(), proof.S.Compress(), proof.T1.Compress(), proof.T2.Compress()})
 	xSquare := new(big.Int).Exp(x, twoNumber, privacy.Curve.Params().N)
 
