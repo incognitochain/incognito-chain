@@ -88,16 +88,16 @@ func (self *BlockChain) StartSyncBlk() {
 					}
 					// record pool state
 					switch self.config.NodeMode {
-					case "auto":
+					case common.NODEMODE_AUTO:
 						switch userRole {
-						case "beacon-proposer", "beacon-validator":
+						case common.BEACON_PROPOSER_ROLE, common.BEACON_VALIDATOR_ROLE:
 							if peerState.ShardToBeaconPool != nil {
 								for shardID, blksHash := range *peerState.ShardToBeaconPool {
 									RCS.ShardToBeaconBlks[shardID][peerID] = blksHash
 								}
 							}
-						case "shard":
-							if userShardRole == "shard-proposer" || userShardRole == "shard-validator" {
+						case common.SHARD_ROLE:
+							if userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
 								if pool, ok := peerState.CrossShardPool[userShardID]; ok {
 									for shardID, blks := range *pool {
 										RCS.CrossShardBlks[shardID][peerID] = blks
@@ -105,16 +105,16 @@ func (self *BlockChain) StartSyncBlk() {
 								}
 							}
 						}
-					case "beacon":
-						if userRole == "beacon-proposer" || userRole == "beacon-validator" {
+					case common.NODEMODE_BEACON:
+						if userRole == common.BEACON_PROPOSER_ROLE || userRole == common.BEACON_VALIDATOR_ROLE {
 							if peerState.ShardToBeaconPool != nil {
 								for shardID, blksHash := range *peerState.ShardToBeaconPool {
 									RCS.ShardToBeaconBlks[shardID][peerID] = blksHash
 								}
 							}
 						}
-					case "shard":
-						if userShardRole == "shard-proposer" || userShardRole == "shard-validator" {
+					case common.NODEMODE_SHARD:
+						if userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
 							if pool, ok := peerState.CrossShardPool[userShardID]; ok {
 								for shardID, blks := range *pool {
 									RCS.CrossShardBlks[shardID][peerID] = blks
@@ -135,38 +135,38 @@ func (self *BlockChain) StartSyncBlk() {
 			}
 
 			switch self.config.NodeMode {
-			case "auto":
+			case common.NODEMODE_AUTO:
 				switch userRole {
-				case "beacon-proposer", "beacon-validator":
+				case common.BEACON_PROPOSER_ROLE, common.BEACON_VALIDATOR_ROLE:
 					for shardID, peer := range RCS.ShardToBeaconBlks {
 						for peerID, blks := range peer {
 							self.SyncBlkShardToBeacon(shardID, true, true, blks, 0, 0, peerID)
 						}
 					}
-				case "shard":
-					if userShardRole == "shard-pending" || userShardRole == "shard-proposer" || userShardRole == "shard-validator" {
+				case common.SHARD_ROLE:
+					if userShardRole == common.SHARD_PENDING_ROLE || userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
 						if _, ok := self.syncStatus.Shards[userShardID]; !ok {
 							self.SyncShard(userShardID)
 						}
-						if userShardRole == "shard-proposer" || userShardRole == "shard-validator" {
+						if userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
 
 						}
 					}
 				}
-			case "beacon":
-				if userRole == "beacon-proposer" || userRole == "beacon-validator" {
+			case common.NODEMODE_BEACON:
+				if userRole == common.BEACON_PROPOSER_ROLE || userRole == common.BEACON_VALIDATOR_ROLE {
 					for shardID, peer := range RCS.ShardToBeaconBlks {
 						for peerID, blks := range peer {
 							self.SyncBlkShardToBeacon(shardID, true, true, blks, 0, 0, peerID)
 						}
 					}
 				}
-			case "shard":
-				if userShardRole == "shard-pending" || userShardRole == "shard-proposer" || userShardRole == "shard-validator" {
+			case common.NODEMODE_SHARD:
+				if userShardRole == common.SHARD_PENDING_ROLE || userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
 					if _, ok := self.syncStatus.Shards[userShardID]; !ok {
 						self.SyncShard(userShardID)
 					}
-					if userShardRole == "shard-proposer" || userShardRole == "shard-validator" {
+					if userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
 						for shardID, peer := range RCS.CrossShardBlks {
 							for peerID, blks := range peer {
 								self.SyncBlkCrossShard(true, blks, shardID, userShardID, peerID)
@@ -215,7 +215,7 @@ func (self *BlockChain) StopSyncUnnecessaryShard() {
 func (self *BlockChain) StopSyncShard(shardID byte) error {
 	self.syncStatus.Lock()
 	defer self.syncStatus.Unlock()
-	if self.config.NodeMode == "auto" || self.config.NodeMode == "shard" {
+	if self.config.NodeMode == common.NODEMODE_AUTO || self.config.NodeMode == common.NODEMODE_SHARD {
 		userRole, userShardID := self.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
 		if userRole == "shard" && shardID == userShardID {
 			return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation can't be stopped")
@@ -259,14 +259,14 @@ func (self *BlockChain) ResetCurrentSyncRecord() {
 func (self *BlockChain) SyncBlkBeacon(byHash bool, getFromPool bool, blksHash []common.Hash, from uint64, to uint64, peerID libp2p.ID) {
 	if byHash {
 		//Sync block by hash
-		tempInterface, init := self.syncStatus.CurrentlySyncBeaconBlk.Load("byhash")
+		tempInterface, init := self.syncStatus.CurrentlySyncBeaconBlk.Load(SyncByHashKey)
 		blksNeedToGet := getBlkNeedToGetByHash(blksHash, tempInterface, init, peerID)
 		if len(blksNeedToGet) > 0 {
 			go self.config.Server.PushMessageGetBlockBeaconByHash(blksNeedToGet, getFromPool, peerID)
 		}
 	} else {
 		//Sync by height
-		tempInterface, init := self.syncStatus.CurrentlySyncBeaconBlk.Load("byheight")
+		tempInterface, init := self.syncStatus.CurrentlySyncBeaconBlk.Load(SyncByHeightKey)
 		blkBatchsNeedToGet := getBlkNeedToGetByHeight(from, to, tempInterface, init, peerID)
 		if len(blkBatchsNeedToGet) > 0 {
 			for fromHeight, toHeight := range blkBatchsNeedToGet {
