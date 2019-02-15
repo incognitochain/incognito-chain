@@ -88,7 +88,7 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 			}
 		default:
 			{
-				return NewBlockChainError(UnmashallJsonBlockError, errors.New("Can not parse a wrong tx"))
+				return NewBlockChainError(UnmashallJsonBlockError, errors.New("can not parse a wrong tx"))
 			}
 		}
 

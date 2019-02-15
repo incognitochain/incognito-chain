@@ -90,7 +90,7 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 // // #1 - tx
 func (shardBlock *ShardBlock) AddTransaction(tx metadata.Transaction) error {
 	if shardBlock.Body.Transactions == nil {
-		return NewBlockChainError(UnExpectedError, errors.New("Not init tx arrays"))
+		return NewBlockChainError(UnExpectedError, errors.New("not init tx arrays"))
 	}
 	shardBlock.Body.Transactions = append(shardBlock.Body.Transactions, tx)
 	return nil
