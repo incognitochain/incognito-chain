@@ -84,6 +84,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 					protocol.pendingBlock = newBlock
 					protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
 
+					timeout.Stop()       //single-node
 					return newBlock, nil //single-node
 				} else {
 					newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, shardID)
@@ -98,6 +99,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 					protocol.pendingBlock = newBlock
 					protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
 
+					timeout.Stop()       //single-node
 					return newBlock, nil //single-node
 				}
 
