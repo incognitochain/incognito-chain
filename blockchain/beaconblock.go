@@ -68,12 +68,12 @@ type BeaconBlock struct {
 func NewBeaconBlock() BeaconBlock {
 	return BeaconBlock{}
 }
-func (self *BeaconBlock) Hash() *common.Hash {
-	hash := self.Header.Hash()
+func (beaconBlock *BeaconBlock) Hash() *common.Hash {
+	hash := beaconBlock.Header.Hash()
 	return &hash
 }
 
-func (self *BeaconBlock) UnmarshalJSON(data []byte) error {
+func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	tempBlk := &struct {
 		AggregatedSig string  `json:"AggregatedSig"`
 		ValidatorsIdx [][]int `json:"ValidatorsIdx"`
@@ -86,10 +86,10 @@ func (self *BeaconBlock) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonBlockError, err)
 	}
-	self.AggregatedSig = tempBlk.AggregatedSig
-	self.R = tempBlk.R
-	self.ValidatorsIdx = tempBlk.ValidatorsIdx
-	self.ProducerSig = tempBlk.ProducerSig
+	beaconBlock.AggregatedSig = tempBlk.AggregatedSig
+	beaconBlock.R = tempBlk.R
+	beaconBlock.ValidatorsIdx = tempBlk.ValidatorsIdx
+	beaconBlock.ProducerSig = tempBlk.ProducerSig
 	// blkBody := BeaconBody{}
 	// err = blkBody.UnmarshalJSON(tempBlk.Body)
 	// if err != nil {
@@ -101,15 +101,15 @@ func (self *BeaconBlock) UnmarshalJSON(data []byte) error {
 	// 	return NewBlockChainError(UnmashallJsonBlockError, err)
 	// }
 
-	self.Header = tempBlk.Header
+	beaconBlock.Header = tempBlk.Header
 
-	self.Body = tempBlk.Body
+	beaconBlock.Body = tempBlk.Body
 	return nil
 }
 
-func (self *BeaconBody) toString() string {
+func (beaconBlock *BeaconBody) toString() string {
 	res := ""
-	for _, l := range self.ShardState {
+	for _, l := range beaconBlock.ShardState {
 		for _, r := range l {
 			res += strconv.Itoa(int(r.Height))
 			res += r.Hash.String()
@@ -119,7 +119,7 @@ func (self *BeaconBody) toString() string {
 		}
 	}
 
-	for _, l := range self.Instructions {
+	for _, l := range beaconBlock.Instructions {
 		for _, r := range l {
 			res += r
 		}
@@ -127,11 +127,11 @@ func (self *BeaconBody) toString() string {
 	return res
 }
 
-func (self *BeaconBody) Hash() common.Hash {
-	return common.DoubleHashH([]byte(self.toString()))
+func (beaconBlock *BeaconBody) Hash() common.Hash {
+	return common.DoubleHashH([]byte(beaconBlock.toString()))
 }
 
-// func (self *BeaconBody) UnmarshalJSON(data []byte) error {
+// func (beaconBlock *BeaconBody) UnmarshalJSON(data []byte) error {
 // 	type BodyAlias BeaconBody
 // 	blkBody := &BodyAlias{}
 
@@ -139,45 +139,45 @@ func (self *BeaconBody) Hash() common.Hash {
 // 	if err != nil {
 // 		return NewBlockChainError(UnmashallJsonBlockError, err)
 // 	}
-// 	self.Instructions = blkBody.Instructions
-// 	self.ShardState = blkBody.ShardState
+// 	beaconBlock.Instructions = blkBody.Instructions
+// 	beaconBlock.ShardState = blkBody.ShardState
 // 	return nil
 // }
 
-func (self *BeaconHeader) toString() string {
+func (beaconBlock *BeaconHeader) toString() string {
 	res := ""
-	res += fmt.Sprintf("%v", self.Version)
-	res += fmt.Sprintf("%v", self.Height)
-	res += fmt.Sprintf("%v", self.Timestamp)
-	res += self.PrevBlockHash.String()
-	res += self.ShardStateHash.String()
-	res += self.InstructionHash.String()
-	res += self.Producer
+	res += fmt.Sprintf("%v", beaconBlock.Version)
+	res += fmt.Sprintf("%v", beaconBlock.Height)
+	res += fmt.Sprintf("%v", beaconBlock.Timestamp)
+	res += beaconBlock.PrevBlockHash.String()
+	res += beaconBlock.ShardStateHash.String()
+	res += beaconBlock.InstructionHash.String()
+	res += beaconBlock.Producer
 	return res
 }
 
-func (self *BeaconHeader) Hash() common.Hash {
-	return common.DoubleHashH([]byte(self.toString()))
+func (beaconBlock *BeaconHeader) Hash() common.Hash {
+	return common.DoubleHashH([]byte(beaconBlock.toString()))
 }
 
-// func (self *BeaconHeader) UnmarshalJSON(data []byte) error {
+// func (beaconBlock *BeaconHeader) UnmarshalJSON(data []byte) error {
 // 	type HeaderAlias BeaconHeader
 // 	blkHeader := &HeaderAlias{}
 // 	err := json.Unmarshal(data, blkHeader)
 // 	if err != nil {
 // 		return NewBlockChainError(UnmashallJsonBlockError, err)
 // 	}
-// 	self.Height = blkHeader.Height
-// 	self.InstructionHash = blkHeader.InstructionHash
-// 	self.PrevBlockHash = blkHeader.PrevBlockHash
-// 	self.Producer = blkHeader.Producer
-// 	self.ShardCandidateRoot = blkHeader.ShardCandidateRoot
-// 	self.ShardStateHash = blkHeader.ShardStateHash
-// 	self.ShardValidatorsRoot = blkHeader.ShardValidatorsRoot
-// 	self.Timestamp = blkHeader.Timestamp
-// 	self.Epoch = blkHeader.Epoch
-// 	self.ValidatorsRoot = blkHeader.ValidatorsRoot
-// 	self.Version = blkHeader.Version
-// 	self.BeaconCandidateRoot = blkHeader.BeaconCandidateRoot
+// 	beaconBlock.Height = blkHeader.Height
+// 	beaconBlock.InstructionHash = blkHeader.InstructionHash
+// 	beaconBlock.PrevBlockHash = blkHeader.PrevBlockHash
+// 	beaconBlock.Producer = blkHeader.Producer
+// 	beaconBlock.ShardCandidateRoot = blkHeader.ShardCandidateRoot
+// 	beaconBlock.ShardStateHash = blkHeader.ShardStateHash
+// 	beaconBlock.ShardValidatorsRoot = blkHeader.ShardValidatorsRoot
+// 	beaconBlock.Timestamp = blkHeader.Timestamp
+// 	beaconBlock.Epoch = blkHeader.Epoch
+// 	beaconBlock.ValidatorsRoot = blkHeader.ValidatorsRoot
+// 	beaconBlock.Version = blkHeader.Version
+// 	beaconBlock.BeaconCandidateRoot = blkHeader.BeaconCandidateRoot
 // 	return nil
 // }
