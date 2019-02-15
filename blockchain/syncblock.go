@@ -270,7 +270,7 @@ func (self *BlockChain) GetCurrentSyncShards() []byte {
 	self.syncStatus.Lock()
 	defer self.syncStatus.Unlock()
 	var currentSyncShards []byte
-	for shardID, _ := range self.syncStatus.Shards {
+	for shardID := range self.syncStatus.Shards {
 		currentSyncShards = append(currentSyncShards, shardID)
 	}
 	return currentSyncShards
