@@ -4,6 +4,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/ninjadotorg/constant/privacy"
+	"math/big"
 	"time"
 
 	"github.com/ninjadotorg/constant/cashec"
@@ -576,7 +578,7 @@ func (rpcServer RpcServer) handleCreateSignatureOnCustomTokenTx(params interface
 
 // handleRandomCommitments - from input of outputcoin, random to create data for create new tx
 func (rpcServer RpcServer) handleRandomCommitments(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	/*arrayParams := common.InterfaceSlice(params)
+	arrayParams := common.InterfaceSlice(params)
 
 	// #1: payment address
 	paymentAddressStr := arrayParams[0].(string)
@@ -588,29 +590,33 @@ func (rpcServer RpcServer) handleRandomCommitments(params interface{}, closeChan
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 
 	// #2: available inputCoin from old outputcoin
-	data := make([]jsonresult.OutCoin, 0)
+	outputs := arrayParams[1].([]interface{})
 	usableOutputCoins := []*privacy.OutputCoin{}
-	for _, item := range data {
+	for _, item := range outputs {
+		out := jsonresult.OutCoin{}
+		out.Init(item)
 		i := &privacy.OutputCoin{
 			CoinDetails: &privacy.Coin{
-				Value:       item.Value,
-				Randomness:  new(big.Int).SetBytes(item.Randomness),
-				SNDerivator: new(big.Int).SetBytes(item.SNDerivator),
+				Value: out.Value,
 			},
 		}
-		i.CoinDetails.Info, _, _ = base58.Base58Check{}.Decode(item.Info)
+		RandomnessInBytes, _, _ := base58.Base58Check{}.Decode(out.Randomness)
+		i.CoinDetails.Randomness = new(big.Int).SetBytes(RandomnessInBytes)
 
-		CoinCommitmentBytes, _, _ := base58.Base58Check{}.Decode(item.CoinCommitment)
+		SNDerivatorInBytes, _, _ := base58.Base58Check{}.Decode(out.SNDerivator)
+		i.CoinDetails.SNDerivator = new(big.Int).SetBytes(SNDerivatorInBytes)
+
+		CoinCommitmentBytes, _, _ := base58.Base58Check{}.Decode(out.CoinCommitment)
 		CoinCommitment := &privacy.EllipticPoint{}
 		_ = CoinCommitment.Decompress(CoinCommitmentBytes)
 		i.CoinDetails.CoinCommitment = CoinCommitment
 
-		PublicKeyBytes, _, _ := base58.Base58Check{}.Decode(item.PublicKey)
+		PublicKeyBytes, _, _ := base58.Base58Check{}.Decode(out.PublicKey)
 		PublicKey := &privacy.EllipticPoint{}
 		_ = PublicKey.Decompress(PublicKeyBytes)
 		i.CoinDetails.PublicKey = PublicKey
 
-		InfoBytes, _, _ := base58.Base58Check{}.Decode(item.Info)
+		InfoBytes, _, _ := base58.Base58Check{}.Decode(out.Info)
 		i.CoinDetails.Info = InfoBytes
 
 		usableOutputCoins = append(usableOutputCoins, i)
@@ -623,8 +629,7 @@ func (rpcServer RpcServer) handleRandomCommitments(params interface{}, closeChan
 	result["CommitmentIndices"] = commitmentIndexs
 	result["MyCommitmentIndexs"] = myCommitmentIndexs
 
-	return result, nil*/
-	return nil, nil
+	return result, nil
 }
 
 // handleHasSerialNumbers - check list serial numbers existed in db of node
