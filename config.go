@@ -36,7 +36,6 @@ const (
 	defaultMaxPeersNoShard    = 100
 	defaultMaxPeersBeacon     = 20
 	defaultMaxRPCClients      = 10
-	defaultGenerate           = false
 	sampleConfigFilename      = "sample-config.conf"
 	defaultDisableRpcTLS      = true
 	defaultFastStartup        = true
@@ -644,12 +643,12 @@ func parseAndSetDebugLevels(debugLevel string) error {
 	return nil
 }
 
-func (self *config) GetUserKeySet() (*cashec.KeySet, error) {
-	if self.SpendingKey == common.EmptyString {
-		return nil, errors.New("User key set cant be empty")
+func (conf *config) GetUserKeySet() (*cashec.KeySet, error) {
+	if conf.SpendingKey == common.EmptyString {
+		return nil, errors.New("user key set cant be empty")
 	}
 	KeySetUser := &cashec.KeySet{}
-	temp, err := wallet.Base58CheckDeserialize(self.SpendingKey)
+	temp, err := wallet.Base58CheckDeserialize(conf.SpendingKey)
 	if err != nil {
 		return nil, err
 	}

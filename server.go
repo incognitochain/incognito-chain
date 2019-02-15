@@ -565,10 +565,6 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			// OnInvalidBlock:  serverObj.OnInvalidBlock,
 			OnPeerState: serverObj.OnPeerState,
 			//
-			//OnRegistration: serverObj.OnRegistration,
-			// OnSwapRequest: serverObj.OnSwapRequest,
-			// OnSwapSig:     serverObj.OnSwapSig,
-			// OnSwapUpdate:  serverObj.OnSwapUpdate,
 			PushRawBytesToShard:  serverObj.PushRawBytesToShard,
 			PushRawBytesToBeacon: serverObj.PushRawBytesToBeacon,
 			GetCurrentRoleShard:  serverObj.GetCurrentRoleShard,
@@ -669,36 +665,6 @@ func (serverObj *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 
 	Logger.log.Info("Receive a new transaction END")
 }
-
-/*func (serverObj *Server) OnRegistration(peer *peer.PeerConn, msg *wire.MessageRegistration) {
-	Logger.log.Info("Receive a new registration START")
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueRegisteration(nil, msg, txProcessed)
-	//<-txProcessed
-
-	Logger.log.Info("Receive a new registration END")
-}*/
-
-// func (serverObj *Server) OnSwapRequest(peer *peer.PeerConn, msg *wire.MessageSwapRequest) {
-// 	Logger.log.Info("Receive a new request swap START")
-// 	var txProcessed chan struct{}
-// 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-// 	Logger.log.Info("Receive a new request swap END")
-// }
-
-// func (serverObj *Server) OnSwapSig(peer *peer.PeerConn, msg *wire.MessageSwapSig) {
-// 	Logger.log.Info("Receive a new sign swap START")
-// 	var txProcessed chan struct{}
-// 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-// 	Logger.log.Info("Receive a new sign swap END")
-// }
-
-// func (serverObj *Server) OnSwapUpdate(peer *peer.PeerConn, msg *wire.MessageSwapUpdate) {
-// 	Logger.log.Info("Receive a new update swap START")
-// 	var txProcessed chan struct{}
-// 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-// 	Logger.log.Info("Receive a new update swap END")
-// }
 
 /*
 // OnVersion is invoked when a peer receives a version message
@@ -849,13 +815,6 @@ func (serverObj *Server) OnBFTMsg(_ *peer.PeerConn, msg wire.Message) {
 	Logger.log.Info("Receive a BFTMsg END")
 }
 
-// func (serverObj *Server) OnInvalidBlock(_ *peer.PeerConn, msg *wire.MessageInvalidBlock) {
-// 	Logger.log.Info("Receive a invalidblock START", msg)
-// 	var txProcessed chan struct{}
-// 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-// 	Logger.log.Info("Receive a invalidblock END", msg)
-// }
-
 func (serverObj *Server) OnPeerState(_ *peer.PeerConn, msg *wire.MessagePeerState) {
 	Logger.log.Info("Receive a peerstate START")
 	var txProcessed chan struct{}
@@ -921,7 +880,7 @@ PushMessageToPeer push msg to pbk
 func (serverObj *Server) PushMessageToPbk(msg wire.Message, pbk string) error {
 	Logger.log.Infof("Push msg to pbk %s", pbk)
 	peerConns := serverObj.connManager.GetPeerConnOfPbk(pbk)
-	if peerConns != nil && len(peerConns) > 0 {
+	if len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
 			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
 			peerConn.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_PEER, nil)
@@ -940,7 +899,7 @@ PushMessageToPeer push msg to pbk
 func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte) error {
 	Logger.log.Infof("Push msg to shard %d", shard)
 	peerConns := serverObj.connManager.GetPeerConnOfShard(shard)
-	if peerConns != nil && len(peerConns) > 0 {
+	if len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
 			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
 			peerConn.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_SHARD, &shard)
@@ -957,7 +916,7 @@ func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte) error 
 func (serverObj *Server) PushRawBytesToShard(p *peer.PeerConn, msgBytes *[]byte, shard byte) error {
 	Logger.log.Infof("Push raw bytes to shard %d", shard)
 	peerConns := serverObj.connManager.GetPeerConnOfShard(shard)
-	if peerConns != nil && len(peerConns) > 0 {
+	if len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
 			if p == nil || peerConn != p {
 				peerConn.QueueMessageWithBytes(msgBytes, nil)
@@ -982,7 +941,7 @@ PushMessageToPeer push msg to beacon node
 func (serverObj *Server) PushMessageToBeacon(msg wire.Message) error {
 	Logger.log.Infof("Push msg to beacon")
 	peerConns := serverObj.connManager.GetPeerConnOfBeacon()
-	if peerConns != nil && len(peerConns) > 0 {
+	if len(peerConns) > 0 {
 		// fmt.Println(len(peerConns))
 		for _, peerConn := range peerConns {
 			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
@@ -1001,7 +960,7 @@ func (serverObj *Server) PushMessageToBeacon(msg wire.Message) error {
 func (serverObj *Server) PushRawBytesToBeacon(p *peer.PeerConn, msgBytes *[]byte) error {
 	Logger.log.Infof("Push raw bytes to beacon")
 	peerConns := serverObj.connManager.GetPeerConnOfBeacon()
-	if peerConns != nil && len(peerConns) > 0 {
+	if len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
 			if p == nil || peerConn != p {
 				peerConn.QueueMessageWithBytes(msgBytes, nil)

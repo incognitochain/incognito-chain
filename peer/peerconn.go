@@ -103,7 +103,7 @@ func (peerConn *PeerConn) ReadString(rw *bufio.ReadWriter, delim byte, maxReadBy
 		buf = append(buf, b)
 		bufL++
 		if bufL > maxReadBytes {
-			return "", errors.New("Limit bytes for message")
+			return "", errors.New("limit bytes for message")
 		}
 	}
 
@@ -440,8 +440,8 @@ BeginCheckHashMessage:
 	}()
 	// set time out for check message
 	go func() {
-		select {
-		case <-time.NewTimer(MAX_TIMEOUT_CHECK_HASH_MESSAGE * time.Second).C:
+		_, ok := <-time.NewTimer(MAX_TIMEOUT_CHECK_HASH_MESSAGE * time.Second).C
+		if !ok {
 			if cTimeOut != nil {
 				Logger.log.Infof("checkMessageHashBeforeSend TIMER time out %s", hash)
 				bTimeOut = true

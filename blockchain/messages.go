@@ -42,7 +42,7 @@ func (self *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 				return
 			} else {
 				if self.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
-					err = self.InsertBeaconBlock(newBlk)
+					err = self.InsertBeaconBlock(newBlk, false)
 					if err != nil {
 						Logger.log.Error(err)
 						return
@@ -92,7 +92,7 @@ func (self *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]
 
 func (self *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
 	//TODO: check node mode -> node mode & role before add block to pool
-
+	fmt.Println("Blockchain Message/OnShardToBeaconBlockReceived: Block Height", block.Header.Height)
 	blkHash := block.Header.Hash()
 	err := cashec.ValidateDataB58(block.Header.Producer, block.ProducerSig, blkHash.GetBytes())
 
