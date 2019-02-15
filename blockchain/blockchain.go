@@ -175,21 +175,7 @@ func (self *BlockChain) StoreMaybeAcceptBeaconBeststate(beaconBestState BestStat
 	self.BestState.beacon[key] = res
 	return key, nil
 }
-func (self *BlockChain) StoreMaybeAcceptBeaconBlock(block BeaconBlock) (string, error) {
-	res, err := json.Marshal(block)
-	if err != nil {
-		return "", NewBlockChainError(UnmashallJsonBlockError, err)
-	}
-	key := block.Hash().String()
-	self.beaconBlock[key] = res
-	// Update heightest block
-	// Ignore error
-	heightBeaconBlock, _ := self.GetMaybeAcceptBeaconBlock(self.highestBeaconBlock)
-	if err != nil || heightBeaconBlock.Header.Height < block.Header.Height {
-		self.highestBeaconBlock = block.Hash().String()
-	}
-	return key, nil
-}
+
 func (self *BlockChain) GetMaybeAcceptBeaconBlock(key string) (BeaconBlock, error) {
 	res := self.beaconBlock[key]
 	beaconBlock := BeaconBlock{}
@@ -197,15 +183,6 @@ func (self *BlockChain) GetMaybeAcceptBeaconBlock(key string) (BeaconBlock, erro
 		return beaconBlock, NewBlockChainError(UnmashallJsonBlockError, err)
 	}
 	return beaconBlock, nil
-}
-
-func (self *BlockChain) GetMaybeAcceptBeaconBestState(key string) (BestStateBeacon, error) {
-	res := self.BestState.beacon[key]
-	beaconBestState := BestStateBeacon{}
-	if err := json.Unmarshal(res, beaconBestState); err != nil {
-		return beaconBestState, NewBlockChainError(UnmashallJsonBlockError, err)
-	}
-	return beaconBestState, nil
 }
 
 // -------------- Blockchain retriever's implementation --------------
@@ -374,8 +351,7 @@ func (self *BlockChain) initShardState(shardID byte) error {
 
 func (self *BlockChain) initBeaconState() error {
 	self.BestState.Beacon = NewBestStateBeacon()
-	var initBlock *BeaconBlock
-	initBlock = self.config.ChainParams.GenesisBeaconBlock
+	initBlock := self.config.ChainParams.GenesisBeaconBlock
 	self.BestState.Beacon.Update(initBlock)
 	// Insert new block into beacon chain
 
@@ -465,7 +441,7 @@ func (self *BlockChain) GetShardBlockByHeight(height uint64, shardID byte) (*Sha
 	}
 	block, err := self.GetShardBlockByHash(hashBlock)
 
-	return block, nil
+	return block, err
 }
 
 /*

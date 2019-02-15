@@ -119,15 +119,10 @@ type MessageListeners struct {
 
 	//PBFT
 	OnBFTMsg func(p *PeerConn, msg wire.Message)
-	// OnInvalidBlock  func(p *PeerConn, msg *wire.MessageInvalidBlock)
 	OnGetBeaconState func(p *PeerConn, msg *wire.MessageGetBeaconState)
 	OnBeaconState    func(p *PeerConn, msg *wire.MessageBeaconState)
 	OnGetShardState  func(p *PeerConn, msg *wire.MessageGetShardState)
 	OnShardState     func(p *PeerConn, msg *wire.MessageShardState)
-	//OnRegistration  func(p *PeerConn, msg *wire.MessageRegistration)
-	// OnSwapRequest func(p *PeerConn, msg *wire.MessageSwapRequest)
-	// OnSwapSig     func(p *PeerConn, msg *wire.MessageSwapSig)
-	// OnSwapUpdate  func(p *PeerConn, msg *wire.MessageSwapUpdate)
 	PushRawBytesToShard  func(p *PeerConn, msgBytes *[]byte, shard byte) error
 	PushRawBytesToBeacon func(p *PeerConn, msgBytes *[]byte) error
 	GetCurrentRoleShard  func() (string, *byte)
