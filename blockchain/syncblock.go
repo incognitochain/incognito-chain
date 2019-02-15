@@ -49,6 +49,7 @@ func (self *BlockChain) StartSyncBlk() {
 			return
 		case <-time.Tick(defaultProcessPeerStateTime):
 			self.InsertBlockFromPool()
+			self.syncStatus.Lock()
 			self.syncStatus.PeersStateLock.Lock()
 
 			userRole, userShardID := self.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
@@ -65,7 +66,7 @@ func (self *BlockChain) StartSyncBlk() {
 				CrossShardBlks:     make(map[byte]map[libp2p.ID][]common.Hash),
 			}
 			for peerID, peerState := range self.syncStatus.PeersState {
-				if peerState.Beacon.Height > self.BestState.Beacon.BeaconHeight {
+				if peerState.Beacon.Height >= self.BestState.Beacon.BeaconHeight {
 					if RCS.ClosestBeaconState.Height == 0 {
 						RCS.ClosestBeaconState = *peerState.Beacon
 					} else {
@@ -191,6 +192,7 @@ func (self *BlockChain) StartSyncBlk() {
 			}
 
 			self.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
+			self.syncStatus.Unlock()
 			self.syncStatus.PeersStateLock.Unlock()
 		}
 	}
@@ -282,7 +284,7 @@ func (self *BlockChain) SyncBlkShard(shardID byte, byHash bool, getFromPool bool
 		tempInterface, init := self.syncStatus.CurrentlySyncShardBlk.Load(SyncByHashKey + fmt.Sprint(shardID))
 		blksNeedToGet := getBlkNeedToGetByHash(blksHash, tempInterface, init, peerID)
 		if len(blksNeedToGet) > 0 {
-			go self.config.Server.PushMessageGetBlockBeaconByHash(blksNeedToGet, getFromPool, peerID)
+			go self.config.Server.PushMessageGetBlockShardByHash(shardID, blksNeedToGet, getFromPool, peerID)
 		}
 	} else {
 		//Sync by height
@@ -290,7 +292,7 @@ func (self *BlockChain) SyncBlkShard(shardID byte, byHash bool, getFromPool bool
 		blkBatchsNeedToGet := getBlkNeedToGetByHeight(from, to, tempInterface, init, peerID)
 		if len(blkBatchsNeedToGet) > 0 {
 			for fromHeight, toHeight := range blkBatchsNeedToGet {
-				go self.config.Server.PushMessageGetBlockBeaconByHeight(fromHeight, toHeight, peerID)
+				go self.config.Server.PushMessageGetBlockShardByHeight(shardID, fromHeight, toHeight, peerID)
 			}
 		}
 	}
