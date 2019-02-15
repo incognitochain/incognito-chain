@@ -9,7 +9,11 @@ import (
 )
 
 type MessageGetShardToBeacon struct {
-	BlockHash common.Hash
+	FromPool  bool
+	ByHash    bool
+	BlksHash  []common.Hash
+	From      uint64
+	To        uint64
 	ShardID   byte
 	SenderID  string
 	Timestamp int64

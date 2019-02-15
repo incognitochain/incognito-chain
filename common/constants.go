@@ -103,15 +103,17 @@ const (
 	COMMITEES    = 1
 	OFFSET       = 1
 
+	NODEMODE_SHARD        = "shard"
+	NODEMODE_AUTO         = "auto"
+	NODEMODE_BEACON       = "beacon"
 	SHARD_ROLE            = "shard"
+	BEACON_ROLE           = "beacon"
 	SHARD_PROPOSER_ROLE   = "shard-proposer"
 	SHARD_VALIDATOR_ROLE  = "shard-validator"
 	SHARD_PENDING_ROLE    = "shard-pending"
-	BEACON_ROLE           = "beacon"
 	BEACON_PROPOSER_ROLE  = "beacon-proposer"
 	BEACON_VALIDATOR_ROLE = "beacon-validator"
 	BEACON_PENDING_ROLE   = "beacon-pending"
-	AUTO_ROLE             = "auto"
 )
 
 //PBFT
