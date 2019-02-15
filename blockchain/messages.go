@@ -8,22 +8,29 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
-func (self *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]ChainState, shardToBeaconPool *map[byte][]common.Hash, crossShardPool *map[byte]map[byte][]common.Hash, peerID libp2p.ID) {
-	if beacon.Height >= self.BestState.Beacon.BeaconHeight {
+func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]ChainState, shardToBeaconPool *map[byte][]common.Hash, crossShardPool *map[byte]map[byte][]common.Hash, peerID libp2p.ID) {
+	if beacon.Height >= blockchain.BestState.Beacon.BeaconHeight {
 		pState := &peerState{
 			Shard:  make(map[byte]*ChainState),
 			Beacon: beacon,
 			Peer:   peerID,
 		}
-		userRole, userShardID := self.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
-		nodeMode := self.config.NodeMode
+		userRole, userShardID := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58())
+		nodeMode := blockchain.config.NodeMode
 		if userRole == "beacon-proposer" || userRole == "beacon-validator" {
 			pState.ShardToBeaconPool = shardToBeaconPool
+			for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
+				if shardState, ok := (*shard)[shardID]; ok {
+					if shardState.Height > blockchain.BestState.Beacon.BestShardHeight[shardID] {
+						pState.Shard[shardID] = &shardState
+					}
+				}
+			}
 		}
 		if userRole == "shard" && (nodeMode == "auto" || nodeMode == "shard") {
-			userRole = self.BestState.Shard[userShardID].GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
+			userRole = blockchain.BestState.Shard[userShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58())
 			if userRole == "shard-proposer" || userRole == "shard-validator" {
-				if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= self.BestState.Shard[userShardID].ShardHeight {
+				if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= blockchain.BestState.Shard[userShardID].ShardHeight {
 					pState.Shard[userShardID] = &shardState
 					if pool, ok := (*crossShardPool)[userShardID]; ok {
 						pState.CrossShardPool = make(map[byte]*map[byte][]common.Hash)
@@ -32,68 +39,68 @@ func (self *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]
 				}
 			}
 		}
-		for shardID := range self.syncStatus.Shards {
+		for shardID := range blockchain.syncStatus.Shards {
 			if shardState, ok := (*shard)[shardID]; ok {
-				if shardState.Height > self.BestState.Shard[shardID].ShardHeight {
+				if shardState.Height > blockchain.BestState.Shard[shardID].ShardHeight {
 					pState.Shard[shardID] = &shardState
 				}
 			}
 		}
-		self.syncStatus.PeersStateLock.Lock()
-		self.syncStatus.PeersState[pState.Peer] = pState
-		self.syncStatus.PeersStateLock.Unlock()
+		blockchain.syncStatus.PeersStateLock.Lock()
+		blockchain.syncStatus.PeersState[pState.Peer] = pState
+		blockchain.syncStatus.PeersStateLock.Unlock()
 	}
 }
 
-func (self *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
-	if _, ok := self.syncStatus.Shards[newBlk.Header.ShardID]; ok {
+func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
+	if _, ok := blockchain.syncStatus.Shards[newBlk.Header.ShardID]; ok {
 		fmt.Println("Shard block received")
-		if self.BestState.Shard[newBlk.Header.ShardID].ShardHeight < newBlk.Header.Height {
+		if blockchain.BestState.Shard[newBlk.Header.ShardID].ShardHeight < newBlk.Header.Height {
 			blkHash := newBlk.Header.Hash()
 			err := cashec.ValidateDataB58(newBlk.Header.Producer, newBlk.ProducerSig, blkHash.GetBytes())
 			if err != nil {
 				Logger.log.Error(err)
 				return
 			} else {
-				if self.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
-					err = self.InsertShardBlock(newBlk)
+				if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
+					err = blockchain.InsertShardBlock(newBlk)
 					if err != nil {
 						Logger.log.Error(err)
 						return
 					}
 				} else {
-					self.config.NodeShardPool.PushBlock(*newBlk)
+					blockchain.config.NodeShardPool.PushBlock(*newBlk)
 				}
 			}
 		}
 	}
 }
 
-func (self *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
-	if self.syncStatus.Beacon {
+func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
+	if blockchain.syncStatus.Beacon {
 		fmt.Println("Beacon block received")
-		if self.BestState.Beacon.BeaconHeight < newBlk.Header.Height {
+		if blockchain.BestState.Beacon.BeaconHeight < newBlk.Header.Height {
 			blkHash := newBlk.Header.Hash()
 			err := cashec.ValidateDataB58(newBlk.Header.Producer, newBlk.ProducerSig, blkHash.GetBytes())
 			if err != nil {
 				Logger.log.Error(err)
 				return
 			} else {
-				if self.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
-					err = self.InsertBeaconBlock(newBlk, false)
+				if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
+					err = blockchain.InsertBeaconBlock(newBlk, false)
 					if err != nil {
 						Logger.log.Error(err)
 						return
 					}
 				} else {
-					self.config.NodeBeaconPool.PushBlock(*newBlk)
+					blockchain.config.NodeBeaconPool.PushBlock(*newBlk)
 				}
 			}
 		}
 	}
 }
 
-func (self *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
+func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
 	//TODO: check node mode -> node mode & role before add block to pool
 	fmt.Println("Blockchain Message/OnShardToBeaconBlockReceived: Block Height", block.Header.Height)
 	blkHash := block.Header.Hash()
@@ -109,7 +116,7 @@ func (self *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
 	}
 
 	//TODO: what if shard to beacon from old committee
-	if err = ValidateAggSignature(block.ValidatorsIdx, self.BestState.Beacon.ShardCommittee[block.Header.ShardID], block.AggregatedSig, block.R, block.Hash()); err != nil {
+	if err = ValidateAggSignature(block.ValidatorsIdx, blockchain.BestState.Beacon.ShardCommittee[block.Header.ShardID], block.AggregatedSig, block.R, block.Hash()); err != nil {
 		Logger.log.Error(err)
 		return
 	}
@@ -125,9 +132,9 @@ func (self *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
 	}
 }
 
-func (self *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {
+func (blockchain *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {
 	//TODO: check node mode -> node role before add block to pool
-	err := self.config.CrossShardPool.AddCrossShardBlock(block)
+	err := blockchain.config.CrossShardPool.AddCrossShardBlock(block)
 	if err != nil {
 		Logger.log.Error(err)
 	}

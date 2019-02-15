@@ -36,8 +36,8 @@ type BlockChain struct {
 	chainLock sync.RWMutex
 
 	//=====cache
-	beaconBlock        map[string][]byte
-	highestBeaconBlock string // TODO review not use
+	beaconBlock        map[string][]byte // TODO review not use
+	highestBeaconBlock string            // TODO review not use
 
 	//channel
 	cQuitSync  chan struct{}
@@ -170,15 +170,6 @@ func (blockchain *BlockChain) InitShardToBeaconPool(db database.DatabaseInterfac
 		blockchain.config.ShardToBeaconPool.SetShardState(beaconBestState.BestShardHeight)
 	}
 
-}
-
-func (blockchain *BlockChain) GetMaybeAcceptBeaconBlock(key string) (BeaconBlock, error) {
-	res := blockchain.beaconBlock[key]
-	beaconBlock := BeaconBlock{}
-	if err := json.Unmarshal(res, beaconBlock); err != nil {
-		return beaconBlock, NewBlockChainError(UnmashallJsonBlockError, err)
-	}
-	return beaconBlock, nil
 }
 
 // -------------- Blockchain retriever's implementation --------------
