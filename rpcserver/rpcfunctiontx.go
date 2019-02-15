@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"math/big"
 	"time"
 
 	"github.com/ninjadotorg/constant/metadata"
@@ -18,21 +19,17 @@ import (
 	"github.com/ninjadotorg/constant/wire"
 )
 
-/*
-// handleList returns a slice of objects representing the wallet
-// transactions fitting the given criteria. The confirmations will be more than
-// minconf, less than maxconf and if addresses is populated only the addresses
-// contained within it will be considered.  If we know nothing about a
-// transaction an empty array will be returned.
-// params:
-Parameter #1—the minimum number of confirmations an output must have
-Parameter #2—the maximum number of confirmations an output may have
-Parameter #3—the list readonly which be used to view all tx out of keyset
-*/
+//handleListOutputCoins - use readonly key to get all tx which contains output coin of account
+// by private key, it return full tx outputcoin with amount and receiver address in txs
+//params:
+//Parameter #1—the minimum number of confirmations an output must have
+//Parameter #2—the maximum number of confirmations an output may have
+//Parameter #3—the list priv-key which be used to view utxo
+//
 func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	result := jsonresult.ListUnspentResult{
-		ListUnspentResultItems: make(map[string][]jsonresult.ListUnspentResultItem),
+		ListUnspentResultItems: make(map[string]jsonresult.ListUnspentResultItem),
 	}
 
 	// get params
@@ -40,7 +37,11 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 	if len(paramsArray) < 1 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key params"))
 	}
-	listKeyParams := common.InterfaceSlice(paramsArray[0])
+	min := int(paramsArray[0].(float64))
+	max := int(paramsArray[1].(float64))
+	_ = min
+	_ = max
+	listKeyParams := common.InterfaceSlice(paramsArray[2])
 	for _, keyParam := range listKeyParams {
 		keys := keyParam.(map[string]interface{})
 
@@ -71,23 +72,21 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		listTxs := make([]jsonresult.ListUnspentResultItem, 0)
 		item := jsonresult.ListUnspentResultItem{
 			OutCoins: make([]jsonresult.OutCoin, 0),
 		}
 		for _, outCoin := range outputCoins {
 			item.OutCoins = append(item.OutCoins, jsonresult.OutCoin{
-				SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
+				//SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
 				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),
 				Value:          outCoin.CoinDetails.Value,
 				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], common.ZeroByte),
 				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), common.ZeroByte),
-				Randomness:     *outCoin.CoinDetails.Randomness,
-				SNDerivator:    *outCoin.CoinDetails.SNDerivator,
+				Randomness:     outCoin.CoinDetails.Randomness.Bytes(),
+				SNDerivator:    outCoin.CoinDetails.SNDerivator.Bytes(),
 			})
-			listTxs = append(listTxs, item)
-			result.ListUnspentResultItems[readonlyKeyStr] = listTxs
 		}
+		result.ListUnspentResultItems[readonlyKeyStr] = item
 	}
 
 	return result, nil
@@ -600,8 +599,8 @@ func (rpcServer RpcServer) handleRandomCommitments(params interface{}, closeChan
 		i := &privacy.OutputCoin{
 			CoinDetails: &privacy.Coin{
 				Value:       item.Value,
-				Randomness:  &item.Randomness,
-				SNDerivator: &item.SNDerivator,
+				Randomness:  new(big.Int).SetBytes(item.Randomness),
+				SNDerivator: new(big.Int).SetBytes(item.SNDerivator),
 			},
 		}
 		i.CoinDetails.Info, _, _ = base58.Base58Check{}.Decode(item.Info)
