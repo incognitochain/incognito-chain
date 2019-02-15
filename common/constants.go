@@ -85,6 +85,7 @@ var (
 var (
 	BTCAssetID = Hash{99, 99, 99, 99, 99, 99, 99, 99, 1}
 	ETHAssetID = Hash{99, 99, 99, 99, 99, 99, 99, 99, 2}
+	USDAssetID = Hash{99, 99, 99, 99, 99, 99, 99, 99, 3}
 )
 
 // board addresses

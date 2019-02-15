@@ -19,11 +19,6 @@ const (
 	CrowdsaleRequestMeta
 	CrowdsalePaymentMeta
 
-	// Reserve
-	ReserveRequestMeta
-	ReserveResponseMeta
-	ReservePaymentMeta
-
 	// CMB
 	CMBInitRequestMeta
 	CMBInitResponseMeta // offchain multisig
