@@ -151,7 +151,7 @@ func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 	helper ConstitutionHelper,
 	minerPrivateKey *privacy.SpendingKey,
 ) ([]metadata.Transaction, error) {
-	resTx, VoteTable, err := self.BuildVoteTableAndPunishTransaction(helper, minerPrivateKey)
+	resTx, VoteTable, _ := self.BuildVoteTableAndPunishTransaction(helper, minerPrivateKey)
 	NextConstitutionIndex := self.GetCurrentBoardIndex(helper)
 	bestProposal := metadata.ProposalVote{
 		TxId:         common.Hash{},
