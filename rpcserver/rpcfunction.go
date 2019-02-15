@@ -245,8 +245,8 @@ func (rpcServer RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-
 //
 func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
-	result := jsonresult.ListUnspentResult{
-		ListUnspentResultItems: make(map[string]jsonresult.ListUnspentResultItem),
+	result := jsonresult.ListOutputCoins{
+		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
 
 	// get params
@@ -262,7 +262,6 @@ func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, clos
 		// get keyset only contain pri-key by deserializing
 		priKeyStr := keys["PrivateKey"].(string)
 		keyWallet, err := wallet.Base58CheckDeserialize(priKeyStr)
-		result.ListUnspentResultItems[priKeyStr] = jsonresult.ListUnspentResultItem{}
 		if err != nil {
 			log.Println("Check Deserialize err", err)
 			continue
@@ -283,21 +282,19 @@ func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, clos
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		item := jsonresult.ListUnspentResultItem{
-			OutCoins: make([]jsonresult.OutCoin, 0),
-		}
+		item := make([]jsonresult.OutCoin, 0)
 		for _, outCoin := range outCoins {
-			item.OutCoins = append(item.OutCoins, jsonresult.OutCoin{
+			item = append(item, jsonresult.OutCoin{
 				SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
 				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),
 				Value:          outCoin.CoinDetails.Value,
 				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], common.ZeroByte),
 				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), common.ZeroByte),
-				Randomness:     outCoin.CoinDetails.Randomness.Bytes(),
-				SNDerivator:    outCoin.CoinDetails.SNDerivator.Bytes(),
+				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.Randomness.Bytes(), common.ZeroByte),
+				SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.SNDerivator.Bytes(), common.ZeroByte),
 			})
 		}
-		result.ListUnspentResultItems[priKeyStr] = item
+		result.Outputs[priKeyStr] = item
 	}
 	return result, nil
 }

@@ -5,29 +5,16 @@ import (
 	"log"
 )
 
-type ListUnspentResult struct {
-	ListUnspentResultItems map[string]ListUnspentResultItem `json:"ListUnspentResultItems"`
-}
-
-type ListUnspentResultItem struct {
-	OutCoins []OutCoin `json:"OutCoins"`
-}
-
-func (listUnspentResultItem *ListUnspentResultItem) Init(data interface{}) {
-	listUnspentResultItem.OutCoins = []OutCoin{}
-	for _, item := range data.([]interface{}) {
-		i := OutCoin{}
-		i.Init(item)
-		listUnspentResultItem.OutCoins = append(listUnspentResultItem.OutCoins, i)
-	}
+type ListOutputCoins struct {
+	Outputs map[string][]OutCoin `json:"Outputs"`
 }
 
 type OutCoin struct {
 	PublicKey      string
 	CoinCommitment string
-	SNDerivator    []byte
+	SNDerivator    string
 	SerialNumber   string
-	Randomness     []byte
+	Randomness     string
 	Value          uint64
 	Info           string
 }
