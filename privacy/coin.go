@@ -17,7 +17,7 @@ type Coin struct {
 	SerialNumber   *EllipticPoint
 	Randomness     *big.Int
 	Value          uint64
-	Info           []byte //512 bytes
+	Info           []byte //256 bytes
 }
 
 // GetPubKeyLastByte returns the last byte of public key

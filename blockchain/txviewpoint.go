@@ -302,10 +302,10 @@ func NewTxViewPoint(shardID byte) *TxViewPoint {
 	result := &TxViewPoint{
 		shardID:                     shardID,
 		listSerialNumbers:           make([][]byte, 0),
-		mapCommitments:              make(map[string][][]byte, 0),
-		mapOutputCoins:              make(map[string][]privacy.OutputCoin, 0),
+		mapCommitments:              make(map[string][][]byte),
+		mapOutputCoins:              make(map[string][]privacy.OutputCoin),
 		listSnD:                     make([]big.Int, 0),
-		customTokenTxs:              make(map[int32]*transaction.TxCustomToken, 0),
+		customTokenTxs:              make(map[int32]*transaction.TxCustomToken),
 		tokenID:                     &common.Hash{},
 		privacyCustomTokenViewPoint: make(map[int32]*TxViewPoint),
 		privacyCustomTokenTxs:       make(map[int32]*transaction.TxCustomTokenPrivacy),

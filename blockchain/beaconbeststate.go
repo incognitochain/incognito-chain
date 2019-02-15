@@ -122,7 +122,7 @@ func (self *BestStateBeacon) Hash() common.Hash {
 	res = append(res, self.BestBlock.Hash().GetBytes()...)
 	res = append(res, self.BestBlock.Hash().GetBytes()...)
 
-	for k, _ := range self.BestShardHash {
+	for k := range self.BestShardHash {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
@@ -131,7 +131,7 @@ func (self *BestStateBeacon) Hash() common.Hash {
 		res = append(res, hash.GetBytes()...)
 	}
 	keys = []int{}
-	for k, _ := range self.BestShardHeight {
+	for k := range self.BestShardHeight {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
@@ -158,7 +158,7 @@ func (self *BestStateBeacon) Hash() common.Hash {
 		res = append(res, []byte(value)...)
 	}
 	keys = []int{}
-	for k, _ := range self.ShardCommittee {
+	for k := range self.ShardCommittee {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
@@ -168,7 +168,7 @@ func (self *BestStateBeacon) Hash() common.Hash {
 		}
 	}
 	keys = []int{}
-	for k, _ := range self.ShardPendingValidator {
+	for k := range self.ShardPendingValidator {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
@@ -184,7 +184,7 @@ func (self *BestStateBeacon) Hash() common.Hash {
 	} else {
 		res = append(res, []byte("false")...)
 	}
-	for k, _ := range self.Params {
+	for k := range self.Params {
 		keyStrs = append(keyStrs, k)
 	}
 	sort.Strings(keyStrs)
@@ -197,19 +197,20 @@ func (self *BestStateBeacon) Hash() common.Hash {
 
 // Get role of a public key base on best state beacond
 // return node-role, <shardID>
+// TODO: Role name should be write in common as constant value
 func (self *BestStateBeacon) GetPubkeyRole(pubkey string) (string, byte) {
 
 	for shardID, pubkeyArr := range self.ShardPendingValidator {
 		found := common.IndexOfStr(pubkey, pubkeyArr)
 		if found > -1 {
-			return "shard", shardID
+			return common.SHARD_ROLE, shardID
 		}
 	}
 
 	for shardID, pubkeyArr := range self.ShardCommittee {
 		found := common.IndexOfStr(pubkey, pubkeyArr)
 		if found > -1 {
-			return "shard", shardID
+			return common.SHARD_ROLE, shardID
 		}
 	}
 
@@ -217,17 +218,17 @@ func (self *BestStateBeacon) GetPubkeyRole(pubkey string) (string, byte) {
 	if found > -1 {
 		tmpID := (self.BeaconProposerIdx + 1) % len(self.BeaconCommittee)
 		if found == tmpID {
-			return "beacon-proposer", 0
+			return common.BEACON_PROPOSER_ROLE, 0
 		}
-		return "beacon-validator", 0
+		return common.BEACON_VALIDATOR_ROLE, 0
 	}
 
 	found = common.IndexOfStr(pubkey, self.BeaconPendingValidator)
 	if found > -1 {
-		return "beacon-pending", 0
+		return common.BEACON_PENDING_ROLE, 0
 	}
 
-	return "", 0
+	return common.EmptyString, 0
 }
 
 // getAssetPrice returns price stored in Oracle

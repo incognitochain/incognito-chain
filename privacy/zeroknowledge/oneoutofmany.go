@@ -282,7 +282,7 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 
 		// cb = Com(la, t)
 		la := new(big.Int).Mul(indexInt, a[j])
-		la.Mod(la, privacy.Curve.Params().N)
+		//la.Mod(la, privacy.Curve.Params().N)
 		cb[j] = privacy.PedCom.CommitAtIndex(la, t[j], privacy.SK)
 	}
 
