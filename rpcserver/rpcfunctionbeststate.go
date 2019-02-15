@@ -14,7 +14,7 @@ func (rpcServer RpcServer) handleGetBeaconBestState(params interface{}, closeCha
 		return nil, NewRPCError(ErrUnexpected, errors.New("Best State beacon not existed"))
 	}
 
-	result := rpcServer.config.BlockChain.BestState.Beacon
+	result := *rpcServer.config.BlockChain.BestState.Beacon
 	result.BestBlock = nil
 	return result, nil
 }

@@ -24,12 +24,21 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	//============Build body=============
 	beaconHeight := blockgen.chain.BestState.Beacon.BeaconHeight
 	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
+	fmt.Println("Shard Producer/NewBlockShard, Beacon Height / Before", beaconHeight)
+	fmt.Println("Shard Producer/NewBlockShard, Beacon Hash / Before", beaconHash)
 	epoch := blockgen.chain.BestState.Beacon.BeaconEpoch
 	if epoch-blockgen.chain.BestState.Shard[shardID].Epoch > 1 {
 		beaconHeight = blockgen.chain.BestState.Shard[shardID].Epoch * common.EPOCH
+		newBeaconHash, err := blockgen.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
+		if err != nil {
+			return nil, err
+		}
+		copy(beaconHash[:], newBeaconHash.GetBytes())
 		epoch = blockgen.chain.BestState.Shard[shardID].Epoch + 1
 	}
-
+	fmt.Println("Shard Producer/NewBlockShard, Beacon Height / After", beaconHeight)
+	fmt.Println("Shard Producer/NewBlockShard, Beacon Hash / After", beaconHash)
+	fmt.Println("Shard Producer/NewBlockShard, Beacon Epoch", epoch)
 	// Get valid transaction (add tx, remove tx, fee of add tx)
 	txsToAdd, txToRemove, totalFee := blockgen.getPendingTransaction(shardID)
 	if len(txsToAdd) == 0 {
@@ -327,10 +336,33 @@ func FetchBeaconBlockFromHeight(db database.DatabaseInterface, from uint64, to u
 func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) {
 	byteMap := make([]byte, common.SHARD_NUMBER)
 	for _, tx := range txList {
-		for _, outCoin := range tx.GetProof().OutputCoins {
-			lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-			shardID := common.GetShardIDFromLastByte(lastByte)
-			byteMap[common.GetShardIDFromLastByte(shardID)] = 1
+		switch tx.GetType() {
+		case common.TxNormalType, common.TxSalaryType:
+			{
+				for _, outCoin := range tx.GetProof().OutputCoins {
+					lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+					shardID := common.GetShardIDFromLastByte(lastByte)
+					byteMap[common.GetShardIDFromLastByte(shardID)] = 1
+				}
+			}
+		case common.TxCustomTokenType:
+			{
+				customTokenTx := tx.(*transaction.TxCustomToken)
+				for _, out := range customTokenTx.TxTokenData.Vouts {
+					lastByte := out.PaymentAddress.Pk[len(out.PaymentAddress.Pk)-1]
+					shardID := common.GetShardIDFromLastByte(lastByte)
+					byteMap[common.GetShardIDFromLastByte(shardID)] = 1
+				}
+			}
+		case common.TxCustomTokenPrivacyType:
+			{
+				customTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
+				for _, outCoin := range customTokenTx.TxTokenPrivacyData.TxNormal.GetProof().OutputCoins {
+					lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+					shardID := common.GetShardIDFromLastByte(lastByte)
+					byteMap[common.GetShardIDFromLastByte(shardID)] = 1
+				}
+			}
 		}
 	}
 
@@ -415,6 +447,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 	}
 
 	//TODO: sort transaction base on fee and check limit block size
+	// StartingPriority, fee, size, time
 
 	// validate tx and calculate total fee
 	for _, txDesc := range sourceTxns {

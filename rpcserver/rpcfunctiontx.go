@@ -4,35 +4,31 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"time"
-
-	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
+	"math/big"
+	"time"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
 )
 
-/*
-// handleList returns a slice of objects representing the wallet
-// transactions fitting the given criteria. The confirmations will be more than
-// minconf, less than maxconf and if addresses is populated only the addresses
-// contained within it will be considered.  If we know nothing about a
-// transaction an empty array will be returned.
-// params:
-Parameter #1—the minimum number of confirmations an output must have
-Parameter #2—the maximum number of confirmations an output may have
-Parameter #3—the list readonly which be used to view utxo
-*/
+//handleListOutputCoins - use readonly key to get all tx which contains output coin of account
+// by private key, it return full tx outputcoin with amount and receiver address in txs
+//params:
+//Parameter #1—the minimum number of confirmations an output must have
+//Parameter #2—the maximum number of confirmations an output may have
+//Parameter #3—the list priv-key which be used to view utxo
+//
 func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
-	result := jsonresult.ListUnspentResult{
-		ListUnspentResultItems: make(map[string][]jsonresult.ListUnspentResultItem),
+	result := jsonresult.ListOutputCoins{
+		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
 
 	// get params
@@ -40,7 +36,11 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 	if len(paramsArray) < 1 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key params"))
 	}
-	listKeyParams := common.InterfaceSlice(paramsArray[0])
+	min := int(paramsArray[0].(float64))
+	max := int(paramsArray[1].(float64))
+	_ = min
+	_ = max
+	listKeyParams := common.InterfaceSlice(paramsArray[2])
 	for _, keyParam := range listKeyParams {
 		keys := keyParam.(map[string]interface{})
 
@@ -71,23 +71,20 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		listTxs := make([]jsonresult.ListUnspentResultItem, 0)
-		item := jsonresult.ListUnspentResultItem{
-			OutCoins: make([]jsonresult.OutCoin, 0),
-		}
+		item := make([]jsonresult.OutCoin, 0)
+
 		for _, outCoin := range outputCoins {
-			item.OutCoins = append(item.OutCoins, jsonresult.OutCoin{
-				SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
+			item = append(item, jsonresult.OutCoin{
+				//SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
 				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),
 				Value:          outCoin.CoinDetails.Value,
 				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], common.ZeroByte),
 				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), common.ZeroByte),
-				Randomness:     *outCoin.CoinDetails.Randomness,
-				SNDerivator:    *outCoin.CoinDetails.SNDerivator,
+				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.Randomness.Bytes(), common.ZeroByte),
+				SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.SNDerivator.Bytes(), common.ZeroByte),
 			})
-			listTxs = append(listTxs, item)
-			result.ListUnspentResultItems[readonlyKeyStr] = listTxs
 		}
+		result.Outputs[readonlyKeyStr] = item
 	}
 
 	return result, nil
@@ -234,6 +231,9 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 				SigPubKey: tempTx.SigPubKey,
 				Sig:       tempTx.Sig,
 			}
+			if len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))
+			}
 			metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
 			result.Metadata = string(metaData)
 		}
@@ -255,6 +255,9 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 			}
 			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
 			result.CustomTokenData = string(txCustomData)
+			if len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))
+			}
 			if tempTx.Metadata != nil {
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
 				result.Metadata = string(metaData)
@@ -275,6 +278,9 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 				Proof:     tempTx.Proof,
 				SigPubKey: tempTx.SigPubKey,
 				Sig:       tempTx.Sig,
+			}
+			if len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))
 			}
 			tokenData, _ := json.MarshalIndent(tempTx.TxTokenPrivacyData, "", "\t")
 			result.PrivacyCustomTokenData = string(tokenData)
@@ -425,8 +431,8 @@ func (rpcServer RpcServer) handleGetListCustomTokenBalance(params interface{}, c
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		pubkey := base58.Base58Check{}.Encode(accountPaymentAddress.Pk, 0x00)
-		item.Amount = res[pubkey]
+		paymentAddressInStr := base58.Base58Check{}.Encode(accountPaymentAddress.Bytes(), 0x00)
+		item.Amount = res[paymentAddressInStr]
 		if item.Amount == 0 {
 			continue
 		}
@@ -584,30 +590,33 @@ func (rpcServer RpcServer) handleRandomCommitments(params interface{}, closeChan
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 
 	// #2: available inputCoin from old outputcoin
-	data := jsonresult.ListUnspentResultItem{}
-	data.Init(arrayParams[0])
+	outputs := arrayParams[1].([]interface{})
 	usableOutputCoins := []*privacy.OutputCoin{}
-	for _, item := range data.OutCoins {
+	for _, item := range outputs {
+		out := jsonresult.OutCoin{}
+		out.Init(item)
 		i := &privacy.OutputCoin{
 			CoinDetails: &privacy.Coin{
-				Value:       item.Value,
-				Randomness:  &item.Randomness,
-				SNDerivator: &item.SNDerivator,
+				Value: out.Value,
 			},
 		}
-		i.CoinDetails.Info, _, _ = base58.Base58Check{}.Decode(item.Info)
+		RandomnessInBytes, _, _ := base58.Base58Check{}.Decode(out.Randomness)
+		i.CoinDetails.Randomness = new(big.Int).SetBytes(RandomnessInBytes)
 
-		CoinCommitmentBytes, _, _ := base58.Base58Check{}.Decode(item.CoinCommitment)
+		SNDerivatorInBytes, _, _ := base58.Base58Check{}.Decode(out.SNDerivator)
+		i.CoinDetails.SNDerivator = new(big.Int).SetBytes(SNDerivatorInBytes)
+
+		CoinCommitmentBytes, _, _ := base58.Base58Check{}.Decode(out.CoinCommitment)
 		CoinCommitment := &privacy.EllipticPoint{}
 		_ = CoinCommitment.Decompress(CoinCommitmentBytes)
 		i.CoinDetails.CoinCommitment = CoinCommitment
 
-		PublicKeyBytes, _, _ := base58.Base58Check{}.Decode(item.PublicKey)
+		PublicKeyBytes, _, _ := base58.Base58Check{}.Decode(out.PublicKey)
 		PublicKey := &privacy.EllipticPoint{}
 		_ = PublicKey.Decompress(PublicKeyBytes)
 		i.CoinDetails.PublicKey = PublicKey
 
-		InfoBytes, _, _ := base58.Base58Check{}.Decode(item.Info)
+		InfoBytes, _, _ := base58.Base58Check{}.Decode(out.Info)
 		i.CoinDetails.Info = InfoBytes
 
 		usableOutputCoins = append(usableOutputCoins, i)
@@ -615,50 +624,95 @@ func (rpcServer RpcServer) handleRandomCommitments(params interface{}, closeChan
 	usableInputCoins := transaction.ConvertOutputCoinToInputCoin(usableOutputCoins)
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
-	commitmentIndexs, myCommitmentIndexs := rpcServer.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, shardIDSender, constantTokenID)
+	commitmentIndexs, myCommitmentIndexs, commitments := rpcServer.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, shardIDSender, constantTokenID)
 	result := make(map[string]interface{})
 	result["CommitmentIndices"] = commitmentIndexs
 	result["MyCommitmentIndexs"] = myCommitmentIndexs
+	temp := []string{}
+	for _, commitment := range commitments {
+		temp = append(temp, base58.Base58Check{}.Encode(commitment, byte(0x00)))
+	}
+	result["Commitments"] = temp
 
 	return result, nil
 }
 
 // handleHasSerialNumbers - check list serial numbers existed in db of node
 func (rpcServer RpcServer) handleHasSerialNumbers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// arrayParams := common.InterfaceSlice(params)
+	arrayParams := common.InterfaceSlice(params)
 
-	// // #1: payment address
-	// paymentAddressStr := arrayParams[0].(string)
-	// key, err := wallet.Base58CheckDeserialize(paymentAddressStr)
-	// if err != nil {
-	// 	return nil, NewRPCError(ErrUnexpected, err)
-	// }
-	// lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
-	// shardIDSender, err := common.GetTxSenderShard(lastByte)
-	// if err != nil {
-	// 	return nil, NewRPCError(ErrUnexpected, err)
-	// }
-	// //#2: list serialnumbers in base58check encode string
-	// serialNumbersStr := arrayParams[1].([]interface{})
+	// #1: payment address
+	paymentAddressStr := arrayParams[0].(string)
+	key, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
+	shardIDSender := common.GetShardIDFromLastByte(lastByte)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	//#2: list serialnumbers in base58check encode string
+	serialNumbersStr := arrayParams[1].([]interface{})
 
-	// result := make(map[byte][]string)
-	// result[0] = []string{}
-	// result[1] = []string{}
-	// constantTokenID := &common.Hash{}
-	// constantTokenID.SetBytes(common.ConstantID[:])
-	// for _, item := range serialNumbersStr {
-	// 	serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
-	// 	db := *(rpcServer.config.Database)
-	// 	ok, err := db.HasSerialNumber(constantTokenID, serialNumber, shardIDSender)
-	// 	if ok && err != nil {
-	// 		result[0] = append(result[0], item.(string))
-	// 	} else {
-	// 		result[1] = append(result[1], item.(string))
-	// 	}
-	// }
+	result := make(map[string][]string)
+	result["Existed"] = []string{}
+	result["NotExisted"] = []string{}
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
+	for _, item := range serialNumbersStr {
+		serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
+		db := *(rpcServer.config.Database)
+		ok, err := db.HasSerialNumber(constantTokenID, serialNumber, shardIDSender)
+		if ok && err != nil {
+			// serial number in db
+			result["Existed"] = append(result["Existed"], item.(string))
+		} else {
+			// serial number not in db
+			result["NotExisted"] = append(result["NotExisted"], item.(string))
+		}
+	}
 
-	// return result, nil
-	return nil, nil
+	return result, nil
+}
+
+// handleHasSerialNumbers - check list serial numbers existed in db of node
+func (rpcServer RpcServer) handleHasSnDerivators(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+
+	// #1: payment address
+	paymentAddressStr := arrayParams[0].(string)
+	key, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
+	shardIDSender := common.GetShardIDFromLastByte(lastByte)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	//#2: list serialnumbers in base58check encode string
+	snDerivatorStr := arrayParams[1].([]interface{})
+
+	result := make(map[string][]string)
+	result["Existed"] = []string{}
+	result["NotExisted"] = []string{}
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
+	for _, item := range snDerivatorStr {
+		snderivator, _, _ := base58.Base58Check{}.Decode(item.(string))
+		db := *(rpcServer.config.Database)
+		ok, err := db.HasSNDerivator(constantTokenID, *(new(big.Int).SetBytes(snderivator)), shardIDSender)
+		if ok && err != nil {
+			// serial number in db
+			result["Existed"] = append(result["Existed"], item.(string))
+		} else {
+			// serial number not in db
+			result["NotExisted"] = append(result["NotExisted"], item.(string))
+		}
+	}
+
+	return result, nil
 }
 
 // handleCreateRawCustomTokenTransaction - handle create a custom token command and return in hex string format.
