@@ -24,10 +24,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	ChainCount = 20
-)
-
 /*
 blockChain is a view presents for data in blockchain network
 because we use 20 chain data to contain all block in system, so
