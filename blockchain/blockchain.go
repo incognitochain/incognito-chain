@@ -37,7 +37,7 @@ type BlockChain struct {
 
 	//=====cache
 	beaconBlock        map[string][]byte
-	highestBeaconBlock string
+	highestBeaconBlock string // TODO review not use
 
 	//channel
 	cQuitSync  chan struct{}
