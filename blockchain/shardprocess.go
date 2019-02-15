@@ -537,7 +537,7 @@ func CreateMerkleCrossOutputCoin(crossOutputCoins map[byte][]CrossOutputCoin) (*
 	}
 	keys := []int{}
 	crossOutputCoinHashes := []*common.Hash{}
-	for k, _ := range crossOutputCoins {
+	for k := range crossOutputCoins {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
@@ -564,6 +564,9 @@ func VerifyMerkleCrossOutputCoin(crossOutputCoins map[byte][]CrossOutputCoin, ro
 	}
 	hashByte := rootHash.GetBytes()
 	newHash, err := common.Hash{}.NewHash(hashByte)
+	if err != nil {
+		return false
+	}
 	return newHash.IsEqual(res)
 }
 
