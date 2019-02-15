@@ -24,12 +24,21 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	//============Build body=============
 	beaconHeight := blockgen.chain.BestState.Beacon.BeaconHeight
 	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
+	fmt.Println("Shard Producer/NewBlockShard, Beacon Height / Before", beaconHeight)
+	fmt.Println("Shard Producer/NewBlockShard, Beacon Hash / Before", beaconHash)
 	epoch := blockgen.chain.BestState.Beacon.BeaconEpoch
 	if epoch-blockgen.chain.BestState.Shard[shardID].Epoch > 1 {
 		beaconHeight = blockgen.chain.BestState.Shard[shardID].Epoch * common.EPOCH
+		newBeaconHash, err := blockgen.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
+		if err != nil {
+			return nil, err
+		}
+		copy(beaconHash[:], newBeaconHash.GetBytes())
 		epoch = blockgen.chain.BestState.Shard[shardID].Epoch + 1
 	}
-
+	fmt.Println("Shard Producer/NewBlockShard, Beacon Height / After", beaconHeight)
+	fmt.Println("Shard Producer/NewBlockShard, Beacon Hash / After", beaconHash)
+	fmt.Println("Shard Producer/NewBlockShard, Beacon Epoch", epoch)
 	// Get valid transaction (add tx, remove tx, fee of add tx)
 	txsToAdd, txToRemove, totalFee := blockgen.getPendingTransaction(shardID)
 	if len(txsToAdd) == 0 {
@@ -87,7 +96,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	//@NOTICE: In this block, only pending validator change, shard committees will change in the next block
 	if beaconHeight%common.EPOCH == 0 {
 		if len(shardPendingValidator) > 0 {
-			swapInstruction, err = CreateSwapAction(shardPendingValidator, shardCommittees, shardID)
+			swapInstruction, shardPendingValidator, shardCommittees, err = CreateSwapAction(shardPendingValidator, shardCommittees, shardID)
 			fmt.Println("Shard Producer: swapInstruction", swapInstruction)
 			if err != nil {
 				Logger.log.Error(err)
@@ -105,7 +114,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 			Transactions:    make([]metadata.Transaction, 0),
 		},
 	}
-
 	// Process new dividend proposal and build new dividend payment txs
 	divTxs, err := blockgen.buildDividendTxs(privatekey)
 	if err != nil {
@@ -140,6 +148,8 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 			return nil, err
 		}
 	}
+	fmt.Println("Shard Producer: Instruction", instructions)
+	//============End Build Body===========
 	//============Build Header=============
 	fmt.Printf("Number of Transaction in blocks %+v \n", len(block.Body.Transactions))
 	//Get user key set
@@ -169,7 +179,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
-	committeeRoot, err := GenerateHashFromStringArray(blockgen.chain.BestState.Shard[shardID].ShardCommittee)
+	committeeRoot, err := GenerateHashFromStringArray(shardCommittees)
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
@@ -337,10 +347,33 @@ func FetchBeaconBlockFromHeight(db database.DatabaseInterface, from uint64, to u
 func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) {
 	byteMap := make([]byte, common.SHARD_NUMBER)
 	for _, tx := range txList {
-		for _, outCoin := range tx.GetProof().OutputCoins {
-			lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-			shardID := common.GetShardIDFromLastByte(lastByte)
-			byteMap[common.GetShardIDFromLastByte(shardID)] = 1
+		switch tx.GetType() {
+		case common.TxNormalType, common.TxSalaryType:
+			{
+				for _, outCoin := range tx.GetProof().OutputCoins {
+					lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+					shardID := common.GetShardIDFromLastByte(lastByte)
+					byteMap[common.GetShardIDFromLastByte(shardID)] = 1
+				}
+			}
+		case common.TxCustomTokenType:
+			{
+				customTokenTx := tx.(*transaction.TxCustomToken)
+				for _, out := range customTokenTx.TxTokenData.Vouts {
+					lastByte := out.PaymentAddress.Pk[len(out.PaymentAddress.Pk)-1]
+					shardID := common.GetShardIDFromLastByte(lastByte)
+					byteMap[common.GetShardIDFromLastByte(shardID)] = 1
+				}
+			}
+		case common.TxCustomTokenPrivacyType:
+			{
+				customTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
+				for _, outCoin := range customTokenTx.TxTokenPrivacyData.TxNormal.GetProof().OutputCoins {
+					lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+					shardID := common.GetShardIDFromLastByte(lastByte)
+					byteMap[common.GetShardIDFromLastByte(shardID)] = 1
+				}
+			}
 		}
 	}
 
@@ -354,19 +387,22 @@ func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) 
 }
 
 /*
-	Action From Other Source:
-	- bpft protocol: swap
-	....
+	Create Swap Action
+	Return param:
+	#1: swap instruction
+	#2: new pending validator list after swapped
+	#3: new committees after swapped
+	#4: error
 */
-func CreateSwapAction(pendingValidator []string, commitees []string, shardID byte) ([]string, error) {
+func CreateSwapAction(pendingValidator []string, commitees []string, shardID byte) ([]string, []string, []string, error) {
 	fmt.Println("Shard Producer/Create Swap Action: pendingValidator", pendingValidator)
 	fmt.Println("Shard Producer/Create Swap Action: commitees", commitees)
-	_, _, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, common.COMMITEES, common.OFFSET)
+	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, common.COMMITEES, common.OFFSET)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	swapInstruction := []string{"swap", strings.Join(shardNewCommittees, ","), strings.Join(shardSwapedCommittees, ","), "shard", strconv.Itoa(int(shardID))}
-	return swapInstruction, nil
+	return swapInstruction, newPendingValidator, newShardCommittees, nil
 }
 
 /*

@@ -80,11 +80,7 @@ func (bbReq *BuyBackRequest) Hash() *common.Hash {
 }
 
 func (bbReq *BuyBackRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	actionContent := map[string]interface{}{
-		"reqTx":       tx,
-		"buyBackMeta": *bbReq,
-	}
-	actionContentBytes, err := json.Marshal(actionContent)
+	actionContentBytes, err := json.Marshal(tx)
 	if err != nil {
 		return [][]string{}, err
 	}
