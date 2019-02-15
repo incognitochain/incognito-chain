@@ -37,28 +37,28 @@ type ShardHeader struct {
 	BeaconHash   common.Hash
 }
 
-func (self ShardHeader) Hash() common.Hash {
+func (shardHeader ShardHeader) Hash() common.Hash {
 	record := common.EmptyString
-	// crossShardHash, _ := common.Hash{}.NewHash(self.CrossShards)
+	// crossShardHash, _ := common.Hash{}.NewHash(shardHeader.CrossShards)
 	// add data from header
-	record += strconv.FormatInt(self.Timestamp, 10) +
-		self.Producer +
-		string(self.ShardID) +
-		strconv.Itoa(self.Version)
+	record += strconv.FormatInt(shardHeader.Timestamp, 10) +
+		shardHeader.Producer +
+		string(shardHeader.ShardID) +
+		strconv.Itoa(shardHeader.Version)
 		// TODO: Uncomment this when finish genesis shard block
-		// self.PrevBlockHash.String() +
-		// strconv.Itoa(int(self.Height)) +
-		// strconv.Itoa(int(self.Epoch)) +
-		// strconv.Itoa(int(self.Timestamp)) +
-		// strconv.Itoa(int(self.SalaryFund)) +
-		// self.TxRoot.String() +
-		// self.ShardTxRoot.String() +
-		// self.CrossOutputCoinRoot.String() +
-		// self.ActionsRoot.String() +
-		// self.CommitteeRoot.String() +
-		// self.PendingValidatorRoot.String() +
-		// self.BeaconHash.String() +
+		// shardHeader.PrevBlockHash.String() +
+		// strconv.Itoa(int(shardHeader.Height)) +
+		// strconv.Itoa(int(shardHeader.Epoch)) +
+		// strconv.Itoa(int(shardHeader.Timestamp)) +
+		// strconv.Itoa(int(shardHeader.SalaryFund)) +
+		// shardHeader.TxRoot.String() +
+		// shardHeader.ShardTxRoot.String() +
+		// shardHeader.CrossOutputCoinRoot.String() +
+		// shardHeader.ActionsRoot.String() +
+		// shardHeader.CommitteeRoot.String() +
+		// shardHeader.PendingValidatorRoot.String() +
+		// shardHeader.BeaconHash.String() +
 		// crossShardHash.String() +
-		// strconv.Itoa(int(self.BeaconHeight))
+		// strconv.Itoa(int(shardHeader.BeaconHeight))
 	return common.DoubleHashH([]byte(record))
 }
