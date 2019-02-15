@@ -173,19 +173,19 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	json.Unmarshal(parentBlock, &parentBlockInterface)
 	// Verify block height with parent block
 	if parentBlockInterface.Header.Height+1 != block.Header.Height {
-		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
+		return NewBlockChainError(BlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
 	// Verify epoch with parent block
 	if (block.Header.Height != 1) && (block.Header.Height%common.EPOCH == 1) && (parentBlockInterface.Header.Epoch != block.Header.Epoch-1) {
-		return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
+		return NewBlockChainError(EpochError, errors.New("lock height and Epoch is not compatiable"))
 	}
 	// Verify timestamp with parent block
 	if block.Header.Timestamp <= parentBlockInterface.Header.Timestamp {
-		return NewBlockChainError(TimestampError, errors.New("Timestamp of new block can't equal to parent block"))
+		return NewBlockChainError(TimestampError, errors.New("timestamp of new block can't equal to parent block"))
 	}
 
 	if !VerifyHashFromShardState(block.Body.ShardState, block.Header.ShardStateHash) {
-		return NewBlockChainError(ShardStateHashError, errors.New("Shard state hash is not correct"))
+		return NewBlockChainError(ShardStateHashError, errors.New("shard state hash is not correct"))
 	}
 
 	tempInstructionArr := []string{}
@@ -193,7 +193,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		tempInstructionArr = append(tempInstructionArr, strs...)
 	}
 	if !VerifyHashFromStringArray(tempInstructionArr, block.Header.InstructionHash) {
-		return NewBlockChainError(InstructionHashError, errors.New("Instruction hash is not correct"))
+		return NewBlockChainError(InstructionHashError, errors.New("instruction hash is not correct"))
 	}
 	// Shard state must in right format
 	// state[i].Height must less than state[i+1].Height and state[i+1].Height - state[i].Height = 1
@@ -203,7 +203,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 			// 	return NewBlockChainError(ShardStateError, errors.New("Shardstates are not in right format"))
 			// }
 			if shardStates[i+1].Height-shardStates[i].Height != 1 {
-				return NewBlockChainError(ShardStateError, errors.New("Shardstates are not in right format"))
+				return NewBlockChainError(ShardStateError, errors.New("shardstates are not in right format"))
 			}
 		}
 	}
@@ -215,14 +215,14 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 			shardStates := block.Body.ShardState[shardID]
 			for index, shardState := range shardStates {
 				if shardBlocks[index].Header.Height != shardState.Height {
-					return NewBlockChainError(ShardStateError, errors.New("Shardstate fail to verify with ShardToBeacon Block in pool"))
+					return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 				}
 				blockHash := shardBlocks[index].Header.Hash()
 				if strings.Compare(blockHash.String(), shardState.Hash.String()) != 0 {
-					return NewBlockChainError(ShardStateError, errors.New("Shardstate fail to verify with ShardToBeacon Block in pool"))
+					return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 				}
 				if !reflect.DeepEqual(shardBlocks[index].Header.CrossShards, shardState.CrossShard) {
-					return NewBlockChainError(ShardStateError, errors.New("Shardstate fail to verify with ShardToBeacon Block in pool"))
+					return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 				}
 			}
 			// Only accept block in one epoch
@@ -234,15 +234,15 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 				if index == 0 && err != nil {
 					currentCommittee, _, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, common.COMMITEES, common.OFFSET)
 					if err != nil {
-						return NewBlockChainError(ShardStateError, errors.New("Shardstate fail to verify with ShardToBeacon Block in pool"))
+						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 					}
 					err = ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
 					if err != nil {
-						return NewBlockChainError(ShardStateError, errors.New("Shardstate fail to verify with ShardToBeacon Block in pool"))
+						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 					}
 				}
 				if index != 0 && err != nil {
-					return NewBlockChainError(ShardStateError, errors.New("Shardstate fail to verify with ShardToBeacon Block in pool"))
+					return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 				}
 			}
 		}
@@ -266,7 +266,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 */
 func (blockchain *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, isVerifySig bool) error {
 	if len(block.ValidatorsIdx) < (len(blockchain.BeaconCommittee) >> 1) {
-		return NewBlockChainError(SignatureError, errors.New("Block validators and Beacon committee is not compatible"))
+		return NewBlockChainError(SignatureError, errors.New("block validators and Beacon committee is not compatible"))
 	}
 	//=============Verify aggegrate signature
 	if isVerifySig {
@@ -277,29 +277,29 @@ func (blockchain *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconB
 	}
 	//=============End Verify Aggegrate signature
 	if blockchain.BeaconHeight+1 != block.Header.Height {
-		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
+		return NewBlockChainError(BlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
 	if !bytes.Equal(blockchain.BestBlockHash.GetBytes(), block.Header.PrevBlockHash.GetBytes()) {
-		return NewBlockChainError(BlockHeightError, errors.New("Previous us block should be :"+blockchain.BestBlockHash.String()))
+		return NewBlockChainError(BlockHeightError, errors.New("previous us block should be :"+blockchain.BestBlockHash.String()))
 	}
 	if block.Header.Height%common.EPOCH == 1 && blockchain.BeaconEpoch+1 != block.Header.Epoch {
-		return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
+		return NewBlockChainError(EpochError, errors.New("block height and Epoch is not compatiable"))
 	}
 	if block.Header.Height%common.EPOCH != 1 && blockchain.BeaconEpoch != block.Header.Epoch {
-		return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
+		return NewBlockChainError(EpochError, errors.New("block height and Epoch is not compatiable"))
 	}
 	//=============Verify Stakers
 	newBeaconCandidate, newShardCandidate := GetStakingCandidate(*block)
 	if !reflect.DeepEqual(newBeaconCandidate, []string{}) {
 		validBeaconCandidate := blockchain.GetValidStakers(newBeaconCandidate)
 		if !reflect.DeepEqual(validBeaconCandidate, newBeaconCandidate) {
-			return NewBlockChainError(CandidateError, errors.New("Beacon candidate list is INVALID"))
+			return NewBlockChainError(CandidateError, errors.New("beacon candidate list is INVALID"))
 		}
 	}
 	if !reflect.DeepEqual(newShardCandidate, []string{}) {
 		validShardCandidate := blockchain.GetValidStakers(newShardCandidate)
 		if !reflect.DeepEqual(validShardCandidate, newShardCandidate) {
-			return NewBlockChainError(CandidateError, errors.New("Shard candidate list is INVALID"))
+			return NewBlockChainError(CandidateError, errors.New("shard candidate list is INVALID"))
 		}
 	}
 	//=============End Verify Stakers
@@ -336,7 +336,7 @@ func (blockchain *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *Beacon
 	strs = append(strs, blockchain.BeaconPendingValidator...)
 	isOk = VerifyHashFromStringArray(strs, block.Header.ValidatorsRoot)
 	if !isOk {
-		return NewBlockChainError(HashError, errors.New("Error verify Beacon Validator root"))
+		return NewBlockChainError(HashError, errors.New("error verify Beacon Validator root"))
 	}
 
 	strs = []string{}
@@ -344,7 +344,7 @@ func (blockchain *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *Beacon
 	strs = append(strs, blockchain.CandidateBeaconWaitingForNextRandom...)
 	isOk = VerifyHashFromStringArray(strs, block.Header.BeaconCandidateRoot)
 	if !isOk {
-		return NewBlockChainError(HashError, errors.New("Error verify Beacon Candidate root"))
+		return NewBlockChainError(HashError, errors.New("error verify Beacon Candidate root"))
 	}
 
 	strs = []string{}
@@ -352,12 +352,12 @@ func (blockchain *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *Beacon
 	strs = append(strs, blockchain.CandidateShardWaitingForNextRandom...)
 	isOk = VerifyHashFromStringArray(strs, block.Header.ShardCandidateRoot)
 	if !isOk {
-		return NewBlockChainError(HashError, errors.New("Error verify Shard Candidate root"))
+		return NewBlockChainError(HashError, errors.New("error verify Shard Candidate root"))
 	}
 
 	isOk = VerifyHashFromMapByteString(blockchain.ShardPendingValidator, blockchain.ShardCommittee, block.Header.ShardValidatorsRoot)
 	if !isOk {
-		return NewBlockChainError(HashError, errors.New("Error verify shard validator root"))
+		return NewBlockChainError(HashError, errors.New("error verify shard validator root"))
 	}
 
 	// COMMENT FOR TESTING
@@ -391,7 +391,7 @@ func (blockchain *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	newShardCandidate := []string{}
 	// Logger.log.Infof("Start processing new block at height %d, with hash %+v", newBlock.Header.Height, *newBlock.Hash())
 	if newBlock == nil {
-		return errors.New("Null pointer")
+		return errors.New("null pointer")
 	}
 	// signal of random parameter from beacon block
 	randomFlag := false
@@ -680,10 +680,10 @@ func calculateHash(candidate string, rand int64) (shardID byte) {
 // return value: #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator #5 error
 func SwapValidator(pendingValidators []string, currentValidators []string, maxCommittee int, offset int) ([]string, []string, []string, []string, error) {
 	if maxCommittee < 0 || offset < 0 {
-		panic("Committee can't be zero")
+		panic("committee can't be zero")
 	}
 	if offset == 0 {
-		return []string{}, pendingValidators, currentValidators, []string{}, errors.New("Can't not swap 0 validator")
+		return []string{}, pendingValidators, currentValidators, []string{}, errors.New("can't not swap 0 validator")
 	}
 	// if number of pending validator is less or equal than offset, set offset equal to number of pending validator
 	if offset > len(pendingValidators) {
@@ -691,10 +691,10 @@ func SwapValidator(pendingValidators []string, currentValidators []string, maxCo
 	}
 	// if swap offset = 0 then do nothing
 	if offset == 0 {
-		return pendingValidators, currentValidators, []string{}, []string{}, errors.New("No pending validator for swapping")
+		return pendingValidators, currentValidators, []string{}, []string{}, errors.New("no pending validator for swapping")
 	}
 	if offset > maxCommittee {
-		return pendingValidators, currentValidators, []string{}, []string{}, errors.New("Trying to swap too many validator")
+		return pendingValidators, currentValidators, []string{}, []string{}, errors.New("trying to swap too many validator")
 	}
 	tempValidators := []string{}
 	swapValidator := []string{}
@@ -743,14 +743,14 @@ func SwapValidator(pendingValidators []string, currentValidators []string, maxCo
 func RemoveValidator(validators []string, removedValidators []string) ([]string, error) {
 	// if number of pending validator is less or equal than offset, set offset equal to number of pending validator
 	if len(removedValidators) > len(validators) {
-		return validators, errors.New("Trying to remove too many validators")
+		return validators, errors.New("trying to remove too many validators")
 	}
 
 	for index, validator := range removedValidators {
 		if strings.Compare(validators[index], validator) == 0 {
 			validators = validators[1:]
 		} else {
-			return validators, errors.New("Remove Validator with Wrong Format")
+			return validators, errors.New("remove Validator with Wrong Format")
 		}
 	}
 	return validators, nil
