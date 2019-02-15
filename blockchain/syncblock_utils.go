@@ -7,7 +7,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
-func getBlkNeedToGetByHash(blksHash []common.Hash, loadedData interface{}, init bool, peerID libp2p.ID) []common.Hash {
+func getBlkNeedToGetByHash(blksHash []common.Hash, loadedData interface{}, init bool, peerID libp2p.ID) ([]common.Hash, interface{}) {
 	var blksNeedToGet []common.Hash
 	var blksSyncByHash *map[string]peerSyncTimestamp
 	if init {
@@ -39,10 +39,10 @@ func getBlkNeedToGetByHash(blksHash []common.Hash, loadedData interface{}, init 
 		}
 		blksNeedToGet = append(blksNeedToGet, blksHash...)
 	}
-	return blksNeedToGet
+	return blksNeedToGet, blksSyncByHash
 }
 
-func getBlkNeedToGetByHeight(fromHeight uint64, toHeight uint64, loadedData interface{}, init bool, peerID libp2p.ID) map[uint64]uint64 {
+func getBlkNeedToGetByHeight(fromHeight uint64, toHeight uint64, loadedData interface{}, init bool, peerID libp2p.ID) (map[uint64]uint64, interface{}) {
 	var blkBatchsNeedToGet map[uint64]uint64
 	blkBatchsNeedToGet = make(map[uint64]uint64)
 	var blksSyncByHeight *map[uint64]peerSyncTimestamp
@@ -96,7 +96,7 @@ func getBlkNeedToGetByHeight(fromHeight uint64, toHeight uint64, loadedData inte
 		}
 		blkBatchsNeedToGet[fromHeight] = toHeight
 	}
-	return blkBatchsNeedToGet
+	return blkBatchsNeedToGet, blksSyncByHeight
 }
 
 //GetDiffHashesOf Get unique hashes of 1st slice compare to 2nd slice
