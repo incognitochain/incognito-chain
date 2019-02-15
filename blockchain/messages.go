@@ -19,6 +19,13 @@ func (self *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]
 		nodeMode := self.config.NodeMode
 		if userRole == "beacon-proposer" || userRole == "beacon-validator" {
 			pState.ShardToBeaconPool = shardToBeaconPool
+			for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
+				if shardState, ok := (*shard)[shardID]; ok {
+					if shardState.Height > self.BestState.Beacon.BestShardHeight[shardID] {
+						pState.Shard[shardID] = &shardState
+					}
+				}
+			}
 		}
 		if userRole == "shard" && (nodeMode == "auto" || nodeMode == "shard") {
 			userRole = self.BestState.Shard[userShardID].GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
