@@ -1155,13 +1155,16 @@ func (serverObj *Server) BoardcastNodeState() error {
 		serverObj.blockChain.BestState.Beacon.BestBlockHash,
 		serverObj.blockChain.BestState.Beacon.Hash(),
 	}
-	for _, shardID := range serverObj.blockChain.GetCurrentSyncShards() {
+	for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
 		msg.(*wire.MessagePeerState).Shards[shardID] = blockchain.ChainState{
 			serverObj.blockChain.BestState.Shard[shardID].ShardHeight,
 			serverObj.blockChain.BestState.Shard[shardID].BestShardBlockHash,
 			serverObj.blockChain.BestState.Shard[shardID].Hash(),
 		}
 	}
+	// for _, shardID := range serverObj.blockChain.GetCurrentSyncShards() {
+
+	// }
 	msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidPendingBlockHash()
 
 	userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58())
