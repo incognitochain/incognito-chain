@@ -2,7 +2,10 @@ package metadata
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -93,4 +96,18 @@ func (bgtr *BuyGOVTokenRequest) Hash() *common.Hash {
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
+}
+
+func (bgtr *BuyGOVTokenRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+	actionContent := map[string]interface{}{
+		"txReqId": *(tx.Hash()),
+		"meta":    *bgtr,
+	}
+	actionContentBytes, err := json.Marshal(actionContent)
+	if err != nil {
+		return [][]string{}, err
+	}
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	action := []string{strconv.Itoa(BuyGOVTokenRequestMeta), actionContentBase64Str}
+	return [][]string{action}, nil
 }

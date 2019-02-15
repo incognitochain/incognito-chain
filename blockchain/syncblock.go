@@ -330,7 +330,7 @@ func (self *BlockChain) InsertBlockFromPool() {
 		Logger.log.Error(err)
 	} else {
 		for idx, newBlk := range blks {
-			err = self.InsertBeaconBlock(&newBlk)
+			err = self.InsertBeaconBlock(&newBlk, false)
 			if err != nil {
 				Logger.log.Error(err)
 				for idx2 := idx; idx2 < len(blks); idx2++ {

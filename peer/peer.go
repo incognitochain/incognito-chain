@@ -148,12 +148,12 @@ func (peerObj *Peer) HashToPool(hash string) {
 	if peerObj.messagePool == nil {
 		peerObj.messagePool = make(map[string]bool)
 	}
-	ok, _ := peerObj.messagePool[hash]
+	ok := peerObj.messagePool[hash]
 	if ok {
 		return
 	}
 	if len(peerObj.messagePool) >= MESSAGE_HASH_POOL_SIZE {
-		for k, _ := range peerObj.messagePool {
+		for k := range peerObj.messagePool {
 			delete(peerObj.messagePool, k)
 			break
 		}
@@ -245,6 +245,7 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 	peerObj.cStopConn = make(chan struct{})
 
 	peerObj.peerConnsMtx = sync.Mutex{}
+	peerObj.pendingPeersMtx = sync.Mutex{}
 	return &peerObj, nil
 }
 
@@ -259,11 +260,10 @@ func (peerObj *Peer) Start() {
 
 	go peerObj.processConn()
 
-	select {
-	case <-peerObj.cStop:
+	_, ok := <-peerObj.cStop
+	if !ok { // stop
 		close(peerObj.cStopConn)
-		Logger.log.Warnf("PEER server shutdown complete %s", peerObj.PeerID)
-		break
+		Logger.log.Criticalf("PEER server shutdown complete %s", peerObj.PeerID)
 	}
 }
 
@@ -291,7 +291,7 @@ func (peerObj *Peer) processConn() {
 	for {
 		select {
 		case <-peerObj.cStopConn:
-			Logger.log.Info("ProcessConn QUIT")
+			Logger.log.Critical("ProcessConn QUIT")
 			return
 		case newPeerMsg := <-peerObj.cNewConn:
 			Logger.log.Infof("ProcessConn START CONN %s %s", newPeerMsg.Peer.PeerID.Pretty(), newPeerMsg.Peer.RawAddress)
@@ -324,15 +324,15 @@ func (peerObj *Peer) processConn() {
 }
 
 func (peerObj *Peer) ConnPending(peer *Peer) {
-	peerObj.peerConnsMtx.Lock()
-	defer peerObj.peerConnsMtx.Unlock()
+	peerObj.pendingPeersMtx.Lock()
+	defer peerObj.pendingPeersMtx.Unlock()
 	peerIDStr := peer.PeerID.Pretty()
 	peerObj.PendingPeers[peerIDStr] = peer
 }
 
 func (peerObj *Peer) ConnEstablished(peer *Peer) {
-	peerObj.peerConnsMtx.Lock()
-	defer peerObj.peerConnsMtx.Unlock()
+	peerObj.pendingPeersMtx.Lock()
+	defer peerObj.pendingPeersMtx.Unlock()
 	peerIDStr := peer.PeerID.Pretty()
 	_, ok := peerObj.PendingPeers[peerIDStr]
 	if ok {
@@ -342,7 +342,11 @@ func (peerObj *Peer) ConnEstablished(peer *Peer) {
 
 func (peerObj *Peer) ConnCanceled(peer *Peer) {
 	peerObj.peerConnsMtx.Lock()
-	defer peerObj.peerConnsMtx.Unlock()
+	peerObj.pendingPeersMtx.Lock()
+	defer func() {
+		peerObj.peerConnsMtx.Unlock()
+		peerObj.pendingPeersMtx.Unlock()
+	}()
 	peerIDStr := peer.PeerID.Pretty()
 	_, ok := peerObj.PeerConns[peerIDStr]
 	if ok {
@@ -519,8 +523,8 @@ func (peerObj *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, er
 		case <-peerConn.cClose:
 			Logger.log.Infof("NewPeerConnection closed stream PEER Id %s", peerConn.RemotePeerID.Pretty())
 			go func() {
-				select {
-				case <-peerConn.cDisconnect:
+				_, ok := <-peerConn.cDisconnect
+				if !ok {
 					Logger.log.Infof("NewPeerConnection disconnected after closed stream PEER Id %s", peerConn.RemotePeerID.Pretty())
 					return
 				}
@@ -606,8 +610,8 @@ func (peerObj *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 		case <-peerConn.cClose:
 			Logger.log.Infof("HandleStream closed stream PEER Id %s", peerConn.RemotePeerID.Pretty())
 			go func() {
-				select {
-				case <-peerConn.cDisconnect:
+				_, ok := <-peerConn.cDisconnect
+				if !ok {
 					Logger.log.Infof("HandleStream disconnected after closed stream PEER Id %s", peerConn.RemotePeerID.Pretty())
 					return
 				}
@@ -636,17 +640,17 @@ func (peerObj *Peer) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<- str
 }
 
 func (peerObj *Peer) Stop() {
-	Logger.log.Infof("Stopping PEER %s", peerObj.PeerID.Pretty())
+	Logger.log.Warnf("Stopping PEER %s", peerObj.PeerID.Pretty())
 
 	peerObj.Host.Close()
 	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
 	for _, peerConn := range peerObj.PeerConns {
 		peerConn.updateConnState(ConnCanceled)
 	}
-	peerObj.peerConnsMtx.Unlock()
 
 	close(peerObj.cStop)
-	Logger.log.Infof("PEER %s stopped", peerObj.PeerID.Pretty())
+	Logger.log.Criticalf("PEER %s stopped", peerObj.PeerID.Pretty())
 }
 
 /*
@@ -716,7 +720,7 @@ func (peerObj *Peer) retryPeerConnection(peerConn *PeerConn) {
 /*
 renewPeerConnection - create peer conn by goroutines for pending peers(reconnect)
 */
-func (peerObj *Peer) renewPeerConnection() {
+/*func (peerObj *Peer) renewPeerConnection() {
 	peerObj.pendingPeersMtx.Lock()
 	defer peerObj.pendingPeersMtx.Unlock()
 	if len(peerObj.PendingPeers) > 0 {
@@ -727,7 +731,7 @@ func (peerObj *Peer) renewPeerConnection() {
 		}
 		Logger.log.Infof("*end - Creating peer conn to %d pending peers", len(peerObj.PendingPeers))
 	}
-}
+}*/
 
 func (peerObj *Peer) GetPeerConnOfAll() []*PeerConn {
 	peerObj.peerConnsMtx.Lock()

@@ -75,3 +75,17 @@ func (bbReq *BuyBackRequest) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
+// func (bbReq *BuyBackRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+// 	actionContent := map[string]interface{}{
+// 		"txReqId": *(tx.Hash()),
+// 		"meta":    *bsReq,
+// 	}
+// 	actionContentBytes, err := json.Marshal(actionContent)
+// 	if err != nil {
+// 		return [][]string{}, err
+// 	}
+// 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+// 	action := []string{strconv.Itoa(BuyFromGOVRequestMeta), actionContentBase64Str}
+// 	return [][]string{action}, nil
+// }

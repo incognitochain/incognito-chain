@@ -377,6 +377,7 @@ func (rpcServer RpcServer) handleListPrivacyCustomToken(params interface{}, clos
 	return result, nil
 }
 
+// handleGetPublicKeyFromPaymentAddress - return base58check encode of public key which is got from payment address
 func (rpcServer RpcServer) handleGetPublicKeyFromPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	paymentAddress := arrayParams[0].(string)
@@ -425,6 +426,7 @@ func (rpcServer RpcServer) handleGetRecentTransactionsByBlockNumber(params inter
 	return result, nil
 }
 
+// ------------------------------------ Defragment output coin of account by combine many input coin in to 1 output coin --------------------
 /*
 handleImportAccount - import a new account by private-key
 - Param #1: private-key string
@@ -433,7 +435,7 @@ handleImportAccount - import a new account by private-key
 */
 func (rpcServer RpcServer) handleDefragmentAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	var err error
-	data, err := rpcServer.handleCreateRawDefragmentAccountTransaction(params, closeChan)
+	data, err := rpcServer.createRawDefragmentAccountTransaction(params, closeChan)
 	if err.(*RPCError) != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
@@ -453,11 +455,11 @@ func (rpcServer RpcServer) handleDefragmentAccount(params interface{}, closeChan
 }
 
 /*
-// handleCreateTransaction handles createtransaction commands.
+// createRawDefragmentAccountTransaction.
 */
-func (rpcServer RpcServer) handleCreateRawDefragmentAccountTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) createRawDefragmentAccountTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	var err error
-	tx, err := rpcServer.handleBuildRawDefragmentAccountTransaction(params, nil)
+	tx, err := rpcServer.buildRawDefragmentAccountTransaction(params, nil)
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
@@ -476,7 +478,8 @@ func (rpcServer RpcServer) handleCreateRawDefragmentAccountTransaction(params in
 	return result, nil
 }
 
-func (rpcServer RpcServer) handleBuildRawDefragmentAccountTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
+// buildRawDefragmentAccountTransaction
+func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 4 {
 		return nil, NewRPCError(ErrRPCInvalidParams, nil)
@@ -563,6 +566,7 @@ func (rpcServer RpcServer) handleBuildRawDefragmentAccountTransaction(params int
 	return &tx, nil
 }
 
+//calculateOutputCoinsByMinValue
 func (rpcServer RpcServer) calculateOutputCoinsByMinValue(outCoins []*privacy.OutputCoin, maxVal uint64) ([]*privacy.OutputCoin, uint64) {
 	outCoinsTmp := make([]*privacy.OutputCoin, 0)
 	amount := uint64(0)
@@ -574,3 +578,5 @@ func (rpcServer RpcServer) calculateOutputCoinsByMinValue(outCoins []*privacy.Ou
 	}
 	return outCoinsTmp, amount
 }
+
+// ----------------------------- End ------------------------------------

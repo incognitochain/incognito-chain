@@ -42,10 +42,9 @@ type BFTProtocol struct {
 }
 
 func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (interface{}, error) {
-
-	protocol.phase = "listen"
+	protocol.phase = common.PBFT_LISTEN
 	if isProposer {
-		protocol.phase = "propose"
+		protocol.phase = common.PBFT_PROPOSE
 	}
 	Logger.log.Info("Starting PBFT protocol for " + layer)
 	protocol.multiSigScheme = new(multiSigScheme)
@@ -62,7 +61,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 			return nil, errors.New("Consensus quit")
 		default:
 			switch protocol.phase {
-			case "propose":
+			case common.PBFT_PROPOSE:
 				timeout := time.AfterFunc(ListenTimeout*time.Second, func() {
 					fmt.Println("Propose phase timeout")
 					close(protocol.cTimeout)
@@ -71,7 +70,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 					msg           wire.Message
 					readyMsgCount int
 				)
-				if layer == "beacon" {
+				if layer == common.BEACON_ROLE {
 					time.Sleep(5 * time.Second) //single-node
 					newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey)
 					if err != nil {
@@ -111,7 +110,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 					case msgReady := <-protocol.cBFTMsg:
 						if msgReady.MessageType() == wire.CmdBFTReady {
 							var bestStateHash common.Hash
-							if layer == "beacon" {
+							if layer == common.BEACON_ROLE {
 								bestStateHash = protocol.Chain.BestState.Beacon.Hash()
 							} else {
 								bestStateHash = protocol.Chain.BestState.Shard[shardID].Hash()
@@ -135,19 +134,19 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 							<-time.After(2 * time.Second)
 
 							fmt.Println("Propose block")
-							if layer == "beacon" {
+							if layer == common.BEACON_ROLE {
 								go protocol.Server.PushMessageToBeacon(msg)
 							} else {
 								go protocol.Server.PushMessageToShard(msg, shardID)
 							}
-							protocol.phase = "prepare"
+							protocol.phase = common.PBFT_PREPARE
 						} else {
 							return nil, errors.New("Didn't received enough ready msg")
 						}
 						break proposephase
 					}
 				}
-			case "listen":
+			case common.PBFT_LISTEN:
 				fmt.Println("Listen phase")
 				timeout := time.AfterFunc(ListenTimeout*time.Second, func() {
 					fmt.Println("Listen phase timeout")
@@ -159,7 +158,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 					case msgPropose := <-protocol.cBFTMsg:
 						if msgPropose.MessageType() == wire.CmdBFTPropose {
 							fmt.Println("Propose block received")
-							if layer == "beacon" {
+							if layer == common.BEACON_ROLE {
 								pendingBlk := blockchain.BeaconBlock{}
 								pendingBlk.UnmarshalJSON(msgPropose.(*wire.MessageBFTPropose).Block)
 								blkHash := pendingBlk.Header.Hash()
@@ -168,7 +167,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 									Logger.log.Error(err)
 									continue
 								}
-								err = protocol.Chain.VerifyPreSignBeaconBlock(&pendingBlk)
+								err = protocol.Chain.VerifyPreSignBeaconBlock(&pendingBlk, true)
 								if err != nil {
 									Logger.log.Error(err)
 									continue
@@ -179,6 +178,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 								pendingBlk := blockchain.ShardBlock{}
 								pendingBlk.UnmarshalJSON(msgPropose.(*wire.MessageBFTPropose).Block)
 								blkHash := pendingBlk.Header.Hash()
+								//TODO: Check Shard ID
 								err := cashec.ValidateDataB58(pendingBlk.Header.Producer, pendingBlk.ProducerSig, blkHash.GetBytes())
 								if err != nil {
 									Logger.log.Error(err)
@@ -193,7 +193,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 								protocol.multiSigScheme.dataToSig = pendingBlk.Header.Hash()
 							}
 
-							protocol.phase = "prepare"
+							protocol.phase = common.PBFT_PREPARE
 							timeout.Stop()
 							break listenphase
 						}
@@ -201,7 +201,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 						return nil, errors.New("Listen phase timeout")
 					}
 				}
-			case "prepare":
+			case common.PBFT_PREPARE:
 				fmt.Println("Prepare phase")
 				time.AfterFunc(PrepareTimeout*time.Second, func() {
 					fmt.Println("Prepare phase timeout")
@@ -214,7 +214,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 						Logger.log.Error(err)
 						return
 					}
-					if layer == "beacon" {
+					if layer == common.BEACON_ROLE {
 						protocol.Server.PushMessageToBeacon(msg)
 					} else {
 						protocol.Server.PushMessageToShard(msg, shardID)
@@ -245,11 +245,11 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 							return nil, err
 						}
 
-						protocol.phase = "commit"
+						protocol.phase = common.PBFT_COMMIT
 						break preparephase
 					}
 				}
-			case "commit":
+			case common.PBFT_COMMIT:
 				fmt.Println("Commit phase")
 				cmTimeout := time.AfterFunc(CommitTimeout*time.Second, func() {
 					fmt.Println("Commit phase timeout")
@@ -263,7 +263,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 						return
 					}
 					fmt.Println("Sending out commit msg")
-					if layer == "beacon" {
+					if layer == common.BEACON_ROLE {
 						protocol.Server.PushMessageToBeacon(msg)
 					} else {
 						protocol.Server.PushMessageToShard(msg, shardID)
@@ -312,7 +312,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 
 						fmt.Println("\n \n Block consensus reach", ValidatorsIdxR, ValidatorsIdxAggSig, AggregatedSig)
 
-						if layer == "beacon" {
+						if layer == common.BEACON_ROLE {
 							protocol.pendingBlock.(*blockchain.BeaconBlock).R = protocol.multiSigScheme.combine.R
 							protocol.pendingBlock.(*blockchain.BeaconBlock).AggregatedSig = AggregatedSig
 							protocol.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx = make([][]int, 2)
