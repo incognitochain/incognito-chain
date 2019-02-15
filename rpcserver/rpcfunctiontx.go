@@ -4,15 +4,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"math/big"
 	"time"
-
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
@@ -28,8 +25,8 @@ import (
 //
 func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
-	result := jsonresult.ListUnspentResult{
-		ListUnspentResultItems: make(map[string]jsonresult.ListUnspentResultItem),
+	result := jsonresult.ListOutputCoins{
+		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
 
 	// get params
@@ -72,21 +69,20 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		item := jsonresult.ListUnspentResultItem{
-			OutCoins: make([]jsonresult.OutCoin, 0),
-		}
+		item := make([]jsonresult.OutCoin, 0)
+
 		for _, outCoin := range outputCoins {
-			item.OutCoins = append(item.OutCoins, jsonresult.OutCoin{
+			item = append(item, jsonresult.OutCoin{
 				//SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
 				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),
 				Value:          outCoin.CoinDetails.Value,
 				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], common.ZeroByte),
 				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), common.ZeroByte),
-				Randomness:     outCoin.CoinDetails.Randomness.Bytes(),
-				SNDerivator:    outCoin.CoinDetails.SNDerivator.Bytes(),
+				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.Randomness.Bytes(), common.ZeroByte),
+				SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.SNDerivator.Bytes(), common.ZeroByte),
 			})
 		}
-		result.ListUnspentResultItems[readonlyKeyStr] = item
+		result.Outputs[readonlyKeyStr] = item
 	}
 
 	return result, nil
@@ -580,7 +576,7 @@ func (rpcServer RpcServer) handleCreateSignatureOnCustomTokenTx(params interface
 
 // handleRandomCommitments - from input of outputcoin, random to create data for create new tx
 func (rpcServer RpcServer) handleRandomCommitments(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
+	/*arrayParams := common.InterfaceSlice(params)
 
 	// #1: payment address
 	paymentAddressStr := arrayParams[0].(string)
@@ -592,10 +588,9 @@ func (rpcServer RpcServer) handleRandomCommitments(params interface{}, closeChan
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 
 	// #2: available inputCoin from old outputcoin
-	data := jsonresult.ListUnspentResultItem{}
-	data.Init(arrayParams[0])
+	data := make([]jsonresult.OutCoin, 0)
 	usableOutputCoins := []*privacy.OutputCoin{}
-	for _, item := range data.OutCoins {
+	for _, item := range data {
 		i := &privacy.OutputCoin{
 			CoinDetails: &privacy.Coin{
 				Value:       item.Value,
@@ -628,7 +623,8 @@ func (rpcServer RpcServer) handleRandomCommitments(params interface{}, closeChan
 	result["CommitmentIndices"] = commitmentIndexs
 	result["MyCommitmentIndexs"] = myCommitmentIndexs
 
-	return result, nil
+	return result, nil*/
+	return nil, nil
 }
 
 // handleHasSerialNumbers - check list serial numbers existed in db of node
