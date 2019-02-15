@@ -122,7 +122,7 @@ func (self *BestStateBeacon) Hash() common.Hash {
 	res = append(res, self.BestBlock.Hash().GetBytes()...)
 	res = append(res, self.BestBlock.Hash().GetBytes()...)
 
-	for k, _ := range self.BestShardHash {
+	for k := range self.BestShardHash {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
@@ -131,7 +131,7 @@ func (self *BestStateBeacon) Hash() common.Hash {
 		res = append(res, hash.GetBytes()...)
 	}
 	keys = []int{}
-	for k, _ := range self.BestShardHeight {
+	for k := range self.BestShardHeight {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
@@ -158,7 +158,7 @@ func (self *BestStateBeacon) Hash() common.Hash {
 		res = append(res, []byte(value)...)
 	}
 	keys = []int{}
-	for k, _ := range self.ShardCommittee {
+	for k := range self.ShardCommittee {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
@@ -168,7 +168,7 @@ func (self *BestStateBeacon) Hash() common.Hash {
 		}
 	}
 	keys = []int{}
-	for k, _ := range self.ShardPendingValidator {
+	for k := range self.ShardPendingValidator {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
@@ -184,7 +184,7 @@ func (self *BestStateBeacon) Hash() common.Hash {
 	} else {
 		res = append(res, []byte("false")...)
 	}
-	for k, _ := range self.Params {
+	for k := range self.Params {
 		keyStrs = append(keyStrs, k)
 	}
 	sort.Strings(keyStrs)
