@@ -362,7 +362,7 @@ func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) 
 		}
 	}
 
-	for k, _ := range byteMap {
+	for k := range byteMap {
 		if byteMap[k] == 1 {
 			crossIDs = append(crossIDs, byte(k))
 		}
