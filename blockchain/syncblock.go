@@ -292,6 +292,11 @@ func (self *BlockChain) ResetCurrentSyncRecord() {
 }
 
 //SyncBlkBeacon Send a req to sync beacon block
+/*
+	- by Hash + blksHash: get by hash
+	- from + to: get from main chain by height
+	- GetFromPool: ignore mainchain, used only for hash
+*/
 func (self *BlockChain) SyncBlkBeacon(byHash bool, getFromPool bool, blksHash []common.Hash, from uint64, to uint64, peerID libp2p.ID) {
 	if byHash {
 		//Sync block by hash
@@ -315,6 +320,11 @@ func (self *BlockChain) SyncBlkBeacon(byHash bool, getFromPool bool, blksHash []
 }
 
 //SyncBlkShard Send a req to sync shard block
+/*
+	- by Hash + blksHash: get by hash
+	- from + to: get from main chain by height
+	- GetFromPool: ignore mainchain, used only for hash
+*/
 func (self *BlockChain) SyncBlkShard(shardID byte, byHash bool, getFromPool bool, blksHash []common.Hash, from uint64, to uint64, peerID libp2p.ID) {
 	if byHash {
 		//Sync block by hash
@@ -338,6 +348,11 @@ func (self *BlockChain) SyncBlkShard(shardID byte, byHash bool, getFromPool bool
 }
 
 //SyncBlkShardToBeacon Send a req to sync shardToBeacon block
+/*
+	- by Hash + blksHash: get by hash
+	- from + to: get from main chain by height
+	- GetFromPool: ignore mainchain, used only for hash
+*/
 func (self *BlockChain) SyncBlkShardToBeacon(shardID byte, byHash bool, getFromPool bool, blksHash []common.Hash, from uint64, to uint64, peerID libp2p.ID) {
 	if byHash {
 		//Sync block by hash
