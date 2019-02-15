@@ -185,15 +185,14 @@ func (self *BlockChain) StartSyncBlk() {
 						}
 					}
 				case common.SHARD_ROLE:
-					if userShardRole == common.SHARD_PENDING_ROLE || userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
-						if _, ok := self.syncStatus.Shards[userShardID]; !ok {
-							self.SyncShard(userShardID)
-						}
-						if userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
-							for shardID, peer := range RCS.CrossShardBlks {
-								for peerID, blks := range peer {
-									self.SyncBlkCrossShard(true, blks, shardID, userShardID, peerID)
-								}
+					if _, ok := self.syncStatus.Shards[userShardID]; !ok {
+						self.SyncShard(userShardID)
+					}
+
+					if userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
+						for shardID, peer := range RCS.CrossShardBlks {
+							for peerID, blks := range peer {
+								self.SyncBlkCrossShard(true, blks, shardID, userShardID, peerID)
 							}
 						}
 					}
@@ -222,17 +221,16 @@ func (self *BlockChain) StartSyncBlk() {
 					}
 				}
 			case common.NODEMODE_SHARD:
-				if userShardRole == common.SHARD_PENDING_ROLE || userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
-					if _, ok := self.syncStatus.Shards[userShardID]; !ok {
-						self.SyncShard(userShardID)
-					}
-					if userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
-						for shardID, peer := range RCS.CrossShardBlks {
-							for peerID, blks := range peer {
-								self.SyncBlkCrossShard(true, blks, shardID, userShardID, peerID)
-							}
+				if _, ok := self.syncStatus.Shards[userShardID]; !ok {
+					self.SyncShard(userShardID)
+				}
+				if userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
+					for shardID, peer := range RCS.CrossShardBlks {
+						for peerID, blks := range peer {
+							self.SyncBlkCrossShard(true, blks, shardID, userShardID, peerID)
 						}
 					}
+
 				}
 			}
 
@@ -379,6 +377,11 @@ func (self *BlockChain) SyncBlkShard(shardID byte, byHash bool, getFromPool bool
 	- GetFromPool: ignore mainchain, used only for hash
 */
 func (self *BlockChain) SyncBlkShardToBeacon(shardID byte, byHash bool, getFromPool bool, blksHash []common.Hash, from uint64, to uint64, peerID libp2p.ID) {
+	fmt.Println()
+	fmt.Println()
+	fmt.Println("SyncShardToBeacon", shardID, from, to)
+	fmt.Println()
+	fmt.Println()
 	if byHash {
 		//Sync block by hash
 		tempInterface, init := self.syncStatus.CurrentlySyncShardToBeaconBlk.Load(SyncByHashKey + fmt.Sprint(shardID))
