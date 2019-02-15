@@ -8,53 +8,6 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
-func (self *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
-	if _, ok := self.syncStatus.Shards[newBlk.Header.ShardID]; ok {
-		fmt.Println("Shard block received")
-		if self.BestState.Shard[newBlk.Header.ShardID].ShardHeight < newBlk.Header.Height {
-			blkHash := newBlk.Header.Hash()
-			err := cashec.ValidateDataB58(newBlk.Header.Producer, newBlk.ProducerSig, blkHash.GetBytes())
-			if err != nil {
-				Logger.log.Error(err)
-				return
-			} else {
-				if self.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
-					err = self.InsertShardBlock(newBlk)
-					if err != nil {
-						Logger.log.Error(err)
-						return
-					}
-				} else {
-					self.config.NodeShardPool.PushBlock(*newBlk)
-				}
-			}
-		}
-	}
-}
-func (self *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
-	if self.syncStatus.Beacon {
-		fmt.Println("Beacon block received")
-		if self.BestState.Beacon.BeaconHeight < newBlk.Header.Height {
-			blkHash := newBlk.Header.Hash()
-			err := cashec.ValidateDataB58(newBlk.Header.Producer, newBlk.ProducerSig, blkHash.GetBytes())
-			if err != nil {
-				Logger.log.Error(err)
-				return
-			} else {
-				if self.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
-					err = self.InsertBeaconBlock(newBlk, false)
-					if err != nil {
-						Logger.log.Error(err)
-						return
-					}
-				} else {
-					self.config.NodeBeaconPool.PushBlock(*newBlk)
-				}
-			}
-		}
-	}
-}
-
 func (self *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]ChainState, shardToBeaconPool *map[byte][]common.Hash, crossShardPool *map[byte]map[byte][]common.Hash, peerID libp2p.ID) {
 	if beacon.Height >= self.BestState.Beacon.BeaconHeight {
 		pState := &peerState{
@@ -89,6 +42,54 @@ func (self *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]
 		self.syncStatus.PeersStateLock.Lock()
 		self.syncStatus.PeersState[pState.Peer] = pState
 		self.syncStatus.PeersStateLock.Unlock()
+	}
+}
+
+func (self *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
+	if _, ok := self.syncStatus.Shards[newBlk.Header.ShardID]; ok {
+		fmt.Println("Shard block received")
+		if self.BestState.Shard[newBlk.Header.ShardID].ShardHeight < newBlk.Header.Height {
+			blkHash := newBlk.Header.Hash()
+			err := cashec.ValidateDataB58(newBlk.Header.Producer, newBlk.ProducerSig, blkHash.GetBytes())
+			if err != nil {
+				Logger.log.Error(err)
+				return
+			} else {
+				if self.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
+					err = self.InsertShardBlock(newBlk)
+					if err != nil {
+						Logger.log.Error(err)
+						return
+					}
+				} else {
+					self.config.NodeShardPool.PushBlock(*newBlk)
+				}
+			}
+		}
+	}
+}
+
+func (self *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
+	if self.syncStatus.Beacon {
+		fmt.Println("Beacon block received")
+		if self.BestState.Beacon.BeaconHeight < newBlk.Header.Height {
+			blkHash := newBlk.Header.Hash()
+			err := cashec.ValidateDataB58(newBlk.Header.Producer, newBlk.ProducerSig, blkHash.GetBytes())
+			if err != nil {
+				Logger.log.Error(err)
+				return
+			} else {
+				if self.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
+					err = self.InsertBeaconBlock(newBlk, false)
+					if err != nil {
+						Logger.log.Error(err)
+						return
+					}
+				} else {
+					self.config.NodeBeaconPool.PushBlock(*newBlk)
+				}
+			}
+		}
 	}
 }
 
