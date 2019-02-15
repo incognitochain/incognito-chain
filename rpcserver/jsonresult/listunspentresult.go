@@ -3,11 +3,10 @@ package jsonresult
 import (
 	"encoding/json"
 	"log"
-	"math/big"
 )
 
 type ListUnspentResult struct {
-	ListUnspentResultItems map[string][]ListUnspentResultItem `json:"ListUnspentResultItems"`
+	ListUnspentResultItems map[string]ListUnspentResultItem `json:"ListUnspentResultItems"`
 }
 
 type ListUnspentResultItem struct {
@@ -26,9 +25,9 @@ func (listUnspentResultItem *ListUnspentResultItem) Init(data interface{}) {
 type OutCoin struct {
 	PublicKey      string
 	CoinCommitment string
-	SNDerivator    big.Int
+	SNDerivator    []byte
 	SerialNumber   string
-	Randomness     big.Int
+	Randomness     []byte
 	Value          uint64
 	Info           string
 }
