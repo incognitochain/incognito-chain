@@ -75,7 +75,7 @@ func (self *BlockChain) StartSyncBlk() {
 					}
 					for shardID := range self.syncStatus.Shards {
 						if shardState, ok := peerState.Shard[shardID]; ok {
-							if shardState.Height > self.BestState.Shard[shardID].ShardHeight && shardState.Height > self.BestState.Beacon.BestShardHeight[shardID] {
+							if shardState.Height > self.BestState.Shard[shardID].ShardHeight && shardState.Height >= self.BestState.Beacon.BestShardHeight[shardID] {
 								if RCS.ClosestShardsState[shardID].Height == 0 {
 									RCS.ClosestShardsState[shardID] = *shardState
 								} else {
@@ -186,7 +186,7 @@ func (self *BlockChain) StartSyncBlk() {
 					}
 				case common.SHARD_ROLE:
 					if _, ok := self.syncStatus.Shards[userShardID]; !ok {
-						self.SyncShard(userShardID)
+						self.syncStatus.Shards[userShardID] = struct{}{}
 					}
 					if userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
 						for shardID, peer := range RCS.CrossShardBlks {
@@ -221,7 +221,7 @@ func (self *BlockChain) StartSyncBlk() {
 				}
 			case common.NODEMODE_SHARD:
 				if _, ok := self.syncStatus.Shards[userShardID]; !ok {
-					self.SyncShard(userShardID)
+					self.syncStatus.Shards[userShardID] = struct{}{}
 				}
 				if userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
 					for shardID, peer := range RCS.CrossShardBlks {
@@ -236,12 +236,14 @@ func (self *BlockChain) StartSyncBlk() {
 			for shardID := range self.syncStatus.Shards {
 				currentShardReqHeight := self.BestState.Shard[shardID].ShardHeight + 1
 				for peerID := range self.syncStatus.PeersState {
-					if _, ok := self.syncStatus.PeersState[peerID].Shard[shardID]; ok {
-						if currentShardReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
-							self.SyncBlkShard(shardID, false, false, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height, peerID)
-						} else {
-							self.SyncBlkShard(shardID, false, false, nil, currentShardReqHeight, currentShardReqHeight+defaultMaxBlkReqPerPeer-1, peerID)
-							currentShardReqHeight += defaultMaxBlkReqPerPeer - 1
+					if shardState, ok := self.syncStatus.PeersState[peerID].Shard[shardID]; ok {
+						if shardState.Height >= currentShardReqHeight {
+							if currentShardReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
+								self.SyncBlkShard(shardID, false, false, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height, peerID)
+							} else {
+								self.SyncBlkShard(shardID, false, false, nil, currentShardReqHeight, currentShardReqHeight+defaultMaxBlkReqPerPeer-1, peerID)
+								currentShardReqHeight += defaultMaxBlkReqPerPeer - 1
+							}
 						}
 					}
 				}
@@ -282,6 +284,7 @@ func (self *BlockChain) StopSyncShard(shardID byte) error {
 	if _, ok := self.syncStatus.Shards[shardID]; ok {
 		if common.IndexOfByte(shardID, self.config.RelayShards) < 0 {
 			delete(self.syncStatus.Shards, shardID)
+			fmt.Println("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation stopped")
 			return nil
 		}
 		return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation can't be stopped")

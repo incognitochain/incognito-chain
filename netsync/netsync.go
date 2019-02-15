@@ -332,18 +332,18 @@ func (netSync *NetSync) HandleMessageGetBlockShard(msg *wire.MessageGetBlockShar
 		for index := msg.From; index <= msg.To; index++ {
 			blk, err := netSync.config.BlockChain.GetShardBlockByHeight(index, msg.ShardID)
 			if err != nil {
-				fmt.Println(err)
+				Logger.log.Error(err)
 				return
 			}
 			msgShardBlk, err := wire.MakeEmptyMessage(wire.CmdBlockShard)
 			if err != nil {
-				fmt.Println(err)
+				Logger.log.Error(err)
 				return
 			}
 			msgShardBlk.(*wire.MessageBlockShard).Block = *blk
 			err = netSync.config.Server.PushMessageToPeer(msgShardBlk, peerID)
 			if err != nil {
-				fmt.Println(err)
+				Logger.log.Error(err)
 			}
 		}
 	}
@@ -377,18 +377,18 @@ func (netSync *NetSync) HandleMessageGetBlockBeacon(msg *wire.MessageGetBlockBea
 		for index := msg.From; index <= msg.To; index++ {
 			blk, err := netSync.config.BlockChain.GetBeaconBlockByHeight(index)
 			if err != nil {
-				fmt.Println(err)
+				Logger.log.Error(err)
 				return
 			}
 			msgBeaconBlk, err := wire.MakeEmptyMessage(wire.CmdBlockBeacon)
 			if err != nil {
-				fmt.Println(err)
+				Logger.log.Error(err)
 				return
 			}
 			msgBeaconBlk.(*wire.MessageBlockBeacon).Block = *blk
 			err = netSync.config.Server.PushMessageToPeer(msgBeaconBlk, peerID)
 			if err != nil {
-				fmt.Println(err)
+				Logger.log.Error(err)
 			}
 		}
 	}
@@ -425,19 +425,19 @@ func (netSync *NetSync) HandleMessageGetShardToBeacon(msg *wire.MessageGetShardT
 		for index := msg.From; index <= msg.To; index++ {
 			blk, err := netSync.config.BlockChain.GetShardBlockByHeight(index, msg.ShardID)
 			if err != nil {
-				fmt.Println(err)
+				Logger.log.Error(err)
 				return
 			}
 			shardToBeaconBlk := blk.CreateShardToBeaconBlock(netSync.config.BlockChain)
 			msgShardBlk, err := wire.MakeEmptyMessage(wire.CmdBlkShardToBeacon)
 			if err != nil {
-				fmt.Println(err)
+				Logger.log.Error(err)
 				return
 			}
 			msgShardBlk.(*wire.MessageShardToBeacon).Block = *shardToBeaconBlk
 			err = netSync.config.Server.PushMessageToPeer(msgShardBlk, peerID)
 			if err != nil {
-				fmt.Println(err)
+				Logger.log.Error(err)
 			}
 		}
 	}
