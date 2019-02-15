@@ -27,7 +27,7 @@ import (
 // params:
 Parameter #1—the minimum number of confirmations an output must have
 Parameter #2—the maximum number of confirmations an output may have
-Parameter #3—the list readonly which be used to view utxo
+Parameter #3—the list readonly which be used to view all tx out of keyset
 */
 func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
