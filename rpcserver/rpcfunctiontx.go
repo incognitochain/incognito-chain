@@ -629,40 +629,41 @@ func (rpcServer RpcServer) handleRandomCommitments(params interface{}, closeChan
 
 // handleHasSerialNumbers - check list serial numbers existed in db of node
 func (rpcServer RpcServer) handleHasSerialNumbers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// arrayParams := common.InterfaceSlice(params)
+	arrayParams := common.InterfaceSlice(params)
 
-	// // #1: payment address
-	// paymentAddressStr := arrayParams[0].(string)
-	// key, err := wallet.Base58CheckDeserialize(paymentAddressStr)
-	// if err != nil {
-	// 	return nil, NewRPCError(ErrUnexpected, err)
-	// }
-	// lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
-	// shardIDSender, err := common.GetTxSenderShard(lastByte)
-	// if err != nil {
-	// 	return nil, NewRPCError(ErrUnexpected, err)
-	// }
-	// //#2: list serialnumbers in base58check encode string
-	// serialNumbersStr := arrayParams[1].([]interface{})
+	// #1: payment address
+	paymentAddressStr := arrayParams[0].(string)
+	key, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
+	shardIDSender := common.GetShardIDFromLastByte(lastByte)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	//#2: list serialnumbers in base58check encode string
+	serialNumbersStr := arrayParams[1].([]interface{})
 
-	// result := make(map[byte][]string)
-	// result[0] = []string{}
-	// result[1] = []string{}
-	// constantTokenID := &common.Hash{}
-	// constantTokenID.SetBytes(common.ConstantID[:])
-	// for _, item := range serialNumbersStr {
-	// 	serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
-	// 	db := *(rpcServer.config.Database)
-	// 	ok, err := db.HasSerialNumber(constantTokenID, serialNumber, shardIDSender)
-	// 	if ok && err != nil {
-	// 		result[0] = append(result[0], item.(string))
-	// 	} else {
-	// 		result[1] = append(result[1], item.(string))
-	// 	}
-	// }
+	result := make(map[string][]string)
+	result["Existed"] = []string{}
+	result["NotExisted"] = []string{}
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
+	for _, item := range serialNumbersStr {
+		serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
+		db := *(rpcServer.config.Database)
+		ok, err := db.HasSerialNumber(constantTokenID, serialNumber, shardIDSender)
+		if ok && err != nil {
+			// serial number in db
+			result["Existed"] = append(result["Existed"], item.(string))
+		} else {
+			// serial number not in db
+			result["NotExisted"] = append(result["NotExisted"], item.(string))
+		}
+	}
 
-	// return result, nil
-	return nil, nil
+	return result, nil
 }
 
 // handleCreateRawCustomTokenTransaction - handle create a custom token command and return in hex string format.
