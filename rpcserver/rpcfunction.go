@@ -50,6 +50,7 @@ var RpcHandler = map[string]commandHandler{
 
 	RandomCommitments: RpcServer.handleRandomCommitments,
 	HasSerialNumbers:  RpcServer.handleHasSerialNumbers,
+	HasSnDerivators:   RpcServer.handleHasSnDerivators,
 
 	CreateAndSendStakingTransaction: RpcServer.handleCreateAndSendStakingTx,
 
