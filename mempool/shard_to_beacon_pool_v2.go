@@ -57,14 +57,17 @@ func (self *ShardToBeaconPool) GetShardState() map[byte]uint64 {
 }
 
 //Add Shard to Beacon block to the pool, if it is new block and not yet in the pool, and satisfy pool capacity (for valid and invalid; also swap for better invalid block)
-func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaconBlock) error {
+//#Return Param:
+//#1 and #2: requested block from height to height
+//#3 error
+func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaconBlock) (uint64, uint64, error) {
 	blkShardID := blk.Header.ShardID
 	blkHeight := blk.Header.Height
 	self.poolMutex.Lock()
-	self.latestValidHeightMutex.RLock()
+	self.latestValidHeightMutex.Lock()
 
 	defer self.poolMutex.Unlock()
-	defer self.latestValidHeightMutex.RUnlock()
+	defer self.latestValidHeightMutex.Unlock()
 
 	if self.latestValidHeight[blkShardID] == 0 {
 		self.latestValidHeight[blkShardID] = 1
@@ -72,13 +75,13 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaco
 
 	//If receive old block, it will ignore
 	if blkHeight <= self.latestValidHeight[blkShardID] {
-		return errors.New("receive old block")
+		return 0, 0, errors.New("receive old block")
 	}
 
 	//If block already in pool, it will ignore
 	for _, blkItem := range self.pool[blkShardID] {
 		if blkItem.Header.Height == blkHeight {
-			return errors.New("receive duplicate block")
+			return 0, 0, errors.New("receive duplicate block")
 		}
 	}
 
@@ -87,7 +90,7 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaco
 		numValidPedingBlk := int(self.latestValidHeight[blkShardID] - self.pool[blkShardID][0].Header.Height)
 		numInValidPedingBlk := len(self.pool[blkShardID]) - numValidPedingBlk
 		if numValidPedingBlk > MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL {
-			return errors.New("exceed max valid pending block")
+			return 0, 0, errors.New("exceed max valid pending block")
 		}
 
 		lastBlkInPool := self.pool[blkShardID][len(self.pool[blkShardID])-1]
@@ -97,7 +100,7 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaco
 				//remove latest block and add better invalid to pool
 				self.pool[blkShardID] = self.pool[blkShardID][:len(self.pool[blkShardID])-1]
 			} else {
-				return errors.New("exceed invalid pending block")
+				return 0, 0, errors.New("exceed invalid pending block")
 			}
 		}
 	}
@@ -115,9 +118,15 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaco
 
 	//update last valid pending ShardState
 	self.UpdateLatestShardState()
-	return nil
+	if self.pool[blkShardID][0].Header.Height > self.latestValidHeight[blkShardID] {
+		offset := self.pool[blkShardID][0].Header.Height - self.latestValidHeight[blkShardID]
+		if offset > MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL {
+			offset = MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL
+		}
+		return self.latestValidHeight[blkShardID] + 1, self.latestValidHeight[blkShardID] + offset, nil
+	}
+	return 0, 0, nil
 }
-
 func (self *ShardToBeaconPool) UpdateLatestShardState() {
 	for shardID, blks := range self.pool {
 		if self.latestValidHeight[shardID] == 0 {
