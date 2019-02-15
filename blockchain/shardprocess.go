@@ -144,7 +144,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	// check with current final best state
 	// block can only be insert if it match the current best state
 	if strings.Compare(blockchain.BestState.Shard[shardID].BestShardBlockHash.String(), block.Header.PrevBlockHash.String()) != 0 {
-		return NewBlockChainError(BeaconError, errors.New("Beacon Block does not match with any Beacon State in cache or in Database"))
+		return NewBlockChainError(BeaconError, errors.New("beacon Block does not match with any Beacon State in cache or in Database"))
 	}
 	// fmt.Printf("BeaconBest state %+v \n", blockchain.BestState.Beacon)
 	Logger.log.Infof("SHARD %+v | Verify BestState with Block %+v \n", block.Header.ShardID, *block.Hash())
@@ -219,7 +219,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	json.Unmarshal(parentBlockData, &parentBlock)
 	// Verify block height with parent block
 	if parentBlock.Header.Height+1 != block.Header.Height {
-		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
+		return NewBlockChainError(BlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
 	// Verify epoch with parent block
 	// if block.Header.Height%EPOCH == 0 && parentBlock.Header.Epoch != block.Header.Epoch-1 {
@@ -227,7 +227,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	// }
 	// Verify timestamp with parent block
 	if block.Header.Timestamp <= parentBlock.Header.Timestamp {
-		return NewBlockChainError(TimestampError, errors.New("Timestamp of new block can't equal to parent block"))
+		return NewBlockChainError(TimestampError, errors.New("timestamp of new block can't equal to parent block"))
 	}
 	// Verify transaction root
 	txMerkle := Merkle{}.BuildMerkleTreeStore(block.Body.Transactions)
@@ -238,22 +238,22 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		test, _ := json.Marshal(block.Body.Transactions[0])
 		fmt.Println(len(block.Body.Transactions), string(test))
 		fmt.Println()
-		return NewBlockChainError(HashError, errors.New("Can't Verify Transaction Root"))
+		return NewBlockChainError(HashError, errors.New("can't Verify Transaction Root"))
 	}
 	// Verify ShardTx Root
 	shardTxRoot := block.Body.CalcMerkleRootShard()
 
 	if !bytes.Equal(block.Header.ShardTxRoot.GetBytes(), shardTxRoot.GetBytes()) {
-		return NewBlockChainError(HashError, errors.New("Can't Verify CrossShardTransaction Root"))
+		return NewBlockChainError(HashError, errors.New("can't Verify CrossShardTransaction Root"))
 	}
 	// Verify Crossoutput coin
 	if !VerifyMerkleCrossOutputCoin(block.Body.CrossOutputCoin, block.Header.CrossOutputCoinRoot) {
-		return NewBlockChainError(HashError, errors.New("Can't Verify CrossOutputCoin Root"))
+		return NewBlockChainError(HashError, errors.New("can't Verify CrossOutputCoin Root"))
 	}
 	//Verify transaction
 	for _, tx := range block.Body.Transactions {
 		if !tx.ValidateTxByItself(tx.IsPrivacy(), blockchain.config.DataBase, blockchain, shardID) {
-			return NewBlockChainError(TransactionError, errors.New("Can't Validate transaction"))
+			return NewBlockChainError(TransactionError, errors.New("can't Validate transaction"))
 		}
 	}
 	// Verify Action
@@ -281,13 +281,13 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return NewBlockChainError(HashError, err)
 	}
 	if !newHash.IsEqual(beaconHash) {
-		return NewBlockChainError(BeaconError, errors.New("Beacon block height and beacon block hash are not compatible in Database"))
+		return NewBlockChainError(BeaconError, errors.New("beacon block height and beacon block hash are not compatible in Database"))
 	}
 	// Swap instruction
 	for _, l := range block.Body.Instructions {
 		if l[0] == "swap" {
 			if l[3] != "shard" || l[4] != strconv.Itoa(int(shardID)) {
-				return NewBlockChainError(InstructionError, errors.New("Swap instruction is invalid"))
+				return NewBlockChainError(InstructionError, errors.New("swap instruction is invalid"))
 			}
 		}
 	}
@@ -386,16 +386,16 @@ func (blockchain *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBloc
 	//=============Verify aggegrate signature
 	if isVerifySig {
 		if len(block.ValidatorsIdx) < (len(blockchain.ShardCommittee) >> 1) {
-			return NewBlockChainError(SignatureError, errors.New("Block validators and Beacon committee is not compatible"))
+			return NewBlockChainError(SignatureError, errors.New("block validators and Beacon committee is not compatible"))
 		}
 		ValidateAggSignature(block.ValidatorsIdx, blockchain.ShardCommittee, block.AggregatedSig, block.R, block.Hash())
 	}
 	//=============End Verify Aggegrate signature
 	if blockchain.ShardHeight+1 != block.Header.Height {
-		return NewBlockChainError(BlockHeightError, errors.New("Block height of new block should be : "+strconv.Itoa(int(blockchain.ShardHeight+1))))
+		return NewBlockChainError(BlockHeightError, errors.New("block height of new block should be : "+strconv.Itoa(int(blockchain.ShardHeight+1))))
 	}
 	if block.Header.BeaconHeight < blockchain.BeaconHeight {
-		return NewBlockChainError(BlockHeightError, errors.New("Block contain invalid beacon height"))
+		return NewBlockChainError(BlockHeightError, errors.New("block contain invalid beacon height"))
 	}
 	Logger.log.Debugf("SHARD %+v | Finish VerifyBestStateWithShardBlock Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	return nil
@@ -461,10 +461,10 @@ func (blockchain *BestStateShard) Update(block *ShardBlock, beaconBlocks []*Beac
 			swapedCommittees := strings.Split(l[2], ",")
 			newCommittees := strings.Split(l[1], ",")
 			if !reflect.DeepEqual(swapedCommittees, shardSwapedCommittees) {
-				return NewBlockChainError(SwapError, errors.New("Invalid shard swapped committees"))
+				return NewBlockChainError(SwapError, errors.New("invalid shard swapped committees"))
 			}
 			if !reflect.DeepEqual(newCommittees, shardNewCommittees) {
-				return NewBlockChainError(SwapError, errors.New("Invalid shard new committees"))
+				return NewBlockChainError(SwapError, errors.New("invalid shard new committees"))
 			}
 			Logger.log.Infof("SHARD %+v | Swap: Out committee %+v", block.Header.ShardID, shardSwapedCommittees)
 			Logger.log.Infof("SHARD %+v | Swap: In committee %+v", block.Header.ShardID, shardNewCommittees)
