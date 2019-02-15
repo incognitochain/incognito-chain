@@ -89,12 +89,12 @@ func TestAddShardToBeaconBlock(t *testing.T) {
 		panic("Pool Should Have 4 Block")
 	}
 	//==============Duplicate==================
-	err = shardToBeaconPoolTest.AddShardToBeaconBlock(blk6)
+	_, _, err = shardToBeaconPoolTest.AddShardToBeaconBlock(blk6)
 	if err.Error() != "receive duplicate block" {
 		panic(err.Error())
 	}
 	//==============Old Block==================
-	err = shardToBeaconPoolTest.AddShardToBeaconBlock(blk3)
+	_, _, err = shardToBeaconPoolTest.AddShardToBeaconBlock(blk3)
 	if err.Error() != "receive old block" {
 		panic(err.Error())
 	}

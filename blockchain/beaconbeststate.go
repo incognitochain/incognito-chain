@@ -114,116 +114,116 @@ func NewBestStateBeacon() *BestStateBeacon {
 	return &bestStateBeacon
 }
 
-func (self *BestStateBeacon) Hash() common.Hash {
+func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
 	var keys []int
 	var keyStrs []string
 	res := []byte{}
-	res = append(res, self.BestBlockHash.GetBytes()...)
-	res = append(res, self.BestBlock.Hash().GetBytes()...)
-	res = append(res, self.BestBlock.Hash().GetBytes()...)
+	res = append(res, bestStateBeacon.BestBlockHash.GetBytes()...)
+	res = append(res, bestStateBeacon.BestBlock.Hash().GetBytes()...)
+	res = append(res, bestStateBeacon.BestBlock.Hash().GetBytes()...)
 
-	for k := range self.BestShardHash {
+	for k := range bestStateBeacon.BestShardHash {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
 	for _, shardID := range keys {
-		hash := self.BestShardHash[byte(shardID)]
+		hash := bestStateBeacon.BestShardHash[byte(shardID)]
 		res = append(res, hash.GetBytes()...)
 	}
 	keys = []int{}
-	for k := range self.BestShardHeight {
+	for k := range bestStateBeacon.BestShardHeight {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
 	for _, shardID := range keys {
-		height := self.BestShardHeight[byte(shardID)]
+		height := bestStateBeacon.BestShardHeight[byte(shardID)]
 		res = append(res, byte(height))
 	}
-	for _, value := range self.BeaconCommittee {
+	for _, value := range bestStateBeacon.BeaconCommittee {
 		res = append(res, []byte(value)...)
 	}
-	for _, value := range self.BeaconPendingValidator {
+	for _, value := range bestStateBeacon.BeaconPendingValidator {
 		res = append(res, []byte(value)...)
 	}
-	for _, value := range self.CandidateBeaconWaitingForCurrentRandom {
+	for _, value := range bestStateBeacon.CandidateBeaconWaitingForCurrentRandom {
 		res = append(res, []byte(value)...)
 	}
-	for _, value := range self.CandidateBeaconWaitingForNextRandom {
+	for _, value := range bestStateBeacon.CandidateBeaconWaitingForNextRandom {
 		res = append(res, []byte(value)...)
 	}
-	for _, value := range self.CandidateShardWaitingForCurrentRandom {
+	for _, value := range bestStateBeacon.CandidateShardWaitingForCurrentRandom {
 		res = append(res, []byte(value)...)
 	}
-	for _, value := range self.CandidateShardWaitingForNextRandom {
+	for _, value := range bestStateBeacon.CandidateShardWaitingForNextRandom {
 		res = append(res, []byte(value)...)
 	}
 	keys = []int{}
-	for k := range self.ShardCommittee {
+	for k := range bestStateBeacon.ShardCommittee {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
 	for _, shardID := range keys {
-		for _, value := range self.ShardCommittee[byte(shardID)] {
+		for _, value := range bestStateBeacon.ShardCommittee[byte(shardID)] {
 			res = append(res, []byte(value)...)
 		}
 	}
 	keys = []int{}
-	for k := range self.ShardPendingValidator {
+	for k := range bestStateBeacon.ShardPendingValidator {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
 	for _, shardID := range keys {
-		for _, value := range self.ShardPendingValidator[byte(shardID)] {
+		for _, value := range bestStateBeacon.ShardPendingValidator[byte(shardID)] {
 			res = append(res, []byte(value)...)
 		}
 	}
-	res = append(res, byte(self.CurrentRandomNumber))
-	res = append(res, byte(self.CurrentRandomTimeStamp))
-	if self.IsGetRandomNumber {
+	res = append(res, byte(bestStateBeacon.CurrentRandomNumber))
+	res = append(res, byte(bestStateBeacon.CurrentRandomTimeStamp))
+	if bestStateBeacon.IsGetRandomNumber {
 		res = append(res, []byte("true")...)
 	} else {
 		res = append(res, []byte("false")...)
 	}
-	for k := range self.Params {
+	for k := range bestStateBeacon.Params {
 		keyStrs = append(keyStrs, k)
 	}
 	sort.Strings(keyStrs)
 	for _, key := range keyStrs {
-		res = append(res, []byte(self.Params[key])...)
+		res = append(res, []byte(bestStateBeacon.Params[key])...)
 	}
-	res = append(res, self.StabilityInfo.GetBytes()...)
+	res = append(res, bestStateBeacon.StabilityInfo.GetBytes()...)
 	return common.DoubleHashH(res)
 }
 
 // Get role of a public key base on best state beacond
 // return node-role, <shardID>
 // TODO: Role name should be write in common as constant value
-func (self *BestStateBeacon) GetPubkeyRole(pubkey string) (string, byte) {
+func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string) (string, byte) {
 
-	for shardID, pubkeyArr := range self.ShardPendingValidator {
+	for shardID, pubkeyArr := range bestStateBeacon.ShardPendingValidator {
 		found := common.IndexOfStr(pubkey, pubkeyArr)
 		if found > -1 {
 			return common.SHARD_ROLE, shardID
 		}
 	}
 
-	for shardID, pubkeyArr := range self.ShardCommittee {
+	for shardID, pubkeyArr := range bestStateBeacon.ShardCommittee {
 		found := common.IndexOfStr(pubkey, pubkeyArr)
 		if found > -1 {
 			return common.SHARD_ROLE, shardID
 		}
 	}
 
-	found := common.IndexOfStr(pubkey, self.BeaconCommittee)
+	found := common.IndexOfStr(pubkey, bestStateBeacon.BeaconCommittee)
 	if found > -1 {
-		tmpID := (self.BeaconProposerIdx + 1) % len(self.BeaconCommittee)
+		tmpID := (bestStateBeacon.BeaconProposerIdx + 1) % len(bestStateBeacon.BeaconCommittee)
 		if found == tmpID {
 			return common.BEACON_PROPOSER_ROLE, 0
 		}
 		return common.BEACON_VALIDATOR_ROLE, 0
 	}
 
-	found = common.IndexOfStr(pubkey, self.BeaconPendingValidator)
+	found = common.IndexOfStr(pubkey, bestStateBeacon.BeaconPendingValidator)
 	if found > -1 {
 		return common.BEACON_PENDING_ROLE, 0
 	}
@@ -232,14 +232,14 @@ func (self *BestStateBeacon) GetPubkeyRole(pubkey string) (string, byte) {
 }
 
 // getAssetPrice returns price stored in Oracle
-func (self *BestStateBeacon) getAssetPrice(assetID common.Hash) uint64 {
+func (bestStateBeacon *BestStateBeacon) getAssetPrice(assetID common.Hash) uint64 {
 	price := uint64(0)
 	if common.IsBondAsset(&assetID) {
-		if self.StabilityInfo.Oracle.Bonds != nil {
-			price = self.StabilityInfo.Oracle.Bonds[assetID.String()]
+		if bestStateBeacon.StabilityInfo.Oracle.Bonds != nil {
+			price = bestStateBeacon.StabilityInfo.Oracle.Bonds[assetID.String()]
 		}
 	} else {
-		oracle := self.StabilityInfo.Oracle
+		oracle := bestStateBeacon.StabilityInfo.Oracle
 		if assetID.IsEqual(&common.ConstantID) {
 			price = oracle.Constant
 		} else if assetID.IsEqual(&common.DCBTokenID) {
@@ -256,9 +256,9 @@ func (self *BestStateBeacon) getAssetPrice(assetID common.Hash) uint64 {
 }
 
 // GetSaleData returns latest data of a crowdsale
-func (self *BestStateBeacon) GetSaleData(saleID []byte) (*params.SaleData, error) {
+func (bestStateBeacon *BestStateBeacon) GetSaleData(saleID []byte) (*params.SaleData, error) {
 	key := getSaleDataKeyBeacon(saleID)
-	if value, ok := self.Params[key]; ok {
+	if value, ok := bestStateBeacon.Params[key]; ok {
 		return parseSaleDataValueBeacon(value)
 	}
 	return nil, errors.Errorf("SaleID not exist: %x", saleID)
