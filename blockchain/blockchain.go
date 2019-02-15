@@ -172,17 +172,6 @@ func (self *BlockChain) InitShardToBeaconPool(db database.DatabaseInterface) {
 
 }
 
-// Before call store and get block from cache or db, call chain.lock()
-func (self *BlockChain) StoreMaybeAcceptBeaconBeststate(beaconBestState BestStateBeacon) (string, error) {
-	res, err := json.Marshal(beaconBestState)
-	if err != nil {
-		return "", NewBlockChainError(UnmashallJsonBlockError, err)
-	}
-	key := beaconBestState.BestBlockHash.String()
-	self.BestState.beacon[key] = res
-	return key, nil
-}
-
 func (self *BlockChain) GetMaybeAcceptBeaconBlock(key string) (BeaconBlock, error) {
 	res := self.beaconBlock[key]
 	beaconBlock := BeaconBlock{}
