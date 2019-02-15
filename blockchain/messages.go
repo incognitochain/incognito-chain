@@ -21,7 +21,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 			pState.ShardToBeaconPool = shardToBeaconPool
 			for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
 				if shardState, ok := (*shard)[shardID]; ok {
-					if shardState.Height > self.BestState.Beacon.BestShardHeight[shardID] {
+					if shardState.Height > blockchain.BestState.Beacon.BestShardHeight[shardID] {
 						pState.Shard[shardID] = &shardState
 					}
 				}
