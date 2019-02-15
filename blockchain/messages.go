@@ -121,15 +121,15 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 		return
 	}
 
-	if err = blockchain.config.ShardToBeaconPool.AddShardToBeaconBlock(block); err != nil {
+	from, to, err := self.config.ShardToBeaconPool.AddShardToBeaconBlock(block)
+	if err != nil {
 		Logger.log.Error(err)
 		return
 	}
-
-	//TODO review: synblock already find?
-	//if blockchain.BestState.Beacon.BestShardHeight[block.Header.ShardID] < block.Header.Height-1 {
-	//	blockchain.config.Server.PushMessageGetShardToBeacons(block.Header.ShardID, blockchain.BestState.Beacon.BestShardHeight[block.Header.ShardID]+1, block.Header.Height)
-	//}
+	if from != 0 || to != 0 {
+		fmt.Printf("Message/SyncBlkShardToBeacon, from %+v to %+v \n", from, to)
+		self.SyncBlkShardToBeacon(block.Header.ShardID, false, false, []common.Hash{}, from, to, "")
+	}
 }
 
 func (blockchain *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {
