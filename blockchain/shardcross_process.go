@@ -127,11 +127,11 @@ func getOutCoinCrossShard(txList []metadata.Transaction, shardID byte) []privacy
 	- Agg Signature
 	- MerklePath
 */
-func (self *CrossShardBlock) VerifyCrossShardBlock(committees []string) error {
-	if err := ValidateAggSignature(self.ValidatorsIdx, committees, self.AggregatedSig, self.R, self.Hash()); err != nil {
+func (crossShardBlock *CrossShardBlock) VerifyCrossShardBlock(committees []string) error {
+	if err := ValidateAggSignature(crossShardBlock.ValidatorsIdx, committees, crossShardBlock.AggregatedSig, crossShardBlock.R, crossShardBlock.Hash()); err != nil {
 		return NewBlockChainError(SignatureError, err)
 	}
-	if ok := VerifyCrossShardBlockUTXO(self, self.MerklePathShard); !ok {
+	if ok := VerifyCrossShardBlockUTXO(crossShardBlock, crossShardBlock.MerklePathShard); !ok {
 		return NewBlockChainError(HashError, errors.New("verify Merkle Path Shard"))
 	}
 	return nil
