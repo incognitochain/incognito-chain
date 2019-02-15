@@ -49,6 +49,7 @@ func (self *ShardToBeaconPool) SetShardState(latestShardState map[byte]uint64) {
 
 	//Remove pool base on new shardstate
 	self.RemovePendingBlock(latestShardState)
+	self.UpdateLatestShardState()
 }
 
 func (self *ShardToBeaconPool) GetShardState() map[byte]uint64 {
@@ -130,27 +131,32 @@ func (self *ShardToBeaconPool) UpdateLatestShardState() {
 			lastHeight = blk.Header.Height
 		}
 		self.latestValidHeight[shardID] = lastHeight
+		fmt.Println("[[[[[[[[[[ShardToBeaconPool]]]]]]]]]]]: LastValidHeight", lastHeight)
 	}
 }
 
+//@Notice: Remove should set latest valid height
+//Because normal beacon node may not have these block to remove
 func (self *ShardToBeaconPool) RemovePendingBlock(blockItems map[byte]uint64) {
 	self.poolMutex.Lock()
 	defer self.poolMutex.Unlock()
 	for shardID, blockHeight := range blockItems {
 		for index, block := range self.pool[shardID] {
+			fmt.Println("ShardToBeaconPool/Pool BEFORE Remove", block.Header.Height)
 			if block.Header.Height <= blockHeight {
 				fmt.Println("ShardToBeaconPool: RemovePendingBlock, Remove Shard Block", block.Header.Height)
 				if index == len(self.pool[shardID])-1 {
-					fmt.Println("ShardToBeaconPool: RemovePendingBlock, Update Shard Height", block.Header.Height)
+					fmt.Println("ShardToBeaconPool: RemovePendingBlock, Update Expected Shard Height 1", block.Header.Height+1)
 					self.pool[shardID] = self.pool[shardID][index+1:]
 				}
 				continue
 			} else {
-				fmt.Println("ShardToBeaconPool: RemovePendingBlock, Update Shard Height", block.Header.Height)
+				fmt.Println("ShardToBeaconPool: RemovePendingBlock, Update Expected Shard Height 2", block.Header.Height)
 				self.pool[shardID] = self.pool[shardID][index:]
 				break
 			}
 		}
+		fmt.Println("[[[[[[[[[[ShardToBeaconPool]]]]]]]]]]]: LastValidHeight", blockHeight)
 	}
 }
 
@@ -174,6 +180,14 @@ func (self *ShardToBeaconPool) GetValidPendingBlock() map[byte][]*blockchain.Sha
 			finalBlocks[shardID] = append(finalBlocks[shardID], blk)
 		}
 	}
+	//UNCOMMENT FOR TESTING
+	fmt.Println()
+	for _, block := range finalBlocks[byte(0)] {
+		fmt.Print("ShardToBeaconPool/ValidPendingBlock ")
+		fmt.Printf(" %+v ", block.Header.Height)
+	}
+	fmt.Println()
+	//==============
 	return finalBlocks
 }
 
