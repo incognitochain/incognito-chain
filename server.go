@@ -260,6 +260,9 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		MemTxPool:  serverObj.memPool,
 		Server:     serverObj,
 		Consensus:  serverObj.consensusEngine,
+
+		ShardToBeaconPool: serverObj.shardToBeaconPool,
+		CrossShardPool:    serverObj.crossShardPool,
 	})
 	// Create a connection manager.
 	var peer *peer.Peer
