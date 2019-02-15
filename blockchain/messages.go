@@ -121,14 +121,14 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 		return
 	}
 
-	from, to, err := self.config.ShardToBeaconPool.AddShardToBeaconBlock(block)
+	from, to, err := blockchain.config.ShardToBeaconPool.AddShardToBeaconBlock(block)
 	if err != nil {
 		Logger.log.Error(err)
 		return
 	}
 	if from != 0 || to != 0 {
 		fmt.Printf("Message/SyncBlkShardToBeacon, from %+v to %+v \n", from, to)
-		self.SyncBlkShardToBeacon(block.Header.ShardID, false, false, []common.Hash{}, from, to, "")
+		blockchain.SyncBlkShardToBeacon(block.Header.ShardID, false, false, []common.Hash{}, from, to, "")
 	}
 }
 
