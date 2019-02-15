@@ -75,7 +75,7 @@ func (self *BlockChain) StartSyncBlk() {
 					}
 					for shardID := range self.syncStatus.Shards {
 						if shardState, ok := peerState.Shard[shardID]; ok {
-							if shardState.Height > self.BestState.Shard[shardID].ShardHeight {
+							if shardState.Height > self.BestState.Shard[shardID].ShardHeight && shardState.Height > self.BestState.Beacon.BestShardHeight[shardID] {
 								if RCS.ClosestShardsState[shardID].Height == 0 {
 									RCS.ClosestShardsState[shardID] = *shardState
 								} else {
@@ -188,7 +188,6 @@ func (self *BlockChain) StartSyncBlk() {
 					if _, ok := self.syncStatus.Shards[userShardID]; !ok {
 						self.SyncShard(userShardID)
 					}
-
 					if userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
 						for shardID, peer := range RCS.CrossShardBlks {
 							for peerID, blks := range peer {
