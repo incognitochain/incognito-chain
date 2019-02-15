@@ -155,7 +155,7 @@ func (self *BlockChain) Init(config *Config) error {
 	self.syncStatus.Shards = make(map[byte]struct{})
 	self.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
 	self.knownChainState.Shards = make(map[byte]ChainState)
-	self.StartSyncBlk()
+	go self.StartSyncBlk()
 	for _, shardID := range self.config.RelayShards {
 		self.SyncShard(shardID)
 	}

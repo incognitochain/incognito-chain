@@ -58,6 +58,7 @@ func (self *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 func (self *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]ChainState, shardToBeaconPool *map[byte][]common.Hash, crossShardPool *map[byte]map[byte][]common.Hash, peerID libp2p.ID) {
 	if beacon.Height >= self.BestState.Beacon.BeaconHeight {
 		var pState *peerState
+		pState.Shard = make(map[byte]*ChainState)
 		pState.Beacon = beacon
 		userRole, userShardID := self.BestState.Beacon.GetPubkeyRole(self.config.UserKeySet.GetPublicKeyB58())
 		nodeMode := self.config.NodeMode
@@ -70,7 +71,8 @@ func (self *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]
 				if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= self.BestState.Shard[userShardID].ShardHeight {
 					pState.Shard[userShardID] = &shardState
 					if pool, ok := (*crossShardPool)[userShardID]; ok {
-						pState.CrossShardPool = &pool
+						pState.CrossShardPool = make(map[byte]*map[byte][]common.Hash)
+						pState.CrossShardPool[userShardID] = &pool
 					}
 				}
 			}
