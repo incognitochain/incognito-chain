@@ -44,6 +44,7 @@ const (
 	GetBlockHeader                             = "getheader"
 	RandomCommitments                          = "randomcommitments"
 	HasSerialNumbers                           = "hasserialnumbers"
+	HasSnDerivators                            = "hassnderivators"
 
 	CreateAndSendStakingTransaction = "createandsendstakingtransaction"
 
