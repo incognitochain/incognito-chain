@@ -156,8 +156,7 @@ func (self *ShardBody) CalcMerkleRootTx() *common.Hash {
 }
 
 func (self *ShardBody) ExtractIncomingCrossShardMap() (map[byte][]common.Hash, error) {
-	var crossShardMap map[byte][]common.Hash
-	crossShardMap = make(map[byte][]common.Hash)
+	crossShardMap := make(map[byte][]common.Hash)
 	for shardID, crossblocks := range self.CrossOutputCoin {
 		for _, crossblock := range crossblocks {
 			crossShardMap[shardID] = append(crossShardMap[shardID], crossblock.BlockHash)
@@ -168,8 +167,7 @@ func (self *ShardBody) ExtractIncomingCrossShardMap() (map[byte][]common.Hash, e
 }
 
 func (self *ShardBody) ExtractOutgoingCrossShardMap() (map[byte][]common.Hash, error) {
-	var crossShardMap map[byte][]common.Hash
-	crossShardMap = make(map[byte][]common.Hash)
+	crossShardMap := make(map[byte][]common.Hash)
 	// for _, crossblock := range self.CrossOutputCoin {
 	// 	crossShardMap[crossblock.ShardID] = append(crossShardMap[crossblock.ShardID], crossblock.BlockHash)
 	// }
