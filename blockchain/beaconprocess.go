@@ -405,6 +405,13 @@ func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	allShardState := newBlock.Body.ShardState
 	if self.AllShardState == nil {
 		self.AllShardState = make(map[byte][]ShardState)
+		for index := 0; index < common.SHARD_NUMBER; index++ {
+			self.AllShardState[byte(index)] = []ShardState{
+				ShardState{
+					Height: 1,
+				},
+			}
+		}
 	}
 	if self.BestShardHash == nil {
 		self.BestShardHash = make(map[byte]common.Hash)

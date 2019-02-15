@@ -9,7 +9,8 @@ import (
 )
 
 type MessageGetCrossShard struct {
-	BlockHash   common.Hash
+	FromPool    bool
+	BlksHash    []common.Hash
 	FromShardID byte
 	ToShardID   byte
 	SenderID    string
