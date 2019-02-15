@@ -143,13 +143,32 @@ func (self *BlockChain) StartSyncBlk() {
 							self.SyncBlkShardToBeacon(shardID, true, true, blks, 0, 0, peerID)
 						}
 					}
+					for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
+						if self.BestState.Beacon.BestShardHeight[shardID] < RCS.ClosestShardsState[shardID].Height {
+							currentShardReqHeight := self.BestState.Beacon.BestShardHeight[shardID] + 1
+							for peerID, peerState := range self.syncStatus.PeersState {
+								if _, ok := peerState.Shard[shardID]; ok {
+									if currentShardReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
+										self.SyncBlkShardToBeacon(shardID, false, false, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height, peerID)
+									} else {
+										self.SyncBlkShardToBeacon(shardID, false, false, nil, currentShardReqHeight, currentShardReqHeight+defaultMaxBlkReqPerPeer-1, peerID)
+										currentShardReqHeight += defaultMaxBlkReqPerPeer - 1
+									}
+								}
+							}
+						}
+					}
 				case common.SHARD_ROLE:
 					if userShardRole == common.SHARD_PENDING_ROLE || userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
 						if _, ok := self.syncStatus.Shards[userShardID]; !ok {
 							self.SyncShard(userShardID)
 						}
 						if userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
-
+							for shardID, peer := range RCS.CrossShardBlks {
+								for peerID, blks := range peer {
+									self.SyncBlkCrossShard(true, blks, shardID, userShardID, peerID)
+								}
+							}
 						}
 					}
 				}
@@ -158,6 +177,21 @@ func (self *BlockChain) StartSyncBlk() {
 					for shardID, peer := range RCS.ShardToBeaconBlks {
 						for peerID, blks := range peer {
 							self.SyncBlkShardToBeacon(shardID, true, true, blks, 0, 0, peerID)
+						}
+					}
+					for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
+						if self.BestState.Beacon.BestShardHeight[shardID] < RCS.ClosestShardsState[shardID].Height {
+							currentShardReqHeight := self.BestState.Beacon.BestShardHeight[shardID] + 1
+							for peerID, peerState := range self.syncStatus.PeersState {
+								if _, ok := peerState.Shard[shardID]; ok {
+									if currentShardReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
+										self.SyncBlkShardToBeacon(shardID, false, false, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height, peerID)
+									} else {
+										self.SyncBlkShardToBeacon(shardID, false, false, nil, currentShardReqHeight, currentShardReqHeight+defaultMaxBlkReqPerPeer-1, peerID)
+										currentShardReqHeight += defaultMaxBlkReqPerPeer - 1
+									}
+								}
+							}
 						}
 					}
 				}
@@ -257,6 +291,7 @@ func (self *BlockChain) ResetCurrentSyncRecord() {
 
 }
 
+//SyncBlkBeacon Send a req to sync beacon block
 func (self *BlockChain) SyncBlkBeacon(byHash bool, getFromPool bool, blksHash []common.Hash, from uint64, to uint64, peerID libp2p.ID) {
 	if byHash {
 		//Sync block by hash
@@ -279,6 +314,7 @@ func (self *BlockChain) SyncBlkBeacon(byHash bool, getFromPool bool, blksHash []
 	}
 }
 
+//SyncBlkShard Send a req to sync shard block
 func (self *BlockChain) SyncBlkShard(shardID byte, byHash bool, getFromPool bool, blksHash []common.Hash, from uint64, to uint64, peerID libp2p.ID) {
 	if byHash {
 		//Sync block by hash
@@ -301,6 +337,7 @@ func (self *BlockChain) SyncBlkShard(shardID byte, byHash bool, getFromPool bool
 	}
 }
 
+//SyncBlkShardToBeacon Send a req to sync shardToBeacon block
 func (self *BlockChain) SyncBlkShardToBeacon(shardID byte, byHash bool, getFromPool bool, blksHash []common.Hash, from uint64, to uint64, peerID libp2p.ID) {
 	if byHash {
 		//Sync block by hash
@@ -323,6 +360,7 @@ func (self *BlockChain) SyncBlkShardToBeacon(shardID byte, byHash bool, getFromP
 	}
 }
 
+//SyncBlkCrossShard Send a req to sync crossShard block
 func (self *BlockChain) SyncBlkCrossShard(getFromPool bool, blksHash []common.Hash, fromShard byte, toShard byte, peerID libp2p.ID) {
 	tempInterface, init := self.syncStatus.CurrentlySyncCrossShardBlk.Load(SyncByHashKey)
 	blksNeedToGet, blksSyncByHash := getBlkNeedToGetByHash(blksHash, tempInterface, init, peerID)
