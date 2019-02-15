@@ -24,10 +24,12 @@ type NetSync struct {
 }
 
 type NetSyncConfig struct {
-	BlockChain *blockchain.BlockChain
-	ChainParam *blockchain.Params
-	MemTxPool  *mempool.TxPool
-	Server     interface {
+	BlockChain        *blockchain.BlockChain
+	ChainParam        *blockchain.Params
+	MemTxPool         *mempool.TxPool
+	ShardToBeaconPool blockchain.ShardToBeaconPool
+	CrossShardPool    blockchain.CrossShardPool
+	Server            interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, libp2p.ID) error
 		PushMessageToAll(wire.Message) error
@@ -311,24 +313,40 @@ func (netSync *NetSync) HandleMessageGetBlockShard(msg *wire.MessageGetBlockShar
 		Logger.log.Error(err)
 		return
 	}
-	for index := msg.From; index <= msg.To; index++ {
-		blk, err := netSync.config.BlockChain.GetShardBlockByHeight(index, msg.ShardID)
-		if err != nil {
-			fmt.Println(err)
-			return
+	if msg.ByHash {
+		for _, blkHash := range msg.BlksHash {
+			blk, err := netSync.config.BlockChain.GetShardBlockByHash(&blkHash)
+			if err != nil {
+				Logger.log.Error(err)
+				return
+			}
+			newMsg, err := wire.MakeEmptyMessage(wire.CmdBlockShard)
+			if err != nil {
+				Logger.log.Error(err)
+				return
+			}
+			newMsg.(*wire.MessageBlockShard).Block = *blk
+			netSync.config.Server.PushMessageToPeer(newMsg, peerID)
 		}
-		msgShardBlk, err := wire.MakeEmptyMessage(wire.CmdBlockShard)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		msgShardBlk.(*wire.MessageBlockShard).Block = *blk
-		err = netSync.config.Server.PushMessageToPeer(msgShardBlk, peerID)
-		if err != nil {
-			fmt.Println(err)
+	} else {
+		for index := msg.From; index <= msg.To; index++ {
+			blk, err := netSync.config.BlockChain.GetShardBlockByHeight(index, msg.ShardID)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			msgShardBlk, err := wire.MakeEmptyMessage(wire.CmdBlockShard)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			msgShardBlk.(*wire.MessageBlockShard).Block = *blk
+			err = netSync.config.Server.PushMessageToPeer(msgShardBlk, peerID)
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
 	}
-
 }
 
 func (netSync *NetSync) HandleMessageGetBlockBeacon(msg *wire.MessageGetBlockBeacon) {
@@ -340,76 +358,120 @@ func (netSync *NetSync) HandleMessageGetBlockBeacon(msg *wire.MessageGetBlockBea
 		Logger.log.Error(err)
 		return
 	}
-	for index := msg.From; index <= msg.To; index++ {
-		blk, err := netSync.config.BlockChain.GetBeaconBlockByHeight(index)
-		if err != nil {
-			fmt.Println(err)
-			return
+	if msg.ByHash {
+		for _, blkHash := range msg.BlksHash {
+			blk, err := netSync.config.BlockChain.GetBeaconBlockByHash(&blkHash)
+			if err != nil {
+				Logger.log.Error(err)
+				return
+			}
+			newMsg, err := wire.MakeEmptyMessage(wire.CmdBlockBeacon)
+			if err != nil {
+				Logger.log.Error(err)
+				return
+			}
+			newMsg.(*wire.MessageBlockBeacon).Block = *blk
+			netSync.config.Server.PushMessageToPeer(newMsg, peerID)
 		}
-		msgBeaconBlk, err := wire.MakeEmptyMessage(wire.CmdBlockBeacon)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		msgBeaconBlk.(*wire.MessageBlockBeacon).Block = *blk
-		err = netSync.config.Server.PushMessageToPeer(msgBeaconBlk, peerID)
-		if err != nil {
-			fmt.Println(err)
+	} else {
+		for index := msg.From; index <= msg.To; index++ {
+			blk, err := netSync.config.BlockChain.GetBeaconBlockByHeight(index)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			msgBeaconBlk, err := wire.MakeEmptyMessage(wire.CmdBlockBeacon)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			msgBeaconBlk.(*wire.MessageBlockBeacon).Block = *blk
+			err = netSync.config.Server.PushMessageToPeer(msgBeaconBlk, peerID)
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
 	}
 }
 
-func (netsync *NetSync) HandleMessageGetShardToBeacon(msg *wire.MessageGetShardToBeacon) {
+func (netSync *NetSync) HandleMessageGetShardToBeacon(msg *wire.MessageGetShardToBeacon) {
 	Logger.log.Info("Handling new message getshardtobeacon")
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
 	if err != nil {
 		Logger.log.Error(err)
 		return
 	}
-	for _, blkHash := range msg.BlksHash {
-		blk, err := netsync.config.BlockChain.GetShardBlockByHash(&blkHash)
-		if err != nil {
-			Logger.log.Error(err)
-			return
+	if msg.ByHash {
+		if msg.FromPool {
+			// netSync.config.ShardToBeaconPool.
+		} else {
+			for _, blkHash := range msg.BlksHash {
+				blk, err := netSync.config.BlockChain.GetShardBlockByHash(&blkHash)
+				if err != nil {
+					Logger.log.Error(err)
+					return
+				}
+				shardToBeaconBlk := blk.CreateShardToBeaconBlock(netSync.config.BlockChain)
+				newMsg, err := wire.MakeEmptyMessage(wire.CmdBlkShardToBeacon)
+				if err != nil {
+					Logger.log.Error(err)
+					return
+				}
+				newMsg.(*wire.MessageShardToBeacon).Block = *shardToBeaconBlk
+				netSync.config.Server.PushMessageToPeer(newMsg, peerID)
+			}
 		}
-		shardToBeaconBlk := blk.CreateShardToBeaconBlock(netsync.config.BlockChain)
-		newMsg, err := wire.MakeEmptyMessage(wire.CmdBlkShardToBeacon)
-		if err != nil {
-			Logger.log.Error(err)
-			return
+	} else {
+		for index := msg.From; index <= msg.To; index++ {
+			blk, err := netSync.config.BlockChain.GetShardBlockByHeight(index, msg.ShardID)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			shardToBeaconBlk := blk.CreateShardToBeaconBlock(netSync.config.BlockChain)
+			msgShardBlk, err := wire.MakeEmptyMessage(wire.CmdBlkShardToBeacon)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			msgShardBlk.(*wire.MessageShardToBeacon).Block = *shardToBeaconBlk
+			err = netSync.config.Server.PushMessageToPeer(msgShardBlk, peerID)
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
-		newMsg.(*wire.MessageShardToBeacon).Block = *shardToBeaconBlk
-		netsync.config.Server.PushMessageToPeer(newMsg, peerID)
 	}
-
 }
 
-func (netsync *NetSync) HandleMessageGetCrossShard(msg *wire.MessageGetCrossShard) {
+func (netSync *NetSync) HandleMessageGetCrossShard(msg *wire.MessageGetCrossShard) {
 	Logger.log.Info("Handling new message getshardtobeacon")
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
 	if err != nil {
 		Logger.log.Error(err)
 		return
 	}
-	for _, blkHash := range msg.BlksHash {
-		blk, err := netsync.config.BlockChain.GetShardBlockByHash(&blkHash)
-		if err != nil {
-			Logger.log.Error(err)
-			return
-		}
+	if msg.FromPool {
+		// netSync.config.CrossShardPool.GetBlock()
+	} else {
+		for _, blkHash := range msg.BlksHash {
+			blk, err := netSync.config.BlockChain.GetShardBlockByHash(&blkHash)
+			if err != nil {
+				Logger.log.Error(err)
+				return
+			}
 
-		crossShardBlk, err := blk.CreateCrossShardBlock(msg.ToShardID)
-		if err != nil {
-			Logger.log.Error(err)
-			return
+			crossShardBlk, err := blk.CreateCrossShardBlock(msg.ToShardID)
+			if err != nil {
+				Logger.log.Error(err)
+				return
+			}
+			newMsg, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
+			if err != nil {
+				Logger.log.Error(err)
+				return
+			}
+			newMsg.(*wire.MessageCrossShard).Block = *crossShardBlk
+			netSync.config.Server.PushMessageToPeer(newMsg, peerID)
 		}
-		newMsg, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
-		if err != nil {
-			Logger.log.Error(err)
-			return
-		}
-		newMsg.(*wire.MessageCrossShard).Block = *crossShardBlk
-		netsync.config.Server.PushMessageToPeer(newMsg, peerID)
 	}
-
 }
