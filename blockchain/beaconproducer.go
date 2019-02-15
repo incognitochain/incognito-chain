@@ -200,12 +200,17 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 		//if !reflect.DeepEqual(tempShardBlocks, shardBlocks) {
 		//	panic("Shard To Beacon block not in right format of increasing height")
 		//}
+		fmt.Println("Beacon Producer/ Got These Block from pool")
+		for _, shardBlocks := range shardBlocks {
+			fmt.Printf(" %+v ", shardBlocks.Header.Height)
+		}
+		fmt.Println()
 		for index, shardBlock := range shardBlocks {
 			currentCommittee := beaconBestState.ShardCommittee[shardID]
 			hash := shardBlock.Header.Hash()
-			err := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
-			if err != nil {
-				totalBlock = index
+			err1 := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
+			fmt.Println("Beacon Producer/ Validate Agg Signature ", err1 == nil)
+			if err1 != nil {
 				break
 			}
 			stabilityInstructionsPerBlock, err := buildStabilityInstructions(
@@ -225,11 +230,17 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 					}
 				}
 			}
-			if index != 0 && err != nil {
-				totalBlock = index
+			if index != 0 && err1 != nil {
 				break
 			}
+			totalBlock = index
 		}
+		fmt.Printf("Beacon Producer/ AFTER FILTER, ONLY GET %+v block \n", totalBlock)
+		fmt.Println("Beacon Producer/ FILTER and ONLY GET These Block from pool")
+		for _, shardBlocks := range shardBlocks[:totalBlock+1] {
+			fmt.Printf(" %+v ", shardBlocks.Header.Height)
+		}
+		fmt.Println()
 		for _, shardBlock := range shardBlocks[:totalBlock+1] {
 			fmt.Println("")
 			fmt.Println("Becon Produce: Got Shard Block", shardBlock.Header.Height)
