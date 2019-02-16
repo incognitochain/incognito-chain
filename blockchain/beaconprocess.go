@@ -94,20 +94,17 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	if err := blockchain.BestState.Beacon.VerifyBestStateWithBeaconBlock(block, true); err != nil {
 		return err
 	}
-
 	Logger.log.Infof("Update BestState with Beacon Block %+v \n", *block.Hash())
 	//========Update best state with new block
 	snapShotBeaconCommittee := blockchain.BestState.Beacon.BeaconCommittee
 	if err := blockchain.BestState.Beacon.Update(block); err != nil {
 		return err
 	}
-
 	Logger.log.Infof("Verify Post Processing Beacon Block %+v \n", *block.Hash())
 	//========Post verififcation: verify new beaconstate with corresponding block
 	if err := blockchain.BestState.Beacon.VerifyPostProcessingBeaconBlock(block, snapShotBeaconCommittee); err != nil {
 		return err
 	}
-
 	//========Store new Beaconblock and new Beacon bestState in cache
 	Logger.log.Infof("Store Beacon BestState %+v \n", *block.Hash())
 	if err := blockchain.config.DataBase.StoreBeaconBestState(blockchain.BestState.Beacon); err != nil {
@@ -199,9 +196,6 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	// state[i].Height must less than state[i+1].Height and state[i+1].Height - state[i].Height = 1
 	for _, shardStates := range block.Body.ShardState {
 		for i := 0; i < len(shardStates)-2; i++ {
-			// if shardStates[i].Height >= shardStates[i+1].Height {
-			// 	return NewBlockChainError(ShardStateError, errors.New("Shardstates are not in right format"))
-			// }
 			if shardStates[i+1].Height-shardStates[i].Height != 1 {
 				return NewBlockChainError(ShardStateError, errors.New("shardstates are not in right format"))
 			}
@@ -305,11 +299,16 @@ func (blockchain *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconB
 	//=============End Verify Stakers
 	//TODO @merman logic check you must
 	// Verify shard state
-	// for shardID, shardStates := range block.Body.ShardState {
-	// if blockchain.AllShardState[shardID][len(blockchain.AllShardState[shardID])-1].Height-shardStates[0].Height != 1 {
-	// 	return NewBlockChainError(ShardStateError, errors.New("Shardstates are not compatible with beacon best state"))
-	// }
-	// }
+	for shardID, shardStates := range block.Body.ShardState {
+		// Do not check this condition with first minted block (genesis block height = 1)
+		if blockchain.BeaconHeight != 2 {
+			fmt.Printf("Beacon Process/Check ShardStates with BestState Current Shard Height %+v \n", blockchain.AllShardState[shardID][len(blockchain.AllShardState[shardID])-1].Height)
+			fmt.Printf("Beacon Process/Check ShardStates with BestState FirstShardHeight %+v \n", shardStates[0].Height)
+			if shardStates[0].Height-blockchain.AllShardState[shardID][len(blockchain.AllShardState[shardID])-1].Height != 1 {
+				return NewBlockChainError(ShardStateError, errors.New("Shardstates are not compatible with beacon best state"))
+			}
+		}
+	}
 	return nil
 }
 
@@ -426,7 +425,7 @@ func (blockchain *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		if _, ok := blockchain.AllShardState[shardID]; !ok {
 			blockchain.AllShardState[shardID] = []ShardState{}
 		}
-		//blockchain.AllShardState[shardID] = append(blockchain.AllShardState[shardID], shardStates...)
+		blockchain.AllShardState[shardID] = append(blockchain.AllShardState[shardID], shardStates...)
 	}
 
 	// update param

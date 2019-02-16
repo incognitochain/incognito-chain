@@ -184,27 +184,19 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 	validSwap := make(map[byte][][]string)
 	//Get shard to beacon block from pool
 	shardsBlocks := blkTmplGenerator.shardToBeaconPool.GetValidPendingBlock()
-
 	//Shard block is a map ShardId -> array of shard block
-
 	stabilityInstructions := [][]string{}
 	accumulativeValues := &accumulativeValues{}
 	for shardID, shardBlocks := range shardsBlocks {
 		// Only accept block in one epoch
-		//tempShardBlocks := make([]ShardToBeaconBlock, len(shardBlocks))
-		//copy(tempShardBlocks, shardBlocks)
 		totalBlock := 0
-		//sort.SliceStable(tempShardBlocks[:], func(i, j int) bool {
-		//	return tempShardBlocks[i].Header.Height < tempShardBlocks[j].Header.Height
-		//})
-		//if !reflect.DeepEqual(tempShardBlocks, shardBlocks) {
-		//	panic("Shard To Beacon block not in right format of increasing height")
-		//}
+		//UNCOMMENT FOR TESTING
 		fmt.Println("Beacon Producer/ Got These Block from pool")
 		for _, shardBlocks := range shardBlocks {
 			fmt.Printf(" %+v ", shardBlocks.Header.Height)
 		}
 		fmt.Println()
+		//=======
 		for index, shardBlock := range shardBlocks {
 			currentCommittee := beaconBestState.ShardCommittee[shardID]
 			hash := shardBlock.Header.Hash()
