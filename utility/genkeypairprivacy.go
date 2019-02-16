@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/ninjadotorg/constant/common/base58"
 
 	"github.com/ninjadotorg/constant/cashec"
@@ -28,29 +29,35 @@ func main() {
 	burnPaymentAddress := burnKey.Base58CheckSerialize(wallet.PaymentAddressType)
 	fmt.Printf("Burn payment address : %s \n", burnPaymentAddress)
 
-	mnemonicGen := wallet.MnemonicGenerator{}
-	Entropy, _ := mnemonicGen.NewEntropy(128)
-	Mnemonic, _ := mnemonicGen.NewMnemonic(Entropy)
-	fmt.Printf("Mnemonic: %s\n", Mnemonic)
-	Seed := mnemonicGen.NewSeed(Mnemonic, "123456")
+	// mnemonicGen := wallet.MnemonicGenerator{}
+	// Entropy, _ := mnemonicGen.NewEntropy(128)
+	// Mnemonic, _ := mnemonicGen.NewMnemonic(Entropy)
+	// fmt.Printf("Mnemonic: %s\n", Mnemonic)
+	// Seed := mnemonicGen.NewSeed(Mnemonic, "123456")
 
-	key, _ := wallet.NewMasterKey(Seed)
-	var i int
-	var k = 0
-	for {
-		i++
-		child, _ := key.NewChildKey(uint32(i))
-		privAddr := child.Base58CheckSerialize(wallet.PriKeyType)
-		paymentAddress := child.Base58CheckSerialize(wallet.PaymentAddressType)
-		if child.KeySet.PaymentAddress.Pk[len(child.KeySet.PaymentAddress.Pk)-1] == 0 {
-			fmt.Printf("Acc %d:\n ", i)
-			fmt.Printf("paymentAddress: %v\n", paymentAddress)
-			fmt.Printf("privateKey: %v\n", privAddr)
-			k ++
-			if k == 3 {
-				break
-			}
-		}
-		i++
-	}
+	// key, _ := wallet.NewMasterKey(Seed)
+	// var i int
+	// var k = 0
+	// for {
+	// 	i++
+	// 	child, _ := key.NewChildKey(uint32(i))
+	// 	privAddr := child.Base58CheckSerialize(wallet.PriKeyType)
+	// 	paymentAddress := child.Base58CheckSerialize(wallet.PaymentAddressType)
+	// 	if child.KeySet.PaymentAddress.Pk[len(child.KeySet.PaymentAddress.Pk)-1] == 0 {
+	// 		fmt.Printf("Acc %d:\n ", i)
+	// 		fmt.Printf("paymentAddress: %v\n", paymentAddress)
+	// 		fmt.Printf("privateKey: %v\n", privAddr)
+	// 		k++
+	// 		if k == 3 {
+	// 			break
+	// 		}
+	// 	}
+	// 	i++
+	// }
+
+	//112t8rqnMrtPkJ4YWzXfG82pd9vCe2jvWGxqwniPM5y4hnimki6LcVNfXxN911ViJS8arTozjH4rTpfaGo5i1KKcG1ayjiMsa4E3nABGAqQh
+	keyWallet, _ := wallet.Base58CheckDeserialize("112t8rpdxySoXQJStHXoqTEnS9Mxtzibug2TE7dnrcLf4Xtt6MKNXrejqWrPFDvAKz7PigpanC4bh8Q86LgaRhvi6Q89qPSA2VHavT4kpsCq")
+	keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	fmt.Println(base58.Base58Check{}.Encode(keyWallet.KeySet.PaymentAddress.Pk, byte(0x00)))
+	fmt.Printf("Pub-key : %+v \n", keyWallet.Base58CheckSerialize(wallet.PaymentAddressType))
 }
