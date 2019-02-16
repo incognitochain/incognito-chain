@@ -297,7 +297,6 @@ func (blockchain *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconB
 		}
 	}
 	//=============End Verify Stakers
-	//TODO @merman logic check you must
 	// Verify shard state
 	for shardID, shardStates := range block.Body.ShardState {
 		// Do not check this condition with first minted block (genesis block height = 1)
