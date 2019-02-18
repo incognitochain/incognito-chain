@@ -76,6 +76,7 @@ const (
 	RewardShareOldGOVBoardMeta
 	PunishDCBDecryptMeta
 	PunishGOVDecryptMeta
+	SendBackTokenVoteFailMeta
 
 	// STAKING
 	ShardStakingMeta
