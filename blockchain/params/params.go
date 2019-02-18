@@ -73,8 +73,8 @@ func NewDCBParams(
 	minLoanResponseRequire uint8,
 	minCMBApprovalRequire uint8,
 	lateWithdrawResponseFine uint64,
-	raiseReserveData *RaiseReserveData,
-	spendReserveData *SpendReserveData,
+	raiseReserveData map[common.Hash]*RaiseReserveData,
+	spendReserveData map[common.Hash]*SpendReserveData,
 	dividendAmount uint64,
 	listLoanParams []LoanParams,
 ) *DCBParams {
@@ -186,8 +186,14 @@ func (dcbParams *DCBParams) Hash() *common.Hash {
 	for _, saleData := range dcbParams.ListSaleData {
 		record = string(saleData.Hash().GetBytes())
 	}
-	record += dcbParams.RaiseReserveData.Hash().String()
-	record += dcbParams.SpendReserveData.Hash().String()
+	for key, data := range dcbParams.RaiseReserveData {
+		record := string(key[:])
+		record += data.Hash().String()
+	}
+	for key, data := range dcbParams.SpendReserveData {
+		record := string(key[:])
+		record += data.Hash().String()
+	}
 	record += string(dcbParams.MinLoanResponseRequire)
 	record += string(dcbParams.MinCMBApprovalRequire)
 	record += string(dcbParams.LateWithdrawResponseFine)
