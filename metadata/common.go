@@ -143,7 +143,6 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PunishDCBDecryptMetadata{}
 	case PunishGOVDecryptMeta:
 		md = &PunishGOVDecryptMetadata{}
-
 	case ShardStakingMeta:
 		md = &StakingMetadata{}
 	case BeaconStakingMeta:

@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
@@ -194,4 +195,26 @@ func (blockchain *BlockChain) GetDepositSend(contractID []byte) ([]byte, error) 
 
 func (blockchain *BlockChain) GetWithdrawRequest(contractID []byte) ([]byte, uint8, error) {
 	return blockchain.config.DataBase.GetWithdrawRequest(contractID)
+}
+
+func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]string, map[byte][]string, []string, []string, []string, []string, []string, []string) {
+	beaconBestState := BestStateBeacon{}
+	temp, err := blockchain.config.DataBase.FetchBeaconBestState()
+	if err != nil {
+		panic("Can't Fetch Beacon BestState")
+	} else {
+		if err := json.Unmarshal(temp, &beaconBestState); err != nil {
+			Logger.log.Error(err)
+			panic("Fail to unmarshal Beacon BestState")
+		}
+	}
+	SC := beaconBestState.ShardCommittee
+	SPV := beaconBestState.ShardPendingValidator
+	BC := beaconBestState.BeaconCommittee
+	BPV := beaconBestState.BeaconPendingValidator
+	CBWFCR := beaconBestState.CandidateBeaconWaitingForCurrentRandom
+	CBWFNR := beaconBestState.CandidateBeaconWaitingForNextRandom
+	CSWFCR := beaconBestState.CandidateShardWaitingForCurrentRandom
+	CSWFNR := beaconBestState.CandidateShardWaitingForNextRandom
+	return SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR
 }
