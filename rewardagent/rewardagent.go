@@ -15,11 +15,11 @@ type RewardAgentConfig struct {
 	BlockChain *blockchain.BlockChain
 }
 
-func (rewardAgent RewardAgent) Init(cfg *RewardAgentConfig) (*RewardAgent, error) {
+func (rewardAgent RewardAgent) Init(cfg *RewardAgentConfig) (*RewardAgent) {
 	rewardAgent.config = cfg
 	rewardAgent.quit = make(chan struct{})
 	rewardAgent.msgChan = make(chan interface{})
-	return &rewardAgent, nil
+	return &rewardAgent
 }
 
 func (self *RewardAgent) GetBasicSalary(shardID byte) uint64 {
