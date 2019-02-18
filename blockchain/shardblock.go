@@ -12,7 +12,7 @@ import (
 
 type ShardBlock struct {
 	AggregatedSig string  `json:"AggregatedSig"`
-	R             string  `json:"r"`
+	R             string  `json:"R"`
 	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
 	ProducerSig   string  `json:"ProducerSig"`
 	Body          ShardBody
@@ -21,7 +21,7 @@ type ShardBlock struct {
 
 type ShardToBeaconBlock struct {
 	AggregatedSig string  `json:"AggregatedSig"`
-	R             string  `json:"r"`
+	R             string  `json:"R"`
 	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
 	ProducerSig   string  `json:"ProducerSig"`
 
@@ -31,7 +31,7 @@ type ShardToBeaconBlock struct {
 
 type CrossShardBlock struct {
 	AggregatedSig string  `json:"AggregatedSig"`
-	R             string  `json:"r"`
+	R             string  `json:"R"`
 	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
 	ProducerSig   string  `json:"ProducerSig"`
 
@@ -58,7 +58,7 @@ func (shardBlock *ShardBlock) Hash() *common.Hash {
 func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 	tempBlk := &struct {
 		AggregatedSig string
-		R             string `json:"r"`
+		R             string `json:"R"`
 		ValidatorsIdx [][]int
 		ProducerSig   string
 		Header        ShardHeader
