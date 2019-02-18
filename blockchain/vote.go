@@ -41,6 +41,9 @@ type ConstitutionHelper interface {
 	GetThresholdRatioOfCrisis() int32
 	GetOldNationalWelfare(chain *BlockChain) int32
 	GetNumberOfGovernor() int32
+	GetSubmitProposalInfo(tx metadata.Transaction) (*metadata.SubmitProposalInfo, error)
+	GetProposalTxID(tx metadata.Transaction) (hash *common.Hash)
+	SetNewConstitution(constitutionInfo *ConstitutionInfo, welfare int32, submitProposalTx metadata.Transaction)
 }
 
 func (blockgen *BlkTmplGenerator) createRewardProposalWinnerTx(
@@ -251,33 +254,32 @@ func (self *BlockChain) createAcceptBoardTxIns(
 	return []toshardins.Instruction{txAcceptBoardIns}, nil
 }
 
-func (block *BeaconBlock) UpdateDCBBoard(thisTx metadata.Transaction) error {
-	// meta := thisTx.GetMetadata().(*metadata.AcceptDCBBoardMetadata)
-	// block.Header.DCBGovernor.BoardIndex += 1
-	// block.Header.DCBGovernor.BoardPaymentAddress = meta.BoardPaymentAddress
-	// block.Header.DCBGovernor.StartedBlock = uint32(block.Header.Height)
-	// block.Header.DCBGovernor.EndBlock = block.Header.DCBGovernor.StartedBlock + common.DurationOfTermDCB
-	// block.Header.DCBGovernor.StartAmountToken = meta.StartAmountToken
+func (block *BestStateBeacon) UpdateDCBBoard(tx metadata.Transaction) error {
+	meta := tx.GetMetadata().(*metadata.AcceptDCBBoardMetadata)
+	block.StabilityInfo.DCBGovernor.BoardIndex += 1
+	block.StabilityInfo.DCBGovernor.BoardPaymentAddress = meta.AcceptBoardMetadata.BoardPaymentAddress
+	block.StabilityInfo.DCBGovernor.StartedBlock = block.BestBlock.Header.Height
+	block.StabilityInfo.DCBGovernor.EndBlock = block.StabilityInfo.DCBGovernor.StartedBlock + common.DurationOfDCBBoard
+	block.StabilityInfo.DCBGovernor.StartAmountToken = meta.AcceptBoardMetadata.StartAmountToken
 	return nil
 }
 
-func (block *BeaconBlock) UpdateGOVBoard(thisTx metadata.Transaction) error {
-	// meta := thisTx.GetMetadata().(*metadata.AcceptGOVBoardMetadata)
-	// block.Header.GOVGovernor.BoardPaymentAddress = meta.BoardPaymentAddress
-	// block.Header.GOVGovernor.StartedBlock = uint32(block.Header.Height)
-	// block.Header.GOVGovernor.EndBlock = block.Header.GOVGovernor.StartedBlock + common.DurationOfTermGOV
-	// block.Header.GOVGovernor.StartAmountToken = meta.StartAmountToken
+func (block *BestStateBeacon) UpdateGOVBoard(tx metadata.Transaction) error {
+	meta := tx.GetMetadata().(*metadata.AcceptGOVBoardMetadata)
+	block.StabilityInfo.GOVGovernor.BoardIndex += 1
+	block.StabilityInfo.GOVGovernor.BoardPaymentAddress = meta.AcceptBoardMetadata.BoardPaymentAddress
+	block.StabilityInfo.GOVGovernor.StartedBlock = block.BestBlock.Header.Height
+	block.StabilityInfo.GOVGovernor.EndBlock = block.StabilityInfo.GOVGovernor.StartedBlock + common.DurationOfGOVBoard
+	block.StabilityInfo.GOVGovernor.StartAmountToken = meta.AcceptBoardMetadata.StartAmountToken
 	return nil
 }
 
-func (block *BeaconBlock) UpdateDCBFund(tx metadata.Transaction) error {
-	// block.Header.BankFund -= common.RewardProposalSubmitter
-	return nil
+func (block *BestStateBeacon) UpdateDCBFund(tx metadata.Transaction) {
+	block.StabilityInfo.BankFund -= common.RewardProposalSubmitter
 }
 
-func (block *BeaconBlock) UpdateGOVFund(tx metadata.Transaction) error {
-	// block.Header.SalaryFund -= common.RewardProposalSubmitter
-	return nil
+func (block *BestStateBeacon) UpdateGOVFund(tx metadata.Transaction) {
+	block.StabilityInfo.SalaryFund -= common.RewardProposalSubmitter
 }
 
 func createSendBackTokenVoteFailIns(
@@ -536,7 +538,7 @@ func (self *BlockChain) generateVotingInstruction(minerPrivateKey *privacy.Spend
 	dcbHelper := DCBConstitutionHelper{}
 	govHelper := GOVConstitutionHelper{}
 	db := self.config.DataBase
-	instruction := make([]toshardins.Instruction, 0)
+	instructions := make([]toshardins.Instruction, 0)
 
 	//============================ VOTE PROPOSAL
 	//coinbases := []metadata.Transaction{salaryTx}
@@ -585,20 +587,24 @@ func (self *BlockChain) generateVotingInstruction(minerPrivateKey *privacy.Spend
 		if err != nil {
 			return nil, err
 		}
-		instruction = append(instruction, updateGovernorInstruction...)
+		instructions = append(instructions, updateGovernorInstruction...)
 	}
 	if self.neededNewGovernor(common.GOVBoard) {
 		updateGovernorInstruction, err := self.CreateUpdateNewGovernorInstruction(GOVConstitutionHelper{}, minerPrivateKey, shardID)
 		if err != nil {
 			return nil, err
 		}
-		instruction = append(instruction, updateGovernorInstruction...)
+		instructions = append(instructions, updateGovernorInstruction...)
 	}
-	instructionString := make([][]string, 0)
-	for _, i := range instruction {
-		instructionString = append(instructionString, i.GetStringFormat())
+	instructionsString := make([][]string, 0)
+	for _, instruction := range instructions {
+		instructionString, err := instruction.GetStringFormat()
+		if err != nil {
+			return nil, err
+		}
+		instructionsString = append(instructionsString, instructionString)
 	}
-	return instructionString, nil
+	return instructionsString, nil
 }
 
 func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
@@ -612,4 +618,31 @@ func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
 		return true
 	}
 	return false
+}
+
+func (bestStateBeacon *BestStateBeacon) updateConstitution(
+	tx metadata.Transaction,
+	bc *BlockChain,
+	helper ConstitutionHelper,
+) error {
+	proposalTxID := helper.GetProposalTxID(tx)
+	_, _, _, submitProposalTx, err := bc.GetTransactionByHash(proposalTxID)
+	if err != nil {
+		return err
+	}
+	submitProposalInfo, err := helper.GetSubmitProposalInfo(submitProposalTx)
+	if err != nil {
+		return err
+	}
+	previousConstitutionIndex := bc.GetConstitutionIndex(helper)
+	newConstitutionIndex := previousConstitutionIndex + 1
+	constitutionInfo := NewConstitutionInfo(
+		newConstitutionIndex,
+		uint64(bestStateBeacon.BestBlock.Header.Height),
+		submitProposalInfo.ExecuteDuration,
+		submitProposalInfo.Explanation,
+		*tx.Hash(),
+	)
+	helper.SetNewConstitution(constitutionInfo, GetOracleDCBNationalWelfare(), submitProposalTx)
+	return nil
 }
