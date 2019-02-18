@@ -67,6 +67,11 @@ func (rpcServer RpcServer) handleCreateRawTxWithIssuingRequest(params interface{
 	assetTypeBytes := []byte(issuingReq["AssetType"].(string))
 	assetType := common.Hash{}
 	copy(assetType[:], assetTypeBytes)
+
+	currencyTypeBytes := []byte(issuingReq["CurrencyType"].(string))
+	currencyType := common.Hash{}
+	copy(currencyType[:], currencyTypeBytes)
+
 	metaType := metadata.IssuingRequestMeta
 	receiverAddressMap := issuingReq["ReceiverAddress"].(map[string]interface{})
 	receiverAddress := privacy.PaymentAddress{
@@ -78,6 +83,7 @@ func (rpcServer RpcServer) handleCreateRawTxWithIssuingRequest(params interface{
 		receiverAddress,
 		depositedAmount,
 		assetType,
+		currencyType,
 		metaType,
 	)
 
