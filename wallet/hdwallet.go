@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha512"
-
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common/base58"
 )
@@ -181,3 +180,4 @@ func Base58CheckDeserialize(data string) (*KeyWallet, error) {
 	}
 	return Deserialize(b)
 }
+
