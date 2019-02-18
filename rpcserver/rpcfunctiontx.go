@@ -4,9 +4,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"github.com/ninjadotorg/constant/privacy"
 	"math/big"
 	"time"
+
+	"github.com/ninjadotorg/constant/privacy"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -213,23 +214,29 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+	db := *(rpcServer.config.Database)
+	blockHeight, _, err := db.GetIndexOfBlock(blockHash)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 	result := jsonresult.TransactionDetail{}
 	switch tx.GetType() {
 	case common.TxNormalType, common.TxSalaryType:
 		{
 			tempTx := tx.(*transaction.Tx)
 			result = jsonresult.TransactionDetail{
-				BlockHash: blockHash.String(),
-				Index:     uint64(index),
-				ShardID:   shardID,
-				Hash:      tx.Hash().String(),
-				Version:   tempTx.Version,
-				Type:      tempTx.Type,
-				LockTime:  time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
-				Fee:       tempTx.Fee,
-				Proof:     tempTx.Proof,
-				SigPubKey: tempTx.SigPubKey,
-				Sig:       tempTx.Sig,
+				BlockHash:   blockHash.String(),
+				BlockHeight: blockHeight,
+				Index:       uint64(index),
+				ShardID:     shardID,
+				Hash:        tx.Hash().String(),
+				Version:     tempTx.Version,
+				Type:        tempTx.Type,
+				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
+				Fee:         tempTx.Fee,
+				Proof:       tempTx.Proof,
+				SigPubKey:   tempTx.SigPubKey,
+				Sig:         tempTx.Sig,
 			}
 			if len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))
@@ -241,17 +248,18 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 		{
 			tempTx := tx.(*transaction.TxCustomToken)
 			result = jsonresult.TransactionDetail{
-				BlockHash: blockHash.String(),
-				Index:     uint64(index),
-				ShardID:   shardID,
-				Hash:      tx.Hash().String(),
-				Version:   tempTx.Version,
-				Type:      tempTx.Type,
-				LockTime:  time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
-				Fee:       tempTx.Fee,
-				Proof:     tempTx.Proof,
-				SigPubKey: tempTx.SigPubKey,
-				Sig:       tempTx.Sig,
+				BlockHash:   blockHash.String(),
+				BlockHeight: blockHeight,
+				Index:       uint64(index),
+				ShardID:     shardID,
+				Hash:        tx.Hash().String(),
+				Version:     tempTx.Version,
+				Type:        tempTx.Type,
+				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
+				Fee:         tempTx.Fee,
+				Proof:       tempTx.Proof,
+				SigPubKey:   tempTx.SigPubKey,
+				Sig:         tempTx.Sig,
 			}
 			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
 			result.CustomTokenData = string(txCustomData)
@@ -267,17 +275,18 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 		{
 			tempTx := tx.(*transaction.TxCustomTokenPrivacy)
 			result = jsonresult.TransactionDetail{
-				BlockHash: blockHash.String(),
-				Index:     uint64(index),
-				ShardID:   shardID,
-				Hash:      tx.Hash().String(),
-				Version:   tempTx.Version,
-				Type:      tempTx.Type,
-				LockTime:  time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
-				Fee:       tempTx.Fee,
-				Proof:     tempTx.Proof,
-				SigPubKey: tempTx.SigPubKey,
-				Sig:       tempTx.Sig,
+				BlockHash:   blockHash.String(),
+				BlockHeight: blockHeight,
+				Index:       uint64(index),
+				ShardID:     shardID,
+				Hash:        tx.Hash().String(),
+				Version:     tempTx.Version,
+				Type:        tempTx.Type,
+				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
+				Fee:         tempTx.Fee,
+				Proof:       tempTx.Proof,
+				SigPubKey:   tempTx.SigPubKey,
+				Sig:         tempTx.Sig,
 			}
 			if len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))
