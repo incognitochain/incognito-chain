@@ -189,11 +189,6 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		proof.cmsValue[i] = privacy.PedCom.CommitAtIndex(values[i], rands[i], privacy.VALUE)
 	}
 
-	cmValuePad := make([]*privacy.EllipticPoint, numValuePad)
-	for i := 0; i < numValuePad; i++ {
-		cmValuePad[i] = privacy.PedCom.CommitAtIndex(values[i], rands[i], privacy.VALUE)
-	}
-
 	n := privacy.MaxExp
 	// Convert values to binary array
 	aL := make([]*big.Int, numValuePad*n)
