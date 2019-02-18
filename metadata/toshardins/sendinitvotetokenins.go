@@ -1,11 +1,13 @@
 package toshardins
 
 import (
+	"encoding/json"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
+	"strconv"
 )
 
 type TxSendInitDCBVoteTokenMetadataIns struct {
@@ -13,8 +15,17 @@ type TxSendInitDCBVoteTokenMetadataIns struct {
 	ReceiverPaymentAddress privacy.PaymentAddress
 }
 
-func (txSendInitDCBVoteTokenMetadataIns *TxSendInitDCBVoteTokenMetadataIns) GetStringFormat() []string {
-	panic("implement me")
+func (txSendInitDCBVoteTokenMetadataIns *TxSendInitDCBVoteTokenMetadataIns) GetStringFormat() ([]string, error) {
+	content, err := json.Marshal(txSendInitDCBVoteTokenMetadataIns)
+	if err != nil {
+		return nil, err
+	}
+	shardID := GetShardIDFromPaymentAddressBytes(txSendInitDCBVoteTokenMetadataIns.ReceiverPaymentAddress)
+	return []string{
+		strconv.Itoa(metadata.SendInitDCBVoteTokenMeta),
+		strconv.Itoa(int(shardID)),
+		string(content),
+	}, nil
 }
 
 func NewTxSendInitDCBVoteTokenMetadataIns(amount uint32, receiverPaymentAddress privacy.PaymentAddress) *TxSendInitDCBVoteTokenMetadataIns {
@@ -42,8 +53,17 @@ type TxSendInitGOVVoteTokenMetadataIns struct {
 	ReceiverPaymentAddress privacy.PaymentAddress
 }
 
-func (txSendInitGOVVoteTokenMetadataIns *TxSendInitGOVVoteTokenMetadataIns) GetStringFormat() []string {
-	panic("implement me")
+func (txSendInitGOVVoteTokenMetadataIns *TxSendInitGOVVoteTokenMetadataIns) GetStringFormat() ([]string, error) {
+	content, err := json.Marshal(txSendInitGOVVoteTokenMetadataIns)
+	if err != nil {
+		return nil, err
+	}
+	shardID := GetShardIDFromPaymentAddressBytes(txSendInitGOVVoteTokenMetadataIns.ReceiverPaymentAddress)
+	return []string{
+		strconv.Itoa(metadata.SendInitGOVVoteTokenMeta),
+		strconv.Itoa(int(shardID)),
+		string(content),
+	}, nil
 }
 
 func NewTxSendInitGOVVoteTokenMetadataIns(amount uint32, receiverPaymentAddress privacy.PaymentAddress) *TxSendInitGOVVoteTokenMetadataIns {
