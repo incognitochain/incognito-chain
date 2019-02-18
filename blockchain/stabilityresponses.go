@@ -44,10 +44,46 @@ type IssuingReqAction struct {
 	Meta    metadata.IssuingRequest `json:"meta"`
 }
 
+func buildInstructionTypeForIssuingAction(
+	beaconBestState *BestStateBeacon,
+	md *IssuingRequest,
+) string {
+	if bytes.Equal(md.AssetType[:], common.ConstantID[:]) {
+		return "accepted"
+	}
+	// process for DCB token case
+	stabilityInfo := beaconBestState.StabilityInfo
+	raiseReserveData := stabilityInfo.DCBConstitution.DCBParams.RaiseReserveData
+	bestBlockHeight := beaconBestState.BestBlock.Header.Height
+	oracle := stabilityInfo.Oracle
+	if raiseReserveData == nil {
+		return "refund"
+	}
+
+	reqAmt := 0
+	var existed bool
+	var reserveData *RaiseReserveData
+	if bytes.Equal(md.CurrencyType, common.USDAssetID) {
+		reserveData, existed = raiseReserveData[common.USDAssetID]
+		reqAmt = md.DepositedAmount / oracle.DCBToken
+	} else bytes.Equal(md.CurrencyType, common.ETHAssetID) {
+		reserveData, existed = raiseReserveData[common.ETHAssetID]
+		reqAmt = (md.DepositedAmount * oracle.ETH) / oracle.DCBToken
+	}
+	if !existed ||
+		bestBlockHeight+1 > reserveData.EndBlock ||
+		reserveData.Amount == 0 ||
+		reserveData.Amount < reqAmt {
+		return "refund"
+	}
+	return "accepted"
+}
+
 func buildInstructionsForIssuingReq(
 	shardID byte,
 	contentStr string,
 	beaconBestState *BestStateBeacon,
+	accumulativeValues *accumulativeValues,
 ) ([][]string, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -61,21 +97,7 @@ func buildInstructionsForIssuingReq(
 	md := issuingReqAction.Meta
 	reqTxID := issuingReqAction.TxReqID
 	instructions := [][]string{}
-	stabilityInfo := beaconBestState.StabilityInfo
-	saleDBCTokensByUSDData := stabilityInfo.DCBConstitution.DCBParams.SaleDCBTokensByUSDData
-	bestBlockHeight := beaconBestState.BestBlock.Header.Height
-	oracle := stabilityInfo.Oracle
-	reqAmt := md.DepositedAmount / oracle.DCBToken
-	instType := "accepted"
-	if bytes.Equal(md.AssetType[:], common.DCBTokenID[:]) {
-		if saleDBCTokensByUSDData == nil ||
-			bestBlockHeight+1 > saleDBCTokensByUSDData.EndBlock ||
-			saleDBCTokensByUSDData.Amount < reqAmt {
-			instType = "refund"
-		} else { // accepted
-			stabilityInfo.DCBConstitution.DCBParams.SaleDCBTokensByUSDData.Amount -= reqAmt
-		}
-	}
+	instType := buildInstructionTypeForIssuingAction(beaconBestState, md)
 
 	iInfo := IssuingInfo{
 		ReceiverAddress: md.ReceiverAddress,
@@ -304,7 +326,7 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 			instructions = append(instructions, buyBackInst...)
 
 		case metadata.IssuingRequestMeta:
-			issuingInst, err := buildInstructionsForIssuingReq(shardID, contentStr, beaconBestState)
+			issuingInst, err := buildInstructionsForIssuingReq(shardID, contentStr, beaconBestState, accumulativeValues)
 			if err != nil {
 				return [][]string{}, err
 			}
