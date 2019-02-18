@@ -178,6 +178,11 @@ func (bc *BlockChain) GetAllCrowdsales() ([]*params.SaleData, error) {
 	return saleDataList, err
 }
 
+//// Reserve
+func (bc *BlockChain) GetAssetPrice(assetID *common.Hash) uint64 {
+	return bc.BestState.Beacon.getAssetPrice(*assetID)
+}
+
 //// CMB
 func (bc *BlockChain) GetCMB(mainAccount []byte) (privacy.PaymentAddress, []privacy.PaymentAddress, uint64, *common.Hash, uint8, uint64, error) {
 	reserveAcc, members, capital, hash, state, fine, err := bc.config.DataBase.GetCMB(mainAccount)
