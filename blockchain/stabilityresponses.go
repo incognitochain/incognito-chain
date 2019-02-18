@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"github.com/ninjadotorg/constant/metadata/toshardins"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
@@ -634,7 +635,11 @@ func (blockgen *BlkTmplGenerator) buildBuyBondsFromGOVRes(
 	return []metadata.Transaction{}, nil
 }
 
-func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.SpendingKey, shardID byte) ([]metadata.Transaction, error) {
+func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
+	beaconBlocks []*BeaconBlock,
+	producerPrivateKey *privacy.SpendingKey,
+	shardID byte,
+) ([]metadata.Transaction, error) {
 	// TODO(@0xbunyip): refund bonds in multiple blocks since many refund instructions might come at once and UTXO picking order is not perfect
 	unspentTokenMap := map[string]([]transaction.TxTokenVout){}
 	resTxs := []metadata.Transaction{}
@@ -644,8 +649,8 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(beac
 			if l[0] == "stake" || l[0] == "swap" || l[0] == "random" {
 				continue
 			}
+			continue
 			if len(l) <= 2 {
-				continue
 			}
 			shardToProcess, err := strconv.Atoi(l[1])
 			if err == nil && shardToProcess == int(shardID) {
@@ -690,6 +695,54 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(beac
 					}
 					resTxs = append(resTxs, txs...)
 
+				case metadata.AcceptDCBBoardMeta:
+					acceptDCBBoardIns := toshardins.TxAcceptDCBBoardIns{}
+					err := json.Unmarshal([]byte(l[2]), &acceptDCBBoardIns)
+					if err != nil {
+						return nil, err
+					}
+					txs := acceptDCBBoardIns.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					resTxs = append(resTxs, txs)
+				case metadata.AcceptGOVBoardMeta:
+					acceptGOVBoardIns := toshardins.TxAcceptGOVBoardIns{}
+					err := json.Unmarshal([]byte(l[2]), &acceptGOVBoardIns)
+					if err != nil {
+						return nil, err
+					}
+					txs := acceptGOVBoardIns.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					resTxs = append(resTxs, txs)
+				case metadata.SendBackTokenVoteFailMeta:
+					sendBackTokenVoteFail := toshardins.TxSendBackTokenVoteFailIns{}
+					err := json.Unmarshal([]byte(l[2]), &sendBackTokenVoteFail)
+					if err != nil {
+						return nil, err
+					}
+					txs := sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					resTxs = append(resTxs, txs)
+				case metadata.SendInitDCBVoteTokenMeta:
+					sendInitDCBVoteToken := toshardins.TxSendInitDCBVoteTokenMetadataIns{}
+					err := json.Unmarshal([]byte(l[2]), &sendInitDCBVoteToken)
+					if err != nil {
+						return nil, err
+					}
+					txs := sendInitDCBVoteToken.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					resTxs = append(resTxs, txs)
+				case metadata.SendInitGOVVoteTokenMeta:
+					sendInitGOVVoteToken := toshardins.TxSendInitGOVVoteTokenMetadataIns{}
+					err := json.Unmarshal([]byte(l[2]), &sendInitGOVVoteToken)
+					if err != nil {
+						return nil, err
+					}
+					txs := sendInitGOVVoteToken.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					resTxs = append(resTxs, txs)
+				case metadata.ShareRewardOldDCBBoardMeta, metadata.ShareRewardOldGOVBoardMeta:
+					shareRewardOldBoard := toshardins.TxShareRewardOldBoardMetadataIns{}
+					err := json.Unmarshal([]byte(l[2]), &shareRewardOldBoard)
+					if err != nil {
+						return nil, err
+					}
+					txs := shareRewardOldBoard.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					resTxs = append(resTxs, txs)
 				case metadata.IssuingRequestMeta:
 					issuingInfoStr := l[3]
 					txs, err := blockgen.buildIssuingRes(l[2], issuingInfoStr, producerPrivateKey)
