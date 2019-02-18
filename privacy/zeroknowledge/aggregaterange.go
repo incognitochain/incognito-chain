@@ -2,8 +2,9 @@ package zkp
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/privacy"
 	"math/big"
+
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 // This protocol proves in zero-knowledge that a list of committed values falls in [0, 2^64)
@@ -439,8 +440,10 @@ func (proof *AggregatedRangeProof) Verify() bool {
 	numValue := len(proof.cmsValue)
 	numValuePad := pad(numValue)
 
+	tmpcmsValue := proof.cmsValue
+
 	for i := numValue; i < numValuePad; i++ {
-		proof.cmsValue = append(proof.cmsValue, new(privacy.EllipticPoint).Zero())
+		tmpcmsValue = append(tmpcmsValue, new(privacy.EllipticPoint).Zero())
 	}
 
 	AggParam := newBulletproofParams(numValuePad)
@@ -505,7 +508,7 @@ func (proof *AggregatedRangeProof) Verify() bool {
 	right1 := privacy.PedCom.G[privacy.VALUE].ScalarMult(deltaYZ).Add(proof.T1.ScalarMult(x)).Add(proof.T2.ScalarMult(xSquare))
 
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
-	for i, cm := range proof.cmsValue {
+	for i, cm := range tmpcmsValue {
 		right1 = right1.Add(cm.ScalarMult(expVector[i]))
 	}
 
