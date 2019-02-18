@@ -8,6 +8,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/pkg/errors"
 )
 
 type ContractingRequest struct {
@@ -16,14 +17,28 @@ type ContractingRequest struct {
 }
 
 func NewContractingRequest(
+	currencyType common.Hash,
 	metaType int,
-) *ContractingRequest {
+) (*ContractingRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
-	contractingReq := &ContractingRequest{}
+	contractingReq := &ContractingRequest{
+		CurrencyType: currencyType,
+	}
 	contractingReq.MetadataBase = metadataBase
-	return contractingReq
+	return contractingReq, nil
+}
+
+func NewContractingRequestFromMap(data map[string]interface{}) (Metadata, error) {
+	currencyType, err := common.NewHashFromStr(data["CurrencyType"].(string))
+	if err != nil {
+		return nil, errors.Errorf("CurrencyType incorrect")
+	}
+	return NewContractingRequest(
+		*currencyType,
+		IssuingRequestMeta,
+	)
 }
 
 func (cReq *ContractingRequest) ValidateTxWithBlockChain(

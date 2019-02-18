@@ -22,6 +22,8 @@ var metaConstructors = map[string]metaConstructorType{
 	CreateAndSendLoanPayment:              metadata.NewLoanPayment,
 	CreateAndSendCrowdsaleRequestToken:    metadata.NewCrowdsaleRequest,
 	CreateAndSendCrowdsaleRequestConstant: metadata.NewCrowdsaleRequest,
+	CreateAndSendIssuingRequest:           metadata.NewIssuingRequestFromMap,
+	CreateAndSendContractingRequest:       metadata.NewContractingRequestFromMap,
 }
 
 func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan <-chan struct{}, metaConstructorType metaConstructorType) (interface{}, *RPCError) {
