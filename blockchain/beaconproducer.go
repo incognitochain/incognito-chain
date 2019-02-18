@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/transaction"
 	"reflect"
 	"strconv"
 	"strings"
@@ -318,44 +316,12 @@ func (self *BlkTmplGenerator) processInstruction(beaconBestState *BestStateBeaco
 		return err
 	}
 	contentBytes, err := base64.StdEncoding.DecodeString(instruction[1])
+	_ = contentBytes
 	if err != nil {
 		return err
 	}
 	switch metaType {
-	case metadata.VoteDCBBoardMeta:
-		{
-			instructionContent := map[string]interface{}{}
-			err := json.Unmarshal([]byte(contentBytes), instructionContent)
-			if err != nil {
-				return err
-			}
-			tx := instructionContent["regTx"].(*transaction.TxCustomToken)
-			meta := tx.GetMetadata().(*metadata.VoteDCBBoardMetadata)
-			boardIndex := beaconBestState.StabilityInfo.DCBGovernor.BoardIndex
-			_ = boardIndex
-			voteAmount := tx.GetAmountOfVote()
-			err = self.chain.config.DataBase.AddVoteBoard(common.DCBBoard, boardIndex, tx.TxTokenData.Vins[0].PaymentAddress, meta.VoteBoardMetadata.CandidatePaymentAddress, voteAmount)
-			if err != nil {
-				return err
-			}
-		}
-	case metadata.VoteGOVBoardMeta:
-		{
-			instructionContent := map[string]interface{}{}
-			err := json.Unmarshal([]byte(contentBytes), instructionContent)
-			if err != nil {
-				return err
-			}
-			tx := instructionContent["regTx"].(*transaction.TxCustomToken)
-			meta := tx.GetMetadata().(*metadata.VoteGOVBoardMetadata)
-			boardIndex := beaconBestState.StabilityInfo.GOVGovernor.BoardIndex
-			_ = boardIndex
-			voteAmount := tx.GetAmountOfVote()
-			err = self.chain.config.DataBase.AddVoteBoard(common.GOVBoard, boardIndex, tx.TxTokenData.Vins[0].PaymentAddress, meta.VoteBoardMetadata.CandidatePaymentAddress, voteAmount)
-			if err != nil {
-				return err
-			}
-		}
+	// process some instruction without create tx (update params,...)
 	default:
 		return nil
 	}

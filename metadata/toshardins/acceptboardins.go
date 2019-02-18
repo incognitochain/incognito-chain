@@ -1,15 +1,17 @@
 package toshardins
 
 import (
+	"encoding/json"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
+	"strconv"
 )
 
 type Instruction interface {
-	GetStringFormat() []string
+	GetStringFormat() ([]string, error)
 }
 
 type TxAcceptDCBBoardIns struct {
@@ -17,8 +19,16 @@ type TxAcceptDCBBoardIns struct {
 	StartAmountToken    uint64
 }
 
-func (txAcceptDCBBoardIns *TxAcceptDCBBoardIns) GetStringFormat() []string {
-	panic("implement me")
+func (txAcceptDCBBoardIns *TxAcceptDCBBoardIns) GetStringFormat() ([]string, error) {
+	content, err := json.Marshal(txAcceptDCBBoardIns)
+	if err != nil {
+		return nil, err
+	}
+	return []string{
+		strconv.Itoa(metadata.AcceptDCBBoardMeta),
+		strconv.Itoa(-1),
+		string(content),
+	}, nil
 }
 
 func (txAcceptDCBBoardIns *TxAcceptDCBBoardIns) BuildTransaction(
@@ -36,8 +46,16 @@ type TxAcceptGOVBoardIns struct {
 	StartAmountToken    uint64
 }
 
-func (txAcceptGOVBoardIns *TxAcceptGOVBoardIns) GetStringFormat() []string {
-	panic("implement me")
+func (txAcceptGOVBoardIns *TxAcceptGOVBoardIns) GetStringFormat() ([]string, error) {
+	content, err := json.Marshal(txAcceptGOVBoardIns)
+	if err != nil {
+		return nil, err
+	}
+	return []string{
+		strconv.Itoa(metadata.AcceptGOVBoardMeta),
+		strconv.Itoa(-1),
+		string(content),
+	}, nil
 }
 
 func (txAcceptGOVBoardIns *TxAcceptGOVBoardIns) BuildTransaction(

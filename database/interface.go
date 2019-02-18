@@ -106,7 +106,7 @@ type DatabaseInterface interface {
 	StoreCustomTokenTx(tokenID *common.Hash, shardID byte, blockHeight uint64, txIndex int32, data []byte) error // store custom token tx. Param: tokenID, shardID, block height, tx-id, data tx
 	ListCustomToken() ([][]byte, error)                                                                          // get list all custom token which issued in network
 	CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error)                                                 // from token id get all custom txs
-	GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddress []byte) (map[string]string, error)             // get list of utxo of an paymentaddress.pubkey of a token
+	GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddress []byte) (map[string]string, error)     // get list of utxo of an paymentaddress.pubkey of a token
 	GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error)                       // get balance of all paymentaddress of a token (only return payment address with balance > 0)
 	UpdateRewardAccountUTXO(tokenID *common.Hash, paymentAddress []byte, txHash *common.Hash, voutIndex int) error
 	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error) // get all paymentaddress owner that have balance > 0 of a custom token
@@ -148,7 +148,13 @@ type DatabaseInterface interface {
 	GetNoticePeriod(blockHeight uint64) ([][]byte, error)
 
 	//Vote
-	AddVoteBoard(boardType byte, boardIndex uint32, VoterPaymentAddress privacy.PaymentAddress, CandidatePaymentAddress privacy.PaymentAddress, amount uint64) error
+	AddVoteBoard(
+		boardType byte,
+		boardIndex uint32,
+		VoterPaymentAddress privacy.PaymentAddress,
+		CandidatePaymentAddress privacy.PaymentAddress,
+		amount uint64,
+	) error
 	GetTopMostVoteGovernor(boardType byte, currentBoardIndex uint32) (CandidateList, error)
 	NewIterator(*util.Range, *opt.ReadOptions) iterator.Iterator
 	GetKey(string, interface{}) []byte
