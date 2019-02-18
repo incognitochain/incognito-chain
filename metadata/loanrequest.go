@@ -18,6 +18,27 @@ import (
 
 const actionValueSep = "-"
 
+type ErrorSaver struct {
+	err error
+}
+
+func (s *ErrorSaver) Save(errs ...error) error {
+	if s.err != nil {
+		return s.err
+	}
+	for _, err := range errs {
+		if err != nil {
+			s.err = err
+			return s.err
+		}
+	}
+	return nil
+}
+
+func (s *ErrorSaver) Get() error {
+	return s.err
+}
+
 type LoanRequest struct {
 	Params           params.LoanParams `json:"Params"`
 	LoanID           []byte            `json:"LoanID"` // 32 bytes
