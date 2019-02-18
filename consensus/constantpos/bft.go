@@ -42,9 +42,9 @@ type BFTProtocol struct {
 }
 
 func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (interface{}, error) {
-	protocol.phase = common.PBFT_LISTEN
+	protocol.phase = PBFT_LISTEN
 	if isProposer {
-		protocol.phase = common.PBFT_PROPOSE
+		protocol.phase = PBFT_PROPOSE
 	}
 	Logger.log.Info("Starting PBFT protocol for " + layer)
 	protocol.multiSigScheme = new(multiSigScheme)
@@ -61,7 +61,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 			return nil, errors.New("Consensus quit")
 		default:
 			switch protocol.phase {
-			case common.PBFT_PROPOSE:
+			case PBFT_PROPOSE:
 				timeout := time.AfterFunc(ListenTimeout*time.Second, func() {
 					fmt.Println("Propose phase timeout")
 					close(protocol.cTimeout)
@@ -141,14 +141,14 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 							} else {
 								go protocol.Server.PushMessageToShard(msg, shardID)
 							}
-							protocol.phase = common.PBFT_PREPARE
+							protocol.phase = PBFT_PREPARE
 						} else {
 							return nil, errors.New("Didn't received enough ready msg")
 						}
 						break proposephase
 					}
 				}
-			case common.PBFT_LISTEN:
+			case PBFT_LISTEN:
 				fmt.Println("Listen phase")
 				timeout := time.AfterFunc(ListenTimeout*time.Second, func() {
 					fmt.Println("Listen phase timeout")
@@ -195,7 +195,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 								protocol.multiSigScheme.dataToSig = pendingBlk.Header.Hash()
 							}
 
-							protocol.phase = common.PBFT_PREPARE
+							protocol.phase = PBFT_PREPARE
 							timeout.Stop()
 							break listenphase
 						}
@@ -203,7 +203,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 						return nil, errors.New("Listen phase timeout")
 					}
 				}
-			case common.PBFT_PREPARE:
+			case PBFT_PREPARE:
 				fmt.Println("Prepare phase")
 				time.AfterFunc(PrepareTimeout*time.Second, func() {
 					fmt.Println("Prepare phase timeout")
@@ -247,11 +247,11 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 							return nil, err
 						}
 
-						protocol.phase = common.PBFT_COMMIT
+						protocol.phase = PBFT_COMMIT
 						break preparephase
 					}
 				}
-			case common.PBFT_COMMIT:
+			case PBFT_COMMIT:
 				fmt.Println("Commit phase")
 				cmTimeout := time.AfterFunc(CommitTimeout*time.Second, func() {
 					fmt.Println("Commit phase timeout")
