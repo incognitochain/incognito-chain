@@ -96,12 +96,11 @@ const (
 
 // CONSENSUS
 const (
-	// SHARD_NUMBER = 4
-	SHARD_NUMBER = 1 //single-node mode
-	EPOCH        = 10
-	RANDOM_TIME  = 5
-	COMMITEES    = 1
-	OFFSET       = 1
+	// SHARD_NUMBER = 1 //single-node mode
+	EPOCH       = 10
+	RANDOM_TIME = 5
+	// COMMITEES    = 1
+	OFFSET = 1
 
 	NODEMODE_SHARD  = "shard"
 	NODEMODE_AUTO   = "auto"
