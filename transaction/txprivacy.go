@@ -77,6 +77,8 @@ func (tx *Tx) Init(
 	tokenID *common.Hash, // default is nil -> use for constant coin
 	metaData metadata.Metadata,
 ) *TransactionError {
+
+	Logger.log.Infof("CREATING TX........\n")
 	//hasPrivacy = false
 	tx.Version = TxVersion
 	var err error
@@ -255,6 +257,8 @@ func (tx *Tx) Init(
 		return NewTransactionErr(UnexpectedErr, err)
 	}
 
+	Logger.log.Infof("DONE PROVING........\n")
+
 	// set private key for signing tx
 	if hasPrivacy {
 		tx.sigPrivKey = make([]byte, 64)
@@ -384,6 +388,7 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	//hasPrivacy = false
 	Logger.log.Debugf("[db] Validating Transaction tx\n")
+	Logger.log.Infof("VALIDATING TX........\n")
 	start := time.Now()
 	// Verify tx signature
 	Logger.log.Debugf("tx.GetType(): %v\n", tx.GetType())
