@@ -180,10 +180,13 @@ func (db *db) GetBlockByIndex(idx uint64, shardID byte) (*common.Hash, error) {
 
 	b, err := db.lvdb.Get(buf, nil)
 	if err != nil {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.GetBlockByIndex"))
 	}
 	h := new(common.Hash)
-	_ = h.SetBytes(b[:])
+	err1 := h.SetBytes(b[:])
+	if err1 != nil {
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.GetBlockByIndex"))
+	}
 	return h, nil
 }
 
