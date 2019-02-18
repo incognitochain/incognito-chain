@@ -1,6 +1,8 @@
 package metadata
 
 import (
+	"errors"
+
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -107,6 +109,20 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockC
 ) (bool, error) {
 	if !submitDCBProposalMetadata.SubmitProposalInfo.ValidateTxWithBlockChain(common.DCBBoard, tx, br, chainID, db) {
 		return false, nil
+	}
+
+	raiseReserveData := submitDCBProposalMetadata.DCBParams.RaiseReserveData
+	if raiseReserveData != nil {
+		if br.GetAssetPrice(raiseReserveData.CurrencyType) == 0 {
+			return false, errors.New("Cannot raise reserve without oracle price")
+		}
+	}
+
+	spendReserveData := submitDCBProposalMetadata.DCBParams.SpendReserveData
+	if spendReserveData != nil {
+		if br.GetAssetPrice(spendReserveData.CurrencyType) == 0 {
+			return false, errors.New("Cannot spend reserve without oracle price")
+		}
 	}
 	return true, nil
 }
