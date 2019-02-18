@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/ninjadotorg/constant/metadata/toshardins"
 	"strconv"
+
+	"github.com/ninjadotorg/constant/metadata/toshardins"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
@@ -45,39 +46,40 @@ type IssuingReqAction struct {
 	Meta    metadata.IssuingRequest `json:"meta"`
 }
 
-func buildInstructionTypeForIssuingAction(
+func buildInstTypeAndAmountForIssuingAction(
 	beaconBestState *BestStateBeacon,
-	md *IssuingRequest,
-) string {
+	md *metadata.IssuingRequest,
+) (string, uint64) {
+	stabilityInfo := beaconBestState.StabilityInfo
+	oracle := stabilityInfo.Oracle
 	if bytes.Equal(md.AssetType[:], common.ConstantID[:]) {
-		return "accepted"
+		return "accepted", md.DepositedAmount / oracle.Constant
 	}
 	// process for DCB token case
-	stabilityInfo := beaconBestState.StabilityInfo
 	raiseReserveData := stabilityInfo.DCBConstitution.DCBParams.RaiseReserveData
 	bestBlockHeight := beaconBestState.BestBlock.Header.Height
-	oracle := stabilityInfo.Oracle
 	if raiseReserveData == nil {
-		return "refund"
+		return "refund", 0
 	}
 
-	reqAmt := 0
+	reqAmt := uint64(0)
 	var existed bool
-	var reserveData *RaiseReserveData
-	if bytes.Equal(md.CurrencyType, common.USDAssetID) {
+	var reserveData *params.RaiseReserveData
+	if bytes.Equal(md.CurrencyType[:], common.USDAssetID[:]) {
 		reserveData, existed = raiseReserveData[common.USDAssetID]
 		reqAmt = md.DepositedAmount / oracle.DCBToken
-	} else bytes.Equal(md.CurrencyType, common.ETHAssetID) {
+	} else if bytes.Equal(md.CurrencyType[:], common.ETHAssetID[:]) {
 		reserveData, existed = raiseReserveData[common.ETHAssetID]
+		// TODO: consider the unit of ETH
 		reqAmt = (md.DepositedAmount * oracle.ETH) / oracle.DCBToken
 	}
 	if !existed ||
 		bestBlockHeight+1 > reserveData.EndBlock ||
 		reserveData.Amount == 0 ||
 		reserveData.Amount < reqAmt {
-		return "refund"
+		return "refund", 0
 	}
-	return "accepted"
+	return "accepted", reqAmt
 }
 
 func buildInstructionsForIssuingReq(
@@ -98,7 +100,7 @@ func buildInstructionsForIssuingReq(
 	md := issuingReqAction.Meta
 	reqTxID := issuingReqAction.TxReqID
 	instructions := [][]string{}
-	instType := buildInstructionTypeForIssuingAction(beaconBestState, md)
+	instType, reqAmt := buildInstTypeAndAmountForIssuingAction(beaconBestState, &md)
 
 	iInfo := IssuingInfo{
 		ReceiverAddress: md.ReceiverAddress,
