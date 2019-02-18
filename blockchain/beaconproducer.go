@@ -14,6 +14,7 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 )
 
@@ -389,17 +390,17 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 
 func (bestStateBeacon *BestStateBeacon) GetValidStakers(tempStaker []string) []string {
 	for _, committees := range bestStateBeacon.ShardCommittee {
-		tempStaker = getValidStaker(committees, tempStaker)
+		tempStaker = metadata.GetValidStaker(committees, tempStaker)
 	}
 	for _, validators := range bestStateBeacon.ShardPendingValidator {
-		tempStaker = getValidStaker(validators, tempStaker)
+		tempStaker = metadata.GetValidStaker(validators, tempStaker)
 	}
-	tempStaker = getValidStaker(bestStateBeacon.BeaconCommittee, tempStaker)
-	tempStaker = getValidStaker(bestStateBeacon.BeaconPendingValidator, tempStaker)
-	tempStaker = getValidStaker(bestStateBeacon.CandidateBeaconWaitingForCurrentRandom, tempStaker)
-	tempStaker = getValidStaker(bestStateBeacon.CandidateBeaconWaitingForNextRandom, tempStaker)
-	tempStaker = getValidStaker(bestStateBeacon.CandidateShardWaitingForCurrentRandom, tempStaker)
-	tempStaker = getValidStaker(bestStateBeacon.CandidateShardWaitingForNextRandom, tempStaker)
+	tempStaker = metadata.GetValidStaker(bestStateBeacon.BeaconCommittee, tempStaker)
+	tempStaker = metadata.GetValidStaker(bestStateBeacon.BeaconPendingValidator, tempStaker)
+	tempStaker = metadata.GetValidStaker(bestStateBeacon.CandidateBeaconWaitingForCurrentRandom, tempStaker)
+	tempStaker = metadata.GetValidStaker(bestStateBeacon.CandidateBeaconWaitingForNextRandom, tempStaker)
+	tempStaker = metadata.GetValidStaker(bestStateBeacon.CandidateShardWaitingForCurrentRandom, tempStaker)
+	tempStaker = metadata.GetValidStaker(bestStateBeacon.CandidateShardWaitingForNextRandom, tempStaker)
 	return tempStaker
 }
 
@@ -421,23 +422,6 @@ func generateRandomInstruction(timestamp int64, wg *sync.WaitGroup) ([]string, i
 	nonce, _ := strconv.Atoi(reses[2])
 	wg.Done()
 	return strs, int64(nonce)
-}
-
-func getValidStaker(committees []string, stakers []string) []string {
-	validStaker := []string{}
-	for _, staker := range stakers {
-		flag := false
-		for _, committee := range committees {
-			if strings.Compare(staker, committee) == 0 {
-				flag = true
-				break
-			}
-		}
-		if !flag {
-			validStaker = append(validStaker, staker)
-		}
-	}
-	return validStaker
 }
 
 func getStakeValidatorArrayString(v []string) ([]string, []string) {

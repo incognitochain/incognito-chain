@@ -117,3 +117,10 @@ const (
 	BEACON_VALIDATOR_ROLE = "beacon-validator"
 	BEACON_PENDING_ROLE   = "beacon-pending"
 )
+
+//Stake amount
+// count in miliconstant
+const (
+	STAKE_SHARD_AMOUNT  = 1
+	STAKE_BEACON_AMOUNT = 2
+)
