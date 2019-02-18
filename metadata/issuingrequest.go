@@ -63,6 +63,18 @@ func (iReq *IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 	if !bytes.Equal(txr.GetSigPubKey(), common.CentralizedWebsitePubKey) {
 		return false, false, errors.New("The issuance request must be called by centralized website.")
 	}
+	if !bytes.Equal(iReq.CurrencyType[:], common.USDAssetID[:]) ||
+		!bytes.Equal(iReq.CurrencyType[:], common.ETHAssetID[:]) {
+		return false, false, errors.New("Currency type must be USD or ETH.")
+	}
+	if !bytes.Equal(iReq.AssetType[:], common.ConstantID[:]) ||
+		!bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) {
+		return false, false, errors.New("Asset type must be CONSTANT or DCB")
+	}
+	if bytes.Equal(iReq.CurrencyType[:], common.ETHAssetID[:]) &&
+		!bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) {
+		return false, false, errors.New("Only can request DCB tokens by ETH.")
+	}
 	return true, true, nil
 }
 
