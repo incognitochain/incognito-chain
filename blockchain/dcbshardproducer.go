@@ -140,18 +140,38 @@ func (blockgen *BlkTmplGenerator) buildDividendTxs(producerPrivateKey *privacy.S
 		return nil, err
 	}
 
-	// TODO: For GOV
+	// For GOV
 	forDCB = false
+	govDividendSubmitTx, err := blockgen.buildInstitutionDividendSubmitTx(forDCB)
+	if err != nil {
+		return nil, err
+	}
 
 	// Build dividend payments for DCB
 	forDCB = true
 	dcbDividendPaymentTxs, err := blockgen.buildInstitutionDividendPaymentTxs(forDCB, producerPrivateKey)
+	if err != nil {
+		return nil, err
+	}
 
-	// TODO: Build dividend payments for GOV
+	// Build dividend payments for GOV
 	forDCB = false
+	govDividendPaymentTxs, err := blockgen.buildInstitutionDividendPaymentTxs(forDCB, producerPrivateKey)
+	if err != nil {
+		return nil, err
+	}
 
-	txs := []metadata.Transaction{dcbDividendSubmitTx}
+	txs := []metadata.Transaction{}
+	if dcbDividendSubmitTx != nil {
+		txs = append(txs, dcbDividendSubmitTx)
+	}
+	if govDividendSubmitTx != nil {
+		txs = append(txs, govDividendSubmitTx)
+	}
 	for _, tx := range dcbDividendPaymentTxs {
+		txs = append(txs, tx)
+	}
+	for _, tx := range govDividendPaymentTxs {
 		txs = append(txs, tx)
 	}
 
