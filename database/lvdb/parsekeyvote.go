@@ -65,6 +65,8 @@ func ParseKeyVoteBoardSum(key []byte) (
 		return 0, 0, nil, err
 	}
 	index := 1
+	i := 1
+	i++
 
 	boardType = elements[iPlusPlus(&index)][0]
 	boardIndex = common.BytesToUint32(elements[iPlusPlus(&index)])

@@ -136,9 +136,9 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case RewardGOVProposalSubmitterMeta:
 		md = &RewardGOVProposalSubmitterMetadata{}
 	case RewardShareOldDCBBoardMeta:
-		md = &RewardShareOldBoardMetadata{}
+		md = &ShareRewardOldBoardMetadata{}
 	case RewardShareOldGOVBoardMeta:
-		md = &RewardShareOldBoardMetadata{}
+		md = &ShareRewardOldBoardMetadata{}
 	case PunishDCBDecryptMeta:
 		md = &PunishDCBDecryptMetadata{}
 	case PunishGOVDecryptMeta:
