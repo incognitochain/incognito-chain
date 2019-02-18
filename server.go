@@ -300,7 +300,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		go serverObj.connManager.Connect(addr, "", nil)
 	}
 
-	fmt.Println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", cfg.DisableRPC)
 	if !cfg.DisableRPC {
 		// Setup listeners for the configured RPC listen addresses and
 		// TLS settings.

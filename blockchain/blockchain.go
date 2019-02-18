@@ -63,8 +63,6 @@ type BlockChain struct {
 type BestState struct {
 	Beacon *BestStateBeacon
 	Shard  map[byte]*BestStateShard
-
-	beacon map[string][]byte
 }
 
 // config is a descriptor which specifies the blockchain instance configuration.
@@ -210,7 +208,6 @@ func (blockchain *BlockChain) initChainState() error {
 	blockchain.BestState = &BestState{
 		Beacon: &BestStateBeacon{},
 		Shard:  make(map[byte]*BestStateShard),
-		beacon: make(map[string][]byte),
 	}
 
 	bestStateBeaconBytes, err := blockchain.config.DataBase.FetchBeaconBestState()
@@ -354,8 +351,6 @@ func (blockchain *BlockChain) initBeaconState() error {
 	if err := blockchain.config.DataBase.StoreBeaconBlockIndex(blockHash, initBlock.Header.Height); err != nil {
 		return err
 	}
-	//=======================Init cache data==========================
-	blockchain.BestState.beacon = make(map[string][]byte)
 	return nil
 }
 
@@ -597,30 +592,6 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) 
 	}
 	return nil
 }
-
-// func (blockchain *BlockChain) GetChainBlocks(shardID byte) ([]*Block, error) {
-// 	result := make([]*Block, 0)
-// 	data, err := blockchain.config.DataBase.FetchChainBlocks(shardID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	for _, item := range data {
-// 		_, err := blockchain.config.DataBase.FetchBlock(item)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		block := ShardBlock{}
-// 		//TODO:
-// 		//err = block.UnmarshalJSON()
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		result = append(result, &block)
-// 	}
-
-// 	return result, nil
-// }
 
 //func (blockchain *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
 //	txs, err := blockchain.config.DataBase.GetLoanTxs(loanID)
