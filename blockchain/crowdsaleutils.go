@@ -178,7 +178,7 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	sellingAsset := saleData.SellingAsset
 
 	var txResponse metadata.Transaction
-	if sellingAsset.IsEqual(&common.ConstantID) {
+	if common.IsConstantAsset(&sellingAsset) {
 		txResponse, err = buildPaymentForCoin(
 			paymentInst.PaymentAddress,
 			paymentInst.Amount,

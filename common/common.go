@@ -21,8 +21,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/libp2p/go-libp2p-peer"
-	"github.com/multiformats/go-multiaddr"
+	peer "github.com/libp2p/go-libp2p-peer"
+	multiaddr "github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
 )
 
@@ -516,6 +516,14 @@ func IsBondAsset(assetID *Hash) bool {
 	return bytes.Equal(assetID[:8], BondTokenID[:8])
 }
 
-func IsDCBTokenAsset(assetID *Hash) bool {
+func IsConstantAsset(assetID *Hash) bool {
 	return assetID.IsEqual(&ConstantID)
+}
+
+func IsDCBTokenAsset(assetID *Hash) bool {
+	return assetID.IsEqual(&DCBTokenID)
+}
+
+func IsUSDAsset(assetID *Hash) bool {
+	return assetID.IsEqual(&USDAssetID)
 }
