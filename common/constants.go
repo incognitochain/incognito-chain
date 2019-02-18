@@ -103,14 +103,16 @@ const (
 	COMMITEES    = 1
 	OFFSET       = 1
 
-	NODEMODE_SHARD        = "shard"
-	NODEMODE_AUTO         = "auto"
-	NODEMODE_BEACON       = "beacon"
-	SHARD_ROLE            = "shard"
+	NODEMODE_SHARD  = "shard"
+	NODEMODE_AUTO   = "auto"
+	NODEMODE_BEACON = "beacon"
+
+	SHARD_ROLE           = "shard"
+	SHARD_PROPOSER_ROLE  = "shard-proposer"
+	SHARD_VALIDATOR_ROLE = "shard-validator"
+	SHARD_PENDING_ROLE   = "shard-pending"
+
 	BEACON_ROLE           = "beacon"
-	SHARD_PROPOSER_ROLE   = "shard-proposer"
-	SHARD_VALIDATOR_ROLE  = "shard-validator"
-	SHARD_PENDING_ROLE    = "shard-pending"
 	BEACON_PROPOSER_ROLE  = "beacon-proposer"
 	BEACON_VALIDATOR_ROLE = "beacon-validator"
 	BEACON_PENDING_ROLE   = "beacon-pending"
