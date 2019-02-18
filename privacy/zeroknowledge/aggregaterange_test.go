@@ -121,7 +121,7 @@ func TestAggregatedRangeProve(t *testing.T) {
 	point := new(privacy.EllipticPoint).Zero()
 	fmt.Printf("testt: %v\n", point.Compress())
 	wit := new(AggregatedRangeWitness)
-	numValue := 5
+	numValue := 3
 	wit.values = make([]*big.Int, numValue)
 	wit.rands = make([]*big.Int, numValue)
 
