@@ -20,9 +20,9 @@ func NewShareRewardOldBoardMetadata(
 ) *ShareRewardOldBoardMetadata {
 	metadataType := 0
 	if boardType == common.DCBBoard {
-		metadataType = RewardShareOldDCBBoardMeta
+		metadataType = ShareRewardOldDCBBoardMeta
 	} else {
-		metadataType = RewardShareOldGOVBoardMeta
+		metadataType = ShareRewardOldGOVBoardMeta
 	}
 
 	return &ShareRewardOldBoardMetadata{

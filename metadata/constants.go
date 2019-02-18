@@ -77,8 +77,8 @@ const (
 	RewardProposalWinnerMeta
 	RewardDCBProposalSubmitterMeta
 	RewardGOVProposalSubmitterMeta
-	RewardShareOldDCBBoardMeta
-	RewardShareOldGOVBoardMeta
+	ShareRewardOldDCBBoardMeta
+	ShareRewardOldGOVBoardMeta
 	PunishDCBDecryptMeta
 	PunishGOVDecryptMeta
 	SendBackTokenVoteFailMeta
