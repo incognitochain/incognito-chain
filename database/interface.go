@@ -22,8 +22,6 @@ type DatabaseInterface interface {
 	StoreShardBlockHeader(interface{}, *common.Hash, byte) error
 	FetchBlock(*common.Hash) ([]byte, error)
 	HasBlock(*common.Hash) (bool, error)
-	//FetchAllBlocks() (map[byte][]*common.Hash, error)
-	FetchChainBlocks(byte) ([]*common.Hash, error)
 	DeleteBlock(*common.Hash, uint64, byte) error
 
 	StoreIncomingCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlkHash *common.Hash) error

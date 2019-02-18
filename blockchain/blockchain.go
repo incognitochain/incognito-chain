@@ -598,30 +598,6 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) 
 	return nil
 }
 
-// func (blockchain *BlockChain) GetChainBlocks(shardID byte) ([]*Block, error) {
-// 	result := make([]*Block, 0)
-// 	data, err := blockchain.config.DataBase.FetchChainBlocks(shardID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	for _, item := range data {
-// 		_, err := blockchain.config.DataBase.FetchBlock(item)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		block := ShardBlock{}
-// 		//TODO:
-// 		//err = block.UnmarshalJSON()
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		result = append(result, &block)
-// 	}
-
-// 	return result, nil
-// }
-
 //func (blockchain *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
 //	txs, err := blockchain.config.DataBase.GetLoanTxs(loanID)
 //	if err != nil {
