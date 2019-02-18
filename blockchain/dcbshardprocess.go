@@ -159,6 +159,185 @@ func (bc *BlockChain) ProcessDividendForBlock(block *ShardBlock) error {
 	return bc.processDividendPayment(receiversToRemove)
 }
 
+func (bc *BlockChain) ProcessVotingForBlock(block *ShardBlock) error {
+	DCBHelper := DCBConstitutionHelper{}
+	GOVHelper := GOVConstitutionHelper{}
+	nextDCBConstitutionIndex := bc.BestState.Beacon.StabilityInfo.DCBConstitution.ConstitutionIndex + 1
+	nextGOVConstitutionIndex := bc.BestState.Beacon.StabilityInfo.GOVConstitution.ConstitutionIndex + 1
+
+	for _, tx := range block.Body.Transactions {
+		switch tx.GetMetadataType() {
+		case metadata.AcceptDCBBoardMeta:
+			err := bc.BestState.Beacon.UpdateDCBBoard(tx)
+			if err != nil {
+				return err
+			}
+		case metadata.AcceptGOVBoardMeta:
+			err := bc.BestState.Beacon.UpdateGOVBoard(tx)
+			if err != nil {
+				return err
+			}
+		case metadata.AcceptDCBProposalMeta:
+			err := bc.BestState.Beacon.updateConstitution(tx, bc, DCBHelper)
+			if err != nil {
+				return err
+			}
+			underlieMetadata := tx.GetMetadata().(*metadata.AcceptDCBProposalMetadata)
+			err1 := bc.config.DataBase.TakeVoteTokenFromWinner(common.DCBBoard, nextDCBConstitutionIndex, underlieMetadata.AcceptProposalMetadata.Voter.PaymentAddress, underlieMetadata.AcceptProposalMetadata.Voter.AmountOfVote)
+			if err1 != nil {
+				return err1
+			}
+			err2 := bc.config.DataBase.SetNewProposalWinningVoter(common.DCBBoard, nextDCBConstitutionIndex, underlieMetadata.AcceptProposalMetadata.Voter.PaymentAddress)
+			if err2 != nil {
+				return err2
+			}
+		case metadata.AcceptGOVProposalMeta:
+			err := bc.BestState.Beacon.updateConstitution(tx, bc, GOVHelper)
+			if err != nil {
+				return err
+			}
+			underlieMetadata := tx.GetMetadata().(*metadata.AcceptGOVProposalMetadata)
+			err1 := bc.config.DataBase.TakeVoteTokenFromWinner(
+				common.GOVBoard,
+				nextGOVConstitutionIndex,
+				underlieMetadata.AcceptProposalMetadata.Voter.PaymentAddress,
+				underlieMetadata.AcceptProposalMetadata.Voter.AmountOfVote,
+			)
+			if err1 != nil {
+				return err1
+			}
+			err2 := bc.config.DataBase.SetNewProposalWinningVoter(common.GOVBoard, nextGOVConstitutionIndex, underlieMetadata.AcceptProposalMetadata.Voter.PaymentAddress)
+			if err2 != nil {
+				return err2
+			}
+		case metadata.RewardDCBProposalSubmitterMeta:
+			bc.BestState.Beacon.UpdateDCBFund(tx)
+		case metadata.RewardGOVProposalSubmitterMeta:
+			bc.BestState.Beacon.UpdateGOVFund(tx)
+
+		case metadata.VoteDCBBoardMeta:
+			{
+				txCustomToken := tx.(*transaction.TxCustomToken)
+				voteAmount := txCustomToken.GetAmountOfVote()
+				voteDCBBoardMetadata := txCustomToken.Metadata.(*metadata.VoteDCBBoardMetadata)
+				boardIndex := bc.BestState.Beacon.StabilityInfo.DCBGovernor.BoardIndex + 1
+				err := bc.config.DataBase.AddVoteBoard(
+					common.DCBBoard,
+					boardIndex,
+					txCustomToken.TxTokenData.Vins[0].PaymentAddress,
+					voteDCBBoardMetadata.VoteBoardMetadata.CandidatePaymentAddress,
+					voteAmount,
+				)
+				if err != nil {
+					return err
+				}
+			}
+		case metadata.VoteGOVBoardMeta:
+			{
+				txCustomToken := tx.(*transaction.TxCustomToken)
+				voteAmount := txCustomToken.GetAmountOfVote()
+				voteDCBBoardMetadata := txCustomToken.Metadata.(*metadata.VoteDCBBoardMetadata)
+				boardIndex := bc.BestState.Beacon.StabilityInfo.DCBGovernor.BoardIndex + 1
+				err := bc.config.DataBase.AddVoteBoard(
+					common.DCBBoard,
+					boardIndex,
+					txCustomToken.TxTokenData.Vins[0].PaymentAddress,
+					voteDCBBoardMetadata.VoteBoardMetadata.CandidatePaymentAddress,
+					voteAmount,
+				)
+				if err != nil {
+					return err
+				}
+			}
+
+		case metadata.SendInitDCBVoteTokenMeta:
+			meta := tx.GetMetadata().(*metadata.SendInitDCBVoteTokenMetadata)
+			err := bc.config.DataBase.SendInitVoteToken(
+				common.DCBBoard,
+				bc.BestState.Beacon.StabilityInfo.DCBGovernor.BoardIndex,
+				meta.SendInitVoteTokenMetadata.ReceiverPaymentAddress,
+				meta.SendInitVoteTokenMetadata.Amount,
+			)
+			if err != nil {
+				return err
+			}
+		case metadata.SendInitGOVVoteTokenMeta:
+			meta := tx.GetMetadata().(*metadata.SendInitGOVVoteTokenMetadata)
+			err := bc.config.DataBase.SendInitVoteToken(
+				common.GOVBoard,
+				bc.BestState.Beacon.StabilityInfo.GOVGovernor.BoardIndex,
+				meta.SendInitVoteTokenMetadata.ReceiverPaymentAddress,
+				meta.SendInitVoteTokenMetadata.Amount,
+			)
+			if err != nil {
+				return err
+			}
+
+			//vote proposal
+		case metadata.SealedLv3DCBVoteProposalMeta:
+			err := bc.config.DataBase.AddVoteLv3Proposal(common.DCBBoard, nextDCBConstitutionIndex, tx.GetMetadata().Hash())
+			if err != nil {
+				return err
+			}
+		case metadata.SealedLv2DCBVoteProposalMeta:
+			underlieMetadata := tx.GetMetadata().(*metadata.SealedLv2DCBVoteProposalMetadata)
+			err := bc.config.DataBase.AddVoteLv1or2Proposal(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
+			if err != nil {
+				return err
+			}
+		case metadata.SealedLv1DCBVoteProposalMeta:
+			underlieMetadata := tx.GetMetadata().(*metadata.SealedLv1DCBVoteProposalMetadata)
+			err := bc.config.DataBase.AddVoteLv1or2Proposal(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
+			if err != nil {
+				return err
+			}
+		case metadata.NormalDCBVoteProposalFromOwnerMeta:
+			underlieMetadata := tx.GetMetadata().(*metadata.NormalDCBVoteProposalFromOwnerMetadata)
+			err := bc.config.DataBase.AddVoteNormalProposalFromOwner(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
+			if err != nil {
+				return err
+			}
+		case metadata.NormalDCBVoteProposalFromSealerMeta:
+			underlieMetadata := tx.GetMetadata().(*metadata.NormalDCBVoteProposalFromSealerMetadata)
+			err := bc.config.DataBase.AddVoteNormalProposalFromSealer(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
+			if err != nil {
+				return err
+			}
+		case metadata.SealedLv3GOVVoteProposalMeta:
+			underlieMetadata := tx.GetMetadata().(*metadata.SealedLv3GOVVoteProposalMetadata)
+			err := bc.config.DataBase.AddVoteLv3Proposal(common.GOVBoard, nextGOVConstitutionIndex, underlieMetadata.Hash())
+			if err != nil {
+				return err
+			}
+		case metadata.SealedLv2GOVVoteProposalMeta:
+			underlieMetadata := tx.GetMetadata().(*metadata.SealedLv2GOVVoteProposalMetadata)
+			err := bc.config.DataBase.AddVoteLv1or2Proposal(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
+			if err != nil {
+				return err
+			}
+		case metadata.SealedLv1GOVVoteProposalMeta:
+			underlieMetadata := tx.GetMetadata().(*metadata.SealedLv1GOVVoteProposalMetadata)
+			err := bc.config.DataBase.AddVoteLv1or2Proposal(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
+			if err != nil {
+				return err
+			}
+		case metadata.NormalGOVVoteProposalFromOwnerMeta:
+			underlieMetadata := tx.GetMetadata().(*metadata.NormalGOVVoteProposalFromOwnerMetadata)
+			err := bc.config.DataBase.AddVoteNormalProposalFromOwner(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
+			if err != nil {
+				return err
+			}
+		case metadata.NormalGOVVoteProposalFromSealerMeta:
+			underlieMetadata := tx.GetMetadata().(*metadata.NormalGOVVoteProposalFromSealerMetadata)
+			err := bc.config.DataBase.AddVoteNormalProposalFromSealer(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 //func (bc *BlockChain) UpdateDividendPayout(block *Block) error {
 //	for _, tx := range block.Transactions {
 //		switch tx.GetMetadataType() {

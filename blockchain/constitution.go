@@ -192,13 +192,13 @@ func (helper DCBConstitutionHelper) GetPaymentAddressVoter(chain *BlockChain) (p
 	info := chain.BestState.Beacon.StabilityInfo
 	_, _, _, tx, _ := chain.GetTransactionByHash(&info.DCBConstitution.AcceptProposalTXID)
 	meta := tx.GetMetadata().(*metadata.AcceptDCBProposalMetadata)
-	return meta.Voter.PaymentAddress, nil
+	return meta.AcceptProposalMetadata.Voter.PaymentAddress, nil
 }
 func (helper GOVConstitutionHelper) GetPaymentAddressVoter(chain *BlockChain) (privacy.PaymentAddress, error) {
 	info := chain.BestState.Beacon.StabilityInfo
 	_, _, _, tx, _ := chain.GetTransactionByHash(&info.GOVConstitution.AcceptProposalTXID)
 	meta := tx.GetMetadata().(*metadata.AcceptGOVProposalMetadata)
-	return meta.Voter.PaymentAddress, nil
+	return meta.AcceptProposalMetadata.Voter.PaymentAddress, nil
 }
 
 func (helper DCBConstitutionHelper) GetPrizeProposal() uint32 {
@@ -308,4 +308,40 @@ func (helper DCBConstitutionHelper) GetNumberOfGovernor() int32 {
 
 func (helper GOVConstitutionHelper) GetNumberOfGovernor() int32 {
 	return common.NumberOfGOVGovernors
+}
+
+func (helper DCBConstitutionHelper) GetProposalTxID(tx metadata.Transaction) (hash *common.Hash) {
+	metadataAcceptProposal := tx.GetMetadata().(*metadata.AcceptDCBProposalMetadata)
+	proposalTxID := &metadataAcceptProposal.AcceptProposalMetadata.ProposalTXID
+	return proposalTxID
+}
+
+func (helper DCBConstitutionHelper) GetSubmitProposalInfo(
+	tx metadata.Transaction,
+) (*metadata.SubmitProposalInfo, error) {
+	SubmitProposal := tx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
+	return &SubmitProposal.SubmitProposalInfo, nil
+}
+
+func (helper GOVConstitutionHelper) GetProposalTxID(tx metadata.Transaction) (hash *common.Hash) {
+	metadataAcceptProposal := tx.GetMetadata().(*metadata.AcceptGOVProposalMetadata)
+	proposalTxID := &metadataAcceptProposal.AcceptProposalMetadata.ProposalTXID
+	return proposalTxID
+}
+
+func (helper GOVConstitutionHelper) GetSubmitProposalInfo(
+	tx metadata.Transaction,
+) (*metadata.SubmitProposalInfo, error) {
+	SubmitProposal := tx.GetMetadata().(*metadata.SubmitGOVProposalMetadata)
+	return &SubmitProposal.SubmitProposalInfo, nil
+}
+
+func (helper DCBConstitutionHelper) SetNewConstitution(constitutionInfo *ConstitutionInfo, welfare int32, submitProposalTx metadata.Transaction) {
+	params := submitProposalTx.GetMetadata().(*metadata.SubmitDCBProposalMetadata).DCBParams
+	NewDCBConstitution(constitutionInfo, welfare, &params)
+}
+
+func (helper GOVConstitutionHelper) SetNewConstitution(constitutionInfo *ConstitutionInfo, welfare int32, submitProposalTx metadata.Transaction) {
+	params := submitProposalTx.GetMetadata().(*metadata.SubmitGOVProposalMetadata).GOVParams
+	NewGOVConstitution(constitutionInfo, welfare, &params)
 }
