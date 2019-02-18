@@ -120,6 +120,7 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 			result.NextBlockHash = nextHashString
 			result.TxHashes = []string{}
 			result.BlockProducerSign = block.ProducerSig
+			result.BlockProducer = block.Header.Producer
 			// for _, tx := range block.Body.(*blockchain.BlockBodyShard).Transactions {
 			for _, tx := range block.Body.Transactions {
 				result.TxHashes = append(result.TxHashes, tx.Hash().String())
