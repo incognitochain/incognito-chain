@@ -88,6 +88,11 @@ var (
 	USDAssetID = Hash{99, 99, 99, 99, 99, 99, 99, 99, 3}
 )
 
+// centralized website's pubkey
+var (
+	CentralizedWebsitePubKey = []byte{}
+)
+
 // board addresses
 const (
 	DCBAddress     = "1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba"

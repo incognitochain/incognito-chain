@@ -396,15 +396,16 @@ func (b *Backend) colorPrint(lvl string, bytebuf []byte) {
 // Logger returns a new logger for a particular subsystem that writes to the
 // Backend b.  A tag describes the subsystem and is included in all log
 // messages.  The logger uses the info verbosity level by default.
-func (b *Backend) Logger(subsystemTag string) Logger {
-	return &slog{LevelInfo, subsystemTag, b}
+func (b *Backend) Logger(subsystemTag string, disable bool) Logger {
+	return &slog{LevelInfo, subsystemTag, b, disable}
 }
 
 // slog is a subsystem logger for a Backend.  Implements the Logger interface.
 type slog struct {
-	lvl Level // atomic
-	tag string
-	b   *Backend
+	lvl     Level // atomic
+	tag     string
+	b       *Backend
+	disable bool
 }
 
 // Trace formats message using the default formats for its operands, prepends
@@ -412,6 +413,9 @@ type slog struct {
 //
 // This is part of the Logger interface implementation.
 func (l *slog) Trace(args ...interface{}) {
+	if l == nil || l.disable {
+		return
+	}
 	lvl := l.Level()
 	if lvl <= LevelTrace {
 		l.b.print("TRC", l.tag, args...)
@@ -423,6 +427,9 @@ func (l *slog) Trace(args ...interface{}) {
 //
 // This is part of the Logger interface implementation.
 func (l *slog) Tracef(format string, args ...interface{}) {
+	if l == nil || l.disable {
+		return
+	}
 	lvl := l.Level()
 	if lvl <= LevelTrace {
 		l.b.printf("TRC", l.tag, format, args...)
@@ -434,6 +441,9 @@ func (l *slog) Tracef(format string, args ...interface{}) {
 //
 // This is part of the Logger interface implementation.
 func (l *slog) Debug(args ...interface{}) {
+	if l == nil || l.disable {
+		return
+	}
 	lvl := l.Level()
 	if lvl <= LevelDebug {
 		l.b.print("DBG", l.tag, args...)
@@ -445,6 +455,9 @@ func (l *slog) Debug(args ...interface{}) {
 //
 // This is part of the Logger interface implementation.
 func (l *slog) Debugf(format string, args ...interface{}) {
+	if l == nil || l.disable {
+		return
+	}
 	lvl := l.Level()
 	if lvl <= LevelDebug {
 		l.b.printf("DBG", l.tag, format, args...)
@@ -456,6 +469,9 @@ func (l *slog) Debugf(format string, args ...interface{}) {
 //
 // This is part of the Logger interface implementation.
 func (l *slog) Info(args ...interface{}) {
+	if l == nil || l.disable {
+		return
+	}
 	lvl := l.Level()
 	if lvl <= LevelInfo {
 		l.b.print("INF", l.tag, args...)
@@ -467,6 +483,9 @@ func (l *slog) Info(args ...interface{}) {
 //
 // This is part of the Logger interface implementation.
 func (l *slog) Infof(format string, args ...interface{}) {
+	if l == nil || l.disable {
+		return
+	}
 	lvl := l.Level()
 	if lvl <= LevelInfo {
 		l.b.printf("INF", l.tag, format, args...)
@@ -478,6 +497,9 @@ func (l *slog) Infof(format string, args ...interface{}) {
 //
 // This is part of the Logger interface implementation.
 func (l *slog) Warn(args ...interface{}) {
+	if l == nil || l.disable {
+		return
+	}
 	lvl := l.Level()
 	if lvl <= LevelWarn {
 		l.b.print("WRN", l.tag, args...)
@@ -489,6 +511,9 @@ func (l *slog) Warn(args ...interface{}) {
 //
 // This is part of the Logger interface implementation.
 func (l *slog) Warnf(format string, args ...interface{}) {
+	if l == nil || l.disable {
+		return
+	}
 	lvl := l.Level()
 	if lvl <= LevelWarn {
 		l.b.printf("WRN", l.tag, format, args...)
@@ -500,6 +525,9 @@ func (l *slog) Warnf(format string, args ...interface{}) {
 //
 // This is part of the Logger interface implementation.
 func (l *slog) Error(args ...interface{}) {
+	if l == nil || l.disable {
+		return
+	}
 	lvl := l.Level()
 	if lvl <= LevelError {
 		l.b.print("ERR", l.tag, args...)
@@ -511,6 +539,9 @@ func (l *slog) Error(args ...interface{}) {
 //
 // This is part of the Logger interface implementation.
 func (l *slog) Errorf(format string, args ...interface{}) {
+	if l == nil || l.disable {
+		return
+	}
 	lvl := l.Level()
 	if lvl <= LevelError {
 		l.b.printf("ERR", l.tag, format, args...)
@@ -522,6 +553,9 @@ func (l *slog) Errorf(format string, args ...interface{}) {
 //
 // This is part of the Logger interface implementation.
 func (l *slog) Critical(args ...interface{}) {
+	if l == nil || l.disable {
+		return
+	}
 	lvl := l.Level()
 	if lvl <= LevelCritical {
 		l.b.print("CRT", l.tag, args...)
@@ -533,6 +567,9 @@ func (l *slog) Critical(args ...interface{}) {
 //
 // This is part of the Logger interface implementation.
 func (l *slog) Criticalf(format string, args ...interface{}) {
+	if l == nil || l.disable {
+		return
+	}
 	lvl := l.Level()
 	if lvl <= LevelCritical {
 		l.b.printf("CRT", l.tag, format, args...)

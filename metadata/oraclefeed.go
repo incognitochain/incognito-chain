@@ -2,7 +2,10 @@ package metadata
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -92,4 +95,18 @@ func (of *OracleFeed) Hash() *common.Hash {
 	record += of.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
+}
+
+func (of *OracleFeed) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+	actionContent := map[string]interface{}{
+		"txReqId": *(tx.Hash()),
+		"meta":    *of,
+	}
+	actionContentBytes, err := json.Marshal(actionContent)
+	if err != nil {
+		return [][]string{}, err
+	}
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	action := []string{strconv.Itoa(OracleFeedMeta), actionContentBase64Str}
+	return [][]string{action}, nil
 }
