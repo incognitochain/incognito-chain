@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 
 	"github.com/ninjadotorg/constant/cashec"
@@ -29,6 +30,10 @@ func main() {
 	burnPaymentAddress := burnKey.Base58CheckSerialize(wallet.PaymentAddressType)
 	fmt.Printf("Burn payment address : %s \n", burnPaymentAddress)
 
+	keyWalletBurningAdd, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
+	fmt.Println("======================================")
+	fmt.Println(keyWalletBurningAdd.KeySet.PaymentAddress.Pk)
+	fmt.Println("======================================")
 	// mnemonicGen := wallet.MnemonicGenerator{}
 	// Entropy, _ := mnemonicGen.NewEntropy(128)
 	// Mnemonic, _ := mnemonicGen.NewMnemonic(Entropy)
