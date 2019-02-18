@@ -6,13 +6,6 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
-// MultiSigSchemeInterface define all of function for create EC Schnorr signature which could be combine by adding with another EC Schnorr Signature
-type MultiSigSchemeInterface interface {
-	SignMultiSig(data []byte, listPK []*PublicKey, listR []*EllipticPoint, r *big.Int) *SchnMultiSig
-	VerifyMultiSig(data []byte, listPK []*PublicKey, pubKey *PublicKey, RCombine *EllipticPoint) bool
-	CombineMultiSig(listSignatures []*SchnMultiSig) *SchnMultiSig
-}
-
 // MultiSigScheme ...
 type MultiSigScheme struct {
 	Keyset    *MultiSigKeyset
