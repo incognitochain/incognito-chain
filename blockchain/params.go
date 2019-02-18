@@ -23,6 +23,17 @@ type Params struct {
 	GenesisShardBlock *ShardBlock
 }
 
+type IcoParams struct {
+	InitialPaymentAddress string
+	InitFundSalary        uint64
+	InitialDCBToken       uint64
+	InitialCMBToken       uint64
+	InitialGOVToken       uint64
+	InitialBondToken      uint64
+	InitialVoteDCBToken   uint64
+	InitialVoteGOVToken   uint64
+}
+
 // FOR TESTNET
 const (
 	TestNetShardsNum           = 4
@@ -91,8 +102,8 @@ var ChainTestParam = Params{
 	Name:                TestnetName,
 	Net:                 Testnet,
 	DefaultPort:         TestnetDefaultPort,
-	ShardCommitteeSize:  1, //TestNetShardCommitteeSize,
-	BeaconCommitteeSize: 1, //TestNetBeaconCommitteeSize,
+	ShardCommitteeSize:  TestNetShardCommitteeSize,  //TestNetShardCommitteeSize,
+	BeaconCommitteeSize: TestNetBeaconCommitteeSize, //TestNetBeaconCommitteeSize,
 	// blockChain parameters
 	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnetSerializedPubkey[:], icoParamsTestnetNew, 1000, 1000, 0),
 	GenesisShardBlock:  CreateShardGenesisBlock(1, preSelectShardNodeTestnetSerializedPubkey[:], icoParamsTestnetNew),
@@ -100,24 +111,30 @@ var ChainTestParam = Params{
 
 // END TESTNET
 
-var ChainMainParam = Params{
-	Name:                TestnetName,
-	Net:                 Testnet,
-	DefaultPort:         TestnetDefaultPort,
-	ShardCommitteeSize:  1, //TestNetShardCommitteeSize,
-	BeaconCommitteeSize: 1, //TestNetBeaconCommitteeSize,
-	// blockChain parameters
-	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnetSerializedPubkey[:], icoParamsTestnetNew, 1000, 1000, 0),
-	GenesisShardBlock:  CreateShardGenesisBlock(1, preSelectShardNodeTestnetSerializedPubkey[:], icoParamsTestnetNew),
-}
+// FOR MAINNET
+const (
+	MainNetShardsNum           = TestNetShardsNum
+	MainNetShardCommitteeSize  = TestNetShardCommitteeSize
+	MainNetBeaconCommitteeSize = TestNetBeaconCommitteeSize
+)
 
-type IcoParams struct {
-	InitialPaymentAddress string
-	InitFundSalary        uint64
-	InitialDCBToken       uint64
-	InitialCMBToken       uint64
-	InitialGOVToken       uint64
-	InitialBondToken      uint64
-	InitialVoteDCBToken   uint64
-	InitialVoteGOVToken   uint64
+// for beacon
+// public key
+var preSelectBeaconNodeMainnetSerializedPubkey = preSelectBeaconNodeTestnetSerializedPubkey
+
+// For shard
+// public key
+var preSelectShardNodeMainnetSerializedPubkey = preSelectShardNodeTestnetSerializedPubkey
+
+var icoParamsMainnetNew = icoParamsTestnetNew
+
+var ChainMainParam = Params{
+	Name:                MainetName,
+	Net:                 Mainnet,
+	DefaultPort:         MainnetDefaultPort,
+	ShardCommitteeSize:  MainNetShardCommitteeSize,  //MainNetShardCommitteeSize,
+	BeaconCommitteeSize: MainNetBeaconCommitteeSize, //MainNetBeaconCommitteeSize,
+	// blockChain parameters
+	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, preSelectBeaconNodeMainnetSerializedPubkey[:], icoParamsMainnetNew, 1000, 1000, 0),
+	GenesisShardBlock:  CreateShardGenesisBlock(1, preSelectShardNodeMainnetSerializedPubkey[:], icoParamsMainnetNew),
 }
