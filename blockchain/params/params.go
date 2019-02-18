@@ -243,15 +243,5 @@ func validAssetPair(buyingAsset common.Hash, sellingAsset common.Hash) bool {
 	} else if common.IsConstantAsset(&buyingAsset) && common.IsBondAsset(&sellingAsset) {
 		return true
 	}
-
-	// DCB Reserve
-	if common.IsConstantAsset(&buyingAsset) && common.IsOffChainAsset(&sellingAsset) {
-		return true // Redeem
-	} else if common.IsOffChainAsset(&buyingAsset) && common.IsDCBTokenAsset(&sellingAsset) {
-		return true // Reserve
-	} else if common.IsUSDAsset(&buyingAsset) && common.IsConstantAsset(&sellingAsset) {
-		return true // Buy Constant
-	}
-
 	return false
 }
