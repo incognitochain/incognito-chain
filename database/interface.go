@@ -148,7 +148,7 @@ type DatabaseInterface interface {
 	GetNoticePeriod(blockHeight uint64) ([][]byte, error)
 
 	//Vote
-	AddVoteBoard(boardType byte, boardIndex uint32, paymentAddress []byte, VoterPaymentAddress privacy.PaymentAddress, CandidatePaymentAddress privacy.PaymentAddress, amount uint64) error
+	AddVoteBoard(boardType byte, boardIndex uint32, VoterPaymentAddress privacy.PaymentAddress, CandidatePaymentAddress privacy.PaymentAddress, amount uint64) error
 	GetTopMostVoteGovernor(boardType byte, currentBoardIndex uint32) (CandidateList, error)
 	NewIterator(*util.Range, *opt.ReadOptions) iterator.Iterator
 	GetKey(string, interface{}) []byte

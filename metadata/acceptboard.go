@@ -6,27 +6,41 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 )
 
-type AcceptDCBBoardMetadata struct {
-	DCBBoardPaymentAddress []privacy.PaymentAddress
-	StartAmountDCBToken    uint64
+type AcceptBoardMetadata struct {
+	BoardPaymentAddress []privacy.PaymentAddress
+	StartAmountToken    uint64
+}
 
+func (acceptBoardMetadata AcceptBoardMetadata) ToBytes() []byte {
+	record := ""
+	for _, i := range acceptBoardMetadata.BoardPaymentAddress {
+		record += i.String()
+	}
+	record += string(acceptBoardMetadata.StartAmountToken)
+	return []byte(record)
+}
+
+func NewAcceptBoardMetadata(boardPaymentAddress []privacy.PaymentAddress, startAmountToken uint64) *AcceptBoardMetadata {
+	return &AcceptBoardMetadata{BoardPaymentAddress: boardPaymentAddress, StartAmountToken: startAmountToken}
+}
+
+type AcceptDCBBoardMetadata struct {
+	AcceptBoardMetadata AcceptBoardMetadata
 	MetadataBase
 }
 
 func NewAcceptDCBBoardMetadata(DCBBoardPaymentAddress []privacy.PaymentAddress, startAmountDCBToken uint64) *AcceptDCBBoardMetadata {
 	return &AcceptDCBBoardMetadata{
-		DCBBoardPaymentAddress: DCBBoardPaymentAddress,
-		StartAmountDCBToken:    startAmountDCBToken,
-		MetadataBase:           *NewMetadataBase(AcceptDCBBoardMeta),
+		AcceptBoardMetadata: *NewAcceptBoardMetadata(
+			DCBBoardPaymentAddress,
+			startAmountDCBToken,
+		),
+		MetadataBase: *NewMetadataBase(AcceptDCBBoardMeta),
 	}
 }
 
 func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) Hash() *common.Hash {
-	record := ""
-	for _, i := range acceptDCBBoardMetadata.DCBBoardPaymentAddress {
-		record += i.String()
-	}
-	record += string(acceptDCBBoardMetadata.StartAmountDCBToken)
+	record := string(acceptDCBBoardMetadata.AcceptBoardMetadata.ToBytes())
 	record += acceptDCBBoardMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
@@ -37,7 +51,7 @@ func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) ValidateTxWithBlockChain(T
 }
 
 func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
-	if len(acceptDCBBoardMetadata.DCBBoardPaymentAddress) != bcr.GetNumberOfDCBGovernors() {
+	if len(acceptDCBBoardMetadata.AcceptBoardMetadata.BoardPaymentAddress) != bcr.GetNumberOfDCBGovernors() {
 		return true, false, nil
 	}
 	return true, true, nil
@@ -48,26 +62,23 @@ func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) ValidateMetadataByItself()
 }
 
 type AcceptGOVBoardMetadata struct {
-	GOVBoardPaymentAddress []privacy.PaymentAddress
-	StartAmountGOVToken    uint64
+	AcceptBoardMetadata AcceptBoardMetadata
 
 	MetadataBase
 }
 
 func NewAcceptGOVBoardMetadata(GOVBoardPaymentAddress []privacy.PaymentAddress, startAmountGOVToken uint64) *AcceptGOVBoardMetadata {
 	return &AcceptGOVBoardMetadata{
-		GOVBoardPaymentAddress: GOVBoardPaymentAddress,
-		StartAmountGOVToken:    startAmountGOVToken,
-		MetadataBase:           *NewMetadataBase(AcceptGOVBoardMeta),
+		AcceptBoardMetadata: *NewAcceptBoardMetadata(
+			GOVBoardPaymentAddress,
+			startAmountGOVToken,
+		),
+		MetadataBase: *NewMetadataBase(AcceptGOVBoardMeta),
 	}
 }
 
 func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) Hash() *common.Hash {
-	record := ""
-	for _, i := range acceptGOVBoardMetadata.GOVBoardPaymentAddress {
-		record += i.String()
-	}
-	record += string(acceptGOVBoardMetadata.StartAmountGOVToken)
+	record := string(acceptGOVBoardMetadata.AcceptBoardMetadata.ToBytes())
 	record += acceptGOVBoardMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
@@ -78,7 +89,7 @@ func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) ValidateTxWithBlockChain(T
 }
 
 func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
-	if len(acceptGOVBoardMetadata.GOVBoardPaymentAddress) != bcr.GetNumberOfGOVGovernors() {
+	if len(acceptGOVBoardMetadata.AcceptBoardMetadata.BoardPaymentAddress) != bcr.GetNumberOfGOVGovernors() {
 		return true, false, nil
 	}
 	return true, true, nil
