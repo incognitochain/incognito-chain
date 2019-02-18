@@ -49,8 +49,8 @@ type DCBParams struct {
 	MinLoanResponseRequire   uint8
 	MinCMBApprovalRequire    uint8
 	LateWithdrawResponseFine uint64 // CST penalty for each CMB's late withdraw response
-	RaiseReserveData         *RaiseReserveData
-	SpendReserveData         *SpendReserveData
+	RaiseReserveData         map[common.Hash]*RaiseReserveData
+	SpendReserveData         map[common.Hash]*SpendReserveData
 	DividendAmount           uint64 // maximum total Constant to pay dividend; might be less if Institution's fund ran out
 
 	// TODO(@0xbunyip): read loan params from proposal instead of storing and reading separately
@@ -58,16 +58,14 @@ type DCBParams struct {
 }
 
 type RaiseReserveData struct {
-	EndBlock     uint64
-	Amount       uint64       // # BANK tokens
-	CurrencyType *common.Hash // USD or crypto currency
+	EndBlock uint64
+	Amount   uint64 // # BANK tokens
 }
 
 type SpendReserveData struct {
 	EndBlock        uint64
 	ReserveMinPrice uint64
-	Amount          uint64       // Constant to burn
-	CurrencyType    *common.Hash // Only crypto currency
+	Amount          uint64 // Constant to burn
 }
 
 func NewDCBParams(
