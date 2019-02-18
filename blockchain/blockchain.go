@@ -63,8 +63,6 @@ type BlockChain struct {
 type BestState struct {
 	Beacon *BestStateBeacon
 	Shard  map[byte]*BestStateShard
-
-	beacon map[string][]byte
 }
 
 // config is a descriptor which specifies the blockchain instance configuration.
@@ -210,7 +208,6 @@ func (blockchain *BlockChain) initChainState() error {
 	blockchain.BestState = &BestState{
 		Beacon: &BestStateBeacon{},
 		Shard:  make(map[byte]*BestStateShard),
-		beacon: make(map[string][]byte),
 	}
 
 	bestStateBeaconBytes, err := blockchain.config.DataBase.FetchBeaconBestState()
@@ -354,8 +351,6 @@ func (blockchain *BlockChain) initBeaconState() error {
 	if err := blockchain.config.DataBase.StoreBeaconBlockIndex(blockHash, initBlock.Header.Height); err != nil {
 		return err
 	}
-	//=======================Init cache data==========================
-	blockchain.BestState.beacon = make(map[string][]byte)
 	return nil
 }
 
