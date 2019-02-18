@@ -239,7 +239,7 @@ func (self *BestStateBeacon) getAssetPrice(assetID common.Hash) uint64 {
 		}
 	} else {
 		oracle := self.StabilityInfo.Oracle
-		if assetID.IsEqual(&common.ConstantID) {
+		if common.IsConstantAsset(&assetID) {
 			price = oracle.Constant
 		} else if assetID.IsEqual(&common.DCBTokenID) {
 			price = oracle.DCBToken
