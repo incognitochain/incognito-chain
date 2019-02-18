@@ -49,11 +49,23 @@ type DCBParams struct {
 	MinLoanResponseRequire   uint8
 	MinCMBApprovalRequire    uint8
 	LateWithdrawResponseFine uint64 // CST penalty for each CMB's late withdraw response
-	SaleDCBTokensByUSDData   *SaleDCBTokensByUSDData
+	RaiseReserveData         map[common.Hash]*RaiseReserveData
+	SpendReserveData         map[common.Hash]*SpendReserveData
 	DividendAmount           uint64 // maximum total Constant to pay dividend; might be less if Institution's fund ran out
 
 	// TODO(@0xbunyip): read loan params from proposal instead of storing and reading separately
 	ListLoanParams []LoanParams // params for collateralized loans of Constant
+}
+
+type RaiseReserveData struct {
+	EndBlock uint64
+	Amount   uint64 // # BANK tokens
+}
+
+type SpendReserveData struct {
+	EndBlock        uint64
+	ReserveMinPrice uint64
+	Amount          uint64 // Constant to burn
 }
 
 func NewDCBParams(
@@ -61,7 +73,8 @@ func NewDCBParams(
 	minLoanResponseRequire uint8,
 	minCMBApprovalRequire uint8,
 	lateWithdrawResponseFine uint64,
-	saleDCBTokensByUSDData *SaleDCBTokensByUSDData,
+	raiseReserveData map[common.Hash]*RaiseReserveData,
+	spendReserveData map[common.Hash]*SpendReserveData,
 	dividendAmount uint64,
 	listLoanParams []LoanParams,
 ) *DCBParams {
@@ -70,7 +83,8 @@ func NewDCBParams(
 		MinLoanResponseRequire:   minLoanResponseRequire,
 		MinCMBApprovalRequire:    minCMBApprovalRequire,
 		LateWithdrawResponseFine: lateWithdrawResponseFine,
-		SaleDCBTokensByUSDData:   saleDCBTokensByUSDData,
+		RaiseReserveData:         raiseReserveData,
+		SpendReserveData:         spendReserveData,
 		DividendAmount:           dividendAmount,
 		ListLoanParams:           listLoanParams,
 	}
@@ -98,7 +112,8 @@ func NewDCBParamsFromJson(rawData interface{}) *DCBParams {
 	lateWithdrawResponseFine := uint64(DCBParams["LateWithdrawResponseFine"].(float64))
 	dividendAmount := uint64(DCBParams["DividendAmount"].(float64))
 
-	saleDCBTokensByUSDData := NewSaleDCBTokensByUSDDataFromJson(DCBParams["SaleDCBTokensByUSDData"])
+	raiseReserveData := NewRaiseReserveDataFromJson(DCBParams["RaiseReserveData"])
+	spendReserveData := NewSpendReserveDataFromJson(DCBParams["SpendReserveData"])
 
 	listLoanParams := NewListLoanParamsFromJson(DCBParams["ListLoanParams"])
 	return NewDCBParams(
@@ -106,7 +121,8 @@ func NewDCBParamsFromJson(rawData interface{}) *DCBParams {
 		minLoanResponseRequire,
 		minCMBApprovalRequire,
 		lateWithdrawResponseFine,
-		saleDCBTokensByUSDData,
+		raiseReserveData,
+		spendReserveData,
 		dividendAmount,
 		listLoanParams,
 	)
@@ -170,7 +186,14 @@ func (dcbParams *DCBParams) Hash() *common.Hash {
 	for _, saleData := range dcbParams.ListSaleData {
 		record = string(saleData.Hash().GetBytes())
 	}
-	record += string(dcbParams.SaleDCBTokensByUSDData.Hash().GetBytes())
+	for key, data := range dcbParams.RaiseReserveData {
+		record := string(key[:])
+		record += data.Hash().String()
+	}
+	for key, data := range dcbParams.SpendReserveData {
+		record := string(key[:])
+		record += data.Hash().String()
+	}
 	record += string(dcbParams.MinLoanResponseRequire)
 	record += string(dcbParams.MinCMBApprovalRequire)
 	record += string(dcbParams.LateWithdrawResponseFine)
@@ -199,16 +222,30 @@ func (govParams *GOVParams) Hash() *common.Hash {
 func (GOVParams GOVParams) Validate() bool {
 	return true
 }
-func (DCBParams DCBParams) Validate() bool {
+func (dcbParams DCBParams) Validate() bool {
 	return true
 }
 
-func (DCBParams DCBParams) ValidateSanityData() bool {
-	// Todo: @0xbunyip
+func (dcbParams DCBParams) ValidateSanityData() bool {
+	for _, saleData := range dcbParams.ListSaleData {
+		if !validAssetPair(saleData.BuyingAsset, saleData.SellingAsset) {
+			return false
+		}
+	}
 	return true
 }
 
 func (GOVParams GOVParams) ValidateSanityData() bool {
 	// Todo: @0xankylosaurus
 	return true
+}
+
+func validAssetPair(buyingAsset common.Hash, sellingAsset common.Hash) bool {
+	// DCB Bond crowdsales
+	if common.IsBondAsset(&buyingAsset) && common.IsConstantAsset(&sellingAsset) {
+		return true
+	} else if common.IsConstantAsset(&buyingAsset) && common.IsBondAsset(&sellingAsset) {
+		return true
+	}
+	return false
 }

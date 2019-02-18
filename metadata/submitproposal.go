@@ -5,6 +5,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
+	"github.com/pkg/errors"
 )
 
 type SubmitProposalInfo struct {
@@ -107,6 +108,20 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockC
 ) (bool, error) {
 	if !submitDCBProposalMetadata.SubmitProposalInfo.ValidateTxWithBlockChain(common.DCBBoard, tx, br, chainID, db) {
 		return false, nil
+	}
+
+	raiseReserveData := submitDCBProposalMetadata.DCBParams.RaiseReserveData
+	for assetID, _ := range raiseReserveData {
+		if br.GetAssetPrice(&assetID) == 0 {
+			return false, errors.Errorf("Cannot raise reserve without oracle price for asset %x", assetID)
+		}
+	}
+
+	spendReserveData := submitDCBProposalMetadata.DCBParams.SpendReserveData
+	for assetID, _ := range spendReserveData {
+		if br.GetAssetPrice(&assetID) == 0 {
+			return false, errors.Errorf("Cannot spend reserve without oracle price for asset %x", assetID)
+		}
 	}
 	return true, nil
 }

@@ -1,8 +1,9 @@
 package params
 
 import (
-	"encoding/hex"
+	"crypto/rand"
 	"fmt"
+	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
 )
@@ -133,7 +134,6 @@ func (sd *SaleData) GetProposalTxHash() common.Hash {
 }
 
 func NewSaleData(
-	saleID []byte,
 	endBlock uint64,
 	buyingAsset *common.Hash,
 	buyingAmount uint64,
@@ -143,7 +143,6 @@ func NewSaleData(
 	defaultSellPrice uint64,
 ) *SaleData {
 	return &SaleData{
-		SaleID:           saleID,
 		EndBlock:         endBlock,
 		BuyingAsset:      *buyingAsset,
 		BuyingAmount:     buyingAmount,
@@ -156,20 +155,17 @@ func NewSaleData(
 
 func NewSaleDataFromJson(data interface{}) *SaleData {
 	saleDataData := data.(map[string]interface{})
-	saleIDStr := saleDataData["SaleID"].(string)
-	saleID, errSale := hex.DecodeString(saleIDStr)
 
 	buyingAssetStr := saleDataData["BuyingAsset"].(string)
 	buyingAsset, errBuy := common.Hash{}.NewHashFromStr(buyingAssetStr)
 
 	sellingAssetStr := saleDataData["SellingAsset"].(string)
 	sellingAsset, errSell := common.Hash{}.NewHashFromStr(sellingAssetStr)
-	if errSale != nil || errBuy != nil || errSell != nil {
+	if errBuy != nil || errSell != nil {
 		return nil
 	}
 
 	saleData := NewSaleData(
-		saleID,
 		uint64(saleDataData["EndBlock"].(float64)),
 		buyingAsset,
 		uint64(saleDataData["BuyingAmount"].(float64)),
@@ -178,6 +174,16 @@ func NewSaleDataFromJson(data interface{}) *SaleData {
 		uint64(saleDataData["SellingAmount"].(float64)),
 		uint64(saleDataData["DefaultSellPrice"].(float64)),
 	)
+
+	// Generate SaleID randomly
+	saleDataHash := saleData.Hash()
+	salt := make([]byte, 32)
+	rand.Read(salt)
+	saleDataHashWithSalt := []byte{}
+	saleDataHashWithSalt = append(saleDataHashWithSalt, saleDataHash[:]...)
+	saleDataHashWithSalt = append(saleDataHashWithSalt, salt...)
+	saleID := common.DoubleHashH(saleDataHashWithSalt)
+	saleData.SaleID = saleID[:]
 	return saleData
 }
 
@@ -210,17 +216,56 @@ type SaleDCBTokensByUSDData struct {
 	EndBlock uint64
 }
 
-func NewSaleDCBTokensByUSDData(amount uint64, endBlock uint64) *SaleDCBTokensByUSDData {
-	return &SaleDCBTokensByUSDData{Amount: amount, EndBlock: endBlock}
+func NewRaiseReserveDataFromJson(data interface{}) map[common.Hash]*RaiseReserveData {
+	dataMap := data.(map[string]interface{})
+	raiseReserveMap := map[common.Hash]*RaiseReserveData{}
+	for key, value := range dataMap {
+		currencyType, err := common.NewHashFromStr(key)
+		if err != nil {
+			continue
+		}
+		valueMap := value.(map[string]interface{})
+		raiseReserveData := &RaiseReserveData{
+			EndBlock: uint64(valueMap["EndBlock"].(float64)),
+			Amount:   uint64(valueMap["Amount"].(float64)),
+		}
+		raiseReserveMap[*currencyType] = raiseReserveData
+	}
+	return raiseReserveMap
 }
 
-func NewSaleDCBTokensByUSDDataFromJson(data interface{}) *SaleDCBTokensByUSDData {
-	saleDCBTokensByUSDDataData := data.(map[string]interface{})
-	saleDCBTokensByUSDData := NewSaleDCBTokensByUSDData(
-		uint64(saleDCBTokensByUSDDataData["Amount"].(float64)),
-		uint64(saleDCBTokensByUSDDataData["EndBlock"].(float64)),
-	)
-	return saleDCBTokensByUSDData
+func (rrd *RaiseReserveData) Hash() *common.Hash {
+	record := strconv.FormatUint(rrd.EndBlock, 10)
+	record += strconv.FormatUint(rrd.Amount, 10)
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
+
+func NewSpendReserveDataFromJson(data interface{}) map[common.Hash]*SpendReserveData {
+	dataMap := data.(map[string]interface{})
+	spendReserveMap := map[common.Hash]*SpendReserveData{}
+	for key, value := range dataMap {
+		currencyType, err := common.NewHashFromStr(key)
+		if err != nil {
+			continue
+		}
+		valueMap := value.(map[string]interface{})
+		spendReserveData := &SpendReserveData{
+			EndBlock:        uint64(valueMap["EndBlock"].(float64)),
+			ReserveMinPrice: uint64(valueMap["ReserveMinPrice"].(float64)),
+			Amount:          uint64(valueMap["Amount"].(float64)),
+		}
+		spendReserveMap[*currencyType] = spendReserveData
+	}
+	return spendReserveMap
+}
+
+func (srd *SpendReserveData) Hash() *common.Hash {
+	record := strconv.FormatUint(srd.EndBlock, 10)
+	record += strconv.FormatUint(srd.ReserveMinPrice, 10)
+	record += strconv.FormatUint(srd.Amount, 10)
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
 }
 
 type OracleNetwork struct {
@@ -260,8 +305,7 @@ func NewOracleNetworkFromJson(data interface{}) *OracleNetwork {
 }
 
 func (saleData *SaleData) Hash() *common.Hash {
-	record := string(saleData.SaleID)
-	record += string(saleData.EndBlock)
+	record := string(saleData.EndBlock)
 	record += saleData.BuyingAsset.String()
 	record += string(saleData.BuyingAmount)
 	record += string(saleData.DefaultBuyPrice)

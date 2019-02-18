@@ -2,7 +2,10 @@ package metadata
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -13,7 +16,7 @@ type IssuingRequest struct {
 	ReceiverAddress privacy.PaymentAddress
 	DepositedAmount uint64      // in US dollar
 	AssetType       common.Hash // token id (one of types: Constant, BANK)
-	// TODO: need an ID to verify with PrimeTrust
+	CurrencyType    common.Hash // USD or ETH for now
 	MetadataBase
 }
 
@@ -41,18 +44,6 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	if bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) {
-		saleDBCTOkensByUSDData := bcr.GetDCBParams().SaleDCBTokensByUSDData
-		height, err := bcr.GetTxChainHeight(txr)
-		if height+1 > saleDBCTOkensByUSDData.EndBlock {
-			return false, err
-		}
-		oracleParams := bcr.GetOracleParams()
-		reqAmt := iReq.DepositedAmount / oracleParams.DCBToken
-		if saleDBCTOkensByUSDData.Amount < reqAmt {
-			return false, nil
-		}
-	}
 	return true, nil
 }
 
@@ -68,6 +59,9 @@ func (iReq *IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 	}
 	if len(iReq.AssetType) != common.HashSize {
 		return false, false, errors.New("Wrong request info's asset type")
+	}
+	if !bytes.Equal(txr.GetSigPubKey(), common.CentralizedWebsitePubKey) {
+		return false, false, errors.New("The issuance request must be called by centralized website.")
 	}
 	return true, true, nil
 }
@@ -86,10 +80,25 @@ func (iReq *IssuingRequest) ValidateMetadataByItself() bool {
 func (iReq *IssuingRequest) Hash() *common.Hash {
 	record := iReq.ReceiverAddress.String()
 	record += iReq.AssetType.String()
+	record += iReq.CurrencyType.String()
 	record += string(iReq.DepositedAmount)
 	record += iReq.MetadataBase.Hash().String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
+}
+
+func (iReq *IssuingRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+	actionContent := map[string]interface{}{
+		"txReqId": *(tx.Hash()),
+		"meta":    *iReq,
+	}
+	actionContentBytes, err := json.Marshal(actionContent)
+	if err != nil {
+		return [][]string{}, err
+	}
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	action := []string{strconv.Itoa(IssuingRequestMeta), actionContentBase64Str}
+	return [][]string{action}, nil
 }
