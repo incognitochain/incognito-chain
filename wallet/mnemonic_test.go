@@ -1,9 +1,9 @@
 package wallet
 
 import (
+	"encoding/hex"
 	"log"
 	"testing"
-	"encoding/hex"
 )
 
 func TestNewEntropy(t *testing.T) {
