@@ -49,8 +49,8 @@ type DCBParams struct {
 	MinLoanResponseRequire   uint8
 	MinCMBApprovalRequire    uint8
 	LateWithdrawResponseFine uint64 // CST penalty for each CMB's late withdraw response
-	RaiseReserveData         *RaiseReserveData
-	SpendReserveData         *SpendReserveData
+	RaiseReserveData         map[common.Hash]*RaiseReserveData
+	SpendReserveData         map[common.Hash]*SpendReserveData
 	DividendAmount           uint64 // maximum total Constant to pay dividend; might be less if Institution's fund ran out
 
 	// TODO(@0xbunyip): read loan params from proposal instead of storing and reading separately
@@ -58,16 +58,14 @@ type DCBParams struct {
 }
 
 type RaiseReserveData struct {
-	EndBlock     uint64
-	Amount       uint64       // # BANK tokens
-	CurrencyType *common.Hash // USD or crypto currency
+	EndBlock uint64
+	Amount   uint64 // # BANK tokens
 }
 
 type SpendReserveData struct {
 	EndBlock        uint64
 	ReserveMinPrice uint64
-	Amount          uint64       // Constant to burn
-	CurrencyType    *common.Hash // Only crypto currency
+	Amount          uint64 // Constant to burn
 }
 
 func NewDCBParams(
@@ -75,8 +73,8 @@ func NewDCBParams(
 	minLoanResponseRequire uint8,
 	minCMBApprovalRequire uint8,
 	lateWithdrawResponseFine uint64,
-	raiseReserveData *RaiseReserveData,
-	spendReserveData *SpendReserveData,
+	raiseReserveData map[common.Hash]*RaiseReserveData,
+	spendReserveData map[common.Hash]*SpendReserveData,
 	dividendAmount uint64,
 	listLoanParams []LoanParams,
 ) *DCBParams {
@@ -188,8 +186,14 @@ func (dcbParams *DCBParams) Hash() *common.Hash {
 	for _, saleData := range dcbParams.ListSaleData {
 		record = string(saleData.Hash().GetBytes())
 	}
-	record += dcbParams.RaiseReserveData.Hash().String()
-	record += dcbParams.SpendReserveData.Hash().String()
+	for key, data := range dcbParams.RaiseReserveData {
+		record := string(key[:])
+		record += data.Hash().String()
+	}
+	for key, data := range dcbParams.SpendReserveData {
+		record := string(key[:])
+		record += data.Hash().String()
+	}
 	record += string(dcbParams.MinLoanResponseRequire)
 	record += string(dcbParams.MinCMBApprovalRequire)
 	record += string(dcbParams.LateWithdrawResponseFine)

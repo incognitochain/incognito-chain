@@ -5,7 +5,7 @@ contract Reserve {
     address payable public manager;
 
     event __raise(address sender, uint256 value, bytes coinReceiver, bytes32 offchain);
-    event __spend(uint256 amount, bytes32 offchain);
+    event __spend(address payable receiver, uint256 amount, bytes32 offchain);
 
     modifier onlyManager() {
         require(msg.sender == manager, "only managers are authorized");
@@ -22,13 +22,12 @@ contract Reserve {
         manager = _manager;
     }
 
-    // TODO(@0xbunyip): add SaleID to separate different on-going sales
     function raise(bytes memory coinReceiver, bytes32 offchain) public payable {
         emit __raise(msg.sender, msg.value, coinReceiver, offchain);
     }
 
-    function spend(uint256 amount, bytes32 offchain) public managerOrOwner {
-        owner.transfer(amount); // TODO: transfer to somewhere else?
-        emit __spend(amount, offchain);
+    function spend(address payable receiver, uint256 amount, bytes32 offchain) public managerOrOwner {
+        receiver.transfer(amount);
+        emit __spend(receiver, amount, offchain);
     }
 }
