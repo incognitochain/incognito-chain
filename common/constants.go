@@ -115,11 +115,3 @@ const (
 	BEACON_VALIDATOR_ROLE = "beacon-validator"
 	BEACON_PENDING_ROLE   = "beacon-pending"
 )
-
-//PBFT
-const (
-	PBFT_LISTEN  = "listen"
-	PBFT_PROPOSE = "propose"
-	PBFT_PREPARE = "prepare"
-	PBFT_COMMIT  = "commit"
-)
