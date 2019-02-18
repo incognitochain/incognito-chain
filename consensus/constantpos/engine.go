@@ -20,13 +20,7 @@ type Engine struct {
 	cQuit   chan struct{}
 	cBFTMsg chan wire.Message
 
-	config      EngineConfig
-	CurrentRole role
-}
-
-type role struct {
-	Role    string
-	ShardID byte
+	config EngineConfig
 }
 
 type EngineConfig struct {
