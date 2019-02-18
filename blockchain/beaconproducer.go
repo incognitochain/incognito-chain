@@ -367,7 +367,7 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 		if chainTimeStamp > bestStateBeacon.CurrentRandomTimeStamp {
 			var wg sync.WaitGroup
 			wg.Add(1)
-			randomInstruction, rand := GenerateRandomInstruction(bestStateBeacon.CurrentRandomTimeStamp, &wg)
+			randomInstruction, rand := generateRandomInstruction(bestStateBeacon.CurrentRandomTimeStamp, &wg)
 			wg.Wait()
 			instructions = append(instructions, randomInstruction)
 			Logger.log.Infof("RandomNumber %+v", randomInstruction)
@@ -406,7 +406,7 @@ func (bestStateBeacon *BestStateBeacon) GetValidStakers(tempStaker []string) []s
 //===================================Util for Beacon=============================
 
 // ["random" "{blockheight}" "{bitcointimestamp}" "{nonce}" "{timestamp}"]
-func GenerateRandomInstruction(timestamp int64, wg *sync.WaitGroup) ([]string, int64) {
+func generateRandomInstruction(timestamp int64, wg *sync.WaitGroup) ([]string, int64) {
 	//COMMENT FOR TESTING
 	// msg := make(chan string)
 	// go btcapi.GenerateRandomNumber(timestamp, msg)
