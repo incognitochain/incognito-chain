@@ -26,10 +26,6 @@ func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ValidateTxWithBlockChain(txr T
 	return true, nil
 }
 
-func (voteGOVBoardMetadata *VoteGOVBoardMetadata) GetType() int {
-	return VoteGOVBoardMeta
-}
-
 func (voteGOVBoardMetadata *VoteGOVBoardMetadata) Hash() *common.Hash {
 	record := string(voteGOVBoardMetadata.VoteBoardMetadata.GetBytes())
 	record += voteGOVBoardMetadata.MetadataBase.Hash().String()
