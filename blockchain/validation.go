@@ -11,8 +11,8 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 )
 
-func (self *BlockChain) GetAmountPerAccount(proposal *metadata.DividendProposal) (uint64, []string, []uint64, error) {
-	tokenHolders, err := self.config.DataBase.GetCustomTokenPaymentAddressesBalanceUnreward(proposal.TokenID)
+func (blockchain *BlockChain) GetAmountPerAccount(proposal *metadata.DividendProposal) (uint64, []string, []uint64, error) {
+	tokenHolders, err := blockchain.config.DataBase.GetCustomTokenPaymentAddressesBalanceUnreward(proposal.TokenID)
 	if err != nil {
 		return 0, nil, nil, err
 	}
@@ -31,7 +31,7 @@ func (self *BlockChain) GetAmountPerAccount(proposal *metadata.DividendProposal)
 		keySet := cashec.KeySet{}
 		keySet.PaymentAddress = privacy.PaymentAddress{}
 		keySet.PaymentAddress.SetBytes(paymentAddressInBytes)
-		vouts, err := self.GetUnspentTxCustomTokenVout(keySet, proposal.TokenID)
+		vouts, err := blockchain.GetUnspentTxCustomTokenVout(keySet, proposal.TokenID)
 		if err != nil {
 			return 0, nil, nil, err
 		}
