@@ -31,9 +31,9 @@ const (
 	defaultLogFilename        = "log.log"
 	defaultMaxPeers           = 125
 	defaultMaxPeersSameShard  = 10
-	defaultMaxPeersOtherShard = 5
-	defaultMaxPeersOther      = 100
-	defaultMaxPeersNoShard    = 100
+	defaultMaxPeersOtherShard = 10
+	defaultMaxPeersOther      = 125
+	defaultMaxPeersNoShard    = 125
 	defaultMaxPeersBeacon     = 20
 	defaultMaxRPCClients      = 10
 	sampleConfigFilename      = "sample-config.conf"
