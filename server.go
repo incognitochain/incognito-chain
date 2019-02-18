@@ -229,18 +229,18 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	serverObj.addrManager = addrmanager.New(cfg.DataDir)
 
-	serverObj.rewardAgent, err = rewardagent.RewardAgent{}.Init(&rewardagent.RewardAgentConfig{
+	// Init reward agent
+	serverObj.rewardAgent = rewardagent.RewardAgent{}.Init(&rewardagent.RewardAgentConfig{
 		BlockChain: serverObj.blockChain,
 	})
-	if err != nil {
-		return err
-	}
 
+	// Init block template generator
 	serverObj.blockgen, err = blockchain.BlkTmplGenerator{}.Init(serverObj.memPool, serverObj.blockChain, serverObj.rewardAgent, serverObj.shardToBeaconPool, serverObj.crossShardPool)
 	if err != nil {
 		return err
 	}
 
+	// Init consensus engine
 	serverObj.consensusEngine, err = constantpos.Engine{}.Init(&constantpos.EngineConfig{
 		ChainParams: serverObj.chainParams,
 		BlockChain:  serverObj.blockChain,
