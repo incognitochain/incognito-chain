@@ -1,9 +1,12 @@
 package blockchain
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/transaction"
 	"reflect"
 	"strconv"
 	"strings"
@@ -86,8 +89,9 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	beaconBlock.Header.Timestamp = time.Now().Unix()
 	beaconBlock.Header.PrevBlockHash = beaconBestState.BestBlockHash
 	tempShardState, staker, swap, stabilityInstructions := self.GetShardState(&beaconBestState)
+
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
-	votingInstruction, err := self.chain.generateVotingInstruction(privateKey)
+	votingInstruction, err := self.chain.generateVotingInstruction(privateKey, 0)
 	if err != nil {
 		return nil, NewBlockChainError(BeaconError, err)
 	}
@@ -225,6 +229,11 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 					} else {
 						// validSwap[shardID] = append(validSwap[shardID], l)
 					}
+				} else {
+					err := self.processInstruction(beaconBestState, l)
+					if err != nil {
+						panic(fmt.Sprintf("Process stability instructions failed: %s", err.Error()))
+					}
 				}
 			}
 			if index != 0 && err != nil {
@@ -298,6 +307,60 @@ func (self *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (m
 		}
 	}
 	return shardStates, validStakers, validSwap, stabilityInstructions
+}
+
+//todo @0xjackalope process instruction without create new tx (eg: update db)
+//should be merge with buildStabilityInstruction
+func (self *BlkTmplGenerator) processInstruction(beaconBestState *BestStateBeacon, instruction []string) error {
+	//bestBlock := beaconBestState.BestBlock
+	metaType, err := strconv.Atoi(instruction[0])
+	if err != nil {
+		return err
+	}
+	contentBytes, err := base64.StdEncoding.DecodeString(instruction[1])
+	if err != nil {
+		return err
+	}
+	switch metaType {
+	case metadata.VoteDCBBoardMeta:
+		{
+			instructionContent := map[string]interface{}{}
+			err := json.Unmarshal([]byte(contentBytes), instructionContent)
+			if err != nil {
+				return err
+			}
+			tx := instructionContent["regTx"].(*transaction.TxCustomToken)
+			meta := tx.GetMetadata().(*metadata.VoteDCBBoardMetadata)
+			boardIndex := beaconBestState.StabilityInfo.DCBGovernor.BoardIndex
+			_ = boardIndex
+			voteAmount := tx.GetAmountOfVote()
+			err = self.chain.config.DataBase.AddVoteBoard(common.DCBBoard, boardIndex, tx.TxTokenData.Vins[0].PaymentAddress, meta.VoteBoardMetadata.CandidatePaymentAddress, voteAmount)
+			if err != nil {
+				return err
+			}
+		}
+	case metadata.VoteGOVBoardMeta:
+		{
+			instructionContent := map[string]interface{}{}
+			err := json.Unmarshal([]byte(contentBytes), instructionContent)
+			if err != nil {
+				return err
+			}
+			tx := instructionContent["regTx"].(*transaction.TxCustomToken)
+			meta := tx.GetMetadata().(*metadata.VoteGOVBoardMetadata)
+			boardIndex := beaconBestState.StabilityInfo.GOVGovernor.BoardIndex
+			_ = boardIndex
+			voteAmount := tx.GetAmountOfVote()
+			err = self.chain.config.DataBase.AddVoteBoard(common.GOVBoard, boardIndex, tx.TxTokenData.Vins[0].PaymentAddress, meta.VoteBoardMetadata.CandidatePaymentAddress, voteAmount)
+			if err != nil {
+				return err
+			}
+		}
+	default:
+		return nil
+	}
+
+	return nil
 }
 
 /*

@@ -22,7 +22,6 @@ func iPlusPlus(x *int) int {
 func (db *db) AddVoteBoard(
 	boardType byte,
 	boardIndex uint32,
-	paymentAddress []byte,
 	VoterPaymentAddress privacy.PaymentAddress,
 	CandidatePaymentAddress privacy.PaymentAddress,
 	amount uint64,
