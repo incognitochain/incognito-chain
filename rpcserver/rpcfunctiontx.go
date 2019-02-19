@@ -668,10 +668,10 @@ func (rpcServer RpcServer) handleHasSerialNumbers(params interface{}, closeChan 
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	for _, item := range serialNumbersStr {
-		serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
+		serialNumber, _, _  := base58.Base58Check{}.Decode(item.(string))
 		db := *(rpcServer.config.Database)
-		ok, err := db.HasSerialNumber(constantTokenID, serialNumber, shardIDSender)
-		if ok && err != nil {
+		ok, _ := db.HasSerialNumber(constantTokenID, serialNumber, shardIDSender)
+		if ok || err != nil {
 			// serial number in db
 			result = append(result, true)
 		} else {
