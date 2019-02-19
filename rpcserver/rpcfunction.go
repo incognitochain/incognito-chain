@@ -102,6 +102,7 @@ var RpcHandler = map[string]commandHandler{
 	SendIssuingRequest:              RpcServer.handleSendIssuingRequest,
 	CreateAndSendIssuingRequest:     RpcServer.handleCreateAndSendIssuingRequest,
 	CreateAndSendContractingRequest: RpcServer.handleCreateAndSendContractingRequest,
+	GetIssuingStatus:                RpcServer.handleGetIssuingStatus,
 	ConvertToDCBTokenAmount:         RpcServer.handleConvertToDCBTokenAmount,
 
 	// multisig

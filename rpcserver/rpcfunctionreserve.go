@@ -45,6 +45,25 @@ func (rpcServer RpcServer) handleCreateAndSendContractingRequest(params interfac
 	)
 }
 
+// handleGetIssuingStatus returns status accept/refund of a reserve issuing tx
+func (rpcServer RpcServer) handleGetIssuingStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	reqTxID, err := common.NewHashFromStr(arrayParams[0].(string))
+	if err != nil {
+		return nil, NewRPCError(ErrRPCParse, err)
+	}
+	amount, status, err := (*rpcServer.config.Database).GetIssuingInfo(*reqTxID)
+	if err != nil {
+		return nil, NewRPCError(ErrRPCInternal, err)
+	}
+	result := map[string]interface{}{
+		"Status": status,
+		"Amount": amount,
+	}
+	return result, nil
+}
+
+// handleConvertToDCBTokenAmount receives amount of ETH (in Wei) and returns number of DCB Tokens for current price
 func (rpcServer RpcServer) handleConvertToDCBTokenAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	amountStr := arrayParams[0].(string)

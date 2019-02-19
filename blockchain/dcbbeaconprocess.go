@@ -14,7 +14,7 @@ import (
 
 func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 	if len(inst) < 2 {
-		return nil // Not error, just not loan instruction
+		return nil // Not error, just not stability instruction
 	}
 	switch inst[0] {
 	case strconv.Itoa(metadata.LoanRequestMeta):
