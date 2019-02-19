@@ -107,3 +107,8 @@ const (
 	COMMITEES    = 1
 	OFFSET       = 1
 )
+
+// Units converter
+const (
+	WeiToMilliEtherRatio = int64(1000000000000000)
+)

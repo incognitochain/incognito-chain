@@ -98,9 +98,11 @@ var RpcHandler = map[string]commandHandler{
 	TestStoreCrowdsale:                    RpcServer.handleTESTStoreCrowdsale,
 
 	// Reserve
-	CreateIssuingRequest:        RpcServer.handleCreateIssuingRequest,
-	SendIssuingRequest:          RpcServer.handleSendIssuingRequest,
-	CreateAndSendIssuingRequest: RpcServer.handleCreateAndSendIssuingRequest,
+	CreateIssuingRequest:            RpcServer.handleCreateIssuingRequest,
+	SendIssuingRequest:              RpcServer.handleSendIssuingRequest,
+	CreateAndSendIssuingRequest:     RpcServer.handleCreateAndSendIssuingRequest,
+	CreateAndSendContractingRequest: RpcServer.handleCreateAndSendContractingRequest,
+	ConvertToDCBTokenAmount:         RpcServer.handleConvertToDCBTokenAmount,
 
 	// multisig
 	CreateSignatureOnCustomTokenTx:       RpcServer.handleCreateSignatureOnCustomTokenTx,

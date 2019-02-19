@@ -1,5 +1,12 @@
 package rpcserver
 
+import (
+	"math/big"
+
+	"github.com/ninjadotorg/constant/common"
+	"github.com/pkg/errors"
+)
+
 func (rpcServer RpcServer) handleCreateIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	constructor := metaConstructors[CreateAndSendIssuingRequest]
 	return rpcServer.createRawCustomTokenTxWithMetadata(params, closeChan, constructor)
@@ -36,4 +43,23 @@ func (rpcServer RpcServer) handleCreateAndSendContractingRequest(params interfac
 		RpcServer.handleCreateContractingRequest,
 		RpcServer.handleSendContractingRequest,
 	)
+}
+
+func (rpcServer RpcServer) handleConvertToDCBTokenAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	amountStr := arrayParams[0].(string)
+	// Convert amount to MilliEther
+	amount := big.NewInt(0)
+	amount, ok := amount.SetString(amountStr, 10)
+	if !ok {
+		return nil, NewRPCError(ErrRPCParse, errors.Errorf("Error parsing amount: %s", amountStr))
+	}
+	oracle := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.Oracle
+	amount = amount.Quo(amount, big.NewInt(common.WeiToMilliEtherRatio))
+	if !amount.IsUint64() {
+		return nil, NewRPCError(ErrRPCParse, errors.New("Amount invalid"))
+	}
+	depositedAmount := amount.Uint64()
+	dcbTokenAmount := depositedAmount * oracle.ETH / oracle.DCBToken
+	return dcbTokenAmount, nil
 }
