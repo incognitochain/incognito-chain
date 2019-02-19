@@ -200,15 +200,13 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		}
 	}
 
-	oneNumber := big.NewInt(1)
 	twoNumber := big.NewInt(2)
-	oneVector := powerVector(oneNumber, n*numValuePad)
-	oneVectorN := powerVector(oneNumber, n)
 	twoVectorN := powerVector(twoNumber, n)
 
-	aR, err := vectorSub(aL, oneVector)
-	if err != nil {
-		return nil, err
+	aR := make([]*big.Int, numValuePad*n)
+
+	for i:=0; i<numValuePad*n; i++{
+		aR[i] = new(big.Int).Sub(aL[i], big.NewInt(1))
 	}
 
 	// random alpha
@@ -288,17 +286,17 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	deltaYZ := new(big.Int).Sub(z, zSquare)
 
 	// innerProduct1 = <1^(n*m), y^(n*m)>
-	innerProduct1, err := innerProduct(oneVector, yVector)
-	if err != nil {
-		return nil, err
+	innerProduct1 := big.NewInt(0)
+	for i:=0; i<n*numValuePad; i++{
+		innerProduct1 = innerProduct1.Add(innerProduct1, yVector[i])
 	}
 
 	deltaYZ.Mul(deltaYZ, innerProduct1)
 
 	// innerProduct2 = <1^n, 2^n>
-	innerProduct2, err := innerProduct(oneVectorN, twoVectorN)
-	if err != nil {
-		return nil, err
+	innerProduct2 := big.NewInt(0)
+	for i:=0; i<n; i++{
+		innerProduct2 = innerProduct2.Add(innerProduct2, twoVectorN[i])
 	}
 
 	sum := big.NewInt(0)

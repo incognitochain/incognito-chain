@@ -469,7 +469,8 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 	wit.ComInputSK.Set(cmInputSK.X, cmInputSK.Y)
 
 	randInputShardID := privacy.RandScalar()
-	wit.ComInputShardID = privacy.PedCom.CommitAtIndex(big.NewInt(int64(pkLastByteSender)), randInputShardID, privacy.SHARDID)
+	senderShardID := common.GetShardIDFromLastByte(pkLastByteSender)
+	wit.ComInputShardID = privacy.PedCom.CommitAtIndex(big.NewInt(int64(senderShardID)), randInputShardID, privacy.SHARDID)
 
 	wit.ComInputValue = make([]*privacy.EllipticPoint, numInputCoin)
 	wit.ComInputSND = make([]*privacy.EllipticPoint, numInputCoin)
@@ -593,8 +594,8 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 		cmOutputSND[i] = privacy.PedCom.CommitAtIndex(outputCoin.CoinDetails.SNDerivator, randOutputSND[i], privacy.SND)
 
 		//TODO: refactor this hardcode, shardnum
-		shardID := common.GetShardIDFromLastByte(outputCoins[i].CoinDetails.GetPubKeyLastByte())
-		cmOutputShardID[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(shardID)), randOutputShardID[i], privacy.SHARDID)
+		receiverShardID := common.GetShardIDFromLastByte(outputCoins[i].CoinDetails.GetPubKeyLastByte())
+		cmOutputShardID[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(receiverShardID)), randOutputShardID[i], privacy.SHARDID)
 
 		randOutputSum[i] = big.NewInt(0)
 		randOutputSum[i].Add(randOutputValue[i], randOutputSND[i])
