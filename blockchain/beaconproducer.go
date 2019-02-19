@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -164,14 +163,6 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	beaconBlock.ProducerSig = producerSig
 	//================End Generate Signature
 	return beaconBlock, nil
-}
-
-type accumulativeValues struct {
-	bondsSold           uint64
-	govTokensSold       uint64
-	incomeFromBonds     uint64
-	incomeFromGOVTokens uint64
-	saleDataMap         map[string]*params.SaleData
 }
 
 // return param:
