@@ -135,6 +135,8 @@ type DatabaseInterface interface {
 	// Reserve
 	StoreIssuingInfo(reqTxID common.Hash, amount uint64, instType string) error
 	GetIssuingInfo(reqTxID common.Hash) (uint64, string, error)
+	StoreContractingInfo(reqTxID common.Hash, amount uint64, instType string) error
+	GetContractingInfo(reqTxID common.Hash) (uint64, string, error)
 
 	// CMB
 	StoreCMB([]byte, []byte, [][]byte, uint64, []byte) error
