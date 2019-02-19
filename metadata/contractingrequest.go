@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
@@ -69,11 +70,28 @@ func (cReq *ContractingRequest) ValidateTxWithBlockChain(
 }
 
 func (cReq *ContractingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+	if cReq.Type == ContractingRequestMeta {
+		return false, false, errors.New("Wrong request info's meta type")
+	}
+	if len(cReq.BurnerAddress.Pk) == 0 {
+		return false, false, errors.New("Wrong request info's burner address")
+	}
+	if cReq.BurnedConstAmount == 0 {
+		return false, false, errors.New("Wrong request info's deposited amount")
+	}
+	if len(cReq.CurrencyType) != common.HashSize {
+		return false, false, errors.New("Wrong request info's currency type")
+	}
+
 	if !txr.IsCoinsBurning() {
 		return false, false, nil
 	}
-	// TODO: compare BurnedConstAmount to vout value
-	// TODO: check buner address is the one in vin
+	if cReq.BurnedConstAmount != txr.CalculateTxValue() {
+		return false, false, nil
+	}
+	if !bytes.Equal(txr.GetSigPubKey()[:], cReq.BurnerAddress.Pk[:]) {
+		return false, false, nil
+	}
 	return true, true, nil
 }
 
