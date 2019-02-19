@@ -66,6 +66,9 @@ func (iReq *IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 	if len(iReq.AssetType) != common.HashSize {
 		return false, false, errors.New("Wrong request info's asset type")
 	}
+	if len(iReq.CurrencyType) != common.HashSize {
+		return false, false, errors.New("Wrong request info's currency type")
+	}
 	return true, true, nil
 }
 
