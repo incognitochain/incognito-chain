@@ -39,6 +39,7 @@ type ContractingInfo struct {
 func buildInstTypeForContractingAction(
 	beaconBestState *BestStateBeacon,
 	md *metadata.ContractingRequest,
+	accumulativeValues *accumulativeValues,
 ) string {
 	if bytes.Equal(md.CurrencyType[:], common.USDAssetID[:]) {
 		return "accepted"
@@ -56,13 +57,14 @@ func buildInstTypeForContractingAction(
 		return "refund"
 	}
 	if bestBlockHeight+1 > reserveData.EndBlock ||
-		md.BurnedConstAmount > reserveData.Amount {
+		md.BurnedConstAmount+accumulativeValues.constantsBurnedByETH > reserveData.Amount {
 		return "refund"
 	}
 	if bytes.Equal(md.CurrencyType[:], common.ETHAssetID[:]) &&
 		oracle.ETH < reserveData.ReserveMinPrice {
 		return "refund"
 	}
+	accumulativeValues.constantsBurnedByETH += md.BurnedConstAmount
 	return "accepted"
 }
 
@@ -84,7 +86,7 @@ func buildInstructionsForContractingReq(
 	md := contractingReqAction.Meta
 	reqTxID := contractingReqAction.TxReqID
 	instructions := [][]string{}
-	instType := buildInstTypeForContractingAction(beaconBestState, &md)
+	instType := buildInstTypeForContractingAction(beaconBestState, &md, accumulativeValues)
 
 	cInfo := ContractingInfo{
 		BurnerAddress:     md.BurnerAddress,
@@ -198,35 +200,46 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 func buildInstTypeAndAmountForIssuingAction(
 	beaconBestState *BestStateBeacon,
 	md *metadata.IssuingRequest,
+	accumulativeValues *accumulativeValues,
 ) (string, uint64) {
 	stabilityInfo := beaconBestState.StabilityInfo
 	oracle := stabilityInfo.Oracle
 	if bytes.Equal(md.AssetType[:], common.ConstantID[:]) {
 		return "accepted", md.DepositedAmount / oracle.Constant
 	}
-	// process for DCB token case
+	// process for case of DCB token
 	raiseReserveData := stabilityInfo.DCBConstitution.DCBParams.RaiseReserveData
 	bestBlockHeight := beaconBestState.BestBlock.Header.Height
 	if raiseReserveData == nil {
 		return "refund", 0
 	}
 
+	dcbTokensNeeded := uint64(0)
 	reqAmt := uint64(0)
 	var existed bool
 	var reserveData *params.RaiseReserveData
-	if bytes.Equal(md.CurrencyType[:], common.USDAssetID[:]) {
+	isOnUSD := bytes.Equal(md.CurrencyType[:], common.USDAssetID[:])
+	isOnETH := bytes.Equal(md.CurrencyType[:], common.ETHAssetID[:])
+	if isOnUSD {
 		reserveData, existed = raiseReserveData[common.USDAssetID]
 		reqAmt = md.DepositedAmount / oracle.DCBToken
-	} else if bytes.Equal(md.CurrencyType[:], common.ETHAssetID[:]) {
+		dcbTokensNeeded = reqAmt + accumulativeValues.dcbTokensSoldByUSD
+	} else if isOnETH {
 		reserveData, existed = raiseReserveData[common.ETHAssetID]
-		// TODO: consider the unit of ETH
+		// TODO: be careful of the ETH unit
 		reqAmt = (md.DepositedAmount * oracle.ETH) / oracle.DCBToken
+		dcbTokensNeeded = reqAmt + accumulativeValues.dcbTokensSoldByETH
 	}
 	if !existed ||
 		bestBlockHeight+1 > reserveData.EndBlock ||
 		reserveData.Amount == 0 ||
-		reserveData.Amount < reqAmt {
+		reserveData.Amount < dcbTokensNeeded {
 		return "refund", 0
+	}
+	if isOnUSD {
+		accumulativeValues.dcbTokensSoldByUSD += reqAmt
+	} else if isOnETH {
+		accumulativeValues.dcbTokensSoldByETH += reqAmt
 	}
 	return "accepted", reqAmt
 }
@@ -249,7 +262,7 @@ func buildInstructionsForIssuingReq(
 	md := issuingReqAction.Meta
 	reqTxID := issuingReqAction.TxReqID
 	instructions := [][]string{}
-	instType, reqAmt := buildInstTypeAndAmountForIssuingAction(beaconBestState, &md)
+	instType, reqAmt := buildInstTypeAndAmountForIssuingAction(beaconBestState, &md, accumulativeValues)
 
 	iInfo := IssuingInfo{
 		ReceiverAddress: md.ReceiverAddress,

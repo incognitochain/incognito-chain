@@ -15,6 +15,17 @@ import (
 	"github.com/pkg/errors"
 )
 
+type accumulativeValues struct {
+	bondsSold            uint64
+	govTokensSold        uint64
+	incomeFromBonds      uint64
+	incomeFromGOVTokens  uint64
+	dcbTokensSoldByUSD   uint64
+	dcbTokensSoldByETH   uint64
+	constantsBurnedByETH uint64
+	saleDataMap          map[string]*params.SaleData
+}
+
 type BuyBackInfo struct {
 	PaymentAddress privacy.PaymentAddress
 	BuyBackPrice   uint64
@@ -258,27 +269,7 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 		}
 	}
 	// update params in beststate
-	updateParamsFromBeaconBestState(beaconBestState, accumulativeValues)
 	return instructions, nil
-}
-
-func updateParamsFromBeaconBestState(
-	beaconBestState *BestStateBeacon,
-	accumulativeValues *accumulativeValues,
-) {
-	beaconBestState.StabilityInfo.SalaryFund += (accumulativeValues.incomeFromBonds + accumulativeValues.incomeFromGOVTokens)
-	if beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SellingBonds != nil {
-		beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= accumulativeValues.bondsSold
-	}
-	if beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens != nil {
-		beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens.GOVTokensToSell -= accumulativeValues.govTokensSold
-	}
-
-	// reset gov values
-	accumulativeValues.govTokensSold = 0
-	accumulativeValues.bondsSold = 0
-	accumulativeValues.incomeFromBonds = 0
-	accumulativeValues.incomeFromGOVTokens = 0
 }
 
 func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, producerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
