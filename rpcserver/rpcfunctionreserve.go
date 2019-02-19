@@ -81,8 +81,8 @@ func (rpcServer RpcServer) handleGetContractingStatus(params interface{}, closeC
 	return result, nil
 }
 
-// handleConvertToDCBTokenAmount receives amount of ETH (in Wei) and returns number of DCB Tokens for current price
-func (rpcServer RpcServer) handleConvertToDCBTokenAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+// handleConvertETHToDCBTokenAmount receives amount of ETH (in Wei) and returns number of DCB Tokens at current price
+func (rpcServer RpcServer) handleConvertETHToDCBTokenAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	amountStr := arrayParams[0].(string)
 	// Convert amount to MilliEther
@@ -99,4 +99,17 @@ func (rpcServer RpcServer) handleConvertToDCBTokenAmount(params interface{}, clo
 	depositedAmount := amount.Uint64()
 	dcbTokenAmount := depositedAmount * oracle.ETH / oracle.DCBToken
 	return dcbTokenAmount, nil
+}
+
+//  handleConvertCSTToETHAmount receives amount of CST and returns number of ETH (in Wei) at current price
+func (rpcServer RpcServer) handleConvertCSTToETHAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	amount := uint64(arrayParams[0].(float64))
+	oracle := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.Oracle
+	milliEtherAmount := amount * oracle.Constant / oracle.ETH
+
+	// Convert MilliEther to Wei
+	etherAmount := big.NewInt(int64(milliEtherAmount))
+	etherAmount = etherAmount.Mul(etherAmount, big.NewInt(common.WeiToMilliEtherRatio))
+	return etherAmount.String(), nil
 }
