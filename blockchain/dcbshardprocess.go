@@ -2,7 +2,9 @@ package blockchain
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
@@ -336,6 +338,32 @@ func (bc *BlockChain) ProcessVotingForBlock(block *ShardBlock) error {
 		}
 	}
 	return nil
+}
+
+func (bc *BlockChain) StoreMetadataInstructions(inst []string, shardID byte) error {
+	if len(inst) < 2 {
+		return nil // Not error, just not stability instruction
+	}
+	switch inst[0] {
+	case strconv.Itoa(metadata.IssuingResponseMeta):
+		return bc.storeIssuingResponseInstruction(inst, shardID)
+	}
+	return nil
+}
+
+func (bc *BlockChain) storeIssuingResponseInstruction(inst []string, shardID byte) error {
+	if strconv.Itoa(int(shardID)) != inst[1] {
+		return nil
+	}
+
+	issuingInfo := &IssuingInfo{}
+	err := json.Unmarshal([]byte(inst[3]), issuingInfo)
+	if err != nil {
+		return err
+	}
+
+	instType := inst[2]
+	return bc.config.DataBase.StoreIssuingInfo(issuingInfo.RequestedTxID, issuingInfo.Amount, instType)
 }
 
 //func (bc *BlockChain) UpdateDividendPayout(block *Block) error {
