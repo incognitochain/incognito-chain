@@ -182,7 +182,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		//TODO: add salary fund
 		SalaryFund:           remainingFund,
 		TxRoot:               *merkleRoot,
-		ShardTxRoot:          *block.Body.CalcMerkleRootShard(),
+		ShardTxRoot:          *block.Body.CalcMerkleRootShard(blockgen.chain.BestState.Shard[shardID].ActiveShards),
 		CrossOutputCoinRoot:  *crossOutputCoinRoot,
 		ActionsRoot:          actionsHash,
 		CrossShards:          CreateCrossShardByteArray(txsToAdd),
@@ -478,12 +478,12 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bcr metadata.BlockchainRetriever
 	return &block
 }
 
-func (blk *ShardBlock) CreateAllCrossShardBlock() map[byte]*CrossShardBlock {
+func (blk *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byte]*CrossShardBlock {
 	allCrossShard := make(map[byte]*CrossShardBlock)
-	if common.MAX_SHARD_NUMBER == 1 {
+	if activeShards == 1 {
 		return allCrossShard
 	}
-	for i := 0; i < common.MAX_SHARD_NUMBER; i++ {
+	for i := 0; i < activeShards; i++ {
 		crossShard, err := blk.CreateCrossShardBlock(byte(i))
 		if crossShard != nil && err == nil {
 			allCrossShard[byte(i)] = crossShard

@@ -241,7 +241,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return NewBlockChainError(HashError, errors.New("can't Verify Transaction Root"))
 	}
 	// Verify ShardTx Root
-	shardTxRoot := block.Body.CalcMerkleRootShard()
+	shardTxRoot := block.Body.CalcMerkleRootShard(blockchain.BestState.Shard[shardID].ActiveShards)
 
 	if !bytes.Equal(block.Header.ShardTxRoot.GetBytes(), shardTxRoot.GetBytes()) {
 		return NewBlockChainError(HashError, errors.New("can't Verify CrossShardTransaction Root"))
@@ -370,7 +370,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	- Beacon Height
 	- Action root
 */
-func (blockchain *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBlock, isVerifySig bool, shardID byte) error {
+func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBlock, isVerifySig bool, shardID byte) error {
 	Logger.log.Debugf("SHARD %+v | Begin VerifyBestStateWithShardBlock Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	//TODO: define method to verify producer
 	// Cal next producer
@@ -385,16 +385,17 @@ func (blockchain *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBloc
 	//=============End Verify producer signature
 	//=============Verify aggegrate signature
 	if isVerifySig {
-		if len(block.ValidatorsIdx) < (len(blockchain.ShardCommittee) >> 1) {
-			return NewBlockChainError(SignatureError, errors.New("block validators and Beacon committee is not compatible"))
+		if len(block.ValidatorsIdx) < (len(bestStateShard.ShardCommittee) >> 1) {
+			fmt.Println(bestStateShard.ShardCommittee)
+			return NewBlockChainError(SignatureError, errors.New("block validators and Shard committee is not compatible"))
 		}
-		ValidateAggSignature(block.ValidatorsIdx, blockchain.ShardCommittee, block.AggregatedSig, block.R, block.Hash())
+		ValidateAggSignature(block.ValidatorsIdx, bestStateShard.ShardCommittee, block.AggregatedSig, block.R, block.Hash())
 	}
 	//=============End Verify Aggegrate signature
-	if blockchain.ShardHeight+1 != block.Header.Height {
-		return NewBlockChainError(BlockHeightError, errors.New("block height of new block should be : "+strconv.Itoa(int(blockchain.ShardHeight+1))))
+	if bestStateShard.ShardHeight+1 != block.Header.Height {
+		return NewBlockChainError(BlockHeightError, errors.New("block height of new block should be : "+strconv.Itoa(int(bestStateShard.ShardHeight+1))))
 	}
-	if block.Header.BeaconHeight < blockchain.BeaconHeight {
+	if block.Header.BeaconHeight < bestStateShard.BeaconHeight {
 		return NewBlockChainError(BlockHeightError, errors.New("block contain invalid beacon height"))
 	}
 	Logger.log.Debugf("SHARD %+v | Finish VerifyBestStateWithShardBlock Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())

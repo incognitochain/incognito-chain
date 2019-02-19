@@ -236,14 +236,14 @@ func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string) (string, by
 	if found > -1 {
 		tmpID := (bestStateBeacon.BeaconProposerIdx + 1) % len(bestStateBeacon.BeaconCommittee)
 		if found == tmpID {
-			return common.BEACON_PROPOSER_ROLE, 0
+			return common.PROPOSER_ROLE, 0
 		}
-		return common.BEACON_VALIDATOR_ROLE, 0
+		return common.VALIDATOR_ROLE, 0
 	}
 
 	found = common.IndexOfStr(pubkey, bestStateBeacon.BeaconPendingValidator)
 	if found > -1 {
-		return common.BEACON_PENDING_ROLE, 0
+		return common.PENDING_ROLE, 0
 	}
 
 	return common.EmptyString, 0

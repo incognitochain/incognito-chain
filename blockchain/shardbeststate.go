@@ -35,6 +35,8 @@ type BestStateShard struct {
 	//TODO: verify if these information are needed or not
 	NumTxns   uint64 `json:"NumTxns,omitempty"`   // The number of txns in the block.
 	TotalTxns uint64 `json:"TotalTxns,omitempty"` // The total number of txns in the chain.
+
+	ActiveShards int `json:"ActiveShards,omitempty"`
 }
 
 // Get role of a public key base on best state shard
@@ -84,19 +86,19 @@ func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string) string {
 	if found > -1 {
 		tmpID := (bestStateShard.ShardProposerIdx + 1) % len(bestStateShard.ShardCommittee)
 		if found == tmpID {
-			fmt.Println("Shard BestState/ Get Public Key Role, ROLE", common.SHARD_PROPOSER_ROLE)
-			return common.SHARD_PROPOSER_ROLE
+			fmt.Println("Shard BestState/ Get Public Key Role, ROLE", common.PROPOSER_ROLE)
+			return common.PROPOSER_ROLE
 		} else {
-			fmt.Println("Shard BestState/ Get Public Key Role, ROLE", common.SHARD_VALIDATOR_ROLE)
-			return common.SHARD_VALIDATOR_ROLE
+			fmt.Println("Shard BestState/ Get Public Key Role, ROLE", common.VALIDATOR_ROLE)
+			return common.VALIDATOR_ROLE
 		}
 
 	}
 
 	found = common.IndexOfStr(pubkey, bestStateShard.ShardPendingValidator)
 	if found > -1 {
-		fmt.Println("Shard BestState/ Get Public Key Role, ROLE", common.SHARD_PENDING_ROLE)
-		return common.SHARD_PENDING_ROLE
+		fmt.Println("Shard BestState/ Get Public Key Role, ROLE", common.PENDING_ROLE)
+		return common.PENDING_ROLE
 	}
 
 	return common.EmptyString
@@ -110,7 +112,7 @@ func NewBestStateShard(netparam *Params) *BestStateShard {
 	bestStateShard.ShardCommittee = []string{}
 	bestStateShard.ShardCommitteeSize = netparam.ShardCommitteeSize
 	bestStateShard.ShardPendingValidator = []string{}
-
+	bestStateShard.ActiveShards = netparam.ActiveShards
 	bestStateShard.BestCrossShard = make(map[byte]uint64)
 
 	return &bestStateShard
