@@ -664,9 +664,7 @@ func (rpcServer RpcServer) handleHasSerialNumbers(params interface{}, closeChan 
 	//#2: list serialnumbers in base58check encode string
 	serialNumbersStr := arrayParams[1].([]interface{})
 
-	result := make(map[string][]string)
-	result["Existed"] = []string{}
-	result["NotExisted"] = []string{}
+	result := make([]bool, 0)
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	for _, item := range serialNumbersStr {
@@ -675,10 +673,10 @@ func (rpcServer RpcServer) handleHasSerialNumbers(params interface{}, closeChan 
 		ok, err := db.HasSerialNumber(constantTokenID, serialNumber, shardIDSender)
 		if ok && err != nil {
 			// serial number in db
-			result["Existed"] = append(result["Existed"], item.(string))
+			result = append(result, true)
 		} else {
 			// serial number not in db
-			result["NotExisted"] = append(result["NotExisted"], item.(string))
+			result = append(result, false)
 		}
 	}
 
@@ -703,9 +701,7 @@ func (rpcServer RpcServer) handleHasSnDerivators(params interface{}, closeChan <
 	//#2: list serialnumbers in base58check encode string
 	snDerivatorStr := arrayParams[1].([]interface{})
 
-	result := make(map[string][]string)
-	result["Existed"] = []string{}
-	result["NotExisted"] = []string{}
+	result := make([]bool, 0)
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	for _, item := range snDerivatorStr {
@@ -714,10 +710,10 @@ func (rpcServer RpcServer) handleHasSnDerivators(params interface{}, closeChan <
 		ok, err := db.HasSNDerivator(constantTokenID, *(new(big.Int).SetBytes(snderivator)), shardIDSender)
 		if ok && err != nil {
 			// serial number in db
-			result["Existed"] = append(result["Existed"], item.(string))
+			result = append(result, true)
 		} else {
 			// serial number not in db
-			result["NotExisted"] = append(result["NotExisted"], item.(string))
+			result = append(result, false)
 		}
 	}
 
