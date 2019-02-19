@@ -26,7 +26,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
 	fmt.Println("Shard Producer/NewBlockShard, Beacon Height / Before", beaconHeight)
 	fmt.Println("Shard Producer/NewBlockShard, Beacon Hash / Before", beaconHash)
-	epoch := blockgen.chain.BestState.Beacon.BeaconEpoch
+	epoch := blockgen.chain.BestState.Beacon.Epoch
 	if epoch-blockgen.chain.BestState.Shard[shardID].Epoch > 1 {
 		beaconHeight = blockgen.chain.BestState.Shard[shardID].Epoch * common.EPOCH
 		newBeaconHash, err := blockgen.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
@@ -83,12 +83,12 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	assignInstructions := GetAssingInstructionFromBeaconBlock(beaconBlocks, shardID)
 	fmt.Println("Shard Block Producer AssignInstructions ", assignInstructions)
 	shardPendingValidator := blockgen.chain.BestState.Shard[shardID].ShardPendingValidator
-	shardCommittees := blockgen.chain.BestState.Shard[shardID].ShardCommittee
+	shardCommittee := blockgen.chain.BestState.Shard[shardID].ShardCommittee
 	for _, assignInstruction := range assignInstructions {
 		shardPendingValidator = append(shardPendingValidator, strings.Split(assignInstruction[1], ",")...)
 	}
 	fmt.Println("Shard Producer: shardPendingValidator", shardPendingValidator)
-	fmt.Println("Shard Producer: shardCommitee", shardCommittees)
+	fmt.Println("Shard Producer: shardCommitee", shardCommittee)
 	//Swap instruction
 	instructions := [][]string{}
 	swapInstruction := []string{}
@@ -96,7 +96,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	//@NOTICE: In this block, only pending validator change, shard committees will change in the next block
 	if beaconHeight%common.EPOCH == 0 {
 		if len(shardPendingValidator) > 0 {
-			swapInstruction, shardPendingValidator, shardCommittees, err = CreateSwapAction(shardPendingValidator, shardCommittees, shardID)
+			swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize, shardID)
 			fmt.Println("Shard Producer: swapInstruction", swapInstruction)
 			if err != nil {
 				Logger.log.Error(err)
@@ -142,7 +142,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	userKeySet.ImportFromPrivateKey(privatekey)
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(block.Body.Transactions)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
-	prevBlock := blockgen.chain.BestState.Shard[shardID].BestShardBlock
+	prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
 	prevBlockHash := prevBlock.Hash()
 
 	crossOutputCoinRoot := &common.Hash{}
@@ -164,7 +164,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
-	committeeRoot, err := GenerateHashFromStringArray(shardCommittees)
+	committeeRoot, err := GenerateHashFromStringArray(shardCommittee)
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
@@ -330,7 +330,7 @@ func FetchBeaconBlockFromHeight(db database.DatabaseInterface, from uint64, to u
 }
 
 func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) {
-	byteMap := make([]byte, common.SHARD_NUMBER)
+	byteMap := make([]byte, common.MAX_SHARD_NUMBER)
 	for _, tx := range txList {
 		switch tx.GetType() {
 		case common.TxNormalType, common.TxSalaryType:
@@ -379,10 +379,10 @@ func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) 
 	#3: new committees after swapped
 	#4: error
 */
-func CreateSwapAction(pendingValidator []string, commitees []string, shardID byte) ([]string, []string, []string, error) {
+func CreateSwapAction(pendingValidator []string, commitees []string, committeeSize int, shardID byte) ([]string, []string, []string, error) {
 	fmt.Println("Shard Producer/Create Swap Action: pendingValidator", pendingValidator)
 	fmt.Println("Shard Producer/Create Swap Action: commitees", commitees)
-	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, common.COMMITEES, common.OFFSET)
+	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, committeeSize, common.OFFSET)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -480,10 +480,10 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bcr metadata.BlockchainRetriever
 
 func (blk *ShardBlock) CreateAllCrossShardBlock() map[byte]*CrossShardBlock {
 	allCrossShard := make(map[byte]*CrossShardBlock)
-	if common.SHARD_NUMBER == 1 {
+	if common.MAX_SHARD_NUMBER == 1 {
 		return allCrossShard
 	}
-	for i := 0; i < common.SHARD_NUMBER; i++ {
+	for i := 0; i < common.MAX_SHARD_NUMBER; i++ {
 		crossShard, err := blk.CreateCrossShardBlock(byte(i))
 		if crossShard != nil && err == nil {
 			allCrossShard[byte(i)] = crossShard
