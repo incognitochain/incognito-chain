@@ -63,7 +63,7 @@ type BestStateBeacon struct {
 
 	BeaconCommitteeSize int
 	ShardCommitteeSize  int
-	ShardsCount         byte
+	ActiveShards        int
 }
 
 type StabilityInfo struct {
@@ -94,7 +94,7 @@ func (bsb *BestStateBeacon) GetCurrentShard() byte {
 	return 0
 }
 
-func NewBestStateBeacon() *BestStateBeacon {
+func NewBestStateBeacon(netparam *Params) *BestStateBeacon {
 	bestStateBeacon := BestStateBeacon{}
 	bestStateBeacon.BestBlockHash.SetBytes(make([]byte, 32))
 	bestStateBeacon.BestBlock = nil
@@ -115,6 +115,9 @@ func NewBestStateBeacon() *BestStateBeacon {
 	bestStateBeacon.Params = make(map[string]string)
 	bestStateBeacon.CurrentRandomNumber = -1
 	bestStateBeacon.StabilityInfo = StabilityInfo{}
+	bestStateBeacon.BeaconCommitteeSize = netparam.BeaconCommitteeSize
+	bestStateBeacon.ShardCommitteeSize = netparam.ShardCommitteeSize
+	bestStateBeacon.ActiveShards = netparam.ActiveShards
 	return &bestStateBeacon
 }
 
