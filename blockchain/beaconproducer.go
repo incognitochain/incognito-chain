@@ -78,7 +78,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	beaconBlock.Header.Producer = base58.Base58Check{}.Encode(payToAddress.Pk, byte(0x00))
 	beaconBlock.Header.Version = VERSION
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
-	beaconBlock.Header.Epoch = beaconBestState.BeaconEpoch
+	beaconBlock.Header.Epoch = beaconBestState.Epoch
 	// Eg: Epoch is 200 blocks then increase epoch at block 201, 401, 601
 	if beaconBlock.Header.Height%common.EPOCH == 1 {
 		beaconBlock.Header.Epoch++
@@ -332,7 +332,7 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 	// Beacon normal swap
 	if block.Header.Height%common.EPOCH == 0 {
 		swapBeaconInstructions := []string{}
-		_, _, swappedValidator, beaconNextCommittee, _ := SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, common.COMMITEES, common.OFFSET)
+		_, _, swappedValidator, beaconNextCommittee, _ := SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, bestStateBeacon.BeaconCommitteeSize, common.OFFSET)
 		if len(swappedValidator) > 0 || len(beaconNextCommittee) > 0 {
 			swapBeaconInstructions = append(swapBeaconInstructions, "swap")
 			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(beaconNextCommittee, ","))

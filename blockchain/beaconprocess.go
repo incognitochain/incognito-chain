@@ -226,7 +226,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 				hash := shardBlock.Header.Hash()
 				err := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
 				if index == 0 && err != nil {
-					currentCommittee, _, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, common.COMMITEES, common.OFFSET)
+					currentCommittee, _, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, blockchain.BestState.Beacon.ShardCommitteeSize, common.OFFSET)
 					if err != nil {
 						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 					}
@@ -276,10 +276,10 @@ func (bestStateBeacon *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *Be
 	if !bytes.Equal(bestStateBeacon.BestBlockHash.GetBytes(), block.Header.PrevBlockHash.GetBytes()) {
 		return NewBlockChainError(BlockHeightError, errors.New("previous us block should be :"+bestStateBeacon.BestBlockHash.String()))
 	}
-	if block.Header.Height%common.EPOCH == 1 && bestStateBeacon.BeaconEpoch+1 != block.Header.Epoch {
+	if block.Header.Height%common.EPOCH == 1 && bestStateBeacon.Epoch+1 != block.Header.Epoch {
 		return NewBlockChainError(EpochError, errors.New("block height and Epoch is not compatiable"))
 	}
-	if block.Header.Height%common.EPOCH != 1 && bestStateBeacon.BeaconEpoch != block.Header.Epoch {
+	if block.Header.Height%common.EPOCH != 1 && bestStateBeacon.Epoch != block.Header.Epoch {
 		return NewBlockChainError(EpochError, errors.New("block height and Epoch is not compatiable"))
 	}
 	//=============Verify Stakers
@@ -396,14 +396,14 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	// update BestShardHash, BestBlock, BestBlockHash
 	bestStateBeacon.BestBlockHash = *newBlock.Hash()
 	bestStateBeacon.BestBlock = newBlock
-	bestStateBeacon.BeaconEpoch = newBlock.Header.Epoch
+	bestStateBeacon.Epoch = newBlock.Header.Epoch
 	bestStateBeacon.BeaconHeight = newBlock.Header.Height
 	bestStateBeacon.BeaconProposerIdx = common.IndexOfStr(newBlock.Header.Producer, bestStateBeacon.BeaconCommittee)
 
 	allShardState := newBlock.Body.ShardState
 	if bestStateBeacon.AllShardState == nil {
 		bestStateBeacon.AllShardState = make(map[byte][]ShardState)
-		for index := 0; index < common.SHARD_NUMBER; index++ {
+		for index := 0; index < common.MAX_SHARD_NUMBER; index++ {
 			bestStateBeacon.AllShardState[byte(index)] = []ShardState{
 				ShardState{
 					Height: 1,
@@ -530,7 +530,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		//Test with 1 member
 		bestStateBeacon.BeaconCommittee = append(bestStateBeacon.BeaconCommittee, newBeaconCandidate[0])
 		bestStateBeacon.ShardCommittee[byte(0)] = append(bestStateBeacon.ShardCommittee[byte(0)], newShardCandidate[0])
-		bestStateBeacon.BeaconEpoch = 1
+		bestStateBeacon.Epoch = 1
 	} else {
 		bestStateBeacon.CandidateBeaconWaitingForNextRandom = append(bestStateBeacon.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
 		bestStateBeacon.CandidateShardWaitingForNextRandom = append(bestStateBeacon.CandidateShardWaitingForNextRandom, newShardCandidate...)
@@ -599,7 +599,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			beaconNewCommittees    []string
 			err                    error
 		)
-		bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, beaconSwapedCommittees, beaconNewCommittees, err = SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, common.COMMITEES, common.OFFSET)
+		bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, beaconSwapedCommittees, beaconNewCommittees, err = SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, bestStateBeacon.BeaconCommitteeSize, common.OFFSET)
 		if err != nil {
 			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 			return NewBlockChainError(UnExpectedError, err)
@@ -668,7 +668,7 @@ func calculateHash(candidate string, rand int64) (shardID byte) {
 	// fmt.Println("Hash of candidate serialized pubkey and random number", hash)
 	// fmt.Printf("\"%d\",\n", hash[len(hash)-1])
 	// fmt.Println("Shard to be assign", hash[len(hash)-1])
-	shardID = byte(int(hash[len(hash)-1]) % common.SHARD_NUMBER)
+	shardID = byte(int(hash[len(hash)-1]) % common.MAX_SHARD_NUMBER)
 	return shardID
 }
 

@@ -19,7 +19,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 		nodeMode := blockchain.config.NodeMode
 		if userRole == "beacon-proposer" || userRole == "beacon-validator" {
 			pState.ShardToBeaconPool = shardToBeaconPool
-			for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
+			for shardID := byte(0); shardID < byte(common.MAX_SHARD_NUMBER); shardID++ {
 				if shardState, ok := (*shard)[shardID]; ok {
 					if shardState.Height > blockchain.BestState.Beacon.BestShardHeight[shardID] {
 						pState.Shard[shardID] = &shardState

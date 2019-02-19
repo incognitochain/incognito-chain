@@ -113,5 +113,5 @@ const (
 	BEACON_PROPOSER_ROLE  = "beacon-proposer"
 	BEACON_VALIDATOR_ROLE = "beacon-validator"
 	BEACON_PENDING_ROLE   = "beacon-pending"
-	MAX_SHARD_NUMBER      = 256
+	MAX_SHARD_NUMBER      = 255
 )

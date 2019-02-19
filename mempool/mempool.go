@@ -139,7 +139,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	// get shardID of tx
 	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 
-	bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestShardBlock.Header.Height
+	bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height
 	// nextBlockHeight := bestHeight + 1
 	// check version
 	ok := tx.CheckTxVersion(MaxVersion)
