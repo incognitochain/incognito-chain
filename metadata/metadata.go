@@ -170,6 +170,7 @@ type Transaction interface {
 	GetSigPubKey() []byte
 	IsPrivacy() bool
 	IsCoinsBurning() bool
+	CalculateTxValue() uint64
 	GetProof() *zkp.PaymentProof
 
 	// Get receivers' data for tx
