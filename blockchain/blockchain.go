@@ -1161,7 +1161,6 @@ func (blockchain *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.Output
 			// check spent with private-key
 			result.CoinDetails.SerialNumber = privacy.PedCom.G[privacy.SK].Derive(new(big.Int).SetBytes(keySet.PrivateKey),
 				result.CoinDetails.SNDerivator)
-			fmt.Print(base58.Base58Check{}.Encode(result.CoinDetails.SerialNumber.Compress(), byte(0x00)))
 			ok, err := blockchain.config.DataBase.HasSerialNumber(tokenID, result.CoinDetails.SerialNumber.Compress(), shardID)
 			if ok || err != nil {
 				return nil
