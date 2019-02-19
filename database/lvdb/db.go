@@ -79,7 +79,8 @@ var (
 	Unspent                 = []byte("unspent")
 
 	// reserve
-	reserveIssuingInfoPrefix = []byte("rsrv")
+	reserveIssuingInfoPrefix     = []byte("rsIss")
+	reserveContractingInfoPrefix = []byte("rsCon")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {
