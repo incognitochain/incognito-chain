@@ -14,9 +14,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+// only centralized website can send this type of tx
 type IssuingRequest struct {
 	ReceiverAddress privacy.PaymentAddress
-	DepositedAmount uint64      // in US dollar
+	DepositedAmount uint64
 	AssetType       common.Hash // token id (one of types: Constant, BANK)
 	CurrencyType    common.Hash // USD or ETH for now
 	MetadataBase
@@ -84,6 +85,9 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
+	if !bytes.Equal(txr.GetSigPubKey(), common.CentralizedWebsitePubKey) {
+		return false, errors.New("The issuance request must be called by centralized website.")
+	}
 	return true, nil
 }
 
@@ -100,9 +104,6 @@ func (iReq *IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 	if len(iReq.AssetType) != common.HashSize {
 		return false, false, errors.New("Wrong request info's asset type")
 	}
-	if !bytes.Equal(txr.GetSigPubKey(), common.CentralizedWebsitePubKey) {
-		return false, false, errors.New("The issuance request must be called by centralized website.")
-	}
 	return true, true, nil
 }
 
@@ -110,8 +111,16 @@ func (iReq *IssuingRequest) ValidateMetadataByItself() bool {
 	if iReq.Type != IssuingRequestMeta {
 		return false
 	}
-	if !bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) &&
-		!bytes.Equal(iReq.AssetType[:], common.ConstantID[:]) {
+	if !bytes.Equal(iReq.CurrencyType[:], common.USDAssetID[:]) &&
+		!bytes.Equal(iReq.CurrencyType[:], common.ETHAssetID[:]) {
+		return false
+	}
+	if !bytes.Equal(iReq.AssetType[:], common.ConstantID[:]) &&
+		!bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) {
+		return false
+	}
+	if bytes.Equal(iReq.CurrencyType[:], common.ETHAssetID[:]) &&
+		!bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) {
 		return false
 	}
 	return true
