@@ -16,6 +16,7 @@ type Params struct {
 	DefaultPort         string
 	ShardCommitteeSize  int
 	BeaconCommitteeSize int
+	ActiveShards        int
 	// GenesisBlock defines the first block of the chain.
 	GenesisBeaconBlock *BeaconBlock
 
@@ -39,6 +40,7 @@ const (
 	TestNetShardsNum           = 4
 	TestNetShardCommitteeSize  = 3
 	TestNetBeaconCommitteeSize = 3
+	TestNetActiveShards        = 1
 )
 
 // for beacon
@@ -104,6 +106,7 @@ var ChainTestParam = Params{
 	DefaultPort:         TestnetDefaultPort,
 	ShardCommitteeSize:  TestNetShardCommitteeSize,  //TestNetShardCommitteeSize,
 	BeaconCommitteeSize: TestNetBeaconCommitteeSize, //TestNetBeaconCommitteeSize,
+	ActiveShards:        TestNetActiveShards,
 	// blockChain parameters
 	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnetSerializedPubkey[:], icoParamsTestnetNew, 1000, 1000, 0),
 	GenesisShardBlock:  CreateShardGenesisBlock(1, preSelectShardNodeTestnetSerializedPubkey[:], icoParamsTestnetNew),
@@ -116,6 +119,7 @@ const (
 	MainNetShardsNum           = TestNetShardsNum
 	MainNetShardCommitteeSize  = TestNetShardCommitteeSize
 	MainNetBeaconCommitteeSize = TestNetBeaconCommitteeSize
+	MainNetActiveShards        = TestNetActiveShards
 )
 
 // for beacon
@@ -134,6 +138,7 @@ var ChainMainParam = Params{
 	DefaultPort:         MainnetDefaultPort,
 	ShardCommitteeSize:  MainNetShardCommitteeSize,  //MainNetShardCommitteeSize,
 	BeaconCommitteeSize: MainNetBeaconCommitteeSize, //MainNetBeaconCommitteeSize,
+	ActiveShards:        MainNetActiveShards,
 	// blockChain parameters
 	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, preSelectBeaconNodeMainnetSerializedPubkey[:], icoParamsMainnetNew, 1000, 1000, 0),
 	GenesisShardBlock:  CreateShardGenesisBlock(1, preSelectShardNodeMainnetSerializedPubkey[:], icoParamsMainnetNew),

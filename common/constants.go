@@ -96,11 +96,9 @@ const (
 
 // CONSENSUS
 const (
-	// SHARD_NUMBER = 1 //single-node mode
 	EPOCH       = 10
 	RANDOM_TIME = 5
-	// COMMITEES    = 1
-	OFFSET = 1
+	OFFSET      = 1
 
 	NODEMODE_SHARD  = "shard"
 	NODEMODE_AUTO   = "auto"
@@ -115,4 +113,5 @@ const (
 	BEACON_PROPOSER_ROLE  = "beacon-proposer"
 	BEACON_VALIDATOR_ROLE = "beacon-validator"
 	BEACON_PENDING_ROLE   = "beacon-pending"
+	MAX_SHARD_NUMBER      = 256
 )
