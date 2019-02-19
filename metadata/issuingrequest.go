@@ -50,8 +50,7 @@ func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 		return nil, errors.Errorf("DepositedAmount incorrect")
 	}
 	// Convert from Wei to MilliEther
-	WeiToMilliEtherRatio := int64(1000000000000000)
-	denominator := big.NewInt(WeiToMilliEtherRatio)
+	denominator := big.NewInt(common.WeiToMilliEtherRatio)
 	n = n.Quo(n, denominator)
 	if !n.IsUint64() {
 		return nil, errors.Errorf("DepositedAmount cannot be converted into uint64")
