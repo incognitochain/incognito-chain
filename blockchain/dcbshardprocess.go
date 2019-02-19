@@ -347,6 +347,8 @@ func (bc *BlockChain) StoreMetadataInstructions(inst []string, shardID byte) err
 	switch inst[0] {
 	case strconv.Itoa(metadata.IssuingResponseMeta):
 		return bc.storeIssuingResponseInstruction(inst, shardID)
+	case strconv.Itoa(metadata.ContractingReponseMeta):
+		return bc.storeContractingResponseInstruction(inst, shardID)
 	}
 	return nil
 }
@@ -364,6 +366,21 @@ func (bc *BlockChain) storeIssuingResponseInstruction(inst []string, shardID byt
 
 	instType := inst[2]
 	return bc.config.DataBase.StoreIssuingInfo(issuingInfo.RequestedTxID, issuingInfo.Amount, instType)
+}
+
+func (bc *BlockChain) storeContractingResponseInstruction(inst []string, shardID byte) error {
+	if strconv.Itoa(int(shardID)) != inst[1] {
+		return nil
+	}
+
+	contractingInfo := &ContractingInfo{}
+	err := json.Unmarshal([]byte(inst[3]), contractingInfo)
+	if err != nil {
+		return err
+	}
+
+	instType := inst[2]
+	return bc.config.DataBase.StoreContractingInfo(contractingInfo.RequestedTxID, contractingInfo.BurnedConstAmount, instType)
 }
 
 //func (bc *BlockChain) UpdateDividendPayout(block *Block) error {

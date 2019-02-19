@@ -109,6 +109,7 @@ const (
 	CreateAndSendIssuingRequest     = "createandsendissuingrequest"
 	CreateAndSendContractingRequest = "createandsendcontractingrequest"
 	GetIssuingStatus                = "getissuingstatus"
+	GetContractingStatus            = "getcontractingstatus"
 	ConvertToDCBTokenAmount         = "converttodcbtokenamount"
 
 	// vote

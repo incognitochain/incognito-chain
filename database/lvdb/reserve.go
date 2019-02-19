@@ -10,7 +10,12 @@ func getIssuingInfoKey(reqTxID common.Hash) []byte {
 	return key
 }
 
-func getIssuingInfoValue(
+func getContractingInfoKey(reqTxID common.Hash) []byte {
+	key := append(reserveContractingInfoPrefix, []byte(reqTxID.String())...)
+	return key
+}
+
+func getInfoValue(
 	amount uint64,
 	instType string,
 ) []byte {
@@ -20,9 +25,9 @@ func getIssuingInfoValue(
 	return values
 }
 
-func parseIssuingInfoValue(value []byte) (uint64, string, error) {
+func parseInfoValue(value []byte) (uint64, string, error) {
 	if len(value) < 8 {
-		return 0, "", errors.Errorf("Error parsing issuing info value: %x", value)
+		return 0, "", errors.Errorf("Error parsing info value: %x", value)
 	}
 	amount := common.BytesToUint64(value[:8])
 	instType := string(value[8:])
@@ -35,7 +40,7 @@ func (db *db) StoreIssuingInfo(
 	instType string,
 ) error {
 	key := getIssuingInfoKey(reqTxID)
-	value := getIssuingInfoValue(amount, instType)
+	value := getInfoValue(amount, instType)
 	return db.Put(key, value)
 }
 
@@ -45,5 +50,24 @@ func (db *db) GetIssuingInfo(reqTxID common.Hash) (uint64, string, error) {
 	if err != nil {
 		return 0, "", err
 	}
-	return parseIssuingInfoValue(value)
+	return parseInfoValue(value)
+}
+
+func (db *db) StoreContractingInfo(
+	reqTxID common.Hash,
+	amount uint64,
+	instType string,
+) error {
+	key := getContractingInfoKey(reqTxID)
+	value := getInfoValue(amount, instType)
+	return db.Put(key, value)
+}
+
+func (db *db) GetContractingInfo(reqTxID common.Hash) (uint64, string, error) {
+	key := getContractingInfoKey(reqTxID)
+	value, err := db.Get(key)
+	if err != nil {
+		return 0, "", err
+	}
+	return parseInfoValue(value)
 }
