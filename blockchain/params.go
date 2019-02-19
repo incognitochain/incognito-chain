@@ -38,29 +38,29 @@ type IcoParams struct {
 // FOR TESTNET
 const (
 	TestNetShardsNum           = 4
-	TestNetShardCommitteeSize  = 3
-	TestNetBeaconCommitteeSize = 3
+	TestNetShardCommitteeSize  = 1
+	TestNetBeaconCommitteeSize = 1
 	TestNetActiveShards        = 1
 )
 
 // for beacon
 // public key
-var preSelectBeaconNodeTestnetSerializedPubkey = [TestNetBeaconCommitteeSize]string{
-	"15NmWBEbc8faj4QxHjBh1ugpkuBC8qaoRAp2mktKiwcKiaQgV8i",
+var preSelectBeaconNodeTestnetSerializedPubkey = []string{
 	"16QMc6ARYki7eL3p8cj8T8b54ZAhPrnBcfaTY9CgPBDKEtwcm2u",
+	"15NmWBEbc8faj4QxHjBh1ugpkuBC8qaoRAp2mktKiwcKiaQgV8i",
 	"16S3Db9V2kqmmogfggKAD2bpJjXcveJcdUQmx9S3ewEGQBE3rrv",
 }
 
 // privatekey
-var preSelectBeaconNodeTestnet = [TestNetBeaconCommitteeSize]string{
-	"112t8rxTdWfGCtgWvAMHnnEw9vN3R1D7YgD1SSHjAnVGL82HCrMq9yyXrHv3kB4gr84cejnMZRQ973RyHhq2G3MksoTWejNKdSWoQYDFf4gQ",
+var preSelectBeaconNodeTestnet = []string{
 	"112t8rnXDNYL1RyTuT85JXeX7mJg1Sc6tCby5akSM7pfEGApgAx83X8C46EDu6dFAK6MVcWfQv2sfTk5nV9HqU3jrkrWdhrmi9z34jEhgHak",
+	"112t8rxTdWfGCtgWvAMHnnEw9vN3R1D7YgD1SSHjAnVGL82HCrMq9yyXrHv3kB4gr84cejnMZRQ973RyHhq2G3MksoTWejNKdSWoQYDFf4gQ",
 	"112t8rnXmEeG5zsS7rExURJfqaRZhm6r4Pypkeag2gprdhtgDpen3LwV68x1nDPRYz2zhyhJTJCGvq1tUx4P1dvrdxF9W9DH7ME7PeGN2ohZ",
 }
 
 // For shard
 // public key
-var preSelectShardNodeTestnetSerializedPubkey = [TestNetShardsNum * TestNetShardCommitteeSize]string{
+var preSelectShardNodeTestnetSerializedPubkey = []string{
 	"177KNe6pRhi97hD9LqjUvGxLoNeKh9F5oSeh99V6Td2sQcm7qEu",
 	"1671hBGTAT1ui2BQGqpzYyy3pVLPvdDTPEMLfoLix7igUyzG6sE",
 	"17zmxXqnwTK1YE42eNqVJ51mvRaCFoqzm6HogpQQBBt8dWwaUgV",
@@ -76,7 +76,7 @@ var preSelectShardNodeTestnetSerializedPubkey = [TestNetShardsNum * TestNetShard
 }
 
 // privatekey
-var preSelectShardNodeTestnet = [TestNetShardsNum * TestNetShardCommitteeSize]string{
+var preSelectShardNodeTestnet = []string{
 	"112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNhc33pzChmJRvikZNc3Dt5V7quhdzjWW9Z4BrB2BxdK5VtHzsG9JZdZ5M7yYYGidKKZV",
 	"112t8rnYBW9trs5rzxrMzLU5AnzngQhbp6X4c3xyamFkWU7PwWRq6gprDkm6mf3ZjxaeYQmSpe3xorpWHo3JLLZFHCHSgqd8u19XkVuMGz1M",
 	"112t8rnYY8UbXGVJ3PsrWxssjr1JXaTPNCPDrneXcQgVQs2MFYwgCzPmTsgqPPbeq8c4QxkrjpHYRaG39ZjtwCmHMJBNh2MxaQvKWw5eUGTM",

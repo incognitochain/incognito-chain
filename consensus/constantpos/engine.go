@@ -59,18 +59,18 @@ func (engine *Engine) Start() error {
 				return
 			default:
 				if engine.config.BlockChain.IsReady(false, 0) {
-					role, shardID := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.config.UserKeySet.GetPublicKeyB58())
+					userRole, shardID := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.config.UserKeySet.GetPublicKeyB58())
 					nodeRole := common.EmptyString
-					if (engine.config.NodeMode == common.NODEMODE_BEACON || engine.config.NodeMode == common.NODEMODE_AUTO) && role != common.SHARD_ROLE {
+					if (engine.config.NodeMode == common.NODEMODE_BEACON || engine.config.NodeMode == common.NODEMODE_AUTO) && userRole != common.SHARD_ROLE && userRole != common.EmptyString {
 						nodeRole = common.BEACON_ROLE
 					}
-					if (engine.config.NodeMode == common.NODEMODE_SHARD || engine.config.NodeMode == common.NODEMODE_AUTO) && role == common.SHARD_ROLE {
+					if (engine.config.NodeMode == common.NODEMODE_SHARD || engine.config.NodeMode == common.NODEMODE_AUTO) && userRole == common.SHARD_ROLE {
 						nodeRole = common.SHARD_ROLE
 					}
 					go engine.config.Server.UpdateConsensusState(nodeRole, engine.config.UserKeySet.GetPublicKeyB58(), nil, engine.config.BlockChain.BestState.Beacon.BeaconCommittee, engine.config.BlockChain.BestState.Beacon.ShardCommittee)
 					time.Sleep(2 * time.Second)
-					fmt.Println(engine.config.NodeMode, role, shardID)
-					if role != "" {
+					fmt.Println(engine.config.NodeMode, userRole, shardID)
+					if userRole != common.EmptyString {
 						bftProtocol := &BFTProtocol{
 							cQuit:      engine.cQuit,
 							cBFTMsg:    engine.cBFTMsg,
@@ -79,21 +79,21 @@ func (engine *Engine) Start() error {
 							Chain:      engine.config.BlockChain,
 							Server:     engine.config.Server,
 						}
-						if (engine.config.NodeMode == common.NODEMODE_BEACON || engine.config.NodeMode == common.NODEMODE_AUTO) && role != common.SHARD_ROLE {
+						if (engine.config.NodeMode == common.NODEMODE_BEACON || engine.config.NodeMode == common.NODEMODE_AUTO) && userRole != common.SHARD_ROLE {
 							bftProtocol.RoleData.Committee = make([]string, len(engine.config.BlockChain.BestState.Beacon.BeaconCommittee))
 							copy(bftProtocol.RoleData.Committee, engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
 							var (
 								err    error
 								resBlk interface{}
 							)
-							switch role {
-							case common.BEACON_PROPOSER_ROLE:
+							switch userRole {
+							case common.PROPOSER_ROLE:
 								resBlk, err = bftProtocol.Start(true, common.BEACON_ROLE, 0)
 								if err != nil {
 									Logger.log.Error("PBFT fatal error", err)
 									continue
 								}
-							case common.BEACON_VALIDATOR_ROLE:
+							case common.VALIDATOR_ROLE:
 								msgReady, _ := MakeMsgBFTReady(engine.config.BlockChain.BestState.Beacon.Hash())
 								engine.config.Server.PushMessageToBeacon(msgReady)
 								resBlk, err = bftProtocol.Start(false, common.BEACON_ROLE, 0)
@@ -126,7 +126,7 @@ func (engine *Engine) Start() error {
 							}
 							continue
 						}
-						if (engine.config.NodeMode == common.NODEMODE_SHARD || engine.config.NodeMode == common.NODEMODE_AUTO) && role == common.SHARD_ROLE {
+						if (engine.config.NodeMode == common.NODEMODE_SHARD || engine.config.NodeMode == common.NODEMODE_AUTO) && userRole == common.SHARD_ROLE {
 							engine.config.BlockChain.SyncShard(shardID)
 							engine.config.BlockChain.StopSyncUnnecessaryShard()
 							bftProtocol.RoleData.Committee = make([]string, len(engine.config.BlockChain.BestState.Shard[shardID].ShardCommittee))
@@ -139,13 +139,13 @@ func (engine *Engine) Start() error {
 								shardRole := engine.config.BlockChain.BestState.Shard[shardID].GetPubkeyRole(engine.config.UserKeySet.GetPublicKeyB58())
 								fmt.Println("My shard role", shardRole)
 								switch shardRole {
-								case common.SHARD_PROPOSER_ROLE:
+								case common.PROPOSER_ROLE:
 									resBlk, err = bftProtocol.Start(true, common.SHARD_ROLE, shardID)
 									if err != nil {
 										Logger.log.Error("PBFT fatal error", err)
 										continue
 									}
-								case common.SHARD_VALIDATOR_ROLE:
+								case common.VALIDATOR_ROLE:
 									msgReady, _ := MakeMsgBFTReady(engine.config.BlockChain.BestState.Shard[shardID].Hash())
 									engine.config.Server.PushMessageToShard(msgReady, shardID)
 									resBlk, err = bftProtocol.Start(false, common.SHARD_ROLE, shardID)
@@ -179,7 +179,7 @@ func (engine *Engine) Start() error {
 									}
 									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 4")
 									//PUSH CROSS-SHARD
-									newCrossShardBlocks := shardBlk.CreateAllCrossShardBlock()
+									newCrossShardBlocks := shardBlk.CreateAllCrossShardBlock(engine.config.BlockChain.BestState.Beacon.ActiveShards)
 									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 5")
 									for sID, newCrossShardBlock := range newCrossShardBlocks {
 										newCrossShardMsg, err := MakeMsgCrossShardBlock(newCrossShardBlock)
