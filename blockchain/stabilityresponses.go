@@ -1,11 +1,11 @@
 package blockchain
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/ninjadotorg/constant/metadata/toshardins"
 	"strconv"
+
+	"github.com/ninjadotorg/constant/metadata/toshardins"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
@@ -23,13 +23,6 @@ type BuyBackInfo struct {
 	TokenID        common.Hash
 }
 
-type IssuingInfo struct {
-	ReceiverAddress privacy.PaymentAddress
-	Amount          uint64
-	RequestedTxID   common.Hash
-	TokenID         common.Hash
-}
-
 type BuyGOVTokenReqAction struct {
 	TxReqID common.Hash                 `json:"txReqId"`
 	Meta    metadata.BuyGOVTokenRequest `json:"meta"`
@@ -38,64 +31,6 @@ type BuyGOVTokenReqAction struct {
 type BuySellReqAction struct {
 	TxReqID common.Hash             `json:"txReqId"`
 	Meta    metadata.BuySellRequest `json:"meta"`
-}
-
-type IssuingReqAction struct {
-	TxReqID common.Hash             `json:"txReqId"`
-	Meta    metadata.IssuingRequest `json:"meta"`
-}
-
-func buildInstructionsForIssuingReq(
-	shardID byte,
-	contentStr string,
-	beaconBestState *BestStateBeacon,
-) ([][]string, error) {
-	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		return [][]string{}, err
-	}
-	var issuingReqAction IssuingReqAction
-	err = json.Unmarshal(contentBytes, &issuingReqAction)
-	if err != nil {
-		return nil, err
-	}
-	md := issuingReqAction.Meta
-	reqTxID := issuingReqAction.TxReqID
-	instructions := [][]string{}
-	stabilityInfo := beaconBestState.StabilityInfo
-	saleDBCTokensByUSDData := stabilityInfo.DCBConstitution.DCBParams.SaleDCBTokensByUSDData
-	bestBlockHeight := beaconBestState.BestBlock.Header.Height
-	oracle := stabilityInfo.Oracle
-	reqAmt := md.DepositedAmount / oracle.DCBToken
-	instType := "accepted"
-	if bytes.Equal(md.AssetType[:], common.DCBTokenID[:]) {
-		if saleDBCTokensByUSDData == nil ||
-			bestBlockHeight+1 > saleDBCTokensByUSDData.EndBlock ||
-			saleDBCTokensByUSDData.Amount < reqAmt {
-			instType = "refund"
-		} else { // accepted
-			stabilityInfo.DCBConstitution.DCBParams.SaleDCBTokensByUSDData.Amount -= reqAmt
-		}
-	}
-
-	iInfo := IssuingInfo{
-		ReceiverAddress: md.ReceiverAddress,
-		Amount:          reqAmt,
-		RequestedTxID:   reqTxID,
-		TokenID:         md.AssetType,
-	}
-	iInfoBytes, err := json.Marshal(iInfo)
-	if err != nil {
-		return nil, err
-	}
-	returnedInst := []string{
-		strconv.Itoa(metadata.IssuingRequestMeta),
-		strconv.Itoa(int(shardID)),
-		instType,
-		string(iInfoBytes),
-	}
-	instructions = append(instructions, returnedInst)
-	return instructions, nil
 }
 
 func buildInstructionsForBuyBackBondsReq(
@@ -305,11 +240,18 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 			instructions = append(instructions, buyBackInst...)
 
 		case metadata.IssuingRequestMeta:
-			issuingInst, err := buildInstructionsForIssuingReq(shardID, contentStr, beaconBestState)
+			issuingInst, err := buildInstructionsForIssuingReq(shardID, contentStr, beaconBestState, accumulativeValues)
 			if err != nil {
 				return [][]string{}, err
 			}
 			instructions = append(instructions, issuingInst...)
+
+		case metadata.ContractingRequestMeta:
+			contractingInst, err := buildInstructionsForContractingReq(shardID, contentStr, beaconBestState, accumulativeValues)
+			if err != nil {
+				return [][]string{}, err
+			}
+			instructions = append(instructions, contractingInst...)
 
 		default:
 			continue
@@ -477,62 +419,6 @@ func (blockgen *BlkTmplGenerator) buildBuyGOVTokensRes(
 		resTx.Type = common.TxCustomTokenType
 		resTx.SetMetadata(buyGOVTokensRes)
 		return []metadata.Transaction{resTx}, nil
-	}
-	return []metadata.Transaction{}, nil
-}
-
-func (blockgen *BlkTmplGenerator) buildIssuingRes(
-	instType string,
-	issuingInfoStr string,
-	blkProducerPrivateKey *privacy.SpendingKey,
-) ([]metadata.Transaction, error) {
-	var issuingInfo IssuingInfo
-	err := json.Unmarshal([]byte(issuingInfoStr), &issuingInfo)
-	if err != nil {
-		return nil, err
-	}
-	txReqID := issuingInfo.RequestedTxID
-	if instType == "accepted" {
-		if bytes.Equal(issuingInfo.TokenID[:], common.ConstantID[:]) {
-			meta := metadata.NewIssuingResponse(txReqID, metadata.IssuingResponseMeta)
-			tx := new(transaction.Tx)
-			err := tx.InitTxSalary(
-				issuingInfo.Amount,
-				&issuingInfo.ReceiverAddress,
-				blkProducerPrivateKey,
-				blockgen.chain.config.DataBase,
-				meta,
-			)
-			if err != nil {
-				Logger.log.Error(err)
-				return nil, err
-			}
-			return []metadata.Transaction{tx}, nil
-		} else if bytes.Equal(issuingInfo.TokenID[:], common.DCBTokenID[:]) {
-			meta := metadata.NewIssuingResponse(txReqID, metadata.IssuingResponseMeta)
-			txTokenVout := transaction.TxTokenVout{
-				Value:          issuingInfo.Amount,
-				PaymentAddress: issuingInfo.ReceiverAddress,
-			}
-			var propertyID [common.HashSize]byte
-			copy(propertyID[:], issuingInfo.TokenID[:])
-			txTokenData := transaction.TxTokenData{
-				Type:       transaction.CustomTokenInit,
-				Mintable:   true,
-				Amount:     issuingInfo.Amount,
-				PropertyID: common.Hash(propertyID),
-				Vins:       []transaction.TxTokenVin{},
-				Vouts:      []transaction.TxTokenVout{txTokenVout},
-			}
-			txTokenData.PropertyName = txTokenData.PropertyID.String()
-			txTokenData.PropertySymbol = txTokenData.PropertyID.String()
-			resTx := &transaction.TxCustomToken{
-				TxTokenData: txTokenData,
-			}
-			resTx.Type = common.TxCustomTokenType
-			resTx.SetMetadata(meta)
-			return []metadata.Transaction{resTx}, nil
-		}
 	}
 	return []metadata.Transaction{}, nil
 }
@@ -721,9 +607,18 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					}
 					txs := shareRewardOldBoard.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
 					resTxs = append(resTxs, txs)
+
 				case metadata.IssuingRequestMeta:
 					issuingInfoStr := l[3]
 					txs, err := blockgen.buildIssuingRes(l[2], issuingInfoStr, producerPrivateKey)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, txs...)
+
+				case metadata.ContractingRequestMeta:
+					contractingInfoStr := l[3]
+					txs, err := blockgen.buildContractingRes(l[2], contractingInfoStr, producerPrivateKey)
 					if err != nil {
 						return nil, err
 					}
