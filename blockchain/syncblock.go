@@ -96,7 +96,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 									RCS.ShardToBeaconBlks[shardID][peerID] = blksHash
 								}
 							}
-							for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
+							for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 								if shardState, ok := peerState.Shard[shardID]; ok {
 									if shardState.Height > blockchain.BestState.Beacon.BestShardHeight[shardID] {
 										if RCS.ClosestShardsState[shardID].Height == 0 {
@@ -125,7 +125,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 									RCS.ShardToBeaconBlks[shardID][peerID] = blksHash
 								}
 							}
-							for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
+							for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 								if shardState, ok := peerState.Shard[shardID]; ok {
 									if shardState.Height > blockchain.BestState.Beacon.BestShardHeight[shardID] {
 										if RCS.ClosestShardsState[shardID].Height == 0 {
@@ -169,7 +169,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 							blockchain.SyncBlkShardToBeacon(shardID, true, true, blks, 0, 0, peerID)
 						}
 					}
-					for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
+					for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 						if blockchain.BestState.Beacon.BestShardHeight[shardID] < RCS.ClosestShardsState[shardID].Height {
 							currentShardReqHeight := blockchain.BestState.Beacon.BestShardHeight[shardID] + 1
 							for peerID, peerState := range blockchain.syncStatus.PeersState {
@@ -203,7 +203,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 							blockchain.SyncBlkShardToBeacon(shardID, true, true, blks, 0, 0, peerID)
 						}
 					}
-					for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
+					for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 						if blockchain.BestState.Beacon.BestShardHeight[shardID] < RCS.ClosestShardsState[shardID].Height {
 							currentShardReqHeight := blockchain.BestState.Beacon.BestShardHeight[shardID] + 1
 							for peerID, peerState := range blockchain.syncStatus.PeersState {
@@ -267,7 +267,7 @@ func (blockchain *BlockChain) SyncShard(shardID byte) error {
 }
 
 func (blockchain *BlockChain) StopSyncUnnecessaryShard() {
-	for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
+	for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 		blockchain.StopSyncShard(shardID)
 	}
 }

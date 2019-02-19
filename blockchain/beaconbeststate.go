@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"encoding/binary"
 	"sort"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
@@ -26,7 +27,7 @@ type BestStateBeacon struct {
 	//TODO: calculate hash
 	AllShardState map[byte][]ShardState `json:"AllShardState"`
 
-	BeaconEpoch            uint64   `json:"BeaconEpoch"`
+	Epoch                  uint64   `json:"Epoch"`
 	BeaconHeight           uint64   `json:"BeaconHeight"`
 	BeaconProposerIdx      int      `json:"BeaconProposerIdx"`
 	BeaconCommittee        []string `json:"BeaconCommittee"`
@@ -122,12 +123,16 @@ func NewBestStateBeacon(netparam *Params) *BestStateBeacon {
 }
 
 func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
+
+	//TODO: 0xBahamoot check back later
 	var keys []int
 	var keyStrs []string
 	res := []byte{}
-	res = append(res, bestStateBeacon.BestBlockHash.GetBytes()...)
 	res = append(res, bestStateBeacon.BestBlock.Hash().GetBytes()...)
-	res = append(res, bestStateBeacon.BestBlock.Hash().GetBytes()...)
+	res = append(res, bestStateBeacon.BestBlock.Header.PrevBlockHash.GetBytes()...)
+	heightBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(heightBytes, bestStateBeacon.BeaconHeight)
+	res = append(res, heightBytes...)
 
 	for k := range bestStateBeacon.BestShardHash {
 		keys = append(keys, int(k))
@@ -184,8 +189,14 @@ func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
 			res = append(res, []byte(value)...)
 		}
 	}
-	res = append(res, byte(bestStateBeacon.CurrentRandomNumber))
-	res = append(res, byte(bestStateBeacon.CurrentRandomTimeStamp))
+	randomNumBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(randomNumBytes, uint64(bestStateBeacon.CurrentRandomNumber))
+	res = append(res, randomNumBytes...)
+
+	randomTimeBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(randomTimeBytes, uint64(bestStateBeacon.CurrentRandomTimeStamp))
+	res = append(res, randomTimeBytes...)
+
 	if bestStateBeacon.IsGetRandomNumber {
 		res = append(res, []byte("true")...)
 	} else {
