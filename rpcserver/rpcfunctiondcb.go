@@ -128,8 +128,23 @@ func (rpcServer RpcServer) handleCreateAndSendTxWithIssuingRequest(params interf
 }
 
 func (rpcServer RpcServer) handleCreateRawTxWithContractingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	// Req param #4: contracting request info
+	contractingReq := arrayParams[4].(map[string]interface{})
+	currencyTypeBytes := []byte(contractingReq["CurrencyType"].(string))
+	currencyType := common.Hash{}
+	copy(currencyType[:], currencyTypeBytes)
+
+	burnerAddressMap := contractingReq["BurnerAddress"].(map[string]interface{})
+	burnerAddress := privacy.PaymentAddress{
+		Pk: []byte(burnerAddressMap["Pk"].(string)),
+		Tk: []byte(burnerAddressMap["Tk"].(string)),
+	}
+
+	burnedConstAmount := uint64(contractingReq["BurnedConstAmount"].(float64))
+
 	metaType := metadata.ContractingRequestMeta
-	meta := metadata.NewContractingRequest(metaType)
+	meta := metadata.NewContractingRequest(burnerAddress, burnedConstAmount, currencyType, metaType)
 	normalTx, err := rpcServer.buildRawTransaction(params, meta)
 	if err != nil {
 		Logger.log.Error(err)
