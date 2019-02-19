@@ -481,6 +481,7 @@ func (serverObj Server) Start() {
 
 		serverObj.rpcServer.Start()
 	}
+	go serverObj.blockChain.StartSyncBlk()
 
 	if cfg.NodeMode != "relay" {
 		err := serverObj.consensusEngine.Start()

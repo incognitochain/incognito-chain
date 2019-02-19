@@ -565,7 +565,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		if randomFlag {
 			bestStateBeacon.IsGetRandomNumber = true
 			fmt.Println("Beacon Process/Update/RandomFlag: Shard Candidate Waiting for Current Random Number", bestStateBeacon.CandidateShardWaitingForCurrentRandom)
-			err := AssignValidatorShard(bestStateBeacon.ShardPendingValidator, bestStateBeacon.CandidateShardWaitingForCurrentRandom, bestStateBeacon.CurrentRandomNumber)
+			err := AssignValidatorShard(bestStateBeacon.ShardPendingValidator, bestStateBeacon.CandidateShardWaitingForCurrentRandom, bestStateBeacon.CurrentRandomNumber, bestStateBeacon.ActiveShards)
 			if err != nil {
 				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 				return NewBlockChainError(UnExpectedError, err)
@@ -631,26 +631,26 @@ func GetStakingCandidate(beaconBlock BeaconBlock) ([]string, []string) {
 // validator and candidate public key encode as base58 string
 // assume that candidates are already been checked
 // Check validation of candidate in transaction
-func AssignValidator(candidates []string, rand int64) (map[byte][]string, error) {
+func AssignValidator(candidates []string, rand int64, activeShards int) (map[byte][]string, error) {
 	pendingValidators := make(map[byte][]string)
 	for _, candidate := range candidates {
-		shardID := calculateHash(candidate, rand)
+		shardID := calculateCandidateShardID(candidate, rand, activeShards)
 		pendingValidators[shardID] = append(pendingValidators[shardID], candidate)
 	}
 	return pendingValidators, nil
 }
 
 // AssignValidatorShard, param for better convenice than AssignValidator
-func AssignValidatorShard(currentCandidates map[byte][]string, shardCandidates []string, rand int64) error {
+func AssignValidatorShard(currentCandidates map[byte][]string, shardCandidates []string, rand int64, activeShards int) error {
 	for _, candidate := range shardCandidates {
-		shardID := calculateHash(candidate, rand)
+		shardID := calculateCandidateShardID(candidate, rand, activeShards)
 		currentCandidates[shardID] = append(currentCandidates[shardID], candidate)
 	}
 	return nil
 }
 
-func VerifyValidator(candidate string, rand int64, shardID byte) (bool, error) {
-	res := calculateHash(candidate, rand)
+func VerifyValidator(candidate string, rand int64, shardID byte, activeShards int) (bool, error) {
+	res := calculateCandidateShardID(candidate, rand, activeShards)
 	if shardID == res {
 		return true, nil
 	} else {
@@ -660,7 +660,7 @@ func VerifyValidator(candidate string, rand int64, shardID byte) (bool, error) {
 
 // Formula ShardID: LSB[hash(candidatePubKey+randomNumber)]
 // Last byte of hash(candidatePubKey+randomNumber)
-func calculateHash(candidate string, rand int64) (shardID byte) {
+func calculateCandidateShardID(candidate string, rand int64, activeShards int) (shardID byte) {
 
 	seed := candidate + strconv.Itoa(int(rand))
 	hash := sha256.Sum256([]byte(seed))
@@ -668,7 +668,7 @@ func calculateHash(candidate string, rand int64) (shardID byte) {
 	// fmt.Println("Hash of candidate serialized pubkey and random number", hash)
 	// fmt.Printf("\"%d\",\n", hash[len(hash)-1])
 	// fmt.Println("Shard to be assign", hash[len(hash)-1])
-	shardID = byte(int(hash[len(hash)-1]) % common.MAX_SHARD_NUMBER)
+	shardID = byte(int(hash[len(hash)-1]) % activeShards)
 	return shardID
 }
 

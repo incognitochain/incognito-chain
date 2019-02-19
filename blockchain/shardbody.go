@@ -113,8 +113,8 @@ func (shardBody *CrossOutputCoin) Hash() common.Hash {
 	}
 	return common.DoubleHashH(record)
 }
-func (shardBody *ShardBody) CalcMerkleRootShard() *common.Hash {
-	if common.MAX_SHARD_NUMBER == 1 {
+func (shardBody *ShardBody) CalcMerkleRootShard(activeShards int) *common.Hash {
+	if activeShards == 1 {
 		merkleRoot := common.HashH([]byte{})
 		return &merkleRoot
 	}
@@ -125,7 +125,7 @@ func (shardBody *ShardBody) CalcMerkleRootShard() *common.Hash {
 		shardTxs[shardID] = append(shardTxs[shardID], tx.Hash())
 	}
 
-	shardsHash := make([]*common.Hash, common.MAX_SHARD_NUMBER)
+	shardsHash := make([]*common.Hash, activeShards)
 	for idx := range shardsHash {
 		h := &common.Hash{}
 		shardsHash[idx], _ = h.NewHashFromStr("")

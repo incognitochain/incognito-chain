@@ -149,10 +149,6 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.syncStatus.Shards = make(map[byte]struct{})
 	blockchain.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
 	blockchain.knownChainState.Shards = make(map[byte]ChainState)
-	go blockchain.StartSyncBlk()
-	for _, shardID := range blockchain.config.RelayShards {
-		blockchain.SyncShard(shardID)
-	}
 	return nil
 }
 func (blockchain *BlockChain) InitShardToBeaconPool(db database.DatabaseInterface) {

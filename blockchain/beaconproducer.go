@@ -373,7 +373,7 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 			instructions = append(instructions, randomInstruction)
 			Logger.log.Infof("RandomNumber %+v", randomInstruction)
 			for _, candidate := range shardCandidates {
-				shardID := calculateHash(candidate, rand)
+				shardID := calculateCandidateShardID(candidate, rand, bestStateBeacon.ActiveShards)
 				assignedCandidates[shardID] = append(assignedCandidates[shardID], candidate)
 			}
 			for shardId, candidates := range assignedCandidates {
