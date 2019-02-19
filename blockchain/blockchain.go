@@ -306,12 +306,6 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 
 	_, newShardCandidate := GetStakingCandidate(*blockchain.config.ChainParams.GenesisBeaconBlock)
 
-	fmt.Println()
-	fmt.Println()
-	fmt.Println(shardID, len(newShardCandidate))
-	fmt.Println()
-	fmt.Println()
-
 	blockchain.BestState.Shard[shardID].ShardCommittee = append(blockchain.BestState.Shard[shardID].ShardCommittee, newShardCandidate[int(shardID)*blockchain.config.ChainParams.ShardCommitteeSize:(int(shardID)*blockchain.config.ChainParams.ShardCommitteeSize)+blockchain.config.ChainParams.ShardCommitteeSize]...)
 
 	genesisBeaconBlk, err := blockchain.GetBeaconBlockByHeight(1)
@@ -323,11 +317,6 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 		return err
 	}
 	blockchain.ProcessStoreShardBlock(&initBlock)
-
-	// fmt.Println()
-	// fmt.Println(*initBlock.Hash())
-	// fmt.Println()
-	// os.Exit(1)
 	return nil
 }
 
