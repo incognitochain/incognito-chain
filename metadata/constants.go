@@ -36,6 +36,7 @@ const (
 	IssuingRequestMeta
 	IssuingResponseMeta
 	ContractingRequestMeta
+	ContractingReponseMeta
 	OracleFeedMeta
 	OracleRewardMeta
 	RefundMeta

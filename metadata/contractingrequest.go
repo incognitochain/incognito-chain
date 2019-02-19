@@ -8,15 +8,22 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/wallet"
 	"github.com/pkg/errors"
 )
 
+// whoever can send this type of tx
 type ContractingRequest struct {
-	CurrencyType common.Hash // USD or ETH for now
+	BurnerAddress     privacy.PaymentAddress
+	BurnedConstAmount uint64      // must be equal to vout value
+	CurrencyType      common.Hash // USD or ETH for now
 	MetadataBase
 }
 
 func NewContractingRequest(
+	burnerAddress privacy.PaymentAddress,
+	burnedConstAmount uint64,
 	currencyType common.Hash,
 	metaType int,
 ) (*ContractingRequest, error) {
@@ -24,18 +31,29 @@ func NewContractingRequest(
 		Type: metaType,
 	}
 	contractingReq := &ContractingRequest{
-		CurrencyType: currencyType,
+		CurrencyType:      currencyType,
+		BurnedConstAmount: burnedConstAmount,
+		BurnerAddress:     burnerAddress,
 	}
 	contractingReq.MetadataBase = metadataBase
 	return contractingReq, nil
 }
 
 func NewContractingRequestFromMap(data map[string]interface{}) (Metadata, error) {
+	keyWallet, err := wallet.Base58CheckDeserialize(data["BurnerAddress"].(string))
+	if err != nil {
+		return nil, errors.Errorf("BurnerAddress incorrect")
+	}
+
+	burnedConstAmount := uint64(data["BurnedConstAmount"].(float64))
+
 	currencyType, err := common.NewHashFromStr(data["CurrencyType"].(string))
 	if err != nil {
 		return nil, errors.Errorf("CurrencyType incorrect")
 	}
 	return NewContractingRequest(
+		keyWallet.KeySet.PaymentAddress,
+		burnedConstAmount,
 		*currencyType,
 		IssuingRequestMeta,
 	)
@@ -54,6 +72,8 @@ func (cReq *ContractingRequest) ValidateSanityData(bcr BlockchainRetriever, txr 
 	if !txr.IsCoinsBurning() {
 		return false, false, nil
 	}
+	// TODO: compare BurnedConstAmount to vout value
+	// TODO: check buner address is the one in vin
 	return true, true, nil
 }
 
@@ -63,7 +83,9 @@ func (cReq *ContractingRequest) ValidateMetadataByItself() bool {
 
 func (cReq *ContractingRequest) Hash() *common.Hash {
 	record := cReq.MetadataBase.Hash().String()
+	record += cReq.BurnerAddress.String()
 	record += cReq.CurrencyType.String()
+	record += string(cReq.BurnedConstAmount)
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
