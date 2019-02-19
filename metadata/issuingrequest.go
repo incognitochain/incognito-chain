@@ -12,6 +12,7 @@ import (
 	privacy "github.com/ninjadotorg/constant/privacy"
 )
 
+// only centralized website can send this type of tx
 type IssuingRequest struct {
 	ReceiverAddress privacy.PaymentAddress
 	DepositedAmount uint64
