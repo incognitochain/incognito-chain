@@ -226,6 +226,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		ChainParams:  chainParams,
 		FeeEstimator: serverObj.feeEstimator,
 	})
+	//add tx pool
+	serverObj.blockChain.AddTxPool(serverObj.memPool)
 
 	serverObj.addrManager = addrmanager.New(cfg.DataDir)
 
