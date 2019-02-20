@@ -30,7 +30,7 @@ const (
 	SendRawPrivacyCustomTokenTransaction       = "sendrawprivacycustomtokentransaction"
 	CreateAndSendPrivacyCustomTokenTransaction = "createandsendprivacycustomtokentransaction"
 	GetMempoolInfo                             = "getmempoolinfo"
-	GetCommitteeCandidateList                  = "getcommitteecandidate"
+	GetCandidateList                           = "getcandidate"
 	GetBlockProducerList                       = "getblockproducer"
 	ListUnspentCustomToken                     = "listunspentcustomtoken"
 	GetTransactionByHash                       = "gettransactionbyhash"
