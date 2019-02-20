@@ -77,6 +77,8 @@ func (tx *Tx) Init(
 	tokenID *common.Hash, // default is nil -> use for constant coin
 	metaData metadata.Metadata,
 ) *TransactionError {
+
+	Logger.log.Infof("CREATING TX........\n")
 	//hasPrivacy = false
 	tx.Version = TxVersion
 	var err error
@@ -136,7 +138,7 @@ func (tx *Tx) Init(
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
 	if hasPrivacy {
-		commitmentIndexs, myCommitmentIndexs = RandomCommitmentsProcess(inputCoins, privacy.CMRingSize, db, shardID, tokenID)
+		commitmentIndexs, myCommitmentIndexs, _ = RandomCommitmentsProcess(inputCoins, privacy.CMRingSize, db, shardID, tokenID)
 
 		// Check number of list of random commitments, list of random commitment indices
 		if len(commitmentIndexs) != len(inputCoins)*privacy.CMRingSize {
@@ -254,6 +256,8 @@ func (tx *Tx) Init(
 	if err.(*privacy.PrivacyError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
+
+	Logger.log.Infof("DONE PROVING........\n")
 
 	// set private key for signing tx
 	if hasPrivacy {
@@ -384,6 +388,7 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	//hasPrivacy = false
 	Logger.log.Debugf("[db] Validating Transaction tx\n")
+	Logger.log.Infof("VALIDATING TX........\n")
 	start := time.Now()
 	// Verify tx signature
 	Logger.log.Debugf("tx.GetType(): %v\n", tx.GetType())
@@ -465,6 +470,8 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		if !valid {
 			Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION PAYMENT PROOF")
 			return false
+		} else{
+			Logger.log.Infof("[PRIVACY LOG] - SUCCESSED VERIFICATION PAYMENT PROOF")
 		}
 	}
 	elapsed := time.Since(start)

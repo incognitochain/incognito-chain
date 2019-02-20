@@ -32,8 +32,9 @@ func ConvertOutputCoinToInputCoin(usableOutputsOfOld []*privacy.OutputCoin) []*p
 // result contains
 // commitmentIndexs = [{1,2,3,4,myindex1,6,7,8}{9,10,11,12,13,myindex2,15,16}...]
 // myCommitmentIndexs = [4, 13, ...]
-func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
-	commitmentIndexs = []uint64{}   // : list commitment indexes which: random from full db commitments + commitments of usableInputCoins
+func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64, commitments [][]byte) {
+	commitmentIndexs = []uint64{} // : list commitment indexes which: random from full db commitments + commitments of usableInputCoins
+	commitments = [][]byte{}
 	myCommitmentIndexs = []uint64{} // : list indexes of commitments(usableInputCoins) in {commitmentIndexs}
 	if randNum == 0 {
 		randNum = privacy.CMRingSize // default
@@ -67,6 +68,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 					if index2, err := common.SliceBytesExists(listUsableCommitments, temp); index2 == -1 && err == nil {
 						// random commitment not in commitments of usableinputcoin
 						commitmentIndexs = append(commitmentIndexs, index.Uint64())
+						commitments = append(commitments, temp)
 						break
 					}
 				} else {
@@ -84,7 +86,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index.Uint64()}, commitmentIndexs[i:]...)...)
 		myCommitmentIndexs = append(myCommitmentIndexs, uint64(i)) // create myCommitmentIndexs
 	}
-	return commitmentIndexs, myCommitmentIndexs
+	return commitmentIndexs, myCommitmentIndexs, commitments
 }
 
 // CheckSNDerivatorExistence return true if snd exists in snDerivators list
