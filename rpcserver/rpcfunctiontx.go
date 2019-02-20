@@ -708,7 +708,7 @@ func (rpcServer RpcServer) handleHasSnDerivators(params interface{}, closeChan <
 		snderivator, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(rpcServer.config.Database)
 		ok, err := db.HasSNDerivator(constantTokenID, *(new(big.Int).SetBytes(snderivator)), shardIDSender)
-		if ok && err != nil {
+		if ok || err != nil {
 			// serial number in db
 			result = append(result, true)
 		} else {
