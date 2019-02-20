@@ -221,3 +221,13 @@ func (self *ShardToBeaconPool) GetValidPendingBlockHeight() map[byte][]uint64 {
 	}
 	return finalBlocks
 }
+
+func (self *ShardToBeaconPool) GetAllPendingBlockHeight() map[byte][]uint64 {
+	finalBlocks := make(map[byte][]uint64)
+	for shardID, blks := range self.pool {
+		for _, blk := range blks {
+			finalBlocks[shardID] = append(finalBlocks[shardID], blk.Header.Height)
+		}
+	}
+	return finalBlocks
+}
