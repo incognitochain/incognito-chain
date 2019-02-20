@@ -1,6 +1,8 @@
 package privacy
 
 import (
+	"fmt"
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
@@ -60,6 +62,10 @@ func TestGenerateKey(t *testing.T){
 	assert.Equal(t, paymentAddress.Pk, paymentAddress2.Pk)
 	assert.Equal(t, paymentAddress.Tk, paymentAddress2.Tk)
 
+	sk := GenerateSpendingKey([]byte{123})
+	fmt.Printf("Spending key byte : %v\n", sk)
+	skStr := base58.Base58Check.Encode(base58.Base58Check{}, sk, 0x01)
+	fmt.Printf("Spending key string after encode : %v\n", skStr)
 }
 
 

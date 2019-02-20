@@ -4,12 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
-	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 func (db *db) StoreShardBlock(v interface{}, shardID byte) error {
@@ -182,47 +180,14 @@ func (db *db) GetBlockByIndex(idx uint64, shardID byte) (*common.Hash, error) {
 
 	b, err := db.lvdb.Get(buf, nil)
 	if err != nil {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.GetBlockByIndex"))
 	}
 	h := new(common.Hash)
-	_ = h.SetBytes(b[:])
+	err1 := h.SetBytes(b[:])
+	if err1 != nil {
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.GetBlockByIndex"))
+	}
 	return h, nil
-}
-
-func (db *db) FetchAllBlocks() (map[byte][]*common.Hash, error) {
-	var keys map[byte][]*common.Hash
-	for shardID := byte(0); shardID < 20; shardID++ {
-		prefix := append(append(shardIDPrefix, shardID), blockKeyPrefix...)
-		// prefix {c10{b-......}}
-		iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
-		for iter.Next() {
-			h := new(common.Hash)
-			_ = h.SetBytes(iter.Key()[len(prefix):])
-			keys[shardID] = append(keys[shardID], h)
-		}
-		iter.Release()
-		if err := iter.Error(); err != nil {
-			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "iter.Error"))
-		}
-	}
-	return keys, nil
-}
-
-func (db *db) FetchChainBlocks(shardID byte) ([]*common.Hash, error) {
-	var keys []*common.Hash
-	prefix := append(append(shardIDPrefix, shardID), blockKeyPrefix...)
-	//prefix {c10{b-......}}
-	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
-	for iter.Next() {
-		h := new(common.Hash)
-		_ = h.SetBytes(iter.Key()[len(prefix):])
-		keys = append(keys, h)
-	}
-	iter.Release()
-	if err := iter.Error(); err != nil {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "iter.Error"))
-	}
-	return keys, nil
 }
 
 //StoreIncomingCrossShard which store crossShardHash from which shard has been include in which block height

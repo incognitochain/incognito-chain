@@ -109,10 +109,7 @@ func VerifyHashFromStringArray(strs []string, hash common.Hash) bool {
 	if err != nil {
 		return false
 	}
-	if bytes.Compare(res.GetBytes(), hash.GetBytes()) == 0 {
-		return true
-	}
-	return false
+	return bytes.Equal(res.GetBytes(), hash.GetBytes())
 }
 
 func VerifyHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]string, hash common.Hash) bool {
@@ -120,10 +117,7 @@ func VerifyHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]strin
 	if err != nil {
 		return false
 	}
-	if bytes.Compare(res.GetBytes(), hash.GetBytes()) == 0 {
-		return true
-	}
-	return false
+	return bytes.Equal(res.GetBytes(), hash.GetBytes())
 }
 
 func VerifyRootHashFromStringArray(strs1 []string, strs2 []string, hash common.Hash) error {
@@ -149,7 +143,7 @@ func VerifyRootHashFromStringArray(strs1 []string, strs2 []string, hash common.H
 	hashArrays = append(hashArrays, hashes2...)
 
 	merkleTree = tempMerkle.BuildMerkleTreeOfHashs(hashArrays)
-	if tempMerkle.VerifyMerkleRootOfHashs(merkleTree, &hash) == false {
+	if !tempMerkle.VerifyMerkleRootOfHashs(merkleTree, &hash) {
 		err = NewBlockChainError(UnExpectedError, errors.New("Error verify merkle root"))
 		Logger.log.Errorf("Error in VerifyRootHashFromStringArray %+v", err)
 		return err
@@ -161,8 +155,5 @@ func VerifyHashFromShardState(allShardState map[byte][]ShardState, hash common.H
 	if err != nil {
 		return false
 	}
-	if bytes.Compare(res.GetBytes(), hash.GetBytes()) == 0 {
-		return true
-	}
-	return false
+	return bytes.Equal(res.GetBytes(), hash.GetBytes())
 }

@@ -2,8 +2,6 @@ package blockchain
 
 import (
 	"errors"
-	"math"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
@@ -41,13 +39,13 @@ func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merkl
 		} else {
 			merklePathShard = append(merklePathShard, merkleData[cursor+i-1])
 		}
-		i = int(math.Floor(float64(i / 2)))
+		i = i / 2
 
 		if cursor == 0 {
 			cursor += len(outputCoinHash)
 		} else {
 			tmp := cursor
-			cursor += int(math.Floor(float64((cursor - lastCursor) / 2)))
+			cursor += (cursor - lastCursor) / 2
 			lastCursor = tmp
 		}
 	}
@@ -127,12 +125,12 @@ func getOutCoinCrossShard(txList []metadata.Transaction, shardID byte) []privacy
 	- Agg Signature
 	- MerklePath
 */
-func (self *CrossShardBlock) VerifyCrossShardBlock(committees []string) error {
-	if err := ValidateAggSignature(self.ValidatorsIdx, committees, self.AggregatedSig, self.R, self.Hash()); err != nil {
+func (crossShardBlock *CrossShardBlock) VerifyCrossShardBlock(committees []string) error {
+	if err := ValidateAggSignature(crossShardBlock.ValidatorsIdx, committees, crossShardBlock.AggregatedSig, crossShardBlock.R, crossShardBlock.Hash()); err != nil {
 		return NewBlockChainError(SignatureError, err)
 	}
-	if err := VerifyCrossShardBlockUTXO(self, self.MerklePathShard); err == false {
-		return NewBlockChainError(HashError, errors.New("Verify Merkle Path Shard"))
+	if ok := VerifyCrossShardBlockUTXO(crossShardBlock, crossShardBlock.MerklePathShard); !ok {
+		return NewBlockChainError(HashError, errors.New("verify Merkle Path Shard"))
 	}
 	return nil
 }

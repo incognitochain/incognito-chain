@@ -83,7 +83,6 @@ func (multiSig *multiSigScheme) SignData(RiList map[string][]byte) error {
 		counter++
 	}
 	sort.Ints(multiSig.combine.ValidatorsIdxR)
-	//Todo Sig block with r Here
 
 	commitSig := multiSig.cryptoScheme.Keyset.SignMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(multiSig.personal.r))
 

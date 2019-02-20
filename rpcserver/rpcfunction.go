@@ -51,6 +51,7 @@ var RpcHandler = map[string]commandHandler{
 
 	RandomCommitments: RpcServer.handleRandomCommitments,
 	HasSerialNumbers:  RpcServer.handleHasSerialNumbers,
+	HasSnDerivators:   RpcServer.handleHasSnDerivators,
 
 	CreateAndSendStakingTransaction: RpcServer.handleCreateAndSendStakingTx,
 
@@ -247,17 +248,17 @@ func (rpcServer RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-
 	return result, nil
 }
 
-//handleListUnspentTx - use private key to get all tx which contains output coin of account
+//handleListUnspentOutputCoins - use private key to get all tx which contains output coin of account
 // by private key, it return full tx outputcoin with amount and receiver address in txs
 //params:
 //Parameter #1—the minimum number of confirmations an output must have
 //Parameter #2—the maximum number of confirmations an output may have
-//Parameter #3—the list readonly which be used to view utxo
+//Parameter #3—the list priv-key which be used to view utxo
 //
 func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
-	result := jsonresult.ListUnspentResult{
-		ListUnspentResultItems: make(map[string][]jsonresult.ListUnspentResultItem),
+	result := jsonresult.ListOutputCoins{
+		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
 
 	// get params
@@ -273,7 +274,6 @@ func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, clos
 		// get keyset only contain pri-key by deserializing
 		priKeyStr := keys["PrivateKey"].(string)
 		keyWallet, err := wallet.Base58CheckDeserialize(priKeyStr)
-		result.ListUnspentResultItems[priKeyStr] = []jsonresult.ListUnspentResultItem{}
 		if err != nil {
 			log.Println("Check Deserialize err", err)
 			continue
@@ -294,30 +294,19 @@ func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, clos
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		listTxs := make([]jsonresult.ListUnspentResultItem, 0)
-		item := jsonresult.ListUnspentResultItem{
-			OutCoins: make([]jsonresult.OutCoin, 0),
-		}
+		item := make([]jsonresult.OutCoin, 0)
 		for _, outCoin := range outCoins {
-			item.OutCoins = append(item.OutCoins, jsonresult.OutCoin{
+			item = append(item, jsonresult.OutCoin{
 				SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
 				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),
 				Value:          outCoin.CoinDetails.Value,
 				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], common.ZeroByte),
 				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), common.ZeroByte),
-				Randomness:     *outCoin.CoinDetails.Randomness,
-				SNDerivator:    *outCoin.CoinDetails.SNDerivator,
+				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.Randomness.Bytes(), common.ZeroByte),
+				SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.SNDerivator.Bytes(), common.ZeroByte),
 			})
-			listTxs = append(listTxs, item)
-
-			if result.ListUnspentResultItems[priKeyStr] == nil {
-				result.ListUnspentResultItems[priKeyStr] = []jsonresult.ListUnspentResultItem{}
-			}
-			if result.ListUnspentResultItems[priKeyStr] == nil {
-				result.ListUnspentResultItems[priKeyStr] = []jsonresult.ListUnspentResultItem{}
-			}
-			result.ListUnspentResultItems[priKeyStr] = listTxs
 		}
+		result.Outputs[priKeyStr] = item
 	}
 	return result, nil
 }
