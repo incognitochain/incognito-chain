@@ -3,12 +3,14 @@ package mempool
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
@@ -49,6 +51,10 @@ type TxPool struct {
 	txCoinHashHPool map[common.Hash][]common.Hash
 	coinHashHPool   map[common.Hash]bool
 	cMtx            sync.RWMutex
+
+	//Candidate List in mempool
+	candidateList []string
+	candidateMtx  sync.RWMutex
 }
 
 /*
@@ -119,6 +125,12 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 	if txHash != nil {
 		tp.addTxCoinHashH(*txHash)
 	}
+	// add candidate into candidate list ONLY with staking transaction
+	if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
+		pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), byte(0x00))
+		tp.addCanđiateToList(pubkey)
+	}
+
 	return txD
 }
 
@@ -135,6 +147,7 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 7. Validate tx with blockchain: douple spend, ...
 8. Check tx existed in mempool
 9. Not accept a salary tx
+10. Check Duplicate stake public key in pool ONLY with staking transaction
 */
 func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	txHash := tx.Hash()
@@ -218,7 +231,17 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		err.Init(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
 		return nil, nil, err
 	}
-
+	// check duplicate stake public key ONLY with staking transaction
+	if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
+		pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), byte(0x00))
+		tempPubkey := metadata.GetValidStaker(tp.candidateList, []string{pubkey})
+		if len(tempPubkey) == 0 {
+			str := fmt.Sprintf("This public key already stake and still in pool %+v", pubkey)
+			err := MempoolTxError{}
+			err.Init(RejectDuplicateStakeTx, errors.New(str))
+			return nil, nil, err
+		}
+	}
 	txD := tp.addTx(tx, bestHeight, txFee)
 	return tx.Hash(), txD, nil
 }
@@ -407,4 +430,30 @@ func (tp *TxPool) removeTxCoinHashH(txHashH common.Hash) error {
 		delete(tp.txCoinHashHPool, txHashH)
 	}
 	return nil
+}
+
+func (tp *TxPool) addCanđiateToList(candidate string) {
+	tp.candidateMtx.Lock()
+	defer tp.candidateMtx.Unlock()
+	// fmt.Println("Mempool/addCanđiateToList: ", candidate)
+	tp.candidateList = append(tp.candidateList, candidate)
+}
+
+func (tp *TxPool) RemoveCandidateList(candidate []string) {
+	tp.candidateMtx.Lock()
+	defer tp.candidateMtx.Unlock()
+	newList := []string{}
+	for _, value := range candidate {
+		flag := false
+		for _, currentCandidate := range tp.candidateList {
+			if strings.Compare(value, currentCandidate) == 0 {
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			newList = append(newList, value)
+		}
+	}
+	tp.candidateList = newList
 }
