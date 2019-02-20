@@ -9,7 +9,7 @@ type BlkTmplGenerator struct {
 	rewardAgent       RewardAgent
 }
 
-func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent RewardAgent, shardToBeaconPool ShardToBeaconPool, crossShardPool CrossShardPool) (*BlkTmplGenerator, error) {
+func (blkTmplGenerator BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent RewardAgent, shardToBeaconPool ShardToBeaconPool, crossShardPool CrossShardPool) (*BlkTmplGenerator, error) {
 	return &BlkTmplGenerator{
 		txPool:            txPool,
 		shardToBeaconPool: shardToBeaconPool,

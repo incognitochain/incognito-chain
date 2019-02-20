@@ -3,16 +3,16 @@ package blockchain
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/ninjadotorg/constant/metadata/toshardins"
-	"github.com/pkg/errors"
 	"sort"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/database/lvdb"
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/metadata/toshardins"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
@@ -156,7 +156,7 @@ func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 	helper ConstitutionHelper,
 	minerPrivateKey *privacy.SpendingKey,
 ) ([]metadata.Transaction, error) {
-	resTx, VoteTable, err := self.BuildVoteTableAndPunishTransaction(helper, minerPrivateKey)
+	resTx, VoteTable, _ := self.BuildVoteTableAndPunishTransaction(helper, minerPrivateKey)
 	NextConstitutionIndex := self.GetCurrentBoardIndex(helper)
 	bestProposal := metadata.ProposalVote{
 		TxId:         common.Hash{},

@@ -12,7 +12,7 @@ import (
 
 type ShardBlock struct {
 	AggregatedSig string  `json:"AggregatedSig"`
-	R             string  `json:"r"`
+	R             string  `json:"R"`
 	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
 	ProducerSig   string  `json:"ProducerSig"`
 	Body          ShardBody
@@ -21,7 +21,7 @@ type ShardBlock struct {
 
 type ShardToBeaconBlock struct {
 	AggregatedSig string  `json:"AggregatedSig"`
-	R             string  `json:"r"`
+	R             string  `json:"R"`
 	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
 	ProducerSig   string  `json:"ProducerSig"`
 
@@ -31,7 +31,7 @@ type ShardToBeaconBlock struct {
 
 type CrossShardBlock struct {
 	AggregatedSig string  `json:"AggregatedSig"`
-	R             string  `json:"r"`
+	R             string  `json:"R"`
 	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
 	ProducerSig   string  `json:"ProducerSig"`
 
@@ -40,25 +40,25 @@ type CrossShardBlock struct {
 	CrossOutputCoin []privacy.OutputCoin
 }
 
-func (self *CrossShardBlock) Hash() *common.Hash {
-	hash := self.Header.Hash()
+func (shardBlock *CrossShardBlock) Hash() *common.Hash {
+	hash := shardBlock.Header.Hash()
 	return &hash
 }
 
-func (self *ShardToBeaconBlock) Hash() *common.Hash {
-	hash := self.Header.Hash()
+func (shardBlock *ShardToBeaconBlock) Hash() *common.Hash {
+	hash := shardBlock.Header.Hash()
 	return &hash
 }
 
-func (self *ShardBlock) Hash() *common.Hash {
-	hash := self.Header.Hash()
+func (shardBlock *ShardBlock) Hash() *common.Hash {
+	hash := shardBlock.Header.Hash()
 	return &hash
 }
 
-func (self *ShardBlock) UnmarshalJSON(data []byte) error {
+func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 	tempBlk := &struct {
 		AggregatedSig string
-		R             string `json:"r"`
+		R             string `json:"R"`
 		ValidatorsIdx [][]int
 		ProducerSig   string
 		Header        ShardHeader
@@ -68,19 +68,19 @@ func (self *ShardBlock) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonBlockError, err)
 	}
-	self.AggregatedSig = tempBlk.AggregatedSig
-	self.R = tempBlk.R
-	self.ValidatorsIdx = tempBlk.ValidatorsIdx
-	self.ProducerSig = tempBlk.ProducerSig
+	shardBlock.AggregatedSig = tempBlk.AggregatedSig
+	shardBlock.R = tempBlk.R
+	shardBlock.ValidatorsIdx = tempBlk.ValidatorsIdx
+	shardBlock.ProducerSig = tempBlk.ProducerSig
 
 	blkBody := ShardBody{}
 	err = blkBody.UnmarshalJSON(*tempBlk.Body)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonBlockError, err)
 	}
-	self.Header = tempBlk.Header
+	shardBlock.Header = tempBlk.Header
 
-	self.Body = blkBody
+	shardBlock.Body = blkBody
 	return nil
 }
 
@@ -88,10 +88,10 @@ func (self *ShardBlock) UnmarshalJSON(data []byte) error {
 // AddTransaction adds a new transaction into block
 // */
 // // #1 - tx
-func (self *ShardBlock) AddTransaction(tx metadata.Transaction) error {
-	if self.Body.Transactions == nil {
-		return NewBlockChainError(UnExpectedError, errors.New("Not init tx arrays"))
+func (shardBlock *ShardBlock) AddTransaction(tx metadata.Transaction) error {
+	if shardBlock.Body.Transactions == nil {
+		return NewBlockChainError(UnExpectedError, errors.New("not init tx arrays"))
 	}
-	self.Body.Transactions = append(self.Body.Transactions, tx)
+	shardBlock.Body.Transactions = append(shardBlock.Body.Transactions, tx)
 	return nil
 }

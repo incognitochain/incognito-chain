@@ -14,11 +14,6 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 )
 
-// TODO: 0xsirrush need to optimize with some features:
-// 2. load data in db on mem and using to validate tx
-// 3. cancel tx
-// 5. priority data in mem
-
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
 	// Block chain of node
@@ -129,10 +124,17 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 
 /*
 // maybeAcceptTransaction is the internal function which implements the public
-// MaybeAcceptTransaction.  See the comment for MaybeAcceptTransaction for
-// more details.
-//
+// See the comment for MaybeAcceptTransaction for more details.
 // This function MUST be called with the mempool lock held (for writes).
+1. Validate tx version
+2. Validate fee with tx size
+3. Validate type of tx
+4. Validate with other txs in mempool
+5. Validate sanity data of tx
+6. Validate data in tx: privacy proof, metadata,...
+7. Validate tx with blockchain: douple spend, ...
+8. Check tx existed in mempool
+9. Not accept a salary tx
 */
 func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	txHash := tx.Hash()
@@ -357,6 +359,7 @@ func (tp *TxPool) ListTxs() []string {
 	return result
 }
 
+// PrePoolTxCoinHashH -
 func (tp *TxPool) PrePoolTxCoinHashH(txHashH common.Hash, coinHashHs []common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
@@ -364,6 +367,8 @@ func (tp *TxPool) PrePoolTxCoinHashH(txHashH common.Hash, coinHashHs []common.Ha
 	return nil
 }
 
+// addTxCoinHashH - add hash of output coin
+//// which use to check double spend in memppol
 func (tp *TxPool) addTxCoinHashH(txHashH common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
@@ -376,6 +381,8 @@ func (tp *TxPool) addTxCoinHashH(txHashH common.Hash) error {
 	return nil
 }
 
+// ValidateCoinHashH - check outputcoin which is
+// used by a tx in mempool
 func (tp *TxPool) ValidateCoinHashH(coinHashH common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
@@ -386,6 +393,8 @@ func (tp *TxPool) ValidateCoinHashH(coinHashH common.Hash) error {
 	return nil
 }
 
+// removeTxCoinHashH remove hash of output coin
+// which use to check double spend in memppol
 func (tp *TxPool) removeTxCoinHashH(txHashH common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
