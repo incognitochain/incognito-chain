@@ -41,7 +41,7 @@ type BFTProtocol struct {
 	multiSigScheme *multiSigScheme
 }
 
-func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) (interface{}, error) {
+func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte, round int) (interface{}, error) {
 	protocol.phase = PBFT_LISTEN
 	if isProposer {
 		protocol.phase = PBFT_PROPOSE
@@ -71,7 +71,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 					readyMsgCount int
 				)
 				if layer == common.BEACON_ROLE {
-					newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, 1)
+					newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, round)
 					if err != nil {
 						return nil, err
 					}
@@ -87,7 +87,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 					timeout.Stop()              //single-node
 					return newBlock, nil        //single-node
 				} else {
-					newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, shardID, 1)
+					newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, shardID, round)
 					if err != nil {
 						return nil, err
 					}
