@@ -14,8 +14,9 @@ import (
 )
 
 type IssuingReqAction struct {
-	TxReqID common.Hash             `json:"txReqId"`
-	Meta    metadata.IssuingRequest `json:"meta"`
+	TxReqID         common.Hash             `json:"txReqId"`
+	ReceiverShardID byte                    `json:"receiverShardID"`
+	Meta            metadata.IssuingRequest `json:"meta"`
 }
 
 type IssuingInfo struct {
@@ -276,7 +277,7 @@ func buildInstructionsForIssuingReq(
 	}
 	returnedInst := []string{
 		strconv.Itoa(metadata.IssuingRequestMeta),
-		strconv.Itoa(int(shardID)),
+		strconv.Itoa(int(issuingReqAction.ReceiverShardID)),
 		instType,
 		string(iInfoBytes),
 	}
