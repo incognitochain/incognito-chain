@@ -141,9 +141,12 @@ func (iReq *IssuingRequest) Hash() *common.Hash {
 }
 
 func (iReq *IssuingRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+	pkLastByte := iReq.ReceiverAddress.Pk[len(iReq.ReceiverAddress.Pk)-1]
+	receiverShardID := common.GetShardIDFromLastByte(pkLastByte)
 	actionContent := map[string]interface{}{
-		"txReqId": *(tx.Hash()),
-		"meta":    *iReq,
+		"txReqId":         *(tx.Hash()),
+		"receiverShardID": receiverShardID,
+		"meta":            *iReq,
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
