@@ -481,6 +481,7 @@ func (serverObj Server) Start() {
 
 		serverObj.rpcServer.Start()
 	}
+	go serverObj.blockChain.StartSyncBlk()
 
 	if cfg.NodeMode != "relay" {
 		err := serverObj.consensusEngine.Start()
@@ -1154,10 +1155,10 @@ func (serverObj *Server) BoardcastNodeState() error {
 		serverObj.blockChain.BestState.Beacon.BestBlockHash,
 		serverObj.blockChain.BestState.Beacon.Hash(),
 	}
-	for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
+	for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 		msg.(*wire.MessagePeerState).Shards[shardID] = blockchain.ChainState{
 			serverObj.blockChain.BestState.Shard[shardID].ShardHeight,
-			serverObj.blockChain.BestState.Shard[shardID].BestShardBlockHash,
+			serverObj.blockChain.BestState.Shard[shardID].BestBlockHash,
 			serverObj.blockChain.BestState.Shard[shardID].Hash(),
 		}
 	}
