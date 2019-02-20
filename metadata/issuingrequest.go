@@ -97,7 +97,7 @@ func (iReq *IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 	if iReq.DepositedAmount == 0 {
 		return false, false, errors.New("Wrong request info's deposited amount")
 	}
-	if iReq.Type == IssuingRequestMeta {
+	if iReq.Type != IssuingRequestMeta {
 		return false, false, errors.New("Wrong request info's meta type")
 	}
 	if len(iReq.AssetType) != common.HashSize {

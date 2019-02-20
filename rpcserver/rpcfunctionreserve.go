@@ -9,11 +9,11 @@ import (
 
 func (rpcServer RpcServer) handleCreateIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	constructor := metaConstructors[CreateAndSendIssuingRequest]
-	return rpcServer.createRawCustomTokenTxWithMetadata(params, closeChan, constructor)
+	return rpcServer.createRawTxWithMetadata(params, closeChan, constructor)
 }
 
 func (rpcServer RpcServer) handleSendIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return rpcServer.sendRawCustomTokenTxWithMetadata(params, closeChan)
+	return rpcServer.sendRawTxWithMetadata(params, closeChan)
 }
 
 // handleCreateAndSendIssuingRequest for user to buy Constant (using USD) or BANK token (using USD/ETH) from DCB
@@ -28,11 +28,11 @@ func (rpcServer RpcServer) handleCreateAndSendIssuingRequest(params interface{},
 
 func (rpcServer RpcServer) handleCreateContractingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	constructor := metaConstructors[CreateAndSendContractingRequest]
-	return rpcServer.createRawCustomTokenTxWithMetadata(params, closeChan, constructor)
+	return rpcServer.createRawTxWithMetadata(params, closeChan, constructor)
 }
 
 func (rpcServer RpcServer) handleSendContractingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return rpcServer.sendRawCustomTokenTxWithMetadata(params, closeChan)
+	return rpcServer.sendRawTxWithMetadata(params, closeChan)
 }
 
 // handleCreateAndSendContractingRequest for user to sell Constant and receive either USD or ETH
