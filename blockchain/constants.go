@@ -1,5 +1,7 @@
 package blockchain
 
+import "time"
+
 // constant for network
 const (
 	//Network fixed params
@@ -35,5 +37,10 @@ const (
 	// BlockVersion is the current latest supported block version.
 	BlockVersion = 1
 
-	defaultGetStateWaitTime = 5
+	defaultBroadcastStateTime   = 3 * time.Second
+	defaultProcessPeerStateTime = 5 * time.Second
+	defaultMaxBlockSyncTime     = 8 * time.Second
+	SyncByHashKey               = "byhash"
+	SyncByHeightKey             = "byheight"
+	defaultMaxBlkReqPerPeer     = 5
 )

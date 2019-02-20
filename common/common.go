@@ -527,3 +527,12 @@ func IsDCBTokenAsset(assetID *Hash) bool {
 func IsUSDAsset(assetID *Hash) bool {
 	return assetID.IsEqual(&USDAssetID)
 }
+
+func IndexOfByte(item byte, arrays []byte) int {
+	for k, v := range arrays {
+		if v == item {
+			return k
+		}
+	}
+	return -1
+}

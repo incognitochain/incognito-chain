@@ -1,8 +1,10 @@
 package zkp
 
 import (
-	"github.com/ninjadotorg/constant/privacy"
+	"fmt"
 	"math/big"
+
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 // This protocol proves in zero-knowledge that a list of committed values falls in [0, 2^64)
@@ -82,6 +84,8 @@ func (proof AggregatedRangeProof) Bytes() []byte {
 	res = append(res, privacy.AddPaddingBigInt(proof.tHat, privacy.BigIntSize)...)
 	res = append(res, privacy.AddPaddingBigInt(proof.mu, privacy.BigIntSize)...)
 	res = append(res, proof.innerProductProof.Bytes()...)
+
+	//fmt.Printf("BYTES ------------ %v\n", res)
 	return res
 
 }
@@ -90,6 +94,8 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return nil
 	}
+
+	//fmt.Printf("BEFORE SETBYTES ------------ %v\n", bytes)
 
 	lenValues := int(bytes[0])
 	offset := 1
@@ -143,6 +149,8 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 
 	proof.innerProductProof = new(InnerProductProof)
 	proof.innerProductProof.SetBytes(bytes[offset:])
+
+	//fmt.Printf("AFTER SETBYTES ------------ %v\n", proof.Bytes())
 	return nil
 }
 
@@ -177,13 +185,9 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 	AggParam := newBulletproofParams(numValuePad)
 
-	proof.cmsValue = make([]*privacy.EllipticPoint, numValuePad)
+	proof.cmsValue = make([]*privacy.EllipticPoint, numValue)
 	for i := 0; i < numValue; i++ {
 		proof.cmsValue[i] = privacy.PedCom.CommitAtIndex(values[i], rands[i], privacy.VALUE)
-	}
-
-	for i := numValue; i < numValuePad; i++ {
-		proof.cmsValue[i] = new(privacy.EllipticPoint).Zero()
 	}
 
 	n := privacy.MaxExp
@@ -196,15 +200,13 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		}
 	}
 
-	oneNumber := big.NewInt(1)
 	twoNumber := big.NewInt(2)
-	oneVector := powerVector(oneNumber, n*numValuePad)
-	oneVectorN := powerVector(oneNumber, n)
 	twoVectorN := powerVector(twoNumber, n)
 
-	aR, err := vectorSub(aL, oneVector)
-	if err != nil {
-		return nil, err
+	aR := make([]*big.Int, numValuePad*n)
+
+	for i:=0; i<numValuePad*n; i++{
+		aR[i] = new(big.Int).Sub(aL[i], big.NewInt(1))
 	}
 
 	// random alpha
@@ -284,17 +286,17 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	deltaYZ := new(big.Int).Sub(z, zSquare)
 
 	// innerProduct1 = <1^(n*m), y^(n*m)>
-	innerProduct1, err := innerProduct(oneVector, yVector)
-	if err != nil {
-		return nil, err
+	innerProduct1 := big.NewInt(0)
+	for i:=0; i<n*numValuePad; i++{
+		innerProduct1 = innerProduct1.Add(innerProduct1, yVector[i])
 	}
 
 	deltaYZ.Mul(deltaYZ, innerProduct1)
 
 	// innerProduct2 = <1^n, 2^n>
-	innerProduct2, err := innerProduct(oneVectorN, twoVectorN)
-	if err != nil {
-		return nil, err
+	innerProduct2 := big.NewInt(0)
+	for i:=0; i<n; i++{
+		innerProduct2 = innerProduct2.Add(innerProduct2, twoVectorN[i])
 	}
 
 	sum := big.NewInt(0)
@@ -436,8 +438,10 @@ func (proof *AggregatedRangeProof) Verify() bool {
 	numValue := len(proof.cmsValue)
 	numValuePad := pad(numValue)
 
+	tmpcmsValue := proof.cmsValue
+
 	for i := numValue; i < numValuePad; i++ {
-		proof.cmsValue = append(proof.cmsValue, new(privacy.EllipticPoint).Zero())
+		tmpcmsValue = append(tmpcmsValue, new(privacy.EllipticPoint).Zero())
 	}
 
 	AggParam := newBulletproofParams(numValuePad)
@@ -456,6 +460,7 @@ func (proof *AggregatedRangeProof) Verify() bool {
 	zSquare := new(big.Int).Exp(z, twoNumber, privacy.Curve.Params().N)
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
+	fmt.Printf("T2: %v\n", proof.T2)
 	x := generateChallengeForAggRange(AggParam, [][]byte{proof.A.Compress(), proof.S.Compress(), proof.T1.Compress(), proof.T2.Compress()})
 	xSquare := new(big.Int).Exp(x, twoNumber, privacy.Curve.Params().N)
 
@@ -501,7 +506,7 @@ func (proof *AggregatedRangeProof) Verify() bool {
 	right1 := privacy.PedCom.G[privacy.VALUE].ScalarMult(deltaYZ).Add(proof.T1.ScalarMult(x)).Add(proof.T2.ScalarMult(xSquare))
 
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
-	for i, cm := range proof.cmsValue {
+	for i, cm := range tmpcmsValue {
 		right1 = right1.Add(cm.ScalarMult(expVector[i]))
 	}
 

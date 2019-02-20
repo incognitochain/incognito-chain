@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"fmt"
+
 	"github.com/ninjadotorg/constant/common"
 )
 
@@ -15,8 +17,8 @@ import (
 // shared by all callers.
 
 type BestStateShard struct {
-	PrevShardBlockHash    common.Hash `json:"PrevShardBlockHash,omitempty"`
 	BestShardBlockHash    common.Hash `json:"BestShardBlockHash,omitempty"` // hash of block.
+	PrevShardBlockHash    common.Hash `json:"PrevShardBlockHash,omitempty"`
 	BestBeaconHash        common.Hash `json:"BestBeaconHash,omitempty"`
 	BestShardBlock        *ShardBlock `json:"BestShardBlock,omitempty"` // block data
 	ShardHeight           uint64      `json:"ShardHeight,omitempty"`
@@ -33,42 +35,46 @@ type BestStateShard struct {
 }
 
 // Get role of a public key base on best state shard
-func (self *BestStateShard) Hash() common.Hash {
+func (bestStateShard *BestStateShard) Hash() common.Hash {
 	res := []byte{}
-	res = append(res, self.PrevShardBlockHash.GetBytes()...)
-	res = append(res, self.BestShardBlockHash.GetBytes()...)
-	res = append(res, self.BestBeaconHash.GetBytes()...)
-	res = append(res, self.BestShardBlock.Hash().GetBytes()...)
-	res = append(res, byte(self.ShardHeight))
-	res = append(res, byte(self.BeaconHeight))
-	for _, value := range self.ShardCommittee {
+	res = append(res, bestStateShard.PrevShardBlockHash.GetBytes()...)
+	res = append(res, bestStateShard.BestShardBlockHash.GetBytes()...)
+	res = append(res, bestStateShard.BestBeaconHash.GetBytes()...)
+	res = append(res, bestStateShard.BestShardBlock.Hash().GetBytes()...)
+	res = append(res, byte(bestStateShard.ShardHeight))
+	res = append(res, byte(bestStateShard.BeaconHeight))
+	for _, value := range bestStateShard.ShardCommittee {
 		res = append(res, []byte(value)...)
 	}
-	for _, value := range self.ShardPendingValidator {
+	for _, value := range bestStateShard.ShardPendingValidator {
 		res = append(res, []byte(value)...)
 	}
-	res = append(res, byte(self.ShardProposerIdx))
-	res = append(res, byte(self.NumTxns))
-	res = append(res, byte(self.TotalTxns))
+	res = append(res, byte(bestStateShard.ShardProposerIdx))
+	res = append(res, byte(bestStateShard.NumTxns))
+	res = append(res, byte(bestStateShard.TotalTxns))
 	return common.DoubleHashH(res)
 }
-func (self *BestStateShard) GetPubkeyRole(pubkey string) string {
-
-	found := common.IndexOfStr(pubkey, self.ShardCommittee)
+func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string) string {
+	fmt.Println("Shard BestState/ BEST STATE", bestStateShard)
+	found := common.IndexOfStr(pubkey, bestStateShard.ShardCommittee)
+	fmt.Println("Shard BestState/ Get Public Key Role, Found IN Shard COMMITTEES", found)
 	if found > -1 {
-		tmpID := (self.ShardProposerIdx + 1) % len(self.ShardCommittee)
+		tmpID := (bestStateShard.ShardProposerIdx + 1) % len(bestStateShard.ShardCommittee)
 		if found == tmpID {
-			return "shard-proposer"
+			fmt.Println("Shard BestState/ Get Public Key Role, ROLE", common.SHARD_PROPOSER_ROLE)
+			return common.SHARD_PROPOSER_ROLE
 		} else {
-			return "shard-validator"
+			fmt.Println("Shard BestState/ Get Public Key Role, ROLE", common.SHARD_VALIDATOR_ROLE)
+			return common.SHARD_VALIDATOR_ROLE
 		}
 
 	}
 
-	found = common.IndexOfStr(pubkey, self.ShardPendingValidator)
+	found = common.IndexOfStr(pubkey, bestStateShard.ShardPendingValidator)
 	if found > -1 {
-		return "shard-pending"
+		fmt.Println("Shard BestState/ Get Public Key Role, ROLE", common.SHARD_PENDING_ROLE)
+		return common.SHARD_PENDING_ROLE
 	}
 
-	return ""
+	return common.EmptyString
 }
