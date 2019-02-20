@@ -181,6 +181,17 @@ func (self *BlockChain) InsertShardBlock(block *ShardBlock) error {
 		return err
 	}
 
+	// Store metadata instruction to local state
+	for _, beaconBlock := range beaconBlocks {
+		instructions := beaconBlock.Body.Instructions
+		for _, inst := range instructions {
+			err := self.StoreMetadataInstructions(inst, shardID)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	//TODO: Remove cross shard block in pool
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 	return nil

@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/wallet"
+	"github.com/pkg/errors"
 )
 
 // whoever can send this type of tx
@@ -25,7 +26,7 @@ func NewContractingRequest(
 	burnedConstAmount uint64,
 	currencyType common.Hash,
 	metaType int,
-) *ContractingRequest {
+) (*ContractingRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
@@ -35,7 +36,27 @@ func NewContractingRequest(
 		BurnerAddress:     burnerAddress,
 	}
 	contractingReq.MetadataBase = metadataBase
-	return contractingReq
+	return contractingReq, nil
+}
+
+func NewContractingRequestFromMap(data map[string]interface{}) (Metadata, error) {
+	keyWallet, err := wallet.Base58CheckDeserialize(data["BurnerAddress"].(string))
+	if err != nil {
+		return nil, errors.Errorf("BurnerAddress incorrect")
+	}
+
+	burnedConstAmount := uint64(data["BurnedConstAmount"].(float64))
+
+	currencyType, err := common.NewHashFromStr(data["CurrencyType"].(string))
+	if err != nil {
+		return nil, errors.Errorf("CurrencyType incorrect")
+	}
+	return NewContractingRequest(
+		keyWallet.KeySet.PaymentAddress,
+		burnedConstAmount,
+		*currencyType,
+		IssuingRequestMeta,
+	)
 }
 
 func (cReq *ContractingRequest) ValidateTxWithBlockChain(

@@ -103,6 +103,16 @@ const (
 	CreateAndSendCrowdsaleRequestConstant = "createandsendcrowdsalerequestconstant"
 	TestStoreCrowdsale                    = "teststorecrowdsale"
 
+	// reserve
+	CreateIssuingRequest            = "createissuingrequest"
+	SendIssuingRequest              = "sendissuingrequest"
+	CreateAndSendIssuingRequest     = "createandsendissuingrequest"
+	CreateAndSendContractingRequest = "createandsendcontractingrequest"
+	GetIssuingStatus                = "getissuingstatus"
+	GetContractingStatus            = "getcontractingstatus"
+	ConvertETHToDCBTokenAmount      = "convertethtodcbtokenamount"
+	ConvertCSTToETHAmount           = "convertcsttoethamount"
+
 	// vote
 	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"
 	CreateRawVoteDCBBoardTx              = "createrawvotedcbboardtx"
@@ -132,8 +142,8 @@ const (
 	SendRawSubmitGOVProposalTx       = "sendrawsubmitgovproposaltx"
 
 	// dcb
-	CreateAndSendTxWithIssuingRequest     = "createandsendtxwithissuingrequest"
-	CreateAndSendTxWithContractingRequest = "createandsendtxwithcontractingrequest"
+	// CreateAndSendTxWithIssuingRequest     = "createandsendtxwithissuingrequest"
+	// CreateAndSendTxWithContractingRequest = "createandsendtxwithcontractingrequest"
 
 	// gov
 	GetBondTypes                           = "getbondtypes"

@@ -77,6 +77,10 @@ var (
 	Unreward                = []byte("unreward")
 	Spent                   = []byte("spent")
 	Unspent                 = []byte("unspent")
+
+	// reserve
+	reserveIssuingInfoPrefix     = []byte("rsIss")
+	reserveContractingInfoPrefix = []byte("rsCon")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {

@@ -2,7 +2,6 @@ package common
 
 const (
 	EmptyString          = ""
-	RefundPeriod         = 1000 // after 1000 blocks since a tx (small & no-privacy) happens, the network will refund an amount of constants to tx initiator automatically
 	PubKeyLength         = 33
 	PaymentAddressLength = 66
 	ZeroByte             = byte(0x00)
@@ -107,4 +106,9 @@ const (
 	RANDOM_TIME  = 5
 	COMMITEES    = 1
 	OFFSET       = 1
+)
+
+// Units converter
+const (
+	WeiToMilliEtherRatio = int64(1000000000000000)
 )
