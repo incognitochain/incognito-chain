@@ -306,24 +306,6 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 	return result, nil
 }
 
-func (rpcServer RpcServer) handleGetCommitteeCandidateList(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// param #1: private key of sender
-	// cndList := self.config.BlockChain.GetCommitteeCandidateList()
-	// return cndList, nil
-	return nil, nil
-}
-
-func (self RpcServer) handleRetrieveCommiteeCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// candidateInfo := self.config.BlockChain.GetCommitteCandidate(params.(string))
-	// if candidateInfo == nil {
-	// 	return nil, nil
-	// }
-	// result := jsonresult.RetrieveCommitteecCandidateResult{}
-	// result.Init(candidateInfo)
-	// return result, nil
-	return nil, nil
-}
-
 func (self RpcServer) handleGetBlockProducerList(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := make(map[string]string)
 	// for shardID, bestState := range self.config.BlockChain.BestState {
@@ -668,7 +650,7 @@ func (rpcServer RpcServer) handleHasSerialNumbers(params interface{}, closeChan 
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	for _, item := range serialNumbersStr {
-		serialNumber, _, _  := base58.Base58Check{}.Decode(item.(string))
+		serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(rpcServer.config.Database)
 		ok, _ := db.HasSerialNumber(constantTokenID, serialNumber, shardIDSender)
 		if ok || err != nil {
