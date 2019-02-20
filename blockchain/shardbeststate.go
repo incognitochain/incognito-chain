@@ -17,8 +17,8 @@ import (
 // shared by all callers.
 
 type BestStateShard struct {
-	PrevShardBlockHash    common.Hash `json:"PrevShardBlockHash,omitempty"`
 	BestShardBlockHash    common.Hash `json:"BestShardBlockHash,omitempty"` // hash of block.
+	PrevShardBlockHash    common.Hash `json:"PrevShardBlockHash,omitempty"`
 	BestBeaconHash        common.Hash `json:"BestBeaconHash,omitempty"`
 	BestShardBlock        *ShardBlock `json:"BestShardBlock,omitempty"` // block data
 	ShardHeight           uint64      `json:"ShardHeight,omitempty"`

@@ -18,10 +18,11 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 type BestStateBeacon struct {
-	BestBlockHash   common.Hash          `json:"BestBlockHash"` // The hash of the block.
-	BestBlock       *BeaconBlock         `json:"BestBlock"`     // The block.
-	BestShardHash   map[byte]common.Hash `json:"BestShardHash"`
-	BestShardHeight map[byte]uint64      `json:"BestShardHeight"`
+	BestBlockHash     common.Hash          `json:"BestBlockHash"`     // The hash of the block.
+	PrevBestBlockHash common.Hash          `json:"PrevBestBlockHash"` // The hash of the block.
+	BestBlock         *BeaconBlock         `json:"BestBlock"`         // The block.
+	BestShardHash     map[byte]common.Hash `json:"BestShardHash"`
+	BestShardHeight   map[byte]uint64      `json:"BestShardHeight"`
 	// New field
 	//TODO: calculate hash
 	AllShardState map[byte][]ShardState `json:"AllShardState"`

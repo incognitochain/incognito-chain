@@ -394,6 +394,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	// signal of random parameter from beacon block
 	randomFlag := false
 	// update BestShardHash, BestBlock, BestBlockHash
+	bestStateBeacon.PrevBestBlockHash = bestStateBeacon.BestBlockHash
 	bestStateBeacon.BestBlockHash = *newBlock.Hash()
 	bestStateBeacon.BestBlock = newBlock
 	bestStateBeacon.BeaconEpoch = newBlock.Header.Epoch
