@@ -2,6 +2,8 @@ package blockchain
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -32,7 +34,53 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 
 	case strconv.Itoa(metadata.CrowdsalePaymentMeta):
 		return bsb.processCrowdsalePaymentInstruction(inst)
+
+	case strconv.Itoa(metadata.BuyFromGOVRequestMeta):
+		return bsb.processBuyFromGOVReqInstruction(inst)
+
+	case strconv.Itoa(metadata.BuyBackRequestMeta):
+		return bsb.processBuyBackReqInstruction(inst)
 	}
+	return nil
+}
+
+func (bsb *BestStateBeacon) processBuyBackReqInstruction(inst []string) error {
+	instType := inst[2]
+	if instType == "refund" {
+		return nil
+	}
+	// accepted
+	buyBackInfoStr := inst[3]
+	var buyBackInfo BuyBackInfo
+	err := json.Unmarshal([]byte(buyBackInfoStr), &buyBackInfo)
+	if err != nil {
+		return err
+	}
+	bsb.StabilityInfo.SalaryFund -= (buyBackInfo.Value + buyBackInfo.BuyBackPrice)
+	return nil
+}
+
+func (bsb *BestStateBeacon) processBuyFromGOVReqInstruction(inst []string) error {
+	instType := inst[2]
+	if instType == "refund" {
+		return nil
+	}
+	// accepted
+	contentStr := inst[3]
+	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		return err
+	}
+	var buySellReqAction BuySellReqAction
+	err = json.Unmarshal(contentBytes, &buySellReqAction)
+	if err != nil {
+		return err
+	}
+	md := buySellReqAction.Meta
+	stabilityInfo := bsb.StabilityInfo
+	sellingBondsParams := stabilityInfo.GOVConstitution.GOVParams.SellingBonds
+	sellingBondsParams.BondsToSell -= md.Amount
+	stabilityInfo.SalaryFund += (md.Amount + md.BuyPrice)
 	return nil
 }
 
