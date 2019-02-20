@@ -20,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*ShardBlock, error) {
+func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte, round int) (*ShardBlock, error) {
 	//============Build body=============
 	beaconHeight := blockgen.chain.BestState.Beacon.BeaconHeight
 	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
@@ -191,6 +191,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		BeaconHeight:         beaconHeight,
 		BeaconHash:           beaconHash,
 		Epoch:                epoch,
+		Round:                round,
 	}
 
 	// Create producer signature

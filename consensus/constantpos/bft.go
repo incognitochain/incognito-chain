@@ -71,8 +71,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 					readyMsgCount int
 				)
 				if layer == common.BEACON_ROLE {
-					// time.Sleep(5 * time.Second) //single-node
-					newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey)
+					newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, 1)
 					if err != nil {
 						return nil, err
 					}
@@ -84,10 +83,11 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte) 
 					protocol.pendingBlock = newBlock
 					protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
 
+					// time.Sleep(5 * time.Second) //single-node
 					// timeout.Stop()       //single-node
 					// return newBlock, nil //single-node
 				} else {
-					newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, shardID)
+					newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, shardID, 1)
 					if err != nil {
 						return nil, err
 					}
