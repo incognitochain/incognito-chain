@@ -261,9 +261,8 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 func (bestStateBeacon *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, isVerifySig bool) error {
 	//=============Verify aggegrate signature
 	if isVerifySig {
-		//@NOTICE:
 		// ValidatorIdx must > Number of Beacon Committee / 2 AND Number of Beacon Committee > 3
-		if len(block.ValidatorsIdx) < (len(bestStateBeacon.BeaconCommittee) >> 1) {
+		if len(block.ValidatorsIdx) <= (len(bestStateBeacon.BeaconCommittee)>>1) && len(bestStateBeacon.BeaconCommittee) > 3 {
 			return NewBlockChainError(SignatureError, errors.New("block validators and Beacon committee is not compatible"))
 		}
 		err := ValidateAggSignature(block.ValidatorsIdx, bestStateBeacon.BeaconCommittee, block.AggregatedSig, block.R, block.Hash())
