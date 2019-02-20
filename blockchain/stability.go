@@ -21,7 +21,23 @@ type accumulativeValues struct {
 	dcbTokensSoldByUSD   uint64
 	dcbTokensSoldByETH   uint64
 	constantsBurnedByETH uint64
+	buyBackCoins         uint64
+	totalFee             uint64
+	totalSalary          uint64
+	totalRefundAmt       uint64
+	totalOracleRewards   uint64
 	saleDataMap          map[string]*params.SaleData
+}
+
+func isGOVFundEnough(
+	beaconBestState *BestStateBeacon,
+	accumulativeValues *accumulativeValues,
+	expense uint64,
+) bool {
+	govFund := beaconBestState.StabilityInfo.SalaryFund
+	income := accumulativeValues.incomeFromBonds + accumulativeValues.incomeFromGOVTokens + accumulativeValues.totalFee
+	totalExpensed := accumulativeValues.buyBackCoins + accumulativeValues.totalSalary + accumulativeValues.totalRefundAmt + accumulativeValues.totalOracleRewards
+	return (govFund + income - expense - totalExpensed) > 0
 }
 
 // build actions from txs at shard
@@ -81,7 +97,7 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 			instructions = append(instructions, saleInst...)
 
 		case metadata.BuyBackRequestMeta:
-			buyBackInst, err := buildInstructionsForBuyBackBondsReq(shardID, contentStr, beaconBestState, blkTmpGen.chain)
+			buyBackInst, err := buildInstructionsForBuyBackBondsReq(shardID, contentStr, beaconBestState, accumulativeValues, blkTmpGen.chain)
 			if err != nil {
 				return [][]string{}, err
 			}
