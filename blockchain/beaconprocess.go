@@ -259,11 +259,12 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	- ShardState
 */
 func (bestStateBeacon *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, isVerifySig bool) error {
-	if len(block.ValidatorsIdx) < (len(bestStateBeacon.BeaconCommittee) >> 1) {
-		return NewBlockChainError(SignatureError, errors.New("block validators and Beacon committee is not compatible"))
-	}
 	//=============Verify aggegrate signature
 	if isVerifySig {
+		// ValidatorIdx must > Number of Beacon Committee / 2
+		if len(block.ValidatorsIdx) <= (len(bestStateBeacon.BeaconCommittee) >> 1) {
+			return NewBlockChainError(SignatureError, errors.New("block validators and Beacon committee is not compatible"))
+		}
 		err := ValidateAggSignature(block.ValidatorsIdx, bestStateBeacon.BeaconCommittee, block.AggregatedSig, block.R, block.Hash())
 		if err != nil {
 			return NewBlockChainError(SignatureError, err)
@@ -529,8 +530,11 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		// Assign committee with genesis block
 		Logger.log.Infof("Proccessing Genesis Block")
 		//Test with 1 member
-		bestStateBeacon.BeaconCommittee = append(bestStateBeacon.BeaconCommittee, newBeaconCandidate[0])
-		bestStateBeacon.ShardCommittee[byte(0)] = append(bestStateBeacon.ShardCommittee[byte(0)], newShardCandidate[0])
+		bestStateBeacon.BeaconCommittee = make([]string, bestStateBeacon.BeaconCommitteeSize)
+		copy(bestStateBeacon.BeaconCommittee, newBeaconCandidate[:bestStateBeacon.BeaconCommitteeSize])
+		for shardID := 0; shardID < bestStateBeacon.ActiveShards; shardID++ {
+			bestStateBeacon.ShardCommittee[byte(shardID)] = append(bestStateBeacon.ShardCommittee[byte(shardID)], newShardCandidate[shardID*bestStateBeacon.ShardCommitteeSize:(shardID+1)*bestStateBeacon.ShardCommitteeSize]...)
+		}
 		bestStateBeacon.Epoch = 1
 	} else {
 		bestStateBeacon.CandidateBeaconWaitingForNextRandom = append(bestStateBeacon.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
