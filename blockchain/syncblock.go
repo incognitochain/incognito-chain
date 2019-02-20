@@ -214,7 +214,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 						if blockchain.BestState.Beacon.BestShardHeight[shardID] < RCS.ClosestShardsState[shardID].Height {
 							currentShardReqHeight := blockchain.BestState.Beacon.BestShardHeight[shardID] + 1
 							for peerID, peerState := range blockchain.syncStatus.PeersState {
-								if _, ok := peerState.Shard[shardID]; ok {
+								if shardState, ok := peerState.Shard[shardID]; ok && shardState.Height > RCS.ClosestShardsState[shardID].Height {
 									if currentShardReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
 										blockchain.SyncBlkShardToBeacon(shardID, false, false, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height, peerID)
 									} else {
@@ -236,7 +236,6 @@ func (blockchain *BlockChain) StartSyncBlk() {
 							blockchain.SyncBlkCrossShard(true, blks, shardID, userShardID, peerID)
 						}
 					}
-
 				}
 			}
 

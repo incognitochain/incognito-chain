@@ -135,3 +135,8 @@ func (crossShardBlock *CrossShardBlock) VerifyCrossShardBlock(committees []strin
 	}
 	return nil
 }
+
+func (self *CrossShardBlock) ShouldStoreBlock() bool {
+	// verify block aggregation
+	return false
+}
