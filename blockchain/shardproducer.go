@@ -22,6 +22,7 @@ import (
 
 func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte, round int) (*ShardBlock, error) {
 	//============Build body=============
+	// Fetch Beacon information
 	beaconHeight := blockgen.chain.BestState.Beacon.BeaconHeight
 	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
 	fmt.Println("Shard Producer/NewBlockShard, Beacon Height / Before", beaconHeight)
@@ -39,47 +40,20 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	fmt.Println("Shard Producer/NewBlockShard, Beacon Height / After", beaconHeight)
 	fmt.Println("Shard Producer/NewBlockShard, Beacon Hash / After", beaconHash)
 	fmt.Println("Shard Producer/NewBlockShard, Beacon Epoch", epoch)
-	// Get valid transaction (add tx, remove tx, fee of add tx)
-	txsToAdd, txToRemove, totalFee := blockgen.getPendingTransaction(shardID)
-	if len(txsToAdd) == 0 {
-		Logger.log.Info("Creating empty block...")
-	}
-	// Remove unrelated shard tx
-	// TODO: Check again Txpool should be remove after create block is successful
-	for _, tx := range txToRemove {
-		blockgen.txPool.RemoveTx(tx)
-	}
-	// Calculate coinbases
-	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(shardID)
-	basicSalary := blockgen.rewardAgent.GetBasicSalary(shardID)
-	salaryFundAdd := uint64(0)
-	salaryMULTP := uint64(0) //salary multiplier
-	for _, blockTx := range txsToAdd {
-		if blockTx.GetTxFee() > 0 {
-			salaryMULTP++
-		}
-	}
-	totalSalary := salaryMULTP*salaryPerTx + basicSalary
-	salaryTx := new(transaction.Tx)
-	err := salaryTx.InitTxSalary(totalSalary, payToAddress, privatekey, blockgen.chain.config.DataBase, nil)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, err
-	}
-	currentSalaryFund := uint64(0)
-	remainingFund := currentSalaryFund + totalFee + salaryFundAdd - totalSalary
-	coinbases := []metadata.Transaction{salaryTx}
-	txsToAdd = append(coinbases, txsToAdd...)
-
-	//Crossoutputcoint
-	crossOutputCoin := blockgen.getCrossOutputCoin(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight)
-	//Assign Instruction
 	//Fetch beacon block from height
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockgen.chain.config.DataBase, blockgen.chain.BestState.Shard[shardID].BeaconHeight+1, beaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
 	}
+	//======Get Transaction For new Block================
+	txsToAdd, remainingFund := blockgen.getTransactionForNewBlock(payToAddress, privatekey, shardID, blockgen.chain.config.DataBase, beaconBlocks)
+	//======Get Cross output coin from other shard=======
+	crossOutputCoin := blockgen.getCrossOutputCoin(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight)
+	//======Create Instruction===========================
+	//Assign Instruction
+	instructions := [][]string{}
+	swapInstruction := []string{}
 	assignInstructions := GetAssingInstructionFromBeaconBlock(beaconBlocks, shardID)
 	fmt.Println("Shard Block Producer AssignInstructions ", assignInstructions)
 	shardPendingValidator := blockgen.chain.BestState.Shard[shardID].ShardPendingValidator
@@ -90,8 +64,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	fmt.Println("Shard Producer: shardPendingValidator", shardPendingValidator)
 	fmt.Println("Shard Producer: shardCommitee", shardCommittee)
 	//Swap instruction
-	instructions := [][]string{}
-	swapInstruction := []string{}
 	// Swap instruction only appear when reach the last block in an epoch
 	//@NOTICE: In this block, only pending validator change, shard committees will change in the next block
 	if beaconHeight%common.EPOCH == 0 {
@@ -114,29 +86,17 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 			Transactions:    make([]metadata.Transaction, 0),
 		},
 	}
-	// Process stability tx, create response txs if needed
-	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey)
-	if err != nil {
-		return nil, err
-	}
-	txsToAdd = append(txsToAdd, stabilityResponseTxs...)
-
-	// Process stability instructions, create response txs if needed
-	stabilityResponseTxs, err = blockgen.buildStabilityResponseTxsFromInstructions(beaconBlocks, privatekey, shardID)
-	if err != nil {
-		return nil, err
-	}
-	txsToAdd = append(txsToAdd, stabilityResponseTxs...)
-
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
 			return nil, err
 		}
+
 	}
 	fmt.Println("Shard Producer: Instruction", instructions)
-	//============End Build Body===========
-	//============Build Header=============
 	fmt.Printf("Number of Transaction in blocks %+v \n", len(block.Body.Transactions))
+	//============End Build Body===========
+
+	//============Build Header=============
 	//Get user key set
 	userKeySet := cashec.KeySet{}
 	userKeySet.ImportFromPrivateKey(privatekey)
@@ -203,6 +163,56 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	block.ProducerSig = sig
 	_ = remainingFund
 	return block, nil
+}
+
+/*
+	Get Transaction For new Block
+*/
+func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte, db database.DatabaseInterface, beaconBlocks []*BeaconBlock) ([]metadata.Transaction, uint64) {
+	txsToAdd, txToRemove, totalFee := blockgen.getPendingTransaction(shardID)
+	if len(txsToAdd) == 0 {
+		Logger.log.Info("Creating empty block...")
+	}
+	// Remove unrelated shard tx
+	// TODO: Check again Txpool should be remove after create block is successful
+	for _, tx := range txToRemove {
+		blockgen.txPool.RemoveTx(tx)
+	}
+	// Calculate coinbases
+	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(shardID)
+	basicSalary := blockgen.rewardAgent.GetBasicSalary(shardID)
+	salaryFundAdd := uint64(0)
+	salaryMULTP := uint64(0) //salary multiplier
+	for _, blockTx := range txsToAdd {
+		if blockTx.GetTxFee() > 0 {
+			salaryMULTP++
+		}
+	}
+	totalSalary := salaryMULTP*salaryPerTx + basicSalary
+	salaryTx := new(transaction.Tx)
+	err := salaryTx.InitTxSalary(totalSalary, payToAddress, privatekey, blockgen.chain.config.DataBase, nil)
+	if err != nil {
+		panic(err)
+	}
+	currentSalaryFund := uint64(0)
+	remainingFund := currentSalaryFund + totalFee + salaryFundAdd - totalSalary
+	coinbases := []metadata.Transaction{salaryTx}
+	txsToAdd = append(coinbases, txsToAdd...)
+
+	// Process stability tx, create response txs if needed
+	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey)
+	if err != nil {
+		panic(err)
+	}
+	txsToAdd = append(txsToAdd, stabilityResponseTxs...)
+
+	// Process stability instructions, create response txs if needed
+	stabilityResponseTxs, err = blockgen.buildStabilityResponseTxsFromInstructions(beaconBlocks, privatekey, shardID)
+	if err != nil {
+		panic(err)
+	}
+	txsToAdd = append(txsToAdd, stabilityResponseTxs...)
+	return txsToAdd, remainingFund
 }
 
 /*
