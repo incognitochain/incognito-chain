@@ -275,7 +275,7 @@ func SliceBytesExists(slice interface{}, item interface{}) (int64, error) {
 }
 
 func GetShardIDFromLastByte(b byte) byte {
-	return byte(int(b) % SHARD_NUMBER)
+	return byte(int(b) % MAX_SHARD_NUMBER)
 }
 
 func IntArrayEquals(a []int, b []int) bool {

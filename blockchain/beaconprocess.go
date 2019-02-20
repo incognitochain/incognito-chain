@@ -226,7 +226,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 				hash := shardBlock.Header.Hash()
 				err := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
 				if index == 0 && err != nil {
-					currentCommittee, _, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, common.COMMITEES, common.OFFSET)
+					currentCommittee, _, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, blockchain.BestState.Beacon.ShardCommitteeSize, common.OFFSET)
 					if err != nil {
 						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 					}
@@ -259,11 +259,13 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	- ShardState
 */
 func (bestStateBeacon *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, isVerifySig bool) error {
-	if len(block.ValidatorsIdx) < (len(bestStateBeacon.BeaconCommittee) >> 1) {
-		return NewBlockChainError(SignatureError, errors.New("block validators and Beacon committee is not compatible"))
-	}
 	//=============Verify aggegrate signature
 	if isVerifySig {
+		//@NOTICE:
+		// ValidatorIdx must > Number of Beacon Committee / 2 AND Number of Beacon Committee > 3
+		if len(block.ValidatorsIdx) < (len(bestStateBeacon.BeaconCommittee) >> 1) {
+			return NewBlockChainError(SignatureError, errors.New("block validators and Beacon committee is not compatible"))
+		}
 		err := ValidateAggSignature(block.ValidatorsIdx, bestStateBeacon.BeaconCommittee, block.AggregatedSig, block.R, block.Hash())
 		if err != nil {
 			return NewBlockChainError(SignatureError, err)
@@ -276,10 +278,10 @@ func (bestStateBeacon *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *Be
 	if !bytes.Equal(bestStateBeacon.BestBlockHash.GetBytes(), block.Header.PrevBlockHash.GetBytes()) {
 		return NewBlockChainError(BlockHeightError, errors.New("previous us block should be :"+bestStateBeacon.BestBlockHash.String()))
 	}
-	if block.Header.Height%common.EPOCH == 1 && bestStateBeacon.BeaconEpoch+1 != block.Header.Epoch {
+	if block.Header.Height%common.EPOCH == 1 && bestStateBeacon.Epoch+1 != block.Header.Epoch {
 		return NewBlockChainError(EpochError, errors.New("block height and Epoch is not compatiable"))
 	}
-	if block.Header.Height%common.EPOCH != 1 && bestStateBeacon.BeaconEpoch != block.Header.Epoch {
+	if block.Header.Height%common.EPOCH != 1 && bestStateBeacon.Epoch != block.Header.Epoch {
 		return NewBlockChainError(EpochError, errors.New("block height and Epoch is not compatiable"))
 	}
 	//=============Verify Stakers
@@ -397,14 +399,14 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	bestStateBeacon.PrevBestBlockHash = bestStateBeacon.BestBlockHash
 	bestStateBeacon.BestBlockHash = *newBlock.Hash()
 	bestStateBeacon.BestBlock = newBlock
-	bestStateBeacon.BeaconEpoch = newBlock.Header.Epoch
+	bestStateBeacon.Epoch = newBlock.Header.Epoch
 	bestStateBeacon.BeaconHeight = newBlock.Header.Height
 	bestStateBeacon.BeaconProposerIdx = common.IndexOfStr(newBlock.Header.Producer, bestStateBeacon.BeaconCommittee)
 
 	allShardState := newBlock.Body.ShardState
 	if bestStateBeacon.AllShardState == nil {
 		bestStateBeacon.AllShardState = make(map[byte][]ShardState)
-		for index := 0; index < common.SHARD_NUMBER; index++ {
+		for index := 0; index < common.MAX_SHARD_NUMBER; index++ {
 			bestStateBeacon.AllShardState[byte(index)] = []ShardState{
 				ShardState{
 					Height: 1,
@@ -529,9 +531,12 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		// Assign committee with genesis block
 		Logger.log.Infof("Proccessing Genesis Block")
 		//Test with 1 member
-		bestStateBeacon.BeaconCommittee = append(bestStateBeacon.BeaconCommittee, newBeaconCandidate[0])
-		bestStateBeacon.ShardCommittee[byte(0)] = append(bestStateBeacon.ShardCommittee[byte(0)], newShardCandidate[0])
-		bestStateBeacon.BeaconEpoch = 1
+		bestStateBeacon.BeaconCommittee = make([]string, bestStateBeacon.BeaconCommitteeSize)
+		copy(bestStateBeacon.BeaconCommittee, newBeaconCandidate[:bestStateBeacon.BeaconCommitteeSize])
+		for shardID := 0; shardID < bestStateBeacon.ActiveShards; shardID++ {
+			bestStateBeacon.ShardCommittee[byte(shardID)] = append(bestStateBeacon.ShardCommittee[byte(shardID)], newShardCandidate[shardID*bestStateBeacon.ShardCommitteeSize:(shardID+1)*bestStateBeacon.ShardCommitteeSize]...)
+		}
+		bestStateBeacon.Epoch = 1
 	} else {
 		bestStateBeacon.CandidateBeaconWaitingForNextRandom = append(bestStateBeacon.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
 		bestStateBeacon.CandidateShardWaitingForNextRandom = append(bestStateBeacon.CandidateShardWaitingForNextRandom, newShardCandidate...)
@@ -566,7 +571,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		if randomFlag {
 			bestStateBeacon.IsGetRandomNumber = true
 			fmt.Println("Beacon Process/Update/RandomFlag: Shard Candidate Waiting for Current Random Number", bestStateBeacon.CandidateShardWaitingForCurrentRandom)
-			err := AssignValidatorShard(bestStateBeacon.ShardPendingValidator, bestStateBeacon.CandidateShardWaitingForCurrentRandom, bestStateBeacon.CurrentRandomNumber)
+			err := AssignValidatorShard(bestStateBeacon.ShardPendingValidator, bestStateBeacon.CandidateShardWaitingForCurrentRandom, bestStateBeacon.CurrentRandomNumber, bestStateBeacon.ActiveShards)
 			if err != nil {
 				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 				return NewBlockChainError(UnExpectedError, err)
@@ -600,7 +605,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			beaconNewCommittees    []string
 			err                    error
 		)
-		bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, beaconSwapedCommittees, beaconNewCommittees, err = SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, common.COMMITEES, common.OFFSET)
+		bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, beaconSwapedCommittees, beaconNewCommittees, err = SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, bestStateBeacon.BeaconCommitteeSize, common.OFFSET)
 		if err != nil {
 			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 			return NewBlockChainError(UnExpectedError, err)
@@ -632,26 +637,26 @@ func GetStakingCandidate(beaconBlock BeaconBlock) ([]string, []string) {
 // validator and candidate public key encode as base58 string
 // assume that candidates are already been checked
 // Check validation of candidate in transaction
-func AssignValidator(candidates []string, rand int64) (map[byte][]string, error) {
+func AssignValidator(candidates []string, rand int64, activeShards int) (map[byte][]string, error) {
 	pendingValidators := make(map[byte][]string)
 	for _, candidate := range candidates {
-		shardID := calculateHash(candidate, rand)
+		shardID := calculateCandidateShardID(candidate, rand, activeShards)
 		pendingValidators[shardID] = append(pendingValidators[shardID], candidate)
 	}
 	return pendingValidators, nil
 }
 
 // AssignValidatorShard, param for better convenice than AssignValidator
-func AssignValidatorShard(currentCandidates map[byte][]string, shardCandidates []string, rand int64) error {
+func AssignValidatorShard(currentCandidates map[byte][]string, shardCandidates []string, rand int64, activeShards int) error {
 	for _, candidate := range shardCandidates {
-		shardID := calculateHash(candidate, rand)
+		shardID := calculateCandidateShardID(candidate, rand, activeShards)
 		currentCandidates[shardID] = append(currentCandidates[shardID], candidate)
 	}
 	return nil
 }
 
-func VerifyValidator(candidate string, rand int64, shardID byte) (bool, error) {
-	res := calculateHash(candidate, rand)
+func VerifyValidator(candidate string, rand int64, shardID byte, activeShards int) (bool, error) {
+	res := calculateCandidateShardID(candidate, rand, activeShards)
 	if shardID == res {
 		return true, nil
 	} else {
@@ -661,7 +666,7 @@ func VerifyValidator(candidate string, rand int64, shardID byte) (bool, error) {
 
 // Formula ShardID: LSB[hash(candidatePubKey+randomNumber)]
 // Last byte of hash(candidatePubKey+randomNumber)
-func calculateHash(candidate string, rand int64) (shardID byte) {
+func calculateCandidateShardID(candidate string, rand int64, activeShards int) (shardID byte) {
 
 	seed := candidate + strconv.Itoa(int(rand))
 	hash := sha256.Sum256([]byte(seed))
@@ -669,7 +674,7 @@ func calculateHash(candidate string, rand int64) (shardID byte) {
 	// fmt.Println("Hash of candidate serialized pubkey and random number", hash)
 	// fmt.Printf("\"%d\",\n", hash[len(hash)-1])
 	// fmt.Println("Shard to be assign", hash[len(hash)-1])
-	shardID = byte(int(hash[len(hash)-1]) % common.SHARD_NUMBER)
+	shardID = byte(int(hash[len(hash)-1]) % activeShards)
 	return shardID
 }
 

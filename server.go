@@ -176,6 +176,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	if err != nil {
 		return err
 	}
+
 	serverObj.blockChain.InitShardToBeaconPool(db)
 
 	// TODO: 0xbahamooth Search for a feeEstimator state in the database. If none can be found
@@ -226,6 +227,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		ChainParams:  chainParams,
 		FeeEstimator: serverObj.feeEstimator,
 	})
+	//add tx pool
+	serverObj.blockChain.AddTxPool(serverObj.memPool)
 
 	serverObj.addrManager = addrmanager.New(cfg.DataDir)
 
@@ -481,6 +484,7 @@ func (serverObj Server) Start() {
 
 		serverObj.rpcServer.Start()
 	}
+	go serverObj.blockChain.StartSyncBlk()
 
 	if cfg.NodeMode != "relay" {
 		err := serverObj.consensusEngine.Start()
@@ -1154,11 +1158,12 @@ func (serverObj *Server) BoardcastNodeState() error {
 		serverObj.blockChain.BestState.Beacon.BestBlockHash,
 		serverObj.blockChain.BestState.Beacon.Hash(),
 	}
-	for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
-		msg.(*wire.MessagePeerState).Shards[shardID] = blockchain.ChainState{
-			serverObj.blockChain.BestState.Shard[shardID].ShardHeight,
-			serverObj.blockChain.BestState.Shard[shardID].BestShardBlockHash,
-			serverObj.blockChain.BestState.Shard[shardID].Hash(),
+	for shardID := 0; shardID < serverObj.blockChain.BestState.Beacon.ActiveShards; shardID++ {
+		shardIDbyte := byte(shardID)
+		msg.(*wire.MessagePeerState).Shards[shardIDbyte] = blockchain.ChainState{
+			serverObj.blockChain.BestState.Shard[shardIDbyte].ShardHeight,
+			serverObj.blockChain.BestState.Shard[shardIDbyte].BestBlockHash,
+			serverObj.blockChain.BestState.Shard[shardIDbyte].Hash(),
 		}
 	}
 	// for _, shardID := range serverObj.blockChain.GetCurrentSyncShards() {
