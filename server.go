@@ -173,11 +173,11 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		// Light:       cfg.Light,
 	})
 
-	serverObj.blockChain.InitShardToBeaconPool(db)
-
 	if err != nil {
 		return err
 	}
+	serverObj.blockChain.InitShardToBeaconPool(db)
+
 	// TODO: 0xbahamooth Search for a feeEstimator state in the database. If none can be found
 	// or if it cannot be loaded, create a new one.
 	if cfg.FastStartup {
