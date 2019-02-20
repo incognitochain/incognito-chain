@@ -35,7 +35,8 @@ func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan
 		return nil, NewRPCError(ErrUnexpected, errCons)
 	}
 	tx, err := rpcServer.buildRawTransaction(params, meta)
-	fmt.Printf("sigPubKey after build: %v\n", tx.SigPubKey)
+	a, _ := json.Marshal(tx)
+	fmt.Println("Created raw loan tx:", string(a))
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +90,7 @@ func (rpcServer RpcServer) sendRawTxWithMetadata(params interface{}, closeChan <
 	}
 	tx := transaction.Tx{}
 	err = json.Unmarshal(rawTxBytes, &tx)
-	fmt.Printf("%+v\n", tx)
+	fmt.Printf("[db]sendRawTx received tx: %+v\n", tx)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}

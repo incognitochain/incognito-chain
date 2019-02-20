@@ -38,7 +38,6 @@ type NodeBeaconPool interface {
 	GetBlocks(uint64) ([]BeaconBlock, error)
 	RemoveBlocks(uint64) error
 }
-
 type TxPool interface {
 	// LastUpdated returns the last time a transaction was added to or
 	// removed from the source pool.
@@ -55,6 +54,7 @@ type TxPool interface {
 	// RemoveTx remove tx from tx resource
 	RemoveTx(tx metadata.Transaction) error
 
+	RemoveCandidateList([]string)
 	//CheckTransactionFee
 	// CheckTransactionFee(tx metadata.Transaction) (uint64, error)
 

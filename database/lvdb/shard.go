@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/pkg/errors"
@@ -129,7 +130,7 @@ func (db *db) FetchBestState(shardID byte) ([]byte, error) {
 }
 
 func (db *db) CleanBestState() error {
-	for shardID := byte(0); shardID < common.TotalValidators; shardID++ {
+	for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 		key := append(bestBlockKey, shardID)
 		err := db.lvdb.Delete(key, nil)
 		if err != nil {
