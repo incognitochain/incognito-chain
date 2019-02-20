@@ -86,7 +86,7 @@ func (merkle Merkle) BuildMerkleTreeStore(transactions []metadata.Transaction) [
 func (merkle Merkle) BuildMerkleTreeOfHashs(shardsHash []*common.Hash) []*common.Hash {
 	// Calculate how many entries are required to hold the binary merkle
 	// tree as a linear array and create an array of that size.
-	nextPoT := merkle.nextPowerOfTwo(common.SHARD_NUMBER)
+	nextPoT := merkle.nextPowerOfTwo(common.MAX_SHARD_NUMBER)
 	arraySize := nextPoT*2 - 1
 	merkles := make([]*common.Hash, arraySize)
 
