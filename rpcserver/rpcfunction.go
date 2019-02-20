@@ -52,6 +52,7 @@ var RpcHandler = map[string]commandHandler{
 
 	// Beststate
 	GetCandidateList:          RpcServer.handleGetCandidateList,
+	GetCommitteeList:          RpcServer.handleGetCommitteeList,
 	GetBlockProducerList:      RpcServer.handleGetBlockProducerList,
 	GetShardBestState:         RpcServer.handleGetShardBestState,
 	GetBeaconBestState:        RpcServer.handleGetBeaconBestState,

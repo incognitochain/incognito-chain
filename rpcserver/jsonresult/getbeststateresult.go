@@ -10,3 +10,11 @@ type CandidateListsResult struct {
 	CandidateShardWaitingForNextRandom     []string `json:"CandidateShardWaitingForNextRandom"`
 	CandidateBeaconWaitingForNextRandom    []string `json:"CandidateBeaconWaitingForNextRandom"`
 }
+
+type CommitteeListsResult struct {
+	Epoch                  uint64            `json:"Epoch"`
+	ShardCommittee         map[byte][]string `json:"ShardCommittee"`
+	ShardPendingValidator  map[byte][]string `json:"ShardPendingValidator"`
+	BeaconCommittee        []string          `json:"BeaconCommittee"`
+	BeaconPendingValidator []string          `json:"BeaconPendingValidator"`
+}
