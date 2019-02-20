@@ -18,3 +18,8 @@ type CommitteeListsResult struct {
 	BeaconCommittee        []string          `json:"BeaconCommittee"`
 	BeaconPendingValidator []string          `json:"BeaconPendingValidator"`
 }
+
+type StakeResult struct {
+	PublicKey string `json:"PublicKey"`
+	CanStake  bool   `json:"CanStake"`
+}
