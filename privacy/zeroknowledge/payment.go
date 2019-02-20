@@ -61,7 +61,6 @@ type PaymentProof struct {
 	ComInputSND     []*privacy.EllipticPoint
 	ComInputShardID *privacy.EllipticPoint
 
-
 	CommitmentIndices []uint64
 }
 
@@ -409,8 +408,8 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	}
 
 	// get commitments list
-	proof.CommitmentIndices = make([]uint64, len(proof.OneOfManyProof)* privacy.CMRingSize)
-	for i := 0; i < len(proof.OneOfManyProof)* privacy.CMRingSize; i++ {
+	proof.CommitmentIndices = make([]uint64, len(proof.OneOfManyProof)*privacy.CMRingSize)
+	for i := 0; i < len(proof.OneOfManyProof)*privacy.CMRingSize; i++ {
 		proof.CommitmentIndices[i] = binary.LittleEndian.Uint64(proofbytes[offset : offset+privacy.Uint64Size])
 		offset = offset + privacy.Uint64Size
 	}
@@ -536,7 +535,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 		var err error
 		for j := 0; j < privacy.CMRingSize; j++ {
 			commitmentTemps[i][j], err = commitments[preIndex+j].Sub(cmInputSum[i])
-			if err != nil{
+			if err != nil {
 				return privacy.NewPrivacyErr(privacy.UnexpectedErr, err)
 
 			}
@@ -738,7 +737,7 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(proof.OutputCoins[i].CoinDetails.Value))))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMult(proof.OutputCoins[i].CoinDetails.SNDerivator))
 			//TODO: refactor this hard code
-			shardID := byte(int(proof.OutputCoins[i].CoinDetails.GetPubKeyLastByte()) % common.SHARD_NUMBER)
+			shardID := common.GetShardIDFromLastByte(proof.OutputCoins[i].CoinDetails.GetPubKeyLastByte())
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(proof.OutputCoins[i].CoinDetails.Randomness))
 			if !cmTmp.IsEqual(proof.OutputCoins[i].CoinDetails.CoinCommitment) {
@@ -767,7 +766,7 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 		// get commitments list from CommitmentIndices
 		commitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
 		for j := 0; j < privacy.CMRingSize; j++ {
-			commitmentBytes, err := db.GetCommitmentByIndex(tokenID, proof.CommitmentIndices[i*privacy.CMRingSize + j], shardID)
+			commitmentBytes, err := db.GetCommitmentByIndex(tokenID, proof.CommitmentIndices[i*privacy.CMRingSize+j], shardID)
 
 			if err != nil {
 				privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Error when get commitment by index from database")
@@ -836,7 +835,7 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 		comOutputValueSum = comOutputValueSum.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(fee))))
 	}
 
-	if !comInputValueSum.IsEqual(comOutputValueSum){
+	if !comInputValueSum.IsEqual(comOutputValueSum) {
 		privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Sum of input coins' value is not equal to sum of output coins' value")
 		return false
 	}
