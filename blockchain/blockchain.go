@@ -102,6 +102,7 @@ type Config struct {
 	CrossShardPool    CrossShardPool
 	NodeBeaconPool    NodeBeaconPool
 	NodeShardPool     NodeShardPool
+	TxPool            TxPool
 
 	Server interface {
 		BoardcastNodeState() error
@@ -150,6 +151,10 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
 	blockchain.knownChainState.Shards = make(map[byte]ChainState)
 	return nil
+}
+
+func (blockchain *BlockChain) AddTxPool(txpool TxPool) {
+	blockchain.config.TxPool = txpool
 }
 func (blockchain *BlockChain) InitShardToBeaconPool(db database.DatabaseInterface) {
 	beaconBestState := BestStateBeacon{}
