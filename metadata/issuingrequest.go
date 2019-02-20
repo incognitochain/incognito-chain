@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
+	"math/big"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	privacy "github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/wallet"
+	"github.com/pkg/errors"
 )
 
 // only centralized website can send this type of tx
@@ -27,7 +29,7 @@ func NewIssuingRequest(
 	assetType common.Hash,
 	currencyType common.Hash,
 	metaType int,
-) *IssuingRequest {
+) (*IssuingRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
@@ -38,9 +40,44 @@ func NewIssuingRequest(
 		CurrencyType:    currencyType,
 	}
 	issuingReq.MetadataBase = metadataBase
-	return issuingReq
+	return issuingReq, nil
 }
 
+func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
+	n := new(big.Int)
+	n, ok := n.SetString(data["DepositedAmount"].(string), 10)
+	if !ok {
+		return nil, errors.Errorf("DepositedAmount incorrect")
+	}
+	// Convert from Wei to MilliEther
+	denominator := big.NewInt(common.WeiToMilliEtherRatio)
+	n = n.Quo(n, denominator)
+	if !n.IsUint64() {
+		return nil, errors.Errorf("DepositedAmount cannot be converted into uint64")
+	}
+
+	keyWallet, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
+	if err != nil {
+		return nil, errors.Errorf("ReceiveAddress incorrect")
+	}
+
+	assetType, err := common.NewHashFromStr(data["AssetType"].(string))
+	if err != nil {
+		return nil, errors.Errorf("AssetType incorrect")
+	}
+
+	currencyType, err := common.NewHashFromStr(data["CurrencyType"].(string))
+	if err != nil {
+		return nil, errors.Errorf("CurrencyType incorrect")
+	}
+	return NewIssuingRequest(
+		keyWallet.KeySet.PaymentAddress,
+		n.Uint64(),
+		*assetType,
+		*currencyType,
+		IssuingRequestMeta,
+	)
+}
 func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
