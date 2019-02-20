@@ -43,7 +43,7 @@ type BestStateShard struct {
 func (bestStateShard *BestStateShard) Hash() common.Hash {
 	//TODO: 0xBahamoot check back later
 	res := []byte{}
-	res = append(res, bestStateShard.BestBlock.Header.PrevBlockHash.GetBytes()...)
+	// res = append(res, bestStateShard.BestBlock.Header.PrevBlockHash.GetBytes()...)
 	res = append(res, bestStateShard.BestBlock.Hash().GetBytes()...)
 	shardHeightBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(shardHeightBytes, bestStateShard.ShardHeight)
@@ -114,6 +114,7 @@ func NewBestStateShard(netparam *Params) *BestStateShard {
 	bestStateShard.ShardPendingValidator = []string{}
 	bestStateShard.ActiveShards = netparam.ActiveShards
 	bestStateShard.BestCrossShard = make(map[byte]uint64)
-
+	bestStateShard.ShardHeight = 1
+	bestStateShard.BeaconHeight = 1
 	return &bestStateShard
 }
