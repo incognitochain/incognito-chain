@@ -18,21 +18,13 @@ const (
 
 // for mining consensus
 const (
-	DurationOfDCBBoard    = 6       //number of block one DCB board in charge
-	DurationOfGOVBoard    = 1000    //number of block one GOV board in charge
-	MaxBlockSize          = 5000000 //byte 5MB
-	MaxTxsInBlock         = 1000
-	MinTxsInBlock         = 10                    // minium txs for block to get immediate process (meaning no wait time)
-	MinBlockWaitTime      = 3                     // second
-	MaxBlockWaitTime      = 10 - MinBlockWaitTime // second
-	MaxSyncChainTime      = 5                     // second
-	MaxBlockSigWaitTime   = 5                     // second
-	MaxBlockPerTurn       = 100                   // maximum blocks that a validator can create per turn
-	TotalValidators       = 20                    // = TOTAL CHAINS
-	MinBlockSigs          = (TotalValidators / 2) + 1
-	GetChainStateInterval = 10 //second
-	MaxBlockTime          = 10 //second Maximum for a chain to grow
-
+	DurationOfDCBBoard = 6       //number of block one DCB board in charge
+	DurationOfGOVBoard = 1000    //number of block one GOV board in charge
+	MaxBlockSize       = 5000000 //byte 5MB
+	MaxTxsInBlock      = 1000
+	MinTxsInBlock      = 10                    // minium txs for block to get immediate process (meaning no wait time)
+	MinBlockWaitTime   = 3                     // second
+	MaxBlockWaitTime   = 10 - MinBlockWaitTime // second
 )
 
 // for voting parameter
@@ -96,24 +88,20 @@ const (
 
 // CONSENSUS
 const (
-	// SHARD_NUMBER = 4
-	SHARD_NUMBER = 1 //single-node mode
-	EPOCH        = 10
-	RANDOM_TIME  = 5
-	COMMITEES    = 1
-	OFFSET       = 1
+	EPOCH       = 10
+	RANDOM_TIME = 5
+	OFFSET      = 1
 
+	NODEMODE_RELAY  = "relay"
 	NODEMODE_SHARD  = "shard"
 	NODEMODE_AUTO   = "auto"
 	NODEMODE_BEACON = "beacon"
 
-	SHARD_ROLE           = "shard"
-	SHARD_PROPOSER_ROLE  = "shard-proposer"
-	SHARD_VALIDATOR_ROLE = "shard-validator"
-	SHARD_PENDING_ROLE   = "shard-pending"
+	BEACON_ROLE    = "beacon"
+	SHARD_ROLE     = "shard"
+	PROPOSER_ROLE  = "proposer"
+	VALIDATOR_ROLE = "validator"
+	PENDING_ROLE   = "pending"
 
-	BEACON_ROLE           = "beacon"
-	BEACON_PROPOSER_ROLE  = "beacon-proposer"
-	BEACON_VALIDATOR_ROLE = "beacon-validator"
-	BEACON_PENDING_ROLE   = "beacon-pending"
+	MAX_SHARD_NUMBER = 255
 )
