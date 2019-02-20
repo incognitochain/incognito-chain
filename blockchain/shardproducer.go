@@ -163,6 +163,10 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	if err != nil {
 		return nil, err
 	}
+	err = blockgen.registerMultiSigsAddressesFromTxs(block.Body.Transactions)
+	if err != nil {
+		return nil, err
+	}
 	actions := CreateShardActionFromTransaction(block.Body.Transactions, blockgen.chain, shardID)
 	action := []string{}
 	for _, value := range actions {
