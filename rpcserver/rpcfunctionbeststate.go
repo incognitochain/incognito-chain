@@ -40,7 +40,7 @@ func (rpcServer RpcServer) handleGetShardBestState(params interface{}, closeChan
 	if !ok || result == nil {
 		return nil, NewRPCError(ErrUnexpected, errors.New("Best State shard given by ID not existed"))
 	}
-	result.BestShardBlock = nil
+	result.BestBlock = nil
 	return result, nil
 }
 
