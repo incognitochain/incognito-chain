@@ -69,7 +69,7 @@ func (cReq *ContractingRequest) ValidateTxWithBlockChain(
 }
 
 func (cReq *ContractingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	if cReq.Type == ContractingRequestMeta {
+	if cReq.Type != ContractingRequestMeta {
 		return false, false, errors.New("Wrong request info's meta type")
 	}
 	if len(cReq.BurnerAddress.Pk) == 0 {
