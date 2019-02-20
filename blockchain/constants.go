@@ -42,5 +42,5 @@ const (
 	defaultMaxBlockSyncTime     = 8 * time.Second
 	SyncByHashKey               = "byhash"
 	SyncByHeightKey             = "byheight"
-	defaultMaxBlkReqPerPeer     = 5
+	defaultMaxBlkReqPerPeer     = 50
 )
