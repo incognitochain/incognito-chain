@@ -70,8 +70,8 @@ func GetCrossShardPool(shardID byte) *CrossShardPool_v2 {
 
 //TODO: calculate waitingCrossShardBlock from beacon info
 func (self *CrossShardPool_v2) CalculateWaitingCrossShardBlock(crossShardProcessState map[byte]uint64) error {
-	self.currentCrossShardProcessState = crossShardProcessState
-	self.RemoveValidBlock(crossShardProcessState)
+
+	return nil
 }
 
 //TODO: When start node, we should get cross shard process to know which block we should store in pool & include in the shard block
@@ -79,10 +79,12 @@ func (self *CrossShardPool_v2) CalculateWaitingCrossShardBlock(crossShardProcess
 func (self *CrossShardPool_v2) SetCrossShardProcessState(crossShardProcessState map[byte]uint64) error {
 	self.currentCrossShardProcessState = crossShardProcessState
 	self.RemoveValidBlock(crossShardProcessState)
+	return nil
 }
 
 func (self *CrossShardPool_v2) RemoveWaitingCrossShardBlock(crossShardProcessState map[byte]uint64) error {
 	//TODO: remove waiting cross shard block hash
+	return nil
 }
 
 // Validate pending pool again, to move pending block to valid block
