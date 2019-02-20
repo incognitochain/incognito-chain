@@ -282,6 +282,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []metadata.Transaction, producerPrivateKey *privacy.SpendingKey) ([]metadata.Transaction, error) {
 	respTxs := []metadata.Transaction{}
 	removeIds := []int{}
+	multisigsRegTxs := []metadata.Transaction{}
 	for i, tx := range txs {
 		var respTx metadata.Transaction
 		var err error
@@ -289,6 +290,8 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []met
 		switch tx.GetMetadataType() {
 		case metadata.LoanWithdrawMeta:
 			respTx, err = blockgen.buildLoanResponseTx(tx, producerPrivateKey)
+		case metadata.MultiSigsRegistrationMeta:
+			multisigsRegTxs = append(multisigsRegTxs, tx)
 		}
 
 		if err != nil {
@@ -297,6 +300,11 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []met
 		} else if respTx != nil {
 			respTxs = append(respTxs, respTx)
 		}
+	}
+
+	err := blockgen.registerMultiSigsAddresses(multisigsRegTxs)
+	if err != nil {
+		return nil, err
 	}
 
 	// TODO(@0xbunyip): remove tx from txsToAdd?

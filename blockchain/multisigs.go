@@ -11,21 +11,6 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 )
 
-func (blockgen *BlkTmplGenerator) registerMultiSigsAddressesFromTxs(txs []metadata.Transaction) error {
-	multisigsRegTxs := []metadata.Transaction{}
-	for _, tx := range txs {
-		meta := tx.GetMetadata()
-		if meta == nil {
-			continue
-		}
-		metaType := meta.GetType()
-		if metaType == metadata.MultiSigsRegistrationMeta {
-			multisigsRegTxs = append(multisigsRegTxs, tx)
-		}
-	}
-	return blockgen.registerMultiSigsAddresses(multisigsRegTxs)
-}
-
 func (blockGen *BlkTmplGenerator) registerMultiSigsAddresses(
 	txs []metadata.Transaction,
 ) error {
