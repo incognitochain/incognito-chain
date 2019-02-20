@@ -9,6 +9,9 @@ import (
 )
 
 type MessageGetBlockShard struct {
+	FromPool  bool
+	ByHash    bool
+	BlksHash  []common.Hash
 	From      uint64
 	To        uint64
 	ShardID   byte

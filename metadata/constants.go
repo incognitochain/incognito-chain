@@ -93,3 +93,10 @@ const (
 	Add = iota + 1
 	Remove
 )
+
+//Stake amount
+// count in miliconstant
+const (
+	STAKE_SHARD_AMOUNT  = 1
+	STAKE_BEACON_AMOUNT = 2
+)

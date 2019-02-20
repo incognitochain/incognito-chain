@@ -99,6 +99,7 @@ const (
 	BurningAddress = "1NHp16Y29xjc1PoXb1qwr65BfVVoHZuCbtTkVyucRzbeydgQHs2wPu5PC1hD"
 )
 
+// CONSENSUS
 const (
 	// SHARD_NUMBER = 4
 	SHARD_NUMBER = 1 //single-node mode
@@ -106,6 +107,20 @@ const (
 	RANDOM_TIME  = 5
 	COMMITEES    = 1
 	OFFSET       = 1
+
+	NODEMODE_SHARD  = "shard"
+	NODEMODE_AUTO   = "auto"
+	NODEMODE_BEACON = "beacon"
+
+	SHARD_ROLE           = "shard"
+	SHARD_PROPOSER_ROLE  = "shard-proposer"
+	SHARD_VALIDATOR_ROLE = "shard-validator"
+	SHARD_PENDING_ROLE   = "shard-pending"
+
+	BEACON_ROLE           = "beacon"
+	BEACON_PROPOSER_ROLE  = "beacon-proposer"
+	BEACON_VALIDATOR_ROLE = "beacon-validator"
+	BEACON_PENDING_ROLE   = "beacon-pending"
 )
 
 // Units converter
