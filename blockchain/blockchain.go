@@ -155,6 +155,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 	return nil
 }
+
 func (blockchain *BlockChain) InitShardToBeaconPool(db database.DatabaseInterface) {
 	beaconBestState := BestStateBeacon{}
 	temp, err := db.FetchBeaconBestState()
