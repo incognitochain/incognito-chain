@@ -15,6 +15,9 @@ func (blockgen *BlkTmplGenerator) registerMultiSigsAddressesFromTxs(txs []metada
 	multisigsRegTxs := []metadata.Transaction{}
 	for _, tx := range txs {
 		meta := tx.GetMetadata()
+		if meta == nil {
+			continue
+		}
 		metaType := meta.GetType()
 		if metaType == metadata.MultiSigsRegistrationMeta {
 			multisigsRegTxs = append(multisigsRegTxs, tx)
