@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"encoding/binary"
 	"sort"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
@@ -27,7 +28,7 @@ type BestStateBeacon struct {
 	//TODO: calculate hash
 	AllShardState map[byte][]ShardState `json:"AllShardState"`
 
-	BeaconEpoch            uint64   `json:"BeaconEpoch"`
+	Epoch                  uint64   `json:"Epoch"`
 	BeaconHeight           uint64   `json:"BeaconHeight"`
 	BeaconProposerIdx      int      `json:"BeaconProposerIdx"`
 	BeaconCommittee        []string `json:"BeaconCommittee"`
@@ -35,7 +36,7 @@ type BestStateBeacon struct {
 
 	// assigned candidate
 	// function as a snapshot list, waiting for random
-	CandidateShardWaitingForCurrentRandom  []string `json:"CandidateBeaconWaitingForCurrentRandom"`
+	CandidateShardWaitingForCurrentRandom  []string `json:"CandidateShardWaitingForCurrentRandom"`
 	CandidateBeaconWaitingForCurrentRandom []string `json:"CandidateBeaconWaitingForCurrentRandom"`
 
 	// assigned candidate
@@ -61,6 +62,10 @@ type BestStateBeacon struct {
 
 	// lock sync.RWMutex
 	ShardHandle map[byte]bool `json:"ShardHandle"`
+
+	BeaconCommitteeSize int
+	ShardCommitteeSize  int
+	ActiveShards        int
 }
 
 type StabilityInfo struct {
@@ -91,7 +96,7 @@ func (bsb *BestStateBeacon) GetCurrentShard() byte {
 	return 0
 }
 
-func NewBestStateBeacon() *BestStateBeacon {
+func NewBestStateBeacon(netparam *Params) *BestStateBeacon {
 	bestStateBeacon := BestStateBeacon{}
 	bestStateBeacon.BestBlockHash.SetBytes(make([]byte, 32))
 	bestStateBeacon.BestBlock = nil
@@ -112,16 +117,23 @@ func NewBestStateBeacon() *BestStateBeacon {
 	bestStateBeacon.Params = make(map[string]string)
 	bestStateBeacon.CurrentRandomNumber = -1
 	bestStateBeacon.StabilityInfo = StabilityInfo{}
+	bestStateBeacon.BeaconCommitteeSize = netparam.BeaconCommitteeSize
+	bestStateBeacon.ShardCommitteeSize = netparam.ShardCommitteeSize
+	bestStateBeacon.ActiveShards = netparam.ActiveShards
 	return &bestStateBeacon
 }
 
 func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
+
+	//TODO: 0xBahamoot check back later
 	var keys []int
 	var keyStrs []string
 	res := []byte{}
-	res = append(res, bestStateBeacon.BestBlockHash.GetBytes()...)
 	res = append(res, bestStateBeacon.BestBlock.Hash().GetBytes()...)
-	res = append(res, bestStateBeacon.BestBlock.Hash().GetBytes()...)
+	res = append(res, bestStateBeacon.BestBlock.Header.PrevBlockHash.GetBytes()...)
+	heightBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(heightBytes, bestStateBeacon.BeaconHeight)
+	res = append(res, heightBytes...)
 
 	for k := range bestStateBeacon.BestShardHash {
 		keys = append(keys, int(k))
@@ -178,8 +190,14 @@ func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
 			res = append(res, []byte(value)...)
 		}
 	}
-	res = append(res, byte(bestStateBeacon.CurrentRandomNumber))
-	res = append(res, byte(bestStateBeacon.CurrentRandomTimeStamp))
+	randomNumBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(randomNumBytes, uint64(bestStateBeacon.CurrentRandomNumber))
+	res = append(res, randomNumBytes...)
+
+	randomTimeBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(randomTimeBytes, uint64(bestStateBeacon.CurrentRandomTimeStamp))
+	res = append(res, randomTimeBytes...)
+
 	if bestStateBeacon.IsGetRandomNumber {
 		res = append(res, []byte("true")...)
 	} else {
@@ -219,14 +237,14 @@ func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string) (string, by
 	if found > -1 {
 		tmpID := (bestStateBeacon.BeaconProposerIdx + 1) % len(bestStateBeacon.BeaconCommittee)
 		if found == tmpID {
-			return common.BEACON_PROPOSER_ROLE, 0
+			return common.PROPOSER_ROLE, 0
 		}
-		return common.BEACON_VALIDATOR_ROLE, 0
+		return common.VALIDATOR_ROLE, 0
 	}
 
 	found = common.IndexOfStr(pubkey, bestStateBeacon.BeaconPendingValidator)
 	if found > -1 {
-		return common.BEACON_PENDING_ROLE, 0
+		return common.PENDING_ROLE, 0
 	}
 
 	return common.EmptyString, 0

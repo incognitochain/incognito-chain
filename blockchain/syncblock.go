@@ -32,6 +32,12 @@ type ChainState struct {
 func (blockchain *BlockChain) StartSyncBlk() {
 	blockchain.knownChainState.Beacon.Height = blockchain.BestState.Beacon.BeaconHeight
 	blockchain.syncStatus.Beacon = true
+	if blockchain.syncStatus.Beacon {
+		return
+	}
+	for _, shardID := range blockchain.config.RelayShards {
+		blockchain.SyncShard(shardID)
+	}
 	go func() {
 		for {
 			select {
@@ -90,13 +96,13 @@ func (blockchain *BlockChain) StartSyncBlk() {
 					switch blockchain.config.NodeMode {
 					case common.NODEMODE_AUTO:
 						switch userRole {
-						case common.BEACON_PROPOSER_ROLE, common.BEACON_VALIDATOR_ROLE:
+						case common.PROPOSER_ROLE, common.VALIDATOR_ROLE:
 							if peerState.ShardToBeaconPool != nil {
 								for shardID, blksHash := range *peerState.ShardToBeaconPool {
 									RCS.ShardToBeaconBlks[shardID][peerID] = blksHash
 								}
 							}
-							for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
+							for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 								if shardState, ok := peerState.Shard[shardID]; ok {
 									if shardState.Height > blockchain.BestState.Beacon.BestShardHeight[shardID] {
 										if RCS.ClosestShardsState[shardID].Height == 0 {
@@ -110,7 +116,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 								}
 							}
 						case common.SHARD_ROLE:
-							if userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
+							if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE {
 								if pool, ok := peerState.CrossShardPool[userShardID]; ok {
 									for shardID, blks := range *pool {
 										RCS.CrossShardBlks[shardID][peerID] = blks
@@ -119,13 +125,13 @@ func (blockchain *BlockChain) StartSyncBlk() {
 							}
 						}
 					case common.NODEMODE_BEACON:
-						if userRole == common.BEACON_PROPOSER_ROLE || userRole == common.BEACON_VALIDATOR_ROLE {
+						if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
 							if peerState.ShardToBeaconPool != nil {
 								for shardID, blksHash := range *peerState.ShardToBeaconPool {
 									RCS.ShardToBeaconBlks[shardID][peerID] = blksHash
 								}
 							}
-							for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
+							for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 								if shardState, ok := peerState.Shard[shardID]; ok {
 									if shardState.Height > blockchain.BestState.Beacon.BestShardHeight[shardID] {
 										if RCS.ClosestShardsState[shardID].Height == 0 {
@@ -140,7 +146,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 							}
 						}
 					case common.NODEMODE_SHARD:
-						if userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
+						if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE {
 							if pool, ok := peerState.CrossShardPool[userShardID]; ok {
 								for shardID, blks := range *pool {
 									RCS.CrossShardBlks[shardID][peerID] = blks
@@ -163,13 +169,13 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			switch blockchain.config.NodeMode {
 			case common.NODEMODE_AUTO:
 				switch userRole {
-				case common.BEACON_PROPOSER_ROLE, common.BEACON_VALIDATOR_ROLE:
+				case common.PROPOSER_ROLE, common.VALIDATOR_ROLE:
 					for shardID, peer := range RCS.ShardToBeaconBlks {
 						for peerID, blks := range peer {
 							blockchain.SyncBlkShardToBeacon(shardID, true, true, blks, 0, 0, peerID)
 						}
 					}
-					for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
+					for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 						if blockchain.BestState.Beacon.BestShardHeight[shardID] < RCS.ClosestShardsState[shardID].Height {
 							currentShardReqHeight := blockchain.BestState.Beacon.BestShardHeight[shardID] + 1
 							for peerID, peerState := range blockchain.syncStatus.PeersState {
@@ -188,7 +194,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 					if _, ok := blockchain.syncStatus.Shards[userShardID]; !ok {
 						blockchain.syncStatus.Shards[userShardID] = struct{}{}
 					}
-					if userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
+					if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE {
 						for shardID, peer := range RCS.CrossShardBlks {
 							for peerID, blks := range peer {
 								blockchain.SyncBlkCrossShard(true, blks, shardID, userShardID, peerID)
@@ -197,13 +203,13 @@ func (blockchain *BlockChain) StartSyncBlk() {
 					}
 				}
 			case common.NODEMODE_BEACON:
-				if userRole == common.BEACON_PROPOSER_ROLE || userRole == common.BEACON_VALIDATOR_ROLE {
+				if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
 					for shardID, peer := range RCS.ShardToBeaconBlks {
 						for peerID, blks := range peer {
 							blockchain.SyncBlkShardToBeacon(shardID, true, true, blks, 0, 0, peerID)
 						}
 					}
-					for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
+					for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 						if blockchain.BestState.Beacon.BestShardHeight[shardID] < RCS.ClosestShardsState[shardID].Height {
 							currentShardReqHeight := blockchain.BestState.Beacon.BestShardHeight[shardID] + 1
 							for peerID, peerState := range blockchain.syncStatus.PeersState {
@@ -223,7 +229,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 				if _, ok := blockchain.syncStatus.Shards[userShardID]; !ok {
 					blockchain.syncStatus.Shards[userShardID] = struct{}{}
 				}
-				if userShardRole == common.SHARD_PROPOSER_ROLE || userShardRole == common.SHARD_VALIDATOR_ROLE {
+				if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE {
 					for shardID, peer := range RCS.CrossShardBlks {
 						for peerID, blks := range peer {
 							blockchain.SyncBlkCrossShard(true, blks, shardID, userShardID, peerID)
@@ -267,7 +273,7 @@ func (blockchain *BlockChain) SyncShard(shardID byte) error {
 }
 
 func (blockchain *BlockChain) StopSyncUnnecessaryShard() {
-	for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
+	for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 		blockchain.StopSyncShard(shardID)
 	}
 }
