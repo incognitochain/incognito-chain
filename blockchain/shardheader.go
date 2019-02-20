@@ -17,6 +17,7 @@ type ShardHeader struct {
 	Version       int
 	PrevBlockHash common.Hash
 	Height        uint64
+	Round         int
 	Epoch         uint64
 	Timestamp     int64
 	SalaryFund    uint64
