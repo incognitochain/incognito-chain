@@ -36,7 +36,7 @@ type BestStateBeacon struct {
 
 	// assigned candidate
 	// function as a snapshot list, waiting for random
-	CandidateShardWaitingForCurrentRandom  []string `json:"CandidateBeaconWaitingForCurrentRandom"`
+	CandidateShardWaitingForCurrentRandom  []string `json:"CandidateShardWaitingForCurrentRandom"`
 	CandidateBeaconWaitingForCurrentRandom []string `json:"CandidateBeaconWaitingForCurrentRandom"`
 
 	// assigned candidate
