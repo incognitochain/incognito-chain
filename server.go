@@ -173,11 +173,12 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		// Light:       cfg.Light,
 	})
 
-	serverObj.blockChain.InitShardToBeaconPool(db)
-
 	if err != nil {
 		return err
 	}
+
+	serverObj.blockChain.InitShardToBeaconPool(db)
+
 	// TODO: 0xbahamooth Search for a feeEstimator state in the database. If none can be found
 	// or if it cannot be loaded, create a new one.
 	if cfg.FastStartup {
@@ -481,6 +482,7 @@ func (serverObj Server) Start() {
 
 		serverObj.rpcServer.Start()
 	}
+	go serverObj.blockChain.StartSyncBlk()
 
 	if cfg.NodeMode != "relay" {
 		err := serverObj.consensusEngine.Start()
@@ -1154,10 +1156,10 @@ func (serverObj *Server) BoardcastNodeState() error {
 		serverObj.blockChain.BestState.Beacon.BestBlockHash,
 		serverObj.blockChain.BestState.Beacon.Hash(),
 	}
-	for shardID := byte(0); shardID < common.SHARD_NUMBER; shardID++ {
+	for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 		msg.(*wire.MessagePeerState).Shards[shardID] = blockchain.ChainState{
 			serverObj.blockChain.BestState.Shard[shardID].ShardHeight,
-			serverObj.blockChain.BestState.Shard[shardID].BestShardBlockHash,
+			serverObj.blockChain.BestState.Shard[shardID].BestBlockHash,
 			serverObj.blockChain.BestState.Shard[shardID].Hash(),
 		}
 	}
