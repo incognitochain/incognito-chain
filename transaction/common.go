@@ -84,6 +84,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 		rand := rand.Intn(randNum)
 		i := (j * randNum) + rand
 		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index.Uint64()}, commitmentIndexs[i:]...)...)
+		commitments = append(commitments[:i], append([][]byte{temp}, commitments[i:]...)...)
 		myCommitmentIndexs = append(myCommitmentIndexs, uint64(i)) // create myCommitmentIndexs
 	}
 	return commitmentIndexs, myCommitmentIndexs, commitments
