@@ -170,7 +170,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		Server:            serverObj,
 		UserKeySet:        serverObj.userKeySet,
 		NodeMode:          cfg.NodeMode,
-		// Light:       cfg.Light,
 	})
 
 	if err != nil {
