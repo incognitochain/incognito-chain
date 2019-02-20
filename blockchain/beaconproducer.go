@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -178,6 +179,8 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 	validSwap := make(map[byte][][]string)
 	//Get shard to beacon block from pool
 	shardsBlocks := blkTmplGenerator.shardToBeaconPool.GetValidPendingBlock()
+	fmt.Printf("found %d shardsBlocks", len(shardsBlocks))
+	os.Exit(1)
 	//Shard block is a map ShardId -> array of shard block
 	stabilityInstructions := [][]string{}
 	accumulativeValues := &accumulativeValues{}
@@ -213,11 +216,6 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 				if l[0] == "swap" {
 					if l[3] != "shard" || l[4] != strconv.Itoa(int(shardID)) {
 						panic("Swap instruction is invalid")
-					}
-				} else {
-					err := blkTmplGenerator.processInstruction(beaconBestState, l)
-					if err != nil {
-						panic(fmt.Sprintf("Process stability instructions failed: %s", err.Error()))
 					}
 				}
 			}
