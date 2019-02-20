@@ -58,8 +58,8 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			blockchain.InsertBlockFromPool()
 			blockchain.syncStatus.Lock()
 			blockchain.syncStatus.PeersStateLock.Lock()
-			userRole, userShardID := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58())
-			userShardRole := blockchain.BestState.Shard[userShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58())
+			userRole, userShardID := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Beacon.BestBlock.Header.Round)
+			userShardRole := blockchain.BestState.Shard[userShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
 			type reportedChainState struct {
 				ClosestBeaconState ChainState
 				ClosestShardsState map[byte]ChainState
@@ -282,7 +282,7 @@ func (blockchain *BlockChain) StopSyncShard(shardID byte) error {
 	blockchain.syncStatus.Lock()
 	defer blockchain.syncStatus.Unlock()
 	if blockchain.config.NodeMode == common.NODEMODE_AUTO || blockchain.config.NodeMode == common.NODEMODE_SHARD {
-		userRole, userShardID := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58())
+		userRole, userShardID := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Beacon.BestBlock.Header.Round)
 		if userRole == "shard" && shardID == userShardID {
 			return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation can't be stopped")
 		}
