@@ -429,6 +429,7 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 		bestStateShard.BestBeaconHash = block.Header.BeaconHash
 	}
 	bestStateShard.BestBlock = block
+	bestStateShard.BestBlockHash = *block.Hash()
 	bestStateShard.ShardHeight = block.Header.Height
 	bestStateShard.Epoch = block.Header.Epoch
 	bestStateShard.BeaconHeight = block.Header.BeaconHeight
