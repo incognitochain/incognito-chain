@@ -3,13 +3,14 @@ package rpcserver
 import (
 	"errors"
 	"fmt"
+	"log"
+	"net"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/wallet"
-	"log"
-	"net"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, *RPCError)
@@ -96,6 +97,16 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendCrowdsaleRequestConstant: RpcServer.handleCreateAndSendCrowdsaleRequestConstant,
 	TestStoreCrowdsale:                    RpcServer.handleTESTStoreCrowdsale,
 
+	// Reserve
+	CreateIssuingRequest:            RpcServer.handleCreateIssuingRequest,
+	SendIssuingRequest:              RpcServer.handleSendIssuingRequest,
+	CreateAndSendIssuingRequest:     RpcServer.handleCreateAndSendIssuingRequest,
+	CreateAndSendContractingRequest: RpcServer.handleCreateAndSendContractingRequest,
+	GetIssuingStatus:                RpcServer.handleGetIssuingStatus,
+	GetContractingStatus:            RpcServer.handleGetContractingStatus,
+	ConvertETHToDCBTokenAmount:      RpcServer.handleConvertETHToDCBTokenAmount,
+	ConvertCSTToETHAmount:           RpcServer.handleConvertCSTToETHAmount,
+
 	// multisig
 	CreateSignatureOnCustomTokenTx:       RpcServer.handleCreateSignatureOnCustomTokenTx,
 	GetListDCBBoard:                      RpcServer.handleGetListDCBBoard,
@@ -134,10 +145,10 @@ var RpcHandler = map[string]commandHandler{
 	SendRawSubmitGOVProposalTx:       RpcServer.handleSendRawSubmitGOVProposalTransaction,
 
 	// dcb
-	GetDCBParams:                          RpcServer.handleGetDCBParams,
-	GetDCBConstitution:                    RpcServer.handleGetDCBConstitution,
-	CreateAndSendTxWithIssuingRequest:     RpcServer.handleCreateAndSendTxWithIssuingRequest,
-	CreateAndSendTxWithContractingRequest: RpcServer.handleCreateAndSendTxWithContractingRequest,
+	GetDCBParams:       RpcServer.handleGetDCBParams,
+	GetDCBConstitution: RpcServer.handleGetDCBConstitution,
+	// CreateAndSendTxWithIssuingRequest:     RpcServer.handleCreateAndSendTxWithIssuingRequest,
+	// CreateAndSendTxWithContractingRequest: RpcServer.handleCreateAndSendTxWithContractingRequest,
 
 	// gov
 	GetBondTypes:                           RpcServer.handleGetBondTypes,
@@ -167,19 +178,19 @@ var RpcHandler = map[string]commandHandler{
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	ListAccounts:                       RpcServer.handleListAccounts,
-	GetAccount:                         RpcServer.handleGetAccount,
-	GetAddressesByAccount:              RpcServer.handleGetAddressesByAccount,
-	GetAccountAddress:                  RpcServer.handleGetAccountAddress,
-	DumpPrivkey:                        RpcServer.handleDumpPrivkey,
-	ImportAccount:                      RpcServer.handleImportAccount,
-	RemoveAccount:                      RpcServer.handleRemoveAccount,
-	ListUnspentOutputCoins:             RpcServer.handleListUnspentOutputCoins,
-	GetBalance:                         RpcServer.handleGetBalance,
-	GetBalanceByPrivatekey:             RpcServer.handleGetBalanceByPrivatekey,
-	GetBalanceByPaymentAddress:         RpcServer.handleGetBalanceByPaymentAddress,
-	GetReceivedByAccount:               RpcServer.handleGetReceivedByAccount,
-	SetTxFee:                           RpcServer.handleSetTxFee,
+	ListAccounts:               RpcServer.handleListAccounts,
+	GetAccount:                 RpcServer.handleGetAccount,
+	GetAddressesByAccount:      RpcServer.handleGetAddressesByAccount,
+	GetAccountAddress:          RpcServer.handleGetAccountAddress,
+	DumpPrivkey:                RpcServer.handleDumpPrivkey,
+	ImportAccount:              RpcServer.handleImportAccount,
+	RemoveAccount:              RpcServer.handleRemoveAccount,
+	ListUnspentOutputCoins:     RpcServer.handleListUnspentOutputCoins,
+	GetBalance:                 RpcServer.handleGetBalance,
+	GetBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
+	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
+	GetReceivedByAccount:       RpcServer.handleGetReceivedByAccount,
+	SetTxFee:                   RpcServer.handleSetTxFee,
 	GetRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
 }
 
