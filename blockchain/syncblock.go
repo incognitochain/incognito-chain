@@ -31,10 +31,11 @@ type ChainState struct {
 
 func (blockchain *BlockChain) StartSyncBlk() {
 	blockchain.knownChainState.Beacon.Height = blockchain.BestState.Beacon.BeaconHeight
-	blockchain.syncStatus.Beacon = true
 	if blockchain.syncStatus.Beacon {
 		return
 	}
+	blockchain.syncStatus.Beacon = true
+
 	for _, shardID := range blockchain.config.RelayShards {
 		blockchain.SyncShard(shardID)
 	}
