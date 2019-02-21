@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
@@ -73,6 +74,25 @@ func (rpcServer RpcServer) handleGetCommitteeList(params interface{}, closeChan 
 		ShardPendingValidator:  shardPendingValidator,
 	}
 	return result, nil
+}
+
+/*
+	Tell a public key can stake or not
+	Compare this public key with database only (TODO: compare with mempool also)
+	param #1: public key
+	return #1: true (can stake), false (can't stake)
+	return #2: error
+*/
+func (rpcServer RpcServer) handleCanPubkeyStake(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	pubkey := arrayParams[0].(string)
+	temp := rpcServer.config.BlockChain.BestState.Beacon.GetValidStakers([]string{pubkey})
+	fmt.Println("alksjdklajsdkljaskldjkasjdlkasjdkl ", temp)
+	if len(temp) == 0 {
+
+		return jsonresult.StakeResult{PublicKey: pubkey, CanStake: false}, nil
+	}
+	return jsonresult.StakeResult{PublicKey: pubkey, CanStake: true}, nil
 }
 func (self RpcServer) handleRetrieveCommiteeCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// candidateInfo := self.config.BlockChain.GetCommitteCandidate(params.(string))
