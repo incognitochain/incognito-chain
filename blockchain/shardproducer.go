@@ -480,7 +480,10 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 func (blk *ShardBlock) CreateShardToBeaconBlock(bcr metadata.BlockchainRetriever) *ShardToBeaconBlock {
 	block := ShardToBeaconBlock{}
 	block.AggregatedSig = blk.AggregatedSig
-	copy(block.ValidatorsIdx, blk.ValidatorsIdx)
+	block.ValidatorsIdx = make([][]int, 2)
+	block.ValidatorsIdx[0] = append(block.ValidatorsIdx[0], blk.ValidatorsIdx[0]...)
+	block.ValidatorsIdx[1] = append(block.ValidatorsIdx[1], blk.ValidatorsIdx[1]...)
+	block.R = blk.R
 	block.ProducerSig = blk.ProducerSig
 	block.Header = blk.Header
 	block.Instructions = blk.Body.Instructions
@@ -516,7 +519,12 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 
 	//Copy signature and header
 	crossShard.AggregatedSig = block.AggregatedSig
-	copy(crossShard.ValidatorsIdx, block.ValidatorsIdx)
+
+	crossShard.ValidatorsIdx = make([][]int, 2)
+	crossShard.ValidatorsIdx[0] = append(crossShard.ValidatorsIdx[0], block.ValidatorsIdx[0]...)
+	crossShard.ValidatorsIdx[1] = append(crossShard.ValidatorsIdx[1], block.ValidatorsIdx[1]...)
+
+	crossShard.R = block.R
 	crossShard.ProducerSig = block.ProducerSig
 	crossShard.Header = block.Header
 	crossShard.MerklePathShard = merklePathShard
