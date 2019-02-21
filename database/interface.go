@@ -22,8 +22,6 @@ type DatabaseInterface interface {
 	StoreShardBlockHeader(interface{}, *common.Hash, byte) error
 	FetchBlock(*common.Hash) ([]byte, error)
 	HasBlock(*common.Hash) (bool, error)
-	//FetchAllBlocks() (map[byte][]*common.Hash, error)
-	FetchChainBlocks(byte) ([]*common.Hash, error)
 	DeleteBlock(*common.Hash, uint64, byte) error
 
 	StoreIncomingCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlkHash *common.Hash) error
@@ -131,6 +129,12 @@ type DatabaseInterface interface {
 	StoreCrowdsaleData(saleID []byte, proposalTxHash common.Hash, buyingAmount uint64, sellingAmount uint64) error
 	GetCrowdsaleData([]byte) (common.Hash, uint64, uint64, error)
 	GetAllCrowdsales() ([][]byte, []common.Hash, []uint64, []uint64, error)
+
+	// Reserve
+	StoreIssuingInfo(reqTxID common.Hash, amount uint64, instType string) error
+	GetIssuingInfo(reqTxID common.Hash) (uint64, string, error)
+	StoreContractingInfo(reqTxID common.Hash, amount uint64, instType string) error
+	GetContractingInfo(reqTxID common.Hash) (uint64, string, error)
 
 	// CMB
 	StoreCMB([]byte, []byte, [][]byte, uint64, []byte) error

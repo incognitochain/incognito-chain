@@ -16,4 +16,10 @@ func TestAES(t*testing.T){
 
 	fmt.Printf("Message: %v\n", msg)
 
+	//res := PedCom.G[0].Derive(big.NewInt(2), big.NewInt(10))
+	//fmt.Printf("res: %v\n", res.Compress())
+
 }
+
+
+

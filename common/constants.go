@@ -2,7 +2,6 @@ package common
 
 const (
 	EmptyString          = ""
-	RefundPeriod         = 1000 // after 1000 blocks since a tx (small & no-privacy) happens, the network will refund an amount of constants to tx initiator automatically
 	PubKeyLength         = 33
 	PaymentAddressLength = 66
 	ZeroByte             = byte(0x00)
@@ -84,7 +83,9 @@ var (
 
 // centralized website's pubkey
 var (
-	CentralizedWebsitePubKey = []byte{}
+	// PrivateKey: 112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNhc33pzChmJRvikZNc3Dt5V7quhdzjWW9Z4BrB2BxdK5VtHzsG9JZdZ5M7yYYGidKKZV
+	// PaymentAddress: 1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba
+	CentralizedWebsitePubKey = []byte{3, 36, 133, 3, 185, 44, 62, 112, 196, 239, 49, 190, 100, 172, 50, 147, 196, 154, 105, 211, 203, 57, 242, 110, 34, 126, 100, 226, 74, 148, 128, 167, 0}
 )
 
 // board addresses
@@ -94,6 +95,7 @@ const (
 	BurningAddress = "1NHp16Y29xjc1PoXb1qwr65BfVVoHZuCbtTkVyucRzbeydgQHs2wPu5PC1hD"
 )
 
+// CONSENSUS
 const (
 	// SHARD_NUMBER = 4
 	SHARD_NUMBER = 1 //single-node mode
@@ -101,4 +103,23 @@ const (
 	RANDOM_TIME  = 5
 	COMMITEES    = 1
 	OFFSET       = 1
+
+	NODEMODE_SHARD  = "shard"
+	NODEMODE_AUTO   = "auto"
+	NODEMODE_BEACON = "beacon"
+
+	SHARD_ROLE           = "shard"
+	SHARD_PROPOSER_ROLE  = "shard-proposer"
+	SHARD_VALIDATOR_ROLE = "shard-validator"
+	SHARD_PENDING_ROLE   = "shard-pending"
+
+	BEACON_ROLE           = "beacon"
+	BEACON_PROPOSER_ROLE  = "beacon-proposer"
+	BEACON_VALIDATOR_ROLE = "beacon-validator"
+	BEACON_PENDING_ROLE   = "beacon-pending"
+)
+
+// Units converter
+const (
+	WeiToMilliEtherRatio = int64(1000000000000000)
 )

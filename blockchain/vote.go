@@ -3,15 +3,15 @@ package blockchain
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/ninjadotorg/constant/metadata/frombeaconins"
-	"github.com/pkg/errors"
 	"sort"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/database/lvdb"
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/metadata/frombeaconins"
 	"github.com/ninjadotorg/constant/privacy"
+	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
