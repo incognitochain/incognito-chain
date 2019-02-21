@@ -5,3 +5,11 @@ const (
 	PrepareTimeout = 6
 	CommitTimeout  = 6
 )
+
+//PBFT
+const (
+	PBFT_LISTEN  = "listen"
+	PBFT_PROPOSE = "propose"
+	PBFT_PREPARE = "prepare"
+	PBFT_COMMIT  = "commit"
+)

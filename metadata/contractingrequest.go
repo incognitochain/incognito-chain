@@ -9,6 +9,8 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/wallet"
+	"github.com/pkg/errors"
 )
 
 // whoever can send this type of tx
@@ -24,7 +26,7 @@ func NewContractingRequest(
 	burnedConstAmount uint64,
 	currencyType common.Hash,
 	metaType int,
-) *ContractingRequest {
+) (*ContractingRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
@@ -34,7 +36,27 @@ func NewContractingRequest(
 		BurnerAddress:     burnerAddress,
 	}
 	contractingReq.MetadataBase = metadataBase
-	return contractingReq
+	return contractingReq, nil
+}
+
+func NewContractingRequestFromMap(data map[string]interface{}) (Metadata, error) {
+	keyWallet, err := wallet.Base58CheckDeserialize(data["BurnerAddress"].(string))
+	if err != nil {
+		return nil, errors.Errorf("BurnerAddress incorrect")
+	}
+
+	burnedConstAmount := uint64(data["BurnedConstAmount"].(float64))
+
+	currencyType, err := common.NewHashFromStr(data["CurrencyType"].(string))
+	if err != nil {
+		return nil, errors.Errorf("CurrencyType incorrect")
+	}
+	return NewContractingRequest(
+		keyWallet.KeySet.PaymentAddress,
+		burnedConstAmount,
+		*currencyType,
+		IssuingRequestMeta,
+	)
 }
 
 func (cReq *ContractingRequest) ValidateTxWithBlockChain(
@@ -47,11 +69,28 @@ func (cReq *ContractingRequest) ValidateTxWithBlockChain(
 }
 
 func (cReq *ContractingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+	if cReq.Type != ContractingRequestMeta {
+		return false, false, errors.New("Wrong request info's meta type")
+	}
+	if len(cReq.BurnerAddress.Pk) == 0 {
+		return false, false, errors.New("Wrong request info's burner address")
+	}
+	if cReq.BurnedConstAmount == 0 {
+		return false, false, errors.New("Wrong request info's deposited amount")
+	}
+	if len(cReq.CurrencyType) != common.HashSize {
+		return false, false, errors.New("Wrong request info's currency type")
+	}
+
 	if !txr.IsCoinsBurning() {
 		return false, false, nil
 	}
-	// TODO: compare BurnedConstAmount to vout value
-	// TODO: check buner address is the one in vin
+	if cReq.BurnedConstAmount != txr.CalculateTxValue() {
+		return false, false, nil
+	}
+	if !bytes.Equal(txr.GetSigPubKey()[:], cReq.BurnerAddress.Pk[:]) {
+		return false, false, nil
+	}
 	return true, true, nil
 }
 

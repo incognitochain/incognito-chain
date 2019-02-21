@@ -2,6 +2,8 @@ package blockchain
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -14,7 +16,7 @@ import (
 
 func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 	if len(inst) < 2 {
-		return nil // Not error, just not loan instruction
+		return nil // Not error, just not stability instruction
 	}
 	switch inst[0] {
 	case strconv.Itoa(metadata.LoanRequestMeta):
@@ -32,6 +34,144 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 
 	case strconv.Itoa(metadata.CrowdsalePaymentMeta):
 		return bsb.processCrowdsalePaymentInstruction(inst)
+
+	case strconv.Itoa(metadata.BuyFromGOVRequestMeta):
+		return bsb.processBuyFromGOVReqInstruction(inst)
+
+	case strconv.Itoa(metadata.BuyBackRequestMeta):
+		return bsb.processBuyBackReqInstruction(inst)
+
+	case strconv.Itoa(metadata.BuyGOVTokenRequestMeta):
+		return bsb.processBuyGOVTokenReqInstruction(inst)
+
+	case strconv.Itoa(metadata.IssuingRequestMeta):
+		return bsb.processIssuingReqInstruction(inst)
+
+	case strconv.Itoa(metadata.ContractingRequestMeta):
+		return bsb.processContractingReqInstruction(inst)
+	}
+	return nil
+}
+
+func (bsb *BestStateBeacon) processContractingReqInstruction(inst []string) error {
+	instType := inst[2]
+	if instType == "refund" {
+		return nil
+	}
+	// accepted
+	cInfoStr := inst[3]
+	var cInfo ContractingInfo
+	err := json.Unmarshal([]byte(cInfoStr), &cInfo)
+	if err != nil {
+		return err
+	}
+	if bytes.Equal(cInfo.CurrencyType[:], common.USDAssetID[:]) {
+		// no need to update BestStateBeacon
+		return nil
+	}
+	// burn const by crypto
+	stabilityInfo := bsb.StabilityInfo
+	spendReserveData := stabilityInfo.DCBConstitution.DCBParams.SpendReserveData
+	if spendReserveData == nil {
+		return nil
+	}
+	reserveData, existed := spendReserveData[cInfo.CurrencyType]
+	if !existed {
+		return nil
+	}
+	reserveData.Amount -= cInfo.BurnedConstAmount
+	return nil
+}
+
+func (bsb *BestStateBeacon) processIssuingReqInstruction(inst []string) error {
+	instType := inst[2]
+	if instType == "refund" {
+		return nil
+	}
+	// accepted
+	iInfoStr := inst[3]
+	var iInfo IssuingInfo
+	err := json.Unmarshal([]byte(iInfoStr), &iInfo)
+	if err != nil {
+		return err
+	}
+	stabilityInfo := bsb.StabilityInfo
+	raiseReserveData := stabilityInfo.DCBConstitution.DCBParams.RaiseReserveData
+	if raiseReserveData == nil {
+		return nil
+	}
+	reserveData, existed := raiseReserveData[iInfo.CurrencyType]
+	if !existed {
+		return nil
+	}
+	reserveData.Amount -= iInfo.Amount
+	return nil
+}
+
+func (bsb *BestStateBeacon) processBuyGOVTokenReqInstruction(inst []string) error {
+	instType := inst[2]
+	if instType == "refund" {
+		return nil
+	}
+	// accepted
+	contentStr := inst[3]
+	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		return err
+	}
+	var buyGOVTokenReqAction BuyGOVTokenReqAction
+	err = json.Unmarshal(contentBytes, &buyGOVTokenReqAction)
+	if err != nil {
+		return err
+	}
+	md := buyGOVTokenReqAction.Meta
+	stabilityInfo := bsb.StabilityInfo
+	sellingGOVTokensParams := stabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens
+	if sellingGOVTokensParams != nil {
+		sellingGOVTokensParams.GOVTokensToSell -= md.Amount
+		stabilityInfo.SalaryFund += (md.Amount + md.BuyPrice)
+	}
+	return nil
+}
+
+func (bsb *BestStateBeacon) processBuyBackReqInstruction(inst []string) error {
+	instType := inst[2]
+	if instType == "refund" {
+		return nil
+	}
+	// accepted
+	buyBackInfoStr := inst[3]
+	var buyBackInfo BuyBackInfo
+	err := json.Unmarshal([]byte(buyBackInfoStr), &buyBackInfo)
+	if err != nil {
+		return err
+	}
+	bsb.StabilityInfo.SalaryFund -= (buyBackInfo.Value + buyBackInfo.BuyBackPrice)
+	return nil
+}
+
+func (bsb *BestStateBeacon) processBuyFromGOVReqInstruction(inst []string) error {
+	instType := inst[2]
+	if instType == "refund" {
+		return nil
+	}
+	// accepted
+	contentStr := inst[3]
+	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		return err
+	}
+	var buySellReqAction BuySellReqAction
+	err = json.Unmarshal(contentBytes, &buySellReqAction)
+	if err != nil {
+		return err
+	}
+	md := buySellReqAction.Meta
+	stabilityInfo := bsb.StabilityInfo
+	sellingBondsParams := stabilityInfo.GOVConstitution.GOVParams.SellingBonds
+	if sellingBondsParams != nil {
+		sellingBondsParams.BondsToSell -= md.Amount
+		stabilityInfo.SalaryFund += (md.Amount + md.BuyPrice)
 	}
 	return nil
 }
