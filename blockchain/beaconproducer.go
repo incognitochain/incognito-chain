@@ -280,10 +280,8 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 				if len(tempStaker) > 0 {
 					if assignShard {
 						stakeShard = append(stakeShard, tempStaker...)
-
 					} else {
-						stakeShard = append(stakeBeacon, tempStaker...)
-						// validStakers = append(validStakers, []string{"stake", strings.Join(tempStaker, ","), "beacon"})
+						stakeBeacon = append(stakeBeacon, tempStaker...)
 					}
 				}
 			}
