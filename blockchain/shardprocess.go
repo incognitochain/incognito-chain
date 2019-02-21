@@ -180,9 +180,13 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	if err != nil {
 		return err
 	}
-	err = blockchain.ProcessVotingForBlock(block)
-	if err != nil {
-		return err
+
+	for _, tx := range block.Body.Transactions {
+		meta := tx.GetMetadata()
+		err := meta.ProcessWhenInsertBlockShard(tx, blockchain)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Store metadata instruction to local state

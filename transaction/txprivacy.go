@@ -25,8 +25,8 @@ type Tx struct {
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
 
-	Fee      uint64 `json:"Fee"` // Fee applies: always consant
-	Info     []byte
+	Fee  uint64 `json:"Fee"` // Fee applies: always consant
+	Info []byte
 
 	// Sign and Privacy proof
 	SigPubKey []byte `json:"SigPubKey, omitempty"` // 33 bytes
@@ -39,6 +39,14 @@ type Tx struct {
 	Metadata metadata.Metadata
 
 	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
+}
+
+func (tx *Tx) GetAmountOfVote() (uint64, error) {
+	return 0, errors.New("wrong type of tx")
+}
+
+func (tx *Tx) GetVoterPaymentAddress() (*privacy.PaymentAddress, error) {
+	return nil, errors.New("wrong type of tx")
 }
 
 func (tx *Tx) UnmarshalJSON(data []byte) error {
@@ -236,11 +244,11 @@ func (tx *Tx) Init(
 	for i, cmIndex := range commitmentIndexs {
 		commitmentProving[i] = new(privacy.EllipticPoint)
 		temp, err := db.GetCommitmentByIndex(tokenID, cmIndex, shardID)
-		if err != nil{
+		if err != nil {
 			return NewTransactionErr(UnexpectedErr, err)
 		}
 		err = commitmentProving[i].Decompress(temp)
-		if err != nil{
+		if err != nil {
 			return NewTransactionErr(UnexpectedErr, err)
 		}
 	}
@@ -439,11 +447,10 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			sndOutputs[i] = tx.Proof.OutputCoins[i].CoinDetails.SNDerivator
 		}
 
-		if common.CheckDuplicateBigIntArray(sndOutputs){
+		if common.CheckDuplicateBigIntArray(sndOutputs) {
 			Logger.log.Infof("Duplicate output coins' snd\n")
 			return false
 		}
-
 
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
@@ -470,7 +477,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		if !valid {
 			Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION PAYMENT PROOF")
 			return false
-		} else{
+		} else {
 			Logger.log.Infof("[PRIVACY LOG] - SUCCESSED VERIFICATION PAYMENT PROOF")
 		}
 	}
