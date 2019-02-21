@@ -395,7 +395,6 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	//hasPrivacy = false
-	Logger.log.Debugf("[db] Validating Transaction tx\n")
 	Logger.log.Infof("VALIDATING TX........\n")
 	start := time.Now()
 	// Verify tx signature
@@ -435,7 +434,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 	}
 
-	Logger.log.Infof("[db]tx.Proof: %+v\n", tx.Proof)
+	// Logger.log.Infof("[db]tx.Proof: %+v\n", tx.Proof)
 	if tx.Proof != nil {
 		if tokenID == nil {
 			tokenID = &common.Hash{}
@@ -955,7 +954,7 @@ func (tx Tx) ValidateTxSalary(
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(tx.Proof.OutputCoins[0].CoinDetails.Value))))
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMult(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator))
 
-	shardID := byte(int(tx.Proof.OutputCoins[0].CoinDetails.GetPubKeyLastByte()) % common.SHARD_NUMBER)
+	shardID := common.GetShardIDFromLastByte(tx.Proof.OutputCoins[0].CoinDetails.GetPubKeyLastByte())
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(tx.Proof.OutputCoins[0].CoinDetails.Randomness))
 	return cmTmp.IsEqual(tx.Proof.OutputCoins[0].CoinDetails.CoinCommitment)
