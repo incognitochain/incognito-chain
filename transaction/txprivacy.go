@@ -387,7 +387,6 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	//hasPrivacy = false
-	Logger.log.Debugf("[db] Validating Transaction tx\n")
 	Logger.log.Infof("VALIDATING TX........\n")
 	start := time.Now()
 	// Verify tx signature
@@ -427,7 +426,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 	}
 
-	Logger.log.Infof("[db]tx.Proof: %+v\n", tx.Proof)
+	// Logger.log.Infof("[db]tx.Proof: %+v\n", tx.Proof)
 	if tx.Proof != nil {
 		if tokenID == nil {
 			tokenID = &common.Hash{}

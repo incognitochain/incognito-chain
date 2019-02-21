@@ -90,7 +90,7 @@ func (rpcServer RpcServer) sendRawTxWithMetadata(params interface{}, closeChan <
 	}
 	tx := transaction.Tx{}
 	err = json.Unmarshal(rawTxBytes, &tx)
-	fmt.Printf("[db]sendRawTx received tx: %+v\n", tx)
+	// fmt.Printf("[db] sendRawTx received tx: %+v\n", tx)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
