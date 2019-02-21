@@ -41,15 +41,9 @@ const (
 	PercentageBoardSalary             = 5
 )
 
-//Fee of specific transaction
-const (
-	FeeSubmitProposal = 100
-	FeeVoteProposal   = 100
-)
-
 //voting flag
 const (
-	Lv3EncryptionFlag = iota
+	Lv3EncryptionFlag = byte(iota)
 	Lv2EncryptionFlag
 	Lv1EncryptionFlag
 	NormalEncryptionFlag

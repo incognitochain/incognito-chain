@@ -1,4 +1,4 @@
-package toshardins
+package frombeaconins
 
 import (
 	"encoding/json"
@@ -37,7 +37,7 @@ func GetShardIDFromPaymentAddressBytes(paymentAddress privacy.PaymentAddress) by
 func (txSendBackTokenVoteFailIns *TxSendBackTokenVoteFailIns) BuildTransaction(
 	minerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
-) metadata.Transaction {
+) (metadata.Transaction, error) {
 	tx := NewSendBackTokenVoteFailTx(
 		minerPrivateKey,
 		db,
@@ -45,14 +45,14 @@ func (txSendBackTokenVoteFailIns *TxSendBackTokenVoteFailIns) BuildTransaction(
 		txSendBackTokenVoteFailIns.Amount,
 		txSendBackTokenVoteFailIns.PropertyID,
 	)
-	return tx
+	return tx, nil
 }
 
 func NewSendBackTokenVoteFailIns(
 	paymentAddress privacy.PaymentAddress,
 	amount uint64,
 	propertyID common.Hash,
-) Instruction {
+) *TxSendBackTokenVoteFailIns {
 	return &TxSendBackTokenVoteFailIns{
 		PaymentAddress: paymentAddress,
 		Amount:         amount,
