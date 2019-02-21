@@ -126,11 +126,12 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 		tp.addTxCoinHashH(*txHash)
 	}
 	// add candidate into candidate list ONLY with staking transaction
-	if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
-		pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), byte(0x00))
-		tp.addCanđiateToList(pubkey)
+	if tx.GetMetadata() != nil {
+		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
+			pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), byte(0x00))
+			tp.addCanđiateToList(pubkey)
+		}
 	}
-
 	return txD
 }
 
