@@ -41,10 +41,8 @@ func createSpecialTokenTx(
 	return result
 }
 
-//TODO Write function to create Shard block of shard chain here
 func CreateShardGenesisBlock(
 	version int,
-	shardNodes []string,
 	icoParams IcoParams,
 ) *ShardBlock {
 
