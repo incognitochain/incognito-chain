@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"strconv"
 	"time"
 
@@ -8,7 +9,6 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 )
 
 type MetadataBase struct {
@@ -95,15 +95,15 @@ type BlockchainRetriever interface {
 	GetBeaconHeight() uint64
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
 	GetDCBParams() params.DCBParams
-	GetBoardPubKeys(boardType byte) [][]byte
-	GetBoardPaymentAddress(boardType byte) []privacy.PaymentAddress
+	GetBoardPubKeys(boardType BoardType) [][]byte
+	GetBoardPaymentAddress(boardType BoardType) []privacy.PaymentAddress
 	GetGOVParams() params.GOVParams
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
 	GetOracleParams() *params.Oracle
-	GetConstitutionStartHeight(boardType byte, shardID byte) uint64
-	GetConstitutionEndHeight(boardType byte, shardID byte) uint64
+	GetConstitutionStartHeight(boardType BoardType, shardID byte) uint64
+	GetConstitutionEndHeight(boardType BoardType, shardID byte) uint64
 	GetCurrentBeaconBlockHeight(byte) uint64
-	GetBoardEndHeight(boardType byte, chainID byte) uint64
+	GetBoardEndHeight(boardType BoardType, chainID byte) uint64
 	GetAllCommitteeValidatorCandidate() (map[byte][]string, map[byte][]string, []string, []string, []string, []string, []string, []string)
 	GetDatabase() database.DatabaseInterface
 
@@ -135,10 +135,10 @@ type BlockchainRetriever interface {
 	GetWithdrawRequest([]byte) ([]byte, uint8, error)
 	UpdateDCBBoard(transaction Transaction) error
 	UpdateGOVBoard(transaction Transaction) error
-	UpdateConstitution(transaction Transaction, boardType byte) error
-	GetConstitution(boardType byte) ConstitutionInterface
+	UpdateConstitution(transaction Transaction, boardType BoardType) error
+	GetConstitution(boardType BoardType) ConstitutionInterface
 	UpdateDCBFund(transaction Transaction)
-	GetGovernor(boardType byte) GovernorInterface
+	GetGovernor(boardType BoardType) GovernorInterface
 }
 
 // Interface for all types of metadata in tx
