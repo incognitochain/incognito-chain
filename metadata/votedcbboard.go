@@ -3,16 +3,46 @@ package metadata
 import (
 	"encoding/base64"
 	"encoding/json"
+	"strconv"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
-	"strconv"
 )
 
 type VoteDCBBoardMetadata struct {
 	VoteBoardMetadata VoteBoardMetadata
 
 	MetadataBase
+}
+
+type GovernorInterface interface {
+	GetBoardIndex() uint32
+}
+
+func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	boardType := common.DCBBoard
+	voteAmount, err := tx.GetAmountOfVote()
+	if err != nil {
+		return err
+	}
+	payment, err := tx.GetVoterPaymentAddress()
+	if err != nil {
+		return err
+	}
+	governor := bcr.GetGovernor(boardType)
+	boardIndex := governor.GetBoardIndex() + 1
+	err1 := bcr.GetDatabase().AddVoteBoard(
+		boardType,
+		boardIndex,
+		*payment,
+		voteDCBBoardMetadata.VoteBoardMetadata.CandidatePaymentAddress,
+		voteAmount,
+	)
+	if err1 != nil {
+		return err1
+	}
+	return nil
 }
 
 func NewVoteDCBBoardMetadata(candidatePaymentAddress privacy.PaymentAddress) *VoteDCBBoardMetadata {

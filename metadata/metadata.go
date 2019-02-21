@@ -59,7 +59,7 @@ func (mb *MetadataBase) BuildReqActions(tx Transaction, bcr BlockchainRetriever,
 	return [][]string{}, nil
 }
 
-func (mb *MetadataBase) ProcessWhenInsertBlockShard(tx Transaction, databaseInterface database.DatabaseInterface) error {
+func (mb *MetadataBase) ProcessWhenInsertBlockShard(tx Transaction, retriever BlockchainRetriever) error {
 	return nil
 }
 
@@ -105,6 +105,7 @@ type BlockchainRetriever interface {
 	GetCurrentBeaconBlockHeight(byte) uint64
 	GetBoardEndHeight(boardType byte, chainID byte) uint64
 	GetAllCommitteeValidatorCandidate() (map[byte][]string, map[byte][]string, []string, []string, []string, []string, []string, []string)
+	GetDatabase() database.DatabaseInterface
 
 	// For validating loan metadata
 	// GetLoanTxs([]byte) ([][]byte, error)
@@ -132,6 +133,12 @@ type BlockchainRetriever interface {
 	GetCMBResponse([]byte) ([][]byte, error)
 	GetDepositSend([]byte) ([]byte, error)
 	GetWithdrawRequest([]byte) ([]byte, uint8, error)
+	UpdateDCBBoard(transaction Transaction) error
+	UpdateGOVBoard(transaction Transaction) error
+	UpdateConstitution(transaction Transaction, boardType byte) error
+	GetConstitution(boardType byte) ConstitutionInterface
+	UpdateDCBFund(transaction Transaction)
+	GetGovernor(boardType byte) GovernorInterface
 }
 
 // Interface for all types of metadata in tx
@@ -146,7 +153,7 @@ type Metadata interface {
 	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool
 	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
 	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
-	ProcessWhenInsertBlockShard(tx Transaction, databaseInterface database.DatabaseInterface) error
+	ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error
 }
 
 // Interface for all type of transaction
@@ -186,4 +193,6 @@ type Transaction interface {
 	// Get receivers' data for custom token tx (nil for normal tx)
 	GetTokenReceivers() ([][]byte, []uint64)
 	GetTokenUniqueReceiver() (bool, []byte, uint64)
+	GetAmountOfVote() (uint64, error)
+	GetVoterPaymentAddress() (*privacy.PaymentAddress, error)
 }

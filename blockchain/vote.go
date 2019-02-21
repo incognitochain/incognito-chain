@@ -18,7 +18,6 @@ import (
 type ConstitutionHelper interface {
 	GetStartedNormalVote(chain *BlockChain) uint64
 	CheckSubmitProposalType(tx metadata.Transaction) bool
-	GetAmountVoteTokenOfTx(tx metadata.Transaction) uint64
 	NewAcceptProposalIns(txId *common.Hash, voter metadata.Voter) frombeaconins.InstructionFromBeacon
 	GetBoardType() byte
 	GetConstitutionEndedBlockHeight(chain *BlockChain) uint64
@@ -33,7 +32,7 @@ type ConstitutionHelper interface {
 	GetBoardFund(chain *BlockChain) uint64
 	GetTokenID() *common.Hash
 	GetAmountOfVoteToBoard(chain *BlockChain, candidatePaymentAddress privacy.PaymentAddress, voterPaymentAddress privacy.PaymentAddress, boardIndex uint32) uint64
-	GetBoard(chain *BlockChain) Governor
+	GetBoard(chain *BlockChain) metadata.GovernorInterface
 	GetConstitutionInfo(chain *BlockChain) ConstitutionInfo
 	GetCurrentNationalWelfare(chain *BlockChain) int32
 	GetThresholdRatioOfCrisis() int32
@@ -248,7 +247,8 @@ func (self *BlockChain) createAcceptBoardTxIns(
 	return []frombeaconins.InstructionFromBeacon{txAcceptBoardIns}, nil
 }
 
-func (block *BestStateBeacon) UpdateDCBBoard(tx metadata.Transaction) error {
+func (bc *BlockChain) UpdateDCBBoard(tx metadata.Transaction) error {
+	block := bc.BestState.Beacon
 	meta := tx.GetMetadata().(*metadata.AcceptDCBBoardMetadata)
 	block.StabilityInfo.DCBGovernor.BoardIndex += 1
 	block.StabilityInfo.DCBGovernor.BoardPaymentAddress = meta.AcceptBoardMetadata.BoardPaymentAddress
@@ -258,7 +258,8 @@ func (block *BestStateBeacon) UpdateDCBBoard(tx metadata.Transaction) error {
 	return nil
 }
 
-func (block *BestStateBeacon) UpdateGOVBoard(tx metadata.Transaction) error {
+func (bc *BlockChain) UpdateGOVBoard(tx metadata.Transaction) error {
+	block := bc.BestState.Beacon
 	meta := tx.GetMetadata().(*metadata.AcceptGOVBoardMetadata)
 	block.StabilityInfo.GOVGovernor.BoardIndex += 1
 	block.StabilityInfo.GOVGovernor.BoardPaymentAddress = meta.AcceptBoardMetadata.BoardPaymentAddress
@@ -268,12 +269,12 @@ func (block *BestStateBeacon) UpdateGOVBoard(tx metadata.Transaction) error {
 	return nil
 }
 
-func (block *BestStateBeacon) UpdateDCBFund(tx metadata.Transaction) {
-	block.StabilityInfo.BankFund -= common.RewardProposalSubmitter
+func (blockchain *BlockChain) UpdateDCBFund(tx metadata.Transaction) {
+	blockchain.BestState.Beacon.StabilityInfo.BankFund -= common.RewardProposalSubmitter
 }
 
-func (block *BestStateBeacon) UpdateGOVFund(tx metadata.Transaction) {
-	block.StabilityInfo.SalaryFund -= common.RewardProposalSubmitter
+func (blockchain *BlockChain) UpdateGOVFund(tx metadata.Transaction) {
+	blockchain.BestState.Beacon.StabilityInfo.BankFund -= common.RewardProposalSubmitter
 }
 
 func createSendBackTokenVoteFailIns(
@@ -588,11 +589,16 @@ func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
 	return false
 }
 
-func (bestStateBeacon *BestStateBeacon) updateConstitution(
+func (bc *BlockChain) UpdateConstitution(
 	tx metadata.Transaction,
-	bc *BlockChain,
-	helper ConstitutionHelper,
+	boardType byte,
 ) error {
+	var helper ConstitutionHelper
+	if boardType == common.DCBBoard {
+		helper = DCBConstitutionHelper{}
+	} else {
+		helper = GOVConstitutionHelper{}
+	}
 	proposalTxID := helper.GetProposalTxID(tx)
 	_, _, _, submitProposalTx, err := bc.GetTransactionByHash(proposalTxID)
 	if err != nil {
@@ -606,11 +612,27 @@ func (bestStateBeacon *BestStateBeacon) updateConstitution(
 	newConstitutionIndex := previousConstitutionIndex + 1
 	constitutionInfo := NewConstitutionInfo(
 		newConstitutionIndex,
-		uint64(bestStateBeacon.BestBlock.Header.Height),
+		uint64(bc.BestState.Beacon.BestBlock.Header.Height),
 		submitProposalInfo.ExecuteDuration,
 		submitProposalInfo.Explanation,
 		*tx.Hash(),
 	)
 	helper.SetNewConstitution(constitutionInfo, GetOracleDCBNationalWelfare(), submitProposalTx)
 	return nil
+}
+
+func (bc *BlockChain) GetGovernor(boardType byte) metadata.GovernorInterface {
+	if boardType == common.DCBBoard {
+		return bc.BestState.Beacon.StabilityInfo.DCBGovernor
+	} else {
+		return bc.BestState.Beacon.StabilityInfo.GOVGovernor
+	}
+}
+
+func (bc *BlockChain) GetConstitution(boardType byte) metadata.ConstitutionInterface {
+	if boardType == common.DCBBoard {
+		return bc.BestState.Beacon.StabilityInfo.DCBConstitution
+	} else {
+		return bc.BestState.Beacon.StabilityInfo.GOVConstitution
+	}
 }

@@ -11,6 +11,16 @@ type SealedLv1GOVVoteProposalMetadata struct {
 	MetadataBase
 }
 
+func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	boardType := common.GOVBoard
+	nextConstitutionIndex := bcr.GetConstitution(boardType).GetConstitutionIndex() + 1
+	err := bcr.GetDatabase().AddVoteLv1or2Proposal(boardType, nextConstitutionIndex, tx.GetMetadata().Hash())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
 	return sealedLv1GOVVoteProposalMetadata.SealedLv1VoteProposalMetadata.ValidateSanityData(bcr, tx)
 }
@@ -71,6 +81,16 @@ type SealedLv2GOVVoteProposalMetadata struct {
 	MetadataBase
 }
 
+func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	boardType := common.GOVBoard
+	nextConstitutionIndex := bcr.GetConstitution(boardType).GetConstitutionIndex() + 1
+	err := bcr.GetDatabase().AddVoteLv1or2Proposal(boardType, nextConstitutionIndex, tx.GetMetadata().Hash())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
 	return sealedLv2GOVVoteProposalMetadata.SealedLv2VoteProposalMetadata.ValidateSanityData(bcr, tx)
 }
@@ -123,6 +143,16 @@ type SealedLv3GOVVoteProposalMetadata struct {
 	MetadataBase
 }
 
+func (sealedLv3GOVVoteProposalMetadata *SealedLv3GOVVoteProposalMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	boardType := common.GOVBoard
+	nextConstitutionIndex := bcr.GetConstitution(boardType).GetConstitutionIndex() + 1
+	err := bcr.GetDatabase().AddVoteLv3Proposal(boardType, nextConstitutionIndex, tx.GetMetadata().Hash())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (sealedLv3GOVVoteProposalMetadata *SealedLv3GOVVoteProposalMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
 	return sealedLv3GOVVoteProposalMetadata.SealedLv3VoteProposalMetadata.ValidateTxWithBlockChain(tx, bcr, b, db)
 }
@@ -155,6 +185,21 @@ type NormalGOVVoteProposalFromSealerMetadata struct {
 	NormalVoteProposalFromSealerMetadata NormalVoteProposalFromSealerMetadata
 
 	MetadataBase
+}
+
+func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	boardType := common.GOVBoard
+	nextConstitutionIndex := bcr.GetConstitution(boardType).GetConstitutionIndex() + 1
+	err := bcr.GetDatabase().AddVoteNormalProposalFromOwner(
+		boardType,
+		nextConstitutionIndex,
+		&normalGOVVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal,
+		normalGOVVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes(),
+	)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
@@ -203,6 +248,22 @@ type NormalGOVVoteProposalFromOwnerMetadata struct {
 	MetadataBase
 }
 
+func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	boardType := common.GOVBoard
+	nextConstitutionIndex := bcr.GetConstitution(boardType).GetConstitutionIndex() + 1
+	err := bcr.GetDatabase().AddVoteNormalProposalFromOwner(
+		common.GOVBoard,
+		nextConstitutionIndex,
+		&normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal,
+		normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes(),
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
+
 func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
 	return normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.ValidateSanityData(bcr, tx)
 }
@@ -248,6 +309,11 @@ func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMeta
 type PunishGOVDecryptMetadata struct {
 	PunishDecryptMetadata PunishDecryptMetadata
 	MetadataBase
+}
+
+func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	// todo @0xjackalope
+	return nil
 }
 
 func NewPunishGOVDecryptMetadata(paymentAddress privacy.PaymentAddress) *PunishGOVDecryptMetadata {
