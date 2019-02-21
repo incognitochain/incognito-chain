@@ -302,8 +302,8 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 
 	// Calculate x
 	x := big.NewInt(0)
-	for j := 0; j <= n-1; j++ {
-		x = generateChallenge([][]byte{x.Bytes(), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
+	for j := 0; j < n; j++ {
+		x = generateChallenge([][]byte{privacy.AddPaddingBigInt(x, privacy.BigIntSize), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
 	}
 
 	// Calculate za, zb zd
@@ -365,12 +365,12 @@ func (proof *OneOutOfManyProof) Verify() bool {
 	//Calculate x
 	x := big.NewInt(0)
 
-	for j := 0; j <= n-1; j++ {
-		x = generateChallenge([][]byte{x.Bytes(), proof.cl[j].Compress(), proof.ca[j].Compress(), proof.cb[j].Compress(), proof.cd[j].Compress()})
+	for j := 0; j < n; j++ {
+		x = generateChallenge([][]byte{privacy.AddPaddingBigInt(x, privacy.BigIntSize), proof.cl[j].Compress(), proof.ca[j].Compress(), proof.cb[j].Compress(), proof.cd[j].Compress()})
 	}
 
 	for i := 0; i < n; i++ {
-		// Check cl^x * ca = Com(f, za)
+		//Check cl^x * ca = Com(f, za)
 		leftPoint1 := proof.cl[i].ScalarMult(x).Add(proof.ca[i])
 		rightPoint1 := privacy.PedCom.CommitAtIndex(proof.f[i], proof.za[i], privacy.SK)
 
@@ -378,7 +378,7 @@ func (proof *OneOutOfManyProof) Verify() bool {
 			return false
 		}
 
-		// Check cl^(x-f) * cb = Com(0, zb)
+		//Check cl^(x-f) * cb = Com(0, zb)
 		xSubF := new(big.Int).Sub(x, proof.f[i])
 		xSubF.Mod(xSubF, privacy.Curve.Params().N)
 
@@ -439,6 +439,7 @@ func GetCoefficient(iBinary []byte, k int, n int, a []*big.Int, l []byte) *big.I
 		} else {
 			fji = fj
 		}
+
 		res = res.Mul(fji, privacy.Curve.Params().N)
 	}
 

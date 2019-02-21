@@ -9,8 +9,8 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 )
 
-func (bc *BlockChain) GetAmountPerAccount(tokenID *common.Hash) (uint64, []privacy.PaymentAddress, []uint64, error) {
-	tokenHoldersMap, err := bc.config.DataBase.GetCustomTokenPaymentAddressesBalanceUnreward(tokenID)
+func (blockchain *BlockChain) GetAmountPerAccount(tokenID *common.Hash) (uint64, []privacy.PaymentAddress, []uint64, error) {
+	tokenHoldersMap, err := blockchain.config.DataBase.GetCustomTokenPaymentAddressesBalanceUnreward(tokenID)
 	if err != nil {
 		return 0, nil, nil, err
 	}
@@ -29,7 +29,7 @@ func (bc *BlockChain) GetAmountPerAccount(tokenID *common.Hash) (uint64, []priva
 		keySet := cashec.KeySet{}
 		keySet.PaymentAddress = privacy.PaymentAddress{}
 		keySet.PaymentAddress.SetBytes(paymentAddressInBytes)
-		//vouts, err := bc.GetUnspentTxCustomTokenVout(keySet, tokenID)
+		//vouts, err := blockchain.GetUnspentTxCustomTokenVout(keySet, tokenID)
 		//if err != nil {
 		//	return 0, nil, nil, err
 		//}
