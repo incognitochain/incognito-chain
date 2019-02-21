@@ -606,6 +606,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 
 		cmOutputValueAll = cmOutputValueAll.Add(cmOutputValue[i])
 		randOutputValueAll.Add(randOutputValueAll, randOutputValue[i])
+		randOutputValueAll.Mod(randOutputValueAll, privacy.Curve.Params().N)
 
 		// calculate final commitment for output coins
 		outputCoins[i].CoinDetails.CoinCommitment = cmOutputSum[i]
