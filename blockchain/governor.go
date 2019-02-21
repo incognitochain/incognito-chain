@@ -21,7 +21,3 @@ type DCBGovernor struct {
 type GOVGovernor struct {
 	GovernorInfo
 }
-
-type Governor interface {
-	GetBoardIndex() uint32
-}
