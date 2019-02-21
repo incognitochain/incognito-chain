@@ -7,7 +7,7 @@ import (
 
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/metadata/toshardins"
+	"github.com/ninjadotorg/constant/metadata/frombeaconins"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/pkg/errors"
@@ -21,7 +21,23 @@ type accumulativeValues struct {
 	dcbTokensSoldByUSD   uint64
 	dcbTokensSoldByETH   uint64
 	constantsBurnedByETH uint64
+	buyBackCoins         uint64
+	totalFee             uint64
+	totalSalary          uint64
+	totalRefundAmt       uint64
+	totalOracleRewards   uint64
 	saleDataMap          map[string]*params.SaleData
+}
+
+func isGOVFundEnough(
+	beaconBestState *BestStateBeacon,
+	accumulativeValues *accumulativeValues,
+	expense uint64,
+) bool {
+	govFund := beaconBestState.StabilityInfo.SalaryFund
+	income := accumulativeValues.incomeFromBonds + accumulativeValues.incomeFromGOVTokens + accumulativeValues.totalFee
+	totalExpensed := accumulativeValues.buyBackCoins + accumulativeValues.totalSalary + accumulativeValues.totalRefundAmt + accumulativeValues.totalOracleRewards
+	return (govFund + income - expense - totalExpensed) > 0
 }
 
 // build actions from txs at shard
@@ -82,7 +98,7 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 			instructions = append(instructions, saleInst...)
 
 		case metadata.BuyBackRequestMeta:
-			buyBackInst, err := buildInstructionsForBuyBackBondsReq(shardID, contentStr, beaconBestState, blkTmpGen.chain)
+			buyBackInst, err := buildInstructionsForBuyBackBondsReq(shardID, contentStr, beaconBestState, accumulativeValues, blkTmpGen.chain)
 			if err != nil {
 				return [][]string{}, err
 			}
@@ -147,7 +163,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 			if l[0] == "stake" || l[0] == "swap" || l[0] == "random" {
 				continue
 			}
-			continue
 			if len(l) <= 2 {
 				continue
 			}
@@ -196,52 +211,70 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					resTxs = append(resTxs, txs...)
 
 				case metadata.AcceptDCBBoardMeta:
-					acceptDCBBoardIns := toshardins.TxAcceptDCBBoardIns{}
+					acceptDCBBoardIns := frombeaconins.TxAcceptDCBBoardIns{}
 					err := json.Unmarshal([]byte(l[2]), &acceptDCBBoardIns)
 					if err != nil {
 						return nil, err
 					}
-					txs := acceptDCBBoardIns.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					txs, err := acceptDCBBoardIns.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					if err != nil {
+						return nil, err
+					}
 					resTxs = append(resTxs, txs)
 				case metadata.AcceptGOVBoardMeta:
-					acceptGOVBoardIns := toshardins.TxAcceptGOVBoardIns{}
+					acceptGOVBoardIns := frombeaconins.TxAcceptGOVBoardIns{}
 					err := json.Unmarshal([]byte(l[2]), &acceptGOVBoardIns)
 					if err != nil {
 						return nil, err
 					}
-					txs := acceptGOVBoardIns.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					txs, err := acceptGOVBoardIns.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					if err != nil {
+						return nil, err
+					}
 					resTxs = append(resTxs, txs)
 				case metadata.SendBackTokenVoteFailMeta:
-					sendBackTokenVoteFail := toshardins.TxSendBackTokenVoteFailIns{}
+					sendBackTokenVoteFail := frombeaconins.TxSendBackTokenVoteFailIns{}
 					err := json.Unmarshal([]byte(l[2]), &sendBackTokenVoteFail)
 					if err != nil {
 						return nil, err
 					}
-					txs := sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					txs, err := sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					if err != nil {
+						return nil, err
+					}
 					resTxs = append(resTxs, txs)
 				case metadata.SendInitDCBVoteTokenMeta:
-					sendInitDCBVoteToken := toshardins.TxSendInitDCBVoteTokenMetadataIns{}
+					sendInitDCBVoteToken := frombeaconins.TxSendInitDCBVoteTokenMetadataIns{}
 					err := json.Unmarshal([]byte(l[2]), &sendInitDCBVoteToken)
 					if err != nil {
 						return nil, err
 					}
-					txs := sendInitDCBVoteToken.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					txs, err := sendInitDCBVoteToken.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					if err != nil {
+						return nil, err
+					}
 					resTxs = append(resTxs, txs)
 				case metadata.SendInitGOVVoteTokenMeta:
-					sendInitGOVVoteToken := toshardins.TxSendInitGOVVoteTokenMetadataIns{}
+					sendInitGOVVoteToken := frombeaconins.TxSendInitGOVVoteTokenMetadataIns{}
 					err := json.Unmarshal([]byte(l[2]), &sendInitGOVVoteToken)
 					if err != nil {
 						return nil, err
 					}
-					txs := sendInitGOVVoteToken.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					txs, err := sendInitGOVVoteToken.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					if err != nil {
+						return nil, err
+					}
 					resTxs = append(resTxs, txs)
 				case metadata.ShareRewardOldDCBBoardMeta, metadata.ShareRewardOldGOVBoardMeta:
-					shareRewardOldBoard := toshardins.TxShareRewardOldBoardMetadataIns{}
+					shareRewardOldBoard := frombeaconins.TxShareRewardOldBoardMetadataIns{}
 					err := json.Unmarshal([]byte(l[2]), &shareRewardOldBoard)
 					if err != nil {
 						return nil, err
 					}
-					txs := shareRewardOldBoard.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					txs, err := shareRewardOldBoard.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					if err != nil {
+						return nil, err
+					}
 					resTxs = append(resTxs, txs)
 
 				case metadata.IssuingRequestMeta:
@@ -269,6 +302,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []metadata.Transaction, producerPrivateKey *privacy.SpendingKey) ([]metadata.Transaction, error) {
 	respTxs := []metadata.Transaction{}
 	removeIds := []int{}
+	multisigsRegTxs := []metadata.Transaction{}
 	for i, tx := range txs {
 		var respTx metadata.Transaction
 		var err error
@@ -276,6 +310,8 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []met
 		switch tx.GetMetadataType() {
 		case metadata.LoanWithdrawMeta:
 			respTx, err = blockgen.buildLoanResponseTx(tx, producerPrivateKey)
+		case metadata.MultiSigsRegistrationMeta:
+			multisigsRegTxs = append(multisigsRegTxs, tx)
 		}
 
 		if err != nil {
@@ -284,6 +320,11 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []met
 		} else if respTx != nil {
 			respTxs = append(respTxs, respTx)
 		}
+	}
+
+	err := blockgen.registerMultiSigsAddresses(multisigsRegTxs)
+	if err != nil {
+		return nil, err
 	}
 
 	// TODO(@0xbunyip): remove tx from txsToAdd?

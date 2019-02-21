@@ -15,8 +15,9 @@ import (
 )
 
 type IssuingReqAction struct {
-	TxReqID common.Hash             `json:"txReqId"`
-	Meta    metadata.IssuingRequest `json:"meta"`
+	TxReqID         common.Hash             `json:"txReqId"`
+	ReceiverShardID byte                    `json:"receiverShardID"`
+	Meta            metadata.IssuingRequest `json:"meta"`
 }
 
 type IssuingInfo struct {
@@ -24,6 +25,7 @@ type IssuingInfo struct {
 	Amount          uint64
 	RequestedTxID   common.Hash
 	TokenID         common.Hash
+	CurrencyType    common.Hash
 }
 
 type ContractingReqAction struct {
@@ -35,6 +37,7 @@ type ContractingInfo struct {
 	BurnerAddress     privacy.PaymentAddress
 	BurnedConstAmount uint64
 	RequestedTxID     common.Hash
+	CurrencyType      common.Hash
 }
 
 func buildInstTypeForContractingAction(
@@ -95,6 +98,7 @@ func buildInstructionsForContractingReq(
 		BurnerAddress:     md.BurnerAddress,
 		BurnedConstAmount: md.BurnedConstAmount,
 		RequestedTxID:     reqTxID,
+		CurrencyType:      md.CurrencyType,
 	}
 	cInfoBytes, err := json.Marshal(cInfo)
 	if err != nil {
@@ -276,6 +280,7 @@ func buildInstructionsForIssuingReq(
 		Amount:          reqAmt,
 		RequestedTxID:   reqTxID,
 		TokenID:         md.AssetType,
+		CurrencyType:    md.CurrencyType,
 	}
 	iInfoBytes, err := json.Marshal(iInfo)
 	if err != nil {
@@ -283,7 +288,7 @@ func buildInstructionsForIssuingReq(
 	}
 	returnedInst := []string{
 		strconv.Itoa(metadata.IssuingRequestMeta),
-		strconv.Itoa(int(shardID)),
+		strconv.Itoa(int(issuingReqAction.ReceiverShardID)),
 		instType,
 		string(iInfoBytes),
 	}

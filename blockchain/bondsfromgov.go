@@ -30,6 +30,7 @@ func buildInstructionsForBuyBackBondsReq(
 	shardID byte,
 	contentStr string,
 	beaconBestState *BestStateBeacon,
+	accumulativeValues *accumulativeValues,
 	bc *BlockChain,
 ) ([][]string, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
@@ -71,11 +72,11 @@ func buildInstructionsForBuyBackBondsReq(
 	instType := ""
 	bestBlockHeight := beaconBestState.BestBlock.Header.Height
 	if (buySellResMeta.StartSellingAt+buySellResMeta.Maturity > bestBlockHeight+1) ||
-		(buyBackReqMeta.Amount*buySellResMeta.BuyBackPrice > beaconBestState.StabilityInfo.SalaryFund) {
+		!isGOVFundEnough(beaconBestState, accumulativeValues, buyBackReqMeta.Amount*buySellResMeta.BuyBackPrice) {
 		instType = "refund"
 	} else {
 		instType = "accepted"
-		beaconBestState.StabilityInfo.SalaryFund -= buyBackReqMeta.Amount * buySellResMeta.BuyBackPrice
+		accumulativeValues.buyBackCoins += buyBackReqMeta.Amount * buySellResMeta.BuyBackPrice
 	}
 
 	buyBackInfo := BuyBackInfo{
