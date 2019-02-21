@@ -171,10 +171,10 @@ type DatabaseInterface interface {
 	SetNewProposalWinningVoter(byte, uint32, privacy.PaymentAddress) error
 	GetVoteTokenAmount(boardType byte, boardIndex uint32, paymentAddress privacy.PaymentAddress) (uint32, error)
 	SetVoteTokenAmount(boardType byte, boardIndex uint32, paymentAddress privacy.PaymentAddress, amount uint32) error
-	GetEncryptFlag(boardType byte) (uint32, error)
-	SetEncryptFlag(boardType byte, flag uint32)
-	GetEncryptionLastBlockHeight(boardType byte) (uint32, error)
-	SetEncryptionLastBlockHeight(boardType byte, height uint32)
+	GetEncryptFlag(boardType byte) (byte, error)
+	SetEncryptFlag(boardType byte, flag byte)
+	GetEncryptionLastBlockHeight(boardType byte) (uint64, error)
+	SetEncryptionLastBlockHeight(boardType byte, height uint64)
 
 	// Multisigs
 	StoreMultiSigsRegistration([]byte, []byte) error
