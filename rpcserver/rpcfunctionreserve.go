@@ -2,8 +2,10 @@ package rpcserver
 
 import (
 	"math/big"
+	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/pkg/errors"
 )
 
@@ -70,13 +72,32 @@ func (rpcServer RpcServer) handleGetContractingStatus(params interface{}, closeC
 	if err != nil {
 		return nil, NewRPCError(ErrRPCParse, err)
 	}
-	amount, status, err := (*rpcServer.config.Database).GetContractingInfo(*reqTxID)
+	amount, redeem, status, err := (*rpcServer.config.Database).GetContractingInfo(*reqTxID)
 	if err != nil {
 		return nil, NewRPCError(ErrRPCInternal, err)
+	}
+
+	// Convert redeem asset units
+	_, _, _, txReq, err := rpcServer.config.BlockChain.GetTransactionByHash(reqTxID)
+	if err != nil {
+		return nil, NewRPCError(ErrRPCInternal, err)
+	}
+	meta := txReq.GetMetadata().(*metadata.ContractingRequest)
+	redeemStr := ""
+	if common.IsUSDAsset(&meta.CurrencyType) {
+		// Convert from millicent to cent
+		redeem = redeem / 1000
+		redeemStr = strconv.FormatUint(redeem, 10)
+	} else {
+		// Convert from milliether to wei
+		redeemBig := big.NewInt(int64(redeem))
+		redeemBig = redeemBig.Mul(redeemBig, big.NewInt(common.WeiToMilliEtherRatio))
+		redeemStr = redeemBig.String()
 	}
 	result := map[string]interface{}{
 		"Status": status,
 		"Amount": amount,
+		"Redeem": redeemStr,
 	}
 	return result, nil
 }
