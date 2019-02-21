@@ -19,7 +19,7 @@ type ConstitutionHelper interface {
 	GetStartedNormalVote(chain *BlockChain) uint64
 	CheckSubmitProposalType(tx metadata.Transaction) bool
 	NewAcceptProposalIns(txId *common.Hash, voter metadata.Voter) frombeaconins.InstructionFromBeacon
-	GetBoardType() byte
+	GetBoardType() metadata.BoardType
 	GetConstitutionEndedBlockHeight(chain *BlockChain) uint64
 	GetSealerPaymentAddress(metadata.Transaction) []privacy.PaymentAddress
 	NewRewardProposalSubmitterIns(blockgen *BlockChain, receiverAddress *privacy.PaymentAddress) (instruction frombeaconins.InstructionFromBeacon, err error)
@@ -71,9 +71,9 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 
 	db := self.config.DataBase
 	boardType := helper.GetBoardType()
-	begin := lvdb.GetKeyThreePhraseCryptoSealer(boardType, 0, nil)
+	begin := lvdb.GetKeyThreePhraseCryptoSealer(boardType.BoardTypeDB(), 0, nil)
 	// +1 to search in that range
-	end := lvdb.GetKeyThreePhraseCryptoSealer(boardType, 1+NextConstitutionIndex, nil)
+	end := lvdb.GetKeyThreePhraseCryptoSealer(boardType.BoardTypeDB(), 1+NextConstitutionIndex, nil)
 
 	searchRange := util.Range{
 		Start: begin,
@@ -92,7 +92,7 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 			continue
 		}
 		//Punish owner if he don't send decrypted message
-		keyOwner := lvdb.GetKeyThreePhraseCryptoOwner(boardType, constitutionIndex, transactionID)
+		keyOwner := lvdb.GetKeyThreePhraseCryptoOwner(boardType.BoardTypeDB(), constitutionIndex, transactionID)
 		valueOwnerInByte, err := db.Get(keyOwner)
 		if err != nil {
 			return nil, nil, err
@@ -109,7 +109,7 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 			resIns = append(resIns, punishDecryptIns)
 		}
 		//Punish sealer if he don't send decrypted message
-		keySealer := lvdb.GetKeyThreePhraseCryptoSealer(boardType, constitutionIndex, transactionID)
+		keySealer := lvdb.GetKeyThreePhraseCryptoSealer(boardType.BoardTypeDB(), constitutionIndex, transactionID)
 		valueSealerInByte, err := db.Get(keySealer)
 		if err != nil {
 			return nil, nil, err
@@ -123,7 +123,7 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 
 		//Accumulate count vote
 		voter := sealerPaymentAddressList[0]
-		keyVote := lvdb.GetKeyThreePhraseVoteValue(boardType, constitutionIndex, transactionID)
+		keyVote := lvdb.GetKeyThreePhraseVoteValue(boardType.BoardTypeDB(), constitutionIndex, transactionID)
 		valueVote, err := db.Get(keyVote)
 		if err != nil {
 			return nil, nil, err
@@ -165,7 +165,7 @@ func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 		countOfThisProposal := uint32(0)
 		for voterPaymentAddressBytes, amount := range listVoter {
 			voterPaymentAddress := privacy.NewPaymentAddressFromByte([]byte(voterPaymentAddressBytes))
-			voterToken, _ := db.GetVoteTokenAmount(helper.GetBoardType(), NextConstitutionIndex, *voterPaymentAddress)
+			voterToken, _ := db.GetVoteTokenAmount(helper.GetBoardType().BoardTypeDB(), NextConstitutionIndex, *voterPaymentAddress)
 			if int32(voterToken) < amount || amount < 0 {
 				listVoter[string(voterPaymentAddress.Bytes())] = 0
 				// can change listvoter because it is a pointer
@@ -239,7 +239,7 @@ func (self *BlockChain) createListSendInitVoteTokenTxIns(
 }
 
 func (self *BlockChain) createAcceptBoardTxIns(
-	boardType byte,
+	boardType metadata.BoardType,
 	BoardPaymentAddress []privacy.PaymentAddress,
 	sumOfVote uint64,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
@@ -278,12 +278,12 @@ func (blockchain *BlockChain) UpdateGOVFund(tx metadata.Transaction) {
 }
 
 func createSendBackTokenVoteFailIns(
-	boardType byte,
+	boardType metadata.BoardType,
 	paymentAddress privacy.PaymentAddress,
 	amount uint64,
 ) frombeaconins.InstructionFromBeacon {
 	var propertyID common.Hash
-	if boardType == common.DCBBoard {
+	if boardType == metadata.DCBBoard {
 		propertyID = common.DCBTokenID
 	} else {
 		propertyID = common.GOVTokenID
@@ -296,12 +296,12 @@ func createSendBackTokenVoteFailIns(
 }
 
 func (self *BlockChain) createSendBackTokenAfterVoteFailIns(
-	boardType byte,
+	boardType metadata.BoardType,
 	newDCBList []privacy.PaymentAddress,
 	shardID byte,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
 	var propertyID common.Hash
-	if boardType == common.DCBBoard {
+	if boardType == metadata.DCBBoard {
 		propertyID = common.DCBTokenID
 	} else {
 		propertyID = common.GOVTokenID
@@ -311,8 +311,8 @@ func (self *BlockChain) createSendBackTokenAfterVoteFailIns(
 		setOfNewDCB[string(i.Bytes())] = true
 	}
 	currentBoardIndex := self.GetCurrentBoardIndex(DCBConstitutionHelper{})
-	begin := lvdb.GetKeyVoteBoardList(boardType, 0, nil, nil)
-	end := lvdb.GetKeyVoteBoardList(boardType, currentBoardIndex+1, nil, nil)
+	begin := lvdb.GetKeyVoteBoardList(boardType.BoardTypeDB(), 0, nil, nil)
+	end := lvdb.GetKeyVoteBoardList(boardType.BoardTypeDB(), currentBoardIndex+1, nil, nil)
 	searchRange := util.Range{
 		Start: begin,
 		Limit: end,
@@ -373,7 +373,7 @@ func (chain *BlockChain) CreateShareRewardOldBoardIns(
 ) []frombeaconins.InstructionFromBeacon {
 	Ins := make([]frombeaconins.InstructionFromBeacon, 0)
 
-	voterList := chain.config.DataBase.GetBoardVoterList(helper.GetBoardType(), chairPaymentAddress, chain.GetCurrentBoardIndex(helper))
+	voterList := chain.config.DataBase.GetBoardVoterList(helper.GetBoardType().BoardTypeDB(), chairPaymentAddress, chain.GetCurrentBoardIndex(helper))
 	boardIndex := chain.GetCurrentBoardIndex(helper)
 	for _, pubKey := range voterList {
 		amountOfVote := helper.GetAmountOfVoteToBoard(chain, chairPaymentAddress, pubKey, boardIndex)
@@ -433,7 +433,7 @@ func (self *BlockChain) CreateUpdateNewGovernorInstruction(
 	shardID byte,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
 	instructions := make([]frombeaconins.InstructionFromBeacon, 0)
-	newBoardList, err := self.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), self.GetCurrentBoardIndex(helper)+1)
+	newBoardList, err := self.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType().BoardTypeDB(), self.GetCurrentBoardIndex(helper)+1)
 
 	if err != nil {
 		return nil, err
@@ -514,10 +514,10 @@ func ListTxToListIns(listTx []metadata.Transaction, chain *BlockChain, shardID b
 	return listIns, nil
 }
 
-func (chain *BlockChain) neededNewGovernor(boardType byte) bool {
+func (chain *BlockChain) neededNewGovernor(boardType metadata.BoardType) bool {
 	BestBlock := chain.BestState.Beacon.BestBlock
 	var endGovernorBlock uint64
-	if boardType == common.DCBBoard {
+	if boardType == metadata.DCBBoard {
 		endGovernorBlock = chain.BestState.Beacon.StabilityInfo.DCBGovernor.EndBlock
 	} else {
 		endGovernorBlock = chain.BestState.Beacon.StabilityInfo.GOVGovernor.EndBlock
@@ -534,14 +534,14 @@ func (self *BlockChain) generateVotingInstruction(minerPrivateKey *privacy.Spend
 
 	//============================ VOTE BOARD
 
-	if self.neededNewGovernor(common.DCBBoard) {
+	if self.neededNewGovernor(metadata.DCBBoard) {
 		updateGovernorInstruction, err := self.CreateUpdateNewGovernorInstruction(DCBConstitutionHelper{}, minerPrivateKey, shardID)
 		if err != nil {
 			return nil, err
 		}
 		instructions = append(instructions, updateGovernorInstruction...)
 	}
-	if self.neededNewGovernor(common.GOVBoard) {
+	if self.neededNewGovernor(metadata.GOVBoard) {
 		updateGovernorInstruction, err := self.CreateUpdateNewGovernorInstruction(GOVConstitutionHelper{}, minerPrivateKey, shardID)
 		if err != nil {
 			return nil, err
@@ -580,8 +580,8 @@ func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
 	db := self.config.DataBase
 	bestBlock := self.BestState.Beacon.BestBlock
 	thisBlockHeight := bestBlock.Header.Height + 1
-	lastEncryptBlockHeight, _ := db.GetEncryptionLastBlockHeight(helper.GetBoardType())
-	encryptFlag, _ := db.GetEncryptFlag(helper.GetBoardType())
+	lastEncryptBlockHeight, _ := db.GetEncryptionLastBlockHeight(helper.GetBoardType().BoardTypeDB())
+	encryptFlag, _ := db.GetEncryptFlag(helper.GetBoardType().BoardTypeDB())
 	if thisBlockHeight == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
 		encryptFlag == common.NormalEncryptionFlag {
 		return true
@@ -591,10 +591,10 @@ func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
 
 func (bc *BlockChain) UpdateConstitution(
 	tx metadata.Transaction,
-	boardType byte,
+	boardType metadata.BoardType,
 ) error {
 	var helper ConstitutionHelper
-	if boardType == common.DCBBoard {
+	if boardType == metadata.DCBBoard {
 		helper = DCBConstitutionHelper{}
 	} else {
 		helper = GOVConstitutionHelper{}
@@ -621,16 +621,16 @@ func (bc *BlockChain) UpdateConstitution(
 	return nil
 }
 
-func (bc *BlockChain) GetGovernor(boardType byte) metadata.GovernorInterface {
-	if boardType == common.DCBBoard {
+func (bc *BlockChain) GetGovernor(boardType metadata.BoardType) metadata.GovernorInterface {
+	if boardType == metadata.DCBBoard {
 		return bc.BestState.Beacon.StabilityInfo.DCBGovernor
 	} else {
 		return bc.BestState.Beacon.StabilityInfo.GOVGovernor
 	}
 }
 
-func (bc *BlockChain) GetConstitution(boardType byte) metadata.ConstitutionInterface {
-	if boardType == common.DCBBoard {
+func (bc *BlockChain) GetConstitution(boardType metadata.BoardType) metadata.ConstitutionInterface {
+	if boardType == metadata.DCBBoard {
 		return bc.BestState.Beacon.StabilityInfo.DCBConstitution
 	} else {
 		return bc.BestState.Beacon.StabilityInfo.GOVConstitution

@@ -25,3 +25,10 @@ func (A CandidateList) Less(i, j int) bool {
 		(A[i].VoteAmount == A[j].VoteAmount && A[i].NumberOfVote == A[j].NumberOfVote &&
 			bytes.Compare(A[i].PaymentAddress.Bytes(), A[j].PaymentAddress.Bytes()) == -1)
 }
+
+type BoardTypeDB byte
+
+func (boardTypeDB BoardTypeDB) Bytes() []byte {
+	x := byte(boardTypeDB)
+	return []byte{x}
+}

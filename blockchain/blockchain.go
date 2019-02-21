@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/ninjadotorg/constant/metadata/frombeaconins"
+
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/cashec"
@@ -1116,8 +1118,8 @@ func (blockchain *BlockChain) GetNumberOfGOVGovernors() int {
 // 	return blockchain.BestState[shardID].BestBlock
 // }
 
-func (blockchain *BlockChain) GetConstitutionStartHeight(boardType byte, shardID byte) uint64 {
-	if boardType == common.DCBBoard {
+func (blockchain *BlockChain) GetConstitutionStartHeight(boardType metadata.BoardType, shardID byte) uint64 {
+	if boardType == metadata.DCBBoard {
 		return blockchain.GetDCBConstitutionStartHeight(shardID)
 	} else {
 		return blockchain.GetGOVConstitutionStartHeight(shardID)
@@ -1131,16 +1133,16 @@ func (self *BlockChain) GetGOVConstitutionStartHeight(shardID byte) uint64 {
 	return self.BestState.Beacon.StabilityInfo.GOVConstitution.StartedBlockHeight
 }
 
-func (blockchain *BlockChain) GetConstitutionEndHeight(boardType byte, shardID byte) uint64 {
-	if boardType == common.DCBBoard {
+func (blockchain *BlockChain) GetConstitutionEndHeight(boardType metadata.BoardType, shardID byte) uint64 {
+	if boardType == metadata.DCBBoard {
 		return blockchain.GetDCBConstitutionEndHeight(shardID)
 	} else {
 		return blockchain.GetGOVConstitutionEndHeight(shardID)
 	}
 }
 
-func (blockchain *BlockChain) GetBoardEndHeight(boardType byte, chainID byte) uint64 {
-	if boardType == common.DCBBoard {
+func (blockchain *BlockChain) GetBoardEndHeight(boardType metadata.BoardType, chainID byte) uint64 {
+	if boardType == metadata.DCBBoard {
 		return blockchain.GetDCBBoardEndHeight(chainID)
 	} else {
 		return blockchain.GetGOVBoardEndHeight(chainID)
@@ -1207,7 +1209,7 @@ func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) b
 	//
 	rightTime := newNationalWelfare < thresholdNationalWelfare || pivotOfStart == uint64(thisBlockHeight)
 
-	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
+	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType().BoardTypeDB())
 	rightFlag := encryptFlag == common.Lv3EncryptionFlag
 	if rightTime && rightFlag {
 		return true
@@ -1219,8 +1221,8 @@ func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) b
 func (self *BlockChain) NeedEnterEncryptLv1(helper ConstitutionHelper) bool {
 	BestBlock := self.BestState.Beacon.BestBlock
 	thisBlockHeight := BestBlock.Header.Height
-	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
-	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
+	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType().BoardTypeDB())
+	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType().BoardTypeDB())
 	if thisBlockHeight == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
 		encryptFlag == common.Lv2EncryptionFlag {
 		return true
@@ -1232,8 +1234,8 @@ func (self *BlockChain) NeedEnterEncryptLv1(helper ConstitutionHelper) bool {
 func (self *BlockChain) NeedEnterEncryptNormal(helper ConstitutionHelper) bool {
 	BestBlock := self.BestState.Beacon.BestBlock
 	thisBlockHeight := BestBlock.Header.Height
-	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
-	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
+	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType().BoardTypeDB())
+	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType().BoardTypeDB())
 	if thisBlockHeight == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
 		encryptFlag == common.Lv1EncryptionFlag {
 		return true
@@ -1277,16 +1279,16 @@ func (blockchain *BlockChain) SetEncryptPhrase(helper ConstitutionHelper) {
 	height := blockchain.BestState.Beacon.BestBlock.Header.Height
 	if blockchain.NeedToEnterEncryptionPhrase(helper) {
 		flag = common.Lv2EncryptionFlag
-		blockchain.config.DataBase.SetEncryptionLastBlockHeight(boardType, height)
-		blockchain.config.DataBase.SetEncryptFlag(boardType, flag)
+		blockchain.config.DataBase.SetEncryptionLastBlockHeight(boardType.BoardTypeDB(), height)
+		blockchain.config.DataBase.SetEncryptFlag(boardType.BoardTypeDB(), flag)
 	} else if blockchain.NeedEnterEncryptLv1(helper) {
 		flag = common.Lv1EncryptionFlag
-		blockchain.config.DataBase.SetEncryptionLastBlockHeight(boardType, height)
-		blockchain.config.DataBase.SetEncryptFlag(boardType, flag)
+		blockchain.config.DataBase.SetEncryptionLastBlockHeight(boardType.BoardTypeDB(), height)
+		blockchain.config.DataBase.SetEncryptFlag(boardType.BoardTypeDB(), flag)
 	} else if blockchain.NeedEnterEncryptNormal(helper) {
 		flag = common.NormalEncryptionFlag
-		blockchain.config.DataBase.SetEncryptionLastBlockHeight(boardType, height)
-		blockchain.config.DataBase.SetEncryptFlag(boardType, flag)
+		blockchain.config.DataBase.SetEncryptionLastBlockHeight(boardType.BoardTypeDB(), height)
+		blockchain.config.DataBase.SetEncryptFlag(boardType.BoardTypeDB(), flag)
 	}
 }
 

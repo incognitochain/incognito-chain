@@ -9,12 +9,12 @@ import (
 )
 
 type AcceptProposalIns struct {
-	boardType byte
+	boardType metadata.BoardType
 	txID      common.Hash
 	voter     metadata.Voter
 }
 
-func NewAcceptProposalIns(boardType byte, txID common.Hash, voter metadata.Voter) *AcceptProposalIns {
+func NewAcceptProposalIns(boardType metadata.BoardType, txID common.Hash, voter metadata.Voter) *AcceptProposalIns {
 	return &AcceptProposalIns{boardType: boardType, txID: txID, voter: voter}
 }
 
@@ -26,7 +26,7 @@ func (acceptProposalIns AcceptProposalIns) BuildTransaction(minerPrivateKey *pri
 	txId := acceptProposalIns.txID
 	voter := acceptProposalIns.voter
 	var meta metadata.Metadata
-	if acceptProposalIns.boardType == common.DCBBoard {
+	if acceptProposalIns.boardType == metadata.DCBBoard {
 		meta = metadata.NewAcceptDCBProposalMetadata(txId, voter)
 	} else {
 		meta = metadata.NewAcceptGOVProposalMetadata(txId, voter)
