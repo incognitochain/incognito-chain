@@ -136,6 +136,11 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 	shardID := block.Header.ShardID
+	Logger.log.Infof("SHARD %+v | Check block existence for insert height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
+	isExist, _ := blockchain.config.DataBase.HasBlock(block.Hash())
+	if isExist {
+		return NewBlockChainError(DuplicateBlockErr, errors.New("This block has been stored already"))
+	}
 	Logger.log.Infof("SHARD %+v | Begin Insert new block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	Logger.log.Infof("SHARD %+v | Verify Pre Processing  Block %+v \n", block.Header.ShardID, *block.Hash())
 	if err := blockchain.VerifyPreProcessingShardBlock(block, shardID); err != nil {
@@ -192,6 +197,15 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	//TODO: Remove cross shard block in pool
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 	return nil
+}
+func (blockchain *BlockChain) CheckBlockExistence(block *BeaconBlock) bool {
+	blockHash := block.Header.Hash()
+	_, err := blockchain.config.DataBase.FetchBeaconBlock(&blockHash)
+	// if no err => have block => true
+	if err == nil {
+		return true
+	}
+	return false
 }
 
 /* Verify Pre-prosessing data
