@@ -227,33 +227,36 @@ func (db *db) SetVoteTokenAmount(boardType byte, boardIndex uint32, paymentAddre
 	return nil
 }
 
-func (db *db) GetEncryptFlag(boardType byte) (uint32, error) {
+func (db *db) GetEncryptFlag(boardType byte) (byte, error) {
 	key := GetKeyEncryptFlag(boardType)
 	value, err := db.Get(key)
 	if err != nil {
 		return 0, err
 	}
-	return common.BytesToUint32(value), nil
+	if len(value) != 1 {
+		return 0, errors.New("wrong flag format")
+	}
+	return value[0], nil
 }
 
-func (db *db) SetEncryptFlag(boardType byte, flag uint32) {
+func (db *db) SetEncryptFlag(boardType byte, flag byte) {
 	key := GetKeyEncryptFlag(boardType)
-	value := common.Uint32ToBytes(flag)
+	value := common.ByteToBytes(flag)
 	db.Put(key, value)
 }
 
-func (db *db) GetEncryptionLastBlockHeight(boardType byte) (uint32, error) {
+func (db *db) GetEncryptionLastBlockHeight(boardType byte) (uint64, error) {
 	key := GetKeyEncryptionLastBlockHeight(boardType)
 	value, err := db.Get(key)
 	if err != nil {
 		return 0, err
 	}
-	return common.BytesToUint32(value), nil
+	return common.BytesToUint64(value), nil
 }
 
-func (db *db) SetEncryptionLastBlockHeight(boardType byte, height uint32) {
+func (db *db) SetEncryptionLastBlockHeight(boardType byte, height uint64) {
 	key := GetKeyEncryptionLastBlockHeight(boardType)
-	value := common.Uint32ToBytes(height)
+	value := common.Uint64ToBytes(height)
 	db.Put(key, value)
 }
 

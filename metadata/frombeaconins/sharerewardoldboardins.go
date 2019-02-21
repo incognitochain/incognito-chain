@@ -1,4 +1,4 @@
-package toshardins
+package frombeaconins
 
 import (
 	"encoding/json"
@@ -56,7 +56,7 @@ func NewShareRewardOldBoardMetadataIns(
 func (txShareRewardOldBoardMetadataIns *TxShareRewardOldBoardMetadataIns) BuildTransaction(
 	minerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
-) metadata.Transaction {
+) (metadata.Transaction, error) {
 	tx := transaction.Tx{}
 	rewardShareOldBoardMeta := metadata.NewShareRewardOldBoardMetadata(
 		txShareRewardOldBoardMetadataIns.chairPaymentAddress,
@@ -88,5 +88,5 @@ func (txShareRewardOldBoardMetadataIns *TxShareRewardOldBoardMetadataIns) BuildT
 		Tx:          tx,
 		TxTokenData: txTokenData,
 	}
-	return &txCustomToken
+	return &txCustomToken, nil
 }
