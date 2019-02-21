@@ -1,9 +1,10 @@
 package constantpos
 
 const (
-	ListenTimeout  = 30 //in second
-	PrepareTimeout = 6
-	CommitTimeout  = 6
+	ListenTimeout  = 18   //in s
+	PrepareTimeout = 6    //in s
+	CommitTimeout  = 6    //in s
+	DelayTime      = 1000 // in ms
 )
 
 //PBFT
