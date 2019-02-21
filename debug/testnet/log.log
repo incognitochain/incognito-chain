@@ -1,0 +1,15 @@
+[32m2019-02-20 14:41:58.283 constant.go:47 [INF] Server Log: Version 0.1.0-beta
+[0m[32m2019-02-20 14:41:58.312 server.go:185 [INF] Server Log: Load chain dependencies from DB
+[0m[32m2019-02-20 14:41:58.488 server.go:97 [INF] Server Log: Disable TLS for RPC is true
+[0m[32m2019-02-20 14:41:58.488 server.go:462 [INF] Server Log: Starting server
+[0m[36m2019-02-20 14:41:58.488 server.go:464 [CRT] Server Log: ************************
+[0m[36m2019-02-20 14:41:58.488 server.go:465 [CRT] Server Log: * Testnet is active *
+[0m[36m2019-02-20 14:41:58.488 server.go:466 [CRT] Server Log: ************************
+[0m[32m2019-02-20 14:41:58.489 engine.go:51 [INF] Consensus log: Start consensus with key 177KNe6pRhi97hD9LqjUvGxLoNeKh9F5oSeh99V6Td2sQcm7qEu
+[0m[32m2019-02-20 14:41:58.489 addrmanager.go:169 [INF] Address Log: Starting address manager
+[0m[32m2019-02-20 14:41:58.489 rpcserver.go:151 [INF] RPC Log: RPC server listening on 127.0.0.1:9334
+[0m[32m2019-02-20 14:41:58.489 rpcserver.go:153 [INF] RPC Log: RPC listener done for 127.0.0.1:9334
+[0m[32m2019-02-20 14:41:58.489 addrmanager.go:105 [INF] Address Log: Loaded 0 addresses from file 'data/shard-1/testnet/peer.json'
+[0m[32m2019-02-20 14:41:58.489 server.go:427 [INF] Server Log: Start peer handler
+[0m[32m2019-02-20 14:42:00.498 bft.go:49 [INF] Consensus log: Starting PBFT protocol for shard
+[0m

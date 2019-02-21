@@ -91,18 +91,18 @@ privAddr: 112t8rnfNhk6QAyQYGxLRTyuR7WTA9yCH4n8EHCSayyTS7KczuziPaVdYMqa5VKRNHKLUM
 
 
 Beacon 
-go build && ./constant --spendingkey '112t8rnXDNYL1RyTuT85JXeX7mJg1Sc6tCby5akSM7pfEGApgAx83X8C46EDu6dFAK6MVcWfQv2sfTk5nV9HqU3jrkrWdhrmi9z34jEhgHak' --nodemode "auto" --datadir "data/node-0" --listen "127.0.0.1:9430" --externaladdress "127.0.0.1:9430" --norpc
+go build && ./constant --spendingkey '112t8rnXDNYL1RyTuT85JXeX7mJg1Sc6tCby5akSM7pfEGApgAx83X8C46EDu6dFAK6MVcWfQv2sfTk5nV9HqU3jrkrWdhrmi9z34jEhgHak' --nodemode "auto" --datadir "data/beacon-0" --listen "127.0.0.1:9430" --externaladdress "127.0.0.1:9430" --norpc
 
-./constant --spendingkey '112t8rnXZD2GmbVAP3xBefJaorCgebytpoRK1oAzcgoNNSVtXzoRTu21KeSmnRbzvd7qMJd1mTcsqFS1CGZ8UpY4mFRZzBa69aVcFWpLXuRv' --nodemode "auto" --datadir "data/node-1" --listen "127.0.0.1:9431" --externaladdress "127.0.0.1:9431"
+./constant --spendingkey '112t8rxTdWfGCtgWvAMHnnEw9vN3R1D7YgD1SSHjAnVGL82HCrMq9yyXrHv3kB4gr84cejnMZRQ973RyHhq2G3MksoTWejNKdSWoQYDFf4gQ' --nodemode "auto" --datadir "data/beacon-1" --listen "127.0.0.1:9431" --externaladdress "127.0.0.1:9431" --norpc
 
-./constant --spendingkey '112t8rnXmEeG5zsS7rExURJfqaRZhm6r4Pypkeag2gprdhtgDpen3LwV68x1nDPRYz2zhyhJTJCGvq1tUx4P1dvrdxF9W9DH7ME7PeGN2ohZ' --nodemode "auto" --datadir "data/node-2" --listen "127.0.0.1:9432" --externaladdress "127.0.0.1:9432"
+./constant --spendingkey '112t8rnXmEeG5zsS7rExURJfqaRZhm6r4Pypkeag2gprdhtgDpen3LwV68x1nDPRYz2zhyhJTJCGvq1tUx4P1dvrdxF9W9DH7ME7PeGN2ohZ' --nodemode "auto" --datadir "data/beacon-2" --listen "127.0.0.1:9432" --externaladdress "127.0.0.1:9432" --norpc
 
 
 
 Shard
 go build && ./constant --spendingkey "112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNhc33pzChmJRvikZNc3Dt5V7quhdzjWW9Z4BrB2BxdK5VtHzsG9JZdZ5M7yYYGidKKZV" --nodemode "auto" --datadir "data/node-3" --listen "127.0.0.1:9433" --externaladdress "127.0.0.1:9433" --norpcauth --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit
 
-./constant --nodemode "auto" --spendingkey "112t8rnYY8UbXGVJ3PsrWxssjr1JXaTPNCPDrneXcQgVQs2MFYwgCzPmTsgqPPbeq8c4QxkrjpHYRaG39ZjtwCmHMJBNh2MxaQvKWw5eUGTM" --nodemode "relay" --datadir "data/node-4" --listen "127.0.0.1:9434" --externaladdress "127.0.0.1:9434" --relayshards [0] --norpc
+./constant --nodemode "auto" --spendingkey "112t8rqnMrtPkJ4YWzXfG82pd9vCe2jvWGxqwniPM5y4hnimki6LcVNfXxN911ViJS8arTozjH4rTpfaGo5i1KKcG1ayjiMsa4E3nABGAqQh"  --datadir "data/shard-1" --listen "127.0.0.1:9434" --externaladdress "127.0.0.1:9434" --relayshards [0] --norpc
 
 
 ./constant --nodemode "auto" --spendingkey "112t8rnYBW9trs5rzxrMzLU5AnzngQhbp6X4c3xyamFkWU7PwWRq6gprDkm6mf3ZjxaeYQmSpe3xorpWHo3JLLZFHCHSgqd8u19XkVuMGz1M" --nodemode "auto" --datadir "data/node-5" --listen "127.0.0.1:9435" --externaladdress "127.0.0.1:9435"

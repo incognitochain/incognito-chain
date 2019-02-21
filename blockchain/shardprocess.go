@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
 )
 
@@ -177,7 +178,17 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	if err != nil {
 		return err
 	}
-
+	//Remove Candidate In pool
+	candidates := []string{}
+	for _, tx := range block.Body.Transactions {
+		if tx.GetMetadata() != nil {
+			if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
+				pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), byte(0x00))
+				candidates = append(candidates, pubkey)
+			}
+		}
+	}
+	blockchain.config.TxPool.RemoveCandidateList(candidates)
 	//TODO: Remove cross shard block in pool
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 	return nil
@@ -429,6 +440,7 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 		bestStateShard.BestBeaconHash = block.Header.BeaconHash
 	}
 	bestStateShard.BestBlock = block
+	bestStateShard.BestBlockHash = *block.Hash()
 	bestStateShard.ShardHeight = block.Header.Height
 	bestStateShard.Epoch = block.Header.Epoch
 	bestStateShard.BeaconHeight = block.Header.BeaconHeight

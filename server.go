@@ -170,7 +170,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		Server:            serverObj,
 		UserKeySet:        serverObj.userKeySet,
 		NodeMode:          cfg.NodeMode,
-		// Light:       cfg.Light,
 	})
 
 	if err != nil {
@@ -227,6 +226,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		ChainParams:  chainParams,
 		FeeEstimator: serverObj.feeEstimator,
 	})
+	//add tx pool
+	serverObj.blockChain.AddTxPool(serverObj.memPool)
 
 	serverObj.addrManager = addrmanager.New(cfg.DataDir)
 
@@ -1064,7 +1065,7 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHash(blksHash []common.Hash,
 	if peerID != "" {
 		return serverObj.PushMessageToPeer(msg, peerID)
 	}
-	return serverObj.PushMessageToBeacon(msg)
+	return serverObj.PushMessageToAll(msg)
 }
 
 func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error {
@@ -1076,7 +1077,11 @@ func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uin
 	msg.(*wire.MessageGetBlockShard).From = from
 	msg.(*wire.MessageGetBlockShard).To = to
 	msg.(*wire.MessageGetBlockShard).ShardID = shardID
+	if peerID == "" {
+		return serverObj.PushMessageToShard(msg, shardID)
+	}
 	return serverObj.PushMessageToPeer(msg, peerID)
+
 }
 
 func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error {
@@ -1088,7 +1093,11 @@ func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blksHash [
 	msg.(*wire.MessageGetBlockShard).FromPool = getFromPool
 	msg.(*wire.MessageGetBlockShard).BlksHash = blksHash
 	msg.(*wire.MessageGetBlockShard).ShardID = shardID
+	if peerID == "" {
+		return serverObj.PushMessageToShard(msg, shardID)
+	}
 	return serverObj.PushMessageToPeer(msg, peerID)
+
 }
 
 func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error {
@@ -1105,8 +1114,11 @@ func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, 
 	msg.(*wire.MessageGetShardToBeacon).Timestamp = time.Now().Unix()
 	msg.SetSenderID(listener.PeerID)
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
-	serverObj.PushMessageToShard(msg, shardID)
-	return nil
+	if peerID == "" {
+		return serverObj.PushMessageToShard(msg, shardID)
+	}
+	return serverObj.PushMessageToPeer(msg, peerID)
+
 }
 
 func (serverObj *Server) PushMessageGetBlockShardToBeaconByHash(shardID byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error {
@@ -1123,8 +1135,10 @@ func (serverObj *Server) PushMessageGetBlockShardToBeaconByHash(shardID byte, bl
 	msg.(*wire.MessageGetShardToBeacon).Timestamp = time.Now().Unix()
 	msg.SetSenderID(listener.PeerID)
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
-	serverObj.PushMessageToShard(msg, shardID)
-	return nil
+	if peerID == "" {
+		return serverObj.PushMessageToShard(msg, shardID)
+	}
+	return serverObj.PushMessageToPeer(msg, peerID)
 }
 
 func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toShard byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error {
@@ -1141,8 +1155,11 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 	msg.(*wire.MessageGetCrossShard).Timestamp = time.Now().Unix()
 	msg.SetSenderID(listener.PeerID)
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
-	serverObj.PushMessageToShard(msg, fromShard)
-	return nil
+	if peerID == "" {
+		return serverObj.PushMessageToShard(msg, fromShard)
+	}
+	return serverObj.PushMessageToPeer(msg, peerID)
+
 }
 
 func (serverObj *Server) BoardcastNodeState() error {
@@ -1156,16 +1173,14 @@ func (serverObj *Server) BoardcastNodeState() error {
 		serverObj.blockChain.BestState.Beacon.BestBlockHash,
 		serverObj.blockChain.BestState.Beacon.Hash(),
 	}
-	for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
-		msg.(*wire.MessagePeerState).Shards[shardID] = blockchain.ChainState{
-			serverObj.blockChain.BestState.Shard[shardID].ShardHeight,
-			serverObj.blockChain.BestState.Shard[shardID].BestBlockHash,
-			serverObj.blockChain.BestState.Shard[shardID].Hash(),
+	for shardID := 0; shardID < serverObj.blockChain.BestState.Beacon.ActiveShards; shardID++ {
+		shardIDbyte := byte(shardID)
+		msg.(*wire.MessagePeerState).Shards[shardIDbyte] = blockchain.ChainState{
+			serverObj.blockChain.BestState.Shard[shardIDbyte].ShardHeight,
+			serverObj.blockChain.BestState.Shard[shardIDbyte].BestBlockHash,
+			serverObj.blockChain.BestState.Shard[shardIDbyte].Hash(),
 		}
 	}
-	// for _, shardID := range serverObj.blockChain.GetCurrentSyncShards() {
-
-	// }
 	msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidPendingBlockHash()
 
 	userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58())
