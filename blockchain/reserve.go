@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
@@ -52,6 +53,7 @@ func buildInstTypeForContractingAction(
 	oracle := stabilityInfo.Oracle
 	spendReserveData := stabilityInfo.DCBConstitution.DCBParams.SpendReserveData
 	bestBlockHeight := beaconBestState.BestBlock.Header.Height
+	fmt.Printf("[db] buildInstTypeForCont spendReserveData: %+v\n", spendReserveData)
 	if spendReserveData == nil {
 		return "refund"
 	}
@@ -81,6 +83,7 @@ func buildInstructionsForContractingReq(
 	if err != nil {
 		return [][]string{}, err
 	}
+	fmt.Printf("[db] building inst for contracting req: %s\n", contentBytes)
 	var contractingReqAction ContractingReqAction
 	err = json.Unmarshal(contentBytes, &contractingReqAction)
 	if err != nil {
@@ -107,6 +110,7 @@ func buildInstructionsForContractingReq(
 		instType,
 		string(cInfoBytes),
 	}
+	fmt.Printf("[db] buildInstForContReq return %+v\n", returnedInst)
 	instructions = append(instructions, returnedInst)
 	return instructions, nil
 }
@@ -149,6 +153,7 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 	blkProducerPrivateKey *privacy.SpendingKey,
 ) ([]metadata.Transaction, error) {
 	var issuingInfo IssuingInfo
+	fmt.Printf("[db] buildIssuingRes %s\n", issuingInfoStr)
 	err := json.Unmarshal([]byte(issuingInfoStr), &issuingInfo)
 	if err != nil {
 		return nil, err
@@ -233,6 +238,7 @@ func buildInstTypeAndAmountForIssuingAction(
 		// TODO: be careful of the ETH unit
 		reqAmt = (md.DepositedAmount * oracle.ETH) / oracle.DCBToken
 		dcbTokensNeeded = reqAmt + accumulativeValues.dcbTokensSoldByETH
+		fmt.Printf("[db] isOnETH: %+v %d %d %d\n", reserveData, reqAmt, dcbTokensNeeded, bestBlockHeight)
 	}
 	if !existed ||
 		bestBlockHeight+1 > reserveData.EndBlock ||
@@ -259,6 +265,7 @@ func buildInstructionsForIssuingReq(
 		return [][]string{}, err
 	}
 	var issuingReqAction IssuingReqAction
+	fmt.Printf("[db] building inst for issuing req: %s\n", contentBytes)
 	err = json.Unmarshal(contentBytes, &issuingReqAction)
 	if err != nil {
 		return nil, err
@@ -285,6 +292,7 @@ func buildInstructionsForIssuingReq(
 		instType,
 		string(iInfoBytes),
 	}
+	fmt.Printf("[db] buildInstForIssuingReq return %+v\n", returnedInst)
 	instructions = append(instructions, returnedInst)
 	return instructions, nil
 }

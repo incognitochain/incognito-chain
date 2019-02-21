@@ -97,6 +97,8 @@ func (rpcServer RpcServer) handleConvertETHToDCBTokenAmount(params interface{}, 
 		return nil, NewRPCError(ErrRPCParse, errors.New("Amount invalid"))
 	}
 	depositedAmount := amount.Uint64()
+
+	// Calculate #DCB tokens
 	dcbTokenAmount := depositedAmount * oracle.ETH / oracle.DCBToken
 	return dcbTokenAmount, nil
 }

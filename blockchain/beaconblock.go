@@ -30,6 +30,7 @@ type BeaconHeader struct {
 	Height   uint64 `json:"Height"`
 	//epoch length should be config in consensus
 	Epoch         uint64      `json:"Epoch"`
+	Round         int         `json:"Round"`
 	Timestamp     int64       `json:"Timestamp"`
 	PrevBlockHash common.Hash `json:"PrevBlockHash"`
 
