@@ -2,12 +2,12 @@ package frombeaconins
 
 import (
 	"encoding/json"
-	"github.com/ninjadotorg/constant/common"
+	"strconv"
+
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
-	"strconv"
 )
 
 type TxSendInitDCBVoteTokenMetadataIns struct {
@@ -87,11 +87,11 @@ func (txSendInitGOVVoteTokenMetadataIns *TxSendInitGOVVoteTokenMetadataIns) Buil
 }
 
 func NewTxSendInitVoteTokenMetadataIns(
-	boardType byte,
+	boardType metadata.BoardType,
 	amount uint32,
 	receiverPaymentAddress privacy.PaymentAddress,
 ) InstructionFromBeacon {
-	if boardType == common.DCBBoard {
+	if boardType == metadata.DCBBoard {
 		return NewTxSendInitDCBVoteTokenMetadataIns(amount, receiverPaymentAddress)
 	} else {
 		return NewTxSendInitGOVVoteTokenMetadataIns(amount, receiverPaymentAddress)
