@@ -153,33 +153,33 @@ type DatabaseInterface interface {
 
 	//Vote
 	AddVoteBoard(
-		boardType byte,
+		boardType BoardTypeDB,
 		boardIndex uint32,
 		VoterPaymentAddress privacy.PaymentAddress,
 		CandidatePaymentAddress privacy.PaymentAddress,
 		amount uint64,
 	) error
-	GetTopMostVoteGovernor(boardType byte, currentBoardIndex uint32) (CandidateList, error)
+	GetTopMostVoteGovernor(boardType BoardTypeDB, currentBoardIndex uint32) (CandidateList, error)
 	NewIterator(*util.Range, *opt.ReadOptions) iterator.Iterator
 	GetKey(string, interface{}) []byte
-	SendInitVoteToken(boardType byte, boardIndex uint32, paymentAddress privacy.PaymentAddress, amount uint32) error
-	AddVoteLv3Proposal(byte, uint32, *common.Hash) error
-	AddVoteLv1or2Proposal(byte, uint32, *common.Hash) error
-	AddVoteNormalProposalFromOwner(byte, uint32, *common.Hash, []byte) error
-	AddVoteNormalProposalFromSealer(byte, uint32, *common.Hash, []byte) error
-	TakeVoteTokenFromWinner(boardType byte, boardIndex uint32, voterPaymentAddress privacy.PaymentAddress, amountOfVote int32) error
-	SetNewProposalWinningVoter(byte, uint32, privacy.PaymentAddress) error
-	GetVoteTokenAmount(boardType byte, boardIndex uint32, paymentAddress privacy.PaymentAddress) (uint32, error)
-	SetVoteTokenAmount(boardType byte, boardIndex uint32, paymentAddress privacy.PaymentAddress, amount uint32) error
-	GetEncryptFlag(boardType byte) (byte, error)
-	SetEncryptFlag(boardType byte, flag byte)
-	GetEncryptionLastBlockHeight(boardType byte) (uint64, error)
-	SetEncryptionLastBlockHeight(boardType byte, height uint64)
+	SendInitVoteToken(boardType BoardTypeDB, boardIndex uint32, paymentAddress privacy.PaymentAddress, amount uint32) error
+	AddVoteLv3Proposal(boardType BoardTypeDB, constitutionIndex uint32, txID *common.Hash) error
+	AddVoteLv1or2Proposal(boardType BoardTypeDB, constitutionIndex uint32, txID *common.Hash) error
+	AddVoteNormalProposalFromOwner(boardType BoardTypeDB, constitutionIndex uint32, txID *common.Hash, voteValue []byte) error
+	AddVoteNormalProposalFromSealer(boardType BoardTypeDB, constitutionIndex uint32, txID *common.Hash, voteValue []byte) error
+	TakeVoteTokenFromWinner(boardType BoardTypeDB, boardIndex uint32, voterPaymentAddress privacy.PaymentAddress, amountOfVote int32) error
+	SetNewProposalWinningVoter(boardType BoardTypeDB, constitutionIndex uint32, paymentAddress privacy.PaymentAddress) error
+	GetVoteTokenAmount(boardType BoardTypeDB, boardIndex uint32, paymentAddress privacy.PaymentAddress) (uint32, error)
+	SetVoteTokenAmount(boardType BoardTypeDB, boardIndex uint32, paymentAddress privacy.PaymentAddress, amount uint32) error
+	GetEncryptFlag(boardType BoardTypeDB) (byte, error)
+	SetEncryptFlag(boardType BoardTypeDB, flag byte)
+	GetEncryptionLastBlockHeight(boardType BoardTypeDB) (uint64, error)
+	SetEncryptionLastBlockHeight(boardType BoardTypeDB, height uint64)
 
 	// Multisigs
 	StoreMultiSigsRegistration([]byte, []byte) error
 	GetMultiSigsRegistration([]byte) ([]byte, error)
-	GetBoardVoterList(boardType byte, chairPaymentAddress privacy.PaymentAddress, boardIndex uint32) []privacy.PaymentAddress
+	GetBoardVoterList(boardType BoardTypeDB, chairPaymentAddress privacy.PaymentAddress, boardIndex uint32) []privacy.PaymentAddress
 
 	Close() error
 }
