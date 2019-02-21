@@ -185,6 +185,9 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 
 	for _, tx := range block.Body.Transactions {
 		meta := tx.GetMetadata()
+		if meta == nil {
+			continue
+		}
 		err := meta.ProcessWhenInsertBlockShard(tx, blockchain)
 		if err != nil {
 			return err

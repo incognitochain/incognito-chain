@@ -20,6 +20,7 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/database/lvdb"
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/metadata/frombeaconins"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
@@ -329,7 +330,8 @@ func (blockchain *BlockChain) initBeaconState() error {
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
 	blockchain.BestState.Beacon.Update(initBlock)
 	// TODO(@0xankylosaurus): initialize oracle data properly
-	blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 1000000 // $10 in millicent
+	// All values are in millicent
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 1000000 // $10
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.GOVToken = 2000000 // $20
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.Constant = 1000    // $1, for Nano
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.ETH = 10000        // $100, for milliether

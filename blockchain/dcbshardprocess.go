@@ -203,7 +203,7 @@ func (bc *BlockChain) storeContractingResponseInstruction(inst []string, shardID
 	}
 
 	instType := inst[2]
-	return bc.config.DataBase.StoreContractingInfo(contractingInfo.RequestedTxID, contractingInfo.BurnedConstAmount, instType)
+	return bc.config.DataBase.StoreContractingInfo(contractingInfo.RequestedTxID, contractingInfo.BurnedConstAmount, contractingInfo.RedeemAmount, instType)
 }
 
 //func (bc *BlockChain) UpdateDividendPayout(block *Block) error {
