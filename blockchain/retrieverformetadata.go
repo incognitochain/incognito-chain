@@ -30,8 +30,8 @@ func (blockchain *BlockChain) GetBeaconHeight() uint64 {
 	return blockchain.BestState.Beacon.BeaconHeight
 }
 
-func (blockchain *BlockChain) GetBoardPubKeys(boardType byte) [][]byte {
-	if boardType == common.DCBBoard {
+func (blockchain *BlockChain) GetBoardPubKeys(boardType metadata.BoardType) [][]byte {
+	if boardType == metadata.DCBBoard {
 		return blockchain.GetDCBBoardPubKeys()
 	} else {
 		return blockchain.GetGOVBoardPubKeys()
@@ -54,8 +54,8 @@ func (blockchain *BlockChain) GetGOVBoardPubKeys() [][]byte {
 	return pubkeys
 }
 
-func (blockchain *BlockChain) GetBoardPaymentAddress(boardType byte) []privacy.PaymentAddress {
-	if boardType == common.DCBBoard {
+func (blockchain *BlockChain) GetBoardPaymentAddress(boardType metadata.BoardType) []privacy.PaymentAddress {
+	if boardType == metadata.DCBBoard {
 		return blockchain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress
 	}
 	return blockchain.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress

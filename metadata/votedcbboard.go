@@ -21,7 +21,7 @@ type GovernorInterface interface {
 }
 
 func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
-	boardType := common.DCBBoard
+	boardType := DCBBoard
 	voteAmount, err := tx.GetAmountOfVote()
 	if err != nil {
 		return err
@@ -33,7 +33,7 @@ func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ProcessWhenInsertBlockShard(tx
 	governor := bcr.GetGovernor(boardType)
 	boardIndex := governor.GetBoardIndex() + 1
 	err1 := bcr.GetDatabase().AddVoteBoard(
-		boardType,
+		boardType.BoardTypeDB(),
 		boardIndex,
 		*payment,
 		voteDCBBoardMetadata.VoteBoardMetadata.CandidatePaymentAddress,

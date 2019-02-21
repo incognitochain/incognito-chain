@@ -65,18 +65,18 @@ type ConstitutionInterface interface {
 }
 
 func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
-	boardType := common.DCBBoard
+	boardType := DCBBoard
 	consitution := bcr.GetConstitution(boardType)
 	nextConstitutionIndex := consitution.GetConstitutionIndex() + 1
 	err := bcr.UpdateConstitution(tx, boardType)
 	if err != nil {
 		return err
 	}
-	err1 := bcr.GetDatabase().TakeVoteTokenFromWinner(boardType, nextConstitutionIndex, acceptDCBProposalMetadata.AcceptProposalMetadata.Voter.PaymentAddress, acceptDCBProposalMetadata.AcceptProposalMetadata.Voter.AmountOfVote)
+	err1 := bcr.GetDatabase().TakeVoteTokenFromWinner(boardType.BoardTypeDB(), nextConstitutionIndex, acceptDCBProposalMetadata.AcceptProposalMetadata.Voter.PaymentAddress, acceptDCBProposalMetadata.AcceptProposalMetadata.Voter.AmountOfVote)
 	if err1 != nil {
 		return err1
 	}
-	err2 := bcr.GetDatabase().SetNewProposalWinningVoter(boardType, nextConstitutionIndex, acceptDCBProposalMetadata.AcceptProposalMetadata.Voter.PaymentAddress)
+	err2 := bcr.GetDatabase().SetNewProposalWinningVoter(boardType.BoardTypeDB(), nextConstitutionIndex, acceptDCBProposalMetadata.AcceptProposalMetadata.Voter.PaymentAddress)
 	if err2 != nil {
 		return err2
 	}
@@ -159,7 +159,7 @@ type AcceptGOVProposalMetadata struct {
 }
 
 func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
-	boardType := common.GOVBoard
+	boardType := GOVBoard
 	consitution := bcr.GetConstitution(boardType)
 	nextConstitutionIndex := consitution.GetConstitutionIndex() + 1
 	err := bcr.UpdateConstitution(tx, boardType)
@@ -167,11 +167,11 @@ func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) ProcessWhenInsertBlo
 		return err
 	}
 	underlieMetadata := tx.GetMetadata().(*AcceptGOVProposalMetadata)
-	err1 := bcr.GetDatabase().TakeVoteTokenFromWinner(boardType, nextConstitutionIndex, underlieMetadata.AcceptProposalMetadata.Voter.PaymentAddress, underlieMetadata.AcceptProposalMetadata.Voter.AmountOfVote)
+	err1 := bcr.GetDatabase().TakeVoteTokenFromWinner(boardType.BoardTypeDB(), nextConstitutionIndex, underlieMetadata.AcceptProposalMetadata.Voter.PaymentAddress, underlieMetadata.AcceptProposalMetadata.Voter.AmountOfVote)
 	if err1 != nil {
 		return err1
 	}
-	err2 := bcr.GetDatabase().SetNewProposalWinningVoter(boardType, nextConstitutionIndex, underlieMetadata.AcceptProposalMetadata.Voter.PaymentAddress)
+	err2 := bcr.GetDatabase().SetNewProposalWinningVoter(boardType.BoardTypeDB(), nextConstitutionIndex, underlieMetadata.AcceptProposalMetadata.Voter.PaymentAddress)
 	if err2 != nil {
 		return err2
 	}
