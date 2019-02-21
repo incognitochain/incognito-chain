@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/metadata/toshardins"
+	"github.com/ninjadotorg/constant/metadata/frombeaconins"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/metadata"
@@ -162,8 +162,8 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 			if l[0] == "stake" || l[0] == "swap" || l[0] == "random" {
 				continue
 			}
-			continue
 			if len(l) <= 2 {
+				continue
 			}
 			shardToProcess, err := strconv.Atoi(l[1])
 			if err == nil && shardToProcess == int(shardID) {
@@ -209,52 +209,70 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					resTxs = append(resTxs, txs...)
 
 				case metadata.AcceptDCBBoardMeta:
-					acceptDCBBoardIns := toshardins.TxAcceptDCBBoardIns{}
+					acceptDCBBoardIns := frombeaconins.TxAcceptDCBBoardIns{}
 					err := json.Unmarshal([]byte(l[2]), &acceptDCBBoardIns)
 					if err != nil {
 						return nil, err
 					}
-					txs := acceptDCBBoardIns.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					txs, err := acceptDCBBoardIns.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					if err != nil {
+						return nil, err
+					}
 					resTxs = append(resTxs, txs)
 				case metadata.AcceptGOVBoardMeta:
-					acceptGOVBoardIns := toshardins.TxAcceptGOVBoardIns{}
+					acceptGOVBoardIns := frombeaconins.TxAcceptGOVBoardIns{}
 					err := json.Unmarshal([]byte(l[2]), &acceptGOVBoardIns)
 					if err != nil {
 						return nil, err
 					}
-					txs := acceptGOVBoardIns.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					txs, err := acceptGOVBoardIns.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					if err != nil {
+						return nil, err
+					}
 					resTxs = append(resTxs, txs)
 				case metadata.SendBackTokenVoteFailMeta:
-					sendBackTokenVoteFail := toshardins.TxSendBackTokenVoteFailIns{}
+					sendBackTokenVoteFail := frombeaconins.TxSendBackTokenVoteFailIns{}
 					err := json.Unmarshal([]byte(l[2]), &sendBackTokenVoteFail)
 					if err != nil {
 						return nil, err
 					}
-					txs := sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					txs, err := sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					if err != nil {
+						return nil, err
+					}
 					resTxs = append(resTxs, txs)
 				case metadata.SendInitDCBVoteTokenMeta:
-					sendInitDCBVoteToken := toshardins.TxSendInitDCBVoteTokenMetadataIns{}
+					sendInitDCBVoteToken := frombeaconins.TxSendInitDCBVoteTokenMetadataIns{}
 					err := json.Unmarshal([]byte(l[2]), &sendInitDCBVoteToken)
 					if err != nil {
 						return nil, err
 					}
-					txs := sendInitDCBVoteToken.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					txs, err := sendInitDCBVoteToken.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					if err != nil {
+						return nil, err
+					}
 					resTxs = append(resTxs, txs)
 				case metadata.SendInitGOVVoteTokenMeta:
-					sendInitGOVVoteToken := toshardins.TxSendInitGOVVoteTokenMetadataIns{}
+					sendInitGOVVoteToken := frombeaconins.TxSendInitGOVVoteTokenMetadataIns{}
 					err := json.Unmarshal([]byte(l[2]), &sendInitGOVVoteToken)
 					if err != nil {
 						return nil, err
 					}
-					txs := sendInitGOVVoteToken.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					txs, err := sendInitGOVVoteToken.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					if err != nil {
+						return nil, err
+					}
 					resTxs = append(resTxs, txs)
 				case metadata.ShareRewardOldDCBBoardMeta, metadata.ShareRewardOldGOVBoardMeta:
-					shareRewardOldBoard := toshardins.TxShareRewardOldBoardMetadataIns{}
+					shareRewardOldBoard := frombeaconins.TxShareRewardOldBoardMetadataIns{}
 					err := json.Unmarshal([]byte(l[2]), &shareRewardOldBoard)
 					if err != nil {
 						return nil, err
 					}
-					txs := shareRewardOldBoard.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					txs, err := shareRewardOldBoard.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					if err != nil {
+						return nil, err
+					}
 					resTxs = append(resTxs, txs)
 
 				case metadata.IssuingRequestMeta:
