@@ -126,11 +126,12 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 		tp.addTxCoinHashH(*txHash)
 	}
 	// add candidate into candidate list ONLY with staking transaction
-	if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
-		pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), byte(0x00))
-		tp.addCanđiateToList(pubkey)
+	if tx.GetMetadata() != nil {
+		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
+			pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), byte(0x00))
+			tp.addCanđiateToList(pubkey)
+		}
 	}
-
 	return txD
 }
 
@@ -232,14 +233,16 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		return nil, nil, err
 	}
 	// check duplicate stake public key ONLY with staking transaction
-	if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
-		pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), byte(0x00))
-		tempPubkey := metadata.GetValidStaker(tp.candidateList, []string{pubkey})
-		if len(tempPubkey) == 0 {
-			str := fmt.Sprintf("This public key already stake and still in pool %+v", pubkey)
-			err := MempoolTxError{}
-			err.Init(RejectDuplicateStakeTx, errors.New(str))
-			return nil, nil, err
+	if tx.GetMetadata() != nil {
+		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
+			pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), byte(0x00))
+			tempPubkey := metadata.GetValidStaker(tp.candidateList, []string{pubkey})
+			if len(tempPubkey) == 0 {
+				str := fmt.Sprintf("This public key already stake and still in pool %+v", pubkey)
+				err := MempoolTxError{}
+				err.Init(RejectDuplicateStakeTx, errors.New(str))
+				return nil, nil, err
+			}
 		}
 	}
 	txD := tp.addTx(tx, bestHeight, txFee)

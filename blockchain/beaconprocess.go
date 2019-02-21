@@ -76,6 +76,11 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock, isCom
 func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee bool) error {
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
+	Logger.log.Infof("Check block existence for insert process %d, with hash %+v", block.Header.Height, *block.Hash())
+	isExist, _ := blockchain.config.DataBase.HasBeaconBlock(block.Hash())
+	if isExist {
+		return NewBlockChainError(DuplicateBlockErr, errors.New("This block has been stored already"))
+	}
 	Logger.log.Infof("Begin Insert new block %d, with hash %+v \n", block.Header.Height, *block.Hash())
 	// fmt.Printf("Beacon block %+v \n", block)
 	Logger.log.Infof("Verify Pre Processing Beacon Block %+v \n", *block.Hash())
