@@ -439,7 +439,7 @@ func (tx *TxCustomToken) GetTxCustomTokenSignature(keyset cashec.KeySet) ([]byte
 	return keyset.Sign(buff.Bytes())
 }
 
-func (tx *TxCustomToken) GetAmountOfVote() uint64 {
+func (tx *TxCustomToken) GetAmountOfVote() (uint64, error) {
 	sum := uint64(0)
 	for _, vout := range tx.TxTokenData.Vouts {
 		keyWallet, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
@@ -450,7 +450,11 @@ func (tx *TxCustomToken) GetAmountOfVote() uint64 {
 			sum += vout.Value
 		}
 	}
-	return sum
+	return sum, nil
+}
+
+func (tx *TxCustomToken) GetVoterPaymentAddress() (*privacy.PaymentAddress, error) {
+	return &tx.TxTokenData.Vins[0].PaymentAddress, nil
 }
 
 func (tx *TxCustomToken) IsPrivacy() bool {

@@ -93,10 +93,6 @@ func (helper DCBConstitutionHelper) CheckSubmitProposalType(tx metadata.Transact
 	return tx.GetMetadataType() == metadata.SubmitDCBProposalMeta
 }
 
-func (helper DCBConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transaction) uint64 {
-	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
-}
-
 func (helper GOVConstitutionHelper) GetStartedNormalVote(chain *BlockChain) uint64 {
 	info := chain.BestState.Beacon.StabilityInfo
 	lastGOVConstitution := info.GOVConstitution
@@ -107,7 +103,7 @@ func (helper GOVConstitutionHelper) CheckSubmitProposalType(tx metadata.Transact
 	return tx.GetMetadataType() == metadata.SubmitGOVProposalMeta
 }
 
-func (helper GOVConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transaction) uint64 {
+func (helper GOVConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transaction) (uint64, error) {
 	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
 }
 
@@ -217,11 +213,11 @@ func (helper GOVConstitutionHelper) GetTokenID() *common.Hash {
 	return &id
 }
 
-func (helper DCBConstitutionHelper) GetBoard(chain *BlockChain) Governor {
+func (helper DCBConstitutionHelper) GetBoard(chain *BlockChain) metadata.GovernorInterface {
 	return chain.BestState.Beacon.StabilityInfo.DCBGovernor
 }
 
-func (helper GOVConstitutionHelper) GetBoard(chain *BlockChain) Governor {
+func (helper GOVConstitutionHelper) GetBoard(chain *BlockChain) metadata.GovernorInterface {
 	return chain.BestState.Beacon.StabilityInfo.GOVGovernor
 }
 
