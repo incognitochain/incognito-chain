@@ -112,7 +112,6 @@ func (engine *Engine) Start() error {
 								resBlk, err = bftProtocol.Start(true, common.BEACON_ROLE, 0, currentPBFTRound)
 								if err != nil {
 									currentPBFTRound++
-									fmt.Println(currentPBFTRound)
 									Logger.log.Error("PBFT fatal error", err)
 									continue
 								}
@@ -121,7 +120,6 @@ func (engine *Engine) Start() error {
 								resBlk, err = bftProtocol.Start(false, common.BEACON_ROLE, 0, currentPBFTRound)
 								if err != nil {
 									currentPBFTRound++
-									fmt.Println(currentPBFTRound)
 									Logger.log.Error("PBFT fatal error", err)
 									continue
 								}
