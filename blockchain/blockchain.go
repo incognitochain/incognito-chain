@@ -103,6 +103,7 @@ type Config struct {
 	CrossShardPool    CrossShardPool
 	NodeBeaconPool    NodeBeaconPool
 	NodeShardPool     NodeShardPool
+	TxPool            TxPool
 
 	Server interface {
 		BoardcastNodeState() error
@@ -150,11 +151,11 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.syncStatus.Shards = make(map[byte]struct{})
 	blockchain.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
 	blockchain.knownChainState.Shards = make(map[byte]ChainState)
-	go blockchain.StartSyncBlk()
-	for _, shardID := range blockchain.config.RelayShards {
-		blockchain.SyncShard(shardID)
-	}
 	return nil
+}
+
+func (blockchain *BlockChain) AddTxPool(txpool TxPool) {
+	blockchain.config.TxPool = txpool
 }
 
 func (blockchain *BlockChain) InitShardToBeaconPool(db database.DatabaseInterface) {
@@ -206,6 +207,8 @@ func (blockchain *BlockChain) GetOracleParams() *params.Oracle {
 func (blockchain *BlockChain) initChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
+
+	//TODO: 0xBahamoot check back later
 	var initialized bool
 	blockchain.BestState = &BestState{
 		Beacon: &BestStateBeacon{},
@@ -231,13 +234,9 @@ func (blockchain *BlockChain) initChainState() error {
 			return err
 		}
 
-	} else {
-		test, _ := json.Marshal(blockchain.BestState.Beacon)
-		fmt.Println(string(test))
-
 	}
 
-	for shard := 1; shard <= common.SHARD_NUMBER; shard++ {
+	for shard := 1; shard <= blockchain.BestState.Beacon.ActiveShards; shard++ {
 		shardID := byte(shard - 1)
 		bestStateBytes, err := blockchain.config.DataBase.FetchBestState(shardID)
 		if err == nil {
@@ -272,7 +271,7 @@ func (blockchain *BlockChain) initChainState() error {
 // the genesis block, so it must only be called on an uninitialized database.
 */
 func (blockchain *BlockChain) initShardState(shardID byte) error {
-
+	blockchain.BestState.Shard[shardID] = NewBestStateShard(blockchain.config.ChainParams)
 	// Create a new block from genesis block and set it as best block of chain
 	initBlock := ShardBlock{}
 	initBlock = *blockchain.config.ChainParams.GenesisShardBlock
@@ -308,12 +307,6 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 	// fmt.Println(initTxs)
 	// os.Exit(1)
 
-	blockchain.BestState.Shard[shardID] = &BestStateShard{
-		ShardCommittee:        []string{},
-		ShardPendingValidator: []string{},
-		BestShardBlock:        &ShardBlock{},
-	}
-
 	_, newShardCandidate := GetStakingCandidate(*blockchain.config.ChainParams.GenesisBeaconBlock)
 
 	blockchain.BestState.Shard[shardID].ShardCommittee = append(blockchain.BestState.Shard[shardID].ShardCommittee, newShardCandidate[int(shardID)*blockchain.config.ChainParams.ShardCommitteeSize:(int(shardID)*blockchain.config.ChainParams.ShardCommitteeSize)+blockchain.config.ChainParams.ShardCommitteeSize]...)
@@ -327,20 +320,33 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 		return err
 	}
 	blockchain.ProcessStoreShardBlock(&initBlock)
-
-	// fmt.Println()
-	// fmt.Println(*initBlock.Hash())
-	// fmt.Println()
-	// os.Exit(1)
 	return nil
 }
 
 func (blockchain *BlockChain) initBeaconState() error {
-	blockchain.BestState.Beacon = NewBestStateBeacon()
+	blockchain.BestState.Beacon = NewBestStateBeacon(blockchain.config.ChainParams)
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
 	blockchain.BestState.Beacon.Update(initBlock)
-	// Insert new block into beacon chain
+	// TODO(@0xankylosaurus): initialize oracle data properly
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 1000000 // $10 in millicent
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.GOVToken = 2000000 // $20
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.Constant = 1000    // $1, for Nano
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.ETH = 10000        // $100, for milliether
+	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.RaiseReserveData = map[common.Hash]*params.RaiseReserveData{
+		common.ETHAssetID: &params.RaiseReserveData{
+			EndBlock: 1000,
+			Amount:   1000,
+		},
+	}
+	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.SpendReserveData = map[common.Hash]*params.SpendReserveData{
+		common.ETHAssetID: &params.SpendReserveData{
+			EndBlock:        1000,
+			ReserveMinPrice: 1000,
+			Amount:          10000000,
+		},
+	}
 
+	// Insert new block into beacon chain
 	if err := blockchain.StoreBeaconBestState(); err != nil {
 		Logger.log.Error("Error Store best state for block", blockchain.BestState.Beacon.BestBlockHash, "in beacon chain")
 		return NewBlockChainError(UnExpectedError, err)

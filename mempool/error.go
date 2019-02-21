@@ -11,6 +11,7 @@ const (
 	RejectInvalidTx
 	RejectSansityTx
 	RejectSalaryTx
+	RejectDuplicateStakeTx
 	RejectVersion
 	RejectInvalidFee
 	CanNotCheckDoubleSpend
@@ -31,6 +32,7 @@ var ErrCodeMessage = map[int]struct {
 	CanNotCheckDoubleSpend: {-1006, "Can not check double spend"},
 	DatabaseError:          {-1007, "Database Error"},
 	ShardToBeaconBoolError: {-1007, "ShardToBeaconBool Error"},
+	RejectDuplicateStakeTx: {-1008, "Reject Duplicate Stake Error"},
 }
 
 type MempoolTxError struct {
