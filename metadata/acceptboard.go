@@ -29,6 +29,14 @@ type AcceptDCBBoardMetadata struct {
 	MetadataBase
 }
 
+func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	err := bcr.UpdateDCBBoard(tx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func NewAcceptDCBBoardMetadata(DCBBoardPaymentAddress []privacy.PaymentAddress, startAmountDCBToken uint64) *AcceptDCBBoardMetadata {
 	return &AcceptDCBBoardMetadata{
 		AcceptBoardMetadata: *NewAcceptBoardMetadata(
@@ -65,6 +73,14 @@ type AcceptGOVBoardMetadata struct {
 	AcceptBoardMetadata AcceptBoardMetadata
 
 	MetadataBase
+}
+
+func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	err := bcr.UpdateGOVBoard(tx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func NewAcceptGOVBoardMetadata(GOVBoardPaymentAddress []privacy.PaymentAddress, startAmountGOVToken uint64) *AcceptGOVBoardMetadata {
