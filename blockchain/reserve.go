@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
@@ -145,6 +146,7 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 	blkProducerPrivateKey *privacy.SpendingKey,
 ) ([]metadata.Transaction, error) {
 	var issuingInfo IssuingInfo
+	fmt.Printf("[db] buildIssuingRes %s\n", issuingInfoStr)
 	err := json.Unmarshal([]byte(issuingInfoStr), &issuingInfo)
 	if err != nil {
 		return nil, err
@@ -229,6 +231,7 @@ func buildInstTypeAndAmountForIssuingAction(
 		// TODO: be careful of the ETH unit
 		reqAmt = (md.DepositedAmount * oracle.ETH) / oracle.DCBToken
 		dcbTokensNeeded = reqAmt + accumulativeValues.dcbTokensSoldByETH
+		fmt.Printf("[db] isOnETH: %+v %d %d %d\n", reserveData, reqAmt, dcbTokensNeeded, bestBlockHeight)
 	}
 	if !existed ||
 		bestBlockHeight+1 > reserveData.EndBlock ||
@@ -255,6 +258,7 @@ func buildInstructionsForIssuingReq(
 		return [][]string{}, err
 	}
 	var issuingReqAction IssuingReqAction
+	fmt.Printf("[db] beacon building inst for issuing req: %s\n", contentBytes)
 	err = json.Unmarshal(contentBytes, &issuingReqAction)
 	if err != nil {
 		return nil, err
@@ -280,6 +284,7 @@ func buildInstructionsForIssuingReq(
 		instType,
 		string(iInfoBytes),
 	}
+	fmt.Printf("[db] buildInstForIssuingReq return %+v\n", returnedInst)
 	instructions = append(instructions, returnedInst)
 	return instructions, nil
 }

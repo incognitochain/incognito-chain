@@ -344,10 +344,12 @@ func (bc *BlockChain) StoreMetadataInstructions(inst []string, shardID byte) err
 	if len(inst) < 2 {
 		return nil // Not error, just not stability instruction
 	}
+	fmt.Printf("[db] store meta inst: %+v\n", inst)
 	switch inst[0] {
-	case strconv.Itoa(metadata.IssuingResponseMeta):
+	// TODO(@0xbunyip): confirm using response or request type for beacon to shard instructions
+	case strconv.Itoa(metadata.IssuingRequestMeta):
 		return bc.storeIssuingResponseInstruction(inst, shardID)
-	case strconv.Itoa(metadata.ContractingReponseMeta):
+	case strconv.Itoa(metadata.ContractingRequestMeta):
 		return bc.storeContractingResponseInstruction(inst, shardID)
 	}
 	return nil

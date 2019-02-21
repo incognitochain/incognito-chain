@@ -326,8 +326,19 @@ func (blockchain *BlockChain) initBeaconState() error {
 	blockchain.BestState.Beacon = NewBestStateBeacon(blockchain.config.ChainParams)
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
 	blockchain.BestState.Beacon.Update(initBlock)
-	// Insert new block into beacon chain
+	// TODO(@0xankylosaurus): initialize oracle data properly
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 1000000 // $10 in millicent
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.GOVToken = 2000000 // $20
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.Constant = 100000  // $1
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.ETH = 10000        // $100, for milliether
+	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.RaiseReserveData = map[common.Hash]*params.RaiseReserveData{
+		common.ETHAssetID: &params.RaiseReserveData{
+			EndBlock: 1000,
+			Amount:   1000,
+		},
+	}
 
+	// Insert new block into beacon chain
 	if err := blockchain.StoreBeaconBestState(); err != nil {
 		Logger.log.Error("Error Store best state for block", blockchain.BestState.Beacon.BestBlockHash, "in beacon chain")
 		return NewBlockChainError(UnExpectedError, err)

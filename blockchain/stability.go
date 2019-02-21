@@ -89,7 +89,6 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 			instructions = append(instructions, buyBackInst...)
 
 		case metadata.IssuingRequestMeta:
-			fmt.Printf("[db] beacon building inst for issuing req: %s\n", contentStr)
 			issuingInst, err := buildInstructionsForIssuingReq(shardID, contentStr, beaconBestState, accumulativeValues)
 			if err != nil {
 				return [][]string{}, err
@@ -150,7 +149,9 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 			}
 			continue
 			if len(l) <= 2 {
+				continue
 			}
+			fmt.Printf("[db] shard build Resp from inst: %+v\n", l)
 			shardToProcess, err := strconv.Atoi(l[1])
 			if err == nil && shardToProcess == int(shardID) {
 				metaType, err := strconv.Atoi(l[0])
