@@ -170,3 +170,9 @@ const (
 	GetPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
 	DefragmentAccount              = "defragmentaccount"
 )
+
+//Fee of specific transaction
+const (
+	FeeSubmitProposal = 100
+	FeeVoteProposal   = 100
+)

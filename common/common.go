@@ -412,6 +412,10 @@ func Uint32ToBytes(value uint32) []byte {
 	return b
 }
 
+func ByteToBytes(value byte) []byte {
+	return []byte{value}
+}
+
 func BytesToUint32(b []byte) uint32 {
 	return binary.LittleEndian.Uint32(b)
 }
