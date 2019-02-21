@@ -24,6 +24,7 @@ type IssuingInfo struct {
 	Amount          uint64
 	RequestedTxID   common.Hash
 	TokenID         common.Hash
+	CurrencyType    common.Hash
 }
 
 type ContractingReqAction struct {
@@ -35,6 +36,7 @@ type ContractingInfo struct {
 	BurnerAddress     privacy.PaymentAddress
 	BurnedConstAmount uint64
 	RequestedTxID     common.Hash
+	CurrencyType      common.Hash
 }
 
 func buildInstTypeForContractingAction(
@@ -93,6 +95,7 @@ func buildInstructionsForContractingReq(
 		BurnerAddress:     md.BurnerAddress,
 		BurnedConstAmount: md.BurnedConstAmount,
 		RequestedTxID:     reqTxID,
+		CurrencyType:      md.CurrencyType,
 	}
 	cInfoBytes, err := json.Marshal(cInfo)
 	if err != nil {
@@ -270,6 +273,7 @@ func buildInstructionsForIssuingReq(
 		Amount:          reqAmt,
 		RequestedTxID:   reqTxID,
 		TokenID:         md.AssetType,
+		CurrencyType:    md.CurrencyType,
 	}
 	iInfoBytes, err := json.Marshal(iInfo)
 	if err != nil {
