@@ -50,6 +50,7 @@ func buildInstTypeForContractingAction(
 	oracle := stabilityInfo.Oracle
 	spendReserveData := stabilityInfo.DCBConstitution.DCBParams.SpendReserveData
 	bestBlockHeight := beaconBestState.BestBlock.Header.Height
+	fmt.Printf("[db] buildInstTypeForCont spendReserveData: %+v\n", spendReserveData)
 	if spendReserveData == nil {
 		return "refund"
 	}
@@ -79,6 +80,7 @@ func buildInstructionsForContractingReq(
 	if err != nil {
 		return [][]string{}, err
 	}
+	fmt.Printf("[db] building inst for contracting req: %s\n", contentBytes)
 	var contractingReqAction ContractingReqAction
 	err = json.Unmarshal(contentBytes, &contractingReqAction)
 	if err != nil {
@@ -104,6 +106,7 @@ func buildInstructionsForContractingReq(
 		instType,
 		string(cInfoBytes),
 	}
+	fmt.Printf("[db] buildInstForContReq return %+v\n", returnedInst)
 	instructions = append(instructions, returnedInst)
 	return instructions, nil
 }
@@ -258,7 +261,7 @@ func buildInstructionsForIssuingReq(
 		return [][]string{}, err
 	}
 	var issuingReqAction IssuingReqAction
-	fmt.Printf("[db] beacon building inst for issuing req: %s\n", contentBytes)
+	fmt.Printf("[db] building inst for issuing req: %s\n", contentBytes)
 	err = json.Unmarshal(contentBytes, &issuingReqAction)
 	if err != nil {
 		return nil, err
