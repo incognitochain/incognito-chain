@@ -1,4 +1,4 @@
-package toshardins
+package frombeaconins
 
 import (
 	"encoding/json"
@@ -10,8 +10,9 @@ import (
 	"strconv"
 )
 
-type Instruction interface {
+type InstructionFromBeacon interface {
 	GetStringFormat() ([]string, error)
+	BuildTransaction(minerPrivateKey *privacy.SpendingKey, db database.DatabaseInterface) (metadata.Transaction, error)
 }
 
 type TxAcceptDCBBoardIns struct {
@@ -34,11 +35,11 @@ func (txAcceptDCBBoardIns *TxAcceptDCBBoardIns) GetStringFormat() ([]string, err
 func (txAcceptDCBBoardIns *TxAcceptDCBBoardIns) BuildTransaction(
 	minerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
-) metadata.Transaction {
+) (metadata.Transaction, error) {
 	meta := metadata.NewAcceptDCBBoardMetadata(txAcceptDCBBoardIns.BoardPaymentAddress,
 		txAcceptDCBBoardIns.StartAmountToken)
 	tx := transaction.NewEmptyTx(minerPrivateKey, db, meta)
-	return tx
+	return tx, nil
 }
 
 type TxAcceptGOVBoardIns struct {
@@ -61,11 +62,11 @@ func (txAcceptGOVBoardIns *TxAcceptGOVBoardIns) GetStringFormat() ([]string, err
 func (txAcceptGOVBoardIns *TxAcceptGOVBoardIns) BuildTransaction(
 	minerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
-) metadata.Transaction {
+) (metadata.Transaction, error) {
 	meta := metadata.NewAcceptGOVBoardMetadata(txAcceptGOVBoardIns.BoardPaymentAddress,
 		txAcceptGOVBoardIns.StartAmountToken)
 	tx := transaction.NewEmptyTx(minerPrivateKey, db, meta)
-	return tx
+	return tx, nil
 }
 
 //used in 2 cases:
@@ -75,7 +76,7 @@ func NewTxAcceptBoardIns(
 	boardType byte,
 	boardPaymentAddress []privacy.PaymentAddress,
 	startAmountToken uint64,
-) Instruction {
+) InstructionFromBeacon {
 	if boardType == common.DCBBoard {
 		return NewTxAcceptDCBBoardIns(
 			boardPaymentAddress,

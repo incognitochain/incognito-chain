@@ -299,7 +299,7 @@ func (rpcServer RpcServer) buildRawSubmitDCBProposalTransaction(
 	newParams["PaymentAddress"] = tmp
 
 	meta := metadata.NewSubmitDCBProposalMetadataFromJson(newParams)
-	params = setBuildRawBurnTransactionParams(params, common.FeeSubmitProposal)
+	params = setBuildRawBurnTransactionParams(params, FeeSubmitProposal)
 	tx, err1 := rpcServer.buildRawTransaction(params, meta)
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)

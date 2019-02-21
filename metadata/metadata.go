@@ -59,6 +59,10 @@ func (mb *MetadataBase) BuildReqActions(tx Transaction, bcr BlockchainRetriever,
 	return [][]string{}, nil
 }
 
+func (mb *MetadataBase) ProcessWhenInsertBlockShard(tx Transaction, databaseInterface database.DatabaseInterface) error {
+	return nil
+}
+
 // TODO(@0xankylosaurus): move TxDesc to mempool DTO
 // This is tx struct which is really saved in tx mempool
 type TxDesc struct {
@@ -98,7 +102,7 @@ type BlockchainRetriever interface {
 	GetOracleParams() *params.Oracle
 	GetConstitutionStartHeight(boardType byte, shardID byte) uint64
 	GetConstitutionEndHeight(boardType byte, shardID byte) uint64
-	GetCurrentBlockHeight(byte) uint64
+	GetCurrentBeaconBlockHeight(byte) uint64
 	GetBoardEndHeight(boardType byte, chainID byte) uint64
 
 	// For validating loan metadata
@@ -141,6 +145,7 @@ type Metadata interface {
 	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool
 	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
 	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
+	ProcessWhenInsertBlockShard(tx Transaction, databaseInterface database.DatabaseInterface) error
 }
 
 // Interface for all type of transaction

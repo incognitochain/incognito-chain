@@ -89,11 +89,14 @@ func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddres
 	tempShardState, staker, swap, stabilityInstructions := self.GetShardState(&beaconBestState)
 
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
+
+	//Add Voting instruction
 	votingInstruction, err := self.chain.generateVotingInstruction(privateKey, 0)
 	if err != nil {
 		return nil, NewBlockChainError(BeaconError, err)
 	}
 	tempInstruction = append(tempInstruction, votingInstruction...)
+
 	//==========Create Body
 	beaconBlock.Body.Instructions = tempInstruction
 	beaconBlock.Body.ShardState = tempShardState
