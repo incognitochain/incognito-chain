@@ -329,12 +329,19 @@ func (blockchain *BlockChain) initBeaconState() error {
 	// TODO(@0xankylosaurus): initialize oracle data properly
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 1000000 // $10 in millicent
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.GOVToken = 2000000 // $20
-	blockchain.BestState.Beacon.StabilityInfo.Oracle.Constant = 100000  // $1
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.Constant = 1000    // $1, for Nano
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.ETH = 10000        // $100, for milliether
 	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.RaiseReserveData = map[common.Hash]*params.RaiseReserveData{
 		common.ETHAssetID: &params.RaiseReserveData{
 			EndBlock: 1000,
 			Amount:   1000,
+		},
+	}
+	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.SpendReserveData = map[common.Hash]*params.SpendReserveData{
+		common.ETHAssetID: &params.SpendReserveData{
+			EndBlock:        1000,
+			ReserveMinPrice: 1000,
+			Amount:          10000000,
 		},
 	}
 
