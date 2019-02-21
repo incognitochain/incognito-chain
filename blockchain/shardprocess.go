@@ -131,8 +131,8 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	return nil
 }
 
+//TODO: @merman, check block height
 func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
-
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 	shardID := block.Header.ShardID
@@ -212,6 +212,7 @@ DO NOT USE THIS with GENESIS BLOCK
 - BeaconHash
 - Swap instruction
 */
+//TODO: @merman Check producer
 func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID byte) error {
 	Logger.log.Debugf("SHARD %+v | Begin VerifyPreProcessingShardBlock Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	if block.Header.ShardID != shardID {

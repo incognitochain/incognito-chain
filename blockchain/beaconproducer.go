@@ -291,7 +291,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 				validStakers = append(validStakers, []string{"stake", strings.Join(stakeShard, ","), "shard"})
 			}
 			if len(stakeBeacon) > 0 {
-				validStakers = append(validStakers, []string{"stake", strings.Join(stakeBeacon, ","), "shard"})
+				validStakers = append(validStakers, []string{"stake", strings.Join(stakeBeacon, ","), "beacon"})
 			}
 			// format
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
