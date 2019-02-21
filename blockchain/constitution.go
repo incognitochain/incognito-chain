@@ -123,12 +123,12 @@ func (helper GOVConstitutionHelper) NewAcceptProposalIns(
 	return ins
 }
 
-func (helper DCBConstitutionHelper) GetBoardType() byte {
-	return common.DCBBoard
+func (helper DCBConstitutionHelper) GetBoardType() metadata.BoardType {
+	return metadata.DCBBoard
 }
 
-func (helper GOVConstitutionHelper) GetBoardType() byte {
-	return common.GOVBoard
+func (helper GOVConstitutionHelper) GetBoardType() metadata.BoardType {
+	return metadata.GOVBoard
 }
 
 func (helper DCBConstitutionHelper) CreatePunishDecryptIns(paymentAddress *privacy.PaymentAddress) frombeaconins.InstructionFromBeacon {
@@ -222,22 +222,22 @@ func (helper GOVConstitutionHelper) GetBoard(chain *BlockChain) metadata.Governo
 }
 
 func (helper DCBConstitutionHelper) GetAmountVoteTokenOfBoard(chain *BlockChain, paymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
-	value, _ := chain.config.DataBase.GetVoteTokenAmount(helper.GetBoardType(), boardIndex, paymentAddress)
+	value, _ := chain.config.DataBase.GetVoteTokenAmount(helper.GetBoardType().BoardTypeDB(), boardIndex, paymentAddress)
 	return uint64(value)
 }
 func (helper GOVConstitutionHelper) GetAmountVoteTokenOfBoard(chain *BlockChain, paymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
-	value, _ := chain.config.DataBase.GetVoteTokenAmount(helper.GetBoardType(), boardIndex, paymentAddress)
+	value, _ := chain.config.DataBase.GetVoteTokenAmount(helper.GetBoardType().BoardTypeDB(), boardIndex, paymentAddress)
 	return uint64(value)
 }
 
 func (helper DCBConstitutionHelper) GetAmountOfVoteToBoard(chain *BlockChain, candidatePaymentAddress privacy.PaymentAddress, voterPaymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
-	key := lvdb.GetKeyVoteBoardList(helper.GetBoardType(), boardIndex, &candidatePaymentAddress, &voterPaymentAddress)
+	key := lvdb.GetKeyVoteBoardList(helper.GetBoardType().BoardTypeDB(), boardIndex, &candidatePaymentAddress, &voterPaymentAddress)
 	value, _ := chain.config.DataBase.Get(key)
 	amount := lvdb.ParseValueVoteBoardList(value)
 	return amount
 }
 func (helper GOVConstitutionHelper) GetAmountOfVoteToBoard(chain *BlockChain, candidatePaymentAddress privacy.PaymentAddress, voterPaymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
-	key := lvdb.GetKeyVoteBoardList(helper.GetBoardType(), boardIndex, &candidatePaymentAddress, &voterPaymentAddress)
+	key := lvdb.GetKeyVoteBoardList(helper.GetBoardType().BoardTypeDB(), boardIndex, &candidatePaymentAddress, &voterPaymentAddress)
 	value, _ := chain.config.DataBase.Get(key)
 	amount := lvdb.ParseValueVoteBoardList(value)
 	return amount
