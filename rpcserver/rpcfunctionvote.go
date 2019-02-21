@@ -149,7 +149,7 @@ func (rpcServer RpcServer) buildRawSealLv3VoteProposalTransaction(
 	Seal3Data := CreateSealLv3Data(voteProposalData, pubKeys)
 	meta := NewSealedLv3VoteProposalMetadata(boardType, Seal3Data, threePaymentAddress)
 
-	params = setBuildRawBurnTransactionParams(params, common.FeeVoteProposal)
+	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
 	tx, err1 := rpcServer.buildRawTransaction(params, meta)
 	if err1 != nil {
 		return tx, err1
@@ -256,7 +256,7 @@ func (rpcServer RpcServer) buildRawSealLv2VoteProposalTransaction(
 		pubKeys,
 		*lv3txID,
 	)
-	params = setBuildRawBurnTransactionParams(params, common.FeeVoteProposal)
+	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
 	tx, err1 := rpcServer.buildRawTransaction(params, meta)
 	return tx, err1
 }
@@ -375,7 +375,7 @@ func (rpcServer RpcServer) buildRawSealLv1VoteProposalTransaction(
 		*lv2TxID,
 		*lv3TxID,
 	)
-	params = setBuildRawBurnTransactionParams(params, common.FeeVoteProposal)
+	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
 	tx, err := rpcServer.buildRawTransaction(params, meta)
 	return tx, err
 }
@@ -483,7 +483,7 @@ func (rpcServer RpcServer) buildRawNormalVoteProposalTransactionFromOwner(
 		paymentAddresses,
 		*lv3TxID,
 	)
-	params = setBuildRawBurnTransactionParams(params, common.FeeVoteProposal)
+	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
 	tx, err := rpcServer.buildRawTransaction(params, meta)
 	return tx, err
 }
@@ -579,7 +579,7 @@ func (rpcServer RpcServer) buildRawNormalVoteProposalTransactionFromSealer(
 		*lv1TxID,
 		*lv3TxID,
 	)
-	params = setBuildRawBurnTransactionParams(params, common.FeeVoteProposal)
+	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
 	tx, err := rpcServer.buildRawTransaction(params, meta)
 	return tx, err
 }

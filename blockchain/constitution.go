@@ -3,9 +3,9 @@ package blockchain
 import (
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/database/lvdb"
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/metadata/frombeaconins"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 )
@@ -111,26 +111,20 @@ func (helper GOVConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transacti
 	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
 }
 
-func (helper DCBConstitutionHelper) TxAcceptProposal(
+func (helper DCBConstitutionHelper) NewAcceptProposalIns(
 	txId *common.Hash,
 	voter metadata.Voter,
-	minerPrivateKey *privacy.SpendingKey,
-	db database.DatabaseInterface,
-) metadata.Transaction {
-	meta := metadata.NewAcceptDCBProposalMetadata(*txId, voter)
-	acceptTx := transaction.NewEmptyTx(minerPrivateKey, db, meta)
-	return acceptTx
+) frombeaconins.InstructionFromBeacon {
+	ins := frombeaconins.NewAcceptProposalIns(helper.GetBoardType(), *txId, voter)
+	return ins
 }
 
-func (helper GOVConstitutionHelper) TxAcceptProposal(
+func (helper GOVConstitutionHelper) NewAcceptProposalIns(
 	txId *common.Hash,
 	voter metadata.Voter,
-	minerPrivateKey *privacy.SpendingKey,
-	db database.DatabaseInterface,
-) metadata.Transaction {
-	meta := metadata.NewAcceptGOVProposalMetadata(*txId, voter)
-	acceptTx := transaction.NewEmptyTx(minerPrivateKey, db, meta)
-	return acceptTx
+) frombeaconins.InstructionFromBeacon {
+	ins := frombeaconins.NewAcceptProposalIns(helper.GetBoardType(), *txId, voter)
+	return ins
 }
 
 func (helper DCBConstitutionHelper) GetBoardType() byte {
@@ -141,12 +135,12 @@ func (helper GOVConstitutionHelper) GetBoardType() byte {
 	return common.GOVBoard
 }
 
-func (helper DCBConstitutionHelper) CreatePunishDecryptTx(paymentAddress privacy.PaymentAddress) metadata.Metadata {
-	return metadata.NewPunishDCBDecryptMetadata(paymentAddress)
+func (helper DCBConstitutionHelper) CreatePunishDecryptIns(paymentAddress *privacy.PaymentAddress) frombeaconins.InstructionFromBeacon {
+	return frombeaconins.NewPunishDecryptIns(helper.GetBoardType(), *paymentAddress)
 }
 
-func (helper GOVConstitutionHelper) CreatePunishDecryptTx(paymentAddress privacy.PaymentAddress) metadata.Metadata {
-	return metadata.NewPunishGOVDecryptMetadata(paymentAddress)
+func (helper GOVConstitutionHelper) CreatePunishDecryptIns(paymentAddress *privacy.PaymentAddress) frombeaconins.InstructionFromBeacon {
+	return frombeaconins.NewPunishDecryptIns(helper.GetBoardType(), *paymentAddress)
 }
 
 func (helper DCBConstitutionHelper) GetSealerPaymentAddress(tx metadata.Transaction) []privacy.PaymentAddress {
@@ -159,24 +153,13 @@ func (helper GOVConstitutionHelper) GetSealerPaymentAddress(tx metadata.Transact
 	return meta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddress
 }
 
-func (helper DCBConstitutionHelper) NewTxRewardProposalSubmitter(chain *BlockChain, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
-	meta := metadata.NewRewardDCBProposalSubmitterMetadata()
-	tx := transaction.Tx{}
-	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, chain.config.DataBase, meta)
-	if err != nil {
-		return nil, err
-	}
-	return &tx, nil
+func (helper DCBConstitutionHelper) NewRewardProposalSubmitterIns(chain *BlockChain, receiverAddress *privacy.PaymentAddress) (frombeaconins.InstructionFromBeacon, error) {
+	return frombeaconins.NewRewardProposalSubmitterIns(receiverAddress, common.RewardProposalSubmitter), nil
 }
 
-func (helper GOVConstitutionHelper) NewTxRewardProposalSubmitter(chain *BlockChain, receiverAddress *privacy.PaymentAddress, minerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
-	meta := metadata.NewRewardGOVProposalSubmitterMetadata()
-	tx := transaction.Tx{}
-	err := tx.InitTxSalary(common.RewardProposalSubmitter, receiverAddress, minerPrivateKey, chain.config.DataBase, meta)
-	if err != nil {
-		return nil, err
-	}
-	return &tx, nil
+func (helper GOVConstitutionHelper) NewRewardProposalSubmitterIns(chain *BlockChain, receiverAddress *privacy.PaymentAddress) (frombeaconins.InstructionFromBeacon, error) {
+	ins := frombeaconins.NewRewardProposalSubmitterIns(receiverAddress, common.RewardProposalSubmitter)
+	return ins, nil
 }
 
 func (helper DCBConstitutionHelper) GetPaymentAddressFromSubmitProposalMetadata(tx metadata.Transaction) *privacy.PaymentAddress {
