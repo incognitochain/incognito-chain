@@ -1,4 +1,4 @@
-package toshardins
+package frombeaconins
 
 import (
 	"encoding/json"
@@ -35,7 +35,7 @@ func NewTxSendInitDCBVoteTokenMetadataIns(amount uint32, receiverPaymentAddress 
 func (txSendInitDCBVoteTokenMetadataIns *TxSendInitDCBVoteTokenMetadataIns) BuildTransaction(
 	minerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
-) metadata.Transaction {
+) (metadata.Transaction, error) {
 	meta := metadata.NewSendInitDCBVoteTokenMetadata(
 		txSendInitDCBVoteTokenMetadataIns.Amount,
 		txSendInitDCBVoteTokenMetadataIns.ReceiverPaymentAddress,
@@ -45,7 +45,7 @@ func (txSendInitDCBVoteTokenMetadataIns *TxSendInitDCBVoteTokenMetadataIns) Buil
 		db,
 		meta,
 	)
-	return sendVoteTokenTransaction
+	return sendVoteTokenTransaction, nil
 }
 
 type TxSendInitGOVVoteTokenMetadataIns struct {
@@ -73,7 +73,7 @@ func NewTxSendInitGOVVoteTokenMetadataIns(amount uint32, receiverPaymentAddress 
 func (txSendInitGOVVoteTokenMetadataIns *TxSendInitGOVVoteTokenMetadataIns) BuildTransaction(
 	minerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
-) metadata.Transaction {
+) (metadata.Transaction, error) {
 	meta := metadata.NewSendInitGOVVoteTokenMetadata(
 		txSendInitGOVVoteTokenMetadataIns.Amount,
 		txSendInitGOVVoteTokenMetadataIns.ReceiverPaymentAddress,
@@ -83,14 +83,14 @@ func (txSendInitGOVVoteTokenMetadataIns *TxSendInitGOVVoteTokenMetadataIns) Buil
 		db,
 		meta,
 	)
-	return sendVoteTokenTransaction
+	return sendVoteTokenTransaction, nil
 }
 
 func NewTxSendInitVoteTokenMetadataIns(
 	boardType byte,
 	amount uint32,
 	receiverPaymentAddress privacy.PaymentAddress,
-) Instruction {
+) InstructionFromBeacon {
 	if boardType == common.DCBBoard {
 		return NewTxSendInitDCBVoteTokenMetadataIns(amount, receiverPaymentAddress)
 	} else {
