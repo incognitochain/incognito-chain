@@ -7,11 +7,11 @@ import (
 )
 
 type SetEncryptionLastBlockIns struct {
-	boardType   byte
+	boardType   metadata.BoardType
 	blockHeight uint64
 }
 
-func NewSetEncryptionLastBlockIns(boardType byte, blockHeight uint64) *SetEncryptionLastBlockIns {
+func NewSetEncryptionLastBlockIns(boardType metadata.BoardType, blockHeight uint64) *SetEncryptionLastBlockIns {
 	return &SetEncryptionLastBlockIns{boardType: boardType, blockHeight: blockHeight}
 }
 
@@ -27,11 +27,11 @@ func (setEncryptionLastBlock *SetEncryptionLastBlockIns) BuildTransaction(
 }
 
 type SetEncryptionFlagIns struct {
-	boardType byte
+	boardType metadata.BoardType
 	flag      byte
 }
 
-func NewSetEncryptionFlagIns(boardType byte, flag byte) *SetEncryptionFlagIns {
+func NewSetEncryptionFlagIns(boardType metadata.BoardType, flag byte) *SetEncryptionFlagIns {
 	return &SetEncryptionFlagIns{boardType: boardType, flag: flag}
 }
 

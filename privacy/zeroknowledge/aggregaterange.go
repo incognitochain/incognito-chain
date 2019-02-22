@@ -207,6 +207,7 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 	for i:=0; i<numValuePad*n; i++{
 		aR[i] = new(big.Int).Sub(aL[i], big.NewInt(1))
+		aR[i].Mod(aR[i], privacy.Curve.Params().N)
 	}
 
 	// random alpha
@@ -290,6 +291,7 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	for i:=0; i<n*numValuePad; i++{
 		innerProduct1 = innerProduct1.Add(innerProduct1, yVector[i])
 	}
+	innerProduct1.Mod(innerProduct1, privacy.Curve.Params().N)
 
 	deltaYZ.Mul(deltaYZ, innerProduct1)
 
@@ -298,6 +300,7 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	for i:=0; i<n; i++{
 		innerProduct2 = innerProduct2.Add(innerProduct2, twoVectorN[i])
 	}
+	innerProduct2.Mod(innerProduct2, privacy.Curve.Params().N)
 
 	sum := big.NewInt(0)
 	zTmp = new(big.Int).Set(zSquare)

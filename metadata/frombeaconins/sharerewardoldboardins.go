@@ -2,18 +2,19 @@ package frombeaconins
 
 import (
 	"encoding/json"
+	"strconv"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
-	"strconv"
 )
 
 type TxShareRewardOldBoardMetadataIns struct {
 	chairPaymentAddress privacy.PaymentAddress
 	voterPaymentAddress privacy.PaymentAddress
-	boardType           byte
+	boardType           metadata.BoardType
 	amountOfCoin        uint64
 	amountOfToken       uint64
 }
@@ -25,7 +26,7 @@ func (txShareRewardOldBoardMetadataIns *TxShareRewardOldBoardMetadataIns) GetStr
 	}
 	shardID := GetShardIDFromPaymentAddressBytes(txShareRewardOldBoardMetadataIns.voterPaymentAddress)
 	var metadataType int
-	if txShareRewardOldBoardMetadataIns.boardType == common.DCBBoard {
+	if txShareRewardOldBoardMetadataIns.boardType == metadata.DCBBoard {
 		metadataType = metadata.ShareRewardOldDCBBoardMeta
 	} else {
 		metadataType = metadata.ShareRewardOldGOVBoardMeta
@@ -40,7 +41,7 @@ func (txShareRewardOldBoardMetadataIns *TxShareRewardOldBoardMetadataIns) GetStr
 func NewShareRewardOldBoardMetadataIns(
 	chairPaymentAddress privacy.PaymentAddress,
 	voterPaymentAddress privacy.PaymentAddress,
-	boardType byte,
+	boardType metadata.BoardType,
 	amountOfCoin uint64,
 	amountOfToken uint64,
 ) *TxShareRewardOldBoardMetadataIns {
@@ -71,7 +72,7 @@ func (txShareRewardOldBoardMetadataIns *TxShareRewardOldBoardMetadataIns) BuildT
 		rewardShareOldBoardMeta,
 	)
 	var propertyID common.Hash
-	if txShareRewardOldBoardMetadataIns.boardType == common.DCBBoard {
+	if txShareRewardOldBoardMetadataIns.boardType == metadata.DCBBoard {
 		propertyID = common.DCBTokenID
 	} else {
 		propertyID = common.GOVTokenID
