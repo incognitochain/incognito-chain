@@ -69,6 +69,11 @@ type BestStateBeacon struct {
 	BeaconCommitteeSize int
 	ShardCommitteeSize  int
 	ActiveShards        int
+
+	// cross shard state for all the shard. shardID -> crossShard shardID -> last height
+	// e.g 1 -> 2 -> 3 // shard 1 has cross shard from shard 2 with latest height is 3
+	// e.g 1 -> 3 -> 2 // shard 1 has cross shard from shard 3 with latest height is 2
+	LastCrossShardState map[byte]map[byte]uint64 `json:"LastCrossShardState"`
 }
 
 type StabilityInfo struct {
@@ -134,6 +139,9 @@ func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
 	bestStateBeacon.BeaconCommitteeSize = netparam.BeaconCommitteeSize
 	bestStateBeacon.ShardCommitteeSize = netparam.ShardCommitteeSize
 	bestStateBeacon.ActiveShards = netparam.ActiveShards
+
+	bestStateBeacon.LastCrossShardState = make(map[byte]map[byte]uint64)
+
 	return bestStateBeacon
 }
 
