@@ -46,6 +46,8 @@ const (
 	WithSenderAddressMeta
 	ResponseBaseMeta
 	BuyGOVTokenRequestMeta
+	SalaryRequestMeta
+	SalaryResponseMeta
 
 	//Voting
 	SubmitDCBProposalMeta
