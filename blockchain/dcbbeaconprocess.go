@@ -206,6 +206,7 @@ func (bsb *BestStateBeacon) processLoanRequestInstruction(inst []string) error {
 	// Save loan request on beacon shard
 	value := txHash.String()
 	bsb.Params[key] = value
+	fmt.Printf("[db] procLoanReqInst success\n")
 	return nil
 }
 

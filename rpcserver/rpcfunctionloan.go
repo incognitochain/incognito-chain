@@ -13,8 +13,7 @@ import (
 )
 
 func (rpcServer RpcServer) handleGetLoanParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// return rpcServer.config.BlockChain.BestState[14].BestBlock.Header.DCBConstitution.DCBParams.ListLoanParams, nil
-	return nil, nil
+	return rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.ListLoanParams, nil
 }
 
 func (rpcServer RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
