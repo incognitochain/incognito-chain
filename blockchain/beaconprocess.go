@@ -156,7 +156,7 @@ FOR CURRENT COMMITTEES ONLY
 */
 func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock, isCommittee bool) error {
 	//verify producer
-	producerPosition := (blockchain.BestState.Beacon.BeaconProposerIdx + 1) % len(blockchain.BestState.Beacon.BeaconCommittee)
+	producerPosition := (blockchain.BestState.Beacon.BeaconProposerIdx + block.Header.Round) % len(blockchain.BestState.Beacon.BeaconCommittee)
 	tempProducer := blockchain.BestState.Beacon.BeaconCommittee[producerPosition]
 	if strings.Compare(tempProducer, block.Header.Producer) != 0 {
 		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))

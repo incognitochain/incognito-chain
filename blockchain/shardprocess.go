@@ -287,15 +287,15 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		}
 	}
 	// Verify Action
-	actions := CreateShardActionFromTransaction(block.Body.Transactions, blockchain, shardID)
-	action := []string{}
-	for _, value := range actions {
-		action = append(action, value...)
+	txInstructions := CreateShardInstructionsFromTransaction(block.Body.Transactions, blockchain, shardID)
+	totalInstructions := []string{}
+	for _, value := range txInstructions {
+		totalInstructions = append(totalInstructions, value...)
 	}
 	for _, value := range block.Body.Instructions {
-		action = append(action, value...)
+		totalInstructions = append(totalInstructions, value...)
 	}
-	isOk := VerifyHashFromStringArray(action, block.Header.ActionsRoot)
+	isOk := VerifyHashFromStringArray(totalInstructions, block.Header.InstructionsRoot)
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("Error verify action root"))
 	}
