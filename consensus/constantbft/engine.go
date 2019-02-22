@@ -1,4 +1,4 @@
-package constantpos
+package constantbft
 
 import (
 	"errors"
