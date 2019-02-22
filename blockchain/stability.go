@@ -118,6 +118,13 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 			}
 			instructions = append(instructions, contractingInst...)
 
+		case metadata.ShardBlockSalaryUpdateMeta:
+			shardBlockSalaryUpdateInst, err := buildInstForShardBlockSalaryUpdate(shardID, contentStr, beaconBestState, accumulativeValues)
+			if err != nil {
+				return [][]string{}, err
+			}
+			instructions = append(instructions, shardBlockSalaryUpdateInst...)
+
 		default:
 			continue
 		}

@@ -49,7 +49,23 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 
 	case strconv.Itoa(metadata.ContractingRequestMeta):
 		return bsb.processContractingReqInstruction(inst)
+
+	case strconv.Itoa(metadata.ShardBlockSalaryUpdateMeta):
+		return bsb.processSalaryUpdateInstruction(inst)
 	}
+	return nil
+}
+
+func (bsb *BestStateBeacon) processSalaryUpdateInstruction(inst []string) error {
+	shardBlockSalaryUpdateInfoStr := inst[2]
+	var shardBlockSalaryUpdateInfo ShardBlockSalaryUpdateInfo
+	err := json.Unmarshal([]byte(shardBlockSalaryUpdateInfoStr), &shardBlockSalaryUpdateInfo)
+	if err != nil {
+		return err
+	}
+	stabilityInfo := bsb.StabilityInfo
+	stabilityInfo.SalaryFund -= shardBlockSalaryUpdateInfo.ShardBlockSalary
+	stabilityInfo.SalaryFund += shardBlockSalaryUpdateInfo.ShardBlockFee
 	return nil
 }
 
