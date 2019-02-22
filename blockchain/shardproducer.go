@@ -241,7 +241,7 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 		sort.SliceStable(crossShardBlock[:], func(i, j int) bool {
 			return crossShardBlock[i].Header.Height < crossShardBlock[j].Header.Height
 		})
-		currentBestCrossShardForThisBlock := currentBestCrossShard.shardHeight[crossShardID]
+		currentBestCrossShardForThisBlock := currentBestCrossShard.ShardHeight[crossShardID]
 		for _, blk := range crossShardBlock {
 			temp, err := blockgen.chain.config.DataBase.FetchBeaconCommitteeByHeight(blk.Header.BeaconHeight)
 			if err != nil {
@@ -465,6 +465,10 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 		}
 		// TODO: need to determine a tx is in privacy format or not
 		if !tx.ValidateTxByItself(tx.IsPrivacy(), blockgen.chain.config.DataBase, blockgen.chain, shardID) {
+			txToRemove = append(txToRemove, metadata.Transaction(tx))
+			continue
+		}
+		if err := tx.ValidateTxWithBlockChain(blockgen.chain, shardID, blockgen.chain.config.DataBase); err != nil {
 			txToRemove = append(txToRemove, metadata.Transaction(tx))
 			continue
 		}

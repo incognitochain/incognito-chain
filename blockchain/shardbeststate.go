@@ -18,8 +18,9 @@ import (
 // shared by all callers.
 
 type BestCrossShard struct {
-	shardHeight  map[byte]uint64 `json:"shardHeight,omitempty"`
-	beaconHeight map[byte]uint64 `json:"beaconHeight,omitempty"`
+	ShardHeight map[byte]uint64 `json:"shardHeight,omitempty"`
+	//Beacon height for cross shard
+	BeaconHeight map[byte]uint64 `json:"beaconHeight,omitempty"`
 }
 
 type BestStateShard struct {
@@ -90,9 +91,9 @@ func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string, round int) st
 	if round <= 0 {
 		round = 1
 	}
-	fmt.Println("Shard BestState/ BEST STATE", bestStateShard)
+	// fmt.Println("Shard BestState/ BEST STATE", bestStateShard)
 	found := common.IndexOfStr(pubkey, bestStateShard.ShardCommittee)
-	fmt.Println("Shard BestState/ Get Public Key Role, Found IN Shard COMMITTEES", found)
+	// fmt.Println("Shard BestState/ Get Public Key Role, Found IN Shard COMMITTEES", found)
 	if found > -1 {
 		tmpID := (bestStateShard.ShardProposerIdx + round) % len(bestStateShard.ShardCommittee)
 		if found == tmpID {
