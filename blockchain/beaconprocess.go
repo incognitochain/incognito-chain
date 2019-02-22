@@ -131,7 +131,45 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	if err := blockchain.config.DataBase.StoreBeaconCommitteeByHeight(block.Header.Height, blockchain.BestState.Beacon.ShardCommittee); err != nil {
 		return err
 	}
-	//=========Remove shard block in beacon pool
+
+	//=========Store cross shard state ==================================
+	lastCrossShardState := GetBestStateBeacon().LastCrossShardState
+	if block.Body.ShardState != nil {
+		for shardID, shardBlockState := range block.Body.ShardState {
+
+			for shardBlockIndex, crossShardInfo := range shardBlockState {
+				for _, crossShardToShardID := range crossShardInfo.CrossShard {
+
+					fromShard := shardID
+					toShard := crossShardToShardID
+					curHeight := crossShardInfo.Height
+					nextHeight := uint64(0)
+
+					if shardBlockIndex == 0 {
+						curHeight = lastCrossShardState[crossShardToShardID][shardID] // crossShardToShardID has cross shard from shardID with height xx
+						nextHeight = crossShardInfo.Height
+						blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, curHeight, nextHeight)
+					}
+
+					if shardBlockIndex == len(shardBlockState)-1 {
+						curHeight = crossShardInfo.Height
+						nextHeight = uint64(0)
+					} else {
+						curHeight = crossShardInfo.Height
+						nextHeight = shardBlockState[shardBlockIndex+1].Height
+					}
+					blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, curHeight, nextHeight)
+
+					if lastCrossShardState[crossShardToShardID] == nil {
+						lastCrossShardState[crossShardToShardID] = make(map[byte]uint64)
+					}
+					lastCrossShardState[crossShardToShardID][shardID] = crossShardInfo.Height
+				}
+			}
+		}
+	}
+
+	//=========Remove shard to beacon block in pool
 	Logger.log.Infof("Remove block from pool %+v \n", *block.Hash())
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.BestShardHeight)
 
@@ -433,6 +471,8 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		}
 		bestStateBeacon.AllShardState[shardID] = append(bestStateBeacon.AllShardState[shardID], shardStates...)
 	}
+
+	//cross shard state
 
 	// update param
 	instructions := newBlock.Body.Instructions

@@ -10,7 +10,7 @@ import (
 
 const (
 	MAX_VALID_CROSS_SHARD_IN_POOL   = 20000
-	MAX_PENDING_CROSS_SHARD_IN_POOL = 200
+	MAX_PENDING_CROSS_SHARD_IN_POOL = 100 //per shardID
 
 	VALID_CROSS_SHARD_BLOCK   = 0
 	INVALID_CROSS_SHARD_BLOCK = -1
@@ -33,14 +33,6 @@ type CrossShardPool_v2 struct {
 	validPool   map[byte][]*blockchain.CrossShardBlock
 	pendingPool map[byte][]*blockchain.CrossShardBlock
 	poolMu      *sync.RWMutex
-
-	currentCrossShardProcessState map[byte]uint64
-	waitingCrossShardBlock        map[byte][]common.Hash
-
-	curBestStateBeacon *blockchain.BestStateBeacon
-
-	beaconBestStateUpdateCh chan *blockchain.BestStateBeacon
-	shardBlockUpdateCh      chan *blockchain.ShardBlock
 }
 
 func GetCrossShardPool(shardID byte) *CrossShardPool_v2 {
@@ -53,39 +45,39 @@ func GetCrossShardPool(shardID byte) *CrossShardPool_v2 {
 		crossShardPool.pendingPool = make(map[byte][]*blockchain.CrossShardBlock)
 		crossShardPool.poolMu = new(sync.RWMutex)
 
-		go func() {
-			for {
-				select {
-				case newBestState := <-crossShardPool.beaconBestStateUpdateCh: // when receive signal of updating beacon state
-					crossShardPool.curBestStateBeacon = newBestState
-					crossShardPool.UpdateValidBlock()
-
-				}
-			}
-		}()
+		//go func() {
+		//	for {
+		//		select {
+		//
+		//		case newBestState := <-crossShardPool.beaconBestStateUpdateCh: // when receive signal of updating beacon state
+		//			crossShardPool.curBestStateBeacon = newBestState
+		//			crossShardPool.UpdateValidBlock()
+		//
+		//		}
+		//	}
+		//}()
 	}
 
 	return crossShardPool
 }
 
-//TODO: calculate waitingCrossShardBlock from beacon info
-func (self *CrossShardPool_v2) CalculateWaitingCrossShardBlock(crossShardProcessState map[byte]uint64) error {
-
-	return nil
-}
+////calculate waitingCrossShardBlock from beacon info
+//func (self *CrossShardPool_v2) CalculateWaitingCrossShardBlock(crossShardProcessState map[byte]uint64) error {
+//	return nil
+//}
 
 //TODO: When start node, we should get cross shard process to know which block we should store in pool & include in the shard block
 //TODO: When shard block is inserted to chain, we should update the cross shard process -> to validate block
 func (self *CrossShardPool_v2) SetCrossShardProcessState(crossShardProcessState map[byte]uint64) error {
-	self.currentCrossShardProcessState = crossShardProcessState
-	self.RemoveValidBlock(crossShardProcessState)
+
+	self.RemoveValidBlockByHeight(crossShardProcessState)
 	return nil
 }
 
-func (self *CrossShardPool_v2) RemoveWaitingCrossShardBlock(crossShardProcessState map[byte]uint64) error {
-	//TODO: remove waiting cross shard block hash
-	return nil
-}
+//func (self *CrossShardPool_v2) RemoveWaitingCrossShardBlock(crossShardProcessState map[byte]uint64) error {
+//	//remove waiting cross shard block hash
+//	return nil
+//}
 
 // Validate pending pool again, to move pending block to valid block
 // When receive new cross shard block or new beacon state arrive
@@ -110,7 +102,8 @@ func (self *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 
 	if shouldStore {
 
-		if len(self.pendingPool) > MAX_PENDING_CROSS_SHARD_IN_POOL {
+		if len(self.pendingPool[shardID]) > MAX_PENDING_CROSS_SHARD_IN_POOL {
+			//TODO: swap for better block
 			return errors.New("Reach max pending cross shard block")
 		}
 
@@ -128,7 +121,7 @@ func (self *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 	return nil
 }
 
-func (self *CrossShardPool_v2) RemoveValidBlock(removeSinceBlkHeight map[byte]uint64) error {
+func (self *CrossShardPool_v2) RemoveValidBlockByHeight(removeSinceBlkHeight map[byte]uint64) error {
 	self.poolMu.Lock()
 	defer self.poolMu.Unlock()
 
@@ -160,8 +153,7 @@ func (self *CrossShardPool_v2) GetValidBlock() map[byte][]*blockchain.CrossShard
 
 func (self *CrossShardPool_v2) GetValidBlockHash() map[byte][]common.Hash {
 	finalBlockHash := make(map[byte][]common.Hash)
-	blks := self.GetValidBlock()
-	for shardID, blkItems := range blks {
+	for shardID, blkItems := range self.validPool {
 		for _, blk := range blkItems {
 			finalBlockHash[shardID] = append(finalBlockHash[shardID], *blk.Hash())
 		}
@@ -171,8 +163,24 @@ func (self *CrossShardPool_v2) GetValidBlockHash() map[byte][]common.Hash {
 
 func (self *CrossShardPool_v2) GetValidBlockHeight() map[byte][]uint64 {
 	finalBlockHeight := make(map[byte][]uint64)
-	blks := self.GetValidBlock()
-	for shardID, blkItems := range blks {
+	for shardID, blkItems := range self.validPool {
+		for _, blk := range blkItems {
+			finalBlockHeight[shardID] = append(finalBlockHeight[shardID], blk.Header.Height)
+		}
+	}
+	return finalBlockHeight
+}
+
+func (self *CrossShardPool_v2) GetAllBlockHeight() map[byte][]uint64 {
+	finalBlockHeight := make(map[byte][]uint64)
+
+	for shardID, blkItems := range self.validPool {
+		for _, blk := range blkItems {
+			finalBlockHeight[shardID] = append(finalBlockHeight[shardID], blk.Header.Height)
+		}
+	}
+
+	for shardID, blkItems := range self.pendingPool {
 		for _, blk := range blkItems {
 			finalBlockHeight[shardID] = append(finalBlockHeight[shardID], blk.Header.Height)
 		}
