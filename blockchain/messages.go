@@ -15,7 +15,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 			Beacon: beacon,
 			Peer:   peerID,
 		}
-		userRole, userShardID := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58())
+		userRole, userShardID := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Beacon.BestBlock.Header.Round)
 		nodeMode := blockchain.config.NodeMode
 		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
 			pState.ShardToBeaconPool = shardToBeaconPool
@@ -28,7 +28,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 			}
 		}
 		if userRole == common.SHARD_ROLE && (nodeMode == common.NODEMODE_AUTO || nodeMode == common.NODEMODE_BEACON) {
-			userShardRole := blockchain.BestState.Shard[userShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58())
+			userShardRole := blockchain.BestState.Shard[userShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
 			if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE {
 				if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= blockchain.BestState.Shard[userShardID].ShardHeight {
 					pState.Shard[userShardID] = &shardState
