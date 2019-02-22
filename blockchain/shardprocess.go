@@ -131,7 +131,6 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	return nil
 }
 
-//TODO: @merman, check block height
 func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
@@ -226,8 +225,13 @@ DO NOT USE THIS with GENESIS BLOCK
 - BeaconHash
 - Swap instruction
 */
-//TODO: @merman Check producer
 func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID byte) error {
+	//verify producer
+	producerPosition := (blockchain.BestState.Shard[shardID].ShardProposerIdx + 1) % len(blockchain.BestState.Shard[shardID].ShardCommittee)
+	tempProducer := blockchain.BestState.Shard[shardID].ShardCommittee[producerPosition]
+	if strings.Compare(tempProducer, block.Header.Producer) != 0 {
+		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
+	}
 	Logger.log.Debugf("SHARD %+v | Begin VerifyPreProcessingShardBlock Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	if block.Header.ShardID != shardID {
 		return NewBlockChainError(ShardIDError, errors.New("Shard should be :"+strconv.Itoa(int(shardID))))
@@ -411,7 +415,7 @@ func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *Shard
 	//=============End Verify producer signature
 	//=============Verify aggegrate signature
 	if isVerifySig {
-		if len(block.ValidatorsIdx) < (len(bestStateShard.ShardCommittee) >> 1) {
+		if len(block.ValidatorsIdx) <= (len(bestStateShard.ShardCommittee)>>1) && len(bestStateShard.ShardCommittee) > 3 {
 			fmt.Println(bestStateShard.ShardCommittee)
 			return NewBlockChainError(SignatureError, errors.New("block validators and Shard committee is not compatible"))
 		}
