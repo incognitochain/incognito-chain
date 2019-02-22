@@ -1,4 +1,4 @@
-package constantpos
+package constantbft
 
 const (
 	ListenTimeout  = 18   //in s
