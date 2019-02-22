@@ -40,7 +40,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	fmt.Println("Shard Producer/NewBlockShard, Beacon Hash / After", beaconHash)
 	fmt.Println("Shard Producer/NewBlockShard, Beacon Epoch", epoch)
 	// Get valid transaction (add tx, remove tx, fee of add tx)
-	txsToAdd, txToRemove, totalFee := blockgen.getPendingTransaction(shardID)
+	txsToAdd, txToRemove, _ := blockgen.getPendingTransaction(shardID)
 	if len(txsToAdd) == 0 {
 		Logger.log.Info("Creating empty block...")
 	}
@@ -50,9 +50,9 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		blockgen.txPool.RemoveTx(tx)
 	}
 	// Calculate coinbases
-	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(shardID)
-	basicSalary := blockgen.rewardAgent.GetBasicSalary(shardID)
-	salaryFundAdd := uint64(0)
+	salaryPerTx := blockgen.chain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.SalaryPerTx
+	basicSalary := blockgen.chain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.BasicSalary
+	// salaryFundAdd := uint64(0)
 	salaryMULTP := uint64(0) //salary multiplier
 	for _, blockTx := range txsToAdd {
 		if blockTx.GetTxFee() > 0 {
@@ -66,8 +66,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		Logger.log.Error(err)
 		return nil, err
 	}
-	currentSalaryFund := uint64(0)
-	remainingFund := currentSalaryFund + totalFee + salaryFundAdd - totalSalary
 	coinbases := []metadata.Transaction{salaryTx}
 	txsToAdd = append(coinbases, txsToAdd...)
 
@@ -191,7 +189,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		Height:        prevBlock.Header.Height + 1,
 		Timestamp:     time.Now().Unix(),
 		//TODO: add salary fund
-		SalaryFund:           remainingFund,
 		TxRoot:               *merkleRoot,
 		ShardTxRoot:          *block.Body.CalcMerkleRootShard(),
 		CrossOutputCoinRoot:  *crossOutputCoinRoot,
@@ -211,7 +208,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		return nil, err
 	}
 	block.ProducerSig = sig
-	_ = remainingFund
 	return block, nil
 }
 
