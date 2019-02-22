@@ -107,6 +107,7 @@ go build && ./constant --spendingkey "112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNh
 
 ./constant --nodemode "auto" --spendingkey "112t8rnYY8UbXGVJ3PsrWxssjr1JXaTPNCPDrneXcQgVQs2MFYwgCzPmTsgqPPbeq8c4QxkrjpHYRaG39ZjtwCmHMJBNh2MxaQvKWw5eUGTM" --nodemode "auto" --datadir "data/shard-2" --listen "127.0.0.1:9435" --externaladdress "127.0.0.1:9435"
 
+//shard 0
 Acc 0:
 paymentAddress:1Uv4BiijnksfTmfisTkgdx8762MFunrad2RZvpd3vPnWHYqQbiPthM7psaMzVi35Fmj8z6vtqPYs9avjJF6Zbsq7gdZ2nJBwkRgnT7bFJ
 privateKey:112t8rqnMrtPkJ4YWzXfG82pd9vCe2jvWGxqwniPM5y4hnimki6LcVNfXxN911ViJS8arTozjH4rTpfaGo5i1KKcG1ayjiMsa4E3nABGAqQh
@@ -124,6 +125,13 @@ privateKey: 112t8rpdxySoXQJStHXoqTEnS9Mxtzibug2TE7dnrcLf4Xtt6MKNXrejqWrPFDvAKz7P
 Acc 825:
  paymentAddress: 1Uv4WFPUtHUuhe6JrFZ8KC5kEWQJ2cZ9bbEgpFGTo58hJesh8SoCYvm6dySYqBTieSqtuCkoaSbaz6PbFEBtb69ZEbscfQWDQTqRLTUGq
 privateKey: 112t8rrcSqAraUy4WGjakiA6Lp5QdFQwELWHyNoHsGaui1pVUPedz2DjfDJF42m3PYCf5FM9LWZPuwYe5GEWTb4ZQtBYUkRQS1JeRdBw2cZ6
+
+//shard 1
+paymentAddress: 1Uv36DEGA9Z91eMhNYHUCFg3dimqVhcVvArrjtS8QSxXQvfb52Hdk8hsQHoX2FPFUXH29uCgkSQkXko8mZ3KdKgbxPm7PKnoEx5p2cAFb
+privateKey: 112t8s2UkZEwS7JtqLHFruRrh4Drj53UzH4A6DrairctKutxVb8Vw2DMzxCReYsAZkXi9ycaSNRHEcB7TJaTwPhyPvqRzu5NnUgTMN9AEKwo
+Acc 243:
+ paymentAddress: 1Uv25dvj8HnfGNYAcY9c1wg5uJ2XoZe3MCUv3MBrbTS15tykLL1i3r1ko7VLv5zhB9acCs5JS7U4X9tKexbneumEje6o9rHZqVeihxZW7
+privateKey: 112t8roj4ZNc3mjUiAGoCwsrueBRiwYqE1URbUrJpBReRDZ5CDubBDUZtfN3Hxht3KtCFVNie1vsdWTPpTe3ydKHnnCvface41feiEahxJgd
 
 curl -X POST \
   http://127.0.0.1:9334 \
