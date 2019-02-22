@@ -25,8 +25,8 @@ type Tx struct {
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
 
-	Fee      uint64 `json:"Fee"` // Fee applies: always consant
-	Info     []byte
+	Fee  uint64 `json:"Fee"` // Fee applies: always consant
+	Info []byte
 
 	// Sign and Privacy proof
 	SigPubKey []byte `json:"SigPubKey, omitempty"` // 33 bytes
@@ -39,6 +39,14 @@ type Tx struct {
 	Metadata metadata.Metadata
 
 	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
+}
+
+func (tx *Tx) GetAmountOfVote() (uint64, error) {
+	return 0, errors.New("wrong type of tx")
+}
+
+func (tx *Tx) GetVoterPaymentAddress() (*privacy.PaymentAddress, error) {
+	return nil, errors.New("wrong type of tx")
 }
 
 func (tx *Tx) UnmarshalJSON(data []byte) error {
@@ -236,11 +244,11 @@ func (tx *Tx) Init(
 	for i, cmIndex := range commitmentIndexs {
 		commitmentProving[i] = new(privacy.EllipticPoint)
 		temp, err := db.GetCommitmentByIndex(tokenID, cmIndex, shardID)
-		if err != nil{
+		if err != nil {
 			return NewTransactionErr(UnexpectedErr, err)
 		}
 		err = commitmentProving[i].Decompress(temp)
-		if err != nil{
+		if err != nil {
 			return NewTransactionErr(UnexpectedErr, err)
 		}
 	}
@@ -387,7 +395,6 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	//hasPrivacy = false
-	Logger.log.Debugf("[db] Validating Transaction tx\n")
 	Logger.log.Infof("VALIDATING TX........\n")
 	start := time.Now()
 	// Verify tx signature
@@ -427,7 +434,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 	}
 
-	Logger.log.Infof("[db]tx.Proof: %+v\n", tx.Proof)
+	// Logger.log.Infof("[db]tx.Proof: %+v\n", tx.Proof)
 	if tx.Proof != nil {
 		if tokenID == nil {
 			tokenID = &common.Hash{}
@@ -439,11 +446,10 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			sndOutputs[i] = tx.Proof.OutputCoins[i].CoinDetails.SNDerivator
 		}
 
-		if common.CheckDuplicateBigIntArray(sndOutputs){
+		if common.CheckDuplicateBigIntArray(sndOutputs) {
 			Logger.log.Infof("Duplicate output coins' snd\n")
 			return false
 		}
-
 
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
@@ -470,7 +476,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		if !valid {
 			Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION PAYMENT PROOF")
 			return false
-		} else{
+		} else {
 			Logger.log.Infof("[PRIVACY LOG] - SUCCESSED VERIFICATION PAYMENT PROOF")
 		}
 	}
@@ -948,7 +954,7 @@ func (tx Tx) ValidateTxSalary(
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(tx.Proof.OutputCoins[0].CoinDetails.Value))))
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMult(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator))
 
-	shardID := byte(int(tx.Proof.OutputCoins[0].CoinDetails.GetPubKeyLastByte()) % common.SHARD_NUMBER)
+	shardID := common.GetShardIDFromLastByte(tx.Proof.OutputCoins[0].CoinDetails.GetPubKeyLastByte())
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(tx.Proof.OutputCoins[0].CoinDetails.Randomness))
 	return cmTmp.IsEqual(tx.Proof.OutputCoins[0].CoinDetails.CoinCommitment)

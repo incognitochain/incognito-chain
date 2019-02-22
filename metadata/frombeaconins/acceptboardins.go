@@ -2,12 +2,12 @@ package frombeaconins
 
 import (
 	"encoding/json"
-	"github.com/ninjadotorg/constant/common"
+	"strconv"
+
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
-	"strconv"
 )
 
 type InstructionFromBeacon interface {
@@ -73,11 +73,11 @@ func (txAcceptGOVBoardIns *TxAcceptGOVBoardIns) BuildTransaction(
 //1. In Beacon chain
 //2. In shard
 func NewTxAcceptBoardIns(
-	boardType byte,
+	boardType metadata.BoardType,
 	boardPaymentAddress []privacy.PaymentAddress,
 	startAmountToken uint64,
 ) InstructionFromBeacon {
-	if boardType == common.DCBBoard {
+	if boardType == metadata.DCBBoard {
 		return NewTxAcceptDCBBoardIns(
 			boardPaymentAddress,
 			startAmountToken,

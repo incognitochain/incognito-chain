@@ -11,6 +11,16 @@ type SealedLv1DCBVoteProposalMetadata struct {
 	MetadataBase
 }
 
+func (sealedLv1DCBVoteProposalMetadata *SealedLv1DCBVoteProposalMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	boardType := DCBBoard
+	nextConstitutionIndex := bcr.GetConstitution(boardType).GetConstitutionIndex() + 1
+	err := bcr.GetDatabase().AddVoteLv1or2Proposal(boardType.BoardTypeDB(), nextConstitutionIndex, tx.GetMetadata().Hash())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (sealedLv1DCBVoteProposalMetadata *SealedLv1DCBVoteProposalMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
 	return sealedLv1DCBVoteProposalMetadata.SealedLv1VoteProposalMetadata.ValidateSanityData(bcr, tx)
 }
@@ -19,8 +29,8 @@ func (sealedLv1DCBVoteProposalMetadata *SealedLv1DCBVoteProposalMetadata) Valida
 	return sealedLv1DCBVoteProposalMetadata.SealedLv1VoteProposalMetadata.ValidateMetadataByItself()
 }
 
-func (sealedLv1DCBVoteProposalMetadata *SealedLv1DCBVoteProposalMetadata) GetBoardType() byte {
-	return common.DCBBoard
+func (sealedLv1DCBVoteProposalMetadata *SealedLv1DCBVoteProposalMetadata) GetBoardType() BoardType {
+	return DCBBoard
 }
 
 func NewSealedLv1DCBVoteProposalMetadata(
@@ -55,7 +65,7 @@ func (sealedLv1DCBVoteProposalMetadata *SealedLv1DCBVoteProposalMetadata) Valida
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	boardType := common.DCBBoard
+	boardType := DCBBoard
 	return sealedLv1DCBVoteProposalMetadata.SealedLv1VoteProposalMetadata.ValidateTxWithBlockChain(
 		boardType,
 		tx,
@@ -71,6 +81,16 @@ type SealedLv2DCBVoteProposalMetadata struct {
 	MetadataBase
 }
 
+func (sealedLv2DCBVoteProposalMetadata *SealedLv2DCBVoteProposalMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	boardType := DCBBoard
+	nextConstitutionIndex := bcr.GetConstitution(boardType).GetConstitutionIndex() + 1
+	err := bcr.GetDatabase().AddVoteLv1or2Proposal(boardType.BoardTypeDB(), nextConstitutionIndex, tx.GetMetadata().Hash())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (sealedLv2DCBVoteProposalMetadata *SealedLv2DCBVoteProposalMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
 	return sealedLv2DCBVoteProposalMetadata.SealedLv2VoteProposalMetadata.ValidateSanityData(bcr, tx)
 }
@@ -79,8 +99,8 @@ func (sealedLv2DCBVoteProposalMetadata *SealedLv2DCBVoteProposalMetadata) Valida
 	return sealedLv2DCBVoteProposalMetadata.SealedLv2VoteProposalMetadata.ValidateMetadataByItself()
 }
 
-func (sealedLv2DCBVoteProposalMetadata *SealedLv2DCBVoteProposalMetadata) GetBoardType() byte {
-	return common.DCBBoard
+func (sealedLv2DCBVoteProposalMetadata *SealedLv2DCBVoteProposalMetadata) GetBoardType() BoardType {
+	return DCBBoard
 }
 
 func NewSealedLv2DCBVoteProposalMetadata(
@@ -123,6 +143,16 @@ type SealedLv3DCBVoteProposalMetadata struct {
 	MetadataBase
 }
 
+func (sealedLv3DCBVoteProposalMetadata *SealedLv3DCBVoteProposalMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	boardType := DCBBoard
+	nextConstitutionIndex := bcr.GetConstitution(boardType).GetConstitutionIndex() + 1
+	err := bcr.GetDatabase().AddVoteLv3Proposal(boardType.BoardTypeDB(), nextConstitutionIndex, tx.GetMetadata().Hash())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (sealedLv3DCBVoteProposalMetadata *SealedLv3DCBVoteProposalMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
 	return sealedLv3DCBVoteProposalMetadata.SealedLv3VoteProposalMetadata.ValidateTxWithBlockChain(tx, bcr, b, db)
 }
@@ -135,8 +165,8 @@ func (sealedLv3DCBVoteProposalMetadata *SealedLv3DCBVoteProposalMetadata) Valida
 	return sealedLv3DCBVoteProposalMetadata.SealedLv3VoteProposalMetadata.ValidateMetadataByItself()
 }
 
-func (sealedLv3DCBVoteProposalMetadata *SealedLv3DCBVoteProposalMetadata) GetBoardType() byte {
-	return common.DCBBoard
+func (sealedLv3DCBVoteProposalMetadata *SealedLv3DCBVoteProposalMetadata) GetBoardType() BoardType {
+	return DCBBoard
 }
 
 func NewSealedLv3DCBVoteProposalMetadata(
@@ -155,6 +185,21 @@ type NormalDCBVoteProposalFromSealerMetadata struct {
 	NormalVoteProposalFromSealerMetadata NormalVoteProposalFromSealerMetadata
 
 	MetadataBase
+}
+
+func (normalDCBVoteProposalFromSealerMetadata *NormalDCBVoteProposalFromSealerMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	boardType := DCBBoard
+	nextConstitutionIndex := bcr.GetConstitution(boardType).GetConstitutionIndex() + 1
+	err := bcr.GetDatabase().AddVoteNormalProposalFromOwner(
+		boardType.BoardTypeDB(),
+		nextConstitutionIndex,
+		&normalDCBVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal,
+		normalDCBVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes(),
+	)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (normalDCBVoteProposalFromSealerMetadata *NormalDCBVoteProposalFromSealerMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
@@ -182,8 +227,8 @@ func NewNormalDCBVoteProposalFromSealerMetadata(
 	}
 }
 
-func (normalDCBVoteProposalFromSealerMetadata *NormalDCBVoteProposalFromSealerMetadata) GetBoardType() byte {
-	return common.DCBBoard
+func (normalDCBVoteProposalFromSealerMetadata *NormalDCBVoteProposalFromSealerMetadata) GetBoardType() BoardType {
+	return DCBBoard
 }
 
 func (normalDCBVoteProposalFromSealerMetadata *NormalDCBVoteProposalFromSealerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
@@ -201,6 +246,22 @@ func (normalDCBVoteProposalFromSealerMetadata *NormalDCBVoteProposalFromSealerMe
 type NormalDCBVoteProposalFromOwnerMetadata struct {
 	NormalVoteProposalFromOwnerMetadata NormalVoteProposalFromOwnerMetadata
 	MetadataBase
+}
+
+func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	boardType := DCBBoard
+	nextConstitutionIndex := bcr.GetConstitution(boardType).GetConstitutionIndex() + 1
+	err := bcr.GetDatabase().AddVoteNormalProposalFromOwner(
+		boardType.BoardTypeDB(),
+		nextConstitutionIndex,
+		&normalDCBVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal,
+		normalDCBVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes(),
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+
 }
 
 func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
@@ -235,7 +296,7 @@ func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMeta
 
 func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	//Validate these pubKeys are in board
-	boardType := common.DCBBoard
+	boardType := DCBBoard
 	return normalDCBVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.ValidateTxWithBlockChain(
 		boardType,
 		tx,
@@ -248,6 +309,11 @@ func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMeta
 type PunishDCBDecryptMetadata struct {
 	PunishDecryptMetadata PunishDecryptMetadata
 	MetadataBase
+}
+
+func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	// todo @0xjackalope
+	return nil
 }
 
 func NewPunishDCBDecryptMetadata(paymentAddress privacy.PaymentAddress) *PunishDCBDecryptMetadata {

@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"errors"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
@@ -81,7 +82,7 @@ func VerifyMerkleTree(finalHash common.Hash, merklePath []common.Hash, merkleRoo
 // helper function to group OutputCoin into shard and get the hash of each group
 func getOutCoinHashEachShard(txList []metadata.Transaction) []common.Hash {
 	// group transaction by shardID
-	outCoinEachShard := make([][]*privacy.OutputCoin, common.SHARD_NUMBER)
+	outCoinEachShard := make([][]*privacy.OutputCoin, common.MAX_SHARD_NUMBER)
 	for _, tx := range txList {
 		for _, outCoin := range tx.GetProof().OutputCoins {
 			lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
@@ -91,8 +92,8 @@ func getOutCoinHashEachShard(txList []metadata.Transaction) []common.Hash {
 	}
 
 	//calcualte hash for each shard
-	outputCoinHash := make([]common.Hash, common.SHARD_NUMBER)
-	for i := 0; i < common.SHARD_NUMBER; i++ {
+	outputCoinHash := make([]common.Hash, common.MAX_SHARD_NUMBER)
+	for i := 0; i < common.MAX_SHARD_NUMBER; i++ {
 		if len(outCoinEachShard[i]) == 0 {
 			outputCoinHash[i] = common.HashH([]byte(""))
 		} else {
@@ -133,4 +134,9 @@ func (crossShardBlock *CrossShardBlock) VerifyCrossShardBlock(committees []strin
 		return NewBlockChainError(HashError, errors.New("verify Merkle Path Shard"))
 	}
 	return nil
+}
+
+func (self *CrossShardBlock) ShouldStoreBlock() bool {
+	// verify block aggregation
+	return false
 }

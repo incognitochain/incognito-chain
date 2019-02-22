@@ -55,7 +55,7 @@ func NewContractingRequestFromMap(data map[string]interface{}) (Metadata, error)
 		keyWallet.KeySet.PaymentAddress,
 		burnedConstAmount,
 		*currencyType,
-		IssuingRequestMeta,
+		ContractingRequestMeta,
 	)
 }
 
@@ -83,19 +83,19 @@ func (cReq *ContractingRequest) ValidateSanityData(bcr BlockchainRetriever, txr 
 	}
 
 	if !txr.IsCoinsBurning() {
-		return false, false, nil
+		return false, false, errors.New("Must send coin to burning address")
 	}
 	if cReq.BurnedConstAmount != txr.CalculateTxValue() {
-		return false, false, nil
+		return false, false, errors.New("BurnedConstAmount incorrect")
 	}
 	if !bytes.Equal(txr.GetSigPubKey()[:], cReq.BurnerAddress.Pk[:]) {
-		return false, false, nil
+		return false, false, errors.New("BurnerAddress incorrect")
 	}
 	return true, true, nil
 }
 
 func (cReq *ContractingRequest) ValidateMetadataByItself() bool {
-	return cReq.Type != ContractingRequestMeta
+	return cReq.Type == ContractingRequestMeta
 }
 
 func (cReq *ContractingRequest) Hash() *common.Hash {

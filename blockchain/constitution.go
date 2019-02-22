@@ -93,10 +93,6 @@ func (helper DCBConstitutionHelper) CheckSubmitProposalType(tx metadata.Transact
 	return tx.GetMetadataType() == metadata.SubmitDCBProposalMeta
 }
 
-func (helper DCBConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transaction) uint64 {
-	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
-}
-
 func (helper GOVConstitutionHelper) GetStartedNormalVote(chain *BlockChain) uint64 {
 	info := chain.BestState.Beacon.StabilityInfo
 	lastGOVConstitution := info.GOVConstitution
@@ -107,7 +103,7 @@ func (helper GOVConstitutionHelper) CheckSubmitProposalType(tx metadata.Transact
 	return tx.GetMetadataType() == metadata.SubmitGOVProposalMeta
 }
 
-func (helper GOVConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transaction) uint64 {
+func (helper GOVConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transaction) (uint64, error) {
 	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
 }
 
@@ -127,12 +123,12 @@ func (helper GOVConstitutionHelper) NewAcceptProposalIns(
 	return ins
 }
 
-func (helper DCBConstitutionHelper) GetBoardType() byte {
-	return common.DCBBoard
+func (helper DCBConstitutionHelper) GetBoardType() metadata.BoardType {
+	return metadata.DCBBoard
 }
 
-func (helper GOVConstitutionHelper) GetBoardType() byte {
-	return common.GOVBoard
+func (helper GOVConstitutionHelper) GetBoardType() metadata.BoardType {
+	return metadata.GOVBoard
 }
 
 func (helper DCBConstitutionHelper) CreatePunishDecryptIns(paymentAddress *privacy.PaymentAddress) frombeaconins.InstructionFromBeacon {
@@ -217,31 +213,31 @@ func (helper GOVConstitutionHelper) GetTokenID() *common.Hash {
 	return &id
 }
 
-func (helper DCBConstitutionHelper) GetBoard(chain *BlockChain) Governor {
+func (helper DCBConstitutionHelper) GetBoard(chain *BlockChain) metadata.GovernorInterface {
 	return chain.BestState.Beacon.StabilityInfo.DCBGovernor
 }
 
-func (helper GOVConstitutionHelper) GetBoard(chain *BlockChain) Governor {
+func (helper GOVConstitutionHelper) GetBoard(chain *BlockChain) metadata.GovernorInterface {
 	return chain.BestState.Beacon.StabilityInfo.GOVGovernor
 }
 
 func (helper DCBConstitutionHelper) GetAmountVoteTokenOfBoard(chain *BlockChain, paymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
-	value, _ := chain.config.DataBase.GetVoteTokenAmount(helper.GetBoardType(), boardIndex, paymentAddress)
+	value, _ := chain.config.DataBase.GetVoteTokenAmount(helper.GetBoardType().BoardTypeDB(), boardIndex, paymentAddress)
 	return uint64(value)
 }
 func (helper GOVConstitutionHelper) GetAmountVoteTokenOfBoard(chain *BlockChain, paymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
-	value, _ := chain.config.DataBase.GetVoteTokenAmount(helper.GetBoardType(), boardIndex, paymentAddress)
+	value, _ := chain.config.DataBase.GetVoteTokenAmount(helper.GetBoardType().BoardTypeDB(), boardIndex, paymentAddress)
 	return uint64(value)
 }
 
 func (helper DCBConstitutionHelper) GetAmountOfVoteToBoard(chain *BlockChain, candidatePaymentAddress privacy.PaymentAddress, voterPaymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
-	key := lvdb.GetKeyVoteBoardList(helper.GetBoardType(), boardIndex, &candidatePaymentAddress, &voterPaymentAddress)
+	key := lvdb.GetKeyVoteBoardList(helper.GetBoardType().BoardTypeDB(), boardIndex, &candidatePaymentAddress, &voterPaymentAddress)
 	value, _ := chain.config.DataBase.Get(key)
 	amount := lvdb.ParseValueVoteBoardList(value)
 	return amount
 }
 func (helper GOVConstitutionHelper) GetAmountOfVoteToBoard(chain *BlockChain, candidatePaymentAddress privacy.PaymentAddress, voterPaymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
-	key := lvdb.GetKeyVoteBoardList(helper.GetBoardType(), boardIndex, &candidatePaymentAddress, &voterPaymentAddress)
+	key := lvdb.GetKeyVoteBoardList(helper.GetBoardType().BoardTypeDB(), boardIndex, &candidatePaymentAddress, &voterPaymentAddress)
 	value, _ := chain.config.DataBase.Get(key)
 	amount := lvdb.ParseValueVoteBoardList(value)
 	return amount

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ninjadotorg/constant/database"
 
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
@@ -38,7 +39,7 @@ func (rpcServer RpcServer) handleGetAmountVoteToken(params interface{}, closeCha
 	TokenID.SetBytes(common.DCBVotingTokenID[:])
 	item.TokenID = TokenID.String()
 	item.TokenImage = common.Render([]byte(item.TokenID))
-	amount, err := db.GetVoteTokenAmount(common.DCBBoard, rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress)
+	amount, err := db.GetVoteTokenAmount(metadata.DCBBoard.BoardTypeDB(), rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -53,7 +54,7 @@ func (rpcServer RpcServer) handleGetAmountVoteToken(params interface{}, closeCha
 	TokenID.SetBytes(common.GOVVotingTokenID[:])
 	item.TokenID = TokenID.String()
 	item.TokenImage = common.Render([]byte(item.TokenID))
-	amount, err = db.GetVoteTokenAmount(common.GOVBoard, rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.GOVConstitutionHelper{}), *paymentAddress)
+	amount, err = db.GetVoteTokenAmount(metadata.GOVBoard.BoardTypeDB(), rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.GOVConstitutionHelper{}), *paymentAddress)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -77,11 +78,11 @@ func (rpcServer RpcServer) handleSetAmountVoteToken(params interface{}, closeCha
 	amountDCBVote := uint32(arrayParams[1].(float64))
 	amountGOVVote := uint32(arrayParams[2].(float64))
 
-	err := db.SetVoteTokenAmount(common.DCBBoard, rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress, amountDCBVote)
+	err := db.SetVoteTokenAmount(metadata.DCBBoard.BoardTypeDB(), rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress, amountDCBVote)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	err = db.SetVoteTokenAmount(common.GOVBoard, rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress, amountGOVVote)
+	err = db.SetVoteTokenAmount(metadata.GOVBoard.BoardTypeDB(), rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress, amountGOVVote)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -92,8 +93,8 @@ func (rpcServer RpcServer) handleSetAmountVoteToken(params interface{}, closeCha
 
 func (rpcServer RpcServer) handleGetEncryptionFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	db := *rpcServer.config.Database
-	dcbEncryptionFlag, _ := db.GetEncryptFlag(common.DCBBoard)
-	govEncryptionFlag, _ := db.GetEncryptFlag(common.GOVBoard)
+	dcbEncryptionFlag, _ := db.GetEncryptFlag(metadata.DCBBoard.BoardTypeDB())
+	govEncryptionFlag, _ := db.GetEncryptFlag(metadata.GOVBoard.BoardTypeDB())
 	return jsonresult.GetEncryptionFlagResult{
 		DCBFlag: dcbEncryptionFlag,
 		GOVFlag: govEncryptionFlag,
@@ -102,27 +103,19 @@ func (rpcServer RpcServer) handleGetEncryptionFlag(params interface{}, closeChan
 func (rpcServer RpcServer) handleSetEncryptionFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	fmt.Print("delete me, use only for test purpose!!!")
 	db := *rpcServer.config.Database
-	dcbEncryptionFlag, _ := db.GetEncryptFlag(common.DCBBoard)
-	govEncryptionFlag, _ := db.GetEncryptFlag(common.GOVBoard)
-	db.SetEncryptFlag(common.DCBBoard, (dcbEncryptionFlag+1)%4)
-	db.SetEncryptFlag(common.GOVBoard, (govEncryptionFlag+1)%4)
+	dcbEncryptionFlag, _ := db.GetEncryptFlag(metadata.DCBBoard.BoardTypeDB())
+	govEncryptionFlag, _ := db.GetEncryptFlag(metadata.GOVBoard.BoardTypeDB())
+	db.SetEncryptFlag(metadata.DCBBoard.BoardTypeDB(), (dcbEncryptionFlag+1)%4)
+	db.SetEncryptFlag(metadata.GOVBoard.BoardTypeDB(), (govEncryptionFlag+1)%4)
 	return dcbEncryptionFlag, nil
 }
 
 func (rpcServer RpcServer) handleGetEncryptionLastBlockHeightFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	boardType := GetBoardTypeFromString(arrayParams[0].(string))
+	boardType := database.BoardTypeDB(arrayParams[0].([]byte)[0])
 	db := *rpcServer.config.Database
 	blockHeight, _ := db.GetEncryptionLastBlockHeight(boardType)
 	return jsonresult.GetEncryptionLastBlockHeightResult{blockHeight}, nil
-}
-
-func GetBoardTypeFromString(s string) byte {
-	if s == "dcb" {
-		return common.DCBBoard
-	} else {
-		return common.GOVBoard
-	}
 }
 
 func CreateSealLv3Data(data *metadata.VoteProposalData, pubKeys [][]byte) []byte {
@@ -136,7 +129,7 @@ func (rpcServer RpcServer) buildRawSealLv3VoteProposalTransaction(
 	arrayParams := common.InterfaceSlice(params)
 	index := len(arrayParams) - 3
 
-	boardType := GetBoardTypeFromString(arrayParams[iPlusPlus(&index)].(string))
+	boardType := database.BoardTypeDB(arrayParams[iPlusPlus(&index)].([]byte)[0])
 	voteProposalData := metadata.NewVoteProposalDataFromJson(arrayParams[iPlusPlus(&index)])
 
 	threeSenderKey := common.SliceInterfaceToSliceString(arrayParams[iPlusPlus(&index)].([]interface{}))
@@ -178,9 +171,9 @@ func (rpcServer RpcServer) ListPubKeyFromListSenderKey(threePaymentAddress []str
 	return pubKeys, nil
 }
 
-func NewSealedLv3VoteProposalMetadata(boardType byte, Seal3Data []byte, paymentAddresses []privacy.PaymentAddress) metadata.Metadata {
+func NewSealedLv3VoteProposalMetadata(boardType database.BoardTypeDB, Seal3Data []byte, paymentAddresses []privacy.PaymentAddress) metadata.Metadata {
 	var meta metadata.Metadata
-	if boardType == common.DCBBoard {
+	if boardType == metadata.DCBBoard.BoardTypeDB() {
 		meta = metadata.NewSealedLv3DCBVoteProposalMetadata(Seal3Data, paymentAddresses)
 	} else {
 		meta = metadata.NewSealedLv3GOVVoteProposalMetadata(Seal3Data, paymentAddresses)
@@ -230,7 +223,7 @@ func (rpcServer RpcServer) buildRawSealLv2VoteProposalTransaction(
 	arrayParams := common.InterfaceSlice(params)
 	index := len(arrayParams) - 3
 
-	boardType := GetBoardTypeFromString(arrayParams[iPlusPlus(&index)].(string))
+	boardType := database.BoardTypeDB(arrayParams[iPlusPlus(&index)].([]byte)[0])
 
 	firstPrivateKey := []byte(arrayParams[iPlusPlus(&index)].(string))
 
@@ -251,7 +244,7 @@ func (rpcServer RpcServer) buildRawSealLv2VoteProposalTransaction(
 	Seal2Data := common.Decrypt(SealLv3Data, firstPrivateKey)
 
 	meta := NewSealedLv2VoteProposalMetadata(
-		boardType,
+		database.BoardTypeDB(boardType),
 		Seal2Data,
 		pubKeys,
 		*lv3txID,
@@ -261,9 +254,9 @@ func (rpcServer RpcServer) buildRawSealLv2VoteProposalTransaction(
 	return tx, err1
 }
 
-func NewSealedLv2VoteProposalMetadata(boardType byte, Seal2Data []byte, paymentAddresses []privacy.PaymentAddress, pointer common.Hash) metadata.Metadata {
+func NewSealedLv2VoteProposalMetadata(boardType database.BoardTypeDB, Seal2Data []byte, paymentAddresses []privacy.PaymentAddress, pointer common.Hash) metadata.Metadata {
 	var meta metadata.Metadata
-	if boardType == common.DCBBoard {
+	if boardType == metadata.DCBBoard.BoardTypeDB() {
 		meta = metadata.NewSealedLv2DCBVoteProposalMetadata(
 			Seal2Data,
 			paymentAddresses,
@@ -344,7 +337,7 @@ func (rpcServer RpcServer) buildRawSealLv1VoteProposalTransaction(
 	arrayParams := common.InterfaceSlice(params)
 	index := len(arrayParams) - 4
 
-	boardType := GetBoardTypeFromString(arrayParams[iPlusPlus(&index)].(string))
+	boardType := database.BoardTypeDB(arrayParams[iPlusPlus(&index)].([]byte)[0])
 
 	secondPrivateKey := []byte(arrayParams[iPlusPlus(&index)].(string))
 
@@ -369,7 +362,7 @@ func (rpcServer RpcServer) buildRawSealLv1VoteProposalTransaction(
 	Seal1Data := common.Decrypt(SealLv2Data, secondPrivateKey)
 
 	meta := NewSealedLv1VoteProposalMetadata(
-		boardType,
+		database.BoardTypeDB(boardType),
 		Seal1Data,
 		pubKeys,
 		*lv2TxID,
@@ -380,9 +373,9 @@ func (rpcServer RpcServer) buildRawSealLv1VoteProposalTransaction(
 	return tx, err
 }
 
-func NewSealedLv1VoteProposalMetadata(boardType byte, sealLv1Data []byte, listPaymentAddress []privacy.PaymentAddress, lv2TxID common.Hash, lv3TxID common.Hash) metadata.Metadata {
+func NewSealedLv1VoteProposalMetadata(boardType database.BoardTypeDB, sealLv1Data []byte, listPaymentAddress []privacy.PaymentAddress, lv2TxID common.Hash, lv3TxID common.Hash) metadata.Metadata {
 	var meta metadata.Metadata
-	if boardType == common.DCBBoard {
+	if boardType == metadata.DCBBoard.BoardTypeDB() {
 		meta = metadata.NewSealedLv1DCBVoteProposalMetadata(
 			sealLv1Data,
 			listPaymentAddress,
@@ -465,7 +458,7 @@ func (rpcServer RpcServer) buildRawNormalVoteProposalTransactionFromOwner(
 	arrayParams := common.InterfaceSlice(params)
 	index := len(arrayParams) - 3
 
-	boardType := GetBoardTypeFromString(arrayParams[iPlusPlus(&index)].(string))
+	boardType := database.BoardTypeDB(arrayParams[iPlusPlus(&index)].([]byte)[0])
 
 	lv3TxID, err1 := common.NewHashFromStr(arrayParams[iPlusPlus(&index)].(string))
 	if err1 != nil {
@@ -478,7 +471,7 @@ func (rpcServer RpcServer) buildRawNormalVoteProposalTransactionFromOwner(
 	voteProposalData := metadata.NewVoteProposalDataFromJson(arrayParams[iPlusPlus(&index)])
 
 	meta := NewNormalVoteProposalFromOwnerMetadata(
-		boardType,
+		database.BoardTypeDB(boardType),
 		voteProposalData,
 		paymentAddresses,
 		*lv3TxID,
@@ -488,9 +481,9 @@ func (rpcServer RpcServer) buildRawNormalVoteProposalTransactionFromOwner(
 	return tx, err
 }
 
-func NewNormalVoteProposalFromOwnerMetadata(boardType byte, voteProposalData *metadata.VoteProposalData, listPaymentAddress []privacy.PaymentAddress, lv3TxID common.Hash) metadata.Metadata {
+func NewNormalVoteProposalFromOwnerMetadata(boardType database.BoardTypeDB, voteProposalData *metadata.VoteProposalData, listPaymentAddress []privacy.PaymentAddress, lv3TxID common.Hash) metadata.Metadata {
 	var meta metadata.Metadata
-	if boardType == common.DCBBoard {
+	if boardType == metadata.DCBBoard.BoardTypeDB() {
 		meta = metadata.NewNormalDCBVoteProposalFromOwnerMetadata(
 			*voteProposalData,
 			listPaymentAddress,
@@ -547,7 +540,7 @@ func (rpcServer RpcServer) buildRawNormalVoteProposalTransactionFromSealer(
 	arrayParams := common.InterfaceSlice(params)
 	index := len(arrayParams) - 4
 
-	boardType := GetBoardTypeFromString(arrayParams[iPlusPlus(&index)].(string))
+	boardType := database.BoardTypeDB(arrayParams[iPlusPlus(&index)].([]byte)[0])
 
 	lv3TxID, err1 := common.NewHashFromStr(arrayParams[iPlusPlus(&index)].(string))
 	if err1 != nil {
@@ -573,7 +566,7 @@ func (rpcServer RpcServer) buildRawNormalVoteProposalTransactionFromSealer(
 	voteProposalData := metadata.NewVoteProposalDataFromBytes(normalVoteProposalData)
 
 	meta := NewNormalVoteProposalFromSealerMetadata(
-		boardType,
+		database.BoardTypeDB(boardType),
 		*voteProposalData,
 		paymentAddresses,
 		*lv1TxID,
@@ -584,9 +577,9 @@ func (rpcServer RpcServer) buildRawNormalVoteProposalTransactionFromSealer(
 	return tx, err
 }
 
-func NewNormalVoteProposalFromSealerMetadata(boardType byte, voteProposalData metadata.VoteProposalData, paymentAddresses []privacy.PaymentAddress, lv1TxID common.Hash, lv3TxID common.Hash) metadata.Metadata {
+func NewNormalVoteProposalFromSealerMetadata(boardType database.BoardTypeDB, voteProposalData metadata.VoteProposalData, paymentAddresses []privacy.PaymentAddress, lv1TxID common.Hash, lv3TxID common.Hash) metadata.Metadata {
 	var meta metadata.Metadata
-	if boardType == common.DCBBoard {
+	if boardType == metadata.DCBBoard.BoardTypeDB() {
 		meta = metadata.NewNormalDCBVoteProposalFromSealerMetadata(
 			voteProposalData,
 			paymentAddresses,
