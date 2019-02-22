@@ -53,7 +53,7 @@ type BeaconHeader struct {
 	// shardRoot is hash of all list
 	ShardStateHash common.Hash `json:"ShardListRootHash"`
 	// hash of all parameters == hash of instruction
-	InstructionHash common.Hash `json:"ParameterHash"`
+	InstructionHash common.Hash `json:"InstructionHash"`
 }
 
 type BeaconBlock struct {
