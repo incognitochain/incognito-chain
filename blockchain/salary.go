@@ -12,6 +12,20 @@ type ShardBlockSalaryUpdateInfo struct {
 	ShardBlockFee    uint64
 }
 
+func getShardBlockFee(txs []metadata.Transaction) uint64 {
+	totalFee := uint64(0)
+	for _, tx := range txs {
+		totalFee += tx.GetTxFee()
+	}
+	return totalFee
+}
+
+func getShardBlockSalary(txs []metadata.Transaction, bestStateBeacon *BestStateBeacon) uint64 {
+	salaryPerTx := bestStateBeacon.StabilityInfo.GOVConstitution.GOVParams.SalaryPerTx
+	basicSalary := bestStateBeacon.StabilityInfo.GOVConstitution.GOVParams.BasicSalary
+	return uint64(len(txs))*salaryPerTx + basicSalary
+}
+
 func createShardBlockSalaryUpdateAction(
 	shardBlockSalary uint64,
 	shardBlockFee uint64,

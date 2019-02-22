@@ -269,7 +269,10 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	}
 	// Verify transaction root
 	txMerkle := Merkle{}.BuildMerkleTreeStore(block.Body.Transactions)
-	txRoot := txMerkle[len(txMerkle)-1]
+	txRoot := &common.Hash{}
+	if len(txMerkle) > 0 {
+		txRoot = txMerkle[len(txMerkle)-1]
+	}
 
 	if !bytes.Equal(block.Header.TxRoot.GetBytes(), txRoot.GetBytes()) {
 		fmt.Println()
