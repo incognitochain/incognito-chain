@@ -347,6 +347,32 @@ func (blockchain *BlockChain) initBeaconState() error {
 		},
 	}
 
+	bondID, _ := common.NewHashFromStr("601b465a22f872cc50ae1f0c8ed84a78de3d649ffc784fc10000000000000000")
+	buyBondSaleID := [32]byte{1}
+	sellBondSaleID := [32]byte{2}
+	saleData := []params.SaleData{
+		params.SaleData{
+			SaleID:           buyBondSaleID[:],
+			EndBlock:         1000,
+			BuyingAsset:      *bondID,
+			BuyingAmount:     100,
+			DefaultBuyPrice:  100,
+			SellingAsset:     common.ConstantID,
+			SellingAmount:    150,
+			DefaultSellPrice: 100,
+		},
+		params.SaleData{
+			SaleID:           sellBondSaleID[:],
+			EndBlock:         2000,
+			BuyingAsset:      common.ConstantID,
+			BuyingAmount:     250,
+			DefaultBuyPrice:  100,
+			SellingAsset:     *bondID,
+			SellingAmount:    200,
+			DefaultSellPrice: 100,
+		},
+	}
+	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.ListSaleData = saleData
 	// Insert new block into beacon chain
 	if err := blockchain.StoreBeaconBestState(); err != nil {
 		Logger.log.Error("Error Store best state for block", blockchain.BestState.Beacon.BestBlockHash, "in beacon chain")
