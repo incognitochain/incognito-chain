@@ -206,6 +206,7 @@ func (engine *Engine) Start() error {
 									newShardToBeaconBlock := shardBlk.CreateShardToBeaconBlock(engine.config.BlockChain)
 									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 3")
 									newShardToBeaconMsg, err := MakeMsgShardToBeaconBlock(newShardToBeaconBlock)
+									//TODO: check lock later
 									if err == nil {
 										go engine.config.Server.PushMessageToBeacon(newShardToBeaconMsg)
 									}

@@ -108,6 +108,11 @@ func getOutCoinHashEachShard(txList []metadata.Transaction) []common.Hash {
 }
 
 // helper function to get the hash of OutputCoins (send to a shard) from list of transaction
+/*
+	Get output coin of transaction
+	Check receiver last byte
+	Append output coin to corresponding shard
+*/
 func getOutCoinCrossShard(txList []metadata.Transaction, shardID byte) []privacy.OutputCoin {
 	coinList := []privacy.OutputCoin{}
 	for _, tx := range txList {

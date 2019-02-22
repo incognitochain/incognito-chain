@@ -133,13 +133,12 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		return nil, NewBlockChainError(HashError, err)
 	}
 	block.Header = ShardHeader{
-		Producer:      userKeySet.GetPublicKeyB58(),
-		ShardID:       shardID,
-		Version:       BlockVersion,
-		PrevBlockHash: *prevBlockHash,
-		Height:        prevBlock.Header.Height + 1,
-		Timestamp:     time.Now().Unix(),
-		//TODO: add salary fund
+		Producer:             userKeySet.GetPublicKeyB58(),
+		ShardID:              shardID,
+		Version:              BlockVersion,
+		PrevBlockHash:        *prevBlockHash,
+		Height:               prevBlock.Header.Height + 1,
+		Timestamp:            time.Now().Unix(),
 		SalaryFund:           remainingFund,
 		TxRoot:               *merkleRoot,
 		ShardTxRoot:          *block.Body.CalcMerkleRootShard(blockgen.chain.BestState.Shard[shardID].ActiveShards),
@@ -305,6 +304,112 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 	return res
 }
 
+/*
+	1. Get valid tx for specific shard and their fee, also return unvalid tx
+		a. Validate Tx By it self
+		b. Validate Tx with Blockchain
+	2. Remove unvalid Tx out of pool
+	3. Keep valid tx for new block
+	4. Return total fee of tx
+*/
+func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
+	sourceTxns := blockgen.txPool.MiningDescs()
+
+	// get tx and wait for more if not enough
+	if len(sourceTxns) < common.MinTxsInBlock {
+		<-time.Tick(common.MinBlockWaitTime * time.Second)
+		sourceTxns = blockgen.txPool.MiningDescs()
+		if len(sourceTxns) == 0 {
+			<-time.Tick(common.MaxBlockWaitTime * time.Second)
+			sourceTxns = blockgen.txPool.MiningDescs()
+		}
+	}
+
+	//TODO: sort transaction base on fee and check limit block size
+	// StartingPriority, fee, size, time
+
+	// validate tx and calculate total fee
+	for _, txDesc := range sourceTxns {
+		tx := txDesc.Tx
+		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		if txShardID != shardID {
+			continue
+		}
+		// TODO: need to determine a tx is in privacy format or not
+		if !tx.ValidateTxByItself(tx.IsPrivacy(), blockgen.chain.config.DataBase, blockgen.chain, shardID) {
+			txToRemove = append(txToRemove, metadata.Transaction(tx))
+			continue
+		}
+		if err := tx.ValidateTxWithBlockChain(blockgen.chain, shardID, blockgen.chain.config.DataBase); err != nil {
+			txToRemove = append(txToRemove, metadata.Transaction(tx))
+			continue
+		}
+		totalFee += tx.GetTxFee()
+		txsToAdd = append(txsToAdd, tx)
+		if len(txsToAdd) == common.MaxTxsInBlock {
+			break
+		}
+	}
+	return txsToAdd, txToRemove, totalFee
+}
+
+func (blk *ShardBlock) CreateShardToBeaconBlock(bcr metadata.BlockchainRetriever) *ShardToBeaconBlock {
+	block := ShardToBeaconBlock{}
+	block.AggregatedSig = blk.AggregatedSig
+	// block.ValidatorsIdx = make([][]int, 2)
+	// block.ValidatorsIdx[0] = append(block.ValidatorsIdx[0], blk.ValidatorsIdx[0]...)
+	// block.ValidatorsIdx[1] = append(block.ValidatorsIdx[1], blk.ValidatorsIdx[1]...)
+	block.R = blk.R
+	block.ProducerSig = blk.ProducerSig
+	block.Header = blk.Header
+	block.Instructions = blk.Body.Instructions
+	instructions := CreateShardInstructionsFromTransaction(blk.Body.Transactions, bcr, blk.Header.ShardID)
+	block.Instructions = append(block.Instructions, instructions...)
+	return &block
+}
+
+func (blk *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byte]*CrossShardBlock {
+	allCrossShard := make(map[byte]*CrossShardBlock)
+	if activeShards == 1 {
+		return allCrossShard
+	}
+	for i := 0; i < activeShards; i++ {
+		if byte(i) != blk.Header.ShardID {
+			crossShard, err := blk.CreateCrossShardBlock(byte(i))
+			if crossShard != nil && err == nil {
+				allCrossShard[byte(i)] = crossShard
+			}
+		}
+	}
+	return allCrossShard
+}
+
+func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
+	crossShard := &CrossShardBlock{}
+	utxoList := getOutCoinCrossShard(block.Body.Transactions, shardID)
+	if len(utxoList) == 0 {
+		return nil, nil
+	}
+	merklePathShard, merkleShardRoot := GetMerklePathCrossShard(block.Body.Transactions, shardID)
+	if merkleShardRoot != block.Header.TxRoot {
+		return crossShard, NewBlockChainError(CrossShardBlockError, errors.New("MerkleRootShard mismatch"))
+	}
+
+	//Copy signature and header
+	crossShard.AggregatedSig = block.AggregatedSig
+
+	// crossShard.ValidatorsIdx = make([][]int, 2)
+	// crossShard.ValidatorsIdx[0] = append(crossShard.ValidatorsIdx[0], block.ValidatorsIdx[0]...)
+	// crossShard.ValidatorsIdx[1] = append(crossShard.ValidatorsIdx[1], block.ValidatorsIdx[1]...)
+
+	crossShard.R = block.R
+	crossShard.ProducerSig = block.ProducerSig
+	crossShard.Header = block.Header
+	crossShard.MerklePathShard = merklePathShard
+	crossShard.CrossOutputCoin = utxoList
+	return crossShard, nil
+}
+
 func GetAssignInstructionFromBeaconBlock(beaconBlocks []*BeaconBlock, shardID byte) [][]string {
 	assignInstruction := [][]string{}
 	for _, beaconBlock := range beaconBlocks {
@@ -437,101 +542,4 @@ func CreateShardInstructionsFromTransaction(transactions []metadata.Transaction,
 	}
 
 	return instructions
-}
-
-// get valid tx for specific shard and their fee, also return unvalid tx
-func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
-	sourceTxns := blockgen.txPool.MiningDescs()
-
-	// get tx and wait for more if not enough
-	if len(sourceTxns) < common.MinTxsInBlock {
-		<-time.Tick(common.MinBlockWaitTime * time.Second)
-		sourceTxns = blockgen.txPool.MiningDescs()
-		if len(sourceTxns) == 0 {
-			<-time.Tick(common.MaxBlockWaitTime * time.Second)
-			sourceTxns = blockgen.txPool.MiningDescs()
-		}
-	}
-
-	//TODO: sort transaction base on fee and check limit block size
-	// StartingPriority, fee, size, time
-
-	// validate tx and calculate total fee
-	for _, txDesc := range sourceTxns {
-		tx := txDesc.Tx
-		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		if txShardID != shardID {
-			continue
-		}
-		// TODO: need to determine a tx is in privacy format or not
-		if !tx.ValidateTxByItself(tx.IsPrivacy(), blockgen.chain.config.DataBase, blockgen.chain, shardID) {
-			txToRemove = append(txToRemove, metadata.Transaction(tx))
-			continue
-		}
-		if err := tx.ValidateTxWithBlockChain(blockgen.chain, shardID, blockgen.chain.config.DataBase); err != nil {
-			txToRemove = append(txToRemove, metadata.Transaction(tx))
-			continue
-		}
-		totalFee += tx.GetTxFee()
-		txsToAdd = append(txsToAdd, tx)
-		if len(txsToAdd) == common.MaxTxsInBlock {
-			break
-		}
-	}
-	return txsToAdd, txToRemove, totalFee
-}
-
-func (blk *ShardBlock) CreateShardToBeaconBlock(bcr metadata.BlockchainRetriever) *ShardToBeaconBlock {
-	block := ShardToBeaconBlock{}
-	block.AggregatedSig = blk.AggregatedSig
-	// block.ValidatorsIdx = make([][]int, 2)
-	// block.ValidatorsIdx[0] = append(block.ValidatorsIdx[0], blk.ValidatorsIdx[0]...)
-	// block.ValidatorsIdx[1] = append(block.ValidatorsIdx[1], blk.ValidatorsIdx[1]...)
-	block.R = blk.R
-	block.ProducerSig = blk.ProducerSig
-	block.Header = blk.Header
-	block.Instructions = blk.Body.Instructions
-	instructions := CreateShardInstructionsFromTransaction(blk.Body.Transactions, bcr, blk.Header.ShardID)
-	block.Instructions = append(block.Instructions, instructions...)
-	return &block
-}
-
-func (blk *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byte]*CrossShardBlock {
-	allCrossShard := make(map[byte]*CrossShardBlock)
-	if activeShards == 1 {
-		return allCrossShard
-	}
-	for i := 0; i < activeShards; i++ {
-		crossShard, err := blk.CreateCrossShardBlock(byte(i))
-		if crossShard != nil && err == nil {
-			allCrossShard[byte(i)] = crossShard
-		}
-	}
-	return allCrossShard
-}
-
-func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
-	crossShard := &CrossShardBlock{}
-	utxoList := getOutCoinCrossShard(block.Body.Transactions, shardID)
-	if len(utxoList) == 0 {
-		return nil, nil
-	}
-	merklePathShard, merkleShardRoot := GetMerklePathCrossShard(block.Body.Transactions, shardID)
-	if merkleShardRoot != block.Header.TxRoot {
-		return crossShard, NewBlockChainError(CrossShardBlockError, errors.New("MerkleRootShard mismatch"))
-	}
-
-	//Copy signature and header
-	crossShard.AggregatedSig = block.AggregatedSig
-
-	// crossShard.ValidatorsIdx = make([][]int, 2)
-	// crossShard.ValidatorsIdx[0] = append(crossShard.ValidatorsIdx[0], block.ValidatorsIdx[0]...)
-	// crossShard.ValidatorsIdx[1] = append(crossShard.ValidatorsIdx[1], block.ValidatorsIdx[1]...)
-
-	crossShard.R = block.R
-	crossShard.ProducerSig = block.ProducerSig
-	crossShard.Header = block.Header
-	crossShard.MerklePathShard = merklePathShard
-	crossShard.CrossOutputCoin = utxoList
-	return crossShard, nil
 }

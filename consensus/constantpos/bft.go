@@ -83,7 +83,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte, 
 					protocol.pendingBlock = newBlock
 					protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
 
-					time.Sleep(30 * time.Second) //single-node
+					time.Sleep(10 * time.Second) //single-node
 					timeout.Stop()               //single-node
 					return newBlock, nil         //single-node
 				} else {
