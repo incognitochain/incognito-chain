@@ -126,7 +126,7 @@ func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 	}
 
 	txHash, _ := bcr.GetLoanReq(lr.LoanID)
-	if len(txHash) > 0 {
+	if txHash != nil && len(txHash) > 0 {
 		return false, errors.New("LoanID already existed")
 	}
 	return true, nil

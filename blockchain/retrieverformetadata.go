@@ -83,8 +83,7 @@ func (blockchain *BlockChain) GetLoanReq(loanID []byte) (*common.Hash, error) {
 	if !ok {
 		return nil, errors.Errorf("Loan request with ID %x not found", loanID)
 	}
-	resp, err := common.NewHashFromStr(reqHash)
-	return resp, err
+	return common.NewHashFromStr(reqHash)
 }
 
 // GetLoanResps returns all responses of a given loanID
