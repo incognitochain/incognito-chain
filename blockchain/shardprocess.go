@@ -132,10 +132,14 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 }
 
 func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
-
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 	shardID := block.Header.ShardID
+	Logger.log.Infof("SHARD %+v | Check block existence for insert height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
+	isExist, _ := blockchain.config.DataBase.HasBlock(block.Hash())
+	if isExist {
+		return NewBlockChainError(DuplicateBlockErr, errors.New("This block has been stored already"))
+	}
 	Logger.log.Infof("SHARD %+v | Begin Insert new block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	Logger.log.Infof("SHARD %+v | Verify Pre Processing  Block %+v \n", block.Header.ShardID, *block.Hash())
 	if err := blockchain.VerifyPreProcessingShardBlock(block, shardID); err != nil {
@@ -193,6 +197,15 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 	return nil
 }
+func (blockchain *BlockChain) CheckBlockExistence(block *BeaconBlock) bool {
+	blockHash := block.Header.Hash()
+	_, err := blockchain.config.DataBase.FetchBeaconBlock(&blockHash)
+	// if no err => have block => true
+	if err == nil {
+		return true
+	}
+	return false
+}
 
 /* Verify Pre-prosessing data
 This function DOES NOT verify new block with best state
@@ -213,6 +226,12 @@ DO NOT USE THIS with GENESIS BLOCK
 - Swap instruction
 */
 func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID byte) error {
+	//verify producer
+	producerPosition := (blockchain.BestState.Shard[shardID].ShardProposerIdx + 1) % len(blockchain.BestState.Shard[shardID].ShardCommittee)
+	tempProducer := blockchain.BestState.Shard[shardID].ShardCommittee[producerPosition]
+	if strings.Compare(tempProducer, block.Header.Producer) != 0 {
+		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
+	}
 	Logger.log.Debugf("SHARD %+v | Begin VerifyPreProcessingShardBlock Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	if block.Header.ShardID != shardID {
 		return NewBlockChainError(ShardIDError, errors.New("Shard should be :"+strconv.Itoa(int(shardID))))
@@ -268,15 +287,15 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		}
 	}
 	// Verify Action
-	actions := CreateShardActionFromTransaction(block.Body.Transactions, blockchain, shardID)
-	action := []string{}
-	for _, value := range actions {
-		action = append(action, value...)
+	txInstructions := CreateShardInstructionsFromTransaction(block.Body.Transactions, blockchain, shardID)
+	totalInstructions := []string{}
+	for _, value := range txInstructions {
+		totalInstructions = append(totalInstructions, value...)
 	}
 	for _, value := range block.Body.Instructions {
-		action = append(action, value...)
+		totalInstructions = append(totalInstructions, value...)
 	}
-	isOk := VerifyHashFromStringArray(action, block.Header.ActionsRoot)
+	isOk := VerifyHashFromStringArray(totalInstructions, block.Header.InstructionsRoot)
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("Error verify action root"))
 	}
@@ -396,7 +415,7 @@ func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *Shard
 	//=============End Verify producer signature
 	//=============Verify aggegrate signature
 	if isVerifySig {
-		if len(block.ValidatorsIdx) < (len(bestStateShard.ShardCommittee) >> 1) {
+		if len(block.ValidatorsIdx) <= (len(bestStateShard.ShardCommittee)>>1) && len(bestStateShard.ShardCommittee) > 3 {
 			fmt.Println(bestStateShard.ShardCommittee)
 			return NewBlockChainError(SignatureError, errors.New("block validators and Shard committee is not compatible"))
 		}

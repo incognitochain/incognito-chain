@@ -28,7 +28,7 @@ type ShardHeader struct {
 	//Output root created for other shard
 	CrossOutputCoinRoot common.Hash
 	//Actions root created from Instructions and Metadata of transaction
-	ActionsRoot          common.Hash
+	InstructionsRoot     common.Hash
 	CommitteeRoot        common.Hash `description: verify post processing`
 	PendingValidatorRoot common.Hash `description: verify post processing`
 	// CrossShards for beacon
