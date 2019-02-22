@@ -100,6 +100,9 @@ func (blockchain *BlockChain) StartSyncBlk() {
 						case common.PROPOSER_ROLE, common.VALIDATOR_ROLE:
 							if peerState.ShardToBeaconPool != nil {
 								for shardID, blksHash := range *peerState.ShardToBeaconPool {
+									if _, ok := RCS.ShardToBeaconBlks[shardID]; !ok {
+										RCS.ShardToBeaconBlks[shardID] = make(map[libp2p.ID][]common.Hash)
+									}
 									RCS.ShardToBeaconBlks[shardID][peerID] = blksHash
 								}
 							}
@@ -120,6 +123,9 @@ func (blockchain *BlockChain) StartSyncBlk() {
 							if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE {
 								if pool, ok := peerState.CrossShardPool[userShardID]; ok {
 									for shardID, blks := range *pool {
+										if _, ok := RCS.CrossShardBlks[shardID]; !ok {
+											RCS.CrossShardBlks[shardID] = make(map[libp2p.ID][]common.Hash)
+										}
 										RCS.CrossShardBlks[shardID][peerID] = blks
 									}
 								}
@@ -129,6 +135,9 @@ func (blockchain *BlockChain) StartSyncBlk() {
 						if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
 							if peerState.ShardToBeaconPool != nil {
 								for shardID, blksHash := range *peerState.ShardToBeaconPool {
+									if _, ok := RCS.ShardToBeaconBlks[shardID]; !ok {
+										RCS.ShardToBeaconBlks[shardID] = make(map[libp2p.ID][]common.Hash)
+									}
 									RCS.ShardToBeaconBlks[shardID][peerID] = blksHash
 								}
 							}
@@ -150,6 +159,9 @@ func (blockchain *BlockChain) StartSyncBlk() {
 						if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE {
 							if pool, ok := peerState.CrossShardPool[userShardID]; ok {
 								for shardID, blks := range *pool {
+									if _, ok := RCS.CrossShardBlks[shardID]; !ok {
+										RCS.CrossShardBlks[shardID] = make(map[libp2p.ID][]common.Hash)
+									}
 									RCS.CrossShardBlks[shardID][peerID] = blks
 								}
 							}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ninjadotorg/constant/common/base58"
 	"math"
 	"math/big"
 	"strconv"
@@ -364,7 +365,7 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	signature.SetBytes(tx.Sig)
 
 	// verify signature
-	Logger.log.Debugf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
+	Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
 	res = verKey.Verify(signature, tx.Hash()[:])
 
 	return res, nil
@@ -481,10 +482,11 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 func (tx Tx) String() string {
 	record := strconv.Itoa(int(tx.Version))
+	//fmt.
 	record += strconv.FormatInt(tx.LockTime, 10)
 	record += strconv.FormatUint(tx.Fee, 10)
 	if tx.Proof != nil {
-		record += string(tx.Proof.Bytes()[:])
+		record += base58.Base58Check{}.Encode(tx.Proof.Bytes()[:], 0x00)
 	}
 	if tx.Metadata != nil {
 		metadata := tx.Metadata.Hash().String()

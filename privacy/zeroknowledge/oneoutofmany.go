@@ -1,6 +1,7 @@
 package zkp
 
 import (
+	"fmt"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/pkg/errors"
 	"math/big"
@@ -375,6 +376,7 @@ func (proof *OneOutOfManyProof) Verify() bool {
 		rightPoint1 := privacy.PedCom.CommitAtIndex(proof.f[i], proof.za[i], privacy.SK)
 
 		if !leftPoint1.IsEqual(rightPoint1) {
+			fmt.Printf("ERR1\n")
 			return false
 		}
 
@@ -386,6 +388,7 @@ func (proof *OneOutOfManyProof) Verify() bool {
 		rightPoint2 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zb[i], privacy.SK)
 
 		if !leftPoint2.IsEqual(rightPoint2) {
+			fmt.Printf("ERR1\n")
 			return false
 		}
 	}
@@ -423,6 +426,8 @@ func (proof *OneOutOfManyProof) Verify() bool {
 	leftPoint3 = leftPoint3.Add(leftPoint32)
 
 	rightPoint3 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zd, privacy.SK)
+
+	fmt.Printf("ERR3\n")
 
 	return leftPoint3.IsEqual(rightPoint3)
 }
