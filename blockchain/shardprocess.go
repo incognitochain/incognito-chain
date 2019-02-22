@@ -503,8 +503,10 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 	}
 	//Update best cross shard
 	for shardID, crossShardBlock := range block.Body.CrossOutputCoin {
-		bestStateShard.BestCrossShard[shardID] = crossShardBlock[len(crossShardBlock)-1].BlockHeight
+		bestStateShard.BestCrossShard.shardHeight[shardID] = crossShardBlock[len(crossShardBlock)-1].BlockHeight
+		bestStateShard.BestCrossShard.beaconHeight[shardID] = block.Header.BeaconHeight
 	}
+
 	Logger.log.Debugf("SHARD %+v | Finish update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	return nil
 }
