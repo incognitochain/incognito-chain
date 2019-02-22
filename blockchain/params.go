@@ -38,8 +38,8 @@ type IcoParams struct {
 // FOR TESTNET
 const (
 	TestNetShardsNum           = 4
-	TestNetShardCommitteeSize  = 1
-	TestNetBeaconCommitteeSize = 1
+	TestNetShardCommitteeSize  = 3
+	TestNetBeaconCommitteeSize = 3
 	TestNetActiveShards        = 1
 )
 
@@ -108,8 +108,8 @@ var ChainTestParam = Params{
 	BeaconCommitteeSize: TestNetBeaconCommitteeSize, //TestNetBeaconCommitteeSize,
 	ActiveShards:        TestNetActiveShards,
 	// blockChain parameters
-	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnetSerializedPubkey[:], icoParamsTestnetNew, 1000, 1000, 0),
-	GenesisShardBlock:  CreateShardGenesisBlock(1, preSelectShardNodeTestnetSerializedPubkey[:], icoParamsTestnetNew),
+	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, icoParamsTestnetNew, 1000, 1000, 0),
+	GenesisShardBlock:  CreateShardGenesisBlock(1, icoParamsTestnetNew),
 }
 
 // END TESTNET
@@ -140,6 +140,6 @@ var ChainMainParam = Params{
 	BeaconCommitteeSize: MainNetBeaconCommitteeSize, //MainNetBeaconCommitteeSize,
 	ActiveShards:        MainNetActiveShards,
 	// blockChain parameters
-	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, preSelectBeaconNodeMainnetSerializedPubkey[:], icoParamsMainnetNew, 1000, 1000, 0),
-	GenesisShardBlock:  CreateShardGenesisBlock(1, preSelectShardNodeMainnetSerializedPubkey[:], icoParamsMainnetNew),
+	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, icoParamsMainnetNew, 1000, 1000, 0),
+	GenesisShardBlock:  CreateShardGenesisBlock(1, icoParamsMainnetNew),
 }

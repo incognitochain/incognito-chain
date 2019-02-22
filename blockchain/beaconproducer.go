@@ -180,8 +180,6 @@ type accumulativeValues struct {
 // #3: swap validator => map[byte][][]string
 func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon) (map[byte][]ShardState, [][]string, map[byte][][]string, [][]string) {
 	shardStates := make(map[byte][]ShardState)
-	stakers := [][]string{}
-	swaps := [][]string{}
 	validStakers := [][]string{}
 	validSwap := make(map[byte][][]string)
 	//Get shard to beacon block from pool
@@ -236,6 +234,8 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 		}
 		fmt.Println()
 		for _, shardBlock := range shardBlocks[:totalBlock+1] {
+			stakers := [][]string{}
+			swaps := [][]string{}
 			fmt.Println("")
 			fmt.Println("Becon Produce: Got Shard Block", shardBlock.Header.Height)
 			fmt.Println("")
@@ -251,6 +251,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			fmt.Printf("\n \n Instruction in shardBlock %+v, %+v \n \n", shardBlock.Header.Height, instructions)
 			for _, l := range instructions {
 				if l[0] == "stake" {
+					fmt.Println("Beacon Producer/ Stake Instructions", l)
 					stakers = append(stakers, l)
 				} else if l[0] == "swap" {
 					swaps = append(swaps, l)
@@ -258,6 +259,9 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			}
 			// ["stake" "pubkey1,pubkey2,..." "shard"]
 			// ["stake" "pubkey1,pubkey2,..." "beacon"]
+			stakeBeacon := []string{}
+			stakeShard := []string{}
+			fmt.Println("Beacon Producer/ Process Stakers List", stakers)
 			for _, staker := range stakers {
 				var tempStaker []string
 				newBeaconCandidate, newShardCandidate := getStakeValidatorArrayString(staker)
@@ -271,13 +275,21 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 					copy(tempStaker, newShardCandidate[:])
 				}
 				tempStaker = blkTmplGenerator.chain.BestState.Beacon.GetValidStakers(tempStaker)
+				tempStaker = metadata.GetValidStaker(stakeShard, tempStaker)
+				tempStaker = metadata.GetValidStaker(stakeBeacon, tempStaker)
 				if len(tempStaker) > 0 {
 					if assignShard {
-						validStakers = append(validStakers, []string{"stake", strings.Join(tempStaker, ","), "shard"})
+						stakeShard = append(stakeShard, tempStaker...)
 					} else {
-						validStakers = append(validStakers, []string{"stake", strings.Join(tempStaker, ","), "beacon"})
+						stakeBeacon = append(stakeBeacon, tempStaker...)
 					}
 				}
+			}
+			if len(stakeShard) > 0 {
+				validStakers = append(validStakers, []string{"stake", strings.Join(stakeShard, ","), "shard"})
+			}
+			if len(stakeBeacon) > 0 {
+				validStakers = append(validStakers, []string{"stake", strings.Join(stakeBeacon, ","), "beacon"})
 			}
 			// format
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
