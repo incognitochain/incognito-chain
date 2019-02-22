@@ -113,7 +113,8 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		return nil, err
 	}
 	actions := CreateShardActionFromTransaction(block.Body.Transactions, blockgen.chain, shardID)
-	actions = append(actions, salaryUpdateActions...)
+	_ = salaryUpdateActions
+	// actions = append(actions, salaryUpdateActions...)
 	action := []string{}
 	for _, value := range actions {
 		action = append(action, value...)
