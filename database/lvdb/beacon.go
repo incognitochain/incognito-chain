@@ -11,6 +11,55 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
+func (db *db) StoreCrossShardNextHeight(fromShard, toShard byte, curHeight uint64, v interface{}) error {
+	//ncsh-{fromShard}-{toShard}-{curHeight} = {nextHeight, nextHash}
+	key := append(nextCrossShardKeyPrefix, fromShard)
+	key = append(key, []byte("-")...)
+	key = append(key, toShard)
+	key = append(key, []byte("-")...)
+	curHeightBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(curHeightBytes, curHeight)
+	key = append(key, curHeightBytes...)
+	val, err := json.Marshal(v)
+	if err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+	}
+	if err := db.Put(key, val); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "Cannot store cross shard next height"))
+	}
+
+	return nil
+}
+
+func (db *db) HasCrossShardNextHeight(key []byte) (bool, error) {
+	exist, err := db.HasValue(key)
+	if err != nil {
+		return false, err
+	} else {
+		return exist, nil
+	}
+}
+
+func (db *db) FetchCrossShardNextHeight(fromShard, toShard byte, curHeight uint64) ([]byte, error) {
+	//ncsh-{fromShard}-{toShard}-{curHeight} = {nextHeight, nextHash}
+	key := append(nextCrossShardKeyPrefix, fromShard)
+	key = append(key, []byte("-")...)
+	key = append(key, toShard)
+	key = append(key, []byte("-")...)
+	curHeightBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(curHeightBytes, curHeight)
+	key = append(key, curHeightBytes...)
+
+	if _, err := db.HasCrossShardNextHeight(key); err != nil {
+		return []byte{}, err
+	}
+	info, err := db.Get(key)
+	if err != nil {
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	}
+	return info, nil
+}
+
 func (db *db) StoreBeaconBlock(v interface{}) error {
 	h, ok := v.(hasher)
 	if !ok {
