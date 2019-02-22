@@ -330,6 +330,9 @@ func (netSync *NetSync) HandleMessageGetBlockShard(msg *wire.MessageGetBlockShar
 		}
 	} else {
 		for index := msg.From; index <= msg.To; index++ {
+			if index == 1 {
+				continue
+			}
 			blk, err := netSync.config.BlockChain.GetShardBlockByHeight(index, msg.ShardID)
 			if err != nil {
 				Logger.log.Error(err)
@@ -375,6 +378,9 @@ func (netSync *NetSync) HandleMessageGetBlockBeacon(msg *wire.MessageGetBlockBea
 		}
 	} else {
 		for index := msg.From; index <= msg.To; index++ {
+			if index == 1 {
+				continue
+			}
 			blk, err := netSync.config.BlockChain.GetBeaconBlockByHeight(index)
 			if err != nil {
 				Logger.log.Error(err)
@@ -423,11 +429,17 @@ func (netSync *NetSync) HandleMessageGetShardToBeacon(msg *wire.MessageGetShardT
 		}
 	} else {
 		for index := msg.From; index <= msg.To; index++ {
+			if index == 1 {
+				continue
+			}
 			blk, err := netSync.config.BlockChain.GetShardBlockByHeight(index, msg.ShardID)
 			if err != nil {
 				Logger.log.Error(err)
 				return
 			}
+			fmt.Println()
+			fmt.Println(index)
+			fmt.Println()
 			shardToBeaconBlk := blk.CreateShardToBeaconBlock(netSync.config.BlockChain)
 			msgShardBlk, err := wire.MakeEmptyMessage(wire.CmdBlkShardToBeacon)
 			if err != nil {
