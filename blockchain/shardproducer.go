@@ -47,7 +47,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		return nil, err
 	}
 	//======Get Transaction For new Block================
-	txsToAdd := blockgen.getTransactionForNewBlock(payToAddress, privatekey, shardID, blockgen.chain.config.DataBase, beaconBlocks)
+	txsToAdd, salaryUpdateActions := blockgen.getTransactionForNewBlock(payToAddress, privatekey, shardID, blockgen.chain.config.DataBase, beaconBlocks)
 	//======Get Cross output coin from other shard=======
 	crossOutputCoin := blockgen.getCrossOutputCoin(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight)
 	//======Create Instruction===========================
@@ -113,6 +113,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		return nil, err
 	}
 	actions := CreateShardActionFromTransaction(block.Body.Transactions, blockgen.chain, shardID)
+	actions = append(actions, salaryUpdateActions...)
 	action := []string{}
 	for _, value := range actions {
 		action = append(action, value...)
@@ -166,9 +167,8 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 /*
 	Get Transaction For new Block
 */
-func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte, db database.DatabaseInterface, beaconBlocks []*BeaconBlock) []metadata.Transaction {
+func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte, db database.DatabaseInterface, beaconBlocks []*BeaconBlock) ([]metadata.Transaction, [][]string) {
 	txsToAdd, txToRemove, totalFee := blockgen.getPendingTransaction(shardID)
-	_ = totalFee
 	if len(txsToAdd) == 0 {
 		Logger.log.Info("Creating empty block...")
 	}
@@ -192,13 +192,16 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 	if err != nil {
 		panic(err)
 	}
+	// build salary update action
+	salaryUpdateActions, _ := createShardBlockSalaryUpdateAction(totalSalary, totalFee)
+
 	coinbases := []metadata.Transaction{salaryTx}
 	txsToAdd = append(coinbases, txsToAdd...)
 
 	// Process new dividend proposal and build new dividend payment txs
 	divTxs, err := blockgen.buildDividendTxs(privatekey)
 	if err != nil {
-		return nil
+		return nil, salaryUpdateActions
 	}
 	for _, tx := range divTxs {
 		if tx != nil {
@@ -209,7 +212,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 	// Process stability tx, create response txs if needed
 	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey)
 	if err != nil {
-		return nil
+		return nil, salaryUpdateActions
 	}
 	txsToAdd = append(txsToAdd, stabilityResponseTxs...)
 
@@ -223,10 +226,10 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 	}
 	stabilityResponseTxs, err = blockgen.buildStabilityResponseTxsFromInstructions(beaconBlocks, privatekey, shardID)
 	if err != nil {
-		return nil
+		return nil, salaryUpdateActions
 	}
 	txsToAdd = append(txsToAdd, stabilityResponseTxs...)
-	return txsToAdd
+	return txsToAdd, salaryUpdateActions
 }
 
 /*
