@@ -241,7 +241,7 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 		sort.SliceStable(crossShardBlock[:], func(i, j int) bool {
 			return crossShardBlock[i].Header.Height < crossShardBlock[j].Header.Height
 		})
-		currentBestCrossShardForThisBlock := currentBestCrossShard[crossShardID]
+		currentBestCrossShardForThisBlock := currentBestCrossShard.shardHeight[crossShardID]
 		for _, blk := range crossShardBlock {
 			temp, err := blockgen.chain.config.DataBase.FetchBeaconCommitteeByHeight(blk.Header.BeaconHeight)
 			if err != nil {

@@ -18,6 +18,9 @@ import (
 // the caller when chain state changes occur as the function name implies.
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
+
+var bestStateBeacon *BestStateBeacon //singleton object
+
 type BestStateBeacon struct {
 	BestBlockHash     common.Hash          `json:"BestBlockHash"`     // The hash of the block.
 	PrevBestBlockHash common.Hash          `json:"PrevBestBlockHash"` // The hash of the block.
@@ -96,8 +99,19 @@ func (bsb *BestStateBeacon) GetCurrentShard() byte {
 	return 0
 }
 
-func NewBestStateBeacon(netparam *Params) *BestStateBeacon {
-	bestStateBeacon := BestStateBeacon{}
+func GetBestStateBeacon() *BestStateBeacon {
+	if bestStateBeacon != nil {
+		return bestStateBeacon
+	}
+	bestStateBeacon = &BestStateBeacon{}
+	return bestStateBeacon
+}
+
+func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
+	if bestStateBeacon == nil {
+		bestStateBeacon = GetBestStateBeacon()
+	}
+
 	bestStateBeacon.BestBlockHash.SetBytes(make([]byte, 32))
 	bestStateBeacon.BestBlock = nil
 	bestStateBeacon.BestShardHash = make(map[byte]common.Hash)
@@ -120,7 +134,7 @@ func NewBestStateBeacon(netparam *Params) *BestStateBeacon {
 	bestStateBeacon.BeaconCommitteeSize = netparam.BeaconCommitteeSize
 	bestStateBeacon.ShardCommitteeSize = netparam.ShardCommitteeSize
 	bestStateBeacon.ActiveShards = netparam.ActiveShards
-	return &bestStateBeacon
+	return bestStateBeacon
 }
 
 func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
