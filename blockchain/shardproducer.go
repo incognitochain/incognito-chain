@@ -54,7 +54,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	//Assign Instruction
 	instructions := [][]string{}
 	swapInstruction := []string{}
-	assignInstructions := GetAssingInstructionFromBeaconBlock(beaconBlocks, shardID)
+	assignInstructions := GetAssignInstructionFromBeaconBlock(beaconBlocks, shardID)
 	fmt.Println("Shard Block Producer AssignInstructions ", assignInstructions)
 	shardPendingValidator := blockgen.chain.BestState.Shard[shardID].ShardPendingValidator
 	shardCommittee := blockgen.chain.BestState.Shard[shardID].ShardCommittee
@@ -112,15 +112,15 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	if err != nil {
 		return nil, err
 	}
-	actions := CreateShardActionFromTransaction(block.Body.Transactions, blockgen.chain, shardID)
-	action := []string{}
-	for _, value := range actions {
-		action = append(action, value...)
+	txInstructions := CreateShardInstructionsFromTransaction(block.Body.Transactions, blockgen.chain, shardID)
+	totalInstructions := []string{}
+	for _, value := range txInstructions {
+		totalInstructions = append(totalInstructions, value...)
 	}
 	for _, value := range instructions {
-		action = append(action, value...)
+		totalInstructions = append(totalInstructions, value...)
 	}
-	actionsHash, err := GenerateHashFromStringArray(action)
+	instructionsHash, err := GenerateHashFromStringArray(totalInstructions)
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
@@ -144,7 +144,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		TxRoot:               *merkleRoot,
 		ShardTxRoot:          *block.Body.CalcMerkleRootShard(blockgen.chain.BestState.Shard[shardID].ActiveShards),
 		CrossOutputCoinRoot:  *crossOutputCoinRoot,
-		ActionsRoot:          actionsHash,
+		InstructionsRoot:     instructionsHash,
 		CrossShards:          CreateCrossShardByteArray(txsToAdd),
 		CommitteeRoot:        committeeRoot,
 		PendingValidatorRoot: pendingValidatorRoot,
@@ -305,7 +305,7 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 	return res
 }
 
-func GetAssingInstructionFromBeaconBlock(beaconBlocks []*BeaconBlock, shardID byte) [][]string {
+func GetAssignInstructionFromBeaconBlock(beaconBlocks []*BeaconBlock, shardID byte) [][]string {
 	assignInstruction := [][]string{}
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
@@ -406,11 +406,11 @@ func CreateSwapAction(pendingValidator []string, commitees []string, committeeSi
 	- Stake
 	- Stable param: set, del,...
 */
-func CreateShardActionFromTransaction(transactions []metadata.Transaction, bcr metadata.BlockchainRetriever, shardID byte) (actions [][]string) {
+func CreateShardInstructionsFromTransaction(transactions []metadata.Transaction, bcr metadata.BlockchainRetriever, shardID byte) (instructions [][]string) {
 	// Generate stake action
 	stakeShardPubKey := []string{}
 	stakeBeaconPubKey := []string{}
-	actions = buildStabilityActions(transactions, bcr, shardID)
+	instructions = buildStabilityActions(transactions, bcr, shardID)
 
 	for _, tx := range transactions {
 		switch tx.GetMetadataType() {
@@ -428,15 +428,15 @@ func CreateShardActionFromTransaction(transactions []metadata.Transaction, bcr m
 	}
 
 	if !reflect.DeepEqual(stakeShardPubKey, []string{}) {
-		action := []string{"stake", strings.Join(stakeShardPubKey, ","), "shard"}
-		actions = append(actions, action)
+		instruction := []string{"stake", strings.Join(stakeShardPubKey, ","), "shard"}
+		instructions = append(instructions, instruction)
 	}
 	if !reflect.DeepEqual(stakeBeaconPubKey, []string{}) {
-		action := []string{"stake", strings.Join(stakeBeaconPubKey, ","), "beacon"}
-		actions = append(actions, action)
+		instruction := []string{"stake", strings.Join(stakeBeaconPubKey, ","), "beacon"}
+		instructions = append(instructions, instruction)
 	}
 
-	return actions
+	return instructions
 }
 
 // get valid tx for specific shard and their fee, also return unvalid tx
@@ -487,8 +487,8 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bcr metadata.BlockchainRetriever
 	block.ProducerSig = blk.ProducerSig
 	block.Header = blk.Header
 	block.Instructions = blk.Body.Instructions
-	actions := CreateShardActionFromTransaction(blk.Body.Transactions, bcr, blk.Header.ShardID)
-	block.Instructions = append(block.Instructions, actions...)
+	instructions := CreateShardInstructionsFromTransaction(blk.Body.Transactions, bcr, blk.Header.ShardID)
+	block.Instructions = append(block.Instructions, instructions...)
 	return &block
 }
 
