@@ -2,12 +2,12 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
-
-	"github.com/ninjadotorg/constant/metadata/frombeaconins"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/metadata/frombeaconins"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/pkg/errors"
@@ -65,6 +65,7 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 ) ([][]string, error) {
 	instructions := [][]string{}
 	for _, inst := range shardBlockInstructions {
+		fmt.Printf("[db] beacon found inst: %s\n", inst[0])
 		// TODO: will improve the condition later
 		if inst[0] == "stake" || inst[0] == "swap" || inst[0] == "random" {
 			continue
@@ -165,6 +166,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 			if len(l) <= 2 {
 				continue
 			}
+			fmt.Printf("[db] shard build Resp from inst: %+v\n", l)
 			shardToProcess, err := strconv.Atoi(l[1])
 			if err == nil && shardToProcess == int(shardID) {
 				metaType, err := strconv.Atoi(l[0])

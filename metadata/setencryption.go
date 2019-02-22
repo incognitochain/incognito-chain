@@ -5,7 +5,7 @@ import (
 )
 
 type SetEncryptionLastBlockMetadata struct {
-	boardType   byte
+	boardType   BoardType
 	blockHeight uint64
 
 	MetadataBase
@@ -29,12 +29,12 @@ func (setEncryptionLastBlock *SetEncryptionLastBlockMetadata) ValidateMetadataBy
 func (setEncryptionLastBlock *SetEncryptionLastBlockMetadata) ProcessWhenInsertBlockShard(tx Transaction, db database.DatabaseInterface) error {
 	boardType := setEncryptionLastBlock.boardType
 	height := setEncryptionLastBlock.blockHeight
-	db.SetEncryptionLastBlockHeight(boardType, height)
+	db.SetEncryptionLastBlockHeight(boardType.BoardTypeDB(), height)
 	return nil
 }
 
 type SetEncryptionFlagMetadata struct {
-	boardType byte
+	boardType BoardType
 	flag      byte
 
 	MetadataBase
@@ -66,6 +66,6 @@ func (setEncryptionFlag *SetEncryptionFlagMetadata) ProcessWhenInsertBlockShard(
 ) error {
 	boardType := setEncryptionFlag.boardType
 	flag := setEncryptionFlag.flag
-	db.SetEncryptFlag(boardType, flag)
+	db.SetEncryptFlag(boardType.BoardTypeDB(), flag)
 	return nil
 }

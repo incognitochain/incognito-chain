@@ -47,7 +47,7 @@ import (
 	Sign:
 		Sign block and update validator index, agg sig
 */
-func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddress, privateKey *privacy.SpendingKey) (*BeaconBlock, error) {
+func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddress, privateKey *privacy.SpendingKey, round int) (*BeaconBlock, error) {
 	beaconBlock := &BeaconBlock{}
 	beaconBestState := BestStateBeacon{}
 	// lock blockchain
@@ -79,7 +79,8 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	beaconBlock.Header.Producer = base58.Base58Check{}.Encode(payToAddress.Pk, byte(0x00))
 	beaconBlock.Header.Version = VERSION
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
-	beaconBlock.Header.Epoch = beaconBestState.BeaconEpoch
+	beaconBlock.Header.Epoch = beaconBestState.Epoch
+	beaconBlock.Header.Round = round
 	// Eg: Epoch is 200 blocks then increase epoch at block 201, 401, 601
 	if beaconBlock.Header.Height%common.EPOCH == 1 {
 		beaconBlock.Header.Epoch++
@@ -216,11 +217,6 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 					if l[3] != "shard" || l[4] != strconv.Itoa(int(shardID)) {
 						panic("Swap instruction is invalid")
 					}
-				} else {
-					err := blkTmplGenerator.processInstruction(beaconBestState, l)
-					if err != nil {
-						panic(fmt.Sprintf("Process stability instructions failed: %s", err.Error()))
-					}
 				}
 			}
 			if index != 0 && err1 != nil {
@@ -355,7 +351,7 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 	// Beacon normal swap
 	if block.Header.Height%common.EPOCH == 0 {
 		swapBeaconInstructions := []string{}
-		_, _, swappedValidator, beaconNextCommittee, _ := SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, common.COMMITEES, common.OFFSET)
+		_, _, swappedValidator, beaconNextCommittee, _ := SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, bestStateBeacon.BeaconCommitteeSize, common.OFFSET)
 		if len(swappedValidator) > 0 || len(beaconNextCommittee) > 0 {
 			swapBeaconInstructions = append(swapBeaconInstructions, "swap")
 			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(beaconNextCommittee, ","))
@@ -395,7 +391,7 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 			instructions = append(instructions, randomInstruction)
 			Logger.log.Infof("RandomNumber %+v", randomInstruction)
 			for _, candidate := range shardCandidates {
-				shardID := calculateHash(candidate, rand)
+				shardID := calculateCandidateShardID(candidate, rand, bestStateBeacon.ActiveShards)
 				assignedCandidates[shardID] = append(assignedCandidates[shardID], candidate)
 			}
 			for shardId, candidates := range assignedCandidates {
@@ -422,6 +418,7 @@ func (bestStateBeacon *BestStateBeacon) GetValidStakers(tempStaker []string) []s
 	tempStaker = metadata.GetValidStaker(bestStateBeacon.CandidateBeaconWaitingForCurrentRandom, tempStaker)
 	tempStaker = metadata.GetValidStaker(bestStateBeacon.CandidateBeaconWaitingForNextRandom, tempStaker)
 	tempStaker = metadata.GetValidStaker(bestStateBeacon.CandidateShardWaitingForCurrentRandom, tempStaker)
+	tempStaker = metadata.GetValidStaker(bestStateBeacon.CandidateShardWaitingForNextRandom, tempStaker)
 	tempStaker = metadata.GetValidStaker(bestStateBeacon.CandidateShardWaitingForNextRandom, tempStaker)
 	return tempStaker
 }

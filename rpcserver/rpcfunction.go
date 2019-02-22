@@ -39,27 +39,26 @@ var RpcHandler = map[string]commandHandler{
 	GetBlockHeader:    RpcServer.handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
 
 	// transaction
-	ListOutputCoins:          RpcServer.handleListOutputCoins,
-	CreateRawTransaction:     RpcServer.handleCreateRawTransaction,
-	SendRawTransaction:       RpcServer.handleSendRawTransaction,
-	CreateAndSendTransaction: RpcServer.handleCreateAndSendTx,
-	GetMempoolInfo:           RpcServer.handleGetMempoolInfo,
-	GetTransactionByHash:     RpcServer.handleGetTransactionByHash,
-
-	GetCommitteeCandidateList: RpcServer.handleGetCommitteeCandidateList,
-	GetBlockProducerList:      RpcServer.handleGetBlockProducerList,
-
-	RandomCommitments: RpcServer.handleRandomCommitments,
-	HasSerialNumbers:  RpcServer.handleHasSerialNumbers,
-	HasSnDerivators:   RpcServer.handleHasSnDerivators,
-
+	ListOutputCoins:                 RpcServer.handleListOutputCoins,
+	CreateRawTransaction:            RpcServer.handleCreateRawTransaction,
+	SendRawTransaction:              RpcServer.handleSendRawTransaction,
+	CreateAndSendTransaction:        RpcServer.handleCreateAndSendTx,
+	GetMempoolInfo:                  RpcServer.handleGetMempoolInfo,
+	GetTransactionByHash:            RpcServer.handleGetTransactionByHash,
 	CreateAndSendStakingTransaction: RpcServer.handleCreateAndSendStakingTx,
+	RandomCommitments:               RpcServer.handleRandomCommitments,
+	HasSerialNumbers:                RpcServer.handleHasSerialNumbers,
+	HasSnDerivators:                 RpcServer.handleHasSnDerivators,
 
-	GetShardBestState:  RpcServer.handleGetShardBestState,
-	GetBeaconBestState: RpcServer.handleGetBeaconBestState,
-
+	// Beststate
+	GetCandidateList:          RpcServer.handleGetCandidateList,
+	GetCommitteeList:          RpcServer.handleGetCommitteeList,
+	GetBlockProducerList:      RpcServer.handleGetBlockProducerList,
+	GetShardBestState:         RpcServer.handleGetShardBestState,
+	GetBeaconBestState:        RpcServer.handleGetBeaconBestState,
 	GetShardToBeaconPoolState: RpcServer.handleGetShardToBeaconPoolState,
 	GetCrossShardPoolState:    RpcServer.handleGetCrossShardPoolState,
+	CanPubkeyStake:            RpcServer.handleCanPubkeyStake,
 
 	// custom token
 	CreateRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,

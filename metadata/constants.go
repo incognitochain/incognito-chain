@@ -102,3 +102,9 @@ const (
 	STAKE_SHARD_AMOUNT  = 1
 	STAKE_BEACON_AMOUNT = 2
 )
+
+// boards
+const (
+	DCBBoard = BoardType(1)
+	GOVBoard = BoardType(2)
+)

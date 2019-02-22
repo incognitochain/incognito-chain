@@ -10,12 +10,7 @@ func getIssuingInfoKey(reqTxID common.Hash) []byte {
 	return key
 }
 
-func getContractingInfoKey(reqTxID common.Hash) []byte {
-	key := append(reserveContractingInfoPrefix, []byte(reqTxID.String())...)
-	return key
-}
-
-func getInfoValue(
+func getIssuingInfoValue(
 	amount uint64,
 	instType string,
 ) []byte {
@@ -25,7 +20,7 @@ func getInfoValue(
 	return values
 }
 
-func parseInfoValue(value []byte) (uint64, string, error) {
+func parseIssuingInfoValue(value []byte) (uint64, string, error) {
 	if len(value) < 8 {
 		return 0, "", errors.Errorf("Error parsing info value: %x", value)
 	}
@@ -40,7 +35,7 @@ func (db *db) StoreIssuingInfo(
 	instType string,
 ) error {
 	key := getIssuingInfoKey(reqTxID)
-	value := getInfoValue(amount, instType)
+	value := getIssuingInfoValue(amount, instType)
 	return db.Put(key, value)
 }
 
@@ -50,24 +45,52 @@ func (db *db) GetIssuingInfo(reqTxID common.Hash) (uint64, string, error) {
 	if err != nil {
 		return 0, "", err
 	}
-	return parseInfoValue(value)
+	return parseIssuingInfoValue(value)
+}
+
+func getContractingInfoKey(reqTxID common.Hash) []byte {
+	key := append(reserveContractingInfoPrefix, []byte(reqTxID.String())...)
+	return key
+}
+
+func getContractingInfoValue(
+	amount uint64,
+	redeem uint64,
+	instType string,
+) []byte {
+	values := []byte{}
+	values = append(values, common.Uint64ToBytes(amount)...)
+	values = append(values, common.Uint64ToBytes(redeem)...)
+	values = append(values, []byte(instType)...)
+	return values
+}
+
+func parseContractingInfoValue(value []byte) (uint64, uint64, string, error) {
+	if len(value) < 8 {
+		return 0, 0, "", errors.Errorf("Error parsing info value: %x", value)
+	}
+	amount := common.BytesToUint64(value[:8])
+	redeem := common.BytesToUint64(value[8:16])
+	instType := string(value[16:])
+	return amount, redeem, instType, nil
 }
 
 func (db *db) StoreContractingInfo(
 	reqTxID common.Hash,
 	amount uint64,
+	redeem uint64,
 	instType string,
 ) error {
 	key := getContractingInfoKey(reqTxID)
-	value := getInfoValue(amount, instType)
+	value := getContractingInfoValue(amount, redeem, instType)
 	return db.Put(key, value)
 }
 
-func (db *db) GetContractingInfo(reqTxID common.Hash) (uint64, string, error) {
+func (db *db) GetContractingInfo(reqTxID common.Hash) (uint64, uint64, string, error) {
 	key := getContractingInfoKey(reqTxID)
 	value, err := db.Get(key)
 	if err != nil {
-		return 0, "", err
+		return 0, 0, "", err
 	}
-	return parseInfoValue(value)
+	return parseContractingInfoValue(value)
 }

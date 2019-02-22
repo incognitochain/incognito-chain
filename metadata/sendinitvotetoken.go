@@ -26,6 +26,20 @@ type SendInitDCBVoteTokenMetadata struct {
 	MetadataBase
 }
 
+func (sendInitDCBVoteTokenMetadata *SendInitDCBVoteTokenMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	boardType := DCBBoard
+	err := bcr.GetDatabase().SendInitVoteToken(
+		boardType.BoardTypeDB(),
+		bcr.GetGovernor(boardType).GetBoardIndex(),
+		sendInitDCBVoteTokenMetadata.SendInitVoteTokenMetadata.ReceiverPaymentAddress,
+		sendInitDCBVoteTokenMetadata.SendInitVoteTokenMetadata.Amount,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func NewSendInitDCBVoteTokenMetadata(amount uint32, receiverPaymentAddress privacy.PaymentAddress) *SendInitDCBVoteTokenMetadata {
 	return &SendInitDCBVoteTokenMetadata{
 		SendInitVoteTokenMetadata: *NewSendInitVoteTokenMetadata(
@@ -34,7 +48,6 @@ func NewSendInitDCBVoteTokenMetadata(amount uint32, receiverPaymentAddress priva
 		),
 		MetadataBase: *NewMetadataBase(SendInitDCBVoteTokenMeta),
 	}
-
 }
 
 func (sendInitDCBVoteTokenMetadata *SendInitDCBVoteTokenMetadata) Hash() *common.Hash {
@@ -60,6 +73,20 @@ type SendInitGOVVoteTokenMetadata struct {
 	SendInitVoteTokenMetadata SendInitVoteTokenMetadata
 
 	MetadataBase
+}
+
+func (sendInitGOVVoteTokenMetadata *SendInitGOVVoteTokenMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	boardType := GOVBoard
+	err := bcr.GetDatabase().SendInitVoteToken(
+		boardType.BoardTypeDB(),
+		bcr.GetGovernor(boardType).GetBoardIndex(),
+		sendInitGOVVoteTokenMetadata.SendInitVoteTokenMetadata.ReceiverPaymentAddress,
+		sendInitGOVVoteTokenMetadata.SendInitVoteTokenMetadata.Amount,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func NewSendInitGOVVoteTokenMetadata(amount uint32, receiverPaymentAddress privacy.PaymentAddress) *SendInitGOVVoteTokenMetadata {
