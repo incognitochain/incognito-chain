@@ -97,10 +97,10 @@ func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string, round int) st
 	if found > -1 {
 		tmpID := (bestStateShard.ShardProposerIdx + round) % len(bestStateShard.ShardCommittee)
 		if found == tmpID {
-			fmt.Println("Shard BestState/ Get Public Key Role, ROLE", common.PROPOSER_ROLE)
+			fmt.Printf("Shard BestState/ Get Public Key Role, ROLE %+v , Shard %+v \n", common.PROPOSER_ROLE, bestStateShard.ShardID)
 			return common.PROPOSER_ROLE
 		} else {
-			fmt.Println("Shard BestState/ Get Public Key Role, ROLE", common.VALIDATOR_ROLE)
+			fmt.Printf("Shard BestState/ Get Public Key Role, ROLE %+v , Shard %+v \n", common.VALIDATOR_ROLE, bestStateShard.ShardID)
 			return common.VALIDATOR_ROLE
 		}
 
@@ -108,7 +108,7 @@ func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string, round int) st
 
 	found = common.IndexOfStr(pubkey, bestStateShard.ShardPendingValidator)
 	if found > -1 {
-		fmt.Println("Shard BestState/ Get Public Key Role, ROLE", common.PENDING_ROLE)
+		fmt.Printf("Shard BestState/ Get Public Key Role, ROLE %+v , Shard %+v \n", common.PENDING_ROLE, bestStateShard.ShardID)
 		return common.PENDING_ROLE
 	}
 
