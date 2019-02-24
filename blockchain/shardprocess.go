@@ -95,7 +95,7 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 		Logger.log.Infof("Number of transaction in this block %d", len(block.Body.Transactions))
 	}
 
-	// TODO: Check: store output coin?
+	// TODO: @merman store output coin?
 	if err := blockchain.CreateAndSaveTxViewPointFromBlock(block); err != nil {
 		return err
 	}

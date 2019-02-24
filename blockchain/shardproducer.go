@@ -49,6 +49,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	txsToAdd, remainingFund := blockgen.getTransactionForNewBlock(payToAddress, privatekey, shardID, blockgen.chain.config.DataBase, beaconBlocks)
 	//======Get Cross output coin from other shard=======
 	crossOutputCoin := blockgen.getCrossOutputCoin(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight)
+	fmt.Println("crossOutputCoin", crossOutputCoin)
 	//======Create Instruction===========================
 	//Assign Instruction
 	instructions := [][]string{}
@@ -266,27 +267,22 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 			*/
 			passed := false
 			for i := lastBeaconHeight + 1; i <= currentBeaconHeight; i++ {
-				for shardToBeaconID, shardStates := range blockgen.chain.BestState.Beacon.AllShardState {
-					if crossShardID == shardToBeaconID {
-						// if the first crossShardblock is not current block then discard current block
-						for i := int(currentBestCrossShardForThisBlock); i < len(shardStates); i++ {
-							if bytes.Contains(shardStates[i].CrossShard, []byte{shardID}) {
-								if shardStates[i].Height == blk.Header.Height {
-									passed = true
-								}
-								break
+				shardStates, ok := blockgen.chain.BestState.Beacon.AllShardState[crossShardID]
+				if ok {
+					// if the first crossShardblock is not current block then discard current block
+					for i := int(currentBestCrossShardForThisBlock); i < len(shardStates); i++ {
+						if bytes.Contains(shardStates[i].CrossShard, []byte{shardID}) {
+							if shardStates[i].Height == blk.Header.Height {
+								passed = true
 							}
+							break
 						}
-					}
-					if passed {
-						break
 					}
 				}
 			}
 			if !passed {
 				break
 			}
-
 			outputCoin := CrossOutputCoin{
 				OutputCoin:  blk.CrossOutputCoin,
 				BlockHash:   *blk.Hash(),
