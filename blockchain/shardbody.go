@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"strconv"
@@ -115,6 +114,7 @@ func (shardBody *CrossOutputCoin) Hash() common.Hash {
 	return common.DoubleHashH(record)
 }
 
+//TODO: @bahamoot check again
 /*
 - Concatenate all transaction in one shard as a string
 - Then each shard producer a string value include all transactions within this block
@@ -152,12 +152,12 @@ func (shardBody *ShardBody) CalcMerkleRootShard(activeShards int) *common.Hash {
 			txHashStrConcat += tx.String()
 		}
 		// fmt.Printf("txHashStrConcat for ShardID %+v is %+v \n", shardID, txHashStrConcat)
-		txHashStrConcatHash := sha256.Sum256([]byte(txHashStrConcat))
+		txHashStrConcatHash := common.HashH([]byte(txHashStrConcat))
 		// fmt.Printf("txHashStrConcatHash for ShardID %+v is %+v \n", shardID, txHashStrConcatHash)
-		h := &common.Hash{}
-		hash, _ := h.NewHash(txHashStrConcatHash[:32])
+		// h := &common.Hash{}
+		// hash, _ := h.NewHash(txHashStrConcatHash[:32])
 		// fmt.Printf("Hash of txHashStrConcat for ShardID %+v is %+v \n", shardID, hash)
-		shardsHash[shardID] = hash
+		shardsHash[shardID] = &txHashStrConcatHash
 	}
 	// fmt.Println("Shard Body/CalcMerkleRootShard ================== 3")
 	// fmt.Println(shardsHash)

@@ -54,6 +54,7 @@ func GetCrossShardPool(shardID byte) *CrossShardPool_v2 {
 		crossShardPool.pendingPool = make(map[byte][]*blockchain.CrossShardBlock)
 		crossShardPool.poolMu = new(sync.RWMutex)
 
+		//TODO: @QUESTION: each time call this function will create a gorountine???
 		go func() {
 			for {
 				select {

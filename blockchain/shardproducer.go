@@ -17,7 +17,6 @@ import (
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/pkg/errors"
 )
 
 func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte, round int) (*ShardBlock, error) {
@@ -132,6 +131,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
+	shardTxRoot := *block.Body.CalcMerkleRootShard(blockgen.chain.BestState.Shard[shardID].ActiveShards)
 	block.Header = ShardHeader{
 		Producer:             userKeySet.GetPublicKeyB58(),
 		ShardID:              shardID,
@@ -141,7 +141,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		Timestamp:            time.Now().Unix(),
 		SalaryFund:           remainingFund,
 		TxRoot:               *merkleRoot,
-		ShardTxRoot:          *block.Body.CalcMerkleRootShard(blockgen.chain.BestState.Shard[shardID].ActiveShards),
 		CrossOutputCoinRoot:  *crossOutputCoinRoot,
 		InstructionsRoot:     instructionsHash,
 		CrossShards:          CreateCrossShardByteArray(txsToAdd),
@@ -152,7 +151,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		Epoch:                epoch,
 		Round:                round,
 	}
-
+	block.Header.ShardTxRoot = shardTxRoot
 	// Create producer signature
 	blkHeaderHash := block.Header.Hash()
 	sig, err := userKeySet.SignDataB58(blkHeaderHash.GetBytes())
@@ -370,31 +369,42 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bcr metadata.BlockchainRetriever
 
 func (blk *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byte]*CrossShardBlock {
 	allCrossShard := make(map[byte]*CrossShardBlock)
+	fmt.Println("########################## 1")
 	if activeShards == 1 {
 		return allCrossShard
 	}
+	fmt.Println("########################## 2")
 	for i := 0; i < activeShards; i++ {
 		if byte(i) != blk.Header.ShardID {
+			fmt.Println("########################## 3")
 			crossShard, err := blk.CreateCrossShardBlock(byte(i))
+			fmt.Printf("Create CrossShardBlock from Shard %+v to Shard %+v: %+v \n", blk.Header.ShardID, i, crossShard)
 			if crossShard != nil && err == nil {
 				allCrossShard[byte(i)] = crossShard
 			}
+			fmt.Println("########################## 4")
 		}
 	}
+	fmt.Println("########################## 5")
 	return allCrossShard
 }
 
 func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
+	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 1")
 	crossShard := &CrossShardBlock{}
 	utxoList := getOutCoinCrossShard(block.Body.Transactions, shardID)
 	if len(utxoList) == 0 {
 		return nil, nil
 	}
+	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 2")
 	merklePathShard, merkleShardRoot := GetMerklePathCrossShard(block.Body.Transactions, shardID)
-	if merkleShardRoot != block.Header.TxRoot {
-		return crossShard, NewBlockChainError(CrossShardBlockError, errors.New("MerkleRootShard mismatch"))
-	}
-
+	fmt.Println(merklePathShard, merkleShardRoot)
+	//TODO: @merman check again
+	// if merkleShardRoot != block.Header.TxRoot {
+	// 	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 2 ERROR")
+	// 	return crossShard, NewBlockChainError(CrossShardBlockError, errors.New("MerkleRootShard mismatch"))
+	// }
+	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 3")
 	//Copy signature and header
 	crossShard.AggregatedSig = block.AggregatedSig
 
@@ -407,6 +417,7 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 	crossShard.Header = block.Header
 	crossShard.MerklePathShard = merklePathShard
 	crossShard.CrossOutputCoin = utxoList
+	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 4")
 	return crossShard, nil
 }
 
