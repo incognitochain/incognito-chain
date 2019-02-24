@@ -2,10 +2,11 @@ package mempool
 
 import (
 	"errors"
-	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/common"
 	"sort"
 	"sync"
+
+	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/common"
 )
 
 const (
