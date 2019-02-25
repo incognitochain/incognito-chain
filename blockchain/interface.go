@@ -24,7 +24,7 @@ type ShardToBeaconPool interface {
 
 type CrossShardPool interface {
 	AddCrossShardBlock(CrossShardBlock) error
-	GetValidBlock() map[byte][]CrossShardBlock
+	GetValidBlock() map[byte][]*CrossShardBlock
 	RemoveBlockByHeight(map[byte]uint64) error
 	UpdatePool() error
 }
