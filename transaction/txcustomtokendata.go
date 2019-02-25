@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"strconv"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/privacy"
