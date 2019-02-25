@@ -126,22 +126,22 @@ func (shardBody *ShardBody) CalcMerkleRootShard(activeShards int) *common.Hash {
 	}
 
 	shardsHash := make([]*common.Hash, activeShards)
-	for idx := range shardsHash {
+	for shardID := range shardsHash {
 		h := &common.Hash{}
-		shardsHash[idx], _ = h.NewHashFromStr("")
+		shardsHash[shardID], _ = h.NewHashFromStr("")
 	}
 
-	for idx, shard := range shardTxs {
+	for shardID := 0; shardID < activeShards; shardID++ {
 		txHashStrConcat := ""
 
-		for _, tx := range shard {
+		for _, tx := range shardTxs[shardID] {
 			txHashStrConcat += tx.String()
 		}
 
 		h := &common.Hash{}
 		hash, _ := h.NewHashFromStr(txHashStrConcat)
 
-		shardsHash[idx] = hash
+		shardsHash[shardID] = hash
 	}
 
 	merkleRoots := Merkle{}.BuildMerkleTreeOfHashs(shardsHash)
