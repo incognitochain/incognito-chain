@@ -54,7 +54,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 
 func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 	if _, ok := blockchain.syncStatus.Shards[newBlk.Header.ShardID]; ok {
-		fmt.Println("Shard block received")
+		fmt.Printf("Shard block received from shard %+v \n", newBlk.Header.ShardID)
 		if blockchain.BestState.Shard[newBlk.Header.ShardID].ShardHeight < newBlk.Header.Height {
 			blkHash := newBlk.Header.Hash()
 			err := cashec.ValidateDataB58(newBlk.Header.Producer, newBlk.ProducerSig, blkHash.GetBytes())
@@ -134,7 +134,7 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 
 func (blockchain *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {
 	//TODO: check node mode -> node role before add block to pool
-
+	fmt.Printf("OnCrossShardBlockReceived/CrossShardBlock from %+v \n", block.Header.ShardID)
 	toShardID := common.GetShardIDFromLastByte(block.CrossOutputCoin[0].CoinDetails.PublicKey.Compress()[33:][0])
 	err := blockchain.config.CrossShardPool[toShardID].AddCrossShardBlock(block)
 	if err != nil {
