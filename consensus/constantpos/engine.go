@@ -84,7 +84,7 @@ func (engine *Engine) Start() error {
 					time.Sleep(2 * time.Second)
 					fmt.Println()
 					fmt.Println()
-					fmt.Println(engine.config.NodeMode, userRole, shardID, currentPBFTRound, engine.config.BlockChain.BestState.Beacon.BeaconHeight, currentPBFTBlkHeight, prevRoundRole)
+					fmt.Printf("Node mode %+v, user role %+v, shardID %+v \n currentPBFTRound %+v, beacon height %+v, currentPBFTBlkHeight %+v, prevRoundRole %+v \n ", engine.config.NodeMode, userRole, shardID, currentPBFTRound, engine.config.BlockChain.BestState.Beacon.BeaconHeight, currentPBFTBlkHeight, prevRoundRole)
 					if currentPBFTRound > 3 && prevRoundRole != "" {
 						os.Exit(1)
 					}
@@ -213,6 +213,7 @@ func (engine *Engine) Start() error {
 									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 4")
 									//PUSH CROSS-SHARD
 									newCrossShardBlocks := shardBlk.CreateAllCrossShardBlock(engine.config.BlockChain.BestState.Beacon.ActiveShards)
+									fmt.Println(newCrossShardBlocks)
 									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 5")
 									for sID, newCrossShardBlock := range newCrossShardBlocks {
 										newCrossShardMsg, err := MakeMsgCrossShardBlock(newCrossShardBlock)
