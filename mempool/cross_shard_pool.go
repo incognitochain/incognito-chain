@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"sort"
 	"sync"
@@ -95,7 +96,7 @@ func (pool *CrossShardPool) AddCrossShardBlock(newBlock blockchain.CrossShardBlo
 
 	shardItems[Height] = items
 	shardPool[ShardID] = shardItems
-
+	fmt.Println("CrossShardPool", shardPool)
 	shardPoolLock.Unlock()
 
 	return nil

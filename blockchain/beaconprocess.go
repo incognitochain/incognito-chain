@@ -539,6 +539,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		copy(bestStateBeacon.BeaconCommittee, newBeaconCandidate[:bestStateBeacon.BeaconCommitteeSize])
 		for shardID := 0; shardID < bestStateBeacon.ActiveShards; shardID++ {
 			bestStateBeacon.ShardCommittee[byte(shardID)] = append(bestStateBeacon.ShardCommittee[byte(shardID)], newShardCandidate[shardID*bestStateBeacon.ShardCommitteeSize:(shardID+1)*bestStateBeacon.ShardCommitteeSize]...)
+			fmt.Println(bestStateBeacon.ShardCommittee[byte(shardID)])
 		}
 		bestStateBeacon.Epoch = 1
 	} else {

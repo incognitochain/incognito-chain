@@ -283,6 +283,9 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 // RemoveTx safe remove transaction for pool
 func (tp *TxPool) RemoveTx(tx metadata.Transaction) error {
 	tp.mtx.Lock()
+	fmt.Println("...................................")
+	fmt.Println("txHash To Be Remove", tx.Hash())
+	fmt.Println("...................................")
 	err := tp.removeTx(&tx)
 	// remove tx coin hash from pool
 	txHash := tx.Hash()
@@ -309,6 +312,13 @@ func (tp *TxPool) GetTx(txHash *common.Hash) (metadata.Transaction, error) {
 // // MiningDescs returns a slice of mining descriptors for all the transactions
 // // in the pool.
 func (tp *TxPool) MiningDescs() []*metadata.TxDesc {
+	fmt.Println()
+	fmt.Println()
+	fmt.Println()
+	fmt.Println("Current Transaction in pool", tp.pool)
+	fmt.Println()
+	fmt.Println()
+	fmt.Println()
 	descs := []*metadata.TxDesc{}
 	tp.mtx.Lock()
 	for _, desc := range tp.pool {
