@@ -15,43 +15,34 @@ import (
 )
 
 func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
+	var stabilityInstructionProcessors = map[string]func(*BestStateBeacon, []string) error{
+		strconv.Itoa(metadata.LoanRequestMeta):  (*BestStateBeacon).processLoanRequestInstruction,
+		strconv.Itoa(metadata.LoanResponseMeta): (*BestStateBeacon).processLoanResponseInstruction,
+		strconv.Itoa(metadata.LoanPaymentMeta):  (*BestStateBeacon).processLoanPaymentInstruction,
+
+		strconv.Itoa(metadata.AcceptDCBProposalMeta): (*BestStateBeacon).processAcceptDCBProposalInstruction,
+
+		strconv.Itoa(metadata.DividendSubmitMeta): (*BestStateBeacon).processDividendSubmitInstruction,
+
+		strconv.Itoa(metadata.CrowdsalePaymentMeta): (*BestStateBeacon).processCrowdsalePaymentInstruction,
+
+		strconv.Itoa(metadata.BuyFromGOVRequestMeta): (*BestStateBeacon).processBuyFromGOVReqInstruction,
+
+		strconv.Itoa(metadata.BuyBackRequestMeta): (*BestStateBeacon).processBuyBackReqInstruction,
+
+		strconv.Itoa(metadata.BuyGOVTokenRequestMeta): (*BestStateBeacon).processBuyGOVTokenReqInstruction,
+
+		strconv.Itoa(metadata.IssuingRequestMeta): (*BestStateBeacon).processIssuingReqInstruction,
+
+		strconv.Itoa(metadata.ContractingRequestMeta): (*BestStateBeacon).processContractingReqInstruction,
+
+		strconv.Itoa(metadata.ShardBlockSalaryUpdateMeta): (*BestStateBeacon).processSalaryUpdateInstruction,
+	}
 	if len(inst) < 2 {
 		return nil // Not error, just not stability instruction
 	}
-	switch inst[0] {
-	case strconv.Itoa(metadata.LoanRequestMeta):
-		return bsb.processLoanRequestInstruction(inst)
-	case strconv.Itoa(metadata.LoanResponseMeta):
-		return bsb.processLoanResponseInstruction(inst)
-	case strconv.Itoa(metadata.LoanPaymentMeta):
-		return bsb.processLoanPaymentInstruction(inst)
-
-	case strconv.Itoa(metadata.AcceptDCBProposalMeta):
-		return bsb.processAcceptDCBProposalInstruction(inst)
-
-	case strconv.Itoa(metadata.DividendSubmitMeta):
-		return bsb.processDividendSubmitInstruction(inst)
-
-	case strconv.Itoa(metadata.CrowdsalePaymentMeta):
-		return bsb.processCrowdsalePaymentInstruction(inst)
-
-	case strconv.Itoa(metadata.BuyFromGOVRequestMeta):
-		return bsb.processBuyFromGOVReqInstruction(inst)
-
-	case strconv.Itoa(metadata.BuyBackRequestMeta):
-		return bsb.processBuyBackReqInstruction(inst)
-
-	case strconv.Itoa(metadata.BuyGOVTokenRequestMeta):
-		return bsb.processBuyGOVTokenReqInstruction(inst)
-
-	case strconv.Itoa(metadata.IssuingRequestMeta):
-		return bsb.processIssuingReqInstruction(inst)
-
-	case strconv.Itoa(metadata.ContractingRequestMeta):
-		return bsb.processContractingReqInstruction(inst)
-
-	case strconv.Itoa(metadata.ShardBlockSalaryUpdateMeta):
-		return bsb.processSalaryUpdateInstruction(inst)
+	if f, ok := stabilityInstructionProcessors[inst[1]]; ok {
+		return f(bsb, inst)
 	}
 	return nil
 }
@@ -193,6 +184,7 @@ func (bsb *BestStateBeacon) processBuyFromGOVReqInstruction(inst []string) error
 }
 
 func (bsb *BestStateBeacon) processLoanRequestInstruction(inst []string) error {
+	fmt.Printf("[db] procLoanReqInst: %s\n", inst[1])
 	loanID, txHash, err := metadata.ParseLoanRequestActionValue(inst[1])
 	if err != nil {
 		return err
@@ -200,6 +192,7 @@ func (bsb *BestStateBeacon) processLoanRequestInstruction(inst []string) error {
 	// Check if no loan request with the same id existed
 	key := getLoanRequestKeyBeacon(loanID)
 	if _, ok := bsb.Params[key]; ok {
+		fmt.Printf("[db] loanID existed %t, %x\n", ok, key)
 		return errors.Errorf("LoanID already existed: %x", loanID)
 	}
 
