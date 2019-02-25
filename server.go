@@ -45,7 +45,7 @@ type Server struct {
 	beaconPool        *mempool.NodeBeaconPool
 	shardPool         *mempool.NodeShardPool
 	shardToBeaconPool *mempool.ShardToBeaconPool
-	crossShardPool    *mempool.CrossShardPool
+	crossShardPool    map[byte]blockchain.CrossShardPool
 
 	waitGroup       sync.WaitGroup
 	netSync         *netsync.NetSync
@@ -149,7 +149,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.beaconPool = &mempool.NodeBeaconPool{}
 	serverObj.shardPool = &mempool.NodeShardPool{}
 	serverObj.shardToBeaconPool = mempool.GetShardToBeaconPool()
-	serverObj.crossShardPool = &mempool.CrossShardPool{}
+	serverObj.crossShardPool = make(map[byte]blockchain.CrossShardPool)
 
 	serverObj.blockChain = &blockchain.BlockChain{}
 	relayShards := []byte{}

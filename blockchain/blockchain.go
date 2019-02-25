@@ -99,7 +99,7 @@ type Config struct {
 	customTokenRewardSnapshot map[string]uint64
 
 	ShardToBeaconPool ShardToBeaconPool
-	CrossShardPool    CrossShardPool
+	CrossShardPool    map[byte]CrossShardPool
 	NodeBeaconPool    NodeBeaconPool
 	NodeShardPool     NodeShardPool
 	TxPool            TxPool

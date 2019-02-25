@@ -28,7 +28,7 @@ type NetSyncConfig struct {
 	ChainParam        *blockchain.Params
 	MemTxPool         *mempool.TxPool
 	ShardToBeaconPool blockchain.ShardToBeaconPool
-	CrossShardPool    blockchain.CrossShardPool
+	CrossShardPool    map[byte]blockchain.CrossShardPool
 	Server            interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, libp2p.ID) error
