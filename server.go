@@ -19,7 +19,7 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/connmanager"
-	"github.com/ninjadotorg/constant/consensus/constantpos"
+	"github.com/ninjadotorg/constant/consensus/constantbft"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/mempool"
 	"github.com/ninjadotorg/constant/netsync"
@@ -52,7 +52,7 @@ type Server struct {
 	addrManager     *addrmanager.AddrManager
 	userKeySet      *cashec.KeySet
 	wallet          *wallet.Wallet
-	consensusEngine *constantpos.Engine
+	consensusEngine *constantbft.Engine
 	blockgen        *blockchain.BlkTmplGenerator
 	rewardAgent     *rewardagent.RewardAgent
 	// The fee estimator keeps track of how long transactions are left in
@@ -243,7 +243,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	}
 
 	// Init consensus engine
-	serverObj.consensusEngine, err = constantpos.Engine{}.Init(&constantpos.EngineConfig{
+	serverObj.consensusEngine, err = constantbft.Engine{}.Init(&constantbft.EngineConfig{
 		ChainParams: serverObj.chainParams,
 		BlockChain:  serverObj.blockChain,
 		Server:      serverObj,
@@ -565,7 +565,7 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			OnGetAddr:          serverObj.OnGetAddr,
 			OnAddr:             serverObj.OnAddr,
 
-			//constantpos
+			//constantbft
 			OnBFTMsg: serverObj.OnBFTMsg,
 			// OnInvalidBlock:  serverObj.OnInvalidBlock,
 			OnPeerState: serverObj.OnPeerState,
