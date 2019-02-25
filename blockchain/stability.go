@@ -299,6 +299,14 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 						return nil, err
 					}
 					resTxs = append(resTxs, txs...)
+
+				case metadata.ShardBlockSalaryUpdateMeta:
+					salaryReqInfoStr := l[3]
+					txs, err := blockgen.buildSalaryRes(l[2], salaryReqInfoStr, producerPrivateKey)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, txs...)
 				}
 			}
 		}
