@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"sort"
 	"sync"
 
 	"github.com/ninjadotorg/constant/blockchain"
@@ -12,37 +11,34 @@ import (
 
 var shardPoolLock sync.RWMutex
 
-var shardPool = map[byte]map[uint64][]blockchain.CrossShardBlock{}
+var shardPool = make(map[byte][]blockchain.CrossShardBlock)
+var poolState = make(map[byte]uint64)
 
 type CrossShardPool struct{}
 
 func (pool *CrossShardPool) GetBlock(bestStateInfos map[byte]uint64) map[byte][]blockchain.CrossShardBlock {
+	fmt.Println("Try to GetBlock From CrossShardPool", shardPool)
 	results := map[byte][]blockchain.CrossShardBlock{}
-
-	for ShardId, shardItems := range shardPool {
-		if shardItems == nil || len(shardItems) <= 0 {
-			continue
-		}
-		shardBestState, ok := bestStateInfos[ShardId]
-		if !ok || shardBestState < 0 {
-			continue
-		}
+	shardPoolLock.Lock()
+	defer shardPoolLock.Unlock()
+	for shardId, shardItems := range shardPool {
+		// shardBestState, ok := bestStateInfos[shardId]
+		// if !ok || shardBestState < 0 {
+		// 	continue
+		// }
 
 		items := []blockchain.CrossShardBlock{}
 
-		for height, item := range shardItems {
-			if height > shardBestState {
-				continue
-			}
-
-			if len(item) <= 0 {
-				continue
-			}
-
-			items = append(items, item...)
+		for _, item := range shardItems {
+			// fmt.Printf("item Height %+v && shardBestState %+v \n", item.Header.Height, shardBestState)
+			// if item.Header.Height > shardBestState {
+			// 	continue
+			// }
+			items = append(items, item)
 		}
-		results[ShardId] = items
+		results[shardId] = items
 	}
+	// fmt.Println("Return result of GetBlock From CrossShardPool", results)
 	return results
 }
 
@@ -59,13 +55,16 @@ func (pool *CrossShardPool) RemoveBlock(blockItems map[byte]uint64) error {
 			log.Println("Shard is not exist")
 			continue
 		}
-
-		items := map[uint64][]blockchain.CrossShardBlock{}
-		for i := blockHeight + 1; i < uint64(len(shardItems)); i++ {
-			items[i] = shardItems[i]
+		index := 0
+		for index, block := range shardPool[shardID] {
+			if block.Header.Height > blockHeight {
+				if index != 0 {
+					poolState[shardID] = shardPool[shardID][index-1].Header.Height
+				}
+				break
+			}
 		}
-
-		shardPool[shardID] = items
+		shardPool[shardID] = shardPool[shardID][index:]
 	}
 	shardPoolLock.Unlock()
 	return nil
@@ -74,66 +73,23 @@ func (pool *CrossShardPool) RemoveBlock(blockItems map[byte]uint64) error {
 func (pool *CrossShardPool) AddCrossShardBlock(newBlock blockchain.CrossShardBlock) error {
 
 	blockHeader := newBlock.Header
-	ShardID := blockHeader.ShardID
-	Height := blockHeader.Height
+	shardID := blockHeader.ShardID
+	height := blockHeader.Height
 
-	if Height == 0 {
+	if height == 0 {
 		return errors.New("Invalid Block Heght")
 	}
 
 	shardPoolLock.Lock()
 
-	shardItems, ok := shardPool[ShardID]
-	if shardItems == nil || !ok {
-		shardItems = map[uint64][]blockchain.CrossShardBlock{}
-	}
+	shardPool[shardID] = append(shardPool[shardID], newBlock)
 
-	items, ok := shardItems[Height]
-	if len(items) <= 0 || !ok {
-		items = []blockchain.CrossShardBlock{}
-	}
-	items = append(items, newBlock)
-
-	shardItems[Height] = items
-	shardPool[ShardID] = shardItems
 	fmt.Println("CrossShardPool", shardPool)
 	shardPoolLock.Unlock()
 
 	return nil
 }
 
-func GetCrossShardPoolState() map[byte][]uint64 {
-	// map[byte]map[uint64][]blockchain.CrossShardBlock{}
-	result := map[byte][]uint64{}
-
-	poolState := map[byte]map[uint64]bool{}
-
-	for k, val := range shardPool {
-		items, ok := poolState[k]
-		if !ok || len(items) <= 0 {
-			items = map[uint64]bool{}
-		}
-
-		if len(val) <= 0 {
-			continue
-		}
-
-		for h, _ := range val {
-			items[h] = true
-		}
-		poolState[k] = items
-	}
-
-	for k, val := range poolState {
-		items := []uint64{}
-		for h, _ := range val {
-			items = append(items, h)
-		}
-		sort.Slice(items, func(i, j int) bool {
-			return items[i] < items[j]
-		})
-
-		result[k] = items
-	}
-	return result
+func GetCrossShardPoolState() map[byte]uint64 {
+	return poolState
 }

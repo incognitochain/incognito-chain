@@ -73,7 +73,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 
 func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	blockHash := block.Hash().String()
-	Logger.log.Debugf("Process store block %+v", blockHash)
+	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 
 	if err := blockchain.StoreShardBlock(block); err != nil {
 		return err
@@ -95,6 +95,7 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	}
 
 	// TODO: @merman store output coin?
+	fmt.Println("ProcessStoreShardBlock/CrossOutputCoin	", block.Body.CrossOutputCoin)
 	if err := blockchain.CreateAndSaveTxViewPointFromBlock(block); err != nil {
 		return err
 	}
@@ -468,6 +469,10 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 		bestStateShard.BestBeaconHash = *ChainTestParam.GenesisBeaconBlock.Hash()
 	} else {
 		bestStateShard.BestBeaconHash = block.Header.BeaconHash
+	}
+	if block.Header.Height == 1 {
+		bestStateShard.BestCrossShard.ShardHeight = make(map[byte]uint64)
+		bestStateShard.BestCrossShard.BeaconHeight = make(map[byte]uint64)
 	}
 	bestStateShard.BestBlock = block
 	bestStateShard.BestBlockHash = *block.Hash()
