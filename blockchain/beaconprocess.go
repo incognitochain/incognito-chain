@@ -136,7 +136,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	lastCrossShardState := GetBestStateBeacon().LastCrossShardState
 	if block.Body.ShardState != nil {
 		for shardID, shardBlockState := range block.Body.ShardState {
-
 			for shardBlockIndex, crossShardInfo := range shardBlockState {
 				for _, crossShardToShardID := range crossShardInfo.CrossShard {
 
@@ -166,6 +165,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 					lastCrossShardState[crossShardToShardID][shardID] = crossShardInfo.Height
 				}
 			}
+			blockchain.config.CrossShardPool[shardID].UpdatePool()
 		}
 	}
 

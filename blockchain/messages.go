@@ -134,7 +134,9 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 
 func (blockchain *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {
 	//TODO: check node mode -> node role before add block to pool
-	err := blockchain.config.CrossShardPool.AddCrossShardBlock(block)
+
+	toShardID := common.GetShardIDFromLastByte(block.CrossOutputCoin[0].CoinDetails.PublicKey.Compress()[33:][0])
+	err := blockchain.config.CrossShardPool[toShardID].AddCrossShardBlock(block)
 	if err != nil {
 		Logger.log.Error(err)
 	}
