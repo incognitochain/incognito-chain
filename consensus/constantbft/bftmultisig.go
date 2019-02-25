@@ -78,7 +78,6 @@ func (multiSig *multiSigScheme) SignData(RiList map[string][]byte) error {
 			return err
 		}
 		RCombined = RCombined.Add(listROfSigners[counter])
-		// phaseData.ValidatorsIdx[counter] = sort.SearchStrings(multiSig.Committee, szPubKey)
 		multiSig.combine.ValidatorsIdxR = append(multiSig.combine.ValidatorsIdxR, common.IndexOfStr(szPubKey, multiSig.combine.SigningCommittee))
 		counter++
 	}
