@@ -6,13 +6,11 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
@@ -132,7 +130,8 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
-	shardTxRoot := *block.Body.CalcMerkleRootShard(blockgen.chain.BestState.Shard[shardID].ActiveShards)
+	_, shardTxMerkleData := CreateShardTxRoot(block.Body.Transactions)
+	fmt.Println("ShardProducer/Shard Tx Root", shardTxMerkleData[len(shardTxMerkleData)-1])
 	block.Header = ShardHeader{
 		Producer:             userKeySet.GetPublicKeyB58(),
 		ShardID:              shardID,
@@ -142,6 +141,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		Timestamp:            time.Now().Unix(),
 		SalaryFund:           remainingFund,
 		TxRoot:               *merkleRoot,
+		ShardTxRoot:          shardTxMerkleData[len(shardTxMerkleData)-1],
 		CrossOutputCoinRoot:  *crossOutputCoinRoot,
 		InstructionsRoot:     instructionsHash,
 		CrossShards:          CreateCrossShardByteArray(txsToAdd),
@@ -152,7 +152,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		Epoch:                epoch,
 		Round:                round,
 	}
-	block.Header.ShardTxRoot = shardTxRoot
 	// Create producer signature
 	blkHeaderHash := block.Header.Hash()
 	sig, err := userKeySet.SignDataB58(blkHeaderHash.GetBytes())
@@ -346,207 +345,4 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 		}
 	}
 	return txsToAdd, txToRemove, totalFee
-}
-
-func (blk *ShardBlock) CreateShardToBeaconBlock(bcr metadata.BlockchainRetriever) *ShardToBeaconBlock {
-	block := ShardToBeaconBlock{}
-	block.AggregatedSig = blk.AggregatedSig
-	block.ValidatorsIdx = make([][]int, 2)                                           //multi-committee
-	block.ValidatorsIdx[0] = append(block.ValidatorsIdx[0], blk.ValidatorsIdx[0]...) //multi-committee
-	block.ValidatorsIdx[1] = append(block.ValidatorsIdx[1], blk.ValidatorsIdx[1]...) //multi-committee
-	block.R = blk.R
-	block.ProducerSig = blk.ProducerSig
-	block.Header = blk.Header
-	block.Instructions = blk.Body.Instructions
-	instructions := CreateShardInstructionsFromTransaction(blk.Body.Transactions, bcr, blk.Header.ShardID)
-	block.Instructions = append(block.Instructions, instructions...)
-	return &block
-}
-
-func (blk *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byte]*CrossShardBlock {
-	allCrossShard := make(map[byte]*CrossShardBlock)
-	fmt.Println("########################## 1")
-	if activeShards == 1 {
-		return allCrossShard
-	}
-	fmt.Println("########################## 2")
-	for i := 0; i < activeShards; i++ {
-		if byte(i) != blk.Header.ShardID {
-			fmt.Println("########################## 3")
-			crossShard, err := blk.CreateCrossShardBlock(byte(i))
-			fmt.Printf("Create CrossShardBlock from Shard %+v to Shard %+v: %+v \n", blk.Header.ShardID, i, crossShard)
-			if crossShard != nil && err == nil {
-				allCrossShard[byte(i)] = crossShard
-			}
-			fmt.Println("########################## 4")
-		}
-	}
-	fmt.Println("########################## 5")
-	return allCrossShard
-}
-
-func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
-	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 1")
-	crossShard := &CrossShardBlock{}
-	utxoList := getOutCoinCrossShard(block.Body.Transactions, shardID)
-	if len(utxoList) == 0 {
-		return nil, nil
-	}
-	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 2")
-	merklePathShard, merkleShardRoot := GetMerklePathCrossShard(block.Body.Transactions, shardID)
-	fmt.Println(merklePathShard, merkleShardRoot)
-	//TODO: @merman check again
-	// if merkleShardRoot != block.Header.TxRoot {
-	// 	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 2 ERROR")
-	// 	return crossShard, NewBlockChainError(CrossShardBlockError, errors.New("MerkleRootShard mismatch"))
-	// }
-	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 3")
-	//Copy signature and header
-	crossShard.AggregatedSig = block.AggregatedSig
-
-	crossShard.ValidatorsIdx = make([][]int, 2)                                                  //multi-committee
-	crossShard.ValidatorsIdx[0] = append(crossShard.ValidatorsIdx[0], block.ValidatorsIdx[0]...) //multi-committee
-	crossShard.ValidatorsIdx[1] = append(crossShard.ValidatorsIdx[1], block.ValidatorsIdx[1]...) //multi-committee
-
-	crossShard.R = block.R
-	crossShard.ProducerSig = block.ProducerSig
-	crossShard.Header = block.Header
-	crossShard.MerklePathShard = merklePathShard
-	crossShard.CrossOutputCoin = utxoList
-	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 4")
-	return crossShard, nil
-}
-
-func GetAssignInstructionFromBeaconBlock(beaconBlocks []*BeaconBlock, shardID byte) [][]string {
-	assignInstruction := [][]string{}
-	for _, beaconBlock := range beaconBlocks {
-		for _, l := range beaconBlock.Body.Instructions {
-			if l[0] == "assign" && l[2] == "shard" {
-				if strings.Compare(l[3], strconv.Itoa(int(shardID))) == 0 {
-					assignInstruction = append(assignInstruction, l)
-				}
-			}
-		}
-	}
-	return assignInstruction
-}
-
-func FetchBeaconBlockFromHeight(db database.DatabaseInterface, from uint64, to uint64) ([]*BeaconBlock, error) {
-	beaconBlocks := []*BeaconBlock{}
-	for i := from; i <= to; i++ {
-		hash, err := db.GetBeaconBlockHashByIndex(i)
-		if err != nil {
-			return beaconBlocks, err
-		}
-		beaconBlockByte, err := db.FetchBeaconBlock(hash)
-		if err != nil {
-			return beaconBlocks, err
-		}
-		beaconBlock := BeaconBlock{}
-		err = json.Unmarshal(beaconBlockByte, &beaconBlock)
-		if err != nil {
-			return beaconBlocks, NewBlockChainError(UnmashallJsonBlockError, err)
-		}
-		beaconBlocks = append(beaconBlocks, &beaconBlock)
-	}
-	return beaconBlocks, nil
-}
-
-func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) {
-	byteMap := make([]byte, common.MAX_SHARD_NUMBER)
-	for _, tx := range txList {
-		switch tx.GetType() {
-		case common.TxNormalType, common.TxSalaryType:
-			{
-				for _, outCoin := range tx.GetProof().OutputCoins {
-					lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-					shardID := common.GetShardIDFromLastByte(lastByte)
-					byteMap[common.GetShardIDFromLastByte(shardID)] = 1
-				}
-			}
-		case common.TxCustomTokenType:
-			{
-				customTokenTx := tx.(*transaction.TxCustomToken)
-				for _, out := range customTokenTx.TxTokenData.Vouts {
-					lastByte := out.PaymentAddress.Pk[len(out.PaymentAddress.Pk)-1]
-					shardID := common.GetShardIDFromLastByte(lastByte)
-					byteMap[common.GetShardIDFromLastByte(shardID)] = 1
-				}
-			}
-		case common.TxCustomTokenPrivacyType:
-			{
-				customTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
-				for _, outCoin := range customTokenTx.TxTokenPrivacyData.TxNormal.GetProof().OutputCoins {
-					lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-					shardID := common.GetShardIDFromLastByte(lastByte)
-					byteMap[common.GetShardIDFromLastByte(shardID)] = 1
-				}
-			}
-		}
-	}
-
-	for k := range byteMap {
-		if byteMap[k] == 1 {
-			crossIDs = append(crossIDs, byte(k))
-		}
-	}
-
-	return crossIDs
-}
-
-/*
-	Create Swap Action
-	Return param:
-	#1: swap instruction
-	#2: new pending validator list after swapped
-	#3: new committees after swapped
-	#4: error
-*/
-func CreateSwapAction(pendingValidator []string, commitees []string, committeeSize int, shardID byte) ([]string, []string, []string, error) {
-	fmt.Println("Shard Producer/Create Swap Action: pendingValidator", pendingValidator)
-	fmt.Println("Shard Producer/Create Swap Action: commitees", commitees)
-	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, committeeSize, common.OFFSET)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	swapInstruction := []string{"swap", strings.Join(shardNewCommittees, ","), strings.Join(shardSwapedCommittees, ","), "shard", strconv.Itoa(int(shardID))}
-	return swapInstruction, newPendingValidator, newShardCommittees, nil
-}
-
-/*
-	Action Generate From Transaction:
-	- Stake
-	- Stable param: set, del,...
-*/
-func CreateShardInstructionsFromTransaction(transactions []metadata.Transaction, bcr metadata.BlockchainRetriever, shardID byte) (instructions [][]string) {
-	// Generate stake action
-	stakeShardPubKey := []string{}
-	stakeBeaconPubKey := []string{}
-	instructions = buildStabilityActions(transactions, bcr, shardID)
-
-	for _, tx := range transactions {
-		switch tx.GetMetadataType() {
-		case metadata.ShardStakingMeta:
-			pk := tx.GetProof().InputCoins[0].CoinDetails.PublicKey.Compress()
-			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-			stakeShardPubKey = append(stakeShardPubKey, pkb58)
-		case metadata.BeaconStakingMeta:
-			pk := tx.GetProof().InputCoins[0].CoinDetails.PublicKey.Compress()
-			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-			stakeBeaconPubKey = append(stakeBeaconPubKey, pkb58)
-			//TODO: stable param 0xsancurasolus
-			// case metadata.BuyFromGOVRequestMeta:
-		}
-	}
-
-	if !reflect.DeepEqual(stakeShardPubKey, []string{}) {
-		instruction := []string{"stake", strings.Join(stakeShardPubKey, ","), "shard"}
-		instructions = append(instructions, instruction)
-	}
-	if !reflect.DeepEqual(stakeBeaconPubKey, []string{}) {
-		instruction := []string{"stake", strings.Join(stakeBeaconPubKey, ","), "beacon"}
-		instructions = append(instructions, instruction)
-	}
-
-	return instructions
 }
