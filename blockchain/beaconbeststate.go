@@ -104,6 +104,10 @@ func (bsb *BestStateBeacon) GetCurrentShard() byte {
 	return 0
 }
 
+func SetBestStateBeacon(beacon *BestStateBeacon) {
+	bestStateBeacon = beacon
+}
+
 func GetBestStateBeacon() *BestStateBeacon {
 	if bestStateBeacon != nil {
 		return bestStateBeacon

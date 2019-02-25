@@ -224,9 +224,11 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 */
 func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHeight uint64, currentBeaconHeight uint64) map[byte][]CrossOutputCoin {
 	res := make(map[byte][]CrossOutputCoin)
-	crossShardMap := make(map[byte][]CrossShardBlock)
+	crossShardMap := make(map[byte][]*CrossShardBlock)
 	// get cross shard block
+
 	allCrossShardBlock := blockgen.crossShardPool[shardID].GetValidBlock()
+
 	crossShardBlocks := allCrossShardBlock[shardID]
 	currentBestCrossShard := blockgen.chain.BestState.Shard[shardID].BestCrossShard
 	// Sort by height
