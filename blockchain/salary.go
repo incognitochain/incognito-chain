@@ -5,11 +5,15 @@ import (
 	"strconv"
 
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 type ShardBlockSalaryUpdateInfo struct {
 	ShardBlockSalary uint64
 	ShardBlockFee    uint64
+	PayToAddress     *privacy.PaymentAddress
+	ShardBlockHeight uint64
 }
 
 func getShardBlockFee(txs []metadata.Transaction) uint64 {
@@ -29,10 +33,14 @@ func getShardBlockSalary(txs []metadata.Transaction, bestStateBeacon *BestStateB
 func createShardBlockSalaryUpdateAction(
 	shardBlockSalary uint64,
 	shardBlockFee uint64,
+	payToAddress *privacy.PaymentAddress,
+	shardBlockHeight uint64,
 ) ([][]string, error) {
 	shardBlockSalaryUpdateInfo := ShardBlockSalaryUpdateInfo{
 		ShardBlockSalary: shardBlockSalary,
 		ShardBlockFee:    shardBlockFee,
+		PayToAddress:     payToAddress,
+		ShardBlockHeight: shardBlockHeight,
 	}
 	shardBlockSalaryUpdateInfoBytes, err := json.Marshal(shardBlockSalaryUpdateInfo)
 	if err != nil {
@@ -54,11 +62,18 @@ func buildInstForShardBlockSalaryUpdate(
 		return nil, err
 	}
 	instructions := [][]string{}
+	instType := string("")
 	accumulativeValues.totalFee += shardBlockSalaryUpdateInfo.ShardBlockFee
-	accumulativeValues.totalSalary += shardBlockSalaryUpdateInfo.ShardBlockSalary
+	if !isGOVFundEnough(beaconBestState, accumulativeValues, shardBlockSalaryUpdateInfo.ShardBlockSalary) {
+		instType = "fundNotEnough"
+	} else {
+		instType = "accepted"
+		accumulativeValues.totalSalary += shardBlockSalaryUpdateInfo.ShardBlockSalary
+	}
 	returnedInst := []string{
 		strconv.Itoa(metadata.ShardBlockSalaryUpdateMeta),
 		strconv.Itoa(int(shardID)),
+		instType,
 		contentStr,
 	}
 	instructions = append(instructions, returnedInst)
@@ -110,25 +125,29 @@ func buildInstForShardBlockSalaryUpdate(
 // 	return instructions, nil
 // }
 
-// func (blockgen *BlkTmplGenerator) buildSalaryRes(
-// 	salaryResContentStr string,
-// 	blkProducerPrivateKey *privacy.SpendingKey,
-// ) ([]metadata.Transaction, error) {
-// 	var salaryResContent SalaryResContent
-// 	err := json.Unmarshal([]byte(salaryResContentStr), &salaryResContent)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	salaryResTx := new(transaction.Tx)
-// 	err = salaryResTx.InitTxSalary(
-// 		salaryResContent.ShardBlockSalary,
-// 		salaryResContent.PayToAddress,
-// 		blkProducerPrivateKey,
-// 		blockgen.chain.GetDatabase(),
-// 		nil,
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return []metadata.Transaction{salaryResTx}, nil
-// }
+func (blockgen *BlkTmplGenerator) buildSalaryRes(
+	instType string,
+	contentStr string,
+	blkProducerPrivateKey *privacy.SpendingKey,
+) ([]metadata.Transaction, error) {
+	if instType == "fundNotEnough" {
+		return nil, nil
+	}
+	var shardBlockSalaryUpdateInfo ShardBlockSalaryUpdateInfo
+	err := json.Unmarshal([]byte(contentStr), &shardBlockSalaryUpdateInfo)
+	if err != nil {
+		return nil, err
+	}
+	salaryResTx := new(transaction.Tx)
+	err = salaryResTx.InitTxSalary(
+		shardBlockSalaryUpdateInfo.ShardBlockSalary,
+		shardBlockSalaryUpdateInfo.PayToAddress,
+		blkProducerPrivateKey,
+		blockgen.chain.GetDatabase(),
+		nil, // TODO: add salary res meta
+	)
+	if err != nil {
+		return nil, err
+	}
+	return []metadata.Transaction{salaryResTx}, nil
+}
