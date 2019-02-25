@@ -216,6 +216,7 @@ func (blockchain *BlockChain) initChainState() error {
 	bestStateBeaconBytes, err := blockchain.config.DataBase.FetchBeaconBestState()
 	if err == nil {
 		err = json.Unmarshal(bestStateBeaconBytes, blockchain.BestState.Beacon)
+		SetBestStateBeacon(blockchain.BestState.Beacon)
 		if err != nil {
 			initialized = false
 		} else {
@@ -240,6 +241,7 @@ func (blockchain *BlockChain) initChainState() error {
 		if err == nil {
 			blockchain.BestState.Shard[shardID] = &BestStateShard{}
 			err = json.Unmarshal(bestStateBytes, blockchain.BestState.Shard[shardID])
+			SetBestStateShard(shardID, blockchain.BestState.Shard[shardID])
 			if err != nil {
 				initialized = false
 			} else {

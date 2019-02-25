@@ -38,19 +38,22 @@ type CrossShardPool_v2 struct {
 
 var crossShardPoolMap = make(map[byte]*CrossShardPool_v2)
 
-func InitCrossShardPool(shardID byte) map[byte]*CrossShardPool_v2 {
-	return crossShardPoolMap
+func InitCrossShardPool(pool map[byte]blockchain.CrossShardPool) {
+	for i := 0; i < 255; i++ {
+		crossShardPoolMap[byte(i)] = GetCrossShardPool(byte(i))
+		pool[byte(i)] = crossShardPoolMap[byte(i)]
+	}
 }
 
 func GetCrossShardPool(shardID byte) *CrossShardPool_v2 {
 	p, ok := crossShardPoolMap[shardID]
 	if ok == false {
 		p = new(CrossShardPool_v2)
-		p = crossShardPoolMap[shardID]
 		p.shardID = shardID
 		p.validPool = make(map[byte][]*blockchain.CrossShardBlock)
 		p.pendingPool = make(map[byte][]*blockchain.CrossShardBlock)
 		p.poolMu = new(sync.RWMutex)
+
 		crossShardPoolMap[shardID] = p
 	}
 	return p
@@ -106,7 +109,7 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 	shardID := blk.Header.ShardID
 	blkHeight := blk.Header.Height
 
-	if shardID != pool.shardID {
+	if blk.ToShardID != pool.shardID {
 		return errors.New("This pool cannot receive this cross shard block, this block for another shard")
 	}
 
