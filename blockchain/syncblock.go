@@ -3,11 +3,11 @@ package blockchain
 import (
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/common"
+	cache "github.com/patrickmn/go-cache"
 )
 
 type peerState struct {
@@ -16,11 +16,6 @@ type peerState struct {
 	ShardToBeaconPool *map[byte][]common.Hash
 	CrossShardPool    map[byte]*map[byte][]common.Hash
 	Peer              libp2p.ID
-}
-
-type peerSyncTimestamp struct {
-	Time   int64
-	PeerID libp2p.ID
 }
 
 type ChainState struct {
@@ -35,6 +30,14 @@ func (blockchain *BlockChain) StartSyncBlk() {
 		return
 	}
 	blockchain.syncStatus.Beacon = true
+
+	blockchain.syncStatus.CurrentlySyncBeaconBlkByHash = cache.New(defaultMaxBlockSyncTime, defaultCacheCleanupTime)
+	blockchain.syncStatus.CurrentlySyncBeaconBlkByHeight = cache.New(defaultMaxBlockSyncTime, defaultCacheCleanupTime)
+	blockchain.syncStatus.CurrentlySyncShardBlkByHash = make(map[byte]*cache.Cache)
+	blockchain.syncStatus.CurrentlySyncShardBlkByHeight = make(map[byte]*cache.Cache)
+	blockchain.syncStatus.CurrentlySyncShardToBeaconBlkByHash = make(map[byte]*cache.Cache)
+	blockchain.syncStatus.CurrentlySyncShardToBeaconBlkByHeight = make(map[byte]*cache.Cache)
+	blockchain.syncStatus.CurrentlySyncCrossShardBlkByHash = make(map[byte]*cache.Cache)
 
 	for _, shardID := range blockchain.config.RelayShards {
 		blockchain.SyncShard(shardID)
@@ -76,8 +79,14 @@ func (blockchain *BlockChain) StartSyncBlk() {
 					if RCS.ClosestBeaconState.Height == 0 {
 						RCS.ClosestBeaconState = *peerState.Beacon
 					} else {
-						if peerState.Beacon.Height < RCS.ClosestBeaconState.Height {
+						if peerState.Beacon.Height < RCS.ClosestBeaconState.Height && peerState.Beacon.Height > blockchain.BestState.Beacon.BeaconHeight {
 							RCS.ClosestBeaconState = *peerState.Beacon
+
+							fmt.Println()
+							fmt.Println()
+							fmt.Println("aaaaa", RCS.ClosestBeaconState)
+							fmt.Println()
+							fmt.Println()
 						}
 					}
 					for shardID := range blockchain.syncStatus.Shards {
@@ -281,6 +290,9 @@ func (blockchain *BlockChain) SyncShard(shardID byte) error {
 		return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation is already started")
 	}
 	blockchain.syncStatus.Shards[shardID] = struct{}{}
+	blockchain.syncStatus.CurrentlySyncShardBlkByHash[shardID] = cache.New(defaultMaxBlockSyncTime, defaultCacheCleanupTime)
+	blockchain.syncStatus.CurrentlySyncShardBlkByHeight[shardID] = cache.New(defaultMaxBlockSyncTime, defaultCacheCleanupTime)
+
 	return nil
 }
 
@@ -328,10 +340,6 @@ func (blockchain *BlockChain) StopSync() error {
 func (blockchain *BlockChain) ResetCurrentSyncRecord() {
 	blockchain.syncStatus.Lock()
 	defer blockchain.syncStatus.Unlock()
-	blockchain.syncStatus.CurrentlySyncBeaconBlk = sync.Map{}
-	blockchain.syncStatus.CurrentlySyncShardBlk = sync.Map{}
-	blockchain.syncStatus.CurrentlySyncShardToBeaconBlk = sync.Map{}
-	blockchain.syncStatus.CurrentlySyncCrossShardBlk = sync.Map{}
 }
 
 //SyncBlkBeacon Send a req to sync beacon block
@@ -343,22 +351,28 @@ func (blockchain *BlockChain) ResetCurrentSyncRecord() {
 func (blockchain *BlockChain) SyncBlkBeacon(byHash bool, getFromPool bool, blksHash []common.Hash, from uint64, to uint64, peerID libp2p.ID) {
 	if byHash {
 		//Sync block by hash
-		tempInterface, init := blockchain.syncStatus.CurrentlySyncBeaconBlk.Load(SyncByHashKey)
-		blksNeedToGet, blksSyncByHash := getBlkNeedToGetByHash(blksHash, tempInterface, init, peerID)
+		cacheItems := blockchain.syncStatus.CurrentlySyncBeaconBlkByHash.Items()
+		blksNeedToGet := getBlkNeedToGetByHash(blksHash, cacheItems, peerID)
 		if len(blksNeedToGet) > 0 {
 			go blockchain.config.Server.PushMessageGetBlockBeaconByHash(blksNeedToGet, getFromPool, peerID)
 		}
-		blockchain.syncStatus.CurrentlySyncBeaconBlk.Store(SyncByHashKey, blksSyncByHash)
+		for _, blkHash := range blksNeedToGet {
+			blockchain.syncStatus.CurrentlySyncBeaconBlkByHash.Add(blkHash.String(), time.Now().Unix(), defaultMaxBlockSyncTime)
+		}
 	} else {
 		//Sync by height
-		tempInterface, init := blockchain.syncStatus.CurrentlySyncBeaconBlk.Load(SyncByHeightKey)
-		blkBatchsNeedToGet, blksSyncByHeight := getBlkNeedToGetByHeight(from, to, tempInterface, init, peerID)
+		cacheItems := blockchain.syncStatus.CurrentlySyncBeaconBlkByHeight.Items()
+		blkBatchsNeedToGet := getBlkNeedToGetByHeight(from, to, cacheItems, peerID)
 		if len(blkBatchsNeedToGet) > 0 {
 			for fromHeight, toHeight := range blkBatchsNeedToGet {
 				go blockchain.config.Server.PushMessageGetBlockBeaconByHeight(fromHeight, toHeight, peerID)
 			}
 		}
-		blockchain.syncStatus.CurrentlySyncBeaconBlk.Store(SyncByHeightKey, blksSyncByHeight)
+		for fromHeight, toHeight := range blkBatchsNeedToGet {
+			for height := fromHeight; height <= toHeight; height++ {
+				blockchain.syncStatus.CurrentlySyncBeaconBlkByHeight.Add(fmt.Sprint(height), time.Now().Unix(), defaultMaxBlockSyncTime)
+			}
+		}
 	}
 }
 
@@ -371,22 +385,34 @@ func (blockchain *BlockChain) SyncBlkBeacon(byHash bool, getFromPool bool, blksH
 func (blockchain *BlockChain) SyncBlkShard(shardID byte, byHash bool, getFromPool bool, blksHash []common.Hash, from uint64, to uint64, peerID libp2p.ID) {
 	if byHash {
 		//Sync block by hash
-		tempInterface, init := blockchain.syncStatus.CurrentlySyncShardBlk.Load(SyncByHashKey + fmt.Sprint(shardID))
-		blksNeedToGet, blksSyncByHash := getBlkNeedToGetByHash(blksHash, tempInterface, init, peerID)
+		if _, ok := blockchain.syncStatus.CurrentlySyncShardBlkByHash[shardID]; !ok {
+			blockchain.syncStatus.CurrentlySyncShardBlkByHash[shardID] = cache.New(defaultMaxBlockSyncTime, defaultCacheCleanupTime)
+		}
+		cacheItems := blockchain.syncStatus.CurrentlySyncShardBlkByHash[shardID].Items()
+		blksNeedToGet := getBlkNeedToGetByHash(blksHash, cacheItems, peerID)
 		if len(blksNeedToGet) > 0 {
 			go blockchain.config.Server.PushMessageGetBlockShardByHash(shardID, blksNeedToGet, getFromPool, peerID)
 		}
-		blockchain.syncStatus.CurrentlySyncShardBlk.Store(SyncByHashKey+fmt.Sprint(shardID), blksSyncByHash)
+		for _, blkHash := range blksNeedToGet {
+			blockchain.syncStatus.CurrentlySyncShardBlkByHash[shardID].Add(blkHash.String(), time.Now().Unix(), defaultMaxBlockSyncTime)
+		}
 	} else {
 		//Sync by height
-		tempInterface, init := blockchain.syncStatus.CurrentlySyncShardBlk.Load(SyncByHeightKey + fmt.Sprint(shardID))
-		blkBatchsNeedToGet, blksSyncByHeight := getBlkNeedToGetByHeight(from, to, tempInterface, init, peerID)
+		if _, ok := blockchain.syncStatus.CurrentlySyncShardBlkByHeight[shardID]; !ok {
+			blockchain.syncStatus.CurrentlySyncShardBlkByHeight[shardID] = cache.New(defaultMaxBlockSyncTime, defaultCacheCleanupTime)
+		}
+		cacheItems := blockchain.syncStatus.CurrentlySyncShardBlkByHeight[shardID].Items()
+		blkBatchsNeedToGet := getBlkNeedToGetByHeight(from, to, cacheItems, peerID)
 		if len(blkBatchsNeedToGet) > 0 {
 			for fromHeight, toHeight := range blkBatchsNeedToGet {
 				go blockchain.config.Server.PushMessageGetBlockShardByHeight(shardID, fromHeight, toHeight, peerID)
 			}
 		}
-		blockchain.syncStatus.CurrentlySyncShardBlk.Store(SyncByHeightKey+fmt.Sprint(shardID), blksSyncByHeight)
+		for fromHeight, toHeight := range blkBatchsNeedToGet {
+			for height := fromHeight; height <= toHeight; height++ {
+				blockchain.syncStatus.CurrentlySyncShardBlkByHeight[shardID].Add(fmt.Sprint(height), time.Now().Unix(), defaultMaxBlockSyncTime)
+			}
+		}
 	}
 }
 
@@ -397,40 +423,53 @@ func (blockchain *BlockChain) SyncBlkShard(shardID byte, byHash bool, getFromPoo
 	- GetFromPool: ignore mainchain, used only for hash
 */
 func (blockchain *BlockChain) SyncBlkShardToBeacon(shardID byte, byHash bool, getFromPool bool, blksHash []common.Hash, from uint64, to uint64, peerID libp2p.ID) {
-	fmt.Println()
-	fmt.Println()
-	fmt.Println("SyncShardToBeacon", shardID, from, to)
-	fmt.Println()
-	fmt.Println()
 	if byHash {
 		//Sync block by hash
-		tempInterface, init := blockchain.syncStatus.CurrentlySyncShardToBeaconBlk.Load(SyncByHashKey + fmt.Sprint(shardID))
-		blksNeedToGet, blksSyncByHash := getBlkNeedToGetByHash(blksHash, tempInterface, init, peerID)
+		if _, ok := blockchain.syncStatus.CurrentlySyncShardToBeaconBlkByHash[shardID]; !ok {
+			blockchain.syncStatus.CurrentlySyncShardToBeaconBlkByHash[shardID] = cache.New(defaultMaxBlockSyncTime, defaultCacheCleanupTime)
+		}
+		cacheItems := blockchain.syncStatus.CurrentlySyncShardToBeaconBlkByHash[shardID].Items()
+		blksNeedToGet := getBlkNeedToGetByHash(blksHash, cacheItems, peerID)
 		if len(blksNeedToGet) > 0 {
 			go blockchain.config.Server.PushMessageGetBlockShardToBeaconByHash(shardID, blksNeedToGet, getFromPool, peerID)
 		}
-		blockchain.syncStatus.CurrentlySyncShardToBeaconBlk.Store(SyncByHashKey+fmt.Sprint(shardID), blksSyncByHash)
+		for _, blkHash := range blksNeedToGet {
+			blockchain.syncStatus.CurrentlySyncShardToBeaconBlkByHash[shardID].Add(blkHash.String(), time.Now().Unix(), defaultMaxBlockSyncTime)
+		}
 	} else {
 		//Sync by height
-		tempInterface, init := blockchain.syncStatus.CurrentlySyncShardToBeaconBlk.Load(SyncByHeightKey + fmt.Sprint(shardID))
-		blkBatchsNeedToGet, blksSyncByHeight := getBlkNeedToGetByHeight(from, to, tempInterface, init, peerID)
+
+		if _, ok := blockchain.syncStatus.CurrentlySyncShardToBeaconBlkByHeight[shardID]; !ok {
+			blockchain.syncStatus.CurrentlySyncShardToBeaconBlkByHeight[shardID] = cache.New(defaultMaxBlockSyncTime, defaultCacheCleanupTime)
+		}
+		cacheItems := blockchain.syncStatus.CurrentlySyncShardToBeaconBlkByHeight[shardID].Items()
+		blkBatchsNeedToGet := getBlkNeedToGetByHeight(from, to, cacheItems, peerID)
 		if len(blkBatchsNeedToGet) > 0 {
 			for fromHeight, toHeight := range blkBatchsNeedToGet {
 				go blockchain.config.Server.PushMessageGetBlockShardToBeaconByHeight(shardID, fromHeight, toHeight, peerID)
 			}
 		}
-		blockchain.syncStatus.CurrentlySyncShardToBeaconBlk.Store(SyncByHeightKey+fmt.Sprint(shardID), blksSyncByHeight)
+		for fromHeight, toHeight := range blkBatchsNeedToGet {
+			for height := fromHeight; height <= toHeight; height++ {
+				blockchain.syncStatus.CurrentlySyncShardToBeaconBlkByHeight[shardID].Add(fmt.Sprint(height), time.Now().Unix(), defaultMaxBlockSyncTime)
+			}
+		}
 	}
 }
 
 //SyncBlkCrossShard Send a req to sync crossShard block
 func (blockchain *BlockChain) SyncBlkCrossShard(getFromPool bool, blksHash []common.Hash, fromShard byte, toShard byte, peerID libp2p.ID) {
-	tempInterface, init := blockchain.syncStatus.CurrentlySyncCrossShardBlk.Load(SyncByHashKey)
-	blksNeedToGet, blksSyncByHash := getBlkNeedToGetByHash(blksHash, tempInterface, init, peerID)
+	if _, ok := blockchain.syncStatus.CurrentlySyncCrossShardBlkByHash[fromShard]; !ok {
+		blockchain.syncStatus.CurrentlySyncCrossShardBlkByHash[fromShard] = cache.New(defaultMaxBlockSyncTime, defaultCacheCleanupTime)
+	}
+	cacheItems := blockchain.syncStatus.CurrentlySyncCrossShardBlkByHash[fromShard].Items()
+	blksNeedToGet := getBlkNeedToGetByHash(blksHash, cacheItems, peerID)
 	if len(blksNeedToGet) > 0 {
 		go blockchain.config.Server.PushMessageGetBlockCrossShardByHash(fromShard, toShard, blksNeedToGet, getFromPool, peerID)
 	}
-	blockchain.syncStatus.CurrentlySyncCrossShardBlk.Store(SyncByHashKey, blksSyncByHash)
+	for _, blkHash := range blksNeedToGet {
+		blockchain.syncStatus.CurrentlySyncCrossShardBlkByHash[fromShard].Add(blkHash.String(), time.Now().Unix(), defaultMaxBlockSyncTime)
+	}
 }
 
 func (blockchain *BlockChain) InsertBlockFromPool() {
