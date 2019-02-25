@@ -95,7 +95,7 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 		Logger.log.Infof("Number of transaction in this block %d", len(block.Body.Transactions))
 	}
 
-	// TODO: Check: store output coin?
+	// TODO: @merman store output coin?
 	if err := blockchain.CreateAndSaveTxViewPointFromBlock(block); err != nil {
 		return err
 	}
@@ -193,6 +193,10 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 		}
 	}
 	blockchain.config.TxPool.RemoveCandidateList(candidates)
+	//Remove tx out of pool
+	for _, tx := range block.Body.Transactions {
+		blockchain.config.TxPool.RemoveTx(tx)
+	}
 	//TODO: Remove cross shard block in pool
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 	return nil
@@ -224,10 +228,11 @@ DO NOT USE THIS with GENESIS BLOCK
 - BeaconHeight
 - BeaconHash
 - Swap instruction
+- ALL Transaction in block
 */
 func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID byte) error {
 	//verify producer
-	producerPosition := (blockchain.BestState.Shard[shardID].ShardProposerIdx + 1) % len(blockchain.BestState.Shard[shardID].ShardCommittee)
+	producerPosition := (blockchain.BestState.Shard[shardID].ShardProposerIdx + block.Header.Round) % len(blockchain.BestState.Shard[shardID].ShardCommittee)
 	tempProducer := blockchain.BestState.Shard[shardID].ShardCommittee[producerPosition]
 	if strings.Compare(tempProducer, block.Header.Producer) != 0 {
 		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
@@ -280,12 +285,6 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	if !VerifyMerkleCrossOutputCoin(block.Body.CrossOutputCoin, block.Header.CrossOutputCoinRoot) {
 		return NewBlockChainError(HashError, errors.New("can't Verify CrossOutputCoin Root"))
 	}
-	//Verify transaction
-	for _, tx := range block.Body.Transactions {
-		if !tx.ValidateTxByItself(tx.IsPrivacy(), blockchain.config.DataBase, blockchain, shardID) {
-			return NewBlockChainError(TransactionError, errors.New("can't Validate transaction"))
-		}
-	}
 	// Verify Action
 	txInstructions := CreateShardInstructionsFromTransaction(block.Body.Transactions, blockchain, shardID)
 	totalInstructions := []string{}
@@ -319,6 +318,18 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 			if l[3] != "shard" || l[4] != strconv.Itoa(int(shardID)) {
 				return NewBlockChainError(InstructionError, errors.New("swap instruction is invalid"))
 			}
+		}
+	}
+	// Verify Transaction
+	// number of salary transaction, used for later verify
+	txSalaryCount := 0
+	for _, tx := range block.Body.Transactions {
+		if tx.IsSalaryTx() {
+			txSalaryCount += 1
+		}
+		fmt.Println("Number of salary transaction", txSalaryCount)
+		if err := blockchain.VerifyTransactionFromNewBlock(tx); err != nil {
+			return NewBlockChainError(TransactionError, err)
 		}
 	}
 	//TODO: UNCOMMENT To verify Cross Shard Block
@@ -503,8 +514,10 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 	}
 	//Update best cross shard
 	for shardID, crossShardBlock := range block.Body.CrossOutputCoin {
-		bestStateShard.BestCrossShard[shardID] = crossShardBlock[len(crossShardBlock)-1].BlockHeight
+		bestStateShard.BestCrossShard.ShardHeight[shardID] = crossShardBlock[len(crossShardBlock)-1].BlockHeight
+		bestStateShard.BestCrossShard.BeaconHeight[shardID] = block.Header.BeaconHeight
 	}
+
 	Logger.log.Debugf("SHARD %+v | Finish update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	return nil
 }
@@ -528,6 +541,62 @@ func (blockchain *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlo
 		return NewBlockChainError(HashError, errors.New("Error verify Pending validator root"))
 	}
 	Logger.log.Debugf("SHARD %+v | Finish VerifyPostProcessing Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
+	return nil
+}
+
+/*
+1. Validate tx version
+2. Validate fee with tx size
+3. Validate type of tx
+5. Validate sanity data of tx
+6. Validate data in tx: privacy proof, metadata,...
+7. Validate tx with blockchain: douple spend, ...
+*/
+func (blockChain *BlockChain) VerifyTransactionFromNewBlock(tx metadata.Transaction) error {
+
+	// that make sure transaction is accepted when passed any rules
+	var shardID byte
+	var err error
+	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	// nextBlockHeight := bestHeight + 1
+	// check version
+	ok := tx.CheckTxVersion(TransactionVersion)
+	if !ok {
+		return errors.New("Version Error")
+	}
+
+	// check fee of tx
+	minFeePerKbTx := blockChain.GetFeePerKbTx()
+	ok = tx.CheckTransactionFee(minFeePerKbTx)
+	if !ok {
+		return errors.New("Fee Error")
+	}
+	// end check with policy
+
+	ok = tx.ValidateType()
+	if !ok {
+		return errors.New("Type Error")
+	}
+
+	// sanity data
+	// if validate, errS := tp.ValidateSanityData(tx); !validate {
+	if validated, err := tx.ValidateSanityData(blockChain); !validated {
+		if !ok {
+			return err
+		}
+	}
+	// ValidateTransaction tx by it self
+	validated := tx.ValidateTxByItself(tx.IsPrivacy(), blockChain.config.DataBase, blockChain, shardID)
+	if !validated {
+		return errors.New("Validate By It self Error")
+	}
+
+	// validate tx with data of blockchain
+	err = tx.ValidateTxWithBlockChain(blockChain, shardID, blockChain.config.DataBase)
+	// err = tp.ValidateTxWithBlockChain(tx, shardID)
+	if err != nil {
+		return errors.New("Validate With Blockchain Error")
+	}
 	return nil
 }
 

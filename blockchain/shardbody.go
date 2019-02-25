@@ -113,39 +113,75 @@ func (shardBody *CrossOutputCoin) Hash() common.Hash {
 	}
 	return common.DoubleHashH(record)
 }
+
+//TODO: @bahamoot check again
+/*
+- Concatenate all transaction in one shard as a string
+- Then each shard producer a string value include all transactions within this block
+- For each string value: Convert string value to hash value
+- So if we have 256 shard, we will have 256 leaf value for merkle tree
+- Make merkle root from these value
+*/
 func (shardBody *ShardBody) CalcMerkleRootShard(activeShards int) *common.Hash {
 	if activeShards == 1 {
 		merkleRoot := common.HashH([]byte{})
 		return &merkleRoot
 	}
+	// fmt.Println("Shard Body/CalcMerkleRootShard ================== 1")
 	var shardTxs = make(map[int][]*common.Hash)
-
+	// Init shard Txs
+	for shardID := 0; shardID < activeShards; shardID++ {
+		shardTxs[shardID] = []*common.Hash{}
+	}
 	for _, tx := range shardBody.Transactions {
 		shardID := int(tx.GetSenderAddrLastByte())
 		shardTxs[shardID] = append(shardTxs[shardID], tx.Hash())
 	}
-
+	// fmt.Println(shardTxs)
+	// fmt.Println("Shard Body/CalcMerkleRootShard ================== 2")
 	shardsHash := make([]*common.Hash, activeShards)
-	for idx := range shardsHash {
-		h := &common.Hash{}
-		shardsHash[idx], _ = h.NewHashFromStr("")
-	}
-
-	for idx, shard := range shardTxs {
+	// for idx := range shardsHash {
+	// 	fmt.Println("idx", idx)
+	// 	h := &common.Hash{}
+	// 	shardsHash[idx], _ = h.NewHashFromStr("")
+	// }
+	// fmt.Println(shardsHash)
+	for shardID := 0; shardID < activeShards; shardID++ {
 		txHashStrConcat := ""
-
-		for _, tx := range shard {
+		for _, tx := range shardTxs[shardID] {
 			txHashStrConcat += tx.String()
 		}
-
-		h := &common.Hash{}
-		hash, _ := h.NewHashFromStr(txHashStrConcat)
-
-		shardsHash[idx] = hash
+		// fmt.Printf("txHashStrConcat for ShardID %+v is %+v \n", shardID, txHashStrConcat)
+		txHashStrConcatHash := common.HashH([]byte(txHashStrConcat))
+		// fmt.Printf("txHashStrConcatHash for ShardID %+v is %+v \n", shardID, txHashStrConcatHash)
+		// h := &common.Hash{}
+		// hash, _ := h.NewHash(txHashStrConcatHash[:32])
+		// fmt.Printf("Hash of txHashStrConcat for ShardID %+v is %+v \n", shardID, hash)
+		shardsHash[shardID] = &txHashStrConcatHash
 	}
+	// fmt.Println("Shard Body/CalcMerkleRootShard ================== 3")
+	// fmt.Println(shardsHash)
+	// for idx, shard := range shardTxs {
+	// 	fmt.Println("idx", idx)
+	// 	txHashStrConcat := ""
 
+	// 	for _, tx := range shard {
+	// 		txHashStrConcat += tx.String()
+	// 	}
+
+	// 	h := &common.Hash{}
+	// 	hash, _ := h.NewHashFromStr(txHashStrConcat)
+
+	// 	shardsHash[idx] = hash
+	// 	fmt.Println(shardsHash)
+	// }
+	// fmt.Println("Shard Body/CalcMerkleRootShard ================== 4")
 	merkleRoots := Merkle{}.BuildMerkleTreeOfHashs(shardsHash)
+	// fmt.Println(merkleRoots)
+	// fmt.Println("Shard Body/CalcMerkleRootShard ================== 5")
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
+	// fmt.Println(merkleRoot)
+	// fmt.Println("Shard Body/CalcMerkleRootShard ================== 6")
 	return merkleRoot
 }
 
