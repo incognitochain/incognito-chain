@@ -4,8 +4,9 @@ import (
 	// "github.com/ninjadotorg/constant/privacy/client"
 	"encoding/json"
 	"errors"
-	errors2 "github.com/pkg/errors"
 	"math/big"
+
+	errors2 "github.com/pkg/errors"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -35,7 +36,7 @@ func (keysetObj *KeySet) GenerateKey(seed []byte) *KeySet {
 /*
 ImportFromPrivateKeyByte - from private-key byte[], regenerate pub-key and readonly-key
 */
-func (keysetObj *KeySet) ImportFromPrivateKeyByte(privateKey []byte) (error) {
+func (keysetObj *KeySet) ImportFromPrivateKeyByte(privateKey []byte) error {
 	if privateKey == nil {
 		return errors2.Wrap(nil, "Priv key is invalid")
 	}
@@ -83,14 +84,6 @@ func (keysetObj *KeySet) Sign(data []byte) ([]byte, error) {
 
 	signature, err := privKeySig.Sign(hash)
 	return signature.Bytes(), err
-}
-
-func (keysetObj *KeySet) SignBase58(data []byte) (string, error) {
-	signatureByte, err := keysetObj.Sign(data)
-	if err != nil {
-		return "", errors.New("Can't sign data. " + err.Error())
-	}
-	return base58.Base58Check{}.Encode(signatureByte, common.ZeroByte), nil
 }
 
 func (keysetObj *KeySet) EncodeToString() string {
