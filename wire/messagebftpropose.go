@@ -2,19 +2,24 @@ package wire
 
 import (
 	"encoding/json"
+	"fmt"
 
-	"github.com/libp2p/go-libp2p-peer"
+	peer "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 )
 
 const (
-	MaxBFTProposePayload = 1000 // 1 Kb
+	MaxBFTProposePayload = 5000 // 5 Kb
 )
 
 type MessageBFTPropose struct {
-	Block  json.RawMessage
-	MsgSig string
+	Layer      string
+	ShardID    byte
+	Block      json.RawMessage
+	ContentSig string
+	Pubkey     string
+	Timestamp  int64
 }
 
 func (msg *MessageBFTPropose) Hash() string {
@@ -47,10 +52,25 @@ func (msg *MessageBFTPropose) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (msg *MessageBFTPropose) SignMsg(_ *cashec.KeySet) error {
-	return nil
+func (msg *MessageBFTPropose) SignMsg(keySet *cashec.KeySet) error {
+	dataBytes := []byte{}
+	dataBytes = append(dataBytes, []byte(msg.Layer)...)
+	dataBytes = append(dataBytes, msg.ShardID)
+	dataBytes = append(dataBytes, msg.Block...)
+	dataBytes = append(dataBytes, []byte(msg.Pubkey)...)
+	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.Timestamp))...)
+	var err error
+	msg.ContentSig, err = keySet.SignDataB58(dataBytes)
+	return err
 }
 
 func (msg *MessageBFTPropose) VerifyMsgSanity() error {
-	return nil
+	dataBytes := []byte{}
+	dataBytes = append(dataBytes, []byte(msg.Layer)...)
+	dataBytes = append(dataBytes, msg.ShardID)
+	dataBytes = append(dataBytes, msg.Block...)
+	dataBytes = append(dataBytes, []byte(msg.Pubkey)...)
+	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.Timestamp))...)
+	err := cashec.ValidateDataB58(msg.Pubkey, msg.ContentSig, dataBytes)
+	return err
 }
