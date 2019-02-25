@@ -57,13 +57,20 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 }
 
 func (bsb *BestStateBeacon) processSalaryUpdateInstruction(inst []string) error {
-	shardBlockSalaryUpdateInfoStr := inst[2]
+	stabilityInfo := bsb.StabilityInfo
+	shardBlockSalaryUpdateInfoStr := inst[3]
 	var shardBlockSalaryUpdateInfo ShardBlockSalaryUpdateInfo
 	err := json.Unmarshal([]byte(shardBlockSalaryUpdateInfoStr), &shardBlockSalaryUpdateInfo)
 	if err != nil {
 		return err
 	}
-	stabilityInfo := bsb.StabilityInfo
+
+	instType := inst[2]
+	if instType == "fundNotEnough" {
+		stabilityInfo.SalaryFund += shardBlockSalaryUpdateInfo.ShardBlockFee
+		return nil
+	}
+	// accepted
 	stabilityInfo.SalaryFund -= shardBlockSalaryUpdateInfo.ShardBlockSalary
 	stabilityInfo.SalaryFund += shardBlockSalaryUpdateInfo.ShardBlockFee
 	return nil
