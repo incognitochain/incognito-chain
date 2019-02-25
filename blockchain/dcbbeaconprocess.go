@@ -50,7 +50,7 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 	case strconv.Itoa(metadata.ContractingRequestMeta):
 		return bsb.processContractingReqInstruction(inst)
 
-	case strconv.Itoa(metadata.ShardBlockSalaryUpdateMeta):
+	case strconv.Itoa(metadata.ShardBlockSalaryRequestMeta):
 		return bsb.processSalaryUpdateInstruction(inst)
 	}
 	return nil
@@ -58,21 +58,21 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 
 func (bsb *BestStateBeacon) processSalaryUpdateInstruction(inst []string) error {
 	stabilityInfo := bsb.StabilityInfo
-	shardBlockSalaryUpdateInfoStr := inst[3]
-	var shardBlockSalaryUpdateInfo ShardBlockSalaryUpdateInfo
-	err := json.Unmarshal([]byte(shardBlockSalaryUpdateInfoStr), &shardBlockSalaryUpdateInfo)
+	shardBlockSalaryInfoStr := inst[3]
+	var shardBlockSalaryInfo ShardBlockSalaryInfo
+	err := json.Unmarshal([]byte(shardBlockSalaryInfoStr), &shardBlockSalaryInfo)
 	if err != nil {
 		return err
 	}
 
 	instType := inst[2]
 	if instType == "fundNotEnough" {
-		stabilityInfo.SalaryFund += shardBlockSalaryUpdateInfo.ShardBlockFee
+		stabilityInfo.SalaryFund += shardBlockSalaryInfo.ShardBlockFee
 		return nil
 	}
 	// accepted
-	stabilityInfo.SalaryFund -= shardBlockSalaryUpdateInfo.ShardBlockSalary
-	stabilityInfo.SalaryFund += shardBlockSalaryUpdateInfo.ShardBlockFee
+	stabilityInfo.SalaryFund -= shardBlockSalaryInfo.ShardBlockSalary
+	stabilityInfo.SalaryFund += shardBlockSalaryInfo.ShardBlockFee
 	return nil
 }
 
