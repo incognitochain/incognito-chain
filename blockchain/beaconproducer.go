@@ -201,7 +201,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			currentCommittee := beaconBestState.ShardCommittee[shardID]
 			hash := shardBlock.Header.Hash()
 			err1 := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
-			fmt.Println("Beacon Producer/ Validate Agg Signature ", err1 == nil)
+			fmt.Println("Beacon Producer/ Validate Agg Signature for shard", shardID, err1 == nil)
 			if err1 != nil {
 				break
 			}
@@ -237,7 +237,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			stakers := [][]string{}
 			swaps := [][]string{}
 			fmt.Println("")
-			fmt.Println("Becon Produce: Got Shard Block", shardBlock.Header.Height)
+			fmt.Printf("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
 			fmt.Println("")
 			// for each shard block, create a corresponding shard state
 			instructions := shardBlock.Instructions
