@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -276,8 +275,9 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return NewBlockChainError(HashError, errors.New("can't Verify Transaction Root"))
 	}
 	// Verify ShardTx Root
-	shardTxRoot := block.Body.CalcMerkleRootShard(blockchain.BestState.Shard[shardID].ActiveShards)
-
+	_, shardTxMerkleData := CreateShardTxRoot(block.Body.Transactions)
+	shardTxRoot := shardTxMerkleData[len(shardTxMerkleData)-1]
+	fmt.Println("ShardProcess/Shard Tx Root", shardTxMerkleData[len(shardTxMerkleData)-1])
 	if !bytes.Equal(block.Header.ShardTxRoot.GetBytes(), shardTxRoot.GetBytes()) {
 		return NewBlockChainError(HashError, errors.New("can't Verify CrossShardTransaction Root"))
 	}
@@ -628,57 +628,6 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(tx metadata.Transact
 //	merkleShardRoot := merkleData[len(merkleData)-1]
 //	return merkleShardRoot
 //}
-
-func CreateMerkleCrossOutputCoin(crossOutputCoins map[byte][]CrossOutputCoin) (*common.Hash, error) {
-	if len(crossOutputCoins) == 0 {
-		res, err := GenerateZeroValueHash()
-
-		return &res, err
-	}
-	keys := []int{}
-	crossOutputCoinHashes := []*common.Hash{}
-	for k := range crossOutputCoins {
-		keys = append(keys, int(k))
-	}
-	sort.Ints(keys)
-	for _, shardID := range keys {
-		for _, value := range crossOutputCoins[byte(shardID)] {
-			hash := value.Hash()
-			hashByte := hash.GetBytes()
-			newHash, err := common.Hash{}.NewHash(hashByte)
-			if err != nil {
-				return &common.Hash{}, NewBlockChainError(HashError, err)
-			}
-			crossOutputCoinHashes = append(crossOutputCoinHashes, newHash)
-		}
-	}
-	merkle := Merkle{}
-	merkleTree := merkle.BuildMerkleTreeOfHashs(crossOutputCoinHashes)
-	return merkleTree[len(merkleTree)-1], nil
-}
-
-func VerifyMerkleCrossOutputCoin(crossOutputCoins map[byte][]CrossOutputCoin, rootHash common.Hash) bool {
-	res, err := CreateMerkleCrossOutputCoin(crossOutputCoins)
-	if err != nil {
-		return false
-	}
-	hashByte := rootHash.GetBytes()
-	newHash, err := common.Hash{}.NewHash(hashByte)
-	if err != nil {
-		return false
-	}
-	return newHash.IsEqual(res)
-}
-
-func (blockchain *BlockChain) StoreIncomingCrossShard(block *ShardBlock) error {
-	crossShardMap, _ := block.Body.ExtractIncomingCrossShardMap()
-	for crossShard, crossBlks := range crossShardMap {
-		for _, crossBlk := range crossBlks {
-			blockchain.config.DataBase.StoreIncomingCrossShard(block.Header.ShardID, crossShard, block.Header.Height, &crossBlk)
-		}
-	}
-	return nil
-}
 
 // func (blockchain *BlockChain) StoreOutgoingCrossShard(block *ShardBlock) error {
 // 	crossShardMap, _ := block.Body.ExtractOutgoingCrossShardMap()
