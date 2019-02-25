@@ -29,10 +29,10 @@ var (
 
 	backendLog        = common.NewBackend(logWriter{})
 	addrManagerLoger  = backendLog.Logger("Address Log", false)
-	connManagerLogger = backendLog.Logger("Connection Manager Log", true)
+	connManagerLogger = backendLog.Logger("Connection Manager Log", false)
 	mainLogger        = backendLog.Logger("Server Log", false)
 	rpcLogger         = backendLog.Logger("RPC Log", false)
-	netsyncLogger     = backendLog.Logger("Netsync Log", true)
+	netsyncLogger     = backendLog.Logger("Netsync Log", false)
 	peerLogger        = backendLog.Logger("Peer Log", true)
 	dbLogger          = backendLog.Logger("Database Log", false)
 	walletLogger      = backendLog.Logger("Wallet log", false)

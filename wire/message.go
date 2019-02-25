@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"reflect"
 
+	peer "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 
 	"time"
 
-	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
@@ -156,17 +156,25 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdVerack:
 		msg = &MessageVerAck{}
 		break
+	case CmdBFTReady:
+		msg = &MessageBFTReady{
+			Timestamp: time.Now().Unix(),
+		}
+		break
 	case CmdBFTPropose:
-		msg = &MessageBFTPropose{}
+		msg = &MessageBFTPropose{
+			Timestamp: time.Now().Unix(),
+		}
 		break
 	case CmdBFTPrepare:
-		msg = &MessageBFTPrepare{}
+		msg = &MessageBFTPrepare{
+			Timestamp: time.Now().Unix(),
+		}
 		break
 	case CmdBFTCommit:
-		msg = &MessageBFTCommit{}
-		break
-	case CmdBFTReady:
-		msg = &MessageBFTReady{}
+		msg = &MessageBFTCommit{
+			Timestamp: time.Now().Unix(),
+		}
 		break
 	case CmdPeerState:
 		msg = &MessagePeerState{

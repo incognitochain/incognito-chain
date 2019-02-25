@@ -1,6 +1,7 @@
 package constantbft
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -76,7 +77,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte, 
 						return nil, err
 					}
 					jsonBlock, _ := json.Marshal(newBlock)
-					msg, err = MakeMsgBFTPropose(jsonBlock)
+					msg, err = MakeMsgBFTPropose(jsonBlock, layer, shardID, protocol.UserKeySet)
 					if err != nil {
 						return nil, err
 					}
@@ -92,7 +93,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte, 
 						return nil, err
 					}
 					jsonBlock, _ := json.Marshal(newBlock)
-					msg, err = MakeMsgBFTPropose(jsonBlock)
+					msg, err = MakeMsgBFTPropose(jsonBlock, layer, shardID, protocol.UserKeySet)
 					if err != nil {
 						return nil, err
 					}
@@ -150,10 +151,10 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte, 
 				}
 			case PBFT_LISTEN:
 				if layer == common.BEACON_ROLE {
-					msgReady, _ := MakeMsgBFTReady(protocol.BlockChain.BestState.Beacon.Hash())
+					msgReady, _ := MakeMsgBFTReady(protocol.BlockChain.BestState.Beacon.Hash(), round, protocol.UserKeySet)
 					protocol.Server.PushMessageToBeacon(msgReady)
 				} else {
-					msgReady, _ := MakeMsgBFTReady(protocol.BlockChain.BestState.Shard[shardID].Hash())
+					msgReady, _ := MakeMsgBFTReady(protocol.BlockChain.BestState.Shard[shardID].Hash(), round, protocol.UserKeySet)
 					protocol.Server.PushMessageToShard(msgReady, shardID)
 				}
 				fmt.Println("Listen phase")
@@ -218,7 +219,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte, 
 				})
 				time.AfterFunc(DelayTime*time.Millisecond, func() {
 					fmt.Println("Sending out prepare msg")
-					msg, err := MakeMsgBFTPrepare(protocol.multiSigScheme.personal.Ri, protocol.UserKeySet.GetPublicKeyB58(), protocol.multiSigScheme.dataToSig.String())
+					msg, err := MakeMsgBFTPrepare(protocol.multiSigScheme.personal.Ri, protocol.UserKeySet, protocol.multiSigScheme.dataToSig)
 					if err != nil {
 						Logger.log.Error(err)
 						return
@@ -239,7 +240,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte, 
 					case msgPrepare := <-protocol.cBFTMsg:
 						if msgPrepare.MessageType() == wire.CmdBFTPrepare {
 							fmt.Println("Prepare msg received")
-							if common.IndexOfStr(msgPrepare.(*wire.MessageBFTPrepare).Pubkey, protocol.RoleData.Committee) >= 0 && (protocol.multiSigScheme.dataToSig.String() == msgPrepare.(*wire.MessageBFTPrepare).BlkHash) {
+							if common.IndexOfStr(msgPrepare.(*wire.MessageBFTPrepare).Pubkey, protocol.RoleData.Committee) >= 0 && bytes.Compare(protocol.multiSigScheme.dataToSig[:], msgPrepare.(*wire.MessageBFTPrepare).BlkHash[:]) == 0 {
 								collectedRiList[msgPrepare.(*wire.MessageBFTPrepare).Pubkey] = msgPrepare.(*wire.MessageBFTPrepare).Ri
 							}
 						}
@@ -266,7 +267,7 @@ func (protocol *BFTProtocol) Start(isProposer bool, layer string, shardID byte, 
 				})
 
 				time.AfterFunc(DelayTime*time.Millisecond, func() {
-					msg, err := MakeMsgBFTCommit(protocol.multiSigScheme.combine.CommitSig, protocol.multiSigScheme.combine.R, protocol.multiSigScheme.combine.ValidatorsIdxR, protocol.UserKeySet.GetPublicKeyB58())
+					msg, err := MakeMsgBFTCommit(protocol.multiSigScheme.combine.CommitSig, protocol.multiSigScheme.combine.R, protocol.multiSigScheme.combine.ValidatorsIdxR, protocol.UserKeySet)
 					if err != nil {
 						Logger.log.Error(err)
 						return
