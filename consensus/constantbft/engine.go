@@ -64,6 +64,7 @@ func (engine *Engine) Start() error {
 			default:
 				if engine.config.BlockChain.IsReady(false, 0) {
 					if prevRoundRole == common.BEACON_ROLE {
+						engine.config.BlockChain.InsertBlockFromPool()
 						if currentPBFTBlkHeight <= engine.config.BlockChain.BestState.Beacon.BeaconHeight {
 							// reset round
 							currentPBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
@@ -85,7 +86,7 @@ func (engine *Engine) Start() error {
 					fmt.Println()
 					fmt.Println()
 					fmt.Printf("Node mode %+v, user role %+v, shardID %+v \n currentPBFTRound %+v, beacon height %+v, currentPBFTBlkHeight %+v, prevRoundRole %+v \n ", engine.config.NodeMode, userRole, shardID, currentPBFTRound, engine.config.BlockChain.BestState.Beacon.BeaconHeight, currentPBFTBlkHeight, prevRoundRole)
-					if currentPBFTRound > 3 && prevRoundRole != "" {
+					if currentPBFTRound > 4 && prevRoundRole != "" {
 						os.Exit(1)
 					}
 					fmt.Println()
@@ -100,6 +101,12 @@ func (engine *Engine) Start() error {
 							Server:     engine.config.Server,
 						}
 						bftProtocol.RoundData.Round = currentPBFTRound
+						if bftProtocol.RoundData.Layer == common.BEACON_ROLE {
+							bftProtocol.RoundData.BestStateHash = engine.config.BlockChain.BestState.Beacon.Hash()
+						} else {
+							bftProtocol.RoundData.BestStateHash = engine.config.BlockChain.BestState.Shard[shardID].Hash()
+						}
+
 						if (engine.config.NodeMode == common.NODEMODE_BEACON || engine.config.NodeMode == common.NODEMODE_AUTO) && userRole != common.SHARD_ROLE {
 							bftProtocol.RoundData.Layer = common.BEACON_ROLE
 							bftProtocol.RoundData.Committee = make([]string, len(engine.config.BlockChain.BestState.Beacon.BeaconCommittee))
