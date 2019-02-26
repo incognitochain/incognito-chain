@@ -46,7 +46,8 @@ const (
 	WithSenderAddressMeta
 	ResponseBaseMeta
 	BuyGOVTokenRequestMeta
-	ShardBlockSalaryUpdateMeta
+	ShardBlockSalaryRequestMeta
+	ShardBlockSalaryResponseMeta
 
 	//Voting
 	SubmitDCBProposalMeta

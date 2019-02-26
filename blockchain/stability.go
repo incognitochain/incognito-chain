@@ -101,8 +101,8 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 		case metadata.ContractingRequestMeta:
 			newInst, err = buildInstructionsForContractingReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
-		case metadata.ShardBlockSalaryUpdateMeta:
-			newInst, err = buildInstForShardBlockSalaryUpdate(shardID, contentStr, beaconBestState, accumulativeValues)
+		case metadata.ShardBlockSalaryRequestMeta:
+			newInst, err = buildInstForShardBlockSalaryReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
 		default:
 			continue
@@ -278,6 +278,14 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				case metadata.ContractingRequestMeta:
 					contractingInfoStr := l[3]
 					txs, err := blockgen.buildContractingRes(l[2], contractingInfoStr, producerPrivateKey)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, txs...)
+
+				case metadata.ShardBlockSalaryRequestMeta:
+					salaryReqInfoStr := l[3]
+					txs, err := blockgen.buildSalaryRes(l[2], salaryReqInfoStr, producerPrivateKey)
 					if err != nil {
 						return nil, err
 					}
