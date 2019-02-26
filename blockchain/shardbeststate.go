@@ -17,21 +17,29 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 
+type BestCrossShard struct {
+	ShardHeight map[byte]uint64 `json:"shardHeight,omitempty"`
+	//Beacon height for cross shard
+	BeaconHeight map[byte]uint64 `json:"beaconHeight,omitempty"`
+}
+
 type BestStateShard struct {
 	BestBlockHash common.Hash `json:"BestBlockHash,omitempty"` // hash of block.
 	BestBlock     *ShardBlock `json:"BestBlock,omitempty"`     // block data
 
-	BestBeaconHash common.Hash `json:"BestBeaconHash,omitempty"`
-	BeaconHeight   uint64      `json:"BeaconHeight,omitempty"`
+	BestBeaconHash        common.Hash `json:"BestBeaconHash,omitempty"`
+	BeaconHeight          uint64      `json:"BeaconHeight,omitempty"`
+	ShardID               byte        `json:"ShardID,omitempty"`
+	Epoch                 uint64      `json:"Epoch,omitempty"`
+	ShardHeight           uint64      `json:"ShardHeight,omitempty"`
+	ShardCommitteeSize    int         `json:"ShardCommitteeSize,omitempty"`
+	ShardProposerIdx      int         `json:"ShardProposerIdx,omitempty"`
+	ShardCommittee        []string    `json:"ShardCommittee,omitempty"`
+	ShardPendingValidator []string    `json:"ShardPendingValidator,omitempty"`
 
-	Epoch                 uint64   `json:"Epoch,omitempty"`
-	ShardHeight           uint64   `json:"ShardHeight,omitempty"`
-	ShardCommitteeSize    int      `json:"ShardCommitteeSize,omitempty"`
-	ShardProposerIdx      int      `json:"ShardProposerIdx,omitempty"`
-	ShardCommittee        []string `json:"ShardCommittee,omitempty"`
-	ShardPendingValidator []string `json:"ShardPendingValidator,omitempty"`
 	// Best cross shard block by height
-	BestCrossShard map[byte]uint64 `json:"BestCrossShard,omitempty"`
+	BestCrossShard BestCrossShard `json:"BestCrossShard,omitempty"`
+
 	//TODO: verify if these information are needed or not
 	NumTxns   uint64 `json:"NumTxns,omitempty"`   // The number of txns in the block.
 	TotalTxns uint64 `json:"TotalTxns,omitempty"` // The total number of txns in the chain.
@@ -79,17 +87,20 @@ func (bestStateShard *BestStateShard) Hash() common.Hash {
 
 	return common.DoubleHashH(res)
 }
-func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string) string {
-	fmt.Println("Shard BestState/ BEST STATE", bestStateShard)
+func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string, round int) string {
+	if round <= 0 {
+		round = 1
+	}
+	// fmt.Println("Shard BestState/ BEST STATE", bestStateShard)
 	found := common.IndexOfStr(pubkey, bestStateShard.ShardCommittee)
-	fmt.Println("Shard BestState/ Get Public Key Role, Found IN Shard COMMITTEES", found)
+	// fmt.Println("Shard BestState/ Get Public Key Role, Found IN Shard COMMITTEES", found)
 	if found > -1 {
-		tmpID := (bestStateShard.ShardProposerIdx + 1) % len(bestStateShard.ShardCommittee)
+		tmpID := (bestStateShard.ShardProposerIdx + round) % len(bestStateShard.ShardCommittee)
 		if found == tmpID {
-			fmt.Println("Shard BestState/ Get Public Key Role, ROLE", common.PROPOSER_ROLE)
+			fmt.Printf("Shard BestState/ Get Public Key Role, ROLE %+v , Shard %+v \n", common.PROPOSER_ROLE, bestStateShard.ShardID)
 			return common.PROPOSER_ROLE
 		} else {
-			fmt.Println("Shard BestState/ Get Public Key Role, ROLE", common.VALIDATOR_ROLE)
+			fmt.Printf("Shard BestState/ Get Public Key Role, ROLE %+v , Shard %+v \n", common.VALIDATOR_ROLE, bestStateShard.ShardID)
 			return common.VALIDATOR_ROLE
 		}
 
@@ -97,15 +108,33 @@ func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string) string {
 
 	found = common.IndexOfStr(pubkey, bestStateShard.ShardPendingValidator)
 	if found > -1 {
-		fmt.Println("Shard BestState/ Get Public Key Role, ROLE", common.PENDING_ROLE)
+		fmt.Printf("Shard BestState/ Get Public Key Role, ROLE %+v , Shard %+v \n", common.PENDING_ROLE, bestStateShard.ShardID)
 		return common.PENDING_ROLE
 	}
 
 	return common.EmptyString
 }
 
-func NewBestStateShard(netparam *Params) *BestStateShard {
-	bestStateShard := BestStateShard{}
+var bestStateShardMap map[byte]*BestStateShard
+
+func GetBestStateShard(shardID byte) *BestStateShard {
+	if bestStateShardMap == nil {
+		bestStateShardMap = make(map[byte]*BestStateShard)
+	}
+
+	if bestStateShard, ok := bestStateShardMap[shardID]; ok != true {
+		bestStateShardMap[shardID] = &BestStateShard{}
+		bestStateShardMap[shardID].ShardID = shardID
+		return bestStateShardMap[shardID]
+	} else {
+		return bestStateShard
+	}
+
+}
+
+func InitBestStateShard(shardID byte, netparam *Params) *BestStateShard {
+	bestStateShard := GetBestStateShard(shardID)
+
 	bestStateShard.BestBlockHash.SetBytes(make([]byte, 32))
 	bestStateShard.BestBeaconHash.SetBytes(make([]byte, 32))
 	bestStateShard.BestBlock = nil
@@ -113,8 +142,9 @@ func NewBestStateShard(netparam *Params) *BestStateShard {
 	bestStateShard.ShardCommitteeSize = netparam.ShardCommitteeSize
 	bestStateShard.ShardPendingValidator = []string{}
 	bestStateShard.ActiveShards = netparam.ActiveShards
-	bestStateShard.BestCrossShard = make(map[byte]uint64)
+	bestStateShard.BestCrossShard = BestCrossShard{make(map[byte]uint64), make(map[byte]uint64)}
 	bestStateShard.ShardHeight = 1
 	bestStateShard.BeaconHeight = 1
-	return &bestStateShard
+
+	return bestStateShard
 }

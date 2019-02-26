@@ -25,7 +25,7 @@ func TestConvertBigIntToBinary(t *testing.T) {
 	binary := ConvertBigIntToBinary(num, 10)
 
 	for i:=0; i<len(binary); i++{
-		fmt.Printf("%v ", binary[i])
+		fmt.Printf("%v: %v ",i,  binary[i])
 	}
 }
 
