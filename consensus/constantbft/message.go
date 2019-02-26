@@ -12,15 +12,27 @@ import (
 	"github.com/ninjadotorg/constant/wire"
 )
 
-func (self *Engine) OnBFTMsg(msg wire.Message) {
-	self.cBFTMsg <- msg
+func (engine *Engine) OnBFTMsg(msg wire.Message) {
+	if engine.started {
+		engine.cBFTMsg <- msg
+	}
 	return
 }
 
-func (self *Engine) OnInvalidBlockReceived(blockHash string, shardID byte, reason string) {
-	// leave empty for now
-	Logger.log.Error(blockHash, shardID, reason)
-	return
+func MakeMsgBFTReq(bestStateHash common.Hash, round int, userKeySet *cashec.KeySet) (wire.Message, error) {
+	msg, err := wire.MakeEmptyMessage(wire.CmdBFTReq)
+	if err != nil {
+		Logger.log.Error(err)
+		return msg, err
+	}
+	msg.(*wire.MessageBFTReq).BestStateHash = bestStateHash
+	msg.(*wire.MessageBFTReq).Round = round
+	msg.(*wire.MessageBFTReq).Pubkey = userKeySet.GetPublicKeyB58()
+	err = msg.(*wire.MessageBFTReq).SignMsg(userKeySet)
+	if err != nil {
+		return msg, err
+	}
+	return msg, nil
 }
 
 func MakeMsgBFTReady(bestStateHash common.Hash, round int, userKeySet *cashec.KeySet) (wire.Message, error) {
