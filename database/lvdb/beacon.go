@@ -11,7 +11,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
-func (db *db) StoreCrossShardNextHeight(fromShard, toShard byte, curHeight uint64, v interface{}) error {
+func (db *db) StoreCrossShardNextHeight(fromShard, toShard byte, curHeight uint64, nextHeight uint64) error {
 	//ncsh-{fromShard}-{toShard}-{curHeight} = {nextHeight, nextHash}
 	key := append(nextCrossShardKeyPrefix, fromShard)
 	key = append(key, []byte("-")...)
@@ -20,11 +20,11 @@ func (db *db) StoreCrossShardNextHeight(fromShard, toShard byte, curHeight uint6
 	curHeightBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(curHeightBytes, curHeight)
 	key = append(key, curHeightBytes...)
-	val, err := json.Marshal(v)
-	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
-	}
-	if err := db.Put(key, val); err != nil {
+
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, nextHeight)
+
+	if err := db.Put(key, buf); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "Cannot store cross shard next height"))
 	}
 
@@ -40,7 +40,7 @@ func (db *db) HasCrossShardNextHeight(key []byte) (bool, error) {
 	}
 }
 
-func (db *db) FetchCrossShardNextHeight(fromShard, toShard byte, curHeight uint64) ([]byte, error) {
+func (db *db) FetchCrossShardNextHeight(fromShard, toShard byte, curHeight uint64) (uint64, error) {
 	//ncsh-{fromShard}-{toShard}-{curHeight} = {nextHeight, nextHash}
 	key := append(nextCrossShardKeyPrefix, fromShard)
 	key = append(key, []byte("-")...)
@@ -51,13 +51,15 @@ func (db *db) FetchCrossShardNextHeight(fromShard, toShard byte, curHeight uint6
 	key = append(key, curHeightBytes...)
 
 	if _, err := db.HasCrossShardNextHeight(key); err != nil {
-		return []byte{}, err
+		return 0, err
 	}
 	info, err := db.Get(key)
 	if err != nil {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		return 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
-	return info, nil
+	var nextHeight uint64
+	binary.Read(bytes.NewReader(info[:8]), binary.LittleEndian, &nextHeight)
+	return nextHeight, nil
 }
 
 func (db *db) StoreBeaconBlock(v interface{}) error {

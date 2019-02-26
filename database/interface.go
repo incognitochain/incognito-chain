@@ -44,8 +44,8 @@ type DatabaseInterface interface {
 	DeleteBeaconBlock(*common.Hash, uint64) error
 
 	//Crossshard
-	StoreCrossShardNextHeight(byte, byte, uint64, interface{}) error
-	FetchCrossShardNextHeight(byte, byte, uint64) ([]byte, error)
+	StoreCrossShardNextHeight(byte, byte, uint64, uint64) error
+	FetchCrossShardNextHeight(byte, byte, uint64) (uint64, error)
 
 	// Block index
 	StoreShardBlockIndex(*common.Hash, uint64, byte) error
