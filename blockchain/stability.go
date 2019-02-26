@@ -83,6 +83,9 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 		case metadata.LoanResponseMeta:
 			newInst, err = buildInstructionsForLoanResponse(contentStr)
 
+		case metadata.LoanWithdrawMeta:
+			newInst, err = buildInstructionsForLoanWithdraw(contentStr)
+
 		case metadata.LoanPaymentMeta:
 			newInst, err = buildInstructionsForLoanPayment(contentStr)
 

@@ -10,10 +10,10 @@ import (
 func (db *db) GetLoanWithdrawed(loanID []byte) (bool, error) {
 	keyLoanWithdrawed := string(loanWithdrawedPrefix) + string(loanID)
 	value, err := db.Get([]byte(keyLoanWithdrawed))
-	return value > 0, err
+	return value[0] > 0, err
 }
 
-func (db *db) StoreLoanWithdrawed(loanID []byte) (bool, error) {
+func (db *db) StoreLoanWithdrawed(loanID []byte) error {
 	keyLoanWithdrawed := string(loanWithdrawedPrefix) + string(loanID)
 	valueLoanWithdrawed := []byte{1}
 	if err := db.Put([]byte(keyLoanWithdrawed), valueLoanWithdrawed); err != nil {
