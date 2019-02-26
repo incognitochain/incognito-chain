@@ -51,6 +51,31 @@ func NewSealedLv1DCBVoteProposalMetadata(
 	}
 }
 
+func NewSealedLv1VoteProposalMetadataFromRPC(data map[string]interface{}) (Metadata, error) {
+	boardType := data["BoardType"].(BoardType)
+	sealLv1Data := data["SealLv1Data"].([]byte)
+	paymentAddresses := data["PaymentAddresses"].([]privacy.PaymentAddress)
+	lv2TxID := data["Lv2TxID"].(common.Hash)
+	lv3TxID := data["Lv3TxID"].(common.Hash)
+	var meta Metadata
+	if boardType == DCBBoard {
+		meta = NewSealedLv1DCBVoteProposalMetadata(
+			sealLv1Data,
+			paymentAddresses,
+			lv2TxID,
+			lv3TxID,
+		)
+	} else {
+		meta = NewSealedLv1GOVVoteProposalMetadata(
+			sealLv1Data,
+			paymentAddresses,
+			lv2TxID,
+			lv3TxID,
+		)
+	}
+	return meta, nil
+}
+
 func (sealedLv1DCBVoteProposalMetadata *SealedLv1DCBVoteProposalMetadata) Hash() *common.Hash {
 	record := string(sealedLv1DCBVoteProposalMetadata.SealedLv1VoteProposalMetadata.ToBytes())
 

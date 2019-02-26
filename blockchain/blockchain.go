@@ -10,8 +10,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ninjadotorg/constant/metadata/frombeaconins"
-
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/cashec"
