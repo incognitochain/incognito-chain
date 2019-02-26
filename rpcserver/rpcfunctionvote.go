@@ -8,11 +8,9 @@ import (
 
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
-	"github.com/ninjadotorg/constant/transaction"
 )
 
 func iPlusPlus(x *int) int {
@@ -23,7 +21,7 @@ func iPlusPlus(x *int) int {
 func (rpcServer RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	paymentAddressData := arrayParams[0].(string)
-	paymentAddress, err := rpcServer.GetPaymentAddressFromSenderKeyParams(paymentAddressData)
+	paymentAddress, err := metadata.GetPaymentAddressFromSenderKeyParams(paymentAddressData)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -67,11 +65,11 @@ func (rpcServer RpcServer) handleGetAmountVoteToken(params interface{}, closeCha
 func (rpcServer RpcServer) handleSetAmountVoteToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	paymentAddressSenderKey := arrayParams[0].(string)
-	paymentAddress, err1 := rpcServer.GetPaymentAddressFromSenderKeyParams(paymentAddressSenderKey)
+	paymentAddress, err1 := metadata.GetPaymentAddressFromSenderKeyParams(paymentAddressSenderKey)
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
-	p2, _ := rpcServer.GetPaymentAddressFromSenderKeyParams(string(paymentAddressSenderKey))
+	p2, _ := metadata.GetPaymentAddressFromSenderKeyParams(string(paymentAddressSenderKey))
 	_ = p2
 	db := *rpcServer.config.Database
 
@@ -118,168 +116,33 @@ func (rpcServer RpcServer) handleGetEncryptionLastBlockHeightFlag(params interfa
 	return jsonresult.GetEncryptionLastBlockHeightResult{blockHeight}, nil
 }
 
-func CreateSealLv3Data(data *metadata.VoteProposalData, pubKeys [][]byte) []byte {
-	SealLv3 := common.Encrypt(common.Encrypt(common.Encrypt(data.ToBytes(), pubKeys[0]), pubKeys[1]), pubKeys[2])
-	return SealLv3
-}
-
-func (rpcServer RpcServer) buildRawSealLv3VoteProposalTransaction(
-	params interface{},
-) (*transaction.Tx, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	index := len(arrayParams) - 3
-
-	boardType := database.BoardTypeDB(arrayParams[iPlusPlus(&index)].([]byte)[0])
-	voteProposalData := metadata.NewVoteProposalDataFromJson(arrayParams[iPlusPlus(&index)])
-
-	threeSenderKey := common.SliceInterfaceToSliceString(arrayParams[iPlusPlus(&index)].([]interface{}))
-	pubKeys, err := rpcServer.ListPubKeyFromListSenderKey(threeSenderKey)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	threePaymentAddress := rpcServer.ListPaymentAddressFromListSenderKey(threeSenderKey)
-
-	Seal3Data := CreateSealLv3Data(voteProposalData, pubKeys)
-	meta := NewSealedLv3VoteProposalMetadata(boardType, Seal3Data, threePaymentAddress)
-
-	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
-	tx, err1 := rpcServer.buildRawTransaction(params, meta)
-	if err1 != nil {
-		return tx, err1
-	}
-	return tx, nil
-}
-
-func (rpcServer RpcServer) ListPaymentAddressFromListSenderKey(listSenderKey []string) []privacy.PaymentAddress {
-	paymentAddresses := make([]privacy.PaymentAddress, 0)
-	for i := 0; i < 3; i++ {
-		new, _ := rpcServer.GetPaymentAddressFromSenderKeyParams(listSenderKey[i])
-		paymentAddresses = append(paymentAddresses, *new)
-	}
-	return paymentAddresses
-}
-
-func (rpcServer RpcServer) ListPubKeyFromListSenderKey(threePaymentAddress []string) ([][]byte, error) {
-	pubKeys := make([][]byte, len(threePaymentAddress))
-	for i := 0; i < len(threePaymentAddress); i++ {
-		paymentAddress, err := rpcServer.GetPaymentAddressFromSenderKeyParams(threePaymentAddress[i])
-		if err != nil {
-			return nil, err
-		}
-		pubKeys[i] = paymentAddress.Pk
-	}
-	return pubKeys, nil
-}
-
-func NewSealedLv3VoteProposalMetadata(boardType database.BoardTypeDB, Seal3Data []byte, paymentAddresses []privacy.PaymentAddress) metadata.Metadata {
-	var meta metadata.Metadata
-	if boardType == metadata.DCBBoard.BoardTypeDB() {
-		meta = metadata.NewSealedLv3DCBVoteProposalMetadata(Seal3Data, paymentAddresses)
-	} else {
-		meta = metadata.NewSealedLv3GOVVoteProposalMetadata(Seal3Data, paymentAddresses)
-	}
-	return meta
-}
-
 func (rpcServer RpcServer) handleCreateRawSealLv3VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	tx, err := rpcServer.buildRawSealLv3VoteProposalTransaction(params)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, err
-	}
-
-	byteArrays, err1 := json.Marshal(tx)
-	if err1 != nil {
-		Logger.log.Error(err1)
-		return nil, NewRPCError(ErrUnexpected, err1)
-	}
-	result := jsonresult.CreateTransactionResult{
-		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
-	}
-	return result, nil
+	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
+	return rpcServer.createRawTxWithMetadata(
+		params,
+		closeChan,
+		metadata.NewSealedLv3VoteProposalMetadataFromRPC,
+	)
 }
 
 //create lv3 vote by 3 layer encrypt
 func (rpcServer RpcServer) handleCreateAndSendSealLv3VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := rpcServer.handleCreateRawSealLv3VoteProposalTransaction(params, closeChan)
-	if err != nil {
-		return nil, err
-	}
-	tx := data.(jsonresult.CreateTransactionResult)
-	base58CheckData := tx.Base58CheckData
-	if err != nil {
-		return nil, err
-	}
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, base58CheckData)
-	txId, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
-	return txId, err
-}
-
-func (rpcServer RpcServer) buildRawSealLv2VoteProposalTransaction(
-	params interface{},
-) (*transaction.Tx, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	index := len(arrayParams) - 3
-
-	boardType := database.BoardTypeDB(arrayParams[iPlusPlus(&index)].([]byte)[0])
-
-	firstPrivateKey := []byte(arrayParams[iPlusPlus(&index)].(string))
-
-	lv3txID, err := common.NewHashFromStr(arrayParams[iPlusPlus(&index)].(string))
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	_, _, _, lv3Tx, err := rpcServer.config.BlockChain.GetTransactionByHash(lv3txID)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	SealLv3Data, err := GetSealLv3Data(lv3Tx)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	pubKeys := GetLockerPaymentAddress(lv3Tx)
-	Seal2Data := common.Decrypt(SealLv3Data, firstPrivateKey)
-
-	meta := NewSealedLv2VoteProposalMetadata(
-		database.BoardTypeDB(boardType),
-		Seal2Data,
-		pubKeys,
-		*lv3txID,
+	return rpcServer.createAndSendTxWithMetadata(
+		params,
+		closeChan,
+		RpcServer.handleCreateRawSealLv3VoteProposalTransaction,
+		RpcServer.handleSendRawTransaction,
 	)
-	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
-	tx, err1 := rpcServer.buildRawTransaction(params, meta)
-	return tx, err1
 }
 
-func NewSealedLv2VoteProposalMetadata(boardType database.BoardTypeDB, Seal2Data []byte, paymentAddresses []privacy.PaymentAddress, pointer common.Hash) metadata.Metadata {
-	var meta metadata.Metadata
-	if boardType == metadata.DCBBoard.BoardTypeDB() {
-		meta = metadata.NewSealedLv2DCBVoteProposalMetadata(
-			Seal2Data,
-			paymentAddresses,
-			pointer,
-		)
-	} else {
-		meta = metadata.NewSealedLv2GOVVoteProposalMetadata(
-			Seal2Data,
-			paymentAddresses,
-			pointer,
-		)
-	}
-	return meta
-}
-
-func GetLockerPaymentAddress(tx metadata.Transaction) []privacy.PaymentAddress {
+func GetLockerPaymentAddresses(tx metadata.Transaction) []privacy.PaymentAddress {
 	meta := tx.GetMetadata()
 	if meta.GetType() == metadata.SealedLv3DCBVoteProposalMeta {
 		newMeta := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
-		return newMeta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddress
+		return newMeta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddresses
 	} else {
 		newMeta := meta.(*metadata.SealedLv3GOVVoteProposalMetadata)
-		return newMeta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddress
+		return newMeta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddresses
 	}
 }
 
@@ -295,58 +158,83 @@ func GetSealLv3Data(tx metadata.Transaction) ([]byte, error) {
 	return nil, errors.New("wrong type")
 }
 
-func (rpcServer RpcServer) handleCreateRawSealLv2VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	tx, err := rpcServer.buildRawSealLv2VoteProposalTransaction(params)
+func (rpcServer *RpcServer) buildParamsSealLv2VoteProposal(params interface{}) (interface{}, *RPCError) {
+	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
+	arrayParams := common.InterfaceSlice(params)
+	data := arrayParams[len(arrayParams)-1].(map[string]interface{})
+	newData := make(map[string]interface{})
+
+	lv3TxID, err := common.NewHashFromStr(data["Lv3TxID"].(string))
+	firstPrivateKey := []byte(data["FirstPrivateKey"].(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	_, _, _, lv3Tx, err := rpcServer.config.BlockChain.GetTransactionByHash(lv3TxID)
 	if err != nil {
 		Logger.log.Error(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	SealLv3Data, err := GetSealLv3Data(lv3Tx)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	paymentAddresses := GetLockerPaymentAddresses(lv3Tx)
+	SealLv2Data := common.Decrypt(SealLv3Data, firstPrivateKey)
+
+	newData["SealLv2Data"] = SealLv2Data
+	newData["PaymentAddresses"] = paymentAddresses
+	newData["Lv3TxID"] = *lv3TxID
+	arrayParams[len(arrayParams)-1] = newData
+	return arrayParams, nil
+
+}
+
+//Input metadataParam: {
+//	Lv3TxID: string,
+//	FirstPrivateKey: string,
+//}
+func (rpcServer RpcServer) handleCreateRawSealLv2VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	params, err := rpcServer.buildParamsSealLv2VoteProposal(params)
+	if err != nil {
 		return nil, err
 	}
 
-	byteArrays, err1 := json.Marshal(tx)
-	if err1 != nil {
-		Logger.log.Error(err1)
-		return nil, NewRPCError(ErrUnexpected, err1)
-	}
-	result := jsonresult.CreateTransactionResult{
-		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
-	}
-	return result, nil
+	return rpcServer.createRawTxWithMetadata(
+		params,
+		closeChan,
+		metadata.NewSealedLv3VoteProposalMetadataFromRPC,
+	)
 }
 
 //create lv2 vote by decrypt A layer
 func (rpcServer RpcServer) handleCreateAndSendSealLv2VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := rpcServer.handleCreateRawSealLv2VoteProposalTransaction(params, closeChan)
-	if err != nil {
-		return nil, err
-	}
-	tx := data.(jsonresult.CreateTransactionResult)
-	base58CheckData := tx.Base58CheckData
-	if err != nil {
-		return nil, err
-	}
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, base58CheckData)
-	txId, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
-	return txId, err
+	return rpcServer.createAndSendTxWithMetadata(
+		params,
+		closeChan,
+		RpcServer.handleCreateRawSealLv2VoteProposalTransaction,
+		RpcServer.handleSendRawTransaction,
+	)
 }
 
-func (rpcServer RpcServer) buildRawSealLv1VoteProposalTransaction(
+func (rpcServer RpcServer) buildParamsSealLv1VoteProposal(
 	params interface{},
-) (*transaction.Tx, *RPCError) {
+) (interface{}, *RPCError) {
+	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
 	arrayParams := common.InterfaceSlice(params)
-	index := len(arrayParams) - 4
+	NParams := len(arrayParams)
+	data := arrayParams[NParams-1].(map[string]interface{})
+	newData := make(map[string]interface{})
 
-	boardType := database.BoardTypeDB(arrayParams[iPlusPlus(&index)].([]byte)[0])
+	boardType := metadata.NewBoardTypeFromString(data["BoardType"].(string))
 
-	secondPrivateKey := []byte(arrayParams[iPlusPlus(&index)].(string))
+	secondPrivateKey := []byte(data["SecondPrivateKey"].(string))
 
-	lv3TxID, err1 := common.NewHashFromStr(arrayParams[iPlusPlus(&index)].(string))
+	lv3TxID, err1 := common.NewHashFromStr(data["Lv3TxID"].(string))
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 
-	lv2TxID, err1 := common.NewHashFromStr(arrayParams[iPlusPlus(&index)].(string))
+	lv2TxID, err1 := common.NewHashFromStr(data["Lv2TxID"].(string))
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
@@ -357,40 +245,17 @@ func (rpcServer RpcServer) buildRawSealLv1VoteProposalTransaction(
 	}
 
 	_, _, _, lv3tx, _ := rpcServer.config.BlockChain.GetTransactionByHash(lv3TxID)
-	pubKeys := GetLockerPaymentAddress(lv3tx)
+	paymentAddresses := GetLockerPaymentAddresses(lv3tx)
+	sealLv1Data := common.Decrypt(SealLv2Data, secondPrivateKey)
 
-	Seal1Data := common.Decrypt(SealLv2Data, secondPrivateKey)
+	newData["BoardType"] = boardType
+	newData["SealLv1Data"] = sealLv1Data
+	newData["PaymentAddresses"] = paymentAddresses
+	newData["Lv2TxID"] = lv2TxID
+	newData["Lv3TxID"] = lv3TxID
+	arrayParams[NParams-1] = newData
 
-	meta := NewSealedLv1VoteProposalMetadata(
-		database.BoardTypeDB(boardType),
-		Seal1Data,
-		pubKeys,
-		*lv2TxID,
-		*lv3TxID,
-	)
-	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
-	tx, err := rpcServer.buildRawTransaction(params, meta)
-	return tx, err
-}
-
-func NewSealedLv1VoteProposalMetadata(boardType database.BoardTypeDB, sealLv1Data []byte, listPaymentAddress []privacy.PaymentAddress, lv2TxID common.Hash, lv3TxID common.Hash) metadata.Metadata {
-	var meta metadata.Metadata
-	if boardType == metadata.DCBBoard.BoardTypeDB() {
-		meta = metadata.NewSealedLv1DCBVoteProposalMetadata(
-			sealLv1Data,
-			listPaymentAddress,
-			lv2TxID,
-			lv3TxID,
-		)
-	} else {
-		meta = metadata.NewSealedLv1GOVVoteProposalMetadata(
-			sealLv1Data,
-			listPaymentAddress,
-			lv2TxID,
-			lv3TxID,
-		)
-	}
-	return meta
+	return arrayParams, nil
 }
 
 func GetSealLv2Data(lv2tx metadata.Transaction) ([]byte, error) {
@@ -418,136 +283,95 @@ func GetSealLv1Data(lv1tx metadata.Transaction) ([]byte, error) {
 }
 
 func (rpcServer RpcServer) handleCreateRawSealLv1VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	tx, err := rpcServer.buildRawSealLv1VoteProposalTransaction(params)
+	params, err := rpcServer.buildParamsSealLv1VoteProposal(params)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-
-	byteArrays, err1 := json.Marshal(tx)
-	if err1 != nil {
-		Logger.log.Error(err1)
-		return nil, NewRPCError(ErrUnexpected, err1)
-	}
-	result := jsonresult.CreateTransactionResult{
-		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
-	}
-	return result, nil
+	return rpcServer.createRawTxWithMetadata(
+		params,
+		closeChan,
+		metadata.NewSealedLv1VoteProposalMetadataFromRPC,
+	)
 }
 
 func (rpcServer RpcServer) handleCreateAndSendSealLv1VoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := rpcServer.handleCreateRawSealLv1VoteProposalTransaction(params, closeChan)
-	if err != nil {
-		return nil, err
-	}
-	tx := data.(jsonresult.CreateTransactionResult)
-	base58CheckData := tx.Base58CheckData
-	if err != nil {
-		return nil, err
-	}
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, base58CheckData)
-	txId, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
-	return txId, err
+	return rpcServer.createAndSendTxWithMetadata(
+		params,
+		closeChan,
+		RpcServer.handleCreateRawSealLv1VoteProposalTransaction,
+		RpcServer.handleSendRawTransaction,
+	)
 }
 
-func (rpcServer RpcServer) buildRawNormalVoteProposalTransactionFromOwner(
+func (rpcServer RpcServer) buildParamsNormalVoteProposalFromOwner(
 	params interface{},
-) (*transaction.Tx, *RPCError) {
+) (interface{}, *RPCError) {
+	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
 	arrayParams := common.InterfaceSlice(params)
-	index := len(arrayParams) - 3
+	NParams := len(arrayParams)
+	data := arrayParams[len(arrayParams)-1].(map[string]interface{})
+	newData := make(map[string]interface{})
 
-	boardType := database.BoardTypeDB(arrayParams[iPlusPlus(&index)].([]byte)[0])
+	boardType := metadata.NewBoardTypeFromString(data["BoardType"].(string))
 
-	lv3TxID, err1 := common.NewHashFromStr(arrayParams[iPlusPlus(&index)].(string))
+	lv3TxID, err1 := common.NewHashFromStr(data["Lv3TxID"].(string))
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 
 	_, _, _, lv3tx, _ := rpcServer.config.BlockChain.GetTransactionByHash(lv3TxID)
-	paymentAddresses := GetLockerPaymentAddress(lv3tx)
+	paymentAddresses := GetLockerPaymentAddresses(lv3tx)
 
-	voteProposalData := metadata.NewVoteProposalDataFromJson(arrayParams[iPlusPlus(&index)])
+	newData["BoardType"] = boardType
+	newData["VoteProposalData"] = data["VoteProposalData"]
+	newData["PaymentAddresses"] = paymentAddresses
+	newData["Lv3TxID"] = lv3TxID
 
-	meta := NewNormalVoteProposalFromOwnerMetadata(
-		database.BoardTypeDB(boardType),
-		voteProposalData,
-		paymentAddresses,
-		*lv3TxID,
-	)
-	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
-	tx, err := rpcServer.buildRawTransaction(params, meta)
-	return tx, err
-}
-
-func NewNormalVoteProposalFromOwnerMetadata(boardType database.BoardTypeDB, voteProposalData *metadata.VoteProposalData, listPaymentAddress []privacy.PaymentAddress, lv3TxID common.Hash) metadata.Metadata {
-	var meta metadata.Metadata
-	if boardType == metadata.DCBBoard.BoardTypeDB() {
-		meta = metadata.NewNormalDCBVoteProposalFromOwnerMetadata(
-			*voteProposalData,
-			listPaymentAddress,
-			lv3TxID,
-		)
-	} else {
-		meta = metadata.NewNormalGOVVoteProposalFromOwnerMetadata(
-			*voteProposalData,
-			listPaymentAddress,
-			lv3TxID,
-		)
-	}
-	return meta
+	arrayParams[NParams-1] = newData
+	return arrayParams, nil
 }
 
 func (rpcServer RpcServer) handleCreateRawNormalVoteProposalTransactionFromOwner(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	tx, err1 := rpcServer.buildRawNormalVoteProposalTransactionFromOwner(params)
-	if err1 != nil {
-		Logger.log.Error(err1)
-		return nil, NewRPCError(ErrUnexpected, err1)
-	}
-
-	byteArrays, err := json.Marshal(tx)
+	params, err := rpcServer.buildParamsNormalVoteProposalFromOwner(params)
 	if err != nil {
-		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	result := jsonresult.CreateTransactionResult{
-		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
-	}
-	return result, nil
+	return rpcServer.createRawTxWithMetadata(
+		params,
+		closeChan,
+		metadata.NewNormalVoteProposalFromOwnerMetadataFromRPC,
+	)
 }
 
 func (rpcServer RpcServer) handleCreateAndSendNormalVoteProposalFromOwnerTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := rpcServer.handleCreateRawNormalVoteProposalTransactionFromOwner(params, closeChan)
-	if err != nil {
-		return nil, err
-	}
-	tx := data.(jsonresult.CreateTransactionResult)
-	base58CheckData := tx.Base58CheckData
-	if err != nil {
-		return nil, err
-	}
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, base58CheckData)
-	txId, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
-	return txId, err
+	return rpcServer.createAndSendTxWithMetadata(
+		params,
+		closeChan,
+		RpcServer.handleCreateRawNormalVoteProposalTransactionFromOwner,
+		RpcServer.handleSendRawTransaction,
+	)
 }
 
-func (rpcServer RpcServer) buildRawNormalVoteProposalTransactionFromSealer(
+func (rpcServer RpcServer) buildParamsNormalVoteProposalFromSealer(
 	params interface{},
-) (*transaction.Tx, *RPCError) {
+) (interface{}, *RPCError) {
+	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
 	arrayParams := common.InterfaceSlice(params)
-	index := len(arrayParams) - 4
+	NParams := len(arrayParams)
+	data := arrayParams[len(arrayParams)-1].(map[string]interface{})
+	newData := make(map[string]interface{})
 
-	boardType := database.BoardTypeDB(arrayParams[iPlusPlus(&index)].([]byte)[0])
+	boardType := metadata.NewBoardTypeFromString(data["BoardType"].(string))
 
-	lv3TxID, err1 := common.NewHashFromStr(arrayParams[iPlusPlus(&index)].(string))
+	lv3TxID, err1 := common.NewHashFromStr(data["Lv3TxID"].(string))
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
+	_, _, _, lv3tx, _ := rpcServer.config.BlockChain.GetTransactionByHash(lv3TxID)
+	paymentAddresses := GetLockerPaymentAddresses(lv3tx)
 
-	lv1TxID, err1 := common.NewHashFromStr(arrayParams[iPlusPlus(&index)].(string))
+	lv1TxID, err1 := common.NewHashFromStr(data["Lv1TxID"].(string))
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
@@ -557,77 +381,42 @@ func (rpcServer RpcServer) buildRawNormalVoteProposalTransactionFromSealer(
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 
-	_, _, _, lv3tx, _ := rpcServer.config.BlockChain.GetTransactionByHash(lv3TxID)
-	paymentAddresses := GetLockerPaymentAddress(lv3tx)
-
-	thirdPrivateKey := []byte(arrayParams[iPlusPlus(&index)].(string))
+	thirdPrivateKey := []byte(data["ThirdPrivateKey"].(string))
 
 	normalVoteProposalData := common.Decrypt(SealLv1Data, thirdPrivateKey)
-	voteProposalData := metadata.NewVoteProposalDataFromBytes(normalVoteProposalData)
-
-	meta := NewNormalVoteProposalFromSealerMetadata(
-		database.BoardTypeDB(boardType),
-		*voteProposalData,
-		paymentAddresses,
-		*lv1TxID,
-		*lv3TxID,
-	)
-	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
-	tx, err := rpcServer.buildRawTransaction(params, meta)
-	return tx, err
-}
-
-func NewNormalVoteProposalFromSealerMetadata(boardType database.BoardTypeDB, voteProposalData metadata.VoteProposalData, paymentAddresses []privacy.PaymentAddress, lv1TxID common.Hash, lv3TxID common.Hash) metadata.Metadata {
-	var meta metadata.Metadata
-	if boardType == metadata.DCBBoard.BoardTypeDB() {
-		meta = metadata.NewNormalDCBVoteProposalFromSealerMetadata(
-			voteProposalData,
-			paymentAddresses,
-			lv1TxID,
-			lv3TxID,
-		)
-	} else {
-		meta = metadata.NewNormalGOVVoteProposalFromSealerMetadata(
-			voteProposalData,
-			paymentAddresses,
-			lv1TxID,
-			lv3TxID,
-		)
-	}
-	return meta
-}
-
-func (rpcServer RpcServer) handleCreateRawNormalVoteProposalTransactionFromSealer(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	tx, err := rpcServer.buildRawNormalVoteProposalTransactionFromSealer(params)
+	voteProposalDataTemp := metadata.NewVoteProposalDataFromBytes(normalVoteProposalData)
+	voteProposalDataByte, err := json.Marshal(voteProposalDataTemp)
 	if err != nil {
-		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	byteArrays, err1 := json.Marshal(tx)
-	if err1 != nil {
-		Logger.log.Error(err1)
-		return nil, NewRPCError(ErrUnexpected, err1)
+	newData["BoardType"] = boardType
+	newData["VoteProposalData"] = voteProposalDataByte
+	newData["PaymentAddresses"] = paymentAddresses
+	newData["Lv1TxID"] = lv1TxID
+	newData["Lv3TxID"] = lv3TxID
+
+	arrayParams[NParams-1] = newData
+	return arrayParams, nil
+}
+
+func (rpcServer RpcServer) handleCreateRawNormalVoteProposalTransactionFromSealer(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	params, err := rpcServer.buildParamsNormalVoteProposalFromSealer(params)
+	if err != nil {
+		return nil, err
 	}
-	result := jsonresult.CreateTransactionResult{
-		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
-	}
-	return result, nil
+	return rpcServer.createRawTxWithMetadata(
+		params,
+		closeChan,
+		metadata.NewNormalVoteProposalFromSealerMetadataFromRPC,
+	)
 }
 
 func (rpcServer RpcServer) handleCreateAndSendNormalVoteProposalFromSealerTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := rpcServer.handleCreateRawNormalVoteProposalTransactionFromSealer(params, closeChan)
-	if err != nil {
-		return nil, err
-	}
-	tx := data.(jsonresult.CreateTransactionResult)
-	base58CheckData := tx.Base58CheckData
-	if err != nil {
-		return nil, err
-	}
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, base58CheckData)
-	txId, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
-	return txId, err
+	return rpcServer.createAndSendTxWithMetadata(
+		params,
+		closeChan,
+		RpcServer.handleCreateRawNormalVoteProposalTransactionFromSealer,
+		RpcServer.handleSendRawTransaction,
+	)
 }
