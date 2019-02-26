@@ -3,6 +3,7 @@ package metadata
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/ninjadotorg/constant/wallet"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
@@ -50,6 +51,13 @@ func NewVoteDCBBoardMetadata(candidatePaymentAddress privacy.PaymentAddress) *Vo
 		VoteBoardMetadata: *NewVoteBoardMetadata(candidatePaymentAddress),
 		MetadataBase:      *NewMetadataBase(VoteDCBBoardMeta),
 	}
+}
+
+func NewVoteDCBBoardMetadataFromRPC(data map[string]interface{}) (Metadata, error) {
+	paymentAddress := data["PaymentAddress"].(string)
+	account, _ := wallet.Base58CheckDeserialize(paymentAddress)
+	meta := NewVoteDCBBoardMetadata(account.KeySet.PaymentAddress)
+	return meta, nil
 }
 
 func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
