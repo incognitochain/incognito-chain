@@ -353,7 +353,6 @@ func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 	tx := transaction.TxCustomToken{}
-	//tx := transaction.TxCustomToken{}
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {

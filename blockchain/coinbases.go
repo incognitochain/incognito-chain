@@ -8,8 +8,6 @@ package blockchain
 // ) ([]metadata.Transaction, error) {
 
 // 	prevBlock := blockgen.chain.BestState[shardID].BestBlock
-// 	dcbHelper := DCBConstitutionHelper{}
-// 	govHelper := GOVConstitutionHelper{}
 // 	coinbases := []metadata.Transaction{salaryTx}
 
 // 	for _, tx := range txGroups.unlockTxs {
