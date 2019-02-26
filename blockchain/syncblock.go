@@ -81,12 +81,6 @@ func (blockchain *BlockChain) StartSyncBlk() {
 					} else {
 						if peerState.Beacon.Height < RCS.ClosestBeaconState.Height && peerState.Beacon.Height > blockchain.BestState.Beacon.BeaconHeight {
 							RCS.ClosestBeaconState = *peerState.Beacon
-
-							fmt.Println()
-							fmt.Println()
-							fmt.Println("aaaaa", RCS.ClosestBeaconState)
-							fmt.Println()
-							fmt.Println()
 						}
 					}
 					for shardID := range blockchain.syncStatus.Shards {
