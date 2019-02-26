@@ -100,9 +100,6 @@ func (shardBlock *ShardBlock) AddTransaction(tx metadata.Transaction) error {
 func (blk *ShardBlock) CreateShardToBeaconBlock(bcr metadata.BlockchainRetriever) *ShardToBeaconBlock {
 	block := ShardToBeaconBlock{}
 	block.AggregatedSig = blk.AggregatedSig
-	// block.ValidatorsIdx = make([][]int, 2)
-	// block.ValidatorsIdx[0] = append(block.ValidatorsIdx[0], blk.ValidatorsIdx[0]...)
-	// block.ValidatorsIdx[1] = append(block.ValidatorsIdx[1], blk.ValidatorsIdx[1]...)
 	block.R = blk.R
 	block.ProducerSig = blk.ProducerSig
 	block.Header = blk.Header
@@ -144,7 +141,6 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 2")
 	merklePathShard, merkleShardRoot := GetMerklePathCrossShard(block.Body.Transactions, shardID)
 	fmt.Println("CreateCrossShardBlock/Shard Tx Root", merkleShardRoot)
-	//TODO: @merman check again
 	if merkleShardRoot != block.Header.ShardTxRoot {
 		fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 2 ERROR")
 		return crossShard, NewBlockChainError(CrossShardBlockError, errors.New("MerkleRootShard mismatch"))

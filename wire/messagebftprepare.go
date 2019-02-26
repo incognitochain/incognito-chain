@@ -2,8 +2,9 @@ package wire
 
 import (
 	"encoding/json"
+	"fmt"
 
-	"github.com/libp2p/go-libp2p-peer"
+	peer "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 )
@@ -13,10 +14,11 @@ const (
 )
 
 type MessageBFTPrepare struct {
-	BlkHash string
-	Ri      []byte
-	Pubkey  string
-	MsgSig  string
+	BlkHash    common.Hash
+	Ri         []byte
+	Pubkey     string
+	ContentSig string
+	Timestamp  int64
 }
 
 func (msg *MessageBFTPrepare) Hash() string {
@@ -49,10 +51,23 @@ func (msg *MessageBFTPrepare) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (msg *MessageBFTPrepare) SignMsg(_ *cashec.KeySet) error {
-	return nil
+func (msg *MessageBFTPrepare) SignMsg(keySet *cashec.KeySet) error {
+	dataBytes := []byte{}
+	dataBytes = append(dataBytes, msg.BlkHash.GetBytes()...)
+	dataBytes = append(dataBytes, []byte(msg.Pubkey)...)
+	dataBytes = append(dataBytes, msg.Ri...)
+	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.Timestamp))...)
+	var err error
+	msg.ContentSig, err = keySet.SignDataB58(dataBytes)
+	return err
 }
 
 func (msg *MessageBFTPrepare) VerifyMsgSanity() error {
-	return nil
+	dataBytes := []byte{}
+	dataBytes = append(dataBytes, msg.BlkHash.GetBytes()...)
+	dataBytes = append(dataBytes, []byte(msg.Pubkey)...)
+	dataBytes = append(dataBytes, msg.Ri...)
+	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.Timestamp))...)
+	err := cashec.ValidateDataB58(msg.Pubkey, msg.ContentSig, dataBytes)
+	return err
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
+	cache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
 
@@ -46,10 +47,13 @@ type BlockChain struct {
 		Shards map[byte]struct{}
 		sync.Mutex
 
-		CurrentlySyncShardBlk         sync.Map
-		CurrentlySyncBeaconBlk        sync.Map
-		CurrentlySyncCrossShardBlk    sync.Map
-		CurrentlySyncShardToBeaconBlk sync.Map
+		CurrentlySyncShardBlkByHash           map[byte]*cache.Cache
+		CurrentlySyncShardBlkByHeight         map[byte]*cache.Cache
+		CurrentlySyncBeaconBlkByHash          *cache.Cache
+		CurrentlySyncBeaconBlkByHeight        *cache.Cache
+		CurrentlySyncShardToBeaconBlkByHash   map[byte]*cache.Cache
+		CurrentlySyncShardToBeaconBlkByHeight map[byte]*cache.Cache
+		CurrentlySyncCrossShardBlkByHash      map[byte]*cache.Cache
 
 		PeersState     map[libp2p.ID]*peerState
 		PeersStateLock sync.Mutex

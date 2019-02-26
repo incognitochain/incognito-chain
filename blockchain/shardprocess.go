@@ -73,7 +73,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 
 func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	blockHash := block.Hash().String()
-	Logger.log.Debugf("Process store block %+v", blockHash)
+	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 
 	if err := blockchain.StoreShardBlock(block); err != nil {
 		return err
@@ -95,6 +95,7 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	}
 
 	// TODO: @merman store output coin?
+	fmt.Println("ProcessStoreShardBlock/CrossOutputCoin	", block.Body.CrossOutputCoin)
 	if err := blockchain.CreateAndSaveTxViewPointFromBlock(block); err != nil {
 		return err
 	}
@@ -236,7 +237,7 @@ DO NOT USE THIS with GENESIS BLOCK
 */
 func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID byte) error {
 	//verify producer
-	producerPosition := (blockchain.BestState.Shard[shardID].ShardProposerIdx + 1) % len(blockchain.BestState.Shard[shardID].ShardCommittee)
+	producerPosition := (blockchain.BestState.Shard[shardID].ShardProposerIdx + block.Header.Round) % len(blockchain.BestState.Shard[shardID].ShardCommittee)
 	tempProducer := blockchain.BestState.Shard[shardID].ShardCommittee[producerPosition]
 	if strings.Compare(tempProducer, block.Header.Producer) != 0 {
 		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
@@ -273,10 +274,6 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	txRoot := txMerkle[len(txMerkle)-1]
 
 	if !bytes.Equal(block.Header.TxRoot.GetBytes(), txRoot.GetBytes()) {
-		fmt.Println()
-		test, _ := json.Marshal(block.Body.Transactions[0])
-		fmt.Println(len(block.Body.Transactions), string(test))
-		fmt.Println()
 		return NewBlockChainError(HashError, errors.New("can't Verify Transaction Root"))
 	}
 	// Verify ShardTx Root
@@ -473,6 +470,10 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 		bestStateShard.BestBeaconHash = *ChainTestParam.GenesisBeaconBlock.Hash()
 	} else {
 		bestStateShard.BestBeaconHash = block.Header.BeaconHash
+	}
+	if block.Header.Height == 1 {
+		bestStateShard.BestCrossShard.ShardHeight = make(map[byte]uint64)
+		bestStateShard.BestCrossShard.BeaconHeight = make(map[byte]uint64)
 	}
 	bestStateShard.BestBlock = block
 	bestStateShard.BestBlockHash = *block.Hash()
