@@ -1,12 +1,11 @@
 package metadata
 
 import (
-	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"strconv"
-	"strings"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
@@ -143,6 +142,11 @@ func (lr *LoanRequest) ValidateMetadataByItself() bool {
 	return true
 }
 
+type LoanRequestAction struct {
+	LoanID []byte
+	TxID   *common.Hash
+}
+
 func (lr *LoanRequest) BuildReqActions(txr Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
 	lrActionValue := getLoanRequestActionValue(lr.LoanID, txr.Hash())
 	lrAction := []string{strconv.Itoa(LoanRequestMeta), lrActionValue}
@@ -150,20 +154,18 @@ func (lr *LoanRequest) BuildReqActions(txr Transaction, bcr BlockchainRetriever,
 }
 
 func getLoanRequestActionValue(loanID []byte, txHash *common.Hash) string {
-	// TODO(@0xbunyip): optimize base64.Encode and hash.String() by using more efficient encoder
-	// Encode to prevent appearance of seperator in loanID
-	return strings.Join([]string{base64.StdEncoding.EncodeToString(loanID), txHash.String()}, actionValueSep)
+	value, _ := json.Marshal(LoanRequestAction{
+		LoanID: loanID,
+		TxID:   txHash,
+	})
+	return string(value)
 }
 
-func ParseLoanRequestActionValue(values string) ([]byte, *common.Hash, error) {
-	s := strings.Split(values, actionValueSep)
-	if len(s) != 2 {
-		return nil, nil, errors.Errorf("LoanRequest value invalid")
-	}
-	loanID, err := base64.StdEncoding.DecodeString(s[0])
+func ParseLoanRequestActionValue(value string) ([]byte, *common.Hash, error) {
+	data := &LoanRequestAction{}
+	err := json.Unmarshal([]byte(value), data)
 	if err != nil {
 		return nil, nil, err
 	}
-	txHash, err := common.NewHashFromStr(s[1])
-	return loanID, txHash, err
+	return data.LoanID, data.TxID, nil
 }

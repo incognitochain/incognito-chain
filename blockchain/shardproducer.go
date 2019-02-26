@@ -218,13 +218,13 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 	txsToAdd = append(txsToAdd, stabilityResponseTxs...)
 
 	// Process stability instructions, create response txs if needed
-	fmt.Printf("[db] start build resp from inst with %d beaconBlocks\n", len(beaconBlocks))
-	for _, b := range beaconBlocks {
-		if len(b.Body.Instructions) > 0 {
-			fmt.Printf("[db] b height: %d\n", b.Header.Height)
-			fmt.Printf("[db] b inst: %+v\n", b.Body.Instructions)
-		}
-	}
+	//fmt.Printf("[db] start build resp from inst with %d beaconBlocks\n", len(beaconBlocks))
+	//for _, b := range beaconBlocks {
+	//	if len(b.Body.Instructions) > 0 {
+	//		fmt.Printf("[db] b height: %d\n", b.Header.Height)
+	//		fmt.Printf("[db] b inst: %+v\n", b.Body.Instructions)
+	//	}
+	//}
 	stabilityResponseTxs, err = blockgen.buildStabilityResponseTxsFromInstructions(beaconBlocks, privatekey, shardID)
 	if err != nil {
 		return nil, salaryUpdateActions
