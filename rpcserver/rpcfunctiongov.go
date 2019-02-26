@@ -10,7 +10,6 @@ import (
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/wire"
 )
 
 func (rpcServer RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -75,36 +74,32 @@ func (rpcServer RpcServer) handleGetCurrentSellingBondTypes(params interface{}, 
 }
 
 func (rpcServer RpcServer) handleGetGOVParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// constitution := rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution
-	// govParams := constitution.GOVParams
-	// results := make(map[string]interface{})
-	// results["GOVParams"] = govParams
-	// results["ExecuteDuration"] = constitution.ExecuteDuration
-	// results["Explanation"] = constitution.Explanation
-	// return results, nil
-	return nil, nil
+	constitution := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVConstitution
+	govParams := constitution.GOVParams
+	results := make(map[string]interface{})
+	results["GOVParams"] = govParams
+	results["ExecuteDuration"] = constitution.ExecuteDuration
+	results["Explanation"] = constitution.Explanation
+	return results, nil
 }
 
 func (rpcServer RpcServer) handleGetGOVConstitution(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// constitution := rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution
-	// return constitution, nil
-	return nil, nil
+	constitution := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVConstitution
+	return constitution, nil
 }
 
 func (rpcServer RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
-	// return res, nil
-	return nil, nil
+	res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress)
+	return res, nil
 }
 
 func (rpcServer RpcServer) handleAppendListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// arrayParams := common.InterfaceSlice(params)
-	// senderKey := arrayParams[0].(string)
-	// paymentAddress, _ := rpcServer.GetPaymentAddressFromSenderKeyParams(senderKey)
-	// rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress = append(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.BoardPaymentAddress, *paymentAddress)
-	// res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.BoardPaymentAddress)
-	// return res, nil
-	return nil, nil
+	arrayParams := common.InterfaceSlice(params)
+	senderKey := arrayParams[0].(string)
+	paymentAddress, _ := metadata.GetPaymentAddressFromSenderKeyParams(senderKey)
+	rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress = append(rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress, *paymentAddress)
+	res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress)
+	return res, nil
 }
 
 func (rpcServer RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -226,189 +221,48 @@ func (rpcServer RpcServer) handleCreateAndSendTxWithBuySellRequest(params interf
 	return result, nil
 }
 
-func (rpcServer RpcServer) buildRawVoteGOVBoardTransaction(
-	params interface{},
-) (*transaction.TxCustomToken, error) {
-	arrayParams := common.InterfaceSlice(params)
-	candidatePaymentAddress := arrayParams[len(arrayParams)-1].(string)
-	account, _ := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-
-	metadata := metadata.NewVoteGOVBoardMetadata(account.KeySet.PaymentAddress)
-	tx, err := rpcServer.buildRawCustomTokenTransaction(params, metadata)
-	return tx, err
-}
-
-func (rpcServer RpcServer) handleSendRawVoteBoardGOVTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Info(params)
-	arrayParams := common.InterfaceSlice(params)
-	base58CheckData := arrayParams[0].(string)
-	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
-
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	tx := transaction.TxCustomToken{}
-	// Logger.log.Info(string(rawTxBytes))
-	err = json.Unmarshal(rawTxBytes, &tx)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-
-	hash, txDesc, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-
-	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
-	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
-
-	// broadcast message
-	txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-
-	txMsg.(*wire.MessageTx).Transaction = &tx
-	rpcServer.config.Server.PushMessageToAll(txMsg)
-
-	return tx.Hash(), nil
-}
-
 func (rpcServer RpcServer) handleCreateRawVoteGOVBoardTransaction(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *RPCError) {
-	tx, err := rpcServer.buildRawVoteGOVBoardTransaction(params)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-
-	byteArrays, err := json.Marshal(tx)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	result := jsonresult.CreateTransactionResult{
-		//HexData:         hexData,
-		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
-	}
-	return result, nil
+	return rpcServer.createRawCustomTokenTxWithMetadata(params, closeChan, metadata.NewVoteDCBBoardMetadataFromRPC)
 }
 
 func (rpcServer RpcServer) handleCreateAndSendVoteGOVBoardTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := rpcServer.handleCreateRawVoteGOVBoardTransaction(params, closeChan)
-	if err != nil {
-		return nil, err
-	}
-	tx := data.(jsonresult.CreateTransactionResult)
-	base58CheckData := tx.Base58CheckData
-	if err != nil {
-		return nil, err
-	}
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, base58CheckData)
-	txId, err := rpcServer.handleSendRawVoteBoardGOVTransaction(newParam, closeChan)
-	return txId, err
-}
-
-func (rpcServer RpcServer) buildRawSubmitGOVProposalTransaction(
-	params interface{},
-) (*transaction.Tx, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	NParams := len(arrayParams)
-
-	newParams := arrayParams[NParams-1].(map[string]interface{})
-	tmp, err := rpcServer.GetPaymentAddressFromPrivateKeyParams(arrayParams[0].(string))
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	newParams["PaymentAddress"] = tmp
-
-	meta := metadata.NewSubmitGOVProposalMetadataFromJson(newParams)
-	params = setBuildRawBurnTransactionParams(params, FeeSubmitProposal)
-	tx, err1 := rpcServer.buildRawTransaction(params, meta)
-	if err1 != nil {
-		return nil, err1
-	}
-
-	return tx, nil
+	return rpcServer.createAndSendTxWithMetadata(
+		params,
+		closeChan,
+		RpcServer.handleCreateRawVoteGOVBoardTransaction,
+		RpcServer.handleSendRawCustomTokenTransaction,
+	)
 }
 
 func (rpcServer RpcServer) handleCreateRawSubmitGOVProposalTransaction(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *RPCError) {
-	tx, err := rpcServer.buildRawSubmitGOVProposalTransaction(params)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-
-	byteArrays, err1 := json.Marshal(tx)
-	if err1 != nil {
-		Logger.log.Error(err1)
-		return nil, NewRPCError(ErrUnexpected, err1)
-	}
-	result := jsonresult.CreateTransactionResult{
-		//HexData:         hexData,
-		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
-	}
-	return result, nil
-}
-
-func (rpcServer RpcServer) handleSendRawSubmitGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
-	base58CheckData := arrayParams[0].(string)
-	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
+	NParams := len(arrayParams)
 
+	metaParams := arrayParams[NParams-1].(map[string]interface{})
+	tmp, err := rpcServer.GetPaymentAddressFromPrivateKeyParams(arrayParams[0].(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	tx := transaction.Tx{}
-	// Logger.log.Info(string(rawTxBytes))
-	err = json.Unmarshal(rawTxBytes, &tx)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
+	metaParams["PaymentAddress"] = tmp
+	arrayParams[NParams-1] = metaParams
 
-	hash, txDesc, err1 := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
-	if err1 != nil {
-		return nil, NewRPCError(ErrUnexpected, err1)
-	}
-
-	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
-	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
-
-	// broadcast message
-	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-
-	txMsg.(*wire.MessageTx).Transaction = &tx
-	rpcServer.config.Server.PushMessageToAll(txMsg)
-
-	return tx.Hash(), nil
+	params = setBuildRawBurnTransactionParams(arrayParams, FeeSubmitProposal)
+	return rpcServer.createRawTxWithMetadata(params, closeChan, metadata.NewSubmitGOVProposalMetadataFromRPC)
 }
 
 func (rpcServer RpcServer) handleCreateAndSendSubmitGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := rpcServer.handleCreateRawSubmitGOVProposalTransaction(params, closeChan)
-	if err != nil {
-		return nil, err
-	}
-	tx := data.(jsonresult.CreateTransactionResult)
-	base58CheckData := tx.Base58CheckData
-	if err != nil {
-		return nil, err
-	}
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, base58CheckData)
-	txId, err := rpcServer.handleSendRawSubmitGOVProposalTransaction(newParam, closeChan)
-	return txId, err
+	return rpcServer.createAndSendTxWithMetadata(
+		params,
+		closeChan,
+		RpcServer.handleCreateRawSubmitGOVProposalTransaction,
+		RpcServer.handleSendRawTransaction,
+	)
 }
 
 func (rpcServer RpcServer) handleCreateRawTxWithOracleFeed(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {

@@ -80,15 +80,14 @@ func NewSubmitDCBProposalMetadata(DCBParams params.DCBParams, executeDuration ui
 	}
 }
 
-func NewSubmitDCBProposalMetadataFromJson(data interface{}) *SubmitDCBProposalMetadata {
-	SubmitDCBProposalData := data.(map[string]interface{})
+func NewSubmitDCBProposalMetadataFromRPC(data map[string]interface{}) (Metadata, error) {
 	meta := NewSubmitDCBProposalMetadata(
-		*params.NewDCBParamsFromJson(SubmitDCBProposalData["DCBParams"]),
-		uint64(SubmitDCBProposalData["ExecuteDuration"].(float64)),
-		SubmitDCBProposalData["Explanation"].(string),
-		SubmitDCBProposalData["PaymentAddress"].(*privacy.PaymentAddress),
+		*params.NewDCBParamsFromJson(data["DCBParams"]),
+		uint64(data["ExecuteDuration"].(float64)),
+		data["Explanation"].(string),
+		data["PaymentAddress"].(*privacy.PaymentAddress),
 	)
-	return meta
+	return meta, nil
 }
 
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) Hash() *common.Hash {
@@ -164,15 +163,13 @@ func NewSubmitGOVProposalMetadata(
 	}
 }
 
-func NewSubmitGOVProposalMetadataFromJson(data interface{}) *SubmitGOVProposalMetadata {
-	submitGOVProposalData := data.(map[string]interface{})
-
+func NewSubmitGOVProposalMetadataFromRPC(data map[string]interface{}) (Metadata, error) {
 	return NewSubmitGOVProposalMetadata(
-		*params.NewGOVParamsFromJson(submitGOVProposalData["GOVParams"]),
-		uint64(submitGOVProposalData["ExecuteDuration"].(float64)),
-		submitGOVProposalData["Explanation"].(string),
-		submitGOVProposalData["PaymentAddress"].(*privacy.PaymentAddress),
-	)
+		*params.NewGOVParamsFromJson(data["GOVParams"]),
+		uint64(data["ExecuteDuration"].(float64)),
+		data["Explanation"].(string),
+		data["PaymentAddress"].(*privacy.PaymentAddress),
+	), nil
 }
 
 func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) Hash() *common.Hash {
