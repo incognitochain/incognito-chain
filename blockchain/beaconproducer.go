@@ -231,14 +231,13 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 		for _, shardBlock := range shardBlocks[:totalBlock+1] {
 			stakers := [][]string{}
 			swaps := [][]string{}
-			fmt.Println("")
 			fmt.Printf("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
-			fmt.Println("")
 			// for each shard block, create a corresponding shard state
 			instructions := shardBlock.Instructions
 			shardState := ShardState{}
 			shardState.CrossShard = make([]byte, len(shardBlock.Header.CrossShards))
 			copy(shardState.CrossShard, shardBlock.Header.CrossShards)
+			fmt.Println("Beacon Producer/ CrossShard Byte Arr", shardState.CrossShard)
 			shardState.Hash = shardBlock.Header.Hash()
 			shardState.Height = shardBlock.Header.Height
 			shardStates[shardID] = append(shardStates[shardID], shardState)
