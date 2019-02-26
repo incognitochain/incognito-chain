@@ -21,5 +21,7 @@ func (crossShardBlock *CrossShardBlock) VerifyCrossShardBlock(committees []strin
 
 func (self *CrossShardBlock) ShouldStoreBlock() bool {
 	// verify block aggregation
+	// verify with best cross shard
+
 	return true
 }
