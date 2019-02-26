@@ -38,9 +38,8 @@ const (
 	BlockVersion                = 1
 	TransactionVersion          = 1
 	defaultBroadcastStateTime   = 3 * time.Second
-	defaultProcessPeerStateTime = 5 * time.Second
-	defaultMaxBlockSyncTime     = 8 * time.Second
-	SyncByHashKey               = "byhash"
-	SyncByHeightKey             = "byheight"
+	defaultProcessPeerStateTime = 4 * time.Second
+	defaultMaxBlockSyncTime     = 5 * time.Second
+	defaultCacheCleanupTime     = 2 * time.Minute
 	defaultMaxBlkReqPerPeer     = 50
 )
