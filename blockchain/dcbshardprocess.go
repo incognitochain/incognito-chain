@@ -17,58 +17,6 @@ type dividendPair struct {
 	ForDCB     bool
 }
 
-func (bc *BlockChain) processLoanPayment(tx metadata.Transaction) error {
-	_, _, value := tx.GetUniqueReceiver()
-	meta := tx.GetMetadata().(*metadata.LoanPayment)
-	principle, interest, deadline, err := bc.config.DataBase.GetLoanPayment(meta.LoanID)
-	requestMeta, err := bc.GetLoanRequestMeta(meta.LoanID)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("[db] pid: %d, %d, %d\n", principle, interest, deadline)
-
-	// Pay interest
-	interestPerTerm := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
-	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	height := bc.GetChainHeight(shardID)
-	totalInterest := metadata.GetTotalInterest(
-		principle,
-		interest,
-		requestMeta.Params.InterestRate,
-		requestMeta.Params.Maturity,
-		deadline,
-		height,
-	)
-	fmt.Printf("[db] perTerm, totalInt: %d, %d\n", interestPerTerm, totalInterest)
-	termInc := uint64(0)
-	if value <= totalInterest { // Pay all to cover interest
-		if interestPerTerm > 0 {
-			if value >= interest {
-				termInc = 1 + uint64((value-interest)/interestPerTerm)
-				interest = interestPerTerm - (value-interest)%interestPerTerm
-			} else {
-				interest -= value
-			}
-		}
-	} else { // Pay enough to cover interest, the rest go to principle
-		if value-totalInterest > principle {
-			principle = 0
-		} else {
-			principle -= value - totalInterest
-		}
-		if totalInterest >= interest { // This payment pays for interest
-			if interestPerTerm > 0 {
-				termInc = 1 + uint64((totalInterest-interest)/interestPerTerm)
-				interest = interestPerTerm
-			}
-		}
-	}
-	fmt.Printf("[db] termInc: %d\n", termInc)
-	deadline = deadline + termInc*requestMeta.Params.Maturity
-
-	return bc.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, deadline)
-}
-
 func (bc *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 	for _, tx := range block.Body.Transactions {
 		switch tx.GetMetadataType() {
@@ -77,30 +25,10 @@ func (bc *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 				// Confirm that loan is withdrawed
 				tx := tx.(*transaction.Tx)
 				meta := tx.GetMetadata().(*metadata.LoanUnlock)
-				err := bc.DataBase.StoreLoanWithdrawed(meta.LoanID)
+				err := bc.config.DataBase.StoreLoanWithdrawed(meta.LoanID)
 				if err != nil {
 					return err
 				}
-
-				//// Update loan payment info after withdrawing Constant
-				//tx := tx.(*transaction.Tx)
-				//meta := tx.GetMetadata().(*metadata.LoanUnlock)
-				//requestMeta, err := bc.GetLoanRequestMeta(meta.LoanID)
-				//if err != nil {
-				//	fmt.Printf("[db] process LoanUnlock fail, err: %+v\n", err)
-				//	return err
-				//}
-				//principle := requestMeta.LoanAmount
-				//interest := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
-				//err = bc.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint64(block.Header.Height))
-				//fmt.Printf("[db] process LoanUnlock: %d %d %d %+v\n", principle, interest, uint64(block.Header.Height), err)
-				//if err != nil {
-				//	return err
-				//}
-			}
-		case metadata.LoanPaymentMeta:
-			{
-				bc.processLoanPayment(tx)
 			}
 		}
 	}
