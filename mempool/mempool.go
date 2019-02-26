@@ -313,11 +313,7 @@ func (tp *TxPool) GetTx(txHash *common.Hash) (metadata.Transaction, error) {
 // // in the pool.
 func (tp *TxPool) MiningDescs() []*metadata.TxDesc {
 	fmt.Println()
-	fmt.Println()
-	fmt.Println()
 	fmt.Println("Current Transaction in pool", tp.pool)
-	fmt.Println()
-	fmt.Println()
 	fmt.Println()
 	descs := []*metadata.TxDesc{}
 	tp.mtx.Lock()
