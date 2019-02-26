@@ -120,6 +120,8 @@ type DatabaseInterface interface {
 	StoreLoanPayment([]byte, uint64, uint64, uint64) error // param: loanID, principle, interest, deadline
 	GetLoanPayment([]byte) (uint64, uint64, uint64, error) // param: loanID; return: principle, interest, deadline
 	GetLoanRequestTx(loanID []byte) ([]byte, error)
+	GetLoanWithdrawed(loanID []byte) (bool, error)
+	StoreLoanWithdrawed(loanID []byte) (bool, error)
 
 	// Dividends
 	GetDividendReceiversForID(id uint64, forDCB bool) (receivers []privacy.PaymentAddress, amounts []uint64, hasValue bool, err error)
