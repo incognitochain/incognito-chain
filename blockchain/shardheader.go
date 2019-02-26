@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 /*
@@ -12,15 +13,16 @@ import (
 	-PendingValidator Root is root hash of pending validator in beststate
 */
 type ShardHeader struct {
-	Producer      string
-	ShardID       byte
-	Version       int
-	PrevBlockHash common.Hash
-	Height        uint64
-	Round         int
-	Epoch         uint64
-	Timestamp     int64
-	SalaryFund    uint64
+	ProducerAddress *privacy.PaymentAddress
+	Producer        string
+	ShardID         byte
+	Version         int
+	PrevBlockHash   common.Hash
+	Height          uint64
+	Round           int
+	Epoch           uint64
+	Timestamp       int64
+	SalaryFund      uint64
 	//Transaction root created from transaction in shard
 	TxRoot common.Hash
 	//Transaction root created from transaction of micro shard to shard block (from other shard)
@@ -60,6 +62,7 @@ func (shardHeader ShardHeader) Hash() common.Hash {
 		// shardHeader.PendingValidatorRoot.String() +
 		// shardHeader.BeaconHash.String() +
 		// crossShardHash.String() +
-		// strconv.Itoa(int(shardHeader.BeaconHeight))
+		// strconv.Itoa(int(shardHeader.BeaconHeight)) +
+		// shardHeader.ProducerAddress.String()
 	return common.DoubleHashH([]byte(record))
 }
