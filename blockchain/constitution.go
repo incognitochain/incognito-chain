@@ -141,12 +141,12 @@ func (helper GOVConstitutionHelper) CreatePunishDecryptIns(paymentAddress *priva
 
 func (helper DCBConstitutionHelper) GetSealerPaymentAddress(tx metadata.Transaction) []privacy.PaymentAddress {
 	meta := tx.GetMetadata().(*metadata.SealedLv3DCBVoteProposalMetadata)
-	return meta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddress
+	return meta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddresses
 }
 
 func (helper GOVConstitutionHelper) GetSealerPaymentAddress(tx metadata.Transaction) []privacy.PaymentAddress {
 	meta := tx.GetMetadata().(*metadata.SealedLv3GOVVoteProposalMetadata)
-	return meta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddress
+	return meta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddresses
 }
 
 func (helper DCBConstitutionHelper) NewRewardProposalSubmitterIns(chain *BlockChain, receiverAddress *privacy.PaymentAddress) (frombeaconins.InstructionFromBeacon, error) {
