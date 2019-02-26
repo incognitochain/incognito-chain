@@ -95,6 +95,7 @@ const (
 	GetLoanResponseRejected   = "getloanresponserejected"
 	GetLoanParams             = "loanparams"
 	GetLoanPaymentInfo        = "getloanpaymentinfo"
+	GetBankFund               = "getbankfund"
 
 	// crowdsale
 	GetListOngoingCrowdsale               = "getlistongoingcrowdsale"

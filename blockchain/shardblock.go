@@ -5,10 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ninjadotorg/constant/privacy"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 type ShardBlock struct {
@@ -107,6 +106,7 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bcr metadata.BlockchainRetriever
 	block.ProducerSig = blk.ProducerSig
 	block.Header = blk.Header
 	block.Instructions = blk.Body.Instructions
+	fmt.Printf("[db] buildActionReq to send to beacon\n")
 	instructions := CreateShardInstructionsFromTransaction(blk.Body.Transactions, bcr, blk.Header.ShardID)
 	block.Instructions = append(block.Instructions, instructions...)
 	return &block

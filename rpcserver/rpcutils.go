@@ -13,7 +13,6 @@ import (
 )
 
 type metaConstructorType func(map[string]interface{}) (metadata.Metadata, error)
-type txConstructorType func(RpcServer, interface{}, metadata.Metadata) (metadata.Transaction, *RPCError)
 
 var metaConstructors = map[string]metaConstructorType{
 	CreateAndSendLoanRequest:              metadata.NewLoanRequest,

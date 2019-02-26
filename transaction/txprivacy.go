@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ninjadotorg/constant/common/base58"
 	"math"
 	"math/big"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
@@ -465,7 +465,6 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			for i := 0; i < len(tx.Proof.InputCoins); i++ {
 				ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, shardID, tokenID)
 				if !ok || err != nil {
-					Logger.log.Infof("[db]cm existed: %d\n", i)
 					return false
 				}
 			}
@@ -686,8 +685,8 @@ func (tx *Tx) ValidateTxWithBlockChain(
 	if tx.GetType() == common.TxSalaryType {
 		return nil
 	}
-	fmt.Printf("[db] validating tx with blockchain tx level\n")
 	if tx.Metadata != nil {
+		fmt.Printf("[db] validating tx with blockchain metadata level: %d\n", tx.GetMetadataType())
 		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(tx, bcr, shardID, db)
 		if err != nil {
 			return err

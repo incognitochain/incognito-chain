@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// buildInstructionsForLoanRequest converts shard inst to beacon inst to update BeaconBestState later on
+// buildInstructionsForLoanRequest converts shard LoanRequest inst to beacon inst to update BeaconBestState later on
 func buildInstructionsForLoanRequest(contentStr string) ([][]string, error) {
 	// Pass through
 	metaType := strconv.Itoa(metadata.LoanRequestMeta)
@@ -19,10 +19,18 @@ func buildInstructionsForLoanRequest(contentStr string) ([][]string, error) {
 	return [][]string{[]string{metaType, shardID, contentStr}}, nil
 }
 
-// buildInstructionsForLoanResponse converts shard inst to beacon inst to update BeaconBestState later on
+// buildInstructionsForLoanResponse converts shard LoanResponse inst to beacon inst to update BeaconBestState later on
 func buildInstructionsForLoanResponse(contentStr string) ([][]string, error) {
 	// Pass through
 	metaType := strconv.Itoa(metadata.LoanResponseMeta)
+	shardID := strconv.Itoa(metadata.BeaconOnly)
+	return [][]string{[]string{metaType, shardID, contentStr}}, nil
+}
+
+// buildInstructionsForLoanPayment converts shard LoanPayment inst to beacon inst to update BeaconBestState later on
+func buildInstructionsForLoanPayment(contentStr string) ([][]string, error) {
+	// Pass through
+	metaType := strconv.Itoa(metadata.LoanPaymentMeta)
 	shardID := strconv.Itoa(metadata.BeaconOnly)
 	return [][]string{[]string{metaType, shardID, contentStr}}, nil
 }
