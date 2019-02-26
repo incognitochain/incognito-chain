@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"strconv"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/privacy"
@@ -123,15 +121,11 @@ func (txObj TxTokenData) String() string {
 	record += fmt.Sprintf("%d", txObj.Amount)
 	if len(txObj.Vins) > 0 {
 		for _, in := range txObj.Vins {
-			record += in.TxCustomTokenID.String()
-			record += strconv.Itoa(in.VoutIndex)
-			record += base58.Base58Check{}.Encode(in.PaymentAddress.Pk, 0x00)
-			record += in.Signature
+			record += in.String()
 		}
 	}
 	for _, out := range txObj.Vouts {
-		record += string(out.PaymentAddress.Pk[:])
-		record += strconv.FormatUint(out.Value, 10)
+		record += out.String()
 	}
 	return record
 }
