@@ -45,6 +45,9 @@ type Merkle struct {
 // also presents an additional case wherein the wtxid of the salary transaction
 // is the zeroHash.
 func (merkle Merkle) BuildMerkleTreeStore(transactions []metadata.Transaction) []*common.Hash {
+	if len(transactions) == 0 {
+		return []*common.Hash{}
+	}
 	// Calculate how many entries are required to hold the binary merkle
 	// tree as a linear array and create an array of that size.
 	nextPoT := merkle.nextPowerOfTwo(len(transactions))
