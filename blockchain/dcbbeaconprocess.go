@@ -265,8 +265,10 @@ func (bsb *BestStateBeacon) processLoanResponseInstruction(inst []string) error 
 }
 
 func (bsb *BestStateBeacon) processLoanPaymentInstruction(inst []string) error {
-	_, amount, err := metadata.ParseLoanPaymentActionValue(inst[1])
+	fmt.Printf("[db] beaconProcess found inst: %+v\n", inst)
+	amount, err := metadata.ParseLoanPaymentActionValue(inst[1])
 	if err != nil {
+		fmt.Printf("[db] procLoanPayInst err: %+v\n", err)
 		return err
 	}
 

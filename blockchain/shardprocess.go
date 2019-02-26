@@ -318,6 +318,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return NewBlockChainError(HashError, errors.New("can't Verify CrossOutputCoin Root"))
 	}
 	// Verify Action
+	fmt.Printf("[db] buildActionReq for shardprocess to validate block instructions\n")
 	txInstructions := CreateShardInstructionsFromTransaction(block.Body.Transactions, blockchain, shardID)
 	totalInstructions := []string{}
 	for _, value := range txInstructions {

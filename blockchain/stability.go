@@ -83,6 +83,9 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 		case metadata.LoanResponseMeta:
 			newInst, err = buildInstructionsForLoanResponse(contentStr)
 
+		case metadata.LoanPaymentMeta:
+			newInst, err = buildInstructionsForLoanPayment(contentStr)
+
 		case metadata.BuyFromGOVRequestMeta:
 			newInst, err = buildInstructionsForBuyBondsFromGOVReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
@@ -136,6 +139,7 @@ func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, p
 	if err != nil {
 		return nil, errors.Errorf("Error building unlock tx for loan id %x", withdrawMeta.LoanID)
 	}
+	fmt.Printf("[db] success build LoanUnlock with amount %d\n", meta.LoanAmount)
 	return txNormals[0], nil
 }
 

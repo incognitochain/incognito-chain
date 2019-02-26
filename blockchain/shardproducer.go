@@ -109,6 +109,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("[db] buildActionReq to get hash for new shard block\n")
 	txInstructions := CreateShardInstructionsFromTransaction(block.Body.Transactions, blockgen.chain, shardID)
 	totalInstructions := []string{}
 	for _, value := range txInstructions {

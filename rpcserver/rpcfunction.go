@@ -86,6 +86,7 @@ var RpcHandler = map[string]commandHandler{
 	GetLoanResponseApproved:   RpcServer.handleGetLoanResponseApproved,
 	GetLoanResponseRejected:   RpcServer.handleGetLoanResponseRejected,
 	GetLoanPaymentInfo:        RpcServer.handleGetLoanPaymentInfo,
+	GetBankFund:               RpcServer.handleGetBankFund,
 
 	// Crowdsale
 	GetListOngoingCrowdsale:               RpcServer.handleGetListOngoingCrowdsale,
