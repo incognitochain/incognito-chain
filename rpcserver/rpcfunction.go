@@ -119,11 +119,9 @@ var RpcHandler = map[string]commandHandler{
 
 	// vote board
 	CreateAndSendVoteDCBBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
-	CreateRawVoteDCBBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
-	SendRawVoteBoardDCBTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
+	CreateRawVoteDCBBoardTx:              RpcServer.handleCreateRawVoteDCBBoardCustomTransaction,
 	CreateAndSendVoteGOVBoardTransaction: RpcServer.handleCreateAndSendVoteGOVBoardTransaction,
-	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
-	SendRawVoteBoardGOVTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
+	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteDCBBoardCustomTransaction,
 	GetAmountVoteToken:                   RpcServer.handleGetAmountVoteToken,
 	SetAmountVoteToken:                   RpcServer.handleSetAmountVoteToken,
 
@@ -140,10 +138,8 @@ var RpcHandler = map[string]commandHandler{
 	// Submit Proposal:
 	CreateAndSendSubmitDCBProposalTx: RpcServer.handleCreateAndSendSubmitDCBProposalTransaction,
 	CreateRawSubmitDCBProposalTx:     RpcServer.handleCreateRawSubmitDCBProposalTransaction,
-	SendRawSubmitDCBProposalTx:       RpcServer.handleSendRawSubmitDCBProposalTransaction,
 	CreateAndSendSubmitGOVProposalTx: RpcServer.handleCreateAndSendSubmitGOVProposalTransaction,
 	CreateRawSubmitGOVProposalTx:     RpcServer.handleCreateRawSubmitGOVProposalTransaction,
-	SendRawSubmitGOVProposalTx:       RpcServer.handleSendRawSubmitGOVProposalTransaction,
 
 	// dcb
 	GetDCBParams:       RpcServer.handleGetDCBParams,
@@ -179,19 +175,19 @@ var RpcHandler = map[string]commandHandler{
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	ListAccounts:               RpcServer.handleListAccounts,
-	GetAccount:                 RpcServer.handleGetAccount,
-	GetAddressesByAccount:      RpcServer.handleGetAddressesByAccount,
-	GetAccountAddress:          RpcServer.handleGetAccountAddress,
-	DumpPrivkey:                RpcServer.handleDumpPrivkey,
-	ImportAccount:              RpcServer.handleImportAccount,
-	RemoveAccount:              RpcServer.handleRemoveAccount,
-	ListUnspentOutputCoins:     RpcServer.handleListUnspentOutputCoins,
-	GetBalance:                 RpcServer.handleGetBalance,
-	GetBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
-	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
-	GetReceivedByAccount:       RpcServer.handleGetReceivedByAccount,
-	SetTxFee:                   RpcServer.handleSetTxFee,
+	ListAccounts:                       RpcServer.handleListAccounts,
+	GetAccount:                         RpcServer.handleGetAccount,
+	GetAddressesByAccount:              RpcServer.handleGetAddressesByAccount,
+	GetAccountAddress:                  RpcServer.handleGetAccountAddress,
+	DumpPrivkey:                        RpcServer.handleDumpPrivkey,
+	ImportAccount:                      RpcServer.handleImportAccount,
+	RemoveAccount:                      RpcServer.handleRemoveAccount,
+	ListUnspentOutputCoins:             RpcServer.handleListUnspentOutputCoins,
+	GetBalance:                         RpcServer.handleGetBalance,
+	GetBalanceByPrivatekey:             RpcServer.handleGetBalanceByPrivatekey,
+	GetBalanceByPaymentAddress:         RpcServer.handleGetBalanceByPaymentAddress,
+	GetReceivedByAccount:               RpcServer.handleGetReceivedByAccount,
+	SetTxFee:                           RpcServer.handleSetTxFee,
 	GetRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
 }
 
