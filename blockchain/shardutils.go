@@ -52,7 +52,7 @@ func FetchBeaconBlockFromHeight(db database.DatabaseInterface, from uint64, to u
 	return beaconBlocks, nil
 }
 
-func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) {
+func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) (crossIDs []byte) {
 	byteMap := make([]byte, common.MAX_SHARD_NUMBER)
 	for _, tx := range txList {
 		switch tx.GetType() {
@@ -86,7 +86,7 @@ func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) 
 	}
 
 	for k := range byteMap {
-		if byteMap[k] == 1 {
+		if byteMap[k] == 1 && k != int(fromShardID) {
 			crossIDs = append(crossIDs, byte(k))
 		}
 	}

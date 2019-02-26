@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"strconv"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/privacy"
@@ -43,7 +41,7 @@ func (txObj TxTokenVin) JSONString() string {
 // Hash - return hash data of TxTokenVin
 func (txObj TxTokenVin) Hash() *common.Hash {
 	// final hash
-	hash := common.DoubleHashH([]byte(txObj.String()))
+	hash := common.HashH([]byte(txObj.String()))
 	return &hash
 }
 
@@ -79,7 +77,7 @@ func (txObj TxTokenVout) JSONString() string {
 // Hash - return hash data of TxTokenVout
 func (txObj TxTokenVout) Hash() *common.Hash {
 	// final hash
-	hash := common.DoubleHashH([]byte(txObj.String()))
+	hash := common.HashH([]byte(txObj.String()))
 	return &hash
 }
 
@@ -123,15 +121,11 @@ func (txObj TxTokenData) String() string {
 	record += fmt.Sprintf("%d", txObj.Amount)
 	if len(txObj.Vins) > 0 {
 		for _, in := range txObj.Vins {
-			record += in.TxCustomTokenID.String()
-			record += strconv.Itoa(in.VoutIndex)
-			record += base58.Base58Check{}.Encode(in.PaymentAddress.Pk, 0x00)
-			record += in.Signature
+			record += in.String()
 		}
 	}
 	for _, out := range txObj.Vouts {
-		record += string(out.PaymentAddress.Pk[:])
-		record += strconv.FormatUint(out.Value, 10)
+		record += out.String()
 	}
 	return record
 }
@@ -151,7 +145,7 @@ func (txObj TxTokenData) Hash() (*common.Hash, error) {
 		return nil, errors.New("Vout is empty")
 	}
 	// final hash
-	hash := common.DoubleHashH([]byte(txObj.String()))
+	hash := common.HashH([]byte(txObj.String()))
 	return &hash, nil
 }
 
