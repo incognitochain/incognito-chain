@@ -1,4 +1,4 @@
-package constantpos
+package constantbft
 
 import (
 	libp2p "github.com/libp2p/go-libp2p-peer"
