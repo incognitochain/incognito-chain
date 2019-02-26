@@ -327,6 +327,8 @@ func NewVoteProposalDataFromJson(data interface{}) *VoteProposalData {
 
 	proposalTxIDData, _ := hex.DecodeString(voteProposalDataData["ProposalTxID"].(string))
 	proposalTxID, _ := common.NewHash(proposalTxIDData)
+	x := int32(voteProposalDataData["AmountOfVote"].(float64))
+	_ = x
 	return NewVoteProposalData(
 		*proposalTxID,
 		int32(voteProposalDataData["AmountOfVote"].(float64)),
