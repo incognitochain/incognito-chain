@@ -143,6 +143,9 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 					toShard := crossShardToShardID
 					curHeight := crossShardInfo.Height
 					nextHeight := uint64(0)
+					if fromShard == toShard {
+						continue
+					}
 
 					if shardBlockIndex == 0 {
 						curHeight = lastCrossShardState[crossShardToShardID][shardID] // crossShardToShardID has cross shard from shardID with height xx
