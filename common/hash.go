@@ -68,7 +68,10 @@ func (hash *Hash) SetBytes(newHash []byte) error {
 	return nil
 }
 func (hash *Hash) GetBytes() []byte {
-	return hash[:]
+	newBytes := []byte{}
+	newBytes = make([]byte, len(hash))
+	copy(newBytes, hash[:])
+	return newBytes
 }
 
 // BytesToHash sets b to hash If b is larger than len(h), b will be cropped from the left.
