@@ -117,6 +117,11 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	if err := blockchain.BestState.Shard[shardID].VerifyPostProcessingShardBlock(block, shardID); err != nil {
 		return err
 	}
+
+	//Update Cross shard pool: remove invalid block
+	blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.BestState.Shard[shardID].BestCrossShard.ShardHeight)
+	blockchain.config.CrossShardPool[shardID].UpdatePool()
+
 	//========Store new Beaconblock and new Beacon bestState
 	blockchain.ProcessStoreShardBlock(block)
 
