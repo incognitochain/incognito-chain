@@ -43,7 +43,7 @@ func (txObj TxTokenVin) JSONString() string {
 // Hash - return hash data of TxTokenVin
 func (txObj TxTokenVin) Hash() *common.Hash {
 	// final hash
-	hash := common.DoubleHashH([]byte(txObj.String()))
+	hash := common.HashH([]byte(txObj.String()))
 	return &hash
 }
 
@@ -79,7 +79,7 @@ func (txObj TxTokenVout) JSONString() string {
 // Hash - return hash data of TxTokenVout
 func (txObj TxTokenVout) Hash() *common.Hash {
 	// final hash
-	hash := common.DoubleHashH([]byte(txObj.String()))
+	hash := common.HashH([]byte(txObj.String()))
 	return &hash
 }
 
@@ -151,7 +151,7 @@ func (txObj TxTokenData) Hash() (*common.Hash, error) {
 		return nil, errors.New("Vout is empty")
 	}
 	// final hash
-	hash := common.DoubleHashH([]byte(txObj.String()))
+	hash := common.HashH([]byte(txObj.String()))
 	return &hash, nil
 }
 
