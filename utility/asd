@@ -164,15 +164,12 @@ curl -X POST \
    "id":1
 }'
 
-
-curl -X POST \
+watch -n5 `echo -x curl -X POST \
   http://127.0.0.1:9334 \
   -H 'Content-Type: application/json' \
-  -H 'Postman-Token: 410c562d-e282-4e58-9ca3-730b0ea77336' \
-  -H 'cache-control: no-cache' \
-  -d '{
-   "jsonrpc":"1.0",
-   "method":"getshardbeststate",
-   "params":[0],
-   "id":1
-}'
+  -d '{"jsonrpc":"1.0","method":"getshardbeststate","params":[0],"id":1}'`
+
+watch -n5 `echo -x curl -X POST \
+  http://127.0.0.1:9343 \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"1.0","method":"getshardbeststate","params":[1],"id":1}'`
