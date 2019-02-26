@@ -14,12 +14,11 @@ import (
 	"github.com/ninjadotorg/constant/metadata"
 )
 
-func (blockchain *BlockChain) StoreMetadata(tx metadata.Transaction) error {
-	switch tx.GetMetadataType() {
-	}
-	return nil
-}
-
+/*
+	Verify Shard Block Before Signing
+	Used for PBFT consensus
+	@Notice: this block doesn't have full information (incomplete block)
+*/
 func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte) error {
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
@@ -71,66 +70,10 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 	return nil
 }
 
-func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
-	blockHash := block.Hash().String()
-	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
-
-	if err := blockchain.StoreShardBlock(block); err != nil {
-		return err
-	}
-
-	if err := blockchain.StoreShardBlockIndex(block); err != nil {
-		return err
-	}
-
-	if err := blockchain.StoreShardBestState(block.Header.ShardID); err != nil {
-		return err
-	}
-
-	// Process transaction db
-	if len(block.Body.Transactions) < 1 {
-		Logger.log.Infof("No transaction in this block")
-	} else {
-		Logger.log.Infof("Number of transaction in this block %d", len(block.Body.Transactions))
-	}
-
-	// TODO: @merman store output coin?
-	fmt.Println("ProcessStoreShardBlock/CrossOutputCoin	", block.Body.CrossOutputCoin)
-	if err := blockchain.CreateAndSaveTxViewPointFromBlock(block); err != nil {
-		return err
-	}
-
-	for index, tx := range block.Body.Transactions {
-		if tx.GetType() == common.TxCustomTokenPrivacyType {
-			_ = 1
-			//TODO: do what???
-		}
-
-		if err := blockchain.StoreTransactionIndex(tx.Hash(), block.Hash(), index); err != nil {
-			Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
-			return NewBlockChainError(UnExpectedError, err)
-		}
-		Logger.log.Debugf("Transaction in block with hash", blockHash, "and index", index)
-
-		// Store metadata if needed
-		if tx.GetMetadata() != nil {
-			if err := blockchain.StoreMetadata(tx); err != nil {
-				return err
-			}
-		}
-	}
-	err := blockchain.StoreIncomingCrossShard(block)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
-	}
-	// err = blockchain.StoreOutgoingCrossShard(block)
-	// if err != nil {
-	// 	return NewBlockChainError(UnExpectedError, err)
-	// }
-	//TODO: store most recent proccess cross shard block
-	return nil
-}
-
+/*
+	Insert Shard Block into blockchain
+	@Notice: this block must have full information (complete block)
+*/
 func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
@@ -201,14 +144,63 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 	return nil
 }
-func (blockchain *BlockChain) CheckBlockExistence(block *BeaconBlock) bool {
-	blockHash := block.Header.Hash()
-	_, err := blockchain.config.DataBase.FetchBeaconBlock(&blockHash)
-	// if no err => have block => true
-	if err == nil {
-		return true
+
+func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
+	blockHash := block.Hash().String()
+	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
+
+	if err := blockchain.StoreShardBlock(block); err != nil {
+		return err
 	}
-	return false
+
+	if err := blockchain.StoreShardBlockIndex(block); err != nil {
+		return err
+	}
+
+	if err := blockchain.StoreShardBestState(block.Header.ShardID); err != nil {
+		return err
+	}
+
+	// Process transaction db
+	if len(block.Body.Transactions) < 1 {
+		Logger.log.Infof("No transaction in this block")
+	} else {
+		Logger.log.Infof("Number of transaction in this block %d", len(block.Body.Transactions))
+	}
+
+	fmt.Println("ProcessStoreShardBlock/CrossOutputCoin	", block.Body.CrossOutputCoin)
+	if err := blockchain.CreateAndSaveTxViewPointFromBlock(block); err != nil {
+		return err
+	}
+
+	for index, tx := range block.Body.Transactions {
+		if err := blockchain.StoreTransactionIndex(tx.Hash(), block.Hash(), index); err != nil {
+			Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
+			return NewBlockChainError(UnExpectedError, err)
+		}
+		Logger.log.Debugf("Transaction in block with hash", blockHash, "and index", index)
+
+		// Store metadata if needed
+		if tx.GetMetadata() != nil {
+			if err := blockchain.StoreMetadata(tx); err != nil {
+				return err
+			}
+		}
+	}
+	// Store Incomming Cross Shard
+	err := blockchain.StoreIncomingCrossShard(block)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
+	//TODO: store most recent proccess cross shard block
+	return nil
+}
+
+//TODO: define metadata to store
+func (blockchain *BlockChain) StoreMetadata(tx metadata.Transaction) error {
+	switch tx.GetMetadataType() {
+	}
+	return nil
 }
 
 /* Verify Pre-prosessing data
