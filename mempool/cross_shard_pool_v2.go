@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"errors"
+	"github.com/ninjadotorg/constant/database"
 	"sort"
 	"sync"
 
@@ -34,14 +35,16 @@ type CrossShardPool_v2 struct {
 	pendingPool     map[byte][]*blockchain.CrossShardBlock
 	crossShardState map[byte]uint64
 	poolMu          *sync.RWMutex
+	db              database.DatabaseInterface
 }
 
 var crossShardPoolMap = make(map[byte]*CrossShardPool_v2)
 
-func InitCrossShardPool(pool map[byte]blockchain.CrossShardPool) {
+func InitCrossShardPool(pool map[byte]blockchain.CrossShardPool, db database.DatabaseInterface) {
 	for i := 0; i < 255; i++ {
 		crossShardPoolMap[byte(i)] = GetCrossShardPool(byte(i))
 		pool[byte(i)] = crossShardPoolMap[byte(i)]
+		crossShardPoolMap[byte(i)].db = db
 	}
 }
 
@@ -53,39 +56,37 @@ func GetCrossShardPool(shardID byte) *CrossShardPool_v2 {
 		p.validPool = make(map[byte][]*blockchain.CrossShardBlock)
 		p.pendingPool = make(map[byte][]*blockchain.CrossShardBlock)
 		p.poolMu = new(sync.RWMutex)
-
 		crossShardPoolMap[shardID] = p
 	}
 	return p
 }
 
-////calculate waitingCrossShardBlock from beacon info
-//func (self *CrossShardPool_v2) CalculateWaitingCrossShardBlock(crossShardProcessState map[byte]uint64) error {
-//	return nil
-//}
-
-//When start node, we should get cross shard process to know which block we should store in pool & include in the shard block
-//When shard block is inserted to chain, we should update the cross shard process -> to validate block
-//func (self *CrossShardPool_v2) SetCrossShardProcessState(crossShardProcessState map[byte]uint64) error {
-//	self.RemoveValidBlockByHeight(crossShardProcessState)
-//	return nil
-//}
-
-//func (self *CrossShardPool_v2) RemoveWaitingCrossShardBlock(crossShardProcessState map[byte]uint64) error {
-//	//remove waiting cross shard block hash
-//	return nil
-//}
-
 // Validate pending pool again, to move pending block to valid block
 // When receive new cross shard block or new beacon state arrive
 func (pool *CrossShardPool_v2) UpdatePool() error {
+	pool.poolMu.Lock()
+	defer pool.poolMu.Unlock()
+	return pool.updatePool()
+}
+
+func (pool *CrossShardPool_v2) getNextCrossShardHeight(fromShard, toShard byte, startHeight uint64) uint64 {
+	nextHeight, err := pool.db.FetchCrossShardNextHeight(fromShard, toShard, startHeight)
+	if err != nil {
+		return 0
+	}
+	return nextHeight
+
+}
+
+func (pool *CrossShardPool_v2) updatePool() error {
 	pool.crossShardState = blockchain.GetBestStateShard(pool.shardID).BestCrossShard.ShardHeight
+	pool.removeBlockByHeight(pool.crossShardState)
 	for blkShardID, blks := range pool.pendingPool {
 		startHeight := pool.crossShardState[blkShardID]
 		index := 0
 		for _, blk := range blks {
 			//only when beacon confirm (save next cross shard height), we make cross shard block valid
-			waitHeight := blockchain.GetNextCrossShardHeight(blkShardID, pool.shardID, startHeight)
+			waitHeight := pool.getNextCrossShardHeight(blkShardID, pool.shardID, startHeight)
 			if waitHeight == blk.Header.Height {
 				index++
 				continue
@@ -145,14 +146,17 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 		return errors.New("Block is not valid")
 	}
 
-	pool.UpdatePool()
+	pool.updatePool()
 	return nil
 }
 
 func (self *CrossShardPool_v2) RemoveBlockByHeight(removeSinceBlkHeight map[byte]uint64) error {
 	self.poolMu.Lock()
 	defer self.poolMu.Unlock()
+	return self.removeBlockByHeight(removeSinceBlkHeight)
+}
 
+func (self *CrossShardPool_v2) removeBlockByHeight(removeSinceBlkHeight map[byte]uint64) error {
 	for shardID, blks := range self.validPool {
 		removeIndex := 0
 		for _, blk := range blks {

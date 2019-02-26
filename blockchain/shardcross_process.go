@@ -25,12 +25,3 @@ func (self *CrossShardBlock) ShouldStoreBlock() bool {
 
 	return true
 }
-
-// get next cross shard height from current cross shard height (of cross shard from fromShardID to toShardID)
-func GetNextCrossShardHeight(fromShardID, toShardID byte, currentCrossShardHeight uint64) uint64 {
-	// asking database for the next cross shard height
-	// e.g at height 30 of shard 1, there are cross shard to shard 2, next at height 33 of shard 1, there are cross shard to shard 2
-	// ask db: cross-f-1-t-2-30 : from shard 1 to shard 2 with current cross shard height = 30
-	// should return value (33 + hash)
-	return 0
-}

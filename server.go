@@ -149,12 +149,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.beaconPool = &mempool.NodeBeaconPool{}
 	serverObj.shardPool = &mempool.NodeShardPool{}
 	serverObj.shardToBeaconPool = mempool.GetShardToBeaconPool()
-
-	//init cross shard pool
 	serverObj.crossShardPool = make(map[byte]blockchain.CrossShardPool)
-	mempool.InitCrossShardPool(serverObj.crossShardPool)
 
 	serverObj.blockChain = &blockchain.BlockChain{}
+
 	relayShards := []byte{}
 	for index := 0; index < len(cfg.RelayShards); index += 2 {
 		s, _ := strconv.Atoi(fmt.Sprintf("%c", byte(cfg.RelayShards[index])))
@@ -179,6 +177,11 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		return err
 	}
 
+	//init cross shard pool
+
+	mempool.InitCrossShardPool(serverObj.crossShardPool, db)
+
+	//init shard to beacon bool
 	serverObj.blockChain.InitShardToBeaconPool(db)
 
 	// TODO: 0xbahamooth Search for a feeEstimator state in the database. If none can be found
