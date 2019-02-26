@@ -25,7 +25,7 @@ func (bc *BlockChain) processLoanPayment(tx metadata.Transaction) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("[db]pid: %d, %d, %d\n", principle, interest, deadline)
+	fmt.Printf("[db] pid: %d, %d, %d\n", principle, interest, deadline)
 
 	// Pay interest
 	interestPerTerm := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
@@ -39,7 +39,7 @@ func (bc *BlockChain) processLoanPayment(tx metadata.Transaction) error {
 		deadline,
 		height,
 	)
-	fmt.Printf("[db]perTerm, totalInt: %d, %d\n", interestPerTerm, totalInterest)
+	fmt.Printf("[db] perTerm, totalInt: %d, %d\n", interestPerTerm, totalInterest)
 	termInc := uint64(0)
 	if value <= totalInterest { // Pay all to cover interest
 		if interestPerTerm > 0 {
@@ -63,7 +63,7 @@ func (bc *BlockChain) processLoanPayment(tx metadata.Transaction) error {
 			}
 		}
 	}
-	fmt.Printf("termInc: %d\n", termInc)
+	fmt.Printf("[db] termInc: %d\n", termInc)
 	deadline = deadline + termInc*requestMeta.Params.Maturity
 
 	return bc.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, deadline)
@@ -77,16 +77,15 @@ func (bc *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 				// Update loan payment info after withdrawing Constant
 				tx := tx.(*transaction.Tx)
 				meta := tx.GetMetadata().(*metadata.LoanUnlock)
-				fmt.Printf("Found tx %x of type loan unlock\n", tx.Hash()[:])
-				fmt.Printf("LoanID: %x\n", meta.LoanID)
 				requestMeta, err := bc.GetLoanRequestMeta(meta.LoanID)
 				if err != nil {
+					fmt.Printf("[db] process LoanUnlock fail, err: %+v\n", err)
 					return err
 				}
 				principle := requestMeta.LoanAmount
 				interest := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
 				err = bc.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint64(block.Header.Height))
-				fmt.Printf("principle: %d\ninterest: %d\nblock: %d\n", principle, interest, uint64(block.Header.Height))
+				fmt.Printf("[db] process LoanUnlock: %d %d %d %+v\n", principle, interest, uint64(block.Header.Height), err)
 				if err != nil {
 					return err
 				}

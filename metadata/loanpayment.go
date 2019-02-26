@@ -3,9 +3,9 @@ package metadata
 import (
 	"bytes"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -89,32 +89,36 @@ func GetInterestPerTerm(principle, interestRate uint64) uint64 {
 	return principle * interestRate / Decimals
 }
 
+type LoanPaymentAction struct {
+	Amount uint64
+}
+
 func (lp *LoanPayment) BuildReqActions(txr Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
 	amount, err := lp.calculateInterestPaid(txr, bcr)
 	if err != nil {
 		return [][]string{}, err
 	}
-	lrActionValue := getLoanPaymentActionValue(txr.Hash(), amount)
+	lrActionValue := getLoanPaymentActionValue(amount)
+	fmt.Printf("[db] LoanPay built action: %s\n", lrActionValue)
 	lrAction := []string{strconv.Itoa(LoanPaymentMeta), lrActionValue}
 	return [][]string{lrAction}, nil
 }
 
-func getLoanPaymentActionValue(txHash *common.Hash, amount uint64) string {
-	return strings.Join([]string{txHash.String(), strconv.FormatUint(amount, 10)}, actionValueSep)
+func getLoanPaymentActionValue(amount uint64) string {
+	action := &LoanPaymentAction{
+		Amount: amount,
+	}
+	value, _ := json.Marshal(action)
+	return string(value)
 }
 
-func ParseLoanPaymentActionValue(values string) (*common.Hash, uint64, error) {
-	s := strings.Split(values, actionValueSep)
-	if len(s) != 2 {
-		return nil, 0, errors.Errorf("LoanPayment value invalid")
+func ParseLoanPaymentActionValue(value string) (uint64, error) {
+	action := &LoanPaymentAction{}
+	err := json.Unmarshal([]byte(value), action)
+	if err != nil {
+		return 0, err
 	}
-	txHash, errHash := common.NewHashFromStr(s[0])
-	amount, errAmount := strconv.ParseUint(s[1], 10, 64)
-	errSaver := &ErrorSaver{}
-	if errSaver.Save(errHash, errAmount) != nil {
-		return nil, 0, errSaver.Get()
-	}
-	return txHash, amount, nil
+	return action.Amount, nil
 }
 
 func (lp *LoanPayment) calculateInterestPaid(tx Transaction, bcr BlockchainRetriever) (uint64, error) {
@@ -131,7 +135,8 @@ func (lp *LoanPayment) calculateInterestPaid(tx Transaction, bcr BlockchainRetri
 
 	// Only keep interest
 	_, _, amount := tx.GetUniqueReceiver() // Receiver is unique and is burn address
-	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	lastByte := requestMeta.ReceiveAddress.Pk[len(requestMeta.ReceiveAddress.Pk)-1]
+	shardID := common.GetShardIDFromLastByte(lastByte)
 	totalInterest := GetTotalInterest(
 		principle,
 		interest,
@@ -144,5 +149,6 @@ func (lp *LoanPayment) calculateInterestPaid(tx Transaction, bcr BlockchainRetri
 	if amount > totalInterest {
 		interestPaid = totalInterest
 	}
+	fmt.Printf("[db] calcInterestPaid: %d %d %d %d %d %d\n", principle, interest, deadline, amount, totalInterest, interestPaid)
 	return interestPaid, nil
 }

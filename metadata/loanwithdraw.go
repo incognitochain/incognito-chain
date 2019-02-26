@@ -8,7 +8,6 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/pkg/errors"
-	"github.com/syndtr/goleveldb/leveldb"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -44,11 +43,20 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 	fmt.Println("Validating LoanWithdraw with blockchain!!!")
 	// Check if loan hasn't been withdrawed
 	_, _, _, err := bcr.GetLoanPayment(lw.LoanID)
-	if err != leveldb.ErrNotFound {
-		if err == nil {
-			return false, errors.Errorf("Loan has been withdrawed")
-		}
+	if err == nil {
+		fmt.Printf("validate LoanWithdraw: withdrawed")
+		return false, errors.Errorf("Loan has been withdrawed")
+	}
+
+	// Check that only shard of loan requester can process this type of tx
+	reqMeta, err := bcr.GetLoanRequestMeta(lw.LoanID)
+	if err != nil {
 		return false, err
+	}
+	lastByte := reqMeta.ReceiveAddress.Pk[len(reqMeta.ReceiveAddress.Pk)-1]
+	if shardID != common.GetShardIDFromLastByte(lastByte) {
+		fmt.Printf("[db] validate LoanWithdraw fail: %d %d", shardID, lastByte)
+		return false, errors.Errorf("Shard %d cannot process LoanWithdraw tx with lastByte", lastByte)
 	}
 
 	// TODO(@0xbunyip): validate that for a loan, there's only one withdraw in a single block

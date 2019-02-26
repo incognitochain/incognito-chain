@@ -58,10 +58,12 @@ func CreateCrossShardByteArray(txList []metadata.Transaction) (crossIDs []byte) 
 		switch tx.GetType() {
 		case common.TxNormalType, common.TxSalaryType:
 			{
-				for _, outCoin := range tx.GetProof().OutputCoins {
-					lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-					shardID := common.GetShardIDFromLastByte(lastByte)
-					byteMap[common.GetShardIDFromLastByte(shardID)] = 1
+				if tx.GetProof() != nil {
+					for _, outCoin := range tx.GetProof().OutputCoins {
+						lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+						shardID := common.GetShardIDFromLastByte(lastByte)
+						byteMap[common.GetShardIDFromLastByte(shardID)] = 1
+					}
 				}
 			}
 		case common.TxCustomTokenType:
@@ -258,10 +260,12 @@ func getOutCoinHashEachShard(txList []metadata.Transaction) []common.Hash {
 	// group transaction by shardID
 	outCoinEachShard := make([][]*privacy.OutputCoin, common.MAX_SHARD_NUMBER)
 	for _, tx := range txList {
-		for _, outCoin := range tx.GetProof().OutputCoins {
-			lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-			shardID := common.GetShardIDFromLastByte(lastByte)
-			outCoinEachShard[shardID] = append(outCoinEachShard[shardID], outCoin)
+		if tx.GetProof() != nil {
+			for _, outCoin := range tx.GetProof().OutputCoins {
+				lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+				shardID := common.GetShardIDFromLastByte(lastByte)
+				outCoinEachShard[shardID] = append(outCoinEachShard[shardID], outCoin)
+			}
 		}
 	}
 	// fmt.Println("len of outCoinEachShard", len(outCoinEachShard))
@@ -292,10 +296,12 @@ func getOutCoinHashEachShard(txList []metadata.Transaction) []common.Hash {
 func getOutCoinCrossShard(txList []metadata.Transaction, shardID byte) []privacy.OutputCoin {
 	coinList := []privacy.OutputCoin{}
 	for _, tx := range txList {
-		for _, outCoin := range tx.GetProof().OutputCoins {
-			lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-			if lastByte == shardID {
-				coinList = append(coinList, *outCoin)
+		if tx.GetProof() != nil {
+			for _, outCoin := range tx.GetProof().OutputCoins {
+				lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+				if lastByte == shardID {
+					coinList = append(coinList, *outCoin)
+				}
 			}
 		}
 	}
