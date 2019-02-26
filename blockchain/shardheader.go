@@ -25,12 +25,12 @@ type ShardHeader struct {
 	SalaryFund      uint64
 	//Transaction root created from transaction in shard
 	TxRoot common.Hash
-	//Transaction root created from transaction of micro shard to shard block (from other shard)
-	ShardTxRoot common.Hash
 	//Output root created for other shard
+	ShardTxRoot common.Hash
+	//Transaction root created from transaction of micro shard to shard block (from other shard)
 	CrossOutputCoinRoot common.Hash
 	//Actions root created from Instructions and Metadata of transaction
-	ActionsRoot          common.Hash
+	InstructionsRoot     common.Hash
 	CommitteeRoot        common.Hash `description: verify post processing`
 	PendingValidatorRoot common.Hash `description: verify post processing`
 	// CrossShards for beacon
