@@ -142,7 +142,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		ShardTxRoot:          shardTxMerkleData[len(shardTxMerkleData)-1],
 		CrossOutputCoinRoot:  *crossOutputCoinRoot,
 		InstructionsRoot:     instructionsHash,
-		CrossShards:          CreateCrossShardByteArray(txsToAdd, fromShardID),
+		CrossShards:          CreateCrossShardByteArray(txsToAdd, shardID),
 		CommitteeRoot:        committeeRoot,
 		PendingValidatorRoot: pendingValidatorRoot,
 		BeaconHeight:         beaconHeight,
