@@ -56,10 +56,7 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 
 	// Check if loan hasn't been withdrawed (on this shard)
 	withdrawed, err := bcr.GetLoanWithdrawed(lw.LoanID)
-	if err != nil {
-		return false, err
-	}
-	if withdrawed {
+	if err == nil && withdrawed {
 		return false, errors.Errorf("Loan has been withdrawed")
 	}
 

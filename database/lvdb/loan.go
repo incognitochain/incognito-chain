@@ -10,6 +10,9 @@ import (
 func (db *db) GetLoanWithdrawed(loanID []byte) (bool, error) {
 	keyLoanWithdrawed := string(loanWithdrawedPrefix) + string(loanID)
 	value, err := db.Get([]byte(keyLoanWithdrawed))
+	if err != nil {
+		return false, err
+	}
 	return value[0] > 0, err
 }
 
