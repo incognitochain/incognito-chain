@@ -142,7 +142,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		ShardTxRoot:          shardTxMerkleData[len(shardTxMerkleData)-1],
 		CrossOutputCoinRoot:  *crossOutputCoinRoot,
 		InstructionsRoot:     instructionsHash,
-		CrossShards:          CreateCrossShardByteArray(txsToAdd),
+		CrossShards:          CreateCrossShardByteArray(txsToAdd, shardID),
 		CommitteeRoot:        committeeRoot,
 		PendingValidatorRoot: pendingValidatorRoot,
 		BeaconHeight:         beaconHeight,
@@ -224,11 +224,11 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 	res := make(map[byte][]CrossOutputCoin)
 	// crossShardMap := make(map[byte][]CrossShardBlock)
 	// get cross shard block
-	bestShardHeight := blockgen.chain.BestState.Beacon.BestShardHeight
-	allCrossShardBlock := blockgen.crossShardPool.GetBlock(bestShardHeight)
+
+	allCrossShardBlock := blockgen.crossShardPool[shardID].GetValidBlock()
 	fmt.Println("ShardProducer/AllCrosshardblock", allCrossShardBlock)
-	// crossShardBlocks := allCrossShardBlock[shardID]
 	// currentBestCrossShard := blockgen.chain.BestState.Shard[shardID].BestCrossShard
+	// crossShardBlocks := allCrossShardBlock[shardID]
 	// Sort by height
 	// for _, blk := range crossShardBlocks {
 	// 	crossShardMap[blk.Header.ShardID] = append(crossShardMap[blk.Header.ShardID], blk)
