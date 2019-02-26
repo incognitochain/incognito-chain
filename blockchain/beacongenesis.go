@@ -5,11 +5,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ninjadotorg/constant/common"
 )
 
 func CreateBeaconGenesisBlock(
 	version int,
-	beaconNodes []string,
 	icoParams IcoParams,
 	salaryPerTx uint64,
 	basicSalary uint64,
@@ -41,10 +42,17 @@ func CreateBeaconGenesisBlock(
 
 	body := BeaconBody{ShardState: nil, Instructions: inst}
 	header := BeaconHeader{
-		Timestamp: time.Date(2018, 8, 1, 0, 0, 0, 0, time.UTC).Unix(),
-		Height:    1,
-		Version:   1,
-		Round:     1,
+		Timestamp:           time.Date(2018, 8, 1, 0, 0, 0, 0, time.UTC).Unix(),
+		Height:              1,
+		Version:             1,
+		Round:               1,
+		PrevBlockHash:       common.Hash{},
+		ValidatorsRoot:      common.Hash{},
+		BeaconCandidateRoot: common.Hash{},
+		ShardCandidateRoot:  common.Hash{},
+		ShardValidatorsRoot: common.Hash{},
+		ShardStateHash:      common.Hash{},
+		InstructionHash:     common.Hash{},
 	}
 
 	block := &BeaconBlock{

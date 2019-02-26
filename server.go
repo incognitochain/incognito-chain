@@ -19,7 +19,7 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/connmanager"
-	"github.com/ninjadotorg/constant/consensus/constantpos"
+	"github.com/ninjadotorg/constant/consensus/constantbft"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/mempool"
 	"github.com/ninjadotorg/constant/netsync"
@@ -52,7 +52,7 @@ type Server struct {
 	addrManager     *addrmanager.AddrManager
 	userKeySet      *cashec.KeySet
 	wallet          *wallet.Wallet
-	consensusEngine *constantpos.Engine
+	consensusEngine *constantbft.Engine
 	blockgen        *blockchain.BlkTmplGenerator
 	rewardAgent     *rewardagent.RewardAgent
 	// The fee estimator keeps track of how long transactions are left in
@@ -243,7 +243,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	}
 
 	// Init consensus engine
-	serverObj.consensusEngine, err = constantpos.Engine{}.Init(&constantpos.EngineConfig{
+	serverObj.consensusEngine, err = constantbft.Engine{}.Init(&constantbft.EngineConfig{
 		ChainParams: serverObj.chainParams,
 		BlockChain:  serverObj.blockChain,
 		Server:      serverObj,
@@ -565,7 +565,7 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			OnGetAddr:          serverObj.OnGetAddr,
 			OnAddr:             serverObj.OnAddr,
 
-			//constantpos
+			//constantbft
 			OnBFTMsg: serverObj.OnBFTMsg,
 			// OnInvalidBlock:  serverObj.OnInvalidBlock,
 			OnPeerState: serverObj.OnPeerState,
@@ -1183,9 +1183,9 @@ func (serverObj *Server) BoardcastNodeState() error {
 	}
 	msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidPendingBlockHash()
 
-	userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58())
+	userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58(), serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
 	if (cfg.NodeMode == "auto" || cfg.NodeMode == "shard") && userRole == "shard" {
-		userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58())
+		userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58(), serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Round)
 		if userRole == "shard-proposer" || userRole == "shard-validator" {
 			// TODO: waiting for crossShardPool to be rewrite
 			// msg.(*wire.MessagePeerState).CrossShardPool = serverObj.crossShardPool.
