@@ -3,7 +3,9 @@ package metadata
 import (
 	"bytes"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -41,13 +43,6 @@ func (lw *LoanWithdraw) Hash() *common.Hash {
 
 func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	fmt.Println("Validating LoanWithdraw with blockchain!!!")
-	// Check if loan hasn't been withdrawed
-	_, _, _, err := bcr.GetLoanPayment(lw.LoanID)
-	if err == nil {
-		fmt.Printf("validate LoanWithdraw: withdrawed")
-		return false, errors.Errorf("Loan has been withdrawed")
-	}
-
 	// Check that only shard of loan requester can process this type of tx
 	reqMeta, err := bcr.GetLoanRequestMeta(lw.LoanID)
 	if err != nil {
@@ -57,6 +52,15 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 	if shardID != common.GetShardIDFromLastByte(lastByte) {
 		fmt.Printf("[db] validate LoanWithdraw fail: %d %d", shardID, lastByte)
 		return false, errors.Errorf("Shard %d cannot process LoanWithdraw tx with lastByte", lastByte)
+	}
+
+	// Check if loan hasn't been withdrawed (on this shard)
+	withdrawed, err := bcr.GetLoanWithdrawed(lw.LoanID)
+	if err != nil {
+		return false, err
+	}
+	if withdrawed {
+		return false, errors.Errorf("Loan has been withdrawed")
 	}
 
 	// TODO(@0xbunyip): validate that for a loan, there's only one withdraw in a single block
@@ -106,4 +110,40 @@ func (lw *LoanWithdraw) ValidateSanityData(bcr BlockchainRetriever, txr Transact
 
 func (lw *LoanWithdraw) ValidateMetadataByItself() bool {
 	return true
+}
+
+type LoanWithdrawAction struct {
+	LoanID    []byte
+	Principle uint64
+	Interest  uint64
+}
+
+func (lw *LoanWithdraw) BuildReqActions(txr Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+	reqMeta, err := bcr.GetLoanRequestMeta(lw.LoanID)
+	if err != nil {
+		return [][]string{}, err
+	}
+	principle := reqMeta.LoanAmount
+	interest := GetInterestPerTerm(principle, reqMeta.Params.InterestRate)
+	lwActionValue := getLoanWithdrawActionValue(lw.LoanID, principle, interest)
+	lwAction := []string{strconv.Itoa(LoanWithdrawMeta), lwActionValue}
+	return [][]string{lwAction}, nil
+}
+
+func getLoanWithdrawActionValue(loanID []byte, principle, interest uint64) string {
+	value, _ := json.Marshal(LoanWithdrawAction{
+		LoanID:    loanID,
+		Principle: principle,
+		Interest:  interest,
+	})
+	return string(value)
+}
+
+func ParseLoanWithdrawActionValue(value string) ([]byte, uint64, uint64, error) {
+	data := &LoanWithdrawAction{}
+	err := json.Unmarshal([]byte(value), data)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	return data.LoanID, data.Principle, data.Interest, nil
 }
