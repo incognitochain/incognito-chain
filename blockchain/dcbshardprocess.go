@@ -165,7 +165,6 @@ func (bc *BlockChain) StoreMetadataInstructions(inst []string, shardID byte) err
 	if len(inst) < 2 {
 		return nil // Not error, just not stability instruction
 	}
-	fmt.Printf("[db] store meta inst: %+v\n", inst)
 	switch inst[0] {
 	// TODO(@0xbunyip): confirm using response or request type for beacon to shard instructions
 	case strconv.Itoa(metadata.IssuingRequestMeta):
@@ -177,6 +176,7 @@ func (bc *BlockChain) StoreMetadataInstructions(inst []string, shardID byte) err
 }
 
 func (bc *BlockChain) storeIssuingResponseInstruction(inst []string, shardID byte) error {
+	fmt.Printf("[db] store meta inst: %+v\n", inst)
 	if strconv.Itoa(int(shardID)) != inst[1] {
 		return nil
 	}
@@ -192,6 +192,7 @@ func (bc *BlockChain) storeIssuingResponseInstruction(inst []string, shardID byt
 }
 
 func (bc *BlockChain) storeContractingResponseInstruction(inst []string, shardID byte) error {
+	fmt.Printf("[db] store meta inst: %+v\n", inst)
 	if strconv.Itoa(int(shardID)) != inst[1] {
 		return nil
 	}
