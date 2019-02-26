@@ -60,7 +60,7 @@ func getAmountVote(receiversPaymentAddressParam map[string]interface{}) int64 {
 	return sumAmount
 }
 
-func (rpcServer RpcServer) handleCreateRawVoteDCBBoardCustomTransaction(
+func (rpcServer RpcServer) handleCreateRawVoteDCBBoardTransaction(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *RPCError) {
@@ -71,36 +71,24 @@ func (rpcServer RpcServer) handleCreateAndSendVoteDCBBoardTransaction(params int
 	return rpcServer.createAndSendTxWithMetadata(
 		params,
 		closeChan,
-		RpcServer.handleCreateRawVoteDCBBoardCustomTransaction,
+		RpcServer.handleCreateRawVoteDCBBoardTransaction,
 		RpcServer.handleSendRawCustomTokenTransaction,
 	)
-}
-
-func setBuildRawBurnTransactionParams(params interface{}, fee float64) interface{} {
-	arrayParams := common.InterfaceSlice(params)
-	x := make(map[string]interface{})
-	x[common.BurningAddress] = fee
-	arrayParams[1] = x
-	return arrayParams
 }
 
 func (rpcServer RpcServer) handleCreateRawSubmitDCBProposalTransaction(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	NParams := len(arrayParams)
-
-	metaParams := arrayParams[NParams-1].(map[string]interface{})
-	tmp, err := rpcServer.GetPaymentAddressFromPrivateKeyParams(arrayParams[0].(string))
+	params, err := rpcServer.buildParamsSubmitDCBProposal(params)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, err
 	}
-	metaParams["PaymentAddress"] = tmp
-	arrayParams[NParams-1] = metaParams
-
-	params = setBuildRawBurnTransactionParams(arrayParams, FeeSubmitProposal)
-	return rpcServer.createRawTxWithMetadata(params, closeChan, metadata.NewSubmitDCBProposalMetadataFromRPC)
+	return rpcServer.createRawTxWithMetadata(
+		params,
+		closeChan,
+		metadata.NewSubmitDCBProposalMetadataFromRPC,
+	)
 }
 
 func (rpcServer RpcServer) handleCreateAndSendSubmitDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {

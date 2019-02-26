@@ -241,19 +241,15 @@ func (rpcServer RpcServer) handleCreateRawSubmitGOVProposalTransaction(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	NParams := len(arrayParams)
-
-	metaParams := arrayParams[NParams-1].(map[string]interface{})
-	tmp, err := rpcServer.GetPaymentAddressFromPrivateKeyParams(arrayParams[0].(string))
+	params, err := rpcServer.buildParamsSubmitGOVProposal(params)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, err
 	}
-	metaParams["PaymentAddress"] = tmp
-	arrayParams[NParams-1] = metaParams
-
-	params = setBuildRawBurnTransactionParams(arrayParams, FeeSubmitProposal)
-	return rpcServer.createRawTxWithMetadata(params, closeChan, metadata.NewSubmitGOVProposalMetadataFromRPC)
+	return rpcServer.createRawTxWithMetadata(
+		params,
+		closeChan,
+		metadata.NewSubmitGOVProposalMetadataFromRPC,
+	)
 }
 
 func (rpcServer RpcServer) handleCreateAndSendSubmitGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {

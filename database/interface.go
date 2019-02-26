@@ -43,6 +43,10 @@ type DatabaseInterface interface {
 	FetchBeaconBlockChain() ([]*common.Hash, error)
 	DeleteBeaconBlock(*common.Hash, uint64) error
 
+	//Crossshard
+	StoreCrossShardNextHeight(byte, byte, uint64, uint64) error
+	FetchCrossShardNextHeight(byte, byte, uint64) (uint64, error)
+
 	// Block index
 	StoreShardBlockIndex(*common.Hash, uint64, byte) error
 	GetIndexOfBlock(*common.Hash) (uint64, byte, error)
