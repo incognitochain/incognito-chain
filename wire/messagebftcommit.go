@@ -2,8 +2,9 @@ package wire
 
 import (
 	"encoding/json"
+	"fmt"
 
-	"github.com/libp2p/go-libp2p-peer"
+	peer "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 )
@@ -17,7 +18,8 @@ type MessageBFTCommit struct {
 	R             string
 	ValidatorsIdx []int
 	Pubkey        string
-	MsgSig        string
+	ContentSig    string
+	Timestamp     int64
 }
 
 func (msg *MessageBFTCommit) Hash() string {
@@ -50,10 +52,25 @@ func (msg *MessageBFTCommit) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (msg *MessageBFTCommit) SignMsg(_ *cashec.KeySet) error {
-	return nil
+func (msg *MessageBFTCommit) SignMsg(keySet *cashec.KeySet) error {
+	dataBytes := []byte{}
+	dataBytes = append(dataBytes, []byte(msg.CommitSig)...)
+	dataBytes = append(dataBytes, []byte(msg.R)...)
+	dataBytes = append(dataBytes, []byte(msg.Pubkey)...)
+	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.ValidatorsIdx))...)
+	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.Timestamp))...)
+	var err error
+	msg.ContentSig, err = keySet.SignDataB58(dataBytes)
+	return err
 }
 
 func (msg *MessageBFTCommit) VerifyMsgSanity() error {
-	return nil
+	dataBytes := []byte{}
+	dataBytes = append(dataBytes, []byte(msg.CommitSig)...)
+	dataBytes = append(dataBytes, []byte(msg.R)...)
+	dataBytes = append(dataBytes, []byte(msg.Pubkey)...)
+	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.ValidatorsIdx))...)
+	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.Timestamp))...)
+	err := cashec.ValidateDataB58(msg.Pubkey, msg.ContentSig, dataBytes)
+	return err
 }

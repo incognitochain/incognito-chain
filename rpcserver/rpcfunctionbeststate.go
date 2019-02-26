@@ -41,8 +41,9 @@ func (rpcServer RpcServer) handleGetShardBestState(params interface{}, closeChan
 	if !ok || result == nil {
 		return nil, NewRPCError(ErrUnexpected, errors.New("Best State shard given by ID not existed"))
 	}
-	result.BestBlock = nil
-	return result, nil
+	valueResult := *result
+	valueResult.BestBlock = nil
+	return valueResult, nil
 }
 
 func (rpcServer RpcServer) handleGetCandidateList(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
