@@ -98,6 +98,7 @@ func (rpcServer RpcServer) handleGetEncryptionFlag(params interface{}, closeChan
 		GOVFlag: govEncryptionFlag,
 	}, nil
 }
+
 func (rpcServer RpcServer) handleSetEncryptionFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	fmt.Print("delete me, use only for test purpose!!!")
 	db := *rpcServer.config.Database
@@ -419,4 +420,12 @@ func (rpcServer RpcServer) handleCreateAndSendNormalVoteProposalFromSealerTransa
 		RpcServer.handleCreateRawNormalVoteProposalTransactionFromSealer,
 		RpcServer.handleSendRawTransaction,
 	)
+}
+
+func setBuildRawBurnTransactionParams(params interface{}, fee float64) interface{} {
+	arrayParams := common.InterfaceSlice(params)
+	x := make(map[string]interface{})
+	x[common.BurningAddress] = fee
+	arrayParams[1] = x
+	return arrayParams
 }
