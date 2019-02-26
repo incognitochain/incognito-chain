@@ -85,7 +85,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 					protocol.pendingBlock = newBlock
 					protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
 
-					time.Sleep(10 * time.Second) //single-node
+					time.Sleep(15 * time.Second) //single-node
 					timeout.Stop()               //single-node
 					return newBlock, nil         //single-node
 				} else {
@@ -101,8 +101,9 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 					protocol.pendingBlock = newBlock
 					protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
 
-					timeout.Stop()       //single-node
-					return newBlock, nil //single-node
+					time.Sleep(15 * time.Second) //single-node
+					timeout.Stop()               //single-node
+					return newBlock, nil         //single-node
 				}
 
 				fmt.Println()
