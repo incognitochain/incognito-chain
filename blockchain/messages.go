@@ -78,7 +78,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 
 func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 	if blockchain.syncStatus.Beacon {
-		fmt.Println("Beacon block received")
+		fmt.Println("Beacon block received", newBlk.Header.Height)
 		if blockchain.BestState.Beacon.BeaconHeight < newBlk.Header.Height {
 			blkHash := newBlk.Header.Hash()
 			err := cashec.ValidateDataB58(newBlk.Header.Producer, newBlk.ProducerSig, blkHash.GetBytes())

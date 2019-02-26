@@ -1,4 +1,4 @@
-package constantpos
+package constantbft
 
 import (
 	"github.com/ninjadotorg/constant/common/base58"

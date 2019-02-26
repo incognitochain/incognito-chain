@@ -11,7 +11,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/connmanager"
-	"github.com/ninjadotorg/constant/consensus/constantpos"
+	"github.com/ninjadotorg/constant/consensus/constantbft"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/mempool"
 	"github.com/ninjadotorg/constant/netsync"
@@ -29,10 +29,10 @@ var (
 
 	backendLog        = common.NewBackend(logWriter{})
 	addrManagerLoger  = backendLog.Logger("Address Log", false)
-	connManagerLogger = backendLog.Logger("Connection Manager Log", true)
+	connManagerLogger = backendLog.Logger("Connection Manager Log", false)
 	mainLogger        = backendLog.Logger("Server Log", false)
 	rpcLogger         = backendLog.Logger("RPC Log", false)
-	netsyncLogger     = backendLog.Logger("Netsync Log", true)
+	netsyncLogger     = backendLog.Logger("Netsync Log", false)
 	peerLogger        = backendLog.Logger("Peer Log", true)
 	dbLogger          = backendLog.Logger("Database Log", false)
 	walletLogger      = backendLog.Logger("Wallet log", false)
@@ -67,7 +67,7 @@ func init() {
 	database.Logger.Init(dbLogger)
 	wallet.Logger.Init(walletLogger)
 	blockchain.Logger.Init(blockchainLogger)
-	constantpos.Logger.Init(consensusLogger)
+	constantbft.Logger.Init(consensusLogger)
 	mempool.Logger.Init(mempoolLogger)
 	btcapi.Logger.Init(randomLogger)
 	transaction.Logger.Init(transactionLogger)

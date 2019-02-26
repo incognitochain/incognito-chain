@@ -287,6 +287,10 @@ func (netSync *NetSync) HandleMessageShardToBeacon(msg *wire.MessageShardToBeaco
 
 func (netSync *NetSync) HandleMessageBFTMsg(msg wire.Message) {
 	Logger.log.Info("Handling new message BFTMsg")
+	if err := msg.VerifyMsgSanity(); err != nil {
+		Logger.log.Error(err)
+		return
+	}
 	netSync.config.Consensus.OnBFTMsg(msg)
 }
 
