@@ -22,6 +22,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
+	cache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
 
@@ -47,10 +48,13 @@ type BlockChain struct {
 		Shards map[byte]struct{}
 		sync.Mutex
 
-		CurrentlySyncShardBlk         sync.Map
-		CurrentlySyncBeaconBlk        sync.Map
-		CurrentlySyncCrossShardBlk    sync.Map
-		CurrentlySyncShardToBeaconBlk sync.Map
+		CurrentlySyncShardBlkByHash           map[byte]*cache.Cache
+		CurrentlySyncShardBlkByHeight         map[byte]*cache.Cache
+		CurrentlySyncBeaconBlkByHash          *cache.Cache
+		CurrentlySyncBeaconBlkByHeight        *cache.Cache
+		CurrentlySyncShardToBeaconBlkByHash   map[byte]*cache.Cache
+		CurrentlySyncShardToBeaconBlkByHeight map[byte]*cache.Cache
+		CurrentlySyncCrossShardBlkByHash      map[byte]*cache.Cache
 
 		PeersState     map[libp2p.ID]*peerState
 		PeersStateLock sync.Mutex
@@ -271,7 +275,7 @@ func (blockchain *BlockChain) initChainState() error {
 // the genesis block, so it must only be called on an uninitialized database.
 */
 func (blockchain *BlockChain) initShardState(shardID byte) error {
-	blockchain.BestState.Shard[shardID] = NewBestStateShard(blockchain.config.ChainParams)
+	blockchain.BestState.Shard[shardID] = InitBestStateShard(shardID, blockchain.config.ChainParams)
 	// Create a new block from genesis block and set it as best block of chain
 	initBlock := ShardBlock{}
 	initBlock = *blockchain.config.ChainParams.GenesisShardBlock
@@ -324,7 +328,7 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 }
 
 func (blockchain *BlockChain) initBeaconState() error {
-	blockchain.BestState.Beacon = NewBestStateBeacon(blockchain.config.ChainParams)
+	blockchain.BestState.Beacon = InitBestStateBeacon(blockchain.config.ChainParams)
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
 	blockchain.BestState.Beacon.Update(initBlock)
 	// TODO(@0xankylosaurus): initialize oracle data properly
@@ -344,6 +348,49 @@ func (blockchain *BlockChain) initBeaconState() error {
 			EndBlock:        1000,
 			ReserveMinPrice: 1000,
 			Amount:          10000000,
+		},
+	}
+
+	bondID, _ := common.NewHashFromStr("601b465a22f872cc50ae1f0c8ed84a78de3d649ffc784fc10000000000000000")
+	buyBondSaleID := [32]byte{1}
+	sellBondSaleID := [32]byte{2}
+	saleData := []params.SaleData{
+		params.SaleData{
+			SaleID:           buyBondSaleID[:],
+			EndBlock:         1000,
+			BuyingAsset:      *bondID,
+			BuyingAmount:     100,
+			DefaultBuyPrice:  100,
+			SellingAsset:     common.ConstantID,
+			SellingAmount:    150,
+			DefaultSellPrice: 100,
+		},
+		params.SaleData{
+			SaleID:           sellBondSaleID[:],
+			EndBlock:         2000,
+			BuyingAsset:      common.ConstantID,
+			BuyingAmount:     250,
+			DefaultBuyPrice:  100,
+			SellingAsset:     *bondID,
+			SellingAmount:    200,
+			DefaultSellPrice: 100,
+		},
+	}
+	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.ListSaleData = saleData
+
+	loanParams := []params.LoanParams{
+		params.LoanParams{
+			InterestRate:     100,   // 1%
+			Maturity:         1000,  // 1 month in blocks
+			LiquidationStart: 15000, // 150%
+		},
+	}
+	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.ListLoanParams = loanParams
+
+	blockchain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress = []privacy.PaymentAddress{
+		privacy.PaymentAddress{
+			Pk: []byte{3, 36, 133, 3, 185, 44, 62, 112, 196, 239, 49, 190, 100, 172, 50, 147, 196, 154, 105, 211, 203, 57, 242, 110, 34, 126, 100, 226, 74, 148, 128, 167, 0},
+			Tk: []byte{2, 134, 3, 114, 89, 60, 134, 3, 185, 245, 176, 187, 244, 145, 250, 149, 67, 98, 68, 106, 69, 200, 228, 209, 3, 26, 231, 15, 36, 251, 211, 186, 159},
 		},
 	}
 

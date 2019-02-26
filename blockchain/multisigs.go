@@ -51,8 +51,7 @@ func (blockGen *BlkTmplGenerator) registerMultiSigsAddresses(
 }
 
 func ValidateAggSignature(validatorIdx [][]int, committees []string, aggSig string, R string, blockHash *common.Hash) error {
-	//single-node
-	return nil
+	return nil //single-node
 	//multi-node
 	pubKeysR := []*privacy.PublicKey{}
 	for _, index := range validatorIdx[0] {

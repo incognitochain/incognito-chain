@@ -64,24 +64,14 @@ func getLoanResponseKeyBeacon(loanID []byte) string {
 }
 
 func getLoanResponseValueBeacon(data []*LoanRespData) string {
-	s := []string{}
-	for _, lrd := range data {
-		s = append(s, lrd.String())
-	}
-	return strings.Join(s, valueSep)
+	value, _ := json.Marshal(data)
+	return string(value)
 }
 
 func parseLoanResponseValueBeacon(data string) ([]*LoanRespData, error) {
-	splits := strings.Split(data, valueSep)
 	lrds := []*LoanRespData{}
-	for _, s := range splits {
-		lrd, err := parseLoanRespData(s)
-		if err != nil {
-			return nil, err
-		}
-		lrds = append(lrds, lrd)
-	}
-	return lrds, nil
+	err := json.Unmarshal([]byte(data), &lrds)
+	return lrds, err
 }
 
 func getSaleDataKeyBeacon(saleID []byte) string {

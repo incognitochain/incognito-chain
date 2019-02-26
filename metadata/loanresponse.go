@@ -2,11 +2,10 @@ package metadata
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -141,6 +140,12 @@ func GetLoanResponses(txHashes [][]byte, bcr BlockchainRetriever) []ResponseData
 	return data
 }
 
+type LoanResponseAction struct {
+	LoanID   []byte
+	Sender   []byte
+	Response ValidLoanResponse
+}
+
 func (lr *LoanResponse) BuildReqActions(txr Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
 	lrActionValue := getLoanResponseActionValue(lr.LoanID, txr.GetSigPubKey(), lr.Response)
 	lrAction := []string{strconv.Itoa(LoanResponseMeta), lrActionValue}
@@ -148,20 +153,20 @@ func (lr *LoanResponse) BuildReqActions(txr Transaction, bcr BlockchainRetriever
 }
 
 func getLoanResponseActionValue(loanID, sender []byte, response ValidLoanResponse) string {
-	return strings.Join([]string{base64.StdEncoding.EncodeToString(loanID), base64.StdEncoding.EncodeToString(sender), string(response)}, actionValueSep)
+	action := &LoanResponseAction{
+		LoanID:   loanID,
+		Sender:   sender,
+		Response: response,
+	}
+	value, _ := json.Marshal(action)
+	return string(value)
 }
 
-func ParseLoanResponseActionValue(values string) ([]byte, []byte, ValidLoanResponse, error) {
-	s := strings.Split(values, actionValueSep)
-	if len(s) != 3 {
-		return nil, nil, 0, errors.Errorf("LoanResponse value invalid")
+func ParseLoanResponseActionValue(value string) ([]byte, []byte, ValidLoanResponse, error) {
+	action := &LoanResponseAction{}
+	err := json.Unmarshal([]byte(value), action)
+	if err != nil {
+		return nil, nil, 0, err
 	}
-	errSaver := &ErrorSaver{}
-	loanID, errID := base64.StdEncoding.DecodeString(s[0])
-	sender, errSender := base64.StdEncoding.DecodeString(s[1])
-	resp, errResp := strconv.Atoi(s[2])
-	if errSaver.Save(errID, errSender, errResp) != nil {
-		return nil, nil, 0, errSaver.Get()
-	}
-	return loanID, sender, ValidLoanResponse(resp), nil
+	return action.LoanID, action.Sender, action.Response, nil
 }
