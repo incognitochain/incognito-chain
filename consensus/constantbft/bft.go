@@ -101,6 +101,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 					protocol.pendingBlock = newBlock
 					protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
 
+					// time.Sleep(10 * time.Second) //single-node
 					timeout.Stop()       //single-node
 					return newBlock, nil //single-node
 				}

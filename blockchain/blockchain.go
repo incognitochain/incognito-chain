@@ -519,14 +519,48 @@ func (blockchain *BlockChain) StoreSerialNumbersFromTxViewPoint(view TxViewPoint
 Uses an existing database to update the set of used tx by saving list SNDerivator of privacy,
 this is a list tx-out which are used by a new tx
 */
-func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint) error {
-	for _, item1 := range view.listSnD {
-		err := blockchain.config.DataBase.StoreSNDerivators(view.tokenID, item1, view.shardID)
-
+func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint, shardID byte) error {
+	// commitment
+	keys := make([]string, 0, len(view.mapCommitments))
+	for k := range view.mapCommitments {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		pubkey := k
+		item1 := view.mapSnD[k]
+		pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
 		if err != nil {
 			return err
 		}
+		lastByte := pubkeyBytes[len(pubkeyBytes)-1]
+		pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
+		if pubkeyShardID == shardID {
+			for _, snd := range item1 {
+				err = blockchain.config.DataBase.StoreSNDerivators(view.tokenID, snd, view.shardID)
+				if err != nil {
+					return err
+				}
+			}
+		}
 	}
+
+	// for pubkey, items := range view.mapSnD {
+	// 	pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	lastByte := pubkeyBytes[len(pubkeyBytes)-1]
+	// 	pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
+	// 	if pubkeyShardID == shardID {
+	// 		for _, item1 := range items {
+	// 			err := blockchain.config.DataBase.StoreSNDerivators(view.tokenID, item1, view.shardID)
+	// 			if err != nil {
+	// 				return err
+	// 			}
+	// 		}
+	// 	}
+	// }
 	return nil
 }
 
@@ -534,7 +568,7 @@ func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint)
 Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
 */
-func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
+func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, shardID byte) error {
 
 	// commitment
 	keys := make([]string, 0, len(view.mapCommitments))
@@ -550,10 +584,14 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) 
 		if err != nil {
 			return err
 		}
-		for _, com := range item1 {
-			err = blockchain.config.DataBase.StoreCommitments(view.tokenID, pubkeyBytes, com, view.shardID)
-			if err != nil {
-				return err
+		lastByte := pubkeyBytes[len(pubkeyBytes)-1]
+		pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
+		if pubkeyShardID == shardID {
+			for _, com := range item1 {
+				err = blockchain.config.DataBase.StoreCommitments(view.tokenID, pubkeyBytes, com, view.shardID)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -573,12 +611,14 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) 
 		if err != nil {
 			return err
 		}
-		for _, com := range item1 {
-			lastByte := pubkeyBytes[len(pubkeyBytes)-1]
-			shardID := common.GetShardIDFromLastByte(lastByte)
-			err = blockchain.config.DataBase.StoreOutputCoins(view.tokenID, pubkeyBytes, com.Bytes(), shardID)
-			if err != nil {
-				return err
+		lastByte := pubkeyBytes[len(pubkeyBytes)-1]
+		pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
+		if pubkeyShardID == shardID {
+			for _, outcoin := range item1 {
+				err = blockchain.config.DataBase.StoreOutputCoins(view.tokenID, pubkeyBytes, outcoin.Bytes(), pubkeyShardID)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -698,252 +738,14 @@ func (blockchain *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 	return nil
 }
 
-//func (blockchain *BlockChain) UpdateDividendPayout(block *Block) error {
-//	for _, tx := range block.Transactions {
-//		switch tx.GetMetadataType() {
-//		case metadata.DividendMeta:
-//			{
-//				tx := tx.(*transaction.Tx)
-//				meta := tx.Metadata.(*metadata.Dividend)
-//				if tx.Proof == nil {
-//					return errors.New("Miss output in tx")
-//				}
-//				for _, _ = range tx.Proof.OutputCoins {
-//					keySet := cashec.KeySet{
-//						PaymentAddress: meta.PaymentAddress,
-//					}
-//					vouts, err := blockchain.GetUnspentTxCustomTokenVout(keySet, meta.TokenID)
-//					if err != nil {
-//						return err
-//					}
-//					for _, vout := range vouts {
-//						txHash := vout.GetTxCustomTokenID()
-//						err := blockchain.config.DataBase.UpdateRewardAccountUTXO(meta.TokenID, keySet.PaymentAddress.Pk, &txHash, vout.GetIndex())
-//						if err != nil {
-//							return err
-//						}
-//					}
-//				}
-//			}
-//		}
-//	}
-//	return nil
-//}
-//
-//func (blockchain *BlockChain) UpdateVoteCountBoard(block *Block) error {
-//	DCBBoardIndex := uint32(0)
-//	GOVBoardIndex := uint32(0)
-//	if block.Header.Height != 1 {
-//		DCBBoardIndex = block.Header.DCBGovernor.BoardIndex + 1
-//		GOVBoardIndex = block.Header.GOVGovernor.BoardIndex + 1
-//	}
-//	for _, tx := range block.Transactions {
-//		switch tx.GetMetadataType() {
-//		case metadata.VoteDCBBoardMeta:
-//			{
-//				txCustomToken := tx.(*transaction.TxCustomToken)
-//				voteAmount := txCustomToken.GetAmountOfVote()
-//				voteDCBBoardMetadata := txCustomToken.Metadata.(*metadata.VoteDCBBoardMetadata)
-//				err := blockchain.config.DataBase.AddVoteBoard(common.DCBBoard, DCBBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteDCBBoardMetadata.CandidatePaymentAddress, voteAmount)
-//				if err != nil {
-//					return err
-//				}
-//			}
-//		case metadata.VoteGOVBoardMeta:
-//			{
-//				txCustomToken := tx.(*transaction.TxCustomToken)
-//				voteAmount := txCustomToken.GetAmountOfVote()
-//				voteGOVBoardMetadata := txCustomToken.Metadata.(*metadata.VoteGOVBoardMetadata)
-//				err := blockchain.config.DataBase.AddVoteBoard(common.GOVBoard, GOVBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteGOVBoardMetadata.CandidatePaymentAddress, voteAmount)
-//				if err != nil {
-//					return err
-//				}
-//			}
-//		}
-//	}
-//	return nil
-//}
-//
-//func (blockchain *BlockChain) UpdateVoteTokenHolderDB(block *Block) error {
-//	for _, tx := range block.Transactions {
-//		switch tx.GetMetadataType() {
-//		case metadata.SendInitDCBVoteTokenMeta:
-//			{
-//				meta := tx.GetMetadata().(*metadata.SendInitDCBVoteTokenMetadata)
-//				err := blockchain.config.DataBase.SendInitVoteToken(common.DCBBoard, block.Header.DCBGovernor.BoardIndex, meta.ReceiverPaymentAddress, meta.Amount)
-//				if err != nil {
-//					return err
-//				}
-//			}
-//		case metadata.SendInitGOVVoteTokenMeta:
-//			{
-//				meta := tx.GetMetadata().(*metadata.SendInitGOVVoteTokenMetadata)
-//				err := blockchain.config.DataBase.SendInitVoteToken(common.GOVBoard, block.Header.GOVGovernor.BoardIndex, meta.ReceiverPaymentAddress, meta.Amount)
-//				if err != nil {
-//					return err
-//				}
-//			}
-//
-//		}
-//	}
-//	return nil
-//}
-//
-//func (blockchain *BlockChain) ProcessVoteProposal(block *Block) error {
-//	nextDCBConstitutionIndex := uint32(block.Header.DCBConstitution.GetConstitutionIndex() + 1)
-//	nextGOVConstitutionIndex := uint32(block.Header.GOVConstitution.GetConstitutionIndex() + 1)
-//	for _, tx := range block.Transactions {
-//		meta := tx.GetMetadata()
-//		switch tx.GetMetadataType() {
-//		case metadata.SealedLv3DCBVoteProposalMeta:
-//			underlieMetadata := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
-//			blockchain.config.DataBase.AddVoteLv3Proposal(common.DCBBoard, nextDCBConstitutionIndex, underlieMetadata.Hash())
-//		case metadata.SealedLv2DCBVoteProposalMeta:
-//			underlieMetadata := meta.(*metadata.SealedLv2DCBVoteProposalMetadata)
-//			blockchain.config.DataBase.AddVoteLv1or2Proposal(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
-//		case metadata.SealedLv1DCBVoteProposalMeta:
-//			underlieMetadata := meta.(*metadata.SealedLv1DCBVoteProposalMetadata)
-//			blockchain.config.DataBase.AddVoteLv1or2Proposal(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
-//		case metadata.NormalDCBVoteProposalFromOwnerMeta:
-//			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromOwnerMetadata)
-//			blockchain.config.DataBase.AddVoteNormalProposalFromOwner(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
-//		case metadata.NormalDCBVoteProposalFromSealerMeta:
-//			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromSealerMetadata)
-//			blockchain.config.DataBase.AddVoteNormalProposalFromSealer(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
-//		case metadata.AcceptDCBProposalMeta:
-//			underlieMetadata := meta.(*metadata.AcceptDCBProposalMetadata)
-//			blockchain.config.DataBase.TakeVoteTokenFromWinner(common.DCBBoard, nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
-//			blockchain.config.DataBase.SetNewProposalWinningVoter(common.DCBBoard, nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
-//		case metadata.SealedLv3GOVVoteProposalMeta:
-//			underlieMetadata := meta.(*metadata.SealedLv3GOVVoteProposalMetadata)
-//			blockchain.config.DataBase.AddVoteLv3Proposal(common.GOVBoard, nextGOVConstitutionIndex, underlieMetadata.Hash())
-//		case metadata.SealedLv2GOVVoteProposalMeta:
-//			underlieMetadata := meta.(*metadata.SealedLv2GOVVoteProposalMetadata)
-//			blockchain.config.DataBase.AddVoteLv1or2Proposal(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
-//		case metadata.SealedLv1GOVVoteProposalMeta:
-//			underlieMetadata := meta.(*metadata.SealedLv1GOVVoteProposalMetadata)
-//			blockchain.config.DataBase.AddVoteLv1or2Proposal(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
-//		case metadata.NormalGOVVoteProposalFromOwnerMeta:
-//			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromOwnerMetadata)
-//			blockchain.config.DataBase.AddVoteNormalProposalFromOwner(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
-//		case metadata.NormalGOVVoteProposalFromSealerMeta:
-//			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromSealerMetadata)
-//			blockchain.config.DataBase.AddVoteNormalProposalFromSealer(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
-//		case metadata.AcceptGOVProposalMeta:
-//			underlieMetadata := meta.(*metadata.AcceptGOVProposalMetadata)
-//			blockchain.config.DataBase.TakeVoteTokenFromWinner(common.GOVBoard, nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
-//			blockchain.config.DataBase.SetNewProposalWinningVoter(common.GOVBoard, nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
-//		}
-//	}
-//	return nil
-//}
-//
-//func (blockchain *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
-//	// Temp storage to update crowdsale data
-//	saleDataMap := make(map[string]*params.SaleData)
-//
-//	for _, tx := range block.Transactions {
-//		switch tx.GetMetadataType() {
-//		case metadata.AcceptDCBProposalMeta:
-//			{
-//             DONE
-//			}
-//		case metadata.CrowdsalePaymentMeta:
-//			{
-//				err := blockchain.updateCrowdsalePaymentData(tx, saleDataMap)
-//				if err != nil {
-//					return err
-//				}
-//			}
-//			//		case metadata.ReserveResponseMeta:
-//			//			{
-//			//				// TODO(@0xbunyip): move to another func
-//			//				meta := tx.GetMetadata().(*metadata.ReserveResponse)
-//			//				_, _, _, txRequest, err := blockchain.GetTransactionByHash(meta.RequestedTxID)
-//			//				if err != nil {
-//			//					return err
-//			//				}
-//			//				requestHash := txRequest.Hash()
-//			//
-//			//				hash := tx.Hash()
-//			//				if err := blockchain.config.DataBase.StoreCrowdsaleResponse(requestHash[:], hash[:]); err != nil {
-//			//					return err
-//			//				}
-//			//			}
-//		}
-//	}
-//
-//	// Save crowdsale data back into db
-//	for _, data := range saleDataMap {
-//		if err := blockchain.config.DataBase.StoreCrowdsaleData(
-//			data.SaleID,
-//			data.GetProposalTxHash(),
-//			data.BuyingAmount,
-//			data.SellingAmount,
-//		); err != nil {
-//			return err
-//		}
-//	}
-//	return nil
-//}
-
-// func (blockchain *BlockChain) ProcessCMBTxs(block *Block) error {
-// 	for _, tx := range block.Transactions {
-// 		switch tx.GetMetadataType() {
-// 		case metadata.CMBInitRequestMeta:
-// 			{
-// 				err := blockchain.processCMBInitRequest(tx)
-// 				if err != nil {
-// 					return err
-// 				}
-// 			}
-// 		case metadata.CMBInitResponseMeta:
-// 			{
-// 				err := blockchain.processCMBInitResponse(tx)
-// 				if err != nil {
-// 					return err
-// 				}
-// 			}
-// 		case metadata.CMBInitRefundMeta:
-// 			{
-// 				err := blockchain.processCMBInitRefund(tx)
-// 				if err != nil {
-// 					return err
-// 				}
-// 			}
-// 		case metadata.CMBDepositSendMeta:
-// 			{
-// 				err := blockchain.processCMBDepositSend(tx)
-// 				if err != nil {
-// 					return err
-// 				}
-// 			}
-// 		case metadata.CMBWithdrawRequestMeta:
-// 			{
-// 				err := blockchain.processCMBWithdrawRequest(tx)
-// 				if err != nil {
-// 					return err
-// 				}
-// 			}
-// 		case metadata.CMBWithdrawResponseMeta:
-// 			{
-// 				err := blockchain.processCMBWithdrawResponse(tx)
-// 				if err != nil {
-// 					return err
-// 				}
-// 			}
-// 		}
-// 	}
-
-// 	// Penalize late response for cmb withdraw request
-// 	return blockchain.findLateWithdrawResponse(uint64(block.Header.Height))
-// }
-
+/*
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
 // need to check light or not light mode
 // with light mode - node only fetch outputcoins of account in local wallet -> smaller data
 // with not light mode - node fetch all outputcoins of all accounts in network -> big data
-// (note: still storage full data of commitments, serialnumbersm snderivator to check double spend)
+// @note: still storage full data of commitments, serialnumbersm snderivator to check double spend
+// @note: this function only work for transaction transfer token/constant within shard
+*/
 func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBlock) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
@@ -1021,12 +823,12 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 			return err
 		}
 
-		err = blockchain.StoreCommitmentsFromTxViewPoint(*privacyCustomTokenSubView)
+		err = blockchain.StoreCommitmentsFromTxViewPoint(*privacyCustomTokenSubView, block.Header.ShardID)
 		if err != nil {
 			return err
 		}
 
-		err = blockchain.StoreSNDerivatorsFromTxViewPoint(*privacyCustomTokenSubView)
+		err = blockchain.StoreSNDerivatorsFromTxViewPoint(*privacyCustomTokenSubView, block.Header.ShardID)
 		if err != nil {
 			return err
 		}
@@ -1040,12 +842,12 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		return err
 	}
 
-	err = blockchain.StoreCommitmentsFromTxViewPoint(*view)
+	err = blockchain.StoreCommitmentsFromTxViewPoint(*view, block.Header.ShardID)
 	if err != nil {
 		return err
 	}
 
-	err = blockchain.StoreSNDerivatorsFromTxViewPoint(*view)
+	err = blockchain.StoreSNDerivatorsFromTxViewPoint(*view, block.Header.ShardID)
 	if err != nil {
 		return err
 	}
@@ -1053,10 +855,10 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 	return nil
 }
 
-// /*
+/*
 // 	KeyWallet: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
 //   H: value-spent/unspent-rewarded/unreward
-// */
+*/
 func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxCustomToken) error {
 	Splitter := lvdb.Splitter
 	TokenPaymentAddressPrefix := lvdb.TokenPaymentAddressPrefix
@@ -1634,3 +1436,244 @@ func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
 
 	return true
 }
+
+//func (blockchain *BlockChain) UpdateDividendPayout(block *Block) error {
+//	for _, tx := range block.Transactions {
+//		switch tx.GetMetadataType() {
+//		case metadata.DividendMeta:
+//			{
+//				tx := tx.(*transaction.Tx)
+//				meta := tx.Metadata.(*metadata.Dividend)
+//				if tx.Proof == nil {
+//					return errors.New("Miss output in tx")
+//				}
+//				for _, _ = range tx.Proof.OutputCoins {
+//					keySet := cashec.KeySet{
+//						PaymentAddress: meta.PaymentAddress,
+//					}
+//					vouts, err := blockchain.GetUnspentTxCustomTokenVout(keySet, meta.TokenID)
+//					if err != nil {
+//						return err
+//					}
+//					for _, vout := range vouts {
+//						txHash := vout.GetTxCustomTokenID()
+//						err := blockchain.config.DataBase.UpdateRewardAccountUTXO(meta.TokenID, keySet.PaymentAddress.Pk, &txHash, vout.GetIndex())
+//						if err != nil {
+//							return err
+//						}
+//					}
+//				}
+//			}
+//		}
+//	}
+//	return nil
+//}
+//
+//func (blockchain *BlockChain) UpdateVoteCountBoard(block *Block) error {
+//	DCBBoardIndex := uint32(0)
+//	GOVBoardIndex := uint32(0)
+//	if block.Header.Height != 1 {
+//		DCBBoardIndex = block.Header.DCBGovernor.BoardIndex + 1
+//		GOVBoardIndex = block.Header.GOVGovernor.BoardIndex + 1
+//	}
+//	for _, tx := range block.Transactions {
+//		switch tx.GetMetadataType() {
+//		case metadata.VoteDCBBoardMeta:
+//			{
+//				txCustomToken := tx.(*transaction.TxCustomToken)
+//				voteAmount := txCustomToken.GetAmountOfVote()
+//				voteDCBBoardMetadata := txCustomToken.Metadata.(*metadata.VoteDCBBoardMetadata)
+//				err := blockchain.config.DataBase.AddVoteBoard(common.DCBBoard, DCBBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteDCBBoardMetadata.CandidatePaymentAddress, voteAmount)
+//				if err != nil {
+//					return err
+//				}
+//			}
+//		case metadata.VoteGOVBoardMeta:
+//			{
+//				txCustomToken := tx.(*transaction.TxCustomToken)
+//				voteAmount := txCustomToken.GetAmountOfVote()
+//				voteGOVBoardMetadata := txCustomToken.Metadata.(*metadata.VoteGOVBoardMetadata)
+//				err := blockchain.config.DataBase.AddVoteBoard(common.GOVBoard, GOVBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteGOVBoardMetadata.CandidatePaymentAddress, voteAmount)
+//				if err != nil {
+//					return err
+//				}
+//			}
+//		}
+//	}
+//	return nil
+//}
+//
+//func (blockchain *BlockChain) UpdateVoteTokenHolderDB(block *Block) error {
+//	for _, tx := range block.Transactions {
+//		switch tx.GetMetadataType() {
+//		case metadata.SendInitDCBVoteTokenMeta:
+//			{
+//				meta := tx.GetMetadata().(*metadata.SendInitDCBVoteTokenMetadata)
+//				err := blockchain.config.DataBase.SendInitVoteToken(common.DCBBoard, block.Header.DCBGovernor.BoardIndex, meta.ReceiverPaymentAddress, meta.Amount)
+//				if err != nil {
+//					return err
+//				}
+//			}
+//		case metadata.SendInitGOVVoteTokenMeta:
+//			{
+//				meta := tx.GetMetadata().(*metadata.SendInitGOVVoteTokenMetadata)
+//				err := blockchain.config.DataBase.SendInitVoteToken(common.GOVBoard, block.Header.GOVGovernor.BoardIndex, meta.ReceiverPaymentAddress, meta.Amount)
+//				if err != nil {
+//					return err
+//				}
+//			}
+//
+//		}
+//	}
+//	return nil
+//}
+//
+//func (blockchain *BlockChain) ProcessVoteProposal(block *Block) error {
+//	nextDCBConstitutionIndex := uint32(block.Header.DCBConstitution.GetConstitutionIndex() + 1)
+//	nextGOVConstitutionIndex := uint32(block.Header.GOVConstitution.GetConstitutionIndex() + 1)
+//	for _, tx := range block.Transactions {
+//		meta := tx.GetMetadata()
+//		switch tx.GetMetadataType() {
+//		case metadata.SealedLv3DCBVoteProposalMeta:
+//			underlieMetadata := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
+//			blockchain.config.DataBase.AddVoteLv3Proposal(common.DCBBoard, nextDCBConstitutionIndex, underlieMetadata.Hash())
+//		case metadata.SealedLv2DCBVoteProposalMeta:
+//			underlieMetadata := meta.(*metadata.SealedLv2DCBVoteProposalMetadata)
+//			blockchain.config.DataBase.AddVoteLv1or2Proposal(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
+//		case metadata.SealedLv1DCBVoteProposalMeta:
+//			underlieMetadata := meta.(*metadata.SealedLv1DCBVoteProposalMetadata)
+//			blockchain.config.DataBase.AddVoteLv1or2Proposal(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
+//		case metadata.NormalDCBVoteProposalFromOwnerMeta:
+//			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromOwnerMetadata)
+//			blockchain.config.DataBase.AddVoteNormalProposalFromOwner(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
+//		case metadata.NormalDCBVoteProposalFromSealerMeta:
+//			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromSealerMetadata)
+//			blockchain.config.DataBase.AddVoteNormalProposalFromSealer(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
+//		case metadata.AcceptDCBProposalMeta:
+//			underlieMetadata := meta.(*metadata.AcceptDCBProposalMetadata)
+//			blockchain.config.DataBase.TakeVoteTokenFromWinner(common.DCBBoard, nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
+//			blockchain.config.DataBase.SetNewProposalWinningVoter(common.DCBBoard, nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
+//		case metadata.SealedLv3GOVVoteProposalMeta:
+//			underlieMetadata := meta.(*metadata.SealedLv3GOVVoteProposalMetadata)
+//			blockchain.config.DataBase.AddVoteLv3Proposal(common.GOVBoard, nextGOVConstitutionIndex, underlieMetadata.Hash())
+//		case metadata.SealedLv2GOVVoteProposalMeta:
+//			underlieMetadata := meta.(*metadata.SealedLv2GOVVoteProposalMetadata)
+//			blockchain.config.DataBase.AddVoteLv1or2Proposal(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
+//		case metadata.SealedLv1GOVVoteProposalMeta:
+//			underlieMetadata := meta.(*metadata.SealedLv1GOVVoteProposalMetadata)
+//			blockchain.config.DataBase.AddVoteLv1or2Proposal(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
+//		case metadata.NormalGOVVoteProposalFromOwnerMeta:
+//			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromOwnerMetadata)
+//			blockchain.config.DataBase.AddVoteNormalProposalFromOwner(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
+//		case metadata.NormalGOVVoteProposalFromSealerMeta:
+//			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromSealerMetadata)
+//			blockchain.config.DataBase.AddVoteNormalProposalFromSealer(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
+//		case metadata.AcceptGOVProposalMeta:
+//			underlieMetadata := meta.(*metadata.AcceptGOVProposalMetadata)
+//			blockchain.config.DataBase.TakeVoteTokenFromWinner(common.GOVBoard, nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
+//			blockchain.config.DataBase.SetNewProposalWinningVoter(common.GOVBoard, nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
+//		}
+//	}
+//	return nil
+//}
+//
+//func (blockchain *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
+//	// Temp storage to update crowdsale data
+//	saleDataMap := make(map[string]*params.SaleData)
+//
+//	for _, tx := range block.Transactions {
+//		switch tx.GetMetadataType() {
+//		case metadata.AcceptDCBProposalMeta:
+//			{
+//             DONE
+//			}
+//		case metadata.CrowdsalePaymentMeta:
+//			{
+//				err := blockchain.updateCrowdsalePaymentData(tx, saleDataMap)
+//				if err != nil {
+//					return err
+//				}
+//			}
+//			//		case metadata.ReserveResponseMeta:
+//			//			{
+//			//				// TODO(@0xbunyip): move to another func
+//			//				meta := tx.GetMetadata().(*metadata.ReserveResponse)
+//			//				_, _, _, txRequest, err := blockchain.GetTransactionByHash(meta.RequestedTxID)
+//			//				if err != nil {
+//			//					return err
+//			//				}
+//			//				requestHash := txRequest.Hash()
+//			//
+//			//				hash := tx.Hash()
+//			//				if err := blockchain.config.DataBase.StoreCrowdsaleResponse(requestHash[:], hash[:]); err != nil {
+//			//					return err
+//			//				}
+//			//			}
+//		}
+//	}
+//
+//	// Save crowdsale data back into db
+//	for _, data := range saleDataMap {
+//		if err := blockchain.config.DataBase.StoreCrowdsaleData(
+//			data.SaleID,
+//			data.GetProposalTxHash(),
+//			data.BuyingAmount,
+//			data.SellingAmount,
+//		); err != nil {
+//			return err
+//		}
+//	}
+//	return nil
+//}
+
+// func (blockchain *BlockChain) ProcessCMBTxs(block *Block) error {
+// 	for _, tx := range block.Transactions {
+// 		switch tx.GetMetadataType() {
+// 		case metadata.CMBInitRequestMeta:
+// 			{
+// 				err := blockchain.processCMBInitRequest(tx)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 		case metadata.CMBInitResponseMeta:
+// 			{
+// 				err := blockchain.processCMBInitResponse(tx)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 		case metadata.CMBInitRefundMeta:
+// 			{
+// 				err := blockchain.processCMBInitRefund(tx)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 		case metadata.CMBDepositSendMeta:
+// 			{
+// 				err := blockchain.processCMBDepositSend(tx)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 		case metadata.CMBWithdrawRequestMeta:
+// 			{
+// 				err := blockchain.processCMBWithdrawRequest(tx)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 		case metadata.CMBWithdrawResponseMeta:
+// 			{
+// 				err := blockchain.processCMBWithdrawResponse(tx)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 		}
+// 	}
+
+// 	// Penalize late response for cmb withdraw request
+// 	return blockchain.findLateWithdrawResponse(uint64(block.Header.Height))
+// }
