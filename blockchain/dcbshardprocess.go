@@ -74,21 +74,29 @@ func (bc *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 		switch tx.GetMetadataType() {
 		case metadata.LoanUnlockMeta:
 			{
-				// Update loan payment info after withdrawing Constant
+				// Confirm that loan is withdrawed
 				tx := tx.(*transaction.Tx)
 				meta := tx.GetMetadata().(*metadata.LoanUnlock)
-				requestMeta, err := bc.GetLoanRequestMeta(meta.LoanID)
-				if err != nil {
-					fmt.Printf("[db] process LoanUnlock fail, err: %+v\n", err)
-					return err
-				}
-				principle := requestMeta.LoanAmount
-				interest := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
-				err = bc.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint64(block.Header.Height))
-				fmt.Printf("[db] process LoanUnlock: %d %d %d %+v\n", principle, interest, uint64(block.Header.Height), err)
+				err := bc.DataBase.StoreLoanWithdrawed(meta.LoanID)
 				if err != nil {
 					return err
 				}
+
+				//// Update loan payment info after withdrawing Constant
+				//tx := tx.(*transaction.Tx)
+				//meta := tx.GetMetadata().(*metadata.LoanUnlock)
+				//requestMeta, err := bc.GetLoanRequestMeta(meta.LoanID)
+				//if err != nil {
+				//	fmt.Printf("[db] process LoanUnlock fail, err: %+v\n", err)
+				//	return err
+				//}
+				//principle := requestMeta.LoanAmount
+				//interest := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
+				//err = bc.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint64(block.Header.Height))
+				//fmt.Printf("[db] process LoanUnlock: %d %d %d %+v\n", principle, interest, uint64(block.Header.Height), err)
+				//if err != nil {
+				//	return err
+				//}
 			}
 		case metadata.LoanPaymentMeta:
 			{
