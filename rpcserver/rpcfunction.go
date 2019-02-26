@@ -118,9 +118,9 @@ var RpcHandler = map[string]commandHandler{
 
 	// vote board
 	CreateAndSendVoteDCBBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
-	CreateRawVoteDCBBoardTx:              RpcServer.handleCreateRawVoteDCBBoardCustomTransaction,
+	CreateRawVoteDCBBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
 	CreateAndSendVoteGOVBoardTransaction: RpcServer.handleCreateAndSendVoteGOVBoardTransaction,
-	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteDCBBoardCustomTransaction,
+	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteGOVBoardTransaction,
 	GetAmountVoteToken:                   RpcServer.handleGetAmountVoteToken,
 	SetAmountVoteToken:                   RpcServer.handleSetAmountVoteToken,
 
