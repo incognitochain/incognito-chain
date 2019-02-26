@@ -103,7 +103,7 @@ type Config struct {
 	customTokenRewardSnapshot map[string]uint64
 
 	ShardToBeaconPool ShardToBeaconPool
-	CrossShardPool    CrossShardPool
+	CrossShardPool    map[byte]CrossShardPool
 	NodeBeaconPool    NodeBeaconPool
 	NodeShardPool     NodeShardPool
 	TxPool            TxPool
@@ -212,14 +212,21 @@ func (blockchain *BlockChain) initChainState() error {
 
 	//TODO: 0xBahamoot check back later
 	var initialized bool
+
 	blockchain.BestState = &BestState{
-		Beacon: &BestStateBeacon{},
+		Beacon: nil,
 		Shard:  make(map[byte]*BestStateShard),
 	}
 
 	bestStateBeaconBytes, err := blockchain.config.DataBase.FetchBeaconBestState()
 	if err == nil {
-		err = json.Unmarshal(bestStateBeaconBytes, blockchain.BestState.Beacon)
+		beacon := &BestStateBeacon{}
+		err = json.Unmarshal(bestStateBeaconBytes, beacon)
+		//update singleton object
+		SetBestStateBeacon(beacon)
+		//update beacon field in blockchain Beststate
+		blockchain.BestState.Beacon = GetBestStateBeacon()
+
 		if err != nil {
 			initialized = false
 		} else {
@@ -242,8 +249,12 @@ func (blockchain *BlockChain) initChainState() error {
 		shardID := byte(shard - 1)
 		bestStateBytes, err := blockchain.config.DataBase.FetchBestState(shardID)
 		if err == nil {
-			blockchain.BestState.Shard[shardID] = &BestStateShard{}
-			err = json.Unmarshal(bestStateBytes, blockchain.BestState.Shard[shardID])
+			shardBestState := &BestStateShard{}
+			err = json.Unmarshal(bestStateBytes, shardBestState)
+			//update singleton object
+			SetBestStateShard(shardID, shardBestState)
+			//update Shard field in blockchain Beststate
+			blockchain.BestState.Shard[shardID] = GetBestStateShard(shardID)
 			if err != nil {
 				initialized = false
 			} else {

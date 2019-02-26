@@ -31,12 +31,12 @@ type ShardToBeaconBlock struct {
 }
 
 type CrossShardBlock struct {
-	AggregatedSig string  `json:"AggregatedSig"`
-	R             string  `json:"R"`
-	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
-	ProducerSig   string  `json:"ProducerSig"`
-
+	AggregatedSig   string  `json:"AggregatedSig"`
+	R               string  `json:"R"`
+	ValidatorsIdx   [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
+	ProducerSig     string  `json:"ProducerSig"`
 	Header          ShardHeader
+	ToShardID       byte
 	MerklePathShard []common.Hash
 	CrossOutputCoin []privacy.OutputCoin
 }
@@ -158,6 +158,7 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 	crossShard.Header = block.Header
 	crossShard.MerklePathShard = merklePathShard
 	crossShard.CrossOutputCoin = utxoList
+	crossShard.ToShardID = shardID
 	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 4")
 	return crossShard, nil
 }
