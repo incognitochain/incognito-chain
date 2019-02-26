@@ -126,11 +126,12 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 		tp.addTxCoinHashH(*txHash)
 	}
 	// add candidate into candidate list ONLY with staking transaction
-	if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
-		pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), byte(0x00))
-		tp.addCanđiateToList(pubkey)
+	if tx.GetMetadata() != nil {
+		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
+			pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), byte(0x00))
+			tp.addCanđiateToList(pubkey)
+		}
 	}
-
 	return txD
 }
 
@@ -232,14 +233,16 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		return nil, nil, err
 	}
 	// check duplicate stake public key ONLY with staking transaction
-	if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
-		pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), byte(0x00))
-		tempPubkey := metadata.GetValidStaker(tp.candidateList, []string{pubkey})
-		if len(tempPubkey) == 0 {
-			str := fmt.Sprintf("This public key already stake and still in pool %+v", pubkey)
-			err := MempoolTxError{}
-			err.Init(RejectDuplicateStakeTx, errors.New(str))
-			return nil, nil, err
+	if tx.GetMetadata() != nil {
+		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
+			pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), byte(0x00))
+			tempPubkey := metadata.GetValidStaker(tp.candidateList, []string{pubkey})
+			if len(tempPubkey) == 0 {
+				str := fmt.Sprintf("This public key already stake and still in pool %+v", pubkey)
+				err := MempoolTxError{}
+				err.Init(RejectDuplicateStakeTx, errors.New(str))
+				return nil, nil, err
+			}
 		}
 	}
 	txD := tp.addTx(tx, bestHeight, txFee)
@@ -280,6 +283,9 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 // RemoveTx safe remove transaction for pool
 func (tp *TxPool) RemoveTx(tx metadata.Transaction) error {
 	tp.mtx.Lock()
+	fmt.Println("...................................")
+	fmt.Println("txHash To Be Remove", tx.Hash())
+	fmt.Println("...................................")
 	err := tp.removeTx(&tx)
 	// remove tx coin hash from pool
 	txHash := tx.Hash()
@@ -306,6 +312,13 @@ func (tp *TxPool) GetTx(txHash *common.Hash) (metadata.Transaction, error) {
 // // MiningDescs returns a slice of mining descriptors for all the transactions
 // // in the pool.
 func (tp *TxPool) MiningDescs() []*metadata.TxDesc {
+	fmt.Println()
+	fmt.Println()
+	fmt.Println()
+	fmt.Println("Current Transaction in pool", tp.pool)
+	fmt.Println()
+	fmt.Println()
+	fmt.Println()
 	descs := []*metadata.TxDesc{}
 	tp.mtx.Lock()
 	for _, desc := range tp.pool {

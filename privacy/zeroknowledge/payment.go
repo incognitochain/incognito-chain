@@ -1,7 +1,6 @@
 package zkp
 
 import (
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"math/big"
@@ -214,9 +213,7 @@ func (proof *PaymentProof) Bytes() []byte {
 
 	// convert commitment index to bytes array
 	for i := 0; i < len(proof.CommitmentIndices); i++ {
-		commitmentIndexBytes := make([]byte, privacy.Uint64Size)
-		binary.LittleEndian.PutUint64(commitmentIndexBytes, proof.CommitmentIndices[i])
-		bytes = append(bytes, commitmentIndexBytes...)
+		bytes = append(bytes, privacy.AddPaddingBigInt(big.NewInt(int64(proof.CommitmentIndices[i])), privacy.Uint64Size)...)
 	}
 	//fmt.Printf("BYTES ------------------ %v\n", bytes)
 	//fmt.Printf("LEN BYTES ------------------ %v\n", len(bytes))
@@ -410,7 +407,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	// get commitments list
 	proof.CommitmentIndices = make([]uint64, len(proof.OneOfManyProof)*privacy.CMRingSize)
 	for i := 0; i < len(proof.OneOfManyProof)*privacy.CMRingSize; i++ {
-		proof.CommitmentIndices[i] = binary.LittleEndian.Uint64(proofbytes[offset : offset+privacy.Uint64Size])
+		proof.CommitmentIndices[i] = new(big.Int).SetBytes(proofbytes[offset : offset+privacy.Uint64Size]).Uint64()
 		offset = offset + privacy.Uint64Size
 	}
 
@@ -609,6 +606,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 
 		cmOutputValueAll = cmOutputValueAll.Add(cmOutputValue[i])
 		randOutputValueAll.Add(randOutputValueAll, randOutputValue[i])
+		randOutputValueAll.Mod(randOutputValueAll, privacy.Curve.Params().N)
 
 		// calculate final commitment for output coins
 		outputCoins[i].CoinDetails.CoinCommitment = cmOutputSum[i]

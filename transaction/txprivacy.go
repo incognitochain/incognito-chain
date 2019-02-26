@@ -12,6 +12,7 @@ import (
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
@@ -372,7 +373,7 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	signature.SetBytes(tx.Sig)
 
 	// verify signature
-	Logger.log.Debugf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
+	Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
 	res = verKey.Verify(signature, tx.Hash()[:])
 
 	return res, nil
@@ -464,7 +465,6 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			for i := 0; i < len(tx.Proof.InputCoins); i++ {
 				ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, shardID, tokenID)
 				if !ok || err != nil {
-					Logger.log.Infof("[db]cm existed: %d\n", i)
 					return false
 				}
 			}
@@ -488,10 +488,11 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 func (tx Tx) String() string {
 	record := strconv.Itoa(int(tx.Version))
+	//fmt.
 	record += strconv.FormatInt(tx.LockTime, 10)
 	record += strconv.FormatUint(tx.Fee, 10)
 	if tx.Proof != nil {
-		record += string(tx.Proof.Bytes()[:])
+		record += base58.Base58Check{}.Encode(tx.Proof.Bytes()[:], 0x00)
 	}
 	if tx.Metadata != nil {
 		metadata := tx.Metadata.Hash().String()
@@ -684,8 +685,8 @@ func (tx *Tx) ValidateTxWithBlockChain(
 	if tx.GetType() == common.TxSalaryType {
 		return nil
 	}
-	fmt.Printf("[db] validating tx with blockchain tx level\n")
 	if tx.Metadata != nil {
+		fmt.Printf("[db] validating tx with blockchain metadata level: %d\n", tx.GetMetadataType())
 		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(tx, bcr, shardID, db)
 		if err != nil {
 			return err
@@ -930,7 +931,6 @@ func (tx *Tx) InitTxSalary(
 func (tx Tx) ValidateTxSalary(
 	db database.DatabaseInterface,
 ) bool {
-	fmt.Printf("[db] validating tx salary: %s\n", tx.Hash())
 	// verify signature
 	valid, err := tx.verifySigTx()
 	if !valid {

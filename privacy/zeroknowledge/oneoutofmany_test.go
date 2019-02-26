@@ -3,119 +3,145 @@ package zkp
 import (
 	"fmt"
 	"github.com/ninjadotorg/constant/privacy"
+	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
-	"github.com/stretchr/testify/assert"
-	"time"
 )
 
 //TestPKOneOfMany test protocol for one of many Commitment is Commitment to zero
 func TestPKOneOfMany(t *testing.T) {
-	witness := new(OneOutOfManyWitness)
-
-	indexIsZero := 2
-
-	// list of commitments
-	commitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
-	snDerivators := make([]*big.Int, privacy.CMRingSize)
-	randoms := make([]*big.Int, privacy.CMRingSize)
-
-	for i := 0; i < privacy.CMRingSize; i++ {
-		snDerivators[i] = privacy.RandScalar()
-		randoms[i] = privacy.RandScalar()
-		commitments[i] = privacy.PedCom.CommitAtIndex(snDerivators[i], randoms[i], privacy.SND)
-	}
-
-	// create Commitment to zero at indexIsZero
-	snDerivators[indexIsZero] = big.NewInt(0)
-	commitments[indexIsZero] = privacy.PedCom.CommitAtIndex(snDerivators[indexIsZero], randoms[indexIsZero], privacy.SND)
-
-	witness.Set(commitments, randoms[indexIsZero], uint64(indexIsZero))
-	start := time.Now()
-	proof, err := witness.Prove()
-	end := time.Since(start)
-	fmt.Printf("One out of many proving time: %v\n", end)
-	if err != nil {
-		privacy.Logger.Log.Error(err)
-	}
-
-	//Convert proof to bytes array
-	proofBytes := proof.Bytes()
-
-	fmt.Printf("One out of many proof size: %v\n", len(proofBytes))
-
-	//revert bytes array to proof
-	proof2 := new(OneOutOfManyProof).Init()
-	proof2.SetBytes(proofBytes)
-	proof2.stmt.commitments = commitments
-
-	start = time.Now()
-
-	res := proof.Verify()
-	end = time.Since(start)
-	fmt.Printf("One out of many verification time: %v\n", end)
-
-	assert.Equal(t, true, res)
+	//witness := new(OneOutOfManyWitness)
+	//
+	//indexIsZero := 2
+	//
+	//// list of commitments
+	//commitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
+	//snDerivators := make([]*big.Int, privacy.CMRingSize)
+	//randoms := make([]*big.Int, privacy.CMRingSize)
+	//
+	//for i := 0; i < privacy.CMRingSize; i++ {
+	//	snDerivators[i] = privacy.RandScalar()
+	//	randoms[i] = privacy.RandScalar()
+	//	commitments[i] = privacy.PedCom.CommitAtIndex(snDerivators[i], randoms[i], privacy.SND)
+	//}
+	//
+	//// create Commitment to zero at indexIsZero
+	//snDerivators[indexIsZero] = big.NewInt(0)
+	//commitments[indexIsZero] = privacy.PedCom.CommitAtIndex(snDerivators[indexIsZero], randoms[indexIsZero], privacy.SND)
+	//
+	//witness.Set(commitments, randoms[indexIsZero], uint64(indexIsZero))
+	//start := time.Now()
+	//proof, err := witness.Prove()
+	//end := time.Since(start)
+	//fmt.Printf("One out of many proving time: %v\n", end)
+	//if err != nil {
+	//	privacy.Logger.Log.Error(err)
+	//}
+	//
+	////Convert proof to bytes array
+	//proofBytes := proof.Bytes()
+	//
+	//fmt.Printf("One out of many proof size: %v\n", len(proofBytes))
+	//
+	////revert bytes array to proof
+	//proof2 := new(OneOutOfManyProof).Init()
+	//proof2.SetBytes(proofBytes)
+	//proof2.stmt.commitments = commitments
+	//
+	//start = time.Now()
+	//
+	//res := proof.Verify()
+	//end = time.Since(start)
+	//fmt.Printf("One out of many verification time: %v\n", end)
+	//
+	//assert.Equal(t, true, res)
 
 	//test for JS
 	//hCommitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
 	//hCommitments[0] = new(privacy.EllipticPoint)
-	//hCommitments[0].Decompress([]byte{2, 63, 242, 198, 114, 250, 36, 102, 85, 80, 173, 148, 153, 247, 78, 215, 30, 54, 40, 193, 40, 190, 206, 73, 198, 39, 23, 48, 56, 136, 58, 91, 167})
+	//hCommitments[0].Decompress([]byte{3, 225, 145, 19, 109, 28, 119, 32, 54, 143, 94, 108, 235, 211, 15, 196, 220, 174, 19, 96, 115, 86, 50, 41, 0, 121, 123, 23, 241, 231, 126, 44, 124})
 	//
 	//hCommitments[1] = new(privacy.EllipticPoint)
-	//hCommitments[1].Decompress([]byte{2, 203, 30, 129, 126, 123, 135, 125, 29, 43, 137, 52, 148, 146, 17, 87, 85, 237, 67, 191, 175, 241, 86, 102, 239, 183, 114, 78, 11, 127, 116, 16, 143})
+	//hCommitments[1].Decompress([]byte{3, 61, 175, 99, 143, 220, 215, 180, 105, 134, 244, 90, 204, 108, 93, 0, 176, 93, 250, 102, 73, 91, 69, 42, 125, 7, 227, 35, 176, 30, 91, 117, 173})
 	//
 	//hCommitments[2] = new(privacy.EllipticPoint)
-	//hCommitments[2].Decompress([]byte{2, 123, 251, 169, 31, 79, 237, 122, 212, 173, 208, 175, 20, 111, 140, 19, 185, 72, 17, 229, 163, 84, 255, 63, 157, 51, 251, 209, 160, 122, 250, 30, 116})
+	//hCommitments[2].Decompress([]byte{3, 131, 74, 242, 235, 166, 189, 189, 108, 197, 76, 104, 145, 18, 180, 201, 70, 168, 40, 234, 56, 128, 109, 46, 96, 6, 198, 207, 10, 148, 69, 175, 22})
 	//
 	//hCommitments[3] = new(privacy.EllipticPoint)
-	//hCommitments[3].Decompress([]byte{2, 174, 247, 205, 128, 120, 191, 95, 219, 186, 227, 95, 10, 157, 200, 224, 109, 152, 179, 5, 188, 162, 125, 167, 214, 127, 178, 173, 246, 109, 18, 23, 254})
+	//hCommitments[3].Decompress([]byte{3, 158, 17, 107, 212, 6, 7, 198, 47, 35, 121, 78, 205, 225, 89, 10, 212, 110, 80, 42, 65, 84, 208, 177, 158, 216, 213, 252, 6, 186, 47, 112, 71})
 	//
 	//hCommitments[4] = new(privacy.EllipticPoint)
-	//hCommitments[4].Decompress([]byte{2, 8, 49, 76, 243, 238, 108, 171, 35, 55, 118, 239, 95, 214, 43, 88, 155, 4, 152, 62, 74, 15, 62, 203, 158, 189, 163, 62, 150, 255, 220, 14, 170})
+	//hCommitments[4].Decompress([]byte{2, 167, 93, 55, 90, 102, 118, 80, 111, 118, 145, 48, 78, 181, 214, 249, 81, 56, 89, 106, 173, 41, 87, 104, 249, 85, 103, 245, 115, 48, 171, 50, 166})
 	//
 	//hCommitments[5] = new(privacy.EllipticPoint)
-	//hCommitments[5].Decompress([]byte{3, 205, 17, 244, 179, 44, 154, 114, 20, 78, 113, 196, 20, 133, 98, 165, 111, 74, 139, 53, 74, 224, 153, 41, 66, 224, 190, 220, 179, 136, 193, 241, 218})
+	//hCommitments[5].Decompress([]byte{2, 232, 218, 17, 250, 193, 207, 155, 20, 217, 68, 12, 192, 177, 238, 240, 181, 138, 216, 226, 242, 138, 62, 8, 146, 231, 7, 121, 178, 19, 147, 207, 181})
 	//
 	//hCommitments[6] = new(privacy.EllipticPoint)
-	//hCommitments[6].Decompress([]byte{3, 191, 145, 66, 202, 76, 92, 64, 185, 89, 85, 149, 239, 190, 231, 208, 214, 25, 0, 218, 142, 114, 18, 188, 122, 111, 213, 6, 108, 128, 129, 122, 109})
+	//hCommitments[6].Decompress([]byte{3, 33, 30, 16, 170, 189, 229, 38, 67, 132, 147, 243, 195, 60, 150, 70, 185, 41, 149, 150, 113, 19, 195, 31, 93, 7, 153, 30, 232, 255, 202, 28, 31})
 	//
 	//hCommitments[7] = new(privacy.EllipticPoint)
-	//hCommitments[7].Decompress([]byte{2, 186, 15, 36, 170, 79, 9, 118, 9, 249, 10, 215, 114, 5, 80, 9, 156, 206, 217, 242, 156, 30, 210, 169, 109, 221, 103, 37, 186, 24, 88, 47, 121})
-	//
+	//hCommitments[7].Decompress([]byte{3, 126, 80, 209, 45, 86, 216, 198, 49, 250, 206, 154, 70, 142, 41, 160, 173, 116, 55, 253, 120, 171, 120, 243, 154, 243, 211, 223, 39, 11, 227, 247, 4})
+
 	//hCommitments[3] = privacy.PedCom.CommitAtIndex(big.NewInt(0), big.NewInt(100), privacy.SK)
-	//
-	////hWit := new(OneOutOfManyWitness)
-	////hWit.Set(hCommitments, big.NewInt(100), 3)
-	////hProof1, _ := hWit.Prove()
-	////res := hProof1.Verify()
-	////fmt.Println(res)
-	//
-	//hProof := new(OneOutOfManyProof).Init()
-	//hProof.SetBytes([]byte{3, 33, 59, 108, 16, 125, 209, 19, 158, 64, 30, 253, 139, 106, 153, 100, 236, 67, 31, 116, 106, 131, 129, 182, 220, 66, 215, 2, 43, 102, 153, 183, 178, 3, 216, 204, 16, 91, 194, 133, 111, 183, 46, 117, 180, 37, 175, 63, 253, 180, 28, 194, 154, 30, 191, 13, 42, 75, 16, 244, 193, 102, 12, 69, 251, 125, 2, 2, 31, 136, 46, 223, 130, 107, 77, 42, 146, 163, 203, 59, 14, 137, 63, 120, 69, 42, 157, 239, 60, 199, 11, 185, 238, 152, 111, 54, 255, 190, 241, 2, 65, 38, 87, 26, 176, 109, 107, 211, 117, 156, 26, 11, 80, 235, 60, 89, 78, 105, 180, 14, 165, 188, 214, 96, 246, 209, 147, 90, 105, 98, 204, 57, 3, 99, 97, 67, 131, 213, 19, 134, 215, 143, 54, 115, 172, 21, 38, 80, 166, 147, 174, 146, 189, 0, 91, 21, 98, 113, 220, 63, 85, 169, 107, 126, 205, 2, 237, 183, 33, 80, 38, 238, 8, 73, 104, 158, 107, 244, 248, 97, 180, 151, 49, 91, 47, 121, 152, 201, 99, 137, 252, 104, 74, 57, 158, 82, 45, 177, 2, 31, 232, 234, 213, 125, 83, 103, 106, 142, 121, 189, 204, 64, 135, 88, 251, 87, 12, 138, 166, 30, 181, 114, 195, 141, 25, 169, 73, 53, 17, 51, 181, 2, 205, 162, 172, 130, 207, 165, 13, 217, 143, 70, 34, 92, 200, 18, 193, 114, 232, 90, 244, 161, 198, 198, 143, 252, 15, 36, 254, 36, 255, 90, 195, 8, 2, 64, 43, 33, 238, 77, 159, 95, 147, 70, 35, 151, 155, 107, 223, 212, 164, 232, 147, 12, 177, 112, 248, 42, 4, 29, 41, 128, 175, 12, 233, 208, 207, 3, 111, 197, 49, 7, 95, 148, 25, 58, 50, 1, 110, 80, 14, 251, 132, 72, 160, 67, 196, 250, 57, 108, 254, 78, 237, 76, 23, 245, 193, 13, 158, 225, 2, 6, 193, 44, 27, 209, 98, 85, 43, 238, 85, 116, 95, 223, 228, 21, 193, 93, 104, 166, 111, 149, 176, 14, 152, 182, 53, 249, 112, 98, 188, 109, 163, 3, 73, 145, 149, 118, 206, 37, 140, 75, 168, 93, 120, 53, 39, 64, 168, 150, 59, 179, 114, 210, 64, 68, 6, 209, 33, 143, 0, 249, 17, 219, 192, 71, 146, 86, 236, 160, 161, 202, 128, 254, 4, 118, 29, 204, 36, 247, 14, 64, 55, 145, 167, 231, 183, 129, 113, 206, 139, 145, 58, 251, 151, 95, 156, 110, 136, 184, 249, 27, 177, 150, 128, 219, 126, 165, 184, 244, 143, 229, 252, 152, 120, 136, 142, 241, 255, 89, 33, 208, 56, 137, 168, 91, 3, 44, 48, 176, 75, 141, 138, 240, 3, 151, 231, 91, 182, 88, 142, 163, 13, 212, 52, 138, 133, 217, 220, 148, 38, 73, 157, 60, 199, 92, 111, 219, 226, 218, 140, 26, 240, 142, 178, 36, 21, 27, 96, 178, 106, 102, 7, 15, 19, 33, 24, 21, 79, 90, 140, 88, 26, 91, 233, 227, 96, 153, 46, 156, 63, 228, 167, 130, 96, 180, 147, 129, 141, 58, 219, 78, 162, 191, 217, 2, 8, 115, 201, 227, 104, 60, 175, 63, 14, 169, 69, 149, 118, 55, 19, 93, 134, 17, 129, 55, 59, 208, 233, 22, 171, 31, 127, 204, 58, 100, 156, 194, 86, 218, 196, 93, 131, 79, 27, 145, 72, 73, 222, 15, 248, 7, 72, 79, 183, 157, 113, 110, 229, 232, 18, 89, 212, 52, 201, 158, 79, 15, 178, 6, 228, 244, 249, 102, 231, 78, 140, 176, 31, 63, 114, 147, 12, 177, 225, 95, 188, 133, 69, 49, 212, 145, 178, 129, 203, 76, 105, 142, 240, 82, 161, 110, 47, 8, 210, 157, 42, 170, 46, 249, 184, 30, 49, 173, 44, 14, 150, 97, 79, 1, 7, 67, 77, 190, 186, 78, 72, 99, 66, 42, 176, 150, 3, 20, 23, 48, 93, 7, 71, 105, 220, 40, 132, 160, 115, 93, 62, 127, 89, 75, 149, 131, 150, 65, 195, 240, 102, 126, 173, 81, 157, 254, 156, 201, 113, 24, 161, 46, 24, 59, 58, 237, 175, 142, 219, 253, 57, 137, 236, 53, 83, 218, 59, 12, 145, 206})
-	//hProof.stmt = new(OneOutOfManyStatement)
-	//hProof.stmt.Set(hCommitments)
-	//
-	//
-	//for i:=0; i<3; i++{
-	//	fmt.Printf("cl: %v: %v\n", i, hProof.cl[i].Compress())
-	//	fmt.Printf("ca: %v: %v\n", i, hProof.ca[i].Compress())
-	//	fmt.Printf("cb: %v: %v\n", i, hProof.cb[i].Compress())
-	//
-	//	fmt.Printf("cd point: %v: %+v\n", i, hProof.cd[i].X.Bytes())
-	//	fmt.Printf("cd: %v: %v\n", i, hProof.cd[i].Compress())
-	//
-	//	fmt.Printf("f: %v: %v\n", i, hProof.f[i].Bytes())
-	//	fmt.Printf("za: %v: %v\n", i, hProof.za[i].Bytes())
-	//	fmt.Printf("zb: %v: %v\n", i, hProof.zb[i].Bytes())
-	//
-	//	fmt.Printf("commitment: %v: %v\n\n", i, hProof.stmt.commitments[i].Compress())
-	//
-	//}
-	//fmt.Printf("zd: %v\n", hProof.zd.Bytes())
-	//
-	//res2 := hProof.Verify()
-	//assert.Equal(t, true, res2)
+
+	commitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
+	commitments[0] = new(privacy.EllipticPoint)
+	commitments[0].Decompress([]byte{2, 63, 242, 198, 114, 250, 36, 102, 85, 80, 173, 148, 153, 247, 78, 215, 30, 54, 40, 193, 40, 190, 206, 73, 198, 39, 23, 48, 56, 136, 58, 91, 167})
+
+	commitments[1] = new(privacy.EllipticPoint)
+	commitments[1].Decompress([]byte{2, 203, 30, 129, 126, 123, 135, 125, 29, 43, 137, 52, 148, 146, 17, 87, 85, 237, 67, 191, 175, 241, 86, 102, 239, 183, 114, 78, 11, 127, 116, 16, 143})
+
+	commitments[2] = new(privacy.EllipticPoint)
+	commitments[2].Decompress([]byte{2, 123, 251, 169, 31, 79, 237, 122, 212, 173, 208, 175, 20, 111, 140, 19, 185, 72, 17, 229, 163, 84, 255, 63, 157, 51, 251, 209, 160, 122, 250, 30, 116})
+
+	commitments[3] = new(privacy.EllipticPoint)
+	commitments[3].Decompress([]byte{2, 174, 247, 205, 128, 120, 191, 95, 219, 186, 227, 95, 10, 157, 200, 224, 109, 152, 179, 5, 188, 162, 125, 167, 214, 127, 178, 173, 246, 109, 18, 23, 254})
+
+	commitments[4] = new(privacy.EllipticPoint)
+	commitments[4].Decompress([]byte{2, 8, 49, 76, 243, 238, 108, 171, 35, 55, 118, 239, 95, 214, 43, 88, 155, 4, 152, 62, 74, 15, 62, 203, 158, 189, 163, 62, 150, 255, 220, 14, 170})
+
+	commitments[5] = new(privacy.EllipticPoint)
+	commitments[5].Decompress([]byte{3, 205, 17, 244, 179, 44, 154, 114, 20, 78, 113, 196, 20, 133, 98, 165, 111, 74, 139, 53, 74, 224, 153, 41, 66, 224, 190, 220, 179, 136, 193, 241, 218})
+
+	commitments[6] = new(privacy.EllipticPoint)
+	commitments[6].Decompress([]byte{3, 191, 145, 66, 202, 76, 92, 64, 185, 89, 85, 149, 239, 190, 231, 208, 214, 25, 0, 218, 142, 114, 18, 188, 122, 111, 213, 6, 108, 128, 129, 122, 109})
+
+	commitments[7] = new(privacy.EllipticPoint)
+	commitments[7].Decompress([]byte{2, 186, 15, 36, 170, 79, 9, 118, 9, 249, 10, 215, 114, 5, 80, 9, 156, 206, 217, 242, 156, 30, 210, 169, 109, 221, 103, 37, 186, 24, 88, 47, 121})
+
+	commitments[3] = privacy.PedCom.CommitAtIndex(big.NewInt(0), big.NewInt(100), privacy.SK)
+
+	//hWit := new(OneOutOfManyWitness)
+	//hWit.Set(hCommitments, big.NewInt(100), 3)
+	//hProof1, _ := hWit.Prove()
+	//res := hProof1.Verify()
+	//fmt.Println(res)
+
+	hProof := new(OneOutOfManyProof).Init()
+	hProof.SetBytes([]byte{2, 252, 129, 242, 143, 200, 121, 32, 63, 4, 37, 248, 52, 208, 1, 131, 68, 219, 226, 104, 7, 122, 29, 72, 133, 107, 9, 40, 15, 228, 158, 214, 221, 2, 222, 146, 133, 245, 79, 118, 168, 82, 2, 191, 122, 39, 39, 20, 4, 177, 155, 90, 127, 81, 19, 22, 247, 4, 123, 233, 106, 152, 180, 113, 60, 12, 2, 133, 200, 39, 72, 31, 216, 112, 63, 162, 62, 169, 73, 160, 57, 177, 78, 135, 91, 0, 192, 254, 40, 7, 125, 230, 191, 166, 144, 154, 99, 212, 86, 2, 43, 24, 179, 196, 182, 191, 180, 242, 71, 29, 32, 167, 238, 182, 182, 114, 211, 13, 178, 238, 119, 21, 71, 233, 151, 119, 25, 251, 59, 4, 206, 78, 3, 63, 197, 122, 186, 102, 162, 22, 232, 197, 253, 163, 244, 48, 180, 189, 70, 189, 188, 233, 191, 60, 237, 215, 195, 187, 64, 124, 245, 246, 140, 50, 196, 2, 96, 114, 90, 5, 184, 21, 182, 146, 209, 7, 218, 236, 236, 198, 188, 48, 23, 161, 179, 99, 14, 203, 250, 57, 189, 77, 102, 47, 57, 141, 204, 221, 2, 38, 181, 212, 41, 75, 247, 193, 123, 39, 187, 182, 204, 53, 120, 13, 171, 26, 198, 76, 231, 251, 185, 23, 177, 210, 232, 169, 24, 76, 120, 172, 184, 3, 71, 156, 156, 242, 42, 237, 66, 77, 93, 28, 173, 196, 241, 201, 162, 217, 9, 245, 151, 47, 42, 210, 80, 9, 171, 186, 39, 192, 119, 64, 45, 123, 2, 61, 83, 62, 204, 249, 69, 136, 101, 8, 202, 52, 117, 52, 118, 152, 79, 196, 164, 109, 172, 239, 2, 166, 220, 100, 167, 27, 64, 170, 233, 54, 163, 2, 247, 126, 170, 208, 26, 156, 136, 223, 94, 93, 167, 42, 223, 247, 236, 72, 0, 91, 117, 196, 212, 118, 200, 68, 228, 39, 18, 203, 95, 43, 212, 166, 2, 97, 48, 62, 10, 220, 196, 116, 121, 121, 12, 210, 15, 62, 161, 0, 141, 232, 215, 23, 253, 198, 64, 181, 45, 244, 0, 150, 25, 194, 223, 114, 204, 2, 86, 48, 227, 172, 10, 149, 73, 110, 144, 37, 174, 81, 90, 188, 127, 135, 6, 212, 221, 145, 110, 212, 163, 126, 126, 176, 90, 77, 95, 67, 136, 13, 185, 223, 154, 106, 217, 197, 94, 158, 10, 69, 97, 23, 73, 221, 132, 49, 3, 103, 215, 38, 174, 51, 199, 72, 174, 127, 8, 177, 239, 148, 198, 64, 191, 37, 49, 129, 10, 179, 181, 89, 213, 222, 179, 64, 231, 201, 40, 28, 63, 73, 69, 142, 49, 209, 26, 232, 46, 43, 105, 15, 107, 93, 145, 171, 184, 180, 120, 102, 99, 255, 203, 142, 244, 62, 28, 153, 220, 145, 103, 53, 167, 69, 82, 46, 76, 110, 108, 121, 34, 21, 152, 128, 79, 117, 62, 7, 27, 141, 62, 227, 50, 157, 183, 191, 183, 248, 43, 235, 105, 204, 129, 136, 1, 99, 157, 146, 43, 178, 77, 175, 107, 103, 203, 9, 185, 181, 192, 57, 176, 3, 66, 170, 255, 18, 118, 121, 184, 80, 25, 254, 105, 234, 207, 31, 111, 17, 97, 132, 234, 6, 25, 230, 223, 133, 170, 152, 93, 233, 200, 169, 3, 137, 31, 154, 85, 23, 76, 201, 156, 183, 185, 102, 216, 126, 254, 171, 224, 68, 255, 9, 249, 127, 208, 11, 90, 188, 133, 252, 231, 5, 139, 59, 35, 130, 162, 122, 251, 11, 11, 188, 124, 93, 14, 45, 52, 93, 170, 131, 4, 103, 189, 210, 159, 122, 145, 133, 28, 197, 199, 11, 178, 241, 158, 215, 145, 190, 167, 247, 70, 1, 216, 166, 52, 153, 15, 229, 32, 80, 116, 136, 248, 116, 172, 221, 165, 235, 221, 31, 68, 245, 72, 211, 160, 234, 70, 242, 127, 136, 246, 239, 225, 116, 104, 191, 190, 32, 81, 126, 247, 126, 13, 77, 170, 61, 127, 188, 16, 82, 0, 25, 0, 178, 160, 103, 123, 72, 117, 117, 215, 247, 192, 229, 24, 221, 28, 127, 26, 188, 5, 130, 122, 28, 76, 197, 216, 203, 177, 165, 246, 192, 78, 87, 13, 99, 177, 14, 78, 72, 115, 118})
+	hProof.stmt = new(OneOutOfManyStatement)
+	hProof.stmt.Set(commitments)
+
+
+	for i:=0; i<3; i++{
+		fmt.Printf("cl: %v: %v\n", i, hProof.cl[i].Compress())
+		fmt.Printf("ca: %v: %v\n", i, hProof.ca[i].Compress())
+		fmt.Printf("cb: %v: %v\n", i, hProof.cb[i].Compress())
+
+		fmt.Printf("cd point: %v: %+v\n", i, hProof.cd[i].X.Bytes())
+		fmt.Printf("cd: %v: %v\n", i, hProof.cd[i].Compress())
+
+		fmt.Printf("f: %v: %v\n", i, hProof.f[i].Bytes())
+		fmt.Printf("za: %v: %v\n", i, hProof.za[i].Bytes())
+		fmt.Printf("zb: %v: %v\n", i, hProof.zb[i].Bytes())
+
+		fmt.Printf("commitment: %v: %v\n\n", i, hProof.stmt.commitments[i].Compress())
+
+	}
+	fmt.Printf("zd: %v\n", hProof.zd.Bytes())
+
+	res2 := hProof.Verify()
+	assert.Equal(t, true, res2)
 }
 
 

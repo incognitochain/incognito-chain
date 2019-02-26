@@ -7,10 +7,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy"
 	"github.com/pkg/errors"
 )
 
@@ -200,31 +198,38 @@ func (bsb *BestStateBeacon) processBuyFromGOVReqInstruction(inst []string) error
 }
 
 func (bsb *BestStateBeacon) processLoanRequestInstruction(inst []string) error {
-	loanID, txHash, err := metadata.ParseLoanRequestActionValue(inst[1])
+	fmt.Printf("[db] beaconProcess found inst: %+v\n", inst)
+	loanID, txHash, err := metadata.ParseLoanRequestActionValue(inst[2])
 	if err != nil {
+		fmt.Printf("[db] parse err: %+v\n", err)
 		return err
 	}
 	// Check if no loan request with the same id existed
 	key := getLoanRequestKeyBeacon(loanID)
 	if _, ok := bsb.Params[key]; ok {
+		fmt.Printf("[db] LoanID existed: %t %x\n", ok, key)
 		return errors.Errorf("LoanID already existed: %x", loanID)
 	}
 
 	// Save loan request on beacon shard
 	value := txHash.String()
 	bsb.Params[key] = value
+	fmt.Printf("[db] procLoanReqInst success\n")
 	return nil
 }
 
 func (bsb *BestStateBeacon) processLoanResponseInstruction(inst []string) error {
-	loanID, sender, resp, err := metadata.ParseLoanResponseActionValue(inst[1])
+	fmt.Printf("[db] beaconProcess found inst: %+v\n", inst)
+	loanID, sender, resp, err := metadata.ParseLoanResponseActionValue(inst[2])
 	if err != nil {
+		fmt.Printf("[db] fail parse loan resp: %+v\n", err)
 		return err
 	}
 
 	// For safety, beacon shard checks if loan request existed
 	key := getLoanRequestKeyBeacon(loanID)
 	if _, ok := bsb.Params[key]; !ok {
+		fmt.Printf("[db] loanID not existed: %t %x\n", ok, loanID)
 		return errors.Errorf("LoanID not existed: %x", loanID)
 	}
 
@@ -234,6 +239,7 @@ func (bsb *BestStateBeacon) processLoanResponseInstruction(inst []string) error 
 	if value, ok := bsb.Params[key]; ok {
 		lrds, err = parseLoanResponseValueBeacon(value)
 		if err != nil {
+			fmt.Printf("[db] parseLoanResp err: %+v\n", err)
 			return err
 		}
 	}
@@ -241,6 +247,7 @@ func (bsb *BestStateBeacon) processLoanResponseInstruction(inst []string) error 
 	// Check if same member doesn't respond twice
 	for _, resp := range lrds {
 		if bytes.Equal(resp.SenderPubkey, sender) {
+			fmt.Printf("[db] same member: %x %x\n", resp.SenderPubkey, sender)
 			return errors.Errorf("Sender %x already responded to loanID %x", sender, loanID)
 		}
 	}
@@ -253,12 +260,15 @@ func (bsb *BestStateBeacon) processLoanResponseInstruction(inst []string) error 
 	lrds = append(lrds, lrd)
 	value := getLoanResponseValueBeacon(lrds)
 	bsb.Params[key] = value
+	fmt.Printf("[db] procLoanRespInst success\n")
 	return nil
 }
 
 func (bsb *BestStateBeacon) processLoanPaymentInstruction(inst []string) error {
-	_, amount, err := metadata.ParseLoanPaymentActionValue(inst[1])
+	fmt.Printf("[db] beaconProcess found inst: %+v\n", inst)
+	amount, err := metadata.ParseLoanPaymentActionValue(inst[1])
 	if err != nil {
+		fmt.Printf("[db] procLoanPayInst err: %+v\n", err)
 		return err
 	}
 
@@ -363,99 +373,4 @@ func (bsb *BestStateBeacon) processCrowdsalePaymentInstruction(inst []string) er
 		bsb.Params[key] = getSaleDataValueBeacon(saleData)
 	}
 	return nil
-}
-
-func buildInstructionsForCrowdsaleRequest(
-	shardID byte,
-	contentStr string,
-	beaconBestState *BestStateBeacon,
-	accumulativeValues *accumulativeValues,
-) ([][]string, error) {
-	saleID, priceLimit, limitSell, paymentAddress, sentAmount, err := metadata.ParseCrowdsaleRequestActionValue(contentStr)
-	if err != nil {
-		return nil, err
-	}
-	key := getSaleDataKeyBeacon(saleID)
-
-	// Get data of current crowdsale
-	var saleData *params.SaleData
-	ok := false
-	if saleData, ok = accumulativeValues.saleDataMap[key]; !ok {
-		if value, ok := beaconBestState.Params[key]; ok {
-			saleData, _ = parseSaleDataValueBeacon(value)
-		} else {
-			return nil, errors.Errorf("SaleID not exist: %x", saleID)
-		}
-	}
-	accumulativeValues.saleDataMap[key] = saleData
-
-	// Skip payment if either selling or buying asset is offchain (needs confirmation)
-	if common.IsOffChainAsset(&saleData.SellingAsset) || common.IsOffChainAsset(&saleData.BuyingAsset) {
-		fmt.Println("[db] crowdsale offchain asset")
-		return nil, nil
-	}
-
-	inst, err := buildPaymentInstructionForCrowdsale(
-		priceLimit,
-		limitSell,
-		paymentAddress,
-		sentAmount,
-		beaconBestState,
-		saleData,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return inst, nil
-}
-
-func buildPaymentInstructionForCrowdsale(
-	priceLimit uint64,
-	limitSell bool,
-	paymentAddress privacy.PaymentAddress,
-	sentAmount uint64,
-	beaconBestState *BestStateBeacon,
-	saleData *params.SaleData,
-) ([][]string, error) {
-	// Get price for asset
-	buyingAsset := saleData.BuyingAsset
-	sellingAsset := saleData.SellingAsset
-	buyPrice := beaconBestState.getAssetPrice(buyingAsset)
-	sellPrice := beaconBestState.getAssetPrice(sellingAsset)
-	if buyPrice == 0 || sellPrice == 0 {
-		buyPrice = saleData.DefaultBuyPrice
-		sellPrice = saleData.DefaultSellPrice
-		if buyPrice == 0 || sellPrice == 0 {
-			return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
-		}
-	}
-	fmt.Printf("[db] buy and sell price: %d %d\n", buyPrice, sellPrice)
-
-	// Check if price limit is not violated
-	if limitSell && sellPrice > priceLimit {
-		fmt.Printf("Price limit violated: %d %d\n", sellPrice, priceLimit)
-		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
-	} else if !limitSell && buyPrice < priceLimit {
-		fmt.Printf("Price limit violated: %d %d\n", buyPrice, priceLimit)
-		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
-	}
-
-	// Calculate value of asset sent in request tx
-	sentAssetValue := sentAmount * buyPrice // in USD
-
-	// Number of asset must pay to user
-	paymentAmount := sentAssetValue / sellPrice
-
-	// Check if there's still enough asset to trade
-	if sentAmount > saleData.BuyingAmount || paymentAmount > saleData.SellingAmount {
-		fmt.Printf("Crowdsale reached limit\n")
-		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
-	}
-
-	// Update amount of buying/selling asset of the crowdsale
-	saleData.BuyingAmount -= sentAmount
-	saleData.SellingAmount -= paymentAmount
-
-	// Build instructions
-	return generateCrowdsalePaymentInstruction(paymentAddress, paymentAmount, sellingAsset, saleData.SaleID, sentAmount, true)
 }

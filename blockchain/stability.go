@@ -65,7 +65,7 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 ) ([][]string, error) {
 	instructions := [][]string{}
 	for _, inst := range shardBlockInstructions {
-		fmt.Printf("[db] beacon found inst: %s\n", inst[0])
+		fmt.Printf("[db] beaconProducer found inst: %s\n", inst[0])
 		// TODO: will improve the condition later
 		if inst[0] == "stake" || inst[0] == "swap" || inst[0] == "random" {
 			continue
@@ -75,59 +75,45 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 			return [][]string{}, err
 		}
 		contentStr := inst[1]
+		newInst := [][]string{}
 		switch metaType {
+		case metadata.LoanRequestMeta:
+			newInst, err = buildInstructionsForLoanRequest(contentStr)
+
+		case metadata.LoanResponseMeta:
+			newInst, err = buildInstructionsForLoanResponse(contentStr)
+
+		case metadata.LoanPaymentMeta:
+			newInst, err = buildInstructionsForLoanPayment(contentStr)
+
 		case metadata.BuyFromGOVRequestMeta:
-			buyBondsInst, err := buildInstructionsForBuyBondsFromGOVReq(shardID, contentStr, beaconBestState, accumulativeValues)
-			if err != nil {
-				return [][]string{}, err
-			}
-			instructions = append(instructions, buyBondsInst...)
+			newInst, err = buildInstructionsForBuyBondsFromGOVReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
 		case metadata.BuyGOVTokenRequestMeta:
-			buyGOVTokensInst, err := buildInstructionsForBuyGOVTokensReq(shardID, contentStr, beaconBestState, accumulativeValues)
-			if err != nil {
-				return [][]string{}, err
-			}
-			instructions = append(instructions, buyGOVTokensInst...)
+			newInst, err = buildInstructionsForBuyGOVTokensReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
 		case metadata.CrowdsaleRequestMeta:
-			saleInst, err := buildInstructionsForCrowdsaleRequest(shardID, contentStr, beaconBestState, accumulativeValues)
-			if err != nil {
-				return [][]string{}, err
-			}
-			instructions = append(instructions, saleInst...)
+			newInst, err = buildInstructionsForCrowdsaleRequest(shardID, contentStr, beaconBestState, accumulativeValues)
 
 		case metadata.BuyBackRequestMeta:
-			buyBackInst, err := buildInstructionsForBuyBackBondsReq(shardID, contentStr, beaconBestState, accumulativeValues, blkTmpGen.chain)
-			if err != nil {
-				return [][]string{}, err
-			}
-			instructions = append(instructions, buyBackInst...)
+			newInst, err = buildInstructionsForBuyBackBondsReq(shardID, contentStr, beaconBestState, accumulativeValues, blkTmpGen.chain)
 
 		case metadata.IssuingRequestMeta:
-			issuingInst, err := buildInstructionsForIssuingReq(shardID, contentStr, beaconBestState, accumulativeValues)
-			if err != nil {
-				return [][]string{}, err
-			}
-			instructions = append(instructions, issuingInst...)
+			newInst, err = buildInstructionsForIssuingReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
 		case metadata.ContractingRequestMeta:
-			contractingInst, err := buildInstructionsForContractingReq(shardID, contentStr, beaconBestState, accumulativeValues)
-			if err != nil {
-				return [][]string{}, err
-			}
-			instructions = append(instructions, contractingInst...)
+			newInst, err = buildInstructionsForContractingReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
 		case metadata.ShardBlockSalaryRequestMeta:
-			shardBlockSalaryReqInst, err := buildInstForShardBlockSalaryReq(shardID, contentStr, beaconBestState, accumulativeValues)
-			if err != nil {
-				return [][]string{}, err
-			}
-			instructions = append(instructions, shardBlockSalaryReqInst...)
+			newInst, err = buildInstForShardBlockSalaryReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
 		default:
 			continue
 		}
+		if err != nil {
+			return [][]string{}, err
+		}
+		instructions = append(instructions, newInst...)
 	}
 	// update params in beststate
 	return instructions, nil
@@ -153,6 +139,7 @@ func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, p
 	if err != nil {
 		return nil, errors.Errorf("Error building unlock tx for loan id %x", withdrawMeta.LoanID)
 	}
+	fmt.Printf("[db] success build LoanUnlock with amount %d\n", meta.LoanAmount)
 	return txNormals[0], nil
 }
 
@@ -173,13 +160,13 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 			if len(l) <= 2 {
 				continue
 			}
-			fmt.Printf("[db] shard build Resp from inst: %+v\n", l)
 			shardToProcess, err := strconv.Atoi(l[1])
 			if err == nil && shardToProcess == int(shardID) {
 				metaType, err := strconv.Atoi(l[0])
 				if err != nil {
 					return nil, err
 				}
+				fmt.Printf("[db] shard build Resp from inst: %+v\n", l)
 				switch metaType {
 				case metadata.CrowdsalePaymentMeta:
 					paymentInst, err := ParseCrowdsalePaymentInstruction(l[2])
