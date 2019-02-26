@@ -61,10 +61,10 @@ func (rpcServer RpcServer) createRawCustomTokenTxWithMetadata(params interface{}
 		return nil, NewRPCError(ErrUnexpected, errCons)
 	}
 	tx, err := rpcServer.buildRawCustomTokenTransaction(params, meta)
-	fmt.Printf("sigPubKey after build: %v\n", tx.SigPubKey)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+	fmt.Printf("sigPubKey after build: %v\n", tx.SigPubKey)
 	byteArrays, errMarshal := json.Marshal(tx)
 	if errMarshal != nil {
 		// return hex for a new tx
