@@ -19,9 +19,10 @@ type TxViewPoint struct {
 	tokenID           *common.Hash
 	shardID           byte
 	listSerialNumbers [][]byte // array serialNumbers
-	listSnD           []big.Int
-	mapCommitments    map[string][][]byte //map[base58check.encode{pubkey}]([]([]byte-commitment))
-	mapOutputCoins    map[string][]privacy.OutputCoin
+	//listSnD            []big.Int
+	mapSnD         map[string][]big.Int
+	mapCommitments map[string][][]byte //map[base58check.encode{pubkey}]([]([]byte-commitment))
+	mapOutputCoins map[string][]privacy.OutputCoin
 
 	// data of normal custom token
 	customTokenTxs map[int32]*transaction.TxCustomToken
@@ -39,8 +40,11 @@ func (view *TxViewPoint) ListSerialNumbers() [][]byte {
 	return view.listSerialNumbers
 }
 
-func (view *TxViewPoint) ListSnDerivators() []big.Int {
-	return view.listSnD
+// func (view *TxViewPoint) ListSnDerivators() []big.Int {
+// 	return view.listSnD
+// }
+func (view *TxViewPoint) MapSnDerivators() map[string][]big.Int {
+	return view.mapSnD
 }
 
 func (view *TxViewPoint) ListSerialNumnbersEclipsePoint() []*privacy.EllipticPoint {
@@ -64,15 +68,18 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 	proof *zkp.PaymentProof,
 	tokenID *common.Hash,
 	localWallet *wallet.Wallet, // nil if running with light mode -> fetch output coin of all, != nill when running light mode and store only outputcoins of account in wallet
-) ([][]byte, map[string][][]byte, map[string][]privacy.OutputCoin, []big.Int, error) {
+) ([][]byte, map[string][][]byte, map[string][]privacy.OutputCoin, map[string][]big.Int, error) {
 	acceptedNullifiers := make([][]byte, 0)
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
-	acceptedSnD := make([]big.Int, 0)
+	acceptedSnD := make(map[string][]big.Int, 0)
 	if proof == nil {
 		return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
 	}
 	// Get data for serialnumbers
+	// Process input of transaction
+	// Get Serial numbers of input
+	// Append into accepttedNullifiers if this serial number haven't exist yet
 	for _, item := range proof.InputCoins {
 		serialNum := item.CoinDetails.SerialNumber.Compress()
 		ok, err := db.HasSerialNumber(tokenID, serialNum, shardID)
@@ -84,9 +91,14 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 		}
 	}
 
+	// Process Output Coins (just created UTXO of this transaction)
+	// Proccessed variable: commitment, snd, outputcoins
+	// Commitment and SND must not exist before in db
+	// Outputcoins will be stored as new utxo for next transaction
 	for _, item := range proof.OutputCoins {
 		commitment := item.CoinDetails.CoinCommitment.Compress()
 		pubkey := item.CoinDetails.PublicKey.Compress()
+		pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
 		ok, err := db.HasCommitment(tokenID, commitment, shardID)
 		if err != nil {
 			return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
@@ -125,7 +137,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 		snD := item.CoinDetails.SNDerivator
 		ok, err = db.HasSNDerivator(tokenID, *snD, shardID)
 		if !ok && err == nil {
-			acceptedSnD = append(acceptedSnD, *snD)
+			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
 		}
 	}
 	return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
@@ -145,7 +157,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 	acceptedSerialNumbers := make([][]byte, 0)
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
-	acceptedSnD := make([]big.Int, 0)
+	acceptedSnD := make(map[string][]big.Int, 0)
 	constantTolenID := &common.Hash{}
 	constantTolenID.SetBytes(common.ConstantID[:])
 	for indexTx, tx := range transactions {
@@ -170,7 +182,13 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 					}
 					acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
 				}
-				acceptedSnD = append(acceptedSnD, snDs...)
+				for pubkey, data := range snDs {
+					if snDs[pubkey] == nil {
+						snDs[pubkey] = make([]big.Int, 0)
+					}
+					snDs[pubkey] = append(snDs[pubkey], data...)
+				}
+				// acceptedSnD = append(acceptedSnD, snDs...)
 			}
 		case common.TxSalaryType:
 			{
@@ -192,7 +210,13 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 					}
 					acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
 				}
-				acceptedSnD = append(acceptedSnD, snDs...)
+				for pubkey, data := range snDs {
+					if snDs[pubkey] == nil {
+						snDs[pubkey] = make([]big.Int, 0)
+					}
+					snDs[pubkey] = append(snDs[pubkey], data...)
+				}
+				// acceptedSnD = append(acceptedSnD, snDs...)
 			}
 		case common.TxCustomTokenType:
 			{
@@ -214,7 +238,13 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 					}
 					acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
 				}
-				acceptedSnD = append(acceptedSnD, snDs...)
+				for pubkey, data := range snDs {
+					if snDs[pubkey] == nil {
+						snDs[pubkey] = make([]big.Int, 0)
+					}
+					snDs[pubkey] = append(snDs[pubkey], data...)
+				}
+				// acceptedSnD = append(acceptedSnD, snDs...)
 
 				// with custom token, we dont care light mode and store fully TODO sirrush
 				view.customTokenTxs[int32(indexTx)] = tx
@@ -239,7 +269,13 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 					}
 					acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
 				}
-				acceptedSnD = append(acceptedSnD, snDs...)
+				for pubkey, data := range snDs {
+					if snDs[pubkey] == nil {
+						snDs[pubkey] = make([]big.Int, 0)
+					}
+					snDs[pubkey] = append(snDs[pubkey], data...)
+				}
+				// acceptedSnD = append(acceptedSnD, snDs...)
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
@@ -264,7 +300,13 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 					}
 					subView.mapOutputCoins[pubkey] = append(subView.mapOutputCoins[pubkey], data...)
 				}
-				subView.listSnD = append(subView.listSnD, snDsP...)
+				for pubkey, data := range snDsP {
+					if subView.mapSnD[pubkey] == nil {
+						subView.mapSnD[pubkey] = make([]big.Int, 0)
+					}
+					subView.mapSnD[pubkey] = append(subView.mapSnD[pubkey], data...)
+				}
+				// subView.listSnD = append(subView.listSnD, snDsP...)
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
@@ -290,7 +332,8 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 		view.mapOutputCoins = acceptedOutputcoins
 	}
 	if len(acceptedSnD) > 0 {
-		view.listSnD = acceptedSnD
+		view.mapSnD = acceptedSnD
+		// view.listSnD = acceptedSnD
 	}
 	return nil
 }
@@ -300,11 +343,12 @@ Create a TxNormal view point, which contains data about nullifiers and commitmen
 */
 func NewTxViewPoint(shardID byte) *TxViewPoint {
 	result := &TxViewPoint{
-		shardID:                     shardID,
-		listSerialNumbers:           make([][]byte, 0),
-		mapCommitments:              make(map[string][][]byte),
-		mapOutputCoins:              make(map[string][]privacy.OutputCoin),
-		listSnD:                     make([]big.Int, 0),
+		shardID:           shardID,
+		listSerialNumbers: make([][]byte, 0),
+		mapCommitments:    make(map[string][][]byte),
+		mapOutputCoins:    make(map[string][]privacy.OutputCoin),
+		mapSnD:            make(map[string][]big.Int, 0),
+		// listSnD:                     make([]big.Int, 0),
 		customTokenTxs:              make(map[int32]*transaction.TxCustomToken),
 		tokenID:                     &common.Hash{},
 		privacyCustomTokenViewPoint: make(map[int32]*TxViewPoint),
