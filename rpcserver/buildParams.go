@@ -61,7 +61,6 @@ func (rpcServer *RpcServer) buildParamsSealLv2VoteProposal(params interface{}) (
 	paymentAddresses := GetLockerPaymentAddresses(lv3Tx)
 	SealLv2Data := common.Decrypt(SealLv3Data, firstPrivateKey)
 
-	newData["BoardType"] = boardType
 	newData["SealLv2Data"] = SealLv2Data
 	newData["PaymentAddresses"] = paymentAddresses
 	newData["Lv3TxID"] = *lv3TxID
