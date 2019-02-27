@@ -107,6 +107,8 @@ const (
 	SendCrowdsaleRequestConstant          = "sendcrowdsalerequestconstant"
 	CreateAndSendCrowdsaleRequestConstant = "createandsendcrowdsalerequestconstant"
 	TestStoreCrowdsale                    = "teststorecrowdsale"
+	GetListDCBProposalBuyingAssets        = "getlistdcbproposalbuyingassets"
+	GetListDCBProposalSellingAssets       = "getlistdcbproposalsellingassets"
 
 	// reserve
 	CreateIssuingRequest            = "createissuingrequest"
