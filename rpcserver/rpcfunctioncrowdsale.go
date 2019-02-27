@@ -3,10 +3,8 @@ package rpcserver
 import (
 	"encoding/hex"
 	"errors"
-	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/wallet"
 )
 
 func (rpcServer RpcServer) handleCreateCrowdsaleRequestToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -47,21 +45,8 @@ func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequestConstant(params in
 	)
 }
 
-// handleGetListOngoingCrowdsale receives a payment address and find all ongoing crowdsales on the chain that handles that address
+// handleGetListOngoingCrowdsale finds all ongoing crowdsales
 func (rpcServer RpcServer) handleGetListOngoingCrowdsale(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// Get height of the chain containing the payment address
-	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) <= 0 {
-		return nil, NewRPCError(ErrUnexpected, errors.New("Must provider at least 1 payment address"))
-	}
-	paymentAddrStr, _ := arrayParams[0].(string)
-	paymentAddr, err := wallet.Base58CheckDeserialize(paymentAddrStr)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, errors.New("Payment address invalid"))
-	}
-	shardID := common.GetShardIDFromLastByte(paymentAddr.KeySet.PaymentAddress.Pk[len(paymentAddr.KeySet.PaymentAddress.Pk)-1])
-	height := rpcServer.config.BlockChain.GetChainHeight(shardID)
-
 	// Get all ongoing crowdsales for that chain
 	type CrowdsaleInfo struct {
 		SaleID           string
@@ -79,8 +64,9 @@ func (rpcServer RpcServer) handleGetListOngoingCrowdsale(params interface{}, clo
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, errors.New("Error querying crowdsales"))
 	}
+	beaconHeight := rpcServer.config.BlockChain.BestState.Beacon.BeaconHeight
 	for _, saleData := range saleDataList {
-		if height >= saleData.EndBlock {
+		if beaconHeight >= saleData.EndBlock {
 			continue
 		}
 
@@ -104,35 +90,6 @@ func (rpcServer RpcServer) handleGetListOngoingCrowdsale(params interface{}, clo
 		result = append(result, info)
 	}
 	return result, nil
-}
-
-// handleTESTStoreCrowdsale receives a crowdsale and store to database for testing
-func (rpcServer RpcServer) handleTESTStoreCrowdsale(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-
-	// Store saledata in db
-	for _, param := range arrayParams {
-		saleData := param.(map[string]interface{})
-		saleID, _ := hex.DecodeString(saleData["SaleID"].(string))
-		proposalTxHash, _ := common.NewHashFromStr(saleData["ProposalTxHash"].(string))
-		fmt.Printf("[db] proposalTxHash: %+v\n", proposalTxHash)
-		buyingAmount := uint64(saleData["BuyingAmount"].(float64))
-		sellingAmount := uint64(saleData["SellingAmount"].(float64))
-		if _, _, _, err := (*rpcServer.config.Database).GetCrowdsaleData(saleID); err == nil {
-			fmt.Printf("[db] cs existed\n")
-			continue
-		}
-		if err := (*rpcServer.config.Database).StoreCrowdsaleData(
-			saleID,
-			*proposalTxHash,
-			buyingAmount,
-			sellingAmount,
-		); err != nil {
-			fmt.Printf("[db] fail store crowdsale data %+v\n", err)
-			return nil, NewRPCError(ErrUnexpected, err)
-		}
-	}
-	return true, nil
 }
 
 func (rpcServer RpcServer) handleGetListDCBProposalBuyingAssets(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {

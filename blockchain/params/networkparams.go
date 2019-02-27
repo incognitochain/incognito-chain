@@ -112,15 +112,15 @@ func NewSellingGOVTokensFromJson(data interface{}) *SellingGOVTokens {
 
 type SaleData struct {
 	SaleID   []byte // Unique id of the crowdsale to store in db
-	EndBlock uint64 // not in db
+	EndBlock uint64
 
-	BuyingAsset     common.Hash // not in db
-	BuyingAmount    uint64      // stored in db
-	DefaultBuyPrice uint64      // not in db
+	BuyingAsset     common.Hash
+	BuyingAmount    uint64
+	DefaultBuyPrice uint64
 
-	SellingAsset     common.Hash // not in db
-	SellingAmount    uint64      // stored in db
-	DefaultSellPrice uint64      // not in db
+	SellingAsset     common.Hash
+	SellingAmount    uint64
+	DefaultSellPrice uint64
 
 	proposalTxHash common.Hash // Temp storage; stored permanent in db, not in proposal
 }

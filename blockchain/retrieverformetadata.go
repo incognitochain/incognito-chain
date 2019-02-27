@@ -169,18 +169,14 @@ func (blockchain *BlockChain) GetCrowdsaleData(saleID []byte) (*params.SaleData,
 
 func (blockchain *BlockChain) GetAllCrowdsales() ([]*params.SaleData, error) {
 	saleDataList := []*params.SaleData{}
-	saleIDs, proposalTxHashes, buyingAmounts, sellingAmounts, err := blockchain.config.DataBase.GetAllCrowdsales()
-	if err == nil {
-		for i, hash := range proposalTxHashes {
-			saleData := blockchain.parseProposalCrowdsaleData(&hash, saleIDs[i])
-			if saleData != nil {
-				saleData.BuyingAmount = buyingAmounts[i]
-				saleData.SellingAmount = sellingAmounts[i]
+	for key, value := range blockchain.BestState.Beacon.Params {
+		if key[:len(saleDataPrefix)] == saleDataPrefix {
+			if saleData, err := parseSaleDataValueBeacon(value); err == nil {
+				saleDataList = append(saleDataList, saleData)
 			}
-			saleDataList = append(saleDataList, saleData)
 		}
 	}
-	return saleDataList, err
+	return saleDataList, nil
 }
 
 //// Reserve

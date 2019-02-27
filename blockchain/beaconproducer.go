@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -181,7 +182,9 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 	shardsBlocks := blkTmplGenerator.shardToBeaconPool.GetValidPendingBlock()
 	//Shard block is a map ShardId -> array of shard block
 	stabilityInstructions := [][]string{}
-	accumulativeValues := &accumulativeValues{}
+	accumulativeValues := &accumulativeValues{
+		saleDataMap: map[string]*params.SaleData{},
+	}
 	for shardID, shardBlocks := range shardsBlocks {
 		// Only accept block in one epoch
 		totalBlock := 0
