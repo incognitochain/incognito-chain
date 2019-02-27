@@ -177,5 +177,5 @@ const (
 //Fee of specific transaction
 const (
 	FeeSubmitProposal = 100
-	FeeVoteProposal   = 100
+	FeeVote           = 100
 )
