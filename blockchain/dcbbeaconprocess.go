@@ -21,8 +21,6 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 		return bsb.processLoanRequestInstruction(inst)
 	case strconv.Itoa(metadata.LoanResponseMeta):
 		return bsb.processLoanResponseInstruction(inst)
-	case strconv.Itoa(metadata.LoanPaymentMeta):
-		return bsb.processLoanPaymentInstruction(inst)
 
 	case strconv.Itoa(metadata.AcceptDCBProposalMeta):
 		return bsb.processAcceptDCBProposalInstruction(inst)
@@ -264,19 +262,6 @@ func (bsb *BestStateBeacon) processLoanResponseInstruction(inst []string) error 
 	return nil
 }
 
-func (bsb *BestStateBeacon) processLoanPaymentInstruction(inst []string) error {
-	fmt.Printf("[db] beaconProcess found inst: %+v\n", inst)
-	amount, err := metadata.ParseLoanPaymentActionValue(inst[1])
-	if err != nil {
-		fmt.Printf("[db] procLoanPayInst err: %+v\n", err)
-		return err
-	}
-
-	// Update fund of DCB
-	bsb.StabilityInfo.BankFund += amount
-	return nil
-}
-
 func (bsb *BestStateBeacon) processAcceptDCBProposalInstruction(inst []string) error {
 	// TODO(@0xjackalope): process other dcb params here
 	dcbParams, err := metadata.ParseAcceptDCBProposalMetadataActionValue(inst[1])
@@ -371,6 +356,104 @@ func (bsb *BestStateBeacon) processCrowdsalePaymentInstruction(inst []string) er
 
 		key := getSaleDataKeyBeacon(paymentInst.SaleID)
 		bsb.Params[key] = getSaleDataValueBeacon(saleData)
+	}
+	return nil
+}
+
+func (bc *BlockChain) processLoanWithdrawInstruction(inst []string) error {
+	loanID, principle, interest, err := metadata.ParseLoanWithdrawActionValue(inst[2])
+	if err != nil {
+		fmt.Printf("[db] parse err: %+v\n", err)
+		return err
+	}
+	beaconHeight := bc.BestState.Beacon.BeaconHeight
+	return bc.config.DataBase.StoreLoanPayment(loanID, principle, interest, beaconHeight)
+}
+
+func (bc *BlockChain) processLoanPayment(
+	loanID []byte,
+	amountSent uint64,
+	interestRate uint64,
+	maturity uint64,
+	beaconHeight uint64,
+) error {
+	principle, interest, deadline, err := bc.config.DataBase.GetLoanPayment(loanID)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("[db] pid: %d, %d, %d\n", principle, interest, deadline)
+
+	// Update BANK fund
+	interestPaid := metadata.CalculateInterestPaid(amountSent, principle, interest, deadline, interestRate, maturity, beaconHeight)
+	bc.BestState.Beacon.StabilityInfo.BankFund += interestPaid // a little bit hacky, update fund here instead of in bsb.Update
+
+	// Pay interest
+	interestPerTerm := metadata.GetInterestPerTerm(principle, interestRate)
+	totalInterest := metadata.GetTotalInterest(
+		principle,
+		interest,
+		interestRate,
+		maturity,
+		deadline,
+		beaconHeight,
+	)
+	fmt.Printf("[db] perTerm, totalInt: %d, %d\n", interestPerTerm, totalInterest)
+	termInc := uint64(0)
+	if amountSent <= totalInterest { // Pay all to cover interest
+		if interestPerTerm > 0 {
+			if amountSent >= interest {
+				termInc = 1 + uint64((amountSent-interest)/interestPerTerm)
+				interest = interestPerTerm - (amountSent-interest)%interestPerTerm
+			} else {
+				interest -= amountSent
+			}
+		}
+	} else { // Pay enough to cover interest, the rest go to principle
+		if amountSent-totalInterest > principle {
+			principle = 0
+		} else {
+			principle -= amountSent - totalInterest
+		}
+		if totalInterest >= interest { // This payment pays for interest
+			if interestPerTerm > 0 {
+				termInc = 1 + uint64((totalInterest-interest)/interestPerTerm)
+				interest = interestPerTerm
+			}
+		}
+	}
+	fmt.Printf("[db] termInc: %d\n", termInc)
+	deadline = deadline + termInc*maturity
+
+	return bc.config.DataBase.StoreLoanPayment(loanID, principle, interest, deadline)
+}
+
+func (bc *BlockChain) processLoanPaymentInstruction(inst []string) error {
+	loanID, amountSent, interestRate, maturity, err := metadata.ParseLoanPaymentActionValue(inst[2])
+	if err != nil {
+		fmt.Printf("[db] parse err: %+v\n", err)
+		return err
+	}
+	beaconHeight := bc.BestState.Beacon.BeaconHeight
+
+	// Update loan payment info and BANK fund
+	return bc.processLoanPayment(loanID, amountSent, interestRate, maturity, beaconHeight)
+}
+
+func (bc *BlockChain) processBeaconOnlyInstructions(block *BeaconBlock) error {
+	for _, inst := range block.Body.Instructions {
+		switch inst[0] {
+		case strconv.Itoa(metadata.LoanWithdrawMeta):
+			err := bc.processLoanWithdrawInstruction(inst)
+			if err != nil {
+				return err
+			}
+
+		case strconv.Itoa(metadata.LoanPaymentMeta):
+			err := bc.processLoanPaymentInstruction(inst)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

@@ -172,7 +172,12 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 		}
 	}
 
-	//=========Remove shard to beacon block in pool
+	// Process instructions and store stability data
+	if err := blockchain.processBeaconOnlyInstructions(block); err != nil {
+		return err
+	}
+
+	//=========Remove shard block in beacon pool
 	Logger.log.Infof("Remove block from pool %+v \n", *block.Hash())
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.BestShardHeight)
 

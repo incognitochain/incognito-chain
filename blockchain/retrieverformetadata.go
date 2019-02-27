@@ -77,6 +77,7 @@ func (blockchain *BlockChain) GetGOVParams() params.GOVParams {
 	return blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams
 }
 
+//// Loan
 func (blockchain *BlockChain) GetLoanReq(loanID []byte) (*common.Hash, error) {
 	key := getLoanRequestKeyBeacon(loanID)
 	reqHash, ok := blockchain.BestState.Beacon.Params[key]
@@ -119,6 +120,10 @@ func (blockchain *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanR
 	}
 	requestMeta := txReq.GetMetadata().(*metadata.LoanRequest)
 	return requestMeta, nil
+}
+
+func (blockchain *BlockChain) GetLoanWithdrawed(loanID []byte) (bool, error) {
+	return blockchain.config.DataBase.GetLoanWithdrawed(loanID)
 }
 
 //// Dividends
