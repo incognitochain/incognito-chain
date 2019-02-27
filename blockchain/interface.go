@@ -19,6 +19,7 @@ type ShardToBeaconPool interface {
 	GetValidPendingBlockHash() map[byte][]common.Hash
 	GetValidPendingBlock(map[byte]uint64) map[byte][]*ShardToBeaconBlock
 	GetValidPendingBlockHeight() map[byte][]uint64
+	GetLatestValidPendingBlockHeight() map[byte]uint64
 	SetShardState(map[byte]uint64)
 }
 
