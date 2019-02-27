@@ -185,7 +185,7 @@ func (rpcServer RpcServer) calcLoanPaymentInfo(strLoanID string) jsonresult.Loan
 	loanPaymentInfo := jsonresult.LoanPaymentInfo{}
 	if loanID, err := hex.DecodeString(strLoanID); err == nil {
 		if priciple, interest, deadline, err := (*rpcServer.config.Database).GetLoanPayment(loanID); err == nil {
-			if reqMeta, err := (*rpcServer.config.BlockChain).GetLoanRequestMeta(loanID); err == nil {
+			if reqMeta, err := rpcServer.config.BlockChain.GetLoanRequestMeta(loanID); err == nil {
 				lastByte := reqMeta.ReceiveAddress.Pk[len(reqMeta.ReceiveAddress.Pk)-1]
 				shardID := common.GetShardIDFromLastByte(lastByte)
 				height := rpcServer.config.BlockChain.GetChainHeight(shardID)
@@ -208,4 +208,23 @@ func (rpcServer RpcServer) calcLoanPaymentInfo(strLoanID string) jsonresult.Loan
 func (rpcServer RpcServer) handleGetBankFund(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	bankFund := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.BankFund
 	return bankFund, nil
+}
+
+// handleGetLoanRequestTxStatus checks if loan request is accepted by beacon
+func (rpcServer RpcServer) handleGetLoanRequestTxStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	result := map[string]string{}
+	for _, p := range arrayParams {
+		s := p.(string)
+		result[s] = "unknown"
+		if h, err := common.NewHashFromStr(s); err == nil {
+			if _, _, _, tx, err := rpcServer.config.BlockChain.GetTransactionByHash(h); err == nil {
+				reqMeta := tx.GetMetadata().(*metadata.LoanRequest)
+				if _, err = rpcServer.config.BlockChain.GetLoanReq(reqMeta.LoanID); err == nil {
+					result[s] = "mined"
+				}
+			}
+		}
+	}
+	return result, nil
 }
