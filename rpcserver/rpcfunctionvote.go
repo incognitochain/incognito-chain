@@ -3,8 +3,6 @@ package rpcserver
 import (
 	"errors"
 	"fmt"
-	"github.com/ninjadotorg/constant/database"
-
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
@@ -110,9 +108,9 @@ func (rpcServer RpcServer) handleSetEncryptionFlag(params interface{}, closeChan
 
 func (rpcServer RpcServer) handleGetEncryptionLastBlockHeightFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	boardType := database.BoardTypeDB(arrayParams[0].([]byte)[0])
+	boardType := metadata.NewBoardTypeFromString(arrayParams[0].(string))
 	db := *rpcServer.config.Database
-	blockHeight, _ := db.GetEncryptionLastBlockHeight(boardType)
+	blockHeight, _ := db.GetEncryptionLastBlockHeight(boardType.BoardTypeDB())
 	return jsonresult.GetEncryptionLastBlockHeightResult{blockHeight}, nil
 }
 
@@ -274,6 +272,13 @@ func (rpcServer RpcServer) handleCreateAndSendNormalVoteProposalFromSealerTransa
 		RpcServer.handleCreateRawNormalVoteProposalTransactionFromSealer,
 		RpcServer.handleSendRawTransaction,
 	)
+}
+
+func (rpcServer RpcServer) handleGetDCBBoardIndex(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardIndex, nil
+}
+func (rpcServer RpcServer) handleGetGOVBoardIndex(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVGovernor.BoardIndex, nil
 }
 
 func setBuildRawBurnTransactionParams(params interface{}, fee float64) interface{} {
