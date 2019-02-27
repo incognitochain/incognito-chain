@@ -76,13 +76,12 @@ func (sealedLv1VoteProposalMetadata *SealedLv1VoteProposalMetadata) GetBoardType
 	// TODO: @0xjackalope
 	panic("override me")
 }
-func (sealedLv1VoteProposalMetadata *SealedLv1VoteProposalMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+func (sealedLv1VoteProposalMetadata *SealedLv1VoteProposalMetadata) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
 	boardType := sealedLv1VoteProposalMetadata.GetBoardType()
 	endedPivot := bcr.GetConstitutionEndHeight(boardType, shardID)
 	currentBlockHeight := bcr.GetCurrentBeaconBlockHeight(shardID) + 1
-	lv3Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
-	lv2Pivot := lv3Pivot - uint64(common.EncryptionOnePhraseDuration)
-	lv1Pivot := lv2Pivot - uint64(common.EncryptionOnePhraseDuration)
+	lv1Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
+	lv2Pivot := lv1Pivot - uint64(common.EncryptionOnePhraseDuration)
 	return currentBlockHeight < lv1Pivot && currentBlockHeight >= lv2Pivot
 }
 
@@ -191,12 +190,13 @@ func (sealedLv2VoteProposalMetadata *SealedLv2VoteProposalMetadata) ToBytes() []
 func (sealedLv2VoteProposalMetadata *SealedLv2VoteProposalMetadata) GetBoardType() BoardType {
 	panic("overwrite me")
 }
-func (sealedLv2VoteProposalMetadata *SealedLv2VoteProposalMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+func (sealedLv2VoteProposalMetadata *SealedLv2VoteProposalMetadata) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
 	boardType := sealedLv2VoteProposalMetadata.GetBoardType()
 	endedPivot := bcr.GetConstitutionEndHeight(boardType, shardID)
 	currentBlockHeight := bcr.GetCurrentBeaconBlockHeight(shardID) + 1
-	lv3Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
-	lv2Pivot := lv3Pivot - uint64(common.EncryptionOnePhraseDuration)
+	lv1Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
+	lv2Pivot := lv1Pivot - uint64(common.EncryptionOnePhraseDuration)
+	lv3Pivot := lv2Pivot - uint64(common.EncryptionOnePhraseDuration)
 	return currentBlockHeight < lv2Pivot && currentBlockHeight >= lv3Pivot
 }
 
@@ -283,11 +283,13 @@ type SealedLv3VoteProposalMetadata struct {
 	SealedVoteProposal SealedVoteProposal
 }
 
-func (sealedLv3VoteProposalMetadata *SealedLv3VoteProposalMetadata) ValidataBeforeNewBlock(boardType BoardType, tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+func (sealedLv3VoteProposalMetadata *SealedLv3VoteProposalMetadata) ValidateBeforeNewBlock(boardType BoardType, tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
 	startedPivot := bcr.GetConstitutionStartHeight(boardType, shardID)
 	endedPivot := bcr.GetConstitutionEndHeight(boardType, shardID)
 	currentBlockHeight := bcr.GetCurrentBeaconBlockHeight(shardID) + 1
-	lv3Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
+	lv1Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
+	lv2Pivot := lv1Pivot - uint64(common.EncryptionOnePhraseDuration)
+	lv3Pivot := lv2Pivot - uint64(common.EncryptionOnePhraseDuration)
 	return currentBlockHeight < lv3Pivot && currentBlockHeight >= startedPivot
 }
 
@@ -327,8 +329,6 @@ func NewVoteProposalDataFromJson(data interface{}) *VoteProposalData {
 
 	proposalTxIDData, _ := hex.DecodeString(voteProposalDataData["ProposalTxID"].(string))
 	proposalTxID, _ := common.NewHash(proposalTxIDData)
-	x := int32(voteProposalDataData["AmountOfVote"].(float64))
-	_ = x
 	return NewVoteProposalData(
 		*proposalTxID,
 		int32(voteProposalDataData["AmountOfVote"].(float64)),
@@ -400,13 +400,11 @@ func (normalVoteProposalFromSealerMetadata *NormalVoteProposalFromSealerMetadata
 	return []byte(record)
 }
 
-func (normalVoteProposalFromSealerMetadata *NormalVoteProposalFromSealerMetadata) ValidataBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+func (normalVoteProposalFromSealerMetadata *NormalVoteProposalFromSealerMetadata) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
 	boardType := normalVoteProposalFromSealerMetadata.GetBoardType()
 	endedPivot := bcr.GetConstitutionEndHeight(boardType, shardID)
 	currentBlockHeight := bcr.GetCurrentBeaconBlockHeight(shardID) + 1
-	lv3Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
-	lv2Pivot := lv3Pivot - uint64(common.EncryptionOnePhraseDuration)
-	lv1Pivot := lv2Pivot - uint64(common.EncryptionOnePhraseDuration)
+	lv1Pivot := endedPivot - uint64(common.EncryptionOnePhraseDuration)
 	return currentBlockHeight < endedPivot && currentBlockHeight >= lv1Pivot
 }
 
@@ -493,12 +491,10 @@ func NewNormalVoteProposalFromOwnerMetadata(
 	}
 }
 
-func (normalVoteProposalFromOwnerMetadata *NormalVoteProposalFromOwnerMetadata) ValidataBeforeNewBlock(boardType BoardType, tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+func (normalVoteProposalFromOwnerMetadata *NormalVoteProposalFromOwnerMetadata) ValidateBeforeNewBlock(boardType BoardType, tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
 	endedPivot := bcr.GetConstitutionEndHeight(boardType, shardID)
 	currentBlockHeight := bcr.GetCurrentBeaconBlockHeight(shardID) + 1
-	lv3Pivot := endedPivot - common.EncryptionOnePhraseDuration
-	lv2Pivot := lv3Pivot - common.EncryptionOnePhraseDuration
-	lv1Pivot := lv2Pivot - common.EncryptionOnePhraseDuration
+	lv1Pivot := endedPivot - common.EncryptionOnePhraseDuration
 	return currentBlockHeight < endedPivot && currentBlockHeight >= lv1Pivot
 }
 
@@ -670,7 +666,7 @@ func NewSealedLv2VoteProposalMetadataFromRPC(data map[string]interface{}) (Metad
 }
 
 func NewNormalVoteProposalFromOwnerMetadataFromRPC(data map[string]interface{}) (Metadata, error) {
-	boardType := data["BoardType"].(BoardType)
+	boardType := NewBoardTypeFromString(data["BoardType"].(string))
 	voteProposalData := NewVoteProposalDataFromJson(data["VoteProposalData"])
 	paymentAddresses := data["PaymentAddresses"].([]privacy.PaymentAddress)
 	lv3TxID := data["Lv3TxID"].(common.Hash)
@@ -692,7 +688,7 @@ func NewNormalVoteProposalFromOwnerMetadataFromRPC(data map[string]interface{}) 
 }
 
 func NewNormalVoteProposalFromSealerMetadataFromRPC(data map[string]interface{}) (Metadata, error) {
-	boardType := data["BoardType"].(BoardType)
+	boardType := NewBoardTypeFromString(data["BoardType"].(string))
 	voteProposalData := NewVoteProposalDataFromJson(data["VoteProposalData"])
 	paymentAddresses := data["PaymentAddresses"].([]privacy.PaymentAddress)
 	lv1TxID := data["Lv1TxID"].(common.Hash)
@@ -714,5 +710,4 @@ func NewNormalVoteProposalFromSealerMetadataFromRPC(data map[string]interface{})
 		)
 	}
 	return meta, nil
-
 }
