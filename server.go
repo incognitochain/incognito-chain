@@ -250,12 +250,13 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	// Init consensus engine
 	serverObj.consensusEngine, err = constantbft.Engine{}.Init(&constantbft.EngineConfig{
-		ChainParams: serverObj.chainParams,
-		BlockChain:  serverObj.blockChain,
-		Server:      serverObj,
-		BlockGen:    serverObj.blockgen,
-		NodeMode:    cfg.NodeMode,
-		UserKeySet:  serverObj.userKeySet,
+		ShardToBeaconPool: serverObj.shardToBeaconPool,
+		ChainParams:       serverObj.chainParams,
+		BlockChain:        serverObj.blockChain,
+		Server:            serverObj,
+		BlockGen:          serverObj.blockgen,
+		NodeMode:          cfg.NodeMode,
+		UserKeySet:        serverObj.userKeySet,
 	})
 	if err != nil {
 		return err
@@ -321,22 +322,21 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		}
 
 		rpcConfig := rpcserver.RpcServerConfig{
-			Listenters:    rpcListeners,
-			RPCQuirks:     cfg.RPCQuirks,
-			RPCMaxClients: cfg.RPCMaxClients,
-			ChainParams:   chainParams,
-			BlockChain:    serverObj.blockChain,
-			TxMemPool:     serverObj.memPool,
-			Server:        serverObj,
-			Wallet:        serverObj.wallet,
-			ConnMgr:       serverObj.connManager,
-			AddrMgr:       serverObj.addrManager,
-			RPCUser:       cfg.RPCUser,
-			RPCPass:       cfg.RPCPass,
-			RPCLimitUser:  cfg.RPCLimitUser,
-			RPCLimitPass:  cfg.RPCLimitPass,
-			DisableAuth:   cfg.RPCDisableAuth,
-			// IsGenerateNode:  cfg.Generate,
+			Listenters:      rpcListeners,
+			RPCQuirks:       cfg.RPCQuirks,
+			RPCMaxClients:   cfg.RPCMaxClients,
+			ChainParams:     chainParams,
+			BlockChain:      serverObj.blockChain,
+			TxMemPool:       serverObj.memPool,
+			Server:          serverObj,
+			Wallet:          serverObj.wallet,
+			ConnMgr:         serverObj.connManager,
+			AddrMgr:         serverObj.addrManager,
+			RPCUser:         cfg.RPCUser,
+			RPCPass:         cfg.RPCPass,
+			RPCLimitUser:    cfg.RPCLimitUser,
+			RPCLimitPass:    cfg.RPCLimitPass,
+			DisableAuth:     cfg.RPCDisableAuth,
 			NodeMode:        cfg.NodeMode,
 			FeeEstimator:    serverObj.feeEstimator,
 			ProtocolVersion: serverObj.protocolVersion,

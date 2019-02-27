@@ -105,6 +105,10 @@ out:
 						{
 							netSync.HandleMessageBFTMsg(msg)
 						}
+					case *wire.MessageBFTReq:
+						{
+							netSync.HandleMessageBFTMsg(msg)
+						}
 					case *wire.MessageBlockBeacon:
 						{
 							netSync.HandleMessageBlockBeacon(msg)

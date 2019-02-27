@@ -14,11 +14,12 @@ const (
 )
 
 type MessageBFTReady struct {
-	BestStateHash common.Hash
-	Round         int
-	Pubkey        string
-	ContentSig    string
-	Timestamp     int64
+	ShToBcnPoolState map[byte]uint64
+	BestStateHash    common.Hash
+	Round            int
+	Pubkey           string
+	ContentSig       string
+	Timestamp        int64
 }
 
 func (msg *MessageBFTReady) Hash() string {
