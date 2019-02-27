@@ -258,10 +258,12 @@ func getOutCoinHashEachShard(txList []metadata.Transaction) []common.Hash {
 	// group transaction by shardID
 	outCoinEachShard := make([][]*privacy.OutputCoin, common.MAX_SHARD_NUMBER)
 	for _, tx := range txList {
-		for _, outCoin := range tx.GetProof().OutputCoins {
-			lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-			shardID := common.GetShardIDFromLastByte(lastByte)
-			outCoinEachShard[shardID] = append(outCoinEachShard[shardID], outCoin)
+		if tx.GetProof() != nil {
+			for _, outCoin := range tx.GetProof().OutputCoins {
+				lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+				shardID := common.GetShardIDFromLastByte(lastByte)
+				outCoinEachShard[shardID] = append(outCoinEachShard[shardID], outCoin)
+			}
 		}
 	}
 	// fmt.Println("len of outCoinEachShard", len(outCoinEachShard))
