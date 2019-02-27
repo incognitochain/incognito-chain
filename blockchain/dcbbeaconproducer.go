@@ -35,6 +35,14 @@ func buildInstructionsForLoanPayment(contentStr string) ([][]string, error) {
 	return [][]string{[]string{metaType, shardID, contentStr}}, nil
 }
 
+// buildInstructionsForLoanWithdraw converts shard LoanWithdraw inst to beacon inst to update BeaconBestState later on
+func buildInstructionsForLoanWithdraw(contentStr string) ([][]string, error) {
+	// Pass through
+	metaType := strconv.Itoa(metadata.LoanWithdrawMeta)
+	shardID := strconv.Itoa(metadata.BeaconOnly)
+	return [][]string{[]string{metaType, shardID, contentStr}}, nil
+}
+
 func buildInstructionsForCrowdsaleRequest(
 	shardID byte,
 	contentStr string,

@@ -405,6 +405,19 @@ func (blockchain *BlockChain) initBeaconState() error {
 		},
 	}
 
+	// Bond
+	blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.SellingBonds = &params.SellingBonds{
+		BondName:       "Bond 1000 blocks",
+		BondSymbol:     "BND1000",
+		TotalIssue:     1000,
+		BondsToSell:    1000,
+		BondPrice:      100, // 1 mili constant
+		Maturity:       3,
+		BuyBackPrice:   120, // 1.2 mili constant
+		StartSellingAt: 0,
+		SellingWithin:  100000,
+	}
+
 	// Insert new block into beacon chain
 	if err := blockchain.StoreBeaconBestState(); err != nil {
 		Logger.log.Error("Error Store best state for block", blockchain.BestState.Beacon.BestBlockHash, "in beacon chain")
