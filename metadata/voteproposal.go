@@ -327,8 +327,6 @@ func NewVoteProposalDataFromJson(data interface{}) *VoteProposalData {
 
 	proposalTxIDData, _ := hex.DecodeString(voteProposalDataData["ProposalTxID"].(string))
 	proposalTxID, _ := common.NewHash(proposalTxIDData)
-	x := int32(voteProposalDataData["AmountOfVote"].(float64))
-	_ = x
 	return NewVoteProposalData(
 		*proposalTxID,
 		int32(voteProposalDataData["AmountOfVote"].(float64)),
@@ -670,7 +668,7 @@ func NewSealedLv2VoteProposalMetadataFromRPC(data map[string]interface{}) (Metad
 }
 
 func NewNormalVoteProposalFromOwnerMetadataFromRPC(data map[string]interface{}) (Metadata, error) {
-	boardType := data["BoardType"].(BoardType)
+	boardType := NewBoardTypeFromString(data["BoardType"].(string))
 	voteProposalData := NewVoteProposalDataFromJson(data["VoteProposalData"])
 	paymentAddresses := data["PaymentAddresses"].([]privacy.PaymentAddress)
 	lv3TxID := data["Lv3TxID"].(common.Hash)
@@ -692,7 +690,7 @@ func NewNormalVoteProposalFromOwnerMetadataFromRPC(data map[string]interface{}) 
 }
 
 func NewNormalVoteProposalFromSealerMetadataFromRPC(data map[string]interface{}) (Metadata, error) {
-	boardType := data["BoardType"].(BoardType)
+	boardType := NewBoardTypeFromString(data["BoardType"].(string))
 	voteProposalData := NewVoteProposalDataFromJson(data["VoteProposalData"])
 	paymentAddresses := data["PaymentAddresses"].([]privacy.PaymentAddress)
 	lv1TxID := data["Lv1TxID"].(common.Hash)
@@ -714,5 +712,4 @@ func NewNormalVoteProposalFromSealerMetadataFromRPC(data map[string]interface{})
 		)
 	}
 	return meta, nil
-
 }

@@ -61,6 +61,7 @@ func (rpcServer *RpcServer) buildParamsSealLv2VoteProposal(params interface{}) (
 	paymentAddresses := GetLockerPaymentAddresses(lv3Tx)
 	SealLv2Data := common.Decrypt(SealLv3Data, firstPrivateKey)
 
+	newData["BoardType"] = data["BoardType"]
 	newData["SealLv2Data"] = SealLv2Data
 	newData["PaymentAddresses"] = paymentAddresses
 	newData["Lv3TxID"] = *lv3TxID
@@ -81,8 +82,6 @@ func (rpcServer RpcServer) buildParamsSealLv1VoteProposal(
 	NParams := len(arrayParams)
 	data := arrayParams[NParams-1].(map[string]interface{})
 	newData := make(map[string]interface{})
-
-	boardType := metadata.NewBoardTypeFromString(data["BoardType"].(string))
 
 	secondPrivateKey := []byte(data["SecondPrivateKey"].(string))
 
@@ -105,11 +104,11 @@ func (rpcServer RpcServer) buildParamsSealLv1VoteProposal(
 	paymentAddresses := GetLockerPaymentAddresses(lv3tx)
 	sealLv1Data := common.Decrypt(SealLv2Data, secondPrivateKey)
 
-	newData["BoardType"] = boardType
+	newData["BoardType"] = data["BoardType"]
 	newData["SealLv1Data"] = sealLv1Data
 	newData["PaymentAddresses"] = paymentAddresses
-	newData["Lv2TxID"] = lv2TxID
-	newData["Lv3TxID"] = lv3TxID
+	newData["Lv2TxID"] = *lv2TxID
+	newData["Lv3TxID"] = *lv3TxID
 	arrayParams[NParams-1] = newData
 
 	return arrayParams, nil
@@ -124,8 +123,6 @@ func (rpcServer RpcServer) buildParamsNormalVoteProposalFromOwner(
 	data := arrayParams[len(arrayParams)-1].(map[string]interface{})
 	newData := make(map[string]interface{})
 
-	boardType := metadata.NewBoardTypeFromString(data["BoardType"].(string))
-
 	lv3TxID, err1 := common.NewHashFromStr(data["Lv3TxID"].(string))
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
@@ -134,10 +131,10 @@ func (rpcServer RpcServer) buildParamsNormalVoteProposalFromOwner(
 	_, _, _, lv3tx, _ := rpcServer.config.BlockChain.GetTransactionByHash(lv3TxID)
 	paymentAddresses := GetLockerPaymentAddresses(lv3tx)
 
-	newData["BoardType"] = boardType
+	newData["BoardType"] = data["BoardType"]
 	newData["VoteProposalData"] = data["VoteProposalData"]
 	newData["PaymentAddresses"] = paymentAddresses
-	newData["Lv3TxID"] = lv3TxID
+	newData["Lv3TxID"] = *lv3TxID
 
 	arrayParams[NParams-1] = newData
 	return arrayParams, nil
@@ -151,8 +148,6 @@ func (rpcServer RpcServer) buildParamsNormalVoteProposalFromSealer(
 	NParams := len(arrayParams)
 	data := arrayParams[len(arrayParams)-1].(map[string]interface{})
 	newData := make(map[string]interface{})
-
-	boardType := metadata.NewBoardTypeFromString(data["BoardType"].(string))
 
 	lv3TxID, err1 := common.NewHashFromStr(data["Lv3TxID"].(string))
 	if err1 != nil {
@@ -175,16 +170,21 @@ func (rpcServer RpcServer) buildParamsNormalVoteProposalFromSealer(
 
 	normalVoteProposalData := common.Decrypt(SealLv1Data, thirdPrivateKey)
 	voteProposalDataTemp := metadata.NewVoteProposalDataFromBytes(normalVoteProposalData)
-	voteProposalDataByte, err := json.Marshal(voteProposalDataTemp)
+	voteProposalDataByte, err := json.Marshal(*voteProposalDataTemp)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	var x map[string]interface{}
+	err = json.Unmarshal(voteProposalDataByte, &x)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	newData["BoardType"] = boardType
-	newData["VoteProposalData"] = voteProposalDataByte
+	newData["BoardType"] = data["BoardType"]
+	newData["VoteProposalData"] = x
 	newData["PaymentAddresses"] = paymentAddresses
-	newData["Lv1TxID"] = lv1TxID
-	newData["Lv3TxID"] = lv3TxID
+	newData["Lv1TxID"] = *lv1TxID
+	newData["Lv3TxID"] = *lv3TxID
 
 	arrayParams[NParams-1] = newData
 	return arrayParams, nil
