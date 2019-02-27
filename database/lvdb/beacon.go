@@ -311,7 +311,7 @@ func (db *db) GetAcceptedShardToBeacon(shardID byte, shardBlkHash *common.Hash) 
 	return idx, nil
 }
 
-func (db *db) StoreBeaconCommitteeByHeight(blkHeight uint64, v interface{}) error {
+func (db *db) StoreCommitteeByHeight(blkHeight uint64, v interface{}) error {
 	//key: bea-s-com-{height}
 	//value: all shard committee
 	key := append(beaconPrefix, shardIDPrefix...)
@@ -331,7 +331,7 @@ func (db *db) StoreBeaconCommitteeByHeight(blkHeight uint64, v interface{}) erro
 	return nil
 }
 
-func (db *db) FetchBeaconCommitteeByHeight(blkHeight uint64) ([]byte, error) {
+func (db *db) FetchCommitteeByHeight(blkHeight uint64) ([]byte, error) {
 	key := append(beaconPrefix, shardIDPrefix...)
 	key = append(key, committeePrefix...)
 	buf := make([]byte, 8)
@@ -345,7 +345,7 @@ func (db *db) FetchBeaconCommitteeByHeight(blkHeight uint64) ([]byte, error) {
 	return b, nil
 }
 
-func (db *db) StoreBeaconCommitteeByEpoch(blkEpoch uint64, v interface{}) error {
+func (db *db) StoreCommitteeByEpoch(blkEpoch uint64, v interface{}) error {
 	//key: bea-s-com-ep-{epoch}
 	//value: all shard committee
 	key := append(beaconPrefix, shardIDPrefix...)
@@ -366,7 +366,7 @@ func (db *db) StoreBeaconCommitteeByEpoch(blkEpoch uint64, v interface{}) error 
 	return nil
 }
 
-func (db *db) FetchBeaconCommitteeByEpoch(blkEpoch uint64) ([]byte, error) {
+func (db *db) FetchCommitteeByEpoch(blkEpoch uint64) ([]byte, error) {
 	key := append(beaconPrefix, shardIDPrefix...)
 	key = append(key, committeePrefix...)
 	key = append(key, epochPrefix...)
@@ -380,7 +380,7 @@ func (db *db) FetchBeaconCommitteeByEpoch(blkEpoch uint64) ([]byte, error) {
 	}
 	return b, nil
 }
-func (db *db) HasBeaconCommitteeByEpoch(blkEpoch uint64) (bool, error) {
+func (db *db) HasCommitteeByEpoch(blkEpoch uint64) (bool, error) {
 	key := append(beaconPrefix, shardIDPrefix...)
 	key = append(key, committeePrefix...)
 	key = append(key, epochPrefix...)

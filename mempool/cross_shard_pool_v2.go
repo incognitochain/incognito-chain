@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"encoding/json"
 	"errors"
 	"sort"
 	"sync"
@@ -133,7 +134,16 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 		}
 	}
 
-	shouldAccept := blk.ShouldAcceptBlock()
+	shardCommitteeByte, err := pool.db.FetchCommitteeByEpoch(blk.Header.Epoch)
+	if err != nil {
+		return errors.New("No committee for this epoch")
+	}
+	shardCommittee := make(map[byte][]string)
+	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
+		return errors.New("Fail to unmarshal shard committee")
+	}
+	shouldAccept := blk.ShouldAcceptBlock(shardCommittee[blk.Header.ShardID])
+
 	if shouldAccept {
 		if len(pool.pendingPool[shardID]) > MAX_PENDING_CROSS_SHARD_IN_POOL {
 			//TODO: swap for better block

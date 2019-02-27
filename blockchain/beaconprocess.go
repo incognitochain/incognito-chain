@@ -129,8 +129,8 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 		}
 	}
 	// if committee of this epoch isn't store yet then store it
-	if res, err := blockchain.config.DataBase.HasBeaconCommitteeByEpoch(block.Header.Epoch); err != nil && res == false {
-		if err := blockchain.config.DataBase.StoreBeaconCommitteeByEpoch(block.Header.Epoch, blockchain.BestState.Beacon.ShardCommittee); err != nil {
+	if res, err := blockchain.config.DataBase.HasCommitteeByEpoch(block.Header.Epoch); err != nil && res == false {
+		if err := blockchain.config.DataBase.StoreCommitteeByEpoch(block.Header.Epoch, blockchain.BestState.Beacon.ShardCommittee); err != nil {
 			return err
 		}
 	}
