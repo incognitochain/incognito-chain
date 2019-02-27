@@ -263,7 +263,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 			}
 			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
 			result.CustomTokenData = string(txCustomData)
-			if len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
+			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))
 			}
 			if tempTx.Metadata != nil {
@@ -288,7 +288,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 				SigPubKey:   tempTx.SigPubKey,
 				Sig:         tempTx.Sig,
 			}
-			if len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
+			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))
 			}
 			tokenData, _ := json.MarshalIndent(tempTx.TxTokenPrivacyData, "", "\t")
