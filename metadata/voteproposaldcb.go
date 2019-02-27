@@ -52,7 +52,7 @@ func NewSealedLv1DCBVoteProposalMetadata(
 }
 
 func NewSealedLv1VoteProposalMetadataFromRPC(data map[string]interface{}) (Metadata, error) {
-	boardType := data["BoardType"].(BoardType)
+	boardType := NewBoardTypeFromString(data["BoardType"].(string))
 	sealLv1Data := data["SealLv1Data"].([]byte)
 	paymentAddresses := data["PaymentAddresses"].([]privacy.PaymentAddress)
 	lv2TxID := data["Lv2TxID"].(common.Hash)
