@@ -149,7 +149,7 @@ func buildPaymentForToken(
 	if mint {
 		txToken = mintTxToken(tokenAmount, tokenID, receiverAddress, metaPay)
 	} else {
-		fmt.Printf("[db] transferTxToken with unspentTxTokenOuts && tokenAmount:\n%+v\n%d\n", unspentTxTokenOuts, tokenAmount)
+		fmt.Printf("[db] transferTxToken with unspentTxTokenOuts && tokenAmount: %+v %d\n", unspentTxTokenOuts, tokenAmount)
 		txToken, usedID, err = transferTxToken(tokenAmount, unspentTxTokenOuts, tokenID, receiverAddress, metaPay)
 		if err != nil {
 			return nil, err
@@ -175,10 +175,10 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	if err != nil {
 		return nil, err
 	}
-	sellingAsset := saleData.SellingAsset
+	assetID := &paymentInst.AssetID
 
 	var txResponse metadata.Transaction
-	if common.IsConstantAsset(&sellingAsset) {
+	if common.IsConstantAsset(assetID) {
 		txResponse, err = buildPaymentForCoin(
 			paymentInst.PaymentAddress,
 			paymentInst.Amount,
@@ -189,15 +189,15 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 		if err != nil {
 			return nil, err
 		}
-	} else if common.IsBondAsset(&sellingAsset) {
+	} else if common.IsBondAsset(assetID) {
 		// Get unspent token UTXO to send to user
-		if _, ok := unspentTokenMap[sellingAsset.String()]; !ok {
-			unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(keyWalletDCBAccount.KeySet, &sellingAsset)
+		if _, ok := unspentTokenMap[assetID.String()]; !ok {
+			unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(keyWalletDCBAccount.KeySet, assetID)
 			fmt.Printf("[db] unspentTxTokenOuts: %+v\n%v\n", unspentTxTokenOuts, err)
 			if err == nil {
-				unspentTokenMap[sellingAsset.String()] = unspentTxTokenOuts
+				unspentTokenMap[assetID.String()] = unspentTxTokenOuts
 			} else {
-				unspentTokenMap[sellingAsset.String()] = []transaction.TxTokenVout{}
+				unspentTokenMap[assetID.String()] = []transaction.TxTokenVout{}
 			}
 		}
 
@@ -205,7 +205,7 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 		txResponse, err = buildPaymentForToken(
 			paymentInst.PaymentAddress,
 			paymentInst.Amount,
-			sellingAsset,
+			*assetID,
 			unspentTokenMap,
 			saleData.SaleID,
 			mint,

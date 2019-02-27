@@ -371,20 +371,20 @@ func (blockchain *BlockChain) initBeaconState() error {
 			EndBlock:         1000,
 			BuyingAsset:      *bondID,
 			BuyingAmount:     100,
-			DefaultBuyPrice:  100,
+			DefaultBuyPrice:  100000, // $1 per bond in millicent
 			SellingAsset:     common.ConstantID,
-			SellingAmount:    150,
-			DefaultSellPrice: 100,
+			SellingAmount:    15000, // 150 CST in Nano
+			DefaultSellPrice: 1000,  // 1000 millicent per Nano
 		},
 		params.SaleData{
 			SaleID:           sellBondSaleID[:],
 			EndBlock:         2000,
 			BuyingAsset:      common.ConstantID,
-			BuyingAmount:     250,
-			DefaultBuyPrice:  100,
+			BuyingAmount:     25000, // 250 CST in Nano
+			DefaultBuyPrice:  1000,
 			SellingAsset:     *bondID,
 			SellingAmount:    200,
-			DefaultSellPrice: 100,
+			DefaultSellPrice: 100000,
 		},
 	}
 	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.ListSaleData = saleData
