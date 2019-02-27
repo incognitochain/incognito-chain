@@ -19,9 +19,9 @@ func (crossShardBlock *CrossShardBlock) VerifyCrossShardBlock(committees []strin
 	return nil
 }
 
-func (self *CrossShardBlock) ShouldStoreBlock() bool {
+//TODO: @merman
+func (self *CrossShardBlock) ShouldAcceptBlock(shardCommittee []string) bool {
 	// verify block aggregation
 	// verify with best cross shard
-
 	return true
 }
