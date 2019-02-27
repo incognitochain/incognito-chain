@@ -77,17 +77,20 @@ func buildPaymentInstructionForCrowdsale(
 	sellingAsset := saleData.SellingAsset
 	buyPrice := beaconBestState.getAssetPrice(buyingAsset)
 	sellPrice := beaconBestState.getAssetPrice(sellingAsset)
-	if buyPrice == 0 || sellPrice == 0 {
+	if buyPrice == 0 {
 		buyPrice = saleData.DefaultBuyPrice
+	}
+	if sellPrice == 0 {
 		sellPrice = saleData.DefaultSellPrice
-		if buyPrice == 0 || sellPrice == 0 {
-			fmt.Printf("[db] asset price is 0: %d %d\n", buyPrice, sellPrice)
-			return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
-		}
+	}
+	if buyPrice == 0 || sellPrice == 0 {
+		fmt.Printf("[db] asset price is 0: %d %d\n", buyPrice, sellPrice)
+		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
 	}
 	fmt.Printf("[db] buy and sell price: %d %d\n", buyPrice, sellPrice)
 
 	// Check if price limit is not violated
+	priceLimit *= beaconBestState.StabilityInfo.Oracle.Constant // Convert from Nano to Millicent
 	if limitSell && sellPrice > priceLimit {
 		fmt.Printf("Price limit violated: %d %d\n", sellPrice, priceLimit)
 		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
