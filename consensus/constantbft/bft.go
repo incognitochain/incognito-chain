@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -84,8 +85,8 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 					}
 				})
 
-				var readyMsgs map[string]struct{}
-				readyMsgs = make(map[string]struct{})
+				var readyMsgs map[string]*wire.MessageBFTReady
+				readyMsgs = make(map[string]*wire.MessageBFTReady)
 
 				fmt.Println()
 				fmt.Println("Listen for ready msg")
@@ -96,7 +97,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 					case msgReady := <-protocol.cBFTMsg:
 						if msgReady.MessageType() == wire.CmdBFTReady {
 							if msgReady.(*wire.MessageBFTReady).BestStateHash == protocol.RoundData.BestStateHash && msgReady.(*wire.MessageBFTReady).Round == protocol.RoundData.Round && common.IndexOfStr(msgReady.(*wire.MessageBFTReady).Pubkey, protocol.RoundData.Committee) != -1 {
-								readyMsgs[msgReady.(*wire.MessageBFTReady).Pubkey] = struct{}{}
+								readyMsgs[msgReady.(*wire.MessageBFTReady).Pubkey] = msgReady.(*wire.MessageBFTReady)
 								if len(readyMsgs) >= (2*len(protocol.RoundData.Committee)/3)-1 {
 									timeout.Stop()
 									timeout2.Stop()
@@ -112,7 +113,14 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 						}
 					case <-protocol.cTimeout:
 						if len(readyMsgs) >= (2*len(protocol.RoundData.Committee)/3)-1 {
-							<-time.After(DelayTime * time.Millisecond)
+							if protocol.RoundData.Layer == common.BEACON_ROLE {
+								var shToBcPoolStates []map[byte]uint64
+								for _, readyMsg := range readyMsgs {
+									shToBcPoolStates = append(shToBcPoolStates, readyMsg.ShToBcnPoolState)
+								}
+								shToBcPoolStates = append(shToBcPoolStates, protocol.ShardToBeaconPool.GetLatestValidPendingBlockHeight())
+								protocol.RoundData.ClosestPoolState.ShardToBeacon = GetClosestPoolState(shToBcPoolStates)
+							}
 
 							fmt.Println("Propose block")
 							msg, err := protocol.CreateBlockMsg()
@@ -162,6 +170,8 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 								err = protocol.BlockChain.VerifyPreSignBeaconBlock(&pendingBlk, true)
 								if err != nil {
 									Logger.log.Error(err)
+									fmt.Println(msgPropose.(*wire.MessageBFTPropose).Block)
+									os.Exit(1)
 									continue
 								}
 								protocol.pendingBlock = &pendingBlk
@@ -377,7 +387,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 func (protocol *BFTProtocol) CreateBlockMsg() (wire.Message, error) {
 	var msg wire.Message
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
-		newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.Round)
+		newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.Round, protocol.RoundData.ClosestPoolState.ShardToBeacon)
 		if err != nil {
 			return nil, err
 		}
