@@ -196,4 +196,6 @@ type Transaction interface {
 	GetTokenUniqueReceiver() (bool, []byte, uint64)
 	GetAmountOfVote() (uint64, error)
 	GetVoterPaymentAddress() (*privacy.PaymentAddress, error)
+
+	GetMetadataFromVinsTx(BlockchainRetriever) (Metadata, error)
 }
