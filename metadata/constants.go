@@ -105,8 +105,8 @@ const (
 
 // boards
 const (
-	DCBBoard = BoardType(1)
-	GOVBoard = BoardType(2)
+	DCBBoard = BoardType(0)
+	GOVBoard = BoardType(1)
 )
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
