@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 	"strconv"
 	"time"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
 )
 
 type MetadataBase struct {
@@ -115,6 +115,7 @@ type BlockchainRetriever interface {
 	GetNumberOfGOVGovernors() int
 	GetLoanPayment([]byte) (uint64, uint64, uint64, error)
 	GetLoanRequestMeta(loanID []byte) (*LoanRequest, error)
+	GetLoanWithdrawed(loanID []byte) (bool, error)
 
 	// For validating dividend
 	GetLatestDividendProposal(bool) (uint64, uint64)
