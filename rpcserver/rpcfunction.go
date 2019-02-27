@@ -98,6 +98,8 @@ var RpcHandler = map[string]commandHandler{
 	SendCrowdsaleRequestConstant:          RpcServer.handleSendCrowdsaleRequestConstant,
 	CreateAndSendCrowdsaleRequestConstant: RpcServer.handleCreateAndSendCrowdsaleRequestConstant,
 	TestStoreCrowdsale:                    RpcServer.handleTESTStoreCrowdsale,
+	GetListDCBProposalBuyingAssets:        RpcServer.handleGetListDCBProposalBuyingAssets,
+	GetListDCBProposalSellingAssets:       RpcServer.handleGetListDCBProposalSellingAssets,
 
 	// Reserve
 	CreateIssuingRequest:            RpcServer.handleCreateIssuingRequest,

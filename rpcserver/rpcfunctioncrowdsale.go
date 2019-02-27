@@ -72,6 +72,7 @@ func (rpcServer RpcServer) handleGetListOngoingCrowdsale(params interface{}, clo
 		SellingAsset     string
 		SellingAmount    uint64
 		DefaultSellPrice uint64
+		Type             string
 	}
 	result := []CrowdsaleInfo{}
 	saleDataList, err := rpcServer.config.BlockChain.GetAllCrowdsales()
@@ -82,6 +83,13 @@ func (rpcServer RpcServer) handleGetListOngoingCrowdsale(params interface{}, clo
 		if height >= saleData.EndBlock {
 			continue
 		}
+
+		// Add type for better ux, not blockchain-related
+		crowdsaleType := "buyable"
+		if saleData.SellingAsset.IsEqual(&common.ConstantID) {
+			crowdsaleType = "sellable"
+		}
+
 		info := CrowdsaleInfo{
 			SaleID:           hex.EncodeToString(saleData.SaleID),
 			EndBlock:         saleData.EndBlock,
@@ -91,6 +99,7 @@ func (rpcServer RpcServer) handleGetListOngoingCrowdsale(params interface{}, clo
 			SellingAsset:     saleData.SellingAsset.String(),
 			SellingAmount:    saleData.SellingAmount,
 			DefaultSellPrice: saleData.DefaultSellPrice,
+			Type:             crowdsaleType,
 		}
 		result = append(result, info)
 	}
@@ -124,4 +133,22 @@ func (rpcServer RpcServer) handleTESTStoreCrowdsale(params interface{}, closeCha
 		}
 	}
 	return true, nil
+}
+
+func (rpcServer RpcServer) handleGetListDCBProposalBuyingAssets(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	// TODO(@0xankylosaurus): call get list bonds
+	buyingAssets := map[string]string{
+		"Bond 1":   "4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000",
+		"Constant": common.ConstantID.String(),
+	} // From asset name to asset id
+	return buyingAssets, nil
+}
+
+func (rpcServer RpcServer) handleGetListDCBProposalSellingAssets(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	// TODO(@0xankylosaurus): call get list bonds
+	sellingAssets := map[string]string{
+		"Constant": common.ConstantID.String(),
+		"Bond 2":   "4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000",
+	} // From asset name to asset id
+	return sellingAssets, nil
 }
