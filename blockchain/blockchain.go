@@ -362,7 +362,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 		},
 	}
 
-	bondID, _ := common.NewHashFromStr("601b465a22f872cc50ae1f0c8ed84a78de3d649ffc784fc10000000000000000")
+	bondID, _ := common.NewHashFromStr("4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000")
 	buyBondSaleID := [32]byte{1}
 	sellBondSaleID := [32]byte{2}
 	saleData := []params.SaleData{
@@ -388,6 +388,15 @@ func (blockchain *BlockChain) initBeaconState() error {
 		},
 	}
 	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.ListSaleData = saleData
+	// Store temp crowdsale states to avoid submiting DCB proposal
+	for _, data := range saleData {
+		key := getSaleDataKeyBeacon(data.SaleID)
+		if _, ok := blockchain.BestState.Beacon.Params[key]; ok {
+			continue
+		}
+		value := getSaleDataValueBeacon(&data)
+		blockchain.BestState.Beacon.Params[key] = value
+	}
 
 	loanParams := []params.LoanParams{
 		params.LoanParams{
@@ -399,6 +408,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.ListLoanParams = loanParams
 
 	blockchain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress = []privacy.PaymentAddress{
+		// Payment4: 1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba
 		privacy.PaymentAddress{
 			Pk: []byte{3, 36, 133, 3, 185, 44, 62, 112, 196, 239, 49, 190, 100, 172, 50, 147, 196, 154, 105, 211, 203, 57, 242, 110, 34, 126, 100, 226, 74, 148, 128, 167, 0},
 			Tk: []byte{2, 134, 3, 114, 89, 60, 134, 3, 185, 245, 176, 187, 244, 145, 250, 149, 67, 98, 68, 106, 69, 200, 228, 209, 3, 26, 231, 15, 36, 251, 211, 186, 159},

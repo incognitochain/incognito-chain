@@ -121,8 +121,8 @@ type DatabaseInterface interface {
 	PrivacyCustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) // from token id get all custom txs
 
 	// Loans
-	StoreLoanPayment([]byte, uint64, uint64, uint64) error // param: loanID, principle, interest, deadline
-	GetLoanPayment([]byte) (uint64, uint64, uint64, error) // param: loanID; return: principle, interest, deadline
+	StoreLoanPayment(loanID []byte, principle uint64, interest uint64, deadline uint64) error
+	GetLoanPayment(loanID []byte) (principle uint64, interest uint64, deadline uint64, err error)
 	GetLoanRequestTx(loanID []byte) ([]byte, error)
 	GetLoanWithdrawed(loanID []byte) (bool, error)
 	StoreLoanWithdrawed(loanID []byte) error
@@ -130,11 +130,6 @@ type DatabaseInterface interface {
 	// Dividends
 	GetDividendReceiversForID(id uint64, forDCB bool) (receivers []privacy.PaymentAddress, amounts []uint64, hasValue bool, err error)
 	StoreDividendReceiversForID(id uint64, forDCB bool, receivers []privacy.PaymentAddress, amounts []uint64) error
-
-	// Crowdsale
-	StoreCrowdsaleData(saleID []byte, proposalTxHash common.Hash, buyingAmount uint64, sellingAmount uint64) error
-	GetCrowdsaleData([]byte) (common.Hash, uint64, uint64, error)
-	GetAllCrowdsales() ([][]byte, []common.Hash, []uint64, []uint64, error)
 
 	// Reserve
 	StoreIssuingInfo(reqTxID common.Hash, amount uint64, instType string) error

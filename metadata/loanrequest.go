@@ -15,8 +15,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const actionValueSep = "-"
-
 type ErrorSaver struct {
 	err error
 }

@@ -11,34 +11,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// buildInstructionsForLoanRequest converts shard LoanRequest inst to beacon inst to update BeaconBestState later on
-func buildInstructionsForLoanRequest(contentStr string) ([][]string, error) {
-	// Pass through
-	metaType := strconv.Itoa(metadata.LoanRequestMeta)
-	shardID := strconv.Itoa(metadata.BeaconOnly)
-	return [][]string{[]string{metaType, shardID, contentStr}}, nil
-}
-
-// buildInstructionsForLoanResponse converts shard LoanResponse inst to beacon inst to update BeaconBestState later on
-func buildInstructionsForLoanResponse(contentStr string) ([][]string, error) {
-	// Pass through
-	metaType := strconv.Itoa(metadata.LoanResponseMeta)
-	shardID := strconv.Itoa(metadata.BeaconOnly)
-	return [][]string{[]string{metaType, shardID, contentStr}}, nil
-}
-
-// buildInstructionsForLoanPayment converts shard LoanPayment inst to beacon inst to update BeaconBestState later on
-func buildInstructionsForLoanPayment(contentStr string) ([][]string, error) {
-	// Pass through
-	metaType := strconv.Itoa(metadata.LoanPaymentMeta)
-	shardID := strconv.Itoa(metadata.BeaconOnly)
-	return [][]string{[]string{metaType, shardID, contentStr}}, nil
-}
-
-// buildInstructionsForLoanWithdraw converts shard LoanWithdraw inst to beacon inst to update BeaconBestState later on
-func buildInstructionsForLoanWithdraw(contentStr string) ([][]string, error) {
-	// Pass through
-	metaType := strconv.Itoa(metadata.LoanWithdrawMeta)
+// buildPassthroughInstruction converts shard instruction to beacon instruction in order to update BeaconBestState later on in beaconprocess
+func buildPassthroughInstruction(receivedType int, contentStr string) ([][]string, error) {
+	metaType := strconv.Itoa(receivedType)
 	shardID := strconv.Itoa(metadata.BeaconOnly)
 	return [][]string{[]string{metaType, shardID, contentStr}}, nil
 }
@@ -51,17 +26,19 @@ func buildInstructionsForCrowdsaleRequest(
 ) ([][]string, error) {
 	saleID, priceLimit, limitSell, paymentAddress, sentAmount, err := metadata.ParseCrowdsaleRequestActionValue(contentStr)
 	if err != nil {
+		fmt.Printf("[db] error parsing action: %+v\n", err)
 		return nil, err
 	}
-	key := getSaleDataKeyBeacon(saleID)
 
 	// Get data of current crowdsale
+	key := getSaleDataKeyBeacon(saleID)
 	var saleData *params.SaleData
 	ok := false
 	if saleData, ok = accumulativeValues.saleDataMap[key]; !ok {
 		if value, ok := beaconBestState.Params[key]; ok {
-			saleData, _ = parseSaleDataValueBeacon(value)
+			saleData, err = parseSaleDataValueBeacon(value)
 		} else {
+			fmt.Printf("[db] saleid not exist: %x\n", saleID)
 			return nil, errors.Errorf("SaleID not exist: %x", saleID)
 		}
 	}
@@ -104,6 +81,7 @@ func buildPaymentInstructionForCrowdsale(
 		buyPrice = saleData.DefaultBuyPrice
 		sellPrice = saleData.DefaultSellPrice
 		if buyPrice == 0 || sellPrice == 0 {
+			fmt.Printf("[db] asset price is 0: %d %d\n", buyPrice, sellPrice)
 			return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
 		}
 	}
@@ -133,6 +111,8 @@ func buildPaymentInstructionForCrowdsale(
 	// Update amount of buying/selling asset of the crowdsale
 	saleData.BuyingAmount -= sentAmount
 	saleData.SellingAmount -= paymentAmount
+
+	fmt.Printf("[db] sentValue, payAmount, buyLeft, sellLeft: %d %d %d %d\n", sentAssetValue, paymentAmount, saleData.BuyingAmount, saleData.SellingAmount)
 
 	// Build instructions
 	return generateCrowdsalePaymentInstruction(paymentAddress, paymentAmount, sellingAsset, saleData.SaleID, sentAmount, true)
