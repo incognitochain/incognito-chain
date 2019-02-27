@@ -39,7 +39,7 @@ func (rpcServer *RpcServer) buildParamsSubmitGOVProposal(params interface{}) (in
 }
 
 func (rpcServer *RpcServer) buildParamsSealLv2VoteProposal(params interface{}) (interface{}, *RPCError) {
-	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
+	params = setBuildRawBurnTransactionParams(params, FeeVote)
 	arrayParams := common.InterfaceSlice(params)
 	data := arrayParams[len(arrayParams)-1].(map[string]interface{})
 	newData := make(map[string]interface{})
@@ -70,14 +70,14 @@ func (rpcServer *RpcServer) buildParamsSealLv2VoteProposal(params interface{}) (
 }
 
 func (rpcServer *RpcServer) buildParamsSealLv3VoteProposal(params interface{}) (interface{}, *RPCError) {
-	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
+	params = setBuildRawBurnTransactionParams(params, FeeVote)
 	return params, nil
 }
 
 func (rpcServer RpcServer) buildParamsSealLv1VoteProposal(
 	params interface{},
 ) (interface{}, *RPCError) {
-	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
+	params = setBuildRawBurnTransactionParams(params, FeeVote)
 	arrayParams := common.InterfaceSlice(params)
 	NParams := len(arrayParams)
 	data := arrayParams[NParams-1].(map[string]interface{})
@@ -117,7 +117,7 @@ func (rpcServer RpcServer) buildParamsSealLv1VoteProposal(
 func (rpcServer RpcServer) buildParamsNormalVoteProposalFromOwner(
 	params interface{},
 ) (interface{}, *RPCError) {
-	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
+	params = setBuildRawBurnTransactionParams(params, FeeVote)
 	arrayParams := common.InterfaceSlice(params)
 	NParams := len(arrayParams)
 	data := arrayParams[len(arrayParams)-1].(map[string]interface{})
@@ -143,7 +143,7 @@ func (rpcServer RpcServer) buildParamsNormalVoteProposalFromOwner(
 func (rpcServer RpcServer) buildParamsNormalVoteProposalFromSealer(
 	params interface{},
 ) (interface{}, *RPCError) {
-	params = setBuildRawBurnTransactionParams(params, FeeVoteProposal)
+	params = setBuildRawBurnTransactionParams(params, FeeVote)
 	arrayParams := common.InterfaceSlice(params)
 	NParams := len(arrayParams)
 	data := arrayParams[len(arrayParams)-1].(map[string]interface{})
