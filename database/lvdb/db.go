@@ -44,6 +44,7 @@ var (
 	loanIDKeyPrefix           = []byte("loanID-")
 	loanTxKeyPrefix           = []byte("loanTx-")
 	loanPaymentKeyPrefix      = []byte("loanPayment-")
+	loanWithdrawedPrefix      = []byte("loanWithdrawed-")
 	loanRequestPostfix        = []byte("-req")
 	loanResponsePostfix       = []byte("-res")
 	rewared                   = []byte("reward")

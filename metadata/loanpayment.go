@@ -90,65 +90,64 @@ func GetInterestPerTerm(principle, interestRate uint64) uint64 {
 }
 
 type LoanPaymentAction struct {
-	Amount uint64
+	LoanID       []byte
+	AmountSent   uint64
+	InterestRate uint64
+	Maturity     uint64
 }
 
 func (lp *LoanPayment) BuildReqActions(txr Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	amount, err := lp.calculateInterestPaid(txr, bcr)
+	lrActionValue, err := getLoanPaymentActionValue(txr, bcr, lp.LoanID)
 	if err != nil {
-		return [][]string{}, err
+		return nil, err
 	}
-	lrActionValue := getLoanPaymentActionValue(amount)
 	fmt.Printf("[db] LoanPay built action: %s\n", lrActionValue)
 	lrAction := []string{strconv.Itoa(LoanPaymentMeta), lrActionValue}
 	return [][]string{lrAction}, nil
 }
 
-func getLoanPaymentActionValue(amount uint64) string {
+func getLoanPaymentActionValue(txr Transaction, bcr BlockchainRetriever, loanID []byte) (string, error) {
+	_, _, amountSent := txr.GetUniqueReceiver()
+
+	// Get loan params
+	reqMeta, err := bcr.GetLoanRequestMeta(loanID)
+	if err != nil {
+		return "", err
+	}
+
 	action := &LoanPaymentAction{
-		Amount: amount,
+		LoanID:       loanID,
+		AmountSent:   amountSent,
+		InterestRate: reqMeta.Params.InterestRate,
+		Maturity:     reqMeta.Params.Maturity,
 	}
 	value, _ := json.Marshal(action)
-	return string(value)
+	return string(value), nil
 }
 
-func ParseLoanPaymentActionValue(value string) (uint64, error) {
+func ParseLoanPaymentActionValue(value string) ([]byte, uint64, uint64, uint64, error) {
 	action := &LoanPaymentAction{}
 	err := json.Unmarshal([]byte(value), action)
 	if err != nil {
-		return 0, err
+		return nil, 0, 0, 0, err
 	}
-	return action.Amount, nil
+	return action.LoanID, action.AmountSent, action.InterestRate, action.Maturity, nil
 }
 
-func (lp *LoanPayment) calculateInterestPaid(tx Transaction, bcr BlockchainRetriever) (uint64, error) {
-	principle, interest, deadline, err := bcr.GetLoanPayment(lp.LoanID)
-	if err != nil {
-		return 0, err
-	}
-
-	// Get loan params
-	requestMeta, err := bcr.GetLoanRequestMeta(lp.LoanID)
-	if err != nil {
-		return 0, err
-	}
-
+func CalculateInterestPaid(amountSent, principle, interest, deadline, interestRate, maturity, currentHeight uint64) uint64 {
 	// Only keep interest
-	_, _, amount := tx.GetUniqueReceiver() // Receiver is unique and is burn address
-	lastByte := requestMeta.ReceiveAddress.Pk[len(requestMeta.ReceiveAddress.Pk)-1]
-	shardID := common.GetShardIDFromLastByte(lastByte)
 	totalInterest := GetTotalInterest(
 		principle,
 		interest,
-		requestMeta.Params.InterestRate,
-		requestMeta.Params.Maturity,
+		interestRate,
+		maturity,
 		deadline,
-		bcr.GetChainHeight(shardID),
+		currentHeight,
 	)
-	interestPaid := amount
-	if amount > totalInterest {
+	interestPaid := amountSent
+	if amountSent > totalInterest {
 		interestPaid = totalInterest
 	}
-	fmt.Printf("[db] calcInterestPaid: %d %d %d %d %d %d\n", principle, interest, deadline, amount, totalInterest, interestPaid)
-	return interestPaid, nil
+	fmt.Printf("[db] calcInterestPaid: %d %d %d %d %d %d\n", principle, interest, deadline, amountSent, totalInterest, interestPaid)
+	return interestPaid
 }
