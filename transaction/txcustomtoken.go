@@ -506,3 +506,19 @@ func (tx *TxCustomToken) GetTokenUniqueReceiver() (bool, []byte, uint64) {
 	return count == 1, pubkey, amount
 
 }
+
+func (tx *TxCustomToken) GetMetadataFromVinsTx(bcr metadata.BlockchainRetriever) (metadata.Metadata, error) {
+	vins := tx.TxTokenData.Vins
+	if len(vins) == 0 {
+		return nil, nil
+	}
+	prevTxID := vins[0].TxCustomTokenID
+	_, _, _, prevTx, err := bcr.GetTransactionByHash(&prevTxID)
+	if err != nil {
+		return nil, err
+	}
+	if prevTx == nil {
+		return nil, nil
+	}
+	return prevTx.GetMetadata(), nil
+}
