@@ -83,6 +83,8 @@ const (
 	GetDCBParams                         = "getdcbparams"
 	GetGOVConstitution                   = "getgovconstitution"
 	GetDCBConstitution                   = "getdcbconstitution"
+	GetDCBBoardIndex                     = "getdcbboardindex"
+	GetGOVBoardIndex                     = "getgovboardindex"
 	CreateAndSendTxWithMultiSigsReg      = "createandsendtxwithmultisigsreg"
 	CreateAndSendTxWithMultiSigsSpending = "createandsendtxwithmultisigsspending"
 

@@ -144,6 +144,8 @@ var RpcHandler = map[string]commandHandler{
 	// dcb
 	GetDCBParams:       RpcServer.handleGetDCBParams,
 	GetDCBConstitution: RpcServer.handleGetDCBConstitution,
+	GetDCBBoardIndex:   RpcServer.handleGetDCBBoardIndex,
+	GetGOVBoardIndex:   RpcServer.handleGetGOVBoardIndex,
 	// CreateAndSendTxWithIssuingRequest:     RpcServer.handleCreateAndSendTxWithIssuingRequest,
 	// CreateAndSendTxWithContractingRequest: RpcServer.handleCreateAndSendTxWithContractingRequest,
 
