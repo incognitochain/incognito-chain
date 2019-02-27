@@ -421,11 +421,19 @@ func (blockchain *BlockChain) initBeaconState() error {
 		BondSymbol:     "BND1000",
 		TotalIssue:     1000,
 		BondsToSell:    1000,
-		BondPrice:      100, // 1 mili constant
+		BondPrice:      100, // 1 constant
 		Maturity:       3,
-		BuyBackPrice:   120, // 1.2 mili constant
+		BuyBackPrice:   120, // 1.2 constant
 		StartSellingAt: 0,
 		SellingWithin:  100000,
+	}
+
+	blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens = &params.SellingGOVTokens{
+		TotalIssue:      1000,
+		GOVTokensToSell: 1000,
+		GOVTokenPrice:   500, // 5 constant
+		StartSellingAt:  0,
+		SellingWithin:   10000,
 	}
 
 	// Insert new block into beacon chain
