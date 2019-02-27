@@ -230,7 +230,7 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 	// crossShardMap := make(map[byte][]CrossShardBlock)
 	// get cross shard block
 
-	allCrossShardBlock := blockgen.crossShardPool[shardID].GetValidBlock()
+	allCrossShardBlock := blockgen.crossShardPool[shardID].GetValidBlock(nil)
 	fmt.Println("ShardProducer/AllCrosshardblock", allCrossShardBlock)
 	// Get Cross Shard Block
 	for _, crossShardBlock := range allCrossShardBlock {
