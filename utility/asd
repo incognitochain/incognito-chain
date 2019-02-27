@@ -173,3 +173,8 @@ watch -n5 `echo -x curl -X POST \
   http://127.0.0.1:9343 \
   -H 'Content-Type: application/json' \
   -d '{"jsonrpc":"1.0","method":"getshardbeststate","params":[1],"id":1}'`
+
+watch -n5 `echo -x curl -X POST \
+  http://127.0.0.1:9343 \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"1.0","method":"getbeaconbeststate","params":[],"id":1}'`

@@ -32,6 +32,7 @@ type EngineConfig struct {
 	NodeMode          string
 	Server            serverInterface
 	ShardToBeaconPool blockchain.ShardToBeaconPool
+	CrossShardPool    map[byte]blockchain.CrossShardPool
 }
 
 //Init apply configuration to consensus engine
@@ -101,6 +102,7 @@ func (engine *Engine) Start() error {
 							BlockChain:        engine.config.BlockChain,
 							Server:            engine.config.Server,
 							ShardToBeaconPool: engine.config.ShardToBeaconPool,
+							CrossShardPool:    engine.config.CrossShardPool,
 						}
 						bftProtocol.RoundData.Round = currentPBFTRound
 						if (engine.config.NodeMode == common.NODEMODE_BEACON || engine.config.NodeMode == common.NODEMODE_AUTO) && userRole != common.SHARD_ROLE {

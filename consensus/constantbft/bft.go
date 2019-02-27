@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -22,6 +21,7 @@ type BFTProtocol struct {
 	EngineCfg *EngineConfig
 
 	ShardToBeaconPool blockchain.ShardToBeaconPool
+	CrossShardPool    map[byte]blockchain.CrossShardPool
 	BlockGen          *blockchain.BlkTmplGenerator
 	BlockChain        *blockchain.BlockChain
 	Server            serverInterface
@@ -41,9 +41,7 @@ type BFTProtocol struct {
 		Layer            string
 		ShardID          byte
 		Committee        []string
-		ClosestPoolState struct {
-			ShardToBeacon map[byte]uint64
-		}
+		ClosestPoolState map[byte]uint64
 	}
 
 	multiSigScheme *multiSigScheme
@@ -116,10 +114,17 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 							if protocol.RoundData.Layer == common.BEACON_ROLE {
 								var shToBcPoolStates []map[byte]uint64
 								for _, readyMsg := range readyMsgs {
-									shToBcPoolStates = append(shToBcPoolStates, readyMsg.ShToBcnPoolState)
+									shToBcPoolStates = append(shToBcPoolStates, readyMsg.PoolState)
 								}
 								shToBcPoolStates = append(shToBcPoolStates, protocol.ShardToBeaconPool.GetLatestValidPendingBlockHeight())
-								protocol.RoundData.ClosestPoolState.ShardToBeacon = GetClosestPoolState(shToBcPoolStates)
+								protocol.RoundData.ClosestPoolState = GetClosestPoolState(shToBcPoolStates)
+							} else {
+								var crossShardsPoolStates []map[byte]uint64
+								for _, readyMsg := range readyMsgs {
+									crossShardsPoolStates = append(crossShardsPoolStates, readyMsg.PoolState)
+								}
+								crossShardsPoolStates = append(crossShardsPoolStates, protocol.CrossShardPool[protocol.RoundData.ShardID].GetLatestValidBlockHeight())
+								protocol.RoundData.ClosestPoolState = GetClosestPoolState(crossShardsPoolStates)
 							}
 
 							fmt.Println("Propose block")
@@ -144,7 +149,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 					msgReady, _ := MakeMsgBFTReady(protocol.BlockChain.BestState.Beacon.Hash(), protocol.RoundData.Round, protocol.ShardToBeaconPool.GetLatestValidPendingBlockHeight(), protocol.UserKeySet)
 					protocol.Server.PushMessageToBeacon(msgReady)
 				} else {
-					msgReady, _ := MakeMsgBFTReady(protocol.BlockChain.BestState.Shard[protocol.RoundData.ShardID].Hash(), protocol.RoundData.Round, nil, protocol.UserKeySet)
+					msgReady, _ := MakeMsgBFTReady(protocol.BlockChain.BestState.Shard[protocol.RoundData.ShardID].Hash(), protocol.RoundData.Round, protocol.CrossShardPool[protocol.RoundData.ShardID].GetLatestValidBlockHeight(), protocol.UserKeySet)
 					protocol.Server.PushMessageToShard(msgReady, protocol.RoundData.ShardID)
 				}
 				fmt.Println("Listen phase")
@@ -170,8 +175,6 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 								err = protocol.BlockChain.VerifyPreSignBeaconBlock(&pendingBlk, true)
 								if err != nil {
 									Logger.log.Error(err)
-									fmt.Println(msgPropose.(*wire.MessageBFTPropose).Block)
-									os.Exit(1)
 									continue
 								}
 								protocol.pendingBlock = &pendingBlk
@@ -387,7 +390,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 func (protocol *BFTProtocol) CreateBlockMsg() (wire.Message, error) {
 	var msg wire.Message
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
-		newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.Round, protocol.RoundData.ClosestPoolState.ShardToBeacon)
+		newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.Round, protocol.RoundData.ClosestPoolState)
 		if err != nil {
 			return nil, err
 		}
@@ -403,7 +406,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() (wire.Message, error) {
 		// timeout.Stop()               //single-node
 		// return newBlock, nil         //single-node
 	} else {
-		newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ShardID, protocol.RoundData.Round)
+		newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ShardID, protocol.RoundData.Round, protocol.RoundData.ClosestPoolState)
 		if err != nil {
 			return nil, err
 		}
