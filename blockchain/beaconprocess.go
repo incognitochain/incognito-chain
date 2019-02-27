@@ -129,12 +129,23 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 		}
 	}
 	// if committee of this epoch isn't store yet then store it
-	if res, err := blockchain.config.DataBase.HasCommitteeByEpoch(block.Header.Epoch); err != nil && res == false {
+	Logger.log.Infof("Store Committee in Epoch %+v \n", block.Header.Epoch)
+	res, err := blockchain.config.DataBase.HasCommitteeByEpoch(block.Header.Epoch)
+	fmt.Println("Beacon Process/HasCommitteeByEpoch", res, err)
+	if res == false {
 		if err := blockchain.config.DataBase.StoreCommitteeByEpoch(block.Header.Epoch, blockchain.BestState.Beacon.ShardCommittee); err != nil {
 			return err
 		}
 	}
-
+	shardCommitteeByte, err := blockchain.config.DataBase.FetchCommitteeByEpoch(block.Header.Epoch)
+	if err != nil {
+		fmt.Println("No committee for this epoch")
+	}
+	shardCommittee := make(map[byte][]string)
+	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
+		fmt.Println("Fail to unmarshal shard committee")
+	}
+	fmt.Println("Beacon Process/Shard Committee in Epoch ", block.Header.Epoch, shardCommittee)
 	//=========Store cross shard state ==================================
 	lastCrossShardState := GetBestStateBeacon().LastCrossShardState
 	if block.Body.ShardState != nil {

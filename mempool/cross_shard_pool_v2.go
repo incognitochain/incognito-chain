@@ -3,6 +3,7 @@ package mempool
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sort"
 	"sync"
 
@@ -118,6 +119,8 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 
 	shardID := blk.Header.ShardID
 	blkHeight := blk.Header.Height
+
+	fmt.Printf("Receiver Block %+v from shard %+v at Cross Shard Pool \n", blkHeight, shardID)
 
 	if blk.ToShardID != pool.shardID {
 		return errors.New("This pool cannot receive this cross shard block, this block for another shard")
