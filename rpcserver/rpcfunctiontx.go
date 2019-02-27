@@ -528,10 +528,22 @@ func (rpcServer RpcServer) handleListUnspentCustomTokenTransaction(params interf
 	tokenIDParam := arrayParams[1]
 	tokenID, _ := common.Hash{}.NewHashFromStr(tokenIDParam.(string))
 	unspentTxTokenOuts, err := rpcServer.config.BlockChain.GetUnspentTxCustomTokenVout(senderKeyset, tokenID)
+
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	return unspentTxTokenOuts, NewRPCError(ErrUnexpected, err)
+	result := []jsonresult.UnspentCustomToken{}
+	for _, temp := range unspentTxTokenOuts {
+		item := jsonresult.UnspentCustomToken{
+			PaymentAddress:  senderKeyParam.(string),
+			Index:           temp.GetIndex(),
+			TxCustomTokenID: temp.GetTxCustomTokenID().String(),
+			Value:           temp.Value,
+		}
+		result = append(result, item)
+	}
+
+	return result, NewRPCError(ErrUnexpected, err)
 }
 
 // handleCreateSignatureOnCustomTokenTx - return a signature which is signed on raw custom token tx
