@@ -29,7 +29,7 @@ type BestStateBeacon struct {
 	BestShardHeight   map[byte]uint64      `json:"BestShardHeight"`
 	// New field
 	//TODO: calculate hash
-	AllShardState map[byte][]ShardState `json:"AllShardState"`
+	// AllShardState map[byte][]ShardState `json:"AllShardState"`
 
 	Epoch                  uint64   `json:"Epoch"`
 	BeaconHeight           uint64   `json:"BeaconHeight"`

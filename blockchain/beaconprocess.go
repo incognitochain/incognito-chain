@@ -348,16 +348,16 @@ func (bestStateBeacon *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *Be
 	}
 	//=============End Verify Stakers
 	// Verify shard state
-	for shardID, shardStates := range block.Body.ShardState {
-		// Do not check this condition with first minted block (genesis block height = 1)
-		if bestStateBeacon.BeaconHeight != 2 {
-			fmt.Printf("Beacon Process/Check ShardStates with BestState Current Shard Height %+v \n", bestStateBeacon.AllShardState[shardID][len(bestStateBeacon.AllShardState[shardID])-1].Height)
-			fmt.Printf("Beacon Process/Check ShardStates with BestState FirstShardHeight %+v \n", shardStates[0].Height)
-			if shardStates[0].Height-bestStateBeacon.AllShardState[shardID][len(bestStateBeacon.AllShardState[shardID])-1].Height != 1 {
-				return NewBlockChainError(ShardStateError, errors.New("Shardstates are not compatible with beacon best state"))
-			}
-		}
-	}
+	// for shardID, shardStates := range block.Body.ShardState {
+	// 	// Do not check this condition with first minted block (genesis block height = 1)
+	// 	if bestStateBeacon.BeaconHeight != 2 {
+	// fmt.Printf("Beacon Process/Check ShardStates with BestState Current Shard Height %+v \n", bestStateBeacon.AllShardState[shardID][len(bestStateBeacon.AllShardState[shardID])-1].Height)
+	// fmt.Printf("Beacon Process/Check ShardStates with BestState FirstShardHeight %+v \n", shardStates[0].Height)
+	// if shardStates[0].Height-bestStateBeacon.AllShardState[shardID][len(bestStateBeacon.AllShardState[shardID])-1].Height != 1 {
+	// 	return NewBlockChainError(ShardStateError, errors.New("Shardstates are not compatible with beacon best state"))
+	// }
+	// }
+	// }
 	return nil
 }
 
@@ -451,17 +451,17 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	bestStateBeacon.BeaconHeight = newBlock.Header.Height
 	bestStateBeacon.BeaconProposerIdx = common.IndexOfStr(newBlock.Header.Producer, bestStateBeacon.BeaconCommittee)
 
-	allShardState := newBlock.Body.ShardState
-	if bestStateBeacon.AllShardState == nil {
-		bestStateBeacon.AllShardState = make(map[byte][]ShardState)
-		for index := 0; index < common.MAX_SHARD_NUMBER; index++ {
-			bestStateBeacon.AllShardState[byte(index)] = []ShardState{
-				ShardState{
-					Height: 1,
-				},
-			}
-		}
-	}
+	// allShardState := newBlock.Body.ShardState
+	// if bestStateBeacon.AllShardState == nil {
+	// 	bestStateBeacon.AllShardState = make(map[byte][]ShardState)
+	// 	for index := 0; index < common.MAX_SHARD_NUMBER; index++ {
+	// 		bestStateBeacon.AllShardState[byte(index)] = []ShardState{
+	// 			ShardState{
+	// 				Height: 1,
+	// 			},
+	// 		}
+	// 	}
+	// }
 	if bestStateBeacon.BestShardHash == nil {
 		bestStateBeacon.BestShardHash = make(map[byte]common.Hash)
 	}
@@ -469,14 +469,14 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		bestStateBeacon.BestShardHeight = make(map[byte]uint64)
 	}
 	// Update new best new block hash
-	for shardID, shardStates := range allShardState {
-		bestStateBeacon.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
-		bestStateBeacon.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
-		if _, ok := bestStateBeacon.AllShardState[shardID]; !ok {
-			bestStateBeacon.AllShardState[shardID] = []ShardState{}
-		}
-		bestStateBeacon.AllShardState[shardID] = append(bestStateBeacon.AllShardState[shardID], shardStates...)
-	}
+	// for shardID, shardStates := range allShardState {
+	// 	bestStateBeacon.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
+	// 	bestStateBeacon.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
+	// 	if _, ok := bestStateBeacon.AllShardState[shardID]; !ok {
+	// 		bestStateBeacon.AllShardState[shardID] = []ShardState{}
+	// 	}
+	// 	bestStateBeacon.AllShardState[shardID] = append(bestStateBeacon.AllShardState[shardID], shardStates...)
+	// }
 
 	//cross shard state
 

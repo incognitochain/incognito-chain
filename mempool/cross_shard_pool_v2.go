@@ -105,6 +105,13 @@ func (pool *CrossShardPool_v2) updatePool() error {
 	return nil
 }
 
+/*
+	Validate Condition:
+	1. Block come into exact destination shardID
+	2. Greater than current pool cross shard state
+	3. Duplicate block in pending or valid
+	4. Signature
+*/
 func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock) error {
 	pool.poolMu.Lock()
 	defer pool.poolMu.Unlock()
@@ -142,20 +149,18 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
 		return errors.New("Fail to unmarshal shard committee")
 	}
-	shouldAccept := blk.ShouldAcceptBlock(shardCommittee[blk.Header.ShardID])
-
-	if shouldAccept {
-		if len(pool.pendingPool[shardID]) > MAX_PENDING_CROSS_SHARD_IN_POOL {
-			//TODO: swap for better block
-			return errors.New("Reach max pending cross shard block")
-		}
-		pool.pendingPool[shardID] = append(pool.pendingPool[shardID], &blk)
-		sort.Slice(pool.pendingPool[shardID], func(i, j int) bool {
-			return pool.pendingPool[shardID][i].Header.Height < pool.pendingPool[shardID][j].Header.Height
-		})
-	} else {
-		return errors.New("Block is not valid")
+	if err := blockchain.ValidateAggSignature(blk.ValidatorsIdx, shardCommittee[shardID], blk.AggregatedSig, blk.R, blk.Hash()); err != nil {
+		return err
 	}
+
+	if len(pool.pendingPool[shardID]) > MAX_PENDING_CROSS_SHARD_IN_POOL {
+		//TODO: swap for better block
+		return errors.New("Reach max pending cross shard block")
+	}
+	pool.pendingPool[shardID] = append(pool.pendingPool[shardID], &blk)
+	sort.Slice(pool.pendingPool[shardID], func(i, j int) bool {
+		return pool.pendingPool[shardID][i].Header.Height < pool.pendingPool[shardID][j].Header.Height
+	})
 
 	pool.updatePool()
 	return nil
