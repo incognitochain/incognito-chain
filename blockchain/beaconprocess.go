@@ -128,8 +128,11 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 			blockchain.config.DataBase.StoreAcceptedShardToBeacon(shardID, block.Header.Height, &shardState.Hash)
 		}
 	}
-	if err := blockchain.config.DataBase.StoreBeaconCommitteeByHeight(block.Header.Height, blockchain.BestState.Beacon.ShardCommittee); err != nil {
-		return err
+	// if committee of this epoch isn't store yet then store it
+	if res, err := blockchain.config.DataBase.HasCommitteeByEpoch(block.Header.Epoch); err != nil && res == false {
+		if err := blockchain.config.DataBase.StoreCommitteeByEpoch(block.Header.Epoch, blockchain.BestState.Beacon.ShardCommittee); err != nil {
+			return err
+		}
 	}
 
 	//=========Store cross shard state ==================================
@@ -254,7 +257,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	}
 	// if pool does not have one of needed block, fail to verify
 	if isCommittee {
-		allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidPendingBlock()
+		allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidPendingBlock(nil)
 		for shardID, shardBlocks := range allShardBlocks {
 			shardBlocks = shardBlocks[:len(block.Body.ShardState[shardID])]
 			shardStates := block.Body.ShardState[shardID]

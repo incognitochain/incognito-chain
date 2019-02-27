@@ -311,7 +311,7 @@ func (db *db) GetAcceptedShardToBeacon(shardID byte, shardBlkHash *common.Hash) 
 	return idx, nil
 }
 
-func (db *db) StoreBeaconCommitteeByHeight(blkHeight uint64, v interface{}) error {
+func (db *db) StoreCommitteeByHeight(blkHeight uint64, v interface{}) error {
 	//key: bea-s-com-{height}
 	//value: all shard committee
 	key := append(beaconPrefix, shardIDPrefix...)
@@ -331,7 +331,7 @@ func (db *db) StoreBeaconCommitteeByHeight(blkHeight uint64, v interface{}) erro
 	return nil
 }
 
-func (db *db) FetchBeaconCommitteeByHeight(blkHeight uint64) ([]byte, error) {
+func (db *db) FetchCommitteeByHeight(blkHeight uint64) ([]byte, error) {
 	key := append(beaconPrefix, shardIDPrefix...)
 	key = append(key, committeePrefix...)
 	buf := make([]byte, 8)
@@ -343,4 +343,54 @@ func (db *db) FetchBeaconCommitteeByHeight(blkHeight uint64) ([]byte, error) {
 		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.get"))
 	}
 	return b, nil
+}
+
+func (db *db) StoreCommitteeByEpoch(blkEpoch uint64, v interface{}) error {
+	//key: bea-s-com-ep-{epoch}
+	//value: all shard committee
+	key := append(beaconPrefix, shardIDPrefix...)
+	key = append(key, committeePrefix...)
+	key = append(key, epochPrefix...)
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, blkEpoch)
+	key = append(key, buf[:]...)
+
+	val, err := json.Marshal(v)
+	if err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+	}
+
+	if err := db.lvdb.Put(key, val, nil); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
+}
+
+func (db *db) FetchCommitteeByEpoch(blkEpoch uint64) ([]byte, error) {
+	key := append(beaconPrefix, shardIDPrefix...)
+	key = append(key, committeePrefix...)
+	key = append(key, epochPrefix...)
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, blkEpoch)
+	key = append(key, buf[:]...)
+
+	b, err := db.lvdb.Get(key, nil)
+	if err != nil {
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.get"))
+	}
+	return b, nil
+}
+func (db *db) HasCommitteeByEpoch(blkEpoch uint64) (bool, error) {
+	key := append(beaconPrefix, shardIDPrefix...)
+	key = append(key, committeePrefix...)
+	key = append(key, epochPrefix...)
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, blkEpoch)
+	key = append(key, buf[:]...)
+
+	exist, err := db.lvdb.Has(key, nil)
+	if err != nil {
+		return false, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.get"))
+	}
+	return exist, nil
 }
