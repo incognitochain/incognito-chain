@@ -757,6 +757,7 @@ func (blockchain *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 // @note: still storage full data of commitments, serialnumbersm snderivator to check double spend
 // @note: this function only work for transaction transfer token/constant within shard
 */
+
 func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBlock) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
@@ -853,6 +854,28 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		return err
 	}
 
+	err = blockchain.StoreCommitmentsFromTxViewPoint(*view, block.Header.ShardID)
+	if err != nil {
+		return err
+	}
+
+	err = blockchain.StoreSNDerivatorsFromTxViewPoint(*view, block.Header.ShardID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//TODO: @merman Store txcustom token
+func (blockchain *BlockChain) CreateAndSaveCrossOutputCoinViewPointFromBlock(block *ShardBlock) error {
+	// Fetch data from block into tx View point
+	view := NewTxViewPoint(block.Header.ShardID)
+	// TODO: 0xsirrush check lightmode turn off
+	err := view.fetchCrossOutputViewPointFromBlock(blockchain.config.DataBase, block, nil)
+	// Update the list nullifiers and commitment, snd set using the state of the used tx view point. This
+	// entails adding the new
+	// ones created by the block.
 	err = blockchain.StoreCommitmentsFromTxViewPoint(*view, block.Header.ShardID)
 	if err != nil {
 		return err
@@ -1094,7 +1117,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, 
 
 // GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
 func (blockchain *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
-	data, err := blockchain.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, receiverKeyset.PaymentAddress.Pk)
+	data, err := blockchain.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, receiverKeyset.PaymentAddress.Bytes())
 	fmt.Println(data)
 	if err != nil {
 		return nil, err

@@ -150,6 +150,13 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	return nil
 }
 
+/*
+	Store All information after Insert
+	- Shard Block
+	- Shard Best State
+	- Transaction => UTXO, serial number, snd, commitment
+	- Cross Output Coin => UTXO, snd, commmitment
+*/
 func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	blockHash := block.Hash().String()
 	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
@@ -193,6 +200,10 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 		}
 	}
 	// Store Incomming Cross Shard
+	// TODO: store outputcoin index in crossoutput coin
+	if err := blockchain.CreateAndSaveCrossOutputCoinViewPointFromBlock(block); err != nil {
+		return err
+	}
 	err := blockchain.StoreIncomingCrossShard(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)

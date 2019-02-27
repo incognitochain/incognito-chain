@@ -249,7 +249,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	}
 	// if pool does not have one of needed block, fail to verify
 	if isCommittee {
-		allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidPendingBlock()
+		allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidPendingBlock(nil)
 		for shardID, shardBlocks := range allShardBlocks {
 			shardBlocks = shardBlocks[:len(block.Body.ShardState[shardID])]
 			shardStates := block.Body.ShardState[shardID]

@@ -183,7 +183,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 	validStakers := [][]string{}
 	validSwap := make(map[byte][][]string)
 	//Get shard to beacon block from pool
-	shardsBlocks := blkTmplGenerator.shardToBeaconPool.GetValidPendingBlock()
+	shardsBlocks := blkTmplGenerator.shardToBeaconPool.GetValidPendingBlock(nil)
 	//Shard block is a map ShardId -> array of shard block
 	stabilityInstructions := [][]string{}
 	accumulativeValues := &accumulativeValues{}
@@ -242,6 +242,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			shardState := ShardState{}
 			shardState.CrossShard = make([]byte, len(shardBlock.Header.CrossShards))
 			copy(shardState.CrossShard, shardBlock.Header.CrossShards)
+			fmt.Println("Beacon Producer/ CrossShard Byte Arr", shardState.CrossShard)
 			shardState.Hash = shardBlock.Header.Hash()
 			shardState.Height = shardBlock.Header.Height
 			shardStates[shardID] = append(shardStates[shardID], shardState)
