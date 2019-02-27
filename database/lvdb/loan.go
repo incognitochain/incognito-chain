@@ -7,6 +7,24 @@ import (
 	"github.com/pkg/errors"
 )
 
+func (db *db) GetLoanWithdrawed(loanID []byte) (bool, error) {
+	keyLoanWithdrawed := string(loanWithdrawedPrefix) + string(loanID)
+	value, err := db.Get([]byte(keyLoanWithdrawed))
+	if err != nil {
+		return false, err
+	}
+	return value[0] > 0, err
+}
+
+func (db *db) StoreLoanWithdrawed(loanID []byte) error {
+	keyLoanWithdrawed := string(loanWithdrawedPrefix) + string(loanID)
+	valueLoanWithdrawed := []byte{1}
+	if err := db.Put([]byte(keyLoanWithdrawed), valueLoanWithdrawed); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
+	}
+	return nil
+}
+
 func (db *db) GetLoanRequestTx(loanID []byte) ([]byte, error) {
 	keyLoanID := string(loanIDKeyPrefix) + string(loanID) + string(loanRequestPostfix)
 	loanReqTx, err := db.Get([]byte(keyLoanID))
