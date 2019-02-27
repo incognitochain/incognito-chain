@@ -76,7 +76,7 @@ var (
 
 // board addresses
 const (
-	DCBAddress     = "1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba"
+	DCBAddress     = "1Uv4CtusMLW1GZpMS2HwqJ5fp654J6VUxUPEm8CpgkqDmKRbKuSH2dvBrrq4P75GNZdbCW3QGXmMQDRqpLnpyHrESqKvawLX7Ju29HjaD"
 	GOVAddress     = "1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba"
 	BurningAddress = "1NHp16Y29xjc1PoXb1qwr65BfVVoHZuCbtTkVyucRzbeydgQHs2wPu5PC1hD"
 )

@@ -2,11 +2,9 @@ package metadata
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/hex"
-	"fmt"
+	"encoding/json"
 	"strconv"
-	"strings"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -60,7 +58,6 @@ func NewCrowdsaleRequest(csReqData map[string]interface{}) (Metadata, error) {
 func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if sale exists and ongoing
 	saleData, err := bcr.GetCrowdsaleData(csReq.SaleID)
-	fmt.Printf("[db] saleData: %+v\n", saleData)
 	if err != nil {
 		return false, err
 	}
@@ -86,7 +83,6 @@ func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	} else {
 		keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 		unique, pubkey, _ := txr.GetTokenUniqueReceiver()
-		fmt.Printf("[db] keywallet and pubkey: \n%x\n%x\n", keyWalletDCBAccount.KeySet.PaymentAddress.Pk[:], pubkey)
 		if !unique || !bytes.Equal(pubkey, keyWalletDCBAccount.KeySet.PaymentAddress.Pk[:]) {
 			return false, errors.Errorf("Crowdsale request must send tokens to DCB address")
 		}
@@ -121,11 +117,28 @@ func (csReq *CrowdsaleRequest) Hash() *common.Hash {
 	return &hash
 }
 
+type CrowdsaleRequestAction struct {
+	SaleID         []byte
+	PriceLimit     uint64
+	LimitSell      bool
+	PaymentAddress privacy.PaymentAddress
+	SentAmount     uint64
+}
+
 func (csReq *CrowdsaleRequest) BuildReqActions(txr Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+	value, err := getCrowdsaleRequestActionValue(csReq, txr, bcr)
+	if err != nil {
+		return nil, err
+	}
+	action := []string{strconv.Itoa(CrowdsaleRequestMeta), value}
+	return [][]string{action}, nil
+}
+
+func getCrowdsaleRequestActionValue(csReq *CrowdsaleRequest, txr Transaction, bcr BlockchainRetriever) (string, error) {
 	// Calculate value of asset sent in request tx
 	saleData, err := bcr.GetCrowdsaleData(csReq.SaleID)
 	if err != nil {
-		return [][]string{}, err
+		return "", err
 	}
 	sentAmount := uint64(0)
 	if common.IsConstantAsset(&saleData.BuyingAsset) {
@@ -133,47 +146,23 @@ func (csReq *CrowdsaleRequest) BuildReqActions(txr Transaction, bcr BlockchainRe
 	} else if common.IsBondAsset(&saleData.BuyingAsset) {
 		_, _, sentAmount = txr.GetTokenUniqueReceiver()
 	}
-	lrActionValue := getCrowdsaleRequestActionValue(
-		csReq.SaleID,
-		csReq.PriceLimit,
-		csReq.LimitSellingAssetPrice,
-		csReq.PaymentAddress,
-		sentAmount,
-	)
-	lrAction := []string{strconv.Itoa(CrowdsaleRequestMeta), lrActionValue}
-	return [][]string{lrAction}, nil
+
+	action := &CrowdsaleRequestAction{
+		SaleID:         csReq.SaleID,
+		PriceLimit:     csReq.PriceLimit,
+		LimitSell:      csReq.LimitSellingAssetPrice,
+		PaymentAddress: csReq.PaymentAddress,
+		SentAmount:     sentAmount,
+	}
+	value, err := json.Marshal(action)
+	return string(value), err
 }
 
-func getCrowdsaleRequestActionValue(
-	saleID []byte,
-	priceLimit uint64,
-	limitSell bool,
-	paymentAddress privacy.PaymentAddress,
-	sentAmount uint64,
-) string {
-	return strings.Join([]string{
-		base64.StdEncoding.EncodeToString(saleID),
-		strconv.FormatUint(priceLimit, 10),
-		strconv.FormatBool(limitSell),
-		paymentAddress.String(),
-		strconv.FormatUint(sentAmount, 10),
-	}, actionValueSep)
-}
-
-func ParseCrowdsaleRequestActionValue(values string) ([]byte, uint64, bool, privacy.PaymentAddress, uint64, error) {
-	s := strings.Split(values, actionValueSep)
-	if len(s) != 5 {
-		return nil, 0, false, privacy.PaymentAddress{}, 0, errors.Errorf("CrowdsaleRequest value invalid")
+func ParseCrowdsaleRequestActionValue(value string) ([]byte, uint64, bool, privacy.PaymentAddress, uint64, error) {
+	action := &CrowdsaleRequestAction{}
+	err := json.Unmarshal([]byte(value), action)
+	if err != nil {
+		return nil, 0, false, privacy.PaymentAddress{}, 0, err
 	}
-	saleID, errID := base64.StdEncoding.DecodeString(s[0])
-	priceLimit, errPrice := strconv.ParseUint(s[1], 10, 64)
-	limitSell, errSell := strconv.ParseBool(s[2])
-	paymentAddressBytes, errPay := hex.DecodeString(s[3])
-	sentAmount, errAmount := strconv.ParseUint(s[4], 10, 64)
-	errSaver := &ErrorSaver{}
-	if errSaver.Save(errID, errPrice, errSell, errPay, errAmount) != nil {
-		return nil, 0, false, privacy.PaymentAddress{}, 0, errSaver.Get()
-	}
-	paymentAddress := privacy.NewPaymentAddressFromByte(paymentAddressBytes)
-	return saleID, priceLimit, limitSell, *paymentAddress, sentAmount, nil
+	return action.SaleID, action.PriceLimit, action.LimitSell, action.PaymentAddress, action.SentAmount, nil
 }

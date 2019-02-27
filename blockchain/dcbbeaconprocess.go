@@ -264,7 +264,7 @@ func (bsb *BestStateBeacon) processLoanResponseInstruction(inst []string) error 
 
 func (bsb *BestStateBeacon) processAcceptDCBProposalInstruction(inst []string) error {
 	// TODO(@0xjackalope): process other dcb params here
-	dcbParams, err := metadata.ParseAcceptDCBProposalMetadataActionValue(inst[1])
+	dcbParams, err := metadata.ParseAcceptDCBProposalMetadataActionValue(inst[2])
 	if err != nil {
 		return err
 	}
@@ -273,7 +273,6 @@ func (bsb *BestStateBeacon) processAcceptDCBProposalInstruction(inst []string) e
 	for _, data := range dcbParams.ListSaleData {
 		key := getSaleDataKeyBeacon(data.SaleID)
 		if _, ok := bsb.Params[key]; ok {
-			// TODO(@0xbunyip): support update crowdsale data
 			continue
 		}
 		value := getSaleDataValueBeacon(&data)
@@ -341,6 +340,7 @@ func (bsb *BestStateBeacon) processDividendSubmitInstruction(inst []string) erro
 }
 
 func (bsb *BestStateBeacon) processCrowdsalePaymentInstruction(inst []string) error {
+	fmt.Printf("[db] beaconProcess found inst: %+v\n", inst)
 	// All shard update bsb, only DCB shard creates payment txs
 	paymentInst, err := ParseCrowdsalePaymentInstruction(inst[2])
 	if err != nil {
@@ -349,6 +349,7 @@ func (bsb *BestStateBeacon) processCrowdsalePaymentInstruction(inst []string) er
 	if paymentInst.UpdateSale {
 		saleData, err := bsb.GetSaleData(paymentInst.SaleID)
 		if err != nil {
+			fmt.Printf("[db] error get sale data: %+v\n", err)
 			return err
 		}
 		saleData.BuyingAmount -= paymentInst.SentAmount
@@ -356,6 +357,7 @@ func (bsb *BestStateBeacon) processCrowdsalePaymentInstruction(inst []string) er
 
 		key := getSaleDataKeyBeacon(paymentInst.SaleID)
 		bsb.Params[key] = getSaleDataValueBeacon(saleData)
+		fmt.Printf("[db] updated crowdsale: %s\n", bsb.Params[key])
 	}
 	return nil
 }
