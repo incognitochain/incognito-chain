@@ -85,9 +85,9 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 					protocol.pendingBlock = newBlock
 					protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
 
-					time.Sleep(15 * time.Second) //single-node
-					timeout.Stop()               //single-node
-					return newBlock, nil         //single-node
+					time.Sleep(2 * time.Second) //single-node
+					timeout.Stop()              //single-node
+					return newBlock, nil        //single-node
 				} else {
 					newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ShardID, protocol.RoundData.Round)
 					if err != nil {
@@ -101,9 +101,9 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 					protocol.pendingBlock = newBlock
 					protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
 
-					time.Sleep(15 * time.Second) //single-node
-					timeout.Stop()               //single-node
-					return newBlock, nil         //single-node
+					time.Sleep(2 * time.Second) //single-node
+					timeout.Stop()              //single-node
+					return newBlock, nil        //single-node
 				}
 
 				fmt.Println()
