@@ -2,9 +2,10 @@ package mempool
 
 import (
 	"errors"
-	"github.com/ninjadotorg/constant/database"
 	"sort"
 	"sync"
+
+	"github.com/ninjadotorg/constant/database"
 
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
@@ -132,8 +133,8 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 		}
 	}
 
-	shouldStore := blk.ShouldStoreBlock()
-	if shouldStore {
+	shouldAccept := blk.ShouldAcceptBlock()
+	if shouldAccept {
 		if len(pool.pendingPool[shardID]) > MAX_PENDING_CROSS_SHARD_IN_POOL {
 			//TODO: swap for better block
 			return errors.New("Reach max pending cross shard block")
