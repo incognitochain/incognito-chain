@@ -250,6 +250,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	// Init consensus engine
 	serverObj.consensusEngine, err = constantbft.Engine{}.Init(&constantbft.EngineConfig{
+		CrossShardPool:    serverObj.crossShardPool,
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		ChainParams:       serverObj.chainParams,
 		BlockChain:        serverObj.blockChain,

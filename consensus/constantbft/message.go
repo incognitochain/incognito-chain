@@ -35,13 +35,13 @@ func MakeMsgBFTReq(bestStateHash common.Hash, round int, userKeySet *cashec.KeyS
 	return msg, nil
 }
 
-func MakeMsgBFTReady(bestStateHash common.Hash, round int, shardToBeaconPoolState map[byte]uint64, userKeySet *cashec.KeySet) (wire.Message, error) {
+func MakeMsgBFTReady(bestStateHash common.Hash, round int, poolState map[byte]uint64, userKeySet *cashec.KeySet) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTReady)
 	if err != nil {
 		Logger.log.Error(err)
 		return msg, err
 	}
-	msg.(*wire.MessageBFTReady).ShToBcnPoolState = shardToBeaconPoolState
+	msg.(*wire.MessageBFTReady).PoolState = poolState
 	msg.(*wire.MessageBFTReady).BestStateHash = bestStateHash
 	msg.(*wire.MessageBFTReady).Round = round
 	msg.(*wire.MessageBFTReady).Pubkey = userKeySet.GetPublicKeyB58()
