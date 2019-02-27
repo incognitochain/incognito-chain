@@ -70,7 +70,7 @@ type BestStateBeacon struct {
 	ShardCommitteeSize  int
 	ActiveShards        int
 
-	// cross shard state for all the shard. shardID -> crossShard shardID -> last height
+	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
 	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
 	LastCrossShardState map[byte]map[byte]uint64 `json:"LastCrossShardState"`
