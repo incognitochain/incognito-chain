@@ -1,10 +1,12 @@
 package mempool
 
 import (
+	"encoding/json"
 	"errors"
-	"github.com/ninjadotorg/constant/database"
 	"sort"
 	"sync"
+
+	"github.com/ninjadotorg/constant/database"
 
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
@@ -132,8 +134,17 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 		}
 	}
 
-	shouldStore := blk.ShouldStoreBlock()
-	if shouldStore {
+	shardCommitteeByte, err := pool.db.FetchCommitteeByEpoch(blk.Header.Epoch)
+	if err != nil {
+		return errors.New("No committee for this epoch")
+	}
+	shardCommittee := make(map[byte][]string)
+	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
+		return errors.New("Fail to unmarshal shard committee")
+	}
+	shouldAccept := blk.ShouldAcceptBlock(shardCommittee[blk.Header.ShardID])
+
+	if shouldAccept {
 		if len(pool.pendingPool[shardID]) > MAX_PENDING_CROSS_SHARD_IN_POOL {
 			//TODO: swap for better block
 			return errors.New("Reach max pending cross shard block")
@@ -196,6 +207,8 @@ func (self *CrossShardPool_v2) GetValidBlock() map[byte][]*blockchain.CrossShard
 }
 
 func (self *CrossShardPool_v2) GetValidBlockHash() map[byte][]common.Hash {
+	self.poolMu.Lock()
+	defer self.poolMu.Unlock()
 	finalBlockHash := make(map[byte][]common.Hash)
 	for shardID, blkItems := range self.validPool {
 		for _, blk := range blkItems {
@@ -206,6 +219,8 @@ func (self *CrossShardPool_v2) GetValidBlockHash() map[byte][]common.Hash {
 }
 
 func (self *CrossShardPool_v2) GetValidBlockHeight() map[byte][]uint64 {
+	self.poolMu.Lock()
+	defer self.poolMu.Unlock()
 	finalBlockHeight := make(map[byte][]uint64)
 	for shardID, blkItems := range self.validPool {
 		for _, blk := range blkItems {
@@ -216,6 +231,8 @@ func (self *CrossShardPool_v2) GetValidBlockHeight() map[byte][]uint64 {
 }
 
 func (self *CrossShardPool_v2) GetPendingBlockHeight() map[byte][]uint64 {
+	self.poolMu.Lock()
+	defer self.poolMu.Unlock()
 	finalBlockHeight := make(map[byte][]uint64)
 	for shardID, blkItems := range self.pendingPool {
 		for _, blk := range blkItems {
@@ -226,6 +243,8 @@ func (self *CrossShardPool_v2) GetPendingBlockHeight() map[byte][]uint64 {
 }
 
 func (self *CrossShardPool_v2) GetAllBlockHeight() map[byte][]uint64 {
+	self.poolMu.Lock()
+	defer self.poolMu.Unlock()
 	finalBlockHeight := make(map[byte][]uint64)
 
 	for shardID, blkItems := range self.validPool {

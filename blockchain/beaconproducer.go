@@ -178,7 +178,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 	validStakers := [][]string{}
 	validSwap := make(map[byte][][]string)
 	//Get shard to beacon block from pool
-	shardsBlocks := blkTmplGenerator.shardToBeaconPool.GetValidPendingBlock()
+	shardsBlocks := blkTmplGenerator.shardToBeaconPool.GetValidPendingBlock(nil)
 	//Shard block is a map ShardId -> array of shard block
 	stabilityInstructions := [][]string{}
 	accumulativeValues := &accumulativeValues{}
