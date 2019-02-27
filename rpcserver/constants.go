@@ -83,6 +83,8 @@ const (
 	GetDCBParams                         = "getdcbparams"
 	GetGOVConstitution                   = "getgovconstitution"
 	GetDCBConstitution                   = "getdcbconstitution"
+	GetDCBBoardIndex                     = "getdcbboardindex"
+	GetGOVBoardIndex                     = "getgovboardindex"
 	CreateAndSendTxWithMultiSigsReg      = "createandsendtxwithmultisigsreg"
 	CreateAndSendTxWithMultiSigsSpending = "createandsendtxwithmultisigsspending"
 
@@ -177,5 +179,5 @@ const (
 //Fee of specific transaction
 const (
 	FeeSubmitProposal = 100
-	FeeVoteProposal   = 100
+	FeeVote           = 100
 )

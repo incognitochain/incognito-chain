@@ -155,8 +155,11 @@ func (rpcServer RpcServer) handleCreateAndSendTxWithBuyBackRequest(params interf
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
+
+	txID := sendResult.(*common.Hash)
 	result := jsonresult.CreateTransactionResult{
-		TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
+		// TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
+		TxID: txID.String(),
 	}
 	return result, nil
 }
@@ -225,6 +228,7 @@ func (rpcServer RpcServer) handleCreateRawVoteGOVBoardTransaction(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *RPCError) {
+	params = setBuildRawBurnTransactionParams(params, FeeVote)
 	return rpcServer.createRawCustomTokenTxWithMetadata(params, closeChan, metadata.NewVoteDCBBoardMetadataFromRPC)
 }
 

@@ -169,7 +169,7 @@ func (self *ShardToBeaconPool) RemovePendingBlock(blockItems map[byte]uint64) {
 	}
 }
 
-func (self *ShardToBeaconPool) GetValidPendingBlock() map[byte][]*blockchain.ShardToBeaconBlock {
+func (self *ShardToBeaconPool) GetValidPendingBlock(limit map[byte]uint64) map[byte][]*blockchain.ShardToBeaconBlock {
 
 	self.poolMutex.RLock()
 	defer self.poolMutex.RUnlock()
@@ -184,6 +184,9 @@ func (self *ShardToBeaconPool) GetValidPendingBlock() map[byte][]*blockchain.Sha
 		}
 		for i, blk := range blks {
 			if blks[i].Header.Height > self.latestValidHeight[shardID] {
+				break
+			}
+			if limit != nil && limit[shardID] != 0 && limit[shardID] < blks[i].Header.Height {
 				break
 			}
 			finalBlocks[shardID] = append(finalBlocks[shardID], blk)
@@ -202,7 +205,7 @@ func (self *ShardToBeaconPool) GetValidPendingBlock() map[byte][]*blockchain.Sha
 
 func (self *ShardToBeaconPool) GetValidPendingBlockHash() map[byte][]common.Hash {
 	finalBlocks := make(map[byte][]common.Hash)
-	blks := self.GetValidPendingBlock()
+	blks := self.GetValidPendingBlock(nil)
 	for shardID, blkItems := range blks {
 		for _, blk := range blkItems {
 			finalBlocks[shardID] = append(finalBlocks[shardID], *blk.Hash())
@@ -213,10 +216,21 @@ func (self *ShardToBeaconPool) GetValidPendingBlockHash() map[byte][]common.Hash
 
 func (self *ShardToBeaconPool) GetValidPendingBlockHeight() map[byte][]uint64 {
 	finalBlocks := make(map[byte][]uint64)
-	blks := self.GetValidPendingBlock()
+	blks := self.GetValidPendingBlock(nil)
 	for shardID, blkItems := range blks {
 		for _, blk := range blkItems {
 			finalBlocks[shardID] = append(finalBlocks[shardID], blk.Header.Height)
+		}
+	}
+	return finalBlocks
+}
+
+func (self *ShardToBeaconPool) GetLatestValidPendingBlockHeight() map[byte]uint64 {
+	finalBlocks := make(map[byte]uint64)
+	blks := self.GetValidPendingBlock(nil)
+	for shardID, blkItems := range blks {
+		for _, blk := range blkItems {
+			finalBlocks[shardID] = blk.Header.Height
 		}
 	}
 	return finalBlocks

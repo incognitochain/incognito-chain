@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
@@ -26,6 +25,12 @@ type BuyBackInfo struct {
 	TokenID        common.Hash
 }
 
+type BuyBackReqAction struct {
+	TxReqID        common.Hash               `json:"txReqId"`
+	BuyBacReqkMeta *metadata.BuyBackRequest  `json:"buyBackReqMeta"`
+	PrevMeta       *metadata.BuySellResponse `json:"prevMeta"`
+}
+
 func buildInstructionsForBuyBackBondsReq(
 	shardID byte,
 	contentStr string,
@@ -37,37 +42,13 @@ func buildInstructionsForBuyBackBondsReq(
 	if err != nil {
 		return [][]string{}, err
 	}
-	var buyBackReqTx transaction.TxCustomToken
-	err = json.Unmarshal(contentBytes, &buyBackReqTx)
+	var buyBackReqAction BuyBackReqAction
+	err = json.Unmarshal(contentBytes, &buyBackReqAction)
 	if err != nil {
 		return nil, err
 	}
-	meta := buyBackReqTx.GetMetadata()
-	buyBackReqMeta, ok := meta.(*metadata.BuyBackRequest)
-	if !ok {
-		return nil, errors.New("Could not parse BuyBackRequest metadata.")
-	}
-	vins := buyBackReqTx.TxTokenData.Vins
-	if len(vins) == 0 {
-		return nil, errors.New("No existed Vins from BuyBackRequest tx")
-	}
-	priorTxID := vins[0].TxCustomTokenID
-	_, _, _, priorTx, err := bc.GetTransactionByHash(&priorTxID)
-	if err != nil {
-		return nil, err
-	}
-	priorCustomTokenTx, ok := priorTx.(*transaction.TxCustomToken)
-	if !ok {
-		return nil, errors.New("Could not parse prior TxCustomToken.")
-	}
-	priorMeta := priorCustomTokenTx.GetMetadata()
-	if priorMeta == nil {
-		return nil, errors.New("Not existed metadata in priorCustomTokenTx")
-	}
-	buySellResMeta, ok := priorMeta.(*metadata.BuySellResponse)
-	if !ok {
-		return nil, errors.New("Could not parse BuySellResponse metadata.")
-	}
+	buyBackReqMeta := buyBackReqAction.BuyBacReqkMeta
+	buySellResMeta := buyBackReqAction.PrevMeta
 
 	instType := ""
 	bestBlockHeight := beaconBestState.BestBlock.Header.Height
@@ -83,7 +64,7 @@ func buildInstructionsForBuyBackBondsReq(
 		PaymentAddress: buyBackReqMeta.PaymentAddress,
 		BuyBackPrice:   buySellResMeta.BuyBackPrice,
 		Value:          buyBackReqMeta.Amount,
-		RequestedTxID:  *(buyBackReqTx.Hash()),
+		RequestedTxID:  buyBackReqAction.TxReqID,
 		TokenID:        buyBackReqMeta.TokenID,
 	}
 	buyBackInfoBytes, err := json.Marshal(buyBackInfo)
