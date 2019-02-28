@@ -53,10 +53,7 @@ func (engine *Engine) Start() error {
 	engine.started = true
 	Logger.log.Info("Start consensus with key", engine.config.UserKeySet.GetPublicKeyB58())
 	fmt.Println(engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
-
-	//Note: why goroutine in this function
 	go func() {
-		<-time.After(DelayTime * time.Second)
 		currentPBFTBlkHeight := uint64(0)
 		currentPBFTRound := 1
 		prevRoundRole := ""
@@ -85,10 +82,14 @@ func (engine *Engine) Start() error {
 					prevRoundRole = nodeRole
 
 					engine.config.Server.UpdateConsensusState(nodeRole, engine.config.UserKeySet.GetPublicKeyB58(), nil, engine.config.BlockChain.BestState.Beacon.BeaconCommittee, engine.config.BlockChain.BestState.Beacon.ShardCommittee)
+
 					fmt.Println()
 					fmt.Println()
 					fmt.Printf("Node mode %+v, user role %+v, shardID %+v \n currentPBFTRound %+v, beacon height %+v, currentPBFTBlkHeight %+v, prevRoundRole %+v \n ", engine.config.NodeMode, userRole, shardID, currentPBFTRound, engine.config.BlockChain.BestState.Beacon.BeaconHeight, currentPBFTBlkHeight, prevRoundRole)
-					if currentPBFTRound > 4 && prevRoundRole != "" {
+					<-time.Tick(DelayTime * time.Millisecond)
+					fmt.Printf("\n %v", engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
+					fmt.Printf("\n %v", engine.config.BlockChain.BestState.Beacon.ShardCommittee)
+					if currentPBFTRound > 3 && prevRoundRole != "" {
 						os.Exit(1)
 					}
 					fmt.Println()
