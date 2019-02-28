@@ -77,6 +77,7 @@ func (pool *CrossShardPool_v2) getNextCrossShardHeight(fromShard, toShard byte, 
 	if err != nil {
 		return 0
 	}
+	fmt.Println("CrossShardPool/getNextCrossShardHeight, NEXT Height", nextHeight)
 	return nextHeight
 
 }
@@ -103,7 +104,8 @@ func (pool *CrossShardPool_v2) updatePool() error {
 			pool.validPool[blkShardID] = append(pool.validPool[blkShardID], valid...)
 		}
 	}
-	fmt.Println("Current Cross Shard Pool", pool.validPool)
+	fmt.Println("Current VALID Cross Shard Pool", pool.validPool)
+	fmt.Println("Current PENDING Cross Shard Pool", pool.pendingPool)
 	return nil
 }
 
