@@ -203,6 +203,12 @@ FOR CURRENT COMMITTEES ONLY
 	- Is shardState existed in pool
 */
 func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock, isCommittee bool) error {
+	//verify producer sig
+	blkHash := block.Header.Hash()
+	err := cashec.ValidateDataB58(block.Header.Producer, block.ProducerSig, blkHash.GetBytes())
+	if err != nil {
+		return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
+	}
 	//verify producer
 	producerPosition := (blockchain.BestState.Beacon.BeaconProposerIdx + block.Header.Round) % len(blockchain.BestState.Beacon.BeaconCommittee)
 	tempProducer := blockchain.BestState.Beacon.BeaconCommittee[producerPosition]
@@ -258,39 +264,43 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	if isCommittee {
 		allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidPendingBlock(nil)
 		for shardID, shardBlocks := range allShardBlocks {
-			shardBlocks = shardBlocks[:len(block.Body.ShardState[shardID])]
-			shardStates := block.Body.ShardState[shardID]
-			for index, shardState := range shardStates {
-				if shardBlocks[index].Header.Height != shardState.Height {
-					return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
-				}
-				blockHash := shardBlocks[index].Header.Hash()
-				if strings.Compare(blockHash.String(), shardState.Hash.String()) != 0 {
-					return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
-				}
-				if !reflect.DeepEqual(shardBlocks[index].Header.CrossShards, shardState.CrossShard) {
-					return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
-				}
-			}
-			// Only accept block in one committee group
-			for index, shardBlock := range shardBlocks {
-				currentCommittee := blockchain.BestState.Beacon.ShardCommittee[shardID]
-				currentPendingValidator := blockchain.BestState.Beacon.ShardPendingValidator[shardID]
-				hash := shardBlock.Header.Hash()
-				err := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
-				if index == 0 && err != nil {
-					currentCommittee, _, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, blockchain.BestState.Beacon.ShardCommitteeSize, common.OFFSET)
-					if err != nil {
+			if len(shardBlocks) >= len(block.Body.ShardState[shardID]) {
+				shardBlocks = shardBlocks[:len(block.Body.ShardState[shardID])]
+				shardStates := block.Body.ShardState[shardID]
+				for index, shardState := range shardStates {
+					if shardBlocks[index].Header.Height != shardState.Height {
 						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 					}
-					err = ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
-					if err != nil {
+					blockHash := shardBlocks[index].Header.Hash()
+					if strings.Compare(blockHash.String(), shardState.Hash.String()) != 0 {
+						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+					}
+					if !reflect.DeepEqual(shardBlocks[index].Header.CrossShards, shardState.CrossShard) {
 						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 					}
 				}
-				if index != 0 && err != nil {
-					return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+				// Only accept block in one epoch
+				for index, shardBlock := range shardBlocks {
+					currentCommittee := blockchain.BestState.Beacon.ShardCommittee[shardID]
+					currentPendingValidator := blockchain.BestState.Beacon.ShardPendingValidator[shardID]
+					hash := shardBlock.Header.Hash()
+					err := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
+					if index == 0 && err != nil {
+						currentCommittee, _, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, blockchain.BestState.Beacon.ShardCommitteeSize, common.OFFSET)
+						if err != nil {
+							return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+						}
+						err = ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
+						if err != nil {
+							return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+						}
+					}
+					if index != 0 && err != nil {
+						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+					}
 				}
+			} else {
+				return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 			}
 		}
 	}

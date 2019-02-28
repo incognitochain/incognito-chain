@@ -64,7 +64,7 @@ var RpcHandler = map[string]commandHandler{
 	CreateRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
 	SendRawCustomTokenTransaction:       RpcServer.handleSendRawCustomTokenTransaction,
 	CreateAndSendCustomTokenTransaction: RpcServer.handleCreateAndSendCustomTokenTransaction,
-	ListUnspentCustomToken:              RpcServer.handleListUnspentCustomTokenTransaction,
+	ListUnspentCustomToken:              RpcServer.handleListUnspentCustomToken,
 	ListCustomToken:                     RpcServer.handleListCustomToken,
 	CustomToken:                         RpcServer.handleCustomTokenDetail,
 	GetListCustomTokenBalance:           RpcServer.handleGetListCustomTokenBalance,
