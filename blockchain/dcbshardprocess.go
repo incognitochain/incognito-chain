@@ -68,20 +68,6 @@ func (bc *BlockChain) ProcessDividendForBlock(block *ShardBlock) error {
 	receiversToRemove := map[dividendPair][][]byte{}
 	for _, tx := range block.Body.Transactions {
 		switch tx.GetMetadataType() {
-		case metadata.DividendSubmitMeta:
-			// Store current list of token holders to local state
-			tx := tx.(*transaction.Tx)
-			meta := tx.GetMetadata().(*metadata.DividendSubmit)
-			_, holders, amounts, err := bc.GetAmountPerAccount(meta.TokenID)
-			if err != nil {
-				return err
-			}
-			forDCB := meta.TokenID.IsEqual(&common.DCBTokenID)
-			err = bc.config.DataBase.StoreDividendReceiversForID(meta.DividendID, forDCB, holders, amounts)
-			if err != nil {
-				return err
-			}
-
 		case metadata.DividendPaymentMeta:
 			_, receiver, _ := tx.GetUniqueReceiver()
 			meta := tx.GetMetadata().(*metadata.DividendPayment)
@@ -140,6 +126,37 @@ func (bc *BlockChain) storeContractingResponseInstruction(inst []string, shardID
 
 	instType := inst[2]
 	return bc.config.DataBase.StoreContractingInfo(contractingInfo.RequestedTxID, contractingInfo.BurnedConstAmount, contractingInfo.RedeemAmount, instType)
+}
+
+func (bc *BlockChain) processDividendSubmitInst(inst []string) error {
+	ds, err := metadata.ParseDividendSubmitActionValue(inst[1])
+	if err != nil {
+		return err
+	}
+
+	// Store current list of token holders to local state
+	_, holders, amounts, err := bc.GetAmountPerAccount(ds.TokenID)
+	if err != nil {
+		return err
+	}
+	forDCB := ds.TokenID.IsEqual(&common.DCBTokenID)
+	return bc.config.DataBase.StoreDividendReceiversForID(ds.DividendID, forDCB, holders, amounts)
+}
+
+// ProcessStandAloneInstructions processes all stand-alone instructions in block (e.g., DividendSubmit, Salary)
+func (bc *BlockChain) ProcessStandAloneInstructions(block *ShardBlock) error {
+	for _, inst := range block.Body.Instructions {
+		if len(inst) < 2 {
+			continue
+		}
+		switch inst[0] {
+		case strconv.Itoa(metadata.DividendSubmitMeta):
+			if err := bc.processDividendSubmitInst(inst); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 //func (bc *BlockChain) UpdateDividendPayout(block *Block) error {
