@@ -56,6 +56,7 @@ func (engine *Engine) Start() error {
 
 	//Note: why goroutine in this function
 	go func() {
+		<-time.After(DelayTime * time.Second)
 		currentPBFTBlkHeight := uint64(0)
 		currentPBFTRound := 1
 		prevRoundRole := ""
