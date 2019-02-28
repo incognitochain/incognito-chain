@@ -1155,10 +1155,33 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 	if err != nil {
 		return err
 	}
+	msg.(*wire.MessageGetCrossShard).ByHash = true
 	msg.(*wire.MessageGetCrossShard).FromPool = getFromPool
 	msg.(*wire.MessageGetCrossShard).FromShardID = fromShard
 	msg.(*wire.MessageGetCrossShard).ToShardID = toShard
 	msg.(*wire.MessageGetCrossShard).BlksHash = blksHash
+	msg.(*wire.MessageGetCrossShard).Timestamp = time.Now().Unix()
+	msg.SetSenderID(listener.PeerID)
+	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
+	if peerID == "" {
+		return serverObj.PushMessageToShard(msg, fromShard)
+	}
+	return serverObj.PushMessageToPeer(msg, peerID)
+
+}
+
+func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error {
+	Logger.log.Debugf("Send a GetCrossShard")
+	listener := serverObj.connManager.Config.ListenerPeer
+	msg, err := wire.MakeEmptyMessage(wire.CmdGetCrossShard)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessageGetCrossShard).ByHash = false
+	msg.(*wire.MessageGetCrossShard).FromPool = getFromPool
+	msg.(*wire.MessageGetCrossShard).FromShardID = fromShard
+	msg.(*wire.MessageGetCrossShard).ToShardID = toShard
+	msg.(*wire.MessageGetCrossShard).BlksHeight = blksHeight
 	msg.(*wire.MessageGetCrossShard).Timestamp = time.Now().Unix()
 	msg.SetSenderID(listener.PeerID)
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
