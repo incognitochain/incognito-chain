@@ -3,6 +3,7 @@ package mempool
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sort"
 	"sync"
 
@@ -102,6 +103,7 @@ func (pool *CrossShardPool_v2) updatePool() error {
 			pool.validPool[blkShardID] = append(pool.validPool[blkShardID], valid...)
 		}
 	}
+	fmt.Println("Current Cross Shard Pool", pool.validPool)
 	return nil
 }
 
@@ -119,6 +121,9 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 	shardID := blk.Header.ShardID
 	blkHeight := blk.Header.Height
 
+	fmt.Printf("Receiver Block %+v from shard %+v at Cross Shard Pool \n", blkHeight, shardID)
+	fmt.Println(blk)
+	fmt.Println("<===================> Verify 1")
 	if blk.ToShardID != pool.shardID {
 		return errors.New("This pool cannot receive this cross shard block, this block for another shard")
 	}
@@ -140,7 +145,7 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 			return errors.New("receive duplicate block")
 		}
 	}
-
+	fmt.Println("<===================> Verify 2")
 	shardCommitteeByte, err := pool.db.FetchCommitteeByEpoch(blk.Header.Epoch)
 	if err != nil {
 		return errors.New("No committee for this epoch")
@@ -149,10 +154,11 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
 		return errors.New("Fail to unmarshal shard committee")
 	}
+	fmt.Println("<===================> Verify 3")
 	if err := blockchain.ValidateAggSignature(blk.ValidatorsIdx, shardCommittee[shardID], blk.AggregatedSig, blk.R, blk.Hash()); err != nil {
 		return err
 	}
-
+	fmt.Println("<===================> Verify 4")
 	if len(pool.pendingPool[shardID]) > MAX_PENDING_CROSS_SHARD_IN_POOL {
 		//TODO: swap for better block
 		return errors.New("Reach max pending cross shard block")
@@ -161,7 +167,7 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 	sort.Slice(pool.pendingPool[shardID], func(i, j int) bool {
 		return pool.pendingPool[shardID][i].Header.Height < pool.pendingPool[shardID][j].Header.Height
 	})
-
+	fmt.Println("<===================> Verify 5")
 	pool.updatePool()
 	return nil
 }
