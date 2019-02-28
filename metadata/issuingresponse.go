@@ -47,3 +47,7 @@ func (iRes *IssuingResponse) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
+func (iRes *IssuingResponse) CalculateSize() uint64 {
+	return calculateSize(iRes)
+}

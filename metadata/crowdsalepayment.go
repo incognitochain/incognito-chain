@@ -57,3 +57,7 @@ func (csRes *CrowdsalePayment) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
+func (csRes *CrowdsalePayment) CalculateSize() uint64 {
+	return calculateSize(csRes)
+}

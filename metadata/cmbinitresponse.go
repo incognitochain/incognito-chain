@@ -87,3 +87,7 @@ func (cres *CMBInitResponse) ValidateMetadataByItself() bool {
 	// TODO(@0xbunyip)
 	return true
 }
+
+func (cres *CMBInitResponse) CalculateSize() uint64 {
+	return calculateSize(cres)
+}
