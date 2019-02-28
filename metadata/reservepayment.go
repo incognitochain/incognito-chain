@@ -83,3 +83,7 @@ func (rpay *ReservePayment) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
+func (rpay *ReservePayment) CalculateSize() uint64 {
+	return calculateSize(rpay)
+}

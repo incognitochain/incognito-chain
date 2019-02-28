@@ -71,3 +71,7 @@ func (bsRes *BuySellResponse) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
+func (bsRes *BuySellResponse) CalculateSize() uint64 {
+	return calculateSize(bsRes)
+}
