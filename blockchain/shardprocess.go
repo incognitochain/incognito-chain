@@ -119,7 +119,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	}
 
 	//Update Cross shard pool: remove invalid block
-	blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.BestState.Shard[shardID].BestCrossShard.ShardHeight)
+	blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.BestState.Shard[shardID].BestCrossShard)
 	blockchain.config.CrossShardPool[shardID].UpdatePool()
 
 	//========Store new Beaconblock and new Beacon bestState
@@ -475,8 +475,7 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 		bestStateShard.BestBeaconHash = block.Header.BeaconHash
 	}
 	if block.Header.Height == 1 {
-		bestStateShard.BestCrossShard.ShardHeight = make(map[byte]uint64)
-		bestStateShard.BestCrossShard.BeaconHeight = make(map[byte]uint64)
+		bestStateShard.BestCrossShard = make(map[byte]uint64)
 	}
 	bestStateShard.BestBlock = block
 	bestStateShard.BestBlockHash = *block.Hash()
@@ -523,8 +522,7 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 	}
 	//Update best cross shard
 	for shardID, crossShardBlock := range block.Body.CrossOutputCoin {
-		bestStateShard.BestCrossShard.ShardHeight[shardID] = crossShardBlock[len(crossShardBlock)-1].BlockHeight
-		bestStateShard.BestCrossShard.BeaconHeight[shardID] = block.Header.BeaconHeight
+		bestStateShard.BestCrossShard[shardID] = crossShardBlock[len(crossShardBlock)-1].BlockHeight
 	}
 
 	Logger.log.Debugf("SHARD %+v | Finish update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
