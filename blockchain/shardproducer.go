@@ -251,7 +251,7 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 		// currentBestCrossShardForThisBlock := currentBestCrossShard.ShardHeight[crossShardID]
 		index := 0
 		for _, blk := range crossShardBlock {
-			if blk.Header.Height <= blockgen.chain.BestState.Shard[shardID].BestCrossShard.ShardHeight[blk.Header.ShardID] {
+			if blk.Header.Height <= blockgen.chain.BestState.Shard[shardID].BestCrossShard[blk.Header.ShardID] {
 				break
 			}
 			temp, err := blockgen.chain.config.DataBase.FetchCommitteeByEpoch(blk.Header.Epoch)
