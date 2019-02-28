@@ -362,6 +362,13 @@ func (blockchain *BlockChain) initBeaconState() error {
 		},
 	}
 
+	// Dividend
+	divAmounts := []uint64{100}
+	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.DividendAmount = divAmounts[0]
+	divKey := getDCBDividendKeyBeacon()
+	divValue := getDividendValueBeacon(divAmounts)
+	blockchain.BestState.Beacon.Params[divKey] = divValue
+
 	bondID, _ := common.NewHashFromStr("4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000")
 	buyBondSaleID := [32]byte{1}
 	sellBondSaleID := [32]byte{2}

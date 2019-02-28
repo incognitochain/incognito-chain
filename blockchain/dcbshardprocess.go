@@ -87,7 +87,6 @@ func (bc *BlockChain) StoreMetadataInstructions(inst []string, shardID byte) err
 		return nil // Not error, just not stability instruction
 	}
 	switch inst[0] {
-	// TODO(@0xbunyip): confirm using response or request type for beacon to shard instructions
 	case strconv.Itoa(metadata.IssuingRequestMeta):
 		return bc.storeIssuingResponseInstruction(inst, shardID)
 	case strconv.Itoa(metadata.ContractingRequestMeta):

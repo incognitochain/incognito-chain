@@ -148,6 +148,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	}
 
 	// Process stability stand-alone instructions
+	fmt.Printf("[db] processing stand alone inst: %+v\n", block.Body.Instructions)
 	err = blockchain.ProcessStandAloneInstructions(block)
 	if err != nil {
 		return err
