@@ -24,8 +24,8 @@ import (
 //params:
 //Parameter #1—the minimum number of confirmations an output must have
 //Parameter #2—the maximum number of confirmations an output may have
-//Parameter #3—the list priv-key which be used to view utxo
-//
+//Parameter #3—the list paymentaddress-readonlykey which be used to view list outputcoin
+//Parameter #4 - optional - token id - default constant coin
 func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	result := jsonresult.ListOutputCoins{
@@ -41,7 +41,19 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 	max := int(paramsArray[1].(float64))
 	_ = min
 	_ = max
+	//#3: list key params
 	listKeyParams := common.InterfaceSlice(paramsArray[2])
+
+	//#4: optional token type - default constant coin
+	tokenID := &common.Hash{}
+	tokenID.SetBytes(common.ConstantID[:])
+	if len(paramsArray) > 3 {
+		var err1 error
+		tokenID, err1 = common.Hash{}.NewHashFromStr(paramsArray[3].(string))
+		if err1 != nil {
+			return nil, NewRPCError(ErrListCustomTokenNotFound, err1)
+		}
+	}
 	for _, keyParam := range listKeyParams {
 		keys := keyParam.(map[string]interface{})
 
@@ -66,9 +78,7 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 		}
 		lastByte := keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
-		constantTokenID := &common.Hash{}
-		constantTokenID.SetBytes(common.ConstantID[:])
-		outputCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&keySet, shardIDSender, constantTokenID)
+		outputCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&keySet, shardIDSender, tokenID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -514,7 +524,8 @@ func (rpcServer RpcServer) handlePrivacyCustomTokenDetail(params interface{}, cl
 	return result, nil
 }
 
-func (rpcServer RpcServer) handleListUnspentCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+// handleListUnspentCustomToken - return list utxo of custom token
+func (rpcServer RpcServer) handleListUnspentCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	// param #1: paymentaddress of sender
 	senderKeyParam := arrayParams[0]
@@ -625,9 +636,17 @@ func (rpcServer RpcServer) handleRandomCommitments(params interface{}, closeChan
 		usableOutputCoins = append(usableOutputCoins, i)
 	}
 	usableInputCoins := transaction.ConvertOutputCoinToInputCoin(usableOutputCoins)
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
-	commitmentIndexs, myCommitmentIndexs, commitments := rpcServer.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, shardIDSender, constantTokenID)
+
+	//#3 - tokenID - default constant
+	tokenID := &common.Hash{}
+	tokenID.SetBytes(common.ConstantID[:])
+	if len(arrayParams) > 2 {
+		tokenID, err = common.Hash{}.NewHashFromStr(arrayParams[2].(string))
+		if err != nil {
+			return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+		}
+	}
+	commitmentIndexs, myCommitmentIndexs, commitments := rpcServer.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, shardIDSender, tokenID)
 	result := make(map[string]interface{})
 	result["CommitmentIndices"] = commitmentIndexs
 	result["MyCommitmentIndexs"] = myCommitmentIndexs
@@ -658,13 +677,20 @@ func (rpcServer RpcServer) handleHasSerialNumbers(params interface{}, closeChan 
 	//#2: list serialnumbers in base58check encode string
 	serialNumbersStr := arrayParams[1].([]interface{})
 
+	// #3: optional - token ID - default is constant coin
+	tokenID := &common.Hash{}
+	tokenID.SetBytes(common.ConstantID[:]) // default is constant
+	if len(arrayParams) > 2 {
+		tokenID, err = (common.Hash{}).NewHashFromStr(arrayParams[1].(string))
+		if err != nil {
+			return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+		}
+	}
 	result := make([]bool, 0)
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
 	for _, item := range serialNumbersStr {
 		serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(rpcServer.config.Database)
-		ok, _ := db.HasSerialNumber(constantTokenID, serialNumber, shardIDSender)
+		ok, _ := db.HasSerialNumber(tokenID, serialNumber, shardIDSender)
 		if ok || err != nil {
 			// serial number in db
 			result = append(result, true)
@@ -695,13 +721,20 @@ func (rpcServer RpcServer) handleHasSnDerivators(params interface{}, closeChan <
 	//#2: list serialnumbers in base58check encode string
 	snDerivatorStr := arrayParams[1].([]interface{})
 
+	// #3: optional - token ID - default is constant coin
+	tokenID := &common.Hash{}
+	tokenID.SetBytes(common.ConstantID[:]) // default is constant
+	if len(arrayParams) > 2 {
+		tokenID, err = (common.Hash{}).NewHashFromStr(arrayParams[1].(string))
+		if err != nil {
+			return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+		}
+	}
 	result := make([]bool, 0)
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
 	for _, item := range snDerivatorStr {
 		snderivator, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(rpcServer.config.Database)
-		ok, err := db.HasSNDerivator(constantTokenID, *(new(big.Int).SetBytes(snderivator)), shardIDSender)
+		ok, err := db.HasSNDerivator(tokenID, *(new(big.Int).SetBytes(snderivator)), shardIDSender)
 		if ok || err != nil {
 			// serial number in db
 			result = append(result, true)
