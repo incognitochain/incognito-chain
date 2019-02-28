@@ -100,7 +100,7 @@ func CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, shardID byte,
 }
 
 // EstimateTxSize returns the estimated size of the tx in kilobyte
-func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo, hasPrivacy bool) uint64 {
+func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo, hasPrivacy bool, metadata metadata.Metadata) uint64 {
 	sizeVersion := uint64(1)  // int8
 	sizeType := uint64(5)     // string, max : 5
 	sizeLockTime := uint64(8) // int64
@@ -123,6 +123,7 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 
 	// TODO 0xjackpolope
 	sizeMetadata := uint64(0)
+	// metadata
 
 	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeInfo + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte + sizeMetadata
 
