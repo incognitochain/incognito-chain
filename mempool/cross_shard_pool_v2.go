@@ -83,7 +83,7 @@ func (pool *CrossShardPool_v2) getNextCrossShardHeight(fromShard, toShard byte, 
 }
 
 func (pool *CrossShardPool_v2) updatePool() error {
-	pool.crossShardState = blockchain.GetBestStateShard(pool.shardID).BestCrossShard.ShardHeight
+	pool.crossShardState = blockchain.GetBestStateShard(pool.shardID).BestCrossShard
 	pool.removeBlockByHeight(pool.crossShardState)
 	for blkShardID, blks := range pool.pendingPool {
 		startHeight := pool.crossShardState[blkShardID]
