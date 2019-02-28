@@ -272,7 +272,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 					return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 				}
 			}
-			// Only accept block in one epoch
+			// Only accept block in one committee group
 			for index, shardBlock := range shardBlocks {
 				currentCommittee := blockchain.BestState.Beacon.ShardCommittee[shardID]
 				currentPendingValidator := blockchain.BestState.Beacon.ShardPendingValidator[shardID]
