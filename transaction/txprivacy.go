@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ninjadotorg/constant/common/base58"
 	"math"
 	"math/big"
 	"strconv"
 	"time"
+
+	"github.com/ninjadotorg/constant/common/base58"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -524,11 +525,10 @@ func (tx *Tx) GetTxActualSize() uint64 {
 	sizeTx += uint64(1)
 	sizeTx += uint64(len(tx.Info))
 
-	if tx.Metadata != nil {
-		// TODO 0xjackpolope
-		_ = 1
+	meta := tx.Metadata
+	if meta != nil {
+		sizeTx += meta.CalculateSize()
 	}
-
 	return uint64(math.Ceil(float64(sizeTx) / 1024))
 }
 

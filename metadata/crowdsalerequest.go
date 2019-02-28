@@ -179,3 +179,7 @@ func ParseCrowdsaleRequestActionValue(values string) ([]byte, uint64, bool, priv
 	paymentAddress := privacy.NewPaymentAddressFromByte(paymentAddressBytes)
 	return saleID, priceLimit, limitSell, *paymentAddress, sentAmount, nil
 }
+
+func (csReq *CrowdsaleRequest) CalculateSize() uint64 {
+	return calculateSize(csReq)
+}
