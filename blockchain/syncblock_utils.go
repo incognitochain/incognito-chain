@@ -43,22 +43,12 @@ func getBlkNeedToGetByHeight(fromHeight uint64, toHeight uint64, cachedItems map
 	return blkBatchsNeedToGet
 }
 
-// //GetDiffHashesOf Get unique hashes of 1st slice compare to 2nd slice
-// func GetDiffHashesOf(slice1 []common.Hash, slice2 []common.Hash) []common.Hash {
-// 	var diff []common.Hash
-
-// 	for _, s1 := range slice1 {
-// 		found := false
-// 		for _, s2 := range slice2 {
-// 			if s1 == s2 {
-// 				found = true
-// 				break
-// 			}
-// 		}
-// 		if !found {
-// 			diff = append(diff, s1)
-// 		}
-// 	}
-
-// 	return diff
-// }
+func getBlkNeedToGetBySpecificHeight(blksHeight []uint64, cachedItems map[string]cache.Item, peerID libp2p.ID) []uint64 {
+	var blksNeedToGet []uint64
+	for _, blkHeight := range blksHeight {
+		if _, ok := cachedItems[fmt.Sprint(blkHeight)]; !ok {
+			blksNeedToGet = append(blksNeedToGet, blkHeight)
+		}
+	}
+	return blksNeedToGet
+}

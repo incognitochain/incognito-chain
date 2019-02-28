@@ -86,9 +86,9 @@ func (engine *Engine) Start() error {
 					fmt.Println()
 					fmt.Println()
 					fmt.Printf("Node mode %+v, user role %+v, shardID %+v \n currentPBFTRound %+v, beacon height %+v, currentPBFTBlkHeight %+v, prevRoundRole %+v \n ", engine.config.NodeMode, userRole, shardID, currentPBFTRound, engine.config.BlockChain.BestState.Beacon.BeaconHeight, currentPBFTBlkHeight, prevRoundRole)
-					<-time.Tick(DelayTime * time.Millisecond)
 					fmt.Printf("\n %v", engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
 					fmt.Printf("\n %v", engine.config.BlockChain.BestState.Beacon.ShardCommittee)
+					<-time.Tick(DelayTime * time.Millisecond)
 					if currentPBFTRound > 3 && prevRoundRole != "" {
 						os.Exit(1)
 					}
