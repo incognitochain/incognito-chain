@@ -12,7 +12,6 @@ import (
 )
 
 type bftCommittedSig struct {
-	Pubkey         string
 	ValidatorsIdxR []int
 	Sig            string
 }
@@ -121,22 +120,24 @@ func (multiSig *multiSigScheme) VerifyCommitSig(validatorPk string, commitSig st
 	return nil
 }
 
-func (multiSig *multiSigScheme) CombineSigs(R string, commitSigs []bftCommittedSig) (string, error) {
-
-	listSigOfSigners := make([]*privacy.SchnMultiSig, len(commitSigs))
-	for i, valSig := range commitSigs {
-		listSigOfSigners[i] = new(privacy.SchnMultiSig)
+func (multiSig *multiSigScheme) CombineSigs(R string, commitSigs map[string]bftCommittedSig) (string, error) {
+	var listSigOfSigners []*privacy.SchnMultiSig
+	var validatorsIdxR []int
+	for pubkey, valSig := range commitSigs {
+		sig := new(privacy.SchnMultiSig)
 		bytesSig, byteVersion, err := base58.Base58Check{}.Decode(valSig.Sig)
 		if (err != nil) || (byteVersion != byte(0x00)) {
 			return "", err
 		}
-		listSigOfSigners[i].SetBytes(bytesSig)
-		multiSig.combine.ValidatorsIdxAggSig = append(multiSig.combine.ValidatorsIdxAggSig, common.IndexOfStr(valSig.Pubkey, multiSig.combine.SigningCommittee))
+		sig.SetBytes(bytesSig)
+		listSigOfSigners = append(listSigOfSigners, sig)
+		multiSig.combine.ValidatorsIdxAggSig = append(multiSig.combine.ValidatorsIdxAggSig, common.IndexOfStr(pubkey, multiSig.combine.SigningCommittee))
+		validatorsIdxR = valSig.ValidatorsIdxR
 	}
 	sort.Ints(multiSig.combine.ValidatorsIdxAggSig)
 	multiSig.combine.R = R
-	multiSig.combine.ValidatorsIdxR = make([]int, len(commitSigs[0].ValidatorsIdxR))
-	copy(multiSig.combine.ValidatorsIdxR, commitSigs[0].ValidatorsIdxR)
+	multiSig.combine.ValidatorsIdxR = make([]int, len(validatorsIdxR))
+	copy(multiSig.combine.ValidatorsIdxR, validatorsIdxR)
 	aggregatedSig := multiSig.cryptoScheme.CombineMultiSig(listSigOfSigners)
 	return base58.Base58Check{}.Encode(aggregatedSig.Bytes(), byte(0x00)), nil
 }

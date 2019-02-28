@@ -43,7 +43,6 @@ type BFTProtocol struct {
 		Committee        []string
 		ClosestPoolState map[byte]uint64
 	}
-
 	multiSigScheme *multiSigScheme
 }
 
@@ -132,11 +131,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 							if err != nil {
 								return nil, err
 							}
-							if protocol.RoundData.Layer == common.BEACON_ROLE {
-								go protocol.Server.PushMessageToBeacon(msg)
-							} else {
-								go protocol.Server.PushMessageToShard(msg, protocol.RoundData.ShardID)
-							}
+							protocol.forwardMsg(msg)
 							protocol.phase = PBFT_PREPARE
 						} else {
 							return nil, errors.New("Didn't received enough ready msg")
@@ -166,12 +161,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 							if protocol.RoundData.Layer == common.BEACON_ROLE {
 								pendingBlk := blockchain.BeaconBlock{}
 								pendingBlk.UnmarshalJSON(msgPropose.(*wire.MessageBFTPropose).Block)
-								blkHash := pendingBlk.Header.Hash()
-								err := cashec.ValidateDataB58(pendingBlk.Header.Producer, pendingBlk.ProducerSig, blkHash.GetBytes())
-								if err != nil {
-									Logger.log.Error(err)
-									continue
-								}
+
 								err = protocol.BlockChain.VerifyPreSignBeaconBlock(&pendingBlk, true)
 								if err != nil {
 									Logger.log.Error(err)
@@ -182,13 +172,6 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 							} else {
 								pendingBlk := blockchain.ShardBlock{}
 								pendingBlk.UnmarshalJSON(msgPropose.(*wire.MessageBFTPropose).Block)
-								blkHash := pendingBlk.Header.Hash()
-								//TODO: Check Shard ID
-								err := cashec.ValidateDataB58(pendingBlk.Header.Producer, pendingBlk.ProducerSig, blkHash.GetBytes())
-								if err != nil {
-									Logger.log.Error(err)
-									continue
-								}
 								err = protocol.BlockChain.VerifyPreSignShardBlock(&pendingBlk, protocol.RoundData.ShardID)
 								if err != nil {
 									Logger.log.Error(err)
@@ -197,13 +180,13 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 								protocol.pendingBlock = &pendingBlk
 								protocol.multiSigScheme.dataToSig = pendingBlk.Header.Hash()
 							}
-
+							protocol.forwardMsg(msgPropose)
 							protocol.phase = PBFT_PREPARE
 							timeout.Stop()
 							break listenphase
 						} else {
-							go func() {
-								if msgPropose.MessageType() == wire.CmdBFTReq {
+							if msgPropose.MessageType() == wire.CmdBFTReq {
+								go func() {
 									if msgPropose.(*wire.MessageBFTReq).BestStateHash == protocol.RoundData.BestStateHash && msgPropose.(*wire.MessageBFTReq).Round == protocol.RoundData.Round && common.IndexOfStr(msgPropose.(*wire.MessageBFTReq).Pubkey, protocol.RoundData.Committee) != -1 {
 										if protocol.RoundData.Layer == common.BEACON_ROLE {
 											if userRole, _ := protocol.BlockChain.BestState.Beacon.GetPubkeyRole(msgPropose.(*wire.MessageBFTReq).Pubkey, protocol.RoundData.Round); userRole == common.PROPOSER_ROLE {
@@ -217,9 +200,15 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 											}
 										}
 									}
-								}
-							}()
+								}()
+							}
+							// if msgPropose.MessageType() == wire.CmdBFTPrepare {
+							// 	if common.IndexOfStr(msgPropose.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0 && bytes.Compare(protocol.multiSigScheme.dataToSig[:], msgPropose.(*wire.MessageBFTPrepare).BlkHash[:]) == 0 {
+							// 		protocol.nextPhaseMsgCache = append(protocol.nextPhaseMsgCache, msgPropose)
+							// 	}
+							// }
 						}
+
 					case <-protocol.cTimeout:
 						return nil, errors.New("Listen phase timeout")
 					}
@@ -237,11 +226,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 						Logger.log.Error(err)
 						return
 					}
-					if protocol.RoundData.Layer == common.BEACON_ROLE {
-						protocol.Server.PushMessageToBeacon(msg)
-					} else {
-						protocol.Server.PushMessageToShard(msg, protocol.RoundData.ShardID)
-					}
+					protocol.forwardMsg(msg)
 				})
 
 				var collectedRiList map[string][]byte //map of members and their Ri
@@ -254,7 +239,10 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 						if msgPrepare.MessageType() == wire.CmdBFTPrepare {
 							fmt.Println("Prepare msg received")
 							if common.IndexOfStr(msgPrepare.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0 && bytes.Compare(protocol.multiSigScheme.dataToSig[:], msgPrepare.(*wire.MessageBFTPrepare).BlkHash[:]) == 0 {
-								collectedRiList[msgPrepare.(*wire.MessageBFTPrepare).Pubkey] = msgPrepare.(*wire.MessageBFTPrepare).Ri
+								if _, ok := collectedRiList[msgPrepare.(*wire.MessageBFTPrepare).Pubkey]; !ok {
+									collectedRiList[msgPrepare.(*wire.MessageBFTPrepare).Pubkey] = msgPrepare.(*wire.MessageBFTPrepare).Ri
+									protocol.forwardMsg(msgPrepare)
+								}
 							}
 						}
 					case <-protocol.cTimeout:
@@ -286,22 +274,18 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 						return
 					}
 					fmt.Println("Sending out commit msg")
-					if protocol.RoundData.Layer == common.BEACON_ROLE {
-						protocol.Server.PushMessageToBeacon(msg)
-					} else {
-						protocol.Server.PushMessageToShard(msg, protocol.RoundData.ShardID)
-					}
+					protocol.forwardMsg(msg)
 				})
 				var phaseData struct {
-					Sigs map[string][]bftCommittedSig
+					Sigs map[string]map[string]bftCommittedSig //map[R]map[Pubkey]CommittedSig
 				}
 
-				phaseData.Sigs = make(map[string][]bftCommittedSig)
-				phaseData.Sigs[protocol.multiSigScheme.combine.R] = append(phaseData.Sigs[protocol.multiSigScheme.combine.R], bftCommittedSig{
-					Pubkey:         protocol.UserKeySet.GetPublicKeyB58(),
+				phaseData.Sigs = make(map[string]map[string]bftCommittedSig)
+				phaseData.Sigs[protocol.multiSigScheme.combine.R] = make(map[string]bftCommittedSig)
+				phaseData.Sigs[protocol.multiSigScheme.combine.R][protocol.UserKeySet.GetPublicKeyB58()] = bftCommittedSig{
 					Sig:            protocol.multiSigScheme.combine.CommitSig,
 					ValidatorsIdxR: protocol.multiSigScheme.combine.ValidatorsIdxR,
-				})
+				}
 				// commitphase:
 				for {
 					select {
@@ -359,26 +343,32 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 						if msgCommit.MessageType() == wire.CmdBFTCommit {
 							fmt.Println("Commit msg received")
 							newSig := bftCommittedSig{
-								Pubkey:         msgCommit.(*wire.MessageBFTCommit).Pubkey,
 								ValidatorsIdxR: msgCommit.(*wire.MessageBFTCommit).ValidatorsIdx,
 								Sig:            msgCommit.(*wire.MessageBFTCommit).CommitSig,
 							}
 							R := msgCommit.(*wire.MessageBFTCommit).R
-							err := protocol.multiSigScheme.VerifyCommitSig(newSig.Pubkey, newSig.Sig, R, newSig.ValidatorsIdxR)
+							err := protocol.multiSigScheme.VerifyCommitSig(msgCommit.(*wire.MessageBFTCommit).Pubkey, newSig.Sig, R, newSig.ValidatorsIdxR)
 							if err != nil {
 								return nil, err
 							}
-							phaseData.Sigs[R] = append(phaseData.Sigs[R], newSig)
-							if len(phaseData.Sigs[R]) >= (2 * len(protocol.RoundData.Committee) / 3) {
-								cmTimeout.Stop()
-								fmt.Println("Collected enough r")
-								select {
-								case <-protocol.cTimeout:
-									continue
-								default:
-									close(protocol.cTimeout)
+							if _, ok := phaseData.Sigs[R]; !ok {
+								phaseData.Sigs[R] = make(map[string]bftCommittedSig)
+							}
+							if _, ok := phaseData.Sigs[R][msgCommit.(*wire.MessageBFTCommit).Pubkey]; !ok {
+								phaseData.Sigs[R][msgCommit.(*wire.MessageBFTCommit).Pubkey] = newSig
+								protocol.forwardMsg(msgCommit)
+								if len(phaseData.Sigs[R]) >= (2 * len(protocol.RoundData.Committee) / 3) {
+									cmTimeout.Stop()
+									fmt.Println("Collected enough r")
+									select {
+									case <-protocol.cTimeout:
+										continue
+									default:
+										close(protocol.cTimeout)
+									}
 								}
 							}
+
 						}
 					}
 				}
@@ -423,4 +413,12 @@ func (protocol *BFTProtocol) CreateBlockMsg() (wire.Message, error) {
 		// return newBlock, nil //single-node
 	}
 	return msg, nil
+}
+
+func (protocol *BFTProtocol) forwardMsg(msg wire.Message) {
+	if protocol.RoundData.Layer == common.BEACON_ROLE {
+		go protocol.Server.PushMessageToBeacon(msg)
+	} else {
+		go protocol.Server.PushMessageToShard(msg, protocol.RoundData.ShardID)
+	}
 }
