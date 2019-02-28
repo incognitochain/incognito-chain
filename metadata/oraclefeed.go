@@ -93,3 +93,7 @@ func (of *OracleFeed) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
+func (of *OracleFeed) CalculateSize() uint64 {
+	return calculateSize(of)
+}

@@ -76,3 +76,7 @@ func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ValidateSanityData(bcr Blockch
 func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ValidateMetadataByItself() bool {
 	return true
 }
+
+func (voteGOVBoardMetadata *VoteGOVBoardMetadata) CalculateSize() uint64 {
+	return calculateSize(voteGOVBoardMetadata)
+}

@@ -47,3 +47,7 @@ func (rf *Refund) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
+func (rf *Refund) CalculateSize() uint64 {
+	return calculateSize(rf)
+}

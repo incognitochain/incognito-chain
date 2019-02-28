@@ -136,3 +136,23 @@ func (uob UpdatingOracleBoard) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
+func (uob UpdatingOracleBoard) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+	return [][]string{}, nil
+}
+
+func (uob UpdatingOracleBoard) CalculateSize() uint64 {
+	return calculateSize(uob)
+}
+
+func (uob UpdatingOracleBoard) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
+	// TODO: 0xjackalope
+	return true
+}
+
+func (uob UpdatingOracleBoard) VerifyMultiSigs(
+	tx Transaction,
+	db database.DatabaseInterface,
+) (bool, error) {
+	return true, nil
+}
