@@ -67,6 +67,14 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 		default:
 			switch protocol.phase {
 			case PBFT_PROPOSE:
+				//    single-node start    //
+				time.Sleep(10 * time.Second)
+				_, err := protocol.CreateBlockMsg()
+				if err != nil {
+					return nil, err
+				}
+				return protocol.pendingBlock, nil
+				//    single-node end    //
 				timeout := time.AfterFunc(ListenTimeout*time.Second, func() {
 					fmt.Println("Propose phase timeout")
 					close(protocol.cTimeout)
@@ -391,10 +399,6 @@ func (protocol *BFTProtocol) CreateBlockMsg() (wire.Message, error) {
 		}
 		protocol.pendingBlock = newBlock
 		protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
-
-		// time.Sleep(10 * time.Second) //single-node
-		// timeout.Stop()               //single-node
-		// return newBlock, nil         //single-node
 	} else {
 		newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ShardID, protocol.RoundData.Round, protocol.RoundData.ClosestPoolState)
 		if err != nil {
@@ -407,10 +411,6 @@ func (protocol *BFTProtocol) CreateBlockMsg() (wire.Message, error) {
 		}
 		protocol.pendingBlock = newBlock
 		protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
-
-		// time.Sleep(10 * time.Second) //single-node
-		// timeout.Stop()       //single-node
-		// return newBlock, nil //single-node
 	}
 	return msg, nil
 }
