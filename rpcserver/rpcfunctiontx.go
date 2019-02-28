@@ -636,9 +636,17 @@ func (rpcServer RpcServer) handleRandomCommitments(params interface{}, closeChan
 		usableOutputCoins = append(usableOutputCoins, i)
 	}
 	usableInputCoins := transaction.ConvertOutputCoinToInputCoin(usableOutputCoins)
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
-	commitmentIndexs, myCommitmentIndexs, commitments := rpcServer.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, shardIDSender, constantTokenID)
+
+	//#3 - tokenID - default constant
+	tokenID := &common.Hash{}
+	tokenID.SetBytes(common.ConstantID[:])
+	if len(arrayParams) > 2 {
+		tokenID, err = common.Hash{}.NewHashFromStr(arrayParams[2].(string))
+		if err != nil {
+			return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+		}
+	}
+	commitmentIndexs, myCommitmentIndexs, commitments := rpcServer.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, shardIDSender, tokenID)
 	result := make(map[string]interface{})
 	result["CommitmentIndices"] = commitmentIndexs
 	result["MyCommitmentIndexs"] = myCommitmentIndexs
