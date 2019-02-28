@@ -25,7 +25,7 @@ import (
 //Parameter #1—the minimum number of confirmations an output must have
 //Parameter #2—the maximum number of confirmations an output may have
 //Parameter #3—the list paymentaddress-readonlykey which be used to view list outputcoin
-//
+//Parameter #4 - optional - token id - default constant coin
 func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	result := jsonresult.ListOutputCoins{
@@ -41,7 +41,19 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 	max := int(paramsArray[1].(float64))
 	_ = min
 	_ = max
+	//#3: list key params
 	listKeyParams := common.InterfaceSlice(paramsArray[2])
+
+	//#4: optional token type - default constant coin
+	tokenID := &common.Hash{}
+	tokenID.SetBytes(common.ConstantID[:])
+	if len(paramsArray) > 3 {
+		var err1 error
+		tokenID, err1 = common.Hash{}.NewHashFromStr(paramsArray[3].(string))
+		if err1 != nil {
+			return nil, NewRPCError(ErrListCustomTokenNotFound, err1)
+		}
+	}
 	for _, keyParam := range listKeyParams {
 		keys := keyParam.(map[string]interface{})
 
@@ -66,9 +78,7 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 		}
 		lastByte := keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
-		constantTokenID := &common.Hash{}
-		constantTokenID.SetBytes(common.ConstantID[:])
-		outputCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&keySet, shardIDSender, constantTokenID)
+		outputCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&keySet, shardIDSender, tokenID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
