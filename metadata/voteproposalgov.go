@@ -278,3 +278,7 @@ func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) ValidateSanityData(Blo
 func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) ValidateMetadataByItself() bool {
 	return true
 }
+
+func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) CalculateSize() uint64 {
+	return calculateSize(punishGOVDecryptMetadata)
+}

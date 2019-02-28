@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"encoding/json"
 	"strconv"
 	"time"
 
@@ -17,6 +18,18 @@ type MetadataBase struct {
 
 func NewMetadataBase(thisType int) *MetadataBase {
 	return &MetadataBase{Type: thisType}
+}
+
+func calculateSize(meta Metadata) uint64 {
+	metaBytes, err := json.Marshal(meta)
+	if err != nil {
+		return 0
+	}
+	return uint64(len(metaBytes))
+}
+
+func (mb *MetadataBase) CalculateSize() uint64 {
+	return 0
 }
 
 func (mb *MetadataBase) Validate() error {
@@ -137,6 +150,7 @@ type Metadata interface {
 	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool
 	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
 	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
+	CalculateSize() uint64
 }
 
 // Interface for all type of transaction

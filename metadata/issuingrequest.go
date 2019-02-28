@@ -93,3 +93,7 @@ func (iReq *IssuingRequest) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
+func (iReq *IssuingRequest) CalculateSize() uint64 {
+	return calculateSize(iReq)
+}

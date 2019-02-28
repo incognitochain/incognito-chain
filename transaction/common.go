@@ -121,9 +121,10 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 
 	sizePubKeyLastByte := uint64(1)
 
-	// TODO 0xjackpolope
 	sizeMetadata := uint64(0)
-	// metadata
+	if metadata != nil {
+		sizeMetadata += metadata.CalculateSize()
+	}
 
 	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeInfo + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte + sizeMetadata
 
