@@ -129,13 +129,13 @@ func buildPaymentForToken(
 	receiverAddress privacy.PaymentAddress,
 	tokenAmount uint64,
 	tokenID common.Hash,
-	unspentTokenMap map[string]([]transaction.TxTokenVout),
+	unspentTokens map[string]([]transaction.TxTokenVout),
 	saleID []byte,
 	mint bool,
 ) (*transaction.TxCustomToken, error) {
 	var txToken *transaction.TxCustomToken
 	var err error
-	unspentTxTokenOuts := unspentTokenMap[tokenID.String()]
+	unspentTxTokenOuts := unspentTokens[tokenID.String()]
 	usedID := -1
 
 	// Create metadata for crowdsale payment
@@ -158,7 +158,7 @@ func buildPaymentForToken(
 
 	// Update list of token available for next request
 	if usedID >= 0 && !mint {
-		unspentTokenMap[tokenID.String()] = unspentTxTokenOuts[usedID:]
+		unspentTokens[tokenID.String()] = unspentTxTokenOuts[usedID:]
 	}
 	return txToken, nil
 }
@@ -166,7 +166,7 @@ func buildPaymentForToken(
 // buildPaymentForCrowdsale builds CrowdsalePayment tx sending either CST or Token
 func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	paymentInst *CrowdsalePaymentInstruction,
-	unspentTokenMap map[string]([]transaction.TxTokenVout),
+	unspentTokens map[string]([]transaction.TxTokenVout),
 	producerPrivateKey *privacy.SpendingKey,
 ) (metadata.Transaction, error) {
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
@@ -191,13 +191,13 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 		}
 	} else if common.IsBondAsset(assetID) {
 		// Get unspent token UTXO to send to user
-		if _, ok := unspentTokenMap[assetID.String()]; !ok {
+		if _, ok := unspentTokens[assetID.String()]; !ok {
 			unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(keyWalletDCBAccount.KeySet, assetID)
 			fmt.Printf("[db] unspentTxTokenOuts: %+v\n%v\n", unspentTxTokenOuts, err)
 			if err == nil {
-				unspentTokenMap[assetID.String()] = unspentTxTokenOuts
+				unspentTokens[assetID.String()] = unspentTxTokenOuts
 			} else {
-				unspentTokenMap[assetID.String()] = []transaction.TxTokenVout{}
+				unspentTokens[assetID.String()] = []transaction.TxTokenVout{}
 			}
 		}
 
@@ -206,7 +206,7 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 			paymentInst.PaymentAddress,
 			paymentInst.Amount,
 			*assetID,
-			unspentTokenMap,
+			unspentTokens,
 			saleData.SaleID,
 			mint,
 		)

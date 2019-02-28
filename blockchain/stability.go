@@ -143,7 +143,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 	shardID byte,
 ) ([]metadata.Transaction, error) {
 	// TODO(@0xbunyip): refund bonds in multiple blocks since many refund instructions might come at once and UTXO picking order is not perfect
-	unspentTokenMap := map[string]([]transaction.TxTokenVout){}
+	unspentTokens := map[string]([]transaction.TxTokenVout){}
 	resTxs := []metadata.Transaction{}
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
@@ -167,7 +167,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					if err != nil {
 						return nil, err
 					}
-					tx, err := blockgen.buildPaymentForCrowdsale(paymentInst, unspentTokenMap, producerPrivateKey)
+					tx, err := blockgen.buildPaymentForCrowdsale(paymentInst, unspentTokens, producerPrivateKey)
 					if err != nil {
 						return nil, err
 					}
