@@ -121,6 +121,10 @@ func getDCBDividendKeyBeacon() string {
 	return dividendPrefixDCB
 }
 
+func getGOVDividendKeyBeacon() string {
+	return dividendPrefixGOV
+}
+
 func getDividendValueBeacon(amounts []uint64) string {
 	value, _ := json.Marshal(amounts)
 	return string(value)

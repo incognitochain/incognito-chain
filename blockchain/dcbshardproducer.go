@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"fmt"
+
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -130,7 +132,7 @@ func (blockgen *BlkTmplGenerator) buildDividendTxs(producerPrivateKey *privacy.S
 	return txs, nil
 }
 
-func buildInstitutionDividendSubmitTx(
+func buildInstitutionDividendSubmitInst(
 	bc *BlockChain,
 	forDCB bool,
 	shardID byte,
@@ -138,15 +140,18 @@ func buildInstitutionDividendSubmitTx(
 	// Get latest dividend proposal id and amount
 	id, _ := bc.BestState.Beacon.GetLatestDividendProposal(forDCB)
 	if id == 0 {
+		// fmt.Printf("[db] no div proposal found: %t\n", forDCB)
 		return nil, nil // No Dividend proposal found
 	}
 
 	// Check in shard state if DividendSubmit tx has been created
 	_, _, hasValue, err := bc.config.DataBase.GetDividendReceiversForID(id, forDCB)
 	if err != nil {
+		fmt.Printf("[db] buildDivSub err: %v\n", err)
 		return nil, err
 	}
 	if hasValue {
+		fmt.Printf("[db] divsub created: %d %t\n", id, forDCB)
 		return nil, nil // Already created DividendSubmit tx in previous blocks
 	}
 
@@ -155,6 +160,7 @@ func buildInstitutionDividendSubmitTx(
 		tokenID = &common.GOVTokenID
 	}
 	totalTokenAmount, _, _, err := bc.GetAmountPerAccount(tokenID)
+	fmt.Printf("[db] buildDivSubmit: %t, %d, %d, %d\n", forDCB, id, totalTokenAmount, shardID)
 	if err != nil {
 		return nil, err
 	}
