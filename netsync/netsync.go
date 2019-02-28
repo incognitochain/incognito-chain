@@ -445,9 +445,6 @@ func (netSync *NetSync) HandleMessageGetShardToBeacon(msg *wire.MessageGetShardT
 				Logger.log.Error(err)
 				return
 			}
-			fmt.Println()
-			fmt.Println(index)
-			fmt.Println()
 			shardToBeaconBlk := blk.CreateShardToBeaconBlock(netSync.config.BlockChain)
 			msgShardBlk, err := wire.MakeEmptyMessage(wire.CmdBlkShardToBeacon)
 			if err != nil {
