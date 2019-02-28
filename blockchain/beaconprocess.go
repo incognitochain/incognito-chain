@@ -455,7 +455,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	bestStateBeacon.BeaconHeight = newBlock.Header.Height
 	bestStateBeacon.BeaconProposerIdx = common.IndexOfStr(newBlock.Header.Producer, bestStateBeacon.BeaconCommittee)
 
-	// allShardState := newBlock.Body.ShardState
+	allShardState := newBlock.Body.ShardState
 	// if bestStateBeacon.AllShardState == nil {
 	// 	bestStateBeacon.AllShardState = make(map[byte][]ShardState)
 	// 	for index := 0; index < common.MAX_SHARD_NUMBER; index++ {
@@ -473,14 +473,14 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		bestStateBeacon.BestShardHeight = make(map[byte]uint64)
 	}
 	// Update new best new block hash
-	// for shardID, shardStates := range allShardState {
-	// 	bestStateBeacon.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
-	// 	bestStateBeacon.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
-	// 	if _, ok := bestStateBeacon.AllShardState[shardID]; !ok {
-	// 		bestStateBeacon.AllShardState[shardID] = []ShardState{}
-	// 	}
-	// 	bestStateBeacon.AllShardState[shardID] = append(bestStateBeacon.AllShardState[shardID], shardStates...)
-	// }
+	for shardID, shardStates := range allShardState {
+		bestStateBeacon.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
+		bestStateBeacon.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
+		//if _, ok := bestStateBeacon.AllShardState[shardID]; !ok {
+		//	bestStateBeacon.AllShardState[shardID] = []ShardState{}
+		//}
+		//bestStateBeacon.AllShardState[shardID] = append(bestStateBeacon.AllShardState[shardID], shardStates...)
+	}
 
 	//cross shard state
 
