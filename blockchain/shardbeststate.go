@@ -17,12 +17,6 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 
-type BestCrossShard struct {
-	ShardHeight map[byte]uint64 `json:"ShardHeight"`
-	//Beacon height for cross shard
-	BeaconHeight map[byte]uint64 `json:"BeaconHeight"`
-}
-
 type BestStateShard struct {
 	BestBlockHash common.Hash `json:"BestBlockHash"` // hash of block.
 	BestBlock     *ShardBlock `json:"BestBlock"`     // block data
@@ -38,7 +32,7 @@ type BestStateShard struct {
 	ShardPendingValidator []string    `json:"ShardPendingValidator"`
 
 	// Best cross shard block by height
-	BestCrossShard *BestCrossShard `json:"BestCrossShard"`
+	BestCrossShard map[byte]uint64 `json:"BestCrossShard"`
 
 	//TODO: verify if these information are needed or not
 	NumTxns   uint64 `json:"NumTxns"`   // The number of txns in the block.
@@ -142,7 +136,7 @@ func InitBestStateShard(shardID byte, netparam *Params) *BestStateShard {
 	bestStateShard.ShardCommitteeSize = netparam.ShardCommitteeSize
 	bestStateShard.ShardPendingValidator = []string{}
 	bestStateShard.ActiveShards = netparam.ActiveShards
-	bestStateShard.BestCrossShard = &BestCrossShard{make(map[byte]uint64), make(map[byte]uint64)}
+	bestStateShard.BestCrossShard = make(map[byte]uint64)
 
 	bestStateShard.ShardHeight = 1
 	bestStateShard.BeaconHeight = 1
