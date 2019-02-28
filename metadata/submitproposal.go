@@ -109,6 +109,8 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockC
 		return false, nil
 	}
 
+	// TODO(@0xbunyip): validate DCBParams: LoanParams, SaleData, etc
+
 	raiseReserveData := submitDCBProposalMetadata.DCBParams.RaiseReserveData
 	for assetID, _ := range raiseReserveData {
 		if br.GetAssetPrice(&assetID) == 0 {

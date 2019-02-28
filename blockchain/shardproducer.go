@@ -178,7 +178,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 	}
 
 	// Process new dividend proposal and build new dividend payment txs
-	divTxs, err := blockgen.buildDividendTxs(privatekey)
+	divTxs, err := blockgen.buildDividendTxs(privatekey, shardID)
 	if err != nil {
 		return nil
 	}

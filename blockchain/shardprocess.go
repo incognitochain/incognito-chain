@@ -147,6 +147,12 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 		}
 	}
 
+	// Process stability stand-alone instructions
+	err = blockchain.ProcessStandAloneInstructions(block)
+	if err != nil {
+		return err
+	}
+
 	// Store metadata instruction to local state
 	for _, beaconBlock := range beaconBlocks {
 		instructions := beaconBlock.Body.Instructions
@@ -357,18 +363,20 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 			}
 		}
 	}
+
+	// TODO(@0xankylosaurus): uncomment verify transaction
 	// Verify Transaction
 	// number of salary transaction, used for later verify
-	txSalaryCount := 0
-	for _, tx := range block.Body.Transactions {
-		if tx.IsSalaryTx() {
-			txSalaryCount += 1
-		}
-		fmt.Println("Number of salary transaction", txSalaryCount)
-		if err := blockchain.VerifyTransactionFromNewBlock(tx); err != nil {
-			return NewBlockChainError(TransactionError, err)
-		}
-	}
+	//txSalaryCount := 0
+	//for _, tx := range block.Body.Transactions {
+	//	if tx.IsSalaryTx() {
+	//		txSalaryCount += 1
+	//	}
+	//	fmt.Println("Number of salary transaction", txSalaryCount)
+	//	if err := blockchain.VerifyTransactionFromNewBlock(tx); err != nil {
+	//		return NewBlockChainError(TransactionError, err)
+	//	}
+	//}
 	//TODO: UNCOMMENT To verify Cross Shard Block
 	// // Get cross shard block from pool
 	// crossShardMap := make(map[byte][]CrossShardBlock)
