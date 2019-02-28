@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/libp2p/go-libp2p-peer"
+	peer "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/wire"
 )
@@ -301,30 +301,14 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if peerConn.Config.MessageListeners.OnBFTMsg != nil {
 						peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTReady))
 					}
-					// case reflect.TypeOf(&wire.MessageInvalidBlock{}):
-					// 	if peerConn.Config.MessageListeners.OnInvalidBlock != nil {
-					// 		peerConn.Config.MessageListeners.OnInvalidBlock(peerConn, message.(*wire.MessageInvalidBlock))
-					// 	}
+				case reflect.TypeOf(&wire.MessageBFTReq{}):
+					if peerConn.Config.MessageListeners.OnBFTMsg != nil {
+						peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTReq))
+					}
 				case reflect.TypeOf(&wire.MessagePeerState{}):
 					if peerConn.Config.MessageListeners.OnPeerState != nil {
 						peerConn.Config.MessageListeners.OnPeerState(peerConn, message.(*wire.MessagePeerState))
 					}
-					/*case reflect.TypeOf(&wire.MessageRegistration{}):
-					  if peerConn.Config.MessageListeners.OnRegistration != nil {
-						  peerConn.Config.MessageListeners.OnRegistration(peerConn, message.(*wire.MessageRegistration))
-					  }*/
-					// case reflect.TypeOf(&wire.MessageSwapRequest{}):
-					// 	if peerConn.Config.MessageListeners.OnSwapRequest != nil {
-					// 		peerConn.Config.MessageListeners.OnSwapRequest(peerConn, message.(*wire.MessageSwapRequest))
-					// 	}
-					// case reflect.TypeOf(&wire.MessageSwapSig{}):
-					// 	if peerConn.Config.MessageListeners.OnSwapSig != nil {
-					// 		peerConn.Config.MessageListeners.OnSwapSig(peerConn, message.(*wire.MessageSwapSig))
-					// 	}
-					// case reflect.TypeOf(&wire.MessageSwapUpdate{}):
-					// 	if peerConn.Config.MessageListeners.OnSwapUpdate != nil {
-					// 		peerConn.Config.MessageListeners.OnSwapUpdate(peerConn, message.(*wire.MessageSwapUpdate))
-					// 	}
 				case reflect.TypeOf(&wire.MessageMsgCheck{}):
 					peerConn.handleMsgCheck(message.(*wire.MessageMsgCheck))
 				case reflect.TypeOf(&wire.MessageMsgCheckResp{}):

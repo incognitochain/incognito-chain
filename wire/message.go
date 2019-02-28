@@ -49,13 +49,9 @@ const (
 	CmdBFTPrepare   = "bftprepare"
 	CmdBFTCommit    = "bftcommit"
 	CmdBFTReady     = "bftready"
+	CmdBFTReq       = "bftreq"
 	CmdInvalidBlock = "invalidblock"
 	CmdPeerState    = "peerstate"
-
-	// SWAP Cmd
-	//CmdSwapRequest = "swaprequest"
-	//CmdSwapSig     = "swapsig"
-	//CmdSwapUpdate  = "swapupdate"
 
 	// heavy message check cmd
 	CmdMsgCheck     = "msgcheck"
@@ -156,6 +152,11 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdVerack:
 		msg = &MessageVerAck{}
 		break
+	case CmdBFTReq:
+		msg = &MessageBFTReq{
+			Timestamp: time.Now().Unix(),
+		}
+		break
 	case CmdBFTReady:
 		msg = &MessageBFTReady{
 			Timestamp: time.Now().Unix(),
@@ -197,17 +198,6 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdPing:
 		msg = &MessagePing{}
 		break
-		// case CmdSwapRequest:
-		// 	msg = &MessageSwapRequest{}
-		// 	break
-		// case CmdSwapSig:
-		// 	msg = &MessageSwapSig{}
-		// 	break
-		// case CmdSwapUpdate:
-		// 	msg = &MessageSwapUpdate{
-		// 		Signatures: make(map[string]string),
-		// 	}
-		// 	break
 	case CmdMsgCheck:
 		msg = &MessageMsgCheck{
 			Timestamp: time.Now().UnixNano(),
@@ -264,16 +254,12 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdBFTCommit, nil
 	case reflect.TypeOf(&MessageBFTReady{}):
 		return CmdBFTReady, nil
+	case reflect.TypeOf(&MessageBFTReq{}):
+		return CmdBFTReq, nil
 	case reflect.TypeOf(&MessageInvalidBlock{}):
 		return CmdInvalidBlock, nil
 	case reflect.TypeOf(&MessagePeerState{}):
 		return CmdPeerState, nil
-		//case reflect.TypeOf(&MessageSwapRequest{}):
-		//	return CmdSwapRequest, nil
-		//case reflect.TypeOf(&MessageSwapSig{}):
-		//	return CmdSwapSig, nil
-		//case reflect.TypeOf(&MessageSwapUpdate{}):
-		//	return CmdSwapUpdate, nil
 	case reflect.TypeOf(&MessageMsgCheck{}):
 		return CmdMsgCheck, nil
 	case reflect.TypeOf(&MessageMsgCheckResp{}):
