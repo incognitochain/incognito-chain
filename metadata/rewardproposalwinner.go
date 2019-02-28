@@ -39,3 +39,7 @@ func (rewardProposalWinnerMetadata *RewardProposalWinnerMetadata) ValidateSanity
 func (rewardProposalWinnerMetadata *RewardProposalWinnerMetadata) ValidateMetadataByItself() bool {
 	return true
 }
+
+func (rewardProposalWinnerMetadata *RewardProposalWinnerMetadata) CalculateSize() uint64 {
+	return calculateSize(rewardProposalWinnerMetadata)
+}
