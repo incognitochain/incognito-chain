@@ -89,3 +89,7 @@ func (bbReq *BuyBackRequest) Hash() *common.Hash {
 // 	action := []string{strconv.Itoa(BuyFromGOVRequestMeta), actionContentBase64Str}
 // 	return [][]string{action}, nil
 // }
+
+func (bbReq *BuyBackRequest) CalculateSize() uint64 {
+	return calculateSize(bbReq)
+}
