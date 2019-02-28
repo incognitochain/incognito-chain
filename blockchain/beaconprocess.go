@@ -129,12 +129,23 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 		}
 	}
 	// if committee of this epoch isn't store yet then store it
-	if res, err := blockchain.config.DataBase.HasCommitteeByEpoch(block.Header.Epoch); err != nil && res == false {
+	Logger.log.Infof("Store Committee in Epoch %+v \n", block.Header.Epoch)
+	res, err := blockchain.config.DataBase.HasCommitteeByEpoch(block.Header.Epoch)
+	fmt.Println("Beacon Process/HasCommitteeByEpoch", res, err)
+	if res == false {
 		if err := blockchain.config.DataBase.StoreCommitteeByEpoch(block.Header.Epoch, blockchain.BestState.Beacon.ShardCommittee); err != nil {
 			return err
 		}
 	}
-
+	shardCommitteeByte, err := blockchain.config.DataBase.FetchCommitteeByEpoch(block.Header.Epoch)
+	if err != nil {
+		fmt.Println("No committee for this epoch")
+	}
+	shardCommittee := make(map[byte][]string)
+	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
+		fmt.Println("Fail to unmarshal shard committee")
+	}
+	fmt.Println("Beacon Process/Shard Committee in Epoch ", block.Header.Epoch, shardCommittee)
 	//=========Store cross shard state ==================================
 	lastCrossShardState := GetBestStateBeacon().LastCrossShardState
 	if block.Body.ShardState != nil {
@@ -444,7 +455,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	bestStateBeacon.BeaconHeight = newBlock.Header.Height
 	bestStateBeacon.BeaconProposerIdx = common.IndexOfStr(newBlock.Header.Producer, bestStateBeacon.BeaconCommittee)
 
-	// allShardState := newBlock.Body.ShardState
+	allShardState := newBlock.Body.ShardState
 	// if bestStateBeacon.AllShardState == nil {
 	// 	bestStateBeacon.AllShardState = make(map[byte][]ShardState)
 	// 	for index := 0; index < common.MAX_SHARD_NUMBER; index++ {
@@ -462,14 +473,14 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		bestStateBeacon.BestShardHeight = make(map[byte]uint64)
 	}
 	// Update new best new block hash
-	// for shardID, shardStates := range allShardState {
-	// 	bestStateBeacon.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
-	// 	bestStateBeacon.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
-	// 	if _, ok := bestStateBeacon.AllShardState[shardID]; !ok {
-	// 		bestStateBeacon.AllShardState[shardID] = []ShardState{}
-	// 	}
-	// 	bestStateBeacon.AllShardState[shardID] = append(bestStateBeacon.AllShardState[shardID], shardStates...)
-	// }
+	for shardID, shardStates := range allShardState {
+		bestStateBeacon.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
+		bestStateBeacon.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
+		//if _, ok := bestStateBeacon.AllShardState[shardID]; !ok {
+		//	bestStateBeacon.AllShardState[shardID] = []ShardState{}
+		//}
+		//bestStateBeacon.AllShardState[shardID] = append(bestStateBeacon.AllShardState[shardID], shardStates...)
+	}
 
 	//cross shard state
 

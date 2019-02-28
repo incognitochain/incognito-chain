@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
@@ -221,7 +222,16 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 		2. Validate
 			- Greater than current cross shard state
 			- Cross Shard Block Signature
-			- Next Cross Shard Block via Beacon Bytemap
+			- Next Cross Shard Block via Beacon Bytemap:
+				// 	When a shard block is created (ex: shard 1 create block A), it will
+				// 	- Send ShardToBeacon Block (A1) to beacon,
+				// 		=> ShardToBeacon Block then will be executed and store as ShardState in beacon
+				// 	- Send CrossShard Block (A2) to other shard if existed
+				// 		=> CrossShard Will be process into CrossOutputCoin
+				// 	=> A1 and A2 must have the same header
+				// 	- Check if A1 indicates that if A2 is exist or not via CrossShardByteMap
+				// 	AND ALSO, check A2 is the only cross shard block after the most recent processed cross shard block
+				// =====> Store Current and Next cross shard block in DB
 		3. if miss Cross Shard Block according to beacon bytemap then stop discard the rest
 		4. After validation: process valid block, extract cross output coin
 */
@@ -239,31 +249,27 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 		})
 		//TODO: @COMMENT for testing get crossoutput coin
 		// currentBestCrossShardForThisBlock := currentBestCrossShard.ShardHeight[crossShardID]
+		index := 0
 		for _, blk := range crossShardBlock {
-			// temp, err := blockgen.chain.config.DataBase.FetchBeaconCommitteeByHeight(blk.Header.BeaconHeight)
-			// if err != nil {
-			// 	break
-			// }
-			// shardCommittee := make(map[byte][]string)
-			// json.Unmarshal(temp, &shardCommittee)
-			// err = blk.VerifyCrossShardBlock(shardCommittee[crossShardID])
-			// fmt.Println("ShardProducer/VerifyCrossShardBlock", err == nil)
-			// if err != nil {
-			// 	break
-			// }
+			if blk.Header.Height <= blockgen.chain.BestState.Shard[shardID].BestCrossShard.ShardHeight[blk.Header.ShardID] {
+				break
+			}
+			temp, err := blockgen.chain.config.DataBase.FetchCommitteeByEpoch(blk.Header.Epoch)
+			if err != nil {
+				break
+			}
+			shardCommittee := make(map[byte][]string)
+			json.Unmarshal(temp, &shardCommittee)
+			err = blk.VerifyCrossShardBlock(shardCommittee[blk.Header.ShardID])
+			fmt.Println("ShardProducer/VerifyCrossShardBlock", err == nil)
+			if err != nil {
+				break
+			}
+			index++
+			//TODO: Verify block with beacon cross sahrd byte map (via function in DB)
+
 			// lastBeaconHeight := blockgen.chain.BestState.Shard[shardID].BeaconHeight
 			// // Get shard state from beacon best state
-			// /*
-			// 	When a shard block is created (ex: shard 1 create block A), it will
-			// 	- Send ShardToBeacon Block (A1) to beacon,
-			// 		=> ShardToBeacon Block then will be executed and store as ShardState in beacon
-			// 	- Send CrossShard Block (A2) to other shard if existed
-			// 		=> CrossShard Will be process into CrossOutputCoin
-			// 	=> A1 and A2 must have the same header
-			// 	- Check if A1 indicates that if A2 is exist or not via CrossShardByteMap
-
-			// 	AND ALSO, check A2 is the only cross shard block after the most recent processed cross shard block
-			// */
 			// passed := false
 			// for i := lastBeaconHeight + 1; i <= currentBeaconHeight; i++ {
 			// 	shardStates, ok := blockgen.chain.BestState.Beacon.AllShardState[crossShardID]
@@ -282,6 +288,8 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 			// if !passed {
 			// 	break
 			// }
+		}
+		for _, blk := range crossShardBlock[:index] {
 			outputCoin := CrossOutputCoin{
 				OutputCoin:  blk.CrossOutputCoin,
 				BlockHash:   *blk.Hash(),
