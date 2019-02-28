@@ -61,16 +61,17 @@ func buildStabilityActions(
 	// Build stand-alone instructions
 	// Dividend proposals for DCB
 	forDCB := true
-	dcbInst, err := buildInstitutionDividendSubmitTx(bc, forDCB, shardID)
+	dcbInst, err := buildInstitutionDividendSubmitInst(bc, forDCB, shardID)
 	if err != nil {
 		fmt.Printf("[db] error building dividend submit tx for dcb: %v\n", err)
 	} else if len(dcbInst) > 0 {
+		fmt.Printf("[db] added divsub inst: %v\n", dcbInst)
 		actions = append(actions, dcbInst...)
 	}
 
 	// For GOV
 	forDCB = false
-	govInst, err := buildInstitutionDividendSubmitTx(bc, forDCB, shardID)
+	govInst, err := buildInstitutionDividendSubmitInst(bc, forDCB, shardID)
 	if err != nil {
 		fmt.Printf("[db] error building dividend submit tx for dcb: %v\n", err)
 	} else if len(govInst) > 0 {

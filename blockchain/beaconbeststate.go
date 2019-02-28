@@ -316,7 +316,7 @@ func (self *BestStateBeacon) GetLatestDividendProposal(forDCB bool) (id, amount 
 	if forDCB {
 		key = getDCBDividendKeyBeacon()
 	} else {
-		// TODO: GOV
+		key = getGOVDividendKeyBeacon()
 	}
 	dividendAmounts := []uint64{}
 	if value, ok := self.Params[key]; ok {
