@@ -12,23 +12,36 @@ import (
 	"github.com/ninjadotorg/constant/wire"
 )
 
-func (self *Engine) OnBFTMsg(msg wire.Message) {
-	self.cBFTMsg <- msg
+func (engine *Engine) OnBFTMsg(msg wire.Message) {
+	if engine.started {
+		engine.cBFTMsg <- msg
+	}
 	return
 }
 
-func (self *Engine) OnInvalidBlockReceived(blockHash string, shardID byte, reason string) {
-	// leave empty for now
-	Logger.log.Error(blockHash, shardID, reason)
-	return
+func MakeMsgBFTReq(bestStateHash common.Hash, round int, userKeySet *cashec.KeySet) (wire.Message, error) {
+	msg, err := wire.MakeEmptyMessage(wire.CmdBFTReq)
+	if err != nil {
+		Logger.log.Error(err)
+		return msg, err
+	}
+	msg.(*wire.MessageBFTReq).BestStateHash = bestStateHash
+	msg.(*wire.MessageBFTReq).Round = round
+	msg.(*wire.MessageBFTReq).Pubkey = userKeySet.GetPublicKeyB58()
+	err = msg.(*wire.MessageBFTReq).SignMsg(userKeySet)
+	if err != nil {
+		return msg, err
+	}
+	return msg, nil
 }
 
-func MakeMsgBFTReady(bestStateHash common.Hash, round int, userKeySet *cashec.KeySet) (wire.Message, error) {
+func MakeMsgBFTReady(bestStateHash common.Hash, round int, poolState map[byte]uint64, userKeySet *cashec.KeySet) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTReady)
 	if err != nil {
 		Logger.log.Error(err)
 		return msg, err
 	}
+	msg.(*wire.MessageBFTReady).PoolState = poolState
 	msg.(*wire.MessageBFTReady).BestStateHash = bestStateHash
 	msg.(*wire.MessageBFTReady).Round = round
 	msg.(*wire.MessageBFTReady).Pubkey = userKeySet.GetPublicKeyB58()

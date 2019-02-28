@@ -22,9 +22,9 @@ const (
 	DurationOfGOVBoard = 1000    //number of block one GOV board in charge
 	MaxBlockSize       = 5000000 //byte 5MB
 	MaxTxsInBlock      = 1000
-	MinTxsInBlock      = 0                     // minium txs for block to get immediate process (meaning no wait time)
-	MinBlockWaitTime   = 3                     // second
-	MaxBlockWaitTime   = 10 - MinBlockWaitTime // second
+	MinTxsInBlock      = 10                   // minium txs for block to get immediate process (meaning no wait time)
+	MinBlockWaitTime   = 2                    // second
+	MaxBlockWaitTime   = 4 - MinBlockWaitTime // second
 )
 
 // for voting parameter

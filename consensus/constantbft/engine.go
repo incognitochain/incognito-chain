@@ -25,12 +25,14 @@ type Engine struct {
 }
 
 type EngineConfig struct {
-	BlockChain  *blockchain.BlockChain
-	ChainParams *blockchain.Params
-	BlockGen    *blockchain.BlkTmplGenerator
-	UserKeySet  *cashec.KeySet
-	NodeMode    string
-	Server      serverInterface
+	BlockChain        *blockchain.BlockChain
+	ChainParams       *blockchain.Params
+	BlockGen          *blockchain.BlkTmplGenerator
+	UserKeySet        *cashec.KeySet
+	NodeMode          string
+	Server            serverInterface
+	ShardToBeaconPool blockchain.ShardToBeaconPool
+	CrossShardPool    map[byte]blockchain.CrossShardPool
 }
 
 //Init apply configuration to consensus engine
@@ -51,8 +53,6 @@ func (engine *Engine) Start() error {
 	engine.started = true
 	Logger.log.Info("Start consensus with key", engine.config.UserKeySet.GetPublicKeyB58())
 	fmt.Println(engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
-
-	//Note: why goroutine in this function
 	go func() {
 		currentPBFTBlkHeight := uint64(0)
 		currentPBFTRound := 1
@@ -64,6 +64,7 @@ func (engine *Engine) Start() error {
 			default:
 				if engine.config.BlockChain.IsReady(false, 0) {
 					if prevRoundRole == common.BEACON_ROLE {
+						engine.config.BlockChain.InsertBlockFromPool()
 						if currentPBFTBlkHeight <= engine.config.BlockChain.BestState.Beacon.BeaconHeight {
 							// reset round
 							currentPBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
@@ -81,10 +82,13 @@ func (engine *Engine) Start() error {
 					prevRoundRole = nodeRole
 
 					engine.config.Server.UpdateConsensusState(nodeRole, engine.config.UserKeySet.GetPublicKeyB58(), nil, engine.config.BlockChain.BestState.Beacon.BeaconCommittee, engine.config.BlockChain.BestState.Beacon.ShardCommittee)
-					time.Sleep(2 * time.Second)
+
 					fmt.Println()
 					fmt.Println()
 					fmt.Printf("Node mode %+v, user role %+v, shardID %+v \n currentPBFTRound %+v, beacon height %+v, currentPBFTBlkHeight %+v, prevRoundRole %+v \n ", engine.config.NodeMode, userRole, shardID, currentPBFTRound, engine.config.BlockChain.BestState.Beacon.BeaconHeight, currentPBFTBlkHeight, prevRoundRole)
+					fmt.Printf("\n %v", engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
+					fmt.Printf("\n %v", engine.config.BlockChain.BestState.Beacon.ShardCommittee)
+					<-time.Tick(DelayTime * time.Millisecond)
 					if currentPBFTRound > 3 && prevRoundRole != "" {
 						os.Exit(1)
 					}
@@ -92,15 +96,18 @@ func (engine *Engine) Start() error {
 					fmt.Println()
 					if userRole != common.EmptyString {
 						bftProtocol := &BFTProtocol{
-							cQuit:      engine.cQuit,
-							cBFTMsg:    engine.cBFTMsg,
-							BlockGen:   engine.config.BlockGen,
-							UserKeySet: engine.config.UserKeySet,
-							BlockChain: engine.config.BlockChain,
-							Server:     engine.config.Server,
+							cQuit:             engine.cQuit,
+							cBFTMsg:           engine.cBFTMsg,
+							BlockGen:          engine.config.BlockGen,
+							UserKeySet:        engine.config.UserKeySet,
+							BlockChain:        engine.config.BlockChain,
+							Server:            engine.config.Server,
+							ShardToBeaconPool: engine.config.ShardToBeaconPool,
+							CrossShardPool:    engine.config.CrossShardPool,
 						}
 						bftProtocol.RoundData.Round = currentPBFTRound
 						if (engine.config.NodeMode == common.NODEMODE_BEACON || engine.config.NodeMode == common.NODEMODE_AUTO) && userRole != common.SHARD_ROLE {
+							bftProtocol.RoundData.BestStateHash = engine.config.BlockChain.BestState.Beacon.Hash()
 							bftProtocol.RoundData.Layer = common.BEACON_ROLE
 							bftProtocol.RoundData.Committee = make([]string, len(engine.config.BlockChain.BestState.Beacon.BeaconCommittee))
 							copy(bftProtocol.RoundData.Committee, engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
@@ -162,6 +169,7 @@ func (engine *Engine) Start() error {
 							}
 							engine.config.BlockChain.SyncShard(shardID)
 							engine.config.BlockChain.StopSyncUnnecessaryShard()
+							bftProtocol.RoundData.BestStateHash = engine.config.BlockChain.BestState.Shard[shardID].Hash()
 							bftProtocol.RoundData.Layer = common.SHARD_ROLE
 							bftProtocol.RoundData.ShardID = shardID
 							bftProtocol.RoundData.Committee = make([]string, len(engine.config.BlockChain.BestState.Shard[shardID].ShardCommittee))

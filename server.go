@@ -250,12 +250,14 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	// Init consensus engine
 	serverObj.consensusEngine, err = constantbft.Engine{}.Init(&constantbft.EngineConfig{
-		ChainParams: serverObj.chainParams,
-		BlockChain:  serverObj.blockChain,
-		Server:      serverObj,
-		BlockGen:    serverObj.blockgen,
-		NodeMode:    cfg.NodeMode,
-		UserKeySet:  serverObj.userKeySet,
+		CrossShardPool:    serverObj.crossShardPool,
+		ShardToBeaconPool: serverObj.shardToBeaconPool,
+		ChainParams:       serverObj.chainParams,
+		BlockChain:        serverObj.blockChain,
+		Server:            serverObj,
+		BlockGen:          serverObj.blockgen,
+		NodeMode:          cfg.NodeMode,
+		UserKeySet:        serverObj.userKeySet,
 	})
 	if err != nil {
 		return err
@@ -321,22 +323,21 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		}
 
 		rpcConfig := rpcserver.RpcServerConfig{
-			Listenters:    rpcListeners,
-			RPCQuirks:     cfg.RPCQuirks,
-			RPCMaxClients: cfg.RPCMaxClients,
-			ChainParams:   chainParams,
-			BlockChain:    serverObj.blockChain,
-			TxMemPool:     serverObj.memPool,
-			Server:        serverObj,
-			Wallet:        serverObj.wallet,
-			ConnMgr:       serverObj.connManager,
-			AddrMgr:       serverObj.addrManager,
-			RPCUser:       cfg.RPCUser,
-			RPCPass:       cfg.RPCPass,
-			RPCLimitUser:  cfg.RPCLimitUser,
-			RPCLimitPass:  cfg.RPCLimitPass,
-			DisableAuth:   cfg.RPCDisableAuth,
-			// IsGenerateNode:  cfg.Generate,
+			Listenters:      rpcListeners,
+			RPCQuirks:       cfg.RPCQuirks,
+			RPCMaxClients:   cfg.RPCMaxClients,
+			ChainParams:     chainParams,
+			BlockChain:      serverObj.blockChain,
+			TxMemPool:       serverObj.memPool,
+			Server:          serverObj,
+			Wallet:          serverObj.wallet,
+			ConnMgr:         serverObj.connManager,
+			AddrMgr:         serverObj.addrManager,
+			RPCUser:         cfg.RPCUser,
+			RPCPass:         cfg.RPCPass,
+			RPCLimitUser:    cfg.RPCLimitUser,
+			RPCLimitPass:    cfg.RPCLimitPass,
+			DisableAuth:     cfg.RPCDisableAuth,
 			NodeMode:        cfg.NodeMode,
 			FeeEstimator:    serverObj.feeEstimator,
 			ProtocolVersion: serverObj.protocolVersion,
@@ -1154,10 +1155,33 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 	if err != nil {
 		return err
 	}
+	msg.(*wire.MessageGetCrossShard).ByHash = true
 	msg.(*wire.MessageGetCrossShard).FromPool = getFromPool
 	msg.(*wire.MessageGetCrossShard).FromShardID = fromShard
 	msg.(*wire.MessageGetCrossShard).ToShardID = toShard
 	msg.(*wire.MessageGetCrossShard).BlksHash = blksHash
+	msg.(*wire.MessageGetCrossShard).Timestamp = time.Now().Unix()
+	msg.SetSenderID(listener.PeerID)
+	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
+	if peerID == "" {
+		return serverObj.PushMessageToShard(msg, fromShard)
+	}
+	return serverObj.PushMessageToPeer(msg, peerID)
+
+}
+
+func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error {
+	Logger.log.Debugf("Send a GetCrossShard")
+	listener := serverObj.connManager.Config.ListenerPeer
+	msg, err := wire.MakeEmptyMessage(wire.CmdGetCrossShard)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessageGetCrossShard).ByHash = false
+	msg.(*wire.MessageGetCrossShard).FromPool = getFromPool
+	msg.(*wire.MessageGetCrossShard).FromShardID = fromShard
+	msg.(*wire.MessageGetCrossShard).ToShardID = toShard
+	msg.(*wire.MessageGetCrossShard).BlksHeight = blksHeight
 	msg.(*wire.MessageGetCrossShard).Timestamp = time.Now().Unix()
 	msg.SetSenderID(listener.PeerID)
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
