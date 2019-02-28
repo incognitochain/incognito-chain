@@ -474,7 +474,7 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 			paymentInfos = append(paymentInfos, paymentInfo)
 		}
 		// check real fee(nano constant) per tx
-		_, estimateFeeCoinPerKb, estimateTxSizeInKb = rpcServer.estimateFee(defaultFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy)
+		_, estimateFeeCoinPerKb, estimateTxSizeInKb = rpcServer.estimateFee(defaultFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil)
 	}
 	result := jsonresult.EstimateFeeResult{
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,

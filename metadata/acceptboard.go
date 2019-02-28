@@ -87,3 +87,7 @@ func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) ValidateSanityData(bcr Blo
 func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) ValidateMetadataByItself() bool {
 	return true
 }
+
+func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) CalculateSize() uint64 {
+	return calculateSize(acceptGOVBoardMetadata)
+}

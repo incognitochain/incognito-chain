@@ -46,3 +46,7 @@ func (bbRes *ResponseBase) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
+func (bbRes *ResponseBase) CalculateSize() uint64 {
+	return calculateSize(bbRes)
+}

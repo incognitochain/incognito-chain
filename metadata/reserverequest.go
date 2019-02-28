@@ -114,3 +114,7 @@ func (rreq *ReserveRequest) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
+func (rreq *ReserveRequest) CalculateSize() uint64 {
+	return calculateSize(rreq)
+}

@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"bytes"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
@@ -92,4 +93,8 @@ func (dc *CMBDepositContract) ValidateSanityData(bcr BlockchainRetriever, txr Tr
 
 func (dc *CMBDepositContract) ValidateMetadataByItself() bool {
 	return true
+}
+
+func (dc *CMBDepositContract) CalculateSize() uint64 {
+	return calculateSize(dc)
 }
