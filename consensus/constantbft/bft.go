@@ -51,6 +51,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 	if protocol.RoundData.IsProposer {
 		protocol.phase = PBFT_PROPOSE
 	}
+
 	Logger.log.Info("Starting PBFT protocol for " + protocol.RoundData.Layer)
 	protocol.multiSigScheme = new(multiSigScheme)
 	protocol.multiSigScheme.Init(protocol.UserKeySet, protocol.RoundData.Committee)
@@ -391,10 +392,6 @@ func (protocol *BFTProtocol) CreateBlockMsg() (wire.Message, error) {
 		}
 		protocol.pendingBlock = newBlock
 		protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
-
-		// time.Sleep(10 * time.Second) //single-node
-		// timeout.Stop()               //single-node
-		// return newBlock, nil         //single-node
 	} else {
 		newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ShardID, protocol.RoundData.Round, protocol.RoundData.ClosestPoolState)
 		if err != nil {
@@ -407,10 +404,6 @@ func (protocol *BFTProtocol) CreateBlockMsg() (wire.Message, error) {
 		}
 		protocol.pendingBlock = newBlock
 		protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
-
-		// time.Sleep(10 * time.Second) //single-node
-		// timeout.Stop()       //single-node
-		// return newBlock, nil //single-node
 	}
 	return msg, nil
 }
