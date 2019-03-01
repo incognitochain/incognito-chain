@@ -43,7 +43,7 @@ type Server struct {
 
 	memPool           *mempool.TxPool
 	beaconPool        *mempool.BeaconPool
-	shardPool         *mempool.NodeShardPool
+	shardPool         map[byte]blockchain.ShardPool
 	shardToBeaconPool *mempool.ShardToBeaconPool
 	crossShardPool    map[byte]blockchain.CrossShardPool
 
@@ -147,10 +147,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		}
 	}
 	serverObj.beaconPool = &mempool.BeaconPool{}
-	serverObj.shardPool = &mempool.NodeShardPool{}
+
 	serverObj.shardToBeaconPool = mempool.GetShardToBeaconPool()
 	serverObj.crossShardPool = make(map[byte]blockchain.CrossShardPool)
-
+	serverObj.shardPool = make(map[byte]blockchain.ShardPool)
 	serverObj.blockChain = &blockchain.BlockChain{}
 
 	relayShards := []byte{}
@@ -165,7 +165,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		RelayShards:       relayShards,
 		Wallet:            serverObj.wallet,
 		NodeBeaconPool:    serverObj.beaconPool,
-		NodeShardPool:     serverObj.shardPool,
+		ShardPool:         serverObj.shardPool,
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		CrossShardPool:    serverObj.crossShardPool,
 		Server:            serverObj,
@@ -176,9 +176,11 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	if err != nil {
 		return err
 	}
-
+	//init beacon pol
+	mempool.InitBeaconPool()
+	//init shard pool
+	mempool.InitShardPool(serverObj.shardPool)
 	//init cross shard pool
-
 	mempool.InitCrossShardPool(serverObj.crossShardPool, db)
 
 	//init shard to beacon bool

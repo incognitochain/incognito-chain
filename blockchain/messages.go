@@ -69,7 +69,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 						return
 					}
 				} else {
-					blockchain.config.NodeShardPool.PushBlock(*newBlk)
+					blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
 				}
 			}
 		}
@@ -93,7 +93,7 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 						return
 					}
 				} else {
-					blockchain.config.NodeBeaconPool.AddBeaconBlock(*newBlk)
+					blockchain.config.NodeBeaconPool.AddBeaconBlock(newBlk)
 				}
 			}
 		}
