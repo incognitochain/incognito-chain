@@ -123,11 +123,17 @@ func CreateSwapAction(pendingValidator []string, commitees []string, committeeSi
 	- Stake
 	- Stable param: set, del,...
 */
-func CreateShardInstructionsFromTransaction(transactions []metadata.Transaction, bc *BlockChain, shardID byte) (instructions [][]string) {
+func CreateShardInstructionsFromTransaction(
+	transactions []metadata.Transaction,
+	bc *BlockChain,
+	shardID byte,
+	producerAddress *privacy.PaymentAddress,
+	shardBlockHeight uint64,
+) (instructions [][]string) {
 	// Generate stake action
 	stakeShardPubKey := []string{}
 	stakeBeaconPubKey := []string{}
-	instructions = buildStabilityActions(transactions, bc, shardID)
+	instructions = buildStabilityActions(transactions, bc, shardID, producerAddress, shardBlockHeight)
 
 	for _, tx := range transactions {
 		switch tx.GetMetadataType() {
