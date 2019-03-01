@@ -160,3 +160,7 @@ func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) ValidateSanityData(b
 func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) ValidateMetadataByItself() bool {
 	return true
 }
+
+func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) CalculateSize() uint64 {
+	return calculateSize(acceptGOVProposalMetadata)
+}

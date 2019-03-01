@@ -48,3 +48,7 @@ func (wsa *WithSenderAddress) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
+func (wsa *WithSenderAddress) CalculateSize() uint64 {
+	return calculateSize(wsa)
+}
