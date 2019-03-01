@@ -119,6 +119,9 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 		return err
 	}
 
+	//=========Remove shard block in pool
+	blockchain.config.ShardPool[shardID].SetShardState(blockchain.BestState.Shard[shardID].ShardHeight)
+
 	//Update Cross shard pool: remove invalid block
 	blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.BestState.Shard[shardID].BestCrossShard.ShardHeight)
 	blockchain.config.CrossShardPool[shardID].UpdatePool()
