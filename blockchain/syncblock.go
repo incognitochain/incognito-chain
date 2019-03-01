@@ -493,18 +493,15 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 	}
 
 	for shardID := range blockchain.syncStatus.Shards {
-		blks, err := blockchain.config.NodeShardPool.GetBlocks(shardID, blockchain.BestState.Shard[shardID].ShardHeight+1)
-		if err != nil {
-			Logger.log.Error(err)
-			continue
-		}
+		blks := blockchain.config.ShardPool[shardID].GetValidBlock()
+
 		for idx, newBlk := range blks {
-			err = blockchain.InsertShardBlock(&newBlk)
+			err := blockchain.InsertShardBlock(newBlk)
 			if err != nil {
 				Logger.log.Error(err)
 				if idx < len(blks)-1 {
 					for idx2 := idx; idx2 < len(blks); idx2++ {
-						blockchain.config.NodeShardPool.PushBlock(blks[idx2])
+						blockchain.config.ShardPool[shardID].AddShardBlock(blks[idx2])
 					}
 					break
 				}
