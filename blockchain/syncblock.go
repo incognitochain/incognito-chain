@@ -7,7 +7,7 @@ import (
 
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/common"
-	cache "github.com/patrickmn/go-cache"
+	"github.com/patrickmn/go-cache"
 )
 
 type peerState struct {
@@ -482,19 +482,13 @@ func (blockchain *BlockChain) SyncBlkCrossShard(getFromPool bool, byHash bool, b
 }
 
 func (blockchain *BlockChain) InsertBlockFromPool() {
-	blks, err := blockchain.config.NodeBeaconPool.GetBlocks(blockchain.BestState.Beacon.BeaconHeight + 1)
-	if err != nil {
-		Logger.log.Error(err)
-	} else {
-		for idx, newBlk := range blks {
-			err = blockchain.InsertBeaconBlock(&newBlk, false)
-			if err != nil {
-				Logger.log.Error(err)
-				for idx2 := idx; idx2 < len(blks); idx2++ {
-					blockchain.config.NodeBeaconPool.PushBlock(blks[idx2])
-				}
-				break
-			}
+	blks := blockchain.config.NodeBeaconPool.GetValidBlock()
+
+	for _, newBlk := range blks {
+		err := blockchain.InsertBeaconBlock(newBlk, false)
+		if err != nil {
+			Logger.log.Error(err)
+			break
 		}
 	}
 

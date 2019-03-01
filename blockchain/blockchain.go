@@ -105,7 +105,7 @@ type Config struct {
 
 	ShardToBeaconPool ShardToBeaconPool
 	CrossShardPool    map[byte]CrossShardPool
-	NodeBeaconPool    NodeBeaconPool
+	NodeBeaconPool    BeaconPool
 	NodeShardPool     NodeShardPool
 	TxPool            TxPool
 

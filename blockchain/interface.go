@@ -37,10 +37,14 @@ type NodeShardPool interface {
 	RemoveBlocks(byte, uint64) error
 }
 
-type NodeBeaconPool interface {
-	PushBlock(BeaconBlock) error
-	GetBlocks(uint64) ([]BeaconBlock, error)
-	RemoveBlocks(uint64) error
+type BeaconPool interface {
+	RemoveBlock(uint64)
+	AddBeaconBlock(block BeaconBlock) error
+	GetValidBlockHash() []common.Hash
+	GetValidBlock() []*BeaconBlock
+	GetValidBlockHeight() []uint64
+	GetLatestValidBlockHeight() uint64
+	SetBeaconState(uint64)
 }
 type TxPool interface {
 	// LastUpdated returns the last time a transaction was added to or
