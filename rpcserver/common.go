@@ -50,6 +50,15 @@ func (rpcServer RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Paymen
 	if err != nil {
 		return nil, 0, NewRPCError(ErrGetOutputCoin, err)
 	}
+	// refund out put for sender
+	overBalanceAmount := candidateOutputCoinAmount - totalAmmount
+	if overBalanceAmount > 0 {
+		// add more into output for estimate fee
+		paymentInfos = append(paymentInfos, &privacy.PaymentInfo{
+			PaymentAddress: keyset.PaymentAddress,
+			Amount:         overBalanceAmount,
+		})
+	}
 
 	// check real fee(nano constant) per tx
 	realFee, _, _ := rpcServer.estimateFee(estimateFeeCoinPerKb, candidateOutputCoins,
