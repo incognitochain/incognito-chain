@@ -484,6 +484,7 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 			privacy := tokenParamsRaw["Privacy"].(bool)
 			if !privacy {
 				// Check normal custom token param
+				// TODO
 				customTokenParams = &transaction.CustomTokenParamTx{
 					PropertyID:     tokenParamsRaw["TokenID"].(string),
 					PropertyName:   tokenParamsRaw["TokenName"].(string),
@@ -552,6 +553,7 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 			} else {
 				// Check privacy custom token param
 				// param #5: token params
+				// TODO
 				customPrivacyTokenParam := &transaction.CustomTokenPrivacyParamTx{
 					PropertyID:     tokenParamsRaw["TokenID"].(string),
 					PropertyName:   tokenParamsRaw["TokenName"].(string),
