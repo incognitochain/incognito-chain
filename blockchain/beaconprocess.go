@@ -179,6 +179,9 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 		}
 	}
 
+	//=========Remove beacon block in pool
+	blockchain.config.NodeBeaconPool.SetBeaconState(blockchain.BestState.Beacon.BeaconHeight)
+
 	//=========Remove shard to beacon block in pool
 	Logger.log.Infof("Remove block from pool %+v \n", *block.Hash())
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.BestShardHeight)
