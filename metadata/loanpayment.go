@@ -151,3 +151,7 @@ func CalculateInterestPaid(amountSent, principle, interest, deadline, interestRa
 	fmt.Printf("[db] calcInterestPaid: %d %d %d %d %d %d\n", principle, interest, deadline, amountSent, totalInterest, interestPaid)
 	return interestPaid
 }
+
+func (lp *LoanPayment) CalculateSize() uint64 {
+	return calculateSize(lp)
+}

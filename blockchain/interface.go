@@ -19,12 +19,14 @@ type ShardToBeaconPool interface {
 	GetValidPendingBlockHash() map[byte][]common.Hash
 	GetValidPendingBlock(map[byte]uint64) map[byte][]*ShardToBeaconBlock
 	GetValidPendingBlockHeight() map[byte][]uint64
+	GetLatestValidPendingBlockHeight() map[byte]uint64
 	SetShardState(map[byte]uint64)
 }
 
 type CrossShardPool interface {
-	AddCrossShardBlock(CrossShardBlock) error
-	GetValidBlock() map[byte][]*CrossShardBlock
+	AddCrossShardBlock(CrossShardBlock) (map[byte]uint64, byte, error)
+	GetValidBlock(map[byte]uint64) map[byte][]*CrossShardBlock
+	GetLatestValidBlockHeight() map[byte]uint64
 	RemoveBlockByHeight(map[byte]uint64) error
 	UpdatePool() error
 }

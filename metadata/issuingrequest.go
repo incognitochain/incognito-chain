@@ -156,3 +156,7 @@ func (iReq *IssuingRequest) BuildReqActions(tx Transaction, bcr BlockchainRetrie
 	action := []string{strconv.Itoa(IssuingRequestMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
+
+func (iReq *IssuingRequest) CalculateSize() uint64 {
+	return calculateSize(iReq)
+}
