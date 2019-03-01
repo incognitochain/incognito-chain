@@ -21,6 +21,7 @@ var beaconPool *BeaconPool = nil
 
 func InitBeaconPool() {
 	//do nothing
+	GetBeaconPool().SetBeaconState(blockchain.GetBestStateBeacon().BeaconHeight)
 }
 
 // get singleton instance of ShardToBeacon pool
@@ -92,13 +93,6 @@ func (self *BeaconPool) AddBeaconBlock(blk *blockchain.BeaconBlock) error {
 
 	//update last valid pending ShardState
 	self.UpdateLatestBeaconState()
-	if self.pool[0].Header.Height > self.latestValidHeight {
-		offset := self.pool[0].Header.Height - self.latestValidHeight
-		if offset > MAX_VALID_BEACON_BLK_IN_POOL {
-			offset = MAX_VALID_BEACON_BLK_IN_POOL
-		}
-		return nil
-	}
 	return nil
 }
 func (self *BeaconPool) UpdateLatestBeaconState() {

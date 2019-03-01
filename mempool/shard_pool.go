@@ -23,7 +23,10 @@ var shardPoolMap = make(map[byte]*ShardPool)
 func InitShardPool(pool map[byte]blockchain.ShardPool) {
 	for i := 0; i < 255; i++ {
 		shardPoolMap[byte(i)] = GetShardPool(byte(i))
+		//update last shard height
+		shardPoolMap[byte(i)].SetShardState(blockchain.GetBestStateShard(byte(i)).ShardHeight)
 		pool[byte(i)] = shardPoolMap[byte(i)]
+
 	}
 }
 
@@ -98,13 +101,6 @@ func (self *ShardPool) AddShardBlock(blk *blockchain.ShardBlock) error {
 
 	//update last valid pending ShardState
 	self.UpdateLatestShardState()
-	if self.pool[0].Header.Height > self.latestValidHeight {
-		offset := self.pool[0].Header.Height - self.latestValidHeight
-		if offset > MAX_VALID_SHARD_BLK_IN_POOL {
-			offset = MAX_VALID_SHARD_BLK_IN_POOL
-		}
-		return nil
-	}
 	return nil
 }
 func (self *ShardPool) UpdateLatestShardState() {
