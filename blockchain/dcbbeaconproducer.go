@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// buildPassthroughInstruction converts shard instruction to beacon instruction in order to update BeaconBestState later on in beaconprocess
-func buildPassthroughInstruction(receivedType int, contentStr string) ([][]string, error) {
+// buildPassThroughInstruction converts shard instruction to beacon instruction in order to update BeaconBestState later on in beaconprocess
+func buildPassThroughInstruction(receivedType int, contentStr string) ([][]string, error) {
 	metaType := strconv.Itoa(receivedType)
 	shardID := strconv.Itoa(metadata.BeaconOnly)
 	return [][]string{[]string{metaType, shardID, contentStr}}, nil

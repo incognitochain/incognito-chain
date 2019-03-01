@@ -9,15 +9,21 @@ import (
 )
 
 type SubmitProposalInfo struct {
-	ExecuteDuration uint64
-	Explanation     string
-	PaymentAddress  privacy.PaymentAddress
+	ExecuteDuration   uint64
+	Explanation       string
+	PaymentAddress    privacy.PaymentAddress
+	ConstitutionIndex uint32
+}
+
+func NewSubmitProposalInfo(executeDuration uint64, explanation string, paymentAddress privacy.PaymentAddress, constitutionIndex uint32) *SubmitProposalInfo {
+	return &SubmitProposalInfo{ExecuteDuration: executeDuration, Explanation: explanation, PaymentAddress: paymentAddress, ConstitutionIndex: constitutionIndex}
 }
 
 func (submitProposalInfo SubmitProposalInfo) ToBytes() []byte {
 	record := string(common.Uint64ToBytes(submitProposalInfo.ExecuteDuration))
 	record += submitProposalInfo.Explanation
 	record += string(submitProposalInfo.PaymentAddress.Bytes())
+	record += string(common.Uint32ToBytes(submitProposalInfo.ConstitutionIndex))
 	return []byte(record)
 }
 
@@ -49,18 +55,6 @@ func (submitProposalInfo SubmitProposalInfo) ValidateTxWithBlockChain(
 	return true
 }
 
-func NewSubmitProposalInfo(
-	executeDuration uint64,
-	explanation string,
-	paymentAddress privacy.PaymentAddress,
-) *SubmitProposalInfo {
-	return &SubmitProposalInfo{
-		ExecuteDuration: executeDuration,
-		Explanation:     explanation,
-		PaymentAddress:  paymentAddress,
-	}
-}
-
 type SubmitDCBProposalMetadata struct {
 	DCBParams          params.DCBParams
 	SubmitProposalInfo SubmitProposalInfo
@@ -68,13 +62,20 @@ type SubmitDCBProposalMetadata struct {
 	MetadataBase
 }
 
-func NewSubmitDCBProposalMetadata(DCBParams params.DCBParams, executeDuration uint64, explanation string, address *privacy.PaymentAddress) *SubmitDCBProposalMetadata {
+func NewSubmitDCBProposalMetadata(
+	DCBParams params.DCBParams,
+	executeDuration uint64,
+	explanation string,
+	address *privacy.PaymentAddress,
+	constitutionIndex uint32,
+) *SubmitDCBProposalMetadata {
 	return &SubmitDCBProposalMetadata{
 		DCBParams: DCBParams,
 		SubmitProposalInfo: *NewSubmitProposalInfo(
 			executeDuration,
 			explanation,
 			*address,
+			constitutionIndex,
 		),
 		MetadataBase: *NewMetadataBase(SubmitDCBProposalMeta),
 	}
@@ -86,6 +87,7 @@ func NewSubmitDCBProposalMetadataFromRPC(data map[string]interface{}) (Metadata,
 		uint64(data["ExecuteDuration"].(float64)),
 		data["Explanation"].(string),
 		data["PaymentAddress"].(*privacy.PaymentAddress),
+		uint32(data["ConstitutionIndex"].(float64)),
 	)
 	return meta, nil
 }
@@ -151,6 +153,7 @@ func NewSubmitGOVProposalMetadata(
 	executeDuration uint64,
 	explanation string,
 	address *privacy.PaymentAddress,
+	constitutionIndex uint32,
 ) *SubmitGOVProposalMetadata {
 	return &SubmitGOVProposalMetadata{
 		GOVParams: govParams,
@@ -158,6 +161,7 @@ func NewSubmitGOVProposalMetadata(
 			executeDuration,
 			explanation,
 			*address,
+			constitutionIndex,
 		),
 		MetadataBase: *NewMetadataBase(SubmitGOVProposalMeta),
 	}
@@ -169,6 +173,7 @@ func NewSubmitGOVProposalMetadataFromRPC(data map[string]interface{}) (Metadata,
 		uint64(data["ExecuteDuration"].(float64)),
 		data["Explanation"].(string),
 		data["PaymentAddress"].(*privacy.PaymentAddress),
+		uint32(data["ConstitutionIndex"].(float64)),
 	), nil
 }
 

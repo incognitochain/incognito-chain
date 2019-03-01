@@ -263,13 +263,26 @@ func (bsb *BestStateBeacon) processLoanResponseInstruction(inst []string) error 
 }
 
 func (bsb *BestStateBeacon) processAcceptDCBProposalInstruction(inst []string) error {
-	// TODO(@0xjackalope): process other dcb params here
 	dcbParams, err := metadata.ParseAcceptDCBProposalMetadataActionValue(inst[2])
 	if err != nil {
 		return err
 	}
+	//todo @0xjackalope: update new Constitution
+	//oldConstitution := bsb.StabilityInfo.DCBConstitution
+	//bsb.StabilityInfo.DCBConstitution = DCBConstitution{
+	//	ConstitutionInfo: ConstitutionInfo{
+	//		ConstitutionIndex:  oldConstitution.ConstitutionIndex + 1,
+	//		StartedBlockHeight: bsb.BestBlock.Header.Height,
+	//		ExecuteDuration:    uint64
+	//		Explanation:        string
+	//		AcceptProposalTXID: common.Hash
+	//	},
+	//	CurrentDCBNationalWelfare: GetOracleDCBNationalWelfare(),
+	//	DCBParams:                *dcbParams,
+	//}
 
 	// Store saledata in state
+
 	for _, data := range dcbParams.ListSaleData {
 		key := getSaleDataKeyBeacon(data.SaleID)
 		if _, ok := bsb.Params[key]; ok {

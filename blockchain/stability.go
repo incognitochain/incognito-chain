@@ -78,7 +78,7 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 		newInst := [][]string{}
 		switch metaType {
 		case metadata.LoanRequestMeta, metadata.LoanResponseMeta, metadata.LoanWithdrawMeta, metadata.LoanPaymentMeta, metadata.AcceptDCBProposalMeta:
-			newInst, err = buildPassthroughInstruction(metaType, contentStr)
+			newInst, err = buildPassThroughInstruction(metaType, contentStr)
 
 		case metadata.BuyFromGOVRequestMeta:
 			newInst, err = buildInstructionsForBuyBondsFromGOVReq(shardID, contentStr, beaconBestState, accumulativeValues)

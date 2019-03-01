@@ -46,17 +46,18 @@ func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ProcessWhenInsertBlockShard(tx
 	return nil
 }
 
-func NewVoteDCBBoardMetadata(candidatePaymentAddress privacy.PaymentAddress) *VoteDCBBoardMetadata {
+func NewVoteDCBBoardMetadata(candidatePaymentAddress privacy.PaymentAddress, boardIndex uint32) *VoteDCBBoardMetadata {
 	return &VoteDCBBoardMetadata{
-		VoteBoardMetadata: *NewVoteBoardMetadata(candidatePaymentAddress),
+		VoteBoardMetadata: *NewVoteBoardMetadata(candidatePaymentAddress, boardIndex),
 		MetadataBase:      *NewMetadataBase(VoteDCBBoardMeta),
 	}
 }
 
 func NewVoteDCBBoardMetadataFromRPC(data map[string]interface{}) (Metadata, error) {
 	paymentAddress := data["PaymentAddress"].(string)
+	boardIndex := uint32(data["BoardIndex"].(float64))
 	account, _ := wallet.Base58CheckDeserialize(paymentAddress)
-	meta := NewVoteDCBBoardMetadata(account.KeySet.PaymentAddress)
+	meta := NewVoteDCBBoardMetadata(account.KeySet.PaymentAddress, boardIndex)
 	return meta, nil
 }
 

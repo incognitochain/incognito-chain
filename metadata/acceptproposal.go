@@ -68,10 +68,6 @@ func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ProcessWhenInsertBlo
 	boardType := DCBBoard
 	consitution := bcr.GetConstitution(boardType)
 	nextConstitutionIndex := consitution.GetConstitutionIndex() + 1
-	err := bcr.UpdateConstitution(tx, boardType)
-	if err != nil {
-		return err
-	}
 	err1 := bcr.GetDatabase().TakeVoteTokenFromWinner(boardType.BoardTypeDB(), nextConstitutionIndex, acceptDCBProposalMetadata.AcceptProposalMetadata.Voter.PaymentAddress, acceptDCBProposalMetadata.AcceptProposalMetadata.Voter.AmountOfVote)
 	if err1 != nil {
 		return err1
@@ -162,10 +158,6 @@ func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) ProcessWhenInsertBlo
 	boardType := GOVBoard
 	consitution := bcr.GetConstitution(boardType)
 	nextConstitutionIndex := consitution.GetConstitutionIndex() + 1
-	err := bcr.UpdateConstitution(tx, boardType)
-	if err != nil {
-		return err
-	}
 	underlieMetadata := tx.GetMetadata().(*AcceptGOVProposalMetadata)
 	err1 := bcr.GetDatabase().TakeVoteTokenFromWinner(boardType.BoardTypeDB(), nextConstitutionIndex, underlieMetadata.AcceptProposalMetadata.Voter.PaymentAddress, underlieMetadata.AcceptProposalMetadata.Voter.AmountOfVote)
 	if err1 != nil {
