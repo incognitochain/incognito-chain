@@ -62,7 +62,6 @@ func (engine *Engine) Start() error {
 			case <-engine.cQuit:
 				return
 			default:
-
 				if engine.config.BlockChain.IsReady(false, 0) {
 					if prevRoundRole == common.BEACON_ROLE {
 						engine.config.BlockChain.InsertBlockFromPool()
@@ -252,11 +251,11 @@ func (engine *Engine) Start() error {
 									Logger.log.Error(err)
 								}
 							} else {
-								Logger.log.Warn("Blockchain is not ready!")
+								//reset round
+								prevRoundRole = ""
+								currentPBFTRound = 1
 							}
 						}
-					} else {
-						time.Sleep(5 * time.Second)
 					}
 				}
 			}
