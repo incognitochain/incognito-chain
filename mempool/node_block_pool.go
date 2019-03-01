@@ -213,9 +213,9 @@ var nodeBeaconPool = map[uint64][]blockchain.BeaconBlock{}
 //	return nil
 //}
 //
-//type NodeBeaconPool struct{}
+//type BeaconPool struct{}
 
-//func (pool *NodeBeaconPool) PushBlock(block blockchain.BeaconBlock) error {
+//func (pool *BeaconPool) PushBlock(block blockchain.BeaconBlock) error {
 //
 //	blockHeader := block.Header
 //	height := blockHeader.Height
@@ -242,11 +242,11 @@ var nodeBeaconPool = map[uint64][]blockchain.BeaconBlock{}
 //	return nil
 //}
 //
-//func (pool *NodeBeaconPool) GetBlocks(blockHeight uint64) ([]blockchain.BeaconBlock, error) {
+//func (pool *BeaconPool) GetBlocks(blockHeight uint64) ([]blockchain.BeaconBlock, error) {
 //	return nodeBeaconPool[blockHeight], nil
 //}
 //
-//func (pool *NodeBeaconPool) RemoveBlocks(blockHeight uint64) error {
+//func (pool *BeaconPool) RemoveBlocks(blockHeight uint64) error {
 //	delete(nodeBeaconPool, blockHeight)
 //	return nil
 //}

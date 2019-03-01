@@ -482,8 +482,8 @@ func (blockchain *BlockChain) SyncBlkCrossShard(getFromPool bool, byHash bool, b
 }
 
 func (blockchain *BlockChain) InsertBlockFromPool() {
-	blks := blockchain.config.NodeBeaconPool.GetValidBlock()
-
+	blks := blockchain.config.BeaconPool.GetValidBlock()
+	fmt.Println("Prepare insert beacon ", len(blks))
 	for _, newBlk := range blks {
 		err := blockchain.InsertBeaconBlock(newBlk, false)
 		if err != nil {
@@ -491,6 +491,7 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 			break
 		}
 	}
+	fmt.Println("Finish insert beacon block")
 
 	for shardID := range blockchain.syncStatus.Shards {
 		blks := blockchain.config.ShardPool[shardID].GetValidBlock()

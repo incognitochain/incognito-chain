@@ -40,3 +40,36 @@ func (rpcServer RpcServer) handleGetCrossShardPoolState(params interface{}, clos
 	// result.BestShardBlock = nil
 	return result, nil
 }
+
+func (rpcServer RpcServer) handleGetBeaconPoolState(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	// if rpcServer.config.BlockChain.BestState.Beacon == nil {
+	// 	return nil, NewRPCError(ErrUnexpected, errors.New("Best State beacon not existed"))
+	// }
+	shardToBeaconPool := mempool.GetBeaconPool()
+	if shardToBeaconPool == nil {
+		return nil, NewRPCError(ErrUnexpected, errors.New("Shard to Beacon Pool not init"))
+	}
+	result := shardToBeaconPool.GetAllBlockHeight()
+	// result.BestBlock = nil
+	return result, nil
+}
+
+func (rpcServer RpcServer) handleGetShardPoolState(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	// if rpcServer.config.BlockChain.BestState.Beacon == nil {
+	// 	return nil, NewRPCError(ErrUnexpected, errors.New("Best State beacon not existed"))
+	// }
+	// get params
+	paramsArray := common.InterfaceSlice(params)
+	if len(paramsArray) < 1 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key params"))
+	}
+	shardID := byte(paramsArray[0].(int))
+
+	shardToBeaconPool := mempool.GetShardPool(shardID)
+	if shardToBeaconPool == nil {
+		return nil, NewRPCError(ErrUnexpected, errors.New("Shard to Beacon Pool not init"))
+	}
+	result := shardToBeaconPool.GetAllBlockHeight()
+	// result.BestBlock = nil
+	return result, nil
+}
