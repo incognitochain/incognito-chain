@@ -179,6 +179,76 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	return &tx, nil
 }
 
+func (rpcServer RpcServer) buildCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *cashec.KeySet, ) (*transaction.CustomTokenParamTx, map[common.Hash]transaction.TxCustomToken, *RPCError) {
+	tokenParams := &transaction.CustomTokenParamTx{
+		PropertyID:     tokenParamsRaw["TokenID"].(string),
+		PropertyName:   tokenParamsRaw["TokenName"].(string),
+		PropertySymbol: tokenParamsRaw["TokenSymbol"].(string),
+		TokenTxType:    int(tokenParamsRaw["TokenTxType"].(float64)),
+		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
+	}
+	voutsAmount := int64(0)
+	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
+	// get list custom token
+	listCustomTokens, err := rpcServer.config.BlockChain.ListCustomToken()
+	if err != nil {
+		return nil, nil, NewRPCError(ErrListCustomTokenNotFound, err)
+	}
+	switch tokenParams.TokenTxType {
+	case transaction.CustomTokenTransfer:
+		{
+			tokenID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+			if err != nil {
+				return nil, nil, NewRPCError(ErrRPCInvalidParams, errors.Wrap(err, "Token ID is invalid"))
+			}
+
+			if _, ok := listCustomTokens[*tokenID]; !ok {
+				return nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
+			}
+
+			unspentTxTokenOuts, err := rpcServer.config.BlockChain.GetUnspentTxCustomTokenVout(*senderKeySet, tokenID)
+			Logger.log.Info("buildRawCustomTokenTransaction ", unspentTxTokenOuts)
+			if err != nil {
+				return nil, nil, NewRPCError(ErrGetOutputCoin, errors.New("Token out invalid"))
+			}
+			if len(unspentTxTokenOuts) == 0 {
+				return nil, nil, NewRPCError(ErrGetOutputCoin, errors.New("Token out invalid"))
+			}
+			txTokenIns := []transaction.TxTokenVin{}
+			txTokenInsAmount := uint64(0)
+			for _, out := range unspentTxTokenOuts {
+				item := transaction.TxTokenVin{
+					PaymentAddress:  out.PaymentAddress,
+					TxCustomTokenID: out.GetTxCustomTokenID(),
+					VoutIndex:       out.GetIndex(),
+				}
+				// create signature by keyset -> base58check.encode of txtokenout double hash
+				signature, err := senderKeySet.Sign(out.Hash()[:])
+				if err != nil {
+					return nil, nil, NewRPCError(ErrCanNotSign, err)
+				}
+				// add signature to TxTokenVin to use token utxo
+				item.Signature = base58.Base58Check{}.Encode(signature, 0)
+				txTokenIns = append(txTokenIns, item)
+				txTokenInsAmount += out.Value
+				voutsAmount -= int64(out.Value)
+				if voutsAmount <= 0 {
+					break
+				}
+			}
+			tokenParams.SetVins(txTokenIns)
+			tokenParams.SetVinsAmount(txTokenInsAmount)
+		}
+	case transaction.CustomTokenInit:
+		{
+			if tokenParams.Receiver[0].Value != tokenParams.Amount { // Init with wrong max amount of custom token
+				return nil, nil, NewRPCError(ErrUnexpected, errors.New("Init with wrong max amount of property"))
+			}
+		}
+	}
+	return tokenParams, listCustomTokens, nil
+}
+
 // buildRawCustomTokenTransaction ...
 func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	params interface{},
@@ -222,73 +292,10 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 
 	// param #5: token params
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
-	tokenParams := &transaction.CustomTokenParamTx{
-		PropertyID:     tokenParamsRaw["TokenID"].(string),
-		PropertyName:   tokenParamsRaw["TokenName"].(string),
-		PropertySymbol: tokenParamsRaw["TokenSymbol"].(string),
-		TokenTxType:    int(tokenParamsRaw["TokenTxType"].(float64)),
-		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
-	}
-	voutsAmount := int64(0)
-	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
-	// get list custom token
-	listCustomTokens, err := rpcServer.config.BlockChain.ListCustomToken()
+	tokenParams, listCustomTokens, err := rpcServer.buildCustomTokenParam(tokenParamsRaw, senderKeySet)
 	if err != nil {
-		return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+		return nil, err.(*RPCError)
 	}
-	switch tokenParams.TokenTxType {
-	case transaction.CustomTokenTransfer:
-		{
-			tokenID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
-			if err != nil {
-				return nil, NewRPCError(ErrRPCInvalidParams, errors.Wrap(err, "Token ID is invalid"))
-			}
-
-			if _, ok := listCustomTokens[*tokenID]; !ok {
-				return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
-			}
-
-			unspentTxTokenOuts, err := rpcServer.config.BlockChain.GetUnspentTxCustomTokenVout(*senderKeySet, tokenID)
-			Logger.log.Info("buildRawCustomTokenTransaction ", unspentTxTokenOuts)
-			if err != nil {
-				return nil, err
-			}
-			if len(unspentTxTokenOuts) == 0 {
-				return nil, errors.Wrap(errors.New("Balance of token is zero"), "")
-			}
-			txTokenIns := []transaction.TxTokenVin{}
-			txTokenInsAmount := uint64(0)
-			for _, out := range unspentTxTokenOuts {
-				item := transaction.TxTokenVin{
-					PaymentAddress:  out.PaymentAddress,
-					TxCustomTokenID: out.GetTxCustomTokenID(),
-					VoutIndex:       out.GetIndex(),
-				}
-				// create signature by keyset -> base58check.encode of txtokenout double hash
-				signature, err := senderKeySet.Sign(out.Hash()[:])
-				if err != nil {
-					return nil, NewRPCError(ErrCanNotSign, err)
-				}
-				// add signature to TxTokenVin to use token utxo
-				item.Signature = base58.Base58Check{}.Encode(signature, 0)
-				txTokenIns = append(txTokenIns, item)
-				txTokenInsAmount += out.Value
-				voutsAmount -= int64(out.Value)
-				if voutsAmount <= 0 {
-					break
-				}
-			}
-			tokenParams.SetVins(txTokenIns)
-			tokenParams.SetVinsAmount(txTokenInsAmount)
-		}
-	case transaction.CustomTokenInit:
-		{
-			if tokenParams.Receiver[0].Value != tokenParams.Amount { // Init with wrong max amount of custom token
-				return nil, NewRPCError(ErrUnexpected, errors.New("Init with wrong max amount of property"))
-			}
-		}
-	}
-
 	/******* START choose output coins constant, which is used to create tx *****/
 	inputCoins, realFee, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0,
 		senderKeySet, shardIDSender, hasPrivacy,
@@ -327,6 +334,54 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	}
 
 	return tx, nil
+}
+
+func (rpcServer RpcServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *cashec.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxCustomTokenPrivacy, *RPCError) {
+	tokenParams := &transaction.CustomTokenPrivacyParamTx{
+		PropertyID:     tokenParamsRaw["TokenID"].(string),
+		PropertyName:   tokenParamsRaw["TokenName"].(string),
+		PropertySymbol: tokenParamsRaw["TokenSymbol"].(string),
+		TokenTxType:    int(tokenParamsRaw["TokenTxType"].(float64)),
+		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
+		TokenInput:     nil,
+	}
+	voutsAmount := int64(0)
+	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"])
+
+	// get list custom token
+	listCustomTokens, err := rpcServer.config.BlockChain.ListPrivacyCustomToken()
+	if err != nil {
+		return nil, nil, NewRPCError(ErrListCustomTokenNotFound, err)
+	}
+	switch tokenParams.TokenTxType {
+	case transaction.CustomTokenTransfer:
+		{
+			tokenID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+			if err != nil {
+				return nil, nil, NewRPCError(ErrRPCInvalidParams, err)
+			}
+			if _, ok := listCustomTokens[*tokenID]; !ok {
+				return nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
+			}
+			outputTokens, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, tokenID)
+			if err != nil {
+				return nil, nil, NewRPCError(ErrGetOutputCoin, err)
+			}
+			candidateOutputTokens, _, _, err := rpcServer.chooseBestOutCoinsToSpent(outputTokens, uint64(voutsAmount))
+			if err != nil {
+				return nil, nil, NewRPCError(ErrGetOutputCoin, err)
+			}
+			intputToken := transaction.ConvertOutputCoinToInputCoin(candidateOutputTokens)
+			tokenParams.TokenInput = intputToken
+		}
+	case transaction.CustomTokenInit:
+		{
+			if tokenParams.Receiver[0].Amount != tokenParams.Amount { // Init with wrong max amount of custom token
+				return nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("Init with wrong max amount of property"))
+			}
+		}
+	}
+	return tokenParams, listCustomTokens, nil
 }
 
 // buildRawCustomTokenTransaction ...
@@ -372,50 +427,11 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 
 	// param #5: token params
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID:     tokenParamsRaw["TokenID"].(string),
-		PropertyName:   tokenParamsRaw["TokenName"].(string),
-		PropertySymbol: tokenParamsRaw["TokenSymbol"].(string),
-		TokenTxType:    int(tokenParamsRaw["TokenTxType"].(float64)),
-		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
-		TokenInput:     nil,
-	}
-	voutsAmount := int64(0)
-	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"])
-
-	// get list custom token
-	listCustomTokens, err := rpcServer.config.BlockChain.ListPrivacyCustomToken()
+	tokenParams, listCustomTokens, err := rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
 	if err != nil {
-		return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+		return nil, err
 	}
-	switch tokenParams.TokenTxType {
-	case transaction.CustomTokenTransfer:
-		{
-			tokenID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
-			if err != nil {
-				return nil, NewRPCError(ErrRPCInvalidParams, err)
-			}
-			if _, ok := listCustomTokens[*tokenID]; !ok {
-				return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
-			}
-			outputTokens, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, tokenID)
-			if err != nil {
-				return nil, NewRPCError(ErrGetOutputCoin, err)
-			}
-			candidateOutputTokens, _, _, err := rpcServer.chooseBestOutCoinsToSpent(outputTokens, uint64(voutsAmount))
-			if err != nil {
-				return nil, NewRPCError(ErrGetOutputCoin, err)
-			}
-			intputToken := transaction.ConvertOutputCoinToInputCoin(candidateOutputTokens)
-			tokenParams.TokenInput = intputToken
-		}
-	case transaction.CustomTokenInit:
-		{
-			if tokenParams.Receiver[0].Amount != tokenParams.Amount { // Init with wrong max amount of custom token
-				return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Init with wrong max amount of property"))
-			}
-		}
-	}
+	// aaa
 	/****** END FEtch data from params *********/
 
 	/******* START choose output coins constant, which is used to create tx *****/
