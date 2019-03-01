@@ -64,8 +64,6 @@ type DividendSubmit struct {
 	DividendID       uint64
 	TotalTokenAmount uint64
 	ShardID          byte
-
-	MetadataBase
 }
 
 func BuildDividendSubmitInst(
