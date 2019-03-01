@@ -316,12 +316,13 @@ func NewSealedLv3VoteProposalMetadata(
 }
 
 type VoteProposalData struct {
-	ProposalTxID common.Hash
-	AmountOfVote int32
+	ProposalTxID      common.Hash
+	AmountOfVote      int32
+	ConstitutionIndex uint32
 }
 
-func NewVoteProposalData(proposalTxID common.Hash, amountOfVote int32) *VoteProposalData {
-	return &VoteProposalData{ProposalTxID: proposalTxID, AmountOfVote: amountOfVote}
+func NewVoteProposalData(proposalTxID common.Hash, amountOfVote int32, constitutionIndex uint32) *VoteProposalData {
+	return &VoteProposalData{ProposalTxID: proposalTxID, AmountOfVote: amountOfVote, ConstitutionIndex: constitutionIndex}
 }
 
 func NewVoteProposalDataFromJson(data interface{}) *VoteProposalData {
@@ -329,24 +330,28 @@ func NewVoteProposalDataFromJson(data interface{}) *VoteProposalData {
 
 	proposalTxIDData, _ := hex.DecodeString(voteProposalDataData["ProposalTxID"].(string))
 	proposalTxID, _ := common.NewHash(proposalTxIDData)
+	constitutionIndex := uint32(voteProposalDataData["ConstitutionIndex"].(float64))
 	return NewVoteProposalData(
 		*proposalTxID,
 		int32(voteProposalDataData["AmountOfVote"].(float64)),
+		constitutionIndex,
 	)
 }
 
 func (voteProposalData VoteProposalData) ToBytes() []byte {
 	b := voteProposalData.ProposalTxID.GetBytes()
 	b = append(b, common.Int32ToBytes(voteProposalData.AmountOfVote)...)
+	b = append(b, common.Uint32ToBytes(voteProposalData.ConstitutionIndex)...)
 	return b
 }
 
 func NewVoteProposalDataFromBytes(b []byte) *VoteProposalData {
 	lenB := len(b)
-	newHash, _ := common.NewHash(b[:lenB-4])
+	newHash, _ := common.NewHash(b[:lenB-8])
 	return NewVoteProposalData(
 		*newHash,
-		common.BytesToInt32(b[lenB-4:]),
+		common.BytesToInt32(b[lenB-8:lenB-4]),
+		common.BytesToUint32(b[lenB-4:]),
 	)
 }
 

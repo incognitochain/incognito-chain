@@ -40,7 +40,7 @@ type ConstitutionHelper interface {
 	GetNumberOfGovernor() int32
 	GetSubmitProposalInfo(tx metadata.Transaction) (*metadata.SubmitProposalInfo, error)
 	GetProposalTxID(tx metadata.Transaction) (hash *common.Hash)
-	SetNewConstitution(constitutionInfo *ConstitutionInfo, welfare int32, submitProposalTx metadata.Transaction)
+	SetNewConstitution(bc *BlockChain, constitutionInfo *ConstitutionInfo, welfare int32, submitProposalTx metadata.Transaction)
 	CreatePunishDecryptIns(paymentAddress *privacy.PaymentAddress) frombeaconins.InstructionFromBeacon
 }
 
@@ -608,16 +608,14 @@ func (bc *BlockChain) UpdateConstitution(
 	if err != nil {
 		return err
 	}
-	previousConstitutionIndex := bc.GetConstitutionIndex(helper)
-	newConstitutionIndex := previousConstitutionIndex + 1
 	constitutionInfo := NewConstitutionInfo(
-		newConstitutionIndex,
+		submitProposalInfo.ConstitutionIndex,
 		uint64(bc.BestState.Beacon.BestBlock.Header.Height),
 		submitProposalInfo.ExecuteDuration,
 		submitProposalInfo.Explanation,
 		*tx.Hash(),
 	)
-	helper.SetNewConstitution(constitutionInfo, GetOracleDCBNationalWelfare(), submitProposalTx)
+	helper.SetNewConstitution(bc, constitutionInfo, GetOracleDCBNationalWelfare(), submitProposalTx)
 	return nil
 }
 

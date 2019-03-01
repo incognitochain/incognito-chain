@@ -315,12 +315,12 @@ func (helper GOVConstitutionHelper) GetSubmitProposalInfo(
 	return &SubmitProposal.SubmitProposalInfo, nil
 }
 
-func (helper DCBConstitutionHelper) SetNewConstitution(constitutionInfo *ConstitutionInfo, welfare int32, submitProposalTx metadata.Transaction) {
-	params := submitProposalTx.GetMetadata().(*metadata.SubmitDCBProposalMetadata).DCBParams
-	NewDCBConstitution(constitutionInfo, welfare, &params)
+func (helper DCBConstitutionHelper) SetNewConstitution(bc *BlockChain, constitutionInfo *ConstitutionInfo, welfare int32, submitProposalTx metadata.Transaction) {
+	dcbParams := submitProposalTx.GetMetadata().(*metadata.SubmitDCBProposalMetadata).DCBParams
+	bc.BestState.Beacon.StabilityInfo.DCBConstitution = *NewDCBConstitution(constitutionInfo, welfare, &dcbParams)
 }
 
-func (helper GOVConstitutionHelper) SetNewConstitution(constitutionInfo *ConstitutionInfo, welfare int32, submitProposalTx metadata.Transaction) {
-	params := submitProposalTx.GetMetadata().(*metadata.SubmitGOVProposalMetadata).GOVParams
-	NewGOVConstitution(constitutionInfo, welfare, &params)
+func (helper GOVConstitutionHelper) SetNewConstitution(bc *BlockChain, constitutionInfo *ConstitutionInfo, welfare int32, submitProposalTx metadata.Transaction) {
+	govParams := submitProposalTx.GetMetadata().(*metadata.SubmitGOVProposalMetadata).GOVParams
+	bc.BestState.Beacon.StabilityInfo.GOVConstitution = *NewGOVConstitution(constitutionInfo, welfare, &govParams)
 }
