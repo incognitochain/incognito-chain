@@ -337,7 +337,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	}
 	// Verify Action
 	fmt.Printf("[db] buildActionReq for shardprocess to validate block instructions\n")
-	txInstructions := CreateShardInstructionsFromTransaction(block.Body.Transactions, blockchain, shardID)
+	txInstructions := CreateShardInstructionsFromTransaction(block.Body.Transactions, blockchain, shardID, block.Header.ProducerAddress, block.Header.Height)
 	totalInstructions := []string{}
 	for _, value := range txInstructions {
 		totalInstructions = append(totalInstructions, value...)
