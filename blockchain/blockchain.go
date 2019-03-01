@@ -105,7 +105,7 @@ type Config struct {
 
 	ShardToBeaconPool ShardToBeaconPool
 	CrossShardPool    map[byte]CrossShardPool
-	NodeBeaconPool    BeaconPool
+	BeaconPool        BeaconPool
 	ShardPool         map[byte]ShardPool
 	TxPool            TxPool
 
@@ -162,20 +162,22 @@ func (blockchain *BlockChain) Init(config *Config) error {
 func (blockchain *BlockChain) AddTxPool(txpool TxPool) {
 	blockchain.config.TxPool = txpool
 }
-func (blockchain *BlockChain) InitShardToBeaconPool(db database.DatabaseInterface) {
-	beaconBestState := BestStateBeacon{}
-	temp, err := db.FetchBeaconBestState()
-	if err != nil {
-		panic("Fail to get state from db")
-	} else {
-		if err := json.Unmarshal(temp, &beaconBestState); err != nil {
-			Logger.log.Error(err)
-			panic("Can't Unmarshal beacon beststate")
-		}
-		blockchain.config.ShardToBeaconPool.SetShardState(beaconBestState.BestShardHeight)
-	}
 
-}
+//move this code to pool
+//func (blockchain *BlockChain) InitShardToBeaconPool(db database.DatabaseInterface) {
+//	beaconBestState := BestStateBeacon{}
+//	temp, err := db.FetchBeaconBestState()
+//	if err != nil {
+//		panic("Fail to get state from db")
+//	} else {
+//		if err := json.Unmarshal(temp, &beaconBestState); err != nil {
+//			Logger.log.Error(err)
+//			panic("Can't Unmarshal beacon beststate")
+//		}
+//		blockchain.config.ShardToBeaconPool.SetShardState(beaconBestState.BestShardHeight)
+//	}
+//
+//}
 
 // -------------- Blockchain retriever's implementation --------------
 // GetCustomTokenTxsHash - return list of tx which relate to custom token
