@@ -110,3 +110,7 @@ func (of *OracleFeed) BuildReqActions(tx Transaction, bcr BlockchainRetriever, s
 	action := []string{strconv.Itoa(OracleFeedMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
+
+func (of *OracleFeed) CalculateSize() uint64 {
+	return calculateSize(of)
+}

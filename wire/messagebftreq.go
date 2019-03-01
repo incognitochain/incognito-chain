@@ -10,11 +10,10 @@ import (
 )
 
 const (
-	MaxBFTReadyPayload = 1000 // 1 Kb
+	MaxBFTReqPayload = 1000 // 1 Kb
 )
 
-type MessageBFTReady struct {
-	PoolState     map[byte]uint64
+type MessageBFTReq struct {
 	BestStateHash common.Hash
 	Round         int
 	Pubkey        string
@@ -22,7 +21,7 @@ type MessageBFTReady struct {
 	Timestamp     int64
 }
 
-func (msg *MessageBFTReady) Hash() string {
+func (msg *MessageBFTReq) Hash() string {
 	rawBytes, err := msg.JsonSerialize()
 	if err != nil {
 		return ""
@@ -30,31 +29,30 @@ func (msg *MessageBFTReady) Hash() string {
 	return common.HashH(rawBytes).String()
 }
 
-func (msg *MessageBFTReady) MessageType() string {
-	return CmdBFTReady
+func (msg *MessageBFTReq) MessageType() string {
+	return CmdBFTReq
 }
 
-func (msg *MessageBFTReady) MaxPayloadLength(pver int) int {
+func (msg *MessageBFTReq) MaxPayloadLength(pver int) int {
 	return MaxBFTReadyPayload
 }
 
-func (msg *MessageBFTReady) JsonSerialize() ([]byte, error) {
+func (msg *MessageBFTReq) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(msg)
 	return jsonBytes, err
 }
 
-func (msg *MessageBFTReady) JsonDeserialize(jsonStr string) error {
+func (msg *MessageBFTReq) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), msg)
 	return err
 }
 
-func (msg *MessageBFTReady) SetSenderID(senderID peer.ID) error {
+func (msg *MessageBFTReq) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (msg *MessageBFTReady) SignMsg(keySet *cashec.KeySet) error {
+func (msg *MessageBFTReq) SignMsg(keySet *cashec.KeySet) error {
 	dataBytes := []byte{}
-	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.PoolState))...)
 	dataBytes = append(dataBytes, msg.BestStateHash.GetBytes()...)
 	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.Round))...)
 	dataBytes = append(dataBytes, []byte(msg.Pubkey)...)
@@ -64,9 +62,8 @@ func (msg *MessageBFTReady) SignMsg(keySet *cashec.KeySet) error {
 	return err
 }
 
-func (msg *MessageBFTReady) VerifyMsgSanity() error {
+func (msg *MessageBFTReq) VerifyMsgSanity() error {
 	dataBytes := []byte{}
-	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.PoolState))...)
 	dataBytes = append(dataBytes, msg.BestStateHash.GetBytes()...)
 	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.Round))...)
 	dataBytes = append(dataBytes, []byte(msg.Pubkey)...)

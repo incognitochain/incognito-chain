@@ -144,3 +144,7 @@ func ParseLoanWithdrawActionValue(value string) ([]byte, uint64, uint64, error) 
 	}
 	return data.LoanID, data.Principle, data.Interest, nil
 }
+
+func (lw *LoanWithdraw) CalculateSize() uint64 {
+	return calculateSize(lw)
+}

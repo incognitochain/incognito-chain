@@ -91,7 +91,7 @@ privAddr: 112t8rnfNhk6QAyQYGxLRTyuR7WTA9yCH4n8EHCSayyTS7KczuziPaVdYMqa5VKRNHKLUM
 
 
 Beacon 
-go build && ./constant --spendingkey '112t8rxTdWfGCtgWvAMHnnEw9vN3R1D7YgD1SSHjAnVGL82HCrMq9yyXrHv3kB4gr84cejnMZRQ973RyHhq2G3MksoTWejNKdSWoQYDFf4gQ' --nodemode "auto" --datadir "data/beacon-0" --listen "127.0.0.1:9430" --externaladdress "127.0.0.1:9430" --norpc
+go build && ./constant --spendingkey '112t8rxTdWfGCtgWvAMHnnEw9vN3R1D7YgD1SSHjAnVGL82HCrMq9yyXrHv3kB4gr84cejnMZRQ973RyHhq2G3MksoTWejNKdSWoQYDFf4gQ' --nodemode "auto" --datadir "data/beacon-0" --listen "127.0.0.1:9430" --externaladdress "127.0.0.1:9430" --norpcauth --rpclisten "127.0.0.1:9345"
 
 ./constant --spendingkey '112t8rnXDNYL1RyTuT85JXeX7mJg1Sc6tCby5akSM7pfEGApgAx83X8C46EDu6dFAK6MVcWfQv2sfTk5nV9HqU3jrkrWdhrmi9z34jEhgHak' --nodemode "auto" --datadir "data/beacon-1" --listen "127.0.0.1:9431" --externaladdress "127.0.0.1:9431" --norpc
 
@@ -164,15 +164,17 @@ curl -X POST \
    "id":1
 }'
 
-
-curl -X POST \
+watch -n5 `echo -x curl -X POST \
   http://127.0.0.1:9334 \
   -H 'Content-Type: application/json' \
-  -H 'Postman-Token: 410c562d-e282-4e58-9ca3-730b0ea77336' \
-  -H 'cache-control: no-cache' \
-  -d '{
-   "jsonrpc":"1.0",
-   "method":"getshardbeststate",
-   "params":[0],
-   "id":1
-}'
+  -d '{"jsonrpc":"1.0","method":"getshardbeststate","params":[0],"id":1}'`
+
+watch -n5 `echo -x curl -X POST \
+  http://127.0.0.1:9343 \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"1.0","method":"getshardbeststate","params":[1],"id":1}'`
+
+watch -n5 `echo -x curl -X POST \
+  http://127.0.0.1:9345 \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"1.0","method":"getbeaconbeststate","params":[],"id":1}'`

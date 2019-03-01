@@ -118,3 +118,7 @@ func (sendInitGOVVoteTokenMetadata *SendInitGOVVoteTokenMetadata) ValidateSanity
 func (sendInitGOVVoteTokenMetadata *SendInitGOVVoteTokenMetadata) ValidateMetadataByItself() bool {
 	return true
 }
+
+func (sendInitGOVVoteTokenMetadata *SendInitGOVVoteTokenMetadata) CalculateSize() uint64 {
+	return calculateSize(sendInitGOVVoteTokenMetadata)
+}

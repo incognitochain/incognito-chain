@@ -29,7 +29,7 @@ type BestStateBeacon struct {
 	BestShardHeight   map[byte]uint64      `json:"BestShardHeight"`
 	// New field
 	//TODO: calculate hash
-	AllShardState map[byte][]ShardState `json:"AllShardState"`
+	// AllShardState map[byte][]ShardState `json:"AllShardState"`
 
 	Epoch                  uint64   `json:"Epoch"`
 	BeaconHeight           uint64   `json:"BeaconHeight"`
@@ -70,9 +70,9 @@ type BestStateBeacon struct {
 	ShardCommitteeSize  int
 	ActiveShards        int
 
-	// cross shard state for all the shard. shardID -> crossShard shardID -> last height
-	// e.g 1 -> 2 -> 3 // shard 1 has cross shard from shard 2 with latest height is 3
-	// e.g 1 -> 3 -> 2 // shard 1 has cross shard from shard 3 with latest height is 2
+	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
+	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3
+	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
 	LastCrossShardState map[byte]map[byte]uint64 `json:"LastCrossShardState"`
 }
 
@@ -316,7 +316,7 @@ func (self *BestStateBeacon) GetLatestDividendProposal(forDCB bool) (id, amount 
 	if forDCB {
 		key = getDCBDividendKeyBeacon()
 	} else {
-		// TODO: GOV
+		key = getGOVDividendKeyBeacon()
 	}
 	dividendAmounts := []uint64{}
 	if value, ok := self.Params[key]; ok {

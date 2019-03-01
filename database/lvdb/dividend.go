@@ -1,6 +1,7 @@
 package lvdb
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -79,5 +80,6 @@ func (db *db) StoreDividendReceiversForID(id uint64, forDCB bool, receivers []pr
 	if err := db.Put(key, value); err != nil {
 		return err
 	}
+	fmt.Printf("[db] stored divReceiver: %d %t\n", id, forDCB)
 	return nil
 }
