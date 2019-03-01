@@ -84,16 +84,21 @@ func (blockgen *BlkTmplGenerator) buildInstitutionDividendPaymentTxs(forDCB bool
 	// Make dividend payments to token holders
 	paymentAddresses := []*privacy.PaymentAddress{}
 	payoutAmounts := []uint64{}
-	for i, receiver := range receivers {
+	for i, amount := range amounts {
 		if i > metadata.MaxDivTxsPerBlock {
 			break
 		}
-		amount := amounts[i]
+		receiver := &privacy.PaymentAddress{
+			Pk: receivers[i].Pk,
+			Tk: receivers[i].Tk,
+		}
 
 		receiverCstAmount := amount * cstToPayout / totalTokenOnAllShards
-		paymentAddresses = append(paymentAddresses, &receiver)
+		paymentAddresses = append(paymentAddresses, receiver)
 		payoutAmounts = append(payoutAmounts, receiverCstAmount)
+		fmt.Printf("[db] div rec, amount: %x %d\n", receiver.Pk[:], receiverCstAmount)
 	}
+	fmt.Printf("[db] paymentAddresses: %v\n", paymentAddresses)
 
 	txs, err := transaction.BuildDividendTxs(
 		id,
@@ -151,7 +156,7 @@ func (blockgen *BlkTmplGenerator) buildInstitutionDividendSubmitInst(forDCB bool
 		return nil, err
 	}
 	if hasValue {
-		fmt.Printf("[db] divsub created: %d %t\n", id, forDCB)
+		// fmt.Printf("[db] divsub created: %d %t\n", id, forDCB)
 		return nil, nil // Already created DividendSubmit tx in previous blocks
 	}
 
@@ -170,6 +175,10 @@ func (blockgen *BlkTmplGenerator) buildInstitutionDividendSubmitInst(forDCB bool
 }
 
 func (blockgen *BlkTmplGenerator) buildDividendSubmitInsts(producerPrivateKey *privacy.SpendingKey, shardID byte) ([][]string, error) {
+	if blockgen.chain.BestState.Beacon.BeaconHeight < 3 {
+		fmt.Printf("[db] waiting, current beaconHeight: %d\n", blockgen.chain.BestState.Beacon.BeaconHeight)
+		return [][]string{}, nil
+	}
 	// Dividend proposals for DCB
 	submitInsts := [][]string{}
 	forDCB := true
