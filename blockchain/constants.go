@@ -37,9 +37,9 @@ const (
 	// BlockVersion is the current latest supported block version.
 	BlockVersion                = 1
 	TransactionVersion          = 1
-	defaultBroadcastStateTime   = 3 * time.Second
-	defaultProcessPeerStateTime = 4 * time.Second
-	defaultMaxBlockSyncTime     = 2 * time.Second
-	defaultCacheCleanupTime     = 2 * time.Minute
-	defaultMaxBlkReqPerPeer     = 100
+	defaultMaxBlkReqPerPeer     = 40
+	defaultBroadcastStateTime   = 2 * time.Second  // in second
+	defaultProcessPeerStateTime = 2 * time.Second  // in second
+	defaultMaxBlockSyncTime     = 2 * time.Second  // in second
+	defaultCacheCleanupTime     = 60 * time.Second // in second
 )

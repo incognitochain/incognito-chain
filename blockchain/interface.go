@@ -39,6 +39,7 @@ type ShardPool interface {
 	GetValidBlockHeight() []uint64
 	GetLatestValidBlockHeight() uint64
 	SetShardState(uint64)
+	GetAllBlockHeight() []uint64
 }
 
 type BeaconPool interface {

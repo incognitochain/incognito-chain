@@ -58,6 +58,11 @@ type BlockChain struct {
 
 		PeersState     map[libp2p.ID]*peerState
 		PeersStateLock sync.Mutex
+		IsReady        struct {
+			sync.Mutex
+			Beacon bool
+			Shards map[byte]bool
+		}
 	}
 	knownChainState struct {
 		Shards map[byte]ChainState
@@ -156,6 +161,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.syncStatus.Shards = make(map[byte]struct{})
 	blockchain.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
 	blockchain.knownChainState.Shards = make(map[byte]ChainState)
+	blockchain.syncStatus.IsReady.Shards = make(map[byte]bool)
 	return nil
 }
 
@@ -1467,15 +1473,26 @@ func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privac
 	return result, nil
 }
 
-func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
-
+func (blockchain *BlockChain) SetReadyState(shard bool, shardID byte, ready bool) {
+	blockchain.syncStatus.IsReady.Lock()
+	defer blockchain.syncStatus.IsReady.Unlock()
 	if shard {
-		//TODO check shardChain ready
+		blockchain.syncStatus.IsReady.Shards[shardID] = ready
 	} else {
-		//TODO check beaconChain ready
+		blockchain.syncStatus.IsReady.Beacon = ready
 	}
+}
 
-	return true
+func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
+	blockchain.syncStatus.IsReady.Lock()
+	defer blockchain.syncStatus.IsReady.Unlock()
+	if shard {
+		if _, ok := blockchain.syncStatus.IsReady.Shards[shardID]; !ok {
+			return false
+		}
+		return blockchain.syncStatus.IsReady.Shards[shardID]
+	}
+	return blockchain.syncStatus.IsReady.Beacon
 }
 
 //func (blockchain *BlockChain) UpdateDividendPayout(block *Block) error {
