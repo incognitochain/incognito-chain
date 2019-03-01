@@ -238,34 +238,32 @@ func (self *BlockChain) createListSendInitVoteTokenTxIns(
 	return SendVoteTx, nil
 }
 
-func (self *BlockChain) createAcceptBoardTxIns(
+func (self *BlockChain) createAcceptBoardIns(
 	boardType metadata.BoardType,
 	BoardPaymentAddress []privacy.PaymentAddress,
 	sumOfVote uint64,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
-	txAcceptBoardIns := frombeaconins.NewTxAcceptBoardIns(boardType, BoardPaymentAddress, sumOfVote)
-	return []frombeaconins.InstructionFromBeacon{txAcceptBoardIns}, nil
+	acceptBoardIns := frombeaconins.NewAcceptBoardIns(boardType, BoardPaymentAddress, sumOfVote)
+	return []frombeaconins.InstructionFromBeacon{acceptBoardIns}, nil
 }
 
-func (bc *BlockChain) UpdateDCBBoard(tx metadata.Transaction) error {
-	block := bc.BestState.Beacon
-	meta := tx.GetMetadata().(*metadata.AcceptDCBBoardMetadata)
-	block.StabilityInfo.DCBGovernor.BoardIndex += 1
-	block.StabilityInfo.DCBGovernor.BoardPaymentAddress = meta.AcceptBoardMetadata.BoardPaymentAddress
-	block.StabilityInfo.DCBGovernor.StartedBlock = block.BestBlock.Header.Height
-	block.StabilityInfo.DCBGovernor.EndBlock = block.StabilityInfo.DCBGovernor.StartedBlock + common.DurationOfDCBBoard
-	block.StabilityInfo.DCBGovernor.StartAmountToken = meta.AcceptBoardMetadata.StartAmountToken
+func (bc *BlockChain) UpdateDCBBoard(ins frombeaconins.AcceptDCBBoardIns) error {
+	stateBeacon := bc.BestState.Beacon
+	stateBeacon.StabilityInfo.DCBGovernor.BoardIndex += 1
+	stateBeacon.StabilityInfo.DCBGovernor.BoardPaymentAddress = ins.BoardPaymentAddress
+	stateBeacon.StabilityInfo.DCBGovernor.StartedBlock = stateBeacon.BestBlock.Header.Height
+	stateBeacon.StabilityInfo.DCBGovernor.EndBlock = stateBeacon.StabilityInfo.DCBGovernor.StartedBlock + common.DurationOfDCBBoard
+	stateBeacon.StabilityInfo.DCBGovernor.StartAmountToken = ins.StartAmountToken
 	return nil
 }
 
-func (bc *BlockChain) UpdateGOVBoard(tx metadata.Transaction) error {
-	block := bc.BestState.Beacon
-	meta := tx.GetMetadata().(*metadata.AcceptGOVBoardMetadata)
-	block.StabilityInfo.GOVGovernor.BoardIndex += 1
-	block.StabilityInfo.GOVGovernor.BoardPaymentAddress = meta.AcceptBoardMetadata.BoardPaymentAddress
-	block.StabilityInfo.GOVGovernor.StartedBlock = block.BestBlock.Header.Height
-	block.StabilityInfo.GOVGovernor.EndBlock = block.StabilityInfo.GOVGovernor.StartedBlock + common.DurationOfGOVBoard
-	block.StabilityInfo.GOVGovernor.StartAmountToken = meta.AcceptBoardMetadata.StartAmountToken
+func (bc *BlockChain) UpdateGOVBoard(ins frombeaconins.AcceptGOVBoardIns) error {
+	stateBeacon := bc.BestState.Beacon
+	stateBeacon.StabilityInfo.GOVGovernor.BoardIndex += 1
+	stateBeacon.StabilityInfo.GOVGovernor.BoardPaymentAddress = ins.BoardPaymentAddress
+	stateBeacon.StabilityInfo.GOVGovernor.StartedBlock = stateBeacon.BestBlock.Header.Height
+	stateBeacon.StabilityInfo.GOVGovernor.EndBlock = stateBeacon.StabilityInfo.GOVGovernor.StartedBlock + common.DurationOfGOVBoard
+	stateBeacon.StabilityInfo.GOVGovernor.StartAmountToken = ins.StartAmountToken
 	return nil
 }
 
@@ -453,7 +451,7 @@ func (self *BlockChain) CreateUpdateNewGovernorInstruction(
 		sumOfVote = 1
 	}
 
-	acceptBoardIns, err := self.createAcceptBoardTxIns(
+	acceptBoardIns, err := self.createAcceptBoardIns(
 		helper.GetBoardType(),
 		newBoardPaymentAddress,
 		sumOfVote,
