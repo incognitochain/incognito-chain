@@ -473,6 +473,11 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 			}
 			paymentInfos = append(paymentInfos, paymentInfo)
 		}
+
+		// Check custom token param
+		if len(arrayParams) > 5 {
+		}
+
 		// check real fee(nano constant) per tx
 		_, estimateFeeCoinPerKb, estimateTxSizeInKb = rpcServer.estimateFee(defaultFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, nil, nil)
 	}
