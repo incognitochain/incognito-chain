@@ -93,7 +93,7 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 						return
 					}
 				} else {
-					blockchain.config.NodeBeaconPool.AddBeaconBlock(newBlk)
+					blockchain.config.BeaconPool.AddBeaconBlock(newBlk)
 				}
 			}
 		}

@@ -164,7 +164,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		Interrupt:         interrupt,
 		RelayShards:       relayShards,
 		Wallet:            serverObj.wallet,
-		NodeBeaconPool:    serverObj.beaconPool,
+		BeaconPool:        serverObj.beaconPool,
 		ShardPool:         serverObj.shardPool,
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		CrossShardPool:    serverObj.crossShardPool,
@@ -184,7 +184,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	mempool.InitCrossShardPool(serverObj.crossShardPool, db)
 
 	//init shard to beacon bool
-	serverObj.blockChain.InitShardToBeaconPool(db)
+	mempool.InitShardToBeaconPool()
 
 	// TODO: 0xbahamooth Search for a feeEstimator state in the database. If none can be found
 	// or if it cannot be loaded, create a new one.
