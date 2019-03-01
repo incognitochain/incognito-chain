@@ -220,38 +220,38 @@ func (pool *NodeShardPool) RemoveBlocks(shardID byte, blockHeight uint64) error 
 
 type NodeBeaconPool struct{}
 
-func (pool *NodeBeaconPool) PushBlock(block blockchain.BeaconBlock) error {
-
-	blockHeader := block.Header
-	height := blockHeader.Height
-	if height == 0 {
-		return errors.New("Invalid Block Heght")
-	}
-
-	nodeBeaconPoolLock.Lock()
-	defer nodeBeaconPoolLock.Unlock()
-	if _, ok := nodeBeaconPool[height]; ok {
-		isNew := true
-		for _, poolblk := range nodeBeaconPool[height] {
-			if poolblk.Hash() == block.Hash() {
-				isNew = false
-				return nil
-			}
-		}
-		if isNew {
-			nodeBeaconPool[height] = append(nodeBeaconPool[height], block)
-		}
-	} else {
-		nodeBeaconPool[height] = append(nodeBeaconPool[height], block)
-	}
-	return nil
-}
-
-func (pool *NodeBeaconPool) GetBlocks(blockHeight uint64) ([]blockchain.BeaconBlock, error) {
-	return nodeBeaconPool[blockHeight], nil
-}
-
-func (pool *NodeBeaconPool) RemoveBlocks(blockHeight uint64) error {
-	delete(nodeBeaconPool, blockHeight)
-	return nil
-}
+//func (pool *NodeBeaconPool) PushBlock(block blockchain.BeaconBlock) error {
+//
+//	blockHeader := block.Header
+//	height := blockHeader.Height
+//	if height == 0 {
+//		return errors.New("Invalid Block Heght")
+//	}
+//
+//	nodeBeaconPoolLock.Lock()
+//	defer nodeBeaconPoolLock.Unlock()
+//	if _, ok := nodeBeaconPool[height]; ok {
+//		isNew := true
+//		for _, poolblk := range nodeBeaconPool[height] {
+//			if poolblk.Hash() == block.Hash() {
+//				isNew = false
+//				return nil
+//			}
+//		}
+//		if isNew {
+//			nodeBeaconPool[height] = append(nodeBeaconPool[height], block)
+//		}
+//	} else {
+//		nodeBeaconPool[height] = append(nodeBeaconPool[height], block)
+//	}
+//	return nil
+//}
+//
+//func (pool *NodeBeaconPool) GetBlocks(blockHeight uint64) ([]blockchain.BeaconBlock, error) {
+//	return nodeBeaconPool[blockHeight], nil
+//}
+//
+//func (pool *NodeBeaconPool) RemoveBlocks(blockHeight uint64) error {
+//	delete(nodeBeaconPool, blockHeight)
+//	return nil
+//}

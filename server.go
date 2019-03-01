@@ -42,7 +42,7 @@ type Server struct {
 	rpcServer       *rpcserver.RpcServer
 
 	memPool           *mempool.TxPool
-	beaconPool        *mempool.NodeBeaconPool
+	beaconPool        *mempool.BeaconPool
 	shardPool         *mempool.NodeShardPool
 	shardToBeaconPool *mempool.ShardToBeaconPool
 	crossShardPool    map[byte]blockchain.CrossShardPool
@@ -146,7 +146,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			Logger.log.Error(err)
 		}
 	}
-	serverObj.beaconPool = &mempool.NodeBeaconPool{}
+	serverObj.beaconPool = &mempool.BeaconPool{}
 	serverObj.shardPool = &mempool.NodeShardPool{}
 	serverObj.shardToBeaconPool = mempool.GetShardToBeaconPool()
 	serverObj.crossShardPool = make(map[byte]blockchain.CrossShardPool)
