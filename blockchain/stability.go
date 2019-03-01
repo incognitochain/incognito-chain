@@ -45,6 +45,8 @@ func buildStabilityActions(
 	txs []metadata.Transaction,
 	bc *BlockChain,
 	shardID byte,
+	producerAddress *privacy.PaymentAddress,
+	shardBlockHeight uint64,
 ) [][]string {
 	actions := [][]string{}
 	for _, tx := range txs {
@@ -57,6 +59,15 @@ func buildStabilityActions(
 			actions = append(actions, actionPairs...)
 		}
 	}
+
+	// build salary update action
+	totalFee := getShardBlockFee(txs)
+	totalSalary := getShardBlockSalary(txs, bc.BestState.Beacon)
+	if totalFee != 0 || totalSalary != 0 {
+		salaryUpdateActions, _ := createShardBlockSalaryUpdateAction(totalSalary, totalFee, producerAddress, shardBlockHeight)
+		actions = append(actions, salaryUpdateActions...)
+	}
+
 	return actions
 }
 
