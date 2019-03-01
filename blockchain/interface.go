@@ -31,15 +31,19 @@ type CrossShardPool interface {
 	UpdatePool() error
 }
 
-type NodeShardPool interface {
-	PushBlock(ShardBlock) error
-	GetBlocks(byte, uint64) ([]ShardBlock, error)
-	RemoveBlocks(byte, uint64) error
+type ShardPool interface {
+	RemoveBlock(uint64)
+	AddShardBlock(block *ShardBlock) error
+	GetValidBlockHash() []common.Hash
+	GetValidBlock() []*ShardBlock
+	GetValidBlockHeight() []uint64
+	GetLatestValidBlockHeight() uint64
+	SetShardState(uint64)
 }
 
 type BeaconPool interface {
 	RemoveBlock(uint64)
-	AddBeaconBlock(block BeaconBlock) error
+	AddBeaconBlock(block *BeaconBlock) error
 	GetValidBlockHash() []common.Hash
 	GetValidBlock() []*BeaconBlock
 	GetValidBlockHeight() []uint64

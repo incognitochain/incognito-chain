@@ -8,44 +8,50 @@ import (
 )
 
 const (
-	MAX_VALID_BEACON_BLK_IN_POOL   = 100
-	MAX_INVALID_BEACON_BLK_IN_POOL = 200
+	MAX_VALID_SHARD_BLK_IN_POOL   = 100
+	MAX_PENDING_SHARD_BLK_IN_POOL = 200
 )
 
-type BeaconPool struct {
-	pool              []*blockchain.BeaconBlock // block
+type ShardPool struct {
+	pool              []*blockchain.ShardBlock // shardID -> height -> block
+	shardID           byte
 	latestValidHeight uint64
 }
 
-var beaconPool *BeaconPool = nil
+var shardPoolMap = make(map[byte]*ShardPool)
 
-func InitBeaconPool() {
-	//do nothing
+func InitShardPool(pool map[byte]blockchain.ShardPool) {
+	for i := 0; i < 255; i++ {
+		shardPoolMap[byte(i)] = GetShardPool(byte(i))
+		pool[byte(i)] = shardPoolMap[byte(i)]
+	}
 }
 
 // get singleton instance of ShardToBeacon pool
-func GetBeaconPool() *BeaconPool {
-	if beaconPool == nil {
-		beaconPool = new(BeaconPool)
-		beaconPool.pool = []*blockchain.BeaconBlock{}
-		beaconPool.latestValidHeight = 1
+func GetShardPool(shardID byte) *ShardPool {
+	if shardPoolMap[shardID] == nil {
+		shardPool := new(ShardPool)
+		shardPool.shardID = shardID
+		shardPool.pool = []*blockchain.ShardBlock{}
+		shardPool.latestValidHeight = 1
+		shardPoolMap[shardID] = shardPool
 	}
-	return beaconPool
+	return shardPoolMap[shardID]
 }
 
-func (self *BeaconPool) SetBeaconState(lastestBeaconHeight uint64) {
-	self.latestValidHeight = lastestBeaconHeight
+func (self *ShardPool) SetShardState(lastestShardHeight uint64) {
+	self.latestValidHeight = lastestShardHeight
 
 	//Remove pool base on new shardstate
-	self.RemoveBlock(lastestBeaconHeight)
-	self.UpdateLatestBeaconState()
+	self.RemoveBlock(lastestShardHeight)
+	self.UpdateLatestShardState()
 }
 
-func (self *BeaconPool) GetBeaconState() uint64 {
+func (self *ShardPool) GetShardState() uint64 {
 	return self.latestValidHeight
 }
 
-func (self *BeaconPool) AddBeaconBlock(blk *blockchain.BeaconBlock) error {
+func (self *ShardPool) AddShardBlock(blk *blockchain.ShardBlock) error {
 	//TODO: validate aggregated signature
 
 	blkHeight := blk.Header.Height
@@ -66,12 +72,12 @@ func (self *BeaconPool) AddBeaconBlock(blk *blockchain.BeaconBlock) error {
 	if len(self.pool) != 0 {
 		numValidPedingBlk := int(self.latestValidHeight - self.pool[0].Header.Height)
 		numInValidPedingBlk := len(self.pool) - numValidPedingBlk
-		if numValidPedingBlk > MAX_VALID_BEACON_BLK_IN_POOL {
+		if numValidPedingBlk > MAX_VALID_SHARD_BLK_IN_POOL {
 			return errors.New("exceed max valid pending block")
 		}
 
 		lastBlkInPool := self.pool[len(self.pool)-1]
-		if numInValidPedingBlk > MAX_INVALID_BEACON_BLK_IN_POOL {
+		if numInValidPedingBlk > MAX_PENDING_SHARD_BLK_IN_POOL {
 			//If invalid block is better than current invalid block
 			if lastBlkInPool.Header.Height > blkHeight {
 				//remove latest block and add better invalid to pool
@@ -91,17 +97,17 @@ func (self *BeaconPool) AddBeaconBlock(blk *blockchain.BeaconBlock) error {
 	})
 
 	//update last valid pending ShardState
-	self.UpdateLatestBeaconState()
+	self.UpdateLatestShardState()
 	if self.pool[0].Header.Height > self.latestValidHeight {
 		offset := self.pool[0].Header.Height - self.latestValidHeight
-		if offset > MAX_VALID_BEACON_BLK_IN_POOL {
-			offset = MAX_VALID_BEACON_BLK_IN_POOL
+		if offset > MAX_VALID_SHARD_BLK_IN_POOL {
+			offset = MAX_VALID_SHARD_BLK_IN_POOL
 		}
 		return nil
 	}
 	return nil
 }
-func (self *BeaconPool) UpdateLatestBeaconState() {
+func (self *ShardPool) UpdateLatestShardState() {
 	lastHeight := self.latestValidHeight
 	for _, blk := range self.pool {
 		if blk.Header.Height > lastHeight && lastHeight+1 != blk.Header.Height {
@@ -114,7 +120,7 @@ func (self *BeaconPool) UpdateLatestBeaconState() {
 
 //@Notice: Remove should set latest valid height
 //Because normal beacon node may not have these block to remove
-func (self *BeaconPool) RemoveBlock(lastBlockHeight uint64) {
+func (self *ShardPool) RemoveBlock(lastBlockHeight uint64) {
 	for index, block := range self.pool {
 		if block.Header.Height <= lastBlockHeight {
 			if index == len(self.pool)-1 {
@@ -126,11 +132,10 @@ func (self *BeaconPool) RemoveBlock(lastBlockHeight uint64) {
 			break
 		}
 	}
-
 }
 
-func (self *BeaconPool) GetValidBlock() []*blockchain.BeaconBlock {
-	finalBlocks := []*blockchain.BeaconBlock{}
+func (self *ShardPool) GetValidBlock() []*blockchain.ShardBlock {
+	finalBlocks := []*blockchain.ShardBlock{}
 	for _, blk := range self.pool {
 		if blk.Header.Height > self.latestValidHeight {
 			break
@@ -141,7 +146,7 @@ func (self *BeaconPool) GetValidBlock() []*blockchain.BeaconBlock {
 	return finalBlocks
 }
 
-func (self *BeaconPool) GetValidBlockHash() []common.Hash {
+func (self *ShardPool) GetValidBlockHash() []common.Hash {
 	finalBlocks := []common.Hash{}
 	blks := self.GetValidBlock()
 	for _, blk := range blks {
@@ -150,7 +155,7 @@ func (self *BeaconPool) GetValidBlockHash() []common.Hash {
 	return finalBlocks
 }
 
-func (self *BeaconPool) GetValidBlockHeight() []uint64 {
+func (self *ShardPool) GetValidBlockHeight() []uint64 {
 	finalBlocks := []uint64{}
 	blks := self.GetValidBlock()
 	for _, blk := range blks {
@@ -159,7 +164,7 @@ func (self *BeaconPool) GetValidBlockHeight() []uint64 {
 	return finalBlocks
 }
 
-func (self *BeaconPool) GetLatestValidBlockHeight() uint64 {
+func (self *ShardPool) GetLatestValidBlockHeight() uint64 {
 	finalBlocks := uint64(0)
 	blks := self.GetValidBlock()
 	for _, blk := range blks {
@@ -169,7 +174,7 @@ func (self *BeaconPool) GetLatestValidBlockHeight() uint64 {
 
 }
 
-func (self *BeaconPool) GetAllBlockHeight() []uint64 {
+func (self *ShardPool) GetAllBlockHeight() []uint64 {
 	finalBlocks := []uint64{}
 	for _, blk := range self.pool {
 		finalBlocks = append(finalBlocks, blk.Header.Height)
