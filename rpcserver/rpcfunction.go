@@ -1,8 +1,9 @@
 package rpcserver
 
 import (
-	"errors"
 	"fmt"
+	"github.com/ninjadotorg/constant/transaction"
+	"github.com/pkg/errors"
 	"log"
 	"net"
 
@@ -475,11 +476,131 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 		}
 
 		// Check custom token param
-		if len(arrayParams) > 5 {
+		var customTokenParams *transaction.CustomTokenParamTx
+		var customPrivacyTokenParam *transaction.CustomTokenPrivacyParamTx
+		if len(arrayParams) > 4 {
+			// param #5: token params
+			tokenParamsRaw := arrayParams[4].(map[string]interface{})
+			privacy := tokenParamsRaw["Privacy"].(bool)
+			if !privacy {
+				// Check normal custom token param
+				customTokenParams = &transaction.CustomTokenParamTx{
+					PropertyID:     tokenParamsRaw["TokenID"].(string),
+					PropertyName:   tokenParamsRaw["TokenName"].(string),
+					PropertySymbol: tokenParamsRaw["TokenSymbol"].(string),
+					TokenTxType:    int(tokenParamsRaw["TokenTxType"].(float64)),
+					Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
+				}
+				voutsAmount := int64(0)
+				customTokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
+				// get list custom token
+				listCustomTokens, err := rpcServer.config.BlockChain.ListCustomToken()
+				if err != nil {
+					return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+				}
+				switch customTokenParams.TokenTxType {
+				case transaction.CustomTokenTransfer:
+					{
+						tokenID, err := common.Hash{}.NewHashFromStr(customTokenParams.PropertyID)
+						if err != nil {
+							return nil, NewRPCError(ErrRPCInvalidParams, errors.Wrap(err, "Token ID is invalid"))
+						}
+
+						if _, ok := listCustomTokens[*tokenID]; !ok {
+							return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
+						}
+
+						unspentTxTokenOuts, err := rpcServer.config.BlockChain.GetUnspentTxCustomTokenVout(*senderKeySet, tokenID)
+						if err != nil {
+							return nil, NewRPCError(ErrGetOutputCoin, errors.New("Token out invalid"))
+						}
+						if len(unspentTxTokenOuts) == 0 {
+							return nil, NewRPCError(ErrGetOutputCoin, errors.New("Token out invalid"))
+						}
+						txTokenIns := []transaction.TxTokenVin{}
+						txTokenInsAmount := uint64(0)
+						for _, out := range unspentTxTokenOuts {
+							item := transaction.TxTokenVin{
+								PaymentAddress:  out.PaymentAddress,
+								TxCustomTokenID: out.GetTxCustomTokenID(),
+								VoutIndex:       out.GetIndex(),
+							}
+							// create signature by keyset -> base58check.encode of txtokenout double hash
+							signature, err := senderKeySet.Sign(out.Hash()[:])
+							if err != nil {
+								return nil, NewRPCError(ErrCanNotSign, err)
+							}
+							// add signature to TxTokenVin to use token utxo
+							item.Signature = base58.Base58Check{}.Encode(signature, 0)
+							txTokenIns = append(txTokenIns, item)
+							txTokenInsAmount += out.Value
+							voutsAmount -= int64(out.Value)
+							if voutsAmount <= 0 {
+								break
+							}
+						}
+						customTokenParams.SetVins(txTokenIns)
+						customTokenParams.SetVinsAmount(txTokenInsAmount)
+					}
+				case transaction.CustomTokenInit:
+					{
+						if customTokenParams.Receiver[0].Value != customTokenParams.Amount { // Init with wrong max amount of custom token
+							return nil, NewRPCError(ErrUnexpected, errors.New("Init with wrong max amount of property"))
+						}
+					}
+				}
+			} else {
+				// Check privacy custom token param
+				// param #5: token params
+				customPrivacyTokenParam := &transaction.CustomTokenPrivacyParamTx{
+					PropertyID:     tokenParamsRaw["TokenID"].(string),
+					PropertyName:   tokenParamsRaw["TokenName"].(string),
+					PropertySymbol: tokenParamsRaw["TokenSymbol"].(string),
+					TokenTxType:    int(tokenParamsRaw["TokenTxType"].(float64)),
+					Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
+					TokenInput:     nil,
+				}
+				voutsAmount := int64(0)
+				customPrivacyTokenParam.Receiver, voutsAmount = transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"])
+
+				// get list custom token
+				listCustomTokens, err := rpcServer.config.BlockChain.ListPrivacyCustomToken()
+				if err != nil {
+					return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+				}
+				switch customPrivacyTokenParam.TokenTxType {
+				case transaction.CustomTokenTransfer:
+					{
+						tokenID, err := common.Hash{}.NewHashFromStr(customPrivacyTokenParam.PropertyID)
+						if err != nil {
+							return nil, NewRPCError(ErrRPCInvalidParams, err)
+						}
+						if _, ok := listCustomTokens[*tokenID]; !ok {
+							return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
+						}
+						outputTokens, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, tokenID)
+						if err != nil {
+							return nil, NewRPCError(ErrGetOutputCoin, err)
+						}
+						candidateOutputTokens, _, _, err := rpcServer.chooseBestOutCoinsToSpent(outputTokens, uint64(voutsAmount))
+						if err != nil {
+							return nil, NewRPCError(ErrGetOutputCoin, err)
+						}
+						intputToken := transaction.ConvertOutputCoinToInputCoin(candidateOutputTokens)
+						customPrivacyTokenParam.TokenInput = intputToken
+					}
+				case transaction.CustomTokenInit:
+					{
+						if customPrivacyTokenParam.Receiver[0].Amount != customPrivacyTokenParam.Amount { // Init with wrong max amount of custom token
+							return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Init with wrong max amount of property"))
+						}
+					}
+				}
+			}
 		}
 
 		// check real fee(nano constant) per tx
-		_, estimateFeeCoinPerKb, estimateTxSizeInKb = rpcServer.estimateFee(defaultFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, nil, nil)
+		_, estimateFeeCoinPerKb, estimateTxSizeInKb = rpcServer.estimateFee(defaultFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, customTokenParams, customPrivacyTokenParam)
 	}
 	result := jsonresult.EstimateFeeResult{
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
