@@ -31,3 +31,7 @@ func (lu *LoanUnlock) ValidateSanityData(bcr BlockchainRetriever, txr Transactio
 func (lu *LoanUnlock) ValidateMetadataByItself() bool {
 	return true
 }
+
+func (lu *LoanUnlock) CalculateSize() uint64 {
+	return calculateSize(lu)
+}

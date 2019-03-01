@@ -318,6 +318,12 @@ func (tx *TxCustomToken) GetTxActualSize() uint64 {
 		tokenDataSize += uint64(vout.PaymentAddress.Size())
 	}
 
+	// calculate metadata size if any
+	meta := tx.Metadata
+	if meta != nil {
+		tokenDataSize += meta.CalculateSize()
+	}
+
 	return normalTxSize + tokenDataSize
 }
 
