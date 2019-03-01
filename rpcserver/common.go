@@ -293,7 +293,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	// param #5: token params
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	tokenParams, listCustomTokens, err := rpcServer.buildCustomTokenParam(tokenParamsRaw, senderKeySet)
-	if err != nil {
+	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
 	/******* START choose output coins constant, which is used to create tx *****/
@@ -428,7 +428,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	// param #5: token params
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	tokenParams, listCustomTokens, err := rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
-	if err != nil {
+	if err.(*RPCError) != nil {
 		return nil, err
 	}
 	// aaa
