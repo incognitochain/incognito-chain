@@ -47,3 +47,7 @@ func (or *OracleReward) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
+func (or *OracleReward) CalculateSize() uint64 {
+	return calculateSize(or)
+}

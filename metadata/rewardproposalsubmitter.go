@@ -71,3 +71,7 @@ func (rewardGOVProposalSubmitterMetadata *RewardGOVProposalSubmitterMetadata) Va
 func (rewardGOVProposalSubmitterMetadata *RewardGOVProposalSubmitterMetadata) ValidateMetadataByItself() bool {
 	return true
 }
+
+func (rewardGOVProposalSubmitterMetadata *RewardGOVProposalSubmitterMetadata) CalculateSize() uint64 {
+	return calculateSize(rewardGOVProposalSubmitterMetadata)
+}

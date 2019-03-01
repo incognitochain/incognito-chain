@@ -46,6 +46,7 @@ func CreateBeaconGenesisBlock(
 		Height:              1,
 		Version:             1,
 		Round:               1,
+		Epoch:               1,
 		PrevBlockHash:       common.Hash{},
 		ValidatorsRoot:      common.Hash{},
 		BeaconCandidateRoot: common.Hash{},

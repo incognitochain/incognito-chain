@@ -41,18 +41,43 @@ func isGOVFundEnough(
 }
 
 // build actions from txs at shard
-func buildStabilityActions(txs []metadata.Transaction, bcr metadata.BlockchainRetriever, shardID byte) [][]string {
+func buildStabilityActions(
+	txs []metadata.Transaction,
+	bc *BlockChain,
+	shardID byte,
+) [][]string {
 	actions := [][]string{}
 	for _, tx := range txs {
 		meta := tx.GetMetadata()
 		if meta != nil {
-			actionPairs, err := meta.BuildReqActions(tx, bcr, shardID)
+			actionPairs, err := meta.BuildReqActions(tx, bc, shardID)
 			if err != nil {
 				continue
 			}
 			actions = append(actions, actionPairs...)
 		}
 	}
+
+	// Build stand-alone instructions
+	// Dividend proposals for DCB
+	forDCB := true
+	dcbInst, err := buildInstitutionDividendSubmitInst(bc, forDCB, shardID)
+	if err != nil {
+		fmt.Printf("[db] error building dividend submit tx for dcb: %v\n", err)
+	} else if len(dcbInst) > 0 {
+		fmt.Printf("[db] added divsub inst: %v\n", dcbInst)
+		actions = append(actions, dcbInst...)
+	}
+
+	// For GOV
+	forDCB = false
+	govInst, err := buildInstitutionDividendSubmitInst(bc, forDCB, shardID)
+	if err != nil {
+		fmt.Printf("[db] error building dividend submit tx for dcb: %v\n", err)
+	} else if len(govInst) > 0 {
+		actions = append(actions, govInst...)
+	}
+
 	return actions
 }
 
@@ -143,7 +168,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 	shardID byte,
 ) ([]metadata.Transaction, error) {
 	// TODO(@0xbunyip): refund bonds in multiple blocks since many refund instructions might come at once and UTXO picking order is not perfect
-	unspentTokenMap := map[string]([]transaction.TxTokenVout){}
+	unspentTokens := map[string]([]transaction.TxTokenVout){}
 	resTxs := []metadata.Transaction{}
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
@@ -167,7 +192,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					if err != nil {
 						return nil, err
 					}
-					tx, err := blockgen.buildPaymentForCrowdsale(paymentInst, unspentTokenMap, producerPrivateKey)
+					tx, err := blockgen.buildPaymentForCrowdsale(paymentInst, unspentTokens, producerPrivateKey)
 					if err != nil {
 						return nil, err
 					}

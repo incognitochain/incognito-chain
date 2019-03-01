@@ -111,6 +111,8 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockC
 		return false, nil
 	}
 
+	// TODO(@0xbunyip): validate DCBParams: LoanParams, SaleData, etc
+
 	raiseReserveData := submitDCBProposalMetadata.DCBParams.RaiseReserveData
 	for assetID, _ := range raiseReserveData {
 		if br.GetAssetPrice(&assetID) == 0 {
@@ -202,4 +204,8 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateSanityData(b
 
 func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateMetadataByItself() bool {
 	return true
+}
+
+func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) CalculateSize() uint64 {
+	return calculateSize(submitGOVProposalMetadata)
 }

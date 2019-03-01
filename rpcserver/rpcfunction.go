@@ -64,7 +64,7 @@ var RpcHandler = map[string]commandHandler{
 	CreateRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
 	SendRawCustomTokenTransaction:       RpcServer.handleSendRawCustomTokenTransaction,
 	CreateAndSendCustomTokenTransaction: RpcServer.handleCreateAndSendCustomTokenTransaction,
-	ListUnspentCustomToken:              RpcServer.handleListUnspentCustomTokenTransaction,
+	ListUnspentCustomToken:              RpcServer.handleListUnspentCustomToken,
 	ListCustomToken:                     RpcServer.handleListCustomToken,
 	CustomToken:                         RpcServer.handleCustomTokenDetail,
 	GetListCustomTokenBalance:           RpcServer.handleGetListCustomTokenBalance,
@@ -179,19 +179,19 @@ var RpcHandler = map[string]commandHandler{
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	ListAccounts:               RpcServer.handleListAccounts,
-	GetAccount:                 RpcServer.handleGetAccount,
-	GetAddressesByAccount:      RpcServer.handleGetAddressesByAccount,
-	GetAccountAddress:          RpcServer.handleGetAccountAddress,
-	DumpPrivkey:                RpcServer.handleDumpPrivkey,
-	ImportAccount:              RpcServer.handleImportAccount,
-	RemoveAccount:              RpcServer.handleRemoveAccount,
-	ListUnspentOutputCoins:     RpcServer.handleListUnspentOutputCoins,
-	GetBalance:                 RpcServer.handleGetBalance,
-	GetBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
-	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
-	GetReceivedByAccount:       RpcServer.handleGetReceivedByAccount,
-	SetTxFee:                   RpcServer.handleSetTxFee,
+	ListAccounts:                       RpcServer.handleListAccounts,
+	GetAccount:                         RpcServer.handleGetAccount,
+	GetAddressesByAccount:              RpcServer.handleGetAddressesByAccount,
+	GetAccountAddress:                  RpcServer.handleGetAccountAddress,
+	DumpPrivkey:                        RpcServer.handleDumpPrivkey,
+	ImportAccount:                      RpcServer.handleImportAccount,
+	RemoveAccount:                      RpcServer.handleRemoveAccount,
+	ListUnspentOutputCoins:             RpcServer.handleListUnspentOutputCoins,
+	GetBalance:                         RpcServer.handleGetBalance,
+	GetBalanceByPrivatekey:             RpcServer.handleGetBalanceByPrivatekey,
+	GetBalanceByPaymentAddress:         RpcServer.handleGetBalanceByPaymentAddress,
+	GetReceivedByAccount:               RpcServer.handleGetReceivedByAccount,
+	SetTxFee:                           RpcServer.handleSetTxFee,
 	GetRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
 }
 
@@ -484,8 +484,13 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 			}
 			paymentInfos = append(paymentInfos, paymentInfo)
 		}
+
+		// Check custom token param
+		if len(arrayParams) > 5 {
+		}
+
 		// check real fee(nano constant) per tx
-		_, estimateFeeCoinPerKb, estimateTxSizeInKb = rpcServer.estimateFee(defaultFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy)
+		_, estimateFeeCoinPerKb, estimateTxSizeInKb = rpcServer.estimateFee(defaultFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, nil, nil)
 	}
 	result := jsonresult.EstimateFeeResult{
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,

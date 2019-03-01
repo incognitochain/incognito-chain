@@ -123,11 +123,11 @@ func CreateSwapAction(pendingValidator []string, commitees []string, committeeSi
 	- Stake
 	- Stable param: set, del,...
 */
-func CreateShardInstructionsFromTransaction(transactions []metadata.Transaction, bcr metadata.BlockchainRetriever, shardID byte) (instructions [][]string) {
+func CreateShardInstructionsFromTransaction(transactions []metadata.Transaction, bc *BlockChain, shardID byte) (instructions [][]string) {
 	// Generate stake action
 	stakeShardPubKey := []string{}
 	stakeBeaconPubKey := []string{}
-	instructions = buildStabilityActions(transactions, bcr, shardID)
+	instructions = buildStabilityActions(transactions, bc, shardID)
 
 	for _, tx := range transactions {
 		switch tx.GetMetadataType() {
@@ -220,9 +220,10 @@ func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merkl
 		}
 		time++
 	}
-	// fmt.Println("merklePathShard", merklePathShard)
-	// fmt.Println("merkleShardRoot", merkleShardRoot)
 	merkleShardRoot = merkleData[len(merkleData)-1]
+	// fmt.Println("GetMerklePathCrossShard/merkleShardID", merkleData[sid])
+	// fmt.Println("GetMerklePathCrossShard/merklePathShard", merklePathShard)
+	// fmt.Println("GetMerklePathCrossShard/merkleShardRoot", merkleShardRoot)
 	return merklePathShard, merkleShardRoot
 }
 
@@ -230,21 +231,42 @@ func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merkl
 func VerifyCrossShardBlockUTXO(block *CrossShardBlock, merklePathShard []common.Hash) bool {
 	outCoins := block.CrossOutputCoin
 	tmpByte := []byte{}
-	for _, coin := range outCoins {
+	for _, outCoin := range outCoins {
+		// fmt.Println("VerifyCrossShardBlockUTXO/outCoin", outCoin)
+		// fmt.Println("VerifyCrossShardBlockUTXO/outCoin", outCoin.Bytes())
+		coin := &outCoin
+		// fmt.Println("VerifyCrossShardBlockUTXO/coin", coin)
+		// fmt.Println("VerifyCrossShardBlockUTXO/coin", coin.Bytes())
 		tmpByte = append(tmpByte, coin.Bytes()...)
 	}
+	// fmt.Printf("VerifyCrossShardBlockUTXO of shard %+v /VALUE TO HASH %+v \n", block.ToShardID, tmpByte)
 	finalHash := common.HashH(tmpByte)
-	for _, hash := range merklePathShard {
-		finalHash = common.HashH(append(finalHash.GetBytes(), hash.GetBytes()...))
-	}
-	return VerifyMerkleTree(finalHash, merklePathShard, block.Header.ShardTxRoot)
+	// fmt.Printf("VerifyCrossShardBlockUTXO of shard %+v /FINAL HASH VALUE %+v \n", block.ToShardID, finalHash)
+	// for _, hash := range merklePathShard {
+	// 	finalHash = common.HashH(append(finalHash.GetBytes(), hash.GetBytes()...))
+	// }
+	// fmt.Println("VerifyCrossShardBlockUTXO/merkleShardID", finalHash)
+	// fmt.Println("VerifyCrossShardBlockUTXO/merklePathShard", merklePathShard)
+	// fmt.Println("VerifyCrossShardBlockUTXO/merkleShardRoot", block.Header.ShardTxRoot)
+	return VerifyMerkleTree(finalHash, merklePathShard, block.Header.ShardTxRoot, block.ToShardID)
 }
 
-func VerifyMerkleTree(finalHash common.Hash, merklePath []common.Hash, merkleRoot common.Hash) bool {
+func VerifyMerkleTree(finalHash common.Hash, merklePath []common.Hash, merkleRoot common.Hash, receiverShardID byte) bool {
+	i := int(receiverShardID)
 	for _, hashPath := range merklePath {
-		finalHash = common.HashH(append(finalHash.GetBytes(), hashPath.GetBytes()...))
+		if i%2 == 0 {
+			finalHash = common.HashH(append(finalHash.GetBytes(), hashPath.GetBytes()...))
+		} else {
+			finalHash = common.HashH(append(hashPath.GetBytes(), finalHash.GetBytes()...))
+		}
+		i = i / 2
 	}
-	if finalHash != merkleRoot {
+	merkleRootString := merkleRoot.String()
+	// fmt.Println("VerifyMerkleTree/MerkleRoot", merkleRoot)
+	// fmt.Println("VerifyMerkleTree/merkleRootString", merkleRootString)
+	// fmt.Println("VerifyMerkleTree/finalHash", finalHash)
+	// fmt.Println("VerifyMerkleTree/finalHashString", finalHash.String())
+	if strings.Compare(finalHash.String(), merkleRootString) != 0 {
 		return false
 	} else {
 		return true
@@ -281,9 +303,13 @@ func getOutCoinHashEachShard(txList []metadata.Transaction) []common.Hash {
 		} else {
 			tmpByte := []byte{}
 			for _, coin := range outCoinEachShard[i] {
+				// fmt.Printf("getOutCoinHashEachShard of shard %+v /coin %+v \n", i, coin)
+				// fmt.Printf("getOutCoinHashEachShard of shard %+v/coin byte %+v \n", i, coin.Bytes())
 				tmpByte = append(tmpByte, coin.Bytes()...)
 			}
+			// fmt.Printf("getOutCoinHashEachShard of shard %+v /VALUE TO HASH %+v \n", i, tmpByte)
 			outputCoinHash[i] = common.HashH(tmpByte)
+			// fmt.Printf("getOutCoinHashEachShard of shard %+v /FINAL HASH VALUE %+v \n", i, outputCoinHash[i])
 		}
 	}
 	// fmt.Println("len of outputCoinHash", len(outputCoinHash))

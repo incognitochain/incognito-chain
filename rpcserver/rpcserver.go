@@ -190,6 +190,11 @@ func (rpcServer RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	// Keep track of the number of connected clients.
 	rpcServer.IncrementClients()
 	defer rpcServer.DecrementClients()

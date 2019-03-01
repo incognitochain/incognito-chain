@@ -86,3 +86,7 @@ func (ds *CMBDepositSend) ValidateSanityData(bcr BlockchainRetriever, txr Transa
 func (ds *CMBDepositSend) ValidateMetadataByItself() bool {
 	return true
 }
+
+func (ds *CMBDepositSend) CalculateSize() uint64 {
+	return calculateSize(ds)
+}

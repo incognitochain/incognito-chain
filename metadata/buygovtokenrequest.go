@@ -111,3 +111,7 @@ func (bgtr *BuyGOVTokenRequest) BuildReqActions(tx Transaction, bcr BlockchainRe
 	action := []string{strconv.Itoa(BuyGOVTokenRequestMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
+
+func (bgtr *BuyGOVTokenRequest) CalculateSize() uint64 {
+	return calculateSize(bgtr)
+}

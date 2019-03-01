@@ -105,6 +105,10 @@ out:
 						{
 							netSync.HandleMessageBFTMsg(msg)
 						}
+					case *wire.MessageBFTReq:
+						{
+							netSync.HandleMessageBFTMsg(msg)
+						}
 					case *wire.MessageBlockBeacon:
 						{
 							netSync.HandleMessageBlockBeacon(msg)
@@ -441,9 +445,6 @@ func (netSync *NetSync) HandleMessageGetShardToBeacon(msg *wire.MessageGetShardT
 				Logger.log.Error(err)
 				return
 			}
-			fmt.Println()
-			fmt.Println(index)
-			fmt.Println()
 			shardToBeaconBlk := blk.CreateShardToBeaconBlock(netSync.config.BlockChain)
 			msgShardBlk, err := wire.MakeEmptyMessage(wire.CmdBlkShardToBeacon)
 			if err != nil {
@@ -469,25 +470,48 @@ func (netSync *NetSync) HandleMessageGetCrossShard(msg *wire.MessageGetCrossShar
 	if msg.FromPool {
 		// netSync.config.CrossShardPool.GetBlock()
 	} else {
-		for _, blkHash := range msg.BlksHash {
-			blk, err := netSync.config.BlockChain.GetShardBlockByHash(&blkHash)
-			if err != nil {
-				Logger.log.Error(err)
-				return
-			}
+		if msg.ByHash {
+			for _, blkHash := range msg.BlksHash {
+				blk, err := netSync.config.BlockChain.GetShardBlockByHash(&blkHash)
+				if err != nil {
+					Logger.log.Error(err)
+					return
+				}
 
-			crossShardBlk, err := blk.CreateCrossShardBlock(msg.ToShardID)
-			if err != nil {
-				Logger.log.Error(err)
-				return
+				crossShardBlk, err := blk.CreateCrossShardBlock(msg.ToShardID)
+				if err != nil {
+					Logger.log.Error(err)
+					return
+				}
+				newMsg, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
+				if err != nil {
+					Logger.log.Error(err)
+					return
+				}
+				newMsg.(*wire.MessageCrossShard).Block = *crossShardBlk
+				netSync.config.Server.PushMessageToPeer(newMsg, peerID)
 			}
-			newMsg, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
-			if err != nil {
-				Logger.log.Error(err)
-				return
+		} else {
+			for _, blkHeight := range msg.BlksHeight {
+				blk, err := netSync.config.BlockChain.GetShardBlockByHeight(blkHeight, msg.FromShardID)
+				if err != nil {
+					Logger.log.Error(err)
+					continue
+				}
+
+				crossShardBlk, err := blk.CreateCrossShardBlock(msg.ToShardID)
+				if err != nil {
+					Logger.log.Error(err)
+					continue
+				}
+				newMsg, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
+				if err != nil {
+					Logger.log.Error(err)
+					continue
+				}
+				newMsg.(*wire.MessageCrossShard).Block = *crossShardBlk
+				netSync.config.Server.PushMessageToPeer(newMsg, peerID)
 			}
-			newMsg.(*wire.MessageCrossShard).Block = *crossShardBlk
-			netSync.config.Server.PushMessageToPeer(newMsg, peerID)
 		}
 	}
 }

@@ -125,3 +125,7 @@ func (cReq *ContractingRequest) BuildReqActions(tx Transaction, bcr BlockchainRe
 	action := []string{strconv.Itoa(ContractingRequestMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
+
+func (cReq *ContractingRequest) CalculateSize() uint64 {
+	return calculateSize(cReq)
+}
