@@ -46,3 +46,7 @@ func (bbRes *BuyBackResponse) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
+func (bbRes *BuyBackResponse) CalculateSize() uint64 {
+	return calculateSize(bbRes)
+}

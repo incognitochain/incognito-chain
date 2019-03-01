@@ -218,20 +218,20 @@ type SaleDCBTokensByUSDData struct {
 
 func NewRaiseReserveDataFromJson(data interface{}) map[common.Hash]*RaiseReserveData {
 	dataMap := data.(map[string]interface{})
-	raiseReserveMap := map[common.Hash]*RaiseReserveData{}
+	raiseReserveData := map[common.Hash]*RaiseReserveData{}
 	for key, value := range dataMap {
 		currencyType, err := common.NewHashFromStr(key)
 		if err != nil {
 			continue
 		}
-		valueMap := value.(map[string]interface{})
-		raiseReserveData := &RaiseReserveData{
-			EndBlock: uint64(valueMap["EndBlock"].(float64)),
-			Amount:   uint64(valueMap["Amount"].(float64)),
+		values := value.(map[string]interface{})
+		rd := &RaiseReserveData{
+			EndBlock: uint64(values["EndBlock"].(float64)),
+			Amount:   uint64(values["Amount"].(float64)),
 		}
-		raiseReserveMap[*currencyType] = raiseReserveData
+		raiseReserveData[*currencyType] = rd
 	}
-	return raiseReserveMap
+	return raiseReserveData
 }
 
 func (rrd *RaiseReserveData) Hash() *common.Hash {
@@ -243,21 +243,21 @@ func (rrd *RaiseReserveData) Hash() *common.Hash {
 
 func NewSpendReserveDataFromJson(data interface{}) map[common.Hash]*SpendReserveData {
 	dataMap := data.(map[string]interface{})
-	spendReserveMap := map[common.Hash]*SpendReserveData{}
+	spendReserveData := map[common.Hash]*SpendReserveData{}
 	for key, value := range dataMap {
 		currencyType, err := common.NewHashFromStr(key)
 		if err != nil {
 			continue
 		}
-		valueMap := value.(map[string]interface{})
-		spendReserveData := &SpendReserveData{
-			EndBlock:        uint64(valueMap["EndBlock"].(float64)),
-			ReserveMinPrice: uint64(valueMap["ReserveMinPrice"].(float64)),
-			Amount:          uint64(valueMap["Amount"].(float64)),
+		values := value.(map[string]interface{})
+		sd := &SpendReserveData{
+			EndBlock:        uint64(values["EndBlock"].(float64)),
+			ReserveMinPrice: uint64(values["ReserveMinPrice"].(float64)),
+			Amount:          uint64(values["Amount"].(float64)),
 		}
-		spendReserveMap[*currencyType] = spendReserveData
+		spendReserveData[*currencyType] = sd
 	}
-	return spendReserveMap
+	return spendReserveData
 }
 
 func (srd *SpendReserveData) Hash() *common.Hash {

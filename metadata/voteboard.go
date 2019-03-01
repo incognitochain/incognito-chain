@@ -19,3 +19,7 @@ func (voteBoardMetadata *VoteBoardMetadata) GetBytes() []byte {
 	record += string(common.Uint32ToBytes(voteBoardMetadata.BoardIndex))
 	return []byte(record)
 }
+
+func (voteGOVBoardMetadata *VoteGOVBoardMetadata) CalculateSize() uint64 {
+	return calculateSize(voteGOVBoardMetadata)
+}

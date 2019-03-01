@@ -83,3 +83,7 @@ func (msReg *MultiSigsRegistration) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
+func (msReg *MultiSigsRegistration) CalculateSize() uint64 {
+	return calculateSize(msReg)
+}

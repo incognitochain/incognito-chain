@@ -7,6 +7,23 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 )
 
+func BuildCoinbaseTx(
+	paymentAddress *privacy.PaymentAddress,
+	amount uint64,
+	producerPrivateKey *privacy.SpendingKey,
+	db database.DatabaseInterface,
+	meta metadata.Metadata,
+) (*Tx, error) {
+	tx := &Tx{}
+	// TODO(@0xbunyip): use another method that sets type to TxNormal (otherwise tx signature will be violated)
+	err := tx.InitTxSalary(amount, paymentAddress, producerPrivateKey, db, meta)
+	tx.Type = common.TxNormalType
+	if err != nil {
+		return nil, err
+	}
+	return tx, nil
+}
+
 func BuildCoinbaseTxs(
 	paymentAddresses []*privacy.PaymentAddress,
 	amounts []uint64,
@@ -22,9 +39,7 @@ func BuildCoinbaseTxs(
 		} else {
 			meta = metaList[i]
 		}
-		// TODO(@0xbunyip): check if txtype should be set to txnormal instead of txsalary
-		tx := new(Tx)
-		err := tx.InitTxSalary(amounts[i], paymentAddress, producerPrivateKey, db, meta)
+		tx, err := BuildCoinbaseTx(paymentAddress, amounts[i], producerPrivateKey, db, meta)
 		if err != nil {
 			return nil, err
 		}

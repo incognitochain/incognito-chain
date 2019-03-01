@@ -55,6 +55,7 @@ type BlockChain struct {
 		CurrentlySyncShardToBeaconBlkByHash   map[byte]*cache.Cache
 		CurrentlySyncShardToBeaconBlkByHeight map[byte]*cache.Cache
 		CurrentlySyncCrossShardBlkByHash      map[byte]*cache.Cache
+		CurrentlySyncCrossShardBlkByHeight    map[byte]*cache.Cache
 
 		PeersState     map[libp2p.ID]*peerState
 		PeersStateLock sync.Mutex
@@ -122,6 +123,7 @@ type Config struct {
 		PushMessageGetBlockShardToBeaconByHash(shardID byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
 
 		PushMessageGetBlockCrossShardByHash(fromShard byte, toShard byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
+		PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error
 	}
 	UserKeySet *cashec.KeySet
 }
@@ -362,6 +364,13 @@ func (blockchain *BlockChain) initBeaconState() error {
 		},
 	}
 
+	// Dividend
+	divAmounts := []uint64{100}
+	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.DividendAmount = divAmounts[0]
+	divKey := getDCBDividendKeyBeacon()
+	divValue := getDividendValueBeacon(divAmounts)
+	blockchain.BestState.Beacon.Params[divKey] = divValue
+
 	bondID, _ := common.NewHashFromStr("4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000")
 	buyBondSaleID := [32]byte{1}
 	sellBondSaleID := [32]byte{2}
@@ -371,20 +380,20 @@ func (blockchain *BlockChain) initBeaconState() error {
 			EndBlock:         1000,
 			BuyingAsset:      *bondID,
 			BuyingAmount:     100,
-			DefaultBuyPrice:  100,
+			DefaultBuyPrice:  100000, // $1 per bond in millicent
 			SellingAsset:     common.ConstantID,
-			SellingAmount:    150,
-			DefaultSellPrice: 100,
+			SellingAmount:    15000, // 150 CST in Nano
+			DefaultSellPrice: 1000,  // 1000 millicent per Nano
 		},
 		params.SaleData{
 			SaleID:           sellBondSaleID[:],
 			EndBlock:         2000,
 			BuyingAsset:      common.ConstantID,
-			BuyingAmount:     250,
-			DefaultBuyPrice:  100,
+			BuyingAmount:     25000, // 250 CST in Nano
+			DefaultBuyPrice:  1000,
 			SellingAsset:     *bondID,
 			SellingAmount:    200,
-			DefaultSellPrice: 100,
+			DefaultSellPrice: 100000,
 		},
 	}
 	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.ListSaleData = saleData
@@ -443,6 +452,9 @@ func (blockchain *BlockChain) initBeaconState() error {
 	}
 	if err := blockchain.config.DataBase.StoreBeaconBlock(blockchain.BestState.Beacon.BestBlock); err != nil {
 		Logger.log.Error("Error store beacon block", blockchain.BestState.Beacon.BestBlockHash, "in beacon chain")
+		return err
+	}
+	if err := blockchain.config.DataBase.StoreCommitteeByEpoch(initBlock.Header.Epoch, blockchain.BestState.Beacon.ShardCommittee); err != nil {
 		return err
 	}
 	blockHash := initBlock.Hash()
@@ -633,21 +645,23 @@ func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint,
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
-		pubkey := k
+		// Store SND of every transaction in this block
+		// UNCOMMENT: TO STORE SND WITH NON-CROSS SHARD TRANSACTION ONLY
+		// pubkey := k
+		// pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
+		// if err != nil {
+		// 	return err
+		// }
+		// lastByte := pubkeyBytes[len(pubkeyBytes)-1]
+		// pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
+		// if pubkeyShardID == shardID {
 		item1 := view.mapSnD[k]
-		pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
-		if err != nil {
-			return err
-		}
-		lastByte := pubkeyBytes[len(pubkeyBytes)-1]
-		pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
-		if pubkeyShardID == shardID {
-			for _, snd := range item1 {
-				err = blockchain.config.DataBase.StoreSNDerivators(view.tokenID, snd, view.shardID)
-				if err != nil {
-					return err
-				}
+		for _, snd := range item1 {
+			err := blockchain.config.DataBase.StoreSNDerivators(view.tokenID, snd, view.shardID)
+			if err != nil {
+				return err
 			}
+			// }
 		}
 	}
 
@@ -1313,9 +1327,7 @@ func (blockchain BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd
 
 // GetFeePerKbTx - return fee (per kb of tx) from GOV params data
 func (blockchain BlockChain) GetFeePerKbTx() uint64 {
-	// TODO: stability
-	// return blockchain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
-	return 0
+	return blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.FeePerKbTx
 }
 
 func (blockchain *BlockChain) GetCurrentBoardIndex(helper ConstitutionHelper) uint32 {
