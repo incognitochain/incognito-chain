@@ -36,8 +36,8 @@ func (bc *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
 }
 
 func (bc *BlockChain) processDividendPayment(receiversToRemove map[dividendPair][][]byte) error {
-	fmt.Printf("[db] remove divPay for %d users\n", len(receiversToRemove))
 	for pair, receivers := range receiversToRemove {
+		// fmt.Printf("[db] pair, rec: %+v %+v\n", pair, receivers)
 		// Get list of token holders left
 		paymentAddresses, amounts, _, _ := bc.config.DataBase.GetDividendReceiversForID(pair.DividendID, pair.ForDCB)
 
@@ -48,6 +48,7 @@ func (bc *BlockChain) processDividendPayment(receiversToRemove map[dividendPair]
 			remove := false
 			for _, pubkey := range receivers {
 				if bytes.Equal(pubkey, addr.Pk[:]) {
+					// fmt.Printf("[db] remove divRec %x, %d\n", pubkey, amounts[i])
 					remove = true
 					break
 				}
@@ -78,6 +79,7 @@ func (bc *BlockChain) ProcessDividendForBlock(block *ShardBlock) error {
 				ForDCB:     forDCB,
 			}
 			receiversToRemove[pair] = append(receiversToRemove[pair], receiver)
+			// fmt.Printf("[db] receiversToRemove: %x %x\n", receiversToRemove, receiver)
 		}
 	}
 	if len(receiversToRemove) > 0 {
