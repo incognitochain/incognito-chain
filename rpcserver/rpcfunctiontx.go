@@ -681,7 +681,7 @@ func (rpcServer RpcServer) handleHasSerialNumbers(params interface{}, closeChan 
 	tokenID := &common.Hash{}
 	tokenID.SetBytes(common.ConstantID[:]) // default is constant
 	if len(arrayParams) > 2 {
-		tokenID, err = (common.Hash{}).NewHashFromStr(arrayParams[1].(string))
+		tokenID, err = (common.Hash{}).NewHashFromStr(arrayParams[2].(string))
 		if err != nil {
 			return nil, NewRPCError(ErrListCustomTokenNotFound, err)
 		}
