@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
@@ -119,7 +120,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	}
 
 	//Update Cross shard pool: remove invalid block
-	blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.BestState.Shard[shardID].BestCrossShard.ShardHeight)
+	blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.BestState.Shard[shardID].BestCrossShard)
 	blockchain.config.CrossShardPool[shardID].UpdatePool()
 
 	//========Store new Beaconblock and new Beacon bestState
@@ -274,6 +275,12 @@ DO NOT USE THIS with GENESIS BLOCK
 - ALL Transaction in block
 */
 func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID byte) error {
+	//verify producer sig
+	blkHash := block.Header.Hash()
+	err := cashec.ValidateDataB58(block.Header.Producer, block.ProducerSig, blkHash.GetBytes())
+	if err != nil {
+		return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
+	}
 	//verify producer
 	producerPosition := (blockchain.BestState.Shard[shardID].ShardProposerIdx + block.Header.Round) % len(blockchain.BestState.Shard[shardID].ShardCommittee)
 	tempProducer := blockchain.BestState.Shard[shardID].ShardCommittee[producerPosition]
@@ -516,8 +523,7 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 		bestStateShard.BestBeaconHash = block.Header.BeaconHash
 	}
 	if block.Header.Height == 1 {
-		bestStateShard.BestCrossShard.ShardHeight = make(map[byte]uint64)
-		bestStateShard.BestCrossShard.BeaconHeight = make(map[byte]uint64)
+		bestStateShard.BestCrossShard = make(map[byte]uint64)
 	}
 	bestStateShard.BestBlock = block
 	bestStateShard.BestBlockHash = *block.Hash()
@@ -564,8 +570,7 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 	}
 	//Update best cross shard
 	for shardID, crossShardBlock := range block.Body.CrossOutputCoin {
-		bestStateShard.BestCrossShard.ShardHeight[shardID] = crossShardBlock[len(crossShardBlock)-1].BlockHeight
-		bestStateShard.BestCrossShard.BeaconHeight[shardID] = block.Header.BeaconHeight
+		bestStateShard.BestCrossShard[shardID] = crossShardBlock[len(crossShardBlock)-1].BlockHeight
 	}
 
 	Logger.log.Debugf("SHARD %+v | Finish update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())

@@ -167,3 +167,7 @@ func ParseLoanRequestActionValue(value string) ([]byte, *common.Hash, error) {
 	}
 	return data.LoanID, data.TxID, nil
 }
+
+func (lr *LoanRequest) CalculateSize() uint64 {
+	return calculateSize(lr)
+}

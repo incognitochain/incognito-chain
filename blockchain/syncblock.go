@@ -38,6 +38,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 	blockchain.syncStatus.CurrentlySyncShardToBeaconBlkByHash = make(map[byte]*cache.Cache)
 	blockchain.syncStatus.CurrentlySyncShardToBeaconBlkByHeight = make(map[byte]*cache.Cache)
 	blockchain.syncStatus.CurrentlySyncCrossShardBlkByHash = make(map[byte]*cache.Cache)
+	blockchain.syncStatus.CurrentlySyncCrossShardBlkByHeight = make(map[byte]*cache.Cache)
 
 	for _, shardID := range blockchain.config.RelayShards {
 		blockchain.SyncShard(shardID)
@@ -213,7 +214,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 					if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE {
 						for shardID, peer := range RCS.CrossShardBlks {
 							for peerID, blks := range peer {
-								blockchain.SyncBlkCrossShard(true, blks, shardID, userShardID, peerID)
+								blockchain.SyncBlkCrossShard(true, true, blks, nil, shardID, userShardID, peerID)
 							}
 						}
 					}
@@ -248,7 +249,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 				if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE {
 					for shardID, peer := range RCS.CrossShardBlks {
 						for peerID, blks := range peer {
-							blockchain.SyncBlkCrossShard(true, blks, shardID, userShardID, peerID)
+							blockchain.SyncBlkCrossShard(true, true, blks, nil, shardID, userShardID, peerID)
 						}
 					}
 				}
@@ -432,7 +433,6 @@ func (blockchain *BlockChain) SyncBlkShardToBeacon(shardID byte, byHash bool, ge
 		}
 	} else {
 		//Sync by height
-
 		if _, ok := blockchain.syncStatus.CurrentlySyncShardToBeaconBlkByHeight[shardID]; !ok {
 			blockchain.syncStatus.CurrentlySyncShardToBeaconBlkByHeight[shardID] = cache.New(defaultMaxBlockSyncTime, defaultCacheCleanupTime)
 		}
@@ -452,17 +452,32 @@ func (blockchain *BlockChain) SyncBlkShardToBeacon(shardID byte, byHash bool, ge
 }
 
 //SyncBlkCrossShard Send a req to sync crossShard block
-func (blockchain *BlockChain) SyncBlkCrossShard(getFromPool bool, blksHash []common.Hash, fromShard byte, toShard byte, peerID libp2p.ID) {
-	if _, ok := blockchain.syncStatus.CurrentlySyncCrossShardBlkByHash[fromShard]; !ok {
-		blockchain.syncStatus.CurrentlySyncCrossShardBlkByHash[fromShard] = cache.New(defaultMaxBlockSyncTime, defaultCacheCleanupTime)
-	}
-	cacheItems := blockchain.syncStatus.CurrentlySyncCrossShardBlkByHash[fromShard].Items()
-	blksNeedToGet := getBlkNeedToGetByHash(blksHash, cacheItems, peerID)
-	if len(blksNeedToGet) > 0 {
-		go blockchain.config.Server.PushMessageGetBlockCrossShardByHash(fromShard, toShard, blksNeedToGet, getFromPool, peerID)
-	}
-	for _, blkHash := range blksNeedToGet {
-		blockchain.syncStatus.CurrentlySyncCrossShardBlkByHash[fromShard].Add(blkHash.String(), time.Now().Unix(), defaultMaxBlockSyncTime)
+func (blockchain *BlockChain) SyncBlkCrossShard(getFromPool bool, byHash bool, blksHash []common.Hash, blksHeight []uint64, fromShard byte, toShard byte, peerID libp2p.ID) {
+	if byHash {
+		if _, ok := blockchain.syncStatus.CurrentlySyncCrossShardBlkByHash[fromShard]; !ok {
+			blockchain.syncStatus.CurrentlySyncCrossShardBlkByHash[fromShard] = cache.New(defaultMaxBlockSyncTime, defaultCacheCleanupTime)
+		}
+		cacheItems := blockchain.syncStatus.CurrentlySyncCrossShardBlkByHash[fromShard].Items()
+		blksNeedToGet := getBlkNeedToGetByHash(blksHash, cacheItems, peerID)
+		if len(blksNeedToGet) > 0 {
+			go blockchain.config.Server.PushMessageGetBlockCrossShardByHash(fromShard, toShard, blksNeedToGet, getFromPool, peerID)
+		}
+		for _, blkHash := range blksNeedToGet {
+			blockchain.syncStatus.CurrentlySyncCrossShardBlkByHash[fromShard].Add(blkHash.String(), time.Now().Unix(), defaultMaxBlockSyncTime)
+		}
+	} else {
+		//Sync by specific heights
+		if _, ok := blockchain.syncStatus.CurrentlySyncCrossShardBlkByHeight[fromShard]; !ok {
+			blockchain.syncStatus.CurrentlySyncCrossShardBlkByHeight[fromShard] = cache.New(defaultMaxBlockSyncTime, defaultCacheCleanupTime)
+		}
+		cacheItems := blockchain.syncStatus.CurrentlySyncCrossShardBlkByHeight[fromShard].Items()
+		blksNeedToGet := getBlkNeedToGetBySpecificHeight(blksHeight, cacheItems, peerID)
+		if len(blksNeedToGet) > 0 {
+			go blockchain.config.Server.PushMessageGetBlockCrossShardBySpecificHeight(fromShard, toShard, blksNeedToGet, getFromPool, peerID)
+		}
+		for _, blkHeight := range blksNeedToGet {
+			blockchain.syncStatus.CurrentlySyncCrossShardBlkByHeight[fromShard].Add(fmt.Sprint(blkHeight), time.Now().Unix(), defaultMaxBlockSyncTime)
+		}
 	}
 }
 

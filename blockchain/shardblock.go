@@ -99,6 +99,11 @@ func (shardBlock *ShardBlock) AddTransaction(tx metadata.Transaction) error {
 func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBlock {
 	block := ShardToBeaconBlock{}
 	block.AggregatedSig = blk.AggregatedSig
+
+	// block.ValidatorsIdx = make([][]int, 2)                                           //multi-node
+	// block.ValidatorsIdx[0] = append(block.ValidatorsIdx[0], blk.ValidatorsIdx[0]...) //multi-node
+	// block.ValidatorsIdx[1] = append(block.ValidatorsIdx[1], blk.ValidatorsIdx[1]...) //multi-node
+
 	block.R = blk.R
 	block.ProducerSig = blk.ProducerSig
 	block.Header = blk.Header
@@ -151,9 +156,9 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 	//Copy signature and header
 	crossShard.AggregatedSig = block.AggregatedSig
 
-	// crossShard.ValidatorsIdx = make([][]int, 2)
-	// crossShard.ValidatorsIdx[0] = append(crossShard.ValidatorsIdx[0], block.ValidatorsIdx[0]...)
-	// crossShard.ValidatorsIdx[1] = append(crossShard.ValidatorsIdx[1], block.ValidatorsIdx[1]...)
+	// crossShard.ValidatorsIdx = make([][]int, 2)                                                  //multi-node
+	// crossShard.ValidatorsIdx[0] = append(crossShard.ValidatorsIdx[0], block.ValidatorsIdx[0]...) //multi-node
+	// crossShard.ValidatorsIdx[1] = append(crossShard.ValidatorsIdx[1], block.ValidatorsIdx[1]...) //multi-node
 
 	crossShard.R = block.R
 	crossShard.ProducerSig = block.ProducerSig

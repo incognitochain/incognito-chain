@@ -369,3 +369,7 @@ func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) ValidateSanityData(Blo
 func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) ValidateMetadataByItself() bool {
 	return true
 }
+
+func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) CalculateSize() uint64 {
+	return calculateSize(punishDCBDecryptMetadata)
+}
