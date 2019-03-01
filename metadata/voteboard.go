@@ -17,3 +17,7 @@ func NewVoteBoardMetadata(candidatePaymentAddress privacy.PaymentAddress) *VoteB
 func (voteBoardMetadata *VoteBoardMetadata) GetBytes() []byte {
 	return voteBoardMetadata.CandidatePaymentAddress.Bytes()
 }
+
+func (voteGOVBoardMetadata *VoteGOVBoardMetadata) CalculateSize() uint64 {
+	return calculateSize(voteGOVBoardMetadata)
+}

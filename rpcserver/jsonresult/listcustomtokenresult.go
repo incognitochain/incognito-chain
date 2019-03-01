@@ -1,11 +1,15 @@
 package jsonresult
 
-import "github.com/ninjadotorg/constant/transaction"
+import (
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/transaction"
+)
 
 type CustomToken struct {
 	ID        string   `json:"ID"`
 	Name      string   `json:"Name"`
 	Symbol    string   `json:"Symbol"`
+	Image     string   `json:"Image"`
 	Amount    uint64   `json:"Amount"`
 	IsPrivacy bool     `json:"IsPrivacy"`
 	ListTxs   []string `json:"ListTxs"`
@@ -16,6 +20,7 @@ func (customToken *CustomToken) Init(obj transaction.TxCustomToken) {
 	customToken.Symbol = obj.TxTokenData.PropertySymbol
 	customToken.Name = obj.TxTokenData.PropertyName
 	customToken.Amount = obj.TxTokenData.Amount
+	customToken.Image = common.Render(obj.TxTokenData.PropertyID[:])
 }
 
 func (customToken *CustomToken) InitPrivacy(obj transaction.TxCustomTokenPrivacy) {

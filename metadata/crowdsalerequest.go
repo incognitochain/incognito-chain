@@ -166,3 +166,7 @@ func ParseCrowdsaleRequestActionValue(value string) ([]byte, uint64, bool, priva
 	}
 	return action.SaleID, action.PriceLimit, action.LimitSell, action.PaymentAddress, action.SentAmount, nil
 }
+
+func (csReq *CrowdsaleRequest) CalculateSize() uint64 {
+	return calculateSize(csReq)
+}

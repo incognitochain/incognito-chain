@@ -99,3 +99,7 @@ func (bbReq *BuyBackRequest) BuildReqActions(tx Transaction, bcr BlockchainRetri
 	action := []string{strconv.Itoa(BuyBackRequestMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
+
+func (bbReq *BuyBackRequest) CalculateSize() uint64 {
+	return calculateSize(bbReq)
+}

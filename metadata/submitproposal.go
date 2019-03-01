@@ -200,3 +200,7 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateSanityData(b
 func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateMetadataByItself() bool {
 	return true
 }
+
+func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) CalculateSize() uint64 {
+	return calculateSize(submitGOVProposalMetadata)
+}
