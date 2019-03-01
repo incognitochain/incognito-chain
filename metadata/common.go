@@ -94,19 +94,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &SubmitDCBProposalMetadata{}
 	case VoteDCBBoardMeta:
 		md = &VoteDCBBoardMetadata{}
-	case AcceptDCBProposalMeta:
-		md = &AcceptDCBProposalMetadata{}
-	case AcceptDCBBoardMeta:
-		md = &AcceptDCBBoardMetadata{}
-
 	case SubmitGOVProposalMeta:
 		md = &SubmitGOVProposalMetadata{}
 	case VoteGOVBoardMeta:
 		md = &VoteGOVBoardMetadata{}
-	case AcceptGOVProposalMeta:
-		md = &AcceptGOVProposalMetadata{}
-	case AcceptGOVBoardMeta:
-		md = &AcceptGOVBoardMetadata{}
 
 	case SendInitDCBVoteTokenMeta:
 		md = &SendInitDCBVoteTokenMetadata{}

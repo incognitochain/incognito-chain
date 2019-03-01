@@ -223,28 +223,26 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					}
 					resTxs = append(resTxs, txs...)
 
-				case metadata.AcceptDCBBoardMeta:
-					acceptDCBBoardIns := frombeaconins.TxAcceptDCBBoardIns{}
+				case metadata.AcceptDCBBoardIns:
+					acceptDCBBoardIns := frombeaconins.AcceptDCBBoardIns{}
 					err := json.Unmarshal([]byte(l[2]), &acceptDCBBoardIns)
 					if err != nil {
 						return nil, err
 					}
-					txs, err := acceptDCBBoardIns.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					err = blockgen.chain.UpdateDCBBoard(acceptDCBBoardIns)
 					if err != nil {
 						return nil, err
 					}
-					resTxs = append(resTxs, txs)
-				case metadata.AcceptGOVBoardMeta:
-					acceptGOVBoardIns := frombeaconins.TxAcceptGOVBoardIns{}
+				case metadata.AcceptGOVBoardIns:
+					acceptGOVBoardIns := frombeaconins.AcceptGOVBoardIns{}
 					err := json.Unmarshal([]byte(l[2]), &acceptGOVBoardIns)
 					if err != nil {
 						return nil, err
 					}
-					txs, err := acceptGOVBoardIns.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					err = blockgen.chain.UpdateGOVBoard(acceptGOVBoardIns)
 					if err != nil {
 						return nil, err
 					}
-					resTxs = append(resTxs, txs)
 				case metadata.SendBackTokenVoteFailMeta:
 					sendBackTokenVoteFail := frombeaconins.TxSendBackTokenVoteFailIns{}
 					err := json.Unmarshal([]byte(l[2]), &sendBackTokenVoteFail)
