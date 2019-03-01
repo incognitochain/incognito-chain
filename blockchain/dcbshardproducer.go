@@ -61,10 +61,12 @@ func (blockgen *BlkTmplGenerator) buildInstitutionDividendPaymentTxs(forDCB bool
 		return nil, err
 	}
 	if !hasValue {
+		fmt.Printf("[db] waiting for dividend submit tx\n")
 		return nil, nil // Waiting for Dividend submit tx to be included in block
 	}
 
 	if len(receivers) == 0 || len(amounts) == 0 {
+		fmt.Printf("[db] paid to all receivers\n")
 		return nil, nil // Paid to all receivers for the latest dividend proposal
 	}
 
@@ -73,9 +75,10 @@ func (blockgen *BlkTmplGenerator) buildInstitutionDividendPaymentTxs(forDCB bool
 	if !forDCB {
 		tokenID = &common.GOVTokenID
 	}
-	totalTokenOnAllShards, cstToPayout, err := blockgen.chain.BestState.Beacon.GetDividendAggregatedInfo(id, tokenID)
-	if err != nil {
-		return nil, err
+	totalTokenOnAllShards, cstToPayout, aggregated := blockgen.chain.BestState.Beacon.GetDividendAggregatedInfo(id, tokenID)
+	if !aggregated {
+		fmt.Printf("[db] waiting for aggregation\n")
+		return nil, nil // Waiting for beacon to aggregate dividend infos
 	}
 
 	// Make dividend payments to token holders
@@ -103,10 +106,11 @@ func (blockgen *BlkTmplGenerator) buildInstitutionDividendPaymentTxs(forDCB bool
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("[db] built divPays: %d\n", len(txs))
 	return txs, nil
 }
 
-func (blockgen *BlkTmplGenerator) buildDividendTxs(producerPrivateKey *privacy.SpendingKey, shardID byte) ([]metadata.Transaction, error) {
+func (blockgen *BlkTmplGenerator) buildDividendPaymentTxs(producerPrivateKey *privacy.SpendingKey, shardID byte) ([]metadata.Transaction, error) {
 	// Build dividend payments for DCB
 	forDCB := true
 	dcbDividendPaymentTxs, err := blockgen.buildInstitutionDividendPaymentTxs(forDCB, producerPrivateKey)
@@ -132,20 +136,16 @@ func (blockgen *BlkTmplGenerator) buildDividendTxs(producerPrivateKey *privacy.S
 	return txs, nil
 }
 
-func buildInstitutionDividendSubmitInst(
-	bc *BlockChain,
-	forDCB bool,
-	shardID byte,
-) ([][]string, error) {
+func (blockgen *BlkTmplGenerator) buildInstitutionDividendSubmitInst(forDCB bool, shardID byte) ([][]string, error) {
 	// Get latest dividend proposal id and amount
-	id, _ := bc.BestState.Beacon.GetLatestDividendProposal(forDCB)
+	id, _ := blockgen.chain.BestState.Beacon.GetLatestDividendProposal(forDCB)
 	if id == 0 {
 		// fmt.Printf("[db] no div proposal found: %t\n", forDCB)
 		return nil, nil // No Dividend proposal found
 	}
 
 	// Check in shard state if DividendSubmit tx has been created
-	_, _, hasValue, err := bc.config.DataBase.GetDividendReceiversForID(id, forDCB)
+	_, _, hasValue, err := blockgen.chain.config.DataBase.GetDividendReceiversForID(id, forDCB)
 	if err != nil {
 		fmt.Printf("[db] buildDivSub err: %v\n", err)
 		return nil, err
@@ -159,7 +159,7 @@ func buildInstitutionDividendSubmitInst(
 	if !forDCB {
 		tokenID = &common.GOVTokenID
 	}
-	totalTokenAmount, _, _, err := bc.GetAmountPerAccount(tokenID)
+	totalTokenAmount, _, _, err := blockgen.chain.GetAmountPerAccount(tokenID)
 	fmt.Printf("[db] buildDivSubmit: %t, %d, %d, %d\n", forDCB, id, totalTokenAmount, shardID)
 	if err != nil {
 		return nil, err
@@ -167,4 +167,30 @@ func buildInstitutionDividendSubmitInst(
 
 	// Create instruction
 	return metadata.BuildDividendSubmitInst(tokenID, id, totalTokenAmount, shardID)
+}
+
+func (blockgen *BlkTmplGenerator) buildDividendSubmitInsts(producerPrivateKey *privacy.SpendingKey, shardID byte) ([][]string, error) {
+	// Dividend proposals for DCB
+	submitInsts := [][]string{}
+	forDCB := true
+	dcbInst, err := blockgen.buildInstitutionDividendSubmitInst(forDCB, shardID)
+	if err != nil {
+		fmt.Printf("[db] error building dividend submit tx for dcb: %v\n", err)
+		return nil, err
+	} else if len(dcbInst) > 0 {
+		fmt.Printf("[db] added divsub inst: %v\n", dcbInst)
+		submitInsts = append(submitInsts, dcbInst...)
+	}
+
+	// For GOV
+	forDCB = false
+	govInst, err := blockgen.buildInstitutionDividendSubmitInst(forDCB, shardID)
+	if err != nil {
+		fmt.Printf("[db] error building dividend submit tx for dcb: %v\n", err)
+		return nil, err
+	} else if len(govInst) > 0 {
+		submitInsts = append(submitInsts, govInst...)
+	}
+
+	return submitInsts, nil
 }

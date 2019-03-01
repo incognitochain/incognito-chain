@@ -75,6 +75,16 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	if !reflect.DeepEqual(swapInstruction, []string{}) {
 		instructions = append(instructions, swapInstruction)
 	}
+
+	// Build stand-alone stability instructions
+	stabilityInsts, err := blockgen.buildDividendSubmitInsts(privatekey, shardID)
+	if err != nil {
+		return nil, err
+	}
+	if len(stabilityInsts) > 0 {
+		instructions = append(instructions, stabilityInsts...)
+	}
+
 	block := &ShardBlock{
 		Body: ShardBody{
 			CrossOutputCoin: crossOutputCoin,
@@ -179,7 +189,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 	}
 
 	// Process new dividend proposal and build new dividend payment txs
-	divTxs, err := blockgen.buildDividendTxs(privatekey, shardID)
+	divTxs, err := blockgen.buildDividendPaymentTxs(privatekey, shardID)
 	if err != nil {
 		return nil
 	}

@@ -13,8 +13,8 @@ const (
 	LoanUnlockMeta
 	LoanPaymentMeta
 
-	DividendPaymentMeta
 	DividendSubmitMeta
+	DividendPaymentMeta
 
 	CrowdsaleRequestMeta
 	CrowdsalePaymentMeta
