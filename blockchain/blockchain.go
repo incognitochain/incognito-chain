@@ -1340,9 +1340,7 @@ func (blockchain BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd
 
 // GetFeePerKbTx - return fee (per kb of tx) from GOV params data
 func (blockchain BlockChain) GetFeePerKbTx() uint64 {
-	// TODO: stability
-	// return blockchain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
-	return 0
+	return blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.FeePerKbTx
 }
 
 func (blockchain *BlockChain) GetCurrentBoardIndex(helper ConstitutionHelper) uint32 {
