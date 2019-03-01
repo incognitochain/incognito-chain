@@ -53,7 +53,7 @@ func (engine *Engine) Start() error {
 	engine.started = true
 	Logger.log.Info("Start consensus with key", engine.config.UserKeySet.GetPublicKeyB58())
 	fmt.Println(engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
-	go func() {
+	time.AfterFunc(DelayTime*time.Millisecond, func() {
 		currentPBFTBlkHeight := uint64(0)
 		currentPBFTRound := 1
 		prevRoundRole := ""
@@ -62,6 +62,7 @@ func (engine *Engine) Start() error {
 			case <-engine.cQuit:
 				return
 			default:
+
 				if engine.config.BlockChain.IsReady(false, 0) {
 					if prevRoundRole == common.BEACON_ROLE {
 						engine.config.BlockChain.InsertBlockFromPool()
@@ -81,7 +82,7 @@ func (engine *Engine) Start() error {
 					}
 					prevRoundRole = nodeRole
 
-					go engine.config.Server.UpdateConsensusState(nodeRole, engine.config.UserKeySet.GetPublicKeyB58(), nil, engine.config.BlockChain.BestState.Beacon.BeaconCommittee, engine.config.BlockChain.BestState.Beacon.ShardCommittee)
+					engine.config.Server.UpdateConsensusState(nodeRole, engine.config.UserKeySet.GetPublicKeyB58(), nil, engine.config.BlockChain.BestState.Beacon.BeaconCommittee, engine.config.BlockChain.BestState.Beacon.ShardCommittee)
 
 					fmt.Println()
 					fmt.Println()
@@ -93,6 +94,7 @@ func (engine *Engine) Start() error {
 					fmt.Println()
 					fmt.Println()
 					if userRole != common.EmptyString {
+
 						bftProtocol := &BFTProtocol{
 							cQuit:             engine.cQuit,
 							cBFTMsg:           engine.cBFTMsg,
@@ -259,7 +261,7 @@ func (engine *Engine) Start() error {
 				}
 			}
 		}
-	}()
+	})
 
 	return nil
 }
