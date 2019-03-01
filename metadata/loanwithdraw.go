@@ -99,3 +99,7 @@ func (lw *LoanWithdraw) ValidateSanityData(bcr BlockchainRetriever, txr Transact
 func (lw *LoanWithdraw) ValidateMetadataByItself() bool {
 	return true
 }
+
+func (lw *LoanWithdraw) CalculateSize() uint64 {
+	return calculateSize(lw)
+}
