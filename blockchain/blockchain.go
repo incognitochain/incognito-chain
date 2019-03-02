@@ -551,21 +551,23 @@ func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint,
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
-		pubkey := k
+		// Store SND of every transaction in this block
+		// UNCOMMENT: TO STORE SND WITH NON-CROSS SHARD TRANSACTION ONLY
+		// pubkey := k
+		// pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
+		// if err != nil {
+		// 	return err
+		// }
+		// lastByte := pubkeyBytes[len(pubkeyBytes)-1]
+		// pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
+		// if pubkeyShardID == shardID {
 		item1 := view.mapSnD[k]
-		pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
-		if err != nil {
-			return err
-		}
-		lastByte := pubkeyBytes[len(pubkeyBytes)-1]
-		pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
-		if pubkeyShardID == shardID {
-			for _, snd := range item1 {
-				err = blockchain.config.DataBase.StoreSNDerivators(view.tokenID, snd, view.shardID)
-				if err != nil {
-					return err
-				}
+		for _, snd := range item1 {
+			err := blockchain.config.DataBase.StoreSNDerivators(view.tokenID, snd, view.shardID)
+			if err != nil {
+				return err
 			}
+			// }
 		}
 	}
 
@@ -1346,9 +1348,7 @@ func (blockchain BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd
 
 // GetFeePerKbTx - return fee (per kb of tx) from GOV params data
 func (blockchain BlockChain) GetFeePerKbTx() uint64 {
-	// TODO: stability
-	// return blockchain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
-	return 0
+	return blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.FeePerKbTx
 }
 
 func (blockchain *BlockChain) GetCurrentBoardIndex(helper ConstitutionHelper) uint32 {
