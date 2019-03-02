@@ -58,6 +58,11 @@ type BlockChain struct {
 
 		PeersState     map[libp2p.ID]*peerState
 		PeersStateLock sync.Mutex
+		IsReady        struct {
+			sync.Mutex
+			Beacon bool
+			Shards map[byte]bool
+		}
 	}
 	knownChainState struct {
 		Shards map[byte]ChainState
@@ -105,8 +110,8 @@ type Config struct {
 
 	ShardToBeaconPool ShardToBeaconPool
 	CrossShardPool    map[byte]CrossShardPool
-	NodeBeaconPool    NodeBeaconPool
-	NodeShardPool     NodeShardPool
+	BeaconPool        BeaconPool
+	ShardPool         map[byte]ShardPool
 	TxPool            TxPool
 
 	Server interface {
@@ -156,26 +161,29 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.syncStatus.Shards = make(map[byte]struct{})
 	blockchain.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
 	blockchain.knownChainState.Shards = make(map[byte]ChainState)
+	blockchain.syncStatus.IsReady.Shards = make(map[byte]bool)
 	return nil
 }
 
 func (blockchain *BlockChain) AddTxPool(txpool TxPool) {
 	blockchain.config.TxPool = txpool
 }
-func (blockchain *BlockChain) InitShardToBeaconPool(db database.DatabaseInterface) {
-	beaconBestState := BestStateBeacon{}
-	temp, err := db.FetchBeaconBestState()
-	if err != nil {
-		panic("Fail to get state from db")
-	} else {
-		if err := json.Unmarshal(temp, &beaconBestState); err != nil {
-			Logger.log.Error(err)
-			panic("Can't Unmarshal beacon beststate")
-		}
-		blockchain.config.ShardToBeaconPool.SetShardState(beaconBestState.BestShardHeight)
-	}
 
-}
+//move this code to pool
+//func (blockchain *BlockChain) InitShardToBeaconPool(db database.DatabaseInterface) {
+//	beaconBestState := BestStateBeacon{}
+//	temp, err := db.FetchBeaconBestState()
+//	if err != nil {
+//		panic("Fail to get state from db")
+//	} else {
+//		if err := json.Unmarshal(temp, &beaconBestState); err != nil {
+//			Logger.log.Error(err)
+//			panic("Can't Unmarshal beacon beststate")
+//		}
+//		blockchain.config.ShardToBeaconPool.SetShardState(beaconBestState.BestShardHeight)
+//	}
+//
+//}
 
 // -------------- Blockchain retriever's implementation --------------
 // GetCustomTokenTxsHash - return list of tx which relate to custom token
@@ -1465,15 +1473,26 @@ func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privac
 	return result, nil
 }
 
-func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
-
+func (blockchain *BlockChain) SetReadyState(shard bool, shardID byte, ready bool) {
+	blockchain.syncStatus.IsReady.Lock()
+	defer blockchain.syncStatus.IsReady.Unlock()
 	if shard {
-		//TODO check shardChain ready
+		blockchain.syncStatus.IsReady.Shards[shardID] = ready
 	} else {
-		//TODO check beaconChain ready
+		blockchain.syncStatus.IsReady.Beacon = ready
 	}
+}
 
-	return true
+func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
+	blockchain.syncStatus.IsReady.Lock()
+	defer blockchain.syncStatus.IsReady.Unlock()
+	if shard {
+		if _, ok := blockchain.syncStatus.IsReady.Shards[shardID]; !ok {
+			return false
+		}
+		return blockchain.syncStatus.IsReady.Shards[shardID]
+	}
+	return blockchain.syncStatus.IsReady.Beacon
 }
 
 //func (blockchain *BlockChain) UpdateDividendPayout(block *Block) error {

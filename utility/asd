@@ -105,7 +105,7 @@ go build && ./constant --spendingkey "112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNh
 ./constant --nodemode "auto" --spendingkey "112t8s2UkZEwS7JtqLHFruRrh4Drj53UzH4A6DrairctKutxVb8Vw2DMzxCReYsAZkXi9ycaSNRHEcB7TJaTwPhyPvqRzu5NnUgTMN9AEKwo"  --datadir "data/shard-1" --listen "127.0.0.1:9434" --externaladdress "127.0.0.1:9434" --relayshards [0] --norpc
 
 
-./constant --nodemode "auto" --spendingkey "112t8rnYY8UbXGVJ3PsrWxssjr1JXaTPNCPDrneXcQgVQs2MFYwgCzPmTsgqPPbeq8c4QxkrjpHYRaG39ZjtwCmHMJBNh2MxaQvKWw5eUGTM" --nodemode "auto" --datadir "data/shard-2" --listen "127.0.0.1:9435" --externaladdress "127.0.0.1:9435"
+./constant --nodemode "auto" --spendingkey "112t8rnYY8UbXGVJ3PsrWxssjr1JXaTPNCPDrneXcQgVQs2MFYwgCzPmTsgqPPbeq8c4QxkrjpHYRaG39ZjtwCmHMJBNh2MxaQvKWw5eUGTM" --nodemode "auto" --datadir "data/shard-2" --listen "127.0.0.1:9435" --externaladdress "127.0.0.1:9435" --norpc
 
 
 
