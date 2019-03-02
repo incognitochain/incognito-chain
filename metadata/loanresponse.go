@@ -165,3 +165,7 @@ func ParseLoanResponseActionValue(values string) ([]byte, []byte, ValidLoanRespo
 	}
 	return loanID, sender, ValidLoanResponse(resp), nil
 }
+
+func (lr *LoanResponse) CalculateSize() uint64 {
+	return calculateSize(lr)
+}

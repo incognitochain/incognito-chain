@@ -100,7 +100,11 @@ func CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, shardID byte,
 }
 
 // EstimateTxSize returns the estimated size of the tx in kilobyte
-func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo, hasPrivacy bool) uint64 {
+func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo,
+	hasPrivacy bool, metadata metadata.Metadata,
+	customTokenParams *CustomTokenParamTx,
+	privacyCustomTokenParams *CustomTokenPrivacyParamTx) uint64 {
+
 	sizeVersion := uint64(1)  // int8
 	sizeType := uint64(5)     // string, max : 5
 	sizeLockTime := uint64(8) // int64
@@ -121,10 +125,66 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 
 	sizePubKeyLastByte := uint64(1)
 
-	// TODO 0xjackpolope
 	sizeMetadata := uint64(0)
+	if metadata != nil {
+		sizeMetadata += metadata.CalculateSize()
+	}
 
 	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeInfo + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte + sizeMetadata
+
+	// size of custom token data
+	if customTokenParams != nil {
+		customTokenDataSize := uint64(0)
+
+		customTokenDataSize += uint64(len(customTokenParams.PropertyID))
+		customTokenDataSize += uint64(len(customTokenParams.PropertySymbol))
+		customTokenDataSize += uint64(len(customTokenParams.PropertyName))
+
+		customTokenDataSize += 8 // for amount
+		customTokenDataSize += 4 // for TokenTxType
+
+		for _, out := range customTokenParams.Receiver {
+			customTokenDataSize += uint64(len(out.PaymentAddress.Bytes()))
+			customTokenDataSize += 8 //out.Value
+		}
+
+		for _, in := range customTokenParams.vins {
+			customTokenDataSize += uint64(len(in.PaymentAddress.Bytes()))
+			customTokenDataSize += uint64(len(in.TxCustomTokenID[:]))
+			customTokenDataSize += uint64(len(in.Signature))
+			customTokenDataSize += uint64(4) //in.VoutIndex
+		}
+		sizeTx += customTokenDataSize
+	}
+
+	// size of privacy custom token  data
+	if privacyCustomTokenParams != nil {
+		customTokenDataSize := uint64(0)
+
+		customTokenDataSize += uint64(len(privacyCustomTokenParams.PropertyID))
+		customTokenDataSize += uint64(len(privacyCustomTokenParams.PropertySymbol))
+		customTokenDataSize += uint64(len(privacyCustomTokenParams.PropertyName))
+
+		customTokenDataSize += 8 // for amount
+		customTokenDataSize += 4 // for TokenTxType
+
+		customTokenDataSize += uint64(1) // int8 version
+		customTokenDataSize += uint64(5) // string, max : 5 type
+		customTokenDataSize += uint64(8) // int64 locktime
+		customTokenDataSize += uint64(8) // uint64 fee
+
+		customTokenDataSize += uint64(64) // info
+
+		customTokenDataSize += uint64(privacy.SigPubKeySize)  // sig pubkey
+		customTokenDataSize += uint64(privacy.SigPrivacySize) // sig
+
+		// Proof
+		customTokenDataSize += zkp.EstimateProofSize(len(privacyCustomTokenParams.TokenInput), len(privacyCustomTokenParams.Receiver), true)
+
+		customTokenDataSize += uint64(1) //PubKeyLastByte
+
+		sizeTx += customTokenDataSize
+	}
 
 	return uint64(math.Ceil(float64(sizeTx) / 1024))
 }

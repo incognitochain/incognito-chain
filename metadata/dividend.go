@@ -86,3 +86,7 @@ func (div *Dividend) ValidateMetadataByItself() bool {
 func (div *Dividend) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	return true
 }
+
+func (div *Dividend) CalculateSize() uint64 {
+	return calculateSize(div)
+}

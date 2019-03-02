@@ -240,3 +240,7 @@ func (lc *CMBLoanContract) ValidateSanityData(bcr BlockchainRetriever, txr Trans
 func (lc *CMBLoanContract) ValidateMetadataByItself() bool {
 	return true
 }
+
+func (lc *CMBLoanContract) CalculateSize() uint64 {
+	return calculateSize(lc)
+}

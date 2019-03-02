@@ -74,3 +74,7 @@ func (creq *CMBInitRequest) ValidateMetadataByItself() bool {
 	// TODO(@0xbunyip)
 	return true
 }
+
+func (creq *CMBInitRequest) CalculateSize() uint64 {
+	return calculateSize(creq)
+}

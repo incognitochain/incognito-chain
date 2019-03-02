@@ -20,6 +20,8 @@ type ShardState struct {
 	CrossShard []byte
 }
 type BeaconBody struct {
+	// Shard State extract from shard to beacon block
+	// Store all shard state == store content of all shard to beacon block
 	ShardState   map[byte][]ShardState
 	Instructions [][]string // Random here
 }

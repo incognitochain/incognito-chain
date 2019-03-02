@@ -1,8 +1,9 @@
 package rpcserver
 
 import (
-	"errors"
 	"fmt"
+	"github.com/ninjadotorg/constant/transaction"
+	"github.com/pkg/errors"
 	"log"
 	"net"
 
@@ -56,6 +57,8 @@ var RpcHandler = map[string]commandHandler{
 	GetBlockProducerList:      RpcServer.handleGetBlockProducerList,
 	GetShardBestState:         RpcServer.handleGetShardBestState,
 	GetBeaconBestState:        RpcServer.handleGetBeaconBestState,
+	GetBeaconPoolState:        RpcServer.handleGetBeaconPoolState,
+	GetShardPoolState:         RpcServer.handleGetShardPoolState,
 	GetShardToBeaconPoolState: RpcServer.handleGetShardToBeaconPoolState,
 	GetCrossShardPoolState:    RpcServer.handleGetCrossShardPoolState,
 	CanPubkeyStake:            RpcServer.handleCanPubkeyStake,
@@ -64,7 +67,7 @@ var RpcHandler = map[string]commandHandler{
 	CreateRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
 	SendRawCustomTokenTransaction:       RpcServer.handleSendRawCustomTokenTransaction,
 	CreateAndSendCustomTokenTransaction: RpcServer.handleCreateAndSendCustomTokenTransaction,
-	ListUnspentCustomToken:              RpcServer.handleListUnspentCustomTokenTransaction,
+	ListUnspentCustomToken:              RpcServer.handleListUnspentCustomToken,
 	ListCustomToken:                     RpcServer.handleListCustomToken,
 	CustomToken:                         RpcServer.handleCustomTokenDetail,
 	GetListCustomTokenBalance:           RpcServer.handleGetListCustomTokenBalance,
@@ -168,19 +171,19 @@ var RpcHandler = map[string]commandHandler{
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	ListAccounts:               RpcServer.handleListAccounts,
-	GetAccount:                 RpcServer.handleGetAccount,
-	GetAddressesByAccount:      RpcServer.handleGetAddressesByAccount,
-	GetAccountAddress:          RpcServer.handleGetAccountAddress,
-	DumpPrivkey:                RpcServer.handleDumpPrivkey,
-	ImportAccount:              RpcServer.handleImportAccount,
-	RemoveAccount:              RpcServer.handleRemoveAccount,
-	ListUnspentOutputCoins:     RpcServer.handleListUnspentOutputCoins,
-	GetBalance:                 RpcServer.handleGetBalance,
-	GetBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
-	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
-	GetReceivedByAccount:       RpcServer.handleGetReceivedByAccount,
-	SetTxFee:                   RpcServer.handleSetTxFee,
+	ListAccounts:                       RpcServer.handleListAccounts,
+	GetAccount:                         RpcServer.handleGetAccount,
+	GetAddressesByAccount:              RpcServer.handleGetAddressesByAccount,
+	GetAccountAddress:                  RpcServer.handleGetAccountAddress,
+	DumpPrivkey:                        RpcServer.handleDumpPrivkey,
+	ImportAccount:                      RpcServer.handleImportAccount,
+	RemoveAccount:                      RpcServer.handleRemoveAccount,
+	ListUnspentOutputCoins:             RpcServer.handleListUnspentOutputCoins,
+	GetBalance:                         RpcServer.handleGetBalance,
+	GetBalanceByPrivatekey:             RpcServer.handleGetBalanceByPrivatekey,
+	GetBalanceByPaymentAddress:         RpcServer.handleGetBalanceByPaymentAddress,
+	GetReceivedByAccount:               RpcServer.handleGetReceivedByAccount,
+	SetTxFee:                           RpcServer.handleSetTxFee,
 	GetRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
 }
 
@@ -473,8 +476,27 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 			}
 			paymentInfos = append(paymentInfos, paymentInfo)
 		}
+
+		// Check custom token param
+		var customTokenParams *transaction.CustomTokenParamTx
+		var customPrivacyTokenParam *transaction.CustomTokenPrivacyParamTx
+		if len(arrayParams) > 4 {
+			// param #5: token params
+			tokenParamsRaw := arrayParams[4].(map[string]interface{})
+			privacy := tokenParamsRaw["Privacy"].(bool)
+			if !privacy {
+				// Check normal custom token param
+				customTokenParams, _, err = rpcServer.buildCustomTokenParam(tokenParamsRaw, senderKeySet)
+				return nil, err.(*RPCError)
+			} else {
+				// Check privacy custom token param
+				customPrivacyTokenParam, _, err = rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
+				return nil, err.(*RPCError)
+			}
+		}
+
 		// check real fee(nano constant) per tx
-		_, estimateFeeCoinPerKb, estimateTxSizeInKb = rpcServer.estimateFee(defaultFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy)
+		_, estimateFeeCoinPerKb, estimateTxSizeInKb = rpcServer.estimateFee(defaultFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, customTokenParams, customPrivacyTokenParam)
 	}
 	result := jsonresult.EstimateFeeResult{
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,

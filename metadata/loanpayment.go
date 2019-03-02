@@ -146,3 +146,7 @@ func (lp *LoanPayment) calculateInterestPaid(tx Transaction, bcr BlockchainRetri
 	}
 	return interestPaid, nil
 }
+
+func (lp *LoanPayment) CalculateSize() uint64 {
+	return calculateSize(lp)
+}
