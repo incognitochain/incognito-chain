@@ -17,34 +17,28 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 
-type BestCrossShard struct {
-	ShardHeight map[byte]uint64 `json:"shardHeight,omitempty"`
-	//Beacon height for cross shard
-	BeaconHeight map[byte]uint64 `json:"beaconHeight,omitempty"`
-}
-
 type BestStateShard struct {
-	BestBlockHash common.Hash `json:"BestBlockHash,omitempty"` // hash of block.
-	BestBlock     *ShardBlock `json:"BestBlock,omitempty"`     // block data
+	BestBlockHash common.Hash `json:"BestBlockHash"` // hash of block.
+	BestBlock     *ShardBlock `json:"BestBlock"`     // block data
 
-	BestBeaconHash        common.Hash `json:"BestBeaconHash,omitempty"`
-	BeaconHeight          uint64      `json:"BeaconHeight,omitempty"`
-	ShardID               byte        `json:"ShardID,omitempty"`
-	Epoch                 uint64      `json:"Epoch,omitempty"`
-	ShardHeight           uint64      `json:"ShardHeight,omitempty"`
-	ShardCommitteeSize    int         `json:"ShardCommitteeSize,omitempty"`
-	ShardProposerIdx      int         `json:"ShardProposerIdx,omitempty"`
-	ShardCommittee        []string    `json:"ShardCommittee,omitempty"`
-	ShardPendingValidator []string    `json:"ShardPendingValidator,omitempty"`
+	BestBeaconHash        common.Hash `json:"BestBeaconHash"`
+	BeaconHeight          uint64      `json:"BeaconHeight"`
+	ShardID               byte        `json:"ShardID"`
+	Epoch                 uint64      `json:"Epoch"`
+	ShardHeight           uint64      `json:"ShardHeight"`
+	ShardCommitteeSize    int         `json:"ShardCommitteeSize"`
+	ShardProposerIdx      int         `json:"ShardProposerIdx"`
+	ShardCommittee        []string    `json:"ShardCommittee"`
+	ShardPendingValidator []string    `json:"ShardPendingValidator"`
 
 	// Best cross shard block by height
-	BestCrossShard BestCrossShard `json:"BestCrossShard,omitempty"`
+	BestCrossShard map[byte]uint64 `json:"BestCrossShard"`
 
 	//TODO: verify if these information are needed or not
-	NumTxns   uint64 `json:"NumTxns,omitempty"`   // The number of txns in the block.
-	TotalTxns uint64 `json:"TotalTxns,omitempty"` // The total number of txns in the chain.
+	NumTxns   uint64 `json:"NumTxns"`   // The number of txns in the block.
+	TotalTxns uint64 `json:"TotalTxns"` // The total number of txns in the chain.
 
-	ActiveShards int `json:"ActiveShards,omitempty"`
+	ActiveShards int `json:"ActiveShards"`
 }
 
 // Get role of a public key base on best state shard
@@ -115,12 +109,9 @@ func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string, round int) st
 	return common.EmptyString
 }
 
-var bestStateShardMap map[byte]*BestStateShard
+var bestStateShardMap = make(map[byte]*BestStateShard)
 
 func GetBestStateShard(shardID byte) *BestStateShard {
-	if bestStateShardMap == nil {
-		bestStateShardMap = make(map[byte]*BestStateShard)
-	}
 
 	if bestStateShard, ok := bestStateShardMap[shardID]; ok != true {
 		bestStateShardMap[shardID] = &BestStateShard{}
@@ -129,7 +120,10 @@ func GetBestStateShard(shardID byte) *BestStateShard {
 	} else {
 		return bestStateShard
 	}
+}
 
+func SetBestStateShard(shardID byte, beststateShard *BestStateShard) {
+	bestStateShardMap[shardID] = beststateShard
 }
 
 func InitBestStateShard(shardID byte, netparam *Params) *BestStateShard {
@@ -142,7 +136,8 @@ func InitBestStateShard(shardID byte, netparam *Params) *BestStateShard {
 	bestStateShard.ShardCommitteeSize = netparam.ShardCommitteeSize
 	bestStateShard.ShardPendingValidator = []string{}
 	bestStateShard.ActiveShards = netparam.ActiveShards
-	bestStateShard.BestCrossShard = BestCrossShard{make(map[byte]uint64), make(map[byte]uint64)}
+	bestStateShard.BestCrossShard = make(map[byte]uint64)
+
 	bestStateShard.ShardHeight = 1
 	bestStateShard.BeaconHeight = 1
 

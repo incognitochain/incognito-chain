@@ -9,17 +9,20 @@ import (
 	- Agg Signature
 	- MerklePath
 */
-func (crossShardBlock *CrossShardBlock) VerifyCrossShardBlock(committees []string) error {
-	if err := ValidateAggSignature(crossShardBlock.ValidatorsIdx, committees, crossShardBlock.AggregatedSig, crossShardBlock.R, crossShardBlock.Hash()); err != nil {
+func (block *CrossShardBlock) VerifyCrossShardBlock(committees []string) error {
+	if err := ValidateAggSignature(block.ValidatorsIdx, committees, block.AggregatedSig, block.R, block.Hash()); err != nil {
 		return NewBlockChainError(SignatureError, err)
 	}
-	if ok := VerifyCrossShardBlockUTXO(crossShardBlock, crossShardBlock.MerklePathShard); !ok {
+	if ok := VerifyCrossShardBlockUTXO(block, block.MerklePathShard); !ok {
 		return NewBlockChainError(HashError, errors.New("verify Merkle Path Shard"))
 	}
 	return nil
 }
 
-func (self *CrossShardBlock) ShouldStoreBlock() bool {
-	// verify block aggregation
-	return true
-}
+// func (block *CrossShardBlock) ShouldAcceptBlock(committees []string) error {
+// 	// verify block aggregation
+// 	if err := ValidateAggSignature(block.ValidatorsIdx, committees, block.AggregatedSig, block.R, block.Hash()); err != nil {
+// 		return NewBlockChainError(SignatureError, err)
+// 	}
+// 	return nil
+// }
