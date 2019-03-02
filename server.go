@@ -42,10 +42,10 @@ type Server struct {
 	rpcServer       *rpcserver.RpcServer
 
 	memPool           *mempool.TxPool
-	beaconPool        *mempool.NodeBeaconPool
-	shardPool         *mempool.NodeShardPool
+	beaconPool        *mempool.BeaconPool
+	shardPool         map[byte]blockchain.ShardPool
 	shardToBeaconPool *mempool.ShardToBeaconPool
-	crossShardPool    *mempool.CrossShardPool
+	crossShardPool    map[byte]blockchain.CrossShardPool
 
 	waitGroup       sync.WaitGroup
 	netSync         *netsync.NetSync
@@ -146,12 +146,13 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			Logger.log.Error(err)
 		}
 	}
-	serverObj.beaconPool = &mempool.NodeBeaconPool{}
-	serverObj.shardPool = &mempool.NodeShardPool{}
-	serverObj.shardToBeaconPool = mempool.GetShardToBeaconPool()
-	serverObj.crossShardPool = &mempool.CrossShardPool{}
+	serverObj.beaconPool = &mempool.BeaconPool{}
 
+	serverObj.shardToBeaconPool = mempool.GetShardToBeaconPool()
+	serverObj.crossShardPool = make(map[byte]blockchain.CrossShardPool)
+	serverObj.shardPool = make(map[byte]blockchain.ShardPool)
 	serverObj.blockChain = &blockchain.BlockChain{}
+
 	relayShards := []byte{}
 	for index := 0; index < len(cfg.RelayShards); index += 2 {
 		s, _ := strconv.Atoi(fmt.Sprintf("%c", byte(cfg.RelayShards[index])))
@@ -163,8 +164,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		Interrupt:         interrupt,
 		RelayShards:       relayShards,
 		Wallet:            serverObj.wallet,
-		NodeBeaconPool:    serverObj.beaconPool,
-		NodeShardPool:     serverObj.shardPool,
+		BeaconPool:        serverObj.beaconPool,
+		ShardPool:         serverObj.shardPool,
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		CrossShardPool:    serverObj.crossShardPool,
 		Server:            serverObj,
@@ -175,8 +176,15 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	if err != nil {
 		return err
 	}
+	//init beacon pol
+	mempool.InitBeaconPool()
+	//init shard pool
+	mempool.InitShardPool(serverObj.shardPool)
+	//init cross shard pool
+	mempool.InitCrossShardPool(serverObj.crossShardPool, db)
 
-	serverObj.blockChain.InitShardToBeaconPool(db)
+	//init shard to beacon bool
+	mempool.InitShardToBeaconPool()
 
 	// TODO: 0xbahamooth Search for a feeEstimator state in the database. If none can be found
 	// or if it cannot be loaded, create a new one.
@@ -244,12 +252,14 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	// Init consensus engine
 	serverObj.consensusEngine, err = constantbft.Engine{}.Init(&constantbft.EngineConfig{
-		ChainParams: serverObj.chainParams,
-		BlockChain:  serverObj.blockChain,
-		Server:      serverObj,
-		BlockGen:    serverObj.blockgen,
-		NodeMode:    cfg.NodeMode,
-		UserKeySet:  serverObj.userKeySet,
+		CrossShardPool:    serverObj.crossShardPool,
+		ShardToBeaconPool: serverObj.shardToBeaconPool,
+		ChainParams:       serverObj.chainParams,
+		BlockChain:        serverObj.blockChain,
+		Server:            serverObj,
+		BlockGen:          serverObj.blockgen,
+		NodeMode:          cfg.NodeMode,
+		UserKeySet:        serverObj.userKeySet,
 	})
 	if err != nil {
 		return err
@@ -315,22 +325,21 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		}
 
 		rpcConfig := rpcserver.RpcServerConfig{
-			Listenters:    rpcListeners,
-			RPCQuirks:     cfg.RPCQuirks,
-			RPCMaxClients: cfg.RPCMaxClients,
-			ChainParams:   chainParams,
-			BlockChain:    serverObj.blockChain,
-			TxMemPool:     serverObj.memPool,
-			Server:        serverObj,
-			Wallet:        serverObj.wallet,
-			ConnMgr:       serverObj.connManager,
-			AddrMgr:       serverObj.addrManager,
-			RPCUser:       cfg.RPCUser,
-			RPCPass:       cfg.RPCPass,
-			RPCLimitUser:  cfg.RPCLimitUser,
-			RPCLimitPass:  cfg.RPCLimitPass,
-			DisableAuth:   cfg.RPCDisableAuth,
-			// IsGenerateNode:  cfg.Generate,
+			Listenters:      rpcListeners,
+			RPCQuirks:       cfg.RPCQuirks,
+			RPCMaxClients:   cfg.RPCMaxClients,
+			ChainParams:     chainParams,
+			BlockChain:      serverObj.blockChain,
+			TxMemPool:       serverObj.memPool,
+			Server:          serverObj,
+			Wallet:          serverObj.wallet,
+			ConnMgr:         serverObj.connManager,
+			AddrMgr:         serverObj.addrManager,
+			RPCUser:         cfg.RPCUser,
+			RPCPass:         cfg.RPCPass,
+			RPCLimitUser:    cfg.RPCLimitUser,
+			RPCLimitPass:    cfg.RPCLimitPass,
+			DisableAuth:     cfg.RPCDisableAuth,
 			NodeMode:        cfg.NodeMode,
 			FeeEstimator:    serverObj.feeEstimator,
 			ProtocolVersion: serverObj.protocolVersion,
@@ -1148,10 +1157,33 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 	if err != nil {
 		return err
 	}
+	msg.(*wire.MessageGetCrossShard).ByHash = true
 	msg.(*wire.MessageGetCrossShard).FromPool = getFromPool
 	msg.(*wire.MessageGetCrossShard).FromShardID = fromShard
 	msg.(*wire.MessageGetCrossShard).ToShardID = toShard
 	msg.(*wire.MessageGetCrossShard).BlksHash = blksHash
+	msg.(*wire.MessageGetCrossShard).Timestamp = time.Now().Unix()
+	msg.SetSenderID(listener.PeerID)
+	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
+	if peerID == "" {
+		return serverObj.PushMessageToShard(msg, fromShard)
+	}
+	return serverObj.PushMessageToPeer(msg, peerID)
+
+}
+
+func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error {
+	Logger.log.Debugf("Send a GetCrossShard")
+	listener := serverObj.connManager.Config.ListenerPeer
+	msg, err := wire.MakeEmptyMessage(wire.CmdGetCrossShard)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessageGetCrossShard).ByHash = false
+	msg.(*wire.MessageGetCrossShard).FromPool = getFromPool
+	msg.(*wire.MessageGetCrossShard).FromShardID = fromShard
+	msg.(*wire.MessageGetCrossShard).ToShardID = toShard
+	msg.(*wire.MessageGetCrossShard).BlksHeight = blksHeight
 	msg.(*wire.MessageGetCrossShard).Timestamp = time.Now().Unix()
 	msg.SetSenderID(listener.PeerID)
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)

@@ -124,3 +124,7 @@ func (msSpending *MultiSigsSpending) VerifyMultiSigs(
 	}
 	return true, nil
 }
+
+func (msSpending *MultiSigsSpending) CalculateSize() uint64 {
+	return calculateSize(msSpending)
+}

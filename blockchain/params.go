@@ -38,8 +38,8 @@ type IcoParams struct {
 // FOR TESTNET
 const (
 	TestNetShardsNum           = 4
-	TestNetShardCommitteeSize  = 1
-	TestNetBeaconCommitteeSize = 1
+	TestNetShardCommitteeSize  = 3
+	TestNetBeaconCommitteeSize = 3
 	TestNetActiveShards        = 2
 )
 

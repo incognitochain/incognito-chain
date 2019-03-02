@@ -58,3 +58,7 @@ func (cref *CMBInitRefund) ValidateSanityData(bcr BlockchainRetriever, txr Trans
 func (cref *CMBInitRefund) ValidateMetadataByItself() bool {
 	return true
 }
+
+func (cref *CMBInitRefund) CalculateSize() uint64 {
+	return calculateSize(cref)
+}

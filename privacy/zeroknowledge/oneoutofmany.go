@@ -427,6 +427,11 @@ func (proof *OneOutOfManyProof) Verify() bool {
 
 	rightPoint3 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zd, privacy.SK)
 
+	fmt.Printf("Leftpoint3: %v\n", leftPoint3.Compress())
+	fmt.Printf("RightPoint3: %v\n", rightPoint3.Compress())
+
+	fmt.Printf("Leftpoint32: %v\n", leftPoint32.Compress())
+
 	fmt.Printf("ERR3\n")
 
 	return leftPoint3.IsEqual(rightPoint3)

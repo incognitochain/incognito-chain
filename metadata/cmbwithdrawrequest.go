@@ -78,3 +78,7 @@ func (cwr *CMBWithdrawRequest) ValidateMetadataByItself() bool {
 	// TODO(@0xbunyip)
 	return true
 }
+
+func (cwr *CMBWithdrawRequest) CalculateSize() uint64 {
+	return calculateSize(cwr)
+}

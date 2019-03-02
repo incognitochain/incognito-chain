@@ -43,6 +43,10 @@ type DatabaseInterface interface {
 	FetchBeaconBlockChain() ([]*common.Hash, error)
 	DeleteBeaconBlock(*common.Hash, uint64) error
 
+	//Crossshard
+	StoreCrossShardNextHeight(byte, byte, uint64, uint64) error
+	FetchCrossShardNextHeight(byte, byte, uint64) (uint64, error)
+
 	// Block index
 	StoreShardBlockIndex(*common.Hash, uint64, byte) error
 	GetIndexOfBlock(*common.Hash) (uint64, byte, error)
@@ -64,8 +68,11 @@ type DatabaseInterface interface {
 
 	// Best state of chain
 	StoreBeaconBestState(interface{}) error
-	StoreBeaconCommitteeByHeight(uint64, interface{}) error
-	FetchBeaconCommitteeByHeight(uint64) ([]byte, error)
+	StoreCommitteeByHeight(uint64, interface{}) error
+	StoreCommitteeByEpoch(uint64, interface{}) error
+	FetchCommitteeByHeight(uint64) ([]byte, error)
+	FetchCommitteeByEpoch(uint64) ([]byte, error)
+	HasCommitteeByEpoch(uint64) (bool, error)
 	FetchBeaconBestState() ([]byte, error)
 	CleanBeaconBestState() error
 
@@ -104,7 +111,7 @@ type DatabaseInterface interface {
 	StoreCustomTokenTx(tokenID *common.Hash, shardID byte, blockHeight uint64, txIndex int32, data []byte) error // store custom token tx. Param: tokenID, shardID, block height, tx-id, data tx
 	ListCustomToken() ([][]byte, error)                                                                          // get list all custom token which issued in network
 	CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error)                                                 // from token id get all custom txs
-	GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddress []byte) (map[string]string, error)             // get list of utxo of an paymentaddress.pubkey of a token
+	GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddress []byte) (map[string]string, error)     // get list of utxo of an paymentaddress.pubkey of a token
 	GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error)                       // get balance of all paymentaddress of a token (only return payment address with balance > 0)
 	UpdateRewardAccountUTXO(tokenID *common.Hash, paymentAddress []byte, txHash *common.Hash, voutIndex int) error
 	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error) // get all paymentaddress owner that have balance > 0 of a custom token

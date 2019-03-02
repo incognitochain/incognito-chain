@@ -441,28 +441,30 @@ func loadConfig() (*config, []string, error) {
 		cfg.Listener = net.JoinHostPort("", activeNetParams.DefaultPort)
 	}
 
-	if cfg.RPCUser == cfg.RPCLimitUser && cfg.RPCUser != "" {
-		str := "%s: --rpcuser and --rpclimituser must not specify the same username"
-		err := fmt.Errorf(str, funcName)
-		fmt.Fprintln(os.Stderr, err)
-		fmt.Fprintln(os.Stderr, usageMessage)
-		return nil, nil, err
-	}
+	if !cfg.RPCDisableAuth {
+		if cfg.RPCUser == cfg.RPCLimitUser && cfg.RPCUser != "" {
+			str := "%s: --rpcuser and --rpclimituser must not specify the same username"
+			err := fmt.Errorf(str, funcName)
+			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, usageMessage)
+			return nil, nil, err
+		}
 
-	// Check to make sure limited and admin users don't have the same password
-	if cfg.RPCPass == cfg.RPCLimitPass && cfg.RPCPass != "" {
-		str := "%s: --rpcpass and --rpclimitpass must not specify the same password"
-		err := fmt.Errorf(str, funcName)
-		fmt.Fprintln(os.Stderr, err)
-		fmt.Fprintln(os.Stderr, usageMessage)
-		return nil, nil, err
-	}
+		// Check to make sure limited and admin users don't have the same password
+		if cfg.RPCPass == cfg.RPCLimitPass && cfg.RPCPass != "" {
+			str := "%s: --rpcpass and --rpclimitpass must not specify the same password"
+			err := fmt.Errorf(str, funcName)
+			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, usageMessage)
+			return nil, nil, err
+		}
 
-	// The RPC server is disabled if no username or password is provided.
-	if (cfg.RPCUser == "" || cfg.RPCPass == "") &&
-		(cfg.RPCLimitUser == "" || cfg.RPCLimitPass == "") {
-		Logger.log.Info("The RPC server is disabled if no username or password is provided.")
-		cfg.DisableRPC = true
+		// The RPC server is disabled if no username or password is provided.
+		if (cfg.RPCUser == "" || cfg.RPCPass == "") &&
+			(cfg.RPCLimitUser == "" || cfg.RPCLimitPass == "") {
+			Logger.log.Info("The RPC server is disabled if no username or password is provided.")
+			cfg.DisableRPC = true
+		}
 	}
 
 	if cfg.DisableRPC {
