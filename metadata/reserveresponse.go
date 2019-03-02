@@ -103,3 +103,7 @@ func (cr *ReserveResponse) ValidateMetadataByItself() bool {
 func (cr *ReserveResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	return true
 }
+
+func (cr *ReserveResponse) CalculateSize() uint64 {
+	return calculateSize(cr)
+}
