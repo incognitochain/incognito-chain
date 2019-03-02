@@ -42,8 +42,8 @@ type Server struct {
 	rpcServer       *rpcserver.RpcServer
 
 	memPool           *mempool.TxPool
-	beaconPool        *mempool.NodeBeaconPool
-	shardPool         *mempool.NodeShardPool
+	beaconPool        *mempool.BeaconPool
+	shardPool         map[byte]blockchain.ShardPool
 	shardToBeaconPool *mempool.ShardToBeaconPool
 	crossShardPool    map[byte]blockchain.CrossShardPool
 
@@ -146,11 +146,11 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			Logger.log.Error(err)
 		}
 	}
-	serverObj.beaconPool = &mempool.NodeBeaconPool{}
-	serverObj.shardPool = &mempool.NodeShardPool{}
+	serverObj.beaconPool = &mempool.BeaconPool{}
+
 	serverObj.shardToBeaconPool = mempool.GetShardToBeaconPool()
 	serverObj.crossShardPool = make(map[byte]blockchain.CrossShardPool)
-
+	serverObj.shardPool = make(map[byte]blockchain.ShardPool)
 	serverObj.blockChain = &blockchain.BlockChain{}
 
 	relayShards := []byte{}
@@ -164,8 +164,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		Interrupt:         interrupt,
 		RelayShards:       relayShards,
 		Wallet:            serverObj.wallet,
-		NodeBeaconPool:    serverObj.beaconPool,
-		NodeShardPool:     serverObj.shardPool,
+		BeaconPool:        serverObj.beaconPool,
+		ShardPool:         serverObj.shardPool,
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		CrossShardPool:    serverObj.crossShardPool,
 		Server:            serverObj,
@@ -176,13 +176,15 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	if err != nil {
 		return err
 	}
-
+	//init beacon pol
+	mempool.InitBeaconPool()
+	//init shard pool
+	mempool.InitShardPool(serverObj.shardPool)
 	//init cross shard pool
-
 	mempool.InitCrossShardPool(serverObj.crossShardPool, db)
 
 	//init shard to beacon bool
-	serverObj.blockChain.InitShardToBeaconPool(db)
+	mempool.InitShardToBeaconPool()
 
 	// TODO: 0xbahamooth Search for a feeEstimator state in the database. If none can be found
 	// or if it cannot be loaded, create a new one.
