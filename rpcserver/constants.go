@@ -53,6 +53,9 @@ const (
 	GetShardBestState  = "getshardbeststate"
 	GetBeaconBestState = "getbeaconbeststate"
 
+	GetBeaconPoolState = "getbeaconpoolstate"
+	GetShardPoolState  = "getshardpoolstate"
+
 	GetShardToBeaconPoolState = "getshardtobeaconpoolstate"
 	GetCrossShardPoolState    = "getcrossshardpoolstate"
 
