@@ -100,3 +100,7 @@ func GetValidStaker(committees []string, stakers []string) []string {
 	}
 	return validStaker
 }
+
+func (sm *StakingMetadata) CalculateSize() uint64 {
+	return calculateSize(sm)
+}

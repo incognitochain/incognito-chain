@@ -251,7 +251,7 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 		// currentBestCrossShardForThisBlock := currentBestCrossShard.ShardHeight[crossShardID]
 		index := 0
 		for _, blk := range crossShardBlock {
-			if blk.Header.Height <= blockgen.chain.BestState.Shard[shardID].BestCrossShard.ShardHeight[blk.Header.ShardID] {
+			if blk.Header.Height <= blockgen.chain.BestState.Shard[shardID].BestCrossShard[blk.Header.ShardID] {
 				break
 			}
 			temp, err := blockgen.chain.config.DataBase.FetchCommitteeByEpoch(blk.Header.Epoch)
@@ -263,6 +263,7 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 			err = blk.VerifyCrossShardBlock(shardCommittee[blk.Header.ShardID])
 			fmt.Println("ShardProducer/VerifyCrossShardBlock", err == nil)
 			if err != nil {
+				fmt.Println("Shard Producer/FAIL TO Verify Crossshard block", err)
 				break
 			}
 			index++
@@ -319,15 +320,16 @@ func (blockgen *BlkTmplGenerator) getCrossOutputCoin(shardID byte, lastBeaconHei
 func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	sourceTxns := blockgen.txPool.MiningDescs()
 
+	//TODO: UNCOMMENT To avoid produce too many empty block
 	// get tx and wait for more if not enough
-	if len(sourceTxns) < common.MinTxsInBlock {
-		<-time.Tick(common.MinBlockWaitTime * time.Second)
-		sourceTxns = blockgen.txPool.MiningDescs()
-		if len(sourceTxns) == 0 {
-			<-time.Tick(common.MaxBlockWaitTime * time.Second)
-			sourceTxns = blockgen.txPool.MiningDescs()
-		}
-	}
+	// if len(sourceTxns) < common.MinTxsInBlock {
+	// 	<-time.Tick(common.MinBlockWaitTime * time.Second)
+	// 	sourceTxns = blockgen.txPool.MiningDescs()
+	// 	if len(sourceTxns) == 0 {
+	// 		<-time.Tick(common.MaxBlockWaitTime * time.Second)
+	// 		sourceTxns = blockgen.txPool.MiningDescs()
+	// 	}
+	// }
 
 	//TODO: sort transaction base on fee and check limit block size
 	// StartingPriority, fee, size, time

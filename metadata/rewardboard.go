@@ -53,3 +53,7 @@ func (rewardShareOldBoardMetadata *RewardShareOldBoardMetadata) ValidateSanityDa
 func (rewardShareOldBoardMetadata *RewardShareOldBoardMetadata) ValidateMetadataByItself() bool {
 	return true
 }
+
+func (rewardShareOldBoardMetadata *RewardShareOldBoardMetadata) CalculateSize() uint64 {
+	return calculateSize(rewardShareOldBoardMetadata)
+}
