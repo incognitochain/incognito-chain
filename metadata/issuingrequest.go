@@ -49,11 +49,27 @@ func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 	if !ok {
 		return nil, errors.Errorf("DepositedAmount incorrect")
 	}
-	// Convert from Wei to MilliEther
-	denominator := big.NewInt(common.WeiToMilliEtherRatio)
-	n = n.Quo(n, denominator)
-	if !n.IsUint64() {
-		return nil, errors.Errorf("DepositedAmount cannot be converted into uint64")
+	currencyType, err := common.NewHashFromStr(data["CurrencyType"].(string))
+	if err != nil {
+		return nil, errors.Errorf("CurrencyType incorrect")
+	}
+
+	depositedAmt := uint64(0)
+	if bytes.Equal(currencyType[:], common.USDAssetID[:]) {
+		depositedAmtStr := data["DepositedAmount"].(string)
+		depositedAmtInt, err := strconv.Atoi(depositedAmtStr)
+		if err != nil {
+			return nil, err
+		}
+		depositedAmt = uint64(depositedAmtInt)
+	} else {
+		// Convert from Wei to MilliEther
+		denominator := big.NewInt(common.WeiToMilliEtherRatio)
+		n = n.Quo(n, denominator)
+		if !n.IsUint64() {
+			return nil, errors.Errorf("DepositedAmount cannot be converted into uint64")
+		}
+		depositedAmt = n.Uint64()
 	}
 
 	keyWallet, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
@@ -66,13 +82,9 @@ func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 		return nil, errors.Errorf("AssetType incorrect")
 	}
 
-	currencyType, err := common.NewHashFromStr(data["CurrencyType"].(string))
-	if err != nil {
-		return nil, errors.Errorf("CurrencyType incorrect")
-	}
 	return NewIssuingRequest(
 		keyWallet.KeySet.PaymentAddress,
-		n.Uint64(),
+		depositedAmt,
 		*assetType,
 		*currencyType,
 		IssuingRequestMeta,
