@@ -68,26 +68,6 @@ func buildStabilityActions(
 		actions = append(actions, salaryUpdateActions...)
 	}
 
-	// Build stand-alone instructions
-	// Dividend proposals for DCB
-	forDCB := true
-	dcbInst, err := buildInstitutionDividendSubmitInst(bc, forDCB, shardID)
-	if err != nil {
-		fmt.Printf("[db] error building dividend submit tx for dcb: %v\n", err)
-	} else if len(dcbInst) > 0 {
-		fmt.Printf("[db] added divsub inst: %v\n", dcbInst)
-		actions = append(actions, dcbInst...)
-	}
-
-	// For GOV
-	forDCB = false
-	govInst, err := buildInstitutionDividendSubmitInst(bc, forDCB, shardID)
-	if err != nil {
-		fmt.Printf("[db] error building dividend submit tx for dcb: %v\n", err)
-	} else if len(govInst) > 0 {
-		actions = append(actions, govInst...)
-	}
-
 	return actions
 }
 
@@ -112,7 +92,7 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 		contentStr := inst[1]
 		newInst := [][]string{}
 		switch metaType {
-		case metadata.LoanRequestMeta, metadata.LoanResponseMeta, metadata.LoanWithdrawMeta, metadata.LoanPaymentMeta, metadata.AcceptDCBProposalMeta:
+		case metadata.LoanRequestMeta, metadata.LoanResponseMeta, metadata.LoanWithdrawMeta, metadata.LoanPaymentMeta, metadata.AcceptDCBProposalMeta, metadata.DividendSubmitMeta:
 			newInst, err = buildPassthroughInstruction(metaType, contentStr)
 
 		case metadata.BuyFromGOVRequestMeta:
