@@ -507,7 +507,7 @@ func (rpcServer RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []
 
 	estimateFeeCoinPerKb = rpcServer.estimateFeeWithEstimator(defaultFee, shardID, numBlock)
 
-	estimateFeeCoinPerKb += uint64(rpcServer.config.Wallet.Config.IncrementalFee)
+	estimateFeeCoinPerKb += uint64(rpcServer.config.Wallet.GetConfig().IncrementalFee)
 	estimateTxSizeInKb = transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacy, metadata, customTokenParams, privacyCustomTokenParams)
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	return realFee, estimateFeeCoinPerKb, estimateTxSizeInKb

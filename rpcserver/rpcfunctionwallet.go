@@ -349,7 +349,7 @@ func (rpcServer RpcServer) handleGetReceivedByAccount(params interface{}, closeC
 handleSetTxFee - RPC sets the transaction fee per kilobyte paid more by transactions created by this wallet. default is 1 coin per 1 kb
 */
 func (rpcServer RpcServer) handleSetTxFee(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	rpcServer.config.Wallet.Config.IncrementalFee = uint64(params.(float64))
+	rpcServer.config.Wallet.GetConfig().IncrementalFee = uint64(params.(float64))
 	err := rpcServer.config.Wallet.Save(rpcServer.config.Wallet.PassPhrase)
 	return err == nil, NewRPCError(ErrUnexpected, err)
 }
