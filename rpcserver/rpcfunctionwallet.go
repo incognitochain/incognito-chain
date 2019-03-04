@@ -9,6 +9,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
@@ -82,8 +83,13 @@ Parameter #1—an account name
 Result—a constant address
 */
 func (rpcServer RpcServer) handleGetAccountAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	result := rpcServer.config.Wallet.GetAccountAddress(params.(string))
-	return result, nil
+	if rpcServer.config.BlockChain.IsReady(false, 0) {
+		activeShards := rpcServer.config.BlockChain.BestState.Beacon.ActiveShards
+		randShard := rand.Int31n(int32(activeShards))
+		result := rpcServer.config.Wallet.GetAccountAddress(params.(string), byte(randShard))
+		return result, nil
+	}
+	return nil, NewRPCError(ErrUnexpected, errors.New("Can not get active shard"))
 }
 
 /*
