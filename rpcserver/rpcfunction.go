@@ -509,3 +509,31 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 	}
 	return result, nil
 }
+
+// handleEstimateFeeWithEstimator -- get fee from estomator
+func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	// all params
+	arrayParams := common.InterfaceSlice(params)
+
+	// param #1: estimation fee coin per kb from client
+	defaultFeeCoinPerKb := int64(arrayParams[0].(float64))
+
+	// param #1: estimation fee coin per kb
+	senderKeyParam := arrayParams[1]
+	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
+	}
+	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
+	shardIDSender := common.GetShardIDFromLastByte(lastByte)
+
+	// estimate fee per tx size
+	estimateFeeCoinPerKb := rpcServer.estimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, 8)
+	govFeePerKbTx := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.FeePerKbTx
+
+	result := jsonresult.EstimateFeeResult{
+		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
+		GOVFeePerKbTx:        govFeePerKbTx,
+	}
+	return result, nil
+}
