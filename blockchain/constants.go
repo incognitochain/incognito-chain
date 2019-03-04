@@ -2,12 +2,24 @@ package blockchain
 
 import "time"
 
-// CONSTANT for network MAINNET
+//Network fixed params
 const (
-	//Network fixed params
+	// BlockVersion is the current latest supported block version.
+	BlockVersion                = 1
+	TransactionVersion          = 1
+	defaultMaxBlkReqPerPeer     = 60
+	defaultBroadcastStateTime   = 2 * time.Second  // in second
+	defaultProcessPeerStateTime = 2 * time.Second  // in second
+	defaultMaxBlockSyncTime     = 2 * time.Second  // in second
+	defaultCacheCleanupTime     = 60 * time.Second // in second
+
+	// Threshold ratio
 	ThresholdRatioOfDCBCrisis = 9000
 	ThresholdRatioOfGOVCrisis = 9000
+)
 
+// CONSTANT for network MAINNET
+const (
 	// ------------- Mainnet ---------------------------------------------
 	Mainnet            = 0x01
 	MainetName         = "mainnet"
@@ -31,10 +43,14 @@ const (
 // for beacon
 // public key
 var PreSelectBeaconNodeMainnetSerializedPubkey = PreSelectBeaconNodeTestnetSerializedPubkey
+// privatekey
+var PreSelectBeaconNodeMainnet = PreSelectBeaconNodeTestnet
 
 // For shard
 // public key
 var PreSelectShardNodeMainnetSerializedPubkey = PreSelectShardNodeTestnetSerializedPubkey
+// privatekey
+var PreSelectShardNodeMainnet = PreSelectShardNodeTestnet
 
 // END CONSTANT for network MAINNET
 
@@ -106,14 +122,3 @@ var PreSelectShardNodeTestnet = []string{
 	"112t8rnbDuvxqCrnzQbRkBLrrGoaqTHnvKSBa4tdt4585gJHJHcsm4shE4yBardCsLkXV2Rtogom6Gy8rn4Z5vQXXmanBoVPn2wQhFLTYz4E",
 }
 // END CONSTANT for network TESTNET
-
-const (
-	// BlockVersion is the current latest supported block version.
-	BlockVersion                = 1
-	TransactionVersion          = 1
-	defaultMaxBlkReqPerPeer     = 60
-	defaultBroadcastStateTime   = 2 * time.Second  // in second
-	defaultProcessPeerStateTime = 2 * time.Second  // in second
-	defaultMaxBlockSyncTime     = 2 * time.Second  // in second
-	defaultCacheCleanupTime     = 60 * time.Second // in second
-)

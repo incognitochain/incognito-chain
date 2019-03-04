@@ -24,25 +24,39 @@ type Params struct {
 	GenesisShardBlock *ShardBlock
 }
 
-type IcoParams struct {
-	InitialPaymentAddress string
-	InitFundSalary        uint64
-	InitialDCBToken       uint64
-	InitialCMBToken       uint64
-	InitialGOVToken       uint64
-	InitialBondToken      uint64
-	InitialVoteDCBToken   uint64
-	InitialVoteGOVToken   uint64
+type GenesisParams struct {
+	InitialPaymentAddress               string
+	InitFundSalary                      uint64
+	InitialDCBToken                     uint64
+	InitialCMBToken                     uint64
+	InitialGOVToken                     uint64
+	InitialBondToken                    uint64
+	InitialVoteDCBToken                 uint64
+	InitialVoteGOVToken                 uint64
+	SalaryPerTx                         uint64
+	BasicSalary                         uint64
+	RandomNumber                        uint64
+	PreSelectBeaconNodeSerializedPubkey [] string
+	PreSelectBeaconNode                 []string
+	PreSelectShardNodeSerializedPubkey  []string
+	PreSelectShardNode                  []string
 }
 
 // FOR TESTNET
-var icoParamsTestnetNew = IcoParams{
-	InitialPaymentAddress: TestnetGenesisBlockPaymentAddress,
-	InitFundSalary:        TestnetInitFundSalary,
-	InitialBondToken:      TestnetInitBondToken,
-	InitialCMBToken:       TestnetInitCmBToken,
-	InitialDCBToken:       TestnetInitDCBToken,
-	InitialGOVToken:       TestnetInitGovToken,
+var genesisParamsTestnetNew = GenesisParams{
+	InitialPaymentAddress:               TestnetGenesisBlockPaymentAddress,
+	InitFundSalary:                      TestnetInitFundSalary,
+	InitialBondToken:                    TestnetInitBondToken,
+	InitialCMBToken:                     TestnetInitCmBToken,
+	InitialDCBToken:                     TestnetInitDCBToken,
+	InitialGOVToken:                     TestnetInitGovToken,
+	BasicSalary:                         1000,
+	SalaryPerTx:                         1000,
+	RandomNumber:                        0,
+	PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeTestnetSerializedPubkey,
+	PreSelectBeaconNode:                 PreSelectBeaconNodeTestnet,
+	PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeTestnetSerializedPubkey,
+	PreSelectShardNode:                  PreSelectShardNodeTestnet,
 }
 
 var ChainTestParam = Params{
@@ -53,19 +67,26 @@ var ChainTestParam = Params{
 	BeaconCommitteeSize: TestNetBeaconCommitteeSize, //TestNetBeaconCommitteeSize,
 	ActiveShards:        TestNetActiveShards,
 	// blockChain parameters
-	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, icoParamsTestnetNew, 1000, 1000, 0),
-	GenesisShardBlock:  CreateShardGenesisBlock(1, icoParamsTestnetNew),
+	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, genesisParamsTestnetNew),
+	GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsTestnetNew),
 }
 // END TESTNET
 
 // FOR MAINNET
-var icoParamsMainnetNew = IcoParams{
-	InitialPaymentAddress: MainnetGenesisblockPaymentAddress,
-	InitFundSalary:        MainnetInitFundSalary,
-	InitialBondToken:      MainnetInitBondToken,
-	InitialCMBToken:       MainnetInitCmBToken,
-	InitialDCBToken:       MainnetInitDCBToken,
-	InitialGOVToken:       MainnetInitGovToken,
+var genesisParamsMainnetNew = GenesisParams{
+	InitialPaymentAddress:               MainnetGenesisblockPaymentAddress,
+	InitFundSalary:                      MainnetInitFundSalary,
+	InitialBondToken:                    MainnetInitBondToken,
+	InitialCMBToken:                     MainnetInitCmBToken,
+	InitialDCBToken:                     MainnetInitDCBToken,
+	InitialGOVToken:                     MainnetInitGovToken,
+	BasicSalary:                         1000,
+	SalaryPerTx:                         1000,
+	RandomNumber:                        0,
+	PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeMainnetSerializedPubkey,
+	PreSelectBeaconNode:                 PreSelectBeaconNodeMainnet,
+	PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeMainnetSerializedPubkey,
+	PreSelectShardNode:                  PreSelectShardNodeMainnet,
 }
 
 var ChainMainParam = Params{
@@ -76,6 +97,6 @@ var ChainMainParam = Params{
 	BeaconCommitteeSize: MainNetBeaconCommitteeSize, //MainNetBeaconCommitteeSize,
 	ActiveShards:        MainNetActiveShards,
 	// blockChain parameters
-	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, icoParamsMainnetNew, 1000, 1000, 0),
-	GenesisShardBlock:  CreateShardGenesisBlock(1, icoParamsMainnetNew),
+	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, genesisParamsMainnetNew),
+	GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsMainnetNew),
 }
