@@ -173,19 +173,19 @@ var RpcHandler = map[string]commandHandler{
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	ListAccounts:               RpcServer.handleListAccounts,
-	GetAccount:                 RpcServer.handleGetAccount,
-	GetAddressesByAccount:      RpcServer.handleGetAddressesByAccount,
-	GetAccountAddress:          RpcServer.handleGetAccountAddress,
-	DumpPrivkey:                RpcServer.handleDumpPrivkey,
-	ImportAccount:              RpcServer.handleImportAccount,
-	RemoveAccount:              RpcServer.handleRemoveAccount,
-	ListUnspentOutputCoins:     RpcServer.handleListUnspentOutputCoins,
-	GetBalance:                 RpcServer.handleGetBalance,
-	GetBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
-	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
-	GetReceivedByAccount:       RpcServer.handleGetReceivedByAccount,
-	SetTxFee:                   RpcServer.handleSetTxFee,
+	ListAccounts:                       RpcServer.handleListAccounts,
+	GetAccount:                         RpcServer.handleGetAccount,
+	GetAddressesByAccount:              RpcServer.handleGetAddressesByAccount,
+	GetAccountAddress:                  RpcServer.handleGetAccountAddress,
+	DumpPrivkey:                        RpcServer.handleDumpPrivkey,
+	ImportAccount:                      RpcServer.handleImportAccount,
+	RemoveAccount:                      RpcServer.handleRemoveAccount,
+	ListUnspentOutputCoins:             RpcServer.handleListUnspentOutputCoins,
+	GetBalance:                         RpcServer.handleGetBalance,
+	GetBalanceByPrivatekey:             RpcServer.handleGetBalanceByPrivatekey,
+	GetBalanceByPaymentAddress:         RpcServer.handleGetBalanceByPaymentAddress,
+	GetReceivedByAccount:               RpcServer.handleGetReceivedByAccount,
+	SetTxFee:                           RpcServer.handleSetTxFee,
 	GetRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
 }
 
@@ -538,4 +538,13 @@ func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, cl
 		GOVFeePerKbTx:        govFeePerKbTx,
 	}
 	return result, nil
+}
+
+// handleGetActiveShards - return active shard num
+func (rpcServer RpcServer) handleGetActiveShards(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	if rpcServer.config.BlockChain.IsReady(false, 0) {
+		activeShards := rpcServer.config.BlockChain.BestState.Beacon.ActiveShards
+		return activeShards, nil
+	}
+	return -1, nil
 }
