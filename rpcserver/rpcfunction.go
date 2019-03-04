@@ -234,8 +234,8 @@ func (rpcServer RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-
 		}
 	}
 	result.Networks = networks
-	if rpcServer.config.Wallet != nil && rpcServer.config.Wallet.Config != nil {
-		result.IncrementalFee = rpcServer.config.Wallet.Config.IncrementalFee
+	if rpcServer.config.Wallet != nil && rpcServer.config.Wallet.GetConfig() != nil {
+		result.IncrementalFee = rpcServer.config.Wallet.GetConfig().IncrementalFee
 	}
 	result.Warnings = ""
 
