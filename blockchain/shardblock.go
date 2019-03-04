@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/transaction"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
@@ -38,7 +39,10 @@ type CrossShardBlock struct {
 	Header          ShardHeader
 	ToShardID       byte
 	MerklePathShard []common.Hash
+	// Cross Shard data for constant
 	CrossOutputCoin []privacy.OutputCoin
+	// Cross Shard Data for Custom Token Tx
+	CrossTxTokenData []transaction.TxTokenData
 }
 
 func (shardBlock *CrossShardBlock) Hash() *common.Hash {

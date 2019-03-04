@@ -164,7 +164,7 @@ func CreateShardInstructionsFromTransaction(transactions []metadata.Transaction,
 */
 func CreateShardTxRoot(txList []metadata.Transaction) ([]common.Hash, []common.Hash) {
 	//calculate output coin hash for each shard
-	outputCoinHash := getOutCoinHashEachShard(txList)
+	crossShardDataHash := getCrossShardDataHash(txList)
 	// calculate merkel path for a shardID
 	// step 1: calculate merkle data : [1, 2, 3, 4, 12, 34, 1234]
 	/*
@@ -174,7 +174,7 @@ func CreateShardTxRoot(txList []metadata.Transaction) ([]common.Hash, []common.H
 			 / \	 		 / \
 			1	2			3	4
 	*/
-	merkleData := outputCoinHash
+	merkleData := crossShardDataHash
 	// fmt.Println("merkleData 1 ", merkleData)
 	// fmt.Println("outputCoinHash 1 ", outputCoinHash)
 	cursor := 0
@@ -187,12 +187,12 @@ func CreateShardTxRoot(txList []metadata.Transaction) ([]common.Hash, []common.H
 			break
 		}
 	}
-	return outputCoinHash, merkleData
+	return crossShardDataHash, merkleData
 }
 
 //Receive tx list from shard block body, produce merkle path of UTXO CrossShard List from specific shardID
 func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merklePathShard []common.Hash, merkleShardRoot common.Hash) {
-	outputCoinHash, merkleData := CreateShardTxRoot(txList)
+	crossShardDataHash, merkleData := CreateShardTxRoot(txList)
 	//TODO: @kumi check again (fix infinity loop ->fix by @merman)
 	// step 2: get merkle path
 	cursor := 0
@@ -212,7 +212,7 @@ func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merkl
 		i = i / 2
 
 		if time == 0 {
-			cursor += len(outputCoinHash)
+			cursor += len(crossShardDataHash)
 		} else {
 			tmp := cursor
 			cursor += (cursor - lastCursor) / 2
@@ -262,10 +262,6 @@ func VerifyMerkleTree(finalHash common.Hash, merklePath []common.Hash, merkleRoo
 		i = i / 2
 	}
 	merkleRootString := merkleRoot.String()
-	// fmt.Println("VerifyMerkleTree/MerkleRoot", merkleRoot)
-	// fmt.Println("VerifyMerkleTree/merkleRootString", merkleRootString)
-	// fmt.Println("VerifyMerkleTree/finalHash", finalHash)
-	// fmt.Println("VerifyMerkleTree/finalHashString", finalHash.String())
 	if strings.Compare(finalHash.String(), merkleRootString) != 0 {
 		return false
 	} else {
@@ -281,39 +277,76 @@ func VerifyMerkleTree(finalHash common.Hash, merklePath []common.Hash, merkleRoo
 		- Value is sorted as shardID from low to high
 		- ShardID which have no outputcoin received hash of emptystring value
 */
-func getOutCoinHashEachShard(txList []metadata.Transaction) []common.Hash {
+//TODO: @merman check logic for cross shard tx custom token
+func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 	// group transaction by shardID
 	outCoinEachShard := make([][]*privacy.OutputCoin, common.MAX_SHARD_NUMBER)
+	txTokenOutEachShard := make([][]transaction.TxTokenVout, common.MAX_SHARD_NUMBER)
 	for _, tx := range txList {
-		if tx.GetProof() != nil {
-			for _, outCoin := range tx.GetProof().OutputCoins {
-				lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-				shardID := common.GetShardIDFromLastByte(lastByte)
-				outCoinEachShard[shardID] = append(outCoinEachShard[shardID], outCoin)
+		switch tx.GetType() {
+		case common.TxNormalType, common.TxSalaryType:
+			{
+				if tx.GetProof() != nil {
+					for _, outCoin := range tx.GetProof().OutputCoins {
+						lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+						shardID := common.GetShardIDFromLastByte(lastByte)
+						outCoinEachShard[shardID] = append(outCoinEachShard[shardID], outCoin)
+					}
+				}
 			}
+		case common.TxCustomTokenType:
+			{
+				customTokenTx := tx.(*transaction.TxCustomToken)
+				for _, out := range customTokenTx.TxTokenData.Vouts {
+					lastByte := out.PaymentAddress.Pk[len(out.PaymentAddress.Pk)-1]
+					shardID := common.GetShardIDFromLastByte(lastByte)
+					txTokenOutEachShard[shardID] = append(txTokenOutEachShard[shardID], out)
+				}
+			}
+			// case common.TxCustomTokenPrivacyType:
+			// 	{
+			// 		customTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
+			// 		if customTokenTx.TxTokenPrivacyData.TxNormal.GetProof() != nil {
+			// 			for _, outCoin := range customTokenTx.TxTokenPrivacyData.TxNormal.GetProof().OutputCoins {
+			// 				lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+			// 				shardID := common.GetShardIDFromLastByte(lastByte)
+			// 				byteMap[common.GetShardIDFromLastByte(shardID)] = 1
+			// 			}
+			// 		}
+			// 	}
+			// }
 		}
 	}
-	// fmt.Println("len of outCoinEachShard", len(outCoinEachShard))
-	// fmt.Println("value of outCoinEachShard", outCoinEachShard)
 	//calcualte hash for each shard
 	outputCoinHash := make([]common.Hash, common.MAX_SHARD_NUMBER)
+	txTokenOutHash := make([]common.Hash, common.MAX_SHARD_NUMBER)
+	combinedHash := make([]common.Hash, common.MAX_SHARD_NUMBER)
 	for i := 0; i < common.MAX_SHARD_NUMBER; i++ {
 		if len(outCoinEachShard[i]) == 0 {
 			outputCoinHash[i] = common.HashH([]byte(""))
 		} else {
 			tmpByte := []byte{}
 			for _, coin := range outCoinEachShard[i] {
-				// fmt.Printf("getOutCoinHashEachShard of shard %+v /coin %+v \n", i, coin)
-				// fmt.Printf("getOutCoinHashEachShard of shard %+v/coin byte %+v \n", i, coin.Bytes())
 				tmpByte = append(tmpByte, coin.Bytes()...)
 			}
-			// fmt.Printf("getOutCoinHashEachShard of shard %+v /VALUE TO HASH %+v \n", i, tmpByte)
 			outputCoinHash[i] = common.HashH(tmpByte)
-			// fmt.Printf("getOutCoinHashEachShard of shard %+v /FINAL HASH VALUE %+v \n", i, outputCoinHash[i])
 		}
 	}
-	// fmt.Println("len of outputCoinHash", len(outputCoinHash))
-	return outputCoinHash
+	for i := 0; i < common.MAX_SHARD_NUMBER; i++ {
+		if len(txTokenOutHash[i]) == 0 {
+			txTokenOutHash[i] = common.HashH([]byte(""))
+		} else {
+			tmpByte := []byte{}
+			for _, out := range txTokenOutEachShard[i] {
+				tmpByte = append(tmpByte, []byte(out.String())...)
+			}
+			txTokenOutHash[i] = common.HashH(tmpByte)
+		}
+	}
+	for i := 0; i < common.MAX_SHARD_NUMBER; i++ {
+		combinedHash[i] = common.HashH(append(outputCoinHash[i].GetBytes(), txTokenOutHash[i].GetBytes()...))
+	}
+	return combinedHash
 }
 
 // helper function to get the hash of OutputCoins (send to a shard) from list of transaction
