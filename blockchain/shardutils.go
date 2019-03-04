@@ -175,8 +175,6 @@ func CreateShardTxRoot(txList []metadata.Transaction) ([]common.Hash, []common.H
 			1	2			3	4
 	*/
 	merkleData := crossShardDataHash
-	// fmt.Println("merkleData 1 ", merkleData)
-	// fmt.Println("outputCoinHash 1 ", outputCoinHash)
 	cursor := 0
 	for {
 		v1 := merkleData[cursor]
@@ -221,33 +219,34 @@ func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merkl
 		time++
 	}
 	merkleShardRoot = merkleData[len(merkleData)-1]
-	// fmt.Println("GetMerklePathCrossShard/merkleShardID", merkleData[sid])
-	// fmt.Println("GetMerklePathCrossShard/merklePathShard", merklePathShard)
-	// fmt.Println("GetMerklePathCrossShard/merkleShardRoot", merkleShardRoot)
 	return merklePathShard, merkleShardRoot
 }
 
 //Receive a cross shard block and merkle path, verify whether the UTXO list is valid or not
+/*
+	Calculate Final Hash as Hash of:
+		1. CrossOutputCoinFinalHash
+		2. TxTokenDataVoutFinalHash
+	These hashes will be calculated as comment in getCrossShardDataHash function
+*/
 func VerifyCrossShardBlockUTXO(block *CrossShardBlock, merklePathShard []common.Hash) bool {
 	outCoins := block.CrossOutputCoin
 	tmpByte := []byte{}
 	for _, outCoin := range outCoins {
-		// fmt.Println("VerifyCrossShardBlockUTXO/outCoin", outCoin)
-		// fmt.Println("VerifyCrossShardBlockUTXO/outCoin", outCoin.Bytes())
 		coin := &outCoin
-		// fmt.Println("VerifyCrossShardBlockUTXO/coin", coin)
-		// fmt.Println("VerifyCrossShardBlockUTXO/coin", coin.Bytes())
 		tmpByte = append(tmpByte, coin.Bytes()...)
 	}
-	// fmt.Printf("VerifyCrossShardBlockUTXO of shard %+v /VALUE TO HASH %+v \n", block.ToShardID, tmpByte)
-	finalHash := common.HashH(tmpByte)
-	// fmt.Printf("VerifyCrossShardBlockUTXO of shard %+v /FINAL HASH VALUE %+v \n", block.ToShardID, finalHash)
-	// for _, hash := range merklePathShard {
-	// 	finalHash = common.HashH(append(finalHash.GetBytes(), hash.GetBytes()...))
-	// }
-	// fmt.Println("VerifyCrossShardBlockUTXO/merkleShardID", finalHash)
-	// fmt.Println("VerifyCrossShardBlockUTXO/merklePathShard", merklePathShard)
-	// fmt.Println("VerifyCrossShardBlockUTXO/merkleShardRoot", block.Header.ShardTxRoot)
+	outputCoinHash := common.HashH(tmpByte)
+
+	txTokenDatas := block.CrossTxTokenData
+	tmpByte = []byte{}
+	for _, txTokenData := range txTokenDatas {
+		for _, out := range txTokenData.Vouts {
+			tmpByte = append(tmpByte, []byte(out.String())...)
+		}
+	}
+	txTokenDataHash := common.HashH(tmpByte)
+	finalHash := common.HashH(append(outputCoinHash.GetBytes(), txTokenDataHash.GetBytes()...))
 	return VerifyMerkleTree(finalHash, merklePathShard, block.Header.ShardTxRoot, block.ToShardID)
 }
 
@@ -272,10 +271,25 @@ func VerifyMerkleTree(finalHash common.Hash, merklePath []common.Hash, merkleRoo
 /*
 	Helper function: group OutputCoin into shard and get the hash of each group
 	Return value
-		- Array of hash created from 256 group OutputCoin hash
+		- Array of hash created from 256 group cross shard data hash
 		- Length array is 256
 		- Value is sorted as shardID from low to high
 		- ShardID which have no outputcoin received hash of emptystring value
+
+	Hash Procedure:
+		- For each shard:
+			CROSS OUTPUT COIN
+			+ Get outputcoin and append to a list of that shard
+			+ Calculate value for Hash:
+				* if receiver shard has no outcoin then received hash value of empty string
+				* if receiver shard has >= 1 outcoin then concatenate all outcoin bytes value then hash
+				* At last, we compress all cross out put coin into a CrossOutputCoinFinalHash
+			TXTOKENDATA
+			+ Do the same as above
+
+			=> Then Final Hash of each shard is Hash of value in this order:
+				1. CrossOutputCoinFinalHash
+				2. TxTokenDataVoutFinalHash
 */
 //TODO: @merman check logic for cross shard tx custom token
 func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
