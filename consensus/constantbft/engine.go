@@ -62,9 +62,9 @@ func (engine *Engine) Start() error {
 			case <-engine.cQuit:
 				return
 			default:
+				engine.config.BlockChain.InsertBlockFromPool()
 				if engine.config.BlockChain.IsReady(false, 0) {
 					if prevRoundRole == common.BEACON_ROLE {
-						engine.config.BlockChain.InsertBlockFromPool()
 						if currentPBFTBlkHeight <= engine.config.BlockChain.BestState.Beacon.BeaconHeight {
 							// reset round
 							currentPBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
@@ -79,14 +79,11 @@ func (engine *Engine) Start() error {
 					if (engine.config.NodeMode == common.NODEMODE_SHARD || engine.config.NodeMode == common.NODEMODE_AUTO) && userRole == common.SHARD_ROLE {
 						nodeRole = common.SHARD_ROLE
 					}
-					prevRoundRole = nodeRole
 
 					engine.config.Server.UpdateConsensusState(nodeRole, engine.config.UserKeySet.GetPublicKeyB58(), nil, engine.config.BlockChain.BestState.Beacon.BeaconCommittee, engine.config.BlockChain.BestState.Beacon.ShardCommittee)
 
 					fmt.Println()
 					fmt.Println()
-					fmt.Printf("\n %v", engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
-					fmt.Printf("\n %v", engine.config.BlockChain.BestState.Beacon.ShardCommittee)
 					if currentPBFTRound > 3 && prevRoundRole != "" {
 						os.Exit(1)
 					}
@@ -122,8 +119,7 @@ func (engine *Engine) Start() error {
 								resBlk, err = bftProtocol.Start()
 								if err != nil {
 									currentPBFTRound++
-									Logger.log.Error("PBFT fatal error", err)
-									continue
+									prevRoundRole = nodeRole
 								}
 							case common.VALIDATOR_ROLE:
 								bftProtocol.RoundData.IsProposer = false
@@ -131,8 +127,7 @@ func (engine *Engine) Start() error {
 								resBlk, err = bftProtocol.Start()
 								if err != nil {
 									currentPBFTRound++
-									Logger.log.Error("PBFT fatal error", err)
-									continue
+									prevRoundRole = nodeRole
 								}
 							default:
 								err = errors.New("Not your turn yet")
@@ -189,8 +184,7 @@ func (engine *Engine) Start() error {
 									resBlk, err = bftProtocol.Start()
 									if err != nil {
 										currentPBFTRound++
-										Logger.log.Error("PBFT fatal error", err)
-										continue
+										prevRoundRole = nodeRole
 									}
 								case common.VALIDATOR_ROLE:
 									bftProtocol.RoundData.IsProposer = false
@@ -199,8 +193,7 @@ func (engine *Engine) Start() error {
 									resBlk, err = bftProtocol.Start()
 									if err != nil {
 										currentPBFTRound++
-										Logger.log.Error("PBFT fatal error", err)
-										continue
+										prevRoundRole = nodeRole
 									}
 								default:
 									err = errors.New("Not your turn yet")
@@ -254,9 +247,16 @@ func (engine *Engine) Start() error {
 								//reset round
 								prevRoundRole = ""
 								currentPBFTRound = 1
+								Logger.log.Error("Blockchain is not ready!")
 							}
 						}
 					}
+				} else {
+					//reset round
+					prevRoundRole = ""
+					currentPBFTRound = 1
+					Logger.log.Error("Blockchain is not ready!")
+
 				}
 			}
 		}
