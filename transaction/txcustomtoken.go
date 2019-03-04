@@ -337,6 +337,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
 	metaData metadata.Metadata,
 	hasPrivacy bool,
+	shardID byte,
 ) *TransactionError {
 	var err error
 	// create normal txCustomToken
@@ -387,13 +388,15 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 			if err != nil {
 				return NewTransactionErr(WrongTokenTxType, err)
 			}
+			//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
+			newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
 			// validate PropertyID is the only one
 			for customTokenID := range listCustomTokens {
 				if hashInitToken.String() == customTokenID.String() {
 					return NewTransactionErr(CustomTokenExisted, nil)
 				}
 			}
-			txCustomToken.TxTokenData.PropertyID = *hashInitToken
+			txCustomToken.TxTokenData.PropertyID = newHashInitToken
 
 		}
 	case CustomTokenTransfer:
