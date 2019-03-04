@@ -322,14 +322,14 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 
 	//TODO: UNCOMMENT To avoid produce too many empty block
 	// get tx and wait for more if not enough
-	// if len(sourceTxns) < common.MinTxsInBlock {
-	// 	<-time.Tick(common.MinBlockWaitTime * time.Second)
-	// 	sourceTxns = blockgen.txPool.MiningDescs()
-	// 	if len(sourceTxns) == 0 {
-	// 		<-time.Tick(common.MaxBlockWaitTime * time.Second)
-	// 		sourceTxns = blockgen.txPool.MiningDescs()
-	// 	}
-	// }
+	if len(sourceTxns) < common.MinTxsInBlock {
+		<-time.Tick(common.MinBlockWaitTime * time.Second)
+		sourceTxns = blockgen.txPool.MiningDescs()
+		if len(sourceTxns) == 0 {
+			<-time.Tick(common.MaxBlockWaitTime * time.Second)
+			sourceTxns = blockgen.txPool.MiningDescs()
+		}
+	}
 
 	//TODO: sort transaction base on fee and check limit block size
 	// StartingPriority, fee, size, time

@@ -353,7 +353,8 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 							R := msgCommit.(*wire.MessageBFTCommit).R
 							err := protocol.multiSigScheme.VerifyCommitSig(msgCommit.(*wire.MessageBFTCommit).Pubkey, newSig.Sig, R, newSig.ValidatorsIdxR)
 							if err != nil {
-								return nil, err
+								Logger.log.Error(err)
+								continue
 							}
 							if _, ok := phaseData.Sigs[R]; !ok {
 								phaseData.Sigs[R] = make(map[string]bftCommittedSig)

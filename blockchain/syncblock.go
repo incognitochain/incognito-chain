@@ -281,19 +281,17 @@ func (blockchain *BlockChain) StartSyncBlk() {
 
 			if RCS.ClosestBeaconState.Height == blockchain.BestState.Beacon.BeaconHeight {
 				blockchain.SetReadyState(false, 0, true)
-			} else {
-				blockchain.SetReadyState(false, 0, false)
-			}
-
-			if userRole == common.SHARD_ROLE {
-				for shardID := range blockchain.syncStatus.Shards {
-					if RCS.ClosestShardsState[shardID].Height == blockchain.BestState.Shard[shardID].ShardHeight {
-						blockchain.SetReadyState(true, shardID, true)
-						blockchain.SetReadyState(false, 0, true)
-					} else {
-						blockchain.SetReadyState(true, shardID, false)
+				if userRole == common.SHARD_ROLE {
+					for shardID := range blockchain.syncStatus.Shards {
+						if RCS.ClosestShardsState[shardID].Height == blockchain.BestState.Shard[shardID].ShardHeight {
+							blockchain.SetReadyState(true, shardID, true)
+						} else {
+							blockchain.SetReadyState(true, shardID, false)
+						}
 					}
 				}
+			} else {
+				blockchain.SetReadyState(false, 0, false)
 			}
 
 			blockchain.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
@@ -515,6 +513,7 @@ func (blockchain *BlockChain) SyncBlkCrossShard(getFromPool bool, byHash bool, b
 }
 
 func (blockchain *BlockChain) InsertBlockFromPool() {
+
 	blks := blockchain.config.BeaconPool.GetValidBlock()
 	fmt.Println("Prepare insert beacon ", len(blks))
 	for _, newBlk := range blks {
