@@ -67,9 +67,18 @@ func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) 
 	return nil
 }
 
-func (wallet *Wallet) CreateNewAccount(accountName string) *AccountWallet {
+func (wallet *Wallet) CreateNewAccount(accountName string, shardID byte) *AccountWallet {
 	newIndex := uint32(len(wallet.MasterAccount.Child))
-	childKey, _ := wallet.MasterAccount.Key.NewChildKey(newIndex)
+	var childKey *KeyWallet
+	for {
+		childKey, _ = wallet.MasterAccount.Key.NewChildKey(newIndex)
+		lastByte := childKey.KeySet.PaymentAddress.Pk[len(childKey.KeySet.PaymentAddress.Pk)-1]
+		if lastByte == shardID {
+			break
+		}
+		newIndex += 1
+	}
+
 	if accountName == "" {
 		accountName = fmt.Sprintf("AccountWallet %d", len(wallet.MasterAccount.Child))
 	}
@@ -197,7 +206,7 @@ func (wallet *Wallet) DumpPrivkey(addressP string) (KeySerializedData) {
 	return KeySerializedData{}
 }
 
-func (wallet *Wallet) GetAccountAddress(accountParam string) (KeySerializedData) {
+func (wallet *Wallet) GetAccountAddress(accountParam string, shardID byte) (KeySerializedData) {
 	for _, account := range wallet.MasterAccount.Child {
 		if account.Name == accountParam {
 			key := KeySerializedData{
@@ -208,7 +217,7 @@ func (wallet *Wallet) GetAccountAddress(accountParam string) (KeySerializedData)
 			return key
 		}
 	}
-	newAccount := wallet.CreateNewAccount(accountParam)
+	newAccount := wallet.CreateNewAccount(accountParam, shardID)
 	key := KeySerializedData{
 		PaymentAddress: newAccount.Key.Base58CheckSerialize(PaymentAddressType),
 		Pubkey:         hex.EncodeToString(newAccount.Key.KeySet.PaymentAddress.Pk),
