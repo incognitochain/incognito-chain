@@ -487,11 +487,15 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 			if !privacy {
 				// Check normal custom token param
 				customTokenParams, _, err = rpcServer.buildCustomTokenParam(tokenParamsRaw, senderKeySet)
-				return nil, err.(*RPCError)
+				if err.(*RPCError) != nil {
+					return nil, err.(*RPCError)
+				}
 			} else {
 				// Check privacy custom token param
 				customPrivacyTokenParam, _, err = rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
-				return nil, err.(*RPCError)
+				if err.(*RPCError) != nil {
+					return nil, err.(*RPCError)
+				}
 			}
 		}
 
