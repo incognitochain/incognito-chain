@@ -36,13 +36,6 @@ type IcoParams struct {
 }
 
 // FOR TESTNET
-const (
-	TestNetShardsNum           = 4
-	TestNetShardCommitteeSize  = 1
-	TestNetBeaconCommitteeSize = 1
-	TestNetActiveShards        = 2
-)
-
 // for beacon
 // public key
 var preSelectBeaconNodeTestnetSerializedPubkey = []string{
@@ -111,17 +104,9 @@ var ChainTestParam = Params{
 	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, icoParamsTestnetNew, 1000, 1000, 0),
 	GenesisShardBlock:  CreateShardGenesisBlock(1, icoParamsTestnetNew),
 }
-
 // END TESTNET
 
 // FOR MAINNET
-const (
-	MainNetShardsNum           = TestNetShardsNum
-	MainNetShardCommitteeSize  = TestNetShardCommitteeSize
-	MainNetBeaconCommitteeSize = TestNetBeaconCommitteeSize
-	MainNetActiveShards        = TestNetActiveShards
-)
-
 // for beacon
 // public key
 var preSelectBeaconNodeMainnetSerializedPubkey = preSelectBeaconNodeTestnetSerializedPubkey
@@ -130,7 +115,14 @@ var preSelectBeaconNodeMainnetSerializedPubkey = preSelectBeaconNodeTestnetSeria
 // public key
 var preSelectShardNodeMainnetSerializedPubkey = preSelectShardNodeTestnetSerializedPubkey
 
-var icoParamsMainnetNew = icoParamsTestnetNew
+var icoParamsMainnetNew = IcoParams{
+	InitialPaymentAddress: TestnetGenesisBlockPaymentAddress,
+	InitFundSalary:        MainnetInitFundSalary,
+	InitialBondToken:      MainnetInitBondToken,
+	InitialCMBToken:       MainnetInitCmBToken,
+	InitialDCBToken:       MainnetInitDCBToken,
+	InitialGOVToken:       MainnetInitGovToken,
+}
 
 var ChainMainParam = Params{
 	Name:                MainetName,
