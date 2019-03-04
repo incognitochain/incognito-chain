@@ -25,17 +25,21 @@ type Params struct {
 }
 
 type GenesisParams struct {
-	InitialPaymentAddress               string
-	InitFundSalary                      uint64
-	InitialDCBToken                     uint64
-	InitialCMBToken                     uint64
-	InitialGOVToken                     uint64
-	InitialBondToken                    uint64
-	InitialVoteDCBToken                 uint64
-	InitialVoteGOVToken                 uint64
-	SalaryPerTx                         uint64
-	BasicSalary                         uint64
-	RandomNumber                        uint64
+	InitialPaymentAddress string
+	InitFundSalary        uint64
+	InitialDCBToken       uint64
+	InitialCMBToken       uint64
+	InitialGOVToken       uint64
+	InitialBondToken      uint64
+	InitialVoteDCBToken   uint64
+	InitialVoteGOVToken   uint64
+
+	SalaryPerTx uint64
+	BasicSalary uint64
+	FeePerTxKb  uint64
+
+	RandomNumber uint64
+
 	PreSelectBeaconNodeSerializedPubkey [] string
 	PreSelectBeaconNode                 []string
 	PreSelectShardNodeSerializedPubkey  []string
