@@ -248,6 +248,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 				// acceptedSnD = append(acceptedSnD, snDs...)
 
 				// with custom token, we dont care light mode and store fully TODO sirrush
+				// indexTx is index of transaction in block
 				view.customTokenTxs[int32(indexTx)] = tx
 			}
 		case common.TxCustomTokenPrivacyType:

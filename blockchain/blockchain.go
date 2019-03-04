@@ -800,6 +800,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		}
 		// save tx which relate to custom token
 		// Reject Double spend UTXO before enter this state
+		fmt.Printf("StoreCustomTokenPaymentAddresstHistory/CustomTokenTx: \n VIN %+v VOUT %+v \n", customTokenTx.TxTokenData.Vins, customTokenTx.TxTokenData.Vouts)
 		err = blockchain.StoreCustomTokenPaymentAddresstHistory(customTokenTx)
 		if err != nil {
 			// Skip double spend
@@ -973,6 +974,7 @@ func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customToken
 		if err := blockchain.config.DataBase.Put(paymentAddressKey, []byte(paymentAddressValue)); err != nil {
 			return err
 		}
+		fmt.Printf("STORE UTXO FOR CUSTOM TOKEN: tokenID %+v \n paymentAddress %+v \n txHash %+v, voutIndex %+v, value %+v \n", (customTokenTx.TxTokenData.PropertyID).String(), vout.PaymentAddress, customTokenTx.Hash(), voutIndex, value)
 	}
 	return nil
 }
@@ -1204,6 +1206,7 @@ func (blockchain *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxC
 		txCustomToken := tx.(*transaction.TxCustomToken)
 		result[txCustomToken.TxTokenData.PropertyID] = *txCustomToken
 	}
+	//TODO: @merman Fetch Custom Token from CrossTokenData
 	return result, nil
 }
 
