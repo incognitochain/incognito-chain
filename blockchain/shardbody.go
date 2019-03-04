@@ -14,12 +14,19 @@ import (
 type ShardBody struct {
 	Instructions    [][]string
 	CrossOutputCoin map[byte][]CrossOutputCoin
-	Transactions    []metadata.Transaction
+	//TODO: Create hash for Cross TxTokenData
+	CrossTxTokenData map[byte][]CrossTxTokenData
+	Transactions     []metadata.Transaction
 }
 type CrossOutputCoin struct {
 	BlockHeight uint64
 	BlockHash   common.Hash
 	OutputCoin  []privacy.OutputCoin
+}
+type CrossTxTokenData struct {
+	BlockHeight uint64
+	BlockHash   common.Hash
+	TxTokenData []transaction.TxTokenData
 }
 
 func (shardBody *ShardBody) Hash() common.Hash {
