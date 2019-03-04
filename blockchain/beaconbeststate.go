@@ -329,14 +329,12 @@ func (self *BestStateBeacon) GetLatestDividendProposal(forDCB bool) (id, amount 
 	return id, amount
 }
 
-func (self *BestStateBeacon) GetDividendAggregatedInfo(dividendID uint64, tokenID *common.Hash) (uint64, uint64, error) {
+func (self *BestStateBeacon) GetDividendAggregatedInfo(dividendID uint64, tokenID *common.Hash) (uint64, uint64, bool) {
 	key := getDividendAggregatedKeyBeacon(dividendID, tokenID)
 	if value, ok := self.Params[key]; ok {
 		totalTokenOnAllShards, cstToPayout := parseDividendAggregatedValueBeacon(value)
 		value = getDividendAggregatedValueBeacon(totalTokenOnAllShards, cstToPayout)
-		return totalTokenOnAllShards, cstToPayout, nil
-	} else {
-		return 0, 0, errors.Errorf("Aggregated dividend info not found for id %d, tokenID %x", dividendID, tokenID.String())
+		return totalTokenOnAllShards, cstToPayout, true
 	}
-
+	return 0, 0, false
 }
