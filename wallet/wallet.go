@@ -2,7 +2,6 @@ package wallet
 
 import (
 	"bytes"
-	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -77,8 +76,9 @@ func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) 
 }
 
 func (wallet *Wallet) CreateNewAccount(accountName string, shardID byte) *AccountWallet {
-	/*newIndex := uint32(len(wallet.MasterAccount.Child))
-	childKey, _ := wallet.MasterAccount.Key.NewChildKey(newIndex)*/
+	newIndex := uint32(len(wallet.MasterAccount.Child))
+	childKey, _ := wallet.MasterAccount.Key.NewChildKey(newIndex)
+	/* TODO 0xsirrush: waiting for next phase: when use active shard num from beancon chain
 	newIndex := uint32(0)
 	for i := len(wallet.MasterAccount.Child) - 1; i >= 0; i-- {
 		temp := wallet.MasterAccount.Child[i]
@@ -96,7 +96,7 @@ func (wallet *Wallet) CreateNewAccount(accountName string, shardID byte) *Accoun
 			break
 		}
 		newIndex += 1
-	}
+	}*/
 
 	if accountName == "" {
 		accountName = fmt.Sprintf("AccountWallet %d", len(wallet.MasterAccount.Child))
