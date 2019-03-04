@@ -297,8 +297,10 @@ func (bsb *BestStateBeacon) processAcceptDCBProposalInstruction(inst []string) e
 }
 
 func (bsb *BestStateBeacon) processDividendSubmitInstruction(inst []string) error {
-	ds, err := metadata.ParseDividendSubmitActionValue(inst[1])
+	fmt.Printf("[db] beaconProcess found inst: %+v\n", inst)
+	ds, err := metadata.ParseDividendSubmitActionValue(inst[2])
 	if err != nil {
+		fmt.Printf("[db] err parse divsub: %v\n", err)
 		return err
 	}
 
@@ -315,6 +317,7 @@ func (bsb *BestStateBeacon) processDividendSubmitInstruction(inst []string) erro
 			shardTokenAmount := parseDividendSubmitValueBeacon(value)
 			totalTokenOnAllShards += shardTokenAmount
 		} else {
+			fmt.Printf("[db] no divSub for: %d %d %x\n", i, ds.DividendID, ds.TokenID)
 			return nil
 		}
 	}
@@ -336,6 +339,7 @@ func (bsb *BestStateBeacon) processDividendSubmitInstruction(inst []string) erro
 	} else {
 		bsb.StabilityInfo.SalaryFund -= cstToPayout
 	}
+	fmt.Printf("[db] updated dividend: %d %d %d\n", totalTokenOnAllShards, cstToPayout, bsb.StabilityInfo.BankFund)
 	return nil
 }
 
