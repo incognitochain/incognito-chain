@@ -9,6 +9,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
@@ -82,8 +83,13 @@ Parameter #1—an account name
 Result—a constant address
 */
 func (rpcServer RpcServer) handleGetAccountAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	result := rpcServer.config.Wallet.GetAccountAddress(params.(string))
-	return result, nil
+	if rpcServer.config.BlockChain.IsReady(false, 0) {
+		activeShards := rpcServer.config.BlockChain.BestState.Beacon.ActiveShards
+		randShard := rand.Int31n(int32(activeShards))
+		result := rpcServer.config.Wallet.GetAccountAddress(params.(string), byte(randShard))
+		return result, nil
+	}
+	return nil, NewRPCError(ErrUnexpected, errors.New("Can not get active shard"))
 }
 
 /*
@@ -343,7 +349,7 @@ func (rpcServer RpcServer) handleGetReceivedByAccount(params interface{}, closeC
 handleSetTxFee - RPC sets the transaction fee per kilobyte paid more by transactions created by this wallet. default is 1 coin per 1 kb
 */
 func (rpcServer RpcServer) handleSetTxFee(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	rpcServer.config.Wallet.Config.IncrementalFee = uint64(params.(float64))
+	rpcServer.config.Wallet.GetConfig().IncrementalFee = uint64(params.(float64))
 	err := rpcServer.config.Wallet.Save(rpcServer.config.Wallet.PassPhrase)
 	return err == nil, NewRPCError(ErrUnexpected, err)
 }
