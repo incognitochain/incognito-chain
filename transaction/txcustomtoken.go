@@ -363,6 +363,24 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 
 	// Add token data params
 	switch tokenParams.TokenTxType {
+	case CustomTokenCrossShard:
+		{
+			handled = true
+			propertyID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+			if err != nil {
+				return NewTransactionErr(UnexpectedErr, err)
+			}
+			txCustomToken.TxTokenData = TxTokenData{
+				PropertyID:     *propertyID,
+				Type:           tokenParams.TokenTxType,
+				PropertyName:   tokenParams.PropertyName,
+				PropertySymbol: tokenParams.PropertySymbol,
+				Vins:           nil,
+				Vouts:          nil,
+				Amount:         tokenParams.Amount,
+			}
+			txCustomToken.TxTokenData.Vouts = tokenParams.Receiver
+		}
 	case CustomTokenInit:
 		{
 			handled = true
@@ -397,7 +415,6 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 				}
 			}
 			txCustomToken.TxTokenData.PropertyID = newHashInitToken
-
 		}
 	case CustomTokenTransfer:
 		handled = true
