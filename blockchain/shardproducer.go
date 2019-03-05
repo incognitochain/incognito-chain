@@ -46,6 +46,9 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	txsToAdd, remainingFund := blockgen.getTransactionForNewBlock(payToAddress, privatekey, shardID, blockgen.chain.config.DataBase, beaconBlocks)
 	//======Get Cross output coin from other shard=======
 	crossOutputCoin, crossTxTokenData := blockgen.getCrossShardData(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight, crossShards)
+	crossTxTokenTransactions := blockgen.createCustomTokenTxForCrossShard(privatekey, crossTxTokenData, shardID)
+	fmt.Println("Shard Producer crossTxTokenTransactions", crossTxTokenTransactions)
+	txsToAdd = append(txsToAdd, crossTxTokenTransactions...)
 	fmt.Println("crossOutputCoin", crossOutputCoin)
 	//======Create Instruction===========================
 	//Assign Instruction
@@ -78,10 +81,10 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	}
 	block := &ShardBlock{
 		Body: ShardBody{
-			CrossOutputCoin:  crossOutputCoin,
-			CrossTxTokenData: crossTxTokenData,
-			Instructions:     instructions,
-			Transactions:     make([]metadata.Transaction, 0),
+			CrossOutputCoin: crossOutputCoin,
+			// CrossTxTokenData: crossTxTokenData,
+			Instructions: instructions,
+			Transactions: make([]metadata.Transaction, 0),
 		},
 	}
 	for _, tx := range txsToAdd {
@@ -330,6 +333,47 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 	3. Keep valid tx for new block
 	4. Return total fee of tx
 */
+func (blockgen *BlkTmplGenerator) createCustomTokenTxForCrossShard(privatekey *privacy.SpendingKey, crossTxTokenDataMap map[byte][]CrossTxTokenData, shardID byte) []metadata.Transaction {
+	txs := []metadata.Transaction{}
+	listCustomTokens, err := blockgen.chain.ListCustomToken()
+	if err != nil {
+		panic("Can't Retrieve List Custom Token in Database")
+	}
+	for _, crossTxTokenDataList := range crossTxTokenDataMap {
+		for _, crossTxTokenData := range crossTxTokenDataList {
+			for _, txTokenData := range crossTxTokenData.TxTokenData {
+				tx := &transaction.TxCustomToken{}
+				tokenParams := &transaction.CustomTokenParamTx{
+					PropertyID:     txTokenData.PropertyID.String(),
+					PropertyName:   txTokenData.PropertyName,
+					PropertySymbol: txTokenData.PropertySymbol,
+					Amount:         txTokenData.Amount,
+					TokenTxType:    transaction.CustomTokenCrossShard,
+					Receiver:       txTokenData.Vouts,
+				}
+				err := tx.Init(
+					privatekey,
+					nil,
+					nil,
+					0,
+					tokenParams,
+					listCustomTokens,
+					blockgen.chain.config.DataBase,
+					nil,
+					false,
+					shardID,
+				)
+				if err != nil {
+					fmt.Printf("Fail to create Transaction for Cross Shard Tx Token, err %+v \n", err)
+					panic("")
+				}
+				fmt.Println("CreateCustomTokenTxForCrossShard/ tx", tx)
+				txs = append(txs, tx)
+			}
+		}
+	}
+	return txs
+}
 func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	sourceTxns := blockgen.txPool.MiningDescs()
 
