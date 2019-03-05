@@ -389,6 +389,7 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	//hasPrivacy = false
+	fmt.Println("&&&&&&&&&&&&&&&&&&&&&&&&&&& 1")
 	Logger.log.Debugf("[db] Validating Transaction tx\n")
 	Logger.log.Infof("VALIDATING TX........\n")
 	start := time.Now()
@@ -711,7 +712,7 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 }
 
 func (tx *Tx) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
-	Logger.log.Info("Validating sanity data!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", tx.Metadata)
+	Logger.log.Info("Validating sanity data", tx.Metadata)
 	if tx.Metadata != nil {
 		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, tx)
 		if err != nil || !ok || !isContinued {

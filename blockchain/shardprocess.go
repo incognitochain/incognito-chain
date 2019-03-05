@@ -343,8 +343,11 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 			txSalaryCount += 1
 		}
 		fmt.Println("Number of salary transaction", txSalaryCount)
-		if err := blockchain.VerifyTransactionFromNewBlock(tx); err != nil {
-			return NewBlockChainError(TransactionError, err)
+		if !tx.IsSalaryTx() {
+			fmt.Println("Cross Shard Tx Transaction", tx)
+			if err := blockchain.VerifyTransactionFromNewBlock(tx); err != nil {
+				return NewBlockChainError(TransactionError, err)
+			}
 		}
 	}
 	//TODO: UNCOMMENT To verify Cross Shard Block
@@ -581,7 +584,7 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(tx metadata.Transact
 	if !ok {
 		return errors.New("Version Error")
 	}
-
+	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 2")
 	// check fee of tx
 	minFeePerKbTx := blockChain.GetFeePerKbTx()
 	ok = tx.CheckTransactionFee(minFeePerKbTx)
@@ -589,12 +592,12 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(tx metadata.Transact
 		return errors.New("Fee Error")
 	}
 	// end check with policy
-
+	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 3")
 	ok = tx.ValidateType()
 	if !ok {
 		return errors.New("Type Error")
 	}
-
+	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 4")
 	// sanity data
 	// if validate, errS := tp.ValidateSanityData(tx); !validate {
 	if validated, err := tx.ValidateSanityData(blockChain); !validated {
@@ -602,18 +605,19 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(tx metadata.Transact
 			return err
 		}
 	}
+	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 5", reflect.TypeOf(tx))
 	// ValidateTransaction tx by it self
 	validated := tx.ValidateTxByItself(tx.IsPrivacy(), blockChain.config.DataBase, blockChain, shardID)
 	if !validated {
 		return errors.New("Validate By It self Error")
 	}
-
+	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 6")
 	// validate tx with data of blockchain
 	err = tx.ValidateTxWithBlockChain(blockChain, shardID, blockChain.config.DataBase)
-	// err = tp.ValidateTxWithBlockChain(tx, shardID)
 	if err != nil {
 		return errors.New("Validate With Blockchain Error")
 	}
+	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 1")
 	return nil
 }
 
