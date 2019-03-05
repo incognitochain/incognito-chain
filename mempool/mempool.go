@@ -55,6 +55,10 @@ type TxPool struct {
 	//Candidate List in mempool
 	candidateList []string
 	candidateMtx  sync.RWMutex
+
+	//Token ID List in Mempool
+	tokenIDList []string
+	tokenIDMtx  sync.RWMutex
 }
 
 /*
@@ -129,7 +133,14 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
 			pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), byte(0x00))
-			tp.addCanđiateToList(pubkey)
+			tp.addCandiateToList(pubkey)
+		}
+	}
+	if tx.GetType() == common.TxCustomTokenType {
+		customTokenTx := tx.(*transaction.TxCustomToken)
+		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
+			tokenID := customTokenTx.TxTokenData.PropertyID.String()
+			tp.addTokenIDToList(tokenID)
 		}
 	}
 	return txD
@@ -223,6 +234,19 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		err := MempoolTxError{}
 		err.Init(RejectDuplicateTx, errors.New(str))
 		return nil, nil, err
+	}
+
+	if tx.GetType() == common.TxCustomTokenType {
+		customTokenTx := tx.(*transaction.TxCustomToken)
+		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
+			tokenID := customTokenTx.TxTokenData.PropertyID.String()
+			tp.tokenIDMtx.Lock()
+			found := common.IndexOfStr(tokenID, tp.tokenIDList)
+			tp.tokenIDMtx.Unlock()
+			if found > -1 {
+				return nil, nil, errors.New("Init Transaction of this Token is in pool already")
+			}
+		}
 	}
 
 	// A standalone transaction must not be a salary transaction.
@@ -441,11 +465,37 @@ func (tp *TxPool) removeTxCoinHashH(txHashH common.Hash) error {
 	return nil
 }
 
-func (tp *TxPool) addCanđiateToList(candidate string) {
+func (tp *TxPool) addCandiateToList(candidate string) {
 	tp.candidateMtx.Lock()
 	defer tp.candidateMtx.Unlock()
 	// fmt.Println("Mempool/addCanđiateToList: ", candidate)
 	tp.candidateList = append(tp.candidateList, candidate)
+}
+
+func (tp *TxPool) addTokenIDToList(tokenID string) {
+	tp.tokenIDMtx.Lock()
+	defer tp.tokenIDMtx.Unlock()
+	// fmt.Println("Mempool/addCanđiateToList: ", candidate)
+	tp.tokenIDList = append(tp.tokenIDList, tokenID)
+}
+
+func (tp *TxPool) RemoveTokenIDList(tokenID []string) {
+	tp.tokenIDMtx.Lock()
+	defer tp.tokenIDMtx.Unlock()
+	newList := []string{}
+	for _, value := range tokenID {
+		flag := false
+		for _, currentToken := range tp.tokenIDList {
+			if strings.Compare(value, currentToken) == 0 {
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			newList = append(newList, value)
+		}
+	}
+	tp.tokenIDList = newList
 }
 
 func (tp *TxPool) RemoveCandidateList(candidate []string) {
