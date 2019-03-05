@@ -371,7 +371,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 	}
 
 	// Dividend
-	divAmounts := []uint64{100}
+	divAmounts := []uint64{0}
 	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.DividendAmount = divAmounts[0]
 	divKey := getDCBDividendKeyBeacon()
 	divValue := getDividendValueBeacon(divAmounts)
@@ -1499,38 +1499,6 @@ func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
 	return true
 }
 
-//func (blockchain *BlockChain) UpdateDividendPayout(block *Block) error {
-//	for _, tx := range block.Transactions {
-//		switch tx.GetMetadataType() {
-//		case metadata.DividendMeta:
-//			{
-//				tx := tx.(*transaction.Tx)
-//				meta := tx.Metadata.(*metadata.Dividend)
-//				if tx.Proof == nil {
-//					return errors.New("Miss output in tx")
-//				}
-//				for _, _ = range tx.Proof.OutputCoins {
-//					keySet := cashec.KeySet{
-//						PaymentAddress: meta.PaymentAddress,
-//					}
-//					vouts, err := blockchain.GetUnspentTxCustomTokenVout(keySet, meta.TokenID)
-//					if err != nil {
-//						return err
-//					}
-//					for _, vout := range vouts {
-//						txHash := vout.GetTxCustomTokenID()
-//						err := blockchain.config.DataBase.UpdateRewardAccountUTXO(meta.TokenID, keySet.PaymentAddress.Pk, &txHash, vout.GetIndex())
-//						if err != nil {
-//							return err
-//						}
-//					}
-//				}
-//			}
-//		}
-//	}
-//	return nil
-//}
-//
 //func (blockchain *BlockChain) UpdateVoteCountBoard(block *Block) error {
 //	DCBBoardIndex := uint32(0)
 //	GOVBoardIndex := uint32(0)
@@ -1638,37 +1606,6 @@ func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
 //	}
 //	return nil
 //}
-//
-//func (blockchain *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
-//	// Temp storage to update crowdsale data
-//	saleDataMap := make(map[string]*params.SaleData)
-//
-//	for _, tx := range block.Transactions {
-//		switch tx.GetMetadataType() {
-//		case metadata.AcceptDCBProposalMeta:
-//			{
-//             DONE
-//			}
-//		case metadata.CrowdsalePaymentMeta:
-//			{
-//				err := blockchain.updateCrowdsalePaymentData(tx, saleDataMap)
-//				if err != nil {
-//					return err
-//				}
-//			}
-//			//		case metadata.ReserveResponseMeta:
-//			//			{
-//			//				// TODO(@0xbunyip): move to another func
-//			//				meta := tx.GetMetadata().(*metadata.ReserveResponse)
-//			//				_, _, _, txRequest, err := blockchain.GetTransactionByHash(meta.RequestedTxID)
-//			//				if err != nil {
-//			//					return err
-//			//				}
-//			//				requestHash := txRequest.Hash()
-//			//
-//			//				hash := tx.Hash()
-//			//				if err := blockchain.config.DataBase.StoreCrowdsaleResponse(requestHash[:], hash[:]); err != nil {
-//			//					return err
 //			//				}
 //			//			}
 //		}
