@@ -347,8 +347,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 	// TODO(@0xankylosaurus): initialize oracle data properly
 	// All values are in millicent
 
-	// blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 1000000 // $10
-	blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 10000   // $10
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 1000000 // $10
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.GOVToken = 2000000 // $20
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.Constant = 1000    // $1, for Nano
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.ETH = 10000        // $100, for milliether
