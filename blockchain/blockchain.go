@@ -793,6 +793,18 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 					return err
 				}
 			}
+		case transaction.CustomTokenCrossShard:
+			{
+				listCustomToken, err := blockchain.ListCustomToken()
+				if err != nil {
+					panic(err)
+				}
+				//If don't exist then create
+				if _, ok := listCustomToken[customTokenTx.TxTokenData.PropertyID]; !ok {
+					Logger.log.Info("Store Cross Shard Custom if It's not existed in DB", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
+					err = blockchain.config.DataBase.StoreCustomToken(&customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
+				}
+			}
 		case transaction.CustomTokenTransfer:
 			{
 				Logger.log.Info("Transfer custom token %+v", customTokenTx)
@@ -1225,7 +1237,6 @@ func (blockchain *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxC
 		txCustomToken := tx.(*transaction.TxCustomToken)
 		result[txCustomToken.TxTokenData.PropertyID] = *txCustomToken
 	}
-	//TODO: @merman Fetch Custom Token from CrossTokenData
 	return result, nil
 }
 
