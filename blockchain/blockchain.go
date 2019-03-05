@@ -346,12 +346,17 @@ func (blockchain *BlockChain) initBeaconState() error {
 	blockchain.BestState.Beacon.Update(initBlock)
 	// TODO(@0xankylosaurus): initialize oracle data properly
 	// All values are in millicent
+
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 1000000 // $10
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.GOVToken = 2000000 // $20
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.Constant = 1000    // $1, for Nano
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.ETH = 10000        // $100, for milliether
 	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.RaiseReserveData = map[common.Hash]*component.RaiseReserveData{
 		common.ETHAssetID: &component.RaiseReserveData{
+			EndBlock: 1000,
+			Amount:   1000,
+		},
+		common.USDAssetID: &component.RaiseReserveData{
 			EndBlock: 1000,
 			Amount:   1000,
 		},
@@ -365,12 +370,12 @@ func (blockchain *BlockChain) initBeaconState() error {
 	}
 
 	// Dividend
-	divAmounts := []uint64{100}
+	divAmounts := []uint64{0}
 	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.DividendAmount = divAmounts[0]
 	divKey := getDCBDividendKeyBeacon()
 	divValue := getDividendValueBeacon(divAmounts)
 	blockchain.BestState.Beacon.Params[divKey] = divValue
-	blockchain.BestState.Beacon.StabilityInfo.BankFund = 0
+	blockchain.BestState.Beacon.StabilityInfo.BankFund = 1000
 
 	bondID, _ := common.NewHashFromStr("4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000")
 	buyBondSaleID := [32]byte{1}

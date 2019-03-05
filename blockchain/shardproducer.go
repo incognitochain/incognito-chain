@@ -81,7 +81,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	if err != nil {
 		return nil, err
 	}
-	if len(stabilityInsts) > 0 {
+	if stabilityInsts != nil && len(stabilityInsts) > 0 {
 		instructions = append(instructions, stabilityInsts...)
 	}
 
