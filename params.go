@@ -8,7 +8,7 @@ import (
 // currently active network.
 var activeNetParams = &mainNetParams
 
-// params is used to group parameters for various networks such as the main
+// component is used to group parameters for various networks such as the main
 // network and test networks.
 type params struct {
 	*blockchain.Params

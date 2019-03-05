@@ -34,7 +34,7 @@ func (rpcServer RpcServer) handleGetAmountVoteToken(params interface{}, closeCha
 	TokenID.SetBytes(common.DCBVotingTokenID[:])
 	item.TokenID = TokenID.String()
 	item.TokenImage = common.Render([]byte(item.TokenID))
-	amount, err := db.GetVoteTokenAmount(metadata.DCBBoard.BoardTypeDB(), rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress)
+	amount, err := db.GetVoteTokenAmount(common.DCBBoard, rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -49,7 +49,7 @@ func (rpcServer RpcServer) handleGetAmountVoteToken(params interface{}, closeCha
 	TokenID.SetBytes(common.GOVVotingTokenID[:])
 	item.TokenID = TokenID.String()
 	item.TokenImage = common.Render([]byte(item.TokenID))
-	amount, err = db.GetVoteTokenAmount(metadata.GOVBoard.BoardTypeDB(), rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.GOVConstitutionHelper{}), *paymentAddress)
+	amount, err = db.GetVoteTokenAmount(common.GOVBoard, rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.GOVConstitutionHelper{}), *paymentAddress)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -73,11 +73,11 @@ func (rpcServer RpcServer) handleSetAmountVoteToken(params interface{}, closeCha
 	amountDCBVote := uint32(arrayParams[1].(float64))
 	amountGOVVote := uint32(arrayParams[2].(float64))
 
-	err := db.SetVoteTokenAmount(metadata.DCBBoard.BoardTypeDB(), rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress, amountDCBVote)
+	err := db.SetVoteTokenAmount(common.DCBBoard, rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress, amountDCBVote)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	err = db.SetVoteTokenAmount(metadata.GOVBoard.BoardTypeDB(), rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress, amountGOVVote)
+	err = db.SetVoteTokenAmount(common.GOVBoard, rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress, amountGOVVote)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -88,8 +88,8 @@ func (rpcServer RpcServer) handleSetAmountVoteToken(params interface{}, closeCha
 
 func (rpcServer RpcServer) handleGetEncryptionFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	db := *rpcServer.config.Database
-	dcbEncryptionFlag, _ := db.GetEncryptFlag(metadata.DCBBoard.BoardTypeDB())
-	govEncryptionFlag, _ := db.GetEncryptFlag(metadata.GOVBoard.BoardTypeDB())
+	dcbEncryptionFlag, _ := db.GetEncryptFlag(common.DCBBoard)
+	govEncryptionFlag, _ := db.GetEncryptFlag(common.GOVBoard)
 	return jsonresult.GetEncryptionFlagResult{
 		DCBFlag: dcbEncryptionFlag,
 		GOVFlag: govEncryptionFlag,
@@ -99,18 +99,18 @@ func (rpcServer RpcServer) handleGetEncryptionFlag(params interface{}, closeChan
 func (rpcServer RpcServer) handleSetEncryptionFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	fmt.Print("delete me, use only for test purpose!!!")
 	db := *rpcServer.config.Database
-	dcbEncryptionFlag, _ := db.GetEncryptFlag(metadata.DCBBoard.BoardTypeDB())
-	govEncryptionFlag, _ := db.GetEncryptFlag(metadata.GOVBoard.BoardTypeDB())
-	db.SetEncryptFlag(metadata.DCBBoard.BoardTypeDB(), (dcbEncryptionFlag+1)%4)
-	db.SetEncryptFlag(metadata.GOVBoard.BoardTypeDB(), (govEncryptionFlag+1)%4)
+	dcbEncryptionFlag, _ := db.GetEncryptFlag(common.DCBBoard)
+	govEncryptionFlag, _ := db.GetEncryptFlag(common.GOVBoard)
+	db.SetEncryptFlag(common.DCBBoard, (dcbEncryptionFlag+1)%4)
+	db.SetEncryptFlag(common.GOVBoard, (govEncryptionFlag+1)%4)
 	return dcbEncryptionFlag, nil
 }
 
 func (rpcServer RpcServer) handleGetEncryptionLastBlockHeightFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	boardType := metadata.NewBoardTypeFromString(arrayParams[0].(string))
+	boardType := common.NewBoardTypeFromString(arrayParams[0].(string))
 	db := *rpcServer.config.Database
-	blockHeight, _ := db.GetEncryptionLastBlockHeight(boardType.BoardTypeDB())
+	blockHeight, _ := db.GetEncryptionLastBlockHeight(boardType)
 	return jsonresult.GetEncryptionLastBlockHeightResult{blockHeight}, nil
 }
 

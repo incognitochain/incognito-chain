@@ -1,11 +1,12 @@
 package metadata
 
 import (
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 )
 
 type SetEncryptionLastBlockMetadata struct {
-	boardType   BoardType
+	boardType   common.BoardType
 	blockHeight uint64
 
 	MetadataBase
@@ -29,12 +30,12 @@ func (setEncryptionLastBlock *SetEncryptionLastBlockMetadata) ValidateMetadataBy
 func (setEncryptionLastBlock *SetEncryptionLastBlockMetadata) ProcessWhenInsertBlockShard(tx Transaction, db database.DatabaseInterface) error {
 	boardType := setEncryptionLastBlock.boardType
 	height := setEncryptionLastBlock.blockHeight
-	db.SetEncryptionLastBlockHeight(boardType.BoardTypeDB(), height)
+	db.SetEncryptionLastBlockHeight(boardType, height)
 	return nil
 }
 
 type SetEncryptionFlagMetadata struct {
-	boardType BoardType
+	boardType common.BoardType
 	flag      byte
 
 	MetadataBase
@@ -66,6 +67,6 @@ func (setEncryptionFlag *SetEncryptionFlagMetadata) ProcessWhenInsertBlockShard(
 ) error {
 	boardType := setEncryptionFlag.boardType
 	flag := setEncryptionFlag.flag
-	db.SetEncryptFlag(boardType.BoardTypeDB(), flag)
+	db.SetEncryptFlag(boardType, flag)
 	return nil
 }

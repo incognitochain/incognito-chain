@@ -1,42 +1,52 @@
 package fromshardins
 
 import (
-	"github.com/ninjadotorg/constant/blockchain/params"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy"
+	"encoding/json"
+	"github.com/ninjadotorg/constant/blockchain/component"
 )
 
 type NewDCBConstitutionIns struct {
-	SubmitProposalInfo metadata.SubmitProposalInfo
-	DCBParams          params.DCBParams
+	SubmitProposalInfo component.SubmitProposalInfo
+	DCBParams          component.DCBParams
+	Voter              component.Voter
+}
+
+func NewNewDCBConstitutionIns(submitProposalInfo component.SubmitProposalInfo, DCBParams component.DCBParams, voter component.Voter) *NewDCBConstitutionIns {
+	return &NewDCBConstitutionIns{SubmitProposalInfo: submitProposalInfo, DCBParams: DCBParams, Voter: voter}
+}
+
+func NewNewDCBConstitutionInsFromStr(inst string) (*NewDCBConstitutionIns, error) {
+	newDCBConstitutionIns := &NewDCBConstitutionIns{}
+	err := json.Unmarshal([]byte(inst), newDCBConstitutionIns)
+	if err != nil {
+		return nil, err
+	}
+	return newDCBConstitutionIns, nil
 }
 
 func (NewDCBConstitutionIns) GetStringFormat() ([]string, error) {
 	panic("implement me")
 }
 
-func (NewDCBConstitutionIns) BuildTransaction(minerPrivateKey *privacy.SpendingKey, db database.DatabaseInterface) (metadata.Transaction, error) {
-	panic("implement me")
-}
-
-func NewNewDCBConstitutionIns(submitProposalInfo metadata.SubmitProposalInfo, DCBParams params.DCBParams) *NewDCBConstitutionIns {
-	return &NewDCBConstitutionIns{SubmitProposalInfo: submitProposalInfo, DCBParams: DCBParams}
-}
-
 type NewGOVConstitutionIns struct {
-	SubmitProposalInfo metadata.SubmitProposalInfo
-	GOVParams          params.GOVParams
+	SubmitProposalInfo component.SubmitProposalInfo
+	GOVParams          component.GOVParams
+	Voter              component.Voter
+}
+
+func NewNewGOVConstitutionIns(submitProposalInfo component.SubmitProposalInfo, GOVParams component.GOVParams, voter component.Voter) *NewGOVConstitutionIns {
+	return &NewGOVConstitutionIns{SubmitProposalInfo: submitProposalInfo, GOVParams: GOVParams, Voter: voter}
+}
+
+func NewNewGOVConstitutionInsFromStr(inst string) (*NewGOVConstitutionIns, error) {
+	newGOVConstitutionIns := &NewGOVConstitutionIns{}
+	err := json.Unmarshal([]byte(inst), newGOVConstitutionIns)
+	if err != nil {
+		return nil, err
+	}
+	return newGOVConstitutionIns, nil
 }
 
 func (NewGOVConstitutionIns) GetStringFormat() ([]string, error) {
 	panic("implement me")
-}
-
-func (NewGOVConstitutionIns) BuildTransaction(minerPrivateKey *privacy.SpendingKey, db database.DatabaseInterface) (metadata.Transaction, error) {
-	panic("implement me")
-}
-
-func NewNewGOVConstitutionIns(submitProposalInfo metadata.SubmitProposalInfo, GOVParams params.GOVParams) *NewGOVConstitutionIns {
-	return &NewGOVConstitutionIns{SubmitProposalInfo: submitProposalInfo, GOVParams: GOVParams}
 }

@@ -12,9 +12,9 @@ type SealedLv1GOVVoteProposalMetadata struct {
 }
 
 func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
-	boardType := GOVBoard
+	boardType := common.GOVBoard
 	nextConstitutionIndex := bcr.GetConstitution(boardType).GetConstitutionIndex() + 1
-	err := bcr.GetDatabase().AddVoteLv1or2Proposal(boardType.BoardTypeDB(), nextConstitutionIndex, tx.GetMetadata().Hash())
+	err := bcr.GetDatabase().AddVoteLv1or2Proposal(boardType, nextConstitutionIndex, tx.GetMetadata().Hash())
 	if err != nil {
 		return err
 	}
@@ -29,8 +29,8 @@ func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) Valida
 	return sealedLv1GOVVoteProposalMetadata.SealedLv1VoteProposalMetadata.ValidateMetadataByItself()
 }
 
-func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) GetBoardType() BoardType {
-	return GOVBoard
+func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) GetBoardType() common.BoardType {
+	return common.GOVBoard
 }
 
 func NewSealedLv1GOVVoteProposalMetadata(
@@ -65,7 +65,7 @@ func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) Valida
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	boardType := GOVBoard
+	boardType := common.GOVBoard
 	return sealedLv1GOVVoteProposalMetadata.SealedLv1VoteProposalMetadata.ValidateTxWithBlockChain(
 		boardType,
 		tx,
@@ -82,9 +82,9 @@ type SealedLv2GOVVoteProposalMetadata struct {
 }
 
 func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
-	boardType := GOVBoard
+	boardType := common.GOVBoard
 	nextConstitutionIndex := bcr.GetConstitution(boardType).GetConstitutionIndex() + 1
-	err := bcr.GetDatabase().AddVoteLv1or2Proposal(boardType.BoardTypeDB(), nextConstitutionIndex, tx.GetMetadata().Hash())
+	err := bcr.GetDatabase().AddVoteLv1or2Proposal(boardType, nextConstitutionIndex, tx.GetMetadata().Hash())
 	if err != nil {
 		return err
 	}
@@ -99,8 +99,8 @@ func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) Valida
 	return sealedLv2GOVVoteProposalMetadata.SealedLv2VoteProposalMetadata.ValidateMetadataByItself()
 }
 
-func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) GetBoardType() BoardType {
-	return GOVBoard
+func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) GetBoardType() common.BoardType {
+	return common.GOVBoard
 }
 
 func NewSealedLv2GOVVoteProposalMetadata(
@@ -144,9 +144,9 @@ type SealedLv3GOVVoteProposalMetadata struct {
 }
 
 func (sealedLv3GOVVoteProposalMetadata *SealedLv3GOVVoteProposalMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
-	boardType := GOVBoard
+	boardType := common.GOVBoard
 	nextConstitutionIndex := bcr.GetConstitution(boardType).GetConstitutionIndex() + 1
-	err := bcr.GetDatabase().AddVoteLv3Proposal(boardType.BoardTypeDB(), nextConstitutionIndex, tx.GetMetadata().Hash())
+	err := bcr.GetDatabase().AddVoteLv3Proposal(boardType, nextConstitutionIndex, tx.GetMetadata().Hash())
 	if err != nil {
 		return err
 	}
@@ -165,8 +165,8 @@ func (sealedLv3GOVVoteProposalMetadata *SealedLv3GOVVoteProposalMetadata) Valida
 	return sealedLv3GOVVoteProposalMetadata.SealedLv3VoteProposalMetadata.ValidateMetadataByItself()
 }
 
-func (sealedLv3GOVVoteProposalMetadata *SealedLv3GOVVoteProposalMetadata) GetBoardType() BoardType {
-	return GOVBoard
+func (sealedLv3GOVVoteProposalMetadata *SealedLv3GOVVoteProposalMetadata) GetBoardType() common.BoardType {
+	return common.GOVBoard
 }
 
 func NewSealedLv3GOVVoteProposalMetadata(
@@ -188,10 +188,10 @@ type NormalGOVVoteProposalFromSealerMetadata struct {
 }
 
 func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
-	boardType := GOVBoard
+	boardType := common.GOVBoard
 	nextConstitutionIndex := bcr.GetConstitution(boardType).GetConstitutionIndex() + 1
 	err := bcr.GetDatabase().AddVoteNormalProposalFromOwner(
-		boardType.BoardTypeDB(),
+		boardType,
 		nextConstitutionIndex,
 		&normalGOVVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal,
 		normalGOVVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes(),
@@ -227,8 +227,8 @@ func NewNormalGOVVoteProposalFromSealerMetadata(
 	}
 }
 
-func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) GetBoardType() BoardType {
-	return GOVBoard
+func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) GetBoardType() common.BoardType {
+	return common.GOVBoard
 }
 
 func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
@@ -249,10 +249,10 @@ type NormalGOVVoteProposalFromOwnerMetadata struct {
 }
 
 func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
-	boardType := GOVBoard
+	boardType := common.GOVBoard
 	nextConstitutionIndex := bcr.GetConstitution(boardType).GetConstitutionIndex() + 1
 	err := bcr.GetDatabase().AddVoteNormalProposalFromOwner(
-		boardType.BoardTypeDB(),
+		boardType,
 		nextConstitutionIndex,
 		&normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal,
 		normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes(),
@@ -296,7 +296,7 @@ func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMeta
 
 func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	//Validate these pubKeys are in board
-	boardType := GOVBoard
+	boardType := common.GOVBoard
 	return normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.ValidateTxWithBlockChain(
 		boardType,
 		tx,
