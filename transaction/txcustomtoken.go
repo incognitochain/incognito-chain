@@ -122,7 +122,7 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 	db database.DatabaseInterface,
 ) error {
 	if customTokenTx.GetType() == common.TxSalaryType {
-		return nil
+		return NewTransactionErr(UnexpectedErr, errors.New("Wrong salary tx"))
 	}
 	if customTokenTx.Metadata != nil {
 		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(customTokenTx, bcr, shardID, db)
