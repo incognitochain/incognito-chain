@@ -53,7 +53,7 @@ func (uob UpdatingOracleBoard) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	govBoardPubKeys := bcr.GetBoardPubKeys(GOVBoard)
+	govBoardPubKeys := bcr.GetBoardPubKeys(common.GOVBoard)
 	boardLen := len(govBoardPubKeys)
 	if boardLen == 0 {
 		return false, errors.New("There is no one in GOV board yet.")

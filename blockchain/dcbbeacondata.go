@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
@@ -78,13 +78,13 @@ func getSaleDataKeyBeacon(saleID []byte) string {
 	return saleDataPrefix + string(saleID)
 }
 
-func getSaleDataValueBeacon(data *params.SaleData) string {
+func getSaleDataValueBeacon(data *component.SaleData) string {
 	value, _ := json.Marshal(data)
 	return string(value)
 }
 
-func parseSaleDataValueBeacon(value string) (*params.SaleData, error) {
-	data := &params.SaleData{}
+func parseSaleDataValueBeacon(value string) (*component.SaleData, error) {
+	data := &component.SaleData{}
 	err := json.Unmarshal([]byte(value), data)
 	if err != nil {
 		return nil, err
@@ -97,7 +97,7 @@ type CrowdsalePaymentInstruction struct {
 	Amount         uint64
 	AssetID        common.Hash
 
-	// Data for updating crowdsale on beacon params
+	// Data for updating crowdsale on beacon component
 	SaleID     []byte
 	SentAmount uint64
 	UpdateSale bool

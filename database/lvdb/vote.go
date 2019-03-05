@@ -2,7 +2,6 @@ package lvdb
 
 import (
 	"encoding/binary"
-	"github.com/ninjadotorg/constant/metadata"
 	"sort"
 
 	"github.com/ninjadotorg/constant/common"
@@ -20,7 +19,7 @@ func iPlusPlus(x *int) int {
 }
 
 func (db *db) AddVoteBoard(
-	boardType database.BoardTypeDB,
+	boardType common.BoardType,
 	boardIndex uint32,
 	VoterPaymentAddress privacy.PaymentAddress,
 	CandidatePaymentAddress privacy.PaymentAddress,
@@ -74,15 +73,15 @@ func (db *db) AddVoteBoard(
 	return err
 }
 
-func GetNumberOfGovernor(boardType database.BoardTypeDB) int {
+func GetNumberOfGovernor(boardType common.BoardType) int {
 	numberOfGovernors := common.NumberOfDCBGovernors
-	if boardType == database.BoardTypeDB(metadata.GOVBoard) {
+	if boardType == common.GOVBoard {
 		numberOfGovernors = common.NumberOfGOVGovernors
 	}
 	return numberOfGovernors
 }
 
-func (db *db) GetTopMostVoteGovernor(boardType database.BoardTypeDB, boardIndex uint32) (database.CandidateList, error) {
+func (db *db) GetTopMostVoteGovernor(boardType common.BoardType, boardIndex uint32) (database.CandidateList, error) {
 	var candidateList database.CandidateList
 	//use prefix  as in file lvdb/block.go FetchChain
 	prefix := GetKeyVoteBoardSum(boardType, boardIndex, nil)
@@ -117,7 +116,7 @@ func (db *db) NewIterator(slice *util.Range, ro *opt.ReadOptions) iterator.Itera
 	return db.lvdb.NewIterator(slice, ro)
 }
 
-func (db *db) AddVoteLv3Proposal(boardType database.BoardTypeDB, constitutionIndex uint32, txID *common.Hash) error {
+func (db *db) AddVoteLv3Proposal(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash) error {
 	//init sealer
 	keySealer := GetKeyThreePhraseCryptoSealer(boardType, constitutionIndex, txID)
 	ok, err := db.HasValue(keySealer)
@@ -145,7 +144,7 @@ func (db *db) AddVoteLv3Proposal(boardType database.BoardTypeDB, constitutionInd
 	return nil
 }
 
-func (db *db) AddVoteLv1or2Proposal(boardType database.BoardTypeDB, constitutionIndex uint32, txID *common.Hash) error {
+func (db *db) AddVoteLv1or2Proposal(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash) error {
 	keySealer := GetKeyThreePhraseCryptoSealer(boardType, constitutionIndex, txID)
 	ok, err := db.HasValue(keySealer)
 	if err != nil {
@@ -166,7 +165,7 @@ func (db *db) AddVoteLv1or2Proposal(boardType database.BoardTypeDB, constitution
 	return nil
 }
 
-func (db *db) AddVoteNormalProposalFromSealer(boardType database.BoardTypeDB, constitutionIndex uint32, txID *common.Hash, voteValue []byte) error {
+func (db *db) AddVoteNormalProposalFromSealer(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash, voteValue []byte) error {
 	err := db.AddVoteLv1or2Proposal(boardType, constitutionIndex, txID)
 	if err != nil {
 		return err
@@ -178,7 +177,7 @@ func (db *db) AddVoteNormalProposalFromSealer(boardType database.BoardTypeDB, co
 	return nil
 }
 
-func (db *db) AddVoteNormalProposalFromOwner(boardType database.BoardTypeDB, constitutionIndex uint32, txID *common.Hash, voteValue []byte) error {
+func (db *db) AddVoteNormalProposalFromOwner(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash, voteValue []byte) error {
 	keyOwner := GetKeyThreePhraseCryptoOwner(boardType, constitutionIndex, txID)
 	ok, err := db.HasValue(keyOwner)
 	if err != nil {
@@ -199,7 +198,7 @@ func (db *db) AddVoteNormalProposalFromOwner(boardType database.BoardTypeDB, con
 	return nil
 }
 
-func (db *db) GetVoteTokenAmount(boardType database.BoardTypeDB, boardIndex uint32, paymentAddress privacy.PaymentAddress) (uint32, error) {
+func (db *db) GetVoteTokenAmount(boardType common.BoardType, boardIndex uint32, paymentAddress privacy.PaymentAddress) (uint32, error) {
 	key := GetKeyVoteTokenAmount(boardType, boardIndex, paymentAddress)
 	value, err := db.Get(key)
 	if err != nil {
@@ -208,7 +207,7 @@ func (db *db) GetVoteTokenAmount(boardType database.BoardTypeDB, boardIndex uint
 	return common.BytesToUint32(value), nil
 }
 
-func (db *db) SetVoteTokenAmount(boardType database.BoardTypeDB, boardIndex uint32, paymentAddress privacy.PaymentAddress, newAmount uint32) error {
+func (db *db) SetVoteTokenAmount(boardType common.BoardType, boardIndex uint32, paymentAddress privacy.PaymentAddress, newAmount uint32) error {
 	key := GetKeyVoteTokenAmount(boardType, boardIndex, paymentAddress)
 	ok, err := db.HasValue(key)
 	if err != nil {
@@ -227,7 +226,7 @@ func (db *db) SetVoteTokenAmount(boardType database.BoardTypeDB, boardIndex uint
 	return nil
 }
 
-func (db *db) GetEncryptFlag(boardType database.BoardTypeDB) (byte, error) {
+func (db *db) GetEncryptFlag(boardType common.BoardType) (byte, error) {
 	key := GetKeyEncryptFlag(boardType)
 	value, err := db.Get(key)
 	if err != nil {
@@ -239,13 +238,13 @@ func (db *db) GetEncryptFlag(boardType database.BoardTypeDB) (byte, error) {
 	return value[0], nil
 }
 
-func (db *db) SetEncryptFlag(boardType database.BoardTypeDB, flag byte) {
+func (db *db) SetEncryptFlag(boardType common.BoardType, flag byte) {
 	key := GetKeyEncryptFlag(boardType)
 	value := common.ByteToBytes(flag)
 	db.Put(key, value)
 }
 
-func (db *db) GetEncryptionLastBlockHeight(boardType database.BoardTypeDB) (uint64, error) {
+func (db *db) GetEncryptionLastBlockHeight(boardType common.BoardType) (uint64, error) {
 	key := GetKeyEncryptionLastBlockHeight(boardType)
 	value, err := db.Get(key)
 	if err != nil {
@@ -254,13 +253,13 @@ func (db *db) GetEncryptionLastBlockHeight(boardType database.BoardTypeDB) (uint
 	return common.BytesToUint64(value), nil
 }
 
-func (db *db) SetEncryptionLastBlockHeight(boardType database.BoardTypeDB, height uint64) {
+func (db *db) SetEncryptionLastBlockHeight(boardType common.BoardType, height uint64) {
 	key := GetKeyEncryptionLastBlockHeight(boardType)
 	value := common.Uint64ToBytes(height)
 	db.Put(key, value)
 }
 
-func (db *db) TakeVoteTokenFromWinner(boardType database.BoardTypeDB, boardIndex uint32, voterPaymentAddress privacy.PaymentAddress, amountOfVote int32) error {
+func (db *db) TakeVoteTokenFromWinner(boardType common.BoardType, boardIndex uint32, voterPaymentAddress privacy.PaymentAddress, amountOfVote int32) error {
 	key := GetKeyVoteTokenAmount(boardType, boardIndex, voterPaymentAddress)
 	currentAmountInByte, err := db.Get(key)
 	if err != nil {
@@ -272,13 +271,13 @@ func (db *db) TakeVoteTokenFromWinner(boardType database.BoardTypeDB, boardIndex
 	return nil
 }
 
-func (db *db) SetNewProposalWinningVoter(boardType database.BoardTypeDB, constitutionIndex uint32, voterPaymentAddress privacy.PaymentAddress) error {
+func (db *db) SetNewProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32, voterPaymentAddress privacy.PaymentAddress) error {
 	key := GetKeyWinningVoter(boardType, constitutionIndex)
 	db.Put(key, voterPaymentAddress.Bytes())
 	return nil
 }
 
-func (db *db) GetBoardVoterList(boardType database.BoardTypeDB, candidatePaymentAddress privacy.PaymentAddress, boardIndex uint32) []privacy.PaymentAddress {
+func (db *db) GetBoardVoterList(boardType common.BoardType, candidatePaymentAddress privacy.PaymentAddress, boardIndex uint32) []privacy.PaymentAddress {
 	begin := GetKeyVoteBoardList(boardType, boardIndex, &candidatePaymentAddress, nil)
 	end := GetKeyVoteBoardList(boardType, boardIndex, &candidatePaymentAddress, nil)
 	end = common.BytesPlusOne(end)

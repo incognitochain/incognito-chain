@@ -7,7 +7,7 @@ import (
 	"math/big"
 )
 
-/***** Bullet proof params *****/
+/***** Bullet proof component *****/
 
 // BulletproofParams includes all generator for aggregated range proof
 type BulletproofParams struct {

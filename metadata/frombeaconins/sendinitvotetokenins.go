@@ -2,6 +2,7 @@ package frombeaconins
 
 import (
 	"encoding/json"
+	"github.com/ninjadotorg/constant/common"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/database"
@@ -87,11 +88,11 @@ func (txSendInitGOVVoteTokenMetadataIns *TxSendInitGOVVoteTokenMetadataIns) Buil
 }
 
 func NewTxSendInitVoteTokenMetadataIns(
-	boardType metadata.BoardType,
+	boardType common.BoardType,
 	amount uint32,
 	receiverPaymentAddress privacy.PaymentAddress,
 ) InstructionFromBeacon {
-	if boardType == metadata.DCBBoard {
+	if boardType == common.DCBBoard {
 		return NewTxSendInitDCBVoteTokenMetadataIns(amount, receiverPaymentAddress)
 	} else {
 		return NewTxSendInitGOVVoteTokenMetadataIns(amount, receiverPaymentAddress)
