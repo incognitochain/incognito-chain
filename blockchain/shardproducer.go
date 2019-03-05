@@ -16,7 +16,7 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 )
 
-func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte, round int, crossShards map[byte]uint64) (*ShardBlock, error) {
+func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte, proposerOffset int, crossShards map[byte]uint64) (*ShardBlock, error) {
 	//============Build body=============
 	// Fetch Beacon information
 	beaconHeight := blockgen.chain.BestState.Beacon.BeaconHeight
@@ -149,7 +149,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		BeaconHeight:         beaconHeight,
 		BeaconHash:           beaconHash,
 		Epoch:                epoch,
-		Round:                round,
+		Round:                proposerOffset + 1,
 	}
 	// Create producer signature
 	blkHeaderHash := block.Header.Hash()
