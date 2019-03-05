@@ -14,12 +14,12 @@ const (
 )
 
 type MessageBFTReady struct {
-	PoolState     map[byte]uint64
-	BestStateHash common.Hash
-	Round         int
-	Pubkey        string
-	ContentSig    string
-	Timestamp     int64
+	PoolState      map[byte]uint64
+	BestStateHash  common.Hash
+	ProposerOffset int
+	Pubkey         string
+	ContentSig     string
+	Timestamp      int64
 }
 
 func (msg *MessageBFTReady) Hash() string {
@@ -56,7 +56,7 @@ func (msg *MessageBFTReady) SignMsg(keySet *cashec.KeySet) error {
 	dataBytes := []byte{}
 	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.PoolState))...)
 	dataBytes = append(dataBytes, msg.BestStateHash.GetBytes()...)
-	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.Round))...)
+	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.ProposerOffset))...)
 	dataBytes = append(dataBytes, []byte(msg.Pubkey)...)
 	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.Timestamp))...)
 	var err error
@@ -68,7 +68,7 @@ func (msg *MessageBFTReady) VerifyMsgSanity() error {
 	dataBytes := []byte{}
 	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.PoolState))...)
 	dataBytes = append(dataBytes, msg.BestStateHash.GetBytes()...)
-	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.Round))...)
+	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.ProposerOffset))...)
 	dataBytes = append(dataBytes, []byte(msg.Pubkey)...)
 	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.Timestamp))...)
 	err := cashec.ValidateDataB58(msg.Pubkey, msg.ContentSig, dataBytes)
