@@ -466,7 +466,11 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	bestStateBeacon.BestBlock = newBlock
 	bestStateBeacon.Epoch = newBlock.Header.Epoch
 	bestStateBeacon.BeaconHeight = newBlock.Header.Height
-	bestStateBeacon.BeaconProposerIdx = common.IndexOfStr(newBlock.Header.Producer, bestStateBeacon.BeaconCommittee)
+	if newBlock.Header.Height == 1 {
+		bestStateBeacon.BeaconProposerIdx = 0
+	} else {
+		bestStateBeacon.BeaconProposerIdx = common.IndexOfStr(newBlock.Header.Producer, bestStateBeacon.BeaconCommittee)
+	}
 
 	allShardState := newBlock.Body.ShardState
 	// if bestStateBeacon.AllShardState == nil {
