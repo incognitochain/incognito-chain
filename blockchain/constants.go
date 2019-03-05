@@ -25,8 +25,8 @@ const (
 	MainetName         = "mainnet"
 	MainnetDefaultPort = "9333"
 
-	MainNetShardCommitteeSize  = 1
-	MainNetBeaconCommitteeSize = 1
+	MainNetShardCommitteeSize  = 3
+	MainNetBeaconCommitteeSize = 3
 	MainNetActiveShards        = 2
 
 	//board and proposal parameters
@@ -42,12 +42,14 @@ const (
 // for beacon
 // public key
 var PreSelectBeaconNodeMainnetSerializedPubkey = PreSelectBeaconNodeTestnetSerializedPubkey
+
 // privatekey
 var PreSelectBeaconNodeMainnet = PreSelectBeaconNodeTestnet
 
 // For shard
 // public key
 var PreSelectShardNodeMainnetSerializedPubkey = PreSelectShardNodeTestnetSerializedPubkey
+
 // privatekey
 var PreSelectShardNodeMainnet = PreSelectShardNodeTestnet
 
@@ -59,8 +61,8 @@ const (
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 
-	TestNetShardCommitteeSize  = 1
-	TestNetBeaconCommitteeSize = 1
+	TestNetShardCommitteeSize  = 3
+	TestNetBeaconCommitteeSize = 3
 	TestNetActiveShards        = 2
 
 	//board and proposal parameters
@@ -119,4 +121,5 @@ var PreSelectShardNodeTestnet = []string{
 	"112t8rnb1VhdWUR4SwVNTAokxntpNT5EcLFg6w6DovD9ZptT1DFsAXfrorLofP9uzCZC3JechZowMnc7fcXJ8nvsjdSEr3M6tzWVYBdLJmNW",
 	"112t8rnbDuvxqCrnzQbRkBLrrGoaqTHnvKSBa4tdt4585gJHJHcsm4shE4yBardCsLkXV2Rtogom6Gy8rn4Z5vQXXmanBoVPn2wQhFLTYz4E",
 }
+
 // END CONSTANT for network TESTNET
