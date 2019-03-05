@@ -43,7 +43,7 @@ func createSpecialTokenTx(
 
 func CreateShardGenesisBlock(
 	version int,
-	icoParams IcoParams,
+	icoParams GenesisParams,
 ) *ShardBlock {
 
 	log.Printf("Ico payment address:", icoParams.InitialPaymentAddress)

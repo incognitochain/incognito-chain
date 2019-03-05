@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -22,7 +23,7 @@ type Wallet struct {
 	Mnemonic      string
 	MasterAccount AccountWallet
 	Name          string
-	Config        *WalletConfig
+	config        *WalletConfig
 }
 
 type WalletConfig struct {
@@ -30,6 +31,14 @@ type WalletConfig struct {
 	DataFile       string
 	DataPath       string
 	IncrementalFee uint64
+}
+
+func (wallet Wallet) GetConfig() *WalletConfig {
+	return wallet.config;
+}
+
+func (wallet *Wallet) SetConfig(config *WalletConfig) {
+	wallet.config = config;
 }
 
 func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) (error) {
@@ -67,9 +76,28 @@ func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) 
 	return nil
 }
 
-func (wallet *Wallet) CreateNewAccount(accountName string) *AccountWallet {
-	newIndex := uint32(len(wallet.MasterAccount.Child))
-	childKey, _ := wallet.MasterAccount.Key.NewChildKey(newIndex)
+func (wallet *Wallet) CreateNewAccount(accountName string, shardID byte) *AccountWallet {
+	/*newIndex := uint32(len(wallet.MasterAccount.Child))
+	childKey, _ := wallet.MasterAccount.Key.NewChildKey(newIndex)*/
+	newIndex := uint32(0)
+	for i := len(wallet.MasterAccount.Child) - 1; i >= 0; i-- {
+		temp := wallet.MasterAccount.Child[i]
+		if !temp.IsImported {
+			newIndex = binary.BigEndian.Uint32(temp.Key.ChildNumber)
+			newIndex += 1
+			break
+		}
+	}
+	var childKey *KeyWallet
+	for {
+		childKey, _ = wallet.MasterAccount.Key.NewChildKey(newIndex)
+		lastByte := childKey.KeySet.PaymentAddress.Pk[len(childKey.KeySet.PaymentAddress.Pk)-1]
+		if lastByte == shardID {
+			break
+		}
+		newIndex += 1
+	}
+
 	if accountName == "" {
 		accountName = fmt.Sprintf("AccountWallet %d", len(wallet.MasterAccount.Child))
 	}
@@ -158,7 +186,8 @@ func (wallet *Wallet) Save(password string) error {
 	}
 	// and
 	// save file
-	err = ioutil.WriteFile(wallet.Config.DataPath, []byte(cipherText), 0644)
+	cipherTexInBytes := []byte(cipherText)
+	err = ioutil.WriteFile(wallet.config.DataPath, cipherTexInBytes, 0644)
 	if err != nil {
 		return NewWalletError(UnexpectedErr, err)
 	}
@@ -167,7 +196,7 @@ func (wallet *Wallet) Save(password string) error {
 
 func (wallet *Wallet) LoadWallet(password string) error {
 	// read file and decrypt
-	bytesData, err := ioutil.ReadFile(wallet.Config.DataPath)
+	bytesData, err := ioutil.ReadFile(wallet.config.DataPath)
 	if err != nil {
 		return NewWalletError(UnexpectedErr, err)
 	}
@@ -197,7 +226,7 @@ func (wallet *Wallet) DumpPrivkey(addressP string) (KeySerializedData) {
 	return KeySerializedData{}
 }
 
-func (wallet *Wallet) GetAccountAddress(accountParam string) (KeySerializedData) {
+func (wallet *Wallet) GetAccountAddress(accountParam string, shardID byte) (KeySerializedData) {
 	for _, account := range wallet.MasterAccount.Child {
 		if account.Name == accountParam {
 			key := KeySerializedData{
@@ -208,7 +237,7 @@ func (wallet *Wallet) GetAccountAddress(accountParam string) (KeySerializedData)
 			return key
 		}
 	}
-	newAccount := wallet.CreateNewAccount(accountParam)
+	newAccount := wallet.CreateNewAccount(accountParam, shardID)
 	key := KeySerializedData{
 		PaymentAddress: newAccount.Key.Base58CheckSerialize(PaymentAddressType),
 		Pubkey:         hex.EncodeToString(newAccount.Key.KeySet.PaymentAddress.Pk),
