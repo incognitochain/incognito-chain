@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
@@ -190,7 +190,7 @@ func (blockgen *BlkTmplGenerator) buildBuyBondsFromGOVRes(
 	blkProducerPrivateKey *privacy.SpendingKey,
 ) ([]metadata.Transaction, error) {
 	sellingBondsParamsBytes := []byte(sellingBondsParamsStr)
-	var sellingBondsParams params.SellingBonds
+	var sellingBondsParams component.SellingBonds
 	err := json.Unmarshal(sellingBondsParamsBytes, &sellingBondsParams)
 	if err != nil {
 		return nil, err

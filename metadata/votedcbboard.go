@@ -1,14 +1,11 @@
 package metadata
 
 import (
-	"encoding/base64"
-	"encoding/json"
-	"github.com/ninjadotorg/constant/wallet"
-	"strconv"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/metadata/fromshardins"
 	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 type VoteDCBBoardMetadata struct {
@@ -22,7 +19,7 @@ type GovernorInterface interface {
 }
 
 func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
-	boardType := DCBBoard
+	boardType := common.DCBBoard
 	voteAmount, err := tx.GetAmountOfVote()
 	if err != nil {
 		return err
@@ -34,7 +31,7 @@ func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ProcessWhenInsertBlockShard(tx
 	governor := bcr.GetGovernor(boardType)
 	boardIndex := governor.GetBoardIndex() + 1
 	err1 := bcr.GetDatabase().AddVoteBoard(
-		boardType.BoardTypeDB(),
+		boardType,
 		boardIndex,
 		*payment,
 		voteDCBBoardMetadata.VoteBoardMetadata.CandidatePaymentAddress,
@@ -46,17 +43,18 @@ func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ProcessWhenInsertBlockShard(tx
 	return nil
 }
 
-func NewVoteDCBBoardMetadata(candidatePaymentAddress privacy.PaymentAddress) *VoteDCBBoardMetadata {
+func NewVoteDCBBoardMetadata(candidatePaymentAddress privacy.PaymentAddress, boardIndex uint32) *VoteDCBBoardMetadata {
 	return &VoteDCBBoardMetadata{
-		VoteBoardMetadata: *NewVoteBoardMetadata(candidatePaymentAddress),
+		VoteBoardMetadata: *NewVoteBoardMetadata(candidatePaymentAddress, boardIndex),
 		MetadataBase:      *NewMetadataBase(VoteDCBBoardMeta),
 	}
 }
 
 func NewVoteDCBBoardMetadataFromRPC(data map[string]interface{}) (Metadata, error) {
 	paymentAddress := data["PaymentAddress"].(string)
+	boardIndex := uint32(data["BoardIndex"].(float64))
 	account, _ := wallet.Base58CheckDeserialize(paymentAddress)
-	meta := NewVoteDCBBoardMetadata(account.KeySet.PaymentAddress)
+	meta := NewVoteDCBBoardMetadata(account.KeySet.PaymentAddress, boardIndex)
 	return meta, nil
 }
 
@@ -80,14 +78,14 @@ func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ValidateMetadataByItself() boo
 }
 
 func (voteDCBBoardMetadata *VoteDCBBoardMetadata) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	actionContent := map[string]interface{}{
-		"reqTx": tx,
-	}
-	actionContentBytes, err := json.Marshal(actionContent)
+	inst := fromshardins.NewVoteBoardIns(
+		common.DCBBoard,
+		voteDCBBoardMetadata.VoteBoardMetadata.CandidatePaymentAddress,
+		voteDCBBoardMetadata.VoteBoardMetadata.BoardIndex,
+	)
+	instStr, err := inst.GetStringFormat()
 	if err != nil {
-		return [][]string{}, err
+		return nil, err
 	}
-	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(voteDCBBoardMetadata.Type), actionContentBase64Str}
-	return [][]string{action}, nil
+	return [][]string{instStr}, nil
 }

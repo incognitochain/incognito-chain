@@ -47,7 +47,7 @@ func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr Block
 	govParams := bcr.GetGOVParams()
 	sellingBondsParams := govParams.SellingBonds
 	if sellingBondsParams == nil {
-		return false, errors.New("SellingBonds params are not existed.")
+		return false, errors.New("SellingBonds component are not existed.")
 	}
 
 	bondID := sellingBondsParams.GetID()
@@ -55,9 +55,9 @@ func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr Block
 		return false, errors.New("Requested tokenID has not been selling yet.")
 	}
 
-	// check if buy price againsts SellingBonds params' BondPrice is correct or not
+	// check if buy price againsts SellingBonds component' BondPrice is correct or not
 	if bsReq.BuyPrice < sellingBondsParams.BondPrice {
-		return false, errors.New("Requested buy price is under SellingBonds params' buy price.")
+		return false, errors.New("Requested buy price is under SellingBonds component' buy price.")
 	}
 	return true, nil
 }

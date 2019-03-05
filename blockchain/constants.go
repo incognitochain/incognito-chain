@@ -4,7 +4,7 @@ import "time"
 
 // constant for network
 const (
-	//Network fixed params
+	//Network fixed component
 	ThresholdRatioOfDCBCrisis = 9000
 	ThresholdRatioOfGOVCrisis = 9000
 
