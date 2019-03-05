@@ -28,7 +28,7 @@ func generateChallenge(values [][]byte) *big.Int {
 	return res
 }
 
-// EstimateProofSize returns the estimated size of the proof in kilobyte
+// EstimateProofSize returns the estimated size of the proof in bytes
 func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 	if !hasPrivacy{
 		FlagSize := 14 + 2*nInput + nOutput
@@ -67,7 +67,7 @@ func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 		sizeComInputSK + sizeComInputValue + sizeComInputSND + sizeComInputShardID +
 		sizeCommitmentIndices + FlagSize
 
-	return uint64(math.Ceil(float64(sizeProof) / 1024))
+	return uint64(sizeProof)
 }
 
 
