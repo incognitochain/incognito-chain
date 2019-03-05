@@ -101,7 +101,7 @@ func (customTokenTx *TxCustomToken) validateDoubleSpendCustomTokenWithBlockchain
 	}
 
 	if len(listTxs) == 0 {
-		if customTokenTx.TxTokenData.Type != CustomTokenInit || customTokenTx.TxTokenData.Type != CustomTokenCrossShard {
+		if customTokenTx.TxTokenData.Type != CustomTokenInit && customTokenTx.TxTokenData.Type != CustomTokenCrossShard {
 			return NewTransactionErr(TxNotExist, nil)
 		}
 	}
