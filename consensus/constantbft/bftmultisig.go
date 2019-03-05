@@ -111,8 +111,10 @@ func (multiSig *multiSigScheme) VerifyCommitSig(validatorPk string, commitSig st
 	var valSigbytesarr []byte
 	valSigbytesarr, byteVersion, err = base58.Base58Check{}.Decode(commitSig)
 	valSig := new(privacy.SchnMultiSig)
-	valSig.SetBytes(valSigbytesarr)
-
+	err = valSig.SetBytes(valSigbytesarr)
+	if err != nil {
+		return err
+	}
 	resValidateEachSigOfSigners := valSig.VerifyMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, []*privacy.PublicKey{validatorPubkey}, RCombined)
 	if !resValidateEachSigOfSigners {
 		return errors.New("Validator's sig is invalid " + validatorPk)
@@ -130,6 +132,9 @@ func (multiSig *multiSigScheme) CombineSigs(R string, commitSigs map[string]bftC
 			return "", err
 		}
 		sig.SetBytes(bytesSig)
+		if err != nil {
+			return "", err
+		}
 		listSigOfSigners = append(listSigOfSigners, sig)
 		multiSig.combine.ValidatorsIdxAggSig = append(multiSig.combine.ValidatorsIdxAggSig, common.IndexOfStr(pubkey, multiSig.combine.SigningCommittee))
 		validatorsIdxR = valSig.ValidatorsIdxR

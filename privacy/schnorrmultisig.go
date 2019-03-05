@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"errors"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
@@ -25,11 +26,18 @@ type SchnMultiSig struct {
 }
 
 // SetBytes - Constructing multiSig from byte array
-func (multiSig *SchnMultiSig) SetBytes(sigByte []byte) {
+func (multiSig *SchnMultiSig) SetBytes(sigByte []byte) error {
+	if len(sigByte) < CompressedPointSize+BigIntSize {
+		return errors.New("Invalid sig length")
+	}
 	multiSig.R = new(EllipticPoint)
-	multiSig.R.Decompress(sigByte[0:CompressedPointSize])
+	err := multiSig.R.Decompress(sigByte[0:CompressedPointSize])
+	if err != nil {
+		return err
+	}
 	multiSig.S = big.NewInt(0)
 	multiSig.S.SetBytes(sigByte[CompressedPointSize : CompressedPointSize+BigIntSize])
+	return nil
 }
 
 // Set - Constructing multiSig
