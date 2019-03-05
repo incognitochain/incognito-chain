@@ -1,69 +1,26 @@
 package metadata
 
 import (
-	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/pkg/errors"
 )
 
-type SubmitProposalInfo struct {
-	ExecuteDuration   uint64
-	Explanation       string
-	PaymentAddress    privacy.PaymentAddress
-	ConstitutionIndex uint32
-}
-
-func NewSubmitProposalInfo(executeDuration uint64, explanation string, paymentAddress privacy.PaymentAddress, constitutionIndex uint32) *SubmitProposalInfo {
-	return &SubmitProposalInfo{ExecuteDuration: executeDuration, Explanation: explanation, PaymentAddress: paymentAddress, ConstitutionIndex: constitutionIndex}
-}
-
-func (submitProposalInfo SubmitProposalInfo) ToBytes() []byte {
-	record := string(common.Uint64ToBytes(submitProposalInfo.ExecuteDuration))
-	record += submitProposalInfo.Explanation
-	record += string(submitProposalInfo.PaymentAddress.Bytes())
-	record += string(common.Uint32ToBytes(submitProposalInfo.ConstitutionIndex))
-	return []byte(record)
-}
-
-func (submitProposalInfo SubmitProposalInfo) ValidateSanityData(
-	br BlockchainRetriever,
-	tx Transaction,
-) bool {
-	if submitProposalInfo.ExecuteDuration < common.MinimumBlockOfProposalDuration ||
-		submitProposalInfo.ExecuteDuration > common.MaximumBlockOfProposalDuration {
-		return false
-	}
-	if len(submitProposalInfo.Explanation) > common.MaximumProposalExplainationLength {
-		return false
-	}
-	return true
-}
-
-func (submitProposalInfo SubmitProposalInfo) ValidateTxWithBlockChain(
-	boardType BoardType,
-	tx Transaction,
-	br BlockchainRetriever,
-	chainID byte,
-	db database.DatabaseInterface,
-) bool {
-	if br.GetConstitutionEndHeight(DCBBoard, chainID)+submitProposalInfo.ExecuteDuration+common.MinimumBlockOfProposalDuration >
-		br.GetBoardEndHeight(boardType, chainID) {
-		return false
-	}
-	return true
+func NewSubmitProposalInfo(executeDuration uint64, explanation string, paymentAddress privacy.PaymentAddress, constitutionIndex uint32) *component.SubmitProposalInfo {
+	return &component.SubmitProposalInfo{ExecuteDuration: executeDuration, Explanation: explanation, PaymentAddress: paymentAddress, ConstitutionIndex: constitutionIndex}
 }
 
 type SubmitDCBProposalMetadata struct {
-	DCBParams          params.DCBParams
-	SubmitProposalInfo SubmitProposalInfo
+	DCBParams          component.DCBParams
+	SubmitProposalInfo component.SubmitProposalInfo
 
 	MetadataBase
 }
 
 func NewSubmitDCBProposalMetadata(
-	DCBParams params.DCBParams,
+	DCBParams component.DCBParams,
 	executeDuration uint64,
 	explanation string,
 	address *privacy.PaymentAddress,
@@ -83,7 +40,7 @@ func NewSubmitDCBProposalMetadata(
 
 func NewSubmitDCBProposalMetadataFromRPC(data map[string]interface{}) (Metadata, error) {
 	meta := NewSubmitDCBProposalMetadata(
-		*params.NewDCBParamsFromJson(data["DCBParams"]),
+		*component.NewDCBParamsFromJson(data["DCBParams"]),
 		uint64(data["ExecuteDuration"].(float64)),
 		data["Explanation"].(string),
 		data["PaymentAddress"].(*privacy.PaymentAddress),
@@ -107,7 +64,7 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockC
 	chainID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	if !submitDCBProposalMetadata.SubmitProposalInfo.ValidateTxWithBlockChain(DCBBoard, tx, br, chainID, db) {
+	if !submitDCBProposalMetadata.SubmitProposalInfo.ValidateTxWithBlockChain(common.DCBBoard, chainID, db) {
 		return false, nil
 	}
 
@@ -133,7 +90,7 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateSanityData(b
 	if !submitDCBProposalMetadata.DCBParams.ValidateSanityData() {
 		return true, false, nil
 	}
-	if !submitDCBProposalMetadata.SubmitProposalInfo.ValidateSanityData(br, tx) {
+	if !submitDCBProposalMetadata.SubmitProposalInfo.ValidateSanityData() {
 		return true, false, nil
 	}
 	return true, true, nil
@@ -144,14 +101,14 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateMetadataByIt
 }
 
 type SubmitGOVProposalMetadata struct {
-	GOVParams          params.GOVParams
-	SubmitProposalInfo SubmitProposalInfo
+	GOVParams          component.GOVParams
+	SubmitProposalInfo component.SubmitProposalInfo
 
 	MetadataBase
 }
 
 func NewSubmitGOVProposalMetadata(
-	govParams params.GOVParams,
+	govParams component.GOVParams,
 	executeDuration uint64,
 	explanation string,
 	address *privacy.PaymentAddress,
@@ -171,7 +128,7 @@ func NewSubmitGOVProposalMetadata(
 
 func NewSubmitGOVProposalMetadataFromRPC(data map[string]interface{}) (Metadata, error) {
 	return NewSubmitGOVProposalMetadata(
-		*params.NewGOVParamsFromJson(data["GOVParams"]),
+		*component.NewGOVParamsFromJson(data["GOVParams"]),
 		uint64(data["ExecuteDuration"].(float64)),
 		data["Explanation"].(string),
 		data["PaymentAddress"].(*privacy.PaymentAddress),
@@ -196,7 +153,7 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateSanityData(b
 	if !submitGOVProposalMetadata.GOVParams.ValidateSanityData() {
 		return true, false, nil
 	}
-	if !submitGOVProposalMetadata.SubmitProposalInfo.ValidateSanityData(br, tx) {
+	if !submitGOVProposalMetadata.SubmitProposalInfo.ValidateSanityData() {
 		return true, false, nil
 	}
 	return true, true, nil

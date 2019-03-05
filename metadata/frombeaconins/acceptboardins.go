@@ -2,6 +2,7 @@ package frombeaconins
 
 import (
 	"encoding/json"
+	"github.com/ninjadotorg/constant/common"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/metadata"
@@ -50,11 +51,11 @@ func (acceptGOVBoardIns *AcceptGOVBoardIns) GetStringFormat() ([]string, error) 
 //1. In Beacon chain
 //2. In shard
 func NewAcceptBoardIns(
-	boardType metadata.BoardType,
+	boardType common.BoardType,
 	boardPaymentAddress []privacy.PaymentAddress,
 	startAmountToken uint64,
 ) InstructionFromBeacon {
-	if boardType == metadata.DCBBoard {
+	if boardType == common.DCBBoard {
 		return NewAcceptDCBBoardIns(
 			boardPaymentAddress,
 			startAmountToken,

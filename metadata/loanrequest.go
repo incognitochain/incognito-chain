@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
@@ -37,10 +37,10 @@ func (s *ErrorSaver) Get() error {
 }
 
 type LoanRequest struct {
-	Params           params.LoanParams `json:"Params"`
-	LoanID           []byte            `json:"LoanID"` // 32 bytes
-	CollateralType   string            `json:"CollateralType"`
-	CollateralAmount *big.Int          `json:"CollateralAmount"`
+	Params           component.LoanParams `json:"Params"`
+	LoanID           []byte               `json:"LoanID"` // 32 bytes
+	CollateralType   string               `json:"CollateralType"`
+	CollateralAmount *big.Int             `json:"CollateralAmount"`
 
 	LoanAmount     uint64                  `json:"LoanAmount"`
 	ReceiveAddress *privacy.PaymentAddress `json:"ReceiveAddress"`
@@ -53,7 +53,7 @@ type LoanRequest struct {
 func NewLoanRequest(data map[string]interface{}) (Metadata, error) {
 	loanParams := data["Params"].(map[string]interface{})
 	result := LoanRequest{
-		Params: params.LoanParams{
+		Params: component.LoanParams{
 			InterestRate:     uint64(loanParams["InterestRate"].(float64)),
 			LiquidationStart: uint64(loanParams["LiquidationStart"].(float64)),
 			Maturity:         uint64(loanParams["Maturity"].(float64)),
@@ -109,7 +109,7 @@ func (lr *LoanRequest) Hash() *common.Hash {
 
 func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	fmt.Println("Validating LoanRequest with blockchain!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	// Check if loan's params are correct
+	// Check if loan's component are correct
 	dcbParams := bcr.GetDCBParams()
 	validLoanParams := dcbParams.ListLoanParams
 	ok := false
@@ -119,7 +119,7 @@ func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 		}
 	}
 	if !ok {
-		return false, errors.New("LoanRequest has incorrect params")
+		return false, errors.New("LoanRequest has incorrect component")
 	}
 
 	txHash, _ := bcr.GetLoanReq(lr.LoanID)

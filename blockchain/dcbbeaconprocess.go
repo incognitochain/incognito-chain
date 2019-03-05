@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/ninjadotorg/constant/metadata/frombeaconins"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
@@ -21,10 +22,26 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 		return bsb.processLoanRequestInstruction(inst)
 	case strconv.Itoa(metadata.LoanResponseMeta):
 		return bsb.processLoanResponseInstruction(inst)
-
-	case strconv.Itoa(metadata.AcceptDCBProposalMeta):
-		return bsb.processAcceptDCBProposalInstruction(inst)
-
+	case strconv.Itoa(metadata.AcceptDCBBoardIns):
+		acceptDCBBoardIns := frombeaconins.AcceptDCBBoardIns{}
+		err := json.Unmarshal([]byte(inst[2]), &acceptDCBBoardIns)
+		if err != nil {
+			return err
+		}
+		err = bsb.UpdateDCBBoard(acceptDCBBoardIns)
+		if err != nil {
+			return err
+		}
+	case strconv.Itoa(metadata.AcceptGOVBoardIns):
+		acceptGOVBoardIns := frombeaconins.AcceptGOVBoardIns{}
+		err := json.Unmarshal([]byte(inst[2]), &acceptGOVBoardIns)
+		if err != nil {
+			return err
+		}
+		err = bsb.UpdateGOVBoard(acceptGOVBoardIns)
+		if err != nil {
+			return err
+		}
 	case strconv.Itoa(metadata.DividendSubmitMeta):
 		return bsb.processDividendSubmitInstruction(inst)
 
@@ -262,24 +279,21 @@ func (bsb *BestStateBeacon) processLoanResponseInstruction(inst []string) error 
 	return nil
 }
 
-func (bsb *BestStateBeacon) processAcceptDCBProposalInstruction(inst []string) error {
-	dcbParams, err := metadata.ParseAcceptDCBProposalMetadataActionValue(inst[2])
-	if err != nil {
-		return err
-	}
+func (bsb *BestStateBeacon) processUpdateDCBProposalInstruction(ins frombeaconins.UpdateDCBConstitutionIns) error {
+	dcbParams := ins.DCBParams
 	//todo @0xjackalope: update new Constitution
-	//oldConstitution := bsb.StabilityInfo.DCBConstitution
-	//bsb.StabilityInfo.DCBConstitution = DCBConstitution{
-	//	ConstitutionInfo: ConstitutionInfo{
-	//		ConstitutionIndex:  oldConstitution.ConstitutionIndex + 1,
-	//		StartedBlockHeight: bsb.BestBlock.Header.Height,
-	//		ExecuteDuration:    uint64
-	//		Explanation:        string
-	//		AcceptProposalTXID: common.Hash
-	//	},
-	//	CurrentDCBNationalWelfare: GetOracleDCBNationalWelfare(),
-	//	DCBParams:                *dcbParams,
-	//}
+	oldConstitution := bsb.StabilityInfo.DCBConstitution
+	bsb.StabilityInfo.DCBConstitution = DCBConstitution{
+		ConstitutionInfo: ConstitutionInfo{
+			ConstitutionIndex:  oldConstitution.ConstitutionIndex + 1,
+			StartedBlockHeight: bsb.BestBlock.Header.Height,
+			ExecuteDuration:    ins.SubmitProposalInfo.ExecuteDuration,
+			Explanation:        ins.SubmitProposalInfo.Explanation,
+			Voter:              ins.Voter,
+		},
+		CurrentDCBNationalWelfare: GetOracleDCBNationalWelfare(),
+		DCBParams:                 dcbParams,
+	}
 
 	// Store saledata in state
 
@@ -297,6 +311,7 @@ func (bsb *BestStateBeacon) processAcceptDCBProposalInstruction(inst []string) e
 		key := getDCBDividendKeyBeacon()
 		dividendAmounts := []uint64{}
 		if value, ok := bsb.Params[key]; ok {
+			var err error
 			dividendAmounts, err = parseDividendValueBeacon(value)
 			if err != nil {
 				return err
@@ -309,9 +324,16 @@ func (bsb *BestStateBeacon) processAcceptDCBProposalInstruction(inst []string) e
 	return nil
 }
 
+func (bsb *BestStateBeacon) processUpdateGOVProposalInstruction(ins frombeaconins.UpdateGOVConstitutionIns) error {
+	panic("")
+	return nil
+}
+
 func (bsb *BestStateBeacon) processDividendSubmitInstruction(inst []string) error {
-	ds, err := metadata.ParseDividendSubmitActionValue(inst[1])
+	fmt.Printf("[db] beaconProcess found inst: %+v\n", inst)
+	ds, err := metadata.ParseDividendSubmitActionValue(inst[2])
 	if err != nil {
+		fmt.Printf("[db] err parse divsub: %v\n", err)
 		return err
 	}
 
@@ -320,7 +342,7 @@ func (bsb *BestStateBeacon) processDividendSubmitInstruction(inst []string) erro
 	value := getDividendSubmitValueBeacon(ds.TotalTokenAmount)
 	bsb.Params[key] = value
 
-	// If enough shard submitted token amounts, aggregate total and save to params to initiate dividend payments
+	// If enough shard submitted token amounts, aggregate total and save to component to initiate dividend payments
 	totalTokenOnAllShards := uint64(0)
 	for i := byte(0); i <= byte(255); i++ {
 		key := getDividendSubmitKeyBeacon(i, ds.DividendID, ds.TokenID)
@@ -328,6 +350,7 @@ func (bsb *BestStateBeacon) processDividendSubmitInstruction(inst []string) erro
 			shardTokenAmount := parseDividendSubmitValueBeacon(value)
 			totalTokenOnAllShards += shardTokenAmount
 		} else {
+			fmt.Printf("[db] no divSub for: %d %d %x\n", i, ds.DividendID, ds.TokenID)
 			return nil
 		}
 	}
@@ -349,6 +372,7 @@ func (bsb *BestStateBeacon) processDividendSubmitInstruction(inst []string) erro
 	} else {
 		bsb.StabilityInfo.SalaryFund -= cstToPayout
 	}
+	fmt.Printf("[db] updated dividend: %d %d %d\n", totalTokenOnAllShards, cstToPayout, bsb.StabilityInfo.BankFund)
 	return nil
 }
 
@@ -468,6 +492,10 @@ func (bc *BlockChain) processBeaconOnlyInstructions(block *BeaconBlock) error {
 			if err != nil {
 				return err
 			}
+		case strconv.Itoa(metadata.UpdateDCBConstitutionIns):
+			return bc.processUpdateDCBConstitutionIns(inst)
+		case strconv.Itoa(metadata.UpdateGOVConstitutionIns):
+			return bc.processUpdateGOVConstitutionIns(inst)
 		}
 	}
 	return nil

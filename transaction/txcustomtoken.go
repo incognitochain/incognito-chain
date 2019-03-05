@@ -360,7 +360,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 
 	var handled = false
 
-	// Add token data params
+	// Add token data component
 	switch tokenParams.TokenTxType {
 	case CustomTokenInit:
 		{

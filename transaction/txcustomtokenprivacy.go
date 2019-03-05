@@ -120,7 +120,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 
 	// check action type and create privacy custom toke data
 	var handled = false
-	// Add token data params
+	// Add token data component
 	switch tokenParams.TokenTxType {
 	case CustomTokenInit:
 		// case init a new privacy custom token
