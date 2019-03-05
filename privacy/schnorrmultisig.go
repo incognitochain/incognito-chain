@@ -82,7 +82,7 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 		R = R.Add(listR[i])
 	}
 
-	//Calculate common params:
+	//Calculate common component:
 	//	aggKey = PK0+PK1+PK2+...+PKn
 	//	X = (PK0*a0) + (PK1*a1) + ... + (PKn*an)
 	//	C = Hash(X||r||data)
@@ -120,7 +120,7 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 // VerifyMultiSig ...
 /*
 	function: Verify signature
-	params:
+	component:
 		#1: data need to be signed
 		#2: List of public key join phase 1 (create RCombine)
 		#3: List of public key of signer who create multi signature
@@ -128,7 +128,7 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 	return: true or false
 */
 func (multiSig *SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicKey, listCombinePK []*PublicKey, RCombine *EllipticPoint) bool {
-	//Calculate common params:
+	//Calculate common component:
 	//	aggKey = PK0+PK1+PK2+...+PKn, PK0 is selfPK
 	//	X = (PK0*a0) + (PK1*a1) + ... + (PKn*an)
 	//	C = Hash(X||r||data)

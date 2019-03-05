@@ -50,15 +50,20 @@ const (
 	ShardBlockSalaryResponseMeta
 
 	//Voting
+	NewDCBConstitutionIns
+	NewGOVConstitutionIns
+	UpdateDCBConstitutionIns
+	UpdateGOVConstitutionIns
+
 	SubmitDCBProposalMeta
 	VoteDCBBoardMeta
-	AcceptDCBProposalMeta
-	AcceptDCBBoardMeta
+	AcceptDCBProposalIns
+	AcceptDCBBoardIns
 
 	SubmitGOVProposalMeta
 	VoteGOVBoardMeta
-	AcceptGOVProposalMeta
-	AcceptGOVBoardMeta
+	AcceptGOVProposalIns
+	AcceptGOVBoardIns
 
 	SendInitDCBVoteTokenMeta
 	SendInitGOVVoteTokenMeta
@@ -103,11 +108,7 @@ const (
 	STAKE_BEACON_AMOUNT = 2
 )
 
-// boards
-const (
-	DCBBoard = BoardType(0)
-	GOVBoard = BoardType(1)
-)
+const ()
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
 const (

@@ -1,36 +1,43 @@
 package frombeaconins
 
 import (
+	"encoding/json"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/transaction"
+	"strconv"
 )
 
 type AcceptProposalIns struct {
-	boardType metadata.BoardType
-	txID      common.Hash
-	voter     metadata.Voter
+	BoardType common.BoardType
+	TxID      common.Hash
+	Voter     component.Voter
+	ShardID   byte
 }
 
-func NewAcceptProposalIns(boardType metadata.BoardType, txID common.Hash, voter metadata.Voter) *AcceptProposalIns {
-	return &AcceptProposalIns{boardType: boardType, txID: txID, voter: voter}
+func NewAcceptProposalIns(
+	boardType common.BoardType,
+	txID common.Hash,
+	voter component.Voter,
+	shardID byte,
+) *AcceptProposalIns {
+	return &AcceptProposalIns{BoardType: boardType, TxID: txID, Voter: voter, ShardID: shardID}
 }
 
-func (AcceptProposalIns) GetStringFormat() ([]string, error) {
-	panic("implement me")
-}
-
-func (acceptProposalIns AcceptProposalIns) BuildTransaction(minerPrivateKey *privacy.SpendingKey, db database.DatabaseInterface) (metadata.Transaction, error) {
-	txId := acceptProposalIns.txID
-	voter := acceptProposalIns.voter
-	var meta metadata.Metadata
-	if acceptProposalIns.boardType == metadata.DCBBoard {
-		meta = metadata.NewAcceptDCBProposalMetadata(txId, voter)
-	} else {
-		meta = metadata.NewAcceptGOVProposalMetadata(txId, voter)
+func (acceptProposalIns AcceptProposalIns) GetStringFormat() ([]string, error) {
+	content, err := json.Marshal(acceptProposalIns)
+	if err != nil {
+		return nil, err
 	}
-	acceptIns := transaction.NewEmptyTx(minerPrivateKey, db, meta)
-	return acceptIns, nil
+	var t int
+	if acceptProposalIns.BoardType == common.DCBBoard {
+		t = metadata.AcceptDCBProposalIns
+	} else {
+		t = metadata.AcceptGOVProposalIns
+	}
+	return []string{
+		strconv.Itoa(t),
+		strconv.Itoa(int(acceptProposalIns.ShardID)),
+		string(content),
+	}, nil
 }

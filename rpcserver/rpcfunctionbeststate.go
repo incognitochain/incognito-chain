@@ -27,11 +27,11 @@ handleGetShardBestState - RPC get shard best state
 func (rpcServer RpcServer) handleGetShardBestState(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Shard ID params empty"))
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Shard ID component empty"))
 	}
 	shardIdParam, ok := arrayParams[0].(float64)
 	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Shard ID params invalid"))
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Shard ID component invalid"))
 	}
 	shardID := byte(shardIdParam)
 	if rpcServer.config.BlockChain.BestState.Shard == nil || len(rpcServer.config.BlockChain.BestState.Shard) <= 0 {
@@ -53,7 +53,7 @@ func (rpcServer RpcServer) handleGetCandidateList(params interface{}, closeChan 
 	CBWFNR := rpcServer.config.BlockChain.BestState.Beacon.CandidateBeaconWaitingForNextRandom
 	epoch := rpcServer.config.BlockChain.BestState.Beacon.Epoch
 	result := jsonresult.CandidateListsResult{
-		Epoch: epoch,
+		Epoch:                                  epoch,
 		CandidateShardWaitingForCurrentRandom:  CSWFCR,
 		CandidateBeaconWaitingForCurrentRandom: CBWFCR,
 		CandidateShardWaitingForNextRandom:     CSWFNR,
@@ -96,7 +96,7 @@ func (rpcServer RpcServer) handleCanPubkeyStake(params interface{}, closeChan <-
 	return jsonresult.StakeResult{PublicKey: pubkey, CanStake: true}, nil
 }
 func (self RpcServer) handleRetrieveCommiteeCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// candidateInfo := self.config.BlockChain.GetCommitteCandidate(params.(string))
+	// candidateInfo := self.config.BlockChain.GetCommitteCandidate(component.(string))
 	// if candidateInfo == nil {
 	// 	return nil, nil
 	// }
