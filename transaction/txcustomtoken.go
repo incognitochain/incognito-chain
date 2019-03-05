@@ -435,9 +435,11 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 			}
 			//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 			newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
+			fmt.Println("INIT Tx Custom Token/ newHashInitToken", newHashInitToken)
 			// validate PropertyID is the only one
 			for customTokenID := range listCustomTokens {
-				if hashInitToken.String() == customTokenID.String() {
+				fmt.Println("INIT Tx Custom Token/ Existed", customTokenID, customTokenID.String() == newHashInitToken.String())
+				if newHashInitToken.String() == customTokenID.String() {
 					return NewTransactionErr(CustomTokenExisted, nil)
 				}
 			}
