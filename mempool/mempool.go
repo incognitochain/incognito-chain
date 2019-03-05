@@ -472,6 +472,24 @@ func (tp *TxPool) addCandiateToList(candidate string) {
 	tp.candidateList = append(tp.candidateList, candidate)
 }
 
+func (tp *TxPool) RemoveCandidateList(candidate []string) {
+	tp.candidateMtx.Lock()
+	defer tp.candidateMtx.Unlock()
+	newList := []string{}
+	for _, value := range candidate {
+		flag := false
+		for _, currentCandidate := range tp.candidateList {
+			if strings.Compare(value, currentCandidate) == 0 {
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			newList = append(newList, value)
+		}
+	}
+	tp.candidateList = newList
+}
 func (tp *TxPool) addTokenIDToList(tokenID string) {
 	tp.tokenIDMtx.Lock()
 	defer tp.tokenIDMtx.Unlock()
@@ -496,23 +514,4 @@ func (tp *TxPool) RemoveTokenIDList(tokenID []string) {
 		}
 	}
 	tp.tokenIDList = newList
-}
-
-func (tp *TxPool) RemoveCandidateList(candidate []string) {
-	tp.candidateMtx.Lock()
-	defer tp.candidateMtx.Unlock()
-	newList := []string{}
-	for _, value := range candidate {
-		flag := false
-		for _, currentCandidate := range tp.candidateList {
-			if strings.Compare(value, currentCandidate) == 0 {
-				flag = true
-				break
-			}
-		}
-		if !flag {
-			newList = append(newList, value)
-		}
-	}
-	tp.candidateList = newList
 }

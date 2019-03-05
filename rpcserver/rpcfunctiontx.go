@@ -408,6 +408,9 @@ func (rpcServer RpcServer) handleCreateAndSendCustomTokenTransaction(params inte
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	_, err = rpcServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, err
+	}
 	return tx, err
 }
 

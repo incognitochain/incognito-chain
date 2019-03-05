@@ -13,6 +13,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 /*
@@ -136,6 +137,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	}
 	//Remove Candidate In pool
 	candidates := []string{}
+	tokenIDs := []string{}
 	for _, tx := range block.Body.Transactions {
 		if tx.GetMetadata() != nil {
 			if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
@@ -143,8 +145,16 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 				candidates = append(candidates, pubkey)
 			}
 		}
+		if tx.GetType() == common.TxCustomTokenType {
+			customTokenTx := tx.(*transaction.TxCustomToken)
+			if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
+				tokenID := customTokenTx.TxTokenData.PropertyID.String()
+				tokenIDs = append(tokenIDs, tokenID)
+			}
+		}
 	}
 	blockchain.config.TxPool.RemoveCandidateList(candidates)
+	blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
 	//Remove tx out of pool
 	for _, tx := range block.Body.Transactions {
 		blockchain.config.TxPool.RemoveTx(tx)
