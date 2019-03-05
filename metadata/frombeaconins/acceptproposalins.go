@@ -2,20 +2,26 @@ package frombeaconins
 
 import (
 	"encoding/json"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"strconv"
 )
 
 type AcceptProposalIns struct {
-	boardType metadata.BoardType
-	txID      common.Hash
-	voter     metadata.Voter
-	shardID   byte
+	BoardType common.BoardType
+	TxID      common.Hash
+	Voter     component.Voter
+	ShardID   byte
 }
 
-func NewAcceptProposalIns(boardType metadata.BoardType, txID common.Hash, voter metadata.Voter, shardID byte) *AcceptProposalIns {
-	return &AcceptProposalIns{boardType: boardType, txID: txID, voter: voter, shardID: shardID}
+func NewAcceptProposalIns(
+	boardType common.BoardType,
+	txID common.Hash,
+	voter component.Voter,
+	shardID byte,
+) *AcceptProposalIns {
+	return &AcceptProposalIns{BoardType: boardType, TxID: txID, Voter: voter, ShardID: shardID}
 }
 
 func (acceptProposalIns AcceptProposalIns) GetStringFormat() ([]string, error) {
@@ -24,14 +30,14 @@ func (acceptProposalIns AcceptProposalIns) GetStringFormat() ([]string, error) {
 		return nil, err
 	}
 	var t int
-	if acceptProposalIns.boardType == metadata.DCBBoard {
+	if acceptProposalIns.BoardType == common.DCBBoard {
 		t = metadata.AcceptDCBProposalIns
 	} else {
 		t = metadata.AcceptGOVProposalIns
 	}
 	return []string{
 		strconv.Itoa(t),
-		strconv.Itoa(int(acceptProposalIns.shardID)),
+		strconv.Itoa(int(acceptProposalIns.ShardID)),
 		string(content),
 	}, nil
 }

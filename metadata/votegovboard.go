@@ -18,7 +18,7 @@ type VoteGOVBoardMetadata struct {
 }
 
 func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
-	boardType := GOVBoard
+	boardType := common.GOVBoard
 	voteAmount, err := tx.GetAmountOfVote()
 	if err != nil {
 		return err
@@ -30,7 +30,7 @@ func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ProcessWhenInsertBlockShard(tx
 	governor := bcr.GetGovernor(boardType)
 	boardIndex := governor.GetBoardIndex() + 1
 	err1 := bcr.GetDatabase().AddVoteBoard(
-		boardType.BoardTypeDB(),
+		boardType,
 		boardIndex,
 		*payment,
 		voteGOVBoardMetadata.VoteBoardMetadata.CandidatePaymentAddress,

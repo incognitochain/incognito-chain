@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
@@ -32,7 +32,7 @@ func buildInstructionsForCrowdsaleRequest(
 
 	// Get data of current crowdsale
 	key := getSaleDataKeyBeacon(saleID)
-	var saleData *params.SaleData
+	var saleData *component.SaleData
 	ok := false
 	if saleData, ok = accumulativeValues.saleDataMap[key]; !ok {
 		if value, ok := beaconBestState.Params[key]; ok {
@@ -70,7 +70,7 @@ func buildPaymentInstructionForCrowdsale(
 	paymentAddress privacy.PaymentAddress,
 	sentAmount uint64,
 	beaconBestState *BestStateBeacon,
-	saleData *params.SaleData,
+	saleData *component.SaleData,
 ) ([][]string, error) {
 	// Get price for asset
 	buyingAsset := saleData.BuyingAsset

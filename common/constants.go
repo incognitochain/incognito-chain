@@ -49,6 +49,11 @@ const (
 	NormalEncryptionFlag
 )
 
+const (
+	DCBBoard = BoardType(0)
+	GOVBoard = BoardType(1)
+)
+
 // special token ids (aka. PropertyID in custom token)
 var (
 	BondTokenID      = Hash{0, 0, 0, 0, 0, 0, 0, 0} // first 8 bytes must be 0

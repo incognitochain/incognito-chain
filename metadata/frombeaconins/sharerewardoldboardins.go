@@ -14,7 +14,7 @@ import (
 type TxShareRewardOldBoardMetadataIns struct {
 	chairPaymentAddress privacy.PaymentAddress
 	voterPaymentAddress privacy.PaymentAddress
-	boardType           metadata.BoardType
+	boardType           common.BoardType
 	amountOfCoin        uint64
 	amountOfToken       uint64
 }
@@ -26,7 +26,7 @@ func (txShareRewardOldBoardMetadataIns *TxShareRewardOldBoardMetadataIns) GetStr
 	}
 	shardID := GetShardIDFromPaymentAddressBytes(txShareRewardOldBoardMetadataIns.voterPaymentAddress)
 	var metadataType int
-	if txShareRewardOldBoardMetadataIns.boardType == metadata.DCBBoard {
+	if txShareRewardOldBoardMetadataIns.boardType == common.DCBBoard {
 		metadataType = metadata.ShareRewardOldDCBBoardMeta
 	} else {
 		metadataType = metadata.ShareRewardOldGOVBoardMeta
@@ -41,7 +41,7 @@ func (txShareRewardOldBoardMetadataIns *TxShareRewardOldBoardMetadataIns) GetStr
 func NewShareRewardOldBoardMetadataIns(
 	chairPaymentAddress privacy.PaymentAddress,
 	voterPaymentAddress privacy.PaymentAddress,
-	boardType metadata.BoardType,
+	boardType common.BoardType,
 	amountOfCoin uint64,
 	amountOfToken uint64,
 ) *TxShareRewardOldBoardMetadataIns {
@@ -72,7 +72,7 @@ func (txShareRewardOldBoardMetadataIns *TxShareRewardOldBoardMetadataIns) BuildT
 		rewardShareOldBoardMeta,
 	)
 	var propertyID common.Hash
-	if txShareRewardOldBoardMetadataIns.boardType == metadata.DCBBoard {
+	if txShareRewardOldBoardMetadataIns.boardType == common.DCBBoard {
 		propertyID = common.DCBTokenID
 	} else {
 		propertyID = common.GOVTokenID

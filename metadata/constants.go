@@ -13,8 +13,8 @@ const (
 	LoanUnlockMeta
 	LoanPaymentMeta
 
-	DividendPaymentMeta
 	DividendSubmitMeta
+	DividendPaymentMeta
 
 	CrowdsaleRequestMeta
 	CrowdsalePaymentMeta
@@ -50,6 +50,11 @@ const (
 	ShardBlockSalaryResponseMeta
 
 	//Voting
+	NewDCBConstitutionIns
+	NewGOVConstitutionIns
+	UpdateDCBConstitutionIns
+	UpdateGOVConstitutionIns
+
 	SubmitDCBProposalMeta
 	VoteDCBBoardMeta
 	AcceptDCBProposalIns
@@ -103,11 +108,7 @@ const (
 	STAKE_BEACON_AMOUNT = 2
 )
 
-// boards
-const (
-	DCBBoard = BoardType(0)
-	GOVBoard = BoardType(1)
-)
+const ()
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
 const (
