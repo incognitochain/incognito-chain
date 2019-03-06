@@ -231,6 +231,8 @@ func (rpcServer RpcServer) handleGetBlockChainInfo(params interface{}, closeChan
 		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
 			Height:           bestState.BestBlock.Header.Height,
 			Hash:             bestState.BestBlockHash.String(),
+			SalaryPerTx:      0, // TODO
+			BasicSalary:      0,
 			TotalTxs:         bestState.TotalTxns,
 			SalaryFund:       bestState.BestBlock.Header.SalaryFund,
 			BlockProducer:    bestState.BestBlock.Header.Producer,
