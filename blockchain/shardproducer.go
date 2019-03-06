@@ -191,6 +191,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 	if err != nil {
 		panic(err)
 	}
+	// TODO get from beacon chain
 	currentSalaryFund := uint64(0)
 	remainingFund := currentSalaryFund + totalFee + salaryFundAdd - totalSalary
 	coinbases := []metadata.Transaction{salaryTx}
