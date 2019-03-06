@@ -117,7 +117,12 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 			result.BeaconBlockHash = block.Header.BeaconHash.String()
 			result.R = block.R
 			result.Round = block.Header.Round
-			result.CrossShards = block.Header.CrossShards
+			result.CrossShards = []int{}
+			if len(block.Header.CrossShards) > 0 {
+				for _, shardID := range block.Header.CrossShards {
+					result.CrossShards = append(result.CrossShards, int(shardID))
+				}
+			}
 			result.Epoch = block.Header.Epoch
 
 			for _, tx := range block.Body.Transactions {
@@ -153,7 +158,12 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 			result.BeaconBlockHash = block.Header.BeaconHash.String()
 			result.R = block.R
 			result.Round = block.Header.Round
-			result.CrossShards = block.Header.CrossShards
+			result.CrossShards = []int{}
+			if len(block.Header.CrossShards) > 0 {
+				for _, shardID := range block.Header.CrossShards {
+					result.CrossShards = append(result.CrossShards, int(shardID))
+				}
+			}
 			result.Epoch = block.Header.Epoch
 
 			result.Txs = make([]jsonresult.GetBlockTxResult, 0)
