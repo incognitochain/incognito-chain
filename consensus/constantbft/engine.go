@@ -3,7 +3,6 @@ package constantbft
 import (
 	"errors"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
@@ -85,7 +84,7 @@ func (engine *Engine) Start() error {
 					fmt.Println()
 					fmt.Println()
 					if currentPBFTRound > 3 && prevRoundNodeRole != "" {
-						os.Exit(1)
+						// os.Exit(1)
 					}
 					fmt.Println()
 					fmt.Println()
