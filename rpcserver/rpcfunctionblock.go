@@ -77,7 +77,6 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 
 		verbosity := paramsT[1].(string)
 
-		// shardID := block.Header.(*blockchain.BlockHeaderShard).ShardID
 		shardID := block.Header.ShardID
 
 		if verbosity == "0" {
@@ -89,7 +88,6 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 		} else if verbosity == "1" {
 			best := rpcServer.config.BlockChain.BestState.Shard[shardID].BestBlock
 
-			// blockHeight := block.Header.GetHeight()
 			blockHeight := block.Header.Height
 			// Get next block hash unless there are none.
 			var nextHashString string
@@ -103,36 +101,26 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 			}
 
 			result.Hash = block.Hash().String()
-			// result.Confirmations = int64(1 + best.Header.GetHeight() - blockHeight)
 			result.Confirmations = int64(1 + best.Header.Height - blockHeight)
-			// result.Height = block.Header.GetHeight()
 			result.Height = block.Header.Height
-			// result.Version = block.Header.(*blockchain.BlockHeaderShard).Version
 			result.Version = block.Header.Version
-			// result.MerkleRoot = block.Header.(*blockchain.BlockHeaderShard).MerkleRoot.String()
 			result.MerkleRoot = block.Header.TxRoot.String()
-			// result.Time = block.Header.(*blockchain.BlockHeaderShard).Timestamp
 			result.Time = block.Header.Timestamp
-			// result.ShardID = block.Header.(*blockchain.BlockHeaderShard).ShardID
 			result.ShardID = block.Header.ShardID
-			// result.PreviousBlockHash = block.Header.(*blockchain.BlockHeaderShard).PrevBlockHash.String()
 			result.PreviousBlockHash = block.Header.PrevBlockHash.String()
 			result.NextBlockHash = nextHashString
 			result.TxHashes = []string{}
 			result.BlockProducerSign = block.ProducerSig
 			result.BlockProducer = block.Header.Producer
-			// for _, tx := range block.Body.(*blockchain.BlockBodyShard).Transactions {
 			for _, tx := range block.Body.Transactions {
 				result.TxHashes = append(result.TxHashes, tx.Hash().String())
 			}
 		} else if verbosity == "2" {
 			best := rpcServer.config.BlockChain.BestState.Shard[shardID].BestBlock
 
-			// blockHeight := block.Header.GetHeight()
 			blockHeight := block.Header.Height
 			// Get next block hash unless there are none.
 			var nextHashString string
-			// if blockHeight < best.Header.GetHeight() {
 			if blockHeight < best.Header.Height {
 				nextHash, err := rpcServer.config.BlockChain.GetShardBlockByHeight(blockHeight+1, shardID)
 				if err != nil {
@@ -142,23 +130,17 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 			}
 
 			result.Hash = block.Hash().String()
-			// result.Confirmations = int64(1 + best.Header.GetHeight() - blockHeight)
 			result.Confirmations = int64(1 + best.Header.Height - blockHeight)
-			// result.Height = block.Header.GetHeight()
 			result.Height = block.Header.Height
-			// result.Version = block.Header.(*blockchain.BlockHeaderShard).Version
-			// result.MerkleRoot = block.Header.(*blockchain.BlockHeaderShard).MerkleRoot.String()
-			// result.Time = block.Header.(*blockchain.BlockHeaderShard).Timestamp
-			// result.ShardID = block.Header.(*blockchain.BlockHeaderShard).ShardID
-			// result.PreviousBlockHash = block.Header.(*blockchain.BlockHeaderShard).PrevBlockHash.String()
 			result.Version = block.Header.Version
 			result.MerkleRoot = block.Header.TxRoot.String()
 			result.Time = block.Header.Timestamp
 			result.ShardID = block.Header.ShardID
 			result.PreviousBlockHash = block.Header.PrevBlockHash.String()
 			result.NextBlockHash = nextHashString
+			result.BlockProducerSign = block.ProducerSig
+			result.BlockProducer = block.Header.Producer
 			result.Txs = make([]jsonresult.GetBlockTxResult, 0)
-			// for _, tx := range block.Body.(*blockchain.BlockBodyShard).Transactions {
 			for _, tx := range block.Body.Transactions {
 				transactionT := jsonresult.GetBlockTxResult{}
 
@@ -202,7 +184,6 @@ func (rpcServer RpcServer) handleGetBlocks(params interface{}, closeChan <-chan 
 		blockResult := jsonresult.GetBlockResult{}
 		blockResult.Init(block)
 		result = append(result, blockResult)
-		// previousHash = &block.Header.(*blockchain.BlockHeaderShard).PrevBlockHash
 		previousHash = &block.Header.PrevBlockHash
 		if previousHash.String() == (common.Hash{}).String() {
 			break
