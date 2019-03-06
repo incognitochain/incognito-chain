@@ -90,24 +90,29 @@ func buildPaymentInstructionForCrowdsale(
 	fmt.Printf("[db] buy and sell price: %d %d\n", buyPrice, sellPrice)
 
 	// Check if price limit is not violated
-	priceLimit *= beaconBestState.StabilityInfo.Oracle.Constant // Convert from Nano to Millicent
 	if limitSell && sellPrice > priceLimit {
-		fmt.Printf("Price limit violated: %d %d\n", sellPrice, priceLimit)
+		fmt.Printf("[db] Price limit violated: %d %d\n", sellPrice, priceLimit)
 		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
 	} else if !limitSell && buyPrice < priceLimit {
-		fmt.Printf("Price limit violated: %d %d\n", buyPrice, priceLimit)
+		fmt.Printf("[db] Price limit violated: %d %d\n", buyPrice, priceLimit)
 		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
 	}
 
 	// Calculate value of asset sent in request tx
-	sentAssetValue := sentAmount * buyPrice // in USD
+	sentAssetValue := sentAmount * buyPrice // in cent
+	if common.IsConstantAsset(&saleData.BuyingAsset) {
+		sentAssetValue /= 100 // Nano to CST
+	}
 
 	// Number of asset must pay to user
 	paymentAmount := sentAssetValue / sellPrice
+	if common.IsConstantAsset(&saleData.SellingAsset) {
+		paymentAmount *= 100 // CST to Nano
+	}
 
 	// Check if there's still enough asset to trade
 	if sentAmount > saleData.BuyingAmount || paymentAmount > saleData.SellingAmount {
-		fmt.Printf("Crowdsale reached limit\n")
+		fmt.Printf("[db] Crowdsale reached limit\n")
 		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
 	}
 
