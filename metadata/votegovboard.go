@@ -18,7 +18,7 @@ type VoteGOVBoardMetadata struct {
 }
 
 func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
-	boardType := GOVBoard
+	boardType := common.GOVBoard
 	voteAmount, err := tx.GetAmountOfVote()
 	if err != nil {
 		return err
@@ -30,7 +30,7 @@ func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ProcessWhenInsertBlockShard(tx
 	governor := bcr.GetGovernor(boardType)
 	boardIndex := governor.GetBoardIndex() + 1
 	err1 := bcr.GetDatabase().AddVoteBoard(
-		boardType.BoardTypeDB(),
+		boardType,
 		boardIndex,
 		*payment,
 		voteGOVBoardMetadata.VoteBoardMetadata.CandidatePaymentAddress,
@@ -42,17 +42,18 @@ func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ProcessWhenInsertBlockShard(tx
 	return nil
 }
 
-func NewVoteGOVBoardMetadata(candidatePaymentAddress privacy.PaymentAddress) *VoteGOVBoardMetadata {
+func NewVoteGOVBoardMetadata(candidatePaymentAddress privacy.PaymentAddress, BoardIndex uint32) *VoteGOVBoardMetadata {
 	return &VoteGOVBoardMetadata{
-		VoteBoardMetadata: *NewVoteBoardMetadata(candidatePaymentAddress),
+		VoteBoardMetadata: *NewVoteBoardMetadata(candidatePaymentAddress, BoardIndex),
 		MetadataBase:      *NewMetadataBase(VoteGOVBoardMeta),
 	}
 }
 
 func NewVoteGOVBoardMetadataFromRPC(data map[string]interface{}) (Metadata, error) {
 	paymentAddress := data["PaymentAddress"].(string)
+	boardIndex := uint32(data["BoardIndex"].(float64))
 	account, _ := wallet.Base58CheckDeserialize(paymentAddress)
-	meta := NewVoteGOVBoardMetadata(account.KeySet.PaymentAddress)
+	meta := NewVoteGOVBoardMetadata(account.KeySet.PaymentAddress, boardIndex)
 	return meta, nil
 }
 

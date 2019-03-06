@@ -1,17 +1,18 @@
 package frombeaconins
 
 import (
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 )
 
 type SetEncryptionLastBlockIns struct {
-	boardType   metadata.BoardType
+	boardType   common.BoardType
 	blockHeight uint64
 }
 
-func NewSetEncryptionLastBlockIns(boardType metadata.BoardType, blockHeight uint64) *SetEncryptionLastBlockIns {
+func NewSetEncryptionLastBlockIns(boardType common.BoardType, blockHeight uint64) *SetEncryptionLastBlockIns {
 	return &SetEncryptionLastBlockIns{boardType: boardType, blockHeight: blockHeight}
 }
 
@@ -27,11 +28,11 @@ func (setEncryptionLastBlock *SetEncryptionLastBlockIns) BuildTransaction(
 }
 
 type SetEncryptionFlagIns struct {
-	boardType metadata.BoardType
+	boardType common.BoardType
 	flag      byte
 }
 
-func NewSetEncryptionFlagIns(boardType metadata.BoardType, flag byte) *SetEncryptionFlagIns {
+func NewSetEncryptionFlagIns(boardType common.BoardType, flag byte) *SetEncryptionFlagIns {
 	return &SetEncryptionFlagIns{boardType: boardType, flag: flag}
 }
 

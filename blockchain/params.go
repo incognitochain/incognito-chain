@@ -1,7 +1,7 @@
 package blockchain
 
 /*
-Params defines a network by its params. These params may be used by Applications
+Params defines a network by its component. These component may be used by Applications
 to differentiate network as well as addresses and keys for one network
 from those intended for use on another network
 */

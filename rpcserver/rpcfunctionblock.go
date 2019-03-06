@@ -249,12 +249,12 @@ getblockcount RPC return information fo blockchain node
 func (rpcServer RpcServer) handleGetBlockCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("params empty"))
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("component empty"))
 	}
 	params, ok := arrayParams[0].(float64)
-	// params, ok := params.(float64)
+	// component, ok := component.(float64)
 	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected get float number params"))
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected get float number component"))
 	}
 	paramNumber := int(params.(float64))
 	shardID := byte(paramNumber)
@@ -314,7 +314,7 @@ func (rpcServer RpcServer) handleGetBlockHash(params interface{}, closeChan <-ch
 
 // handleGetBlockHeader - return block header data
 func (rpcServer RpcServer) handleGetBlockHeader(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// Logger.log.Info(params)
+	// Logger.log.Info(component)
 	log.Printf("%+v", params)
 	result := jsonresult.GetHeaderResult{}
 
