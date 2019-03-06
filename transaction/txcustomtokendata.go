@@ -108,7 +108,7 @@ type TxTokenData struct {
 	PropertyName   string
 	PropertySymbol string
 
-	Type     int    // action type [init, transfer]
+	Type     int    // action type [init, transfer, crossShard (used only for crossShard msg)]
 	Mintable bool   // can mine, default false
 	Amount   uint64 // init amount
 	Vins     []TxTokenVin

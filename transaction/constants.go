@@ -26,6 +26,6 @@ const (
 	VoteGOVBoard
 	SendBackDCBTokenVoteFail
 	SendBackGOVTokenVoteFail
-
+	CustomTokenCrossShard
 	//to remove
 )
