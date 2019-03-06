@@ -2,10 +2,10 @@ package frombeaconins
 
 import (
 	"encoding/json"
-	"github.com/ninjadotorg/constant/blockchain/component"
-	"github.com/ninjadotorg/constant/common"
 	"strconv"
 
+	"github.com/ninjadotorg/constant/blockchain/component"
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy"
 )
 
