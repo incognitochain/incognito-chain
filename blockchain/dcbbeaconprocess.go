@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/metadata/frombeaconins"
 	"strconv"
 
@@ -22,7 +23,7 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 		return bsb.processLoanRequestInstruction(inst)
 	case strconv.Itoa(metadata.LoanResponseMeta):
 		return bsb.processLoanResponseInstruction(inst)
-	case strconv.Itoa(metadata.AcceptDCBBoardIns):
+	case strconv.Itoa(component.AcceptDCBBoardIns):
 		acceptDCBBoardIns := frombeaconins.AcceptDCBBoardIns{}
 		err := json.Unmarshal([]byte(inst[2]), &acceptDCBBoardIns)
 		if err != nil {
@@ -32,7 +33,7 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 		if err != nil {
 			return err
 		}
-	case strconv.Itoa(metadata.AcceptGOVBoardIns):
+	case strconv.Itoa(component.AcceptGOVBoardIns):
 		acceptGOVBoardIns := frombeaconins.AcceptGOVBoardIns{}
 		err := json.Unmarshal([]byte(inst[2]), &acceptGOVBoardIns)
 		if err != nil {
@@ -492,9 +493,9 @@ func (bc *BlockChain) processBeaconOnlyInstructions(block *BeaconBlock) error {
 			if err != nil {
 				return err
 			}
-		case strconv.Itoa(metadata.UpdateDCBConstitutionIns):
+		case strconv.Itoa(component.UpdateDCBConstitutionIns):
 			return bc.processUpdateDCBConstitutionIns(inst)
-		case strconv.Itoa(metadata.UpdateGOVConstitutionIns):
+		case strconv.Itoa(component.UpdateGOVConstitutionIns):
 			return bc.processUpdateGOVConstitutionIns(inst)
 		}
 	}
