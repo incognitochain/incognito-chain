@@ -1,4 +1,4 @@
-package params
+package component
 
 import "github.com/ninjadotorg/constant/common"
 
@@ -53,8 +53,8 @@ type DCBParams struct {
 	SpendReserveData         map[common.Hash]*SpendReserveData
 	DividendAmount           uint64 // maximum total Constant to pay dividend; might be less if Institution's fund ran out
 
-	// TODO(@0xbunyip): read loan params from proposal instead of storing and reading separately
-	ListLoanParams []LoanParams // params for collateralized loans of Constant
+	// TODO(@0xbunyip): read loan component from proposal instead of storing and reading separately
+	ListLoanParams []LoanParams // component for collateralized loans of Constant
 }
 
 type RaiseReserveData struct {

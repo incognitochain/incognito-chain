@@ -375,7 +375,7 @@ func loadConfig() (*config, []string, error) {
 
 	// Multiple networks can't be selected simultaneously.
 	numNets := 0
-	// Count number of network flags passed; assign active network params
+	// Count number of network flags passed; assign active network component
 	// while we're at it
 	if cfg.TestNet {
 		numNets++
@@ -383,7 +383,7 @@ func loadConfig() (*config, []string, error) {
 	}
 
 	if numNets > 1 {
-		Logger.log.Error("The testnet, regtest, segnet, and simnet params can't be used together -- choose one of the four")
+		Logger.log.Error("The testnet, regtest, segnet, and simnet component can't be used together -- choose one of the four")
 		os.Exit(0)
 	}
 

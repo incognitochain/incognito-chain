@@ -16,10 +16,10 @@ type ShareRewardOldBoardMetadata struct {
 func NewShareRewardOldBoardMetadata(
 	candidatePaymentAddress privacy.PaymentAddress,
 	voterPaymentAddress privacy.PaymentAddress,
-	boardType BoardType,
+	boardType common.BoardType,
 ) *ShareRewardOldBoardMetadata {
 	metadataType := 0
-	if boardType == DCBBoard {
+	if boardType == common.DCBBoard {
 		metadataType = ShareRewardOldDCBBoardMeta
 	} else {
 		metadataType = ShareRewardOldGOVBoardMeta

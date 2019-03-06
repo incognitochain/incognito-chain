@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"sort"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/pkg/errors"
 )
@@ -80,7 +80,7 @@ type StabilityInfo struct {
 	SalaryFund uint64 // use to pay salary for miners(block producer or current leader) in chain
 	BankFund   uint64 // for DBank
 
-	GOVConstitution GOVConstitution // params which get from governance for network
+	GOVConstitution GOVConstitution // component which get from governance for network
 	DCBConstitution DCBConstitution
 
 	// BOARD
@@ -88,7 +88,7 @@ type StabilityInfo struct {
 	GOVGovernor GOVGovernor
 
 	// Price feeds through Oracle
-	Oracle params.Oracle
+	Oracle component.Oracle
 }
 
 func (si StabilityInfo) GetBytes() []byte {
@@ -303,7 +303,7 @@ func (bestStateBeacon *BestStateBeacon) getAssetPrice(assetID common.Hash) uint6
 }
 
 // GetSaleData returns latest data of a crowdsale
-func (bestStateBeacon *BestStateBeacon) GetSaleData(saleID []byte) (*params.SaleData, error) {
+func (bestStateBeacon *BestStateBeacon) GetSaleData(saleID []byte) (*component.SaleData, error) {
 	key := getSaleDataKeyBeacon(saleID)
 	if value, ok := bestStateBeacon.Params[key]; ok {
 		return parseSaleDataValueBeacon(value)
