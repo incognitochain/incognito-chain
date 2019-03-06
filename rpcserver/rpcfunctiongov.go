@@ -532,3 +532,8 @@ func (rpcServer RpcServer) handleCreateAndSendTxWithBuyGOVTokensRequest(params i
 	}
 	return result, nil
 }
+
+func (rpcServer RpcServer) handleGetCurrentStabilityInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	stabilityInfo := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo
+	return stabilityInfo, nil
+}

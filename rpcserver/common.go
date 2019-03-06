@@ -99,8 +99,8 @@ func (rpcServer RpcServer) makeArrayInputCoinHashHs(inputCoins []*privacy.InputC
 func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
 	Logger.log.Infof("Params: \n%+v\n\n\n", params)
 
-	/******* START Fetch all params to ******/
-	// all params
+	/******* START Fetch all component to ******/
+	// all component
 	arrayParams := common.InterfaceSlice(params)
 
 	// param #1: private key of sender
@@ -136,7 +136,7 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 
 	// param #4: hasPrivacy flag: 1 or -1
 	hasPrivacy := int(arrayParams[3].(float64)) > 0
-	/********* END Fetch all params to *******/
+	/********* END Fetch all component to *******/
 
 	/******* START choose output coins constant, which is used to create tx *****/
 	inputCoins, realFee, err1 := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, shardIDSender, hasPrivacy, meta, nil, nil)
@@ -184,7 +184,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	params interface{},
 	metaData metadata.Metadata,
 ) (*transaction.TxCustomToken, error) {
-	// all params
+	// all component
 	arrayParams := common.InterfaceSlice(params)
 
 	// param #1: private key of sender
@@ -220,7 +220,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	// param #4: hasPrivacy flag
 	hasPrivacy := int(arrayParams[3].(float64)) > 0
 
-	// param #5: token params
+	// param #5: token component
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	tokenParams := &transaction.CustomTokenParamTx{
 		PropertyID:     tokenParamsRaw["TokenID"].(string),
@@ -333,10 +333,10 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	params interface{},
 ) (*transaction.TxCustomTokenPrivacy, error) {
-	// all params
+	// all component
 	arrayParams := common.InterfaceSlice(params)
 
-	/****** START FEtch data from params *********/
+	/****** START FEtch data from component *********/
 	// param #1: private key of sender
 	senderKeyParam := arrayParams[0]
 	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
@@ -370,7 +370,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	// param #4: hasPrivacy flag for constant
 	hasPrivacyConst := int(arrayParams[3].(float64)) > 0
 
-	// param #5: token params
+	// param #5: token component
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	tokenParams := &transaction.CustomTokenPrivacyParamTx{
 		PropertyID:     tokenParamsRaw["TokenID"].(string),
@@ -416,7 +416,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 			}
 		}
 	}
-	/****** END FEtch data from params *********/
+	/****** END FEtch data from component *********/
 
 	/******* START choose output coins constant, which is used to create tx *****/
 	inputCoins, realFee, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos,
