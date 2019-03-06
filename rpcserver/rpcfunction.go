@@ -19,14 +19,15 @@ type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, 
 // Commands valid for normal user
 var RpcHandler = map[string]commandHandler{
 	// node
-	GetNetworkInfo:     RpcServer.handleGetNetWorkInfo,
-	GetConnectionCount: RpcServer.handleGetConnectionCount,
-	GetAllPeers:        RpcServer.handleGetAllPeers,
-	GetRawMempool:      RpcServer.handleGetRawMempool,
-	GetMempoolEntry:    RpcServer.handleMempoolEntry,
-	EstimateFee:        RpcServer.handleEstimateFee,
-	GetGenerate:        RpcServer.handleGetGenerate,
-	GetMiningInfo:      RpcServer.handleGetMiningInfo,
+	GetNetworkInfo:           RpcServer.handleGetNetWorkInfo,
+	GetConnectionCount:       RpcServer.handleGetConnectionCount,
+	GetAllPeers:              RpcServer.handleGetAllPeers,
+	GetRawMempool:            RpcServer.handleGetRawMempool,
+	GetMempoolEntry:          RpcServer.handleMempoolEntry,
+	EstimateFee:              RpcServer.handleEstimateFee,
+	EstimateFeeWithEstimator: RpcServer.handleEstimateFeeWithEstimator,
+	GetGenerate:              RpcServer.handleGetGenerate,
+	GetMiningInfo:            RpcServer.handleGetMiningInfo,
 
 	// block
 	GetBestBlock:      RpcServer.handleGetBestBlock,
@@ -52,16 +53,17 @@ var RpcHandler = map[string]commandHandler{
 	HasSnDerivators:                 RpcServer.handleHasSnDerivators,
 
 	// Beststate
-	GetCandidateList:          RpcServer.handleGetCandidateList,
-	GetCommitteeList:          RpcServer.handleGetCommitteeList,
-	GetBlockProducerList:      RpcServer.handleGetBlockProducerList,
-	GetShardBestState:         RpcServer.handleGetShardBestState,
-	GetBeaconBestState:        RpcServer.handleGetBeaconBestState,
-	GetBeaconPoolState:        RpcServer.handleGetBeaconPoolState,
-	GetShardPoolState:         RpcServer.handleGetShardPoolState,
-	GetShardToBeaconPoolState: RpcServer.handleGetShardToBeaconPoolState,
-	GetCrossShardPoolState:    RpcServer.handleGetCrossShardPoolState,
-	CanPubkeyStake:            RpcServer.handleCanPubkeyStake,
+	GetCandidateList:              RpcServer.handleGetCandidateList,
+	GetCommitteeList:              RpcServer.handleGetCommitteeList,
+	GetBlockProducerList:          RpcServer.handleGetBlockProducerList,
+	GetShardBestState:             RpcServer.handleGetShardBestState,
+	GetBeaconBestState:            RpcServer.handleGetBeaconBestState,
+	GetBeaconPoolState:            RpcServer.handleGetBeaconPoolState,
+	GetShardPoolState:             RpcServer.handleGetShardPoolState,
+	GetShardPoolLatestValidHeight: RpcServer.handleGetShardPoolLatestValidHeight,
+	GetShardToBeaconPoolState:     RpcServer.handleGetShardToBeaconPoolState,
+	GetCrossShardPoolState:        RpcServer.handleGetCrossShardPoolState,
+	CanPubkeyStake:                RpcServer.handleCanPubkeyStake,
 
 	// custom token
 	CreateRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
@@ -232,8 +234,8 @@ func (rpcServer RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-
 		}
 	}
 	result.Networks = networks
-	if rpcServer.config.Wallet != nil && rpcServer.config.Wallet.Config != nil {
-		result.IncrementalFee = rpcServer.config.Wallet.Config.IncrementalFee
+	if rpcServer.config.Wallet != nil && rpcServer.config.Wallet.GetConfig() != nil {
+		result.IncrementalFee = rpcServer.config.Wallet.GetConfig().IncrementalFee
 	}
 	result.Warnings = ""
 
@@ -508,4 +510,41 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 		GOVFeePerKbTx:        govFeePerKbTx,
 	}
 	return result, nil
+}
+
+// handleEstimateFeeWithEstimator -- get fee from estomator
+func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	// all params
+	arrayParams := common.InterfaceSlice(params)
+
+	// param #1: estimation fee coin per kb from client
+	defaultFeeCoinPerKb := int64(arrayParams[0].(float64))
+
+	// param #2: payment address
+	senderKeyParam := arrayParams[1]
+	senderKeySet, err := rpcServer.GetKeySetFromKeyParams(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
+	}
+	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
+	shardIDSender := common.GetShardIDFromLastByte(lastByte)
+
+	// param #2: numblocl
+	estimateFeeCoinPerKb := rpcServer.estimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, 8)
+	govFeePerKbTx := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.FeePerKbTx
+
+	result := jsonresult.EstimateFeeResult{
+		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
+		GOVFeePerKbTx:        govFeePerKbTx,
+	}
+	return result, nil
+}
+
+// handleGetActiveShards - return active shard num
+func (rpcServer RpcServer) handleGetActiveShards(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	if rpcServer.config.BlockChain.IsReady(false, 0) {
+		activeShards := rpcServer.config.BlockChain.BestState.Beacon.ActiveShards
+		return activeShards, nil
+	}
+	return -1, nil
 }

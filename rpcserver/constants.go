@@ -2,14 +2,15 @@ package rpcserver
 
 // rpc cmd method
 const (
-	GetNetworkInfo     = "getnetworkinfo"
-	GetConnectionCount = "getconnectioncount"
-	GetAllPeers        = "getallpeers"
-	GetRawMempool      = "getrawmempool"
-	GetMempoolEntry    = "getmempoolentry"
-	EstimateFee        = "estimatefee"
-	GetGenerate        = "getgenerate"
-	GetMiningInfo      = "getmininginfo"
+	GetNetworkInfo           = "getnetworkinfo"
+	GetConnectionCount       = "getconnectioncount"
+	GetAllPeers              = "getallpeers"
+	GetRawMempool            = "getrawmempool"
+	GetMempoolEntry          = "getmempoolentry"
+	EstimateFee              = "estimatefee"
+	EstimateFeeWithEstimator = "estimatefeewithestimator"
+	GetGenerate              = "getgenerate"
+	GetMiningInfo            = "getmininginfo"
 
 	GetBestBlock      = "getbestblock"
 	GetBestBlockHash  = "getbestblockhash"
@@ -53,8 +54,9 @@ const (
 	GetShardBestState  = "getshardbeststate"
 	GetBeaconBestState = "getbeaconbeststate"
 
-	GetBeaconPoolState = "getbeaconpoolstate"
-	GetShardPoolState  = "getshardpoolstate"
+	GetBeaconPoolState            = "getbeaconpoolstate"
+	GetShardPoolState             = "getshardpoolstate"
+	GetShardPoolLatestValidHeight = "getshardpoollatestvalidheight"
 
 	GetShardToBeaconPoolState = "getshardtobeaconpoolstate"
 	GetCrossShardPoolState    = "getcrossshardpoolstate"

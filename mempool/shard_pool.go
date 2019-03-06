@@ -5,6 +5,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 	"sort"
+	"sync"
 )
 
 const (
@@ -16,6 +17,7 @@ type ShardPool struct {
 	pool              []*blockchain.ShardBlock // shardID -> height -> block
 	shardID           byte
 	latestValidHeight uint64
+	poolMu            *sync.Mutex
 }
 
 var shardPoolMap = make(map[byte]*ShardPool)
@@ -25,6 +27,7 @@ func InitShardPool(pool map[byte]blockchain.ShardPool) {
 		shardPoolMap[byte(i)] = GetShardPool(byte(i))
 		//update last shard height
 		shardPoolMap[byte(i)].SetShardState(blockchain.GetBestStateShard(byte(i)).ShardHeight)
+		shardPoolMap[byte(i)].poolMu = new(sync.Mutex)
 		pool[byte(i)] = shardPoolMap[byte(i)]
 
 	}
@@ -56,6 +59,8 @@ func (self *ShardPool) GetShardState() uint64 {
 
 func (self *ShardPool) AddShardBlock(blk *blockchain.ShardBlock) error {
 	//TODO: validate aggregated signature
+	self.poolMu.Lock()
+	defer self.poolMu.Unlock()
 
 	blkHeight := blk.Header.Height
 
@@ -106,7 +111,7 @@ func (self *ShardPool) AddShardBlock(blk *blockchain.ShardBlock) error {
 func (self *ShardPool) UpdateLatestShardState() {
 	lastHeight := self.latestValidHeight
 	for _, blk := range self.pool {
-		if blk.Header.Height > lastHeight && lastHeight+1 != blk.Header.Height {
+		if lastHeight+1 != blk.Header.Height {
 			break
 		}
 		lastHeight = blk.Header.Height
@@ -167,7 +172,11 @@ func (self *ShardPool) GetLatestValidBlockHeight() uint64 {
 		finalBlocks = blk.Header.Height
 	}
 	return finalBlocks
+}
 
+type AllHeight struct {
+	valid   []uint64
+	pending []uint64
 }
 
 func (self *ShardPool) GetAllBlockHeight() []uint64 {
