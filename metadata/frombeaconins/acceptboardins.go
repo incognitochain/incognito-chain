@@ -2,10 +2,10 @@ package frombeaconins
 
 import (
 	"encoding/json"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 )
 
@@ -24,7 +24,7 @@ func (acceptDCBBoardIns *AcceptDCBBoardIns) GetStringFormat() ([]string, error) 
 		return nil, err
 	}
 	return []string{
-		strconv.Itoa(metadata.AcceptDCBBoardIns),
+		strconv.Itoa(component.AcceptDCBBoardIns),
 		strconv.Itoa(-1),
 		string(content),
 	}, nil
@@ -41,7 +41,7 @@ func (acceptGOVBoardIns *AcceptGOVBoardIns) GetStringFormat() ([]string, error) 
 		return nil, err
 	}
 	return []string{
-		strconv.Itoa(metadata.AcceptGOVBoardIns),
+		strconv.Itoa(component.AcceptGOVBoardIns),
 		strconv.Itoa(-1),
 		string(content),
 	}, nil

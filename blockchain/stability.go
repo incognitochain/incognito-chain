@@ -88,7 +88,7 @@ func buildStabilityActions(
 				}
 				var newIns []string
 				switch metaType {
-				case metadata.AcceptDCBProposalIns:
+				case component.AcceptDCBProposalIns:
 					acceptProposalIns := frombeaconins.AcceptProposalIns{}
 					err := json.Unmarshal([]byte(l[2]), &acceptProposalIns)
 					if err != nil {
@@ -105,7 +105,7 @@ func buildStabilityActions(
 					if err != nil {
 						panic(err)
 					}
-				case metadata.AcceptGOVProposalIns:
+				case component.AcceptGOVProposalIns:
 					acceptProposalIns := frombeaconins.AcceptProposalIns{}
 					err := json.Unmarshal([]byte(l[2]), &acceptProposalIns)
 					if err != nil {
@@ -186,11 +186,28 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 		case metadata.ShardBlockSalaryRequestMeta:
 			newInst, err = buildInstForShardBlockSalaryReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
-		case metadata.NewDCBConstitutionIns:
+		case component.NewDCBConstitutionIns:
 			newInst, err = buildUpdateConstitutionIns(inst[2], common.DCBBoard)
 
-		case metadata.NewGOVConstitutionIns:
+		case component.NewGOVConstitutionIns:
 			newInst, err = buildUpdateConstitutionIns(inst[2], common.GOVBoard)
+
+		case component.VoteDCBBoardIns:
+			err = blkTmpGen.chain.AddVoteDCBBoard(inst[2])
+
+		case component.VoteGOVBoardIns:
+			err = blkTmpGen.chain.AddVoteDCBBoard(inst[2])
+
+		case component.SealedLv1Or2VoteProposalIns:
+			err = blkTmpGen.chain.AddVoteLv1or2Proposal(inst[2])
+		case component.SealedLv3VoteProposalIns:
+			err = blkTmpGen.chain.AddVoteLv3Proposal(inst[2])
+		case component.NormalVoteProposalFromSealerIns:
+			err = blkTmpGen.chain.AddNormalVoteProposalFromSealer(inst[2])
+		case component.NormalVoteProposalFromOwnerIns:
+			err = blkTmpGen.chain.AddNormalVoteProposalFromOwner(inst[2])
+		case component.PunishDecryptIns:
+			// todo @0xjackalope
 		default:
 			continue
 		}
@@ -425,6 +442,115 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []met
 
 	// TODO(@0xbunyip): remove tx from txsToAdd?
 	return respTxs, nil
+}
+
+func (chain *BlockChain) AddVoteDCBBoard(inst string) error {
+	newInst, err := fromshardins.NewVoteDCBBoardInsFromStr(inst)
+	if err != nil {
+		return err
+	}
+
+	boardType := common.DCBBoard
+	voteAmount := newInst.AmountOfVote
+	voterPayment := newInst.VoterPaymentAddress
+	governor := chain.GetGovernor(boardType)
+	boardIndex := governor.GetBoardIndex() + 1
+	err1 := chain.GetDatabase().AddVoteBoard(
+		boardType,
+		boardIndex,
+		voterPayment,
+		newInst.CandidatePaymentAddress,
+		voteAmount,
+	)
+	if err1 != nil {
+		return err1
+	}
+	return nil
+}
+
+func (chain *BlockChain) AddVoteGOVBoard(inst string) error {
+	newInst, err := fromshardins.NewVoteGOVBoardInsFromStr(inst)
+	if err != nil {
+		return err
+	}
+
+	boardType := common.GOVBoard
+	voteAmount := newInst.AmountOfVote
+	voterPayment := newInst.VoterPaymentAddress
+	governor := chain.GetGovernor(boardType)
+	boardIndex := governor.GetBoardIndex() + 1
+	err1 := chain.GetDatabase().AddVoteBoard(
+		boardType,
+		boardIndex,
+		voterPayment,
+		newInst.CandidatePaymentAddress,
+		voteAmount,
+	)
+	if err1 != nil {
+		return err1
+	}
+	return nil
+}
+
+func (chain *BlockChain) AddVoteLv1or2Proposal(inst string) error {
+	newInst, err := fromshardins.NewSealedLv1Or2VoteProposalInsFromStr(inst)
+	boardType := newInst.BoardType
+	if err != nil {
+		return err
+	}
+
+	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
+	err = chain.GetDatabase().AddVoteLv1or2ProposalDB(boardType, nextConstitutionIndex, &newInst.Lv3TxID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (chain *BlockChain) AddVoteLv3Proposal(inst string) error {
+	newInst, err := fromshardins.NewSealedLv3VoteProposalInsFromStr(inst)
+	boardType := newInst.BoardType
+
+	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
+	err = chain.GetDatabase().AddVoteLv3ProposalDB(boardType, nextConstitutionIndex, &newInst.Lv3TxID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (chain *BlockChain) AddNormalVoteProposalFromSealer(inst string) error {
+	newInst, err := fromshardins.NewNormalVoteProposalFromSealerInsFromStr(inst)
+	boardType := newInst.BoardType
+
+	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
+	err = chain.GetDatabase().AddVoteNormalProposalFromSealerDB(
+		boardType,
+		nextConstitutionIndex,
+		&newInst.Lv3TxID,
+		newInst.VoteProposal.ToBytes(),
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (chain *BlockChain) AddNormalVoteProposalFromOwner(inst string) error {
+	newInst, err := fromshardins.NewNormalVoteProposalFromOwnerInsFromStr(inst)
+	boardType := newInst.BoardType
+
+	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
+	err = chain.GetDatabase().AddVoteNormalProposalFromOwnerDB(
+		boardType,
+		nextConstitutionIndex,
+		&newInst.Lv3TxID,
+		newInst.VoteProposal.ToBytes(),
+	)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // func (blockgen *BlkTmplGenerator) buildIssuingResTxs(

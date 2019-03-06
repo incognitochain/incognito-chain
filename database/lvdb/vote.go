@@ -116,7 +116,7 @@ func (db *db) NewIterator(slice *util.Range, ro *opt.ReadOptions) iterator.Itera
 	return db.lvdb.NewIterator(slice, ro)
 }
 
-func (db *db) AddVoteLv3Proposal(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash) error {
+func (db *db) AddVoteLv3ProposalDB(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash) error {
 	//init sealer
 	keySealer := GetKeyThreePhraseCryptoSealer(boardType, constitutionIndex, txID)
 	ok, err := db.HasValue(keySealer)
@@ -144,8 +144,8 @@ func (db *db) AddVoteLv3Proposal(boardType common.BoardType, constitutionIndex u
 	return nil
 }
 
-func (db *db) AddVoteLv1or2Proposal(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash) error {
-	keySealer := GetKeyThreePhraseCryptoSealer(boardType, constitutionIndex, txID)
+func (db *db) AddVoteLv1or2ProposalDB(boardType common.BoardType, constitutionIndex uint32, lv3TxID *common.Hash) error {
+	keySealer := GetKeyThreePhraseCryptoSealer(boardType, constitutionIndex, lv3TxID)
 	ok, err := db.HasValue(keySealer)
 	if err != nil {
 		return err
@@ -165,8 +165,8 @@ func (db *db) AddVoteLv1or2Proposal(boardType common.BoardType, constitutionInde
 	return nil
 }
 
-func (db *db) AddVoteNormalProposalFromSealer(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash, voteValue []byte) error {
-	err := db.AddVoteLv1or2Proposal(boardType, constitutionIndex, txID)
+func (db *db) AddVoteNormalProposalFromSealerDB(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash, voteValue []byte) error {
+	err := db.AddVoteLv1or2ProposalDB(boardType, constitutionIndex, txID)
 	if err != nil {
 		return err
 	}
@@ -177,7 +177,7 @@ func (db *db) AddVoteNormalProposalFromSealer(boardType common.BoardType, consti
 	return nil
 }
 
-func (db *db) AddVoteNormalProposalFromOwner(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash, voteValue []byte) error {
+func (db *db) AddVoteNormalProposalFromOwnerDB(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash, voteValue []byte) error {
 	keyOwner := GetKeyThreePhraseCryptoOwner(boardType, constitutionIndex, txID)
 	ok, err := db.HasValue(keyOwner)
 	if err != nil {

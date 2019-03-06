@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"encoding/hex"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/pkg/errors"
 
@@ -315,17 +316,11 @@ func NewSealedLv3VoteProposalMetadata(
 
 }
 
-type VoteProposalData struct {
-	ProposalTxID      common.Hash
-	AmountOfVote      int32
-	ConstitutionIndex uint32
+func NewVoteProposalData(proposalTxID common.Hash, amountOfVote int32, constitutionIndex uint32) *component.VoteProposalData {
+	return &component.VoteProposalData{ProposalTxID: proposalTxID, AmountOfVote: amountOfVote, ConstitutionIndex: constitutionIndex}
 }
 
-func NewVoteProposalData(proposalTxID common.Hash, amountOfVote int32, constitutionIndex uint32) *VoteProposalData {
-	return &VoteProposalData{ProposalTxID: proposalTxID, AmountOfVote: amountOfVote, ConstitutionIndex: constitutionIndex}
-}
-
-func NewVoteProposalDataFromJson(data interface{}) *VoteProposalData {
+func NewVoteProposalDataFromJson(data interface{}) *component.VoteProposalData {
 	voteProposalDataData := data.(map[string]interface{})
 
 	proposalTxIDData, _ := hex.DecodeString(voteProposalDataData["ProposalTxID"].(string))
@@ -338,14 +333,7 @@ func NewVoteProposalDataFromJson(data interface{}) *VoteProposalData {
 	)
 }
 
-func (voteProposalData VoteProposalData) ToBytes() []byte {
-	b := voteProposalData.ProposalTxID.GetBytes()
-	b = append(b, common.Int32ToBytes(voteProposalData.AmountOfVote)...)
-	b = append(b, common.Uint32ToBytes(voteProposalData.ConstitutionIndex)...)
-	return b
-}
-
-func NewVoteProposalDataFromBytes(b []byte) *VoteProposalData {
+func NewVoteProposalDataFromBytes(b []byte) *component.VoteProposalData {
 	lenB := len(b)
 	newHash, _ := common.NewHash(b[:lenB-8])
 	return NewVoteProposalData(
@@ -356,14 +344,14 @@ func NewVoteProposalDataFromBytes(b []byte) *VoteProposalData {
 }
 
 type NormalVoteProposalFromSealerMetadata struct {
-	VoteProposal             VoteProposalData
+	VoteProposal             component.VoteProposalData
 	LockerPaymentAddress     []privacy.PaymentAddress
 	PointerToLv1VoteProposal common.Hash
 	PointerToLv3VoteProposal common.Hash
 }
 
 func NewNormalVoteProposalFromSealerMetadata(
-	voteProposal VoteProposalData,
+	voteProposal component.VoteProposalData,
 	lockerPaymentAddress []privacy.PaymentAddress,
 	pointerToLv1VoteProposal common.Hash,
 	pointerToLv3VoteProposal common.Hash,
@@ -479,13 +467,13 @@ func GetSealedLv1VoteProposalMeta(boardType common.BoardType) int {
 }
 
 type NormalVoteProposalFromOwnerMetadata struct {
-	VoteProposal             VoteProposalData
+	VoteProposal             component.VoteProposalData
 	LockerPaymentAddress     []privacy.PaymentAddress
 	PointerToLv3VoteProposal common.Hash
 }
 
 func NewNormalVoteProposalFromOwnerMetadata(
-	voteProposal VoteProposalData,
+	voteProposal component.VoteProposalData,
 	lockerPaymentAddress []privacy.PaymentAddress,
 	pointerToLv3VoteProposal common.Hash,
 ) *NormalVoteProposalFromOwnerMetadata {
@@ -621,7 +609,7 @@ func ListPaymentAddressFromListSenderKey(listSenderKey []string) []privacy.Payme
 	return paymentAddresses
 }
 
-func CreateSealLv3Data(data *VoteProposalData, pubKeys [][]byte) []byte {
+func CreateSealLv3Data(data *component.VoteProposalData, pubKeys [][]byte) []byte {
 	SealLv3 := common.Encrypt(common.Encrypt(common.Encrypt(data.ToBytes(), pubKeys[0]), pubKeys[1]), pubKeys[2])
 	return SealLv3
 }
@@ -711,6 +699,31 @@ func NewNormalVoteProposalFromSealerMetadataFromRPC(data map[string]interface{})
 			*voteProposalData,
 			paymentAddresses,
 			lv1TxID,
+			lv3TxID,
+		)
+	}
+	return meta, nil
+}
+
+func NewSealedLv1VoteProposalMetadataFromRPC(data map[string]interface{}) (Metadata, error) {
+	boardType := common.NewBoardTypeFromString(data["BoardType"].(string))
+	sealLv1Data := data["SealLv1Data"].([]byte)
+	paymentAddresses := data["PaymentAddresses"].([]privacy.PaymentAddress)
+	lv2TxID := data["Lv2TxID"].(common.Hash)
+	lv3TxID := data["Lv3TxID"].(common.Hash)
+	var meta Metadata
+	if boardType == common.DCBBoard {
+		meta = NewSealedLv1DCBVoteProposalMetadata(
+			sealLv1Data,
+			paymentAddresses,
+			lv2TxID,
+			lv3TxID,
+		)
+	} else {
+		meta = NewSealedLv1GOVVoteProposalMetadata(
+			sealLv1Data,
+			paymentAddresses,
+			lv2TxID,
 			lv3TxID,
 		)
 	}
