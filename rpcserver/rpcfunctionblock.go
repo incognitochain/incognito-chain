@@ -112,6 +112,9 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 			result.TxHashes = []string{}
 			result.BlockProducerSign = block.ProducerSig
 			result.BlockProducer = block.Header.Producer
+			result.AggregatedSig = block.AggregatedSig
+			result.BeaconHeight = block.Header.BeaconHeight
+			result.BeaconBlockHash = block.Header.BeaconHash.String()
 			for _, tx := range block.Body.Transactions {
 				result.TxHashes = append(result.TxHashes, tx.Hash().String())
 			}
@@ -140,6 +143,9 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 			result.NextBlockHash = nextHashString
 			result.BlockProducerSign = block.ProducerSig
 			result.BlockProducer = block.Header.Producer
+			result.AggregatedSig = block.AggregatedSig
+			result.BeaconHeight = block.Header.BeaconHeight
+			result.BeaconBlockHash = block.Header.BeaconHash.String()
 			result.Txs = make([]jsonresult.GetBlockTxResult, 0)
 			for _, tx := range block.Body.Transactions {
 				transactionT := jsonresult.GetBlockTxResult{}
