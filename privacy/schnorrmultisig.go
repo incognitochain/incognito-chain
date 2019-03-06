@@ -54,7 +54,13 @@ func (multiSigKeyset *MultiSigKeyset) Set(priKey *SpendingKey, pubKey *PublicKey
 
 // Bytes - Converting SchnorrMultiSig to byte array
 func (multiSig *SchnMultiSig) Bytes() []byte {
+	if !Curve.IsOnCurve(multiSig.R.X, multiSig.R.Y) {
+		panic("Throw Error from Byte() method")
+	}
 	res := multiSig.R.Compress()
+	if multiSig.S == nil {
+		panic("Throw Error from Byte() method")
+	}
 	temp := multiSig.S.Bytes()
 	for j := 0; j < BigIntSize-len(temp); j++ {
 		temp = append([]byte{0}, temp...)
@@ -69,7 +75,9 @@ func (multisigScheme *MultiSigScheme) Init() {
 	multisigScheme.Keyset.pubKey = new(PublicKey)
 	multisigScheme.Signature = new(SchnMultiSig)
 	multisigScheme.Signature.R = new(EllipticPoint)
-	multisigScheme.Signature.S = new(big.Int)
+	multisigScheme.Signature.R.X = big.NewInt(0)
+	multisigScheme.Signature.R.Y = big.NewInt(0)
+	multisigScheme.Signature.S = big.NewInt(0)
 }
 
 /*
@@ -135,7 +143,10 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 		#4: r combine in phase 1
 	return: true or false
 */
-func (multiSig *SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicKey, listCombinePK []*PublicKey, RCombine *EllipticPoint) bool {
+func (multiSig SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicKey, listCombinePK []*PublicKey, RCombine *EllipticPoint) bool {
+	if len(multiSig.Bytes()) != (BigIntSize + CompressedPointSize) {
+		panic("Wrong length")
+	}
 	//Calculate common params:
 	//	aggKey = PK0+PK1+PK2+...+PKn, PK0 is selfPK
 	//	X = (PK0*a0) + (PK1*a1) + ... + (PKn*an)
