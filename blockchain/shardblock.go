@@ -8,12 +8,13 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 type ShardBlock struct {
 	AggregatedSig string  `json:"AggregatedSig"`
 	R             string  `json:"R"`
-	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
+	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
 	ProducerSig   string  `json:"ProducerSig"`
 	Body          ShardBody
 	Header        ShardHeader
@@ -22,7 +23,7 @@ type ShardBlock struct {
 type ShardToBeaconBlock struct {
 	AggregatedSig string  `json:"AggregatedSig"`
 	R             string  `json:"R"`
-	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
+	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
 	ProducerSig   string  `json:"ProducerSig"`
 
 	Instructions [][]string
@@ -32,12 +33,15 @@ type ShardToBeaconBlock struct {
 type CrossShardBlock struct {
 	AggregatedSig   string  `json:"AggregatedSig"`
 	R               string  `json:"R"`
-	ValidatorsIdx   [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
+	ValidatorsIdx   [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
 	ProducerSig     string  `json:"ProducerSig"`
 	Header          ShardHeader
 	ToShardID       byte
 	MerklePathShard []common.Hash
+	// Cross Shard data for constant
 	CrossOutputCoin []privacy.OutputCoin
+	// Cross Shard Data for Custom Token Tx
+	CrossTxTokenData []transaction.TxTokenData
 }
 
 func (shardBlock *CrossShardBlock) Hash() *common.Hash {
@@ -147,8 +151,9 @@ func (blk *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byte]*Cros
 func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
 	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 1")
 	crossShard := &CrossShardBlock{}
-	utxoList := getOutCoinCrossShard(block.Body.Transactions, shardID)
-	if len(utxoList) == 0 {
+	crossOutputCoin := getOutCoinCrossShard(block.Body.Transactions, shardID)
+	crossTxTokenData := getTxTokenDataCrossShard(block.Body.Transactions, shardID)
+	if len(crossOutputCoin) == 0 && len(crossTxTokenData) == 0 {
 		return nil, nil
 	}
 	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 2")
@@ -170,7 +175,8 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 	crossShard.ProducerSig = block.ProducerSig
 	crossShard.Header = block.Header
 	crossShard.MerklePathShard = merklePathShard
-	crossShard.CrossOutputCoin = utxoList
+	crossShard.CrossOutputCoin = crossOutputCoin
+	crossShard.CrossTxTokenData = crossTxTokenData
 	crossShard.ToShardID = shardID
 	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 4")
 	return crossShard, nil

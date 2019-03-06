@@ -5,9 +5,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/metadata/frombeaconins"
-	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
@@ -71,7 +72,7 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 }
 
 func (bsb *BestStateBeacon) processSalaryUpdateInstruction(inst []string) error {
-	stabilityInfo := bsb.StabilityInfo
+	stabilityInfo := &bsb.StabilityInfo
 	shardBlockSalaryInfoStr := inst[3]
 	var shardBlockSalaryInfo ShardBlockSalaryInfo
 	err := json.Unmarshal([]byte(shardBlockSalaryInfoStr), &shardBlockSalaryInfo)

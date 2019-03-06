@@ -51,6 +51,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 	if protocol.RoundData.IsProposer {
 		protocol.phase = PBFT_PROPOSE
 	}
+
 	Logger.log.Info("Starting PBFT protocol for " + protocol.RoundData.Layer)
 	protocol.multiSigScheme = new(multiSigScheme)
 	protocol.multiSigScheme.Init(protocol.UserKeySet, protocol.RoundData.Committee)
@@ -99,23 +100,6 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 			proposephase:
 				for {
 					select {
-					case msgReady := <-protocol.cBFTMsg:
-						if msgReady.MessageType() == wire.CmdBFTReady {
-							if msgReady.(*wire.MessageBFTReady).BestStateHash == protocol.RoundData.BestStateHash && msgReady.(*wire.MessageBFTReady).Round == protocol.RoundData.Round && common.IndexOfStr(msgReady.(*wire.MessageBFTReady).Pubkey, protocol.RoundData.Committee) != -1 {
-								readyMsgs[msgReady.(*wire.MessageBFTReady).Pubkey] = msgReady.(*wire.MessageBFTReady)
-								if len(readyMsgs) >= (2*len(protocol.RoundData.Committee)/3)-1 {
-									timeout.Stop()
-									timeout2.Stop()
-									fmt.Println("Collected enough ready")
-									select {
-									case <-protocol.cTimeout:
-										continue
-									default:
-										close(protocol.cTimeout)
-									}
-								}
-							}
-						}
 					case <-protocol.cTimeout:
 						if len(readyMsgs) >= (2*len(protocol.RoundData.Committee)/3)-1 {
 							if protocol.RoundData.Layer == common.BEACON_ROLE {
@@ -145,6 +129,18 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 							return nil, errors.New("Didn't received enough ready msg")
 						}
 						break proposephase
+					case msgReady := <-protocol.cBFTMsg:
+						if msgReady.MessageType() == wire.CmdBFTReady {
+							if msgReady.(*wire.MessageBFTReady).BestStateHash == protocol.RoundData.BestStateHash && msgReady.(*wire.MessageBFTReady).Round == protocol.RoundData.Round && common.IndexOfStr(msgReady.(*wire.MessageBFTReady).Pubkey, protocol.RoundData.Committee) != -1 {
+								readyMsgs[msgReady.(*wire.MessageBFTReady).Pubkey] = msgReady.(*wire.MessageBFTReady)
+								if len(readyMsgs) >= (2*len(protocol.RoundData.Committee)/3)-1 {
+									timeout.Stop()
+									timeout2.Stop()
+									fmt.Println("Collected enough ready")
+									protocol.closeTimeoutCh()
+								}
+							}
+						}
 					}
 				}
 			case PBFT_LISTEN:
@@ -210,11 +206,6 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 									}
 								}()
 							}
-							// if msgPropose.MessageType() == wire.CmdBFTPrepare {
-							// 	if common.IndexOfStr(msgPropose.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0 && bytes.Compare(protocol.multiSigScheme.dataToSig[:], msgPropose.(*wire.MessageBFTPrepare).BlkHash[:]) == 0 {
-							// 		protocol.nextPhaseMsgCache = append(protocol.nextPhaseMsgCache, msgPropose)
-							// 	}
-							// }
 						}
 
 					case <-protocol.cTimeout:
@@ -223,7 +214,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 				}
 			case PBFT_PREPARE:
 				fmt.Println("Prepare phase")
-				time.AfterFunc(PrepareTimeout*time.Second, func() {
+				timeout := time.AfterFunc(PrepareTimeout*time.Second, func() {
 					fmt.Println("Prepare phase timeout")
 					close(protocol.cTimeout)
 				})
@@ -243,16 +234,6 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 			preparephase:
 				for {
 					select {
-					case msgPrepare := <-protocol.cBFTMsg:
-						if msgPrepare.MessageType() == wire.CmdBFTPrepare {
-							fmt.Println("Prepare msg received")
-							if common.IndexOfStr(msgPrepare.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0 && bytes.Compare(protocol.multiSigScheme.dataToSig[:], msgPrepare.(*wire.MessageBFTPrepare).BlkHash[:]) == 0 {
-								if _, ok := collectedRiList[msgPrepare.(*wire.MessageBFTPrepare).Pubkey]; !ok {
-									collectedRiList[msgPrepare.(*wire.MessageBFTPrepare).Pubkey] = msgPrepare.(*wire.MessageBFTPrepare).Ri
-									protocol.forwardMsg(msgPrepare)
-								}
-							}
-						}
 					case <-protocol.cTimeout:
 						//Use collected Ri to calc r & get ValidatorsIdx if len(Ri) > 1/2size(committee)
 						// then sig block with this r
@@ -266,6 +247,21 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 
 						protocol.phase = PBFT_COMMIT
 						break preparephase
+					case msgPrepare := <-protocol.cBFTMsg:
+						if msgPrepare.MessageType() == wire.CmdBFTPrepare {
+							fmt.Println("Prepare msg received")
+							if common.IndexOfStr(msgPrepare.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0 && bytes.Compare(protocol.multiSigScheme.dataToSig[:], msgPrepare.(*wire.MessageBFTPrepare).BlkHash[:]) == 0 {
+								if _, ok := collectedRiList[msgPrepare.(*wire.MessageBFTPrepare).Pubkey]; !ok {
+									collectedRiList[msgPrepare.(*wire.MessageBFTPrepare).Pubkey] = msgPrepare.(*wire.MessageBFTPrepare).Ri
+									protocol.forwardMsg(msgPrepare)
+									if len(collectedRiList) == len(protocol.RoundData.Committee) {
+										fmt.Println("Collected enough Ri")
+										timeout.Stop()
+										protocol.closeTimeoutCh()
+									}
+								}
+							}
+						}
 					}
 				}
 			case PBFT_COMMIT:
@@ -367,13 +363,8 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 								protocol.forwardMsg(msgCommit)
 								if len(phaseData.Sigs[R]) >= (2 * len(protocol.RoundData.Committee) / 3) {
 									cmTimeout.Stop()
-									fmt.Println("Collected enough r")
-									select {
-									case <-protocol.cTimeout:
-										continue
-									default:
-										close(protocol.cTimeout)
-									}
+									fmt.Println("Collected enough Sig")
+									protocol.closeTimeoutCh()
 								}
 							}
 
@@ -420,5 +411,14 @@ func (protocol *BFTProtocol) forwardMsg(msg wire.Message) {
 		go protocol.Server.PushMessageToBeacon(msg)
 	} else {
 		go protocol.Server.PushMessageToShard(msg, protocol.RoundData.ShardID)
+	}
+}
+
+func (protocol *BFTProtocol) closeTimeoutCh() {
+	select {
+	case <-protocol.cTimeout:
+		return
+	default:
+		close(protocol.cTimeout)
 	}
 }
