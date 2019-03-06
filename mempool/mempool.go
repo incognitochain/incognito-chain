@@ -153,6 +153,14 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	txHash := tx.Hash()
 
+	// Don't accept the transaction if it already exists in the pool.
+	if tp.isTxInPool(txHash) {
+		str := fmt.Sprintf("already have transaction %+v", txHash.String())
+		err := MempoolTxError{}
+		err.Init(RejectDuplicateTx, errors.New(str))
+		return nil, nil, err
+	}
+
 	// that make sure transaction is accepted when passed any rules
 	var shardID byte
 	var err error
@@ -186,7 +194,6 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		fmt.Printf("Type: %s\n", (tx.(*transaction.Tx).Type))
 		return nil, nil, errors.New("wrong tx type")
 	}
-
 	// check tx with all txs in current mempool
 	err = tx.ValidateTxWithCurrentMempool(tp)
 	if err != nil {
@@ -195,6 +202,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 
 	// sanity data
 	// if validate, errS := tp.ValidateSanityData(tx); !validate {
+
 	if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
 		err := MempoolTxError{}
 		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
@@ -216,15 +224,6 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	if err != nil {
 		return nil, nil, err
 	}
-
-	// Don't accept the transaction if it already exists in the pool.
-	if tp.isTxInPool(txHash) {
-		str := fmt.Sprintf("already have transaction %+v", txHash.String())
-		err := MempoolTxError{}
-		err.Init(RejectDuplicateTx, errors.New(str))
-		return nil, nil, err
-	}
-
 	// A standalone transaction must not be a salary transaction.
 	// if tp.config.BlockChain.IsSalaryTx(tx) {
 	if tx.IsSalaryTx() {
