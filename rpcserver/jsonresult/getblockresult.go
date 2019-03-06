@@ -24,7 +24,8 @@ type GetBlockResult struct {
 	Round             int                `json:"Round"`
 	CrossShards       []int              `json:"CrossShards"`
 	Epoch             uint64             `json:"Epoch"`
-	Reward            uint64             `json:"Reward"`
+	Reward            uint64             `json:"Reward"` // salary tx output
+	Fee               uint64             `json:"Fee"`    // total fee
 }
 
 type GetBlockTxResult struct {
@@ -44,8 +45,10 @@ func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock) {
 	getBlockResult.ShardID = block.Header.ShardID
 	getBlockResult.TxRoot = block.Header.TxRoot.String()
 	getBlockResult.TxHashes = make([]string, 0)
+	getBlockResult.Fee = uint64(0)
 	for _, tx := range block.Body.Transactions {
 		getBlockResult.TxHashes = append(getBlockResult.TxHashes, tx.Hash().String())
+		getBlockResult.Fee += tx.GetTxFee()
 	}
 	getBlockResult.BeaconHeight = block.Header.BeaconHeight
 	getBlockResult.BeaconBlockHash = block.Header.BeaconHash.String()
