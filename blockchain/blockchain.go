@@ -347,10 +347,15 @@ func (blockchain *BlockChain) initBeaconState() error {
 	// TODO(@0xankylosaurus): initialize oracle data properly
 	// All values are in millicent
 
+	// hard code params here in order to test salary tx
+	blockchain.BestState.Beacon.StabilityInfo.SalaryFund = 1000000                       // 10k const                          // 10 Const
+	blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.SalaryPerTx = 10 // 0.1 Const
+	blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.BasicSalary = 10 // 0.1 Const
+
 	// blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 1000000 // $10
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 10000   // $10
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.GOVToken = 2000000 // $20
-	blockchain.BestState.Beacon.StabilityInfo.Oracle.Constant = 1000    // $1, for Nano
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.Constant = 100     // $1, for Nano
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.ETH = 10000        // $100, for milliether
 	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.RaiseReserveData = map[common.Hash]*params.RaiseReserveData{
 		common.ETHAssetID: &params.RaiseReserveData{
