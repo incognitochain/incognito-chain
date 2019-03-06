@@ -20,6 +20,10 @@ type GetBlockResult struct {
 	BeaconHeight      uint64             `json:"BeaconHeight"`
 	BeaconBlockHash   string             `json:"BeaconBlockHash"`
 	AggregatedSig     string             `json:"AggregatedSig"`
+	R                 string             `json:"R"`
+	Round             int                `json:"Round"`
+	CrossShards       []byte             `json:"CrossShards"`
+	Epoch             uint64             `json:"Epoch"`
 }
 
 type GetBlockTxResult struct {
@@ -45,4 +49,8 @@ func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock) {
 	getBlockResult.BeaconHeight = block.Header.BeaconHeight
 	getBlockResult.BeaconBlockHash = block.Header.BeaconHash.String()
 	getBlockResult.AggregatedSig = block.AggregatedSig
+	getBlockResult.R = block.R
+	getBlockResult.Round = block.Header.Round
+	getBlockResult.CrossShards = block.Header.CrossShards
+	getBlockResult.Epoch = block.Header.Epoch
 }
