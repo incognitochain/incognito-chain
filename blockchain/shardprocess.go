@@ -350,18 +350,16 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	txSalaryCount := 0
 	for _, tx := range block.Body.Transactions {
 		if tx.IsSalaryTx() {
-			txSalaryCount += 1
+			txSalaryCount++
 		}
-		fmt.Println("Number of salary transaction", txSalaryCount)
-		if !tx.IsSalaryTx() {
-			fmt.Println("Cross Shard Tx Transaction", tx)
-			if err := blockchain.VerifyTransactionFromNewBlock(tx); err != nil {
-				return NewBlockChainError(TransactionError, err)
-			}
+		fmt.Println("Cross Shard Tx Transaction", tx)
+		if err := blockchain.VerifyTransactionFromNewBlock(tx); err != nil {
+			return NewBlockChainError(TransactionError, err)
 		}
 	}
+	fmt.Println("Number of salary transaction", txSalaryCount)
 	//TODO: UNCOMMENT To verify Cross Shard Block
-	// // Get cross shard block from pool
+	// Get cross shard block from pool
 	// crossShardMap := make(map[byte][]CrossShardBlock)
 	// bestShardHeight := blockchain.BestState.Beacon.BestShardHeight
 	// allCrossShardBlock := blockchain.config.CrossShardPool.GetBlock(bestShardHeight)

@@ -14,9 +14,7 @@ import (
 type ShardBody struct {
 	Instructions    [][]string
 	CrossOutputCoin map[byte][]CrossOutputCoin
-	//TODO: Create hash for Cross TxTokenData
-	CrossTxTokenData map[byte][]CrossTxTokenData
-	Transactions     []metadata.Transaction
+	Transactions    []metadata.Transaction
 }
 type CrossOutputCoin struct {
 	BlockHeight uint64
