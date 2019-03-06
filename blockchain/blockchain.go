@@ -793,6 +793,18 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 					return err
 				}
 			}
+		case transaction.CustomTokenCrossShard:
+			{
+				listCustomToken, err := blockchain.ListCustomToken()
+				if err != nil {
+					panic(err)
+				}
+				//If don't exist then create
+				if _, ok := listCustomToken[customTokenTx.TxTokenData.PropertyID]; !ok {
+					Logger.log.Info("Store Cross Shard Custom if It's not existed in DB", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
+					err = blockchain.config.DataBase.StoreCustomToken(&customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
+				}
+			}
 		case transaction.CustomTokenTransfer:
 			{
 				Logger.log.Info("Transfer custom token %+v", customTokenTx)
@@ -800,6 +812,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		}
 		// save tx which relate to custom token
 		// Reject Double spend UTXO before enter this state
+		fmt.Printf("StoreCustomTokenPaymentAddresstHistory/CustomTokenTx: \n VIN %+v VOUT %+v \n", customTokenTx.TxTokenData.Vins, customTokenTx.TxTokenData.Vouts)
 		err = blockchain.StoreCustomTokenPaymentAddresstHistory(customTokenTx)
 		if err != nil {
 			// Skip double spend
@@ -882,12 +895,31 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 	return nil
 }
 
-//TODO: @merman Store txcustom token
 func (blockchain *BlockChain) CreateAndSaveCrossOutputCoinViewPointFromBlock(block *ShardBlock) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
 	// TODO: 0xsirrush check lightmode turn off
 	err := view.fetchCrossOutputViewPointFromBlock(blockchain.config.DataBase, block, nil)
+	// Update the list nullifiers and commitment, snd set using the state of the used tx view point. This
+	// entails adding the new
+	// ones created by the block.
+	err = blockchain.StoreCommitmentsFromTxViewPoint(*view, block.Header.ShardID)
+	if err != nil {
+		return err
+	}
+
+	err = blockchain.StoreSNDerivatorsFromTxViewPoint(*view, block.Header.ShardID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (blockchain *BlockChain) CreateAndSaveCrossTxTokenDataViewPointFromBlock(block *ShardBlock) error {
+	// Fetch data from block into tx View point
+	view := NewTxViewPoint(block.Header.ShardID)
+	// TODO: 0xsirrush check lightmode turn off
+	err := view.fetchCrossTxTokenDataViewPointFromBlock(blockchain.config.DataBase, block, nil)
 	// Update the list nullifiers and commitment, snd set using the state of the used tx view point. This
 	// entails adding the new
 	// ones created by the block.
@@ -973,6 +1005,7 @@ func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customToken
 		if err := blockchain.config.DataBase.Put(paymentAddressKey, []byte(paymentAddressValue)); err != nil {
 			return err
 		}
+		fmt.Printf("STORE UTXO FOR CUSTOM TOKEN: tokenID %+v \n paymentAddress %+v \n txHash %+v, voutIndex %+v, value %+v \n", (customTokenTx.TxTokenData.PropertyID).String(), vout.PaymentAddress, customTokenTx.Hash(), voutIndex, value)
 	}
 	return nil
 }
