@@ -39,27 +39,27 @@ type ConsensusState struct {
 	ShardNumber     int
 }
 
-func (connManager *ConsensusState) rebuild() {
-	connManager.Committee = make(map[string]byte)
-	for shard, committees := range connManager.ShardCommittee {
+func (consensusState *ConsensusState) rebuild() {
+	consensusState.Committee = make(map[string]byte)
+	for shard, committees := range consensusState.ShardCommittee {
 		for _, committee := range committees {
-			connManager.Committee[committee] = shard
+			consensusState.Committee[committee] = shard
 		}
 	}
 }
 
-func (connManager *ConsensusState) GetBeaconCommittee() []string {
-	connManager.Lock()
-	defer connManager.Unlock()
-	ret := make([]string, len(connManager.BeaconCommittee))
-	copy(ret, connManager.BeaconCommittee)
+func (consensusState *ConsensusState) GetBeaconCommittee() []string {
+	consensusState.Lock()
+	defer consensusState.Unlock()
+	ret := make([]string, len(consensusState.BeaconCommittee))
+	copy(ret, consensusState.BeaconCommittee)
 	return ret
 }
 
-func (connManager *ConsensusState) GetShardCommittee(shard byte) []string {
-	connManager.Lock()
-	defer connManager.Unlock()
-	committee, ok := connManager.ShardCommittee[shard]
+func (consensusState *ConsensusState) GetShardCommittee(shard byte) []string {
+	consensusState.Lock()
+	defer consensusState.Unlock()
+	committee, ok := consensusState.ShardCommittee[shard]
 	if ok {
 		ret := make([]string, len(committee))
 		copy(ret, committee)
@@ -68,11 +68,11 @@ func (connManager *ConsensusState) GetShardCommittee(shard byte) []string {
 	return make([]string, 0)
 }
 
-func (connManager *ConsensusState) GetCommittee() map[string]byte {
-	connManager.Lock()
-	defer connManager.Unlock()
+func (consensusState *ConsensusState) GetCommittee() map[string]byte {
+	consensusState.Lock()
+	defer consensusState.Unlock()
 	ret := make(map[string]byte)
-	for k, v := range connManager.Committee {
+	for k, v := range consensusState.Committee {
 		ret[k] = v
 	}
 	return ret
@@ -188,7 +188,7 @@ func (connManager *ConnManager) UpdateConsensusState(role string, userPbk string
 	// update peer connection
 	if bChange {
 		connManager.Config.ConsensusState.rebuild()
-		connManager.processDiscoverPeers()
+		go connManager.processDiscoverPeers()
 	}
 
 	return

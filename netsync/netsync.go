@@ -85,10 +85,6 @@ out:
 						{
 							netSync.HandleMessageTx(msg)
 						}
-						//case *wire.MessageRegistration:
-						//	{
-						//		netSync.HandleMessageRegisteration(msg)
-						//	}
 					case *wire.MessageBFTPropose:
 						{
 							netSync.HandleMessageBFTMsg(msg)
@@ -145,18 +141,6 @@ out:
 						{
 							netSync.HandleMessagePeerState(msg)
 						}
-					// case *wire.MessageSwapRequest:
-					// 	{
-					// 		netSync.HandleMessageSwapRequest(msg)
-					// 	}
-					// case *wire.MessageSwapSig:
-					// 	{
-					// 		netSync.HandleMessageSwapSig(msg)
-					// 	}
-					// case *wire.MessageSwapUpdate:
-					// 	{
-					// 		netSync.HandleMessageSwapUpdate(msg)
-					// 	}
 					default:
 						Logger.log.Infof("Invalid message type in block "+"handler: %T", msg)
 					}
@@ -213,25 +197,6 @@ func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 		}
 	}
 }
-
-// handleTxMsg handles transaction messages from all peers.
-/*func (netSync *NetSync) HandleMessageRegisteration(msg *wire.MessageRegistration) {
-	Logger.log.Info("Handling new message tx")
-	hash, txDesc, err := netSync.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
-
-	if err != nil {
-		Logger.log.Error(err)
-	} else {
-		Logger.log.Infof("there is hash of transaction %s", hash.String())
-		Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
-
-		// Broadcast to network
-		err := netSync.config.Server.PushMessageToAll(msg)
-		if err != nil {
-			Logger.log.Error(err)
-		}
-	}
-}*/
 
 // QueueBlock adds the passed block message and peer to the block handling
 // queue. Responds to the done channel argument after the block message is
