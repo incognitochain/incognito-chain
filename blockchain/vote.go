@@ -3,9 +3,9 @@ package blockchain
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/ninjadotorg/constant/blockchain/component"
 	"sort"
 
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/database/lvdb"
@@ -341,11 +341,11 @@ func (self *BlockChain) createSendBackTokenAfterVoteFailIns(
 }
 
 func GetOracleDCBNationalWelfare() int32 {
-	fmt.Print("Get national welfare. It is constant now. Need to change !!!")
+	fmt.Print("Get national welfare. It is constant now. Need to change !!!\n")
 	return 1234
 }
 func GetOracleGOVNationalWelfare() int32 {
-	fmt.Print("Get national welfare. It is constant now. Need to change !!!")
+	fmt.Print("Get national welfare. It is constant now. Need to change !!!\n")
 	return 1234
 }
 
