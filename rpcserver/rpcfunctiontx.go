@@ -345,8 +345,12 @@ func (rpcServer RpcServer) handleCreateRawCustomTokenTransaction(
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
-	result := jsonresult.CreateTransactionResult{
+	result := jsonresult.CreateTransactionCustomTokenResult{
+		ShardID:         tx.Tx.PubKeyLastByteSender,
 		TxID:            tx.Hash().String(),
+		TokenID:         tx.TxTokenData.PropertyID.String(),
+		TokenName:       tx.TxTokenData.PropertyName,
+		TokenAmount:     tx.TxTokenData.Amount,
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
@@ -396,15 +400,18 @@ func (rpcServer RpcServer) handleCreateAndSendCustomTokenTransaction(params inte
 	if err != nil {
 		return nil, err
 	}
-	tx := data.(jsonresult.CreateTransactionResult)
+	tx := data.(jsonresult.CreateTransactionCustomTokenResult)
 	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, err
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	txId, err := rpcServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
-	return txId, err
+	_, err = rpcServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, err
+	}
+	return tx, err
 }
 
 func (rpcServer RpcServer) handleGetListCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
