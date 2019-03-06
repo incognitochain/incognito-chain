@@ -58,7 +58,7 @@ func (rpcServer RpcServer) handleGetBestBlockHash(params interface{}, closeChan 
 }
 
 /*
-getblockcount RPC return information fo blockchain node
+handleRetrieveBlock RPC return information for block
 */
 func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	paramsT, ok := params.([]interface{})
@@ -189,33 +189,90 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 	return nil, nil
 }
 
+/*
+handleRetrieveBlock RPC return information for block
+*/
+func (rpcServer RpcServer) handleRetrieveBeaconBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	paramsT, ok := params.([]interface{})
+	if ok && len(paramsT) >= 2 {
+		hashString := paramsT[0].(string)
+		hash, errH := common.Hash{}.NewHashFromStr(hashString)
+		if errH != nil {
+			return nil, NewRPCError(ErrUnexpected, errH)
+		}
+		block, errD := rpcServer.config.BlockChain.GetBeaconBlockByHash(hash)
+		if errD != nil {
+			return nil, NewRPCError(ErrUnexpected, errD)
+		}
+		result := jsonresult.GetBlocksBeaconResult{
+			Hash:              block.Hash().String(),
+			Height:            block.Header.Height,
+			Instructions:      block.Body.Instructions,
+			Time:              block.Header.Timestamp,
+			Round:             block.Header.Round,
+			Epoch:             block.Header.Epoch,
+			Version:           block.Header.Version,
+			BlockProducerSign: block.ProducerSig,
+			BlockProducer:     block.Header.Producer,
+			AggregatedSig:     block.AggregatedSig,
+			R:                 block.R,
+			PreviousBlockHash: block.Header.PrevBlockHash.String(),
+		}
+
+		return result, nil
+	}
+	return nil, nil
+}
+
 // handleGetBlocks - get n top blocks from chain ID
 func (rpcServer RpcServer) handleGetBlocks(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	result := make([]jsonresult.GetBlockResult, 0)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) != 2 {
 		arrayParams = append(arrayParams, 0.0, 0.0)
 	}
 	numBlock := int(arrayParams[0].(float64))
-	shardID := byte(arrayParams[1].(float64))
-	bestBlock := rpcServer.config.BlockChain.BestState.Shard[shardID].BestBlock
-	previousHash := bestBlock.Hash()
-	for numBlock > 0 {
-		numBlock--
-		// block, errD := rpcServer.config.BlockChain.GetBlockByHash(previousHash)
-		block, errD := rpcServer.config.BlockChain.GetShardBlockByHash(previousHash)
-		if errD != nil {
-			return nil, NewRPCError(ErrUnexpected, errD)
+	shardIDParam := int(arrayParams[1].(float64))
+	if shardIDParam != -1 {
+		result := make([]jsonresult.GetBlockResult, 0)
+		bestBlock := rpcServer.config.BlockChain.BestState.Shard[byte(shardIDParam)].BestBlock
+		previousHash := bestBlock.Hash()
+		for numBlock > 0 {
+			numBlock--
+			// block, errD := rpcServer.config.BlockChain.GetBlockByHash(previousHash)
+			block, errD := rpcServer.config.BlockChain.GetShardBlockByHash(previousHash)
+			if errD != nil {
+				return nil, NewRPCError(ErrUnexpected, errD)
+			}
+			blockResult := jsonresult.GetBlockResult{}
+			blockResult.Init(block)
+			result = append(result, blockResult)
+			previousHash = &block.Header.PrevBlockHash
+			if previousHash.String() == (common.Hash{}).String() {
+				break
+			}
 		}
-		blockResult := jsonresult.GetBlockResult{}
-		blockResult.Init(block)
-		result = append(result, blockResult)
-		previousHash = &block.Header.PrevBlockHash
-		if previousHash.String() == (common.Hash{}).String() {
-			break
+		return result, nil
+	} else {
+		result := make([]jsonresult.GetBlocksBeaconResult, 0)
+		bestBlock := rpcServer.config.BlockChain.BestState.Beacon.BestBlock
+		previousHash := bestBlock.Hash()
+		for numBlock > 0 {
+			numBlock--
+			// block, errD := rpcServer.config.BlockChain.GetBlockByHash(previousHash)
+			block, errD := rpcServer.config.BlockChain.GetBeaconBlockByHash(previousHash)
+			if errD != nil {
+				return nil, NewRPCError(ErrUnexpected, errD)
+			}
+			blockResult := jsonresult.GetBlocksBeaconResult{}
+			blockResult.Init(block)
+			result = append(result, blockResult)
+			previousHash = &block.Header.PrevBlockHash
+			if previousHash.String() == (common.Hash{}).String() {
+				break
+			}
 		}
+		return result, nil
 	}
-	return result, nil
 }
 
 /*
@@ -242,7 +299,7 @@ func (rpcServer RpcServer) handleGetBlockChainInfo(params interface{}, closeChan
 	beaconBestState := rpcServer.config.BlockChain.BestState.Beacon
 	result.BestBlocks[-1] = jsonresult.GetBestBlockItem{
 		Height:           beaconBestState.BestBlock.Header.Height,
-		Hash:             beaconBestState.BestBlockHash.String(),
+		Hash:             beaconBestState.BestBlock.Hash().String(),
 		BlockProducer:    beaconBestState.BestBlock.Header.Producer,
 		BlockProducerSig: beaconBestState.BestBlock.ProducerSig,
 	}
