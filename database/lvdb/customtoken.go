@@ -14,8 +14,10 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
+// Key: token-init-{tokenID}
+// Value: txHash
 func (db *db) StoreCustomToken(tokenID *common.Hash, txHash []byte) error {
-	key := db.GetKey(string(tokenInitPrefix), tokenID) // token-init-{tokenID}
+	key := db.GetKey(string(tokenInitPrefix), tokenID)
 	if err := db.lvdb.Put(key, txHash, nil); err != nil {
 		return err
 	}
@@ -62,6 +64,9 @@ func (db *db) StorePrivacyCustomTokenTx(tokenID *common.Hash, shardID byte, bloc
 	return nil
 }
 
+/*
+	Return list of txhash
+*/
 func (db *db) ListCustomToken() ([][]byte, error) {
 	result := make([][]byte, 0)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(tokenInitPrefix), nil)

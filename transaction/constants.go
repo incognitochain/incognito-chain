@@ -20,6 +20,5 @@ const (
 const (
 	CustomTokenInit = iota
 	CustomTokenTransfer
-
-	//to remove
+	CustomTokenCrossShard
 )

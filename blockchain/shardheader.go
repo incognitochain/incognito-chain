@@ -8,7 +8,7 @@ import (
 )
 
 /*
-	-MerkleRoot and MerkleRootShard: make from transaction
+	-TxRoot and MerkleRootShard: make from transaction
 	-Validator Root is root hash of current committee in beststate
 	-PendingValidator Root is root hash of pending validator in beststate
 */
@@ -31,8 +31,8 @@ type ShardHeader struct {
 	CrossOutputCoinRoot common.Hash
 	//Actions root created from Instructions and Metadata of transaction
 	InstructionsRoot     common.Hash
-	CommitteeRoot        common.Hash `description: verify post processing`
-	PendingValidatorRoot common.Hash `description: verify post processing`
+	CommitteeRoot        common.Hash
+	PendingValidatorRoot common.Hash
 	// CrossShards for beacon
 	CrossShards []byte
 	//Beacon check point
