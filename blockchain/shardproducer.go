@@ -82,9 +82,8 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	block := &ShardBlock{
 		Body: ShardBody{
 			CrossOutputCoin: crossOutputCoin,
-			// CrossTxTokenData: crossTxTokenData,
-			Instructions: instructions,
-			Transactions: make([]metadata.Transaction, 0),
+			Instructions:    instructions,
+			Transactions:    make([]metadata.Transaction, 0),
 		},
 	}
 	for _, tx := range txsToAdd {
