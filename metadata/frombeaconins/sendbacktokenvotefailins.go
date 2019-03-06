@@ -23,7 +23,7 @@ func (txSendBackTokenVoteFailIns *TxSendBackTokenVoteFailIns) GetStringFormat() 
 	}
 	shardID := GetShardIDFromPaymentAddressBytes(txSendBackTokenVoteFailIns.PaymentAddress)
 	return []string{
-		strconv.Itoa(metadata.AcceptDCBBoardMeta),
+		strconv.Itoa(metadata.SendBackTokenVoteFailMeta),
 		strconv.Itoa(int(shardID)),
 		string(content),
 	}, nil

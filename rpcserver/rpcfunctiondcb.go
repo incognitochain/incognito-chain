@@ -8,7 +8,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 )
 
-// handleGetDCBParams - get dcb params
+// handleGetDCBParams - get dcb component
 func (rpcServer RpcServer) handleGetDCBParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	constitution := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.DCBConstitution
 	dcbParam := constitution.DCBParams

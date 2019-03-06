@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
@@ -230,7 +230,7 @@ func buildInstTypeAndAmountForIssuingAction(
 	dcbTokensNeeded := uint64(0)
 	reqAmt := uint64(0)
 	var existed bool
-	var reserveData *params.RaiseReserveData
+	var reserveData *component.RaiseReserveData
 	isOnUSD := bytes.Equal(md.CurrencyType[:], common.USDAssetID[:])
 	isOnETH := bytes.Equal(md.CurrencyType[:], common.ETHAssetID[:])
 	if isOnUSD {

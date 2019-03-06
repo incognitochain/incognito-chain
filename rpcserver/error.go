@@ -36,7 +36,7 @@ var ErrCodeMessage = map[int]struct {
 	ErrUnexpected:     {-1, "Unexpected error"},
 	ErrAlreadyStarted: {-2, "RPC server is already started"},
 
-	// validate params -1xxx
+	// validate component -1xxx
 	ErrRPCInvalidRequest:             {-1001, "Invalid request"},
 	ErrRPCMethodNotFound:             {-1002, "Method not found"},
 	ErrRPCInvalidParams:              {-1003, "Invalid parameters"},
