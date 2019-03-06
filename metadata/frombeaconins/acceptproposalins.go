@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/metadata"
 	"strconv"
 )
 
@@ -31,9 +30,9 @@ func (acceptProposalIns AcceptProposalIns) GetStringFormat() ([]string, error) {
 	}
 	var t int
 	if acceptProposalIns.BoardType == common.DCBBoard {
-		t = metadata.AcceptDCBProposalIns
+		t = component.AcceptDCBProposalIns
 	} else {
-		t = metadata.AcceptGOVProposalIns
+		t = component.AcceptGOVProposalIns
 	}
 	return []string{
 		strconv.Itoa(t),

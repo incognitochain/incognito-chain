@@ -3,7 +3,6 @@ package frombeaconins
 import (
 	"encoding/json"
 	"github.com/ninjadotorg/constant/blockchain/component"
-	"github.com/ninjadotorg/constant/metadata"
 	"strconv"
 )
 
@@ -19,7 +18,7 @@ func (updateDCBConstitutionIns *UpdateDCBConstitutionIns) GetStringFormat() ([]s
 		return nil, err
 	}
 	return []string{
-		strconv.Itoa(metadata.UpdateDCBConstitutionIns),
+		strconv.Itoa(component.UpdateDCBConstitutionIns),
 		strconv.Itoa(-1),
 		string(content),
 	}, nil
@@ -50,7 +49,7 @@ func (updateGOVConstitutionIns *UpdateGOVConstitutionIns) GetStringFormat() ([]s
 		return nil, err
 	}
 	return []string{
-		strconv.Itoa(metadata.UpdateGOVConstitutionIns),
+		strconv.Itoa(component.UpdateGOVConstitutionIns),
 		strconv.Itoa(-1),
 		string(content),
 	}, nil
