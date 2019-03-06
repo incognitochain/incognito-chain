@@ -4,9 +4,9 @@ import "github.com/ninjadotorg/constant/blockchain"
 
 type GetBlockResult struct {
 	Hash              string             `json:"Hash"`
-	ShardID           byte               `json:"shardID"`
+	ShardID           byte               `json:"ShardID"`
 	Height            uint64             `json:"Height"`
-	Confirmations     int64              `json:"confirmations"`
+	Confirmations     int64              `json:"Confirmations"`
 	Version           int                `json:"Version"`
 	MerkleRoot        string             `json:"TransactionRoot"`
 	Time              int64              `json:"Time"`
