@@ -26,17 +26,17 @@ type GetBlockTxResult struct {
 }
 
 func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock) {
-	// 	getBlockResult.BlockProducerSign = block.BlockProducerSig
-	// 	getBlockResult.BlockProducer = block.BlockProducer
-	// 	getBlockResult.Hash = block.Hash().String()
-	// 	getBlockResult.PreviousBlockHash = block.Header.PrevBlockHash.String()
-	// 	getBlockResult.Version = block.Header.Version
-	// 	getBlockResult.Height = block.Header.Height
-	// 	getBlockResult.Time = block.Header.Timestamp
-	// 	getBlockResult.ShardID = block.Header.ShardID
-	// 	getBlockResult.MerkleRoot = block.Header.MerkleRoot.String()
-	// 	getBlockResult.TxHashes = make([]string, 0)
-	// 	for _, tx := range block.Transactions {
-	// 		getBlockResult.TxHashes = append(getBlockResult.TxHashes, tx.Hash().String())
-	// 	}
+	getBlockResult.BlockProducerSign = block.ProducerSig
+	getBlockResult.BlockProducer = block.Header.Producer
+	getBlockResult.Hash = block.Hash().String()
+	getBlockResult.PreviousBlockHash = block.Header.PrevBlockHash.String()
+	getBlockResult.Version = block.Header.Version
+	getBlockResult.Height = block.Header.Height
+	getBlockResult.Time = block.Header.Timestamp
+	getBlockResult.ShardID = block.Header.ShardID
+	getBlockResult.MerkleRoot = block.Header.ShardTxRoot.String()
+	getBlockResult.TxHashes = make([]string, 0)
+	for _, tx := range block.Body.Transactions {
+		getBlockResult.TxHashes = append(getBlockResult.TxHashes, tx.Hash().String())
+	}
 }
