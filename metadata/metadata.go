@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
@@ -107,16 +107,16 @@ type BlockchainRetriever interface {
 	GetChainHeight(byte) uint64
 	GetBeaconHeight() uint64
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
-	GetDCBParams() params.DCBParams
-	GetBoardPubKeys(boardType BoardType) [][]byte
-	GetBoardPaymentAddress(boardType BoardType) []privacy.PaymentAddress
-	GetGOVParams() params.GOVParams
+	GetDCBParams() component.DCBParams
+	GetBoardPubKeys(boardType common.BoardType) [][]byte
+	GetBoardPaymentAddress(boardType common.BoardType) []privacy.PaymentAddress
+	GetGOVParams() component.GOVParams
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
-	GetOracleParams() *params.Oracle
-	GetConstitutionStartHeight(boardType BoardType, shardID byte) uint64
-	GetConstitutionEndHeight(boardType BoardType, shardID byte) uint64
+	GetOracleParams() *component.Oracle
+	GetConstitutionStartHeight(boardType common.BoardType, shardID byte) uint64
+	GetConstitutionEndHeight(boardType common.BoardType, shardID byte) uint64
 	GetCurrentBeaconBlockHeight(byte) uint64
-	GetBoardEndHeight(boardType BoardType, chainID byte) uint64
+	GetBoardEndHeight(boardType common.BoardType, chainID byte) uint64
 	GetAllCommitteeValidatorCandidate() (map[byte][]string, map[byte][]string, []string, []string, []string, []string, []string, []string)
 	GetDatabase() database.DatabaseInterface
 
@@ -136,7 +136,7 @@ type BlockchainRetriever interface {
 	GetDividendReceiversForID(dividendID uint64, forDCB bool) ([]privacy.PaymentAddress, []uint64, bool, error)
 
 	// For validating crowdsale
-	GetCrowdsaleData([]byte) (*params.SaleData, error)
+	GetCrowdsaleData([]byte) (*component.SaleData, error)
 
 	// For validating reserve
 	GetAssetPrice(assetID *common.Hash) uint64
@@ -147,12 +147,9 @@ type BlockchainRetriever interface {
 	GetCMBResponse([]byte) ([][]byte, error)
 	GetDepositSend([]byte) ([]byte, error)
 	GetWithdrawRequest([]byte) ([]byte, uint8, error)
-	UpdateDCBBoard(transaction Transaction) error
-	UpdateGOVBoard(transaction Transaction) error
-	UpdateConstitution(transaction Transaction, boardType BoardType) error
-	GetConstitution(boardType BoardType) ConstitutionInterface
+	GetConstitution(boardType common.BoardType) ConstitutionInterface
 	UpdateDCBFund(transaction Transaction)
-	GetGovernor(boardType BoardType) GovernorInterface
+	GetGovernor(boardType common.BoardType) GovernorInterface
 }
 
 // Interface for all types of metadata in tx

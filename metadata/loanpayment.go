@@ -109,7 +109,7 @@ func (lp *LoanPayment) BuildReqActions(txr Transaction, bcr BlockchainRetriever,
 func getLoanPaymentActionValue(txr Transaction, bcr BlockchainRetriever, loanID []byte) (string, error) {
 	_, _, amountSent := txr.GetUniqueReceiver()
 
-	// Get loan params
+	// Get loan component
 	reqMeta, err := bcr.GetLoanRequestMeta(loanID)
 	if err != nil {
 		return "", err

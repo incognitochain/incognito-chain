@@ -81,7 +81,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	if err != nil {
 		return nil, err
 	}
-	if len(stabilityInsts) > 0 {
+	if stabilityInsts != nil && len(stabilityInsts) > 0 {
 		instructions = append(instructions, stabilityInsts...)
 	}
 
@@ -121,7 +121,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		return nil, err
 	}
 	fmt.Printf("[db] buildActionReq to get hash for new shard block\n")
-	txInstructions := CreateShardInstructionsFromTransaction(block.Body.Transactions, blockgen.chain, shardID, payToAddress, prevBlock.Header.Height+1)
+	txInstructions := CreateShardInstructionsFromTransactionAndIns(block.Body.Transactions, blockgen.chain, shardID, payToAddress, prevBlock.Header.Height+1, beaconBlocks)
 	totalInstructions := []string{}
 	for _, value := range txInstructions {
 		totalInstructions = append(totalInstructions, value...)

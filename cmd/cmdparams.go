@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	defaultConfigFilename = "params.conf"
+	defaultConfigFilename = "component.conf"
 	defaultDataDirname    = "data"
 	defaultLogDirname     = "logs"
 )
