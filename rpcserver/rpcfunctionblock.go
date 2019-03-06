@@ -216,19 +216,16 @@ getblockchaininfo RPC return information fo blockchain node
 */
 func (rpcServer RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetBlockChainInfoResult{
-		ChainName: rpcServer.config.ChainParams.Name,
-		// BestBlocks: make(map[byte]jsonresult.GetBestBlockItem),
-		BestBlocks: make(map[int]jsonresult.GetBestBlockItem),
+		ChainName:    rpcServer.config.ChainParams.Name,
+		BestBlocks:   make(map[int]jsonresult.GetBestBlockItem),
+		ActiveShards: rpcServer.config.ChainParams.ActiveShards,
 	}
 	for shardID, bestState := range rpcServer.config.BlockChain.BestState.Shard {
 		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
-			// Height:   bestState.BestBlock.Header.GetHeight(),
-			Height:     bestState.BestBlock.Header.Height,
-			Hash:       bestState.BestBlockHash.String(),
-			TotalTxs:   bestState.TotalTxns,
-			SalaryFund: bestState.BestBlock.Header.SalaryFund,
-			// BasicSalary:      bestState.BestBlock.Header.GOVConstitution.GOVParams.BasicSalary,
-			// SalaryPerTx:      bestState.BestBlock.Header.GOVConstitution.GOVParams.SalaryPerTx,
+			Height:           bestState.BestBlock.Header.Height,
+			Hash:             bestState.BestBlockHash.String(),
+			TotalTxs:         bestState.TotalTxns,
+			SalaryFund:       bestState.BestBlock.Header.SalaryFund,
 			BlockProducer:    bestState.BestBlock.Header.Producer,
 			BlockProducerSig: bestState.BestBlock.ProducerSig,
 		}
