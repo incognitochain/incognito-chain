@@ -11,33 +11,31 @@ import (
 
 func CreateBeaconGenesisBlock(
 	version int,
-	icoParams IcoParams,
-	salaryPerTx uint64,
-	basicSalary uint64,
-	randomnumber int,
+	genesisParams GenesisParams,
 ) *BeaconBlock {
 	inst := [][]string{}
 	// build validator beacon
 	// test generate public key in utility/generateKeys
 	beaconAssingInstruction := []string{"stake"}
-	beaconAssingInstruction = append(beaconAssingInstruction, strings.Join(preSelectBeaconNodeTestnetSerializedPubkey[:], ","))
+	beaconAssingInstruction = append(beaconAssingInstruction, strings.Join(genesisParams.PreSelectBeaconNodeSerializedPubkey[:], ","))
 	beaconAssingInstruction = append(beaconAssingInstruction, "beacon")
 
 	shardAssingInstruction := []string{"stake"}
-	shardAssingInstruction = append(shardAssingInstruction, strings.Join(preSelectShardNodeTestnetSerializedPubkey[:], ","))
+	shardAssingInstruction = append(shardAssingInstruction, strings.Join(genesisParams.PreSelectShardNodeSerializedPubkey[:], ","))
 	shardAssingInstruction = append(shardAssingInstruction, "shard")
 
 	inst = append(inst, beaconAssingInstruction)
 	inst = append(inst, shardAssingInstruction)
 	// build network param
-	inst = append(inst, []string{"set", "salaryPerTx", fmt.Sprintf("%v", salaryPerTx)})
-	inst = append(inst, []string{"set", "basicSalary", fmt.Sprintf("%v", basicSalary)})
-	inst = append(inst, []string{"set", "initialPaymentAddress", icoParams.InitialPaymentAddress})
-	inst = append(inst, []string{"set", "initFundSalary", strconv.Itoa(int(icoParams.InitFundSalary))})
-	inst = append(inst, []string{"set", "initialDCBToken", strconv.Itoa(int(icoParams.InitialDCBToken))})
-	inst = append(inst, []string{"set", "initialCMBToken", strconv.Itoa(int(icoParams.InitialCMBToken))})
-	inst = append(inst, []string{"set", "initialGOVToken", strconv.Itoa(int(icoParams.InitialGOVToken))})
-	inst = append(inst, []string{"set", "initialBondToken", strconv.Itoa(int(icoParams.InitialBondToken))})
+	inst = append(inst, []string{"set", "salaryPerTx", fmt.Sprintf("%v", genesisParams.SalaryPerTx)})
+	inst = append(inst, []string{"set", "basicSalary", fmt.Sprintf("%v", genesisParams.BasicSalary)})
+	inst = append(inst, []string{"set", "feePerTxKb", fmt.Sprintf("%v", genesisParams.FeePerTxKb)})
+	inst = append(inst, []string{"set", "initialPaymentAddress", genesisParams.InitialPaymentAddress})
+	inst = append(inst, []string{"set", "initFundSalary", strconv.Itoa(int(genesisParams.InitFundSalary))})
+	inst = append(inst, []string{"set", "initialDCBToken", strconv.Itoa(int(genesisParams.InitialDCBToken))})
+	inst = append(inst, []string{"set", "initialCMBToken", strconv.Itoa(int(genesisParams.InitialCMBToken))})
+	inst = append(inst, []string{"set", "initialGOVToken", strconv.Itoa(int(genesisParams.InitialGOVToken))})
+	inst = append(inst, []string{"set", "initialBondToken", strconv.Itoa(int(genesisParams.InitialBondToken))})
 	inst = append(inst, []string{"set", "randomnumber", strconv.Itoa(int(0))})
 
 	body := BeaconBody{ShardState: nil, Instructions: inst}

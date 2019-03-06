@@ -476,17 +476,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	return tx, err
 }
 
-func (rpcServer RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []*privacy.OutputCoin,
-	paymentInfos []*privacy.PaymentInfo, shardID byte,
-	numBlock uint64, hasPrivacy bool,
-	metadata metadata.Metadata,
-	customTokenParams *transaction.CustomTokenParamTx,
-	privacyCustomTokenParams *transaction.CustomTokenPrivacyParamTx) (uint64, uint64, uint64) {
-	if numBlock == 0 {
-		numBlock = 10
-	}
-	// check real fee(nano constant) per tx
-	var realFee uint64
+func (rpcServer RpcServer) estimateFeeWithEstimator(defaultFee int64, shardID byte, numBlock uint64) uint64 {
 	estimateFeeCoinPerKb := uint64(0)
 	if defaultFee == -1 {
 		if _, ok := rpcServer.config.FeeEstimator[shardID]; ok {
@@ -499,9 +489,27 @@ func (rpcServer RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []
 	} else {
 		estimateFeeCoinPerKb = uint64(defaultFee)
 	}
+	return estimateFeeCoinPerKb
+}
 
-	estimateFeeCoinPerKb += uint64(rpcServer.config.Wallet.Config.IncrementalFee)
-	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacy, metadata, customTokenParams, privacyCustomTokenParams)
+func (rpcServer RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []*privacy.OutputCoin,
+	paymentInfos []*privacy.PaymentInfo, shardID byte,
+	numBlock uint64, hasPrivacy bool,
+	metadata metadata.Metadata,
+	customTokenParams *transaction.CustomTokenParamTx,
+	privacyCustomTokenParams *transaction.CustomTokenPrivacyParamTx) (uint64, uint64, uint64) {
+	if numBlock == 0 {
+		numBlock = 10
+	}
+	// check real fee(nano constant) per tx
+	var realFee uint64
+	estimateFeeCoinPerKb := uint64(0)
+	estimateTxSizeInKb := uint64(0)
+
+	estimateFeeCoinPerKb = rpcServer.estimateFeeWithEstimator(defaultFee, shardID, numBlock)
+
+	estimateFeeCoinPerKb += uint64(rpcServer.config.Wallet.GetConfig().IncrementalFee)
+	estimateTxSizeInKb = transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacy, metadata, customTokenParams, privacyCustomTokenParams)
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	return realFee, estimateFeeCoinPerKb, estimateTxSizeInKb
 }
