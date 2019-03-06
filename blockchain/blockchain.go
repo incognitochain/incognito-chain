@@ -345,12 +345,10 @@ func (blockchain *BlockChain) initBeaconState() error {
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
 	blockchain.BestState.Beacon.Update(initBlock)
 	// TODO(@0xankylosaurus): initialize oracle data properly
-	// All values are in millicent
-
-	blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 1000000 // $10
-	blockchain.BestState.Beacon.StabilityInfo.Oracle.GOVToken = 2000000 // $20
-	blockchain.BestState.Beacon.StabilityInfo.Oracle.Constant = 1000    // $1, for Nano
-	blockchain.BestState.Beacon.StabilityInfo.Oracle.ETH = 10000        // $100, for milliether
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 1000 // $10
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.GOVToken = 2000 // $20
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.Constant = 100  // $1 = 100 cent
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.ETH = 10000     // $100.00 = 10000 cent per ether
 	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.RaiseReserveData = map[common.Hash]*params.RaiseReserveData{
 		common.ETHAssetID: &params.RaiseReserveData{
 			EndBlock: 1000,
