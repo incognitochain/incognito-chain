@@ -17,6 +17,9 @@ type GetBlockResult struct {
 	BlockProducerSign string             `json:"BlockProducerSign"`
 	BlockProducer     string             `json:"BlockProducer"`
 	Data              string             `json:"Data"`
+	BeanconHeight     uint64             `json:"BeanconHeight"`
+	BeanconBlockHash  string             `json:"BeanconBlockHash"`
+	AggregatedSig     string             `json:"AggregatedSig"`
 }
 
 type GetBlockTxResult struct {
@@ -39,4 +42,7 @@ func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock) {
 	for _, tx := range block.Body.Transactions {
 		getBlockResult.TxHashes = append(getBlockResult.TxHashes, tx.Hash().String())
 	}
+	getBlockResult.BeanconHeight = block.Header.BeaconHeight
+	getBlockResult.BeanconBlockHash = block.Header.BeaconHash.String()
+	getBlockResult.AggregatedSig = block.AggregatedSig
 }
