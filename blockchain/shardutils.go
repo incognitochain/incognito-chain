@@ -262,7 +262,7 @@ func VerifyMerkleTree(finalHash common.Hash, merklePath []common.Hash, merkleRoo
 		i = i / 2
 	}
 	merkleRootString := merkleRoot.String()
-	// fmt.Println("VerifyMerkleTree/MerkleRoot", merkleRoot)
+	// fmt.Println("VerifyMerkleTree/TxRoot", merkleRoot)
 	// fmt.Println("VerifyMerkleTree/merkleRootString", merkleRootString)
 	// fmt.Println("VerifyMerkleTree/finalHash", finalHash)
 	// fmt.Println("VerifyMerkleTree/finalHashString", finalHash.String())
