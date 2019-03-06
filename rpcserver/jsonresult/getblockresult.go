@@ -2,6 +2,21 @@ package jsonresult
 
 import "github.com/ninjadotorg/constant/blockchain"
 
+type GetBlocksBeaconResult struct {
+	Hash              string     `json:"Hash"`
+	Height            uint64     `json:"Height"`
+	AggregatedSig     string     `json:"AggregatedSig"`
+	R                 string     `json:"R"`
+	BlockProducerSign string     `json:"BlockProducerSign"`
+	BlockProducer     string     `json:"BlockProducer"`
+	Version           int        `json:"Version"`
+	Epoch             uint64     `json:"Epoch"`
+	Round             int        `json:"Round"`
+	Time              int64      `json:"Time"`
+	PreviousBlockHash string     `json:"PreviousBlockHash"`
+	Instructions      [][]string `json:"Instructions"`
+}
+
 type GetBlockResult struct {
 	Hash              string             `json:"Hash"`
 	ShardID           byte               `json:"ShardID"`
@@ -32,6 +47,21 @@ type GetBlockTxResult struct {
 	Hash     string `json:"Hash"`
 	Locktime int64  `json:"Locktime"`
 	HexData  string `json:"HexData"`
+}
+
+func (getBlockResult *GetBlocksBeaconResult) Init(block *blockchain.BeaconBlock) {
+	getBlockResult.Version = block.Header.Version
+	getBlockResult.Hash = block.Hash().String()
+	getBlockResult.Height = block.Header.Height
+	getBlockResult.AggregatedSig = block.AggregatedSig
+	getBlockResult.R = block.R
+	getBlockResult.BlockProducer = block.Header.Producer
+	getBlockResult.BlockProducerSign = block.ProducerSig
+	getBlockResult.Epoch = block.Header.Epoch
+	getBlockResult.Round = block.Header.Round
+	getBlockResult.Time = block.Header.Timestamp
+	getBlockResult.PreviousBlockHash = block.Header.PrevBlockHash.String()
+	getBlockResult.Instructions = block.Body.Instructions
 }
 
 func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock) {
