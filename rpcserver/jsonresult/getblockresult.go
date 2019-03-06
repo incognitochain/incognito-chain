@@ -24,6 +24,7 @@ type GetBlockResult struct {
 	Round             int                `json:"Round"`
 	CrossShards       []int              `json:"CrossShards"`
 	Epoch             uint64             `json:"Epoch"`
+	Reward            uint64             `json:"Reward"`
 }
 
 type GetBlockTxResult struct {
@@ -58,4 +59,5 @@ func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock) {
 		}
 	}
 	getBlockResult.Epoch = block.Header.Epoch
+	getBlockResult.Reward = block.Body.Transactions[0].GetProof().OutputCoins[0].CoinDetails.Value
 }
