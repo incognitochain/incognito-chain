@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/pkg/errors"
 )
 
-// buildPassthroughInstruction converts shard instruction to beacon instruction in order to update BeaconBestState later on in beaconprocess
-func buildPassthroughInstruction(receivedType int, contentStr string) ([][]string, error) {
+// buildPassThroughInstruction converts shard instruction to beacon instruction in order to update BeaconBestState later on in beaconprocess
+func buildPassThroughInstruction(receivedType int, contentStr string) ([][]string, error) {
 	metaType := strconv.Itoa(receivedType)
 	shardID := strconv.Itoa(metadata.BeaconOnly)
 	return [][]string{[]string{metaType, shardID, contentStr}}, nil
@@ -32,7 +32,7 @@ func buildInstructionsForCrowdsaleRequest(
 
 	// Get data of current crowdsale
 	key := getSaleDataKeyBeacon(saleID)
-	var saleData *params.SaleData
+	var saleData *component.SaleData
 	ok := false
 	if saleData, ok = accumulativeValues.saleDataMap[key]; !ok {
 		if value, ok := beaconBestState.Params[key]; ok {
@@ -70,7 +70,7 @@ func buildPaymentInstructionForCrowdsale(
 	paymentAddress privacy.PaymentAddress,
 	sentAmount uint64,
 	beaconBestState *BestStateBeacon,
-	saleData *params.SaleData,
+	saleData *component.SaleData,
 ) ([][]string, error) {
 	// Get price for asset
 	buyingAsset := saleData.BuyingAsset

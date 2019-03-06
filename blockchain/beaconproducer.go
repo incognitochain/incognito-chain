@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -90,13 +90,6 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	beaconBlock.Header.PrevBlockHash = beaconBestState.BestBlockHash
 	tempShardState, staker, swap, stabilityInstructions := blkTmplGenerator.GetShardState(&beaconBestState, shardsToBeacon)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
-
-	//Add Voting instruction
-	votingInstruction, err := blkTmplGenerator.chain.generateVotingInstruction(privateKey, 0)
-	if err != nil {
-		return nil, NewBlockChainError(BeaconError, err)
-	}
-	tempInstruction = append(tempInstruction, votingInstruction...)
 
 	//==========Create Body
 	beaconBlock.Body.Instructions = tempInstruction
@@ -183,7 +176,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 	//Shard block is a map ShardId -> array of shard block
 	stabilityInstructions := [][]string{}
 	accumulativeValues := &accumulativeValues{
-		saleDataMap: map[string]*params.SaleData{},
+		saleDataMap: map[string]*component.SaleData{},
 	}
 	for shardID, shardBlocks := range shardsBlocks {
 		// Only accept block in one epoch
@@ -329,7 +322,7 @@ func (blkTmplGenerator *BlkTmplGenerator) processInstruction(beaconBestState *Be
 		return err
 	}
 	switch metaType {
-	// process some instruction without create tx (update params,...)
+	// process some instruction without create tx (update component,...)
 	default:
 		return nil
 	}

@@ -48,16 +48,16 @@ func (bgtr *BuyGOVTokenRequest) ValidateTxWithBlockChain(
 	govParams := bcr.GetGOVParams()
 	sellingGOVTokensParams := govParams.SellingGOVTokens
 	if sellingGOVTokensParams == nil {
-		return false, errors.New("SellingGOVTokensParams params are not existed.")
+		return false, errors.New("SellingGOVTokensParams component are not existed.")
 	}
 
 	if !bytes.Equal(common.GOVTokenID[:], bgtr.TokenID[:]) {
 		return false, errors.New("Requested GOV tokenID has not been selling yet.")
 	}
 
-	// check if buy price againsts SellingGOVTokens params' GOVTokenPrice is correct or not
+	// check if buy price againsts SellingGOVTokens component' GOVTokenPrice is correct or not
 	if bgtr.BuyPrice < sellingGOVTokensParams.GOVTokenPrice {
-		return false, errors.New("Requested buy price is under SellingGOVTokens params' buy price.")
+		return false, errors.New("Requested buy price is under SellingGOVTokens component' buy price.")
 	}
 	return true, nil
 }
