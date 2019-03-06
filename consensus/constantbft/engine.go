@@ -82,16 +82,11 @@ func (engine *Engine) Start() error {
 					prevRoundRole = nodeRole
 
 					engine.config.Server.UpdateConsensusState(nodeRole, engine.config.UserKeySet.GetPublicKeyB58(), nil, engine.config.BlockChain.BestState.Beacon.BeaconCommittee, engine.config.BlockChain.BestState.Beacon.ShardCommittee)
-
-					fmt.Println()
-					fmt.Println()
-					fmt.Printf("\n %v", engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
-					fmt.Printf("\n %v", engine.config.BlockChain.BestState.Beacon.ShardCommittee)
+					fmt.Printf("%v \n", engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
+					fmt.Printf("%v \n", engine.config.BlockChain.BestState.Beacon.ShardCommittee)
 					if currentPBFTRound > 3 && prevRoundRole != "" {
 						os.Exit(1)
 					}
-					fmt.Println()
-					fmt.Println()
 					if userRole != common.EmptyString {
 
 						bftProtocol := &BFTProtocol{

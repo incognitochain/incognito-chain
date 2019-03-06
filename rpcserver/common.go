@@ -179,7 +179,7 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	return &tx, nil
 }
 
-func (rpcServer RpcServer) buildCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *cashec.KeySet, ) (*transaction.CustomTokenParamTx, map[common.Hash]transaction.TxCustomToken, *RPCError) {
+func (rpcServer RpcServer) buildCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *cashec.KeySet) (*transaction.CustomTokenParamTx, map[common.Hash]transaction.TxCustomToken, *RPCError) {
 	tokenParams := &transaction.CustomTokenParamTx{
 		PropertyID:     tokenParamsRaw["TokenID"].(string),
 		PropertyName:   tokenParamsRaw["TokenName"].(string),
@@ -322,6 +322,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 		*rpcServer.config.Database,
 		metaData,
 		hasPrivacy,
+		shardIDSender,
 	)
 	if err.(*transaction.TransactionError) != nil {
 		return nil, err
