@@ -62,5 +62,7 @@ func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock) {
 		}
 	}
 	getBlockResult.Epoch = block.Header.Epoch
-	getBlockResult.Reward = block.Body.Transactions[0].GetProof().OutputCoins[0].CoinDetails.Value
+	if len(block.Body.Transactions) > 0 && block.Body.Transactions[0].GetProof() != nil {
+		getBlockResult.Reward = block.Body.Transactions[0].GetProof().OutputCoins[0].CoinDetails.Value
+	}
 }
