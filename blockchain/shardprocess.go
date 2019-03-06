@@ -13,6 +13,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 /*
@@ -136,6 +137,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	}
 	//Remove Candidate In pool
 	candidates := []string{}
+	tokenIDs := []string{}
 	for _, tx := range block.Body.Transactions {
 		if tx.GetMetadata() != nil {
 			if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
@@ -143,8 +145,16 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 				candidates = append(candidates, pubkey)
 			}
 		}
+		if tx.GetType() == common.TxCustomTokenType {
+			customTokenTx := tx.(*transaction.TxCustomToken)
+			if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
+				tokenID := customTokenTx.TxTokenData.PropertyID.String()
+				tokenIDs = append(tokenIDs, tokenID)
+			}
+		}
 	}
 	blockchain.config.TxPool.RemoveCandidateList(candidates)
+	blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
 	//Remove tx out of pool
 	for _, tx := range block.Body.Transactions {
 		blockchain.config.TxPool.RemoveTx(tx)
@@ -340,15 +350,16 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	txSalaryCount := 0
 	for _, tx := range block.Body.Transactions {
 		if tx.IsSalaryTx() {
-			txSalaryCount += 1
+			txSalaryCount++
 		}
-		fmt.Println("Number of salary transaction", txSalaryCount)
+		fmt.Println("Cross Shard Tx Transaction", tx)
 		if err := blockchain.VerifyTransactionFromNewBlock(tx); err != nil {
 			return NewBlockChainError(TransactionError, err)
 		}
 	}
+	fmt.Println("Number of salary transaction", txSalaryCount)
 	//TODO: UNCOMMENT To verify Cross Shard Block
-	// // Get cross shard block from pool
+	// Get cross shard block from pool
 	// crossShardMap := make(map[byte][]CrossShardBlock)
 	// bestShardHeight := blockchain.BestState.Beacon.BestShardHeight
 	// allCrossShardBlock := blockchain.config.CrossShardPool.GetBlock(bestShardHeight)
@@ -583,7 +594,7 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(tx metadata.Transact
 	if !ok {
 		return errors.New("Version Error")
 	}
-
+	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 2")
 	// check fee of tx
 	minFeePerKbTx := blockChain.GetFeePerKbTx()
 	ok = tx.CheckTransactionFee(minFeePerKbTx)
@@ -591,12 +602,12 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(tx metadata.Transact
 		return errors.New("Fee Error")
 	}
 	// end check with policy
-
+	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 3")
 	ok = tx.ValidateType()
 	if !ok {
 		return errors.New("Type Error")
 	}
-
+	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 4")
 	// sanity data
 	// if validate, errS := tp.ValidateSanityData(tx); !validate {
 	if validated, err := tx.ValidateSanityData(blockChain); !validated {
@@ -604,18 +615,19 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(tx metadata.Transact
 			return err
 		}
 	}
+	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 5", reflect.TypeOf(tx))
 	// ValidateTransaction tx by it self
 	validated := tx.ValidateTxByItself(tx.IsPrivacy(), blockChain.config.DataBase, blockChain, shardID)
 	if !validated {
 		return errors.New("Validate By It self Error")
 	}
-
+	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 6")
 	// validate tx with data of blockchain
 	err = tx.ValidateTxWithBlockChain(blockChain, shardID, blockChain.config.DataBase)
-	// err = tp.ValidateTxWithBlockChain(tx, shardID)
 	if err != nil {
 		return errors.New("Validate With Blockchain Error")
 	}
+	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 1")
 	return nil
 }
 

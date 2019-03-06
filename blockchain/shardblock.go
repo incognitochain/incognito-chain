@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/ninjadotorg/constant/privacy"
+	"github.com/ninjadotorg/constant/transaction"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
@@ -38,7 +39,10 @@ type CrossShardBlock struct {
 	Header          ShardHeader
 	ToShardID       byte
 	MerklePathShard []common.Hash
+	// Cross Shard data for constant
 	CrossOutputCoin []privacy.OutputCoin
+	// Cross Shard Data for Custom Token Tx
+	CrossTxTokenData []transaction.TxTokenData
 }
 
 func (shardBlock *CrossShardBlock) Hash() *common.Hash {
@@ -139,8 +143,9 @@ func (blk *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byte]*Cros
 func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
 	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 1")
 	crossShard := &CrossShardBlock{}
-	utxoList := getOutCoinCrossShard(block.Body.Transactions, shardID)
-	if len(utxoList) == 0 {
+	crossOutputCoin := getOutCoinCrossShard(block.Body.Transactions, shardID)
+	crossTxTokenData := getTxTokenDataCrossShard(block.Body.Transactions, shardID)
+	if len(crossOutputCoin) == 0 && len(crossTxTokenData) == 0 {
 		return nil, nil
 	}
 	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 2")
@@ -162,7 +167,8 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 	crossShard.ProducerSig = block.ProducerSig
 	crossShard.Header = block.Header
 	crossShard.MerklePathShard = merklePathShard
-	crossShard.CrossOutputCoin = utxoList
+	crossShard.CrossOutputCoin = crossOutputCoin
+	crossShard.CrossTxTokenData = crossTxTokenData
 	crossShard.ToShardID = shardID
 	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 4")
 	return crossShard, nil
