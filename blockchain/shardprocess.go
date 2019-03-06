@@ -493,6 +493,8 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 	bestStateShard.Epoch = block.Header.Epoch
 	bestStateShard.BeaconHeight = block.Header.BeaconHeight
 	bestStateShard.ShardProposerIdx = common.IndexOfStr(block.Header.Producer, bestStateShard.ShardCommittee)
+	bestStateShard.TotalTxns += uint64(len(block.Body.Transactions))
+	bestStateShard.NumTxns = uint64(len(block.Body.Transactions))
 	// Add pending validator
 	for _, beaconBlock := range beaconBlocks {
 		fmt.Println("ShardProcess/Update: BeaconBlock Height", beaconBlock.Header.Height)
