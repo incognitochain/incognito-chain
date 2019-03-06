@@ -388,21 +388,21 @@ func (blockchain *BlockChain) initBeaconState() error {
 			SaleID:           buyBondSaleID[:],
 			EndBlock:         1000,
 			BuyingAsset:      *bondID,
-			BuyingAmount:     100,
-			DefaultBuyPrice:  100000, // $1 per bond in millicent
+			BuyingAmount:     100, // 100 bonds
+			DefaultBuyPrice:  100, // 100 cent per bond
 			SellingAsset:     common.ConstantID,
 			SellingAmount:    15000, // 150 CST in Nano
-			DefaultSellPrice: 1000,  // 1000 millicent per Nano
+			DefaultSellPrice: 100,   // 100 cent per CST
 		},
 		component.SaleData{
 			SaleID:           sellBondSaleID[:],
 			EndBlock:         2000,
 			BuyingAsset:      common.ConstantID,
 			BuyingAmount:     25000, // 250 CST in Nano
-			DefaultBuyPrice:  1000,
+			DefaultBuyPrice:  100,   // 100 cent per CST
 			SellingAsset:     *bondID,
-			SellingAmount:    200,
-			DefaultSellPrice: 100000,
+			SellingAmount:    200, // 200 bonds
+			DefaultSellPrice: 100, // 100 cent per bond
 		},
 	}
 	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.ListSaleData = saleData
