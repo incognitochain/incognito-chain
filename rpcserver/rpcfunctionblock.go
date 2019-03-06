@@ -104,7 +104,7 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 			result.Confirmations = int64(1 + best.Header.Height - blockHeight)
 			result.Height = block.Header.Height
 			result.Version = block.Header.Version
-			result.MerkleRoot = block.Header.TxRoot.String()
+			result.TxRoot = block.Header.TxRoot.String()
 			result.Time = block.Header.Timestamp
 			result.ShardID = block.Header.ShardID
 			result.PreviousBlockHash = block.Header.PrevBlockHash.String()
@@ -115,6 +115,11 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 			result.AggregatedSig = block.AggregatedSig
 			result.BeaconHeight = block.Header.BeaconHeight
 			result.BeaconBlockHash = block.Header.BeaconHash.String()
+			result.R = block.R
+			result.Round = block.Header.Round
+			result.CrossShards = block.Header.CrossShards
+			result.Epoch = block.Header.Epoch
+
 			for _, tx := range block.Body.Transactions {
 				result.TxHashes = append(result.TxHashes, tx.Hash().String())
 			}
@@ -136,7 +141,7 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 			result.Confirmations = int64(1 + best.Header.Height - blockHeight)
 			result.Height = block.Header.Height
 			result.Version = block.Header.Version
-			result.MerkleRoot = block.Header.TxRoot.String()
+			result.TxRoot = block.Header.TxRoot.String()
 			result.Time = block.Header.Timestamp
 			result.ShardID = block.Header.ShardID
 			result.PreviousBlockHash = block.Header.PrevBlockHash.String()
@@ -146,6 +151,11 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 			result.AggregatedSig = block.AggregatedSig
 			result.BeaconHeight = block.Header.BeaconHeight
 			result.BeaconBlockHash = block.Header.BeaconHash.String()
+			result.R = block.R
+			result.Round = block.Header.Round
+			result.CrossShards = block.Header.CrossShards
+			result.Epoch = block.Header.Epoch
+
 			result.Txs = make([]jsonresult.GetBlockTxResult, 0)
 			for _, tx := range block.Body.Transactions {
 				transactionT := jsonresult.GetBlockTxResult{}
