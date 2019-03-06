@@ -62,14 +62,14 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 				Logger.log.Error(err)
 				return
 			} else {
-				if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
+				if blockchain.BestState.Shard[newBlk.Header.ShardID].ShardHeight == newBlk.Header.Height-1 {
 					err = blockchain.InsertShardBlock(newBlk)
 					if err != nil {
 						Logger.log.Error(err)
 						return
 					}
 				} else {
-					blockchain.config.NodeShardPool.PushBlock(*newBlk)
+					blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
 				}
 			}
 		}
@@ -93,7 +93,7 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 						return
 					}
 				} else {
-					blockchain.config.NodeBeaconPool.PushBlock(*newBlk)
+					blockchain.config.BeaconPool.AddBeaconBlock(newBlk)
 				}
 			}
 		}

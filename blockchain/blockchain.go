@@ -59,6 +59,11 @@ type BlockChain struct {
 
 		PeersState     map[libp2p.ID]*peerState
 		PeersStateLock sync.Mutex
+		IsReady        struct {
+			sync.Mutex
+			Beacon bool
+			Shards map[byte]bool
+		}
 	}
 	knownChainState struct {
 		Shards map[byte]ChainState
@@ -106,8 +111,8 @@ type Config struct {
 
 	ShardToBeaconPool ShardToBeaconPool
 	CrossShardPool    map[byte]CrossShardPool
-	NodeBeaconPool    NodeBeaconPool
-	NodeShardPool     NodeShardPool
+	BeaconPool        BeaconPool
+	ShardPool         map[byte]ShardPool
 	TxPool            TxPool
 
 	Server interface {
@@ -157,6 +162,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.syncStatus.Shards = make(map[byte]struct{})
 	blockchain.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
 	blockchain.knownChainState.Shards = make(map[byte]ChainState)
+	blockchain.syncStatus.IsReady.Shards = make(map[byte]bool)
 	return nil
 }
 
@@ -164,20 +170,21 @@ func (blockchain *BlockChain) AddTxPool(txpool TxPool) {
 	blockchain.config.TxPool = txpool
 }
 
-func (blockchain *BlockChain) InitShardToBeaconPool(db database.DatabaseInterface) {
-	beaconBestState := BestStateBeacon{}
-	temp, err := db.FetchBeaconBestState()
-	if err != nil {
-		panic("Fail to get state from db")
-	} else {
-		if err := json.Unmarshal(temp, &beaconBestState); err != nil {
-			Logger.log.Error(err)
-			panic("Can't Unmarshal beacon beststate")
-		}
-		blockchain.config.ShardToBeaconPool.SetShardState(beaconBestState.BestShardHeight)
-	}
-
-}
+//move this code to pool
+//func (blockchain *BlockChain) InitShardToBeaconPool(db database.DatabaseInterface) {
+//	beaconBestState := BestStateBeacon{}
+//	temp, err := db.FetchBeaconBestState()
+//	if err != nil {
+//		panic("Fail to get state from db")
+//	} else {
+//		if err := json.Unmarshal(temp, &beaconBestState); err != nil {
+//			Logger.log.Error(err)
+//			panic("Can't Unmarshal beacon beststate")
+//		}
+//		blockchain.config.ShardToBeaconPool.SetShardState(beaconBestState.BestShardHeight)
+//	}
+//
+//}
 
 // -------------- Blockchain retriever's implementation --------------
 // GetCustomTokenTxsHash - return list of tx which relate to custom token
@@ -788,6 +795,18 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 					return err
 				}
 			}
+		case transaction.CustomTokenCrossShard:
+			{
+				listCustomToken, err := blockchain.ListCustomToken()
+				if err != nil {
+					panic(err)
+				}
+				//If don't exist then create
+				if _, ok := listCustomToken[customTokenTx.TxTokenData.PropertyID]; !ok {
+					Logger.log.Info("Store Cross Shard Custom if It's not existed in DB", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
+					err = blockchain.config.DataBase.StoreCustomToken(&customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
+				}
+			}
 		case transaction.CustomTokenTransfer:
 			{
 				Logger.log.Info("Transfer custom token %+v", customTokenTx)
@@ -795,6 +814,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		}
 		// save tx which relate to custom token
 		// Reject Double spend UTXO before enter this state
+		fmt.Printf("StoreCustomTokenPaymentAddresstHistory/CustomTokenTx: \n VIN %+v VOUT %+v \n", customTokenTx.TxTokenData.Vins, customTokenTx.TxTokenData.Vouts)
 		err = blockchain.StoreCustomTokenPaymentAddresstHistory(customTokenTx)
 		if err != nil {
 			// Skip double spend
@@ -877,12 +897,31 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 	return nil
 }
 
-//TODO: @merman Store txcustom token
 func (blockchain *BlockChain) CreateAndSaveCrossOutputCoinViewPointFromBlock(block *ShardBlock) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
 	// TODO: 0xsirrush check lightmode turn off
 	err := view.fetchCrossOutputViewPointFromBlock(blockchain.config.DataBase, block, nil)
+	// Update the list nullifiers and commitment, snd set using the state of the used tx view point. This
+	// entails adding the new
+	// ones created by the block.
+	err = blockchain.StoreCommitmentsFromTxViewPoint(*view, block.Header.ShardID)
+	if err != nil {
+		return err
+	}
+
+	err = blockchain.StoreSNDerivatorsFromTxViewPoint(*view, block.Header.ShardID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (blockchain *BlockChain) CreateAndSaveCrossTxTokenDataViewPointFromBlock(block *ShardBlock) error {
+	// Fetch data from block into tx View point
+	view := NewTxViewPoint(block.Header.ShardID)
+	// TODO: 0xsirrush check lightmode turn off
+	err := view.fetchCrossTxTokenDataViewPointFromBlock(blockchain.config.DataBase, block, nil)
 	// Update the list nullifiers and commitment, snd set using the state of the used tx view point. This
 	// entails adding the new
 	// ones created by the block.
@@ -968,6 +1007,7 @@ func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customToken
 		if err := blockchain.config.DataBase.Put(paymentAddressKey, []byte(paymentAddressValue)); err != nil {
 			return err
 		}
+		fmt.Printf("STORE UTXO FOR CUSTOM TOKEN: tokenID %+v \n paymentAddress %+v \n txHash %+v, voutIndex %+v, value %+v \n", (customTokenTx.TxTokenData.PropertyID).String(), vout.PaymentAddress, customTokenTx.Hash(), voutIndex, value)
 	}
 	return nil
 }
@@ -1490,15 +1530,26 @@ func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privac
 	return result, nil
 }
 
-func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
-
+func (blockchain *BlockChain) SetReadyState(shard bool, shardID byte, ready bool) {
+	blockchain.syncStatus.IsReady.Lock()
+	defer blockchain.syncStatus.IsReady.Unlock()
 	if shard {
-		//TODO check shardChain ready
+		blockchain.syncStatus.IsReady.Shards[shardID] = ready
 	} else {
-		//TODO check beaconChain ready
+		blockchain.syncStatus.IsReady.Beacon = ready
 	}
+}
 
-	return true
+func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
+	blockchain.syncStatus.IsReady.Lock()
+	defer blockchain.syncStatus.IsReady.Unlock()
+	if shard {
+		if _, ok := blockchain.syncStatus.IsReady.Shards[shardID]; !ok {
+			return false
+		}
+		return blockchain.syncStatus.IsReady.Shards[shardID]
+	}
+	return blockchain.syncStatus.IsReady.Beacon
 }
 
 func (bc *BlockChain) processUpdateDCBConstitutionIns(inst []string) error {
