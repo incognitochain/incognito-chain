@@ -8,7 +8,7 @@ type GetBlockResult struct {
 	Height            uint64             `json:"Height"`
 	Confirmations     int64              `json:"Confirmations"`
 	Version           int                `json:"Version"`
-	MerkleRoot        string             `json:"TransactionRoot"`
+	TxRoot            string             `json:"TxRoot"`
 	Time              int64              `json:"Time"`
 	PreviousBlockHash string             `json:"PreviousBlockHash"`
 	NextBlockHash     string             `json:"NextBlockHash"`
@@ -37,7 +37,7 @@ func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock) {
 	getBlockResult.Height = block.Header.Height
 	getBlockResult.Time = block.Header.Timestamp
 	getBlockResult.ShardID = block.Header.ShardID
-	getBlockResult.MerkleRoot = block.Header.ShardTxRoot.String()
+	getBlockResult.TxRoot = block.Header.TxRoot.String()
 	getBlockResult.TxHashes = make([]string, 0)
 	for _, tx := range block.Body.Transactions {
 		getBlockResult.TxHashes = append(getBlockResult.TxHashes, tx.Hash().String())

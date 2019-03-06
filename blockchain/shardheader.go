@@ -7,7 +7,7 @@ import (
 )
 
 /*
-	-MerkleRoot and MerkleRootShard: make from transaction
+	-TxRoot and MerkleRootShard: make from transaction
 	-Validator Root is root hash of current committee in beststate
 	-PendingValidator Root is root hash of pending validator in beststate
 */
