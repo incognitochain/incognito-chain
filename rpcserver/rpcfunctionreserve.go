@@ -85,8 +85,6 @@ func (rpcServer RpcServer) handleGetContractingStatus(params interface{}, closeC
 	meta := txReq.GetMetadata().(*metadata.ContractingRequest)
 	redeemStr := ""
 	if common.IsUSDAsset(&meta.CurrencyType) {
-		// Convert from millicent to cent
-		redeem = redeem / 1000
 		redeemStr = strconv.FormatUint(redeem, 10)
 	} else {
 		// Convert from milliether to wei

@@ -71,7 +71,8 @@ func buildInstTypeAndAmountForContractingAction(
 		oracle.ETH < reserveData.ReserveMinPrice {
 		return "refund", 0
 	}
-	redeemAmount := md.BurnedConstAmount * oracle.Constant / oracle.ETH
+	// redeemAmount := md.BurnedConstAmount * oracle.Constant / oracle.ETH
+	redeemAmount := common.CentInMilliEther(md.BurnedConstAmount*oracle.Constant, oracle.ETH)
 	accumulativeValues.constantsBurnedByETH += md.BurnedConstAmount
 	return "accepted", redeemAmount
 }
@@ -239,8 +240,8 @@ func buildInstTypeAndAmountForIssuingAction(
 		dcbTokensNeeded = reqAmt + accumulativeValues.dcbTokensSoldByUSD
 	} else if isOnETH {
 		reserveData, existed = raiseReserveData[common.ETHAssetID]
-		// TODO: be careful of the ETH unit
-		reqAmt = (md.DepositedAmount * oracle.ETH) / oracle.DCBToken
+		reqAmt = common.MilliEtherValue(md.DepositedAmount, oracle.ETH) / oracle.DCBToken
+		// reqAmt = (md.DepositedAmount * oracle.ETH) / oracle.DCBToken
 		dcbTokensNeeded = reqAmt + accumulativeValues.dcbTokensSoldByETH
 		fmt.Printf("[db] isOnETH: %+v %d %d %d\n", reserveData, reqAmt, dcbTokensNeeded, bestBlockHeight)
 	}
