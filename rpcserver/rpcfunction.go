@@ -33,6 +33,7 @@ var RpcHandler = map[string]commandHandler{
 	GetBestBlock:      RpcServer.handleGetBestBlock,
 	GetBestBlockHash:  RpcServer.handleGetBestBlockHash,
 	RetrieveBlock:     RpcServer.handleRetrieveBlock,
+	RetrieveBeaconBlock:     RpcServer.handleRetrieveBeaconBlock,
 	GetBlocks:         RpcServer.handleGetBlocks,
 	GetBlockChainInfo: RpcServer.handleGetBlockChainInfo,
 	GetBlockCount:     RpcServer.handleGetBlockCount,
