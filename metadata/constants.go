@@ -50,6 +50,11 @@ const (
 	ShardBlockSalaryResponseMeta
 
 	//Voting
+	NewDCBConstitutionIns
+	NewGOVConstitutionIns
+	UpdateDCBConstitutionIns
+	UpdateGOVConstitutionIns
+
 	SubmitDCBProposalMeta
 	VoteDCBBoardMeta
 	SubmitGOVProposalMeta
