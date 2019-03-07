@@ -11,13 +11,14 @@ import (
 	"sync"
 
 	libp2p "github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/database/lvdb"
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/metadata/frombeaconins"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
@@ -203,9 +204,9 @@ func (blockchain *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[commo
 	return result, nil
 }
 
-// GetOracleParams returns oracle params
-func (blockchain *BlockChain) GetOracleParams() *params.Oracle {
-	return &params.Oracle{}
+// GetOracleParams returns oracle component
+func (blockchain *BlockChain) GetOracleParams() *component.Oracle {
+	return &component.Oracle{}
 	// return blockchain.BestState[0].BestBlock.Header.Oracle
 }
 
@@ -350,8 +351,117 @@ func (blockchain *BlockChain) initBeaconState() error {
 	blockchain.BestState.Beacon = InitBestStateBeacon(blockchain.config.ChainParams)
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
 	blockchain.BestState.Beacon.Update(initBlock)
-	// Insert new block into beacon chain
+	// TODO(@0xankylosaurus): initialize oracle data properly
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 1000 // $10
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.GOVToken = 2000 // $20
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.Constant = 100  // $1 = 100 cent
+	blockchain.BestState.Beacon.StabilityInfo.Oracle.ETH = 10000     // $100.00 = 10000 cent per ether
+	// hard code params here in order to test salary tx
+	blockchain.BestState.Beacon.StabilityInfo.SalaryFund = 1000000                       // 10k const                          // 10 Const
+	blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.SalaryPerTx = 10 // 0.1 Const
+	blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.BasicSalary = 10 // 0.1 Const
 
+	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.RaiseReserveData = map[common.Hash]*component.RaiseReserveData{
+		common.ETHAssetID: &component.RaiseReserveData{
+			EndBlock: 1000,
+			Amount:   1000,
+		},
+		common.USDAssetID: &component.RaiseReserveData{
+			EndBlock: 1000,
+			Amount:   1000,
+		},
+	}
+	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.SpendReserveData = map[common.Hash]*component.SpendReserveData{
+		common.ETHAssetID: &component.SpendReserveData{
+			EndBlock:        1000,
+			ReserveMinPrice: 1000,
+			Amount:          10000000,
+		},
+	}
+
+	// Dividend
+	divAmounts := []uint64{0}
+	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.DividendAmount = divAmounts[0]
+	divKey := getDCBDividendKeyBeacon()
+	divValue := getDividendValueBeacon(divAmounts)
+	blockchain.BestState.Beacon.Params[divKey] = divValue
+	blockchain.BestState.Beacon.StabilityInfo.BankFund = 1000
+
+	bondID, _ := common.NewHashFromStr("4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000")
+	buyBondSaleID := [32]byte{1}
+	sellBondSaleID := [32]byte{2}
+	saleData := []component.SaleData{
+		component.SaleData{
+			SaleID:           buyBondSaleID[:],
+			EndBlock:         1000,
+			BuyingAsset:      *bondID,
+			BuyingAmount:     100, // 100 bonds
+			DefaultBuyPrice:  100, // 100 cent per bond
+			SellingAsset:     common.ConstantID,
+			SellingAmount:    15000, // 150 CST in Nano
+			DefaultSellPrice: 100,   // 100 cent per CST
+		},
+		component.SaleData{
+			SaleID:           sellBondSaleID[:],
+			EndBlock:         2000,
+			BuyingAsset:      common.ConstantID,
+			BuyingAmount:     25000, // 250 CST in Nano
+			DefaultBuyPrice:  100,   // 100 cent per CST
+			SellingAsset:     *bondID,
+			SellingAmount:    200, // 200 bonds
+			DefaultSellPrice: 100, // 100 cent per bond
+		},
+	}
+	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.ListSaleData = saleData
+	// Store temp crowdsale states to avoid submiting DCB proposal
+	for _, data := range saleData {
+		key := getSaleDataKeyBeacon(data.SaleID)
+		if _, ok := blockchain.BestState.Beacon.Params[key]; ok {
+			continue
+		}
+		value := getSaleDataValueBeacon(&data)
+		blockchain.BestState.Beacon.Params[key] = value
+	}
+
+	loanParams := []component.LoanParams{
+		component.LoanParams{
+			InterestRate:     100,   // 1%
+			Maturity:         1000,  // 1 month in blocks
+			LiquidationStart: 15000, // 150%
+		},
+	}
+	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.ListLoanParams = loanParams
+
+	blockchain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress = []privacy.PaymentAddress{
+		// Payment4: 1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba
+		privacy.PaymentAddress{
+			Pk: []byte{3, 36, 133, 3, 185, 44, 62, 112, 196, 239, 49, 190, 100, 172, 50, 147, 196, 154, 105, 211, 203, 57, 242, 110, 34, 126, 100, 226, 74, 148, 128, 167, 0},
+			Tk: []byte{2, 134, 3, 114, 89, 60, 134, 3, 185, 245, 176, 187, 244, 145, 250, 149, 67, 98, 68, 106, 69, 200, 228, 209, 3, 26, 231, 15, 36, 251, 211, 186, 159},
+		},
+	}
+
+	// Bond
+	blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.SellingBonds = &component.SellingBonds{
+		BondName:       "Bond 1000 blocks",
+		BondSymbol:     "BND1000",
+		TotalIssue:     1000,
+		BondsToSell:    1000,
+		BondPrice:      100, // 1 constant
+		Maturity:       3,
+		BuyBackPrice:   120, // 1.2 constant
+		StartSellingAt: 0,
+		SellingWithin:  100000,
+	}
+
+	blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens = &component.SellingGOVTokens{
+		TotalIssue:      1000,
+		GOVTokensToSell: 1000,
+		GOVTokenPrice:   500, // 5 constant
+		StartSellingAt:  0,
+		SellingWithin:   10000,
+	}
+
+	// Insert new block into beacon chain
 	if err := blockchain.StoreBeaconBestState(); err != nil {
 		Logger.log.Error("Error Store best state for block", blockchain.BestState.Beacon.BestBlockHash, "in beacon chain")
 		return NewBlockChainError(UnExpectedError, err)
@@ -651,127 +761,19 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 	return nil
 }
 
-//func (blockchain *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
-//	txs, err := blockchain.config.DataBase.GetLoanTxs(loanID)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	for _, txHash := range txs {
-//		hash := &common.Hash{}
-//		copy(hash[:], txHash)
-//		_, _, _, tx, err := blockchain.GetTransactionByHash(hash)
-//		if err != nil {
-//			return nil, err
-//		}
-//		if tx.GetMetadataType() == metadata.LoanRequestMeta {
-//			meta := tx.GetMetadata()
-//			if meta == nil {
-//				continue
-//			}
-//			requestMeta, ok := meta.(*metadata.LoanRequest)
-//			if !ok {
-//				continue
-//			}
-//			if bytes.Equal(requestMeta.LoanID, loanID) {
-//				return requestMeta, nil
-//			}
-//		}
-//	}
-//	return nil, nil
-//}
+// func (self *BlockChain) GetChainBlocks(shardID byte) ([]*Block, error) {
+// 	result := make([]*Block, 0)
+// 	data, err := self.config.DataBase.FetchChainBlocks(shardID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-func (blockchain *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
-	_, _, value := tx.GetUniqueReceiver()
-	meta := tx.GetMetadata().(*metadata.LoanPayment)
-	principle, interest, deadline, err := blockchain.config.DataBase.GetLoanPayment(meta.LoanID)
-	if err != nil {
-		return err
-	}
-	requestMeta, err := blockchain.GetLoanRequestMeta(meta.LoanID)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("[db]pid: %d, %d, %d\n", principle, interest, deadline)
-
-	// Pay interest
-	interestPerTerm := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
-	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	height := blockchain.GetChainHeight(shardID)
-	totalInterest := metadata.GetTotalInterest(
-		principle,
-		interest,
-		requestMeta.Params.InterestRate,
-		requestMeta.Params.Maturity,
-		deadline,
-		height,
-	)
-	fmt.Printf("[db]perTerm, totalInt: %d, %d\n", interestPerTerm, totalInterest)
-	termInc := uint64(0)
-	if value <= totalInterest { // Pay all to cover interest
-		if interestPerTerm > 0 {
-			if value >= interest {
-				termInc = 1 + uint64((value-interest)/interestPerTerm)
-				interest = interestPerTerm - (value-interest)%interestPerTerm
-			} else {
-				interest -= value
-			}
-		}
-	} else { // Pay enough to cover interest, the rest go to principle
-		if value-totalInterest > principle {
-			principle = 0
-		} else {
-			principle -= value - totalInterest
-		}
-		if totalInterest >= interest { // This payment pays for interest
-			if interestPerTerm > 0 {
-				termInc = 1 + uint64((totalInterest-interest)/interestPerTerm)
-				interest = interestPerTerm
-			}
-		}
-	}
-	fmt.Printf("termInc: %d\n", termInc)
-	deadline = deadline + termInc*requestMeta.Params.Maturity
-
-	return blockchain.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, deadline)
-}
-
-func (blockchain *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
-	for _, tx := range block.Body.Transactions {
-		switch tx.GetMetadataType() {
-		case metadata.LoanUnlockMeta:
-			{
-				// Update loan payment info after withdrawing Constant
-				tx := tx.(*transaction.Tx)
-				meta := tx.GetMetadata().(*metadata.LoanUnlock)
-				fmt.Printf("Found tx %x of type loan unlock\n", tx.Hash()[:])
-				fmt.Printf("LoanID: %x\n", meta.LoanID)
-				requestMeta, err := blockchain.GetLoanRequestMeta(meta.LoanID)
-				if err != nil {
-					return err
-				}
-				principle := requestMeta.LoanAmount
-				interest := metadata.GetInterestPerTerm(principle, requestMeta.Params.InterestRate)
-				blockchain.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint64(block.Header.Height))
-				fmt.Printf("principle: %d\ninterest: %d\nblock: %d\n", principle, interest, uint64(block.Header.Height))
-			}
-		case metadata.LoanPaymentMeta:
-			{
-				blockchain.ProcessLoanPayment(tx)
-			}
-		}
-	}
-	return nil
-}
-
-/*
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
 // need to check light or not light mode
 // with light mode - node only fetch outputcoins of account in local wallet -> smaller data
 // with not light mode - node fetch all outputcoins of all accounts in network -> big data
 // @note: still storage full data of commitments, serialnumbersm snderivator to check double spend
 // @note: this function only work for transaction transfer token/constant within shard
-*/
 
 func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBlock) error {
 	// Fetch data from block into tx View point
@@ -793,6 +795,18 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 					return err
 				}
 			}
+		case transaction.CustomTokenCrossShard:
+			{
+				listCustomToken, err := blockchain.ListCustomToken()
+				if err != nil {
+					panic(err)
+				}
+				//If don't exist then create
+				if _, ok := listCustomToken[customTokenTx.TxTokenData.PropertyID]; !ok {
+					Logger.log.Info("Store Cross Shard Custom if It's not existed in DB", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
+					err = blockchain.config.DataBase.StoreCustomToken(&customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
+				}
+			}
 		case transaction.CustomTokenTransfer:
 			{
 				Logger.log.Info("Transfer custom token %+v", customTokenTx)
@@ -800,6 +814,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		}
 		// save tx which relate to custom token
 		// Reject Double spend UTXO before enter this state
+		fmt.Printf("StoreCustomTokenPaymentAddresstHistory/CustomTokenTx: \n VIN %+v VOUT %+v \n", customTokenTx.TxTokenData.Vins, customTokenTx.TxTokenData.Vouts)
 		err = blockchain.StoreCustomTokenPaymentAddresstHistory(customTokenTx)
 		if err != nil {
 			// Skip double spend
@@ -882,12 +897,31 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 	return nil
 }
 
-//TODO: @merman Store txcustom token
 func (blockchain *BlockChain) CreateAndSaveCrossOutputCoinViewPointFromBlock(block *ShardBlock) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
 	// TODO: 0xsirrush check lightmode turn off
 	err := view.fetchCrossOutputViewPointFromBlock(blockchain.config.DataBase, block, nil)
+	// Update the list nullifiers and commitment, snd set using the state of the used tx view point. This
+	// entails adding the new
+	// ones created by the block.
+	err = blockchain.StoreCommitmentsFromTxViewPoint(*view, block.Header.ShardID)
+	if err != nil {
+		return err
+	}
+
+	err = blockchain.StoreSNDerivatorsFromTxViewPoint(*view, block.Header.ShardID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (blockchain *BlockChain) CreateAndSaveCrossTxTokenDataViewPointFromBlock(block *ShardBlock) error {
+	// Fetch data from block into tx View point
+	view := NewTxViewPoint(block.Header.ShardID)
+	// TODO: 0xsirrush check lightmode turn off
+	err := view.fetchCrossTxTokenDataViewPointFromBlock(blockchain.config.DataBase, block, nil)
 	// Update the list nullifiers and commitment, snd set using the state of the used tx view point. This
 	// entails adding the new
 	// ones created by the block.
@@ -973,6 +1007,7 @@ func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customToken
 		if err := blockchain.config.DataBase.Put(paymentAddressKey, []byte(paymentAddressValue)); err != nil {
 			return err
 		}
+		fmt.Printf("STORE UTXO FOR CUSTOM TOKEN: tokenID %+v \n paymentAddress %+v \n txHash %+v, voutIndex %+v, value %+v \n", (customTokenTx.TxTokenData.PropertyID).String(), vout.PaymentAddress, customTokenTx.Hash(), voutIndex, value)
 	}
 	return nil
 }
@@ -1280,7 +1315,7 @@ func (blockchain *BlockChain) GetNumberOfGOVGovernors() int {
 // 	return blockchain.BestState[shardID].BestBlock
 // }
 
-func (blockchain *BlockChain) GetConstitutionStartHeight(boardType byte, shardID byte) uint64 {
+func (blockchain *BlockChain) GetConstitutionStartHeight(boardType common.BoardType, shardID byte) uint64 {
 	if boardType == common.DCBBoard {
 		return blockchain.GetDCBConstitutionStartHeight(shardID)
 	} else {
@@ -1288,16 +1323,14 @@ func (blockchain *BlockChain) GetConstitutionStartHeight(boardType byte, shardID
 	}
 }
 
-func (blockchain *BlockChain) GetDCBConstitutionStartHeight(shardID byte) uint64 {
-	// return blockchain.GetBestBlock(shardID).Header.DCBConstitution.StartedBlockHeight
-	return 0
+func (self *BlockChain) GetDCBConstitutionStartHeight(shardID byte) uint64 {
+	return self.BestState.Beacon.StabilityInfo.DCBConstitution.StartedBlockHeight
 }
-func (blockchain *BlockChain) GetGOVConstitutionStartHeight(shardID byte) uint64 {
-	// return blockchain.GetBestBlock(shardID).Header.GOVConstitution.StartedBlockHeight
-	return 0
+func (self *BlockChain) GetGOVConstitutionStartHeight(shardID byte) uint64 {
+	return self.BestState.Beacon.StabilityInfo.GOVConstitution.StartedBlockHeight
 }
 
-func (blockchain *BlockChain) GetConstitutionEndHeight(boardType byte, shardID byte) uint64 {
+func (blockchain *BlockChain) GetConstitutionEndHeight(boardType common.BoardType, shardID byte) uint64 {
 	if boardType == common.DCBBoard {
 		return blockchain.GetDCBConstitutionEndHeight(shardID)
 	} else {
@@ -1305,7 +1338,7 @@ func (blockchain *BlockChain) GetConstitutionEndHeight(boardType byte, shardID b
 	}
 }
 
-func (blockchain *BlockChain) GetBoardEndHeight(boardType byte, chainID byte) uint64 {
+func (blockchain *BlockChain) GetBoardEndHeight(boardType common.BoardType, chainID byte) uint64 {
 	if boardType == common.DCBBoard {
 		return blockchain.GetDCBBoardEndHeight(chainID)
 	} else {
@@ -1313,29 +1346,24 @@ func (blockchain *BlockChain) GetBoardEndHeight(boardType byte, chainID byte) ui
 	}
 }
 
-func (blockchain *BlockChain) GetDCBConstitutionEndHeight(chainID byte) uint64 {
-	//	return blockchain.GetBestBlock(chainID).Header.DCBConstitution.GetEndedBlockHeight()
-	return 0
+func (self *BlockChain) GetDCBConstitutionEndHeight(chainID byte) uint64 {
+	return self.BestState.Beacon.StabilityInfo.DCBConstitution.GetEndedBlockHeight()
 }
 
-func (blockchain *BlockChain) GetGOVConstitutionEndHeight(shardID byte) uint64 {
-	// return blockchain.GetBestBlock(shardID).Header.GOVConstitution.GetEndedBlockHeight()
-	return 0
+func (self *BlockChain) GetGOVConstitutionEndHeight(shardID byte) uint64 {
+	return self.BestState.Beacon.StabilityInfo.GOVConstitution.GetEndedBlockHeight()
 }
 
-func (blockchain *BlockChain) GetDCBBoardEndHeight(chainID byte) uint64 {
-	// return blockchain.GetBestBlock(chainID).Header.DCBGovernor.EndBlock
-	return 0
+func (self *BlockChain) GetDCBBoardEndHeight(chainID byte) uint64 {
+	return self.BestState.Beacon.StabilityInfo.DCBGovernor.EndBlock
 }
 
-func (blockchain *BlockChain) GetGOVBoardEndHeight(chainID byte) uint64 {
-	// return blockchain.GetBestBlock(chainID).Header.GOVGovernor.EndBlock
-	return 0
+func (self *BlockChain) GetGOVBoardEndHeight(chainID byte) uint64 {
+	return self.BestState.Beacon.StabilityInfo.GOVGovernor.EndBlock
 }
 
-func (blockchain *BlockChain) GetCurrentBlockHeight(shardID byte) uint64 {
-	// return uint64(blockchain.GetBestBlock(shardID).Header.Height)
-	return 0
+func (self *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {
+	return self.BestState.Beacon.BestBlock.Header.Height
 }
 
 func (blockchain BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64, commitments [][]byte) {
@@ -1346,7 +1374,7 @@ func (blockchain BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd
 	return transaction.CheckSNDerivatorExistence(tokenID, snd, shardID, blockchain.config.DataBase)
 }
 
-// GetFeePerKbTx - return fee (per kb of tx) from GOV params data
+// GetFeePerKbTx - return fee (per kb of tx) from GOV component data
 func (blockchain BlockChain) GetFeePerKbTx() uint64 {
 	return blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.FeePerKbTx
 }
@@ -1364,70 +1392,99 @@ func (blockchain *BlockChain) GetConstitutionIndex(helper ConstitutionHelper) ui
 //1. Current National welfare (NW)  < lastNW * 0.9 (Emergency case)
 //2. Block height == last constitution start time + last constitution window
 //This function is called after successful connect block => block height is block height of best state
-func (blockchain *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) bool {
-	// BestBlock := blockchain.BestState[0].BestBlock
-	// thisBlockHeight := BestBlock.Header.Height
-	// newNationalWelfare := helper.GetCurrentNationalWelfare(blockchain)
-	// oldNationalWelfare := helper.GetOldNationalWelfare(blockchain)
-	// thresholdNationalWelfare := oldNationalWelfare * helper.GetThresholdRatioOfCrisis() / common.BasePercentage
+func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) bool {
+	thisBlockHeight := self.BestState.Beacon.BestBlock.Header.Height
+	newNationalWelfare := helper.GetCurrentNationalWelfare(self)
+	oldNationalWelfare := helper.GetOldNationalWelfare(self)
+	thresholdNationalWelfare := oldNationalWelfare * helper.GetThresholdRatioOfCrisis() / common.BasePercentage
+	//
+	constitutionInfo := helper.GetConstitutionInfo(self)
+	endedOfConstitution := constitutionInfo.StartedBlockHeight + constitutionInfo.ExecuteDuration
+	pivotOfStart := endedOfConstitution - 3*uint64(common.EncryptionOnePhraseDuration)
+	//
+	rightTime := newNationalWelfare < thresholdNationalWelfare || pivotOfStart == uint64(thisBlockHeight)
 
-	// constitutionInfo := helper.GetConstitutionInfo(blockchain)
-	// endedOfConstitution := constitutionInfo.StartedBlockHeight + constitutionInfo.ExecuteDuration
-	// pivotOfStart := endedOfConstitution - 3*uint64(common.EncryptionOnePhraseDuration)
-
-	// rightTime := newNationalWelfare < thresholdNationalWelfare || pivotOfStart == uint64(thisBlockHeight)
-
-	// encryptFlag, _ := blockchain.config.DataBase.GetEncryptFlag(helper.GetBoardType())
-	// rightFlag := encryptFlag == common.Lv3EncryptionFlag
-	// if rightTime && rightFlag {
-	// 	return true
-	// }
+	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
+	rightFlag := encryptFlag == common.Lv3EncryptionFlag
+	if rightTime && rightFlag {
+		return true
+	}
 	return false
 }
 
 //This function is called after successful connect block => block height is block height of best state
-func (blockchain *BlockChain) NeedEnterEncryptLv1(helper ConstitutionHelper) bool {
-	// BestBlock := blockchain.BestState[0].BestBlock
-	// thisBlockHeight := BestBlock.Header.Height
-	// lastEncryptBlockHeight, _ := blockchain.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
-	// encryptFlag, _ := blockchain.config.DataBase.GetEncryptFlag(helper.GetBoardType())
-	// if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
-	// 	encryptFlag == common.Lv2EncryptionFlag {
-	// 	return true
-	// }
+func (self *BlockChain) NeedEnterEncryptLv1(helper ConstitutionHelper) bool {
+	BestBlock := self.BestState.Beacon.BestBlock
+	thisBlockHeight := BestBlock.Header.Height
+	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
+	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
+	if thisBlockHeight == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
+		encryptFlag == common.Lv2EncryptionFlag {
+		return true
+	}
 	return false
 }
 
 //This function is called after successful connect block => block height is block height of best state
-func (blockchain *BlockChain) NeedEnterEncryptNormal(helper ConstitutionHelper) bool {
-	// BestBlock := blockchain.BestState[0].BestBlock
-	// thisBlockHeight := BestBlock.Header.Height
-	// lastEncryptBlockHeight, _ := blockchain.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
-	// encryptFlag, _ := blockchain.config.DataBase.GetEncryptFlag(helper.GetBoardType())
-	// if uint32(thisBlockHeight) == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
-	// 	encryptFlag == common.Lv1EncryptionFlag {
-	// 	return true
-	// }
+func (self *BlockChain) NeedEnterEncryptNormal(helper ConstitutionHelper) bool {
+	BestBlock := self.BestState.Beacon.BestBlock
+	thisBlockHeight := BestBlock.Header.Height
+	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
+	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
+	if thisBlockHeight == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
+		encryptFlag == common.Lv1EncryptionFlag {
+		return true
+	}
 	return false
 }
 
 //This function is called after successful connect block => block height is block height of best state
+func (self *BlockChain) CreateUpdateEncryptPhraseAndRewardConstitutionIns(helper ConstitutionHelper) ([]frombeaconins.InstructionFromBeacon, error) {
+	instructions := make([]frombeaconins.InstructionFromBeacon, 0)
+	flag := byte(0)
+	boardType := helper.GetBoardType()
+	if self.NeedToEnterEncryptionPhrase(helper) {
+		flag = common.Lv2EncryptionFlag
+	} else if self.NeedEnterEncryptLv1(helper) {
+		flag = common.Lv1EncryptionFlag
+	} else if self.NeedEnterEncryptNormal(helper) {
+		flag = common.NormalEncryptionFlag
+	} else if self.readyNewConstitution(helper) {
+		flag = common.Lv3EncryptionFlag
+		newIns, err := self.createAcceptConstitutionAndPunishTxAndRewardSubmitter(helper)
+		instructions = append(instructions, newIns...)
+		if err != nil {
+			Logger.log.Error(err)
+			return nil, err
+		}
+		rewardIns, err := self.createRewardProposalWinnerIns(helper)
+		instructions = append(instructions, rewardIns)
+	}
+	//create instruction to force shard to create transaction. Insert block in shard will affect db
+	setEncryptionLastBlockIns := frombeaconins.NewSetEncryptionLastBlockIns(boardType, self.BestState.Beacon.BestBlock.Header.Height)
+	instructions = append(instructions, setEncryptionLastBlockIns)
+	setEncryptionFlagIns := frombeaconins.NewSetEncryptionFlagIns(boardType, flag)
+	instructions = append(instructions, setEncryptionFlagIns)
+	return instructions, nil
+}
+
 func (blockchain *BlockChain) SetEncryptPhrase(helper ConstitutionHelper) {
-	// flag := 0
-	// boardType := helper.GetBoardType()
-	// if blockchain.NeedToEnterEncryptionPhrase(helper) {
-	// 	flag = common.Lv2EncryptionFlag
-	// 	blockchain.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(blockchain.BestState[0].BestBlock.Header.Height))
-	// 	blockchain.config.DataBase.SetEncryptFlag(boardType, uint32(flag))
-	// } else if blockchain.NeedEnterEncryptLv1(helper) {
-	// 	flag = common.Lv1EncryptionFlag
-	// 	blockchain.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(blockchain.BestState[0].BestBlock.Header.Height))
-	// 	blockchain.config.DataBase.SetEncryptFlag(boardType, uint32(flag))
-	// } else if blockchain.NeedEnterEncryptNormal(helper) {
-	// 	flag = common.NormalEncryptionFlag
-	// 	blockchain.config.DataBase.SetEncryptionLastBlockHeight(boardType, uint32(blockchain.BestState[0].BestBlock.Header.Height))
-	// 	blockchain.config.DataBase.SetEncryptFlag(boardType, uint32(flag))
-	// }
+	flag := byte(0)
+	boardType := helper.GetBoardType()
+	height := blockchain.BestState.Beacon.BestBlock.Header.Height
+	if blockchain.NeedToEnterEncryptionPhrase(helper) {
+		flag = common.Lv2EncryptionFlag
+		blockchain.config.DataBase.SetEncryptionLastBlockHeight(boardType, height)
+		blockchain.config.DataBase.SetEncryptFlag(boardType, flag)
+	} else if blockchain.NeedEnterEncryptLv1(helper) {
+		flag = common.Lv1EncryptionFlag
+		blockchain.config.DataBase.SetEncryptionLastBlockHeight(boardType, height)
+		blockchain.config.DataBase.SetEncryptFlag(boardType, flag)
+	} else if blockchain.NeedEnterEncryptNormal(helper) {
+		flag = common.NormalEncryptionFlag
+		blockchain.config.DataBase.SetEncryptionLastBlockHeight(boardType, height)
+		blockchain.config.DataBase.SetEncryptFlag(boardType, flag)
+	}
 }
 
 // GetRecentTransactions - find all recent history txs which are created by user
@@ -1495,6 +1552,64 @@ func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
 	return blockchain.syncStatus.IsReady.Beacon
 }
 
+func (bc *BlockChain) processUpdateDCBConstitutionIns(inst []string) error {
+	updateConstitutionIns, err := frombeaconins.NewUpdateDCBConstitutionInsFromStr(inst)
+	if err != nil {
+		return err
+	}
+	boardType := common.DCBBoard
+	consitution := bc.GetConstitution(boardType)
+	nextConstitutionIndex := consitution.GetConstitutionIndex() + 1
+	err1 := bc.GetDatabase().TakeVoteTokenFromWinner(
+		boardType,
+		nextConstitutionIndex,
+		updateConstitutionIns.Voter.PaymentAddress,
+		updateConstitutionIns.Voter.AmountOfVote,
+	)
+	if err1 != nil {
+		return err1
+	}
+	err2 := bc.GetDatabase().SetNewProposalWinningVoter(
+		boardType,
+		nextConstitutionIndex,
+		updateConstitutionIns.Voter.PaymentAddress,
+	)
+	if err2 != nil {
+		return err2
+	}
+	bc.BestState.Beacon.processUpdateDCBProposalInstruction(*updateConstitutionIns)
+	return nil
+}
+
+func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
+	updateConstitutionIns, err := frombeaconins.NewUpdateGOVConstitutionInsFromStr(inst)
+	if err != nil {
+		return err
+	}
+	boardType := common.GOVBoard
+	consitution := bc.GetConstitution(boardType)
+	nextConstitutionIndex := consitution.GetConstitutionIndex() + 1
+	err1 := bc.GetDatabase().TakeVoteTokenFromWinner(
+		boardType,
+		nextConstitutionIndex,
+		updateConstitutionIns.Voter.PaymentAddress,
+		updateConstitutionIns.Voter.AmountOfVote,
+	)
+	if err1 != nil {
+		return err1
+	}
+	err2 := bc.GetDatabase().SetNewProposalWinningVoter(
+		boardType,
+		nextConstitutionIndex,
+		updateConstitutionIns.Voter.PaymentAddress,
+	)
+	if err2 != nil {
+		return err2
+	}
+	bc.BestState.Beacon.processUpdateGOVProposalInstruction(*updateConstitutionIns)
+	return nil
+}
+
 //func (blockchain *BlockChain) UpdateDividendPayout(block *Block) error {
 //	for _, tx := range block.Transactions {
 //		switch tx.GetMetadataType() {
@@ -1551,7 +1666,7 @@ func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
 //				txCustomToken := tx.(*transaction.TxCustomToken)
 //				voteAmount := txCustomToken.GetAmountOfVote()
 //				voteGOVBoardMetadata := txCustomToken.Metadata.(*metadata.VoteGOVBoardMetadata)
-//				err := blockchain.config.DataBase.AddVoteBoard(common.GOVBoard, GOVBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteGOVBoardMetadata.CandidatePaymentAddress, voteAmount)
+//				err := blockchain.config.DataBase.AddVoteBoard(common.GOVBoard, common.GOVBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteGOVBoardMetadata.CandidatePaymentAddress, voteAmount)
 //				if err != nil {
 //					return err
 //				}
@@ -1594,7 +1709,7 @@ func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
 //		switch tx.GetMetadataType() {
 //		case metadata.SealedLv3DCBVoteProposalMeta:
 //			underlieMetadata := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
-//			blockchain.config.DataBase.AddVoteLv3Proposal(common.DCBBoard, nextDCBConstitutionIndex, underlieMetadata.Hash())
+//			blockchain.config.DataBase.AddVoteLv3ProposalDB(common.DCBBoard, nextDCBConstitutionIndex, underlieMetadata.Hash())
 //		case metadata.SealedLv2DCBVoteProposalMeta:
 //			underlieMetadata := meta.(*metadata.SealedLv2DCBVoteProposalMetadata)
 //			blockchain.config.DataBase.AddVoteLv1or2Proposal(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
@@ -1603,17 +1718,17 @@ func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
 //			blockchain.config.DataBase.AddVoteLv1or2Proposal(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
 //		case metadata.NormalDCBVoteProposalFromOwnerMeta:
 //			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromOwnerMetadata)
-//			blockchain.config.DataBase.AddVoteNormalProposalFromOwner(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
+//			blockchain.config.DataBase.AddVoteNormalProposalFromOwnerDB(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
 //		case metadata.NormalDCBVoteProposalFromSealerMeta:
 //			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromSealerMetadata)
-//			blockchain.config.DataBase.AddVoteNormalProposalFromSealer(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
+//			blockchain.config.DataBase.AddNormalVoteProposalFromSealer(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
 //		case metadata.AcceptDCBProposalMeta:
 //			underlieMetadata := meta.(*metadata.AcceptDCBProposalMetadata)
 //			blockchain.config.DataBase.TakeVoteTokenFromWinner(common.DCBBoard, nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
 //			blockchain.config.DataBase.SetNewProposalWinningVoter(common.DCBBoard, nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
 //		case metadata.SealedLv3GOVVoteProposalMeta:
 //			underlieMetadata := meta.(*metadata.SealedLv3GOVVoteProposalMetadata)
-//			blockchain.config.DataBase.AddVoteLv3Proposal(common.GOVBoard, nextGOVConstitutionIndex, underlieMetadata.Hash())
+//			blockchain.config.DataBase.AddVoteLv3ProposalDB(common.GOVBoard, nextGOVConstitutionIndex, underlieMetadata.Hash())
 //		case metadata.SealedLv2GOVVoteProposalMeta:
 //			underlieMetadata := meta.(*metadata.SealedLv2GOVVoteProposalMetadata)
 //			blockchain.config.DataBase.AddVoteLv1or2Proposal(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
@@ -1622,10 +1737,10 @@ func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
 //			blockchain.config.DataBase.AddVoteLv1or2Proposal(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
 //		case metadata.NormalGOVVoteProposalFromOwnerMeta:
 //			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromOwnerMetadata)
-//			blockchain.config.DataBase.AddVoteNormalProposalFromOwner(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
+//			blockchain.config.DataBase.AddVoteNormalProposalFromOwnerDB(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
 //		case metadata.NormalGOVVoteProposalFromSealerMeta:
 //			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromSealerMetadata)
-//			blockchain.config.DataBase.AddVoteNormalProposalFromSealer(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
+//			blockchain.config.DataBase.AddNormalVoteProposalFromSealer(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
 //		case metadata.AcceptGOVProposalMeta:
 //			underlieMetadata := meta.(*metadata.AcceptGOVProposalMetadata)
 //			blockchain.config.DataBase.TakeVoteTokenFromWinner(common.GOVBoard, nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
@@ -1637,7 +1752,7 @@ func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
 //
 //func (blockchain *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 //	// Temp storage to update crowdsale data
-//	saleDataMap := make(map[string]*params.SaleData)
+//	saleDataMap := make(map[string]*component.SaleData)
 //
 //	for _, tx := range block.Transactions {
 //		switch tx.GetMetadataType() {

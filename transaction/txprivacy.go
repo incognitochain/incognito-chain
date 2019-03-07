@@ -43,6 +43,14 @@ type Tx struct {
 	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
 }
 
+func (tx *Tx) GetAmountOfVote() (uint64, error) {
+	return 0, errors.New("wrong type of tx")
+}
+
+func (tx *Tx) GetVoterPaymentAddress() (*privacy.PaymentAddress, error) {
+	return nil, errors.New("wrong type of tx")
+}
+
 func (tx *Tx) UnmarshalJSON(data []byte) error {
 	type Alias Tx
 	temp := &struct {
@@ -386,9 +394,9 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
-// - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	//hasPrivacy = false
+	fmt.Println("&&&&&&&&&&&&&&&&&&&&&&&&&&& 1")
 	Logger.log.Debugf("[db] Validating Transaction tx\n")
 	Logger.log.Infof("VALIDATING TX........\n")
 	start := time.Now()
@@ -429,7 +437,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 	}
 
-	Logger.log.Infof("[db]tx.Proof: %+v\n", tx.Proof)
+	// Logger.log.Infof("[db]tx.Proof: %+v\n", tx.Proof)
 	if tx.Proof != nil {
 		if tokenID == nil {
 			tokenID = &common.Hash{}
@@ -459,7 +467,6 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			for i := 0; i < len(tx.Proof.InputCoins); i++ {
 				ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, shardID, tokenID)
 				if !ok || err != nil {
-					Logger.log.Infof("[db]cm existed: %d\n", i)
 					return false
 				}
 			}
@@ -679,8 +686,8 @@ func (tx *Tx) ValidateTxWithBlockChain(
 	if tx.GetType() == common.TxSalaryType {
 		return nil
 	}
-	fmt.Printf("[db] validating tx with blockchain tx level\n")
 	if tx.Metadata != nil {
+		fmt.Printf("[db] validating tx with blockchain metadata level: %d\n", tx.GetMetadataType())
 		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(tx, bcr, shardID, db)
 		if err != nil {
 			return err
@@ -711,7 +718,7 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 }
 
 func (tx *Tx) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
-	Logger.log.Info("Validating sanity data!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", tx.Metadata)
+	Logger.log.Info("Validating sanity data", tx.Metadata)
 	if tx.Metadata != nil {
 		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, tx)
 		if err != nil || !ok || !isContinued {
@@ -925,7 +932,6 @@ func (tx *Tx) InitTxSalary(
 func (tx Tx) ValidateTxSalary(
 	db database.DatabaseInterface,
 ) bool {
-	fmt.Printf("[db] validating tx salary: %s\n", tx.Hash())
 	// verify signature
 	valid, err := tx.verifySigTx()
 	if !valid {
@@ -953,4 +959,9 @@ func (tx Tx) ValidateTxSalary(
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(tx.Proof.OutputCoins[0].CoinDetails.Randomness))
 	return cmTmp.IsEqual(tx.Proof.OutputCoins[0].CoinDetails.CoinCommitment)
+}
+
+func (tx Tx) GetMetadataFromVinsTx(bcr metadata.BlockchainRetriever) (metadata.Metadata, error) {
+	// implement this func if needed
+	return nil, nil
 }

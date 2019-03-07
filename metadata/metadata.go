@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
@@ -72,6 +72,10 @@ func (mb *MetadataBase) BuildReqActions(tx Transaction, bcr BlockchainRetriever,
 	return [][]string{}, nil
 }
 
+func (mb *MetadataBase) ProcessWhenInsertBlockShard(tx Transaction, retriever BlockchainRetriever) error {
+	return nil
+}
+
 // TODO(@0xankylosaurus): move TxDesc to mempool DTO
 // This is tx struct which is really saved in tx mempool
 type TxDesc struct {
@@ -103,17 +107,18 @@ type BlockchainRetriever interface {
 	GetChainHeight(byte) uint64
 	GetBeaconHeight() uint64
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
-	GetDCBParams() params.DCBParams
-	GetBoardPubKeys(boardType byte) [][]byte
-	GetBoardPaymentAddress(boardType byte) []privacy.PaymentAddress
-	GetGOVParams() params.GOVParams
+	GetDCBParams() component.DCBParams
+	GetBoardPubKeys(boardType common.BoardType) [][]byte
+	GetBoardPaymentAddress(boardType common.BoardType) []privacy.PaymentAddress
+	GetGOVParams() component.GOVParams
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
-	GetOracleParams() *params.Oracle
-	GetConstitutionStartHeight(boardType byte, shardID byte) uint64
-	GetConstitutionEndHeight(boardType byte, shardID byte) uint64
-	GetCurrentBlockHeight(byte) uint64
-	GetBoardEndHeight(boardType byte, chainID byte) uint64
+	GetOracleParams() *component.Oracle
+	GetConstitutionStartHeight(boardType common.BoardType, shardID byte) uint64
+	GetConstitutionEndHeight(boardType common.BoardType, shardID byte) uint64
+	GetCurrentBeaconBlockHeight(byte) uint64
+	GetBoardEndHeight(boardType common.BoardType, chainID byte) uint64
 	GetAllCommitteeValidatorCandidate() (map[byte][]string, map[byte][]string, []string, []string, []string, []string, []string, []string)
+	GetDatabase() database.DatabaseInterface
 
 	// For validating loan metadata
 	// GetLoanTxs([]byte) ([][]byte, error)
@@ -123,12 +128,18 @@ type BlockchainRetriever interface {
 	GetNumberOfGOVGovernors() int
 	GetLoanPayment([]byte) (uint64, uint64, uint64, error)
 	GetLoanRequestMeta(loanID []byte) (*LoanRequest, error)
+	GetLoanWithdrawed(loanID []byte) (bool, error)
 
 	// For validating dividend
-	GetAmountPerAccount(*DividendProposal) (uint64, []string, []uint64, error)
+	GetLatestDividendProposal(bool) (uint64, uint64)
+	GetAmountPerAccount(*common.Hash) (uint64, []privacy.PaymentAddress, []uint64, error)
+	GetDividendReceiversForID(dividendID uint64, forDCB bool) ([]privacy.PaymentAddress, []uint64, bool, error)
 
 	// For validating crowdsale
-	GetCrowdsaleData([]byte) (*params.SaleData, error)
+	GetCrowdsaleData([]byte) (*component.SaleData, error)
+
+	// For validating reserve
+	GetAssetPrice(assetID *common.Hash) uint64
 
 	// For validating cmb
 	GetCMB([]byte) (privacy.PaymentAddress, []privacy.PaymentAddress, uint64, *common.Hash, uint8, uint64, error)
@@ -136,6 +147,9 @@ type BlockchainRetriever interface {
 	GetCMBResponse([]byte) ([][]byte, error)
 	GetDepositSend([]byte) ([]byte, error)
 	GetWithdrawRequest([]byte) ([]byte, uint8, error)
+	GetConstitution(boardType common.BoardType) ConstitutionInterface
+	UpdateDCBFund(transaction Transaction)
+	GetGovernor(boardType common.BoardType) GovernorInterface
 }
 
 // Interface for all types of metadata in tx
@@ -150,6 +164,7 @@ type Metadata interface {
 	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool
 	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
 	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
+	ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error
 	CalculateSize() uint64
 }
 
@@ -180,6 +195,7 @@ type Transaction interface {
 	GetSigPubKey() []byte
 	IsPrivacy() bool
 	IsCoinsBurning() bool
+	CalculateTxValue() uint64
 	GetProof() *zkp.PaymentProof
 
 	// Get receivers' data for tx
@@ -189,4 +205,8 @@ type Transaction interface {
 	// Get receivers' data for custom token tx (nil for normal tx)
 	GetTokenReceivers() ([][]byte, []uint64)
 	GetTokenUniqueReceiver() (bool, []byte, uint64)
+	GetAmountOfVote() (uint64, error)
+	GetVoterPaymentAddress() (*privacy.PaymentAddress, error)
+
+	GetMetadataFromVinsTx(BlockchainRetriever) (Metadata, error)
 }

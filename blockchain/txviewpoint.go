@@ -30,6 +30,9 @@ type TxViewPoint struct {
 	// data of privacy custom token
 	privacyCustomTokenViewPoint map[int32]*TxViewPoint
 	privacyCustomTokenTxs       map[int32]*transaction.TxCustomTokenPrivacy
+
+	//cross shard tx token
+	crossTxTokenData map[int32]*transaction.TxTokenData
 }
 
 /*
@@ -248,6 +251,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 				// acceptedSnD = append(acceptedSnD, snDs...)
 
 				// with custom token, we dont care light mode and store fully TODO sirrush
+				// indexTx is index of transaction in block
 				view.customTokenTxs[int32(indexTx)] = tx
 			}
 		case common.TxCustomTokenPrivacyType:
@@ -344,16 +348,16 @@ Create a TxNormal view point, which contains data about nullifiers and commitmen
 */
 func NewTxViewPoint(shardID byte) *TxViewPoint {
 	result := &TxViewPoint{
-		shardID:           shardID,
-		listSerialNumbers: make([][]byte, 0),
-		mapCommitments:    make(map[string][][]byte),
-		mapOutputCoins:    make(map[string][]privacy.OutputCoin),
-		mapSnD:            make(map[string][]big.Int, 0),
-		// listSnD:                     make([]big.Int, 0),
+		shardID:                     shardID,
+		listSerialNumbers:           make([][]byte, 0),
+		mapCommitments:              make(map[string][][]byte),
+		mapOutputCoins:              make(map[string][]privacy.OutputCoin),
+		mapSnD:                      make(map[string][]big.Int, 0),
 		customTokenTxs:              make(map[int32]*transaction.TxCustomToken),
 		tokenID:                     &common.Hash{},
 		privacyCustomTokenViewPoint: make(map[int32]*TxViewPoint),
 		privacyCustomTokenTxs:       make(map[int32]*transaction.TxCustomTokenPrivacy),
+		crossTxTokenData:            make(map[int32]*transaction.TxTokenData),
 	}
 	result.tokenID.SetBytes(common.ConstantID[:])
 	return result
@@ -478,5 +482,10 @@ func (view *TxViewPoint) fetchCrossOutputViewPointFromBlock(db database.Database
 		view.mapSnD = acceptedSnD
 		// view.listSnD = acceptedSnD
 	}
+	return nil
+}
+
+func (view *TxViewPoint) fetchCrossTxTokenDataViewPointFromBlock(db database.DatabaseInterface, block *ShardBlock, localWallet *wallet.Wallet) error {
+
 	return nil
 }

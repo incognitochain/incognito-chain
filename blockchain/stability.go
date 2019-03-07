@@ -1,122 +1,156 @@
 package blockchain
 
 import (
-	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata/fromshardins"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
-	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/metadata/frombeaconins"
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/pkg/errors"
 )
 
-func buildInstructionsForBuyBondsFromGOVReq(
-	shardID byte,
-	contentStr string,
-	beaconBestState *BestStateBeacon,
-	accumulativeValues *accumulativeValues,
-) ([][]string, error) {
-	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		return [][]string{}, err
-	}
-	buyBondsFromGOVActionContent := map[string]interface{}{}
-	err = json.Unmarshal(contentBytes, &buyBondsFromGOVActionContent)
-	if err != nil {
-		return nil, err
-	}
-	md, ok := buyBondsFromGOVActionContent["meta"].(metadata.BuySellRequest)
-	if !ok {
-		return nil, errors.New("Could not parse BuySellRequest metadata.")
-	}
-
-	instructions := [][]string{}
-	stabilityInfo := beaconBestState.StabilityInfo
-	sellingBondsParams := stabilityInfo.GOVConstitution.GOVParams.SellingBonds
-	bestBlockHeight := beaconBestState.BestBlock.Header.Height
-	instType := ""
-	if (sellingBondsParams == nil) ||
-		(bestBlockHeight+1 < sellingBondsParams.StartSellingAt) ||
-		(bestBlockHeight+1 > sellingBondsParams.StartSellingAt+sellingBondsParams.SellingWithin) ||
-		(accumulativeValues.bondsSold+md.Amount > sellingBondsParams.BondsToSell) {
-		instType = "refund"
-	} else {
-		accumulativeValues.incomeFromBonds += (md.Amount + md.BuyPrice)
-		accumulativeValues.bondsSold += md.Amount
-		instType = "accepted"
-	}
-	sellingBondsParamsBytes, err := json.Marshal(sellingBondsParams)
-	if err != nil {
-		return nil, err
-	}
-	returnedInst := []string{
-		strconv.Itoa(metadata.BuyFromGOVRequestMeta),
-		strconv.Itoa(int(shardID)),
-		instType,
-		contentStr,
-		string(sellingBondsParamsBytes),
-	}
-	instructions = append(instructions, returnedInst)
-	return instructions, nil
+type accumulativeValues struct {
+	bondsSold            uint64
+	govTokensSold        uint64
+	incomeFromBonds      uint64
+	incomeFromGOVTokens  uint64
+	dcbTokensSoldByUSD   uint64
+	dcbTokensSoldByETH   uint64
+	constantsBurnedByETH uint64
+	buyBackCoins         uint64
+	totalFee             uint64
+	totalSalary          uint64
+	totalRefundAmt       uint64
+	totalOracleRewards   uint64
+	saleDataMap          map[string]*component.SaleData
 }
 
-func buildInstructionsForBuyGOVTokensReq(
-	shardID byte,
-	contentStr string,
+func isGOVFundEnough(
 	beaconBestState *BestStateBeacon,
 	accumulativeValues *accumulativeValues,
-) ([][]string, error) {
-	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		return [][]string{}, err
-	}
-	buyGOVTokensActionContent := map[string]interface{}{}
-	err = json.Unmarshal(contentBytes, &buyGOVTokensActionContent)
-	if err != nil {
-		return nil, err
-	}
-	md, ok := buyGOVTokensActionContent["meta"].(metadata.BuyGOVTokenRequest)
-	if !ok {
-		return nil, errors.New("Could not parse BuyGOVTokenRequest metadata.")
+	expense uint64,
+) bool {
+	govFund := beaconBestState.StabilityInfo.SalaryFund
+	income := accumulativeValues.incomeFromBonds + accumulativeValues.incomeFromGOVTokens + accumulativeValues.totalFee
+	totalExpensed := accumulativeValues.buyBackCoins + accumulativeValues.totalSalary + accumulativeValues.totalRefundAmt + accumulativeValues.totalOracleRewards
+	return (govFund + income - expense - totalExpensed) > 0
+}
+
+// build actions from txs and ins at shard
+func buildStabilityActions(
+	txs []metadata.Transaction,
+	bc *BlockChain,
+	shardID byte,
+	producerAddress *privacy.PaymentAddress,
+	shardBlockHeight uint64,
+	beaconBlocks []*BeaconBlock,
+) [][]string {
+	actions := [][]string{}
+	for _, tx := range txs {
+		meta := tx.GetMetadata()
+		if meta != nil {
+			actionPairs, err := meta.BuildReqActions(tx, bc, shardID)
+			if err != nil {
+				continue
+			}
+			actions = append(actions, actionPairs...)
+		}
 	}
 
-	instructions := [][]string{}
-	stabilityInfo := beaconBestState.StabilityInfo
-	sellingGOVTokensParams := stabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens
-	bestBlockHeight := beaconBestState.BestBlock.Header.Height
-	instType := ""
-	if (sellingGOVTokensParams == nil) ||
-		(bestBlockHeight+1 < sellingGOVTokensParams.StartSellingAt) ||
-		(bestBlockHeight+1 > sellingGOVTokensParams.StartSellingAt+sellingGOVTokensParams.SellingWithin) ||
-		(accumulativeValues.govTokensSold+md.Amount > sellingGOVTokensParams.GOVTokensToSell) {
-		instType = "refund"
-	} else {
-		accumulativeValues.incomeFromGOVTokens += (md.Amount + md.BuyPrice)
-		accumulativeValues.govTokensSold += md.Amount
-		instType = "accepted"
+	// build salary update action
+	totalFee := getShardBlockFee(txs)
+	totalSalary := getShardBlockSalary(txs, bc.BestState.Beacon)
+	if totalFee != 0 || totalSalary != 0 {
+		salaryUpdateActions, _ := createShardBlockSalaryUpdateAction(totalSalary, totalFee, producerAddress, shardBlockHeight)
+		actions = append(actions, salaryUpdateActions...)
 	}
-	returnedInst := []string{
-		strconv.Itoa(metadata.BuyGOVTokenRequestMeta),
-		strconv.Itoa(int(shardID)),
-		instType,
-		contentStr,
+
+	//Add response instruction
+	for _, beaconBlock := range beaconBlocks {
+		for _, l := range beaconBlock.Body.Instructions {
+
+			shardToProcess, err := strconv.Atoi(l[1])
+			if err != nil {
+				panic("err")
+				return nil
+			}
+			if shardToProcess == int(shardID) {
+				metaType, err := strconv.Atoi(l[0])
+				if err != nil {
+					panic("err")
+					return nil
+				}
+				var newIns []string
+				switch metaType {
+				case component.AcceptDCBProposalIns:
+					acceptProposalIns := frombeaconins.AcceptProposalIns{}
+					err := json.Unmarshal([]byte(l[2]), &acceptProposalIns)
+					if err != nil {
+						panic(err)
+					}
+					txID := acceptProposalIns.TxID
+					_, _, _, txProposal, err := bc.GetTransactionByHash(&txID)
+					metaProposal := txProposal.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
+					newIns, err = fromshardins.NewNewDCBConstitutionIns(
+						metaProposal.SubmitProposalInfo,
+						metaProposal.DCBParams,
+						acceptProposalIns.Voter,
+					).GetStringFormat()
+					if err != nil {
+						panic(err)
+					}
+				case component.AcceptGOVProposalIns:
+					acceptProposalIns := frombeaconins.AcceptProposalIns{}
+					err := json.Unmarshal([]byte(l[2]), &acceptProposalIns)
+					if err != nil {
+						panic(err)
+					}
+					txID := acceptProposalIns.TxID
+					_, _, _, txProposal, err := bc.GetTransactionByHash(&txID)
+					metaProposal := txProposal.GetMetadata().(*metadata.SubmitGOVProposalMetadata)
+					if err != nil {
+						panic(err)
+					}
+					newIns, err = fromshardins.NewNewGOVConstitutionIns(
+						metaProposal.SubmitProposalInfo,
+						metaProposal.GOVParams,
+						acceptProposalIns.Voter,
+					).GetStringFormat()
+					if err != nil {
+						panic(err)
+					}
+				}
+				actions = append(actions, newIns)
+			}
+		}
 	}
-	instructions = append(instructions, returnedInst)
-	return instructions, nil
+
+	return actions
 }
 
 // build instructions at beacon chain before syncing to shards
-func buildStabilityInstructions(
+func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 	shardID byte,
 	shardBlockInstructions [][]string,
 	beaconBestState *BestStateBeacon,
 	accumulativeValues *accumulativeValues,
 ) ([][]string, error) {
 	instructions := [][]string{}
+	//Add Voting instruction
+	votingInstruction, err := blkTmpGen.chain.generateVotingInstructionWOIns(0)
+	if err != nil {
+		return nil, NewBlockChainError(BeaconError, err)
+	}
+	instructions = append(instructions, votingInstruction...)
+
 	for _, inst := range shardBlockInstructions {
+		fmt.Printf("[db] beaconProducer found inst: %s\n", inst[0])
 		// TODO: will improve the condition later
 		if inst[0] == "stake" || inst[0] == "swap" || inst[0] == "random" {
 			continue
@@ -126,54 +160,96 @@ func buildStabilityInstructions(
 			return [][]string{}, err
 		}
 		contentStr := inst[1]
+		newInst := [][]string{}
 		switch metaType {
+		case metadata.LoanRequestMeta, metadata.LoanResponseMeta, metadata.LoanWithdrawMeta, metadata.LoanPaymentMeta, metadata.DividendSubmitMeta:
+			newInst, err = buildPassThroughInstruction(metaType, contentStr)
+
 		case metadata.BuyFromGOVRequestMeta:
-			buyBondsInst, err := buildInstructionsForBuyBondsFromGOVReq(shardID, contentStr, beaconBestState, accumulativeValues)
-			if err != nil {
-				return [][]string{}, err
-			}
-			instructions = append(instructions, buyBondsInst...)
+			newInst, err = buildInstructionsForBuyBondsFromGOVReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
 		case metadata.BuyGOVTokenRequestMeta:
-			buyGOVTokensInst, err := buildInstructionsForBuyGOVTokensReq(shardID, contentStr, beaconBestState, accumulativeValues)
-			if err != nil {
-				return [][]string{}, err
-			}
-			instructions = append(instructions, buyGOVTokensInst...)
+			newInst, err = buildInstructionsForBuyGOVTokensReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
 		case metadata.CrowdsaleRequestMeta:
-			saleInst, err := buildInstructionsForCrowdsaleRequest(shardID, contentStr, beaconBestState, accumulativeValues)
-			if err != nil {
-				return [][]string{}, err
-			}
-			instructions = append(instructions, saleInst...)
+			newInst, err = buildInstructionsForCrowdsaleRequest(shardID, contentStr, beaconBestState, accumulativeValues)
 
+		case metadata.BuyBackRequestMeta:
+			newInst, err = buildInstructionsForBuyBackBondsReq(shardID, contentStr, beaconBestState, accumulativeValues, blkTmpGen.chain)
+
+		case metadata.IssuingRequestMeta:
+			newInst, err = buildInstructionsForIssuingReq(shardID, contentStr, beaconBestState, accumulativeValues)
+
+		case metadata.ContractingRequestMeta:
+			newInst, err = buildInstructionsForContractingReq(shardID, contentStr, beaconBestState, accumulativeValues)
+
+		case metadata.ShardBlockSalaryRequestMeta:
+			newInst, err = buildInstForShardBlockSalaryReq(shardID, contentStr, beaconBestState, accumulativeValues)
+
+		case component.NewDCBConstitutionIns:
+			newInst, err = buildUpdateConstitutionIns(inst[2], common.DCBBoard)
+
+		case component.NewGOVConstitutionIns:
+			newInst, err = buildUpdateConstitutionIns(inst[2], common.GOVBoard)
+
+		case component.VoteDCBBoardIns:
+			err = blkTmpGen.chain.AddVoteDCBBoard(inst[2])
+
+		case component.VoteGOVBoardIns:
+			err = blkTmpGen.chain.AddVoteDCBBoard(inst[2])
+
+		case component.SealedLv1Or2VoteProposalIns:
+			err = blkTmpGen.chain.AddVoteLv1or2Proposal(inst[2])
+		case component.SealedLv3VoteProposalIns:
+			err = blkTmpGen.chain.AddVoteLv3Proposal(inst[2])
+		case component.NormalVoteProposalFromSealerIns:
+			err = blkTmpGen.chain.AddNormalVoteProposalFromSealer(inst[2])
+		case component.NormalVoteProposalFromOwnerIns:
+			err = blkTmpGen.chain.AddNormalVoteProposalFromOwner(inst[2])
+		case component.PunishDecryptIns:
+			// todo @0xjackalope
 		default:
 			continue
 		}
+		if err != nil {
+			return [][]string{}, err
+		}
+		instructions = append(instructions, newInst...)
 	}
-	// update params in beststate
-	updateParamsFromBeaconBestState(beaconBestState, accumulativeValues)
+	// update component in beststate
 	return instructions, nil
 }
 
-func updateParamsFromBeaconBestState(
-	beaconBestState *BestStateBeacon,
-	accumulativeValues *accumulativeValues,
-) {
-	beaconBestState.StabilityInfo.SalaryFund += (accumulativeValues.incomeFromBonds + accumulativeValues.incomeFromGOVTokens)
-	if beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SellingBonds != nil {
-		beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= accumulativeValues.bondsSold
+func buildUpdateConstitutionIns(inst string, boardType common.BoardType) ([][]string, error) {
+	var newInst []string
+	if boardType == common.DCBBoard {
+		newConstitutionIns, err := fromshardins.NewNewDCBConstitutionInsFromStr(inst)
+		if err != nil {
+			return nil, err
+		}
+		newInst, err = frombeaconins.NewUpdateDCBConstitutionIns(
+			newConstitutionIns.SubmitProposalInfo,
+			newConstitutionIns.DCBParams,
+			newConstitutionIns.Voter,
+		).GetStringFormat()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		newConstitutionIns, err := fromshardins.NewNewGOVConstitutionInsFromStr(inst)
+		if err != nil {
+			return nil, err
+		}
+		newInst, err = frombeaconins.NewUpdateGOVConstitutionIns(
+			newConstitutionIns.SubmitProposalInfo,
+			newConstitutionIns.GOVParams,
+			newConstitutionIns.Voter,
+		).GetStringFormat()
+		if err != nil {
+			return nil, err
+		}
 	}
-	if beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens != nil {
-		beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens.GOVTokensToSell -= accumulativeValues.govTokensSold
-	}
-
-	// reset gov values
-	accumulativeValues.govTokensSold = 0
-	accumulativeValues.bondsSold = 0
-	accumulativeValues.incomeFromBonds = 0
-	accumulativeValues.incomeFromGOVTokens = 0
+	return [][]string{newInst}, nil
 }
 
 func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, producerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
@@ -196,151 +272,17 @@ func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, p
 	if err != nil {
 		return nil, errors.Errorf("Error building unlock tx for loan id %x", withdrawMeta.LoanID)
 	}
+	fmt.Printf("[db] success build LoanUnlock with amount %d\n", meta.LoanAmount)
 	return txNormals[0], nil
 }
 
-func (blockgen *BlkTmplGenerator) buildBuyGOVTokensRes(
-	instType string,
-	contentStr string,
-	blkProducerPrivateKey *privacy.SpendingKey,
+func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
+	beaconBlocks []*BeaconBlock,
+	producerPrivateKey *privacy.SpendingKey,
+	shardID byte,
 ) ([]metadata.Transaction, error) {
-	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		return nil, err
-	}
-	buyGOVTokensActionContent := map[string]interface{}{}
-	err = json.Unmarshal(contentBytes, &buyGOVTokensActionContent)
-	if err != nil {
-		return nil, err
-	}
-	txReqID := buyGOVTokensActionContent["txReqId"].(common.Hash)
-	reqMeta := buyGOVTokensActionContent["meta"].(metadata.BuyGOVTokenRequest)
-	if instType == "refund" {
-		refundMeta := metadata.NewResponseBase(txReqID, metadata.ResponseBaseMeta)
-		refundTx := new(transaction.Tx)
-		err := refundTx.InitTxSalary(
-			reqMeta.Amount*reqMeta.BuyPrice,
-			&reqMeta.BuyerAddress,
-			blkProducerPrivateKey,
-			blockgen.chain.config.DataBase,
-			nil,
-		)
-		if err != nil {
-			Logger.log.Error(err)
-			return nil, err
-		}
-		refundTx.SetMetadata(refundMeta)
-		return []metadata.Transaction{refundTx}, nil
-	} else if instType == "accepted" {
-		govTokenID := reqMeta.TokenID
-		buyGOVTokensRes := metadata.NewResponseBase(txReqID, metadata.ResponseBaseMeta)
-		txTokenVout := transaction.TxTokenVout{
-			Value:          reqMeta.Amount,
-			PaymentAddress: reqMeta.BuyerAddress,
-		}
-		var propertyID [common.HashSize]byte
-		copy(propertyID[:], govTokenID[:])
-		txTokenData := transaction.TxTokenData{
-			Type:       transaction.CustomTokenInit,
-			Mintable:   true,
-			Amount:     reqMeta.Amount,
-			PropertyID: common.Hash(propertyID),
-			Vins:       []transaction.TxTokenVin{},
-			Vouts:      []transaction.TxTokenVout{txTokenVout},
-		}
-		txTokenData.PropertyName = txTokenData.PropertyID.String()
-		txTokenData.PropertySymbol = txTokenData.PropertyID.String()
-
-		resTx := &transaction.TxCustomToken{
-			TxTokenData: txTokenData,
-		}
-		resTx.Type = common.TxCustomTokenType
-		resTx.SetMetadata(buyGOVTokensRes)
-		return []metadata.Transaction{resTx}, nil
-	}
-	return []metadata.Transaction{}, nil
-}
-
-func (blockgen *BlkTmplGenerator) buildBuyBondsFromGOVRes(
-	instType string,
-	contentStr string,
-	sellingBondsParamsStr string,
-	blkProducerPrivateKey *privacy.SpendingKey,
-) ([]metadata.Transaction, error) {
-	sellingBondsParamsBytes := []byte(sellingBondsParamsStr)
-	var sellingBondsParams params.SellingBonds
-	err := json.Unmarshal(sellingBondsParamsBytes, &sellingBondsParams)
-	if err != nil {
-		return nil, err
-	}
-
-	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		return nil, err
-	}
-	buyBondsFromGOVActionContent := map[string]interface{}{}
-	err = json.Unmarshal(contentBytes, &buyBondsFromGOVActionContent)
-	if err != nil {
-		return nil, err
-	}
-	txReqID := buyBondsFromGOVActionContent["txReqId"].(common.Hash)
-	reqMeta := buyBondsFromGOVActionContent["meta"].(metadata.BuySellRequest)
-	if instType == "refund" {
-		refundMeta := metadata.NewResponseBase(txReqID, metadata.ResponseBaseMeta)
-		refundTx := new(transaction.Tx)
-		err := refundTx.InitTxSalary(
-			reqMeta.Amount*reqMeta.BuyPrice,
-			&reqMeta.PaymentAddress,
-			blkProducerPrivateKey,
-			blockgen.chain.config.DataBase,
-			nil,
-		)
-		if err != nil {
-			Logger.log.Error(err)
-			return nil, err
-		}
-		refundTx.SetMetadata(refundMeta)
-		return []metadata.Transaction{refundTx}, nil
-	} else if instType == "accepted" {
-		bondID := reqMeta.TokenID
-		buySellRes := metadata.NewBuySellResponse(
-			txReqID,
-			sellingBondsParams.StartSellingAt,
-			sellingBondsParams.Maturity,
-			sellingBondsParams.BuyBackPrice,
-			bondID[:],
-			metadata.BuyFromGOVResponseMeta,
-		)
-		txTokenVout := transaction.TxTokenVout{
-			Value:          reqMeta.Amount,
-			PaymentAddress: reqMeta.PaymentAddress,
-		}
-		var propertyID [common.HashSize]byte
-		copy(propertyID[:], bondID[:])
-		txTokenData := transaction.TxTokenData{
-			Type:       transaction.CustomTokenInit,
-			Mintable:   true,
-			Amount:     reqMeta.Amount,
-			PropertyID: common.Hash(propertyID),
-			Vins:       []transaction.TxTokenVin{},
-			Vouts:      []transaction.TxTokenVout{txTokenVout},
-		}
-		txTokenData.PropertyName = txTokenData.PropertyID.String()
-		txTokenData.PropertySymbol = txTokenData.PropertyID.String()
-
-		resTx := &transaction.TxCustomToken{
-			TxTokenData: txTokenData,
-		}
-		resTx.Type = common.TxCustomTokenType
-		resTx.SetMetadata(buySellRes)
-		return []metadata.Transaction{resTx}, nil
-	}
-	return []metadata.Transaction{}, nil
-}
-
-func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.SpendingKey, shardID byte) ([]metadata.Transaction, error) {
 	// TODO(@0xbunyip): refund bonds in multiple blocks since many refund instructions might come at once and UTXO picking order is not perfect
-	unspentTokenMap := map[string]([]transaction.TxTokenVout){}
+	unspentTokens := map[string]([]transaction.TxTokenVout){}
 	resTxs := []metadata.Transaction{}
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
@@ -357,13 +299,14 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(beac
 				if err != nil {
 					return nil, err
 				}
+				fmt.Printf("[db] shard build Resp from inst: %+v\n", l)
 				switch metaType {
 				case metadata.CrowdsalePaymentMeta:
 					paymentInst, err := ParseCrowdsalePaymentInstruction(l[2])
 					if err != nil {
 						return nil, err
 					}
-					tx, err := blockgen.buildPaymentForCrowdsale(paymentInst, unspentTokenMap, producerPrivateKey)
+					tx, err := blockgen.buildPaymentForCrowdsale(paymentInst, unspentTokens, producerPrivateKey)
 					if err != nil {
 						return nil, err
 					}
@@ -385,6 +328,83 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(beac
 						return nil, err
 					}
 					resTxs = append(resTxs, txs...)
+
+				case metadata.BuyBackRequestMeta:
+					buyBackInfoStr := l[3]
+					txs, err := blockgen.buildBuyBackRes(l[2], buyBackInfoStr, producerPrivateKey)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, txs...)
+
+				case metadata.SendBackTokenVoteFailMeta:
+					sendBackTokenVoteFail := frombeaconins.TxSendBackTokenVoteFailIns{}
+					err := json.Unmarshal([]byte(l[2]), &sendBackTokenVoteFail)
+					if err != nil {
+						return nil, err
+					}
+					txs, err := sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, txs)
+				case metadata.SendInitDCBVoteTokenMeta:
+					sendInitDCBVoteToken := frombeaconins.TxSendInitDCBVoteTokenMetadataIns{}
+					err := json.Unmarshal([]byte(l[2]), &sendInitDCBVoteToken)
+					if err != nil {
+						return nil, err
+					}
+					txs, err := sendInitDCBVoteToken.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, txs)
+				case metadata.SendInitGOVVoteTokenMeta:
+					sendInitGOVVoteToken := frombeaconins.TxSendInitGOVVoteTokenMetadataIns{}
+					err := json.Unmarshal([]byte(l[2]), &sendInitGOVVoteToken)
+					if err != nil {
+						return nil, err
+					}
+					txs, err := sendInitGOVVoteToken.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, txs)
+				case metadata.ShareRewardOldDCBBoardMeta, metadata.ShareRewardOldGOVBoardMeta:
+					shareRewardOldBoard := frombeaconins.TxShareRewardOldBoardMetadataIns{}
+					err := json.Unmarshal([]byte(l[2]), &shareRewardOldBoard)
+					if err != nil {
+						return nil, err
+					}
+					txs, err := shareRewardOldBoard.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, txs)
+
+				case metadata.IssuingRequestMeta:
+					issuingInfoStr := l[3]
+					txs, err := blockgen.buildIssuingRes(l[2], issuingInfoStr, producerPrivateKey)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, txs...)
+
+				case metadata.ContractingRequestMeta:
+					contractingInfoStr := l[3]
+					txs, err := blockgen.buildContractingRes(l[2], contractingInfoStr, producerPrivateKey)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, txs...)
+
+				case metadata.ShardBlockSalaryRequestMeta:
+					salaryReqInfoStr := l[3]
+					txs, err := blockgen.buildSalaryRes(l[2], salaryReqInfoStr, producerPrivateKey)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, txs...)
 				}
 			}
 		}
@@ -395,6 +415,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(beac
 func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []metadata.Transaction, producerPrivateKey *privacy.SpendingKey) ([]metadata.Transaction, error) {
 	respTxs := []metadata.Transaction{}
 	removeIds := []int{}
+	multisigsRegTxs := []metadata.Transaction{}
 	for i, tx := range txs {
 		var respTx metadata.Transaction
 		var err error
@@ -402,6 +423,8 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []met
 		switch tx.GetMetadataType() {
 		case metadata.LoanWithdrawMeta:
 			respTx, err = blockgen.buildLoanResponseTx(tx, producerPrivateKey)
+		case metadata.MultiSigsRegistrationMeta:
+			multisigsRegTxs = append(multisigsRegTxs, tx)
 		}
 
 		if err != nil {
@@ -412,8 +435,122 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []met
 		}
 	}
 
+	err := blockgen.registerMultiSigsAddresses(multisigsRegTxs)
+	if err != nil {
+		return nil, err
+	}
+
 	// TODO(@0xbunyip): remove tx from txsToAdd?
 	return respTxs, nil
+}
+
+func (chain *BlockChain) AddVoteDCBBoard(inst string) error {
+	newInst, err := fromshardins.NewVoteDCBBoardInsFromStr(inst)
+	if err != nil {
+		return err
+	}
+
+	boardType := common.DCBBoard
+	voteAmount := newInst.AmountOfVote
+	voterPayment := newInst.VoterPaymentAddress
+	governor := chain.GetGovernor(boardType)
+	boardIndex := governor.GetBoardIndex() + 1
+	err1 := chain.GetDatabase().AddVoteBoard(
+		boardType,
+		boardIndex,
+		voterPayment,
+		newInst.CandidatePaymentAddress,
+		voteAmount,
+	)
+	if err1 != nil {
+		return err1
+	}
+	return nil
+}
+
+func (chain *BlockChain) AddVoteGOVBoard(inst string) error {
+	newInst, err := fromshardins.NewVoteGOVBoardInsFromStr(inst)
+	if err != nil {
+		return err
+	}
+
+	boardType := common.GOVBoard
+	voteAmount := newInst.AmountOfVote
+	voterPayment := newInst.VoterPaymentAddress
+	governor := chain.GetGovernor(boardType)
+	boardIndex := governor.GetBoardIndex() + 1
+	err1 := chain.GetDatabase().AddVoteBoard(
+		boardType,
+		boardIndex,
+		voterPayment,
+		newInst.CandidatePaymentAddress,
+		voteAmount,
+	)
+	if err1 != nil {
+		return err1
+	}
+	return nil
+}
+
+func (chain *BlockChain) AddVoteLv1or2Proposal(inst string) error {
+	newInst, err := fromshardins.NewSealedLv1Or2VoteProposalInsFromStr(inst)
+	boardType := newInst.BoardType
+	if err != nil {
+		return err
+	}
+
+	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
+	err = chain.GetDatabase().AddVoteLv1or2ProposalDB(boardType, nextConstitutionIndex, &newInst.Lv3TxID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (chain *BlockChain) AddVoteLv3Proposal(inst string) error {
+	newInst, err := fromshardins.NewSealedLv3VoteProposalInsFromStr(inst)
+	boardType := newInst.BoardType
+
+	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
+	err = chain.GetDatabase().AddVoteLv3ProposalDB(boardType, nextConstitutionIndex, &newInst.Lv3TxID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (chain *BlockChain) AddNormalVoteProposalFromSealer(inst string) error {
+	newInst, err := fromshardins.NewNormalVoteProposalFromSealerInsFromStr(inst)
+	boardType := newInst.BoardType
+
+	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
+	err = chain.GetDatabase().AddVoteNormalProposalFromSealerDB(
+		boardType,
+		nextConstitutionIndex,
+		&newInst.Lv3TxID,
+		newInst.VoteProposal.ToBytes(),
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (chain *BlockChain) AddNormalVoteProposalFromOwner(inst string) error {
+	newInst, err := fromshardins.NewNormalVoteProposalFromOwnerInsFromStr(inst)
+	boardType := newInst.BoardType
+
+	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
+	err = chain.GetDatabase().AddVoteNormalProposalFromOwnerDB(
+		boardType,
+		nextConstitutionIndex,
+		&newInst.Lv3TxID,
+		newInst.VoteProposal.ToBytes(),
+	)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // func (blockgen *BlkTmplGenerator) buildIssuingResTxs(
@@ -637,7 +774,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []met
 // // the tx is to distribute tokens (bond, gov, ...) to token requesters
 // func (blockgen *BlkTmplGenerator) buildBuySellResponsesTx(
 // 	buySellReqTxs []metadata.Transaction,
-// 	sellingBondsParam *params.SellingBonds,
+// 	sellingBondsParam *component.SellingBonds,
 // ) ([]metadata.Transaction, error) {
 // 	if len(buySellReqTxs) == 0 {
 // 		return []metadata.Transaction{}, nil
@@ -655,7 +792,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []met
 
 // func buildSingleBuySellResponseTx(
 // 	buySellReqTx metadata.Transaction,
-// 	sellingBondsParam *params.SellingBonds,
+// 	sellingBondsParam *component.SellingBonds,
 // ) (*transaction.TxCustomToken, error) {
 // 	bondID := sellingBondsParam.GetID()
 // 	buySellRes := metadata.NewBuySellResponse(
@@ -700,7 +837,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []met
 
 // func buildSingleBuyGOVTokensResTx(
 // 	buyGOVTokensReqTx metadata.Transaction,
-// 	sellingGOVTokensParams *params.SellingGOVTokens,
+// 	sellingGOVTokensParams *component.SellingGOVTokens,
 // ) (*transaction.TxCustomToken, error) {
 // 	buyGOVTokensRes := metadata.NewResponseBase(
 // 		*buyGOVTokensReqTx.Hash(),
@@ -740,7 +877,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []met
 
 // func (blockgen *BlkTmplGenerator) buildBuyGOVTokensResTxs(
 // 	buyGOVTokensReqTxs []metadata.Transaction,
-// 	sellingGOVTokensParams *params.SellingGOVTokens,
+// 	sellingGOVTokensParams *component.SellingGOVTokens,
 // ) ([]metadata.Transaction, error) {
 // 	if len(buyGOVTokensReqTxs) == 0 {
 // 		return []metadata.Transaction{}, nil

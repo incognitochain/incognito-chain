@@ -1,33 +1,12 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
-	"strconv"
-
-	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy"
 )
-
-type Voter struct {
-	PaymentAddress privacy.PaymentAddress
-	AmountOfVote   int32
-}
-
-func (voter *Voter) Greater(voter2 Voter) bool {
-	return voter.AmountOfVote > voter2.AmountOfVote ||
-		(voter.AmountOfVote == voter2.AmountOfVote && bytes.Compare(voter.PaymentAddress.Bytes(), voter2.PaymentAddress.Bytes()) > 0)
-}
-
-func (voter *Voter) Hash() *common.Hash {
-	record := string(voter.PaymentAddress.String())
-	record += string(voter.AmountOfVote)
-	hash := common.DoubleHashH([]byte(record))
-	return &hash
-}
 
 type ProposalVote struct {
 	TxId         common.Hash
@@ -41,22 +20,32 @@ func (proposalVote ProposalVote) Greater(proposalVote2 ProposalVote) bool {
 		(proposalVote.AmountOfVote == proposalVote2.AmountOfVote && proposalVote.NumberOfVote == proposalVote2.NumberOfVote && string(proposalVote.TxId.GetBytes()) > string(proposalVote2.TxId.GetBytes()))
 }
 
+type AcceptProposalMetadata struct {
+	ProposalTXID common.Hash
+	Voter        component.Voter
+}
+
+func (acceptProposalMetadata *AcceptProposalMetadata) ToBytes() []byte {
+	record := string(acceptProposalMetadata.ProposalTXID.GetBytes())
+	record += string(acceptProposalMetadata.Voter.ToBytes())
+	return []byte(record)
+}
+
+func NewAcceptProposalMetadata(DCBProposalTXID common.Hash, voter component.Voter) *AcceptProposalMetadata {
+	return &AcceptProposalMetadata{ProposalTXID: DCBProposalTXID, Voter: voter}
+}
+
 type AcceptDCBProposalMetadata struct {
-	DCBProposalTXID common.Hash
-	Voter           Voter
+	AcceptProposalMetadata AcceptProposalMetadata
 	MetadataBase
 }
 
-func NewAcceptDCBProposalMetadata(DCBProposalTXID common.Hash, voter Voter) *AcceptDCBProposalMetadata {
-	return &AcceptDCBProposalMetadata{
-		DCBProposalTXID: DCBProposalTXID,
-		Voter:           voter,
-		MetadataBase:    *NewMetadataBase(AcceptDCBProposalMeta),
-	}
+type ConstitutionInterface interface {
+	GetConstitutionIndex() uint32
 }
 
 func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-	_, _, _, tx, err := bcr.GetTransactionByHash(&acceptDCBProposalMetadata.DCBProposalTXID)
+	_, _, _, tx, err := bcr.GetTransactionByHash(&acceptDCBProposalMetadata.AcceptProposalMetadata.ProposalTXID)
 	if err != nil {
 		return false, err
 	}
@@ -67,8 +56,7 @@ func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ValidateTxWithBlockC
 }
 
 func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) Hash() *common.Hash {
-	record := string(acceptDCBProposalMetadata.DCBProposalTXID.GetBytes())
-	record += acceptDCBProposalMetadata.Voter.Hash().String()
+	record := string(acceptDCBProposalMetadata.AcceptProposalMetadata.ToBytes())
 	record += string(acceptDCBProposalMetadata.MetadataBase.Hash().GetBytes())
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
@@ -82,17 +70,8 @@ func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ValidateMetadataByIt
 	return true
 }
 
-func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) BuildReqActions(txr Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	actionValue, err := getSaleDataActionValue(acceptDCBProposalMetadata, bcr)
-	if err != nil {
-		return nil, err
-	}
-	action := []string{strconv.Itoa(AcceptDCBProposalMeta), actionValue}
-	return [][]string{action}, nil
-}
-
 func getSaleDataActionValue(meta *AcceptDCBProposalMetadata, bcr BlockchainRetriever) (string, error) {
-	_, _, _, txProposal, err := bcr.GetTransactionByHash(&meta.DCBProposalTXID)
+	_, _, _, txProposal, err := bcr.GetTransactionByHash(&meta.AcceptProposalMetadata.ProposalTXID)
 	if err != nil {
 		return "", err
 	}
@@ -107,8 +86,8 @@ func getSaleDataActionValue(meta *AcceptDCBProposalMetadata, bcr BlockchainRetri
 	return string(value), nil
 }
 
-func ParseAcceptDCBProposalMetadataActionValue(values string) (*params.DCBParams, error) {
-	params := &params.DCBParams{}
+func ParseAcceptDCBProposalMetadataActionValue(values string) (*component.DCBParams, error) {
+	params := &component.DCBParams{}
 	err := json.Unmarshal([]byte(values), params)
 	if err != nil {
 		return nil, err
@@ -117,21 +96,12 @@ func ParseAcceptDCBProposalMetadataActionValue(values string) (*params.DCBParams
 }
 
 type AcceptGOVProposalMetadata struct {
-	GOVProposalTXID common.Hash
-	Voter           Voter
+	AcceptProposalMetadata AcceptProposalMetadata
 	MetadataBase
 }
 
-func NewAcceptGOVProposalMetadata(GOVProposalTXID common.Hash, voter Voter) *AcceptGOVProposalMetadata {
-	return &AcceptGOVProposalMetadata{
-		GOVProposalTXID: GOVProposalTXID,
-		Voter:           voter,
-		MetadataBase:    *NewMetadataBase(AcceptGOVProposalMeta),
-	}
-}
-
 func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-	_, _, _, tx, err := bcr.GetTransactionByHash(&acceptGOVProposalMetadata.GOVProposalTXID)
+	_, _, _, tx, err := bcr.GetTransactionByHash(&acceptGOVProposalMetadata.AcceptProposalMetadata.ProposalTXID)
 	if err != nil {
 		return false, err
 	}
@@ -141,13 +111,8 @@ func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) ValidateTxWithBlockC
 	return true, nil
 }
 
-func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) GetType() int {
-	return AcceptGOVProposalMeta
-}
-
 func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) Hash() *common.Hash {
-	record := string(acceptGOVProposalMetadata.GOVProposalTXID.GetBytes())
-	record += acceptGOVProposalMetadata.Hash().String()
+	record := string(acceptGOVProposalMetadata.AcceptProposalMetadata.ToBytes())
 	record += string(acceptGOVProposalMetadata.MetadataBase.Hash().GetBytes())
 	hash := common.DoubleHashH([]byte(record))
 	return &hash

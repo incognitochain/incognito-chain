@@ -1,14 +1,13 @@
 package metadata
 
 import (
-	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"strconv"
-	"strings"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy"
@@ -16,13 +15,32 @@ import (
 	"github.com/pkg/errors"
 )
 
-const actionValueSep = "-"
+type ErrorSaver struct {
+	err error
+}
+
+func (s *ErrorSaver) Save(errs ...error) error {
+	if s.err != nil {
+		return s.err
+	}
+	for _, err := range errs {
+		if err != nil {
+			s.err = err
+			return s.err
+		}
+	}
+	return nil
+}
+
+func (s *ErrorSaver) Get() error {
+	return s.err
+}
 
 type LoanRequest struct {
-	Params           params.LoanParams `json:"Params"`
-	LoanID           []byte            `json:"LoanID"` // 32 bytes
-	CollateralType   string            `json:"CollateralType"`
-	CollateralAmount *big.Int          `json:"CollateralAmount"`
+	Params           component.LoanParams `json:"Params"`
+	LoanID           []byte               `json:"LoanID"` // 32 bytes
+	CollateralType   string               `json:"CollateralType"`
+	CollateralAmount *big.Int             `json:"CollateralAmount"`
 
 	LoanAmount     uint64                  `json:"LoanAmount"`
 	ReceiveAddress *privacy.PaymentAddress `json:"ReceiveAddress"`
@@ -35,7 +53,7 @@ type LoanRequest struct {
 func NewLoanRequest(data map[string]interface{}) (Metadata, error) {
 	loanParams := data["Params"].(map[string]interface{})
 	result := LoanRequest{
-		Params: params.LoanParams{
+		Params: component.LoanParams{
 			InterestRate:     uint64(loanParams["InterestRate"].(float64)),
 			LiquidationStart: uint64(loanParams["LiquidationStart"].(float64)),
 			Maturity:         uint64(loanParams["Maturity"].(float64)),
@@ -91,7 +109,7 @@ func (lr *LoanRequest) Hash() *common.Hash {
 
 func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	fmt.Println("Validating LoanRequest with blockchain!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	// Check if loan's params are correct
+	// Check if loan's component are correct
 	dcbParams := bcr.GetDCBParams()
 	validLoanParams := dcbParams.ListLoanParams
 	ok := false
@@ -101,11 +119,11 @@ func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 		}
 	}
 	if !ok {
-		return false, errors.New("LoanRequest has incorrect params")
+		return false, errors.New("LoanRequest has incorrect component")
 	}
 
 	txHash, _ := bcr.GetLoanReq(lr.LoanID)
-	if len(txHash) > 0 {
+	if txHash != nil && len(txHash) > 0 {
 		return false, errors.New("LoanID already existed")
 	}
 	return true, nil
@@ -122,6 +140,11 @@ func (lr *LoanRequest) ValidateMetadataByItself() bool {
 	return true
 }
 
+type LoanRequestAction struct {
+	LoanID []byte
+	TxID   *common.Hash
+}
+
 func (lr *LoanRequest) BuildReqActions(txr Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
 	lrActionValue := getLoanRequestActionValue(lr.LoanID, txr.Hash())
 	lrAction := []string{strconv.Itoa(LoanRequestMeta), lrActionValue}
@@ -129,22 +152,20 @@ func (lr *LoanRequest) BuildReqActions(txr Transaction, bcr BlockchainRetriever,
 }
 
 func getLoanRequestActionValue(loanID []byte, txHash *common.Hash) string {
-	// TODO(@0xbunyip): optimize base64.Encode and hash.String() by using more efficient encoder
-	// Encode to prevent appearance of seperator in loanID
-	return strings.Join([]string{base64.StdEncoding.EncodeToString(loanID), txHash.String()}, actionValueSep)
+	value, _ := json.Marshal(LoanRequestAction{
+		LoanID: loanID,
+		TxID:   txHash,
+	})
+	return string(value)
 }
 
-func ParseLoanRequestActionValue(values string) ([]byte, *common.Hash, error) {
-	s := strings.Split(values, actionValueSep)
-	if len(s) != 2 {
-		return nil, nil, errors.Errorf("LoanRequest value invalid")
-	}
-	loanID, err := base64.StdEncoding.DecodeString(s[0])
+func ParseLoanRequestActionValue(value string) ([]byte, *common.Hash, error) {
+	data := &LoanRequestAction{}
+	err := json.Unmarshal([]byte(value), data)
 	if err != nil {
 		return nil, nil, err
 	}
-	txHash, err := common.NewHashFromStr(s[1])
-	return loanID, txHash, err
+	return data.LoanID, data.TxID, nil
 }
 
 func (lr *LoanRequest) CalculateSize() uint64 {

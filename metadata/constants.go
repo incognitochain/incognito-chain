@@ -12,16 +12,12 @@ const (
 	LoanWithdrawMeta
 	LoanUnlockMeta
 	LoanPaymentMeta
-	DividendMeta
 
-	// OMO
+	DividendSubmitMeta
+	DividendPaymentMeta
+
 	CrowdsaleRequestMeta
 	CrowdsalePaymentMeta
-
-	// Reserve
-	ReserveRequestMeta
-	ReserveResponseMeta
-	ReservePaymentMeta
 
 	// CMB
 	CMBInitRequestMeta
@@ -40,6 +36,7 @@ const (
 	IssuingRequestMeta
 	IssuingResponseMeta
 	ContractingRequestMeta
+	ContractingReponseMeta
 	OracleFeedMeta
 	OracleRewardMeta
 	RefundMeta
@@ -49,18 +46,19 @@ const (
 	WithSenderAddressMeta
 	ResponseBaseMeta
 	BuyGOVTokenRequestMeta
+	ShardBlockSalaryRequestMeta
+	ShardBlockSalaryResponseMeta
 
 	//Voting
+	NewDCBConstitutionIns
+	NewGOVConstitutionIns
+	UpdateDCBConstitutionIns
+	UpdateGOVConstitutionIns
+
 	SubmitDCBProposalMeta
 	VoteDCBBoardMeta
-	AcceptDCBProposalMeta
-	AcceptDCBBoardMeta
-
 	SubmitGOVProposalMeta
 	VoteGOVBoardMeta
-	AcceptGOVProposalMeta
-	AcceptGOVBoardMeta
-
 	SendInitDCBVoteTokenMeta
 	SendInitGOVVoteTokenMeta
 	SealedLv1DCBVoteProposalMeta
@@ -76,10 +74,11 @@ const (
 	RewardProposalWinnerMeta
 	RewardDCBProposalSubmitterMeta
 	RewardGOVProposalSubmitterMeta
-	RewardShareOldDCBBoardMeta
-	RewardShareOldGOVBoardMeta
+	ShareRewardOldDCBBoardMeta
+	ShareRewardOldGOVBoardMeta
 	PunishDCBDecryptMeta
 	PunishGOVDecryptMeta
+	SendBackTokenVoteFailMeta
 
 	// STAKING
 	ShardStakingMeta
@@ -88,7 +87,6 @@ const (
 
 const (
 	MaxDivTxsPerBlock = 1000
-	PayoutFrequency   = 1000 // Payout dividend every 1000 blocks
 )
 
 // update oracle board actions
@@ -102,4 +100,12 @@ const (
 const (
 	STAKE_SHARD_AMOUNT  = 1
 	STAKE_BEACON_AMOUNT = 2
+)
+
+const ()
+
+// Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
+const (
+	AllShards  = -1
+	BeaconOnly = -2
 )
