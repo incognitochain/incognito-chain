@@ -43,6 +43,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 	for _, shardID := range blockchain.config.RelayShards {
 		blockchain.SyncShard(shardID)
 	}
+
 	go func() {
 		for {
 			select {
