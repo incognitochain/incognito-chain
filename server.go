@@ -161,7 +161,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			relayShards = append(relayShards, byte(index))
 		}
 	} else {
-		var validPath = regexp.MustCompile(`(?s)[[[:digit:]]|[\,[[:digit:]]]]`)
+		var validPath = regexp.MustCompile(`(?s)[[:digit:]]+`)
 		relayShardsStr := validPath.FindAllString(cfg.RelayShards, -1)
 		for index := 0; index < len(relayShardsStr); index++ {
 			s, err := strconv.Atoi(relayShardsStr[index])
