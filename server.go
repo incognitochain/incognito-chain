@@ -8,8 +8,8 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -156,13 +156,21 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.blockChain = &blockchain.BlockChain{}
 
 	relayShards := []byte{}
-	relayShardsStr := strings.Split(cfg.RelayShards, ",")
-	for index := 0; index < len(relayShardsStr); index++ {
-		s, err := strconv.Atoi(string(relayShardsStr[index]))
-		if err == nil {
-			relayShards = append(relayShards, byte(s))
+	if cfg.RelayShards == "all" {
+		for index := 0; index < common.MAX_SHARD_NUMBER; index++ {
+			relayShards = append(relayShards, byte(index))
+		}
+	} else {
+		var validPath = regexp.MustCompile(`(?s)[[[:digit:]]|[\,[[:digit:]]]]`)
+		relayShardsStr := validPath.FindAllString(cfg.RelayShards, -1)
+		for index := 0; index < len(relayShardsStr); index++ {
+			s, err := strconv.Atoi(relayShardsStr[index])
+			if err == nil {
+				relayShards = append(relayShards, byte(s))
+			}
 		}
 	}
+
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		ChainParams:       serverObj.chainParams,
 		DataBase:          serverObj.dataBase,
