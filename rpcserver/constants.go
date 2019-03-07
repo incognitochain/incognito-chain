@@ -82,7 +82,7 @@ const (
 	CreateSignatureOnCustomTokenTx       = "createsignatureoncustomtokentx"
 	GetListDCBBoard                      = "getlistdcbboard"
 	GetListGOVBoard                      = "getlistgovboard"
-	GetListCBBoard                       = "getlistcbboard"
+	GetListCMBBoard                      = "getlistcmbboard"
 	AppendListDCBBoard                   = "testappendlistdcbboard"
 	AppendListGOVBoard                   = "testappendlistgovboard"
 	GetGOVParams                         = "getgovparams"

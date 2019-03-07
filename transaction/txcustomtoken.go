@@ -196,17 +196,13 @@ func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRe
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
 func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	// validate for normal tx
-	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 0")
 	if tx.Tx.ValidateTransaction(hasPrivacy, db, shardID, tokenID) {
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 1")
 		if len(tx.listUtxo) == 0 {
 			return false
 		}
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 2")
 		if len(tx.TxTokenData.Vins) == 0 {
 			return false
 		}
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 3")
 		for _, vin := range tx.TxTokenData.Vins {
 			keySet := cashec.KeySet{}
 			keySet.PaymentAddress = vin.PaymentAddress
@@ -221,10 +217,8 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 				return false
 			}
 		}
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 4")
 		return true
 	}
-	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 5")
 	return false
 }
 
@@ -256,8 +250,7 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 ) bool {
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
-	fmt.Println("******************* - 1")
-	//TODO: verify CustomTokenInit
+	//TODO:  @merman verify CustomTokenInit
 	if customTokenTx.TxTokenData.Type == CustomTokenInit {
 		return true
 	}
@@ -267,11 +260,9 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 		if !ok {
 			return false
 		}
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 1-1")
 		if len(customTokenTx.listUtxo) != 0 {
 			return false
 		}
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 2-1")
 		if len(customTokenTx.TxTokenData.Vins) != 0 {
 			return false
 		}
