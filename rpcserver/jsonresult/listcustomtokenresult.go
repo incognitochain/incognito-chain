@@ -28,6 +28,7 @@ func (customToken *CustomToken) InitPrivacy(obj transaction.TxCustomTokenPrivacy
 	customToken.Symbol = obj.TxTokenPrivacyData.PropertySymbol
 	customToken.Name = obj.TxTokenPrivacyData.PropertyName
 	customToken.Amount = obj.TxTokenPrivacyData.Amount
+	customToken.Image = common.Render(obj.TxTokenPrivacyData.PropertyID[:])
 	customToken.IsPrivacy = true
 }
 
