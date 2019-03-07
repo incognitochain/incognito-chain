@@ -385,6 +385,23 @@ func (blockgen *BlkTmplGenerator) createCustomTokenTxForCrossShard(privatekey *p
 	return txs
 }
 
+/*
+	Verify Transaction with these condition:
+	1. Validate tx version
+	2. Validate fee with tx size
+	3. Validate type of tx
+	4. Validate with other txs in block:
+ 	- Normal Transaction:
+ 	- Custom Tx:
+	4.1 Validate Init Custom Token
+	5. Validate sanity data of tx
+	6. Validate data in tx: privacy proof, metadata,...
+	7. Validate tx with blockchain: douple spend, ...
+	8. Check tx existed in block
+	9. Not accept a salary tx
+	10. Check duplicate staker public key in block
+	11. Check duplicate Init Custom Token in block
+*/
 func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	sourceTxns := blockgen.txPool.MiningDescs()
 
@@ -401,28 +418,38 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 
 	//TODO: sort transaction base on fee and check limit block size
 	// StartingPriority, fee, size, time
-
-	// validate tx and calculate total fee
+	fmt.Println("TempTxPool", reflect.TypeOf(blockgen.chain.config.TempTxPool))
+	isEmpty := blockgen.chain.config.TempTxPool.EmptyPool()
+	if !isEmpty {
+		panic("TempTxPool Is not Empty")
+	}
 	for _, txDesc := range sourceTxns {
 		tx := txDesc.Tx
-		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		if txShardID != shardID {
-			continue
-		}
-		// TODO: need to determine a tx is in privacy format or not
-		if !tx.ValidateTxByItself(tx.IsPrivacy(), blockgen.chain.config.DataBase, blockgen.chain, shardID) {
-			txToRemove = append(txToRemove, metadata.Transaction(tx))
-			continue
-		}
-		if err := tx.ValidateTxWithBlockChain(blockgen.chain, shardID, blockgen.chain.config.DataBase); err != nil {
-			txToRemove = append(txToRemove, metadata.Transaction(tx))
+		tempTxDesc, err := blockgen.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
+		tempTx := tempTxDesc.Tx
+		if err != nil {
+			txToRemove = append(txToRemove, metadata.Transaction(tempTx))
 			continue
 		}
 		totalFee += tx.GetTxFee()
-		txsToAdd = append(txsToAdd, tx)
+		txsToAdd = append(txsToAdd, tempTx)
 		if len(txsToAdd) == common.MaxTxsInBlock {
 			break
 		}
+		// txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		// if txShardID != shardID {
+		// 	continue
+		// }
+		// // TODO: need to determine a tx is in privacy format or not
+		// if !tx.ValidateTxByItself(tx.IsPrivacy(), blockgen.chain.config.DataBase, blockgen.chain, shardID) {
+		// 	txToRemove = append(txToRemove, metadata.Transaction(tx))
+		// 	continue
+		// }
+		// if err := tx.ValidateTxWithBlockChain(blockgen.chain, shardID, blockgen.chain.config.DataBase); err != nil {
+		// 	txToRemove = append(txToRemove, metadata.Transaction(tx))
+		// 	continue
+		// }
 	}
+	blockgen.chain.config.TempTxPool.EmptyPool()
 	return txsToAdd, txToRemove, totalFee
 }

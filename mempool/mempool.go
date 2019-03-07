@@ -127,20 +127,20 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 	}
 	txHash := tx.Hash()
 	if txHash != nil {
-		tp.addTxCoinHashH(*txHash)
+		tp.AddTxCoinHashH(*txHash)
 	}
 	// add candidate into candidate list ONLY with staking transaction
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
 			pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), byte(0x00))
-			tp.addCandiateToList(pubkey)
+			tp.AddCandiateToList(pubkey)
 		}
 	}
 	if tx.GetType() == common.TxCustomTokenType {
 		customTokenTx := tx.(*transaction.TxCustomToken)
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
 			tokenID := customTokenTx.TxTokenData.PropertyID.String()
-			tp.addTokenIDToList(tokenID)
+			tp.AddTokenIDToList(tokenID)
 		}
 	}
 	return txD
@@ -303,6 +303,15 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	return hash, txDesc, err
 }
 
+// This function is safe for concurrent access.
+func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction) (*metadata.TxDesc, error) {
+	tp.mtx.Lock()
+	_, txDesc, err := tp.maybeAcceptTransaction(tx)
+	tempTxDesc := &txDesc.Desc
+	tp.mtx.Unlock()
+	return tempTxDesc, err
+}
+
 // RemoveTx safe remove transaction for pool
 func (tp *TxPool) RemoveTx(tx metadata.Transaction) error {
 	tp.mtx.Lock()
@@ -313,7 +322,7 @@ func (tp *TxPool) RemoveTx(tx metadata.Transaction) error {
 	// remove tx coin hash from pool
 	txHash := tx.Hash()
 	if txHash != nil {
-		tp.removeTxCoinHashH(*txHash)
+		tp.RemoveTxCoinHashH(*txHash)
 	}
 	tp.mtx.Unlock()
 	return err
@@ -424,7 +433,7 @@ func (tp *TxPool) PrePoolTxCoinHashH(txHashH common.Hash, coinHashHs []common.Ha
 
 // addTxCoinHashH - add hash of output coin
 //// which use to check double spend in memppol
-func (tp *TxPool) addTxCoinHashH(txHashH common.Hash) error {
+func (tp *TxPool) AddTxCoinHashH(txHashH common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
 	inCoinHs, ok := tp.txCoinHashHPool[txHashH]
@@ -450,7 +459,7 @@ func (tp *TxPool) ValidateCoinHashH(coinHashH common.Hash) error {
 
 // removeTxCoinHashH remove hash of output coin
 // which use to check double spend in memppol
-func (tp *TxPool) removeTxCoinHashH(txHashH common.Hash) error {
+func (tp *TxPool) RemoveTxCoinHashH(txHashH common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
 	if coinHashHs, okTxHashH := tp.txCoinHashHPool[txHashH]; okTxHashH {
@@ -464,7 +473,7 @@ func (tp *TxPool) removeTxCoinHashH(txHashH common.Hash) error {
 	return nil
 }
 
-func (tp *TxPool) addCandiateToList(candidate string) {
+func (tp *TxPool) AddCandiateToList(candidate string) {
 	tp.candidateMtx.Lock()
 	defer tp.candidateMtx.Unlock()
 	// fmt.Println("Mempool/addCanđiateToList: ", candidate)
@@ -489,7 +498,7 @@ func (tp *TxPool) RemoveCandidateList(candidate []string) {
 	}
 	tp.candidateList = newList
 }
-func (tp *TxPool) addTokenIDToList(tokenID string) {
+func (tp *TxPool) AddTokenIDToList(tokenID string) {
 	tp.tokenIDMtx.Lock()
 	defer tp.tokenIDMtx.Unlock()
 	// fmt.Println("Mempool/addCanđiateToList: ", candidate)
@@ -513,4 +522,63 @@ func (tp *TxPool) RemoveTokenIDList(tokenID []string) {
 		}
 	}
 	tp.tokenIDList = newList
+}
+
+/*
+	pool              map[common.Hash]*TxDesc
+	poolSerialNumbers map[common.Hash][][]byte
+
+	txCoinHashHPool map[common.Hash][]common.Hash
+	coinHashHPool   map[common.Hash]bool
+	cMtx            sync.RWMutex
+
+	//Candidate List in mempool
+	candidateList []string
+	candidateMtx  sync.RWMutex
+
+	//Token ID List in Mempool
+	tokenIDList []string
+	tokenIDMtx  sync.RWMutex
+*/
+func (tp *TxPool) EmptyPool() bool {
+	tp.cMtx.Lock()
+	tp.candidateMtx.Lock()
+	tp.tokenIDMtx.Lock()
+
+	defer tp.cMtx.Unlock()
+	defer tp.candidateMtx.Unlock()
+	defer tp.tokenIDMtx.Unlock()
+
+	if len(tp.pool) == 0 && len(tp.poolSerialNumbers) == 0 && len(tp.txCoinHashHPool) == 0 && len(tp.coinHashHPool) == 0 && len(tp.candidateList) == 0 && len(tp.tokenIDList) == 0 {
+		return true
+	}
+
+	for key := range tp.pool {
+		delete(tp.pool, key)
+	}
+
+	for key := range tp.poolSerialNumbers {
+		delete(tp.poolSerialNumbers, key)
+	}
+
+	for key := range tp.txCoinHashHPool {
+		delete(tp.txCoinHashHPool, key)
+	}
+
+	for key := range tp.coinHashHPool {
+		delete(tp.coinHashHPool, key)
+	}
+	tp.candidateList = []string{}
+	tp.tokenIDList = []string{}
+
+	if len(tp.pool) == 0 && len(tp.poolSerialNumbers) == 0 && len(tp.txCoinHashHPool) == 0 && len(tp.coinHashHPool) == 0 && len(tp.candidateList) == 0 && len(tp.tokenIDList) == 0 {
+		return true
+	}
+	fmt.Println("len(tp.pool)", len(tp.pool))
+	fmt.Println("len(tp.poolSerialNumbers)", len(tp.poolSerialNumbers))
+	fmt.Println("len(tp.txCoinHashHPool)", len(tp.txCoinHashHPool))
+	fmt.Println("len(tp.coinHashHPool)", len(tp.coinHashHPool))
+	fmt.Println("len(tp.candidateList)", len(tp.candidateList))
+	fmt.Println("len(tp.tokenIDList)", len(tp.tokenIDList))
+	return false
 }
