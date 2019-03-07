@@ -186,7 +186,6 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 		Logger.log.Info("Creating empty block...")
 	}
 	// Remove unrelated shard tx
-	// TODO: Check again Txpool should be remove after create block is successful
 	for _, tx := range txToRemove {
 		blockgen.txPool.RemoveTx(tx)
 	}
@@ -232,6 +231,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 			- Get Current Cross Shard State: BestCrossShard.ShardHeight
 			- Get Current Cross Shard Bytemap height: BestCrossShard.BeaconHeight
 			- Get Shard Committee for Cross Shard Block via Beacon Height
+			   + Using FetchCrossShardNextHeight function in Database to determine next block height
 		2. Validate
 			- Greater than current cross shard state
 			- Cross Shard Block Signature
@@ -257,17 +257,25 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 	allCrossShardBlock := blockgen.crossShardPool[shardID].GetValidBlock(crossShards)
 	fmt.Println("ShardProducer/AllCrosshardblock", allCrossShardBlock)
 	// Get Cross Shard Block
-	for _, crossShardBlock := range allCrossShardBlock {
+	for fromShard, crossShardBlock := range allCrossShardBlock {
 		sort.SliceStable(crossShardBlock[:], func(i, j int) bool {
 			return crossShardBlock[i].Header.Height < crossShardBlock[j].Header.Height
 		})
-		//TODO: @COMMENT for testing get crossoutput coin
-		// currentBestCrossShardForThisBlock := currentBestCrossShard.ShardHeight[crossShardID]
-		index := 0
-		for _, blk := range crossShardBlock {
-			if blk.Header.Height <= blockgen.chain.BestState.Shard[shardID].BestCrossShard[blk.Header.ShardID] {
+		indexs := []int{}
+		toShard := shardID
+		startHeight := blockgen.chain.BestState.Shard[toShard].BestCrossShard[fromShard]
+		for index, blk := range crossShardBlock {
+			if blk.Header.Height <= startHeight {
 				break
 			}
+			nextHeight, err := blockgen.chain.config.DataBase.FetchCrossShardNextHeight(fromShard, toShard, startHeight)
+			if err != nil {
+				break
+			}
+			if nextHeight != blk.Header.Height {
+				continue
+			}
+			startHeight = nextHeight
 			temp, err := blockgen.chain.config.DataBase.FetchCommitteeByEpoch(blk.Header.Epoch)
 			if err != nil {
 				break
@@ -280,31 +288,10 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 				fmt.Println("Shard Producer/FAIL TO Verify Crossshard block", err)
 				break
 			}
-			index++
-			//TODO: Verify block with beacon cross sahrd byte map (via function in DB)
-
-			// lastBeaconHeight := blockgen.chain.BestState.Shard[shardID].BeaconHeight
-			// // Get shard state from beacon best state
-			// passed := false
-			// for i := lastBeaconHeight + 1; i <= currentBeaconHeight; i++ {
-			// 	shardStates, ok := blockgen.chain.BestState.Beacon.AllShardState[crossShardID]
-			// 	if ok {
-			// 		// if the first crossShardblock is not current block then discard current block
-			// 		for i := int(currentBestCrossShardForThisBlock); i < len(shardStates); i++ {
-			// 			if bytes.Contains(shardStates[i].CrossShard, []byte{shardID}) {
-			// 				if shardStates[i].Height == blk.Header.Height {
-			// 					passed = true
-			// 				}
-			// 				break
-			// 			}
-			// 		}
-			// 	}
-			// }
-			// if !passed {
-			// 	break
-			// }
+			indexs = append(indexs, index)
 		}
-		for _, blk := range crossShardBlock[:index] {
+		for _, index := range indexs {
+			blk := crossShardBlock[index]
 			outputCoin := CrossOutputCoin{
 				OutputCoin:  blk.CrossOutputCoin,
 				BlockHash:   *blk.Hash(),
