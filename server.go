@@ -42,6 +42,7 @@ type Server struct {
 	rpcServer       *rpcserver.RpcServer
 
 	memPool           *mempool.TxPool
+	tempMemPool       *mempool.TxPool
 	beaconPool        *mempool.BeaconPool
 	shardPool         map[byte]blockchain.ShardPool
 	shardToBeaconPool *mempool.ShardToBeaconPool
@@ -237,6 +238,16 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
 
+	//==============Temp mem pool only used for validation
+	serverObj.tempMemPool = &mempool.TxPool{}
+	serverObj.tempMemPool.Init(&mempool.Config{
+		BlockChain:   serverObj.blockChain,
+		DataBase:     serverObj.dataBase,
+		ChainParams:  chainParams,
+		FeeEstimator: serverObj.feeEstimator,
+	})
+	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
+	//===============
 	serverObj.addrManager = addrmanager.New(cfg.DataDir)
 
 	// Init reward agent
