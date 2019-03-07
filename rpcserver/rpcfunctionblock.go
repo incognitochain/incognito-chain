@@ -284,19 +284,20 @@ func (rpcServer RpcServer) handleGetBlockChainInfo(params interface{}, closeChan
 		BestBlocks:   make(map[int]jsonresult.GetBestBlockItem),
 		ActiveShards: rpcServer.config.ChainParams.ActiveShards,
 	}
+	beaconBestState := rpcServer.config.BlockChain.BestState.Beacon
 	for shardID, bestState := range rpcServer.config.BlockChain.BestState.Shard {
 		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
 			Height:           bestState.BestBlock.Header.Height,
 			Hash:             bestState.BestBlockHash.String(),
-			SalaryPerTx:      0, // TODO
-			BasicSalary:      0,
+			SalaryPerTx:      beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SalaryPerTx,
+			BasicSalary:      beaconBestState.StabilityInfo.GOVConstitution.GOVParams.BasicSalary,
 			TotalTxs:         bestState.TotalTxns,
 			SalaryFund:       bestState.BestBlock.Header.SalaryFund,
 			BlockProducer:    bestState.BestBlock.Header.Producer,
 			BlockProducerSig: bestState.BestBlock.ProducerSig,
 		}
 	}
-	beaconBestState := rpcServer.config.BlockChain.BestState.Beacon
+
 	result.BestBlocks[-1] = jsonresult.GetBestBlockItem{
 		Height:           beaconBestState.BestBlock.Header.Height,
 		Hash:             beaconBestState.BestBlock.Hash().String(),
