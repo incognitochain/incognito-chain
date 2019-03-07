@@ -292,7 +292,7 @@ func (rpcServer RpcServer) handleGetBlockChainInfo(params interface{}, closeChan
 			SalaryPerTx:      beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SalaryPerTx,
 			BasicSalary:      beaconBestState.StabilityInfo.GOVConstitution.GOVParams.BasicSalary,
 			TotalTxs:         bestState.TotalTxns,
-			SalaryFund:       bestState.BestBlock.Header.SalaryFund,
+			SalaryFund:       beaconBestState.StabilityInfo.SalaryFund,
 			BlockProducer:    bestState.BestBlock.Header.Producer,
 			BlockProducerSig: bestState.BestBlock.ProducerSig,
 		}
