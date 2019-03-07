@@ -144,7 +144,7 @@ func (self *ShardToBeaconPool) UpdateLatestShardState() {
 			lastHeight = blk.Header.Height
 		}
 		self.latestValidHeight[shardID] = lastHeight
-		fmt.Printf("[[[[[[[[[[ShardToBeaconPool]]]]]]]]]]]: LastValidHeight %+v of Shard %+v \n", lastHeight, shardID)
+		fmt.Printf("ShardToBeaconPool: Updated/LastValidHeight %+v of Shard %+v \n", lastHeight, shardID)
 	}
 }
 
@@ -169,7 +169,7 @@ func (self *ShardToBeaconPool) RemovePendingBlock(blockItems map[byte]uint64) {
 				break
 			}
 		}
-		fmt.Println("[[[[[[[[[[ShardToBeaconPool]]]]]]]]]]]: LastValidHeight", blockHeight)
+		fmt.Printf("ShardToBeaconPool: Removed/LastValidHeight %+v of shard %+v", blockHeight, shardID)
 	}
 }
 

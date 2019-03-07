@@ -156,3 +156,7 @@ func (uob UpdatingOracleBoard) VerifyMultiSigs(
 ) (bool, error) {
 	return true, nil
 }
+
+func (uob UpdatingOracleBoard) ProcessWhenInsertBlockShard(tx Transaction, retriever BlockchainRetriever) error {
+	return nil
+}

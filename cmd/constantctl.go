@@ -1,9 +1,9 @@
 package main
 
 import (
-	"log"
 	"encoding/json"
 	"github.com/ninjadotorg/constant/common"
+	"log"
 )
 
 var (
@@ -14,10 +14,10 @@ func main() {
 	// Show version at startup.
 	log.Printf("Version %s\n", "0.0.1")
 
-	// load params
+	// load component
 	tcfg, err := loadParams()
 	if err != nil {
-		log.Println("Parse params error", err.Error())
+		log.Println("Parse component error", err.Error())
 		return
 	}
 	cfg = tcfg
@@ -93,7 +93,7 @@ func main() {
 			}
 		}
 	} else {
-		log.Println("Parse params error", err.Error())
+		log.Println("Parse component error", err.Error())
 	}
 }
 

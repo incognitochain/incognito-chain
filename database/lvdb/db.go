@@ -45,6 +45,7 @@ var (
 	loanIDKeyPrefix           = []byte("loanID-")
 	loanTxKeyPrefix           = []byte("loanTx-")
 	loanPaymentKeyPrefix      = []byte("loanPayment-")
+	loanWithdrawedPrefix      = []byte("loanWithdrawed-")
 	loanRequestPostfix        = []byte("-req")
 	loanResponsePostfix       = []byte("-res")
 	rewared                   = []byte("reward")
@@ -76,9 +77,14 @@ var (
 	crowdsalePrefix = []byte("crowdsale-")
 
 	// dividend
-	Unreward = []byte("unreward")
-	Spent    = []byte("spent")
-	Unspent  = []byte("unspent")
+	dividendReceiversPrefix = []byte("divRec")
+	Unreward                = []byte("unreward")
+	Spent                   = []byte("spent")
+	Unspent                 = []byte("unspent")
+
+	// reserve
+	reserveIssuingInfoPrefix     = []byte("rsIss")
+	reserveContractingInfoPrefix = []byte("rsCon")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {

@@ -179,6 +179,11 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 		}
 	}
 
+	// Process instructions and store stability data
+	if err := blockchain.processBeaconOnlyInstructions(block); err != nil {
+		return err
+	}
+
 	//=========Remove beacon block in pool
 	blockchain.config.BeaconPool.SetBeaconState(blockchain.BestState.Beacon.BeaconHeight)
 

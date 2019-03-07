@@ -71,6 +71,9 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case WithSenderAddressMeta:
 		md = &WithSenderAddress{}
 
+	case ShardBlockSalaryResponseMeta:
+		md = &ShardBlockSalaryRes{}
+
 	case LoanRequestMeta:
 		md = &LoanRequest{}
 	case LoanResponseMeta:
@@ -87,23 +90,17 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case CrowdsalePaymentMeta:
 		md = &CrowdsalePayment{}
 
+	case DividendPaymentMeta:
+		md = &DividendPayment{}
+
 	case SubmitDCBProposalMeta:
 		md = &SubmitDCBProposalMetadata{}
 	case VoteDCBBoardMeta:
 		md = &VoteDCBBoardMetadata{}
-	case AcceptDCBProposalMeta:
-		md = &AcceptDCBProposalMetadata{}
-	case AcceptDCBBoardMeta:
-		md = &AcceptDCBBoardMetadata{}
-
 	case SubmitGOVProposalMeta:
 		md = &SubmitGOVProposalMetadata{}
 	case VoteGOVBoardMeta:
 		md = &VoteGOVBoardMetadata{}
-	case AcceptGOVProposalMeta:
-		md = &AcceptGOVProposalMetadata{}
-	case AcceptGOVBoardMeta:
-		md = &AcceptGOVBoardMetadata{}
 
 	case SendInitDCBVoteTokenMeta:
 		md = &SendInitDCBVoteTokenMetadata{}
@@ -135,10 +132,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &RewardDCBProposalSubmitterMetadata{}
 	case RewardGOVProposalSubmitterMeta:
 		md = &RewardGOVProposalSubmitterMetadata{}
-	case RewardShareOldDCBBoardMeta:
-		md = &RewardShareOldBoardMetadata{}
-	case RewardShareOldGOVBoardMeta:
-		md = &RewardShareOldBoardMetadata{}
+	case ShareRewardOldDCBBoardMeta:
+		md = &ShareRewardOldBoardMetadata{}
+	case ShareRewardOldGOVBoardMeta:
+		md = &ShareRewardOldBoardMetadata{}
 	case PunishDCBDecryptMeta:
 		md = &PunishDCBDecryptMetadata{}
 	case PunishGOVDecryptMeta:

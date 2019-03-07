@@ -21,6 +21,11 @@ type CrossOutputCoin struct {
 	BlockHash   common.Hash
 	OutputCoin  []privacy.OutputCoin
 }
+type CrossTxTokenData struct {
+	BlockHeight uint64
+	BlockHash   common.Hash
+	TxTokenData []transaction.TxTokenData
+}
 
 func (shardBody *ShardBody) Hash() common.Hash {
 	record := []byte{}

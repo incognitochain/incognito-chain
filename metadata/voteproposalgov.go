@@ -1,8 +1,10 @@
 package metadata
 
 import (
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/metadata/fromshardins"
 	"github.com/ninjadotorg/constant/privacy"
 )
 
@@ -19,7 +21,7 @@ func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) Valida
 	return sealedLv1GOVVoteProposalMetadata.SealedLv1VoteProposalMetadata.ValidateMetadataByItself()
 }
 
-func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) GetBoardType() byte {
+func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) GetBoardType() common.BoardType {
 	return common.GOVBoard
 }
 
@@ -36,7 +38,6 @@ func NewSealedLv1GOVVoteProposalMetadata(
 			pointerToLv2VoteProposal,
 			pointerToLv3VoteProposal,
 		),
-
 		MetadataBase: *NewMetadataBase(SealedLv1GOVVoteProposalMeta),
 	}
 }
@@ -65,6 +66,21 @@ func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) Valida
 	)
 }
 
+func (sealedLv1GOVVoteProposalMetadata *SealedLv1GOVVoteProposalMetadata) BuildReqActions(
+	tx Transaction,
+	bcr BlockchainRetriever,
+	shardID byte,
+) ([][]string, error) {
+	lv3TxID := sealedLv1GOVVoteProposalMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal
+	inst := fromshardins.NewSealedLv1Or2VoteProposalIns(common.GOVBoard, lv3TxID)
+
+	instStr, err := inst.GetStringFormat()
+	if err != nil {
+		return nil, err
+	}
+	return [][]string{instStr}, nil
+}
+
 type SealedLv2GOVVoteProposalMetadata struct {
 	SealedLv2VoteProposalMetadata SealedLv2VoteProposalMetadata
 
@@ -79,7 +95,7 @@ func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) Valida
 	return sealedLv2GOVVoteProposalMetadata.SealedLv2VoteProposalMetadata.ValidateMetadataByItself()
 }
 
-func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) GetBoardType() byte {
+func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) GetBoardType() common.BoardType {
 	return common.GOVBoard
 }
 
@@ -117,6 +133,21 @@ func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) Valida
 
 }
 
+func (sealedLv2GOVVoteProposalMetadata *SealedLv2GOVVoteProposalMetadata) BuildReqActions(
+	tx Transaction,
+	bcr BlockchainRetriever,
+	shardID byte,
+) ([][]string, error) {
+	lv3TxID := sealedLv2GOVVoteProposalMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal
+	inst := fromshardins.NewSealedLv1Or2VoteProposalIns(common.GOVBoard, lv3TxID)
+
+	instStr, err := inst.GetStringFormat()
+	if err != nil {
+		return nil, err
+	}
+	return [][]string{instStr}, nil
+}
+
 type SealedLv3GOVVoteProposalMetadata struct {
 	SealedLv3VoteProposalMetadata SealedLv3VoteProposalMetadata
 
@@ -135,7 +166,7 @@ func (sealedLv3GOVVoteProposalMetadata *SealedLv3GOVVoteProposalMetadata) Valida
 	return sealedLv3GOVVoteProposalMetadata.SealedLv3VoteProposalMetadata.ValidateMetadataByItself()
 }
 
-func (sealedLv3GOVVoteProposalMetadata *SealedLv3GOVVoteProposalMetadata) GetBoardType() byte {
+func (sealedLv3GOVVoteProposalMetadata *SealedLv3GOVVoteProposalMetadata) GetBoardType() common.BoardType {
 	return common.GOVBoard
 }
 
@@ -149,6 +180,21 @@ func NewSealedLv3GOVVoteProposalMetadata(
 		),
 		MetadataBase: *NewMetadataBase(SealedLv3GOVVoteProposalMeta),
 	}
+}
+
+func (sealedLv3GOVVoteProposalMetadata *SealedLv3GOVVoteProposalMetadata) BuildReqActions(
+	tx Transaction,
+	bcr BlockchainRetriever,
+	shardID byte,
+) ([][]string, error) {
+	lv3TxID := tx.Hash()
+	inst := fromshardins.NewSealedLv3VoteProposalIns(common.GOVBoard, *lv3TxID)
+
+	instStr, err := inst.GetStringFormat()
+	if err != nil {
+		return nil, err
+	}
+	return [][]string{instStr}, nil
 }
 
 type NormalGOVVoteProposalFromSealerMetadata struct {
@@ -166,7 +212,7 @@ func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMe
 }
 
 func NewNormalGOVVoteProposalFromSealerMetadata(
-	voteProposal VoteProposalData,
+	voteProposal component.VoteProposalData,
 	lockerPaymentAddress []privacy.PaymentAddress,
 	pointerToLv1VoteProposal common.Hash,
 	pointerToLv3VoteProposal common.Hash,
@@ -182,7 +228,7 @@ func NewNormalGOVVoteProposalFromSealerMetadata(
 	}
 }
 
-func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) GetBoardType() byte {
+func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) GetBoardType() common.BoardType {
 	return common.GOVBoard
 }
 
@@ -196,6 +242,22 @@ func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMe
 		shardID,
 		db,
 	)
+}
+
+func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) BuildReqActions(
+	tx Transaction,
+	bcr BlockchainRetriever,
+	shardID byte,
+) ([][]string, error) {
+	lv3TxID := normalGOVVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal
+	voteProposal := normalGOVVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal
+	inst := fromshardins.NewNormalVoteProposalFromSealerIns(common.GOVBoard, lv3TxID, voteProposal)
+
+	instStr, err := inst.GetStringFormat()
+	if err != nil {
+		return nil, err
+	}
+	return [][]string{instStr}, nil
 }
 
 type NormalGOVVoteProposalFromOwnerMetadata struct {
@@ -212,7 +274,7 @@ func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMeta
 }
 
 func NewNormalGOVVoteProposalFromOwnerMetadata(
-	voteProposal VoteProposalData,
+	voteProposal component.VoteProposalData,
 	lockerPaymentAddress []privacy.PaymentAddress,
 	pointerToLv3VoteProposal common.Hash,
 ) *NormalGOVVoteProposalFromOwnerMetadata {
@@ -243,6 +305,22 @@ func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMeta
 		shardID,
 		db,
 	)
+}
+
+func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMetadata) BuildReqActions(
+	tx Transaction,
+	bcr BlockchainRetriever,
+	shardID byte,
+) ([][]string, error) {
+	lv3TxID := normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal
+	voteProposal := normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal
+	inst := fromshardins.NewNormalVoteProposalFromOwnerIns(common.GOVBoard, lv3TxID, voteProposal)
+
+	instStr, err := inst.GetStringFormat()
+	if err != nil {
+		return nil, err
+	}
+	return [][]string{instStr}, nil
 }
 
 type PunishGOVDecryptMetadata struct {
@@ -281,4 +359,18 @@ func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) ValidateMetadataByItse
 
 func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) CalculateSize() uint64 {
 	return calculateSize(punishGOVDecryptMetadata)
+}
+
+func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) BuildReqActions(
+	tx Transaction,
+	bcr BlockchainRetriever,
+	shardID byte,
+) ([][]string, error) {
+	inst := fromshardins.NewPunishDeryptIns(common.GOVBoard)
+
+	instStr, err := inst.GetStringFormat()
+	if err != nil {
+		return nil, err
+	}
+	return [][]string{instStr}, nil
 }

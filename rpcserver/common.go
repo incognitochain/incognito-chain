@@ -99,8 +99,8 @@ func (rpcServer RpcServer) makeArrayInputCoinHashHs(inputCoins []*privacy.InputC
 func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
 	Logger.log.Infof("Params: \n%+v\n\n\n", params)
 
-	/******* START Fetch all params to ******/
-	// all params
+	/******* START Fetch all component to ******/
+	// all component
 	arrayParams := common.InterfaceSlice(params)
 
 	// param #1: private key of sender
@@ -136,7 +136,7 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 
 	// param #4: hasPrivacy flag: 1 or -1
 	hasPrivacy := int(arrayParams[3].(float64)) > 0
-	/********* END Fetch all params to *******/
+	/********* END Fetch all component to *******/
 
 	/******* START choose output coins constant, which is used to create tx *****/
 	inputCoins, realFee, err1 := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, shardIDSender, hasPrivacy, meta, nil, nil)
@@ -179,7 +179,7 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	return &tx, nil
 }
 
-func (rpcServer RpcServer) buildCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *cashec.KeySet, ) (*transaction.CustomTokenParamTx, map[common.Hash]transaction.TxCustomToken, *RPCError) {
+func (rpcServer RpcServer) buildCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *cashec.KeySet) (*transaction.CustomTokenParamTx, map[common.Hash]transaction.TxCustomToken, *RPCError) {
 	tokenParams := &transaction.CustomTokenParamTx{
 		PropertyID:     tokenParamsRaw["TokenID"].(string),
 		PropertyName:   tokenParamsRaw["TokenName"].(string),
@@ -322,6 +322,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 		*rpcServer.config.Database,
 		metaData,
 		hasPrivacy,
+		shardIDSender,
 	)
 	if err.(*transaction.TransactionError) != nil {
 		return nil, err
@@ -388,10 +389,10 @@ func (rpcServer RpcServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	params interface{},
 ) (*transaction.TxCustomTokenPrivacy, error) {
-	// all params
+	// all component
 	arrayParams := common.InterfaceSlice(params)
 
-	/****** START FEtch data from params *********/
+	/****** START FEtch data from component *********/
 	// param #1: private key of sender
 	senderKeyParam := arrayParams[0]
 	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
@@ -425,13 +426,12 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	// param #4: hasPrivacy flag for constant
 	hasPrivacyConst := int(arrayParams[3].(float64)) > 0
 
-	// param #5: token params
+	// param #5: token component
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	tokenParams, listCustomTokens, err := rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
 	if err.(*RPCError) != nil {
 		return nil, err
 	}
-	// aaa
 	/****** END FEtch data from params *********/
 
 	/******* START choose output coins constant, which is used to create tx *****/
@@ -607,15 +607,6 @@ func (rpcServer RpcServer) GetPaymentAddressFromPrivateKeyParams(senderKeyParam 
 		return nil, err
 	}
 	return &keySet.PaymentAddress, err
-}
-
-//
-func (rpcServer RpcServer) GetPaymentAddressFromSenderKeyParams(keyParam string) (*privacy.PaymentAddress, error) {
-	keyWallet, err := wallet.Base58CheckDeserialize(keyParam)
-	if err != nil {
-		return nil, err
-	}
-	return &keyWallet.KeySet.PaymentAddress, nil
 }
 
 // GetKeySetFromKeyParams - deserialize a key string(wallet serialized)

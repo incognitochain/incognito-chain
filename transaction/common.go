@@ -202,9 +202,3 @@ func SortTxsByLockTime(txs []metadata.Transaction, isDesc bool) []metadata.Trans
 	})
 	return txs
 }
-
-func TxToIns(tx metadata.Transaction) []string {
-	//todo @0xjackalope
-	a := []string{""}
-	return a
-}

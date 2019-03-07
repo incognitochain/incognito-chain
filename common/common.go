@@ -21,8 +21,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/libp2p/go-libp2p-peer"
-	"github.com/multiformats/go-multiaddr"
+	peer "github.com/libp2p/go-libp2p-peer"
+	multiaddr "github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
 )
 
@@ -412,6 +412,10 @@ func Uint32ToBytes(value uint32) []byte {
 	return b
 }
 
+func ByteToBytes(value byte) []byte {
+	return []byte{value}
+}
+
 func BytesToUint32(b []byte) uint32 {
 	return binary.LittleEndian.Uint32(b)
 }
@@ -516,8 +520,16 @@ func IsBondAsset(assetID *Hash) bool {
 	return bytes.Equal(assetID[:8], BondTokenID[:8])
 }
 
-func IsDCBTokenAsset(assetID *Hash) bool {
+func IsConstantAsset(assetID *Hash) bool {
 	return assetID.IsEqual(&ConstantID)
+}
+
+func IsDCBTokenAsset(assetID *Hash) bool {
+	return assetID.IsEqual(&DCBTokenID)
+}
+
+func IsUSDAsset(assetID *Hash) bool {
+	return assetID.IsEqual(&USDAssetID)
 }
 
 func IndexOfByte(item byte, arrays []byte) int {
@@ -527,4 +539,22 @@ func IndexOfByte(item byte, arrays []byte) int {
 		}
 	}
 	return -1
+}
+
+// MilliEtherValue converts amount of milliether to cent using current price of ether
+func MilliEtherValue(a uint64, p uint64) uint64 {
+	milliEtherToEtherRatio := big.NewInt(1000)
+	v := big.NewInt(int64(a))
+	v.Mul(v, big.NewInt(int64(p)))
+	v.Quo(v, milliEtherToEtherRatio)
+	return v.Uint64()
+}
+
+// CentInMilliEther converts amount of cent to milliether using current price of ether
+func CentInMilliEther(a uint64, p uint64) uint64 {
+	milliEtherToEtherRatio := big.NewInt(1000)
+	v := big.NewInt(int64(a))
+	v.Mul(v, milliEtherToEtherRatio)
+	v.Quo(v, big.NewInt(int64(p)))
+	return v.Uint64()
 }

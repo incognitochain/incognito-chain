@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -89,11 +90,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	beaconBlock.Header.PrevBlockHash = beaconBestState.BestBlockHash
 	tempShardState, staker, swap, stabilityInstructions := blkTmplGenerator.GetShardState(&beaconBestState, shardsToBeacon)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
-	votingInstruction, err := blkTmplGenerator.chain.generateVotingInstruction(privateKey)
-	if err != nil {
-		return nil, NewBlockChainError(BeaconError, err)
-	}
-	tempInstruction = append(tempInstruction, votingInstruction...)
+
 	//==========Create Body
 	beaconBlock.Body.Instructions = tempInstruction
 	beaconBlock.Body.ShardState = tempShardState
@@ -166,14 +163,6 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	return beaconBlock, nil
 }
 
-type accumulativeValues struct {
-	bondsSold           uint64
-	govTokensSold       uint64
-	incomeFromBonds     uint64
-	incomeFromGOVTokens uint64
-	saleDataMap         map[string]*params.SaleData
-}
-
 // return param:
 // #1: shard state
 // #2: valid stakers
@@ -186,7 +175,9 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 	shardsBlocks := blkTmplGenerator.shardToBeaconPool.GetValidPendingBlock(shardsToBeacon)
 	//Shard block is a map ShardId -> array of shard block
 	stabilityInstructions := [][]string{}
-	accumulativeValues := &accumulativeValues{}
+	accumulativeValues := &accumulativeValues{
+		saleDataMap: map[string]*component.SaleData{},
+	}
 	for shardID, shardBlocks := range shardsBlocks {
 		// Only accept block in one epoch
 		totalBlock := 0
@@ -205,7 +196,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			if err1 != nil {
 				break
 			}
-			stabilityInstructionsPerBlock, err := buildStabilityInstructions(
+			stabilityInstructionsPerBlock, err := blkTmplGenerator.buildStabilityInstructions(
 				shardID,
 				shardBlock.Instructions,
 				beaconBestState,
@@ -315,6 +306,28 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 		}
 	}
 	return shardStates, validStakers, validSwap, stabilityInstructions
+}
+
+//todo @0xjackalope process instruction without create new tx (eg: update db)
+//should be merge with buildStabilityInstruction
+func (blkTmplGenerator *BlkTmplGenerator) processInstruction(beaconBestState *BestStateBeacon, instruction []string) error {
+	//bestBlock := beaconBestState.BestBlock
+	metaType, err := strconv.Atoi(instruction[0])
+	if err != nil {
+		return err
+	}
+	contentBytes, err := base64.StdEncoding.DecodeString(instruction[1])
+	_ = contentBytes
+	if err != nil {
+		return err
+	}
+	switch metaType {
+	// process some instruction without create tx (update component,...)
+	default:
+		return nil
+	}
+
+	return nil
 }
 
 /*
