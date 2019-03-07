@@ -358,11 +358,6 @@ func (blockchain *BlockChain) initBeaconState() error {
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.Constant = 100  // $1 = 100 cent
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.ETH = 10000     // $100.00 = 10000 cent per ether
 
-	// hard code params here in order to test salary tx
-	blockchain.BestState.Beacon.StabilityInfo.SalaryFund = 1000000                       // 10k const                          // 10 Const
-	blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.SalaryPerTx = 10 // 0.1 Const
-	blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.BasicSalary = 10 // 0.1 Const
-
 	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.RaiseReserveData = map[common.Hash]*component.RaiseReserveData{
 		common.ETHAssetID: &component.RaiseReserveData{
 			EndBlock: 1000,
