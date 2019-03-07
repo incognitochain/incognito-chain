@@ -12,13 +12,14 @@ const (
 	GetGenerate              = "getgenerate"
 	GetMiningInfo            = "getmininginfo"
 
-	GetBestBlock      = "getbestblock"
-	GetBestBlockHash  = "getbestblockhash"
-	GetBlocks         = "getblocks"
-	RetrieveBlock     = "retrieveblock"
-	GetBlockChainInfo = "getblockchaininfo"
-	GetBlockCount     = "getblockcount"
-	GetBlockHash      = "getblockhash"
+	GetBestBlock        = "getbestblock"
+	GetBestBlockHash    = "getbestblockhash"
+	GetBlocks           = "getblocks"
+	RetrieveBlock       = "retrieveblock"
+	RetrieveBeaconBlock = "retrievebeaconblock"
+	GetBlockChainInfo   = "getblockchaininfo"
+	GetBlockCount       = "getblockcount"
+	GetBlockHash        = "getblockhash"
 
 	ListOutputCoins                            = "listoutputcoins"
 	CreateRawTransaction                       = "createtransaction"
@@ -88,6 +89,8 @@ const (
 	GetDCBParams                         = "getdcbparams"
 	GetGOVConstitution                   = "getgovconstitution"
 	GetDCBConstitution                   = "getdcbconstitution"
+	GetDCBBoardIndex                     = "getdcbboardindex"
+	GetGOVBoardIndex                     = "getgovboardindex"
 	CreateAndSendTxWithMultiSigsReg      = "createandsendtxwithmultisigsreg"
 	CreateAndSendTxWithMultiSigsSpending = "createandsendtxwithmultisigsspending"
 
@@ -100,6 +103,8 @@ const (
 	GetLoanResponseRejected   = "getloanresponserejected"
 	GetLoanParams             = "loanparams"
 	GetLoanPaymentInfo        = "getloanpaymentinfo"
+	GetBankFund               = "getbankfund"
+	GetLoanRequestTxStatus    = "getloanrequesttxstatus"
 
 	// crowdsale
 	GetListOngoingCrowdsale               = "getlistongoingcrowdsale"
@@ -109,7 +114,18 @@ const (
 	CreateCrowdsaleRequestConstant        = "createcrowdsalerequestconstant"
 	SendCrowdsaleRequestConstant          = "sendcrowdsalerequestconstant"
 	CreateAndSendCrowdsaleRequestConstant = "createandsendcrowdsalerequestconstant"
-	TestStoreCrowdsale                    = "teststorecrowdsale"
+	GetListDCBProposalBuyingAssets        = "getlistdcbproposalbuyingassets"
+	GetListDCBProposalSellingAssets       = "getlistdcbproposalsellingassets"
+
+	// reserve
+	CreateIssuingRequest            = "createissuingrequest"
+	SendIssuingRequest              = "sendissuingrequest"
+	CreateAndSendIssuingRequest     = "createandsendissuingrequest"
+	CreateAndSendContractingRequest = "createandsendcontractingrequest"
+	GetIssuingStatus                = "getissuingstatus"
+	GetContractingStatus            = "getcontractingstatus"
+	ConvertETHToDCBTokenAmount      = "convertethtodcbtokenamount"
+	ConvertCSTToETHAmount           = "convertcsttoethamount"
 
 	// vote
 	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"
@@ -140,12 +156,13 @@ const (
 	SendRawSubmitGOVProposalTx       = "sendrawsubmitgovproposaltx"
 
 	// dcb
-	CreateAndSendTxWithIssuingRequest     = "createandsendtxwithissuingrequest"
-	CreateAndSendTxWithContractingRequest = "createandsendtxwithcontractingrequest"
+	// CreateAndSendTxWithIssuingRequest     = "createandsendtxwithissuingrequest"
+	// CreateAndSendTxWithContractingRequest = "createandsendtxwithcontractingrequest"
 
 	// gov
 	GetBondTypes                           = "getbondtypes"
 	GetCurrentSellingBondTypes             = "getcurrentsellingbondtypes"
+	GetCurrentStabilityInfo                = "getcurrentstabilityinfo"
 	CreateAndSendTxWithBuyBackRequest      = "createandsendtxwithbuybackrequest"
 	CreateAndSendTxWithBuySellRequest      = "createandsendtxwithbuysellrequest"
 	CreateAndSendTxWithOracleFeed          = "createandsendtxwithoraclefeed"
@@ -164,4 +181,10 @@ const (
 	// wallet
 	GetPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
 	DefragmentAccount              = "defragmentaccount"
+)
+
+//Fee of specific transaction
+const (
+	FeeSubmitProposal = 100
+	FeeVote           = 100
 )

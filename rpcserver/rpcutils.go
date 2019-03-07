@@ -13,7 +13,6 @@ import (
 )
 
 type metaConstructorType func(map[string]interface{}) (metadata.Metadata, error)
-type txConstructorType func(RpcServer, interface{}, metadata.Metadata) (metadata.Transaction, *RPCError)
 
 var metaConstructors = map[string]metaConstructorType{
 	CreateAndSendLoanRequest:              metadata.NewLoanRequest,
@@ -22,6 +21,8 @@ var metaConstructors = map[string]metaConstructorType{
 	CreateAndSendLoanPayment:              metadata.NewLoanPayment,
 	CreateAndSendCrowdsaleRequestToken:    metadata.NewCrowdsaleRequest,
 	CreateAndSendCrowdsaleRequestConstant: metadata.NewCrowdsaleRequest,
+	CreateAndSendIssuingRequest:           metadata.NewIssuingRequestFromMap,
+	CreateAndSendContractingRequest:       metadata.NewContractingRequestFromMap,
 }
 
 func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan <-chan struct{}, metaConstructorType metaConstructorType) (interface{}, *RPCError) {
@@ -33,7 +34,8 @@ func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan
 		return nil, NewRPCError(ErrUnexpected, errCons)
 	}
 	tx, err := rpcServer.buildRawTransaction(params, meta)
-	fmt.Printf("sigPubKey after build: %v\n", tx.SigPubKey)
+	a, _ := json.Marshal(tx)
+	fmt.Println("Created raw loan tx:", string(a))
 	if err != nil {
 		return nil, err
 	}
@@ -59,10 +61,10 @@ func (rpcServer RpcServer) createRawCustomTokenTxWithMetadata(params interface{}
 		return nil, NewRPCError(ErrUnexpected, errCons)
 	}
 	tx, err := rpcServer.buildRawCustomTokenTransaction(params, meta)
-	fmt.Printf("sigPubKey after build: %v\n", tx.SigPubKey)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+	fmt.Printf("sigPubKey after build: %v\n", tx.SigPubKey)
 	byteArrays, errMarshal := json.Marshal(tx)
 	if errMarshal != nil {
 		// return hex for a new tx
@@ -87,7 +89,7 @@ func (rpcServer RpcServer) sendRawTxWithMetadata(params interface{}, closeChan <
 	}
 	tx := transaction.Tx{}
 	err = json.Unmarshal(rawTxBytes, &tx)
-	fmt.Printf("%+v\n", tx)
+	// fmt.Printf("[db] sendRawTx received tx: %+v\n", tx)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}

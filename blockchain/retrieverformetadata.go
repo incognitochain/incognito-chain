@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
@@ -30,7 +30,7 @@ func (blockchain *BlockChain) GetBeaconHeight() uint64 {
 	return blockchain.BestState.Beacon.BeaconHeight
 }
 
-func (blockchain *BlockChain) GetBoardPubKeys(boardType byte) [][]byte {
+func (blockchain *BlockChain) GetBoardPubKeys(boardType common.BoardType) [][]byte {
 	if boardType == common.DCBBoard {
 		return blockchain.GetDCBBoardPubKeys()
 	} else {
@@ -53,7 +53,8 @@ func (blockchain *BlockChain) GetGOVBoardPubKeys() [][]byte {
 	}
 	return pubkeys
 }
-func (blockchain *BlockChain) GetBoardPaymentAddress(boardType byte) []privacy.PaymentAddress {
+
+func (blockchain *BlockChain) GetBoardPaymentAddress(boardType common.BoardType) []privacy.PaymentAddress {
 	if boardType == common.DCBBoard {
 		return blockchain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress
 	}
@@ -68,22 +69,22 @@ func ListPubKeyFromListPayment(listPaymentAddresses []privacy.PaymentAddress) []
 	return pubKeys
 }
 
-func (blockchain *BlockChain) GetDCBParams() params.DCBParams {
+func (blockchain *BlockChain) GetDCBParams() component.DCBParams {
 	return blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams
 }
 
-func (blockchain *BlockChain) GetGOVParams() params.GOVParams {
+func (blockchain *BlockChain) GetGOVParams() component.GOVParams {
 	return blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams
 }
 
+//// Loan
 func (blockchain *BlockChain) GetLoanReq(loanID []byte) (*common.Hash, error) {
 	key := getLoanRequestKeyBeacon(loanID)
 	reqHash, ok := blockchain.BestState.Beacon.Params[key]
 	if !ok {
 		return nil, errors.Errorf("Loan request with ID %x not found", loanID)
 	}
-	resp, err := common.NewHashFromStr(reqHash)
-	return resp, err
+	return common.NewHashFromStr(reqHash)
 }
 
 // GetLoanResps returns all responses of a given loanID
@@ -121,8 +122,22 @@ func (blockchain *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanR
 	return requestMeta, nil
 }
 
-func (blockchain *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.Hash, saleID []byte) *params.SaleData {
-	var saleData *params.SaleData
+func (blockchain *BlockChain) GetLoanWithdrawed(loanID []byte) (bool, error) {
+	return blockchain.config.DataBase.GetLoanWithdrawed(loanID)
+}
+
+//// Dividends
+func (blockchain *BlockChain) GetLatestDividendProposal(forDCB bool) (id, amount uint64) {
+	return blockchain.BestState.Beacon.GetLatestDividendProposal(forDCB)
+}
+
+func (blockchain *BlockChain) GetDividendReceiversForID(dividendID uint64, forDCB bool) ([]privacy.PaymentAddress, []uint64, bool, error) {
+	return blockchain.config.DataBase.GetDividendReceiversForID(dividendID, forDCB)
+}
+
+//// Crowdsales
+func (blockchain *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.Hash, saleID []byte) *component.SaleData {
+	var saleData *component.SaleData
 	_, _, _, proposalTx, err := blockchain.GetTransactionByHash(proposalTxHash)
 	if err == nil {
 		proposalMeta := proposalTx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
@@ -139,7 +154,7 @@ func (blockchain *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.
 	return saleData
 }
 
-func (blockchain *BlockChain) GetCrowdsaleData(saleID []byte) (*params.SaleData, error) {
+func (blockchain *BlockChain) GetCrowdsaleData(saleID []byte) (*component.SaleData, error) {
 	key := getSaleDataKeyBeacon(saleID)
 	if value, ok := blockchain.BestState.Beacon.Params[key]; ok {
 		saleData, err := parseSaleDataValueBeacon(value)
@@ -152,22 +167,24 @@ func (blockchain *BlockChain) GetCrowdsaleData(saleID []byte) (*params.SaleData,
 	}
 }
 
-func (blockchain *BlockChain) GetAllCrowdsales() ([]*params.SaleData, error) {
-	saleDataList := []*params.SaleData{}
-	saleIDs, proposalTxHashes, buyingAmounts, sellingAmounts, err := blockchain.config.DataBase.GetAllCrowdsales()
-	if err == nil {
-		for i, hash := range proposalTxHashes {
-			saleData := blockchain.parseProposalCrowdsaleData(&hash, saleIDs[i])
-			if saleData != nil {
-				saleData.BuyingAmount = buyingAmounts[i]
-				saleData.SellingAmount = sellingAmounts[i]
+func (blockchain *BlockChain) GetAllCrowdsales() ([]*component.SaleData, error) {
+	saleDataList := []*component.SaleData{}
+	for key, value := range blockchain.BestState.Beacon.Params {
+		if key[:len(saleDataPrefix)] == saleDataPrefix {
+			if saleData, err := parseSaleDataValueBeacon(value); err == nil {
+				saleDataList = append(saleDataList, saleData)
 			}
-			saleDataList = append(saleDataList, saleData)
 		}
 	}
-	return saleDataList, err
+	return saleDataList, nil
 }
 
+//// Reserve
+func (blockchain *BlockChain) GetAssetPrice(assetID *common.Hash) uint64 {
+	return blockchain.BestState.Beacon.getAssetPrice(*assetID)
+}
+
+//// CMB
 func (blockchain *BlockChain) GetCMB(mainAccount []byte) (privacy.PaymentAddress, []privacy.PaymentAddress, uint64, *common.Hash, uint8, uint64, error) {
 	reserveAcc, members, capital, hash, state, fine, err := blockchain.config.DataBase.GetCMB(mainAccount)
 	if err != nil {

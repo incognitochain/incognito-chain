@@ -13,8 +13,7 @@ import (
 )
 
 func (rpcServer RpcServer) handleGetLoanParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// return rpcServer.config.BlockChain.BestState[14].BestBlock.Header.DCBConstitution.DCBParams.ListLoanParams, nil
-	return nil, nil
+	return rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.ListLoanParams, nil
 }
 
 func (rpcServer RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -77,6 +76,7 @@ func (rpcServer RpcServer) handleCreateRawLoanPayment(params interface{}, closeC
 }
 
 func (rpcServer RpcServer) handleSendRawLoanPayment(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	fmt.Printf("[db] send raw loan payment tx\n")
 	return rpcServer.sendRawTxWithMetadata(params, closeChan)
 }
 
@@ -185,20 +185,46 @@ func (rpcServer RpcServer) calcLoanPaymentInfo(strLoanID string) jsonresult.Loan
 	loanPaymentInfo := jsonresult.LoanPaymentInfo{}
 	if loanID, err := hex.DecodeString(strLoanID); err == nil {
 		if priciple, interest, deadline, err := (*rpcServer.config.Database).GetLoanPayment(loanID); err == nil {
-			if txReqHash, err := (*rpcServer.config.Database).GetLoanRequestTx(loanID); err == nil {
-				hash, _ := (&common.Hash{}).NewHash(txReqHash)
-				if _, _, _, txReq, err := (*rpcServer.config.BlockChain).GetTransactionByHash(hash); err == nil {
-					reqMeta, _ := txReq.GetMetadata().(*metadata.LoanRequest)
-					shardID := common.GetShardIDFromLastByte(txReq.GetSenderAddrLastByte())
-					height := rpcServer.config.BlockChain.GetChainHeight(shardID)
-					loanPaymentInfo.Principle = priciple
-					if height >= deadline { // Current term interest is not fully paid
-						loanPaymentInfo.Interest = interest
-					}
-					loanPaymentInfo.Deadline = deadline + reqMeta.Params.Maturity
+			if reqMeta, err := rpcServer.config.BlockChain.GetLoanRequestMeta(loanID); err == nil {
+				lastByte := reqMeta.ReceiveAddress.Pk[len(reqMeta.ReceiveAddress.Pk)-1]
+				shardID := common.GetShardIDFromLastByte(lastByte)
+				height := rpcServer.config.BlockChain.GetChainHeight(shardID)
+				loanPaymentInfo.Principle = priciple
+				if height >= deadline { // Current term interest is not fully paid
+					loanPaymentInfo.Interest = interest
+				}
+				loanPaymentInfo.Deadline = deadline + reqMeta.Params.Maturity
+			} else {
+				fmt.Printf("[db] calcLoanPay err: %+v\n", err)
+			}
+		} else {
+			fmt.Printf("[db] calcLoanPay err: %+v\n", err)
+		}
+	}
+	return loanPaymentInfo
+}
+
+// handleGetBankFund returns bank fund stored on Beacon chain
+func (rpcServer RpcServer) handleGetBankFund(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	bankFund := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.BankFund
+	return bankFund, nil
+}
+
+// handleGetLoanRequestTxStatus checks if loan request is accepted by beacon
+func (rpcServer RpcServer) handleGetLoanRequestTxStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	result := map[string]string{}
+	for _, p := range arrayParams {
+		s := p.(string)
+		result[s] = "unknown"
+		if h, err := common.NewHashFromStr(s); err == nil {
+			if _, _, _, tx, err := rpcServer.config.BlockChain.GetTransactionByHash(h); err == nil {
+				reqMeta := tx.GetMetadata().(*metadata.LoanRequest)
+				if _, err = rpcServer.config.BlockChain.GetLoanReq(reqMeta.LoanID); err == nil {
+					result[s] = "mined"
 				}
 			}
 		}
 	}
-	return loanPaymentInfo
+	return result, nil
 }

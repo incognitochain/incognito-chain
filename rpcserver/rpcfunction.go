@@ -33,6 +33,7 @@ var RpcHandler = map[string]commandHandler{
 	GetBestBlock:      RpcServer.handleGetBestBlock,
 	GetBestBlockHash:  RpcServer.handleGetBestBlockHash,
 	RetrieveBlock:     RpcServer.handleRetrieveBlock,
+	RetrieveBeaconBlock:     RpcServer.handleRetrieveBeaconBlock,
 	GetBlocks:         RpcServer.handleGetBlocks,
 	GetBlockChainInfo: RpcServer.handleGetBlockChainInfo,
 	GetBlockCount:     RpcServer.handleGetBlockCount,
@@ -91,6 +92,8 @@ var RpcHandler = map[string]commandHandler{
 	GetLoanResponseApproved:   RpcServer.handleGetLoanResponseApproved,
 	GetLoanResponseRejected:   RpcServer.handleGetLoanResponseRejected,
 	GetLoanPaymentInfo:        RpcServer.handleGetLoanPaymentInfo,
+	GetBankFund:               RpcServer.handleGetBankFund,
+	GetLoanRequestTxStatus:    RpcServer.handleGetLoanRequestTxStatus,
 
 	// Crowdsale
 	GetListOngoingCrowdsale:               RpcServer.handleGetListOngoingCrowdsale,
@@ -100,7 +103,18 @@ var RpcHandler = map[string]commandHandler{
 	CreateCrowdsaleRequestConstant:        RpcServer.handleCreateCrowdsaleRequestConstant,
 	SendCrowdsaleRequestConstant:          RpcServer.handleSendCrowdsaleRequestConstant,
 	CreateAndSendCrowdsaleRequestConstant: RpcServer.handleCreateAndSendCrowdsaleRequestConstant,
-	TestStoreCrowdsale:                    RpcServer.handleTESTStoreCrowdsale,
+	GetListDCBProposalBuyingAssets:        RpcServer.handleGetListDCBProposalBuyingAssets,
+	GetListDCBProposalSellingAssets:       RpcServer.handleGetListDCBProposalSellingAssets,
+
+	// Reserve
+	CreateIssuingRequest:            RpcServer.handleCreateIssuingRequest,
+	SendIssuingRequest:              RpcServer.handleSendIssuingRequest,
+	CreateAndSendIssuingRequest:     RpcServer.handleCreateAndSendIssuingRequest,
+	CreateAndSendContractingRequest: RpcServer.handleCreateAndSendContractingRequest,
+	GetIssuingStatus:                RpcServer.handleGetIssuingStatus,
+	GetContractingStatus:            RpcServer.handleGetContractingStatus,
+	ConvertETHToDCBTokenAmount:      RpcServer.handleConvertETHToDCBTokenAmount,
+	ConvertCSTToETHAmount:           RpcServer.handleConvertCSTToETHAmount,
 
 	// multisig
 	CreateSignatureOnCustomTokenTx:       RpcServer.handleCreateSignatureOnCustomTokenTx,
@@ -114,10 +128,8 @@ var RpcHandler = map[string]commandHandler{
 	// vote board
 	CreateAndSendVoteDCBBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
 	CreateRawVoteDCBBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
-	SendRawVoteBoardDCBTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
 	CreateAndSendVoteGOVBoardTransaction: RpcServer.handleCreateAndSendVoteGOVBoardTransaction,
-	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
-	SendRawVoteBoardGOVTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
+	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteGOVBoardTransaction,
 	GetAmountVoteToken:                   RpcServer.handleGetAmountVoteToken,
 	SetAmountVoteToken:                   RpcServer.handleSetAmountVoteToken,
 
@@ -134,20 +146,21 @@ var RpcHandler = map[string]commandHandler{
 	// Submit Proposal:
 	CreateAndSendSubmitDCBProposalTx: RpcServer.handleCreateAndSendSubmitDCBProposalTransaction,
 	CreateRawSubmitDCBProposalTx:     RpcServer.handleCreateRawSubmitDCBProposalTransaction,
-	SendRawSubmitDCBProposalTx:       RpcServer.handleSendRawSubmitDCBProposalTransaction,
 	CreateAndSendSubmitGOVProposalTx: RpcServer.handleCreateAndSendSubmitGOVProposalTransaction,
 	CreateRawSubmitGOVProposalTx:     RpcServer.handleCreateRawSubmitGOVProposalTransaction,
-	SendRawSubmitGOVProposalTx:       RpcServer.handleSendRawSubmitGOVProposalTransaction,
 
 	// dcb
-	GetDCBParams:                          RpcServer.handleGetDCBParams,
-	GetDCBConstitution:                    RpcServer.handleGetDCBConstitution,
-	CreateAndSendTxWithIssuingRequest:     RpcServer.handleCreateAndSendTxWithIssuingRequest,
-	CreateAndSendTxWithContractingRequest: RpcServer.handleCreateAndSendTxWithContractingRequest,
+	GetDCBParams:       RpcServer.handleGetDCBParams,
+	GetDCBConstitution: RpcServer.handleGetDCBConstitution,
+	GetDCBBoardIndex:   RpcServer.handleGetDCBBoardIndex,
+	GetGOVBoardIndex:   RpcServer.handleGetGOVBoardIndex,
+	// CreateAndSendTxWithIssuingRequest:     RpcServer.handleCreateAndSendTxWithIssuingRequest,
+	// CreateAndSendTxWithContractingRequest: RpcServer.handleCreateAndSendTxWithContractingRequest,
 
 	// gov
 	GetBondTypes:                           RpcServer.handleGetBondTypes,
 	GetCurrentSellingBondTypes:             RpcServer.handleGetCurrentSellingBondTypes,
+	GetCurrentStabilityInfo:                RpcServer.handleGetCurrentStabilityInfo,
 	GetGOVConstitution:                     RpcServer.handleGetGOVConstitution,
 	GetGOVParams:                           RpcServer.handleGetGOVParams,
 	CreateAndSendTxWithBuyBackRequest:      RpcServer.handleCreateAndSendTxWithBuyBackRequest,
@@ -173,19 +186,19 @@ var RpcHandler = map[string]commandHandler{
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	ListAccounts:                       RpcServer.handleListAccounts,
-	GetAccount:                         RpcServer.handleGetAccount,
-	GetAddressesByAccount:              RpcServer.handleGetAddressesByAccount,
-	GetAccountAddress:                  RpcServer.handleGetAccountAddress,
-	DumpPrivkey:                        RpcServer.handleDumpPrivkey,
-	ImportAccount:                      RpcServer.handleImportAccount,
-	RemoveAccount:                      RpcServer.handleRemoveAccount,
-	ListUnspentOutputCoins:             RpcServer.handleListUnspentOutputCoins,
-	GetBalance:                         RpcServer.handleGetBalance,
-	GetBalanceByPrivatekey:             RpcServer.handleGetBalanceByPrivatekey,
-	GetBalanceByPaymentAddress:         RpcServer.handleGetBalanceByPaymentAddress,
-	GetReceivedByAccount:               RpcServer.handleGetReceivedByAccount,
-	SetTxFee:                           RpcServer.handleSetTxFee,
+	ListAccounts:               RpcServer.handleListAccounts,
+	GetAccount:                 RpcServer.handleGetAccount,
+	GetAddressesByAccount:      RpcServer.handleGetAddressesByAccount,
+	GetAccountAddress:          RpcServer.handleGetAccountAddress,
+	DumpPrivkey:                RpcServer.handleDumpPrivkey,
+	ImportAccount:              RpcServer.handleImportAccount,
+	RemoveAccount:              RpcServer.handleRemoveAccount,
+	ListUnspentOutputCoins:     RpcServer.handleListUnspentOutputCoins,
+	GetBalance:                 RpcServer.handleGetBalance,
+	GetBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
+	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
+	GetReceivedByAccount:       RpcServer.handleGetReceivedByAccount,
+	SetTxFee:                   RpcServer.handleSetTxFee,
 	GetRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
 }
 
@@ -244,7 +257,7 @@ func (rpcServer RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-
 
 //handleListUnspentOutputCoins - use private key to get all tx which contains output coin of account
 // by private key, it return full tx outputcoin with amount and receiver address in txs
-//params:
+//component:
 //Parameter #1—the minimum number of confirmations an output must have
 //Parameter #2—the maximum number of confirmations an output may have
 //Parameter #3—the list priv-key which be used to view utxo
@@ -255,7 +268,7 @@ func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, clos
 		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
 
-	// get params
+	// get component
 	paramsArray := common.InterfaceSlice(params)
 	min := int(paramsArray[0].(float64))
 	max := int(paramsArray[1].(float64))
@@ -312,7 +325,7 @@ func (rpcServer RpcServer) handleCheckHashValue(params interface{}, closeChan <-
 	)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) == 0 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected array params"))
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected array component"))
 	}
 	hashParams, ok := arrayParams[0].(string)
 	if !ok {
@@ -382,7 +395,7 @@ func (rpcServer RpcServer) handleGetMiningInfo(params interface{}, closeChan <-c
 	// if !rpcServer.config.IsGenerateNode {
 	// 	return nil, NewRPCError(ErrUnexpected, errors.New("Not mining"))
 	// }
-	// shardID := byte(int(params.(float64)))
+	// shardID := byte(int(component.(float64)))
 	// result := jsonresult.GetMiningInfoResult{}
 	// result.Blocks = uint64(rpcServer.config.BlockChain.BestState[shardID].BestBlock.Header.Height + 1)
 	// result.PoolSize = rpcServer.config.TxMemPool.Count()
@@ -427,8 +440,8 @@ func (rpcServer RpcServer) handleMempoolEntry(params interface{}, closeChan <-ch
 handleEstimateFee - RPC estimates the transaction fee per kilobyte that needs to be paid for a transaction to be included within a certain number of blocks.
 */
 func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	/******* START Fetch all params to ******/
-	// all params
+	/******* START Fetch all component to ******/
+	// all component
 	arrayParams := common.InterfaceSlice(params)
 	// param #1: private key of sender
 	senderKeyParam := arrayParams[0]

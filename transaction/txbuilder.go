@@ -1,10 +1,28 @@
 package transaction
 
 import (
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy"
 )
+
+func BuildCoinbaseTx(
+	paymentAddress *privacy.PaymentAddress,
+	amount uint64,
+	producerPrivateKey *privacy.SpendingKey,
+	db database.DatabaseInterface,
+	meta metadata.Metadata,
+) (*Tx, error) {
+	tx := &Tx{}
+	// TODO(@0xbunyip): use another method that sets type to TxNormal (otherwise tx signature will be violated)
+	err := tx.InitTxSalary(amount, paymentAddress, producerPrivateKey, db, meta)
+	tx.Type = common.TxNormalType
+	if err != nil {
+		return nil, err
+	}
+	return tx, nil
+}
 
 func BuildCoinbaseTxs(
 	paymentAddresses []*privacy.PaymentAddress,
@@ -21,9 +39,7 @@ func BuildCoinbaseTxs(
 		} else {
 			meta = metaList[i]
 		}
-		// TODO(@0xbunyip): check if txtype should be set to txnormal instead of txsalary
-		tx := new(Tx)
-		err := tx.InitTxSalary(amounts[i], paymentAddress, producerPrivateKey, db, meta)
+		tx, err := BuildCoinbaseTx(paymentAddress, amounts[i], producerPrivateKey, db, meta)
 		if err != nil {
 			return nil, err
 		}
@@ -33,27 +49,23 @@ func BuildCoinbaseTxs(
 }
 
 func BuildDividendTxs(
-	infos []metadata.DividendInfo,
-	proposal *metadata.DividendProposal,
+	dividendID uint64,
+	tokenID *common.Hash,
+	receivers []*privacy.PaymentAddress,
+	amounts []uint64,
 	producerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
 ) ([]*Tx, error) {
-	amounts := []uint64{}
-	dividendMetaList := []metadata.Metadata{}
-	paymentAddresses := []*privacy.PaymentAddress{}
-	for _, info := range infos {
-		amounts = append(amounts, info.Amount)
-		paymentAddress := info.TokenHolder
-		paymentAddresses = append(paymentAddresses, &paymentAddress)
-		dividendMeta := &metadata.Dividend{
-			PayoutID:       proposal.PayoutID,
-			TokenID:        proposal.TokenID,
-			PaymentAddress: paymentAddress,
-			MetadataBase:   metadata.MetadataBase{Type: metadata.DividendMeta},
+	metas := []metadata.Metadata{}
+	for i := 0; i < len(receivers); i++ {
+		dividendMeta := &metadata.DividendPayment{
+			DividendID:   dividendID,
+			TokenID:      tokenID,
+			MetadataBase: metadata.MetadataBase{Type: metadata.DividendPaymentMeta},
 		}
-		dividendMetaList = append(dividendMetaList, dividendMeta)
+		metas = append(metas, dividendMeta)
 	}
-	return BuildCoinbaseTxs(paymentAddresses, amounts, producerPrivateKey, db, dividendMetaList)
+	return BuildCoinbaseTxs(receivers, amounts, producerPrivateKey, db, metas)
 }
 
 // BuildRefundTx - build a coinbase tx to refund constant with CMB policies

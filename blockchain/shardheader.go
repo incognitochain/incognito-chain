@@ -4,23 +4,25 @@ import (
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy"
 )
 
 /*
-	-MerkleRoot and MerkleRootShard: make from transaction
+	-TxRoot and MerkleRootShard: make from transaction
 	-Validator Root is root hash of current committee in beststate
 	-PendingValidator Root is root hash of pending validator in beststate
 */
 type ShardHeader struct {
-	Producer      string
-	ShardID       byte
-	Version       int
-	PrevBlockHash common.Hash
-	Height        uint64
-	Round         int
-	Epoch         uint64
-	Timestamp     int64
-	SalaryFund    uint64
+	ProducerAddress *privacy.PaymentAddress
+	Producer        string
+	ShardID         byte
+	Version         int
+	PrevBlockHash   common.Hash
+	Height          uint64
+	Round           int
+	Epoch           uint64
+	Timestamp       int64
+	SalaryFund      uint64
 	//Transaction root created from transaction in shard
 	TxRoot common.Hash
 	//Output root created for other shard
@@ -29,8 +31,8 @@ type ShardHeader struct {
 	CrossOutputCoinRoot common.Hash
 	//Actions root created from Instructions and Metadata of transaction
 	InstructionsRoot     common.Hash
-	CommitteeRoot        common.Hash `description: verify post processing`
-	PendingValidatorRoot common.Hash `description: verify post processing`
+	CommitteeRoot        common.Hash
+	PendingValidatorRoot common.Hash
 	// CrossShards for beacon
 	CrossShards []byte
 	//Beacon check point
@@ -60,6 +62,7 @@ func (shardHeader ShardHeader) Hash() common.Hash {
 		// shardHeader.PendingValidatorRoot.String() +
 		// shardHeader.BeaconHash.String() +
 		// crossShardHash.String() +
-		// strconv.Itoa(int(shardHeader.BeaconHeight))
+		// strconv.Itoa(int(shardHeader.BeaconHeight)) +
+		// shardHeader.ProducerAddress.String()
 	return common.DoubleHashH([]byte(record))
 }

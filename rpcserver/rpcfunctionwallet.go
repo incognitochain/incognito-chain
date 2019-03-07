@@ -159,11 +159,11 @@ func (rpcServer RpcServer) handleGetBalanceByPrivatekey(params interface{}, clos
 	log.Println(params)
 	balance := uint64(0)
 
-	// all params
+	// all component
 	arrayParams := common.InterfaceSlice(params)
 
 	if len(arrayParams) != 1 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("key params invalid"))
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("key component invalid"))
 	}
 	// param #1: private key of sender
 	log.Println("importing")
@@ -198,8 +198,8 @@ func (rpcServer RpcServer) handleGetBalanceByPrivatekey(params interface{}, clos
 func (rpcServer RpcServer) handleGetBalanceByPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// balance := uint64(0)
 
-	// // all params
-	// arrayParams := common.InterfaceSlice(params)
+	// // all component
+	// arrayParams := common.InterfaceSlice(component)
 
 	// // param #1: private key of sender
 	// paymentAddressParam := arrayParams[0]
@@ -241,7 +241,7 @@ func (rpcServer RpcServer) handleGetBalance(params interface{}, closeChan <-chan
 		return balance, NewRPCError(ErrUnexpected, errors.New("no account is existed"))
 	}
 
-	// convert params to array
+	// convert component to array
 	arrayParams := common.InterfaceSlice(params)
 
 	// Param #1: account "*" for all or a particular account
@@ -308,7 +308,7 @@ func (rpcServer RpcServer) handleGetReceivedByAccount(params interface{}, closeC
 		return balance, NewRPCError(ErrUnexpected, errors.New("no account is existed"))
 	}
 
-	// convert params to array
+	// convert component to array
 	arrayParams := common.InterfaceSlice(params)
 
 	// Param #1: account "*" for all or a particular account
@@ -495,7 +495,7 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
 	// param #4: hasPrivacy flag: 1 or -1
 	hasPrivacy := int(arrayParams[3].(float64)) > 0
-	/********* END Fetch all params to *******/
+	/********* END Fetch all component to *******/
 
 	// param #1: private key of sender
 	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam)

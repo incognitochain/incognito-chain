@@ -14,9 +14,14 @@ var ErrHashStrSize = fmt.Errorf("max hash string length is %v bytes", MaxHashStr
 
 type Hash [HashSize]byte
 
-func (hash Hash) MarshalJSON() ([]byte, error) {
-	hashString := hash.String()
-	return json.Marshal(hashString)
+// MarshalText to use Hash as map's key
+func (hash Hash) MarshalText() ([]byte, error) {
+	return []byte(hash.String()), nil
+}
+
+func (hash Hash) UnmarshalText(text []byte) error {
+	copy(hash[:], text)
+	return nil
 }
 
 func (hash *Hash) UnmarshalJSON(data []byte) error {

@@ -21,7 +21,7 @@ import (
 
 //handleListOutputCoins - use readonly key to get all tx which contains output coin of account
 // by private key, it return full tx outputcoin with amount and receiver address in txs
-//params:
+//component:
 //Parameter #1—the minimum number of confirmations an output must have
 //Parameter #2—the maximum number of confirmations an output may have
 //Parameter #3—the list paymentaddress-readonlykey which be used to view list outputcoin
@@ -32,16 +32,16 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
 
-	// get params
+	// get component
 	paramsArray := common.InterfaceSlice(params)
 	if len(paramsArray) < 1 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key params"))
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key component"))
 	}
 	min := int(paramsArray[0].(float64))
 	max := int(paramsArray[1].(float64))
 	_ = min
 	_ = max
-	//#3: list key params
+	//#3: list key component
 	listKeyParams := common.InterfaceSlice(paramsArray[2])
 
 	//#4: optional token type - default constant coin
@@ -345,8 +345,12 @@ func (rpcServer RpcServer) handleCreateRawCustomTokenTransaction(
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
-	result := jsonresult.CreateTransactionResult{
+	result := jsonresult.CreateTransactionCustomTokenResult{
+		ShardID:         tx.Tx.PubKeyLastByteSender,
 		TxID:            tx.Hash().String(),
+		TokenID:         tx.TxTokenData.PropertyID.String(),
+		TokenName:       tx.TxTokenData.PropertyName,
+		TokenAmount:     tx.TxTokenData.Amount,
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
@@ -363,7 +367,6 @@ func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 	tx := transaction.TxCustomToken{}
-	//tx := transaction.TxCustomToken{}
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
@@ -396,15 +399,18 @@ func (rpcServer RpcServer) handleCreateAndSendCustomTokenTransaction(params inte
 	if err != nil {
 		return nil, err
 	}
-	tx := data.(jsonresult.CreateTransactionResult)
+	tx := data.(jsonresult.CreateTransactionCustomTokenResult)
 	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, err
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	txId, err := rpcServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
-	return txId, err
+	_, err = rpcServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, err
+	}
+	return tx, err
 }
 
 func (rpcServer RpcServer) handleGetListCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -828,14 +834,14 @@ func (rpcServer RpcServer) handleCreateAndSendPrivacyCustomTokenTransaction(para
 // handleCreateRawStakingTransaction handles create staking
 */
 func (rpcServer RpcServer) handleCreateRawStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// get params
+	// get component
 	paramsArray := common.InterfaceSlice(params)
 	if len(paramsArray) < 5 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Empty staking type params"))
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Empty staking type component"))
 	}
 	stakingType, ok := paramsArray[4].(float64)
 	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid staking type params"))
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid staking type component"))
 	}
 
 	var err error

@@ -1,8 +1,10 @@
 package metadata
 
 import (
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/metadata/fromshardins"
 	"github.com/ninjadotorg/constant/privacy"
 )
 
@@ -19,7 +21,7 @@ func (sealedLv1DCBVoteProposalMetadata *SealedLv1DCBVoteProposalMetadata) Valida
 	return sealedLv1DCBVoteProposalMetadata.SealedLv1VoteProposalMetadata.ValidateMetadataByItself()
 }
 
-func (sealedLv1DCBVoteProposalMetadata *SealedLv1DCBVoteProposalMetadata) GetBoardType() byte {
+func (sealedLv1DCBVoteProposalMetadata *SealedLv1DCBVoteProposalMetadata) GetBoardType() common.BoardType {
 	return common.DCBBoard
 }
 
@@ -36,7 +38,6 @@ func NewSealedLv1DCBVoteProposalMetadata(
 			pointerToLv2VoteProposal,
 			pointerToLv3VoteProposal,
 		),
-
 		MetadataBase: *NewMetadataBase(SealedLv1DCBVoteProposalMeta),
 	}
 }
@@ -65,6 +66,21 @@ func (sealedLv1DCBVoteProposalMetadata *SealedLv1DCBVoteProposalMetadata) Valida
 	)
 }
 
+func (sealedLv1DCBVoteProposalMetadata *SealedLv1DCBVoteProposalMetadata) BuildReqActions(
+	tx Transaction,
+	bcr BlockchainRetriever,
+	shardID byte,
+) ([][]string, error) {
+	lv3TxID := sealedLv1DCBVoteProposalMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal
+	inst := fromshardins.NewSealedLv1Or2VoteProposalIns(common.DCBBoard, lv3TxID)
+
+	instStr, err := inst.GetStringFormat()
+	if err != nil {
+		return nil, err
+	}
+	return [][]string{instStr}, nil
+}
+
 type SealedLv2DCBVoteProposalMetadata struct {
 	SealedLv2VoteProposalMetadata SealedLv2VoteProposalMetadata
 
@@ -79,7 +95,7 @@ func (sealedLv2DCBVoteProposalMetadata *SealedLv2DCBVoteProposalMetadata) Valida
 	return sealedLv2DCBVoteProposalMetadata.SealedLv2VoteProposalMetadata.ValidateMetadataByItself()
 }
 
-func (sealedLv2DCBVoteProposalMetadata *SealedLv2DCBVoteProposalMetadata) GetBoardType() byte {
+func (sealedLv2DCBVoteProposalMetadata *SealedLv2DCBVoteProposalMetadata) GetBoardType() common.BoardType {
 	return common.DCBBoard
 }
 
@@ -117,6 +133,21 @@ func (sealedLv2DCBVoteProposalMetadata *SealedLv2DCBVoteProposalMetadata) Valida
 
 }
 
+func (sealedLv2DCBVoteProposalMetadata *SealedLv2DCBVoteProposalMetadata) BuildReqActions(
+	tx Transaction,
+	bcr BlockchainRetriever,
+	shardID byte,
+) ([][]string, error) {
+	lv3TxID := sealedLv2DCBVoteProposalMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal
+	inst := fromshardins.NewSealedLv1Or2VoteProposalIns(common.DCBBoard, lv3TxID)
+
+	instStr, err := inst.GetStringFormat()
+	if err != nil {
+		return nil, err
+	}
+	return [][]string{instStr}, nil
+}
+
 type SealedLv3DCBVoteProposalMetadata struct {
 	SealedLv3VoteProposalMetadata SealedLv3VoteProposalMetadata
 
@@ -135,7 +166,7 @@ func (sealedLv3DCBVoteProposalMetadata *SealedLv3DCBVoteProposalMetadata) Valida
 	return sealedLv3DCBVoteProposalMetadata.SealedLv3VoteProposalMetadata.ValidateMetadataByItself()
 }
 
-func (sealedLv3DCBVoteProposalMetadata *SealedLv3DCBVoteProposalMetadata) GetBoardType() byte {
+func (sealedLv3DCBVoteProposalMetadata *SealedLv3DCBVoteProposalMetadata) GetBoardType() common.BoardType {
 	return common.DCBBoard
 }
 
@@ -149,6 +180,21 @@ func NewSealedLv3DCBVoteProposalMetadata(
 		),
 		MetadataBase: *NewMetadataBase(SealedLv3DCBVoteProposalMeta),
 	}
+}
+
+func (sealedLv3DCBVoteProposalMetadata *SealedLv3DCBVoteProposalMetadata) BuildReqActions(
+	tx Transaction,
+	bcr BlockchainRetriever,
+	shardID byte,
+) ([][]string, error) {
+	lv3TxID := tx.Hash()
+	inst := fromshardins.NewSealedLv3VoteProposalIns(common.DCBBoard, *lv3TxID)
+
+	instStr, err := inst.GetStringFormat()
+	if err != nil {
+		return nil, err
+	}
+	return [][]string{instStr}, nil
 }
 
 type NormalDCBVoteProposalFromSealerMetadata struct {
@@ -166,7 +212,7 @@ func (normalDCBVoteProposalFromSealerMetadata *NormalDCBVoteProposalFromSealerMe
 }
 
 func NewNormalDCBVoteProposalFromSealerMetadata(
-	voteProposal VoteProposalData,
+	voteProposal component.VoteProposalData,
 	lockerPaymentAddress []privacy.PaymentAddress,
 	pointerToLv1VoteProposal common.Hash,
 	pointerToLv3VoteProposal common.Hash,
@@ -182,7 +228,7 @@ func NewNormalDCBVoteProposalFromSealerMetadata(
 	}
 }
 
-func (normalDCBVoteProposalFromSealerMetadata *NormalDCBVoteProposalFromSealerMetadata) GetBoardType() byte {
+func (normalDCBVoteProposalFromSealerMetadata *NormalDCBVoteProposalFromSealerMetadata) GetBoardType() common.BoardType {
 	return common.DCBBoard
 }
 
@@ -196,6 +242,22 @@ func (normalDCBVoteProposalFromSealerMetadata *NormalDCBVoteProposalFromSealerMe
 		shardID,
 		db,
 	)
+}
+
+func (normalDCBVoteProposalFromSealerMetadata *NormalDCBVoteProposalFromSealerMetadata) BuildReqActions(
+	tx Transaction,
+	bcr BlockchainRetriever,
+	shardID byte,
+) ([][]string, error) {
+	lv3TxID := normalDCBVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal
+	voteProposal := normalDCBVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal
+	inst := fromshardins.NewNormalVoteProposalFromSealerIns(common.DCBBoard, lv3TxID, voteProposal)
+
+	instStr, err := inst.GetStringFormat()
+	if err != nil {
+		return nil, err
+	}
+	return [][]string{instStr}, nil
 }
 
 type NormalDCBVoteProposalFromOwnerMetadata struct {
@@ -212,7 +274,7 @@ func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMeta
 }
 
 func NewNormalDCBVoteProposalFromOwnerMetadata(
-	voteProposal VoteProposalData,
+	voteProposal component.VoteProposalData,
 	lockerPaymentAddress []privacy.PaymentAddress,
 	pointerToLv3VoteProposal common.Hash,
 ) *NormalDCBVoteProposalFromOwnerMetadata {
@@ -243,6 +305,22 @@ func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMeta
 		shardID,
 		db,
 	)
+}
+
+func (normalDCBVoteProposalFromOwnerMetadata *NormalDCBVoteProposalFromOwnerMetadata) BuildReqActions(
+	tx Transaction,
+	bcr BlockchainRetriever,
+	shardID byte,
+) ([][]string, error) {
+	lv3TxID := normalDCBVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal
+	voteProposal := normalDCBVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal
+	inst := fromshardins.NewNormalVoteProposalFromOwnerIns(common.DCBBoard, lv3TxID, voteProposal)
+
+	instStr, err := inst.GetStringFormat()
+	if err != nil {
+		return nil, err
+	}
+	return [][]string{instStr}, nil
 }
 
 type PunishDCBDecryptMetadata struct {
@@ -281,4 +359,18 @@ func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) ValidateMetadataByItse
 
 func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) CalculateSize() uint64 {
 	return calculateSize(punishDCBDecryptMetadata)
+}
+
+func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) BuildReqActions(
+	tx Transaction,
+	bcr BlockchainRetriever,
+	shardID byte,
+) ([][]string, error) {
+	inst := fromshardins.NewPunishDeryptIns(common.DCBBoard)
+
+	instStr, err := inst.GetStringFormat()
+	if err != nil {
+		return nil, err
+	}
+	return [][]string{instStr}, nil
 }

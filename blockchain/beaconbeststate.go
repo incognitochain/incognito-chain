@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"sort"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
+	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/pkg/errors"
 )
@@ -80,7 +80,7 @@ type StabilityInfo struct {
 	SalaryFund uint64 // use to pay salary for miners(block producer or current leader) in chain
 	BankFund   uint64 // for DBank
 
-	GOVConstitution GOVConstitution // params which get from governance for network
+	GOVConstitution GOVConstitution // component which get from governance for network
 	DCBConstitution DCBConstitution
 
 	// BOARD
@@ -88,7 +88,7 @@ type StabilityInfo struct {
 	GOVGovernor GOVGovernor
 
 	// Price feeds through Oracle
-	Oracle params.Oracle
+	Oracle component.Oracle
 }
 
 func (si StabilityInfo) GetBytes() []byte {
@@ -284,7 +284,7 @@ func (bestStateBeacon *BestStateBeacon) getAssetPrice(assetID common.Hash) uint6
 		}
 	} else {
 		oracle := bestStateBeacon.StabilityInfo.Oracle
-		if assetID.IsEqual(&common.ConstantID) {
+		if common.IsConstantAsset(&assetID) {
 			price = oracle.Constant
 		} else if assetID.IsEqual(&common.DCBTokenID) {
 			price = oracle.DCBToken
@@ -300,10 +300,38 @@ func (bestStateBeacon *BestStateBeacon) getAssetPrice(assetID common.Hash) uint6
 }
 
 // GetSaleData returns latest data of a crowdsale
-func (bestStateBeacon *BestStateBeacon) GetSaleData(saleID []byte) (*params.SaleData, error) {
+func (bestStateBeacon *BestStateBeacon) GetSaleData(saleID []byte) (*component.SaleData, error) {
 	key := getSaleDataKeyBeacon(saleID)
 	if value, ok := bestStateBeacon.Params[key]; ok {
 		return parseSaleDataValueBeacon(value)
 	}
 	return nil, errors.Errorf("SaleID not exist: %x", saleID)
+}
+
+func (self *BestStateBeacon) GetLatestDividendProposal(forDCB bool) (id, amount uint64) {
+	key := ""
+	if forDCB {
+		key = getDCBDividendKeyBeacon()
+	} else {
+		key = getGOVDividendKeyBeacon()
+	}
+	dividendAmounts := []uint64{}
+	if value, ok := self.Params[key]; ok {
+		dividendAmounts, _ = parseDividendValueBeacon(value)
+		if len(dividendAmounts) > 0 {
+			id = uint64(len(dividendAmounts))
+			amount = dividendAmounts[len(dividendAmounts)-1]
+		}
+	}
+	return id, amount
+}
+
+func (self *BestStateBeacon) GetDividendAggregatedInfo(dividendID uint64, tokenID *common.Hash) (uint64, uint64, bool) {
+	key := getDividendAggregatedKeyBeacon(dividendID, tokenID)
+	if value, ok := self.Params[key]; ok {
+		totalTokenOnAllShards, cstToPayout := parseDividendAggregatedValueBeacon(value)
+		value = getDividendAggregatedValueBeacon(totalTokenOnAllShards, cstToPayout)
+		return totalTokenOnAllShards, cstToPayout, true
+	}
+	return 0, 0, false
 }

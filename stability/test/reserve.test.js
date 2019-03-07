@@ -47,13 +47,15 @@ contract("Reserve", (accounts) => {
         })
 
         it('should fail to spend', async () => {
-            await u.assertRevert(c.spend(web3.utils.toWei("1"), offchain, { from: requester1 } ))
+            await u.assertRevert(c.spend(requester1, web3.utils.toWei("1"), offchain, { from: requester1 } ))
         })
 
         it('should spend reserve successfully', async () => {
-            tx1 = await c.spend(web3.utils.toWei("1"), offchain, { from: owner } )
+            tx1 = await c.spend(requester1, web3.utils.toWei("1"), offchain, { from: owner } )
             let amount = await u.oc(tx1, "__spend", "amount")
             eq(amount.toString(), web3.utils.toWei("1"))
+            let receiver = await u.oc(tx1, "__spend", "receiver")
+            eq(receiver, requester1)
         })
     })
 })

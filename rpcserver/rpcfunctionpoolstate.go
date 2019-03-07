@@ -26,10 +26,10 @@ func (rpcServer RpcServer) handleGetShardToBeaconPoolState(params interface{}, c
 handleGetCrossShardPoolState - RPC get cross shard pool state
 */
 func (rpcServer RpcServer) handleGetCrossShardPoolState(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// get params
+	// get component
 	paramsArray := common.InterfaceSlice(params)
 	if len(paramsArray) < 1 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key params"))
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key component"))
 	}
 	shardID := byte(paramsArray[0].(int))
 

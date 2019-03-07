@@ -10,6 +10,11 @@ type RewardDCBProposalSubmitterMetadata struct {
 	MetadataBase
 }
 
+func (rewardDCBProposalSubmitterMetadata *RewardDCBProposalSubmitterMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	bcr.UpdateDCBFund(tx)
+	return nil
+}
+
 func NewRewardDCBProposalSubmitterMetadata() *RewardDCBProposalSubmitterMetadata {
 	return &RewardDCBProposalSubmitterMetadata{
 		MetadataBase: *NewMetadataBase(RewardDCBProposalSubmitterMeta),
@@ -36,6 +41,11 @@ func (rewardDCBProposalSubmitterMetadata *RewardDCBProposalSubmitterMetadata) Va
 
 type RewardGOVProposalSubmitterMetadata struct {
 	MetadataBase
+}
+
+func (rewardGOVProposalSubmitterMetadata *RewardGOVProposalSubmitterMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
+	bcr.UpdateDCBFund(tx)
+	return nil
 }
 
 func NewRewardGOVProposalSubmitterMetadata() *RewardGOVProposalSubmitterMetadata {

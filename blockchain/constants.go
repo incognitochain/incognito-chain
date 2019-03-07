@@ -30,7 +30,7 @@ const (
 	MainNetActiveShards        = 2
 
 	//board and proposal parameters
-	MainnetInitFundSalary             = 1000000000000000
+	MainnetInitFundSalary             = 1000000
 	MainnetInitDCBToken               = 10000
 	MainnetInitGovToken               = 10000
 	MainnetInitCmBToken               = 10000
@@ -66,7 +66,7 @@ const (
 	TestNetActiveShards        = 2
 
 	//board and proposal parameters
-	TestnetInitFundSalary             = 1000000000000000
+	TestnetInitFundSalary             = 1000000
 	TestnetInitDCBToken               = 10000
 	TestnetInitGovToken               = 10000
 	TestnetInitCmBToken               = 10000
