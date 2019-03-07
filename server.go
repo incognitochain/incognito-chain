@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
