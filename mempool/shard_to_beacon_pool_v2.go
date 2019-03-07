@@ -169,7 +169,7 @@ func (self *ShardToBeaconPool) RemovePendingBlock(blockItems map[byte]uint64) {
 				break
 			}
 		}
-		fmt.Printf("ShardToBeaconPool: Removed/LastValidHeight %+v of shard %+v", blockHeight, shardID)
+		fmt.Printf("ShardToBeaconPool: Removed/LastValidHeight %+v of shard %+v \n", blockHeight, shardID)
 	}
 }
 
