@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -42,6 +43,7 @@ type Server struct {
 	rpcServer       *rpcserver.RpcServer
 
 	memPool           *mempool.TxPool
+	tempMemPool       *mempool.TxPool
 	beaconPool        *mempool.BeaconPool
 	shardPool         map[byte]blockchain.ShardPool
 	shardToBeaconPool *mempool.ShardToBeaconPool
@@ -154,10 +156,21 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.blockChain = &blockchain.BlockChain{}
 
 	relayShards := []byte{}
-	for index := 0; index < len(cfg.RelayShards); index += 2 {
-		s, _ := strconv.Atoi(fmt.Sprintf("%c", byte(cfg.RelayShards[index])))
-		relayShards = append(relayShards, byte(s))
+	if cfg.RelayShards == "all" {
+		for index := 0; index < common.MAX_SHARD_NUMBER; index++ {
+			relayShards = append(relayShards, byte(index))
+		}
+	} else {
+		var validPath = regexp.MustCompile(`(?s)[[:digit:]]+`)
+		relayShardsStr := validPath.FindAllString(cfg.RelayShards, -1)
+		for index := 0; index < len(relayShardsStr); index++ {
+			s, err := strconv.Atoi(relayShardsStr[index])
+			if err == nil {
+				relayShards = append(relayShards, byte(s))
+			}
+		}
 	}
+
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		ChainParams:       serverObj.chainParams,
 		DataBase:          serverObj.dataBase,
@@ -237,6 +250,16 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
 
+	//==============Temp mem pool only used for validation
+	serverObj.tempMemPool = &mempool.TxPool{}
+	serverObj.tempMemPool.Init(&mempool.Config{
+		BlockChain:   serverObj.blockChain,
+		DataBase:     serverObj.dataBase,
+		ChainParams:  chainParams,
+		FeeEstimator: serverObj.feeEstimator,
+	})
+	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
+	//===============
 	serverObj.addrManager = addrmanager.New(cfg.DataDir)
 
 	// Init reward agent
