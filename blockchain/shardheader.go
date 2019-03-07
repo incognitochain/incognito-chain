@@ -22,21 +22,17 @@ type ShardHeader struct {
 	Round           int
 	Epoch           uint64
 	Timestamp       int64
-	SalaryFund      uint64
-	//Transaction root created from transaction in shard
-	TxRoot common.Hash
-	//Output root created for other shard
-	ShardTxRoot common.Hash
-	//Transaction root created from transaction of micro shard to shard block (from other shard)
-	CrossOutputCoinRoot common.Hash
-	//Actions root created from Instructions and Metadata of transaction
-	InstructionsRoot     common.Hash
+
+	TxRoot               common.Hash //Transaction root created from transaction in shard
+	ShardTxRoot          common.Hash //Output root created for other shard
+	CrossOutputCoinRoot  common.Hash //Transaction root created from transaction of micro shard to shard block (from other shard)
+	InstructionsRoot     common.Hash //Actions root created from Instructions and Metadata of transaction
 	CommitteeRoot        common.Hash
 	PendingValidatorRoot common.Hash
-	// CrossShards for beacon
-	CrossShards []byte
-	//Beacon check point
-	BeaconHeight uint64
+
+	CrossShards []byte // CrossShards for beacon
+
+	BeaconHeight uint64 //Beacon check point
 	BeaconHash   common.Hash
 }
 
@@ -48,21 +44,21 @@ func (shardHeader ShardHeader) Hash() common.Hash {
 		shardHeader.Producer +
 		string(shardHeader.ShardID) +
 		strconv.Itoa(shardHeader.Version)
-		// TODO: Uncomment this when finish genesis shard block
-		// shardHeader.PrevBlockHash.String() +
-		// strconv.Itoa(int(shardHeader.Height)) +
-		// strconv.Itoa(int(shardHeader.Epoch)) +
-		// strconv.Itoa(int(shardHeader.Timestamp)) +
-		// strconv.Itoa(int(shardHeader.SalaryFund)) +
-		// shardHeader.TxRoot.String() +
-		// shardHeader.ShardTxRoot.String() +
-		// shardHeader.CrossOutputCoinRoot.String() +
-		// shardHeader.ActionsRoot.String() +
-		// shardHeader.CommitteeRoot.String() +
-		// shardHeader.PendingValidatorRoot.String() +
-		// shardHeader.BeaconHash.String() +
-		// crossShardHash.String() +
-		// strconv.Itoa(int(shardHeader.BeaconHeight)) +
-		// shardHeader.ProducerAddress.String()
+	// TODO: Uncomment this when finish genesis shard block
+	// shardHeader.PrevBlockHash.String() +
+	// strconv.Itoa(int(shardHeader.Height)) +
+	// strconv.Itoa(int(shardHeader.Epoch)) +
+	// strconv.Itoa(int(shardHeader.Timestamp)) +
+	// strconv.Itoa(int(shardHeader.SalaryFund)) +
+	// shardHeader.TxRoot.String() +
+	// shardHeader.ShardTxRoot.String() +
+	// shardHeader.CrossOutputCoinRoot.String() +
+	// shardHeader.ActionsRoot.String() +
+	// shardHeader.CommitteeRoot.String() +
+	// shardHeader.PendingValidatorRoot.String() +
+	// shardHeader.BeaconHash.String() +
+	// crossShardHash.String() +
+	// strconv.Itoa(int(shardHeader.BeaconHeight)) +
+	// shardHeader.ProducerAddress.String()
 	return common.DoubleHashH([]byte(record))
 }
