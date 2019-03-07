@@ -114,6 +114,7 @@ type Config struct {
 	BeaconPool        BeaconPool
 	ShardPool         map[byte]ShardPool
 	TxPool            TxPool
+	TempTxPool        TxPool
 
 	Server interface {
 		BoardcastNodeState() error
@@ -168,6 +169,10 @@ func (blockchain *BlockChain) Init(config *Config) error {
 
 func (blockchain *BlockChain) AddTxPool(txpool TxPool) {
 	blockchain.config.TxPool = txpool
+}
+
+func (blockchain *BlockChain) AddTempTxPool(temptxpool TxPool) {
+	blockchain.config.TempTxPool = temptxpool
 }
 
 //move this code to pool
