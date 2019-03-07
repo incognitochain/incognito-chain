@@ -128,6 +128,7 @@ var PreSelectShardNodeTestnet = []string{
 
 // END CONSTANT for network TESTNET
 
+// -------------- FOR INSTRUCTION --------------
 // Action for instruction
 const (
 	SetAction    = "set"
@@ -145,3 +146,5 @@ const (
 	salaryFund  = "salaryFund"
 	feePerTxKb  = "feePerTxKb"
 )
+
+// ---------------------------------------------
