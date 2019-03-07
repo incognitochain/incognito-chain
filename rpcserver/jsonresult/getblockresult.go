@@ -14,6 +14,7 @@ type GetBlocksBeaconResult struct {
 	Round             int        `json:"Round"`
 	Time              int64      `json:"Time"`
 	PreviousBlockHash string     `json:"PreviousBlockHash"`
+	NextBlockHash     string     `json:"NextBlockHash"`
 	Instructions      [][]string `json:"Instructions"`
 }
 

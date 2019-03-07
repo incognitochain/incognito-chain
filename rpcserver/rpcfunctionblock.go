@@ -204,6 +204,20 @@ func (rpcServer RpcServer) handleRetrieveBeaconBlock(params interface{}, closeCh
 		if errD != nil {
 			return nil, NewRPCError(ErrUnexpected, errD)
 		}
+
+		best := rpcServer.config.BlockChain.BestState.Beacon.BestBlock
+		blockHeight := block.Header.Height
+		// Get next block hash unless there are none.
+		var nextHashString string
+		// if blockHeight < best.Header.GetHeight() {
+		if blockHeight < best.Header.Height {
+			nextHash, err := rpcServer.config.BlockChain.GetBeaconBlockByHeight(blockHeight + 1)
+			if err != nil {
+				return nil, NewRPCError(ErrUnexpected, err)
+			}
+			nextHashString = nextHash.Hash().String()
+		}
+
 		result := jsonresult.GetBlocksBeaconResult{
 			Hash:              block.Hash().String(),
 			Height:            block.Header.Height,
@@ -217,6 +231,7 @@ func (rpcServer RpcServer) handleRetrieveBeaconBlock(params interface{}, closeCh
 			AggregatedSig:     block.AggregatedSig,
 			R:                 block.R,
 			PreviousBlockHash: block.Header.PrevBlockHash.String(),
+			NextBlockHash:     nextHashString,
 		}
 
 		return result, nil
