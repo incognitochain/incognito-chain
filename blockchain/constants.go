@@ -130,8 +130,12 @@ var PreSelectShardNodeTestnet = []string{
 
 // Action for instruction
 const (
-	SetAction  = "set"
-	InitAction = "init"
+	SetAction    = "set"
+	InitAction   = "init"
+	DeleteAction = "del"
+	SwapAction   = "swap"
+	RandomAction = "random"
+	StakeAction  = "stake"
 )
 
 // Key param for instruction
@@ -139,5 +143,5 @@ const (
 	salaryPerTx = "salaryPerTx"
 	basicSalary = "basicSalary"
 	salaryFund  = "salaryFund"
-	feePerTxKb = "feePerTxKb"
+	feePerTxKb  = "feePerTxKb"
 )
