@@ -68,7 +68,12 @@ type TxPool interface {
 	RemoveTx(tx metadata.Transaction) error
 
 	RemoveCandidateList([]string)
+
 	RemoveTokenIDList([]string)
+
+	EmptyPool() bool
+
+	MaybeAcceptTransactionForBlockProducing(metadata.Transaction) (*metadata.TxDesc, error)
 	//CheckTransactionFee
 	// CheckTransactionFee(tx metadata.Transaction) (uint64, error)
 

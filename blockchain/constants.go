@@ -9,7 +9,7 @@ const (
 	TransactionVersion          = 1
 	defaultMaxBlkReqPerPeer     = 60
 	defaultBroadcastStateTime   = 2 * time.Second  // in second
-	defaultProcessPeerStateTime = 2 * time.Second  // in second
+	defaultProcessPeerStateTime = 5 * time.Second  // in second
 	defaultMaxBlockSyncTime     = 2 * time.Second  // in second
 	defaultCacheCleanupTime     = 60 * time.Second // in second
 
