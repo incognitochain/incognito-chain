@@ -19,14 +19,14 @@ func (engine *Engine) OnBFTMsg(msg wire.Message) {
 	return
 }
 
-func MakeMsgBFTReq(bestStateHash common.Hash, round int, userKeySet *cashec.KeySet) (wire.Message, error) {
+func MakeMsgBFTReq(bestStateHash common.Hash, proposerOffset int, userKeySet *cashec.KeySet) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTReq)
 	if err != nil {
 		Logger.log.Error(err)
 		return msg, err
 	}
 	msg.(*wire.MessageBFTReq).BestStateHash = bestStateHash
-	msg.(*wire.MessageBFTReq).Round = round
+	msg.(*wire.MessageBFTReq).ProposerOffset = proposerOffset
 	msg.(*wire.MessageBFTReq).Pubkey = userKeySet.GetPublicKeyB58()
 	err = msg.(*wire.MessageBFTReq).SignMsg(userKeySet)
 	if err != nil {
@@ -35,7 +35,7 @@ func MakeMsgBFTReq(bestStateHash common.Hash, round int, userKeySet *cashec.KeyS
 	return msg, nil
 }
 
-func MakeMsgBFTReady(bestStateHash common.Hash, round int, poolState map[byte]uint64, userKeySet *cashec.KeySet) (wire.Message, error) {
+func MakeMsgBFTReady(bestStateHash common.Hash, proposerOffset int, poolState map[byte]uint64, userKeySet *cashec.KeySet) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTReady)
 	if err != nil {
 		Logger.log.Error(err)
@@ -43,7 +43,7 @@ func MakeMsgBFTReady(bestStateHash common.Hash, round int, poolState map[byte]ui
 	}
 	msg.(*wire.MessageBFTReady).PoolState = poolState
 	msg.(*wire.MessageBFTReady).BestStateHash = bestStateHash
-	msg.(*wire.MessageBFTReady).Round = round
+	msg.(*wire.MessageBFTReady).ProposerOffset = proposerOffset
 	msg.(*wire.MessageBFTReady).Pubkey = userKeySet.GetPublicKeyB58()
 	err = msg.(*wire.MessageBFTReady).SignMsg(userKeySet)
 	if err != nil {
