@@ -664,7 +664,7 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(txs []metadata.Trans
 			}
 			index++
 		} else {
-			//TODO: @merman verify salary transaction
+			//TODO: verify salary transaction
 			salaryCount++
 		}
 	}
