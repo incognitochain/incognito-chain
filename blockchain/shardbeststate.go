@@ -81,15 +81,12 @@ func (bestStateShard *BestStateShard) Hash() common.Hash {
 
 	return common.DoubleHashH(res)
 }
-func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string, round int) string {
-	if round <= 0 {
-		round = 1
-	}
+func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string, proposerOffset int) string {
 	// fmt.Println("Shard BestState/ BEST STATE", bestStateShard)
 	found := common.IndexOfStr(pubkey, bestStateShard.ShardCommittee)
 	// fmt.Println("Shard BestState/ Get Public Key Role, Found IN Shard COMMITTEES", found)
 	if found > -1 {
-		tmpID := (bestStateShard.ShardProposerIdx + round) % len(bestStateShard.ShardCommittee)
+		tmpID := (bestStateShard.ShardProposerIdx + proposerOffset + 1) % len(bestStateShard.ShardCommittee)
 		if found == tmpID {
 			fmt.Printf("Shard BestState/ Get Public Key Role, ROLE %+v , Shard %+v \n", common.PROPOSER_ROLE, bestStateShard.ShardID)
 			return common.PROPOSER_ROLE

@@ -1,6 +1,8 @@
 package privacy
 
 import (
+	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
@@ -25,11 +27,18 @@ type SchnMultiSig struct {
 }
 
 // SetBytes - Constructing multiSig from byte array
-func (multiSig *SchnMultiSig) SetBytes(sigByte []byte) {
+func (multiSig *SchnMultiSig) SetBytes(sigByte []byte) error {
+	if len(sigByte) < CompressedPointSize+BigIntSize {
+		return errors.New("Invalid sig length")
+	}
 	multiSig.R = new(EllipticPoint)
-	multiSig.R.Decompress(sigByte[0:CompressedPointSize])
+	err := multiSig.R.Decompress(sigByte[0:CompressedPointSize])
+	if err != nil {
+		return err
+	}
 	multiSig.S = big.NewInt(0)
 	multiSig.S.SetBytes(sigByte[CompressedPointSize : CompressedPointSize+BigIntSize])
+	return nil
 }
 
 // Set - Constructing multiSig
@@ -46,7 +55,13 @@ func (multiSigKeyset *MultiSigKeyset) Set(priKey *SpendingKey, pubKey *PublicKey
 
 // Bytes - Converting SchnorrMultiSig to byte array
 func (multiSig *SchnMultiSig) Bytes() []byte {
+	if !Curve.IsOnCurve(multiSig.R.X, multiSig.R.Y) {
+		panic("Throw Error from Byte() method")
+	}
 	res := multiSig.R.Compress()
+	if multiSig.S == nil {
+		panic("Throw Error from Byte() method")
+	}
 	temp := multiSig.S.Bytes()
 	for j := 0; j < BigIntSize-len(temp); j++ {
 		temp = append([]byte{0}, temp...)
@@ -61,7 +76,9 @@ func (multisigScheme *MultiSigScheme) Init() {
 	multisigScheme.Keyset.pubKey = new(PublicKey)
 	multisigScheme.Signature = new(SchnMultiSig)
 	multisigScheme.Signature.R = new(EllipticPoint)
-	multisigScheme.Signature.S = new(big.Int)
+	multisigScheme.Signature.R.X = big.NewInt(0)
+	multisigScheme.Signature.R.Y = big.NewInt(0)
+	multisigScheme.Signature.S = big.NewInt(0)
 }
 
 /*
@@ -113,6 +130,9 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 	selfR = selfR.ScalarMult(r)
 	res := new(SchnMultiSig)
 	res.Set(selfR, sig)
+	if len(res.Bytes()) != (BigIntSize + CompressedPointSize) {
+		panic("aaaaaaaaaaaaaaaaaaaa")
+	}
 
 	return res
 }
@@ -127,8 +147,11 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 		#4: r combine in phase 1
 	return: true or false
 */
-func (multiSig *SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicKey, listCombinePK []*PublicKey, RCombine *EllipticPoint) bool {
-	//Calculate common component:
+func (multiSig SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicKey, listCombinePK []*PublicKey, RCombine *EllipticPoint) bool {
+	if len(multiSig.Bytes()) != (BigIntSize + CompressedPointSize) {
+		panic("Wrong length")
+	}
+	//Calculate common params:
 	//	aggKey = PK0+PK1+PK2+...+PKn, PK0 is selfPK
 	//	X = (PK0*a0) + (PK1*a1) + ... + (PKn*an)
 	//	C = Hash(X||r||data)
@@ -146,6 +169,8 @@ func (multiSig *SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*Public
 	GSPoint.X, GSPoint.Y = big.NewInt(0), big.NewInt(0)
 	GSPoint.X.Set(Curve.Params().Gx)
 	GSPoint.Y.Set(Curve.Params().Gy)
+	fmt.Println("GSPoint: %v\n", GSPoint)
+	fmt.Println("multisig.S: %v\n", multiSig.S)
 	GSPoint = GSPoint.ScalarMult(multiSig.S)
 
 	//RXCPoint is r.X^C

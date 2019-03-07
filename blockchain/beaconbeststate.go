@@ -243,10 +243,7 @@ func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
 // Get role of a public key base on best state beacond
 // return node-role, <shardID>
 // TODO: Role name should be write in common as constant value
-func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string, round int) (string, byte) {
-	if round <= 0 {
-		round = 1
-	}
+func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string, proposerOffset int) (string, byte) {
 	for shardID, pubkeyArr := range bestStateBeacon.ShardPendingValidator {
 		found := common.IndexOfStr(pubkey, pubkeyArr)
 		if found > -1 {
@@ -263,7 +260,7 @@ func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string, round int) 
 
 	found := common.IndexOfStr(pubkey, bestStateBeacon.BeaconCommittee)
 	if found > -1 {
-		tmpID := (bestStateBeacon.BeaconProposerIdx + round) % len(bestStateBeacon.BeaconCommittee)
+		tmpID := (bestStateBeacon.BeaconProposerIdx + proposerOffset + 1) % len(bestStateBeacon.BeaconCommittee)
 		if found == tmpID {
 			return common.PROPOSER_ROLE, 0
 		}
