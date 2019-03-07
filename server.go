@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -155,9 +156,12 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.blockChain = &blockchain.BlockChain{}
 
 	relayShards := []byte{}
-	for index := 0; index < len(cfg.RelayShards); index += 2 {
-		s, _ := strconv.Atoi(fmt.Sprintf("%c", byte(cfg.RelayShards[index])))
-		relayShards = append(relayShards, byte(s))
+	relayShardsStr := strings.Split(cfg.RelayShards, ",")
+	for index := 0; index < len(relayShardsStr); index++ {
+		s, err := strconv.Atoi(string(relayShardsStr[index]))
+		if err == nil {
+			relayShards = append(relayShards, byte(s))
+		}
 	}
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		ChainParams:       serverObj.chainParams,
