@@ -33,13 +33,13 @@ func CreateBeaconGenesisBlock(
 	inst = append(inst, []string{"init", "salaryFund", strconv.Itoa(int(genesisParams.InitFundSalary))})
 	inst = append(inst, []string{"init", "feePerTxKb", fmt.Sprintf("%v", genesisParams.FeePerTxKb)})
 
-	inst = append(inst, []string{"init", "initialPaymentAddress", genesisParams.InitialPaymentAddress})
-	inst = append(inst, []string{"init", "initialDCBToken", strconv.Itoa(int(genesisParams.InitialDCBToken))})
-	inst = append(inst, []string{"init", "initialCMBToken", strconv.Itoa(int(genesisParams.InitialCMBToken))})
-	inst = append(inst, []string{"init", "initialGOVToken", strconv.Itoa(int(genesisParams.InitialGOVToken))})
-	inst = append(inst, []string{"init", "initialBondToken", strconv.Itoa(int(genesisParams.InitialBondToken))})
+	inst = append(inst, []string{InitAction, "initialPaymentAddress", genesisParams.InitialPaymentAddress})
+	inst = append(inst, []string{InitAction, "initialDCBToken", strconv.Itoa(int(genesisParams.InitialDCBToken))})
+	inst = append(inst, []string{InitAction, "initialCMBToken", strconv.Itoa(int(genesisParams.InitialCMBToken))})
+	inst = append(inst, []string{InitAction, "initialGOVToken", strconv.Itoa(int(genesisParams.InitialGOVToken))})
+	inst = append(inst, []string{InitAction, "initialBondToken", strconv.Itoa(int(genesisParams.InitialBondToken))})
 
-	inst = append(inst, []string{"set", "randomnumber", strconv.Itoa(int(0))})
+	inst = append(inst, []string{SetAction, "randomnumber", strconv.Itoa(int(0))})
 
 	body := BeaconBody{ShardState: nil, Instructions: inst}
 	header := BeaconHeader{

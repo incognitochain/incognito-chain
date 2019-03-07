@@ -515,7 +515,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			fmt.Println(err)
 		}
 
-		if l[0] == "set" {
+		if l[0] == SetAction {
 			bestStateBeacon.Params[l[1]] = l[2]
 		}
 		if l[0] == "del" {
