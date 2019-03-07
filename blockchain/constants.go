@@ -127,3 +127,17 @@ var PreSelectShardNodeTestnet = []string{
 }
 
 // END CONSTANT for network TESTNET
+
+// Action for instruction
+const (
+	SetAction  = "set"
+	InitAction = "init"
+)
+
+// Key param for instruction
+const (
+	salaryPerTx = "salaryPerTx"
+	basicSalary = "basicSalary"
+	salaryFund  = "salaryFund"
+	feePerTxKb = "feePerTxKb"
+)
