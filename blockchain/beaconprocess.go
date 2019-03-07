@@ -518,10 +518,10 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		if l[0] == SetAction {
 			bestStateBeacon.Params[l[1]] = l[2]
 		}
-		if l[0] == "del" {
+		if l[0] == DeleteAction {
 			delete(bestStateBeacon.Params, l[1])
 		}
-		if l[0] == "swap" {
+		if l[0] == SwapAction {
 			fmt.Println("---------------============= SWAP", l)
 			// format
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
@@ -581,7 +581,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			}
 		}
 		// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
-		if l[0] == "random" {
+		if l[0] == RandomAction {
 			temp, err := strconv.Atoi(l[1])
 			if err != nil {
 				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
@@ -594,11 +594,11 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		// Update candidate
 		// get staking candidate list and store
 		// store new staking candidate
-		if l[0] == "stake" && l[2] == "beacon" {
+		if l[0] == StakeAction && l[2] == "beacon" {
 			beacon := strings.Split(l[1], ",")
 			newBeaconCandidate = append(newBeaconCandidate, beacon...)
 		}
-		if l[0] == "stake" && l[2] == "shard" {
+		if l[0] == StakeAction && l[2] == "shard" {
 			shard := strings.Split(l[1], ",")
 			newShardCandidate = append(newShardCandidate, shard...)
 		}
@@ -699,10 +699,10 @@ func GetStakingCandidate(beaconBlock BeaconBlock) ([]string, []string) {
 	shard := []string{}
 	beaconBlockBody := beaconBlock.Body
 	for _, v := range beaconBlockBody.Instructions {
-		if v[0] == "stake" && v[2] == "beacon" {
+		if v[0] == StakeAction && v[2] == "beacon" {
 			beacon = strings.Split(v[1], ",")
 		}
-		if v[0] == "stake" && v[2] == "shard" {
+		if v[0] == StakeAction && v[2] == "shard" {
 			shard = strings.Split(v[1], ",")
 		}
 	}
