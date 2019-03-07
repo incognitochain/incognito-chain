@@ -122,7 +122,6 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) error {
-	//TODO: throw error here
 	if customTokenTx.GetType() == common.TxSalaryType {
 		return NewTransactionErr(UnexpectedErr, errors.New("Wrong salary tx"))
 	}
@@ -250,8 +249,17 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 ) bool {
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
-	//TODO:  @merman verify CustomTokenInit
 	if customTokenTx.TxTokenData.Type == CustomTokenInit {
+		ok := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
+		if !ok {
+			return false
+		}
+		if len(customTokenTx.TxTokenData.Vouts) != 1 {
+			return false
+		}
+		if len(customTokenTx.TxTokenData.Vins) != 0 && customTokenTx.TxTokenData.Vins != nil {
+			return false
+		}
 		return true
 	}
 	//Process CustomToken CrossShard
@@ -427,7 +435,6 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 			//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 			newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
 			fmt.Println("INIT Tx Custom Token/ newHashInitToken", newHashInitToken)
-			// validate PropertyID is the only one
 			for customTokenID := range listCustomTokens {
 				fmt.Println("INIT Tx Custom Token/ Existed", customTokenID, customTokenID.String() == newHashInitToken.String())
 				if newHashInitToken.String() == customTokenID.String() {

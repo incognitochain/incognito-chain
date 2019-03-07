@@ -12,7 +12,8 @@ import (
 )
 
 type ShardBody struct {
-	Instructions    [][]string
+	Instructions [][]string
+	//CrossOutputCoin from all other shard
 	CrossOutputCoin map[byte][]CrossOutputCoin
 	Transactions    []metadata.Transaction
 }
