@@ -204,6 +204,20 @@ func (rpcServer RpcServer) handleRetrieveBeaconBlock(params interface{}, closeCh
 		if errD != nil {
 			return nil, NewRPCError(ErrUnexpected, errD)
 		}
+
+		best := rpcServer.config.BlockChain.BestState.Beacon.BestBlock
+		blockHeight := block.Header.Height
+		// Get next block hash unless there are none.
+		var nextHashString string
+		// if blockHeight < best.Header.GetHeight() {
+		if blockHeight < best.Header.Height {
+			nextHash, err := rpcServer.config.BlockChain.GetBeaconBlockByHeight(blockHeight + 1)
+			if err != nil {
+				return nil, NewRPCError(ErrUnexpected, err)
+			}
+			nextHashString = nextHash.Hash().String()
+		}
+
 		result := jsonresult.GetBlocksBeaconResult{
 			Hash:              block.Hash().String(),
 			Height:            block.Header.Height,
@@ -217,6 +231,7 @@ func (rpcServer RpcServer) handleRetrieveBeaconBlock(params interface{}, closeCh
 			AggregatedSig:     block.AggregatedSig,
 			R:                 block.R,
 			PreviousBlockHash: block.Header.PrevBlockHash.String(),
+			NextBlockHash:     nextHashString,
 		}
 
 		return result, nil
@@ -284,19 +299,20 @@ func (rpcServer RpcServer) handleGetBlockChainInfo(params interface{}, closeChan
 		BestBlocks:   make(map[int]jsonresult.GetBestBlockItem),
 		ActiveShards: rpcServer.config.ChainParams.ActiveShards,
 	}
+	beaconBestState := rpcServer.config.BlockChain.BestState.Beacon
 	for shardID, bestState := range rpcServer.config.BlockChain.BestState.Shard {
 		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
 			Height:           bestState.BestBlock.Header.Height,
 			Hash:             bestState.BestBlockHash.String(),
-			SalaryPerTx:      0, // TODO
-			BasicSalary:      0,
+			SalaryPerTx:      beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SalaryPerTx,
+			BasicSalary:      beaconBestState.StabilityInfo.GOVConstitution.GOVParams.BasicSalary,
 			TotalTxs:         bestState.TotalTxns,
-			SalaryFund:       bestState.BestBlock.Header.SalaryFund,
+			SalaryFund:       beaconBestState.StabilityInfo.SalaryFund,
 			BlockProducer:    bestState.BestBlock.Header.Producer,
 			BlockProducerSig: bestState.BestBlock.ProducerSig,
 		}
 	}
-	beaconBestState := rpcServer.config.BlockChain.BestState.Beacon
+
 	result.BestBlocks[-1] = jsonresult.GetBestBlockItem{
 		Height:           beaconBestState.BestBlock.Header.Height,
 		Hash:             beaconBestState.BestBlock.Hash().String(),

@@ -152,11 +152,11 @@ func CreateShardInstructionsFromTransactionAndIns(
 	}
 
 	if !reflect.DeepEqual(stakeShardPubKey, []string{}) {
-		instruction := []string{"stake", strings.Join(stakeShardPubKey, ","), "shard"}
+		instruction := []string{StakeAction, strings.Join(stakeShardPubKey, ","), "shard"}
 		instructions = append(instructions, instruction)
 	}
 	if !reflect.DeepEqual(stakeBeaconPubKey, []string{}) {
-		instruction := []string{"stake", strings.Join(stakeBeaconPubKey, ","), "beacon"}
+		instruction := []string{StakeAction, strings.Join(stakeBeaconPubKey, ","), "beacon"}
 		instructions = append(instructions, instruction)
 	}
 

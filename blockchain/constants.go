@@ -9,7 +9,7 @@ const (
 	TransactionVersion          = 1
 	defaultMaxBlkReqPerPeer     = 60
 	defaultBroadcastStateTime   = 2 * time.Second  // in second
-	defaultProcessPeerStateTime = 2 * time.Second  // in second
+	defaultProcessPeerStateTime = 5 * time.Second  // in second
 	defaultMaxBlockSyncTime     = 2 * time.Second  // in second
 	defaultCacheCleanupTime     = 60 * time.Second // in second
 
@@ -30,6 +30,8 @@ const (
 	MainNetActiveShards        = 2
 
 	//board and proposal parameters
+	MainnetSalaryPerTx                = 10
+	MainnetBasicSalary                = 10
 	MainnetInitFundSalary             = 1000000
 	MainnetInitDCBToken               = 10000
 	MainnetInitGovToken               = 10000
@@ -66,6 +68,8 @@ const (
 	TestNetActiveShards        = 2
 
 	//board and proposal parameters
+	TestnetSalaryPerTx                = 10
+	TestnetBasicSalary                = 10
 	TestnetInitFundSalary             = 1000000
 	TestnetInitDCBToken               = 10000
 	TestnetInitGovToken               = 10000
@@ -123,3 +127,24 @@ var PreSelectShardNodeTestnet = []string{
 }
 
 // END CONSTANT for network TESTNET
+
+// -------------- FOR INSTRUCTION --------------
+// Action for instruction
+const (
+	SetAction    = "set"
+	InitAction   = "init"
+	DeleteAction = "del"
+	SwapAction   = "swap"
+	RandomAction = "random"
+	StakeAction  = "stake"
+)
+
+// Key param for instruction
+const (
+	salaryPerTx = "salaryPerTx"
+	basicSalary = "basicSalary"
+	salaryFund  = "salaryFund"
+	feePerTxKb  = "feePerTxKb"
+)
+
+// ---------------------------------------------
