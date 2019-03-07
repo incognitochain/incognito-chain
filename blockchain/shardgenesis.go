@@ -61,7 +61,7 @@ func CreateShardGenesisBlock(
 		BeaconHeight:  1,
 		Epoch:         1,
 		Round:         1,
-		//TODO:
+		//TODO: 0xBahamooth
 		SalaryFund: icoParams.InitFundSalary,
 	}
 
