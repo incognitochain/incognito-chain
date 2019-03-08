@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 //=========================HASH util==================================
@@ -156,4 +157,22 @@ func VerifyHashFromShardState(allShardState map[byte][]ShardState, hash common.H
 		return false
 	}
 	return bytes.Equal(res.GetBytes(), hash.GetBytes())
+}
+func calHashFromTxTokenDataList(txTokenDataList []transaction.TxTokenData) (common.Hash, error) {
+	hashes := []common.Hash{}
+	sort.SliceStable(txTokenDataList[:], func(i, j int) bool {
+		return txTokenDataList[i].PropertyID.String() < txTokenDataList[j].PropertyID.String()
+	})
+	for _, txTokenData := range txTokenDataList {
+		hash, err := txTokenData.Hash()
+		if err != nil {
+			return common.Hash{}, err
+		}
+		hashes = append(hashes, *hash)
+	}
+	hash, err := GenerateHashFromHashArray(hashes)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return hash, nil
 }
