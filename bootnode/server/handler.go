@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+
 	"github.com/ninjadotorg/constant/wire"
 )
 
@@ -20,10 +21,11 @@ func (s Handler) Ping(args *PingArgs, peers *[]wire.RawPeer) error {
 	// update peer information to server
 	s.server.AddOrUpdatePeer(args.RawAddress, args.PublicKey, args.SignData)
 	// return note list
+	s.server.peersMtx.Lock()
 	for _, p := range s.server.Peers {
 		*peers = append(*peers, wire.RawPeer{p.RawAddress, p.PublicKey})
 	}
-
+	s.server.peersMtx.Unlock()
 	fmt.Println("Response", *peers)
 
 	return nil

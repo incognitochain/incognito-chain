@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"net/rpc"
+	"sync"
 	"time"
 
 	"github.com/ninjadotorg/constant/cashec"
@@ -33,7 +34,8 @@ type Peer struct {
 
 // rpcServer provides a concurrent safe RPC server to a chain server.
 type RpcServer struct {
-	Peers map[string]*Peer
+	Peers    map[string]*Peer
+	peersMtx sync.Mutex
 
 	Config RpcServerConfig
 }
@@ -65,6 +67,7 @@ func (self *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 string, s
 	if signDataB58 != "" && publicKeyB58 != "" && rawAddress != "" {
 		err := cashec.ValidateDataB58(publicKeyB58, signDataB58, []byte(rawAddress))
 		if err == nil {
+			self.peersMtx.Lock()
 			self.Peers[publicKeyB58] = &Peer{
 				ID:         self.CombineID(rawAddress, publicKeyB58),
 				RawAddress: rawAddress,
@@ -72,6 +75,7 @@ func (self *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 string, s
 				FirstPing:  time.Now().Local(),
 				LastPing:   time.Now().Local(),
 			}
+			self.peersMtx.Unlock()
 		} else {
 			log.Println("AddOrUpdatePeer error", err)
 		}
