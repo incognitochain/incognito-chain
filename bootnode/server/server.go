@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/rpc"
 	"time"
+
 	"github.com/ninjadotorg/constant/cashec"
 )
 
@@ -41,7 +42,7 @@ type RpcServerConfig struct {
 	Port int
 }
 
-func (self *RpcServer) Init(config *RpcServerConfig) (error) {
+func (self *RpcServer) Init(config *RpcServerConfig) error {
 	self.Config = *config
 	self.Peers = make(map[string]*Peer)
 	go self.PeerHeartBeat()
@@ -57,6 +58,7 @@ func (self *RpcServer) Start() {
 		log.Fatal("listen error:", e)
 	}
 	server.Accept(l)
+	l.Close()
 }
 
 func (self *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 string, signDataB58 string) {
