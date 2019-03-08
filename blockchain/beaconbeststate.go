@@ -150,7 +150,6 @@ func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
 }
 
 func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
-
 	//TODO: 0xBahamoot check back later
 	var keys []int
 	var keyStrs []string
@@ -242,7 +241,6 @@ func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
 
 // Get role of a public key base on best state beacond
 // return node-role, <shardID>
-// TODO: Role name should be write in common as constant value
 func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string, proposerOffset int) (string, byte) {
 	for shardID, pubkeyArr := range bestStateBeacon.ShardPendingValidator {
 		found := common.IndexOfStr(pubkey, pubkeyArr)
