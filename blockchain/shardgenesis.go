@@ -54,13 +54,14 @@ func CreateShardGenesisBlock(
 
 	body := ShardBody{}
 	header := ShardHeader{
-		Timestamp:     time.Date(2018, 8, 1, 0, 0, 0, 0, time.UTC).Unix(),
-		Height:        1,
-		Version:       1,
-		PrevBlockHash: common.Hash{},
-		BeaconHeight:  1,
-		Epoch:         1,
-		Round:         1,
+		Timestamp:       time.Date(2018, 8, 1, 0, 0, 0, 0, time.UTC).Unix(),
+		Height:          1,
+		Version:         1,
+		PrevBlockHash:   common.Hash{},
+		BeaconHeight:    1,
+		Epoch:           1,
+		Round:           1,
+		ProducerAddress: &privacy.PaymentAddress{},
 	}
 
 	block := &ShardBlock{
