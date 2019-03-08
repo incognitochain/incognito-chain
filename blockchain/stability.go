@@ -152,7 +152,7 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 	for _, inst := range shardBlockInstructions {
 		fmt.Printf("[db] beaconProducer found inst: %s\n", inst[0])
 		// TODO: will improve the condition later
-		if inst[0] == "stake" || inst[0] == "swap" || inst[0] == "random" {
+		if inst[0] == StakeAction || inst[0] == SwapAction || inst[0] == RandomAction {
 			continue
 		}
 		metaType, err := strconv.Atoi(inst[0])
@@ -287,7 +287,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
 			// TODO: will improve the condition later
-			if l[0] == "stake" || l[0] == "swap" || l[0] == "random" {
+			if l[0] == StakeAction || l[0] == "swap" || l[0] == RandomAction {
 				continue
 			}
 			if len(l) <= 2 {

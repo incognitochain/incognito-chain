@@ -286,10 +286,8 @@ func (self *CrossShardPool_v2) GetLatestValidBlockHeight() map[byte]uint64 {
 	self.poolMu.Lock()
 	defer self.poolMu.Unlock()
 	finalBlockHeight := make(map[byte]uint64)
-	for shardID, blkItems := range self.pendingPool {
-		for _, blk := range blkItems {
-			finalBlockHeight[shardID] = blk.Header.Height
-		}
+	for shardID, blkItems := range self.validPool {
+		finalBlockHeight[shardID] = blkItems[len(blkItems)-1].Header.Height
 	}
 	return finalBlockHeight
 }

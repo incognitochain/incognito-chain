@@ -22,7 +22,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
-	cache "github.com/patrickmn/go-cache"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
 
@@ -114,6 +114,7 @@ type Config struct {
 	BeaconPool        BeaconPool
 	ShardPool         map[byte]ShardPool
 	TxPool            TxPool
+	TempTxPool        TxPool
 
 	Server interface {
 		BoardcastNodeState() error
@@ -168,6 +169,10 @@ func (blockchain *BlockChain) Init(config *Config) error {
 
 func (blockchain *BlockChain) AddTxPool(txpool TxPool) {
 	blockchain.config.TxPool = txpool
+}
+
+func (blockchain *BlockChain) AddTempTxPool(temptxpool TxPool) {
+	blockchain.config.TempTxPool = temptxpool
 }
 
 //move this code to pool
@@ -351,15 +356,12 @@ func (blockchain *BlockChain) initBeaconState() error {
 	blockchain.BestState.Beacon = InitBestStateBeacon(blockchain.config.ChainParams)
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
 	blockchain.BestState.Beacon.Update(initBlock)
+
 	// TODO(@0xankylosaurus): initialize oracle data properly
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 1000 // $10
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.GOVToken = 2000 // $20
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.Constant = 100  // $1 = 100 cent
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.ETH = 10000     // $100.00 = 10000 cent per ether
-	// hard code params here in order to test salary tx
-	blockchain.BestState.Beacon.StabilityInfo.SalaryFund = 1000000                       // 10k const                          // 10 Const
-	blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.SalaryPerTx = 10 // 0.1 Const
-	blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.BasicSalary = 10 // 0.1 Const
 
 	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.RaiseReserveData = map[common.Hash]*component.RaiseReserveData{
 		common.ETHAssetID: &component.RaiseReserveData{

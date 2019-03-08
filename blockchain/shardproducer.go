@@ -186,7 +186,6 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 		Logger.log.Info("Creating empty block...")
 	}
 	// Remove unrelated shard tx
-	// TODO: Check again Txpool should be remove after create block is successful
 	for _, tx := range txToRemove {
 		blockgen.txPool.RemoveTx(tx)
 	}
@@ -232,6 +231,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 			- Get Current Cross Shard State: BestCrossShard.ShardHeight
 			- Get Current Cross Shard Bytemap height: BestCrossShard.BeaconHeight
 			- Get Shard Committee for Cross Shard Block via Beacon Height
+			   + Using FetchCrossShardNextHeight function in Database to determine next block height
 		2. Validate
 			- Greater than current cross shard state
 			- Cross Shard Block Signature
@@ -257,17 +257,25 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 	allCrossShardBlock := blockgen.crossShardPool[shardID].GetValidBlock(crossShards)
 	fmt.Println("ShardProducer/AllCrosshardblock", allCrossShardBlock)
 	// Get Cross Shard Block
-	for _, crossShardBlock := range allCrossShardBlock {
+	for fromShard, crossShardBlock := range allCrossShardBlock {
 		sort.SliceStable(crossShardBlock[:], func(i, j int) bool {
 			return crossShardBlock[i].Header.Height < crossShardBlock[j].Header.Height
 		})
-		//TODO: @COMMENT for testing get crossoutput coin
-		// currentBestCrossShardForThisBlock := currentBestCrossShard.ShardHeight[crossShardID]
-		index := 0
-		for _, blk := range crossShardBlock {
-			if blk.Header.Height <= blockgen.chain.BestState.Shard[shardID].BestCrossShard[blk.Header.ShardID] {
+		indexs := []int{}
+		toShard := shardID
+		startHeight := blockgen.chain.BestState.Shard[toShard].BestCrossShard[fromShard]
+		for index, blk := range crossShardBlock {
+			if blk.Header.Height <= startHeight {
 				break
 			}
+			nextHeight, err := blockgen.chain.config.DataBase.FetchCrossShardNextHeight(fromShard, toShard, startHeight)
+			if err != nil {
+				break
+			}
+			if nextHeight != blk.Header.Height {
+				continue
+			}
+			startHeight = nextHeight
 			temp, err := blockgen.chain.config.DataBase.FetchCommitteeByEpoch(blk.Header.Epoch)
 			if err != nil {
 				break
@@ -280,31 +288,10 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 				fmt.Println("Shard Producer/FAIL TO Verify Crossshard block", err)
 				break
 			}
-			index++
-			//TODO: Verify block with beacon cross sahrd byte map (via function in DB)
-
-			// lastBeaconHeight := blockgen.chain.BestState.Shard[shardID].BeaconHeight
-			// // Get shard state from beacon best state
-			// passed := false
-			// for i := lastBeaconHeight + 1; i <= currentBeaconHeight; i++ {
-			// 	shardStates, ok := blockgen.chain.BestState.Beacon.AllShardState[crossShardID]
-			// 	if ok {
-			// 		// if the first crossShardblock is not current block then discard current block
-			// 		for i := int(currentBestCrossShardForThisBlock); i < len(shardStates); i++ {
-			// 			if bytes.Contains(shardStates[i].CrossShard, []byte{shardID}) {
-			// 				if shardStates[i].Height == blk.Header.Height {
-			// 					passed = true
-			// 				}
-			// 				break
-			// 			}
-			// 		}
-			// 	}
-			// }
-			// if !passed {
-			// 	break
-			// }
+			indexs = append(indexs, index)
 		}
-		for _, blk := range crossShardBlock[:index] {
+		for _, index := range indexs {
+			blk := crossShardBlock[index]
 			outputCoin := CrossOutputCoin{
 				OutputCoin:  blk.CrossOutputCoin,
 				BlockHash:   *blk.Hash(),
@@ -385,6 +372,23 @@ func (blockgen *BlkTmplGenerator) createCustomTokenTxForCrossShard(privatekey *p
 	return txs
 }
 
+/*
+	Verify Transaction with these condition:
+	1. Validate tx version
+	2. Validate fee with tx size
+	3. Validate type of tx
+	4. Validate with other txs in block:
+ 	- Normal Transaction:
+ 	- Custom Tx:
+	4.1 Validate Init Custom Token
+	5. Validate sanity data of tx
+	6. Validate data in tx: privacy proof, metadata,...
+	7. Validate tx with blockchain: douple spend, ...
+	8. Check tx existed in block
+	9. Not accept a salary tx
+	10. Check duplicate staker public key in block
+	11. Check duplicate Init Custom Token in block
+*/
 func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	sourceTxns := blockgen.txPool.MiningDescs()
 
@@ -401,28 +405,38 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 
 	//TODO: sort transaction base on fee and check limit block size
 	// StartingPriority, fee, size, time
-
-	// validate tx and calculate total fee
+	fmt.Println("TempTxPool", reflect.TypeOf(blockgen.chain.config.TempTxPool))
+	isEmpty := blockgen.chain.config.TempTxPool.EmptyPool()
+	if !isEmpty {
+		panic("TempTxPool Is not Empty")
+	}
 	for _, txDesc := range sourceTxns {
 		tx := txDesc.Tx
-		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		if txShardID != shardID {
-			continue
-		}
-		// TODO: need to determine a tx is in privacy format or not
-		if !tx.ValidateTxByItself(tx.IsPrivacy(), blockgen.chain.config.DataBase, blockgen.chain, shardID) {
-			txToRemove = append(txToRemove, metadata.Transaction(tx))
-			continue
-		}
-		if err := tx.ValidateTxWithBlockChain(blockgen.chain, shardID, blockgen.chain.config.DataBase); err != nil {
-			txToRemove = append(txToRemove, metadata.Transaction(tx))
+		tempTxDesc, err := blockgen.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
+		tempTx := tempTxDesc.Tx
+		if err != nil {
+			txToRemove = append(txToRemove, metadata.Transaction(tempTx))
 			continue
 		}
 		totalFee += tx.GetTxFee()
-		txsToAdd = append(txsToAdd, tx)
+		txsToAdd = append(txsToAdd, tempTx)
 		if len(txsToAdd) == common.MaxTxsInBlock {
 			break
 		}
+		// txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		// if txShardID != shardID {
+		// 	continue
+		// }
+		// // TODO: need to determine a tx is in privacy format or not
+		// if !tx.ValidateTxByItself(tx.IsPrivacy(), blockgen.chain.config.DataBase, blockgen.chain, shardID) {
+		// 	txToRemove = append(txToRemove, metadata.Transaction(tx))
+		// 	continue
+		// }
+		// if err := tx.ValidateTxWithBlockChain(blockgen.chain, shardID, blockgen.chain.config.DataBase); err != nil {
+		// 	txToRemove = append(txToRemove, metadata.Transaction(tx))
+		// 	continue
+		// }
 	}
+	blockgen.chain.config.TempTxPool.EmptyPool()
 	return txsToAdd, txToRemove, totalFee
 }

@@ -240,7 +240,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 
 			fmt.Printf("\n \n Instruction in shardBlock %+v, %+v \n \n", shardBlock.Header.Height, instructions)
 			for _, l := range instructions {
-				if l[0] == "stake" {
+				if l[0] == StakeAction {
 					fmt.Println("Beacon Producer/ Stake Instructions", l)
 					stakers = append(stakers, l)
 				} else if l[0] == "swap" {
@@ -276,10 +276,10 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 				}
 			}
 			if len(stakeShard) > 0 {
-				validStakers = append(validStakers, []string{"stake", strings.Join(stakeShard, ","), "shard"})
+				validStakers = append(validStakers, []string{StakeAction, strings.Join(stakeShard, ","), "shard"})
 			}
 			if len(stakeBeacon) > 0 {
-				validStakers = append(validStakers, []string{"stake", strings.Join(stakeBeacon, ","), "beacon"})
+				validStakers = append(validStakers, []string{StakeAction, strings.Join(stakeBeacon, ","), "beacon"})
 			}
 			// format
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
@@ -442,7 +442,7 @@ func generateRandomInstruction(timestamp int64, wg *sync.WaitGroup) ([]string, i
 	strs := []string{}
 	//UNCOMMENT FOR TESTTING
 	reses := []string{"1000", strconv.Itoa(int(timestamp) + 1), "1000"}
-	strs = append(strs, "random")
+	strs = append(strs, RandomAction)
 	strs = append(strs, reses...)
 	strs = append(strs, strconv.Itoa(int(timestamp)))
 	nonce, _ := strconv.Atoi(reses[2])
@@ -453,10 +453,10 @@ func generateRandomInstruction(timestamp int64, wg *sync.WaitGroup) ([]string, i
 func getStakeValidatorArrayString(v []string) ([]string, []string) {
 	beacon := []string{}
 	shard := []string{}
-	if v[0] == "stake" && v[2] == "beacon" {
+	if v[0] == StakeAction && v[2] == "beacon" {
 		beacon = strings.Split(v[1], ",")
 	}
-	if v[0] == "stake" && v[2] == "shard" {
+	if v[0] == StakeAction && v[2] == "shard" {
 		shard = strings.Split(v[1], ",")
 	}
 	return beacon, shard
