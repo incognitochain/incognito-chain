@@ -352,7 +352,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 						txTokenDataEachShard[shardID] = make(map[common.Hash]*transaction.TxTokenData)
 					}
 					if _, ok := txTokenDataEachShard[shardID][customTokenTx.TxTokenData.PropertyID]; !ok {
-						newTxTokenData := cloneTxTokenData(customTokenTx.TxTokenData)
+						newTxTokenData := cloneTxTokenDataForCrossShard(customTokenTx.TxTokenData)
 						txTokenDataEachShard[shardID][customTokenTx.TxTokenData.PropertyID] = &newTxTokenData
 					}
 					vouts := txTokenDataEachShard[shardID][customTokenTx.TxTokenData.PropertyID].Vouts
@@ -445,7 +445,7 @@ func getTxTokenDataCrossShard(txList []metadata.Transaction, shardID byte) []tra
 				lastByte := common.GetShardIDFromLastByte(vout.PaymentAddress.Pk[len(vout.PaymentAddress.Pk)-1])
 				if lastByte == shardID {
 					if _, ok := txTokenDataMap[customTokenTx.TxTokenData.PropertyID]; !ok {
-						newTxTokenData := cloneTxTokenData(customTokenTx.TxTokenData)
+						newTxTokenData := cloneTxTokenDataForCrossShard(customTokenTx.TxTokenData)
 						txTokenDataMap[customTokenTx.TxTokenData.PropertyID] = &newTxTokenData
 					}
 					vouts := txTokenDataMap[customTokenTx.TxTokenData.PropertyID].Vouts
@@ -501,14 +501,14 @@ func calHashTxTokenDataHashList(txTokenDataList []transaction.TxTokenData) commo
 	}
 	return common.HashH(tmpByte)
 }
-func cloneTxTokenData(txTokenData transaction.TxTokenData) transaction.TxTokenData {
+func cloneTxTokenDataForCrossShard(txTokenData transaction.TxTokenData) transaction.TxTokenData {
 	newTxTokenData := transaction.TxTokenData{
 		PropertyID:     txTokenData.PropertyID,
 		PropertyName:   txTokenData.PropertyName,
 		PropertySymbol: txTokenData.PropertySymbol,
 		Mintable:       txTokenData.Mintable,
 		Amount:         txTokenData.Amount,
-		Type:           2,
+		Type:           transaction.CustomTokenCrossShard,
 	}
 	newTxTokenData.Vins = []transaction.TxTokenVin{}
 	newTxTokenData.Vouts = []transaction.TxTokenVout{}

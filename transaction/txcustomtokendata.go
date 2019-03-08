@@ -107,12 +107,11 @@ type TxTokenData struct {
 	PropertyID     common.Hash // = hash of TxTokenData data
 	PropertyName   string
 	PropertySymbol string
-
-	Type     int    // action type [init, transfer, crossShard (used only for crossShard msg)]
-	Mintable bool   // can mine, default false
-	Amount   uint64 // init amount
-	Vins     []TxTokenVin
-	Vouts    []TxTokenVout
+	Type           int    // action type [init, transfer, crossShard (used only for crossShard msg)]
+	Mintable       bool   // can mine, default false
+	Amount         uint64 // init amount
+	Vins           []TxTokenVin
+	Vouts          []TxTokenVout
 }
 
 func (txObj TxTokenData) String() string {
