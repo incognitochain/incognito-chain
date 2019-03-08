@@ -394,13 +394,17 @@ func (connManager *ConnManager) processDiscoverPeers() {
 
 		// remove later
 		rawAddress := listener.RawAddress
+		rawPort := listener.Port
 		if externalAddress == common.EmptyString {
 			externalAddress = os.Getenv("EXTERNAL_ADDRESS")
 		}
 		if externalAddress != common.EmptyString {
-			host, _, err := net.SplitHostPort(externalAddress)
+			host, port, err := net.SplitHostPort(externalAddress)
 			if err == nil && host != common.EmptyString {
 				rawAddress = strings.Replace(rawAddress, "127.0.0.1", host, 1)
+				rawAddress = strings.Replace(rawAddress, "0.0.0.0", host, 1)
+				rawAddress = strings.Replace(rawAddress, "localhost", host, 1)
+				rawAddress = strings.Replace(rawAddress, fmt.Sprintf("/%s/", rawPort), fmt.Sprintf("/%s/", port), 1)
 			}
 		} else {
 			rawAddress = ""
