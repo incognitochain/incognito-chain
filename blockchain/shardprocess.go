@@ -355,6 +355,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	)
 	if err != nil {
 		Logger.log.Error(err)
+		fmt.Println(blockchain.BestState.Shard[block.Header.ShardID].BeaconHeight , block.Header.BeaconHeight)
 		panic(err)
 		return nil
 	}
