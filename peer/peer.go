@@ -50,6 +50,7 @@ type Peer struct {
 	cStopConn       chan struct{}
 
 	Host host.Host
+	Port string
 
 	TargetAddress    ma.Multiaddr
 	PeerID           peer.ID
@@ -236,6 +237,7 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 
 	peerObj.RawAddress = rawAddress
 	peerObj.Host = basicHost
+	peerObj.Port = port
 	peerObj.TargetAddress = fullAddr
 	peerObj.PeerID = peerID
 	peerObj.cStop = make(chan struct{}, 1)
