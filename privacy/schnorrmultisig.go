@@ -63,7 +63,8 @@ func (multiSig *SchnMultiSig) Bytes() []byte {
 		panic("Throw Error from Byte() method")
 	}
 	temp := multiSig.S.Bytes()
-	for j := 0; j < BigIntSize-len(temp); j++ {
+	diff := BigIntSize - len(temp)
+	for j := 0; j < diff; j++ {
 		temp = append([]byte{0}, temp...)
 	}
 	res = append(res, temp...)
