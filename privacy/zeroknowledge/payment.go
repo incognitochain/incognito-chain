@@ -642,7 +642,6 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 // Prove creates big proof
 func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.PrivacyError) {
 	proof := new(PaymentProof).Init()
-	var err error
 
 	proof.InputCoins = wit.inputCoins
 	proof.OutputCoins = wit.outputCoins
@@ -689,6 +688,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 		}
 		proof.SerialNumberProof = append(proof.SerialNumberProof, serialNumberProof)
 	}
+	var err error
 
 	// Proving that each output values and sum of them does not exceed v_max
 	proof.AggregatedRangeProof, err = wit.AggregatedRangeWitness.Prove()
