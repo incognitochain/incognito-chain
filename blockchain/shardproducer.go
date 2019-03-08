@@ -46,7 +46,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	txsToAdd := blockgen.getTransactionForNewBlock(payToAddress, privatekey, shardID, blockgen.chain.config.DataBase, beaconBlocks)
 	//======Get Cross output coin from other shard=======
 	crossOutputCoin, crossTxTokenData := blockgen.getCrossShardData(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight, crossShards)
-	crossTxTokenTransactions := blockgen.createCustomTokenTxForCrossShard(privatekey, crossTxTokenData, shardID)
+	crossTxTokenTransactions, _ := blockgen.chain.createCustomTokenTxForCrossShard(privatekey, crossTxTokenData, shardID)
 	fmt.Println("Shard Producer crossTxTokenTransactions", crossTxTokenTransactions)
 	txsToAdd = append(txsToAdd, crossTxTokenTransactions...)
 	fmt.Println("crossOutputCoin", crossOutputCoin)
@@ -318,58 +318,9 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 	}
 	fmt.Println("ShardProducer/CrossOutputcoin Number of cross output coin", len(crossOutputCoin[byte(0)]))
 	fmt.Println("ShardProducer/CrossOutputcoin", crossOutputCoin)
+	fmt.Println("ShardProducer/crossTxTokenData Number of cross custom tx token", len(crossTxTokenData[byte(0)]))
+	fmt.Println("ShardProducer/crossTxTokenData", crossTxTokenData)
 	return crossOutputCoin, crossTxTokenData
-}
-
-/*
-	1. Get valid tx for specific shard and their fee, also return unvalid tx
-		a. Validate Tx By it self
-		b. Validate Tx with Blockchain
-	2. Remove unvalid Tx out of pool
-	3. Keep valid tx for new block
-	4. Return total fee of tx
-*/
-// get valid tx for specific shard and their fee, also return unvalid tx
-func (blockgen *BlkTmplGenerator) createCustomTokenTxForCrossShard(privatekey *privacy.SpendingKey, crossTxTokenDataMap map[byte][]CrossTxTokenData, shardID byte) []metadata.Transaction {
-	txs := []metadata.Transaction{}
-	listCustomTokens, err := blockgen.chain.ListCustomToken()
-	if err != nil {
-		panic("Can't Retrieve List Custom Token in Database")
-	}
-	for _, crossTxTokenDataList := range crossTxTokenDataMap {
-		for _, crossTxTokenData := range crossTxTokenDataList {
-			for _, txTokenData := range crossTxTokenData.TxTokenData {
-				tx := &transaction.TxCustomToken{}
-				tokenParams := &transaction.CustomTokenParamTx{
-					PropertyID:     txTokenData.PropertyID.String(),
-					PropertyName:   txTokenData.PropertyName,
-					PropertySymbol: txTokenData.PropertySymbol,
-					Amount:         txTokenData.Amount,
-					TokenTxType:    transaction.CustomTokenCrossShard,
-					Receiver:       txTokenData.Vouts,
-				}
-				err := tx.Init(
-					privatekey,
-					nil,
-					nil,
-					0,
-					tokenParams,
-					listCustomTokens,
-					blockgen.chain.config.DataBase,
-					nil,
-					false,
-					shardID,
-				)
-				if err != nil {
-					fmt.Printf("Fail to create Transaction for Cross Shard Tx Token, err %+v \n", err)
-					panic("")
-				}
-				fmt.Println("CreateCustomTokenTxForCrossShard/ tx", tx)
-				txs = append(txs, tx)
-			}
-		}
-	}
-	return txs
 }
 
 /*
@@ -423,20 +374,72 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 		if len(txsToAdd) == common.MaxTxsInBlock {
 			break
 		}
-		// txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		// if txShardID != shardID {
-		// 	continue
-		// }
-		// // TODO: need to determine a tx is in privacy format or not
-		// if !tx.ValidateTxByItself(tx.IsPrivacy(), blockgen.chain.config.DataBase, blockgen.chain, shardID) {
-		// 	txToRemove = append(txToRemove, metadata.Transaction(tx))
-		// 	continue
-		// }
-		// if err := tx.ValidateTxWithBlockChain(blockgen.chain, shardID, blockgen.chain.config.DataBase); err != nil {
-		// 	txToRemove = append(txToRemove, metadata.Transaction(tx))
-		// 	continue
-		// }
 	}
 	blockgen.chain.config.TempTxPool.EmptyPool()
 	return txsToAdd, txToRemove, totalFee
+}
+
+/*
+	1. Get valid tx for specific shard and their fee, also return unvalid tx
+		a. Validate Tx By it self
+		b. Validate Tx with Blockchain
+	2. Remove unvalid Tx out of pool
+	3. Keep valid tx for new block
+	4. Return total fee of tx
+*/
+// get valid tx for specific shard and their fee, also return unvalid tx
+func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *privacy.SpendingKey, crossTxTokenDataMap map[byte][]CrossTxTokenData, shardID byte) ([]metadata.Transaction, []transaction.TxTokenData) {
+	var keys []int
+	txs := []metadata.Transaction{}
+	txTokenDataList := []transaction.TxTokenData{}
+	listCustomTokens, err := blockchain.ListCustomToken()
+	if err != nil {
+		panic("Can't Retrieve List Custom Token in Database")
+	}
+	for k := range crossTxTokenDataMap {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, fromShardID := range keys {
+		crossTxTokenDataList, _ := crossTxTokenDataMap[byte(fromShardID)]
+		//crossTxTokenData is already sorted by block height
+		for _, crossTxTokenData := range crossTxTokenDataList {
+			for _, txTokenData := range crossTxTokenData.TxTokenData {
+				if privatekey != nil {
+					tx := &transaction.TxCustomToken{}
+					tokenParam := &transaction.CustomTokenParamTx{
+						PropertyID:     txTokenData.PropertyID.String(),
+						PropertyName:   txTokenData.PropertyName,
+						PropertySymbol: txTokenData.PropertySymbol,
+						Amount:         txTokenData.Amount,
+						TokenTxType:    transaction.CustomTokenCrossShard,
+						Receiver:       txTokenData.Vouts,
+					}
+					err := tx.Init(
+						privatekey,
+						nil,
+						nil,
+						0,
+						tokenParam,
+						listCustomTokens,
+						blockchain.config.DataBase,
+						nil,
+						false,
+						shardID,
+					)
+					if err != nil {
+						fmt.Printf("Fail to create Transaction for Cross Shard Tx Token, err %+v \n", err)
+						panic("")
+					}
+					fmt.Println("CreateCustomTokenTxForCrossShard/ tx", tx)
+					txs = append(txs, tx)
+				} else {
+					tempTxTokenData := cloneTxTokenDataForCrossShard(txTokenData)
+					tempTxTokenData.Vouts = txTokenData.Vouts
+					txTokenDataList = append(txTokenDataList, tempTxTokenData)
+				}
+			}
+		}
+	}
+	return txs, txTokenDataList
 }
