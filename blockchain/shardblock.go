@@ -154,7 +154,8 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 	crossOutputCoin := getOutCoinCrossShard(block.Body.Transactions, shardID)
 	crossTxTokenData := getTxTokenDataCrossShard(block.Body.Transactions, shardID)
 	if len(crossOutputCoin) == 0 && len(crossTxTokenData) == 0 {
-		return nil, nil
+		//TODO ?
+		return nil, errors.New("Oops")
 	}
 	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 2")
 	merklePathShard, merkleShardRoot := GetMerklePathCrossShard(block.Body.Transactions, shardID)
