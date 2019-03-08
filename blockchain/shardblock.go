@@ -44,13 +44,13 @@ type CrossShardBlock struct {
 	CrossTxTokenData []transaction.TxTokenData
 }
 
-func (shardBlock *CrossShardBlock) Hash() *common.Hash {
-	hash := shardBlock.Header.Hash()
+func (crossShardBlock *CrossShardBlock) Hash() *common.Hash {
+	hash := crossShardBlock.Header.Hash()
 	return &hash
 }
 
-func (shardBlock *ShardToBeaconBlock) Hash() *common.Hash {
-	hash := shardBlock.Header.Hash()
+func (shardToBeaconBlock *ShardToBeaconBlock) Hash() *common.Hash {
+	hash := shardToBeaconBlock.Header.Hash()
 	return &hash
 }
 
