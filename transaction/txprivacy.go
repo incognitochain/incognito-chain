@@ -130,7 +130,7 @@ func (tx *Tx) Init(
 	tx.Type = common.TxNormalType
 	Logger.log.Infof("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(inputCoins), fee, hasPrivacy)
 
-	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
+	if len(inputCoins) == 0 && len(paymentInfo) == 0 && fee == 0 && !hasPrivacy {
 		Logger.log.Infof("CREATE TX CUSTOM TOKEN\n")
 		tx.Fee = fee
 		tx.sigPrivKey = *senderSK
