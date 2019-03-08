@@ -1,7 +1,7 @@
 package blockchain
 
 import (
-	"strconv"
+	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy"
@@ -36,29 +36,31 @@ type ShardHeader struct {
 	BeaconHash   common.Hash
 }
 
-func (shardHeader ShardHeader) Hash() common.Hash {
-	record := common.EmptyString
-	// crossShardHash, _ := common.Hash{}.NewHash(shardHeader.CrossShards)
-	// add data from header
-	record += strconv.FormatInt(shardHeader.Timestamp, 10) +
-		shardHeader.Producer +
-		string(shardHeader.ShardID) +
-		strconv.Itoa(shardHeader.Version)
-	// TODO: Uncomment this when finish genesis shard block
-	// shardHeader.PrevBlockHash.String() +
-	// strconv.Itoa(int(shardHeader.Height)) +
-	// strconv.Itoa(int(shardHeader.Epoch)) +
-	// strconv.Itoa(int(shardHeader.Timestamp)) +
-	// strconv.Itoa(int(shardHeader.SalaryFund)) +
-	// shardHeader.TxRoot.String() +
-	// shardHeader.ShardTxRoot.String() +
-	// shardHeader.CrossOutputCoinRoot.String() +
-	// shardHeader.ActionsRoot.String() +
-	// shardHeader.CommitteeRoot.String() +
-	// shardHeader.PendingValidatorRoot.String() +
-	// shardHeader.BeaconHash.String() +
-	// crossShardHash.String() +
-	// strconv.Itoa(int(shardHeader.BeaconHeight)) +
-	// shardHeader.ProducerAddress.String()
-	return common.DoubleHashH([]byte(record))
+func (shardHeader *ShardHeader) String() string {
+	res := common.EmptyString
+	res += shardHeader.ProducerAddress.String()
+	res += shardHeader.Producer
+	res += string(shardHeader.ShardID)
+	res += fmt.Sprintf("%v", shardHeader.Version)
+	res += shardHeader.PrevBlockHash.String()
+	res += fmt.Sprintf("%v", shardHeader.Height)
+	res += fmt.Sprintf("%v", shardHeader.Round)
+	res += fmt.Sprintf("%v", shardHeader.Epoch)
+	res += fmt.Sprintf("%v", shardHeader.Timestamp)
+	res += shardHeader.TxRoot.String()
+	res += shardHeader.ShardTxRoot.String()
+	res += shardHeader.CrossOutputCoinRoot.String()
+	res += shardHeader.InstructionsRoot.String()
+	res += shardHeader.CommitteeRoot.String()
+	res += shardHeader.PendingValidatorRoot.String()
+	res += shardHeader.BeaconHash.String()
+	res += fmt.Sprintf("%v", shardHeader.BeaconHeight)
+	for _, value := range shardHeader.CrossShards {
+		res += string(value)
+	}
+	return res
+}
+
+func (shardHeader *ShardHeader) Hash() common.Hash {
+	return common.HashH([]byte(shardHeader.String()))
 }

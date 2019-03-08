@@ -3,7 +3,8 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
-	"strconv"
+	"fmt"
+	"sort"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
@@ -29,21 +30,32 @@ type CrossTxTokenData struct {
 }
 
 func (shardBody *ShardBody) Hash() common.Hash {
-	record := []byte{}
-	for shardID, refs := range shardBody.CrossOutputCoin {
-		record = append(record, shardID)
-		for _, ref := range refs {
-			record = append(record, []byte(strconv.Itoa(int(ref.BlockHeight)))...)
-			record = append(record, ref.BlockHash.GetBytes()...)
-			for _, coins := range ref.OutputCoin {
-				record = append(record, coins.Bytes()...)
+	res := []byte{}
+
+	for _, item := range shardBody.Instructions {
+		for _, l := range item {
+			res = append(res, []byte(l)...)
+		}
+	}
+	keys := []int{}
+	for k := range shardBody.CrossOutputCoin {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, shardID := range keys {
+		for _, value := range shardBody.CrossOutputCoin[byte(shardID)] {
+			res = append(res, []byte(fmt.Sprintf("%v", value.BlockHeight))...)
+			res = append(res, value.BlockHash.GetBytes()...)
+			for _, coins := range value.OutputCoin {
+				res = append(res, coins.Bytes()...)
 			}
+
 		}
 	}
 	for _, tx := range shardBody.Transactions {
-		record = append(record, tx.Hash().GetBytes()...)
+		res = append(res, tx.Hash().GetBytes()...)
 	}
-	return common.DoubleHashH(record)
+	return common.HashH(res)
 }
 
 /*
