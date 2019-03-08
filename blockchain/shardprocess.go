@@ -496,7 +496,7 @@ func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *Shard
 	// Cal next producer
 	// Verify next producer
 	//=============Verify producer signature
-	producerPubkey := bestStateShard.ShardCommittee[bestStateShard.ShardProposerIdx]
+	producerPubkey := bestStateShard.ShardCommittee[bestStateShard.ShardProposerIdx+block.Header.Round]
 	blockHash := block.Header.Hash()
 	if err := cashec.ValidateDataB58(producerPubkey, block.ProducerSig, blockHash.GetBytes()); err != nil {
 		return NewBlockChainError(SignatureError, err)
