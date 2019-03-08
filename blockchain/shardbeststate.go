@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/binary"
 	"fmt"
+	"sort"
 
 	"github.com/ninjadotorg/constant/common"
 )
@@ -18,68 +19,76 @@ import (
 // shared by all callers.
 
 type BestStateShard struct {
-	BestBlockHash common.Hash `json:"BestBlockHash"` // hash of block.
-	BestBlock     *ShardBlock `json:"BestBlock"`     // block data
-
-	BestBeaconHash        common.Hash `json:"BestBeaconHash"`
-	BeaconHeight          uint64      `json:"BeaconHeight"`
-	ShardID               byte        `json:"ShardID"`
-	Epoch                 uint64      `json:"Epoch"`
-	ShardHeight           uint64      `json:"ShardHeight"`
-	ShardCommitteeSize    int         `json:"ShardCommitteeSize"`
-	ShardProposerIdx      int         `json:"ShardProposerIdx"`
-	ShardCommittee        []string    `json:"ShardCommittee"`
-	ShardPendingValidator []string    `json:"ShardPendingValidator"`
-
-	// Best cross shard block by height
-	BestCrossShard map[byte]uint64 `json:"BestCrossShard"`
-
-	//TODO: verify if these information are needed or not
-	NumTxns   uint64 `json:"NumTxns"`   // The number of txns in the block.
-	TotalTxns uint64 `json:"TotalTxns"` // The total number of txns in the chain.
-
-	ActiveShards int `json:"ActiveShards"`
+	BestBlockHash         common.Hash     `json:"BestBlockHash"` // hash of block.
+	BestBlock             *ShardBlock     `json:"BestBlock"`     // block data
+	BestBeaconHash        common.Hash     `json:"BestBeaconHash"`
+	BeaconHeight          uint64          `json:"BeaconHeight"`
+	ShardID               byte            `json:"ShardID"`
+	Epoch                 uint64          `json:"Epoch"`
+	ShardHeight           uint64          `json:"ShardHeight"`
+	ShardCommitteeSize    int             `json:"ShardCommitteeSize"`
+	ShardProposerIdx      int             `json:"ShardProposerIdx"`
+	ShardCommittee        []string        `json:"ShardCommittee"`
+	ShardPendingValidator []string        `json:"ShardPendingValidator"`
+	BestCrossShard        map[byte]uint64 `json:"BestCrossShard"` // Best cross shard block by heigh
+	NumTxns               uint64          `json:"NumTxns"`        // The number of txns in the block.
+	TotalTxns             uint64          `json:"TotalTxns"`      // The total number of txns in the chain.
+	ActiveShards          int             `json:"ActiveShards"`
 }
 
 // Get role of a public key base on best state shard
-func (bestStateShard *BestStateShard) Hash() common.Hash {
-	//TODO: 0xBahamoot check back later
+func (bestStateShard *BestStateShard) GetBytes() []byte {
 	res := []byte{}
-	// res = append(res, bestStateShard.BestBlock.Header.PrevBlockHash.GetBytes()...)
+	res = append(res, bestStateShard.BestBlockHash.GetBytes()...)
 	res = append(res, bestStateShard.BestBlock.Hash().GetBytes()...)
-	shardHeightBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(shardHeightBytes, bestStateShard.ShardHeight)
-	res = append(res, shardHeightBytes...)
-
 	res = append(res, bestStateShard.BestBeaconHash.GetBytes()...)
-
 	beaconHeightBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(beaconHeightBytes, bestStateShard.BeaconHeight)
 	res = append(res, beaconHeightBytes...)
-
+	res = append(res, bestStateShard.ShardID)
 	epochBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(epochBytes, bestStateShard.Epoch)
 	res = append(res, epochBytes...)
+	shardHeightBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(shardHeightBytes, bestStateShard.ShardHeight)
+	res = append(res, shardHeightBytes...)
+	shardCommitteeSizeBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(shardCommitteeSizeBytes, uint32(bestStateShard.ShardCommitteeSize))
+	res = append(res, shardCommitteeSizeBytes...)
+	proposerIdxBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(proposerIdxBytes, uint32(bestStateShard.ShardProposerIdx))
+	res = append(res, proposerIdxBytes...)
 	for _, value := range bestStateShard.ShardCommittee {
 		res = append(res, []byte(value)...)
 	}
 	for _, value := range bestStateShard.ShardPendingValidator {
 		res = append(res, []byte(value)...)
 	}
-
-	proposerIdxBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(proposerIdxBytes, uint32(bestStateShard.ShardProposerIdx))
-	res = append(res, proposerIdxBytes...)
-
+	keys := []int{}
+	for k := range bestStateShard.BestCrossShard {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, shardID := range keys {
+		value := bestStateShard.BestCrossShard[byte(shardID)]
+		valueBytes := make([]byte, 8)
+		binary.LittleEndian.PutUint64(valueBytes, value)
+		res = append(res, valueBytes...)
+	}
 	numTxnsBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(numTxnsBytes, bestStateShard.NumTxns)
 	res = append(res, numTxnsBytes...)
-
 	totalTxnsBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(totalTxnsBytes, bestStateShard.TotalTxns)
 	res = append(res, totalTxnsBytes...)
+	activeShardsBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(activeShardsBytes, uint32(bestStateShard.ActiveShards))
+	res = append(res, activeShardsBytes...)
 
-	return common.DoubleHashH(res)
+	return res
+}
+func (bestStateShard *BestStateShard) Hash() common.Hash {
+	return common.HashH(bestStateShard.GetBytes())
 }
 func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string, proposerOffset int) string {
 	// fmt.Println("Shard BestState/ BEST STATE", bestStateShard)
