@@ -407,7 +407,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	}
 
 	// Get cross shard block from pool
-	// TODO: UNCOMMENT to bypass verify cross shard block
+	// TODO: COMMENT to bypass verify cross shard block
 	if isPresig {
 		toShard := shardID
 		crossShardLimit := blockchain.config.CrossShardPool[toShard].GetLatestValidBlockHeight()
