@@ -130,8 +130,8 @@ func (beaconBlock *BeaconBody) toString() string {
 	return res
 }
 
-func (beaconBlock *BeaconBody) Hash() common.Hash {
-	return common.DoubleHashH([]byte(beaconBlock.toString()))
+func (beaconBody *BeaconBody) Hash() common.Hash {
+	return common.DoubleHashH([]byte(beaconBody.toString()))
 }
 
 // func (beaconBlock *BeaconBody) UnmarshalJSON(data []byte) error {
@@ -147,15 +147,21 @@ func (beaconBlock *BeaconBody) Hash() common.Hash {
 // 	return nil
 // }
 
-func (beaconBlock *BeaconHeader) toString() string {
+func (beaconHeader *BeaconHeader) toString() string {
 	res := ""
-	res += fmt.Sprintf("%v", beaconBlock.Version)
-	res += fmt.Sprintf("%v", beaconBlock.Height)
-	res += fmt.Sprintf("%v", beaconBlock.Timestamp)
-	res += beaconBlock.PrevBlockHash.String()
-	res += beaconBlock.ShardStateHash.String()
-	res += beaconBlock.InstructionHash.String()
-	res += beaconBlock.Producer
+	res += beaconHeader.Producer
+	res += fmt.Sprintf("%v", beaconHeader.Version)
+	res += fmt.Sprintf("%v", beaconHeader.Height)
+	res += fmt.Sprintf("%v", beaconHeader.Epoch)
+	res += fmt.Sprintf("%v", beaconHeader.Round)
+	res += fmt.Sprintf("%v", beaconHeader.Timestamp)
+	res += beaconHeader.PrevBlockHash.String()
+	res += beaconHeader.ValidatorsRoot.String()
+	res += beaconHeader.BeaconCandidateRoot.String()
+	res += beaconHeader.ShardCandidateRoot.String()
+	res += beaconHeader.ShardValidatorsRoot.String()
+	res += beaconHeader.ShardStateHash.String()
+	res += beaconHeader.InstructionHash.String()
 	return res
 }
 
