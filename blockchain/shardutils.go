@@ -198,7 +198,6 @@ func CreateShardTxRoot(txList []metadata.Transaction) ([]common.Hash, []common.H
 //Receive tx list from shard block body, produce merkle path of UTXO CrossShard List from specific shardID
 func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merklePathShard []common.Hash, merkleShardRoot common.Hash) {
 	crossShardDataHash, merkleData := CreateShardTxRoot(txList)
-	//TODO: @kumi check again (fix infinity loop ->fix by @merman)
 	// step 2: get merkle path
 	cursor := 0
 	lastCursor := 0
@@ -315,7 +314,6 @@ func VerifyMerkleTree(finalHash common.Hash, merklePath []common.Hash, merkleRoo
 			key: token ID
 			value: TokenData of that token
 */
-//TODO: @merman check logic for cross shard tx custom token
 func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 	// group transaction by shardID
 	outCoinEachShard := make([][]privacy.OutputCoin, common.MAX_SHARD_NUMBER)
