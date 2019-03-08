@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -26,7 +27,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 	defer blockchain.chainLock.Unlock()
 	//========Verify block only
 	Logger.log.Infof("Verify block for signing process %d, with hash %+v", block.Header.Height, *block.Hash())
-	if err := blockchain.VerifyPreProcessingShardBlock(block, shardID); err != nil {
+	if err := blockchain.VerifyPreProcessingShardBlock(block, shardID, true); err != nil {
 		return err
 	}
 	//========Verify block with previous best state
@@ -57,8 +58,8 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 		return err
 	}
 	//========Update best state with new block
-	fmt.Println("Shard Process/Insert Shard Block: BEFORE", shardBestState)
 	fmt.Println("|=========================================================|")
+	fmt.Println("Shard Process/Insert Shard Block: BEFORE", shardBestState)
 	fmt.Println("|=========================================================|")
 	if err := shardBestState.Update(block, beaconBlocks); err != nil {
 		return err
@@ -87,7 +88,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	}
 	Logger.log.Infof("SHARD %+v | Begin Insert new block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	Logger.log.Infof("SHARD %+v | Verify Pre Processing  Block %+v \n", block.Header.ShardID, *block.Hash())
-	if err := blockchain.VerifyPreProcessingShardBlock(block, shardID); err != nil {
+	if err := blockchain.VerifyPreProcessingShardBlock(block, shardID, false); err != nil {
 		return err
 	}
 	//========Verify block with previous best state
@@ -194,7 +195,6 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	for _, tx := range block.Body.Transactions {
 		blockchain.config.TxPool.RemoveTx(tx)
 	}
-	//TODO: Remove cross shard block in pool
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 	return nil
 }
@@ -249,7 +249,6 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 		}
 	}
 	// Store Incomming Cross Shard
-	// TODO: store outputcoin index in crossoutput coin
 	if err := blockchain.CreateAndSaveCrossOutputCoinViewPointFromBlock(block); err != nil {
 		return err
 	}
@@ -257,7 +256,6 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
-	//TODO: store most recent proccess cross shard block
 	return nil
 }
 
@@ -272,7 +270,7 @@ func (blockchain *BlockChain) StoreMetadata(tx metadata.Transaction) error {
 This function DOES NOT verify new block with best state
 DO NOT USE THIS with GENESIS BLOCK
 - Producer
-- ShardID: of received block same shardID with input
+- ShardID: of received block same shardID
 - Version
 - Parent hash
 - Height = parent hash + 1
@@ -285,9 +283,9 @@ DO NOT USE THIS with GENESIS BLOCK
 - BeaconHeight
 - BeaconHash
 - Swap instruction
-- ALL Transaction in block
+- ALL Transaction in block: see in VerifyTransactionFromNewBlock
 */
-func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID byte) error {
+func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID byte, isPresig bool) error {
 	//verify producer sig
 	blkHash := block.Header.Hash()
 	err := cashec.ValidateDataB58(block.Header.Producer, block.ProducerSig, blkHash.GetBytes())
@@ -402,83 +400,79 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		}
 	}
 
-	// TODO(@0xankylosaurus): uncomment verify transaction
 	// Verify Transaction
-	// number of salary transaction, used for later verify
-	// txSalaryCount := 0
-	// for _, tx := range block.Body.Transactions {
-	// 	if tx.IsSalaryTx() {
-	// 		txSalaryCount++
-	// 	}
-	// 	fmt.Println("Cross Shard Tx Transaction", tx)
-	// 	if err := blockchain.VerifyTransactionFromNewBlock(tx); err != nil {
-	// 		return NewBlockChainError(TransactionError, err)
-	// 	}
-	// }
-	// fmt.Println("Number of salary transaction", txSalaryCount)
+	if err := blockchain.VerifyTransactionFromNewBlock(block.Body.Transactions); err != nil {
+		return NewBlockChainError(TransactionError, err)
 
-	//TODO: UNCOMMENT To verify Cross Shard Block
+	}
+
 	// Get cross shard block from pool
-	// crossShardMap := make(map[byte][]CrossShardBlock)
-	// bestShardHeight := blockchain.BestState.Beacon.BestShardHeight
-	// allCrossShardBlock := blockchain.config.CrossShardPool.GetBlock(bestShardHeight)
-	// oneShardCrossShardBlocks := allCrossShardBlock[shardID]
-	// currentBestCrossShard := blockchain.BestState.Shard[shardID].BestCrossShard
-	// for _, blk := range oneShardCrossShardBlocks {
-	// 	crossShardMap[blk.Header.ShardID] = append(crossShardMap[blk.Header.ShardID], blk)
-	// }
-	// for crossShardID, crossShardBlocks := range crossShardMap {
-	// 	sort.SliceStable(crossShardBlocks[:], func(i, j int) bool {
-	// 		return crossShardBlocks[i].Header.Height < crossShardBlocks[j].Header.Height
-	// 	})
-	// 	// compare cross shard block with received cross output coin
-	// 	crossOutputCoins := block.Body.CrossOutputCoin[crossShardID]
-	// 	for _, crossOutputCoin := range crossOutputCoins {
-	// 		found := false
-	// 		for _, crossShardBlock := range crossShardBlocks {
-	// 			if crossOutputCoin.BlockHeight == crossShardBlock.Header.Height {
-	// 				found = true
-	// 				break
-	// 			}
-	// 		}
-	// 		if !found {
-	// 			return NewBlockChainError(ShardStateError, errors.New("No CrossOutputCoin can't be found from any CrossShardBlock in pool"))
-	// 		}
-	// 	}
-	// 	currentBestCrossShardForThisBlock := currentBestCrossShard[crossShardID]
-	// 	for _, blk := range crossShardBlocks {
-	// 		temp, err := blockchain.config.DataBase.FetchBeaconCommitteeByHeight(blk.Header.BeaconHeight)
-	// 		if err != nil {
-	// 			return NewBlockChainError(UnmashallJsonBlockError, err)
-	// 		}
-	// 		shardCommittee := make(map[byte][]string)
-	// 		json.Unmarshal(temp, &shardCommittee)
-	// 		err = blk.VerifyCrossShardBlock(shardCommittee[shardID])
-	// 		if err != nil {
-	// 			return NewBlockChainError(SignatureError, err)
-	// 		}
-	// 		// Verify with bytemap in beacon
-	// 		passed := false
-	// 		for i := blockchain.BestState.Shard[shardID].BeaconHeight + 1; i <= block.Header.BeaconHeight; i++ {
-	// 			for shardToBeaconID, shardStates := range blockchain.BestState.Beacon.AllShardState {
-	// 				if crossShardID == shardToBeaconID {
-	// 					// compare crossoutputcoin with bytemap in beacon
-	// 					for i := int(currentBestCrossShardForThisBlock); i < len(shardStates); i++ {
-	// 						if bytes.Contains(shardStates[i].CrossShard, []byte{shardID}) {
-	// 							if shardStates[i].Height == blk.Header.Height {
-	// 								continue
-	// 							}
-	// 							return NewBlockChainError(ShardStateError, errors.New("CrossOutput coin not in bytemap"))
-	// 						}
-	// 					}
-	// 				}
-	// 				if passed {
-	// 					break
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
+	// TODO: UNCOMMENT to bypass verify cross shard block
+	if isPresig {
+		toShard := shardID
+		crossShardLimit := blockchain.config.CrossShardPool[toShard].GetLatestValidBlockHeight()
+		toShardAllCrossShardBlock := blockchain.config.CrossShardPool[toShard].GetValidBlock(crossShardLimit)
+		for fromShard, crossOutputCoins := range block.Body.CrossOutputCoin {
+			toShardCrossShardBlocks, ok := toShardAllCrossShardBlock[fromShard]
+			if !ok {
+				return NewBlockChainError(CrossShardBlockError, errors.New("Cross Shard Block From Shard "+strconv.Itoa(int(fromShard))+" Not Found in Pool"))
+			}
+			sort.SliceStable(toShardCrossShardBlocks[:], func(i, j int) bool {
+				return toShardCrossShardBlocks[i].Header.Height < toShardCrossShardBlocks[j].Header.Height
+			})
+			startHeight := blockchain.BestState.Shard[toShard].BestCrossShard[fromShard]
+			isValids := 0
+			for _, crossOutputCoin := range crossOutputCoins {
+				for index, toShardCrossShardBlock := range toShardCrossShardBlocks {
+					//Compare block height and block hash
+					if crossOutputCoin.BlockHeight == toShardCrossShardBlock.Header.Height {
+						//TODO: Verify Next Cross Shard Height via database function => done
+						nextHeight, err := blockchain.config.DataBase.FetchCrossShardNextHeight(fromShard, toShard, startHeight)
+						if err != nil {
+							return NewBlockChainError(CrossShardBlockError, err)
+						}
+						if nextHeight != crossOutputCoin.BlockHeight {
+							return NewBlockChainError(CrossShardBlockError, errors.New("Next Cross Shard Block "+strconv.Itoa(int(toShardCrossShardBlock.Header.Height))+"is Not Expected block Height "+strconv.Itoa(int(nextHeight))+" from shard "+strconv.Itoa(int(fromShard))))
+						}
+						startHeight = nextHeight
+						//TODO: VerifyCrossShardBlock => done
+						temp, err := blockchain.config.DataBase.FetchCommitteeByEpoch(toShardCrossShardBlock.Header.Epoch)
+						if err != nil {
+							return NewBlockChainError(CrossShardBlockError, err)
+						}
+						shardCommittee := make(map[byte][]string)
+						json.Unmarshal(temp, &shardCommittee)
+						err = toShardCrossShardBlock.VerifyCrossShardBlock(shardCommittee[toShardCrossShardBlock.Header.ShardID])
+						fmt.Println("ShardProducer/VerifyCrossShardBlock", err == nil)
+						if err != nil {
+							fmt.Println("Shard Producer/FAIL TO Verify Crossshard block", err)
+							return NewBlockChainError(CrossShardBlockError, err)
+						}
+						//TODO: compare crossoutput coin => done
+						compareCrossOutputCoin := CrossOutputCoin{
+							OutputCoin:  toShardCrossShardBlock.CrossOutputCoin,
+							BlockHash:   *toShardCrossShardBlock.Hash(),
+							BlockHeight: toShardCrossShardBlock.Header.Height,
+						}
+						targetHash := crossOutputCoin.Hash()
+						hash := compareCrossOutputCoin.Hash()
+						if !hash.IsEqual(&targetHash) {
+							return NewBlockChainError(CrossShardBlockError, errors.New("Cross Output Coin From New Block not compatible with cross shard block in pool"))
+						}
+						//TODO: compare cross custom token
+						if true {
+							toShardCrossShardBlocks = toShardCrossShardBlocks[index:]
+							isValids++
+							break
+						}
+					}
+				}
+			}
+			if len(crossOutputCoins) != isValids {
+				return NewBlockChainError(CrossShardBlockError, errors.New("Can't not verify all cross shard block from shard "+strconv.Itoa(int(fromShard))))
+			}
+		}
+	}
 	Logger.log.Debugf("SHARD %+v | Finish VerifyPreProcessingShardBlock Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	return nil
 }
@@ -502,12 +496,11 @@ func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *Shard
 	// Cal next producer
 	// Verify next producer
 	//=============Verify producer signature
-	//==========TODO:UNCOMMENT to verify producer signature
-	// producerPubkey := blockchain.ShardCommittee[blockchain.ShardProposerIdx]
-	// blockHash := block.Header.Hash()
-	// if err := cashec.ValidateDataB58(producerPubkey, block.ProducerSig, blockHash.GetBytes()); err != nil {
-	// 	return NewBlockChainError(SignatureError, err)
-	// }
+	producerPubkey := bestStateShard.ShardCommittee[bestStateShard.ShardProposerIdx]
+	blockHash := block.Header.Hash()
+	if err := cashec.ValidateDataB58(producerPubkey, block.ProducerSig, blockHash.GetBytes()); err != nil {
+		return NewBlockChainError(SignatureError, err)
+	}
 	//=============End Verify producer signature
 	//=============Verify aggegrate signature
 	if isVerifySig {
@@ -639,60 +632,97 @@ func (blockchain *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlo
 }
 
 /*
-1. Validate tx version
-2. Validate fee with tx size
-3. Validate type of tx
-5. Validate sanity data of tx
-6. Validate data in tx: privacy proof, metadata,...
-7. Validate tx with blockchain: douple spend, ...
+	Verify Transaction with these condition:
+	1. Validate tx version
+	2. Validate fee with tx size
+	3. Validate type of tx
+	4. Validate with other txs in block:
+ 	- Normal Transaction:
+ 	- Custom Tx:
+	4.1 Validate Init Custom Token
+	5. Validate sanity data of tx
+	6. Validate data in tx: privacy proof, metadata,...
+	7. Validate tx with blockchain: douple spend, ...
+	8. Check tx existed in block
+	9. Not accept a salary tx
+	10. Check duplicate staker public key in block
+	11. Check duplicate Init Custom Token in block
 */
-func (blockChain *BlockChain) VerifyTransactionFromNewBlock(tx metadata.Transaction) error {
+func (blockChain *BlockChain) VerifyTransactionFromNewBlock(txs []metadata.Transaction) error {
+	isEmpty := blockChain.config.TempTxPool.EmptyPool()
+	if !isEmpty {
+		panic("TempTxPool Is not Empty")
+	}
+	index := 0
+	salaryCount := 0
+	fmt.Println("TempTxPool", blockChain.config.TempTxPool)
 
-	// that make sure transaction is accepted when passed any rules
-	var shardID byte
-	var err error
-	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	// nextBlockHeight := bestHeight + 1
-	// check version
-	ok := tx.CheckTxVersion(TransactionVersion)
-	if !ok {
-		return errors.New("Version Error")
-	}
-	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 2")
-	// check fee of tx
-	minFeePerKbTx := blockChain.GetFeePerKbTx()
-	ok = tx.CheckTransactionFee(minFeePerKbTx)
-	if !ok {
-		return errors.New("Fee Error")
-	}
-	// end check with policy
-	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 3")
-	ok = tx.ValidateType()
-	if !ok {
-		return errors.New("Type Error")
-	}
-	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 4")
-	// sanity data
-	// if validate, errS := tp.ValidateSanityData(tx); !validate {
-	if validated, err := tx.ValidateSanityData(blockChain); !validated {
-		if !ok {
-			return err
+	for _, tx := range txs {
+		if !tx.IsSalaryTx() {
+			_, err := blockChain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
+			if err != nil {
+				return err
+			}
+			index++
+		} else {
+			//TODO: verify salary transaction
+			salaryCount++
 		}
 	}
-	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 5", reflect.TypeOf(tx))
-	// ValidateTransaction tx by it self
-	validated := tx.ValidateTxByItself(tx.IsPrivacy(), blockChain.config.DataBase, blockChain, shardID)
-	if !validated {
-		return errors.New("Validate By It self Error")
+	blockChain.config.TempTxPool.EmptyPool()
+	fmt.Println("Index", index)
+	fmt.Println("salaryCount", salaryCount)
+	fmt.Println("len(txs)", len(txs))
+	if index == len(txs)-salaryCount {
+		return nil
+	} else {
+		return NewBlockChainError(TransactionError, errors.New("Some Transactions in new Block maybe invalid"))
 	}
-	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 6")
-	// validate tx with data of blockchain
-	err = tx.ValidateTxWithBlockChain(blockChain, shardID, blockChain.config.DataBase)
-	if err != nil {
-		return errors.New("Validate With Blockchain Error")
-	}
-	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 1")
-	return nil
+	// that make sure transaction is accepted when passed any rules
+	// var shardID byte
+	// var err error
+	// shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	// // nextBlockHeight := bestHeight + 1
+	// // check version
+	// ok := tx.CheckTxVersion(TransactionVersion)
+	// if !ok {
+	// 	return errors.New("Version Error")
+	// }
+	// fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 2")
+	// // check fee of tx
+	// minFeePerKbTx := blockChain.GetFeePerKbTx()
+	// ok = tx.CheckTransactionFee(minFeePerKbTx)
+	// if !ok {
+	// 	return errors.New("Fee Error")
+	// }
+	// // end check with policy
+	// fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 3")
+	// ok = tx.ValidateType()
+	// if !ok {
+	// 	return errors.New("Type Error")
+	// }
+	// fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 4")
+	// // sanity data
+	// // if validate, errS := tp.ValidateSanityData(tx); !validate {
+	// if validated, err := tx.ValidateSanityData(blockChain); !validated {
+	// 	if !ok {
+	// 		return err
+	// 	}
+	// }
+	// fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 5", reflect.TypeOf(tx))
+	// // ValidateTransaction tx by it self
+	// validated := tx.ValidateTxByItself(tx.IsPrivacy(), blockChain.config.DataBase, blockChain, shardID)
+	// if !validated {
+	// 	return errors.New("Validate By It self Error")
+	// }
+	// fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 6")
+	// // validate tx with data of blockchain
+	// err = tx.ValidateTxWithBlockChain(blockChain, shardID, blockChain.config.DataBase)
+	// if err != nil {
+	// 	return errors.New("Validate With Blockchain Error")
+	// }
+	// fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 1")
+	// return nil
 }
 
 //=====================Util for shard====================

@@ -122,7 +122,6 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) error {
-	//TODO: throw error here
 	if customTokenTx.GetType() == common.TxSalaryType {
 		return NewTransactionErr(UnexpectedErr, errors.New("Wrong salary tx"))
 	}
@@ -196,17 +195,13 @@ func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRe
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
 func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	// validate for normal tx
-	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 0")
 	if tx.Tx.ValidateTransaction(hasPrivacy, db, shardID, tokenID) {
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 1")
 		if len(tx.listUtxo) == 0 {
 			return false
 		}
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 2")
 		if len(tx.TxTokenData.Vins) == 0 {
 			return false
 		}
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 3")
 		for _, vin := range tx.TxTokenData.Vins {
 			keySet := cashec.KeySet{}
 			keySet.PaymentAddress = vin.PaymentAddress
@@ -221,10 +216,8 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 				return false
 			}
 		}
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 4")
 		return true
 	}
-	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 5")
 	return false
 }
 
@@ -256,9 +249,17 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 ) bool {
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
-	fmt.Println("******************* - 1")
-	//TODO: verify CustomTokenInit
 	if customTokenTx.TxTokenData.Type == CustomTokenInit {
+		ok := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
+		if !ok {
+			return false
+		}
+		if len(customTokenTx.TxTokenData.Vouts) != 1 {
+			return false
+		}
+		if len(customTokenTx.TxTokenData.Vins) != 0 && customTokenTx.TxTokenData.Vins != nil {
+			return false
+		}
 		return true
 	}
 	//Process CustomToken CrossShard
@@ -267,11 +268,9 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 		if !ok {
 			return false
 		}
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 1-1")
 		if len(customTokenTx.listUtxo) != 0 {
 			return false
 		}
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 2-1")
 		if len(customTokenTx.TxTokenData.Vins) != 0 {
 			return false
 		}
@@ -436,7 +435,6 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 			//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 			newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
 			fmt.Println("INIT Tx Custom Token/ newHashInitToken", newHashInitToken)
-			// validate PropertyID is the only one
 			for customTokenID := range listCustomTokens {
 				fmt.Println("INIT Tx Custom Token/ Existed", customTokenID, customTokenID.String() == newHashInitToken.String())
 				if newHashInitToken.String() == customTokenID.String() {
