@@ -409,6 +409,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	// Get cross shard block from pool
 	// TODO: UNCOMMENT to bypass verify cross shard block
 	if isPresig {
+		crossTxTokenData := make(map[byte][]CrossTxTokenData)
 		toShard := shardID
 		crossShardLimit := blockchain.config.CrossShardPool[toShard].GetLatestValidBlockHeight()
 		toShardAllCrossShardBlock := blockchain.config.CrossShardPool[toShard].GetValidBlock(crossShardLimit)
@@ -460,6 +461,12 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 							return NewBlockChainError(CrossShardBlockError, errors.New("Cross Output Coin From New Block not compatible with cross shard block in pool"))
 						}
 						//TODO: compare cross custom token
+						txTokenData := CrossTxTokenData{
+							TxTokenData: toShardCrossShardBlock.CrossTxTokenData,
+							BlockHash:   *toShardCrossShardBlock.Hash(),
+							BlockHeight: toShardCrossShardBlock.Header.Height,
+						}
+						crossTxTokenData[toShardCrossShardBlock.Header.ShardID] = append(crossTxTokenData[toShardCrossShardBlock.Header.ShardID], txTokenData)
 						if true {
 							toShardCrossShardBlocks = toShardCrossShardBlocks[index:]
 							isValids++
@@ -471,6 +478,9 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 			if len(crossOutputCoins) != isValids {
 				return NewBlockChainError(CrossShardBlockError, errors.New("Can't not verify all cross shard block from shard "+strconv.Itoa(int(fromShard))))
 			}
+		}
+		if err := blockchain.VerifyCrossShardCustomToken(crossTxTokenData, shardID, block.Body.Transactions); err != nil {
+			return NewBlockChainError(CrossShardBlockError, err)
 		}
 	}
 	Logger.log.Debugf("SHARD %+v | Finish VerifyPreProcessingShardBlock Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
@@ -678,51 +688,30 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(txs []metadata.Trans
 	} else {
 		return NewBlockChainError(TransactionError, errors.New("Some Transactions in new Block maybe invalid"))
 	}
-	// that make sure transaction is accepted when passed any rules
-	// var shardID byte
-	// var err error
-	// shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	// // nextBlockHeight := bestHeight + 1
-	// // check version
-	// ok := tx.CheckTxVersion(TransactionVersion)
-	// if !ok {
-	// 	return errors.New("Version Error")
-	// }
-	// fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 2")
-	// // check fee of tx
-	// minFeePerKbTx := blockChain.GetFeePerKbTx()
-	// ok = tx.CheckTransactionFee(minFeePerKbTx)
-	// if !ok {
-	// 	return errors.New("Fee Error")
-	// }
-	// // end check with policy
-	// fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 3")
-	// ok = tx.ValidateType()
-	// if !ok {
-	// 	return errors.New("Type Error")
-	// }
-	// fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 4")
-	// // sanity data
-	// // if validate, errS := tp.ValidateSanityData(tx); !validate {
-	// if validated, err := tx.ValidateSanityData(blockChain); !validated {
-	// 	if !ok {
-	// 		return err
-	// 	}
-	// }
-	// fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 5", reflect.TypeOf(tx))
-	// // ValidateTransaction tx by it self
-	// validated := tx.ValidateTxByItself(tx.IsPrivacy(), blockChain.config.DataBase, blockChain, shardID)
-	// if !validated {
-	// 	return errors.New("Validate By It self Error")
-	// }
-	// fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 6")
-	// // validate tx with data of blockchain
-	// err = tx.ValidateTxWithBlockChain(blockChain, shardID, blockChain.config.DataBase)
-	// if err != nil {
-	// 	return errors.New("Validate With Blockchain Error")
-	// }
-	// fmt.Println("$$$$$$$$$$$$$$$$$$$$$$ 1")
-	// return nil
+}
+func (blockchain *BlockChain) VerifyCrossShardCustomToken(CrossTxTokenData map[byte][]CrossTxTokenData, shardID byte, txs []metadata.Transaction) error {
+	txTokenDataListFromTxs := []transaction.TxTokenData{}
+	_, txTokenDataList := blockchain.createCustomTokenTxForCrossShard(nil, CrossTxTokenData, shardID)
+	hash, err := calHashFromTxTokenDataList(txTokenDataList)
+	if err != nil {
+		return err
+	}
+	for _, tx := range txs {
+		if tx.GetType() == common.TxCustomTokenType {
+			txCustomToken := tx.(*transaction.TxCustomToken)
+			if txCustomToken.TxTokenData.Type == transaction.CustomTokenCrossShard {
+				txTokenDataListFromTxs = append(txTokenDataListFromTxs, txCustomToken.TxTokenData)
+			}
+		}
+	}
+	hashFromTxs, err := calHashFromTxTokenDataList(txTokenDataListFromTxs)
+	if err != nil {
+		return err
+	}
+	if strings.Compare(hash.String(), hashFromTxs.String()) != 0 {
+		return errors.New("Cross Token Data from Cross Shard Block Not Compatible with Cross Token Data in New Block")
+	}
+	return nil
 }
 
 //=====================Util for shard====================
