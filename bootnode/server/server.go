@@ -5,7 +5,9 @@ import (
 	"log"
 	"net"
 	"net/rpc"
+	"sync"
 	"time"
+
 	"github.com/ninjadotorg/constant/cashec"
 )
 
@@ -32,7 +34,8 @@ type Peer struct {
 
 // rpcServer provides a concurrent safe RPC server to a chain server.
 type RpcServer struct {
-	Peers map[string]*Peer
+	Peers    map[string]*Peer
+	peersMtx sync.Mutex
 
 	Config RpcServerConfig
 }
@@ -41,7 +44,7 @@ type RpcServerConfig struct {
 	Port int
 }
 
-func (self *RpcServer) Init(config *RpcServerConfig) (error) {
+func (self *RpcServer) Init(config *RpcServerConfig) error {
 	self.Config = *config
 	self.Peers = make(map[string]*Peer)
 	go self.PeerHeartBeat()
@@ -57,12 +60,14 @@ func (self *RpcServer) Start() {
 		log.Fatal("listen error:", e)
 	}
 	server.Accept(l)
+	l.Close()
 }
 
 func (self *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 string, signDataB58 string) {
 	if signDataB58 != "" && publicKeyB58 != "" && rawAddress != "" {
 		err := cashec.ValidateDataB58(publicKeyB58, signDataB58, []byte(rawAddress))
 		if err == nil {
+			self.peersMtx.Lock()
 			self.Peers[publicKeyB58] = &Peer{
 				ID:         self.CombineID(rawAddress, publicKeyB58),
 				RawAddress: rawAddress,
@@ -70,6 +75,7 @@ func (self *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 string, s
 				FirstPing:  time.Now().Local(),
 				LastPing:   time.Now().Local(),
 			}
+			self.peersMtx.Unlock()
 		} else {
 			log.Println("AddOrUpdatePeer error", err)
 		}
