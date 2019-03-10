@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"log"
 	"net"
+	"os"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -202,12 +203,10 @@ var RpcLimited = map[string]commandHandler{
 	GetRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
 }
 
-/*
-getblockcount RPC return information fo blockchain node
-*/
 func (rpcServer RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetNetworkInfoResult{}
 
+	result.Commit = os.Getenv("commit")
 	result.Version = RpcServerVersion
 	result.SubVersion = ""
 	result.ProtocolVersion = rpcServer.config.ProtocolVersion
