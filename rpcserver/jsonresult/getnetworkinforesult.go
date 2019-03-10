@@ -1,6 +1,7 @@
 package jsonresult
 
 type GetNetworkInfoResult struct {
+	Commit 					string                   `json:"commit"`
 	Version         string                   `json:"version"`
 	SubVersion      string                   `json:"SubVersion"`
 	ProtocolVersion string                   `json:"ProtocolVersion"`
