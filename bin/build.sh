@@ -9,4 +9,6 @@ fi
 env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '-w' github.com/ninjadotorg/constant
 env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '-w' -o bootnode ../bootnode/*.go
 
-docker build . -t dungvanautonomous/constant
+commit=`git show --summary --oneline | cut -d ' ' -f 1`
+echo $commit
+docker build --build-arg commit=$commit . -t dungvanautonomous/constant
