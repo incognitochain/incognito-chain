@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/ninjadotorg/constant/bootnode/server"
 	"log"
+
+	"github.com/ninjadotorg/constant/bootnode/server"
 )
 
 var (
@@ -31,5 +32,7 @@ func main() {
 		return
 	}
 	log.Printf("Start server with config \n %+v", server.Config)
-	server.Start()
+	for {
+		server.Start()
+	}
 }
