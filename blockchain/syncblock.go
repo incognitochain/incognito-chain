@@ -86,10 +86,11 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			}
 			for peerID, peerState := range blockchain.syncStatus.PeersState {
 				if peerState.Beacon.Height >= blockchain.BestState.Beacon.BeaconHeight {
-					if RCS.ClosestBeaconState.Height == blockchain.BestState.Beacon.BeaconHeight {
-						RCS.ClosestBeaconState = *peerState.Beacon
-					} else {
-						if peerState.Beacon.Height < RCS.ClosestBeaconState.Height && peerState.Beacon.Height > blockchain.BestState.Beacon.BeaconHeight {
+					if peerState.Beacon.Height > blockchain.BestState.Beacon.BeaconHeight {
+						if RCS.ClosestBeaconState.Height == blockchain.BestState.Beacon.BeaconHeight {
+							RCS.ClosestBeaconState = *peerState.Beacon
+						}
+						if peerState.Beacon.Height < RCS.ClosestBeaconState.Height {
 							RCS.ClosestBeaconState = *peerState.Beacon
 						}
 					}
