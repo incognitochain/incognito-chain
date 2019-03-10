@@ -50,7 +50,6 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			case <-blockchain.cQuitSync:
 				return
 			case <-time.Tick(defaultBroadcastStateTime):
-				blockchain.InsertBlockFromPool()
 				go blockchain.config.Server.BoardcastNodeState()
 			}
 		}
