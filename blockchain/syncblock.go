@@ -183,7 +183,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 				}
 			}
 
-			if RCS.ClosestBeaconState.Height == blockchain.BestState.Beacon.BeaconHeight {
+			if RCS.ClosestBeaconState.Height == blockchain.BestState.Beacon.BeaconHeight && len(blockchain.syncStatus.PeersState) > 0 {
 				blockchain.SetReadyState(false, 0, true)
 				if userRole == common.SHARD_ROLE {
 					for shardID := range blockchain.syncStatus.Shards {
