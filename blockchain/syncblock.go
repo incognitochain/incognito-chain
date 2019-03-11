@@ -182,103 +182,6 @@ func (blockchain *BlockChain) StartSyncBlk() {
 					}
 				}
 			}
-			currentBcnReqHeight := blockchain.BestState.Beacon.BeaconHeight + 1
-			for peerID := range blockchain.syncStatus.PeersState {
-				if currentBcnReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestBeaconState.Height {
-					blockchain.SyncBlkBeacon(false, false, nil, currentBcnReqHeight, RCS.ClosestBeaconState.Height, peerID)
-				} else {
-					blockchain.SyncBlkBeacon(false, false, nil, currentBcnReqHeight, currentBcnReqHeight+defaultMaxBlkReqPerPeer-1, peerID)
-					currentBcnReqHeight += defaultMaxBlkReqPerPeer - 1
-				}
-			}
-
-			switch blockchain.config.NodeMode {
-			case common.NODEMODE_AUTO:
-				switch userRole {
-				case common.PROPOSER_ROLE, common.VALIDATOR_ROLE:
-					for shardID, peer := range RCS.ShardToBeaconBlks {
-						for peerID, blks := range peer {
-							blockchain.SyncBlkShardToBeacon(shardID, true, true, blks, 0, 0, peerID)
-						}
-					}
-					for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
-						if blockchain.BestState.Beacon.BestShardHeight[shardID] < RCS.ClosestShardsState[shardID].Height {
-							currentShardReqHeight := blockchain.BestState.Beacon.BestShardHeight[shardID] + 1
-							for peerID, peerState := range blockchain.syncStatus.PeersState {
-								if _, ok := peerState.Shard[shardID]; ok {
-									if currentShardReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
-										blockchain.SyncBlkShardToBeacon(shardID, false, false, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height, peerID)
-									} else {
-										blockchain.SyncBlkShardToBeacon(shardID, false, false, nil, currentShardReqHeight, currentShardReqHeight+defaultMaxBlkReqPerPeer-1, peerID)
-										currentShardReqHeight += defaultMaxBlkReqPerPeer - 1
-									}
-								}
-							}
-						}
-					}
-				case common.SHARD_ROLE:
-					if _, ok := blockchain.syncStatus.Shards[userShardID]; !ok {
-						blockchain.syncStatus.Shards[userShardID] = struct{}{}
-					}
-					if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE {
-						for shardID, peer := range RCS.CrossShardBlks {
-							for peerID, blks := range peer {
-								blockchain.SyncBlkCrossShard(true, true, blks, nil, shardID, userShardID, peerID)
-							}
-						}
-					}
-				}
-			case common.NODEMODE_BEACON:
-				if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
-					for shardID, peer := range RCS.ShardToBeaconBlks {
-						for peerID, blks := range peer {
-							blockchain.SyncBlkShardToBeacon(shardID, true, true, blks, 0, 0, peerID)
-						}
-					}
-					for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
-						if blockchain.BestState.Beacon.BestShardHeight[shardID] < RCS.ClosestShardsState[shardID].Height {
-							currentShardReqHeight := blockchain.BestState.Beacon.BestShardHeight[shardID] + 1
-							for peerID, peerState := range blockchain.syncStatus.PeersState {
-								if shardState, ok := peerState.Shard[shardID]; ok && shardState.Height > RCS.ClosestShardsState[shardID].Height {
-									if currentShardReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
-										blockchain.SyncBlkShardToBeacon(shardID, false, false, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height, peerID)
-									} else {
-										blockchain.SyncBlkShardToBeacon(shardID, false, false, nil, currentShardReqHeight, currentShardReqHeight+defaultMaxBlkReqPerPeer-1, peerID)
-										currentShardReqHeight += defaultMaxBlkReqPerPeer - 1
-									}
-								}
-							}
-						}
-					}
-				}
-			case common.NODEMODE_SHARD:
-				if _, ok := blockchain.syncStatus.Shards[userShardID]; !ok {
-					blockchain.syncStatus.Shards[userShardID] = struct{}{}
-				}
-				if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE {
-					for shardID, peer := range RCS.CrossShardBlks {
-						for peerID, blks := range peer {
-							blockchain.SyncBlkCrossShard(true, true, blks, nil, shardID, userShardID, peerID)
-						}
-					}
-				}
-			}
-
-			for shardID := range blockchain.syncStatus.Shards {
-				currentShardReqHeight := blockchain.BestState.Shard[shardID].ShardHeight + 1
-				for peerID := range blockchain.syncStatus.PeersState {
-					if shardState, ok := blockchain.syncStatus.PeersState[peerID].Shard[shardID]; ok {
-						if shardState.Height >= currentShardReqHeight {
-							if currentShardReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
-								blockchain.SyncBlkShard(shardID, false, false, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height, peerID)
-							} else {
-								blockchain.SyncBlkShard(shardID, false, false, nil, currentShardReqHeight, currentShardReqHeight+defaultMaxBlkReqPerPeer-1, peerID)
-								currentShardReqHeight += defaultMaxBlkReqPerPeer - 1
-							}
-						}
-					}
-				}
-			}
 
 			if RCS.ClosestBeaconState.Height == blockchain.BestState.Beacon.BeaconHeight {
 				blockchain.SetReadyState(false, 0, true)
@@ -293,6 +196,106 @@ func (blockchain *BlockChain) StartSyncBlk() {
 				}
 			} else {
 				blockchain.SetReadyState(false, 0, false)
+			}
+
+			currentBcnReqHeight := blockchain.BestState.Beacon.BeaconHeight + 1
+			for peerID := range blockchain.syncStatus.PeersState {
+				if currentBcnReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestBeaconState.Height {
+					blockchain.SyncBlkBeacon(false, false, nil, currentBcnReqHeight, RCS.ClosestBeaconState.Height, peerID)
+				} else {
+					blockchain.SyncBlkBeacon(false, false, nil, currentBcnReqHeight, currentBcnReqHeight+defaultMaxBlkReqPerPeer-1, peerID)
+					currentBcnReqHeight += defaultMaxBlkReqPerPeer - 1
+				}
+			}
+
+			if blockchain.IsReady(false, 0) {
+				switch blockchain.config.NodeMode {
+				case common.NODEMODE_AUTO:
+					switch userRole {
+					case common.PROPOSER_ROLE, common.VALIDATOR_ROLE:
+						for shardID, peer := range RCS.ShardToBeaconBlks {
+							for peerID, blks := range peer {
+								blockchain.SyncBlkShardToBeacon(shardID, true, true, blks, 0, 0, peerID)
+							}
+						}
+						for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
+							if blockchain.BestState.Beacon.BestShardHeight[shardID] < RCS.ClosestShardsState[shardID].Height {
+								currentShardReqHeight := blockchain.BestState.Beacon.BestShardHeight[shardID] + 1
+								for peerID, peerState := range blockchain.syncStatus.PeersState {
+									if _, ok := peerState.Shard[shardID]; ok {
+										if currentShardReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
+											blockchain.SyncBlkShardToBeacon(shardID, false, false, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height, peerID)
+										} else {
+											blockchain.SyncBlkShardToBeacon(shardID, false, false, nil, currentShardReqHeight, currentShardReqHeight+defaultMaxBlkReqPerPeer-1, peerID)
+											currentShardReqHeight += defaultMaxBlkReqPerPeer - 1
+										}
+									}
+								}
+							}
+						}
+					case common.SHARD_ROLE:
+						if _, ok := blockchain.syncStatus.Shards[userShardID]; !ok {
+							blockchain.syncStatus.Shards[userShardID] = struct{}{}
+						}
+						if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE {
+							for shardID, peer := range RCS.CrossShardBlks {
+								for peerID, blks := range peer {
+									blockchain.SyncBlkCrossShard(true, true, blks, nil, shardID, userShardID, peerID)
+								}
+							}
+						}
+					}
+				case common.NODEMODE_BEACON:
+					if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+						for shardID, peer := range RCS.ShardToBeaconBlks {
+							for peerID, blks := range peer {
+								blockchain.SyncBlkShardToBeacon(shardID, true, true, blks, 0, 0, peerID)
+							}
+						}
+						for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
+							if blockchain.BestState.Beacon.BestShardHeight[shardID] < RCS.ClosestShardsState[shardID].Height {
+								currentShardReqHeight := blockchain.BestState.Beacon.BestShardHeight[shardID] + 1
+								for peerID, peerState := range blockchain.syncStatus.PeersState {
+									if shardState, ok := peerState.Shard[shardID]; ok && shardState.Height > RCS.ClosestShardsState[shardID].Height {
+										if currentShardReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
+											blockchain.SyncBlkShardToBeacon(shardID, false, false, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height, peerID)
+										} else {
+											blockchain.SyncBlkShardToBeacon(shardID, false, false, nil, currentShardReqHeight, currentShardReqHeight+defaultMaxBlkReqPerPeer-1, peerID)
+											currentShardReqHeight += defaultMaxBlkReqPerPeer - 1
+										}
+									}
+								}
+							}
+						}
+					}
+				case common.NODEMODE_SHARD:
+					if _, ok := blockchain.syncStatus.Shards[userShardID]; !ok {
+						blockchain.syncStatus.Shards[userShardID] = struct{}{}
+					}
+					if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE {
+						for shardID, peer := range RCS.CrossShardBlks {
+							for peerID, blks := range peer {
+								blockchain.SyncBlkCrossShard(true, true, blks, nil, shardID, userShardID, peerID)
+							}
+						}
+					}
+				}
+
+				for shardID := range blockchain.syncStatus.Shards {
+					currentShardReqHeight := blockchain.BestState.Shard[shardID].ShardHeight + 1
+					for peerID := range blockchain.syncStatus.PeersState {
+						if shardState, ok := blockchain.syncStatus.PeersState[peerID].Shard[shardID]; ok {
+							if shardState.Height >= currentShardReqHeight {
+								if currentShardReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
+									blockchain.SyncBlkShard(shardID, false, false, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height, peerID)
+								} else {
+									blockchain.SyncBlkShard(shardID, false, false, nil, currentShardReqHeight, currentShardReqHeight+defaultMaxBlkReqPerPeer-1, peerID)
+									currentShardReqHeight += defaultMaxBlkReqPerPeer - 1
+								}
+							}
+						}
+					}
+				}
 			}
 
 			blockchain.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
