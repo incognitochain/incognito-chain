@@ -229,7 +229,7 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 		Logger.log.Infof("Number of transaction in this block %d", len(block.Body.Transactions))
 	}
 
-	fmt.Println("ProcessStoreShardBlock/CrossOutputCoin	", block.Body.CrossOutputCoin)
+	fmt.Println("ProcessStoreShardBlock/CrossTransactions	", block.Body.CrossTransactions)
 	if err := blockchain.CreateAndSaveTxViewPointFromBlock(block); err != nil {
 		return err
 	}
@@ -249,7 +249,8 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 		}
 	}
 	// Store Incomming Cross Shard
-	if err := blockchain.CreateAndSaveCrossOutputCoinViewPointFromBlock(block); err != nil {
+	//TODO: Store
+	if err := blockchain.CreateAndSaveCrossTransactionCoinViewPointFromBlock(block); err != nil {
 		return err
 	}
 	err := blockchain.StoreIncomingCrossShard(block)
@@ -342,8 +343,8 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	if !bytes.Equal(block.Header.ShardTxRoot.GetBytes(), shardTxRoot.GetBytes()) {
 		return NewBlockChainError(HashError, errors.New("can't Verify CrossShardTransaction Root"))
 	}
-	// Verify Crossoutput coin
-	if !VerifyMerkleCrossOutputCoin(block.Body.CrossOutputCoin, block.Header.CrossOutputCoinRoot) {
+	// Verify crossTransaction coin
+	if !VerifyMerkleCrossTransaction(block.Body.CrossTransactions, block.Header.CrossTransactionRoot) {
 		return NewBlockChainError(HashError, errors.New("can't Verify CrossOutputCoin Root"))
 	}
 	// Verify Action
@@ -414,7 +415,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		toShard := shardID
 		crossShardLimit := blockchain.config.CrossShardPool[toShard].GetLatestValidBlockHeight()
 		toShardAllCrossShardBlock := blockchain.config.CrossShardPool[toShard].GetValidBlock(crossShardLimit)
-		for fromShard, crossOutputCoins := range block.Body.CrossOutputCoin {
+		for fromShard, crossTransactions := range block.Body.CrossTransactions {
 			toShardCrossShardBlocks, ok := toShardAllCrossShardBlock[fromShard]
 			if !ok {
 				return NewBlockChainError(CrossShardBlockError, errors.New("Cross Shard Block From Shard "+strconv.Itoa(int(fromShard))+" Not Found in Pool"))
@@ -424,16 +425,16 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 			})
 			startHeight := blockchain.BestState.Shard[toShard].BestCrossShard[fromShard]
 			isValids := 0
-			for _, crossOutputCoin := range crossOutputCoins {
+			for _, crossTransaction := range crossTransactions {
 				for index, toShardCrossShardBlock := range toShardCrossShardBlocks {
 					//Compare block height and block hash
-					if crossOutputCoin.BlockHeight == toShardCrossShardBlock.Header.Height {
+					if crossTransaction.BlockHeight == toShardCrossShardBlock.Header.Height {
 						//TODO: Verify Next Cross Shard Height via database function => done
 						nextHeight, err := blockchain.config.DataBase.FetchCrossShardNextHeight(fromShard, toShard, startHeight)
 						if err != nil {
 							return NewBlockChainError(CrossShardBlockError, err)
 						}
-						if nextHeight != crossOutputCoin.BlockHeight {
+						if nextHeight != crossTransaction.BlockHeight {
 							return NewBlockChainError(CrossShardBlockError, errors.New("Next Cross Shard Block "+strconv.Itoa(int(toShardCrossShardBlock.Header.Height))+"is Not Expected block Height "+strconv.Itoa(int(nextHeight))+" from shard "+strconv.Itoa(int(fromShard))))
 						}
 						startHeight = nextHeight
@@ -450,14 +451,15 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 							fmt.Println("Shard Producer/FAIL TO Verify Crossshard block", err)
 							return NewBlockChainError(CrossShardBlockError, err)
 						}
-						//TODO: compare crossoutput coin => done
-						compareCrossOutputCoin := CrossOutputCoin{
-							OutputCoin:  toShardCrossShardBlock.CrossOutputCoin,
-							BlockHash:   *toShardCrossShardBlock.Hash(),
-							BlockHeight: toShardCrossShardBlock.Header.Height,
+						//TODO: compare crossTransaction coin => done
+						compareCrossTransaction := CrossTransaction{
+							TokenPrivacyData: toShardCrossShardBlock.CrossTxTokenPrivacyData,
+							OutputCoin:       toShardCrossShardBlock.CrossOutputCoin,
+							BlockHash:        *toShardCrossShardBlock.Hash(),
+							BlockHeight:      toShardCrossShardBlock.Header.Height,
 						}
-						targetHash := crossOutputCoin.Hash()
-						hash := compareCrossOutputCoin.Hash()
+						targetHash := crossTransaction.Hash()
+						hash := compareCrossTransaction.Hash()
 						if !hash.IsEqual(&targetHash) {
 							return NewBlockChainError(CrossShardBlockError, errors.New("Cross Output Coin From New Block not compatible with cross shard block in pool"))
 						}
@@ -476,7 +478,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 					}
 				}
 			}
-			if len(crossOutputCoins) != isValids {
+			if len(crossTransactions) != isValids {
 				return NewBlockChainError(CrossShardBlockError, errors.New("Can't not verify all cross shard block from shard "+strconv.Itoa(int(fromShard))))
 			}
 		}
@@ -503,7 +505,6 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 */
 func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *ShardBlock, isVerifySig bool, shardID byte) error {
 	Logger.log.Debugf("SHARD %+v | Begin VerifyBestStateWithShardBlock Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
-	//TODO: define method to verify producer
 	// Cal next producer
 	// Verify next producer
 	//=============Verify producer signature
@@ -613,7 +614,7 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 		}
 	}
 	//Update best cross shard
-	for shardID, crossShardBlock := range block.Body.CrossOutputCoin {
+	for shardID, crossShardBlock := range block.Body.CrossTransactions {
 		bestStateShard.BestCrossShard[shardID] = crossShardBlock[len(crossShardBlock)-1].BlockHeight
 	}
 
@@ -717,40 +718,3 @@ func (blockchain *BlockChain) VerifyCrossShardCustomToken(CrossTxTokenData map[b
 }
 
 //=====================Util for shard====================
-//TODO: remove
-//func CreateMerkleRootShard(txList []metadata.Transaction) common.Hash {
-//	//calculate output coin hash for each shard
-//	if len(txList) == 0 {
-//		res, _ := GenerateZeroValueHash()
-//		return res
-//	}
-//	outputCoinHash := getOutCoinHashEachShard(txList)
-//	// calculate merkle data : 1 2 3 4 12 34 1234
-//	merkleData := outputCoinHash
-//	if len(merkleData)%2 == 1 {
-//		merkleData = append(merkleData, common.HashH([]byte{}))
-//	}
-//
-//	cursor := 0
-//	for {
-//		v1 := merkleData[cursor]
-//		v2 := merkleData[cursor+1]
-//		merkleData = append(merkleData, common.HashH(append(v1.GetBytes(), v2.GetBytes()...)))
-//		cursor += 2
-//		if cursor >= len(merkleData)-1 {
-//			break
-//		}
-//	}
-//	merkleShardRoot := merkleData[len(merkleData)-1]
-//	return merkleShardRoot
-//}
-
-// func (blockchain *BlockChain) StoreOutgoingCrossShard(block *ShardBlock) error {
-// 	crossShardMap, _ := block.Body.ExtractOutgoingCrossShardMap()
-// 	for crossShard, crossBlks := range crossShardMap {
-// 		for _, crossBlk := range crossBlks {
-// 			blockchain.config.DataBase.StoreIncomingCrossShard(block.Header.ShardID, crossShard, block.Header.Height, &crossBlk)
-// 		}
-// 	}
-// 	return nil
-// }

@@ -436,8 +436,8 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 	return acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
 }
 
-func (view *TxViewPoint) fetchCrossOutputViewPointFromBlock(db database.DatabaseInterface, block *ShardBlock, localWallet *wallet.Wallet) error {
-	allShardCrossOutputCoins := block.Body.CrossOutputCoin
+func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.DatabaseInterface, block *ShardBlock, localWallet *wallet.Wallet) error {
+	allShardCrossTransactions := block.Body.CrossTransactions
 	// Loop through all of the transaction descs (except for the salary tx)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
 	acceptedCommitments := make(map[string][][]byte)
@@ -445,9 +445,9 @@ func (view *TxViewPoint) fetchCrossOutputViewPointFromBlock(db database.Database
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	//@NOTICE: this function just work for Normal Transaction
-	for _, crossOutputCoins := range allShardCrossOutputCoins {
-		for _, crossOutputCoin := range crossOutputCoins {
-			commitments, outCoins, snDs, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, crossOutputCoin.OutputCoin, constantTokenID, localWallet)
+	for _, crossTransactions := range allShardCrossTransactions {
+		for _, crossTransaction := range crossTransactions {
+			commitments, outCoins, snDs, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, crossTransaction.OutputCoin, constantTokenID, localWallet)
 			if err != nil {
 				return NewBlockChainError(UnExpectedError, err)
 			}
@@ -482,10 +482,5 @@ func (view *TxViewPoint) fetchCrossOutputViewPointFromBlock(db database.Database
 		view.mapSnD = acceptedSnD
 		// view.listSnD = acceptedSnD
 	}
-	return nil
-}
-
-func (view *TxViewPoint) fetchCrossTxTokenDataViewPointFromBlock(db database.DatabaseInterface, block *ShardBlock, localWallet *wallet.Wallet) error {
-
 	return nil
 }

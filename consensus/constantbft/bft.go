@@ -69,7 +69,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 			switch protocol.phase {
 			case PBFT_PROPOSE:
 				//    single-node start    //
-				time.Sleep(2 * time.Second)
+				time.Sleep(10 * time.Second)
 				_, err := protocol.CreateBlockMsg()
 				if err != nil {
 					return nil, err
