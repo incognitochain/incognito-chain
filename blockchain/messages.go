@@ -126,7 +126,7 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 		Logger.log.Error(err)
 		return
 	}
-	if from != 0 || to != 0 {
+	if (from != 0 || to != 0) && blockchain.IsReady(false, 0) {
 		fmt.Printf("Message/SyncBlkShardToBeacon, from %+v to %+v \n", from, to)
 		blockchain.SyncBlkShardToBeacon(block.Header.ShardID, false, false, []common.Hash{}, from, to, "")
 	}
