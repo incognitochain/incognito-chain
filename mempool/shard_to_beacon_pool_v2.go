@@ -240,7 +240,7 @@ func (self *ShardToBeaconPool) GetLatestValidPendingBlockHeight() map[byte]uint6
 	return finalBlocks
 }
 
-func (self *ShardToBeaconPool) GetAllPendingBlockHeight() map[byte][]uint64 {
+func (self *ShardToBeaconPool) GetAllBlockHeight() map[byte][]uint64 {
 	finalBlocks := make(map[byte][]uint64)
 	for shardID, blks := range self.pool {
 		for _, blk := range blks {
