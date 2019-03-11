@@ -5,6 +5,7 @@ import (
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
 	"sort"
+	"sync"
 )
 
 const (
@@ -17,6 +18,7 @@ type BeaconPool struct {
 	latestValidHeight uint64
 }
 
+var poolMu sync.RWMutex
 var beaconPool *BeaconPool = nil
 
 func InitBeaconPool() {
@@ -26,6 +28,8 @@ func InitBeaconPool() {
 
 // get singleton instance of ShardToBeacon pool
 func GetBeaconPool() *BeaconPool {
+	poolMu.RLock()
+	defer poolMu.Unlock()
 	if beaconPool == nil {
 		beaconPool = new(BeaconPool)
 		beaconPool.pool = []*blockchain.BeaconBlock{}
@@ -35,11 +39,14 @@ func GetBeaconPool() *BeaconPool {
 }
 
 func (self *BeaconPool) SetBeaconState(lastestBeaconHeight uint64) {
+	poolMu.Lock()
+	defer poolMu.Unlock()
+
 	self.latestValidHeight = lastestBeaconHeight
 
 	//Remove pool base on new shardstate
-	self.RemoveBlock(lastestBeaconHeight)
-	self.UpdateLatestBeaconState()
+	self.removeBlock(lastestBeaconHeight)
+	self.updateLatestBeaconState()
 }
 
 func (self *BeaconPool) GetBeaconState() uint64 {
@@ -48,6 +55,8 @@ func (self *BeaconPool) GetBeaconState() uint64 {
 
 func (self *BeaconPool) AddBeaconBlock(blk *blockchain.BeaconBlock) error {
 	//TODO: validate aggregated signature
+	poolMu.Lock()
+	defer poolMu.Unlock()
 
 	blkHeight := blk.Header.Height
 
@@ -92,10 +101,11 @@ func (self *BeaconPool) AddBeaconBlock(blk *blockchain.BeaconBlock) error {
 	})
 
 	//update last valid pending ShardState
-	self.UpdateLatestBeaconState()
+	self.updateLatestBeaconState()
 	return nil
 }
-func (self *BeaconPool) UpdateLatestBeaconState() {
+
+func (self *BeaconPool) updateLatestBeaconState() {
 	lastHeight := self.latestValidHeight
 	for _, blk := range self.pool {
 		if blk.Header.Height > lastHeight && lastHeight+1 != blk.Header.Height {
@@ -106,9 +116,21 @@ func (self *BeaconPool) UpdateLatestBeaconState() {
 	self.latestValidHeight = lastHeight
 }
 
+func (self *BeaconPool) UpdateLatestBeaconState() {
+	poolMu.Lock()
+	defer poolMu.Unlock()
+	self.updateLatestBeaconState()
+}
+
+func (self *BeaconPool) RemoveBlock(lastBlockHeight uint64) {
+	poolMu.Lock()
+	defer poolMu.Unlock()
+	self.removeBlock(lastBlockHeight)
+}
+
 //@Notice: Remove should set latest valid height
 //Because normal beacon node may not have these block to remove
-func (self *BeaconPool) RemoveBlock(lastBlockHeight uint64) {
+func (self *BeaconPool) removeBlock(lastBlockHeight uint64) {
 	for index, block := range self.pool {
 		if block.Header.Height <= lastBlockHeight {
 			if index == len(self.pool)-1 {
@@ -124,6 +146,8 @@ func (self *BeaconPool) RemoveBlock(lastBlockHeight uint64) {
 }
 
 func (self *BeaconPool) GetValidBlock() []*blockchain.BeaconBlock {
+	poolMu.RLock()
+	defer poolMu.Unlock()
 	finalBlocks := []*blockchain.BeaconBlock{}
 	for _, blk := range self.pool {
 		if blk.Header.Height > self.latestValidHeight {
@@ -164,6 +188,9 @@ func (self *BeaconPool) GetLatestValidBlockHeight() uint64 {
 }
 
 func (self *BeaconPool) GetAllBlockHeight() []uint64 {
+	poolMu.RLock()
+	defer poolMu.Unlock()
+
 	finalBlocks := []uint64{}
 	for _, blk := range self.pool {
 		finalBlocks = append(finalBlocks, blk.Header.Height)
