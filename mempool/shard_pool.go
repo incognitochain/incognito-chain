@@ -126,6 +126,11 @@ func (self *ShardPool) updateLatestShardState() {
 
 //@Notice: Remove should set latest valid height
 //Because normal beacon node may not have these block to remove
+func (self *ShardPool) RemoveBlock(lastBlockHeight uint64) {
+	self.poolMu.Lock()
+	defer self.poolMu.Unlock()
+	self.removeBlock(lastBlockHeight)
+}
 
 func (self *ShardPool) removeBlock(lastBlockHeight uint64) {
 	for index, block := range self.pool {
