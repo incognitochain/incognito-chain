@@ -61,8 +61,8 @@ func (engine *Engine) Start() error {
 			case <-engine.cQuit:
 				return
 			default:
-				engine.config.BlockChain.InsertBlockFromPool()
 				if engine.config.BlockChain.IsReady(false, 0) {
+					fmt.Println("Blockchain is ready. Run consensus...")
 					if prevRoundNodeRole == common.BEACON_ROLE {
 						if currentPBFTBlkHeight <= engine.config.BlockChain.BestState.Beacon.BeaconHeight {
 							// reset round
@@ -246,7 +246,7 @@ func (engine *Engine) Start() error {
 								//reset round
 								prevRoundNodeRole = ""
 								currentPBFTRound = 1
-								Logger.log.Error("Blockchain is not ready!")
+								// Logger.log.Error("Blockchain is not ready!")
 							}
 						}
 					}
@@ -254,8 +254,7 @@ func (engine *Engine) Start() error {
 					//reset round
 					prevRoundNodeRole = ""
 					currentPBFTRound = 1
-					Logger.log.Error("Blockchain is not ready!")
-
+					// Logger.log.Error("Blockchain is not ready!")
 				}
 			}
 		}
