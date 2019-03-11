@@ -1,8 +1,8 @@
 package jsonresult
 
 import (
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/transaction"
+	"github.com/big0t/constant-chain/common"
+	"github.com/big0t/constant-chain/transaction"
 )
 
 type CustomToken struct {

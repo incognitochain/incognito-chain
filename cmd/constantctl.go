@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/constant-money/constant-chain/common"
+	"github.com/big0t/constant-chain/common"
 	"log"
 )
 

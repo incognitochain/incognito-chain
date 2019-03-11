@@ -1,11 +1,11 @@
 package zkp
 
 import (
-	"github.com/constant-money/constant-chain/common"
+	"github.com/big0t/constant-chain/common"
 	"math"
 	"math/big"
 
-	"github.com/constant-money/constant-chain/privacy"
+	"github.com/big0t/constant-chain/privacy"
 )
 
 // GenerateChallengeFromByte get hash of n points in G append with input values

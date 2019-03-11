@@ -3,13 +3,13 @@ package main
 import (
 	"fmt"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/common/base58"
+	"github.com/big0t/constant-chain/common"
+	"github.com/big0t/constant-chain/common/base58"
 
-	"github.com/constant-money/constant-chain/cashec"
-	"github.com/constant-money/constant-chain/privacy"
+	"github.com/big0t/constant-chain/cashec"
+	"github.com/big0t/constant-chain/privacy"
 
-	"github.com/constant-money/constant-chain/wallet"
+	"github.com/big0t/constant-chain/wallet"
 )
 
 func main() {

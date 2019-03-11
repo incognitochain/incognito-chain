@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/big0t/constant-chain/blockchain"
 )
 
 // activeNetParams is a pointer to the parameters specific to the

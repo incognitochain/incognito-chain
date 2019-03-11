@@ -8,10 +8,10 @@ import (
 	"runtime"
 	"runtime/debug"
 
-	"github.com/constant-money/constant-chain/database"
-	_ "github.com/constant-money/constant-chain/database/lvdb"
-	"github.com/constant-money/constant-chain/limits"
-	"github.com/constant-money/constant-chain/wallet"
+	"github.com/big0t/constant-chain/database"
+	_ "github.com/big0t/constant-chain/database/lvdb"
+	"github.com/big0t/constant-chain/limits"
+	"github.com/big0t/constant-chain/wallet"
 )
 
 var (

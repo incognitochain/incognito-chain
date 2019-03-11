@@ -1,7 +1,7 @@
 package constantbft
 
 import (
-	"github.com/constant-money/constant-chain/wire"
+	"github.com/big0t/constant-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 

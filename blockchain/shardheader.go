@@ -3,8 +3,8 @@ package blockchain
 import (
 	"fmt"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/privacy"
+	"github.com/big0t/constant-chain/common"
+	"github.com/big0t/constant-chain/privacy"
 )
 
 /*

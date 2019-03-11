@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/constant-money/constant-chain/cashec"
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/database"
-	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/transaction"
+	"github.com/big0t/constant-chain/cashec"
+	"github.com/big0t/constant-chain/common"
+	"github.com/big0t/constant-chain/database"
+	"github.com/big0t/constant-chain/metadata"
+	"github.com/big0t/constant-chain/privacy"
+	"github.com/big0t/constant-chain/transaction"
 )
 
 func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte, proposerOffset int, crossShards map[byte]uint64) (*ShardBlock, error) {

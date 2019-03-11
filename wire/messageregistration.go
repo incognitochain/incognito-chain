@@ -5,7 +5,7 @@ package wire
 	"encoding/json"
 
 	"github.com/libp2p/go-libp2p-peer"
-	"github.com/constant-money/constant-chain/transaction"
+	"github.com/big0t/constant-chain/transaction"
 )
 
 const (

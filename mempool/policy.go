@@ -5,8 +5,8 @@ import (
 
 	"errors"
 
-	"github.com/constant-money/constant-chain/blockchain"
-	"github.com/constant-money/constant-chain/transaction"
+	"github.com/big0t/constant-chain/blockchain"
+	"github.com/big0t/constant-chain/transaction"
 )
 
 // Policy houses the policy (configuration parameters) which is used to control the mempool.
