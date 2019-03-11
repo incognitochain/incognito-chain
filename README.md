@@ -1,7 +1,7 @@
-# Constant core
+# Constant chain
 
 ![Constant is digital money you can actually use.
-](https://constant.money/static/images/block5.webp)
+](https://constant.money/public/assets/logo-5321c8fe.svg)
 
 One prototype version for a new type of crypto curency
 
