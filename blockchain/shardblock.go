@@ -115,7 +115,6 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 	beaconBlocks, err := FetchBeaconBlockFromHeight(bc.config.DataBase, bc.BestState.Shard[block.Header.ShardID].BeaconHeight+1, block.Header.BeaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
-		panic(err)
 		return nil
 	}
 	instructions := CreateShardInstructionsFromTransactionAndIns(blk.Body.Transactions, bc, blk.Header.ShardID, blk.Header.ProducerAddress, blk.Header.Height, beaconBlocks)
