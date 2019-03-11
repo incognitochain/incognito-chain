@@ -3,7 +3,7 @@ package server
 import (
 	"fmt"
 
-	"github.com/ninjadotorg/constant/wire"
+	"github.com/constant-money/constant-chain/wire"
 )
 
 type Handler struct {

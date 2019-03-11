@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"math/big"
 
-	"github.com/ninjadotorg/constant/common"
+	"github.com/constant-money/constant-chain/common"
 )
 
 // 32-byte spending key
@@ -124,5 +124,3 @@ func (addr PaymentAddress) String() string {
 	byteArrays := addr.Bytes()
 	return hex.EncodeToString(byteArrays[:])
 }
-
-

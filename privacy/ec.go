@@ -4,11 +4,11 @@ import (
 	"crypto/elliptic"
 	"math/big"
 
-	"github.com/ninjadotorg/constant/common"
+	"github.com/constant-money/constant-chain/common"
 
 	"encoding/json"
 
-	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/pkg/errors"
 )
 
@@ -138,7 +138,7 @@ func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 	point.X = new(big.Int).SetBytes(compressPointBytes[1:33])
 
 	err := point.ComputeYCoord()
-	if err!= nil{
+	if err != nil {
 		return err
 	}
 

@@ -1,7 +1,7 @@
 package connmanager
 
 import (
-	"github.com/ninjadotorg/constant/common"
+	"github.com/constant-money/constant-chain/common"
 )
 
 type ConnManagerLogger struct {

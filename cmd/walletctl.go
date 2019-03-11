@@ -1,11 +1,11 @@
 package main
 
 import (
-	"path/filepath"
-	"os"
-	"github.com/ninjadotorg/constant/wallet"
-	"log"
 	"errors"
+	"github.com/constant-money/constant-chain/wallet"
+	"log"
+	"os"
+	"path/filepath"
 )
 
 var walletObj *wallet.Wallet
@@ -42,7 +42,7 @@ func createWallet() error {
 		log.Printf("Create wallet successfully with name: %s", cfg.WalletName)
 		return nil
 	} else {
-		return errors.New("Exist wallet with name %s\n", )
+		return errors.New("Exist wallet with name %s\n")
 	}
 }
 

@@ -2,7 +2,7 @@ package zkp
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/pkg/errors"
 	"math/big"
 )
@@ -11,7 +11,7 @@ import (
 
 // Statement to be proved
 type OneOutOfManyStatement struct {
-	commitments       []*privacy.EllipticPoint
+	commitments []*privacy.EllipticPoint
 }
 
 // Statement's witness

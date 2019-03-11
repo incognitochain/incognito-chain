@@ -1,6 +1,6 @@
 package jsonresult
 
-import "github.com/ninjadotorg/constant/blockchain"
+import "github.com/constant-money/constant-chain/blockchain"
 
 type GetBlocksBeaconResult struct {
 	Hash              string     `json:"Hash"`

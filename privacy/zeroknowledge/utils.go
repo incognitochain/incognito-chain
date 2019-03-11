@@ -1,11 +1,11 @@
 package zkp
 
 import (
-	"github.com/ninjadotorg/constant/common"
+	"github.com/constant-money/constant-chain/common"
 	"math"
 	"math/big"
 
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 )
 
 // GenerateChallengeFromByte get hash of n points in G append with input values
@@ -30,7 +30,7 @@ func generateChallenge(values [][]byte) *big.Int {
 
 // EstimateProofSize returns the estimated size of the proof in bytes
 func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
-	if !hasPrivacy{
+	if !hasPrivacy {
 		FlagSize := 14 + 2*nInput + nOutput
 		sizeSNNoPrivacyProof := nInput * privacy.SNNoPrivacyProofSize
 		sizeInputCoins := nInput * privacy.InputCoinsNoPrivacySize
@@ -45,7 +45,6 @@ func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 	sizeOneOfManyProof := nInput * privacy.OneOfManyProofSize
 	sizeSNPrivacyProof := nInput * privacy.SNPrivacyProofSize
 	sizeComOutputMultiRangeProof := int(estimateMultiRangeProofSize(nOutput))
-
 
 	sizeInputCoins := nInput * privacy.InputCoinsPrivacySize
 	sizeOutputCoins := nOutput * privacy.OutputCoinsPrivacySize
@@ -69,5 +68,3 @@ func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 
 	return uint64(sizeProof)
 }
-
-

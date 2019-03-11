@@ -1,7 +1,7 @@
 package mempool
 
 import (
-	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/constant-money/constant-chain/blockchain"
 	"sync"
 )
 

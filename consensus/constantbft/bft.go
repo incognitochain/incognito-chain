@@ -8,12 +8,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/ninjadotorg/constant/common"
+	"github.com/constant-money/constant-chain/common"
 
-	"github.com/ninjadotorg/constant/cashec"
+	"github.com/constant-money/constant-chain/cashec"
 
-	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/wire"
+	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/constant-money/constant-chain/wire"
 )
 
 type BFTProtocol struct {

@@ -1,7 +1,7 @@
 package rewardagent
 
 import (
-	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/constant-money/constant-chain/blockchain"
 )
 
 type RewardAgent struct {
@@ -15,7 +15,7 @@ type RewardAgentConfig struct {
 	BlockChain *blockchain.BlockChain
 }
 
-func (rewardAgent RewardAgent) Init(cfg *RewardAgentConfig) (*RewardAgent) {
+func (rewardAgent RewardAgent) Init(cfg *RewardAgentConfig) *RewardAgent {
 	rewardAgent.config = cfg
 	rewardAgent.quit = make(chan struct{})
 	rewardAgent.msgChan = make(chan interface{})

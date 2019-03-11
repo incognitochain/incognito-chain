@@ -11,13 +11,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/constant-money/constant-chain/bootnode/server"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/peer"
+	"github.com/constant-money/constant-chain/wire"
 	libpeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
-	"github.com/ninjadotorg/constant/bootnode/server"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/peer"
-	"github.com/ninjadotorg/constant/wire"
 )
 
 // ConnState represents the state of the requested connection.
