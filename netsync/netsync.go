@@ -5,10 +5,10 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/constant-money/constant-chain/blockchain"
-	"github.com/constant-money/constant-chain/mempool"
-	"github.com/constant-money/constant-chain/peer"
-	"github.com/constant-money/constant-chain/wire"
+	"github.com/big0t/constant-chain/blockchain"
+	"github.com/big0t/constant-chain/mempool"
+	"github.com/big0t/constant-chain/peer"
+	"github.com/big0t/constant-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 

@@ -3,13 +3,13 @@ package constantbft
 import (
 	"encoding/json"
 
-	"github.com/constant-money/constant-chain/cashec"
+	"github.com/big0t/constant-chain/cashec"
 
-	"github.com/constant-money/constant-chain/common"
+	"github.com/big0t/constant-chain/common"
 
-	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/big0t/constant-chain/blockchain"
 
-	"github.com/constant-money/constant-chain/wire"
+	"github.com/big0t/constant-chain/wire"
 )
 
 func (engine *Engine) OnBFTMsg(msg wire.Message) {

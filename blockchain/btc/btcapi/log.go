@@ -1,6 +1,6 @@
 package btcapi
 
-import "github.com/constant-money/constant-chain/common"
+import "github.com/big0t/constant-chain/common"
 
 type RandomLogger struct {
 	log common.Logger

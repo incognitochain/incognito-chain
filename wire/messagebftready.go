@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/constant-money/constant-chain/cashec"
-	"github.com/constant-money/constant-chain/common"
+	"github.com/big0t/constant-chain/cashec"
+	"github.com/big0t/constant-chain/common"
 	peer "github.com/libp2p/go-libp2p-peer"
 )
 

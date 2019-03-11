@@ -1,6 +1,6 @@
 package netsync
 
-import "github.com/constant-money/constant-chain/common"
+import "github.com/big0t/constant-chain/common"
 
 type NetSyncLogger struct {
 	log common.Logger

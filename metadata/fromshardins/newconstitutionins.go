@@ -2,7 +2,7 @@ package fromshardins
 
 import (
 	"encoding/json"
-	"github.com/constant-money/constant-chain/blockchain/component"
+	"github.com/big0t/constant-chain/blockchain/component"
 )
 
 type NewDCBConstitutionIns struct {

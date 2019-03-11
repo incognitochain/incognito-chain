@@ -1,7 +1,7 @@
 package rewardagent
 
 import (
-	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/big0t/constant-chain/blockchain"
 )
 
 type RewardAgent struct {

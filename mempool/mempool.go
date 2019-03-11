@@ -8,12 +8,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/constant-money/constant-chain/blockchain"
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/common/base58"
-	"github.com/constant-money/constant-chain/database"
-	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/transaction"
+	"github.com/big0t/constant-chain/blockchain"
+	"github.com/big0t/constant-chain/common"
+	"github.com/big0t/constant-chain/common/base58"
+	"github.com/big0t/constant-chain/database"
+	"github.com/big0t/constant-chain/metadata"
+	"github.com/big0t/constant-chain/transaction"
 )
 
 // config is a descriptor containing the memory pool configuration.

@@ -1,6 +1,6 @@
 package jsonresult
 
-import "github.com/constant-money/constant-chain/blockchain"
+import "github.com/big0t/constant-chain/blockchain"
 
 type GetBlocksBeaconResult struct {
 	Hash              string     `json:"Hash"`

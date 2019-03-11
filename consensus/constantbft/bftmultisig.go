@@ -4,10 +4,10 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/constant-money/constant-chain/cashec"
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/common/base58"
-	privacy "github.com/constant-money/constant-chain/privacy"
+	"github.com/big0t/constant-chain/cashec"
+	"github.com/big0t/constant-chain/common"
+	"github.com/big0t/constant-chain/common/base58"
+	privacy "github.com/big0t/constant-chain/privacy"
 	"github.com/pkg/errors"
 )
 

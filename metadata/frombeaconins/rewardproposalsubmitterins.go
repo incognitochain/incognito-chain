@@ -1,10 +1,10 @@
 package frombeaconins
 
 import (
-	"github.com/constant-money/constant-chain/database"
-	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/transaction"
+	"github.com/big0t/constant-chain/database"
+	"github.com/big0t/constant-chain/metadata"
+	"github.com/big0t/constant-chain/privacy"
+	"github.com/big0t/constant-chain/transaction"
 )
 
 type RewardProposalSubmitterIns struct {

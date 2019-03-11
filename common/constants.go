@@ -35,6 +35,10 @@ const (
 	MaximumProposalExplainationLength = 1000
 	NumberOfDCBGovernors              = 3
 	NumberOfGOVGovernors              = 3
+	DCBGovernorsLowerBound            = 3
+	DCBGovernorsUpperBound            = 6
+	GOVGovernorsLowerBound            = 3
+	GOVGovernorsUpperBound            = 6
 	EncryptionOnePhraseDuration       = 5
 	RewardProposalSubmitter           = 500
 	BasePercentage                    = 10000

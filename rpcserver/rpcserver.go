@@ -17,13 +17,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/constant-money/constant-chain/addrmanager"
-	"github.com/constant-money/constant-chain/blockchain"
-	"github.com/constant-money/constant-chain/connmanager"
-	"github.com/constant-money/constant-chain/database"
-	"github.com/constant-money/constant-chain/mempool"
-	"github.com/constant-money/constant-chain/wallet"
-	"github.com/constant-money/constant-chain/wire"
+	"github.com/big0t/constant-chain/addrmanager"
+	"github.com/big0t/constant-chain/blockchain"
+	"github.com/big0t/constant-chain/connmanager"
+	"github.com/big0t/constant-chain/database"
+	"github.com/big0t/constant-chain/mempool"
+	"github.com/big0t/constant-chain/wallet"
+	"github.com/big0t/constant-chain/wire"
 	peer2 "github.com/libp2p/go-libp2p-peer"
 )
 

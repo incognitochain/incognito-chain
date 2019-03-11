@@ -3,8 +3,8 @@ package database
 import (
 	"math/big"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/privacy"
+	"github.com/big0t/constant-chain/common"
+	"github.com/big0t/constant-chain/privacy"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"

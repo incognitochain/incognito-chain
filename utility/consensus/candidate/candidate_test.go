@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/constant-money/constant-chain/utility/generateKeys/generator"
+	"github.com/big0t/constant-chain/utility/generateKeys/generator"
 )
 
 const random = int64(4121500227)

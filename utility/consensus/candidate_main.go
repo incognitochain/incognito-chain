@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/constant-money/constant-chain/blockchain"
-	"github.com/constant-money/constant-chain/utility/consensus/candidate"
+	"github.com/big0t/constant-chain/blockchain"
+	"github.com/big0t/constant-chain/utility/consensus/candidate"
 )
 
 func main() {

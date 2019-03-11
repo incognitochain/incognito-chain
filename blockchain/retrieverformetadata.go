@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/database"
-	"github.com/constant-money/constant-chain/metadata"
-	privacy "github.com/constant-money/constant-chain/privacy"
+	"github.com/big0t/constant-chain/blockchain/component"
+	"github.com/big0t/constant-chain/common"
+	"github.com/big0t/constant-chain/database"
+	"github.com/big0t/constant-chain/metadata"
+	privacy "github.com/big0t/constant-chain/privacy"
 	"github.com/pkg/errors"
 )
 

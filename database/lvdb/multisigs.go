@@ -1,7 +1,7 @@
 package lvdb
 
 import (
-	"github.com/constant-money/constant-chain/database"
+	"github.com/big0t/constant-chain/database"
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )

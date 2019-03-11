@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/privacy"
+	"github.com/big0t/constant-chain/blockchain/component"
+	"github.com/big0t/constant-chain/common"
+	"github.com/big0t/constant-chain/metadata"
+	"github.com/big0t/constant-chain/privacy"
 	"github.com/pkg/errors"
 )
 

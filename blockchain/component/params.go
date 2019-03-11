@@ -1,6 +1,6 @@
 package component
 
-import "github.com/constant-money/constant-chain/common"
+import "github.com/big0t/constant-chain/common"
 
 type Oracle struct {
 	Bonds    map[string]uint64 // key: bondTypeID, value: price

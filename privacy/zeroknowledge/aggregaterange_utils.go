@@ -2,7 +2,7 @@ package zkp
 
 import (
 	"errors"
-	"github.com/constant-money/constant-chain/privacy"
+	"github.com/big0t/constant-chain/privacy"
 	"math"
 	"math/big"
 )
