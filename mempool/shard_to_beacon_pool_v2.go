@@ -131,6 +131,7 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaco
 	}
 	return 0, 0, nil
 }
+
 func (self *ShardToBeaconPool) UpdateLatestShardState() {
 	for shardID, blks := range self.pool {
 		if self.latestValidHeight[shardID] == 0 {
