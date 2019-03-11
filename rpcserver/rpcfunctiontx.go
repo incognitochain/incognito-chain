@@ -770,8 +770,12 @@ func (rpcServer RpcServer) handleCreateRawPrivacyCustomTokenTransaction(
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
-	result := jsonresult.CreateTransactionResult{
+	result := jsonresult.CreateTransactionCustomTokenResult{
+		ShardID:         tx.Tx.PubKeyLastByteSender,
 		TxID:            tx.Hash().String(),
+		TokenID:         tx.TxTokenPrivacyData.PropertyID.String(),
+		TokenName:       tx.TxTokenPrivacyData.PropertyName,
+		TokenAmount:     tx.TxTokenPrivacyData.Amount,
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
@@ -819,7 +823,7 @@ func (rpcServer RpcServer) handleCreateAndSendPrivacyCustomTokenTransaction(para
 	if err != nil {
 		return nil, err
 	}
-	tx := data.(jsonresult.CreateTransactionResult)
+	tx := data.(jsonresult.CreateTransactionCustomTokenResult)
 	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, err
@@ -827,6 +831,9 @@ func (rpcServer RpcServer) handleCreateAndSendPrivacyCustomTokenTransaction(para
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	txId, err := rpcServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err == nil {
+		return tx, nil
+	}
 	return txId, err
 }
 

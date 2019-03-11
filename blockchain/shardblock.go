@@ -42,6 +42,8 @@ type CrossShardBlock struct {
 	CrossOutputCoin []privacy.OutputCoin
 	// Cross Shard Data for Custom Token Tx
 	CrossTxTokenData []transaction.TxTokenData
+	//TODO: add to hash
+	CrossTxTokenPrivacyData []ContentCrossTokenPrivacyData
 }
 
 func (crossShardBlock *CrossShardBlock) Hash() *common.Hash {
@@ -150,11 +152,13 @@ func (blk *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byte]*Cros
 func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
 	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 1")
 	crossShard := &CrossShardBlock{}
+	//TODO: optimize, loop 1 one time for all extracted information
 	crossOutputCoin := getOutCoinCrossShard(block.Body.Transactions, shardID)
 	crossTxTokenData := getTxTokenDataCrossShard(block.Body.Transactions, shardID)
-	if len(crossOutputCoin) == 0 && len(crossTxTokenData) == 0 {
-		//TODO ?
-		return nil, errors.New("Oops")
+	crossCustomTokenPrivacyData := getTxTokenPrivacyDataCrossShard(block.Body.Transactions, shardID)
+	// Return nothing if nothing to cross
+	if len(crossOutputCoin) == 0 && len(crossTxTokenData) == 0 && len(crossCustomTokenPrivacyData) == 0 {
+		return nil, nil
 	}
 	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 2")
 	merklePathShard, merkleShardRoot := GetMerklePathCrossShard(block.Body.Transactions, shardID)
@@ -177,6 +181,7 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 	crossShard.MerklePathShard = merklePathShard
 	crossShard.CrossOutputCoin = crossOutputCoin
 	crossShard.CrossTxTokenData = crossTxTokenData
+	crossShard.CrossTxTokenPrivacyData = crossCustomTokenPrivacyData
 	crossShard.ToShardID = shardID
 	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 4")
 	return crossShard, nil

@@ -231,39 +231,26 @@ func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merkl
 //Receive a cross shard block and merkle path, verify whether the UTXO list is valid or not
 /*
 	Calculate Final Hash as Hash of:
-		1. CrossOutputCoinFinalHash
+		1. CrossTransactionFinalHash
 		2. TxTokenDataVoutFinalHash
 	These hashes will be calculated as comment in getCrossShardDataHash function
 */
 func VerifyCrossShardBlockUTXO(block *CrossShardBlock, merklePathShard []common.Hash) bool {
-	outCoins := block.CrossOutputCoin
 	var outputCoinHash common.Hash
 	var txTokenDataHash common.Hash
+	var txTokenPrivacyDataHash common.Hash
+
+	outCoins := block.CrossOutputCoin
 	outputCoinHash = calHashOutCoinCrossShard(outCoins)
-	// if len(outCoins) != 0 {
-	// 	for _, outCoin := range outCoins {
-	// 		coin := &outCoin
-	// 		tmpByte = append(tmpByte, coin.Bytes()...)
-	// 	}
-	// 	outputCoinHash = common.HashH(tmpByte)
-	// } else {
-	// 	outputCoinHash = common.HashH([]byte(""))
-	// }
 
 	txTokenDataList := block.CrossTxTokenData
 	txTokenDataHash = calHashTxTokenDataHashList(txTokenDataList)
-	// tmpByte = []byte{}
-	// if len(txTokenDatas) != 0 {
-	// 	for _, txTokenData := range txTokenDatas {
-	// 		for _, out := range txTokenData.Vouts {
-	// 			tmpByte = append(tmpByte, []byte(out.String())...)
-	// 		}
-	// 	}
-	// 	txTokenDataHash = common.HashH(tmpByte)
-	// } else {
-	// 	txTokenDataHash = common.HashH([]byte(""))
-	// }
-	finalHash := common.HashH(append(outputCoinHash.GetBytes(), txTokenDataHash.GetBytes()...))
+
+	txTokenPrivacyDataList := block.CrossTxTokenPrivacyData
+	txTokenPrivacyDataHash = calHashTxTokenPrivacyDataHashList(txTokenPrivacyDataList)
+
+	tmpByte := append(outputCoinHash.GetBytes(), txTokenDataHash.GetBytes()...)
+	finalHash := common.HashH(append(tmpByte, txTokenPrivacyDataHash.GetBytes()...))
 	return VerifyMerkleTree(finalHash, merklePathShard, block.Header.ShardTxRoot, block.ToShardID)
 }
 
@@ -318,6 +305,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 	// group transaction by shardID
 	outCoinEachShard := make([][]privacy.OutputCoin, common.MAX_SHARD_NUMBER)
 	txTokenDataEachShard := make([]map[common.Hash]*transaction.TxTokenData, common.MAX_SHARD_NUMBER)
+	txTokenPrivacyDataMap := make([]map[common.Hash]*ContentCrossTokenPrivacyData, common.MAX_SHARD_NUMBER)
 	for _, tx := range txList {
 		switch tx.GetType() {
 		//==================For Constant Transfer Only
@@ -360,51 +348,44 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 					txTokenDataEachShard[shardID][customTokenTx.TxTokenData.PropertyID].Vouts = vouts
 				}
 			}
-			// case common.TxCustomTokenPrivacyType:
-			// 	{
-			// 		customTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
-			// 		if customTokenTx.TxTokenPrivacyData.TxNormal.GetProof() != nil {
-			// 			for _, outCoin := range customTokenTx.TxTokenPrivacyData.TxNormal.GetProof().OutputCoins {
-			// 				lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-			// 				shardID := common.GetShardIDFromLastByte(lastByte)
-			// 				byteMap[common.GetShardIDFromLastByte(shardID)] = 1
-			// 			}
-			// 		}
-			// 	}
-			// }
+		case common.TxCustomTokenPrivacyType:
+			{
+				customTokenPrivacyTx := tx.(*transaction.TxCustomTokenPrivacy)
+				if customTokenPrivacyTx.TxTokenPrivacyData.TxNormal.GetProof() != nil {
+					for _, outCoin := range customTokenPrivacyTx.TxTokenPrivacyData.TxNormal.GetProof().OutputCoins {
+						lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+						shardID := common.GetShardIDFromLastByte(lastByte)
+						if _, ok := txTokenPrivacyDataMap[shardID][customTokenPrivacyTx.TxTokenPrivacyData.PropertyID]; !ok {
+							contentCrossTokenPrivacyData := cloneTxTokenPrivacyDataForCrossShard(customTokenPrivacyTx.TxTokenPrivacyData)
+							txTokenPrivacyDataMap[shardID][customTokenPrivacyTx.TxTokenPrivacyData.PropertyID] = &contentCrossTokenPrivacyData
+						}
+						outputCoins := txTokenPrivacyDataMap[shardID][customTokenPrivacyTx.TxTokenPrivacyData.PropertyID].OutputCoin
+						outputCoins = append(outputCoins, *outCoin)
+						txTokenPrivacyDataMap[shardID][customTokenPrivacyTx.TxTokenPrivacyData.PropertyID].OutputCoin = outputCoins
+
+					}
+				}
+			}
 		}
 	}
 	//calcualte hash for each shard
 	outputCoinHash := make([]common.Hash, common.MAX_SHARD_NUMBER)
 	txTokenOutHash := make([]common.Hash, common.MAX_SHARD_NUMBER)
+	txTokenPrivacyOutHash := make([]common.Hash, common.MAX_SHARD_NUMBER)
 	combinedHash := make([]common.Hash, common.MAX_SHARD_NUMBER)
+	//TODO: Optimize loop
 	for i := 0; i < common.MAX_SHARD_NUMBER; i++ {
 		outputCoinHash[i] = calHashOutCoinCrossShard(outCoinEachShard[i])
-		// if len(outCoinEachShard[i]) == 0 {
-		// 	outputCoinHash[i] = common.HashH([]byte(""))
-		// } else {
-		// 	tmpByte := []byte{}
-		// 	for _, outCoin := range outCoinEachShard[i] {
-		// 		coin := &outCoin
-		// 		tmpByte = append(tmpByte, coin.Bytes()...)
-		// 	}
-		// 	outputCoinHash[i] = common.HashH(tmpByte)
-		// }
 	}
 	for i := 0; i < common.MAX_SHARD_NUMBER; i++ {
 		txTokenOutHash[i] = calHashTxTokenDataHashFromMap(txTokenDataEachShard[i])
-		// if len(txTokenOutHash[i]) == 0 {
-		// 	txTokenOutHash[i] = common.HashH([]byte(""))
-		// } else {
-		// 	tmpByte := []byte{}
-		// 	for _, out := range txTokenOutEachShard[i] {
-		// 		tmpByte = append(tmpByte, []byte(out.String())...)
-		// 	}
-		// 	txTokenOutHash[i] = common.HashH(tmpByte)
-		// }
 	}
 	for i := 0; i < common.MAX_SHARD_NUMBER; i++ {
-		combinedHash[i] = common.HashH(append(outputCoinHash[i].GetBytes(), txTokenOutHash[i].GetBytes()...))
+		txTokenPrivacyOutHash[i] = calHashTxTokenPrivacyDataHashFromMap(txTokenPrivacyDataMap[i])
+	}
+	for i := 0; i < common.MAX_SHARD_NUMBER; i++ {
+		tmpByte := append(outputCoinHash[i].GetBytes(), txTokenOutHash[i].GetBytes()...)
+		combinedHash[i] = common.HashH(append(tmpByte, txTokenPrivacyOutHash[i].GetBytes()...))
 	}
 	return combinedHash
 }
@@ -466,6 +447,38 @@ func getTxTokenDataCrossShard(txList []metadata.Transaction, shardID byte) []tra
 	}
 	return txTokenDataList
 }
+func getTxTokenPrivacyDataCrossShard(txList []metadata.Transaction, shardID byte) []ContentCrossTokenPrivacyData {
+	txTokenPrivacyDataMap := make(map[common.Hash]*ContentCrossTokenPrivacyData)
+	for _, tx := range txList {
+		if tx.GetType() == common.TxCustomTokenPrivacyType {
+			customTokenPrivacyTx := tx.(*transaction.TxCustomTokenPrivacy)
+			if customTokenPrivacyTx.TxTokenPrivacyData.TxNormal.GetProof() != nil {
+				for _, outCoin := range customTokenPrivacyTx.TxTokenPrivacyData.TxNormal.GetProof().OutputCoins {
+					lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+					if lastByte == shardID {
+						if _, ok := txTokenPrivacyDataMap[customTokenPrivacyTx.TxTokenPrivacyData.PropertyID]; !ok {
+							contentCrossTokenPrivacyData := cloneTxTokenPrivacyDataForCrossShard(customTokenPrivacyTx.TxTokenPrivacyData)
+							txTokenPrivacyDataMap[customTokenPrivacyTx.TxTokenPrivacyData.PropertyID] = &contentCrossTokenPrivacyData
+						}
+						outputCoins := txTokenPrivacyDataMap[customTokenPrivacyTx.TxTokenPrivacyData.PropertyID].OutputCoin
+						outputCoins = append(outputCoins, *outCoin)
+						txTokenPrivacyDataMap[customTokenPrivacyTx.TxTokenPrivacyData.PropertyID].OutputCoin = outputCoins
+					}
+				}
+			}
+		}
+	}
+	var txTokenPrivacyDataList []ContentCrossTokenPrivacyData
+	if len(txTokenPrivacyDataMap) != 0 {
+		for _, value := range txTokenPrivacyDataMap {
+			txTokenPrivacyDataList = append(txTokenPrivacyDataList, *value)
+		}
+		sort.SliceStable(txTokenPrivacyDataList[:], func(i, j int) bool {
+			return txTokenPrivacyDataList[i].PropertyID.String() < txTokenPrivacyDataList[j].PropertyID.String()
+		})
+	}
+	return txTokenPrivacyDataList
+}
 func calHashOutCoinCrossShard(outCoins []privacy.OutputCoin) common.Hash {
 	tmpByte := []byte{}
 	var outputCoinHash common.Hash
@@ -501,6 +514,28 @@ func calHashTxTokenDataHashList(txTokenDataList []transaction.TxTokenData) commo
 	}
 	return common.HashH(tmpByte)
 }
+func calHashTxTokenPrivacyDataHashFromMap(txTokenPrivacyDataMap map[common.Hash]*ContentCrossTokenPrivacyData) common.Hash {
+	if len(txTokenPrivacyDataMap) == 0 {
+		return common.HashH([]byte(""))
+	}
+	var txTokenPrivacyDataList []ContentCrossTokenPrivacyData
+	for _, value := range txTokenPrivacyDataMap {
+		txTokenPrivacyDataList = append(txTokenPrivacyDataList, *value)
+	}
+	sort.SliceStable(txTokenPrivacyDataList[:], func(i, j int) bool {
+		return txTokenPrivacyDataList[i].PropertyID.String() < txTokenPrivacyDataList[j].PropertyID.String()
+	})
+	return calHashTxTokenPrivacyDataHashList(txTokenPrivacyDataList)
+}
+func calHashTxTokenPrivacyDataHashList(txTokenPrivacyDataList []ContentCrossTokenPrivacyData) common.Hash {
+	tmpByte := []byte{}
+	for _, txTokenPrivacyData := range txTokenPrivacyDataList {
+		tmpByte = append(tmpByte, txTokenPrivacyData.Bytes()...)
+
+	}
+	return common.HashH(tmpByte)
+}
+
 func cloneTxTokenDataForCrossShard(txTokenData transaction.TxTokenData) transaction.TxTokenData {
 	newTxTokenData := transaction.TxTokenData{
 		PropertyID:     txTokenData.PropertyID,
@@ -513,6 +548,18 @@ func cloneTxTokenDataForCrossShard(txTokenData transaction.TxTokenData) transact
 	newTxTokenData.Vins = []transaction.TxTokenVin{}
 	newTxTokenData.Vouts = []transaction.TxTokenVout{}
 	return newTxTokenData
+}
+func cloneTxTokenPrivacyDataForCrossShard(txTokenPrivacyData transaction.TxTokenPrivacyData) ContentCrossTokenPrivacyData {
+	newContentCrossTokenPrivacyData := ContentCrossTokenPrivacyData{
+		PropertyID:     txTokenPrivacyData.PropertyID,
+		PropertyName:   txTokenPrivacyData.PropertyName,
+		PropertySymbol: txTokenPrivacyData.PropertySymbol,
+		Mintable:       txTokenPrivacyData.Mintable,
+		Amount:         txTokenPrivacyData.Amount,
+		Type:           transaction.CustomTokenCrossShard,
+	}
+	newContentCrossTokenPrivacyData.OutputCoin = []privacy.OutputCoin{}
+	return newContentCrossTokenPrivacyData
 }
 func CreateMerkleCrossOutputCoin(crossOutputCoins map[byte][]CrossOutputCoin) (*common.Hash, error) {
 	if len(crossOutputCoins) == 0 {
@@ -544,6 +591,40 @@ func CreateMerkleCrossOutputCoin(crossOutputCoins map[byte][]CrossOutputCoin) (*
 
 func VerifyMerkleCrossOutputCoin(crossOutputCoins map[byte][]CrossOutputCoin, rootHash common.Hash) bool {
 	res, err := CreateMerkleCrossOutputCoin(crossOutputCoins)
+	if err != nil {
+		return false
+	}
+	hashByte := rootHash.GetBytes()
+	newHash, err := common.Hash{}.NewHash(hashByte)
+	if err != nil {
+		return false
+	}
+	return newHash.IsEqual(res)
+}
+func CreateMerkleCrossTransaction(crossTransactions map[byte][]CrossTransaction) (*common.Hash, error) {
+	if len(crossTransactions) == 0 {
+		res, err := GenerateZeroValueHash()
+		return &res, err
+	}
+	keys := []int{}
+	crossTransactionHashes := []*common.Hash{}
+	for k := range crossTransactions {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, shardID := range keys {
+		for _, value := range crossTransactions[byte(shardID)] {
+			hash := value.Hash()
+			crossTransactionHashes = append(crossTransactionHashes, &hash)
+		}
+	}
+	merkle := Merkle{}
+	merkleTree := merkle.BuildMerkleTreeOfHashs(crossTransactionHashes)
+	return merkleTree[len(merkleTree)-1], nil
+}
+
+func VerifyMerkleCrossTransaction(crossTransactions map[byte][]CrossTransaction, rootHash common.Hash) bool {
+	res, err := CreateMerkleCrossTransaction(crossTransactions)
 	if err != nil {
 		return false
 	}
