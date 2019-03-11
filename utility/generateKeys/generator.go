@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/constant-money/constant-chain/utility/generateKeys/generator"
+	"github.com/big0t/constant-chain/utility/generateKeys/generator"
 )
 
 type KeyPair struct {

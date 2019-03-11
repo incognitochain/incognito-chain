@@ -3,11 +3,11 @@ package blockchain
 // import (
 // 	"bytes"
 
-// 	"github.com/constant-money/constant-chain/common"
-// 	"github.com/constant-money/constant-chain/metadata"
-// 	"github.com/constant-money/constant-chain/privacy"
-// 	"github.com/constant-money/constant-chain/transaction"
-// 	"github.com/constant-money/constant-chain/wallet"
+// 	"github.com/big0t/constant-chain/common"
+// 	"github.com/big0t/constant-chain/metadata"
+// 	"github.com/big0t/constant-chain/privacy"
+// 	"github.com/big0t/constant-chain/transaction"
+// 	"github.com/big0t/constant-chain/wallet"
 // 	"github.com/pkg/errors"
 // )
 

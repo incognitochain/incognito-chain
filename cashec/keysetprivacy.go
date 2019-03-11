@@ -1,16 +1,16 @@
 package cashec
 
 import (
-	// "github.com/constant-money/constant-chain/privacy/client"
+	// "github.com/big0t/constant-chain/privacy/client"
 	"encoding/json"
 	"errors"
 	"math/big"
 
 	errors2 "github.com/pkg/errors"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/common/base58"
-	"github.com/constant-money/constant-chain/privacy"
+	"github.com/big0t/constant-chain/common"
+	"github.com/big0t/constant-chain/common/base58"
+	"github.com/big0t/constant-chain/privacy"
 )
 
 // This is real raw data of wallet account, which user can use to

@@ -1,6 +1,6 @@
 package blockchain
 
-import "github.com/constant-money/constant-chain/privacy"
+import "github.com/big0t/constant-chain/privacy"
 
 type GovernorInfo struct {
 	BoardIndex          uint32

@@ -1,7 +1,7 @@
 package metadata
 
 import (
-	"github.com/constant-money/constant-chain/database"
+	"github.com/big0t/constant-chain/database"
 )
 
 type SendBackTokenVoteFailMetadata struct {

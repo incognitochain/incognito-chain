@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/constant-money/constant-chain/blockchain"
-	"github.com/constant-money/constant-chain/common"
+	"github.com/big0t/constant-chain/blockchain"
+	"github.com/big0t/constant-chain/common"
 )
 
 type ByShardIDAndBlockHeight []blockchain.BlockV2

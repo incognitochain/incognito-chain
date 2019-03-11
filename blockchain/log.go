@@ -1,6 +1,6 @@
 package blockchain
 
-import "github.com/constant-money/constant-chain/common"
+import "github.com/big0t/constant-chain/common"
 
 type BlockChainLogger struct {
 	log common.Logger

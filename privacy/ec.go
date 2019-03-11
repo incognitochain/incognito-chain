@@ -4,11 +4,11 @@ import (
 	"crypto/elliptic"
 	"math/big"
 
-	"github.com/constant-money/constant-chain/common"
+	"github.com/big0t/constant-chain/common"
 
 	"encoding/json"
 
-	"github.com/constant-money/constant-chain/common/base58"
+	"github.com/big0t/constant-chain/common/base58"
 	"github.com/pkg/errors"
 )
 

@@ -5,10 +5,10 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/common/base58"
-	"github.com/constant-money/constant-chain/database"
-	"github.com/constant-money/constant-chain/privacy"
+	"github.com/big0t/constant-chain/common"
+	"github.com/big0t/constant-chain/common/base58"
+	"github.com/big0t/constant-chain/database"
+	"github.com/big0t/constant-chain/privacy"
 )
 
 // PaymentWitness contains all of witness for proving when spending coins

@@ -14,9 +14,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/constant-money/constant-chain/cashec"
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/wallet"
+	"github.com/big0t/constant-chain/cashec"
+	"github.com/big0t/constant-chain/common"
+	"github.com/big0t/constant-chain/wallet"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jessevdk/go-flags"
 )

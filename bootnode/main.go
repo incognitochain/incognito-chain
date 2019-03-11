@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/constant-money/constant-chain/bootnode/server"
+	"github.com/big0t/constant-chain/bootnode/server"
 )
 
 var (

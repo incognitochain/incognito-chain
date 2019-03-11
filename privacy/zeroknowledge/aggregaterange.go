@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/constant-money/constant-chain/privacy"
+	"github.com/big0t/constant-chain/privacy"
 )
 
 // This protocol proves in zero-knowledge that a list of committed values falls in [0, 2^64)

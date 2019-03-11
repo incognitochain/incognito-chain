@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha512"
-	"github.com/constant-money/constant-chain/cashec"
-	"github.com/constant-money/constant-chain/common/base58"
+	"github.com/big0t/constant-chain/cashec"
+	"github.com/big0t/constant-chain/common/base58"
 )
 
 // KeyWallet represents with bip32 standard

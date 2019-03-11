@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/constant-money/constant-chain/common"
+	"github.com/big0t/constant-chain/common"
 )
 
 // ErrChecksum indicates that the checksum of a check-encoded string does not verify against

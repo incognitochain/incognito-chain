@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/constant-money/constant-chain/peer"
+	"github.com/big0t/constant-chain/peer"
 	peer2 "github.com/libp2p/go-libp2p-peer"
 )
 

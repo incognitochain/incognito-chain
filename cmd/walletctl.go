@@ -2,7 +2,7 @@ package main
 
 import (
 	"errors"
-	"github.com/constant-money/constant-chain/wallet"
+	"github.com/big0t/constant-chain/wallet"
 	"log"
 	"os"
 	"path/filepath"

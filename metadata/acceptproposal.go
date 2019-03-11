@@ -3,9 +3,9 @@ package metadata
 import (
 	"encoding/json"
 	"errors"
-	"github.com/constant-money/constant-chain/blockchain/component"
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/database"
+	"github.com/big0t/constant-chain/blockchain/component"
+	"github.com/big0t/constant-chain/common"
+	"github.com/big0t/constant-chain/database"
 )
 
 type ProposalVote struct {

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/constant-money/constant-chain/privacy"
+	"github.com/big0t/constant-chain/privacy"
 	"github.com/stretchr/testify/assert"
 )
 
