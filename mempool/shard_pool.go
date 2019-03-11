@@ -109,14 +109,8 @@ func (self *ShardPool) AddShardBlock(blk *blockchain.ShardBlock) error {
 	})
 
 	//update last valid pending ShardState
-	self.UpdateLatestShardState()
-	return nil
-}
-
-func (self *ShardPool) UpdateLatestShardState() {
-	self.poolMu.Lock()
-	defer self.poolMu.Unlock()
 	self.updateLatestShardState()
+	return nil
 }
 
 func (self *ShardPool) updateLatestShardState() {
@@ -132,15 +126,8 @@ func (self *ShardPool) updateLatestShardState() {
 
 //@Notice: Remove should set latest valid height
 //Because normal beacon node may not have these block to remove
-func (self *ShardPool) RemoveBlock(lastBlockHeight uint64) {
-	self.poolMu.Lock()
-	defer self.poolMu.Unlock()
-	self.removeBlock(lastBlockHeight)
-}
 
 func (self *ShardPool) removeBlock(lastBlockHeight uint64) {
-	self.poolMu.Lock()
-	defer self.poolMu.Unlock()
 	for index, block := range self.pool {
 		if block.Header.Height <= lastBlockHeight {
 			if index == len(self.pool)-1 {
