@@ -73,12 +73,21 @@ func (db *db) AddVoteBoard(
 	return err
 }
 
+// GetNumberOfGovernor remove-soon
 func GetNumberOfGovernor(boardType common.BoardType) int {
 	numberOfGovernors := common.NumberOfDCBGovernors
 	if boardType == common.GOVBoard {
 		numberOfGovernors = common.NumberOfGOVGovernors
 	}
 	return numberOfGovernors
+}
+
+// GetNumberOfGovernorRange return
+func GetNumberOfGovernorRange(boardType common.BoardType) (int, int) {
+	if boardType == common.GOVBoard {
+		return common.GOVGovernorsLowerBound, common.GOVGovernorsUpperBound
+	}
+	return common.DCBGovernorsLowerBound, common.DCBGovernorsUpperBound
 }
 
 func (db *db) GetTopMostVoteGovernor(boardType common.BoardType, boardIndex uint32) (database.CandidateList, error) {
@@ -104,12 +113,15 @@ func (db *db) GetTopMostVoteGovernor(boardType common.BoardType, boardIndex uint
 		})
 	}
 	sort.Sort(candidateList)
-	numberOfGovernors := GetNumberOfGovernor(boardType)
-	if len(candidateList) < numberOfGovernors {
+	lenCandidateList := len(candidateList)
+	lowerBound, upperBound := GetNumberOfGovernorRange(boardType)
+	if lowerBound > lenCandidateList {
 		return nil, database.NewDatabaseError(database.NotEnoughCandidate, errors.Errorf("not enough Candidate"))
 	}
-
-	return candidateList[len(candidateList)-numberOfGovernors:], nil
+	if lenCandidateList > upperBound {
+		return candidateList[lenCandidateList-upperBound:], nil
+	}
+	return candidateList, nil
 }
 
 func (db *db) NewIterator(slice *util.Range, ro *opt.ReadOptions) iterator.Iterator {
