@@ -134,8 +134,6 @@ const (
 	SendRawVoteBoardGOVTx                = "sendrawvoteboardgovtx"
 	CreateRawVoteGOVBoardTx              = "createrawvotegovboardtx"
 	CreateAndSendVoteGOVBoardTransaction = "createandsendvotegovboardtransaction"
-	GetAmountVoteToken                   = "getamountvotetoken"
-	SetAmountVoteToken                   = "testsetamountvotetoken"
 
 	//vote propopsal
 	GetEncryptionFlag                         = "getencryptionflag"

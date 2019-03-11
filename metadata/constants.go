@@ -59,8 +59,6 @@ const (
 	VoteDCBBoardMeta
 	SubmitGOVProposalMeta
 	VoteGOVBoardMeta
-	SendInitDCBVoteTokenMeta
-	SendInitGOVVoteTokenMeta
 	SealedLv1DCBVoteProposalMeta
 	SealedLv2DCBVoteProposalMeta
 	SealedLv3DCBVoteProposalMeta
