@@ -1539,6 +1539,9 @@ func (blockchain *BlockChain) SetReadyState(shard bool, shardID byte, ready bool
 		blockchain.syncStatus.IsReady.Shards[shardID] = ready
 	} else {
 		blockchain.syncStatus.IsReady.Beacon = ready
+		if ready {
+			fmt.Println("blockchain is ready")
+		}
 	}
 }
 
