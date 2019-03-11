@@ -22,7 +22,7 @@ import (
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/constant-money/constant-chain/wallet"
 	libp2p "github.com/libp2p/go-libp2p-peer"
-	"github.com/patrickmn/go-cache"
+	cache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
 
@@ -1556,6 +1556,31 @@ func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
 
 func (bc *BlockChain) processUpdateDCBConstitutionIns(inst []string) error {
 	//todo @big0t
+	// updateConstitutionIns, err := frombeaconins.NewAcceptDCBBoardIns(inst,)
+	// if err != nil {
+	// 	return err
+	// }
+	// boardType := common.GOVBoard
+	// consitution := bc.GetConstitution(boardType)
+	// nextConstitutionIndex := consitution.GetConstitutionIndex() + 1
+	// err1 := bc.GetDatabase().TakeVoteTokenFromWinner(
+	// 	boardType,
+	// 	nextConstitutionIndex,
+	// 	updateConstitutionIns.Voter.PaymentAddress,
+	// 	updateConstitutionIns.Voter.AmountOfVote,
+	// )
+	// if err1 != nil {
+	// 	return err1
+	// }
+	// err2 := bc.GetDatabase().SetNewProposalWinningVoter(
+	// 	boardType,
+	// 	nextConstitutionIndex,
+	// 	updateConstitutionIns.Voter.PaymentAddress,
+	// )
+	// if err2 != nil {
+	// 	return err2
+	// }
+	// bc.BestState.Beacon.processUpdateGOVProposalInstruction(*updateConstitutionIns)
 	return nil
 }
 
