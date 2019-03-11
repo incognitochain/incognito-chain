@@ -78,7 +78,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 				//    single-node end    //
 				timeout := time.AfterFunc(ListenTimeout*time.Second, func() {
 					fmt.Println("Propose phase timeout")
-					close(protocol.cTimeout)
+					protocol.closeTimeoutCh()
 				})
 				timeout2 := time.AfterFunc((ListenTimeout/2)*time.Second, func() {
 					fmt.Println("Request ready msg")
@@ -154,7 +154,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 				fmt.Println("Listen phase")
 				timeout := time.AfterFunc(ListenTimeout*time.Second, func() {
 					fmt.Println("Listen phase timeout")
-					close(protocol.cTimeout)
+					protocol.closeTimeoutCh()
 				})
 			listenphase:
 				for {
@@ -216,7 +216,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 				fmt.Println("Prepare phase")
 				timeout := time.AfterFunc(PrepareTimeout*time.Second, func() {
 					fmt.Println("Prepare phase timeout")
-					close(protocol.cTimeout)
+					protocol.closeTimeoutCh()
 				})
 				time.AfterFunc(DelayTime*time.Millisecond, func() {
 					fmt.Println("Sending out prepare msg")
@@ -268,7 +268,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 				fmt.Println("Commit phase")
 				cmTimeout := time.AfterFunc(CommitTimeout*time.Second, func() {
 					fmt.Println("Commit phase timeout")
-					close(protocol.cTimeout)
+					protocol.closeTimeoutCh()
 				})
 
 				time.AfterFunc(DelayTime*time.Millisecond, func() {
