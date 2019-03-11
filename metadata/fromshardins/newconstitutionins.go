@@ -2,7 +2,7 @@ package fromshardins
 
 import (
 	"encoding/json"
-	"github.com/ninjadotorg/constant/blockchain/component"
+	"github.com/constant-money/constant-chain/blockchain/component"
 )
 
 type NewDCBConstitutionIns struct {

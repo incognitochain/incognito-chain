@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/ninjadotorg/constant/bootnode/server"
+	"github.com/constant-money/constant-chain/bootnode/server"
 )
 
 var (

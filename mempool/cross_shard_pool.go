@@ -7,7 +7,7 @@ package mempool
 //	"sort"
 //	"sync"
 //
-//	"github.com/ninjadotorg/constant/blockchain"
+//	"github.com/constant-money/constant-chain/blockchain"
 //)
 //
 //var shardPoolLock sync.RWMutex

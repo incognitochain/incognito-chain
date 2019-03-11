@@ -1,13 +1,13 @@
 package blockchain
 
 import (
-	"github.com/ninjadotorg/constant/blockchain/component"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/database/lvdb"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/metadata/frombeaconins"
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/transaction"
+	"github.com/constant-money/constant-chain/blockchain/component"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/database/lvdb"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/metadata/frombeaconins"
+	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/transaction"
 )
 
 type ConstitutionInfo struct {

@@ -1,11 +1,11 @@
 package rpcserver
 
 import (
-	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/constant-money/constant-chain/common/base58"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/privacy"
 )
 
 // handleGetDCBParams - get dcb component

@@ -2,8 +2,8 @@ package mempool
 
 import (
 	"errors"
-	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/common"
+	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/constant-money/constant-chain/common"
 	"sort"
 )
 

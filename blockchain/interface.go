@@ -3,8 +3,8 @@ package blockchain
 import (
 	"time"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/metadata"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/metadata"
 )
 
 type BFTBlockInterface interface {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/pkg/errors"
 )
 

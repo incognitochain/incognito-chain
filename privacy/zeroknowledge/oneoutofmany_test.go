@@ -2,7 +2,7 @@ package zkp
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
@@ -122,8 +122,7 @@ func TestPKOneOfMany(t *testing.T) {
 	hProof.stmt = new(OneOutOfManyStatement)
 	hProof.stmt.Set(commitments)
 
-
-	for i:=0; i<3; i++{
+	for i := 0; i < 3; i++ {
 		fmt.Printf("cl: %v: %v\n", i, hProof.cl[i].Compress())
 		fmt.Printf("ca: %v: %v\n", i, hProof.ca[i].Compress())
 		fmt.Printf("cb: %v: %v\n", i, hProof.cb[i].Compress())
@@ -144,7 +143,6 @@ func TestPKOneOfMany(t *testing.T) {
 	assert.Equal(t, true, res2)
 }
 
-
 func TestGetCoefficient(t *testing.T) {
 
 	a := make([]*big.Int, 3)
@@ -153,7 +151,7 @@ func TestGetCoefficient(t *testing.T) {
 	a[1] = new(big.Int).SetBytes([]byte{144, 245, 78, 232, 93, 155, 71, 49, 175, 154, 78, 81, 146, 120, 171, 74, 88, 99, 196, 61, 124, 156, 35, 55, 39, 22, 189, 111, 108, 236, 3, 131})
 	a[2] = new(big.Int).SetBytes([]byte{224, 15, 114, 83, 56, 148, 202, 7, 187, 99, 242, 4, 2, 168, 169, 168, 44, 174, 215, 111, 119, 162, 172, 44, 225, 97, 236, 240, 242, 233, 148, 49})
 
-	res := GetCoefficient([]byte{0,1,1}, 3, 3, a, []byte{0,1,1})
+	res := GetCoefficient([]byte{0, 1, 1}, 3, 3, a, []byte{0, 1, 1})
 
 	//expectedRes := big.NewInt(-6)
 	//expectedRes.Mod(expectedRes, privacy.Curve.Params().N)
@@ -162,8 +160,7 @@ func TestGetCoefficient(t *testing.T) {
 	//assert.Equal(t, expectedRes, res)
 }
 
-
-func TestCd(t *testing.T){
+func TestCd(t *testing.T) {
 
 	indexIsZeroBinary := privacy.ConvertIntToBinary(3, 3)
 

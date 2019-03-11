@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 )
 
 // This protocol proves in zero-knowledge that a list of committed values falls in [0, 2^64)
@@ -205,7 +205,7 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 	aR := make([]*big.Int, numValuePad*n)
 
-	for i:=0; i<numValuePad*n; i++{
+	for i := 0; i < numValuePad*n; i++ {
 		aR[i] = new(big.Int).Sub(aL[i], big.NewInt(1))
 		aR[i].Mod(aR[i], privacy.Curve.Params().N)
 	}
@@ -288,7 +288,7 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 	// innerProduct1 = <1^(n*m), y^(n*m)>
 	innerProduct1 := big.NewInt(0)
-	for i:=0; i<n*numValuePad; i++{
+	for i := 0; i < n*numValuePad; i++ {
 		innerProduct1 = innerProduct1.Add(innerProduct1, yVector[i])
 	}
 	innerProduct1.Mod(innerProduct1, privacy.Curve.Params().N)
@@ -297,7 +297,7 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 	// innerProduct2 = <1^n, 2^n>
 	innerProduct2 := big.NewInt(0)
-	for i:=0; i<n; i++{
+	for i := 0; i < n; i++ {
 		innerProduct2 = innerProduct2.Add(innerProduct2, twoVectorN[i])
 	}
 	innerProduct2.Mod(innerProduct2, privacy.Curve.Params().N)

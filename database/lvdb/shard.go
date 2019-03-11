@@ -5,8 +5,8 @@ import (
 	"encoding/binary"
 	"encoding/json"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/database"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/database"
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )

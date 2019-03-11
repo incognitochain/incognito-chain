@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/constant-money/constant-chain/common"
 	peer "github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/common"
 
 	"time"
 
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/transaction"
+	"github.com/constant-money/constant-chain/cashec"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/transaction"
 )
 
 // list message type

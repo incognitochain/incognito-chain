@@ -1,7 +1,7 @@
 package metadata
 
 import (
-	"github.com/ninjadotorg/constant/database"
+	"github.com/constant-money/constant-chain/database"
 )
 
 type SendBackTokenVoteFailMetadata struct {

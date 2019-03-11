@@ -1,6 +1,6 @@
 package transaction
 
-import "github.com/ninjadotorg/constant/common"
+import "github.com/constant-money/constant-chain/common"
 
 type TransactionLogger struct {
 	log common.Logger

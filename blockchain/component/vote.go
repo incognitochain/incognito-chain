@@ -1,6 +1,6 @@
 package component
 
-import "github.com/ninjadotorg/constant/common"
+import "github.com/constant-money/constant-chain/common"
 
 type VoteProposalData struct {
 	ProposalTxID      common.Hash

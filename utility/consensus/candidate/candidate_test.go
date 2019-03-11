@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/ninjadotorg/constant/utility/generateKeys/generator"
+	"github.com/constant-money/constant-chain/utility/generateKeys/generator"
 )
 
 const random = int64(4121500227)

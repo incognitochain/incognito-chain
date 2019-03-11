@@ -1,6 +1,6 @@
 package jsonresult
 
-import "github.com/ninjadotorg/constant/metadata"
+import "github.com/constant-money/constant-chain/metadata"
 
 type GetRawMempoolResult struct {
 	TxHashes []string

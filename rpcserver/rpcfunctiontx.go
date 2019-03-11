@@ -7,16 +7,16 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
-	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/wire"
+	"github.com/constant-money/constant-chain/cashec"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
+	"github.com/constant-money/constant-chain/transaction"
+	"github.com/constant-money/constant-chain/wallet"
+	"github.com/constant-money/constant-chain/wire"
 )
 
 //handleListOutputCoins - use readonly key to get all tx which contains output coin of account

@@ -1,7 +1,7 @@
 package jsonresult
 
 import (
-	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
+	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
 )
 
 type TransactionDetail struct {
