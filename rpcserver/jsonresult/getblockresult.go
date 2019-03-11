@@ -1,6 +1,8 @@
 package jsonresult
 
-import "github.com/constant-money/constant-chain/blockchain"
+import (
+	"github.com/constant-money/constant-chain/blockchain"
+)
 
 type GetBlocksBeaconResult struct {
 	Hash              string     `json:"Hash"`
@@ -16,6 +18,7 @@ type GetBlocksBeaconResult struct {
 	PreviousBlockHash string     `json:"PreviousBlockHash"`
 	NextBlockHash     string     `json:"NextBlockHash"`
 	Instructions      [][]string `json:"Instructions"`
+	Size              uint64     `json:"Size"`
 }
 
 type GetBlockResult struct {
@@ -42,6 +45,7 @@ type GetBlockResult struct {
 	Epoch             uint64             `json:"Epoch"`
 	Reward            uint64             `json:"Reward"` // salary tx output
 	Fee               uint64             `json:"Fee"`    // total fee
+	Size              uint64             `json:"Size"`
 }
 
 type GetBlockTxResult struct {
@@ -50,7 +54,7 @@ type GetBlockTxResult struct {
 	HexData  string `json:"HexData"`
 }
 
-func (getBlockResult *GetBlocksBeaconResult) Init(block *blockchain.BeaconBlock) {
+func (getBlockResult *GetBlocksBeaconResult) Init(block *blockchain.BeaconBlock, size uint64) {
 	getBlockResult.Version = block.Header.Version
 	getBlockResult.Hash = block.Hash().String()
 	getBlockResult.Height = block.Header.Height
@@ -63,9 +67,10 @@ func (getBlockResult *GetBlocksBeaconResult) Init(block *blockchain.BeaconBlock)
 	getBlockResult.Time = block.Header.Timestamp
 	getBlockResult.PreviousBlockHash = block.Header.PrevBlockHash.String()
 	getBlockResult.Instructions = block.Body.Instructions
+	getBlockResult.Size = size
 }
 
-func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock) {
+func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock, size uint64) {
 	getBlockResult.BlockProducerSign = block.ProducerSig
 	getBlockResult.BlockProducer = block.Header.Producer
 	getBlockResult.Hash = block.Hash().String()
@@ -77,6 +82,7 @@ func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock) {
 	getBlockResult.TxRoot = block.Header.TxRoot.String()
 	getBlockResult.TxHashes = make([]string, 0)
 	getBlockResult.Fee = uint64(0)
+	getBlockResult.Size = size
 	for _, tx := range block.Body.Transactions {
 		getBlockResult.TxHashes = append(getBlockResult.TxHashes, tx.Hash().String())
 		getBlockResult.Fee += tx.GetTxFee()

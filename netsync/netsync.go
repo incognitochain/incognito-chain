@@ -288,7 +288,7 @@ func (netSync *NetSync) HandleMessageGetBlockShard(msg *wire.MessageGetBlockShar
 	}
 	if msg.ByHash {
 		for _, blkHash := range msg.BlksHash {
-			blk, err := netSync.config.BlockChain.GetShardBlockByHash(&blkHash)
+			blk, err, _ := netSync.config.BlockChain.GetShardBlockByHash(&blkHash)
 			if err != nil {
 				Logger.log.Error(err)
 				return
@@ -336,7 +336,7 @@ func (netSync *NetSync) HandleMessageGetBlockBeacon(msg *wire.MessageGetBlockBea
 	}
 	if msg.ByHash {
 		for _, blkHash := range msg.BlksHash {
-			blk, err := netSync.config.BlockChain.GetBeaconBlockByHash(&blkHash)
+			blk, err, _ := netSync.config.BlockChain.GetBeaconBlockByHash(&blkHash)
 			if err != nil {
 				Logger.log.Error(err)
 				return
@@ -385,7 +385,7 @@ func (netSync *NetSync) HandleMessageGetShardToBeacon(msg *wire.MessageGetShardT
 			// netSync.config.ShardToBeaconPool.
 		} else {
 			for _, blkHash := range msg.BlksHash {
-				blk, err := netSync.config.BlockChain.GetShardBlockByHash(&blkHash)
+				blk, err, _ := netSync.config.BlockChain.GetShardBlockByHash(&blkHash)
 				if err != nil {
 					Logger.log.Error(err)
 					return
@@ -437,7 +437,7 @@ func (netSync *NetSync) HandleMessageGetCrossShard(msg *wire.MessageGetCrossShar
 	} else {
 		if msg.ByHash {
 			for _, blkHash := range msg.BlksHash {
-				blk, err := netSync.config.BlockChain.GetShardBlockByHash(&blkHash)
+				blk, err, _ := netSync.config.BlockChain.GetShardBlockByHash(&blkHash)
 				if err != nil {
 					Logger.log.Error(err)
 					return
