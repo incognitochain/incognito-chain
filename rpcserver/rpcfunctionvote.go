@@ -3,7 +3,6 @@ package rpcserver
 import (
 	"errors"
 	"fmt"
-	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
@@ -13,75 +12,6 @@ import (
 func iPlusPlus(x *int) int {
 	*x += 1
 	return *x - 1
-}
-
-func (rpcServer RpcServer) handleGetAmountVoteToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	paymentAddressData := arrayParams[0].(string)
-	paymentAddress, err := metadata.GetPaymentAddressFromSenderKeyParams(paymentAddressData)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	db := *rpcServer.config.Database
-	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
-
-	// For DCB voting token
-	result.PaymentAddress = string(paymentAddressData)
-	item := jsonresult.CustomTokenBalance{}
-	item.Name = "DCB voting token"
-	item.Symbol = "DCB Voting Token"
-	TokenID := &common.Hash{}
-	TokenID.SetBytes(common.DCBVotingTokenID[:])
-	item.TokenID = TokenID.String()
-	item.TokenImage = common.Render([]byte(item.TokenID))
-	amount, err := db.GetVoteTokenAmount(common.DCBBoard, rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress)
-	if err != nil {
-		Logger.log.Error(err)
-	}
-	item.Amount = uint64(amount)
-	result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
-
-	// For GOV voting token
-	item = jsonresult.CustomTokenBalance{}
-	item.Name = "GOV voting token"
-	item.Symbol = "GOV Voting Token"
-	TokenID = &common.Hash{}
-	TokenID.SetBytes(common.GOVVotingTokenID[:])
-	item.TokenID = TokenID.String()
-	item.TokenImage = common.Render([]byte(item.TokenID))
-	amount, err = db.GetVoteTokenAmount(common.GOVBoard, rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.GOVConstitutionHelper{}), *paymentAddress)
-	if err != nil {
-		Logger.log.Error(err)
-	}
-	item.Amount = uint64(amount)
-	result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
-
-	return result, nil
-}
-
-func (rpcServer RpcServer) handleSetAmountVoteToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	paymentAddressSenderKey := arrayParams[0].(string)
-	paymentAddress, err1 := metadata.GetPaymentAddressFromSenderKeyParams(paymentAddressSenderKey)
-	if err1 != nil {
-		return nil, NewRPCError(ErrUnexpected, err1)
-	}
-	p2, _ := metadata.GetPaymentAddressFromSenderKeyParams(string(paymentAddressSenderKey))
-	_ = p2
-	db := *rpcServer.config.Database
-
-	amountDCBVote := uint32(arrayParams[1].(float64))
-	amountGOVVote := uint32(arrayParams[2].(float64))
-
-	err := db.SetVoteTokenAmount(common.DCBBoard, rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress, amountDCBVote)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	err = db.SetVoteTokenAmount(common.GOVBoard, rpcServer.config.BlockChain.GetCurrentBoardIndex(blockchain.DCBConstitutionHelper{}), *paymentAddress, amountGOVVote)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	return nil, nil
 }
 
 // ============================== VOTE PROPOSAL

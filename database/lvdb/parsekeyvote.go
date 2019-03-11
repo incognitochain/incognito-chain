@@ -145,15 +145,6 @@ func ParseValueVoteBoardList(value []byte) uint64 {
 	return common.BytesToUint64(value)
 }
 
-func GetKeyVoteTokenAmount(boardType common.BoardType, boardIndex uint32, paymentAddress privacy.PaymentAddress) []byte {
-	key := GetKeyFromVariadic(VoteTokenAmountPrefix,
-		boardType.Bytes(),
-		common.Uint32ToBytes(boardIndex),
-		paymentAddress.Bytes(),
-	)
-	return key
-}
-
 func GetKeyThreePhraseCryptoOwner(boardType common.BoardType, constitutionIndex uint32, txId *common.Hash) []byte {
 	txIdByte := make([]byte, 0)
 	if txId != nil {

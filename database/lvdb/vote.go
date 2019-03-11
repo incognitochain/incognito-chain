@@ -198,34 +198,6 @@ func (db *db) AddVoteNormalProposalFromOwnerDB(boardType common.BoardType, const
 	return nil
 }
 
-func (db *db) GetVoteTokenAmount(boardType common.BoardType, boardIndex uint32, paymentAddress privacy.PaymentAddress) (uint32, error) {
-	key := GetKeyVoteTokenAmount(boardType, boardIndex, paymentAddress)
-	value, err := db.Get(key)
-	if err != nil {
-		return 0, err
-	}
-	return common.BytesToUint32(value), nil
-}
-
-func (db *db) SetVoteTokenAmount(boardType common.BoardType, boardIndex uint32, paymentAddress privacy.PaymentAddress, newAmount uint32) error {
-	key := GetKeyVoteTokenAmount(boardType, boardIndex, paymentAddress)
-	ok, err := db.HasValue(key)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		zeroInBytes := common.Uint32ToBytes(uint32(0))
-		db.Put(key, zeroInBytes)
-	}
-
-	newAmountInBytes := common.Uint32ToBytes(newAmount)
-	err = db.Put(key, newAmountInBytes)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (db *db) GetEncryptFlag(boardType common.BoardType) (byte, error) {
 	key := GetKeyEncryptFlag(boardType)
 	value, err := db.Get(key)
@@ -257,18 +229,6 @@ func (db *db) SetEncryptionLastBlockHeight(boardType common.BoardType, height ui
 	key := GetKeyEncryptionLastBlockHeight(boardType)
 	value := common.Uint64ToBytes(height)
 	db.Put(key, value)
-}
-
-func (db *db) TakeVoteTokenFromWinner(boardType common.BoardType, boardIndex uint32, voterPaymentAddress privacy.PaymentAddress, amountOfVote int32) error {
-	key := GetKeyVoteTokenAmount(boardType, boardIndex, voterPaymentAddress)
-	currentAmountInByte, err := db.Get(key)
-	if err != nil {
-		return err
-	}
-	currentAmount := common.BytesToUint32(currentAmountInByte)
-	newAmount := currentAmount - uint32(amountOfVote)
-	db.Put(key, common.Uint32ToBytes(newAmount))
-	return nil
 }
 
 func (db *db) SetNewProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32, voterPaymentAddress privacy.PaymentAddress) error {

@@ -7,7 +7,6 @@ import (
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/metadata/frombeaconins"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/transaction"
 )
 
 type ConstitutionInfo struct {
@@ -95,10 +94,6 @@ func (helper GOVConstitutionHelper) GetStartedNormalVote(chain *BlockChain) uint
 
 func (helper GOVConstitutionHelper) CheckSubmitProposalType(tx metadata.Transaction) bool {
 	return tx.GetMetadataType() == metadata.SubmitGOVProposalMeta
-}
-
-func (helper GOVConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transaction) (uint64, error) {
-	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
 }
 
 func (helper DCBConstitutionHelper) NewAcceptProposalIns(
@@ -211,15 +206,6 @@ func (helper DCBConstitutionHelper) GetBoard(chain *BlockChain) metadata.Governo
 
 func (helper GOVConstitutionHelper) GetBoard(chain *BlockChain) metadata.GovernorInterface {
 	return chain.BestState.Beacon.StabilityInfo.GOVGovernor
-}
-
-func (helper DCBConstitutionHelper) GetAmountVoteTokenOfBoard(chain *BlockChain, paymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
-	value, _ := chain.config.DataBase.GetVoteTokenAmount(helper.GetBoardType(), boardIndex, paymentAddress)
-	return uint64(value)
-}
-func (helper GOVConstitutionHelper) GetAmountVoteTokenOfBoard(chain *BlockChain, paymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
-	value, _ := chain.config.DataBase.GetVoteTokenAmount(helper.GetBoardType(), boardIndex, paymentAddress)
-	return uint64(value)
 }
 
 func (helper DCBConstitutionHelper) GetAmountOfVoteToBoard(chain *BlockChain, candidatePaymentAddress privacy.PaymentAddress, voterPaymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
