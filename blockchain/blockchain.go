@@ -899,31 +899,11 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 	return nil
 }
 
-func (blockchain *BlockChain) CreateAndSaveCrossOutputCoinViewPointFromBlock(block *ShardBlock) error {
+func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBlock(block *ShardBlock) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
 	// TODO: 0xsirrush check lightmode turn off
-	err := view.fetchCrossOutputViewPointFromBlock(blockchain.config.DataBase, block, nil)
-	// Update the list nullifiers and commitment, snd set using the state of the used tx view point. This
-	// entails adding the new
-	// ones created by the block.
-	err = blockchain.StoreCommitmentsFromTxViewPoint(*view, block.Header.ShardID)
-	if err != nil {
-		return err
-	}
-
-	err = blockchain.StoreSNDerivatorsFromTxViewPoint(*view, block.Header.ShardID)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-func (blockchain *BlockChain) CreateAndSaveCrossTxTokenDataViewPointFromBlock(block *ShardBlock) error {
-	// Fetch data from block into tx View point
-	view := NewTxViewPoint(block.Header.ShardID)
-	// TODO: 0xsirrush check lightmode turn off
-	err := view.fetchCrossTxTokenDataViewPointFromBlock(blockchain.config.DataBase, block, nil)
+	err := view.fetchCrossTransactionViewPointFromBlock(blockchain.config.DataBase, block, nil)
 	// Update the list nullifiers and commitment, snd set using the state of the used tx view point. This
 	// entails adding the new
 	// ones created by the block.

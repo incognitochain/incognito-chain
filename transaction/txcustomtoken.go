@@ -436,8 +436,8 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 			newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
 			fmt.Println("INIT Tx Custom Token/ newHashInitToken", newHashInitToken)
 			for customTokenID := range listCustomTokens {
-				fmt.Println("INIT Tx Custom Token/ Existed", customTokenID, customTokenID.String() == newHashInitToken.String())
 				if newHashInitToken.String() == customTokenID.String() {
+					fmt.Println("INIT Tx Custom Token/ Existed", customTokenID, customTokenID.String() == newHashInitToken.String())
 					return NewTransactionErr(CustomTokenExisted, nil)
 				}
 			}
