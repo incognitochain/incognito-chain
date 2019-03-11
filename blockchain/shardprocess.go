@@ -126,7 +126,11 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 
 	//Update Cross shard pool: remove invalid block
 	blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.BestState.Shard[shardID].BestCrossShard)
-	blockchain.config.CrossShardPool[shardID].UpdatePool()
+	expectedHeight, _ := blockchain.config.CrossShardPool[shardID].UpdatePool()
+	for fromShardID, height := range expectedHeight {
+		fmt.Printf("Shard %+v request CrossShardBlock with Height %+v from shard %+v ", shardID, height, fromShardID)
+		blockchain.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, shardID, "")
+	}
 
 	//========Store new  Shard block and new shard bestState
 	blockchain.ProcessStoreShardBlock(block)

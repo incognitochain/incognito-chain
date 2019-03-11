@@ -66,11 +66,11 @@ func GetCrossShardPool(shardID byte) *CrossShardPool_v2 {
 
 // Validate pending pool again, to move pending block to valid block
 // When receive new cross shard block or new beacon state arrive
-func (pool *CrossShardPool_v2) UpdatePool() error {
+func (pool *CrossShardPool_v2) UpdatePool() (map[byte]uint64, error) {
 	pool.poolMu.Lock()
 	defer pool.poolMu.Unlock()
-	_, err := pool.updatePool()
-	return err
+	expectedHeight, err := pool.updatePool()
+	return expectedHeight, err
 }
 
 func (pool *CrossShardPool_v2) getNextCrossShardHeight(fromShard, toShard byte, startHeight uint64) uint64 {
