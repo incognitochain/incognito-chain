@@ -5,8 +5,8 @@ import (
 
 	"errors"
 
-	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/transaction"
+	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/constant-money/constant-chain/transaction"
 )
 
 // Policy houses the policy (configuration parameters) which is used to control the mempool.

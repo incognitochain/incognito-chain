@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ninjadotorg/constant/cashec"
+	"github.com/constant-money/constant-chain/cashec"
 )
 
 const (

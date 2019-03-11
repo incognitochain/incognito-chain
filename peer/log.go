@@ -1,6 +1,6 @@
 package peer
 
-import "github.com/ninjadotorg/constant/common"
+import "github.com/constant-money/constant-chain/common"
 
 type PeerLoger struct {
 	log common.Logger

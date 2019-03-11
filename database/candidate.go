@@ -2,7 +2,7 @@ package database
 
 import (
 	"bytes"
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 )
 
 type CandidateElement struct {

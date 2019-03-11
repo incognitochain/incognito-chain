@@ -8,10 +8,10 @@ import (
 	"runtime"
 	"runtime/debug"
 
-	"github.com/ninjadotorg/constant/database"
-	_ "github.com/ninjadotorg/constant/database/lvdb"
-	"github.com/ninjadotorg/constant/limits"
-	"github.com/ninjadotorg/constant/wallet"
+	"github.com/constant-money/constant-chain/database"
+	_ "github.com/constant-money/constant-chain/database/lvdb"
+	"github.com/constant-money/constant-chain/limits"
+	"github.com/constant-money/constant-chain/wallet"
 )
 
 var (

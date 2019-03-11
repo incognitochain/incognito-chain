@@ -1,6 +1,6 @@
 package privacy
 
-import "github.com/ninjadotorg/constant/common"
+import "github.com/constant-money/constant-chain/common"
 
 type PrivacyLogger struct {
 	Log common.Logger

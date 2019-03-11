@@ -1,6 +1,6 @@
 package constantbft
 
-import "github.com/ninjadotorg/constant/common"
+import "github.com/constant-money/constant-chain/common"
 
 type constantbftLogger struct {
 	log common.Logger

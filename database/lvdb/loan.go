@@ -3,7 +3,7 @@ package lvdb
 import (
 	"fmt"
 
-	"github.com/ninjadotorg/constant/database"
+	"github.com/constant-money/constant-chain/database"
 	"github.com/pkg/errors"
 )
 

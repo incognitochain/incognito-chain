@@ -2,17 +2,17 @@ package rpcserver
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/transaction"
+	"github.com/constant-money/constant-chain/transaction"
 	"github.com/pkg/errors"
 	"log"
 	"net"
 	"os"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
-	"github.com/ninjadotorg/constant/wallet"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
+	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
+	"github.com/constant-money/constant-chain/wallet"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, *RPCError)
@@ -31,16 +31,16 @@ var RpcHandler = map[string]commandHandler{
 	GetMiningInfo:            RpcServer.handleGetMiningInfo,
 
 	// block
-	GetBestBlock:      RpcServer.handleGetBestBlock,
-	GetBestBlockHash:  RpcServer.handleGetBestBlockHash,
-	RetrieveBlock:     RpcServer.handleRetrieveBlock,
-	RetrieveBeaconBlock:     RpcServer.handleRetrieveBeaconBlock,
-	GetBlocks:         RpcServer.handleGetBlocks,
-	GetBlockChainInfo: RpcServer.handleGetBlockChainInfo,
-	GetBlockCount:     RpcServer.handleGetBlockCount,
-	GetBlockHash:      RpcServer.handleGetBlockHash,
-	CheckHashValue:    RpcServer.handleCheckHashValue, // get data in blockchain from hash value
-	GetBlockHeader:    RpcServer.handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
+	GetBestBlock:        RpcServer.handleGetBestBlock,
+	GetBestBlockHash:    RpcServer.handleGetBestBlockHash,
+	RetrieveBlock:       RpcServer.handleRetrieveBlock,
+	RetrieveBeaconBlock: RpcServer.handleRetrieveBeaconBlock,
+	GetBlocks:           RpcServer.handleGetBlocks,
+	GetBlockChainInfo:   RpcServer.handleGetBlockChainInfo,
+	GetBlockCount:       RpcServer.handleGetBlockCount,
+	GetBlockHash:        RpcServer.handleGetBlockHash,
+	CheckHashValue:      RpcServer.handleCheckHashValue, // get data in blockchain from hash value
+	GetBlockHeader:      RpcServer.handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
 
 	// transaction
 	ListOutputCoins:                 RpcServer.handleListOutputCoins,
@@ -187,19 +187,19 @@ var RpcHandler = map[string]commandHandler{
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	ListAccounts:               RpcServer.handleListAccounts,
-	GetAccount:                 RpcServer.handleGetAccount,
-	GetAddressesByAccount:      RpcServer.handleGetAddressesByAccount,
-	GetAccountAddress:          RpcServer.handleGetAccountAddress,
-	DumpPrivkey:                RpcServer.handleDumpPrivkey,
-	ImportAccount:              RpcServer.handleImportAccount,
-	RemoveAccount:              RpcServer.handleRemoveAccount,
-	ListUnspentOutputCoins:     RpcServer.handleListUnspentOutputCoins,
-	GetBalance:                 RpcServer.handleGetBalance,
-	GetBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
-	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
-	GetReceivedByAccount:       RpcServer.handleGetReceivedByAccount,
-	SetTxFee:                   RpcServer.handleSetTxFee,
+	ListAccounts:                       RpcServer.handleListAccounts,
+	GetAccount:                         RpcServer.handleGetAccount,
+	GetAddressesByAccount:              RpcServer.handleGetAddressesByAccount,
+	GetAccountAddress:                  RpcServer.handleGetAccountAddress,
+	DumpPrivkey:                        RpcServer.handleDumpPrivkey,
+	ImportAccount:                      RpcServer.handleImportAccount,
+	RemoveAccount:                      RpcServer.handleRemoveAccount,
+	ListUnspentOutputCoins:             RpcServer.handleListUnspentOutputCoins,
+	GetBalance:                         RpcServer.handleGetBalance,
+	GetBalanceByPrivatekey:             RpcServer.handleGetBalanceByPrivatekey,
+	GetBalanceByPaymentAddress:         RpcServer.handleGetBalanceByPaymentAddress,
+	GetReceivedByAccount:               RpcServer.handleGetReceivedByAccount,
+	SetTxFee:                           RpcServer.handleSetTxFee,
 	GetRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
 }
 

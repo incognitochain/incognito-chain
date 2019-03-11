@@ -2,8 +2,8 @@ package rpcserver
 
 import (
 	"errors"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/mempool"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/mempool"
 )
 
 /*

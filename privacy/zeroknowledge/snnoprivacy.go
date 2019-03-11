@@ -1,7 +1,7 @@
 package zkp
 
 import (
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 	"math/big"
 )
 

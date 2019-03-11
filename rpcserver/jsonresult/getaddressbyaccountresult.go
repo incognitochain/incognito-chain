@@ -1,7 +1,7 @@
 package jsonresult
 
-import "github.com/ninjadotorg/constant/wallet"
+import "github.com/constant-money/constant-chain/wallet"
 
 type GetAddressesByAccount struct {
-	Addresses [] wallet.KeySerializedData `json:"Addresses"`
+	Addresses []wallet.KeySerializedData `json:"Addresses"`
 }

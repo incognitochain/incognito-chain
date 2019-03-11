@@ -3,12 +3,12 @@ package metadata
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/ninjadotorg/constant/wallet"
+	"github.com/constant-money/constant-chain/wallet"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/database"
+	"github.com/constant-money/constant-chain/privacy"
 )
 
 type VoteGOVBoardMetadata struct {

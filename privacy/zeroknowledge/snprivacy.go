@@ -1,7 +1,7 @@
 package zkp
 
 import (
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 	"math/big"
 )
 
@@ -12,16 +12,16 @@ type SNPrivacyStatement struct {
 }
 
 type SNPrivacyWitness struct {
-	stmt   *SNPrivacyStatement // statement to be proved
+	stmt *SNPrivacyStatement // statement to be proved
 
-	sk     *big.Int            // private key
-	rSK    *big.Int            // blinding factor in the commitment to private key
-	input  *big.Int            // input of pseudo-random function
-	rInput *big.Int            // blinding factor in the commitment to input
+	sk     *big.Int // private key
+	rSK    *big.Int // blinding factor in the commitment to private key
+	input  *big.Int // input of pseudo-random function
+	rInput *big.Int // blinding factor in the commitment to input
 }
 
 type SNPrivacyProof struct {
-	stmt   *SNPrivacyStatement    // statement to be proved
+	stmt *SNPrivacyStatement // statement to be proved
 
 	tSK    *privacy.EllipticPoint // random commitment related to private key
 	tInput *privacy.EllipticPoint // random commitment related to input

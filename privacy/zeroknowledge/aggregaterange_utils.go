@@ -2,7 +2,7 @@ package zkp
 
 import (
 	"errors"
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 	"math"
 	"math/big"
 )
@@ -355,5 +355,5 @@ func vectorMulScalar(v []*big.Int, s *big.Int) []*big.Int {
 
 // estimateMultiRangeProofSize estimate multi range proof size
 func estimateMultiRangeProofSize(nOutput int) uint64 {
-	return uint64((nOutput + 2*int(math.Log2(float64(privacy.MaxExp * pad(nOutput)))) + 5) * privacy.CompressedPointSize + 5*privacy.BigIntSize + 2)
+	return uint64((nOutput+2*int(math.Log2(float64(privacy.MaxExp*pad(nOutput))))+5)*privacy.CompressedPointSize + 5*privacy.BigIntSize + 2)
 }

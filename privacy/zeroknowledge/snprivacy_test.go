@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/stretchr/testify/assert"
 )
 

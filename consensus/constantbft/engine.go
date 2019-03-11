@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/wire"
+	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/constant-money/constant-chain/cashec"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/wire"
 )
 
 type Engine struct {
