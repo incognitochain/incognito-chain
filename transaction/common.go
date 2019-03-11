@@ -48,7 +48,10 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 		usableCommitment := in.CoinDetails.CoinCommitment.Compress()
 		listUsableCommitments = append(listUsableCommitments, usableCommitment)
 		index, err := db.GetCommitmentIndex(tokenID, usableCommitment, shardID)
-		Logger.log.Error(err)
+		if err != nil {
+			Logger.log.Error(err)
+			return
+		}
 		mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(usableCommitment, common.ZeroByte)] = index
 	}
 
