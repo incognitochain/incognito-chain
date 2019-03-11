@@ -16,9 +16,9 @@ const (
 type BeaconPool struct {
 	pool              []*blockchain.BeaconBlock // block
 	latestValidHeight uint64
+	poolMu            sync.RWMutex
 }
 
-var poolMu sync.RWMutex
 var beaconPool *BeaconPool = nil
 
 func InitBeaconPool() {
@@ -28,8 +28,6 @@ func InitBeaconPool() {
 
 // get singleton instance of ShardToBeacon pool
 func GetBeaconPool() *BeaconPool {
-	poolMu.RLock()
-	defer poolMu.Unlock()
 	if beaconPool == nil {
 		beaconPool = new(BeaconPool)
 		beaconPool.pool = []*blockchain.BeaconBlock{}
@@ -39,8 +37,8 @@ func GetBeaconPool() *BeaconPool {
 }
 
 func (self *BeaconPool) SetBeaconState(lastestBeaconHeight uint64) {
-	poolMu.Lock()
-	defer poolMu.Unlock()
+	self.poolMu.Lock()
+	defer self.poolMu.Unlock()
 
 	self.latestValidHeight = lastestBeaconHeight
 
@@ -55,8 +53,8 @@ func (self *BeaconPool) GetBeaconState() uint64 {
 
 func (self *BeaconPool) AddBeaconBlock(blk *blockchain.BeaconBlock) error {
 	//TODO: validate aggregated signature
-	poolMu.Lock()
-	defer poolMu.Unlock()
+	self.poolMu.Lock()
+	defer self.poolMu.Unlock()
 
 	blkHeight := blk.Header.Height
 
@@ -117,14 +115,14 @@ func (self *BeaconPool) updateLatestBeaconState() {
 }
 
 func (self *BeaconPool) UpdateLatestBeaconState() {
-	poolMu.Lock()
-	defer poolMu.Unlock()
+	self.poolMu.Lock()
+	defer self.poolMu.Unlock()
 	self.updateLatestBeaconState()
 }
 
 func (self *BeaconPool) RemoveBlock(lastBlockHeight uint64) {
-	poolMu.Lock()
-	defer poolMu.Unlock()
+	self.poolMu.Lock()
+	defer self.poolMu.Unlock()
 	self.removeBlock(lastBlockHeight)
 }
 
@@ -146,8 +144,8 @@ func (self *BeaconPool) removeBlock(lastBlockHeight uint64) {
 }
 
 func (self *BeaconPool) GetValidBlock() []*blockchain.BeaconBlock {
-	poolMu.RLock()
-	defer poolMu.Unlock()
+	self.poolMu.RLock()
+	defer self.poolMu.Unlock()
 	finalBlocks := []*blockchain.BeaconBlock{}
 	for _, blk := range self.pool {
 		if blk.Header.Height > self.latestValidHeight {
@@ -188,8 +186,8 @@ func (self *BeaconPool) GetLatestValidBlockHeight() uint64 {
 }
 
 func (self *BeaconPool) GetAllBlockHeight() []uint64 {
-	poolMu.RLock()
-	defer poolMu.Unlock()
+	self.poolMu.RLock()
+	defer self.poolMu.Unlock()
 
 	finalBlocks := []uint64{}
 	for _, blk := range self.pool {
