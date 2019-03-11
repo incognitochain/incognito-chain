@@ -348,28 +348,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 						return nil, err
 					}
 					resTxs = append(resTxs, txs)
-				case metadata.SendInitDCBVoteTokenMeta:
-					sendInitDCBVoteToken := frombeaconins.TxSendInitDCBVoteTokenMetadataIns{}
-					err := json.Unmarshal([]byte(l[2]), &sendInitDCBVoteToken)
-					if err != nil {
-						return nil, err
-					}
-					txs, err := sendInitDCBVoteToken.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
-					if err != nil {
-						return nil, err
-					}
-					resTxs = append(resTxs, txs)
-				case metadata.SendInitGOVVoteTokenMeta:
-					sendInitGOVVoteToken := frombeaconins.TxSendInitGOVVoteTokenMetadataIns{}
-					err := json.Unmarshal([]byte(l[2]), &sendInitGOVVoteToken)
-					if err != nil {
-						return nil, err
-					}
-					txs, err := sendInitGOVVoteToken.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
-					if err != nil {
-						return nil, err
-					}
-					resTxs = append(resTxs, txs)
 				case metadata.ShareRewardOldDCBBoardMeta, metadata.ShareRewardOldGOVBoardMeta:
 					shareRewardOldBoard := frombeaconins.TxShareRewardOldBoardMetadataIns{}
 					err := json.Unmarshal([]byte(l[2]), &shareRewardOldBoard)
