@@ -17,7 +17,7 @@ func (rpcServer RpcServer) handleGetShardToBeaconPoolState(params interface{}, c
 	if shardToBeaconPool == nil {
 		return nil, NewRPCError(ErrUnexpected, errors.New("Shard to Beacon Pool not init"))
 	}
-	result := shardToBeaconPool.GetAllPendingBlockHeight()
+	result := shardToBeaconPool.GetAllBlockHeight()
 	// result.BestBlock = nil
 	return result, nil
 }
