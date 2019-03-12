@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/binary"
 	"fmt"
+	"reflect"
 	"sort"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
@@ -233,7 +234,7 @@ func (self *BlockChain) createSendBackTokenAfterVoteFailIns(
 		_, boardIndex, candidatePubKey, voterPaymentAddress, _ := lvdb.ParseKeyVoteBoardList(key)
 		value := iter.Value()
 		amountOfDCBToken := lvdb.ParseValueVoteBoardList(value)
-
+		fmt.Println("\n\n\n\n\n\n\n\n\n\n\n", key, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
 		_, found := setOfNewDCB[string(candidatePubKey)]
 		if boardIndex < uint32(currentBoardIndex) || !found {
 			listNewIns = append(
@@ -318,7 +319,7 @@ func (self *BlockChain) CreateUpdateNewGovernorInstruction(
 	newBoardList, err := self.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), self.GetCurrentBoardIndex(helper)+1)
 
 	if err != nil {
-		if err.Error() == "not enough Candidate" {
+		if reflect.TypeOf(err).String() == "*database.DatabaseError" {
 			return nil, nil
 		}
 		return nil, err
@@ -397,8 +398,9 @@ func (chain *BlockChain) neededNewGovernor(boardType common.BoardType) bool {
 	} else {
 		endGovernorBlock = chain.BestState.Beacon.StabilityInfo.GOVGovernor.EndBlock
 	}
+	fmt.Println("\n\n\n", endGovernorBlock, "\n\n\n")
 	currentHeight := BestBlock.Header.Height + 1
-	return endGovernorBlock == currentHeight
+	return endGovernorBlock <= currentHeight
 }
 
 func (self *BlockChain) generateVotingInstructionWOIns(shardID byte) ([][]string, error) {
