@@ -713,140 +713,142 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 		return false, errors.New("wrong tx locktime")
 	}
 
-	isPrivacy := true
-	// check Privacy or not
+	if txN.Proof != nil {
+		isPrivacy := true
+		// check Privacy or not
 
-	if txN.Proof.AggregatedRangeProof == nil || txN.Proof.OneOfManyProof == nil || txN.Proof.SerialNumberProof == nil {
-		isPrivacy = false
-	}
-
-	if isPrivacy {
-		if !txN.Proof.AggregatedRangeProof.A.IsSafe() {
-			return false, errors.New("wrong tx proof")
-		}
-		if !txN.Proof.AggregatedRangeProof.T1.IsSafe() {
-			return false, errors.New("wrong tx proof")
-		}
-		if !txN.Proof.AggregatedRangeProof.T2.IsSafe() {
-			return false, errors.New("wrong tx proof")
-		}
-		if !txN.Proof.AggregatedRangeProof.S.IsSafe() {
-			return false, errors.New("wrong tx proof")
+		if txN.Proof.AggregatedRangeProof == nil || txN.Proof.OneOfManyProof == nil || txN.Proof.SerialNumberProof == nil {
+			isPrivacy = false
 		}
 
-		for i := 0; i < len(txN.Proof.OneOfManyProof); i++ {
-			if len(txN.Proof.OneOfManyProof[i].Bytes()) != privacy.OneOfManyProofSize {
+		if isPrivacy {
+			if !txN.Proof.AggregatedRangeProof.A.IsSafe() {
 				return false, errors.New("wrong tx proof")
 			}
-		}
-		for i := 0; i < len(txN.Proof.SerialNumberProof); i++ {
-			if len(txN.Proof.SerialNumberProof[i].Bytes()) != privacy.SNPrivacyProofSize {
+			if !txN.Proof.AggregatedRangeProof.T1.IsSafe() {
 				return false, errors.New("wrong tx proof")
 			}
-		}
-
-		// check input coins with privacy
-		for i := 0; i < len(txN.Proof.InputCoins); i++ {
-			if !txN.Proof.InputCoins[i].CoinDetails.SerialNumber.IsSafe() {
-				return false, errors.New("wrong tx input coins")
-			}
-		}
-		// check output coins with privacy
-		for i := 0; i < len(txN.Proof.InputCoins); i++ {
-			if !txN.Proof.OutputCoins[i].CoinDetails.PublicKey.IsSafe() {
-				return false, errors.New("wrong tx output coins")
-			}
-			if !txN.Proof.OutputCoins[i].CoinDetails.CoinCommitment.IsSafe() {
-				return false, errors.New("wrong tx output coins")
-			}
-			if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) != privacy.BigIntSize {
-				return false, errors.New("wrong tx output coins")
-			}
-		}
-		// check ComInputSK
-		if !txN.Proof.ComInputSK.IsSafe() {
-			return false, errors.New("wrong tx ComInputSK")
-		}
-		// check ComInputValue
-		for i := 0; i < len(txN.Proof.ComInputValue); i++ {
-			if !txN.Proof.ComInputValue[i].IsSafe() {
-				return false, errors.New("wrong tx ComInputValue")
-			}
-		}
-		//check ComInputSND
-		for i := 0; i < len(txN.Proof.ComInputSND); i++ {
-			if !txN.Proof.ComInputSND[i].IsSafe() {
-				return false, errors.New("wrong tx ComInputSND")
-			}
-		}
-		//check ComInputShardID
-		if !txN.Proof.ComInputShardID.IsSafe() {
-			return false, errors.New("wrong tx ComInputShardID")
-		}
-
-		// check ComOutputShardID
-		for i := 0; i < len(txN.Proof.ComOutputShardID); i++ {
-			if !txN.Proof.ComOutputShardID[i].IsSafe() {
-				return false, errors.New("wrong tx ComOutputShardID")
-			}
-		}
-		//check ComOutputSND
-		for i := 0; i < len(txN.Proof.ComOutputSND); i++ {
-			if !txN.Proof.ComOutputSND[i].IsSafe() {
-				return false, errors.New("wrong tx ComOutputSND")
-			}
-		}
-		//check ComOutputValue
-		for i := 0; i < len(txN.Proof.ComOutputValue); i++ {
-			if !txN.Proof.ComOutputValue[i].IsSafe() {
-				return false, errors.New("wrong tx ComOutputSND")
-			}
-		}
-		if len(txN.Proof.CommitmentIndices) != len(txN.Proof.InputCoins)*privacy.CMRingSize {
-			return false, errors.New("wrong tx CommitmentIndices")
-
-		}
-	}
-
-	if !isPrivacy {
-		for i := 0; i < len(txN.Proof.SNNoPrivacyProof); i++ {
-			if len(txN.Proof.SNNoPrivacyProof[i].Bytes()) != privacy.SNNoPrivacyProofSize {
+			if !txN.Proof.AggregatedRangeProof.T2.IsSafe() {
 				return false, errors.New("wrong tx proof")
 			}
-		}
-		// check input coins without privacy
-		for i := 0; i < len(txN.Proof.InputCoins); i++ {
-			if !txN.Proof.InputCoins[i].CoinDetails.CoinCommitment.IsSafe() {
-				return false, errors.New("wrong tx output coins")
-			}
-			if !txN.Proof.InputCoins[i].CoinDetails.PublicKey.IsSafe() {
-				return false, errors.New("wrong tx output coins")
-			}
-			if !txN.Proof.InputCoins[i].CoinDetails.SerialNumber.IsSafe() {
-				return false, errors.New("wrong tx output coins")
-			}
-			if len(txN.Proof.InputCoins[i].CoinDetails.Randomness.Bytes()) >= privacy.BigIntSize {
-				return false, errors.New("wrong tx output coins")
-			}
-			if len(txN.Proof.InputCoins[i].CoinDetails.SNDerivator.Bytes()) >= privacy.BigIntSize {
-				return false, errors.New("wrong tx output coins")
+			if !txN.Proof.AggregatedRangeProof.S.IsSafe() {
+				return false, errors.New("wrong tx proof")
 			}
 
+			for i := 0; i < len(txN.Proof.OneOfManyProof); i++ {
+				if len(txN.Proof.OneOfManyProof[i].Bytes()) != privacy.OneOfManyProofSize {
+					return false, errors.New("wrong tx proof")
+				}
+			}
+			for i := 0; i < len(txN.Proof.SerialNumberProof); i++ {
+				if len(txN.Proof.SerialNumberProof[i].Bytes()) != privacy.SNPrivacyProofSize {
+					return false, errors.New("wrong tx proof")
+				}
+			}
+
+			// check input coins with privacy
+			for i := 0; i < len(txN.Proof.InputCoins); i++ {
+				if !txN.Proof.InputCoins[i].CoinDetails.SerialNumber.IsSafe() {
+					return false, errors.New("wrong tx input coins")
+				}
+			}
+			// check output coins with privacy
+			for i := 0; i < len(txN.Proof.InputCoins); i++ {
+				if !txN.Proof.OutputCoins[i].CoinDetails.PublicKey.IsSafe() {
+					return false, errors.New("wrong tx output coins")
+				}
+				if !txN.Proof.OutputCoins[i].CoinDetails.CoinCommitment.IsSafe() {
+					return false, errors.New("wrong tx output coins")
+				}
+				if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) != privacy.BigIntSize {
+					return false, errors.New("wrong tx output coins")
+				}
+			}
+			// check ComInputSK
+			if !txN.Proof.ComInputSK.IsSafe() {
+				return false, errors.New("wrong tx ComInputSK")
+			}
+			// check ComInputValue
+			for i := 0; i < len(txN.Proof.ComInputValue); i++ {
+				if !txN.Proof.ComInputValue[i].IsSafe() {
+					return false, errors.New("wrong tx ComInputValue")
+				}
+			}
+			//check ComInputSND
+			for i := 0; i < len(txN.Proof.ComInputSND); i++ {
+				if !txN.Proof.ComInputSND[i].IsSafe() {
+					return false, errors.New("wrong tx ComInputSND")
+				}
+			}
+			//check ComInputShardID
+			if !txN.Proof.ComInputShardID.IsSafe() {
+				return false, errors.New("wrong tx ComInputShardID")
+			}
+
+			// check ComOutputShardID
+			for i := 0; i < len(txN.Proof.ComOutputShardID); i++ {
+				if !txN.Proof.ComOutputShardID[i].IsSafe() {
+					return false, errors.New("wrong tx ComOutputShardID")
+				}
+			}
+			//check ComOutputSND
+			for i := 0; i < len(txN.Proof.ComOutputSND); i++ {
+				if !txN.Proof.ComOutputSND[i].IsSafe() {
+					return false, errors.New("wrong tx ComOutputSND")
+				}
+			}
+			//check ComOutputValue
+			for i := 0; i < len(txN.Proof.ComOutputValue); i++ {
+				if !txN.Proof.ComOutputValue[i].IsSafe() {
+					return false, errors.New("wrong tx ComOutputSND")
+				}
+			}
+			if len(txN.Proof.CommitmentIndices) != len(txN.Proof.InputCoins)*privacy.CMRingSize {
+				return false, errors.New("wrong tx CommitmentIndices")
+
+			}
 		}
 
-		// check output coins without privacy
-		for i := 0; i < len(txN.Proof.OutputCoins); i++ {
-			if !txN.Proof.OutputCoins[i].CoinDetails.CoinCommitment.IsSafe() {
-				return false, errors.New("wrong tx output coins")
+		if !isPrivacy {
+			for i := 0; i < len(txN.Proof.SNNoPrivacyProof); i++ {
+				if len(txN.Proof.SNNoPrivacyProof[i].Bytes()) != privacy.SNNoPrivacyProofSize {
+					return false, errors.New("wrong tx proof")
+				}
 			}
-			if !txN.Proof.OutputCoins[i].CoinDetails.PublicKey.IsSafe() {
-				return false, errors.New("wrong tx output coins")
+			// check input coins without privacy
+			for i := 0; i < len(txN.Proof.InputCoins); i++ {
+				if !txN.Proof.InputCoins[i].CoinDetails.CoinCommitment.IsSafe() {
+					return false, errors.New("wrong tx output coins")
+				}
+				if !txN.Proof.InputCoins[i].CoinDetails.PublicKey.IsSafe() {
+					return false, errors.New("wrong tx output coins")
+				}
+				if !txN.Proof.InputCoins[i].CoinDetails.SerialNumber.IsSafe() {
+					return false, errors.New("wrong tx output coins")
+				}
+				if len(txN.Proof.InputCoins[i].CoinDetails.Randomness.Bytes()) >= privacy.BigIntSize {
+					return false, errors.New("wrong tx output coins")
+				}
+				if len(txN.Proof.InputCoins[i].CoinDetails.SNDerivator.Bytes()) >= privacy.BigIntSize {
+					return false, errors.New("wrong tx output coins")
+				}
+
 			}
-			if len(txN.Proof.OutputCoins[i].CoinDetails.Randomness.Bytes()) >= privacy.BigIntSize {
-				return false, errors.New("wrong tx output coins")
-			}
-			if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) >= privacy.BigIntSize {
-				return false, errors.New("wrong tx output coins")
+
+			// check output coins without privacy
+			for i := 0; i < len(txN.Proof.OutputCoins); i++ {
+				if !txN.Proof.OutputCoins[i].CoinDetails.CoinCommitment.IsSafe() {
+					return false, errors.New("wrong tx output coins")
+				}
+				if !txN.Proof.OutputCoins[i].CoinDetails.PublicKey.IsSafe() {
+					return false, errors.New("wrong tx output coins")
+				}
+				if len(txN.Proof.OutputCoins[i].CoinDetails.Randomness.Bytes()) >= privacy.BigIntSize {
+					return false, errors.New("wrong tx output coins")
+				}
+				if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) >= privacy.BigIntSize {
+					return false, errors.New("wrong tx output coins")
+				}
 			}
 		}
 	}
