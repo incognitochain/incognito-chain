@@ -135,7 +135,6 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 }
 
 func (blockchain *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {
-	//TODO: check node mode -> node role before add block to pool
 	fmt.Printf("OnCrossShardBlockReceived/CrossShardBlock from %+v \n", block.Header.ShardID)
 	expectedHeight, toShardID, err := blockchain.config.CrossShardPool[block.ToShardID].AddCrossShardBlock(block)
 	for fromShardID, height := range expectedHeight {
