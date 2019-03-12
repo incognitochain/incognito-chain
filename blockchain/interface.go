@@ -20,6 +20,7 @@ type ShardToBeaconPool interface {
 	GetValidPendingBlock(map[byte]uint64) map[byte][]*ShardToBeaconBlock
 	GetValidPendingBlockHeight() map[byte][]uint64
 	GetLatestValidPendingBlockHeight() map[byte]uint64
+	GetBlockByHeight(shardID byte, height uint64) *ShardToBeaconBlock
 	SetShardState(map[byte]uint64)
 }
 
@@ -27,6 +28,8 @@ type CrossShardPool interface {
 	AddCrossShardBlock(CrossShardBlock) (map[byte]uint64, byte, error)
 	GetValidBlock(map[byte]uint64) map[byte][]*CrossShardBlock
 	GetLatestValidBlockHeight() map[byte]uint64
+	GetValidBlockHeight() map[byte][]uint64
+	GetBlockByHeight(_shardID byte, height uint64) *CrossShardBlock
 	RemoveBlockByHeight(map[byte]uint64) error
 	UpdatePool() error
 }

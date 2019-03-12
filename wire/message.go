@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	"github.com/constant-money/constant-chain/blockchain"
-	"github.com/constant-money/constant-chain/common"
 	peer "github.com/libp2p/go-libp2p-peer"
 
 	"time"
@@ -181,8 +180,8 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessagePeerState{
 			Timestamp:         time.Now().Unix(),
 			Shards:            make(map[byte]blockchain.ChainState),
-			ShardToBeaconPool: make(map[byte][]common.Hash),
-			CrossShardPool:    make(map[byte]map[byte][]common.Hash),
+			ShardToBeaconPool: make(map[byte][]uint64),
+			CrossShardPool:    make(map[byte]map[byte][]uint64),
 		}
 		break
 	case CmdGetAddr:
