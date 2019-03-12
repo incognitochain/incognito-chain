@@ -5,7 +5,7 @@ import (
 
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
-	"github.com/libp2p/go-libp2p-peer"
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 const (
@@ -13,13 +13,13 @@ const (
 )
 
 type MessageGetBlockBeacon struct {
-	FromPool  bool
-	ByHash    bool
-	BlksHash  []common.Hash
-	From      uint64
-	To        uint64
-	SenderID  string
-	Timestamp int64
+	FromPool         bool
+	ByHash           bool
+	BySpecificHeight bool
+	BlkHashes        []common.Hash
+	BlkHeights       []uint64
+	SenderID         string
+	Timestamp        int64
 }
 
 func (msg *MessageGetBlockBeacon) Hash() string {
@@ -35,7 +35,7 @@ func (msg *MessageGetBlockBeacon) MessageType() string {
 }
 
 func (msg *MessageGetBlockBeacon) MaxPayloadLength(pver int) int {
-	return MaxBlockPayload
+	return MaxGetBlockPayload
 }
 
 func (msg *MessageGetBlockBeacon) JsonSerialize() ([]byte, error) {
