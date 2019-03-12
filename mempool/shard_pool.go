@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	MAX_VALID_SHARD_BLK_IN_POOL   = 1000
-	MAX_PENDING_SHARD_BLK_IN_POOL = 200
+	MAX_VALID_SHARD_BLK_IN_POOL   = 10000
+	MAX_PENDING_SHARD_BLK_IN_POOL = 1000
 )
 
 type ShardPool struct {
@@ -83,6 +83,9 @@ func (self *ShardPool) AddShardBlock(blk *blockchain.ShardBlock) error {
 	//Check if satisfy pool capacity (for valid and invalid)
 	if len(self.pool) != 0 {
 		numValidPedingBlk := int(self.latestValidHeight - self.pool[0].Header.Height)
+		if numValidPedingBlk < 0 {
+			numValidPedingBlk = 0
+		}
 		numInValidPedingBlk := len(self.pool) - numValidPedingBlk
 		if numValidPedingBlk > MAX_VALID_SHARD_BLK_IN_POOL {
 			return errors.New("exceed max valid pending block")

@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"sort"
+	"sync"
 
 	"github.com/constant-money/constant-chain/common"
 )
@@ -34,6 +35,7 @@ type BestStateShard struct {
 	NumTxns               uint64          `json:"NumTxns"`        // The number of txns in the block.
 	TotalTxns             uint64          `json:"TotalTxns"`      // The total number of txns in the chain.
 	ActiveShards          int             `json:"ActiveShards"`
+	lock                  sync.Mutex
 }
 
 // Get role of a public key base on best state shard
@@ -88,6 +90,8 @@ func (bestStateShard *BestStateShard) GetBytes() []byte {
 	return res
 }
 func (bestStateShard *BestStateShard) Hash() common.Hash {
+	bestStateShard.lock.Lock()
+	defer bestStateShard.lock.Unlock()
 	return common.HashH(bestStateShard.GetBytes())
 }
 func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string, proposerOffset int) string {
