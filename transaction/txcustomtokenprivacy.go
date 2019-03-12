@@ -20,6 +20,8 @@ import (
 type TxCustomTokenPrivacy struct {
 	Tx                                    // inherit from normal tx of constant(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
 	TxTokenPrivacyData TxTokenPrivacyData // supporting privacy format
+
+	cachedHash *common.Hash // cached hash data of tx
 }
 
 func (txObj *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) error {
@@ -65,6 +67,9 @@ func (txObj TxCustomTokenPrivacy) JSONString() string {
 
 // Hash returns the hash of all fields of the transaction
 func (tx *TxCustomTokenPrivacy) Hash() *common.Hash {
+	if tx.cachedHash != nil {
+		return tx.cachedHash
+	}
 	// final hash
 	hash := common.DoubleHashH([]byte(tx.String()))
 	return &hash
