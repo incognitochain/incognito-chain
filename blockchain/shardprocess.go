@@ -355,8 +355,6 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	)
 	if err != nil {
 		Logger.log.Error(err)
-		fmt.Println(blockchain.BestState.Shard[block.Header.ShardID].BeaconHeight, block.Header.BeaconHeight)
-		panic(err)
 		return nil
 	}
 	txInstructions := CreateShardInstructionsFromTransactionAndIns(
@@ -547,6 +545,9 @@ func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *Shard
 		Swap shard committee if detect new epoch of beacon
 */
 func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBlock) error {
+	bestStateShard.lock.Lock()
+	defer bestStateShard.lock.Unlock()
+
 	Logger.log.Debugf("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	var (
 		err                   error

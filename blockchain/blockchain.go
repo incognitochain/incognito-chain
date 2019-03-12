@@ -1533,6 +1533,7 @@ func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privac
 }
 
 func (blockchain *BlockChain) SetReadyState(shard bool, shardID byte, ready bool) {
+	fmt.Println("SetReadyState", shard, shardID, ready)
 	blockchain.syncStatus.IsReady.Lock()
 	defer blockchain.syncStatus.IsReady.Unlock()
 	if shard {

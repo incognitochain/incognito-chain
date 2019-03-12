@@ -31,7 +31,7 @@ func (rpcServer RpcServer) handleGetCrossShardPoolState(params interface{}, clos
 	if len(paramsArray) < 1 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key component"))
 	}
-	shardID := byte(paramsArray[0].(int))
+	shardID := byte(paramsArray[0].(float64))
 
 	result := mempool.GetCrossShardPool(shardID).GetAllBlockHeight()
 	// if !ok || result == nil {
