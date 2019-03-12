@@ -136,9 +136,6 @@ var RpcHandler = map[string]commandHandler{
 	GetEncryptionFlag:                         RpcServer.handleGetEncryptionFlag,
 	SetEncryptionFlag:                         RpcServer.handleSetEncryptionFlag,
 	GetEncryptionLastBlockHeightFlag:          RpcServer.handleGetEncryptionLastBlockHeightFlag,
-	CreateAndSendSealLv3VoteProposal:          RpcServer.handleCreateAndSendSealLv3VoteProposalTransaction,
-	CreateAndSendSealLv2VoteProposal:          RpcServer.handleCreateAndSendSealLv2VoteProposalTransaction,
-	CreateAndSendSealLv1VoteProposal:          RpcServer.handleCreateAndSendSealLv1VoteProposalTransaction,
 	CreateAndSendNormalVoteProposalFromOwner:  RpcServer.handleCreateAndSendNormalVoteProposalFromOwnerTransaction,
 	CreateAndSendNormalVoteProposalFromSealer: RpcServer.handleCreateAndSendNormalVoteProposalFromSealerTransaction,
 
