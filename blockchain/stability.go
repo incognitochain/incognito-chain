@@ -192,11 +192,8 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 		case component.NewGOVConstitutionIns:
 			newInst, err = buildUpdateConstitutionIns(inst[2], common.GOVBoard)
 
-		case component.VoteDCBBoardIns:
-			err = blkTmpGen.chain.AddVoteDCBBoard(inst[2])
-
-		case component.VoteGOVBoardIns:
-			err = blkTmpGen.chain.AddVoteDCBBoard(inst[2])
+		case component.VoteBoardIns:
+			err = blkTmpGen.chain.AddVoteBoard(inst[2])
 
 		case component.SealedLv1Or2VoteProposalIns:
 			err = blkTmpGen.chain.AddVoteLv1or2Proposal(inst[2])
@@ -422,37 +419,12 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []met
 	return respTxs, nil
 }
 
-func (chain *BlockChain) AddVoteDCBBoard(inst string) error {
-	newInst, err := fromshardins.NewVoteDCBBoardInsFromStr(inst)
+func (chain *BlockChain) AddVoteBoard(inst string) error {
+	newInst, err := fromshardins.NewVoteBoardInsFromStr(inst)
 	if err != nil {
 		return err
 	}
-
-	boardType := common.DCBBoard
-	voteAmount := newInst.AmountOfVote
-	voterPayment := newInst.VoterPaymentAddress
-	governor := chain.GetGovernor(boardType)
-	boardIndex := governor.GetBoardIndex() + 1
-	err1 := chain.GetDatabase().AddVoteBoard(
-		boardType,
-		boardIndex,
-		voterPayment,
-		newInst.CandidatePaymentAddress,
-		voteAmount,
-	)
-	if err1 != nil {
-		return err1
-	}
-	return nil
-}
-
-func (chain *BlockChain) AddVoteGOVBoard(inst string) error {
-	newInst, err := fromshardins.NewVoteGOVBoardInsFromStr(inst)
-	if err != nil {
-		return err
-	}
-
-	boardType := common.GOVBoard
+	boardType := newInst.BoardType
 	voteAmount := newInst.AmountOfVote
 	voterPayment := newInst.VoterPaymentAddress
 	governor := chain.GetGovernor(boardType)
