@@ -1,6 +1,6 @@
 # Constant chain
 
-![Constant is digital money you can actually use.](https://constant.money/public/assets/logo-5321c8fe.svg)
+![Constant is digital money you can actually use.](https://avatars2.githubusercontent.com/u/45321944?s=200&v=4)
 
 One prototype version for a new type of crypto curency
 
