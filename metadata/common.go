@@ -101,23 +101,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &SubmitGOVProposalMetadata{}
 	case VoteGOVBoardMeta:
 		md = &VoteGOVBoardMetadata{}
-
-	case SealedLv1DCBVoteProposalMeta:
-		md = &SealedLv1DCBVoteProposalMetadata{}
-	case SealedLv2DCBVoteProposalMeta:
-		md = &SealedLv2DCBVoteProposalMetadata{}
-	case SealedLv3DCBVoteProposalMeta:
-		md = &SealedLv3DCBVoteProposalMetadata{}
-	case NormalDCBVoteProposalFromSealerMeta:
+case NormalDCBVoteProposalFromSealerMeta:
 		md = &NormalDCBVoteProposalFromSealerMetadata{}
 	case NormalDCBVoteProposalFromOwnerMeta:
 		md = &NormalDCBVoteProposalFromOwnerMetadata{}
-	case SealedLv1GOVVoteProposalMeta:
-		md = &SealedLv1GOVVoteProposalMetadata{}
-	case SealedLv2GOVVoteProposalMeta:
-		md = &SealedLv2GOVVoteProposalMetadata{}
-	case SealedLv3GOVVoteProposalMeta:
-		md = &SealedLv3GOVVoteProposalMetadata{}
 	case NormalGOVVoteProposalFromSealerMeta:
 		md = &NormalGOVVoteProposalFromSealerMetadata{}
 	case NormalGOVVoteProposalFromOwnerMeta:
