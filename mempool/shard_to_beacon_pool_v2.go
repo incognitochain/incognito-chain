@@ -65,6 +65,7 @@ func (self *ShardToBeaconPool) GetShardState() map[byte]uint64 {
 //#1 and #2: requested block from height to height
 //#3 error
 func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaconBlock) (uint64, uint64, error) {
+	fmt.Println("Receive beacon ")
 	blkShardID := blk.Header.ShardID
 	blkHeight := blk.Header.Height
 	self.poolMutex.Lock()
@@ -253,4 +254,20 @@ func (self *ShardToBeaconPool) GetAllBlockHeight() map[byte][]uint64 {
 		}
 	}
 	return finalBlocks
+}
+
+func (self *ShardToBeaconPool) GetBlockByHeight(shardID byte, height uint64) *blockchain.ShardToBeaconBlock {
+	self.poolMutex.RLock()
+	defer self.poolMutex.RUnlock()
+	for _shardID, blks := range self.pool {
+		if _shardID != shardID {
+			continue
+		}
+		for _, blk := range blks {
+			if blk.Header.Height == height {
+				return blk
+			}
+		}
+	}
+	return nil
 }

@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"errors"
+	"fmt"
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
 	"sort"
@@ -10,7 +11,7 @@ import (
 
 const (
 	MAX_VALID_BEACON_BLK_IN_POOL   = 10000
-	MAX_INVALID_BEACON_BLK_IN_POOL = 5000
+	MAX_INVALID_BEACON_BLK_IN_POOL = 1000
 )
 
 type BeaconPool struct {
@@ -76,25 +77,26 @@ func (self *BeaconPool) AddBeaconBlock(blk *blockchain.BeaconBlock) error {
 		if numValidPedingBlk < 0 {
 			numValidPedingBlk = 0
 		}
-
 		numInValidPedingBlk := len(self.pool) - numValidPedingBlk
-
 		if numValidPedingBlk > MAX_VALID_BEACON_BLK_IN_POOL {
+			fmt.Println("cannot add to beacon pool (exceed valid pending block)", blk.Header.Height, self.latestValidHeight, blockchain.GetBestStateBeacon().BeaconHeight)
 			return errors.New("exceed max valid pending block")
 		}
-
 		lastBlkInPool := self.pool[len(self.pool)-1]
 		if numInValidPedingBlk > MAX_INVALID_BEACON_BLK_IN_POOL {
 			//If invalid block is better than current invalid block
 			if lastBlkInPool.Header.Height > blkHeight {
 				//remove latest block and add better invalid to pool
+				fmt.Println("swap out beacon pool ", self.pool[len(self.pool)-1].Header.Height, self.pool[0].Header.Height, self.latestValidHeight, blockchain.GetBestStateBeacon().BeaconHeight)
 				self.pool = self.pool[:len(self.pool)-1]
 			} else {
+				fmt.Println("cannot add to beacon pool (exceed pending block)", blk.Header.Height, self.latestValidHeight, blockchain.GetBestStateBeacon().BeaconHeight)
 				return errors.New("exceed invalid pending block")
 			}
 		}
 	}
 
+	fmt.Println("add to beacon pool ", blk.Header.Height, self.latestValidHeight, blockchain.GetBestStateBeacon().BeaconHeight)
 	// add to pool
 	self.pool = append(self.pool, blk)
 
@@ -150,7 +152,7 @@ func (self *BeaconPool) removeBlock(lastBlockHeight uint64) {
 
 func (self *BeaconPool) GetValidBlock() []*blockchain.BeaconBlock {
 	self.poolMu.RLock()
-	defer self.poolMu.Unlock()
+	defer self.poolMu.RUnlock()
 	finalBlocks := []*blockchain.BeaconBlock{}
 	for _, blk := range self.pool {
 		if blk.Header.Height > self.latestValidHeight {
@@ -187,16 +189,26 @@ func (self *BeaconPool) GetLatestValidBlockHeight() uint64 {
 		finalBlocks = blk.Header.Height
 	}
 	return finalBlocks
-
 }
 
 func (self *BeaconPool) GetAllBlockHeight() []uint64 {
 	self.poolMu.RLock()
-	defer self.poolMu.Unlock()
+	defer self.poolMu.RUnlock()
 
 	finalBlocks := []uint64{}
 	for _, blk := range self.pool {
 		finalBlocks = append(finalBlocks, blk.Header.Height)
 	}
 	return finalBlocks
+}
+
+func (self *BeaconPool) GetBlockByHeight(height uint64) *blockchain.BeaconBlock {
+	self.poolMu.RLock()
+	defer self.poolMu.RUnlock()
+	for _, blk := range self.pool {
+		if blk.Header.Height == height {
+			return blk
+		}
+	}
+	return nil
 }
