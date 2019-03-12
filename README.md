@@ -70,4 +70,5 @@ NOTE: The GOROOT and GOPATH above must not be the same path. It is recommended t
 -   Run node with config param in long or short format to change features of running node
 
 ## Other Utilities
--   Node wallet tool https://github.com/ninjadotorg/constant-wallet-extension
+-   Node wallet tool https://github.com/constant-money/constant-chain-wallet-client
+-   Wallet client js https://github.com/constant-money/constant-chain-wallet-client-2
