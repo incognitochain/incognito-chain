@@ -40,7 +40,8 @@ type Tx struct {
 	// Metadata
 	Metadata metadata.Metadata
 
-	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
+	sigPrivKey []byte       // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
+	cachedHash *common.Hash // cached hash data of tx
 }
 
 func (tx *Tx) GetAmountOfVote() (uint64, error) {
@@ -503,7 +504,11 @@ func (tx Tx) String() string {
 }
 
 func (tx *Tx) Hash() *common.Hash {
+	if tx.cachedHash != nil {
+		return tx.cachedHash
+	}
 	hash := common.HashH([]byte(tx.String()))
+	tx.cachedHash = &hash
 	return &hash
 }
 

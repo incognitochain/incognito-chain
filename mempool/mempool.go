@@ -212,16 +212,13 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 
 	// sanity data
-	// if validate, errS := tp.ValidateSanityData(tx); !validate {
-
 	if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
 		err := MempoolTxError{}
 		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
 		return nil, nil, err
 	}
 
-	// ValidateTransaction tx by it self
-	// validate := tp.ValidateTxByItSelf(tx)
+	// ValidateTransaction tx by it self // TODO validate performance later 0xkraken
 	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
 	if !validated {
 		err := MempoolTxError{}
@@ -235,6 +232,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	if err != nil {
 		return nil, nil, err
 	}
+
 	if tx.GetType() == common.TxCustomTokenType {
 		customTokenTx := tx.(*transaction.TxCustomToken)
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
@@ -249,12 +247,12 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 
 	// A standalone transaction must not be a salary transaction.
-	// if tp.config.BlockChain.IsSalaryTx(tx) {
 	if tx.IsSalaryTx() {
 		err := MempoolTxError{}
 		err.Init(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
 		return nil, nil, err
 	}
+
 	// check duplicate stake public key ONLY with staking transaction
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
@@ -268,6 +266,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 			}
 		}
 	}
+
 	txD := tp.addTx(tx, bestHeight, txFee)
 	return tx.Hash(), txD, nil
 }
