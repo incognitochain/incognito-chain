@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL   = 1000
-	MAX_INVALID_SHARD_TO_BEACON_BLK_IN_POOL = 200
+	MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL   = 10000
+	MAX_INVALID_SHARD_TO_BEACON_BLK_IN_POOL = 1000
 )
 
 type ShardToBeaconPool struct {
@@ -65,6 +65,7 @@ func (self *ShardToBeaconPool) GetShardState() map[byte]uint64 {
 //#1 and #2: requested block from height to height
 //#3 error
 func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaconBlock) (uint64, uint64, error) {
+	fmt.Println("Receive beacon ")
 	blkShardID := blk.Header.ShardID
 	blkHeight := blk.Header.Height
 	self.poolMutex.Lock()
@@ -93,6 +94,10 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaco
 	if len(self.pool[blkShardID]) != 0 {
 		numValidPedingBlk := int(self.latestValidHeight[blkShardID] - self.pool[blkShardID][0].Header.Height)
 		numInValidPedingBlk := len(self.pool[blkShardID]) - numValidPedingBlk
+		if numValidPedingBlk < 0 {
+			numValidPedingBlk = 0
+		}
+
 		if numValidPedingBlk > MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL {
 			return 0, 0, errors.New("exceed max valid pending block")
 		}
@@ -131,6 +136,7 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaco
 	}
 	return 0, 0, nil
 }
+
 func (self *ShardToBeaconPool) UpdateLatestShardState() {
 	for shardID, blks := range self.pool {
 		if self.latestValidHeight[shardID] == 0 {
@@ -240,7 +246,7 @@ func (self *ShardToBeaconPool) GetLatestValidPendingBlockHeight() map[byte]uint6
 	return finalBlocks
 }
 
-func (self *ShardToBeaconPool) GetAllPendingBlockHeight() map[byte][]uint64 {
+func (self *ShardToBeaconPool) GetAllBlockHeight() map[byte][]uint64 {
 	finalBlocks := make(map[byte][]uint64)
 	for shardID, blks := range self.pool {
 		for _, blk := range blks {
@@ -248,4 +254,20 @@ func (self *ShardToBeaconPool) GetAllPendingBlockHeight() map[byte][]uint64 {
 		}
 	}
 	return finalBlocks
+}
+
+func (self *ShardToBeaconPool) GetBlockByHeight(shardID byte, height uint64) *blockchain.ShardToBeaconBlock {
+	self.poolMutex.RLock()
+	defer self.poolMutex.RUnlock()
+	for _shardID, blks := range self.pool {
+		if _shardID != shardID {
+			continue
+		}
+		for _, blk := range blks {
+			if blk.Header.Height == height {
+				return blk
+			}
+		}
+	}
+	return nil
 }

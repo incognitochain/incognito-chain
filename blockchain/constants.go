@@ -8,6 +8,7 @@ const (
 	BlockVersion                = 1
 	TransactionVersion          = 1
 	defaultMaxBlkReqPerPeer     = 60
+	defaultMaxBlkReqPerTime     = 600
 	defaultBroadcastStateTime   = 2 * time.Second  // in second
 	defaultProcessPeerStateTime = 5 * time.Second  // in second
 	defaultMaxBlockSyncTime     = 2 * time.Second  // in second
@@ -25,8 +26,8 @@ const (
 	MainetName         = "mainnet"
 	MainnetDefaultPort = "9333"
 
-	MainNetShardCommitteeSize  = 1
-	MainNetBeaconCommitteeSize = 1
+	MainNetShardCommitteeSize  = 3
+	MainNetBeaconCommitteeSize = 3
 	MainNetActiveShards        = 2
 
 	//board and proposal parameters
@@ -63,8 +64,8 @@ const (
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 
-	TestNetShardCommitteeSize  = 1
-	TestNetBeaconCommitteeSize = 1
+	TestNetShardCommitteeSize  = 3
+	TestNetBeaconCommitteeSize = 3
 	TestNetActiveShards        = 2
 
 	//board and proposal parameters
