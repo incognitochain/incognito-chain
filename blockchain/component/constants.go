@@ -1,9 +1,7 @@
 package component
 
 const (
-	SealedLv1Or2VoteProposalIns = 100 + iota
-	SealedLv3VoteProposalIns
-	NormalVoteProposalFromSealerIns
+	NormalVoteProposalFromSealerIns = 100 + iota
 	NormalVoteProposalFromOwnerIns
 	PunishDecryptIns
 	NewDCBConstitutionIns
