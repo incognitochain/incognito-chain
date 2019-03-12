@@ -61,8 +61,8 @@ func (engine *Engine) Start() error {
 			case <-engine.cQuit:
 				return
 			default:
-				engine.config.BlockChain.InsertBlockFromPool()
 				if engine.config.BlockChain.IsReady(false, 0) {
+					fmt.Println("Blockchain is ready. Run consensus...")
 					if prevRoundNodeRole == common.BEACON_ROLE {
 						if currentPBFTBlkHeight <= engine.config.BlockChain.BestState.Beacon.BeaconHeight {
 							// reset round
@@ -204,37 +204,32 @@ func (engine *Engine) Start() error {
 										Logger.log.Error("Insert shard block error", err)
 										continue
 									}
-									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 1")
 									//PUSH SHARD TO BEACON
 									shardBlk, ok := resBlk.(*blockchain.ShardBlock)
 									if !ok {
 										Logger.log.Debug("Got data of type %T but wanted blockchain.ShardBlock", resBlk)
 										continue
 									}
-									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 2")
+									fmt.Println("Create And Push Shard To Beacon Block")
 									newShardToBeaconBlock := shardBlk.CreateShardToBeaconBlock(engine.config.BlockChain)
-									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 3")
 									newShardToBeaconMsg, err := MakeMsgShardToBeaconBlock(newShardToBeaconBlock)
 									//TODO: check lock later
 									if err == nil {
 										go engine.config.Server.PushMessageToBeacon(newShardToBeaconMsg)
 									}
-									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 4")
+									fmt.Println("Create and Push all Cross Shard Block")
 									//PUSH CROSS-SHARD
 									newCrossShardBlocks := shardBlk.CreateAllCrossShardBlock(engine.config.BlockChain.BestState.Beacon.ActiveShards)
-									fmt.Println(newCrossShardBlocks)
-									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 5")
+									fmt.Printf("New Cross Shard Blocks %+v \n", newCrossShardBlocks)
 									for sID, newCrossShardBlock := range newCrossShardBlocks {
 										newCrossShardMsg, err := MakeMsgCrossShardBlock(newCrossShardBlock)
 										if err == nil {
 											engine.config.Server.PushMessageToShard(newCrossShardMsg, sID)
 										}
 									}
-									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 6")
 									if err != nil {
 										Logger.log.Error("Make new block message error", err)
 									}
-									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 7")
 
 									//reset round
 									prevRoundNodeRole = ""
@@ -246,7 +241,7 @@ func (engine *Engine) Start() error {
 								//reset round
 								prevRoundNodeRole = ""
 								currentPBFTRound = 1
-								Logger.log.Error("Blockchain is not ready!")
+								// Logger.log.Error("Blockchain is not ready!")
 							}
 						}
 					}
@@ -254,8 +249,7 @@ func (engine *Engine) Start() error {
 					//reset round
 					prevRoundNodeRole = ""
 					currentPBFTRound = 1
-					Logger.log.Error("Blockchain is not ready!")
-
+					// Logger.log.Error("Blockchain is not ready!")
 				}
 			}
 		}

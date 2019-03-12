@@ -6,16 +6,16 @@ import (
 )
 
 type Ciphertext struct {
-	msgEncrypted    []byte
-	symKeyEncrypted []byte
+	MsgEncrypted    []byte
+	SymKeyEncrypted []byte
 }
 
 func (ciphertext *Ciphertext) IsNil() bool {
-	if len(ciphertext.msgEncrypted) == 0 {
+	if len(ciphertext.MsgEncrypted) == 0 {
 		return true
 	}
 
-	return len(ciphertext.symKeyEncrypted) == 0
+	return len(ciphertext.SymKeyEncrypted) == 0
 }
 
 func (ciphertext *Ciphertext) Bytes() []byte {
@@ -24,8 +24,8 @@ func (ciphertext *Ciphertext) Bytes() []byte {
 	}
 
 	res := make([]byte, 0)
-	res = append(res, ciphertext.symKeyEncrypted...)
-	res = append(res, ciphertext.msgEncrypted...)
+	res = append(res, ciphertext.SymKeyEncrypted...)
+	res = append(res, ciphertext.MsgEncrypted...)
 
 	return res
 }
@@ -34,8 +34,8 @@ func (ciphertext *Ciphertext) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return errors.New("SetBytes ciphertext encryption: invalid input")
 	}
-	ciphertext.symKeyEncrypted = bytes[0:66]
-	ciphertext.msgEncrypted = bytes[66:]
+	ciphertext.SymKeyEncrypted = bytes[0:66]
+	ciphertext.MsgEncrypted = bytes[66:]
 	return nil
 }
 
@@ -52,7 +52,7 @@ func HybridEncrypt(msg []byte, publicKey *EllipticPoint) (ciphertext *Ciphertext
 		Key: aesKeyByte,
 	}
 
-	ciphertext.msgEncrypted, err = aesScheme.encrypt(msg)
+	ciphertext.MsgEncrypted, err = aesScheme.encrypt(msg)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func HybridEncrypt(msg []byte, publicKey *EllipticPoint) (ciphertext *Ciphertext
 	pubKey.H = new(EllipticPoint)
 	pubKey.H.Set(publicKey.X, publicKey.Y)
 
-	ciphertext.symKeyEncrypted = pubKey.Encrypt(aesKeyPoint).Bytes()
+	ciphertext.SymKeyEncrypted = pubKey.Encrypt(aesKeyPoint).Bytes()
 
 	return ciphertext, nil
 }
@@ -79,7 +79,7 @@ func HybridDecrypt(ciphertext *Ciphertext, privateKey *big.Int) (msg []byte, err
 
 	// Parse encrypted AES key encoded as an elliptic point from EncryptedSymKey
 	encryptedAESKey := new(ElGamalCiphertext)
-	err = encryptedAESKey.SetBytes(ciphertext.symKeyEncrypted)
+	err = encryptedAESKey.SetBytes(ciphertext.SymKeyEncrypted)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -96,7 +96,7 @@ func HybridDecrypt(ciphertext *Ciphertext, privateKey *big.Int) (msg []byte, err
 	}
 
 	// Decrypt encrypted coin randomness using AES key
-	msg, err = aesScheme.decrypt(ciphertext.msgEncrypted)
+	msg, err = aesScheme.decrypt(ciphertext.MsgEncrypted)
 	if err != nil {
 		return []byte{}, err
 	}

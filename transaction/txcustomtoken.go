@@ -25,7 +25,8 @@ type TxCustomToken struct {
 	TxTokenData TxTokenData // vin - vout format
 
 	// Template data variable to process logic
-	listUtxo map[common.Hash]TxCustomToken
+	listUtxo   map[common.Hash]TxCustomToken
+	cachedHash *common.Hash // cached hash data of tx
 }
 
 func (txObj *TxCustomToken) UnmarshalJSON(data []byte) error {
@@ -315,6 +316,9 @@ func (txObj TxCustomToken) JSONString() string {
 
 // Hash returns the hash of all fields of the transaction
 func (tx TxCustomToken) Hash() *common.Hash {
+	if tx.cachedHash != nil {
+		return tx.cachedHash
+	}
 	// final hash
 	hash := common.DoubleHashH([]byte(tx.String()))
 	return &hash
@@ -436,8 +440,8 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 			newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
 			fmt.Println("INIT Tx Custom Token/ newHashInitToken", newHashInitToken)
 			for customTokenID := range listCustomTokens {
-				fmt.Println("INIT Tx Custom Token/ Existed", customTokenID, customTokenID.String() == newHashInitToken.String())
 				if newHashInitToken.String() == customTokenID.String() {
+					fmt.Println("INIT Tx Custom Token/ Existed", customTokenID, customTokenID.String() == newHashInitToken.String())
 					return NewTransactionErr(CustomTokenExisted, nil)
 				}
 			}
