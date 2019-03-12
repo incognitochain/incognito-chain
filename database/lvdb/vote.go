@@ -2,6 +2,7 @@ package lvdb
 
 import (
 	"encoding/binary"
+	"fmt"
 	"sort"
 
 	"github.com/constant-money/constant-chain/common"
@@ -113,6 +114,12 @@ func (db *db) GetTopMostVoteGovernor(boardType common.BoardType, boardIndex uint
 		})
 	}
 	sort.Sort(candidateList)
+	fmt.Println("\n\n\n\n\n\n\n\n\n")
+	fmt.Println(candidateList.Len())
+	for _, candidateElement := range candidateList {
+		fmt.Println(candidateElement)
+	}
+	fmt.Println("\n\n\n\n\n\n\n\n\n")
 	lenCandidateList := len(candidateList)
 	lowerBound, upperBound := GetNumberOfGovernorRange(boardType)
 	if lowerBound > lenCandidateList {
