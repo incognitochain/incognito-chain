@@ -195,10 +195,6 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 		case component.VoteBoardIns:
 			err = blkTmpGen.chain.AddVoteBoard(inst[2])
 
-		case component.SealedLv1Or2VoteProposalIns:
-			err = blkTmpGen.chain.AddVoteLv1or2Proposal(inst[2])
-		case component.SealedLv3VoteProposalIns:
-			err = blkTmpGen.chain.AddVoteLv3Proposal(inst[2])
 		case component.NormalVoteProposalFromSealerIns:
 			err = blkTmpGen.chain.AddNormalVoteProposalFromSealer(inst[2])
 		case component.NormalVoteProposalFromOwnerIns:
@@ -438,33 +434,6 @@ func (chain *BlockChain) AddVoteBoard(inst string) error {
 	)
 	if err1 != nil {
 		return err1
-	}
-	return nil
-}
-
-func (chain *BlockChain) AddVoteLv1or2Proposal(inst string) error {
-	newInst, err := fromshardins.NewSealedLv1Or2VoteProposalInsFromStr(inst)
-	boardType := newInst.BoardType
-	if err != nil {
-		return err
-	}
-
-	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
-	err = chain.GetDatabase().AddVoteLv1or2ProposalDB(boardType, nextConstitutionIndex, &newInst.Lv3TxID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (chain *BlockChain) AddVoteLv3Proposal(inst string) error {
-	newInst, err := fromshardins.NewSealedLv3VoteProposalInsFromStr(inst)
-	boardType := newInst.BoardType
-
-	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
-	err = chain.GetDatabase().AddVoteLv3ProposalDB(boardType, nextConstitutionIndex, &newInst.Lv3TxID)
-	if err != nil {
-		return err
 	}
 	return nil
 }
