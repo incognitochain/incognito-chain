@@ -80,6 +80,7 @@ func NewSendBackTokenVoteFailTx(
 			Vouts:      []transaction.TxTokenVout{txTokenVout},
 		},
 	}
+	newTx.Type = common.TxCustomTokenType
 	newTx.SetMetadata(metadata.NewSendBackTokenVoteFailMetadata())
 	return &newTx
 }

@@ -10,63 +10,9 @@ import (
 	"github.com/constant-money/constant-chain/privacy"
 )
 
-//abstract class
-type SealedVoteProposal struct {
-	SealVoteProposalData   []byte
-	LockerPaymentAddresses []privacy.PaymentAddress
-}
 
-func NewSealedVoteProposalMetadata(sealedVoteProposal []byte, lockerPubKeys []privacy.PaymentAddress) *SealedVoteProposal {
-	return &SealedVoteProposal{
-		SealVoteProposalData:   sealedVoteProposal,
-		LockerPaymentAddresses: lockerPubKeys,
-	}
-}
-
-func (sealedVoteProposal *SealedVoteProposal) ToBytes() []byte {
-	record := string(sealedVoteProposal.SealVoteProposalData)
-	for _, i := range sealedVoteProposal.LockerPaymentAddresses {
-		record += i.String()
-	}
-	return []byte(record)
-}
-
-func (sealedVoteProposal *SealedVoteProposal) ValidateLockerPubKeys(bcr BlockchainRetriever, boardType common.BoardType) (bool, error) {
-	//Validate these pubKeys are in board
-	boardPaymentAddress := bcr.GetBoardPaymentAddress(boardType)
-	for _, j := range sealedVoteProposal.LockerPaymentAddresses {
-		exist := false
-		for _, i := range boardPaymentAddress {
-			if common.ByteEqual(i.Bytes(), j.Bytes()) {
-				exist = true
-				break
-			}
-		}
-		if !exist {
-			return false, nil
-		}
-	}
-	return true, nil
-}
-
-func (sealedVoteProposal *SealedVoteProposal) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
-	return true, true, nil
-}
-
-func (sealedVoteProposal *SealedVoteProposal) ValidateMetadataByItself() bool {
-	for index1 := 0; index1 < len(sealedVoteProposal.LockerPaymentAddresses); index1++ {
-		pub1 := sealedVoteProposal.LockerPaymentAddresses[index1]
-		for index2 := index1 + 1; index2 < len(sealedVoteProposal.LockerPaymentAddresses); index2++ {
-			pub2 := sealedVoteProposal.LockerPaymentAddresses[index2]
-			if common.ByteEqual(pub1.Bytes(), pub2.Bytes()) {
-				return false
-			}
-		}
-	}
-	return true
-}
-func NewVoteProposalData(proposalTxID common.Hash, amountOfVote int32, constitutionIndex uint32) *component.VoteProposalData {
-	return &component.VoteProposalData{ProposalTxID: proposalTxID, AmountOfVote: amountOfVote, ConstitutionIndex: constitutionIndex}
+func NewVoteProposalData(proposalTxID common.Hash, constitutionIndex uint32) *component.VoteProposalData {
+	return &component.VoteProposalData{ProposalTxID: proposalTxID, ConstitutionIndex: constitutionIndex}
 }
 
 func NewVoteProposalDataFromJson(data interface{}) *component.VoteProposalData {
@@ -77,18 +23,7 @@ func NewVoteProposalDataFromJson(data interface{}) *component.VoteProposalData {
 	constitutionIndex := uint32(voteProposalDataData["ConstitutionIndex"].(float64))
 	return NewVoteProposalData(
 		*proposalTxID,
-		int32(voteProposalDataData["AmountOfVote"].(float64)),
 		constitutionIndex,
-	)
-}
-
-func NewVoteProposalDataFromBytes(b []byte) *component.VoteProposalData {
-	lenB := len(b)
-	newHash, _ := common.NewHash(b[:lenB-8])
-	return NewVoteProposalData(
-		*newHash,
-		common.BytesToInt32(b[lenB-8:lenB-4]),
-		common.BytesToUint32(b[lenB-4:]),
 	)
 }
 
