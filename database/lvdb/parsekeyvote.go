@@ -84,8 +84,8 @@ func GetKeyVoteBoardCount(boardType common.BoardType, boardIndex uint32, payment
 	return key
 }
 
-func ParseKeyVoteBoardCount(key []byte) (boardType common.BoardType, boardIndex uint32, candidatePubKey []byte, err error) {
-	length := []int{len(voteBoardCountPrefix), 1, 4, common.PubKeyLength}
+func ParseKeyVoteBoardCount(key []byte) (boardType common.BoardType, boardIndex uint32, paymentAddress []byte, err error) {
+	length := []int{len(voteBoardCountPrefix), 1, 4, common.PaymentAddressLength}
 	elements, err := ParseKeyToSlice(key, length)
 	if err != nil {
 		return 0, 0, nil, err
@@ -94,8 +94,8 @@ func ParseKeyVoteBoardCount(key []byte) (boardType common.BoardType, boardIndex 
 
 	boardType = common.BoardType(elements[iPlusPlus(&index)][0])
 	boardIndex = common.BytesToUint32(elements[iPlusPlus(&index)])
-	candidatePubKey = elements[iPlusPlus(&index)]
-	return boardType, boardIndex, candidatePubKey, nil
+	paymentAddress = elements[iPlusPlus(&index)]
+	return boardType, boardIndex, paymentAddress, nil
 }
 
 func GetKeyVoteBoardList(
@@ -123,7 +123,7 @@ func GetKeyVoteBoardList(
 }
 
 func ParseKeyVoteBoardList(key []byte) (boardType common.BoardType, boardIndex uint32, candidatePubKey []byte, voterPaymentAddress *privacy.PaymentAddress, err error) {
-	length := []int{len(voteBoardListPrefix), 1, 4, common.PubKeyLength, common.PubKeyLength}
+	length := []int{len(voteBoardListPrefix), 1, 4, common.PaymentAddressLength, common.PaymentAddressLength}
 	elements, err := ParseKeyToSlice(key, length)
 	if err != nil {
 		return 0, 0, nil, nil, err
@@ -158,7 +158,7 @@ func GetKeyThreePhraseCryptoOwner(boardType common.BoardType, constitutionIndex 
 }
 
 func ParseKeyThreePhraseCryptoOwner(key []byte) (boardType common.BoardType, constitutionIndex uint32, txId *common.Hash, err error) {
-	length := []int{len(threePhraseCryptoOwnerPrefix), 1, 4, common.PubKeyLength}
+	length := []int{len(threePhraseCryptoOwnerPrefix), 1, 4, common.PaymentAddressLength}
 	if CheckLength(key, length) {
 		length[len(length)-1] = 0
 	}
@@ -199,7 +199,7 @@ func GetKeyThreePhraseCryptoSealer(boardType common.BoardType, constitutionIndex
 }
 
 func ParseKeyThreePhraseCryptoSealer(key []byte) (boardType common.BoardType, constitutionIndex uint32, txId *common.Hash, err error) {
-	length := []int{len(threePhraseCryptoSealerPrefix), 1, 4, common.PubKeyLength}
+	length := []int{len(threePhraseCryptoSealerPrefix), 1, 4, common.PaymentAddressLength}
 	if CheckLength(key, length) {
 		length[len(length)-1] = 0
 	}
@@ -239,7 +239,7 @@ func GetKeyThreePhraseVoteValue(boardType common.BoardType, constitutionIndex ui
 }
 
 func ParseKeyThreePhraseVoteValue(key []byte) (boardType common.BoardType, constitutionIndex uint32, txId *common.Hash, err error) {
-	length := []int{len(threePhraseVoteValuePrefix), 1, 4, common.PubKeyLength}
+	length := []int{len(threePhraseVoteValuePrefix), 1, 4, common.PaymentAddressLength}
 	if CheckLength(key, length) {
 		length[len(length)-1] = 0
 	}
