@@ -10,7 +10,7 @@ const (
 	NewGOVConstitutionIns
 	UpdateDCBConstitutionIns
 	UpdateGOVConstitutionIns
-	VoteDCBBoardIns
+	VoteBoardIns
 	VoteGOVBoardIns
 
 	AcceptDCBProposalIns
