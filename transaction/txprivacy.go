@@ -714,10 +714,11 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 	}
 
 	// check sanity of Proof
-	validateSanityOfProof, err := tx.validateSanityDataOfProof()
+	// TODO: 0xthunderbird
+	/*validateSanityOfProof, err := tx.validateSanityDataOfProof()
 	if err != nil || !validateSanityOfProof {
 		return false, err
-	}
+	}*/
 
 	if len(txN.SigPubKey) != privacy.SigPubKeySize {
 		return false, errors.New("wrong tx Sig PK")
