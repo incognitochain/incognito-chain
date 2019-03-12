@@ -713,6 +713,23 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 		return false, errors.New("wrong tx locktime")
 	}
 
+	// check sanity of Proof
+	validateSanityOfProof, err := tx.validateSanityDataOfProof()
+	if err != nil || !validateSanityOfProof {
+		return false, err
+	}
+
+	if len(txN.SigPubKey) != privacy.SigPubKeySize {
+		return false, errors.New("wrong tx Sig PK")
+	}
+	// check Type is normal or salary tx
+	if txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType && txN.Type != common.TxCustomTokenType && txN.Type != common.TxCustomTokenPrivacyType { // only 1 byte
+		return false, errors.New("Wrong tx type")
+	}
+	return true, nil
+}
+
+func (txN Tx) validateSanityDataOfProof() (bool, error) {
 	if txN.Proof != nil {
 		isPrivacy := true
 		// check Privacy or not
@@ -851,14 +868,6 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 				}
 			}
 		}
-	}
-
-	if len(txN.SigPubKey) != privacy.SigPubKeySize {
-		return false, errors.New("wrong tx Sig PK")
-	}
-	// check Type is normal or salary tx
-	if txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType && txN.Type != common.TxCustomTokenType && txN.Type != common.TxCustomTokenPrivacyType { // only 1 byte
-		return false, errors.New("Wrong tx type")
 	}
 	return true, nil
 }
