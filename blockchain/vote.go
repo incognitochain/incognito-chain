@@ -145,8 +145,8 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 
 func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 	helper ConstitutionHelper,
-) ([]frombeaconins.InstructionFromBeacon, error){
-	//todo @big0t
+) ([]frombeaconins.InstructionFromBeacon, error) {
+	//todo @constant-money
 	return nil, nil
 }
 
@@ -305,7 +305,7 @@ func (self *BlockChain) createSendRewardOldBoardIns(
 	shardID byte,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
 	//reward for each by voteDCBList
-	//todo @big0t
+	//todo @constant-money
 	return nil, nil
 }
 
@@ -318,6 +318,9 @@ func (self *BlockChain) CreateUpdateNewGovernorInstruction(
 	newBoardList, err := self.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), self.GetCurrentBoardIndex(helper)+1)
 
 	if err != nil {
+		if err.Error() == "not enough Candidate" {
+			return nil, nil
+		}
 		return nil, err
 	}
 	if len(newBoardList) == 0 {
