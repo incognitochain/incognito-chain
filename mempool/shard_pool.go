@@ -9,15 +9,15 @@ import (
 )
 
 const (
-	MAX_VALID_SHARD_BLK_IN_POOL   = 1000
-	MAX_PENDING_SHARD_BLK_IN_POOL = 200
+	MAX_VALID_SHARD_BLK_IN_POOL   = 10000
+	MAX_PENDING_SHARD_BLK_IN_POOL = 1000
 )
 
 type ShardPool struct {
 	pool              []*blockchain.ShardBlock // shardID -> height -> block
 	shardID           byte
 	latestValidHeight uint64
-	poolMu            *sync.Mutex
+	poolMu            *sync.RWMutex
 }
 
 var shardPoolMap = make(map[byte]*ShardPool)
@@ -26,8 +26,8 @@ func InitShardPool(pool map[byte]blockchain.ShardPool) {
 	for i := 0; i < 255; i++ {
 		shardPoolMap[byte(i)] = GetShardPool(byte(i))
 		//update last shard height
+		shardPoolMap[byte(i)].poolMu = new(sync.RWMutex)
 		shardPoolMap[byte(i)].SetShardState(blockchain.GetBestStateShard(byte(i)).ShardHeight)
-		shardPoolMap[byte(i)].poolMu = new(sync.Mutex)
 		pool[byte(i)] = shardPoolMap[byte(i)]
 
 	}
@@ -46,14 +46,18 @@ func GetShardPool(shardID byte) *ShardPool {
 }
 
 func (self *ShardPool) SetShardState(lastestShardHeight uint64) {
+	self.poolMu.Lock()
+	defer self.poolMu.Unlock()
 	self.latestValidHeight = lastestShardHeight
 
 	//Remove pool base on new shardstate
-	self.RemoveBlock(lastestShardHeight)
-	self.UpdateLatestShardState()
+	self.removeBlock(lastestShardHeight)
+	self.updateLatestShardState()
 }
 
 func (self *ShardPool) GetShardState() uint64 {
+	self.poolMu.RLock()
+	defer self.poolMu.RUnlock()
 	return self.latestValidHeight
 }
 
@@ -79,6 +83,9 @@ func (self *ShardPool) AddShardBlock(blk *blockchain.ShardBlock) error {
 	//Check if satisfy pool capacity (for valid and invalid)
 	if len(self.pool) != 0 {
 		numValidPedingBlk := int(self.latestValidHeight - self.pool[0].Header.Height)
+		if numValidPedingBlk < 0 {
+			numValidPedingBlk = 0
+		}
 		numInValidPedingBlk := len(self.pool) - numValidPedingBlk
 		if numValidPedingBlk > MAX_VALID_SHARD_BLK_IN_POOL {
 			return errors.New("exceed max valid pending block")
@@ -105,10 +112,11 @@ func (self *ShardPool) AddShardBlock(blk *blockchain.ShardBlock) error {
 	})
 
 	//update last valid pending ShardState
-	self.UpdateLatestShardState()
+	self.updateLatestShardState()
 	return nil
 }
-func (self *ShardPool) UpdateLatestShardState() {
+
+func (self *ShardPool) updateLatestShardState() {
 	lastHeight := self.latestValidHeight
 	for _, blk := range self.pool {
 		if lastHeight+1 != blk.Header.Height {
@@ -122,6 +130,12 @@ func (self *ShardPool) UpdateLatestShardState() {
 //@Notice: Remove should set latest valid height
 //Because normal beacon node may not have these block to remove
 func (self *ShardPool) RemoveBlock(lastBlockHeight uint64) {
+	self.poolMu.Lock()
+	defer self.poolMu.Unlock()
+	self.removeBlock(lastBlockHeight)
+}
+
+func (self *ShardPool) removeBlock(lastBlockHeight uint64) {
 	for index, block := range self.pool {
 		if block.Header.Height <= lastBlockHeight {
 			if index == len(self.pool)-1 {
@@ -136,6 +150,8 @@ func (self *ShardPool) RemoveBlock(lastBlockHeight uint64) {
 }
 
 func (self *ShardPool) GetValidBlock() []*blockchain.ShardBlock {
+	self.poolMu.RLock()
+	defer self.poolMu.RUnlock()
 	finalBlocks := []*blockchain.ShardBlock{}
 	for _, blk := range self.pool {
 		if blk.Header.Height > self.latestValidHeight {
@@ -174,15 +190,23 @@ func (self *ShardPool) GetLatestValidBlockHeight() uint64 {
 	return finalBlocks
 }
 
-type AllHeight struct {
-	valid   []uint64
-	pending []uint64
-}
-
 func (self *ShardPool) GetAllBlockHeight() []uint64 {
+	self.poolMu.RLock()
+	defer self.poolMu.RUnlock()
 	finalBlocks := []uint64{}
 	for _, blk := range self.pool {
 		finalBlocks = append(finalBlocks, blk.Header.Height)
 	}
 	return finalBlocks
+}
+
+func (self *ShardPool) GetBlockByHeight(height uint64) *blockchain.ShardBlock {
+	self.poolMu.RLock()
+	defer self.poolMu.RUnlock()
+	for _, blk := range self.pool {
+		if blk.Header.Height == height {
+			return blk
+		}
+	}
+	return nil
 }
