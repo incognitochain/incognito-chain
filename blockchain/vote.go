@@ -1,10 +1,9 @@
 package blockchain
 
 import (
-	"encoding/binary"
 	"fmt"
 	"sort"
-
+	
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database/lvdb"
@@ -21,7 +20,6 @@ type ConstitutionHelper interface {
 	NewAcceptProposalIns(txId *common.Hash, voter component.Voter, shardID byte) frombeaconins.InstructionFromBeacon
 	GetBoardType() common.BoardType
 	GetConstitutionEndedBlockHeight(chain *BlockChain) uint64
-	GetSealerPaymentAddress(metadata.Transaction) []privacy.PaymentAddress
 	NewRewardProposalSubmitterIns(blockgen *BlockChain, receiverAddress *privacy.PaymentAddress) (instruction frombeaconins.InstructionFromBeacon, err error)
 	GetPaymentAddressFromSubmitProposalMetadata(tx metadata.Transaction) *privacy.PaymentAddress
 	GetPaymentAddressVoter(chain *BlockChain) (privacy.PaymentAddress, error)
@@ -64,8 +62,6 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 ) {
 	resIns = make([]frombeaconins.InstructionFromBeacon, 0)
 	VoteTable = make(map[common.Hash]map[string]int32)
-	SumVote := make(map[common.Hash]uint64)
-	CountVote := make(map[common.Hash]uint32)
 	NextConstitutionIndex := self.GetCurrentBoardIndex(helper)
 
 	db := self.config.DataBase
@@ -83,6 +79,7 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 	for iter.Next() {
 		key := iter.Key()
 		_, constitutionIndex, transactionID, err := lvdb.ParseKeyThreePhraseCryptoSealer(key)
+		_ = transactionID
 		if err != nil {
 			return nil, nil, err
 		}
@@ -91,54 +88,6 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 			continue
 		}
 		//Punish owner if he don't send decrypted message
-		keyOwner := lvdb.GetKeyThreePhraseCryptoOwner(boardType, constitutionIndex, transactionID)
-		valueOwnerInByte, err := db.Get(keyOwner)
-		if err != nil {
-			return nil, nil, err
-		}
-		valueOwner, err := lvdb.ParseValueThreePhraseCryptoOwner(valueOwnerInByte)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		_, _, _, lv3Tx, _ := self.GetTransactionByHash(transactionID)
-		sealerPaymentAddressList := helper.GetSealerPaymentAddress(lv3Tx)
-		if valueOwner != 1 {
-			punishDecryptIns := helper.CreatePunishDecryptIns(&sealerPaymentAddressList[0])
-			resIns = append(resIns, punishDecryptIns)
-		}
-		//Punish sealer if he don't send decrypted message
-		keySealer := lvdb.GetKeyThreePhraseCryptoSealer(boardType, constitutionIndex, transactionID)
-		valueSealerInByte, err := db.Get(keySealer)
-		if err != nil {
-			return nil, nil, err
-		}
-		valueSealer := binary.LittleEndian.Uint32(valueSealerInByte)
-		if valueSealer != 3 {
-			//Count number of time she don't send encrypted message if number==2 create punish transaction
-			punishDecryptIns := helper.CreatePunishDecryptIns(&sealerPaymentAddressList[valueSealer])
-			resIns = append(resIns, punishDecryptIns)
-		}
-
-		//Accumulate count vote
-		voter := sealerPaymentAddressList[0]
-		keyVote := lvdb.GetKeyThreePhraseVoteValue(boardType, constitutionIndex, transactionID)
-		valueVote, err := db.Get(keyVote)
-		if err != nil {
-			return nil, nil, err
-		}
-		proposalData := metadata.NewVoteProposalDataFromBytes(valueVote)
-		txId, voteAmount := &proposalData.ProposalTxID, proposalData.AmountOfVote
-		if err != nil {
-			return nil, nil, err
-		}
-
-		SumVote[*txId] += uint64(voteAmount)
-		if VoteTable[*txId] == nil {
-			VoteTable[*txId] = make(map[string]int32)
-		}
-		VoteTable[*txId][string(voter.Bytes())] += voteAmount
-		CountVote[*txId] += 1
 	}
 	return
 }

@@ -59,14 +59,8 @@ const (
 	VoteDCBBoardMeta
 	SubmitGOVProposalMeta
 	VoteGOVBoardMeta
-	SealedLv1DCBVoteProposalMeta
-	SealedLv2DCBVoteProposalMeta
-	SealedLv3DCBVoteProposalMeta
 	NormalDCBVoteProposalFromSealerMeta
 	NormalDCBVoteProposalFromOwnerMeta
-	SealedLv1GOVVoteProposalMeta
-	SealedLv2GOVVoteProposalMeta
-	SealedLv3GOVVoteProposalMeta
 	NormalGOVVoteProposalFromSealerMeta
 	NormalGOVVoteProposalFromOwnerMeta
 	RewardProposalWinnerMeta
