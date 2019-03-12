@@ -26,8 +26,8 @@ func InitShardPool(pool map[byte]blockchain.ShardPool) {
 	for i := 0; i < 255; i++ {
 		shardPoolMap[byte(i)] = GetShardPool(byte(i))
 		//update last shard height
-		shardPoolMap[byte(i)].SetShardState(blockchain.GetBestStateShard(byte(i)).ShardHeight)
 		shardPoolMap[byte(i)].poolMu = new(sync.RWMutex)
+		shardPoolMap[byte(i)].SetShardState(blockchain.GetBestStateShard(byte(i)).ShardHeight)
 		pool[byte(i)] = shardPoolMap[byte(i)]
 
 	}
@@ -57,7 +57,7 @@ func (self *ShardPool) SetShardState(lastestShardHeight uint64) {
 
 func (self *ShardPool) GetShardState() uint64 {
 	self.poolMu.RLock()
-	defer self.poolMu.Unlock()
+	defer self.poolMu.RUnlock()
 	return self.latestValidHeight
 }
 
@@ -151,7 +151,7 @@ func (self *ShardPool) removeBlock(lastBlockHeight uint64) {
 
 func (self *ShardPool) GetValidBlock() []*blockchain.ShardBlock {
 	self.poolMu.RLock()
-	defer self.poolMu.Unlock()
+	defer self.poolMu.RUnlock()
 	finalBlocks := []*blockchain.ShardBlock{}
 	for _, blk := range self.pool {
 		if blk.Header.Height > self.latestValidHeight {
@@ -192,10 +192,21 @@ func (self *ShardPool) GetLatestValidBlockHeight() uint64 {
 
 func (self *ShardPool) GetAllBlockHeight() []uint64 {
 	self.poolMu.RLock()
-	defer self.poolMu.Unlock()
+	defer self.poolMu.RUnlock()
 	finalBlocks := []uint64{}
 	for _, blk := range self.pool {
 		finalBlocks = append(finalBlocks, blk.Header.Height)
 	}
 	return finalBlocks
+}
+
+func (self *ShardPool) GetBlockByHeight(height uint64) *blockchain.ShardBlock {
+	self.poolMu.RLock()
+	defer self.poolMu.RUnlock()
+	for _, blk := range self.pool {
+		if blk.Header.Height == height {
+			return blk
+		}
+	}
+	return nil
 }
