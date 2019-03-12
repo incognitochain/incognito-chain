@@ -245,6 +245,10 @@ func (self *BlockChain) createSendBackTokenAfterVoteFailIns(
 				),
 			)
 		}
+		err := self.config.DataBase.Delete(key)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return listNewIns, nil
 }
