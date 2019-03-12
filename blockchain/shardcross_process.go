@@ -14,7 +14,7 @@ func (block *CrossShardBlock) VerifyCrossShardBlock(committees []string) error {
 		return NewBlockChainError(SignatureError, err)
 	}
 	if ok := VerifyCrossShardBlockUTXO(block, block.MerklePathShard); !ok {
-		return NewBlockChainError(HashError, errors.New("verify Merkle Path Shard"))
+		return NewBlockChainError(HashError, errors.New("Fail to verify Merkle Path Shard"))
 	}
 	return nil
 }

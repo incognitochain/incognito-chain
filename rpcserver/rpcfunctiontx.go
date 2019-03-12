@@ -414,13 +414,16 @@ func (rpcServer RpcServer) handleCreateAndSendCustomTokenTransaction(params inte
 }
 
 func (rpcServer RpcServer) handleGetListCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	arrayParams := common.InterfaceSlice(params)
 	accountParam := arrayParams[0].(string)
+	if len(accountParam) == 0 {
+		return result, NewRPCError(ErrRPCInvalidParams, errors.New("Param is invalid"))
+	}
 	account, err := wallet.Base58CheckDeserialize(accountParam)
 	if err != nil {
 		return nil, nil
 	}
-	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	result.PaymentAddress = accountParam
 	accountPaymentAddress := account.KeySet.PaymentAddress
 	temps, err := rpcServer.config.BlockChain.ListCustomToken()
@@ -450,14 +453,17 @@ func (rpcServer RpcServer) handleGetListCustomTokenBalance(params interface{}, c
 }
 
 func (rpcServer RpcServer) handleGetListPrivacyCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	arrayParams := common.InterfaceSlice(params)
 	privateKey := arrayParams[0].(string)
+	if len(privateKey) == 0 {
+		return result, NewRPCError(ErrRPCInvalidParams, errors.New("Param is invalid"))
+	}
 	account, err := wallet.Base58CheckDeserialize(privateKey)
 	account.KeySet.ImportFromPrivateKey(&account.KeySet.PrivateKey)
 	if err != nil {
 		return nil, nil
 	}
-	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	temps, err := rpcServer.config.BlockChain.ListPrivacyCustomToken()
 	if err != nil {
