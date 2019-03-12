@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,8 +16,8 @@ import (
 type ShardBody struct {
 	Instructions [][]string
 	//CrossOutputCoin from all other shard
-	CrossOutputCoin map[byte][]CrossOutputCoin
-	Transactions    []metadata.Transaction
+	CrossTransactions map[byte][]CrossTransaction
+	Transactions      []metadata.Transaction
 }
 type CrossOutputCoin struct {
 	BlockHeight uint64
@@ -28,7 +29,51 @@ type CrossTxTokenData struct {
 	BlockHash   common.Hash
 	TxTokenData []transaction.TxTokenData
 }
+type CrossTokenPrivacyData struct {
+	BlockHeight      uint64
+	BlockHash        common.Hash
+	TokenPrivacyData []ContentCrossTokenPrivacyData
+}
+type CrossTransaction struct {
+	BlockHeight      uint64
+	BlockHash        common.Hash
+	TokenPrivacyData []ContentCrossTokenPrivacyData
+	OutputCoin       []privacy.OutputCoin
+}
+type ContentCrossTokenPrivacyData struct {
+	OutputCoin     []privacy.OutputCoin
+	PropertyID     common.Hash // = hash of TxCustomTokenprivacy data
+	PropertyName   string
+	PropertySymbol string
+	Type           int    // action type
+	Mintable       bool   // default false
+	Amount         uint64 // init amount
+}
 
+func (self *ContentCrossTokenPrivacyData) Bytes() []byte {
+	res := []byte{}
+	for _, item := range self.OutputCoin {
+		res = append(res, item.Bytes()...)
+	}
+	res = append(res, self.PropertyID.GetBytes()...)
+	res = append(res, []byte(self.PropertyName)...)
+	res = append(res, []byte(self.PropertySymbol)...)
+	typeBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(typeBytes, uint32(self.Type))
+	res = append(res, typeBytes...)
+	amountBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint32(amountBytes, uint32(self.Amount))
+	res = append(res, amountBytes...)
+	if self.Mintable {
+		res = append(res, []byte("true")...)
+	} else {
+		res = append(res, []byte("false")...)
+	}
+	return res
+}
+func (self *ContentCrossTokenPrivacyData) Hash() common.Hash {
+	return common.HashH(self.Bytes())
+}
 func (shardBody *ShardBody) Hash() common.Hash {
 	res := []byte{}
 
@@ -38,18 +83,20 @@ func (shardBody *ShardBody) Hash() common.Hash {
 		}
 	}
 	keys := []int{}
-	for k := range shardBody.CrossOutputCoin {
+	for k := range shardBody.CrossTransactions {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
 	for _, shardID := range keys {
-		for _, value := range shardBody.CrossOutputCoin[byte(shardID)] {
+		for _, value := range shardBody.CrossTransactions[byte(shardID)] {
 			res = append(res, []byte(fmt.Sprintf("%v", value.BlockHeight))...)
 			res = append(res, value.BlockHash.GetBytes()...)
 			for _, coins := range value.OutputCoin {
 				res = append(res, coins.Bytes()...)
 			}
-
+			for _, coins := range value.TokenPrivacyData {
+				res = append(res, coins.Bytes()...)
+			}
 		}
 	}
 	for _, tx := range shardBody.Transactions {
@@ -123,13 +170,27 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
-func (shardBody *CrossOutputCoin) Hash() common.Hash {
-	record := []byte{}
-	record = append(record, shardBody.BlockHash.GetBytes()...)
-	for _, coins := range shardBody.OutputCoin {
-		record = append(record, coins.Bytes()...)
+func (crossOutputCoin *CrossOutputCoin) Hash() common.Hash {
+	res := []byte{}
+	res = append(res, crossOutputCoin.BlockHash.GetBytes()...)
+	for _, coins := range crossOutputCoin.OutputCoin {
+		res = append(res, coins.Bytes()...)
 	}
-	return common.DoubleHashH(record)
+	return common.HashH(res)
+}
+func (crossTransaction *CrossTransaction) Bytes() []byte {
+	res := []byte{}
+	res = append(res, crossTransaction.BlockHash.GetBytes()...)
+	for _, coins := range crossTransaction.OutputCoin {
+		res = append(res, coins.Bytes()...)
+	}
+	for _, coins := range crossTransaction.TokenPrivacyData {
+		res = append(res, coins.Bytes()...)
+	}
+	return res
+}
+func (crossTransaction *CrossTransaction) Hash() common.Hash {
+	return common.HashH(crossTransaction.Bytes())
 }
 
 /*
@@ -148,11 +209,10 @@ func (shardBody *ShardBody) CalcMerkleRootTx() *common.Hash {
 
 func (shardBody *ShardBody) ExtractIncomingCrossShardMap() (map[byte][]common.Hash, error) {
 	crossShardMap := make(map[byte][]common.Hash)
-	for shardID, crossblocks := range shardBody.CrossOutputCoin {
+	for shardID, crossblocks := range shardBody.CrossTransactions {
 		for _, crossblock := range crossblocks {
 			crossShardMap[shardID] = append(crossShardMap[shardID], crossblock.BlockHash)
 		}
-
 	}
 	return crossShardMap, nil
 }
@@ -164,66 +224,3 @@ func (shardBody *ShardBody) ExtractOutgoingCrossShardMap() (map[byte][]common.Ha
 	// }
 	return crossShardMap, nil
 }
-
-// func (shardBody *ShardBody) CalcMerkleRootShard(activeShards int) *common.Hash {
-// 	if activeShards == 1 {
-// 		merkleRoot := common.HashH([]byte{})
-// 		return &merkleRoot
-// 	}
-// 	// fmt.Println("Shard Body/CalcMerkleRootShard ================== 1")
-// 	var shardTxs = make(map[int][]*common.Hash)
-// 	// Init shard Txs
-// 	for shardID := 0; shardID < activeShards; shardID++ {
-// 		shardTxs[shardID] = []*common.Hash{}
-// 	}
-// 	for _, tx := range shardBody.Transactions {
-// 		shardID := int(tx.GetSenderAddrLastByte())
-// 		shardTxs[shardID] = append(shardTxs[shardID], tx.Hash())
-// 	}
-// 	// fmt.Println(shardTxs)
-// 	// fmt.Println("Shard Body/CalcMerkleRootShard ================== 2")
-// 	shardsHash := make([]*common.Hash, activeShards)
-// 	// for idx := range shardsHash {
-// 	// 	fmt.Println("idx", idx)
-// 	// 	h := &common.Hash{}
-// 	// 	shardsHash[idx], _ = h.NewHashFromStr("")
-// 	// }
-// 	// fmt.Println(shardsHash)
-// 	for shardID := 0; shardID < activeShards; shardID++ {
-// 		txHashStrConcat := ""
-// 		for _, tx := range shardTxs[shardID] {
-// 			txHashStrConcat += tx.String()
-// 		}
-// 		// fmt.Printf("txHashStrConcat for ShardID %+v is %+v \n", shardID, txHashStrConcat)
-// 		txHashStrConcatHash := common.HashH([]byte(txHashStrConcat))
-// 		// fmt.Printf("txHashStrConcatHash for ShardID %+v is %+v \n", shardID, txHashStrConcatHash)
-// 		// h := &common.Hash{}
-// 		// hash, _ := h.NewHash(txHashStrConcatHash[:32])
-// 		// fmt.Printf("Hash of txHashStrConcat for ShardID %+v is %+v \n", shardID, hash)
-// 		shardsHash[shardID] = &txHashStrConcatHash
-// 	}
-// 	// fmt.Println("Shard Body/CalcMerkleRootShard ================== 3")
-// 	// fmt.Println(shardsHash)
-// 	// for idx, shard := range shardTxs {
-// 	// 	fmt.Println("idx", idx)
-// 	// 	txHashStrConcat := ""
-
-// 	// 	for _, tx := range shard {
-// 	// 		txHashStrConcat += tx.String()
-// 	// 	}
-
-// 	// 	h := &common.Hash{}
-// 	// 	hash, _ := h.NewHashFromStr(txHashStrConcat)
-
-// 	// 	shardsHash[idx] = hash
-// 	// 	fmt.Println(shardsHash)
-// 	// }
-// 	// fmt.Println("Shard Body/CalcMerkleRootShard ================== 4")
-// 	merkleRoots := Merkle{}.BuildMerkleTreeOfHashs(shardsHash)
-// 	// fmt.Println(merkleRoots)
-// 	// fmt.Println("Shard Body/CalcMerkleRootShard ================== 5")
-// 	merkleRoot := merkleRoots[len(merkleRoots)-1]
-// 	// fmt.Println(merkleRoot)
-// 	// fmt.Println("Shard Body/CalcMerkleRootShard ================== 6")
-// 	return merkleRoot
-// }

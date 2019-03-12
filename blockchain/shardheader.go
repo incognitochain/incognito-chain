@@ -25,7 +25,7 @@ type ShardHeader struct {
 
 	TxRoot               common.Hash //Transaction root created from transaction in shard
 	ShardTxRoot          common.Hash //Output root created for other shard
-	CrossOutputCoinRoot  common.Hash //Transaction root created from transaction of micro shard to shard block (from other shard)
+	CrossTransactionRoot common.Hash //Transaction root created from transaction of micro shard to shard block (from other shard)
 	InstructionsRoot     common.Hash //Actions root created from Instructions and Metadata of transaction
 	CommitteeRoot        common.Hash
 	PendingValidatorRoot common.Hash
@@ -49,7 +49,7 @@ func (shardHeader *ShardHeader) String() string {
 	res += fmt.Sprintf("%v", shardHeader.Timestamp)
 	res += shardHeader.TxRoot.String()
 	res += shardHeader.ShardTxRoot.String()
-	res += shardHeader.CrossOutputCoinRoot.String()
+	res += shardHeader.CrossTransactionRoot.String()
 	res += shardHeader.InstructionsRoot.String()
 	res += shardHeader.CommitteeRoot.String()
 	res += shardHeader.PendingValidatorRoot.String()

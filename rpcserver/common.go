@@ -460,6 +460,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 		listCustomTokens,
 		*rpcServer.config.Database,
 		hasPrivacyConst,
+		shardIDSender,
 	)
 
 	if err.(*transaction.TransactionError) != nil {
