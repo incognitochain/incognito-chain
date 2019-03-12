@@ -848,16 +848,14 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 			if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) >= privacy.BigIntSize {
 				return false, errors.New("wrong tx output coins")
 			}
-
 		}
-
 	}
 
 	if len(txN.SigPubKey) != privacy.SigPubKeySize {
 		return false, errors.New("wrong tx Sig PK")
 	}
 	// check Type is normal or salary tx
-	if txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType { // only 1 byte
+	if txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType && txN.Type != common.TxCustomTokenType && txN.Type != common.TxCustomTokenPrivacyType { // only 1 byte
 		return false, errors.New("Wrong tx type")
 	}
 	return true, nil
