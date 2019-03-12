@@ -8,7 +8,7 @@ import (
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 
-func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]ChainState, shardToBeaconPool *map[byte][]common.Hash, crossShardPool *map[byte]map[byte][]common.Hash, peerID libp2p.ID) {
+func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]ChainState, shardToBeaconPool *map[byte][]uint64, crossShardPool *map[byte]map[byte][]uint64, peerID libp2p.ID) {
 	if beacon.Height >= blockchain.BestState.Beacon.BeaconHeight {
 		pState := &peerState{
 			Shard:  make(map[byte]*ChainState),
@@ -33,7 +33,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 				if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= blockchain.BestState.Shard[userShardID].ShardHeight {
 					pState.Shard[userShardID] = &shardState
 					if pool, ok := (*crossShardPool)[userShardID]; ok {
-						pState.CrossShardPool = make(map[byte]*map[byte][]common.Hash)
+						pState.CrossShardPool = make(map[byte]*map[byte][]uint64)
 						pState.CrossShardPool[userShardID] = &pool
 					}
 				}
@@ -129,7 +129,7 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 		}
 		if from != 0 && to != 0 {
 			fmt.Printf("Message/SyncBlkShardToBeacon, from %+v to %+v \n", from, to)
-			blockchain.SyncBlkShardToBeacon(block.Header.ShardID, false, false, []common.Hash{}, from, to, "")
+			blockchain.SyncBlkShardToBeacon(block.Header.ShardID, false, false, false, nil, nil, from, to, "")
 		}
 	}
 }
