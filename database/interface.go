@@ -123,6 +123,9 @@ type DatabaseInterface interface {
 	ListPrivacyCustomToken() ([][]byte, error)                          // get list all custom token which issued in network
 	PrivacyCustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) // from token id get all custom txs
 
+	StorePrivacyCustomTokenCrossShard(tokenID *common.Hash, tokenValue []byte) error // store custom token cross shard privacy
+	ListPrivacyCustomTokenCrossShard() ([][]byte, error)
+
 	// Loans
 	StoreLoanPayment(loanID []byte, principle uint64, interest uint64, deadline uint64) error
 	GetLoanPayment(loanID []byte) (principle uint64, interest uint64, deadline uint64, err error)

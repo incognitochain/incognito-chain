@@ -64,6 +64,14 @@ func (db *db) StorePrivacyCustomTokenTx(tokenID *common.Hash, shardID byte, bloc
 	return nil
 }
 
+func (db *db) StorePrivacyCustomTokenCrossShard(tokenID *common.Hash, tokenValue []byte) error {
+	key := db.GetKey(string(PrivacyTokenCrossShardPrefix), tokenID) // token-{tokenID}-shardID-(999999999-blockHeight)-(999999999-txIndex)
+	if err := db.lvdb.Put(key, tokenValue, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 /*
 	Return list of txhash
 */
@@ -82,6 +90,22 @@ func (db *db) ListCustomToken() ([][]byte, error) {
 func (db *db) ListPrivacyCustomToken() ([][]byte, error) {
 	result := make([][]byte, 0)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(privacyTokenInitPrefix), nil)
+	for iter.Next() {
+		value := make([]byte, len(iter.Value()))
+		copy(value, iter.Value())
+		result = append(result, value)
+	}
+	iter.Release()
+	return result, nil
+}
+
+/*
+	Return all data of token
+
+*/
+func (db *db) ListPrivacyCustomTokenCrossShard() ([][]byte, error) {
+	result := make([][]byte, 0)
+	iter := db.lvdb.NewIterator(util.BytesPrefix(PrivacyTokenCrossShardPrefix), nil)
 	for iter.Next() {
 		value := make([]byte, len(iter.Value()))
 		copy(value, iter.Value())
