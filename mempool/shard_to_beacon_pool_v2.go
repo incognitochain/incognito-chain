@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL   = 1000
-	MAX_INVALID_SHARD_TO_BEACON_BLK_IN_POOL = 200
+	MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL   = 10000
+	MAX_INVALID_SHARD_TO_BEACON_BLK_IN_POOL = 1000
 )
 
 type ShardToBeaconPool struct {
@@ -93,6 +93,10 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaco
 	if len(self.pool[blkShardID]) != 0 {
 		numValidPedingBlk := int(self.latestValidHeight[blkShardID] - self.pool[blkShardID][0].Header.Height)
 		numInValidPedingBlk := len(self.pool[blkShardID]) - numValidPedingBlk
+		if numValidPedingBlk < 0 {
+			numValidPedingBlk = 0
+		}
+
 		if numValidPedingBlk > MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL {
 			return 0, 0, errors.New("exceed max valid pending block")
 		}
