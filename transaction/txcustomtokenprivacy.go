@@ -3,6 +3,7 @@ package transaction
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
@@ -19,6 +20,8 @@ import (
 type TxCustomTokenPrivacy struct {
 	Tx                                    // inherit from normal tx of constant(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
 	TxTokenPrivacyData TxTokenPrivacyData // supporting privacy format
+
+	cachedHash *common.Hash // cached hash data of tx
 }
 
 func (txObj *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) error {
@@ -64,6 +67,9 @@ func (txObj TxCustomTokenPrivacy) JSONString() string {
 
 // Hash returns the hash of all fields of the transaction
 func (tx *TxCustomTokenPrivacy) Hash() *common.Hash {
+	if tx.cachedHash != nil {
+		return tx.cachedHash
+	}
 	// final hash
 	hash := common.DoubleHashH([]byte(tx.String()))
 	return &hash
@@ -99,6 +105,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 	listCustomTokens map[common.Hash]TxCustomTokenPrivacy,
 	db database.DatabaseInterface,
 	hasPrivacyConst bool,
+	shardID byte,
 ) *TransactionError {
 	var err error
 	// init data for tx constant for fee
@@ -168,14 +175,18 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			if err != nil {
 				return NewTransactionErr(UnexpectedErr, errors.New("can't handle this TokenTxType"))
 			}
+			//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
+			newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
+			fmt.Println("INIT Tx Custom Token Privacy/ newHashInitToken", newHashInitToken)
 			// validate PropertyID is the only one
 			for customTokenID := range listCustomTokens {
-				if hashInitToken.String() == customTokenID.String() {
+				if newHashInitToken.String() == customTokenID.String() {
+					fmt.Println("INIT Tx Custom Token Privacy/ Existed", customTokenID, customTokenID.String() == newHashInitToken.String())
 					return NewTransactionErr(UnexpectedErr, errors.New("this token is existed in network"))
 				}
 			}
-			txCustomToken.TxTokenPrivacyData.PropertyID = *hashInitToken
-			Logger.log.Infof("A new token wil be issued with ID: %+v", txCustomToken.TxTokenPrivacyData.PropertyID.String())
+			txCustomToken.TxTokenPrivacyData.PropertyID = newHashInitToken
+			Logger.log.Infof("A new token privacy wil be issued with ID: %+v", txCustomToken.TxTokenPrivacyData.PropertyID.String())
 		}
 	case CustomTokenTransfer:
 		{

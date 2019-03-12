@@ -21,8 +21,8 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	// Fetch Beacon information
 	beaconHeight := blockgen.chain.BestState.Beacon.BeaconHeight
 	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
-	fmt.Println("Shard Producer/NewBlockShard, Beacon Height / Before", beaconHeight)
-	fmt.Println("Shard Producer/NewBlockShard, Beacon Hash / Before", beaconHash)
+	// fmt.Println("Shard Producer/NewBlockShard, Beacon Height", beaconHeight)
+	// fmt.Println("Shard Producer/NewBlockShard, Beacon Hash", beaconHash)
 	epoch := blockgen.chain.BestState.Beacon.Epoch
 	if epoch-blockgen.chain.BestState.Shard[shardID].Epoch > 1 {
 		beaconHeight = blockgen.chain.BestState.Shard[shardID].Epoch * common.EPOCH
@@ -33,8 +33,8 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		copy(beaconHash[:], newBeaconHash.GetBytes())
 		epoch = blockgen.chain.BestState.Shard[shardID].Epoch + 1
 	}
-	fmt.Println("Shard Producer/NewBlockShard, Beacon Height / After", beaconHeight)
-	fmt.Println("Shard Producer/NewBlockShard, Beacon Hash / After", beaconHash)
+	fmt.Println("Shard Producer/NewBlockShard, Beacon Height", beaconHeight)
+	fmt.Println("Shard Producer/NewBlockShard, Beacon Hash", beaconHash)
 	fmt.Println("Shard Producer/NewBlockShard, Beacon Epoch", epoch)
 	//Fetch beacon block from height
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockgen.chain.config.DataBase, blockgen.chain.BestState.Shard[shardID].BeaconHeight+1, beaconHeight)
@@ -45,11 +45,11 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	//======Get Transaction For new Block================
 	txsToAdd := blockgen.getTransactionForNewBlock(payToAddress, privatekey, shardID, blockgen.chain.config.DataBase, beaconBlocks)
 	//======Get Cross output coin from other shard=======
-	crossOutputCoin, crossTxTokenData := blockgen.getCrossShardData(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight, crossShards)
+	crossTransactions, crossTxTokenData := blockgen.getCrossShardData(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight, crossShards)
 	crossTxTokenTransactions, _ := blockgen.chain.createCustomTokenTxForCrossShard(privatekey, crossTxTokenData, shardID)
-	fmt.Println("Shard Producer crossTxTokenTransactions", crossTxTokenTransactions)
 	txsToAdd = append(txsToAdd, crossTxTokenTransactions...)
-	fmt.Println("crossOutputCoin", crossOutputCoin)
+	fmt.Println("crossOutputCoin", crossTransactions)
+	fmt.Println("Shard Producer crossTxTokenTransactions", crossTxTokenTransactions)
 	//======Create Instruction===========================
 	//Assign Instruction
 	instructions := [][]string{}
@@ -91,9 +91,9 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 
 	block := &ShardBlock{
 		Body: ShardBody{
-			CrossOutputCoin: crossOutputCoin,
-			Instructions:    instructions,
-			Transactions:    make([]metadata.Transaction, 0),
+			CrossTransactions: crossTransactions,
+			Instructions:      instructions,
+			Transactions:      make([]metadata.Transaction, 0),
 		},
 	}
 	for _, tx := range txsToAdd {
@@ -117,10 +117,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
 	prevBlockHash := prevBlock.Hash()
 
-	crossOutputCoinRoot := &common.Hash{}
-	if len(block.Body.CrossOutputCoin) != 0 {
-		crossOutputCoinRoot, err = CreateMerkleCrossOutputCoin(block.Body.CrossOutputCoin)
-	}
+	crossTransactionRoot, err := CreateMerkleCrossTransaction(block.Body.CrossTransactions)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +154,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		Timestamp:            time.Now().Unix(),
 		TxRoot:               *merkleRoot,
 		ShardTxRoot:          shardTxMerkleData[len(shardTxMerkleData)-1],
-		CrossOutputCoinRoot:  *crossOutputCoinRoot,
+		CrossTransactionRoot: *crossTransactionRoot,
 		InstructionsRoot:     instructionsHash,
 		CrossShards:          CreateCrossShardByteArray(txsToAdd, shardID),
 		CommitteeRoot:        committeeRoot,
@@ -225,7 +222,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 }
 
 /*
-	build CrossOutputCoin
+	build CrossTransaction
 		1. Get information for CrossShardBlock Validation
 			- Get Valid Shard Block from Pool
 			- Get Current Cross Shard State: BestCrossShard.ShardHeight
@@ -240,7 +237,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 				// 	- Send ShardToBeacon Block (A1) to beacon,
 				// 		=> ShardToBeacon Block then will be executed and store as ShardState in beacon
 				// 	- Send CrossShard Block (A2) to other shard if existed
-				// 		=> CrossShard Will be process into CrossOutputCoin
+				// 		=> CrossShard Will be process into CrossTransaction
 				// 	=> A1 and A2 must have the same header
 				// 	- Check if A1 indicates that if A2 is exist or not via CrossShardByteMap
 				// 	AND ALSO, check A2 is the only cross shard block after the most recent processed cross shard block
@@ -248,10 +245,9 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 		3. if miss Cross Shard Block according to beacon bytemap then stop discard the rest
 		4. After validation: process valid block, extract cross output coin
 */
-func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeight uint64, currentBeaconHeight uint64, crossShards map[byte]uint64) (map[byte][]CrossOutputCoin, map[byte][]CrossTxTokenData) {
-	crossOutputCoin := make(map[byte][]CrossOutputCoin)
+func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeight uint64, currentBeaconHeight uint64, crossShards map[byte]uint64) (map[byte][]CrossTransaction, map[byte][]CrossTxTokenData) {
+	crossTransactions := make(map[byte][]CrossTransaction)
 	crossTxTokenData := make(map[byte][]CrossTxTokenData)
-	// crossShardMap := make(map[byte][]CrossShardBlock)
 	// get cross shard block
 
 	allCrossShardBlock := blockgen.crossShardPool[shardID].GetValidBlock(crossShards)
@@ -292,12 +288,13 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 		}
 		for _, index := range indexs {
 			blk := crossShardBlock[index]
-			outputCoin := CrossOutputCoin{
-				OutputCoin:  blk.CrossOutputCoin,
-				BlockHash:   *blk.Hash(),
-				BlockHeight: blk.Header.Height,
+			crossTransaction := CrossTransaction{
+				OutputCoin:       blk.CrossOutputCoin,
+				TokenPrivacyData: blk.CrossTxTokenPrivacyData,
+				BlockHash:        *blk.Hash(),
+				BlockHeight:      blk.Header.Height,
 			}
-			crossOutputCoin[blk.Header.ShardID] = append(crossOutputCoin[blk.Header.ShardID], outputCoin)
+			crossTransactions[blk.Header.ShardID] = append(crossTransactions[blk.Header.ShardID], crossTransaction)
 			txTokenData := CrossTxTokenData{
 				TxTokenData: blk.CrossTxTokenData,
 				BlockHash:   *blk.Hash(),
@@ -306,21 +303,23 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 			crossTxTokenData[blk.Header.ShardID] = append(crossTxTokenData[blk.Header.ShardID], txTokenData)
 		}
 	}
-	for _, crossOutputcoin := range crossOutputCoin {
-		sort.SliceStable(crossOutputcoin[:], func(i, j int) bool {
-			return crossOutputcoin[i].BlockHeight < crossOutputcoin[j].BlockHeight
-		})
-	}
 	for _, crossTxTokenData := range crossTxTokenData {
 		sort.SliceStable(crossTxTokenData[:], func(i, j int) bool {
 			return crossTxTokenData[i].BlockHeight < crossTxTokenData[j].BlockHeight
 		})
 	}
-	fmt.Println("ShardProducer/CrossOutputcoin Number of cross output coin", len(crossOutputCoin[byte(0)]))
-	fmt.Println("ShardProducer/CrossOutputcoin", crossOutputCoin)
-	fmt.Println("ShardProducer/crossTxTokenData Number of cross custom tx token", len(crossTxTokenData[byte(0)]))
+
+	for _, crossTransaction := range crossTransactions {
+		sort.SliceStable(crossTransaction[:], func(i, j int) bool {
+			return crossTransaction[i].BlockHeight < crossTransaction[j].BlockHeight
+		})
+	}
+	fmt.Println("ShardProducer/Get data from cross shard block to shard ", shardID)
+	fmt.Println("ShardProducer/crossTransactions Number of cross transaction", len(crossTransactions[shardID]))
+	fmt.Println("ShardProducer/crossTransactions", crossTransactions)
+	fmt.Println("ShardProducer/crossTxTokenData Number of cross custom tx token", len(crossTxTokenData[shardID]))
 	fmt.Println("ShardProducer/crossTxTokenData", crossTxTokenData)
-	return crossOutputCoin, crossTxTokenData
+	return crossTransactions, crossTxTokenData
 }
 
 /*
@@ -345,14 +344,14 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 
 	//TODO: UNCOMMENT To avoid produce too many empty block
 	// get tx and wait for more if not enough
-	if len(sourceTxns) < common.MinTxsInBlock {
-		<-time.Tick(common.MinBlockWaitTime * time.Second)
-		sourceTxns = blockgen.txPool.MiningDescs()
-		if len(sourceTxns) == 0 {
-			<-time.Tick(common.MaxBlockWaitTime * time.Second)
-			sourceTxns = blockgen.txPool.MiningDescs()
-		}
-	}
+	// if len(sourceTxns) < common.MinTxsInBlock {
+	// 	<-time.Tick(common.MinBlockWaitTime * time.Second)
+	// 	sourceTxns = blockgen.txPool.MiningDescs()
+	// 	if len(sourceTxns) == 0 {
+	// 		<-time.Tick(common.MaxBlockWaitTime * time.Second)
+	// 		sourceTxns = blockgen.txPool.MiningDescs()
+	// 	}
+	// }
 
 	//TODO: sort transaction base on fee and check limit block size
 	// StartingPriority, fee, size, time
@@ -443,3 +442,69 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 	}
 	return txs, txTokenDataList
 }
+
+// /*
+// 	1. Get valid tx for specific shard and their fee, also return unvalid tx
+// 		a. Validate Tx By it self
+// 		b. Validate Tx with Blockchain
+// 	2. Remove unvalid Tx out of pool
+// 	3. Keep valid tx for new block
+// 	4. Return total fee of tx
+// */
+// // get valid tx for specific shard and their fee, also return unvalid tx
+// func (blockchain *BlockChain) createCustomTokenPrivacyTxForCrossShard(privatekey *privacy.SpendingKey, contentCrossTokenPrivacyDataMap map[byte][]ContentCrossTokenPrivacyData, shardID byte) ([]metadata.Transaction, []transaction.TxTokenData) {
+// 	var keys []int
+// 	compressContentCrossTokenPrivacyData := make(map[byte][]ContentCrossTokenPrivacyData)
+// 	txs := []metadata.Transaction{}
+// 	txTokenDataList := []transaction.TxTokenData{}
+// 	listCustomTokens, err := blockchain.ListCustomToken()
+// 	if err != nil {
+// 		panic("Can't Retrieve List Custom Token in Database")
+// 	}
+// 	for k := range contentCrossTokenPrivacyDataMap {
+// 		keys = append(keys, int(k))
+// 	}
+// 	sort.Ints(keys)
+// 	for _, fromShardID := range keys {
+// 		crossTxTokenPrivacyDataList, _ := contentCrossTokenPrivacyDataMap[byte(fromShardID)]
+// 		//crossTxTokenData is already sorted by block height
+// 		for _, crossTxTokenPrivacyData := range crossTxTokenPrivacyDataList {
+// 			for _, txTokenData := range crossTxTokenPrivacyData.TxTokenData {
+// 				if privatekey != nil {
+// 					tx := &transaction.TxCustomToken{}
+// 					tokenParam := &transaction.CustomTokenParamTx{
+// 						PropertyID:     txTokenData.PropertyID.String(),
+// 						PropertyName:   txTokenData.PropertyName,
+// 						PropertySymbol: txTokenData.PropertySymbol,
+// 						Amount:         txTokenData.Amount,
+// 						TokenTxType:    transaction.CustomTokenCrossShard,
+// 						Receiver:       txTokenData.Vouts,
+// 					}
+// 					err := tx.Init(
+// 						privatekey,
+// 						nil,
+// 						nil,
+// 						0,
+// 						tokenParam,
+// 						listCustomTokens,
+// 						blockchain.config.DataBase,
+// 						nil,
+// 						false,
+// 						shardID,
+// 					)
+// 					if err != nil {
+// 						fmt.Printf("Fail to create Transaction for Cross Shard Tx Token, err %+v \n", err)
+// 						panic("")
+// 					}
+// 					fmt.Println("CreateCustomTokenTxForCrossShard/ tx", tx)
+// 					txs = append(txs, tx)
+// 				} else {
+// 					tempTxTokenData := cloneTxTokenDataForCrossShard(txTokenData)
+// 					tempTxTokenData.Vouts = txTokenData.Vouts
+// 					txTokenDataList = append(txTokenDataList, tempTxTokenData)
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return txs, txTokenDataList
+// }
