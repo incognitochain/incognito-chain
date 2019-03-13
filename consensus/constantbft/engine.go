@@ -239,6 +239,7 @@ func (engine *Engine) Start() error {
 								}
 							} else {
 								//reset round
+								time.Sleep(time.Millisecond * 500)
 								prevRoundNodeRole = ""
 								currentPBFTRound = 1
 								// Logger.log.Error("Blockchain is not ready!")
@@ -247,6 +248,7 @@ func (engine *Engine) Start() error {
 					}
 				} else {
 					//reset round
+					time.Sleep(time.Millisecond * 500)
 					prevRoundNodeRole = ""
 					currentPBFTRound = 1
 					// Logger.log.Error("Blockchain is not ready!")
