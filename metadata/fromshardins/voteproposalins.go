@@ -7,61 +7,29 @@ import (
 	"strconv"
 )
 
-type NormalVoteProposalFromSealerIns struct {
+type NormalVoteProposalIns struct {
 	BoardType    common.BoardType
-	Lv3TxID      common.Hash
 	VoteProposal component.VoteProposalData
 }
 
-func (normalVoteProposalFromSealerIns NormalVoteProposalFromSealerIns) GetStringFormat() ([]string, error) {
-	content, err := json.Marshal(normalVoteProposalFromSealerIns)
+func (normalVoteProposalIns NormalVoteProposalIns) GetStringFormat() ([]string, error) {
+	content, err := json.Marshal(normalVoteProposalIns)
 	if err != nil {
 		return nil, err
 	}
 	return []string{
-		strconv.Itoa(component.NormalVoteProposalFromSealerIns),
+		strconv.Itoa(component.NormalVoteProposalIns),
 		strconv.Itoa(-1),
 		string(content),
 	}, nil
 }
 
-func NewNormalVoteProposalFromSealerIns(boardType common.BoardType, lv3TxID common.Hash, voteProposal component.VoteProposalData) *NormalVoteProposalFromSealerIns {
-	return &NormalVoteProposalFromSealerIns{BoardType: boardType, Lv3TxID: lv3TxID, VoteProposal: voteProposal}
+func NewNormalVoteProposalIns(boardType common.BoardType, voteProposal component.VoteProposalData) *NormalVoteProposalIns {
+	return &NormalVoteProposalIns{BoardType: boardType,  VoteProposal: voteProposal}
 }
 
-func NewNormalVoteProposalFromSealerInsFromStr(inst string) (*NormalVoteProposalFromSealerIns, error) {
-	Ins := &NormalVoteProposalFromSealerIns{}
-	err := json.Unmarshal([]byte(inst), Ins)
-	if err != nil {
-		return nil, err
-	}
-	return Ins, nil
-}
-
-type NormalVoteProposalFromOwnerIns struct {
-	BoardType    common.BoardType
-	Lv3TxID      common.Hash
-	VoteProposal component.VoteProposalData
-}
-
-func (normalVoteProposalFromOwnerIns NormalVoteProposalFromOwnerIns) GetStringFormat() ([]string, error) {
-	content, err := json.Marshal(normalVoteProposalFromOwnerIns)
-	if err != nil {
-		return nil, err
-	}
-	return []string{
-		strconv.Itoa(component.NormalVoteProposalFromOwnerIns),
-		strconv.Itoa(-1),
-		string(content),
-	}, nil
-}
-
-func NewNormalVoteProposalFromOwnerIns(boardType common.BoardType, lv3TxID common.Hash, voteProposal component.VoteProposalData) *NormalVoteProposalFromOwnerIns {
-	return &NormalVoteProposalFromOwnerIns{BoardType: boardType, Lv3TxID: lv3TxID, VoteProposal: voteProposal}
-}
-
-func NewNormalVoteProposalFromOwnerInsFromStr(inst string) (*NormalVoteProposalFromOwnerIns, error) {
-	Ins := &NormalVoteProposalFromOwnerIns{}
+func NewNormalVoteProposalInsFromStr(inst string) (*NormalVoteProposalIns, error) {
+	Ins := &NormalVoteProposalIns{}
 	err := json.Unmarshal([]byte(inst), Ins)
 	if err != nil {
 		return nil, err

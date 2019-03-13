@@ -42,44 +42,23 @@ func (rpcServer RpcServer) handleGetEncryptionLastBlockHeightFlag(params interfa
 	return jsonresult.GetEncryptionLastBlockHeightResult{blockHeight}, nil
 }
 
-func (rpcServer RpcServer) handleCreateRawNormalVoteProposalTransactionFromOwner(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	params, err := rpcServer.buildParamsNormalVoteProposalFromOwner(params)
+func (rpcServer RpcServer) handleCreateRawVoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	params, err := rpcServer.buildParamsVoteProposal(params)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	return rpcServer.createRawTxWithMetadata(
 		params,
 		closeChan,
-		metadata.NewNormalVoteProposalFromOwnerMetadataFromRPC,
+		metadata.NewNormalVoteProposalMetadataFromRPC,
 	)
 }
 
-func (rpcServer RpcServer) handleCreateAndSendNormalVoteProposalFromOwnerTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateAndSendVoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	return rpcServer.createAndSendTxWithMetadata(
 		params,
 		closeChan,
-		RpcServer.handleCreateRawNormalVoteProposalTransactionFromOwner,
-		RpcServer.handleSendRawTransaction,
-	)
-}
-
-func (rpcServer RpcServer) handleCreateRawNormalVoteProposalTransactionFromSealer(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	params, err := rpcServer.buildParamsNormalVoteProposalFromSealer(params)
-	if err != nil {
-		return nil, err
-	}
-	return rpcServer.createRawTxWithMetadata(
-		params,
-		closeChan,
-		metadata.NewNormalVoteProposalFromSealerMetadataFromRPC,
-	)
-}
-
-func (rpcServer RpcServer) handleCreateAndSendNormalVoteProposalFromSealerTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return rpcServer.createAndSendTxWithMetadata(
-		params,
-		closeChan,
-		RpcServer.handleCreateRawNormalVoteProposalTransactionFromSealer,
+		RpcServer.handleCreateRawVoteProposalTransaction,
 		RpcServer.handleSendRawTransaction,
 	)
 }

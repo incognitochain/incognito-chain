@@ -145,15 +145,11 @@ func ParseValueVoteBoardList(value []byte) uint64 {
 	return common.BytesToUint64(value)
 }
 
-func GetKeyThreePhraseCryptoOwner(boardType common.BoardType, constitutionIndex uint32, txId *common.Hash) []byte {
-	txIdByte := make([]byte, 0)
-	if txId != nil {
-		txIdByte = txId.GetBytes()
-	}
+func GetKeyThreePhraseCryptoOwner(boardType common.BoardType, constitutionIndex uint32) []byte {
 	key := GetKeyFromVariadic(threePhraseCryptoOwnerPrefix,
 		boardType.Bytes(),
 		common.Uint32ToBytes(constitutionIndex),
-		txIdByte)
+	)
 	return key
 }
 
@@ -229,12 +225,8 @@ func GetKeyWinningVoter(boardType common.BoardType, constitutionIndex uint32) []
 	return key
 }
 
-func GetKeyThreePhraseVoteValue(boardType common.BoardType, constitutionIndex uint32, txId *common.Hash) []byte {
-	txIdByte := make([]byte, 0)
-	if txId != nil {
-		txIdByte = txId.GetBytes()
-	}
-	key := GetKeyFromVariadic(threePhraseVoteValuePrefix, boardType.Bytes(), common.Uint32ToBytes(constitutionIndex), txIdByte)
+func GetKeyThreePhraseVoteValue(boardType common.BoardType, constitutionIndex uint32) []byte {
+	key := GetKeyFromVariadic(threePhraseVoteValuePrefix, boardType.Bytes(), common.Uint32ToBytes(constitutionIndex))
 	return key
 }
 

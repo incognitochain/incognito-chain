@@ -59,10 +59,6 @@ const (
 	VoteDCBBoardMeta
 	SubmitGOVProposalMeta
 	VoteGOVBoardMeta
-	NormalDCBVoteProposalFromSealerMeta
-	NormalDCBVoteProposalFromOwnerMeta
-	NormalGOVVoteProposalFromSealerMeta
-	NormalGOVVoteProposalFromOwnerMeta
 	RewardProposalWinnerMeta
 	RewardDCBProposalSubmitterMeta
 	RewardGOVProposalSubmitterMeta
@@ -71,6 +67,8 @@ const (
 	PunishDCBDecryptMeta
 	PunishGOVDecryptMeta
 	SendBackTokenVoteFailMeta
+	NormalDCBVoteProposalMeta
+	NormalGOVVoteProposalMeta
 
 	// STAKING
 	ShardStakingMeta

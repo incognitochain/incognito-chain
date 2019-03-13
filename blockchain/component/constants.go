@@ -1,8 +1,7 @@
 package component
 
 const (
-	NormalVoteProposalFromSealerIns = 100 + iota
-	NormalVoteProposalFromOwnerIns
+	NormalVoteProposalIns = 100 + iota
 	PunishDecryptIns
 	NewDCBConstitutionIns
 	NewGOVConstitutionIns
