@@ -714,11 +714,11 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 	}
 
 	// check sanity of Proof
-	// TODO: 0xthunderbird
-	/*validateSanityOfProof, err := tx.validateSanityDataOfProof()
-	if err != nil || !validateSanityOfProof {
-		return false, err
-	}*/
+
+	//validateSanityOfProof, err := tx.validateSanityDataOfProof()
+	//if err != nil || !validateSanityOfProof {
+	//	return false, err
+	//}
 
 	if len(txN.SigPubKey) != privacy.SigPubKeySize {
 		return false, errors.New("wrong tx Sig PK")
@@ -778,7 +778,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.OutputCoins[i].CoinDetails.CoinCommitment.IsSafe() {
 					return false, errors.New("wrong tx output coins")
 				}
-				if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) != privacy.BigIntSize {
+				if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) > privacy.BigIntSize {
 					return false, errors.New("wrong tx output coins")
 				}
 			}
@@ -844,10 +844,10 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.InputCoins[i].CoinDetails.SerialNumber.IsSafe() {
 					return false, errors.New("wrong tx output coins")
 				}
-				if len(txN.Proof.InputCoins[i].CoinDetails.Randomness.Bytes()) >= privacy.BigIntSize {
+				if len(txN.Proof.InputCoins[i].CoinDetails.Randomness.Bytes()) > privacy.BigIntSize {
 					return false, errors.New("wrong tx output coins")
 				}
-				if len(txN.Proof.InputCoins[i].CoinDetails.SNDerivator.Bytes()) >= privacy.BigIntSize {
+				if len(txN.Proof.InputCoins[i].CoinDetails.SNDerivator.Bytes()) > privacy.BigIntSize {
 					return false, errors.New("wrong tx output coins")
 				}
 
@@ -861,10 +861,10 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.OutputCoins[i].CoinDetails.PublicKey.IsSafe() {
 					return false, errors.New("wrong tx output coins")
 				}
-				if len(txN.Proof.OutputCoins[i].CoinDetails.Randomness.Bytes()) >= privacy.BigIntSize {
+				if len(txN.Proof.OutputCoins[i].CoinDetails.Randomness.Bytes()) > privacy.BigIntSize {
 					return false, errors.New("wrong tx output coins")
 				}
-				if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) >= privacy.BigIntSize {
+				if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) > privacy.BigIntSize {
 					return false, errors.New("wrong tx output coins")
 				}
 			}
