@@ -771,7 +771,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				}
 			}
 			// check output coins with privacy
-			for i := 0; i < len(txN.Proof.InputCoins); i++ {
+			for i := 0; i < len(txN.Proof.OutputCoins); i++ {
 				if !txN.Proof.OutputCoins[i].CoinDetails.PublicKey.IsSafe() {
 					return false, errors.New("wrong tx output coins")
 				}
