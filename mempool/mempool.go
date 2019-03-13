@@ -235,13 +235,13 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	if tx.GetType() == common.TxCustomTokenType {
 		customTokenTx := tx.(*transaction.TxCustomToken)
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
-			tokenID := customTokenTx.TxTokenData.PropertyID.String()
-			tp.tokenIDMtx.Lock()
-			found := common.IndexOfStr(tokenID, tp.tokenIDList)
-			tp.tokenIDMtx.Unlock()
-			if found > -1 {
-				return nil, nil, errors.New("Init Transaction of this Token is in pool already")
-			}
+			//tokenID := customTokenTx.TxTokenData.PropertyID.String()
+			//tp.tokenIDMtx.Lock()
+			//found := common.IndexOfStr(tokenID, tp.tokenIDList)
+			//tp.tokenIDMtx.Unlock()
+			//if found > -1 {
+			//	return nil, nil, errors.New("Init Transaction of this Token is in pool already")
+			//}
 		}
 	}
 
