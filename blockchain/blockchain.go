@@ -902,9 +902,8 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBlock(block *ShardBlock) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
-	// TODO: 0xsirrush check lightmode turn off
-	err := view.fetchCrossTransactionViewPointFromBlock(blockchain.config.DataBase, block, nil)
 
+	err := view.fetchCrossTransactionViewPointFromBlock(blockchain.config.DataBase, block, nil)
 	for _, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
 		listCustomTokens, listCustomTokenCrossShard, err := blockchain.ListPrivacyCustomToken()
 		if err != nil {
@@ -915,6 +914,11 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 			if _, ok := listCustomTokenCrossShard[*tokenID]; !ok {
 				Logger.log.Info("Store custom token when it is issued ", tokenID, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertyName, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertySymbol, privacyCustomTokenSubView.privacyCustomTokenMetadata.Amount, privacyCustomTokenSubView.privacyCustomTokenMetadata.Mintable)
 				tokenDataBytes, _ := json.Marshal(privacyCustomTokenSubView.privacyCustomTokenMetadata)
+
+				// crossShardTokenPrivacyMetaData := CrossShardTokenPrivacyMetaData{}
+				// json.Unmarshal(tokenDataBytes, &crossShardTokenPrivacyMetaData)
+				// fmt.Println("New Token CrossShardTokenPrivacyMetaData", crossShardTokenPrivacyMetaData)
+
 				if err := blockchain.config.DataBase.StorePrivacyCustomTokenCrossShard(tokenID, tokenDataBytes); err != nil {
 					return err
 				}
@@ -1221,7 +1225,6 @@ func (blockchain *BlockChain) ListPrivacyCustomToken() (map[common.Hash]transact
 		}
 		resultCrossShard[crossShardTokenPrivacyMetaData.TokenID] = crossShardTokenPrivacyMetaData
 	}
-	fmt.Println("============= resultCrossShard ====================", resultCrossShard)
 	return result, resultCrossShard, nil
 }
 
