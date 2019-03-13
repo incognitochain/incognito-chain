@@ -45,8 +45,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	//======Get Transaction For new Block================
 	txsToAdd, err := blockgen.getTransactionForNewBlock(payToAddress, privatekey, shardID, blockgen.chain.config.DataBase, beaconBlocks)
 	if err != nil {
-		//@todo @0xjackalope remove panic
-		panic(err)
 		Logger.log.Error(err)
 		return nil, err
 	}

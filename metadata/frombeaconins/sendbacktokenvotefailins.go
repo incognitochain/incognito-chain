@@ -38,14 +38,13 @@ func (txSendBackTokenVoteFailIns *TxSendBackTokenVoteFailIns) BuildTransaction(
 	minerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
 ) (metadata.Transaction, error) {
-	tx := NewSendBackTokenVoteFailTx(
+	return NewSendBackTokenVoteFailTx(
 		minerPrivateKey,
 		db,
 		txSendBackTokenVoteFailIns.PaymentAddress,
 		txSendBackTokenVoteFailIns.Amount,
 		txSendBackTokenVoteFailIns.PropertyID,
 	)
-	return tx, nil
 }
 
 func NewSendBackTokenVoteFailIns(
@@ -66,21 +65,25 @@ func NewSendBackTokenVoteFailTx(
 	paymentAddress privacy.PaymentAddress,
 	amount uint64,
 	propertyID common.Hash,
-) metadata.Transaction {
+) (metadata.Transaction, error) {
 	txTokenVout := transaction.TxTokenVout{
 		Value:          amount,
 		PaymentAddress: paymentAddress,
 	}
-	newTx := transaction.TxCustomToken{
-		TxTokenData: transaction.TxTokenData{
-			Type:       transaction.CustomTokenInit,
-			Amount:     amount,
-			PropertyID: propertyID,
-			Vins:       []transaction.TxTokenVin{},
-			Vouts:      []transaction.TxTokenVout{txTokenVout},
-		},
+	txTokenData := transaction.TxTokenData{
+		Type:       transaction.CustomTokenInit,
+		Amount:     amount,
+		PropertyID: propertyID,
+		Vins:       []transaction.TxTokenVin{},
+		Vouts:      []transaction.TxTokenVout{txTokenVout},
 	}
-	newTx.Type = common.TxCustomTokenType
-	newTx.SetMetadata(metadata.NewSendBackTokenVoteFailMetadata())
-	return &newTx
+	newTx, err := NewVoteCustomTokenTx(
+		0,
+		&paymentAddress,
+		minerPrivateKey,
+		db,
+		metadata.NewSendBackTokenVoteFailMetadata(),
+		txTokenData,
+	)
+	return newTx, err
 }
