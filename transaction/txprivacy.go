@@ -703,6 +703,8 @@ func (tx *Tx) ValidateTxWithBlockChain(
 }
 
 func (tx *Tx) validateNormalTxSanityData() (bool, error) {
+	//todo @0xthunderbird
+	return true, nil
 	txN := tx
 	//check version
 	if txN.Version > TxVersion {
