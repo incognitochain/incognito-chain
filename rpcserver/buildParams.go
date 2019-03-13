@@ -36,29 +36,7 @@ func (rpcServer *RpcServer) buildParamsSubmitGOVProposal(params interface{}) (in
 	return params, nil
 }
 
-func (rpcServer RpcServer) buildParamsNormalVoteProposalFromOwner(
-	params interface{},
-) (interface{}, *RPCError) {
-	params = setBuildRawBurnTransactionParams(params, FeeVote)
-	arrayParams := common.InterfaceSlice(params)
-	NParams := len(arrayParams)
-	data := arrayParams[len(arrayParams)-1].(map[string]interface{})
-	newData := make(map[string]interface{})
-
-	lv3TxID, err1 := common.NewHashFromStr(data["Lv3TxID"].(string))
-	if err1 != nil {
-		return nil, NewRPCError(ErrUnexpected, err1)
-	}
-
-	newData["BoardType"] = data["BoardType"]
-	newData["VoteProposalData"] = data["VoteProposalData"]
-	newData["Lv3TxID"] = *lv3TxID
-
-	arrayParams[NParams-1] = newData
-	return arrayParams, nil
-}
-
-func (rpcServer RpcServer) buildParamsNormalVoteProposalFromSealer(
+func (rpcServer RpcServer) buildParamsVoteProposal(
 	params interface{},
 ) (interface{}, *RPCError) {
 	params = setBuildRawBurnTransactionParams(params, FeeVote)

@@ -8,124 +8,63 @@ import (
 	"github.com/constant-money/constant-chain/privacy"
 )
 
-type NormalGOVVoteProposalFromSealerMetadata struct {
-	NormalVoteProposalFromSealerMetadata NormalVoteProposalFromSealerMetadata
 
-	MetadataBase
-}
-
-func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
-	return normalGOVVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.ValidateSanityData(bcr, tx)
-}
-
-func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) ValidateMetadataByItself() bool {
-	return normalGOVVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.ValidateMetadataByItself()
-}
-
-func NewNormalGOVVoteProposalFromSealerMetadata(
-	voteProposal component.VoteProposalData,
-	lockerPaymentAddress []privacy.PaymentAddress,
-	pointerToLv1VoteProposal common.Hash,
-	pointerToLv3VoteProposal common.Hash,
-) *NormalGOVVoteProposalFromSealerMetadata {
-	return &NormalGOVVoteProposalFromSealerMetadata{
-		NormalVoteProposalFromSealerMetadata: *NewNormalVoteProposalFromSealerMetadata(
-			voteProposal,
-			lockerPaymentAddress,
-			pointerToLv1VoteProposal,
-			pointerToLv3VoteProposal,
-		),
-		MetadataBase: *NewMetadataBase(NormalGOVVoteProposalFromSealerMeta),
-	}
-}
-
-func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) GetBoardType() common.BoardType {
+func (normalGOVVoteProposalMetadata *NormalGOVVoteProposalMetadata) GetBoardType() common.BoardType {
 	return common.GOVBoard
 }
-
-func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-	//Validate these pubKeys are in board
-	boardType := normalGOVVoteProposalFromSealerMetadata.GetBoardType()
-	return normalGOVVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.ValidateTxWithBlockChain(
-		boardType,
-		tx,
-		bcr,
-		shardID,
-		db,
-	)
-}
-
-func (normalGOVVoteProposalFromSealerMetadata *NormalGOVVoteProposalFromSealerMetadata) BuildReqActions(
-	tx Transaction,
-	bcr BlockchainRetriever,
-	shardID byte,
-) ([][]string, error) {
-	lv3TxID := normalGOVVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal
-	voteProposal := normalGOVVoteProposalFromSealerMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal
-	inst := fromshardins.NewNormalVoteProposalFromSealerIns(common.GOVBoard, lv3TxID, voteProposal)
-
-	instStr, err := inst.GetStringFormat()
-	if err != nil {
-		return nil, err
-	}
-	return [][]string{instStr}, nil
-}
-
-type NormalGOVVoteProposalFromOwnerMetadata struct {
-	NormalVoteProposalFromOwnerMetadata NormalVoteProposalFromOwnerMetadata
+type NormalGOVVoteProposalMetadata struct {
+	NormalVoteProposalMetadata component.VoteProposalData
 	MetadataBase
 }
 
-func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
-	return normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.ValidateSanityData(bcr, tx)
+func (normalGOVVoteProposalMetadata *NormalGOVVoteProposalMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
+	//return normalGOVVoteProposalMetadata.NormalVoteProposalMetadata.ValidateSanityData(bcr, tx)
+	return true, true, nil
 }
 
-func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMetadata) ValidateMetadataByItself() bool {
-	return normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.ValidateMetadataByItself()
+func (normalGOVVoteProposalMetadata *NormalGOVVoteProposalMetadata) ValidateMetadataByItself() bool {
+	//return normalGOVVoteProposalMetadata.NormalVoteProposalMetadata.ValidateMetadataByItself()
+	return true
 }
 
-func NewNormalGOVVoteProposalFromOwnerMetadata(
+func NewNormalGOVVoteProposalMetadata(
 	voteProposal component.VoteProposalData,
 	lockerPaymentAddress []privacy.PaymentAddress,
 	pointerToLv3VoteProposal common.Hash,
-) *NormalGOVVoteProposalFromOwnerMetadata {
-	return &NormalGOVVoteProposalFromOwnerMetadata{
-		NormalVoteProposalFromOwnerMetadata: *NewNormalVoteProposalFromOwnerMetadata(
-			voteProposal,
-			lockerPaymentAddress,
-			pointerToLv3VoteProposal,
-		),
-		MetadataBase: *NewMetadataBase(NormalGOVVoteProposalFromOwnerMeta),
+) *NormalGOVVoteProposalMetadata {
+	return &NormalGOVVoteProposalMetadata{
+		NormalVoteProposalMetadata: voteProposal,
+		MetadataBase: *NewMetadataBase(NormalGOVVoteProposalMeta),
 	}
 }
 
-func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMetadata) Hash() *common.Hash {
-	record := normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.ToBytes()
+func (normalGOVVoteProposalMetadata *NormalGOVVoteProposalMetadata) Hash() *common.Hash {
+	record := normalGOVVoteProposalMetadata.NormalVoteProposalMetadata.ToBytes()
 
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
-func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (normalGOVVoteProposalMetadata *NormalGOVVoteProposalMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	//Validate these pubKeys are in board
-	boardType := common.GOVBoard
-	return normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.ValidateTxWithBlockChain(
-		boardType,
-		tx,
-		bcr,
-		shardID,
-		db,
-	)
+	//boardType := common.GOVBoard
+	//return normalGOVVoteProposalMetadata.NormalVoteProposalMetadata.ValidateTxWithBlockChain(
+	//	boardType,
+	//	tx,
+	//	bcr,
+	//	shardID,
+	//	db,
+	//)
+	return true, nil
 }
 
-func (normalGOVVoteProposalFromOwnerMetadata *NormalGOVVoteProposalFromOwnerMetadata) BuildReqActions(
+func (normalGOVVoteProposalMetadata *NormalGOVVoteProposalMetadata) BuildReqActions(
 	tx Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
 ) ([][]string, error) {
-	lv3TxID := normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal
-	voteProposal := normalGOVVoteProposalFromOwnerMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal
-	inst := fromshardins.NewNormalVoteProposalFromOwnerIns(common.GOVBoard, lv3TxID, voteProposal)
+	voteProposal := normalGOVVoteProposalMetadata.NormalVoteProposalMetadata
+	inst := fromshardins.NewNormalVoteProposalIns(common.GOVBoard,  voteProposal)
 
 	instStr, err := inst.GetStringFormat()
 	if err != nil {
