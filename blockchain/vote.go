@@ -352,8 +352,8 @@ func (chain *BlockChain) neededNewGovernor(boardType common.BoardType) bool {
 	} else {
 		endGovernorBlock = chain.BestState.Beacon.StabilityInfo.GOVGovernor.EndBlock
 	}
-	fmt.Println("\n\n\n", endGovernorBlock, "\n\n\n")
 	currentHeight := BestBlock.Header.Height + 1
+	Logger.log.Warn("Endblock", endGovernorBlock, currentHeight, "\n")
 	return endGovernorBlock <= currentHeight
 }
 
