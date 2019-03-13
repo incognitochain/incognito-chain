@@ -127,6 +127,7 @@ type Config struct {
 
 		PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error
 		PushMessageGetBlockShardToBeaconByHash(shardID byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
+		PushMessageGetBlockShardToBeaconBySpecificHeight(shardID byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error
 
 		PushMessageGetBlockCrossShardByHash(fromShard byte, toShard byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
 		PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error
@@ -504,7 +505,7 @@ func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) (*BeaconBloc
 	if err != nil {
 		return nil, err
 	}
-	block, err := blockchain.GetBeaconBlockByHash(hashBlock)
+	block, err, _ := blockchain.GetBeaconBlockByHash(hashBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -514,17 +515,17 @@ func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) (*BeaconBloc
 /*
 Fetch DatabaseInterface and get block data by block hash
 */
-func (blockchain *BlockChain) GetBeaconBlockByHash(hash *common.Hash) (*BeaconBlock, error) {
+func (blockchain *BlockChain) GetBeaconBlockByHash(hash *common.Hash) (*BeaconBlock, error, uint64) {
 	blockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(hash)
 	if err != nil {
-		return nil, err
+		return nil, err, 0
 	}
 	block := BeaconBlock{}
 	err = json.Unmarshal(blockBytes, &block)
 	if err != nil {
-		return nil, err
+		return nil, err, 0
 	}
-	return &block, nil
+	return &block, nil, uint64(len(blockBytes))
 }
 
 /*
@@ -549,7 +550,7 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 	if err != nil {
 		return nil, err
 	}
-	block, err := blockchain.GetShardBlockByHash(hashBlock)
+	block, err, _ := blockchain.GetShardBlockByHash(hashBlock)
 
 	return block, err
 }
@@ -557,18 +558,18 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 /*
 Fetch DatabaseInterface and get block data by block hash
 */
-func (blockchain *BlockChain) GetShardBlockByHash(hash *common.Hash) (*ShardBlock, error) {
+func (blockchain *BlockChain) GetShardBlockByHash(hash *common.Hash) (*ShardBlock, error, uint64) {
 	blockBytes, err := blockchain.config.DataBase.FetchBlock(hash)
 	if err != nil {
-		return nil, err
+		return nil, err, 0
 	}
 
 	block := ShardBlock{}
 	err = json.Unmarshal(blockBytes, &block)
 	if err != nil {
-		return nil, err
+		return nil, err, 0
 	}
-	return &block, nil
+	return &block, nil, uint64(len(blockBytes))
 }
 
 /*
@@ -1162,7 +1163,7 @@ func (blockchain *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *
 		Logger.log.Error(abc)
 		return byte(255), nil, -1, nil, abc
 	}
-	block, err1 := blockchain.GetShardBlockByHash(blockHash)
+	block, err1, _ := blockchain.GetShardBlockByHash(blockHash)
 	if err1 != nil {
 		Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
 		return byte(255), nil, -1, nil, NewBlockChainError(UnExpectedError, err1)
@@ -1495,12 +1496,16 @@ func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privac
 }
 
 func (blockchain *BlockChain) SetReadyState(shard bool, shardID byte, ready bool) {
+	fmt.Println("SetReadyState", shard, shardID, ready)
 	blockchain.syncStatus.IsReady.Lock()
 	defer blockchain.syncStatus.IsReady.Unlock()
 	if shard {
 		blockchain.syncStatus.IsReady.Shards[shardID] = ready
 	} else {
 		blockchain.syncStatus.IsReady.Beacon = ready
+		if ready {
+			fmt.Println("blockchain is ready")
+		}
 	}
 }
 

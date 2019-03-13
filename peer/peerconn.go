@@ -146,12 +146,13 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				jsonDecodeBytesRaw, _ := hex.DecodeString(msgStr)
 
 				// cache message hash S
-				hashMsgRaw := common.HashH(jsonDecodeBytesRaw).String()
-				if peerConn.ListenerPeer.CheckHashPool(hashMsgRaw) {
-					Logger.log.Infof("InMessageHandler existed raw hash message %s", hashMsgRaw)
-					return
-				}
-				peerConn.ListenerPeer.HashToPool(hashMsgRaw)
+				//TODO 0xBahamoot replace with cache from syncblock
+				// hashMsgRaw := common.HashH(jsonDecodeBytesRaw).String()
+				// if peerConn.ListenerPeer.CheckHashPool(hashMsgRaw) {
+				// 	Logger.log.Infof("InMessageHandler existed raw hash message %s", hashMsgRaw)
+				// 	return
+				// }
+				// peerConn.ListenerPeer.HashToPool(hashMsgRaw)
 				// cache message hash E
 
 				// unzip data before process

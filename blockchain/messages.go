@@ -8,7 +8,7 @@ import (
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 
-func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]ChainState, shardToBeaconPool *map[byte][]common.Hash, crossShardPool *map[byte]map[byte][]common.Hash, peerID libp2p.ID) {
+func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]ChainState, shardToBeaconPool *map[byte][]uint64, crossShardPool *map[byte]map[byte][]uint64, peerID libp2p.ID) {
 	if beacon.Height >= blockchain.BestState.Beacon.BeaconHeight {
 		pState := &peerState{
 			Shard:  make(map[byte]*ChainState),
@@ -33,7 +33,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 				if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= blockchain.BestState.Shard[userShardID].ShardHeight {
 					pState.Shard[userShardID] = &shardState
 					if pool, ok := (*crossShardPool)[userShardID]; ok {
-						pState.CrossShardPool = make(map[byte]*map[byte][]common.Hash)
+						pState.CrossShardPool = make(map[byte]*map[byte][]uint64)
 						pState.CrossShardPool[userShardID] = &pool
 					}
 				}
@@ -102,33 +102,35 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 
 func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
 	//TODO: check node mode -> node mode & role before add block to pool
-	fmt.Println("Blockchain Message/OnShardToBeaconBlockReceived: Block Height", block.Header.Height)
-	blkHash := block.Header.Hash()
-	err := cashec.ValidateDataB58(block.Header.Producer, block.ProducerSig, blkHash.GetBytes())
+	if blockchain.IsReady(false, 0) {
+		fmt.Println("Blockchain Message/OnShardToBeaconBlockReceived: Block Height", block.Header.Height)
+		blkHash := block.Header.Hash()
+		err := cashec.ValidateDataB58(block.Header.Producer, block.ProducerSig, blkHash.GetBytes())
 
-	if err != nil {
-		Logger.log.Debugf("Invalid Producer Signature of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
-		return
-	}
-	if block.Header.Version != VERSION {
-		Logger.log.Debugf("Invalid Verion of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
-		return
-	}
+		if err != nil {
+			Logger.log.Debugf("Invalid Producer Signature of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
+			return
+		}
+		if block.Header.Version != VERSION {
+			Logger.log.Debugf("Invalid Verion of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
+			return
+		}
 
-	//TODO: what if shard to beacon from old committee
-	if err = ValidateAggSignature(block.ValidatorsIdx, blockchain.BestState.Beacon.ShardCommittee[block.Header.ShardID], block.AggregatedSig, block.R, block.Hash()); err != nil {
-		Logger.log.Error(err)
-		return
-	}
+		//TODO: what if shard to beacon from old committee
+		if err = ValidateAggSignature(block.ValidatorsIdx, blockchain.BestState.Beacon.ShardCommittee[block.Header.ShardID], block.AggregatedSig, block.R, block.Hash()); err != nil {
+			Logger.log.Error(err)
+			return
+		}
 
-	from, to, err := blockchain.config.ShardToBeaconPool.AddShardToBeaconBlock(block)
-	if err != nil {
-		Logger.log.Error(err)
-		return
-	}
-	if from != 0 || to != 0 {
-		fmt.Printf("Message/SyncBlkShardToBeacon, from %+v to %+v \n", from, to)
-		blockchain.SyncBlkShardToBeacon(block.Header.ShardID, false, false, []common.Hash{}, from, to, "")
+		from, to, err := blockchain.config.ShardToBeaconPool.AddShardToBeaconBlock(block)
+		if err != nil {
+			Logger.log.Error(err)
+			return
+		}
+		if from != 0 && to != 0 {
+			fmt.Printf("Message/SyncBlkShardToBeacon, from %+v to %+v \n", from, to)
+			blockchain.SyncBlkShardToBeacon(block.Header.ShardID, false, false, false, nil, nil, from, to, "")
+		}
 	}
 }
 
