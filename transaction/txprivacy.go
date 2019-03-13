@@ -713,6 +713,24 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 		return false, errors.New("wrong tx locktime")
 	}
 
+	// check sanity of Proof
+
+	//validateSanityOfProof, err := tx.validateSanityDataOfProof()
+	//if err != nil || !validateSanityOfProof {
+	//	return false, err
+	//}
+
+	if len(txN.SigPubKey) != privacy.SigPubKeySize {
+		return false, errors.New("wrong tx Sig PK")
+	}
+	// check Type is normal or salary tx
+	if txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType && txN.Type != common.TxCustomTokenType && txN.Type != common.TxCustomTokenPrivacyType { // only 1 byte
+		return false, errors.New("Wrong tx type")
+	}
+	return true, nil
+}
+
+func (txN Tx) validateSanityDataOfProof() (bool, error) {
 	if txN.Proof != nil {
 		isPrivacy := true
 		// check Privacy or not
@@ -760,7 +778,7 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 				if !txN.Proof.OutputCoins[i].CoinDetails.CoinCommitment.IsSafe() {
 					return false, errors.New("wrong tx output coins")
 				}
-				if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) != privacy.BigIntSize {
+				if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) > privacy.BigIntSize {
 					return false, errors.New("wrong tx output coins")
 				}
 			}
@@ -826,10 +844,10 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 				if !txN.Proof.InputCoins[i].CoinDetails.SerialNumber.IsSafe() {
 					return false, errors.New("wrong tx output coins")
 				}
-				if len(txN.Proof.InputCoins[i].CoinDetails.Randomness.Bytes()) >= privacy.BigIntSize {
+				if len(txN.Proof.InputCoins[i].CoinDetails.Randomness.Bytes()) > privacy.BigIntSize {
 					return false, errors.New("wrong tx output coins")
 				}
-				if len(txN.Proof.InputCoins[i].CoinDetails.SNDerivator.Bytes()) >= privacy.BigIntSize {
+				if len(txN.Proof.InputCoins[i].CoinDetails.SNDerivator.Bytes()) > privacy.BigIntSize {
 					return false, errors.New("wrong tx output coins")
 				}
 
@@ -843,22 +861,14 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 				if !txN.Proof.OutputCoins[i].CoinDetails.PublicKey.IsSafe() {
 					return false, errors.New("wrong tx output coins")
 				}
-				if len(txN.Proof.OutputCoins[i].CoinDetails.Randomness.Bytes()) >= privacy.BigIntSize {
+				if len(txN.Proof.OutputCoins[i].CoinDetails.Randomness.Bytes()) > privacy.BigIntSize {
 					return false, errors.New("wrong tx output coins")
 				}
-				if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) >= privacy.BigIntSize {
+				if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) > privacy.BigIntSize {
 					return false, errors.New("wrong tx output coins")
 				}
 			}
 		}
-	}
-
-	if len(txN.SigPubKey) != privacy.SigPubKeySize {
-		return false, errors.New("wrong tx Sig PK")
-	}
-	// check Type is normal or salary tx
-	if txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType && txN.Type != common.TxCustomTokenType && txN.Type != common.TxCustomTokenPrivacyType { // only 1 byte
-		return false, errors.New("Wrong tx type")
 	}
 	return true, nil
 }
