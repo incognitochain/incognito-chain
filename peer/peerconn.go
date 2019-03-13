@@ -222,12 +222,12 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				Logger.log.Infof("Cmd message type of struct %s", realType.String())
 
 				// cache message hash S
-				hashMsg := message.Hash()
-				if peerConn.ListenerPeer.CheckHashPool(hashMsg) {
-					Logger.log.Infof("InMessageHandler existed hash message %s", hashMsg)
-					return
-				}
-				peerConn.ListenerPeer.HashToPool(hashMsg)
+				//hashMsg := message.Hash()
+				//if peerConn.ListenerPeer.CheckHashPool(hashMsg) {
+				//	Logger.log.Infof("InMessageHandler existed hash message %s", hashMsg)
+				//	return
+				//}
+				//peerConn.ListenerPeer.HashToPool(hashMsg)
 				// cache message hash E
 
 				// process message for each of message type
