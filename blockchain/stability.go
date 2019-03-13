@@ -195,10 +195,8 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 		case component.VoteBoardIns:
 			err = blkTmpGen.chain.AddVoteBoard(inst[2])
 
-		case component.NormalVoteProposalFromSealerIns:
-			err = blkTmpGen.chain.AddNormalVoteProposalFromSealer(inst[2])
-		case component.NormalVoteProposalFromOwnerIns:
-			err = blkTmpGen.chain.AddNormalVoteProposalFromOwner(inst[2])
+		case component.NormalVoteProposalIns:
+			err = blkTmpGen.chain.AddNormalVoteProposal(inst[2])
 		case component.PunishDecryptIns:
 			// todo @0xjackalope
 		default:
@@ -438,32 +436,14 @@ func (chain *BlockChain) AddVoteBoard(inst string) error {
 	return nil
 }
 
-func (chain *BlockChain) AddNormalVoteProposalFromSealer(inst string) error {
-	newInst, err := fromshardins.NewNormalVoteProposalFromSealerInsFromStr(inst)
+func (chain *BlockChain) AddNormalVoteProposal(inst string) error {
+	newInst, err := fromshardins.NewNormalVoteProposalInsFromStr(inst)
 	boardType := newInst.BoardType
 
 	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
-	err = chain.GetDatabase().AddVoteNormalProposalFromSealerDB(
+	err = chain.GetDatabase().AddVoteNormalProposalDB(
 		boardType,
 		nextConstitutionIndex,
-		&newInst.Lv3TxID,
-		newInst.VoteProposal.ToBytes(),
-	)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (chain *BlockChain) AddNormalVoteProposalFromOwner(inst string) error {
-	newInst, err := fromshardins.NewNormalVoteProposalFromOwnerInsFromStr(inst)
-	boardType := newInst.BoardType
-
-	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
-	err = chain.GetDatabase().AddVoteNormalProposalFromOwnerDB(
-		boardType,
-		nextConstitutionIndex,
-		&newInst.Lv3TxID,
 		newInst.VoteProposal.ToBytes(),
 	)
 	if err != nil {

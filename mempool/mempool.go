@@ -202,7 +202,6 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 
 	ok = tx.ValidateType()
 	if !ok {
-		fmt.Printf("Type: %s\n", (tx.(*transaction.Tx).Type))
 		return nil, nil, errors.New("wrong tx type")
 	}
 	// check tx with all txs in current mempool
