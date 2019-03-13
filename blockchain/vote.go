@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
-	
+
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database/lvdb"
@@ -114,6 +114,7 @@ func (stateBeacon *BestStateBeacon) UpdateDCBBoard(ins frombeaconins.AcceptDCBBo
 	stateBeacon.StabilityInfo.DCBGovernor.BoardPaymentAddress = ins.BoardPaymentAddress
 	stateBeacon.StabilityInfo.DCBGovernor.StartedBlock = stateBeacon.BestBlock.Header.Height
 	stateBeacon.StabilityInfo.DCBGovernor.EndBlock = stateBeacon.StabilityInfo.DCBGovernor.StartedBlock + common.DurationOfDCBBoard
+	Logger.log.Error("New endblock is: ", stateBeacon.StabilityInfo.DCBGovernor.EndBlock, "\n")
 	stateBeacon.StabilityInfo.DCBGovernor.StartAmountToken = ins.StartAmountToken
 	return nil
 }
