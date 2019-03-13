@@ -150,7 +150,7 @@ func (db *db) AddVoteLv3ProposalDB(boardType common.BoardType, constitutionIndex
 	db.Put(keySealer, zeroInBytes)
 
 	// init owner
-	keyOwner := GetKeyThreePhraseCryptoOwner(boardType, constitutionIndex, txID)
+	keyOwner := GetKeyThreePhraseCryptoOwner(boardType, constitutionIndex)
 	ok, err = db.HasValue(keyOwner)
 	if err != nil {
 		return err
@@ -184,20 +184,8 @@ func (db *db) AddVoteLv1or2ProposalDB(boardType common.BoardType, constitutionIn
 	return nil
 }
 
-func (db *db) AddVoteNormalProposalFromSealerDB(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash, voteValue []byte) error {
-	err := db.AddVoteLv1or2ProposalDB(boardType, constitutionIndex, txID)
-	if err != nil {
-		return err
-	}
-	key := GetKeyThreePhraseVoteValue(boardType, constitutionIndex, txID)
-
-	db.Put(key, voteValue)
-
-	return nil
-}
-
-func (db *db) AddVoteNormalProposalFromOwnerDB(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash, voteValue []byte) error {
-	keyOwner := GetKeyThreePhraseCryptoOwner(boardType, constitutionIndex, txID)
+func (db *db) AddVoteNormalProposalDB(boardType common.BoardType, constitutionIndex uint32, voteValue []byte) error {
+	keyOwner := GetKeyThreePhraseCryptoOwner(boardType, constitutionIndex)
 	ok, err := db.HasValue(keyOwner)
 	if err != nil {
 		return err
@@ -211,7 +199,7 @@ func (db *db) AddVoteNormalProposalFromOwnerDB(boardType common.BoardType, const
 	newValueInByte := common.Uint32ToBytes(1)
 	db.Put(keyOwner, newValueInByte)
 
-	key := GetKeyThreePhraseVoteValue(boardType, constitutionIndex, txID)
+	key := GetKeyThreePhraseVoteValue(boardType, constitutionIndex)
 	db.Put(key, voteValue)
 
 	return nil

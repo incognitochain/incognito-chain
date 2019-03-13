@@ -139,11 +139,7 @@ const (
 	GetEncryptionFlag                         = "getencryptionflag"
 	SetEncryptionFlag                         = "testsetencryptionflag"
 	GetEncryptionLastBlockHeightFlag          = "getencryptionlastblockheightflag"
-	CreateAndSendSealLv3VoteProposal          = "createandsendseallv3voteproposal"
-	CreateAndSendSealLv2VoteProposal          = "createandsendseallv2voteproposal"
-	CreateAndSendSealLv1VoteProposal          = "createandsendseallv1voteproposal"
-	CreateAndSendNormalVoteProposalFromOwner  = "createandsendnormalvoteproposalfromowner"
-	CreateAndSendNormalVoteProposalFromSealer = "createandsendnormalvoteproposalfromsealer"
+	CreateAndSendVoteProposal = "createandsendvoteproposal"
 
 	// Submit Proposal
 	CreateAndSendSubmitDCBProposalTx = "createandsendsubmitdcbproposaltx"
