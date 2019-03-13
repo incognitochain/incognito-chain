@@ -85,6 +85,9 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 		item := make([]jsonresult.OutCoin, 0)
 
 		for _, outCoin := range outputCoins {
+			if outCoin.CoinDetails.Value == 0 {
+				continue
+			}
 			item = append(item, jsonresult.OutCoin{
 				//SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
 				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),

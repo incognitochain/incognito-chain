@@ -188,19 +188,19 @@ var RpcHandler = map[string]commandHandler{
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	ListAccounts:               RpcServer.handleListAccounts,
-	GetAccount:                 RpcServer.handleGetAccount,
-	GetAddressesByAccount:      RpcServer.handleGetAddressesByAccount,
-	GetAccountAddress:          RpcServer.handleGetAccountAddress,
-	DumpPrivkey:                RpcServer.handleDumpPrivkey,
-	ImportAccount:              RpcServer.handleImportAccount,
-	RemoveAccount:              RpcServer.handleRemoveAccount,
-	ListUnspentOutputCoins:     RpcServer.handleListUnspentOutputCoins,
-	GetBalance:                 RpcServer.handleGetBalance,
-	GetBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
-	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
-	GetReceivedByAccount:       RpcServer.handleGetReceivedByAccount,
-	SetTxFee:                   RpcServer.handleSetTxFee,
+	ListAccounts:                       RpcServer.handleListAccounts,
+	GetAccount:                         RpcServer.handleGetAccount,
+	GetAddressesByAccount:              RpcServer.handleGetAddressesByAccount,
+	GetAccountAddress:                  RpcServer.handleGetAccountAddress,
+	DumpPrivkey:                        RpcServer.handleDumpPrivkey,
+	ImportAccount:                      RpcServer.handleImportAccount,
+	RemoveAccount:                      RpcServer.handleRemoveAccount,
+	ListUnspentOutputCoins:             RpcServer.handleListUnspentOutputCoins,
+	GetBalance:                         RpcServer.handleGetBalance,
+	GetBalanceByPrivatekey:             RpcServer.handleGetBalanceByPrivatekey,
+	GetBalanceByPaymentAddress:         RpcServer.handleGetBalanceByPaymentAddress,
+	GetReceivedByAccount:               RpcServer.handleGetReceivedByAccount,
+	SetTxFee:                           RpcServer.handleSetTxFee,
 	GetRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
 }
 
@@ -303,6 +303,9 @@ func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, clos
 		}
 		item := make([]jsonresult.OutCoin, 0)
 		for _, outCoin := range outCoins {
+			if outCoin.CoinDetails.Value == 0 {
+				continue
+			}
 			item = append(item, jsonresult.OutCoin{
 				SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
 				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),
