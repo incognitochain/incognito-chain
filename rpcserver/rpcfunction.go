@@ -2,11 +2,12 @@ package rpcserver
 
 import (
 	"fmt"
-	"github.com/constant-money/constant-chain/transaction"
-	"github.com/pkg/errors"
 	"log"
 	"net"
 	"os"
+
+	"github.com/constant-money/constant-chain/transaction"
+	"github.com/pkg/errors"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -187,19 +188,19 @@ var RpcHandler = map[string]commandHandler{
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	ListAccounts:                       RpcServer.handleListAccounts,
-	GetAccount:                         RpcServer.handleGetAccount,
-	GetAddressesByAccount:              RpcServer.handleGetAddressesByAccount,
-	GetAccountAddress:                  RpcServer.handleGetAccountAddress,
-	DumpPrivkey:                        RpcServer.handleDumpPrivkey,
-	ImportAccount:                      RpcServer.handleImportAccount,
-	RemoveAccount:                      RpcServer.handleRemoveAccount,
-	ListUnspentOutputCoins:             RpcServer.handleListUnspentOutputCoins,
-	GetBalance:                         RpcServer.handleGetBalance,
-	GetBalanceByPrivatekey:             RpcServer.handleGetBalanceByPrivatekey,
-	GetBalanceByPaymentAddress:         RpcServer.handleGetBalanceByPaymentAddress,
-	GetReceivedByAccount:               RpcServer.handleGetReceivedByAccount,
-	SetTxFee:                           RpcServer.handleSetTxFee,
+	ListAccounts:               RpcServer.handleListAccounts,
+	GetAccount:                 RpcServer.handleGetAccount,
+	GetAddressesByAccount:      RpcServer.handleGetAddressesByAccount,
+	GetAccountAddress:          RpcServer.handleGetAccountAddress,
+	DumpPrivkey:                RpcServer.handleDumpPrivkey,
+	ImportAccount:              RpcServer.handleImportAccount,
+	RemoveAccount:              RpcServer.handleRemoveAccount,
+	ListUnspentOutputCoins:     RpcServer.handleListUnspentOutputCoins,
+	GetBalance:                 RpcServer.handleGetBalance,
+	GetBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
+	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
+	GetReceivedByAccount:       RpcServer.handleGetReceivedByAccount,
+	SetTxFee:                   RpcServer.handleSetTxFee,
 	GetRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
 }
 
@@ -506,7 +507,7 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 				}
 			} else {
 				// Check privacy custom token param
-				customPrivacyTokenParam, _, err = rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
+				customPrivacyTokenParam, _, _, err = rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
 				if err.(*RPCError) != nil {
 					return nil, err.(*RPCError)
 				}
