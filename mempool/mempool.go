@@ -297,19 +297,24 @@ func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	tp.mtx.Lock()
 	hash, txDesc, err := tp.maybeAcceptTransaction(tx)
+	if err != nil {
+		Logger.log.Error(err)
+	}
 	tp.mtx.Unlock()
+
 	return hash, txDesc, err
 }
 
 // This function is safe for concurrent access.
 func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction) (*metadata.TxDesc, error) {
 	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
 	_, txDesc, err := tp.maybeAcceptTransaction(tx)
 	if err != nil {
+		Logger.log.Error(err)
 		return nil, err
 	}
 	tempTxDesc := &txDesc.Desc
-	tp.mtx.Unlock()
 	return tempTxDesc, err
 }
 
