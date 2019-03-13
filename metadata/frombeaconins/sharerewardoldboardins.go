@@ -64,13 +64,16 @@ func (txShareRewardOldBoardMetadataIns *TxShareRewardOldBoardMetadataIns) BuildT
 		txShareRewardOldBoardMetadataIns.voterPaymentAddress,
 		txShareRewardOldBoardMetadataIns.boardType,
 	)
-	tx.InitTxSalary(
+	err := tx.InitTxSalary(
 		txShareRewardOldBoardMetadataIns.amountOfCoin,
 		&txShareRewardOldBoardMetadataIns.voterPaymentAddress,
 		minerPrivateKey,
 		db,
 		rewardShareOldBoardMeta,
 	)
+	if err != nil {
+		return nil, err
+	}
 	var propertyID common.Hash
 	if txShareRewardOldBoardMetadataIns.boardType == common.DCBBoard {
 		propertyID = common.DCBTokenID

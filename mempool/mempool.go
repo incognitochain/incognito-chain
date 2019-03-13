@@ -306,7 +306,7 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 	tp.mtx.Lock()
 	_, txDesc, err := tp.maybeAcceptTransaction(tx)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	tempTxDesc := &txDesc.Desc
 	tp.mtx.Unlock()
