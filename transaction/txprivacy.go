@@ -347,7 +347,7 @@ func (tx *Tx) signTx() error {
 // verifySigTx - verify signature on tx
 func (tx *Tx) verifySigTx() (bool, error) {
 	// check input transaction
-	if tx.Sig == nil {
+	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, errors.New("input transaction must be an signed one")
 	}
 
