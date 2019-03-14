@@ -2,11 +2,12 @@ package rpcserver
 
 import (
 	"fmt"
-	"github.com/constant-money/constant-chain/transaction"
-	"github.com/pkg/errors"
 	"log"
 	"net"
 	"os"
+
+	"github.com/constant-money/constant-chain/transaction"
+	"github.com/pkg/errors"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -296,6 +297,9 @@ func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, clos
 		}
 		item := make([]jsonresult.OutCoin, 0)
 		for _, outCoin := range outCoins {
+			if outCoin.CoinDetails.Value == 0 {
+				continue
+			}
 			item = append(item, jsonresult.OutCoin{
 				SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
 				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),
@@ -500,7 +504,7 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 				}
 			} else {
 				// Check privacy custom token param
-				customPrivacyTokenParam, _, err = rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
+				customPrivacyTokenParam, _, _, err = rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
 				if err.(*RPCError) != nil {
 					return nil, err.(*RPCError)
 				}

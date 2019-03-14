@@ -16,9 +16,10 @@ const (
 
 // for mining consensus
 const (
-	DurationOfDCBBoard = 6       //number of block one DCB board in charge
-	DurationOfGOVBoard = 1000    //number of block one GOV board in charge
-	MaxBlockSize       = 5000000 //byte 5MB
+	DurationOfDCBBoard = 6    //number of block one DCB board in charge
+	DurationOfGOVBoard = 1000 //number of block one GOV board in charge
+	MaxBlockSize       = 2000 //unit kilobytes = 2 Megabyte
+	MaxTxSize          = 100
 	MaxTxsInBlock      = 1000
 	MinTxsInBlock      = 10                   // minium txs for block to get immediate process (meaning no wait time)
 	MinBlockWaitTime   = 2                    // second

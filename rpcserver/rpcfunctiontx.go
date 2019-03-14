@@ -85,6 +85,9 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 		item := make([]jsonresult.OutCoin, 0)
 
 		for _, outCoin := range outputCoins {
+			if outCoin.CoinDetails.Value == 0 {
+				continue
+			}
 			item = append(item, jsonresult.OutCoin{
 				//SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
 				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),
@@ -465,7 +468,7 @@ func (rpcServer RpcServer) handleGetListPrivacyCustomTokenBalance(params interfa
 		return nil, nil
 	}
 	result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
-	temps, err := rpcServer.config.BlockChain.ListPrivacyCustomToken()
+	temps, listCustomTokenCrossShard, err := rpcServer.config.BlockChain.ListPrivacyCustomToken()
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -499,6 +502,37 @@ func (rpcServer RpcServer) handleGetListPrivacyCustomTokenBalance(params interfa
 		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
 		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	}
+	for _, customTokenCrossShard := range listCustomTokenCrossShard {
+		item := jsonresult.CustomTokenBalance{}
+		item.Name = customTokenCrossShard.PropertyName
+		item.Symbol = customTokenCrossShard.PropertySymbol
+		item.TokenID = customTokenCrossShard.TokenID.String()
+		item.TokenImage = common.Render([]byte(item.TokenID))
+		tokenID := customTokenCrossShard.TokenID
+
+		balance := uint64(0)
+		// get balance for accountName in wallet
+		lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
+		shardIDSender := common.GetShardIDFromLastByte(lastByte)
+		constantTokenID := &common.Hash{}
+		constantTokenID.SetBytes(common.ConstantID[:])
+		outcoints, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tokenID)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		for _, out := range outcoints {
+			balance += out.CoinDetails.Value
+		}
+
+		item.Amount = balance
+		if item.Amount == 0 {
+			continue
+		}
+		item.IsPrivacy = true
+		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
+		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
+	}
+
 	return result, nil
 }
 
