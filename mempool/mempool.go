@@ -151,7 +151,8 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 // See the comment for MaybeAcceptTransaction for more details.
 // This function MUST be called with the mempool lock held (for writes).
 1. Validate tx version
-2. Validate fee with tx size
+2.1 Validate size of transaction (can't greater than max size of block)
+2.2 Validate fee with tx size
 3. Validate type of tx
 4. Validate with other txs in mempool
 5. Validate sanity data of tx
@@ -185,7 +186,16 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	ok := tx.CheckTxVersion(MaxVersion)
 	if !ok {
 		err := MempoolTxError{}
-		err.Init(RejectVersion, fmt.Errorf("%+v's version is invalid", txHash.String()))
+		err.Init(RejectVersion, fmt.Errorf("transaction %+v's version is invalid", txHash.String()))
+		return nil, nil, err
+	}
+
+	// check actual size
+	actualSize := tx.GetTxActualSize()
+	fmt.Printf("Transaction %+v's size %+v \n", txHash, actualSize)
+	if actualSize >= common.MaxBlockSize || actualSize >= common.MaxTxSize {
+		err := MempoolTxError{}
+		err.Init(RejectInvalidSize, fmt.Errorf("transaction %+v's size is invalid, more than %+v Kilobyte", txHash.String(), common.MaxBlockSize))
 		return nil, nil, err
 	}
 

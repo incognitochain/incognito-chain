@@ -903,8 +903,40 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBlock(block *ShardBlock) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
-	// TODO: 0xsirrush check lightmode turn off
+
 	err := view.fetchCrossTransactionViewPointFromBlock(blockchain.config.DataBase, block, nil)
+	for _, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
+		listCustomTokens, listCustomTokenCrossShard, err := blockchain.ListPrivacyCustomToken()
+		if err != nil {
+			return nil
+		}
+		tokenID := privacyCustomTokenSubView.tokenID
+		if _, ok := listCustomTokens[*tokenID]; !ok {
+			if _, ok := listCustomTokenCrossShard[*tokenID]; !ok {
+				Logger.log.Info("Store custom token when it is issued ", tokenID, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertyName, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertySymbol, privacyCustomTokenSubView.privacyCustomTokenMetadata.Amount, privacyCustomTokenSubView.privacyCustomTokenMetadata.Mintable)
+				tokenDataBytes, _ := json.Marshal(privacyCustomTokenSubView.privacyCustomTokenMetadata)
+
+				// crossShardTokenPrivacyMetaData := CrossShardTokenPrivacyMetaData{}
+				// json.Unmarshal(tokenDataBytes, &crossShardTokenPrivacyMetaData)
+				// fmt.Println("New Token CrossShardTokenPrivacyMetaData", crossShardTokenPrivacyMetaData)
+
+				if err := blockchain.config.DataBase.StorePrivacyCustomTokenCrossShard(tokenID, tokenDataBytes); err != nil {
+					return err
+				}
+			}
+		}
+		// Store both commitment and outcoin
+		err = blockchain.StoreCommitmentsFromTxViewPoint(*privacyCustomTokenSubView, block.Header.ShardID)
+		if err != nil {
+			return err
+		}
+		// store snd
+		err = blockchain.StoreSNDerivatorsFromTxViewPoint(*privacyCustomTokenSubView, block.Header.ShardID)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Update the list nullifiers and commitment, snd set using the state of the used tx view point. This
 	// entails adding the new
 	// ones created by the block.
@@ -1085,69 +1117,6 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, 
 	return results, nil
 }
 
-// func (blockchain *BlockChain) GetCommitteCandidate(pubkeyParam string) *CommitteeCandidateInfo {
-// 	for _, bestState := range blockchain.BestState {
-// 		for pubkey, candidateInfo := range bestState.Candidates {
-// 			if pubkey == pubkeyParam {
-// 				return &candidateInfo
-// 			}
-// 		}
-// 	}
-// 	return nil
-// }
-
-// /*
-// Get Candidate List from all chain and merge all to one - return pubkey of them
-// */
-// func (blockchain *BlockChain) GetCommitteeCandidateList() []string {
-// 	candidatePubkeyList := []string{}
-// 	for _, bestState := range blockchain.BestState {
-// 		for pubkey, _ := range bestState.Candidates {
-// 			if common.IndexOfStr(pubkey, candidatePubkeyList) < 0 {
-// 				candidatePubkeyList = append(candidatePubkeyList, pubkey)
-// 			}
-// 		}
-// 	}
-// 	sort.Slice(candidatePubkeyList, func(i, j int) bool {
-// 		cndInfoi := blockchain.GetCommitteeCandidateInfo(candidatePubkeyList[i])
-// 		cndInfoj := blockchain.GetCommitteeCandidateInfo(candidatePubkeyList[j])
-// 		if cndInfoi.Value == cndInfoj.Value {
-// 			if cndInfoi.Timestamp < cndInfoj.Timestamp {
-// 				return true
-// 			} else if cndInfoi.Timestamp > cndInfoj.Timestamp {
-// 				return false
-// 			} else {
-// 				if cndInfoi.shardID <= cndInfoj.shardID {
-// 					return true
-// 				} else if cndInfoi.shardID < cndInfoj.shardID {
-// 					return false
-// 				}
-// 			}
-// 		} else if cndInfoi.Value > cndInfoj.Value {
-// 			return true
-// 		} else {
-// 			return false
-// 		}
-// 		return false
-// 	})
-// 	return candidatePubkeyList
-// }
-
-// func (blockchain *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCandidateInfo {
-// 	var cndVal CommitteeCandidateInfo
-// 	for _, bestState := range blockchain.BestState {
-// 		cndValTmp, ok := bestState.Candidates[nodeAddr]
-// 		if ok {
-// 			cndVal.Value += cndValTmp.Value
-// 			if cndValTmp.Timestamp > cndVal.Timestamp {
-// 				cndVal.Timestamp = cndValTmp.Timestamp
-// 				cndVal.shardID = cndValTmp.shardID
-// 			}
-// 		}
-// 	}
-// 	return cndVal
-// }
-
 // GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
 func (blockchain *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
 	data, err := blockchain.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, receiverKeyset.PaymentAddress.Bytes())
@@ -1226,10 +1195,14 @@ func (blockchain *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxC
 }
 
 // ListCustomToken - return all custom token which existed in network
-func (blockchain *BlockChain) ListPrivacyCustomToken() (map[common.Hash]transaction.TxCustomTokenPrivacy, error) {
+func (blockchain *BlockChain) ListPrivacyCustomToken() (map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]CrossShardTokenPrivacyMetaData, error) {
 	data, err := blockchain.config.DataBase.ListPrivacyCustomToken()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+	crossShardData, err := blockchain.config.DataBase.ListPrivacyCustomTokenCrossShard()
+	if err != nil {
+		return nil, nil, err
 	}
 	result := make(map[common.Hash]transaction.TxCustomTokenPrivacy)
 	for _, txData := range data {
@@ -1239,12 +1212,21 @@ func (blockchain *BlockChain) ListPrivacyCustomToken() (map[common.Hash]transact
 		_ = blockHash
 		_ = index
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		txPrivacyCustomToken := tx.(*transaction.TxCustomTokenPrivacy)
 		result[txPrivacyCustomToken.TxTokenPrivacyData.PropertyID] = *txPrivacyCustomToken
 	}
-	return result, nil
+	resultCrossShard := make(map[common.Hash]CrossShardTokenPrivacyMetaData)
+	for _, tokenData := range crossShardData {
+		crossShardTokenPrivacyMetaData := CrossShardTokenPrivacyMetaData{}
+		err = json.Unmarshal(tokenData, &crossShardTokenPrivacyMetaData)
+		if err != nil {
+			return nil, nil, err
+		}
+		resultCrossShard[crossShardTokenPrivacyMetaData.TokenID] = crossShardTokenPrivacyMetaData
+	}
+	return result, resultCrossShard, nil
 }
 
 // GetCustomTokenTxsHash - return list hash of tx which relate to custom token
