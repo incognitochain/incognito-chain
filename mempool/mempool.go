@@ -222,11 +222,11 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 
 	// sanity data
-	if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
-		err := MempoolTxError{}
-		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
-		return nil, nil, err
-	}
+	//if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
+	//	err := MempoolTxError{}
+	//	err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
+	//	return nil, nil, err
+	//}
 
 	// ValidateTransaction tx by it self // TODO validate performance later 0xkraken
 	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
