@@ -3,7 +3,6 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
-
 	"github.com/pkg/errors"
 )
 

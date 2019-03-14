@@ -277,3 +277,28 @@ func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, paymentAddress []byt
 	}
 	return nil
 }
+
+func (db *db) StorePrivacyCustomTokenCrossShard(tokenID *common.Hash, tokenValue []byte) error {
+	// key := db.GetKey(string(PrivacyTokenCrossShardPrefix), tokenID)
+	key := append([]byte(PrivacyTokenCrossShardPrefix), []byte(tokenID.String())...)
+	if err := db.lvdb.Put(key, tokenValue, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+/*
+	Return all data of token
+
+*/
+func (db *db) ListPrivacyCustomTokenCrossShard() ([][]byte, error) {
+	result := make([][]byte, 0)
+	iter := db.lvdb.NewIterator(util.BytesPrefix(PrivacyTokenCrossShardPrefix), nil)
+	for iter.Next() {
+		value := make([]byte, len(iter.Value()))
+		copy(value, iter.Value())
+		result = append(result, value)
+	}
+	iter.Release()
+	return result, nil
+}

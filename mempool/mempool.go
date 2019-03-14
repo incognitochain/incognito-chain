@@ -151,7 +151,8 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 // See the comment for MaybeAcceptTransaction for more details.
 // This function MUST be called with the mempool lock held (for writes).
 1. Validate tx version
-2. Validate fee with tx size
+2.1 Validate size of transaction (can't greater than max size of block)
+2.2 Validate fee with tx size
 3. Validate type of tx
 4. Validate with other txs in mempool
 5. Validate sanity data of tx
@@ -185,7 +186,16 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	ok := tx.CheckTxVersion(MaxVersion)
 	if !ok {
 		err := MempoolTxError{}
-		err.Init(RejectVersion, fmt.Errorf("%+v's version is invalid", txHash.String()))
+		err.Init(RejectVersion, fmt.Errorf("transaction %+v's version is invalid", txHash.String()))
+		return nil, nil, err
+	}
+
+	// check actual size
+	actualSize := tx.GetTxActualSize()
+	fmt.Printf("Transaction %+v's size %+v \n", txHash, actualSize)
+	if actualSize >= common.MaxBlockSize || actualSize >= common.MaxTxSize {
+		err := MempoolTxError{}
+		err.Init(RejectInvalidSize, fmt.Errorf("transaction %+v's size is invalid, more than %+v Kilobyte", txHash.String(), common.MaxBlockSize))
 		return nil, nil, err
 	}
 
@@ -235,13 +245,13 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	if tx.GetType() == common.TxCustomTokenType {
 		customTokenTx := tx.(*transaction.TxCustomToken)
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
-			tokenID := customTokenTx.TxTokenData.PropertyID.String()
-			tp.tokenIDMtx.Lock()
-			found := common.IndexOfStr(tokenID, tp.tokenIDList)
-			tp.tokenIDMtx.Unlock()
-			if found > -1 {
-				return nil, nil, errors.New("Init Transaction of this Token is in pool already")
-			}
+			//tokenID := customTokenTx.TxTokenData.PropertyID.String()
+			//tp.tokenIDMtx.Lock()
+			//found := common.IndexOfStr(tokenID, tp.tokenIDList)
+			//tp.tokenIDMtx.Unlock()
+			//if found > -1 {
+			//	return nil, nil, errors.New("Init Transaction of this Token is in pool already")
+			//}
 		}
 	}
 
@@ -297,19 +307,24 @@ func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	tp.mtx.Lock()
 	hash, txDesc, err := tp.maybeAcceptTransaction(tx)
+	if err != nil {
+		Logger.log.Error(err)
+	}
 	tp.mtx.Unlock()
+
 	return hash, txDesc, err
 }
 
 // This function is safe for concurrent access.
 func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction) (*metadata.TxDesc, error) {
 	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
 	_, txDesc, err := tp.maybeAcceptTransaction(tx)
 	if err != nil {
+		Logger.log.Error(err)
 		return nil, err
 	}
 	tempTxDesc := &txDesc.Desc
-	tp.mtx.Unlock()
 	return tempTxDesc, err
 }
 

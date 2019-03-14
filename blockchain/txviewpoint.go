@@ -30,6 +30,7 @@ type TxViewPoint struct {
 	// data of privacy custom token
 	privacyCustomTokenViewPoint map[int32]*TxViewPoint
 	privacyCustomTokenTxs       map[int32]*transaction.TxCustomTokenPrivacy
+	privacyCustomTokenMetadata  *CrossShardTokenPrivacyMetaData
 
 	//cross shard tx token
 	crossTxTokenData map[int32]*transaction.TxTokenData
@@ -357,6 +358,7 @@ func NewTxViewPoint(shardID byte) *TxViewPoint {
 		tokenID:                     &common.Hash{},
 		privacyCustomTokenViewPoint: make(map[int32]*TxViewPoint),
 		privacyCustomTokenTxs:       make(map[int32]*transaction.TxCustomTokenPrivacy),
+		privacyCustomTokenMetadata:  &CrossShardTokenPrivacyMetaData{},
 		crossTxTokenData:            make(map[int32]*transaction.TxTokenData),
 	}
 	result.tokenID.SetBytes(common.ConstantID[:])
@@ -468,6 +470,40 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 					snDs[pubkey] = make([]big.Int, 0)
 				}
 				snDs[pubkey] = append(snDs[pubkey], data...)
+			}
+			if crossTransaction.TokenPrivacyData != nil && len(crossTransaction.TokenPrivacyData) > 0 {
+				for index, tokenPrivacyData := range crossTransaction.TokenPrivacyData {
+					subView := NewTxViewPoint(block.Header.ShardID)
+					subView.tokenID = &tokenPrivacyData.PropertyID
+					subView.privacyCustomTokenMetadata.TokenID = tokenPrivacyData.PropertyID
+					subView.privacyCustomTokenMetadata.PropertyName = tokenPrivacyData.PropertyName
+					subView.privacyCustomTokenMetadata.PropertySymbol = tokenPrivacyData.PropertySymbol
+					subView.privacyCustomTokenMetadata.Amount = tokenPrivacyData.Amount
+					subView.privacyCustomTokenMetadata.Mintable = tokenPrivacyData.Mintable
+					commitmentsP, outCoinsP, snDsP, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, tokenPrivacyData.OutputCoin, subView.tokenID, localWallet)
+					if err != nil {
+						return NewBlockChainError(UnExpectedError, err)
+					}
+					for pubkey, data := range commitmentsP {
+						if subView.mapCommitments[pubkey] == nil {
+							subView.mapCommitments[pubkey] = make([][]byte, 0)
+						}
+						subView.mapCommitments[pubkey] = append(subView.mapCommitments[pubkey], data...)
+					}
+					for pubkey, data := range outCoinsP {
+						if subView.mapOutputCoins[pubkey] == nil {
+							subView.mapOutputCoins[pubkey] = make([]privacy.OutputCoin, 0)
+						}
+						subView.mapOutputCoins[pubkey] = append(subView.mapOutputCoins[pubkey], data...)
+					}
+					for pubkey, data := range snDsP {
+						if subView.mapSnD[pubkey] == nil {
+							subView.mapSnD[pubkey] = make([]big.Int, 0)
+						}
+						subView.mapSnD[pubkey] = append(subView.mapSnD[pubkey], data...)
+					}
+					view.privacyCustomTokenViewPoint[int32(index)] = subView
+				}
 			}
 		}
 	}

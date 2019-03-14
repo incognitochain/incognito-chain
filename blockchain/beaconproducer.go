@@ -57,10 +57,12 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	// produce new block with current beststate
 	tempMarshal, err := json.Marshal(*blkTmplGenerator.chain.BestState.Beacon)
 	if err != nil {
+		blkTmplGenerator.chain.chainLock.Unlock()
 		return nil, NewBlockChainError(MashallJsonError, err)
 	}
 	err = json.Unmarshal(tempMarshal, &beaconBestState)
 	if err != nil {
+		blkTmplGenerator.chain.chainLock.Unlock()
 		return nil, NewBlockChainError(UnmashallJsonBlockError, err)
 	}
 	beaconBestState.CandidateShardWaitingForCurrentRandom = blkTmplGenerator.chain.BestState.Beacon.CandidateShardWaitingForCurrentRandom
@@ -70,6 +72,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	// fmt.Printf("Beacon Produce: BeaconBestState Copy %+v \n", beaconBestState)
 	// fmt.Printf("Beacon Produce: BeaconBestState Compare %+v \n", reflect.DeepEqual(beaconBestState, *blkTmplGenerator.chain.BestState.Beacon))
 	if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
+		blkTmplGenerator.chain.chainLock.Unlock()
 		panic(NewBlockChainError(BeaconError, errors.New("problem with beststate in producing new block")))
 	}
 
