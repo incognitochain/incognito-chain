@@ -9,7 +9,7 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
 )
 
 // TxCustomTokenPrivacy is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -93,7 +93,7 @@ func (tx *TxCustomTokenPrivacy) GetTxActualSize() uint64 {
 		tokenDataSize += meta.CalculateSize()
 	}
 
-	return normalTxSize + tokenDataSize
+	return normalTxSize + tokenDataSize/1024
 }
 
 // Init -  build normal tx component and privacy custom token data
