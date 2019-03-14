@@ -120,9 +120,6 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 		return nil
 	}
 	instructions := CreateShardInstructionsFromTransactionAndIns(blk.Body.Transactions, bc, blk.Header.ShardID, blk.Header.ProducerAddress, blk.Header.Height, beaconBlocks)
-	if len(instructions) > 0 {
-		fmt.Printf("[db] buildActionReq to send to beacon\n")
-	}
 	block.Instructions = append(block.Instructions, instructions...)
 	return &block
 }

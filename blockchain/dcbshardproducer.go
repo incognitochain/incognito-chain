@@ -51,7 +51,7 @@ func (blockchain *BlockChain) GetAmountPerAccount(tokenID *common.Hash) (uint64,
 func (blockgen *BlkTmplGenerator) buildInstitutionDividendPaymentTxs(forDCB bool, producerPrivateKey *privacy.SpendingKey) ([]*transaction.Tx, error) {
 	// Get latest dividend proposal id and amount
 	id, cstToPayout := blockgen.chain.BestState.Beacon.GetLatestDividendProposal(forDCB)
-	if id == 0 {
+	if id == 0 || cstToPayout == 0 {
 		return nil, nil // No Dividend proposal found
 	}
 
@@ -143,8 +143,8 @@ func (blockgen *BlkTmplGenerator) buildDividendPaymentTxs(producerPrivateKey *pr
 
 func (blockgen *BlkTmplGenerator) buildInstitutionDividendSubmitInst(forDCB bool, shardID byte) ([][]string, error) {
 	// Get latest dividend proposal id and amount
-	id, _ := blockgen.chain.BestState.Beacon.GetLatestDividendProposal(forDCB)
-	if id == 0 {
+	id, cstToPayout := blockgen.chain.BestState.Beacon.GetLatestDividendProposal(forDCB)
+	if id == 0 || cstToPayout == 0 {
 		// fmt.Printf("[db] no div proposal found: %t\n", forDCB)
 		return nil, nil // No Dividend proposal found
 	}
@@ -175,10 +175,6 @@ func (blockgen *BlkTmplGenerator) buildInstitutionDividendSubmitInst(forDCB bool
 }
 
 func (blockgen *BlkTmplGenerator) buildDividendSubmitInsts(producerPrivateKey *privacy.SpendingKey, shardID byte) ([][]string, error) {
-	if blockgen.chain.BestState.Beacon.BeaconHeight < 3 {
-		fmt.Printf("[db] waiting, current beaconHeight: %d\n", blockgen.chain.BestState.Beacon.BeaconHeight)
-		return [][]string{}, nil
-	}
 	// Dividend proposals for DCB
 	submitInsts := [][]string{}
 	forDCB := true
