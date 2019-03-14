@@ -73,7 +73,8 @@ func buildInstTypeAndAmountForContractingAction(
 		return "refund", 0
 	}
 	// redeemAmount := md.BurnedConstAmount * oracle.Constant / oracle.ETH
-	redeemAmount := common.CentInMilliEther(md.BurnedConstAmount*oracle.Constant, oracle.ETH)
+	cstValue := md.BurnedConstAmount * oracle.Constant / 100
+	redeemAmount := common.CentInMilliEther(cstValue, oracle.ETH)
 	accumulativeValues.constantsBurnedByETH += md.BurnedConstAmount
 	return "accepted", redeemAmount
 }
