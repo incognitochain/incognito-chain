@@ -107,6 +107,9 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	}
 	fmt.Println("Shard Producer: Instruction", instructions)
 	fmt.Printf("Number of Transaction in blocks %+v \n", len(block.Body.Transactions))
+	for i, tx := range block.Body.Transactions {
+		Logger.log.Warn(i, tx, "\n")
+	}
 	//============End Build Body===========
 
 	//============Build Header=============
