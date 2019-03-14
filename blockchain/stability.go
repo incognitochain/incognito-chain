@@ -330,15 +330,15 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					}
 					resTxs = append(resTxs, txs...)
 
-				case metadata.SendBackTokenVoteFailMeta:
-					Logger.log.Info(metadata.SendBackTokenVoteFailMeta, "\n")
+				case metadata.SendBackTokenVoteBoardFailMeta:
+					Logger.log.Info(metadata.SendBackTokenVoteBoardFailMeta, "\n")
 					sendBackTokenVoteFail := frombeaconins.TxSendBackTokenVoteFailIns{}
 					err := json.Unmarshal([]byte(l[2]), &sendBackTokenVoteFail)
 					if err != nil {
 						Logger.log.Error("Here, why?", err.Error(), "\n")
 						return nil, err
 					}
-					txs, err := sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					txs, err := sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, blockgen.chain, shardID)
 					if err != nil {
 						Logger.log.Error("Here, why2?", err.Error(), "\n")
 						return nil, err

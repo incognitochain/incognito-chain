@@ -66,7 +66,7 @@ const (
 	ShareRewardOldGOVBoardMeta
 	PunishDCBDecryptMeta
 	PunishGOVDecryptMeta
-	SendBackTokenVoteFailMeta
+	SendBackTokenVoteBoardFailMeta
 	NormalDCBVoteProposalMeta
 	NormalGOVVoteProposalMeta
 
