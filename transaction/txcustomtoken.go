@@ -504,6 +504,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 		}
 		txCustomToken.TxTokenData.Vouts = VoutsTemp
 	}
+	txCustomToken.Type = common.TxCustomTokenType
 
 	if !handled {
 		return NewTransactionErr(WrongTokenTxType, nil)
