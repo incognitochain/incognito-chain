@@ -329,13 +329,13 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					}
 					resTxs = append(resTxs, txs...)
 
-				case metadata.SendBackTokenVoteFailMeta:
+				case metadata.SendBackTokenVoteBoardFailMeta:
 					sendBackTokenVoteFail := frombeaconins.TxSendBackTokenVoteFailIns{}
 					err := json.Unmarshal([]byte(l[2]), &sendBackTokenVoteFail)
 					if err != nil {
 						return nil, err
 					}
-					txs, err := sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					txs, err := sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, blockgen.chain, shardID)
 					if err != nil {
 						return nil, err
 					}
