@@ -3,6 +3,7 @@ package constantbft
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -62,7 +63,7 @@ func (engine *Engine) Start() error {
 				return
 			default:
 				if engine.config.BlockChain.IsReady(false, 0) {
-					fmt.Println("Blockchain is ready. Run consensus...")
+					// fmt.Println("Blockchain is ready. Run consensus...")
 					if prevRoundNodeRole == common.BEACON_ROLE {
 						if currentPBFTBlkHeight <= engine.config.BlockChain.BestState.Beacon.BeaconHeight {
 							// reset round
@@ -80,8 +81,8 @@ func (engine *Engine) Start() error {
 					}
 
 					engine.config.Server.UpdateConsensusState(nodeRole, engine.config.UserKeySet.GetPublicKeyB58(), nil, engine.config.BlockChain.BestState.Beacon.BeaconCommittee, engine.config.BlockChain.BestState.Beacon.ShardCommittee)
-					fmt.Printf("%v \n", engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
-					fmt.Printf("%v \n", engine.config.BlockChain.BestState.Beacon.ShardCommittee)
+					// fmt.Printf("%v \n", engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
+					// fmt.Printf("%v \n", engine.config.BlockChain.BestState.Beacon.ShardCommittee)
 					if currentPBFTRound > 3 && prevRoundNodeRole != "" {
 						// os.Exit(1)
 					}
@@ -199,7 +200,11 @@ func (engine *Engine) Start() error {
 								}
 								if err == nil {
 									fmt.Println("========NEW SHARD BLOCK=======", resBlk.(*blockchain.ShardBlock).Header.Height)
-									err = engine.config.BlockChain.InsertShardBlock(resBlk.(*blockchain.ShardBlock))
+									isProducer := false
+									if strings.Compare(engine.config.UserKeySet.GetPublicKeyB58(), resBlk.(*blockchain.ShardBlock).Header.Producer) == 0 {
+										isProducer = true
+									}
+									err = engine.config.BlockChain.InsertShardBlock(resBlk.(*blockchain.ShardBlock), isProducer)
 									if err != nil {
 										Logger.log.Error("Insert shard block error", err)
 										continue
