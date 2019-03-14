@@ -13,6 +13,7 @@ const (
 	TxSalaryType             = "s"  // salary tx(gov pay salary for block producer)
 	TxCustomTokenType        = "t"  // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
+	MaxTxSize                = 100  // unit KB = 100KB
 )
 
 // for mining consensus
@@ -20,7 +21,6 @@ const (
 	DurationOfDCBBoard = 6    //number of block one DCB board in charge
 	DurationOfGOVBoard = 1000 //number of block one GOV board in charge
 	MaxBlockSize       = 2000 //unit kilobytes = 2 Megabyte
-	MaxTxSize          = 100
 	MaxTxsInBlock      = 1000
 	MinTxsInBlock      = 10                   // minium txs for block to get immediate process (meaning no wait time)
 	MinBlockWaitTime   = 2                    // second
