@@ -134,18 +134,12 @@ const (
 	SendRawVoteBoardGOVTx                = "sendrawvoteboardgovtx"
 	CreateRawVoteGOVBoardTx              = "createrawvotegovboardtx"
 	CreateAndSendVoteGOVBoardTransaction = "createandsendvotegovboardtransaction"
-	GetAmountVoteToken                   = "getamountvotetoken"
-	SetAmountVoteToken                   = "testsetamountvotetoken"
 
 	//vote propopsal
-	GetEncryptionFlag                         = "getencryptionflag"
-	SetEncryptionFlag                         = "testsetencryptionflag"
-	GetEncryptionLastBlockHeightFlag          = "getencryptionlastblockheightflag"
-	CreateAndSendSealLv3VoteProposal          = "createandsendseallv3voteproposal"
-	CreateAndSendSealLv2VoteProposal          = "createandsendseallv2voteproposal"
-	CreateAndSendSealLv1VoteProposal          = "createandsendseallv1voteproposal"
-	CreateAndSendNormalVoteProposalFromOwner  = "createandsendnormalvoteproposalfromowner"
-	CreateAndSendNormalVoteProposalFromSealer = "createandsendnormalvoteproposalfromsealer"
+	GetEncryptionFlag                = "getencryptionflag"
+	SetEncryptionFlag                = "testsetencryptionflag"
+	GetEncryptionLastBlockHeightFlag = "getencryptionlastblockheightflag"
+	CreateAndSendVoteProposal        = "createandsendvoteproposal"
 
 	// Submit Proposal
 	CreateAndSendSubmitDCBProposalTx = "createandsendsubmitdcbproposaltx"
