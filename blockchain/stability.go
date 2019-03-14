@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/metadata/fromshardins"
-
 	"github.com/constant-money/constant-chain/blockchain/component"
+	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/metadata/frombeaconins"
+	"github.com/constant-money/constant-chain/metadata/fromshardins"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/pkg/errors"
@@ -354,7 +353,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 
 				case metadata.IssuingRequestMeta:
 					issuingInfoStr := l[3]
-					txs, err := blockgen.buildIssuingRes(l[2], issuingInfoStr, producerPrivateKey)
+					txs, err := blockgen.buildIssuingRes(l[2], issuingInfoStr, producerPrivateKey, shardID)
 					if err != nil {
 						return nil, err
 					}
