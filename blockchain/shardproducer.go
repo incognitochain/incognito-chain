@@ -360,6 +360,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 	if !isEmpty {
 		panic("TempTxPool Is not Empty")
 	}
+	currentSize := uint64(0)
 	for _, txDesc := range sourceTxns {
 		tx := txDesc.Tx
 		tempTxDesc, err := blockgen.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
@@ -369,6 +370,12 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 			continue
 		}
 		totalFee += tx.GetTxFee()
+
+		tempSize := tempTx.GetTxActualSize()
+		if currentSize+tempSize >= common.MaxBlockSize {
+			break
+		}
+		currentSize += tempSize
 		txsToAdd = append(txsToAdd, tempTx)
 		if len(txsToAdd) == common.MaxTxsInBlock {
 			break
