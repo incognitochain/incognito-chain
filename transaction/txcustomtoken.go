@@ -129,8 +129,11 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 	}
 	if customTokenTx.Metadata != nil {
 		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(customTokenTx, bcr, shardID, db)
-		if err != nil || !isContinued {
+		if err != nil {
 			return NewTransactionErr(UnexpectedErr, err)
+		}
+		if !isContinued {
+			return nil
 		}
 	}
 
@@ -278,6 +281,12 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 		}
 		return true
 	}
+
+	if customTokenTx.TxTokenData.Type == CustomTokenMint {
+		// TODO(@0xsirrush): validate for this type
+		return true
+	}
+
 	//Process CustomToken Transfer
 	ok := customTokenTx.getListUTXOFromTxCustomToken(bcr)
 	if !ok {

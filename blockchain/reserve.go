@@ -187,25 +187,31 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 		return []metadata.Transaction{tx}, nil
 	} else if bytes.Equal(issuingInfo.TokenID[:], common.DCBTokenID[:]) {
 		meta := metadata.NewIssuingResponse(txReqID, metadata.IssuingResponseMeta)
-		paymentInfos := []*privacy.PaymentInfo{&privacy.PaymentInfo{
-			PaymentAddress: issuingInfo.ReceiverAddress,
-			Amount:         issuingInfo.Amount,
-		}}
+		//paymentInfos := []*privacy.PaymentInfo{&privacy.PaymentInfo{
+		//	PaymentAddress: issuingInfo.ReceiverAddress,
+		//	Amount:         issuingInfo.Amount,
+		//}}
 		txCustom := &transaction.TxCustomToken{}
 		customTokenParamTx := &transaction.CustomTokenParamTx{
 			PropertyID:  common.DCBTokenID.String(),
 			TokenTxType: transaction.CustomTokenMint,
 			Amount:      issuingInfo.Amount,
+			Receiver: []transaction.TxTokenVout{
+				transaction.TxTokenVout{
+					Value:          issuingInfo.Amount,
+					PaymentAddress: issuingInfo.ReceiverAddress,
+				},
+			},
 		}
 		db := blockgen.chain.config.DataBase
 		listCustomTokens, err := frombeaconins.GetListCustomTokens(db, blockgen.chain)
 		if err != nil {
-			fmt.Printf("[db] build issuing resp err: %v\n", err)
+			fmt.Printf("[db] build issuing resp get list err: %v\n", err)
 			return nil, err
 		}
 		err = txCustom.Init(
 			blkProducerPrivateKey,
-			paymentInfos,
+			[]*privacy.PaymentInfo{},
 			nil,
 			0,
 			customTokenParamTx,
@@ -215,7 +221,7 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 			false,
 			shardID,
 		)
-		if err != nil {
+		if err.(*transaction.TransactionError) != nil {
 			fmt.Printf("[db] build issuing resp err: %v\n", err)
 			return nil, err
 		}
@@ -240,6 +246,7 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 		//}
 		//resTx.SetMetadata(meta)
 		txCustom.Type = common.TxCustomTokenType
+		fmt.Printf("[db] build issuing resp success: %s\n", txCustom.Hash().String())
 		return []metadata.Transaction{txCustom}, nil
 	}
 	return []metadata.Transaction{}, nil
