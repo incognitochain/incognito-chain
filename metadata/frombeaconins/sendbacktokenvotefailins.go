@@ -109,6 +109,7 @@ func NewSendBackTokenVoteFailTx(
 		false,
 		shardID,
 	)
+	txCustom.Type = common.TxCustomTokenType
 	return txCustom, err
 }
 
