@@ -4,46 +4,12 @@
 
 package base58
 
-/*import (
+import (
 	"fmt"
 	"math/big"
 )
 
-//go:generate go run genalphabet.go
-
-var bigRadix = big.NewInt(58)
-var bigZero = big.NewInt(0)
-
-type Base58 struct {
-}
-
 // Decode decodes a modified base58 string to a byte slice.
-func (self Base58) Decode(b string) []byte {
-	if len(b) > 10000 {
-		a := 1
-		_ = a
-	}
-	temp, _ := Decode(b)
-	if len(b) > 10000 {
-		a := 1
-		_ = a
-	}
-	return temp
-}
-
-// Encode encodes a byte slice to a modified base58 string.
-func (self Base58) Encode(b []byte) string {
-	if len(b) > 10000 {
-		a := 1
-		_ = a
-	}
-	result := Encode(b);
-	if len(b) > 10000 {
-		a := 1
-		_ = a
-	}
-	return result;
-}
 
 // ----- Implement Function -----
 var (
@@ -294,4 +260,3 @@ func TrivialBase58DecodingAlphabet(str string, alphabet *Alphabet) ([]byte, erro
 	}
 	return append(leading, n.Bytes()...), nil
 }
-*/

@@ -30,6 +30,8 @@ func getShardBlockSalary(txs []metadata.Transaction, bestStateBeacon *BestStateB
 	return uint64(len(txs))*salaryPerTx + basicSalary
 }
 
+// Type Content
+// Content: shardBlockSalaryInfo
 func createShardBlockSalaryUpdateAction(
 	shardBlockSalary uint64,
 	shardBlockFee uint64,
