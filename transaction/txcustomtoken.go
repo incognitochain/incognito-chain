@@ -12,7 +12,7 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
 	"github.com/constant-money/constant-chain/wallet"
 )
 
@@ -331,7 +331,7 @@ func (tx *TxCustomToken) GetTxActualSize() uint64 {
 
 	tokenDataSize := uint64(0)
 
-	tokenDataSize += uint64(len(tx.TxTokenData.PropertyName))
+	// tokenDataSize += uint64(len(tx.TxTokenData.PropertyName))
 	tokenDataSize += uint64(len(tx.TxTokenData.PropertyName))
 	tokenDataSize += uint64(len(tx.TxTokenData.PropertyID))
 	tokenDataSize += 4 // for TxTokenData.Type
@@ -354,7 +354,7 @@ func (tx *TxCustomToken) GetTxActualSize() uint64 {
 		tokenDataSize += meta.CalculateSize()
 	}
 
-	return normalTxSize + tokenDataSize
+	return normalTxSize + tokenDataSize/1024
 }
 
 // CreateTxCustomToken ...
