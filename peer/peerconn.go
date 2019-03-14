@@ -147,12 +147,12 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 
 				// cache message hash S
 				//TODO 0xBahamoot replace with cache from syncblock
-				// hashMsgRaw := common.HashH(jsonDecodeBytesRaw).String()
-				// if peerConn.ListenerPeer.CheckHashPool(hashMsgRaw) {
-				// 	Logger.log.Infof("InMessageHandler existed raw hash message %s", hashMsgRaw)
-				// 	return
-				// }
-				// peerConn.ListenerPeer.HashToPool(hashMsgRaw)
+				hashMsgRaw := common.HashH(jsonDecodeBytesRaw).String()
+				if peerConn.ListenerPeer.CheckHashPool(hashMsgRaw) {
+					Logger.log.Infof("InMessageHandler existed raw hash message %s", hashMsgRaw)
+					return
+				}
+				peerConn.ListenerPeer.HashToPool(hashMsgRaw)
 				// cache message hash E
 
 				// unzip data before process
@@ -221,13 +221,14 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				realType := reflect.TypeOf(message)
 				Logger.log.Infof("Cmd message type of struct %s", realType.String())
 
+				//TODO: 0xBahamoot replace with cache from syncblock
 				// cache message hash S
-				//hashMsg := message.Hash()
-				//if peerConn.ListenerPeer.CheckHashPool(hashMsg) {
-				//	Logger.log.Infof("InMessageHandler existed hash message %s", hashMsg)
-				//	return
-				//}
-				//peerConn.ListenerPeer.HashToPool(hashMsg)
+				hashMsg := message.Hash()
+				if peerConn.ListenerPeer.CheckHashPool(hashMsg) {
+					Logger.log.Infof("InMessageHandler existed hash message %s", hashMsg)
+					return
+				}
+				peerConn.ListenerPeer.HashToPool(hashMsg)
 				// cache message hash E
 
 				// process message for each of message type
