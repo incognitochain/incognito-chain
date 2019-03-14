@@ -58,9 +58,9 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 		return err
 	}
 	//========Update best state with new block
-	fmt.Println("|=========================================================|")
-	fmt.Println("Shard Process/Insert Shard Block: BEFORE", shardBestState)
-	fmt.Println("|=========================================================|")
+	// fmt.Println("|=========================================================|")
+	// fmt.Println("Shard Process/Insert Shard Block: BEFORE", shardBestState)
+	// fmt.Println("|=========================================================|")
 	if err := shardBestState.Update(block, beaconBlocks); err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 	Insert Shard Block into blockchain
 	@Notice: this block must have full information (complete block)
 */
-func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
+func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer bool) error {
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 	shardID := block.Header.ShardID
@@ -87,9 +87,13 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 		return NewBlockChainError(DuplicateBlockErr, errors.New("This block has been stored already"))
 	}
 	Logger.log.Infof("SHARD %+v | Begin Insert new block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
-	Logger.log.Infof("SHARD %+v | Verify Pre Processing  Block %+v \n", block.Header.ShardID, *block.Hash())
-	if err := blockchain.VerifyPreProcessingShardBlock(block, shardID, false); err != nil {
-		return err
+	if !isProducer {
+		Logger.log.Infof("SHARD %+v | Verify Pre Processing  Block %+v \n", block.Header.ShardID, *block.Hash())
+		if err := blockchain.VerifyPreProcessingShardBlock(block, shardID, false); err != nil {
+			return err
+		}
+	} else {
+		Logger.log.Infof("SHARD %+v | SKIP Verify Pre Processing Block %+v \n", block.Header.ShardID, *block.Hash())
 	}
 	//========Verify block with previous best state
 	// check with current final best state
@@ -97,13 +101,16 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 	if strings.Compare(blockchain.BestState.Shard[shardID].BestBlockHash.String(), block.Header.PrevBlockHash.String()) != 0 {
 		return NewBlockChainError(BeaconError, errors.New("beacon Block does not match with any Beacon State in cache or in Database"))
 	}
-	// fmt.Printf("BeaconBest state %+v \n", blockchain.BestState.Beacon)
-	Logger.log.Infof("SHARD %+v | Verify BestState with Block %+v \n", block.Header.ShardID, *block.Hash())
-	// Verify block with previous best state
-	if err := blockchain.BestState.Shard[shardID].VerifyBestStateWithShardBlock(block, true, shardID); err != nil {
-		return err
-	}
 
+	// Verify block with previous best state
+	if !isProducer {
+		Logger.log.Infof("SHARD %+v | Verify BestState with Block %+v \n", block.Header.ShardID, *block.Hash())
+		if err := blockchain.BestState.Shard[shardID].VerifyBestStateWithShardBlock(block, true, shardID); err != nil {
+			return err
+		}
+	} else {
+		Logger.log.Infof("SHARD %+v | SKIP Verify BestState with Block %+v \n", block.Header.ShardID, *block.Hash())
+	}
 	Logger.log.Infof("SHARD %+v | Update BestState with Block %+v \n", block.Header.ShardID, *block.Hash())
 	//========Update best state with new block
 	prevBeaconHeight := blockchain.BestState.Shard[shardID].BeaconHeight
@@ -115,10 +122,14 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock) error {
 		return err
 	}
 
-	Logger.log.Infof("SHARD %+v | Verify Post Processing Block %+v \n", block.Header.ShardID, *block.Hash())
 	//========Post verififcation: verify new beaconstate with corresponding block
-	if err := blockchain.BestState.Shard[shardID].VerifyPostProcessingShardBlock(block, shardID); err != nil {
-		return err
+	if !isProducer {
+		Logger.log.Infof("SHARD %+v | Verify Post Processing Block %+v \n", block.Header.ShardID, *block.Hash())
+		if err := blockchain.BestState.Shard[shardID].VerifyPostProcessingShardBlock(block, shardID); err != nil {
+			return err
+		}
+	} else {
+		Logger.log.Infof("SHARD %+v | SKIP Verify Post Processing Block %+v \n", block.Header.ShardID, *block.Hash())
 	}
 
 	//=========Remove invalid shard block in pool

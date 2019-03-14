@@ -63,7 +63,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 				return
 			} else {
 				if blockchain.BestState.Shard[newBlk.Header.ShardID].ShardHeight == newBlk.Header.Height-1 {
-					err = blockchain.InsertShardBlock(newBlk)
+					err = blockchain.InsertShardBlock(newBlk, false)
 					if err != nil {
 						Logger.log.Error(err)
 						return
