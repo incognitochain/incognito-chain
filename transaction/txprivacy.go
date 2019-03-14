@@ -89,9 +89,17 @@ func (tx *Tx) Init(
 ) *TransactionError {
 
 	Logger.log.Infof("CREATING TX........\n")
-	//hasPrivacy = false
 	tx.Version = TxVersion
 	var err error
+
+	if len(inputCoins) > 255 {
+		return NewTransactionErr(UnexpectedErr, errors.New("Input coins in tx are very large:"+strconv.Itoa(len(inputCoins))))
+	}
+
+	if len(paymentInfo) > 254 {
+		return NewTransactionErr(UnexpectedErr, errors.New("Input coins in tx are very large:"+strconv.Itoa(len(paymentInfo))))
+	}
+
 	if tokenID == nil {
 		tokenID = &common.Hash{}
 		tokenID.SetBytes(common.ConstantID[:])
@@ -716,11 +724,10 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 	}
 
 	// check sanity of Proof
-
-	//validateSanityOfProof, err := tx.validateSanityDataOfProof()
-	//if err != nil || !validateSanityOfProof {
-	//	return false, err
-	//}
+	validateSanityOfProof, err := tx.validateSanityDataOfProof()
+	if err != nil || !validateSanityOfProof {
+		return false, err
+	}
 
 	if len(txN.SigPubKey) != privacy.SigPubKeySize {
 		return false, errors.New("wrong tx Sig PK")
@@ -734,6 +741,15 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 
 func (txN Tx) validateSanityDataOfProof() (bool, error) {
 	if txN.Proof != nil {
+
+		if len(txN.Proof.InputCoins) > 255 {
+			return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(txN.Proof.InputCoins)))
+		}
+
+		if len(txN.Proof.OutputCoins) > 255 {
+			return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(txN.Proof.OutputCoins)))
+		}
+
 		isPrivacy := true
 		// check Privacy or not
 
@@ -773,7 +789,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				}
 			}
 			// check output coins with privacy
-			for i := 0; i < len(txN.Proof.InputCoins); i++ {
+			for i := 0; i < len(txN.Proof.OutputCoins); i++ {
 				if !txN.Proof.OutputCoins[i].CoinDetails.PublicKey.IsSafe() {
 					return false, errors.New("wrong tx output coins")
 				}

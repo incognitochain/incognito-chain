@@ -156,7 +156,6 @@ type CustomTokenParamTx struct {
 	Amount         uint64        `json:"TokenAmount"`
 	TokenTxType    int           `json:"TokenTxType"`
 	Receiver       []TxTokenVout `json:"TokenReceiver"`
-
 	// temp variable to process coding
 	vins       []TxTokenVin
 	vinsAmount uint64
