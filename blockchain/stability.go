@@ -292,6 +292,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					return nil, err
 				}
 				fmt.Printf("[db] shard build Resp from inst: %+v\n", l)
+				Logger.log.Warn("Metadata type:", metaType, "\n")
 				switch metaType {
 				case metadata.CrowdsalePaymentMeta:
 					paymentInst, err := ParseCrowdsalePaymentInstruction(l[2])
@@ -330,17 +331,21 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					resTxs = append(resTxs, txs...)
 
 				case metadata.SendBackTokenVoteFailMeta:
+					Logger.log.Info(metadata.SendBackTokenVoteFailMeta, "\n")
 					sendBackTokenVoteFail := frombeaconins.TxSendBackTokenVoteFailIns{}
 					err := json.Unmarshal([]byte(l[2]), &sendBackTokenVoteFail)
 					if err != nil {
+						Logger.log.Error("Here, why?", err.Error(), "\n")
 						return nil, err
 					}
 					txs, err := sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
 					if err != nil {
+						Logger.log.Error("Here, why2?", err.Error(), "\n")
 						return nil, err
 					}
 					resTxs = append(resTxs, txs)
 				case metadata.ShareRewardOldDCBBoardMeta, metadata.ShareRewardOldGOVBoardMeta:
+					Logger.log.Info(metadata.ShareRewardOldDCBBoardMeta, metadata.ShareRewardOldGOVBoardMeta, "\n")
 					shareRewardOldBoard := frombeaconins.TxShareRewardOldBoardMetadataIns{}
 					err := json.Unmarshal([]byte(l[2]), &shareRewardOldBoard)
 					if err != nil {
