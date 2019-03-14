@@ -106,6 +106,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
 	hasPrivacyConst bool,
 	shardID byte,
+	listCustomTokenCrossShard map[common.Hash]bool,
 ) *TransactionError {
 	var err error
 	// init data for tx constant for fee
@@ -185,6 +186,12 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 					return NewTransactionErr(UnexpectedErr, errors.New("this token is existed in network"))
 				}
 			}
+			for key, _ := range listCustomTokenCrossShard {
+				if newHashInitToken.String() == key.String() {
+					fmt.Println("INIT Tx Custom Token Privacy/ Existed", key, key.String() == newHashInitToken.String())
+					return NewTransactionErr(UnexpectedErr, errors.New("this token is existed in network via cross shard"))
+				}
+			}
 			txCustomToken.TxTokenPrivacyData.PropertyID = newHashInitToken
 			Logger.log.Infof("A new token privacy wil be issued with ID: %+v", txCustomToken.TxTokenPrivacyData.PropertyID.String())
 		}
@@ -196,7 +203,9 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			temp := Tx{}
 			propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 			if _, ok := listCustomTokens[*propertyID]; !ok {
-				return NewTransactionErr(UnexpectedErr, errors.New("invalid Token ID"))
+				if _, ok := listCustomTokenCrossShard[*propertyID]; !ok {
+					return NewTransactionErr(UnexpectedErr, errors.New("invalid Token ID"))
+				}
 			}
 			Logger.log.Infof("Token %+v wil be transfered with", propertyID)
 			txCustomToken.TxTokenPrivacyData = TxTokenPrivacyData{
