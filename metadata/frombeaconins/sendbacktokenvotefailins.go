@@ -2,6 +2,7 @@ package frombeaconins
 
 import (
 	"encoding/json"
+	"github.com/constant-money/constant-chain/transaction"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
@@ -11,9 +12,14 @@ import (
 )
 
 type TxSendBackTokenVoteFailIns struct {
+	BoardType      common.BoardType
 	PaymentAddress privacy.PaymentAddress
 	Amount         uint64
 	PropertyID     common.Hash
+}
+
+func NewTxSendBackTokenVoteFailIns(boardType common.BoardType, paymentAddress privacy.PaymentAddress, amount uint64, propertyID common.Hash) *TxSendBackTokenVoteFailIns {
+	return &TxSendBackTokenVoteFailIns{BoardType: boardType, PaymentAddress: paymentAddress, Amount: amount, PropertyID: propertyID}
 }
 
 func (txSendBackTokenVoteFailIns *TxSendBackTokenVoteFailIns) GetStringFormat() ([]string, error) {
@@ -23,7 +29,7 @@ func (txSendBackTokenVoteFailIns *TxSendBackTokenVoteFailIns) GetStringFormat() 
 	}
 	shardID := GetShardIDFromPaymentAddressBytes(txSendBackTokenVoteFailIns.PaymentAddress)
 	return []string{
-		strconv.Itoa(metadata.SendBackTokenVoteFailMeta),
+		strconv.Itoa(metadata.SendBackTokenVoteBoardFailMeta),
 		strconv.Itoa(int(shardID)),
 		string(content),
 	}, nil
@@ -37,13 +43,17 @@ func GetShardIDFromPaymentAddressBytes(paymentAddress privacy.PaymentAddress) by
 func (txSendBackTokenVoteFailIns *TxSendBackTokenVoteFailIns) BuildTransaction(
 	minerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
+	bcr metadata.BlockchainRetriever,
+	shardID byte,
 ) (metadata.Transaction, error) {
 	return NewSendBackTokenVoteFailTx(
+		txSendBackTokenVoteFailIns.BoardType,
 		minerPrivateKey,
 		db,
 		txSendBackTokenVoteFailIns.PaymentAddress,
 		txSendBackTokenVoteFailIns.Amount,
-		txSendBackTokenVoteFailIns.PropertyID,
+		bcr,
+		shardID,
 	)
 }
 
@@ -60,94 +70,68 @@ func NewSendBackTokenVoteFailIns(
 }
 
 func NewSendBackTokenVoteFailTx(
+	boardType common.BoardType,
 	minerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
 	paymentAddress privacy.PaymentAddress,
 	amount uint64,
-	propertyID common.Hash,
-	//<<<<<<< HEAD
-	//) (metadata.Transaction, error) {
-	//	txTokenVout := transaction.TxTokenVout{
-	//		Value:          amount,
-	//		PaymentAddress: paymentAddress,
-	//	}
-	//	txTokenData := transaction.TxTokenData{
-	//		Type:       transaction.CustomTokenInit,
-	//		Amount:     amount,
-	//		PropertyID: propertyID,
-	//		Vins:       []transaction.TxTokenVin{},
-	//		Vouts:      []transaction.TxTokenVout{txTokenVout},
-	//	}
-	//	newTx, err := NewVoteCustomTokenTx(
-	//		0,
-	//		&paymentAddress,
-	//		minerPrivateKey,
-	//		db,
-	//		metadata.NewSendBackTokenVoteFailMetadata(),
-	//		txTokenData,
-	//	)
-	//	return newTx, err
-	//=======
+	bcr metadata.BlockchainRetriever,
+	shardID byte,
 ) (metadata.Transaction, error) {
-	//==== TODO: create token params
-	// customTokenParamTx := &transaction.CustomTokenParamTx{
-	// PropertyID: propertyID.String(),
-	// PropertyName
-	// PropertySymbol
-	// Amount
-	// TokenTxType: transaction.CustomTokenMint,
-	// Receiver
-	// }
-	//====
-	// TODO: CALL DB
-	// data, err := blockchain.config.DataBase.ListCustomToken()
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// result := make(map[common.Hash]transaction.TxCustomToken)
-	// for _, txData := range data {
-	// 	hash := common.Hash{}
-	// 	hash.SetBytes(txData)
-	// 	_, blockHash, index, tx, err := blockchain.GetTransactionByHash(&hash)
-	// 	_ = blockHash
-	// 	_ = index
-	// 	if err != nil {
-	// 		return nil, NewBlockChainError(UnExpectedError, err)
-	// 	}
-	// 	txCustomToken := tx.(*transaction.TxCustomToken)
-	// 	result[txCustomToken.TxTokenData.PropertyID] = *txCustomToken
-	// }
-	//=======
-	// TODO: Init tx custom token
-	// tx := &transaction.TxCustomToken{}
-	// err := tx.Init(
-	// 	&senderKeySet.PrivateKey,
-	// 	nil,
-	// 	nil,
-	// 	0,
-	// 	customTokenParamTx,
-	// 	listCustomTokens,
-	// 	*rpcServer.config.Database,
-	// 	metaData,
-	// 	hasPrivacy,
-	// 	shardIDSender,
-	// )
-	//=======
-	// txTokenVout := transaction.TxTokenVout{
-	// 	Value:          amount,
-	// 	PaymentAddress: paymentAddress,
-	// }
-	// newTx := transaction.TxCustomToken{
-	// 	TxTokenData: transaction.TxTokenData{
-	// 		Type:       transaction.CustomTokenTransfer,
-	// 		Amount:     amount,
-	// 		PropertyID: propertyID,
-	// 		Vins:       []transaction.TxTokenVin{},
-	// 		Vouts:      []transaction.TxTokenVout{txTokenVout},
-	// 	},
-	// }
-	// newTx.SetMetadata(metadata.NewSendBackTokenVoteFailMetadata())
-	//Create: CustomTokenParamTx
-	return nil, nil
-	//>>>>>>> company/master
+
+	//create token params
+	customTokenParamTx := mintDCBTokenParam
+	if boardType == common.GOVBoard {
+		customTokenParamTx = mintGOVTokenParam
+	}
+	customTokenParamTx.Amount = amount
+
+	//CALL DB
+	listCustomTokens, err := GetListCustomTokens(db, bcr)
+	if err != nil {
+		return nil, err
+	}
+	//Init tx custom token
+	paymentInfo := privacy.PaymentInfo{
+		PaymentAddress: paymentAddress,
+		Amount:         amount,
+	}
+	txCustom := &transaction.TxCustomToken{}
+	err = txCustom.Init(
+		minerPrivateKey,
+		[]*privacy.PaymentInfo{&paymentInfo},
+		nil,
+		0,
+		&customTokenParamTx,
+		listCustomTokens,
+		db,
+		metadata.NewSendBackTokenVoteFailMetadata(),
+		false,
+		shardID,
+	)
+	return txCustom, err
+}
+
+func GetListCustomTokens(
+	db database.DatabaseInterface,
+	bcr metadata.BlockchainRetriever,
+) (map[common.Hash]transaction.TxCustomToken, error) {
+	data, err := db.ListCustomToken()
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[common.Hash]transaction.TxCustomToken)
+	for _, txData := range data {
+		hash := common.Hash{}
+		hash.SetBytes(txData)
+		_, blockHash, index, tx, err := bcr.GetTransactionByHash(&hash)
+		_ = blockHash
+		_ = index
+		if err != nil {
+			return nil, err
+		}
+		txCustomToken := tx.(*transaction.TxCustomToken)
+		result[txCustomToken.TxTokenData.PropertyID] = *txCustomToken
+	}
+	return result, nil
 }
