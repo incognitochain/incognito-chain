@@ -22,7 +22,7 @@ import (
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/constant-money/constant-chain/wallet"
 	libp2p "github.com/libp2p/go-libp2p-peer"
-	"github.com/patrickmn/go-cache"
+	cache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
 
@@ -1522,60 +1522,37 @@ func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
 }
 
 func (bc *BlockChain) processUpdateDCBConstitutionIns(inst []string) error {
-	updateConstitutionIns, err := frombeaconins.NewUpdateDCBConstitutionInsFromStr(inst)
-	if err != nil {
-		return err
-	}
-	boardType := common.DCBBoard
-	consitution := bc.GetConstitution(boardType)
-	nextConstitutionIndex := consitution.GetConstitutionIndex() + 1
-	err1 := bc.GetDatabase().TakeVoteTokenFromWinner(
-		boardType,
-		nextConstitutionIndex,
-		updateConstitutionIns.Voter.PaymentAddress,
-		updateConstitutionIns.Voter.AmountOfVote,
-	)
-	if err1 != nil {
-		return err1
-	}
-	err2 := bc.GetDatabase().SetNewProposalWinningVoter(
-		boardType,
-		nextConstitutionIndex,
-		updateConstitutionIns.Voter.PaymentAddress,
-	)
-	if err2 != nil {
-		return err2
-	}
-	bc.BestState.Beacon.processUpdateDCBProposalInstruction(*updateConstitutionIns)
+	//todo @constant-money
+	// updateConstitutionIns, err := frombeaconins.NewAcceptDCBBoardIns(inst,)
+	// if err != nil {
+	// 	return err
+	// }
+	// boardType := common.GOVBoard
+	// consitution := bc.GetConstitution(boardType)
+	// nextConstitutionIndex := consitution.GetConstitutionIndex() + 1
+	// err1 := bc.GetDatabase().TakeVoteTokenFromWinner(
+	// 	boardType,
+	// 	nextConstitutionIndex,
+	// 	updateConstitutionIns.Voter.PaymentAddress,
+	// 	updateConstitutionIns.Voter.AmountOfVote,
+	// )
+	// if err1 != nil {
+	// 	return err1
+	// }
+	// err2 := bc.GetDatabase().SetNewProposalWinningVoter(
+	// 	boardType,
+	// 	nextConstitutionIndex,
+	// 	updateConstitutionIns.Voter.PaymentAddress,
+	// )
+	// if err2 != nil {
+	// 	return err2
+	// }
+	// bc.BestState.Beacon.processUpdateGOVProposalInstruction(*updateConstitutionIns)
 	return nil
 }
 
 func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
-	updateConstitutionIns, err := frombeaconins.NewUpdateGOVConstitutionInsFromStr(inst)
-	if err != nil {
-		return err
-	}
-	boardType := common.GOVBoard
-	consitution := bc.GetConstitution(boardType)
-	nextConstitutionIndex := consitution.GetConstitutionIndex() + 1
-	err1 := bc.GetDatabase().TakeVoteTokenFromWinner(
-		boardType,
-		nextConstitutionIndex,
-		updateConstitutionIns.Voter.PaymentAddress,
-		updateConstitutionIns.Voter.AmountOfVote,
-	)
-	if err1 != nil {
-		return err1
-	}
-	err2 := bc.GetDatabase().SetNewProposalWinningVoter(
-		boardType,
-		nextConstitutionIndex,
-		updateConstitutionIns.Voter.PaymentAddress,
-	)
-	if err2 != nil {
-		return err2
-	}
-	bc.BestState.Beacon.processUpdateGOVProposalInstruction(*updateConstitutionIns)
+	//todo @constant-money
 	return nil
 }
 
@@ -1640,80 +1617,6 @@ func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
 //					return err
 //				}
 //			}
-//		}
-//	}
-//	return nil
-//}
-//
-//func (blockchain *BlockChain) UpdateVoteTokenHolderDB(block *Block) error {
-//	for _, tx := range block.Transactions {
-//		switch tx.GetMetadataType() {
-//		case metadata.SendInitDCBVoteTokenMeta:
-//			{
-//				meta := tx.GetMetadata().(*metadata.SendInitDCBVoteTokenMetadata)
-//				err := blockchain.config.DataBase.SendInitVoteToken(common.DCBBoard, block.Header.DCBGovernor.BoardIndex, meta.ReceiverPaymentAddress, meta.Amount)
-//				if err != nil {
-//					return err
-//				}
-//			}
-//		case metadata.SendInitGOVVoteTokenMeta:
-//			{
-//				meta := tx.GetMetadata().(*metadata.SendInitGOVVoteTokenMetadata)
-//				err := blockchain.config.DataBase.SendInitVoteToken(common.GOVBoard, block.Header.GOVGovernor.BoardIndex, meta.ReceiverPaymentAddress, meta.Amount)
-//				if err != nil {
-//					return err
-//				}
-//			}
-//
-//		}
-//	}
-//	return nil
-//}
-//
-//func (blockchain *BlockChain) ProcessVoteProposal(block *Block) error {
-//	nextDCBConstitutionIndex := uint32(block.Header.DCBConstitution.GetConstitutionIndex() + 1)
-//	nextGOVConstitutionIndex := uint32(block.Header.GOVConstitution.GetConstitutionIndex() + 1)
-//	for _, tx := range block.Transactions {
-//		meta := tx.GetMetadata()
-//		switch tx.GetMetadataType() {
-//		case metadata.SealedLv3DCBVoteProposalMeta:
-//			underlieMetadata := meta.(*metadata.SealedLv3DCBVoteProposalMetadata)
-//			blockchain.config.DataBase.AddVoteLv3ProposalDB(common.DCBBoard, nextDCBConstitutionIndex, underlieMetadata.Hash())
-//		case metadata.SealedLv2DCBVoteProposalMeta:
-//			underlieMetadata := meta.(*metadata.SealedLv2DCBVoteProposalMetadata)
-//			blockchain.config.DataBase.AddVoteLv1or2Proposal(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
-//		case metadata.SealedLv1DCBVoteProposalMeta:
-//			underlieMetadata := meta.(*metadata.SealedLv1DCBVoteProposalMetadata)
-//			blockchain.config.DataBase.AddVoteLv1or2Proposal(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
-//		case metadata.NormalDCBVoteProposalFromOwnerMeta:
-//			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromOwnerMetadata)
-//			blockchain.config.DataBase.AddVoteNormalProposalFromOwnerDB(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
-//		case metadata.NormalDCBVoteProposalFromSealerMeta:
-//			underlieMetadata := meta.(*metadata.NormalDCBVoteProposalFromSealerMetadata)
-//			blockchain.config.DataBase.AddNormalVoteProposalFromSealer(common.DCBBoard, nextDCBConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
-//		case metadata.AcceptDCBProposalMeta:
-//			underlieMetadata := meta.(*metadata.AcceptDCBProposalMetadata)
-//			blockchain.config.DataBase.TakeVoteTokenFromWinner(common.DCBBoard, nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
-//			blockchain.config.DataBase.SetNewProposalWinningVoter(common.DCBBoard, nextDCBConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
-//		case metadata.SealedLv3GOVVoteProposalMeta:
-//			underlieMetadata := meta.(*metadata.SealedLv3GOVVoteProposalMetadata)
-//			blockchain.config.DataBase.AddVoteLv3ProposalDB(common.GOVBoard, nextGOVConstitutionIndex, underlieMetadata.Hash())
-//		case metadata.SealedLv2GOVVoteProposalMeta:
-//			underlieMetadata := meta.(*metadata.SealedLv2GOVVoteProposalMetadata)
-//			blockchain.config.DataBase.AddVoteLv1or2Proposal(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.SealedLv2VoteProposalMetadata.PointerToLv3VoteProposal)
-//		case metadata.SealedLv1GOVVoteProposalMeta:
-//			underlieMetadata := meta.(*metadata.SealedLv1GOVVoteProposalMetadata)
-//			blockchain.config.DataBase.AddVoteLv1or2Proposal(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.SealedLv1VoteProposalMetadata.PointerToLv3VoteProposal)
-//		case metadata.NormalGOVVoteProposalFromOwnerMeta:
-//			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromOwnerMetadata)
-//			blockchain.config.DataBase.AddVoteNormalProposalFromOwnerDB(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromOwnerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromOwnerMetadata.VoteProposal.ToBytes())
-//		case metadata.NormalGOVVoteProposalFromSealerMeta:
-//			underlieMetadata := meta.(*metadata.NormalGOVVoteProposalFromSealerMetadata)
-//			blockchain.config.DataBase.AddNormalVoteProposalFromSealer(common.GOVBoard, nextGOVConstitutionIndex, &underlieMetadata.NormalVoteProposalFromSealerMetadata.PointerToLv3VoteProposal, underlieMetadata.NormalVoteProposalFromSealerMetadata.VoteProposal.ToBytes())
-//		case metadata.AcceptGOVProposalMeta:
-//			underlieMetadata := meta.(*metadata.AcceptGOVProposalMetadata)
-//			blockchain.config.DataBase.TakeVoteTokenFromWinner(common.GOVBoard, nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress, underlieMetadata.Voter.AmountOfVote)
-//			blockchain.config.DataBase.SetNewProposalWinningVoter(common.GOVBoard, nextGOVConstitutionIndex, underlieMetadata.Voter.PaymentAddress)
 //		}
 //	}
 //	return nil

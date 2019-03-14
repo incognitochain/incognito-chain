@@ -7,7 +7,6 @@ import (
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/metadata/frombeaconins"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/transaction"
 )
 
 type ConstitutionInfo struct {
@@ -97,10 +96,6 @@ func (helper GOVConstitutionHelper) CheckSubmitProposalType(tx metadata.Transact
 	return tx.GetMetadataType() == metadata.SubmitGOVProposalMeta
 }
 
-func (helper GOVConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transaction) (uint64, error) {
-	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
-}
-
 func (helper DCBConstitutionHelper) NewAcceptProposalIns(
 	txId *common.Hash,
 	voter component.Voter,
@@ -133,16 +128,6 @@ func (helper DCBConstitutionHelper) CreatePunishDecryptIns(paymentAddress *priva
 
 func (helper GOVConstitutionHelper) CreatePunishDecryptIns(paymentAddress *privacy.PaymentAddress) frombeaconins.InstructionFromBeacon {
 	return frombeaconins.NewPunishDecryptIns(helper.GetBoardType(), *paymentAddress)
-}
-
-func (helper DCBConstitutionHelper) GetSealerPaymentAddress(tx metadata.Transaction) []privacy.PaymentAddress {
-	meta := tx.GetMetadata().(*metadata.SealedLv3DCBVoteProposalMetadata)
-	return meta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddresses
-}
-
-func (helper GOVConstitutionHelper) GetSealerPaymentAddress(tx metadata.Transaction) []privacy.PaymentAddress {
-	meta := tx.GetMetadata().(*metadata.SealedLv3GOVVoteProposalMetadata)
-	return meta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddresses
 }
 
 func (helper DCBConstitutionHelper) NewRewardProposalSubmitterIns(chain *BlockChain, receiverAddress *privacy.PaymentAddress) (frombeaconins.InstructionFromBeacon, error) {
@@ -211,15 +196,6 @@ func (helper DCBConstitutionHelper) GetBoard(chain *BlockChain) metadata.Governo
 
 func (helper GOVConstitutionHelper) GetBoard(chain *BlockChain) metadata.GovernorInterface {
 	return chain.BestState.Beacon.StabilityInfo.GOVGovernor
-}
-
-func (helper DCBConstitutionHelper) GetAmountVoteTokenOfBoard(chain *BlockChain, paymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
-	value, _ := chain.config.DataBase.GetVoteTokenAmount(helper.GetBoardType(), boardIndex, paymentAddress)
-	return uint64(value)
-}
-func (helper GOVConstitutionHelper) GetAmountVoteTokenOfBoard(chain *BlockChain, paymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
-	value, _ := chain.config.DataBase.GetVoteTokenAmount(helper.GetBoardType(), boardIndex, paymentAddress)
-	return uint64(value)
 }
 
 func (helper DCBConstitutionHelper) GetAmountOfVoteToBoard(chain *BlockChain, candidatePaymentAddress privacy.PaymentAddress, voterPaymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
