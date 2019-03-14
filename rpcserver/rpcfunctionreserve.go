@@ -127,10 +127,9 @@ func (rpcServer RpcServer) handleConvertCSTToETHAmount(params interface{}, close
 	arrayParams := common.InterfaceSlice(params)
 	amount := uint64(arrayParams[0].(float64))
 	oracle := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.Oracle
-	milliEtherAmount := amount * oracle.Constant / oracle.ETH
+	cstValue := big.NewInt(int64(amount * oracle.Constant / 100)) // Amount is in cent Constant but price is per Constant
+	etherAmount := cstValue.Mul(cstValue, big.NewInt(common.WeiToEtherRatio))
+	etherAmount = etherAmount.Quo(etherAmount, big.NewInt(int64(oracle.ETH)))
 
-	// Convert MilliEther to Wei
-	etherAmount := big.NewInt(int64(milliEtherAmount))
-	etherAmount = etherAmount.Mul(etherAmount, big.NewInt(common.WeiToMilliEtherRatio))
 	return etherAmount.String(), nil
 }
