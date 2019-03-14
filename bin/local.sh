@@ -11,3 +11,4 @@ env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '-w' -o bootnode ../
 
 commit=`git show --summary --oneline | cut -d ' ' -f 1`
 docker build --build-arg commit=$commit . -t constant && echo "Commit: $commit"
+docker rmi -f $(docker images --filter "dangling=true" -q)

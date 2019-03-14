@@ -981,7 +981,7 @@ func (serverObj *Server) PushMessageToBeacon(msg wire.Message) error {
 	Logger.log.Debugf("Push msg to beacon")
 	peerConns := serverObj.connManager.GetPeerConnOfBeacon()
 	if len(peerConns) > 0 {
-		// fmt.Println(len(peerConns))
+		fmt.Println("BFT:", len(peerConns))
 		for _, peerConn := range peerConns {
 			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
 			peerConn.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_BEACON, nil)
