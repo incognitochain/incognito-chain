@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
@@ -93,7 +94,7 @@ func (tx *TxCustomTokenPrivacy) GetTxActualSize() uint64 {
 		tokenDataSize += meta.CalculateSize()
 	}
 
-	return normalTxSize + tokenDataSize/1024
+	return normalTxSize + uint64(math.Ceil(float64(tokenDataSize)/1024))
 }
 
 // Init -  build normal tx component and privacy custom token data

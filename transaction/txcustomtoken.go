@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
@@ -331,7 +332,6 @@ func (tx *TxCustomToken) GetTxActualSize() uint64 {
 
 	tokenDataSize := uint64(0)
 
-	// tokenDataSize += uint64(len(tx.TxTokenData.PropertyName))
 	tokenDataSize += uint64(len(tx.TxTokenData.PropertyName))
 	tokenDataSize += uint64(len(tx.TxTokenData.PropertyID))
 	tokenDataSize += 4 // for TxTokenData.Type
@@ -354,7 +354,7 @@ func (tx *TxCustomToken) GetTxActualSize() uint64 {
 		tokenDataSize += meta.CalculateSize()
 	}
 
-	return normalTxSize + tokenDataSize/1024
+	return normalTxSize + uint64(math.Ceil(float64(tokenDataSize)/1024))
 }
 
 // CreateTxCustomToken ...
@@ -504,6 +504,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 		}
 		txCustomToken.TxTokenData.Vouts = VoutsTemp
 	}
+	txCustomToken.Type = common.TxCustomTokenType
 
 	if !handled {
 		return NewTransactionErr(WrongTokenTxType, nil)
