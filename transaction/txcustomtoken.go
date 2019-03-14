@@ -393,6 +393,27 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 
 	// Add token data component
 	switch tokenParams.TokenTxType {
+	case CustomTokenMint:
+		{
+			handled = true
+			propertyID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+			//TODO: check dcb or gov
+			if err != nil {
+				return NewTransactionErr(UnexpectedErr, err)
+			}
+			//TODO: check sender?
+			txCustomToken.TxTokenData = TxTokenData{
+				PropertyID:     *propertyID,
+				Type:           tokenParams.TokenTxType,
+				PropertyName:   tokenParams.PropertyName,
+				PropertySymbol: tokenParams.PropertySymbol,
+				Vins:           nil,
+				Vouts:          nil,
+				Amount:         tokenParams.Amount,
+			}
+			//TODO: get vouts
+			txCustomToken.TxTokenData.Vouts = tokenParams.Receiver
+		}
 	case CustomTokenCrossShard:
 		{
 			handled = true
