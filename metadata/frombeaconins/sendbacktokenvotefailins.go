@@ -95,15 +95,10 @@ func NewSendBackTokenVoteFailTx(
 	if err != nil {
 		return nil, err
 	}
-	//Init tx custom token
-	paymentInfo := privacy.PaymentInfo{
-		PaymentAddress: paymentAddress,
-		Amount:         amount,
-	}
 	txCustom := &transaction.TxCustomToken{}
-	err = txCustom.Init(
+	err1 := txCustom.Init(
 		minerPrivateKey,
-		[]*privacy.PaymentInfo{&paymentInfo},
+		[]*privacy.PaymentInfo{},
 		nil,
 		0,
 		&customTokenParamTx,
@@ -113,8 +108,8 @@ func NewSendBackTokenVoteFailTx(
 		false,
 		shardID,
 	)
-	if err != nil {
-		return nil, err
+	if err1 != nil {
+		return nil, err1
 	}
 	txCustom.Type = common.TxCustomTokenType
 	return txCustom, nil
