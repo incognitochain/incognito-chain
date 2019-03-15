@@ -395,6 +395,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	switch tokenParams.TokenTxType {
 	case CustomTokenMint:
 		{
+			Logger.log.Error("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n")
 			handled = true
 			propertyID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 			//TODO: check dcb or gov
