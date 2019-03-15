@@ -82,6 +82,10 @@ func NewSendBackTokenVoteFailTx(
 
 	//create token params
 	customTokenParamTx := mintDCBTokenParam
+	customTokenParamTx.Receiver = []transaction.TxTokenVout{{
+		Value:          amount,
+		PaymentAddress: paymentAddress,
+	}}
 	if boardType == common.GOVBoard {
 		customTokenParamTx = mintGOVTokenParam
 	}
@@ -110,6 +114,9 @@ func NewSendBackTokenVoteFailTx(
 		false,
 		shardID,
 	)
+	if err != nil {
+		return nil, err
+	}
 	txCustom.Type = common.TxCustomTokenType
 	if err.(*transaction.TransactionError) != nil {
 		return txCustom, err
