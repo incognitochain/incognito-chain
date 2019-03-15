@@ -59,18 +59,6 @@ const (
 	VoteDCBBoardMeta
 	SubmitGOVProposalMeta
 	VoteGOVBoardMeta
-	SendInitDCBVoteTokenMeta
-	SendInitGOVVoteTokenMeta
-	SealedLv1DCBVoteProposalMeta
-	SealedLv2DCBVoteProposalMeta
-	SealedLv3DCBVoteProposalMeta
-	NormalDCBVoteProposalFromSealerMeta
-	NormalDCBVoteProposalFromOwnerMeta
-	SealedLv1GOVVoteProposalMeta
-	SealedLv2GOVVoteProposalMeta
-	SealedLv3GOVVoteProposalMeta
-	NormalGOVVoteProposalFromSealerMeta
-	NormalGOVVoteProposalFromOwnerMeta
 	RewardProposalWinnerMeta
 	RewardDCBProposalSubmitterMeta
 	RewardGOVProposalSubmitterMeta
@@ -78,7 +66,9 @@ const (
 	ShareRewardOldGOVBoardMeta
 	PunishDCBDecryptMeta
 	PunishGOVDecryptMeta
-	SendBackTokenVoteFailMeta
+	SendBackTokenVoteBoardFailMeta
+	NormalDCBVoteProposalMeta
+	NormalGOVVoteProposalMeta
 
 	// STAKING
 	ShardStakingMeta

@@ -2,11 +2,12 @@ package rpcserver
 
 import (
 	"fmt"
-	"github.com/constant-money/constant-chain/transaction"
-	"github.com/pkg/errors"
 	"log"
 	"net"
 	"os"
+
+	"github.com/constant-money/constant-chain/transaction"
+	"github.com/pkg/errors"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -131,18 +132,12 @@ var RpcHandler = map[string]commandHandler{
 	CreateRawVoteDCBBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
 	CreateAndSendVoteGOVBoardTransaction: RpcServer.handleCreateAndSendVoteGOVBoardTransaction,
 	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteGOVBoardTransaction,
-	GetAmountVoteToken:                   RpcServer.handleGetAmountVoteToken,
-	SetAmountVoteToken:                   RpcServer.handleSetAmountVoteToken,
 
 	// vote proposal
-	GetEncryptionFlag:                         RpcServer.handleGetEncryptionFlag,
-	SetEncryptionFlag:                         RpcServer.handleSetEncryptionFlag,
-	GetEncryptionLastBlockHeightFlag:          RpcServer.handleGetEncryptionLastBlockHeightFlag,
-	CreateAndSendSealLv3VoteProposal:          RpcServer.handleCreateAndSendSealLv3VoteProposalTransaction,
-	CreateAndSendSealLv2VoteProposal:          RpcServer.handleCreateAndSendSealLv2VoteProposalTransaction,
-	CreateAndSendSealLv1VoteProposal:          RpcServer.handleCreateAndSendSealLv1VoteProposalTransaction,
-	CreateAndSendNormalVoteProposalFromOwner:  RpcServer.handleCreateAndSendNormalVoteProposalFromOwnerTransaction,
-	CreateAndSendNormalVoteProposalFromSealer: RpcServer.handleCreateAndSendNormalVoteProposalFromSealerTransaction,
+	GetEncryptionFlag:                RpcServer.handleGetEncryptionFlag,
+	SetEncryptionFlag:                RpcServer.handleSetEncryptionFlag,
+	GetEncryptionLastBlockHeightFlag: RpcServer.handleGetEncryptionLastBlockHeightFlag,
+	CreateAndSendVoteProposal:        RpcServer.handleCreateAndSendVoteProposalTransaction,
 
 	// Submit Proposal:
 	CreateAndSendSubmitDCBProposalTx: RpcServer.handleCreateAndSendSubmitDCBProposalTransaction,
@@ -509,7 +504,7 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 				}
 			} else {
 				// Check privacy custom token param
-				customPrivacyTokenParam, _, err = rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
+				customPrivacyTokenParam, _, _, err = rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
 				if err.(*RPCError) != nil {
 					return nil, err.(*RPCError)
 				}

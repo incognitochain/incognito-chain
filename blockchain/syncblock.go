@@ -480,7 +480,7 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 	for shardID := range blockchain.syncStatus.Shards {
 		blks := blockchain.config.ShardPool[shardID].GetValidBlock()
 		for _, newBlk := range blks {
-			err := blockchain.InsertShardBlock(newBlk)
+			err := blockchain.InsertShardBlock(newBlk, false)
 			if err != nil {
 				Logger.log.Error(err)
 			}

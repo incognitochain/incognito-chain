@@ -123,6 +123,9 @@ type DatabaseInterface interface {
 	ListPrivacyCustomToken() ([][]byte, error)                          // get list all custom token which issued in network
 	PrivacyCustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) // from token id get all custom txs
 
+	StorePrivacyCustomTokenCrossShard(tokenID *common.Hash, tokenValue []byte) error // store custom token cross shard privacy
+	ListPrivacyCustomTokenCrossShard() ([][]byte, error)
+
 	// Loans
 	StoreLoanPayment(loanID []byte, principle uint64, interest uint64, deadline uint64) error
 	GetLoanPayment(loanID []byte) (principle uint64, interest uint64, deadline uint64, err error)
@@ -166,15 +169,8 @@ type DatabaseInterface interface {
 	GetTopMostVoteGovernor(boardType common.BoardType, currentBoardIndex uint32) (CandidateList, error)
 	NewIterator(*util.Range, *opt.ReadOptions) iterator.Iterator
 	GetKey(string, interface{}) []byte
-	SendInitVoteToken(boardType common.BoardType, boardIndex uint32, paymentAddress privacy.PaymentAddress, amount uint32) error
-	AddVoteLv3ProposalDB(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash) error
-	AddVoteLv1or2ProposalDB(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash) error
-	AddVoteNormalProposalFromOwnerDB(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash, voteValue []byte) error
-	AddVoteNormalProposalFromSealerDB(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash, voteValue []byte) error
-	TakeVoteTokenFromWinner(boardType common.BoardType, boardIndex uint32, voterPaymentAddress privacy.PaymentAddress, amountOfVote int32) error
+	AddVoteNormalProposalDB(boardType common.BoardType, constitutionIndex uint32, voteValue []byte) error
 	SetNewProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32, paymentAddress privacy.PaymentAddress) error
-	GetVoteTokenAmount(boardType common.BoardType, boardIndex uint32, paymentAddress privacy.PaymentAddress) (uint32, error)
-	SetVoteTokenAmount(boardType common.BoardType, boardIndex uint32, paymentAddress privacy.PaymentAddress, amount uint32) error
 	GetEncryptFlag(boardType common.BoardType) (byte, error)
 	SetEncryptFlag(boardType common.BoardType, flag byte)
 	GetEncryptionLastBlockHeight(boardType common.BoardType) (uint64, error)

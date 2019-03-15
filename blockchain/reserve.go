@@ -10,6 +10,7 @@ import (
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/metadata/frombeaconins"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
 )
@@ -72,7 +73,8 @@ func buildInstTypeAndAmountForContractingAction(
 		return "refund", 0
 	}
 	// redeemAmount := md.BurnedConstAmount * oracle.Constant / oracle.ETH
-	redeemAmount := common.CentInMilliEther(md.BurnedConstAmount*oracle.Constant, oracle.ETH)
+	cstValue := md.BurnedConstAmount * oracle.Constant / 100
+	redeemAmount := common.CentInMilliEther(cstValue, oracle.ETH)
 	accumulativeValues.constantsBurnedByETH += md.BurnedConstAmount
 	return "accepted", redeemAmount
 }
@@ -156,6 +158,7 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 	instType string,
 	issuingInfoStr string,
 	blkProducerPrivateKey *privacy.SpendingKey,
+	shardID byte,
 ) ([]metadata.Transaction, error) {
 	var issuingInfo IssuingInfo
 	fmt.Printf("[db] buildIssuingRes %s\n", issuingInfoStr)
@@ -185,28 +188,67 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 		return []metadata.Transaction{tx}, nil
 	} else if bytes.Equal(issuingInfo.TokenID[:], common.DCBTokenID[:]) {
 		meta := metadata.NewIssuingResponse(txReqID, metadata.IssuingResponseMeta)
-		txTokenVout := transaction.TxTokenVout{
-			Value:          issuingInfo.Amount,
-			PaymentAddress: issuingInfo.ReceiverAddress,
+		//paymentInfos := []*privacy.PaymentInfo{&privacy.PaymentInfo{
+		//	PaymentAddress: issuingInfo.ReceiverAddress,
+		//	Amount:         issuingInfo.Amount,
+		//}}
+		txCustom := &transaction.TxCustomToken{}
+		customTokenParamTx := &transaction.CustomTokenParamTx{
+			PropertyID:  common.DCBTokenID.String(),
+			TokenTxType: transaction.CustomTokenMint,
+			Amount:      issuingInfo.Amount,
+			Receiver: []transaction.TxTokenVout{
+				transaction.TxTokenVout{
+					Value:          issuingInfo.Amount,
+					PaymentAddress: issuingInfo.ReceiverAddress,
+				},
+			},
 		}
-		var propertyID [common.HashSize]byte
-		copy(propertyID[:], issuingInfo.TokenID[:])
-		txTokenData := transaction.TxTokenData{
-			Type:       transaction.CustomTokenInit,
-			Mintable:   true,
-			Amount:     issuingInfo.Amount,
-			PropertyID: common.Hash(propertyID),
-			Vins:       []transaction.TxTokenVin{},
-			Vouts:      []transaction.TxTokenVout{txTokenVout},
+		db := blockgen.chain.config.DataBase
+		listCustomTokens, err := frombeaconins.GetListCustomTokens(db, blockgen.chain)
+		if err != nil {
+			fmt.Printf("[db] build issuing resp get list err: %v\n", err)
+			return nil, err
 		}
-		txTokenData.PropertyName = txTokenData.PropertyID.String()
-		txTokenData.PropertySymbol = txTokenData.PropertyID.String()
-		resTx := &transaction.TxCustomToken{
-			TxTokenData: txTokenData,
+		err = txCustom.Init(
+			blkProducerPrivateKey,
+			[]*privacy.PaymentInfo{},
+			nil,
+			0,
+			customTokenParamTx,
+			listCustomTokens,
+			db,
+			meta,
+			false,
+			shardID,
+		)
+		if err.(*transaction.TransactionError) != nil {
+			fmt.Printf("[db] build issuing resp err: %v\n", err)
+			return nil, err
 		}
-		resTx.Type = common.TxCustomTokenType
-		resTx.SetMetadata(meta)
-		return []metadata.Transaction{resTx}, nil
+		//txTokenVout := transaction.TxTokenVout{
+		//	Value:          issuingInfo.Amount,
+		//	PaymentAddress: issuingInfo.ReceiverAddress,
+		//}
+		//var propertyID [common.HashSize]byte
+		//copy(propertyID[:], issuingInfo.TokenID[:])
+		//txTokenData := transaction.TxTokenData{
+		//	Type:       transaction.CustomTokenInit,
+		//	Mintable:   true,
+		//	Amount:     issuingInfo.Amount,
+		//	PropertyID: common.Hash(propertyID),
+		//	Vins:       []transaction.TxTokenVin{},
+		//	Vouts:      []transaction.TxTokenVout{txTokenVout},
+		//}
+		//txTokenData.PropertyName = txTokenData.PropertyID.String()
+		//txTokenData.PropertySymbol = txTokenData.PropertyID.String()
+		//resTx := &transaction.TxCustomToken{
+		//	TxTokenData: txTokenData,
+		//}
+		//resTx.SetMetadata(meta)
+		txCustom.Type = common.TxCustomTokenType
+		fmt.Printf("[db] build issuing resp success: %s\n", txCustom.Hash().String())
+		return []metadata.Transaction{txCustom}, nil
 	}
 	return []metadata.Transaction{}, nil
 }

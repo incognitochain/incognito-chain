@@ -395,7 +395,10 @@ func (rpcServer RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Requ
 	}
 	if jsonErr.(*RPCError) != nil && r.Method != "OPTIONS" {
 		// Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
-		log.Printf("RPC function process with err \n %+v", jsonErr)
+		fmt.Println(request.Method)
+		if request.Method != GetTransactionByHash {
+			log.Printf("RPC function process with err \n %+v", jsonErr)
+		}
 	}
 	// Marshal the response.
 	msg, err := rpcServer.createMarshalledReply(responseID, result, jsonErr)

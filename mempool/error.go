@@ -14,6 +14,7 @@ const (
 	RejectDuplicateStakeTx
 	RejectVersion
 	RejectInvalidFee
+	RejectInvalidSize
 	CanNotCheckDoubleSpend
 	DatabaseError
 	ShardToBeaconBoolError

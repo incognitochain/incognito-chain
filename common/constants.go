@@ -2,7 +2,6 @@ package common
 
 const (
 	EmptyString          = ""
-	PubKeyLength         = 33
 	PaymentAddressLength = 66
 	ZeroByte             = byte(0x00)
 	DateOutputFormat     = "2006-01-02T15:04:05.999999"
@@ -13,13 +12,14 @@ const (
 	TxSalaryType             = "s"  // salary tx(gov pay salary for block producer)
 	TxCustomTokenType        = "t"  // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
+	MaxTxSize                = 100  // unit KB = 100KB
 )
 
 // for mining consensus
 const (
-	DurationOfDCBBoard = 6       //number of block one DCB board in charge
-	DurationOfGOVBoard = 1000    //number of block one GOV board in charge
-	MaxBlockSize       = 5000000 //byte 5MB
+	DurationOfDCBBoard = 6    //number of block one DCB board in charge
+	DurationOfGOVBoard = 1000 //number of block one GOV board in charge
+	MaxBlockSize       = 2000 //unit kilobytes = 2 Megabyte
 	MaxTxsInBlock      = 1000
 	MinTxsInBlock      = 10                   // minium txs for block to get immediate process (meaning no wait time)
 	MinBlockWaitTime   = 2                    // second
@@ -35,6 +35,10 @@ const (
 	MaximumProposalExplainationLength = 1000
 	NumberOfDCBGovernors              = 3
 	NumberOfGOVGovernors              = 3
+	DCBGovernorsLowerBound            = 3
+	DCBGovernorsUpperBound            = 6
+	GOVGovernorsLowerBound            = 3
+	GOVGovernorsUpperBound            = 6
 	EncryptionOnePhraseDuration       = 5
 	RewardProposalSubmitter           = 500
 	BasePercentage                    = 10000
@@ -109,4 +113,5 @@ const (
 // Units converter
 const (
 	WeiToMilliEtherRatio = int64(1000000000000000)
+	WeiToEtherRatio      = int64(1000000000000000000)
 )
