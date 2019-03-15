@@ -2,8 +2,9 @@ package frombeaconins
 
 import (
 	"encoding/json"
-	"github.com/constant-money/constant-chain/transaction"
 	"strconv"
+
+	"github.com/constant-money/constant-chain/transaction"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
@@ -110,7 +111,10 @@ func NewSendBackTokenVoteFailTx(
 		shardID,
 	)
 	txCustom.Type = common.TxCustomTokenType
-	return txCustom, err
+	if err.(*transaction.TransactionError) != nil {
+		return txCustom, err
+	}
+	return txCustom, nil
 }
 
 func GetListCustomTokens(
