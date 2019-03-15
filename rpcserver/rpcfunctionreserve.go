@@ -104,22 +104,16 @@ func (rpcServer RpcServer) handleGetContractingStatus(params interface{}, closeC
 func (rpcServer RpcServer) handleConvertETHToDCBTokenAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	amountStr := arrayParams[0].(string)
-	// Convert amount to MilliEther
 	amount := big.NewInt(0)
 	amount, ok := amount.SetString(amountStr, 10)
 	if !ok {
 		return nil, NewRPCError(ErrRPCParse, errors.Errorf("Error parsing amount: %s", amountStr))
 	}
 	oracle := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.Oracle
-	amount = amount.Quo(amount, big.NewInt(common.WeiToMilliEtherRatio))
-	if !amount.IsUint64() {
-		return nil, NewRPCError(ErrRPCParse, errors.New("Amount invalid"))
-	}
-	depositedAmount := amount.Uint64()
-
-	// Calculate #DCB tokens
-	dcbTokenAmount := depositedAmount * oracle.ETH / oracle.DCBToken
-	return dcbTokenAmount, nil
+	amountValue := amount.Mul(amount, big.NewInt(int64(oracle.ETH)))
+	dcbTokenAmount := amountValue.Quo(amountValue, big.NewInt(int64(oracle.DCBToken)))
+	dcbTokenAmount = dcbTokenAmount.Quo(dcbTokenAmount, big.NewInt(common.WeiToEtherRatio))
+	return dcbTokenAmount.Uint64(), nil
 }
 
 //  handleConvertCSTToETHAmount receives amount of CST and returns number of ETH (in Wei) at current price
@@ -127,10 +121,9 @@ func (rpcServer RpcServer) handleConvertCSTToETHAmount(params interface{}, close
 	arrayParams := common.InterfaceSlice(params)
 	amount := uint64(arrayParams[0].(float64))
 	oracle := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.Oracle
-	milliEtherAmount := amount * oracle.Constant / oracle.ETH
+	cstValue := big.NewInt(int64(amount * oracle.Constant / 100)) // Amount is in cent Constant but price is per Constant
+	etherAmount := cstValue.Mul(cstValue, big.NewInt(common.WeiToEtherRatio))
+	etherAmount = etherAmount.Quo(etherAmount, big.NewInt(int64(oracle.ETH)))
 
-	// Convert MilliEther to Wei
-	etherAmount := big.NewInt(int64(milliEtherAmount))
-	etherAmount = etherAmount.Mul(etherAmount, big.NewInt(common.WeiToMilliEtherRatio))
 	return etherAmount.String(), nil
 }
