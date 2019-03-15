@@ -113,4 +113,5 @@ const (
 // Units converter
 const (
 	WeiToMilliEtherRatio = int64(1000000000000000)
+	WeiToEtherRatio      = int64(1000000000000000000)
 )
