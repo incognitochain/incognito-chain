@@ -43,10 +43,13 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		return nil, err
 	}
 	//======Get Transaction For new Block================
-	txsToAdd, err := blockgen.getTransactionForNewBlock(payToAddress, privatekey, shardID, blockgen.chain.config.DataBase, beaconBlocks)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, err
+	txsToAdd, err1 := blockgen.getTransactionForNewBlock(payToAddress, privatekey, shardID, blockgen.chain.config.DataBase, beaconBlocks)
+	for i, tx1 := range txsToAdd {
+		Logger.log.Warn(i, tx1.GetType(), tx1.GetMetadata(), "\n")
+	}
+	if err1 != nil {
+		Logger.log.Error(err1, reflect.TypeOf(err1), reflect.ValueOf(err1))
+		return nil, err1
 	}
 	//======Get Cross output coin from other shard=======
 	crossTransactions, crossTxTokenData := blockgen.getCrossShardData(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight, crossShards)
@@ -99,6 +102,9 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 			Instructions:      instructions,
 			Transactions:      make([]metadata.Transaction, 0),
 		},
+	}
+	for i, tx1 := range txsToAdd {
+		Logger.log.Warn(i, tx1.GetType(), tx1.GetMetadata(), "\n")
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
@@ -200,6 +206,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 		return nil, err
 	}
 	for _, tx := range divTxs {
+		Logger.log.Warn(tx, "-----+++++++++++++++\n")
 		if tx != nil {
 			txsToAdd = append(txsToAdd, tx)
 		}
@@ -207,6 +214,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 
 	// Process stability tx, create response txs if needed
 	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey)
+	Logger.log.Error(stabilityResponseTxs, "-----------------------------\n")
 	if err != nil {
 		return nil, err
 	}
