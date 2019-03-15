@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
@@ -338,10 +339,12 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 						Logger.log.Error("Here, why?", err.Error(), "\n")
 						return nil, err
 					}
-					txs, err := sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, blockgen.chain, shardID)
-					if err != nil {
-						Logger.log.Error("Here, why2?", err.Error(), "\n")
-						return nil, err
+
+					txs, err1 := sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, blockgen.chain, shardID)
+
+					if err1 != nil {
+						Logger.log.Error("Here, why?????????", err1, reflect.TypeOf(err1), reflect.ValueOf(err1), "\n")
+						return nil, err1
 					}
 					resTxs = append(resTxs, txs)
 				case metadata.ShareRewardOldDCBBoardMeta, metadata.ShareRewardOldGOVBoardMeta:
