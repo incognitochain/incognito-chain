@@ -26,8 +26,8 @@ const (
 	MainetName         = "mainnet"
 	MainnetDefaultPort = "9333"
 
-	MainNetShardCommitteeSize  = 1
-	MainNetBeaconCommitteeSize = 1
+	MainNetShardCommitteeSize  = 3
+	MainNetBeaconCommitteeSize = 3
 	MainNetActiveShards        = 2
 
 	//board and proposal parameters
@@ -64,8 +64,8 @@ const (
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 
-	TestNetShardCommitteeSize  = 1
-	TestNetBeaconCommitteeSize = 1
+	TestNetShardCommitteeSize  = 3
+	TestNetBeaconCommitteeSize = 3
 	TestNetActiveShards        = 2
 
 	//board and proposal parameters
