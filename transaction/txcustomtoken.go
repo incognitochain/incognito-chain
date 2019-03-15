@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
@@ -12,7 +13,7 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
 	"github.com/constant-money/constant-chain/wallet"
 )
 
@@ -128,8 +129,11 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 	}
 	if customTokenTx.Metadata != nil {
 		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(customTokenTx, bcr, shardID, db)
-		if err != nil || !isContinued {
+		if err != nil {
 			return NewTransactionErr(UnexpectedErr, err)
+		}
+		if !isContinued {
+			return nil
 		}
 	}
 
@@ -277,6 +281,12 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 		}
 		return true
 	}
+
+	if customTokenTx.TxTokenData.Type == CustomTokenMint {
+		// TODO(@0xsirrush): validate for this type
+		return true
+	}
+
 	//Process CustomToken Transfer
 	ok := customTokenTx.getListUTXOFromTxCustomToken(bcr)
 	if !ok {
@@ -332,7 +342,6 @@ func (tx *TxCustomToken) GetTxActualSize() uint64 {
 	tokenDataSize := uint64(0)
 
 	tokenDataSize += uint64(len(tx.TxTokenData.PropertyName))
-	tokenDataSize += uint64(len(tx.TxTokenData.PropertyName))
 	tokenDataSize += uint64(len(tx.TxTokenData.PropertyID))
 	tokenDataSize += 4 // for TxTokenData.Type
 
@@ -354,7 +363,7 @@ func (tx *TxCustomToken) GetTxActualSize() uint64 {
 		tokenDataSize += meta.CalculateSize()
 	}
 
-	return normalTxSize + tokenDataSize
+	return normalTxSize + uint64(math.Ceil(float64(tokenDataSize)/1024))
 }
 
 // CreateTxCustomToken ...
@@ -393,6 +402,27 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 
 	// Add token data component
 	switch tokenParams.TokenTxType {
+	case CustomTokenMint:
+		{
+			handled = true
+			propertyID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+			//TODO: check dcb or gov
+			if err != nil {
+				return NewTransactionErr(UnexpectedErr, err)
+			}
+			//TODO: check sender?
+			txCustomToken.TxTokenData = TxTokenData{
+				PropertyID:     *propertyID,
+				Type:           tokenParams.TokenTxType,
+				PropertyName:   tokenParams.PropertyName,
+				PropertySymbol: tokenParams.PropertySymbol,
+				Vins:           nil,
+				Vouts:          nil,
+				Amount:         tokenParams.Amount,
+			}
+			//TODO: get vouts
+			txCustomToken.TxTokenData.Vouts = tokenParams.Receiver
+		}
 	case CustomTokenCrossShard:
 		{
 			handled = true
@@ -483,6 +513,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 		}
 		txCustomToken.TxTokenData.Vouts = VoutsTemp
 	}
+	txCustomToken.Type = common.TxCustomTokenType
 
 	if !handled {
 		return NewTransactionErr(WrongTokenTxType, nil)
