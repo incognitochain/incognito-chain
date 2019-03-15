@@ -1,6 +1,7 @@
 package jsonresult
 
 import (
+	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/transaction"
 )
@@ -29,6 +30,15 @@ func (customToken *CustomToken) InitPrivacy(obj transaction.TxCustomTokenPrivacy
 	customToken.Name = obj.TxTokenPrivacyData.PropertyName
 	customToken.Amount = obj.TxTokenPrivacyData.Amount
 	customToken.Image = common.Render(obj.TxTokenPrivacyData.PropertyID[:])
+	customToken.IsPrivacy = true
+}
+
+func (customToken *CustomToken) InitPrivacyForCrossShard(obj blockchain.CrossShardTokenPrivacyMetaData) {
+	customToken.ID = obj.TokenID.String()
+	customToken.Symbol = obj.PropertySymbol
+	customToken.Name = obj.PropertyName
+	customToken.Amount = obj.Amount
+	customToken.Image = common.Render(obj.TokenID[:])
 	customToken.IsPrivacy = true
 }
 

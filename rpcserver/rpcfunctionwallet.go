@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/transaction"
 	"log"
 	"math/rand"
 	"time"
+
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/transaction"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -370,7 +371,7 @@ func (rpcServer RpcServer) handleListCustomToken(params interface{}, closeChan <
 }
 
 func (rpcServer RpcServer) handleListPrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	temps, err := rpcServer.config.BlockChain.ListPrivacyCustomToken()
+	temps, listCustomTokenCrossShard, err := rpcServer.config.BlockChain.ListPrivacyCustomToken()
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -378,6 +379,11 @@ func (rpcServer RpcServer) handleListPrivacyCustomToken(params interface{}, clos
 	for _, token := range temps {
 		item := jsonresult.CustomToken{}
 		item.InitPrivacy(token)
+		result.ListCustomToken = append(result.ListCustomToken, item)
+	}
+	for _, token := range listCustomTokenCrossShard {
+		item := jsonresult.CustomToken{}
+		item.InitPrivacyForCrossShard(token)
 		result.ListCustomToken = append(result.ListCustomToken, item)
 	}
 	return result, nil

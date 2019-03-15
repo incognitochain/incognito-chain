@@ -58,18 +58,10 @@ func (txShareRewardOldBoardMetadataIns *TxShareRewardOldBoardMetadataIns) BuildT
 	minerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
 ) (metadata.Transaction, error) {
-	tx := transaction.Tx{}
 	rewardShareOldBoardMeta := metadata.NewShareRewardOldBoardMetadata(
 		txShareRewardOldBoardMetadataIns.chairPaymentAddress,
 		txShareRewardOldBoardMetadataIns.voterPaymentAddress,
 		txShareRewardOldBoardMetadataIns.boardType,
-	)
-	tx.InitTxSalary(
-		txShareRewardOldBoardMetadataIns.amountOfCoin,
-		&txShareRewardOldBoardMetadataIns.voterPaymentAddress,
-		minerPrivateKey,
-		db,
-		rewardShareOldBoardMeta,
 	)
 	var propertyID common.Hash
 	if txShareRewardOldBoardMetadataIns.boardType == common.DCBBoard {
@@ -85,9 +77,41 @@ func (txShareRewardOldBoardMetadataIns *TxShareRewardOldBoardMetadataIns) BuildT
 		Vouts:      []transaction.TxTokenVout{},
 	}
 
+	txCustomToken, err := NewVoteCustomTokenTx(
+		txShareRewardOldBoardMetadataIns.amountOfCoin,
+		&txShareRewardOldBoardMetadataIns.voterPaymentAddress,
+		minerPrivateKey,
+		db,
+		rewardShareOldBoardMeta,
+		txTokenData,
+	)
+
+	return txCustomToken, err
+}
+
+func NewVoteCustomTokenTx(
+	salary uint64,
+	paymentAddress *privacy.PaymentAddress,
+	minerPrivateKey *privacy.SpendingKey,
+	db database.DatabaseInterface,
+	meta metadata.Metadata,
+	txTokenData transaction.TxTokenData,
+) (metadata.Transaction, error) {
+	tx := transaction.Tx{}
+	err := tx.InitTxSalary(
+		salary,
+		paymentAddress,
+		minerPrivateKey,
+		db,
+		meta,
+	)
+	if err != nil {
+		return nil, err
+	}
 	txCustomToken := transaction.TxCustomToken{
 		Tx:          tx,
 		TxTokenData: txTokenData,
 	}
+	txCustomToken.Type = common.TxCustomTokenType
 	return &txCustomToken, nil
 }

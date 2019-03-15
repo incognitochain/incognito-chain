@@ -22,6 +22,6 @@ func (SendBackTokenVoteFailMetadata) ValidateMetadataByItself() bool {
 
 func NewSendBackTokenVoteFailMetadata() *SendBackTokenVoteFailMetadata {
 	return &SendBackTokenVoteFailMetadata{
-		MetadataBase: *NewMetadataBase(SendBackTokenVoteFailMeta),
+		MetadataBase: *NewMetadataBase(SendBackTokenVoteBoardFailMeta),
 	}
 }

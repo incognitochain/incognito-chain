@@ -43,7 +43,11 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		return nil, err
 	}
 	//======Get Transaction For new Block================
-	txsToAdd := blockgen.getTransactionForNewBlock(payToAddress, privatekey, shardID, blockgen.chain.config.DataBase, beaconBlocks)
+	txsToAdd, err := blockgen.getTransactionForNewBlock(payToAddress, privatekey, shardID, blockgen.chain.config.DataBase, beaconBlocks)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
+	}
 	//======Get Cross output coin from other shard=======
 	crossTransactions, crossTxTokenData := blockgen.getCrossShardData(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight, crossShards)
 	crossTxTokenTransactions, _ := blockgen.chain.createCustomTokenTxForCrossShard(privatekey, crossTxTokenData, shardID)
@@ -177,7 +181,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 /*
 	Get Transaction For new Block
 */
-func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte, db database.DatabaseInterface, beaconBlocks []*BeaconBlock) []metadata.Transaction {
+func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte, db database.DatabaseInterface, beaconBlocks []*BeaconBlock) ([]metadata.Transaction, error) {
 	txsToAdd, txToRemove, _ := blockgen.getPendingTransaction(shardID)
 	if len(txsToAdd) == 0 {
 		Logger.log.Info("Creating empty block...")
@@ -190,7 +194,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 	// Process new dividend proposal and build new dividend payment txs
 	divTxs, err := blockgen.buildDividendPaymentTxs(privatekey, shardID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	for _, tx := range divTxs {
 		if tx != nil {
@@ -201,7 +205,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 	// Process stability tx, create response txs if needed
 	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	txsToAdd = append(txsToAdd, stabilityResponseTxs...)
 
@@ -215,10 +219,10 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 	//}
 	stabilityResponseTxs, err = blockgen.buildStabilityResponseTxsFromInstructions(beaconBlocks, privatekey, shardID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	txsToAdd = append(txsToAdd, stabilityResponseTxs...)
-	return txsToAdd
+	return txsToAdd, nil
 }
 
 /*
@@ -360,6 +364,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 	if !isEmpty {
 		panic("TempTxPool Is not Empty")
 	}
+	currentSize := uint64(0)
 	for _, txDesc := range sourceTxns {
 		tx := txDesc.Tx
 		tempTxDesc, err := blockgen.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
@@ -369,6 +374,12 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 			continue
 		}
 		totalFee += tx.GetTxFee()
+
+		tempSize := tempTx.GetTxActualSize()
+		if currentSize+tempSize >= common.MaxBlockSize {
+			break
+		}
+		currentSize += tempSize
 		txsToAdd = append(txsToAdd, tempTx)
 		if len(txsToAdd) == common.MaxTxsInBlock {
 			break

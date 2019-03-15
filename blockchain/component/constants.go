@@ -1,16 +1,13 @@
 package component
 
 const (
-	SealedLv1Or2VoteProposalIns = 100 + iota
-	SealedLv3VoteProposalIns
-	NormalVoteProposalFromSealerIns
-	NormalVoteProposalFromOwnerIns
+	NormalVoteProposalIns = 100 + iota
 	PunishDecryptIns
 	NewDCBConstitutionIns
 	NewGOVConstitutionIns
 	UpdateDCBConstitutionIns
 	UpdateGOVConstitutionIns
-	VoteDCBBoardIns
+	VoteBoardIns
 	VoteGOVBoardIns
 
 	AcceptDCBProposalIns

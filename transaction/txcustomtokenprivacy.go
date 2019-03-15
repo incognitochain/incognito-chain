@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
 )
 
 // TxCustomTokenPrivacy is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -93,7 +94,7 @@ func (tx *TxCustomTokenPrivacy) GetTxActualSize() uint64 {
 		tokenDataSize += meta.CalculateSize()
 	}
 
-	return normalTxSize + tokenDataSize
+	return normalTxSize + uint64(math.Ceil(float64(tokenDataSize)/1024))
 }
 
 // Init -  build normal tx component and privacy custom token data
@@ -106,6 +107,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
 	hasPrivacyConst bool,
 	shardID byte,
+	listCustomTokenCrossShard map[common.Hash]bool,
 ) *TransactionError {
 	var err error
 	// init data for tx constant for fee
@@ -185,6 +187,12 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 					return NewTransactionErr(UnexpectedErr, errors.New("this token is existed in network"))
 				}
 			}
+			for key, _ := range listCustomTokenCrossShard {
+				if newHashInitToken.String() == key.String() {
+					fmt.Println("INIT Tx Custom Token Privacy/ Existed", key, key.String() == newHashInitToken.String())
+					return NewTransactionErr(UnexpectedErr, errors.New("this token is existed in network via cross shard"))
+				}
+			}
 			txCustomToken.TxTokenPrivacyData.PropertyID = newHashInitToken
 			Logger.log.Infof("A new token privacy wil be issued with ID: %+v", txCustomToken.TxTokenPrivacyData.PropertyID.String())
 		}
@@ -196,7 +204,9 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			temp := Tx{}
 			propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 			if _, ok := listCustomTokens[*propertyID]; !ok {
-				return NewTransactionErr(UnexpectedErr, errors.New("invalid Token ID"))
+				if _, ok := listCustomTokenCrossShard[*propertyID]; !ok {
+					return NewTransactionErr(UnexpectedErr, errors.New("invalid Token ID"))
+				}
 			}
 			Logger.log.Infof("Token %+v wil be transfered with", propertyID)
 			txCustomToken.TxTokenPrivacyData = TxTokenPrivacyData{
