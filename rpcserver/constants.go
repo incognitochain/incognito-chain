@@ -128,6 +128,7 @@ const (
 	ConvertCSTToETHAmount           = "convertcsttoethamount"
 	GetRaiseReserveInfo             = "getraisereserveinfo"
 	GetSpendReserveInfo             = "getspendreserveinfo"
+	ConvertUSDToDCBTokenAmount      = "convertusdtodcbtokenamount"
 
 	// vote
 	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"

@@ -185,6 +185,7 @@ func (db *db) AddVoteLv1or2ProposalDB(boardType common.BoardType, constitutionIn
 }
 
 func (db *db) AddVoteNormalProposalDB(boardType common.BoardType, constitutionIndex uint32, voteValue []byte) error {
+	//todo
 	keyOwner := GetKeyThreePhraseCryptoOwner(boardType, constitutionIndex)
 	ok, err := db.HasValue(keyOwner)
 	if err != nil {
@@ -261,4 +262,9 @@ func (db *db) GetBoardVoterList(boardType common.BoardType, candidatePaymentAddr
 		listVoter = append(listVoter, *candidatePaymentAddress)
 	}
 	return listVoter
+}
+
+func (db *db) GetListSupporters(boardType common.BoardType, candidateAddress privacy.PaymentAddress) ([]*privacy.PaymentAddress, error) {
+	// todo @jackalope
+	return nil, nil
 }
