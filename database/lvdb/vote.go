@@ -185,6 +185,7 @@ func (db *db) AddVoteLv1or2ProposalDB(boardType common.BoardType, constitutionIn
 }
 
 func (db *db) AddVoteNormalProposalDB(boardType common.BoardType, constitutionIndex uint32, voteValue []byte) error {
+	//todo
 	keyOwner := GetKeyThreePhraseCryptoOwner(boardType, constitutionIndex)
 	ok, err := db.HasValue(keyOwner)
 	if err != nil {
