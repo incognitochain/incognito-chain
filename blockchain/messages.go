@@ -65,7 +65,9 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 				if blockchain.BestState.Shard[newBlk.Header.ShardID].ShardHeight == newBlk.Header.Height-1 {
 					err = blockchain.InsertShardBlock(newBlk, false)
 					if err != nil {
-						Logger.log.Error(err)
+						if err.(*BlockChainError).Code != -26 {
+							Logger.log.Error(err)
+						}
 						return
 					}
 				} else {
@@ -89,7 +91,9 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 				if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
 					err = blockchain.InsertBeaconBlock(newBlk, false)
 					if err != nil {
-						Logger.log.Error(err)
+						if err.(*BlockChainError).Code != -26 {
+							Logger.log.Error(err)
+						}
 						return
 					}
 				} else {
@@ -124,8 +128,10 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 
 		from, to, err := blockchain.config.ShardToBeaconPool.AddShardToBeaconBlock(block)
 		if err != nil {
-			Logger.log.Error(err)
-			return
+			if err.Error() != "receive old block" && err.Error() != "receive duplicate block" {
+				Logger.log.Error(err)
+				return
+			}
 		}
 		if from != 0 && to != 0 {
 			fmt.Printf("Message/SyncBlkShardToBeacon, from %+v to %+v \n", from, to)
@@ -143,6 +149,9 @@ func (blockchain *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {
 	}
 
 	if err != nil {
-		Logger.log.Error(err)
+		if err.Error() != "receive old block" && err.Error() != "receive duplicate block" {
+			Logger.log.Error(err)
+			return
+		}
 	}
 }
