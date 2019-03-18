@@ -64,7 +64,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 	if err := shardBestState.Update(block, beaconBlocks); err != nil {
 		return err
 	}
-	fmt.Println("Shard Process/Insert Shard Block: AFTER", shardBestState)
+	// fmt.Println("Shard Process/Insert Shard Block: AFTER", shardBestState)
 	//========Post verififcation: verify new beaconstate with corresponding block
 	if err := shardBestState.VerifyPostProcessingShardBlock(block, shardID); err != nil {
 		return err
@@ -139,7 +139,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 	blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.BestState.Shard[shardID].BestCrossShard)
 	expectedHeight, _ := blockchain.config.CrossShardPool[shardID].UpdatePool()
 	for fromShardID, height := range expectedHeight {
-		fmt.Printf("Shard %+v request CrossShardBlock with Height %+v from shard %+v ", shardID, height, fromShardID)
+		// fmt.Printf("Shard %+v request CrossShardBlock with Height %+v from shard %+v \n", shardID, height, fromShardID)
 		blockchain.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, shardID, "")
 	}
 
@@ -684,7 +684,7 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(txs []metadata.Trans
 	}
 	index := 0
 	salaryCount := 0
-	fmt.Println("TempTxPool", blockChain.config.TempTxPool)
+	// fmt.Println("TempTxPool", blockChain.config.TempTxPool)
 
 	for _, tx := range txs {
 		if !tx.IsSalaryTx() {

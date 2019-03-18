@@ -359,7 +359,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 
 	//TODO: sort transaction base on fee and check limit block size
 	// StartingPriority, fee, size, time
-	fmt.Println("TempTxPool", reflect.TypeOf(blockgen.chain.config.TempTxPool))
+	// fmt.Println("TempTxPool", reflect.TypeOf(blockgen.chain.config.TempTxPool))
 	isEmpty := blockgen.chain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
 		panic("TempTxPool Is not Empty")
