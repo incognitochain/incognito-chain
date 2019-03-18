@@ -584,7 +584,7 @@ func (tx *Tx) CheckTransactionFee(minFeePerKbTx uint64) bool {
 		return tx.Metadata.CheckTransactionFee(tx, minFeePerKbTx)
 	}
 	fullFee := minFeePerKbTx * tx.GetTxActualSize()
-	return !(tx.Fee < fullFee)
+	return tx.Fee >= fullFee
 }
 
 func (tx *Tx) IsSalaryTx() bool {
