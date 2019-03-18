@@ -735,8 +735,14 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 	}
 	// check Type is normal or salary tx
 	if txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType && txN.Type != common.TxCustomTokenType && txN.Type != common.TxCustomTokenPrivacyType { // only 1 byte
-		return false, errors.New("Wrong tx type")
+		return false, errors.New("wrong tx type")
 	}
+
+	// check info field
+	if len(txN.Info) > 512 {
+		return false, errors.New("wrong tx info length")
+	}
+
 	return true, nil
 }
 
