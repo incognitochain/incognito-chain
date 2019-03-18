@@ -328,6 +328,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					}
 					resTxs = append(resTxs, txs...)
 
+					// todo @0xjackalope move meta to ins?
 				case metadata.SendBackTokenVoteBoardFailMeta:
 					sendBackTokenVoteFail := frombeaconins.TxSendBackTokenVoteFailIns{}
 					err := json.Unmarshal([]byte(l[2]), &sendBackTokenVoteFail)
