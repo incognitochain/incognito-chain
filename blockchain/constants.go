@@ -38,6 +38,7 @@ const (
 	MainnetInitGovToken               = 10000
 	MainnetInitCmBToken               = 10000
 	MainnetInitBondToken              = 10000
+	MainnetFeePerTxKb                 = 1
 	MainnetGenesisblockPaymentAddress = "1UuyYcHgVFLMd8Qy7T1ZWRmfFvaEgogF7cEsqY98ubQjoQUy4VozTqyfSNjkjhjR85C6GKBmw1JKekgMwCeHtHex25XSKwzb9QPQ2g6a3"
 	// ------------- end Mainnet --------------------------------------
 )
@@ -76,6 +77,7 @@ const (
 	TestnetInitGovToken               = 10000
 	TestnetInitCmBToken               = 10000
 	TestnetInitBondToken              = 10000
+	TestnetFeePerTxKb                 = 1
 	TestnetGenesisBlockPaymentAddress = "1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba"
 )
 
