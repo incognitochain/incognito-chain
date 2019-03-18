@@ -17,7 +17,7 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
 	"github.com/constant-money/constant-chain/wallet"
 )
 
@@ -139,14 +139,15 @@ func (tx *Tx) Init(
 	tx.Type = common.TxNormalType
 	Logger.log.Infof("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(inputCoins), fee, hasPrivacy)
 
-	if len(inputCoins) == 0 && len(paymentInfo) == 0 && fee == 0 && !hasPrivacy {
+	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
 		Logger.log.Infof("CREATE TX CUSTOM TOKEN\n")
 		tx.Fee = fee
 		tx.sigPrivKey = *senderSK
 		tx.PubKeyLastByteSender = pkLastByteSender
-
+		Logger.log.Error("aaaaaaaaaaaaaaaaaaaaaaaaaa", tx, "\n")
 		err := tx.signTx()
 		if err != nil {
+			Logger.log.Error(err)
 			return NewTransactionErr(UnexpectedErr, err)
 		}
 		return nil

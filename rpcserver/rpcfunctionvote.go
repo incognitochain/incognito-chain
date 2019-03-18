@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"fmt"
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
@@ -43,6 +44,7 @@ func (rpcServer RpcServer) handleGetEncryptionLastBlockHeightFlag(params interfa
 }
 
 func (rpcServer RpcServer) handleCreateRawVoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	//VoteProposal - Step 2: Create Raw vote proposal transaction
 	params, err := rpcServer.buildParamsVoteProposal(params)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -55,6 +57,7 @@ func (rpcServer RpcServer) handleCreateRawVoteProposalTransaction(params interfa
 }
 
 func (rpcServer RpcServer) handleCreateAndSendVoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	//VoteProposal - Step 1: Client call rpc function to create vote proposal transaction
 	return rpcServer.createAndSendTxWithMetadata(
 		params,
 		closeChan,

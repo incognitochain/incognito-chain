@@ -253,7 +253,7 @@ func ParseKeyThreePhraseVoteValue(key []byte) (boardType common.BoardType, const
 		}
 		txId = newHash
 	}
-	return boardType, constitutionIndex, txId, err
+	return boardType, constitutionIndex, txId, nil
 }
 
 func GetKeyEncryptFlag(boardType common.BoardType) []byte {
