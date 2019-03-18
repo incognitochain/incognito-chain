@@ -28,7 +28,7 @@ type Tx struct {
 	LockTime int64  `json:"LockTime"`
 
 	Fee  uint64 `json:"Fee"` // Fee applies: always consant
-	Info []byte
+	Info []byte // 512 bytes
 
 	// Sign and Privacy proof
 	SigPubKey []byte `json:"SigPubKey, omitempty"` // 33 bytes
@@ -124,12 +124,13 @@ func (tx *Tx) Init(
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
 
 	// init info of tx
-	pubKeyData := &privacy.EllipticPoint{}
-	pubKeyData.Decompress(senderFullKey.PaymentAddress.Pk)
-	tx.Info, err = privacy.ElGamalEncrypt(senderFullKey.PaymentAddress.Tk[:], pubKeyData)
-	if err != nil {
-		return NewTransactionErr(UnexpectedErr, err)
-	}
+	tx.Info = []byte{}
+	//pubKeyData := &privacy.EllipticPoint{}
+	//pubKeyData.Decompress(senderFullKey.PaymentAddress.Pk)
+	//tx.Info, err = privacy.ElGamalEncrypt(senderFullKey.PaymentAddress.Tk[:], pubKeyData)
+	//if err != nil {
+	//	return NewTransactionErr(UnexpectedErr, err)
+	//}
 
 	// set metadata
 	tx.Metadata = metaData
