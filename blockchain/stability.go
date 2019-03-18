@@ -144,6 +144,7 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 ) ([][]string, error) {
 	instructions := [][]string{}
 	//Add Voting instruction
+	// step 3 hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 	votingInstruction, err := blkTmpGen.chain.generateVotingInstructionWOIns(0)
 	if err != nil {
 		return nil, NewBlockChainError(BeaconError, err)
@@ -447,7 +448,7 @@ func (chain *BlockChain) AddVoteBoard(inst string) error {
 func (chain *BlockChain) AddNormalVoteProposal(inst string) error {
 	newInst, err := fromshardins.NewNormalVoteProposalInsFromStr(inst)
 	boardType := newInst.BoardType
-
+	// step 4 hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
 	err = chain.GetDatabase().AddVoteNormalProposalDB(
 		boardType,
