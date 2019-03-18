@@ -5,7 +5,6 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata/fromshardins"
-	"github.com/constant-money/constant-chain/privacy"
 )
 
 func (dcbVoteProposalMetadata *DCBVoteProposalMetadata) GetBoardType() common.BoardType {
@@ -65,58 +64,6 @@ func (dcbVoteProposalMetadata *DCBVoteProposalMetadata) BuildReqActions(
 ) ([][]string, error) {
 	voteProposal := dcbVoteProposalMetadata.NormalVoteProposalMetadata
 	inst := fromshardins.NewNormalVoteProposalIns(common.DCBBoard, voteProposal)
-
-	instStr, err := inst.GetStringFormat()
-	if err != nil {
-		return nil, err
-	}
-	return [][]string{instStr}, nil
-}
-
-type PunishDCBDecryptMetadata struct {
-	PunishDecryptMetadata PunishDecryptMetadata
-	MetadataBase
-}
-
-func NewPunishDCBDecryptMetadata(paymentAddress privacy.PaymentAddress) *PunishDCBDecryptMetadata {
-	return &PunishDCBDecryptMetadata{
-		PunishDecryptMetadata: PunishDecryptMetadata{
-			PaymentAddress: paymentAddress,
-		},
-		MetadataBase: *NewMetadataBase(PunishDCBDecryptMeta),
-	}
-}
-
-func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) Hash() *common.Hash {
-	record := string(punishDCBDecryptMetadata.PunishDecryptMetadata.ToBytes())
-	record += punishDCBDecryptMetadata.MetadataBase.Hash().String()
-
-	hash := common.DoubleHashH([]byte(record))
-	return &hash
-}
-
-func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
-	return true, nil
-}
-
-func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
-	return true, true, nil
-}
-
-func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) ValidateMetadataByItself() bool {
-	return true
-}
-
-func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) CalculateSize() uint64 {
-	return calculateSize(punishDCBDecryptMetadata)
-}
-
-func (punishDCBDecryptMetadata *PunishDCBDecryptMetadata) BuildReqActions(
-	tx Transaction,
-	bcr BlockchainRetriever,
-	shardID byte,
-) ([][]string, error) {
-	inst := fromshardins.NewPunishDeryptIns(common.DCBBoard)
 
 	instStr, err := inst.GetStringFormat()
 	if err != nil {

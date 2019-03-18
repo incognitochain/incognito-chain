@@ -3,6 +3,7 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/pkg/errors"
 )
 
@@ -110,10 +111,6 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &ShareRewardOldBoardMetadata{}
 	case ShareRewardOldGOVBoardMeta:
 		md = &ShareRewardOldBoardMetadata{}
-	case PunishDCBDecryptMeta:
-		md = &PunishDCBDecryptMetadata{}
-	case PunishGOVDecryptMeta:
-		md = &PunishGOVDecryptMetadata{}
 	case DCBVoteProposalMeta:
 		md = &DCBVoteProposalMetadata{}
 	case GOVVoteProposalMeta:
