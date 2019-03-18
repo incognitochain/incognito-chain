@@ -5,7 +5,6 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata/fromshardins"
-	"github.com/constant-money/constant-chain/privacy"
 )
 
 func (govVoteProposalMetadata *GOVVoteProposalMetadata) GetBoardType() common.BoardType {
@@ -63,58 +62,6 @@ func (govVoteProposalMetadata *GOVVoteProposalMetadata) BuildReqActions(
 ) ([][]string, error) {
 	voteProposal := govVoteProposalMetadata.VoteProposalMetadata
 	inst := fromshardins.NewNormalVoteProposalIns(common.GOVBoard, voteProposal)
-
-	instStr, err := inst.GetStringFormat()
-	if err != nil {
-		return nil, err
-	}
-	return [][]string{instStr}, nil
-}
-
-type PunishGOVDecryptMetadata struct {
-	PunishDecryptMetadata PunishDecryptMetadata
-	MetadataBase
-}
-
-func NewPunishGOVDecryptMetadata(paymentAddress privacy.PaymentAddress) *PunishGOVDecryptMetadata {
-	return &PunishGOVDecryptMetadata{
-		PunishDecryptMetadata: PunishDecryptMetadata{
-			PaymentAddress: paymentAddress,
-		},
-		MetadataBase: *NewMetadataBase(PunishGOVDecryptMeta),
-	}
-}
-
-func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) Hash() *common.Hash {
-	record := string(punishGOVDecryptMetadata.PunishDecryptMetadata.ToBytes())
-	record += punishGOVDecryptMetadata.MetadataBase.Hash().String()
-
-	hash := common.DoubleHashH([]byte(record))
-	return &hash
-}
-
-func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
-	return true, nil
-}
-
-func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
-	return true, true, nil
-}
-
-func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) ValidateMetadataByItself() bool {
-	return true
-}
-
-func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) CalculateSize() uint64 {
-	return calculateSize(punishGOVDecryptMetadata)
-}
-
-func (punishGOVDecryptMetadata *PunishGOVDecryptMetadata) BuildReqActions(
-	tx Transaction,
-	bcr BlockchainRetriever,
-	shardID byte,
-) ([][]string, error) {
-	inst := fromshardins.NewPunishDeryptIns(common.GOVBoard)
 
 	instStr, err := inst.GetStringFormat()
 	if err != nil {

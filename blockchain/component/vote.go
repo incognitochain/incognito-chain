@@ -13,6 +13,6 @@ func (voteProposalData VoteProposalData) ToBytes() []byte {
 	return b
 }
 
-func NewVoteProposalDataFromByte(b []byte) VoteProposalData {
-
-}
+// func NewVoteProposalDataFromByte(b []byte) VoteProposalData {
+// 	return nil
+// }

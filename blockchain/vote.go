@@ -108,7 +108,7 @@ func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 	helper ConstitutionHelper,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
 	//resIns := make([]frombeaconins.InstructionFromBeacon, 0)
-	//VoteTable, CountVote, err := self.BuildVoteTableAndPunishTransaction(helper)
+	VoteTable, CountVote, err := self.BuildVoteTableAndPunishTransaction(helper)
 	//NextConstitutionIndex := self.GetCurrentBoardIndex(helper)
 	//bestProposal := metadata.ProposalVote{
 	//	TxId:         common.Hash{},
