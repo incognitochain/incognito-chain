@@ -393,6 +393,9 @@ func (self *BlockChain) generateVotingInstructionWOIns(shardID byte) ([][]string
 	// 	// Check if it is the case we need to apply a new proposal
 	// 	// 1. newNW < lastNW * 0.9
 	// 	// 2. current block height == last Constitution start time + last Constitution execute duration
+
+	// //Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+	// // step 2 Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 	updateDCBEncryptPhraseInstruction, err := self.CreateUpdateEncryptPhraseAndRewardConstitutionIns(DCBConstitutionHelper{})
 	if err != nil {
 		return nil, err
