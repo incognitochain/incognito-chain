@@ -336,17 +336,19 @@ func (self *BlockChain) createSendRewardOldBoardIns(
 	}
 	ins := make([]frombeaconins.InstructionFromBeacon, 0)
 	for _, paymentAddress := range paymentAddresses {
+		// todo
+		boardSupporters, err := self.config.DataBase.GetListSupporters(helper.GetBoardType(), paymentAddress)
+		if err != nil {
+			continue
+		}
 		rewardIns := frombeaconins.NewRewardProposalWinnerIns(paymentAddress, uint32(prize))
 		ins = append(ins, []frombeaconins.InstructionFromBeacon{*rewardIns}...)
-		// todo
-		// boardPartisans := GetPartisanOfBoard(paymentAddress)
-		// for _, partisan := range boardPartisans {
-		// 	//todo: recalculate prize
-		// 	rewardIns := frombeaconins.NewRewardProposalSubmitterIns(partisan, prize)
-		// 	ins = append(ins, []frombeaconins.InstructionFromBeacon{*rewardIns}...)
-		// }
+		for _, supporter := range boardSupporters {
+			//todo: recalculate prize
+			rewardIns := frombeaconins.NewRewardProposalSubmitterIns(supporter, uint64(prize))
+			ins = append(ins, []frombeaconins.InstructionFromBeacon{*rewardIns}...)
+		}
 	}
-
 	return ins, nil
 }
 
