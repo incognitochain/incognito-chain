@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -248,6 +249,8 @@ func VerifyCrossShardBlockUTXO(block *CrossShardBlock, merklePathShard []common.
 
 	tmpByte := append(append(outputCoinHash.GetBytes(), txTokenDataHash.GetBytes()...), txTokenPrivacyDataHash.GetBytes()...)
 	finalHash := common.HashH(tmpByte)
+	fmt.Println("VerifyCrossShardBlockUTXO ", block.Header.Height, finalHash, merklePathShard, block.Header.ShardTxRoot, block.ToShardID, VerifyMerkleTree(finalHash, merklePathShard, block.Header.ShardTxRoot, block.ToShardID))
+
 	return VerifyMerkleTree(finalHash, merklePathShard, block.Header.ShardTxRoot, block.ToShardID)
 }
 
@@ -402,7 +405,7 @@ func getOutCoinCrossShard(txList []metadata.Transaction, shardID byte) []privacy
 		if tx.GetProof() != nil {
 			for _, outCoin := range tx.GetProof().OutputCoins {
 				lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-				if lastByte == shardID {
+				if common.GetShardIDFromLastByte(lastByte) == shardID {
 					coinList = append(coinList, *outCoin)
 				}
 			}

@@ -88,14 +88,20 @@ func (pool *CrossShardPool_v2) updatePool() (map[byte]uint64, error) {
 	expectedHeight := make(map[byte]uint64)
 	for blkShardID, blks := range pool.pendingPool {
 		startHeight := pool.crossShardState[blkShardID]
+		if len(pool.validPool[blkShardID]) > 0 {
+			startHeight = pool.validPool[blkShardID][len(pool.validPool[blkShardID])-1].Header.Height
+		}
 		index := 0
 		for _, blk := range blks {
 			//only when beacon confirm (save next cross shard height), we make cross shard block valid
 			waitHeight := pool.getNextCrossShardHeight(blkShardID, pool.shardID, startHeight)
+			//TODO: what if wait height > blk height (compromise case)???
 			if waitHeight == blk.Header.Height {
 				index++
+				startHeight = waitHeight
 				continue
 			} else {
+				fmt.Println("crossshard next expectedHeight", waitHeight)
 				expectedHeight[blkShardID] = waitHeight
 				break
 			}
@@ -106,7 +112,7 @@ func (pool *CrossShardPool_v2) updatePool() (map[byte]uint64, error) {
 			pool.validPool[blkShardID] = append(pool.validPool[blkShardID], valid...)
 		}
 	}
-	fmt.Println("Current VALID Cross Shard Pool", pool.validPool)
+	fmt.Println("Current VALID Cross Shard Pool", pool.validPool[0])
 	fmt.Println("Current PENDING Cross Shard Pool", pool.pendingPool)
 	return expectedHeight, nil
 }
@@ -125,7 +131,7 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 	shardID := blk.Header.ShardID
 	blkHeight := blk.Header.Height
 
-	fmt.Printf("Receiver Block %+v from shard %+v at Cross Shard Pool \n", blkHeight, shardID)
+	fmt.Printf("Receiver Block %+v from shard %+v at Cross Shard Pool:q \n", blkHeight, shardID)
 	if blk.ToShardID != pool.shardID {
 		return nil, pool.shardID, errors.New("This pool cannot receive this cross shard block, this block for another shard")
 	}

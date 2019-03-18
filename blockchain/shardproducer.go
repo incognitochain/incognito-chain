@@ -147,7 +147,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		return nil, NewBlockChainError(HashError, err)
 	}
 	_, shardTxMerkleData := CreateShardTxRoot(block.Body.Transactions)
-	fmt.Println("ShardProducer/Shard Tx Root", shardTxMerkleData[len(shardTxMerkleData)-1])
+
 	block.Header = ShardHeader{
 		ProducerAddress:      payToAddress,
 		Producer:             userKeySet.GetPublicKeyB58(),
@@ -168,6 +168,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		Epoch:                epoch,
 		Round:                proposerOffset + 1,
 	}
+	fmt.Println("ShardProducer/Shard Tx Root", shardTxMerkleData[len(shardTxMerkleData)-1], block.Header.CrossShards)
 	// Create producer signature
 	blkHeaderHash := block.Header.Hash()
 	sig, err := userKeySet.SignDataB58(blkHeaderHash.GetBytes())
@@ -255,7 +256,7 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 	// get cross shard block
 
 	allCrossShardBlock := blockgen.crossShardPool[shardID].GetValidBlock(crossShards)
-	fmt.Println("ShardProducer/AllCrosshardblock", allCrossShardBlock)
+	fmt.Println("ShardProducer/AllCrosshardblock", allCrossShardBlock, crossShards)
 	// Get Cross Shard Block
 	for fromShard, crossShardBlock := range allCrossShardBlock {
 		sort.SliceStable(crossShardBlock[:], func(i, j int) bool {
