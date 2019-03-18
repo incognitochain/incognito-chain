@@ -61,59 +61,62 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 	VoteTable map[common.Hash]map[string]int32,
 	err error,
 ) {
-	resIns = make([]frombeaconins.InstructionFromBeacon, 0)
-	VoteTable = make(map[common.Hash]map[string]int32)
-	NextConstitutionIndex := self.GetCurrentBoardIndex(helper)
+	// resIns = make([]frombeaconins.InstructionFromBeacon, 0)
+	// VoteTable = make(map[common.Hash]map[string]int32)
+	// NextConstitutionIndex := self.GetCurrentBoardIndex(helper)
 
-	db := self.config.DataBase
-	boardType := helper.GetBoardType()
-	begin := lvdb.GetKeyThreePhraseCryptoSealer(boardType, 0, nil)
-	// +1 to search in that range
-	end := lvdb.GetKeyThreePhraseCryptoSealer(boardType, 1+NextConstitutionIndex, nil)
+	// db := self.config.DataBase
+	// boardType := helper.GetBoardType()
+	// begin := lvdb.Get(boardType, 0, nil)
+	// // +1 to search in that range
+	// end := lvdb.GetKeyThreePhraseCryptoSealer(boardType, 1+NextConstitutionIndex, nil)
 
-	searchRange := util.Range{
-		Start: begin,
-		Limit: end,
-	}
-	iter := db.NewIterator(&searchRange, nil)
-	rightIndex := self.GetConstitutionIndex(helper) + 1
-	for iter.Next() {
-		key := iter.Key()
-		_, constitutionIndex, transactionID, err := lvdb.ParseKeyThreePhraseCryptoSealer(key)
-		_ = transactionID
-		if err != nil {
-			return nil, nil, err
-		}
-		if constitutionIndex != uint32(rightIndex) {
-			db.Delete(key)
-			continue
-		}
-		//Punish owner if he don't send decrypted message
-	}
+	// searchRange := util.Range{
+	// 	Start: begin,
+	// 	Limit: end,
+	// }
+	// iter := db.NewIterator(&searchRange, nil)
+	// rightIndex := self.GetConstitutionIndex(helper) + 1
+	// for iter.Next() {
+	// 	key := iter.Key()
+	// 	_, constitutionIndex, transactionID, err := lvdb.ParseKeyThreePhraseCryptoSealer(key)
+	// 	_ = transactionID
+	// 	if err != nil {
+	// 		return nil, nil, err
+	// 	}
+	// 	if constitutionIndex != uint32(rightIndex) {
+	// 		db.Delete(key)
+	// 		continue
+	// 	}
+	// 	//Punish owner if he don't send decrypted message
+	// }
 	return
 }
 
 func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 	helper ConstitutionHelper,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
-	//resIns := make([]frombeaconins.InstructionFromBeacon, 0)
-	//punishIns, VoteTable, err := self.BuildVoteTableAndPunishTransaction(helper)
-	//resIns = append(resIns, punishIns...)
-	//NextConstitutionIndex := self.GetCurrentBoardIndex(helper)
-	//bestProposal := metadata.ProposalVote{
-	//	TxId:         common.Hash{},
-	//	AmountOfVote: 0,
-	//	NumberOfVote: 0,
-	//}
-	//var bestVoterAll component.Voter
-	//// Get most vote proposal
-	//db := self.config.DataBase
-	//for txId, listVoter := range VoteTable {
-	//	var bestVoterThisProposal component.Voter
-	//	amountOfThisProposal := int64(0)
-	//	countOfThisProposal := uint32(0)
-	//	for voterPaymentAddressBytes, amount := range listVoter {
-	//		voterPaymentAddress := privacy.NewPaymentAddressFromByte([]byte(voterPaymentAddressBytes))
+	// resIns := make([]frombeaconins.InstructionFromBeacon, 0)
+	// _, VoteTable, err := self.BuildVoteTableAndPunishTransaction(helper)
+	// if (err!= nil){
+	// 	return nil, err
+	// }
+	// // resIns = append(resIns, punishIns...)
+	// NextConstitutionIndex := self.GetCurrentBoardIndex(helper)
+	// bestProposal := metadata.ProposalVote{
+	// 	TxId:         common.Hash{},
+	// 	AmountOfVote: 0,
+	// 	NumberOfVote: 0,
+	// }
+	// //var bestVoterAll component.Voter
+	// //// Get most vote proposal
+	// db := self.config.DataBase
+	// for txId, listVoter := range VoteTable {
+	// //	var bestVoterThisProposal component.Voter
+	// 	amountOfThisProposal := int64(0)
+	// 	// countOfThisProposal := uint32(0)
+	// 	for voterPaymentAddressBytes, amount := range listVoter {
+	// 		voterPaymentAddress := privacy.NewPaymentAddressFromByte([]byte(voterPaymentAddressBytes))
 	//		voterToken, _ := db.GetVoteTokenAmount(helper.GetBoardType(), NextConstitutionIndex, *voterPaymentAddress)
 	//		if int32(voterToken) < amount || amount < 0 {
 	//			listVoter[string(voterPaymentAddress.Bytes())] = 0
@@ -326,8 +329,25 @@ func (self *BlockChain) createSendRewardOldBoardIns(
 	shardID byte,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
 	//reward for each by voteDCBList
-	//todo @constant-money
-	return nil, nil
+	paymentAddresses := helper.GetCurrentBoardPaymentAddress(self)
+	prize := helper.GetOldNationalWelfare(self)
+	if prize < 0 {
+		return nil, nil
+	}
+	ins := make([]frombeaconins.InstructionFromBeacon, 0)
+	for _, paymentAddress := range paymentAddresses {
+		rewardIns := frombeaconins.NewRewardProposalWinnerIns(paymentAddress, uint32(prize))
+		ins = append(ins, []frombeaconins.InstructionFromBeacon{*rewardIns}...)
+		// todo
+		// boardPartisans := GetPartisanOfBoard(paymentAddress)
+		// for _, partisan := range boardPartisans {
+		// 	//todo: recalculate prize
+		// 	rewardIns := frombeaconins.NewRewardProposalSubmitterIns(partisan, prize)
+		// 	ins = append(ins, []frombeaconins.InstructionFromBeacon{*rewardIns}...)
+		// }
+	}
+
+	return ins, nil
 }
 
 //todo @0xjackalope reward for chair
@@ -462,16 +482,16 @@ func (self *BlockChain) generateVotingInstructionWOIns(shardID byte) ([][]string
 
 	// //Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 	// // step 2 Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-	updateDCBEncryptPhraseInstruction, err := self.CreateUpdateEncryptPhraseAndRewardConstitutionIns(DCBConstitutionHelper{})
+	updateDCBProposalInstruction, err := self.createAcceptConstitutionAndPunishTxAndRewardSubmitter(DCBConstitutionHelper{})
 	if err != nil {
 		return nil, err
 	}
-	instructions = append(instructions, updateDCBEncryptPhraseInstruction...)
-	updateGOVEncryptPhraseInstruction, err := self.CreateUpdateEncryptPhraseAndRewardConstitutionIns(GOVConstitutionHelper{})
+	instructions = append(instructions, updateDCBProposalInstruction...)
+	updateGOVProposalInstruction, err := self.createAcceptConstitutionAndPunishTxAndRewardSubmitter(GOVConstitutionHelper{})
 	if err != nil {
 		return nil, err
 	}
-	instructions = append(instructions, updateGOVEncryptPhraseInstruction...)
+	instructions = append(instructions, updateGOVProposalInstruction...)
 
 	return instructionsString, nil
 }
