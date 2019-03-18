@@ -52,7 +52,7 @@ func (rpcServer RpcServer) handleCreateRawVoteProposalTransaction(params interfa
 	return rpcServer.createRawTxWithMetadata(
 		params,
 		closeChan,
-		metadata.NewNormalVoteProposalMetadataFromRPC,
+		metadata.NewVoteProposalMetadataFromRPC,
 	)
 }
 
