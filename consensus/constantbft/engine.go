@@ -183,6 +183,7 @@ func (engine *Engine) Start() error {
 									currentPBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
 									resBlk, err = bftProtocol.Start()
 									if err != nil {
+										Logger.log.Error(err)
 										currentPBFTRound++
 										prevRoundNodeRole = nodeRole
 									}

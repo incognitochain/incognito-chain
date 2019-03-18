@@ -2,8 +2,9 @@ package frombeaconins
 
 import (
 	"encoding/json"
-	"github.com/constant-money/constant-chain/transaction"
 	"strconv"
+
+	"github.com/constant-money/constant-chain/transaction"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
@@ -81,6 +82,10 @@ func NewSendBackTokenVoteFailTx(
 
 	//create token params
 	customTokenParamTx := mintDCBTokenParam
+	customTokenParamTx.Receiver = []transaction.TxTokenVout{{
+		Value:          amount,
+		PaymentAddress: paymentAddress,
+	}}
 	if boardType == common.GOVBoard {
 		customTokenParamTx = mintGOVTokenParam
 	}
@@ -91,15 +96,10 @@ func NewSendBackTokenVoteFailTx(
 	if err != nil {
 		return nil, err
 	}
-	//Init tx custom token
-	paymentInfo := privacy.PaymentInfo{
-		PaymentAddress: paymentAddress,
-		Amount:         amount,
-	}
 	txCustom := &transaction.TxCustomToken{}
-	err = txCustom.Init(
+	err1 := txCustom.Init(
 		minerPrivateKey,
-		[]*privacy.PaymentInfo{&paymentInfo},
+		[]*privacy.PaymentInfo{},
 		nil,
 		0,
 		&customTokenParamTx,
@@ -109,8 +109,11 @@ func NewSendBackTokenVoteFailTx(
 		false,
 		shardID,
 	)
+	if err1 != nil {
+		return nil, err1
+	}
 	txCustom.Type = common.TxCustomTokenType
-	return txCustom, err
+	return txCustom, nil
 }
 
 func GetListCustomTokens(
