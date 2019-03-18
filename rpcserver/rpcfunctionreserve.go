@@ -174,3 +174,12 @@ func (rpcServer RpcServer) handleGetSpendReserveInfo(params interface{}, closeCh
 	}
 	return result, nil
 }
+
+// handleConvertUSDToDCBTokenAmount receives amount of USD (in Cent) and returns number of DCB Tokens at current price
+func (rpcServer RpcServer) handleConvertUSDToDCBTokenAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	amount := uint64(arrayParams[0].(float64))
+	oracle := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.Oracle
+	dcbTokenAmount := amount / oracle.DCBToken
+	return dcbTokenAmount, nil
+}
