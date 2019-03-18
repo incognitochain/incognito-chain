@@ -11,6 +11,7 @@ import (
 func (normalDCBVoteProposalMetadata *NormalDCBVoteProposalMetadata) GetBoardType() common.BoardType {
 	return common.DCBBoard
 }
+
 type NormalDCBVoteProposalMetadata struct {
 	NormalVoteProposalMetadata component.VoteProposalData
 	MetadataBase
@@ -33,7 +34,7 @@ func NewNormalDCBVoteProposalMetadata(
 ) *NormalDCBVoteProposalMetadata {
 	return &NormalDCBVoteProposalMetadata{
 		NormalVoteProposalMetadata: voteProposal,
-		MetadataBase: *NewMetadataBase(NormalDCBVoteProposalMeta),
+		MetadataBase:               *NewMetadataBase(NormalDCBVoteProposalMeta),
 	}
 }
 
@@ -58,6 +59,8 @@ func (normalDCBVoteProposalMetadata *NormalDCBVoteProposalMetadata) ValidateTxWi
 }
 
 func (normalDCBVoteProposalMetadata *NormalDCBVoteProposalMetadata) BuildReqActions(
+	//Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+	//Step 1 hyyyyyyyyyyyyyyyyyyyyyyyy
 	tx Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,

@@ -199,6 +199,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			if err1 != nil {
 				break
 			}
+			// step 3 Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 			stabilityInstructionsPerBlock, err := blkTmplGenerator.buildStabilityInstructions(
 				shardID,
 				shardBlock.Instructions,

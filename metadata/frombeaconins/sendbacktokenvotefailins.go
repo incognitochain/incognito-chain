@@ -113,9 +113,6 @@ func NewSendBackTokenVoteFailTx(
 		return nil, err1
 	}
 	txCustom.Type = common.TxCustomTokenType
-	if err.(*transaction.TransactionError) != nil {
-		return txCustom, err
-	}
 	return txCustom, nil
 }
 
