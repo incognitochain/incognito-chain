@@ -127,3 +127,50 @@ func (rpcServer RpcServer) handleConvertCSTToETHAmount(params interface{}, close
 
 	return etherAmount.String(), nil
 }
+
+// handleGetRaiseReserveInfo returns number of DCB tokens available to raise reserve
+func (rpcServer RpcServer) handleGetRaiseReserveInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	assetID, _ := common.NewHashFromStr(arrayParams[0].(string))
+	rrd := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.RaiseReserveData
+	blockHeight := rpcServer.config.BlockChain.BestState.Beacon.BeaconHeight
+	data, ok := rrd[*assetID]
+	tokenLeft := uint64(0)
+	status := "No proposal"
+	if ok {
+		if data.EndBlock > blockHeight {
+			tokenLeft = data.Amount
+			status = "Ongoing"
+		} else {
+			status = "Ended"
+		}
+	}
+	result := map[string]interface{}{
+		"Status":    status,
+		"TokenLeft": tokenLeft,
+	}
+	return result, nil
+}
+
+// handleGetSpendReserveInfo returns number of Constant needed to burn
+func (rpcServer RpcServer) handleGetSpendReserveInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	assetID, _ := common.NewHashFromStr(arrayParams[0].(string))
+	blockHeight := rpcServer.config.BlockChain.BestState.Beacon.BeaconHeight
+	data, ok := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.SpendReserveData[*assetID]
+	tokenLeft := uint64(0)
+	status := "No proposal"
+	if ok {
+		if data.EndBlock > blockHeight {
+			tokenLeft = data.Amount
+			status = "Ongoing"
+		} else {
+			status = "Ended"
+		}
+	}
+	result := map[string]interface{}{
+		"Status":    status,
+		"TokenLeft": tokenLeft,
+	}
+	return result, nil
+}
