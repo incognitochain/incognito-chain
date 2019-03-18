@@ -87,14 +87,20 @@ func (pool *CrossShardPool_v2) updatePool() (map[byte]uint64, error) {
 	expectedHeight := make(map[byte]uint64)
 	for blkShardID, blks := range pool.pendingPool {
 		startHeight := pool.crossShardState[blkShardID]
+		if len(pool.validPool[blkShardID]) > 0 {
+			startHeight = pool.validPool[blkShardID][len(pool.validPool[blkShardID])-1].Header.Height
+		}
 		index := 0
 		for _, blk := range blks {
 			//only when beacon confirm (save next cross shard height), we make cross shard block valid
 			waitHeight := pool.getNextCrossShardHeight(blkShardID, pool.shardID, startHeight)
+			//TODO: what if wait height > blk height (compromise case)???
 			if waitHeight == blk.Header.Height {
 				index++
+				startHeight = waitHeight
 				continue
 			} else {
+				fmt.Println("crossshard next expectedHeight", waitHeight)
 				expectedHeight[blkShardID] = waitHeight
 				break
 			}

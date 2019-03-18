@@ -225,7 +225,8 @@ func (engine *Engine) Start() error {
 									fmt.Println("Create and Push all Cross Shard Block")
 									//PUSH CROSS-SHARD
 									newCrossShardBlocks := shardBlk.CreateAllCrossShardBlock(engine.config.BlockChain.BestState.Beacon.ActiveShards)
-									fmt.Printf("New Cross Shard Blocks %+v \n", newCrossShardBlocks)
+									fmt.Println("New Cross Shard Blocks ", newCrossShardBlocks, shardBlk.Header.Height, shardBlk.Header.CrossShards)
+
 									for sID, newCrossShardBlock := range newCrossShardBlocks {
 										newCrossShardMsg, err := MakeMsgCrossShardBlock(newCrossShardBlock)
 										if err == nil {
