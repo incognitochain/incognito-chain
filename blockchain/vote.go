@@ -57,19 +57,19 @@ func (chain *BlockChain) createRewardProposalWinnerIns(
 func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 	helper ConstitutionHelper,
 ) (
-	resIns []frombeaconins.InstructionFromBeacon,
-	VoteTable map[common.Hash]map[string]int32,
+	VoteTable map[common.Hash][]privacy.PaymentAddress,
+	CountVote map[common.Hash]uint32,
 	err error,
 ) {
-	resIns = make([]frombeaconins.InstructionFromBeacon, 0)
-	VoteTable = make(map[common.Hash]map[string]int32)
+	VoteTable = make(map[common.Hash][]privacy.PaymentAddress)
+	CountVote = make(map[common.Hash]uint32)
 	NextConstitutionIndex := self.GetCurrentBoardIndex(helper)
 
 	db := self.config.DataBase
 	boardType := helper.GetBoardType()
-	begin := lvdb.GetKeyThreePhraseCryptoSealer(boardType, 0, nil)
+	begin := lvdb.GetKeyVoteProposal(boardType, 0, nil)
 	// +1 to search in that range
-	end := lvdb.GetKeyThreePhraseCryptoSealer(boardType, 1+NextConstitutionIndex, nil)
+	end := lvdb.GetKeyVoteProposal(boardType, 1+NextConstitutionIndex, nil)
 
 	searchRange := util.Range{
 		Start: begin,
@@ -79,16 +79,27 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 	rightIndex := self.GetConstitutionIndex(helper) + 1
 	for iter.Next() {
 		key := iter.Key()
-		_, constitutionIndex, transactionID, err := lvdb.ParseKeyThreePhraseCryptoSealer(key)
-		_ = transactionID
+		value := iter.Value()
+		_, constitutionIndex, voterPayment, err := lvdb.ParseKeyVoteProposal(key)
 		if err != nil {
-			return nil, nil, err
+			return
 		}
 		if constitutionIndex != uint32(rightIndex) {
 			db.Delete(key)
 			continue
 		}
-		//Punish owner if he don't send decrypted message
+
+		//Accumulate count vote
+		proposalTxID, err := lvdb.ParseValueVoteProposal(value)
+		if err != nil {
+			return
+		}
+
+		if VoteTable[*proposalTxID] == nil {
+			VoteTable[*proposalTxID] = make([]privacy.PaymentAddress, 0)
+		}
+		VoteTable[*proposalTxID] = append(VoteTable[*proposalTxID], *voterPayment)
+		CountVote[*proposalTxID] += 1
 	}
 	return
 }
@@ -97,8 +108,7 @@ func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 	helper ConstitutionHelper,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
 	//resIns := make([]frombeaconins.InstructionFromBeacon, 0)
-	//punishIns, VoteTable, err := self.BuildVoteTableAndPunishTransaction(helper)
-	//resIns = append(resIns, punishIns...)
+	//VoteTable, CountVote, err := self.BuildVoteTableAndPunishTransaction(helper)
 	//NextConstitutionIndex := self.GetCurrentBoardIndex(helper)
 	//bestProposal := metadata.ProposalVote{
 	//	TxId:         common.Hash{},

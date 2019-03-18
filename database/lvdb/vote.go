@@ -137,7 +137,7 @@ func (db *db) NewIterator(slice *util.Range, ro *opt.ReadOptions) iterator.Itera
 
 func (db *db) AddVoteLv3ProposalDB(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash) error {
 	//init sealer
-	keySealer := GetKeyThreePhraseCryptoSealer(boardType, constitutionIndex, txID)
+	keySealer := GetKeyVoteProposal(boardType, constitutionIndex, txID)
 	ok, err := db.HasValue(keySealer)
 	if err != nil {
 		return err
@@ -164,7 +164,7 @@ func (db *db) AddVoteLv3ProposalDB(boardType common.BoardType, constitutionIndex
 }
 
 func (db *db) AddVoteLv1or2ProposalDB(boardType common.BoardType, constitutionIndex uint32, lv3TxID *common.Hash) error {
-	keySealer := GetKeyThreePhraseCryptoSealer(boardType, constitutionIndex, lv3TxID)
+	keySealer := GetKeyVoteProposal(boardType, constitutionIndex, lv3TxID)
 	ok, err := db.HasValue(keySealer)
 	if err != nil {
 		return err
