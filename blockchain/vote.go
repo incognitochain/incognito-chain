@@ -82,7 +82,7 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 		value := iter.Value()
 		_, constitutionIndex, voterPayment, err := lvdb.ParseKeyVoteProposal(key)
 		if err != nil {
-			return
+			return nil, nil, err
 		}
 		if constitutionIndex != uint32(rightIndex) {
 			db.Delete(key)
@@ -92,7 +92,7 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 		//Accumulate count vote
 		proposalTxID, err := lvdb.ParseValueVoteProposal(value)
 		if err != nil {
-			return
+			return nil, nil, err
 		}
 
 		if VoteTable[*proposalTxID] == nil {
@@ -108,7 +108,7 @@ func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 	helper ConstitutionHelper,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
 	//resIns := make([]frombeaconins.InstructionFromBeacon, 0)
-	VoteTable, CountVote, err := self.BuildVoteTableAndPunishTransaction(helper)
+	//VoteTable, CountVote, err := self.BuildVoteTableAndPunishTransaction(helper)
 	//NextConstitutionIndex := self.GetCurrentBoardIndex(helper)
 	//bestProposal := metadata.ProposalVote{
 	//	TxId:         common.Hash{},
