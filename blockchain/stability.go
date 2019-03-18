@@ -448,6 +448,9 @@ func (chain *BlockChain) AddVoteBoard(inst string) error {
 
 func (chain *BlockChain) AddNormalVoteProposal(inst string) error {
 	newInst, err := fromshardins.NewNormalVoteProposalInsFromStr(inst)
+	if err != nil {
+		return err
+	}
 	boardType := newInst.BoardType
 	// step 4 hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
