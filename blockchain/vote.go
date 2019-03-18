@@ -336,8 +336,27 @@ func (self *BlockChain) createSendRewardOldBoardIns(
 	shardID byte,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
 	//reward for each by voteDCBList
-	//todo @constant-money
-	return nil, nil
+	paymentAddresses := helper.GetCurrentBoardPaymentAddress(self)
+	prize := helper.GetOldNationalWelfare(self)
+	if prize < 0 {
+		return nil, nil
+	}
+	ins := make([]frombeaconins.InstructionFromBeacon, 0)
+	for _, paymentAddress := range paymentAddresses {
+		// todo
+		boardSupporters, err := self.config.DataBase.GetListSupporters(helper.GetBoardType(), paymentAddress)
+		if err != nil {
+			continue
+		}
+		rewardIns := frombeaconins.NewRewardProposalWinnerIns(paymentAddress, uint32(prize))
+		ins = append(ins, []frombeaconins.InstructionFromBeacon{*rewardIns}...)
+		for _, supporter := range boardSupporters {
+			//todo: recalculate prize
+			rewardIns := frombeaconins.NewRewardProposalSubmitterIns(supporter, uint64(prize))
+			ins = append(ins, []frombeaconins.InstructionFromBeacon{*rewardIns}...)
+		}
+	}
+	return ins, nil
 }
 
 //todo @0xjackalope reward for chair
@@ -472,16 +491,16 @@ func (self *BlockChain) generateVotingInstructionWOIns(shardID byte) ([][]string
 
 	// //Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 	// // step 2 Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-	updateDCBEncryptPhraseInstruction, err := self.CreateUpdateEncryptPhraseAndRewardConstitutionIns(DCBConstitutionHelper{})
+	updateDCBProposalInstruction, err := self.createAcceptConstitutionAndPunishTxAndRewardSubmitter(DCBConstitutionHelper{})
 	if err != nil {
 		return nil, err
 	}
-	instructions = append(instructions, updateDCBEncryptPhraseInstruction...)
-	updateGOVEncryptPhraseInstruction, err := self.CreateUpdateEncryptPhraseAndRewardConstitutionIns(GOVConstitutionHelper{})
+	instructions = append(instructions, updateDCBProposalInstruction...)
+	updateGOVProposalInstruction, err := self.createAcceptConstitutionAndPunishTxAndRewardSubmitter(GOVConstitutionHelper{})
 	if err != nil {
 		return nil, err
 	}
-	instructions = append(instructions, updateGOVEncryptPhraseInstruction...)
+	instructions = append(instructions, updateGOVProposalInstruction...)
 
 	return instructionsString, nil
 }

@@ -175,6 +175,7 @@ type DatabaseInterface interface {
 	SetEncryptFlag(boardType common.BoardType, flag byte)
 	GetEncryptionLastBlockHeight(boardType common.BoardType) (uint64, error)
 	SetEncryptionLastBlockHeight(boardType common.BoardType, height uint64)
+	GetListSupporters(boardType common.BoardType, candidateAddress privacy.PaymentAddress) ([]*privacy.PaymentAddress, error)
 
 	// Multisigs
 	StoreMultiSigsRegistration([]byte, []byte) error

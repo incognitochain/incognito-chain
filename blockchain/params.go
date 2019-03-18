@@ -40,7 +40,7 @@ type GenesisParams struct {
 
 	RandomNumber uint64
 
-	PreSelectBeaconNodeSerializedPubkey [] string
+	PreSelectBeaconNodeSerializedPubkey []string
 	PreSelectBeaconNode                 []string
 	PreSelectShardNodeSerializedPubkey  []string
 	PreSelectShardNode                  []string
@@ -56,6 +56,7 @@ var genesisParamsTestnetNew = GenesisParams{
 	InitialGOVToken:                     TestnetInitGovToken,
 	BasicSalary:                         TestnetBasicSalary,
 	SalaryPerTx:                         TestnetSalaryPerTx,
+	FeePerTxKb:                          TestnetFeePerTxKb,
 	RandomNumber:                        0,
 	PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeTestnetSerializedPubkey,
 	PreSelectBeaconNode:                 PreSelectBeaconNodeTestnet,
@@ -74,6 +75,7 @@ var ChainTestParam = Params{
 	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, genesisParamsTestnetNew),
 	GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsTestnetNew),
 }
+
 // END TESTNET
 
 // FOR MAINNET
@@ -86,6 +88,7 @@ var genesisParamsMainnetNew = GenesisParams{
 	InitialGOVToken:                     MainnetInitGovToken,
 	BasicSalary:                         MainnetBasicSalary,
 	SalaryPerTx:                         MainnetSalaryPerTx,
+	FeePerTxKb:                          MainnetFeePerTxKb,
 	RandomNumber:                        0,
 	PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeMainnetSerializedPubkey,
 	PreSelectBeaconNode:                 PreSelectBeaconNodeMainnet,

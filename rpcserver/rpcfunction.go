@@ -118,6 +118,7 @@ var RpcHandler = map[string]commandHandler{
 	ConvertCSTToETHAmount:           RpcServer.handleConvertCSTToETHAmount,
 	GetRaiseReserveInfo:             RpcServer.handleGetRaiseReserveInfo,
 	GetSpendReserveInfo:             RpcServer.handleGetSpendReserveInfo,
+	ConvertUSDToDCBTokenAmount:      RpcServer.handleConvertUSDToDCBTokenAmount,
 
 	// multisig
 	CreateSignatureOnCustomTokenTx:       RpcServer.handleCreateSignatureOnCustomTokenTx,
