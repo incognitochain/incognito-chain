@@ -457,7 +457,8 @@ func (chain *BlockChain) AddNormalVoteProposal(inst string) error {
 	err = chain.GetDatabase().AddVoteNormalProposalDB(
 		boardType,
 		nextConstitutionIndex,
-		newInst.VoteProposal.ToBytes(),
+		newInst.VoteProposal.VoterPayment.Bytes(),
+		newInst.VoteProposal.ProposalTxID.GetBytes(),
 	)
 	if err != nil {
 		return err
