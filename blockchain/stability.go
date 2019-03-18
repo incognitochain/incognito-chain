@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
@@ -143,6 +144,7 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 ) ([][]string, error) {
 	instructions := [][]string{}
 	//Add Voting instruction
+	// step 3 hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 	votingInstruction, err := blkTmpGen.chain.generateVotingInstructionWOIns(0)
 	if err != nil {
 		return nil, NewBlockChainError(BeaconError, err)
@@ -291,6 +293,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					return nil, err
 				}
 				fmt.Printf("[db] shard build Resp from inst: %+v\n", l)
+				Logger.log.Warn("Metadata type:", metaType, "\n")
 				switch metaType {
 				case metadata.CrowdsalePaymentMeta:
 					paymentInst, err := ParseCrowdsalePaymentInstruction(l[2])
@@ -328,18 +331,25 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					}
 					resTxs = append(resTxs, txs...)
 
+					// todo @0xjackalope move meta to ins?
 				case metadata.SendBackTokenVoteBoardFailMeta:
+					Logger.log.Info(metadata.SendBackTokenVoteBoardFailMeta, "\n")
 					sendBackTokenVoteFail := frombeaconins.TxSendBackTokenVoteFailIns{}
 					err := json.Unmarshal([]byte(l[2]), &sendBackTokenVoteFail)
 					if err != nil {
+						Logger.log.Error("Here, why?", err.Error(), "\n")
 						return nil, err
 					}
-					txs, err := sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, blockgen.chain, shardID)
-					if err != nil {
-						return nil, err
+
+					txs, err1 := sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, blockgen.chain, shardID)
+
+					if err1 != nil {
+						Logger.log.Error("Here, why?????????", err1, reflect.TypeOf(err1), reflect.ValueOf(err1), "\n")
+						return nil, err1
 					}
 					resTxs = append(resTxs, txs)
 				case metadata.ShareRewardOldDCBBoardMeta, metadata.ShareRewardOldGOVBoardMeta:
+					Logger.log.Info(metadata.ShareRewardOldDCBBoardMeta, metadata.ShareRewardOldGOVBoardMeta, "\n")
 					shareRewardOldBoard := frombeaconins.TxShareRewardOldBoardMetadataIns{}
 					err := json.Unmarshal([]byte(l[2]), &shareRewardOldBoard)
 					if err != nil {
@@ -439,7 +449,7 @@ func (chain *BlockChain) AddVoteBoard(inst string) error {
 func (chain *BlockChain) AddNormalVoteProposal(inst string) error {
 	newInst, err := fromshardins.NewNormalVoteProposalInsFromStr(inst)
 	boardType := newInst.BoardType
-
+	// step 4 hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
 	err = chain.GetDatabase().AddVoteNormalProposalDB(
 		boardType,

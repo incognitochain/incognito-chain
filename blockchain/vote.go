@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
-	
+
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database/lvdb"
@@ -96,7 +96,73 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 	helper ConstitutionHelper,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
-	//todo @constant-money
+	//resIns := make([]frombeaconins.InstructionFromBeacon, 0)
+	//punishIns, VoteTable, err := self.BuildVoteTableAndPunishTransaction(helper)
+	//resIns = append(resIns, punishIns...)
+	//NextConstitutionIndex := self.GetCurrentBoardIndex(helper)
+	//bestProposal := metadata.ProposalVote{
+	//	TxId:         common.Hash{},
+	//	AmountOfVote: 0,
+	//	NumberOfVote: 0,
+	//}
+	//var bestVoterAll component.Voter
+	//// Get most vote proposal
+	//db := self.config.DataBase
+	//for txId, listVoter := range VoteTable {
+	//	var bestVoterThisProposal component.Voter
+	//	amountOfThisProposal := int64(0)
+	//	countOfThisProposal := uint32(0)
+	//	for voterPaymentAddressBytes, amount := range listVoter {
+	//		voterPaymentAddress := privacy.NewPaymentAddressFromByte([]byte(voterPaymentAddressBytes))
+	//		voterToken, _ := db.GetVoteTokenAmount(helper.GetBoardType(), NextConstitutionIndex, *voterPaymentAddress)
+	//		if int32(voterToken) < amount || amount < 0 {
+	//			listVoter[string(voterPaymentAddress.Bytes())] = 0
+	//			// can change listvoter because it is a pointer
+	//			continue
+	//		} else {
+	//			tVoter := component.Voter{
+	//				PaymentAddress: *voterPaymentAddress,
+	//				AmountOfVote:   amount,
+	//			}
+	//			if tVoter.Greater(bestVoterThisProposal) {
+	//				bestVoterThisProposal = tVoter
+	//			}
+	//			amountOfThisProposal += int64(tVoter.AmountOfVote)
+	//			countOfThisProposal += 1
+	//		}
+	//	}
+	//	amountOfThisProposal -= int64(bestVoterThisProposal.AmountOfVote)
+	//	tProposalVote := metadata.ProposalVote{
+	//		TxId:         txId,
+	//		AmountOfVote: amountOfThisProposal,
+	//		NumberOfVote: countOfThisProposal,
+	//	}
+	//	if tProposalVote.Greater(bestProposal) {
+	//		bestProposal = tProposalVote
+	//		bestVoterAll = bestVoterThisProposal
+	//	}
+	//}
+	//_, _, _, bestSubmittedProposal, err := self.GetTransactionByHash(&bestProposal.TxId)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//submitterPaymentAddress := helper.GetPaymentAddressFromSubmitProposalMetadata(bestSubmittedProposal)
+	//
+	//// If submitterPaymentAdress use don't use privacy for
+	//if submitterPaymentAddress == nil {
+	//	rewardForProposalSubmitterIns, err := helper.NewRewardProposalSubmitterIns(self, submitterPaymentAddress)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	resIns = append(resIns, rewardForProposalSubmitterIns)
+	//}
+	//
+	////todo @0xjackalope
+	//shardID := byte(1)
+	//acceptedProposalIns := helper.NewAcceptProposalIns(&bestProposal.TxId, bestVoterAll, shardID)
+	//resIns = append(resIns, acceptedProposalIns)
+	//
+	//return resIns, nil
 	return nil, nil
 }
 
@@ -114,6 +180,7 @@ func (stateBeacon *BestStateBeacon) UpdateDCBBoard(ins frombeaconins.AcceptDCBBo
 	stateBeacon.StabilityInfo.DCBGovernor.BoardPaymentAddress = ins.BoardPaymentAddress
 	stateBeacon.StabilityInfo.DCBGovernor.StartedBlock = stateBeacon.BestBlock.Header.Height
 	stateBeacon.StabilityInfo.DCBGovernor.EndBlock = stateBeacon.StabilityInfo.DCBGovernor.StartedBlock + common.DurationOfDCBBoard
+	Logger.log.Error("New endblock is: ", stateBeacon.StabilityInfo.DCBGovernor.EndBlock, "\n")
 	stateBeacon.StabilityInfo.DCBGovernor.StartAmountToken = ins.StartAmountToken
 	return nil
 }
@@ -351,8 +418,8 @@ func (chain *BlockChain) neededNewGovernor(boardType common.BoardType) bool {
 	} else {
 		endGovernorBlock = chain.BestState.Beacon.StabilityInfo.GOVGovernor.EndBlock
 	}
-	fmt.Println("\n\n\n", endGovernorBlock, "\n\n\n")
 	currentHeight := BestBlock.Header.Height + 1
+	Logger.log.Warn("Endblock", endGovernorBlock, currentHeight, "\n")
 	return endGovernorBlock <= currentHeight
 }
 
@@ -392,6 +459,9 @@ func (self *BlockChain) generateVotingInstructionWOIns(shardID byte) ([][]string
 	// 	// Check if it is the case we need to apply a new proposal
 	// 	// 1. newNW < lastNW * 0.9
 	// 	// 2. current block height == last Constitution start time + last Constitution execute duration
+
+	// //Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+	// // step 2 Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 	updateDCBEncryptPhraseInstruction, err := self.CreateUpdateEncryptPhraseAndRewardConstitutionIns(DCBConstitutionHelper{})
 	if err != nil {
 		return nil, err
