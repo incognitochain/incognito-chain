@@ -28,10 +28,10 @@ func CreateBeaconGenesisBlock(
 	inst = append(inst, shardAssingInstruction)
 
 	// init network param
-	inst = append(inst, []string{"init", "salaryPerTx", fmt.Sprintf("%v", genesisParams.SalaryPerTx)})
-	inst = append(inst, []string{"init", "basicSalary", fmt.Sprintf("%v", genesisParams.BasicSalary)})
-	inst = append(inst, []string{"init", "salaryFund", strconv.Itoa(int(genesisParams.InitFundSalary))})
-	inst = append(inst, []string{"init", "feePerTxKb", fmt.Sprintf("%v", genesisParams.FeePerTxKb)})
+	inst = append(inst, []string{InitAction, "salaryPerTx", fmt.Sprintf("%v", genesisParams.SalaryPerTx)})
+	inst = append(inst, []string{InitAction, "basicSalary", fmt.Sprintf("%v", genesisParams.BasicSalary)})
+	inst = append(inst, []string{InitAction, "salaryFund", strconv.Itoa(int(genesisParams.InitFundSalary))})
+	inst = append(inst, []string{InitAction, "feePerTxKb", fmt.Sprintf("%v", genesisParams.FeePerTxKb)})
 
 	inst = append(inst, []string{InitAction, "initialPaymentAddress", genesisParams.InitialPaymentAddress})
 	inst = append(inst, []string{InitAction, "initialDCBToken", strconv.Itoa(int(genesisParams.InitialDCBToken))})
