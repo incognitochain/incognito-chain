@@ -263,3 +263,8 @@ func (db *db) GetBoardVoterList(boardType common.BoardType, candidatePaymentAddr
 	}
 	return listVoter
 }
+
+func (db *db) GetListSupporters(boardType common.BoardType, candidateAddress privacy.PaymentAddress) ([]*privacy.PaymentAddress, error) {
+	// todo @jackalope
+	return nil, nil
+}
