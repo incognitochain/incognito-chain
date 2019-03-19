@@ -136,29 +136,20 @@ func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 	resIns = append(resIns, acceptedProposalIns)
 	boardType := helper.GetBoardType()
 	boardIndex := helper.GetBoard(self).GetBoardIndex()
-	totalReward := helper.GetCurrentNationalWelfare(self)
+	totalReward := uint64(helper.GetCurrentNationalWelfare(self))
 	listVotersOfCurrentProposal, eGetBoardVoterListrr := self.config.DataBase.GetCurrentProposalWinningVoter(boardType, helper.GetConstitutionInfo(self).ConstitutionIndex)
 	if err == nil {
-		var totalOfVote uint64
-		totalOfVote = 0
 		voterAndSupporters := make([][]privacy.PaymentAddress, len(listVotersOfCurrentProposal))
-		var voterAndAmount map[uint16]uint64
+		voterAndAmount := make([]uint64, len(listVotersOfCurrentProposal))
 		for i, voter := range listVotersOfCurrentProposal {
-			voterAndSupporters
 			listSupporters := self.config.DataBase.GetBoardVoterList(boardType, voter, boardIndex)
+			voterAndSupporters[i] = listSupporters
+			voterAndAmount[i] = 0
 			for _, supporter := range listSupporters {
-				shareRewardIns := self.CreateSingleShareRewardOldBoardIns(helper, voter, supporter, 0)
-				resIns = append(resIns, []frombeaconins.InstructionFromBeacon{shareRewardIns}...) 
+				voterAndAmount[i] += helper.GetAmountOfVoteToBoard(self, voter, supporter, boardIndex)
 			}
-		}
-		for _, voter := range listVotersOfCurrentProposal {
-			shareRewardIns := self.CreateShareRewardOldBoardIns(helper, voter,totalReward)
-			self.
-			listSupporters := self.config.DataBase.GetBoardVoterList(boardType, voter, boardIndex)
-			for _, supporter := range listSupporters {
-				shareRewardIns := self.CreateSingleShareRewardOldBoardIns(helper, voter, supporter, 0)
-				resIns = append(resIns, []frombeaconins.InstructionFromBeacon{shareRewardIns}...)
-			}
+			shareRewardIns := self.CreateShareRewardOldBoardIns(helper, listVotersOfCurrentProposal[i], totalReward, voterAndAmount[i])
+			resIns = append(resIns, shareRewardIns...)
 		}
 	}
 	return resIns, nil
