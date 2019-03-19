@@ -341,7 +341,9 @@ func (tx *Tx) signTx() error {
 	tx.SigPubKey = sigKey.PubKey.PK.Compress()
 
 	// signing
-	Logger.log.Debugf(tx.Hash().String())
+	if Logger.log != nil {
+		Logger.log.Debugf(tx.Hash().String())
+	}
 	signature, err := sigKey.Sign(tx.Hash()[:])
 	if err != nil {
 		return err
