@@ -2,25 +2,27 @@ package frombeaconins
 
 import (
 	"encoding/json"
+	"strconv"
+
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
-	"strconv"
+	"github.com/constant-money/constant-chain/privacy"
 )
 
 type AcceptProposalIns struct {
 	BoardType common.BoardType
 	TxID      common.Hash
-	Voter     component.Voter
+	Voters    []privacy.PaymentAddress
 	ShardID   byte
 }
 
 func NewAcceptProposalIns(
 	boardType common.BoardType,
 	txID common.Hash,
-	voter component.Voter,
+	voters []privacy.PaymentAddress,
 	shardID byte,
 ) *AcceptProposalIns {
-	return &AcceptProposalIns{BoardType: boardType, TxID: txID, Voter: voter, ShardID: shardID}
+	return &AcceptProposalIns{BoardType: boardType, TxID: txID, Voters: voters, ShardID: shardID}
 }
 
 func (acceptProposalIns AcceptProposalIns) GetStringFormat() ([]string, error) {

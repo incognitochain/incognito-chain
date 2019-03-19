@@ -1522,7 +1522,6 @@ func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
 }
 
 func (bc *BlockChain) processUpdateDCBConstitutionIns(inst []string) error {
-	//todo @constant-money
 	// updateConstitutionIns, err := frombeaconins.NewAcceptDCBBoardIns(inst,)
 	// if err != nil {
 	// 	return err

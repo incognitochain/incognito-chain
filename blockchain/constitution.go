@@ -98,19 +98,19 @@ func (helper GOVConstitutionHelper) CheckSubmitProposalType(tx metadata.Transact
 
 func (helper DCBConstitutionHelper) NewAcceptProposalIns(
 	txId *common.Hash,
-	voter component.Voter,
+	voters []privacy.PaymentAddress,
 	shardID byte,
 ) frombeaconins.InstructionFromBeacon {
-	ins := frombeaconins.NewAcceptProposalIns(helper.GetBoardType(), *txId, voter, shardID)
+	ins := frombeaconins.NewAcceptProposalIns(helper.GetBoardType(), *txId, voters, shardID)
 	return ins
 }
 
 func (helper GOVConstitutionHelper) NewAcceptProposalIns(
 	txId *common.Hash,
-	voter component.Voter,
+	voters []privacy.PaymentAddress,
 	shardID byte,
 ) frombeaconins.InstructionFromBeacon {
-	ins := frombeaconins.NewAcceptProposalIns(helper.GetBoardType(), *txId, voter, shardID)
+	ins := frombeaconins.NewAcceptProposalIns(helper.GetBoardType(), *txId, voters, shardID)
 	return ins
 }
 

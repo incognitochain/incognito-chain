@@ -188,8 +188,9 @@ func (db *db) SetEncryptionLastBlockHeight(boardType common.BoardType, height ui
 	db.Put(key, value)
 }
 
-func (db *db) SetNewProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32, voterPaymentAddress privacy.PaymentAddress) error {
+func (db *db) SetNewProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32, paymentAddresseses []privacy.PaymentAddress) error {
 	key := GetKeyWinningVoter(boardType, constitutionIndex)
+	// paymentAddressesByte := make([]byte)
 	db.Put(key, voterPaymentAddress.Bytes())
 	return nil
 }
