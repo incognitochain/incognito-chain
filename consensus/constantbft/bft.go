@@ -79,11 +79,11 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 				// return protocol.pendingBlock, nil
 				//    single-node end    //
 				timeout := time.AfterFunc(ListenTimeout*time.Second, func() {
-					fmt.Println("BFT: Propose phase timeout")
+					fmt.Println("BFT: Propose phase timeout", time.Now().Unix())
 					protocol.closeTimeoutCh()
 				})
 				timeout2 := time.AfterFunc((ListenTimeout/2)*time.Second, func() {
-					fmt.Println("BFT: Request ready msg")
+					fmt.Println("BFT: Request ready msg", time.Now().Unix())
 					if protocol.RoundData.Layer == common.BEACON_ROLE {
 						msgReq, _ := MakeMsgBFTReq(protocol.RoundData.BestStateHash, protocol.RoundData.ProposerOffset, protocol.UserKeySet)
 						if err := protocol.Server.PushMessageToBeacon(msgReq); err != nil {
@@ -137,7 +137,8 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 						break proposephase
 					case msgReady := <-protocol.cBFTMsg:
 						if msgReady.MessageType() == wire.CmdBFTReady {
-							fmt.Println("BFT: pro ", protocol.RoundData.BestStateHash, msgReady.(*wire.MessageBFTReady).BestStateHash, blockchain.GetBestStateBeacon().BeaconHeight)
+							fmt.Println("BFT: pro ", time.Now().Unix(), protocol.RoundData.BestStateHash, msgReady.(*wire.MessageBFTReady).BestStateHash, blockchain.GetBestStateBeacon().BeaconHeight, msgReady.(*wire.MessageBFTReady).ProposerOffset, protocol.RoundData.ProposerOffset, common.IndexOfStr(msgReady.(*wire.MessageBFTReady).Pubkey, protocol.RoundData.Committee))
+
 							if msgReady.(*wire.MessageBFTReady).BestStateHash == protocol.RoundData.BestStateHash && msgReady.(*wire.MessageBFTReady).ProposerOffset == protocol.RoundData.ProposerOffset && common.IndexOfStr(msgReady.(*wire.MessageBFTReady).Pubkey, protocol.RoundData.Committee) != -1 {
 								readyMsgs[msgReady.(*wire.MessageBFTReady).Pubkey] = msgReady.(*wire.MessageBFTReady)
 								if len(readyMsgs) >= (2*len(protocol.RoundData.Committee)/3)-1 {
@@ -197,7 +198,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 							break listenphase
 						} else {
 							if msgPropose.MessageType() == wire.CmdBFTReq {
-								fmt.Println("BFT: val ", protocol.RoundData.BestStateHash, msgPropose.(*wire.MessageBFTReq).BestStateHash, blockchain.GetBestStateBeacon().BeaconHeight)
+								fmt.Println("BFT: val ", time.Now().Unix(), protocol.RoundData.BestStateHash, msgPropose.(*wire.MessageBFTReq).BestStateHash, blockchain.GetBestStateBeacon().BeaconHeight)
 								go func() {
 									if msgPropose.(*wire.MessageBFTReq).BestStateHash == protocol.RoundData.BestStateHash && msgPropose.(*wire.MessageBFTReq).ProposerOffset == protocol.RoundData.ProposerOffset && common.IndexOfStr(msgPropose.(*wire.MessageBFTReq).Pubkey, protocol.RoundData.Committee) != -1 {
 										if protocol.RoundData.Layer == common.BEACON_ROLE {

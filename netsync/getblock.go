@@ -112,7 +112,9 @@ func (netSync *NetSync) GetBlkShardByHeightAndSend(peerID libp2p.ID, fromPool bo
 				continue
 			}
 		}
+
 		err = netSync.config.Server.PushMessageToPeer(blkMsg, peerID)
+		fmt.Println("CROSS:", blkHeights, err)
 		if err != nil {
 			Logger.log.Error(err)
 		}
@@ -170,6 +172,7 @@ func (netSync *NetSync) CreateBlkShardMsgByType(block *blockchain.ShardBlock, bl
 		blkMsg wire.Message
 		err    error
 	)
+
 	switch blkType {
 	case 0:
 		blkMsg, err = wire.MakeEmptyMessage(wire.CmdBlockShard)
@@ -180,6 +183,7 @@ func (netSync *NetSync) CreateBlkShardMsgByType(block *blockchain.ShardBlock, bl
 		blkMsg.(*wire.MessageBlockShard).Block = *block
 	case 1:
 		blkToSend, err := block.CreateCrossShardBlock(crossShardID)
+		fmt.Println("CROSS: ", blkToSend.Header.Height)
 		if err != nil {
 			Logger.log.Error(err)
 			return nil, err

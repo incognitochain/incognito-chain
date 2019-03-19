@@ -244,7 +244,7 @@ func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
 
 	//TODO: @stability
 	//res = append(res, bestStateBeacon.StabilityInfo.GetBytes()...)
-	return common.DoubleHashH(res)
+	//return common.DoubleHashH(res)
 
 	keys = []int{}
 	for k := range bestStateBeacon.ShardHandle {
