@@ -452,7 +452,7 @@ func (chain *BlockChain) AddVoteProposal(inst string) error {
 	boardType := newInst.BoardType
 	// step 4 hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
-	err = chain.GetDatabase().AddVoteNormalProposalDB(
+	err = chain.GetDatabase().AddVoteProposalDB(
 		boardType,
 		nextConstitutionIndex,
 		newInst.VoteProposal.VoterPayment.Bytes(),
