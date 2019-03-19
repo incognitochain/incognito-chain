@@ -10,7 +10,6 @@ import (
 
 const saleDataSep = "-"
 
-// Todo: @0xjackalope, @0xbunyip Check logic in Hash and Validate and rpcfunction because other will change component struct without modified these function
 type SellingBonds struct {
 	BondName       string
 	BondSymbol     string
