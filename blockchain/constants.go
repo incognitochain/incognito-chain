@@ -6,7 +6,6 @@ import "time"
 const (
 	// BlockVersion is the current latest supported block version.
 	BlockVersion                = 1
-	TransactionVersion          = 1
 	defaultMaxBlkReqPerPeer     = 60
 	defaultMaxBlkReqPerTime     = 600
 	defaultBroadcastStateTime   = 2 * time.Second  // in second
@@ -31,14 +30,14 @@ const (
 	MainNetActiveShards        = 2
 
 	//board and proposal parameters
-	MainnetSalaryPerTx                = 10
-	MainnetBasicSalary                = 10
-	MainnetInitFundSalary             = 1000000
-	MainnetInitDCBToken               = 10000
-	MainnetInitGovToken               = 10000
-	MainnetInitCmBToken               = 10000
-	MainnetInitBondToken              = 10000
-	MainnetFeePerTxKb                 = 1
+	MainnetSalaryPerTx                = 0
+	MainnetBasicSalary                = 0
+	MainnetInitFundSalary             = 0
+	MainnetInitDCBToken               = 0
+	MainnetInitGovToken               = 0
+	MainnetInitCmBToken               = 0
+	MainnetInitBondToken              = 0
+	MainnetFeePerTxKb                 = 0
 	MainnetGenesisblockPaymentAddress = "1UuyYcHgVFLMd8Qy7T1ZWRmfFvaEgogF7cEsqY98ubQjoQUy4VozTqyfSNjkjhjR85C6GKBmw1JKekgMwCeHtHex25XSKwzb9QPQ2g6a3"
 	// ------------- end Mainnet --------------------------------------
 )
