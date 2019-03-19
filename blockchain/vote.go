@@ -265,10 +265,9 @@ func (chain *BlockChain) CreateSingleShareRewardOldBoardIns(
 	chairPaymentAddress privacy.PaymentAddress,
 	voterPaymentAddress privacy.PaymentAddress,
 	amountOfCoin uint64,
-	amountOfToken uint64,
 ) frombeaconins.InstructionFromBeacon {
 	return frombeaconins.NewShareRewardOldBoardMetadataIns(
-		chairPaymentAddress, voterPaymentAddress, helper.GetBoardType(), amountOfCoin, amountOfToken,
+		chairPaymentAddress, voterPaymentAddress, helper.GetBoardType(), amountOfCoin,
 	)
 }
 
@@ -276,7 +275,6 @@ func (chain *BlockChain) CreateShareRewardOldBoardIns(
 	helper ConstitutionHelper,
 	chairPaymentAddress privacy.PaymentAddress,
 	totalAmountCoinReward uint64,
-	totalAmountTokenReward uint64,
 	totalVoteAmount uint64,
 ) []frombeaconins.InstructionFromBeacon {
 	Ins := make([]frombeaconins.InstructionFromBeacon, 0)
@@ -286,13 +284,11 @@ func (chain *BlockChain) CreateShareRewardOldBoardIns(
 	for _, pubKey := range voterList {
 		amountOfVote := helper.GetAmountOfVoteToBoard(chain, chairPaymentAddress, pubKey, boardIndex)
 		amountOfCoin := amountOfVote * totalAmountCoinReward / totalVoteAmount
-		amountOfToken := amountOfVote * totalAmountTokenReward / totalVoteAmount
 		Ins = append(Ins, chain.CreateSingleShareRewardOldBoardIns(
 			helper,
 			chairPaymentAddress,
 			pubKey,
 			amountOfCoin,
-			amountOfToken,
 		))
 	}
 	return Ins
