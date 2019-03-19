@@ -437,7 +437,6 @@ func (chain *BlockChain) neededNewGovernor(boardType common.BoardType) bool {
 }
 
 func (self *BlockChain) generateVotingInstructionWOIns(shardID byte) ([][]string, error) {
-	//todo 0xjackalope
 
 	// 	prevBlock := blockgen.chain.BestState[shardID].BestBlock
 	instructions := make([]frombeaconins.InstructionFromBeacon, 0)
