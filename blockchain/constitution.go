@@ -122,14 +122,6 @@ func (helper GOVConstitutionHelper) GetBoardType() common.BoardType {
 	return common.GOVBoard
 }
 
-func (helper DCBConstitutionHelper) CreatePunishDecryptIns(paymentAddress *privacy.PaymentAddress) frombeaconins.InstructionFromBeacon {
-	return frombeaconins.NewPunishDecryptIns(helper.GetBoardType(), *paymentAddress)
-}
-
-func (helper GOVConstitutionHelper) CreatePunishDecryptIns(paymentAddress *privacy.PaymentAddress) frombeaconins.InstructionFromBeacon {
-	return frombeaconins.NewPunishDecryptIns(helper.GetBoardType(), *paymentAddress)
-}
-
 func (helper DCBConstitutionHelper) NewRewardProposalSubmitterIns(chain *BlockChain, receiverAddress *privacy.PaymentAddress) (frombeaconins.InstructionFromBeacon, error) {
 	return frombeaconins.NewRewardProposalSubmitterIns(receiverAddress, common.RewardProposalSubmitter), nil
 }

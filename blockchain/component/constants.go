@@ -1,14 +1,12 @@
 package component
 
 const (
-	NormalVoteProposalIns = 100 + iota
-	PunishDecryptIns
+	VoteProposalIns = 100 + iota
 	NewDCBConstitutionIns
 	NewGOVConstitutionIns
 	UpdateDCBConstitutionIns
 	UpdateGOVConstitutionIns
 	VoteBoardIns
-	VoteGOVBoardIns
 
 	AcceptDCBProposalIns
 	AcceptDCBBoardIns

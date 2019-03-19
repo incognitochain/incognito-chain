@@ -229,7 +229,7 @@ func (rpcServer RpcServer) handleCreateRawVoteGOVBoardTransaction(
 	closeChan <-chan struct{},
 ) (interface{}, *RPCError) {
 	params = setBuildRawBurnTransactionParams(params, FeeVote)
-	return rpcServer.createRawCustomTokenTxWithMetadata(params, closeChan, metadata.NewVoteDCBBoardMetadataFromRPC)
+	return rpcServer.createRawCustomTokenTxWithMetadata(params, closeChan, metadata.NewVoteGOVBoardMetadataFromRPC)
 }
 
 func (rpcServer RpcServer) handleCreateAndSendVoteGOVBoardTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
