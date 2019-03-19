@@ -351,7 +351,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return NewBlockChainError(HashError, errors.New("can't Verify Transaction Root"))
 	}
 	// Verify ShardTx Root
-	_, shardTxMerkleData := CreateShardTxRoot(block.Body.Transactions)
+	_, shardTxMerkleData := CreateShardTxRoot2(block.Body.Transactions)
 	shardTxRoot := shardTxMerkleData[len(shardTxMerkleData)-1]
 	fmt.Println("ShardProcess/Shard Tx Root", shardTxMerkleData[len(shardTxMerkleData)-1])
 	if !bytes.Equal(block.Header.ShardTxRoot.GetBytes(), shardTxRoot.GetBytes()) {

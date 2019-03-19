@@ -46,7 +46,6 @@ func CreateShardGenesisBlock(
 	icoParams GenesisParams,
 ) *ShardBlock {
 
-	log.Printf("Ico payment address:", icoParams.InitialPaymentAddress)
 	keyWallet, err := wallet.Base58CheckDeserialize(icoParams.InitialPaymentAddress)
 	if err != nil {
 		panic(err)
