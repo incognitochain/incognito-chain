@@ -3,21 +3,21 @@ package metadata
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 )
 
 type ProposalVote struct {
-	TxId         common.Hash
-	AmountOfVote int64
+	TxId common.Hash
+	// AmountOfVote int64
 	NumberOfVote uint32
 }
 
 func (proposalVote ProposalVote) Greater(proposalVote2 ProposalVote) bool {
-	return proposalVote.AmountOfVote > proposalVote2.AmountOfVote ||
-		(proposalVote.AmountOfVote == proposalVote2.AmountOfVote && proposalVote.NumberOfVote > proposalVote2.NumberOfVote) ||
-		(proposalVote.AmountOfVote == proposalVote2.AmountOfVote && proposalVote.NumberOfVote == proposalVote2.NumberOfVote && string(proposalVote.TxId.GetBytes()) > string(proposalVote2.TxId.GetBytes()))
+	return (proposalVote.NumberOfVote > proposalVote2.NumberOfVote) ||
+		(proposalVote.NumberOfVote == proposalVote2.NumberOfVote && string(proposalVote.TxId.GetBytes()) > string(proposalVote2.TxId.GetBytes()))
 }
 
 type AcceptProposalMetadata struct {
