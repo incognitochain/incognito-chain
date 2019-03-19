@@ -135,7 +135,7 @@ func (db *db) NewIterator(slice *util.Range, ro *opt.ReadOptions) iterator.Itera
 	return db.lvdb.NewIterator(slice, ro)
 }
 
-func (db *db) AddVoteNormalProposalDB(boardType common.BoardType, constitutionIndex uint32, voterPayment []byte, proposalTxID []byte) error {
+func (db *db) AddVoteProposalDB(boardType common.BoardType, constitutionIndex uint32, voterPayment []byte, proposalTxID []byte) error {
 	key := GetKeyVoteProposal(boardType, constitutionIndex, privacy.NewPaymentAddressFromByte(voterPayment))
 	ok, err := db.HasValue(key)
 	if err != nil {
