@@ -413,7 +413,7 @@ func (rpcServer RpcServer) handleCreateAndSendCustomTokenTransaction(params inte
 	if err != nil {
 		return nil, err
 	}
-	return tx, err
+	return tx, nil
 }
 
 func (rpcServer RpcServer) handleGetListCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -874,7 +874,7 @@ func (rpcServer RpcServer) handleCreateAndSendPrivacyCustomTokenTransaction(para
 	if err == nil {
 		return tx, nil
 	}
-	return txId, err
+	return txId, nil
 }
 
 /*
