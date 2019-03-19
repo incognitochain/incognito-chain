@@ -241,7 +241,9 @@ func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
 	for _, key := range keyStrs {
 		res = append(res, []byte(bestStateBeacon.Params[key])...)
 	}
-	res = append(res, bestStateBeacon.StabilityInfo.GetBytes()...)
+
+	//TODO: @stability
+	//res = append(res, bestStateBeacon.StabilityInfo.GetBytes()...)
 	return common.DoubleHashH(res)
 
 	keys = []int{}
@@ -280,6 +282,7 @@ func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
 			res = append(res, valueBytes...)
 		}
 	}
+
 	return common.HashH(res)
 }
 
