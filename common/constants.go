@@ -107,7 +107,7 @@ const (
 	VALIDATOR_ROLE = "validator"
 	PENDING_ROLE   = "pending"
 
-	MAX_SHARD_NUMBER = 5
+	MAX_SHARD_NUMBER = 4
 )
 
 // Units converter

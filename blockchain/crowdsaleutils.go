@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
@@ -28,7 +27,7 @@ func buildPaymentForCoin(
 	copy(metaPay.SaleID, saleID)
 	metaPayList := []metadata.Metadata{metaPay}
 
-	fmt.Printf("[db] build CST payment: %d\n", amount)
+	// fmt.Printf("[db] build CST payment: %d\n", amount)
 
 	amounts := []uint64{amount}
 	txs, err := transaction.BuildCoinbaseTxs([]*privacy.PaymentAddress{&receiverAddress}, amounts, producerPrivateKey, db, metaPayList) // There's only one tx in txs
@@ -149,7 +148,7 @@ func buildPaymentForToken(
 	if mint {
 		txToken = mintTxToken(tokenAmount, tokenID, receiverAddress, metaPay)
 	} else {
-		fmt.Printf("[db] transferTxToken with unspentTxTokenOuts && tokenAmount: %+v %d\n", unspentTxTokenOuts, tokenAmount)
+		// fmt.Printf("[db] transferTxToken with unspentTxTokenOuts && tokenAmount: %+v %d\n", unspentTxTokenOuts, tokenAmount)
 		txToken, usedID, err = transferTxToken(tokenAmount, unspentTxTokenOuts, tokenID, receiverAddress, metaPay)
 		if err != nil {
 			return nil, err
@@ -193,7 +192,7 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 		// Get unspent token UTXO to send to user
 		if _, ok := unspentTokens[assetID.String()]; !ok {
 			unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(keyWalletDCBAccount.KeySet, assetID)
-			fmt.Printf("[db] unspentTxTokenOuts: %+v\n%v\n", unspentTxTokenOuts, err)
+			// fmt.Printf("[db] unspentTxTokenOuts: %+v\n%v\n", unspentTxTokenOuts, err)
 			if err == nil {
 				unspentTokens[assetID.String()] = unspentTxTokenOuts
 			} else {

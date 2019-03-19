@@ -3,7 +3,6 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
@@ -102,7 +101,7 @@ func (bc *BlockChain) StoreMetadataInstructions(inst []string, shardID byte) err
 }
 
 func (bc *BlockChain) storeIssuingResponseInstruction(inst []string, shardID byte) error {
-	fmt.Printf("[db] store meta inst: %+v\n", inst)
+	// fmt.Printf("[db] store meta inst: %+v\n", inst)
 	if strconv.Itoa(int(shardID)) != inst[1] {
 		return nil
 	}
@@ -118,7 +117,7 @@ func (bc *BlockChain) storeIssuingResponseInstruction(inst []string, shardID byt
 }
 
 func (bc *BlockChain) storeContractingResponseInstruction(inst []string, shardID byte) error {
-	fmt.Printf("[db] store meta inst: %+v\n", inst)
+	// fmt.Printf("[db] store meta inst: %+v\n", inst)
 	if strconv.Itoa(int(shardID)) != inst[1] {
 		return nil
 	}
