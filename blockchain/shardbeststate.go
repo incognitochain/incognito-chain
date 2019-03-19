@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"encoding/binary"
-	"fmt"
 	"sort"
 	"sync"
 
@@ -101,10 +100,10 @@ func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string, proposerOffse
 	if found > -1 {
 		tmpID := (bestStateShard.ShardProposerIdx + proposerOffset + 1) % len(bestStateShard.ShardCommittee)
 		if found == tmpID {
-			fmt.Printf("Shard BestState/ Get Public Key Role, ROLE %+v , Shard %+v \n", common.PROPOSER_ROLE, bestStateShard.ShardID)
+			// fmt.Printf("Shard BestState/ Get Public Key Role, ROLE %+v , Shard %+v \n", common.PROPOSER_ROLE, bestStateShard.ShardID)
 			return common.PROPOSER_ROLE
 		} else {
-			fmt.Printf("Shard BestState/ Get Public Key Role, ROLE %+v , Shard %+v \n", common.VALIDATOR_ROLE, bestStateShard.ShardID)
+			// fmt.Printf("Shard BestState/ Get Public Key Role, ROLE %+v , Shard %+v \n", common.VALIDATOR_ROLE, bestStateShard.ShardID)
 			return common.VALIDATOR_ROLE
 		}
 
@@ -112,7 +111,7 @@ func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string, proposerOffse
 
 	found = common.IndexOfStr(pubkey, bestStateShard.ShardPendingValidator)
 	if found > -1 {
-		fmt.Printf("Shard BestState/ Get Public Key Role, ROLE %+v , Shard %+v \n", common.PENDING_ROLE, bestStateShard.ShardID)
+		// fmt.Printf("Shard BestState/ Get Public Key Role, ROLE %+v , Shard %+v \n", common.PENDING_ROLE, bestStateShard.ShardID)
 		return common.PENDING_ROLE
 	}
 
