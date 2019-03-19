@@ -169,7 +169,7 @@ func (stateBeacon *BestStateBeacon) UpdateDCBBoard(ins frombeaconins.AcceptDCBBo
 	stateBeacon.StabilityInfo.DCBGovernor.BoardPaymentAddress = ins.BoardPaymentAddress
 	stateBeacon.StabilityInfo.DCBGovernor.StartedBlock = stateBeacon.BestBlock.Header.Height
 	stateBeacon.StabilityInfo.DCBGovernor.EndBlock = stateBeacon.StabilityInfo.DCBGovernor.StartedBlock + common.DurationOfDCBBoard
-	Logger.log.Error("New endblock is: ", stateBeacon.StabilityInfo.DCBGovernor.EndBlock, "\n")
+	Logger.log.Info("New DCBGovernor.EndBlock is: ", stateBeacon.StabilityInfo.DCBGovernor.EndBlock, "\n")
 	stateBeacon.StabilityInfo.DCBGovernor.StartAmountToken = ins.StartAmountToken
 	return nil
 }
@@ -179,10 +179,12 @@ func (stateBeacon *BestStateBeacon) UpdateGOVBoard(ins frombeaconins.AcceptGOVBo
 	stateBeacon.StabilityInfo.GOVGovernor.BoardPaymentAddress = ins.BoardPaymentAddress
 	stateBeacon.StabilityInfo.GOVGovernor.StartedBlock = stateBeacon.BestBlock.Header.Height
 	stateBeacon.StabilityInfo.GOVGovernor.EndBlock = stateBeacon.StabilityInfo.GOVGovernor.StartedBlock + common.DurationOfGOVBoard
+	Logger.log.Info("New DCBGovernor.EndBlock is: ", stateBeacon.StabilityInfo.GOVGovernor.EndBlock, "\n")
 	stateBeacon.StabilityInfo.GOVGovernor.StartAmountToken = ins.StartAmountToken
 	return nil
 }
 
+//????
 func (blockchain *BlockChain) UpdateDCBFund(tx metadata.Transaction) {
 	blockchain.BestState.Beacon.StabilityInfo.BankFund -= common.RewardProposalSubmitter
 }
@@ -286,16 +288,15 @@ func (chain *BlockChain) CreateShareRewardOldBoardIns(
 	totalVoteAmount uint64,
 ) []frombeaconins.InstructionFromBeacon {
 	Ins := make([]frombeaconins.InstructionFromBeacon, 0)
-
-	voterList := chain.config.DataBase.GetBoardVoterList(helper.GetBoardType(), chairPaymentAddress, chain.GetCurrentBoardIndex(helper))
 	boardIndex := chain.GetCurrentBoardIndex(helper)
-	for _, pubKey := range voterList {
-		amountOfVote := helper.GetAmountOfVoteToBoard(chain, chairPaymentAddress, pubKey, boardIndex)
+	voterList := chain.config.DataBase.GetBoardVoterList(helper.GetBoardType(), chairPaymentAddress, boardIndex)
+	for _, voter := range voterList {
+		amountOfVote := helper.GetAmountOfVoteToBoard(chain, chairPaymentAddress, voter, boardIndex)
 		amountOfCoin := amountOfVote * totalAmountCoinReward / totalVoteAmount
 		Ins = append(Ins, chain.CreateSingleShareRewardOldBoardIns(
 			helper,
 			chairPaymentAddress,
-			pubKey,
+			voter,
 			amountOfCoin,
 		))
 	}
@@ -316,8 +317,24 @@ func (self *BlockChain) createSendRewardOldBoardIns(
 	if prize < 0 {
 		return nil, nil
 	}
-	ins := make([]frombeaconins.InstructionFromBeacon, 0)
+	boardIndex := self.GetCurrentBoardIndex(helper)
+	boardType := helper.GetBoardType()
+	resIns := make([]frombeaconins.InstructionFromBeacon, 0)
 	for _, paymentAddress := range paymentAddresses {
+		ins := make([]frombeaconins.InstructionFromBeacon, 0)
+		voterList := self.config.DataBase.GetBoardVoterList(boardType, paymentAddress, boardIndex)
+		for _, voter := range voterList {
+			amountOfVote := helper.GetAmountOfVoteToBoard(self, paymentAddress, voter, boardIndex)
+			// 	amountOfCoin := amountOfVote * prize / totalVoteAmount
+			// 	Ins = append(Ins, self.Creates
+			// 		helper,
+			// 		chairPaymentAddress,
+			// 		voter,
+			// 		amountOfCoin,
+			// 	))
+		}
+		// return nil, Ins
+
 		// todo
 		boardSupporters, err := self.config.DataBase.GetListSupporters(helper.GetBoardType(), paymentAddress)
 		if err != nil {
@@ -331,7 +348,7 @@ func (self *BlockChain) createSendRewardOldBoardIns(
 			ins = append(ins, []frombeaconins.InstructionFromBeacon{*rewardIns}...)
 		}
 	}
-	return ins, nil
+	return resIns, nil
 }
 
 //todo @0xjackalope reward for chair
