@@ -197,10 +197,8 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 		case component.VoteBoardIns:
 			err = blkTmpGen.chain.AddVoteBoard(inst[2])
 
-		case component.NormalVoteProposalIns:
-			err = blkTmpGen.chain.AddNormalVoteProposal(inst[2])
-		case component.PunishDecryptIns:
-			// todo @0xjackalope
+		case component.VoteProposalIns:
+			err = blkTmpGen.chain.AddVoteProposal(inst[2])
 		default:
 			continue
 		}
@@ -446,7 +444,7 @@ func (chain *BlockChain) AddVoteBoard(inst string) error {
 	return nil
 }
 
-func (chain *BlockChain) AddNormalVoteProposal(inst string) error {
+func (chain *BlockChain) AddVoteProposal(inst string) error {
 	newInst, err := fromshardins.NewNormalVoteProposalInsFromStr(inst)
 	if err != nil {
 		return err
