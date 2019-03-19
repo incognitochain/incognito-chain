@@ -17,7 +17,3 @@ func (voteProposalData VoteProposalData) ToBytes() []byte {
 	b = append(b, voteProposalData.VoterPayment.Bytes()...)
 	return b
 }
-
-// func NewVoteProposalDataFromByte(b []byte) VoteProposalData {
-// 	return nil
-// }

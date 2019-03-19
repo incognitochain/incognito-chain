@@ -1588,40 +1588,6 @@ func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
 //	return nil
 //}
 //
-//func (blockchain *BlockChain) UpdateVoteCountBoard(block *Block) error {
-//	DCBBoardIndex := uint32(0)
-//	GOVBoardIndex := uint32(0)
-//	if block.Header.Height != 1 {
-//		DCBBoardIndex = block.Header.DCBGovernor.BoardIndex + 1
-//		GOVBoardIndex = block.Header.GOVGovernor.BoardIndex + 1
-//	}
-//	for _, tx := range block.Transactions {
-//		switch tx.GetMetadataType() {
-//		case metadata.VoteDCBBoardMeta:
-//			{
-//				txCustomToken := tx.(*transaction.TxCustomToken)
-//				voteAmount := txCustomToken.GetAmountOfVote()
-//				voteDCBBoardMetadata := txCustomToken.Metadata.(*metadata.VoteDCBBoardMetadata)
-//				err := blockchain.config.DataBase.AddVoteBoard(common.DCBBoard, DCBBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteDCBBoardMetadata.CandidatePaymentAddress, voteAmount)
-//				if err != nil {
-//					return err
-//				}
-//			}
-//		case metadata.VoteGOVBoardMeta:
-//			{
-//				txCustomToken := tx.(*transaction.TxCustomToken)
-//				voteAmount := txCustomToken.GetAmountOfVote()
-//				voteGOVBoardMetadata := txCustomToken.Metadata.(*metadata.VoteGOVBoardMetadata)
-//				err := blockchain.config.DataBase.AddVoteBoard(common.GOVBoard, common.GOVBoardIndex, txCustomToken.TxTokenData.Vins[0].PaymentAddress.Bytes(), txCustomToken.TxTokenData.Vins[0].PaymentAddress, voteGOVBoardMetadata.CandidatePaymentAddress, voteAmount)
-//				if err != nil {
-//					return err
-//				}
-//			}
-//		}
-//	}
-//	return nil
-//}
-//
 //func (blockchain *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 //	// Temp storage to update crowdsale data
 //	saleDataMap := make(map[string]*component.SaleData)
