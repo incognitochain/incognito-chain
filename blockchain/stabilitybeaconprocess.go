@@ -365,7 +365,18 @@ func (bsb *BestStateBeacon) processUpdateDCBProposalInstruction(ins frombeaconin
 }
 
 func (bsb *BestStateBeacon) processUpdateGOVProposalInstruction(ins frombeaconins.UpdateGOVConstitutionIns) error {
-	panic("")
+	oldConstitution := bsb.StabilityInfo.DCBConstitution
+	bsb.StabilityInfo.GOVConstitution = GOVConstitution{
+		ConstitutionInfo: ConstitutionInfo{
+			ConstitutionIndex:  oldConstitution.ConstitutionIndex + 1,
+			StartedBlockHeight: bsb.BestBlock.Header.Height,
+			ExecuteDuration:    ins.SubmitProposalInfo.ExecuteDuration,
+			Explanation:        ins.SubmitProposalInfo.Explanation,
+			Voter:              ins.Voter,
+		},
+		CurrentGOVNationalWelfare: GetOracleGOVNationalWelfare(),
+		GOVParams:                 ins.GOVParams,
+	}
 	return nil
 }
 

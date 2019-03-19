@@ -1517,6 +1517,25 @@ func (bc *BlockChain) processUpdateDCBConstitutionIns(inst []string) error {
 
 func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
 	//todo @constant-money
+	updateConstitutionIns, err := frombeaconins.NewUpdateGOVConstitutionInsFromStr(inst)
+	if err != nil {
+		return err
+	}
+	boardType := common.GOVBoard
+	constitution := bc.GetConstitution(boardType)
+	nextConstitutionIndex := constitution.GetConstitutionIndex() + 1
+	err = bc.GetDatabase().SetNewProposalWinningVoter(
+		boardType,
+		nextConstitutionIndex,
+		updateConstitutionIns.Voter.PaymentAddress,
+	)
+	if err != nil {
+		return err
+	}
+	err = bc.BestState.Beacon.processUpdateGOVProposalInstruction(*updateConstitutionIns)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
