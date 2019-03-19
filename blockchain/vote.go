@@ -306,34 +306,6 @@ func (chain *BlockChain) GetCoinTermReward(helper ConstitutionHelper) uint64 {
 	return helper.GetBoardFund(chain) * common.PercentageBoardSalary / common.BasePercentage
 }
 
-func (self *BlockChain) createSendRewardOldBoardIns(
-	helper ConstitutionHelper,
-	shardID byte,
-) ([]frombeaconins.InstructionFromBeacon, error) {
-	//reward for each by voteDCBList
-	paymentAddresses := helper.GetCurrentBoardPaymentAddress(self)
-	prize := helper.GetOldNationalWelfare(self)
-	if prize < 0 {
-		return nil, nil
-	}
-	ins := make([]frombeaconins.InstructionFromBeacon, 0)
-	for _, paymentAddress := range paymentAddresses {
-		// todo
-		boardSupporters, err := self.config.DataBase.GetListSupporters(helper.GetBoardType(), paymentAddress)
-		if err != nil {
-			continue
-		}
-		rewardIns := frombeaconins.NewRewardProposalWinnerIns(paymentAddress, uint32(prize))
-		ins = append(ins, []frombeaconins.InstructionFromBeacon{*rewardIns}...)
-		for _, supporter := range boardSupporters {
-			//todo: recalculate prize
-			rewardIns := frombeaconins.NewRewardProposalSubmitterIns(supporter, uint64(prize))
-			ins = append(ins, []frombeaconins.InstructionFromBeacon{*rewardIns}...)
-		}
-	}
-	return ins, nil
-}
-
 //todo @0xjackalope reward for chair
 func (self *BlockChain) CreateUpdateNewGovernorInstruction(
 	helper ConstitutionHelper,
@@ -383,12 +355,8 @@ func (self *BlockChain) CreateUpdateNewGovernorInstruction(
 	}
 	instructions = append(instructions, sendBackTokenAfterVoteFailIns...)
 
-	sendRewardOldBoardIns, err := self.createSendRewardOldBoardIns(helper, shardID)
-	if err != nil {
-		return nil, err
-	}
-	instructions = append(instructions, sendRewardOldBoardIns...)
-
+	// hyyyyyyyyyyyyyyyyyyyyy
+	// send back dcbtoken after board
 	return instructions, nil
 }
 
