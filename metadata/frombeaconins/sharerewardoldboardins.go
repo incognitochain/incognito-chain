@@ -16,7 +16,6 @@ type TxShareRewardOldBoardMetadataIns struct {
 	VoterPaymentAddress privacy.PaymentAddress
 	BoardType           common.BoardType
 	AmountOfCoin        uint64
-	AmountOfToken       uint64
 }
 
 func (txShareRewardOldBoardMetadataIns *TxShareRewardOldBoardMetadataIns) GetStringFormat() ([]string, error) {
@@ -43,14 +42,12 @@ func NewShareRewardOldBoardMetadataIns(
 	voterPaymentAddress privacy.PaymentAddress,
 	boardType common.BoardType,
 	amountOfCoin uint64,
-	amountOfToken uint64,
 ) *TxShareRewardOldBoardMetadataIns {
 	return &TxShareRewardOldBoardMetadataIns{
 		ChairPaymentAddress: chairPaymentAddress,
 		VoterPaymentAddress: voterPaymentAddress,
 		BoardType:           boardType,
 		AmountOfCoin:        amountOfCoin,
-		AmountOfToken:       amountOfToken,
 	}
 }
 
@@ -63,55 +60,16 @@ func (txShareRewardOldBoardMetadataIns *TxShareRewardOldBoardMetadataIns) BuildT
 		txShareRewardOldBoardMetadataIns.VoterPaymentAddress,
 		txShareRewardOldBoardMetadataIns.BoardType,
 	)
-	var propertyID common.Hash
-	if txShareRewardOldBoardMetadataIns.BoardType == common.DCBBoard {
-		propertyID = common.DCBTokenID
-	} else {
-		propertyID = common.GOVTokenID
-	}
-	txTokenData := transaction.TxTokenData{
-		Type:       transaction.CustomTokenInit,
-		Amount:     txShareRewardOldBoardMetadataIns.AmountOfToken,
-		PropertyID: propertyID,
-		Vins:       []transaction.TxTokenVin{},
-		Vouts:      []transaction.TxTokenVout{},
-	}
-
-	txCustomToken, err := NewVoteCustomTokenTx(
+	tx := transaction.Tx{}
+	err := tx.InitTxSalary(
 		txShareRewardOldBoardMetadataIns.AmountOfCoin,
 		&txShareRewardOldBoardMetadataIns.VoterPaymentAddress,
 		minerPrivateKey,
 		db,
 		rewardShareOldBoardMeta,
-		txTokenData,
-	)
-
-	return txCustomToken, err
-}
-
-func NewVoteCustomTokenTx(
-	salary uint64,
-	paymentAddress *privacy.PaymentAddress,
-	minerPrivateKey *privacy.SpendingKey,
-	db database.DatabaseInterface,
-	meta metadata.Metadata,
-	txTokenData transaction.TxTokenData,
-) (metadata.Transaction, error) {
-	tx := transaction.Tx{}
-	err := tx.InitTxSalary(
-		salary,
-		paymentAddress,
-		minerPrivateKey,
-		db,
-		meta,
 	)
 	if err != nil {
 		return nil, err
 	}
-	txCustomToken := transaction.TxCustomToken{
-		Tx:          tx,
-		TxTokenData: txTokenData,
-	}
-	txCustomToken.Type = common.TxCustomTokenType
-	return &txCustomToken, nil
+	return &tx, nil
 }
