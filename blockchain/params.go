@@ -31,8 +31,8 @@ type GenesisParams struct {
 	InitialCMBToken       uint64
 	InitialGOVToken       uint64
 	InitialBondToken      uint64
-	InitialVoteDCBToken   uint64
-	InitialVoteGOVToken   uint64
+
+	InitialConstant []string
 
 	SalaryPerTx uint64
 	BasicSalary uint64
@@ -62,6 +62,8 @@ var genesisParamsTestnetNew = GenesisParams{
 	PreSelectBeaconNode:                 PreSelectBeaconNodeTestnet,
 	PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeTestnetSerializedPubkey,
 	PreSelectShardNode:                  PreSelectShardNodeTestnet,
+
+	InitialConstant: TestnetInitConstant,
 }
 
 var ChainTestParam = Params{
@@ -94,6 +96,8 @@ var genesisParamsMainnetNew = GenesisParams{
 	PreSelectBeaconNode:                 PreSelectBeaconNodeMainnet,
 	PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeMainnetSerializedPubkey,
 	PreSelectShardNode:                  PreSelectShardNodeMainnet,
+
+	InitialConstant: MainnetInitConstant,
 }
 
 var ChainMainParam = Params{

@@ -64,6 +64,12 @@ func CreateShardGenesisBlock(
 		ProducerAddress: &privacy.PaymentAddress{},
 	}
 
+	for _, tx := range icoParams.InitialConstant {
+		testSalaryTX := transaction.Tx{}
+		testSalaryTX.UnmarshalJSON([]byte(tx))
+		body.Transactions = append(body.Transactions, &testSalaryTX)
+	}
+
 	block := &ShardBlock{
 		Body:   body,
 		Header: header,
