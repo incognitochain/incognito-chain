@@ -76,44 +76,52 @@ func CreateShardGenesisBlock(
 	}
 
 	// Create genesis token tx for DCB
-	dcbTokenTx := createSpecialTokenTx( // DCB
-		common.Hash(common.DCBTokenID),
-		"Decentralized central bank token",
-		"DCB",
-		icoParams.InitialDCBToken,
-		keyWallet.KeySet.PaymentAddress,
-	)
-	block.Body.Transactions = append(block.Body.Transactions, &dcbTokenTx)
+	if icoParams.InitialDCBToken > 0 {
+		dcbTokenTx := createSpecialTokenTx( // DCB
+			common.Hash(common.DCBTokenID),
+			"Decentralized central bank token",
+			"DCB",
+			icoParams.InitialDCBToken,
+			keyWallet.KeySet.PaymentAddress,
+		)
+		block.Body.Transactions = append(block.Body.Transactions, &dcbTokenTx)
+	}
 
 	// Create genesis token tx for GOV
-	govTokenTx := createSpecialTokenTx(
-		common.Hash(common.GOVTokenID),
-		"Government token",
-		"GOV",
-		icoParams.InitialGOVToken,
-		keyWallet.KeySet.PaymentAddress,
-	)
-	block.Body.Transactions = append(block.Body.Transactions, &govTokenTx)
+	if icoParams.InitialGOVToken > 0 {
+		govTokenTx := createSpecialTokenTx(
+			common.Hash(common.GOVTokenID),
+			"Government token",
+			"GOV",
+			icoParams.InitialGOVToken,
+			keyWallet.KeySet.PaymentAddress,
+		)
+		block.Body.Transactions = append(block.Body.Transactions, &govTokenTx)
+	}
 
 	// Create genesis token tx for CMB
-	cmbTokenTx := createSpecialTokenTx(
-		common.Hash(common.CMBTokenID),
-		"Commercial bank token",
-		"CMB",
-		icoParams.InitialCMBToken,
-		keyWallet.KeySet.PaymentAddress,
-	)
-	block.Body.Transactions = append(block.Body.Transactions, &cmbTokenTx)
+	if icoParams.InitialCMBToken > 0 {
+		cmbTokenTx := createSpecialTokenTx(
+			common.Hash(common.CMBTokenID),
+			"Commercial bank token",
+			"CMB",
+			icoParams.InitialCMBToken,
+			keyWallet.KeySet.PaymentAddress,
+		)
+		block.Body.Transactions = append(block.Body.Transactions, &cmbTokenTx)
+	}
 
 	// Create genesis token tx for BOND test
-	bondTokenTx := createSpecialTokenTx(
-		common.Hash([common.HashSize]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
-		"BondTest",
-		"BONTest",
-		icoParams.InitialBondToken,
-		keyWallet.KeySet.PaymentAddress,
-	)
-	block.Body.Transactions = append(block.Body.Transactions, &bondTokenTx)
+	if icoParams.InitialBondToken > 0 {
+		bondTokenTx := createSpecialTokenTx(
+			common.Hash([common.HashSize]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
+			"BondTest",
+			"BONTest",
+			icoParams.InitialBondToken,
+			keyWallet.KeySet.PaymentAddress,
+		)
+		block.Body.Transactions = append(block.Body.Transactions, &bondTokenTx)
+	}
 
 	return block
 }
