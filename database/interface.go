@@ -170,7 +170,8 @@ type DatabaseInterface interface {
 	NewIterator(*util.Range, *opt.ReadOptions) iterator.Iterator
 	GetKey(string, interface{}) []byte
 	AddVoteProposalDB(boardType common.BoardType, constitutionIndex uint32, voterPayment []byte, proposalTxID []byte) error
-	SetNewProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32, paymentAddress privacy.PaymentAddress) error
+	SetNewProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32, paymentAddresses []privacy.PaymentAddress) error
+	GetCurrentProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32) ([]privacy.PaymentAddress, error)
 	GetEncryptFlag(boardType common.BoardType) (byte, error)
 	SetEncryptFlag(boardType common.BoardType, flag byte)
 	GetEncryptionLastBlockHeight(boardType common.BoardType) (uint64, error)

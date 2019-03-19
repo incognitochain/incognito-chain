@@ -18,7 +18,7 @@ import (
 type ConstitutionHelper interface {
 	GetStartedNormalVote(chain *BlockChain) uint64
 	CheckSubmitProposalType(tx metadata.Transaction) bool
-	NewAcceptProposalIns(txId *common.Hash, voter component.Voter, shardID byte) frombeaconins.InstructionFromBeacon
+	NewAcceptProposalIns(txId *common.Hash, voter []privacy.PaymentAddress, shardID byte) frombeaconins.InstructionFromBeacon
 	GetBoardType() common.BoardType
 	GetConstitutionEndedBlockHeight(chain *BlockChain) uint64
 	NewRewardProposalSubmitterIns(blockgen *BlockChain, receiverAddress *privacy.PaymentAddress) (instruction frombeaconins.InstructionFromBeacon, err error)
@@ -108,14 +108,11 @@ func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 ) ([]frombeaconins.InstructionFromBeacon, error) {
 	resIns := make([]frombeaconins.InstructionFromBeacon, 0)
 	VoteTable, CountVote, err := self.BuildVoteTableAndPunishTransaction(helper)
-	// NextConstitutionIndex := self.GetCurrentBoardIndex(helper)
 	bestProposal := metadata.ProposalVote{
 		TxId:         common.Hash{},
 		NumberOfVote: 0,
 	}
-	//var bestVoterAll component.Voter
-	//// Get most vote proposal
-	// db := self.config.DataBase
+	db := self.config.DataBase
 	for txId, _ := range VoteTable {
 		if CountVote[txId] > bestProposal.NumberOfVote {
 			bestProposal.TxId = txId
@@ -126,25 +123,45 @@ func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 	if err != nil {
 		return nil, err
 	}
-	// helper
 	submitterPaymentAddress := helper.GetPaymentAddressFromSubmitProposalMetadata(bestSubmittedProposal)
-	//
-	//// If submitterPaymentAdress use don't use privacy for
-	if submitterPaymentAddress == nil {
+	if submitterPaymentAddress != nil {
 		rewardForProposalSubmitterIns, err := helper.NewRewardProposalSubmitterIns(self, submitterPaymentAddress)
 		if err != nil {
 			return nil, err
 		}
 		resIns = append(resIns, rewardForProposalSubmitterIns)
 	}
-	//
-	////todo @0xjackalope hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-	//shardID := byte(1)
-	// acceptedProposalIns := helper.NewAcceptProposalIns(&bestProposal.TxId, VoteTable[bestProposal.TxId][0], shardID)
-	// resIns = append(resIns, acceptedProposalIns)
-	//
-	//return resIns, nil
-	return nil, nil
+	shardID := common.GetShardIDFromLastByte(bestSubmittedProposal.GetSenderAddrLastByte())
+	acceptedProposalIns := helper.NewAcceptProposalIns(&bestProposal.TxId, VoteTable[bestProposal.TxId], shardID)
+	resIns = append(resIns, acceptedProposalIns)
+	boardType := helper.GetBoardType()
+	boardIndex := helper.GetBoard(self).GetBoardIndex()
+	totalReward := helper.GetCurrentNationalWelfare(self)
+	listVotersOfCurrentProposal, eGetBoardVoterListrr := self.config.DataBase.GetCurrentProposalWinningVoter(boardType, helper.GetConstitutionInfo(self).ConstitutionIndex)
+	if err == nil {
+		var totalOfVote uint64
+		totalOfVote = 0
+		voterAndSupporters := make([][]privacy.PaymentAddress, len(listVotersOfCurrentProposal))
+		var voterAndAmount map[uint16]uint64
+		for i, voter := range listVotersOfCurrentProposal {
+			voterAndSupporters
+			listSupporters := self.config.DataBase.GetBoardVoterList(boardType, voter, boardIndex)
+			for _, supporter := range listSupporters {
+				shareRewardIns := self.CreateSingleShareRewardOldBoardIns(helper, voter, supporter, 0)
+				resIns = append(resIns, []frombeaconins.InstructionFromBeacon{shareRewardIns}...) 
+			}
+		}
+		for _, voter := range listVotersOfCurrentProposal {
+			shareRewardIns := self.CreateShareRewardOldBoardIns(helper, voter,totalReward)
+			self.
+			listSupporters := self.config.DataBase.GetBoardVoterList(boardType, voter, boardIndex)
+			for _, supporter := range listSupporters {
+				shareRewardIns := self.CreateSingleShareRewardOldBoardIns(helper, voter, supporter, 0)
+				resIns = append(resIns, []frombeaconins.InstructionFromBeacon{shareRewardIns}...)
+			}
+		}
+	}
+	return resIns, nil
 }
 
 func (self *BlockChain) createAcceptBoardIns(
