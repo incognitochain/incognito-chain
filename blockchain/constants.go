@@ -6,7 +6,6 @@ import "time"
 const (
 	// BlockVersion is the current latest supported block version.
 	BlockVersion                = 1
-	TransactionVersion          = 1
 	defaultMaxBlkReqPerPeer     = 60
 	defaultMaxBlkReqPerTime     = 600
 	defaultBroadcastStateTime   = 2 * time.Second  // in second
@@ -31,17 +30,19 @@ const (
 	MainNetActiveShards        = 2
 
 	//board and proposal parameters
-	MainnetSalaryPerTx                = 10
-	MainnetBasicSalary                = 10
-	MainnetInitFundSalary             = 1000000
-	MainnetInitDCBToken               = 10000
-	MainnetInitGovToken               = 10000
-	MainnetInitCmBToken               = 10000
-	MainnetInitBondToken              = 10000
-	MainnetFeePerTxKb                 = 1
+	MainnetSalaryPerTx                = 0
+	MainnetBasicSalary                = 0
+	MainnetInitFundSalary             = 0
+	MainnetInitDCBToken               = 0
+	MainnetInitGovToken               = 0
+	MainnetInitCmBToken               = 0
+	MainnetInitBondToken              = 0
+	MainnetFeePerTxKb                 = 0
 	MainnetGenesisblockPaymentAddress = "1UuyYcHgVFLMd8Qy7T1ZWRmfFvaEgogF7cEsqY98ubQjoQUy4VozTqyfSNjkjhjR85C6GKBmw1JKekgMwCeHtHex25XSKwzb9QPQ2g6a3"
 	// ------------- end Mainnet --------------------------------------
 )
+
+var MainnetInitConstant = []string{}
 
 // for beacon
 // public key
@@ -80,6 +81,8 @@ const (
 	TestnetFeePerTxKb                 = 1
 	TestnetGenesisBlockPaymentAddress = "1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba"
 )
+
+var TestnetInitConstant = []string{`{"Version":1,"Type":"s","LockTime":1549889112,"Fee":0,"Info":null,"SigPubKey":"A7GGbCnosNljq25A5o4VIGs7r6WOcs3OrDBJUFd28eEA","Sig":"4gzqBc1TnROMjEdGW1DdIlLRA6pAwbcC3r1macAVy8OaOQaWxcSQXubEgm3oKcJAyE7OnEckV35pwAWD4vr7+A==","Proof":"11111116WGHqpGSLR21nkwRaRVR2vJBD6DR8wKQfB5VCC4TNEXz1XeskmWDehJbmDvr4EeC8x5vGFSrNq4KRs4GoDgn85t7CHJPQWu6s8QWhQVRd621qqT5mBofPcB9WGgQPsD7i4WPxoPKVYhS3jaRXbT2C9S1tHQbW9TytbZKbASDgKygqeijEoWsLW4RXct1oGn2wat2Q1kdPX35AKW1B2R","PubKeyLastByteSender":0,"Metadata":null}`, `{"Version":1,"Type":"s","LockTime":1549889112,"Fee":0,"Info":null,"SigPubKey":"AySFA7ksPnDE7zG+ZKwyk8SaadPLOfJuIn5k4kqUgKcA","Sig":"0jcALduldAkey/6EmKW3EyUQGpJCZ5Vr1lmc7QlzOL3FYEHVwF3kXcDkuPXqqjaH8ueJjDGDqx4N8KpWDfSi7Q==","Proof":"11111116WGHqpGNRGpV3VBz1rndCx6TP4A8eLYeocjg8izynA2YAkx7x38mCir9Nm3oCubXdn25F4sj4jHryBtSbdwJj6o4X43YDftZ9nPsrw4m8DyF6NkxNXbvGj9egkUtypup34hdCXv2L8j5tB9cVUCXVqWeC9axqLLoibXEay4fLrroeRnfNhJ1moNDoQqyRVLrcC7yUjDQz6AUsdd3uFB","PubKeyLastByteSender":0,"Metadata":null}`}
 
 // for beacon
 // public key
