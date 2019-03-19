@@ -329,7 +329,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 						copy(ValidatorsIdxAggSig, protocol.multiSigScheme.combine.ValidatorsIdxAggSig)
 						copy(ValidatorsIdxR, protocol.multiSigScheme.combine.ValidatorsIdxR)
 
-						fmt.Println("BFT: \n \n Block consensus reach", ValidatorsIdxR, ValidatorsIdxAggSig, AggregatedSig)
+						// fmt.Println("BFT: \n \n Block consensus reach", ValidatorsIdxR, ValidatorsIdxAggSig, AggregatedSig)
 
 						if protocol.RoundData.Layer == common.BEACON_ROLE {
 							protocol.pendingBlock.(*blockchain.BeaconBlock).R = protocol.multiSigScheme.combine.R
