@@ -22,7 +22,7 @@ import (
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/constant-money/constant-chain/wallet"
 	libp2p "github.com/libp2p/go-libp2p-peer"
-	cache "github.com/patrickmn/go-cache"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
 
@@ -315,27 +315,6 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 		testSalaryTX.UnmarshalJSON([]byte(tx))
 		initBlock.Body.Transactions = append(initBlock.Body.Transactions, &testSalaryTX)
 	}
-	// var initTxs []string
-	// testUserkeyList := []string{
-	// 	"112t8rqnMrtPkJ4YWzXfG82pd9vCe2jvWGxqwniPM5y4hnimki6LcVNfXxN911ViJS8arTozjH4rTpfaGo5i1KKcG1ayjiMsa4E3nABGAqQh",
-	// 	"112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNhc33pzChmJRvikZNc3Dt5V7quhdzjWW9Z4BrB2BxdK5VtHzsG9JZdZ5M7yYYGidKKZV",
-	// }
-	// for _, val := range testUserkeyList {
-
-	// 	testUserKey, _ := wallet.Base58CheckDeserialize(val)
-	// 	testUserKey.KeySet.ImportFromPrivateKey(&testUserKey.KeySet.PrivateKey)
-
-	// 	testSalaryTX := transaction.Tx{}
-	// 	testSalaryTX.InitTxSalary(1000000, &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey,
-	// 		blockchain.config.DataBase,
-	// 		nil,
-	// 	)
-	// 	initTx, _ := json.Marshal(testSalaryTX)
-	// 	initTxs = append(initTxs, string(initTx))
-	// 	initBlock.Body.Transactions = append(initBlock.Body.Transactions, &testSalaryTX)
-	// }
-	// fmt.Println(initTxs)
-	// os.Exit(1)
 
 	_, newShardCandidate := GetStakingCandidate(*blockchain.config.ChainParams.GenesisBeaconBlock)
 
