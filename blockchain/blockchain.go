@@ -1492,31 +1492,26 @@ func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
 }
 
 func (bc *BlockChain) processUpdateDCBConstitutionIns(inst []string) error {
-	// updateConstitutionIns, err := frombeaconins.NewAcceptDCBBoardIns(inst,)
-	// if err != nil {
-	// 	return err
-	// }
-	// boardType := common.GOVBoard
-	// consitution := bc.GetConstitution(boardType)
-	// nextConstitutionIndex := consitution.GetConstitutionIndex() + 1
-	// err1 := bc.GetDatabase().TakeVoteTokenFromWinner(
-	// 	boardType,
-	// 	nextConstitutionIndex,
-	// 	updateConstitutionIns.Voter.PaymentAddress,
-	// 	updateConstitutionIns.Voter.AmountOfVote,
-	// )
-	// if err1 != nil {
-	// 	return err1
-	// }
-	// err2 := bc.GetDatabase().SetNewProposalWinningVoter(
-	// 	boardType,
-	// 	nextConstitutionIndex,
-	// 	updateConstitutionIns.Voter.PaymentAddress,
-	// )
-	// if err2 != nil {
-	// 	return err2
-	// }
-	// bc.BestState.Beacon.processUpdateGOVProposalInstruction(*updateConstitutionIns)
+	//todo @constant-money
+	updateConstitutionIns, err := frombeaconins.NewUpdateDCBConstitutionInsFromStr(inst)
+	if err != nil {
+		return err
+	}
+	boardType := common.DCBBoard
+	constitution := bc.GetConstitution(boardType)
+	nextConstitutionIndex := constitution.GetConstitutionIndex() + 1
+	err = bc.GetDatabase().SetNewProposalWinningVoter(
+		boardType,
+		nextConstitutionIndex,
+		updateConstitutionIns.Voter.PaymentAddress,
+	)
+	if err != nil {
+		return err
+	}
+	err = bc.BestState.Beacon.processUpdateDCBProposalInstruction(*updateConstitutionIns)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
