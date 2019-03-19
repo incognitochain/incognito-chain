@@ -145,46 +145,6 @@ func ParseValueVoteBoardList(value []byte) uint64 {
 	return common.BytesToUint64(value)
 }
 
-func GetKeyThreePhraseCryptoOwner(boardType common.BoardType, constitutionIndex uint32) []byte {
-	key := GetKeyFromVariadic(threePhraseCryptoOwnerPrefix,
-		boardType.Bytes(),
-		common.Uint32ToBytes(constitutionIndex),
-	)
-	return key
-}
-
-func ParseKeyThreePhraseCryptoOwner(key []byte) (boardType common.BoardType, constitutionIndex uint32, txId *common.Hash, err error) {
-	length := []int{len(threePhraseCryptoOwnerPrefix), 1, 4, common.PaymentAddressLength}
-	if CheckLength(key, length) {
-		length[len(length)-1] = 0
-	}
-	elements, err := ParseKeyToSlice(key, length)
-	if err != nil {
-		return 0, 0, nil, err
-	}
-	index := 1
-
-	boardType = common.BoardType(elements[iPlusPlus(&index)][0])
-	constitutionIndex = common.BytesToUint32(elements[iPlusPlus(&index)])
-
-	txId = nil
-	txIdData := elements[iPlusPlus(&index)]
-	if len(txIdData) != 0 {
-		newHash, err1 := common.NewHash(txIdData)
-		if err1 != nil {
-			return 0, 0, nil, err1
-		}
-		txId = newHash
-	}
-
-	return boardType, constitutionIndex, txId, nil
-}
-
-func ParseValueThreePhraseCryptoOwner(value []byte) (uint32, error) {
-	i := common.BytesToUint32(value)
-	return i, nil
-}
-
 func GetKeyVoteProposal(boardType common.BoardType, constitutionIndex uint32, voterPayment *privacy.PaymentAddress) []byte {
 	b := make([]byte, PaymentAddressLen)
 	if voterPayment != nil {
@@ -240,37 +200,6 @@ func ParseValueVoteProposal(value []byte) (*common.Hash, error) {
 func GetKeyWinningVoter(boardType common.BoardType, constitutionIndex uint32) []byte {
 	key := GetKeyFromVariadic(winningVoterPrefix, boardType.Bytes(), common.Uint32ToBytes(constitutionIndex))
 	return key
-}
-
-func GetKeyThreePhraseVoteValue(boardType common.BoardType, constitutionIndex uint32) []byte {
-	key := GetKeyFromVariadic(threePhraseVoteValuePrefix, boardType.Bytes(), common.Uint32ToBytes(constitutionIndex))
-	return key
-}
-
-func ParseKeyThreePhraseVoteValue(key []byte) (boardType common.BoardType, constitutionIndex uint32, txId *common.Hash, err error) {
-	length := []int{len(threePhraseVoteValuePrefix), 1, 4, common.PaymentAddressLength}
-	if CheckLength(key, length) {
-		length[len(length)-1] = 0
-	}
-	elements, err := ParseKeyToSlice(key, length)
-	if err != nil {
-		return 0, 0, nil, err
-	}
-	index := 1
-
-	boardType = common.BoardType(elements[iPlusPlus(&index)][0])
-	constitutionIndex = common.BytesToUint32(elements[iPlusPlus(&index)])
-
-	txId = nil
-	txIdData := elements[iPlusPlus(&index)]
-	if len(txIdData) != 0 {
-		newHash, err1 := common.NewHash(txIdData)
-		if err1 != nil {
-			return boardType, constitutionIndex, txId, err1
-		}
-		txId = newHash
-	}
-	return boardType, constitutionIndex, txId, nil
 }
 
 func GetKeyEncryptFlag(boardType common.BoardType) []byte {
