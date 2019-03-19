@@ -39,7 +39,6 @@ type ConstitutionHelper interface {
 	GetSubmitProposalInfo(tx metadata.Transaction) (*component.SubmitProposalInfo, error)
 	GetProposalTxID(tx metadata.Transaction) (hash *common.Hash)
 	SetNewConstitution(bc *BlockChain, constitutionInfo *ConstitutionInfo, welfare int32, submitProposalTx metadata.Transaction)
-	CreatePunishDecryptIns(paymentAddress *privacy.PaymentAddress) frombeaconins.InstructionFromBeacon
 }
 
 func (chain *BlockChain) createRewardProposalWinnerIns(
