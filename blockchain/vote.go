@@ -106,70 +106,42 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 	helper ConstitutionHelper,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
-	//resIns := make([]frombeaconins.InstructionFromBeacon, 0)
-	//VoteTable, CountVote, err := self.BuildVoteTableAndPunishTransaction(helper)
-	//NextConstitutionIndex := self.GetCurrentBoardIndex(helper)
-	//bestProposal := metadata.ProposalVote{
-	//	TxId:         common.Hash{},
-	//	AmountOfVote: 0,
-	//	NumberOfVote: 0,
-	//}
+	resIns := make([]frombeaconins.InstructionFromBeacon, 0)
+	VoteTable, CountVote, err := self.BuildVoteTableAndPunishTransaction(helper)
+	// NextConstitutionIndex := self.GetCurrentBoardIndex(helper)
+	bestProposal := metadata.ProposalVote{
+		TxId:         common.Hash{},
+		NumberOfVote: 0,
+	}
 	//var bestVoterAll component.Voter
 	//// Get most vote proposal
-	//db := self.config.DataBase
-	//for txId, listVoter := range VoteTable {
-	//	var bestVoterThisProposal component.Voter
-	//	amountOfThisProposal := int64(0)
-	//	countOfThisProposal := uint32(0)
-	//	for voterPaymentAddressBytes, amount := range listVoter {
-	//		voterPaymentAddress := privacy.NewPaymentAddressFromByte([]byte(voterPaymentAddressBytes))
-	//		voterToken, _ := db.GetVoteTokenAmount(helper.GetBoardType(), NextConstitutionIndex, *voterPaymentAddress)
-	//		if int32(voterToken) < amount || amount < 0 {
-	//			listVoter[string(voterPaymentAddress.Bytes())] = 0
-	//			// can change listvoter because it is a pointer
-	//			continue
-	//		} else {
-	//			tVoter := component.Voter{
-	//				PaymentAddress: *voterPaymentAddress,
-	//				AmountOfVote:   amount,
-	//			}
-	//			if tVoter.Greater(bestVoterThisProposal) {
-	//				bestVoterThisProposal = tVoter
-	//			}
-	//			amountOfThisProposal += int64(tVoter.AmountOfVote)
-	//			countOfThisProposal += 1
-	//		}
-	//	}
-	//	amountOfThisProposal -= int64(bestVoterThisProposal.AmountOfVote)
-	//	tProposalVote := metadata.ProposalVote{
-	//		TxId:         txId,
-	//		AmountOfVote: amountOfThisProposal,
-	//		NumberOfVote: countOfThisProposal,
-	//	}
-	//	if tProposalVote.Greater(bestProposal) {
-	//		bestProposal = tProposalVote
-	//		bestVoterAll = bestVoterThisProposal
-	//	}
-	//}
-	//_, _, _, bestSubmittedProposal, err := self.GetTransactionByHash(&bestProposal.TxId)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//submitterPaymentAddress := helper.GetPaymentAddressFromSubmitProposalMetadata(bestSubmittedProposal)
+	// db := self.config.DataBase
+	for txId, _ := range VoteTable {
+		if CountVote[txId] > bestProposal.NumberOfVote {
+			bestProposal.TxId = txId
+			bestProposal.NumberOfVote = CountVote[txId]
+		}
+	}
+	_, _, _, bestSubmittedProposal, err := self.GetTransactionByHash(&bestProposal.TxId)
+	if err != nil {
+		return nil, err
+	}
+	// helper
+	submitterPaymentAddress := helper.GetPaymentAddressFromSubmitProposalMetadata(bestSubmittedProposal)
 	//
 	//// If submitterPaymentAdress use don't use privacy for
-	//if submitterPaymentAddress == nil {
-	//	rewardForProposalSubmitterIns, err := helper.NewRewardProposalSubmitterIns(self, submitterPaymentAddress)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	resIns = append(resIns, rewardForProposalSubmitterIns)
-	//}
+	if submitterPaymentAddress == nil {
+		rewardForProposalSubmitterIns, err := helper.NewRewardProposalSubmitterIns(self, submitterPaymentAddress)
+		if err != nil {
+			return nil, err
+		}
+		resIns = append(resIns, rewardForProposalSubmitterIns)
+	}
 	//
-	////todo @0xjackalope
+	////todo @0xjackalope hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 	//shardID := byte(1)
-	//acceptedProposalIns := helper.NewAcceptProposalIns(&bestProposal.TxId, bestVoterAll, shardID)
-	//resIns = append(resIns, acceptedProposalIns)
+	// acceptedProposalIns := helper.NewAcceptProposalIns(&bestProposal.TxId, VoteTable[bestProposal.TxId][0], shardID)
+	// resIns = append(resIns, acceptedProposalIns)
 	//
 	//return resIns, nil
 	return nil, nil
