@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/json"
-	"errors"
 	"sort"
 	"strconv"
 
@@ -121,36 +120,6 @@ func VerifyHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]strin
 	return bytes.Equal(res.GetBytes(), hash.GetBytes())
 }
 
-func VerifyRootHashFromStringArray(strs1 []string, strs2 []string, hash common.Hash) error {
-	var (
-		tempMerkle Merkle
-		merkleTree []*common.Hash
-		hashArrays []*common.Hash
-		// merkleRoot *common.Hash
-	)
-
-	hashes1, err := common.ConvertArrayStringToArrayHash(strs1)
-	if err != nil {
-		Logger.log.Errorf("Error converting from string array to hash array %+v", err)
-		return err
-	}
-
-	hashes2, err := common.ConvertArrayStringToArrayHash(strs2)
-	if err != nil {
-		Logger.log.Errorf("Error converting from string array to hash array %+v", err)
-		return err
-	}
-	hashArrays = append(hashArrays, hashes1...)
-	hashArrays = append(hashArrays, hashes2...)
-
-	merkleTree = tempMerkle.BuildMerkleTreeOfHashs(hashArrays)
-	if !tempMerkle.VerifyMerkleRootOfHashs(merkleTree, &hash) {
-		err = NewBlockChainError(UnExpectedError, errors.New("Error verify merkle root"))
-		Logger.log.Errorf("Error in VerifyRootHashFromStringArray %+v", err)
-		return err
-	}
-	return nil
-}
 func VerifyHashFromShardState(allShardState map[byte][]ShardState, hash common.Hash) bool {
 	res, err := GenerateHashFromShardState(allShardState)
 	if err != nil {

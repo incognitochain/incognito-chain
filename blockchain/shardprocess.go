@@ -139,7 +139,6 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 	blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.BestState.Shard[shardID].BestCrossShard)
 	expectedHeight, _ := blockchain.config.CrossShardPool[shardID].UpdatePool()
 	for fromShardID, height := range expectedHeight {
-		fmt.Printf("Shard %+v request CrossShardBlock with Height %+v from shard %+v ", shardID, height, fromShardID)
 		blockchain.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, shardID, "")
 	}
 

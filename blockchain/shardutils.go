@@ -161,7 +161,7 @@ func CreateShardInstructionsFromTransactionAndIns(
 }
 
 //=======================================END SHARD BLOCK UTIL
-//=======================================BEGIN CROSS SHARD UTIL
+//====================OLD Merkle Tree============
 /*
 	Return value #1: outputcoin hash
 	Return value #2: merkle data created from outputcoin hash
@@ -248,6 +248,7 @@ func VerifyCrossShardBlockUTXO(block *CrossShardBlock, merklePathShard []common.
 
 	tmpByte := append(append(outputCoinHash.GetBytes(), txTokenDataHash.GetBytes()...), txTokenPrivacyDataHash.GetBytes()...)
 	finalHash := common.HashH(tmpByte)
+	// return Merkle{}.VerifyMerkleRootFromMerklePath(finalHash, merklePathShard, block.Header.ShardTxRoot, block.ToShardID)
 	return VerifyMerkleTree(finalHash, merklePathShard, block.Header.ShardTxRoot, block.ToShardID)
 }
 
@@ -269,6 +270,58 @@ func VerifyMerkleTree(finalHash common.Hash, merklePath []common.Hash, merkleRoo
 	}
 }
 
+//====================END OLD Merkle Tree============
+
+//====================New Merkle Tree================
+func CreateShardTxRoot2(txList []metadata.Transaction) ([]common.Hash, []common.Hash) {
+	//calculate output coin hash for each shard
+	crossShardDataHash := getCrossShardDataHash(txList)
+	// calculate merkel path for a shardID
+	// step 1: calculate merkle data : [1, 2, 3, 4, 12, 34, 1234]
+	/*
+			   	1234=hash(12,34)
+			   /			  \
+		  12=hash(1,2)	 34=hash(3,4)
+			 / \	 		 / \
+			1	2			3	4
+	*/
+	merkleTree := Merkle{}
+	merkleData := merkleTree.BuildMerkleTreeOfHashes2(crossShardDataHash, common.MAX_SHARD_NUMBER)
+	return crossShardDataHash, merkleData
+}
+func GetMerklePathCrossShard2(txList []metadata.Transaction, shardID byte) (merklePathShard []common.Hash, merkleShardRoot common.Hash) {
+	_, merkleTree := CreateShardTxRoot2(txList)
+	merklePathShard, merkleShardRoot = Merkle{}.GetMerklePathForCrossShard(common.MAX_SHARD_NUMBER, merkleTree, shardID)
+	return merklePathShard, merkleShardRoot
+}
+
+/*
+	Calculate Final Hash as Hash of:
+		1. CrossTransactionFinalHash
+		2. TxTokenDataVoutFinalHash
+		3. CrossTxTokenPrivacyData
+	These hashes will be calculated as comment in getCrossShardDataHash function
+*/
+func VerifyCrossShardBlockUTXO2(block *CrossShardBlock, merklePathShard []common.Hash) bool {
+	var outputCoinHash common.Hash
+	var txTokenDataHash common.Hash
+	var txTokenPrivacyDataHash common.Hash
+
+	outCoins := block.CrossOutputCoin
+	outputCoinHash = calHashOutCoinCrossShard(outCoins)
+
+	txTokenDataList := block.CrossTxTokenData
+	txTokenDataHash = calHashTxTokenDataHashList(txTokenDataList)
+
+	txTokenPrivacyDataList := block.CrossTxTokenPrivacyData
+	txTokenPrivacyDataHash = calHashTxTokenPrivacyDataHashList(txTokenPrivacyDataList)
+
+	tmpByte := append(append(outputCoinHash.GetBytes(), txTokenDataHash.GetBytes()...), txTokenPrivacyDataHash.GetBytes()...)
+	finalHash := common.HashH(tmpByte)
+	return Merkle{}.VerifyMerkleRootFromMerklePath(finalHash, merklePathShard, block.Header.ShardTxRoot, block.ToShardID)
+}
+
+//====================End New Merkle Tree================
 /*
 	Helper function: group OutputCoin into shard and get the hash of each group
 	Return value
@@ -401,7 +454,7 @@ func getOutCoinCrossShard(txList []metadata.Transaction, shardID byte) []privacy
 	for _, tx := range txList {
 		if tx.GetProof() != nil {
 			for _, outCoin := range tx.GetProof().OutputCoins {
-				lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+				lastByte := common.GetShardIDFromLastByte(outCoin.CoinDetails.GetPubKeyLastByte())
 				if lastByte == shardID {
 					coinList = append(coinList, *outCoin)
 				}
@@ -594,7 +647,7 @@ func CreateMerkleCrossOutputCoin(crossOutputCoins map[byte][]CrossOutputCoin) (*
 		}
 	}
 	merkle := Merkle{}
-	merkleTree := merkle.BuildMerkleTreeOfHashs(crossOutputCoinHashes)
+	merkleTree := merkle.BuildMerkleTreeOfHashes(crossOutputCoinHashes, len(crossOutputCoinHashes))
 	return merkleTree[len(merkleTree)-1], nil
 }
 
@@ -628,7 +681,7 @@ func CreateMerkleCrossTransaction(crossTransactions map[byte][]CrossTransaction)
 		}
 	}
 	merkle := Merkle{}
-	merkleTree := merkle.BuildMerkleTreeOfHashs(crossTransactionHashes)
+	merkleTree := merkle.BuildMerkleTreeOfHashes(crossTransactionHashes, len(crossTransactionHashes))
 	return merkleTree[len(merkleTree)-1], nil
 }
 

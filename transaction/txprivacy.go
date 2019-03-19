@@ -847,7 +847,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 
 		if !isPrivacy {
 			for i := 0; i < len(txN.Proof.SNNoPrivacyProof); i++ {
-				if !txN.Proof.SNNoPrivacyProof[i].ValidateSanity(){
+				if !txN.Proof.SNNoPrivacyProof[i].ValidateSanity() {
 					return false, errors.New("validate sanity Serial number no privacy proof failed")
 				}
 			}
