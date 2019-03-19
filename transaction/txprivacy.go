@@ -342,7 +342,9 @@ func (tx *Tx) signTx() error {
 	tx.SigPubKey = sigKey.PubKey.PK.Compress()
 
 	// signing
-	Logger.log.Debugf(tx.Hash().String())
+	if Logger.log != nil {
+		Logger.log.Debugf(tx.Hash().String())
+	}
 	signature, err := sigKey.Sign(tx.Hash()[:])
 	if err != nil {
 		return err
@@ -585,7 +587,7 @@ func (tx *Tx) CheckTransactionFee(minFeePerKbTx uint64) bool {
 		return tx.Metadata.CheckTransactionFee(tx, minFeePerKbTx)
 	}
 	fullFee := minFeePerKbTx * tx.GetTxActualSize()
-	return !(tx.Fee < fullFee)
+	return tx.Fee >= fullFee
 }
 
 func (tx *Tx) IsSalaryTx() bool {
@@ -755,126 +757,117 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 		}
 
 		if len(txN.Proof.OutputCoins) > 255 {
-			return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(txN.Proof.OutputCoins)))
+			return false, errors.New("Output coins in tx are very large:" + strconv.Itoa(len(txN.Proof.OutputCoins)))
 		}
 
 		isPrivacy := true
 		// check Privacy or not
 
-		if txN.Proof.AggregatedRangeProof == nil || txN.Proof.OneOfManyProof == nil || txN.Proof.SerialNumberProof == nil {
+		if txN.Proof.AggregatedRangeProof == nil || len(txN.Proof.OneOfManyProof) == 0 || len(txN.Proof.SerialNumberProof) == 0 {
 			isPrivacy = false
 		}
 
 		if isPrivacy {
-			if !txN.Proof.AggregatedRangeProof.A.IsSafe() {
-				return false, errors.New("wrong tx proof")
-			}
-			if !txN.Proof.AggregatedRangeProof.T1.IsSafe() {
-				return false, errors.New("wrong tx proof")
-			}
-			if !txN.Proof.AggregatedRangeProof.T2.IsSafe() {
-				return false, errors.New("wrong tx proof")
-			}
-			if !txN.Proof.AggregatedRangeProof.S.IsSafe() {
-				return false, errors.New("wrong tx proof")
+			if !txN.Proof.AggregatedRangeProof.ValidateSanity() {
+				return false, errors.New("validate sanity Aggregated range proof failed")
 			}
 
 			for i := 0; i < len(txN.Proof.OneOfManyProof); i++ {
-				if len(txN.Proof.OneOfManyProof[i].Bytes()) != privacy.OneOfManyProofSize {
-					return false, errors.New("wrong tx proof")
+				if !txN.Proof.OneOfManyProof[i].ValidateSanity() {
+					return false, errors.New("validate sanity One out of many proof failed")
 				}
 			}
 			for i := 0; i < len(txN.Proof.SerialNumberProof); i++ {
-				if len(txN.Proof.SerialNumberProof[i].Bytes()) != privacy.SNPrivacyProofSize {
-					return false, errors.New("wrong tx proof")
+				if !txN.Proof.SerialNumberProof[i].ValidateSanity() {
+					return false, errors.New("validate sanity Serial number proof failed")
 				}
 			}
 
 			// check input coins with privacy
 			for i := 0; i < len(txN.Proof.InputCoins); i++ {
 				if !txN.Proof.InputCoins[i].CoinDetails.SerialNumber.IsSafe() {
-					return false, errors.New("wrong tx input coins")
+					return false, errors.New("validate sanity Serial number of input coin failed")
 				}
 			}
 			// check output coins with privacy
 			for i := 0; i < len(txN.Proof.OutputCoins); i++ {
 				if !txN.Proof.OutputCoins[i].CoinDetails.PublicKey.IsSafe() {
-					return false, errors.New("wrong tx output coins")
+					return false, errors.New("validate sanity Public key of output coin failed")
 				}
 				if !txN.Proof.OutputCoins[i].CoinDetails.CoinCommitment.IsSafe() {
-					return false, errors.New("wrong tx output coins")
+					return false, errors.New("validate sanity Coin commitment of output coin failed")
 				}
 				if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) > privacy.BigIntSize {
-					return false, errors.New("wrong tx output coins")
+					return false, errors.New("validate sanity SNDerivator of output coin failed")
 				}
 			}
 			// check ComInputSK
 			if !txN.Proof.ComInputSK.IsSafe() {
-				return false, errors.New("wrong tx ComInputSK")
+				return false, errors.New("validate sanity ComInputSK of proof failed")
 			}
 			// check ComInputValue
 			for i := 0; i < len(txN.Proof.ComInputValue); i++ {
 				if !txN.Proof.ComInputValue[i].IsSafe() {
-					return false, errors.New("wrong tx ComInputValue")
+					return false, errors.New("validate sanity ComInputValue of proof failed")
 				}
 			}
 			//check ComInputSND
 			for i := 0; i < len(txN.Proof.ComInputSND); i++ {
 				if !txN.Proof.ComInputSND[i].IsSafe() {
-					return false, errors.New("wrong tx ComInputSND")
+					return false, errors.New("validate sanity ComInputSND of proof failed")
 				}
 			}
 			//check ComInputShardID
 			if !txN.Proof.ComInputShardID.IsSafe() {
-				return false, errors.New("wrong tx ComInputShardID")
+				return false, errors.New("validate sanity ComInputShardID of proof failed")
 			}
 
 			// check ComOutputShardID
 			for i := 0; i < len(txN.Proof.ComOutputShardID); i++ {
 				if !txN.Proof.ComOutputShardID[i].IsSafe() {
-					return false, errors.New("wrong tx ComOutputShardID")
+					return false, errors.New("validate sanity ComOutputShardID of proof failed")
 				}
 			}
 			//check ComOutputSND
 			for i := 0; i < len(txN.Proof.ComOutputSND); i++ {
 				if !txN.Proof.ComOutputSND[i].IsSafe() {
-					return false, errors.New("wrong tx ComOutputSND")
+					return false, errors.New("validate sanity ComOutputSND of proof failed")
 				}
 			}
 			//check ComOutputValue
 			for i := 0; i < len(txN.Proof.ComOutputValue); i++ {
 				if !txN.Proof.ComOutputValue[i].IsSafe() {
-					return false, errors.New("wrong tx ComOutputSND")
+					return false, errors.New("validate sanity ComInputValue of proof failed")
 				}
 			}
 			if len(txN.Proof.CommitmentIndices) != len(txN.Proof.InputCoins)*privacy.CMRingSize {
-				return false, errors.New("wrong tx CommitmentIndices")
+				return false, errors.New("validate sanity CommitmentIndices of proof failed")
 
 			}
 		}
 
 		if !isPrivacy {
 			for i := 0; i < len(txN.Proof.SNNoPrivacyProof); i++ {
-				if len(txN.Proof.SNNoPrivacyProof[i].Bytes()) != privacy.SNNoPrivacyProofSize {
-					return false, errors.New("wrong tx proof")
+				if !txN.Proof.SNNoPrivacyProof[i].ValidateSanity(){
+					return false, errors.New("validate sanity Serial number no privacy proof failed")
 				}
 			}
 			// check input coins without privacy
 			for i := 0; i < len(txN.Proof.InputCoins); i++ {
 				if !txN.Proof.InputCoins[i].CoinDetails.CoinCommitment.IsSafe() {
-					return false, errors.New("wrong tx output coins")
+					return false, errors.New("validate sanity CoinCommitment of input coin failed")
 				}
 				if !txN.Proof.InputCoins[i].CoinDetails.PublicKey.IsSafe() {
-					return false, errors.New("wrong tx output coins")
+					return false, errors.New("validate sanity PublicKey of input coin failed")
 				}
 				if !txN.Proof.InputCoins[i].CoinDetails.SerialNumber.IsSafe() {
-					return false, errors.New("wrong tx output coins")
+					return false, errors.New("validate sanity Serial number of input coin failed")
 				}
 				if len(txN.Proof.InputCoins[i].CoinDetails.Randomness.Bytes()) > privacy.BigIntSize {
-					return false, errors.New("wrong tx output coins")
+					return false, errors.New("validate sanity Randomness of input coin failed")
 				}
 				if len(txN.Proof.InputCoins[i].CoinDetails.SNDerivator.Bytes()) > privacy.BigIntSize {
-					return false, errors.New("wrong tx output coins")
+					return false, errors.New("validate sanity SNDerivator of input coin failed")
 				}
 
 			}
@@ -882,16 +875,16 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 			// check output coins without privacy
 			for i := 0; i < len(txN.Proof.OutputCoins); i++ {
 				if !txN.Proof.OutputCoins[i].CoinDetails.CoinCommitment.IsSafe() {
-					return false, errors.New("wrong tx output coins")
+					return false, errors.New("validate sanity CoinCommitment of output coin failed")
 				}
 				if !txN.Proof.OutputCoins[i].CoinDetails.PublicKey.IsSafe() {
-					return false, errors.New("wrong tx output coins")
+					return false, errors.New("validate sanity PublicKey of output coin failed")
 				}
 				if len(txN.Proof.OutputCoins[i].CoinDetails.Randomness.Bytes()) > privacy.BigIntSize {
-					return false, errors.New("wrong tx output coins")
+					return false, errors.New("validate sanity Randomness of output coin failed")
 				}
 				if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) > privacy.BigIntSize {
-					return false, errors.New("wrong tx output coins")
+					return false, errors.New("validate sanity SNDerivator of output coin failed")
 				}
 			}
 		}
