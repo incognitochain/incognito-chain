@@ -136,7 +136,7 @@ func (block *CrossShardBlock) VerifyCrossShardBlock(committees []string) error {
 	if err := ValidateAggSignature(block.ValidatorsIdx, committees, block.AggregatedSig, block.R, block.Hash()); err != nil {
 		return NewBlockChainError(SignatureError, err)
 	}
-	if ok := VerifyCrossShardBlockUTXO(block, block.MerklePathShard); !ok {
+	if ok := VerifyCrossShardBlockUTXO2(block, block.MerklePathShard); !ok {
 		return NewBlockChainError(HashError, errors.New("Fail to verify Merkle Path Shard"))
 	}
 	return nil

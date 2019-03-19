@@ -434,6 +434,10 @@ func (blockchain *BlockChain) SyncBlkShardToBeacon(shardID byte, byHash bool, by
 }
 
 //SyncBlkCrossShard Send a req to sync crossShard block
+/*
+	From Shard: shard creates cross shard block
+	To  Shard: shard receive cross shard block
+*/
 func (blockchain *BlockChain) SyncBlkCrossShard(getFromPool bool, byHash bool, blksHash []common.Hash, blksHeight []uint64, fromShard byte, toShard byte, peerID libp2p.ID) {
 	if byHash {
 		if _, ok := blockchain.syncStatus.CurrentlySyncCrossShardBlkByHash[fromShard]; !ok {
