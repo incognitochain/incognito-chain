@@ -8,7 +8,7 @@ import (
 	"github.com/constant-money/constant-chain/common"
 )
 
-const MAX_SHARD_NUMBER = 8
+const MAX_SHARD_NUMBER = 255
 
 func CreateHashes() ([]common.Hash, []*common.Hash) {
 	hashesPointer := []*common.Hash{}
@@ -54,6 +54,18 @@ func TestConvertHashAndHashPointer(t *testing.T) {
 	for i := range tempMerkleTree2 {
 		if strings.Compare(tempMerkleTree2[i].String(), merkleTree1[i].String()) != 0 {
 			panic("value not compatible")
+		}
+	}
+}
+
+func TestGetMerkleShardPath(t *testing.T) {
+	hashes, _ := CreateHashes()
+	merkleTree := Merkle{}.BuildMerkleTreeOfHashes2(hashes, MAX_SHARD_NUMBER)
+	for shardID := 0; shardID < len(hashes); shardID++ {
+		merklePathShard, merkleShardRoot := Merkle{}.GetMerklePathForCrossShard(MAX_SHARD_NUMBER, merkleTree, byte(shardID))
+		ok := Merkle{}.VerifyMerkleRootFromMerklePath(hashes[shardID], merklePathShard, merkleShardRoot, byte(shardID))
+		if !ok {
+			panic("Fail To Verify Shard Merkle Path")
 		}
 	}
 }
