@@ -190,9 +190,19 @@ func (db *db) SetEncryptionLastBlockHeight(boardType common.BoardType, height ui
 
 func (db *db) SetNewProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32, paymentAddresseses []privacy.PaymentAddress) error {
 	key := GetKeyWinningVoter(boardType, constitutionIndex)
-	// paymentAddressesByte := make([]byte)
-	db.Put(key, voterPaymentAddress.Bytes())
+	value := concatListPaymentAddresses(paymentAddresseses)
+	db.Put(key, value)
 	return nil
+}
+
+func (db *db) GetCurrentProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32) ([]privacy.PaymentAddress, error) {
+	key := GetKeyWinningVoter(boardType, constitutionIndex)
+	value, err := db.Get(key)
+	if err != nil {
+		return nil, err
+	}
+	res := decompListPaymentAddressesByte(value)
+	return res, nil
 }
 
 func (db *db) GetBoardVoterList(boardType common.BoardType, candidatePaymentAddress privacy.PaymentAddress, boardIndex uint32) []privacy.PaymentAddress {
@@ -217,4 +227,22 @@ func (db *db) GetBoardVoterList(boardType common.BoardType, candidatePaymentAddr
 func (db *db) GetListSupporters(boardType common.BoardType, candidateAddress privacy.PaymentAddress) ([]*privacy.PaymentAddress, error) {
 	// todo @jackalope
 	return nil, nil
+}
+
+func concatListPaymentAddresses(paymentAddresses []privacy.PaymentAddress) []byte {
+	res := make([]byte, len(paymentAddresses)*common.PaymentAddressLength)
+	i := 0
+	for _, paymentAddress := range paymentAddresses {
+		i += copy(res[i:], paymentAddress.Bytes())
+	}
+	return res
+}
+
+func decompListPaymentAddressesByte(paymentAddressesByte []byte) []privacy.PaymentAddress {
+	//todo handle error
+	res := make([]privacy.PaymentAddress, len(paymentAddressesByte)/common.PaymentAddressLength)
+	for i, paymentAddress := range res {
+		(&paymentAddress).SetBytes(paymentAddressesByte[i*common.PaymentAddressLength : (i+1)*common.PaymentAddressLength])
+	}
+	return res
 }

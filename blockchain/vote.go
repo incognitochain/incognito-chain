@@ -134,7 +134,18 @@ func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 	shardID := common.GetShardIDFromLastByte(bestSubmittedProposal.GetSenderAddrLastByte())
 	acceptedProposalIns := helper.NewAcceptProposalIns(&bestProposal.TxId, VoteTable[bestProposal.TxId], shardID)
 	resIns = append(resIns, acceptedProposalIns)
-
+	boardType := helper.GetBoardType()
+	boardIndex := helper.GetBoard(self).GetBoardIndex()
+	listVotersOfCurrentProposal, err := self.config.DataBase.GetCurrentProposalWinningVoter(boardType, helper.GetConstitutionInfo(self).ConstitutionIndex)
+	if err == nil {
+		for _, voter := range listVotersOfCurrentProposal {
+			listSupporters := self.config.DataBase.GetBoardVoterList(boardType, voter, boardIndex)
+			for _, supporter := range listSupporters {
+				shareRewardIns := self.CreateSingleShareRewardOldBoardIns(helper, voter, supporter, 0, 0)
+				resIns = append(resIns, []frombeaconins.InstructionFromBeacon{shareRewardIns}...)
+			}
+		}
+	}
 	return resIns, nil
 }
 
@@ -256,10 +267,10 @@ func (chain *BlockChain) CreateSingleShareRewardOldBoardIns(
 	chairPaymentAddress privacy.PaymentAddress,
 	voterPaymentAddress privacy.PaymentAddress,
 	amountOfCoin uint64,
-	amountOfToken uint64,
+	// amountOfToken uint64,
 ) frombeaconins.InstructionFromBeacon {
 	return frombeaconins.NewShareRewardOldBoardMetadataIns(
-		chairPaymentAddress, voterPaymentAddress, helper.GetBoardType(), amountOfCoin, amountOfToken,
+		chairPaymentAddress, voterPaymentAddress, helper.GetBoardType(), amountOfCoin, // amountOfToken,
 	)
 }
 
@@ -277,13 +288,13 @@ func (chain *BlockChain) CreateShareRewardOldBoardIns(
 	for _, pubKey := range voterList {
 		amountOfVote := helper.GetAmountOfVoteToBoard(chain, chairPaymentAddress, pubKey, boardIndex)
 		amountOfCoin := amountOfVote * totalAmountCoinReward / totalVoteAmount
-		amountOfToken := amountOfVote * totalAmountTokenReward / totalVoteAmount
+		// amountOfToken := amountOfVote * totalAmountTokenReward / totalVoteAmount
 		Ins = append(Ins, chain.CreateSingleShareRewardOldBoardIns(
 			helper,
 			chairPaymentAddress,
 			pubKey,
 			amountOfCoin,
-			amountOfToken,
+			// amountOfToken,
 		))
 	}
 	return Ins
