@@ -101,7 +101,7 @@ func buildStabilityActions(
 					newIns, err = fromshardins.NewNewDCBConstitutionIns(
 						metaProposal.SubmitProposalInfo,
 						metaProposal.DCBParams,
-						acceptProposalIns.Voter,
+						acceptProposalIns.Voters,
 					).GetStringFormat()
 					if err != nil {
 						panic(err)
@@ -121,7 +121,7 @@ func buildStabilityActions(
 					newIns, err = fromshardins.NewNewGOVConstitutionIns(
 						metaProposal.SubmitProposalInfo,
 						metaProposal.GOVParams,
-						acceptProposalIns.Voter,
+						acceptProposalIns.Voters,
 					).GetStringFormat()
 					if err != nil {
 						panic(err)
@@ -221,7 +221,7 @@ func buildUpdateConstitutionIns(inst string, boardType common.BoardType) ([][]st
 		newInst, err = frombeaconins.NewUpdateDCBConstitutionIns(
 			newConstitutionIns.SubmitProposalInfo,
 			newConstitutionIns.DCBParams,
-			newConstitutionIns.Voter,
+			newConstitutionIns.Voters,
 		).GetStringFormat()
 		if err != nil {
 			return nil, err
@@ -234,7 +234,7 @@ func buildUpdateConstitutionIns(inst string, boardType common.BoardType) ([][]st
 		newInst, err = frombeaconins.NewUpdateGOVConstitutionIns(
 			newConstitutionIns.SubmitProposalInfo,
 			newConstitutionIns.GOVParams,
-			newConstitutionIns.Voter,
+			newConstitutionIns.Voters,
 		).GetStringFormat()
 		if err != nil {
 			return nil, err

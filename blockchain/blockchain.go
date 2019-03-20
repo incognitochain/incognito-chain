@@ -22,7 +22,7 @@ import (
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/constant-money/constant-chain/wallet"
 	libp2p "github.com/libp2p/go-libp2p-peer"
-	"github.com/patrickmn/go-cache"
+	cache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
 
@@ -1503,7 +1503,7 @@ func (bc *BlockChain) processUpdateDCBConstitutionIns(inst []string) error {
 	err = bc.GetDatabase().SetNewProposalWinningVoter(
 		boardType,
 		nextConstitutionIndex,
-		updateConstitutionIns.Voter.PaymentAddress,
+		updateConstitutionIns.Voters,
 	)
 	if err != nil {
 		return err
@@ -1527,7 +1527,7 @@ func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
 	err = bc.GetDatabase().SetNewProposalWinningVoter(
 		boardType,
 		nextConstitutionIndex,
-		updateConstitutionIns.Voter.PaymentAddress,
+		updateConstitutionIns.Voters,
 	)
 	if err != nil {
 		return err
