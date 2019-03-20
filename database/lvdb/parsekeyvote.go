@@ -145,19 +145,22 @@ func ParseValueVoteBoardList(value []byte) uint64 {
 	return common.BytesToUint64(value)
 }
 
-func GetKeyThreePhraseCryptoOwner(boardType common.BoardType, constitutionIndex uint32) []byte {
-	key := GetKeyFromVariadic(threePhraseCryptoOwnerPrefix,
-		boardType.Bytes(),
-		common.Uint32ToBytes(constitutionIndex),
-	)
+func GetKeyVoteProposal(boardType common.BoardType, constitutionIndex uint32, voterPayment *privacy.PaymentAddress) []byte {
+	b := make([]byte, PaymentAddressLen)
+	if voterPayment != nil {
+		b = voterPayment.Bytes()
+	}
+	key := GetKeyFromVariadic(voteProposalPrefix, boardType.Bytes(), common.Uint32ToBytes(constitutionIndex), b)
 	return key
 }
 
-func ParseKeyThreePhraseCryptoOwner(key []byte) (boardType common.BoardType, constitutionIndex uint32, txId *common.Hash, err error) {
-	length := []int{len(threePhraseCryptoOwnerPrefix), 1, 4, common.PaymentAddressLength}
-	if CheckLength(key, length) {
-		length[len(length)-1] = 0
-	}
+func ParseKeyVoteProposal(key []byte) (
+	boardType common.BoardType,
+	constitutionIndex uint32,
+	voterPayment *privacy.PaymentAddress,
+	err error,
+) {
+	length := []int{len(voteProposalPrefix), 1, 4, common.PaymentAddressLength}
 	elements, err := ParseKeyToSlice(key, length)
 	if err != nil {
 		return 0, 0, nil, err
@@ -167,93 +170,36 @@ func ParseKeyThreePhraseCryptoOwner(key []byte) (boardType common.BoardType, con
 	boardType = common.BoardType(elements[iPlusPlus(&index)][0])
 	constitutionIndex = common.BytesToUint32(elements[iPlusPlus(&index)])
 
-	txId = nil
-	txIdData := elements[iPlusPlus(&index)]
-	if len(txIdData) != 0 {
-		newHash, err1 := common.NewHash(txIdData)
-		if err1 != nil {
-			return 0, 0, nil, err1
-		}
-		txId = newHash
-	}
-
-	return boardType, constitutionIndex, txId, nil
+	voterPayment = privacy.NewPaymentAddressFromByte(elements[iPlusPlus(&index)])
+	return boardType, constitutionIndex, voterPayment, nil
 }
 
-func ParseValueThreePhraseCryptoOwner(value []byte) (uint32, error) {
-	i := common.BytesToUint32(value)
-	return i, nil
+func GetValueVoteProposal(proposalTxID *common.Hash) []byte {
+	b := make([]byte, common.HashSize)
+	if proposalTxID == nil {
+		b = proposalTxID.GetBytes()
+	}
+	value := GetKeyFromVariadic(voteProposalPrefix, b)
+	return value
 }
 
-func GetKeyThreePhraseCryptoSealer(boardType common.BoardType, constitutionIndex uint32, txId *common.Hash) []byte {
-	txIdByte := make([]byte, 0)
-	if txId != nil {
-		txIdByte = txId.GetBytes()
-	}
-	key := GetKeyFromVariadic(threePhraseCryptoSealerPrefix, boardType.Bytes(), common.Uint32ToBytes(constitutionIndex), txIdByte)
-	return key
-}
-
-func ParseKeyThreePhraseCryptoSealer(key []byte) (boardType common.BoardType, constitutionIndex uint32, txId *common.Hash, err error) {
-	length := []int{len(threePhraseCryptoSealerPrefix), 1, 4, common.PaymentAddressLength}
-	if CheckLength(key, length) {
-		length[len(length)-1] = 0
-	}
-	elements, err := ParseKeyToSlice(key, length)
+func ParseValueVoteProposal(value []byte) (*common.Hash, error) {
+	length := []int{len(voteProposalPrefix), common.HashSize}
+	elements, err := ParseKeyToSlice(value, length)
 	if err != nil {
-		return 0, 0, nil, err
+		return nil, err
 	}
 	index := 1
-
-	boardType = common.BoardType(elements[iPlusPlus(&index)][0])
-	constitutionIndex = common.BytesToUint32(elements[iPlusPlus(&index)])
-
-	txId = nil
-	txIdData := elements[iPlusPlus(&index)]
-	if len(txIdData) != 0 {
-		newHash, err1 := common.NewHash(txIdData)
-		if err1 != nil {
-			return 0, 0, nil, err1
-		}
-		txId = newHash
+	proposalTxID, err := common.NewHash(elements[iPlusPlus(&index)])
+	if err != nil {
+		return nil, err
 	}
-	return boardType, constitutionIndex, txId, nil
+	return proposalTxID, nil
 }
 
 func GetKeyWinningVoter(boardType common.BoardType, constitutionIndex uint32) []byte {
 	key := GetKeyFromVariadic(winningVoterPrefix, boardType.Bytes(), common.Uint32ToBytes(constitutionIndex))
 	return key
-}
-
-func GetKeyThreePhraseVoteValue(boardType common.BoardType, constitutionIndex uint32) []byte {
-	key := GetKeyFromVariadic(threePhraseVoteValuePrefix, boardType.Bytes(), common.Uint32ToBytes(constitutionIndex))
-	return key
-}
-
-func ParseKeyThreePhraseVoteValue(key []byte) (boardType common.BoardType, constitutionIndex uint32, txId *common.Hash, err error) {
-	length := []int{len(threePhraseVoteValuePrefix), 1, 4, common.PaymentAddressLength}
-	if CheckLength(key, length) {
-		length[len(length)-1] = 0
-	}
-	elements, err := ParseKeyToSlice(key, length)
-	if err != nil {
-		return 0, 0, nil, err
-	}
-	index := 1
-
-	boardType = common.BoardType(elements[iPlusPlus(&index)][0])
-	constitutionIndex = common.BytesToUint32(elements[iPlusPlus(&index)])
-
-	txId = nil
-	txIdData := elements[iPlusPlus(&index)]
-	if len(txIdData) != 0 {
-		newHash, err1 := common.NewHash(txIdData)
-		if err1 != nil {
-			return boardType, constitutionIndex, txId, err1
-		}
-		txId = newHash
-	}
-	return boardType, constitutionIndex, txId, err
 }
 
 func GetKeyEncryptFlag(boardType common.BoardType) []byte {
