@@ -241,7 +241,6 @@ func (self *BlockChain) createSendBackTokenAfterVoteFailIns(
 		_, boardIndex, candidatePubKey, voterPaymentAddress, _ := lvdb.ParseKeyVoteBoardList(key)
 		value := iter.Value()
 		amountOfDCBToken := lvdb.ParseValueVoteBoardList(value)
-		fmt.Println("\n\n\n\n\n\n\n\n\n\n\n", key, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
 		_, found := setOfNewDCB[string(candidatePubKey)]
 		if boardIndex < uint32(currentBoardIndex) || !found {
 			listNewIns = append(
