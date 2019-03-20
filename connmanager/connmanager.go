@@ -386,6 +386,8 @@ func (connManager *ConnManager) processDiscoverPeers() {
 		return
 	}
 	if client != nil {
+		defer client.Close()
+
 		listener := connManager.Config.ListenerPeer
 		var response []wire.RawPeer
 

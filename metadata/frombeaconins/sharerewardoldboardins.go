@@ -12,11 +12,10 @@ import (
 )
 
 type TxShareRewardOldBoardMetadataIns struct {
-	chairPaymentAddress privacy.PaymentAddress
-	voterPaymentAddress privacy.PaymentAddress
-	boardType           common.BoardType
-	amountOfCoin        uint64
-	amountOfToken       uint64
+	ChairPaymentAddress privacy.PaymentAddress
+	VoterPaymentAddress privacy.PaymentAddress
+	BoardType           common.BoardType
+	AmountOfCoin        uint64
 }
 
 func (txShareRewardOldBoardMetadataIns *TxShareRewardOldBoardMetadataIns) GetStringFormat() ([]string, error) {
@@ -24,9 +23,9 @@ func (txShareRewardOldBoardMetadataIns *TxShareRewardOldBoardMetadataIns) GetStr
 	if err != nil {
 		return nil, err
 	}
-	shardID := GetShardIDFromPaymentAddressBytes(txShareRewardOldBoardMetadataIns.voterPaymentAddress)
+	shardID := GetShardIDFromPaymentAddressBytes(txShareRewardOldBoardMetadataIns.VoterPaymentAddress)
 	var metadataType int
-	if txShareRewardOldBoardMetadataIns.boardType == common.DCBBoard {
+	if txShareRewardOldBoardMetadataIns.BoardType == common.DCBBoard {
 		metadataType = metadata.ShareRewardOldDCBBoardMeta
 	} else {
 		metadataType = metadata.ShareRewardOldGOVBoardMeta
@@ -43,14 +42,12 @@ func NewShareRewardOldBoardMetadataIns(
 	voterPaymentAddress privacy.PaymentAddress,
 	boardType common.BoardType,
 	amountOfCoin uint64,
-	amountOfToken uint64,
 ) *TxShareRewardOldBoardMetadataIns {
 	return &TxShareRewardOldBoardMetadataIns{
-		chairPaymentAddress: chairPaymentAddress,
-		voterPaymentAddress: voterPaymentAddress,
-		boardType:           boardType,
-		amountOfCoin:        amountOfCoin,
-		amountOfToken:       amountOfToken,
+		ChairPaymentAddress: chairPaymentAddress,
+		VoterPaymentAddress: voterPaymentAddress,
+		BoardType:           boardType,
+		AmountOfCoin:        amountOfCoin,
 	}
 }
 
@@ -59,59 +56,20 @@ func (txShareRewardOldBoardMetadataIns *TxShareRewardOldBoardMetadataIns) BuildT
 	db database.DatabaseInterface,
 ) (metadata.Transaction, error) {
 	rewardShareOldBoardMeta := metadata.NewShareRewardOldBoardMetadata(
-		txShareRewardOldBoardMetadataIns.chairPaymentAddress,
-		txShareRewardOldBoardMetadataIns.voterPaymentAddress,
-		txShareRewardOldBoardMetadataIns.boardType,
+		txShareRewardOldBoardMetadataIns.ChairPaymentAddress,
+		txShareRewardOldBoardMetadataIns.VoterPaymentAddress,
+		txShareRewardOldBoardMetadataIns.BoardType,
 	)
-	var propertyID common.Hash
-	if txShareRewardOldBoardMetadataIns.boardType == common.DCBBoard {
-		propertyID = common.DCBTokenID
-	} else {
-		propertyID = common.GOVTokenID
-	}
-	txTokenData := transaction.TxTokenData{
-		Type:       transaction.CustomTokenInit,
-		Amount:     txShareRewardOldBoardMetadataIns.amountOfToken,
-		PropertyID: propertyID,
-		Vins:       []transaction.TxTokenVin{},
-		Vouts:      []transaction.TxTokenVout{},
-	}
-
-	txCustomToken, err := NewVoteCustomTokenTx(
-		txShareRewardOldBoardMetadataIns.amountOfCoin,
-		&txShareRewardOldBoardMetadataIns.voterPaymentAddress,
+	tx := transaction.Tx{}
+	err := tx.InitTxSalary(
+		txShareRewardOldBoardMetadataIns.AmountOfCoin,
+		&txShareRewardOldBoardMetadataIns.VoterPaymentAddress,
 		minerPrivateKey,
 		db,
 		rewardShareOldBoardMeta,
-		txTokenData,
-	)
-
-	return txCustomToken, err
-}
-
-func NewVoteCustomTokenTx(
-	salary uint64,
-	paymentAddress *privacy.PaymentAddress,
-	minerPrivateKey *privacy.SpendingKey,
-	db database.DatabaseInterface,
-	meta metadata.Metadata,
-	txTokenData transaction.TxTokenData,
-) (metadata.Transaction, error) {
-	tx := transaction.Tx{}
-	err := tx.InitTxSalary(
-		salary,
-		paymentAddress,
-		minerPrivateKey,
-		db,
-		meta,
 	)
 	if err != nil {
 		return nil, err
 	}
-	txCustomToken := transaction.TxCustomToken{
-		Tx:          tx,
-		TxTokenData: txTokenData,
-	}
-	txCustomToken.Type = common.TxCustomTokenType
-	return &txCustomToken, nil
+	return &tx, nil
 }
