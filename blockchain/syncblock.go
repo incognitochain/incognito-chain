@@ -151,7 +151,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 				blockchain.SetReadyState(false, 0, true)
 				if userRole == common.SHARD_ROLE {
 					for shardID := range blockchain.syncStatus.Shards {
-						if RCS.ClosestShardsState[shardID].Height == blockchain.BestState.Shard[shardID].ShardHeight {
+						if RCS.ClosestShardsState[shardID].Height == blockchain.BestState.Shard[shardID].ShardHeight && RCS.ClosestShardsState[shardID].Height >= blockchain.BestState.Beacon.BestShardHeight[shardID] {
 							blockchain.SetReadyState(true, shardID, true)
 						} else {
 							blockchain.SetReadyState(true, shardID, false)
