@@ -439,6 +439,7 @@ func (blockchain *BlockChain) SyncBlkShardToBeacon(shardID byte, byHash bool, by
 	To  Shard: shard receive cross shard block
 */
 func (blockchain *BlockChain) SyncBlkCrossShard(getFromPool bool, byHash bool, blksHash []common.Hash, blksHeight []uint64, fromShard byte, toShard byte, peerID libp2p.ID) {
+	Logger.log.Criticalf("Shard %+v request CrossShardBlock with Height %+v from shard %+v \n", fromShard, blksHeight, toShard)
 	if byHash {
 		if _, ok := blockchain.syncStatus.CurrentlySyncCrossShardBlkByHash[fromShard]; !ok {
 			blockchain.syncStatus.CurrentlySyncCrossShardBlkByHash[fromShard] = cache.New(defaultMaxBlockSyncTime, defaultCacheCleanupTime)
@@ -454,6 +455,16 @@ func (blockchain *BlockChain) SyncBlkCrossShard(getFromPool bool, byHash bool, b
 		}
 	} else {
 		//Sync by specific heights
+		var tempBlksHeight []uint64
+		for _, value := range blksHeight {
+			if value != 0 {
+				tempBlksHeight = append(tempBlksHeight, value)
+			}
+		}
+		blksHeight = tempBlksHeight
+		if len(blksHeight) == 0 {
+			return
+		}
 		if _, ok := blockchain.syncStatus.CurrentlySyncCrossShardBlkByHeight[fromShard]; !ok {
 			blockchain.syncStatus.CurrentlySyncCrossShardBlkByHeight[fromShard] = cache.New(defaultMaxBlockSyncTime, defaultCacheCleanupTime)
 		}
