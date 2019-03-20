@@ -324,7 +324,7 @@ func (netSync *NetSync) HandleMessageGetShardToBeacon(msg *wire.MessageGetShardT
 }
 
 func (netSync *NetSync) HandleMessageGetCrossShard(msg *wire.MessageGetCrossShard) {
-	Logger.log.Info("Handling new message getshardtobeacon")
+	Logger.log.Info("Handling new message getcrossshard")
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
 	if err != nil {
 		Logger.log.Error(err)

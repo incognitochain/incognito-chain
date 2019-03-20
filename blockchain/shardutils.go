@@ -194,7 +194,7 @@ func CreateShardTxRoot(txList []metadata.Transaction) ([]common.Hash, []common.H
 
 //Receive tx list from shard block body, produce merkle path of UTXO CrossShard List from specific shardID
 func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merklePathShard []common.Hash, merkleShardRoot common.Hash) {
-	crossShardDataHash, merkleData := CreateShardTxRoot(txList)
+	crossShardDataHash, merkleData := CreateShardTxRoot2(txList)
 	// step 2: get merkle path
 	cursor := 0
 	lastCursor := 0
@@ -454,7 +454,7 @@ func getOutCoinCrossShard(txList []metadata.Transaction, shardID byte) []privacy
 	for _, tx := range txList {
 		if tx.GetProof() != nil {
 			for _, outCoin := range tx.GetProof().OutputCoins {
-				lastByte := common.GetShardIDFromLastByte(outCoin.CoinDetails.GetPubKeyLastByte())
+				lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
 				if lastByte == shardID {
 					coinList = append(coinList, *outCoin)
 				}
