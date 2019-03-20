@@ -1,8 +1,8 @@
 package constantbft
 
 import (
-	"github.com/ninjadotorg/constant/common/base58"
-	privacy "github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/common/base58"
+	privacy "github.com/constant-money/constant-chain/privacy"
 )
 
 func GetPubKeysFromIdx(pubkeyList []string, idxs []int) []*privacy.PublicKey {

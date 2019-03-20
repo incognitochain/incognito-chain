@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/transaction"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/transaction"
 )
 
 type ShardBlock struct {
@@ -42,15 +42,17 @@ type CrossShardBlock struct {
 	CrossOutputCoin []privacy.OutputCoin
 	// Cross Shard Data for Custom Token Tx
 	CrossTxTokenData []transaction.TxTokenData
+	//TODO: add to hash
+	CrossTxTokenPrivacyData []ContentCrossTokenPrivacyData
 }
 
-func (shardBlock *CrossShardBlock) Hash() *common.Hash {
-	hash := shardBlock.Header.Hash()
+func (crossShardBlock *CrossShardBlock) Hash() *common.Hash {
+	hash := crossShardBlock.Header.Hash()
 	return &hash
 }
 
-func (shardBlock *ShardToBeaconBlock) Hash() *common.Hash {
-	hash := shardBlock.Header.Hash()
+func (shardToBeaconBlock *ShardToBeaconBlock) Hash() *common.Hash {
+	hash := shardToBeaconBlock.Header.Hash()
 	return &hash
 }
 
@@ -104,9 +106,9 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 	block := ShardToBeaconBlock{}
 	block.AggregatedSig = blk.AggregatedSig
 
-	// block.ValidatorsIdx = make([][]int, 2)                                           //multi-node
-	// block.ValidatorsIdx[0] = append(block.ValidatorsIdx[0], blk.ValidatorsIdx[0]...) //multi-node
-	// block.ValidatorsIdx[1] = append(block.ValidatorsIdx[1], blk.ValidatorsIdx[1]...) //multi-node
+	//block.ValidatorsIdx = make([][]int, 2)                                           //multi-node
+	//block.ValidatorsIdx[0] = append(block.ValidatorsIdx[0], blk.ValidatorsIdx[0]...) //multi-node
+	//block.ValidatorsIdx[1] = append(block.ValidatorsIdx[1], blk.ValidatorsIdx[1]...) //multi-node
 
 	block.R = blk.R
 	block.ProducerSig = blk.ProducerSig
@@ -115,61 +117,52 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 	beaconBlocks, err := FetchBeaconBlockFromHeight(bc.config.DataBase, bc.BestState.Shard[block.Header.ShardID].BeaconHeight+1, block.Header.BeaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
-		panic(err)
 		return nil
 	}
 	instructions := CreateShardInstructionsFromTransactionAndIns(blk.Body.Transactions, bc, blk.Header.ShardID, blk.Header.ProducerAddress, blk.Header.Height, beaconBlocks)
-	if len(instructions) > 0 {
-		fmt.Printf("[db] buildActionReq to send to beacon\n")
-	}
 	block.Instructions = append(block.Instructions, instructions...)
 	return &block
 }
 
 func (blk *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byte]*CrossShardBlock {
 	allCrossShard := make(map[byte]*CrossShardBlock)
-	fmt.Println("########################## 1")
 	if activeShards == 1 {
 		return allCrossShard
 	}
-	fmt.Println("########################## 2")
 	for i := 0; i < activeShards; i++ {
-		if byte(i) != blk.Header.ShardID {
-			fmt.Println("########################## 3")
-			crossShard, err := blk.CreateCrossShardBlock(byte(i))
-			fmt.Printf("Create CrossShardBlock from Shard %+v to Shard %+v: %+v \n", blk.Header.ShardID, i, crossShard)
+		shardID := common.GetShardIDFromLastByte(byte(i))
+		if shardID != blk.Header.ShardID {
+			crossShard, err := blk.CreateCrossShardBlock(shardID)
+			fmt.Printf("Create CrossShardBlock from Shard %+v to Shard %+v: %+v \n", blk.Header.ShardID, shardID, crossShard)
 			if crossShard != nil && err == nil {
 				allCrossShard[byte(i)] = crossShard
 			}
-			fmt.Println("########################## 4")
 		}
 	}
-	fmt.Println("########################## 5")
 	return allCrossShard
 }
 
 func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
-	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 1")
 	crossShard := &CrossShardBlock{}
+	//TODO: optimize, loop 1 one time for all extracted information
 	crossOutputCoin := getOutCoinCrossShard(block.Body.Transactions, shardID)
 	crossTxTokenData := getTxTokenDataCrossShard(block.Body.Transactions, shardID)
-	if len(crossOutputCoin) == 0 && len(crossTxTokenData) == 0 {
+	crossCustomTokenPrivacyData := getTxTokenPrivacyDataCrossShard(block.Body.Transactions, shardID)
+	// Return nothing if nothing to cross
+	if len(crossOutputCoin) == 0 && len(crossTxTokenData) == 0 && len(crossCustomTokenPrivacyData) == 0 {
+		fmt.Println("CreateCrossShardBlock no crossshard", block.Header.Height)
 		return nil, nil
 	}
-	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 2")
-	merklePathShard, merkleShardRoot := GetMerklePathCrossShard(block.Body.Transactions, shardID)
-	fmt.Println("CreateCrossShardBlock/Shard Tx Root", merkleShardRoot)
+	merklePathShard, merkleShardRoot := GetMerklePathCrossShard2(block.Body.Transactions, shardID)
 	if merkleShardRoot != block.Header.ShardTxRoot {
-		fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 2 ERROR")
-		return crossShard, NewBlockChainError(CrossShardBlockError, errors.New("MerkleRootShard mismatch"))
+		return crossShard, NewBlockChainError(CrossShardBlockError, errors.New("ShardTxRoot mismatch"))
 	}
-	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 3")
 	//Copy signature and header
 	crossShard.AggregatedSig = block.AggregatedSig
 
-	// crossShard.ValidatorsIdx = make([][]int, 2)                                                  //multi-node
-	// crossShard.ValidatorsIdx[0] = append(crossShard.ValidatorsIdx[0], block.ValidatorsIdx[0]...) //multi-node
-	// crossShard.ValidatorsIdx[1] = append(crossShard.ValidatorsIdx[1], block.ValidatorsIdx[1]...) //multi-node
+	//crossShard.ValidatorsIdx = make([][]int, 2)                                                  //multi-node
+	//crossShard.ValidatorsIdx[0] = append(crossShard.ValidatorsIdx[0], block.ValidatorsIdx[0]...) //multi-node
+	//crossShard.ValidatorsIdx[1] = append(crossShard.ValidatorsIdx[1], block.ValidatorsIdx[1]...) //multi-node
 
 	crossShard.R = block.R
 	crossShard.ProducerSig = block.ProducerSig
@@ -177,7 +170,7 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 	crossShard.MerklePathShard = merklePathShard
 	crossShard.CrossOutputCoin = crossOutputCoin
 	crossShard.CrossTxTokenData = crossTxTokenData
+	crossShard.CrossTxTokenPrivacyData = crossCustomTokenPrivacyData
 	crossShard.ToShardID = shardID
-	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@ 4")
 	return crossShard, nil
 }

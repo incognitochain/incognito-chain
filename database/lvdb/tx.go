@@ -7,14 +7,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ninjadotorg/constant/common"
+	"github.com/constant-money/constant-chain/common"
 
-	"github.com/ninjadotorg/constant/database"
+	"github.com/constant-money/constant-chain/database"
 
 	"math/big"
 
-	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/common/base58"
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"

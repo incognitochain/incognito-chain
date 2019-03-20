@@ -45,4 +45,4 @@ src/.com
 src/golang.org
 src/google.golang.org
 src/rpcserver
-bin
+bootnode

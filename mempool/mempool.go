@@ -8,12 +8,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/transaction"
+	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
+	"github.com/constant-money/constant-chain/database"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/transaction"
 )
 
 // config is a descriptor containing the memory pool configuration.
@@ -127,20 +127,20 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 	}
 	txHash := tx.Hash()
 	if txHash != nil {
-		tp.addTxCoinHashH(*txHash)
+		tp.AddTxCoinHashH(*txHash)
 	}
 	// add candidate into candidate list ONLY with staking transaction
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
 			pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), byte(0x00))
-			tp.addCandiateToList(pubkey)
+			tp.AddCandiateToList(pubkey)
 		}
 	}
 	if tx.GetType() == common.TxCustomTokenType {
 		customTokenTx := tx.(*transaction.TxCustomToken)
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
 			tokenID := customTokenTx.TxTokenData.PropertyID.String()
-			tp.addTokenIDToList(tokenID)
+			tp.AddTokenIDToList(tokenID)
 		}
 	}
 	return txD
@@ -151,7 +151,8 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 // See the comment for MaybeAcceptTransaction for more details.
 // This function MUST be called with the mempool lock held (for writes).
 1. Validate tx version
-2. Validate fee with tx size
+2.1 Validate size of transaction (can't greater than max size of block)
+2.2 Validate fee with tx size
 3. Validate type of tx
 4. Validate with other txs in mempool
 5. Validate sanity data of tx
@@ -163,6 +164,14 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 */
 func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	txHash := tx.Hash()
+
+	// Don't accept the transaction if it already exists in the pool.
+	if tp.isTxInPool(txHash) {
+		str := fmt.Sprintf("already have transaction %+v", txHash.String())
+		err := MempoolTxError{}
+		err.Init(RejectDuplicateTx, errors.New(str))
+		return nil, nil, err
+	}
 
 	// that make sure transaction is accepted when passed any rules
 	var shardID byte
@@ -177,7 +186,16 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	ok := tx.CheckTxVersion(MaxVersion)
 	if !ok {
 		err := MempoolTxError{}
-		err.Init(RejectVersion, fmt.Errorf("%+v's version is invalid", txHash.String()))
+		err.Init(RejectVersion, fmt.Errorf("transaction %+v's version is invalid", txHash.String()))
+		return nil, nil, err
+	}
+
+	// check actual size
+	actualSize := tx.GetTxActualSize()
+	fmt.Printf("Transaction %+v's size %+v \n", txHash, actualSize)
+	if actualSize >= common.MaxBlockSize || actualSize >= common.MaxTxSize {
+		err := MempoolTxError{}
+		err.Init(RejectInvalidSize, fmt.Errorf("transaction %+v's size is invalid, more than %+v Kilobyte", txHash.String(), common.MaxBlockSize))
 		return nil, nil, err
 	}
 
@@ -194,10 +212,8 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 
 	ok = tx.ValidateType()
 	if !ok {
-		fmt.Printf("Type: %s\n", (tx.(*transaction.Tx).Type))
 		return nil, nil, errors.New("wrong tx type")
 	}
-
 	// check tx with all txs in current mempool
 	err = tx.ValidateTxWithCurrentMempool(tp)
 	if err != nil {
@@ -205,15 +221,13 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 
 	// sanity data
-	// if validate, errS := tp.ValidateSanityData(tx); !validate {
-	if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
-		err := MempoolTxError{}
-		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
-		return nil, nil, err
-	}
+	//if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
+	//	err := MempoolTxError{}
+	//	err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
+	//	return nil, nil, err
+	//}
 
-	// ValidateTransaction tx by it self
-	// validate := tp.ValidateTxByItSelf(tx)
+	// ValidateTransaction tx by it self // TODO validate performance later 0xkraken
 	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
 	if !validated {
 		err := MempoolTxError{}
@@ -228,34 +242,26 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		return nil, nil, err
 	}
 
-	// Don't accept the transaction if it already exists in the pool.
-	if tp.isTxInPool(txHash) {
-		str := fmt.Sprintf("already have transaction %+v", txHash.String())
-		err := MempoolTxError{}
-		err.Init(RejectDuplicateTx, errors.New(str))
-		return nil, nil, err
-	}
-
 	if tx.GetType() == common.TxCustomTokenType {
 		customTokenTx := tx.(*transaction.TxCustomToken)
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
-			tokenID := customTokenTx.TxTokenData.PropertyID.String()
-			tp.tokenIDMtx.Lock()
-			found := common.IndexOfStr(tokenID, tp.tokenIDList)
-			tp.tokenIDMtx.Unlock()
-			if found > -1 {
-				return nil, nil, errors.New("Init Transaction of this Token is in pool already")
-			}
+			//tokenID := customTokenTx.TxTokenData.PropertyID.String()
+			//tp.tokenIDMtx.Lock()
+			//found := common.IndexOfStr(tokenID, tp.tokenIDList)
+			//tp.tokenIDMtx.Unlock()
+			//if found > -1 {
+			//	return nil, nil, errors.New("Init Transaction of this Token is in pool already")
+			//}
 		}
 	}
 
 	// A standalone transaction must not be a salary transaction.
-	// if tp.config.BlockChain.IsSalaryTx(tx) {
 	if tx.IsSalaryTx() {
 		err := MempoolTxError{}
 		err.Init(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
 		return nil, nil, err
 	}
+
 	// check duplicate stake public key ONLY with staking transaction
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
@@ -269,6 +275,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 			}
 		}
 	}
+
 	txD := tp.addTx(tx, bestHeight, txFee)
 	return tx.Hash(), txD, nil
 }
@@ -300,8 +307,25 @@ func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	tp.mtx.Lock()
 	hash, txDesc, err := tp.maybeAcceptTransaction(tx)
+	if err != nil {
+		Logger.log.Error(err)
+	}
 	tp.mtx.Unlock()
+
 	return hash, txDesc, err
+}
+
+// This function is safe for concurrent access.
+func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction) (*metadata.TxDesc, error) {
+	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
+	_, txDesc, err := tp.maybeAcceptTransaction(tx)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
+	}
+	tempTxDesc := &txDesc.Desc
+	return tempTxDesc, err
 }
 
 // RemoveTx safe remove transaction for pool
@@ -314,7 +338,7 @@ func (tp *TxPool) RemoveTx(tx metadata.Transaction) error {
 	// remove tx coin hash from pool
 	txHash := tx.Hash()
 	if txHash != nil {
-		tp.removeTxCoinHashH(*txHash)
+		tp.RemoveTxCoinHashH(*txHash)
 	}
 	tp.mtx.Unlock()
 	return err
@@ -425,7 +449,7 @@ func (tp *TxPool) PrePoolTxCoinHashH(txHashH common.Hash, coinHashHs []common.Ha
 
 // addTxCoinHashH - add hash of output coin
 //// which use to check double spend in memppol
-func (tp *TxPool) addTxCoinHashH(txHashH common.Hash) error {
+func (tp *TxPool) AddTxCoinHashH(txHashH common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
 	inCoinHs, ok := tp.txCoinHashHPool[txHashH]
@@ -451,7 +475,7 @@ func (tp *TxPool) ValidateCoinHashH(coinHashH common.Hash) error {
 
 // removeTxCoinHashH remove hash of output coin
 // which use to check double spend in memppol
-func (tp *TxPool) removeTxCoinHashH(txHashH common.Hash) error {
+func (tp *TxPool) RemoveTxCoinHashH(txHashH common.Hash) error {
 	tp.cMtx.Lock()
 	defer tp.cMtx.Unlock()
 	if coinHashHs, okTxHashH := tp.txCoinHashHPool[txHashH]; okTxHashH {
@@ -465,7 +489,7 @@ func (tp *TxPool) removeTxCoinHashH(txHashH common.Hash) error {
 	return nil
 }
 
-func (tp *TxPool) addCandiateToList(candidate string) {
+func (tp *TxPool) AddCandiateToList(candidate string) {
 	tp.candidateMtx.Lock()
 	defer tp.candidateMtx.Unlock()
 	// fmt.Println("Mempool/addCanđiateToList: ", candidate)
@@ -490,7 +514,7 @@ func (tp *TxPool) RemoveCandidateList(candidate []string) {
 	}
 	tp.candidateList = newList
 }
-func (tp *TxPool) addTokenIDToList(tokenID string) {
+func (tp *TxPool) AddTokenIDToList(tokenID string) {
 	tp.tokenIDMtx.Lock()
 	defer tp.tokenIDMtx.Unlock()
 	// fmt.Println("Mempool/addCanđiateToList: ", candidate)
@@ -514,4 +538,63 @@ func (tp *TxPool) RemoveTokenIDList(tokenID []string) {
 		}
 	}
 	tp.tokenIDList = newList
+}
+
+/*
+	pool              map[common.Hash]*TxDesc
+	poolSerialNumbers map[common.Hash][][]byte
+
+	txCoinHashHPool map[common.Hash][]common.Hash
+	coinHashHPool   map[common.Hash]bool
+	cMtx            sync.RWMutex
+
+	//Candidate List in mempool
+	candidateList []string
+	candidateMtx  sync.RWMutex
+
+	//Token ID List in Mempool
+	tokenIDList []string
+	tokenIDMtx  sync.RWMutex
+*/
+func (tp *TxPool) EmptyPool() bool {
+	tp.cMtx.Lock()
+	tp.candidateMtx.Lock()
+	tp.tokenIDMtx.Lock()
+
+	defer tp.cMtx.Unlock()
+	defer tp.candidateMtx.Unlock()
+	defer tp.tokenIDMtx.Unlock()
+
+	if len(tp.pool) == 0 && len(tp.poolSerialNumbers) == 0 && len(tp.txCoinHashHPool) == 0 && len(tp.coinHashHPool) == 0 && len(tp.candidateList) == 0 && len(tp.tokenIDList) == 0 {
+		return true
+	}
+
+	for key := range tp.pool {
+		delete(tp.pool, key)
+	}
+
+	for key := range tp.poolSerialNumbers {
+		delete(tp.poolSerialNumbers, key)
+	}
+
+	for key := range tp.txCoinHashHPool {
+		delete(tp.txCoinHashHPool, key)
+	}
+
+	for key := range tp.coinHashHPool {
+		delete(tp.coinHashHPool, key)
+	}
+	tp.candidateList = []string{}
+	tp.tokenIDList = []string{}
+
+	if len(tp.pool) == 0 && len(tp.poolSerialNumbers) == 0 && len(tp.txCoinHashHPool) == 0 && len(tp.coinHashHPool) == 0 && len(tp.candidateList) == 0 && len(tp.tokenIDList) == 0 {
+		return true
+	}
+	fmt.Println("len(tp.pool)", len(tp.pool))
+	fmt.Println("len(tp.poolSerialNumbers)", len(tp.poolSerialNumbers))
+	fmt.Println("len(tp.txCoinHashHPool)", len(tp.txCoinHashHPool))
+	fmt.Println("len(tp.coinHashHPool)", len(tp.coinHashHPool))
+	fmt.Println("len(tp.candidateList)", len(tp.candidateList))
+	fmt.Println("len(tp.tokenIDList)", len(tp.tokenIDList))
+	return false
 }

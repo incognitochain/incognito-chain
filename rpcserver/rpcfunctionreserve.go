@@ -4,8 +4,8 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/metadata"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/metadata"
 	"github.com/pkg/errors"
 )
 
@@ -85,8 +85,6 @@ func (rpcServer RpcServer) handleGetContractingStatus(params interface{}, closeC
 	meta := txReq.GetMetadata().(*metadata.ContractingRequest)
 	redeemStr := ""
 	if common.IsUSDAsset(&meta.CurrencyType) {
-		// Convert from millicent to cent
-		redeem = redeem / 1000
 		redeemStr = strconv.FormatUint(redeem, 10)
 	} else {
 		// Convert from milliether to wei
@@ -106,22 +104,16 @@ func (rpcServer RpcServer) handleGetContractingStatus(params interface{}, closeC
 func (rpcServer RpcServer) handleConvertETHToDCBTokenAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	amountStr := arrayParams[0].(string)
-	// Convert amount to MilliEther
 	amount := big.NewInt(0)
 	amount, ok := amount.SetString(amountStr, 10)
 	if !ok {
 		return nil, NewRPCError(ErrRPCParse, errors.Errorf("Error parsing amount: %s", amountStr))
 	}
 	oracle := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.Oracle
-	amount = amount.Quo(amount, big.NewInt(common.WeiToMilliEtherRatio))
-	if !amount.IsUint64() {
-		return nil, NewRPCError(ErrRPCParse, errors.New("Amount invalid"))
-	}
-	depositedAmount := amount.Uint64()
-
-	// Calculate #DCB tokens
-	dcbTokenAmount := depositedAmount * oracle.ETH / oracle.DCBToken
-	return dcbTokenAmount, nil
+	amountValue := amount.Mul(amount, big.NewInt(int64(oracle.ETH)))
+	dcbTokenAmount := amountValue.Quo(amountValue, big.NewInt(int64(oracle.DCBToken)))
+	dcbTokenAmount = dcbTokenAmount.Quo(dcbTokenAmount, big.NewInt(common.WeiToEtherRatio))
+	return dcbTokenAmount.Uint64(), nil
 }
 
 //  handleConvertCSTToETHAmount receives amount of CST and returns number of ETH (in Wei) at current price
@@ -129,10 +121,65 @@ func (rpcServer RpcServer) handleConvertCSTToETHAmount(params interface{}, close
 	arrayParams := common.InterfaceSlice(params)
 	amount := uint64(arrayParams[0].(float64))
 	oracle := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.Oracle
-	milliEtherAmount := amount * oracle.Constant / oracle.ETH
+	cstValue := big.NewInt(int64(amount * oracle.Constant / 100)) // Amount is in cent Constant but price is per Constant
+	etherAmount := cstValue.Mul(cstValue, big.NewInt(common.WeiToEtherRatio))
+	etherAmount = etherAmount.Quo(etherAmount, big.NewInt(int64(oracle.ETH)))
 
-	// Convert MilliEther to Wei
-	etherAmount := big.NewInt(int64(milliEtherAmount))
-	etherAmount = etherAmount.Mul(etherAmount, big.NewInt(common.WeiToMilliEtherRatio))
 	return etherAmount.String(), nil
+}
+
+// handleGetRaiseReserveInfo returns number of DCB tokens available to raise reserve
+func (rpcServer RpcServer) handleGetRaiseReserveInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	assetID, _ := common.NewHashFromStr(arrayParams[0].(string))
+	rrd := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.RaiseReserveData
+	blockHeight := rpcServer.config.BlockChain.BestState.Beacon.BeaconHeight
+	data, ok := rrd[*assetID]
+	tokenLeft := uint64(0)
+	status := "No proposal"
+	if ok {
+		if data.EndBlock > blockHeight {
+			tokenLeft = data.Amount
+			status = "Ongoing"
+		} else {
+			status = "Ended"
+		}
+	}
+	result := map[string]interface{}{
+		"Status":    status,
+		"TokenLeft": tokenLeft,
+	}
+	return result, nil
+}
+
+// handleGetSpendReserveInfo returns number of Constant needed to burn
+func (rpcServer RpcServer) handleGetSpendReserveInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	assetID, _ := common.NewHashFromStr(arrayParams[0].(string))
+	blockHeight := rpcServer.config.BlockChain.BestState.Beacon.BeaconHeight
+	data, ok := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.SpendReserveData[*assetID]
+	tokenLeft := uint64(0)
+	status := "No proposal"
+	if ok {
+		if data.EndBlock > blockHeight {
+			tokenLeft = data.Amount
+			status = "Ongoing"
+		} else {
+			status = "Ended"
+		}
+	}
+	result := map[string]interface{}{
+		"Status":    status,
+		"TokenLeft": tokenLeft,
+	}
+	return result, nil
+}
+
+// handleConvertUSDToDCBTokenAmount receives amount of USD (in Cent) and returns number of DCB Tokens at current price
+func (rpcServer RpcServer) handleConvertUSDToDCBTokenAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	amount := uint64(arrayParams[0].(float64))
+	oracle := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.Oracle
+	dcbTokenAmount := amount / oracle.DCBToken
+	return dcbTokenAmount, nil
 }

@@ -12,15 +12,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/constant-money/constant-chain/cashec"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/wire"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/libp2p/go-libp2p-host"
 	"github.com/libp2p/go-libp2p-net"
 	"github.com/libp2p/go-libp2p-peer"
 	ma "github.com/multiformats/go-multiaddr"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/wire"
+	cache "github.com/patrickmn/go-cache"
 )
 
 // ConnState represents the state of the requested connection.
@@ -42,6 +43,8 @@ type Peer struct {
 	messagePool    map[string]bool
 	messagePoolMtx sync.Mutex
 
+	messagePoolNew *cache.Cache
+
 	// channel
 	cStop           chan struct{}
 	cDisconnectPeer chan *PeerConn
@@ -50,6 +53,7 @@ type Peer struct {
 	cStopConn       chan struct{}
 
 	Host host.Host
+	Port string
 
 	TargetAddress    ma.Multiaddr
 	PeerID           peer.ID
@@ -141,34 +145,45 @@ type outMsg struct {
 	//encoding wire.MessageEncoding
 }
 
-func (peerObj *Peer) HashToPool(hash string) {
-	peerObj.messagePoolMtx.Lock()
-	defer peerObj.messagePoolMtx.Unlock()
+func (peerObj *Peer) HashToPool(hash string) error {
+	if peerObj.messagePoolNew == nil {
+		peerObj.messagePoolNew = cache.New(MsgLiveTime, MsgsCleanupInterval)
+	}
+	// peerObj.messagePoolMtx.Lock()
+	// defer peerObj.messagePoolMtx.Unlock()
 
-	if peerObj.messagePool == nil {
-		peerObj.messagePool = make(map[string]bool)
-	}
-	ok := peerObj.messagePool[hash]
-	if ok {
-		return
-	}
-	if len(peerObj.messagePool) >= MESSAGE_HASH_POOL_SIZE {
-		for k := range peerObj.messagePool {
-			delete(peerObj.messagePool, k)
-			break
-		}
-	}
-	peerObj.messagePool[hash] = true
+	// if peerObj.messagePool == nil {
+	// 	peerObj.messagePool = make(map[string]bool)
+	// }
+	// ok := peerObj.messagePool[hash]
+	// if ok {
+	// 	return
+	// }
+	// if len(peerObj.messagePool) >= MESSAGE_HASH_POOL_SIZE {
+	// 	for k := range peerObj.messagePool {
+	// 		delete(peerObj.messagePool, k)
+	// 		break
+	// 	}
+	// }
+	// peerObj.messagePool[hash] = true
+	return peerObj.messagePoolNew.Add(hash, 1, MsgLiveTime)
 }
 
 func (peerObj *Peer) CheckHashPool(hash string) bool {
-	peerObj.messagePoolMtx.Lock()
-	defer peerObj.messagePoolMtx.Unlock()
-	if peerObj.messagePool == nil {
-		peerObj.messagePool = make(map[string]bool)
+	// peerObj.messagePoolMtx.Lock()
+	// defer peerObj.messagePoolMtx.Unlock()
+	// if peerObj.messagePool == nil {
+	// 	peerObj.messagePool = make(map[string]bool)
+	// }
+	// ok := peerObj.messagePool[hash]
+	// return ok
+	_, expiredT, exist := peerObj.messagePoolNew.GetWithExpiration(hash)
+	if exist {
+		if (expiredT != time.Time{}) {
+			return true
+		}
 	}
-	ok := peerObj.messagePool[hash]
-	return ok
+	return false
 }
 
 /*
@@ -236,6 +251,7 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 
 	peerObj.RawAddress = rawAddress
 	peerObj.Host = basicHost
+	peerObj.Port = port
 	peerObj.TargetAddress = fullAddr
 	peerObj.PeerID = peerID
 	peerObj.cStop = make(chan struct{}, 1)

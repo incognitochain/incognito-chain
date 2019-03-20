@@ -2,16 +2,17 @@ package rpcserver
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/transaction"
-	"github.com/pkg/errors"
 	"log"
 	"net"
+	"os"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
-	"github.com/ninjadotorg/constant/wallet"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
+	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
+	"github.com/constant-money/constant-chain/transaction"
+	"github.com/constant-money/constant-chain/wallet"
+	"github.com/pkg/errors"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, *RPCError)
@@ -30,16 +31,16 @@ var RpcHandler = map[string]commandHandler{
 	GetMiningInfo:            RpcServer.handleGetMiningInfo,
 
 	// block
-	GetBestBlock:      RpcServer.handleGetBestBlock,
-	GetBestBlockHash:  RpcServer.handleGetBestBlockHash,
-	RetrieveBlock:     RpcServer.handleRetrieveBlock,
-	RetrieveBeaconBlock:     RpcServer.handleRetrieveBeaconBlock,
-	GetBlocks:         RpcServer.handleGetBlocks,
-	GetBlockChainInfo: RpcServer.handleGetBlockChainInfo,
-	GetBlockCount:     RpcServer.handleGetBlockCount,
-	GetBlockHash:      RpcServer.handleGetBlockHash,
-	CheckHashValue:    RpcServer.handleCheckHashValue, // get data in blockchain from hash value
-	GetBlockHeader:    RpcServer.handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
+	GetBestBlock:        RpcServer.handleGetBestBlock,
+	GetBestBlockHash:    RpcServer.handleGetBestBlockHash,
+	RetrieveBlock:       RpcServer.handleRetrieveBlock,
+	RetrieveBeaconBlock: RpcServer.handleRetrieveBeaconBlock,
+	GetBlocks:           RpcServer.handleGetBlocks,
+	GetBlockChainInfo:   RpcServer.handleGetBlockChainInfo,
+	GetBlockCount:       RpcServer.handleGetBlockCount,
+	GetBlockHash:        RpcServer.handleGetBlockHash,
+	CheckHashValue:      RpcServer.handleCheckHashValue, // get data in blockchain from hash value
+	GetBlockHeader:      RpcServer.handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
 
 	// transaction
 	ListOutputCoins:                 RpcServer.handleListOutputCoins,
@@ -115,6 +116,9 @@ var RpcHandler = map[string]commandHandler{
 	GetContractingStatus:            RpcServer.handleGetContractingStatus,
 	ConvertETHToDCBTokenAmount:      RpcServer.handleConvertETHToDCBTokenAmount,
 	ConvertCSTToETHAmount:           RpcServer.handleConvertCSTToETHAmount,
+	GetRaiseReserveInfo:             RpcServer.handleGetRaiseReserveInfo,
+	GetSpendReserveInfo:             RpcServer.handleGetSpendReserveInfo,
+	ConvertUSDToDCBTokenAmount:      RpcServer.handleConvertUSDToDCBTokenAmount,
 
 	// multisig
 	CreateSignatureOnCustomTokenTx:       RpcServer.handleCreateSignatureOnCustomTokenTx,
@@ -130,18 +134,12 @@ var RpcHandler = map[string]commandHandler{
 	CreateRawVoteDCBBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
 	CreateAndSendVoteGOVBoardTransaction: RpcServer.handleCreateAndSendVoteGOVBoardTransaction,
 	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteGOVBoardTransaction,
-	GetAmountVoteToken:                   RpcServer.handleGetAmountVoteToken,
-	SetAmountVoteToken:                   RpcServer.handleSetAmountVoteToken,
 
 	// vote proposal
-	GetEncryptionFlag:                         RpcServer.handleGetEncryptionFlag,
-	SetEncryptionFlag:                         RpcServer.handleSetEncryptionFlag,
-	GetEncryptionLastBlockHeightFlag:          RpcServer.handleGetEncryptionLastBlockHeightFlag,
-	CreateAndSendSealLv3VoteProposal:          RpcServer.handleCreateAndSendSealLv3VoteProposalTransaction,
-	CreateAndSendSealLv2VoteProposal:          RpcServer.handleCreateAndSendSealLv2VoteProposalTransaction,
-	CreateAndSendSealLv1VoteProposal:          RpcServer.handleCreateAndSendSealLv1VoteProposalTransaction,
-	CreateAndSendNormalVoteProposalFromOwner:  RpcServer.handleCreateAndSendNormalVoteProposalFromOwnerTransaction,
-	CreateAndSendNormalVoteProposalFromSealer: RpcServer.handleCreateAndSendNormalVoteProposalFromSealerTransaction,
+	GetEncryptionFlag:                RpcServer.handleGetEncryptionFlag,
+	SetEncryptionFlag:                RpcServer.handleSetEncryptionFlag,
+	GetEncryptionLastBlockHeightFlag: RpcServer.handleGetEncryptionLastBlockHeightFlag,
+	CreateAndSendVoteProposal:        RpcServer.handleCreateAndSendVoteProposalTransaction,
 
 	// Submit Proposal:
 	CreateAndSendSubmitDCBProposalTx: RpcServer.handleCreateAndSendSubmitDCBProposalTransaction,
@@ -202,12 +200,10 @@ var RpcLimited = map[string]commandHandler{
 	GetRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
 }
 
-/*
-getblockcount RPC return information fo blockchain node
-*/
 func (rpcServer RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetNetworkInfoResult{}
 
+	result.Commit = os.Getenv("commit")
 	result.Version = RpcServerVersion
 	result.SubVersion = ""
 	result.ProtocolVersion = rpcServer.config.ProtocolVersion
@@ -303,6 +299,9 @@ func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, clos
 		}
 		item := make([]jsonresult.OutCoin, 0)
 		for _, outCoin := range outCoins {
+			if outCoin.CoinDetails.Value == 0 {
+				continue
+			}
 			item = append(item, jsonresult.OutCoin{
 				SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
 				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),
@@ -338,7 +337,7 @@ func (rpcServer RpcServer) handleCheckHashValue(params interface{}, closeChan <-
 
 	// Check block
 	// _, err := rpcServer.config.BlockChain.GetBlockByHash(hash)
-	_, err := rpcServer.config.BlockChain.GetShardBlockByHash(hash)
+	_, err, _ := rpcServer.config.BlockChain.GetShardBlockByHash(hash)
 	if err != nil {
 		isBlock = false
 	} else {
@@ -507,7 +506,7 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 				}
 			} else {
 				// Check privacy custom token param
-				customPrivacyTokenParam, _, err = rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
+				customPrivacyTokenParam, _, _, err = rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
 				if err.(*RPCError) != nil {
 					return nil, err.(*RPCError)
 				}

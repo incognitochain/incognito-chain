@@ -3,16 +3,16 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/metadata/fromshardins"
-
-	"github.com/ninjadotorg/constant/blockchain/component"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/metadata/frombeaconins"
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/transaction"
+	"github.com/constant-money/constant-chain/blockchain/component"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/metadata/frombeaconins"
+	"github.com/constant-money/constant-chain/metadata/fromshardins"
+	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/transaction"
 	"github.com/pkg/errors"
 )
 
@@ -144,16 +144,17 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 ) ([][]string, error) {
 	instructions := [][]string{}
 	//Add Voting instruction
-	votingInstruction, err := blkTmpGen.chain.generateVotingInstructionWOIns(0)
-	if err != nil {
-		return nil, NewBlockChainError(BeaconError, err)
-	}
-	instructions = append(instructions, votingInstruction...)
+	// step 3 hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+	// votingInstruction, err := blkTmpGen.chain.generateVotingInstructionWOIns(0)
+	// if err != nil {
+	// 	return nil, NewBlockChainError(BeaconError, err)
+	// }
+	// instructions = append(instructions, votingInstruction...)
 
 	for _, inst := range shardBlockInstructions {
 		fmt.Printf("[db] beaconProducer found inst: %s\n", inst[0])
 		// TODO: will improve the condition later
-		if inst[0] == "stake" || inst[0] == "swap" || inst[0] == "random" {
+		if inst[0] == StakeAction || inst[0] == SwapAction || inst[0] == RandomAction {
 			continue
 		}
 		metaType, err := strconv.Atoi(inst[0])
@@ -199,26 +200,11 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 		case component.NewGOVConstitutionIns:
 			newInst, err = buildUpdateConstitutionIns(inst[2], common.GOVBoard)
 
-		case component.VoteDCBBoardIns:
-			err = blkTmpGen.chain.AddVoteDCBBoard(inst[2])
+		case component.VoteBoardIns:
+			err = blkTmpGen.chain.AddVoteBoard(inst[2])
 
-		case component.VoteGOVBoardIns:
-			err = blkTmpGen.chain.AddVoteDCBBoard(inst[2])
-
-		case component.SealedLv1Or2VoteProposalIns:
-			err = blkTmpGen.chain.AddVoteLv1or2Proposal(inst[2])
-
-		case component.SealedLv3VoteProposalIns:
-			err = blkTmpGen.chain.AddVoteLv3Proposal(inst[2])
-
-		case component.NormalVoteProposalFromSealerIns:
-			err = blkTmpGen.chain.AddNormalVoteProposalFromSealer(inst[2])
-
-		case component.NormalVoteProposalFromOwnerIns:
-			err = blkTmpGen.chain.AddNormalVoteProposalFromOwner(inst[2])
-
-		case component.PunishDecryptIns:
-			// todo @0xjackalope
+		case component.VoteProposalIns:
+			err = blkTmpGen.chain.AddVoteProposal(inst[2])
 		default:
 			continue
 		}
@@ -298,7 +284,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
 			// TODO: will improve the condition later
-			if l[0] == "stake" || l[0] == "swap" || l[0] == "random" {
+			if l[0] == StakeAction || l[0] == "swap" || l[0] == RandomAction {
 				continue
 			}
 			if len(l) <= 2 {
@@ -311,6 +297,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					return nil, err
 				}
 				fmt.Printf("[db] shard build Resp from inst: %+v\n", l)
+				Logger.log.Warn("Metadata type:", metaType, "\n")
 				switch metaType {
 				case metadata.CrowdsalePaymentMeta:
 					paymentInst, err := ParseCrowdsalePaymentInstruction(l[2])
@@ -348,40 +335,25 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					}
 					resTxs = append(resTxs, txs...)
 
-				case metadata.SendBackTokenVoteFailMeta:
+					// todo @0xjackalope move meta to ins?
+				case metadata.SendBackTokenVoteBoardFailMeta:
+					Logger.log.Info(metadata.SendBackTokenVoteBoardFailMeta, "\n")
 					sendBackTokenVoteFail := frombeaconins.TxSendBackTokenVoteFailIns{}
 					err := json.Unmarshal([]byte(l[2]), &sendBackTokenVoteFail)
 					if err != nil {
+						Logger.log.Error("Here, why?", err.Error(), "\n")
 						return nil, err
 					}
-					txs, err := sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
-					if err != nil {
-						return nil, err
-					}
-					resTxs = append(resTxs, txs)
-				case metadata.SendInitDCBVoteTokenMeta:
-					sendInitDCBVoteToken := frombeaconins.TxSendInitDCBVoteTokenMetadataIns{}
-					err := json.Unmarshal([]byte(l[2]), &sendInitDCBVoteToken)
-					if err != nil {
-						return nil, err
-					}
-					txs, err := sendInitDCBVoteToken.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
-					if err != nil {
-						return nil, err
-					}
-					resTxs = append(resTxs, txs)
-				case metadata.SendInitGOVVoteTokenMeta:
-					sendInitGOVVoteToken := frombeaconins.TxSendInitGOVVoteTokenMetadataIns{}
-					err := json.Unmarshal([]byte(l[2]), &sendInitGOVVoteToken)
-					if err != nil {
-						return nil, err
-					}
-					txs, err := sendInitGOVVoteToken.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
-					if err != nil {
-						return nil, err
+
+					txs, err1 := sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, blockgen.chain, shardID)
+
+					if err1 != nil {
+						Logger.log.Error("Here, why?????????", err1, reflect.TypeOf(err1), reflect.ValueOf(err1), "\n")
+						return nil, err1
 					}
 					resTxs = append(resTxs, txs)
 				case metadata.ShareRewardOldDCBBoardMeta, metadata.ShareRewardOldGOVBoardMeta:
+					Logger.log.Info(metadata.ShareRewardOldDCBBoardMeta, metadata.ShareRewardOldGOVBoardMeta, "\n")
 					shareRewardOldBoard := frombeaconins.TxShareRewardOldBoardMetadataIns{}
 					err := json.Unmarshal([]byte(l[2]), &shareRewardOldBoard)
 					if err != nil {
@@ -395,7 +367,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 
 				case metadata.IssuingRequestMeta:
 					issuingInfoStr := l[3]
-					txs, err := blockgen.buildIssuingRes(l[2], issuingInfoStr, producerPrivateKey)
+					txs, err := blockgen.buildIssuingRes(l[2], issuingInfoStr, producerPrivateKey, shardID)
 					if err != nil {
 						return nil, err
 					}
@@ -463,13 +435,12 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []met
 	return respTxs, nil
 }
 
-func (chain *BlockChain) AddVoteDCBBoard(inst string) error {
-	newInst, err := fromshardins.NewVoteDCBBoardInsFromStr(inst)
+func (chain *BlockChain) AddVoteBoard(inst string) error {
+	newInst, err := fromshardins.NewVoteBoardInsFromStr(inst)
 	if err != nil {
 		return err
 	}
-
-	boardType := common.DCBBoard
+	boardType := newInst.BoardType
 	voteAmount := newInst.AmountOfVote
 	voterPayment := newInst.VoterPaymentAddress
 	governor := chain.GetGovernor(boardType)
@@ -487,84 +458,19 @@ func (chain *BlockChain) AddVoteDCBBoard(inst string) error {
 	return nil
 }
 
-func (chain *BlockChain) AddVoteGOVBoard(inst string) error {
-	newInst, err := fromshardins.NewVoteGOVBoardInsFromStr(inst)
+func (chain *BlockChain) AddVoteProposal(inst string) error {
+	newInst, err := fromshardins.NewNormalVoteProposalInsFromStr(inst)
 	if err != nil {
 		return err
 	}
-
-	boardType := common.GOVBoard
-	voteAmount := newInst.AmountOfVote
-	voterPayment := newInst.VoterPaymentAddress
-	governor := chain.GetGovernor(boardType)
-	boardIndex := governor.GetBoardIndex() + 1
-	err1 := chain.GetDatabase().AddVoteBoard(
-		boardType,
-		boardIndex,
-		voterPayment,
-		newInst.CandidatePaymentAddress,
-		voteAmount,
-	)
-	if err1 != nil {
-		return err1
-	}
-	return nil
-}
-
-func (chain *BlockChain) AddVoteLv1or2Proposal(inst string) error {
-	newInst, err := fromshardins.NewSealedLv1Or2VoteProposalInsFromStr(inst)
 	boardType := newInst.BoardType
-	if err != nil {
-		return err
-	}
-
+	// step 4 hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
-	err = chain.GetDatabase().AddVoteLv1or2ProposalDB(boardType, nextConstitutionIndex, &newInst.Lv3TxID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (chain *BlockChain) AddVoteLv3Proposal(inst string) error {
-	newInst, err := fromshardins.NewSealedLv3VoteProposalInsFromStr(inst)
-	boardType := newInst.BoardType
-
-	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
-	err = chain.GetDatabase().AddVoteLv3ProposalDB(boardType, nextConstitutionIndex, &newInst.Lv3TxID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (chain *BlockChain) AddNormalVoteProposalFromSealer(inst string) error {
-	newInst, err := fromshardins.NewNormalVoteProposalFromSealerInsFromStr(inst)
-	boardType := newInst.BoardType
-
-	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
-	err = chain.GetDatabase().AddVoteNormalProposalFromSealerDB(
+	err = chain.GetDatabase().AddVoteProposalDB(
 		boardType,
 		nextConstitutionIndex,
-		&newInst.Lv3TxID,
-		newInst.VoteProposal.ToBytes(),
-	)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (chain *BlockChain) AddNormalVoteProposalFromOwner(inst string) error {
-	newInst, err := fromshardins.NewNormalVoteProposalFromOwnerInsFromStr(inst)
-	boardType := newInst.BoardType
-
-	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
-	err = chain.GetDatabase().AddVoteNormalProposalFromOwnerDB(
-		boardType,
-		nextConstitutionIndex,
-		&newInst.Lv3TxID,
-		newInst.VoteProposal.ToBytes(),
+		newInst.VoteProposal.VoterPayment.Bytes(),
+		newInst.VoteProposal.ProposalTxID.GetBytes(),
 	)
 	if err != nil {
 		return err

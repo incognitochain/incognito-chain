@@ -11,13 +11,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/constant-money/constant-chain/bootnode/server"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/peer"
+	"github.com/constant-money/constant-chain/wire"
 	libpeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
-	"github.com/ninjadotorg/constant/bootnode/server"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/peer"
-	"github.com/ninjadotorg/constant/wire"
 )
 
 // ConnState represents the state of the requested connection.
@@ -386,6 +386,8 @@ func (connManager *ConnManager) processDiscoverPeers() {
 		return
 	}
 	if client != nil {
+		defer client.Close()
+
 		listener := connManager.Config.ListenerPeer
 		var response []wire.RawPeer
 
@@ -394,13 +396,17 @@ func (connManager *ConnManager) processDiscoverPeers() {
 
 		// remove later
 		rawAddress := listener.RawAddress
+		rawPort := listener.Port
 		if externalAddress == common.EmptyString {
 			externalAddress = os.Getenv("EXTERNAL_ADDRESS")
 		}
 		if externalAddress != common.EmptyString {
-			host, _, err := net.SplitHostPort(externalAddress)
+			host, port, err := net.SplitHostPort(externalAddress)
 			if err == nil && host != common.EmptyString {
 				rawAddress = strings.Replace(rawAddress, "127.0.0.1", host, 1)
+				rawAddress = strings.Replace(rawAddress, "0.0.0.0", host, 1)
+				rawAddress = strings.Replace(rawAddress, "localhost", host, 1)
+				rawAddress = strings.Replace(rawAddress, fmt.Sprintf("/%s/", rawPort), fmt.Sprintf("/%s/", port), 1)
 			}
 		} else {
 			rawAddress = ""

@@ -540,3 +540,21 @@ func IndexOfByte(item byte, arrays []byte) int {
 	}
 	return -1
 }
+
+// MilliEtherValue converts amount of milliether to cent using current price of ether
+func MilliEtherValue(a uint64, p uint64) uint64 {
+	milliEtherToEtherRatio := big.NewInt(1000)
+	v := big.NewInt(int64(a))
+	v.Mul(v, big.NewInt(int64(p)))
+	v.Quo(v, milliEtherToEtherRatio)
+	return v.Uint64()
+}
+
+// CentInMilliEther converts amount of cent to milliether using current price of ether
+func CentInMilliEther(a uint64, p uint64) uint64 {
+	milliEtherToEtherRatio := big.NewInt(1000)
+	v := big.NewInt(int64(a))
+	v.Mul(v, milliEtherToEtherRatio)
+	v.Quo(v, big.NewInt(int64(p)))
+	return v.Uint64()
+}

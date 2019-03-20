@@ -5,15 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
-	"github.com/ninjadotorg/constant/wallet"
+	"github.com/constant-money/constant-chain/cashec"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
+	"github.com/constant-money/constant-chain/database"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/privacy"
+	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	"github.com/constant-money/constant-chain/wallet"
 )
 
 // TxCustomToken is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -25,7 +26,8 @@ type TxCustomToken struct {
 	TxTokenData TxTokenData // vin - vout format
 
 	// Template data variable to process logic
-	listUtxo map[common.Hash]TxCustomToken
+	listUtxo   map[common.Hash]TxCustomToken
+	cachedHash *common.Hash // cached hash data of tx
 }
 
 func (txObj *TxCustomToken) UnmarshalJSON(data []byte) error {
@@ -122,14 +124,16 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) error {
-	//TODO: throw error here
 	if customTokenTx.GetType() == common.TxSalaryType {
 		return NewTransactionErr(UnexpectedErr, errors.New("Wrong salary tx"))
 	}
 	if customTokenTx.Metadata != nil {
 		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(customTokenTx, bcr, shardID, db)
-		if err != nil || !isContinued {
+		if err != nil {
 			return NewTransactionErr(UnexpectedErr, err)
+		}
+		if !isContinued {
+			return nil
 		}
 	}
 
@@ -196,17 +200,13 @@ func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRe
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
 func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	// validate for normal tx
-	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 0")
 	if tx.Tx.ValidateTransaction(hasPrivacy, db, shardID, tokenID) {
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 1")
 		if len(tx.listUtxo) == 0 {
 			return false
 		}
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 2")
 		if len(tx.TxTokenData.Vins) == 0 {
 			return false
 		}
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 3")
 		for _, vin := range tx.TxTokenData.Vins {
 			keySet := cashec.KeySet{}
 			keySet.PaymentAddress = vin.PaymentAddress
@@ -221,10 +221,8 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 				return false
 			}
 		}
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 4")
 		return true
 	}
-	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 5")
 	return false
 }
 
@@ -256,9 +254,17 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 ) bool {
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
-	fmt.Println("******************* - 1")
-	//TODO: verify CustomTokenInit
 	if customTokenTx.TxTokenData.Type == CustomTokenInit {
+		ok := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
+		if !ok {
+			return false
+		}
+		if len(customTokenTx.TxTokenData.Vouts) != 1 {
+			return false
+		}
+		if len(customTokenTx.TxTokenData.Vins) != 0 && customTokenTx.TxTokenData.Vins != nil {
+			return false
+		}
 		return true
 	}
 	//Process CustomToken CrossShard
@@ -267,16 +273,20 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 		if !ok {
 			return false
 		}
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 1-1")
 		if len(customTokenTx.listUtxo) != 0 {
 			return false
 		}
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!! 2-1")
 		if len(customTokenTx.TxTokenData.Vins) != 0 {
 			return false
 		}
 		return true
 	}
+
+	if customTokenTx.TxTokenData.Type == CustomTokenMint {
+		// TODO(@0xsirrush): validate for this type
+		return true
+	}
+
 	//Process CustomToken Transfer
 	ok := customTokenTx.getListUTXOFromTxCustomToken(bcr)
 	if !ok {
@@ -316,6 +326,9 @@ func (txObj TxCustomToken) JSONString() string {
 
 // Hash returns the hash of all fields of the transaction
 func (tx TxCustomToken) Hash() *common.Hash {
+	if tx.cachedHash != nil {
+		return tx.cachedHash
+	}
 	// final hash
 	hash := common.DoubleHashH([]byte(tx.String()))
 	return &hash
@@ -328,7 +341,6 @@ func (tx *TxCustomToken) GetTxActualSize() uint64 {
 
 	tokenDataSize := uint64(0)
 
-	tokenDataSize += uint64(len(tx.TxTokenData.PropertyName))
 	tokenDataSize += uint64(len(tx.TxTokenData.PropertyName))
 	tokenDataSize += uint64(len(tx.TxTokenData.PropertyID))
 	tokenDataSize += 4 // for TxTokenData.Type
@@ -351,7 +363,7 @@ func (tx *TxCustomToken) GetTxActualSize() uint64 {
 		tokenDataSize += meta.CalculateSize()
 	}
 
-	return normalTxSize + tokenDataSize
+	return normalTxSize + uint64(math.Ceil(float64(tokenDataSize)/1024))
 }
 
 // CreateTxCustomToken ...
@@ -390,6 +402,28 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 
 	// Add token data component
 	switch tokenParams.TokenTxType {
+	case CustomTokenMint:
+		{
+			Logger.log.Error("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n")
+			handled = true
+			propertyID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+			//TODO: check dcb or gov
+			if err != nil {
+				return NewTransactionErr(UnexpectedErr, err)
+			}
+			//TODO: check sender?
+			txCustomToken.TxTokenData = TxTokenData{
+				PropertyID:     *propertyID,
+				Type:           tokenParams.TokenTxType,
+				PropertyName:   tokenParams.PropertyName,
+				PropertySymbol: tokenParams.PropertySymbol,
+				Vins:           nil,
+				Vouts:          nil,
+				Amount:         tokenParams.Amount,
+			}
+			//TODO: get vouts
+			txCustomToken.TxTokenData.Vouts = tokenParams.Receiver
+		}
 	case CustomTokenCrossShard:
 		{
 			handled = true
@@ -436,10 +470,9 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 			//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 			newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
 			fmt.Println("INIT Tx Custom Token/ newHashInitToken", newHashInitToken)
-			// validate PropertyID is the only one
 			for customTokenID := range listCustomTokens {
-				fmt.Println("INIT Tx Custom Token/ Existed", customTokenID, customTokenID.String() == newHashInitToken.String())
 				if newHashInitToken.String() == customTokenID.String() {
+					fmt.Println("INIT Tx Custom Token/ Existed", customTokenID, customTokenID.String() == newHashInitToken.String())
 					return NewTransactionErr(CustomTokenExisted, nil)
 				}
 			}
@@ -481,6 +514,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 		}
 		txCustomToken.TxTokenData.Vouts = VoutsTemp
 	}
+	txCustomToken.Type = common.TxCustomTokenType
 
 	if !handled {
 		return NewTransactionErr(WrongTokenTxType, nil)

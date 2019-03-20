@@ -2,7 +2,7 @@ package zkp
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
@@ -163,7 +163,7 @@ func BenchmarkAggregatedRangeProve(b *testing.B) {
 		wit.rands[i] = privacy.RandScalar()
 	}
 
-	for i:=0; i<b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		start := time.Now()
 		proof, err := wit.Prove()
 		if err != nil {
@@ -187,11 +187,11 @@ func BenchmarkAggregatedRangeProve(b *testing.B) {
 	}
 }
 
-func TestMultiExponentiation(t *testing.T){
+func TestMultiExponentiation(t *testing.T) {
 	//exponents := []*big.Int{big.NewInt(5), big.NewInt(10),big.NewInt(5),big.NewInt(7), big.NewInt(5)}
 
 	exponents := make([]*big.Int, 64)
-	for i:= range exponents{
+	for i := range exponents {
 		exponents[i] = new(big.Int).SetBytes(privacy.RandBytes(2))
 	}
 
@@ -200,17 +200,16 @@ func TestMultiExponentiation(t *testing.T){
 
 	start1 := time.Now()
 	expectedRes := new(privacy.EllipticPoint).Zero()
-	for i:= range exponents{
+	for i := range exponents {
 		expectedRes = expectedRes.Add(bases.G[i].ScalarMult(exponents[i]))
 	}
 	end1 := time.Since(start1)
 	fmt.Printf("normal calculation time: %v\n", end1)
 	fmt.Printf("Res from normal calculation: %+v\n", expectedRes)
 
-
 	start2 := time.Now()
 	testcase4, err := privacy.MultiScalarmult(bases.G, exponents)
-	if err != nil{
+	if err != nil {
 		fmt.Printf("Error of multi-exponentiation algorithm")
 	}
 	end2 := time.Since(start2)
@@ -219,7 +218,7 @@ func TestMultiExponentiation(t *testing.T){
 
 	start3 := time.Now()
 	testcase5, err := privacy.MultiScalar2(bases.G, exponents)
-	if err != nil{
+	if err != nil {
 		fmt.Printf("Error of multi-exponentiation algorithm")
 	}
 	end3 := time.Since(start3)
@@ -229,7 +228,7 @@ func TestMultiExponentiation(t *testing.T){
 	assert.Equal(t, expectedRes, testcase4)
 }
 
-func TestPad (t*testing.T){
+func TestPad(t *testing.T) {
 	num := 1000
 	testcase1 := 1024
 
@@ -241,7 +240,7 @@ func TestPad (t*testing.T){
 	assert.Equal(t, testcase1, padNum)
 }
 
-func TestPowerVector(t*testing.T){
+func TestPowerVector(t *testing.T) {
 	twoVector := powerVector(big.NewInt(2), 5)
 	fmt.Printf("two vector : %v\n", twoVector)
 }

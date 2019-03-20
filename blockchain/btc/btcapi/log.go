@@ -1,6 +1,6 @@
 package btcapi
 
-import "github.com/ninjadotorg/constant/common"
+import "github.com/constant-money/constant-chain/common"
 
 type RandomLogger struct {
 	log common.Logger

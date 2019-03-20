@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/wallet"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
+	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/wallet"
 	"github.com/pkg/errors"
 )
 
@@ -107,12 +107,11 @@ type TxTokenData struct {
 	PropertyID     common.Hash // = hash of TxTokenData data
 	PropertyName   string
 	PropertySymbol string
-
-	Type     int    // action type [init, transfer, crossShard (used only for crossShard msg)]
-	Mintable bool   // can mine, default false
-	Amount   uint64 // init amount
-	Vins     []TxTokenVin
-	Vouts    []TxTokenVout
+	Type           int    // action type [init, transfer, crossShard (used only for crossShard msg)]
+	Mintable       bool   // can mine, default false
+	Amount         uint64 // init amount
+	Vins           []TxTokenVin
+	Vouts          []TxTokenVout
 }
 
 func (txObj TxTokenData) String() string {
@@ -157,7 +156,6 @@ type CustomTokenParamTx struct {
 	Amount         uint64        `json:"TokenAmount"`
 	TokenTxType    int           `json:"TokenTxType"`
 	Receiver       []TxTokenVout `json:"TokenReceiver"`
-
 	// temp variable to process coding
 	vins       []TxTokenVin
 	vinsAmount uint64

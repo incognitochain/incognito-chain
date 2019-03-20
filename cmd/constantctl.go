@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/ninjadotorg/constant/common"
+	"github.com/constant-money/constant-chain/common"
 	"log"
 )
 

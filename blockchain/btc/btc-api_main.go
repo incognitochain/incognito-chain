@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
+	"github.com/constant-money/constant-chain/blockchain/btc/btcapi"
 )
 
 func main() {

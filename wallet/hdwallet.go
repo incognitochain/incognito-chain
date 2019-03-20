@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha512"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/constant-money/constant-chain/cashec"
+	"github.com/constant-money/constant-chain/common/base58"
 )
 
 // KeyWallet represents with bip32 standard
@@ -180,4 +180,3 @@ func Base58CheckDeserialize(data string) (*KeyWallet, error) {
 	}
 	return Deserialize(b)
 }
-

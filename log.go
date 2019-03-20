@@ -5,21 +5,21 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/constant-money/constant-chain/addrmanager"
+	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/constant-money/constant-chain/blockchain/btc/btcapi"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/connmanager"
+	"github.com/constant-money/constant-chain/consensus/constantbft"
+	"github.com/constant-money/constant-chain/database"
+	"github.com/constant-money/constant-chain/mempool"
+	"github.com/constant-money/constant-chain/netsync"
+	"github.com/constant-money/constant-chain/peer"
+	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/rpcserver"
+	"github.com/constant-money/constant-chain/transaction"
+	"github.com/constant-money/constant-chain/wallet"
 	"github.com/jrick/logrotate/rotator"
-	"github.com/ninjadotorg/constant/addrmanager"
-	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/blockchain/btc/btcapi"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/connmanager"
-	"github.com/ninjadotorg/constant/consensus/constantbft"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/mempool"
-	"github.com/ninjadotorg/constant/netsync"
-	"github.com/ninjadotorg/constant/peer"
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/rpcserver"
-	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/wallet"
 )
 
 var (
@@ -28,12 +28,12 @@ var (
 	logRotator *rotator.Rotator
 
 	backendLog        = common.NewBackend(logWriter{})
-	addrManagerLoger  = backendLog.Logger("Address Log", true)
-	connManagerLogger = backendLog.Logger("Connection Manager Log", true)
+	addrManagerLoger  = backendLog.Logger("Address Log", false)
+	connManagerLogger = backendLog.Logger("Connection Manager Log", false)
 	mainLogger        = backendLog.Logger("Server Log", false)
 	rpcLogger         = backendLog.Logger("RPC Log", false)
-	netsyncLogger     = backendLog.Logger("Netsync Log", true)
-	peerLogger        = backendLog.Logger("Peer Log", true)
+	netsyncLogger     = backendLog.Logger("Netsync Log", false)
+	peerLogger        = backendLog.Logger("Peer Log", false)
 	dbLogger          = backendLog.Logger("Database Log", false)
 	walletLogger      = backendLog.Logger("Wallet log", false)
 	blockchainLogger  = backendLog.Logger("BlockChain log", false)

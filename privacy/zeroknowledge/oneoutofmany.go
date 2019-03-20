@@ -2,7 +2,7 @@ package zkp
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/pkg/errors"
 	"math/big"
 )
@@ -11,7 +11,7 @@ import (
 
 // Statement to be proved
 type OneOutOfManyStatement struct {
-	commitments       []*privacy.EllipticPoint
+	commitments []*privacy.EllipticPoint
 }
 
 // Statement's witness
@@ -29,6 +29,52 @@ type OneOutOfManyProof struct {
 	cl, ca, cb, cd []*privacy.EllipticPoint
 	f, za, zb      []*big.Int
 	zd             *big.Int
+}
+
+func (proof *OneOutOfManyProof) ValidateSanity() bool {
+	if len(proof.stmt.commitments) != privacy.CMRingSize {
+		return false
+	}
+
+	for i := 0; i < len(proof.stmt.commitments); i++ {
+		if !proof.stmt.commitments[i].IsSafe() {
+			return false
+		}
+	}
+
+	if len(proof.cl) != privacy.CMRingSizeExp || len(proof.ca) != privacy.CMRingSizeExp ||
+		len(proof.cb) != privacy.CMRingSizeExp || len(proof.cd) != privacy.CMRingSizeExp ||
+		len(proof.f) != privacy.CMRingSizeExp || len(proof.za) != privacy.CMRingSizeExp ||
+		len(proof.zb) != privacy.CMRingSizeExp {
+		return false
+	}
+
+	for i := 0; i < len(proof.cl); i++ {
+		if !proof.cl[i].IsSafe() {
+			return false
+		}
+		if !proof.ca[i].IsSafe() {
+			return false
+		}
+		if !proof.cb[i].IsSafe() {
+			return false
+		}
+		if !proof.cd[i].IsSafe() {
+			return false
+		}
+
+		if proof.f[i].BitLen() > 256 {
+			return false
+		}
+		if proof.za[i].BitLen() > 256 {
+			return false
+		}
+		if proof.zb[i].BitLen() > 256 {
+			return false
+		}
+	}
+
+	return proof.zd.BitLen() <= 256
 }
 
 func (proof *OneOutOfManyProof) isNil() bool {

@@ -10,15 +10,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/constant-money/constant-chain/common/base58"
 
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
-	"github.com/ninjadotorg/constant/wallet"
+	"github.com/constant-money/constant-chain/cashec"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/database"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/privacy"
+	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	"github.com/constant-money/constant-chain/wallet"
 )
 
 type Tx struct {
@@ -28,7 +28,7 @@ type Tx struct {
 	LockTime int64  `json:"LockTime"`
 
 	Fee  uint64 `json:"Fee"` // Fee applies: always consant
-	Info []byte
+	Info []byte // 512 bytes
 
 	// Sign and Privacy proof
 	SigPubKey []byte `json:"SigPubKey, omitempty"` // 33 bytes
@@ -36,11 +36,11 @@ type Tx struct {
 	Proof     *zkp.PaymentProof
 
 	PubKeyLastByteSender byte
-
 	// Metadata
 	Metadata metadata.Metadata
 
-	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
+	sigPrivKey []byte       // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
+	cachedHash *common.Hash // cached hash data of tx
 }
 
 func (tx *Tx) GetAmountOfVote() (uint64, error) {
@@ -89,9 +89,17 @@ func (tx *Tx) Init(
 ) *TransactionError {
 
 	Logger.log.Infof("CREATING TX........\n")
-	//hasPrivacy = false
 	tx.Version = TxVersion
 	var err error
+
+	if len(inputCoins) > 255 {
+		return NewTransactionErr(UnexpectedErr, errors.New("Input coins in tx are very large:"+strconv.Itoa(len(inputCoins))))
+	}
+
+	if len(paymentInfo) > 254 {
+		return NewTransactionErr(UnexpectedErr, errors.New("Input coins in tx are very large:"+strconv.Itoa(len(paymentInfo))))
+	}
+
 	if tokenID == nil {
 		tokenID = &common.Hash{}
 		tokenID.SetBytes(common.ConstantID[:])
@@ -116,12 +124,13 @@ func (tx *Tx) Init(
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
 
 	// init info of tx
-	pubKeyData := &privacy.EllipticPoint{}
-	pubKeyData.Decompress(senderFullKey.PaymentAddress.Pk)
-	tx.Info, err = privacy.ElGamalEncrypt(senderFullKey.PaymentAddress.Tk[:], pubKeyData)
-	if err != nil {
-		return NewTransactionErr(UnexpectedErr, err)
-	}
+	tx.Info = []byte{}
+	//pubKeyData := &privacy.EllipticPoint{}
+	//pubKeyData.Decompress(senderFullKey.PaymentAddress.Pk)
+	//tx.Info, err = privacy.ElGamalEncrypt(senderFullKey.PaymentAddress.Tk[:], pubKeyData)
+	//if err != nil {
+	//	return NewTransactionErr(UnexpectedErr, err)
+	//}
 
 	// set metadata
 	tx.Metadata = metaData
@@ -135,9 +144,10 @@ func (tx *Tx) Init(
 		tx.Fee = fee
 		tx.sigPrivKey = *senderSK
 		tx.PubKeyLastByteSender = pkLastByteSender
-
+		Logger.log.Error("aaaaaaaaaaaaaaaaaaaaaaaaaa", tx, "\n")
 		err := tx.signTx()
 		if err != nil {
+			Logger.log.Error(err)
 			return NewTransactionErr(UnexpectedErr, err)
 		}
 		return nil
@@ -332,7 +342,9 @@ func (tx *Tx) signTx() error {
 	tx.SigPubKey = sigKey.PubKey.PK.Compress()
 
 	// signing
-	Logger.log.Debugf(tx.Hash().String())
+	if Logger.log != nil {
+		Logger.log.Debugf(tx.Hash().String())
+	}
 	signature, err := sigKey.Sign(tx.Hash()[:])
 	if err != nil {
 		return err
@@ -396,7 +408,6 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Verify the payment proof
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	//hasPrivacy = false
-	fmt.Println("&&&&&&&&&&&&&&&&&&&&&&&&&&& 1")
 	Logger.log.Debugf("[db] Validating Transaction tx\n")
 	Logger.log.Infof("VALIDATING TX........\n")
 	start := time.Now()
@@ -504,7 +515,11 @@ func (tx Tx) String() string {
 }
 
 func (tx *Tx) Hash() *common.Hash {
+	if tx.cachedHash != nil {
+		return tx.cachedHash
+	}
 	hash := common.HashH([]byte(tx.String()))
+	tx.cachedHash = &hash
 	return &hash
 }
 
@@ -572,7 +587,7 @@ func (tx *Tx) CheckTransactionFee(minFeePerKbTx uint64) bool {
 		return tx.Metadata.CheckTransactionFee(tx, minFeePerKbTx)
 	}
 	fullFee := minFeePerKbTx * tx.GetTxActualSize()
-	return !(tx.Fee < fullFee)
+	return tx.Fee >= fullFee
 }
 
 func (tx *Tx) IsSalaryTx() bool {
@@ -700,6 +715,8 @@ func (tx *Tx) ValidateTxWithBlockChain(
 }
 
 func (tx *Tx) validateNormalTxSanityData() (bool, error) {
+	//todo @0xthunderbird
+	return true, nil
 	txN := tx
 	//check version
 	if txN.Version > TxVersion {
@@ -709,11 +726,169 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 	if int64(txN.LockTime) > time.Now().Unix() {
 		return false, errors.New("wrong tx locktime")
 	}
-	// check Type is normal or salary tx
-	/*if len(txN.Type) != 1 || (txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType) { // only 1 byte
-		return false, errors.New("Wrong tx type")
-	}*/
 
+	// check sanity of Proof
+	validateSanityOfProof, err := tx.validateSanityDataOfProof()
+	if err != nil || !validateSanityOfProof {
+		return false, err
+	}
+
+	if len(txN.SigPubKey) != privacy.SigPubKeySize {
+		return false, errors.New("wrong tx Sig PK")
+	}
+	// check Type is normal or salary tx
+	if txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType && txN.Type != common.TxCustomTokenType && txN.Type != common.TxCustomTokenPrivacyType { // only 1 byte
+		return false, errors.New("wrong tx type")
+	}
+
+	// check info field
+	if len(txN.Info) > 512 {
+		return false, errors.New("wrong tx info length")
+	}
+
+	return true, nil
+}
+
+func (txN Tx) validateSanityDataOfProof() (bool, error) {
+	if txN.Proof != nil {
+
+		if len(txN.Proof.InputCoins) > 255 {
+			return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(txN.Proof.InputCoins)))
+		}
+
+		if len(txN.Proof.OutputCoins) > 255 {
+			return false, errors.New("Output coins in tx are very large:" + strconv.Itoa(len(txN.Proof.OutputCoins)))
+		}
+
+		isPrivacy := true
+		// check Privacy or not
+
+		if txN.Proof.AggregatedRangeProof == nil || len(txN.Proof.OneOfManyProof) == 0 || len(txN.Proof.SerialNumberProof) == 0 {
+			isPrivacy = false
+		}
+
+		if isPrivacy {
+			if !txN.Proof.AggregatedRangeProof.ValidateSanity() {
+				return false, errors.New("validate sanity Aggregated range proof failed")
+			}
+
+			for i := 0; i < len(txN.Proof.OneOfManyProof); i++ {
+				if !txN.Proof.OneOfManyProof[i].ValidateSanity() {
+					return false, errors.New("validate sanity One out of many proof failed")
+				}
+			}
+			for i := 0; i < len(txN.Proof.SerialNumberProof); i++ {
+				if !txN.Proof.SerialNumberProof[i].ValidateSanity() {
+					return false, errors.New("validate sanity Serial number proof failed")
+				}
+			}
+
+			// check input coins with privacy
+			for i := 0; i < len(txN.Proof.InputCoins); i++ {
+				if !txN.Proof.InputCoins[i].CoinDetails.SerialNumber.IsSafe() {
+					return false, errors.New("validate sanity Serial number of input coin failed")
+				}
+			}
+			// check output coins with privacy
+			for i := 0; i < len(txN.Proof.OutputCoins); i++ {
+				if !txN.Proof.OutputCoins[i].CoinDetails.PublicKey.IsSafe() {
+					return false, errors.New("validate sanity Public key of output coin failed")
+				}
+				if !txN.Proof.OutputCoins[i].CoinDetails.CoinCommitment.IsSafe() {
+					return false, errors.New("validate sanity Coin commitment of output coin failed")
+				}
+				if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) > privacy.BigIntSize {
+					return false, errors.New("validate sanity SNDerivator of output coin failed")
+				}
+			}
+			// check ComInputSK
+			if !txN.Proof.ComInputSK.IsSafe() {
+				return false, errors.New("validate sanity ComInputSK of proof failed")
+			}
+			// check ComInputValue
+			for i := 0; i < len(txN.Proof.ComInputValue); i++ {
+				if !txN.Proof.ComInputValue[i].IsSafe() {
+					return false, errors.New("validate sanity ComInputValue of proof failed")
+				}
+			}
+			//check ComInputSND
+			for i := 0; i < len(txN.Proof.ComInputSND); i++ {
+				if !txN.Proof.ComInputSND[i].IsSafe() {
+					return false, errors.New("validate sanity ComInputSND of proof failed")
+				}
+			}
+			//check ComInputShardID
+			if !txN.Proof.ComInputShardID.IsSafe() {
+				return false, errors.New("validate sanity ComInputShardID of proof failed")
+			}
+
+			// check ComOutputShardID
+			for i := 0; i < len(txN.Proof.ComOutputShardID); i++ {
+				if !txN.Proof.ComOutputShardID[i].IsSafe() {
+					return false, errors.New("validate sanity ComOutputShardID of proof failed")
+				}
+			}
+			//check ComOutputSND
+			for i := 0; i < len(txN.Proof.ComOutputSND); i++ {
+				if !txN.Proof.ComOutputSND[i].IsSafe() {
+					return false, errors.New("validate sanity ComOutputSND of proof failed")
+				}
+			}
+			//check ComOutputValue
+			for i := 0; i < len(txN.Proof.ComOutputValue); i++ {
+				if !txN.Proof.ComOutputValue[i].IsSafe() {
+					return false, errors.New("validate sanity ComInputValue of proof failed")
+				}
+			}
+			if len(txN.Proof.CommitmentIndices) != len(txN.Proof.InputCoins)*privacy.CMRingSize {
+				return false, errors.New("validate sanity CommitmentIndices of proof failed")
+
+			}
+		}
+
+		if !isPrivacy {
+			for i := 0; i < len(txN.Proof.SNNoPrivacyProof); i++ {
+				if !txN.Proof.SNNoPrivacyProof[i].ValidateSanity() {
+					return false, errors.New("validate sanity Serial number no privacy proof failed")
+				}
+			}
+			// check input coins without privacy
+			for i := 0; i < len(txN.Proof.InputCoins); i++ {
+				if !txN.Proof.InputCoins[i].CoinDetails.CoinCommitment.IsSafe() {
+					return false, errors.New("validate sanity CoinCommitment of input coin failed")
+				}
+				if !txN.Proof.InputCoins[i].CoinDetails.PublicKey.IsSafe() {
+					return false, errors.New("validate sanity PublicKey of input coin failed")
+				}
+				if !txN.Proof.InputCoins[i].CoinDetails.SerialNumber.IsSafe() {
+					return false, errors.New("validate sanity Serial number of input coin failed")
+				}
+				if len(txN.Proof.InputCoins[i].CoinDetails.Randomness.Bytes()) > privacy.BigIntSize {
+					return false, errors.New("validate sanity Randomness of input coin failed")
+				}
+				if len(txN.Proof.InputCoins[i].CoinDetails.SNDerivator.Bytes()) > privacy.BigIntSize {
+					return false, errors.New("validate sanity SNDerivator of input coin failed")
+				}
+
+			}
+
+			// check output coins without privacy
+			for i := 0; i < len(txN.Proof.OutputCoins); i++ {
+				if !txN.Proof.OutputCoins[i].CoinDetails.CoinCommitment.IsSafe() {
+					return false, errors.New("validate sanity CoinCommitment of output coin failed")
+				}
+				if !txN.Proof.OutputCoins[i].CoinDetails.PublicKey.IsSafe() {
+					return false, errors.New("validate sanity PublicKey of output coin failed")
+				}
+				if len(txN.Proof.OutputCoins[i].CoinDetails.Randomness.Bytes()) > privacy.BigIntSize {
+					return false, errors.New("validate sanity Randomness of output coin failed")
+				}
+				if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) > privacy.BigIntSize {
+					return false, errors.New("validate sanity SNDerivator of output coin failed")
+				}
+			}
+		}
+	}
 	return true, nil
 }
 

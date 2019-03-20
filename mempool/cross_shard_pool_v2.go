@@ -7,15 +7,15 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/ninjadotorg/constant/database"
+	"github.com/constant-money/constant-chain/database"
 
-	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/common"
+	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/constant-money/constant-chain/common"
 )
 
 const (
-	MAX_VALID_CROSS_SHARD_IN_POOL   = 20000
-	MAX_PENDING_CROSS_SHARD_IN_POOL = 100 //per shardID
+	MAX_VALID_CROSS_SHARD_IN_POOL   = 1000
+	MAX_PENDING_CROSS_SHARD_IN_POOL = 2000 //per shardID
 
 	VALID_CROSS_SHARD_BLOCK   = 0
 	INVALID_CROSS_SHARD_BLOCK = -1
@@ -66,11 +66,11 @@ func GetCrossShardPool(shardID byte) *CrossShardPool_v2 {
 
 // Validate pending pool again, to move pending block to valid block
 // When receive new cross shard block or new beacon state arrive
-func (pool *CrossShardPool_v2) UpdatePool() error {
+func (pool *CrossShardPool_v2) UpdatePool() (map[byte]uint64, error) {
 	pool.poolMu.Lock()
 	defer pool.poolMu.Unlock()
-	_, err := pool.updatePool()
-	return err
+	expectedHeight, err := pool.updatePool()
+	return expectedHeight, err
 }
 
 func (pool *CrossShardPool_v2) getNextCrossShardHeight(fromShard, toShard byte, startHeight uint64) uint64 {
@@ -78,7 +78,6 @@ func (pool *CrossShardPool_v2) getNextCrossShardHeight(fromShard, toShard byte, 
 	if err != nil {
 		return 0
 	}
-	fmt.Println("CrossShardPool/getNextCrossShardHeight, NEXT Height", nextHeight)
 	return nextHeight
 
 }
@@ -88,14 +87,20 @@ func (pool *CrossShardPool_v2) updatePool() (map[byte]uint64, error) {
 	expectedHeight := make(map[byte]uint64)
 	for blkShardID, blks := range pool.pendingPool {
 		startHeight := pool.crossShardState[blkShardID]
+		if len(pool.validPool[blkShardID]) > 0 {
+			startHeight = pool.validPool[blkShardID][len(pool.validPool[blkShardID])-1].Header.Height
+		}
 		index := 0
 		for _, blk := range blks {
 			//only when beacon confirm (save next cross shard height), we make cross shard block valid
 			waitHeight := pool.getNextCrossShardHeight(blkShardID, pool.shardID, startHeight)
+			//TODO: what if wait height > blk height (compromise case)???
 			if waitHeight == blk.Header.Height {
 				index++
+				startHeight = waitHeight
 				continue
 			} else {
+				fmt.Println("crossshard next expectedHeight", waitHeight)
 				expectedHeight[blkShardID] = waitHeight
 				break
 			}
@@ -106,8 +111,23 @@ func (pool *CrossShardPool_v2) updatePool() (map[byte]uint64, error) {
 			pool.validPool[blkShardID] = append(pool.validPool[blkShardID], valid...)
 		}
 	}
-	fmt.Println("Current VALID Cross Shard Pool", pool.validPool)
-	fmt.Println("Current PENDING Cross Shard Pool", pool.pendingPool)
+
+	//===============For log
+	validPoolHeight := make(map[byte][]uint64)
+	pendingPoolHeight := make(map[byte][]uint64)
+	for shardID, blocks := range pool.validPool {
+		for _, block := range blocks {
+			validPoolHeight[shardID] = append(validPoolHeight[shardID], block.Header.Height)
+		}
+	}
+	for shardID, blocks := range pool.pendingPool {
+		for _, block := range blocks {
+			pendingPoolHeight[shardID] = append(pendingPoolHeight[shardID], block.Header.Height)
+		}
+	}
+	fmt.Println("CrossShardPool/getNextCrossShardHeight, NEXT Height", expectedHeight)
+	fmt.Println("CrossShardPool/Current VALID Cross Shard Pool", validPoolHeight)
+	fmt.Println("CrossShardPool/Current PENDING Cross Shard Pool", pendingPoolHeight)
 	return expectedHeight, nil
 }
 
@@ -125,9 +145,7 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 	shardID := blk.Header.ShardID
 	blkHeight := blk.Header.Height
 
-	fmt.Printf("Receiver Block %+v from shard %+v at Cross Shard Pool \n", blkHeight, shardID)
-	fmt.Println(blk)
-	fmt.Println("<===================> Verify 1")
+	Logger.log.Criticalf("Receiver Block %+v from shard %+v at Cross Shard Pool \n", blkHeight, shardID)
 	if blk.ToShardID != pool.shardID {
 		return nil, pool.shardID, errors.New("This pool cannot receive this cross shard block, this block for another shard")
 	}
@@ -149,7 +167,6 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 			return nil, pool.shardID, errors.New("receive duplicate block")
 		}
 	}
-	fmt.Println("<===================> Verify 2")
 	shardCommitteeByte, err := pool.db.FetchCommitteeByEpoch(blk.Header.Epoch)
 	if err != nil {
 		return nil, pool.shardID, errors.New("No committee for this epoch")
@@ -158,11 +175,10 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
 		return nil, pool.shardID, errors.New("Fail to unmarshal shard committee")
 	}
-	fmt.Println("<===================> Verify 3")
 	if err := blockchain.ValidateAggSignature(blk.ValidatorsIdx, shardCommittee[shardID], blk.AggregatedSig, blk.R, blk.Hash()); err != nil {
 		return nil, pool.shardID, err
 	}
-	fmt.Println("<===================> Verify 4")
+
 	if len(pool.pendingPool[shardID]) > MAX_PENDING_CROSS_SHARD_IN_POOL {
 		//TODO: swap for better block
 		return nil, pool.shardID, errors.New("Reach max pending cross shard block")
@@ -171,7 +187,7 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 	sort.Slice(pool.pendingPool[shardID], func(i, j int) bool {
 		return pool.pendingPool[shardID][i].Header.Height < pool.pendingPool[shardID][j].Header.Height
 	})
-	fmt.Println("<===================> Verify 5")
+	fmt.Printf("Finish Verify Cross Shard Block %+v from shard %+v \n", blkHeight, shardID)
 	expectedHeight, _ := pool.updatePool()
 	return expectedHeight, pool.shardID, nil
 }
@@ -212,8 +228,8 @@ func (self *CrossShardPool_v2) removeBlockByHeight(removeSinceBlkHeight map[byte
 }
 
 func (self *CrossShardPool_v2) GetValidBlock(limit map[byte]uint64) map[byte][]*blockchain.CrossShardBlock {
-	self.poolMu.Lock()
-	defer self.poolMu.Unlock()
+	self.poolMu.RLock()
+	defer self.poolMu.RUnlock()
 	finalBlocks := make(map[byte][]*blockchain.CrossShardBlock)
 	for shardID, blks := range self.validPool {
 		for _, blk := range blks {
@@ -228,8 +244,8 @@ func (self *CrossShardPool_v2) GetValidBlock(limit map[byte]uint64) map[byte][]*
 }
 
 func (self *CrossShardPool_v2) GetValidBlockHash() map[byte][]common.Hash {
-	self.poolMu.Lock()
-	defer self.poolMu.Unlock()
+	self.poolMu.RLock()
+	defer self.poolMu.RUnlock()
 	finalBlockHash := make(map[byte][]common.Hash)
 	for shardID, blkItems := range self.validPool {
 		for _, blk := range blkItems {
@@ -240,8 +256,8 @@ func (self *CrossShardPool_v2) GetValidBlockHash() map[byte][]common.Hash {
 }
 
 func (self *CrossShardPool_v2) GetValidBlockHeight() map[byte][]uint64 {
-	self.poolMu.Lock()
-	defer self.poolMu.Unlock()
+	self.poolMu.RLock()
+	defer self.poolMu.RUnlock()
 	finalBlockHeight := make(map[byte][]uint64)
 	for shardID, blkItems := range self.validPool {
 		for _, blk := range blkItems {
@@ -252,8 +268,8 @@ func (self *CrossShardPool_v2) GetValidBlockHeight() map[byte][]uint64 {
 }
 
 func (self *CrossShardPool_v2) GetPendingBlockHeight() map[byte][]uint64 {
-	self.poolMu.Lock()
-	defer self.poolMu.Unlock()
+	self.poolMu.RLock()
+	defer self.poolMu.RUnlock()
 	finalBlockHeight := make(map[byte][]uint64)
 	for shardID, blkItems := range self.pendingPool {
 		for _, blk := range blkItems {
@@ -264,8 +280,8 @@ func (self *CrossShardPool_v2) GetPendingBlockHeight() map[byte][]uint64 {
 }
 
 func (self *CrossShardPool_v2) GetAllBlockHeight() map[byte][]uint64 {
-	self.poolMu.Lock()
-	defer self.poolMu.Unlock()
+	self.poolMu.RLock()
+	defer self.poolMu.RUnlock()
 	finalBlockHeight := make(map[byte][]uint64)
 
 	for shardID, blkItems := range self.validPool {
@@ -283,13 +299,44 @@ func (self *CrossShardPool_v2) GetAllBlockHeight() map[byte][]uint64 {
 }
 
 func (self *CrossShardPool_v2) GetLatestValidBlockHeight() map[byte]uint64 {
-	self.poolMu.Lock()
-	defer self.poolMu.Unlock()
+	self.poolMu.RLock()
+	defer self.poolMu.RUnlock()
 	finalBlockHeight := make(map[byte]uint64)
-	for shardID, blkItems := range self.pendingPool {
-		for _, blk := range blkItems {
-			finalBlockHeight[shardID] = blk.Header.Height
+	for shardID, blkItems := range self.validPool {
+		if len(blkItems) > 0 {
+			finalBlockHeight[shardID] = blkItems[len(blkItems)-1].Header.Height
+		} else {
+			finalBlockHeight[shardID] = 0
 		}
+
 	}
 	return finalBlockHeight
+}
+
+func (self *CrossShardPool_v2) GetBlockByHeight(_shardID byte, height uint64) *blockchain.CrossShardBlock {
+	self.poolMu.RLock()
+	defer self.poolMu.RUnlock()
+	for shardID, blkItems := range self.validPool {
+		if shardID != _shardID {
+			continue
+		}
+		for _, blk := range blkItems {
+			if blk.Header.Height == height {
+				return blk
+			}
+		}
+	}
+
+	for shardID, blkItems := range self.pendingPool {
+		if shardID != _shardID {
+			continue
+		}
+		for _, blk := range blkItems {
+			if blk.Header.Height == height {
+				return blk
+			}
+		}
+	}
+
+	return nil
 }
