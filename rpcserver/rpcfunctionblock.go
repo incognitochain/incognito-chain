@@ -449,3 +449,77 @@ func (rpcServer RpcServer) handleGetBlockHeader(params interface{}, closeChan <-
 
 	return result, nil
 }
+
+//This function return the result of cross shard block of a specific block in shard
+func (rpcServer RpcServer) handleGetCrossShardBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	// Logger.log.Info(arrayParams)
+	log.Printf("arrayParams: %+v", arrayParams)
+	if arrayParams == nil || len(arrayParams) != 2 {
+		return nil, NewRPCError(ErrUnexpected, errors.New("wrong request format"))
+	}
+	// #param1: shardID
+	// #param2: shard block height
+	shardID := arrayParams[0].(byte)
+	blockHeight := arrayParams[1].(uint64)
+	shardBlock, err := rpcServer.config.BlockChain.GetShardBlockByHeight(blockHeight, shardID)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	result := jsonresult.CrossShardDataResult{HasCrossShard: false}
+	flag := false
+	for _, tx := range shardBlock.Body.Transactions {
+		if tx.GetType() == common.TxCustomTokenType {
+			customTokenTx := tx.(*transaction.TxCustomToken)
+			if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
+				if !flag {
+					flag = true //has cross shard block
+				}
+				crossShardCSTokenResult := jsonresult.CrossShardCSTokenResult{
+					Name:      customTokenTx.TxTokenData.PropertyName,
+					Symbol:    customTokenTx.TxTokenData.PropertySymbol,
+					TokenID:   customTokenTx.TxTokenData.PropertyID.String(),
+					Amount:    customTokenTx.TxTokenData.Amount,
+					IsPrivacy: false,
+				}
+				crossShardCSTokenBalanceResultList := []jsonresult.CrossShardCSTokenBalanceResult{}
+				for _, vout := range customTokenTx.TxTokenData.Vouts {
+					crossShardCSTokenBalanceResult := jsonresult.CrossShardCSTokenBalanceResult{
+						PaymentAddress: vout.PaymentAddress.String(),
+						Value:          vout.Value,
+					}
+					crossShardCSTokenBalanceResultList = append(crossShardCSTokenBalanceResultList, crossShardCSTokenBalanceResult)
+				}
+				result.CrossShardCSTokenResultList = append(result.CrossShardCSTokenResultList, crossShardCSTokenResult)
+			}
+		}
+	}
+	for _, crossTransactions := range shardBlock.Body.CrossTransactions {
+		if !flag {
+			flag = true //has cross shard block
+		}
+		for _, crossTransaction := range crossTransactions {
+			for _, outputCoin := range crossTransaction.OutputCoin {
+				if outputCoin.CoinDetailsEncrypted != nil {
+					// crossShardConstantResult := jsonresult.CrossShardConstantResult{
+					// 	PublicKey:
+					// 	Value:
+					// }
+					//TODO: add public key + value
+				} else {
+					// crossShardConstantPrivacyResult := jsonresult.CrossShardConstantPrivacyResult{
+					// 	PublicKey:
+					// }
+					//TODO: add value
+				}
+			}
+			for _, tokenPrivacyData := crossTransaction.TokenPrivacyData {
+				
+			}
+		}
+	}
+	if flag {
+		result.HasCrossShard = flag
+	}
+	return result, nil
+}
