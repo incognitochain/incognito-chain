@@ -1,8 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
-
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -61,12 +59,12 @@ func (blockgen *BlkTmplGenerator) buildInstitutionDividendPaymentTxs(forDCB bool
 		return nil, err
 	}
 	if !hasValue {
-		fmt.Printf("[db] waiting for dividend submit tx\n")
+		// fmt.Printf("[db] waiting for dividend submit tx\n")
 		return nil, nil // Waiting for Dividend submit tx to be included in block
 	}
 
 	if len(receivers) == 0 || len(amounts) == 0 {
-		fmt.Printf("[db] paid to all receivers\n")
+		// fmt.Printf("[db] paid to all receivers\n")
 		return nil, nil // Paid to all receivers for the latest dividend proposal
 	}
 
@@ -77,7 +75,7 @@ func (blockgen *BlkTmplGenerator) buildInstitutionDividendPaymentTxs(forDCB bool
 	}
 	totalTokenOnAllShards, cstToPayout, aggregated := blockgen.chain.BestState.Beacon.GetDividendAggregatedInfo(id, tokenID)
 	if !aggregated {
-		fmt.Printf("[db] waiting for aggregation\n")
+		// fmt.Printf("[db] waiting for aggregation\n")
 		return nil, nil // Waiting for beacon to aggregate dividend infos
 	}
 
@@ -96,9 +94,9 @@ func (blockgen *BlkTmplGenerator) buildInstitutionDividendPaymentTxs(forDCB bool
 		receiverCstAmount := amount * cstToPayout / totalTokenOnAllShards
 		paymentAddresses = append(paymentAddresses, receiver)
 		payoutAmounts = append(payoutAmounts, receiverCstAmount)
-		fmt.Printf("[db] div rec, amount: %x %d\n", receiver.Pk[:], receiverCstAmount)
+		// fmt.Printf("[db] div rec, amount: %x %d\n", receiver.Pk[:], receiverCstAmount)
 	}
-	fmt.Printf("[db] paymentAddresses: %v\n", paymentAddresses)
+	// fmt.Printf("[db] paymentAddresses: %v\n", paymentAddresses)
 
 	txs, err := transaction.BuildDividendTxs(
 		id,
@@ -111,7 +109,7 @@ func (blockgen *BlkTmplGenerator) buildInstitutionDividendPaymentTxs(forDCB bool
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("[db] built divPays: %d\n", len(txs))
+	// fmt.Printf("[db] built divPays: %d\n", len(txs))
 	return txs, nil
 }
 
@@ -152,7 +150,7 @@ func (blockgen *BlkTmplGenerator) buildInstitutionDividendSubmitInst(forDCB bool
 	// Check in shard state if DividendSubmit tx has been created
 	_, _, hasValue, err := blockgen.chain.config.DataBase.GetDividendReceiversForID(id, forDCB)
 	if err != nil {
-		fmt.Printf("[db] buildDivSub err: %v\n", err)
+		// fmt.Printf("[db] buildDivSub err: %v\n", err)
 		return nil, err
 	}
 	if hasValue {
@@ -165,7 +163,7 @@ func (blockgen *BlkTmplGenerator) buildInstitutionDividendSubmitInst(forDCB bool
 		tokenID = &common.GOVTokenID
 	}
 	totalTokenAmount, _, _, err := blockgen.chain.GetAmountPerAccount(tokenID)
-	fmt.Printf("[db] buildDivSubmit: %t, %d, %d, %d\n", forDCB, id, totalTokenAmount, shardID)
+	// fmt.Printf("[db] buildDivSubmit: %t, %d, %d, %d\n", forDCB, id, totalTokenAmount, shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -180,10 +178,10 @@ func (blockgen *BlkTmplGenerator) buildDividendSubmitInsts(producerPrivateKey *p
 	forDCB := true
 	dcbInst, err := blockgen.buildInstitutionDividendSubmitInst(forDCB, shardID)
 	if err != nil {
-		fmt.Printf("[db] error building dividend submit tx for dcb: %v\n", err)
+		// fmt.Printf("[db] error building dividend submit tx for dcb: %v\n", err)
 		return nil, err
 	} else if len(dcbInst) > 0 {
-		fmt.Printf("[db] added divsub inst: %v\n", dcbInst)
+		// fmt.Printf("[db] added divsub inst: %v\n", dcbInst)
 		submitInsts = append(submitInsts, dcbInst...)
 	}
 
@@ -191,7 +189,7 @@ func (blockgen *BlkTmplGenerator) buildDividendSubmitInsts(producerPrivateKey *p
 	forDCB = false
 	govInst, err := blockgen.buildInstitutionDividendSubmitInst(forDCB, shardID)
 	if err != nil {
-		fmt.Printf("[db] error building dividend submit tx for dcb: %v\n", err)
+		// fmt.Printf("[db] error building dividend submit tx for dcb: %v\n", err)
 		return nil, err
 	} else if len(govInst) > 0 {
 		submitInsts = append(submitInsts, govInst...)

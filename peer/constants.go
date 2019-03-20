@@ -10,6 +10,9 @@ const (
 	ProtocolId        = "/blockchain/1.0.0"
 	DelimMessageByte  = '\n'
 	DelimMessageStr   = "\n"
+
+	MsgLiveTime         = 4 * time.Second  // in second
+	MsgsCleanupInterval = MsgLiveTime * 10 //in second
 )
 
 // ConnState can be either pending, established, disconnected or failed.  When
@@ -17,7 +20,7 @@ const (
 // established or failed depending on the connection result.  An established
 // connection which was disconnected is categorized as disconnected.
 const (
-	ConnPending      ConnState = iota
+	ConnPending ConnState = iota
 	ConnFailing
 	ConnCanceled
 	ConnEstablished
