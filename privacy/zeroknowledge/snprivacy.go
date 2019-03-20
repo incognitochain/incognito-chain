@@ -33,6 +33,39 @@ type SNPrivacyProof struct {
 	zRInput *big.Int // second challenge-dependent information to open the commitment to input
 }
 
+func (proof *SNPrivacyProof) ValidateSanity() bool {
+	if !proof.stmt.sn.IsSafe() {
+		return false
+	}
+	if !proof.stmt.comSK.IsSafe() {
+		return false
+	}
+	if !proof.stmt.comInput.IsSafe() {
+		return false
+	}
+
+	if !proof.tSK.IsSafe() {
+		return false
+	}
+	if !proof.tInput.IsSafe() {
+		return false
+	}
+	if !proof.tSN.IsSafe() {
+		return false
+	}
+
+	if proof.zSK.BitLen() > 256 {
+		return false
+	}
+	if proof.zRSK.BitLen() > 256 {
+		return false
+	}
+	if proof.zInput.BitLen() > 256 {
+		return false
+	}
+	return proof.zRInput.BitLen() <= 256
+}
+
 func (proof *SNPrivacyProof) isNil() bool {
 	if proof.stmt.sn == nil {
 		return true

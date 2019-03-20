@@ -23,6 +23,31 @@ type InnerProductProof struct {
 	p *privacy.EllipticPoint
 }
 
+func (proof *InnerProductProof) ValidateSanity() bool {
+	if len(proof.l) != len(proof.r) {
+		return false
+	}
+
+	for i := 0; i < len(proof.l); i++ {
+		if !proof.l[i].IsSafe() {
+			return false
+		}
+
+		if !proof.r[i].IsSafe() {
+			return false
+		}
+	}
+
+	if proof.a.BitLen() > 256 {
+		return false
+	}
+	if proof.b.BitLen() > 256 {
+		return false
+	}
+
+	return proof.p.IsSafe()
+}
+
 func (proof *InnerProductProof) Bytes() []byte {
 	var res []byte
 

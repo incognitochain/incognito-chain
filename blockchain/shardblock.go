@@ -153,7 +153,7 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 		fmt.Println("CreateCrossShardBlock no crossshard", block.Header.Height)
 		return nil, nil
 	}
-	merklePathShard, merkleShardRoot := GetMerklePathCrossShard(block.Body.Transactions, shardID)
+	merklePathShard, merkleShardRoot := GetMerklePathCrossShard2(block.Body.Transactions, shardID)
 	if merkleShardRoot != block.Header.ShardTxRoot {
 		return crossShard, NewBlockChainError(CrossShardBlockError, errors.New("ShardTxRoot mismatch"))
 	}

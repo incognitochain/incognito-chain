@@ -169,12 +169,13 @@ type DatabaseInterface interface {
 	GetTopMostVoteGovernor(boardType common.BoardType, currentBoardIndex uint32) (CandidateList, error)
 	NewIterator(*util.Range, *opt.ReadOptions) iterator.Iterator
 	GetKey(string, interface{}) []byte
-	AddVoteNormalProposalDB(boardType common.BoardType, constitutionIndex uint32, voteValue []byte) error
+	AddVoteProposalDB(boardType common.BoardType, constitutionIndex uint32, voterPayment []byte, proposalTxID []byte) error
 	SetNewProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32, paymentAddress privacy.PaymentAddress) error
 	GetEncryptFlag(boardType common.BoardType) (byte, error)
 	SetEncryptFlag(boardType common.BoardType, flag byte)
 	GetEncryptionLastBlockHeight(boardType common.BoardType) (uint64, error)
 	SetEncryptionLastBlockHeight(boardType common.BoardType, height uint64)
+	GetListSupporters(boardType common.BoardType, candidateAddress privacy.PaymentAddress) ([]*privacy.PaymentAddress, error)
 
 	// Multisigs
 	StoreMultiSigsRegistration([]byte, []byte) error
