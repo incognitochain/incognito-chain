@@ -3,9 +3,10 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata/fromshardins"
-	"strconv"
 
 	"github.com/ninjadotorg/constant/blockchain/component"
 	"github.com/ninjadotorg/constant/metadata"
@@ -186,6 +187,12 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 		case metadata.ShardBlockSalaryRequestMeta:
 			newInst, err = buildInstForShardBlockSalaryReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
+		case metadata.OracleFeedMeta:
+			newInst, err = buildInstForOracleFeedReq(shardID, contentStr, beaconBestState)
+
+		case metadata.UpdatingOracleBoardMeta:
+			newInst, err = buildInstForUpdatingOracleBoardReq(shardID, contentStr, beaconBestState)
+
 		case component.NewDCBConstitutionIns:
 			newInst, err = buildUpdateConstitutionIns(inst[2], common.DCBBoard)
 
@@ -200,12 +207,16 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 
 		case component.SealedLv1Or2VoteProposalIns:
 			err = blkTmpGen.chain.AddVoteLv1or2Proposal(inst[2])
+
 		case component.SealedLv3VoteProposalIns:
 			err = blkTmpGen.chain.AddVoteLv3Proposal(inst[2])
+
 		case component.NormalVoteProposalFromSealerIns:
 			err = blkTmpGen.chain.AddNormalVoteProposalFromSealer(inst[2])
+
 		case component.NormalVoteProposalFromOwnerIns:
 			err = blkTmpGen.chain.AddNormalVoteProposalFromOwner(inst[2])
+
 		case component.PunishDecryptIns:
 			// todo @0xjackalope
 		default:
@@ -393,6 +404,14 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				case metadata.ContractingRequestMeta:
 					contractingInfoStr := l[3]
 					txs, err := blockgen.buildContractingRes(l[2], contractingInfoStr, producerPrivateKey)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, txs...)
+
+				case metadata.OracleRewardMeta:
+					evaluationStr := l[3]
+					txs, err := blockgen.buildOracleRewardTxs(evaluationStr, producerPrivateKey)
 					if err != nil {
 						return nil, err
 					}
