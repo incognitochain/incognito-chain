@@ -134,7 +134,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("[db] buildActionReq to get hash for new shard block\n")
+	// fmt.Printf("[db] buildActionReq to get hash for new shard block\n")
 	txInstructions := CreateShardInstructionsFromTransactionAndIns(block.Body.Transactions, blockgen.chain, shardID, payToAddress, prevBlock.Header.Height+1, beaconBlocks)
 	totalInstructions := []string{}
 	for _, value := range txInstructions {
@@ -155,7 +155,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
-	_, shardTxMerkleData := CreateShardTxRoot(block.Body.Transactions)
+	_, shardTxMerkleData := CreateShardTxRoot2(block.Body.Transactions)
 	fmt.Println("ShardProducer/Shard Tx Root", shardTxMerkleData[len(shardTxMerkleData)-1])
 	block.Header = ShardHeader{
 		ProducerAddress:      payToAddress,
@@ -370,7 +370,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 
 	//TODO: sort transaction base on fee and check limit block size
 	// StartingPriority, fee, size, time
-	fmt.Println("TempTxPool", reflect.TypeOf(blockgen.chain.config.TempTxPool))
+	// fmt.Println("TempTxPool", reflect.TypeOf(blockgen.chain.config.TempTxPool))
 	isEmpty := blockgen.chain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
 		panic("TempTxPool Is not Empty")

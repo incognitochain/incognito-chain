@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"math"
+	"strings"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
@@ -50,7 +51,7 @@ func (merkle Merkle) BuildMerkleTreeStore(transactions []metadata.Transaction) [
 	}
 	// Calculate how many entries are required to hold the binary merkle
 	// tree as a linear array and create an array of that size.
-	nextPoT := merkle.nextPowerOfTwo(len(transactions))
+	nextPoT := NextPowerOfTwo(len(transactions))
 	arraySize := nextPoT*2 - 1
 	merkles := make([]*common.Hash, arraySize)
 
@@ -85,16 +86,21 @@ func (merkle Merkle) BuildMerkleTreeStore(transactions []metadata.Transaction) [
 
 	return merkles
 }
-
-func (merkle Merkle) BuildMerkleTreeOfHashs(shardsHash []*common.Hash) []*common.Hash {
+func (merkle Merkle) BuildMerkleTreeOfHashes(shardsHash []*common.Hash, length int) []*common.Hash {
 	// Calculate how many entries are required to hold the binary merkle
 	// tree as a linear array and create an array of that size.
-	nextPoT := merkle.nextPowerOfTwo(common.MAX_SHARD_NUMBER)
+	nextPoT := NextPowerOfTwo(length)
 	arraySize := nextPoT*2 - 1
 	merkles := make([]*common.Hash, arraySize)
 
 	// Create the base transaction hashes and populate the array with them.
-	copy(merkles, shardsHash)
+	// Create the base transaction hashes and populate the array with them.
+	for i := range shardsHash {
+		merkles[i] = shardsHash[i]
+	}
+	for i := len(shardsHash); i < len(merkles); i++ {
+		merkles[i], _ = common.Hash{}.NewHashFromStr("")
+	}
 
 	// Start the array offset after the last transaction and adjusted to the
 	// next power of two.
@@ -119,20 +125,92 @@ func (merkle Merkle) BuildMerkleTreeOfHashs(shardsHash []*common.Hash) []*common
 		}
 		offset++
 	}
-
 	return merkles
 }
 
-func (merkle Merkle) VerifyMerkleRootOfHashs(merkleTree []*common.Hash, merkleRoot *common.Hash) bool {
-	res := merkle.BuildMerkleTreeOfHashs(merkleTree)
+func (merkle Merkle) VerifyMerkleRootOfHashes(merkleTree []*common.Hash, merkleRoot *common.Hash, length int) bool {
+	res := merkle.BuildMerkleTreeOfHashes(merkleTree, length)
 	tempRoot := res[len(res)-1].GetBytes()
 	return bytes.Equal(tempRoot, merkleRoot.GetBytes())
+}
+
+func (merkle Merkle) BuildMerkleTreeOfHashes2(shardsHashes []common.Hash, length int) []common.Hash {
+	// tempShardsHashes := make([]*common.Hash, len(shardsHashes))
+
+	tempShardsHashes := []*common.Hash{}
+
+	for _, value := range shardsHashes {
+		newHash, _ := common.Hash{}.NewHashFromStr(value.String())
+		tempShardsHashes = append(tempShardsHashes, newHash)
+	}
+	merkleData := merkle.BuildMerkleTreeOfHashes(tempShardsHashes, length)
+	tempMerkleData := make([]common.Hash, len(merkleData))
+	for i, value := range merkleData {
+		tempMerkleData[i] = *value
+	}
+	return tempMerkleData
+}
+func (merkle Merkle) VerifyMerkleRootOfHashes2(merkleTree []common.Hash, merkleRoot common.Hash, length int) bool {
+	res := merkle.BuildMerkleTreeOfHashes2(merkleTree, length)
+	tempRoot := res[len(res)-1].GetBytes()
+	return bytes.Equal(tempRoot, merkleRoot.GetBytes())
+}
+
+func (merkle Merkle) GetMerklePathForCrossShard(length int, merkleTree []common.Hash, shardID byte) (merklePathShard []common.Hash, merkleShardRoot common.Hash) {
+	nextPoT := NextPowerOfTwo(length)
+	// merkleSize := nextPoT*2 - 1
+	cursor := 0
+	lastCursor := 0
+	sid := int(shardID)
+	i := sid
+	time := 0
+	for {
+		if cursor >= len(merkleTree)-2 {
+			break
+		}
+		if i%2 == 0 {
+			merklePathShard = append(merklePathShard, merkleTree[cursor+i+1])
+		} else {
+			merklePathShard = append(merklePathShard, merkleTree[cursor+i-1])
+		}
+		i = i / 2
+
+		if time == 0 {
+			cursor += nextPoT
+		} else {
+			tmp := cursor
+			cursor += (cursor - lastCursor) / 2
+			lastCursor = tmp
+		}
+		time++
+	}
+	merkleShardRoot = merkleTree[len(merkleTree)-1]
+	return merklePathShard, merkleShardRoot
+}
+func (merkle Merkle) VerifyMerkleRootFromMerklePath(leaf common.Hash, merklePath []common.Hash, merkleRoot common.Hash, receiverShardID byte) bool {
+
+	i := int(receiverShardID)
+	finalHash := &leaf
+	for _, hashPath := range merklePath {
+		if i%2 == 0 {
+			finalHash = merkle.hashMerkleBranches(finalHash, &hashPath)
+		} else {
+			finalHash = merkle.hashMerkleBranches(&hashPath, finalHash)
+		}
+		i = i / 2
+	}
+	merkleRootString := merkleRoot.String()
+
+	if strings.Compare(finalHash.String(), merkleRootString) == 0 {
+		return true
+	}
+	return false
 }
 
 // nextPowerOfTwo returns the next highest power of two from a given number if
 // it is not already a power of two.  This is a helper function used during the
 // calculation of a merkle tree.
-func (merkle Merkle) nextPowerOfTwo(n int) int {
+func NextPowerOfTwo(n int) int {
 	// Return the number if it's already a power of 2.
 	if n&(n-1) == 0 {
 		return n
@@ -154,7 +232,7 @@ func (merkle Merkle) hashMerkleBranches(left *common.Hash, right *common.Hash) *
 	copy(hash[:common.HashSize], left[:])
 	copy(hash[common.HashSize:], right[:])
 
-	newHash := common.DoubleHashH(hash[:])
+	newHash := common.HashH(hash[:])
 	return &newHash
 }
 
