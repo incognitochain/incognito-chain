@@ -18,14 +18,14 @@ func (normalVoteProposalIns NormalVoteProposalIns) GetStringFormat() ([]string, 
 		return nil, err
 	}
 	return []string{
-		strconv.Itoa(component.NormalVoteProposalIns),
+		strconv.Itoa(component.VoteProposalIns),
 		strconv.Itoa(-1),
 		string(content),
 	}, nil
 }
 
 func NewNormalVoteProposalIns(boardType common.BoardType, voteProposal component.VoteProposalData) *NormalVoteProposalIns {
-	return &NormalVoteProposalIns{BoardType: boardType,  VoteProposal: voteProposal}
+	return &NormalVoteProposalIns{BoardType: boardType, VoteProposal: voteProposal}
 }
 
 func NewNormalVoteProposalInsFromStr(inst string) (*NormalVoteProposalIns, error) {
@@ -35,24 +35,4 @@ func NewNormalVoteProposalInsFromStr(inst string) (*NormalVoteProposalIns, error
 		return nil, err
 	}
 	return Ins, nil
-}
-
-type PunishDeryptIns struct {
-	BoardType common.BoardType
-}
-
-func (punishDeryptIns PunishDeryptIns) GetStringFormat() ([]string, error) {
-	content, err := json.Marshal(punishDeryptIns)
-	if err != nil {
-		return nil, err
-	}
-	return []string{
-		strconv.Itoa(component.PunishDecryptIns),
-		strconv.Itoa(-1),
-		string(content),
-	}, nil
-}
-
-func NewPunishDeryptIns(boardType common.BoardType) *PunishDeryptIns {
-	return &PunishDeryptIns{BoardType: boardType}
 }
