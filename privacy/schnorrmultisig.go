@@ -2,7 +2,6 @@ package privacy
 
 import (
 	"errors"
-	"fmt"
 	"math/big"
 
 	"github.com/constant-money/constant-chain/common"
@@ -170,8 +169,8 @@ func (multiSig SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicK
 	GSPoint.X, GSPoint.Y = big.NewInt(0), big.NewInt(0)
 	GSPoint.X.Set(Curve.Params().Gx)
 	GSPoint.Y.Set(Curve.Params().Gy)
-	fmt.Println("GSPoint: %v\n", GSPoint)
-	fmt.Println("multisig.S: %v\n", multiSig.S)
+	// fmt.Println("GSPoint: \n", GSPoint)
+	// fmt.Println("multisig.S: \n", multiSig.S)
 	GSPoint = GSPoint.ScalarMult(multiSig.S)
 
 	//RXCPoint is r.X^C
