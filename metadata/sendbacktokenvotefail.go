@@ -4,24 +4,24 @@ import (
 	"github.com/constant-money/constant-chain/database"
 )
 
-type SendBackTokenVoteFailMetadata struct {
+type SendBackTokenVoteBoardFailMetadata struct {
 	MetadataBase
 }
 
-func (SendBackTokenVoteFailMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
+func (SendBackTokenVoteBoardFailMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
 	return true, nil
 }
 
-func (SendBackTokenVoteFailMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
+func (SendBackTokenVoteBoardFailMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
 	return true, true, nil
 }
 
-func (SendBackTokenVoteFailMetadata) ValidateMetadataByItself() bool {
+func (SendBackTokenVoteBoardFailMetadata) ValidateMetadataByItself() bool {
 	return true
 }
 
-func NewSendBackTokenVoteFailMetadata() *SendBackTokenVoteFailMetadata {
-	return &SendBackTokenVoteFailMetadata{
+func NewSendBackTokenVoteFailMetadata() *SendBackTokenVoteBoardFailMetadata {
+	return &SendBackTokenVoteBoardFailMetadata{
 		MetadataBase: *NewMetadataBase(SendBackTokenVoteBoardFailMeta),
 	}
 }
