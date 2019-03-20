@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/transaction"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/transaction"
 )
 
 type ShardBlockSalaryInfo struct {
@@ -30,6 +30,8 @@ func getShardBlockSalary(txs []metadata.Transaction, bestStateBeacon *BestStateB
 	return uint64(len(txs))*salaryPerTx + basicSalary
 }
 
+// Type Content
+// Content: shardBlockSalaryInfo
 func createShardBlockSalaryUpdateAction(
 	shardBlockSalary uint64,
 	shardBlockFee uint64,

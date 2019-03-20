@@ -1,8 +1,8 @@
 package metadata
 
 import (
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/database"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/database"
 )
 
 //validate by checking vout address of this tx equal to vin address of winning proposal

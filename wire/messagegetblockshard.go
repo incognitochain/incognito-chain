@@ -3,20 +3,20 @@ package wire
 import (
 	"encoding/json"
 
-	"github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common"
+	"github.com/constant-money/constant-chain/cashec"
+	"github.com/constant-money/constant-chain/common"
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 type MessageGetBlockShard struct {
-	FromPool  bool
-	ByHash    bool
-	BlksHash  []common.Hash
-	From      uint64
-	To        uint64
-	ShardID   byte
-	SenderID  string
-	Timestamp int64
+	FromPool         bool
+	ByHash           bool
+	BySpecificHeight bool
+	BlksHash         []common.Hash
+	BlkHeights       []uint64
+	ShardID          byte
+	SenderID         string
+	Timestamp        int64
 }
 
 func (msg *MessageGetBlockShard) Hash() string {

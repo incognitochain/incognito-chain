@@ -2,18 +2,25 @@ package frombeaconins
 
 import (
 	"encoding/json"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/transaction"
 	"strconv"
+
+	"github.com/constant-money/constant-chain/transaction"
+
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/database"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/privacy"
 )
 
 type TxSendBackTokenVoteFailIns struct {
+	BoardType      common.BoardType
 	PaymentAddress privacy.PaymentAddress
 	Amount         uint64
 	PropertyID     common.Hash
+}
+
+func NewTxSendBackTokenVoteFailIns(boardType common.BoardType, paymentAddress privacy.PaymentAddress, amount uint64, propertyID common.Hash) *TxSendBackTokenVoteFailIns {
+	return &TxSendBackTokenVoteFailIns{BoardType: boardType, PaymentAddress: paymentAddress, Amount: amount, PropertyID: propertyID}
 }
 
 func (txSendBackTokenVoteFailIns *TxSendBackTokenVoteFailIns) GetStringFormat() ([]string, error) {
@@ -23,7 +30,7 @@ func (txSendBackTokenVoteFailIns *TxSendBackTokenVoteFailIns) GetStringFormat() 
 	}
 	shardID := GetShardIDFromPaymentAddressBytes(txSendBackTokenVoteFailIns.PaymentAddress)
 	return []string{
-		strconv.Itoa(metadata.SendBackTokenVoteFailMeta),
+		strconv.Itoa(metadata.SendBackTokenVoteBoardFailMeta),
 		strconv.Itoa(int(shardID)),
 		string(content),
 	}, nil
@@ -37,15 +44,18 @@ func GetShardIDFromPaymentAddressBytes(paymentAddress privacy.PaymentAddress) by
 func (txSendBackTokenVoteFailIns *TxSendBackTokenVoteFailIns) BuildTransaction(
 	minerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
+	bcr metadata.BlockchainRetriever,
+	shardID byte,
 ) (metadata.Transaction, error) {
-	tx := NewSendBackTokenVoteFailTx(
+	return NewSendBackTokenVoteFailTx(
+		txSendBackTokenVoteFailIns.BoardType,
 		minerPrivateKey,
 		db,
 		txSendBackTokenVoteFailIns.PaymentAddress,
 		txSendBackTokenVoteFailIns.Amount,
-		txSendBackTokenVoteFailIns.PropertyID,
+		bcr,
+		shardID,
 	)
-	return tx, nil
 }
 
 func NewSendBackTokenVoteFailIns(
@@ -61,25 +71,71 @@ func NewSendBackTokenVoteFailIns(
 }
 
 func NewSendBackTokenVoteFailTx(
+	boardType common.BoardType,
 	minerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
 	paymentAddress privacy.PaymentAddress,
 	amount uint64,
-	propertyID common.Hash,
-) metadata.Transaction {
-	txTokenVout := transaction.TxTokenVout{
+	bcr metadata.BlockchainRetriever,
+	shardID byte,
+) (metadata.Transaction, error) {
+
+	//create token params
+	customTokenParamTx := mintDCBTokenParam
+	customTokenParamTx.Receiver = []transaction.TxTokenVout{{
 		Value:          amount,
 		PaymentAddress: paymentAddress,
+	}}
+	if boardType == common.GOVBoard {
+		customTokenParamTx = mintGOVTokenParam
 	}
-	newTx := transaction.TxCustomToken{
-		TxTokenData: transaction.TxTokenData{
-			Type:       transaction.CustomTokenInit,
-			Amount:     amount,
-			PropertyID: propertyID,
-			Vins:       []transaction.TxTokenVin{},
-			Vouts:      []transaction.TxTokenVout{txTokenVout},
-		},
+	customTokenParamTx.Amount = amount
+
+	//CALL DB
+	listCustomTokens, err := GetListCustomTokens(db, bcr)
+	if err != nil {
+		return nil, err
 	}
-	newTx.SetMetadata(metadata.NewSendBackTokenVoteFailMetadata())
-	return &newTx
+	txCustom := &transaction.TxCustomToken{}
+	err1 := txCustom.Init(
+		minerPrivateKey,
+		[]*privacy.PaymentInfo{},
+		nil,
+		0,
+		&customTokenParamTx,
+		listCustomTokens,
+		db,
+		metadata.NewSendBackTokenVoteFailMetadata(),
+		false,
+		shardID,
+	)
+	if err1 != nil {
+		return nil, err1
+	}
+	txCustom.Type = common.TxCustomTokenType
+	return txCustom, nil
+}
+
+func GetListCustomTokens(
+	db database.DatabaseInterface,
+	bcr metadata.BlockchainRetriever,
+) (map[common.Hash]transaction.TxCustomToken, error) {
+	data, err := db.ListCustomToken()
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[common.Hash]transaction.TxCustomToken)
+	for _, txData := range data {
+		hash := common.Hash{}
+		hash.SetBytes(txData)
+		_, blockHash, index, tx, err := bcr.GetTransactionByHash(&hash)
+		_ = blockHash
+		_ = index
+		if err != nil {
+			return nil, err
+		}
+		txCustomToken := tx.(*transaction.TxCustomToken)
+		result[txCustomToken.TxTokenData.PropertyID] = *txCustomToken
+	}
+	return result, nil
 }

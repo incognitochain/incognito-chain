@@ -3,14 +3,14 @@ package constantbft
 import (
 	"errors"
 	"fmt"
-	"os"
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/wire"
+	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/constant-money/constant-chain/cashec"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/wire"
 )
 
 type Engine struct {
@@ -56,15 +56,15 @@ func (engine *Engine) Start() error {
 	time.AfterFunc(DelayTime*time.Millisecond, func() {
 		currentPBFTBlkHeight := uint64(0)
 		currentPBFTRound := 1
-		prevRoundRole := ""
+		prevRoundNodeRole := ""
 		for {
 			select {
 			case <-engine.cQuit:
 				return
 			default:
 				if engine.config.BlockChain.IsReady(false, 0) {
-					if prevRoundRole == common.BEACON_ROLE {
-						engine.config.BlockChain.InsertBlockFromPool()
+					// fmt.Println("Blockchain is ready. Run consensus...")
+					if prevRoundNodeRole == common.BEACON_ROLE {
 						if currentPBFTBlkHeight <= engine.config.BlockChain.BestState.Beacon.BeaconHeight {
 							// reset round
 							currentPBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
@@ -79,13 +79,12 @@ func (engine *Engine) Start() error {
 					if (engine.config.NodeMode == common.NODEMODE_SHARD || engine.config.NodeMode == common.NODEMODE_AUTO) && userRole == common.SHARD_ROLE {
 						nodeRole = common.SHARD_ROLE
 					}
-					prevRoundRole = nodeRole
 
 					engine.config.Server.UpdateConsensusState(nodeRole, engine.config.UserKeySet.GetPublicKeyB58(), nil, engine.config.BlockChain.BestState.Beacon.BeaconCommittee, engine.config.BlockChain.BestState.Beacon.ShardCommittee)
-					fmt.Printf("%v \n", engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
-					fmt.Printf("%v \n", engine.config.BlockChain.BestState.Beacon.ShardCommittee)
-					if currentPBFTRound > 3 && prevRoundRole != "" {
-						os.Exit(1)
+					// fmt.Printf("%v \n", engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
+					// fmt.Printf("%v \n", engine.config.BlockChain.BestState.Beacon.ShardCommittee)
+					if currentPBFTRound > 3 && prevRoundNodeRole != "" {
+						// os.Exit(1)
 					}
 					if userRole != common.EmptyString {
 
@@ -99,26 +98,27 @@ func (engine *Engine) Start() error {
 							ShardToBeaconPool: engine.config.ShardToBeaconPool,
 							CrossShardPool:    engine.config.CrossShardPool,
 						}
-						bftProtocol.RoundData.Round = currentPBFTRound
+
 						if (engine.config.NodeMode == common.NODEMODE_BEACON || engine.config.NodeMode == common.NODEMODE_AUTO) && userRole != common.SHARD_ROLE {
-							fmt.Printf("Node mode %+v, user role %+v, shardID %+v \n currentPBFTRound %+v, beacon height %+v, currentPBFTBlkHeight %+v, prevRoundRole %+v \n ", engine.config.NodeMode, userRole, shardID, currentPBFTRound, engine.config.BlockChain.BestState.Beacon.BeaconHeight, currentPBFTBlkHeight, prevRoundRole)
+							fmt.Printf("Node mode %+v, user role %+v, shardID %+v \n currentPBFTRound %+v, beacon height %+v, currentPBFTBlkHeight %+v, prevRoundNodeRole %+v \n ", engine.config.NodeMode, userRole, shardID, currentPBFTRound, engine.config.BlockChain.BestState.Beacon.BeaconHeight, currentPBFTBlkHeight, prevRoundNodeRole)
+							bftProtocol.RoundData.ProposerOffset = (currentPBFTRound - 1) % len(engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
 							bftProtocol.RoundData.BestStateHash = engine.config.BlockChain.BestState.Beacon.Hash()
 							bftProtocol.RoundData.Layer = common.BEACON_ROLE
 							bftProtocol.RoundData.Committee = make([]string, len(engine.config.BlockChain.BestState.Beacon.BeaconCommittee))
 							copy(bftProtocol.RoundData.Committee, engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
+							roundRole, _ := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.config.UserKeySet.GetPublicKeyB58(), bftProtocol.RoundData.ProposerOffset)
 							var (
 								err    error
 								resBlk interface{}
 							)
-							switch userRole {
+							switch roundRole {
 							case common.PROPOSER_ROLE:
 								bftProtocol.RoundData.IsProposer = true
 								currentPBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
 								resBlk, err = bftProtocol.Start()
 								if err != nil {
 									currentPBFTRound++
-									Logger.log.Error("PBFT fatal error", err)
-									continue
+									prevRoundNodeRole = nodeRole
 								}
 							case common.VALIDATOR_ROLE:
 								bftProtocol.RoundData.IsProposer = false
@@ -126,8 +126,7 @@ func (engine *Engine) Start() error {
 								resBlk, err = bftProtocol.Start()
 								if err != nil {
 									currentPBFTRound++
-									Logger.log.Error("PBFT fatal error", err)
-									continue
+									prevRoundNodeRole = nodeRole
 								}
 							default:
 								err = errors.New("Not your turn yet")
@@ -149,7 +148,7 @@ func (engine *Engine) Start() error {
 									engine.config.Server.PushMessageToAll(newBeaconBlockMsg)
 								}
 								//reset round
-								prevRoundRole = ""
+								prevRoundNodeRole = ""
 								currentPBFTRound = 1
 							} else {
 								Logger.log.Error(err)
@@ -162,9 +161,10 @@ func (engine *Engine) Start() error {
 								currentPBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
 								currentPBFTRound = 1
 							}
-							fmt.Printf("Node mode %+v, user role %+v, shardID %+v \n currentPBFTRound %+v, beacon height %+v, currentPBFTBlkHeight %+v, prevRoundRole %+v \n ", engine.config.NodeMode, userRole, shardID, currentPBFTRound, engine.config.BlockChain.BestState.Shard[shardID].ShardCommittee, currentPBFTBlkHeight, prevRoundRole)
+							fmt.Printf("Node mode %+v, user role %+v, shardID %+v \n currentPBFTRound %+v, beacon height %+v, currentPBFTBlkHeight %+v, prevRoundNodeRole %+v \n ", engine.config.NodeMode, userRole, shardID, currentPBFTRound, engine.config.BlockChain.BestState.Shard[shardID].ShardCommittee, currentPBFTBlkHeight, prevRoundNodeRole)
 							engine.config.BlockChain.SyncShard(shardID)
 							engine.config.BlockChain.StopSyncUnnecessaryShard()
+							bftProtocol.RoundData.ProposerOffset = (currentPBFTRound - 1) % len(engine.config.BlockChain.BestState.Shard[shardID].ShardCommittee)
 							bftProtocol.RoundData.BestStateHash = engine.config.BlockChain.BestState.Shard[shardID].Hash()
 							bftProtocol.RoundData.Layer = common.SHARD_ROLE
 							bftProtocol.RoundData.ShardID = shardID
@@ -175,17 +175,17 @@ func (engine *Engine) Start() error {
 								resBlk interface{}
 							)
 							if engine.config.BlockChain.IsReady(true, shardID) {
-								shardRole := engine.config.BlockChain.BestState.Shard[shardID].GetPubkeyRole(engine.config.UserKeySet.GetPublicKeyB58(), currentPBFTRound)
-								fmt.Println("My shard role", shardRole)
-								switch shardRole {
+								roundRole := engine.config.BlockChain.BestState.Shard[shardID].GetPubkeyRole(engine.config.UserKeySet.GetPublicKeyB58(), bftProtocol.RoundData.ProposerOffset)
+								fmt.Println("My shard role", roundRole)
+								switch roundRole {
 								case common.PROPOSER_ROLE:
 									bftProtocol.RoundData.IsProposer = true
 									currentPBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
 									resBlk, err = bftProtocol.Start()
 									if err != nil {
+										Logger.log.Error(err)
 										currentPBFTRound++
-										Logger.log.Error("PBFT fatal error", err)
-										continue
+										prevRoundNodeRole = nodeRole
 									}
 								case common.VALIDATOR_ROLE:
 									bftProtocol.RoundData.IsProposer = false
@@ -194,64 +194,71 @@ func (engine *Engine) Start() error {
 									resBlk, err = bftProtocol.Start()
 									if err != nil {
 										currentPBFTRound++
-										Logger.log.Error("PBFT fatal error", err)
-										continue
+										prevRoundNodeRole = nodeRole
 									}
 								default:
 									err = errors.New("Not your turn yet")
 								}
 								if err == nil {
 									fmt.Println("========NEW SHARD BLOCK=======", resBlk.(*blockchain.ShardBlock).Header.Height)
-									err = engine.config.BlockChain.InsertShardBlock(resBlk.(*blockchain.ShardBlock))
+									isProducer := false
+									if strings.Compare(engine.config.UserKeySet.GetPublicKeyB58(), resBlk.(*blockchain.ShardBlock).Header.Producer) == 0 {
+										isProducer = true
+									}
+									err = engine.config.BlockChain.InsertShardBlock(resBlk.(*blockchain.ShardBlock), isProducer)
 									if err != nil {
 										Logger.log.Error("Insert shard block error", err)
 										continue
 									}
-									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 1")
 									//PUSH SHARD TO BEACON
 									shardBlk, ok := resBlk.(*blockchain.ShardBlock)
 									if !ok {
 										Logger.log.Debug("Got data of type %T but wanted blockchain.ShardBlock", resBlk)
 										continue
 									}
-									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 2")
+									fmt.Println("Create And Push Shard To Beacon Block")
 									newShardToBeaconBlock := shardBlk.CreateShardToBeaconBlock(engine.config.BlockChain)
-									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 3")
 									newShardToBeaconMsg, err := MakeMsgShardToBeaconBlock(newShardToBeaconBlock)
 									//TODO: check lock later
 									if err == nil {
 										go engine.config.Server.PushMessageToBeacon(newShardToBeaconMsg)
 									}
-									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 4")
+									fmt.Println("Create and Push all Cross Shard Block")
 									//PUSH CROSS-SHARD
 									newCrossShardBlocks := shardBlk.CreateAllCrossShardBlock(engine.config.BlockChain.BestState.Beacon.ActiveShards)
-									fmt.Println(newCrossShardBlocks)
-									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 5")
+									fmt.Println("New Cross Shard Blocks ", newCrossShardBlocks, shardBlk.Header.Height, shardBlk.Header.CrossShards)
+
 									for sID, newCrossShardBlock := range newCrossShardBlocks {
 										newCrossShardMsg, err := MakeMsgCrossShardBlock(newCrossShardBlock)
 										if err == nil {
 											engine.config.Server.PushMessageToShard(newCrossShardMsg, sID)
 										}
 									}
-									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 6")
 									if err != nil {
 										Logger.log.Error("Make new block message error", err)
 									}
-									fmt.Println(">>>>>>>>>>>>>+++++++++++++++<<<<<<<< 7")
 
 									//reset round
-									prevRoundRole = ""
+									prevRoundNodeRole = ""
 									currentPBFTRound = 1
 								} else {
 									Logger.log.Error(err)
 								}
 							} else {
 								//reset round
-								prevRoundRole = ""
+								time.Sleep(time.Millisecond * 500)
+								prevRoundNodeRole = ""
 								currentPBFTRound = 1
+								// Logger.log.Error("Blockchain is not ready!")
 							}
 						}
 					}
+				} else {
+					//reset round
+					time.Sleep(time.Millisecond * 500)
+					prevRoundNodeRole = ""
+					currentPBFTRound = 1
+					// Logger.log.Error("Blockchain is not ready!")
 				}
 			}
 		}

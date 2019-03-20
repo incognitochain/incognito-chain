@@ -1,13 +1,12 @@
 package blockchain
 
 import (
-	"fmt"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/blockchain/component"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/blockchain/component"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/pkg/errors"
 )
 
@@ -26,7 +25,7 @@ func buildInstructionsForCrowdsaleRequest(
 ) ([][]string, error) {
 	saleID, priceLimit, limitSell, paymentAddress, sentAmount, err := metadata.ParseCrowdsaleRequestActionValue(contentStr)
 	if err != nil {
-		fmt.Printf("[db] error parsing action: %+v\n", err)
+		// fmt.Printf("[db] error parsing action: %+v\n", err)
 		return nil, err
 	}
 
@@ -38,7 +37,7 @@ func buildInstructionsForCrowdsaleRequest(
 		if value, ok := beaconBestState.Params[key]; ok {
 			saleData, err = parseSaleDataValueBeacon(value)
 		} else {
-			fmt.Printf("[db] saleid not exist: %x\n", saleID)
+			// fmt.Printf("[db] saleid not exist: %x\n", saleID)
 			return nil, errors.Errorf("SaleID not exist: %x", saleID)
 		}
 	}
@@ -46,7 +45,7 @@ func buildInstructionsForCrowdsaleRequest(
 
 	// Skip payment if either selling or buying asset is offchain (needs confirmation)
 	if common.IsOffChainAsset(&saleData.SellingAsset) || common.IsOffChainAsset(&saleData.BuyingAsset) {
-		fmt.Println("[db] crowdsale offchain asset")
+		// fmt.Println("[db] crowdsale offchain asset")
 		return nil, nil
 	}
 
@@ -84,30 +83,35 @@ func buildPaymentInstructionForCrowdsale(
 		sellPrice = saleData.DefaultSellPrice
 	}
 	if buyPrice == 0 || sellPrice == 0 {
-		fmt.Printf("[db] asset price is 0: %d %d\n", buyPrice, sellPrice)
+		// fmt.Printf("[db] asset price is 0: %d %d\n", buyPrice, sellPrice)
 		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
 	}
-	fmt.Printf("[db] buy and sell price: %d %d\n", buyPrice, sellPrice)
+	// fmt.Printf("[db] buy and sell price: %d %d\n", buyPrice, sellPrice)
 
 	// Check if price limit is not violated
-	priceLimit *= beaconBestState.StabilityInfo.Oracle.Constant // Convert from Nano to Millicent
 	if limitSell && sellPrice > priceLimit {
-		fmt.Printf("Price limit violated: %d %d\n", sellPrice, priceLimit)
+		// fmt.Printf("[db] Price limit violated: %d %d\n", sellPrice, priceLimit)
 		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
 	} else if !limitSell && buyPrice < priceLimit {
-		fmt.Printf("Price limit violated: %d %d\n", buyPrice, priceLimit)
+		// fmt.Printf("[db] Price limit violated: %d %d\n", buyPrice, priceLimit)
 		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
 	}
 
 	// Calculate value of asset sent in request tx
-	sentAssetValue := sentAmount * buyPrice // in USD
+	sentAssetValue := sentAmount * buyPrice // in cent
+	if common.IsConstantAsset(&saleData.BuyingAsset) {
+		sentAssetValue /= 100 // Nano to CST
+	}
 
 	// Number of asset must pay to user
 	paymentAmount := sentAssetValue / sellPrice
+	if common.IsConstantAsset(&saleData.SellingAsset) {
+		paymentAmount *= 100 // CST to Nano
+	}
 
 	// Check if there's still enough asset to trade
 	if sentAmount > saleData.BuyingAmount || paymentAmount > saleData.SellingAmount {
-		fmt.Printf("Crowdsale reached limit\n")
+		// fmt.Printf("[db] Crowdsale reached limit\n")
 		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
 	}
 
@@ -115,7 +119,7 @@ func buildPaymentInstructionForCrowdsale(
 	saleData.BuyingAmount -= sentAmount
 	saleData.SellingAmount -= paymentAmount
 
-	fmt.Printf("[db] sentValue, payAmount, buyLeft, sellLeft: %d %d %d %d\n", sentAssetValue, paymentAmount, saleData.BuyingAmount, saleData.SellingAmount)
+	// fmt.Printf("[db] sentValue, payAmount, buyLeft, sellLeft: %d %d %d %d\n", sentAssetValue, paymentAmount, saleData.BuyingAmount, saleData.SellingAmount)
 
 	// Build instructions
 	return generateCrowdsalePaymentInstruction(paymentAddress, paymentAmount, sellingAsset, saleData.SaleID, sentAmount, true)

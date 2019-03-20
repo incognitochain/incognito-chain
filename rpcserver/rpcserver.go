@@ -17,14 +17,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/constant-money/constant-chain/addrmanager"
+	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/constant-money/constant-chain/connmanager"
+	"github.com/constant-money/constant-chain/database"
+	"github.com/constant-money/constant-chain/mempool"
+	"github.com/constant-money/constant-chain/wallet"
+	"github.com/constant-money/constant-chain/wire"
 	peer2 "github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/constant/addrmanager"
-	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/connmanager"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/mempool"
-	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/wire"
 )
 
 const (
@@ -395,7 +395,10 @@ func (rpcServer RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Requ
 	}
 	if jsonErr.(*RPCError) != nil && r.Method != "OPTIONS" {
 		// Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
-		log.Printf("RPC function process with err \n %+v", jsonErr)
+		fmt.Println(request.Method)
+		if request.Method != GetTransactionByHash {
+			log.Printf("RPC function process with err \n %+v", jsonErr)
+		}
 	}
 	// Marshal the response.
 	msg, err := rpcServer.createMarshalledReply(responseID, result, jsonErr)

@@ -7,10 +7,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/database"
-	_ "github.com/ninjadotorg/constant/database/lvdb"
-	"github.com/ninjadotorg/constant/metadata"
+	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/constant-money/constant-chain/database"
+	_ "github.com/constant-money/constant-chain/database/lvdb"
+	"github.com/constant-money/constant-chain/metadata"
 )
 
 func setup(t *testing.T) (database.DatabaseInterface, func()) {

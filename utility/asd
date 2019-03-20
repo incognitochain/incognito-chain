@@ -100,7 +100,7 @@ go build && ./constant --spendingkey '112t8rxTdWfGCtgWvAMHnnEw9vN3R1D7YgD1SSHjAn
 
 
 Shard 0
-go build && ./constant --spendingkey "112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNhc33pzChmJRvikZNc3Dt5V7quhdzjWW9Z4BrB2BxdK5VtHzsG9JZdZ5M7yYYGidKKZV" --nodemode "auto" --datadir "data/shard-0" --listen "127.0.0.1:9433" --externaladdress "127.0.0.1:9433" --norpcauth --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit
+go build && ./constant --spendingkey "112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNhc33pzChmJRvikZNc3Dt5V7quhdzjWW9Z4BrB2BxdK5VtHzsG9JZdZ5M7yYYGidKKZV" --nodemode "auto" --datadir "data/shard-0" --listen "127.0.0.1:9433" --externaladdress "127.0.0.1:9433" --norpcauth --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit --rpclisten "0.0.0.0:9334"
 
 ./constant --nodemode "auto" --spendingkey "112t8s2UkZEwS7JtqLHFruRrh4Drj53UzH4A6DrairctKutxVb8Vw2DMzxCReYsAZkXi9ycaSNRHEcB7TJaTwPhyPvqRzu5NnUgTMN9AEKwo"  --datadir "data/shard-1" --listen "127.0.0.1:9434" --externaladdress "127.0.0.1:9434" --relayshards [0] --norpc
 
@@ -110,9 +110,10 @@ go build && ./constant --spendingkey "112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNh
 
 
 Shard 1
-./constant --spendingkey "112t8rnYoj4LesSwRsseGCCYi4J2Py5QxytKKF2WixwEYP4opKUNL2Av9bR2zjfLewf3PQeKcNnuRTTPKgZSJaZH8dfoqY2rmHNekmGMBNDX" --nodemode "auto" --datadir "data/shard1-0" --listen "127.0.0.1:9443" --externaladdress "127.0.0.1:9443" --norpcauth --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit --rpclisten "127.0.0.1:9343"
+go build && ./constant --spendingkey "112t8rnYoj4LesSwRsseGCCYi4J2Py5QxytKKF2WixwEYP4opKUNL2Av9bR2zjfLewf3PQeKcNnuRTTPKgZSJaZH8dfoqY2rmHNekmGMBNDX" --nodemode "auto" --datadir "data/shard1-0" --listen "127.0.0.1:9443" --externaladdress "127.0.0.1:9443" --norpcauth --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit --rpclisten "127.0.0.1:9343"
 
-./constant --nodemode "auto" --spendingkey "112t8rnZ5aGQqJw9bg6fR8AiGe9NFRtSmn73Scd4oNJcE5BNY4Rbju2amkTRW5PUaFpETkKAdSJUMqptjFYb3B8PVAcQhrqooieNFXe5jzTj"  --datadir "data/shard1-1" --listen "127.0.0.1:9444" --externaladdress "127.0.0.1:9444" --relayshards [1] --norpc
+./constant --nodemode "auto" --spendingkey "112t8rnZ5aGQqJw9bg6fR8AiGe9NFRtSmn73Scd4oNJcE5BNY4Rbju2amkTRW5PUaFpETkKAdSJUMqptjFYb3B8PVAcQhrqooieNFXe5jzTj"  --datadir "data/shard1-1" --listen "127.0.0.1:9444" --externaladdress "127.0.0.1:9444" --relayshards [1] --norpcauth --rpclisten "0.0.0.0:9346"
+
 
 ./constant --nodemode "auto" --spendingkey "112t8rnZUKcW5CBDojVmMD6PmDJzR3VtfqFGWG6HRT9PocB6aewekjebWMm9aQnSncgwDV2GMqAWzspzFYL2vs3C3KnZB9H5YSE4s1SdotHb"  --datadir "data/shard1-2" --listen "127.0.0.1:9445" --externaladdress "127.0.0.1:9445" --relayshards [1] --norpc
 
@@ -178,3 +179,18 @@ watch -n5 `echo -x curl -X POST \
   http://127.0.0.1:9345 \
   -H 'Content-Type: application/json' \
   -d '{"jsonrpc":"1.0","method":"getbeaconbeststate","params":[],"id":1}'`
+  
+  watch -n5 `echo -x curl -X POST \
+  http://127.0.0.1:9346 \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"1.0","method":"getshardpoolstate","params":[1],"id":1}'`
+
+  watch -n5 `echo -x curl -X POST \
+  http://127.0.0.1:9346 \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"1.0","method":"getshardbeststate","params":[1],"id":1}'`
+
+  watch -n5 `echo -x curl -X POST \
+  http://127.0.0.1:9343 \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"1.0","method":"getshardpoolstate","params":[1],"id":1}'`

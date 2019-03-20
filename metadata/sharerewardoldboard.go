@@ -1,14 +1,14 @@
 package metadata
 
 import (
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/database"
+	"github.com/constant-money/constant-chain/privacy"
 )
 
 type ShareRewardOldBoardMetadata struct {
-	chairPaymentAddress privacy.PaymentAddress
-	voterPaymentAddress privacy.PaymentAddress
+	ChairPaymentAddress privacy.PaymentAddress
+	VoterPaymentAddress privacy.PaymentAddress
 
 	MetadataBase
 }
@@ -26,8 +26,8 @@ func NewShareRewardOldBoardMetadata(
 	}
 
 	return &ShareRewardOldBoardMetadata{
-		chairPaymentAddress: candidatePaymentAddress,
-		voterPaymentAddress: voterPaymentAddress,
+		ChairPaymentAddress: candidatePaymentAddress,
+		VoterPaymentAddress: voterPaymentAddress,
 		MetadataBase: MetadataBase{
 			Type: metadataType,
 		},
@@ -35,8 +35,8 @@ func NewShareRewardOldBoardMetadata(
 }
 
 func (rewardShareOldBoardMetadata *ShareRewardOldBoardMetadata) Hash() *common.Hash {
-	record := rewardShareOldBoardMetadata.voterPaymentAddress.String()
-	record += rewardShareOldBoardMetadata.chairPaymentAddress.String()
+	record := rewardShareOldBoardMetadata.VoterPaymentAddress.String()
+	record += rewardShareOldBoardMetadata.ChairPaymentAddress.String()
 	record += rewardShareOldBoardMetadata.MetadataBase.Hash().String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash

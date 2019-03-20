@@ -3,10 +3,10 @@ package wire
 import (
 	"encoding/json"
 
+	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/constant-money/constant-chain/cashec"
+	"github.com/constant-money/constant-chain/common"
 	"github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common"
 )
 
 const (

@@ -5,13 +5,13 @@ import (
 
 	"math/big"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/privacy/zeroknowledge"
-	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/wallet"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
+	"github.com/constant-money/constant-chain/database"
+	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	"github.com/constant-money/constant-chain/transaction"
+	"github.com/constant-money/constant-chain/wallet"
 )
 
 // TxViewPoint is used to contain data which is fetched from tx of every block
@@ -30,6 +30,7 @@ type TxViewPoint struct {
 	// data of privacy custom token
 	privacyCustomTokenViewPoint map[int32]*TxViewPoint
 	privacyCustomTokenTxs       map[int32]*transaction.TxCustomTokenPrivacy
+	privacyCustomTokenMetadata  *CrossShardTokenPrivacyMetaData
 
 	//cross shard tx token
 	crossTxTokenData map[int32]*transaction.TxTokenData
@@ -357,6 +358,7 @@ func NewTxViewPoint(shardID byte) *TxViewPoint {
 		tokenID:                     &common.Hash{},
 		privacyCustomTokenViewPoint: make(map[int32]*TxViewPoint),
 		privacyCustomTokenTxs:       make(map[int32]*transaction.TxCustomTokenPrivacy),
+		privacyCustomTokenMetadata:  &CrossShardTokenPrivacyMetaData{},
 		crossTxTokenData:            make(map[int32]*transaction.TxTokenData),
 	}
 	result.tokenID.SetBytes(common.ConstantID[:])
@@ -436,8 +438,8 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 	return acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
 }
 
-func (view *TxViewPoint) fetchCrossOutputViewPointFromBlock(db database.DatabaseInterface, block *ShardBlock, localWallet *wallet.Wallet) error {
-	allShardCrossOutputCoins := block.Body.CrossOutputCoin
+func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.DatabaseInterface, block *ShardBlock, localWallet *wallet.Wallet) error {
+	allShardCrossTransactions := block.Body.CrossTransactions
 	// Loop through all of the transaction descs (except for the salary tx)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
 	acceptedCommitments := make(map[string][][]byte)
@@ -445,9 +447,9 @@ func (view *TxViewPoint) fetchCrossOutputViewPointFromBlock(db database.Database
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	//@NOTICE: this function just work for Normal Transaction
-	for _, crossOutputCoins := range allShardCrossOutputCoins {
-		for _, crossOutputCoin := range crossOutputCoins {
-			commitments, outCoins, snDs, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, crossOutputCoin.OutputCoin, constantTokenID, localWallet)
+	for _, crossTransactions := range allShardCrossTransactions {
+		for _, crossTransaction := range crossTransactions {
+			commitments, outCoins, snDs, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, crossTransaction.OutputCoin, constantTokenID, localWallet)
 			if err != nil {
 				return NewBlockChainError(UnExpectedError, err)
 			}
@@ -469,6 +471,40 @@ func (view *TxViewPoint) fetchCrossOutputViewPointFromBlock(db database.Database
 				}
 				snDs[pubkey] = append(snDs[pubkey], data...)
 			}
+			if crossTransaction.TokenPrivacyData != nil && len(crossTransaction.TokenPrivacyData) > 0 {
+				for index, tokenPrivacyData := range crossTransaction.TokenPrivacyData {
+					subView := NewTxViewPoint(block.Header.ShardID)
+					subView.tokenID = &tokenPrivacyData.PropertyID
+					subView.privacyCustomTokenMetadata.TokenID = tokenPrivacyData.PropertyID
+					subView.privacyCustomTokenMetadata.PropertyName = tokenPrivacyData.PropertyName
+					subView.privacyCustomTokenMetadata.PropertySymbol = tokenPrivacyData.PropertySymbol
+					subView.privacyCustomTokenMetadata.Amount = tokenPrivacyData.Amount
+					subView.privacyCustomTokenMetadata.Mintable = tokenPrivacyData.Mintable
+					commitmentsP, outCoinsP, snDsP, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, tokenPrivacyData.OutputCoin, subView.tokenID, localWallet)
+					if err != nil {
+						return NewBlockChainError(UnExpectedError, err)
+					}
+					for pubkey, data := range commitmentsP {
+						if subView.mapCommitments[pubkey] == nil {
+							subView.mapCommitments[pubkey] = make([][]byte, 0)
+						}
+						subView.mapCommitments[pubkey] = append(subView.mapCommitments[pubkey], data...)
+					}
+					for pubkey, data := range outCoinsP {
+						if subView.mapOutputCoins[pubkey] == nil {
+							subView.mapOutputCoins[pubkey] = make([]privacy.OutputCoin, 0)
+						}
+						subView.mapOutputCoins[pubkey] = append(subView.mapOutputCoins[pubkey], data...)
+					}
+					for pubkey, data := range snDsP {
+						if subView.mapSnD[pubkey] == nil {
+							subView.mapSnD[pubkey] = make([]big.Int, 0)
+						}
+						subView.mapSnD[pubkey] = append(subView.mapSnD[pubkey], data...)
+					}
+					view.privacyCustomTokenViewPoint[int32(index)] = subView
+				}
+			}
 		}
 	}
 
@@ -482,10 +518,5 @@ func (view *TxViewPoint) fetchCrossOutputViewPointFromBlock(db database.Database
 		view.mapSnD = acceptedSnD
 		// view.listSnD = acceptedSnD
 	}
-	return nil
-}
-
-func (view *TxViewPoint) fetchCrossTxTokenDataViewPointFromBlock(db database.DatabaseInterface, block *ShardBlock, localWallet *wallet.Wallet) error {
-
 	return nil
 }

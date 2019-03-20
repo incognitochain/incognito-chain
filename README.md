@@ -1,9 +1,8 @@
-# Constant core
+# Constant chain
 
-![Constant is digital money you can actually use.
-](https://constant.money/static/images/block5.webp)
+![Constant is digital money you can actually use.](https://avatars2.githubusercontent.com/u/45321944?s=200&v=4)
 
-One prototype version for a new type of crypto curency
+A new type of crypto curency
 
 ## Getting Started
 
@@ -71,4 +70,5 @@ NOTE: The GOROOT and GOPATH above must not be the same path. It is recommended t
 -   Run node with config param in long or short format to change features of running node
 
 ## Other Utilities
--   Node wallet tool https://github.com/ninjadotorg/constant-wallet-extension
+-   Node wallet tool https://github.com/constant-money/constant-chain-wallet-client
+-   Wallet client js https://github.com/constant-money/constant-chain-wallet-client-2

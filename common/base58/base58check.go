@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/ninjadotorg/constant/common"
+	"github.com/constant-money/constant-chain/common"
 )
 
 // ErrChecksum indicates that the checksum of a check-encoded string does not verify against
@@ -52,7 +52,7 @@ func (self Base58Check) Decode(input string) (result []byte, version byte, err e
 	if bytes.Compare(ChecksumFirst4Bytes(decoded[:len(decoded)-4]), cksum) != 0 {
 		return nil, 0, ErrChecksum
 	}
-	payload := decoded[1: len(decoded)-4]
+	payload := decoded[1 : len(decoded)-4]
 	result = append(result, payload...)
 	return
 }

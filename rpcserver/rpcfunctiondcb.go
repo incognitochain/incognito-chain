@@ -1,11 +1,11 @@
 package rpcserver
 
 import (
-	"encoding/hex"
+	"github.com/constant-money/constant-chain/common/base58"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/privacy"
 )
 
 // handleGetDCBParams - get dcb component
@@ -44,7 +44,7 @@ func (rpcServer RpcServer) handleAppendListDCBBoard(params interface{}, closeCha
 func ListPaymentAddressToListString(addresses []privacy.PaymentAddress) []string {
 	res := make([]string, 0)
 	for _, i := range addresses {
-		pk := hex.EncodeToString(i.Pk)
+		pk := base58.Base58Check{}.Encode(i.Pk, byte(0x00))
 		res = append(res, pk)
 	}
 	return res

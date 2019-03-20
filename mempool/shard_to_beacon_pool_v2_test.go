@@ -3,7 +3,7 @@ package mempool
 import (
 	"testing"
 
-	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/constant-money/constant-chain/blockchain"
 )
 
 var (

@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common"
+	"github.com/constant-money/constant-chain/cashec"
+	"github.com/constant-money/constant-chain/common"
 )
 
 /*
@@ -131,7 +131,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	// if committee of this epoch isn't store yet then store it
 	Logger.log.Infof("Store Committee in Epoch %+v \n", block.Header.Epoch)
 	res, err := blockchain.config.DataBase.HasCommitteeByEpoch(block.Header.Epoch)
-	fmt.Println("Beacon Process/HasCommitteeByEpoch", res, err)
+	// fmt.Println("Beacon Process/HasCommitteeByEpoch", res, err)
 	if res == false {
 		if err := blockchain.config.DataBase.StoreCommitteeByEpoch(block.Header.Epoch, blockchain.BestState.Beacon.ShardCommittee); err != nil {
 			return err
@@ -145,7 +145,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
 		fmt.Println("Fail to unmarshal shard committee")
 	}
-	fmt.Println("Beacon Process/Shard Committee in Epoch ", block.Header.Epoch, shardCommittee)
+	// fmt.Println("Beacon Process/Shard Committee in Epoch ", block.Header.Epoch, shardCommittee)
 	//=========Store cross shard state ==================================
 	lastCrossShardState := GetBestStateBeacon().LastCrossShardState
 	if block.Body.ShardState != nil {
@@ -471,7 +471,11 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	bestStateBeacon.BestBlock = newBlock
 	bestStateBeacon.Epoch = newBlock.Header.Epoch
 	bestStateBeacon.BeaconHeight = newBlock.Header.Height
-	bestStateBeacon.BeaconProposerIdx = common.IndexOfStr(newBlock.Header.Producer, bestStateBeacon.BeaconCommittee)
+	if newBlock.Header.Height == 1 {
+		bestStateBeacon.BeaconProposerIdx = 0
+	} else {
+		bestStateBeacon.BeaconProposerIdx = common.IndexOfStr(newBlock.Header.Producer, bestStateBeacon.BeaconCommittee)
+	}
 
 	allShardState := newBlock.Body.ShardState
 	// if bestStateBeacon.AllShardState == nil {
@@ -511,13 +515,13 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			fmt.Println(err)
 		}
 
-		if l[0] == "set" {
+		if l[0] == SetAction {
 			bestStateBeacon.Params[l[1]] = l[2]
 		}
-		if l[0] == "del" {
+		if l[0] == DeleteAction {
 			delete(bestStateBeacon.Params, l[1])
 		}
-		if l[0] == "swap" {
+		if l[0] == SwapAction {
 			fmt.Println("---------------============= SWAP", l)
 			// format
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
@@ -577,7 +581,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			}
 		}
 		// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
-		if l[0] == "random" {
+		if l[0] == RandomAction {
 			temp, err := strconv.Atoi(l[1])
 			if err != nil {
 				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
@@ -590,11 +594,11 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 		// Update candidate
 		// get staking candidate list and store
 		// store new staking candidate
-		if l[0] == "stake" && l[2] == "beacon" {
+		if l[0] == StakeAction && l[2] == "beacon" {
 			beacon := strings.Split(l[1], ",")
 			newBeaconCandidate = append(newBeaconCandidate, beacon...)
 		}
-		if l[0] == "stake" && l[2] == "shard" {
+		if l[0] == StakeAction && l[2] == "shard" {
 			shard := strings.Split(l[1], ",")
 			newShardCandidate = append(newShardCandidate, shard...)
 		}
@@ -695,10 +699,10 @@ func GetStakingCandidate(beaconBlock BeaconBlock) ([]string, []string) {
 	shard := []string{}
 	beaconBlockBody := beaconBlock.Body
 	for _, v := range beaconBlockBody.Instructions {
-		if v[0] == "stake" && v[2] == "beacon" {
+		if v[0] == StakeAction && v[2] == "beacon" {
 			beacon = strings.Split(v[1], ",")
 		}
-		if v[0] == "stake" && v[2] == "shard" {
+		if v[0] == StakeAction && v[2] == "shard" {
 			shard = strings.Split(v[1], ",")
 		}
 	}

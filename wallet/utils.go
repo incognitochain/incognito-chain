@@ -3,7 +3,7 @@ package wallet
 import (
 	"encoding/binary"
 
-	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/constant-money/constant-chain/common/base58"
 )
 
 func addChecksumToBytes(data []byte) ([]byte, error) {

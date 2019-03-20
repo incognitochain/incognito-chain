@@ -1,7 +1,7 @@
 package zkp
 
 import (
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 	"math/big"
 )
 
@@ -12,16 +12,16 @@ type SNPrivacyStatement struct {
 }
 
 type SNPrivacyWitness struct {
-	stmt   *SNPrivacyStatement // statement to be proved
+	stmt *SNPrivacyStatement // statement to be proved
 
-	sk     *big.Int            // private key
-	rSK    *big.Int            // blinding factor in the commitment to private key
-	input  *big.Int            // input of pseudo-random function
-	rInput *big.Int            // blinding factor in the commitment to input
+	sk     *big.Int // private key
+	rSK    *big.Int // blinding factor in the commitment to private key
+	input  *big.Int // input of pseudo-random function
+	rInput *big.Int // blinding factor in the commitment to input
 }
 
 type SNPrivacyProof struct {
-	stmt   *SNPrivacyStatement    // statement to be proved
+	stmt *SNPrivacyStatement // statement to be proved
 
 	tSK    *privacy.EllipticPoint // random commitment related to private key
 	tInput *privacy.EllipticPoint // random commitment related to input
@@ -31,6 +31,39 @@ type SNPrivacyProof struct {
 	zRSK    *big.Int // second challenge-dependent information to open the commitment to private key
 	zInput  *big.Int // first challenge-dependent information to open the commitment to input
 	zRInput *big.Int // second challenge-dependent information to open the commitment to input
+}
+
+func (proof *SNPrivacyProof) ValidateSanity() bool {
+	if !proof.stmt.sn.IsSafe() {
+		return false
+	}
+	if !proof.stmt.comSK.IsSafe() {
+		return false
+	}
+	if !proof.stmt.comInput.IsSafe() {
+		return false
+	}
+
+	if !proof.tSK.IsSafe() {
+		return false
+	}
+	if !proof.tInput.IsSafe() {
+		return false
+	}
+	if !proof.tSN.IsSafe() {
+		return false
+	}
+
+	if proof.zSK.BitLen() > 256 {
+		return false
+	}
+	if proof.zRSK.BitLen() > 256 {
+		return false
+	}
+	if proof.zInput.BitLen() > 256 {
+		return false
+	}
+	return proof.zRInput.BitLen() <= 256
 }
 
 func (proof *SNPrivacyProof) isNil() bool {

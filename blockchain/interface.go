@@ -3,8 +3,8 @@ package blockchain
 import (
 	"time"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/metadata"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/metadata"
 )
 
 type BFTBlockInterface interface {
@@ -20,6 +20,7 @@ type ShardToBeaconPool interface {
 	GetValidPendingBlock(map[byte]uint64) map[byte][]*ShardToBeaconBlock
 	GetValidPendingBlockHeight() map[byte][]uint64
 	GetLatestValidPendingBlockHeight() map[byte]uint64
+	GetBlockByHeight(shardID byte, height uint64) *ShardToBeaconBlock
 	SetShardState(map[byte]uint64)
 }
 
@@ -27,8 +28,10 @@ type CrossShardPool interface {
 	AddCrossShardBlock(CrossShardBlock) (map[byte]uint64, byte, error)
 	GetValidBlock(map[byte]uint64) map[byte][]*CrossShardBlock
 	GetLatestValidBlockHeight() map[byte]uint64
+	GetValidBlockHeight() map[byte][]uint64
+	GetBlockByHeight(_shardID byte, height uint64) *CrossShardBlock
 	RemoveBlockByHeight(map[byte]uint64) error
-	UpdatePool() error
+	UpdatePool() (map[byte]uint64, error)
 }
 
 type ShardPool interface {
@@ -68,7 +71,12 @@ type TxPool interface {
 	RemoveTx(tx metadata.Transaction) error
 
 	RemoveCandidateList([]string)
+
 	RemoveTokenIDList([]string)
+
+	EmptyPool() bool
+
+	MaybeAcceptTransactionForBlockProducing(metadata.Transaction) (*metadata.TxDesc, error)
 	//CheckTransactionFee
 	// CheckTransactionFee(tx metadata.Transaction) (uint64, error)
 

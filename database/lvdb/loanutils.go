@@ -3,7 +3,7 @@ package lvdb
 import (
 	"encoding/binary"
 
-	"github.com/ninjadotorg/constant/common"
+	"github.com/constant-money/constant-chain/common"
 	"github.com/pkg/errors"
 )
 

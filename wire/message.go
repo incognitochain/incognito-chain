@@ -4,15 +4,14 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/constant-money/constant-chain/blockchain"
 	peer "github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/common"
 
 	"time"
 
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/transaction"
+	"github.com/constant-money/constant-chain/cashec"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/transaction"
 )
 
 // list message type
@@ -181,8 +180,8 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessagePeerState{
 			Timestamp:         time.Now().Unix(),
 			Shards:            make(map[byte]blockchain.ChainState),
-			ShardToBeaconPool: make(map[byte][]common.Hash),
-			CrossShardPool:    make(map[byte]map[byte][]common.Hash),
+			ShardToBeaconPool: make(map[byte][]uint64),
+			CrossShardPool:    make(map[byte]map[byte][]uint64),
 		}
 		break
 	case CmdGetAddr:

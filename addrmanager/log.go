@@ -1,6 +1,6 @@
 package addrmanager
 
-import "github.com/ninjadotorg/constant/common"
+import "github.com/constant-money/constant-chain/common"
 
 type AddrManagerLogger struct {
 	log common.Logger

@@ -2,11 +2,12 @@ package lvdb
 
 import (
 	"encoding/binary"
+	"fmt"
 	"sort"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/database"
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
@@ -73,12 +74,21 @@ func (db *db) AddVoteBoard(
 	return err
 }
 
+// GetNumberOfGovernor remove-soon
 func GetNumberOfGovernor(boardType common.BoardType) int {
 	numberOfGovernors := common.NumberOfDCBGovernors
 	if boardType == common.GOVBoard {
 		numberOfGovernors = common.NumberOfGOVGovernors
 	}
 	return numberOfGovernors
+}
+
+// GetNumberOfGovernorRange return
+func GetNumberOfGovernorRange(boardType common.BoardType) (int, int) {
+	if boardType == common.GOVBoard {
+		return common.GOVGovernorsLowerBound, common.GOVGovernorsUpperBound
+	}
+	return common.DCBGovernorsLowerBound, common.DCBGovernorsUpperBound
 }
 
 func (db *db) GetTopMostVoteGovernor(boardType common.BoardType, boardIndex uint32) (database.CandidateList, error) {
@@ -104,125 +114,44 @@ func (db *db) GetTopMostVoteGovernor(boardType common.BoardType, boardIndex uint
 		})
 	}
 	sort.Sort(candidateList)
-	numberOfGovernors := GetNumberOfGovernor(boardType)
-	if len(candidateList) < numberOfGovernors {
+	fmt.Println("\n\n\n\n\n\n\n\n\n")
+	fmt.Println(candidateList.Len())
+	for _, candidateElement := range candidateList {
+		fmt.Println(candidateElement)
+	}
+	fmt.Println("\n\n\n\n\n\n\n\n\n")
+	lenCandidateList := len(candidateList)
+	lowerBound, upperBound := GetNumberOfGovernorRange(boardType)
+	if lowerBound > lenCandidateList {
 		return nil, database.NewDatabaseError(database.NotEnoughCandidate, errors.Errorf("not enough Candidate"))
 	}
-
-	return candidateList[len(candidateList)-numberOfGovernors:], nil
+	if lenCandidateList > upperBound {
+		return candidateList[lenCandidateList-upperBound:], nil
+	}
+	return candidateList, nil
 }
 
 func (db *db) NewIterator(slice *util.Range, ro *opt.ReadOptions) iterator.Iterator {
 	return db.lvdb.NewIterator(slice, ro)
 }
 
-func (db *db) AddVoteLv3ProposalDB(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash) error {
-	//init sealer
-	keySealer := GetKeyThreePhraseCryptoSealer(boardType, constitutionIndex, txID)
-	ok, err := db.HasValue(keySealer)
-	if err != nil {
-		return err
-	}
-	if ok {
-		return errors.Errorf("duplicate txid")
-	}
-	zeroInBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(zeroInBytes, 0)
-	db.Put(keySealer, zeroInBytes)
-
-	// init owner
-	keyOwner := GetKeyThreePhraseCryptoOwner(boardType, constitutionIndex, txID)
-	ok, err = db.HasValue(keyOwner)
-	if err != nil {
-		return err
-	}
-	if ok {
-		return errors.Errorf("duplicate txid")
-	}
-	db.Put(keyOwner, zeroInBytes)
-
-	return nil
-}
-
-func (db *db) AddVoteLv1or2ProposalDB(boardType common.BoardType, constitutionIndex uint32, lv3TxID *common.Hash) error {
-	keySealer := GetKeyThreePhraseCryptoSealer(boardType, constitutionIndex, lv3TxID)
-	ok, err := db.HasValue(keySealer)
-	if err != nil {
-		return err
-	}
-	if ok {
-		return errors.Errorf("duplicate txid")
-	}
-	valueInBytes, err := db.Get(keySealer)
-	if err != nil {
-		return err
-	}
-	value := binary.LittleEndian.Uint32(valueInBytes)
-	newValue := value + 1
-	newValueInByte := make([]byte, 4)
-	binary.LittleEndian.PutUint32(newValueInByte, newValue)
-	db.Put(keySealer, newValueInByte)
-	return nil
-}
-
-func (db *db) AddVoteNormalProposalFromSealerDB(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash, voteValue []byte) error {
-	err := db.AddVoteLv1or2ProposalDB(boardType, constitutionIndex, txID)
-	if err != nil {
-		return err
-	}
-	key := GetKeyThreePhraseVoteValue(boardType, constitutionIndex, txID)
-
-	db.Put(key, voteValue)
-
-	return nil
-}
-
-func (db *db) AddVoteNormalProposalFromOwnerDB(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash, voteValue []byte) error {
-	keyOwner := GetKeyThreePhraseCryptoOwner(boardType, constitutionIndex, txID)
-	ok, err := db.HasValue(keyOwner)
-	if err != nil {
-		return err
-	}
-	if ok {
-		return errors.Errorf("duplicate txid")
-	}
-	if err != nil {
-		return err
-	}
-	newValueInByte := common.Uint32ToBytes(1)
-	db.Put(keyOwner, newValueInByte)
-
-	key := GetKeyThreePhraseVoteValue(boardType, constitutionIndex, txID)
-	db.Put(key, voteValue)
-
-	return nil
-}
-
-func (db *db) GetVoteTokenAmount(boardType common.BoardType, boardIndex uint32, paymentAddress privacy.PaymentAddress) (uint32, error) {
-	key := GetKeyVoteTokenAmount(boardType, boardIndex, paymentAddress)
-	value, err := db.Get(key)
-	if err != nil {
-		return 0, err
-	}
-	return common.BytesToUint32(value), nil
-}
-
-func (db *db) SetVoteTokenAmount(boardType common.BoardType, boardIndex uint32, paymentAddress privacy.PaymentAddress, newAmount uint32) error {
-	key := GetKeyVoteTokenAmount(boardType, boardIndex, paymentAddress)
+func (db *db) AddVoteProposalDB(boardType common.BoardType, constitutionIndex uint32, voterPayment []byte, proposalTxID []byte) error {
+	key := GetKeyVoteProposal(boardType, constitutionIndex, privacy.NewPaymentAddressFromByte(voterPayment))
 	ok, err := db.HasValue(key)
 	if err != nil {
 		return err
 	}
-	if !ok {
-		zeroInBytes := common.Uint32ToBytes(uint32(0))
-		db.Put(key, zeroInBytes)
+	if ok {
+		return errors.Errorf("duplicate txid")
 	}
-
-	newAmountInBytes := common.Uint32ToBytes(newAmount)
-	err = db.Put(key, newAmountInBytes)
 	if err != nil {
 		return err
 	}
+	err = db.Put(key, proposalTxID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -259,18 +188,6 @@ func (db *db) SetEncryptionLastBlockHeight(boardType common.BoardType, height ui
 	db.Put(key, value)
 }
 
-func (db *db) TakeVoteTokenFromWinner(boardType common.BoardType, boardIndex uint32, voterPaymentAddress privacy.PaymentAddress, amountOfVote int32) error {
-	key := GetKeyVoteTokenAmount(boardType, boardIndex, voterPaymentAddress)
-	currentAmountInByte, err := db.Get(key)
-	if err != nil {
-		return err
-	}
-	currentAmount := common.BytesToUint32(currentAmountInByte)
-	newAmount := currentAmount - uint32(amountOfVote)
-	db.Put(key, common.Uint32ToBytes(newAmount))
-	return nil
-}
-
 func (db *db) SetNewProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32, voterPaymentAddress privacy.PaymentAddress) error {
 	key := GetKeyWinningVoter(boardType, constitutionIndex)
 	db.Put(key, voterPaymentAddress.Bytes())
@@ -294,4 +211,9 @@ func (db *db) GetBoardVoterList(boardType common.BoardType, candidatePaymentAddr
 		listVoter = append(listVoter, *candidatePaymentAddress)
 	}
 	return listVoter
+}
+
+func (db *db) GetListSupporters(boardType common.BoardType, candidateAddress privacy.PaymentAddress) ([]*privacy.PaymentAddress, error) {
+	// todo @jackalope
+	return nil, nil
 }
