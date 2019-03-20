@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/json"
-	"errors"
 	"sort"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/common"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/transaction"
 )
 
 //=========================HASH util==================================
@@ -120,40 +120,28 @@ func VerifyHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]strin
 	return bytes.Equal(res.GetBytes(), hash.GetBytes())
 }
 
-func VerifyRootHashFromStringArray(strs1 []string, strs2 []string, hash common.Hash) error {
-	var (
-		tempMerkle Merkle
-		merkleTree []*common.Hash
-		hashArrays []*common.Hash
-		// merkleRoot *common.Hash
-	)
-
-	hashes1, err := common.ConvertArrayStringToArrayHash(strs1)
-	if err != nil {
-		Logger.log.Errorf("Error converting from string array to hash array %+v", err)
-		return err
-	}
-
-	hashes2, err := common.ConvertArrayStringToArrayHash(strs2)
-	if err != nil {
-		Logger.log.Errorf("Error converting from string array to hash array %+v", err)
-		return err
-	}
-	hashArrays = append(hashArrays, hashes1...)
-	hashArrays = append(hashArrays, hashes2...)
-
-	merkleTree = tempMerkle.BuildMerkleTreeOfHashs(hashArrays)
-	if !tempMerkle.VerifyMerkleRootOfHashs(merkleTree, &hash) {
-		err = NewBlockChainError(UnExpectedError, errors.New("Error verify merkle root"))
-		Logger.log.Errorf("Error in VerifyRootHashFromStringArray %+v", err)
-		return err
-	}
-	return nil
-}
 func VerifyHashFromShardState(allShardState map[byte][]ShardState, hash common.Hash) bool {
 	res, err := GenerateHashFromShardState(allShardState)
 	if err != nil {
 		return false
 	}
 	return bytes.Equal(res.GetBytes(), hash.GetBytes())
+}
+func calHashFromTxTokenDataList(txTokenDataList []transaction.TxTokenData) (common.Hash, error) {
+	hashes := []common.Hash{}
+	sort.SliceStable(txTokenDataList[:], func(i, j int) bool {
+		return txTokenDataList[i].PropertyID.String() < txTokenDataList[j].PropertyID.String()
+	})
+	for _, txTokenData := range txTokenDataList {
+		hash, err := txTokenData.Hash()
+		if err != nil {
+			return common.Hash{}, err
+		}
+		hashes = append(hashes, *hash)
+	}
+	hash, err := GenerateHashFromHashArray(hashes)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return hash, nil
 }

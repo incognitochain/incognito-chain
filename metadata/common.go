@@ -101,31 +101,6 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &SubmitGOVProposalMetadata{}
 	case VoteGOVBoardMeta:
 		md = &VoteGOVBoardMetadata{}
-
-	case SendInitDCBVoteTokenMeta:
-		md = &SendInitDCBVoteTokenMetadata{}
-	case SendInitGOVVoteTokenMeta:
-		md = &SendInitGOVVoteTokenMetadata{}
-	case SealedLv1DCBVoteProposalMeta:
-		md = &SealedLv1DCBVoteProposalMetadata{}
-	case SealedLv2DCBVoteProposalMeta:
-		md = &SealedLv2DCBVoteProposalMetadata{}
-	case SealedLv3DCBVoteProposalMeta:
-		md = &SealedLv3DCBVoteProposalMetadata{}
-	case NormalDCBVoteProposalFromSealerMeta:
-		md = &NormalDCBVoteProposalFromSealerMetadata{}
-	case NormalDCBVoteProposalFromOwnerMeta:
-		md = &NormalDCBVoteProposalFromOwnerMetadata{}
-	case SealedLv1GOVVoteProposalMeta:
-		md = &SealedLv1GOVVoteProposalMetadata{}
-	case SealedLv2GOVVoteProposalMeta:
-		md = &SealedLv2GOVVoteProposalMetadata{}
-	case SealedLv3GOVVoteProposalMeta:
-		md = &SealedLv3GOVVoteProposalMetadata{}
-	case NormalGOVVoteProposalFromSealerMeta:
-		md = &NormalGOVVoteProposalFromSealerMetadata{}
-	case NormalGOVVoteProposalFromOwnerMeta:
-		md = &NormalGOVVoteProposalFromOwnerMetadata{}
 	case RewardProposalWinnerMeta:
 		md = &RewardProposalWinnerMetadata{}
 	case RewardDCBProposalSubmitterMeta:
@@ -136,10 +111,13 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &ShareRewardOldBoardMetadata{}
 	case ShareRewardOldGOVBoardMeta:
 		md = &ShareRewardOldBoardMetadata{}
-	case PunishDCBDecryptMeta:
-		md = &PunishDCBDecryptMetadata{}
-	case PunishGOVDecryptMeta:
-		md = &PunishGOVDecryptMetadata{}
+	case DCBVoteProposalMeta:
+		md = &DCBVoteProposalMetadata{}
+	case GOVVoteProposalMeta:
+		md = &GOVVoteProposalMetadata{}
+	case SendBackTokenVoteBoardFailMeta:
+		md = &SendBackTokenVoteBoardFailMetadata{}
+
 	case ShardStakingMeta:
 		md = &StakingMetadata{}
 	case BeaconStakingMeta:

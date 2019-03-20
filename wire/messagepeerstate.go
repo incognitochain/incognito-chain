@@ -3,11 +3,11 @@ package wire
 import (
 	"encoding/json"
 
-	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/constant-money/constant-chain/blockchain"
+	peer "github.com/libp2p/go-libp2p-peer"
 
-	"github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common"
+	"github.com/constant-money/constant-chain/cashec"
+	"github.com/constant-money/constant-chain/common"
 )
 
 const (
@@ -17,8 +17,8 @@ const (
 type MessagePeerState struct {
 	Beacon            blockchain.ChainState
 	Shards            map[byte]blockchain.ChainState
-	ShardToBeaconPool map[byte][]common.Hash
-	CrossShardPool    map[byte]map[byte][]common.Hash
+	ShardToBeaconPool map[byte][]uint64
+	CrossShardPool    map[byte]map[byte][]uint64
 	Timestamp         int64
 	SenderID          string
 }

@@ -1,7 +1,7 @@
 package lvdb
 
 import (
-	"github.com/ninjadotorg/constant/database"
+	"github.com/constant-money/constant-chain/database"
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )

@@ -5,10 +5,10 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
+	"github.com/constant-money/constant-chain/database"
+	"github.com/constant-money/constant-chain/privacy"
 )
 
 // PaymentWitness contains all of witness for proving when spending coins
@@ -642,7 +642,6 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 // Prove creates big proof
 func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.PrivacyError) {
 	proof := new(PaymentProof).Init()
-	var err error
 
 	proof.InputCoins = wit.inputCoins
 	proof.OutputCoins = wit.outputCoins
@@ -689,6 +688,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 		}
 		proof.SerialNumberProof = append(proof.SerialNumberProof, serialNumberProof)
 	}
+	var err error
 
 	// Proving that each output values and sum of them does not exceed v_max
 	proof.AggregatedRangeProof, err = wit.AggregatedRangeWitness.Prove()

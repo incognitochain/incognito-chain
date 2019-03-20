@@ -1,8 +1,8 @@
 package constantbft
 
 import (
+	"github.com/constant-money/constant-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/constant/wire"
 )
 
 type ChainInfo struct {

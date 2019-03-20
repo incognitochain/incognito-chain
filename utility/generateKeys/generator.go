@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/ninjadotorg/constant/utility/generateKeys/generator"
+	"github.com/constant-money/constant-chain/utility/generateKeys/generator"
 )
 
 type KeyPair struct {

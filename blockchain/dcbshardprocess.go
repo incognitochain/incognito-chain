@@ -3,13 +3,12 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/transaction"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/transaction"
 )
 
 type dividendPair struct {
@@ -102,7 +101,7 @@ func (bc *BlockChain) StoreMetadataInstructions(inst []string, shardID byte) err
 }
 
 func (bc *BlockChain) storeIssuingResponseInstruction(inst []string, shardID byte) error {
-	fmt.Printf("[db] store meta inst: %+v\n", inst)
+	// fmt.Printf("[db] store meta inst: %+v\n", inst)
 	if strconv.Itoa(int(shardID)) != inst[1] {
 		return nil
 	}
@@ -118,7 +117,7 @@ func (bc *BlockChain) storeIssuingResponseInstruction(inst []string, shardID byt
 }
 
 func (bc *BlockChain) storeContractingResponseInstruction(inst []string, shardID byte) error {
-	fmt.Printf("[db] store meta inst: %+v\n", inst)
+	// fmt.Printf("[db] store meta inst: %+v\n", inst)
 	if strconv.Itoa(int(shardID)) != inst[1] {
 		return nil
 	}

@@ -1,13 +1,12 @@
 package blockchain
 
 import (
-	"github.com/ninjadotorg/constant/blockchain/component"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/database/lvdb"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/metadata/frombeaconins"
-	"github.com/ninjadotorg/constant/privacy"
-	"github.com/ninjadotorg/constant/transaction"
+	"github.com/constant-money/constant-chain/blockchain/component"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/database/lvdb"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/metadata/frombeaconins"
+	"github.com/constant-money/constant-chain/privacy"
 )
 
 type ConstitutionInfo struct {
@@ -97,10 +96,6 @@ func (helper GOVConstitutionHelper) CheckSubmitProposalType(tx metadata.Transact
 	return tx.GetMetadataType() == metadata.SubmitGOVProposalMeta
 }
 
-func (helper GOVConstitutionHelper) GetAmountVoteTokenOfTx(tx metadata.Transaction) (uint64, error) {
-	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
-}
-
 func (helper DCBConstitutionHelper) NewAcceptProposalIns(
 	txId *common.Hash,
 	voter component.Voter,
@@ -125,24 +120,6 @@ func (helper DCBConstitutionHelper) GetBoardType() common.BoardType {
 
 func (helper GOVConstitutionHelper) GetBoardType() common.BoardType {
 	return common.GOVBoard
-}
-
-func (helper DCBConstitutionHelper) CreatePunishDecryptIns(paymentAddress *privacy.PaymentAddress) frombeaconins.InstructionFromBeacon {
-	return frombeaconins.NewPunishDecryptIns(helper.GetBoardType(), *paymentAddress)
-}
-
-func (helper GOVConstitutionHelper) CreatePunishDecryptIns(paymentAddress *privacy.PaymentAddress) frombeaconins.InstructionFromBeacon {
-	return frombeaconins.NewPunishDecryptIns(helper.GetBoardType(), *paymentAddress)
-}
-
-func (helper DCBConstitutionHelper) GetSealerPaymentAddress(tx metadata.Transaction) []privacy.PaymentAddress {
-	meta := tx.GetMetadata().(*metadata.SealedLv3DCBVoteProposalMetadata)
-	return meta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddresses
-}
-
-func (helper GOVConstitutionHelper) GetSealerPaymentAddress(tx metadata.Transaction) []privacy.PaymentAddress {
-	meta := tx.GetMetadata().(*metadata.SealedLv3GOVVoteProposalMetadata)
-	return meta.SealedLv3VoteProposalMetadata.SealedVoteProposal.LockerPaymentAddresses
 }
 
 func (helper DCBConstitutionHelper) NewRewardProposalSubmitterIns(chain *BlockChain, receiverAddress *privacy.PaymentAddress) (frombeaconins.InstructionFromBeacon, error) {
@@ -211,15 +188,6 @@ func (helper DCBConstitutionHelper) GetBoard(chain *BlockChain) metadata.Governo
 
 func (helper GOVConstitutionHelper) GetBoard(chain *BlockChain) metadata.GovernorInterface {
 	return chain.BestState.Beacon.StabilityInfo.GOVGovernor
-}
-
-func (helper DCBConstitutionHelper) GetAmountVoteTokenOfBoard(chain *BlockChain, paymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
-	value, _ := chain.config.DataBase.GetVoteTokenAmount(helper.GetBoardType(), boardIndex, paymentAddress)
-	return uint64(value)
-}
-func (helper GOVConstitutionHelper) GetAmountVoteTokenOfBoard(chain *BlockChain, paymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
-	value, _ := chain.config.DataBase.GetVoteTokenAmount(helper.GetBoardType(), boardIndex, paymentAddress)
-	return uint64(value)
 }
 
 func (helper DCBConstitutionHelper) GetAmountOfVoteToBoard(chain *BlockChain, candidatePaymentAddress privacy.PaymentAddress, voterPaymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {

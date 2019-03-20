@@ -2,8 +2,8 @@ package frombeaconins
 
 import (
 	"encoding/json"
-	"github.com/ninjadotorg/constant/blockchain/component"
-	"github.com/ninjadotorg/constant/common"
+	"github.com/constant-money/constant-chain/blockchain/component"
+	"github.com/constant-money/constant-chain/common"
 	"strconv"
 )
 

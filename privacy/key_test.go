@@ -2,7 +2,7 @@ package privacy
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
@@ -23,7 +23,7 @@ func TestPAdd1Div4(t *testing.T) {
 	assert.Equal(t, expectedResult, res)
 }
 
-func TestGenerateKey(t *testing.T){
+func TestGenerateKey(t *testing.T) {
 	spendingKey := GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
 
 	//publicKey is compressed
@@ -67,5 +67,3 @@ func TestGenerateKey(t *testing.T){
 	skStr := base58.Base58Check.Encode(base58.Base58Check{}, sk, 0x01)
 	fmt.Printf("Spending key string after encode : %v\n", skStr)
 }
-
-

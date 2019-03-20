@@ -3,9 +3,10 @@ package blockchain
 import (
 	"encoding/binary"
 	"sort"
+	"strconv"
 
-	"github.com/ninjadotorg/constant/blockchain/component"
-	"github.com/ninjadotorg/constant/common"
+	"github.com/constant-money/constant-chain/blockchain/component"
+	"github.com/constant-money/constant-chain/common"
 	"github.com/pkg/errors"
 )
 
@@ -150,17 +151,14 @@ func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
 }
 
 func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
-
 	//TODO: 0xBahamoot check back later
 	var keys []int
 	var keyStrs []string
 	res := []byte{}
+	res = append(res, bestStateBeacon.BestBlockHash.GetBytes()...)
+	res = append(res, bestStateBeacon.PrevBestBlockHash.GetBytes()...)
 	res = append(res, bestStateBeacon.BestBlock.Hash().GetBytes()...)
 	res = append(res, bestStateBeacon.BestBlock.Header.PrevBlockHash.GetBytes()...)
-	heightBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(heightBytes, bestStateBeacon.BeaconHeight)
-	res = append(res, heightBytes...)
-
 	for k := range bestStateBeacon.BestShardHash {
 		keys = append(keys, int(k))
 	}
@@ -178,6 +176,13 @@ func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
 		height := bestStateBeacon.BestShardHeight[byte(shardID)]
 		res = append(res, byte(height))
 	}
+	EpochBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(EpochBytes, bestStateBeacon.Epoch)
+	res = append(res, EpochBytes...)
+	heightBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(heightBytes, bestStateBeacon.BeaconHeight)
+	res = append(res, heightBytes...)
+	res = append(res, []byte(strconv.Itoa(bestStateBeacon.BeaconProposerIdx))...)
 	for _, value := range bestStateBeacon.BeaconCommittee {
 		res = append(res, []byte(value)...)
 	}
@@ -236,17 +241,54 @@ func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
 	for _, key := range keyStrs {
 		res = append(res, []byte(bestStateBeacon.Params[key])...)
 	}
-	res = append(res, bestStateBeacon.StabilityInfo.GetBytes()...)
-	return common.DoubleHashH(res)
+
+	//TODO: @stability
+	//res = append(res, bestStateBeacon.StabilityInfo.GetBytes()...)
+	//return common.DoubleHashH(res)
+
+	keys = []int{}
+	for k := range bestStateBeacon.ShardHandle {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, shardID := range keys {
+		shardHandleItem := bestStateBeacon.ShardHandle[byte(shardID)]
+		if shardHandleItem {
+			res = append(res, []byte("true")...)
+		} else {
+			res = append(res, []byte("false")...)
+		}
+	}
+	res = append(res, []byte(strconv.Itoa(bestStateBeacon.BeaconCommitteeSize))...)
+	res = append(res, []byte(strconv.Itoa(bestStateBeacon.ShardCommitteeSize))...)
+	res = append(res, []byte(strconv.Itoa(bestStateBeacon.ActiveShards))...)
+
+	keys = []int{}
+	for k := range bestStateBeacon.LastCrossShardState {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, fromShard := range keys {
+		fromShardMap := bestStateBeacon.LastCrossShardState[byte(fromShard)]
+		newKeys := []int{}
+		for k := range fromShardMap {
+			newKeys = append(newKeys, int(k))
+		}
+		sort.Ints(newKeys)
+		for _, toShard := range newKeys {
+			value := fromShardMap[byte(toShard)]
+			valueBytes := make([]byte, 8)
+			binary.LittleEndian.PutUint64(valueBytes, value)
+			res = append(res, valueBytes...)
+		}
+	}
+
+	return common.HashH(res)
 }
 
 // Get role of a public key base on best state beacond
 // return node-role, <shardID>
-// TODO: Role name should be write in common as constant value
-func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string, round int) (string, byte) {
-	if round <= 0 {
-		round = 1
-	}
+func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string, proposerOffset int) (string, byte) {
 	for shardID, pubkeyArr := range bestStateBeacon.ShardPendingValidator {
 		found := common.IndexOfStr(pubkey, pubkeyArr)
 		if found > -1 {
@@ -263,7 +305,7 @@ func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string, round int) 
 
 	found := common.IndexOfStr(pubkey, bestStateBeacon.BeaconCommittee)
 	if found > -1 {
-		tmpID := (bestStateBeacon.BeaconProposerIdx + round) % len(bestStateBeacon.BeaconCommittee)
+		tmpID := (bestStateBeacon.BeaconProposerIdx + proposerOffset + 1) % len(bestStateBeacon.BeaconCommittee)
 		if found == tmpID {
 			return common.PROPOSER_ROLE, 0
 		}

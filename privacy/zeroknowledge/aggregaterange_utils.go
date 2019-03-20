@@ -2,7 +2,7 @@ package zkp
 
 import (
 	"errors"
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 	"math"
 	"math/big"
 )
@@ -21,6 +21,31 @@ type InnerProductProof struct {
 	b *big.Int
 
 	p *privacy.EllipticPoint
+}
+
+func (proof *InnerProductProof) ValidateSanity() bool {
+	if len(proof.l) != len(proof.r) {
+		return false
+	}
+
+	for i := 0; i < len(proof.l); i++ {
+		if !proof.l[i].IsSafe() {
+			return false
+		}
+
+		if !proof.r[i].IsSafe() {
+			return false
+		}
+	}
+
+	if proof.a.BitLen() > 256 {
+		return false
+	}
+	if proof.b.BitLen() > 256 {
+		return false
+	}
+
+	return proof.p.IsSafe()
 }
 
 func (proof *InnerProductProof) Bytes() []byte {
@@ -355,5 +380,5 @@ func vectorMulScalar(v []*big.Int, s *big.Int) []*big.Int {
 
 // estimateMultiRangeProofSize estimate multi range proof size
 func estimateMultiRangeProofSize(nOutput int) uint64 {
-	return uint64((nOutput + 2*int(math.Log2(float64(privacy.MaxExp * pad(nOutput)))) + 5) * privacy.CompressedPointSize + 5*privacy.BigIntSize + 2)
+	return uint64((nOutput+2*int(math.Log2(float64(privacy.MaxExp*pad(nOutput))))+5)*privacy.CompressedPointSize + 5*privacy.BigIntSize + 2)
 }

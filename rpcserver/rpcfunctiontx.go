@@ -7,16 +7,16 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
-	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/wire"
+	"github.com/constant-money/constant-chain/cashec"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
+	"github.com/constant-money/constant-chain/transaction"
+	"github.com/constant-money/constant-chain/wallet"
+	"github.com/constant-money/constant-chain/wire"
 )
 
 //handleListOutputCoins - use readonly key to get all tx which contains output coin of account
@@ -85,6 +85,9 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 		item := make([]jsonresult.OutCoin, 0)
 
 		for _, outCoin := range outputCoins {
+			if outCoin.CoinDetails.Value == 0 {
+				continue
+			}
 			item = append(item, jsonresult.OutCoin{
 				//SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
 				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),
@@ -410,17 +413,20 @@ func (rpcServer RpcServer) handleCreateAndSendCustomTokenTransaction(params inte
 	if err != nil {
 		return nil, err
 	}
-	return tx, err
+	return tx, nil
 }
 
 func (rpcServer RpcServer) handleGetListCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	arrayParams := common.InterfaceSlice(params)
 	accountParam := arrayParams[0].(string)
+	if len(accountParam) == 0 {
+		return result, NewRPCError(ErrRPCInvalidParams, errors.New("Param is invalid"))
+	}
 	account, err := wallet.Base58CheckDeserialize(accountParam)
 	if err != nil {
 		return nil, nil
 	}
-	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	result.PaymentAddress = accountParam
 	accountPaymentAddress := account.KeySet.PaymentAddress
 	temps, err := rpcServer.config.BlockChain.ListCustomToken()
@@ -450,16 +456,19 @@ func (rpcServer RpcServer) handleGetListCustomTokenBalance(params interface{}, c
 }
 
 func (rpcServer RpcServer) handleGetListPrivacyCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	arrayParams := common.InterfaceSlice(params)
 	privateKey := arrayParams[0].(string)
+	if len(privateKey) == 0 {
+		return result, NewRPCError(ErrRPCInvalidParams, errors.New("Param is invalid"))
+	}
 	account, err := wallet.Base58CheckDeserialize(privateKey)
 	account.KeySet.ImportFromPrivateKey(&account.KeySet.PrivateKey)
 	if err != nil {
 		return nil, nil
 	}
-	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
-	temps, err := rpcServer.config.BlockChain.ListPrivacyCustomToken()
+	temps, listCustomTokenCrossShard, err := rpcServer.config.BlockChain.ListPrivacyCustomToken()
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -493,6 +502,37 @@ func (rpcServer RpcServer) handleGetListPrivacyCustomTokenBalance(params interfa
 		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
 		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	}
+	for _, customTokenCrossShard := range listCustomTokenCrossShard {
+		item := jsonresult.CustomTokenBalance{}
+		item.Name = customTokenCrossShard.PropertyName
+		item.Symbol = customTokenCrossShard.PropertySymbol
+		item.TokenID = customTokenCrossShard.TokenID.String()
+		item.TokenImage = common.Render([]byte(item.TokenID))
+		tokenID := customTokenCrossShard.TokenID
+
+		balance := uint64(0)
+		// get balance for accountName in wallet
+		lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
+		shardIDSender := common.GetShardIDFromLastByte(lastByte)
+		constantTokenID := &common.Hash{}
+		constantTokenID.SetBytes(common.ConstantID[:])
+		outcoints, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tokenID)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		for _, out := range outcoints {
+			balance += out.CoinDetails.Value
+		}
+
+		item.Amount = balance
+		if item.Amount == 0 {
+			continue
+		}
+		item.IsPrivacy = true
+		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
+		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
+	}
+
 	return result, nil
 }
 
@@ -770,8 +810,12 @@ func (rpcServer RpcServer) handleCreateRawPrivacyCustomTokenTransaction(
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
-	result := jsonresult.CreateTransactionResult{
+	result := jsonresult.CreateTransactionCustomTokenResult{
+		ShardID:         tx.Tx.PubKeyLastByteSender,
 		TxID:            tx.Hash().String(),
+		TokenID:         tx.TxTokenPrivacyData.PropertyID.String(),
+		TokenName:       tx.TxTokenPrivacyData.PropertyName,
+		TokenAmount:     tx.TxTokenPrivacyData.Amount,
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
@@ -819,7 +863,7 @@ func (rpcServer RpcServer) handleCreateAndSendPrivacyCustomTokenTransaction(para
 	if err != nil {
 		return nil, err
 	}
-	tx := data.(jsonresult.CreateTransactionResult)
+	tx := data.(jsonresult.CreateTransactionCustomTokenResult)
 	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, err
@@ -827,7 +871,10 @@ func (rpcServer RpcServer) handleCreateAndSendPrivacyCustomTokenTransaction(para
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	txId, err := rpcServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
-	return txId, err
+	if err == nil {
+		return tx, nil
+	}
+	return txId, nil
 }
 
 /*

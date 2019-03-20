@@ -3,7 +3,7 @@ package common
 import (
 	"log"
 
-	"github.com/ninjadotorg/constant/common/aggregatelog"
+	"github.com/constant-money/constant-chain/common/aggregatelog"
 	"github.com/pkg/errors"
 )
 

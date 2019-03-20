@@ -1,6 +1,6 @@
 package blockchain
 
-import "github.com/ninjadotorg/constant/privacy"
+import "github.com/constant-money/constant-chain/privacy"
 
 type GovernorInfo struct {
 	BoardIndex          uint32

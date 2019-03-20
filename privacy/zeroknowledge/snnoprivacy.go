@@ -1,7 +1,7 @@
 package zkp
 
 import (
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 	"math/big"
 )
 
@@ -32,6 +32,27 @@ type SNNoPrivacyProof struct {
 
 	zSeed *big.Int
 }
+
+func (proof *SNNoPrivacyProof) ValidateSanity() bool {
+	if !proof.stmt.output.IsSafe() {
+		return false
+	}
+	if !proof.stmt.vKey.IsSafe() {
+		return false
+	}
+	if proof.stmt.input.BitLen() > 256 {
+		return false
+	}
+
+	if !proof.tSeed.IsSafe() {
+		return false
+	}
+	if !proof.tOutput.IsSafe() {
+		return false
+	}
+	return proof.zSeed.BitLen() <= 256
+}
+
 
 func (pro *SNNoPrivacyProof) isNil() bool {
 	if pro.stmt.output == nil {

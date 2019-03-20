@@ -7,24 +7,62 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ninjadotorg/constant/blockchain/component"
-	"github.com/ninjadotorg/constant/metadata/frombeaconins"
+	"github.com/constant-money/constant-chain/blockchain/component"
+	"github.com/constant-money/constant-chain/metadata/frombeaconins"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/metadata"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/metadata"
 	"github.com/pkg/errors"
 )
 
 func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
+	if inst[0] == InitAction {
+		// init data for network
+		var err error
+		switch inst[1] {
+		case salaryPerTx:
+			{
+				bsb.StabilityInfo.GOVConstitution.GOVParams.SalaryPerTx, err = strconv.ParseUint(inst[2], 10, 64)
+				if err != nil {
+					return err
+				}
+			}
+		case basicSalary:
+			{
+				bsb.StabilityInfo.GOVConstitution.GOVParams.BasicSalary, err = strconv.ParseUint(inst[2], 10, 64)
+				if err != nil {
+					return err
+				}
+			}
+		case salaryFund:
+			{
+				bsb.StabilityInfo.SalaryFund, err = strconv.ParseUint(inst[2], 10, 64)
+				if err != nil {
+					return err
+				}
+			}
+		case feePerTxKb:
+			{
+				bsb.StabilityInfo.GOVConstitution.GOVParams.FeePerKbTx, err = strconv.ParseUint(inst[2], 10, 64)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}
+	Logger.log.Warn("+++++++++++++++++++Here! ", len(inst), inst[0], strconv.Itoa(component.AcceptDCBBoardIns), "\n")
 	if len(inst) < 2 {
 		return nil // Not error, just not stability instruction
 	}
+	Logger.log.Warn("+++++++++++++++++++Here! ", inst[0], "\n")
 	switch inst[0] {
 	case strconv.Itoa(metadata.LoanRequestMeta):
 		return bsb.processLoanRequestInstruction(inst)
 	case strconv.Itoa(metadata.LoanResponseMeta):
 		return bsb.processLoanResponseInstruction(inst)
 	case strconv.Itoa(component.AcceptDCBBoardIns):
+		Logger.log.Error("-----------------------------------------------Here! Update DCB Board!\n")
 		acceptDCBBoardIns := frombeaconins.AcceptDCBBoardIns{}
 		err := json.Unmarshal([]byte(inst[2]), &acceptDCBBoardIns)
 		if err != nil {
@@ -114,8 +152,12 @@ func (bsb *BestStateBeacon) processSalaryUpdateInstruction(inst []string) error 
 		return nil
 	}
 	// accepted
-	stabilityInfo.SalaryFund -= shardBlockSalaryInfo.ShardBlockSalary
 	stabilityInfo.SalaryFund += shardBlockSalaryInfo.ShardBlockFee
+	if shardBlockSalaryInfo.ShardBlockSalary > stabilityInfo.SalaryFund {
+		stabilityInfo.SalaryFund = 0
+	} else {
+		stabilityInfo.SalaryFund -= shardBlockSalaryInfo.ShardBlockSalary
+	}
 	return nil
 }
 

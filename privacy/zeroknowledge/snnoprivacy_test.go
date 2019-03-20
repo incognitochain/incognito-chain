@@ -2,7 +2,7 @@ package zkp
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
@@ -13,10 +13,10 @@ func TestPKSNNoPrivacy(t *testing.T) {
 	skInt := new(big.Int).SetBytes(sk)
 
 	pk := privacy.GeneratePublicKey(sk)
-	pkPoint :=new(privacy.EllipticPoint)
+	pkPoint := new(privacy.EllipticPoint)
 
 	err := pkPoint.Decompress(pk)
-	if err != nil{
+	if err != nil {
 		return
 	}
 
@@ -28,7 +28,7 @@ func TestPKSNNoPrivacy(t *testing.T) {
 	witness.Set(serialNumber, pkPoint, SND, skInt)
 
 	proof, err := witness.Prove(nil)
-	if err != nil{
+	if err != nil {
 		return
 	}
 

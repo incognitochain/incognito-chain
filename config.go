@@ -14,11 +14,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/constant-money/constant-chain/cashec"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/wallet"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jessevdk/go-flags"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/wallet"
 )
 
 // default config
@@ -59,6 +59,7 @@ var runServiceCommand func(string) error
 
 // See loadConfig for details on the configuration load process.
 type config struct {
+	Nodename    string `short:"n" long:"name" description:"Node name"`
 	ShowVersion bool   `short:"V" long:"version" description:"Display version information and exit"`
 	ConfigFile  string `short:"C" long:"configfile" description:"Path to configuratio\n file"`
 	DataDir     string `short:"D" long:"datadir" description:"Directory to store data"`
