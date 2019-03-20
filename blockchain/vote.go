@@ -23,7 +23,7 @@ type ConstitutionHelper interface {
 	GetConstitutionEndedBlockHeight(chain *BlockChain) uint64
 	NewRewardProposalSubmitterIns(blockgen *BlockChain, receiverAddress *privacy.PaymentAddress) (instruction frombeaconins.InstructionFromBeacon, err error)
 	GetPaymentAddressFromSubmitProposalMetadata(tx metadata.Transaction) *privacy.PaymentAddress
-	GetPaymentAddressVoter(chain *BlockChain) (privacy.PaymentAddress, error)
+	GetPaymentAddressVoter(chain *BlockChain) ([]privacy.PaymentAddress, error)
 	GetPrizeProposal() uint32
 	GetCurrentBoardPaymentAddress(chain *BlockChain) []privacy.PaymentAddress
 	GetBoardSumToken(chain *BlockChain) uint64
@@ -44,12 +44,13 @@ type ConstitutionHelper interface {
 func (chain *BlockChain) createRewardProposalWinnerIns(
 	constitutionHelper ConstitutionHelper,
 ) (frombeaconins.InstructionFromBeacon, error) {
-	paymentAddress, err := constitutionHelper.GetPaymentAddressVoter(chain)
+	paymentAddresses, err := constitutionHelper.GetPaymentAddressVoter(chain)
 	if err != nil {
 		return nil, err
 	}
 	prize := constitutionHelper.GetPrizeProposal()
-	ins := frombeaconins.NewRewardProposalWinnerIns(paymentAddress, prize)
+
+	ins := frombeaconins.NewRewardProposalWinnerIns(paymentAddresses, prize)
 	return ins, nil
 }
 
@@ -458,6 +459,33 @@ func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
 		return true
 	}
 	return false
+}
+
+func (self *BlockChain) GetListVoterOfProposalDB(helper ConstitutionHelper, proposalTxID []byte) ([]privacy.PaymentAddress, error) {
+	var res []privacy.PaymentAddress
+	currentBoardIndex := self.GetCurrentBoardIndex(helper)
+	boardType := helper.GetBoardType()
+	begin := lvdb.GetKeyListVoterOfProposal(boardType, helper.GetConstitutionInfo(self).ConstitutionIndex, proposalTxID, nil)
+	end := lvdb.GetKeyListVoterOfProposal(boardType, helper.GetConstitutionInfo(self).ConstitutionIndex, common.BytesPlusOne(proposalTxID), nil)
+	searchRange := util.Range{
+		Start: begin,
+		Limit: end,
+	}
+	iter := self.config.DataBase.NewIterator(&searchRange, nil)
+	for iter.Next() {
+		key := iter.Key()
+		_, _, _, voterPaymentAddress, err := lvdb.ParseKeyListVoterOfProposal(key)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, *voterPaymentAddress)
+		err = self.config.DataBase.Delete(key)
+		if err != nil {
+			return nil, err
+		}
+	}
+	//use prefix  as in file lvdb/block.go FetchChain
+	return nil, nil
 }
 
 func (bc *BlockChain) GetGovernor(boardType common.BoardType) metadata.GovernorInterface {

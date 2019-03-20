@@ -14,11 +14,11 @@ type ConstitutionInfo struct {
 	StartedBlockHeight uint64
 	ExecuteDuration    uint64
 	Explanation        string
-	Voter              component.Voter
+	Voters             []privacy.PaymentAddress
 }
 
-func NewConstitutionInfo(constitutionIndex uint32, startedBlockHeight uint64, executeDuration uint64, explanation string, voter component.Voter) *ConstitutionInfo {
-	return &ConstitutionInfo{ConstitutionIndex: constitutionIndex, StartedBlockHeight: startedBlockHeight, ExecuteDuration: executeDuration, Explanation: explanation, Voter: voter}
+func NewConstitutionInfo(constitutionIndex uint32, startedBlockHeight uint64, executeDuration uint64, explanation string, voters []privacy.PaymentAddress) *ConstitutionInfo {
+	return &ConstitutionInfo{ConstitutionIndex: constitutionIndex, StartedBlockHeight: startedBlockHeight, ExecuteDuration: executeDuration, Explanation: explanation, Voters: voters}
 }
 
 func (constitutionInfo ConstitutionInfo) GetConstitutionIndex() uint32 {
@@ -140,13 +140,13 @@ func (helper GOVConstitutionHelper) GetPaymentAddressFromSubmitProposalMetadata(
 	return &meta.SubmitProposalInfo.PaymentAddress
 }
 
-func (helper DCBConstitutionHelper) GetPaymentAddressVoter(chain *BlockChain) (privacy.PaymentAddress, error) {
+func (helper DCBConstitutionHelper) GetPaymentAddressVoter(chain *BlockChain) ([]privacy.PaymentAddress, error) {
 	info := chain.BestState.Beacon.StabilityInfo
-	return info.DCBConstitution.Voter.PaymentAddress, nil
+	return info.DCBConstitution.Voters, nil
 }
-func (helper GOVConstitutionHelper) GetPaymentAddressVoter(chain *BlockChain) (privacy.PaymentAddress, error) {
+func (helper GOVConstitutionHelper) GetPaymentAddressVoter(chain *BlockChain) ([]privacy.PaymentAddress, error) {
 	info := chain.BestState.Beacon.StabilityInfo
-	return info.GOVConstitution.Voter.PaymentAddress, nil
+	return info.GOVConstitution.Voters, nil
 }
 
 func (helper DCBConstitutionHelper) GetPrizeProposal() uint32 {
