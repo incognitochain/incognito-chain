@@ -1,13 +1,13 @@
 package metadata
 
 import (
-	"crypto/ecdsa"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
-	"math"
+	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy"
 )
 
 type UpdatingOracleBoard struct {
@@ -53,39 +53,42 @@ func (uob UpdatingOracleBoard) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	govBoardPubKeys := bcr.GetBoardPubKeys(common.GOVBoard)
-	boardLen := len(govBoardPubKeys)
-	if boardLen == 0 {
-		return false, errors.New("There is no one in GOV board yet.")
-	}
-	// verify signs
-	txBytes := txr.Hash()[:]
-	signs := uob.Signs
-	verifiedSignCount := 0
-	for _, pubKey := range govBoardPubKeys {
-		sign, existed := signs[string(pubKey)]
-		if !existed {
-			continue
-		}
-		verKey := new(ecdsa.PublicKey)
-		point := new(privacy.EllipticPoint)
-		_ = point.Decompress(pubKey)
-		verKey.X, verKey.Y = point.X, point.Y
-		verKey.Curve = privacy.Curve
-
-		// convert signature from byte array to ECDSASign
-		r, s := common.FromByteArrayToECDSASig(sign)
-
-		// verify signature
-		res := ecdsa.Verify(verKey, txBytes, r, s)
-		if res {
-			verifiedSignCount += 1
-		}
-	}
-	if verifiedSignCount < int(math.Floor(float64(boardLen/2)))+1 {
-		return false, errors.New("Number of signatures is not enough.")
-	}
+	// signatures validation will be done in beacon chain so dont need to do it here anymore
 	return true, nil
+
+	// govBoardPubKeys := bcr.GetBoardPubKeys(common.GOVBoard)
+	// boardLen := len(govBoardPubKeys)
+	// if boardLen == 0 {
+	// 	return false, errors.New("There is no one in GOV board yet.")
+	// }
+	// // verify signs
+	// txBytes := txr.Hash()[:]
+	// signs := uob.Signs
+	// verifiedSignCount := 0
+	// for _, pubKey := range govBoardPubKeys {
+	// 	sign, existed := signs[string(pubKey)]
+	// 	if !existed {
+	// 		continue
+	// 	}
+	// 	verKey := new(ecdsa.PublicKey)
+	// 	point := new(privacy.EllipticPoint)
+	// 	_ = point.Decompress(pubKey)
+	// 	verKey.X, verKey.Y = point.X, point.Y
+	// 	verKey.Curve = privacy.Curve
+
+	// 	// convert signature from byte array to ECDSASign
+	// 	r, s := common.FromByteArrayToECDSASig(sign)
+
+	// 	// verify signature
+	// 	res := ecdsa.Verify(verKey, txBytes, r, s)
+	// 	if res {
+	// 		verifiedSignCount += 1
+	// 	}
+	// }
+	// if verifiedSignCount < int(math.Floor(float64(boardLen/2)))+1 {
+	// 	return false, errors.New("Number of signatures is not enough.")
+	// }
+	// return true, nil
 }
 
 func (uob UpdatingOracleBoard) ValidateSanityData(
@@ -138,7 +141,16 @@ func (uob UpdatingOracleBoard) Hash() *common.Hash {
 }
 
 func (uob UpdatingOracleBoard) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	return [][]string{}, nil
+	actionContent := map[string]interface{}{
+		"meta": uob,
+	}
+	actionContentBytes, err := json.Marshal(actionContent)
+	if err != nil {
+		return [][]string{}, err
+	}
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	action := []string{strconv.Itoa(UpdatingOracleBoardMeta), actionContentBase64Str}
+	return [][]string{action}, nil
 }
 
 func (uob UpdatingOracleBoard) CalculateSize() uint64 {

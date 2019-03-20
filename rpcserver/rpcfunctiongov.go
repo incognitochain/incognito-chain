@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -279,21 +280,22 @@ func (rpcServer RpcServer) handleCreateRawTxWithOracleFeed(params interface{}, c
 	// Req param #4: oracle feed
 	oracleFeed := arrayParams[4].(map[string]interface{})
 
-	assetTypeBytes := []byte(oracleFeed["AssetType"].(string))
-	assetType := common.Hash{}
-	copy(assetType[:], assetTypeBytes)
+	assetTypeStr := oracleFeed["AssetType"].(string)
+	assetType, _ := common.Hash{}.NewHashFromStr(assetTypeStr)
+
 	price := uint64(oracleFeed["Price"].(float64))
 	metaType := metadata.OracleFeedMeta
 
 	meta := metadata.NewOracleFeed(
-		assetType,
+		*assetType,
 		price,
 		metaType,
 		feederAddr,
 	)
 
 	normalTx, err := rpcServer.buildRawTransaction(params, meta)
-	if err != nil {
+	rpcErr := err.(*RPCError)
+	if rpcErr != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -354,6 +356,8 @@ func (rpcServer RpcServer) handleCreateRawTxWithUpdatingOracleBoard(params inter
 		assertedSigns,
 		metaType,
 	)
+
+	fmt.Println("dudududududududududu: ", meta)
 
 	normalTx, err := rpcServer.buildRawTransaction(params, meta)
 	if err != nil {
