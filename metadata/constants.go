@@ -67,8 +67,8 @@ const (
 	PunishDCBDecryptMeta
 	PunishGOVDecryptMeta
 	SendBackTokenVoteBoardFailMeta
-	NormalDCBVoteProposalMeta
-	NormalGOVVoteProposalMeta
+	DCBVoteProposalMeta
+	GOVVoteProposalMeta
 
 	// STAKING
 	ShardStakingMeta

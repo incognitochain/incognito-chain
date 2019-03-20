@@ -135,58 +135,9 @@ func (db *db) NewIterator(slice *util.Range, ro *opt.ReadOptions) iterator.Itera
 	return db.lvdb.NewIterator(slice, ro)
 }
 
-func (db *db) AddVoteLv3ProposalDB(boardType common.BoardType, constitutionIndex uint32, txID *common.Hash) error {
-	//init sealer
-	keySealer := GetKeyThreePhraseCryptoSealer(boardType, constitutionIndex, txID)
-	ok, err := db.HasValue(keySealer)
-	if err != nil {
-		return err
-	}
-	if ok {
-		return errors.Errorf("duplicate txid")
-	}
-	zeroInBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(zeroInBytes, 0)
-	db.Put(keySealer, zeroInBytes)
-
-	// init owner
-	keyOwner := GetKeyThreePhraseCryptoOwner(boardType, constitutionIndex)
-	ok, err = db.HasValue(keyOwner)
-	if err != nil {
-		return err
-	}
-	if ok {
-		return errors.Errorf("duplicate txid")
-	}
-	db.Put(keyOwner, zeroInBytes)
-
-	return nil
-}
-
-func (db *db) AddVoteLv1or2ProposalDB(boardType common.BoardType, constitutionIndex uint32, lv3TxID *common.Hash) error {
-	keySealer := GetKeyThreePhraseCryptoSealer(boardType, constitutionIndex, lv3TxID)
-	ok, err := db.HasValue(keySealer)
-	if err != nil {
-		return err
-	}
-	if ok {
-		return errors.Errorf("duplicate txid")
-	}
-	valueInBytes, err := db.Get(keySealer)
-	if err != nil {
-		return err
-	}
-	value := binary.LittleEndian.Uint32(valueInBytes)
-	newValue := value + 1
-	newValueInByte := make([]byte, 4)
-	binary.LittleEndian.PutUint32(newValueInByte, newValue)
-	db.Put(keySealer, newValueInByte)
-	return nil
-}
-
-func (db *db) AddVoteNormalProposalDB(boardType common.BoardType, constitutionIndex uint32, voteValue []byte) error {
-	keyOwner := GetKeyThreePhraseCryptoOwner(boardType, constitutionIndex)
-	ok, err := db.HasValue(keyOwner)
+func (db *db) AddVoteProposalDB(boardType common.BoardType, constitutionIndex uint32, voterPayment []byte, proposalTxID []byte) error {
+	key := GetKeyVoteProposal(boardType, constitutionIndex, privacy.NewPaymentAddressFromByte(voterPayment))
+	ok, err := db.HasValue(key)
 	if err != nil {
 		return err
 	}
@@ -196,11 +147,10 @@ func (db *db) AddVoteNormalProposalDB(boardType common.BoardType, constitutionIn
 	if err != nil {
 		return err
 	}
-	newValueInByte := common.Uint32ToBytes(1)
-	db.Put(keyOwner, newValueInByte)
-
-	key := GetKeyThreePhraseVoteValue(boardType, constitutionIndex)
-	db.Put(key, voteValue)
+	err = db.Put(key, proposalTxID)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -261,4 +211,9 @@ func (db *db) GetBoardVoterList(boardType common.BoardType, candidatePaymentAddr
 		listVoter = append(listVoter, *candidatePaymentAddress)
 	}
 	return listVoter
+}
+
+func (db *db) GetListSupporters(boardType common.BoardType, candidateAddress privacy.PaymentAddress) ([]*privacy.PaymentAddress, error) {
+	// todo @jackalope
+	return nil, nil
 }

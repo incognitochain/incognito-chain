@@ -31,8 +31,8 @@ type GenesisParams struct {
 	InitialCMBToken       uint64
 	InitialGOVToken       uint64
 	InitialBondToken      uint64
-	InitialVoteDCBToken   uint64
-	InitialVoteGOVToken   uint64
+
+	InitialConstant []string
 
 	SalaryPerTx uint64
 	BasicSalary uint64
@@ -40,7 +40,7 @@ type GenesisParams struct {
 
 	RandomNumber uint64
 
-	PreSelectBeaconNodeSerializedPubkey [] string
+	PreSelectBeaconNodeSerializedPubkey []string
 	PreSelectBeaconNode                 []string
 	PreSelectShardNodeSerializedPubkey  []string
 	PreSelectShardNode                  []string
@@ -56,11 +56,14 @@ var genesisParamsTestnetNew = GenesisParams{
 	InitialGOVToken:                     TestnetInitGovToken,
 	BasicSalary:                         TestnetBasicSalary,
 	SalaryPerTx:                         TestnetSalaryPerTx,
+	FeePerTxKb:                          TestnetFeePerTxKb,
 	RandomNumber:                        0,
 	PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeTestnetSerializedPubkey,
 	PreSelectBeaconNode:                 PreSelectBeaconNodeTestnet,
 	PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeTestnetSerializedPubkey,
 	PreSelectShardNode:                  PreSelectShardNodeTestnet,
+
+	InitialConstant: TestnetInitConstant,
 }
 
 var ChainTestParam = Params{
@@ -74,6 +77,7 @@ var ChainTestParam = Params{
 	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, genesisParamsTestnetNew),
 	GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsTestnetNew),
 }
+
 // END TESTNET
 
 // FOR MAINNET
@@ -86,11 +90,14 @@ var genesisParamsMainnetNew = GenesisParams{
 	InitialGOVToken:                     MainnetInitGovToken,
 	BasicSalary:                         MainnetBasicSalary,
 	SalaryPerTx:                         MainnetSalaryPerTx,
+	FeePerTxKb:                          MainnetFeePerTxKb,
 	RandomNumber:                        0,
 	PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeMainnetSerializedPubkey,
 	PreSelectBeaconNode:                 PreSelectBeaconNodeMainnet,
 	PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeMainnetSerializedPubkey,
 	PreSelectShardNode:                  PreSelectShardNodeMainnet,
+
+	InitialConstant: MainnetInitConstant,
 }
 
 var ChainMainParam = Params{
