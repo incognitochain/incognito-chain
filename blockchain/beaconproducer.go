@@ -207,11 +207,10 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 				accumulativeValues,
 			)
 			if err != nil {
-				//panic(fmt.Sprintf("Build stability instructions failed: %s", err.Error()))
-			} else {
-				stabilityInstructions = append(stabilityInstructions, stabilityInstructionsPerBlock...)
+				Logger.log.Error(err)
+				fmt.Sprintf("Build stability instructions failed: %s", err.Error())
 			}
-
+			stabilityInstructions = append(stabilityInstructions, stabilityInstructionsPerBlock...)
 			for _, l := range shardBlock.Instructions {
 				if l[0] == "swap" {
 					if l[3] != "shard" || l[4] != strconv.Itoa(int(shardID)) {
