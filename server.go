@@ -1221,8 +1221,8 @@ func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard
 	if err != nil {
 		return err
 	}
-	msg.(*wire.MessageGetCrossShard).ByHash = false
 	msg.(*wire.MessageGetCrossShard).FromPool = getFromPool
+	msg.(*wire.MessageGetCrossShard).BySpecificHeight = true
 	msg.(*wire.MessageGetCrossShard).FromShardID = fromShard
 	msg.(*wire.MessageGetCrossShard).ToShardID = toShard
 	msg.(*wire.MessageGetCrossShard).BlkHeights = blkHeights

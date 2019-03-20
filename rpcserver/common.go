@@ -66,11 +66,7 @@ func (rpcServer RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Paymen
 		paymentInfos, shardIDSender, numBlock, hasPrivacy,
 		metadata, customTokenParams,
 		privacyCustomTokenParams)
-	if len(outCoins) == 0 {
-		realFee = 0
-	}
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
-
 	// if not enough to pay fee
 	if needToPayFee > 0 {
 		if len(outCoins) > 0 {
