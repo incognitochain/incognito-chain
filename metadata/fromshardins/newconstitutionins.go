@@ -2,17 +2,19 @@ package fromshardins
 
 import (
 	"encoding/json"
+
 	"github.com/constant-money/constant-chain/blockchain/component"
+	"github.com/constant-money/constant-chain/privacy"
 )
 
 type NewDCBConstitutionIns struct {
 	SubmitProposalInfo component.SubmitProposalInfo
 	DCBParams          component.DCBParams
-	Voter              component.Voter
+	Voters             []privacy.PaymentAddress
 }
 
-func NewNewDCBConstitutionIns(submitProposalInfo component.SubmitProposalInfo, DCBParams component.DCBParams, voter component.Voter) *NewDCBConstitutionIns {
-	return &NewDCBConstitutionIns{SubmitProposalInfo: submitProposalInfo, DCBParams: DCBParams, Voter: voter}
+func NewNewDCBConstitutionIns(submitProposalInfo component.SubmitProposalInfo, DCBParams component.DCBParams, voters []privacy.PaymentAddress) *NewDCBConstitutionIns {
+	return &NewDCBConstitutionIns{SubmitProposalInfo: submitProposalInfo, DCBParams: DCBParams, Voters: voters}
 }
 
 func NewNewDCBConstitutionInsFromStr(inst string) (*NewDCBConstitutionIns, error) {
@@ -31,11 +33,11 @@ func (NewDCBConstitutionIns) GetStringFormat() ([]string, error) {
 type NewGOVConstitutionIns struct {
 	SubmitProposalInfo component.SubmitProposalInfo
 	GOVParams          component.GOVParams
-	Voter              component.Voter
+	Voters             []privacy.PaymentAddress
 }
 
-func NewNewGOVConstitutionIns(submitProposalInfo component.SubmitProposalInfo, GOVParams component.GOVParams, voter component.Voter) *NewGOVConstitutionIns {
-	return &NewGOVConstitutionIns{SubmitProposalInfo: submitProposalInfo, GOVParams: GOVParams, Voter: voter}
+func NewNewGOVConstitutionIns(submitProposalInfo component.SubmitProposalInfo, GOVParams component.GOVParams, voters []privacy.PaymentAddress) *NewGOVConstitutionIns {
+	return &NewGOVConstitutionIns{SubmitProposalInfo: submitProposalInfo, GOVParams: GOVParams, Voters: voters}
 }
 
 func NewNewGOVConstitutionInsFromStr(inst string) (*NewGOVConstitutionIns, error) {

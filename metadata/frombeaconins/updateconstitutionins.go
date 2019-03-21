@@ -2,14 +2,16 @@ package frombeaconins
 
 import (
 	"encoding/json"
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"strconv"
+
+	"github.com/constant-money/constant-chain/blockchain/component"
+	"github.com/constant-money/constant-chain/privacy"
 )
 
 type UpdateDCBConstitutionIns struct {
 	SubmitProposalInfo component.SubmitProposalInfo
 	DCBParams          component.DCBParams
-	Voter              component.Voter
+	Voters             []privacy.PaymentAddress
 }
 
 func (updateDCBConstitutionIns *UpdateDCBConstitutionIns) GetStringFormat() ([]string, error) {
@@ -24,8 +26,8 @@ func (updateDCBConstitutionIns *UpdateDCBConstitutionIns) GetStringFormat() ([]s
 	}, nil
 }
 
-func NewUpdateDCBConstitutionIns(submitProposalInfo component.SubmitProposalInfo, DCBParams component.DCBParams, voter component.Voter) *UpdateDCBConstitutionIns {
-	return &UpdateDCBConstitutionIns{SubmitProposalInfo: submitProposalInfo, DCBParams: DCBParams, Voter: voter}
+func NewUpdateDCBConstitutionIns(submitProposalInfo component.SubmitProposalInfo, DCBParams component.DCBParams, voters []privacy.PaymentAddress) *UpdateDCBConstitutionIns {
+	return &UpdateDCBConstitutionIns{SubmitProposalInfo: submitProposalInfo, DCBParams: DCBParams, Voters: voters}
 }
 
 func NewUpdateDCBConstitutionInsFromStr(inst []string) (*UpdateDCBConstitutionIns, error) {
@@ -40,7 +42,7 @@ func NewUpdateDCBConstitutionInsFromStr(inst []string) (*UpdateDCBConstitutionIn
 type UpdateGOVConstitutionIns struct {
 	SubmitProposalInfo component.SubmitProposalInfo
 	GOVParams          component.GOVParams
-	Voter              component.Voter
+	Voters             []privacy.PaymentAddress
 }
 
 func (updateGOVConstitutionIns *UpdateGOVConstitutionIns) GetStringFormat() ([]string, error) {
@@ -55,8 +57,8 @@ func (updateGOVConstitutionIns *UpdateGOVConstitutionIns) GetStringFormat() ([]s
 	}, nil
 }
 
-func NewUpdateGOVConstitutionIns(submitProposalInfo component.SubmitProposalInfo, GOVParams component.GOVParams, voter component.Voter) *UpdateGOVConstitutionIns {
-	return &UpdateGOVConstitutionIns{SubmitProposalInfo: submitProposalInfo, GOVParams: GOVParams, Voter: voter}
+func NewUpdateGOVConstitutionIns(submitProposalInfo component.SubmitProposalInfo, GOVParams component.GOVParams, voters []privacy.PaymentAddress) *UpdateGOVConstitutionIns {
+	return &UpdateGOVConstitutionIns{SubmitProposalInfo: submitProposalInfo, GOVParams: GOVParams, Voters: voters}
 }
 
 func NewUpdateGOVConstitutionInsFromStr(inst []string) (*UpdateGOVConstitutionIns, error) {
