@@ -7,7 +7,7 @@ type CrossShardDataResult struct {
 	CrossShardCSTokenResultList         []CrossShardCSTokenResult         `json:"CrossShardCSTokenResult"`
 }
 type CrossShardConstantResult struct {
-	PublicKey string `json:"PaymentAddress"`
+	PublicKey string `json:"PublicKey"`
 	Value     uint64 `json:"Value"`
 }
 
@@ -22,9 +22,13 @@ type CrossShardCSTokenResult struct {
 	TokenImage                         string                           `json:"TokenImage"`
 	IsPrivacy                          bool                             `json:"IsPrivacy"`
 	CrossShardCSTokenBalanceResultList []CrossShardCSTokenBalanceResult `json:"CrossShardCSTokenBalanceResultList"`
+	CrossShardPrivacyCSTokenResultList []CrossShardPrivacyCSTokenResult `json:"CrossShardPrivacyCSTokenResult"`
 }
 
 type CrossShardCSTokenBalanceResult struct {
 	PaymentAddress string `json:"PaymentAddress"`
 	Value          uint64 `json:"Value"`
+}
+type CrossShardPrivacyCSTokenResult struct {
+	PublicKey string `json:"PublicKey"`
 }
