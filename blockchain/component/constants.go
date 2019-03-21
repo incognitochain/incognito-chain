@@ -16,6 +16,8 @@ const (
 
 	RewardDCBProposalSubmitterIns
 	RewardGOVProposalSubmitterIns
+	ShareRewardOldDCBBoardIns
+	ShareRewardOldGOVBoardIns
 )
 
 const (

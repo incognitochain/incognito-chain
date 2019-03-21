@@ -21,7 +21,7 @@ func (updateDCBConstitutionIns *UpdateDCBConstitutionIns) GetStringFormat() ([]s
 	}
 	return []string{
 		strconv.Itoa(component.UpdateDCBConstitutionIns),
-		strconv.Itoa(-1),
+		strconv.Itoa(component.AllShards),
 		string(content),
 	}, nil
 }
@@ -52,7 +52,7 @@ func (updateGOVConstitutionIns *UpdateGOVConstitutionIns) GetStringFormat() ([]s
 	}
 	return []string{
 		strconv.Itoa(component.UpdateGOVConstitutionIns),
-		strconv.Itoa(-1),
+		strconv.Itoa(component.AllShards),
 		string(content),
 	}, nil
 }
