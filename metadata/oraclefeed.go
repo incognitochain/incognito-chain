@@ -42,15 +42,8 @@ func (of *OracleFeed) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	govParams := bcr.GetGOVParams()
-	oraclePubKeys := govParams.OracleNetwork.OraclePubKeys
-	senderPubKey := txr.GetSigPubKey()
-	for _, oraclePubKey := range oraclePubKeys {
-		if bytes.Equal(oraclePubKey, senderPubKey) {
-			return true, nil
-		}
-	}
-	return true, errors.New("The oracle feeder is not belong to eligible oracles.")
+	// will check senderPubKey with oraclePubKeys on beacon chain
+	return true, nil
 }
 
 func (of *OracleFeed) ValidateSanityData(
@@ -69,6 +62,8 @@ func (of *OracleFeed) ValidateSanityData(
 	if len(of.AssetType) != common.HashSize {
 		return false, false, errors.New("Wrong oracle feed's asset type")
 	}
+
+	// TODO: compare feederAddress to address in vins
 	return true, true, nil
 }
 
@@ -101,6 +96,7 @@ func (of *OracleFeed) BuildReqActions(tx Transaction, bcr BlockchainRetriever, s
 	actionContent := map[string]interface{}{
 		"txReqId": *(tx.Hash()),
 		"meta":    *of,
+		"txFee":   tx.GetTxFee(),
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
