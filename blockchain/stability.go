@@ -301,13 +301,24 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				fmt.Printf("[db] shard build Resp from inst: %+v\n", l)
 				Logger.log.Warn("Metadata type:", metaType, "\n")
 				switch metaType {
-				case metadata.RewardDCBProposalSubmitterMeta, metadata.RewardGOVProposalSubmitterMeta:
+				case component.RewardDCBProposalSubmitterIns:
 					rewardProposalSubmitter := frombeaconins.RewardProposalSubmitterIns{}
 					err := json.Unmarshal([]byte(l[2]), &rewardProposalSubmitter)
 					if err != nil {
 						return nil, err
 					}
-					tx, err := rewardProposalSubmitter.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					tx, err := rewardProposalSubmitter.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, common.DCBBoard)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, tx)
+				case component.RewardGOVProposalSubmitterIns:
+					rewardProposalSubmitter := frombeaconins.RewardProposalSubmitterIns{}
+					err := json.Unmarshal([]byte(l[2]), &rewardProposalSubmitter)
+					if err != nil {
+						return nil, err
+					}
+					tx, err := rewardProposalSubmitter.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, common.GOVBoard)
 					if err != nil {
 						return nil, err
 					}
