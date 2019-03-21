@@ -334,6 +334,13 @@ func (blockchain *BlockChain) initBeaconState() error {
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.Constant = 100  // $1 = 100 cent
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.ETH = 10000     // $100.00 = 10000 cent per ether
 
+	blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.OracleNetwork = &component.OracleNetwork{
+		OraclePubKeys: [][]byte{
+			[]byte{3, 36, 133, 3, 185, 44, 62, 112, 196, 239, 49, 190, 100, 172, 50, 147, 196, 154, 105, 211, 203, 57, 242, 110, 34, 126, 100, 226, 74, 148, 128, 167, 0},
+		},
+		UpdateFrequency: 10,
+	}
+
 	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.RaiseReserveData = map[common.Hash]*component.RaiseReserveData{
 		common.ETHAssetID: &component.RaiseReserveData{
 			EndBlock: 1000,

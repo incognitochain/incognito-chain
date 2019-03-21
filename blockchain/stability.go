@@ -145,11 +145,11 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 	instructions := [][]string{}
 	//Add Voting instruction
 	// step 3 hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-	votingInstruction, err := blkTmpGen.chain.generateVotingInstructionWOIns(0)
-	if err != nil {
-		return nil, NewBlockChainError(BeaconError, err)
-	}
-	instructions = append(instructions, votingInstruction...)
+	// votingInstruction, err := blkTmpGen.chain.generateVotingInstructionWOIns(0)
+	// if err != nil {
+	// 	return nil, NewBlockChainError(BeaconError, err)
+	// }
+	// instructions = append(instructions, votingInstruction...)
 
 	for _, inst := range shardBlockInstructions {
 		fmt.Printf("[db] beaconProducer found inst: %s\n", inst[0])
@@ -187,6 +187,12 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 
 		case metadata.ShardBlockSalaryRequestMeta:
 			newInst, err = buildInstForShardBlockSalaryReq(shardID, contentStr, beaconBestState, accumulativeValues)
+
+		case metadata.OracleFeedMeta:
+			newInst, err = buildInstForOracleFeedReq(shardID, contentStr, beaconBestState)
+
+		case metadata.UpdatingOracleBoardMeta:
+			newInst, err = buildInstForUpdatingOracleBoardReq(shardID, contentStr, beaconBestState)
 
 		case component.NewDCBConstitutionIns:
 			newInst, err = buildUpdateConstitutionIns(inst[2], common.DCBBoard)
@@ -370,6 +376,14 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				case metadata.ContractingRequestMeta:
 					contractingInfoStr := l[3]
 					txs, err := blockgen.buildContractingRes(l[2], contractingInfoStr, producerPrivateKey)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, txs...)
+
+				case metadata.OracleRewardMeta:
+					evaluationStr := l[3]
+					txs, err := blockgen.buildOracleRewardTxs(evaluationStr, producerPrivateKey)
 					if err != nil {
 						return nil, err
 					}
