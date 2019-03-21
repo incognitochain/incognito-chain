@@ -9,10 +9,12 @@ import (
 	"strconv"
 
 	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
 	"github.com/constant-money/constant-chain/transaction"
+	"github.com/constant-money/constant-chain/wallet"
 )
 
 // handleGetBestBlock implements the getbestblock command.
@@ -477,20 +479,29 @@ func (rpcServer RpcServer) handleGetCrossShardBlock(params interface{}, closeCha
 					flag = true //has cross shard block
 				}
 				crossShardCSTokenResult := jsonresult.CrossShardCSTokenResult{
-					Name:      customTokenTx.TxTokenData.PropertyName,
-					Symbol:    customTokenTx.TxTokenData.PropertySymbol,
-					TokenID:   customTokenTx.TxTokenData.PropertyID.String(),
-					Amount:    customTokenTx.TxTokenData.Amount,
-					IsPrivacy: false,
+					Name:                               customTokenTx.TxTokenData.PropertyName,
+					Symbol:                             customTokenTx.TxTokenData.PropertySymbol,
+					TokenID:                            customTokenTx.TxTokenData.PropertyID.String(),
+					Amount:                             customTokenTx.TxTokenData.Amount,
+					IsPrivacy:                          false,
+					CrossShardCSTokenBalanceResultList: []jsonresult.CrossShardCSTokenBalanceResult{},
+					CrossShardPrivacyCSTokenResultList: []jsonresult.CrossShardPrivacyCSTokenResult{},
 				}
 				crossShardCSTokenBalanceResultList := []jsonresult.CrossShardCSTokenBalanceResult{}
 				for _, vout := range customTokenTx.TxTokenData.Vouts {
+					paymentAddressWallet := wallet.KeyWallet{
+						KeySet: cashec.KeySet{
+							PaymentAddress: vout.PaymentAddress,
+						},
+					}
+					paymentAddress := paymentAddressWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 					crossShardCSTokenBalanceResult := jsonresult.CrossShardCSTokenBalanceResult{
-						PaymentAddress: vout.PaymentAddress.String(),
+						PaymentAddress: paymentAddress,
 						Value:          vout.Value,
 					}
 					crossShardCSTokenBalanceResultList = append(crossShardCSTokenBalanceResultList, crossShardCSTokenBalanceResult)
 				}
+				crossShardCSTokenResult.CrossShardCSTokenBalanceResultList = crossShardCSTokenBalanceResultList
 				result.CrossShardCSTokenResultList = append(result.CrossShardCSTokenResultList, crossShardCSTokenResult)
 			}
 		}
@@ -518,11 +529,12 @@ func (rpcServer RpcServer) handleGetCrossShardBlock(params interface{}, closeCha
 			}
 			for _, tokenPrivacyData := range crossTransaction.TokenPrivacyData {
 				crossShardCSTokenResult := jsonresult.CrossShardCSTokenResult{
-					Name:      tokenPrivacyData.PropertyName,
-					Symbol:    tokenPrivacyData.PropertySymbol,
-					TokenID:   tokenPrivacyData.PropertyID.String(),
-					Amount:    tokenPrivacyData.Amount,
-					IsPrivacy: true,
+					Name:                               tokenPrivacyData.PropertyName,
+					Symbol:                             tokenPrivacyData.PropertySymbol,
+					TokenID:                            tokenPrivacyData.PropertyID.String(),
+					Amount:                             tokenPrivacyData.Amount,
+					IsPrivacy:                          true,
+					CrossShardPrivacyCSTokenResultList: []jsonresult.CrossShardPrivacyCSTokenResult{},
 				}
 				for _, outputCoin := range tokenPrivacyData.OutputCoin {
 					pubkey := outputCoin.CoinDetails.PublicKey.Compress()
