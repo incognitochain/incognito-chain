@@ -1,8 +1,7 @@
 package rpcserver
 
 import (
-	"github.com/constant-money/constant-chain/common/base58"
-
+	"encoding/hex"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
@@ -44,7 +43,7 @@ func (rpcServer RpcServer) handleAppendListDCBBoard(params interface{}, closeCha
 func ListPaymentAddressToListString(addresses []privacy.PaymentAddress) []string {
 	res := make([]string, 0)
 	for _, i := range addresses {
-		pk := base58.Base58Check{}.Encode(i.Pk, byte(0x00))
+		pk := hex.EncodeToString(i.Pk)
 		res = append(res, pk)
 	}
 	return res
