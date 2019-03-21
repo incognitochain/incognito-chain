@@ -10,6 +10,7 @@ import (
 
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
 	"github.com/constant-money/constant-chain/transaction"
 )
@@ -460,9 +461,9 @@ func (rpcServer RpcServer) handleGetCrossShardBlock(params interface{}, closeCha
 	}
 	// #param1: shardID
 	// #param2: shard block height
-	shardID := arrayParams[0].(byte)
-	blockHeight := arrayParams[1].(uint64)
-	shardBlock, err := rpcServer.config.BlockChain.GetShardBlockByHeight(blockHeight, shardID)
+	shardID := int(arrayParams[0].(float64))
+	blockHeight := uint64(arrayParams[1].(float64))
+	shardBlock, err := rpcServer.config.BlockChain.GetShardBlockByHeight(blockHeight, byte(shardID))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -500,21 +501,38 @@ func (rpcServer RpcServer) handleGetCrossShardBlock(params interface{}, closeCha
 		}
 		for _, crossTransaction := range crossTransactions {
 			for _, outputCoin := range crossTransaction.OutputCoin {
-				if outputCoin.CoinDetailsEncrypted != nil {
-					// crossShardConstantResult := jsonresult.CrossShardConstantResult{
-					// 	PublicKey:
-					// 	Value:
-					// }
-					//TODO: add public key + value
+				pubkey := outputCoin.CoinDetails.PublicKey.Compress()
+				pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
+				if outputCoin.CoinDetailsEncrypted == nil {
+					crossShardConstantResult := jsonresult.CrossShardConstantResult{
+						PublicKey: pubkeyStr,
+						Value:     outputCoin.CoinDetails.Value,
+					}
+					result.CrossShardConstantResultList = append(result.CrossShardConstantResultList, crossShardConstantResult)
 				} else {
-					// crossShardConstantPrivacyResult := jsonresult.CrossShardConstantPrivacyResult{
-					// 	PublicKey:
-					// }
-					//TODO: add value
+					crossShardConstantPrivacyResult := jsonresult.CrossShardConstantPrivacyResult{
+						PublicKey: pubkeyStr,
+					}
+					result.CrossShardConstantPrivacyResultList = append(result.CrossShardConstantPrivacyResultList, crossShardConstantPrivacyResult)
 				}
 			}
-			for _, tokenPrivacyData := crossTransaction.TokenPrivacyData {
-				
+			for _, tokenPrivacyData := range crossTransaction.TokenPrivacyData {
+				crossShardCSTokenResult := jsonresult.CrossShardCSTokenResult{
+					Name:      tokenPrivacyData.PropertyName,
+					Symbol:    tokenPrivacyData.PropertySymbol,
+					TokenID:   tokenPrivacyData.PropertyID.String(),
+					Amount:    tokenPrivacyData.Amount,
+					IsPrivacy: true,
+				}
+				for _, outputCoin := range tokenPrivacyData.OutputCoin {
+					pubkey := outputCoin.CoinDetails.PublicKey.Compress()
+					pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
+					crossShardPrivacyCSTokenResult := jsonresult.CrossShardPrivacyCSTokenResult{
+						PublicKey: pubkeyStr,
+					}
+					crossShardCSTokenResult.CrossShardPrivacyCSTokenResultList = append(crossShardCSTokenResult.CrossShardPrivacyCSTokenResultList, crossShardPrivacyCSTokenResult)
+				}
+				result.CrossShardCSTokenResultList = append(result.CrossShardCSTokenResultList, crossShardCSTokenResult)
 			}
 		}
 	}
