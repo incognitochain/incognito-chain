@@ -55,6 +55,10 @@ var RpcHandler = map[string]commandHandler{
 	HasSerialNumbers:                RpcServer.handleHasSerialNumbers,
 	HasSnDerivators:                 RpcServer.handleHasSnDerivators,
 
+	//pool
+	GetShardToBeaconPoolState: RpcServer.handleGetShardToBeaconPoolState,
+	GetCrossShardPoolState:    RpcServer.handleGetCrossShardPoolState,
+
 	// Beststate
 	GetCandidateList:              RpcServer.handleGetCandidateList,
 	GetCommitteeList:              RpcServer.handleGetCommitteeList,
@@ -64,9 +68,8 @@ var RpcHandler = map[string]commandHandler{
 	GetBeaconPoolState:            RpcServer.handleGetBeaconPoolState,
 	GetShardPoolState:             RpcServer.handleGetShardPoolState,
 	GetShardPoolLatestValidHeight: RpcServer.handleGetShardPoolLatestValidHeight,
-	GetShardToBeaconPoolState:     RpcServer.handleGetShardToBeaconPoolState,
-	GetCrossShardPoolState:        RpcServer.handleGetCrossShardPoolState,
-	CanPubkeyStake:                RpcServer.handleCanPubkeyStake,
+
+	CanPubkeyStake: RpcServer.handleCanPubkeyStake,
 
 	// custom token
 	CreateRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
