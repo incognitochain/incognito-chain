@@ -204,7 +204,7 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 			err = blkTmpGen.chain.AddVoteBoard(inst[2])
 
 		case component.SubmitProposalIns:
-
+			err = blkTmpGen.chain.AddSubmitProposal(inst[2])
 		case component.VoteProposalIns:
 			err = blkTmpGen.chain.AddVoteProposal(inst[2])
 		default:
@@ -489,8 +489,6 @@ func (chain *BlockChain) AddSubmitProposal(inst string) error {
 	}
 	boardType := newInst.BoardType
 	submitter := newInst.SubmitProposal.SubmitterPayment
-	// governor := chain.GetGovernor(boardType)
-	// boardIndex := governor.GetBoardIndex() + 1
 	err1 := chain.GetDatabase().AddSubmitProposal(
 		boardType,
 		newInst.SubmitProposal.ConstitutionIndex,
