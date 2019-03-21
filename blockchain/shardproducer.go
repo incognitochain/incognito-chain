@@ -55,21 +55,23 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	crossTransactions, crossTxTokenData := blockgen.getCrossShardData(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight, crossShards)
 	crossTxTokenTransactions, _ := blockgen.chain.createCustomTokenTxForCrossShard(privatekey, crossTxTokenData, shardID)
 	txsToAdd = append(txsToAdd, crossTxTokenTransactions...)
-	fmt.Println("crossOutputCoin", crossTransactions)
-	fmt.Println("Shard Producer crossTxTokenTransactions", crossTxTokenTransactions)
+	// fmt.Println("crossOutputCoin", crossTransactions)
+	// fmt.Println("Shard Producer crossTxTokenTransactions", crossTxTokenTransactions)
 	//======Create Instruction===========================
 	//Assign Instruction
 	instructions := [][]string{}
 	swapInstruction := []string{}
 	assignInstructions := GetAssignInstructionFromBeaconBlock(beaconBlocks, shardID)
-	fmt.Println("Shard Block Producer AssignInstructions ", assignInstructions)
+	if len(assignInstructions) != 0 {
+		Logger.log.Critical("Shard Block Producer AssignInstructions ", assignInstructions)
+	}
 	shardPendingValidator := blockgen.chain.BestState.Shard[shardID].ShardPendingValidator
 	shardCommittee := blockgen.chain.BestState.Shard[shardID].ShardCommittee
 	for _, assignInstruction := range assignInstructions {
 		shardPendingValidator = append(shardPendingValidator, strings.Split(assignInstruction[1], ",")...)
 	}
-	fmt.Println("Shard Producer: shardPendingValidator", shardPendingValidator)
-	fmt.Println("Shard Producer: shardCommitee", shardCommittee)
+	// fmt.Println("Shard Producer: shardPendingValidator", shardPendingValidator)
+	// fmt.Println("Shard Producer: shardCommitee", shardCommittee)
 	//Swap instruction
 	// Swap instruction only appear when reach the last block in an epoch
 	//@NOTICE: In this block, only pending validator change, shard committees will change in the next block
@@ -111,7 +113,9 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 			return nil, err
 		}
 	}
-	fmt.Println("Shard Producer: Instruction", instructions)
+	if len(instructions) != 0 {
+		Logger.log.Critical("Shard Producer: Instruction", instructions)
+	}
 	fmt.Printf("Number of Transaction in blocks %+v \n", len(block.Body.Transactions))
 	for i, tx := range block.Body.Transactions {
 		Logger.log.Warn(i, tx, "\n")
@@ -156,7 +160,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		return nil, NewBlockChainError(HashError, err)
 	}
 	_, shardTxMerkleData := CreateShardTxRoot2(block.Body.Transactions)
-	fmt.Println("ShardProducer/Shard Tx Root", shardTxMerkleData[len(shardTxMerkleData)-1])
+	// fmt.Println("ShardProducer/Shard Tx Root", shardTxMerkleData[len(shardTxMerkleData)-1])
 	block.Header = ShardHeader{
 		ProducerAddress:      payToAddress,
 		Producer:             userKeySet.GetPublicKeyB58(),
@@ -177,7 +181,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		Epoch:                epoch,
 		Round:                proposerOffset + 1,
 	}
-	fmt.Println("ShardProducer/Shard Tx Root", shardTxMerkleData[len(shardTxMerkleData)-1], block.Header.CrossShards)
+	// fmt.Println("ShardProducer/Shard Tx Root", shardTxMerkleData[len(shardTxMerkleData)-1], block.Header.CrossShards)
 	// Create producer signature
 	blkHeaderHash := block.Header.Hash()
 	sig, err := userKeySet.SignDataB58(blkHeaderHash.GetBytes())
@@ -207,7 +211,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 		return nil, err
 	}
 	for _, tx := range divTxs {
-		Logger.log.Warn(tx, "-----+++++++++++++++\n")
+		// Logger.log.Warn(tx, "-----+++++++++++++++\n")
 		if tx != nil {
 			txsToAdd = append(txsToAdd, tx)
 		}
@@ -332,9 +336,9 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 	}
 	fmt.Println("ShardProducer/Get data from cross shard block to shard ", shardID)
 	fmt.Println("ShardProducer/crossTransactions Number of cross transaction", len(crossTransactions[shardID]))
-	fmt.Println("ShardProducer/crossTransactions", crossTransactions)
+	// fmt.Println("ShardProducer/crossTransactions", crossTransactions)
 	fmt.Println("ShardProducer/crossTxTokenData Number of cross custom tx token", len(crossTxTokenData[shardID]))
-	fmt.Println("ShardProducer/crossTxTokenData", crossTxTokenData)
+	// fmt.Println("ShardProducer/crossTxTokenData", crossTxTokenData)
 	return crossTransactions, crossTxTokenData
 }
 
