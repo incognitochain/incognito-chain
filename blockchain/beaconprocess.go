@@ -76,6 +76,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock, isCom
 func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee bool) error {
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
+
 	Logger.log.Infof("Check block existence for insert process %d, with hash %+v", block.Header.Height, *block.Hash())
 	isExist, _ := blockchain.config.DataBase.HasBeaconBlock(block.Hash())
 	if isExist {
@@ -110,19 +111,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	if err := blockchain.BestState.Beacon.VerifyPostProcessingBeaconBlock(block, snapShotBeaconCommittee); err != nil {
 		return err
 	}
-	//========Store new Beaconblock and new Beacon bestState in cache
-	Logger.log.Infof("Store Beacon BestState %+v \n", *block.Hash())
-	if err := blockchain.config.DataBase.StoreBeaconBestState(blockchain.BestState.Beacon); err != nil {
-		return err
-	}
-	Logger.log.Infof("Store Beacon Block %+v \n", *block.Hash())
-	if err := blockchain.config.DataBase.StoreBeaconBlock(block); err != nil {
-		return err
-	}
-	blockHash := block.Hash()
-	if err := blockchain.config.DataBase.StoreBeaconBlockIndex(blockHash, block.Header.Height); err != nil {
-		return err
-	}
+
 	for shardID, shardStates := range block.Body.ShardState {
 		for _, shardState := range shardStates {
 			blockchain.config.DataBase.StoreAcceptedShardToBeacon(shardID, block.Header.Height, &shardState.Hash)
@@ -163,7 +152,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 
 					lastHeight := lastCrossShardState[fromShard][toShard] // get last cross shard height from shardID  to crossShardShardID
 					waitHeight := shardBlock.Height
-
+					fmt.Println("StoreCrossShardNextHeight", fromShard, toShard, lastHeight, waitHeight)
 					blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, lastHeight, waitHeight)
 					//beacon process shard_to_beacon in order so cross shard next height also will be saved in order
 					//dont care overwrite this value
@@ -184,11 +173,26 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 		return err
 	}
 
+	// ************ Store block at last
+	//========Store new Beaconblock and new Beacon bestState in cache
+	Logger.log.Infof("Store Beacon BestState %+v \n", *block.Hash())
+	if err := blockchain.config.DataBase.StoreBeaconBestState(blockchain.BestState.Beacon); err != nil {
+		return err
+	}
+	Logger.log.Infof("Store Beacon Block %+v \n", *block.Hash())
+	if err := blockchain.config.DataBase.StoreBeaconBlock(block); err != nil {
+		return err
+	}
+	blockHash := block.Hash()
+	if err := blockchain.config.DataBase.StoreBeaconBlockIndex(blockHash, block.Header.Height); err != nil {
+		return err
+	}
+
 	//=========Remove beacon block in pool
 	blockchain.config.BeaconPool.SetBeaconState(blockchain.BestState.Beacon.BeaconHeight)
 
 	//=========Remove shard to beacon block in pool
-	Logger.log.Infof("Remove block from pool %+v \n", *block.Hash())
+	Logger.log.Infof("Remove block from pool %+v \n", *block.Hash(), block.Header.Height, blockchain.BestState.Beacon.BestShardHeight)
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.BestShardHeight)
 
 	Logger.log.Infof("Finish Insert new block %d, with hash %+v", block.Header.Height, *block.Hash())

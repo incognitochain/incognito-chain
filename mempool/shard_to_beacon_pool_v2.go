@@ -41,6 +41,10 @@ func GetShardToBeaconPool() *ShardToBeaconPool {
 }
 
 func (self *ShardToBeaconPool) SetShardState(latestShardState map[byte]uint64) {
+	fmt.Println("SetShardState")
+	self.poolMutex.Lock()
+	defer self.poolMutex.Unlock()
+
 	self.latestValidHeightMutex.Lock()
 	defer self.latestValidHeightMutex.Unlock()
 
@@ -50,10 +54,12 @@ func (self *ShardToBeaconPool) SetShardState(latestShardState map[byte]uint64) {
 		}
 		self.latestValidHeight[shardID] = latestShardState[shardID]
 	}
-
+	fmt.Println("SetShardState 1")
 	//Remove pool base on new shardstate
-	self.RemovePendingBlock(latestShardState)
-	self.UpdateLatestShardState()
+	self.removePendingBlock(latestShardState)
+	fmt.Println("SetShardState 2")
+	self.updateLatestShardState()
+	fmt.Println("SetShardState 3")
 }
 
 func (self *ShardToBeaconPool) GetShardState() map[byte]uint64 {
@@ -65,9 +71,11 @@ func (self *ShardToBeaconPool) GetShardState() map[byte]uint64 {
 //#1 and #2: requested block from height to height
 //#3 error
 func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaconBlock) (uint64, uint64, error) {
-	fmt.Println("Receive beacon ")
+
 	blkShardID := blk.Header.ShardID
 	blkHeight := blk.Header.Height
+
+	fmt.Println("AddShardToBeaconBlock ", blkShardID, blkHeight)
 	self.poolMutex.Lock()
 	self.latestValidHeightMutex.Lock()
 
@@ -126,7 +134,7 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaco
 	})
 
 	//update last valid pending ShardState
-	self.UpdateLatestShardState()
+	self.updateLatestShardState()
 	if self.pool[blkShardID][0].Header.Height > self.latestValidHeight[blkShardID] {
 		offset := self.pool[blkShardID][0].Header.Height - self.latestValidHeight[blkShardID]
 		if offset > MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL {
@@ -137,7 +145,7 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaco
 	return 0, 0, nil
 }
 
-func (self *ShardToBeaconPool) UpdateLatestShardState() {
+func (self *ShardToBeaconPool) updateLatestShardState() {
 	for shardID, blks := range self.pool {
 		if self.latestValidHeight[shardID] == 0 {
 			self.latestValidHeight[shardID] = 1
@@ -159,6 +167,11 @@ func (self *ShardToBeaconPool) UpdateLatestShardState() {
 func (self *ShardToBeaconPool) RemovePendingBlock(blockItems map[byte]uint64) {
 	self.poolMutex.Lock()
 	defer self.poolMutex.Unlock()
+	self.removePendingBlock(blockItems)
+}
+
+func (self *ShardToBeaconPool) removePendingBlock(blockItems map[byte]uint64) {
+
 	for shardID, blockHeight := range blockItems {
 		for index, block := range self.pool[shardID] {
 			fmt.Println("ShardToBeaconPool/Pool BEFORE Remove", block.Header.Height)
@@ -247,6 +260,8 @@ func (self *ShardToBeaconPool) GetLatestValidPendingBlockHeight() map[byte]uint6
 }
 
 func (self *ShardToBeaconPool) GetAllBlockHeight() map[byte][]uint64 {
+	self.poolMutex.RLock()
+	defer self.poolMutex.RUnlock()
 	finalBlocks := make(map[byte][]uint64)
 	for shardID, blks := range self.pool {
 		for _, blk := range blks {

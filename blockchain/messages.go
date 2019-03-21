@@ -93,6 +93,7 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 				return
 			} else {
 				if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
+					fmt.Println("Beacon block insert", newBlk.Header.Height)
 					err = blockchain.InsertBeaconBlock(newBlk, false)
 					if err != nil {
 						fmt.Println("Beacon block insert err", err)
@@ -102,6 +103,7 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 						return
 					}
 				} else {
+					fmt.Println("Beacon block prepare add to pool", newBlk.Header.Height)
 					err := blockchain.config.BeaconPool.AddBeaconBlock(newBlk)
 					if err != nil {
 						fmt.Println("Beacon block add pool err", err)
