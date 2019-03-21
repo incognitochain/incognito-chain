@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"sort"
 	"strconv"
+	"sync"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
@@ -75,6 +76,7 @@ type BestStateBeacon struct {
 	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
 	LastCrossShardState map[byte]map[byte]uint64 `json:"LastCrossShardState"`
+	lockMu              sync.Mutex
 }
 
 type StabilityInfo struct {
@@ -144,13 +146,15 @@ func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
 	bestStateBeacon.BeaconCommitteeSize = netparam.BeaconCommitteeSize
 	bestStateBeacon.ShardCommitteeSize = netparam.ShardCommitteeSize
 	bestStateBeacon.ActiveShards = netparam.ActiveShards
-
 	bestStateBeacon.LastCrossShardState = make(map[byte]map[byte]uint64)
 
 	return bestStateBeacon
 }
 
 func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
+	bestStateBeacon.lockMu.Lock()
+	defer bestStateBeacon.lockMu.Unlock()
+
 	//TODO: 0xBahamoot check back later
 	var keys []int
 	var keyStrs []string
