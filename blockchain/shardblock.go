@@ -151,7 +151,7 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 	// Return nothing if nothing to cross
 	if len(crossOutputCoin) == 0 && len(crossTxTokenData) == 0 && len(crossCustomTokenPrivacyData) == 0 {
 		fmt.Println("CreateCrossShardBlock no crossshard", block.Header.Height)
-		return nil, nil
+		return nil, NewBlockChainError(CrossShardBlockError, errors.New("No cross outputcoin"))
 	}
 	merklePathShard, merkleShardRoot := GetMerklePathCrossShard2(block.Body.Transactions, shardID)
 	if merkleShardRoot != block.Header.ShardTxRoot {

@@ -183,11 +183,12 @@ func (netSync *NetSync) CreateBlkShardMsgByType(block *blockchain.ShardBlock, bl
 		blkMsg.(*wire.MessageBlockShard).Block = *block
 	case 1:
 		blkToSend, err := block.CreateCrossShardBlock(crossShardID)
-		fmt.Println("CROSS: ", blkToSend.Header.Height)
 		if err != nil {
 			Logger.log.Error(err)
 			return nil, err
 		}
+
+		fmt.Println("CROSS: ", block.Header.Height, blkToSend, crossShardID)
 		blkMsg, err = wire.MakeEmptyMessage(wire.CmdCrossShard)
 		if err != nil {
 			Logger.log.Error(err)
