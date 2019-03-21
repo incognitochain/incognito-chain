@@ -160,6 +160,7 @@ var RpcHandler = map[string]commandHandler{
 	GetBondTypes:                           RpcServer.handleGetBondTypes,
 	GetCurrentSellingBondTypes:             RpcServer.handleGetCurrentSellingBondTypes,
 	GetCurrentStabilityInfo:                RpcServer.handleGetCurrentStabilityInfo,
+	GetCurrentOracleNetworkParams:          RpcServer.handleGetCurrentOracleNetworkParams,
 	GetGOVConstitution:                     RpcServer.handleGetGOVConstitution,
 	GetGOVParams:                           RpcServer.handleGetGOVParams,
 	CreateAndSendTxWithBuyBackRequest:      RpcServer.handleCreateAndSendTxWithBuyBackRequest,
