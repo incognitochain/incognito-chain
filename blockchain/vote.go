@@ -109,7 +109,7 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 	helper ConstitutionHelper,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
-	nextConstitutionIndex := self.GetCurrentBoardIndex(DCBConstitutionHelper{})
+	nextConstitutionIndex := self.GetConstitutionIndex(DCBConstitutionHelper{})
 	resIns := make([]frombeaconins.InstructionFromBeacon, 0)
 	VoteTable, CountVote, err := self.BuildVoteTableAndPunishTransaction(helper, nextConstitutionIndex)
 	bestProposal := metadata.ProposalVote{
@@ -221,7 +221,6 @@ func createSendBackTokenVoteFailIns(
 func (self *BlockChain) createSendBackTokenAfterVoteFailIns(
 	boardType common.BoardType,
 	newDCBList []privacy.PaymentAddress,
-	shardID byte,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
 	var propertyID common.Hash
 	if boardType == common.DCBBoard {
@@ -316,7 +315,6 @@ func (chain *BlockChain) GetCoinTermReward(helper ConstitutionHelper) uint64 {
 //todo @0xjackalope reward for chair
 func (self *BlockChain) CreateUpdateNewGovernorInstruction(
 	helper ConstitutionHelper,
-	shardID byte,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
 	instructions := make([]frombeaconins.InstructionFromBeacon, 0)
 	newBoardList, err := self.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), self.GetCurrentBoardIndex(helper)+1)
@@ -355,7 +353,6 @@ func (self *BlockChain) CreateUpdateNewGovernorInstruction(
 	sendBackTokenAfterVoteFailIns, err := self.createSendBackTokenAfterVoteFailIns(
 		helper.GetBoardType(),
 		newBoardPaymentAddress,
-		shardID,
 	)
 	if err != nil {
 		return nil, err
@@ -389,68 +386,53 @@ func ListTxToListIns(listTx []metadata.Transaction, chain *BlockChain, shardID b
 	return listIns, nil
 }
 
-func (chain *BlockChain) neededNewGovernor(boardType common.BoardType) bool {
-	BestBeaconBlock := chain.BestState.Beacon.BestBlock
-	var endGovernorBlock uint64
-	if boardType == common.DCBBoard {
-		endGovernorBlock = chain.BestState.Beacon.StabilityInfo.DCBGovernor.EndBlock
-	} else {
-		endGovernorBlock = chain.BestState.Beacon.StabilityInfo.GOVGovernor.EndBlock
-	}
-	currentHeight := BestBeaconBlock.Header.Height + 1
-	Logger.log.Warn("Endblock", endGovernorBlock, currentHeight, "\n")
-	return endGovernorBlock <= currentHeight
+func (chain *BlockChain) neededNewGovernor(helper ConstitutionHelper) bool {
+	constitutionIndex := chain.GetConstitutionIndex(helper)
+	return constitutionIndex == ConstitutionPerBoard
 }
 
-func (self *BlockChain) generateVotingInstructionWOIns(shardID byte) ([][]string, error) {
+func (chain *BlockChain) neededNewConstitution(helper ConstitutionHelper) bool {
+	// todo: hyyyyyyyyyyyy
+	return true
+}
+
+func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper) ([][]string, error) {
 
 	// 	prevBlock := blockgen.chain.BestState[shardID].BestBlock
 	instructions := make([]frombeaconins.InstructionFromBeacon, 0)
 
-	//============================ VOTE BOARD
+	if self.neededNewConstitution(helper) {
+		//============================ VOTE PROPOSAL
+		// 	// Voting transaction
+		// 	// Check if it is the case we need to apply a new proposal
+		// 	// 1. newNW < lastNW * 0.9
+		// 	// 2. current block height == last Constitution start time + last Constitution execute duration
 
-	if self.neededNewGovernor(common.DCBBoard) {
-		updateGovernorInstruction, err := self.CreateUpdateNewGovernorInstruction(DCBConstitutionHelper{}, shardID)
+		// //Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+		// // step 2 Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+		updateProposalInstruction, err := self.createAcceptConstitutionAndPunishTxAndRewardSubmitter(helper)
 		if err != nil {
 			return nil, err
 		}
-		instructions = append(instructions, updateGovernorInstruction...)
-	}
-	if self.neededNewGovernor(common.GOVBoard) {
-		updateGovernorInstruction, err := self.CreateUpdateNewGovernorInstruction(GOVConstitutionHelper{}, shardID)
-		if err != nil {
-			return nil, err
+		instructions = append(instructions, updateProposalInstruction...)
+
+		//============================ VOTE BOARD
+		if self.neededNewGovernor(helper) {
+			updateGovernorInstruction, err := self.CreateUpdateNewGovernorInstruction(helper)
+			if err != nil {
+				return nil, err
+			}
+			instructions = append(instructions, updateGovernorInstruction...)
 		}
-		instructions = append(instructions, updateGovernorInstruction...)
 	}
-
-	//============================ VOTE PROPOSAL
-	// 	// Voting transaction
-	// 	// Check if it is the case we need to apply a new proposal
-	// 	// 1. newNW < lastNW * 0.9
-	// 	// 2. current block height == last Constitution start time + last Constitution execute duration
-
-	// //Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-	// // step 2 Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-
-	updateDCBProposalInstruction, err := self.createAcceptConstitutionAndPunishTxAndRewardSubmitter(DCBConstitutionHelper{})
-	if err != nil {
-		return nil, err
-	}
-	instructions = append(instructions, updateDCBProposalInstruction...)
-	updateGOVProposalInstruction, err := self.createAcceptConstitutionAndPunishTxAndRewardSubmitter(GOVConstitutionHelper{})
-	if err != nil {
-		return nil, err
-	}
-	instructions = append(instructions, updateGOVProposalInstruction...)
 
 	instructionsString := make([][]string, 0)
 	for _, instruction := range instructions {
-		instructionString, err := instruction.GetStringFormat()
+		newIns, err := instruction.GetStringFormat()
 		if err != nil {
 			return nil, err
 		}
-		instructionsString = append(instructionsString, instructionString)
+		instructionsString = append(instructionsString, newIns)
 	}
 	return instructionsString, nil
 }
