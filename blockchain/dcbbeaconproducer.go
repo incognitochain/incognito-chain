@@ -13,7 +13,7 @@ import (
 // buildPassThroughInstruction converts shard instruction to beacon instruction in order to update BeaconBestState later on in beaconprocess
 func buildPassThroughInstruction(receivedType int, contentStr string) ([][]string, error) {
 	metaType := strconv.Itoa(receivedType)
-	shardID := strconv.Itoa(metadata.BeaconOnly)
+	shardID := strconv.Itoa(component.BeaconOnly)
 	return [][]string{[]string{metaType, shardID, contentStr}}, nil
 }
 

@@ -14,4 +14,11 @@ const (
 
 	AcceptGOVProposalIns
 	AcceptGOVBoardIns
+	RewardDCBProposalSubmitterIns
+	RewardGOVProposalSubmitterIns
+)
+
+const (
+	AllShards  = -1
+	BeaconOnly = -2
 )

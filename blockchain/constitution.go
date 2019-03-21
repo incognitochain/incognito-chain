@@ -123,11 +123,11 @@ func (helper GOVConstitutionHelper) GetBoardType() common.BoardType {
 }
 
 func (helper DCBConstitutionHelper) NewRewardProposalSubmitterIns(chain *BlockChain, receiverAddress *privacy.PaymentAddress) (frombeaconins.InstructionFromBeacon, error) {
-	return frombeaconins.NewRewardProposalSubmitterIns(receiverAddress, common.RewardProposalSubmitter), nil
+	return frombeaconins.NewRewardProposalSubmitterIns(receiverAddress, common.RewardProposalSubmitter, common.DCBBoard), nil
 }
 
 func (helper GOVConstitutionHelper) NewRewardProposalSubmitterIns(chain *BlockChain, receiverAddress *privacy.PaymentAddress) (frombeaconins.InstructionFromBeacon, error) {
-	ins := frombeaconins.NewRewardProposalSubmitterIns(receiverAddress, common.RewardProposalSubmitter)
+	ins := frombeaconins.NewRewardProposalSubmitterIns(receiverAddress, common.RewardProposalSubmitter, common.GOVBoard)
 	return ins, nil
 }
 
