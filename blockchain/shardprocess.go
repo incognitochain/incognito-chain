@@ -139,7 +139,9 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 	blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.BestState.Shard[shardID].BestCrossShard)
 	expectedHeight, _ := blockchain.config.CrossShardPool[shardID].UpdatePool()
 	for fromShardID, height := range expectedHeight {
-		blockchain.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, shardID, "")
+		if height != 0 {
+			blockchain.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, shardID, "")
+		}
 	}
 
 	//========Store new  Shard block and new shard bestState
@@ -433,6 +435,11 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		for fromShard, crossTransactions := range block.Body.CrossTransactions {
 			toShardCrossShardBlocks, ok := toShardAllCrossShardBlock[fromShard]
 			if !ok {
+				heights := []uint64{}
+				for _, crossTransaction := range crossTransactions {
+					heights = append(heights, crossTransaction.BlockHeight)
+				}
+				blockchain.SyncBlkCrossShard(false, false, []common.Hash{}, heights, fromShard, shardID, "")
 				return NewBlockChainError(CrossShardBlockError, errors.New("Cross Shard Block From Shard "+strconv.Itoa(int(fromShard))+" Not Found in Pool"))
 			}
 			sort.SliceStable(toShardCrossShardBlocks[:], func(i, j int) bool {
