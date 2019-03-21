@@ -1,13 +1,16 @@
 package rpcserver
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"math/big"
+	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/constant-money/constant-chain/wallet"
@@ -342,12 +345,16 @@ func (rpcServer RpcServer) handleCreateRawTxWithUpdatingOracleBoard(params inter
 	oraclePubKeys := updatingOracleBoard["OraclePubKeys"].([]interface{})
 	assertedOraclePKs := [][]byte{}
 	for _, pk := range oraclePubKeys {
-		assertedOraclePKs = append(assertedOraclePKs, []byte(pk.(string)))
+		hexStrPk := pk.(string)
+		pkBytes, _ := hex.DecodeString(hexStrPk)
+		assertedOraclePKs = append(assertedOraclePKs, pkBytes)
 	}
 	signs := updatingOracleBoard["Signs"].(map[string]interface{})
 	assertedSigns := map[string][]byte{}
 	for k, s := range signs {
-		assertedSigns[k] = []byte(s.(string))
+		hexStrSign := s.(string)
+		signBytes, _ := hex.DecodeString(hexStrSign)
+		assertedSigns[k] = signBytes
 	}
 	metaType := metadata.UpdatingOracleBoardMeta
 	meta := metadata.NewUpdatingOracleBoard(
@@ -357,9 +364,8 @@ func (rpcServer RpcServer) handleCreateRawTxWithUpdatingOracleBoard(params inter
 		metaType,
 	)
 
-	fmt.Println("dudududududududududu: ", meta)
-
 	normalTx, err := rpcServer.buildRawTransaction(params, meta)
+	// rpcErr := err.(*RPCError)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -537,7 +543,66 @@ func (rpcServer RpcServer) handleCreateAndSendTxWithBuyGOVTokensRequest(params i
 	return result, nil
 }
 
+func (rpcServer RpcServer) handleGetCurrentOracleNetworkParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	stabilityInfo := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo
+	oracleNetwork := stabilityInfo.GOVConstitution.GOVParams.OracleNetwork
+	oracleNetworkResult := jsonresult.OracleNetworkResult{
+		WrongTimesAllowed:      oracleNetwork.WrongTimesAllowed,
+		Quorum:                 oracleNetwork.Quorum,
+		AcceptableErrorMargin:  oracleNetwork.AcceptableErrorMargin,
+		UpdateFrequency:        oracleNetwork.UpdateFrequency,
+		OracleRewardMultiplier: oracleNetwork.OracleRewardMultiplier,
+	}
+	if oracleNetwork != nil {
+		oraclePubKeys := oracleNetwork.OraclePubKeys
+		oracleNetworkResult.OraclePubKeys = make([]string, len(oraclePubKeys))
+		for idx, pkBytes := range oraclePubKeys {
+			oracleNetworkResult.OraclePubKeys[idx] = hex.EncodeToString(pkBytes)
+		}
+	}
+	return oracleNetworkResult, nil
+}
+
 func (rpcServer RpcServer) handleGetCurrentStabilityInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	stabilityInfo := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo
 	return stabilityInfo, nil
+}
+
+func (rpcServer RpcServer) handleSignUpdatingOracleBoardContent(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	action := int8(arrayParams[1].(float64))        // action
+	oraclePubKeys := arrayParams[2].([]interface{}) // OraclePubKeys
+	assertedOraclePKs := [][]byte{}
+	for _, pk := range oraclePubKeys {
+		hexStrPk := pk.(string)
+		pkBytes, _ := hex.DecodeString(hexStrPk)
+		assertedOraclePKs = append(assertedOraclePKs, pkBytes)
+	}
+	record := string(action)
+	for _, pk := range assertedOraclePKs {
+		record += string(pk)
+	}
+	record += common.DoubleHashH([]byte(strconv.Itoa(metadata.UpdatingOracleBoardMeta))).String()
+	hash := common.DoubleHashH([]byte(record))
+	hashContent := hash[:]
+
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	privKey := senderKey.KeySet.PrivateKey
+
+	sk := new(big.Int).SetBytes(privKey[:privacy.BigIntSize])
+	r := new(big.Int).SetBytes(privKey[privacy.BigIntSize:])
+	sigKey := new(privacy.SchnPrivKey)
+	sigKey.Set(sk, r)
+
+	// signing
+	signature, _ := sigKey.Sign(hashContent)
+
+	// convert signature to byte array
+	signatureBytes := signature.Bytes()
+	signStr := hex.EncodeToString(signatureBytes)
+	return signStr, nil
 }

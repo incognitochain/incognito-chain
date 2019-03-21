@@ -127,13 +127,11 @@ func (bsb *BestStateBeacon) processUpdatingOracleBoardInstruction(inst []string)
 
 	oraclePubKeys := bsb.StabilityInfo.GOVConstitution.GOVParams.OracleNetwork.OraclePubKeys
 	action := updatingOracleBoardMeta.Action
-	fmt.Println("ducducducduc: ", oraclePubKeys)
 	if action == metadata.Add {
 		bsb.StabilityInfo.GOVConstitution.GOVParams.OracleNetwork.OraclePubKeys = append(oraclePubKeys, updatingOracleBoardMeta.OraclePubKeys...)
 	} else if action == metadata.Remove {
 		bsb.StabilityInfo.GOVConstitution.GOVParams.OracleNetwork.OraclePubKeys = removeOraclePubKeys(updatingOracleBoardMeta.OraclePubKeys, oraclePubKeys)
 	}
-	fmt.Println("ducducducduc 1: ", oraclePubKeys)
 	return nil
 }
 
