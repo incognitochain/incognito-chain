@@ -375,51 +375,61 @@ func buildInstForUpdatingOracleBoardReq(
 		return nil, err
 	}
 	md := updatingOracleBoardAction.Meta
-	// govBoardPks := getGOVBoardPubKeys(beaconBestState)
-	// boardLen := len(govBoardPks)
-	// if boardLen == 0 {
-	// 	returnedInst := []string{
-	// 		strconv.Itoa(metadata.UpdatingOracleBoardMeta),
-	// 		strconv.Itoa(int(shardID)),
-	// 		"notAccepted",
-	// 		contentStr,
-	// 	}
-	// 	return [][]string{returnedInst}, nil
-	// }
+	govBoardPks := getGOVBoardPubKeys(beaconBestState)
+	boardLen := len(govBoardPks)
+	if boardLen == 0 {
+		returnedInst := []string{
+			strconv.Itoa(metadata.UpdatingOracleBoardMeta),
+			strconv.Itoa(int(shardID)),
+			"notAccepted",
+			contentStr,
+		}
+		return [][]string{returnedInst}, nil
+	}
 
 	// // verify signs
-	// metaBytes := md.Hash()[:]
-	// signs := md.Signs
-	// verifiedSignCount := 0
-	// for _, pubKey := range govBoardPks {
-	// 	sign, existed := signs[string(pubKey)]
-	// 	if !existed {
-	// 		continue
-	// 	}
-	// 	verKey := new(ecdsa.PublicKey)
-	// 	point := new(privacy.EllipticPoint)
-	// 	_ = point.Decompress(pubKey)
-	// 	verKey.X, verKey.Y = point.X, point.Y
-	// 	verKey.Curve = privacy.Curve
+	metaBytes := md.Hash()[:]
+	signs := md.Signs
+	verifiedSignCount := 0
+	for _, pubKey := range govBoardPks {
+		base64Pk := base64.StdEncoding.EncodeToString(pubKey)
+		sign, existed := signs[base64Pk]
+		if !existed {
+			continue
+		}
 
-	// 	// convert signature from byte array to ECDSASign
-	// 	r, s := common.FromByteArrayToECDSASig(sign)
+		verKey := new(privacy.SchnPubKey)
+		verKey.PK = new(privacy.EllipticPoint)
+		err = verKey.PK.Decompress(pubKey)
+		if err != nil {
+			continue
+		}
 
-	// 	// verify signature
-	// 	res := ecdsa.Verify(verKey, metaBytes, r, s)
-	// 	if res {
-	// 		verifiedSignCount += 1
-	// 	}
-	// }
-	// if verifiedSignCount < int(math.Floor(float64(boardLen/2)))+1 {
-	// 	returnedInst := []string{
-	// 		strconv.Itoa(metadata.UpdatingOracleBoardMeta),
-	// 		strconv.Itoa(int(shardID)),
-	// 		"notAccepted",
-	// 		contentStr,
-	// 	}
-	// 	return [][]string{returnedInst}, nil
-	// }
+		verKey.G = new(privacy.EllipticPoint)
+		verKey.G.Set(privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y)
+
+		verKey.H = new(privacy.EllipticPoint)
+		verKey.H.Set(privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y)
+
+		// convert signature from byte array to SchnorrSign
+		signature := new(privacy.SchnSignature)
+		signature.SetBytes(sign)
+
+		// verify signature
+		res := verKey.Verify(signature, metaBytes)
+		if res {
+			verifiedSignCount += 1
+		}
+	}
+	if verifiedSignCount < int(math.Floor(float64(boardLen/2)))+1 {
+		returnedInst := []string{
+			strconv.Itoa(metadata.UpdatingOracleBoardMeta),
+			strconv.Itoa(int(shardID)),
+			"notAccepted",
+			contentStr,
+		}
+		return [][]string{returnedInst}, nil
+	}
 	mdBytes, err := json.Marshal(md)
 	if err != nil {
 		return nil, err

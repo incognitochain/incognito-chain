@@ -1,9 +1,8 @@
 package mempool
 
 import (
-	"fmt"
-
 	"errors"
+	"fmt"
 
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/transaction"
