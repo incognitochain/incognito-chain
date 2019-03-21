@@ -155,7 +155,7 @@ func GetKeyVoteProposal(boardType common.BoardType, constitutionIndex uint32, vo
 }
 
 func GetKeySubmitProposal(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte) []byte {
-	key := GetKeyFromVariadic(submitProposalProposalPrefix, boardType.Bytes(), common.Uint32ToBytes(constitutionIndex), proposalTxID)
+	key := GetKeyFromVariadic(submitProposalPrefix, boardType.Bytes(), common.Uint32ToBytes(constitutionIndex), proposalTxID)
 	return key
 }
 
