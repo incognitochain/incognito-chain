@@ -11,9 +11,9 @@ const (
 
 	AcceptDCBProposalIns
 	AcceptDCBBoardIns
-
 	AcceptGOVProposalIns
 	AcceptGOVBoardIns
+
 	RewardDCBProposalSubmitterIns
 	RewardGOVProposalSubmitterIns
 )

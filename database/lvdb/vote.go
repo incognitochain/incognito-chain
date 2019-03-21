@@ -164,7 +164,7 @@ func (db *db) GetSubmitProposal(boardType common.BoardType, constitutionIndex ui
 	return value, nil
 }
 
-func (db *db) AddSubmitProposal(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte, submitter []byte) error {
+func (db *db) AddSubmitProposalDB(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte, submitter []byte) error {
 	key := GetKeySubmitProposal(boardType, constitutionIndex, proposalTxID) //privacy.NewPaymentAddressFromByte(submitter)
 	ok, err := db.HasValue(key)
 	if err != nil {

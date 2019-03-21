@@ -58,6 +58,7 @@ type ConstitutionHelper interface {
 
 func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 	helper ConstitutionHelper,
+	nextConstitutionIndex uint32,
 ) (
 	VoteTable map[common.Hash][]privacy.PaymentAddress,
 	CountVote map[common.Hash]uint32,
@@ -65,12 +66,12 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 ) {
 	VoteTable = make(map[common.Hash][]privacy.PaymentAddress)
 	CountVote = make(map[common.Hash]uint32)
-	NextConstitutionIndex := self.GetCurrentBoardIndex(helper)
+
 	db := self.config.DataBase
 	boardType := helper.GetBoardType()
 	begin := lvdb.GetKeyVoteProposal(boardType, 0, nil)
 	// +1 to search in that range
-	end := lvdb.GetKeyVoteProposal(boardType, 1+NextConstitutionIndex, nil)
+	end := lvdb.GetKeyVoteProposal(boardType, 1+nextConstitutionIndex, nil)
 
 	searchRange := util.Range{
 		Start: begin,
@@ -108,8 +109,9 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 	helper ConstitutionHelper,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
+	nextConstitutionIndex := self.GetCurrentBoardIndex(DCBConstitutionHelper{})
 	resIns := make([]frombeaconins.InstructionFromBeacon, 0)
-	VoteTable, CountVote, err := self.BuildVoteTableAndPunishTransaction(helper)
+	VoteTable, CountVote, err := self.BuildVoteTableAndPunishTransaction(helper, nextConstitutionIndex)
 	bestProposal := metadata.ProposalVote{
 		TxId:         common.Hash{},
 		NumberOfVote: 0,
@@ -133,7 +135,7 @@ func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 		}
 		resIns = append(resIns, rewardForProposalSubmitterIns)
 	}
-	shardID := common.GetShardIDFromLastByte(submitterPaymentAddress.Bytes()[privacy.PublicKeySize-1])
+	shardID := frombeaconins.GetShardIDFromPaymentAddressBytes(*submitterPaymentAddress)
 	acceptedProposalIns := helper.NewAcceptProposalIns(&bestProposal.TxId, VoteTable[bestProposal.TxId], shardID)
 	resIns = append(resIns, acceptedProposalIns)
 	boardType := helper.GetBoardType()
@@ -385,14 +387,14 @@ func ListTxToListIns(listTx []metadata.Transaction, chain *BlockChain, shardID b
 }
 
 func (chain *BlockChain) neededNewGovernor(boardType common.BoardType) bool {
-	BestBlock := chain.BestState.Beacon.BestBlock
+	BestBeaconBlock := chain.BestState.Beacon.BestBlock
 	var endGovernorBlock uint64
 	if boardType == common.DCBBoard {
 		endGovernorBlock = chain.BestState.Beacon.StabilityInfo.DCBGovernor.EndBlock
 	} else {
 		endGovernorBlock = chain.BestState.Beacon.StabilityInfo.GOVGovernor.EndBlock
 	}
-	currentHeight := BestBlock.Header.Height + 1
+	currentHeight := BestBeaconBlock.Header.Height + 1
 	Logger.log.Warn("Endblock", endGovernorBlock, currentHeight, "\n")
 	return endGovernorBlock <= currentHeight
 }
@@ -427,6 +429,7 @@ func (self *BlockChain) generateVotingInstructionWOIns(shardID byte) ([][]string
 
 	// //Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 	// // step 2 Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+
 	updateDCBProposalInstruction, err := self.createAcceptConstitutionAndPunishTxAndRewardSubmitter(DCBConstitutionHelper{})
 	if err != nil {
 		return nil, err

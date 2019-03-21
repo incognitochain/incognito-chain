@@ -20,8 +20,8 @@ func (submitProposalIns SubmitProposalIns) GetStringFormat() ([]string, error) {
 		return nil, err
 	}
 	return []string{
-		strconv.Itoa(component.VoteProposalIns),
-		strconv.Itoa(-1),
+		strconv.Itoa(component.SubmitProposalIns),
+		strconv.Itoa(component.BeaconOnly),
 		string(content),
 	}, nil
 }
