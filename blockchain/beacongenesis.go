@@ -134,7 +134,7 @@ func createGOVGenesisParamInst() []string {
 	govUpdateInst := &frombeaconins.UpdateGOVConstitutionIns{
 		SubmitProposalInfo: component.SubmitProposalInfo{
 			ExecuteDuration:   0,
-			Explanation:       "Genesis proposal",
+			Explanation:       "Genesis GOV proposal",
 			PaymentAddress:    govAddress,
 			ConstitutionIndex: 0,
 		},
@@ -243,7 +243,7 @@ func createDCBGenesisParamsInst() []string {
 	dcbUpdateInst := &frombeaconins.UpdateDCBConstitutionIns{
 		SubmitProposalInfo: component.SubmitProposalInfo{
 			ExecuteDuration:   0,
-			Explanation:       "Genesis proposal",
+			Explanation:       "Genesis DCB proposal",
 			PaymentAddress:    dcbAddress,
 			ConstitutionIndex: 0,
 		},

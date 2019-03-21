@@ -572,9 +572,15 @@ func (bc *BlockChain) processBeaconOnlyInstructions(block *BeaconBlock) error {
 				return err
 			}
 		case strconv.Itoa(component.UpdateDCBConstitutionIns):
-			return bc.processUpdateDCBConstitutionIns(inst)
+			err := bc.processUpdateDCBConstitutionIns(inst)
+			if err != nil {
+				return err
+			}
 		case strconv.Itoa(component.UpdateGOVConstitutionIns):
-			return bc.processUpdateGOVConstitutionIns(inst)
+			err := bc.processUpdateGOVConstitutionIns(inst)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
