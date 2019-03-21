@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"math"
 	"sort"
 	"strconv"
@@ -16,10 +15,11 @@ import (
 )
 
 type Evaluation struct {
-	Tx               *transaction.Tx
+	TxReqID          common.Hash
 	OracleFeederAddr *privacy.PaymentAddress
 	OracleFeed       *metadata.OracleFeed
 	Reward           uint64
+	TxFee            uint64
 }
 
 func sortEvalsByPrice(evals []*Evaluation, isDesc bool) []*Evaluation {
@@ -35,6 +35,45 @@ func sortEvalsByPrice(evals []*Evaluation, isDesc bool) []*Evaluation {
 type OracleFeedAction struct {
 	TxReqID common.Hash         `json:"txReqId"`
 	Meta    metadata.OracleFeed `json:"meta"`
+	TxFee   uint64              `json:"txFee"`
+}
+
+type UpdatingOracleBoardAction struct {
+	Meta metadata.UpdatingOracleBoard `json:"meta"`
+}
+
+func buildInstForOracleFeedReq(
+	shardID byte,
+	contentStr string,
+	beaconBestState *BestStateBeacon,
+) ([][]string, error) {
+	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		return [][]string{}, err
+	}
+	var oracleFeedAction OracleFeedAction
+	err = json.Unmarshal(contentBytes, &oracleFeedAction)
+	if err != nil {
+		return nil, err
+	}
+	md := oracleFeedAction.Meta
+	feederPubKey := md.FeederAddress.Pk
+	govParams := beaconBestState.StabilityInfo.GOVConstitution.GOVParams
+	oraclePubKeys := govParams.OracleNetwork.OraclePubKeys
+	instType := "notAccepted"
+	for _, oraclePubKey := range oraclePubKeys {
+		if bytes.Equal(oraclePubKey, feederPubKey) {
+			instType = "accepted"
+			break
+		}
+	}
+	returnedInst := []string{
+		strconv.Itoa(metadata.OracleFeedMeta),
+		strconv.Itoa(int(shardID)),
+		instType,
+		contentStr,
+	}
+	return [][]string{returnedInst}, nil
 }
 
 func (blockGen *BlkTmplGenerator) groupOracleFeedTxsByOracleType(
@@ -57,8 +96,15 @@ func (blockGen *BlkTmplGenerator) groupOracleFeedTxsByOracleType(
 			return nil, err
 		}
 		for _, inst := range block.Body.Instructions {
+			if len(inst) != 4 {
+				continue
+			}
 			metaTypeStr := inst[0]
-			contentStr := inst[1]
+			instType := inst[2]
+			if instType != "accepted" {
+				continue
+			}
+			contentStr := inst[3]
 			if metaTypeStr == strconv.Itoa(metadata.OracleFeedMeta) {
 				contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 				if err != nil {
@@ -99,80 +145,73 @@ func computeRewards(
 		if i < minPos || i > maxPos {
 			continue
 		}
-		basePayout := eval.Tx.GetTxFee()
+		basePayout := eval.TxFee
 		eval.Reward = basePayout + uint64(oracleRewardMultiplier)*uint64(math.Abs(delta-float64(2*(eval.OracleFeed.Price-selectedPrice)))/delta)
 		rewardedEvals = append(rewardedEvals, eval)
 	}
 	return selectedPrice, rewardedEvals
 }
 
-func getSenderAddress(tx *transaction.Tx) (*privacy.PaymentAddress, error) {
-	meta := tx.GetMetadata()
-	if meta == nil || meta.GetType() != metadata.OracleFeedMeta {
-		return nil, errors.New("Metadata from tx is not OracleFeedMeta type.")
-	}
-	oracleFeed, ok := meta.(*metadata.OracleFeed)
-	if !ok {
-		return nil, errors.New("Could not parse OracleFeedMeta metadata.")
-	}
-	return &oracleFeed.FeederAddress, nil
-}
-
-func refundOracleFeeders(txs []metadata.Transaction) []*Evaluation {
+func refundOracleFeeders(insts [][]string) ([]*Evaluation, error) {
 	evals := []*Evaluation{}
-	for _, tx := range txs {
-		normalTx, ok := tx.(*transaction.Tx)
-		if !ok {
-			continue
-		}
-		senderAddr, err := getSenderAddress(normalTx)
+	for _, inst := range insts {
+		contentStr := inst[3]
+		contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 		if err != nil {
-			continue
+			return evals, err
 		}
+		var oracleFeedAction OracleFeedAction
+		err = json.Unmarshal(contentBytes, &oracleFeedAction)
+		if err != nil {
+			return evals, err
+		}
+		md := oracleFeedAction.Meta
+		paidFee := oracleFeedAction.TxFee
 		eval := &Evaluation{
-			Tx:               normalTx,
-			OracleFeederAddr: senderAddr,
+			TxReqID:          oracleFeedAction.TxReqID,
+			OracleFeederAddr: &md.FeederAddress,
 			OracleFeed:       nil,
-			Reward:           normalTx.GetTxFee(),
+			Reward:           paidFee,
+			TxFee:            paidFee,
 		}
 		evals = append(evals, eval)
 	}
-	return evals
+	return evals, nil
 }
 
-// func (blockGen *BlkTmplGenerator) updateOracleValues(
-// 	newBlock *Block,
-// 	updatedValues map[string]uint64,
-// ) {
-// 	oracleValues := newBlock.Header.Oracle
-// 	for oracleType, value := range updatedValues {
-// 		oracleTypeBytes := []byte(oracleType)
-// 		if bytes.Equal(oracleTypeBytes, common.DCBTokenID[:]) {
-// 			oracleValues.DCBToken = value
-// 			continue
-// 		}
-// 		if bytes.Equal(oracleTypeBytes, common.GOVTokenID[:]) {
-// 			oracleValues.GOVToken = value
-// 			continue
-// 		}
-// 		if bytes.Equal(oracleTypeBytes, common.ConstantID[:]) {
-// 			oracleValues.Constant = value
-// 			continue
-// 		}
-// 		if bytes.Equal(oracleTypeBytes, common.ETHAssetID[:]) {
-// 			oracleValues.ETH = value
-// 			continue
-// 		}
-// 		if bytes.Equal(oracleTypeBytes, common.BTCAssetID[:]) {
-// 			oracleValues.BTC = value
-// 			continue
-// 		}
-// 		if bytes.Equal(oracleTypeBytes[0:8], common.BondTokenID[0:8]) {
-// 			oracleValues.Bonds[oracleType] = value
-// 			continue
-// 		}
-// 	}
-// }
+func updateOracleValues(
+	beaconBestState *BestStateBeacon,
+	updatedValues map[string]uint64,
+) {
+	oracleValues := &bestStateBeacon.StabilityInfo.Oracle
+	for oracleType, value := range updatedValues {
+		oracleTypeBytes := []byte(oracleType)
+		if bytes.Equal(oracleTypeBytes, common.DCBTokenID[:]) {
+			oracleValues.DCBToken = value
+			continue
+		}
+		if bytes.Equal(oracleTypeBytes, common.GOVTokenID[:]) {
+			oracleValues.GOVToken = value
+			continue
+		}
+		if bytes.Equal(oracleTypeBytes, common.ConstantID[:]) {
+			oracleValues.Constant = value
+			continue
+		}
+		if bytes.Equal(oracleTypeBytes, common.ETHAssetID[:]) {
+			oracleValues.ETH = value
+			continue
+		}
+		if bytes.Equal(oracleTypeBytes, common.BTCAssetID[:]) {
+			oracleValues.BTC = value
+			continue
+		}
+		if bytes.Equal(oracleTypeBytes[0:8], common.BondTokenID[0:8]) {
+			oracleValues.Bonds[oracleType] = value
+			continue
+		}
+	}
+}
 
 func (blockGen *BlkTmplGenerator) buildRewardAndRefundEvals(
 	beaconBestState *BestStateBeacon,
@@ -181,43 +220,115 @@ func (blockGen *BlkTmplGenerator) buildRewardAndRefundEvals(
 	stabilityInfo := beaconBestState.StabilityInfo
 	govParams := stabilityInfo.GOVConstitution.GOVParams
 	oracleNetwork := govParams.OracleNetwork
-	if beaconHeight == 0 || uint32(beaconHeight)%oracleNetwork.UpdateFrequency != 0 {
+	if beaconHeight == 0 || oracleNetwork == nil || uint32(beaconHeight)%oracleNetwork.UpdateFrequency != 0 {
 		return []*Evaluation{}, map[string]uint64{}, nil
 	}
-	_, err := blockGen.groupOracleFeedTxsByOracleType(beaconBestState, oracleNetwork.UpdateFrequency)
+	instsByOracleType, err := blockGen.groupOracleFeedTxsByOracleType(beaconBestState, oracleNetwork.UpdateFrequency)
 	if err != nil {
 		return nil, nil, err
 	}
 	rewardAndRefundEvals := []*Evaluation{}
 	updatedOracleValues := map[string]uint64{}
+	for oracleType, insts := range instsByOracleType {
+		instsLen := len(insts)
+		if instsLen < int(oracleNetwork.Quorum) {
+			refundEvals, err := refundOracleFeeders(insts)
+			if err != nil {
+				return nil, nil, err
+			}
+			rewardAndRefundEvals = append(rewardAndRefundEvals, refundEvals...)
+			continue
+		}
+
+		evals := []*Evaluation{}
+		for _, inst := range insts {
+			contentStr := inst[3]
+			contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+			if err != nil {
+				return evals, updatedOracleValues, err
+			}
+			var oracleFeedAction OracleFeedAction
+			err = json.Unmarshal(contentBytes, &oracleFeedAction)
+			if err != nil {
+				return evals, updatedOracleValues, err
+			}
+			md := oracleFeedAction.Meta
+			paidFee := oracleFeedAction.TxFee
+			eval := &Evaluation{
+				TxReqID:          oracleFeedAction.TxReqID,
+				OracleFeed:       &md,
+				OracleFeederAddr: &md.FeederAddress,
+				TxFee:            paidFee,
+			}
+			evals = append(evals, eval)
+		}
+		selectedPrice, rewardedEvals := computeRewards(
+			evals,
+			oracleNetwork.OracleRewardMultiplier,
+		)
+		updatedOracleValues[oracleType] = selectedPrice
+		rewardAndRefundEvals = append(rewardAndRefundEvals, rewardedEvals...)
+	}
+
 	// update oracle values in block header
 	// update(header.Oracle, updatedOracleValues)
 	return rewardAndRefundEvals, updatedOracleValues, nil
 }
 
-func (blockGen *BlkTmplGenerator) buildOracleRewardTxs(
+func (blockGen *BlkTmplGenerator) buildOracleRewardInstructions(
 	beaconBestState *BestStateBeacon,
-	privatekey *privacy.SpendingKey,
-) ([]metadata.Transaction, uint64, map[string]uint64, error) {
-	// bestBlock := beaconBestState.BestBlock
+) ([][]string, error) {
 	evals, updatedOracleValues, err := blockGen.buildRewardAndRefundEvals(beaconBestState)
 	if err != nil {
-		return []metadata.Transaction{}, 0, map[string]uint64{}, err
+		return nil, err
+	}
+	if len(evals) == 0 {
+		return [][]string{}, nil
 	}
 
 	totalRewards := uint64(0)
-	oracleRewardTxs := []metadata.Transaction{}
+	instructions := [][]string{}
 	for _, eval := range evals {
-		oracleReward := metadata.NewOracleReward(*eval.Tx.Hash(), metadata.OracleRewardMeta)
-		oracleRewardTx := new(transaction.Tx)
-		err := oracleRewardTx.InitTxSalary(eval.Reward, eval.OracleFeederAddr, privatekey, blockGen.chain.GetDatabase(), oracleReward)
+		feederPk := eval.OracleFeederAddr.Pk[:]
+		lastByte := feederPk[len(feederPk)-1]
+		shardID := common.GetShardIDFromLastByte(lastByte)
+		evalBytes, err := json.Marshal(eval)
 		if err != nil {
-			return []metadata.Transaction{}, 0, map[string]uint64{}, err
+			return nil, err
 		}
-		oracleRewardTxs = append(oracleRewardTxs, oracleRewardTx)
+		inst := []string{
+			strconv.Itoa(metadata.OracleRewardMeta),
+			strconv.Itoa(int(shardID)),
+			"accepted",
+			string(evalBytes),
+		}
+		instructions = append(instructions, inst)
 		totalRewards += eval.Reward
 	}
-	return oracleRewardTxs, totalRewards, updatedOracleValues, nil
+	// TODO: move update best state beacon code to Update function in beaconprocess.go
+	if bestStateBeacon.StabilityInfo.SalaryFund < totalRewards {
+		bestStateBeacon.StabilityInfo.SalaryFund = 0
+	} else {
+		bestStateBeacon.StabilityInfo.SalaryFund -= totalRewards
+	}
+	updateOracleValues(beaconBestState, updatedOracleValues)
+	return instructions, nil
+}
+
+func (blockGen *BlkTmplGenerator) buildOracleRewardTxs(
+	evalStr string,
+	privatekey *privacy.SpendingKey,
+) ([]metadata.Transaction, error) {
+	var eval Evaluation
+	err := json.Unmarshal([]byte(evalStr), &eval)
+	if err != nil {
+		return nil, err
+	}
+
+	oracleReward := metadata.NewOracleReward(eval.TxReqID, metadata.OracleRewardMeta)
+	oracleRewardTx := new(transaction.Tx)
+	err = oracleRewardTx.InitTxSalary(eval.Reward, eval.OracleFeederAddr, privatekey, blockGen.chain.GetDatabase(), oracleReward)
+	return []metadata.Transaction{oracleRewardTx}, err
 }
 
 func removeOraclePubKeys(
@@ -238,4 +349,97 @@ func removeOraclePubKeys(
 		}
 	}
 	return pubKeys
+}
+
+func getGOVBoardPubKeys(beaconBestState *BestStateBeacon) [][]byte {
+	govBoardAddresses := beaconBestState.StabilityInfo.GOVGovernor.GovernorInfo.BoardPaymentAddress
+	pks := [][]byte{}
+	for _, addr := range govBoardAddresses {
+		pks = append(pks, addr.Pk[:])
+	}
+	return pks
+}
+
+func buildInstForUpdatingOracleBoardReq(
+	shardID byte,
+	contentStr string,
+	beaconBestState *BestStateBeacon,
+) ([][]string, error) {
+	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		return [][]string{}, err
+	}
+	var updatingOracleBoardAction UpdatingOracleBoardAction
+	err = json.Unmarshal(contentBytes, &updatingOracleBoardAction)
+	if err != nil {
+		return nil, err
+	}
+	md := updatingOracleBoardAction.Meta
+	govBoardPks := getGOVBoardPubKeys(beaconBestState)
+	boardLen := len(govBoardPks)
+	if boardLen == 0 {
+		returnedInst := []string{
+			strconv.Itoa(metadata.UpdatingOracleBoardMeta),
+			strconv.Itoa(int(shardID)),
+			"notAccepted",
+			contentStr,
+		}
+		return [][]string{returnedInst}, nil
+	}
+
+	// // verify signs
+	metaBytes := md.Hash()[:]
+	signs := md.Signs
+	verifiedSignCount := 0
+	for _, pubKey := range govBoardPks {
+		base64Pk := base64.StdEncoding.EncodeToString(pubKey)
+		sign, existed := signs[base64Pk]
+		if !existed {
+			continue
+		}
+
+		verKey := new(privacy.SchnPubKey)
+		verKey.PK = new(privacy.EllipticPoint)
+		err = verKey.PK.Decompress(pubKey)
+		if err != nil {
+			continue
+		}
+
+		verKey.G = new(privacy.EllipticPoint)
+		verKey.G.Set(privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y)
+
+		verKey.H = new(privacy.EllipticPoint)
+		verKey.H.Set(privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y)
+
+		// convert signature from byte array to SchnorrSign
+		signature := new(privacy.SchnSignature)
+		signature.SetBytes(sign)
+
+		// verify signature
+		res := verKey.Verify(signature, metaBytes)
+		if res {
+			verifiedSignCount += 1
+		}
+	}
+	if verifiedSignCount < int(math.Floor(float64(boardLen/2)))+1 {
+		returnedInst := []string{
+			strconv.Itoa(metadata.UpdatingOracleBoardMeta),
+			strconv.Itoa(int(shardID)),
+			"notAccepted",
+			contentStr,
+		}
+		return [][]string{returnedInst}, nil
+	}
+	mdBytes, err := json.Marshal(md)
+	if err != nil {
+		return nil, err
+	}
+
+	returnedInst := []string{
+		strconv.Itoa(metadata.UpdatingOracleBoardMeta),
+		strconv.Itoa(int(shardID)),
+		"accepted",
+		string(mdBytes),
+	}
+	return [][]string{returnedInst}, nil
 }
