@@ -50,11 +50,6 @@ const (
 	ShardBlockSalaryResponseMeta
 
 	//Voting
-	NewDCBConstitutionIns
-	NewGOVConstitutionIns
-	UpdateDCBConstitutionIns
-	UpdateGOVConstitutionIns
-
 	SubmitDCBProposalMeta
 	VoteDCBBoardMeta
 	SubmitGOVProposalMeta
@@ -64,8 +59,6 @@ const (
 	RewardGOVProposalSubmitterMeta
 	ShareRewardOldDCBBoardMeta
 	ShareRewardOldGOVBoardMeta
-	PunishDCBDecryptMeta
-	PunishGOVDecryptMeta
 	SendBackTokenVoteBoardFailMeta
 	DCBVoteProposalMeta
 	GOVVoteProposalMeta
@@ -95,7 +88,3 @@ const (
 const ()
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
-const (
-	AllShards  = -1
-	BeaconOnly = -2
-)

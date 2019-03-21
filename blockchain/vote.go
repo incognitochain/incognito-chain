@@ -418,14 +418,6 @@ func (self *BlockChain) generateVotingInstructionWOIns(shardID byte) ([][]string
 		}
 		instructions = append(instructions, updateGovernorInstruction...)
 	}
-	instructionsString := make([][]string, 0)
-	for _, instruction := range instructions {
-		instructionString, err := instruction.GetStringFormat()
-		if err != nil {
-			return nil, err
-		}
-		instructionsString = append(instructionsString, instructionString)
-	}
 
 	//============================ VOTE PROPOSAL
 	// 	// Voting transaction
@@ -446,6 +438,14 @@ func (self *BlockChain) generateVotingInstructionWOIns(shardID byte) ([][]string
 	}
 	instructions = append(instructions, updateGOVProposalInstruction...)
 
+	instructionsString := make([][]string, 0)
+	for _, instruction := range instructions {
+		instructionString, err := instruction.GetStringFormat()
+		if err != nil {
+			return nil, err
+		}
+		instructionsString = append(instructionsString, instructionString)
+	}
 	return instructionsString, nil
 }
 

@@ -2,6 +2,7 @@ package fromshardins
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/privacy"
@@ -26,8 +27,18 @@ func NewNewDCBConstitutionInsFromStr(inst string) (*NewDCBConstitutionIns, error
 	return newDCBConstitutionIns, nil
 }
 
-func (NewDCBConstitutionIns) GetStringFormat() ([]string, error) {
-	panic("implement me")
+func (newDCBConstitutionIns NewDCBConstitutionIns) GetStringFormat() ([]string, error) {
+	content, err := json.Marshal(newDCBConstitutionIns)
+	if err != nil {
+		return nil, err
+	}
+	shardID := component.BeaconOnly
+	metadataType := component.NewDCBConstitutionIns
+	return []string{
+		strconv.Itoa(metadataType),
+		strconv.Itoa(int(shardID)),
+		string(content),
+	}, nil
 }
 
 type NewGOVConstitutionIns struct {
@@ -49,6 +60,16 @@ func NewNewGOVConstitutionInsFromStr(inst string) (*NewGOVConstitutionIns, error
 	return newGOVConstitutionIns, nil
 }
 
-func (NewGOVConstitutionIns) GetStringFormat() ([]string, error) {
-	panic("implement me")
+func (newGOVConstitutionIns NewGOVConstitutionIns) GetStringFormat() ([]string, error) {
+	content, err := json.Marshal(newGOVConstitutionIns)
+	if err != nil {
+		return nil, err
+	}
+	shardID := component.BeaconOnly
+	metadataType := component.NewGOVConstitutionIns
+	return []string{
+		strconv.Itoa(metadataType),
+		strconv.Itoa(int(shardID)),
+		string(content),
+	}, nil
 }
