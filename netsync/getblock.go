@@ -1,7 +1,6 @@
 package netsync
 
 import (
-	"fmt"
 	"sort"
 
 	"github.com/constant-money/constant-chain/blockchain"
@@ -47,7 +46,7 @@ func (netSync *NetSync) GetBlkBeaconByHashAndSend(peerID libp2p.ID, blkHashes []
 }
 
 func (netSync *NetSync) GetBlkShardByHeightAndSend(peerID libp2p.ID, fromPool bool, blkType byte, specificHeight bool, shardID byte, blkHeights []uint64, crossShardID byte) {
-	fmt.Println("GETCROSS: ", fromPool, blkType, specificHeight, shardID, crossShardID, blkHeights)
+	// fmt.Println("GETCROSS: ", fromPool, blkType, specificHeight, shardID, crossShardID, blkHeights)
 	if !specificHeight {
 		if len(blkHeights) != 2 || blkHeights[1] < blkHeights[0] {
 			return
@@ -114,7 +113,7 @@ func (netSync *NetSync) GetBlkShardByHeightAndSend(peerID libp2p.ID, fromPool bo
 		}
 
 		err = netSync.config.Server.PushMessageToPeer(blkMsg, peerID)
-		fmt.Println("CROSS:", blkHeights, err)
+		// fmt.Println("CROSS:", blkHeights, err)
 		if err != nil {
 			Logger.log.Error(err)
 		}
@@ -188,7 +187,7 @@ func (netSync *NetSync) CreateBlkShardMsgByType(block *blockchain.ShardBlock, bl
 			return nil, err
 		}
 
-		fmt.Println("CROSS: ", block.Header.Height, blkToSend, crossShardID)
+		// fmt.Println("CROSS: ", block.Header.Height, blkToSend, crossShardID)
 		blkMsg, err = wire.MakeEmptyMessage(wire.CmdCrossShard)
 		if err != nil {
 			Logger.log.Error(err)
