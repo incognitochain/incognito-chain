@@ -160,6 +160,7 @@ const (
 	GetBondTypes                           = "getbondtypes"
 	GetCurrentSellingBondTypes             = "getcurrentsellingbondtypes"
 	GetCurrentStabilityInfo                = "getcurrentstabilityinfo"
+	GetCurrentOracleNetworkParams          = "getcurrentoraclenetworkparams"
 	CreateAndSendTxWithBuyBackRequest      = "createandsendtxwithbuybackrequest"
 	CreateAndSendTxWithBuySellRequest      = "createandsendtxwithbuysellrequest"
 	CreateAndSendTxWithOracleFeed          = "createandsendtxwithoraclefeed"
