@@ -10,6 +10,7 @@ import (
 
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
 	"github.com/constant-money/constant-chain/transaction"
 )
@@ -447,5 +448,96 @@ func (rpcServer RpcServer) handleGetBlockHeader(params interface{}, closeChan <-
 		return nil, NewRPCError(ErrUnexpected, errors.New("wrong request format"))
 	}
 
+	return result, nil
+}
+
+//This function return the result of cross shard block of a specific block in shard
+func (rpcServer RpcServer) handleGetCrossShardBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	// Logger.log.Info(arrayParams)
+	log.Printf("arrayParams: %+v", arrayParams)
+	if arrayParams == nil || len(arrayParams) != 2 {
+		return nil, NewRPCError(ErrUnexpected, errors.New("wrong request format"))
+	}
+	// #param1: shardID
+	// #param2: shard block height
+	shardID := int(arrayParams[0].(float64))
+	blockHeight := uint64(arrayParams[1].(float64))
+	shardBlock, err := rpcServer.config.BlockChain.GetShardBlockByHeight(blockHeight, byte(shardID))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	result := jsonresult.CrossShardDataResult{HasCrossShard: false}
+	flag := false
+	for _, tx := range shardBlock.Body.Transactions {
+		if tx.GetType() == common.TxCustomTokenType {
+			customTokenTx := tx.(*transaction.TxCustomToken)
+			if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
+				if !flag {
+					flag = true //has cross shard block
+				}
+				crossShardCSTokenResult := jsonresult.CrossShardCSTokenResult{
+					Name:      customTokenTx.TxTokenData.PropertyName,
+					Symbol:    customTokenTx.TxTokenData.PropertySymbol,
+					TokenID:   customTokenTx.TxTokenData.PropertyID.String(),
+					Amount:    customTokenTx.TxTokenData.Amount,
+					IsPrivacy: false,
+				}
+				crossShardCSTokenBalanceResultList := []jsonresult.CrossShardCSTokenBalanceResult{}
+				for _, vout := range customTokenTx.TxTokenData.Vouts {
+					crossShardCSTokenBalanceResult := jsonresult.CrossShardCSTokenBalanceResult{
+						PaymentAddress: vout.PaymentAddress.String(),
+						Value:          vout.Value,
+					}
+					crossShardCSTokenBalanceResultList = append(crossShardCSTokenBalanceResultList, crossShardCSTokenBalanceResult)
+				}
+				result.CrossShardCSTokenResultList = append(result.CrossShardCSTokenResultList, crossShardCSTokenResult)
+			}
+		}
+	}
+	for _, crossTransactions := range shardBlock.Body.CrossTransactions {
+		if !flag {
+			flag = true //has cross shard block
+		}
+		for _, crossTransaction := range crossTransactions {
+			for _, outputCoin := range crossTransaction.OutputCoin {
+				pubkey := outputCoin.CoinDetails.PublicKey.Compress()
+				pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
+				if outputCoin.CoinDetailsEncrypted == nil {
+					crossShardConstantResult := jsonresult.CrossShardConstantResult{
+						PublicKey: pubkeyStr,
+						Value:     outputCoin.CoinDetails.Value,
+					}
+					result.CrossShardConstantResultList = append(result.CrossShardConstantResultList, crossShardConstantResult)
+				} else {
+					crossShardConstantPrivacyResult := jsonresult.CrossShardConstantPrivacyResult{
+						PublicKey: pubkeyStr,
+					}
+					result.CrossShardConstantPrivacyResultList = append(result.CrossShardConstantPrivacyResultList, crossShardConstantPrivacyResult)
+				}
+			}
+			for _, tokenPrivacyData := range crossTransaction.TokenPrivacyData {
+				crossShardCSTokenResult := jsonresult.CrossShardCSTokenResult{
+					Name:      tokenPrivacyData.PropertyName,
+					Symbol:    tokenPrivacyData.PropertySymbol,
+					TokenID:   tokenPrivacyData.PropertyID.String(),
+					Amount:    tokenPrivacyData.Amount,
+					IsPrivacy: true,
+				}
+				for _, outputCoin := range tokenPrivacyData.OutputCoin {
+					pubkey := outputCoin.CoinDetails.PublicKey.Compress()
+					pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
+					crossShardPrivacyCSTokenResult := jsonresult.CrossShardPrivacyCSTokenResult{
+						PublicKey: pubkeyStr,
+					}
+					crossShardCSTokenResult.CrossShardPrivacyCSTokenResultList = append(crossShardCSTokenResult.CrossShardPrivacyCSTokenResultList, crossShardPrivacyCSTokenResult)
+				}
+				result.CrossShardCSTokenResultList = append(result.CrossShardCSTokenResultList, crossShardCSTokenResult)
+			}
+		}
+	}
+	if flag {
+		result.HasCrossShard = flag
+	}
 	return result, nil
 }
