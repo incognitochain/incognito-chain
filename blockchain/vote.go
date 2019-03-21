@@ -126,8 +126,11 @@ func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 	if bestProposal.NumberOfVote == 0 {
 		return resIns, nil
 	}
-
-	submitterPaymentAddress := privacy.NewPaymentAddressFromByte(lvdb.GetKeySubmitProposal(helper.GetBoardType(), helper.GetConstitutionInfo(self).ConstitutionIndex, bestProposal.TxId.GetBytes()))
+	byteTemp, err0 := db.GetSubmitProposalDB(helper.GetBoardType(), helper.GetConstitutionInfo(self).ConstitutionIndex, bestProposal.TxId.GetBytes())
+	if err0 != nil {
+		return resIns, nil
+	}
+	submitterPaymentAddress := privacy.NewPaymentAddressFromByte(byteTemp)
 	if submitterPaymentAddress != nil {
 		rewardForProposalSubmitterIns, err := helper.NewRewardProposalSubmitterIns(self, submitterPaymentAddress)
 		if err != nil {

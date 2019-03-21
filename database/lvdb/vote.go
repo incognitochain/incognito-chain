@@ -155,7 +155,7 @@ func (db *db) AddVoteProposalDB(boardType common.BoardType, constitutionIndex ui
 	return nil
 }
 
-func (db *db) GetSubmitProposal(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte) ([]byte, error) {
+func (db *db) GetSubmitProposalDB(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte) ([]byte, error) {
 	key := GetKeySubmitProposal(boardType, constitutionIndex, proposalTxID)
 	value, err := db.Get(key)
 	if err != nil {

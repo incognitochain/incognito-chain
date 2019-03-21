@@ -204,7 +204,7 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 			err = blkTmpGen.chain.AddVoteBoard(inst[2])
 
 		case component.SubmitProposalIns:
-
+			err = blkTmpGen.chain.AddSubmitProposal(inst[2])
 		case component.VoteProposalIns:
 			err = blkTmpGen.chain.AddVoteProposal(inst[2])
 		default:
@@ -376,9 +376,8 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 						return nil, err1
 					}
 					resTxs = append(resTxs, txs)
-				case metadata.ShareRewardOldDCBBoardMeta, metadata.ShareRewardOldGOVBoardMeta:
-					Logger.log.Info(metadata.ShareRewardOldDCBBoardMeta, metadata.ShareRewardOldGOVBoardMeta, "\n")
-					shareRewardOldBoard := frombeaconins.TxShareRewardOldBoardMetadataIns{}
+				case component.ShareRewardOldDCBBoardIns, component.ShareRewardOldGOVBoardIns:
+					shareRewardOldBoard := frombeaconins.ShareRewardOldBoardIns{}
 					err := json.Unmarshal([]byte(l[2]), &shareRewardOldBoard)
 					if err != nil {
 						return nil, err
@@ -489,8 +488,6 @@ func (chain *BlockChain) AddSubmitProposal(inst string) error {
 	}
 	boardType := newInst.BoardType
 	submitter := newInst.SubmitProposal.SubmitterPayment
-	// governor := chain.GetGovernor(boardType)
-	// boardIndex := governor.GetBoardIndex() + 1
 	err1 := chain.GetDatabase().AddSubmitProposalDB(
 		boardType,
 		newInst.SubmitProposal.ConstitutionIndex,
