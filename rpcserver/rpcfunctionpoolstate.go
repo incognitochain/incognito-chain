@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"errors"
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/mempool"
 )

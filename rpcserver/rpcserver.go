@@ -75,7 +75,10 @@ type RpcServerConfig struct {
 		PushMessageToPeer(message wire.Message, id peer2.ID) error
 	}
 
-	TxMemPool     *mempool.TxPool
+	TxMemPool         *mempool.TxPool
+	ShardToBeaconPool *mempool.ShardToBeaconPool
+	CrossShardPool    *mempool.CrossShardPool_v2
+
 	RPCMaxClients int
 	RPCQuirks     bool
 
