@@ -1,6 +1,7 @@
 package rpcserver
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 
@@ -279,21 +280,22 @@ func (rpcServer RpcServer) handleCreateRawTxWithOracleFeed(params interface{}, c
 	// Req param #4: oracle feed
 	oracleFeed := arrayParams[4].(map[string]interface{})
 
-	assetTypeBytes := []byte(oracleFeed["AssetType"].(string))
-	assetType := common.Hash{}
-	copy(assetType[:], assetTypeBytes)
+	assetTypeStr := oracleFeed["AssetType"].(string)
+	assetType, _ := common.Hash{}.NewHashFromStr(assetTypeStr)
+
 	price := uint64(oracleFeed["Price"].(float64))
 	metaType := metadata.OracleFeedMeta
 
 	meta := metadata.NewOracleFeed(
-		assetType,
+		*assetType,
 		price,
 		metaType,
 		feederAddr,
 	)
 
 	normalTx, err := rpcServer.buildRawTransaction(params, meta)
-	if err != nil {
+	rpcErr := err.(*RPCError)
+	if rpcErr != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -340,12 +342,16 @@ func (rpcServer RpcServer) handleCreateRawTxWithUpdatingOracleBoard(params inter
 	oraclePubKeys := updatingOracleBoard["OraclePubKeys"].([]interface{})
 	assertedOraclePKs := [][]byte{}
 	for _, pk := range oraclePubKeys {
-		assertedOraclePKs = append(assertedOraclePKs, []byte(pk.(string)))
+		base64Pk := pk.(string)
+		pkBytes, _ := base64.StdEncoding.DecodeString(base64Pk)
+		assertedOraclePKs = append(assertedOraclePKs, pkBytes)
 	}
 	signs := updatingOracleBoard["Signs"].(map[string]interface{})
 	assertedSigns := map[string][]byte{}
 	for k, s := range signs {
-		assertedSigns[k] = []byte(s.(string))
+		base64Sign := s.(string)
+		pkBytes, _ := base64.StdEncoding.DecodeString(base64Sign)
+		assertedSigns[k] = pkBytes
 	}
 	metaType := metadata.UpdatingOracleBoardMeta
 	meta := metadata.NewUpdatingOracleBoard(
@@ -356,6 +362,7 @@ func (rpcServer RpcServer) handleCreateRawTxWithUpdatingOracleBoard(params inter
 	)
 
 	normalTx, err := rpcServer.buildRawTransaction(params, meta)
+	// rpcErr := err.(*RPCError)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}

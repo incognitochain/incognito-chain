@@ -104,6 +104,32 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 
 	case strconv.Itoa(metadata.ShardBlockSalaryRequestMeta):
 		return bsb.processSalaryUpdateInstruction(inst)
+
+	case strconv.Itoa(metadata.UpdatingOracleBoardMeta):
+		return bsb.processUpdatingOracleBoardInstruction(inst)
+	}
+	return nil
+}
+
+func (bsb *BestStateBeacon) processUpdatingOracleBoardInstruction(inst []string) error {
+	instType := inst[2]
+	if instType != "accepted" {
+		return nil
+	}
+	// accepted
+	updatingOracleBoardMetaStr := inst[3]
+	var updatingOracleBoardMeta metadata.UpdatingOracleBoard
+	err := json.Unmarshal([]byte(updatingOracleBoardMetaStr), &updatingOracleBoardMeta)
+	if err != nil {
+		return err
+	}
+
+	oraclePubKeys := bsb.StabilityInfo.GOVConstitution.GOVParams.OracleNetwork.OraclePubKeys
+	action := updatingOracleBoardMeta.Action
+	if action == metadata.Add {
+		bsb.StabilityInfo.GOVConstitution.GOVParams.OracleNetwork.OraclePubKeys = append(oraclePubKeys, updatingOracleBoardMeta.OraclePubKeys...)
+	} else if action == metadata.Remove {
+		bsb.StabilityInfo.GOVConstitution.GOVParams.OracleNetwork.OraclePubKeys = removeOraclePubKeys(updatingOracleBoardMeta.OraclePubKeys, oraclePubKeys)
 	}
 	return nil
 }
@@ -123,8 +149,12 @@ func (bsb *BestStateBeacon) processSalaryUpdateInstruction(inst []string) error 
 		return nil
 	}
 	// accepted
-	stabilityInfo.SalaryFund -= shardBlockSalaryInfo.ShardBlockSalary
 	stabilityInfo.SalaryFund += shardBlockSalaryInfo.ShardBlockFee
+	if shardBlockSalaryInfo.ShardBlockSalary > stabilityInfo.SalaryFund {
+		stabilityInfo.SalaryFund = 0
+	} else {
+		stabilityInfo.SalaryFund -= shardBlockSalaryInfo.ShardBlockSalary
+	}
 	return nil
 }
 

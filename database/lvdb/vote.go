@@ -155,6 +155,55 @@ func (db *db) AddVoteProposalDB(boardType common.BoardType, constitutionIndex ui
 	return nil
 }
 
+func (db *db) GetSubmitProposal(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte) ([]byte, error) {
+	key := GetKeySubmitProposal(boardType, constitutionIndex, proposalTxID)
+	value, err := db.Get(key)
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
+func (db *db) AddSubmitProposal(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte, submitter []byte) error {
+	key := GetKeySubmitProposal(boardType, constitutionIndex, proposalTxID) //privacy.NewPaymentAddressFromByte(submitter)
+	ok, err := db.HasValue(key)
+	if err != nil {
+		return err
+	}
+	if ok {
+		return errors.Errorf("duplicate proposal txid")
+	}
+	if err != nil {
+		return err
+	}
+	err = db.Put(key, submitter)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *db) AddListVoterOfProposalDB(boardType common.BoardType, constitutionIndex uint32, voterPayment []byte, proposalTxID []byte) error {
+	key := GetKeyListVoterOfProposal(boardType, constitutionIndex, proposalTxID, privacy.NewPaymentAddressFromByte(voterPayment))
+	ok, err := db.HasValue(key)
+	if err != nil {
+		return err
+	}
+	if ok {
+		return errors.Errorf("duplicate vote")
+	}
+	if err != nil {
+		return err
+	}
+	err = db.Put(key, []byte{0})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *db) GetEncryptFlag(boardType common.BoardType) (byte, error) {
 	key := GetKeyEncryptFlag(boardType)
 	value, err := db.Get(key)
