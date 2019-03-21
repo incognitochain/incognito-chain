@@ -1,7 +1,7 @@
 package rpcserver
 
 import (
-	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 
@@ -342,16 +342,16 @@ func (rpcServer RpcServer) handleCreateRawTxWithUpdatingOracleBoard(params inter
 	oraclePubKeys := updatingOracleBoard["OraclePubKeys"].([]interface{})
 	assertedOraclePKs := [][]byte{}
 	for _, pk := range oraclePubKeys {
-		base64Pk := pk.(string)
-		pkBytes, _ := base64.StdEncoding.DecodeString(base64Pk)
+		hexStrPk := pk.(string)
+		pkBytes, _ := hex.DecodeString(hexStrPk)
 		assertedOraclePKs = append(assertedOraclePKs, pkBytes)
 	}
 	signs := updatingOracleBoard["Signs"].(map[string]interface{})
 	assertedSigns := map[string][]byte{}
 	for k, s := range signs {
-		base64Sign := s.(string)
-		pkBytes, _ := base64.StdEncoding.DecodeString(base64Sign)
-		assertedSigns[k] = pkBytes
+		hexStrSign := s.(string)
+		signBytes, _ := hex.DecodeString(hexStrSign)
+		assertedSigns[k] = signBytes
 	}
 	metaType := metadata.UpdatingOracleBoardMeta
 	meta := metadata.NewUpdatingOracleBoard(
@@ -538,6 +538,26 @@ func (rpcServer RpcServer) handleCreateAndSendTxWithBuyGOVTokensRequest(params i
 		TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
 	}
 	return result, nil
+}
+
+func (rpcServer RpcServer) handleGetCurrentOracleNetworkParams(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	stabilityInfo := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo
+	oracleNetwork := stabilityInfo.GOVConstitution.GOVParams.OracleNetwork
+	oracleNetworkResult := jsonresult.OracleNetworkResult{
+		WrongTimesAllowed:      oracleNetwork.WrongTimesAllowed,
+		Quorum:                 oracleNetwork.Quorum,
+		AcceptableErrorMargin:  oracleNetwork.AcceptableErrorMargin,
+		UpdateFrequency:        oracleNetwork.UpdateFrequency,
+		OracleRewardMultiplier: oracleNetwork.OracleRewardMultiplier,
+	}
+	if oracleNetwork != nil {
+		oraclePubKeys := oracleNetwork.OraclePubKeys
+		oracleNetworkResult.OraclePubKeys = make([]string, len(oraclePubKeys))
+		for idx, pkBytes := range oraclePubKeys {
+			oracleNetworkResult.OraclePubKeys[idx] = hex.EncodeToString(pkBytes)
+		}
+	}
+	return oracleNetworkResult, nil
 }
 
 func (rpcServer RpcServer) handleGetCurrentStabilityInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {

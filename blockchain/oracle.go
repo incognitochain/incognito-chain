@@ -3,7 +3,9 @@ package blockchain
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"math"
 	"sort"
 	"strconv"
@@ -319,6 +321,8 @@ func (blockGen *BlkTmplGenerator) buildOracleRewardTxs(
 	evalStr string,
 	privatekey *privacy.SpendingKey,
 ) ([]metadata.Transaction, error) {
+	fmt.Println("buildOracleRewardTxs hahaha")
+
 	var eval Evaluation
 	err := json.Unmarshal([]byte(evalStr), &eval)
 	if err != nil {
@@ -392,8 +396,8 @@ func buildInstForUpdatingOracleBoardReq(
 	signs := md.Signs
 	verifiedSignCount := 0
 	for _, pubKey := range govBoardPks {
-		base64Pk := base64.StdEncoding.EncodeToString(pubKey)
-		sign, existed := signs[base64Pk]
+		hexStrPk := hex.EncodeToString(pubKey)
+		sign, existed := signs[hexStrPk]
 		if !existed {
 			continue
 		}
