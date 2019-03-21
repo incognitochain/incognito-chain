@@ -301,6 +301,17 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				fmt.Printf("[db] shard build Resp from inst: %+v\n", l)
 				Logger.log.Warn("Metadata type:", metaType, "\n")
 				switch metaType {
+				case metadata.RewardDCBProposalSubmitterMeta, metadata.RewardGOVProposalSubmitterMeta:
+					rewardProposalSubmitter := frombeaconins.RewardProposalSubmitterIns{}
+					err := json.Unmarshal([]byte(l[2]), &rewardProposalSubmitter)
+					if err != nil {
+						return nil, err
+					}
+					tx, err := rewardProposalSubmitter.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, tx)
 				case metadata.CrowdsalePaymentMeta:
 					paymentInst, err := ParseCrowdsalePaymentInstruction(l[2])
 					if err != nil {
