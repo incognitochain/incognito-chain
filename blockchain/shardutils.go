@@ -454,7 +454,7 @@ func getOutCoinCrossShard(txList []metadata.Transaction, shardID byte) []privacy
 	for _, tx := range txList {
 		if tx.GetProof() != nil {
 			for _, outCoin := range tx.GetProof().OutputCoins {
-				lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+				lastByte := common.GetShardIDFromLastByte(outCoin.CoinDetails.GetPubKeyLastByte())
 				if lastByte == shardID {
 					coinList = append(coinList, *outCoin)
 				}

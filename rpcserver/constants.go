@@ -46,6 +46,7 @@ const (
 	GetListCustomTokenBalance                  = "getlistcustomtokenbalance"
 	GetListPrivacyCustomTokenBalance           = "getlistprivacycustomtokenbalance"
 	GetBlockHeader                             = "getheader"
+	GetCrossShardBlock                         = "getcrossshardblock"
 	RandomCommitments                          = "randomcommitments"
 	HasSerialNumbers                           = "hasserialnumbers"
 	HasSnDerivators                            = "hassnderivators"
