@@ -100,17 +100,19 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	//==========End Create Body
 	//============Process new block with beststate
 	fmt.Println("Beacon Candidate", beaconBestState.CandidateBeaconWaitingForCurrentRandom)
-	fmt.Println("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
-	fmt.Printf("Beacon Produce/AfterUpdate: Beacon Pending Validator %+v \n, Beacon Committee %+v \n, Beacon Validator Root %+v \n", beaconBestState.BeaconPendingValidator, beaconBestState.BeaconCommittee, beaconBlock.Header.ValidatorsRoot)
-	fmt.Println("=======================================")
-	fmt.Printf("Beacon Produce/Before Update: Shard Pending Validator %+v \n, ShardCommitee %+v \n, Shard Validator Root %+v \n", beaconBestState.ShardPendingValidator, beaconBestState.ShardCommittee, beaconBlock.Header.ShardValidatorsRoot)
+	if len(beaconBlock.Body.Instructions) != 0 {
+		Logger.log.Critical("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
+	}
+	// fmt.Printf("Beacon Produce/AfterUpdate: Beacon Pending Validator %+v \n, Beacon Committee %+v \n, Beacon Validator Root %+v \n", beaconBestState.BeaconPendingValidator, beaconBestState.BeaconCommittee, beaconBlock.Header.ValidatorsRoot)
+	// fmt.Println("=======================================")
+	// fmt.Printf("Beacon Produce/Before Update: Shard Pending Validator %+v \n, ShardCommitee %+v \n, Shard Validator Root %+v \n", beaconBestState.ShardPendingValidator, beaconBestState.ShardCommittee, beaconBlock.Header.ShardValidatorsRoot)
 	beaconBestState.Update(beaconBlock)
 	//============End Process new block with beststate
 	//==========Create Hash in Header
 	// BeaconValidator root: beacon committee + beacon pending committee
 	validatorArr := append(beaconBestState.BeaconCommittee, beaconBestState.BeaconPendingValidator...)
 	beaconBlock.Header.ValidatorsRoot, err = GenerateHashFromStringArray(validatorArr)
-	fmt.Printf("Beacon Produce/AfterUpdate: Beacon Pending Validator %+v , Beacon Committee %+v, Beacon Validator Root %+v \n", beaconBestState.BeaconPendingValidator, beaconBestState.BeaconCommittee, beaconBlock.Header.ValidatorsRoot)
+	// fmt.Printf("Beacon Produce/AfterUpdate: Beacon Pending Validator %+v , Beacon Committee %+v, Beacon Validator Root %+v \n", beaconBestState.BeaconPendingValidator, beaconBestState.BeaconCommittee, beaconBlock.Header.ValidatorsRoot)
 	if err != nil {
 		panic(err)
 	}
@@ -128,7 +130,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	}
 	// Shard Validator root
 	beaconBlock.Header.ShardValidatorsRoot, err = GenerateHashFromMapByteString(beaconBestState.ShardPendingValidator, beaconBestState.ShardCommittee)
-	fmt.Printf("Beacon Produce/AfterUpdate: Shard Pending Validator %+v , ShardCommitee %+v, Shard Validator Root %+v \n", beaconBestState.ShardPendingValidator, beaconBestState.ShardCommittee, beaconBlock.Header.ShardValidatorsRoot)
+	// fmt.Printf("Beacon Produce/AfterUpdate: Shard Pending Validator %+v , ShardCommitee %+v, Shard Validator Root %+v \n", beaconBestState.ShardPendingValidator, beaconBestState.ShardCommittee, beaconBlock.Header.ShardValidatorsRoot)
 	if err != nil {
 		panic(err)
 	}
@@ -210,6 +212,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 				Logger.log.Error(err)
 				fmt.Printf("Build stability instructions failed: %s", err.Error())
 			}
+
 			stabilityInstructions = append(stabilityInstructions, stabilityInstructionsPerBlock...)
 			for _, l := range shardBlock.Instructions {
 				if l[0] == "swap" {
@@ -238,12 +241,14 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			shardState := ShardState{}
 			shardState.CrossShard = make([]byte, len(shardBlock.Header.CrossShards))
 			copy(shardState.CrossShard, shardBlock.Header.CrossShards)
-			fmt.Println("Beacon Producer/ CrossShard Byte Arr", shardState.CrossShard)
+			// fmt.Println("Beacon Producer/ CrossShard Byte Arr", shardState.CrossShard)
 			shardState.Hash = shardBlock.Header.Hash()
 			shardState.Height = shardBlock.Header.Height
 			shardStates[shardID] = append(shardStates[shardID], shardState)
 
-			fmt.Printf("\n \n Instruction in shardBlock %+v, %+v \n \n", shardBlock.Header.Height, instructions)
+			if len(instructions) != 0 {
+				Logger.log.Criticalf("Instruction in shardBlock %+v, %+v \n", shardBlock.Header.Height, instructions)
+			}
 			for _, l := range instructions {
 				if l[0] == StakeAction {
 					fmt.Println("Beacon Producer/ Stake Instructions", l)
@@ -256,7 +261,10 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			// ["stake" "pubkey1,pubkey2,..." "beacon"]
 			stakeBeacon := []string{}
 			stakeShard := []string{}
-			fmt.Println("Beacon Producer/ Process Stakers List", stakers)
+			if len(stakers) != 0 {
+				Logger.log.Critical("Beacon Producer/ Process Stakers List", stakers)
+			}
+
 			for _, staker := range stakers {
 				var tempStaker []string
 				newBeaconCandidate, newShardCandidate := getStakeValidatorArrayString(staker)
@@ -386,18 +394,18 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 	instructions = append(instructions, stakers...)
 	//=======Random and Assign if random number is detected
 	// Time to get random number and no block in this epoch get it
-	fmt.Printf("RandomTimestamp %+v \n", bestStateBeacon.CurrentRandomTimeStamp)
-	fmt.Printf("=========Epoch %+v \n", block.Header.Epoch)
-	fmt.Printf("============height epoch: %+v, RANDOM TIME: %+v \n", block.Header.Height%common.EPOCH+1, common.RANDOM_TIME)
-	fmt.Printf("============IsGetRandomNumber %+v \n", bestStateBeacon.IsGetRandomNumber)
-	fmt.Printf("===================ShardCandidate %+v \n", shardCandidates)
+	// fmt.Printf("RandomTimestamp %+v \n", bestStateBeacon.CurrentRandomTimeStamp)
+	// fmt.Printf("=========Epoch %+v \n", block.Header.Epoch)
+	// fmt.Printf("============height epoch: %+v, RANDOM TIME: %+v \n", block.Header.Height%common.EPOCH+1, common.RANDOM_TIME)
+	// fmt.Printf("============IsGetRandomNumber %+v \n", bestStateBeacon.IsGetRandomNumber)
+	// fmt.Printf("===================ShardCandidate %+v \n", shardCandidates)
 	if block.Header.Height%common.EPOCH > common.RANDOM_TIME && !bestStateBeacon.IsGetRandomNumber {
 		var err error
 		// COMMENT FOR TESTING
 		// chainTimeStamp, err := btcapi.GetCurrentChainTimeStamp()
 		// UNCOMMENT FOR TESTING
 		chainTimeStamp := bestStateBeacon.CurrentRandomTimeStamp + 1
-		fmt.Printf("============chainTimeStamp %+v \n", chainTimeStamp)
+		// fmt.Printf("============chainTimeStamp %+v \n", chainTimeStamp)
 		if err != nil {
 			panic(err)
 		}
@@ -408,7 +416,7 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 			randomInstruction, rand := generateRandomInstruction(bestStateBeacon.CurrentRandomTimeStamp, &wg)
 			wg.Wait()
 			instructions = append(instructions, randomInstruction)
-			Logger.log.Infof("RandomNumber %+v", randomInstruction)
+			Logger.log.Critical("RandomNumber %+v", randomInstruction)
 			for _, candidate := range shardCandidates {
 				shardID := calculateCandidateShardID(candidate, rand, bestStateBeacon.ActiveShards)
 				assignedCandidates[shardID] = append(assignedCandidates[shardID], candidate)

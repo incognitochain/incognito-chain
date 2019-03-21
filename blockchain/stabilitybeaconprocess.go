@@ -8,10 +8,9 @@ import (
 	"strconv"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
-	"github.com/constant-money/constant-chain/metadata/frombeaconins"
-
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/metadata/frombeaconins"
 	"github.com/pkg/errors"
 )
 
@@ -366,7 +365,6 @@ func (bsb *BestStateBeacon) processUpdateDCBProposalInstruction(ins frombeaconin
 	}
 
 	// Store saledata in state
-
 	for _, data := range dcbParams.ListSaleData {
 		key := getSaleDataKeyBeacon(data.SaleID)
 		if _, ok := bsb.Params[key]; ok {
@@ -574,9 +572,15 @@ func (bc *BlockChain) processBeaconOnlyInstructions(block *BeaconBlock) error {
 				return err
 			}
 		case strconv.Itoa(component.UpdateDCBConstitutionIns):
-			return bc.processUpdateDCBConstitutionIns(inst)
+			err := bc.processUpdateDCBConstitutionIns(inst)
+			if err != nil {
+				return err
+			}
 		case strconv.Itoa(component.UpdateGOVConstitutionIns):
-			return bc.processUpdateGOVConstitutionIns(inst)
+			err := bc.processUpdateGOVConstitutionIns(inst)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
