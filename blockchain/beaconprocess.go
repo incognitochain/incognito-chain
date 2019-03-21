@@ -333,8 +333,8 @@ func (bestStateBeacon *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *Be
 	//=============Verify aggegrate signature
 	if isVerifySig {
 		// ValidatorIdx must > Number of Beacon Committee / 2 AND Number of Beacon Committee > 3
-		if len(block.ValidatorsIdx) <= (len(bestStateBeacon.BeaconCommittee)>>1) && len(bestStateBeacon.BeaconCommittee) > 3 {
-			return NewBlockChainError(SignatureError, errors.New("block validators and Beacon committee is not compatible"))
+		if len(bestStateBeacon.BeaconCommittee) > 3 && len(block.ValidatorsIdx[1]) < (len(bestStateBeacon.BeaconCommittee)>>1) {
+			return NewBlockChainError(SignatureError, errors.New("block validators and Beacon committee is not compatible "+fmt.Sprint(len(block.ValidatorsIdx))))
 		}
 		err := ValidateAggSignature(block.ValidatorsIdx, bestStateBeacon.BeaconCommittee, block.AggregatedSig, block.R, block.Hash())
 		if err != nil {
@@ -457,6 +457,9 @@ func (bestStateBeacon *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *B
 	Update Beststate with new Block
 */
 func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
+	bestStateBeacon.lockMu.Lock()
+	defer bestStateBeacon.lockMu.Unlock()
+
 	newBeaconCandidate := []string{}
 	newShardCandidate := []string{}
 	// Logger.log.Infof("Start processing new block at height %d, with hash %+v", newBlock.Header.Height, *newBlock.Hash())

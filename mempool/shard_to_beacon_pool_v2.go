@@ -203,12 +203,12 @@ func (self *ShardToBeaconPool) GetValidPendingBlock(limit map[byte]uint64) map[b
 		}
 	}
 	//UNCOMMENT FOR TESTING
-	fmt.Println()
-	fmt.Print("ShardToBeaconPool/ValidPendingBlock ")
-	for _, block := range finalBlocks[byte(0)] {
-		fmt.Printf(" %+v ", block.Header.Height)
-	}
-	fmt.Println()
+	// fmt.Println()
+	// fmt.Print("ShardToBeaconPool/ValidPendingBlock ")
+	// for _, block := range finalBlocks[byte(0)] {
+	// 	fmt.Printf(" %+v ", block.Header.Height)
+	// }
+	// fmt.Println()
 	//==============
 	return finalBlocks
 }
