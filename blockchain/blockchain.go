@@ -327,112 +327,13 @@ func (blockchain *BlockChain) initBeaconState() error {
 	blockchain.BestState.Beacon = InitBestStateBeacon(blockchain.config.ChainParams)
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
 	blockchain.BestState.Beacon.Update(initBlock)
+	blockchain.processBeaconOnlyInstructions(initBlock)
 
 	// TODO(@0xankylosaurus): initialize oracle data properly
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 1000 // $10
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.GOVToken = 2000 // $20
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.Constant = 100  // $1 = 100 cent
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.ETH = 10000     // $100.00 = 10000 cent per ether
-
-	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.RaiseReserveData = map[common.Hash]*component.RaiseReserveData{
-		common.ETHAssetID: &component.RaiseReserveData{
-			EndBlock: 1000,
-			Amount:   1000,
-		},
-		common.USDAssetID: &component.RaiseReserveData{
-			EndBlock: 1000,
-			Amount:   1000,
-		},
-	}
-	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.SpendReserveData = map[common.Hash]*component.SpendReserveData{
-		common.ETHAssetID: &component.SpendReserveData{
-			EndBlock:        1000,
-			ReserveMinPrice: 1000,
-			Amount:          10000000,
-		},
-	}
-
-	// Dividend
-	divAmounts := []uint64{0}
-	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.DividendAmount = divAmounts[0]
-	divKey := getDCBDividendKeyBeacon()
-	divValue := getDividendValueBeacon(divAmounts)
-	blockchain.BestState.Beacon.Params[divKey] = divValue
-	blockchain.BestState.Beacon.StabilityInfo.BankFund = 1000
-
-	bondID, _ := common.NewHashFromStr("4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000")
-	buyBondSaleID := [32]byte{1}
-	sellBondSaleID := [32]byte{2}
-	saleData := []component.SaleData{
-		component.SaleData{
-			SaleID:           buyBondSaleID[:],
-			EndBlock:         1000,
-			BuyingAsset:      *bondID,
-			BuyingAmount:     100, // 100 bonds
-			DefaultBuyPrice:  100, // 100 cent per bond
-			SellingAsset:     common.ConstantID,
-			SellingAmount:    15000, // 150 CST in Nano
-			DefaultSellPrice: 100,   // 100 cent per CST
-		},
-		component.SaleData{
-			SaleID:           sellBondSaleID[:],
-			EndBlock:         2000,
-			BuyingAsset:      common.ConstantID,
-			BuyingAmount:     25000, // 250 CST in Nano
-			DefaultBuyPrice:  100,   // 100 cent per CST
-			SellingAsset:     *bondID,
-			SellingAmount:    200, // 200 bonds
-			DefaultSellPrice: 100, // 100 cent per bond
-		},
-	}
-	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.ListSaleData = saleData
-	// Store temp crowdsale states to avoid submiting DCB proposal
-	for _, data := range saleData {
-		key := getSaleDataKeyBeacon(data.SaleID)
-		if _, ok := blockchain.BestState.Beacon.Params[key]; ok {
-			continue
-		}
-		value := getSaleDataValueBeacon(&data)
-		blockchain.BestState.Beacon.Params[key] = value
-	}
-
-	loanParams := []component.LoanParams{
-		component.LoanParams{
-			InterestRate:     100,   // 1%
-			Maturity:         1000,  // 1 month in blocks
-			LiquidationStart: 15000, // 150%
-		},
-	}
-	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.ListLoanParams = loanParams
-
-	blockchain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress = []privacy.PaymentAddress{
-		// Payment4: 1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba
-		privacy.PaymentAddress{
-			Pk: []byte{3, 36, 133, 3, 185, 44, 62, 112, 196, 239, 49, 190, 100, 172, 50, 147, 196, 154, 105, 211, 203, 57, 242, 110, 34, 126, 100, 226, 74, 148, 128, 167, 0},
-			Tk: []byte{2, 134, 3, 114, 89, 60, 134, 3, 185, 245, 176, 187, 244, 145, 250, 149, 67, 98, 68, 106, 69, 200, 228, 209, 3, 26, 231, 15, 36, 251, 211, 186, 159},
-		},
-	}
-
-	// Bond
-	blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.SellingBonds = &component.SellingBonds{
-		BondName:       "Bond 1000 blocks",
-		BondSymbol:     "BND1000",
-		TotalIssue:     1000,
-		BondsToSell:    1000,
-		BondPrice:      100, // 1 constant
-		Maturity:       3,
-		BuyBackPrice:   120, // 1.2 constant
-		StartSellingAt: 0,
-		SellingWithin:  100000,
-	}
-
-	blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens = &component.SellingGOVTokens{
-		TotalIssue:      1000,
-		GOVTokensToSell: 1000,
-		GOVTokenPrice:   500, // 5 constant
-		StartSellingAt:  0,
-		SellingWithin:   10000,
-	}
 
 	// Insert new block into beacon chain
 	if err := blockchain.StoreBeaconBestState(); err != nil {

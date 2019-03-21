@@ -8,10 +8,9 @@ import (
 	"strconv"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
-	"github.com/constant-money/constant-chain/metadata/frombeaconins"
-
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/metadata/frombeaconins"
 	"github.com/pkg/errors"
 )
 
@@ -336,7 +335,6 @@ func (bsb *BestStateBeacon) processUpdateDCBProposalInstruction(ins frombeaconin
 	}
 
 	// Store saledata in state
-
 	for _, data := range dcbParams.ListSaleData {
 		key := getSaleDataKeyBeacon(data.SaleID)
 		if _, ok := bsb.Params[key]; ok {
