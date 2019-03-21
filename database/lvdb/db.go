@@ -58,7 +58,7 @@ var (
 	threePhraseCryptoOwnerPrefix = []byte("threephrasecryptoownerprefix-")
 	voteProposalPrefix           = []byte("voteproposalprefix-")
 	listVoterOfProposalPrefix    = []byte("listvoterofproposalprefix-")
-	submitProposalProposalPrefix = []byte("submitproposalprefix-")
+	submitProposalPrefix         = []byte("submitproposalprefix-")
 	threePhraseVoteValuePrefix   = []byte("threephrasevotevalueprefix-")
 	winningVoterPrefix           = []byte("winningvoterprefix-")
 	//pubKeyToPaymentAddress          = []byte("pubkeytopaymentaddress")
