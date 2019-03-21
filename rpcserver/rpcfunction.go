@@ -41,6 +41,7 @@ var RpcHandler = map[string]commandHandler{
 	GetBlockHash:        RpcServer.handleGetBlockHash,
 	CheckHashValue:      RpcServer.handleCheckHashValue, // get data in blockchain from hash value
 	GetBlockHeader:      RpcServer.handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
+	GetCrossShardBlock:  RpcServer.handleGetCrossShardBlock,
 
 	// transaction
 	ListOutputCoins:                 RpcServer.handleListOutputCoins,
@@ -159,6 +160,8 @@ var RpcHandler = map[string]commandHandler{
 	GetBondTypes:                           RpcServer.handleGetBondTypes,
 	GetCurrentSellingBondTypes:             RpcServer.handleGetCurrentSellingBondTypes,
 	GetCurrentStabilityInfo:                RpcServer.handleGetCurrentStabilityInfo,
+	GetCurrentOracleNetworkParams:          RpcServer.handleGetCurrentOracleNetworkParams,
+	SignUpdatingOracleBoardContent:         RpcServer.handleSignUpdatingOracleBoardContent,
 	GetGOVConstitution:                     RpcServer.handleGetGOVConstitution,
 	GetGOVParams:                           RpcServer.handleGetGOVParams,
 	CreateAndSendTxWithBuyBackRequest:      RpcServer.handleCreateAndSendTxWithBuyBackRequest,
