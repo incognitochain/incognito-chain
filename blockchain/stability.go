@@ -491,7 +491,7 @@ func (chain *BlockChain) AddSubmitProposal(inst string) error {
 	submitter := newInst.SubmitProposal.SubmitterPayment
 	// governor := chain.GetGovernor(boardType)
 	// boardIndex := governor.GetBoardIndex() + 1
-	err1 := chain.GetDatabase().AddSubmitProposal(
+	err1 := chain.GetDatabase().AddSubmitProposalDB(
 		boardType,
 		newInst.SubmitProposal.ConstitutionIndex,
 		newInst.SubmitProposal.ProposalTxID.GetBytes(),
@@ -508,12 +508,10 @@ func (chain *BlockChain) AddVoteProposal(inst string) error {
 	if err != nil {
 		return err
 	}
-	boardType := newInst.BoardType
 	// step 4 hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-	nextConstitutionIndex := chain.GetConstitution(boardType).GetConstitutionIndex() + 1
 	err = chain.GetDatabase().AddVoteProposalDB(
-		boardType,
-		nextConstitutionIndex,
+		newInst.BoardType,
+		newInst.VoteProposal.ConstitutionIndex,
 		newInst.VoteProposal.VoterPayment.Bytes(),
 		newInst.VoteProposal.ProposalTxID.GetBytes(),
 	)

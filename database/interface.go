@@ -170,7 +170,7 @@ type DatabaseInterface interface {
 	NewIterator(*util.Range, *opt.ReadOptions) iterator.Iterator
 	GetKey(string, interface{}) []byte
 	AddListVoterOfProposalDB(boardType common.BoardType, constitutionIndex uint32, voterPayment []byte, proposalTxID []byte) error
-	AddSubmitProposal(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte, submitter []byte) error
+	AddSubmitProposalDB(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte, submitter []byte) error
 	AddVoteProposalDB(boardType common.BoardType, constitutionIndex uint32, voterPayment []byte, proposalTxID []byte) error
 	SetNewProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32, paymentAddresses []privacy.PaymentAddress) error
 	GetCurrentProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32) ([]privacy.PaymentAddress, error)
