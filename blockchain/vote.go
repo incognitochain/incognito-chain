@@ -41,18 +41,20 @@ type ConstitutionHelper interface {
 	SetNewConstitution(bc *BlockChain, constitutionInfo *ConstitutionInfo, welfare int32, submitProposalTx metadata.Transaction)
 }
 
-func (chain *BlockChain) createRewardProposalWinnerIns(
-	constitutionHelper ConstitutionHelper,
-) (frombeaconins.InstructionFromBeacon, error) {
-	paymentAddresses, err := constitutionHelper.GetPaymentAddressVoter(chain)
-	if err != nil {
-		return nil, err
-	}
-	prize := constitutionHelper.GetPrizeProposal()
-
-	ins := frombeaconins.NewRewardProposalWinnerIns(paymentAddresses, prize)
-	return ins, nil
-}
+// func (chain *BlockChain) createRewardProposalWinnerIns(
+// 	constitutionHelper ConstitutionHelper,
+// ) ([]frombeaconins.InstructionFromBeacon, error) {
+// 	paymentAddresses, err := constitutionHelper.GetPaymentAddressVoter(chain)
+// 	var resIns frombeaconins
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	prize := constitutionHelper.GetPrizeProposal()
+// 	for _, paymentAddress := range paymentAddresses {
+// 		ins := frombeaconins.NewRewardProposalWinnerIns(paymentAddresses, prize)
+// 	}
+// 	return ins, nil
+// }
 
 func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 	helper ConstitutionHelper,
@@ -64,7 +66,6 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 	VoteTable = make(map[common.Hash][]privacy.PaymentAddress)
 	CountVote = make(map[common.Hash]uint32)
 	NextConstitutionIndex := self.GetCurrentBoardIndex(helper)
-
 	db := self.config.DataBase
 	boardType := helper.GetBoardType()
 	begin := lvdb.GetKeyVoteProposal(boardType, 0, nil)
@@ -120,11 +121,11 @@ func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 			bestProposal.NumberOfVote = CountVote[txId]
 		}
 	}
-	_, _, _, bestSubmittedProposal, err := self.GetTransactionByHash(&bestProposal.TxId)
-	if err != nil {
-		return nil, err
+	if bestProposal.NumberOfVote == 0 {
+		return resIns, nil
 	}
-	submitterPaymentAddress := helper.GetPaymentAddressFromSubmitProposalMetadata(bestSubmittedProposal)
+
+	submitterPaymentAddress := privacy.NewPaymentAddressFromByte(lvdb.GetKeySubmitProposal(helper.GetBoardType(), helper.GetConstitutionInfo(self).ConstitutionIndex, bestProposal.TxId.GetBytes()))
 	if submitterPaymentAddress != nil {
 		rewardForProposalSubmitterIns, err := helper.NewRewardProposalSubmitterIns(self, submitterPaymentAddress)
 		if err != nil {
@@ -132,13 +133,13 @@ func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
 		}
 		resIns = append(resIns, rewardForProposalSubmitterIns)
 	}
-	shardID := common.GetShardIDFromLastByte(bestSubmittedProposal.GetSenderAddrLastByte())
+	shardID := common.GetShardIDFromLastByte(submitterPaymentAddress.Bytes()[privacy.PublicKeySize-1])
 	acceptedProposalIns := helper.NewAcceptProposalIns(&bestProposal.TxId, VoteTable[bestProposal.TxId], shardID)
 	resIns = append(resIns, acceptedProposalIns)
 	boardType := helper.GetBoardType()
 	boardIndex := helper.GetBoard(self).GetBoardIndex()
 	totalReward := uint64(helper.GetCurrentNationalWelfare(self))
-	listVotersOfCurrentProposal, eGetBoardVoterListrr := self.config.DataBase.GetCurrentProposalWinningVoter(boardType, helper.GetConstitutionInfo(self).ConstitutionIndex)
+	listVotersOfCurrentProposal, err := db.GetCurrentProposalWinningVoter(boardType, helper.GetConstitutionInfo(self).ConstitutionIndex)
 	if err == nil {
 		voterAndSupporters := make([][]privacy.PaymentAddress, len(listVotersOfCurrentProposal))
 		voterAndAmount := make([]uint64, len(listVotersOfCurrentProposal))
@@ -463,7 +464,7 @@ func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
 
 func (self *BlockChain) GetListVoterOfProposalDB(helper ConstitutionHelper, proposalTxID []byte) ([]privacy.PaymentAddress, error) {
 	var res []privacy.PaymentAddress
-	currentBoardIndex := self.GetCurrentBoardIndex(helper)
+	// currentBoardIndex := self.GetCurrentBoardIndex(helper)
 	boardType := helper.GetBoardType()
 	begin := lvdb.GetKeyListVoterOfProposal(boardType, helper.GetConstitutionInfo(self).ConstitutionIndex, proposalTxID, nil)
 	end := lvdb.GetKeyListVoterOfProposal(boardType, helper.GetConstitutionInfo(self).ConstitutionIndex, common.BytesPlusOne(proposalTxID), nil)

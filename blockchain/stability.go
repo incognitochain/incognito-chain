@@ -145,11 +145,11 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 	instructions := [][]string{}
 	//Add Voting instruction
 	// step 3 hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-	votingInstruction, err := blkTmpGen.chain.generateVotingInstructionWOIns(0)
-	if err != nil {
-		return nil, NewBlockChainError(BeaconError, err)
-	}
-	instructions = append(instructions, votingInstruction...)
+	// votingInstruction, err := blkTmpGen.chain.generateVotingInstructionWOIns(0)
+	// if err != nil {
+	// 	return nil, NewBlockChainError(BeaconError, err)
+	// }
+	// instructions = append(instructions, votingInstruction...)
 
 	for _, inst := range shardBlockInstructions {
 		fmt.Printf("[db] beaconProducer found inst: %s\n", inst[0])
@@ -188,6 +188,12 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 		case metadata.ShardBlockSalaryRequestMeta:
 			newInst, err = buildInstForShardBlockSalaryReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
+		case metadata.OracleFeedMeta:
+			newInst, err = buildInstForOracleFeedReq(shardID, contentStr, beaconBestState)
+
+		case metadata.UpdatingOracleBoardMeta:
+			newInst, err = buildInstForUpdatingOracleBoardReq(shardID, contentStr, beaconBestState)
+
 		case component.NewDCBConstitutionIns:
 			newInst, err = buildUpdateConstitutionIns(inst[2], common.DCBBoard)
 
@@ -196,6 +202,8 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 
 		case component.VoteBoardIns:
 			err = blkTmpGen.chain.AddVoteBoard(inst[2])
+
+		case component.SubmitProposalIns:
 
 		case component.VoteProposalIns:
 			err = blkTmpGen.chain.AddVoteProposal(inst[2])
@@ -375,6 +383,14 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					}
 					resTxs = append(resTxs, txs...)
 
+				case metadata.OracleRewardMeta:
+					evaluationStr := l[3]
+					txs, err := blockgen.buildOracleRewardTxs(evaluationStr, producerPrivateKey)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, txs...)
+
 				case metadata.ShardBlockSalaryRequestMeta:
 					salaryReqInfoStr := l[3]
 					txs, err := blockgen.buildSalaryRes(l[2], salaryReqInfoStr, producerPrivateKey)
@@ -437,6 +453,27 @@ func (chain *BlockChain) AddVoteBoard(inst string) error {
 		voterPayment,
 		newInst.CandidatePaymentAddress,
 		voteAmount,
+	)
+	if err1 != nil {
+		return err1
+	}
+	return nil
+}
+
+func (chain *BlockChain) AddSubmitProposal(inst string) error {
+	newInst, err := fromshardins.NewSubmitProposalInsFromStr(inst)
+	if err != nil {
+		return err
+	}
+	boardType := newInst.BoardType
+	submitter := newInst.SubmitProposal.SubmitterPayment
+	// governor := chain.GetGovernor(boardType)
+	// boardIndex := governor.GetBoardIndex() + 1
+	err1 := chain.GetDatabase().AddSubmitProposal(
+		boardType,
+		newInst.SubmitProposal.ConstitutionIndex,
+		newInst.SubmitProposal.ProposalTxID.GetBytes(),
+		submitter.Bytes(),
 	)
 	if err1 != nil {
 		return err1

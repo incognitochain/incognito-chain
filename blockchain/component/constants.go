@@ -7,6 +7,7 @@ const (
 	UpdateDCBConstitutionIns
 	UpdateGOVConstitutionIns
 	VoteBoardIns
+	SubmitProposalIns
 
 	AcceptDCBProposalIns
 	AcceptDCBBoardIns
