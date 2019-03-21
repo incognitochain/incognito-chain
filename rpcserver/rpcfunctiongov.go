@@ -1,9 +1,9 @@
 package rpcserver
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -342,12 +342,16 @@ func (rpcServer RpcServer) handleCreateRawTxWithUpdatingOracleBoard(params inter
 	oraclePubKeys := updatingOracleBoard["OraclePubKeys"].([]interface{})
 	assertedOraclePKs := [][]byte{}
 	for _, pk := range oraclePubKeys {
-		assertedOraclePKs = append(assertedOraclePKs, []byte(pk.(string)))
+		base64Pk := pk.(string)
+		pkBytes, _ := base64.StdEncoding.DecodeString(base64Pk)
+		assertedOraclePKs = append(assertedOraclePKs, pkBytes)
 	}
 	signs := updatingOracleBoard["Signs"].(map[string]interface{})
 	assertedSigns := map[string][]byte{}
 	for k, s := range signs {
-		assertedSigns[k] = []byte(s.(string))
+		base64Sign := s.(string)
+		pkBytes, _ := base64.StdEncoding.DecodeString(base64Sign)
+		assertedSigns[k] = pkBytes
 	}
 	metaType := metadata.UpdatingOracleBoardMeta
 	meta := metadata.NewUpdatingOracleBoard(
@@ -357,9 +361,8 @@ func (rpcServer RpcServer) handleCreateRawTxWithUpdatingOracleBoard(params inter
 		metaType,
 	)
 
-	fmt.Println("dudududududududududu: ", meta)
-
 	normalTx, err := rpcServer.buildRawTransaction(params, meta)
+	// rpcErr := err.(*RPCError)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
