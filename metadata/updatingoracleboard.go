@@ -55,40 +55,6 @@ func (uob UpdatingOracleBoard) ValidateTxWithBlockChain(
 ) (bool, error) {
 	// signatures validation will be done in beacon chain so dont need to do it here anymore
 	return true, nil
-
-	// govBoardPubKeys := bcr.GetBoardPubKeys(common.GOVBoard)
-	// boardLen := len(govBoardPubKeys)
-	// if boardLen == 0 {
-	// 	return false, errors.New("There is no one in GOV board yet.")
-	// }
-	// // verify signs
-	// txBytes := txr.Hash()[:]
-	// signs := uob.Signs
-	// verifiedSignCount := 0
-	// for _, pubKey := range govBoardPubKeys {
-	// 	sign, existed := signs[string(pubKey)]
-	// 	if !existed {
-	// 		continue
-	// 	}
-	// 	verKey := new(ecdsa.PublicKey)
-	// 	point := new(privacy.EllipticPoint)
-	// 	_ = point.Decompress(pubKey)
-	// 	verKey.X, verKey.Y = point.X, point.Y
-	// 	verKey.Curve = privacy.Curve
-
-	// 	// convert signature from byte array to ECDSASign
-	// 	r, s := common.FromByteArrayToECDSASig(sign)
-
-	// 	// verify signature
-	// 	res := ecdsa.Verify(verKey, txBytes, r, s)
-	// 	if res {
-	// 		verifiedSignCount += 1
-	// 	}
-	// }
-	// if verifiedSignCount < int(math.Floor(float64(boardLen/2)))+1 {
-	// 	return false, errors.New("Number of signatures is not enough.")
-	// }
-	// return true, nil
 }
 
 func (uob UpdatingOracleBoard) ValidateSanityData(
