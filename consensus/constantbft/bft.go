@@ -71,12 +71,12 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 			switch protocol.phase {
 			case PBFT_PROPOSE:
 				//    single-node start    //
-				time.Sleep(2 * time.Second)
-				_, err := protocol.CreateBlockMsg()
-				if err != nil {
-					return nil, err
-				}
-				return protocol.pendingBlock, nil
+				// time.Sleep(2 * time.Second)
+				// _, err := protocol.CreateBlockMsg()
+				// if err != nil {
+				// 	return nil, err
+				// }
+				// return protocol.pendingBlock, nil
 				//    single-node end    //
 				timeout := time.AfterFunc(ListenTimeout*time.Second, func() {
 					fmt.Println("BFT: Propose phase timeout", time.Now().Unix())
@@ -371,7 +371,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 							if _, ok := phaseData.Sigs[R][msgCommit.(*wire.MessageBFTCommit).Pubkey]; !ok {
 								phaseData.Sigs[R][msgCommit.(*wire.MessageBFTCommit).Pubkey] = newSig
 								protocol.forwardMsg(msgCommit)
-								if len(phaseData.Sigs[R]) >= (2 * len(protocol.RoundData.Committee) / 3) {
+								if len(phaseData.Sigs[R]) > (2 * len(protocol.RoundData.Committee) / 3) {
 									cmTimeout.Stop()
 									fmt.Println("BFT: Collected enough Sig")
 									protocol.closeTimeoutCh()

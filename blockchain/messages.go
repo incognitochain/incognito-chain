@@ -71,7 +71,10 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 						return
 					}
 				} else {
-					blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
+					err = blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
+					if err != nil {
+						fmt.Println("Shard block add pool err", err)
+					}
 				}
 			}
 		}
@@ -80,24 +83,29 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 
 func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 	if blockchain.syncStatus.Beacon {
-		fmt.Println("Beacon block received", newBlk.Header.Height)
+		fmt.Println("Beacon block received", newBlk.Header.Height, blockchain.BestState.Beacon.BeaconHeight)
 		if blockchain.BestState.Beacon.BeaconHeight < newBlk.Header.Height {
 			blkHash := newBlk.Header.Hash()
 			err := cashec.ValidateDataB58(newBlk.Header.Producer, newBlk.ProducerSig, blkHash.GetBytes())
 			if err != nil {
+				fmt.Println("Beacon block validate err", err)
 				Logger.log.Error(err)
 				return
 			} else {
 				if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
 					err = blockchain.InsertBeaconBlock(newBlk, false)
 					if err != nil {
+						fmt.Println("Beacon block insert err", err)
 						if err.(*BlockChainError).Code != -26 {
 							Logger.log.Error(err)
 						}
 						return
 					}
 				} else {
-					blockchain.config.BeaconPool.AddBeaconBlock(newBlk)
+					err := blockchain.config.BeaconPool.AddBeaconBlock(newBlk)
+					if err != nil {
+						fmt.Println("Beacon block add pool err", err)
+					}
 				}
 			}
 		}
