@@ -162,6 +162,7 @@ const (
 	GetCurrentSellingBondTypes             = "getcurrentsellingbondtypes"
 	GetCurrentStabilityInfo                = "getcurrentstabilityinfo"
 	GetCurrentOracleNetworkParams          = "getcurrentoraclenetworkparams"
+	SignUpdatingOracleBoardContent         = "signupdatingoracleboardcontent"
 	CreateAndSendTxWithBuyBackRequest      = "createandsendtxwithbuybackrequest"
 	CreateAndSendTxWithBuySellRequest      = "createandsendtxwithbuysellrequest"
 	CreateAndSendTxWithOracleFeed          = "createandsendtxwithoraclefeed"
