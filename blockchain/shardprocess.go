@@ -243,7 +243,10 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 		Logger.log.Infof("Number of transaction in this block %d", len(block.Body.Transactions))
 	}
 
-	fmt.Println("ProcessStoreShardBlock/CrossTransactions	", block.Body.CrossTransactions)
+	if len(block.Body.CrossTransactions) != 0 {
+		Logger.log.Critical("ProcessStoreShardBlock/CrossTransactions	", block.Body.CrossTransactions)
+	}
+
 	if err := blockchain.CreateAndSaveTxViewPointFromBlock(block); err != nil {
 		return err
 	}
@@ -529,7 +532,7 @@ func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *Shard
 	//=============End Verify producer signature
 	//=============Verify aggegrate signature
 	if isVerifySig {
-		if len(block.ValidatorsIdx) <= (len(bestStateShard.ShardCommittee)>>1) && len(bestStateShard.ShardCommittee) > 3 {
+		if len(bestStateShard.ShardCommittee) > 3 && len(block.ValidatorsIdx[1]) < (len(bestStateShard.ShardCommittee)>>1) {
 			fmt.Println(bestStateShard.ShardCommittee)
 			return NewBlockChainError(SignatureError, errors.New("block validators and Shard committee is not compatible"))
 		}
@@ -604,7 +607,9 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 			}
 		}
 	}
-	fmt.Println("Shard Process/Update: ALL Instruction", block.Body.Instructions)
+	if len(block.Body.Instructions) != 0 {
+		Logger.log.Critical("Shard Process/Update: ALL Instruction", block.Body.Instructions)
+	}
 	// Swap committee
 	for _, l := range block.Body.Instructions {
 		fmt.Println("Shard Process/Update: Instruction", l)
