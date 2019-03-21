@@ -67,7 +67,7 @@ const (
 	TestnetDefaultPort = "9444"
 
 	TestNetShardCommitteeSize  = 4
-	TestNetBeaconCommitteeSize = 3
+	TestNetBeaconCommitteeSize = 13
 	TestNetActiveShards        = 2
 
 	//board and proposal parameters
