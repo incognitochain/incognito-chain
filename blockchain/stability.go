@@ -51,7 +51,7 @@ func buildStabilityActions(
 	producerAddress *privacy.PaymentAddress,
 	shardBlockHeight uint64,
 	beaconBlocks []*BeaconBlock,
-) [][]string {
+) ([][]string, error) {
 	actions := [][]string{}
 	for _, tx := range txs {
 		meta := tx.GetMetadata()
@@ -78,14 +78,12 @@ func buildStabilityActions(
 
 			shardToProcess, err := strconv.Atoi(l[1])
 			if err != nil {
-				panic("err")
-				return nil
+				continue
 			}
 			if shardToProcess == int(shardID) {
 				metaType, err := strconv.Atoi(l[0])
 				if err != nil {
-					panic("err")
-					return nil
+					return nil, err
 				}
 				var newIns []string
 				switch metaType {
@@ -93,7 +91,7 @@ func buildStabilityActions(
 					acceptProposalIns := frombeaconins.AcceptProposalIns{}
 					err := json.Unmarshal([]byte(l[2]), &acceptProposalIns)
 					if err != nil {
-						panic(err)
+						return nil, err
 					}
 					txID := acceptProposalIns.TxID
 					_, _, _, txProposal, err := bc.GetTransactionByHash(&txID)
@@ -104,19 +102,19 @@ func buildStabilityActions(
 						acceptProposalIns.Voter,
 					).GetStringFormat()
 					if err != nil {
-						panic(err)
+						return nil, err
 					}
 				case component.AcceptGOVProposalIns:
 					acceptProposalIns := frombeaconins.AcceptProposalIns{}
 					err := json.Unmarshal([]byte(l[2]), &acceptProposalIns)
 					if err != nil {
-						panic(err)
+						return nil, err
 					}
 					txID := acceptProposalIns.TxID
 					_, _, _, txProposal, err := bc.GetTransactionByHash(&txID)
 					metaProposal := txProposal.GetMetadata().(*metadata.SubmitGOVProposalMetadata)
 					if err != nil {
-						panic(err)
+						return nil, err
 					}
 					newIns, err = fromshardins.NewNewGOVConstitutionIns(
 						metaProposal.SubmitProposalInfo,
@@ -124,7 +122,7 @@ func buildStabilityActions(
 						acceptProposalIns.Voter,
 					).GetStringFormat()
 					if err != nil {
-						panic(err)
+						return nil, err
 					}
 				}
 				actions = append(actions, newIns)
@@ -132,7 +130,7 @@ func buildStabilityActions(
 		}
 	}
 
-	return actions
+	return actions, nil
 }
 
 // build instructions at beacon chain before syncing to shards
