@@ -193,7 +193,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 
 	//=========Remove shard to beacon block in pool
 	Logger.log.Infof("Remove block from pool %+v \n", *block.Hash(), block.Header.Height, blockchain.BestState.Beacon.BestShardHeight)
-	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.BestShardHeight)
+	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
 
 	Logger.log.Infof("Finish Insert new block %d, with hash %+v", block.Header.Height, *block.Hash())
 	return nil

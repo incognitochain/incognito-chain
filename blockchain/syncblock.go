@@ -68,6 +68,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			blockchain.InsertBlockFromPool()
 			blockchain.syncStatus.Lock()
 			blockchain.syncStatus.PeersStateLock.Lock()
+
 			userRole, userShardID := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Beacon.BestBlock.Header.Round)
 			userShardRole := blockchain.BestState.Shard[userShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
 			RCS := reportedChainState{
@@ -95,7 +96,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 					}
 					for shardID := range blockchain.syncStatus.Shards {
 						if shardState, ok := peerState.Shard[shardID]; ok {
-							if shardState.Height > blockchain.BestState.Shard[shardID].ShardHeight && shardState.Height >= blockchain.BestState.Beacon.BestShardHeight[shardID] {
+							if shardState.Height > blockchain.BestState.Shard[shardID].ShardHeight && shardState.Height >= GetBestStateBeacon().GetBestHeightOfShard(shardID) {
 								if RCS.ClosestShardsState[shardID].Height == blockchain.BestState.Shard[shardID].ShardHeight {
 									RCS.ClosestShardsState[shardID] = *shardState
 								} else {
@@ -120,7 +121,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 							}
 							for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 								if shardState, ok := peerState.Shard[shardID]; ok {
-									if shardState.Height > blockchain.BestState.Beacon.BestShardHeight[shardID] {
+									if shardState.Height > GetBestStateBeacon().GetBestHeightOfShard(shardID) {
 										if RCS.ClosestShardsState[shardID].Height == 0 {
 											RCS.ClosestShardsState[shardID] = *shardState
 										} else {
@@ -151,7 +152,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 				blockchain.SetReadyState(false, 0, true)
 				if userRole == common.SHARD_ROLE {
 					for shardID := range blockchain.syncStatus.Shards {
-						if RCS.ClosestShardsState[shardID].Height == blockchain.BestState.Shard[shardID].ShardHeight && RCS.ClosestShardsState[shardID].Height >= blockchain.BestState.Beacon.BestShardHeight[shardID] {
+						if RCS.ClosestShardsState[shardID].Height == blockchain.BestState.Shard[shardID].ShardHeight && RCS.ClosestShardsState[shardID].Height >= GetBestStateBeacon().GetBestHeightOfShard(shardID) {
 							blockchain.SetReadyState(true, shardID, true)
 						} else {
 							blockchain.SetReadyState(true, shardID, false)
@@ -185,8 +186,8 @@ func (blockchain *BlockChain) StartSyncBlk() {
 							}
 						}
 						for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
-							if blockchain.BestState.Beacon.BestShardHeight[shardID] < RCS.ClosestShardsState[shardID].Height {
-								currentShardReqHeight := blockchain.BestState.Beacon.BestShardHeight[shardID] + 1
+							if GetBestStateBeacon().GetBestHeightOfShard(shardID) < RCS.ClosestShardsState[shardID].Height {
+								currentShardReqHeight := GetBestStateBeacon().GetBestHeightOfShard(shardID) + 1
 								for peerID, peerState := range blockchain.syncStatus.PeersState {
 									if _, ok := peerState.Shard[shardID]; ok {
 										if currentShardReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
