@@ -127,11 +127,14 @@ func CreateShardInstructionsFromTransactionAndIns(
 	producerAddress *privacy.PaymentAddress,
 	shardBlockHeight uint64,
 	beaconBlocks []*BeaconBlock,
-) (instructions [][]string) {
+) (instructions [][]string, err error) {
 	// Generate stake action
 	stakeShardPubKey := []string{}
 	stakeBeaconPubKey := []string{}
-	instructions = buildStabilityActions(transactions, bc, shardID, producerAddress, shardBlockHeight, beaconBlocks)
+	instructions, err = buildStabilityActions(transactions, bc, shardID, producerAddress, shardBlockHeight, beaconBlocks)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, tx := range transactions {
 		switch tx.GetMetadataType() {
@@ -157,7 +160,7 @@ func CreateShardInstructionsFromTransactionAndIns(
 		instructions = append(instructions, instruction)
 	}
 
-	return instructions
+	return instructions, nil
 }
 
 //=======================================END SHARD BLOCK UTIL
