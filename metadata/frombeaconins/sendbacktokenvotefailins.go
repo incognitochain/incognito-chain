@@ -2,6 +2,7 @@ package frombeaconins
 
 import (
 	"encoding/json"
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/transaction"
@@ -30,7 +31,7 @@ func (txSendBackTokenVoteFailIns *TxSendBackTokenVoteFailIns) GetStringFormat() 
 	}
 	shardID := GetShardIDFromPaymentAddressBytes(txSendBackTokenVoteFailIns.PaymentAddress)
 	return []string{
-		strconv.Itoa(metadata.SendBackTokenVoteBoardFailMeta),
+		strconv.Itoa(component.SendBackTokenVoteBoardFailIns),
 		strconv.Itoa(int(shardID)),
 		string(content),
 	}, nil
