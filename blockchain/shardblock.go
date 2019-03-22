@@ -119,7 +119,11 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 		Logger.log.Error(err)
 		return nil
 	}
-	instructions := CreateShardInstructionsFromTransactionAndIns(blk.Body.Transactions, bc, blk.Header.ShardID, blk.Header.ProducerAddress, blk.Header.Height, beaconBlocks)
+	instructions, err := CreateShardInstructionsFromTransactionAndIns(blk.Body.Transactions, bc, blk.Header.ShardID, blk.Header.ProducerAddress, blk.Header.Height, beaconBlocks)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil
+	}
 	block.Instructions = append(block.Instructions, instructions...)
 	return &block
 }
