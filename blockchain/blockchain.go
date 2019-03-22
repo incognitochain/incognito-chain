@@ -1295,7 +1295,7 @@ func (blockchain *BlockChain) GetConstitutionIndex(helper ConstitutionHelper) ui
 // 		flag = common.NormalEncryptionFlag
 // 	} else if self.readyNewConstitution(helper) {
 // 		flag = common.Lv3EncryptionFlag
-// 		newIns, err := self.createAcceptConstitutionAndPunishTxAndRewardSubmitter(helper)
+// 		newIns, err := self.createAcceptConstitutionAndRewardSubmitter(helper)
 // 		instructions = append(instructions, newIns...)
 // 		if err != nil {
 // 			Logger.log.Error(err)
