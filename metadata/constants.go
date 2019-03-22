@@ -72,8 +72,8 @@ const (
 	GOVVoteProposalMeta             = 56
 
 	//statking
-	ShardStakingMeta  = 57
-	BeaconStakingMeta = 58
+	ShardStakingMeta  = 63
+	BeaconStakingMeta = 64
 )
 
 const (
