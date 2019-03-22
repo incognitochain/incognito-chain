@@ -69,10 +69,12 @@ const (
 	SendBackTokenVoteBoardFailMeta
 	DCBVoteProposalMeta
 	GOVVoteProposalMeta
+)
 
+const (
 	// STAKING
-	ShardStakingMeta
-	BeaconStakingMeta
+	ShardStakingMeta  = 1
+	BeaconStakingMeta = 2
 )
 
 const (
