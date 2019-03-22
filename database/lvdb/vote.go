@@ -74,15 +74,6 @@ func (db *db) AddVoteBoard(
 	return err
 }
 
-// GetNumberOfGovernor remove-soon
-func GetNumberOfGovernor(boardType common.BoardType) int {
-	numberOfGovernors := common.NumberOfDCBGovernors
-	if boardType == common.GOVBoard {
-		numberOfGovernors = common.NumberOfGOVGovernors
-	}
-	return numberOfGovernors
-}
-
 // GetNumberOfGovernorRange return
 func GetNumberOfGovernorRange(boardType common.BoardType) (int, int) {
 	if boardType == common.GOVBoard {
