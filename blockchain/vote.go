@@ -393,7 +393,11 @@ func (chain *BlockChain) neededNewGovernor(helper ConstitutionHelper) bool {
 
 func (chain *BlockChain) neededNewConstitution(helper ConstitutionHelper) bool {
 	// todo: hyyyyyyyyyyyy
-	return true
+	endBlock := helper.GetConstitutionEndedBlockHeight(chain)
+	if chain.BestState.Beacon.BeaconHeight >= endBlock {
+		return true
+	}
+	return false
 }
 
 func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper) ([][]string, error) {
