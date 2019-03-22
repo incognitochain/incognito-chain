@@ -81,6 +81,34 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 		if err != nil {
 			return err
 		}
+	case strconv.Itoa(component.ShareRewardOldDCBBoardIns):
+		shareRewardOldDCBBoardIns := frombeaconins.ShareRewardOldBoardIns{}
+		err := json.Unmarshal([]byte(inst[2]), shareRewardOldDCBBoardIns)
+		if err != nil {
+			return err
+		}
+		bsb.UpdateDCBFund(-int64(shareRewardOldDCBBoardIns.AmountOfCoin))
+	case strconv.Itoa(component.ShareRewardOldGOVBoardIns):
+		shareRewardOldGOVBoardIns := frombeaconins.ShareRewardOldBoardIns{}
+		err := json.Unmarshal([]byte(inst[2]), shareRewardOldGOVBoardIns)
+		if err != nil {
+			return err
+		}
+		bsb.UpdateGOVFund(-int64(shareRewardOldGOVBoardIns.AmountOfCoin))
+	case strconv.Itoa(component.RewardDCBProposalSubmitterIns):
+		rewardDCBProposalSubmitterIns := frombeaconins.RewardProposalSubmitterIns{}
+		err := json.Unmarshal([]byte(inst[2]), rewardDCBProposalSubmitterIns)
+		if err != nil {
+			return err
+		}
+		bsb.UpdateDCBFund(-int64(rewardDCBProposalSubmitterIns.Amount))
+	case strconv.Itoa(component.RewardGOVProposalSubmitterIns):
+		rewardGOVProposalSubmitterIns := frombeaconins.RewardProposalSubmitterIns{}
+		err := json.Unmarshal([]byte(inst[2]), rewardGOVProposalSubmitterIns)
+		if err != nil {
+			return err
+		}
+		bsb.UpdateGOVFund(-int64(rewardGOVProposalSubmitterIns.Amount))
 	case strconv.Itoa(metadata.DividendSubmitMeta):
 		return bsb.processDividendSubmitInstruction(inst)
 
@@ -109,6 +137,16 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 		return bsb.processUpdatingOracleBoardInstruction(inst)
 	}
 	return nil
+}
+
+func (bsb *BestStateBeacon) UpdateDCBFund(amount int64) {
+	t := int64(bsb.StabilityInfo.BankFund) + amount
+	bsb.StabilityInfo.BankFund = uint64(t)
+}
+
+func (bsb *BestStateBeacon) UpdateGOVFund(amount int64) {
+	t := int64(bsb.StabilityInfo.SalaryFund) + amount
+	bsb.StabilityInfo.BankFund = uint64(t)
 }
 
 func (bsb *BestStateBeacon) processUpdatingOracleBoardInstruction(inst []string) error {
