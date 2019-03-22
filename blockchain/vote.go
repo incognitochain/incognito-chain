@@ -35,7 +35,6 @@ type ConstitutionHelper interface {
 	GetCurrentNationalWelfare(chain *BlockChain) int32
 	GetThresholdRatioOfCrisis() int32
 	GetOldNationalWelfare(chain *BlockChain) int32
-	GetNumberOfGovernor() int32
 	GetSubmitProposalInfo(tx metadata.Transaction) (*component.SubmitProposalInfo, error)
 	GetProposalTxID(tx metadata.Transaction) (hash *common.Hash)
 	SetNewConstitution(bc *BlockChain, constitutionInfo *ConstitutionInfo, welfare int32, submitProposalTx metadata.Transaction)
