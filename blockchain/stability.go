@@ -379,6 +379,21 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 						return nil, err1
 					}
 					resTxs = append(resTxs, txs)
+				case metadata.SendBackTokenToOldSupporterMeta:
+					Logger.log.Info(metadata.SendBackTokenToOldSupporterMeta, "\n")
+					sendBackTokenToOldSupporter := frombeaconins.TxSendBackTokenToOldSupporterIns{}
+					err := json.Unmarshal([]byte(l[2]), &sendBackTokenToOldSupporter)
+					if err != nil {
+						Logger.log.Error("Here, why?2", err.Error(), "\n")
+						return nil, err
+					}
+					txs, err1 := sendBackTokenToOldSupporter.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, blockgen.chain, shardID)
+
+					if err1 != nil {
+						Logger.log.Error("Here, why?2????????", err1, reflect.TypeOf(err1), reflect.ValueOf(err1), "\n")
+						return nil, err1
+					}
+					resTxs = append(resTxs, txs)
 				case component.ShareRewardOldDCBBoardIns, component.ShareRewardOldGOVBoardIns:
 					shareRewardOldBoard := frombeaconins.ShareRewardOldBoardIns{}
 					err := json.Unmarshal([]byte(l[2]), &shareRewardOldBoard)
