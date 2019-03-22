@@ -1147,14 +1147,6 @@ func (blockchain *BlockChain) GetCustomTokenRewardSnapshot() map[string]uint64 {
 	return blockchain.config.customTokenRewardSnapshot
 }
 
-func (blockchain *BlockChain) GetNumberOfDCBGovernors() int {
-	return common.NumberOfDCBGovernors
-}
-
-func (blockchain *BlockChain) GetNumberOfGOVGovernors() int {
-	return common.NumberOfGOVGovernors
-}
-
 // func (blockchain *BlockChain) GetBestBlock(shardID byte) *Block {
 // 	return blockchain.BestState[shardID].BestBlock
 // }
