@@ -241,14 +241,6 @@ func (helper GOVConstitutionHelper) GetOldNationalWelfare(chain *BlockChain) int
 	return chain.BestState.Beacon.StabilityInfo.GOVConstitution.CurrentGOVNationalWelfare
 }
 
-func (helper DCBConstitutionHelper) GetNumberOfGovernor() int32 {
-	return common.NumberOfDCBGovernors
-}
-
-func (helper GOVConstitutionHelper) GetNumberOfGovernor() int32 {
-	return common.NumberOfGOVGovernors
-}
-
 func (helper DCBConstitutionHelper) GetProposalTxID(tx metadata.Transaction) (hash *common.Hash) {
 	metadataAcceptProposal := tx.GetMetadata().(*metadata.AcceptDCBProposalMetadata)
 	proposalTxID := &metadataAcceptProposal.AcceptProposalMetadata.ProposalTXID
