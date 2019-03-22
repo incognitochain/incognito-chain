@@ -76,7 +76,7 @@ type BestStateBeacon struct {
 	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
 	LastCrossShardState map[byte]map[byte]uint64 `json:"LastCrossShardState"`
-	lockMu              sync.Mutex
+	lockMu              sync.RWMutex
 }
 
 type StabilityInfo struct {
@@ -96,6 +96,20 @@ type StabilityInfo struct {
 
 func (si StabilityInfo) GetBytes() []byte {
 	return common.GetBytes(si)
+}
+
+func (self *BestStateBeacon) GetBestShardHeight() map[byte]uint64 {
+	res := make(map[byte]uint64)
+	for index, element := range self.BestShardHeight {
+		res[index] = element
+	}
+	return res
+}
+
+func (self *BestStateBeacon) GetBestHeightOfShard(shardID byte) uint64 {
+	self.lockMu.RLock()
+	defer self.lockMu.RUnlock()
+	return self.BestShardHeight[shardID]
 }
 
 func (bsb *BestStateBeacon) GetCurrentShard() byte {
