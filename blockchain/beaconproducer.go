@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -326,28 +325,6 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 	}
 
 	return shardStates, validStakers, validSwap, stabilityInstructions
-}
-
-//todo @0xjackalope process instruction without create new tx (eg: update db)
-//should be merge with buildStabilityInstruction
-func (blkTmplGenerator *BlkTmplGenerator) processInstruction(beaconBestState *BestStateBeacon, instruction []string) error {
-	//bestBlock := beaconBestState.BestBlock
-	metaType, err := strconv.Atoi(instruction[0])
-	if err != nil {
-		return err
-	}
-	contentBytes, err := base64.StdEncoding.DecodeString(instruction[1])
-	_ = contentBytes
-	if err != nil {
-		return err
-	}
-	switch metaType {
-	// process some instruction without create tx (update component,...)
-	default:
-		return nil
-	}
-
-	return nil
 }
 
 /*

@@ -106,7 +106,7 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 	return
 }
 
-func (self *BlockChain) createAcceptConstitutionAndPunishTxAndRewardSubmitter(
+func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 	helper ConstitutionHelper,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
 	nextConstitutionIndex := self.GetConstitutionIndex(DCBConstitutionHelper{})
@@ -410,7 +410,7 @@ func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper
 
 		// //Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 		// // step 2 Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-		updateProposalInstruction, err := self.createAcceptConstitutionAndPunishTxAndRewardSubmitter(helper)
+		updateProposalInstruction, err := self.createAcceptConstitutionAndRewardSubmitter(helper)
 		if err != nil {
 			return nil, err
 		}
