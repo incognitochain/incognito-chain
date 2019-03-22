@@ -1,5 +1,7 @@
 package jsonresult
 
+import "github.com/constant-money/constant-chain/metadata"
+
 type GetMempoolInfo struct {
 	Size          int      `json:"Size"`
 	Bytes         uint64   `json:"Bytes"`
@@ -8,4 +10,12 @@ type GetMempoolInfo struct {
 	MempoolMinFee uint64   `json:"MempoolMinFee"`
 	MempoolMaxFee uint64   `json:"MempoolMaxFee"`
 	ListTxs       []string `json:"ListTxs"`
+}
+
+type GetRawMempoolResult struct {
+	TxHashes []string
+}
+
+type GetMempoolEntryResult struct {
+	Tx metadata.Transaction
 }

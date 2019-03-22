@@ -23,3 +23,9 @@ type StakeResult struct {
 	PublicKey string `json:"PublicKey"`
 	CanStake  bool   `json:"CanStake"`
 }
+
+type TotalTransactionInShard struct {
+	TotalTransactions                 uint64 `json:"TotalTransactions"`
+	TotalTransactionsExcludeSystemTxs uint64 `json:"TotalTransactionsExcludeSystemTxs"`
+	SalaryTransaction                 uint64 `json:"SalaryTransaction"`
+}
