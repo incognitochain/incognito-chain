@@ -375,7 +375,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		Logger.log.Error(err)
 		return nil
 	}
-	txInstructions := CreateShardInstructionsFromTransactionAndIns(
+	txInstructions, err := CreateShardInstructionsFromTransactionAndIns(
 		block.Body.Transactions,
 		blockchain,
 		shardID,
@@ -383,6 +383,10 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		block.Header.Height,
 		beaconBlocks,
 	)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil
+	}
 	totalInstructions := []string{}
 	for _, value := range txInstructions {
 		totalInstructions = append(totalInstructions, value...)
