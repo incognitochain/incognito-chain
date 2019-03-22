@@ -331,9 +331,9 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 // RemoveTx safe remove transaction for pool
 func (tp *TxPool) RemoveTx(tx metadata.Transaction) error {
 	tp.mtx.Lock()
-	fmt.Println("...................................")
-	fmt.Println("txHash To Be Remove", tx.Hash())
-	fmt.Println("...................................")
+	// fmt.Println("...................................")
+	// fmt.Println("txHash To Be Remove", tx.Hash())
+	// fmt.Println("...................................")
 	err := tp.removeTx(&tx)
 	// remove tx coin hash from pool
 	txHash := tx.Hash()

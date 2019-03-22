@@ -23,13 +23,18 @@ var RpcHandler = map[string]commandHandler{
 	GetNetworkInfo:           RpcServer.handleGetNetWorkInfo,
 	GetConnectionCount:       RpcServer.handleGetConnectionCount,
 	GetAllPeers:              RpcServer.handleGetAllPeers,
-	GetRawMempool:            RpcServer.handleGetRawMempool,
-	GetMempoolEntry:          RpcServer.handleMempoolEntry,
 	EstimateFee:              RpcServer.handleEstimateFee,
 	EstimateFeeWithEstimator: RpcServer.handleEstimateFeeWithEstimator,
 	GetGenerate:              RpcServer.handleGetGenerate,
-	GetMiningInfo:            RpcServer.handleGetMiningInfo,
 
+	//pool
+	GetMiningInfo:               RpcServer.handleGetMiningInfo,
+	GetRawMempool:               RpcServer.handleGetRawMempool,
+	GetMempoolEntry:             RpcServer.handleMempoolEntry,
+	GetShardToBeaconPoolStateV2: RpcServer.handleGetShardToBeaconPoolStateV2,
+	GetCrossShardPoolStateV2:    RpcServer.handleGetCrossShardPoolStateV2,
+	GetShardPoolStateV2:         RpcServer.handleGetShardPoolStateV2,
+	GetBeaconPoolStateV2:        RpcServer.handleGetBeaconPoolStateV2,
 	// block
 	GetBestBlock:        RpcServer.handleGetBestBlock,
 	GetBestBlockHash:    RpcServer.handleGetBestBlockHash,
@@ -68,6 +73,10 @@ var RpcHandler = map[string]commandHandler{
 	GetBeaconPoolState:            RpcServer.handleGetBeaconPoolState,
 	GetShardPoolState:             RpcServer.handleGetShardPoolState,
 	GetShardPoolLatestValidHeight: RpcServer.handleGetShardPoolLatestValidHeight,
+	GetShardToBeaconPoolState:     RpcServer.handleGetShardToBeaconPoolState,
+	GetCrossShardPoolState:        RpcServer.handleGetCrossShardPoolState,
+	CanPubkeyStake:                RpcServer.handleCanPubkeyStake,
+	GetTotalTransaction:           RpcServer.handleGetTotalTransaction,
 
 	CanPubkeyStake: RpcServer.handleCanPubkeyStake,
 

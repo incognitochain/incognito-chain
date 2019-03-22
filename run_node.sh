@@ -37,7 +37,7 @@ go run *.go --spendingkey "112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNhc33pzChmJRv
 fi
 # Shard: 0, Role: Normal
 if [ "$1" == "shard0-normal" ]; then
-go run *.go --spendingkey "112t8rqnMrtPkJ4YWzXfG82pd9vCe2jvWGxqwniPM5y4hnimki6LcVNfXxN911ViJS8arTozjH4rTpfaGo5i1KKcG1ayjiMsa4E3nABGAqQh" --nodemode "auto" --datadir "data/shard0-2" --listen "127.0.0.1:9435" --externaladdress "127.0.0.1:9435" --norpcauth --rpclisten "127.0.0.1:9336" --enablewallet --wallet "wallet2" --walletpassphrase "12345678" --walletautoinit --relayshards "0"
+go run *.go --spendingkey "112t8rqnMrtPkJ4YWzXfG82pd9vCe2jvWGxqwniPM5y4hnimki6LcVNfXxN911ViJS8arTozjH4rTpfaGo5i1KKcG1ayjiMsa4E3nABGAqQh" --nodemode "auto" --datadir "data/shard0-2" --listen "127.0.0.1:9435" --externaladdress "127.0.0.1:9435" --norpcauth --rpclisten "127.0.0.1:9336" --enablewallet --wallet "wallet2" --walletpassphrase "12345678" --walletautoinit
 fi
 # Shard: 1, Role: Proposer
 if [ "$1" == "shard1-proposer" ]; then
