@@ -87,15 +87,6 @@ const (
 	Remove
 )
 
-//Stake amount
-// count in miliconstant
-const (
-	STAKE_SHARD_AMOUNT  = 1
-	STAKE_BEACON_AMOUNT = 2
-)
-
-const ()
-
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
 const (
 	AllShards  = -1
