@@ -18,6 +18,7 @@ const (
 	RewardGOVProposalSubmitterIns
 	ShareRewardOldDCBBoardIns
 	ShareRewardOldGOVBoardIns
+	SendBackTokenVoteBoardFailIns
 )
 
 const (
