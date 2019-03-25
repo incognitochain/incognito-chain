@@ -326,7 +326,7 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 func (blockchain *BlockChain) initBeaconState() error {
 	blockchain.BestState.Beacon = InitBestStateBeacon(blockchain.config.ChainParams)
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
-	blockchain.BestState.Beacon.Update(initBlock)
+	blockchain.BestState.Beacon.Update(initBlock, blockchain)
 
 	// TODO(@0xankylosaurus): initialize oracle data properly
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 1000 // $10
@@ -339,7 +339,9 @@ func (blockchain *BlockChain) initBeaconState() error {
 			[]byte{3, 36, 133, 3, 185, 44, 62, 112, 196, 239, 49, 190, 100, 172, 50, 147, 196, 154, 105, 211, 203, 57, 242, 110, 34, 126, 100, 226, 74, 148, 128, 167, 0},
 			// []byte{3, 36, 133, 3, 185, 44, 62, 112, 196, 239, 49, 190, 100, 172, 50, 147, 196, 154, 105, 211, 203, 57, 242, 110, 34, 126, 100, 226, 74, 148, 128, 167, 1},
 		},
-		UpdateFrequency: 10,
+		UpdateFrequency:        10,
+		OracleRewardMultiplier: 1,
+		AcceptableErrorMargin:  5,
 	}
 	blockchain.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress = []privacy.PaymentAddress{
 		// Payment4: 1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba
