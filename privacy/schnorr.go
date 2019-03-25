@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"crypto/sha256"
 	"errors"
 	"math/big"
 
@@ -125,6 +126,6 @@ func (sig *SchnSignature) SetBytes(bytes []byte) {
 func Hash(p EllipticPoint, m []byte) *big.Int {
 	b := append(AddPaddingBigInt(p.X, BigIntSize), AddPaddingBigInt(p.Y, BigIntSize)...)
 	b = append(b, m...)
-
-	return new(big.Int).SetBytes(common.HashB(b))
+	temp := sha256.Sum256(b)
+	return new(big.Int).SetBytes(temp[:])
 }
