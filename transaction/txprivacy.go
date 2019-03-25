@@ -17,7 +17,7 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
 	"github.com/constant-money/constant-chain/wallet"
 )
 
@@ -387,6 +387,8 @@ func (tx *Tx) verifySigTx() (bool, error) {
 
 	// verify signature
 	Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
+	Logger.log.Infof(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
+	Logger.log.Infof(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)
 	res = verKey.Verify(signature, tx.Hash()[:])
 
 	return res, nil
@@ -505,10 +507,14 @@ func (tx Tx) String() string {
 	record += strconv.FormatInt(tx.LockTime, 10)
 	record += strconv.FormatUint(tx.Fee, 10)
 	if tx.Proof != nil {
-		record += base58.Base58Check{}.Encode(tx.Proof.Bytes()[:], 0x00)
+		tmp := base58.Base58Check{}.Encode(tx.Proof.Bytes()[:], 0x00)
+		record += tmp
+		fmt.Printf("Proof check base 58: %v\n",tmp)
 	}
 	if tx.Metadata != nil {
-		metadata := tx.Metadata.Hash().String()
+		metadataHash := tx.Metadata.Hash()
+		//Logger.log.Infof("\n\n\n\n test metadata after hashing: %v\n", metadataHash.GetBytes())
+		metadata := metadataHash.String()
 		record += metadata
 	}
 	return record
@@ -518,7 +524,9 @@ func (tx *Tx) Hash() *common.Hash {
 	if tx.cachedHash != nil {
 		return tx.cachedHash
 	}
-	hash := common.HashH([]byte(tx.String()))
+	bytes := []byte(tx.String())
+	//Logger.log.Infof("\n\n\n\n TX bytes when hashing: %v\n", bytes)
+	hash := common.HashH(bytes)
 	tx.cachedHash = &hash
 	return &hash
 }
