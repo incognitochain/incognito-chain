@@ -2,7 +2,6 @@ package rpcserver
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
@@ -27,7 +26,7 @@ handleGetShardBestState - RPC get shard best state
 func (rpcServer RpcServer) handleGetShardBestState(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Shard ID component empty"))
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Shard ID empty"))
 	}
 	shardIdParam, ok := arrayParams[0].(float64)
 	if !ok {
@@ -53,7 +52,7 @@ func (rpcServer RpcServer) handleGetCandidateList(params interface{}, closeChan 
 	CBWFNR := rpcServer.config.BlockChain.BestState.Beacon.CandidateBeaconWaitingForNextRandom
 	epoch := rpcServer.config.BlockChain.BestState.Beacon.Epoch
 	result := jsonresult.CandidateListsResult{
-		Epoch:                                  epoch,
+		Epoch: epoch,
 		CandidateShardWaitingForCurrentRandom:  CSWFCR,
 		CandidateBeaconWaitingForCurrentRandom: CBWFCR,
 		CandidateShardWaitingForNextRandom:     CSWFNR,
@@ -88,20 +87,34 @@ func (rpcServer RpcServer) handleCanPubkeyStake(params interface{}, closeChan <-
 	arrayParams := common.InterfaceSlice(params)
 	pubkey := arrayParams[0].(string)
 	temp := rpcServer.config.BlockChain.BestState.Beacon.GetValidStakers([]string{pubkey})
-	fmt.Println("alksjdklajsdkljaskldjkasjdlkasjdkl ", temp)
 	if len(temp) == 0 {
 
 		return jsonresult.StakeResult{PublicKey: pubkey, CanStake: false}, nil
 	}
 	return jsonresult.StakeResult{PublicKey: pubkey, CanStake: true}, nil
 }
-func (self RpcServer) handleRetrieveCommiteeCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// candidateInfo := self.config.BlockChain.GetCommitteCandidate(component.(string))
-	// if candidateInfo == nil {
-	// 	return nil, nil
-	// }
-	// result := jsonresult.RetrieveCommitteecCandidateResult{}
-	// result.Init(candidateInfo)
-	// return result, nil
-	return nil, nil
+
+func (rpcServer RpcServer) handleGetTotalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Shard ID empty"))
+	}
+	shardIdParam, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Shard ID invalid"))
+	}
+	shardID := byte(shardIdParam)
+	if rpcServer.config.BlockChain.BestState.Shard == nil || len(rpcServer.config.BlockChain.BestState.Shard) <= 0 {
+		return nil, NewRPCError(ErrUnexpected, errors.New("Best State shard not existed"))
+	}
+	shardBeststate, ok := rpcServer.config.BlockChain.BestState.Shard[shardID]
+	if !ok || shardBeststate == nil {
+		return nil, NewRPCError(ErrUnexpected, errors.New("Best State shard given by ID not existed"))
+	}
+	result := jsonresult.TotalTransactionInShard{
+		TotalTransactions:                 shardBeststate.TotalTxns,
+		TotalTransactionsExcludeSystemTxs: shardBeststate.TotalTxnsExcludeSalary,
+		SalaryTransaction:                 shardBeststate.TotalTxns - shardBeststate.TotalTxnsExcludeSalary,
+	}
+	return result, nil
 }
