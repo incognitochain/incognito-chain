@@ -54,7 +54,7 @@ func (csRes *CrowdsalePayment) Hash() *common.Hash {
 	record := string(csRes.SaleID)
 
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

@@ -94,7 +94,7 @@ func (bsReq *BuySellRequest) Hash() *common.Hash {
 	record += bsReq.MetadataBase.Hash().String()
 
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

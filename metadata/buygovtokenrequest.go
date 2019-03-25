@@ -94,7 +94,7 @@ func (bgtr *BuyGOVTokenRequest) Hash() *common.Hash {
 	record += bgtr.MetadataBase.Hash().String()
 
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

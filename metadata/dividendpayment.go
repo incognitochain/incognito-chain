@@ -22,7 +22,7 @@ func (dp *DividendPayment) Hash() *common.Hash {
 
 	// final hash
 	record += dp.MetadataBase.Hash().String()
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

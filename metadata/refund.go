@@ -44,7 +44,7 @@ func (rf *Refund) Hash() *common.Hash {
 	record += rf.MetadataBase.Hash().String()
 
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

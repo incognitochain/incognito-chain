@@ -68,7 +68,7 @@ func (bsRes *BuySellResponse) Hash() *common.Hash {
 	record += bsRes.MetadataBase.Hash().String()
 
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
