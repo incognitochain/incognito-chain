@@ -6,30 +6,10 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 
-	"github.com/constant-money/constant-chain/cashec"
-	"github.com/constant-money/constant-chain/privacy"
-
 	"github.com/constant-money/constant-chain/wallet"
 )
 
 func main() {
-
-	a, _ := wallet.Base58CheckDeserialize("1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba")
-	k1 := base58.Base58Check{}.Encode(a.KeySet.PaymentAddress.Pk, 0x00)
-	_ = k1
-
-	burnPubKeyE := privacy.PedCom.G[0].Hash(1000000)
-	burnPubKey := burnPubKeyE.Compress()
-	burnKey := wallet.KeyWallet{
-		KeySet: cashec.KeySet{
-			PaymentAddress: privacy.PaymentAddress{
-				Pk: burnPubKey,
-			},
-		},
-	}
-	burnPaymentAddress := burnKey.Base58CheckSerialize(wallet.PaymentAddressType)
-	fmt.Printf("Burn payment address : %s \n", burnPaymentAddress)
-
 	keyWalletBurningAdd, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 	fmt.Println("======================================")
 	fmt.Println(keyWalletBurningAdd.KeySet.PaymentAddress.Pk)
