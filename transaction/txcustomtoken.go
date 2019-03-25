@@ -330,7 +330,7 @@ func (tx TxCustomToken) Hash() *common.Hash {
 		return tx.cachedHash
 	}
 	// final hash
-	hash := common.DoubleHashH([]byte(tx.String()))
+	hash := common.HashH([]byte(tx.String()))
 	return &hash
 }
 

@@ -88,7 +88,7 @@ func (of *OracleFeed) Hash() *common.Hash {
 	record += of.FeederAddress.String()
 	record += string(of.Price)
 	record += of.MetadataBase.Hash().String()
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

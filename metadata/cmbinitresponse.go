@@ -33,7 +33,7 @@ func (cres *CMBInitResponse) Hash() *common.Hash {
 
 	// final hash
 	record += cres.MetadataBase.Hash().String()
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
