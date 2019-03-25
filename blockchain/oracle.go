@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"math"
 	"sort"
 	"strconv"
@@ -78,7 +77,8 @@ func buildInstForOracleFeedReq(
 	return [][]string{returnedInst}, nil
 }
 
-func (blockGen *BlkTmplGenerator) groupOracleFeedTxsByOracleType(
+func groupOracleFeedTxsByOracleType(
+	bc *BlockChain,
 	beaconBestState *BestStateBeacon,
 	updateFrequency uint32,
 ) (map[string][][]string, error) {
@@ -88,7 +88,7 @@ func (blockGen *BlkTmplGenerator) groupOracleFeedTxsByOracleType(
 		if blockHash.String() == (common.Hash{}).String() {
 			return instsByOracleType, nil
 		}
-		blockBytes, err := blockGen.chain.config.DataBase.FetchBlock(&blockHash)
+		blockBytes, err := bc.config.DataBase.FetchBlock(&blockHash)
 		if err != nil {
 			return nil, err
 		}
@@ -143,12 +143,17 @@ func computeRewards(
 	delta := math.Abs(float64(sortedEvals[minPos].OracleFeed.Price - sortedEvals[maxPos].OracleFeed.Price))
 	selectedPrice := sortedEvals[medPos].OracleFeed.Price
 	rewardedEvals := []*Evaluation{}
+
 	for i, eval := range sortedEvals {
 		if i < minPos || i > maxPos {
 			continue
 		}
 		basePayout := eval.TxFee
-		eval.Reward = basePayout + uint64(oracleRewardMultiplier)*uint64(math.Abs(delta-float64(2*(eval.OracleFeed.Price-selectedPrice)))/delta)
+		if delta == 0 {
+			eval.Reward = basePayout + uint64(oracleRewardMultiplier)
+		} else {
+			eval.Reward = basePayout + uint64(oracleRewardMultiplier)*uint64(math.Abs(delta-float64(2*(eval.OracleFeed.Price-selectedPrice)))/delta)
+		}
 		rewardedEvals = append(rewardedEvals, eval)
 	}
 	return selectedPrice, rewardedEvals
@@ -215,7 +220,8 @@ func updateOracleValues(
 	}
 }
 
-func (blockGen *BlkTmplGenerator) buildRewardAndRefundEvals(
+func buildRewardAndRefundEvals(
+	bc *BlockChain,
 	beaconBestState *BestStateBeacon,
 ) ([]*Evaluation, map[string]uint64, error) {
 	beaconHeight := beaconBestState.BeaconHeight
@@ -225,7 +231,7 @@ func (blockGen *BlkTmplGenerator) buildRewardAndRefundEvals(
 	if beaconHeight == 0 || oracleNetwork == nil || uint32(beaconHeight)%oracleNetwork.UpdateFrequency != 0 {
 		return []*Evaluation{}, map[string]uint64{}, nil
 	}
-	instsByOracleType, err := blockGen.groupOracleFeedTxsByOracleType(beaconBestState, oracleNetwork.UpdateFrequency)
+	instsByOracleType, err := groupOracleFeedTxsByOracleType(bc, beaconBestState, oracleNetwork.UpdateFrequency)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -271,16 +277,13 @@ func (blockGen *BlkTmplGenerator) buildRewardAndRefundEvals(
 		updatedOracleValues[oracleType] = selectedPrice
 		rewardAndRefundEvals = append(rewardAndRefundEvals, rewardedEvals...)
 	}
-
-	// update oracle values in block header
-	// update(header.Oracle, updatedOracleValues)
 	return rewardAndRefundEvals, updatedOracleValues, nil
 }
 
 func (blockGen *BlkTmplGenerator) buildOracleRewardInstructions(
 	beaconBestState *BestStateBeacon,
 ) ([][]string, error) {
-	evals, updatedOracleValues, err := blockGen.buildRewardAndRefundEvals(beaconBestState)
+	evals, _, err := buildRewardAndRefundEvals(blockGen.chain, beaconBestState)
 	if err != nil {
 		return nil, err
 	}
@@ -307,22 +310,36 @@ func (blockGen *BlkTmplGenerator) buildOracleRewardInstructions(
 		instructions = append(instructions, inst)
 		totalRewards += eval.Reward
 	}
-	// TODO: move update best state beacon code to Update function in beaconprocess.go
+	return instructions, nil
+}
+
+func (bsb *BestStateBeacon) updateOracleParams(bc *BlockChain) error {
+	evals, updatedOracleValues, err := buildRewardAndRefundEvals(bc, bsb)
+	if err != nil {
+		return err
+	}
+	if len(evals) == 0 {
+		return nil
+	}
+
+	totalRewards := uint64(0)
+	for _, eval := range evals {
+		totalRewards += eval.Reward
+	}
+
 	if bestStateBeacon.StabilityInfo.SalaryFund < totalRewards {
 		bestStateBeacon.StabilityInfo.SalaryFund = 0
 	} else {
 		bestStateBeacon.StabilityInfo.SalaryFund -= totalRewards
 	}
-	updateOracleValues(beaconBestState, updatedOracleValues)
-	return instructions, nil
+	updateOracleValues(bsb, updatedOracleValues)
+	return nil
 }
 
 func (blockGen *BlkTmplGenerator) buildOracleRewardTxs(
 	evalStr string,
 	privatekey *privacy.SpendingKey,
 ) ([]metadata.Transaction, error) {
-	fmt.Println("buildOracleRewardTxs hahaha")
-
 	var eval Evaluation
 	err := json.Unmarshal([]byte(evalStr), &eval)
 	if err != nil {

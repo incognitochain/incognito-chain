@@ -106,7 +106,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	// fmt.Printf("Beacon Produce/AfterUpdate: Beacon Pending Validator %+v \n, Beacon Committee %+v \n, Beacon Validator Root %+v \n", beaconBestState.BeaconPendingValidator, beaconBestState.BeaconCommittee, beaconBlock.Header.ValidatorsRoot)
 	// fmt.Println("=======================================")
 	// fmt.Printf("Beacon Produce/Before Update: Shard Pending Validator %+v \n, ShardCommitee %+v \n, Shard Validator Root %+v \n", beaconBestState.ShardPendingValidator, beaconBestState.ShardCommittee, beaconBlock.Header.ShardValidatorsRoot)
-	beaconBestState.Update(beaconBlock)
+	beaconBestState.Update(beaconBlock, blkTmplGenerator.chain)
 	//============End Process new block with beststate
 	//==========Create Hash in Header
 	// BeaconValidator root: beacon committee + beacon pending committee
