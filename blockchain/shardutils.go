@@ -55,17 +55,14 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 	crossIDs := []byte{}
 	byteMap := make([]byte, common.MAX_SHARD_NUMBER)
 	for _, tx := range txList {
-		switch tx.GetType() {
-		case common.TxNormalType, common.TxSalaryType:
-			{
-				if tx.GetProof() != nil {
-					for _, outCoin := range tx.GetProof().OutputCoins {
-						lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-						shardID := common.GetShardIDFromLastByte(lastByte)
-						byteMap[common.GetShardIDFromLastByte(shardID)] = 1
-					}
-				}
+		if tx.GetProof() != nil {
+			for _, outCoin := range tx.GetProof().OutputCoins {
+				lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
+				shardID := common.GetShardIDFromLastByte(lastByte)
+				byteMap[common.GetShardIDFromLastByte(shardID)] = 1
 			}
+		}
+		switch tx.GetType() {
 		case common.TxCustomTokenType:
 			{
 				customTokenTx := tx.(*transaction.TxCustomToken)

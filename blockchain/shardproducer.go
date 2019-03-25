@@ -55,8 +55,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	crossTransactions, crossTxTokenData := blockgen.getCrossShardData(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight, crossShards)
 	crossTxTokenTransactions, _ := blockgen.chain.createCustomTokenTxForCrossShard(privatekey, crossTxTokenData, shardID)
 	txsToAdd = append(txsToAdd, crossTxTokenTransactions...)
-	// fmt.Println("crossOutputCoin", crossTransactions)
-	// fmt.Println("Shard Producer crossTxTokenTransactions", crossTxTokenTransactions)
 	//======Create Instruction===========================
 	//Assign Instruction
 	instructions := [][]string{}

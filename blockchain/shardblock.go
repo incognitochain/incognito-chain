@@ -148,10 +148,6 @@ func (blk *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byte]*Cros
 
 func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
 	crossShard := &CrossShardBlock{}
-	//TODO: optimize, loop 1 one time for all extracted information
-	// crossOutputCoin := getOutCoinCrossShard(block.Body.Transactions, shardID)
-	// crossTxTokenData := getTxTokenDataCrossShard(block.Body.Transactions, shardID)
-	// crossCustomTokenPrivacyData := getTxTokenPrivacyDataCrossShard(block.Body.Transactions, shardID)
 	crossOutputCoin, crossTxTokenData, crossCustomTokenPrivacyData := getCrossShardData(block.Body.Transactions, shardID)
 	// Return nothing if nothing to cross
 	if len(crossOutputCoin) == 0 && len(crossTxTokenData) == 0 && len(crossCustomTokenPrivacyData) == 0 {
