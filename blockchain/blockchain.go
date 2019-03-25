@@ -36,11 +36,6 @@ type BlockChain struct {
 	BestState *BestState
 	config    Config
 	chainLock sync.RWMutex
-
-	//=====cache
-	beaconBlock        map[string][]byte // TODO review not use
-	highestBeaconBlock string            // TODO review not use
-
 	//channel
 	cQuitSync  chan struct{}
 	syncStatus struct {

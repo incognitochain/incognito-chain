@@ -120,7 +120,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	// if committee of this epoch isn't store yet then store it
 	Logger.log.Infof("Store Committee in Epoch %+v \n", block.Header.Epoch)
 	res, err := blockchain.config.DataBase.HasCommitteeByEpoch(block.Header.Epoch)
-	// fmt.Println("Beacon Process/HasCommitteeByEpoch", res, err)
 	if res == false {
 		if err := blockchain.config.DataBase.StoreCommitteeByEpoch(block.Header.Epoch, blockchain.BestState.Beacon.ShardCommittee); err != nil {
 			return err
@@ -142,23 +141,19 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 		for fromShard, shardBlocks := range block.Body.ShardState {
 			for _, shardBlock := range shardBlocks {
 				for _, toShard := range shardBlock.CrossShard {
-
-					if fromShard == toShard { //TODO: hot fix - bug why cross shard byte map contains itself
+					if fromShard == toShard {
 						continue
 					}
-
 					if lastCrossShardState[fromShard] == nil {
 						lastCrossShardState[fromShard] = make(map[byte]uint64)
 					}
-
 					lastHeight := lastCrossShardState[fromShard][toShard] // get last cross shard height from shardID  to crossShardShardID
 					waitHeight := shardBlock.Height
-					fmt.Println("StoreCrossShardNextHeight", fromShard, toShard, lastHeight, waitHeight)
+					// fmt.Println("StoreCrossShardNextHeight", fromShard, toShard, lastHeight, waitHeight)
 					blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, lastHeight, waitHeight)
 					//beacon process shard_to_beacon in order so cross shard next height also will be saved in order
 					//dont care overwrite this value
 					blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, waitHeight, 0)
-
 					if lastCrossShardState[fromShard] == nil {
 						lastCrossShardState[fromShard] = make(map[byte]uint64)
 					}
@@ -173,7 +168,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	if err := blockchain.processBeaconOnlyInstructions(block); err != nil {
 		return err
 	}
-
 	// ************ Store block at last
 	//========Store new Beaconblock and new Beacon bestState in cache
 	Logger.log.Infof("Store Beacon BestState %+v \n", *block.Hash())
