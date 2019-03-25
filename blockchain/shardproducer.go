@@ -384,7 +384,8 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 		panic("TempTxPool Is not Empty")
 	}
 	currentSize := uint64(0)
-	for _, txDesc := range sourceTxns {
+	for i, txDesc := range sourceTxns {
+		Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
 		tx := txDesc.Tx
 		tempTxDesc, err := blockgen.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
 		tempTx := tempTxDesc.Tx
