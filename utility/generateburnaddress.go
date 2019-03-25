@@ -25,4 +25,9 @@ func main() {
 	burnPaymentAddress := burnKey.Base58CheckSerialize(wallet.PaymentAddressType)
 	fmt.Printf("Burn payment address : %s \n", burnPaymentAddress)
 	os.Exit(0)
+
+	/*keyWalletBurningAdd, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
+	fmt.Println("======================================")
+	fmt.Println(keyWalletBurningAdd.KeySet.PaymentAddress.Pk)
+	fmt.Println("======================================")*/
 }
