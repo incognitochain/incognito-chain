@@ -41,7 +41,7 @@ func GetShardToBeaconPool() *ShardToBeaconPool {
 }
 
 func (self *ShardToBeaconPool) SetShardState(latestShardState map[byte]uint64) {
-	fmt.Println("SetShardState")
+	// fmt.Println("SetShardState")
 	self.poolMutex.Lock()
 	defer self.poolMutex.Unlock()
 
@@ -54,12 +54,12 @@ func (self *ShardToBeaconPool) SetShardState(latestShardState map[byte]uint64) {
 		}
 		self.latestValidHeight[shardID] = latestShardState[shardID]
 	}
-	fmt.Println("SetShardState 1")
+	// fmt.Println("SetShardState 1")
 	//Remove pool base on new shardstate
 	self.removePendingBlock(latestShardState)
-	fmt.Println("SetShardState 2")
+	// fmt.Println("SetShardState 2")
 	self.updateLatestShardState()
-	fmt.Println("SetShardState 3")
+	// fmt.Println("SetShardState 3")
 }
 
 func (self *ShardToBeaconPool) GetShardState() map[byte]uint64 {

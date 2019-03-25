@@ -187,7 +187,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	blockchain.config.BeaconPool.SetBeaconState(blockchain.BestState.Beacon.BeaconHeight)
 
 	//=========Remove shard to beacon block in pool
-	Logger.log.Infof("Remove block from pool %+v \n", *block.Hash(), block.Header.Height, blockchain.BestState.Beacon.BestShardHeight)
+	Logger.log.Infof("Remove block from pool block %d with hash %+v \n", *block.Hash(), block.Header.Height, blockchain.BestState.Beacon.BestShardHeight)
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
 
 	Logger.log.Infof("Finish Insert new block %d, with hash %+v", block.Header.Height, *block.Hash())
@@ -524,16 +524,16 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 			delete(bestStateBeacon.Params, l[1])
 		}
 		if l[0] == SwapAction {
-			fmt.Println("---------------============= SWAP", l)
+			fmt.Println("SWAP", l)
 			// format
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
 			inPubkeys := strings.Split(l[1], ",")
 			outPubkeys := strings.Split(l[2], ",")
-			fmt.Println("---------------============= SWAP l1", l[1])
-			fmt.Println("---------------============= SWAP l2", l[2])
-			fmt.Println("---------------============= SWAP inPubkeys", inPubkeys)
-			fmt.Println("---------------============= SWAP outPubkeys", outPubkeys)
+			fmt.Println("SWAP l1", l[1])
+			fmt.Println("SWAP l2", l[2])
+			fmt.Println("SWAP inPubkeys", inPubkeys)
+			fmt.Println("SWAP outPubkeys", outPubkeys)
 			if l[3] == "shard" {
 				temp, err := strconv.Atoi(l[4])
 				if err != nil {

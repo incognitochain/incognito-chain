@@ -469,7 +469,6 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 						if !hash.IsEqual(&targetHash) {
 							return NewBlockChainError(CrossShardBlockError, errors.New("Cross Output Coin From New Block not compatible with cross shard block in pool"))
 						}
-						//TODO: compare cross custom token
 						txTokenData := CrossTxTokenData{
 							TxTokenData: toShardCrossShardBlock.CrossTxTokenData,
 							BlockHash:   *toShardCrossShardBlock.Hash(),
