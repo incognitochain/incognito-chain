@@ -38,7 +38,7 @@ const (
 	MainnetInitCmBToken               = 0
 	MainnetInitBondToken              = 0
 	MainnetFeePerTxKb                 = 0
-	MainnetGenesisblockPaymentAddress = "1UuyYcHgVFLMd8Qy7T1ZWRmfFvaEgogF7cEsqY98ubQjoQUy4VozTqyfSNjkjhjR85C6GKBmw1JKekgMwCeHtHex25XSKwzb9QPQ2g6a3"
+	MainnetGenesisblockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -48,15 +48,9 @@ var MainnetInitConstant = []string{}
 // public key
 var PreSelectBeaconNodeMainnetSerializedPubkey = PreSelectBeaconNodeTestnetSerializedPubkey
 
-// privatekey
-var PreSelectBeaconNodeMainnet = PreSelectBeaconNodeTestnet
-
 // For shard
 // public key
 var PreSelectShardNodeMainnetSerializedPubkey = PreSelectShardNodeTestnetSerializedPubkey
-
-// privatekey
-var PreSelectShardNodeMainnet = PreSelectShardNodeTestnet
 
 // END CONSTANT for network MAINNET
 
@@ -79,10 +73,10 @@ const (
 	TestnetInitCmBToken               = 10000
 	TestnetInitBondToken              = 10000
 	TestnetFeePerTxKb                 = 1
-	TestnetGenesisBlockPaymentAddress = "1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba"
+	TestnetGenesisBlockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
 )
 
-var TestnetInitConstant = []string{`{"Version":1,"Type":"s","LockTime":1549889112,"Fee":0,"Info":null,"SigPubKey":"A7GGbCnosNljq25A5o4VIGs7r6WOcs3OrDBJUFd28eEA","Sig":"4gzqBc1TnROMjEdGW1DdIlLRA6pAwbcC3r1macAVy8OaOQaWxcSQXubEgm3oKcJAyE7OnEckV35pwAWD4vr7+A==","Proof":"11111116WGHqpGSLR21nkwRaRVR2vJBD6DR8wKQfB5VCC4TNEXz1XeskmWDehJbmDvr4EeC8x5vGFSrNq4KRs4GoDgn85t7CHJPQWu6s8QWhQVRd621qqT5mBofPcB9WGgQPsD7i4WPxoPKVYhS3jaRXbT2C9S1tHQbW9TytbZKbASDgKygqeijEoWsLW4RXct1oGn2wat2Q1kdPX35AKW1B2R","PubKeyLastByteSender":0,"Metadata":null}`, `{"Version":1,"Type":"s","LockTime":1549889112,"Fee":0,"Info":null,"SigPubKey":"AySFA7ksPnDE7zG+ZKwyk8SaadPLOfJuIn5k4kqUgKcA","Sig":"0jcALduldAkey/6EmKW3EyUQGpJCZ5Vr1lmc7QlzOL3FYEHVwF3kXcDkuPXqqjaH8ueJjDGDqx4N8KpWDfSi7Q==","Proof":"11111116WGHqpGNRGpV3VBz1rndCx6TP4A8eLYeocjg8izynA2YAkx7x38mCir9Nm3oCubXdn25F4sj4jHryBtSbdwJj6o4X43YDftZ9nPsrw4m8DyF6NkxNXbvGj9egkUtypup34hdCXv2L8j5tB9cVUCXVqWeC9axqLLoibXEay4fLrroeRnfNhJ1moNDoQqyRVLrcC7yUjDQz6AUsdd3uFB","PubKeyLastByteSender":0,"Metadata":null}`}
+var TestnetInitConstant = []string{`[{"Version":1,"Type":"s","LockTime":1553499428,"Fee":0,"Info":null,"SigPubKey":"AsKCsGYkt3JthzFysVzWHxkESGfEoSRFeWafGB+DZRQA","Sig":"wdz+/yfK83Z6jAx+c8PTSBFF1rBZ8vizHanUp60mprI/rvYSseInpfIDEvGYei8DV8RE558+siktzIMRbrKN/A==","Proof":"11111116WGHqpGKhPnvZ7i2w3heBopZQYdwc4cG7c4H53LZKzjBdafgMwxaXKzLhaeHyPqfuTUVMYYWKUGYwnQ4F7VaMXit6aFEzcg6wDW1HYcWTSKR5mBpJ73XqFJaVg72uts16KZ7xN7Ywi5JQUhmX4C6tTsSHnPhntdzpkReBgYEUX6nwgyGJ2kuoNbXA5i8pVvLkaB9nkhg8HviyvuHphd","PubKeyLastByteSender":0,"Metadata":null}]`}
 
 // for beacon
 // public key
@@ -114,35 +108,6 @@ var PreSelectBeaconNodeTestnetSerializedPubkey = []string{
 	"15PMBJz2vQDPWXmDUZY33SN4uG5BKgsHk2sTxkJo156PJPy28dm",
 }
 
-// privatekey
-var PreSelectBeaconNodeTestnet = []string{
-	"112t8rxTdWfGCtgWvAMHnnEw9vN3R1D7YgD1SSHjAnVGL82HCrMq9yyXrHv3kB4gr84cejnMZRQ973RyHhq2G3MksoTWejNKdSWoQYDFf4gQ",
-	"112t8rnXDNYL1RyTuT85JXeX7mJg1Sc6tCby5akSM7pfEGApgAx83X8C46EDu6dFAK6MVcWfQv2sfTk5nV9HqU3jrkrWdhrmi9z34jEhgHak",
-	"112t8rnXmEeG5zsS7rExURJfqaRZhm6r4Pypkeag2gprdhtgDpen3LwV68x1nDPRYz2zhyhJTJCGvq1tUx4P1dvrdxF9W9DH7ME7PeGN2ohZ",
-	"112t8rnXZD2GmbVAP3xBefJaorCgebytpoRK1oAzcgoNNSVtXzoRTu21KeSmnRbzvd7qMJd1mTcsqFS1CGZ8UpY4mFRZzBa69aVcFWpLXuRv",
-	"112t8rnXxR8GDWhm5Shn8GAaCHFNLXyFpz4Ln8wCcDCkmnJLNU4msYvCaXShxcp2mEoUxyVpGcyYtk2JzntZFZ4DNpwAc7QVif6r2oeLj2Qo",
-	"112t8rnYBW9trs5rzxrMzLU5AnzngQhbp6X4c3xyamFkWU7PwWRq6gprDkm6mf3ZjxaeYQmSpe3xorpWHo3JLLZFHCHSgqd8u19XkVuMGz1M",
-
-	"112t8rnXRwPSzrQFjCbDnciutb3K8MnbGVAxLzaYK8UhGjr8JKbR4CwGmiibz17CieTUxtgPEzqLiufsxG7kwfNEdh6PjWtqvcdULpkHsGVS",
-	"112t8rnYAR1CmGRPjhGSeSSDgQgzEB1M8asjUwhN63CAwh74uTisQRbSUvXG6dbf3hmS63gAkudevHc4JLVeTboNXMr6c5cVPAHXgqtekLcc",
-	"112t8rnYbn9vXZpmkn7gN71PY5qtF4i8vutwfKEJV4wdw9YBnJnooRumw9iucKY3XSeAuDNLwGK9xYKimUeHrogqu7rYyVTbqRsX3knnHeSJ",
-	"112t8rnZEM3qDq5eiFwmhznYdZiuEAxhEFNpvu3PqVua51vDhhEpwJ3WH14G5UazfXSpY2BD7i1dac74eChhyQDm38x5ZJCfs1F1wTr4eDNh",
-	"112t8rnZhsatLCpVW8E2PccMbQD64CHybdFxbiAMbiF7nSuQ9nY5gMxvueVi9JVmVgJTjm4CWFGSxbMN3ouMbKoaygkk1ru5inqsaRfWo6DQ",
-	"112t8rnaRzEQ4vingMe1ZSjuC83eKuXr2tPQhuvp7JsURJdHa5TEhFQRzY1zi8RraKqXzcWPxrSfVFxeeXUj1MFPUtCh7ji3PdCFzZvMe36Z",
-	"112t8rnayWyHLvZboXXz5SoJ7C8TqGxXJYBkbU8RDq12x6R7ck7q8STuCZpTbZ7ZdX3NqM2iu3sVAmbkG5RKUMvLTgUiMcTu6w9k2zDCSwLN",
-	"112t8rnbaTV3J9dbWcddPwc1vNacJckg3qpS3RUfybE1e5rEop7zRKaEKUUWA7aKgLjAPyMpNZ7h6zSGedMB7CAKp4wxVQJVd1vLQyJCB1b6",
-	"112t8rnbuoERjJSvDScFhJh6dPChenaYcGwnfXFGB9CpKxYavM4xHmuX3J9HRMMpnpLsABaWJuxyqi9ch7Cwf6y1sUTA4KCmECPZkj6BXzNp",
-	"112t8rncXpqe4cHE4yrwowipdYuGturFovzHWuWJWQPe6zqmDGmEAASnbDbeXvq9GhtRiH2zeyVDGGsxYZYpBiUV14jiGrZ5xiXCxgvtrhPe",
-	"112t8rndAXCuZ96NFFubQmHCytTBihK9gjasF3nrvawkgWTiNTRq6vvoVgRUhNPaxwswxtoPJ25EGNKo2Sr6dNeUYbvcuYdM1SoebND8qGNT",
-	"112t8rnduMvZ6GSsgWaBhBaF6gknBYqPT6gy1GGnjDwrFNFKhGqJ5gNzT7daYysV8a7WnCaknn24NUf7E69MNWm8WCN841ZGm33bC3y47pUq",
-	"112t8rneGa8Hwc8cw93xe14aoXrd5T1fhWe1nohhPXwe8SAvsxMijdpvvkNRd6rLU5KB65AfywpYa9tmu4ifcTyucXwJJcJ9yLSEp7KhYGT5",
-	"112t8rnesT45PaMb4FymSe18exVWfwJUJCV7fUZ86LV3vvADbbGCs7eiMrM1a7ifMGpCfoDcVEZKC7aPXrfPqRbnZWqaUhVP4gebfmSsqwKU",
-	"112t8rnfcTU5rdWyj8bFboJsVvRW8g7KPTGARsNmvs3nYn23XmJicvp4vyj17LpKs8MgjgXpqRQxAizTi2JCEfjVmYEXqZMUhQQaZVN111CS",
-	"112t8rngAy7uR1VvCKtVcLTCXYrY72FEn4z4H13QCWsvaFzoJt3DpZnyVLGcg7GXcTK7uV729yKe9Ayp6XYdvwExtMZGCCb5fSCgktmNMn1C",
-	"112t8rngZqsK5Tos41TuVvLNfLdx9bneACnPBphnzM6ueZZD4ExoYc1T6ajToRd6AKBhiF28m9crd4L6RTuLLzfC8GqwdKFGmrHVfqGFzEPX",
-	"112t8rnh7F9ByXV97LKsmBSqton4yqqYNfKi6Ty2e5mmnd86ovC4QdbpVgSWcz5ygE7xWX74XHcqRE4VnZTXMGrH2z1sPKfDKwhuB3L1zjr1",
-}
-
 // For shard
 // public key
 var PreSelectShardNodeTestnetSerializedPubkey = []string{
@@ -162,26 +127,6 @@ var PreSelectShardNodeTestnetSerializedPubkey = []string{
 	"16uYeyZyRe3pzpWsyjJvqVGsa65R3A4myCzYYX9qr2Gw6L4YBnu",
 	"18eckf9WNsj4hrm9goesUqeXgDzracNbr7m86qpHDLbB3jEC4wt",
 	"17bgRBWmoNUCRZFAtmRKo7af98t53AWWmVagB5cwPj26Ri7ipPg",
-}
-
-// privatekey
-var PreSelectShardNodeTestnet = []string{
-	"112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNhc33pzChmJRvikZNc3Dt5V7quhdzjWW9Z4BrB2BxdK5VtHzsG9JZdZ5M7yYYGidKKZV", //shard 0
-	"112t8s2UkZEwS7JtqLHFruRrh4Drj53UzH4A6DrairctKutxVb8Vw2DMzxCReYsAZkXi9ycaSNRHEcB7TJaTwPhyPvqRzu5NnUgTMN9AEKwo", //shard 0
-	"112t8rnYY8UbXGVJ3PsrWxssjr1JXaTPNCPDrneXcQgVQs2MFYwgCzPmTsgqPPbeq8c4QxkrjpHYRaG39ZjtwCmHMJBNh2MxaQvKWw5eUGTM", //shard 0
-	"112t8rniLPf1ten3xsPpFx2P6Ug7D4UVz4yYGKQfk8YpzY3RDEqmQ9FxTXd9G6r6dJXb9URqvNApfQzVQqqRqvmfarRnaR4tVUATrxbmcQD6", //shard 0
-
-	"112t8rnYoj4LesSwRsseGCCYi4J2Py5QxytKKF2WixwEYP4opKUNL2Av9bR2zjfLewf3PQeKcNnuRTTPKgZSJaZH8dfoqY2rmHNekmGMBNDX", //shard 1
-	"112t8rnZ5aGQqJw9bg6fR8AiGe9NFRtSmn73Scd4oNJcE5BNY4Rbju2amkTRW5PUaFpETkKAdSJUMqptjFYb3B8PVAcQhrqooieNFXe5jzTj", //shard 1
-	"112t8rnZUKcW5CBDojVmMD6PmDJzR3VtfqFGWG6HRT9PocB6aewekjebWMm9aQnSncgwDV2GMqAWzspzFYL2vs3C3KnZB9H5YSE4s1SdotHb", //shard 1
-	"112t8rnhvfmkbNz6bmrtBM74pHiUFgML4yhuSZ431teYD3S1sEUVPKpB6gGFjgrPu8e9uc7eqfnmqqtj9kTxYXTRbYkvyrsv3ydxVPmRM8fX", //shard 1
-
-	"112t8rnZdou7TJBdGsWUJ3jWxuQYHdEKndzmKHhHzjdHzckLf7dAz4uBr2oVPF3ChNjs9owpobjaySzPrK3nUsZukVWv2MybKiajw6kD6M69",
-	"112t8rna913eNyB7uyfi6Nbpg9Fqv4ic8uyCyC79S8MhkTgVQYnxpEJFBQZsEveNa3AGWqHoBiEp1dgMH5e2UUpcN6XLvbVo6jaiy3UiiaUY",
-	"112t8rnaTDoXRzYbiB5BZKdZcxjEEKoZ7W4h5QFJ7iwgQ1MqDALCL5c7sexj42GvMLHsXbCmMcjx4JZEUW2UramvgrTwVr9TCp16obmuwTCs",
-	"112t8rnaet4nhVpq517eXmCNnE4JAd2EsTZgfzn6SVKgfSQ6rS7h6AYETMBUNkiZ8PpXqRwCYjpGCLk5DpPhHQNqa8tcRacMKffbYoTWGK9W",
-	"112t8rnb1VhdWUR4SwVNTAokxntpNT5EcLFg6w6DovD9ZptT1DFsAXfrorLofP9uzCZC3JechZowMnc7fcXJ8nvsjdSEr3M6tzWVYBdLJmNW",
-	"112t8rnbDuvxqCrnzQbRkBLrrGoaqTHnvKSBa4tdt4585gJHJHcsm4shE4yBardCsLkXV2Rtogom6Gy8rn4Z5vQXXmanBoVPn2wQhFLTYz4E",
 }
 
 // END CONSTANT for network TESTNET
