@@ -81,52 +81,36 @@ var TestnetInitConstant = []string{`[{"Version":1,"Type":"s","LockTime":15534994
 // for beacon
 // public key
 var PreSelectBeaconNodeTestnetSerializedPubkey = []string{
-	"15NmWBEbc8faj4QxHjBh1ugpkuBC8qaoRAp2mktKiwcKiaQgV8i",
-	"16QMc6ARYki7eL3p8cj8T8b54ZAhPrnBcfaTY9CgPBDKEtwcm2u",
-	"16S3Db9V2kqmmogfggKAD2bpJjXcveJcdUQmx9S3ewEGQBE3rrv",
-	"158haewyeNr4WXGk4Bao2MUonNNaAjSpYeUTJ8JoD4at2AjVS45",
-	"177ZHyh2WpZeVcFPJULigwkH6dahem4jDHkXQMZGNgVDijyKjKJ",
-	"1671hBGTAT1ui2BQGqpzYyy3pVLPvdDTPEMLfoLix7igUyzG6sE",
+	"17dTfsw6VVuN2Ebf6AxjU2ewPC9DtVCnjPzoPRpSiexqVLtFuZa",
+	"16Vi9kjv1RDRpBLdVqc1i3wdnbqPntLL8AxkzxwBU1iCRuCPUbr",
+	"16zLUs4RcJ6HhMEn26bfeZdw224BQxAm5RpefKNidowJR3KmZ5u",
+	"165Nbz2ZZm52JdzUiSdQ73qTKbQvjBoU88zrhBGej64oGoQoQZ1",
+	"16MaJTDAgw4jxpiReBu61uRqkm84ywNwzpwx2xo6Jj6AUh2scU8",
+	"16Ekwi3fCqCStjzi1rbgV2S4kniQgbHSEiWpoanetue2dKaJXbb",
 
-	"15QDhbfx5bE7HZPkpmsayKPD13ZM1zfrCJXdbMm8y63LZU8fbG9",
-	"15yb9gJC7QH3hTdjxNyV4Mdr7FJkjia5SQ5Bbwb4EHAtBTXSWC1",
-	"15MC1D4orEfnJFaEeebVuUmxq2UDAwcogd8efPMDxC2cJW2MFDD",
-	"15nAkpuo4BKCPk3VFey81WZaHV1YYV8HW8925eNb24mhTTtHFqV",
-	"18E2LKY4PND2tAwcM9hNsZsvK1tUpKUwtLjMVRmjCBURKKD14Du",
-	"17AHQTTHCnTDrt1wj3t7rThjEQndrSpk75Pv4xEpAsMw4caD4xa",
-	"16XruBoQVSdMwvLzo28cL4SmdQJyBLrZD3Y9ezjAdcxaBp6GXUv",
-	"16rsKSNDMGUcr7Xpt5PpkA1KiHkujEcF9BPMN9AW4gS8ZZNBu9R",
-	"15QRR2WDLQcpru794E7GFjsJthhJWLhSDo2t9DToizWBAXZkCyi",
-	"17k3AdAH1crag9gV4VNT7SLK76zbnc8jMUw9WPmztk7GG5n5YWt",
-	"17HZ2km8EHB94EnxC9o4nP14GbzrB4Ci7yULmS7DcooY6eP4wNG",
-	"17p8PgmAUpmm6CJqAtw8B5W3hLCdVYiq1W3fZ7v4hy183Pq9xYf",
-	"17PKTxtJUtFLb73tu77qPqYNVvYmGMPLPCh9A1ukG3VvWqWSHQL",
-	"16eykkm9y72xbrG9pLhdCWm7FVEY77gCrbpaJMgp8Ck7SZXDDkn",
-	"188cBXFqnKoTroNAPtwYThbbmEoy1gAZnLCYQPL4q6gEFbz1xCs",
-	"164DBoH1SDYY5xnzctuE7KEnut48tbeSTQ27zHXaTv8vvbUc2GF",
-	"15rfZautPLY7mxe2MrBCmgpmRCoXfCXe4Ay1mKRKETcxabGQeDq",
-	"15PMBJz2vQDPWXmDUZY33SN4uG5BKgsHk2sTxkJo156PJPy28dm",
+	"15L68KC5u26ZqMXjFMvTZgMJcZAKjtVvvjN4cUPso7DDYwepSHa",
+	"16sU7voKM75cKkn6weD6DBTTRXD8uqqnz5yYbdLy9X8SA7RWVJf",
 }
 
 // For shard
 // public key
 var PreSelectShardNodeTestnetSerializedPubkey = []string{
-	"177KNe6pRhi97hD9LqjUvGxLoNeKh9F5oSeh99V6Td2sQcm7qEu", //shard 0
-	"16W9eKEqyJqKKDkzxcSAKu4G2b1HvZh9FDRmM3ZyC4tN3MkVx6z", //shard 0
-	"17zmxXqnwTK1YE42eNqVJ51mvRaCFoqzm6HogpQQBBt8dWwaUgV", //shard 0
-	"17wqq26DuTQ6Hr7ocuMBdeu934rLqSoMyxib4RQdQhLUQ7Le3KD", //shard 0
+	"183GBqPhSfcEFZP7MQFTnuLVuX2PRkd5HFA3qkqkLN4STghvxpw", //shard 0
+	"15ezEJs61P8qq6F8Zrhbcd2RpuqrtDWtzPheJWiEM6ct1sWjFTi", //shard 0
+	"152nVbYDgLDYve2RA2CQLEJMTUTAHSuZmT6s4DnsaeeDQ8bDD82", //shard 0
+	"16HXR5Jp2LJVV1vV9NTqpPVsVAZvQigv8huJLC9j4TZXnkWc5cw", //shard 0
 
-	"17S44aXG7y9yEmb932MWQrrRT4Rc6pehK2UMC5np84QB2UYZdZM", //shard 1
-	"18YNhMumBmeWE8GJJGbW19esqtB22zUiQx73Rwifxkyt1YKCp1s", //shard 1
-	"15QYRykFuiFhoU56EAJYFRXn5UWurSuyGiZox9y7rCoSzpKW62H", //shard 1
-	"15Mjx8UwK9hG2xFrmyVxco39BSDLidvcy7MBDTivuPBme6JJ24e", //shard 1
+	"16VVUEPJR3uwbkgyVXcwiifsJLcqqR95onn7sZ3jzfs1QofLv11", //shard 1
+	"14zf4SMg7Jfmmaq64jkjcfRBY8NB9xkg9adSBkXisoEiXUWxxs3", //shard 1
+	"15tZEEk7qvyFUN9rdLWfSMZj28VDWTywTW41WTLcpYNCpRGpqqu", //shard 1
+	"188xSvTr2ktocRgLPfKaAtw8vgqrgKSMjJD7VPxEoopCLyKxHFi", //shard 1
 
-	"17E9zkHtf495WBkdo47vDB2AVTLLtSq5QtpFU2X7sQcEgHSLmfB",
-	"16zsNt8d4UEtGR5c5gLfW4GvhWe3NXQv9K3tBEfom8FTYKNDeim",
-	"173HS3C7RFGJDWH8YwtDvMG1s9tgrHu69DtMxVi9NsunwWnrWjk",
-	"16uYeyZyRe3pzpWsyjJvqVGsa65R3A4myCzYYX9qr2Gw6L4YBnu",
-	"18eckf9WNsj4hrm9goesUqeXgDzracNbr7m86qpHDLbB3jEC4wt",
-	"17bgRBWmoNUCRZFAtmRKo7af98t53AWWmVagB5cwPj26Ri7ipPg",
+	"177wqpiaSaswghv2z2y13KR6RPwfMm6mbeTtnfMEdH2iPhmxEbv",
+	"16HxssV6VKrGs9qNnCoA1bXi5Uqjco8DyhYLLLqmhgJPAGHyk9A",
+	"1771T9b7vo426iizqfyjTVfKz5DM76eQvCdxREJBkEuCD7xXyaF",
+	"17wUTdX3qLdyoiw6LAcQmBQYEnDpkYCCKir22WRzfcSXQ1CCNug",
+	"15FVc7gKiP9hrazFSQDmJ2TkBi3s9qD3FQBcqCGzvZhLFHxKLLD",
+	"17K1jyVmJ94gKmH5eok9XAzCUjuCk64bFzZ1UFtQFTTz6duue8d",
 }
 
 // END CONSTANT for network TESTNET
