@@ -38,7 +38,7 @@ func NewGOVVoteProposalMetadata(
 func (govVoteProposalMetadata *GOVVoteProposalMetadata) Hash() *common.Hash {
 	record := govVoteProposalMetadata.VoteProposalMetadata.ToBytes()
 
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

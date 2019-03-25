@@ -53,7 +53,7 @@ func (txTokenPrivacyData TxTokenPrivacyData) JSONString() string {
 
 // Hash - return hash of custom token data, be used as Token ID
 func (txTokenPrivacyData TxTokenPrivacyData) Hash() (*common.Hash, error) {
-	hash := common.DoubleHashH([]byte(txTokenPrivacyData.String()))
+	hash := common.HashH([]byte(txTokenPrivacyData.String()))
 	return &hash, nil
 }
 
