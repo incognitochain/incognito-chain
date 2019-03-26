@@ -183,9 +183,11 @@ const (
 	CreateAndSendTxWithCMBDepositSend     = "createandsendtxwithcmbdepositsend"
 	CreateAndSendTxWithCMBWithdrawRequest = "createandsendtxwithcmbwithdrawrequest"
 
-	// wallet
+	// walletsta
 	GetPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
 	DefragmentAccount              = "defragmentaccount"
+
+	GetStackingAmount = "getstackingamount"
 )
 
 //Fee of specific transaction
