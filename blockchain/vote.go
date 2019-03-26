@@ -142,7 +142,7 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 	resIns = append(resIns, acceptedProposalIns)
 	boardType := helper.GetBoardType()
 	boardIndex := helper.GetBoard(self).GetBoardIndex()
-	totalReward := uint64(helper.GetCurrentNationalWelfare(self))
+	totalReward := uint64(helper.GetCurrentNationalWelfare(self)) * BaseSalaryBoard
 	listVotersOfCurrentProposal, err := db.GetCurrentProposalWinningVoter(boardType, helper.GetConstitutionInfo(self).ConstitutionIndex)
 	if err == nil {
 		voterAndSupporters := make([][]privacy.PaymentAddress, len(listVotersOfCurrentProposal))
