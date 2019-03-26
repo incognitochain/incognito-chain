@@ -137,6 +137,8 @@ type BlockchainRetriever interface {
 
 	// For validating crowdsale
 	GetCrowdsaleData([]byte) (*component.SaleData, error)
+	CrowdsaleExisted(saleID []byte) bool
+	GetDCBAvailableAsset(assetID *common.Hash) uint64
 
 	// For validating reserve
 	GetAssetPrice(assetID *common.Hash) uint64

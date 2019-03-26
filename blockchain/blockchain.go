@@ -22,7 +22,7 @@ import (
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/constant-money/constant-chain/wallet"
 	libp2p "github.com/libp2p/go-libp2p-peer"
-	"github.com/patrickmn/go-cache"
+	cache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
 
@@ -1540,87 +1540,6 @@ func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
 	//todo @constant-money
 	return nil
 }
-
-//func (blockchain *BlockChain) UpdateDividendPayout(block *Block) error {
-//	for _, tx := range block.Transactions {
-//		switch tx.GetMetadataType() {
-//		case metadata.DividendMeta:
-//			{
-//				tx := tx.(*transaction.Tx)
-//				meta := tx.Metadata.(*metadata.Dividend)
-//				if tx.Proof == nil {
-//					return errors.New("Miss output in tx")
-//				}
-//				for _, _ = range tx.Proof.OutputCoins {
-//					keySet := cashec.KeySet{
-//						PaymentAddress: meta.PaymentAddress,
-//					}
-//					vouts, err := blockchain.GetUnspentTxCustomTokenVout(keySet, meta.TokenID)
-//					if err != nil {
-//						return err
-//					}
-//					for _, vout := range vouts {
-//						txHash := vout.GetTxCustomTokenID()
-//						err := blockchain.config.DataBase.UpdateRewardAccountUTXO(meta.TokenID, keySet.PaymentAddress.Pk, &txHash, vout.GetIndex())
-//						if err != nil {
-//							return err
-//						}
-//					}
-//				}
-//			}
-//		}
-//	}
-//	return nil
-//}
-//
-//func (blockchain *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
-//	// Temp storage to update crowdsale data
-//	saleDataMap := make(map[string]*component.SaleData)
-//
-//	for _, tx := range block.Transactions {
-//		switch tx.GetMetadataType() {
-//		case metadata.AcceptDCBProposalMeta:
-//			{
-//             DONE
-//			}
-//		case metadata.CrowdsalePaymentMeta:
-//			{
-//				err := blockchain.updateCrowdsalePaymentData(tx, saleDataMap)
-//				if err != nil {
-//					return err
-//				}
-//			}
-//			//		case metadata.ReserveResponseMeta:
-//			//			{
-//			//				// TODO(@0xbunyip): move to another func
-//			//				meta := tx.GetMetadata().(*metadata.ReserveResponse)
-//			//				_, _, _, txRequest, err := blockchain.GetTransactionByHash(meta.RequestedTxID)
-//			//				if err != nil {
-//			//					return err
-//			//				}
-//			//				requestHash := txRequest.Hash()
-//			//
-//			//				hash := tx.Hash()
-//			//				if err := blockchain.config.DataBase.StoreCrowdsaleResponse(requestHash[:], hash[:]); err != nil {
-//			//					return err
-//			//				}
-//			//			}
-//		}
-//	}
-//
-//	// Save crowdsale data back into db
-//	for _, data := range saleDataMap {
-//		if err := blockchain.config.DataBase.StoreCrowdsaleData(
-//			data.SaleID,
-//			data.GetProposalTxHash(),
-//			data.BuyingAmount,
-//			data.SellingAmount,
-//		); err != nil {
-//			return err
-//		}
-//	}
-//	return nil
-//}
 
 // func (blockchain *BlockChain) ProcessCMBTxs(block *Block) error {
 // 	for _, tx := range block.Transactions {

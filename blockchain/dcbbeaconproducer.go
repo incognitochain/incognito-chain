@@ -97,6 +97,11 @@ func buildPaymentInstructionForCrowdsale(
 		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
 	}
 
+	// Check if sale is on-going
+	if bestStateBeacon.BeaconHeight >= saleData.EndBlock {
+		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
+	}
+
 	// Calculate value of asset sent in request tx
 	sentAssetValue := sentAmount * buyPrice // in cent
 	if common.IsConstantAsset(&saleData.BuyingAsset) {

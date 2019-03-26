@@ -92,8 +92,6 @@ const (
 	STAKE_BEACON_AMOUNT = 2
 )
 
-const ()
-
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
 const (
 	AllShards  = -1
