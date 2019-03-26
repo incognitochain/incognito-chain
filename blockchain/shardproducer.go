@@ -222,7 +222,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 
 	// Process stability tx, create response txs if needed
 	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey)
-	Logger.log.Error(stabilityResponseTxs, "-----------------------------\n")
+	// Logger.log.Error(stabilityResponseTxs, "-----------------------------\n")
 	if err != nil {
 		return nil, err
 	}
