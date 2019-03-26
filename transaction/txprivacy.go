@@ -17,7 +17,7 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
 	"github.com/constant-money/constant-chain/wallet"
 )
 
@@ -387,7 +387,7 @@ func (tx *Tx) verifySigTx() (bool, error) {
 
 	// verify signature
 	Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
-	Logger.log.Infof(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
+	// Logger.log.Infof(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
 	Logger.log.Infof(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)
 	res = verKey.Verify(signature, tx.Hash()[:])
 
@@ -509,7 +509,7 @@ func (tx Tx) String() string {
 	if tx.Proof != nil {
 		tmp := base58.Base58Check{}.Encode(tx.Proof.Bytes()[:], 0x00)
 		record += tmp
-		fmt.Printf("Proof check base 58: %v\n",tmp)
+		fmt.Printf("Proof check base 58: %v\n", tmp)
 	}
 	if tx.Metadata != nil {
 		metadataHash := tx.Metadata.Hash()
