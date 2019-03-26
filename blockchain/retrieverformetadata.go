@@ -10,6 +10,7 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	privacy "github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/wallet"
 	"github.com/pkg/errors"
 )
 
@@ -177,6 +178,39 @@ func (blockchain *BlockChain) GetAllCrowdsales() ([]*component.SaleData, error) 
 		}
 	}
 	return saleDataList, nil
+}
+
+func (blockchain *BlockChain) CrowdsaleExisted(saleID []byte) bool {
+	key := getSaleDataKeyBeacon(saleID)
+	if _, ok := blockchain.BestState.Beacon.Params[key]; ok {
+		return true
+	}
+	return false
+}
+
+// GetDCBAvailableAsset returns number of token left accounted for all on-going crowdsales
+func (blockchain *BlockChain) GetDCBAvailableAsset(assetID *common.Hash) uint64 {
+	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	vouts, err := blockchain.GetUnspentTxCustomTokenVout(keyWalletDCBAccount.KeySet, assetID)
+	if err != nil {
+		return 0
+	}
+	tokenLeft := uint64(0)
+	for _, vout := range vouts {
+		tokenLeft += vout.Value
+	}
+
+	sales, _ := blockchain.GetAllCrowdsales()
+	for _, sale := range sales {
+		if sale.SellingAsset.IsEqual(assetID) && sale.EndBlock < blockchain.GetBeaconHeight() {
+			if sale.SellingAmount >= tokenLeft {
+				tokenLeft = 0
+			} else {
+				tokenLeft -= sale.SellingAmount
+			}
+		}
+	}
+	return tokenLeft
 }
 
 //// Reserve
