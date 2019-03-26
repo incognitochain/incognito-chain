@@ -93,14 +93,17 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 				return
 			} else {
 				if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
-					fmt.Println("Beacon block insert", newBlk.Header.Height)
-					err = blockchain.InsertBeaconBlock(newBlk, false)
-					if err != nil {
-						fmt.Println("Beacon block insert err", err)
-						if err.(*BlockChainError).Code != -26 {
-							Logger.log.Error(err)
+					userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+					if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+						fmt.Println("Beacon block insert", newBlk.Header.Height)
+						err = blockchain.InsertBeaconBlock(newBlk, false)
+						if err != nil {
+							fmt.Println("Beacon block insert err", err)
+							if err.(*BlockChainError).Code != -26 {
+								Logger.log.Error(err)
+							}
+							return
 						}
-						return
 					}
 				} else {
 					fmt.Println("Beacon block prepare add to pool", newBlk.Header.Height)
