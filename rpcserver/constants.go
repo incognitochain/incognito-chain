@@ -186,6 +186,8 @@ const (
 	// walletsta
 	GetPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
 	DefragmentAccount              = "defragmentaccount"
+
+	GetStackingAmount = "getstackingamount"
 )
 
 //Fee of specific transaction

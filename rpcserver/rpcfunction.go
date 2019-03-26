@@ -6,6 +6,8 @@ import (
 	"net"
 	"os"
 
+	"github.com/constant-money/constant-chain/metadata"
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/privacy"
@@ -188,6 +190,8 @@ var RpcHandler = map[string]commandHandler{
 	// wallet
 	GetPublicKeyFromPaymentAddress: RpcServer.handleGetPublicKeyFromPaymentAddress,
 	DefragmentAccount:              RpcServer.handleDefragmentAccount,
+
+	GetStackingAmount: RpcServer.handleGetStakingAmount,
 }
 
 // Commands that are available to a limited user
@@ -568,4 +572,20 @@ func (rpcServer RpcServer) handleGetActiveShards(params interface{}, closeChan <
 		return activeShards, nil
 	}
 	return -1, nil
+}
+
+func (rpcServer RpcServer) handleGetStakingAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) <= 0 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("ErrRPCInvalidParams"))
+	}
+	stackingType := int64(arrayParams[0].(float64))
+	amount := uint64(0)
+	if stackingType == 1 {
+		amount = metadata.GetBeaconStakeAmount()
+	}
+	if stackingType == 2 {
+		amount = metadata.GetBeaconStakeAmount()
+	}
+	return amount, nil
 }
