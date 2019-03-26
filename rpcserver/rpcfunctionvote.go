@@ -45,10 +45,6 @@ func (rpcServer RpcServer) handleGetEncryptionLastBlockHeightFlag(params interfa
 
 func (rpcServer RpcServer) handleCreateRawVoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	//VoteProposal - Step 2: Create Raw vote proposal transaction
-	params, err := rpcServer.buildParamsVoteProposal(params)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
 	return rpcServer.createRawTxWithMetadata(
 		params,
 		closeChan,

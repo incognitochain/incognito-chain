@@ -35,18 +35,3 @@ func (rpcServer *RpcServer) buildParamsSubmitGOVProposal(params interface{}) (in
 
 	return params, nil
 }
-
-func (rpcServer RpcServer) buildParamsVoteProposal(
-	params interface{},
-) (interface{}, *RPCError) {
-	params = setBuildRawBurnTransactionParams(params, FeeVote)
-	arrayParams := common.InterfaceSlice(params)
-	NParams := len(arrayParams)
-	data := arrayParams[len(arrayParams)-1].(map[string]interface{})
-	newData := make(map[string]interface{})
-
-	newData["BoardType"] = data["BoardType"]
-
-	arrayParams[NParams-1] = newData
-	return arrayParams, nil
-}
