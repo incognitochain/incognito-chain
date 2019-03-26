@@ -176,15 +176,50 @@ func NewSaleDataFromJson(data interface{}) *SaleData {
 	)
 
 	// Generate SaleID randomly
-	saleDataHash := saleData.Hash()
+	hash := saleData.PartialHash()
 	salt := make([]byte, 32)
 	rand.Read(salt)
-	saleDataHashWithSalt := []byte{}
-	saleDataHashWithSalt = append(saleDataHashWithSalt, saleDataHash[:]...)
-	saleDataHashWithSalt = append(saleDataHashWithSalt, salt...)
-	saleID := common.DoubleHashH(saleDataHashWithSalt)
+	saltedHash := []byte{}
+	saltedHash = append(saltedHash, hash[:]...)
+	saltedHash = append(saltedHash, salt...)
+	saleID := common.DoubleHashH(saltedHash)
 	saleData.SaleID = saleID[:]
 	return saleData
+}
+
+type TradeBondWithGOV struct {
+	TradeID []byte
+	BondID  *common.Hash
+	Amount  uint64
+	Buy     bool
+}
+
+func NewTradeBondWithGOVFromJson(tradeBondData interface{}) (*TradeBondWithGOV, error) {
+	data := tradeBondData.(map[string]interface{})
+
+	bondID, err := common.Hash{}.NewHashFromStr(data["BondID"].(string))
+	amount := data["Amount"].(float64)
+	buy := data["Buy"].(bool)
+	if err != nil {
+		return nil, err
+	}
+
+	trade := &TradeBondWithGOV{
+		BondID: bondID,
+		Amount: uint64(amount),
+		Buy:    buy,
+	}
+
+	// Generate TradeID randomly
+	hash := trade.PartialHash()
+	salt := make([]byte, 32)
+	rand.Read(salt)
+	saltedHash := []byte{}
+	saltedHash = append(saltedHash, hash[:]...)
+	saltedHash = append(saltedHash, salt...)
+	tradeID := common.DoubleHashH(saltedHash)
+	trade.TradeID = tradeID[:]
+	return trade, nil
 }
 
 type RefundInfo struct {
@@ -304,7 +339,7 @@ func NewOracleNetworkFromJson(data interface{}) *OracleNetwork {
 	return oracleNetwork
 }
 
-func (saleData *SaleData) Hash() *common.Hash {
+func (saleData *SaleData) PartialHash() *common.Hash {
 	record := string(saleData.EndBlock)
 	record += saleData.BuyingAsset.String()
 	record += string(saleData.BuyingAmount)
@@ -312,6 +347,30 @@ func (saleData *SaleData) Hash() *common.Hash {
 	record += saleData.SellingAsset.String()
 	record += string(saleData.SellingAmount)
 	record += string(saleData.DefaultSellPrice)
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
+
+func (saleData *SaleData) Hash() *common.Hash {
+	h := saleData.PartialHash()
+	record := string(saleData.SaleID)
+	record += string(h[:])
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
+
+func (trade *TradeBondWithGOV) PartialHash() *common.Hash {
+	record := trade.BondID.String()
+	record += strconv.FormatUint(trade.Amount, 10)
+	record += strconv.FormatBool(trade.Buy)
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
+
+func (trade *TradeBondWithGOV) Hash() *common.Hash {
+	h := trade.PartialHash()
+	record := string(trade.TradeID)
+	record += string(h[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
