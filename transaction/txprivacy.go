@@ -387,8 +387,6 @@ func (tx *Tx) verifySigTx() (bool, error) {
 
 	// verify signature
 	Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
-	// Logger.log.Infof(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
-	Logger.log.Infof(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)
 	res = verKey.Verify(signature, tx.Hash()[:])
 
 	return res, nil
