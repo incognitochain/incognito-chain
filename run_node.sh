@@ -22,13 +22,13 @@ go run *.go --spendingkey "112t8rnZUKcW5CBDojVmMD6PmDJzR3VtfqFGWG6HRT9PocB6aewek
 fi
 # Beacon--norpcauth 
 if [ "$1" == "beacon-0" ]; then
-go run *.go --spendingkey "112t8rxTdWfGCtgWvAMHnnEw9vN3R1D7YgD1SSHjAnVGL82HCrMq9yyXrHv3kB4gr84cejnMZRQ973RyHhq2G3MksoTWejNKdSWoQYDFf4gQ" --nodemode "auto" --datadir "data/beacon-0" --listen "127.0.0.1:9430" --externaladdress "127.0.0.1:9423" --norpcauth --rpclisten "127.0.0.1:9340" --rpclisten "127.0.0.1:9337"
+go run *.go --spendingkey "112t8rxTdWfGCtgWvAMHnnEw9vN3R1D7YgD1SSHjAnVGL82HCrMq9yyXrHv3kB4gr84cejnMZRQ973RyHhq2G3MksoTWejNKdSWoQYDFf4gQ" --nodemode "auto" --datadir "data/beacon-0" --listen "127.0.0.1:9423" --externaladdress "127.0.0.1:9423" --norpcauth --rpclisten "127.0.0.1:9340" --rpclisten "127.0.0.1:9337"
 fi
 if [ "$1" == "beacon-1" ]; then
-go run *.go --spendingkey "112t8rnXDNYL1RyTuT85JXeX7mJg1Sc6tCby5akSM7pfEGApgAx83X8C46EDu6dFAK6MVcWfQv2sfTk5nV9HqU3jrkrWdhrmi9z34jEhgHak" --nodemode "auto" --datadir "data/beacon-1" --listen "127.0.0.1:9431" --externaladdress "127.0.0.1:9424" --norpcauth --rpclisten "127.0.0.1:9341" --norpc
+go run *.go --spendingkey "112t8rnXDNYL1RyTuT85JXeX7mJg1Sc6tCby5akSM7pfEGApgAx83X8C46EDu6dFAK6MVcWfQv2sfTk5nV9HqU3jrkrWdhrmi9z34jEhgHak" --nodemode "auto" --datadir "data/beacon-1" --listen "127.0.0.1:9424" --externaladdress "127.0.0.1:9424" --norpcauth --rpclisten "127.0.0.1:9341" --norpc
 fi
 if [ "$1" == "beacon-2" ]; then
-go run *.go --spendingkey "112t8rnXmEeG5zsS7rExURJfqaRZhm6r4Pypkeag2gprdhtgDpen3LwV68x1nDPRYz2zhyhJTJCGvq1tUx4P1dvrdxF9W9DH7ME7PeGN2ohZ" --nodemode "auto" --datadir "data/beacon-2" --listen "127.0.0.1:9432" --externaladdress "127.0.0.1:9425" --norpcauth --rpclisten "127.0.0.1:9342" --norpc
+go run *.go --spendingkey "112t8rnXmEeG5zsS7rExURJfqaRZhm6r4Pypkeag2gprdhtgDpen3LwV68x1nDPRYz2zhyhJTJCGvq1tUx4P1dvrdxF9W9DH7ME7PeGN2ohZ" --nodemode "auto" --datadir "data/beacon-2" --listen "127.0.0.1:9425" --externaladdress "127.0.0.1:9425" --norpcauth --rpclisten "127.0.0.1:9342" --norpc
 fi
 
 # Shard: 0, Role: Proposer
