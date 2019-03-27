@@ -6,6 +6,8 @@ import (
 	"net"
 	"os"
 
+	"github.com/constant-money/constant-chain/metadata"
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/privacy"
@@ -23,13 +25,18 @@ var RpcHandler = map[string]commandHandler{
 	GetNetworkInfo:           RpcServer.handleGetNetWorkInfo,
 	GetConnectionCount:       RpcServer.handleGetConnectionCount,
 	GetAllPeers:              RpcServer.handleGetAllPeers,
-	GetRawMempool:            RpcServer.handleGetRawMempool,
-	GetMempoolEntry:          RpcServer.handleMempoolEntry,
 	EstimateFee:              RpcServer.handleEstimateFee,
 	EstimateFeeWithEstimator: RpcServer.handleEstimateFeeWithEstimator,
 	GetGenerate:              RpcServer.handleGetGenerate,
-	GetMiningInfo:            RpcServer.handleGetMiningInfo,
 
+	//pool
+	GetMiningInfo:               RpcServer.handleGetMiningInfo,
+	GetRawMempool:               RpcServer.handleGetRawMempool,
+	GetMempoolEntry:             RpcServer.handleMempoolEntry,
+	GetShardToBeaconPoolStateV2: RpcServer.handleGetShardToBeaconPoolStateV2,
+	GetCrossShardPoolStateV2:    RpcServer.handleGetCrossShardPoolStateV2,
+	GetShardPoolStateV2:         RpcServer.handleGetShardPoolStateV2,
+	GetBeaconPoolStateV2:        RpcServer.handleGetBeaconPoolStateV2,
 	// block
 	GetBestBlock:        RpcServer.handleGetBestBlock,
 	GetBestBlockHash:    RpcServer.handleGetBestBlockHash,
@@ -67,6 +74,7 @@ var RpcHandler = map[string]commandHandler{
 	GetShardToBeaconPoolState:     RpcServer.handleGetShardToBeaconPoolState,
 	GetCrossShardPoolState:        RpcServer.handleGetCrossShardPoolState,
 	CanPubkeyStake:                RpcServer.handleCanPubkeyStake,
+	GetTotalTransaction:           RpcServer.handleGetTotalTransaction,
 
 	// custom token
 	CreateRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
@@ -140,10 +148,7 @@ var RpcHandler = map[string]commandHandler{
 	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteGOVBoardTransaction,
 
 	// vote proposal
-	GetEncryptionFlag:                RpcServer.handleGetEncryptionFlag,
-	SetEncryptionFlag:                RpcServer.handleSetEncryptionFlag,
-	GetEncryptionLastBlockHeightFlag: RpcServer.handleGetEncryptionLastBlockHeightFlag,
-	CreateAndSendVoteProposal:        RpcServer.handleCreateAndSendVoteProposalTransaction,
+	CreateAndSendVoteProposal: RpcServer.handleCreateAndSendVoteProposalTransaction,
 
 	// Submit Proposal:
 	CreateAndSendSubmitDCBProposalTx: RpcServer.handleCreateAndSendSubmitDCBProposalTransaction,
@@ -164,6 +169,7 @@ var RpcHandler = map[string]commandHandler{
 	GetCurrentSellingBondTypes:             RpcServer.handleGetCurrentSellingBondTypes,
 	GetCurrentStabilityInfo:                RpcServer.handleGetCurrentStabilityInfo,
 	GetCurrentOracleNetworkParams:          RpcServer.handleGetCurrentOracleNetworkParams,
+	SignUpdatingOracleBoardContent:         RpcServer.handleSignUpdatingOracleBoardContent,
 	GetGOVConstitution:                     RpcServer.handleGetGOVConstitution,
 	GetGOVParams:                           RpcServer.handleGetGOVParams,
 	CreateAndSendTxWithBuyBackRequest:      RpcServer.handleCreateAndSendTxWithBuyBackRequest,
@@ -184,24 +190,26 @@ var RpcHandler = map[string]commandHandler{
 	// wallet
 	GetPublicKeyFromPaymentAddress: RpcServer.handleGetPublicKeyFromPaymentAddress,
 	DefragmentAccount:              RpcServer.handleDefragmentAccount,
+
+	GetStackingAmount: RpcServer.handleGetStakingAmount,
 }
 
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	ListAccounts:               RpcServer.handleListAccounts,
-	GetAccount:                 RpcServer.handleGetAccount,
-	GetAddressesByAccount:      RpcServer.handleGetAddressesByAccount,
-	GetAccountAddress:          RpcServer.handleGetAccountAddress,
-	DumpPrivkey:                RpcServer.handleDumpPrivkey,
-	ImportAccount:              RpcServer.handleImportAccount,
-	RemoveAccount:              RpcServer.handleRemoveAccount,
-	ListUnspentOutputCoins:     RpcServer.handleListUnspentOutputCoins,
-	GetBalance:                 RpcServer.handleGetBalance,
-	GetBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
-	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
-	GetReceivedByAccount:       RpcServer.handleGetReceivedByAccount,
-	SetTxFee:                   RpcServer.handleSetTxFee,
+	ListAccounts:                       RpcServer.handleListAccounts,
+	GetAccount:                         RpcServer.handleGetAccount,
+	GetAddressesByAccount:              RpcServer.handleGetAddressesByAccount,
+	GetAccountAddress:                  RpcServer.handleGetAccountAddress,
+	DumpPrivkey:                        RpcServer.handleDumpPrivkey,
+	ImportAccount:                      RpcServer.handleImportAccount,
+	RemoveAccount:                      RpcServer.handleRemoveAccount,
+	ListUnspentOutputCoins:             RpcServer.handleListUnspentOutputCoins,
+	GetBalance:                         RpcServer.handleGetBalance,
+	GetBalanceByPrivatekey:             RpcServer.handleGetBalanceByPrivatekey,
+	GetBalanceByPaymentAddress:         RpcServer.handleGetBalanceByPaymentAddress,
+	GetReceivedByAccount:               RpcServer.handleGetReceivedByAccount,
+	SetTxFee:                           RpcServer.handleSetTxFee,
 	GetRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
 }
 
@@ -564,4 +572,20 @@ func (rpcServer RpcServer) handleGetActiveShards(params interface{}, closeChan <
 		return activeShards, nil
 	}
 	return -1, nil
+}
+
+func (rpcServer RpcServer) handleGetStakingAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) <= 0 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("ErrRPCInvalidParams"))
+	}
+	stackingType := int64(arrayParams[0].(float64))
+	amount := uint64(0)
+	if stackingType == 1 {
+		amount = metadata.GetBeaconStakeAmount()
+	}
+	if stackingType == 2 {
+		amount = metadata.GetBeaconStakeAmount()
+	}
+	return amount, nil
 }

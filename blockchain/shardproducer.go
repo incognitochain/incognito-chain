@@ -139,7 +139,10 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 		return nil, err
 	}
 	// fmt.Printf("[db] buildActionReq to get hash for new shard block\n")
-	txInstructions := CreateShardInstructionsFromTransactionAndIns(block.Body.Transactions, blockgen.chain, shardID, payToAddress, prevBlock.Header.Height+1, beaconBlocks)
+	txInstructions, err := CreateShardInstructionsFromTransactionAndIns(block.Body.Transactions, blockgen.chain, shardID, payToAddress, prevBlock.Header.Height+1, beaconBlocks)
+	if err != nil {
+		return nil, err
+	}
 	totalInstructions := []string{}
 	for _, value := range txInstructions {
 		totalInstructions = append(totalInstructions, value...)
@@ -219,7 +222,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 
 	// Process stability tx, create response txs if needed
 	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey)
-	Logger.log.Error(stabilityResponseTxs, "-----------------------------\n")
+	// Logger.log.Error(stabilityResponseTxs, "-----------------------------\n")
 	if err != nil {
 		return nil, err
 	}
@@ -381,7 +384,8 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 		panic("TempTxPool Is not Empty")
 	}
 	currentSize := uint64(0)
-	for _, txDesc := range sourceTxns {
+	for i, txDesc := range sourceTxns {
+		Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
 		tx := txDesc.Tx
 		tempTxDesc, err := blockgen.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
 		tempTx := tempTxDesc.Tx

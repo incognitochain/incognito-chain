@@ -5,76 +5,77 @@ const (
 )
 
 const (
-	InvalidMeta = iota
+	InvalidMeta = 1
 
-	LoanRequestMeta
-	LoanResponseMeta
-	LoanWithdrawMeta
-	LoanUnlockMeta
-	LoanPaymentMeta
+	LoanRequestMeta  = 2
+	LoanResponseMeta = 3
+	LoanWithdrawMeta = 4
+	LoanUnlockMeta   = 5
+	LoanPaymentMeta  = 6
 
-	DividendSubmitMeta
-	DividendPaymentMeta
+	DividendSubmitMeta  = 7
+	DividendPaymentMeta = 8
 
-	CrowdsaleRequestMeta
-	CrowdsalePaymentMeta
-
-	TradeActivationMeta
+	CrowdsaleRequestMeta = 10
+	CrowdsalePaymentMeta = 11
 
 	// CMB
-	CMBInitRequestMeta
-	CMBInitResponseMeta // offchain multisig
-	CMBInitRefundMeta   // miner
-	CMBDepositContractMeta
-	CMBDepositSendMeta
-	CMBWithdrawRequestMeta
-	CMBWithdrawResponseMeta // offchain multisig
-	CMBLoanContractMeta
+	CMBInitRequestMeta      = 12
+	CMBInitResponseMeta     = 13 // offchain multisig
+	CMBInitRefundMeta       = 14 // miner
+	CMBDepositContractMeta  = 15
+	CMBDepositSendMeta      = 16
+	CMBWithdrawRequestMeta  = 17
+	CMBWithdrawResponseMeta = 18 // offchain multisig
+	CMBLoanContractMeta     = 19
 
-	BuyFromGOVRequestMeta
-	BuyFromGOVResponseMeta
-	BuyBackRequestMeta
-	BuyBackResponseMeta
-	IssuingRequestMeta
-	IssuingResponseMeta
-	ContractingRequestMeta
-	ContractingReponseMeta
-	OracleFeedMeta
-	OracleRewardMeta
-	RefundMeta
-	UpdatingOracleBoardMeta
-	MultiSigsRegistrationMeta
-	MultiSigsSpendingMeta
-	WithSenderAddressMeta
-	ResponseBaseMeta
-	BuyGOVTokenRequestMeta
-	ShardBlockSalaryRequestMeta
-	ShardBlockSalaryResponseMeta
+	BuyFromGOVRequestMeta        = 20
+	BuyFromGOVResponseMeta       = 21
+	BuyBackRequestMeta           = 22
+	BuyBackResponseMeta          = 23
+	IssuingRequestMeta           = 24
+	IssuingResponseMeta          = 25
+	ContractingRequestMeta       = 26
+	ContractingReponseMeta       = 27
+	OracleFeedMeta               = 28
+	OracleRewardMeta             = 29
+	RefundMeta                   = 30
+	UpdatingOracleBoardMeta      = 31
+	MultiSigsRegistrationMeta    = 32
+	MultiSigsSpendingMeta        = 33
+	WithSenderAddressMeta        = 34
+	ResponseBaseMeta             = 35
+	BuyGOVTokenRequestMeta       = 36
+	ShardBlockSalaryRequestMeta  = 37
+	ShardBlockSalaryResponseMeta = 38
 
 	//Voting
-	NewDCBConstitutionIns
-	NewGOVConstitutionIns
-	UpdateDCBConstitutionIns
-	UpdateGOVConstitutionIns
+	NewDCBConstitutionIns    = 39
+	NewGOVConstitutionIns    = 40
+	UpdateDCBConstitutionIns = 41
+	UpdateGOVConstitutionIns = 42
 
-	SubmitDCBProposalMeta
-	VoteDCBBoardMeta
-	SubmitGOVProposalMeta
-	VoteGOVBoardMeta
-	RewardProposalWinnerMeta
-	RewardDCBProposalSubmitterMeta
-	RewardGOVProposalSubmitterMeta
-	ShareRewardOldDCBBoardMeta
-	ShareRewardOldGOVBoardMeta
-	PunishDCBDecryptMeta
-	PunishGOVDecryptMeta
-	SendBackTokenVoteBoardFailMeta
-	DCBVoteProposalMeta
-	GOVVoteProposalMeta
+	SubmitDCBProposalMeta           = 43
+	VoteDCBBoardMeta                = 44
+	SubmitGOVProposalMeta           = 45
+	VoteGOVBoardMeta                = 46
+	RewardProposalWinnerMeta        = 47
+	RewardDCBProposalSubmitterMeta  = 48
+	RewardGOVProposalSubmitterMeta  = 49
+	ShareRewardOldDCBBoardMeta      = 50
+	ShareRewardOldGOVBoardMeta      = 51
+	PunishDCBDecryptMeta            = 52
+	PunishGOVDecryptMeta            = 53
+	SendBackTokenVoteBoardFailMeta  = 54
+	SendBackTokenToOldSupporterMeta = 59
+	DCBVoteProposalMeta             = 55
+	GOVVoteProposalMeta             = 56
 
-	// STAKING
-	ShardStakingMeta
-	BeaconStakingMeta
+	//statking
+	ShardStakingMeta  = 63
+	BeaconStakingMeta = 64
+
+	TradeActivationMeta = 65
 )
 
 const (
@@ -87,15 +88,4 @@ const (
 	Remove
 )
 
-//Stake amount
-// count in miliconstant
-const (
-	STAKE_SHARD_AMOUNT  = 1
-	STAKE_BEACON_AMOUNT = 2
-)
-
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
-const (
-	AllShards  = -1
-	BeaconOnly = -2
-)

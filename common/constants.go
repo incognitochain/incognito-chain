@@ -33,8 +33,6 @@ const (
 	MinimumBlockOfProposalDuration    = 50
 	MaximumBlockOfProposalDuration    = 200
 	MaximumProposalExplainationLength = 1000
-	NumberOfDCBGovernors              = 3
-	NumberOfGOVGovernors              = 3
 	DCBGovernorsLowerBound            = 3
 	DCBGovernorsUpperBound            = 6
 	GOVGovernorsLowerBound            = 3
@@ -107,7 +105,7 @@ const (
 	VALIDATOR_ROLE = "validator"
 	PENDING_ROLE   = "pending"
 
-	MAX_SHARD_NUMBER = 2
+	MAX_SHARD_NUMBER = 255
 )
 
 // Units converter

@@ -4,10 +4,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"math/big"
+	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/constant-money/constant-chain/wallet"
@@ -116,12 +119,9 @@ func (rpcServer RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	_, voutsAmount := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
 
-	tokenIDStr := tokenParamsRaw["TokenID"].(string)
-	tokenID, _ := common.Hash{}.NewHashFromStr(tokenIDStr)
 	meta := metadata.NewBuyBackRequest(
 		paymentAddr,
 		uint64(voutsAmount),
-		*tokenID,
 		metadata.BuyBackRequestMeta,
 	)
 	customTokenTx, err := rpcServer.buildRawCustomTokenTransaction(params, meta)
@@ -563,4 +563,43 @@ func (rpcServer RpcServer) handleGetCurrentOracleNetworkParams(params interface{
 func (rpcServer RpcServer) handleGetCurrentStabilityInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	stabilityInfo := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo
 	return stabilityInfo, nil
+}
+
+func (rpcServer RpcServer) handleSignUpdatingOracleBoardContent(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	action := int8(arrayParams[1].(float64))        // action
+	oraclePubKeys := arrayParams[2].([]interface{}) // OraclePubKeys
+	assertedOraclePKs := [][]byte{}
+	for _, pk := range oraclePubKeys {
+		hexStrPk := pk.(string)
+		pkBytes, _ := hex.DecodeString(hexStrPk)
+		assertedOraclePKs = append(assertedOraclePKs, pkBytes)
+	}
+	record := string(action)
+	for _, pk := range assertedOraclePKs {
+		record += string(pk)
+	}
+	record += common.HashH([]byte(strconv.Itoa(metadata.UpdatingOracleBoardMeta))).String()
+	hash := common.DoubleHashH([]byte(record))
+	hashContent := hash[:]
+
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	privKey := senderKey.KeySet.PrivateKey
+
+	sk := new(big.Int).SetBytes(privKey[:privacy.BigIntSize])
+	r := new(big.Int).SetBytes(privKey[privacy.BigIntSize:])
+	sigKey := new(privacy.SchnPrivKey)
+	sigKey.Set(sk, r)
+
+	// signing
+	signature, _ := sigKey.Sign(hashContent)
+
+	// convert signature to byte array
+	signatureBytes := signature.Bytes()
+	signStr := hex.EncodeToString(signatureBytes)
+	return signStr, nil
 }
