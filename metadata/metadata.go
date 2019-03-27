@@ -46,7 +46,7 @@ func (mb *MetadataBase) GetType() int {
 
 func (mb *MetadataBase) Hash() *common.Hash {
 	record := strconv.Itoa(mb.Type)
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
@@ -124,8 +124,6 @@ type BlockchainRetriever interface {
 	// GetLoanTxs([]byte) ([][]byte, error)
 	GetLoanReq(loanID []byte) (*common.Hash, error)
 	GetLoanResps(loanID []byte) ([][]byte, []ValidLoanResponse, error)
-	GetNumberOfDCBGovernors() int
-	GetNumberOfGOVGovernors() int
 	GetLoanPayment([]byte) (uint64, uint64, uint64, error)
 	GetLoanRequestMeta(loanID []byte) (*LoanRequest, error)
 	GetLoanWithdrawed(loanID []byte) (bool, error)

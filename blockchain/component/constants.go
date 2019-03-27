@@ -7,10 +7,21 @@ const (
 	UpdateDCBConstitutionIns
 	UpdateGOVConstitutionIns
 	VoteBoardIns
+	SubmitProposalIns
 
 	AcceptDCBProposalIns
 	AcceptDCBBoardIns
-
 	AcceptGOVProposalIns
 	AcceptGOVBoardIns
+
+	RewardDCBProposalSubmitterIns
+	RewardGOVProposalSubmitterIns
+	ShareRewardOldDCBBoardIns
+	ShareRewardOldGOVBoardIns
+	SendBackTokenVoteBoardFailIns
+)
+
+const (
+	AllShards  = -1
+	BeaconOnly = -2
 )

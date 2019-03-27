@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -106,7 +105,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	// fmt.Printf("Beacon Produce/AfterUpdate: Beacon Pending Validator %+v \n, Beacon Committee %+v \n, Beacon Validator Root %+v \n", beaconBestState.BeaconPendingValidator, beaconBestState.BeaconCommittee, beaconBlock.Header.ValidatorsRoot)
 	// fmt.Println("=======================================")
 	// fmt.Printf("Beacon Produce/Before Update: Shard Pending Validator %+v \n, ShardCommitee %+v \n, Shard Validator Root %+v \n", beaconBestState.ShardPendingValidator, beaconBestState.ShardCommittee, beaconBlock.Header.ShardValidatorsRoot)
-	beaconBestState.Update(beaconBlock)
+	beaconBestState.Update(beaconBlock, blkTmplGenerator.chain)
 	//============End Process new block with beststate
 	//==========Create Hash in Header
 	// BeaconValidator root: beacon committee + beacon pending committee
@@ -327,28 +326,6 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 	}
 
 	return shardStates, validStakers, validSwap, stabilityInstructions
-}
-
-//todo @0xjackalope process instruction without create new tx (eg: update db)
-//should be merge with buildStabilityInstruction
-func (blkTmplGenerator *BlkTmplGenerator) processInstruction(beaconBestState *BestStateBeacon, instruction []string) error {
-	//bestBlock := beaconBestState.BestBlock
-	metaType, err := strconv.Atoi(instruction[0])
-	if err != nil {
-		return err
-	}
-	contentBytes, err := base64.StdEncoding.DecodeString(instruction[1])
-	_ = contentBytes
-	if err != nil {
-		return err
-	}
-	switch metaType {
-	// process some instruction without create tx (update component,...)
-	default:
-		return nil
-	}
-
-	return nil
 }
 
 /*

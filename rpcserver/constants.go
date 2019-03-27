@@ -2,15 +2,26 @@ package rpcserver
 
 // rpc cmd method
 const (
-	GetNetworkInfo           = "getnetworkinfo"
-	GetConnectionCount       = "getconnectioncount"
-	GetAllPeers              = "getallpeers"
-	GetRawMempool            = "getrawmempool"
-	GetMempoolEntry          = "getmempoolentry"
+	GetNetworkInfo     = "getnetworkinfo"
+	GetConnectionCount = "getconnectioncount"
+	GetAllPeers        = "getallpeers"
+
 	EstimateFee              = "estimatefee"
 	EstimateFeeWithEstimator = "estimatefeewithestimator"
 	GetGenerate              = "getgenerate"
-	GetMiningInfo            = "getmininginfo"
+
+	GetMiningInfo                 = "getmininginfo"
+	GetRawMempool                 = "getrawmempool"
+	GetMempoolEntry               = "getmempoolentry"
+	GetBeaconPoolState            = "getbeaconpoolstate"
+	GetShardPoolState             = "getshardpoolstate"
+	GetShardPoolLatestValidHeight = "getshardpoollatestvalidheight"
+	GetShardToBeaconPoolState     = "getshardtobeaconpoolstate"
+	GetCrossShardPoolState        = "getcrossshardpoolstate"
+	GetShardToBeaconPoolStateV2   = "getshardtobeaconpoolstatev2"
+	GetCrossShardPoolStateV2      = "getcrossshardpoolstatev2"
+	GetShardPoolStateV2           = "getshardpoolstatev2"
+	GetBeaconPoolStateV2          = "getbeaconpoolstatev2"
 
 	GetBestBlock        = "getbestblock"
 	GetBestBlockHash    = "getbestblockhash"
@@ -35,6 +46,7 @@ const (
 	GetCandidateList                           = "getcandidatelist"
 	GetCommitteeList                           = "getcommitteelist"
 	CanPubkeyStake                             = "canpubkeystake"
+	GetTotalTransaction                        = "gettotaltransaction"
 	GetBlockProducerList                       = "getblockproducer"
 	ListUnspentCustomToken                     = "listunspentcustomtoken"
 	GetTransactionByHash                       = "gettransactionbyhash"
@@ -55,13 +67,6 @@ const (
 
 	GetShardBestState  = "getshardbeststate"
 	GetBeaconBestState = "getbeaconbeststate"
-
-	GetBeaconPoolState            = "getbeaconpoolstate"
-	GetShardPoolState             = "getshardpoolstate"
-	GetShardPoolLatestValidHeight = "getshardpoollatestvalidheight"
-
-	GetShardToBeaconPoolState = "getshardtobeaconpoolstate"
-	GetCrossShardPoolState    = "getcrossshardpoolstate"
 
 	// Wallet rpc cmd
 	ListAccounts                       = "listaccounts"
@@ -143,10 +148,7 @@ const (
 	CreateAndSendVoteGOVBoardTransaction = "createandsendvotegovboardtransaction"
 
 	//vote propopsal
-	GetEncryptionFlag                = "getencryptionflag"
-	SetEncryptionFlag                = "testsetencryptionflag"
-	GetEncryptionLastBlockHeightFlag = "getencryptionlastblockheightflag"
-	CreateAndSendVoteProposal        = "createandsendvoteproposal"
+	CreateAndSendVoteProposal = "createandsendvoteproposal"
 
 	// Submit Proposal
 	CreateAndSendSubmitDCBProposalTx = "createandsendsubmitdcbproposaltx"
@@ -165,6 +167,7 @@ const (
 	GetCurrentSellingBondTypes             = "getcurrentsellingbondtypes"
 	GetCurrentStabilityInfo                = "getcurrentstabilityinfo"
 	GetCurrentOracleNetworkParams          = "getcurrentoraclenetworkparams"
+	SignUpdatingOracleBoardContent         = "signupdatingoracleboardcontent"
 	CreateAndSendTxWithBuyBackRequest      = "createandsendtxwithbuybackrequest"
 	CreateAndSendTxWithBuySellRequest      = "createandsendtxwithbuysellrequest"
 	CreateAndSendTxWithOracleFeed          = "createandsendtxwithoraclefeed"
@@ -180,9 +183,11 @@ const (
 	CreateAndSendTxWithCMBDepositSend     = "createandsendtxwithcmbdepositsend"
 	CreateAndSendTxWithCMBWithdrawRequest = "createandsendtxwithcmbwithdrawrequest"
 
-	// wallet
+	// walletsta
 	GetPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
 	DefragmentAccount              = "defragmentaccount"
+
+	GetStackingAmount = "getstackingamount"
 )
 
 //Fee of specific transaction

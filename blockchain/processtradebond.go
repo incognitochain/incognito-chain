@@ -92,7 +92,6 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	buyBackMeta := &metadata.BuyBackRequest{
 		PaymentAddress: keyWalletDCBAccount.KeySet.PaymentAddress,
-		TokenID:        *bondID,
 		Amount:         amount,
 		TradeID:        tradeID,
 		MetadataBase:   metadata.MetadataBase{Type: metadata.BuyBackRequestMeta},
