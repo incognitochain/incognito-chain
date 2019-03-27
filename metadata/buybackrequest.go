@@ -15,6 +15,8 @@ type BuyBackRequest struct {
 	PaymentAddress privacy.PaymentAddress
 	Amount         uint64
 	TokenID        common.Hash
+
+	TradeID []byte
 	MetadataBase
 }
 
@@ -75,6 +77,7 @@ func (bbReq *BuyBackRequest) Hash() *common.Hash {
 	record += string(bbReq.Amount)
 	record += bbReq.TokenID.String()
 	record += bbReq.MetadataBase.Hash().String()
+	record += string(bbReq.TradeID)
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
