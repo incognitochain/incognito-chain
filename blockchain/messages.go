@@ -102,15 +102,15 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 							if err.(*BlockChainError).Code != -26 {
 								Logger.log.Error(err)
 							}
-							return
 						}
+						return
 					}
-				} else {
-					fmt.Println("Beacon block prepare add to pool", newBlk.Header.Height)
-					err := blockchain.config.BeaconPool.AddBeaconBlock(newBlk)
-					if err != nil {
-						fmt.Println("Beacon block add pool err", err)
-					}
+				}
+
+				fmt.Println("Beacon block prepare add to pool", newBlk.Header.Height)
+				err := blockchain.config.BeaconPool.AddBeaconBlock(newBlk)
+				if err != nil {
+					fmt.Println("Beacon block add pool err", err)
 				}
 			}
 		}
