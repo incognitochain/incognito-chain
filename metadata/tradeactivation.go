@@ -44,13 +44,10 @@ func (act *TradeActivation) ValidateTxWithBlockChain(txr Transaction, bcr Blockc
 
 	// Check if tradeID hasn't been activated and amount is positive
 	_, _, activated, amount, err := bcr.GetTradeActivation(act.TradeID)
-	if err != nil {
-		return false, err
-	}
-	if activated {
+	if err == nil && activated {
 		return false, errors.New("Trade is activated")
 	}
-	if amount == 0 {
+	if err == nil && amount == 0 {
 		return false, errors.New("Trade proposal is already done")
 	}
 

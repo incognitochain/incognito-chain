@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"fmt"
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
@@ -13,13 +15,16 @@ func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 	unspentTokens map[string]([]transaction.TxTokenVout),
 	producerPrivateKey *privacy.SpendingKey,
 ) ([]metadata.Transaction, error) {
+	fmt.Printf("[db] building trade act tx\n")
 	tb, err := ParseTradeBondInstruction(inst)
 	if err != nil {
+		fmt.Printf("[db] 1\n")
 		return nil, err
 	}
 
 	bondID, buy, _, amount, err := blockgen.chain.config.DataBase.GetTradeActivation(tb.TradeID)
 	if err != nil {
+		fmt.Printf("[db] 2\n")
 		return nil, err
 	}
 
@@ -31,9 +36,11 @@ func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 	}
 
 	if err != nil {
+		fmt.Printf("[db] 3\n")
 		return nil, err
 	}
 
+	fmt.Printf("[db] done built trade act tx\n")
 	return txs, nil
 }
 
@@ -46,6 +53,10 @@ func (blockgen *BlkTmplGenerator) buildTradeBuySellRequestTx(
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	keyWalletBurnAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 	buyPrice := blockgen.chain.BestState.Beacon.StabilityInfo.Oracle.Bonds[bondID.String()]
+	if buyPrice == 0 {
+		buyPrice = blockgen.chain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.SellingBonds.BondPrice
+	}
+
 	buySellMeta := &metadata.BuySellRequest{
 		PaymentAddress: keyWalletDCBAccount.KeySet.PaymentAddress,
 		TokenID:        *bondID,
@@ -54,9 +65,10 @@ func (blockgen *BlkTmplGenerator) buildTradeBuySellRequestTx(
 		TradeID:        tradeID,
 		MetadataBase:   metadata.MetadataBase{Type: metadata.BuyFromGOVRequestMeta},
 	}
+	cstAmount := amount * buyPrice
 	txs, err := transaction.BuildCoinbaseTxs(
 		[]*privacy.PaymentAddress{&keyWalletBurnAccount.KeySet.PaymentAddress},
-		[]uint64{amount},
+		[]uint64{cstAmount},
 		producerPrivateKey,
 		blockgen.chain.GetDatabase(),
 		[]metadata.Metadata{buySellMeta},
@@ -64,6 +76,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuySellRequestTx(
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("[db] built buy sell req: %d\n", cstAmount)
 	return []metadata.Transaction{txs[0]}, nil
 }
 

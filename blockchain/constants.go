@@ -78,7 +78,7 @@ const (
 	TestnetInitGovToken               = 10000
 	TestnetInitCmBToken               = 10000
 	TestnetInitBondToken              = 10000
-	TestnetFeePerTxKb                 = 1
+	TestnetFeePerTxKb                 = 0
 	TestnetGenesisBlockPaymentAddress = "1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba"
 )
 
