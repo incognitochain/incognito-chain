@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"encoding/hex"
+
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/wallet"
 
@@ -9,19 +10,20 @@ import (
 	"github.com/constant-money/constant-chain/privacy"
 )
 
-func NewVoteProposalData(proposalTxID common.Hash, constitutionIndex uint32) *component.VoteProposalData {
-	return &component.VoteProposalData{ProposalTxID: proposalTxID, ConstitutionIndex: constitutionIndex}
+func NewVoteProposalData(proposalTxID common.Hash, constitutionIndex uint32, voterPayment privacy.PaymentAddress) *component.VoteProposalData {
+	return &component.VoteProposalData{ProposalTxID: proposalTxID, ConstitutionIndex: constitutionIndex, VoterPayment: voterPayment}
 }
 
 func NewVoteProposalDataFromJson(data interface{}) *component.VoteProposalData {
 	voteProposalDataData := data.(map[string]interface{})
-
 	proposalTxIDData, _ := hex.DecodeString(voteProposalDataData["ProposalTxID"].(string))
 	proposalTxID, _ := common.NewHash(proposalTxIDData)
 	constitutionIndex := uint32(voteProposalDataData["ConstitutionIndex"].(float64))
+	voterPayment := privacy.NewPaymentAddressFromByte([]byte(voteProposalDataData["VoterPayment"].(string)))
 	return NewVoteProposalData(
 		*proposalTxID,
 		constitutionIndex,
+		*voterPayment,
 	)
 }
 
