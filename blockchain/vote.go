@@ -16,7 +16,6 @@ import (
 )
 
 type ConstitutionHelper interface {
-	GetStartedNormalVote(chain *BlockChain) uint64
 	CheckSubmitProposalType(tx metadata.Transaction) bool
 	NewAcceptProposalIns(txId *common.Hash, voter []privacy.PaymentAddress, shardID byte) frombeaconins.InstructionFromBeacon
 	GetBoardType() common.BoardType
@@ -440,18 +439,18 @@ func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper
 	return instructionsString, nil
 }
 
-func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
-	db := self.config.DataBase
-	bestBlock := self.BestState.Beacon.BestBlock
-	thisBlockHeight := bestBlock.Header.Height + 1
-	lastEncryptBlockHeight, _ := db.GetEncryptionLastBlockHeight(helper.GetBoardType())
-	encryptFlag, _ := db.GetEncryptFlag(helper.GetBoardType())
-	if thisBlockHeight == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
-		encryptFlag == common.NormalEncryptionFlag {
-		return true
-	}
-	return false
-}
+//func (self *BlockChain) readyNewConstitution(helper ConstitutionHelper) bool {
+//	db := self.config.DataBase
+//	bestBlock := self.BestState.Beacon.BestBlock
+//	thisBlockHeight := bestBlock.Header.Height + 1
+//	lastEncryptBlockHeight, _ := db.GetEncryptionLastBlockHeight(helper.GetBoardType())
+//	encryptFlag, _ := db.GetEncryptFlag(helper.GetBoardType())
+//	if thisBlockHeight == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
+//		encryptFlag == common.NormalEncryptionFlag {
+//		return true
+//	}
+//	return false
+//}
 
 func (self *BlockChain) GetListVoterOfProposalDB(helper ConstitutionHelper, proposalTxID []byte) ([]privacy.PaymentAddress, error) {
 	var res []privacy.PaymentAddress

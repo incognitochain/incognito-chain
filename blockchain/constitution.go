@@ -76,21 +76,21 @@ func (helper GOVConstitutionHelper) GetConstitutionEndedBlockHeight(chain *Block
 	return lastGOVConstitution.StartedBlockHeight + lastGOVConstitution.ExecuteDuration
 }
 
-func (helper DCBConstitutionHelper) GetStartedNormalVote(chain *BlockChain) uint64 {
-	info := chain.BestState.Beacon.StabilityInfo
-	lastDCBConstitution := info.DCBConstitution
-	return uint64(lastDCBConstitution.StartedBlockHeight) - uint64(common.EncryptionOnePhraseDuration)
-}
+//func (helper DCBConstitutionHelper) GetStartedNormalVote(chain *BlockChain) uint64 {
+//	info := chain.BestState.Beacon.StabilityInfo
+//	lastDCBConstitution := info.DCBConstitution
+//	return uint64(lastDCBConstitution.StartedBlockHeight) - uint64(common.EncryptionOnePhraseDuration)
+//}
 
 func (helper DCBConstitutionHelper) CheckSubmitProposalType(tx metadata.Transaction) bool {
 	return tx.GetMetadataType() == metadata.SubmitDCBProposalMeta
 }
 
-func (helper GOVConstitutionHelper) GetStartedNormalVote(chain *BlockChain) uint64 {
-	info := chain.BestState.Beacon.StabilityInfo
-	lastGOVConstitution := info.GOVConstitution
-	return uint64(lastGOVConstitution.StartedBlockHeight) - uint64(common.EncryptionOnePhraseDuration)
-}
+//func (helper GOVConstitutionHelper) GetStartedNormalVote(chain *BlockChain) uint64 {
+//	info := chain.BestState.Beacon.StabilityInfo
+//	lastGOVConstitution := info.GOVConstitution
+//	return uint64(lastGOVConstitution.StartedBlockHeight) - uint64(common.EncryptionOnePhraseDuration)
+//}
 
 func (helper GOVConstitutionHelper) CheckSubmitProposalType(tx metadata.Transaction) bool {
 	return tx.GetMetadataType() == metadata.SubmitGOVProposalMeta
