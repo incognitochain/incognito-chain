@@ -375,7 +375,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		Logger.log.Error(err)
 		return nil
 	}
-	txInstructions := CreateShardInstructionsFromTransactionAndIns(
+	txInstructions, err := CreateShardInstructionsFromTransactionAndIns(
 		block.Body.Transactions,
 		blockchain,
 		shardID,
@@ -383,6 +383,10 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		block.Header.Height,
 		beaconBlocks,
 	)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil
+	}
 	totalInstructions := []string{}
 	for _, value := range txInstructions {
 		totalInstructions = append(totalInstructions, value...)
@@ -417,15 +421,13 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		}
 	}
 
-	// Verify Transaction
-	if err := blockchain.VerifyTransactionFromNewBlock(block.Body.Transactions); err != nil {
-		return NewBlockChainError(TransactionError, err)
-
-	}
-
 	// Get cross shard block from pool
 	// TODO: COMMENT to bypass verify cross shard block
 	if isPresig {
+		// Verify Transaction
+		if err := blockchain.VerifyTransactionFromNewBlock(block.Body.Transactions); err != nil {
+			return NewBlockChainError(TransactionError, err)
+		}
 		crossTxTokenData := make(map[byte][]CrossTxTokenData)
 		toShard := shardID
 		crossShardLimit := blockchain.config.CrossShardPool[toShard].GetLatestValidBlockHeight()
@@ -588,6 +590,16 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 	bestStateShard.BeaconHeight = block.Header.BeaconHeight
 	bestStateShard.TotalTxns += uint64(len(block.Body.Transactions))
 	bestStateShard.NumTxns = uint64(len(block.Body.Transactions))
+	//======BEGIN For testing and benchmark
+	temp := 0
+	for _, tx := range block.Body.Transactions {
+		//TODO: detect transaction that's not from user
+		if !tx.IsSalaryTx() {
+			temp++
+		}
+	}
+	bestStateShard.TotalTxnsExcludeSalary += uint64(temp)
+	//======END
 	if block.Header.Height == 1 {
 		bestStateShard.ShardProposerIdx = 0
 	} else {
@@ -703,9 +715,9 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(txs []metadata.Trans
 		}
 	}
 	blockChain.config.TempTxPool.EmptyPool()
-	fmt.Println("Index", index)
-	fmt.Println("salaryCount", salaryCount)
-	fmt.Println("len(txs)", len(txs))
+	// fmt.Println("Index", index)
+	// fmt.Println("salaryCount", salaryCount)
+	// fmt.Println("len(txs)", len(txs))
 	if index == len(txs)-salaryCount {
 		return nil
 	} else {

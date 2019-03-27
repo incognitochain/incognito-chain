@@ -284,6 +284,7 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 
 	if customTokenTx.TxTokenData.Type == CustomTokenMint {
 		// TODO(@0xsirrush): validate for this type
+		// todo @bunyip
 		return true
 	}
 
@@ -610,4 +611,21 @@ func (tx *TxCustomToken) GetMetadataFromVinsTx(bcr metadata.BlockchainRetriever)
 		return nil, nil
 	}
 	return prevTx.GetMetadata(), nil
+}
+
+func (tx *TxCustomToken) CalculateTxValue() uint64 {
+	vins := tx.TxTokenData.Vins
+	vouts := tx.TxTokenData.Vouts
+	if len(vins) == 0 {
+		return 0
+	}
+	senderPk := vins[0].PaymentAddress.Pk
+	txValue := uint64(0)
+	for _, vout := range vouts {
+		if bytes.Equal(vout.PaymentAddress.Pk[:], senderPk[:]) {
+			continue
+		}
+		txValue += vout.Value
+	}
+	return txValue
 }

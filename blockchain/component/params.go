@@ -183,7 +183,6 @@ func NewGOVParams(
 }
 
 func NewGOVParamsFromJson(data interface{}) *GOVParams {
-	//@todo 0xjackalope marshall
 	arrayParams := data.(map[string]interface{})
 
 	salaryPerTx := uint64(arrayParams["SalaryPerTx"].(float64))

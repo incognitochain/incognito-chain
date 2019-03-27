@@ -81,6 +81,34 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 		if err != nil {
 			return err
 		}
+	case strconv.Itoa(component.ShareRewardOldDCBBoardIns):
+		shareRewardOldDCBBoardIns := frombeaconins.ShareRewardOldBoardIns{}
+		err := json.Unmarshal([]byte(inst[2]), shareRewardOldDCBBoardIns)
+		if err != nil {
+			return err
+		}
+		bsb.UpdateDCBFund(-int64(shareRewardOldDCBBoardIns.AmountOfCoin))
+	case strconv.Itoa(component.ShareRewardOldGOVBoardIns):
+		shareRewardOldGOVBoardIns := frombeaconins.ShareRewardOldBoardIns{}
+		err := json.Unmarshal([]byte(inst[2]), shareRewardOldGOVBoardIns)
+		if err != nil {
+			return err
+		}
+		bsb.UpdateGOVFund(-int64(shareRewardOldGOVBoardIns.AmountOfCoin))
+	case strconv.Itoa(component.RewardDCBProposalSubmitterIns):
+		rewardDCBProposalSubmitterIns := frombeaconins.RewardProposalSubmitterIns{}
+		err := json.Unmarshal([]byte(inst[2]), rewardDCBProposalSubmitterIns)
+		if err != nil {
+			return err
+		}
+		bsb.UpdateDCBFund(-int64(rewardDCBProposalSubmitterIns.Amount))
+	case strconv.Itoa(component.RewardGOVProposalSubmitterIns):
+		rewardGOVProposalSubmitterIns := frombeaconins.RewardProposalSubmitterIns{}
+		err := json.Unmarshal([]byte(inst[2]), rewardGOVProposalSubmitterIns)
+		if err != nil {
+			return err
+		}
+		bsb.UpdateGOVFund(-int64(rewardGOVProposalSubmitterIns.Amount))
 	case strconv.Itoa(metadata.DividendSubmitMeta):
 		return bsb.processDividendSubmitInstruction(inst)
 
@@ -109,6 +137,16 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 		return bsb.processUpdatingOracleBoardInstruction(inst)
 	}
 	return nil
+}
+
+func (bsb *BestStateBeacon) UpdateDCBFund(amount int64) {
+	t := int64(bsb.StabilityInfo.BankFund) + amount
+	bsb.StabilityInfo.BankFund = uint64(t)
+}
+
+func (bsb *BestStateBeacon) UpdateGOVFund(amount int64) {
+	t := int64(bsb.StabilityInfo.SalaryFund) + amount
+	bsb.StabilityInfo.BankFund = uint64(t)
 }
 
 func (bsb *BestStateBeacon) processUpdatingOracleBoardInstruction(inst []string) error {
@@ -230,11 +268,11 @@ func (bsb *BestStateBeacon) processBuyGOVTokenReqInstruction(inst []string) erro
 		return err
 	}
 	md := buyGOVTokenReqAction.Meta
-	stabilityInfo := bsb.StabilityInfo
+	stabilityInfo := &bsb.StabilityInfo
 	sellingGOVTokensParams := stabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens
 	if sellingGOVTokensParams != nil {
 		sellingGOVTokensParams.GOVTokensToSell -= md.Amount
-		stabilityInfo.SalaryFund += (md.Amount + md.BuyPrice)
+		stabilityInfo.SalaryFund += (md.Amount * md.BuyPrice)
 	}
 	return nil
 }
@@ -251,7 +289,7 @@ func (bsb *BestStateBeacon) processBuyBackReqInstruction(inst []string) error {
 	if err != nil {
 		return err
 	}
-	bsb.StabilityInfo.SalaryFund -= (buyBackInfo.Value + buyBackInfo.BuyBackPrice)
+	bsb.StabilityInfo.SalaryFund -= (buyBackInfo.Value * buyBackInfo.BuyBackPrice)
 	return nil
 }
 
@@ -272,11 +310,11 @@ func (bsb *BestStateBeacon) processBuyFromGOVReqInstruction(inst []string) error
 		return err
 	}
 	md := buySellReqAction.Meta
-	stabilityInfo := bsb.StabilityInfo
+	stabilityInfo := &bsb.StabilityInfo
 	sellingBondsParams := stabilityInfo.GOVConstitution.GOVParams.SellingBonds
 	if sellingBondsParams != nil {
 		sellingBondsParams.BondsToSell -= md.Amount
-		stabilityInfo.SalaryFund += (md.Amount + md.BuyPrice)
+		stabilityInfo.SalaryFund += (md.Amount * md.BuyPrice)
 	}
 	return nil
 }
@@ -358,7 +396,7 @@ func (bsb *BestStateBeacon) processUpdateDCBProposalInstruction(ins frombeaconin
 			StartedBlockHeight: bsb.BestBlock.Header.Height,
 			ExecuteDuration:    ins.SubmitProposalInfo.ExecuteDuration,
 			Explanation:        ins.SubmitProposalInfo.Explanation,
-			Voter:              ins.Voter,
+			Voters:             ins.Voters,
 		},
 		CurrentDCBNationalWelfare: GetOracleDCBNationalWelfare(),
 		DCBParams:                 dcbParams,
@@ -393,7 +431,18 @@ func (bsb *BestStateBeacon) processUpdateDCBProposalInstruction(ins frombeaconin
 }
 
 func (bsb *BestStateBeacon) processUpdateGOVProposalInstruction(ins frombeaconins.UpdateGOVConstitutionIns) error {
-	panic("")
+	oldConstitution := bsb.StabilityInfo.DCBConstitution
+	bsb.StabilityInfo.GOVConstitution = GOVConstitution{
+		ConstitutionInfo: ConstitutionInfo{
+			ConstitutionIndex:  oldConstitution.ConstitutionIndex + 1,
+			StartedBlockHeight: bsb.BestBlock.Header.Height,
+			ExecuteDuration:    ins.SubmitProposalInfo.ExecuteDuration,
+			Explanation:        ins.SubmitProposalInfo.Explanation,
+			Voters:             ins.Voters,
+		},
+		CurrentGOVNationalWelfare: GetOracleGOVNationalWelfare(),
+		GOVParams:                 ins.GOVParams,
+	}
 	return nil
 }
 
