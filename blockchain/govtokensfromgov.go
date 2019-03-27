@@ -40,13 +40,24 @@ func buildInstructionsForBuyGOVTokensReq(
 	if (sellingGOVTokensParams == nil) ||
 		(bestBlockHeight+1 < sellingGOVTokensParams.StartSellingAt) ||
 		(bestBlockHeight+1 > sellingGOVTokensParams.StartSellingAt+sellingGOVTokensParams.SellingWithin) ||
-		(accumulativeValues.govTokensSold+md.Amount > sellingGOVTokensParams.GOVTokensToSell) ||
-		(md.BuyPrice < sellingGOVTokensParams.GOVTokenPrice) {
+		(accumulativeValues.govTokensSold+md.Amount > sellingGOVTokensParams.GOVTokensToSell) {
 		instType = "refund"
 	} else {
-		accumulativeValues.incomeFromGOVTokens += (md.Amount + md.BuyPrice)
-		accumulativeValues.govTokensSold += md.Amount
-		instType = "accepted"
+		buyPrice := uint64(0)
+		govTokenPriceFromOracle := stabilityInfo.Oracle.GOVToken
+		if govTokenPriceFromOracle == 0 {
+			buyPrice = sellingGOVTokensParams.GOVTokenPrice
+		} else {
+			buyPrice = govTokenPriceFromOracle
+		}
+
+		if md.BuyPrice < buyPrice {
+			instType = "refund"
+		} else {
+			accumulativeValues.incomeFromGOVTokens += (md.Amount + md.BuyPrice)
+			accumulativeValues.govTokensSold += md.Amount
+			instType = "accepted"
+		}
 	}
 	returnedInst := []string{
 		strconv.Itoa(metadata.BuyGOVTokenRequestMeta),
