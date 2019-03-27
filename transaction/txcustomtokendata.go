@@ -55,7 +55,6 @@ type TxTokenVout struct {
 	index int
 	// temp variable to know what is id of tx which contain itself
 	txCustomTokenID common.Hash
-	// BuySellResponse *BuySellResponse
 }
 
 func (txObj TxTokenVout) String() string {
