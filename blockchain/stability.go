@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
@@ -30,6 +29,7 @@ type accumulativeValues struct {
 	totalRefundAmt       uint64
 	totalOracleRewards   uint64
 	saleDataMap          map[string]*component.SaleData
+	trade                map[string]bool
 }
 
 func isGOVFundEnough(
@@ -176,6 +176,9 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 		case metadata.CrowdsaleRequestMeta:
 			newInst, err = buildInstructionsForCrowdsaleRequest(shardID, contentStr, beaconBestState, accumulativeValues)
 
+		case metadata.TradeActivationMeta:
+			newInst, err = buildInstructionsForTradeActivation(shardID, contentStr, beaconBestState, accumulativeValues, blkTmpGen.chain.config.DataBase)
+
 		case metadata.BuyBackRequestMeta:
 			newInst, err = buildInstructionsForBuyBackBondsReq(shardID, contentStr, beaconBestState, accumulativeValues, blkTmpGen.chain)
 
@@ -298,42 +301,28 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				}
 				fmt.Printf("[db] shard build Resp from inst: %+v\n", l)
 				Logger.log.Warn("Metadata type:", metaType, "\n")
+
+				var tx metadata.Transaction
+				txs := []metadata.Transaction{}
 				switch metaType {
 				case metadata.CrowdsalePaymentMeta:
-					paymentInst, err := ParseCrowdsalePaymentInstruction(l[2])
-					if err != nil {
-						return nil, err
-					}
-					tx, err := blockgen.buildPaymentForCrowdsale(paymentInst, unspentTokens, producerPrivateKey)
-					if err != nil {
-						return nil, err
-					}
-					resTxs = append(resTxs, tx)
+					txs, err = blockgen.buildPaymentForCrowdsale(l[2], unspentTokens, producerPrivateKey)
+
+				case metadata.TradeActivationMeta:
+					txs, err = blockgen.buildTradeActivationTx(l[2], unspentTokens, producerPrivateKey)
 
 				case metadata.BuyFromGOVRequestMeta:
 					contentStr := l[3]
 					sellingBondsParamsStr := l[4]
-					txs, err := blockgen.buildBuyBondsFromGOVRes(l[2], contentStr, sellingBondsParamsStr, producerPrivateKey)
-					if err != nil {
-						return nil, err
-					}
-					resTxs = append(resTxs, txs...)
+					txs, err = blockgen.buildBuyBondsFromGOVRes(l[2], contentStr, sellingBondsParamsStr, producerPrivateKey)
 
 				case metadata.BuyGOVTokenRequestMeta:
 					contentStr := l[3]
-					txs, err := blockgen.buildBuyGOVTokensRes(l[2], contentStr, producerPrivateKey)
-					if err != nil {
-						return nil, err
-					}
-					resTxs = append(resTxs, txs...)
+					txs, err = blockgen.buildBuyGOVTokensRes(l[2], contentStr, producerPrivateKey)
 
 				case metadata.BuyBackRequestMeta:
 					buyBackInfoStr := l[3]
-					txs, err := blockgen.buildBuyBackRes(l[2], buyBackInfoStr, producerPrivateKey)
-					if err != nil {
-						return nil, err
-					}
-					resTxs = append(resTxs, txs...)
+					txs, err = blockgen.buildBuyBackRes(l[2], buyBackInfoStr, producerPrivateKey)
 
 					// todo @0xjackalope move meta to ins?
 				case metadata.SendBackTokenVoteBoardFailMeta:
@@ -345,13 +334,9 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 						return nil, err
 					}
 
-					txs, err1 := sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, blockgen.chain, shardID)
+					tx, err = sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, blockgen.chain, shardID)
+					txs = append(txs, tx)
 
-					if err1 != nil {
-						Logger.log.Error("Here, why?????????", err1, reflect.TypeOf(err1), reflect.ValueOf(err1), "\n")
-						return nil, err1
-					}
-					resTxs = append(resTxs, txs)
 				case metadata.ShareRewardOldDCBBoardMeta, metadata.ShareRewardOldGOVBoardMeta:
 					Logger.log.Info(metadata.ShareRewardOldDCBBoardMeta, metadata.ShareRewardOldGOVBoardMeta, "\n")
 					shareRewardOldBoard := frombeaconins.TxShareRewardOldBoardMetadataIns{}
@@ -359,44 +344,30 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					if err != nil {
 						return nil, err
 					}
-					txs, err := shareRewardOldBoard.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
-					if err != nil {
-						return nil, err
-					}
-					resTxs = append(resTxs, txs)
+					tx, err = shareRewardOldBoard.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
+					txs = append(txs, tx)
 
 				case metadata.IssuingRequestMeta:
 					issuingInfoStr := l[3]
-					txs, err := blockgen.buildIssuingRes(l[2], issuingInfoStr, producerPrivateKey, shardID)
-					if err != nil {
-						return nil, err
-					}
-					resTxs = append(resTxs, txs...)
+					txs, err = blockgen.buildIssuingRes(l[2], issuingInfoStr, producerPrivateKey, shardID)
 
 				case metadata.ContractingRequestMeta:
 					contractingInfoStr := l[3]
-					txs, err := blockgen.buildContractingRes(l[2], contractingInfoStr, producerPrivateKey)
-					if err != nil {
-						return nil, err
-					}
-					resTxs = append(resTxs, txs...)
+					txs, err = blockgen.buildContractingRes(l[2], contractingInfoStr, producerPrivateKey)
 
 				case metadata.OracleRewardMeta:
 					evaluationStr := l[3]
-					txs, err := blockgen.buildOracleRewardTxs(evaluationStr, producerPrivateKey)
-					if err != nil {
-						return nil, err
-					}
-					resTxs = append(resTxs, txs...)
+					txs, err = blockgen.buildOracleRewardTxs(evaluationStr, producerPrivateKey)
 
 				case metadata.ShardBlockSalaryRequestMeta:
 					salaryReqInfoStr := l[3]
-					txs, err := blockgen.buildSalaryRes(l[2], salaryReqInfoStr, producerPrivateKey)
-					if err != nil {
-						return nil, err
-					}
-					resTxs = append(resTxs, txs...)
+					txs, err = blockgen.buildSalaryRes(l[2], salaryReqInfoStr, producerPrivateKey)
 				}
+
+				if err != nil {
+					return nil, err
+				}
+				resTxs = append(resTxs, txs...)
 			}
 		}
 	}

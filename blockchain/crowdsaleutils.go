@@ -164,10 +164,14 @@ func buildPaymentForToken(
 
 // buildPaymentForCrowdsale builds CrowdsalePayment tx sending either CST or Token
 func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
-	paymentInst *CrowdsalePaymentInstruction,
+	inst string,
 	unspentTokens map[string]([]transaction.TxTokenVout),
 	producerPrivateKey *privacy.SpendingKey,
-) (metadata.Transaction, error) {
+) ([]metadata.Transaction, error) {
+	paymentInst, err := ParseCrowdsalePaymentInstruction(inst)
+	if err != nil {
+		return nil, err
+	}
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	saleID := paymentInst.SaleID
 	saleData, err := blockgen.chain.BestState.Beacon.GetSaleData(saleID)
@@ -210,7 +214,7 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 			mint,
 		)
 	}
-	return txResponse, err
+	return []metadata.Transaction{txResponse}, err
 }
 
 func generateCrowdsalePaymentInstruction(

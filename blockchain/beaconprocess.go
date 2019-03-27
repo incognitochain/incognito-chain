@@ -180,7 +180,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	}
 
 	// Process instructions and store stability data
-	if err := blockchain.processBeaconOnlyInstructions(block); err != nil {
+	if err := blockchain.updateStabilityLocalState(block); err != nil {
 		return err
 	}
 

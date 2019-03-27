@@ -74,7 +74,8 @@ var (
 	cmbNoticePrefix          = []byte("cmbnotice-")
 
 	// crowdsale
-	crowdsalePrefix = []byte("crowdsale-")
+	crowdsalePrefix       = []byte("crowdsale-")
+	tradeActivationPrefix = []byte("tradeAct-")
 
 	// dividend
 	dividendReceiversPrefix = []byte("divRec")

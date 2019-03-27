@@ -17,6 +17,8 @@ type BuySellRequest struct {
 	TokenID        common.Hash
 	Amount         uint64
 	BuyPrice       uint64 // in Constant unit
+
+	TradeID []byte // To trade bond with DCB
 	MetadataBase
 }
 
@@ -92,6 +94,7 @@ func (bsReq *BuySellRequest) Hash() *common.Hash {
 	record += string(bsReq.Amount)
 	record += string(bsReq.BuyPrice)
 	record += bsReq.MetadataBase.Hash().String()
+	record += string(bsReq.TradeID)
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

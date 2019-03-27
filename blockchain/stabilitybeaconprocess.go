@@ -546,24 +546,85 @@ func (bc *BlockChain) processLoanPaymentInstruction(inst []string) error {
 	return bc.processLoanPayment(loanID, amountSent, interestRate, maturity, beaconHeight)
 }
 
-func (bc *BlockChain) processBeaconOnlyInstructions(block *BeaconBlock) error {
+func (bc *BlockChain) processTradeBondInstruction(inst []string) error {
+	tbi, err := ParseTradeBondInstruction(inst[2])
+	if err != nil {
+		return err
+	}
+	bondID, buy, _, amount, err := bc.config.DataBase.GetTradeActivation(tbi.TradeID)
+	if err != nil {
+		return err
+	}
+	activated := true
+	return bc.config.DataBase.StoreTradeActivation(tbi.TradeID, bondID, buy, activated, amount)
+}
+
+func (bc *BlockChain) processBuyBackResponseInstruction(inst []string) error {
+	if inst[2] == "refund" {
+		// Update activation status to false to retry later
+		var buyBackInfo BuyBackInfo
+		json.Unmarshal([]byte(inst[3]), &buyBackInfo)
+		_, _, _, tx, err := bc.GetTransactionByHash(&buyBackInfo.RequestedTxID)
+		if err != nil {
+			return err
+		}
+		meta := tx.GetMetadata().(*metadata.BuyBackRequest)
+		bondID, buy, _, amount, err := bc.config.DataBase.GetTradeActivation(meta.TradeID)
+		if err != nil {
+			return err
+		}
+		activated := false
+		return bc.config.DataBase.StoreTradeActivation(meta.TradeID, bondID, buy, activated, amount)
+	}
+	return nil
+}
+
+func (bc *BlockChain) processBuyFromGOVResponseInstruction(inst []string) error {
+	if inst[2] == "refund" {
+		// Update activation status to false to retry later
+		contentBytes, _ := base64.StdEncoding.DecodeString(inst[3])
+		var buySellReqAction BuySellReqAction
+		json.Unmarshal(contentBytes, &buySellReqAction)
+		_, _, _, tx, err := bc.GetTransactionByHash(&buySellReqAction.TxReqID)
+		if err != nil {
+			return err
+		}
+		meta := tx.GetMetadata().(*metadata.BuySellRequest)
+		bondID, buy, _, amount, err := bc.config.DataBase.GetTradeActivation(meta.TradeID)
+		if err != nil {
+			return err
+		}
+		activated := false
+		return bc.config.DataBase.StoreTradeActivation(meta.TradeID, bondID, buy, activated, amount)
+	}
+	return nil
+}
+
+func (bc *BlockChain) updateStabilityLocalState(block *BeaconBlock) error {
 	for _, inst := range block.Body.Instructions {
+		var err error
 		switch inst[0] {
 		case strconv.Itoa(metadata.LoanWithdrawMeta):
-			err := bc.processLoanWithdrawInstruction(inst)
-			if err != nil {
-				return err
-			}
-
+			err = bc.processLoanWithdrawInstruction(inst)
 		case strconv.Itoa(metadata.LoanPaymentMeta):
-			err := bc.processLoanPaymentInstruction(inst)
-			if err != nil {
-				return err
-			}
+			err = bc.processLoanPaymentInstruction(inst)
+
+		case strconv.Itoa(metadata.TradeActivationMeta):
+			err = bc.processTradeBondInstruction(inst)
+
 		case strconv.Itoa(component.UpdateDCBConstitutionIns):
-			return bc.processUpdateDCBConstitutionIns(inst)
+			err = bc.processUpdateDCBConstitutionIns(inst)
 		case strconv.Itoa(component.UpdateGOVConstitutionIns):
-			return bc.processUpdateGOVConstitutionIns(inst)
+			err = bc.processUpdateGOVConstitutionIns(inst)
+
+		case strconv.Itoa(metadata.BuyFromGOVResponseMeta):
+			err = bc.processBuyFromGOVResponseInstruction(inst)
+		case strconv.Itoa(metadata.BuyBackResponseMeta):
+			err = bc.processBuyBackResponseInstruction(inst)
+		}
+
+		if err != nil {
+			return err
 		}
 	}
 	return nil
