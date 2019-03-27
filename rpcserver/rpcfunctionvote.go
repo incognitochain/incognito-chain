@@ -14,6 +14,7 @@ func iPlusPlus(x *int) int {
 
 func (rpcServer RpcServer) handleCreateRawVoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	//VoteProposal - Step 2: Create Raw vote proposal transaction
+	params = setBuildRawBurnTransactionParams(params, FeeVote)
 	return rpcServer.createRawTxWithMetadata(
 		params,
 		closeChan,
