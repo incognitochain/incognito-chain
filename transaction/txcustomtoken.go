@@ -284,6 +284,7 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 
 	if customTokenTx.TxTokenData.Type == CustomTokenMint {
 		// TODO(@0xsirrush): validate for this type
+		// todo @bunyip
 		return true
 	}
 
