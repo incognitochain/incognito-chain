@@ -26,7 +26,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 	//========Verify block only
-	Logger.log.Infof("Verify block for signing process %d, with hash %+v", block.Header.Height, *block.Hash())
+	Logger.log.Infof("SHARD %+v | Verify block for signing process %d, with hash %+v", shardID, block.Header.Height, *block.Hash())
 	if err := blockchain.VerifyPreProcessingShardBlock(block, shardID, true); err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 	if err := shardBestState.VerifyPostProcessingShardBlock(block, shardID); err != nil {
 		return err
 	}
-	Logger.log.Infof("Block %d, with hash %+v is VALID for signing", block.Header.Height, *block.Hash())
+	Logger.log.Infof("SHARD %+v | Block %d, with hash %+v is VALID for signing", shardID, block.Header.Height, *block.Hash())
 	return nil
 }
 
@@ -692,6 +692,13 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(txs []metadata.Trans
 
 	for _, tx := range txs {
 		if !tx.IsSalaryTx() {
+			if tx.GetType() == common.TxCustomTokenType {
+				customTokenTx := tx.(*transaction.TxCustomToken)
+				if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
+					salaryCount++
+					continue
+				}
+			}
 			_, err := blockChain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
 			if err != nil {
 				return err

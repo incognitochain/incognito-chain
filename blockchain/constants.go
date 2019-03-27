@@ -147,14 +147,14 @@ var PreSelectBeaconNodeTestnet = []string{
 // public key
 var PreSelectShardNodeTestnetSerializedPubkey = []string{
 	"177KNe6pRhi97hD9LqjUvGxLoNeKh9F5oSeh99V6Td2sQcm7qEu", //shard 0
-	"16W9eKEqyJqKKDkzxcSAKu4G2b1HvZh9FDRmM3ZyC4tN3MkVx6z", //shard 0
-	"17zmxXqnwTK1YE42eNqVJ51mvRaCFoqzm6HogpQQBBt8dWwaUgV", //shard 0
-	"17wqq26DuTQ6Hr7ocuMBdeu934rLqSoMyxib4RQdQhLUQ7Le3KD", //shard 0
+	"17KKWNHXf5g1vt5g5FQ7bLLy7VZZWw66KABCkJh6EUHWckh3JAs", //shard 0
+	"18YsDcTo7RG5aYdXp4P7QqtUaS8VLYADWZGCfNfaWJUarrvV7Zs", //shard 0
+	"181t5nb3KSqjSGTYFDo1hnV8xPEsi2uZsc5dgVmycFytMUJHNpv", //shard 0
 
-	"17S44aXG7y9yEmb932MWQrrRT4Rc6pehK2UMC5np84QB2UYZdZM", //shard 1
-	"18YNhMumBmeWE8GJJGbW19esqtB22zUiQx73Rwifxkyt1YKCp1s", //shard 1
-	"15QYRykFuiFhoU56EAJYFRXn5UWurSuyGiZox9y7rCoSzpKW62H", //shard 1
-	"15Mjx8UwK9hG2xFrmyVxco39BSDLidvcy7MBDTivuPBme6JJ24e", //shard 1
+	"18XpTg8Q2dJqTXgDvc1fECQXUi1NkqVuJnPrQ6meZxwWCw1xxbn", //shard 1
+	"173YFBy4eHQpGHzFBbkEtkanHskhhD1FZPtrE2kGwYKEKQ3GZKM", //shard 1
+	"16g5hZyPwe4KzVXEeP4rC6BhMPMenzxvgxX5MaaJrAbJNktKAWY", //shard 1
+	"159sN3Wm8HXdnNSc2K8nRXXpkC6PwXsGAGV4b6qY3wkSKeX9K35", //shard 1
 
 	"17E9zkHtf495WBkdo47vDB2AVTLLtSq5QtpFU2X7sQcEgHSLmfB",
 	"16zsNt8d4UEtGR5c5gLfW4GvhWe3NXQv9K3tBEfom8FTYKNDeim",
@@ -167,14 +167,14 @@ var PreSelectShardNodeTestnetSerializedPubkey = []string{
 // privatekey
 var PreSelectShardNodeTestnet = []string{
 	"112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNhc33pzChmJRvikZNc3Dt5V7quhdzjWW9Z4BrB2BxdK5VtHzsG9JZdZ5M7yYYGidKKZV", //shard 0
-	"112t8s2UkZEwS7JtqLHFruRrh4Drj53UzH4A6DrairctKutxVb8Vw2DMzxCReYsAZkXi9ycaSNRHEcB7TJaTwPhyPvqRzu5NnUgTMN9AEKwo", //shard 0
-	"112t8rnYY8UbXGVJ3PsrWxssjr1JXaTPNCPDrneXcQgVQs2MFYwgCzPmTsgqPPbeq8c4QxkrjpHYRaG39ZjtwCmHMJBNh2MxaQvKWw5eUGTM", //shard 0
-	"112t8rniLPf1ten3xsPpFx2P6Ug7D4UVz4yYGKQfk8YpzY3RDEqmQ9FxTXd9G6r6dJXb9URqvNApfQzVQqqRqvmfarRnaR4tVUATrxbmcQD6", //shard 0
+	"112t8ruNDweRqN4LvP1FaxjWWoVjDqbhtqQyjx52xtq3rpcRuPhqtwApvuNYpj78TAdZAqDsy4ewwgaEdCQWqK5VAXdBPfWKkMD3QbeRSaSJ", //shard 0
+	"112t8roGSduAqZKFWWdRMzVazM5qDN6xzii4wWwbn6r4uEbTfEVN2o9sHY9kvHpouUXnhm9HnUcWSUTDvyBDgRLTVqqj5pgdmD6QJoC99bRq", //shard 0
+	"112t8ruqNDGrL9LqCvgZZuPGANgJ2mQEYogEmuSfpUFgaCf2cpPMvYpDUQzX4xWYaFXbfrfsNdjK9gZn2zS8tXhaywgAp1Pu8Bra2PurHtw6", //shard 0
 
-	"112t8rnYoj4LesSwRsseGCCYi4J2Py5QxytKKF2WixwEYP4opKUNL2Av9bR2zjfLewf3PQeKcNnuRTTPKgZSJaZH8dfoqY2rmHNekmGMBNDX", //shard 1
-	"112t8rnZ5aGQqJw9bg6fR8AiGe9NFRtSmn73Scd4oNJcE5BNY4Rbju2amkTRW5PUaFpETkKAdSJUMqptjFYb3B8PVAcQhrqooieNFXe5jzTj", //shard 1
-	"112t8rnZUKcW5CBDojVmMD6PmDJzR3VtfqFGWG6HRT9PocB6aewekjebWMm9aQnSncgwDV2GMqAWzspzFYL2vs3C3KnZB9H5YSE4s1SdotHb", //shard 1
-	"112t8rnhvfmkbNz6bmrtBM74pHiUFgML4yhuSZ431teYD3S1sEUVPKpB6gGFjgrPu8e9uc7eqfnmqqtj9kTxYXTRbYkvyrsv3ydxVPmRM8fX", //shard 1
+	"112t8rpxJvKj42esCYsnShYnbe67yERdjrPmWcDWCcTyM6W4Nst3yyBkidWEu2M2M5H5cKwVMtzBLM6XWyqQrB4L4QK2GJFyaBQhRwgC8Vz6", //shard 1
+	"112t8rqNdNmv4Z1WeR9Lj8Us9qABCCSFRNJf1fQ3yr2v9WKkkxxHQZzDX6zF1GYq3hC6qBE9GMo9hJgrBq7irZ2qc3HSMaPLMkMTE76YH4Jc", //shard 1
+	"112t8rpcsM9MQtbinYKXphEmCM1xmd4SmsFupTmNp2kBkboVSsAJj3r7bZ4CwDAdHapc5hdsrNNgoCo7a6MJkc93UuSu875Y6ewNLMDXtgyr", //shard 1
+	"112t8rt27RFqHVYpj11Q7tVsjE9sxFQESe53BChdXaySoRDDo3vqfrSB4sce2HruiLh9T2aq6fSScV48XBBi5jVSoSXnd1ubMRLgBYRRqqHq", //shard 1
 
 	"112t8rnZdou7TJBdGsWUJ3jWxuQYHdEKndzmKHhHzjdHzckLf7dAz4uBr2oVPF3ChNjs9owpobjaySzPrK3nUsZukVWv2MybKiajw6kD6M69",
 	"112t8rna913eNyB7uyfi6Nbpg9Fqv4ic8uyCyC79S8MhkTgVQYnxpEJFBQZsEveNa3AGWqHoBiEp1dgMH5e2UUpcN6XLvbVo6jaiy3UiiaUY",
