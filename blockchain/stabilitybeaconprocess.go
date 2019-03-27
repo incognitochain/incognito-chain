@@ -547,16 +547,24 @@ func (bc *BlockChain) processLoanPaymentInstruction(inst []string) error {
 }
 
 func (bc *BlockChain) processTradeBondInstruction(inst []string) error {
+	fmt.Printf("[db] updated trade bond status: %v\n", inst)
 	tbi, err := ParseTradeBondInstruction(inst[2])
 	if err != nil {
 		return err
 	}
-	bondID, buy, _, amount, err := bc.config.DataBase.GetTradeActivation(tbi.TradeID)
-	if err != nil {
-		return err
+
+	var trade *component.TradeBondWithGOV
+	for _, t := range bc.GetAllTrades() {
+		if bytes.Equal(t.TradeID, tbi.TradeID) {
+			trade = t
+		}
 	}
+	if trade == nil {
+		return errors.New("Found no trade in current proposal")
+	}
+
 	activated := true
-	return bc.config.DataBase.StoreTradeActivation(tbi.TradeID, bondID, buy, activated, amount)
+	return bc.config.DataBase.StoreTradeActivation(tbi.TradeID, trade.BondID, trade.Buy, activated, trade.Amount)
 }
 
 func (bc *BlockChain) processBuyBackResponseInstruction(inst []string) error {

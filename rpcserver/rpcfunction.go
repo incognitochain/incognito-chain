@@ -108,6 +108,9 @@ var RpcHandler = map[string]commandHandler{
 	GetListDCBProposalBuyingAssets:        RpcServer.handleGetListDCBProposalBuyingAssets,
 	GetListDCBProposalSellingAssets:       RpcServer.handleGetListDCBProposalSellingAssets,
 
+	// Trade bonds with GOV
+	CreateAndSendTradeActivation: RpcServer.handleCreateAndSendTradeActivation,
+
 	// Reserve
 	CreateIssuingRequest:            RpcServer.handleCreateIssuingRequest,
 	SendIssuingRequest:              RpcServer.handleSendIssuingRequest,

@@ -152,7 +152,9 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 	// instructions = append(instructions, votingInstruction...)
 
 	for _, inst := range shardBlockInstructions {
-		fmt.Printf("[db] beaconProducer found inst: %s\n", inst[0])
+		if inst[0] != "36" {
+			fmt.Printf("[db] beaconProducer found inst: %s\n", inst[0])
+		}
 		// TODO: will improve the condition later
 		if inst[0] == StakeAction || inst[0] == SwapAction || inst[0] == RandomAction {
 			continue
@@ -299,7 +301,9 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				if err != nil {
 					return nil, err
 				}
-				fmt.Printf("[db] shard build Resp from inst: %+v\n", l)
+				if metaType != 36 {
+					fmt.Printf("[db] shard build Resp from inst: %+v\n", l)
+				}
 				Logger.log.Warn("Metadata type:", metaType, "\n")
 
 				var tx metadata.Transaction

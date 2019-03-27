@@ -420,6 +420,25 @@ func (blockchain *BlockChain) initBeaconState() error {
 	}
 	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.ListLoanParams = loanParams
 
+	// Trade bonds
+	tradeBondBuyID := [32]byte{5}
+	tradeBondSellID := [32]byte{6}
+	tradeBonds := []*component.TradeBondWithGOV{
+		&component.TradeBondWithGOV{
+			TradeID: tradeBondBuyID[:],
+			BondID:  bondID,
+			Amount:  100,
+			Buy:     true,
+		},
+		&component.TradeBondWithGOV{
+			TradeID: tradeBondSellID[:],
+			BondID:  bondID,
+			Amount:  200,
+			Buy:     false,
+		},
+	}
+	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.TradeBonds = tradeBonds
+
 	blockchain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress = []privacy.PaymentAddress{
 		// Payment4: 1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba
 		privacy.PaymentAddress{
