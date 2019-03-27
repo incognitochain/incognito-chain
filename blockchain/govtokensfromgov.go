@@ -40,7 +40,8 @@ func buildInstructionsForBuyGOVTokensReq(
 	if (sellingGOVTokensParams == nil) ||
 		(bestBlockHeight+1 < sellingGOVTokensParams.StartSellingAt) ||
 		(bestBlockHeight+1 > sellingGOVTokensParams.StartSellingAt+sellingGOVTokensParams.SellingWithin) ||
-		(accumulativeValues.govTokensSold+md.Amount > sellingGOVTokensParams.GOVTokensToSell) {
+		(accumulativeValues.govTokensSold+md.Amount > sellingGOVTokensParams.GOVTokensToSell) ||
+		(md.BuyPrice < sellingGOVTokensParams.GOVTokenPrice) {
 		instType = "refund"
 	} else {
 		accumulativeValues.incomeFromGOVTokens += (md.Amount + md.BuyPrice)
