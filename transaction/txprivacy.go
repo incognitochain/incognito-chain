@@ -386,7 +386,9 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	signature.SetBytes(tx.Sig)
 
 	// verify signature
-	Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
+	// Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
+	// Logger.log.Infof(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
+	// Logger.log.Infof(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)
 	res = verKey.Verify(signature, tx.Hash()[:])
 
 	return res, nil
@@ -507,7 +509,7 @@ func (tx Tx) String() string {
 	if tx.Proof != nil {
 		tmp := base58.Base58Check{}.Encode(tx.Proof.Bytes()[:], 0x00)
 		record += tmp
-		fmt.Printf("Proof check base 58: %v\n", tmp)
+		// fmt.Printf("Proof check base 58: %v\n",tmp)
 	}
 	if tx.Metadata != nil {
 		metadataHash := tx.Metadata.Hash()

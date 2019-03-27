@@ -40,7 +40,7 @@ func isGOVFundEnough(
 	govFund := beaconBestState.StabilityInfo.SalaryFund
 	income := accumulativeValues.incomeFromBonds + accumulativeValues.incomeFromGOVTokens + accumulativeValues.totalFee
 	totalExpensed := accumulativeValues.buyBackCoins + accumulativeValues.totalSalary + accumulativeValues.totalRefundAmt + accumulativeValues.totalOracleRewards
-	return (govFund + income - expense - totalExpensed) > 0
+	return govFund+income > expense+totalExpensed
 }
 
 // build actions from txs and ins at shard
@@ -356,7 +356,8 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 
 				case metadata.BuyBackRequestMeta:
 					buyBackInfoStr := l[3]
-					txs, err := blockgen.buildBuyBackRes(l[2], buyBackInfoStr, producerPrivateKey)
+					prevBuySellResMetaStr := l[4]
+					txs, err := blockgen.buildBuyBackRes(l[2], buyBackInfoStr, prevBuySellResMetaStr, producerPrivateKey)
 					if err != nil {
 						return nil, err
 					}
