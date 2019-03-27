@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
@@ -139,21 +140,21 @@ func buildInstructionsForTradeActivation(
 	accumulativeValues *accumulativeValues,
 	db database.DatabaseInterface,
 ) ([][]string, error) {
+	fmt.Printf("[db] beacon buildingInst for trade\n")
 	tradeID, err := metadata.ParseTradeActivationActionValue(contentStr)
 	if err != nil {
+		fmt.Printf("[db] 1\n")
 		return nil, err
 	}
 
 	// If trade had been activated, ignore the request
-	_, _, activated, _, err := db.GetTradeActivation(tradeID)
-	if err != nil {
-		return nil, err
-	}
-
+	_, _, activated, _, _ := db.GetTradeActivation(tradeID)
 	key := string(tradeID)
 	if activatedInBlock := accumulativeValues.trade[key]; activatedInBlock {
+		fmt.Printf("[db] 2\n")
 		return nil, nil
 	} else if activated {
+		fmt.Printf("[db] 3\n")
 		return nil, nil
 	}
 	accumulativeValues.trade[key] = true
@@ -170,5 +171,6 @@ func buildInstructionsForTradeActivation(
 		strconv.Itoa(int(dcbShardID)),
 		tradeInst.String(),
 	}
+	fmt.Printf("[db] beacon built inst: %v\n", inst)
 	return [][]string{inst}, nil
 }
