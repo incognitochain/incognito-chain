@@ -509,7 +509,7 @@ func (tx Tx) String() string {
 	if tx.Proof != nil {
 		tmp := base58.Base58Check{}.Encode(tx.Proof.Bytes()[:], 0x00)
 		record += tmp
-		fmt.Printf("Proof check base 58: %v\n",tmp)
+		// fmt.Printf("Proof check base 58: %v\n",tmp)
 	}
 	if tx.Metadata != nil {
 		metadataHash := tx.Metadata.Hash()
