@@ -19,6 +19,8 @@ const (
 	CrowdsaleRequestMeta
 	CrowdsalePaymentMeta
 
+	TradeActivationMeta
+
 	// CMB
 	CMBInitRequestMeta
 	CMBInitResponseMeta // offchain multisig
