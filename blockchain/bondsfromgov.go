@@ -12,6 +12,7 @@ import (
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
+	"github.com/constant-money/constant-chain/wallet"
 )
 
 type BuySellReqAction struct {
@@ -181,12 +182,22 @@ func (blockgen *BlkTmplGenerator) buildBuyBackRes(
 		return []metadata.Transaction{refundTx}, nil
 
 	} else if instType == "accepted" {
+		dcbKey, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+		dcbAddr := dcbKey.KeySet.PaymentAddress
+		burningKey, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
+		burningAddr := burningKey.KeySet.PaymentAddress
+
+		receiverAddr := buyBackInfo.PaymentAddress
+		if bytes.Equal(buyBackInfo.PaymentAddress.Pk[:], dcbAddr.Pk[:]) {
+			receiverAddr = burningAddr
+		}
+
 		buyBackAmount := buyBackInfo.Value * buyBackInfo.BuyBackPrice
 		buyBackRes := metadata.NewBuyBackResponse(buyBackInfo.RequestedTxID, metadata.BuyBackResponseMeta)
 		buyBackResTx := new(transaction.Tx)
 		err := buyBackResTx.InitTxSalary(
 			buyBackAmount,
-			&buyBackInfo.PaymentAddress,
+			&receiverAddr,
 			blkProducerPrivateKey,
 			blockgen.chain.GetDatabase(),
 			buyBackRes,
@@ -223,7 +234,9 @@ func (blockgen *BlkTmplGenerator) buildBuyBondsFromGOVRes(
 	}
 	txReqID := buySellReqAction.TxReqID
 	reqMeta := buySellReqAction.Meta
-	if instType == "refund" {
+	key, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	dcbAddr := key.KeySet.PaymentAddress
+	if instType == "refund" && !bytes.Equal(dcbAddr.Pk[:], reqMeta.PaymentAddress.Pk[:]) {
 		refundMeta := metadata.NewResponseBase(txReqID, metadata.ResponseBaseMeta)
 		refundTx := new(transaction.Tx)
 		err := refundTx.InitTxSalary(

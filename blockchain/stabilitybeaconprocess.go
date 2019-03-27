@@ -252,7 +252,7 @@ func (bsb *BestStateBeacon) processBuyBackReqInstruction(inst []string) error {
 	if err != nil {
 		return err
 	}
-	bsb.StabilityInfo.SalaryFund -= (buyBackInfo.Value + buyBackInfo.BuyBackPrice)
+	bsb.StabilityInfo.SalaryFund -= (buyBackInfo.Value * buyBackInfo.BuyBackPrice)
 	return nil
 }
 
