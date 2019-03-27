@@ -273,11 +273,11 @@ func (bsb *BestStateBeacon) processBuyFromGOVReqInstruction(inst []string) error
 		return err
 	}
 	md := buySellReqAction.Meta
-	stabilityInfo := bsb.StabilityInfo
+	stabilityInfo := &bsb.StabilityInfo
 	sellingBondsParams := stabilityInfo.GOVConstitution.GOVParams.SellingBonds
 	if sellingBondsParams != nil {
 		sellingBondsParams.BondsToSell -= md.Amount
-		stabilityInfo.SalaryFund += (md.Amount + md.BuyPrice)
+		stabilityInfo.SalaryFund += (md.Amount * md.BuyPrice)
 	}
 	return nil
 }
