@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -41,24 +40,7 @@ func NewBuySellRequest(
 }
 
 func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-
-	// TODO: support and validate for either bonds or govs buy requests
-
-	govParams := bcr.GetGOVParams()
-	sellingBondsParams := govParams.SellingBonds
-	if sellingBondsParams == nil {
-		return false, errors.New("SellingBonds component are not existed.")
-	}
-
-	bondID := sellingBondsParams.GetID()
-	if !bytes.Equal(bondID[:], bsReq.TokenID[:]) {
-		return false, errors.New("Requested tokenID has not been selling yet.")
-	}
-
-	// check if buy price againsts SellingBonds component' BondPrice is correct or not
-	if bsReq.BuyPrice < sellingBondsParams.BondPrice {
-		return false, errors.New("Requested buy price is under SellingBonds component' buy price.")
-	}
+	// no need to do validation here since it'll be checked on beacon chain
 	return true, nil
 }
 
@@ -77,6 +59,12 @@ func (bsReq *BuySellRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tra
 	}
 	if len(bsReq.TokenID) != common.HashSize {
 		return false, false, errors.New("Wrong request info's asset type")
+	}
+	if txr.CalculateTxValue() < bsReq.BuyPrice*bsReq.Amount {
+		return false, false, errors.New("Sending constant amount is not enough for buying bonds.")
+	}
+	if !txr.IsCoinsBurning() {
+		return false, false, errors.New("Must send coin to burning address")
 	}
 	return true, true, nil
 }
