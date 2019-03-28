@@ -83,9 +83,9 @@ var (
 
 // board addresses
 const (
-	DCBAddress     = "1Uv4CtusMLW1GZpMS2HwqJ5fp654J6VUxUPEm8CpgkqDmKRbKuSH2dvBrrq4P75GNZdbCW3QGXmMQDRqpLnpyHrESqKvawLX7Ju29HjaD"
-	GOVAddress     = "1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba"
-	BurningAddress = "1NHp16Y29xjc1PoXb1qwr65BfVVoHZuCbtTkVyucRzbeydgQHs2wPu5PC1hD"
+	DCBAddress     = "1NHoBqcP4pub7h2xHjfSqazgNUiKg2DMKyeyaDRmiZ4EMnMY3Eh4gjMk2cbA"
+	GOVAddress     = "1NHoRSbCXCvnbHrrkLJ5R3YMdSX2guJ31X3jHsFuVoo2VknqH3BrBmumEJXS"
+	BurningAddress = "1NHooC9spWwdWZw7itkDrSrueSHtdGtR9deCHSvDK84KAFow5b7LNopcsCFz"
 )
 
 // CONSENSUS

@@ -105,7 +105,7 @@ func (cReq *ContractingRequest) Hash() *common.Hash {
 	record += string(cReq.BurnedConstAmount)
 
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
