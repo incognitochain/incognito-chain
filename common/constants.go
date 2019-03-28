@@ -84,6 +84,7 @@ var (
 // board addresses
 const (
 	DCBAddress     = "1NHoBqcP4pub7h2xHjfSqazgNUiKg2DMKyeyaDRmiZ4EMnMY3Eh4gjMk2cbA"
+	GOVAddress     = "1NHoRSbCXCvnbHrrkLJ5R3YMdSX2guJ31X3jHsFuVoo2VknqH3BrBmumEJXS"
 	BurningAddress = "1NHooC9spWwdWZw7itkDrSrueSHtdGtR9deCHSvDK84KAFow5b7LNopcsCFz"
 )
 
