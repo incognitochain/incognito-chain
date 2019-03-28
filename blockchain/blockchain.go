@@ -22,7 +22,7 @@ import (
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/constant-money/constant-chain/wallet"
 	libp2p "github.com/libp2p/go-libp2p-peer"
-	"github.com/patrickmn/go-cache"
+	cache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
 
@@ -344,7 +344,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 	}
 
 	// Trade bonds
-	bondID, _ := common.NewHashFromStr("4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000")
+	bondID, _ := common.NewHashFromStr("a1bdba2624828899959bd3704df90859539623d89ba6767d0000000000000000")
 	tradeBondBuyID := [32]byte{5}
 	tradeBondSellID := [32]byte{6}
 	tradeBonds := []*component.TradeBondWithGOV{

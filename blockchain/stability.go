@@ -156,7 +156,7 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 	instructions = append(instructions, votingInstruction...)
 
 	for _, inst := range shardBlockInstructions {
-		if inst[0] != "36" {
+		if inst[0] != "37" {
 			fmt.Printf("[db] beaconProducer found inst: %s\n", inst[0])
 		}
 		// TODO: will improve the condition later
@@ -307,7 +307,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				if err != nil {
 					return nil, err
 				}
-				if metaType != 36 {
+				if metaType != 37 {
 					fmt.Printf("[db] shard build Resp from inst: %+v\n", l)
 				}
 				Logger.log.Warn("Metadata type:", metaType, "\n")

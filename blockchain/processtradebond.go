@@ -118,6 +118,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 		keyWalletBurnAccount.KeySet.PaymentAddress,
 		buyBackMeta,
 	)
+	// TODO(@0xbunyip): skip building tx buyback/buysell if error (retry later)
 	if err != nil {
 		fmt.Printf("[db] build buyback request err: %v\n", err)
 		return nil, err
