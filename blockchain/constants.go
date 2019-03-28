@@ -79,7 +79,7 @@ const (
 	TestnetGenesisBlockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
 )
 
-var TestnetInitConstant = []string{`{"Version":1,"Type":"s","LockTime":1553740832,"Fee":0,"Info":null,"SigPubKey":"AsKCsGYkt3JthzFysVzWHxkESGfEoSRFeWafGB+DZRQA","Sig":"fv4iWFbxdfv426PSTGPR+kJNkRARQOEQGrcDIhkvM3/SajBiOMq2azQyjVol4N9VkxGu3NVhCTCySRJuM2rSmg==","Proof":"11111116WGHqpGKhPnvZ7i2w3heBopZQYdwc4cG7c4H53LZKzjBdafgMwxaXKVeaUNNhfQahh8zfnxjpWCTApCK3qg1M3VvA9iiQ9wkDgD3gobwEPESULJkBEnEAq5Pw3DwhURvgh89HRZ58XFK7AstSMmtxQFJoWGMoWkHNUAVjpM7L9ge2EZ7hwBhWqyafycxP94LdE33TdjxnSarT83pmkQ","PubKeyLastByteSender":0,"Metadata":null}`}
+var TestnetInitConstant = []string{`{"Version":1,"Type":"s","LockTime":1553758820,"Fee":0,"Info":null,"SigPubKey":"A58CKhajw92BH9mFlRBEbCrAOl8nzD9Ey4TdMLWDKL0A","Sig":"WylO/dJWQY5wu2axUX9JHtH9MKpgja2bwt6ofx3xtPuA40TLh6h1Tpwq6G5y6ItpE4E+kTCL/Yo8CnU3erzPcw==","Proof":"11111112F9nPGbqt7CVTk9ou9UEBVhYPTGDuaYA563zYS6QyNjeBxxsyydsxB4DgfH42QA3wTEF1XSdfzEexQ1Vt71ffzPKhhrh4ccjFjYqkwhynQgjUi86gZ3WpaX4bjxAeo7SoSmQmQy7PnjYbfMnpmiiwFrnhLmQw85kTmGygUyrMT9BpAVqmWeeTgM4fAfdvhd3gQSLDDD4MgvyFPMpgo","PubKeyLastByteSender":0,"Metadata":null}`}
 
 // for beacon
 // public key
