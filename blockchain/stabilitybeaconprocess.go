@@ -19,30 +19,9 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 		// init data for network
 		var err error
 		switch inst[1] {
-		case salaryPerTx:
-			{
-				bsb.StabilityInfo.GOVConstitution.GOVParams.SalaryPerTx, err = strconv.ParseUint(inst[2], 10, 64)
-				if err != nil {
-					return err
-				}
-			}
-		case basicSalary:
-			{
-				bsb.StabilityInfo.GOVConstitution.GOVParams.BasicSalary, err = strconv.ParseUint(inst[2], 10, 64)
-				if err != nil {
-					return err
-				}
-			}
 		case salaryFund:
 			{
 				bsb.StabilityInfo.SalaryFund, err = strconv.ParseUint(inst[2], 10, 64)
-				if err != nil {
-					return err
-				}
-			}
-		case feePerTxKb:
-			{
-				bsb.StabilityInfo.GOVConstitution.GOVParams.FeePerKbTx, err = strconv.ParseUint(inst[2], 10, 64)
 				if err != nil {
 					return err
 				}
