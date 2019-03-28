@@ -75,6 +75,8 @@ const (
 	//statking
 	ShardStakingMeta  = 63
 	BeaconStakingMeta = 64
+
+	TradeActivationMeta = 65
 )
 
 const (

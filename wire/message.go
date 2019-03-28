@@ -3,15 +3,12 @@ package wire
 import (
 	"fmt"
 	"reflect"
-
-	"github.com/constant-money/constant-chain/blockchain"
-	peer "github.com/libp2p/go-libp2p-peer"
-
 	"time"
 
+	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/cashec"
-	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/transaction"
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 // list message type
@@ -29,10 +26,6 @@ const (
 	CmdTx                 = "tx"
 	CmdCustomToken        = "txtoken"
 	CmdPrivacyCustomToken = "txprivacytok"
-	CmdCLoanRequestToken  = "txloanreq"
-	CmdCLoanResponseToken = "txloanres"
-	CmdCLoanWithdrawToken = "txloanwith"
-	CmdCLoanPayToken      = "txloanpay"
 	CmdGetBlockBeacon     = "getblkbeacon"
 	CmdGetBlockShard      = "getblkshard"
 	CmdInv                = "inv"
@@ -102,34 +95,6 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdPrivacyCustomToken:
 		msg = &MessageTx{
 			Transaction: &transaction.TxCustomTokenPrivacy{},
-		}
-		break
-	case CmdCLoanRequestToken:
-		msg = &MessageTx{
-			Transaction: &transaction.Tx{
-				Metadata: &metadata.LoanRequest{},
-			},
-		}
-		break
-	case CmdCLoanResponseToken:
-		msg = &MessageTx{
-			Transaction: &transaction.Tx{
-				Metadata: &metadata.LoanResponse{},
-			},
-		}
-		break
-	case CmdCLoanWithdrawToken:
-		msg = &MessageTx{
-			Transaction: &transaction.Tx{
-				Metadata: &metadata.LoanWithdraw{},
-			},
-		}
-		break
-	case CmdCLoanPayToken:
-		msg = &MessageTx{
-			Transaction: &transaction.Tx{
-				Metadata: &metadata.LoanPayment{},
-			},
 		}
 		break
 	case CmdGetBlockBeacon:
