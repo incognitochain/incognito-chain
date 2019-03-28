@@ -6,15 +6,13 @@ type BlkTmplGenerator struct {
 	shardToBeaconPool ShardToBeaconPool
 	crossShardPool    map[byte]CrossShardPool
 	chain             *BlockChain
-	rewardAgent       RewardAgent
 }
 
-func (blkTmplGenerator BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent RewardAgent, shardToBeaconPool ShardToBeaconPool, crossShardPool map[byte]CrossShardPool) (*BlkTmplGenerator, error) {
+func (blkTmplGenerator BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, shardToBeaconPool ShardToBeaconPool, crossShardPool map[byte]CrossShardPool) (*BlkTmplGenerator, error) {
 	return &BlkTmplGenerator{
 		txPool:            txPool,
 		shardToBeaconPool: shardToBeaconPool,
 		crossShardPool:    crossShardPool,
 		chain:             chain,
-		rewardAgent:       rewardAgent,
 	}, nil
 }
