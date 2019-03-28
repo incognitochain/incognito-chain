@@ -83,9 +83,9 @@ var (
 
 // board addresses
 const (
-	DCBAddress     = "1NHoBqcP4pub7h2xHjfSqazgNUiKg2DMKyeyaDRmiZ4EMnMY3Eh4gjMk2cbA"
-	GOVAddress     = "1NHoRSbCXCvnbHrrkLJ5R3YMdSX2guJ31X3jHsFuVoo2VknqH3BrBmumEJXS"
-	BurningAddress = "1NHooC9spWwdWZw7itkDrSrueSHtdGtR9deCHSvDK84KAFow5b7LNopcsCFz"
+	DCBAddress     = "1NHpe7QsfnocqvbZPXC5zV7nz6yRpevvVQV55p7xaz6rxRzUrgy5eZrfKatR"
+	GOVAddress     = "1NHnn9xtv2iHyxdEwN6X9KEJa6h5HwdQU28cCNkkHha1W961K9C9nWqDrwrd"
+	BurningAddress = "1NHnxeKaZD5tMCzWR3yKXeQYh6o9XaskNhYb7WsWacwcUxB92GnoNGJTMHf1"
 )
 
 // CONSENSUS
@@ -105,7 +105,7 @@ const (
 	VALIDATOR_ROLE = "validator"
 	PENDING_ROLE   = "pending"
 
-	MAX_SHARD_NUMBER = 255
+	MAX_SHARD_NUMBER = 4
 )
 
 // Units converter
