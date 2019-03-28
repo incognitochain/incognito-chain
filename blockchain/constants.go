@@ -76,7 +76,7 @@ const (
 	TestnetInitCmBToken               = 10000
 	TestnetInitBondToken              = 10000
 	TestnetFeePerTxKb                 = 1
-	TestnetGenesisBlockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
+	TestnetGenesisBlockPaymentAddress = "1Uv46Pu4pqBvxCcPw7MXhHfiAD5Rmi2xgEE7XB6eQurFAt4vSYvfyGn3uMMB1xnXDq9nRTPeiAZv5gRFCBDroRNsXJF1sxPSjNQtivuHk"
 )
 
 var TestnetInitConstant = []string{`{"Version":1,"Type":"s","LockTime":1553758820,"Fee":0,"Info":null,"SigPubKey":"A58CKhajw92BH9mFlRBEbCrAOl8nzD9Ey4TdMLWDKL0A","Sig":"WylO/dJWQY5wu2axUX9JHtH9MKpgja2bwt6ofx3xtPuA40TLh6h1Tpwq6G5y6ItpE4E+kTCL/Yo8CnU3erzPcw==","Proof":"11111112F9nPGbqt7CVTk9ou9UEBVhYPTGDuaYA563zYS6QyNjeBxxsyydsxB4DgfH42QA3wTEF1XSdfzEexQ1Vt71ffzPKhhrh4ccjFjYqkwhynQgjUi86gZ3WpaX4bjxAeo7SoSmQmQy7PnjYbfMnpmiiwFrnhLmQw85kTmGygUyrMT9BpAVqmWeeTgM4fAfdvhd3gQSLDDD4MgvyFPMpgo","PubKeyLastByteSender":0,"Metadata":null}`}
