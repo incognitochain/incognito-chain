@@ -575,16 +575,12 @@ func (rpcServer RpcServer) handleGetActiveShards(params interface{}, closeChan <
 }
 
 func (rpcServer RpcServer) handleGetStakingAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) <= 0 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("ErrRPCInvalidParams"))
-	}
-	stackingType := int64(arrayParams[0].(float64))
+	stackingType := int64(params.(float64))
 	amount := uint64(0)
 	if stackingType == 1 {
 		amount = metadata.GetBeaconStakeAmount()
 	}
-	if stackingType == 2 {
+	if stackingType == 0 {
 		amount = metadata.GetBeaconStakeAmount()
 	}
 	return amount, nil
