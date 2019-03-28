@@ -364,7 +364,7 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 */
 func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	sourceTxns := blockgen.txPool.MiningDescs()
-
+	// sourceTxns := []*metadata.TxDesc{}
 	//TODO: UNCOMMENT To avoid produce too many empty block
 	// get tx and wait for more if not enough
 	// if len(sourceTxns) < common.MinTxsInBlock {
