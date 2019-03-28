@@ -21,8 +21,8 @@ const (
 )
 
 var ErrCodeMessage = map[int]struct {
-	code    int
-	message string
+	Code    int
+	Message string
 }{
 	RejectDuplicateTx:      {-1000, "Reject duplicate tx"},
 	RejectInvalidTx:        {-1001, "Reject invalid tx"},
@@ -50,7 +50,7 @@ func (e MempoolTxError) Error() string {
 // txRuleError creates an underlying MempoolTxError with the given a set of
 // arguments and returns a RuleError that encapsulates it.
 func (e *MempoolTxError) Init(key int, err error) {
-	e.Code = ErrCodeMessage[key].code
-	e.Message = ErrCodeMessage[key].message
+	e.Code = ErrCodeMessage[key].Code
+	e.Message = ErrCodeMessage[key].Message
 	e.Err = errors.Wrap(err, e.Message)
 }
