@@ -123,6 +123,9 @@ const (
 	GetListDCBProposalBuyingAssets        = "getlistdcbproposalbuyingassets"
 	GetListDCBProposalSellingAssets       = "getlistdcbproposalsellingassets"
 
+	// trade bonds with gov
+	CreateAndSendTradeActivation = "createandsendtradeactivation"
+
 	// reserve
 	CreateIssuingRequest            = "createissuingrequest"
 	SendIssuingRequest              = "sendissuingrequest"
