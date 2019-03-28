@@ -159,7 +159,6 @@ func NewGOVParams(
 }
 
 func NewGOVParamsFromJson(data interface{}) *GOVParams {
-	//@todo 0xjackalope marshall
 	arrayParams := data.(map[string]interface{})
 
 	salaryPerTx := uint64(arrayParams["SalaryPerTx"].(float64))
@@ -203,7 +202,7 @@ func (dcbParams *DCBParams) Hash() *common.Hash {
 		record += string(i.Maturity)
 		record += string(i.LiquidationStart)
 	}
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
@@ -215,7 +214,7 @@ func (govParams *GOVParams) Hash() *common.Hash {
 	record += string(govParams.SellingGOVTokens.Hash().GetBytes())
 	record += string(govParams.RefundInfo.Hash().GetBytes())
 	record += string(govParams.OracleNetwork.Hash().GetBytes())
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

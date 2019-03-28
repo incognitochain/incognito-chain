@@ -45,20 +45,7 @@ func (bgtr *BuyGOVTokenRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	govParams := bcr.GetGOVParams()
-	sellingGOVTokensParams := govParams.SellingGOVTokens
-	if sellingGOVTokensParams == nil {
-		return false, errors.New("SellingGOVTokensParams component are not existed.")
-	}
-
-	if !bytes.Equal(common.GOVTokenID[:], bgtr.TokenID[:]) {
-		return false, errors.New("Requested GOV tokenID has not been selling yet.")
-	}
-
-	// check if buy price againsts SellingGOVTokens component' GOVTokenPrice is correct or not
-	if bgtr.BuyPrice < sellingGOVTokensParams.GOVTokenPrice {
-		return false, errors.New("Requested buy price is under SellingGOVTokens component' buy price.")
-	}
+	// no need to do validation here since it'll be checked on beacon chain
 	return true, nil
 }
 
@@ -78,6 +65,15 @@ func (bgtr *BuyGOVTokenRequest) ValidateSanityData(bcr BlockchainRetriever, txr 
 	if len(bgtr.TokenID) != common.HashSize {
 		return false, false, errors.New("Wrong request info's asset type")
 	}
+	if !txr.IsCoinsBurning() {
+		return false, false, errors.New("Must send coin to burning address")
+	}
+	if txr.CalculateTxValue() < bgtr.BuyPrice*bgtr.Amount {
+		return false, false, errors.New("Sending constant amount is not enough for buying GOV tokens.")
+	}
+	if !bytes.Equal(common.GOVTokenID[:], bgtr.TokenID[:]) {
+		return false, false, errors.New("Requested GOV tokenID has not been selling yet.")
+	}
 	return true, true, nil
 }
 
@@ -94,7 +90,7 @@ func (bgtr *BuyGOVTokenRequest) Hash() *common.Hash {
 	record += bgtr.MetadataBase.Hash().String()
 
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
