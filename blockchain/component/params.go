@@ -1,6 +1,9 @@
 package component
 
-import "github.com/constant-money/constant-chain/common"
+import (
+	"github.com/constant-money/constant-chain/common"
+	"github.com/pkg/errors"
+)
 
 type Oracle struct {
 	Bonds    map[string]uint64 // key: bondTypeID, value: price
@@ -46,15 +49,14 @@ func NewListLoanParamsFromJson(data interface{}) []LoanParams {
 
 type DCBParams struct {
 	ListSaleData             []SaleData
+	TradeBonds               []*TradeBondWithGOV
 	MinLoanResponseRequire   uint8
 	MinCMBApprovalRequire    uint8
 	LateWithdrawResponseFine uint64 // CST penalty for each CMB's late withdraw response
 	RaiseReserveData         map[common.Hash]*RaiseReserveData
 	SpendReserveData         map[common.Hash]*SpendReserveData
-	DividendAmount           uint64 // maximum total Constant to pay dividend; might be less if Institution's fund ran out
-
-	// TODO(@0xbunyip): read loan component from proposal instead of storing and reading separately
-	ListLoanParams []LoanParams // component for collateralized loans of Constant
+	DividendAmount           uint64       // maximum total Constant to pay dividend; might be less if Institution's fund ran out
+	ListLoanParams           []LoanParams // component for collateralized loans of Constant
 }
 
 type RaiseReserveData struct {
@@ -70,6 +72,7 @@ type SpendReserveData struct {
 
 func NewDCBParams(
 	listSaleData []SaleData,
+	tradeBonds []*TradeBondWithGOV,
 	minLoanResponseRequire uint8,
 	minCMBApprovalRequire uint8,
 	lateWithdrawResponseFine uint64,
@@ -80,6 +83,7 @@ func NewDCBParams(
 ) *DCBParams {
 	return &DCBParams{
 		ListSaleData:             listSaleData,
+		TradeBonds:               tradeBonds,
 		MinLoanResponseRequire:   minLoanResponseRequire,
 		MinCMBApprovalRequire:    minCMBApprovalRequire,
 		LateWithdrawResponseFine: lateWithdrawResponseFine,
@@ -102,11 +106,30 @@ func NewListSaleDataFromJson(data interface{}) []SaleData {
 	return listSaleData
 }
 
-func NewDCBParamsFromJson(rawData interface{}) *DCBParams {
+func NewTradeBondsFromJson(data interface{}) ([]*TradeBondWithGOV, error) {
+	tradeBondData := common.InterfaceSlice(data)
+	if tradeBondData == nil {
+		return nil, errors.Errorf("Invalid TradeBonds data")
+	}
+	tradeBonds := make([]*TradeBondWithGOV, 0)
+	for _, data := range tradeBondData {
+		trade, err := NewTradeBondWithGOVFromJson(data)
+		if err != nil {
+			return nil, err
+		}
+		tradeBonds = append(tradeBonds, trade)
+	}
+	return tradeBonds, nil
+}
 
+func NewDCBParamsFromJson(rawData interface{}) (*DCBParams, error) {
 	DCBParams := rawData.(map[string]interface{})
 
 	listSaleData := NewListSaleDataFromJson(DCBParams["ListSaleData"])
+	tradeBonds, errTrade := NewTradeBondsFromJson(DCBParams["TradeBonds"])
+	if errTrade != nil {
+		return nil, errTrade
+	}
 	minLoanResponseRequire := uint8(DCBParams["MinLoanResponseRequire"].(float64))
 	minCMBApprovalRequire := uint8(DCBParams["MinCMBApprovalRequire"].(float64))
 	lateWithdrawResponseFine := uint64(DCBParams["LateWithdrawResponseFine"].(float64))
@@ -118,6 +141,7 @@ func NewDCBParamsFromJson(rawData interface{}) *DCBParams {
 	listLoanParams := NewListLoanParamsFromJson(DCBParams["ListLoanParams"])
 	return NewDCBParams(
 		listSaleData,
+		tradeBonds,
 		minLoanResponseRequire,
 		minCMBApprovalRequire,
 		lateWithdrawResponseFine,
@@ -125,7 +149,7 @@ func NewDCBParamsFromJson(rawData interface{}) *DCBParams {
 		spendReserveData,
 		dividendAmount,
 		listLoanParams,
-	)
+	), nil
 }
 
 type GOVParams struct {
@@ -183,7 +207,10 @@ func NewGOVParamsFromJson(data interface{}) *GOVParams {
 func (dcbParams *DCBParams) Hash() *common.Hash {
 	record := ""
 	for _, saleData := range dcbParams.ListSaleData {
-		record = string(saleData.Hash().GetBytes())
+		record += string(saleData.Hash().GetBytes())
+	}
+	for _, trade := range dcbParams.TradeBonds {
+		record += string(trade.Hash().GetBytes())
 	}
 	for key, data := range dcbParams.RaiseReserveData {
 		record := string(key[:])
@@ -216,13 +243,6 @@ func (govParams *GOVParams) Hash() *common.Hash {
 	record += string(govParams.OracleNetwork.Hash().GetBytes())
 	hash := common.HashH([]byte(record))
 	return &hash
-}
-
-func (GOVParams GOVParams) Validate() bool {
-	return true
-}
-func (dcbParams DCBParams) Validate() bool {
-	return true
 }
 
 func (dcbParams DCBParams) ValidateSanityData() bool {
