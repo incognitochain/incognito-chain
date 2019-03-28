@@ -221,8 +221,6 @@ func (blockchain *BlockChain) GetOracleParams() *component.Oracle {
 func (blockchain *BlockChain) initChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
-
-	//TODO: 0xBahamoot check back later
 	var initialized bool
 
 	blockchain.BestState = &BestState{
