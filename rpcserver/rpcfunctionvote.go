@@ -1,11 +1,8 @@
 package rpcserver
 
 import (
-	"fmt"
-
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
 )
 
 func iPlusPlus(x *int) int {
@@ -15,40 +12,9 @@ func iPlusPlus(x *int) int {
 
 // ============================== VOTE PROPOSAL
 
-func (rpcServer RpcServer) handleGetEncryptionFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	db := *rpcServer.config.Database
-	dcbEncryptionFlag, _ := db.GetEncryptFlag(common.DCBBoard)
-	govEncryptionFlag, _ := db.GetEncryptFlag(common.GOVBoard)
-	return jsonresult.GetEncryptionFlagResult{
-		DCBFlag: dcbEncryptionFlag,
-		GOVFlag: govEncryptionFlag,
-	}, nil
-}
-
-func (rpcServer RpcServer) handleSetEncryptionFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	fmt.Print("delete me, use only for test purpose!!!")
-	db := *rpcServer.config.Database
-	dcbEncryptionFlag, _ := db.GetEncryptFlag(common.DCBBoard)
-	govEncryptionFlag, _ := db.GetEncryptFlag(common.GOVBoard)
-	db.SetEncryptFlag(common.DCBBoard, (dcbEncryptionFlag+1)%4)
-	db.SetEncryptFlag(common.GOVBoard, (govEncryptionFlag+1)%4)
-	return dcbEncryptionFlag, nil
-}
-
-func (rpcServer RpcServer) handleGetEncryptionLastBlockHeightFlag(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	boardType := common.NewBoardTypeFromString(arrayParams[0].(string))
-	db := *rpcServer.config.Database
-	blockHeight, _ := db.GetEncryptionLastBlockHeight(boardType)
-	return jsonresult.GetEncryptionLastBlockHeightResult{blockHeight}, nil
-}
-
 func (rpcServer RpcServer) handleCreateRawVoteProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	//VoteProposal - Step 2: Create Raw vote proposal transaction
-	params, err := rpcServer.buildParamsVoteProposal(params)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
+	params = setBuildRawBurnTransactionParams(params, FeeVote)
 	return rpcServer.createRawTxWithMetadata(
 		params,
 		closeChan,

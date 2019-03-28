@@ -62,7 +62,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock, isCom
 	}
 	//========Update best state with new block
 	snapShotBeaconCommittee := beaconBestState.BeaconCommittee
-	if err := beaconBestState.Update(block); err != nil {
+	if err := beaconBestState.Update(block, blockchain); err != nil {
 		return err
 	}
 	//========Post verififcation: verify new beaconstate with corresponding block
@@ -102,7 +102,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	Logger.log.Infof("Update BestState with Beacon Block %+v \n", *block.Hash())
 	//========Update best state with new block
 	snapShotBeaconCommittee := blockchain.BestState.Beacon.BeaconCommittee
-	if err := blockchain.BestState.Beacon.Update(block); err != nil {
+	if err := blockchain.BestState.Beacon.Update(block, blockchain); err != nil {
 		return err
 	}
 	Logger.log.Infof("Verify Post Processing Beacon Block %+v \n", *block.Hash())
@@ -456,7 +456,7 @@ func (bestStateBeacon *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *B
 /*
 	Update Beststate with new Block
 */
-func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
+func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *BlockChain) error {
 	bestStateBeacon.lockMu.Lock()
 	defer bestStateBeacon.lockMu.Unlock()
 
@@ -510,6 +510,10 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	//cross shard state
 
 	// update param
+	err := bestStateBeacon.updateOracleParams(chain)
+	if err != nil {
+		return err
+	}
 	instructions := newBlock.Body.Instructions
 	for _, l := range instructions {
 		// For stability instructions
@@ -620,7 +624,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	} else {
 		bestStateBeacon.CandidateBeaconWaitingForNextRandom = append(bestStateBeacon.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
 		bestStateBeacon.CandidateShardWaitingForNextRandom = append(bestStateBeacon.CandidateShardWaitingForNextRandom, newShardCandidate...)
-		fmt.Println("Beacon Process/Before: CandidateShardWaitingForNextRandom: ", bestStateBeacon.CandidateShardWaitingForNextRandom)
+		// fmt.Println("Beacon Process/Before: CandidateShardWaitingForNextRandom: ", bestStateBeacon.CandidateShardWaitingForNextRandom)
 	}
 
 	if bestStateBeacon.BeaconHeight%common.EPOCH == 1 && bestStateBeacon.BeaconHeight != 1 {

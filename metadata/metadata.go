@@ -124,8 +124,6 @@ type BlockchainRetriever interface {
 	// GetLoanTxs([]byte) ([][]byte, error)
 	GetLoanReq(loanID []byte) (*common.Hash, error)
 	GetLoanResps(loanID []byte) ([][]byte, []ValidLoanResponse, error)
-	GetNumberOfDCBGovernors() int
-	GetNumberOfGOVGovernors() int
 	GetLoanPayment([]byte) (uint64, uint64, uint64, error)
 	GetLoanRequestMeta(loanID []byte) (*LoanRequest, error)
 	GetLoanWithdrawed(loanID []byte) (bool, error)
