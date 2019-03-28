@@ -138,7 +138,6 @@ func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
 	return bestStateBeacon
 }
 func (bestStateBeacon *BestStateBeacon) GetBytes() []byte {
-	//TODO: 0xBahamoot check back later
 	var keys []int
 	var keyStrs []string
 	res := []byte{}
