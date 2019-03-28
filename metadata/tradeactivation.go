@@ -55,16 +55,16 @@ func (act *TradeActivation) ValidateTxWithBlockChain(txr Transaction, bcr Blockc
 		return false, errors.New("trade is activated")
 	}
 	if err == nil && act.Amount > amount {
-		return false, errors.Errorf("requested amount is too high: %d > %d", amount, act.Amount)
+		return false, errors.Errorf("requested amount is too high: %d > %d", act.Amount, amount)
 	}
 
 	// Check if balance is positive in case of selling bonds
-	//if !trade.Buy {
-	//	avail := bcr.GetDCBAvailableAsset(trade.BondID)
-	//	if avail < act.Amount {
-	//		return false, errors.Errorf("not enough asset to trade, have %d, need %d\n", avail, act.Amount)
-	//	}
-	//}
+	if !trade.Buy {
+		avail := bcr.GetDCBAvailableAsset(trade.BondID)
+		if avail < act.Amount {
+			return false, errors.Errorf("not enough asset to trade, have %d, need %d\n", avail, act.Amount)
+		}
+	}
 
 	return true, nil
 }
