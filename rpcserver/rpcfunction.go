@@ -116,6 +116,9 @@ var RpcHandler = map[string]commandHandler{
 	GetListDCBProposalBuyingAssets:        RpcServer.handleGetListDCBProposalBuyingAssets,
 	GetListDCBProposalSellingAssets:       RpcServer.handleGetListDCBProposalSellingAssets,
 
+	// Trade bonds with GOV
+	CreateAndSendTradeActivation: RpcServer.handleCreateAndSendTradeActivation,
+
 	// Reserve
 	CreateIssuingRequest:            RpcServer.handleCreateIssuingRequest,
 	SendIssuingRequest:              RpcServer.handleSendIssuingRequest,
@@ -582,7 +585,7 @@ func (rpcServer RpcServer) handleGetStakingAmount(params interface{}, closeChan 
 		amount = metadata.GetBeaconStakeAmount()
 	}
 	if stackingType == 0 {
-		amount = metadata.GetBeaconStakeAmount()
+		amount = metadata.GetShardStateAmount()
 	}
 	return amount, nil
 }
