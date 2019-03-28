@@ -22,17 +22,18 @@ func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 		return nil, err
 	}
 
-	bondID, buy, _, amount, err := blockgen.chain.config.DataBase.GetTradeActivation(tb.TradeID)
+	bondID, buy, _, _, err := blockgen.chain.config.DataBase.GetTradeActivation(tb.TradeID)
 	if err != nil {
 		fmt.Printf("[db] 2\n")
 		return nil, err
 	}
 
+	fmt.Printf("[db] trade act tx data: %s %t %d\n", bondID.String(), buy, tb.Amount)
 	txs := []metadata.Transaction{}
 	if buy {
-		txs, err = blockgen.buildTradeBuySellRequestTx(tb.TradeID, bondID, amount, producerPrivateKey)
+		txs, err = blockgen.buildTradeBuySellRequestTx(tb.TradeID, bondID, tb.Amount, producerPrivateKey)
 	} else {
-		txs, err = blockgen.buildTradeBuyBackRequestTx(tb.TradeID, bondID, amount, unspentTokens, producerPrivateKey)
+		txs, err = blockgen.buildTradeBuyBackRequestTx(tb.TradeID, bondID, tb.Amount, unspentTokens, producerPrivateKey)
 	}
 
 	if err != nil {
@@ -87,6 +88,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 	unspentTokens map[string]([]transaction.TxTokenVout),
 	producerPrivateKey *privacy.SpendingKey,
 ) ([]metadata.Transaction, error) {
+	fmt.Printf("[db] building buyback request tx: %d\n", amount)
 	// TODO(@0xbunyip): not enough bonds to send ==> update activated status to retry later
 	// Build metadata to send to GOV
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
@@ -117,6 +119,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 		buyBackMeta,
 	)
 	if err != nil {
+		fmt.Printf("[db] build buyback request err: %v\n", err)
 		return nil, err
 	}
 
@@ -125,5 +128,6 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 		unspentTokens[bondID.String()] = unspentTokens[bondID.String()][usedID:]
 	}
 
+	fmt.Printf("[db] done built buyback request tx: %v\n", usedID)
 	return []metadata.Transaction{txToken}, nil
 }

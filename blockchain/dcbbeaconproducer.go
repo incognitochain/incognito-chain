@@ -141,7 +141,7 @@ func buildInstructionsForTradeActivation(
 	db database.DatabaseInterface,
 ) ([][]string, error) {
 	fmt.Printf("[db] beacon buildingInst for trade\n")
-	tradeID, err := metadata.ParseTradeActivationActionValue(contentStr)
+	tradeID, amount, err := metadata.ParseTradeActivationActionValue(contentStr)
 	if err != nil {
 		fmt.Printf("[db] 1\n")
 		return nil, err
@@ -162,6 +162,7 @@ func buildInstructionsForTradeActivation(
 	// Generate instruction to send request to GOV
 	tradeInst := &TradeBondInstruction{
 		TradeID: tradeID,
+		Amount:  amount,
 	}
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
