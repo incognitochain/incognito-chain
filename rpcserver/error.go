@@ -25,6 +25,7 @@ const (
 	ErrCreateTxData
 	ErrSendTxData
 	ErrTxTypeInvalid
+	ErrRejectInvalidFee
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -52,6 +53,7 @@ var ErrCodeMessage = map[int]struct {
 	ErrGetOutputCoin:                 {-1013, "Can not get output coin"},
 	ErrTxTypeInvalid:                 {-1014, "Invalid tx type"},
 	ErrInvalidSenderViewingKey:       {-1015, "Invalid viewing key"},
+	ErrRejectInvalidFee:              {-1016, "Reject invalid fee"},
 
 	// processing -2xxx
 	ErrCreateTxData: {-2001, "Can not create tx"},
