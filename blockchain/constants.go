@@ -16,7 +16,8 @@ const (
 	// Threshold ratio
 	ThresholdRatioOfDCBCrisis = 9000
 	ThresholdRatioOfGOVCrisis = 9000
-	ConstitutionPerBoard      = 30
+	ConstitutionPerBoard      = 10
+	EndOfFirstBoard           = 25
 	BaseSalaryBoard           = 10000
 )
 
