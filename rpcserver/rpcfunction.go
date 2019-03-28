@@ -136,6 +136,8 @@ var RpcHandler = map[string]commandHandler{
 	CreateSignatureOnCustomTokenTx:       RpcServer.handleCreateSignatureOnCustomTokenTx,
 	GetListDCBBoard:                      RpcServer.handleGetListDCBBoard,
 	GetListGOVBoard:                      RpcServer.handleGetListGOVBoard,
+	GetListDCBBoardPayment:               RpcServer.handleGetListDCBBoardPayment,
+	GetListGOVBoardPayment:               RpcServer.handleGetListGOVBoardPayment,
 	AppendListDCBBoard:                   RpcServer.handleAppendListDCBBoard,
 	AppendListGOVBoard:                   RpcServer.handleAppendListGOVBoard,
 	CreateAndSendTxWithMultiSigsReg:      RpcServer.handleCreateAndSendTxWithMultiSigsReg,
