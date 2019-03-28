@@ -25,12 +25,12 @@ type BuyBackInfo struct {
 	BuyBackPrice   uint64
 	Value          uint64
 	RequestedTxID  common.Hash
-	TokenID        common.Hash
+	TradeID        []byte
 }
 
 type BuyBackReqAction struct {
 	TxReqID        common.Hash               `json:"txReqId"`
-	BuyBacReqkMeta *metadata.BuyBackRequest  `json:"buyBackReqMeta"`
+	BuyBackReqMeta *metadata.BuyBackRequest  `json:"buyBackReqMeta"`
 	PrevMeta       *metadata.BuySellResponse `json:"prevMeta"`
 }
 
@@ -50,7 +50,7 @@ func buildInstructionsForBuyBackBondsReq(
 	if err != nil {
 		return nil, err
 	}
-	buyBackReqMeta := buyBackReqAction.BuyBacReqkMeta
+	buyBackReqMeta := buyBackReqAction.BuyBackReqMeta
 	buySellResMeta := buyBackReqAction.PrevMeta
 
 	instType := ""
@@ -68,7 +68,7 @@ func buildInstructionsForBuyBackBondsReq(
 		BuyBackPrice:   buySellResMeta.BuyBackPrice,
 		Value:          buyBackReqMeta.Amount,
 		RequestedTxID:  buyBackReqAction.TxReqID,
-		// TokenID:        buyBackReqMeta.TokenID,
+		TradeID:        buyBackReqMeta.TradeID,
 	}
 	buyBackInfoBytes, err := json.Marshal(buyBackInfo)
 	if err != nil {
