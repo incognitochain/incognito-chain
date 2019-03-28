@@ -48,7 +48,7 @@ func (lr *LoanResponse) Hash() *common.Hash {
 
 	// final hash
 	record += lr.MetadataBase.Hash().String()
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

@@ -580,7 +580,7 @@ func (rpcServer RpcServer) handleSignUpdatingOracleBoardContent(params interface
 		record += string(pk)
 	}
 	record += common.HashH([]byte(strconv.Itoa(metadata.UpdatingOracleBoardMeta))).String()
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	hashContent := hash[:]
 
 	senderKeyParam := arrayParams[0]

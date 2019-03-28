@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -32,15 +31,11 @@ func CreateBeaconGenesisBlock(
 	inst = append(inst, shardAssingInstruction)
 
 	// init network param
-	inst = append(inst, []string{InitAction, salaryPerTx, fmt.Sprintf("%v", genesisParams.SalaryPerTx)})
-	inst = append(inst, []string{InitAction, basicSalary, fmt.Sprintf("%v", genesisParams.BasicSalary)})
 	inst = append(inst, []string{InitAction, salaryFund, strconv.Itoa(int(genesisParams.InitFundSalary))})
-	inst = append(inst, []string{InitAction, feePerTxKb, fmt.Sprintf("%v", genesisParams.FeePerTxKb)})
-
 	inst = append(inst, []string{SetAction, "randomnumber", strconv.Itoa(int(0))})
 
 	// init stability params
-	stabilityInsts := createStabilityGenesisInsts()
+	stabilityInsts := createStabilityGenesisInsts(genesisParams)
 	inst = append(inst, stabilityInsts...)
 
 	body := BeaconBody{ShardState: nil, Instructions: inst}
@@ -68,8 +63,8 @@ func CreateBeaconGenesisBlock(
 }
 
 // createStabilityGenesisInsts generates instructions to initialize stability params for genesis block of beacon chain
-func createStabilityGenesisInsts() [][]string {
-	govInsts := createGOVGenesisInsts()
+func createStabilityGenesisInsts(genesisParams GenesisParams) [][]string {
+	govInsts := createGOVGenesisInsts(genesisParams)
 	dcbInsts := createDCBGenesisInsts()
 	insts := [][]string{}
 	insts = append(insts, govInsts...)
@@ -77,8 +72,8 @@ func createStabilityGenesisInsts() [][]string {
 	return insts
 }
 
-func createGOVGenesisInsts() [][]string {
-	return [][]string{createGOVGenesisBoardInst(), createGOVGenesisParamInst()}
+func createGOVGenesisInsts(genesisParams GenesisParams) [][]string {
+	return [][]string{createGOVGenesisBoardInst(), createGOVGenesisParamInst(genesisParams)}
 }
 
 func createGOVGenesisBoardInst() []string {
@@ -97,7 +92,7 @@ func createGOVGenesisBoardInst() []string {
 	return govInst
 }
 
-func createGOVGenesisParamInst() []string {
+func createGOVGenesisParamInst(genesisParams GenesisParams) []string {
 	// Bond
 	sellingBonds := &component.SellingBonds{
 		BondName:       "Bond 1000 blocks",
@@ -119,9 +114,9 @@ func createGOVGenesisParamInst() []string {
 	}
 
 	govParams := component.GOVParams{
-		SalaryPerTx:      uint64(0),
-		BasicSalary:      uint64(0),
-		FeePerKbTx:       uint64(0),
+		SalaryPerTx:      uint64(genesisParams.SalaryPerTx),
+		BasicSalary:      uint64(genesisParams.BasicSalary),
+		FeePerKbTx:       uint64(genesisParams.FeePerTxKb),
 		SellingBonds:     sellingBonds,
 		SellingGOVTokens: sellingGOVTokens,
 		RefundInfo:       nil,

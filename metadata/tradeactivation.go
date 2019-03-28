@@ -82,10 +82,11 @@ func (act *TradeActivation) ValidateMetadataByItself() bool {
 
 func (act *TradeActivation) Hash() *common.Hash {
 	record := string(act.TradeID)
+	record += strconv.FormatUint(act.Amount, 10)
 
 	// final hash
 	record += act.MetadataBase.Hash().String()
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

@@ -30,7 +30,7 @@ type BuyBackInfo struct {
 
 type BuyBackReqAction struct {
 	TxReqID        common.Hash               `json:"txReqId"`
-	BuyBacReqkMeta *metadata.BuyBackRequest  `json:"buyBackReqMeta"`
+	BuyBackReqMeta *metadata.BuyBackRequest  `json:"buyBackReqMeta"`
 	PrevMeta       *metadata.BuySellResponse `json:"prevMeta"`
 }
 
@@ -50,7 +50,7 @@ func buildInstructionsForBuyBackBondsReq(
 	if err != nil {
 		return nil, err
 	}
-	buyBackReqMeta := buyBackReqAction.BuyBacReqkMeta
+	buyBackReqMeta := buyBackReqAction.BuyBackReqMeta
 	buySellResMeta := buyBackReqAction.PrevMeta
 
 	instType := ""

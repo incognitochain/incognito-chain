@@ -80,7 +80,7 @@ func (msReg *MultiSigsRegistration) Hash() *common.Hash {
 	record += msReg.MetadataBase.Hash().String()
 
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

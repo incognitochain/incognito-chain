@@ -389,6 +389,14 @@ func (chain *BlockChain) neededNewGovernor(helper ConstitutionHelper) bool {
 	return constitutionIndex == ConstitutionPerBoard
 }
 
+func (chain *BlockChain) neededFirstNewGovernor(helper ConstitutionHelper) bool {
+	fmt.Println(chain.BestState.Beacon.BeaconHeight)
+	if EndOfFirstBoard == chain.BestState.Beacon.BeaconHeight {
+		return true
+	}
+	return false
+}
+
 func (chain *BlockChain) neededNewConstitution(helper ConstitutionHelper) bool {
 	// todo: hyyyyyyyyyyyy
 	endBlock := helper.GetConstitutionEndedBlockHeight(chain)
@@ -402,6 +410,14 @@ func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper
 
 	// 	prevBlock := blockgen.chain.BestState[shardID].BestBlock
 	instructions := make([]frombeaconins.InstructionFromBeacon, 0)
+
+	if self.neededFirstNewGovernor(helper) {
+		updateGovernorInstruction, err := self.CreateUpdateNewGovernorInstruction(helper)
+		if err != nil {
+			return nil, err
+		}
+		instructions = append(instructions, updateGovernorInstruction...)
+	}
 
 	if self.neededNewConstitution(helper) {
 		//============================ VOTE PROPOSAL
