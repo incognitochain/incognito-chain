@@ -34,7 +34,7 @@ func (self SellingBonds) GetID() *common.Hash {
 	record := fmt.Sprintf("%d", self.Maturity)
 	record += fmt.Sprintf("%d", self.BuyBackPrice)
 	record += fmt.Sprintf("%d", self.StartSellingAt)
-	temp := common.DoubleHashH([]byte(record))
+	temp := common.HashH([]byte(record))
 	bondIDBytesWithPrefix := append(common.BondTokenID[0:8], temp[8:]...)
 	result := &common.Hash{}
 	result.SetBytes(bondIDBytesWithPrefix)
@@ -181,7 +181,7 @@ func NewSaleDataFromJson(data interface{}) *SaleData {
 	saleDataHashWithSalt := []byte{}
 	saleDataHashWithSalt = append(saleDataHashWithSalt, saleDataHash[:]...)
 	saleDataHashWithSalt = append(saleDataHashWithSalt, salt...)
-	saleID := common.DoubleHashH(saleDataHashWithSalt)
+	saleID := common.HashH(saleDataHashWithSalt)
 	saleData.SaleID = saleID[:]
 	return saleData
 }
@@ -236,7 +236,7 @@ func NewRaiseReserveDataFromJson(data interface{}) map[common.Hash]*RaiseReserve
 func (rrd *RaiseReserveData) Hash() *common.Hash {
 	record := strconv.FormatUint(rrd.EndBlock, 10)
 	record += strconv.FormatUint(rrd.Amount, 10)
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
@@ -263,7 +263,7 @@ func (srd *SpendReserveData) Hash() *common.Hash {
 	record := strconv.FormatUint(srd.EndBlock, 10)
 	record += strconv.FormatUint(srd.ReserveMinPrice, 10)
 	record += strconv.FormatUint(srd.Amount, 10)
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
@@ -311,7 +311,7 @@ func (saleData *SaleData) Hash() *common.Hash {
 	record += saleData.SellingAsset.String()
 	record += string(saleData.SellingAmount)
 	record += string(saleData.DefaultSellPrice)
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
@@ -325,7 +325,7 @@ func (sellingBonds *SellingBonds) Hash() *common.Hash {
 	record += string(sellingBonds.StartSellingAt)
 	record += string(sellingBonds.SellingWithin)
 	record += string(sellingBonds.TotalIssue)
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
@@ -335,21 +335,21 @@ func (sellingGOVTokens *SellingGOVTokens) Hash() *common.Hash {
 	record += string(sellingGOVTokens.GOVTokenPrice)
 	record += string(sellingGOVTokens.StartSellingAt)
 	record += string(sellingGOVTokens.SellingWithin)
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
 func (refundInfo *RefundInfo) Hash() *common.Hash {
 	record := string(refundInfo.ThresholdToLargeTx)
 	record += string(refundInfo.RefundAmount)
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
 func (sdt *SaleDCBTokensByUSDData) Hash() *common.Hash {
 	record := string(sdt.Amount)
 	record += string(sdt.EndBlock)
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
@@ -361,6 +361,6 @@ func (on *OracleNetwork) Hash() *common.Hash {
 	for _, oraclePk := range on.OraclePubKeys {
 		record += string(oraclePk)
 	}
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }

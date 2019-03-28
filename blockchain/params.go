@@ -59,9 +59,7 @@ var genesisParamsTestnetNew = GenesisParams{
 	FeePerTxKb:                          TestnetFeePerTxKb,
 	RandomNumber:                        0,
 	PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeTestnetSerializedPubkey,
-	PreSelectBeaconNode:                 PreSelectBeaconNodeTestnet,
 	PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeTestnetSerializedPubkey,
-	PreSelectShardNode:                  PreSelectShardNodeTestnet,
 
 	InitialConstant: TestnetInitConstant,
 }
@@ -93,9 +91,7 @@ var genesisParamsMainnetNew = GenesisParams{
 	FeePerTxKb:                          MainnetFeePerTxKb,
 	RandomNumber:                        0,
 	PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeMainnetSerializedPubkey,
-	PreSelectBeaconNode:                 PreSelectBeaconNodeMainnet,
 	PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeMainnetSerializedPubkey,
-	PreSelectShardNode:                  PreSelectShardNodeMainnet,
 
 	InitialConstant: MainnetInitConstant,
 }
