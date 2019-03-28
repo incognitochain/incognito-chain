@@ -23,6 +23,7 @@ var metaConstructors = map[string]metaConstructorType{
 	CreateAndSendCrowdsaleRequestConstant: metadata.NewCrowdsaleRequest,
 	CreateAndSendIssuingRequest:           metadata.NewIssuingRequestFromMap,
 	CreateAndSendContractingRequest:       metadata.NewContractingRequestFromMap,
+	CreateAndSendTradeActivation:          metadata.NewTradeActivation,
 	CreateAndSendVoteProposal:             metadata.NewVoteProposalMetadataFromRPC,
 }
 
@@ -104,8 +105,7 @@ func (rpcServer RpcServer) sendRawTxWithMetadata(params interface{}, closeChan <
 	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 	// broadcast message
-	// TODO(@0xbunyip): use different wire.CmdCLoanRequestToken?
-	txMsg, err := wire.MakeEmptyMessage(wire.CmdCLoanRequestToken)
+	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -144,8 +144,7 @@ func (rpcServer RpcServer) sendRawCustomTokenTxWithMetadata(params interface{}, 
 	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 	// broadcast message
-	// TODO(@0xbunyip): use different wire.CmdCLoanRequestToken?
-	txMsg, err := wire.MakeEmptyMessage(wire.CmdCLoanRequestToken)
+	txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}

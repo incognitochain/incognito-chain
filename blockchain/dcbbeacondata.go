@@ -74,6 +74,7 @@ func parseLoanResponseValueBeacon(data string) ([]*LoanRespData, error) {
 	return lrds, err
 }
 
+//// Crowdsale bond
 func getSaleDataKeyBeacon(saleID []byte) string {
 	return saleDataPrefix + string(saleID)
 }
@@ -116,6 +117,28 @@ func ParseCrowdsalePaymentInstruction(data string) (*CrowdsalePaymentInstruction
 	}
 	return inst, nil
 }
+
+//// TradeBondWithGOV
+type TradeBondInstruction struct {
+	TradeID []byte
+	Amount  uint64
+}
+
+func (tb *TradeBondInstruction) String() string {
+	inst, _ := json.Marshal(tb)
+	return string(inst)
+}
+
+func ParseTradeBondInstruction(data string) (*TradeBondInstruction, error) {
+	inst := &TradeBondInstruction{}
+	err := json.Unmarshal([]byte(data), inst)
+	if err != nil {
+		return nil, err
+	}
+	return inst, nil
+}
+
+//// Dividend
 
 func getDCBDividendKeyBeacon() string {
 	return dividendPrefixDCB
