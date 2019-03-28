@@ -16,6 +16,8 @@ const (
 	// Threshold ratio
 	ThresholdRatioOfDCBCrisis = 9000
 	ThresholdRatioOfGOVCrisis = 9000
+	ConstitutionPerBoard      = 30
+	BaseSalaryBoard           = 10000
 )
 
 // CONSTANT for network MAINNET

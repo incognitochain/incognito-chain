@@ -145,10 +145,7 @@ const (
 	CreateAndSendVoteGOVBoardTransaction = "createandsendvotegovboardtransaction"
 
 	//vote propopsal
-	GetEncryptionFlag                = "getencryptionflag"
-	SetEncryptionFlag                = "testsetencryptionflag"
-	GetEncryptionLastBlockHeightFlag = "getencryptionlastblockheightflag"
-	CreateAndSendVoteProposal        = "createandsendvoteproposal"
+	CreateAndSendVoteProposal = "createandsendvoteproposal"
 
 	// Submit Proposal
 	CreateAndSendSubmitDCBProposalTx = "createandsendsubmitdcbproposaltx"
@@ -186,6 +183,8 @@ const (
 	// walletsta
 	GetPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
 	DefragmentAccount              = "defragmentaccount"
+
+	GetStackingAmount = "getstackingamount"
 )
 
 //Fee of specific transaction

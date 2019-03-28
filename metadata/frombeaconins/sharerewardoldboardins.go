@@ -2,6 +2,7 @@ package frombeaconins
 
 import (
 	"encoding/json"
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
@@ -11,24 +12,24 @@ import (
 	"github.com/constant-money/constant-chain/transaction"
 )
 
-type TxShareRewardOldBoardMetadataIns struct {
+type ShareRewardOldBoardIns struct {
 	ChairPaymentAddress privacy.PaymentAddress
 	VoterPaymentAddress privacy.PaymentAddress
 	BoardType           common.BoardType
 	AmountOfCoin        uint64
 }
 
-func (txShareRewardOldBoardMetadataIns *TxShareRewardOldBoardMetadataIns) GetStringFormat() ([]string, error) {
-	content, err := json.Marshal(txShareRewardOldBoardMetadataIns)
+func (shareRewardOldBoardIns *ShareRewardOldBoardIns) GetStringFormat() ([]string, error) {
+	content, err := json.Marshal(shareRewardOldBoardIns)
 	if err != nil {
 		return nil, err
 	}
-	shardID := GetShardIDFromPaymentAddressBytes(txShareRewardOldBoardMetadataIns.VoterPaymentAddress)
+	shardID := GetShardIDFromPaymentAddressBytes(shareRewardOldBoardIns.VoterPaymentAddress)
 	var metadataType int
-	if txShareRewardOldBoardMetadataIns.BoardType == common.DCBBoard {
-		metadataType = metadata.ShareRewardOldDCBBoardMeta
+	if shareRewardOldBoardIns.BoardType == common.DCBBoard {
+		metadataType = component.ShareRewardOldDCBBoardIns
 	} else {
-		metadataType = metadata.ShareRewardOldGOVBoardMeta
+		metadataType = component.ShareRewardOldGOVBoardIns
 	}
 	return []string{
 		strconv.Itoa(metadataType),
@@ -42,8 +43,8 @@ func NewShareRewardOldBoardMetadataIns(
 	voterPaymentAddress privacy.PaymentAddress,
 	boardType common.BoardType,
 	amountOfCoin uint64,
-) *TxShareRewardOldBoardMetadataIns {
-	return &TxShareRewardOldBoardMetadataIns{
+) *ShareRewardOldBoardIns {
+	return &ShareRewardOldBoardIns{
 		ChairPaymentAddress: chairPaymentAddress,
 		VoterPaymentAddress: voterPaymentAddress,
 		BoardType:           boardType,
@@ -51,19 +52,19 @@ func NewShareRewardOldBoardMetadataIns(
 	}
 }
 
-func (txShareRewardOldBoardMetadataIns *TxShareRewardOldBoardMetadataIns) BuildTransaction(
+func (shareRewardOldBoardIns *ShareRewardOldBoardIns) BuildTransaction(
 	minerPrivateKey *privacy.SpendingKey,
 	db database.DatabaseInterface,
 ) (metadata.Transaction, error) {
 	rewardShareOldBoardMeta := metadata.NewShareRewardOldBoardMetadata(
-		txShareRewardOldBoardMetadataIns.ChairPaymentAddress,
-		txShareRewardOldBoardMetadataIns.VoterPaymentAddress,
-		txShareRewardOldBoardMetadataIns.BoardType,
+		shareRewardOldBoardIns.ChairPaymentAddress,
+		shareRewardOldBoardIns.VoterPaymentAddress,
+		shareRewardOldBoardIns.BoardType,
 	)
 	tx := transaction.Tx{}
 	err := tx.InitTxSalary(
-		txShareRewardOldBoardMetadataIns.AmountOfCoin,
-		&txShareRewardOldBoardMetadataIns.VoterPaymentAddress,
+		shareRewardOldBoardIns.AmountOfCoin,
+		&shareRewardOldBoardIns.VoterPaymentAddress,
 		minerPrivateKey,
 		db,
 		rewardShareOldBoardMeta,
