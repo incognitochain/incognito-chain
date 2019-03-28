@@ -496,20 +496,6 @@ func loadConfig() (*config, []string, error) {
 		}
 	}
 
-	//TODO update code for NodeRole
-	// Ensure there is at least one mining address when the generate flag is
-	// set.
-	// if cfg.Generate && len(cfg.UserPrvKey) == 0 {
-	// 	str := "%s: the generate flag is set, but there are no producer's key specified "
-	// 	err := fmt.Errorf(str, funcName)
-	// 	fmt.Fprintln(os.Stderr, err)
-	// 	fmt.Fprintln(os.Stderr, usageMessage)
-	// 	return nil, nil, err
-	// }
-	// if cfg.Light {
-	// 	cfg.DatabaseDir = cfg.DatabaseDir + "-light"
-	// }
-
 	// Add default port to all listener addresses if needed and remove
 	// duplicate addresses.
 	cfg.Listener = normalizeAddress(cfg.Listener, activeNetParams.DefaultPort)

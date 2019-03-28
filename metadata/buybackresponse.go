@@ -43,7 +43,7 @@ func (bbRes *BuyBackResponse) Hash() *common.Hash {
 	record := bbRes.RequestedTxID.String()
 	// final hash
 	record += bbRes.MetadataBase.Hash().String()
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

@@ -55,7 +55,7 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) Hash() *common.Hash 
 	record += string(submitDCBProposalMetadata.SubmitProposalInfo.ToBytes())
 
 	record += submitDCBProposalMetadata.MetadataBase.Hash().String()
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
@@ -161,7 +161,7 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) Hash() *common.Hash 
 	record += string(submitGOVProposalMetadata.SubmitProposalInfo.ToBytes())
 
 	record += submitGOVProposalMetadata.MetadataBase.Hash().String()
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

@@ -38,7 +38,7 @@ func NewDCBVoteProposalMetadata(
 func (dcbVoteProposalMetadata *DCBVoteProposalMetadata) Hash() *common.Hash {
 	record := dcbVoteProposalMetadata.NormalVoteProposalMetadata.ToBytes()
 
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

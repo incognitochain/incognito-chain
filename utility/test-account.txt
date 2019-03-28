@@ -1,0 +1,197 @@
+// shard 0
+Acc 0:
+ paymentAddress: 1Uv46Pu4pqBvxCcPw7MXhHfiAD5Rmi2xgEE7XB6eQurFAt4vSYvfyGn3uMMB1xnXDq9nRTPeiAZv5gRFCBDroRNsXJF1sxPSjNQtivuHk
+ spending key: 112t8rqJHgJp2TPpNpLNx34aWHB5VH5Pys3hVjjhhf9tctVeCNmX2zQLBqzHau6LpUbSV52kXtG2hRZsuYWkXWF5kw2v24RJq791fWmQxVqy
+ pubkey: 183GBqPhSfcEFZP7MQFTnuLVuX2PRkd5HFA3qkqkLN4STghvxpw
+Acc 1:
+ paymentAddress: 1Uv2Y7UHWdnJUiDzzkHiAL3Bb5xYYSwConh2dcH7qmPrYGu567Pojnpz4ehfcJEZ5hgFYAhbnZNq4MXJxTwTp6eCx9rHVicU54AfDkg5x
+ spending key: 112t8rrEEcDQBMnUM5J17qniHZZmckmr8LGCv9nBjP9x5wmGFGUryKTNvEAf1jh2wwW69rxwtANq4m8JmzowfKVPayUHPmAKdwQw5718GKuH
+ pubkey: 15ezEJs61P8qq6F8Zrhbcd2RpuqrtDWtzPheJWiEM6ct1sWjFTi
+
+// all shard
+Acc 0:
+ paymentAddress: 1Uv28UW44QHW9QCBkdT7HGb7aDcDwNqZdnpa3nu6pLc4J5x1miNLAgY2pyAMsuQ5BoneNLCnZK5x3NgceNpwTRFNiwKJUGoVkcJvstBjm
+spending key: 112t8rnXJsh6L8CgtrbHCj5AoBtKQ2XQj9uPuasQjU443RUmki9drcyniAnrxQz24kHeyzce3JgPQthtvvefeEDVVPVoqavf9s47pC7HojJy
+pubkey: 152nVbYDgLDYve2RA2CQLEJMTUTAHSuZmT6s4DnsaeeDQ8bDD82
+Acc 1:
+ paymentAddress: 1Uv2wy93wLABoMqdH1L1xBKimfXMQPikbY2Z8YbGTQVcFyTuSMKYiL3Q9nTyQWHLdHUqNFgNcw6mDkq2umGh3N8m7okKiE45tXCrYnEGj
+spending key: 112t8rnXLL5sagi3cS9YiThti5GW5js8jF7YNqqtzaPpRbPTvJf9f1GGsUSkwuuh78ufiaLzLqoToz9memigUKkuV6ErNB9n2WEgcjyEGMch
+pubkey: 16HXR5Jp2LJVV1vV9NTqpPVsVAZvQigv8huJLC9j4TZXnkWc5cw
+Acc 2:
+ paymentAddress: 1Uv35nJddyRLHpntGaYGbCLJNRs4YmJKxTLmtPKF29ZERr2wrWF3cqvANRT3vUTJGdcboL6RCPnHUFxpJsQPowi7TgRevFaGpdQw7aTPD
+spending key: 112t8rnXgYcLCjeHBpnesutJEBfG5xVzhMf8gLVZuL4fya4ov9Ko8pr6Mrj5eEZe5bie4ZVnH7MQNpLjuAxiuSDmPp5WgkuRRGW8NLcJZoF2
+pubkey: 16VVUEPJR3uwbkgyVXcwiifsJLcqqR95onn7sZ3jzfs1QofLv11
+Acc 3:
+ paymentAddress: 1Uv275ufR4KwAy2DSrT69NUziLAoKaxNpVcRa1Mb2jRD3epcgcKEgHuvAseGMmRrzo3KNz4amBA4ixAgWtPGY4vKM8fnAB4pRBnjrzA95
+spending key: 112t8rnY5yiM5XJCnAH3hD2UzhKnwoQjPCDDy6cRwsoNevRFJBm7HmYLbpijKvpxG8GD1LsamT9DC6xhs1RqCnDzoDhwFv1sd7ckzSa2Cj16
+pubkey: 14zf4SMg7Jfmmaq64jkjcfRBY8NB9xkg9adSBkXisoEiXUWxxs3
+Acc 4:
+ paymentAddress: 1Uv2gyKdkFMhw5t9Zvats5QRfvUmM33osJXBY4oXrvuwQmwS3obNn8sRxkRSDusSRF3PFkrixhqSTePjLus5cEh72qvbTL4MvgsDKRpTC
+spending key: 112t8rnYHmzZMyVZFqEdVuHfCSp6ENvdg6yLdBc3nhLx9NnbHnHRjhBk6Z58Vf8Cqhp1v8uLa7rAdhjhKecn8nyp4mNxG1h9eWrbVwpJo4o1
+pubkey: 15tZEEk7qvyFUN9rdLWfSMZj28VDWTywTW41WTLcpYNCpRGpqqu
+Acc 5:
+ paymentAddress: 1Uv4A7Xtp73L23zNuuSJzNDKDDzzJWtG4J5ssMEz9RY6o5L3Bzsr5a7aXjDMCt3rD4f4scUttaPAQTHRjCmwTZ3WJpk5T58Noo5ULLxMP
+spending key: 112t8rnYhBXxfg7Fnofed64bWTrin8sy4n3YoLrqfDdiRS4AXPQJVypmgA3pVNjhxUydUHPfszya9iPhRAaMYxp29rVozhPNghCZHQhY551X
+pubkey: 188xSvTr2ktocRgLPfKaAtw8vgqrgKSMjJD7VPxEoopCLyKxHFi
+Acc 6:
+ paymentAddress: 1Uv3Vaq7qV1dKRQvR1JbhesCpgJrivdMzYJgcWJgoJV19rxMq3ux5tNmwRrv2sDrQgwHVw4nHQEUv6p7fTXo7A8osbThozAk4Q52a9f3v
+spending key: 112t8rnYpfDFd3iNp1XQTRV8HfkUT77VSKvCbZeGNCzxr41QxMRXL7vJy4yKNz8HxFNKXDD1p6uQHsZix4wsPw7U2WJeX61NMRgxtMTSVUCh
+pubkey: 177wqpiaSaswghv2z2y13KR6RPwfMm6mbeTtnfMEdH2iPhmxEbv
+Acc 7:
+ paymentAddress: 1Uv2xFmHewsrSbeDVvLawnqAUJgLwAvDsWZoMvXWVZdC3djeVJAtnw5dxbkukqAj3Q9iDrKnttTRR7Bpps6k5toNFvwH8NwPJZRGqhnSP
+spending key: 112t8rnZAXZ2F6APZusBzCenRwfZdJNEYRrMbh7xqicdF4C1EHcG5nDYjkCy94HvPNUsF1jVDjBbqDtX9FCyc5oMupSqfU9xKJWG6Zr8N9PJ
+pubkey: 16HxssV6VKrGs9qNnCoA1bXi5Uqjco8DyhYLLLqmhgJPAGHyk9A
+Acc 8:
+ paymentAddress: 1Uv3UyKMVNS3HSpBdN4JspbNJZrh7HaB3xXyRdY4c4C9cinqrSp8GX4bo8oGxh9WuZPYC31nbwa9j33pRL2C2eMBLFVFfhv8Q6jks2o2v
+spending key: 112t8rnZP7XuiGCggPJTkbtwgxxyvWTDZd8znxKsFvQcMVdC124npmBUc5M4wk6i7qSDDP3F7Q6gjFunyKVnPjuVkCashosZjAWXcTUeBNhu
+pubkey: 1771T9b7vo426iizqfyjTVfKz5DM76eQvCdxREJBkEuCD7xXyaF
+Acc 9:
+ paymentAddress: 1Uv42chBj3aL7dAKcUAZqP1rpRCmE17qhLeK8RQa6PY5JUjvHXu1isryVWyH3Rc128odsK958zWPQUhqoBVVbadAEp5H1RQbhumU6E6UY
+spending key: 112t8rnZcLq9qRkzAZGGAz2QTcnEmaZpb4YyKm2pyagAjFooJ23t6aUPLpLiJCLTVJc74HiCsoWwWcshKy4CabrT2LmhMDeJgiBjx9zd6iRh
+pubkey: 17wUTdX3qLdyoiw6LAcQmBQYEnDpkYCCKir22WRzfcSXQ1CCNug
+Acc 10:
+ paymentAddress: 1Uv2GmnDy3hEHSH38JAzKjjwk7wd2yrM9hn9rDZyjrQnVKi5N1592g73ZwsPMqRcNQSVQLAwezCKcBV5gfeQ9CLgzzHUqyz5dW1QYaJBx
+spending key: 112t8rna2e1NxaPsn39SAbznG89wd7zfLwkdthaFy148wX6grpZfm8rJ88shKxX2E7ty3BLnTGveT1JkwcC4VQfdvvqW4ghzg6Vtt7C8AiZU
+pubkey: 15FVc7gKiP9hrazFSQDmJ2TkBi3s9qD3FQBcqCGzvZhLFHxKLLD
+Acc 11:
+ paymentAddress: 1Uv3cowbj39XTenTp65Sva3SuEUYKYYKi79GcpuMzVrd14ah22HVN2m8B3zUTUphSxKA4vW8zrBBrJZoFDSNK1esie2p7CRk2f28aBEMr
+spending key: 112t8rnaRUVj82QiS1M5rH57mngeYzkbyGNpqzAxwnSS12iVQufwgNCsfXmZYaUbvrCALDj63ZMStEuL3koE4swLmHotjTZiA8grBntzbThi
+pubkey: 17K1jyVmJ94gKmH5eok9XAzCUjuCk64bFzZ1UFtQFTTz6duue8d
+Acc 12:
+ paymentAddress: 1Uv3prXRa9L3dBeJfFTz9JppaBAneKEEkVb3fSCRNMbbVf1jkL7CmbeSgDHeQK1nzobLeD6eatSwwDSLxHSoUjJLRAVUz5VpDbQrTjxSA
+spending key: 112t8rnaYDe8T6fdAqRwLj8QcSfoUeT6VC1Wj3q3MmpU4dunS6HnRkYnQibSGSvtHW8y7hJYRBvVJkdhj61o5NW8EjxTgHWLdyCM6LoaTTMs
+pubkey: 17dTfsw6VVuN2Ebf6AxjU2ewPC9DtVCnjPzoPRpSiexqVLtFuZa
+Acc 13:
+ paymentAddress: 1Uv35vasdezgkz8qojjciFA1xj47h1asnNS9fsTfMoR21SrBtV86d9zYdyAgSggZAeEUYnusNULJRLQyjThshy6ooxxUbgZpz84ARWKXU
+spending key: 112t8rnauiXW7zE73RDKNoAGKGPBWrZWnQbgFXbRYWLafwUNK3D21yFvToJ428nUo9FhE9zBxgKNKUFSSfWHvtizreDWaEJYNTiAafALTz4f
+pubkey: 16Vi9kjv1RDRpBLdVqc1i3wdnbqPntLL8AxkzxwBU1iCRuCPUbr
+Acc 14:
+ paymentAddress: 1Uv3QcevphdHzEzu4NVNnk71X5rMqN2pdVn2PXn2R1wwzSyovKQGBYrDbSy2jjQ26GDVRq1GQjMKZeYjcQVfmFsQqqdYFixHY3G6isJej
+spending key: 112t8rnb3xmnwFstCHpEzYwjSSXJBbGgsT2mBxGLs4P3bBGPpeTh3f2mshA3xdod7XwZDuc2MsEg2ezCUVcEHx361SJBUmiZoz2Jcdabb2MV
+pubkey: 16zLUs4RcJ6HhMEn26bfeZdw224BQxAm5RpefKNidowJR3KmZ5u
+Acc 15:
+ paymentAddress: 1Uv2p2x6519oZSaoAxcck3AVCVWmrMZZjQzZe3x7NYMDWCP5aLeF56g1KKL7fGwk1SEWXdB1n3FECg3MLKuybtRnw9WUtKfBFyyKniCoz
+spending key: 112t8rnbVAREWj3Sdu6hFeb2LF6FiYyTRPPre9TsmF2mqJdkpGXYYUSWy31u3dDPv6bJBdnrEma4zkwTNPWEiftnne4XUcXvPAWN1mA8oJHG
+pubkey: 165Nbz2ZZm52JdzUiSdQ73qTKbQvjBoU88zrhBGej64oGoQoQZ1
+Acc 16:
+ paymentAddress: 1Uv2zcW69SVka19BTHqsjjLFAdzMckiWpxfej4p53VHNCUDHP3WhXwB3bwcNQDRXUZLcSdLz6JCZ5bsTr6go9Gx2ZpuQyR3Wcy88s29qy
+spending key: 112t8rnbisY5B71SqkEUS5Ubhw5woBQY5F787KfFuGTUvFMCZbikojvYgaQu48RwrfPeaJyEbVT3fh9taRZ3XnGXCjLjA99TD9EJ83nvdyJS
+pubkey: 16MaJTDAgw4jxpiReBu61uRqkm84ywNwzpwx2xo6Jj6AUh2scU8
+Acc 17:
+ paymentAddress: 1Uv2vAN3T81ZV5BRP528Y68nNLarYHQCHeoTU4oPZfxbeMBrbtWdM61T3ygXXutMsaZr8aR9H35urFCZgrkKHQZLEixVH8jkT4h2btBCg
+spending key: 112t8rnbyVBa6XY7BrK6ot6owrYueJ3ntHXcMxomnksEibiRWp45mGg8oAiPgFbaDgsqGdtMhKp9V4nDes1odrNqSCw8s1nwPCDsUQSLmoD6
+pubkey: 16Ekwi3fCqCStjzi1rbgV2S4kniQgbHSEiWpoanetue2dKaJXbb
+Acc 18:
+ paymentAddress: 1Uv2KmoG9wwUb4j3NtJmTG9NLshEwH7NrtettqfBGMJu16PNwqeeu2X5MJXhxuhynyyj7bkejcmCiGDdK5M4agnDHEP6YdQEAoB73V4oi
+spending key: 112t8rncENHC5J23MS53eqTrYsPjvKHDPK5twFmgc9idJN62m1STjHeSUNYBUGpK1fPnNbPLNSrQjiUk9wz7bKxGJxmpSaDf7t7ym4zuyYUt
+pubkey: 15L68KC5u26ZqMXjFMvTZgMJcZAKjtVvvjN4cUPso7DDYwepSHa
+Acc 19:
+ paymentAddress: 1Uv3L8Z9ZuALdKCFNAPWNNKsHrR8CME8aTq9hHtNR5houE7ZWRm9GF2J8qFGdAm4TniNfAm8b2AJmzPGRzx7uxHk27T3LCW9DgjCF8wqM
+spending key: 112t8rncmSc3fPrZ8gCZ1gz65MnQjxpF7z6ktWWbK2yLYnR4CNgZAxMBVuFWaNVbLAiA3Ny88dB7pDYLewEp9evRfaAq9ouZat3m2iZaUaSo
+pubkey: 16sU7voKM75cKkn6weD6DBTTRXD8uqqnz5yYbdLy9X8SA7RWVJf
+
+
+Beacon 
+go build && ./constant --spendingkey '112t8rxTdWfGCtgWvAMHnnEw9vN3R1D7YgD1SSHjAnVGL82HCrMq9yyXrHv3kB4gr84cejnMZRQ973RyHhq2G3MksoTWejNKdSWoQYDFf4gQ' --nodemode "auto" --datadir "data/beacon-0" --listen "127.0.0.1:9430" --externaladdress "127.0.0.1:9430" --norpcauth --rpclisten "127.0.0.1:9345"
+
+./constant --spendingkey '112t8rnXDNYL1RyTuT85JXeX7mJg1Sc6tCby5akSM7pfEGApgAx83X8C46EDu6dFAK6MVcWfQv2sfTk5nV9HqU3jrkrWdhrmi9z34jEhgHak' --nodemode "auto" --datadir "data/beacon-1" --listen "127.0.0.1:9431" --externaladdress "127.0.0.1:9431" --norpc
+
+./constant --spendingkey '112t8rnXmEeG5zsS7rExURJfqaRZhm6r4Pypkeag2gprdhtgDpen3LwV68x1nDPRYz2zhyhJTJCGvq1tUx4P1dvrdxF9W9DH7ME7PeGN2ohZ' --nodemode "auto" --datadir "data/beacon-2" --listen "127.0.0.1:9432" --externaladdress "127.0.0.1:9432" --norpc
+
+
+
+Shard 0
+go build && ./constant --spendingkey "112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNhc33pzChmJRvikZNc3Dt5V7quhdzjWW9Z4BrB2BxdK5VtHzsG9JZdZ5M7yYYGidKKZV" --nodemode "auto" --datadir "data/shard-0" --listen "127.0.0.1:9433" --externaladdress "127.0.0.1:9433" --norpcauth --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit --rpclisten "0.0.0.0:9334"
+
+./constant --nodemode "auto" --spendingkey "112t8s2UkZEwS7JtqLHFruRrh4Drj53UzH4A6DrairctKutxVb8Vw2DMzxCReYsAZkXi9ycaSNRHEcB7TJaTwPhyPvqRzu5NnUgTMN9AEKwo"  --datadir "data/shard-1" --listen "127.0.0.1:9434" --externaladdress "127.0.0.1:9434" --relayshards [0] --norpc
+
+
+./constant --nodemode "auto" --spendingkey "112t8rnYY8UbXGVJ3PsrWxssjr1JXaTPNCPDrneXcQgVQs2MFYwgCzPmTsgqPPbeq8c4QxkrjpHYRaG39ZjtwCmHMJBNh2MxaQvKWw5eUGTM" --nodemode "auto" --datadir "data/shard-2" --listen "127.0.0.1:9435" --externaladdress "127.0.0.1:9435" --norpc
+
+
+
+Shard 1
+go build && ./constant --spendingkey "112t8rnYoj4LesSwRsseGCCYi4J2Py5QxytKKF2WixwEYP4opKUNL2Av9bR2zjfLewf3PQeKcNnuRTTPKgZSJaZH8dfoqY2rmHNekmGMBNDX" --nodemode "auto" --datadir "data/shard1-0" --listen "127.0.0.1:9443" --externaladdress "127.0.0.1:9443" --norpcauth --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit --rpclisten "127.0.0.1:9343"
+
+./constant --nodemode "auto" --spendingkey "112t8rnZ5aGQqJw9bg6fR8AiGe9NFRtSmn73Scd4oNJcE5BNY4Rbju2amkTRW5PUaFpETkKAdSJUMqptjFYb3B8PVAcQhrqooieNFXe5jzTj"  --datadir "data/shard1-1" --listen "127.0.0.1:9444" --externaladdress "127.0.0.1:9444" --relayshards [1] --norpcauth --rpclisten "0.0.0.0:9346"
+
+
+./constant --nodemode "auto" --spendingkey "112t8rnZUKcW5CBDojVmMD6PmDJzR3VtfqFGWG6HRT9PocB6aewekjebWMm9aQnSncgwDV2GMqAWzspzFYL2vs3C3KnZB9H5YSE4s1SdotHb"  --datadir "data/shard1-2" --listen "127.0.0.1:9445" --externaladdress "127.0.0.1:9445" --relayshards [1] --norpc
+
+
+
+
+Acc 0:
+paymentAddress:1Uv4BiijnksfTmfisTkgdx8762MFunrad2RZvpd3vPnWHYqQbiPthM7psaMzVi35Fmj8z6vtqPYs9avjJF6Zbsq7gdZ2nJBwkRgnT7bFJ
+privateKey:112t8rqnMrtPkJ4YWzXfG82pd9vCe2jvWGxqwniPM5y4hnimki6LcVNfXxN911ViJS8arTozjH4rTpfaGo5i1KKcG1ayjiMsa4E3nABGAqQh
+
+Acc 1:
+paymentAddress:1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba
+privateKey:112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNhc33pzChmJRvikZNc3Dt5V7quhdzjWW9Z4BrB2BxdK5VtHzsG9JZdZ5M7yYYGidKKZV
+
+Acc 2005:
+ paymentAddress: 1Uv2MXFL2PmuFa6zkF3sBh425jefEEm5Ed7ajgJVvrEZ2vpzUmUaKxgiuH7cugYbMexLtUcX3BQiXAB3L9ymU12rTj99EadXVxNc5yvHy
+privateKey: 112t8rxTdWfGCtgWvAMHnnEw9vN3R1D7YgD1SSHjAnVGL82HCrMq9yyXrHv3kB4gr84cejnMZRQ973RyHhq2G3MksoTWejNKdSWoQYDFf4gQ
+Acc 427:
+ paymentAddress: 1Uv2WcMMkZTrX6kDebYeL9mYCpxV79aG3wG3BTHKKztTZgpT7KDUcy7m6QfjUC9v6mZEjbLXF2VBKNfbdChFEkcrGAknaGF4bj41kGqiH
+privateKey: 112t8rpdxySoXQJStHXoqTEnS9Mxtzibug2TE7dnrcLf4Xtt6MKNXrejqWrPFDvAKz7PigpanC4bh8Q86LgaRhvi6Q89qPSA2VHavT4kpsCq
+Acc 825:
+ paymentAddress: 1Uv4WFPUtHUuhe6JrFZ8KC5kEWQJ2cZ9bbEgpFGTo58hJesh8SoCYvm6dySYqBTieSqtuCkoaSbaz6PbFEBtb69ZEbscfQWDQTqRLTUGq
+privateKey: 112t8rrcSqAraUy4WGjakiA6Lp5QdFQwELWHyNoHsGaui1pVUPedz2DjfDJF42m3PYCf5FM9LWZPuwYe5GEWTb4ZQtBYUkRQS1JeRdBw2cZ6
+
+//shard 1
+paymentAddress: 1Uv36DEGA9Z91eMhNYHUCFg3dimqVhcVvArrjtS8QSxXQvfb52Hdk8hsQHoX2FPFUXH29uCgkSQkXko8mZ3KdKgbxPm7PKnoEx5p2cAFb
+privateKey: 112t8s2UkZEwS7JtqLHFruRrh4Drj53UzH4A6DrairctKutxVb8Vw2DMzxCReYsAZkXi9ycaSNRHEcB7TJaTwPhyPvqRzu5NnUgTMN9AEKwo
+Acc 243:
+ paymentAddress: 1Uv25dvj8HnfGNYAcY9c1wg5uJ2XoZe3MCUv3MBrbTS15tykLL1i3r1ko7VLv5zhB9acCs5JS7U4X9tKexbneumEje6o9rHZqVeihxZW7
+privateKey: 112t8roj4ZNc3mjUiAGoCwsrueBRiwYqE1URbUrJpBReRDZ5CDubBDUZtfN3Hxht3KtCFVNie1vsdWTPpTe3ydKHnnCvface41feiEahxJgd
+
+curl -X POST \
+  http://127.0.0.1:9334 \
+  -H 'Content-Type: application/json' \
+  -H 'Postman-Token: 410c562d-e282-4e58-9ca3-730b0ea77336' \
+  -H 'cache-control: no-cache' \
+  -d '{
+   "jsonrpc":"1.0",
+   "method":"createandsendstakingtransaction",
+   "params":[
+      "112t8rqnMrtPkJ4YWzXfG82pd9vCe2jvWGxqwniPM5y4hnimki6LcVNfXxN911ViJS8arTozjH4rTpfaGo5i1KKcG1ayjiMsa4E3nABGAqQh",
+      {
+        "1NHp16Y29xjc1PoXb1qwr65BfVVoHZuCbtTkVyucRzbeydgQHs2wPu5PC1hD":1
+      },
+     100,
+     0,
+     63
+   ],
+   "id":1
+}'
+
+watch -n5 `echo -x curl -X POST \
+  http://127.0.0.1:9334 \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"1.0","method":"getshardbeststate","params":[0],"id":1}'`
+
+watch -n5 `echo -x curl -X POST \
+  http://127.0.0.1:9343 \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"1.0","method":"getshardbeststate","params":[1],"id":1}'`
+
+watch -n5 `echo -x curl -X POST \
+  http://127.0.0.1:9345 \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"1.0","method":"getbeaconbeststate","params":[],"id":1}'`
+  
+  watch -n5 `echo -x curl -X POST \
+  http://127.0.0.1:9346 \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"1.0","method":"getshardpoolstate","params":[1],"id":1}'`
+
+  watch -n5 `echo -x curl -X POST \
+  http://127.0.0.1:9346 \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"1.0","method":"getshardbeststate","params":[1],"id":1}'`
+
+  watch -n5 `echo -x curl -X POST \
+  http://127.0.0.1:9343 \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"1.0","method":"getshardpoolstate","params":[1],"id":1}'`

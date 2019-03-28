@@ -15,7 +15,7 @@ func (lu *LoanUnlock) Hash() *common.Hash {
 
 	// final hash
 	record += lu.MetadataBase.Hash().String()
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
