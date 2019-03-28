@@ -45,6 +45,6 @@ go run *.go --spendingkey "112t8rrEEcDQBMnUM5J17qniHZZmckmr8LGCv9nBjP9x5wmGFGUry
 fi
 # Beacon, Role: Proposer
 if [ "$1" == "beacon-proposer" ]; then
-go run *.go --spendingkey "112t8rnaYDe8T6fdAqRwLj8QcSfoUeT6VC1Wj3q3MmpU4dunS6HnRkYnQibSGSvtHW8y7hJYRBvVJkdhj61o5NW8EjxTgHWLdyCM6LoaTTMs" --nodemode "auto" --datadir "data/beacon-1" --listen "127.0.0.1:9430" --externaladdress "127.0.0.1:9430" --norpcauth --rpclisten "127.0.0.1:9337"
+go run *.go --spendingkey "112t8rnaYDe8T6fdAqRwLj8QcSfoUeT6VC1Wj3q3MmpU4dunS6HnRkYnQibSGSvtHW8y7hJYRBvVJkdhj61o5NW8EjxTgHWLdyCM6LoaTTMs" --nodemode "auto" --datadir "data/beacon-1" --listen "127.0.0.1:9423" --externaladdress "127.0.0.1:9423" --norpcauth --rpclisten "127.0.0.1:9340"
 fi
 
