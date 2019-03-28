@@ -17,7 +17,7 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
 	"github.com/constant-money/constant-chain/wallet"
 )
 
@@ -125,12 +125,14 @@ func (tx *Tx) Init(
 
 	// init info of tx
 	tx.Info = []byte{}
-	//pubKeyData := &privacy.EllipticPoint{}
-	//pubKeyData.Decompress(senderFullKey.PaymentAddress.Pk)
-	//tx.Info, err = privacy.ElGamalEncrypt(senderFullKey.PaymentAddress.Tk[:], pubKeyData)
-	//if err != nil {
-	//	return NewTransactionErr(UnexpectedErr, err)
-	//}
+	if !hasPrivacy {
+		// store payment address of sender for refund on small tx
+		info := make(map[string]interface{})
+		senderInfo := make(map[string][]byte)
+		info["Sender"] = senderInfo
+		senderInfo["PaymentAddress"] = senderFullKey.PaymentAddress.Bytes()
+		tx.Info, _ = json.Marshal(info)
+	}
 
 	// set metadata
 	tx.Metadata = metaData
