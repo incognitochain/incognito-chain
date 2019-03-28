@@ -119,12 +119,9 @@ func (rpcServer RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	_, voutsAmount := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
 
-	tokenIDStr := tokenParamsRaw["TokenID"].(string)
-	tokenID, _ := common.Hash{}.NewHashFromStr(tokenIDStr)
 	meta := metadata.NewBuyBackRequest(
 		paymentAddr,
 		uint64(voutsAmount),
-		*tokenID,
 		metadata.BuyBackRequestMeta,
 	)
 	customTokenTx, err := rpcServer.buildRawCustomTokenTransaction(params, meta)

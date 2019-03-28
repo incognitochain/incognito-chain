@@ -124,7 +124,7 @@ func (rpcServer RpcServer) handleGetLoanResponseRejected(params interface{}, clo
 		strLoanID := param.(string)
 		rejectors := rpcServer.getResponseAddresses(strLoanID, metadata.Reject)
 		approveReq := rpcServer.config.BlockChain.GetDCBParams().MinLoanResponseRequire
-		rejectReq := common.NumberOfDCBGovernors - approveReq
+		rejectReq := len(rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress) - int(approveReq)
 		rejected := len(rejectors) > int(rejectReq)
 		result.Rejectors[strLoanID] = rejectors
 		result.Rejected[strLoanID] = rejected

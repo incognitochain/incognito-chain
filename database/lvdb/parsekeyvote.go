@@ -154,6 +154,11 @@ func GetKeyVoteProposal(boardType common.BoardType, constitutionIndex uint32, vo
 	return key
 }
 
+func GetKeySubmitProposal(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte) []byte {
+	key := GetKeyFromVariadic(submitProposalPrefix, boardType.Bytes(), common.Uint32ToBytes(constitutionIndex), proposalTxID)
+	return key
+}
+
 func ParseKeyVoteProposal(key []byte) (
 	boardType common.BoardType,
 	constitutionIndex uint32,
@@ -172,6 +177,36 @@ func ParseKeyVoteProposal(key []byte) (
 
 	voterPayment = privacy.NewPaymentAddressFromByte(elements[iPlusPlus(&index)])
 	return boardType, constitutionIndex, voterPayment, nil
+}
+
+func GetKeyListVoterOfProposal(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte, voterPayment *privacy.PaymentAddress) []byte {
+	paymentAddressBytes := make([]byte, PaymentAddressLen)
+	if voterPayment != nil {
+		paymentAddressBytes = voterPayment.Bytes()
+	}
+	key := GetKeyFromVariadic(listVoterOfProposalPrefix, boardType.Bytes(), common.Uint32ToBytes(constitutionIndex), proposalTxID, paymentAddressBytes)
+	return key
+}
+
+func ParseKeyListVoterOfProposal(key []byte) (
+	boardType common.BoardType,
+	constitutionIndex uint32,
+	proposalTxID []byte,
+	voterPayment *privacy.PaymentAddress,
+	err error,
+) {
+	length := []int{len(listVoterOfProposalPrefix), 1, 4, common.HashSize, common.PaymentAddressLength}
+	elements, err := ParseKeyToSlice(key, length)
+	if err != nil {
+		return 0, 0, []byte{0}, nil, err
+	}
+	index := 1
+
+	boardType = common.BoardType(elements[iPlusPlus(&index)][0])
+	constitutionIndex = common.BytesToUint32(elements[iPlusPlus(&index)])
+	proposalTxID = elements[iPlusPlus(&index)]
+	voterPayment = privacy.NewPaymentAddressFromByte(elements[iPlusPlus(&index)])
+	return boardType, constitutionIndex, proposalTxID, voterPayment, nil
 }
 
 func GetValueVoteProposal(proposalTxID *common.Hash) []byte {
