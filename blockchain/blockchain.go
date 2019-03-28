@@ -325,7 +325,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 	blockchain.BestState.Beacon = InitBestStateBeacon(blockchain.config.ChainParams)
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
 	blockchain.BestState.Beacon.Update(initBlock, blockchain)
-	blockchain.processBeaconOnlyInstructions(initBlock)
+	blockchain.updateStabilityLocalState(initBlock)
 
 	// TODO(@0xankylosaurus): initialize oracle data properly
 	blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 1000 // $10
@@ -342,6 +342,26 @@ func (blockchain *BlockChain) initBeaconState() error {
 		OracleRewardMultiplier: 1,
 		AcceptableErrorMargin:  5,
 	}
+
+	// Trade bonds
+	bondID, _ := common.NewHashFromStr("4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000")
+	tradeBondBuyID := [32]byte{5}
+	tradeBondSellID := [32]byte{6}
+	tradeBonds := []*component.TradeBondWithGOV{
+		&component.TradeBondWithGOV{
+			TradeID: tradeBondBuyID[:],
+			BondID:  bondID,
+			Amount:  100,
+			Buy:     true,
+		},
+		&component.TradeBondWithGOV{
+			TradeID: tradeBondSellID[:],
+			BondID:  bondID,
+			Amount:  200,
+			Buy:     false,
+		},
+	}
+	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.TradeBonds = tradeBonds
 
 	// Insert new block into beacon chain
 	if err := blockchain.StoreBeaconBestState(); err != nil {
@@ -1420,87 +1440,6 @@ func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
 	}
 	return nil
 }
-
-//func (blockchain *BlockChain) UpdateDividendPayout(block *Block) error {
-//	for _, tx := range block.Transactions {
-//		switch tx.GetMetadataType() {
-//		case metadata.DividendMeta:
-//			{
-//				tx := tx.(*transaction.Tx)
-//				meta := tx.Metadata.(*metadata.Dividend)
-//				if tx.Proof == nil {
-//					return errors.New("Miss output in tx")
-//				}
-//				for _, _ = range tx.Proof.OutputCoins {
-//					keySet := cashec.KeySet{
-//						PaymentAddress: meta.PaymentAddress,
-//					}
-//					vouts, err := blockchain.GetUnspentTxCustomTokenVout(keySet, meta.TokenID)
-//					if err != nil {
-//						return err
-//					}
-//					for _, vout := range vouts {
-//						txHash := vout.GetTxCustomTokenID()
-//						err := blockchain.config.DataBase.UpdateRewardAccountUTXO(meta.TokenID, keySet.PaymentAddress.Pk, &txHash, vout.GetIndex())
-//						if err != nil {
-//							return err
-//						}
-//					}
-//				}
-//			}
-//		}
-//	}
-//	return nil
-//}
-//
-//func (blockchain *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
-//	// Temp storage to update crowdsale data
-//	saleDataMap := make(map[string]*component.SaleData)
-//
-//	for _, tx := range block.Transactions {
-//		switch tx.GetMetadataType() {
-//		case metadata.AcceptDCBProposalMeta:
-//			{
-//             DONE
-//			}
-//		case metadata.CrowdsalePaymentMeta:
-//			{
-//				err := blockchain.updateCrowdsalePaymentData(tx, saleDataMap)
-//				if err != nil {
-//					return err
-//				}
-//			}
-//			//		case metadata.ReserveResponseMeta:
-//			//			{
-//			//				// TODO(@0xbunyip): move to another func
-//			//				meta := tx.GetMetadata().(*metadata.ReserveResponse)
-//			//				_, _, _, txRequest, err := blockchain.GetTransactionByHash(meta.RequestedTxID)
-//			//				if err != nil {
-//			//					return err
-//			//				}
-//			//				requestHash := txRequest.Hash()
-//			//
-//			//				hash := tx.Hash()
-//			//				if err := blockchain.config.DataBase.StoreCrowdsaleResponse(requestHash[:], hash[:]); err != nil {
-//			//					return err
-//			//				}
-//			//			}
-//		}
-//	}
-//
-//	// Save crowdsale data back into db
-//	for _, data := range saleDataMap {
-//		if err := blockchain.config.DataBase.StoreCrowdsaleData(
-//			data.SaleID,
-//			data.GetProposalTxHash(),
-//			data.BuyingAmount,
-//			data.SellingAmount,
-//		); err != nil {
-//			return err
-//		}
-//	}
-//	return nil
-//}
 
 // func (blockchain *BlockChain) ProcessCMBTxs(block *Block) error {
 // 	for _, tx := range block.Transactions {
