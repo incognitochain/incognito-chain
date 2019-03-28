@@ -4,6 +4,7 @@ import (
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
+	"github.com/constant-money/constant-chain/metadata/fromshardins"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/pkg/errors"
 )
@@ -54,8 +55,27 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) Hash() *common.Hash 
 	record += string(submitDCBProposalMetadata.SubmitProposalInfo.ToBytes())
 
 	record += submitDCBProposalMetadata.MetadataBase.Hash().String()
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
+}
+
+func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) BuildReqActions(
+	tx Transaction,
+	bcr BlockchainRetriever,
+	shardID byte,
+) ([][]string, error) {
+	submitProposal := component.SubmitProposalData{
+		ProposalTxID:      *tx.Hash(),
+		ConstitutionIndex: submitDCBProposalMetadata.SubmitProposalInfo.ConstitutionIndex,
+		SubmitterPayment:  submitDCBProposalMetadata.SubmitProposalInfo.PaymentAddress,
+	}
+	inst := fromshardins.NewSubmitProposalIns(common.DCBBoard, submitProposal)
+
+	instStr, err := inst.GetStringFormat()
+	if err != nil {
+		return nil, err
+	}
+	return [][]string{instStr}, nil
 }
 
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockChain(
@@ -141,7 +161,7 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) Hash() *common.Hash 
 	record += string(submitGOVProposalMetadata.SubmitProposalInfo.ToBytes())
 
 	record += submitGOVProposalMetadata.MetadataBase.Hash().String()
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
