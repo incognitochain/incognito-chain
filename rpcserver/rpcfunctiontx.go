@@ -7,12 +7,11 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/constant-money/constant-chain/privacy"
-
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/constant-money/constant-chain/wallet"
