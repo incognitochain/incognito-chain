@@ -644,7 +644,9 @@ func (bc *BlockChain) processBuyFromGOVResponseInstruction(inst []string) error 
 func (bc *BlockChain) updateStabilityLocalState(block *BeaconBlock) error {
 	for _, inst := range block.Body.Instructions {
 		var err error
-		fmt.Printf("[db] update local state: %s\n", inst)
+		if inst[0] != "37" {
+			fmt.Printf("[db] update local state: %s\n", inst)
+		}
 		switch inst[0] {
 		case strconv.Itoa(metadata.LoanWithdrawMeta):
 			err = bc.processLoanWithdrawInstruction(inst)
