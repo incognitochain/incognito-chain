@@ -145,7 +145,10 @@ var RpcHandler = map[string]commandHandler{
 	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteGOVBoardTransaction,
 
 	// vote proposal
-	CreateAndSendVoteProposal: RpcServer.handleCreateAndSendVoteProposalTransaction,
+	GetEncryptionFlag:                RpcServer.handleGetEncryptionFlag,
+	SetEncryptionFlag:                RpcServer.handleSetEncryptionFlag,
+	GetEncryptionLastBlockHeightFlag: RpcServer.handleGetEncryptionLastBlockHeightFlag,
+	CreateAndSendVoteProposal:        RpcServer.handleCreateAndSendVoteProposalTransaction,
 
 	// Submit Proposal:
 	CreateAndSendSubmitDCBProposalTx: RpcServer.handleCreateAndSendSubmitDCBProposalTransaction,
@@ -194,19 +197,19 @@ var RpcHandler = map[string]commandHandler{
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	ListAccounts:                       RpcServer.handleListAccounts,
-	GetAccount:                         RpcServer.handleGetAccount,
-	GetAddressesByAccount:              RpcServer.handleGetAddressesByAccount,
-	GetAccountAddress:                  RpcServer.handleGetAccountAddress,
-	DumpPrivkey:                        RpcServer.handleDumpPrivkey,
-	ImportAccount:                      RpcServer.handleImportAccount,
-	RemoveAccount:                      RpcServer.handleRemoveAccount,
-	ListUnspentOutputCoins:             RpcServer.handleListUnspentOutputCoins,
-	GetBalance:                         RpcServer.handleGetBalance,
-	GetBalanceByPrivatekey:             RpcServer.handleGetBalanceByPrivatekey,
-	GetBalanceByPaymentAddress:         RpcServer.handleGetBalanceByPaymentAddress,
-	GetReceivedByAccount:               RpcServer.handleGetReceivedByAccount,
-	SetTxFee:                           RpcServer.handleSetTxFee,
+	ListAccounts:               RpcServer.handleListAccounts,
+	GetAccount:                 RpcServer.handleGetAccount,
+	GetAddressesByAccount:      RpcServer.handleGetAddressesByAccount,
+	GetAccountAddress:          RpcServer.handleGetAccountAddress,
+	DumpPrivkey:                RpcServer.handleDumpPrivkey,
+	ImportAccount:              RpcServer.handleImportAccount,
+	RemoveAccount:              RpcServer.handleRemoveAccount,
+	ListUnspentOutputCoins:     RpcServer.handleListUnspentOutputCoins,
+	GetBalance:                 RpcServer.handleGetBalance,
+	GetBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
+	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
+	GetReceivedByAccount:       RpcServer.handleGetReceivedByAccount,
+	SetTxFee:                   RpcServer.handleSetTxFee,
 	GetRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
 }
 
@@ -572,7 +575,11 @@ func (rpcServer RpcServer) handleGetActiveShards(params interface{}, closeChan <
 }
 
 func (rpcServer RpcServer) handleGetStakingAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	stackingType := int64(params.(float64))
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) <= 0 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("ErrRPCInvalidParams"))
+	}
+	stackingType := int64(arrayParams[0].(float64))
 	amount := uint64(0)
 	if stackingType == 1 {
 		amount = metadata.GetBeaconStakeAmount()
