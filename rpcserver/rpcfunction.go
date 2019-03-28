@@ -584,7 +584,7 @@ func (rpcServer RpcServer) handleGetStakingAmount(params interface{}, closeChan 
 	if stackingType == 1 {
 		amount = metadata.GetBeaconStakeAmount()
 	}
-	if stackingType == 2 {
+	if stackingType == 0 {
 		amount = metadata.GetBeaconStakeAmount()
 	}
 	return amount, nil

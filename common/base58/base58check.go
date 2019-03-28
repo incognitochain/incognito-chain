@@ -21,7 +21,7 @@ var ErrInvalidFormat = errors.New("invalid format: version and/or checksum bytes
 // checksum: first four bytes of sha256^2
 func ChecksumFirst4Bytes(input []byte) (cksum []byte) {
 	cksum = make([]byte, 4)
-	h2 := common.DoubleHashB(input)
+	h2 := common.HashB(input)
 	copy(cksum[:], h2[:4])
 	return
 }

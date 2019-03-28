@@ -22,7 +22,7 @@ import (
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/constant-money/constant-chain/wallet"
 	libp2p "github.com/libp2p/go-libp2p-peer"
-	cache "github.com/patrickmn/go-cache"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
 
@@ -101,8 +101,6 @@ type Config struct {
 	ChainParams *Params
 	RelayShards []byte
 	NodeMode    string
-	//Light mode flag
-	// Light bool
 	//Wallet for light mode
 	Wallet *wallet.Wallet
 
@@ -514,17 +512,6 @@ func (blockchain *BlockChain) StoreShardBlockHeader(block *ShardBlock) error {
 	//Logger.log.Infof("Store Block Header, block header %+v, block hash %+v, chain id %+v",block.Header, block.blockHash, block.Header.shardID)
 	return blockchain.config.DataBase.StoreShardBlockHeader(block.Header, block.Hash(), block.Header.ShardID)
 }
-
-/*
-	Store Transaction in Light mode
-*/
-// func (blockchain *BlockChain) StoreUnspentTransactionLightMode(privatKey *privacy.SpendingKey, shardID byte, blockHeight int32, txIndex int, tx *transaction.Tx) error {
-// 	txJsonBytes, err := json.Marshal(tx)
-// 	if err != nil {
-// 		return NewBlockChainError(UnExpectedError, errors.New("json.Marshal"))
-// 	}
-// 	return blockchain.config.DataBase.StoreTransactionLightMode(privatKey, shardID, blockHeight, txIndex, *(tx.Hash()), txJsonBytes)
-// }
 
 /*
 Save index(height) of block by block hash
@@ -978,12 +965,6 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, 
 	// lock chain
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
-
-	// if blockchain.config.Light {
-	// 	// Get unspent tx with light mode
-	// 	// TODO
-	// }
-	// get list outputcoin of pubkey from db
 
 	outCointsInBytes, err := blockchain.config.DataBase.GetOutcoinsByPubkey(tokenID, keyset.PaymentAddress.Pk[:], shardID)
 	if err != nil {
