@@ -37,8 +37,7 @@ func main() {
 	// 	}
 
 	// }
-	// 112t8rqnMrtPkJ4YWzXfG82pd9vCe2jvWGxqwniPM5y4hnimki6LcVNfXxN911ViJS8arTozjH4rTpfaGo5i1KKcG1ayjiMsa4E3nABGAqQh
-	keyWallet, _ := wallet.Base58CheckDeserialize("112t8rnaYDe8T6fdAqRwLj8QcSfoUeT6VC1Wj3q3MmpU4dunS6HnRkYnQibSGSvtHW8y7hJYRBvVJkdhj61o5NW8EjxTgHWLdyCM6LoaTTMs")
+	keyWallet, _ := wallet.Base58CheckDeserialize("112t8rsq5Xx45T1ZKH4N45aBztqBJiDAR9Nw5wMb8Fe5PnFCqDiUAgVzoMr3xBznNJTfu2CSW3HC6M9rGHxTyUzUBbZHjv6wCMnucDDKbHT4")
 	keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	fmt.Println("Pub-key byte array", keyWallet.KeySet.PaymentAddress.Pk)
 	fmt.Println(base58.Base58Check{}.Encode(keyWallet.KeySet.PaymentAddress.Pk, byte(0x00)))
