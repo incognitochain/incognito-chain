@@ -154,8 +154,11 @@ func (self *BeaconPool) GetValidBlock() []*blockchain.BeaconBlock {
 	self.poolMu.RLock()
 	defer self.poolMu.RUnlock()
 	finalBlocks := []*blockchain.BeaconBlock{}
-	for _, blk := range self.pool {
+	for i, blk := range self.pool {
 		if blk.Header.Height > self.latestValidHeight {
+			break
+		}
+		if i == len(self.pool)-1 {
 			break
 		}
 		finalBlocks = append(finalBlocks, blk)
