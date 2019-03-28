@@ -39,5 +39,5 @@ func main() {
 	// if err != nil {
 	// 	panic(err)
 	// }
-	generator.GenerateAddressByShard(1)
+	generator.GenerateAddressByShard(0)
 }
