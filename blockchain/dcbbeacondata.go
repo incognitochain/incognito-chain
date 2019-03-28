@@ -121,6 +121,7 @@ func ParseCrowdsalePaymentInstruction(data string) (*CrowdsalePaymentInstruction
 //// TradeBondWithGOV
 type TradeBondInstruction struct {
 	TradeID []byte
+	Amount  uint64
 }
 
 func (tb *TradeBondInstruction) String() string {

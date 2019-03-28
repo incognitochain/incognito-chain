@@ -1,8 +1,6 @@
 package lvdb
 
 import (
-	"strconv"
-
 	"github.com/constant-money/constant-chain/common"
 	"github.com/pkg/errors"
 )
@@ -20,20 +18,21 @@ func getTradeActivationValue(
 ) []byte {
 	values := []byte{}
 	values = append(values, bondID[:]...)
-	values = append(values, byte(strconv.FormatBool(buy)[0]))
-	values = append(values, byte(strconv.FormatBool(activated)[0]))
+	m := map[bool]byte{false: byte(0), true: byte(1)}
+	values = append(values, m[buy])
+	values = append(values, m[activated])
 	values = append(values, common.Uint64ToBytes(amount)...)
 	return values
 }
 
 func parseTradeActivationValue(value []byte) (*common.Hash, bool, bool, uint64, error) {
 	if len(value) != common.HashSize+10 {
-		return nil, false, false, 0, errors.Errorf("Invalid trade activation value")
+		return nil, false, false, 0, errors.Errorf("invalid trade activation value")
 	}
 	bondID := &common.Hash{}
 	err := bondID.SetBytes(value[:common.HashSize])
 	if err != nil {
-		return nil, false, false, 0, errors.Errorf("Invalid trade activation value")
+		return nil, false, false, 0, errors.Errorf("invalid trade activation bondID")
 	}
 	buy := false
 	if value[common.HashSize] > 0 {
