@@ -130,15 +130,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	var err error
 
-	// Create a new block chain instance with the appropriate configuration.9
-	// if cfg.Light {
-	// 	if serverObj.wallet == nil {
-	// 		return errors.New("Wallet NOT FOUND. Light Mode required Wallet with at least one child account")
-	// 	}
-	// 	if len(serverObj.wallet.MasterAccount.Child) < 1 {
-	// 		return errors.New("No child account in wallet. Light Mode required Wallet with at least one child account")
-	// 	}
-	// }
 	serverObj.userKeySet, err = cfg.GetUserKeySet()
 	if err != nil {
 		if cfg.NodeMode == "auto" || cfg.NodeMode == "beacon" || cfg.NodeMode == "shard" {
