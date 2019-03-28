@@ -60,12 +60,23 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			}
 		}
 	}()
+
+	//go func() {
+	//	for {
+	//		select {
+	//		case <-blockchain.cQuitSync:
+	//			return
+	//		case <-time.Tick(time.Millisecond * 1000):
+	//			blockchain.InsertBlockFromPool()
+	//		}
+	//	}
+	//}()
+
 	for {
 		select {
 		case <-blockchain.cQuitSync:
 			return
 		case <-time.Tick(defaultProcessPeerStateTime):
-			blockchain.InsertBlockFromPool()
 			blockchain.syncStatus.Lock()
 			blockchain.syncStatus.PeersStateLock.Lock()
 
@@ -148,23 +159,24 @@ func (blockchain *BlockChain) StartSyncBlk() {
 					}
 				}
 			}
-
-			if RCS.ClosestBeaconState.Height == blockchain.BestState.Beacon.BeaconHeight && len(blockchain.syncStatus.PeersState) > 0 {
-				blockchain.SetReadyState(false, 0, true)
-
-			} else {
-				blockchain.SetReadyState(false, 0, false)
-			}
-			if userRole == common.SHARD_ROLE {
-				for shardID := range blockchain.syncStatus.Shards {
-					if RCS.ClosestShardsState[shardID].Height == blockchain.BestState.Shard[shardID].ShardHeight && RCS.ClosestShardsState[shardID].Height >= GetBestStateShard(shardID).ShardHeight {
-						blockchain.SetReadyState(false, 0, true)
-						blockchain.SetReadyState(true, shardID, true)
-					} else {
-						blockchain.SetReadyState(true, shardID, false)
+			if len(blockchain.syncStatus.PeersState) > 0 {
+				if RCS.ClosestBeaconState.Height == blockchain.BestState.Beacon.BeaconHeight {
+					blockchain.SetReadyState(false, 0, true)
+				} else {
+					blockchain.SetReadyState(false, 0, false)
+				}
+				if userRole == common.SHARD_ROLE && RCS.ClosestBeaconState.Height-1 <= blockchain.BestState.Beacon.BeaconHeight {
+					for shardID := range blockchain.syncStatus.Shards {
+						if RCS.ClosestShardsState[shardID].Height == GetBestStateShard(shardID).ShardHeight && RCS.ClosestShardsState[shardID].Height >= GetBestStateBeacon().BestShardHeight[shardID] {
+							blockchain.SetReadyState(false, 0, true)
+							blockchain.SetReadyState(true, shardID, true)
+						} else {
+							blockchain.SetReadyState(true, shardID, false)
+						}
 					}
 				}
 			}
+
 			currentBcnReqHeight := blockchain.BestState.Beacon.BeaconHeight + 1
 			if RCS.ClosestBeaconState.Height-blockchain.BestState.Beacon.BeaconHeight > defaultMaxBlkReqPerTime {
 				RCS.ClosestBeaconState.Height = blockchain.BestState.Beacon.BeaconHeight + defaultMaxBlkReqPerTime
@@ -493,17 +505,30 @@ func (blockchain *BlockChain) SyncBlkCrossShard(getFromPool bool, byHash bool, b
 	}
 }
 
+var lasttime = time.Now()
+
 func (blockchain *BlockChain) InsertBlockFromPool() {
 
-	blks := blockchain.config.BeaconPool.GetValidBlock()
-	fmt.Println("Prepare insert beacon ", len(blks))
-	for _, newBlk := range blks {
-		err := blockchain.InsertBeaconBlock(newBlk, false)
-		if err != nil {
-			Logger.log.Error(err)
-		}
+	if time.Since(lasttime) >= 100*time.Millisecond {
+		tmp := lasttime
+		lasttime = time.Now()
+		fmt.Println("InsertBlockFromPool continue", tmp, lasttime)
+	} else {
+		fmt.Println("InsertBlockFromPool return", lasttime)
+		return
 	}
-	fmt.Println("Finish insert beacon block")
+
+	go func() {
+		blks := blockchain.config.BeaconPool.GetValidBlock()
+		fmt.Println("Prepare insert beacon ", len(blks))
+		for _, newBlk := range blks {
+			err := blockchain.InsertBeaconBlock(newBlk, false)
+			if err != nil {
+				Logger.log.Error(err)
+			}
+		}
+		fmt.Println("Finish insert beacon block")
+	}()
 
 	for shardID := range blockchain.syncStatus.Shards {
 		blks := blockchain.config.ShardPool[shardID].GetValidBlock()
