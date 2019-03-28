@@ -55,7 +55,7 @@ func transferTxToken(
 	}
 
 	if sumTokens < tokenAmount {
-		return nil, 0, errors.New("Not enough tokens to pay in this block")
+		return nil, 0, errors.New("not enough tokens to pay in this block")
 	}
 
 	txTokenIns := []transaction.TxTokenVin{}

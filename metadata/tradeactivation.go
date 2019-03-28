@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/pkg/errors"
@@ -14,13 +15,19 @@ import (
 // TradeActivation sends request to create a BuySellRequest or BuyBackRequest from DCB to GOV to buy or sell bonds
 type TradeActivation struct {
 	TradeID []byte
+	Amount  uint64
 	MetadataBase
 }
 
 func NewTradeActivation(data map[string]interface{}) (Metadata, error) {
 	result := TradeActivation{}
 	s, _ := hex.DecodeString(data["TradeID"].(string))
+	amount, ok := data["Amount"].(float64)
+	if !ok {
+		return nil, errors.New("amount invalid")
+	}
 	result.TradeID = s
+	result.Amount = uint64(amount)
 	result.Type = TradeActivationMeta
 	return &result, nil
 }
@@ -32,24 +39,32 @@ func (act *TradeActivation) ValidateTxWithBlockChain(txr Transaction, bcr Blockc
 	}
 
 	// Check if tradeID is in current proposal
-	found := false
-	for _, trade := range bcr.GetAllTrades() {
-		if bytes.Equal(trade.TradeID, act.TradeID) {
-			found = true
+	var trade *component.TradeBondWithGOV
+	for _, t := range bcr.GetAllTrades() {
+		if bytes.Equal(t.TradeID, act.TradeID) {
+			trade = t
 		}
 	}
-	if !found {
+	if trade == nil {
 		return false, errors.New("TradeActivation id is not in current proposal")
 	}
 
-	// Check if tradeID hasn't been activated and amount is positive
+	// Check if tradeID hasn't been activated and amount left is higher than requested
 	_, _, activated, amount, err := bcr.GetTradeActivation(act.TradeID)
 	if err == nil && activated {
-		return false, errors.New("Trade is activated")
+		return false, errors.New("trade is activated")
 	}
-	if err == nil && amount == 0 {
-		return false, errors.New("Trade proposal is already done")
+	if err == nil && act.Amount > amount {
+		return false, errors.Errorf("requested amount is too high: %d > %d", amount, act.Amount)
 	}
+
+	// Check if balance is positive in case of selling bonds
+	//if !trade.Buy {
+	//	avail := bcr.GetDCBAvailableAsset(trade.BondID)
+	//	if avail < act.Amount {
+	//		return false, errors.Errorf("not enough asset to trade, have %d, need %d\n", avail, act.Amount)
+	//	}
+	//}
 
 	return true, nil
 }
@@ -76,6 +91,7 @@ func (act *TradeActivation) Hash() *common.Hash {
 
 type TradeActivationAction struct {
 	TradeID []byte
+	Amount  uint64
 }
 
 func (act *TradeActivation) BuildReqActions(txr Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
@@ -90,18 +106,19 @@ func (act *TradeActivation) BuildReqActions(txr Transaction, bcr BlockchainRetri
 func getTradeActivationActionValue(act *TradeActivation, txr Transaction, bcr BlockchainRetriever) (string, error) {
 	action := &TradeActivationAction{
 		TradeID: act.TradeID,
+		Amount:  act.Amount,
 	}
 	value, err := json.Marshal(action)
 	return string(value), err
 }
 
-func ParseTradeActivationActionValue(value string) ([]byte, error) {
+func ParseTradeActivationActionValue(value string) ([]byte, uint64, error) {
 	action := &TradeActivationAction{}
 	err := json.Unmarshal([]byte(value), action)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return action.TradeID, nil
+	return action.TradeID, action.Amount, nil
 }
 
 func (act *TradeActivation) CalculateSize() uint64 {
