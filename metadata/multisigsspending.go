@@ -78,7 +78,7 @@ func (msSpending *MultiSigsSpending) Hash() *common.Hash {
 	record := msSpending.MetadataBase.Hash().String()
 
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

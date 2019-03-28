@@ -55,20 +55,21 @@ const (
 	UpdateDCBConstitutionIns = 41
 	UpdateGOVConstitutionIns = 42
 
-	SubmitDCBProposalMeta          = 43
-	VoteDCBBoardMeta               = 44
-	SubmitGOVProposalMeta          = 45
-	VoteGOVBoardMeta               = 46
-	RewardProposalWinnerMeta       = 47
-	RewardDCBProposalSubmitterMeta = 48
-	RewardGOVProposalSubmitterMeta = 49
-	ShareRewardOldDCBBoardMeta     = 50
-	ShareRewardOldGOVBoardMeta     = 51
-	PunishDCBDecryptMeta           = 52
-	PunishGOVDecryptMeta           = 53
-	SendBackTokenVoteBoardFailMeta = 54
-	DCBVoteProposalMeta            = 55
-	GOVVoteProposalMeta            = 56
+	SubmitDCBProposalMeta           = 43
+	VoteDCBBoardMeta                = 44
+	SubmitGOVProposalMeta           = 45
+	VoteGOVBoardMeta                = 46
+	RewardProposalWinnerMeta        = 47
+	RewardDCBProposalSubmitterMeta  = 48
+	RewardGOVProposalSubmitterMeta  = 49
+	ShareRewardOldDCBBoardMeta      = 50
+	ShareRewardOldGOVBoardMeta      = 51
+	PunishDCBDecryptMeta            = 52
+	PunishGOVDecryptMeta            = 53
+	SendBackTokenVoteBoardFailMeta  = 54
+	SendBackTokenToOldSupporterMeta = 59
+	DCBVoteProposalMeta             = 55
+	GOVVoteProposalMeta             = 56
 
 	//statking
 	ShardStakingMeta  = 63
@@ -86,7 +87,3 @@ const (
 )
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
-const (
-	AllShards  = -1
-	BeaconOnly = -2
-)
