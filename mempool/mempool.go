@@ -203,11 +203,11 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	minFeePerKbTx := tp.config.BlockChain.GetFeePerKbTx()
 	txFee := tx.GetTxFee()
 	ok = tx.CheckTransactionFee(minFeePerKbTx)
-	if !ok {
-		err := MempoolTxError{}
-		err.Init(RejectVersion, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, minFeePerKbTx*tx.GetTxActualSize()))
-		return nil, nil, err
-	}
+	// if !ok {
+	// 	err := MempoolTxError{}
+	// 	err.Init(RejectVersion, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, minFeePerKbTx*tx.GetTxActualSize()))
+	// 	return nil, nil, err
+	// }
 	// end check with policy
 
 	ok = tx.ValidateType()
