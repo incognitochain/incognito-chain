@@ -9,7 +9,7 @@ const (
 	defaultMaxBlkReqPerPeer     = 60
 	defaultMaxBlkReqPerTime     = 600
 	defaultBroadcastStateTime   = 2 * time.Second  // in second
-	defaultProcessPeerStateTime = 5 * time.Second  // in second
+	defaultProcessPeerStateTime = 4 * time.Second  // in second
 	defaultMaxBlockSyncTime     = 2 * time.Second  // in second
 	defaultCacheCleanupTime     = 60 * time.Second // in second
 
@@ -66,7 +66,7 @@ const (
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 
-	TestNetShardCommitteeSize  = 4
+	TestNetShardCommitteeSize  = 3
 	TestNetBeaconCommitteeSize = 3
 	TestNetActiveShards        = 2
 
@@ -149,7 +149,7 @@ var PreSelectShardNodeTestnetSerializedPubkey = []string{
 	"177KNe6pRhi97hD9LqjUvGxLoNeKh9F5oSeh99V6Td2sQcm7qEu", //shard 0
 	"17KKWNHXf5g1vt5g5FQ7bLLy7VZZWw66KABCkJh6EUHWckh3JAs", //shard 0
 	"18YsDcTo7RG5aYdXp4P7QqtUaS8VLYADWZGCfNfaWJUarrvV7Zs", //shard 0
-	"181t5nb3KSqjSGTYFDo1hnV8xPEsi2uZsc5dgVmycFytMUJHNpv", //shard 0
+	//"181t5nb3KSqjSGTYFDo1hnV8xPEsi2uZsc5dgVmycFytMUJHNpv", //shard 0
 
 	"18XpTg8Q2dJqTXgDvc1fECQXUi1NkqVuJnPrQ6meZxwWCw1xxbn", //shard 1
 	"173YFBy4eHQpGHzFBbkEtkanHskhhD1FZPtrE2kGwYKEKQ3GZKM", //shard 1
@@ -169,7 +169,7 @@ var PreSelectShardNodeTestnet = []string{
 	"112t8rqGc71CqjrDCuReGkphJ4uWHJmiaV7rVczqNhc33pzChmJRvikZNc3Dt5V7quhdzjWW9Z4BrB2BxdK5VtHzsG9JZdZ5M7yYYGidKKZV", //shard 0
 	"112t8ruNDweRqN4LvP1FaxjWWoVjDqbhtqQyjx52xtq3rpcRuPhqtwApvuNYpj78TAdZAqDsy4ewwgaEdCQWqK5VAXdBPfWKkMD3QbeRSaSJ", //shard 0
 	"112t8roGSduAqZKFWWdRMzVazM5qDN6xzii4wWwbn6r4uEbTfEVN2o9sHY9kvHpouUXnhm9HnUcWSUTDvyBDgRLTVqqj5pgdmD6QJoC99bRq", //shard 0
-	"112t8ruqNDGrL9LqCvgZZuPGANgJ2mQEYogEmuSfpUFgaCf2cpPMvYpDUQzX4xWYaFXbfrfsNdjK9gZn2zS8tXhaywgAp1Pu8Bra2PurHtw6", //shard 0
+	//"112t8ruqNDGrL9LqCvgZZuPGANgJ2mQEYogEmuSfpUFgaCf2cpPMvYpDUQzX4xWYaFXbfrfsNdjK9gZn2zS8tXhaywgAp1Pu8Bra2PurHtw6", //shard 0
 
 	"112t8rpxJvKj42esCYsnShYnbe67yERdjrPmWcDWCcTyM6W4Nst3yyBkidWEu2M2M5H5cKwVMtzBLM6XWyqQrB4L4QK2GJFyaBQhRwgC8Vz6", //shard 1
 	"112t8rqNdNmv4Z1WeR9Lj8Us9qABCCSFRNJf1fQ3yr2v9WKkkxxHQZzDX6zF1GYq3hC6qBE9GMo9hJgrBq7irZ2qc3HSMaPLMkMTE76YH4Jc", //shard 1

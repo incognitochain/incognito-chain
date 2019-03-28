@@ -75,6 +75,8 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 					if err != nil {
 						fmt.Println("Shard block add pool err", err)
 					}
+					fmt.Println("InsertBlockFromPool from shard")
+					blockchain.InsertBlockFromPool()
 				}
 			}
 		}
@@ -94,6 +96,7 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 			} else {
 				if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
 					userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+					fmt.Println("Beacon block user role", userRole)
 					if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
 						fmt.Println("Beacon block insert", newBlk.Header.Height)
 						err = blockchain.InsertBeaconBlock(newBlk, false)
@@ -112,6 +115,8 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 				if err != nil {
 					fmt.Println("Beacon block add pool err", err)
 				}
+				fmt.Println("InsertBlockFromPool from beacon", newBlk.Header.Height)
+				blockchain.InsertBlockFromPool()
 			}
 		}
 	}
