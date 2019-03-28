@@ -131,10 +131,7 @@ const (
 
 // Key param for instruction
 const (
-	salaryPerTx = "salaryPerTx"
-	basicSalary = "basicSalary"
-	salaryFund  = "salaryFund"
-	feePerTxKb  = "feePerTxKb"
+	salaryFund = "salaryFund"
 )
 
 // ---------------------------------------------
