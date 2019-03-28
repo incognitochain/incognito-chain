@@ -131,7 +131,7 @@ func (beaconBlock *BeaconBody) toString() string {
 }
 
 func (beaconBody *BeaconBody) Hash() common.Hash {
-	return common.DoubleHashH([]byte(beaconBody.toString()))
+	return common.HashH([]byte(beaconBody.toString()))
 }
 
 // func (beaconBlock *BeaconBody) UnmarshalJSON(data []byte) error {
@@ -166,7 +166,7 @@ func (beaconHeader *BeaconHeader) toString() string {
 }
 
 func (beaconBlock *BeaconHeader) Hash() common.Hash {
-	return common.DoubleHashH([]byte(beaconBlock.toString()))
+	return common.HashH([]byte(beaconBlock.toString()))
 }
 
 // func (beaconBlock *BeaconHeader) UnmarshalJSON(data []byte) error {

@@ -85,7 +85,7 @@ func (bsReq *BuySellRequest) Hash() *common.Hash {
 	record += string(bsReq.TradeID)
 
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

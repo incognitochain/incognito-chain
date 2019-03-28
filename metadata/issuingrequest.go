@@ -148,7 +148,7 @@ func (iReq *IssuingRequest) Hash() *common.Hash {
 	record += iReq.MetadataBase.Hash().String()
 
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

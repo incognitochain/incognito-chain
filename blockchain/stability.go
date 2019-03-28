@@ -144,16 +144,16 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 	instructions := [][]string{}
 	//Add Voting instruction
 	// step 3 hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-	//votingInstruction, err := blkTmpGen.chain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
-	//if err != nil {
-	//	return nil, NewBlockChainError(BeaconError, err)
-	//}
-	//instructions = append(instructions, votingInstruction...)
-	//votingInstruction, err = blkTmpGen.chain.generateVotingInstructionWOIns(GOVConstitutionHelper{})
-	//if err != nil {
-	//	return nil, NewBlockChainError(BeaconError, err)
-	//}
-	//instructions = append(instructions, votingInstruction...)
+	votingInstruction, err := blkTmpGen.chain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
+	if err != nil {
+		return nil, NewBlockChainError(BeaconError, err)
+	}
+	instructions = append(instructions, votingInstruction...)
+	votingInstruction, err = blkTmpGen.chain.generateVotingInstructionWOIns(GOVConstitutionHelper{})
+	if err != nil {
+		return nil, NewBlockChainError(BeaconError, err)
+	}
+	instructions = append(instructions, votingInstruction...)
 
 	for _, inst := range shardBlockInstructions {
 		if inst[0] != "36" {
