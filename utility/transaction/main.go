@@ -19,12 +19,18 @@ func main() {
 	//==========Write
 	if os.Args[1] == "write" {
 		transactions := []string{}
-		txs := initTx("1000", "112t8rrEgLjxmpzQTh3i2SFxxV27WntXpAkoe9JbseqFvDBPpaPaudzJWXFctZorJXtivEXv1nPzggnmNfNDyj9d5PKh5S4N3UTs6fHBWgeo")
+		db, err := database.Open("leveldb", filepath.Join("./", "./"))
+		if err != nil {
+			fmt.Print("could not open connection to leveldb")
+			fmt.Print(err)
+			panic(err)
+		}
 		for i := 0; i < 500; i++ {
+			txs := initTx("1000", "112t8rsq5Xx45T1ZKH4N45aBztqBJiDAR9Nw5wMb8Fe5PnFCqDiUAgVzoMr3xBznNJTfu2CSW3HC6M9rGHxTyUzUBbZHjv6wCMnucDDKbHT4", db)
 			transactions = append(transactions, txs[0])
 		}
 		file, _ := json.MarshalIndent(transactions, "", " ")
-		_ = ioutil.WriteFile("test1.json", file, 0644)
+		_ = ioutil.WriteFile("test0.json", file, 0644)
 	}
 	//==========Read
 	if os.Args[1] == "read" {
@@ -49,13 +55,7 @@ func readTxsFromFile(filename string) {
 	// defer the closing of our jsonFile so that we can parse it later on
 	defer jsonFile.Close()
 }
-func initTx(amount string, privateKey string) []string {
-	db, err := database.Open("leveldb", filepath.Join("./", "./"))
-	if err != nil {
-		fmt.Print("could not open connection to leveldb")
-		fmt.Print(err)
-		panic(err)
-	}
+func initTx(amount string, privateKey string, db database.DatabaseInterface) []string {
 	var initTxs []string
 	var initAmount, _ = strconv.Atoi(amount) // amount init
 	var spendingKey = privateKey             // spending key str
@@ -75,6 +75,5 @@ func initTx(amount string, privateKey string) []string {
 		initTx, _ := json.Marshal(testSalaryTX)
 		initTxs = append(initTxs, string(initTx))
 	}
-	fmt.Println(initTxs)
 	return initTxs
 }
