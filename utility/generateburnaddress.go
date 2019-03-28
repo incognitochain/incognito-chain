@@ -12,7 +12,9 @@ import (
 func main() {
 	param, _ := strconv.Atoi(os.Args[1])
 	// dcb: 1000000000
+	// gov: 10000000
 	// burn: 1000000
+	//param = 10000000
 	burnPubKeyE := privacy.PedCom.G[0].Hash(param)
 	burnPubKey := burnPubKeyE.Compress()
 	burnKey := wallet.KeyWallet{
