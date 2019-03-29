@@ -4,15 +4,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/constant-money/constant-chain/mempool"
 	"math/big"
 	"time"
-
-	"github.com/constant-money/constant-chain/privacy"
 
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/constant-money/constant-chain/wallet"
@@ -152,6 +152,12 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 
 	hash, txDesc, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
+		mempoolErr, ok := err.(mempool.MempoolTxError)
+		if ok {
+			if mempoolErr.Code == mempool.ErrCodeMessage[mempool.RejectInvalidFee].Code {
+				return nil, NewRPCError(ErrRejectInvalidFee, mempoolErr)
+			}
+		}
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 

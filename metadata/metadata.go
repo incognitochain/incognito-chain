@@ -46,7 +46,7 @@ func (mb *MetadataBase) GetType() int {
 
 func (mb *MetadataBase) Hash() *common.Hash {
 	record := strconv.Itoa(mb.Type)
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
@@ -124,8 +124,6 @@ type BlockchainRetriever interface {
 	// GetLoanTxs([]byte) ([][]byte, error)
 	GetLoanReq(loanID []byte) (*common.Hash, error)
 	GetLoanResps(loanID []byte) ([][]byte, []ValidLoanResponse, error)
-	GetNumberOfDCBGovernors() int
-	GetNumberOfGOVGovernors() int
 	GetLoanPayment([]byte) (uint64, uint64, uint64, error)
 	GetLoanRequestMeta(loanID []byte) (*LoanRequest, error)
 	GetLoanWithdrawed(loanID []byte) (bool, error)
@@ -137,9 +135,15 @@ type BlockchainRetriever interface {
 
 	// For validating crowdsale
 	GetCrowdsaleData([]byte) (*component.SaleData, error)
+	CrowdsaleExisted(saleID []byte) bool
+	GetDCBAvailableAsset(assetID *common.Hash) uint64
 
 	// For validating reserve
 	GetAssetPrice(assetID *common.Hash) uint64
+
+	// For validating trade bonds
+	GetAllTrades() []*component.TradeBondWithGOV
+	GetTradeActivation([]byte) (*common.Hash, bool, bool, uint64, error)
 
 	// For validating cmb
 	GetCMB([]byte) (privacy.PaymentAddress, []privacy.PaymentAddress, uint64, *common.Hash, uint8, uint64, error)

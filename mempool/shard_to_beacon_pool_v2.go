@@ -176,14 +176,11 @@ func (self *ShardToBeaconPool) removePendingBlock(blockItems map[byte]uint64) {
 		for index, block := range self.pool[shardID] {
 			fmt.Println("ShardToBeaconPool/Pool BEFORE Remove", block.Header.Height)
 			if block.Header.Height <= blockHeight {
-				fmt.Println("ShardToBeaconPool: RemovePendingBlock, Remove Shard Block", block.Header.Height)
 				if index == len(self.pool[shardID])-1 {
-					fmt.Println("ShardToBeaconPool: RemovePendingBlock, Update Expected Shard Height 1", block.Header.Height+1)
 					self.pool[shardID] = self.pool[shardID][index+1:]
 				}
 				continue
 			} else {
-				fmt.Println("ShardToBeaconPool: RemovePendingBlock, Update Expected Shard Height 2", block.Header.Height)
 				self.pool[shardID] = self.pool[shardID][index:]
 				break
 			}

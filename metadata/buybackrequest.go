@@ -14,14 +14,14 @@ import (
 type BuyBackRequest struct {
 	PaymentAddress privacy.PaymentAddress
 	Amount         uint64
-	TokenID        common.Hash
+
+	TradeID []byte // To trade bond with DCB
 	MetadataBase
 }
 
 func NewBuyBackRequest(
 	paymentAddress privacy.PaymentAddress,
 	amount uint64,
-	tokenID common.Hash,
 	metaType int,
 ) *BuyBackRequest {
 	metadataBase := MetadataBase{
@@ -30,7 +30,6 @@ func NewBuyBackRequest(
 	return &BuyBackRequest{
 		PaymentAddress: paymentAddress,
 		Amount:         amount,
-		TokenID:        tokenID,
 		MetadataBase:   metadataBase,
 	}
 }
@@ -41,8 +40,6 @@ func (bbReq *BuyBackRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-
-	// TODO: need to check vin's amt and burning address in vout
 	return true, nil
 }
 
@@ -59,9 +56,13 @@ func (bbReq *BuyBackRequest) ValidateSanityData(
 	if bbReq.Amount == 0 {
 		return false, false, errors.New("Wrong request info's amount")
 	}
-	if len(bbReq.TokenID) != common.HashSize {
-		return false, false, errors.New("Wrong request info's token id")
+	if !txr.IsCoinsBurning() {
+		return false, false, errors.New("Must send bonds to burning address")
 	}
+	if txr.CalculateTxValue() < bbReq.Amount {
+		return false, false, errors.New("Burning bond amount in Vouts should be equal metadata's amount")
+	}
+
 	return true, true, nil
 }
 
@@ -73,9 +74,9 @@ func (bbReq *BuyBackRequest) ValidateMetadataByItself() bool {
 func (bbReq *BuyBackRequest) Hash() *common.Hash {
 	record := bbReq.PaymentAddress.String()
 	record += string(bbReq.Amount)
-	record += bbReq.TokenID.String()
 	record += bbReq.MetadataBase.Hash().String()
-	hash := common.DoubleHashH([]byte(record))
+	record += string(bbReq.TradeID)
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

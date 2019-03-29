@@ -45,7 +45,7 @@ func (wsa *WithSenderAddress) Hash() *common.Hash {
 	record := wsa.SenderAddress.String()
 	// final hash
 	record += wsa.MetadataBase.Hash().String()
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

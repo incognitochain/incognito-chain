@@ -220,7 +220,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 
 	// Process stability tx, create response txs if needed
 	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey)
-	Logger.log.Error(stabilityResponseTxs, "-----------------------------\n")
+	// Logger.log.Error(stabilityResponseTxs, "-----------------------------\n")
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +362,7 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 */
 func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	sourceTxns := blockgen.txPool.MiningDescs()
-
+	// sourceTxns := []*metadata.TxDesc{}
 	//@NOTICE: COMMENT To allow produce too many empty block
 	// get tx and wait for more if not enough
 	//if len(sourceTxns) < common.MinTxsInBlock {

@@ -70,9 +70,13 @@ const (
 	DCBVoteProposalMeta            = 55
 	GOVVoteProposalMeta            = 56
 
+	SendBackTokenToOldSupporterMeta = 59
+
 	//statking
 	ShardStakingMeta  = 63
 	BeaconStakingMeta = 64
+
+	TradeActivationMeta = 65
 )
 
 const (
@@ -86,7 +90,3 @@ const (
 )
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
-const (
-	AllShards  = -1
-	BeaconOnly = -2
-)

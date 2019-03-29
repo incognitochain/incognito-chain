@@ -4,6 +4,7 @@ import (
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
+	"github.com/constant-money/constant-chain/metadata/fromshardins"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/pkg/errors"
 )
@@ -39,14 +40,17 @@ func NewSubmitDCBProposalMetadata(
 }
 
 func NewSubmitDCBProposalMetadataFromRPC(data map[string]interface{}) (Metadata, error) {
-	meta := NewSubmitDCBProposalMetadata(
-		*component.NewDCBParamsFromJson(data["DCBParams"]),
+	dcbParams, err := component.NewDCBParamsFromJson(data["DCBParams"])
+	if err != nil {
+		return nil, err
+	}
+	return NewSubmitDCBProposalMetadata(
+		*dcbParams,
 		uint64(data["ExecuteDuration"].(float64)),
 		data["Explanation"].(string),
 		data["PaymentAddress"].(*privacy.PaymentAddress),
 		uint32(data["ConstitutionIndex"].(float64)),
-	)
-	return meta, nil
+	), nil
 }
 
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) Hash() *common.Hash {
@@ -54,8 +58,27 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) Hash() *common.Hash 
 	record += string(submitDCBProposalMetadata.SubmitProposalInfo.ToBytes())
 
 	record += submitDCBProposalMetadata.MetadataBase.Hash().String()
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
+}
+
+func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) BuildReqActions(
+	tx Transaction,
+	bcr BlockchainRetriever,
+	shardID byte,
+) ([][]string, error) {
+	submitProposal := component.SubmitProposalData{
+		ProposalTxID:      *tx.Hash(),
+		ConstitutionIndex: submitDCBProposalMetadata.SubmitProposalInfo.ConstitutionIndex,
+		SubmitterPayment:  submitDCBProposalMetadata.SubmitProposalInfo.PaymentAddress,
+	}
+	inst := fromshardins.NewSubmitProposalIns(common.DCBBoard, submitProposal)
+
+	instStr, err := inst.GetStringFormat()
+	if err != nil {
+		return nil, err
+	}
+	return [][]string{instStr}, nil
 }
 
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockChain(
@@ -65,10 +88,33 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockC
 	db database.DatabaseInterface,
 ) (bool, error) {
 	if !submitDCBProposalMetadata.SubmitProposalInfo.ValidateTxWithBlockChain(common.DCBBoard, chainID, db) {
-		return false, nil
+		return false, errors.Errorf("SubmitProposalInfo invalid")
 	}
 
-	// TODO(@0xbunyip): validate DCBParams: LoanParams, SaleData, etc
+	// TODO(@0xbunyip): validate DCBParams: LoanParams, etc
+
+	// Validate SaleData
+	for _, sale := range submitDCBProposalMetadata.DCBParams.ListSaleData {
+		// No crowdsale existed with the same id
+		if br.CrowdsaleExisted(sale.SaleID) {
+			return false, errors.Errorf("Crowdsale with the same ID existed")
+		}
+
+		// EndBlock is valid
+		if sale.EndBlock <= br.GetBeaconHeight() {
+			return false, errors.Errorf("Crowdsale EndBlock must be higher than current beacon height")
+		}
+
+		// Amount and DefaultPrice must be set
+		if sale.BuyingAmount*sale.DefaultBuyPrice*sale.SellingAmount*sale.DefaultSellPrice == 0 {
+			return false, errors.Errorf("Crowdsale asset amounts and prices must be set")
+		}
+
+		// Check if DCB has enough SellingAsset
+		if common.IsBondAsset(&sale.SellingAsset) && br.GetDCBAvailableAsset(&sale.SellingAsset) < sale.SellingAmount {
+			return false, errors.Errorf("Crowdsale: not enough selling asset")
+		}
+	}
 
 	raiseReserveData := submitDCBProposalMetadata.DCBParams.RaiseReserveData
 	for assetID, _ := range raiseReserveData {
@@ -141,7 +187,7 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) Hash() *common.Hash 
 	record += string(submitGOVProposalMetadata.SubmitProposalInfo.ToBytes())
 
 	record += submitGOVProposalMetadata.MetadataBase.Hash().String()
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
