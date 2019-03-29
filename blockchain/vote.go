@@ -110,6 +110,9 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 	nextConstitutionIndex := self.GetConstitutionIndex(DCBConstitutionHelper{})
 	resIns := make([]frombeaconins.InstructionFromBeacon, 0)
 	VoteTable, CountVote, err := self.BuildVoteTableAndPunishTransaction(helper, nextConstitutionIndex)
+	if err != nil {
+		return nil, err
+	}
 	bestProposal := metadata.ProposalVote{
 		TxId:         common.Hash{},
 		NumberOfVote: 0,
