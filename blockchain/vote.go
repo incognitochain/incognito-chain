@@ -111,7 +111,7 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 	resIns := make([]frombeaconins.InstructionFromBeacon, 0)
 	VoteTable, CountVote, err := self.BuildVoteTableAndPunishTransaction(helper, nextConstitutionIndex)
 	if err != nil {
-		return resIns, err
+		return nil, err
 	}
 	bestProposal := metadata.ProposalVote{
 		TxId:         common.Hash{},

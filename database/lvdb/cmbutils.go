@@ -8,8 +8,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const PaymentAddressLen = 66
-
 func errUnexpected(err error, content string) *database.DatabaseError {
 	if err == nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Errorf(content))
@@ -47,7 +45,7 @@ func getCMBInitValue(
 
 	// Add members
 	for _, member := range members {
-		if len(member) != PaymentAddressLen {
+		if len(member) != common.PaymentAddressLength {
 			return nil, errors.Errorf("provided bytes are not payment address")
 		}
 		values = append(values, member...)
@@ -64,13 +62,13 @@ func getCMBInitValue(
 
 func parseCMBInitValue(value []byte) ([]byte, [][]byte, uint64, []byte, uint8, uint64, error) {
 	// Get reserve
-	if len(value) < PaymentAddressLen {
+	if len(value) < common.PaymentAddressLength {
 		return nil, nil, 0, nil, 0, 0, errors.Errorf("error parsing cmb value")
 	}
-	reserve := value[:PaymentAddressLen]
+	reserve := value[:common.PaymentAddressLength]
 
 	// Get capital
-	value = value[PaymentAddressLen:]
+	value = value[common.PaymentAddressLength:]
 	if len(value) < 8 {
 		return nil, nil, 0, nil, 0, 0, errors.Errorf("error parsing cmb value")
 	}
@@ -91,15 +89,15 @@ func parseCMBInitValue(value []byte) ([]byte, [][]byte, uint64, []byte, uint8, u
 
 	// The rest: members
 	value = value[8 : len(value)-common.HashSize-2]
-	if len(value)%PaymentAddressLen != 0 {
+	if len(value)%common.PaymentAddressLength != 0 {
 		return nil, nil, 0, nil, 0, 0, errors.Errorf("error parsing cmb value")
 	}
-	numMembers := len(value) / PaymentAddressLen
+	numMembers := len(value) / common.PaymentAddressLength
 	members := [][]byte{}
 
 	for i := 0; i < numMembers; i += 1 {
-		member := make([]byte, PaymentAddressLen)
-		copy(member, value[i*PaymentAddressLen:(i+1)*PaymentAddressLen])
+		member := make([]byte, common.PaymentAddressLength)
+		copy(member, value[i*common.PaymentAddressLength:(i+1)*common.PaymentAddressLength])
 		members = append(members, member)
 	}
 	return reserve, members, capital, txHash, state, fine, nil
