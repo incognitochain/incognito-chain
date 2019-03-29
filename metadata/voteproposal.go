@@ -19,7 +19,7 @@ func NewVoteProposalDataFromJson(data interface{}) *component.VoteProposalData {
 	proposalTxIDData, _ := hex.DecodeString(voteProposalDataData["ProposalTxID"].(string))
 	proposalTxID, _ := common.NewHash(proposalTxIDData)
 	constitutionIndex := uint32(voteProposalDataData["ConstitutionIndex"].(float64))
-	voterPayment := privacy.NewPaymentAddressFromByte([]byte(voteProposalDataData["VoterPayment"].(string)))
+	voterPayment := component.New([]byte(voteProposalDataData["VoterPayment"].(string)))
 	return NewVoteProposalData(
 		*proposalTxID,
 		constitutionIndex,
