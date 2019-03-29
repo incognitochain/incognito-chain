@@ -507,6 +507,7 @@ func (chain *BlockChain) AddVoteProposal(inst string) error {
 		newInst.VoteProposal.VoterPayment.Bytes(),
 		newInst.VoteProposal.ProposalTxID.GetBytes(),
 	)
+
 	if err != nil {
 		return err
 	}
