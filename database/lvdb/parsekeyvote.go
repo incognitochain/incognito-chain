@@ -146,11 +146,11 @@ func ParseValueVoteBoardList(value []byte) uint64 {
 }
 
 func GetKeyVoteProposal(boardType common.BoardType, constitutionIndex uint32, voterPayment *privacy.PaymentAddress) []byte {
-	b := make([]byte, PaymentAddressLen)
+	b := make([]byte, common.PaymentAddressLength)
 	if voterPayment != nil {
 		b = voterPayment.Bytes()
 	}
-	key := GetKeyFromVariadic(voteProposalPrefix, boardType.Bytes(), common.Uint32ToBytes(constitutionIndex), b)
+	key := GetKeyFromVariadic(VoteProposalPrefix, boardType.Bytes(), common.Uint32ToBytes(constitutionIndex), b)
 	return key
 }
 
@@ -165,7 +165,7 @@ func ParseKeyVoteProposal(key []byte) (
 	voterPayment *privacy.PaymentAddress,
 	err error,
 ) {
-	length := []int{len(voteProposalPrefix), 1, 4, common.PaymentAddressLength}
+	length := []int{len(VoteProposalPrefix), 1, 4, common.PaymentAddressLength}
 	elements, err := ParseKeyToSlice(key, length)
 	if err != nil {
 		return 0, 0, nil, err
@@ -180,7 +180,7 @@ func ParseKeyVoteProposal(key []byte) (
 }
 
 func GetKeyListVoterOfProposal(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte, voterPayment *privacy.PaymentAddress) []byte {
-	paymentAddressBytes := make([]byte, PaymentAddressLen)
+	paymentAddressBytes := make([]byte, common.PaymentAddressLength)
 	if voterPayment != nil {
 		paymentAddressBytes = voterPayment.Bytes()
 	}
@@ -214,12 +214,12 @@ func GetValueVoteProposal(proposalTxID *common.Hash) []byte {
 	if proposalTxID == nil {
 		b = proposalTxID.GetBytes()
 	}
-	value := GetKeyFromVariadic(voteProposalPrefix, b)
+	value := GetKeyFromVariadic(VoteProposalPrefix, b)
 	return value
 }
 
 func ParseValueVoteProposal(value []byte) (*common.Hash, error) {
-	length := []int{len(voteProposalPrefix), common.HashSize}
+	length := []int{len(VoteProposalPrefix), common.HashSize}
 	elements, err := ParseKeyToSlice(value, length)
 	if err != nil {
 		return nil, err

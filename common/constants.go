@@ -2,7 +2,7 @@ package common
 
 const (
 	EmptyString          = ""
-	PaymentAddressLength = 66
+	PaymentAddressLength = 105
 	ZeroByte             = byte(0x00)
 	DateOutputFormat     = "2006-01-02T15:04:05.999999"
 )
