@@ -213,8 +213,10 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 			err = blkTmpGen.chain.AddVoteBoard(inst[2])
 
 		case component.SubmitProposalIns:
+			// common.FileLog(false, "component.SubmitProposalIns: "+inst[2])
 			err = blkTmpGen.chain.AddSubmitProposal(inst[2])
 		case component.VoteProposalIns:
+			// common.FileLog(false, "component.SubmitProposalIns: "+inst[2])
 			err = blkTmpGen.chain.AddVoteProposal(inst[2])
 		default:
 			continue
