@@ -44,9 +44,12 @@ type BFTProtocol struct {
 		ClosestPoolState map[byte]uint64
 	}
 	multiSigScheme *multiSigScheme
+
+	proposeCh chan wire.Message
 }
 
 func (protocol *BFTProtocol) Start() (interface{}, error) {
+	protocol.proposeCh = make(chan wire.Message)
 	protocol.phase = PBFT_LISTEN
 	if protocol.RoundData.IsProposer {
 		protocol.phase = PBFT_PROPOSE
@@ -78,6 +81,8 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 				// }
 				// return protocol.pendingBlock, nil
 				//    single-node end    //
+
+				go protocol.CreateBlockMsg()
 				timeout := time.AfterFunc(ListenTimeout*time.Second, func() {
 					fmt.Println("BFT: Propose phase timeout", time.Now().Unix())
 					protocol.closeTimeoutCh()
@@ -125,13 +130,16 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 							}
 
 							fmt.Println("BFT: Propose block")
-							msg, err := protocol.CreateBlockMsg()
-							if err != nil {
-								return nil, err
+
+							msg := <-protocol.proposeCh
+							if msg == nil {
+								return nil, errors.New("Failed to propose block")
 							}
 							protocol.forwardMsg(msg)
 							protocol.phase = PBFT_PREPARE
+							close(protocol.proposeCh)
 						} else {
+							close(protocol.proposeCh)
 							return nil, errors.New("Didn't received enough ready msg")
 						}
 						break proposephase
@@ -397,34 +405,38 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 	}
 }
 
-func (protocol *BFTProtocol) CreateBlockMsg() (wire.Message, error) {
+func (protocol *BFTProtocol) CreateBlockMsg() {
 	var msg wire.Message
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
 		newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
 		if err != nil {
-			return nil, err
+			Logger.log.Error(err)
+			close(protocol.proposeCh)
 		}
 		jsonBlock, _ := json.Marshal(newBlock)
 		msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.UserKeySet)
 		if err != nil {
-			return nil, err
+			Logger.log.Error(err)
+			close(protocol.proposeCh)
 		}
 		protocol.pendingBlock = newBlock
 		protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
 	} else {
 		newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ShardID, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
 		if err != nil {
-			return nil, err
+			Logger.log.Error(err)
+			close(protocol.proposeCh)
 		}
 		jsonBlock, _ := json.Marshal(newBlock)
 		msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.UserKeySet)
 		if err != nil {
-			return nil, err
+			Logger.log.Error(err)
+			close(protocol.proposeCh)
 		}
 		protocol.pendingBlock = newBlock
 		protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
 	}
-	return msg, nil
+	protocol.proposeCh <- msg
 }
 
 func (protocol *BFTProtocol) forwardMsg(msg wire.Message) {
