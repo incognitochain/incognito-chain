@@ -436,7 +436,13 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 		protocol.pendingBlock = newBlock
 		protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
 	}
-	protocol.proposeCh <- msg
+	select {
+	case <-protocol.proposeCh:
+		Logger.log.Critical("Oops block create time longer than timeout")
+		return
+	default:
+		protocol.proposeCh <- msg
+	}
 }
 
 func (protocol *BFTProtocol) forwardMsg(msg wire.Message) {
