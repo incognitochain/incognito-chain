@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -17,6 +16,8 @@ type BuySellRequest struct {
 	TokenID        common.Hash
 	Amount         uint64
 	BuyPrice       uint64 // in Constant unit
+
+	TradeID []byte // To trade bond with DCB
 	MetadataBase
 }
 
@@ -41,24 +42,7 @@ func NewBuySellRequest(
 }
 
 func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-
-	// TODO: support and validate for either bonds or govs buy requests
-
-	govParams := bcr.GetGOVParams()
-	sellingBondsParams := govParams.SellingBonds
-	if sellingBondsParams == nil {
-		return false, errors.New("SellingBonds component are not existed.")
-	}
-
-	bondID := sellingBondsParams.GetID()
-	if !bytes.Equal(bondID[:], bsReq.TokenID[:]) {
-		return false, errors.New("Requested tokenID has not been selling yet.")
-	}
-
-	// check if buy price againsts SellingBonds component' BondPrice is correct or not
-	if bsReq.BuyPrice < sellingBondsParams.BondPrice {
-		return false, errors.New("Requested buy price is under SellingBonds component' buy price.")
-	}
+	// no need to do validation here since it'll be checked on beacon chain
 	return true, nil
 }
 
@@ -78,6 +62,12 @@ func (bsReq *BuySellRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tra
 	if len(bsReq.TokenID) != common.HashSize {
 		return false, false, errors.New("Wrong request info's asset type")
 	}
+	if txr.CalculateTxValue() < bsReq.BuyPrice*bsReq.Amount {
+		return false, false, errors.New("Sending constant amount is not enough for buying bonds.")
+	}
+	if !txr.IsCoinsBurning() {
+		return false, false, errors.New("Must send coin to burning address")
+	}
 	return true, true, nil
 }
 
@@ -92,9 +82,10 @@ func (bsReq *BuySellRequest) Hash() *common.Hash {
 	record += string(bsReq.Amount)
 	record += string(bsReq.BuyPrice)
 	record += bsReq.MetadataBase.Hash().String()
+	record += string(bsReq.TradeID)
 
 	// final hash
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

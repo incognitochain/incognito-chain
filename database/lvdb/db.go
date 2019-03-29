@@ -57,6 +57,8 @@ var (
 	voteBoardListPrefix          = []byte("votelistboard-")
 	threePhraseCryptoOwnerPrefix = []byte("threephrasecryptoownerprefix-")
 	voteProposalPrefix           = []byte("voteproposalprefix-")
+	listVoterOfProposalPrefix    = []byte("listvoterofproposalprefix-")
+	submitProposalPrefix         = []byte("submitproposalprefix-")
 	threePhraseVoteValuePrefix   = []byte("threephrasevotevalueprefix-")
 	winningVoterPrefix           = []byte("winningvoterprefix-")
 	//pubKeyToPaymentAddress          = []byte("pubkeytopaymentaddress")
@@ -74,7 +76,8 @@ var (
 	cmbNoticePrefix          = []byte("cmbnotice-")
 
 	// crowdsale
-	crowdsalePrefix = []byte("crowdsale-")
+	crowdsalePrefix       = []byte("crowdsale-")
+	tradeActivationPrefix = []byte("tradeAct-")
 
 	// dividend
 	dividendReceiversPrefix = []byte("divRec")

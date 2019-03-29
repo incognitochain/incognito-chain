@@ -8,10 +8,9 @@ import (
 	"strconv"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
-	"github.com/constant-money/constant-chain/metadata/frombeaconins"
-
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/metadata/frombeaconins"
 	"github.com/pkg/errors"
 )
 
@@ -20,30 +19,9 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 		// init data for network
 		var err error
 		switch inst[1] {
-		case salaryPerTx:
-			{
-				bsb.StabilityInfo.GOVConstitution.GOVParams.SalaryPerTx, err = strconv.ParseUint(inst[2], 10, 64)
-				if err != nil {
-					return err
-				}
-			}
-		case basicSalary:
-			{
-				bsb.StabilityInfo.GOVConstitution.GOVParams.BasicSalary, err = strconv.ParseUint(inst[2], 10, 64)
-				if err != nil {
-					return err
-				}
-			}
 		case salaryFund:
 			{
 				bsb.StabilityInfo.SalaryFund, err = strconv.ParseUint(inst[2], 10, 64)
-				if err != nil {
-					return err
-				}
-			}
-		case feePerTxKb:
-			{
-				bsb.StabilityInfo.GOVConstitution.GOVParams.FeePerKbTx, err = strconv.ParseUint(inst[2], 10, 64)
 				if err != nil {
 					return err
 				}
@@ -82,6 +60,34 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 		if err != nil {
 			return err
 		}
+	case strconv.Itoa(component.ShareRewardOldDCBBoardIns):
+		shareRewardOldDCBBoardIns := frombeaconins.ShareRewardOldBoardIns{}
+		err := json.Unmarshal([]byte(inst[2]), shareRewardOldDCBBoardIns)
+		if err != nil {
+			return err
+		}
+		bsb.UpdateDCBFund(-int64(shareRewardOldDCBBoardIns.AmountOfCoin))
+	case strconv.Itoa(component.ShareRewardOldGOVBoardIns):
+		shareRewardOldGOVBoardIns := frombeaconins.ShareRewardOldBoardIns{}
+		err := json.Unmarshal([]byte(inst[2]), shareRewardOldGOVBoardIns)
+		if err != nil {
+			return err
+		}
+		bsb.UpdateGOVFund(-int64(shareRewardOldGOVBoardIns.AmountOfCoin))
+	case strconv.Itoa(component.RewardDCBProposalSubmitterIns):
+		rewardDCBProposalSubmitterIns := frombeaconins.RewardProposalSubmitterIns{}
+		err := json.Unmarshal([]byte(inst[2]), rewardDCBProposalSubmitterIns)
+		if err != nil {
+			return err
+		}
+		bsb.UpdateDCBFund(-int64(rewardDCBProposalSubmitterIns.Amount))
+	case strconv.Itoa(component.RewardGOVProposalSubmitterIns):
+		rewardGOVProposalSubmitterIns := frombeaconins.RewardProposalSubmitterIns{}
+		err := json.Unmarshal([]byte(inst[2]), rewardGOVProposalSubmitterIns)
+		if err != nil {
+			return err
+		}
+		bsb.UpdateGOVFund(-int64(rewardGOVProposalSubmitterIns.Amount))
 	case strconv.Itoa(metadata.DividendSubmitMeta):
 		return bsb.processDividendSubmitInstruction(inst)
 
@@ -110,6 +116,16 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 		return bsb.processUpdatingOracleBoardInstruction(inst)
 	}
 	return nil
+}
+
+func (bsb *BestStateBeacon) UpdateDCBFund(amount int64) {
+	t := int64(bsb.StabilityInfo.BankFund) + amount
+	bsb.StabilityInfo.BankFund = uint64(t)
+}
+
+func (bsb *BestStateBeacon) UpdateGOVFund(amount int64) {
+	t := int64(bsb.StabilityInfo.SalaryFund) + amount
+	bsb.StabilityInfo.BankFund = uint64(t)
 }
 
 func (bsb *BestStateBeacon) processUpdatingOracleBoardInstruction(inst []string) error {
@@ -231,11 +247,11 @@ func (bsb *BestStateBeacon) processBuyGOVTokenReqInstruction(inst []string) erro
 		return err
 	}
 	md := buyGOVTokenReqAction.Meta
-	stabilityInfo := bsb.StabilityInfo
+	stabilityInfo := &bsb.StabilityInfo
 	sellingGOVTokensParams := stabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens
 	if sellingGOVTokensParams != nil {
 		sellingGOVTokensParams.GOVTokensToSell -= md.Amount
-		stabilityInfo.SalaryFund += (md.Amount + md.BuyPrice)
+		stabilityInfo.SalaryFund += (md.Amount * md.BuyPrice)
 	}
 	return nil
 }
@@ -252,7 +268,7 @@ func (bsb *BestStateBeacon) processBuyBackReqInstruction(inst []string) error {
 	if err != nil {
 		return err
 	}
-	bsb.StabilityInfo.SalaryFund -= (buyBackInfo.Value + buyBackInfo.BuyBackPrice)
+	bsb.StabilityInfo.SalaryFund -= (buyBackInfo.Value * buyBackInfo.BuyBackPrice)
 	return nil
 }
 
@@ -273,11 +289,11 @@ func (bsb *BestStateBeacon) processBuyFromGOVReqInstruction(inst []string) error
 		return err
 	}
 	md := buySellReqAction.Meta
-	stabilityInfo := bsb.StabilityInfo
+	stabilityInfo := &bsb.StabilityInfo
 	sellingBondsParams := stabilityInfo.GOVConstitution.GOVParams.SellingBonds
 	if sellingBondsParams != nil {
 		sellingBondsParams.BondsToSell -= md.Amount
-		stabilityInfo.SalaryFund += (md.Amount + md.BuyPrice)
+		stabilityInfo.SalaryFund += (md.Amount * md.BuyPrice)
 	}
 	return nil
 }
@@ -359,14 +375,13 @@ func (bsb *BestStateBeacon) processUpdateDCBProposalInstruction(ins frombeaconin
 			StartedBlockHeight: bsb.BestBlock.Header.Height,
 			ExecuteDuration:    ins.SubmitProposalInfo.ExecuteDuration,
 			Explanation:        ins.SubmitProposalInfo.Explanation,
-			Voter:              ins.Voter,
+			Voters:             ins.Voters,
 		},
 		CurrentDCBNationalWelfare: GetOracleDCBNationalWelfare(),
 		DCBParams:                 dcbParams,
 	}
 
 	// Store saledata in state
-
 	for _, data := range dcbParams.ListSaleData {
 		key := getSaleDataKeyBeacon(data.SaleID)
 		if _, ok := bsb.Params[key]; ok {
@@ -395,7 +410,18 @@ func (bsb *BestStateBeacon) processUpdateDCBProposalInstruction(ins frombeaconin
 }
 
 func (bsb *BestStateBeacon) processUpdateGOVProposalInstruction(ins frombeaconins.UpdateGOVConstitutionIns) error {
-	panic("")
+	oldConstitution := bsb.StabilityInfo.DCBConstitution
+	bsb.StabilityInfo.GOVConstitution = GOVConstitution{
+		ConstitutionInfo: ConstitutionInfo{
+			ConstitutionIndex:  oldConstitution.ConstitutionIndex + 1,
+			StartedBlockHeight: bsb.BestBlock.Header.Height,
+			ExecuteDuration:    ins.SubmitProposalInfo.ExecuteDuration,
+			Explanation:        ins.SubmitProposalInfo.Explanation,
+			Voters:             ins.Voters,
+		},
+		CurrentGOVNationalWelfare: GetOracleGOVNationalWelfare(),
+		GOVParams:                 ins.GOVParams,
+	}
 	return nil
 }
 
@@ -548,24 +574,99 @@ func (bc *BlockChain) processLoanPaymentInstruction(inst []string) error {
 	return bc.processLoanPayment(loanID, amountSent, interestRate, maturity, beaconHeight)
 }
 
-func (bc *BlockChain) processBeaconOnlyInstructions(block *BeaconBlock) error {
+func (bc *BlockChain) processTradeBondInstruction(inst []string) error {
+	tbi, err := ParseTradeBondInstruction(inst[2])
+	if err != nil {
+		return err
+	}
+
+	var trade *component.TradeBondWithGOV
+	for _, t := range bc.GetAllTrades() {
+		if bytes.Equal(t.TradeID, tbi.TradeID) {
+			trade = t
+		}
+	}
+	if trade == nil {
+		return errors.New("Found no trade in current proposal")
+	}
+
+	// Use balance left from previous activation is it exist
+	_, _, _, amount, err := bc.config.DataBase.GetTradeActivation(tbi.TradeID)
+	if err != nil {
+		amount = trade.Amount
+	}
+	if amount < tbi.Amount {
+		return errors.Errorf("trade bond requested amount too high, %d > %d\n", tbi.Amount, amount)
+	}
+
+	activated := true
+	fmt.Printf("[db] updating trade bond status: %v %s %t %t %d\n", tbi.TradeID, trade.BondID.String(), trade.Buy, activated, amount)
+	return bc.config.DataBase.StoreTradeActivation(tbi.TradeID, trade.BondID, trade.Buy, activated, amount-tbi.Amount)
+}
+
+func (bc *BlockChain) processBuyBackResponseInstruction(inst []string) error {
+	var buyBackInfo BuyBackInfo
+	json.Unmarshal([]byte(inst[3]), &buyBackInfo)
+	bondID, buy, _, amount, err := bc.config.DataBase.GetTradeActivation(buyBackInfo.TradeID)
+	if err != nil {
+		return err
+	}
+
+	// Update activation status to false to retry later
+	activated := false
+	if inst[2] == "refund" {
+		amount += buyBackInfo.Value
+	}
+	fmt.Printf("[db] processBuyBack update: %x %s %t %t %d\n", buyBackInfo.TradeID, bondID, buy, activated, amount)
+	return bc.config.DataBase.StoreTradeActivation(buyBackInfo.TradeID, bondID, buy, activated, amount)
+}
+
+func (bc *BlockChain) processBuyFromGOVResponseInstruction(inst []string) error {
+	//fmt.Printf("[db] processBuyFromGOV inst: %s\n", inst)
+	contentBytes, _ := base64.StdEncoding.DecodeString(inst[3])
+	var buySellReqAction BuySellReqAction
+	json.Unmarshal(contentBytes, &buySellReqAction)
+	meta := buySellReqAction.Meta
+	bondID, buy, _, amount, err := bc.config.DataBase.GetTradeActivation(meta.TradeID)
+	if err != nil {
+		return err
+	}
+
+	// Update activation status to false to retry later
+	activated := false
+	if inst[2] == "refund" {
+		amount += meta.Amount
+	}
+	fmt.Printf("[db] processBuyFromGOV update: %x %s %t %t %d\n", meta.TradeID, bondID, buy, activated, amount)
+	return bc.config.DataBase.StoreTradeActivation(meta.TradeID, bondID, buy, activated, amount)
+}
+
+func (bc *BlockChain) updateStabilityLocalState(block *BeaconBlock) error {
 	for _, inst := range block.Body.Instructions {
+		var err error
+		fmt.Printf("[db] update local state: %s\n", inst)
 		switch inst[0] {
 		case strconv.Itoa(metadata.LoanWithdrawMeta):
-			err := bc.processLoanWithdrawInstruction(inst)
-			if err != nil {
-				return err
-			}
-
+			err = bc.processLoanWithdrawInstruction(inst)
 		case strconv.Itoa(metadata.LoanPaymentMeta):
-			err := bc.processLoanPaymentInstruction(inst)
-			if err != nil {
-				return err
-			}
+			err = bc.processLoanPaymentInstruction(inst)
+
+		case strconv.Itoa(metadata.TradeActivationMeta):
+			err = bc.processTradeBondInstruction(inst)
+
 		case strconv.Itoa(component.UpdateDCBConstitutionIns):
-			return bc.processUpdateDCBConstitutionIns(inst)
+			err = bc.processUpdateDCBConstitutionIns(inst)
 		case strconv.Itoa(component.UpdateGOVConstitutionIns):
-			return bc.processUpdateGOVConstitutionIns(inst)
+			err = bc.processUpdateGOVConstitutionIns(inst)
+
+		case strconv.Itoa(metadata.BuyFromGOVRequestMeta):
+			err = bc.processBuyFromGOVResponseInstruction(inst)
+		case strconv.Itoa(metadata.BuyBackRequestMeta):
+			err = bc.processBuyBackResponseInstruction(inst)
+		}
+
+		if err != nil {
+			return err
 		}
 	}
 	return nil

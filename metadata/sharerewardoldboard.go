@@ -38,7 +38,7 @@ func (rewardShareOldBoardMetadata *ShareRewardOldBoardMetadata) Hash() *common.H
 	record := rewardShareOldBoardMetadata.VoterPaymentAddress.String()
 	record += rewardShareOldBoardMetadata.ChairPaymentAddress.String()
 	record += rewardShareOldBoardMetadata.MetadataBase.Hash().String()
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

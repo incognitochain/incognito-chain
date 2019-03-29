@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -62,7 +61,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock, isCom
 	}
 	//========Update best state with new block
 	snapShotBeaconCommittee := beaconBestState.BeaconCommittee
-	if err := beaconBestState.Update(block); err != nil {
+	if err := beaconBestState.Update(block, blockchain); err != nil {
 		return err
 	}
 	//========Post verififcation: verify new beaconstate with corresponding block
@@ -103,7 +102,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	Logger.log.Infof("Update BestState with Beacon Block %+v \n", *block.Hash())
 	//========Update best state with new block
 	snapShotBeaconCommittee := blockchain.BestState.Beacon.BeaconCommittee
-	if err := blockchain.BestState.Beacon.Update(block); err != nil {
+	if err := blockchain.BestState.Beacon.Update(block, blockchain); err != nil {
 		return err
 	}
 	Logger.log.Infof("Verify Post Processing Beacon Block %+v \n", *block.Hash())
@@ -165,7 +164,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	}
 	GetBestStateBeacon().lockMu.Unlock()
 	// Process instructions and store stability data
-	if err := blockchain.processBeaconOnlyInstructions(block); err != nil {
+	if err := blockchain.updateStabilityLocalState(block); err != nil {
 		return err
 	}
 	// ************ Store block at last
@@ -455,7 +454,7 @@ func (bestStateBeacon *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *B
 /*
 	Update Beststate with new Block
 */
-func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
+func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *BlockChain) error {
 	bestStateBeacon.lockMu.Lock()
 	defer bestStateBeacon.lockMu.Unlock()
 
@@ -509,6 +508,10 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	//cross shard state
 
 	// update param
+	err := bestStateBeacon.updateOracleParams(chain)
+	if err != nil {
+		return err
+	}
 	instructions := newBlock.Body.Instructions
 	for _, l := range instructions {
 		// For stability instructions
@@ -619,7 +622,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 	} else {
 		bestStateBeacon.CandidateBeaconWaitingForNextRandom = append(bestStateBeacon.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
 		bestStateBeacon.CandidateShardWaitingForNextRandom = append(bestStateBeacon.CandidateShardWaitingForNextRandom, newShardCandidate...)
-		fmt.Println("Beacon Process/Before: CandidateShardWaitingForNextRandom: ", bestStateBeacon.CandidateShardWaitingForNextRandom)
+		// fmt.Println("Beacon Process/Before: CandidateShardWaitingForNextRandom: ", bestStateBeacon.CandidateShardWaitingForNextRandom)
 	}
 
 	if bestStateBeacon.BeaconHeight%common.EPOCH == 1 && bestStateBeacon.BeaconHeight != 1 {
@@ -748,7 +751,7 @@ func VerifyValidator(candidate string, rand int64, shardID byte, activeShards in
 func calculateCandidateShardID(candidate string, rand int64, activeShards int) (shardID byte) {
 
 	seed := candidate + strconv.Itoa(int(rand))
-	hash := sha256.Sum256([]byte(seed))
+	hash := common.HashB([]byte(seed))
 	// fmt.Println("Candidate public key", candidate)
 	// fmt.Println("Hash of candidate serialized pubkey and random number", hash)
 	// fmt.Printf("\"%d\",\n", hash[len(hash)-1])
@@ -852,7 +855,7 @@ func ShuffleCandidate(candidates []string, rand int64) ([]string, error) {
 	sortedCandidate := []string{}
 	for _, candidate := range candidates {
 		seed := candidate + strconv.Itoa(int(rand))
-		hash := sha256.Sum256([]byte(seed))
+		hash := common.HashB([]byte(seed))
 		hashes = append(hashes, string(hash[:32]))
 		m[string(hash[:32])] = candidate
 	}

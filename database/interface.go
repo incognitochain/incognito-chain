@@ -133,6 +133,10 @@ type DatabaseInterface interface {
 	GetLoanWithdrawed(loanID []byte) (bool, error)
 	StoreLoanWithdrawed(loanID []byte) error
 
+	// DCB trade bonds with GOV
+	StoreTradeActivation(tradeID []byte, bondID *common.Hash, buy bool, activated bool, amount uint64) error
+	GetTradeActivation(tradeID []byte) (*common.Hash, bool, bool, uint64, error)
+
 	// Dividends
 	GetDividendReceiversForID(id uint64, forDCB bool) (receivers []privacy.PaymentAddress, amounts []uint64, hasValue bool, err error)
 	StoreDividendReceiversForID(id uint64, forDCB bool, receivers []privacy.PaymentAddress, amounts []uint64) error
@@ -169,13 +173,16 @@ type DatabaseInterface interface {
 	GetTopMostVoteGovernor(boardType common.BoardType, currentBoardIndex uint32) (CandidateList, error)
 	NewIterator(*util.Range, *opt.ReadOptions) iterator.Iterator
 	GetKey(string, interface{}) []byte
+	AddListVoterOfProposalDB(boardType common.BoardType, constitutionIndex uint32, voterPayment []byte, proposalTxID []byte) error
+	AddSubmitProposalDB(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte, submitter []byte) error
+	GetSubmitProposalDB(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte) ([]byte, error)
 	AddVoteProposalDB(boardType common.BoardType, constitutionIndex uint32, voterPayment []byte, proposalTxID []byte) error
-	SetNewProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32, paymentAddress privacy.PaymentAddress) error
+	SetNewProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32, paymentAddresses []privacy.PaymentAddress) error
+	GetCurrentProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32) ([]privacy.PaymentAddress, error)
 	GetEncryptFlag(boardType common.BoardType) (byte, error)
 	SetEncryptFlag(boardType common.BoardType, flag byte)
 	GetEncryptionLastBlockHeight(boardType common.BoardType) (uint64, error)
 	SetEncryptionLastBlockHeight(boardType common.BoardType, height uint64)
-	GetListSupporters(boardType common.BoardType, candidateAddress privacy.PaymentAddress) ([]*privacy.PaymentAddress, error)
 
 	// Multisigs
 	StoreMultiSigsRegistration([]byte, []byte) error

@@ -123,6 +123,9 @@ const (
 	GetListDCBProposalBuyingAssets        = "getlistdcbproposalbuyingassets"
 	GetListDCBProposalSellingAssets       = "getlistdcbproposalsellingassets"
 
+	// trade bonds with gov
+	CreateAndSendTradeActivation = "createandsendtradeactivation"
+
 	// reserve
 	CreateIssuingRequest            = "createissuingrequest"
 	SendIssuingRequest              = "sendissuingrequest"
@@ -145,10 +148,7 @@ const (
 	CreateAndSendVoteGOVBoardTransaction = "createandsendvotegovboardtransaction"
 
 	//vote propopsal
-	GetEncryptionFlag                = "getencryptionflag"
-	SetEncryptionFlag                = "testsetencryptionflag"
-	GetEncryptionLastBlockHeightFlag = "getencryptionlastblockheightflag"
-	CreateAndSendVoteProposal        = "createandsendvoteproposal"
+	CreateAndSendVoteProposal = "createandsendvoteproposal"
 
 	// Submit Proposal
 	CreateAndSendSubmitDCBProposalTx = "createandsendsubmitdcbproposaltx"
@@ -183,9 +183,11 @@ const (
 	CreateAndSendTxWithCMBDepositSend     = "createandsendtxwithcmbdepositsend"
 	CreateAndSendTxWithCMBWithdrawRequest = "createandsendtxwithcmbwithdrawrequest"
 
-	// wallet
+	// walletsta
 	GetPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
 	DefragmentAccount              = "defragmentaccount"
+
+	GetStackingAmount = "getstackingamount"
 )
 
 //Fee of specific transaction

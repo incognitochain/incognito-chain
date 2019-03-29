@@ -3,65 +3,41 @@ package main
 import (
 	"fmt"
 
-	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
-
-	"github.com/constant-money/constant-chain/cashec"
-	"github.com/constant-money/constant-chain/privacy"
 
 	"github.com/constant-money/constant-chain/wallet"
 )
 
 func main() {
+	// mnemonicGen := wallet.MnemonicGenerator{}
+	// Entropy, _ := mnemonicGen.NewEntropy(128)
+	// Mnemonic, _ := mnemonicGen.NewMnemonic(Entropy)
+	// fmt.Printf("Mnemonic: %s\n", Mnemonic)
+	// Seed := mnemonicGen.NewSeed(Mnemonic, "123456")
 
-	a, _ := wallet.Base58CheckDeserialize("1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba")
-	k1 := base58.Base58Check{}.Encode(a.KeySet.PaymentAddress.Pk, 0x00)
-	_ = k1
+	// key, _ := wallet.NewMasterKey(Seed)
+	// var i int
+	// var k = 0
+	// for {
+	// 	//i++
+	// 	child, _ := key.NewChildKey(uint32(i))
+	// 	privAddr := child.Base58CheckSerialize(wallet.PriKeyType)
+	// 	paymentAddress := child.Base58CheckSerialize(wallet.PaymentAddressType)
+	// 	if true || child.KeySet.PaymentAddress.Pk[len(child.KeySet.PaymentAddress.Pk)-1] == 0 {
+	// 		fmt.Printf("Acc %d:\n ", i)
+	// 		fmt.Printf("paymentAddress: %v\n", paymentAddress)
+	// 		fmt.Printf("spending key: %v\n", privAddr)
+	// 		fmt.Printf("pubkey: %v\n", base58.Base58Check{}.Encode(child.KeySet.PaymentAddress.Pk, byte(0x00)))
+	// 		k++
+	// 		if k == 20 {
+	// 			break
+	// 		}
+	// 		//}
+	// 		i++
+	// 	}
 
-	burnPubKeyE := privacy.PedCom.G[0].Hash(1000000)
-	burnPubKey := burnPubKeyE.Compress()
-	burnKey := wallet.KeyWallet{
-		KeySet: cashec.KeySet{
-			PaymentAddress: privacy.PaymentAddress{
-				Pk: burnPubKey,
-			},
-		},
-	}
-	burnPaymentAddress := burnKey.Base58CheckSerialize(wallet.PaymentAddressType)
-	fmt.Printf("Burn payment address : %s \n", burnPaymentAddress)
-
-	keyWalletBurningAdd, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
-	fmt.Println("======================================")
-	fmt.Println(keyWalletBurningAdd.KeySet.PaymentAddress.Pk)
-	fmt.Println("======================================")
-	mnemonicGen := wallet.MnemonicGenerator{}
-	Entropy, _ := mnemonicGen.NewEntropy(128)
-	Mnemonic, _ := mnemonicGen.NewMnemonic(Entropy)
-	fmt.Printf("Mnemonic: %s\n", Mnemonic)
-	Seed := mnemonicGen.NewSeed(Mnemonic, "123456")
-
-	key, _ := wallet.NewMasterKey(Seed)
-	var i int
-	var k = 0
-	for {
-		i++
-		child, _ := key.NewChildKey(uint32(i))
-		privAddr := child.Base58CheckSerialize(wallet.PriKeyType)
-		//paymentAddress := child.Base58CheckSerialize(wallet.PaymentAddressType)
-		//if child.KeySet.PaymentAddress.Pk[len(child.KeySet.PaymentAddress.Pk)-1] == 0 {
-		//fmt.Printf("Acc %d:\n ", i)
-		//fmt.Printf("paymentAddress: %v\n", paymentAddress)
-		fmt.Println(privAddr, base58.Base58Check{}.Encode(child.KeySet.PaymentAddress.Pk, byte(0x00)))
-		k++
-		if k == 20 {
-			break
-		}
-		//}
-		i++
-	}
-
-	//112t8rqnMrtPkJ4YWzXfG82pd9vCe2jvWGxqwniPM5y4hnimki6LcVNfXxN911ViJS8arTozjH4rTpfaGo5i1KKcG1ayjiMsa4E3nABGAqQh
-	keyWallet, _ := wallet.Base58CheckDeserialize("112t8rpxJvKj42esCYsnShYnbe67yERdjrPmWcDWCcTyM6W4Nst3yyBkidWEu2M2M5H5cKwVMtzBLM6XWyqQrB4L4QK2GJFyaBQhRwgC8Vz6")
+	// }
+	keyWallet, _ := wallet.Base58CheckDeserialize("112t8rsq5Xx45T1ZKH4N45aBztqBJiDAR9Nw5wMb8Fe5PnFCqDiUAgVzoMr3xBznNJTfu2CSW3HC6M9rGHxTyUzUBbZHjv6wCMnucDDKbHT4")
 	keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	fmt.Println("Pub-key byte array", keyWallet.KeySet.PaymentAddress.Pk)
 	fmt.Println(base58.Base58Check{}.Encode(keyWallet.KeySet.PaymentAddress.Pk, byte(0x00)))
