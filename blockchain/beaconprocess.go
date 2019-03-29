@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 )
@@ -268,6 +269,10 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	}
 	// if pool does not have one of needed block, fail to verify
 	if isCommittee {
+		accumulativeValues := &accumulativeValues{
+			saleDataMap: map[string]*component.SaleData{},
+			trade:       map[string]bool{},
+		}
 		allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidPendingBlock(nil)
 		for shardID, shardBlocks := range allShardBlocks {
 			if len(shardBlocks) >= len(block.Body.ShardState[shardID]) {
@@ -304,6 +309,48 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 					if index != 0 && err != nil {
 						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 					}
+				}
+				beaconBestState := BestStateBeacon{}
+				tempShardStates := make(map[byte][]ShardState)
+				validStakers := [][]string{}
+				validSwappers := make(map[byte][][]string)
+				stabilityInstructions := [][]string{}
+				tempMarshal, err := json.Marshal(*blockchain.BestState.Beacon)
+				err = json.Unmarshal(tempMarshal, &beaconBestState)
+				if err != nil {
+					return NewBlockChainError(UnExpectedError, errors.New("Fail to Unmarshal beacon beststate"))
+				}
+				beaconBestState.CandidateShardWaitingForCurrentRandom = blockchain.BestState.Beacon.CandidateShardWaitingForCurrentRandom
+				beaconBestState.CandidateShardWaitingForNextRandom = blockchain.BestState.Beacon.CandidateShardWaitingForNextRandom
+				beaconBestState.CandidateBeaconWaitingForCurrentRandom = blockchain.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom
+				beaconBestState.CandidateBeaconWaitingForNextRandom = blockchain.BestState.Beacon.CandidateBeaconWaitingForNextRandom
+				if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
+					panic(NewBlockChainError(BeaconError, errors.New("problem with beststate in producing new block")))
+				}
+				for _, shardBlock := range shardBlocks {
+					tempShardState, validStaker, validSwapper, stabilityInstruction := blockchain.GetShardStateFromBlock(&beaconBestState, shardBlock, accumulativeValues, shardID)
+					tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
+					validStakers = append(validStakers, validStaker...)
+					validSwappers[shardID] = append(validSwappers[shardID], validSwapper[shardID]...)
+					stabilityInstructions = append(stabilityInstructions, stabilityInstruction...)
+				}
+				oracleInsts, err := blockchain.buildOracleRewardInstructions(&beaconBestState)
+				if err != nil {
+					Logger.log.Error("Build oracle reward instructions failed: ", err)
+				} else {
+					stabilityInstructions = append(stabilityInstructions, oracleInsts...)
+				}
+				tempInstruction := beaconBestState.GenerateInstruction(block, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
+				tempInstructionArr := []string{}
+				for _, strs := range tempInstruction {
+					tempInstructionArr = append(tempInstructionArr, strs...)
+				}
+				tempInstructionHash, err := GenerateHashFromStringArray(tempInstructionArr)
+				if err != nil {
+					return NewBlockChainError(HashError, errors.New("Fail to generate hash for instruction"))
+				}
+				if strings.Compare(tempInstructionHash.String(), block.Header.InstructionHash.String()) != 0 {
+					return NewBlockChainError(InstructionHashError, errors.New("instruction hash is not correct"))
 				}
 			} else {
 				return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
