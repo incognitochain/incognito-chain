@@ -138,9 +138,17 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 							}
 							protocol.forwardMsg(msg)
 							protocol.phase = PBFT_PREPARE
-							close(protocol.proposeCh)
+							select {
+							case <-protocol.proposeCh:
+							default:
+								close(protocol.proposeCh)
+							}
 						} else {
-							close(protocol.proposeCh)
+							select {
+							case <-protocol.proposeCh:
+							default:
+								close(protocol.proposeCh)
+							}
 							return nil, errors.New("Didn't received enough ready msg")
 						}
 						break proposephase
