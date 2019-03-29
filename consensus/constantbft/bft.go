@@ -416,10 +416,6 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 
 func (protocol *BFTProtocol) CreateBlockMsg() {
 	start := time.Now()
-	defer func() {
-		elasped := time.Since(start)
-		Logger.log.Critical("Block create time is", elasped)
-	}()
 	var msg wire.Message
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
 		newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
@@ -450,11 +446,11 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 		protocol.pendingBlock = newBlock
 		protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
 	}
+	elasped := time.Since(start)
+	Logger.log.Critical("Block create time is", elasped)
 	select {
 	case <-protocol.proposeCh:
 		Logger.log.Critical("Oops block create time longer than timeout")
-		elasped := time.Since(start)
-		Logger.log.Critical("Block create time is", elasped)
 		os.Exit(1)
 	default:
 		protocol.proposeCh <- msg
