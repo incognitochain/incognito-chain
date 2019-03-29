@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -419,6 +418,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	var msg wire.Message
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
 		newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
+		<-time.Tick(time.Millisecond * 2000)
 		if err != nil {
 			Logger.log.Error(err)
 			close(protocol.proposeCh)
@@ -451,7 +451,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	select {
 	case <-protocol.proposeCh:
 		Logger.log.Critical("Oops block create time longer than timeout")
-		os.Exit(1)
+		// os.Exit(1)
 	default:
 		protocol.proposeCh <- msg
 	}
