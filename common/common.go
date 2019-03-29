@@ -559,7 +559,7 @@ func CentInMilliEther(a uint64, p uint64) uint64 {
 	return v.Uint64()
 }
 
-func FileLog(fromShard bool, info []interface{}) {
+func FileLog(fromShard bool, info string) {
 	shardFile := "~/shard.txt"
 	beaconFile := "~/beacon.txt"
 	var foName string
@@ -569,13 +569,9 @@ func FileLog(fromShard bool, info []interface{}) {
 		foName = beaconFile
 	}
 	fo, err := os.Open(foName)
-	defer fo.Close()
+	defer fo.Sync()
 	if err != nil {
 		fo, _ = os.Create(foName)
 	}
-	var content string
-	for _, element := range info {
-		content += fmt.Sprint(element)
-	}
-	fo.WriteString(content + "\n")
+	fo.WriteString(info + "\n")
 }
