@@ -9,6 +9,7 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/wallet"
 )
 
 type BuySellRequest struct {
@@ -42,7 +43,16 @@ func NewBuySellRequest(
 }
 
 func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-	// no need to do validation here since it'll be checked on beacon chain
+	// For DCB trading bods with GOV
+	if len(bsReq.TradeID) > 0 {
+		keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+		dcbAddress := keyWalletDCBAccount.KeySet.PaymentAddress
+		if dcbAddress != bsReq.PaymentAddress {
+			return false, errors.New("buy bond request with TradeID must send assets to DCB's address")
+		}
+	}
+
+	// no need to do other validation here since it'll be checked on beacon chain
 	return true, nil
 }
 
