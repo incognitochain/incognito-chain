@@ -15,15 +15,12 @@ import (
 
 // CrowdsaleRequest represents a buying request created by user to send to DCB
 type CrowdsaleRequest struct {
+	SaleID                 []byte
+	PriceLimit             uint64 // max price set by user
+	LimitSellingAssetPrice bool   // PriceLimit is in selling asset: i.e., tx is valid only when price(SellingAsset)/price(BuyingAsset) <= PriceLimit
+
+	ValidUntil     uint64 // in original shard, not beacon or payment shard, 0 for not limit
 	PaymentAddress privacy.PaymentAddress
-	SaleID         []byte
-
-	PriceLimit uint64 // max price set by user
-
-	// PriceLimit and Amount is in selling asset: i.e., tx is valid only when price(SellingAsset)/price(BuyingAsset) <= PriceLimit
-	LimitSellingAssetPrice bool
-
-	ValidUntil uint64 // in original shard, not beacon or payment shard
 	MetadataBase
 }
 
@@ -69,7 +66,7 @@ func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 
 	// Check if request is still valid
 	shardHeight := bcr.GetChainHeight(shardID)
-	if shardHeight >= csReq.ValidUntil {
+	if csReq.ValidUntil > 0 && shardHeight >= csReq.ValidUntil {
 		return false, errors.Errorf("Crowdsale request is not valid anymore")
 	}
 
@@ -113,7 +110,7 @@ func (csReq *CrowdsaleRequest) Hash() *common.Hash {
 
 	// final hash
 	record += csReq.MetadataBase.Hash().String()
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 

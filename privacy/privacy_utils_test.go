@@ -61,3 +61,34 @@ func TestMultiExponentiation(t *testing.T){
 	fmt.Printf("Res from multi exponentiation 2 alg: %+v\n", testcase5)
 	assert.Equal(t, expectedRes, testcase4)
 }
+
+
+func TestHashEC(t *testing.T){
+	res := PedCom.G[0].Hash(100)
+	fmt.Printf("Res: %v\n", res.Compress())
+
+	res = PedCom.G[0].Hash(1000)
+	fmt.Printf("Res: %v\n", res.Compress())
+
+	res = PedCom.G[0].Hash(10000)
+	fmt.Printf("Res: %v\n", res.Compress())
+
+	res = PedCom.G[0].Hash(100000)
+	fmt.Printf("Res: %v\n", res.Compress())
+
+	res = PedCom.G[0].Hash(1000000)
+	fmt.Printf("Res: %v\n", res.Compress())
+
+	res = PedCom.G[0].Hash(10000000)
+	fmt.Printf("Res: %v\n", res.Compress())
+
+	res = PedCom.G[0].Hash(100000000)
+	//fmt.Printf("Byte: %v\n", byte(100000000))
+	fmt.Printf("Res: %v\n", res.Compress())
+
+	res = PedCom.G[0].Hash(1000000000)
+	fmt.Printf("Res: %v\n", res.Compress())
+
+	res = PedCom.G[0].Hash(10000000000)
+	fmt.Printf("Res: %v\n", res.Compress())
+}

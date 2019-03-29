@@ -33,8 +33,6 @@ const (
 	MinimumBlockOfProposalDuration    = 50
 	MaximumBlockOfProposalDuration    = 200
 	MaximumProposalExplainationLength = 1000
-	NumberOfDCBGovernors              = 3
-	NumberOfGOVGovernors              = 3
 	DCBGovernorsLowerBound            = 3
 	DCBGovernorsUpperBound            = 6
 	GOVGovernorsLowerBound            = 3
@@ -85,9 +83,9 @@ var (
 
 // board addresses
 const (
-	DCBAddress     = "1Uv4CtusMLW1GZpMS2HwqJ5fp654J6VUxUPEm8CpgkqDmKRbKuSH2dvBrrq4P75GNZdbCW3QGXmMQDRqpLnpyHrESqKvawLX7Ju29HjaD"
-	GOVAddress     = "1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba"
-	BurningAddress = "1NHp16Y29xjc1PoXb1qwr65BfVVoHZuCbtTkVyucRzbeydgQHs2wPu5PC1hD"
+	DCBAddress     = "1NHpe7QsfnocqvbZPXC5zV7nz6yRpevvVQV55p7xaz6rxRzUrgy5eZrfKatR"
+	GOVAddress     = "1NHnn9xtv2iHyxdEwN6X9KEJa6h5HwdQU28cCNkkHha1W961K9C9nWqDrwrd"
+	BurningAddress = "1NHnxeKaZD5tMCzWR3yKXeQYh6o9XaskNhYb7WsWacwcUxB92GnoNGJTMHf1"
 )
 
 // CONSENSUS
@@ -107,7 +105,7 @@ const (
 	VALIDATOR_ROLE = "validator"
 	PENDING_ROLE   = "pending"
 
-	MAX_SHARD_NUMBER = 255
+	MAX_SHARD_NUMBER = 4
 )
 
 // Units converter

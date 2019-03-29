@@ -17,7 +17,7 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
 	"github.com/constant-money/constant-chain/wallet"
 )
 
@@ -125,12 +125,14 @@ func (tx *Tx) Init(
 
 	// init info of tx
 	tx.Info = []byte{}
-	//pubKeyData := &privacy.EllipticPoint{}
-	//pubKeyData.Decompress(senderFullKey.PaymentAddress.Pk)
-	//tx.Info, err = privacy.ElGamalEncrypt(senderFullKey.PaymentAddress.Tk[:], pubKeyData)
-	//if err != nil {
-	//	return NewTransactionErr(UnexpectedErr, err)
-	//}
+	if !hasPrivacy {
+		// store payment address of sender for refund on small tx
+		info := make(map[string]interface{})
+		senderInfo := make(map[string][]byte)
+		info["Sender"] = senderInfo
+		senderInfo["PaymentAddress"] = senderFullKey.PaymentAddress.Bytes()
+		tx.Info, _ = json.Marshal(info)
+	}
 
 	// set metadata
 	tx.Metadata = metaData
@@ -386,7 +388,9 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	signature.SetBytes(tx.Sig)
 
 	// verify signature
-	Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
+	// Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
+	// Logger.log.Infof(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
+	// Logger.log.Infof(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)
 	res = verKey.Verify(signature, tx.Hash()[:])
 
 	return res, nil
@@ -505,10 +509,14 @@ func (tx Tx) String() string {
 	record += strconv.FormatInt(tx.LockTime, 10)
 	record += strconv.FormatUint(tx.Fee, 10)
 	if tx.Proof != nil {
-		record += base58.Base58Check{}.Encode(tx.Proof.Bytes()[:], 0x00)
+		tmp := base58.Base58Check{}.Encode(tx.Proof.Bytes()[:], 0x00)
+		record += tmp
+		// fmt.Printf("Proof check base 58: %v\n",tmp)
 	}
 	if tx.Metadata != nil {
-		metadata := tx.Metadata.Hash().String()
+		metadataHash := tx.Metadata.Hash()
+		//Logger.log.Infof("\n\n\n\n test metadata after hashing: %v\n", metadataHash.GetBytes())
+		metadata := metadataHash.String()
 		record += metadata
 	}
 	return record
@@ -518,7 +526,9 @@ func (tx *Tx) Hash() *common.Hash {
 	if tx.cachedHash != nil {
 		return tx.cachedHash
 	}
-	hash := common.HashH([]byte(tx.String()))
+	bytes := []byte(tx.String())
+	//Logger.log.Infof("\n\n\n\n TX bytes when hashing: %v\n", bytes)
+	hash := common.HashH(bytes)
 	tx.cachedHash = &hash
 	return &hash
 }

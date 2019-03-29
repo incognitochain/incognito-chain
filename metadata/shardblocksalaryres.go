@@ -62,6 +62,6 @@ func (sbsRes *ShardBlockSalaryRes) Hash() *common.Hash {
 	record += string(sbsRes.ShardBlockHeight)
 	// final hash
 	record += sbsRes.MetadataBase.Hash().String()
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }

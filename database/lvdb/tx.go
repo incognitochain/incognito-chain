@@ -1,9 +1,7 @@
 package lvdb
 
 import (
-	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -13,8 +11,6 @@ import (
 
 	"math/big"
 
-	"github.com/constant-money/constant-chain/common/base58"
-	"github.com/constant-money/constant-chain/privacy"
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -547,117 +543,3 @@ func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, *da
 	}
 	return hash, index, nil
 }
-
-/*
-	Store Transaction in Light mode
-	1. Key -> value : prefix(privateky)privateKey-[-]-shardID-[-]-(999999999 - blockHeight)-[-]-(999999999 - txIndex) 		-> 		tx
-	2. Key -> value :							prefix(transaction)txHash 												->  	privateKey-shardID-blockHeight-txIndex
-
-*/
-func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, shardID byte, blockHeight int32, txIndex int, unspentTxHash common.Hash, unspentTx []byte) error {
-	//tempShardID := []byte{}
-	//tempShardID = append(tempShardID, shardID)
-	temp3ShardID := int(shardID)
-	temp2ShardID := string(int(shardID))
-	fmt.Println("StoreTransactionLightMode", privateKey, temp3ShardID, temp2ShardID, blockHeight, txIndex)
-	reverseBlockHeight := make([]byte, 4)
-	binary.LittleEndian.PutUint32(reverseBlockHeight, uint32(bigNumber-blockHeight))
-
-	// Uncomment this to test little endian encoding and decoding
-	/*
-		buf := bytes.NewBuffer(reverseBlockHeight)
-		var temp uint32
-		err1 := binary.Read(buf, binary.LittleEndian, &temp)
-		if err1 != nil {
-			return err1
-		}
-		fmt.Println("Testing encoding and decoding uint32 little endian", uint32(999999999-temp), blockHeight)
-	*/
-
-	//fmt.Println("StoreTransactionLightMode reverseBlockHeight in byte", reverseBlockHeight, []byte(string(reverseBlockHeight)))
-
-	reverseTxIndex := make([]byte, 4)
-	binary.LittleEndian.PutUint32(reverseTxIndex, uint32(bigNumberTx-int32(txIndex)))
-
-	key1 := string(privateKeyPrefix) + base58.Base58Check{}.Encode((*privateKey)[:], 0x00) + string(Splitter) + string(int(shardID)) + string(Splitter) + string(reverseBlockHeight) + string(Splitter) + string(reverseTxIndex)
-	key2 := string(transactionKeyPrefix) + unspentTxHash.String()
-
-	if ok, _ := db.HasValue([]byte(key1)); ok {
-		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("tx %s already exists", key1))
-	}
-	if ok, _ := db.HasValue([]byte(key2)); ok {
-		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("tx %s already exists", key2))
-	}
-
-	/*value, err := json.Marshal(unspentTx)
-	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
-	}*/
-	value := unspentTx
-	if err := db.Put([]byte(key1), value); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
-	}
-	if err := db.Put([]byte(key2), []byte(key1)); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
-	}
-
-	return nil
-}
-
-/*
-	Get Transaction in LightMode mode
-	Get transaction by prefix(privateKey)privateKey, this prefix help to get all transaction belong to that privatekey
-	1. Key -> value : prefix(privateky)-privateKey-shardID-(999999999 - blockHeight)-(999999999 - txIndex) 		-> 		tx
-
-*/
-/*func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKey) (map[byte]([]([]byte)), error) {
-prefix := []byte(string(privateKeyPrefix) + privateKey.String())
-iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
-
-results := make(map[byte]([]([]byte)))
-for iter.Next() {
-	key := iter.Key()
-	value := iter.Value()
-
-	reses := strings.Split(string(key), string(Splitter))
-	tempShardID, _ := strconv.Atoi(reses[2])
-	shardID := byte(tempShardID)
-	/*tx := transaction.Tx{}
-	err := json.Unmarshal(value, &tx)
-	if err != nil {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
-	}*/ /*
-		data := make([]byte, len(value))
-		copy(data[:], value[:])
-		results[shardID] = append(results[shardID], data)
-	}
-
-	iter.Release()
-	return results, nil
-}*/
-
-/*
-	Key: transactionPrefix-txHash
-  H: txLocation
-  tx: tx object in byte
-*/
-/*func (db *db) GetTransactionLightModeByHash(txId *common.Hash) ([]byte, []byte, error) {
-	key := string(transactionKeyPrefix) + txId.String()
-	_, err := db.HasValue([]byte(key))
-	if err != nil {
-		return nil, nil, err
-	}
-	value, err := db.lvdb.Get([]byte(key), nil)
-	if err != nil {
-		return nil, nil, err
-	}
-	_, err1 := db.HasValue([]byte(value))
-	if err1 != nil {
-		return nil, nil, err
-	}
-	tx, err := db.lvdb.Get([]byte(value), nil)
-	if err != nil {
-		return nil, nil, err
-	}
-	return value, tx, nil
-}*/

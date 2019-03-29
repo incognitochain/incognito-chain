@@ -10,7 +10,6 @@ import (
 
 const saleDataSep = "-"
 
-// Todo: @0xjackalope, @0xbunyip Check logic in Hash and Validate and rpcfunction because other will change component struct without modified these function
 type SellingBonds struct {
 	BondName       string
 	BondSymbol     string
@@ -35,7 +34,7 @@ func (self SellingBonds) GetID() *common.Hash {
 	record := fmt.Sprintf("%d", self.Maturity)
 	record += fmt.Sprintf("%d", self.BuyBackPrice)
 	record += fmt.Sprintf("%d", self.StartSellingAt)
-	temp := common.DoubleHashH([]byte(record))
+	temp := common.HashH([]byte(record))
 	bondIDBytesWithPrefix := append(common.BondTokenID[0:8], temp[8:]...)
 	result := &common.Hash{}
 	result.SetBytes(bondIDBytesWithPrefix)
@@ -176,15 +175,50 @@ func NewSaleDataFromJson(data interface{}) *SaleData {
 	)
 
 	// Generate SaleID randomly
-	saleDataHash := saleData.Hash()
+	hash := saleData.PartialHash()
 	salt := make([]byte, 32)
 	rand.Read(salt)
-	saleDataHashWithSalt := []byte{}
-	saleDataHashWithSalt = append(saleDataHashWithSalt, saleDataHash[:]...)
-	saleDataHashWithSalt = append(saleDataHashWithSalt, salt...)
-	saleID := common.DoubleHashH(saleDataHashWithSalt)
+	saltedHash := []byte{}
+	saltedHash = append(saltedHash, hash[:]...)
+	saltedHash = append(saltedHash, salt...)
+	saleID := common.HashH(saltedHash)
 	saleData.SaleID = saleID[:]
 	return saleData
+}
+
+type TradeBondWithGOV struct {
+	TradeID []byte
+	BondID  *common.Hash
+	Amount  uint64
+	Buy     bool
+}
+
+func NewTradeBondWithGOVFromJson(tradeBondData interface{}) (*TradeBondWithGOV, error) {
+	data := tradeBondData.(map[string]interface{})
+
+	bondID, err := common.Hash{}.NewHashFromStr(data["BondID"].(string))
+	amount := data["Amount"].(float64)
+	buy := data["Buy"].(bool)
+	if err != nil {
+		return nil, err
+	}
+
+	trade := &TradeBondWithGOV{
+		BondID: bondID,
+		Amount: uint64(amount),
+		Buy:    buy,
+	}
+
+	// Generate TradeID randomly
+	hash := trade.PartialHash()
+	salt := make([]byte, 32)
+	rand.Read(salt)
+	saltedHash := []byte{}
+	saltedHash = append(saltedHash, hash[:]...)
+	saltedHash = append(saltedHash, salt...)
+	tradeID := common.HashH(saltedHash)
+	trade.TradeID = tradeID[:]
+	return trade, nil
 }
 
 type RefundInfo struct {
@@ -237,7 +271,7 @@ func NewRaiseReserveDataFromJson(data interface{}) map[common.Hash]*RaiseReserve
 func (rrd *RaiseReserveData) Hash() *common.Hash {
 	record := strconv.FormatUint(rrd.EndBlock, 10)
 	record += strconv.FormatUint(rrd.Amount, 10)
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
@@ -264,7 +298,7 @@ func (srd *SpendReserveData) Hash() *common.Hash {
 	record := strconv.FormatUint(srd.EndBlock, 10)
 	record += strconv.FormatUint(srd.ReserveMinPrice, 10)
 	record += strconv.FormatUint(srd.Amount, 10)
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
@@ -304,7 +338,7 @@ func NewOracleNetworkFromJson(data interface{}) *OracleNetwork {
 	return oracleNetwork
 }
 
-func (saleData *SaleData) Hash() *common.Hash {
+func (saleData *SaleData) PartialHash() *common.Hash {
 	record := string(saleData.EndBlock)
 	record += saleData.BuyingAsset.String()
 	record += string(saleData.BuyingAmount)
@@ -312,7 +346,31 @@ func (saleData *SaleData) Hash() *common.Hash {
 	record += saleData.SellingAsset.String()
 	record += string(saleData.SellingAmount)
 	record += string(saleData.DefaultSellPrice)
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
+func (saleData *SaleData) Hash() *common.Hash {
+	h := saleData.PartialHash()
+	record := string(saleData.SaleID)
+	record += string(h[:])
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
+func (trade *TradeBondWithGOV) PartialHash() *common.Hash {
+	record := trade.BondID.String()
+	record += strconv.FormatUint(trade.Amount, 10)
+	record += strconv.FormatBool(trade.Buy)
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
+func (trade *TradeBondWithGOV) Hash() *common.Hash {
+	h := trade.PartialHash()
+	record := string(trade.TradeID)
+	record += string(h[:])
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
@@ -326,7 +384,7 @@ func (sellingBonds *SellingBonds) Hash() *common.Hash {
 	record += string(sellingBonds.StartSellingAt)
 	record += string(sellingBonds.SellingWithin)
 	record += string(sellingBonds.TotalIssue)
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
@@ -336,21 +394,21 @@ func (sellingGOVTokens *SellingGOVTokens) Hash() *common.Hash {
 	record += string(sellingGOVTokens.GOVTokenPrice)
 	record += string(sellingGOVTokens.StartSellingAt)
 	record += string(sellingGOVTokens.SellingWithin)
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
 func (refundInfo *RefundInfo) Hash() *common.Hash {
 	record := string(refundInfo.ThresholdToLargeTx)
 	record += string(refundInfo.RefundAmount)
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
 func (sdt *SaleDCBTokensByUSDData) Hash() *common.Hash {
 	record := string(sdt.Amount)
 	record += string(sdt.EndBlock)
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
@@ -362,6 +420,6 @@ func (on *OracleNetwork) Hash() *common.Hash {
 	for _, oraclePk := range on.OraclePubKeys {
 		record += string(oraclePk)
 	}
-	hash := common.DoubleHashH([]byte(record))
+	hash := common.HashH([]byte(record))
 	return &hash
 }
