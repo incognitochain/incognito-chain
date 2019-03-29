@@ -61,16 +61,16 @@ func (blockchain *BlockChain) StartSyncBlk() {
 		}
 	}()
 
-	//go func() {
-	//	for {
-	//		select {
-	//		case <-blockchain.cQuitSync:
-	//			return
-	//		case <-time.Tick(time.Millisecond * 1000):
-	//			blockchain.InsertBlockFromPool()
-	//		}
-	//	}
-	//}()
+	go func() {
+		for {
+			select {
+			case <-blockchain.cQuitSync:
+				return
+			case <-time.Tick(time.Millisecond * 500):
+				blockchain.InsertBlockFromPool()
+			}
+		}
+	}()
 
 	for {
 		select {
@@ -160,7 +160,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 				}
 			}
 			if len(blockchain.syncStatus.PeersState) > 0 {
-				if RCS.ClosestBeaconState.Height == blockchain.BestState.Beacon.BeaconHeight {
+				if userRole != common.SHARD_ROLE && RCS.ClosestBeaconState.Height == blockchain.BestState.Beacon.BeaconHeight {
 					blockchain.SetReadyState(false, 0, true)
 				} else {
 					blockchain.SetReadyState(false, 0, false)
@@ -510,7 +510,7 @@ var lasttime = time.Now()
 
 func (blockchain *BlockChain) InsertBlockFromPool() {
 
-	if time.Since(lasttime) >= 100*time.Millisecond {
+	if time.Since(lasttime) >= 30*time.Millisecond {
 		tmp := lasttime
 		lasttime = time.Now()
 		fmt.Println("InsertBlockFromPool continue", tmp, lasttime)
