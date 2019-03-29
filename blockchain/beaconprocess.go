@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -753,7 +752,7 @@ func VerifyValidator(candidate string, rand int64, shardID byte, activeShards in
 func calculateCandidateShardID(candidate string, rand int64, activeShards int) (shardID byte) {
 
 	seed := candidate + strconv.Itoa(int(rand))
-	hash := sha256.Sum256([]byte(seed))
+	hash := common.HashB([]byte(seed))
 	// fmt.Println("Candidate public key", candidate)
 	// fmt.Println("Hash of candidate serialized pubkey and random number", hash)
 	// fmt.Printf("\"%d\",\n", hash[len(hash)-1])
@@ -857,7 +856,7 @@ func ShuffleCandidate(candidates []string, rand int64) ([]string, error) {
 	sortedCandidate := []string{}
 	for _, candidate := range candidates {
 		seed := candidate + strconv.Itoa(int(rand))
-		hash := sha256.Sum256([]byte(seed))
+		hash := common.HashB([]byte(seed))
 		hashes = append(hashes, string(hash[:32]))
 		m[string(hash[:32])] = candidate
 	}
