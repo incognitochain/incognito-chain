@@ -110,17 +110,22 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 	nextConstitutionIndex := self.GetConstitutionIndex(DCBConstitutionHelper{})
 	resIns := make([]frombeaconins.InstructionFromBeacon, 0)
 	VoteTable, CountVote, err := self.BuildVoteTableAndPunishTransaction(helper, nextConstitutionIndex)
+	if err != nil {
+		return resIns, err
+	}
 	bestProposal := metadata.ProposalVote{
 		TxId:         common.Hash{},
 		NumberOfVote: 0,
 	}
 	db := self.config.DataBase
 	for txId, _ := range VoteTable {
+		fmt.Println("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", txId, " ", CountVote[txId], "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
 		if CountVote[txId] > bestProposal.NumberOfVote {
 			bestProposal.TxId = txId
 			bestProposal.NumberOfVote = CountVote[txId]
 		}
 	}
+	// panic("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n\n\n\n\n\n")
 	if bestProposal.NumberOfVote == 0 {
 		return resIns, nil
 	}

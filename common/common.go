@@ -558,3 +558,5 @@ func CentInMilliEther(a uint64, p uint64) uint64 {
 	v.Quo(v, big.NewInt(int64(p)))
 	return v.Uint64()
 }
+
+// func FileLog(fromShard bool, )
