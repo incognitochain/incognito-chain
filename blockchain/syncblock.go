@@ -171,6 +171,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 							blockchain.SetReadyState(false, 0, true)
 							blockchain.SetReadyState(true, shardID, true)
 						} else {
+							blockchain.SetReadyState(false, 0, false)
 							blockchain.SetReadyState(true, shardID, false)
 						}
 					}
