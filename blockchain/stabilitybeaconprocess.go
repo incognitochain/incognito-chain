@@ -587,7 +587,8 @@ func (bc *BlockChain) processTradeBondInstruction(inst []string) error {
 		}
 	}
 	if trade == nil {
-		return errors.New("Found no trade in current proposal")
+		Logger.log.Warnf("Found no trade to activate in current proposal: %s", inst)
+		return nil
 	}
 
 	// Use balance left from previous activation is it exist

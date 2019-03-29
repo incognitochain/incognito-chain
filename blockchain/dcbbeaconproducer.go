@@ -143,18 +143,15 @@ func buildInstructionsForTradeActivation(
 	fmt.Printf("[db] beacon buildingInst for trade\n")
 	tradeID, amount, err := metadata.ParseTradeActivationActionValue(contentStr)
 	if err != nil {
-		fmt.Printf("[db] 1\n")
-		return nil, err
+		return nil, errors.Errorf("fail parsing TradeActivationActionValue: %+v %s", err, contentStr)
 	}
 
 	// If trade had been activated, ignore the request
 	_, _, activated, _, _ := db.GetTradeActivation(tradeID)
 	key := string(tradeID)
 	if activatedInBlock := accumulativeValues.trade[key]; activatedInBlock {
-		fmt.Printf("[db] 2\n")
 		return nil, nil
 	} else if activated {
-		fmt.Printf("[db] 3\n")
 		return nil, nil
 	}
 	accumulativeValues.trade[key] = true

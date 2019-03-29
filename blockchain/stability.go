@@ -220,9 +220,13 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 			continue
 		}
 		if err != nil {
-			return [][]string{}, err
+			Logger.log.Error(err)
+			continue
 		}
-		instructions = append(instructions, newInst...)
+
+		if len(newInst) > 0 {
+			instructions = append(instructions, newInst...)
+		}
 	}
 	// update component in beststate
 	return instructions, nil
