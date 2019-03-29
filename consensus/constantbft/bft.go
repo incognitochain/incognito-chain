@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -444,6 +445,9 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	select {
 	case <-protocol.proposeCh:
 		Logger.log.Critical("Oops block create time longer than timeout")
+		elasped := time.Since(start)
+		Logger.log.Critical("Block create time is", elasped)
+		os.Exit(1)
 	default:
 		protocol.proposeCh <- msg
 	}
