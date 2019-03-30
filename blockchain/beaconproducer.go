@@ -199,6 +199,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			err1 := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
 			fmt.Println("Beacon Producer/ Validate Agg Signature for shard", shardID, err1 == nil)
 			if err1 != nil {
+				panic("wtf")
 				break
 			}
 			// step 3 Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
@@ -209,6 +210,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 				accumulativeValues,
 			)
 			if err != nil {
+				panic("wtf")
 				Logger.log.Error(err)
 				fmt.Printf("Build stability instructions failed: %s", err.Error())
 			}

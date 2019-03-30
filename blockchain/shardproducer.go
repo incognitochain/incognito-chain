@@ -38,6 +38,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	fmt.Println("Shard Producer/NewBlockShard, Beacon Epoch", epoch)
 	//Fetch beacon block from height
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockgen.chain.config.DataBase, blockgen.chain.BestState.Shard[shardID].BeaconHeight+1, beaconHeight)
+	fmt.Println("fuckkkkkkkkkkkkk newshard", blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err

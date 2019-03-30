@@ -66,6 +66,8 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 	CountVote = make(map[common.Hash]uint32)
 
 	db := self.config.DataBase
+	gg := lvdb.ViewDBByPrefix(db, lvdb.VoteProposalPrefix)
+	_ = gg
 	boardType := helper.GetBoardType()
 	begin := lvdb.GetKeyVoteProposal(boardType, 0, nil)
 	// +1 to search in that range
@@ -75,6 +77,7 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 		Start: begin,
 		Limit: end,
 	}
+	
 	iter := db.NewIterator(&searchRange, nil)
 	rightIndex := self.GetConstitutionIndex(helper) + 1
 	for iter.Next() {
@@ -107,7 +110,7 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 	helper ConstitutionHelper,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
-	nextConstitutionIndex := self.GetConstitutionIndex(DCBConstitutionHelper{})
+	nextConstitutionIndex := self.GetConstitutionIndex(DCBConstitutionHelper{}) + 1
 	resIns := make([]frombeaconins.InstructionFromBeacon, 0)
 	VoteTable, CountVote, err := self.BuildVoteTableAndPunishTransaction(helper, nextConstitutionIndex)
 	if err != nil {
@@ -129,7 +132,9 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 	if bestProposal.NumberOfVote == 0 {
 		return resIns, nil
 	}
-	byteTemp, err0 := db.GetSubmitProposalDB(helper.GetBoardType(), helper.GetConstitutionInfo(self).ConstitutionIndex, bestProposal.TxId.GetBytes())
+	byteTemp, err0 := db.GetSubmitProposalDB(helper.GetBoardType(), helper.GetConstitutionInfo(self).ConstitutionIndex + 1, bestProposal.TxId.GetBytes())
+	gg := lvdb.ViewDBByPrefix(db, lvdb.SubmitProposalPrefix)
+	_ = gg
 	if err0 != nil {
 		return resIns, nil
 	}
