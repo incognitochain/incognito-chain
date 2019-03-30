@@ -106,9 +106,9 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 	block := ShardToBeaconBlock{}
 	block.AggregatedSig = blk.AggregatedSig
 
-	// block.ValidatorsIdx = make([][]int, 2)                                           //multi-node
-	// block.ValidatorsIdx[0] = append(block.ValidatorsIdx[0], blk.ValidatorsIdx[0]...) //multi-node
-	// block.ValidatorsIdx[1] = append(block.ValidatorsIdx[1], blk.ValidatorsIdx[1]...) //multi-node
+	block.ValidatorsIdx = make([][]int, 2)                                           //multi-node
+	block.ValidatorsIdx[0] = append(block.ValidatorsIdx[0], blk.ValidatorsIdx[0]...) //multi-node
+	block.ValidatorsIdx[1] = append(block.ValidatorsIdx[1], blk.ValidatorsIdx[1]...) //multi-node
 
 	block.R = blk.R
 	block.ProducerSig = blk.ProducerSig
@@ -148,10 +148,7 @@ func (blk *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byte]*Cros
 
 func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
 	crossShard := &CrossShardBlock{}
-	//TODO: optimize, loop 1 one time for all extracted information
-	crossOutputCoin := getOutCoinCrossShard(block.Body.Transactions, shardID)
-	crossTxTokenData := getTxTokenDataCrossShard(block.Body.Transactions, shardID)
-	crossCustomTokenPrivacyData := getTxTokenPrivacyDataCrossShard(block.Body.Transactions, shardID)
+	crossOutputCoin, crossTxTokenData, crossCustomTokenPrivacyData := getCrossShardData(block.Body.Transactions, shardID)
 	// Return nothing if nothing to cross
 	if len(crossOutputCoin) == 0 && len(crossTxTokenData) == 0 && len(crossCustomTokenPrivacyData) == 0 {
 		fmt.Println("CreateCrossShardBlock no crossshard", block.Header.Height)
@@ -164,9 +161,9 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 	//Copy signature and header
 	crossShard.AggregatedSig = block.AggregatedSig
 
-	// crossShard.ValidatorsIdx = make([][]int, 2)                                                  //multi-node
-	// crossShard.ValidatorsIdx[0] = append(crossShard.ValidatorsIdx[0], block.ValidatorsIdx[0]...) //multi-node
-	// crossShard.ValidatorsIdx[1] = append(crossShard.ValidatorsIdx[1], block.ValidatorsIdx[1]...) //multi-node
+	crossShard.ValidatorsIdx = make([][]int, 2)                                                  //multi-node
+	crossShard.ValidatorsIdx[0] = append(crossShard.ValidatorsIdx[0], block.ValidatorsIdx[0]...) //multi-node
+	crossShard.ValidatorsIdx[1] = append(crossShard.ValidatorsIdx[1], block.ValidatorsIdx[1]...) //multi-node
 
 	crossShard.R = block.R
 	crossShard.ProducerSig = block.ProducerSig

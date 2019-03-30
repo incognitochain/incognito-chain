@@ -9,7 +9,7 @@ const (
 	defaultMaxBlkReqPerPeer     = 60
 	defaultMaxBlkReqPerTime     = 600
 	defaultBroadcastStateTime   = 2 * time.Second  // in second
-	defaultProcessPeerStateTime = 5 * time.Second  // in second
+	defaultProcessPeerStateTime = 4 * time.Second  // in second
 	defaultMaxBlockSyncTime     = 2 * time.Second  // in second
 	defaultCacheCleanupTime     = 60 * time.Second // in second
 
@@ -28,8 +28,8 @@ const (
 	MainetName         = "mainnet"
 	MainnetDefaultPort = "9333"
 
-	MainNetShardCommitteeSize  = 1
-	MainNetBeaconCommitteeSize = 1
+	MainNetShardCommitteeSize  = 4
+	MainNetBeaconCommitteeSize = 3
 	MainNetActiveShards        = 2
 
 	//board and proposal parameters
@@ -63,8 +63,8 @@ const (
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 
-	TestNetShardCommitteeSize  = 1
-	TestNetBeaconCommitteeSize = 1
+	TestNetShardCommitteeSize  = 4
+	TestNetBeaconCommitteeSize = 3
 	TestNetActiveShards        = 2
 
 	//board and proposal parameters
@@ -82,29 +82,28 @@ const (
 // for beacon
 // public key
 var PreSelectBeaconNodeTestnetSerializedPubkey = []string{
-	"17dTfsw6VVuN2Ebf6AxjU2ewPC9DtVCnjPzoPRpSiexqVLtFuZa",
-	"16Vi9kjv1RDRpBLdVqc1i3wdnbqPntLL8AxkzxwBU1iCRuCPUbr",
-	"16zLUs4RcJ6HhMEn26bfeZdw224BQxAm5RpefKNidowJR3KmZ5u",
-	"165Nbz2ZZm52JdzUiSdQ73qTKbQvjBoU88zrhBGej64oGoQoQZ1",
-	"16MaJTDAgw4jxpiReBu61uRqkm84ywNwzpwx2xo6Jj6AUh2scU8",
-	"16Ekwi3fCqCStjzi1rbgV2S4kniQgbHSEiWpoanetue2dKaJXbb",
-
-	"15L68KC5u26ZqMXjFMvTZgMJcZAKjtVvvjN4cUPso7DDYwepSHa",
-	"16sU7voKM75cKkn6weD6DBTTRXD8uqqnz5yYbdLy9X8SA7RWVJf",
+	"17YiepCpN6tMwD91MGSXbEBjLBjeUysVcQJm87kCSHfXA2bWM46",
+	"16jWkWY5xRqZDkwDQaA32uvnakS27YyyWqeWtap6a6ELEc2Vbwi",
+	"15gXn3sEVp41Kdquy696ftT5bi3fRRbExFT7p5ZftEQusaJGi3y",
+	"16WQfZBp27g9AUYPXujLqNF7JtZhxdEUfVdox5wEuqM9dC1VYz6",
+	"1651Vc7vjFBj69mUZ6BB8KY7uziRWZ57Fi4thXAVqtySGzCqfpq",
+	"15EhQjnhchcsozbySChn6sv5ZonVYCC459TkJ6oiTEiprPPMf6n",
+	"16ui4k2kPpZrWZaeMq9MnRJocEtoGNJeBN7LWhVFwVpmfukhy8B",
+	"18PnGK8M7zj892syajS9H7c7BX8CJfQjyswpLAsHnwQuDzkVSni",
 }
 
 // For shard
 // public key
 var PreSelectShardNodeTestnetSerializedPubkey = []string{
 	"183GBqPhSfcEFZP7MQFTnuLVuX2PRkd5HFA3qkqkLN4STghvxpw", //shard 0
-	"15ezEJs61P8qq6F8Zrhbcd2RpuqrtDWtzPheJWiEM6ct1sWjFTi", //shard 1
-	"152nVbYDgLDYve2RA2CQLEJMTUTAHSuZmT6s4DnsaeeDQ8bDD82",
-	"16HXR5Jp2LJVV1vV9NTqpPVsVAZvQigv8huJLC9j4TZXnkWc5cw",
+	"15ezEJs61P8qq6F8Zrhbcd2RpuqrtDWtzPheJWiEM6ct1sWjFTi", //shard 0
+	"16VVUEPJR3uwbkgyVXcwiifsJLcqqR95onn7sZ3jzfs1QofLv11", //shard 1
+	"183cdDa9XXppiTTxF4HBiFyRABWtB8v8EBy556WNfX2RnW87VRC", //shard 0
 
-	"16VVUEPJR3uwbkgyVXcwiifsJLcqqR95onn7sZ3jzfs1QofLv11",
-	"14zf4SMg7Jfmmaq64jkjcfRBY8NB9xkg9adSBkXisoEiXUWxxs3",
-	"15tZEEk7qvyFUN9rdLWfSMZj28VDWTywTW41WTLcpYNCpRGpqqu",
-	"188xSvTr2ktocRgLPfKaAtw8vgqrgKSMjJD7VPxEoopCLyKxHFi",
+	"14zf4SMg7Jfmmaq64jkjcfRBY8NB9xkg9adSBkXisoEiXUWxxs3", //shard 1
+	"16H5t5ezMF16S5j5ZEyHP3N4nBBcsppg5bRfU5Ft8N1VZYBQu38", //shard 1
+	"156qsnqcYWPUb8PLbdowV4TtUhS8kuEboABfHgVeh4MguoPwqVj", //shard 1
+	"177cGseHedBzrvBTqP2boXBjXb84JgKJEs7fGbCmgJ47gcgNwoK", //shard 1
 
 	"177wqpiaSaswghv2z2y13KR6RPwfMm6mbeTtnfMEdH2iPhmxEbv",
 	"16HxssV6VKrGs9qNnCoA1bXi5Uqjco8DyhYLLLqmhgJPAGHyk9A",
