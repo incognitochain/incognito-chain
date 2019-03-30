@@ -41,7 +41,7 @@ const (
 	MainnetInitCmBToken               = 0
 	MainnetInitBondToken              = 0
 	MainnetFeePerTxKb                 = 0
-	MainnetGenesisblockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
+	MainnetGenesisblockPaymentAddress = "1Uv46Pu4pqBvxCcPw7MXhHfiAD5Rmi2xgEE7XB6eQurFAt4vSYvfyGn3uMMB1xnXDq9nRTPeiAZv5gRFCBDroRNsXJF1sxPSjNQtivuHk"
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -133,6 +133,4 @@ const (
 
 // ---------------------------------------------
 
-var TestnetInitConstant = []string{
-	`{"Version":1,"Type":"s","LockTime":1553768899,"Fee":0,"Info":null,"SigPubKey":"AsKCsGYkt3JthzFysVzWHxkESGfEoSRFeWafGB+DZRQA","Sig":"MpZZJmgM61lNx3cqoC74qc/m+TCgrngctP/i+SusXNFmlgQzIE/1JoPnO9+4kbUp1jtLBWY80B629qWU/UiuHA==","Proof":"11111116WGHqpGKhPnvZ7i2w3heBopZQYdwc4cG7c4H53LZKzjBdafgMwxaXKzdaKCniFTXSdTm7rXCPeg5qqxB1hP3w2uNQRj5V6sX4F7n7SpDN6uYF18Y29NJNJxugr6R6WpYrSX9UVYbnBwEgnHPefMrzFMvTQDrqurWT2ZpVu7BDedZwkLoq61YTNeDRw2HGN2tLFyN7M2icsd7HhqWSpi","PubKeyLastByteSender":0,"Metadata":null}`,
-}
+var TestnetInitConstant = []string{`{"Version":1,"Type":"s","LockTime":1553830226,"Fee":0,"Info":null,"SigPubKey":"A58CKhajw92BH9mFlRBEbCrAOl8nzD9Ey4TdMLWDKL0A","Sig":"uTZZEwAJQ+Wlp871n3IF0hcVcxxaHnbsdj20NxZNRxe8yiAuEeSUYZv9rKOBCyO/SVYYCoP1W2qHFDQsvpwPWw==","Proof":"11111116WGHqpGRpb156mNjZAF55nAeqtfP68nb2hQYXCzLzACytCMb85wsvJo6rG9fdqi5C6VJoW4c5QYXBbFKbw1KuQpruLUcSzm5Ywn3ekJj4NFj9ZCHZdfqK4iW3n7mRayFq7uGuvpCe212opG7unMhNY7kE1DoyqJdKA7A57LsE5AiwhJf6dUMGe9SVK2Kppw6W4BGUWox4qPv97zVSLo","PubKeyLastByteSender":0,"Metadata":null}`}
