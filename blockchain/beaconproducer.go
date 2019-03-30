@@ -298,7 +298,6 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
 			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
 			// Validate swap instruction => extract only valid swap instruction
-			//TODO: define error handler scheme
 			for _, swap := range swaps {
 				if swap[3] == "beacon" {
 					continue
@@ -352,7 +351,6 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 	for _, swapInstruction := range swap {
 		instructions = append(instructions, swapInstruction...)
 	}
-	// TODO: beacon unexpeted swap -> pbft
 	// Beacon normal swap
 	if block.Header.Height%common.EPOCH == 0 {
 		swapBeaconInstructions := []string{}

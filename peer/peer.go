@@ -16,10 +16,10 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/wire"
 	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-crypto"
-	"github.com/libp2p/go-libp2p-host"
-	"github.com/libp2p/go-libp2p-net"
-	"github.com/libp2p/go-libp2p-peer"
+	crypto "github.com/libp2p/go-libp2p-crypto"
+	host "github.com/libp2p/go-libp2p-host"
+	net "github.com/libp2p/go-libp2p-net"
+	peer "github.com/libp2p/go-libp2p-peer"
 	ma "github.com/multiformats/go-multiaddr"
 	cache "github.com/patrickmn/go-cache"
 )
@@ -149,34 +149,10 @@ func (peerObj *Peer) HashToPool(hash string) error {
 	if peerObj.messagePoolNew == nil {
 		peerObj.messagePoolNew = cache.New(MsgLiveTime, MsgsCleanupInterval)
 	}
-	// peerObj.messagePoolMtx.Lock()
-	// defer peerObj.messagePoolMtx.Unlock()
-
-	// if peerObj.messagePool == nil {
-	// 	peerObj.messagePool = make(map[string]bool)
-	// }
-	// ok := peerObj.messagePool[hash]
-	// if ok {
-	// 	return
-	// }
-	// if len(peerObj.messagePool) >= MESSAGE_HASH_POOL_SIZE {
-	// 	for k := range peerObj.messagePool {
-	// 		delete(peerObj.messagePool, k)
-	// 		break
-	// 	}
-	// }
-	// peerObj.messagePool[hash] = true
 	return peerObj.messagePoolNew.Add(hash, 1, MsgLiveTime)
 }
 
 func (peerObj *Peer) CheckHashPool(hash string) bool {
-	// peerObj.messagePoolMtx.Lock()
-	// defer peerObj.messagePoolMtx.Unlock()
-	// if peerObj.messagePool == nil {
-	// 	peerObj.messagePool = make(map[string]bool)
-	// }
-	// ok := peerObj.messagePool[hash]
-	// return ok
 	_, expiredT, exist := peerObj.messagePoolNew.GetWithExpiration(hash)
 	if exist {
 		if (expiredT != time.Time{}) {

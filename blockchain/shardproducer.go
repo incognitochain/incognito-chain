@@ -55,8 +55,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	crossTransactions, crossTxTokenData := blockgen.getCrossShardData(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight, crossShards)
 	crossTxTokenTransactions, _ := blockgen.chain.createCustomTokenTxForCrossShard(privatekey, crossTxTokenData, shardID)
 	txsToAdd = append(txsToAdd, crossTxTokenTransactions...)
-	// fmt.Println("crossOutputCoin", crossTransactions)
-	// fmt.Println("Shard Producer crossTxTokenTransactions", crossTxTokenTransactions)
 	//======Create Instruction===========================
 	//Assign Instruction
 	instructions := [][]string{}
@@ -365,20 +363,16 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	sourceTxns := blockgen.txPool.MiningDescs()
 	// sourceTxns := []*metadata.TxDesc{}
-	//TODO: UNCOMMENT To avoid produce too many empty block
+	//@NOTICE: COMMENT To allow produce too many empty block
 	// get tx and wait for more if not enough
-	// if len(sourceTxns) < common.MinTxsInBlock {
-	// 	<-time.Tick(common.MinBlockWaitTime * time.Second)
-	// 	sourceTxns = blockgen.txPool.MiningDescs()
-	// 	if len(sourceTxns) == 0 {
-	// 		<-time.Tick(common.MaxBlockWaitTime * time.Second)
-	// 		sourceTxns = blockgen.txPool.MiningDescs()
-	// 	}
-	// }
-
-	//TODO: sort transaction base on fee and check limit block size
-	// StartingPriority, fee, size, time
-	// fmt.Println("TempTxPool", reflect.TypeOf(blockgen.chain.config.TempTxPool))
+	//if len(sourceTxns) < common.MinTxsInBlock {
+	//	<-time.Tick(common.MinBlockWaitTime * time.Second)
+	//	sourceTxns = blockgen.txPool.MiningDescs()
+	//	if len(sourceTxns) == 0 {
+	//		<-time.Tick(common.MaxBlockWaitTime * time.Second)
+	//		sourceTxns = blockgen.txPool.MiningDescs()
+	//	}
+	//}
 	isEmpty := blockgen.chain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
 		panic("TempTxPool Is not Empty")
