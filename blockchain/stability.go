@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/constant-money/constant-chain/database/lvdb"
 	"reflect"
 	"strconv"
 
@@ -509,6 +510,8 @@ func (chain *BlockChain) AddVoteProposal(inst string) error {
 		newInst.VoteProposal.VoterPayment.Bytes(),
 		newInst.VoteProposal.ProposalTxID.GetBytes(),
 	)
+	gg := lvdb.ViewDBByPrefix(chain.config.DataBase, lvdb.VoteProposalPrefix)
+	_ = gg
 
 	if err != nil {
 		return err

@@ -155,7 +155,7 @@ func GetKeyVoteProposal(boardType common.BoardType, constitutionIndex uint32, vo
 }
 
 func GetKeySubmitProposal(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte) []byte {
-	key := GetKeyFromVariadic(submitProposalPrefix, boardType.Bytes(), common.Uint32ToBytes(constitutionIndex), proposalTxID)
+	key := GetKeyFromVariadic(SubmitProposalPrefix, boardType.Bytes(), common.Uint32ToBytes(constitutionIndex), proposalTxID)
 	return key
 }
 
@@ -219,12 +219,12 @@ func GetValueVoteProposal(proposalTxID *common.Hash) []byte {
 }
 
 func ParseValueVoteProposal(value []byte) (*common.Hash, error) {
-	length := []int{len(VoteProposalPrefix), common.HashSize}
+	length := []int{common.HashSize}
 	elements, err := ParseKeyToSlice(value, length)
 	if err != nil {
 		return nil, err
 	}
-	index := 1
+	index := 0
 	proposalTxID, err := common.NewHash(elements[iPlusPlus(&index)])
 	if err != nil {
 		return nil, err

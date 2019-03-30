@@ -115,6 +115,8 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 	block.Header = blk.Header
 	block.Instructions = blk.Body.Instructions
 	beaconBlocks, err := FetchBeaconBlockFromHeight(bc.config.DataBase, bc.BestState.Shard[block.Header.ShardID].BeaconHeight+1, block.Header.BeaconHeight)
+	fmt.Println("fuckkkkkkkkkkkkk newshardtobeacon", bc.BestState.Shard[block.Header.ShardID].BeaconHeight, block.Header.BeaconHeight)
+	
 	if err != nil {
 		Logger.log.Error(err)
 		return nil

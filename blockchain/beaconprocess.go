@@ -242,9 +242,10 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		return NewBlockChainError(EpochError, errors.New("lock height and Epoch is not compatiable"))
 	}
 	// Verify timestamp with parent block
-	if block.Header.Timestamp <= parentBlockInterface.Header.Timestamp {
-		return NewBlockChainError(TimestampError, errors.New("timestamp of new block can't equal to parent block"))
-	}
+	//jackalope: temporary commment for debug purpose
+	//if block.Header.Timestamp <= parentBlockInterface.Header.Timestamp {
+	//	return NewBlockChainError(TimestampError, errors.New("timestamp of new block can't equal to parent block"))
+	//}
 
 	if !VerifyHashFromShardState(block.Body.ShardState, block.Header.ShardStateHash) {
 		return NewBlockChainError(ShardStateHashError, errors.New("shard state hash is not correct"))
