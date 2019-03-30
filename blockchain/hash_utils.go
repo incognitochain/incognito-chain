@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/json"
 	"sort"
 	"strconv"
@@ -44,7 +43,7 @@ func GenerateHashFromStringArray(strs []string) (common.Hash, error) {
 	for _, value := range strs {
 		buf.WriteString(value)
 	}
-	temp := sha256.Sum256(buf.Bytes())
+	temp := common.HashB(buf.Bytes())
 	if err := hash.SetBytes(temp[:]); err != nil {
 		return common.Hash{}, NewBlockChainError(HashError, err)
 	}

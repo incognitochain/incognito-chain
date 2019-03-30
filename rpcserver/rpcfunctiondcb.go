@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"encoding/hex"
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
@@ -13,6 +14,7 @@ func (rpcServer RpcServer) handleGetDCBParams(params interface{}, closeChan <-ch
 	constitution := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.DCBConstitution
 	dcbParam := constitution.DCBParams
 	results := make(map[string]interface{})
+	results["ConstitutionIndex"] = constitution.ConstitutionIndex
 	results["DCBParams"] = dcbParam
 	results["ExecuteDuration"] = constitution.ExecuteDuration
 	results["Explanation"] = constitution.Explanation
