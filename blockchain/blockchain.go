@@ -36,11 +36,6 @@ type BlockChain struct {
 	BestState *BestState
 	config    Config
 	chainLock sync.RWMutex
-
-	//=====cache
-	beaconBlock        map[string][]byte // TODO review not use
-	highestBeaconBlock string            // TODO review not use
-
 	//channel
 	cQuitSync  chan struct{}
 	syncStatus struct {
@@ -224,8 +219,6 @@ func (blockchain *BlockChain) GetOracleParams() *component.Oracle {
 func (blockchain *BlockChain) initChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
-
-	//TODO: 0xBahamoot check back later
 	var initialized bool
 
 	blockchain.BestState = &BestState{
