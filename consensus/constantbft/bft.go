@@ -75,12 +75,12 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 			switch protocol.phase {
 			case PBFT_PROPOSE:
 				//    single-node start    //
-				// time.Sleep(2 * time.Second)
-				// _, err := protocol.CreateBlockMsg()
-				// if err != nil {
-				// 	return nil, err
-				// }
-				// return protocol.pendingBlock, nil
+				go protocol.CreateBlockMsg()
+				<-protocol.proposeCh
+				if protocol.pendingBlock != nil {
+					return protocol.pendingBlock, nil
+				}
+				return nil, errors.New("can't produce block")
 				//    single-node end    //
 
 				go protocol.CreateBlockMsg()
@@ -418,6 +418,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	start := time.Now()
 	var msg wire.Message
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
+		// time.Sleep(2 * time.Second)
 		newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
 		if err != nil {
 			Logger.log.Error(err)
