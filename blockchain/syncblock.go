@@ -160,12 +160,14 @@ func (blockchain *BlockChain) StartSyncBlk() {
 				}
 			}
 			if len(blockchain.syncStatus.PeersState) > 0 {
-				if userRole != common.SHARD_ROLE && RCS.ClosestBeaconState.Height == blockchain.BestState.Beacon.BeaconHeight {
+
+				if RCS.ClosestBeaconState.Height-1 <= blockchain.BestState.Beacon.BeaconHeight {
 					blockchain.SetReadyState(false, 0, true)
 				} else {
 					blockchain.SetReadyState(false, 0, false)
 				}
-				if userRole == common.SHARD_ROLE && RCS.ClosestBeaconState.Height-1 <= blockchain.BestState.Beacon.BeaconHeight {
+
+				if blockchain.IsReady(false, 0) {
 					for shardID := range blockchain.syncStatus.Shards {
 						if RCS.ClosestShardsState[shardID].Height == GetBestStateShard(shardID).ShardHeight && RCS.ClosestShardsState[shardID].Height >= GetBestStateBeacon().BestShardHeight[shardID] {
 							blockchain.SetReadyState(false, 0, true)
