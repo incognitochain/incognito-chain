@@ -41,7 +41,7 @@ const (
 	MainnetInitCmBToken               = 0
 	MainnetInitBondToken              = 0
 	MainnetFeePerTxKb                 = 0
-	MainnetGenesisblockPaymentAddress = "1Uv46Pu4pqBvxCcPw7MXhHfiAD5Rmi2xgEE7XB6eQurFAt4vSYvfyGn3uMMB1xnXDq9nRTPeiAZv5gRFCBDroRNsXJF1sxPSjNQtivuHk"
+	MainnetGenesisblockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -135,4 +135,3 @@ const (
 
 // Todo @hy don't merge this
 var TestnetInitConstant = []string{`{"Version":1,"Type":"s","LockTime":1553765098,"Fee":0,"Info":null,"SigPubKey":"AietXs9VLcsFnJMORtdmhdZZ0m0CreSXLOurqKCjzcwB","Sig":"7E90vcQuND1/Usw/2kz8M7C6VotyL2m+i9KcfeXvUEzYkrHMTKHcdivpT00vR4gnxMS3+ClcBmWuXUHBg8TUIA==","Proof":"11111112F9nPGboX8Fh1HmhP6KMy17RokQSRxazSGKZhbQZ9FX7QzAdFp3KrrcqshUHfQ1BsWtp24TfQp24cvucwhgSWCckG32qF5MUPpwFcRz5NPJ31kiLnddkcdCbdPugKeysqkNjhPaotgDa8tSMbusrsKnE5iLCEE1kQ5JLwqwAANmsoKy4DnHik6kfM79kyuF7qeVSja3iWZ572jmBZ5","PubKeyLastByteSender":1,"Metadata":null}`}
-

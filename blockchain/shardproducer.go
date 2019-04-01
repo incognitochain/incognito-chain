@@ -418,6 +418,7 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 	var keys []int
 	txs := []metadata.Transaction{}
 	txTokenDataList := []transaction.TxTokenData{}
+	// TODO: 0xsirrush change process
 	listCustomTokens, err := blockchain.ListCustomToken()
 	if err != nil {
 		panic("Can't Retrieve List Custom Token in Database")
