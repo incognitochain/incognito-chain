@@ -2,12 +2,10 @@ package privacy
 
 import (
 	"crypto/elliptic"
+	"encoding/json"
 	"math/big"
 
 	"github.com/constant-money/constant-chain/common"
-
-	"encoding/json"
-
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/pkg/errors"
 )
@@ -153,7 +151,7 @@ func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 func (point EllipticPoint) Hash(index int) *EllipticPoint {
 	res := new(EllipticPoint).Zero()
 	tmp := AddPaddingBigInt(point.X, BigIntSize)
-	tmp = append(tmp, byte(index))
+	tmp = append(tmp, common.Uint64ToBytes(uint64(index))...)
 
 	for {
 		tmp = common.HashB(tmp)
