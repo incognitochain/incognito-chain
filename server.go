@@ -24,7 +24,6 @@ import (
 	"github.com/constant-money/constant-chain/mempool"
 	"github.com/constant-money/constant-chain/netsync"
 	"github.com/constant-money/constant-chain/peer"
-	"github.com/constant-money/constant-chain/rewardagent"
 	"github.com/constant-money/constant-chain/rpcserver"
 	"github.com/constant-money/constant-chain/wallet"
 	"github.com/constant-money/constant-chain/wire"
@@ -56,7 +55,6 @@ type Server struct {
 	wallet          *wallet.Wallet
 	consensusEngine *constantbft.Engine
 	blockgen        *blockchain.BlkTmplGenerator
-	rewardAgent     *rewardagent.RewardAgent
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
 	feeEstimator map[byte]*mempool.FeeEstimator
@@ -192,7 +190,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	//init shard to beacon bool
 	mempool.InitShardToBeaconPool()
 
-	// TODO: 0xbahamooth Search for a feeEstimator state in the database. If none can be found
 	// or if it cannot be loaded, create a new one.
 	if cfg.FastStartup {
 		Logger.log.Debug("Load chain dependencies from DB")
@@ -254,14 +251,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
 	//===============
 	serverObj.addrManager = addrmanager.New(cfg.DataDir)
-
-	// Init reward agent
-	serverObj.rewardAgent = rewardagent.RewardAgent{}.Init(&rewardagent.RewardAgentConfig{
-		BlockChain: serverObj.blockChain,
-	})
-
 	// Init block template generator
-	serverObj.blockgen, err = blockchain.BlkTmplGenerator{}.Init(serverObj.memPool, serverObj.blockChain, serverObj.rewardAgent, serverObj.shardToBeaconPool, serverObj.crossShardPool)
+	serverObj.blockgen, err = blockchain.BlkTmplGenerator{}.Init(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool)
 	if err != nil {
 		return err
 	}

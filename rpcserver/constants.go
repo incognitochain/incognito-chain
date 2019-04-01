@@ -11,6 +11,9 @@ const (
 	GetGenerate              = "getgenerate"
 	GetActiveShards = "getactiveshards"
 
+	GetActiveShards    = "getactiveshards"
+	GetMaxShardsNumber = "getmaxshardsnumber"
+
 	GetMiningInfo                 = "getmininginfo"
 	GetRawMempool                 = "getrawmempool"
 	GetMempoolEntry               = "getmempoolentry"
