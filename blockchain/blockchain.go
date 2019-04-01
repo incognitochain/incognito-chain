@@ -336,7 +336,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 		AcceptableErrorMargin:  5,
 	}
 
-	// Trade bonds
+	// TODO: remove Trade bonds
 	bondID, _ := common.NewHashFromStr("4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000")
 	tradeBondBuyID := [32]byte{5}
 	tradeBondSellID := [32]byte{6}
