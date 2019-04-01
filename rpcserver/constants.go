@@ -10,6 +10,9 @@ const (
 	EstimateFeeWithEstimator = "estimatefeewithestimator"
 	GetGenerate              = "getgenerate"
 
+	GetActiveShards    = "getactiveshards"
+	GetMaxShardsNumber = "getmaxshardsnumber"
+
 	GetMiningInfo                 = "getmininginfo"
 	GetRawMempool                 = "getrawmempool"
 	GetMempoolEntry               = "getmempoolentry"
