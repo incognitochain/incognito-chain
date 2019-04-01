@@ -571,7 +571,7 @@ func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, cl
 
 // handleGetActiveShards - return active shard num
 func (rpcServer RpcServer) handleGetActiveShards(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	if rpcServer.config.BlockChain.IsReady(true, 0) {
+	if rpcServer.config.BlockChain.IsReady(false, 0) {
 		activeShards := rpcServer.config.BlockChain.BestState.Beacon.ActiveShards
 		return activeShards, nil
 	}
