@@ -112,11 +112,6 @@ func (tx *Tx) Init(
 		tx.LockTime = time.Now().Unix()
 	}
 
-	// check number of outputs
-	//if len(paymentInfo) > privacy.ValueMax{
-	//	return NewTransactionErr(WrongInput, errors.New("Number of outputs is exceed max value"))
-	//}
-
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKey(senderSK)

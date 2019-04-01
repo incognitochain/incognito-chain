@@ -28,6 +28,7 @@ var RpcHandler = map[string]commandHandler{
 	EstimateFee:              RpcServer.handleEstimateFee,
 	EstimateFeeWithEstimator: RpcServer.handleEstimateFeeWithEstimator,
 	GetGenerate:              RpcServer.handleGetGenerate,
+	GetActiveShards:  RpcServer.handleGetActiveShards,
 
 	//pool
 	GetMiningInfo:               RpcServer.handleGetMiningInfo,
@@ -566,12 +567,13 @@ func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, cl
 }
 
 // handleGetActiveShards - return active shard num
+//todo: 0xkumi
 func (rpcServer RpcServer) handleGetActiveShards(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	if rpcServer.config.BlockChain.IsReady(false, 0) {
+	if rpcServer.config.BlockChain.IsReady(true, 0) {
 		activeShards := rpcServer.config.BlockChain.BestState.Beacon.ActiveShards
 		return activeShards, nil
 	}
-	return -1, nil
+	return common.MAX_SHARD_NUMBER, nil
 }
 
 func (rpcServer RpcServer) handleGetStakingAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
