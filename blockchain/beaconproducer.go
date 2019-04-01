@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -48,6 +49,7 @@ import (
 		Sign block and update validator index, agg sig
 */
 func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddress, privateKey *privacy.SpendingKey, proposerOffset int, shardsToBeacon map[byte]uint64) (*BeaconBlock, error) {
+	os.Exit(0)
 	beaconBlock := &BeaconBlock{}
 	beaconBestState := BestStateBeacon{}
 	// lock blockchain
@@ -90,6 +92,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	}
 	beaconBlock.Header.Timestamp = time.Now().Unix()
 	beaconBlock.Header.PrevBlockHash = beaconBestState.BestBlockHash
+	os.Exit(0)
 	tempShardState, staker, swap, stabilityInstructions := blkTmplGenerator.GetShardState(&beaconBestState, shardsToBeacon)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
 
@@ -172,6 +175,9 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 // #2: valid stakers
 // #3: swap validator => map[byte][][]string
 func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon, shardsToBeacon map[byte]uint64) (map[byte][]ShardState, [][]string, map[byte][][]string, [][]string) {
+	fmt.Println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	os.Exit(0)
+	panic("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	shardStates := make(map[byte][]ShardState)
 	validStakers := [][]string{}
 	validSwap := make(map[byte][][]string)
@@ -202,7 +208,9 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 				panic("wtf")
 				break
 			}
+			fmt.Println("[voting] - creating stability instruction")
 			// step 3 Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+			os.Exit(0)
 			stabilityInstructionsPerBlock, err := blkTmplGenerator.buildStabilityInstructions(
 				shardID,
 				shardBlock.Instructions,
@@ -210,7 +218,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 				accumulativeValues,
 			)
 			if err != nil {
-				panic("wtf")
+				panic("[voting] wtf")
 				Logger.log.Error(err)
 				fmt.Printf("Build stability instructions failed: %s", err.Error())
 			}
