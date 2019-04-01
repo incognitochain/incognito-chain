@@ -681,6 +681,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 			}
 		case transaction.CustomTokenCrossShard:
 			{
+				// TODO: 0xsirrush change process
 				listCustomToken, err := blockchain.ListCustomToken()
 				if err != nil {
 					panic(err)
