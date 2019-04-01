@@ -19,6 +19,7 @@ import (
 func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte, proposerOffset int, crossShards map[byte]uint64) (*ShardBlock, error) {
 	//============Build body=============
 	// Fetch Beacon information
+
 	beaconHeight := blockgen.chain.BestState.Beacon.BeaconHeight
 	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
 	// fmt.Println("Shard Producer/NewBlockShard, Beacon Height", beaconHeight)
