@@ -81,8 +81,8 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			blockchain.syncStatus.PeersStateLock.Lock()
 
 			userRole, userShardID := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Beacon.BestBlock.Header.Round)
-			blockchain.SyncShard(userShardID)
-			blockchain.StopSyncUnnecessaryShard()
+			blockchain.syncShard(userShardID)
+			blockchain.stopSyncUnnecessaryShard()
 			userShardRole := blockchain.BestState.Shard[userShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
 			RCS := reportedChainState{
 				ClosestBeaconState: ChainState{
@@ -162,7 +162,6 @@ func (blockchain *BlockChain) StartSyncBlk() {
 				}
 			}
 			if len(blockchain.syncStatus.PeersState) > 0 {
-
 				if userRole != common.SHARD_ROLE && RCS.ClosestBeaconState.Height == blockchain.BestState.Beacon.BeaconHeight {
 					blockchain.SetReadyState(false, 0, true)
 				} else {
@@ -271,6 +270,10 @@ func (blockchain *BlockChain) StartSyncBlk() {
 func (blockchain *BlockChain) SyncShard(shardID byte) error {
 	blockchain.syncStatus.Lock()
 	defer blockchain.syncStatus.Unlock()
+	return blockchain.syncShard(shardID)
+}
+
+func (blockchain *BlockChain) syncShard(shardID byte) error {
 	if _, ok := blockchain.syncStatus.Shards[shardID]; ok {
 		return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation is already started")
 	}
@@ -280,20 +283,22 @@ func (blockchain *BlockChain) SyncShard(shardID byte) error {
 
 	return nil
 }
-
 func (blockchain *BlockChain) StopSyncUnnecessaryShard() {
+	blockchain.syncStatus.Lock()
+	defer blockchain.syncStatus.Unlock()
+	blockchain.stopSyncUnnecessaryShard()
+}
+
+func (blockchain *BlockChain) stopSyncUnnecessaryShard() {
 	for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
-		if err := blockchain.StopSyncShard(shardID); err != nil {
+		if err := blockchain.stopSyncShard(shardID); err != nil {
 			fmt.Println("StopSyncUnnecessaryShard", shardID)
 			Logger.log.Error(err)
 		}
-
 	}
 }
 
-func (blockchain *BlockChain) StopSyncShard(shardID byte) error {
-	blockchain.syncStatus.Lock()
-	defer blockchain.syncStatus.Unlock()
+func (blockchain *BlockChain) stopSyncShard(shardID byte) error {
 	if blockchain.config.NodeMode == common.NODEMODE_AUTO || blockchain.config.NodeMode == common.NODEMODE_SHARD {
 		userRole, userShardID := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Beacon.BestBlock.Header.Round)
 		if userRole == "shard" && shardID == userShardID {

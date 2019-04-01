@@ -76,12 +76,12 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 			switch protocol.phase {
 			case PBFT_PROPOSE:
 				//    single-node start    //
-				// time.Sleep(2 * time.Second)
-				// _, err := protocol.CreateBlockMsg()
-				// if err != nil {
-				// 	return nil, err
-				// }
-				// return protocol.pendingBlock, nil
+				go protocol.CreateBlockMsg()
+				<-protocol.proposeCh
+				if protocol.pendingBlock != nil {
+					return protocol.pendingBlock, nil
+				}
+				return nil, errors.New("can't produce block")
 				//    single-node end    //
 
 				go protocol.CreateBlockMsg()
@@ -423,34 +423,39 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	start := time.Now()
 	var msg wire.Message
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
+		// time.Sleep(2 * time.Second)
 		newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
 		<-time.Tick(time.Millisecond * 2000)
 		if err != nil {
 			Logger.log.Error(err)
 			close(protocol.proposeCh)
+		} else {
+			jsonBlock, _ := json.Marshal(newBlock)
+			msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.UserKeySet)
+			if err != nil {
+				Logger.log.Error(err)
+				close(protocol.proposeCh)
+			} else {
+				protocol.pendingBlock = newBlock
+				protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
+			}
 		}
-		jsonBlock, _ := json.Marshal(newBlock)
-		msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.UserKeySet)
-		if err != nil {
-			Logger.log.Error(err)
-			close(protocol.proposeCh)
-		}
-		protocol.pendingBlock = newBlock
-		protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
 	} else {
 		newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ShardID, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
 		if err != nil {
 			Logger.log.Error(err)
 			close(protocol.proposeCh)
+		} else {
+			jsonBlock, _ := json.Marshal(newBlock)
+			msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.UserKeySet)
+			if err != nil {
+				Logger.log.Error(err)
+				close(protocol.proposeCh)
+			} else {
+				protocol.pendingBlock = newBlock
+				protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
+			}
 		}
-		jsonBlock, _ := json.Marshal(newBlock)
-		msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.UserKeySet)
-		if err != nil {
-			Logger.log.Error(err)
-			close(protocol.proposeCh)
-		}
-		protocol.pendingBlock = newBlock
-		protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
 	}
 	elasped := time.Since(start)
 	Logger.log.Critical("BFT: Block create time is", elasped)
