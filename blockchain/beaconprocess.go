@@ -269,12 +269,20 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	}
 	// if pool does not have one of needed block, fail to verify
 	if isCommittee {
+		// @UNCOMMENT TO TEST
 		accumulativeValues := &accumulativeValues{
 			saleDataMap: map[string]*component.SaleData{},
 			trade:       map[string]bool{},
 		}
 		allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidPendingBlock(nil)
-		for shardID, shardBlocks := range allShardBlocks {
+		var keys []int
+		for k := range allShardBlocks {
+			keys = append(keys, int(k))
+		}
+		sort.Ints(keys)
+		for _, value := range keys {
+			shardID := byte(value)
+			shardBlocks := allShardBlocks[shardID]
 			if len(shardBlocks) >= len(block.Body.ShardState[shardID]) {
 				shardBlocks = shardBlocks[:len(block.Body.ShardState[shardID])]
 				shardStates := block.Body.ShardState[shardID]
@@ -310,6 +318,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 					}
 				}
+				// @UNCOMMENT TO TEST
 				beaconBestState := BestStateBeacon{}
 				tempShardStates := make(map[byte][]ShardState)
 				validStakers := [][]string{}
@@ -341,6 +350,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 					stabilityInstructions = append(stabilityInstructions, oracleInsts...)
 				}
 				tempInstruction := beaconBestState.GenerateInstruction(block, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
+				fmt.Println("BeaconProcess/tempInstruction: ", tempInstruction)
 				tempInstructionArr := []string{}
 				for _, strs := range tempInstruction {
 					tempInstructionArr = append(tempInstructionArr, strs...)
@@ -349,6 +359,8 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 				if err != nil {
 					return NewBlockChainError(HashError, errors.New("Fail to generate hash for instruction"))
 				}
+				fmt.Println("BeaconProcess/tempInstructionHash: ", tempInstructionHash)
+				fmt.Println("BeaconProcess/block.Header.InstructionHash: ", block.Header.InstructionHash)
 				if strings.Compare(tempInstructionHash.String(), block.Header.InstructionHash.String()) != 0 {
 					return NewBlockChainError(InstructionHashError, errors.New("instruction hash is not correct"))
 				}
@@ -557,6 +569,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 	// update param
 	err := bestStateBeacon.updateOracleParams(chain)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
 	instructions := newBlock.Body.Instructions
@@ -567,7 +580,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 		// For stability instructions
 		err := bestStateBeacon.processStabilityInstruction(l)
 		if err != nil {
-			fmt.Println(err)
+			Logger.log.Error(err)
 		}
 
 		if l[0] == SetAction {

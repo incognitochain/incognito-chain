@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -90,7 +91,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	beaconBlock.Header.PrevBlockHash = beaconBestState.BestBlockHash
 	tempShardState, staker, swap, stabilityInstructions := blkTmplGenerator.GetShardState(&beaconBestState, shardsToBeacon)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
-
+	fmt.Println("BeaconProducer/tempInstruction", tempInstruction)
 	//==========Create Body
 	beaconBlock.Body.Instructions = tempInstruction
 	beaconBlock.Body.ShardState = tempShardState
@@ -171,14 +172,21 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 	validStakers := [][]string{}
 	validSwappers := make(map[byte][][]string)
 	//Get shard to beacon block from pool
-	shardsBlocks := blkTmplGenerator.shardToBeaconPool.GetValidPendingBlock(shardsToBeacon)
+	allShardBlocks := blkTmplGenerator.shardToBeaconPool.GetValidPendingBlock(shardsToBeacon)
 	//Shard block is a map ShardId -> array of shard block
 	stabilityInstructions := [][]string{}
 	accumulativeValues := &accumulativeValues{
 		saleDataMap: map[string]*component.SaleData{},
 		trade:       map[string]bool{},
 	}
-	for shardID, shardBlocks := range shardsBlocks {
+	var keys []int
+	for k := range allShardBlocks {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, value := range keys {
+		shardID := byte(value)
+		shardBlocks := allShardBlocks[shardID]
 		// Only accept block in one epoch
 		totalBlock := 0
 		//UNCOMMENT FOR TESTING
@@ -242,8 +250,14 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 	instructions = append(instructions, stabilityInstructions...)
 	//=======Swap
 	// Shard Swap: both abnormal or normal swap
-	for _, swapInstruction := range swap {
-		instructions = append(instructions, swapInstruction...)
+	//TODO: key value
+	var keys []int
+	for k := range swap {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, shardID := range keys {
+		instructions = append(instructions, swap[byte(shardID)]...)
 	}
 	// Beacon normal swap
 	if block.Header.Height%common.EPOCH == 0 {
