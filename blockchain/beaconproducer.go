@@ -336,11 +336,14 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 	shardStates[shardID] = shardState
 
 	instructions := shardBlock.Instructions
+	Logger.log.Critical(instructions)
 	// Validate swap instruction => for testing
 	for _, l := range shardBlock.Instructions {
-		if l[0] == "swap" {
-			if l[3] != "shard" || l[4] != strconv.Itoa(int(shardID)) {
-				panic("Swap instruction is invalid")
+		if len(l) > 0 {
+			if l[0] == SwapAction {
+				if l[3] != "shard" || l[4] != strconv.Itoa(int(shardID)) {
+					panic("Swap instruction is invalid")
+				}
 			}
 		}
 	}
@@ -348,10 +351,12 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 		Logger.log.Criticalf("Instruction in shardBlock %+v, %+v \n", shardBlock.Header.Height, instructions)
 	}
 	for _, l := range instructions {
-		if l[0] == StakeAction {
-			stakers = append(stakers, l)
-		} else if l[0] == SwapAction {
-			swapers = append(swapers, l)
+		if len(l) > 0 {
+			if l[0] == StakeAction {
+				stakers = append(stakers, l)
+			} else if l[0] == SwapAction {
+				swapers = append(swapers, l)
+			}
 		}
 	}
 
@@ -449,11 +454,13 @@ func generateRandomInstruction(timestamp int64, wg *sync.WaitGroup) ([]string, i
 func getStakeValidatorArrayString(v []string) ([]string, []string) {
 	beacon := []string{}
 	shard := []string{}
-	if v[0] == StakeAction && v[2] == "beacon" {
-		beacon = strings.Split(v[1], ",")
-	}
-	if v[0] == StakeAction && v[2] == "shard" {
-		shard = strings.Split(v[1], ",")
+	if len(v) > 0 {
+		if v[0] == StakeAction && v[2] == "beacon" {
+			beacon = strings.Split(v[1], ",")
+		}
+		if v[0] == StakeAction && v[2] == "shard" {
+			shard = strings.Split(v[1], ",")
+		}
 	}
 	return beacon, shard
 }

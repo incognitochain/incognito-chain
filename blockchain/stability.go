@@ -156,6 +156,9 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 	instructions = append(instructions, votingInstruction...)
 
 	for _, inst := range shardBlockInstructions {
+		if len(inst) < 1 {
+			continue
+		}
 		if inst[0] != "36" {
 			fmt.Printf("[db] beaconProducer found inst: %s\n", inst[0])
 		}
