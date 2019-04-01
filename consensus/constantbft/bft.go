@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -77,6 +76,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 			switch protocol.phase {
 			case PBFT_PROPOSE:
 				//    single-node start    //
+				time.Sleep(2 * time.Second)
 				go protocol.CreateBlockMsg()
 				<-protocol.proposeCh
 				if protocol.pendingBlock != nil {
@@ -462,7 +462,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	select {
 	case <-protocol.proposeCh:
 		Logger.log.Critical("Oops block create time longer than timeout")
-		os.Exit(1)
+		// os.Exit(1)
 	default:
 		protocol.proposeCh <- msg
 	}
