@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"sort"
 
@@ -77,7 +78,7 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 		Start: begin,
 		Limit: end,
 	}
-	
+
 	iter := db.NewIterator(&searchRange, nil)
 	rightIndex := self.GetConstitutionIndex(helper) + 1
 	for iter.Next() {
@@ -132,7 +133,7 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 	if bestProposal.NumberOfVote == 0 {
 		return resIns, nil
 	}
-	byteTemp, err0 := db.GetSubmitProposalDB(helper.GetBoardType(), helper.GetConstitutionInfo(self).ConstitutionIndex + 1, bestProposal.TxId.GetBytes())
+	byteTemp, err0 := db.GetSubmitProposalDB(helper.GetBoardType(), helper.GetConstitutionInfo(self).ConstitutionIndex+1, bestProposal.TxId.GetBytes())
 	gg := lvdb.ViewDBByPrefix(db, lvdb.SubmitProposalPrefix)
 	_ = gg
 	if err0 != nil {
@@ -417,15 +418,18 @@ func (chain *BlockChain) neededNewConstitution(helper ConstitutionHelper) bool {
 }
 
 func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper) ([][]string, error) {
-
+	panic("[voting] aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	// 	prevBlock := blockgen.chain.BestState[shardID].BestBlock
 	instructions := make([]frombeaconins.InstructionFromBeacon, 0)
-
+	fmt.Println("[voting]-Enter generateVotingInstructionWOIns")
+	os.Exit(0)
 	if self.neededFirstNewGovernor(helper) {
+		fmt.Println("[voting]-[neededNewGovernor]-Create first instruction")
 		updateGovernorInstruction, err := self.CreateUpdateNewGovernorInstruction(helper)
 		if err != nil {
 			return nil, err
 		}
+		fmt.Println("[voting]-[neededNewGovernor]-Created ", updateGovernorInstruction)
 		instructions = append(instructions, updateGovernorInstruction...)
 	}
 
