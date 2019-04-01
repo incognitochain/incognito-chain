@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -77,6 +76,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 			switch protocol.phase {
 			case PBFT_PROPOSE:
 				//    single-node start    //
+				time.Sleep(2 * time.Second)
 				go protocol.CreateBlockMsg()
 				<-protocol.proposeCh
 				if protocol.pendingBlock != nil {
@@ -429,36 +429,40 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 		if err != nil {
 			Logger.log.Error(err)
 			close(protocol.proposeCh)
+		} else {
+			jsonBlock, _ := json.Marshal(newBlock)
+			msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.UserKeySet)
+			if err != nil {
+				Logger.log.Error(err)
+				close(protocol.proposeCh)
+			} else {
+				protocol.pendingBlock = newBlock
+				protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
+			}
 		}
-		jsonBlock, _ := json.Marshal(newBlock)
-		msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.UserKeySet)
-		if err != nil {
-			Logger.log.Error(err)
-			close(protocol.proposeCh)
-		}
-		protocol.pendingBlock = newBlock
-		protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
 	} else {
 		newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ShardID, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
 		if err != nil {
 			Logger.log.Error(err)
 			close(protocol.proposeCh)
+		} else {
+			jsonBlock, _ := json.Marshal(newBlock)
+			msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.UserKeySet)
+			if err != nil {
+				Logger.log.Error(err)
+				close(protocol.proposeCh)
+			} else {
+				protocol.pendingBlock = newBlock
+				protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
+			}
 		}
-		jsonBlock, _ := json.Marshal(newBlock)
-		msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.UserKeySet)
-		if err != nil {
-			Logger.log.Error(err)
-			close(protocol.proposeCh)
-		}
-		protocol.pendingBlock = newBlock
-		protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
 	}
 	elasped := time.Since(start)
 	Logger.log.Critical("BFT: Block create time is", elasped)
 	select {
 	case <-protocol.proposeCh:
 		Logger.log.Critical("Oops block create time longer than timeout")
-		os.Exit(1)
+		// os.Exit(1)
 	default:
 		protocol.proposeCh <- msg
 	}
