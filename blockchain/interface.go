@@ -83,8 +83,3 @@ type TxPool interface {
 	// Check tx validate by it self
 	// ValidateTxByItSelf(tx metadata.Transaction) bool
 }
-
-type RewardAgent interface {
-	GetBasicSalary(shardID byte) uint64
-	GetSalaryPerTx(shardID byte) uint64
-}
