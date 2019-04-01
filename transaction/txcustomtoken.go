@@ -582,6 +582,9 @@ func (tx *TxCustomToken) GetTokenReceivers() ([][]byte, []uint64) {
 
 func (tx *TxCustomToken) GetTokenUniqueReceiver() (bool, []byte, uint64) {
 	sender := tx.GetSigPubKey()
+	if len(tx.TxTokenData.Vins) > 0 {
+		sender = tx.TxTokenData.Vins[0].PaymentAddress.Pk
+	}
 	pubkeys, amounts := tx.GetTokenReceivers()
 	pubkey := []byte{}
 	amount := uint64(0)
