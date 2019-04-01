@@ -90,12 +90,20 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	}
 
 	// Build stand-alone stability instructions
-	stabilityInsts, err := blockgen.buildDividendSubmitInsts(privatekey, shardID)
+	divInsts, err := blockgen.buildDividendSubmitInsts(privatekey, shardID)
 	if err != nil {
 		return nil, err
 	}
-	if stabilityInsts != nil && len(stabilityInsts) > 0 {
-		instructions = append(instructions, stabilityInsts...)
+	if divInsts != nil && len(divInsts) > 0 {
+		instructions = append(instructions, divInsts...)
+	}
+
+	tradeBondRespInsts, err := blockgen.buildTradeBondConfirmInsts(beaconBlocks, shardID)
+	if err != nil {
+		return nil, err
+	}
+	if tradeBondRespInsts != nil && len(tradeBondRespInsts) > 0 {
+		instructions = append(instructions, tradeBondRespInsts...)
 	}
 
 	block := &ShardBlock{
