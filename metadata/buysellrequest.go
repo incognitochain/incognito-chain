@@ -44,16 +44,7 @@ func NewBuySellRequest(
 }
 
 func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-	// For DCB trading bods with GOV
-	if len(bsReq.TradeID) > 0 {
-		keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-		dcbAddress := keyWalletDCBAccount.KeySet.PaymentAddress
-		if !bytes.Equal(dcbAddress.Pk, bsReq.PaymentAddress.Pk) {
-			return false, errors.New("buy bond request with TradeID must send assets to DCB's address")
-		}
-	}
-
-	// no need to do other validation here since it'll be checked on beacon chain
+	// no need to do validation here since it'll be checked on beacon chain
 	return true, nil
 }
 
@@ -78,6 +69,15 @@ func (bsReq *BuySellRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tra
 	}
 	if !txr.IsCoinsBurning() {
 		return false, false, errors.New("Must send coin to burning address")
+	}
+
+	// For DCB trading bods with GOV
+	if len(bsReq.TradeID) > 0 {
+		keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+		dcbAddress := keyWalletDCBAccount.KeySet.PaymentAddress
+		if !bytes.Equal(dcbAddress.Pk, bsReq.PaymentAddress.Pk) {
+			return false, false, errors.New("buy bond request with TradeID must send assets to DCB's address")
+		}
 	}
 	return true, true, nil
 }
