@@ -231,7 +231,7 @@ func (blockchain *BlockChain) GetTradeActivation(tradeID []byte) (*common.Hash, 
 func (blockchain *BlockChain) GetLatestTradeActivation(tradeID []byte) (*common.Hash, bool, bool, uint64, error) {
 	bondID, buy, activated, amount, err := blockchain.config.DataBase.GetTradeActivation(tradeID)
 	if err == nil {
-		return bondID, buy, activated, amount, err
+		return bondID, buy, activated, amount, nil
 	}
 	for _, trade := range blockchain.GetAllTrades() {
 		if bytes.Equal(trade.TradeID, tradeID) {
