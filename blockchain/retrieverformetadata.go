@@ -227,6 +227,21 @@ func (blockchain *BlockChain) GetTradeActivation(tradeID []byte) (*common.Hash, 
 	return blockchain.config.DataBase.GetTradeActivation(tradeID)
 }
 
+// GetLatestTradeActivation returns trade activation from local state if exist, otherwise get from current proposal
+func (blockchain *BlockChain) GetLatestTradeActivation(tradeID []byte) (*common.Hash, bool, bool, uint64, error) {
+	bondID, buy, activated, amount, err := blockchain.config.DataBase.GetTradeActivation(tradeID)
+	if err == nil {
+		return bondID, buy, activated, amount, err
+	}
+	for _, trade := range blockchain.GetAllTrades() {
+		if bytes.Equal(trade.TradeID, tradeID) {
+			activated := false
+			return trade.BondID, trade.Buy, activated, trade.Amount, nil
+		}
+	}
+	return nil, false, false, 0, errors.New("no trade found")
+}
+
 //// CMB
 func (blockchain *BlockChain) GetCMB(mainAccount []byte) (privacy.PaymentAddress, []privacy.PaymentAddress, uint64, *common.Hash, uint8, uint64, error) {
 	reserveAcc, members, capital, hash, state, fine, err := blockchain.config.DataBase.GetCMB(mainAccount)

@@ -156,6 +156,11 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 		return err
 	}
 
+	err = blockchain.processTradeBondTx(block)
+	if err != nil {
+		return err
+	}
+
 	for _, tx := range block.Body.Transactions {
 		meta := tx.GetMetadata()
 		if meta == nil {

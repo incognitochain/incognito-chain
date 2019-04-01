@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -47,7 +48,7 @@ func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr Block
 	if len(bsReq.TradeID) > 0 {
 		keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 		dcbAddress := keyWalletDCBAccount.KeySet.PaymentAddress
-		if dcbAddress != bsReq.PaymentAddress {
+		if !bytes.Equal(dcbAddress.Pk, bsReq.PaymentAddress.Pk) {
 			return false, errors.New("buy bond request with TradeID must send assets to DCB's address")
 		}
 	}
