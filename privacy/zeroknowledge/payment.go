@@ -707,19 +707,21 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 		sumInputValue = 0
 		sumOutputValue = 0
 
+		pubKeyLastByteSender := pubKey[len(pubKey)-1]
+		senderShardID := common.GetShardIDFromLastByte(pubKeyLastByteSender)
+		cmShardIDSender := privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{senderShardID}))
+
 		for i := 0; i < len(proof.InputCoins); i++ {
 			// Check input coins' Serial number is created from input coins' input and sender's spending key
 			if !proof.SNNoPrivacyProof[i].Verify(nil) {
 				return false
 			}
 
-			pubKeyLastByteSender := pubKey[len(pubKey)-1]
-
 			// Check input coins' cm is calculated correctly
 			cmTmp := proof.InputCoins[i].CoinDetails.PublicKey
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(proof.InputCoins[i].CoinDetails.Value))))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMult(proof.InputCoins[i].CoinDetails.SNDerivator))
-			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{pubKeyLastByteSender})))
+			cmTmp = cmTmp.Add(cmShardIDSender)
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(proof.InputCoins[i].CoinDetails.Randomness))
 			if !cmTmp.IsEqual(proof.InputCoins[i].CoinDetails.CoinCommitment) {
 				return false
