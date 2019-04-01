@@ -211,19 +211,19 @@ func (bc *BlockChain) ProcessStandAloneInstructions(block *ShardBlock) error {
 	return nil
 }
 
-func (bc *BlockChain) updateTradeActivation(tradeID []byte, amount uint64) error {
+func (bc *BlockChain) updateTradeActivation(tradeID []byte, reqAmount uint64) error {
 	// Use balance left from previous activation if it exist
-	bondID, buy, _, maxAmount, err := bc.GetLatestTradeActivation(tradeID)
+	bondID, buy, _, amount, err := bc.GetLatestTradeActivation(tradeID)
 	if err != nil {
 		return err
 	}
-	if maxAmount < amount {
-		return errors.Errorf("trade bond requested amount too high, %d > %d\n", amount, maxAmount)
+	if amount < reqAmount {
+		return errors.Errorf("trade bond requested amount too high, %d > %d\n", reqAmount, amount)
 	}
 
 	activated := true
-	fmt.Printf("[db] updating trade bond status: %v %s %t %t %d\n", tradeID, bondID.String(), buy, activated, amount)
-	return bc.config.DataBase.StoreTradeActivation(tradeID, bondID, buy, activated, maxAmount-amount)
+	fmt.Printf("[db] updating trade bond status: %v %s %t %t %d\n", tradeID, bondID.String(), buy, activated, reqAmount)
+	return bc.config.DataBase.StoreTradeActivation(tradeID, bondID, buy, activated, amount-reqAmount)
 }
 
 func (bc *BlockChain) processBuyBondTx(tx metadata.Transaction) error {
