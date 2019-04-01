@@ -422,16 +422,16 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	valid, err = tx.verifySigTx()
 	if !valid {
 		if err != nil {
-			Logger.log.Infof("[PRIVACY LOG] - Error verifying signature of tx: %+v", err)
+			Logger.log.Errorf("[PRIVACY LOG] - Error verifying signature of tx: %+v", err)
 		}
-		Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION SIGNATURE")
+		Logger.log.Errorf("[PRIVACY LOG] - FAILED VERIFICATION SIGNATURE")
 		return false
 	}
 
 	senderPK := tx.GetSigPubKey()
 	multisigsRegBytes, getMSRErr := db.GetMultiSigsRegistration(senderPK)
 	if getMSRErr != nil {
-		Logger.log.Infof("getMSRErr: %v\n", getMSRErr)
+		Logger.log.Errorf("getMSRErr: %v\n", getMSRErr)
 		return false
 	}
 
