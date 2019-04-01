@@ -422,7 +422,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		}
 
 		// Verify stability transactions
-		err := blockchain.VerifyStabilityTransactionsForNewBlock(block)
+		err := blockchain.VerifyStabilityTransactionsForNewBlock(totalInstructions, block)
 		if err != nil {
 			return err
 		}
