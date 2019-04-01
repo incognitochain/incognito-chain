@@ -9,6 +9,7 @@ const (
 	EstimateFee              = "estimatefee"
 	EstimateFeeWithEstimator = "estimatefeewithestimator"
 	GetGenerate              = "getgenerate"
+	GetActiveShards = "getactiveshards"
 
 	GetMiningInfo                 = "getmininginfo"
 	GetRawMempool                 = "getrawmempool"
