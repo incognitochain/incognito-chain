@@ -98,7 +98,7 @@ func (bc *BlockChain) verifyBuyBackRequestTx(tx metadata.Transaction, insts [][]
 			return errors.Errorf("invalid data for trade bond BuyBackRequest tx: got %+v, expect %+v", txData, td)
 		}
 
-		bondID := &txToken.TxTokenData.Vins[0].TxCustomTokenID
+		bondID := &txToken.TxTokenData.PropertyID
 		if !bondID.IsEqual(td.bondID) {
 			fmt.Printf("[db] invalid bondID: %s %s\n", bondID.String(), td.bondID.String())
 			return errors.Errorf("invalid bondID for trade bond BuyBackRequest tx: got %s, expected %s", bondID.String(), td.bondID.String())
