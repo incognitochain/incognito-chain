@@ -30,7 +30,6 @@ type accumulativeValues struct {
 	totalRefundAmt       uint64
 	totalOracleRewards   uint64
 	saleDataMap          map[string]*component.SaleData
-	trade                map[string]bool
 }
 
 func isGOVFundEnough(
