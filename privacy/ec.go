@@ -151,7 +151,11 @@ func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 func (point EllipticPoint) Hash(index int64) *EllipticPoint {
 	res := new(EllipticPoint).Zero()
 	tmp := AddPaddingBigInt(point.X, BigIntSize)
-	tmp = append(tmp, big.NewInt(index).Bytes()...)
+	if index == 0 {
+		tmp = append(tmp, byte(0))
+	} else {
+		tmp = append(tmp, big.NewInt(index).Bytes()...)
+	}
 
 	for {
 		tmp = common.HashB(tmp)
