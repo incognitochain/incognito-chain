@@ -3,12 +3,12 @@ package metadata
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
+	"github.com/pkg/errors"
 )
 
 type BuyBackRequest struct {
@@ -40,6 +40,17 @@ func (bbReq *BuyBackRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
+	if len(bbReq.TradeID) > 0 {
+		// Validation for trading bonds
+		_, buy, _, amount, _ := bcr.GetLatestTradeActivation(bbReq.TradeID)
+		if amount < bbReq.Amount {
+			return false, errors.Errorf("trade bond requested amount too high, %d > %d\n", bbReq.Amount, amount)
+		}
+		if buy {
+			return false, errors.New("trade is for buying bonds, not selling")
+		}
+	}
+
 	return true, nil
 }
 
