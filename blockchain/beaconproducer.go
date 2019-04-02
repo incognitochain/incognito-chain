@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -49,7 +48,6 @@ import (
 		Sign block and update validator index, agg sig
 */
 func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddress, privateKey *privacy.SpendingKey, proposerOffset int, shardsToBeacon map[byte]uint64) (*BeaconBlock, error) {
-	os.Exit(0)
 	beaconBlock := &BeaconBlock{}
 	beaconBestState := BestStateBeacon{}
 	// lock blockchain
@@ -92,7 +90,6 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	}
 	beaconBlock.Header.Timestamp = time.Now().Unix()
 	beaconBlock.Header.PrevBlockHash = beaconBestState.BestBlockHash
-	os.Exit(0)
 	tempShardState, staker, swap, stabilityInstructions := blkTmplGenerator.GetShardState(&beaconBestState, shardsToBeacon)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
 
@@ -167,6 +164,10 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	}
 	beaconBlock.ProducerSig = producerSig
 	//================End Generate Signature
+	fmt.Println("[voting] - Beaconblock[", beaconBlock.Header.Height, "] body")
+	for _, inst := range beaconBlock.Body.Instructions {
+		fmt.Println("[voting] - - - > ", inst)
+	}
 	return beaconBlock, nil
 }
 
@@ -175,9 +176,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 // #2: valid stakers
 // #3: swap validator => map[byte][][]string
 func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon, shardsToBeacon map[byte]uint64) (map[byte][]ShardState, [][]string, map[byte][][]string, [][]string) {
-	fmt.Println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-	os.Exit(0)
-	panic("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+
 	shardStates := make(map[byte][]ShardState)
 	validStakers := [][]string{}
 	validSwap := make(map[byte][][]string)
@@ -210,7 +209,6 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			}
 			fmt.Println("[voting] - creating stability instruction")
 			// step 3 Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-			os.Exit(0)
 			stabilityInstructionsPerBlock, err := blkTmplGenerator.buildStabilityInstructions(
 				shardID,
 				shardBlock.Instructions,
@@ -225,6 +223,9 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 
 			stabilityInstructions = append(stabilityInstructions, stabilityInstructionsPerBlock...)
 			for _, l := range shardBlock.Instructions {
+				if len(l) == 0 {
+					continue
+				}
 				if l[0] == "swap" {
 					if l[3] != "shard" || l[4] != strconv.Itoa(int(shardID)) {
 						panic("Swap instruction is invalid")
@@ -260,6 +261,9 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 				Logger.log.Criticalf("Instruction in shardBlock %+v, %+v \n", shardBlock.Header.Height, instructions)
 			}
 			for _, l := range instructions {
+				if len(l) == 0 {
+					continue
+				}
 				if l[0] == StakeAction {
 					fmt.Println("Beacon Producer/ Stake Instructions", l)
 					stakers = append(stakers, l)
@@ -327,6 +331,30 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			}
 		}
 	}
+
+	fmt.Println("[voting]-Stability Instruction before add voting : ")
+	for _, inst := range stabilityInstructions {
+		fmt.Println("[voting]=============> ", inst)
+	}
+
+	votingInstruction, err := blkTmplGenerator.chain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
+	if err != nil {
+		fmt.Println("[voting]-Build DCB voting instruction failed: ", err)
+	} else {
+		stabilityInstructions = append(stabilityInstructions, votingInstruction...)
+	}
+	votingInstruction, err = blkTmplGenerator.chain.generateVotingInstructionWOIns(GOVConstitutionHelper{})
+	if err != nil {
+		fmt.Println("[voting]-Build GOV voting instruction failed: ", err)
+	} else {
+		stabilityInstructions = append(stabilityInstructions, votingInstruction...)
+	}
+
+	fmt.Println("[voting]-Stability Instruction after add voting : ")
+	for _, inst := range stabilityInstructions {
+		fmt.Println("[voting]<============= ", inst)
+	}
+
 	oracleInsts, err := blkTmplGenerator.buildOracleRewardInstructions(beaconBestState)
 	if err != nil {
 		fmt.Println("Build oracle reward instructions failed: ", err)
