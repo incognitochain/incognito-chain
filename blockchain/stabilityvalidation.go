@@ -54,7 +54,6 @@ func (bc *BlockChain) verifyBuyFromGOVRequestTx(tx metadata.Transaction, insts [
 }
 
 func (bc *BlockChain) VerifyStabilityTransactionsForNewBlock(insts [][]string, block *ShardBlock) error {
-	fmt.Println("Start VerifyStabilityTransactionsForNewBlock.... hahaha")
 	instUsed := make([]int, len(insts)) // Count how many times an inst is used by a tx
 	for _, tx := range block.Body.Transactions {
 		if tx.GetMetadata() == nil {
