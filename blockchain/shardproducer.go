@@ -424,11 +424,11 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 	var keys []int
 	txs := []metadata.Transaction{}
 	txTokenDataList := []transaction.TxTokenData{}
-	// TODO: 0xsirrush change process
-	listCustomTokens, err := blockchain.ListCustomToken()
-	if err != nil {
-		panic("Can't Retrieve List Custom Token in Database")
-	}
+	// 0xsirrush updated: check existed tokenID
+	//listCustomTokens, err := blockchain.ListCustomToken()
+	//if err != nil {
+	//	panic("Can't Retrieve List Custom Token in Database")
+	//}
 	for k := range crossTxTokenDataMap {
 		keys = append(keys, int(k))
 	}
@@ -454,7 +454,7 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 						nil,
 						0,
 						tokenParam,
-						listCustomTokens,
+						//listCustomTokens,
 						blockchain.config.DataBase,
 						nil,
 						false,
