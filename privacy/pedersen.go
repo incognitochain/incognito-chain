@@ -30,7 +30,7 @@ func newPedersenParams() PedersenCommitment {
 	pcm.G[0].Set(Curve.Params().Gx, Curve.Params().Gy)
 
 	for i := 1; i < len(pcm.G); i++ {
-		pcm.G[i] = pcm.G[0].Hash(uint64(i))
+		pcm.G[i] = pcm.G[0].Hash(int64(i))
 	}
 	return pcm
 }
