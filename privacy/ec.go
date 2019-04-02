@@ -148,10 +148,10 @@ func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 }
 
 // Hash derives a new elliptic point from an elliptic point and an index using hash function
-func (point EllipticPoint) Hash(index int) *EllipticPoint {
+func (point EllipticPoint) Hash(index uint64) *EllipticPoint {
 	res := new(EllipticPoint).Zero()
 	tmp := AddPaddingBigInt(point.X, BigIntSize)
-	tmp = append(tmp, common.Uint64ToBytes(uint64(index))...)
+	tmp = append(tmp, common.Uint64ToBytes(index)...)
 
 	for {
 		tmp = common.HashB(tmp)

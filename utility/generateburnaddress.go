@@ -11,7 +11,7 @@ package main
 //		// gov: 10000000
 //		// burn: 1000000
 //		//param = 10000000
-//		burnPubKeyE := privacy.PedCom.G[0].Hash(i)
+//		burnPubKeyE := privacy.PedCom.G[0].Hash(uint64(i))
 //		burnPubKey := burnPubKeyE.Compress()
 //		burnKey := wallet.KeyWallet{
 //			KeySet: cashec.KeySet{
