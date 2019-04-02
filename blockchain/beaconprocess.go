@@ -290,7 +290,6 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		}
 		accumulativeValues := &accumulativeValues{
 			saleDataMap: map[string]*component.SaleData{},
-			trade:       map[string]bool{},
 		}
 		allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidPendingBlock(nil)
 		var keys []int
