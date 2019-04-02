@@ -187,10 +187,10 @@ func (rpcServer RpcServer) buildCustomTokenParam(tokenParamsRaw map[string]inter
 	voutsAmount := int64(0)
 	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
 	// get list custom token
-	listCustomTokens, err := rpcServer.config.BlockChain.ListCustomToken()
-	if err != nil {
-		return nil, nil, NewRPCError(ErrListCustomTokenNotFound, err)
-	}
+	//listCustomTokens, err := rpcServer.config.BlockChain.ListCustomToken()
+	//if err != nil {
+	//	return nil, nil, NewRPCError(ErrListCustomTokenNotFound, err)
+	//}
 	switch tokenParams.TokenTxType {
 	case transaction.CustomTokenTransfer:
 		{
@@ -199,7 +199,12 @@ func (rpcServer RpcServer) buildCustomTokenParam(tokenParamsRaw map[string]inter
 				return nil, nil, NewRPCError(ErrRPCInvalidParams, errors.Wrap(err, "Token ID is invalid"))
 			}
 
-			if _, ok := listCustomTokens[*tokenID]; !ok {
+			//if _, ok := listCustomTokens[*tokenID]; !ok {
+			//	return nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
+			//}
+
+			existed := rpcServer.config.BlockChain.CustomTokenIDExisted(tokenID)
+			if !existed {
 				return nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
 			}
 
@@ -243,7 +248,8 @@ func (rpcServer RpcServer) buildCustomTokenParam(tokenParamsRaw map[string]inter
 			}
 		}
 	}
-	return tokenParams, listCustomTokens, nil
+	//return tokenParams, listCustomTokens, nil
+	return tokenParams, nil, nil
 }
 
 // buildRawCustomTokenTransaction ...
@@ -290,6 +296,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	// param #5: token params
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	tokenParams, listCustomTokens, err := rpcServer.buildCustomTokenParam(tokenParamsRaw, senderKeySet)
+	_ = listCustomTokens
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
@@ -315,7 +322,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 		inputCoins,
 		realFee,
 		tokenParams,
-		listCustomTokens,
+		//listCustomTokens,
 		*rpcServer.config.Database,
 		metaData,
 		hasPrivacy,

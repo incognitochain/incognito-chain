@@ -10,7 +10,6 @@ import (
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/metadata/frombeaconins"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
 )
@@ -205,18 +204,18 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 			},
 		}
 		db := blockgen.chain.config.DataBase
-		listCustomTokens, err := frombeaconins.GetListCustomTokens(db, blockgen.chain)
-		if err != nil {
-			fmt.Printf("[db] build issuing resp get list err: %v\n", err)
-			return nil, err
-		}
+		//listCustomTokens, err := frombeaconins.GetListCustomTokens(db, blockgen.chain)
+		//if err != nil {
+		//	fmt.Printf("[db] build issuing resp get list err: %v\n", err)
+		//	return nil, err
+		//}
 		err = txCustom.Init(
 			blkProducerPrivateKey,
 			[]*privacy.PaymentInfo{},
 			nil,
 			0,
 			customTokenParamTx,
-			listCustomTokens,
+			//listCustomTokens,
 			db,
 			meta,
 			false,
