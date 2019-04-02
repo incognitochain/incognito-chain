@@ -11,7 +11,6 @@ import (
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
 	"github.com/constant-money/constant-chain/transaction"
-	"github.com/constant-money/constant-chain/wallet"
 )
 
 // TxViewPoint is used to contain data which is fetched from tx of every block
@@ -62,9 +61,6 @@ func (view *TxViewPoint) ListSerialNumnbersEclipsePoint() []*privacy.EllipticPoi
 }
 
 // fetch from desc of tx to get nullifiers and commitments
-// need to check light or not light mode by local wallet param
-// with light mode - node only fetch outputcoins of account in local wallet -> smaller data
-// with not light mode - node fetch all outputcoins of all accounts in network -> big data
 // (note: still storage full data of commitments, serialnumbers, snderivator to check double spend)
 func (view *TxViewPoint) processFetchTxViewPoint(
 	shardID byte,
@@ -112,7 +108,6 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 				acceptedCommitments[pubkeyStr] = make([][]byte, 0)
 			}
 			// get data for commitments
-			// no need to check light mode
 			acceptedCommitments[pubkeyStr] = append(acceptedCommitments[pubkeyStr], item.CoinDetails.CoinCommitment.Compress())
 
 			// get data for output coin
@@ -123,7 +118,6 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 		}
 
 		// get data for Snderivators
-		// no need to check light mode
 		snD := item.CoinDetails.SNDerivator
 		ok, err = db.HasSNDerivator(tokenID, *snD, shardID)
 		if !ok && err == nil {
@@ -136,9 +130,6 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 /*
 fetchTxViewPointFromBlock get list serialnumber and commitments, output coins from txs in block and check if they are not in Main chain db
 return a tx view point which contains list new nullifiers and new commitments from block
-// need to check light or not light mode by local wallet param
-// with light mode - node only fetch outputcoins of account in local wallet -> smaller data
-// with not light mode - node fetch all outputcoins of all accounts in network -> big data
 // (note: still storage full data of commitments, serialnumbers, snderivator to check double spend)
 */
 
@@ -360,7 +351,6 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 	db database.DatabaseInterface,
 	outputCoins []privacy.OutputCoin,
 	tokenID *common.Hash,
-	localWallet *wallet.Wallet, // nil if running with light mode -> fetch output coin of all, != nill when running light mode and store only outputcoins of account in wallet
 ) (map[string][][]byte, map[string][]privacy.OutputCoin, map[string][]big.Int, error) {
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
@@ -388,31 +378,16 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 				acceptedCommitments[pubkeyStr] = make([][]byte, 0)
 			}
 			// get data for commitments
-			// no need to check light mode
 			acceptedCommitments[pubkeyStr] = append(acceptedCommitments[pubkeyStr], item.CoinDetails.CoinCommitment.Compress())
 
 			// get data for output coin
-			// need to check light mode
-			if localWallet == nil {
-				// full node
-				if acceptedOutputcoins[pubkeyStr] == nil {
-					acceptedOutputcoins[pubkeyStr] = make([]privacy.OutputCoin, 0)
-				}
-				acceptedOutputcoins[pubkeyStr] = append(acceptedOutputcoins[pubkeyStr], *item)
-			} else {
-				// light mode node
-				// only store outputcoins when local wallet of node is containing tx of accounts in wallet
-				if localWallet.ContainPubKey(pubkey) {
-					if acceptedOutputcoins[pubkeyStr] == nil {
-						acceptedOutputcoins[pubkeyStr] = make([]privacy.OutputCoin, 0)
-					}
-					acceptedOutputcoins[pubkeyStr] = append(acceptedOutputcoins[pubkeyStr], *item)
-				}
+			if acceptedOutputcoins[pubkeyStr] == nil {
+				acceptedOutputcoins[pubkeyStr] = make([]privacy.OutputCoin, 0)
 			}
+			acceptedOutputcoins[pubkeyStr] = append(acceptedOutputcoins[pubkeyStr], *item)
 		}
 
 		// get data for Snderivators
-		// no need to check light mode
 		snD := item.CoinDetails.SNDerivator
 		ok, err = db.HasSNDerivator(tokenID, *snD, shardID)
 		if !ok && err == nil {
@@ -422,7 +397,7 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 	return acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
 }
 
-func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.DatabaseInterface, block *ShardBlock, localWallet *wallet.Wallet) error {
+func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.DatabaseInterface, block *ShardBlock) error {
 	allShardCrossTransactions := block.Body.CrossTransactions
 	// Loop through all of the transaction descs (except for the salary tx)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
@@ -433,7 +408,7 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 	//@NOTICE: this function just work for Normal Transaction
 	for _, crossTransactions := range allShardCrossTransactions {
 		for _, crossTransaction := range crossTransactions {
-			commitments, outCoins, snDs, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, crossTransaction.OutputCoin, constantTokenID, localWallet)
+			commitments, outCoins, snDs, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, crossTransaction.OutputCoin, constantTokenID)
 			if err != nil {
 				return NewBlockChainError(UnExpectedError, err)
 			}
@@ -464,7 +439,7 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 					subView.privacyCustomTokenMetadata.PropertySymbol = tokenPrivacyData.PropertySymbol
 					subView.privacyCustomTokenMetadata.Amount = tokenPrivacyData.Amount
 					subView.privacyCustomTokenMetadata.Mintable = tokenPrivacyData.Mintable
-					commitmentsP, outCoinsP, snDsP, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, tokenPrivacyData.OutputCoin, subView.tokenID, localWallet)
+					commitmentsP, outCoinsP, snDsP, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, tokenPrivacyData.OutputCoin, subView.tokenID)
 					if err != nil {
 						return NewBlockChainError(UnExpectedError, err)
 					}

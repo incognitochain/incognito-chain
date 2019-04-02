@@ -20,7 +20,6 @@ import (
 	"github.com/constant-money/constant-chain/metadata/frombeaconins"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
-	"github.com/constant-money/constant-chain/wallet"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
@@ -96,8 +95,6 @@ type Config struct {
 	ChainParams *Params
 	RelayShards []byte
 	NodeMode    string
-	//Wallet for light mode
-	Wallet *wallet.Wallet
 
 	//snapshot reward
 	customTokenRewardSnapshot map[string]uint64
@@ -653,12 +650,8 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 // 	}
 
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
-// need to check light or not light mode
-// with light mode - node only fetch outputcoins of account in local wallet -> smaller data
-// with not light mode - node fetch all outputcoins of all accounts in network -> big data
 // @note: still storage full data of commitments, serialnumbersm snderivator to check double spend
 // @note: this function only work for transaction transfer token/constant within shard
-
 func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBlock) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
@@ -791,7 +784,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
 
-	err := view.fetchCrossTransactionViewPointFromBlock(blockchain.config.DataBase, block, nil)
+	err := view.fetchCrossTransactionViewPointFromBlock(blockchain.config.DataBase, block)
 	for _, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
 		// 0xsirrush updated: check existed tokenID
 		tokenID := privacyCustomTokenSubView.tokenID
@@ -804,7 +797,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 
 				// crossShardTokenPrivacyMetaData := CrossShardTokenPrivacyMetaData{}
 				// json.Unmarshal(tokenDataBytes, &crossShardTokenPrivacyMetaData)
-				// fmt.Println("New Token CrossShardTokenPrivacyMetaData", crossShardTokenPrivacyMetaData)
+				// fmt.Println("New Token CrossShardTokenPrivacyMetaData", crossShardTokenPrivacyMetaDatla)
 
 				if err := blockchain.config.DataBase.StorePrivacyCustomTokenCrossShard(tokenID, tokenDataBytes); err != nil {
 					return err
