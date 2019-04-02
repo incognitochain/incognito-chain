@@ -662,8 +662,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBlock) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
-	// TODO: 0xsirrush check lightmode turn off
-	err := view.fetchTxViewPointFromBlock(blockchain.config.DataBase, block, nil)
+	err := view.fetchTxViewPointFromBlock(blockchain.config.DataBase, block)
 	if err != nil {
 		return err
 	}
