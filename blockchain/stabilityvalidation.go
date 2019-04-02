@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"bytes"
+	"fmt"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/metadata"
@@ -8,6 +10,7 @@ import (
 )
 
 func (bc *BlockChain) verifyBuyFromGOVRequestTx(tx metadata.Transaction, insts [][]string, instUsed []int) error {
+	fmt.Printf("[db] verifying buy form GOV Request tx\n")
 	meta, ok := tx.GetMetadata().(*metadata.BuySellRequest)
 	if !ok {
 		return errors.Errorf("error parsing metadata BuySellRequest of tx %s", tx.Hash().String())
@@ -22,9 +25,11 @@ func (bc *BlockChain) verifyBuyFromGOVRequestTx(tx metadata.Transaction, insts [
 			continue
 		}
 		td, err := bc.calcTradeData(inst[2])
-		if err != nil {
+		if err != nil && !bytes.Equal(meta.TradeID, td.tradeID) {
 			continue
 		}
+
+		fmt.Printf("[db] found inst: %s\n", inst[2])
 
 		txData := &tradeData{
 			tradeID:   meta.TradeID,
@@ -36,11 +41,13 @@ func (bc *BlockChain) verifyBuyFromGOVRequestTx(tx metadata.Transaction, insts [
 		}
 
 		if !td.Compare(txData) {
+			fmt.Printf("[db] data mismatched: %+v\t %+v", td, txData)
 			return errors.Errorf("invalid data for trade bond BuySellRequest tx: got %+v, expect %+v", td, txData)
 		}
 
 		instUsed[i] += 1
-		break
+		fmt.Printf("[db] inst %d matched\n", i)
+		return nil
 	}
 
 	return errors.Errorf("no instruction found for BuySellRequest tx %s", tx.Hash().String())
