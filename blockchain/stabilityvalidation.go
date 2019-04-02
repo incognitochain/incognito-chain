@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"bytes"
+	"fmt"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/metadata"
@@ -39,6 +40,7 @@ func (bc *BlockChain) verifyBuyFromGOVRequestTx(tx metadata.Transaction, insts [
 }
 
 func (bc *BlockChain) VerifyStabilityTransactionsForNewBlock(insts [][]string, block *ShardBlock) error {
+	fmt.Println("Start VerifyStabilityTransactionsForNewBlock.... hahaha")
 	instUsed := make([]int, len(insts)) // Count how many times an inst is used by a tx
 	for _, tx := range block.Body.Transactions {
 		if tx.GetMetadata() == nil {
@@ -49,6 +51,8 @@ func (bc *BlockChain) VerifyStabilityTransactionsForNewBlock(insts [][]string, b
 		switch tx.GetMetadataType() {
 		case metadata.BuyFromGOVRequestMeta:
 			err = bc.verifyBuyFromGOVRequestTx(tx, insts, instUsed)
+		case metadata.ShardBlockSalaryResponseMeta:
+			err = bc.verifyShardBlockSalaryResTx(tx, insts, instUsed, block.Header.ShardID)
 		}
 
 		if err != nil {
