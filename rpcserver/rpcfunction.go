@@ -28,6 +28,8 @@ var RpcHandler = map[string]commandHandler{
 	EstimateFee:              RpcServer.handleEstimateFee,
 	EstimateFeeWithEstimator: RpcServer.handleEstimateFeeWithEstimator,
 	GetGenerate:              RpcServer.handleGetGenerate,
+	GetActiveShards:          RpcServer.handleGetActiveShards,
+	GetMaxShardsNumber:       RpcServer.handleGetMaxShardsNumber,
 
 	//pool
 	GetMiningInfo:               RpcServer.handleGetMiningInfo,
@@ -37,6 +39,8 @@ var RpcHandler = map[string]commandHandler{
 	GetCrossShardPoolStateV2:    RpcServer.handleGetCrossShardPoolStateV2,
 	GetShardPoolStateV2:         RpcServer.handleGetShardPoolStateV2,
 	GetBeaconPoolStateV2:        RpcServer.handleGetBeaconPoolStateV2,
+	GetShardToBeaconPoolState:   RpcServer.handleGetShardToBeaconPoolState,
+	GetCrossShardPoolState:      RpcServer.handleGetCrossShardPoolState,
 	// block
 	GetBestBlock:        RpcServer.handleGetBestBlock,
 	GetBestBlockHash:    RpcServer.handleGetBestBlockHash,
@@ -62,6 +66,8 @@ var RpcHandler = map[string]commandHandler{
 	HasSerialNumbers:                RpcServer.handleHasSerialNumbers,
 	HasSnDerivators:                 RpcServer.handleHasSnDerivators,
 
+	//pool
+
 	// Beststate
 	GetCandidateList:              RpcServer.handleGetCandidateList,
 	GetCommitteeList:              RpcServer.handleGetCommitteeList,
@@ -71,8 +77,6 @@ var RpcHandler = map[string]commandHandler{
 	GetBeaconPoolState:            RpcServer.handleGetBeaconPoolState,
 	GetShardPoolState:             RpcServer.handleGetShardPoolState,
 	GetShardPoolLatestValidHeight: RpcServer.handleGetShardPoolLatestValidHeight,
-	GetShardToBeaconPoolState:     RpcServer.handleGetShardToBeaconPoolState,
-	GetCrossShardPoolState:        RpcServer.handleGetCrossShardPoolState,
 	CanPubkeyStake:                RpcServer.handleCanPubkeyStake,
 	GetTotalTransaction:           RpcServer.handleGetTotalTransaction,
 
@@ -572,6 +576,10 @@ func (rpcServer RpcServer) handleGetActiveShards(params interface{}, closeChan <
 		return activeShards, nil
 	}
 	return -1, nil
+}
+
+func (rpcServer RpcServer) handleGetMaxShardsNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return common.MAX_SHARD_NUMBER, nil
 }
 
 func (rpcServer RpcServer) handleGetStakingAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
