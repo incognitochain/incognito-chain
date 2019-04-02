@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"math/big"
@@ -58,7 +59,15 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 	// loop to random commitmentIndexs
 	cpRandNum := (len(listUsableCommitments) * randNum) - len(listUsableCommitments)
 	fmt.Printf("cpRandNum: %d\n", cpRandNum)
-	lenCommitment, _ := db.GetCommitmentLength(tokenID, shardID)
+	lenCommitment, err1 := db.GetCommitmentLength(tokenID, shardID)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return
+	}
+	if lenCommitment == nil {
+		Logger.log.Error(errors.New("Commitments is empty"))
+		return
+	}
 	if lenCommitment.Uint64() == 1 {
 		commitmentIndexs = []uint64{0, 0, 0, 0, 0, 0, 0}
 		temp := usableInputCoins[0].CoinDetails.CoinCommitment.Compress()

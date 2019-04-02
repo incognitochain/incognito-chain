@@ -177,7 +177,6 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 	stabilityInstructions := [][]string{}
 	accumulativeValues := &accumulativeValues{
 		saleDataMap: map[string]*component.SaleData{},
-		trade:       map[string]bool{},
 	}
 	var keys []int
 	for k := range allShardBlocks {

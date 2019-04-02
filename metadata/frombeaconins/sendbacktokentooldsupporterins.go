@@ -87,10 +87,10 @@ func NewSendBackTokenToOldSupporterTx(
 	customTokenParamTx.Amount = amount
 
 	//CALL DB
-	listCustomTokens, err := GetListCustomTokens(db, bcr)
-	if err != nil {
-		return nil, err
-	}
+	//listCustomTokens, err := GetListCustomTokens(db, bcr)
+	//if err != nil {
+	//	return nil, err
+	//}
 	txCustom := &transaction.TxCustomToken{}
 	err1 := txCustom.Init(
 		minerPrivateKey,
@@ -98,7 +98,7 @@ func NewSendBackTokenToOldSupporterTx(
 		nil,
 		0,
 		&customTokenParamTx,
-		listCustomTokens,
+		//listCustomTokens,
 		db,
 		metadata.NewSendBackTokenToOldSupporterMetadata(),
 		false,
