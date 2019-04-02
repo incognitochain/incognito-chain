@@ -806,7 +806,7 @@ func (rpcServer RpcServer) handleCreateRawPrivacyCustomTokenTransaction(
 ) (interface{}, *RPCError) {
 	var err error
 	tx, err := rpcServer.buildRawPrivacyCustomTokenTransaction(params)
-	if err.(*transaction.TransactionError) != nil {
+	if err.(*RPCError) != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
