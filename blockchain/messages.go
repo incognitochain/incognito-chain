@@ -65,9 +65,6 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 				if blockchain.BestState.Shard[newBlk.Header.ShardID].ShardHeight == newBlk.Header.Height-1 {
 					err = blockchain.InsertShardBlock(newBlk, false)
 					if err != nil {
-						if err.(*BlockChainError).Code != -26 {
-							Logger.log.Error(err)
-						}
 						return
 					}
 				} else {
@@ -101,10 +98,7 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 						fmt.Println("Beacon block insert", newBlk.Header.Height)
 						err = blockchain.InsertBeaconBlock(newBlk, false)
 						if err != nil {
-							fmt.Println("Beacon block insert err", err)
-							if err.(*BlockChainError).Code != -26 {
-								Logger.log.Error(err)
-							}
+							return
 						}
 						return
 					}
