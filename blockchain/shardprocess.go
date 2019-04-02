@@ -380,6 +380,9 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return nil
 	}
 	totalInstructions := []string{}
+	instsForValidations := [][]string{}
+	instsForValidations = append(instsForValidations, txInstructions...)
+	instsForValidations = append(instsForValidations, block.Body.Instructions...)
 	for _, value := range txInstructions {
 		totalInstructions = append(totalInstructions, value...)
 	}
@@ -422,7 +425,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		}
 
 		// Verify stability transactions
-		err := blockchain.VerifyStabilityTransactionsForNewBlock(totalInstructions, block)
+		err := blockchain.VerifyStabilityTransactionsForNewBlock(instsForValidations, block)
 		if err != nil {
 			return err
 		}
