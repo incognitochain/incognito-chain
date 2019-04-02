@@ -329,7 +329,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 		shardIDSender,
 	)
 	if err.(*transaction.TransactionError) != nil {
-		return nil, err
+		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 
 	// pool inCoinsH
@@ -482,7 +482,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	)
 
 	if err.(*transaction.TransactionError) != nil {
-		return nil, err
+		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 
 	// pool inCoinsH
