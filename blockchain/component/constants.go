@@ -19,6 +19,9 @@ const (
 	ShareRewardOldDCBBoardIns
 	ShareRewardOldGOVBoardIns
 	SendBackTokenVoteBoardFailIns
+
+	ConfirmBuySellRequestMeta
+	ConfirmBuyBackRequestMeta
 )
 
 const (

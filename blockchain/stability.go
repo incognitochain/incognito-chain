@@ -135,7 +135,7 @@ func buildStabilityActions(
 }
 
 // build instructions at beacon chain before syncing to shards
-func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
+func (blockChain *BlockChain) buildStabilityInstructions(
 	shardID byte,
 	shardBlockInstructions [][]string,
 	beaconBestState *BestStateBeacon,
@@ -144,18 +144,21 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 	instructions := [][]string{}
 	//Add Voting instruction
 	// step 3 hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-	votingInstruction, err := blkTmpGen.chain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
+	votingInstruction, err := blockChain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
 	if err != nil {
 		return nil, NewBlockChainError(BeaconError, err)
 	}
 	instructions = append(instructions, votingInstruction...)
-	votingInstruction, err = blkTmpGen.chain.generateVotingInstructionWOIns(GOVConstitutionHelper{})
+	votingInstruction, err = blockChain.generateVotingInstructionWOIns(GOVConstitutionHelper{})
 	if err != nil {
 		return nil, NewBlockChainError(BeaconError, err)
 	}
 	instructions = append(instructions, votingInstruction...)
 
 	for _, inst := range shardBlockInstructions {
+		if len(inst) < 1 {
+			continue
+		}
 		if inst[0] != "36" {
 			fmt.Printf("[db] beaconProducer found inst: %s\n", inst[0])
 		}
@@ -186,7 +189,7 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 			newInst, err = buildInstructionsForTradeActivation(shardID, contentStr, beaconBestState, accumulativeValues, blkTmpGen.chain.config.DataBase)
 
 		case metadata.BuyBackRequestMeta:
-			newInst, err = buildInstructionsForBuyBackBondsReq(shardID, contentStr, beaconBestState, accumulativeValues, blkTmpGen.chain)
+			newInst, err = buildInstructionsForBuyBackBondsReq(shardID, contentStr, beaconBestState, accumulativeValues, blockChain)
 
 		case metadata.IssuingRequestMeta:
 			newInst, err = buildInstructionsForIssuingReq(shardID, contentStr, beaconBestState, accumulativeValues)
@@ -210,19 +213,23 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 			newInst, err = buildUpdateConstitutionIns(inst[2], common.GOVBoard)
 
 		case component.VoteBoardIns:
-			err = blkTmpGen.chain.AddVoteBoard(inst[2])
+			err = blockChain.AddVoteBoard(inst[2])
 
 		case component.SubmitProposalIns:
-			err = blkTmpGen.chain.AddSubmitProposal(inst[2])
+			err = blockChain.AddSubmitProposal(inst[2])
 		case component.VoteProposalIns:
-			err = blkTmpGen.chain.AddVoteProposal(inst[2])
+			err = blockChain.AddVoteProposal(inst[2])
 		default:
 			continue
 		}
 		if err != nil {
-			return [][]string{}, err
+			Logger.log.Error(err)
+			continue
 		}
-		instructions = append(instructions, newInst...)
+
+		if len(newInst) > 0 {
+			instructions = append(instructions, newInst...)
+		}
 	}
 	// update component in beststate
 	return instructions, nil
@@ -307,7 +314,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				if err != nil {
 					return nil, err
 				}
-				if metaType != 36 {
+				if metaType != 37 {
 					fmt.Printf("[db] shard build Resp from inst: %+v\n", l)
 				}
 				Logger.log.Warn("Metadata type:", metaType, "\n")
@@ -414,7 +421,9 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				if err != nil {
 					return nil, err
 				}
-				resTxs = append(resTxs, txs...)
+				if len(txs) > 0 {
+					resTxs = append(resTxs, txs...)
+				}
 			}
 		}
 	}

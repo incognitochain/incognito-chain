@@ -22,7 +22,7 @@ import (
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/constant-money/constant-chain/wallet"
 	libp2p "github.com/libp2p/go-libp2p-peer"
-	"github.com/patrickmn/go-cache"
+	cache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
 
@@ -36,11 +36,6 @@ type BlockChain struct {
 	BestState *BestState
 	config    Config
 	chainLock sync.RWMutex
-
-	//=====cache
-	beaconBlock        map[string][]byte // TODO review not use
-	highestBeaconBlock string            // TODO review not use
-
 	//channel
 	cQuitSync  chan struct{}
 	syncStatus struct {
@@ -224,8 +219,6 @@ func (blockchain *BlockChain) GetOracleParams() *component.Oracle {
 func (blockchain *BlockChain) initChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
-
-	//TODO: 0xBahamoot check back later
 	var initialized bool
 
 	blockchain.BestState = &BestState{
@@ -344,7 +337,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 	}
 
 	// Trade bonds
-	bondID, _ := common.NewHashFromStr("4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000")
+	bondID, _ := common.NewHashFromStr("a1bdba2624828899959bd3704df90859539623d89ba6767d0000000000000000")
 	tradeBondBuyID := [32]byte{5}
 	tradeBondSellID := [32]byte{6}
 	tradeBonds := []*component.TradeBondWithGOV{
@@ -688,6 +681,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 			}
 		case transaction.CustomTokenCrossShard:
 			{
+				// TODO: 0xsirrush change process
 				listCustomToken, err := blockchain.ListCustomToken()
 				if err != nil {
 					panic(err)

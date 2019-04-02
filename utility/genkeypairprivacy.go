@@ -41,5 +41,5 @@ func main() {
 	keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	fmt.Println("Pub-key byte array", keyWallet.KeySet.PaymentAddress.Pk)
 	fmt.Println(base58.Base58Check{}.Encode(keyWallet.KeySet.PaymentAddress.Pk, byte(0x00)))
-	fmt.Printf("Pub-key : %+v \n", keyWallet.Base58CheckSerialize(wallet.PaymentAddressType))
+	fmt.Printf("Payment address : %+v \n", keyWallet.Base58CheckSerialize(wallet.PaymentAddressType))
 }

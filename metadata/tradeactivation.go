@@ -51,27 +51,31 @@ func (act *TradeActivation) ValidateTxWithBlockChain(txr Transaction, bcr Blockc
 
 	// Check if tradeID hasn't been activated and amount left is higher than requested
 	_, _, activated, amount, err := bcr.GetTradeActivation(act.TradeID)
-	if err == nil && activated {
-		return false, errors.New("trade is activated")
-	}
-	if err == nil && act.Amount > amount {
-		return false, errors.Errorf("requested amount is too high: %d > %d", amount, act.Amount)
+	if err == nil {
+		if activated {
+			return false, errors.New("trade is activated")
+		}
+		if act.Amount > amount {
+			return false, errors.Errorf("requested amount is too high: %d > %d", act.Amount, amount)
+		}
+	} else if act.Amount > trade.Amount {
+		return false, errors.Errorf("requested amount is too high: %d > %d", act.Amount, trade.Amount)
 	}
 
-	// Check if balance is positive in case of selling bonds
-	//if !trade.Buy {
-	//	avail := bcr.GetDCBAvailableAsset(trade.BondID)
-	//	if avail < act.Amount {
-	//		return false, errors.Errorf("not enough asset to trade, have %d, need %d\n", avail, act.Amount)
-	//	}
-	//}
+	// Check if balance is enough in case of selling bonds
+	if !trade.Buy {
+		avail := bcr.GetDCBAvailableAsset(trade.BondID)
+		if avail < act.Amount {
+			return false, errors.Errorf("not enough asset to trade, have %d, need %d\n", avail, act.Amount)
+		}
+	}
 
 	return true, nil
 }
 
 func (act *TradeActivation) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if len(act.TradeID) == 0 {
-		return false, false, errors.New("Wrong TradeID")
+		return false, false, errors.New("wrong TradeID")
 	}
 	return false, true, nil
 }

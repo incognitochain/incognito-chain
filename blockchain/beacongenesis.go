@@ -147,11 +147,11 @@ func createDCBGenesisInsts() [][]string {
 func createDCBGenesisBoardInst() []string {
 	// TODO(@0xbunyip): set correct board address
 	boardAddress := []privacy.PaymentAddress{
-		// Payment4: 1Uv3VB24eUszt5xqVfB87ninDu7H43gGxdjAUxs9j9JzisBJcJr7bAJpAhxBNvqe8KNjM5G9ieS1iC944YhPWKs3H2US2qSqTyyDNS4Ba
-		//privacy.PaymentAddress{
-		//Pk: []byte{3, 36, 133, 3, 185, 44, 62, 112, 196, 239, 49, 190, 100, 172, 50, 147, 196, 154, 105, 211, 203, 57, 242, 110, 34, 126, 100, 226, 74, 148, 128, 167, 0},
-		//Tk: []byte{2, 134, 3, 114, 89, 60, 134, 3, 185, 245, 176, 187, 244, 145, 250, 149, 67, 98, 68, 106, 69, 200, 228, 209, 3, 26, 231, 15, 36, 251, 211, 186, 159},
-		//},
+		// Payment4: 112t8rqJHgJp2TPpNpLNx34aWHB5VH5Pys3hVjjhhf9tctVeCNmX2zQLBqzHau6LpUbSV52kXtG2hRZsuYWkXWF5kw2v24RJq791fWmQxVqy
+		privacy.PaymentAddress{
+			Pk: []byte{3, 159, 2, 42, 22, 163, 195, 221, 129, 31, 217, 133, 149, 16, 68, 108, 42, 192, 58, 95, 39, 204, 63, 68, 203, 132, 221, 48, 181, 131, 40, 189, 0},
+			Tk: []byte{2, 58, 116, 58, 73, 55, 129, 154, 193, 197, 40, 130, 50, 242, 99, 84, 59, 31, 107, 85, 68, 234, 250, 118, 66, 188, 15, 139, 89, 254, 12, 38, 211},
+		},
 	}
 
 	dcbBoardInst := &frombeaconins.AcceptDCBBoardIns{
@@ -164,7 +164,7 @@ func createDCBGenesisBoardInst() []string {
 
 func createDCBGenesisParamsInst() []string {
 	// Crowdsale bonds
-	bondID, _ := common.NewHashFromStr("4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000")
+	bondID, _ := common.NewHashFromStr("a1bdba2624828899959bd3704df90859539623d89ba6767d0000000000000000")
 	buyBondSaleID := [32]byte{1}
 	sellBondSaleID := [32]byte{2}
 	saleData := []component.SaleData{
