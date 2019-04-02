@@ -10,7 +10,7 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
 )
 
 // TxCustomTokenPrivacy is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -219,7 +219,8 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			//	}
 			//}
 			existed := db.PrivacyCustomTokenIDExisted(propertyID)
-			if !existed {
+			existedCross := db.PrivacyCustomTokenIDCrossShardExisted(propertyID)
+			if !existed && !existedCross {
 				return NewTransactionErr(UnexpectedErr, errors.New("invalid Token ID"))
 			}
 			Logger.log.Infof("Token %+v wil be transfered with", propertyID)
