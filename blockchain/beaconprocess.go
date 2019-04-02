@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 )
@@ -268,8 +269,20 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	}
 	// if pool does not have one of needed block, fail to verify
 	if isCommittee {
+		// @UNCOMMENT TO TEST
+		accumulativeValues := &accumulativeValues{
+			saleDataMap: map[string]*component.SaleData{},
+			trade:       map[string]bool{},
+		}
 		allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidPendingBlock(nil)
-		for shardID, shardBlocks := range allShardBlocks {
+		var keys []int
+		for k := range allShardBlocks {
+			keys = append(keys, int(k))
+		}
+		sort.Ints(keys)
+		for _, value := range keys {
+			shardID := byte(value)
+			shardBlocks := allShardBlocks[shardID]
 			if len(shardBlocks) >= len(block.Body.ShardState[shardID]) {
 				shardBlocks = shardBlocks[:len(block.Body.ShardState[shardID])]
 				shardStates := block.Body.ShardState[shardID]
@@ -304,6 +317,52 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 					if index != 0 && err != nil {
 						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 					}
+				}
+				// @UNCOMMENT TO TEST
+				beaconBestState := BestStateBeacon{}
+				tempShardStates := make(map[byte][]ShardState)
+				validStakers := [][]string{}
+				validSwappers := make(map[byte][][]string)
+				stabilityInstructions := [][]string{}
+				tempMarshal, err := json.Marshal(*blockchain.BestState.Beacon)
+				err = json.Unmarshal(tempMarshal, &beaconBestState)
+				if err != nil {
+					return NewBlockChainError(UnExpectedError, errors.New("Fail to Unmarshal beacon beststate"))
+				}
+				beaconBestState.CandidateShardWaitingForCurrentRandom = blockchain.BestState.Beacon.CandidateShardWaitingForCurrentRandom
+				beaconBestState.CandidateShardWaitingForNextRandom = blockchain.BestState.Beacon.CandidateShardWaitingForNextRandom
+				beaconBestState.CandidateBeaconWaitingForCurrentRandom = blockchain.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom
+				beaconBestState.CandidateBeaconWaitingForNextRandom = blockchain.BestState.Beacon.CandidateBeaconWaitingForNextRandom
+				if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
+					panic(NewBlockChainError(BeaconError, errors.New("problem with beststate in producing new block")))
+				}
+				for _, shardBlock := range shardBlocks {
+					tempShardState, validStaker, validSwapper, stabilityInstruction := blockchain.GetShardStateFromBlock(&beaconBestState, shardBlock, accumulativeValues, shardID)
+					tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
+					validStakers = append(validStakers, validStaker...)
+					validSwappers[shardID] = append(validSwappers[shardID], validSwapper[shardID]...)
+					stabilityInstructions = append(stabilityInstructions, stabilityInstruction...)
+				}
+				oracleInsts, err := blockchain.buildOracleRewardInstructions(&beaconBestState)
+				if err != nil {
+					Logger.log.Error("Build oracle reward instructions failed: ", err)
+				} else {
+					stabilityInstructions = append(stabilityInstructions, oracleInsts...)
+				}
+				tempInstruction := beaconBestState.GenerateInstruction(block, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
+				fmt.Println("BeaconProcess/tempInstruction: ", tempInstruction)
+				tempInstructionArr := []string{}
+				for _, strs := range tempInstruction {
+					tempInstructionArr = append(tempInstructionArr, strs...)
+				}
+				tempInstructionHash, err := GenerateHashFromStringArray(tempInstructionArr)
+				if err != nil {
+					return NewBlockChainError(HashError, errors.New("Fail to generate hash for instruction"))
+				}
+				fmt.Println("BeaconProcess/tempInstructionHash: ", tempInstructionHash)
+				fmt.Println("BeaconProcess/block.Header.InstructionHash: ", block.Header.InstructionHash)
+				if strings.Compare(tempInstructionHash.String(), block.Header.InstructionHash.String()) != 0 {
+					return NewBlockChainError(InstructionHashError, errors.New("instruction hash is not correct"))
 				}
 			} else {
 				return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
@@ -510,14 +569,18 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 	// update param
 	err := bestStateBeacon.updateOracleParams(chain)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
 	instructions := newBlock.Body.Instructions
 	for _, l := range instructions {
+		if len(l) < 1 {
+			continue
+		}
 		// For stability instructions
 		err := bestStateBeacon.processStabilityInstruction(l)
 		if err != nil {
-			fmt.Println(err)
+			Logger.log.Error(err)
 		}
 
 		if l[0] == SetAction {
@@ -704,6 +767,9 @@ func GetStakingCandidate(beaconBlock BeaconBlock) ([]string, []string) {
 	shard := []string{}
 	beaconBlockBody := beaconBlock.Body
 	for _, v := range beaconBlockBody.Instructions {
+		if len(v) < 1 {
+			continue
+		}
 		if v[0] == StakeAction && v[2] == "beacon" {
 			beacon = strings.Split(v[1], ",")
 		}
@@ -866,183 +932,3 @@ func ShuffleCandidate(candidates []string, rand int64) ([]string, error) {
 	fmt.Println("Beacon Process/Shuffle Candidate: Candidate After Sort ", sortedCandidate)
 	return sortedCandidate, nil
 }
-
-//=====================ARCHIVE=========================
-
-/*
-Insert new block into beaconchain
-1. Verify Block
-	1.1 Verify Block (block height, parent block,...)
-	1.2 Validate Block after process (root hash, random number,...)
-2. Update: Process block
-	2.1 Process BestStateBeacon
-	2.2 Store BestStateBeacon
-3. Store Block
-*/
-
-// func (blockchain *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
-// 	blockchain.chainLock.Lock()
-// 	defer blockchain.chainLock.Unlock()
-// 	blockHash := block.Hash().String()
-
-// 	Logger.log.Infof("Insert block %+v to Blockchain", blockHash)
-
-// 	//===================Verify============================
-// 	Logger.log.Infof("Verify Pre-Process block %+v to Blockchain", blockHash)
-
-// 	err := blockchain.VerifyPreProcessingBeaconBlock(block)
-// 	if err != nil {
-// 		Logger.log.Error("Error update best state for block", block, "in beacon chain")
-// 		return NewBlockChainError(UnExpectedError, err)
-// 	}
-
-// 	//===================Post-Verify == Validation============================
-// 	Logger.log.Infof("Verify Post-Process block %+v to Blockchain", blockHash)
-// 	err = blockchain.VerifyPostProcessingBeaconBlock(block)
-// 	if err != nil {
-// 		Logger.log.Error("Error Verify Post-Processing block", block, "in beacon chain")
-// 		return NewBlockChainError(UnExpectedError, err)
-// 	}
-
-// 	//===================Process============================
-// 	Logger.log.Infof("Process block %+v", blockHash)
-
-// 	Logger.log.Infof("Process BeaconBestState block %+v", blockHash)
-// 	// Process best state or not and store beststate
-// 	err = blockchain.BestState.Beacon.Update(block)
-// 	if err != nil {
-// 		Logger.log.Error("Error update best state for block", block, "in beacon chain")
-// 		return NewBlockChainError(UnExpectedError, err)
-// 	}
-// 	//===================Store Block and BestState in cache======================
-// 	return nil
-// }
-// // Maybe accept new block (new block created from consensus)
-// /*
-// 	1. Verify Signature
-// 	2. Verify Pre Processing
-// 	3.
-// 		- Load (from cache or database) beststate corressponding to block
-// 		- Stored loaded beststate in local variable
-// 		- verify loaded beststate with new block
-// 	4. Update local beststate (process local beststate with new block)
-// 	5. Verify Post Processing (verify updated local beststate with new block)
-// 	6. Store in cache
-// 		- updated local beststate
-// 		- new block
-// 	7. Acceptblock
-// 		- Store in DB Previous Block of new Block
-// 	    - Update final beststate (blockchain.BestState.BestStateBeacon.Beacon) with previous block
-// 	    - Store just updated final beststate in DB
-// */
-// // This function return key to retrive new block and new beststate in cache
-// func (blockchain *BlockChain) MaybeAcceptBeaconBlock(block *BeaconBlock) (string, error) {
-// 	blockchain.chainLock.Lock()
-// 	defer blockchain.chainLock.Unlock()
-// 	Logger.log.Infof("Maybe accept new block %d, with hash %+v", block.Header.Height, *block.Hash())
-// 	if err := blockchain.VerifyPreProcessingBeaconBlock(block); err != nil {
-// 		return "", err
-// 	}
-// 	//========Verify block with previous best state
-// 	// Get Beststate of previous block == previous best state
-// 	// Clone best state value into new variable
-// 	beaconBestState := BestStateBeacon{}
-// 	// check with current final best state
-// 	if strings.Compare(blockchain.BestState.Beacon.BestBlockHash.String(), block.Header.PrevBlockHash.String()) == 0 {
-// 		tempMarshal, err := json.Marshal(blockchain.BestState.Beacon)
-// 		if err != nil {
-// 			return "", NewBlockChainError(UnmashallJsonBlockError, err)
-// 		}
-// 		json.Unmarshal(tempMarshal, &beaconBestState)
-// 	} else {
-// 		// check with current cache best state
-// 		var err error
-// 		beaconBestState, err = blockchain.GetMaybeAcceptBeaconBestState(block.Header.PrevBlockHash.String())
-// 		if err != nil {
-// 			return "", err
-// 		}
-// 	}
-// 	// if no match best state found then block is unknown
-// 	if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
-// 		return "", NewBlockChainError(BeaconError, errors.New("Beacon Block does not match with any Beacon State in cache or in Database"))
-// 	}
-
-// 	// beaconBestState.lock.Lock()
-// 	// defer beaconBestState.lock.Unlock()
-
-// 	// Verify block with previous best state
-// 	if err := beaconBestState.VerifyBestStateWithBeaconBlock(block, true); err != nil {
-// 		return "", err
-// 	}
-
-// 	//========Update best state with new block
-// 	if err := beaconBestState.Update(block); err != nil {
-// 		return "", err
-// 	}
-// 	//========Post verififcation: verify new beaconstate with corresponding block
-// 	if err := beaconBestState.VerifyPostProcessingBeaconBlock(block); err != nil {
-// 		return "", err
-// 	}
-
-// 	//========Store new Beaconblock and new Beacon bestState in cache
-// 	_, err := blockchain.StoreMaybeAcceptBeaconBeststate(beaconBestState)
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	keyBL, err := blockchain.StoreMaybeAcceptBeaconBlock(*block)
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	//=========Remove beacon block
-// 	blockchain.config.ShardToBeaconPool.RemovePendingBlock(beaconBestState.BestShardHeight)
-// 	//=========Accept previous if new block is valid
-// 	if err := blockchain.AcceptBeaconBlock(&block.Header.PrevBlockHash); err != nil {
-// 		return "", err
-// 	}
-// 	Logger.log.Infof("New maybe accepted VALID block %d, with hash %x", block.Header.Height, *block.Hash())
-// 	return keyBL, nil
-// }
-
-// //Store block & state offcial
-// //lock sync.Mutex blockchain before call accept beacon block
-// func (blockchain *BlockChain) AcceptBeaconBlock(blockHash *common.Hash) error {
-// 	// blockchain.chainLock.Lock()
-// 	// defer blockchain.chainLock.Unlock()
-// 	// This function make sure if stored block at height 91, then best state height at 90
-// 	beaconBlock, err := blockchain.GetMaybeAcceptBeaconBlock(blockHash.String())
-// 	if err != nil {
-// 		Logger.log.Errorf("Can't find block %+v to accept", blockHash)
-// 		return err
-// 	}
-// 	Logger.log.Infof("Accept block %d, with hash %+v", beaconBlock.Header.Height, blockHash)
-// 	err = blockchain.BestState.Beacon.Update(&beaconBlock)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	// beaconBestState, err := blockchain.GetMaybeAcceptBeaconBestState(blockHash.String())
-// 	// if err != nil {
-// 	// 	return err
-// 	// }
-// 	// if !reflect.DeepEqual(beaconBestState, blockchain.BestState.Beacon) {
-// 	// 	Logger.log.Error("Current best state and stored block %+v are not compatible", blockHash)
-// 	// 	return NewBlockChainError(BeaconError, errors.New("Current best state and stored block are not compatible"))
-// 	// }
-// 	//===================Store Block============================
-// 	Logger.log.Infof("Store Beacon block %+v", blockHash)
-// 	if err := blockchain.config.DataBase.StoreBeaconBlock(beaconBlock); err != nil {
-// 		Logger.log.Error("Error store beacon block", blockHash, "in beacon chain")
-// 		return err
-// 	}
-
-// 	//===================Store State============================
-// 	Logger.log.Infof("Store BeaconBestState block %+v", blockHash)
-// 	//Process stored block with current best state
-
-// 	if err := blockchain.config.DataBase.StoreBeaconBestState(blockchain.BestState.Beacon); err != nil {
-// 		Logger.log.Error("Error Store best state for block", blockHash, "in beacon chain")
-// 		return NewBlockChainError(UnExpectedError, err)
-// 	}
-// 	Logger.log.Infof("Accepted block %+v", blockHash)
-// 	return nil
-// }
