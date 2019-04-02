@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"bytes"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/metadata"
@@ -22,17 +21,26 @@ func (bc *BlockChain) verifyBuyFromGOVRequestTx(tx metadata.Transaction, insts [
 		if instUsed[i] > 0 || inst[0] != strconv.Itoa(metadata.TradeActivationMeta) {
 			continue
 		}
-		tradeID, reqAmount, err := metadata.ParseTradeActivationActionValue(inst[2])
-		if err != nil || !bytes.Equal(meta.TradeID, tradeID) {
+		td, err := bc.calcTradeData(inst[2])
+		if err != nil {
 			continue
 		}
 
-		// Check if amount is correct
-		if meta.Amount != reqAmount {
-			return errors.Errorf("invalid amount for trade bond BuySellRequest tx: got %d instead of %d", meta.Amount, reqAmount)
+		txData := &tradeData{
+			tradeID:   meta.TradeID,
+			bondID:    &meta.TokenID,
+			buy:       true,
+			activated: false,
+			amount:    td.amount, // no need to check
+			reqAmount: meta.Amount,
+		}
+
+		if !td.Compare(txData) {
+			return errors.Errorf("invalid data for trade bond BuySellRequest tx: got %+v, expect %+v", td, txData)
 		}
 
 		instUsed[i] += 1
+		break
 	}
 
 	return errors.Errorf("no instruction found for BuySellRequest tx %s", tx.Hash().String())
