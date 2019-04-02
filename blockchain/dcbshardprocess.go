@@ -164,7 +164,7 @@ func (bc *BlockChain) processConfirmBuyBackInst(inst []string) error {
 	if inst[2] == "refund" {
 		amount += buyBackInfo.Value
 	}
-	fmt.Printf("[db] processBuyBack update: %x %s %t %t %d\n", buyBackInfo.TradeID, bondID, buy, activated, amount)
+	fmt.Printf("[db] processBuyBack update: %x %s %t %t %d\n", buyBackInfo.TradeID, bondID.String(), buy, activated, amount)
 	return bc.config.DataBase.StoreTradeActivation(buyBackInfo.TradeID, bondID, buy, activated, amount)
 }
 
@@ -184,7 +184,7 @@ func (bc *BlockChain) processConfirmBuySellInst(inst []string) error {
 	if inst[2] == "refund" {
 		amount += meta.Amount
 	}
-	fmt.Printf("[db] processBuyFromGOV update: %x %s %t %t %d\n", meta.TradeID, bondID, buy, activated, amount)
+	fmt.Printf("[db] processBuyFromGOV update: %x %s %t %t %d\n", meta.TradeID, bondID.String(), buy, activated, amount)
 	return bc.config.DataBase.StoreTradeActivation(meta.TradeID, bondID, buy, activated, amount)
 }
 

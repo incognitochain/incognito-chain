@@ -52,6 +52,14 @@ func (bc *BlockChain) calcTradeData(inst string) (*tradeData, error) {
 	}, nil
 }
 
+func (bc *BlockChain) getSellBondPrice(bondID *common.Hash) uint64 {
+	buyPrice := bc.BestState.Beacon.StabilityInfo.Oracle.Bonds[bondID.String()]
+	if buyPrice == 0 {
+		buyPrice = bc.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.SellingBonds.BondPrice
+	}
+	return buyPrice
+}
+
 func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 	inst string,
 	unspentTokens map[string]([]transaction.TxTokenVout),
@@ -78,7 +86,6 @@ func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 	}
 
 	if err != nil {
-		fmt.Printf("[db] 3\n")
 		return nil, err
 	}
 
@@ -94,10 +101,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuySellRequestTx(
 ) ([]metadata.Transaction, error) {
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	keyWalletBurnAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
-	buyPrice := blockgen.chain.BestState.Beacon.StabilityInfo.Oracle.Bonds[bondID.String()]
-	if buyPrice == 0 {
-		buyPrice = blockgen.chain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.SellingBonds.BondPrice
-	}
+	buyPrice := blockgen.chain.getSellBondPrice(bondID)
 
 	buySellMeta := &metadata.BuySellRequest{
 		PaymentAddress: keyWalletDCBAccount.KeySet.PaymentAddress,
@@ -116,7 +120,9 @@ func (blockgen *BlkTmplGenerator) buildTradeBuySellRequestTx(
 		[]metadata.Metadata{buySellMeta},
 	)
 	if err != nil {
-		return nil, err
+		fmt.Printf("[db] build buysell request err: %v\n", err)
+		// Skip building tx buyback/buysell if error (retry later)
+		return nil, nil
 	}
 	fmt.Printf("[db] built buy sell req: %d\n", cstAmount)
 	return []metadata.Transaction{txs[0]}, nil
@@ -129,8 +135,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 	unspentTokens map[string]([]transaction.TxTokenVout),
 	producerPrivateKey *privacy.SpendingKey,
 ) ([]metadata.Transaction, error) {
-	fmt.Printf("[db] building buyback request tx: %d\n", amount)
-	// TODO(@0xbunyip): not enough bonds to send ==> update activated status to retry later
+	fmt.Printf("[db] building buyback request tx: %d %s\n", amount, bondID.String())
 	// Build metadata to send to GOV
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	buyBackMeta := &metadata.BuyBackRequest{
@@ -159,10 +164,10 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 		keyWalletBurnAccount.KeySet.PaymentAddress,
 		buyBackMeta,
 	)
-	// TODO(@0xbunyip): skip building tx buyback/buysell if error (retry later)
 	if err != nil {
 		fmt.Printf("[db] build buyback request err: %v\n", err)
-		return nil, err
+		// Skip building tx buyback/buysell if error (retry later)
+		return nil, nil
 	}
 
 	// Update list of token available for next request
