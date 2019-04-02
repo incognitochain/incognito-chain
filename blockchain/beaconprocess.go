@@ -80,7 +80,8 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	Logger.log.Infof("Check block existence for insert process %d, with hash %+v", block.Header.Height, *block.Hash())
 	isExist, _ := blockchain.config.DataBase.HasBeaconBlock(block.Hash())
 	if isExist {
-		return NewBlockChainError(DuplicateBlockErr, errors.New("This block has been stored already"))
+		return nil
+		// return NewBlockChainError(DuplicateBlockErr, errors.New("This block has been stored already"))
 	}
 	Logger.log.Infof("Begin Insert new block %d, with hash %+v \n", block.Header.Height, *block.Hash())
 	// fmt.Printf("Beacon block %+v \n", block)
@@ -335,8 +336,6 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 					}
 				}
-				// @UNCOMMENT TO TEST
-
 				for _, shardBlock := range shardBlocks {
 					tempShardState, validStaker, validSwapper, stabilityInstruction := blockchain.GetShardStateFromBlock(&beaconBestState, shardBlock, accumulativeValues, shardID)
 					tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
