@@ -357,7 +357,6 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return NewBlockChainError(HashError, errors.New("can't Verify CrossOutputCoin Root"))
 	}
 	// Verify Action
-	fmt.Printf("[db] buildActionReq for shardprocess to validate block instructions\n")
 	beaconBlocks, err := FetchBeaconBlockFromHeight(
 		blockchain.config.DataBase,
 		blockchain.BestState.Shard[block.Header.ShardID].BeaconHeight+1,
@@ -380,9 +379,6 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return nil
 	}
 	totalInstructions := []string{}
-	instsForValidations := [][]string{}
-	instsForValidations = append(instsForValidations, txInstructions...)
-	instsForValidations = append(instsForValidations, block.Body.Instructions...)
 	for _, value := range txInstructions {
 		totalInstructions = append(totalInstructions, value...)
 	}
@@ -416,18 +412,24 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		}
 	}
 
+	// TODO(@0xbunyip): move to inside isPresig when running validator's node
+	// Verify stability transactions
+	instsForValidations := [][]string{}
+	instsForValidations = append(instsForValidations, block.Body.Instructions...)
+	for _, beaconBlock := range beaconBlocks {
+		instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
+	}
+	err = blockchain.VerifyStabilityTransactionsForNewBlock(instsForValidations, block)
+	if err != nil {
+		return NewBlockChainError(TransactionError, err)
+	}
+
 	// Get cross shard block from pool
 	// @NOTICE: COMMENT to bypass verify cross shard block
 	if isPresig {
 		// Verify Transaction
 		if err := blockchain.VerifyTransactionFromNewBlock(block.Body.Transactions); err != nil {
 			return NewBlockChainError(TransactionError, err)
-		}
-
-		// Verify stability transactions
-		err := blockchain.VerifyStabilityTransactionsForNewBlock(instsForValidations, block)
-		if err != nil {
-			return err
 		}
 
 		crossTxTokenData := make(map[byte][]CrossTxTokenData)

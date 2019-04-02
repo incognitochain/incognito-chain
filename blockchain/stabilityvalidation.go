@@ -10,6 +10,7 @@ import (
 )
 
 func (bc *BlockChain) verifyBuyFromGOVRequestTx(tx metadata.Transaction, insts [][]string, instUsed []int) error {
+	fmt.Printf("[db] verifying buy form GOV Request tx\n")
 	meta, ok := tx.GetMetadata().(*metadata.BuySellRequest)
 	if !ok {
 		return errors.Errorf("error parsing metadata BuySellRequest of tx %s", tx.Hash().String())
@@ -23,17 +24,30 @@ func (bc *BlockChain) verifyBuyFromGOVRequestTx(tx metadata.Transaction, insts [
 		if instUsed[i] > 0 || inst[0] != strconv.Itoa(metadata.TradeActivationMeta) {
 			continue
 		}
-		tradeID, reqAmount, err := metadata.ParseTradeActivationActionValue(inst[2])
-		if err != nil || !bytes.Equal(meta.TradeID, tradeID) {
+		td, err := bc.calcTradeData(inst[2])
+		if err != nil && !bytes.Equal(meta.TradeID, td.tradeID) {
 			continue
 		}
 
-		// Check if amount is correct
-		if meta.Amount != reqAmount {
-			return errors.Errorf("invalid amount for trade bond BuySellRequest tx: got %d instead of %d", meta.Amount, reqAmount)
+		fmt.Printf("[db] found inst: %s\n", inst[2])
+
+		txData := &tradeData{
+			tradeID:   meta.TradeID,
+			bondID:    &meta.TokenID,
+			buy:       true,
+			activated: false,
+			amount:    td.amount, // no need to check
+			reqAmount: meta.Amount,
+		}
+
+		if !td.Compare(txData) {
+			fmt.Printf("[db] data mismatched: %+v\t %+v", td, txData)
+			return errors.Errorf("invalid data for trade bond BuySellRequest tx: got %+v, expect %+v", td, txData)
 		}
 
 		instUsed[i] += 1
+		fmt.Printf("[db] inst %d matched\n", i)
+		return nil
 	}
 
 	return errors.Errorf("no instruction found for BuySellRequest tx %s", tx.Hash().String())
