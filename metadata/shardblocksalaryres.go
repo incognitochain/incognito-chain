@@ -10,22 +10,25 @@ import (
 
 type ShardBlockSalaryRes struct {
 	MetadataBase
-	ShardBlockHeight uint64
-	ProducerAddress  privacy.PaymentAddress
+	ShardBlockHeight         uint64
+	ProducerAddress          privacy.PaymentAddress
+	ShardBlockSalaryInfoHash common.Hash
 }
 
 func NewShardBlockSalaryRes(
 	shardBlockHeight uint64,
 	producerAddress privacy.PaymentAddress,
+	shardBlockSalaryInfoHash common.Hash,
 	metaType int,
 ) *ShardBlockSalaryRes {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 	return &ShardBlockSalaryRes{
-		ShardBlockHeight: shardBlockHeight,
-		ProducerAddress:  producerAddress,
-		MetadataBase:     metadataBase,
+		ShardBlockHeight:         shardBlockHeight,
+		ProducerAddress:          producerAddress,
+		ShardBlockSalaryInfoHash: shardBlockSalaryInfoHash,
+		MetadataBase:             metadataBase,
 	}
 }
 
@@ -35,7 +38,7 @@ func (sbsRes *ShardBlockSalaryRes) CheckTransactionFee(tr Transaction, minFee ui
 }
 
 func (sbsRes *ShardBlockSalaryRes) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-	// no need to validate tx with blockchain, just need to validate with requeste tx (via RequestedTxID) in current block
+	// no need to validate tx with blockchain, just need to validate with request tx (via RequestedTxID) in current block
 	return false, nil
 }
 
@@ -46,9 +49,9 @@ func (sbsRes *ShardBlockSalaryRes) ValidateSanityData(bcr BlockchainRetriever, t
 	if len(sbsRes.ProducerAddress.Tk) == 0 {
 		return false, false, errors.New("Wrong request info's producer address")
 	}
-	if sbsRes.ShardBlockHeight == 0 {
-		return false, false, errors.New("Wrong request info's shard block height")
-	}
+	// if sbsRes.ShardBlockHeight == 0 {
+	// 	return false, false, errors.New("Wrong request info's shard block height")
+	// }
 	return false, true, nil
 }
 
@@ -60,6 +63,8 @@ func (sbsRes *ShardBlockSalaryRes) ValidateMetadataByItself() bool {
 func (sbsRes *ShardBlockSalaryRes) Hash() *common.Hash {
 	record := sbsRes.ProducerAddress.String()
 	record += string(sbsRes.ShardBlockHeight)
+	record += sbsRes.ShardBlockSalaryInfoHash.String()
+
 	// final hash
 	record += sbsRes.MetadataBase.Hash().String()
 	hash := common.HashH([]byte(record))
