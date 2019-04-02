@@ -22,7 +22,7 @@ import (
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/constant-money/constant-chain/wallet"
 	libp2p "github.com/libp2p/go-libp2p-peer"
-	cache "github.com/patrickmn/go-cache"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
 
@@ -681,8 +681,14 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 			}
 		case transaction.CustomTokenCrossShard:
 			{
-				// TODO: 0xsirrush change process
-				listCustomToken, err := blockchain.ListCustomToken()
+				// 0xsirrush updated: check existed token ID
+				existedToken := blockchain.CustomTokenIDExisted(&customTokenTx.TxTokenData.PropertyID)
+				//If don't exist then create
+				if !existedToken {
+					Logger.log.Info("Store Cross Shard Custom if It's not existed in DB", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
+					err = blockchain.config.DataBase.StoreCustomToken(&customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
+				}
+				/*listCustomToken, err := blockchain.ListCustomToken()
 				if err != nil {
 					panic(err)
 				}
@@ -690,7 +696,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 				if _, ok := listCustomToken[customTokenTx.TxTokenData.PropertyID]; !ok {
 					Logger.log.Info("Store Cross Shard Custom if It's not existed in DB", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
 					err = blockchain.config.DataBase.StoreCustomToken(&customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
-				}
+				}*/
 			}
 		case transaction.CustomTokenTransfer:
 			{
@@ -788,7 +794,25 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 
 	err := view.fetchCrossTransactionViewPointFromBlock(blockchain.config.DataBase, block, nil)
 	for _, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
-		listCustomTokens, listCustomTokenCrossShard, err := blockchain.ListPrivacyCustomToken()
+		// 0xsirrush updated: check existed tokenID
+		tokenID := privacyCustomTokenSubView.tokenID
+		existed := blockchain.PrivacyCustomTokenIDExisted(tokenID)
+		if !existed {
+			existedCrossShard := blockchain.PrivacyCustomTokenIDCrossShardExisted(tokenID)
+			if !existedCrossShard {
+				Logger.log.Info("Store custom token when it is issued ", tokenID, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertyName, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertySymbol, privacyCustomTokenSubView.privacyCustomTokenMetadata.Amount, privacyCustomTokenSubView.privacyCustomTokenMetadata.Mintable)
+				tokenDataBytes, _ := json.Marshal(privacyCustomTokenSubView.privacyCustomTokenMetadata)
+
+				// crossShardTokenPrivacyMetaData := CrossShardTokenPrivacyMetaData{}
+				// json.Unmarshal(tokenDataBytes, &crossShardTokenPrivacyMetaData)
+				// fmt.Println("New Token CrossShardTokenPrivacyMetaData", crossShardTokenPrivacyMetaData)
+
+				if err := blockchain.config.DataBase.StorePrivacyCustomTokenCrossShard(tokenID, tokenDataBytes); err != nil {
+					return err
+				}
+			}
+		}
+		/*listCustomTokens, listCustomTokenCrossShard, err := blockchain.ListPrivacyCustomToken()
 		if err != nil {
 			return nil
 		}
@@ -806,7 +830,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 					return err
 				}
 			}
-		}
+		}*/
 		// Store both commitment and outcoin
 		err = blockchain.StoreCommitmentsFromTxViewPoint(*privacyCustomTokenSubView, block.Header.ShardID)
 		if err != nil {
@@ -1046,6 +1070,20 @@ func (blockchain *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *
 	}
 	//Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
 	return block.Header.ShardID, blockHash, index, block.Body.Transactions[index], nil
+}
+
+// Check Custom token ID is existed
+func (blockchain *BlockChain) CustomTokenIDExisted(tokenID *common.Hash) bool {
+	return blockchain.config.DataBase.CustomTokenIDExisted(tokenID)
+}
+
+// Check Privacy Custom token ID is existed
+func (blockchain *BlockChain) PrivacyCustomTokenIDExisted(tokenID *common.Hash) bool {
+	return blockchain.config.DataBase.PrivacyCustomTokenIDExisted(tokenID)
+}
+
+func (blockchain *BlockChain) PrivacyCustomTokenIDCrossShardExisted(tokenID *common.Hash) bool {
+	return blockchain.config.DataBase.PrivacyCustomTokenIDCrossShardExisted(tokenID)
 }
 
 // ListCustomToken - return all custom token which existed in network
