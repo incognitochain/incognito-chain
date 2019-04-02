@@ -186,7 +186,7 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 			newInst, err = buildInstructionsForCrowdsaleRequest(shardID, contentStr, beaconBestState, accumulativeValues)
 
 		case metadata.TradeActivationMeta:
-			newInst, err = buildInstructionsForTradeActivation(shardID, contentStr, beaconBestState, accumulativeValues, blkTmpGen.chain.config.DataBase)
+			newInst, err = buildInstructionsForTradeActivation(shardID, contentStr)
 
 		case metadata.BuyBackRequestMeta:
 			newInst, err = buildInstructionsForBuyBackBondsReq(shardID, contentStr, beaconBestState, accumulativeValues, blockChain)
