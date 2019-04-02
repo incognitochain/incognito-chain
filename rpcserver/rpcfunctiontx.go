@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/constant-money/constant-chain/mempool"
 	"math/big"
 	"time"
 
@@ -151,6 +152,12 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 
 	hash, txDesc, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
+		mempoolErr, ok := err.(mempool.MempoolTxError)
+		if ok {
+			if mempoolErr.Code == mempool.ErrCodeMessage[mempool.RejectInvalidFee].Code {
+				return nil, NewRPCError(ErrRejectInvalidFee, mempoolErr)
+			}
+		}
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 

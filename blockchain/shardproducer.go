@@ -55,8 +55,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	crossTransactions, crossTxTokenData := blockgen.getCrossShardData(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight, crossShards)
 	crossTxTokenTransactions, _ := blockgen.chain.createCustomTokenTxForCrossShard(privatekey, crossTxTokenData, shardID)
 	txsToAdd = append(txsToAdd, crossTxTokenTransactions...)
-	// fmt.Println("crossOutputCoin", crossTransactions)
-	// fmt.Println("Shard Producer crossTxTokenTransactions", crossTxTokenTransactions)
 	//======Create Instruction===========================
 	//Assign Instruction
 	instructions := [][]string{}
@@ -90,12 +88,20 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	}
 
 	// Build stand-alone stability instructions
-	stabilityInsts, err := blockgen.buildDividendSubmitInsts(privatekey, shardID)
+	divInsts, err := blockgen.buildDividendSubmitInsts(privatekey, shardID)
 	if err != nil {
 		return nil, err
 	}
-	if stabilityInsts != nil && len(stabilityInsts) > 0 {
-		instructions = append(instructions, stabilityInsts...)
+	if divInsts != nil && len(divInsts) > 0 {
+		instructions = append(instructions, divInsts...)
+	}
+
+	tradeBondRespInsts, err := blockgen.buildTradeBondConfirmInsts(beaconBlocks, shardID)
+	if err != nil {
+		return nil, err
+	}
+	if tradeBondRespInsts != nil && len(tradeBondRespInsts) > 0 {
+		instructions = append(instructions, tradeBondRespInsts...)
 	}
 
 	block := &ShardBlock{
@@ -364,21 +370,17 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 */
 func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	sourceTxns := blockgen.txPool.MiningDescs()
-
-	//TODO: UNCOMMENT To avoid produce too many empty block
+	// sourceTxns := []*metadata.TxDesc{}
+	//@NOTICE: COMMENT To allow produce too many empty block
 	// get tx and wait for more if not enough
-	// if len(sourceTxns) < common.MinTxsInBlock {
-	// 	<-time.Tick(common.MinBlockWaitTime * time.Second)
-	// 	sourceTxns = blockgen.txPool.MiningDescs()
-	// 	if len(sourceTxns) == 0 {
-	// 		<-time.Tick(common.MaxBlockWaitTime * time.Second)
-	// 		sourceTxns = blockgen.txPool.MiningDescs()
-	// 	}
-	// }
-
-	//TODO: sort transaction base on fee and check limit block size
-	// StartingPriority, fee, size, time
-	// fmt.Println("TempTxPool", reflect.TypeOf(blockgen.chain.config.TempTxPool))
+	//if len(sourceTxns) < common.MinTxsInBlock {
+	//	<-time.Tick(common.MinBlockWaitTime * time.Second)
+	//	sourceTxns = blockgen.txPool.MiningDescs()
+	//	if len(sourceTxns) == 0 {
+	//		<-time.Tick(common.MaxBlockWaitTime * time.Second)
+	//		sourceTxns = blockgen.txPool.MiningDescs()
+	//	}
+	//}
 	isEmpty := blockgen.chain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
 		panic("TempTxPool Is not Empty")
@@ -422,6 +424,7 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 	var keys []int
 	txs := []metadata.Transaction{}
 	txTokenDataList := []transaction.TxTokenData{}
+	// TODO: 0xsirrush change process
 	listCustomTokens, err := blockchain.ListCustomToken()
 	if err != nil {
 		panic("Can't Retrieve List Custom Token in Database")

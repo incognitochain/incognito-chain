@@ -16,24 +16,30 @@ func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 	producerPrivateKey *privacy.SpendingKey,
 ) ([]metadata.Transaction, error) {
 	fmt.Printf("[db] building trade act tx\n")
-	tb, err := ParseTradeBondInstruction(inst)
+	tradeID, reqAmount, err := metadata.ParseTradeActivationActionValue(inst)
 	if err != nil {
-		fmt.Printf("[db] 1\n")
+		fmt.Printf("[db] err parsing ta action: %v\n", err)
 		return nil, err
 	}
 
-	bondID, buy, _, _, err := blockgen.chain.config.DataBase.GetTradeActivation(tb.TradeID)
+	bondID, buy, activated, amount, err := blockgen.chain.GetLatestTradeActivation(tradeID)
 	if err != nil {
-		fmt.Printf("[db] 2\n")
+		fmt.Printf("[db] err getting latest trade: %v\n", err)
 		return nil, err
 	}
 
-	fmt.Printf("[db] trade act tx data: %s %t %d\n", bondID.String(), buy, tb.Amount)
+	// Ignore activation request if params are unsynced
+	if activated || reqAmount > amount {
+		fmt.Printf("[db] skip building buy sell tx: %t %d %d\n", activated, reqAmount, amount)
+		return nil, nil
+	}
+
+	fmt.Printf("[db] trade act tx data: %s %t %d\n", bondID.String(), buy, reqAmount)
 	txs := []metadata.Transaction{}
 	if buy {
-		txs, err = blockgen.buildTradeBuySellRequestTx(tb.TradeID, bondID, tb.Amount, producerPrivateKey)
+		txs, err = blockgen.buildTradeBuySellRequestTx(tradeID, bondID, reqAmount, producerPrivateKey)
 	} else {
-		txs, err = blockgen.buildTradeBuyBackRequestTx(tb.TradeID, bondID, tb.Amount, unspentTokens, producerPrivateKey)
+		txs, err = blockgen.buildTradeBuyBackRequestTx(tradeID, bondID, reqAmount, unspentTokens, producerPrivateKey)
 	}
 
 	if err != nil {
@@ -118,6 +124,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 		keyWalletBurnAccount.KeySet.PaymentAddress,
 		buyBackMeta,
 	)
+	// TODO(@0xbunyip): skip building tx buyback/buysell if error (retry later)
 	if err != nil {
 		fmt.Printf("[db] build buyback request err: %v\n", err)
 		return nil, err

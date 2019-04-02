@@ -574,95 +574,19 @@ func (bc *BlockChain) processLoanPaymentInstruction(inst []string) error {
 	return bc.processLoanPayment(loanID, amountSent, interestRate, maturity, beaconHeight)
 }
 
-func (bc *BlockChain) processTradeBondInstruction(inst []string) error {
-	tbi, err := ParseTradeBondInstruction(inst[2])
-	if err != nil {
-		return err
-	}
-
-	var trade *component.TradeBondWithGOV
-	for _, t := range bc.GetAllTrades() {
-		if bytes.Equal(t.TradeID, tbi.TradeID) {
-			trade = t
-		}
-	}
-	if trade == nil {
-		return errors.New("Found no trade in current proposal")
-	}
-
-	// Use balance left from previous activation is it exist
-	_, _, _, amount, err := bc.config.DataBase.GetTradeActivation(tbi.TradeID)
-	if err != nil {
-		amount = trade.Amount
-	}
-	if amount < tbi.Amount {
-		return errors.Errorf("trade bond requested amount too high, %d > %d\n", tbi.Amount, amount)
-	}
-
-	activated := true
-	fmt.Printf("[db] updating trade bond status: %v %s %t %t %d\n", tbi.TradeID, trade.BondID.String(), trade.Buy, activated, amount)
-	return bc.config.DataBase.StoreTradeActivation(tbi.TradeID, trade.BondID, trade.Buy, activated, amount-tbi.Amount)
-}
-
-func (bc *BlockChain) processBuyBackResponseInstruction(inst []string) error {
-	var buyBackInfo BuyBackInfo
-	json.Unmarshal([]byte(inst[3]), &buyBackInfo)
-	bondID, buy, _, amount, err := bc.config.DataBase.GetTradeActivation(buyBackInfo.TradeID)
-	if err != nil {
-		return err
-	}
-
-	// Update activation status to false to retry later
-	activated := false
-	if inst[2] == "refund" {
-		amount += buyBackInfo.Value
-	}
-	fmt.Printf("[db] processBuyBack update: %x %s %t %t %d\n", buyBackInfo.TradeID, bondID, buy, activated, amount)
-	return bc.config.DataBase.StoreTradeActivation(buyBackInfo.TradeID, bondID, buy, activated, amount)
-}
-
-func (bc *BlockChain) processBuyFromGOVResponseInstruction(inst []string) error {
-	//fmt.Printf("[db] processBuyFromGOV inst: %s\n", inst)
-	contentBytes, _ := base64.StdEncoding.DecodeString(inst[3])
-	var buySellReqAction BuySellReqAction
-	json.Unmarshal(contentBytes, &buySellReqAction)
-	meta := buySellReqAction.Meta
-	bondID, buy, _, amount, err := bc.config.DataBase.GetTradeActivation(meta.TradeID)
-	if err != nil {
-		return err
-	}
-
-	// Update activation status to false to retry later
-	activated := false
-	if inst[2] == "refund" {
-		amount += meta.Amount
-	}
-	fmt.Printf("[db] processBuyFromGOV update: %x %s %t %t %d\n", meta.TradeID, bondID, buy, activated, amount)
-	return bc.config.DataBase.StoreTradeActivation(meta.TradeID, bondID, buy, activated, amount)
-}
-
 func (bc *BlockChain) updateStabilityLocalState(block *BeaconBlock) error {
 	for _, inst := range block.Body.Instructions {
 		var err error
-		fmt.Printf("[db] update local state: %s\n", inst)
 		switch inst[0] {
 		case strconv.Itoa(metadata.LoanWithdrawMeta):
 			err = bc.processLoanWithdrawInstruction(inst)
 		case strconv.Itoa(metadata.LoanPaymentMeta):
 			err = bc.processLoanPaymentInstruction(inst)
 
-		case strconv.Itoa(metadata.TradeActivationMeta):
-			err = bc.processTradeBondInstruction(inst)
-
 		case strconv.Itoa(component.UpdateDCBConstitutionIns):
 			err = bc.processUpdateDCBConstitutionIns(inst)
 		case strconv.Itoa(component.UpdateGOVConstitutionIns):
 			err = bc.processUpdateGOVConstitutionIns(inst)
-
-		case strconv.Itoa(metadata.BuyFromGOVRequestMeta):
-			err = bc.processBuyFromGOVResponseInstruction(inst)
-		case strconv.Itoa(metadata.BuyBackRequestMeta):
-			err = bc.processBuyBackResponseInstruction(inst)
 		}
 
 		if err != nil {

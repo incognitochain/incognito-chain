@@ -1,12 +1,12 @@
 package rpcserver
 
 import (
-	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/constant-money/constant-chain/common"
 	"io"
 	"io/ioutil"
 	"log"
@@ -52,8 +52,8 @@ type RpcServer struct {
 	statusLock  sync.RWMutex
 	statusLines map[int]string
 
-	authSHA      [sha256.Size]byte
-	limitAuthSHA [sha256.Size]byte
+	authSHA      []byte
+	limitAuthSHA []byte
 
 	// channel
 	cRequestProcessShutdown chan struct{}
@@ -75,7 +75,10 @@ type RpcServerConfig struct {
 		PushMessageToPeer(message wire.Message, id peer2.ID) error
 	}
 
-	TxMemPool     *mempool.TxPool
+	TxMemPool         *mempool.TxPool
+	ShardToBeaconPool *mempool.ShardToBeaconPool
+	CrossShardPool    *mempool.CrossShardPool_v2
+
 	RPCMaxClients int
 	RPCQuirks     bool
 
@@ -97,12 +100,12 @@ func (rpcServer *RpcServer) Init(config *RpcServerConfig) {
 	if config.RPCUser != "" && config.RPCPass != "" {
 		login := config.RPCUser + ":" + config.RPCPass
 		auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(login))
-		rpcServer.authSHA = sha256.Sum256([]byte(auth))
+		rpcServer.authSHA = common.HashB([]byte(auth))
 	}
 	if config.RPCLimitUser != "" && config.RPCLimitPass != "" {
 		login := config.RPCLimitUser + ":" + config.RPCLimitPass
 		auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(login))
-		rpcServer.limitAuthSHA = sha256.Sum256([]byte(auth))
+		rpcServer.limitAuthSHA = common.HashB([]byte(auth))
 	}
 }
 
@@ -235,7 +238,7 @@ func (rpcServer RpcServer) checkAuth(r *http.Request, require bool) (bool, bool,
 		return false, false, nil
 	}
 
-	authsha := sha256.Sum256([]byte(authhdr[0]))
+	authsha := common.HashB([]byte(authhdr[0]))
 
 	// Check for limited auth first as in environments with limited users, those
 	// are probably expected to have a higher volume of calls
