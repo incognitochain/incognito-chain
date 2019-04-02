@@ -371,7 +371,8 @@ func (rpcServer RpcServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 			//	}
 			//}
 			existed := rpcServer.config.BlockChain.PrivacyCustomTokenIDExisted(tokenID)
-			if !existed {
+			existedCrossShard := rpcServer.config.BlockChain.PrivacyCustomTokenIDCrossShardExisted(tokenID)
+			if !existed && !existedCrossShard {
 				return nil, nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
 			}
 			outputTokens, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, tokenID)
