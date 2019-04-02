@@ -479,7 +479,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 			//}
 			existed := db.CustomTokenIDExisted(&newHashInitToken)
 			if existed {
-				Logger.log.Errorf("INIT Tx Custom Token is Existed", newHashInitToken)
+				Logger.log.Error("INIT Tx Custom Token is Existed", newHashInitToken)
 				return NewTransactionErr(CustomTokenExisted, nil)
 			}
 			txCustomToken.TxTokenData.PropertyID = newHashInitToken

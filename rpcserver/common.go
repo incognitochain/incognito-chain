@@ -354,10 +354,10 @@ func (rpcServer RpcServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"])
 
 	// get list custom token
-	listCustomTokens, listCustomTokenCrossShard, err := rpcServer.config.BlockChain.ListPrivacyCustomToken()
+	/*listCustomTokens, listCustomTokenCrossShard, err := rpcServer.config.BlockChain.ListPrivacyCustomToken()
 	if err != nil {
 		return nil, nil, nil, NewRPCError(ErrListCustomTokenNotFound, err)
-	}
+	}*/
 	switch tokenParams.TokenTxType {
 	case transaction.CustomTokenTransfer:
 		{
@@ -365,10 +365,14 @@ func (rpcServer RpcServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 			if err != nil {
 				return nil, nil, nil, NewRPCError(ErrRPCInvalidParams, err)
 			}
-			if _, ok := listCustomTokens[*tokenID]; !ok {
-				if _, ok := listCustomTokenCrossShard[*tokenID]; !ok {
-					return nil, nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
-				}
+			//if _, ok := listCustomTokens[*tokenID]; !ok {
+			//	if _, ok := listCustomTokenCrossShard[*tokenID]; !ok {
+			//		return nil, nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
+			//	}
+			//}
+			existed := rpcServer.config.BlockChain.PrivacyCustomTokenIDExisted(tokenID)
+			if !existed {
+				return nil, nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
 			}
 			outputTokens, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, tokenID)
 			if err != nil {
@@ -388,7 +392,8 @@ func (rpcServer RpcServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 			}
 		}
 	}
-	return tokenParams, listCustomTokens, listCustomTokenCrossShard, nil
+	//return tokenParams, listCustomTokens, listCustomTokenCrossShard, nil
+	return tokenParams, nil, nil, nil
 }
 
 // buildRawCustomTokenTransaction ...
@@ -435,10 +440,12 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	// param #5: token component
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	tokenParams, listCustomTokens, listCustomTokenCrossShard, err := rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
-	mapCustomTokenCrossShard := make(map[common.Hash]bool)
+	/*mapCustomTokenCrossShard := make(map[common.Hash]bool)
 	for _, customTokenCrossShard := range listCustomTokenCrossShard {
 		mapCustomTokenCrossShard[customTokenCrossShard.TokenID] = true
-	}
+	}*/
+	_ = listCustomTokenCrossShard
+	_ = listCustomTokens
 	if err.(*RPCError) != nil {
 		return nil, err
 	}
@@ -467,11 +474,11 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 		inputCoins,
 		realFee,
 		tokenParams,
-		listCustomTokens,
+		//listCustomTokens,
 		*rpcServer.config.Database,
 		hasPrivacyConst,
 		shardIDSender,
-		mapCustomTokenCrossShard,
+		//mapCustomTokenCrossShard,
 	)
 
 	if err.(*transaction.TransactionError) != nil {
