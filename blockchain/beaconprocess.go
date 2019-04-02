@@ -512,14 +512,16 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 	// update param
 	err := bestStateBeacon.updateOracleParams(chain)
 	if err != nil {
-		return err
+		Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+		return NewBlockChainError(UnExpectedError, err)
 	}
 	instructions := newBlock.Body.Instructions
 	for _, l := range instructions {
 		// For stability instructions
 		err := bestStateBeacon.processStabilityInstruction(l)
 		if err != nil {
-			fmt.Println(err)
+			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+			return NewBlockChainError(UnExpectedError, err)
 		}
 
 		if l[0] == SetAction {

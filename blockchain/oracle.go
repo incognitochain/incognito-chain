@@ -86,7 +86,8 @@ func groupOracleFeedTxsByOracleType(
 	blockHash := beaconBestState.BestBlock.Header.PrevBlockHash
 	for i := updateFrequency; i > 0; i-- {
 		if blockHash.String() == (common.Hash{}).String() {
-			return instsByOracleType, nil
+			// return instsByOracleType, nil
+			continue
 		}
 		blockBytes, err := bc.config.DataBase.FetchBlock(&blockHash)
 		if err != nil {
