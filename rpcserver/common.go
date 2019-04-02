@@ -256,7 +256,7 @@ func (rpcServer RpcServer) buildCustomTokenParam(tokenParamsRaw map[string]inter
 func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	params interface{},
 	metaData metadata.Metadata,
-) (*transaction.TxCustomToken, error) {
+) (*transaction.TxCustomToken, *RPCError) {
 	// all params
 	arrayParams := common.InterfaceSlice(params)
 
@@ -264,7 +264,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	senderKeyParam := arrayParams[0]
 	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
 	if err != nil {
-		return nil, err
+		return nil, err.(*RPCError)
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
@@ -399,7 +399,7 @@ func (rpcServer RpcServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 // buildRawCustomTokenTransaction ...
 func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	params interface{},
-) (*transaction.TxCustomTokenPrivacy, error) {
+) (*transaction.TxCustomTokenPrivacy, *RPCError) {
 	// all component
 	arrayParams := common.InterfaceSlice(params)
 
@@ -447,7 +447,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	_ = listCustomTokenCrossShard
 	_ = listCustomTokens
 	if err.(*RPCError) != nil {
-		return nil, err
+		return nil, err.(*RPCError)
 	}
 	/****** END FEtch data from params *********/
 
@@ -491,7 +491,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 		rpcServer.config.TxMemPool.PrePoolTxCoinHashH(*txHash, inputCoinHs)
 	}
 
-	return tx, err
+	return tx, nil
 }
 
 func (rpcServer RpcServer) estimateFeeWithEstimator(defaultFee int64, shardID byte, numBlock uint64) uint64 {
