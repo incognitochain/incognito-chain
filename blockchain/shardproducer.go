@@ -39,16 +39,13 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	fmt.Println("Shard Producer/NewBlockShard, Beacon Epoch", epoch)
 	//Fetch beacon block from height
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockgen.chain.config.DataBase, blockgen.chain.BestState.Shard[shardID].BeaconHeight+1, beaconHeight)
-	fmt.Println("fuckkkkkkkkkkkkk newshard", blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight)
+	fmt.Println("[voting] - newshard", blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
 	}
 	//======Get Transaction For new Block================
 	txsToAdd, err1 := blockgen.getTransactionForNewBlock(payToAddress, privatekey, shardID, blockgen.chain.config.DataBase, beaconBlocks)
-	for i, tx1 := range txsToAdd {
-		Logger.log.Warn(i, tx1.GetType(), tx1.GetMetadata(), "\n")
-	}
 	if err1 != nil {
 		Logger.log.Error(err1, reflect.TypeOf(err1), reflect.ValueOf(err1))
 		return nil, err1
@@ -115,10 +112,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	}
 	if len(instructions) != 0 {
 		Logger.log.Critical("Shard Producer: Instruction", instructions)
-	}
-	fmt.Printf("Number of Transaction in blocks %+v \n", len(block.Body.Transactions))
-	for i, tx := range block.Body.Transactions {
-		Logger.log.Warn(i, tx, "\n")
 	}
 	//============End Build Body===========
 
