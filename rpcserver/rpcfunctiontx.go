@@ -4,9 +4,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"github.com/constant-money/constant-chain/mempool"
 	"math/big"
 	"time"
+
+	"github.com/constant-money/constant-chain/mempool"
 
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
@@ -344,7 +345,7 @@ func (rpcServer RpcServer) handleCreateRawCustomTokenTransaction(
 ) (interface{}, *RPCError) {
 	var err error
 	tx, err := rpcServer.buildRawCustomTokenTransaction(params, nil)
-	if err != nil {
+	if err.(*RPCError) != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
