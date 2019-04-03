@@ -6,6 +6,7 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/wallet"
 )
 
 // handleGetDCBParams - get dcb component
@@ -29,6 +30,17 @@ func (rpcServer RpcServer) handleGetDCBConstitution(params interface{}, closeCha
 // handleGetListDCBBoard - return list payment address of DCB board
 func (rpcServer RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress)
+	return res, nil
+}
+
+func (rpcServer RpcServer) handleGetListDCBBoardPayment(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	res := []string{}
+	listPayment := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress
+	for _, i := range listPayment {
+		wtf := wallet.KeyWallet{}
+		wtf.KeySet.PaymentAddress = i
+		res = append(res, wtf.Base58CheckSerialize(wallet.PaymentAddressType))
+	}
 	return res, nil
 }
 
