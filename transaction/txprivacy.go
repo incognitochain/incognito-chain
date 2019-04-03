@@ -996,9 +996,20 @@ func (tx *Tx) IsCoinsBurning() bool {
 }
 
 func (tx *Tx) CalculateTxValue() uint64 {
-	if tx.Proof == nil || len(tx.Proof.InputCoins) == 0 || len(tx.Proof.OutputCoins) == 0 {
+	if tx.Proof == nil {
 		return 0
 	}
+	if tx.Proof.OutputCoins == nil || len(tx.Proof.OutputCoins) == 0 {
+		return 0
+	}
+	if tx.Proof.InputCoins == nil || len(tx.Proof.InputCoins) == 0 { // coinbase tx
+		txValue := uint64(0)
+		for _, outCoin := range tx.Proof.OutputCoins {
+			txValue += outCoin.CoinDetails.Value
+		}
+		return txValue
+	}
+
 	senderPKBytes := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
 	txValue := uint64(0)
 	for _, outCoin := range tx.Proof.OutputCoins {

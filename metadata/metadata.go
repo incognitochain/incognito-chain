@@ -76,7 +76,6 @@ func (mb *MetadataBase) ProcessWhenInsertBlockShard(tx Transaction, retriever Bl
 	return nil
 }
 
-// TODO(@0xankylosaurus): move TxDesc to mempool DTO
 // This is tx struct which is really saved in tx mempool
 type TxDesc struct {
 	// Tx is the transaction associated with the entry.

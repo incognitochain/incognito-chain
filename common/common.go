@@ -558,3 +558,20 @@ func CentInMilliEther(a uint64, p uint64) uint64 {
 	v.Quo(v, big.NewInt(int64(p)))
 	return v.Uint64()
 }
+
+func FileLog(fromShard bool, info string) {
+	shardFile := "~/shard.txt"
+	beaconFile := "~/beacon.txt"
+	var foName string
+	if fromShard {
+		foName = shardFile
+	} else {
+		foName = beaconFile
+	}
+	fo, err := os.Open(foName)
+	defer fo.Sync()
+	if err != nil {
+		fo, _ = os.Create(foName)
+	}
+	fo.WriteString(info + "\n")
+}

@@ -160,6 +160,10 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	}
 	beaconBlock.ProducerSig = producerSig
 	//================End Generate Signature
+	fmt.Println("[voting] - Beaconblock[", beaconBlock.Header.Height, "] body")
+	for _, inst := range beaconBlock.Body.Instructions {
+		fmt.Println("[voting] - - - > ", inst)
+	}
 	return beaconBlock, nil
 }
 
@@ -168,6 +172,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 // #2: valid stakers
 // #3: swap validator => map[byte][][]string
 func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestStateBeacon, shardsToBeacon map[byte]uint64) (map[byte][]ShardState, [][]string, map[byte][][]string, [][]string) {
+
 	shardStates := make(map[byte][]ShardState)
 	validStakers := [][]string{}
 	validSwappers := make(map[byte][][]string)
@@ -201,6 +206,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			err1 := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
 			fmt.Println("Beacon Producer/ Validate Agg Signature for shard", shardID, err1 == nil)
 			if err1 != nil {
+				panic("wtf")
 				break
 			}
 			if index != 0 && err1 != nil {
@@ -219,10 +225,26 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			stabilityInstructions = append(stabilityInstructions, stabilityInstruction...)
 		}
 	}
+	votingInstruction, err := blkTmplGenerator.chain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
+	if err != nil {
+		fmt.Println("[voting]-Build DCB voting instruction failed: ", err)
+	} else {
+		if len(votingInstruction) != 0 {
+			stabilityInstructions = append(stabilityInstructions, votingInstruction...)
+		}
+	}
+	votingInstruction, err = blkTmplGenerator.chain.generateVotingInstructionWOIns(GOVConstitutionHelper{})
+	if err != nil {
+		fmt.Println("[voting]-Build GOV voting instruction failed: ", err)
+	} else {
+		if len(votingInstruction) != 0 {
+			stabilityInstructions = append(stabilityInstructions, votingInstruction...)
+		}
+	}
 	oracleInsts, err := blkTmplGenerator.chain.buildOracleRewardInstructions(beaconBestState)
 	if err != nil {
 		fmt.Println("Build oracle reward instructions failed: ", err)
-	} else {
+	} else if len(oracleInsts) > 0 {
 		stabilityInstructions = append(stabilityInstructions, oracleInsts...)
 	}
 	return shardStates, validStakers, validSwappers, stabilityInstructions

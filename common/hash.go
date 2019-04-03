@@ -42,6 +42,10 @@ func (hash Hash) String() string {
 	return hex.EncodeToString(hash[:])
 }
 
+func (hash Hash) StringNotReverse() string {
+	return hex.EncodeToString(hash[:])
+}
+
 /*
 CloneBytes returns a copy of the bytes which represent the hash as a byte
 slice.

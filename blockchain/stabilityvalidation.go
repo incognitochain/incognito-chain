@@ -64,6 +64,8 @@ func (bc *BlockChain) VerifyStabilityTransactionsForNewBlock(insts [][]string, b
 		switch tx.GetMetadataType() {
 		case metadata.BuyFromGOVRequestMeta:
 			err = bc.verifyBuyFromGOVRequestTx(tx, insts, instUsed)
+		case metadata.ShardBlockSalaryResponseMeta:
+			err = bc.verifyShardBlockSalaryResTx(tx, insts, instUsed, block.Header.ShardID)
 		}
 
 		if err != nil {

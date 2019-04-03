@@ -317,22 +317,6 @@ func (blockchain *BlockChain) initBeaconState() error {
 	blockchain.BestState.Beacon.Update(initBlock, blockchain)
 	blockchain.updateStabilityLocalState(initBlock)
 
-	// TODO(@0xankylosaurus): initialize oracle data properly
-	blockchain.BestState.Beacon.StabilityInfo.Oracle.DCBToken = 1000 // $10
-	blockchain.BestState.Beacon.StabilityInfo.Oracle.GOVToken = 2000 // $20
-	blockchain.BestState.Beacon.StabilityInfo.Oracle.Constant = 100  // $1 = 100 cent
-	blockchain.BestState.Beacon.StabilityInfo.Oracle.ETH = 10000     // $100.00 = 10000 cent per ether
-
-	blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.OracleNetwork = &component.OracleNetwork{
-		OraclePubKeys: [][]byte{
-			[]byte{3, 36, 133, 3, 185, 44, 62, 112, 196, 239, 49, 190, 100, 172, 50, 147, 196, 154, 105, 211, 203, 57, 242, 110, 34, 126, 100, 226, 74, 148, 128, 167, 0},
-			// []byte{3, 36, 133, 3, 185, 44, 62, 112, 196, 239, 49, 190, 100, 172, 50, 147, 196, 154, 105, 211, 203, 57, 242, 110, 34, 126, 100, 226, 74, 148, 128, 167, 1},
-		},
-		UpdateFrequency:        10,
-		OracleRewardMultiplier: 1,
-		AcceptableErrorMargin:  5,
-	}
-
 	// Trade bonds
 	bondID, _ := common.NewHashFromStr("a1bdba2624828899959bd3704df90859539623d89ba6767d0000000000000000")
 	tradeBondBuyID := [32]byte{5}

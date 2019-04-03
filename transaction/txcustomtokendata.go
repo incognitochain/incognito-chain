@@ -175,7 +175,10 @@ func CreateCustomTokenReceiverArray(data interface{}) ([]TxTokenVout, int64) {
 	voutsAmount := int64(0)
 	receivers := data.(map[string]interface{})
 	for key, value := range receivers {
-		keyWallet, _ := wallet.Base58CheckDeserialize(key)
+		keyWallet, err := wallet.Base58CheckDeserialize(key)
+		if err != nil {
+			panic(err)
+		}
 		keySet := keyWallet.KeySet
 		temp := TxTokenVout{
 			PaymentAddress: keySet.PaymentAddress,
