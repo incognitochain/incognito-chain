@@ -72,13 +72,11 @@ var (
 	crowdsalePrefix       = []byte("crowdsale-")
 	tradeActivationPrefix = []byte("tradeAct-")
 
-	// dividend
-	dividendReceiversPrefix = []byte("divRec")
-	Unreward                = []byte("unreward")
-	Spent                   = []byte("spent")
-	Unspent                 = []byte("unspent")
-	Mintable                = []byte("mintable")
-	UnMintable              = []byte("unmintable")
+	Unreward   = []byte("unreward")
+	Spent      = []byte("spent")
+	Unspent    = []byte("unspent")
+	Mintable   = []byte("mintable")
+	UnMintable = []byte("unmintable")
 
 	// reserve
 	reserveIssuingInfoPrefix     = []byte("rsIss")

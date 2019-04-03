@@ -13,8 +13,7 @@ const (
 	LoanUnlockMeta   = 5
 	LoanPaymentMeta  = 6
 
-	DividendSubmitMeta  = 7
-	DividendPaymentMeta = 8
+	// Dividend: removed 7-8
 
 	CrowdsaleRequestMeta = 10
 	CrowdsalePaymentMeta = 11
