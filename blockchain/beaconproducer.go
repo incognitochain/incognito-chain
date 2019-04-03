@@ -319,7 +319,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 	oracleInsts, err := blkTmplGenerator.buildOracleRewardInstructions(beaconBestState)
 	if err != nil {
 		fmt.Println("Build oracle reward instructions failed: ", err)
-	} else {
+	} else if len(oracleInsts) > 0 {
 		stabilityInstructions = append(stabilityInstructions, oracleInsts...)
 	}
 
