@@ -112,13 +112,13 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 		<-time.Tick(time.Second * 2)
 		if err != nil {
 			Logger.log.Error(err)
-			close(protocol.proposeCh)
+			protocol.closeProposeCh()
 		} else {
 			jsonBlock, _ := json.Marshal(newBlock)
 			msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.UserKeySet)
 			if err != nil {
 				Logger.log.Error(err)
-				close(protocol.proposeCh)
+				protocol.closeProposeCh()
 			} else {
 				protocol.pendingBlock = newBlock
 				protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
@@ -128,13 +128,13 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 		newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ShardID, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
 		if err != nil {
 			Logger.log.Error(err)
-			close(protocol.proposeCh)
+			protocol.closeProposeCh()
 		} else {
 			jsonBlock, _ := json.Marshal(newBlock)
 			msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.UserKeySet)
 			if err != nil {
 				Logger.log.Error(err)
-				close(protocol.proposeCh)
+				protocol.closeProposeCh()
 			} else {
 				protocol.pendingBlock = newBlock
 				protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
