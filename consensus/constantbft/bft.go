@@ -109,7 +109,10 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	var msg wire.Message
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
 		newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
-		<-time.Tick(time.Second * 2)
+		timeSinceLastBlk := time.Since(time.Unix(protocol.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0))
+		if timeSinceLastBlk <= common.MinBlkInterval {
+			<-time.Tick(common.MinBlkInterval - timeSinceLastBlk)
+		}
 		if err != nil {
 			Logger.log.Error(err)
 			protocol.closeProposeCh()
@@ -126,6 +129,10 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 		}
 	} else {
 		newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ShardID, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
+		timeSinceLastBlk := time.Since(time.Unix(protocol.BlockChain.BestState.Shard[protocol.RoundData.ShardID].BestBlock.Header.Timestamp, 0))
+		if timeSinceLastBlk <= common.MinBlkInterval {
+			<-time.Tick(common.MinBlkInterval - timeSinceLastBlk)
+		}
 		if err != nil {
 			Logger.log.Error(err)
 			protocol.closeProposeCh()
