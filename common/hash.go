@@ -31,6 +31,12 @@ func (hash *Hash) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// Short returns the first few bytes for easy debugging
+func (hash *Hash) Short() string {
+	s := hash.String()
+	return s[:8]
+}
+
 /*
 String returns the Hash as the hexadecimal string of the byte-reversed
  hash.
