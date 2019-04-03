@@ -64,20 +64,21 @@ func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 	inst string,
 	unspentTokens map[string]([]transaction.TxTokenVout),
 	producerPrivateKey *privacy.SpendingKey,
+	tradeActivated map[string]bool,
 ) ([]metadata.Transaction, error) {
-	fmt.Printf("[db] building trade act tx\n")
 	data, err := blockgen.chain.calcTradeData(inst)
 	if err != nil {
 		return nil, err
 	}
 
 	// Ignore activation request if params are unsynced
-	if data.activated || data.reqAmount > data.amount {
-		fmt.Printf("[db] skip building buy sell tx: %t %d %d\n", data.activated, data.reqAmount, data.amount)
+	activatedInBlock := tradeActivated[string(data.tradeID)]
+	if data.activated || data.reqAmount > data.amount || activatedInBlock {
+		fmt.Printf("[db] skip building buy sell tx: %t %t %d %d\n", data.activated, activatedInBlock, data.reqAmount, data.amount)
 		return nil, nil
 	}
 
-	fmt.Printf("[db] trade act tx data: %s %t %d\n", data.bondID.String(), data.buy, data.reqAmount)
+	fmt.Printf("[db] trade act tx data: %s %t %d\n", data.bondID.Short(), data.buy, data.reqAmount)
 	txs := []metadata.Transaction{}
 	if data.buy {
 		txs, err = blockgen.buildTradeBuySellRequestTx(data.tradeID, data.bondID, data.reqAmount, producerPrivateKey)
@@ -89,6 +90,7 @@ func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 		return nil, err
 	}
 
+	tradeActivated[string(data.tradeID)] = true
 	fmt.Printf("[db] done built trade act tx\n")
 	return txs, nil
 }
@@ -135,7 +137,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 	unspentTokens map[string]([]transaction.TxTokenVout),
 	producerPrivateKey *privacy.SpendingKey,
 ) ([]metadata.Transaction, error) {
-	fmt.Printf("[db] building buyback request tx: %d %s\n", amount, bondID.String())
+	fmt.Printf("[db] building buyback request tx: %d %s\n", amount, bondID.Short())
 	// Build metadata to send to GOV
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	buyBackMeta := &metadata.BuyBackRequest{
