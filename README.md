@@ -2,7 +2,7 @@
 
 ![Constant is digital money you can actually use.](https://avatars2.githubusercontent.com/u/45321944?s=200&v=4)
 
-A new type of crypto curency
+A new type of crypto-currency
 
 ## Getting Started
 
@@ -13,10 +13,10 @@ These instructions will get you a copy of the project up and running on your loc
 #### Environment for dev
 
 - [Go](https://golang.org/) 1.10 or newer.
-- Mac, Linux, Window OS
+- Mac, Linux, Windows OS
 
 #### Installation
-##### Linux/BSD/MacOSX/POSIX/Window - Build from Source
+##### Linux/BSD/macOS/Windows - Build from Source
 - Install Go according to the installation instructions here: [http://golang.org/doc/install](http://golang.org/doc/install)
 - Ensure Go was installed properly and is a supported version:
 ```$ go version```

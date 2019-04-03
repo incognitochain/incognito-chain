@@ -6,7 +6,6 @@ import (
 
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/wallet"
@@ -136,41 +135,14 @@ func buildPaymentInstructionForCrowdsale(
 func buildInstructionsForTradeActivation(
 	shardID byte,
 	contentStr string,
-	beaconBestState *BestStateBeacon,
-	accumulativeValues *accumulativeValues,
-	db database.DatabaseInterface,
 ) ([][]string, error) {
-	fmt.Printf("[db] beacon buildingInst for trade\n")
-	tradeID, amount, err := metadata.ParseTradeActivationActionValue(contentStr)
-	if err != nil {
-		fmt.Printf("[db] 1\n")
-		return nil, err
-	}
-
-	// If trade had been activated, ignore the request
-	_, _, activated, _, _ := db.GetTradeActivation(tradeID)
-	key := string(tradeID)
-	if activatedInBlock := accumulativeValues.trade[key]; activatedInBlock {
-		fmt.Printf("[db] 2\n")
-		return nil, nil
-	} else if activated {
-		fmt.Printf("[db] 3\n")
-		return nil, nil
-	}
-	accumulativeValues.trade[key] = true
-
-	// Generate instruction to send request to GOV
-	tradeInst := &TradeBondInstruction{
-		TradeID: tradeID,
-		Amount:  amount,
-	}
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
 	dcbShardID := common.GetShardIDFromLastByte(dcbPk[len(dcbPk)-1])
 	inst := []string{
 		strconv.Itoa(metadata.TradeActivationMeta),
 		strconv.Itoa(int(dcbShardID)),
-		tradeInst.String(),
+		contentStr,
 	}
 	fmt.Printf("[db] beacon built inst: %v\n", inst)
 	return [][]string{inst}, nil

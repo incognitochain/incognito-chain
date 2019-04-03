@@ -28,6 +28,8 @@ var RpcHandler = map[string]commandHandler{
 	EstimateFee:              RpcServer.handleEstimateFee,
 	EstimateFeeWithEstimator: RpcServer.handleEstimateFeeWithEstimator,
 	GetGenerate:              RpcServer.handleGetGenerate,
+	GetActiveShards:          RpcServer.handleGetActiveShards,
+	GetMaxShardsNumber:       RpcServer.handleGetMaxShardsNumber,
 
 	//pool
 	GetMiningInfo:               RpcServer.handleGetMiningInfo,
@@ -576,6 +578,10 @@ func (rpcServer RpcServer) handleGetActiveShards(params interface{}, closeChan <
 		return activeShards, nil
 	}
 	return -1, nil
+}
+
+func (rpcServer RpcServer) handleGetMaxShardsNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return common.MAX_SHARD_NUMBER, nil
 }
 
 func (rpcServer RpcServer) handleGetStakingAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {

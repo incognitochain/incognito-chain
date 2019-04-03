@@ -2,12 +2,10 @@ package privacy
 
 import (
 	"crypto/elliptic"
+	"encoding/json"
 	"math/big"
 
 	"github.com/constant-money/constant-chain/common"
-
-	"encoding/json"
-
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/pkg/errors"
 )
@@ -150,10 +148,14 @@ func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 }
 
 // Hash derives a new elliptic point from an elliptic point and an index using hash function
-func (point EllipticPoint) Hash(index int) *EllipticPoint {
+func (point EllipticPoint) Hash(index int64) *EllipticPoint {
 	res := new(EllipticPoint).Zero()
 	tmp := AddPaddingBigInt(point.X, BigIntSize)
-	tmp = append(tmp, byte(index))
+	if index == 0 {
+		tmp = append(tmp, byte(0))
+	} else {
+		tmp = append(tmp, big.NewInt(index).Bytes()...)
+	}
 
 	for {
 		tmp = common.HashB(tmp)

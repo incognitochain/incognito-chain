@@ -167,7 +167,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		DataBase:          serverObj.dataBase,
 		Interrupt:         interrupt,
 		RelayShards:       relayShards,
-		Wallet:            serverObj.wallet,
 		BeaconPool:        serverObj.beaconPool,
 		ShardPool:         serverObj.shardPool,
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
