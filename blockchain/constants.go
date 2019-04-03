@@ -134,4 +134,4 @@ const (
 // ---------------------------------------------
 
 // Todo @hy don't merge this
-var TestnetInitConstant = []string{`{"Version":1,"Type":"s","LockTime":1553765098,"Fee":0,"Info":null,"SigPubKey":"AietXs9VLcsFnJMORtdmhdZZ0m0CreSXLOurqKCjzcwB","Sig":"7E90vcQuND1/Usw/2kz8M7C6VotyL2m+i9KcfeXvUEzYkrHMTKHcdivpT00vR4gnxMS3+ClcBmWuXUHBg8TUIA==","Proof":"11111112F9nPGboX8Fh1HmhP6KMy17RokQSRxazSGKZhbQZ9FX7QzAdFp3KrrcqshUHfQ1BsWtp24TfQp24cvucwhgSWCckG32qF5MUPpwFcRz5NPJ31kiLnddkcdCbdPugKeysqkNjhPaotgDa8tSMbusrsKnE5iLCEE1kQ5JLwqwAANmsoKy4DnHik6kfM79kyuF7qeVSja3iWZ572jmBZ5","PubKeyLastByteSender":1,"Metadata":null}`}
+var TestnetInitConstant = []string{`{"Version":1,"Type":"s","LockTime":1554203055,"Fee":0,"Info":null,"SigPubKey":"A58CKhajw92BH9mFlRBEbCrAOl8nzD9Ey4TdMLWDKL0A","Sig":"ZjxxKZv2v7nPTnpq8x4cZNjUg27PollvtiwjzJly2xcnNUJtOg8LpzGHF5QP47/jc1x9FeXZdaSE2siT31PWcA==","Proof":"11111116WGHqpGRpb156mNjZAF55nAeqtfP68nb2hQYXCzLzACytCMb85wsvLd7aTE6FxWQK88KPhnZEg9YxpAzcvi8xypaxXkeq2hxTTbBZin4qgFheBPEinySyKHJoudMEKtFrZBxoB8jCLTUmD9t4iEjdHS8mG8Khmdbx5Ms9UWDzW3oWTaeQQFSnHoUh7TFT6BhpHhsMj7S7nSQgGFGMNx","PubKeyLastByteSender":0,"Metadata":null}`}

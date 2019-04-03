@@ -154,6 +154,8 @@ func (db db) GetKey(keyType string, key interface{}) []byte {
 		dbkey = append(TokenPrefix, []byte(key.(*common.Hash).String())...)
 	case string(PrivacyTokenPrefix):
 		dbkey = append(PrivacyTokenPrefix, []byte(key.(*common.Hash).String())...)
+	case string(PrivacyTokenCrossShardPrefix):
+		dbkey = append(PrivacyTokenCrossShardPrefix, []byte(key.(*common.Hash).String())...)
 	case string(tokenInitPrefix):
 		dbkey = append(tokenInitPrefix, []byte(key.(*common.Hash).String())...)
 	case string(privacyTokenInitPrefix):

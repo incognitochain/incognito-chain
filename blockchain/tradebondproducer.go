@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/constant-money/constant-chain/common"
@@ -10,30 +11,70 @@ import (
 	"github.com/constant-money/constant-chain/wallet"
 )
 
+type tradeData struct {
+	tradeID   []byte
+	bondID    *common.Hash
+	buy       bool
+	activated bool
+	amount    uint64
+	reqAmount uint64
+}
+
+func (td *tradeData) Compare(td2 *tradeData) bool {
+	return bytes.Equal(td.tradeID, td2.tradeID) &&
+		td.bondID.IsEqual(td2.bondID) &&
+		td.buy == td2.buy &&
+		td.activated == td2.activated &&
+		td.amount == td2.amount &&
+		td.reqAmount == td2.reqAmount
+}
+
+func (bc *BlockChain) calcTradeData(inst string) (*tradeData, error) {
+	tradeID, reqAmount, err := metadata.ParseTradeActivationActionValue(inst)
+	if err != nil {
+		fmt.Printf("[db] err parsing ta action: %v\n", err)
+		return nil, err
+	}
+
+	bondID, buy, activated, amount, err := bc.GetLatestTradeActivation(tradeID)
+	if err != nil {
+		fmt.Printf("[db] err getting latest trade: %v\n", err)
+		return nil, err
+	}
+
+	return &tradeData{
+		tradeID:   tradeID,
+		bondID:    bondID,
+		buy:       buy,
+		activated: activated,
+		amount:    amount,
+		reqAmount: reqAmount,
+	}, nil
+}
+
 func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 	inst string,
 	unspentTokens map[string]([]transaction.TxTokenVout),
 	producerPrivateKey *privacy.SpendingKey,
 ) ([]metadata.Transaction, error) {
 	fmt.Printf("[db] building trade act tx\n")
-	tb, err := ParseTradeBondInstruction(inst)
+	data, err := blockgen.chain.calcTradeData(inst)
 	if err != nil {
-		fmt.Printf("[db] 1\n")
 		return nil, err
 	}
 
-	bondID, buy, _, _, err := blockgen.chain.config.DataBase.GetTradeActivation(tb.TradeID)
-	if err != nil {
-		fmt.Printf("[db] 2\n")
-		return nil, err
+	// Ignore activation request if params are unsynced
+	if data.activated || data.reqAmount > data.amount {
+		fmt.Printf("[db] skip building buy sell tx: %t %d %d\n", data.activated, data.reqAmount, data.amount)
+		return nil, nil
 	}
 
-	fmt.Printf("[db] trade act tx data: %s %t %d\n", bondID.String(), buy, tb.Amount)
+	fmt.Printf("[db] trade act tx data: %s %t %d\n", data.bondID.String(), data.buy, data.reqAmount)
 	txs := []metadata.Transaction{}
-	if buy {
-		txs, err = blockgen.buildTradeBuySellRequestTx(tb.TradeID, bondID, tb.Amount, producerPrivateKey)
+	if data.buy {
+		txs, err = blockgen.buildTradeBuySellRequestTx(data.tradeID, data.bondID, data.reqAmount, producerPrivateKey)
 	} else {
-		txs, err = blockgen.buildTradeBuyBackRequestTx(tb.TradeID, bondID, tb.Amount, unspentTokens, producerPrivateKey)
+		txs, err = blockgen.buildTradeBuyBackRequestTx(data.tradeID, data.bondID, data.reqAmount, unspentTokens, producerPrivateKey)
 	}
 
 	if err != nil {
@@ -118,6 +159,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 		keyWalletBurnAccount.KeySet.PaymentAddress,
 		buyBackMeta,
 	)
+	// TODO(@0xbunyip): skip building tx buyback/buysell if error (retry later)
 	if err != nil {
 		fmt.Printf("[db] build buyback request err: %v\n", err)
 		return nil, err
