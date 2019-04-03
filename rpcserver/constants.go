@@ -91,6 +91,8 @@ const (
 	CreateSignatureOnCustomTokenTx       = "createsignatureoncustomtokentx"
 	GetListDCBBoard                      = "getlistdcbboard"
 	GetListGOVBoard                      = "getlistgovboard"
+	GetListDCBBoardPayment               = "getlistdcbboardpayment"
+	GetListGOVBoardPayment               = "getlistgovboardpayment"
 	GetListCMBBoard                      = "getlistcmbboard"
 	AppendListDCBBoard                   = "testappendlistdcbboard"
 	AppendListGOVBoard                   = "testappendlistgovboard"

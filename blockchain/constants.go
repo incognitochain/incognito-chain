@@ -17,7 +17,7 @@ const (
 	ThresholdRatioOfDCBCrisis = 9000
 	ThresholdRatioOfGOVCrisis = 9000
 	ConstitutionPerBoard      = 10
-	EndOfFirstBoard           = 25
+	EndOfFirstBoard           = 100
 	BaseSalaryBoard           = 10000
 )
 
@@ -76,7 +76,7 @@ const (
 	TestnetInitCmBToken               = 10000
 	TestnetInitBondToken              = 10000
 	TestnetFeePerTxKb                 = 1
-	TestnetGenesisBlockPaymentAddress = "1Uv4APZadR2kbpm4Uazwng2hwfqb2AtuV6Y6QVcypzQurzwE9YvUzTA8TWVndLJxtuAytWPey57YiU97abmSJ7nnPxnDdsjGcXUAiiE6t"
+	TestnetGenesisBlockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
 )
 
 // for beacon
@@ -128,7 +128,8 @@ const (
 
 // Key param for instruction
 const (
-	salaryFund = "salaryFund"
+	salaryFund          = "salaryFund"
+	oracleInitialPrices = "oracleInitialPrices"
 )
 
 // ---------------------------------------------
