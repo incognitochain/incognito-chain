@@ -17,18 +17,15 @@ import (
 func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 	if inst[0] == InitAction {
 		// init data for network
-		var err error
 		switch inst[1] {
 		case salaryFund:
-			{
-				bsb.StabilityInfo.SalaryFund, err = strconv.ParseUint(inst[2], 10, 64)
-				if err != nil {
-					return err
-				}
-			}
+			return bsb.updateSalaryFund(inst)
+		case oracleInitialPrices:
+			return bsb.updateOracleInitialPrices(inst)
 		}
 		return nil
 	}
+
 	Logger.log.Warn("+++++++++++++++++++Here! ", len(inst), inst[0], strconv.Itoa(component.AcceptDCBBoardIns), "\n")
 	if len(inst) < 2 {
 		return nil // Not error, just not stability instruction
@@ -115,6 +112,26 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 	case strconv.Itoa(metadata.UpdatingOracleBoardMeta):
 		return bsb.processUpdatingOracleBoardInstruction(inst)
 	}
+	return nil
+}
+
+func (bsb *BestStateBeacon) updateSalaryFund(inst []string) error {
+	salaryFund, err := strconv.ParseUint(inst[2], 10, 64)
+	if err != nil {
+		return err
+	}
+	bsb.StabilityInfo.SalaryFund = salaryFund
+	return nil
+}
+
+func (bsb *BestStateBeacon) updateOracleInitialPrices(inst []string) error {
+	oracleInitialPricesStr := inst[2]
+	var oracle component.Oracle
+	err := json.Unmarshal([]byte(oracleInitialPricesStr), &oracle)
+	if err != nil {
+		return err
+	}
+	bsb.StabilityInfo.Oracle = oracle
 	return nil
 }
 
