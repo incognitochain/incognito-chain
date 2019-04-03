@@ -9,7 +9,7 @@ const (
 	defaultMaxBlkReqPerPeer     = 60
 	defaultMaxBlkReqPerTime     = 600
 	defaultBroadcastStateTime   = 2 * time.Second  // in second
-	defaultProcessPeerStateTime = 4 * time.Second  // in second
+	defaultProcessPeerStateTime = 3 * time.Second  // in second
 	defaultMaxBlockSyncTime     = 2 * time.Second  // in second
 	defaultCacheCleanupTime     = 60 * time.Second // in second
 
