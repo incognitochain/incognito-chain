@@ -108,11 +108,13 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	start := time.Now()
 	var msg wire.Message
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
-		newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
 		timeSinceLastBlk := time.Since(time.Unix(protocol.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0))
-		if timeSinceLastBlk <= common.MinBlkInterval {
-			<-time.Tick(common.MinBlkInterval - timeSinceLastBlk)
+		if timeSinceLastBlk <= common.MinBlkInterval-2*time.Second {
+			fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk - 2*time.Second).Seconds())
+			<-time.Tick(common.MinBlkInterval - timeSinceLastBlk - 2*time.Second)
 		}
+		newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
+
 		if err != nil {
 			Logger.log.Error(err)
 			protocol.closeProposeCh()
@@ -128,11 +130,13 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 			}
 		}
 	} else {
-		newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ShardID, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
 		timeSinceLastBlk := time.Since(time.Unix(protocol.BlockChain.BestState.Shard[protocol.RoundData.ShardID].BestBlock.Header.Timestamp, 0))
-		if timeSinceLastBlk <= common.MinBlkInterval {
-			<-time.Tick(common.MinBlkInterval - timeSinceLastBlk)
+		if timeSinceLastBlk <= common.MinBlkInterval-2*time.Second {
+			fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk - 2*time.Second).Seconds())
+			<-time.Tick(common.MinBlkInterval - timeSinceLastBlk - 2*time.Second)
 		}
+		newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ShardID, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
+
 		if err != nil {
 			Logger.log.Error(err)
 			protocol.closeProposeCh()
