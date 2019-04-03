@@ -1,6 +1,8 @@
 package metadata
 
 import (
+	"fmt"
+
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
@@ -75,6 +77,7 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) BuildReqActions(
 	inst := fromshardins.NewSubmitProposalIns(common.DCBBoard, submitProposal)
 
 	instStr, err := inst.GetStringFormat()
+	fmt.Println("[voting] - submitDCBProposalMetadata BuildReqActions: ", instStr)
 	if err != nil {
 		return nil, err
 	}
