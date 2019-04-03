@@ -1,5 +1,7 @@
 package common
 
+import "time"
+
 const (
 	EmptyString          = ""
 	PaymentAddressLength = 66
@@ -24,6 +26,7 @@ const (
 	MinTxsInBlock      = 10                   // minium txs for block to get immediate process (meaning no wait time)
 	MinBlockWaitTime   = 2                    // second
 	MaxBlockWaitTime   = 4 - MinBlockWaitTime // second
+	MinBlkInterval     = 5 * time.Second      //second
 )
 
 // for voting parameter
