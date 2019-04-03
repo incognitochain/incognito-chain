@@ -154,11 +154,6 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 		return err
 	}
 
-	err = blockchain.ProcessDividendForBlock(block)
-	if err != nil {
-		return err
-	}
-
 	err = blockchain.processTradeBondTx(block)
 	if err != nil {
 		return err

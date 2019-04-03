@@ -87,14 +87,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	}
 
 	// Build stand-alone stability instructions
-	divInsts, err := blockgen.buildDividendSubmitInsts(privatekey, shardID)
-	if err != nil {
-		return nil, err
-	}
-	if divInsts != nil && len(divInsts) > 0 {
-		instructions = append(instructions, divInsts...)
-	}
-
 	tradeBondRespInsts, err := blockgen.buildTradeBondConfirmInsts(beaconBlocks, shardID)
 	if err != nil {
 		return nil, err
@@ -207,18 +199,6 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 	// Remove unrelated shard tx
 	for _, tx := range txToRemove {
 		blockgen.txPool.RemoveTx(tx)
-	}
-
-	// Process new dividend proposal and build new dividend payment txs
-	divTxs, err := blockgen.buildDividendPaymentTxs(privatekey, shardID)
-	if err != nil {
-		return nil, err
-	}
-	for _, tx := range divTxs {
-		// Logger.log.Warn(tx, "-----+++++++++++++++\n")
-		if tx != nil {
-			txsToAdd = append(txsToAdd, tx)
-		}
 	}
 
 	// Process stability tx, create response txs if needed

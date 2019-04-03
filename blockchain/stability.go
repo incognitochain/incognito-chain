@@ -166,7 +166,7 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		contentStr := inst[1]
 		newInst := [][]string{}
 		switch metaType {
-		case metadata.LoanRequestMeta, metadata.LoanResponseMeta, metadata.LoanWithdrawMeta, metadata.LoanPaymentMeta, metadata.DividendSubmitMeta:
+		case metadata.LoanRequestMeta, metadata.LoanResponseMeta, metadata.LoanWithdrawMeta, metadata.LoanPaymentMeta:
 			newInst, err = buildPassThroughInstruction(metaType, contentStr)
 
 		case metadata.BuyFromGOVRequestMeta:

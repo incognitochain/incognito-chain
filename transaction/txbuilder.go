@@ -47,23 +47,3 @@ func BuildCoinbaseTxs(
 	}
 	return txs, nil
 }
-
-func BuildDividendTxs(
-	dividendID uint64,
-	tokenID *common.Hash,
-	receivers []*privacy.PaymentAddress,
-	amounts []uint64,
-	producerPrivateKey *privacy.SpendingKey,
-	db database.DatabaseInterface,
-) ([]*Tx, error) {
-	metas := []metadata.Metadata{}
-	for i := 0; i < len(receivers); i++ {
-		dividendMeta := &metadata.DividendPayment{
-			DividendID:   dividendID,
-			TokenID:      tokenID,
-			MetadataBase: metadata.MetadataBase{Type: metadata.DividendPaymentMeta},
-		}
-		metas = append(metas, dividendMeta)
-	}
-	return BuildCoinbaseTxs(receivers, amounts, producerPrivateKey, db, metas)
-}
