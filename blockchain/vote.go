@@ -379,7 +379,7 @@ func (self *BlockChain) CreateUpdateNewGovernorInstruction(
 		return nil, err
 	}
 	instructions = append(instructions, sendBackTokenAfterVoteFailIns...)
-	fmt.Println("[voting]-Update new governor inst ok")
+	fmt.Println("[voting]-Update new governor inst ok", sendBackTokenAfterVoteFailIns)
 	// hyyyyyyyyyyyyyyyyyyyyy
 	// send back dcbtoken after board
 	return instructions, nil
