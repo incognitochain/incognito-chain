@@ -128,7 +128,8 @@ const (
 
 // Key param for instruction
 const (
-	salaryFund = "salaryFund"
+	salaryFund          = "salaryFund"
+	oracleInitialPrices = "oracleInitialPrices"
 )
 
 // ---------------------------------------------
