@@ -66,7 +66,6 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 
 	//    single-node start    //
 	go protocol.CreateBlockMsg()
-	time.Sleep(500)
 	<-protocol.proposeCh
 	if protocol.pendingBlock != nil {
 		return protocol.pendingBlock, nil
