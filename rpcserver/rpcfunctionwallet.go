@@ -195,7 +195,7 @@ func (rpcServer RpcServer) handleGetBalanceByPrivatekey(params interface{}, clos
 	return balance, nil
 }
 
-// handleGetBalanceByPaymentAddress -  return balance of private key
+// handleGetBalanceByPaymentAddress -  return balance of paymentaddress
 func (rpcServer RpcServer) handleGetBalanceByPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	balance := uint64(0)
 
