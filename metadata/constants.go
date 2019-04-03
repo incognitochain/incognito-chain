@@ -19,15 +19,7 @@ const (
 	CrowdsaleRequestMeta = 10
 	CrowdsalePaymentMeta = 11
 
-	// CMB
-	CMBInitRequestMeta      = 12
-	CMBInitResponseMeta     = 13 // offchain multisig
-	CMBInitRefundMeta       = 14 // miner
-	CMBDepositContractMeta  = 15
-	CMBDepositSendMeta      = 16
-	CMBWithdrawRequestMeta  = 17
-	CMBWithdrawResponseMeta = 18 // offchain multisig
-	CMBLoanContractMeta     = 19
+	// CMB: removed 12-19
 
 	BuyFromGOVRequestMeta        = 20
 	BuyFromGOVResponseMeta       = 21
