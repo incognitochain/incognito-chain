@@ -106,11 +106,11 @@ func (sm *StakingMetadata) CalculateSize() uint64 {
 }
 
 func GetBeaconStakeAmount() uint64 {
-	const STAKE_BEACON_AMOUNT = 2
+	const STAKE_BEACON_AMOUNT = 20
 	return STAKE_BEACON_AMOUNT
 }
 
 func GetShardStateAmount() uint64 {
-	const STAKE_SHARD_AMOUNT = 1
+	const STAKE_SHARD_AMOUNT = 10
 	return STAKE_SHARD_AMOUNT
 }
