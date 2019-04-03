@@ -242,36 +242,6 @@ func (blockchain *BlockChain) GetLatestTradeActivation(tradeID []byte) (*common.
 	return nil, false, false, 0, errors.New("no trade found")
 }
 
-//// CMB
-func (blockchain *BlockChain) GetCMB(mainAccount []byte) (privacy.PaymentAddress, []privacy.PaymentAddress, uint64, *common.Hash, uint8, uint64, error) {
-	reserveAcc, members, capital, hash, state, fine, err := blockchain.config.DataBase.GetCMB(mainAccount)
-	if err != nil {
-		return privacy.PaymentAddress{}, nil, 0, nil, 0, 0, err
-	}
-
-	memberAddresses := []privacy.PaymentAddress{}
-	for _, member := range members {
-		memberAddress := (&privacy.PaymentAddress{}).SetBytes(member)
-		memberAddresses = append(memberAddresses, *memberAddress)
-	}
-
-	txHash, _ := (&common.Hash{}).NewHash(hash)
-	reserve := (&privacy.PaymentAddress{}).SetBytes(reserveAcc)
-	return *reserve, memberAddresses, capital, txHash, state, fine, nil
-}
-
-func (blockchain *BlockChain) GetCMBResponse(mainAccount []byte) ([][]byte, error) {
-	return blockchain.config.DataBase.GetCMBResponse(mainAccount)
-}
-
-func (blockchain *BlockChain) GetDepositSend(contractID []byte) ([]byte, error) {
-	return blockchain.config.DataBase.GetDepositSend(contractID)
-}
-
-func (blockchain *BlockChain) GetWithdrawRequest(contractID []byte) ([]byte, uint8, error) {
-	return blockchain.config.DataBase.GetWithdrawRequest(contractID)
-}
-
 func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]string, map[byte][]string, []string, []string, []string, []string, []string, []string) {
 	beaconBestState := BestStateBeacon{}
 	temp, err := blockchain.config.DataBase.FetchBeaconBestState()

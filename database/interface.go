@@ -150,21 +150,6 @@ type DatabaseInterface interface {
 	StoreContractingInfo(reqTxID common.Hash, amount uint64, redeem uint64, instType string) error
 	GetContractingInfo(reqTxID common.Hash) (uint64, uint64, string, error)
 
-	// CMB
-	StoreCMB([]byte, []byte, [][]byte, uint64, []byte) error
-	GetCMB([]byte) ([]byte, [][]byte, uint64, []byte, uint8, uint64, error)
-	UpdateCMBState([]byte, uint8) error
-	UpdateCMBFine(mainAccount []byte, fine uint64) error
-	StoreCMBResponse([]byte, []byte) error
-	GetCMBResponse([]byte) ([][]byte, error)
-	StoreDepositSend([]byte, []byte) error
-	GetDepositSend([]byte) ([]byte, error)
-	StoreWithdrawRequest(contractID []byte, txHash []byte) error
-	GetWithdrawRequest(contractID []byte) ([]byte, uint8, error)
-	UpdateWithdrawRequestState(contractID []byte, state uint8) error
-	StoreNoticePeriod(blockHeight uint64, txReqHash []byte) error
-	GetNoticePeriod(blockHeight uint64) ([][]byte, error)
-
 	//Vote
 	AddVoteBoard(
 		boardType common.BoardType,
