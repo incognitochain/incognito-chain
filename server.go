@@ -695,13 +695,16 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 	Logger.log.Debug("Receive version message START")
 
 	pbk := ""
-	err := cashec.ValidateDataB58(msg.PublicKey, msg.SignDataB58, []byte(peerConn.ListenerPeer.PeerID.Pretty()))
-	if err == nil {
-		pbk = msg.PublicKey
-	} else {
-		peerConn.ForceClose()
-		return
+	if msg.PublicKey != "" {
+		err := cashec.ValidateDataB58(msg.PublicKey, msg.SignDataB58, []byte(peerConn.ListenerPeer.PeerID.Pretty()))
+		if err == nil {
+			pbk = msg.PublicKey
+		} else {
+			peerConn.ForceClose()
+			return
+		}
 	}
+
 	remotePeer := &peer.Peer{
 		ListeningAddress: msg.LocalAddress,
 		RawAddress:       msg.RawLocalAddress,
