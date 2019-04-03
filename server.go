@@ -590,7 +590,7 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			GetCurrentRoleShard:  serverObj.GetCurrentRoleShard,
 		},
 	}
-	if len(KeySetUser.PrivateKey) != 0 {
+	if KeySetUser != nil && len(KeySetUser.PrivateKey) != 0 {
 		config.UserKeySet = KeySetUser
 	}
 	return config
@@ -695,13 +695,16 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 	Logger.log.Debug("Receive version message START")
 
 	pbk := ""
-	err := cashec.ValidateDataB58(msg.PublicKey, msg.SignDataB58, []byte(peerConn.ListenerPeer.PeerID.Pretty()))
-	if err == nil {
-		pbk = msg.PublicKey
-	} else {
-		peerConn.ForceClose()
-		return
+	if msg.PublicKey != "" {
+		err := cashec.ValidateDataB58(msg.PublicKey, msg.SignDataB58, []byte(peerConn.ListenerPeer.PeerID.Pretty()))
+		if err == nil {
+			pbk = msg.PublicKey
+		} else {
+			peerConn.ForceClose()
+			return
+		}
 	}
+
 	remotePeer := &peer.Peer{
 		ListeningAddress: msg.LocalAddress,
 		RawAddress:       msg.RawLocalAddress,
@@ -1021,16 +1024,6 @@ func (serverObj *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	msg.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.RawAddress
 	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerID
 	msg.(*wire.MessageVersion).ProtocolVersion = serverObj.protocolVersion
-	msg.(*wire.MessageVersion).PublicKey = peerConn.ListenerPeer.Config.UserKeySet.GetPublicKeyB58()
-	// Validate Public Key from UserPrvKey
-	// if peerConn.ListenerPeer.Config.UserKeySet != "" {
-	// 	// keySet, err := cfg.GetUserKeySet()
-	// 	// if err != nil {
-	// 	// 	Logger.log.Critical("Invalid producer's private key")
-	// 	// 	return err
-	// 	// }
-	// 	msg.(*wire.MessageVersion).PublicKey = peerConn.ListenerPeer.Config.UserKeySet.GetPublicKeyB58()
-	// }
 
 	// ValidateTransaction Public Key from ProducerPrvKey
 	if peerConn.ListenerPeer.Config.UserKeySet != nil {
@@ -1236,12 +1229,13 @@ func (serverObj *Server) BoardcastNodeState() error {
 		}
 	}
 	msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidPendingBlockHeight()
-
-	userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58(), serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
-	if (cfg.NodeMode == "auto" || cfg.NodeMode == "shard") && userRole == "shard" {
-		userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58(), serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Round)
-		if userRole == "shard-proposer" || userRole == "shard-validator" {
-			msg.(*wire.MessagePeerState).CrossShardPool[shardID] = serverObj.crossShardPool[shardID].GetValidBlockHeight()
+	if serverObj.userKeySet != nil {
+		userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58(), serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
+		if (cfg.NodeMode == "auto" || cfg.NodeMode == "shard") && userRole == "shard" {
+			userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58(), serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Round)
+			if userRole == "shard-proposer" || userRole == "shard-validator" {
+				msg.(*wire.MessagePeerState).CrossShardPool[shardID] = serverObj.crossShardPool[shardID].GetValidBlockHeight()
+			}
 		}
 	}
 	msg.SetSenderID(listener.PeerID)
