@@ -86,7 +86,8 @@ func groupOracleFeedTxsByOracleType(
 	blockHash := beaconBestState.BestBlock.Header.PrevBlockHash
 	for i := updateFrequency; i > 0; i-- {
 		if blockHash.String() == (common.Hash{}).String() {
-			return instsByOracleType, nil
+			// return instsByOracleType, nil
+			continue
 		}
 		blockBytes, err := bc.config.DataBase.FetchBlock(&blockHash)
 		if err != nil {
@@ -280,10 +281,10 @@ func buildRewardAndRefundEvals(
 	return rewardAndRefundEvals, updatedOracleValues, nil
 }
 
-func (blockGen *BlkTmplGenerator) buildOracleRewardInstructions(
+func (blockChain *BlockChain) buildOracleRewardInstructions(
 	beaconBestState *BestStateBeacon,
 ) ([][]string, error) {
-	evals, _, err := buildRewardAndRefundEvals(blockGen.chain, beaconBestState)
+	evals, _, err := buildRewardAndRefundEvals(blockChain, beaconBestState)
 	if err != nil {
 		return nil, err
 	}
