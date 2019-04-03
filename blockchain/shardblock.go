@@ -114,7 +114,18 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 	block.ProducerSig = blk.ProducerSig
 	block.Header = blk.Header
 	block.Instructions = blk.Body.Instructions
-	beaconBlocks, err := FetchBeaconBlockFromHeight(bc.config.DataBase, bc.BestState.Shard[block.Header.ShardID].BeaconHeight+1, block.Header.BeaconHeight)
+	previousShardBlockByte, err := bc.config.DataBase.FetchBlock(&blk.Header.PrevBlockHash)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil
+	}
+	previousShardBlock := ShardBlock{}
+	err = json.Unmarshal(previousShardBlockByte, &previousShardBlock)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil
+	}
+	beaconBlocks, err := FetchBeaconBlockFromHeight(bc.config.DataBase, previousShardBlock.Header.BeaconHeight+1, block.Header.BeaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil

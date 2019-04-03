@@ -143,8 +143,6 @@ func CreateShardInstructionsFromTransactionAndIns(
 			pk := tx.GetProof().InputCoins[0].CoinDetails.PublicKey.Compress()
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
 			stakeBeaconPubKey = append(stakeBeaconPubKey, pkb58)
-			//TODO: stable param 0xsancurasolus
-			// case metadata.BuyFromGOVRequestMeta:
 		}
 	}
 
