@@ -59,6 +59,9 @@ type TxPool struct {
 	//Token ID List in Mempool
 	tokenIDList []string
 	tokenIDMtx  sync.RWMutex
+
+	//Max transaction pool may have
+	maxTx uint64
 }
 
 /*
@@ -72,6 +75,7 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.txCoinHashHPool = make(map[common.Hash][]common.Hash)
 	tp.coinHashHPool = make(map[common.Hash]bool)
 	tp.cMtx = sync.RWMutex{}
+	tp.maxTx = 1000
 }
 
 // ----------- transaction.MempoolRetriever's implementation -----------------
@@ -306,6 +310,9 @@ func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
 // This function is safe for concurrent access.
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	tp.mtx.Lock()
+	if uint64(len(tp.pool)) >= tp.maxTx {
+		return nil, nil, errors.New("Pool reach max number of transaction")
+	}
 	hash, txDesc, err := tp.maybeAcceptTransaction(tx)
 	if err != nil {
 		Logger.log.Error(err)
