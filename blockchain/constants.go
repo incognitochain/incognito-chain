@@ -134,5 +134,5 @@ const (
 // ---------------------------------------------
 
 var TestnetInitConstant = []string{
-	`{"Version":1,"Type":"s","LockTime":1553768899,"Fee":0,"Info":null,"SigPubKey":"AsKCsGYkt3JthzFysVzWHxkESGfEoSRFeWafGB+DZRQA","Sig":"MpZZJmgM61lNx3cqoC74qc/m+TCgrngctP/i+SusXNFmlgQzIE/1JoPnO9+4kbUp1jtLBWY80B629qWU/UiuHA==","Proof":"11111116WGHqpGKhPnvZ7i2w3heBopZQYdwc4cG7c4H53LZKzjBdafgMwxaXKzdaKCniFTXSdTm7rXCPeg5qqxB1hP3w2uNQRj5V6sX4F7n7SpDN6uYF18Y29NJNJxugr6R6WpYrSX9UVYbnBwEgnHPefMrzFMvTQDrqurWT2ZpVu7BDedZwkLoq61YTNeDRw2HGN2tLFyN7M2icsd7HhqWSpi","PubKeyLastByteSender":0,"Metadata":null}`,
+	`{"Version":1,"Type":"s","LockTime":1554269718,"Fee":0,"Info":null,"SigPubKey":"A58CKhajw92BH9mFlRBEbCrAOl8nzD9Ey4TdMLWDKL0A","Sig":"ZqtpQ/H30vwQSNMrNj5yU1CU4hH958AnxsXJVLaysV76IUDP3IN+FiII5nwVs8T4KRwsA60p7EMT7v1H95nN8A==","Proof":"11111116WGHqpGRpb156mNjZAF55nAeqtfP68nb2hQYXCzLzACytCMb85wsvL37QLnSmmFCf6UU4oWWQx1FtQQjmUW1ZFq6dBJt1GwQLNKGz8DqR4P2UfKN2eNXX83htr2AaLUUEQoSw1ntBaRq4ArQgkhT6oMzv5bHqRDbZdR5Z9yt4jZvHGveWdCowP5jRq1vH3j5Z92W9eguWWEhmkKe9hj","PubKeyLastByteSender":0,"Metadata":null}`,
 }
