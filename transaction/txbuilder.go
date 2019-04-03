@@ -67,23 +67,3 @@ func BuildDividendTxs(
 	}
 	return BuildCoinbaseTxs(receivers, amounts, producerPrivateKey, db, metas)
 }
-
-// BuildRefundTx - build a coinbase tx to refund constant with CMB policies
-func BuildRefundTx(
-	receiver privacy.PaymentAddress,
-	amount uint64,
-	producerPrivateKey *privacy.SpendingKey,
-	db database.DatabaseInterface,
-) (*Tx, error) {
-	meta := &metadata.CMBInitRefund{
-		MainAccount:  receiver,
-		MetadataBase: metadata.MetadataBase{Type: metadata.CMBInitRefundMeta},
-	}
-	metaList := []metadata.Metadata{meta}
-	amounts := []uint64{amount}
-	txs, err := BuildCoinbaseTxs([]*privacy.PaymentAddress{&receiver}, amounts, producerPrivateKey, db, metaList)
-	if err != nil {
-		return nil, err
-	}
-	return txs[0], nil // only one tx in slice
-}

@@ -68,13 +68,6 @@ var (
 	// multisigs
 	multisigsPrefix = []byte("multisigs")
 
-	// cmb
-	cmbPrefix                = []byte("cmb-")
-	cmbResponsePrefix        = []byte("cmbres-")
-	cmbDepositSendKeyPrefix  = []byte("cmbdepositsend-")
-	cmbWithdrawRequestPrefix = []byte("cmbwithdrawreq-")
-	cmbNoticePrefix          = []byte("cmbnotice-")
-
 	// crowdsale
 	crowdsalePrefix       = []byte("crowdsale-")
 	tradeActivationPrefix = []byte("tradeAct-")

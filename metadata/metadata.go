@@ -145,12 +145,6 @@ type BlockchainRetriever interface {
 	GetTradeActivation([]byte) (*common.Hash, bool, bool, uint64, error)
 	GetLatestTradeActivation([]byte) (*common.Hash, bool, bool, uint64, error)
 
-	// For validating cmb
-	GetCMB([]byte) (privacy.PaymentAddress, []privacy.PaymentAddress, uint64, *common.Hash, uint8, uint64, error)
-	GetBlockHeightByBlockHash(*common.Hash) (uint64, byte, error)
-	GetCMBResponse([]byte) ([][]byte, error)
-	GetDepositSend([]byte) ([]byte, error)
-	GetWithdrawRequest([]byte) ([]byte, uint8, error)
 	GetConstitution(boardType common.BoardType) ConstitutionInterface
 	UpdateDCBFund(transaction Transaction)
 	GetGovernor(boardType common.BoardType) GovernorInterface
