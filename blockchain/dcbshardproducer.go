@@ -1,12 +1,17 @@
 package blockchain
 
 import (
+	"fmt"
+	"strconv"
+
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
+	"github.com/constant-money/constant-chain/wallet"
 )
 
 func (blockchain *BlockChain) GetAmountPerAccount(tokenID *common.Hash) (uint64, []privacy.PaymentAddress, []uint64, error) {
@@ -196,4 +201,51 @@ func (blockgen *BlkTmplGenerator) buildDividendSubmitInsts(producerPrivateKey *p
 	}
 
 	return submitInsts, nil
+}
+
+func buildBuySellConfirmInst(inst []string, shardID byte) []string {
+	fmt.Printf("[db] build buy sell confirm inst: %v %d\n", inst, shardID)
+	return []string{
+		strconv.Itoa(component.ConfirmBuySellRequestMeta),
+		strconv.Itoa(int(shardID)),
+		inst[2],
+		inst[3],
+		inst[4],
+	}
+}
+
+func buildBuyBackConfirmInst(inst []string, shardID byte) []string {
+	fmt.Printf("[db] build buy back confirm inst: %v %d\n", inst, shardID)
+	return []string{
+		strconv.Itoa(component.ConfirmBuyBackRequestMeta),
+		strconv.Itoa(int(shardID)),
+		inst[2],
+		inst[3],
+		inst[4],
+	}
+}
+
+func (blockgen *BlkTmplGenerator) buildTradeBondConfirmInsts(beaconBlocks []*BeaconBlock, shardID byte) ([][]string, error) {
+	insts := [][]string{}
+	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
+	dcbShardID := common.GetShardIDFromLastByte(dcbPk[len(dcbPk)-1])
+
+	if shardID == dcbShardID {
+		for _, beaconBlock := range beaconBlocks {
+			for _, l := range beaconBlock.Body.Instructions {
+				if len(l) <= 2 {
+					continue
+				}
+				switch l[0] {
+				case strconv.Itoa(metadata.BuyFromGOVRequestMeta):
+					insts = append(insts, buildBuySellConfirmInst(l, shardID))
+
+				case strconv.Itoa(metadata.BuyBackRequestMeta):
+					insts = append(insts, buildBuyBackConfirmInst(l, shardID))
+				}
+			}
+		}
+	}
+	return insts, nil
 }

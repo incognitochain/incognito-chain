@@ -31,7 +31,6 @@ type accumulativeValues struct {
 	totalRefundAmt       uint64
 	totalOracleRewards   uint64
 	saleDataMap          map[string]*component.SaleData
-	trade                map[string]bool
 }
 
 func isGOVFundEnough(
@@ -165,7 +164,7 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 			continue
 		}
 		fmt.Println("[voting] -----------------------> Instrucstion from shard to beacon ", inst)
-		if inst[0] != "36" {
+		if inst[0] != "37" {
 			fmt.Printf("[db] beaconProducer found inst: %s\n", inst[0])
 		}
 		// TODO: will improve the condition later
@@ -192,7 +191,7 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 			newInst, err = buildInstructionsForCrowdsaleRequest(shardID, contentStr, beaconBestState, accumulativeValues)
 
 		case metadata.TradeActivationMeta:
-			newInst, err = buildInstructionsForTradeActivation(shardID, contentStr, beaconBestState, accumulativeValues, blkTmpGen.chain.config.DataBase)
+			newInst, err = buildInstructionsForTradeActivation(shardID, contentStr)
 
 		case metadata.BuyBackRequestMeta:
 			newInst, err = buildInstructionsForBuyBackBondsReq(shardID, contentStr, beaconBestState, accumulativeValues, blkTmpGen.chain)
@@ -234,9 +233,13 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 			continue
 		}
 		if err != nil {
-			return [][]string{}, err
+			Logger.log.Error(err)
+			continue
 		}
-		instructions = append(instructions, newInst...)
+
+		if len(newInst) > 0 {
+			instructions = append(instructions, newInst...)
+		}
 	}
 	// update component in beststate
 	return instructions, nil
@@ -324,7 +327,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				if err != nil {
 					return nil, err
 				}
-				if metaType != 36 {
+				if metaType != 37 {
 					fmt.Printf("[db] shard build Resp from inst: %+v\n", l)
 				}
 				Logger.log.Warn("Metadata type:", metaType, "\n")
@@ -434,7 +437,9 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				if err != nil {
 					return nil, err
 				}
-				resTxs = append(resTxs, txs...)
+				if len(txs) > 0 {
+					resTxs = append(resTxs, txs...)
+				}
 			}
 		}
 	}

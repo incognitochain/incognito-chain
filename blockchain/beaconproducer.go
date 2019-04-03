@@ -186,7 +186,6 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 	stabilityInstructions := [][]string{}
 	accumulativeValues := &accumulativeValues{
 		saleDataMap: map[string]*component.SaleData{},
-		trade:       map[string]bool{},
 	}
 	for shardID, shardBlocks := range shardsBlocks {
 		// Only accept block in one epoch
