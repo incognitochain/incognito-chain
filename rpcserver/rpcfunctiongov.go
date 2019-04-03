@@ -49,6 +49,9 @@ func (rpcServer RpcServer) handleGetBondTypes(params interface{}, closeChan <-ch
 func (rpcServer RpcServer) handleGetCurrentSellingBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	stabilityInfo := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo
 	sellingBondsParam := stabilityInfo.GOVConstitution.GOVParams.SellingBonds
+	if sellingBondsParam == nil {
+		return nil, nil
+	}
 	buyPrice := uint64(0)
 	bondID := sellingBondsParam.GetID()
 	bondPriceFromOracle := stabilityInfo.Oracle.Bonds[bondID.String()]
@@ -94,6 +97,17 @@ func (rpcServer RpcServer) handleGetGOVConstitution(params interface{}, closeCha
 
 func (rpcServer RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	res := ListPaymentAddressToListString(rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress)
+	return res, nil
+}
+
+func (rpcServer RpcServer) handleGetListGOVBoardPayment(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	res := []string{}
+	listPayment := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress
+	for _, i := range listPayment {
+		wtf := wallet.KeyWallet{}
+		wtf.KeySet.PaymentAddress = i
+		res = append(res, wtf.Base58CheckSerialize(wallet.PaymentAddressType))
+	}
 	return res, nil
 }
 
@@ -461,6 +475,10 @@ func (self RpcServer) handleCreateAndSendTxWithSenderAddress(params interface{},
 func (rpcServer RpcServer) handleGetCurrentSellingGOVTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	stabilityInfo := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo
 	sellingGOVTokensParam := stabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens
+	if sellingGOVTokensParam == nil {
+		return nil, nil
+	}
+
 	buyPrice := uint64(0)
 	govTokenPriceFromOracle := stabilityInfo.Oracle.GOVToken
 	if govTokenPriceFromOracle == 0 {

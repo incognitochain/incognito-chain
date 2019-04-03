@@ -3,6 +3,7 @@ package component
 import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/wallet"
 )
 
 type VoteProposalData struct {
@@ -31,4 +32,12 @@ func (submitProposalData SubmitProposalData) ToBytes() []byte {
 	i += copy(res[i:], common.Uint32ToBytes(submitProposalData.ConstitutionIndex))
 	i += copy(res[i:], submitProposalData.SubmitterPayment.Bytes())
 	return res
+}
+
+func NewPaymentAddressFromString(paymentString string) (*privacy.PaymentAddress, error) {
+	res, err := wallet.Base58CheckDeserialize(paymentString)
+	if err != nil {
+		return nil, err
+	}
+	return &res.KeySet.PaymentAddress, nil
 }
