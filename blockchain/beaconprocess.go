@@ -346,7 +346,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 				oracleInsts, err := blockchain.buildOracleRewardInstructions(&beaconBestState)
 				if err != nil {
 					Logger.log.Error("Build oracle reward instructions failed: ", err)
-				} else {
+				} else if len(oracleInsts) > 0 {
 					stabilityInstructions = append(stabilityInstructions, oracleInsts...)
 				}
 			} else {
