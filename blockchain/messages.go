@@ -98,7 +98,7 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 				Logger.log.Error(err)
 				return
 			} else {
-				if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
+				if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 && blockchain.config.UserKeySet != nil {
 					userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
 					fmt.Println("Beacon block user role", userRole)
 					if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
