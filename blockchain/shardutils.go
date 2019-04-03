@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -130,10 +131,12 @@ func CreateShardInstructionsFromTransactionAndIns(
 	stakeBeaconPubKey := []string{}
 	instructions, err = buildStabilityActions(transactions, bc, shardID, producerAddress, shardBlockHeight, beaconBlocks)
 	if err != nil {
+		fmt.Println("[voting] - wtf err???", err)
 		return nil, err
 	}
 
 	for _, tx := range transactions {
+		fmt.Println("[voting] - CreateShardInstructionsFromTransactionAndIns: ", tx.GetMetadataType())
 		switch tx.GetMetadataType() {
 		case metadata.ShardStakingMeta:
 			pk := tx.GetProof().InputCoins[0].CoinDetails.PublicKey.Compress()
@@ -143,8 +146,6 @@ func CreateShardInstructionsFromTransactionAndIns(
 			pk := tx.GetProof().InputCoins[0].CoinDetails.PublicKey.Compress()
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
 			stakeBeaconPubKey = append(stakeBeaconPubKey, pkb58)
-			//TODO: stable param 0xsancurasolus
-			// case metadata.BuyFromGOVRequestMeta:
 		}
 	}
 

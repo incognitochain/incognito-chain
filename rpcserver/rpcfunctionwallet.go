@@ -195,38 +195,37 @@ func (rpcServer RpcServer) handleGetBalanceByPrivatekey(params interface{}, clos
 	return balance, nil
 }
 
-// handleGetBalanceByPaymentAddress -  return balance of private key
+// handleGetBalanceByPaymentAddress -  return balance of paymentaddress
 func (rpcServer RpcServer) handleGetBalanceByPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// balance := uint64(0)
+	balance := uint64(0)
 
-	// // all component
-	// arrayParams := common.InterfaceSlice(component)
+	// all component
+	arrayParams := common.InterfaceSlice(params)
 
-	// // param #1: private key of sender
-	// paymentAddressParam := arrayParams[0]
-	// accountWithPaymentAddress, err := wallet.Base58CheckDeserialize(paymentAddressParam.(string))
-	// if err != nil {
-	// 	return nil, NewRPCError(ErrUnexpected, err)
-	// }
+	// param #1: private key of sender
+	paymentAddressParam := arrayParams[0]
+	accountWithPaymentAddress, err := wallet.Base58CheckDeserialize(paymentAddressParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 
-	// // get balance for accountName in wallet
-	// lastByte := accountWithPaymentAddress.KeySet.PaymentAddress.Pk[len(accountWithPaymentAddress.KeySet.PaymentAddress.Pk)-1]
-	// shardIDSender, err := common.GetTxSenderChain(lastByte)
-	// if err != nil {
-	// 	return nil, NewRPCError(ErrUnexpected, err)
-	// }
-	// constantTokenID := &common.Hash{}
-	// constantTokenID.SetBytes(common.ConstantID[:])
-	// outcoints, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&accountWithPaymentAddress.KeySet, shardIDSender, constantTokenID)
-	// if err != nil {
-	// 	return nil, NewRPCError(ErrUnexpected, err)
-	// }
-	// for _, out := range outcoints {
-	// 	balance += out.CoinDetails.Value
-	// }
+	// get balance for accountName in wallet
+	lastByte := accountWithPaymentAddress.KeySet.PaymentAddress.Pk[len(accountWithPaymentAddress.KeySet.PaymentAddress.Pk)-1]
+	shardIDSender := common.GetShardIDFromLastByte(lastByte)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
+	outcoints, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&accountWithPaymentAddress.KeySet, shardIDSender, constantTokenID)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	for _, out := range outcoints {
+		balance += out.CoinDetails.Value
+	}
 
-	// return balance, nil
-	return nil, nil
+	return balance, nil
 }
 
 /*

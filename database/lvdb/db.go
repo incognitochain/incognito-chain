@@ -56,9 +56,9 @@ var (
 	voteBoardCountPrefix         = []byte("votecountboard-")
 	voteBoardListPrefix          = []byte("votelistboard-")
 	threePhraseCryptoOwnerPrefix = []byte("threephrasecryptoownerprefix-")
-	voteProposalPrefix           = []byte("voteproposalprefix-")
+	VoteProposalPrefix           = []byte("voteproposalprefix-")
 	listVoterOfProposalPrefix    = []byte("listvoterofproposalprefix-")
-	submitProposalPrefix         = []byte("submitproposalprefix-")
+	SubmitProposalPrefix         = []byte("submitproposalprefix-")
 	threePhraseVoteValuePrefix   = []byte("threephrasevotevalueprefix-")
 	winningVoterPrefix           = []byte("winningvoterprefix-")
 	//pubKeyToPaymentAddress          = []byte("pubkeytopaymentaddress")
@@ -154,6 +154,8 @@ func (db db) GetKey(keyType string, key interface{}) []byte {
 		dbkey = append(TokenPrefix, []byte(key.(*common.Hash).String())...)
 	case string(PrivacyTokenPrefix):
 		dbkey = append(PrivacyTokenPrefix, []byte(key.(*common.Hash).String())...)
+	case string(PrivacyTokenCrossShardPrefix):
+		dbkey = append(PrivacyTokenCrossShardPrefix, []byte(key.(*common.Hash).String())...)
 	case string(tokenInitPrefix):
 		dbkey = append(tokenInitPrefix, []byte(key.(*common.Hash).String())...)
 	case string(privacyTokenInitPrefix):

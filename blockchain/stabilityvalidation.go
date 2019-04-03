@@ -125,6 +125,9 @@ func (bc *BlockChain) VerifyStabilityTransactionsForNewBlock(insts [][]string, b
 
 		case metadata.BuyBackRequestMeta:
 			err = bc.verifyBuyBackRequestTx(tx, insts, instUsed)
+
+		case metadata.ShardBlockSalaryResponseMeta:
+			err = bc.verifyShardBlockSalaryResTx(tx, insts, instUsed, block.Header.ShardID)
 		}
 
 		if err != nil {

@@ -114,15 +114,32 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 	block.ProducerSig = blk.ProducerSig
 	block.Header = blk.Header
 	block.Instructions = blk.Body.Instructions
-	beaconBlocks, err := FetchBeaconBlockFromHeight(bc.config.DataBase, bc.BestState.Shard[block.Header.ShardID].BeaconHeight+1, block.Header.BeaconHeight)
+	previousShardBlockByte, err := bc.config.DataBase.FetchBlock(&blk.Header.PrevBlockHash)
 	if err != nil {
 		Logger.log.Error(err)
+		return nil
+	}
+	previousShardBlock := ShardBlock{}
+	err = json.Unmarshal(previousShardBlockByte, &previousShardBlock)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil
+	}
+	beaconBlocks, err := FetchBeaconBlockFromHeight(bc.config.DataBase, previousShardBlock.Header.BeaconHeight+1, block.Header.BeaconHeight)
+	fmt.Println("[voting] - newshardtobeacon", previousShardBlock.Header.BeaconHeight, block.Header.BeaconHeight)
+	if err != nil {
+		Logger.log.Error(err)
+		fmt.Println("[voting] - error in create shard to beacon", err)
 		return nil
 	}
 	instructions, err := CreateShardInstructionsFromTransactionAndIns(blk.Body.Transactions, bc, blk.Header.ShardID, blk.Header.ProducerAddress, blk.Header.Height, beaconBlocks)
 	if err != nil {
 		Logger.log.Error(err)
+		fmt.Println("[voting] - error in create shard to beacon", err)
 		return nil
+	}
+	for _, inst := range instructions {
+		fmt.Println("[voting] - instruction to beacon: ", inst)
 	}
 	block.Instructions = append(block.Instructions, instructions...)
 	return &block

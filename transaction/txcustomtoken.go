@@ -13,7 +13,7 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
 	"github.com/constant-money/constant-chain/wallet"
 )
 
@@ -373,7 +373,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	inputCoin []*privacy.InputCoin,
 	fee uint64,
 	tokenParams *CustomTokenParamTx,
-	listCustomTokens map[common.Hash]TxCustomToken,
+	//listCustomTokens map[common.Hash]TxCustomToken,
 	db database.DatabaseInterface,
 	metaData metadata.Metadata,
 	hasPrivacy bool,
@@ -471,11 +471,16 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 			//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 			newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
 			fmt.Println("INIT Tx Custom Token/ newHashInitToken", newHashInitToken)
-			for customTokenID := range listCustomTokens {
-				if newHashInitToken.String() == customTokenID.String() {
-					fmt.Println("INIT Tx Custom Token/ Existed", customTokenID, customTokenID.String() == newHashInitToken.String())
-					return NewTransactionErr(CustomTokenExisted, nil)
-				}
+			//for customTokenID := range listCustomTokens {
+			//	if newHashInitToken.String() == customTokenID.String() {
+			//		fmt.Println("INIT Tx Custom Token/ Existed", customTokenID, customTokenID.String() == newHashInitToken.String())
+			//		return NewTransactionErr(CustomTokenExisted, nil)
+			//	}
+			//}
+			existed := db.CustomTokenIDExisted(&newHashInitToken)
+			if existed {
+				Logger.log.Error("INIT Tx Custom Token is Existed", newHashInitToken)
+				return NewTransactionErr(CustomTokenExisted, nil)
 			}
 			txCustomToken.TxTokenData.PropertyID = newHashInitToken
 		}
@@ -494,7 +499,11 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 			Vouts:          nil,
 		}
 		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
-		if _, ok := listCustomTokens[*propertyID]; !ok {
+		//if _, ok := listCustomTokens[*propertyID]; !ok {
+		//	return NewTransactionErr(UnexpectedErr, errors.New("invalid Token ID"))
+		//}
+		existed := db.CustomTokenIDExisted(propertyID)
+		if !existed {
 			return NewTransactionErr(UnexpectedErr, errors.New("invalid Token ID"))
 		}
 		txCustomToken.TxTokenData.PropertyID = *propertyID
@@ -619,9 +628,14 @@ func (tx *TxCustomToken) GetMetadataFromVinsTx(bcr metadata.BlockchainRetriever)
 func (tx *TxCustomToken) CalculateTxValue() uint64 {
 	vins := tx.TxTokenData.Vins
 	vouts := tx.TxTokenData.Vouts
-	if len(vins) == 0 {
-		return 0
+	if len(vins) == 0 { // coinbase tx
+		txValue := uint64(0)
+		for _, vout := range vouts {
+			txValue += vout.Value
+		}
+		return txValue
 	}
+
 	senderPk := vins[0].PaymentAddress.Pk
 	txValue := uint64(0)
 	for _, vout := range vouts {
