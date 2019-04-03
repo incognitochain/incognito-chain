@@ -56,6 +56,14 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 		protocol.phase = PBFT_PROPOSE
 	}
 
+	Logger.log.Info("Starting PBFT protocol for " + protocol.RoundData.Layer)
+	protocol.multiSigScheme = new(multiSigScheme)
+	protocol.multiSigScheme.Init(protocol.UserKeySet, protocol.RoundData.Committee)
+	err := protocol.multiSigScheme.Prepare()
+	if err != nil {
+		return nil, err
+	}
+
 	//    single-node start    //
 	// go protocol.CreateBlockMsg()
 	// <-protocol.proposeCh
@@ -64,14 +72,6 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 	// }
 	// return nil, errors.New("can't produce block")
 	//    single-node end    //
-
-	Logger.log.Info("Starting PBFT protocol for " + protocol.RoundData.Layer)
-	protocol.multiSigScheme = new(multiSigScheme)
-	protocol.multiSigScheme.Init(protocol.UserKeySet, protocol.RoundData.Committee)
-	err := protocol.multiSigScheme.Prepare()
-	if err != nil {
-		return nil, err
-	}
 
 	for {
 		protocol.startTime = time.Now()
