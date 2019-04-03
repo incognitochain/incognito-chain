@@ -204,7 +204,7 @@ func (blockgen *BlkTmplGenerator) buildDividendSubmitInsts(producerPrivateKey *p
 }
 
 func buildBuySellConfirmInst(inst []string, shardID byte) []string {
-	fmt.Printf("[db] build buy sell confirm inst: %v %d\n", inst, shardID)
+	fmt.Printf("[db] build buy sell confirm inst\n")
 	return []string{
 		strconv.Itoa(component.ConfirmBuySellRequestMeta),
 		strconv.Itoa(int(shardID)),
@@ -215,7 +215,7 @@ func buildBuySellConfirmInst(inst []string, shardID byte) []string {
 }
 
 func buildBuyBackConfirmInst(inst []string, shardID byte) []string {
-	fmt.Printf("[db] build buy back confirm inst: %v %d\n", inst, shardID)
+	fmt.Printf("[db] build buy back confirm inst\n")
 	return []string{
 		strconv.Itoa(component.ConfirmBuyBackRequestMeta),
 		strconv.Itoa(int(shardID)),

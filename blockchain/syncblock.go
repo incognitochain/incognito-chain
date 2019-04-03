@@ -45,10 +45,9 @@ func (blockchain *BlockChain) StartSyncBlk() {
 	blockchain.syncStatus.CurrentlySyncShardToBeaconBlkByHeight = make(map[byte]*cache.Cache)
 	blockchain.syncStatus.CurrentlySyncCrossShardBlkByHash = make(map[byte]*cache.Cache)
 	blockchain.syncStatus.CurrentlySyncCrossShardBlkByHeight = make(map[byte]*cache.Cache)
-
-	for _, shardID := range blockchain.config.RelayShards {
-		blockchain.SyncShard(shardID)
-	}
+	blockchain.syncStatus.Lock()
+	blockchain.startSyncRelayShards()
+	blockchain.syncStatus.Unlock()
 
 	go func() {
 		for {
@@ -80,10 +79,19 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			blockchain.syncStatus.Lock()
 			blockchain.syncStatus.PeersStateLock.Lock()
 
-			userRole, userShardID := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Beacon.BestBlock.Header.Round)
-			blockchain.syncShard(userShardID)
-			blockchain.stopSyncUnnecessaryShard()
-			userShardRole := blockchain.BestState.Shard[userShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
+			var (
+				userRole      string
+				userShardID   byte
+				userShardRole string
+			)
+			if blockchain.config.UserKeySet != nil {
+				userRole, userShardID = blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Beacon.BestBlock.Header.Round)
+				blockchain.syncShard(userShardID)
+				blockchain.stopSyncUnnecessaryShard()
+				blockchain.startSyncRelayShards()
+				userShardRole = blockchain.BestState.Shard[userShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
+			}
+
 			RCS := reportedChainState{
 				ClosestBeaconState: ChainState{
 					Height: blockchain.BestState.Beacon.BeaconHeight,
@@ -282,6 +290,15 @@ func (blockchain *BlockChain) syncShard(shardID byte) error {
 	blockchain.syncStatus.CurrentlySyncShardBlkByHeight[shardID] = cache.New(defaultMaxBlockSyncTime, defaultCacheCleanupTime)
 
 	return nil
+}
+
+func (blockchain *BlockChain) startSyncRelayShards() {
+	for _, shardID := range blockchain.config.RelayShards {
+		if shardID > byte(blockchain.BestState.Beacon.ActiveShards-1) {
+			break
+		}
+		blockchain.syncShard(shardID)
+	}
 }
 func (blockchain *BlockChain) StopSyncUnnecessaryShard() {
 	blockchain.syncStatus.Lock()

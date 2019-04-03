@@ -29,7 +29,6 @@ const (
 	ShardError
 	BeaconError
 	SignatureError
-	NotSupportInLightMode
 	CrossShardBlockError
 	CandidateError
 	ShardIDError
@@ -66,7 +65,6 @@ var ErrCodeMessage = map[int]struct {
 	ShardIDError:                  {-18, "ShardID Error"},
 	ProducerError:                 {-19, "Producer Error"},
 	ShardStateError:               {-21, "Shard State Error"},
-	NotSupportInLightMode:         {-20, "This features is not supported in light mode running"},
 	TransactionError:              {-22, "Transaction invalid"},
 	InstructionError:              {-23, "Instruction Error"},
 	SwapError:                     {-24, "Swap Error"},
