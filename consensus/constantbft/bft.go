@@ -109,7 +109,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	var msg wire.Message
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
 		newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
-		<-time.Tick(time.Second * 2)
+		<-time.Tick(time.Second * 2) //single-node
 		if err != nil {
 			Logger.log.Error(err)
 			protocol.closeProposeCh()
@@ -126,6 +126,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 		}
 	} else {
 		newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ShardID, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
+		<-time.Tick(time.Second * 2) //single-node
 		if err != nil {
 			Logger.log.Error(err)
 			protocol.closeProposeCh()
