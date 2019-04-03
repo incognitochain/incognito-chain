@@ -127,15 +127,6 @@ func (blockchain *BlockChain) GetLoanWithdrawed(loanID []byte) (bool, error) {
 	return blockchain.config.DataBase.GetLoanWithdrawed(loanID)
 }
 
-//// Dividends
-func (blockchain *BlockChain) GetLatestDividendProposal(forDCB bool) (id, amount uint64) {
-	return blockchain.BestState.Beacon.GetLatestDividendProposal(forDCB)
-}
-
-func (blockchain *BlockChain) GetDividendReceiversForID(dividendID uint64, forDCB bool) ([]privacy.PaymentAddress, []uint64, bool, error) {
-	return blockchain.config.DataBase.GetDividendReceiversForID(dividendID, forDCB)
-}
-
 //// Crowdsales
 func (blockchain *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.Hash, saleID []byte) *component.SaleData {
 	var saleData *component.SaleData
