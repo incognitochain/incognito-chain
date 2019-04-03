@@ -139,25 +139,13 @@ func buildStabilityActions(
 }
 
 // build instructions at beacon chain before syncing to shards
-func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
+func (blockChain *BlockChain) buildStabilityInstructions(
 	shardID byte,
 	shardBlockInstructions [][]string,
 	beaconBestState *BestStateBeacon,
 	accumulativeValues *accumulativeValues,
 ) ([][]string, error) {
 	instructions := [][]string{}
-	//Add Voting instruction
-	// step 3 hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-	// votingInstruction, err := blkTmpGen.chain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
-	// if err != nil {
-	// 	return nil, NewBlockChainError(BeaconError, err)
-	// }
-	// instructions = append(instructions, votingInstruction...)
-	// votingInstruction, err = blkTmpGen.chain.generateVotingInstructionWOIns(GOVConstitutionHelper{})
-	// if err != nil {
-	// 	return nil, NewBlockChainError(BeaconError, err)
-	// }
-	// instructions = append(instructions, votingInstruction...)
 
 	for _, inst := range shardBlockInstructions {
 		if len(inst) == 0 {
@@ -194,7 +182,7 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 			newInst, err = buildInstructionsForTradeActivation(shardID, contentStr)
 
 		case metadata.BuyBackRequestMeta:
-			newInst, err = buildInstructionsForBuyBackBondsReq(shardID, contentStr, beaconBestState, accumulativeValues, blkTmpGen.chain)
+			newInst, err = buildInstructionsForBuyBackBondsReq(shardID, contentStr, beaconBestState, accumulativeValues, blockChain)
 
 		case metadata.IssuingRequestMeta:
 			newInst, err = buildInstructionsForIssuingReq(shardID, contentStr, beaconBestState, accumulativeValues)
@@ -221,14 +209,14 @@ func (blkTmpGen *BlkTmplGenerator) buildStabilityInstructions(
 
 		case component.VoteBoardIns:
 			fmt.Println("[voting]-[AddVoteBoard] " + inst[2])
-			err = blkTmpGen.chain.AddVoteBoard(inst[2])
+			err = blockChain.AddVoteBoard(inst[2])
 
 		case component.SubmitProposalIns:
 			fmt.Println("[voting]-[AddSubmitProposal] " + inst[2])
-			err = blkTmpGen.chain.AddSubmitProposal(inst[2])
+			err = blockChain.AddSubmitProposal(inst[2])
 		case component.VoteProposalIns:
 			fmt.Println("[voting]-[VoteProposalIns] " + inst[2])
-			err = blkTmpGen.chain.AddVoteProposal(inst[2])
+			err = blockChain.AddVoteProposal(inst[2])
 		default:
 			continue
 		}

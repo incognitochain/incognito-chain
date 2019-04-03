@@ -628,9 +628,14 @@ func (tx *TxCustomToken) GetMetadataFromVinsTx(bcr metadata.BlockchainRetriever)
 func (tx *TxCustomToken) CalculateTxValue() uint64 {
 	vins := tx.TxTokenData.Vins
 	vouts := tx.TxTokenData.Vouts
-	if len(vins) == 0 {
-		return 0
+	if len(vins) == 0 { // coinbase tx
+		txValue := uint64(0)
+		for _, vout := range vouts {
+			txValue += vout.Value
+		}
+		return txValue
 	}
+
 	senderPk := vins[0].PaymentAddress.Pk
 	txValue := uint64(0)
 	for _, vout := range vouts {

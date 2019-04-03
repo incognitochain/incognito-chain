@@ -1,12 +1,15 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/json"
 	"strconv"
 
+	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
+	"github.com/pkg/errors"
 )
 
 type ShardBlockSalaryInfo struct {
@@ -14,6 +17,7 @@ type ShardBlockSalaryInfo struct {
 	ShardBlockFee    uint64
 	PayToAddress     *privacy.PaymentAddress
 	ShardBlockHeight uint64
+	InfoHash         *common.Hash
 }
 
 func getShardBlockFee(txs []metadata.Transaction) uint64 {
@@ -30,6 +34,18 @@ func getShardBlockSalary(txs []metadata.Transaction, bestStateBeacon *BestStateB
 	return uint64(len(txs))*salaryPerTx + basicSalary
 }
 
+func hashShardBlockSalaryInfo(
+	shardBlockSalary uint64,
+	shardBlockFee uint64,
+	payToAddress *privacy.PaymentAddress,
+	shardBlockHeight uint64,
+) *common.Hash {
+	record := string(shardBlockSalary) + string(shardBlockFee) + string(shardBlockHeight)
+	record += payToAddress.String()
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
 // Type Content
 // Content: shardBlockSalaryInfo
 func createShardBlockSalaryUpdateAction(
@@ -38,11 +54,13 @@ func createShardBlockSalaryUpdateAction(
 	payToAddress *privacy.PaymentAddress,
 	shardBlockHeight uint64,
 ) ([][]string, error) {
+	infoHash := hashShardBlockSalaryInfo(shardBlockSalary, shardBlockFee, payToAddress, shardBlockHeight)
 	shardBlockSalaryInfo := ShardBlockSalaryInfo{
 		ShardBlockSalary: shardBlockSalary,
 		ShardBlockFee:    shardBlockFee,
 		PayToAddress:     payToAddress,
 		ShardBlockHeight: shardBlockHeight,
+		InfoHash:         infoHash,
 	}
 	shardBlockSalaryInfoBytes, err := json.Marshal(shardBlockSalaryInfo)
 	if err != nil {
@@ -98,6 +116,7 @@ func (blockgen *BlkTmplGenerator) buildSalaryRes(
 	salaryResMeta := metadata.NewShardBlockSalaryRes(
 		shardBlockSalaryInfo.ShardBlockHeight,
 		*shardBlockSalaryInfo.PayToAddress,
+		*shardBlockSalaryInfo.InfoHash,
 		metadata.ShardBlockSalaryResponseMeta,
 	)
 	salaryResTx := new(transaction.Tx)
@@ -112,4 +131,58 @@ func (blockgen *BlkTmplGenerator) buildSalaryRes(
 		return nil, err
 	}
 	return []metadata.Transaction{salaryResTx}, nil
+}
+
+func (bc *BlockChain) verifyShardBlockSalaryResTx(
+	tx metadata.Transaction,
+	insts [][]string,
+	instUsed []int,
+	shardID byte,
+) error {
+	meta, ok := tx.GetMetadata().(*metadata.ShardBlockSalaryRes)
+	if !ok {
+		return errors.Errorf("Could not parse ShardBlockSalaryRes metadata of tx %s", tx.Hash().String())
+	}
+
+	instIdx := -1
+	var shardBlockSalaryInfo ShardBlockSalaryInfo
+	for i, inst := range insts {
+		if instUsed[i] > 0 {
+			continue
+		}
+		if inst[0] != strconv.Itoa(metadata.ShardBlockSalaryRequestMeta) {
+			continue
+		}
+		if inst[1] != strconv.Itoa(int(shardID)) {
+			continue
+		}
+		if inst[2] != "accepted" {
+			continue
+		}
+		contentStr := inst[3]
+		err := json.Unmarshal([]byte(contentStr), &shardBlockSalaryInfo)
+		if err != nil {
+			return err
+		}
+		if !bytes.Equal(shardBlockSalaryInfo.InfoHash[:], meta.ShardBlockSalaryInfoHash[:]) {
+			continue
+		}
+		instIdx = i
+		instUsed[i] += 1
+		break
+	}
+	if instIdx == -1 {
+		return errors.Errorf("no instruction found for ShardBlockSalaryRes tx %s", tx.Hash().String())
+	}
+	if (!bytes.Equal(shardBlockSalaryInfo.PayToAddress.Pk[:], meta.ProducerAddress.Pk[:])) ||
+		(!bytes.Equal(shardBlockSalaryInfo.PayToAddress.Tk[:], meta.ProducerAddress.Tk[:])) {
+		return errors.Errorf("Producer address in ShardBlockSalaryRes tx %s is not matched to instruction's", tx.Hash().String())
+	}
+	if shardBlockSalaryInfo.ShardBlockHeight != meta.ShardBlockHeight {
+		return errors.Errorf("ShardBlockHeight in ShardBlockSalaryRes tx %s is not matched to instruction's", tx.Hash().String())
+	}
+	if shardBlockSalaryInfo.ShardBlockSalary != tx.CalculateTxValue() {
+		return errors.Errorf("Salary amount in ShardBlockSalaryRes tx %s is not matched to instruction's", tx.Hash().String())
+	}
+	return nil
 }
