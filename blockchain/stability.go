@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/constant-money/constant-chain/database/lvdb"
-
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/database/lvdb"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/metadata/frombeaconins"
 	"github.com/constant-money/constant-chain/metadata/fromshardins"
@@ -147,6 +146,7 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 ) ([][]string, error) {
 	instructions := [][]string{}
 
+	fmt.Printf("[db] building stability instructions\n")
 	for _, inst := range shardBlockInstructions {
 		if len(inst) == 0 {
 			continue
@@ -297,9 +297,10 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 ) ([]metadata.Transaction, error) {
 	// TODO(@0xbunyip): refund bonds in multiple blocks since many refund instructions might come at once and UTXO picking order is not perfect
 	unspentTokens := map[string]([]transaction.TxTokenVout){}
+	tradeActivated := map[string]bool{}
 	resTxs := []metadata.Transaction{}
 	for _, beaconBlock := range beaconBlocks {
-		fmt.Println("[voting] - beaconBlock[", beaconBlock.Header.Height, "]")
+		fmt.Println("[db] - beaconBlock[", beaconBlock.Header.Height, "]")
 		for _, l := range beaconBlock.Body.Instructions {
 			// TODO: will improve the condition later
 			if l[0] == StakeAction || l[0] == "swap" || l[0] == RandomAction {
@@ -314,9 +315,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				fmt.Println("[voting] - metaType: ", l)
 				if err != nil {
 					return nil, err
-				}
-				if metaType != 37 {
-					fmt.Printf("[db] shard build Resp from inst: %+v\n", l)
 				}
 				Logger.log.Warn("Metadata type:", metaType, "\n")
 
@@ -351,7 +349,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					txs, err = blockgen.buildPaymentForCrowdsale(l[2], unspentTokens, producerPrivateKey)
 
 				case metadata.TradeActivationMeta:
-					txs, err = blockgen.buildTradeActivationTx(l[2], unspentTokens, producerPrivateKey)
+					txs, err = blockgen.buildTradeActivationTx(l[2], unspentTokens, producerPrivateKey, tradeActivated)
 
 				case metadata.BuyFromGOVRequestMeta:
 					contentStr := l[3]
