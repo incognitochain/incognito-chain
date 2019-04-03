@@ -297,7 +297,7 @@ func (blockchain *BlockChain) startSyncRelayShards() {
 		if shardID > byte(blockchain.BestState.Beacon.ActiveShards-1) {
 			break
 		}
-		blockchain.SyncShard(shardID)
+		blockchain.syncShard(shardID)
 	}
 }
 func (blockchain *BlockChain) StopSyncUnnecessaryShard() {
