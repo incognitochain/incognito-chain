@@ -31,7 +31,7 @@ type reportedChainState struct {
 }
 
 func (blockchain *BlockChain) StartSyncBlk() {
-	blockchain.knownChainState.Beacon.Height = blockchain.BestState.Beacon.BeaconHeight
+	// blockchain.knownChainState.Beacon.Height = blockchain.BestState.Beacon.BeaconHeight
 	if blockchain.syncStatus.Beacon {
 		return
 	}

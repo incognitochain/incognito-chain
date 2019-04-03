@@ -113,6 +113,9 @@ func (blockgen *BlkTmplGenerator) buildSalaryRes(
 	if err != nil {
 		return nil, err
 	}
+	if shardBlockSalaryInfo.PayToAddress == nil || shardBlockSalaryInfo.InfoHash == nil {
+		return nil, errors.Errorf("Can not Parse from contentStr")
+	}
 	salaryResMeta := metadata.NewShardBlockSalaryRes(
 		shardBlockSalaryInfo.ShardBlockHeight,
 		*shardBlockSalaryInfo.PayToAddress,
