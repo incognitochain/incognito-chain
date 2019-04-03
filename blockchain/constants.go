@@ -17,7 +17,7 @@ const (
 	ThresholdRatioOfDCBCrisis = 9000
 	ThresholdRatioOfGOVCrisis = 9000
 	ConstitutionPerBoard      = 10
-	EndOfFirstBoard           = 90
+	EndOfFirstBoard           = 1000
 	BaseSalaryBoard           = 10000
 )
 
