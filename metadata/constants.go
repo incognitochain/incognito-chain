@@ -49,12 +49,6 @@ const (
 	ShardBlockSalaryRequestMeta  = 37
 	ShardBlockSalaryResponseMeta = 38
 
-	//Voting
-	NewDCBConstitutionIns    = 39
-	NewGOVConstitutionIns    = 40
-	UpdateDCBConstitutionIns = 41
-	UpdateGOVConstitutionIns = 42
-
 	SubmitDCBProposalMeta          = 43
 	VoteDCBBoardMeta               = 44
 	SubmitGOVProposalMeta          = 45
@@ -64,8 +58,6 @@ const (
 	RewardGOVProposalSubmitterMeta = 49
 	ShareRewardOldDCBBoardMeta     = 50
 	ShareRewardOldGOVBoardMeta     = 51
-	PunishDCBDecryptMeta           = 52
-	PunishGOVDecryptMeta           = 53
 	SendBackTokenVoteBoardFailMeta = 54
 	DCBVoteProposalMeta            = 55
 	GOVVoteProposalMeta            = 56
