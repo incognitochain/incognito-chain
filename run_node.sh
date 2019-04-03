@@ -30,7 +30,14 @@ fi
 if [ "$1" == "beacon-2" ]; then
 go run *.go --spendingkey "112t8rnyr3YjfpLN9unAvAM2TGZhurt7gfcrjCkUv11DWf6gN79raFqrazCHArWsWyosZvGdw5s5cuzzYXgpxDj9sEieyKqKCZ97inpaAXUR" --nodemode "auto" --datadir "data/beacon-2" --listen "127.0.0.1:9425" --externaladdress "127.0.0.1:9425" --norpcauth --rpclisten "127.0.0.1:9342"
 fi
-
+######
+if [ "$1" == "shard-stake-1" ]; then
+go run *.go --spendingkey "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe" --nodemode "auto" --datadir "data/shard-stake" --listen "127.0.0.1:9436" --externaladdress "127.0.0.1:9436" --norpcauth --rpclisten "127.0.0.1:9343" 
+fi
+if [ "$1" == "shard-stake-2" ]; then
+go run *.go --spendingkey "112t8rsURTpYQMp3978j2nvYXTbuMa9H7MfLTA4PCJoxyweZNWRR3beMEtsoLBBbc473Bv8NE3uKUXcVA2Jnh6sPhTEnFfmQEpY8opeFytoM" --nodemode "auto" --datadir "data/shard-stake-2" --listen "127.0.0.1:9446" --externaladdress "127.0.0.1:9446" --norpcauth --rpclisten "127.0.0.1:9344"
+fi
+######
 # Shard: 0, Role: Proposer
 if [ "$1" == "shard0-proposer" ]; then
 go run *.go --spendingkey "112t8rqJHgJp2TPpNpLNx34aWHB5VH5Pys3hVjjhhf9tctVeCNmX2zQLBqzHau6LpUbSV52kXtG2hRZsuYWkXWF5kw2v24RJq791fWmQxVqy" --nodemode "auto" --datadir "data/shard0-0" --listen "127.0.0.1:9433" --externaladdress "127.0.0.1:9433" --norpcauth --rpclisten "127.0.0.1:9334" --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit --relayshards "0"
