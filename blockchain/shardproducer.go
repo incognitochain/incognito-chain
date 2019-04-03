@@ -19,6 +19,7 @@ import (
 func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte, proposerOffset int, crossShards map[byte]uint64) (*ShardBlock, error) {
 	//============Build body=============
 	// Fetch Beacon information
+
 	beaconHeight := blockgen.chain.BestState.Beacon.BeaconHeight
 	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
 	// fmt.Println("Shard Producer/NewBlockShard, Beacon Height", beaconHeight)
@@ -38,15 +39,13 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	fmt.Println("Shard Producer/NewBlockShard, Beacon Epoch", epoch)
 	//Fetch beacon block from height
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockgen.chain.config.DataBase, blockgen.chain.BestState.Shard[shardID].BeaconHeight+1, beaconHeight)
+	fmt.Println("[voting] - newshard", blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
 	}
 	//======Get Transaction For new Block================
 	txsToAdd, err1 := blockgen.getTransactionForNewBlock(payToAddress, privatekey, shardID, blockgen.chain.config.DataBase, beaconBlocks)
-	for i, tx1 := range txsToAdd {
-		Logger.log.Warn(i, tx1.GetType(), tx1.GetMetadata(), "\n")
-	}
 	if err1 != nil {
 		Logger.log.Error(err1, reflect.TypeOf(err1), reflect.ValueOf(err1))
 		return nil, err1
@@ -121,10 +120,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	}
 	if len(instructions) != 0 {
 		Logger.log.Critical("Shard Producer: Instruction", instructions)
-	}
-	fmt.Printf("Number of Transaction in blocks %+v \n", len(block.Body.Transactions))
-	for i, tx := range block.Body.Transactions {
-		Logger.log.Warn(i, tx, "\n")
 	}
 	//============End Build Body===========
 
@@ -424,11 +419,11 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 	var keys []int
 	txs := []metadata.Transaction{}
 	txTokenDataList := []transaction.TxTokenData{}
-	// TODO: 0xsirrush change process
-	listCustomTokens, err := blockchain.ListCustomToken()
-	if err != nil {
-		panic("Can't Retrieve List Custom Token in Database")
-	}
+	// 0xsirrush updated: check existed tokenID
+	//listCustomTokens, err := blockchain.ListCustomToken()
+	//if err != nil {
+	//	panic("Can't Retrieve List Custom Token in Database")
+	//}
 	for k := range crossTxTokenDataMap {
 		keys = append(keys, int(k))
 	}
@@ -454,7 +449,7 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 						nil,
 						0,
 						tokenParam,
-						listCustomTokens,
+						//listCustomTokens,
 						blockchain.config.DataBase,
 						nil,
 						false,

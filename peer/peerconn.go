@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"sync"
 	"time"
@@ -147,6 +148,7 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 
 				// cache message hash
 				hashMsgRaw := common.HashH(jsonDecodeBytesRaw).String()
+				fmt.Println("hyyyyyyyyyyy", string(jsonDecodeBytesRaw))
 				if err := peerConn.ListenerPeer.HashToPool(hashMsgRaw); err != nil {
 					Logger.log.Error(err)
 					return
