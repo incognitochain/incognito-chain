@@ -17,7 +17,7 @@ const (
 	ThresholdRatioOfDCBCrisis = 9000
 	ThresholdRatioOfGOVCrisis = 9000
 	ConstitutionPerBoard      = 10
-	EndOfFirstBoard           = 1000
+	EndOfFirstBoard           = 100
 	BaseSalaryBoard           = 10000
 )
 
@@ -128,7 +128,8 @@ const (
 
 // Key param for instruction
 const (
-	salaryFund = "salaryFund"
+	salaryFund          = "salaryFund"
+	oracleInitialPrices = "oracleInitialPrices"
 )
 
 // ---------------------------------------------
