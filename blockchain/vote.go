@@ -177,7 +177,11 @@ func (self *BlockChain) createAcceptBoardIns(
 	acceptBoardIns := frombeaconins.NewAcceptBoardIns(boardType, BoardPaymentAddress, sumOfVote)
 	inst, _ := acceptBoardIns.GetStringFormat()
 	fmt.Println("[voting] -  SendBackToken to vote failed acceptBoardIns", inst)
-	return []frombeaconins.InstructionFromBeacon{acceptBoardIns}, nil
+	if len(inst) != 0 {
+		return []frombeaconins.InstructionFromBeacon{acceptBoardIns}, nil
+	} else {
+		return nil, nil
+	}
 }
 
 func (stateBeacon *BestStateBeacon) UpdateDCBBoard(ins frombeaconins.AcceptDCBBoardIns) error {
@@ -368,7 +372,9 @@ func (self *BlockChain) CreateUpdateNewGovernorInstruction(
 		return nil, err
 	}
 	fmt.Println("[voting]-acceptBoardIns ok")
-	instructions = append(instructions, acceptBoardIns...)
+	if acceptBoardIns != nil {
+		instructions = append(instructions, acceptBoardIns...)
+	}
 
 	sendBackTokenAfterVoteFailIns, err := self.createSendBackTokenAfterVoteFailIns(
 		helper.GetBoardType(),
@@ -447,7 +453,9 @@ func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper
 			instString, _ := inst.GetStringFormat()
 			fmt.Println("[voting]-[neededNewGovernor] - Created ", instString)
 		}
-		instructions = append(instructions, updateGovernorInstruction...)
+		if len(updateGovernorInstruction) != 0 {
+			instructions = append(instructions, updateGovernorInstruction...)
+		}
 	}
 
 	if self.neededNewConstitution(helper) {

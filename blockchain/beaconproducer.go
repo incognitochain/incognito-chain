@@ -229,13 +229,17 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 	if err != nil {
 		fmt.Println("[voting]-Build DCB voting instruction failed: ", err)
 	} else {
-		stabilityInstructions = append(stabilityInstructions, votingInstruction...)
+		if len(votingInstruction) != 0 {
+			stabilityInstructions = append(stabilityInstructions, votingInstruction...)
+		}
 	}
 	votingInstruction, err = blkTmplGenerator.chain.generateVotingInstructionWOIns(GOVConstitutionHelper{})
 	if err != nil {
 		fmt.Println("[voting]-Build GOV voting instruction failed: ", err)
 	} else {
-		stabilityInstructions = append(stabilityInstructions, votingInstruction...)
+		if len(votingInstruction) != 0 {
+			stabilityInstructions = append(stabilityInstructions, votingInstruction...)
+		}
 	}
 	oracleInsts, err := blkTmplGenerator.chain.buildOracleRewardInstructions(beaconBestState)
 	if err != nil {
