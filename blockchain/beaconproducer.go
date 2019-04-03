@@ -455,7 +455,7 @@ func generateRandomInstruction(timestamp int64, wg *sync.WaitGroup) ([]string, i
 	// reses := strings.Split(res, (","))
 	strs := []string{}
 	//UNCOMMENT FOR TESTTING
-	reses := []string{"1000", strconv.Itoa(int(timestamp) + 1), "1000"}
+	reses := []string{strconv.Itoa(int(timestamp)), strconv.Itoa(int(timestamp) + 1), "1000"}
 	strs = append(strs, RandomAction)
 	strs = append(strs, reses...)
 	strs = append(strs, strconv.Itoa(int(timestamp)))

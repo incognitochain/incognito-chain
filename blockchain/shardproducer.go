@@ -390,11 +390,11 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 		Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
 		tx := txDesc.Tx
 		tempTxDesc, err := blockgen.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
-		tempTx := tempTxDesc.Tx
 		if err != nil {
-			txToRemove = append(txToRemove, metadata.Transaction(tempTx))
+			txToRemove = append(txToRemove, tx)
 			continue
 		}
+		tempTx := tempTxDesc.Tx
 		totalFee += tx.GetTxFee()
 
 		tempSize := tempTx.GetTxActualSize()
