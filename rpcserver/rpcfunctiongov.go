@@ -97,6 +97,17 @@ func (rpcServer RpcServer) handleGetListGOVBoard(params interface{}, closeChan <
 	return res, nil
 }
 
+func (rpcServer RpcServer) handleGetListGOVBoardPayment(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	res := []string{}
+	listPayment := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress
+	for _, i := range listPayment {
+		wtf := wallet.KeyWallet{}
+		wtf.KeySet.PaymentAddress = i
+		res = append(res, wtf.Base58CheckSerialize(wallet.PaymentAddressType))
+	}
+	return res, nil
+}
+
 func (rpcServer RpcServer) handleAppendListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	senderKey := arrayParams[0].(string)
