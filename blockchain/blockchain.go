@@ -59,11 +59,11 @@ type BlockChain struct {
 			Shards map[byte]bool
 		}
 	}
-	knownChainState struct {
-		Shards map[byte]ChainState
-		Beacon ChainState
-	}
-	PeerStateCh chan *peerState
+	// knownChainState struct {
+	// 	Shards map[byte]ChainState
+	// 	Beacon ChainState
+	// }
+	// PeerStateCh chan *peerState
 }
 type BestState struct {
 	Beacon *BestStateBeacon
@@ -153,7 +153,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.cQuitSync = make(chan struct{})
 	blockchain.syncStatus.Shards = make(map[byte]struct{})
 	blockchain.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
-	blockchain.knownChainState.Shards = make(map[byte]ChainState)
+	// blockchain.knownChainState.Shards = make(map[byte]ChainState)
 	blockchain.syncStatus.IsReady.Shards = make(map[byte]bool)
 	return nil
 }

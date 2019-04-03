@@ -60,9 +60,7 @@ func (engine *Engine) Start() error {
 	fmt.Println(engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
 
 	time.AfterFunc(DelayTime*time.Millisecond, func() {
-		engine.currentBFTBlkHeight = uint64(0)
 		engine.currentBFTRound = 1
-		engine.prevRoundUserLayer = ""
 		for {
 			select {
 			case <-engine.cQuit:
@@ -198,7 +196,6 @@ func (engine *Engine) execShardRole(shardID byte) {
 	}
 	// fmt.Printf("Node mode %+v, user role %+v, shardID %+v \n currentPBFTRound %+v, beacon height %+v, currentPBFTBlkHeight %+v, prevRoundUserLayer %+v \n ", engine.config.NodeMode, userRole, shardID, currentPBFTRound, engine.config.BlockChain.BestState.Shard[shardID].ShardCommittee, currentPBFTBlkHeight, prevRoundUserLayer)
 	engine.config.BlockChain.SyncShard(shardID)
-	engine.config.BlockChain.StopSyncUnnecessaryShard()
 	bftProtocol := &BFTProtocol{
 		cQuit:             engine.cQuit,
 		cBFTMsg:           engine.cBFTMsg,
