@@ -218,6 +218,10 @@ func (rpcServer RpcServer) handleGetBalanceByPaymentAddress(params interface{}, 
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	outcoints, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&accountWithPaymentAddress.KeySet, shardIDSender, constantTokenID)
+	Logger.log.Infof("OutCoins: %+v", outcoints)
+	Logger.log.Infof("shardIDSender: %+v", shardIDSender)
+	Logger.log.Infof("accountWithPaymentAddress.KeySet: %+v", accountWithPaymentAddress.KeySet)
+	Logger.log.Infof("paymentAddressParam: %+v", paymentAddressParam)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
