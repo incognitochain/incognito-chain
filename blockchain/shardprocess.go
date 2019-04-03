@@ -84,7 +84,8 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 	Logger.log.Infof("SHARD %+v | Check block existence for insert height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	isExist, _ := blockchain.config.DataBase.HasBlock(block.Hash())
 	if isExist {
-		return NewBlockChainError(DuplicateBlockErr, errors.New("This block has been stored already"))
+		return nil
+		// return NewBlockChainError(DuplicateBlockErr, errors.New("This block has been stored already"))
 	}
 	Logger.log.Infof("SHARD %+v | Begin Insert new block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	if !isProducer {
