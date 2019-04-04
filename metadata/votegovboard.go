@@ -1,10 +1,8 @@
 package metadata
 
 import (
-	"encoding/base64"
-	"encoding/json"
+	"github.com/constant-money/constant-chain/metadata/fromshardins"
 	"github.com/constant-money/constant-chain/wallet"
-	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
@@ -52,14 +50,24 @@ func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ValidateMetadataByItself() boo
 }
 
 func (voteGOVBoardMetadata *VoteGOVBoardMetadata) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	actionContent := map[string]interface{}{
-		"reqTx": tx,
-	}
-	actionContentBytes, err := json.Marshal(actionContent)
+	voterPaymentAddress, err := tx.GetVoterPaymentAddress()
 	if err != nil {
-		return [][]string{}, err
+		return nil, err
 	}
-	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(voteGOVBoardMetadata.Type), actionContentBase64Str}
-	return [][]string{action}, nil
+	amountOfVote, err := tx.GetAmountOfVote()
+	if err != nil {
+		return nil, err
+	}
+	inst := fromshardins.NewVoteBoardIns(
+		common.GOVBoard,
+		voteGOVBoardMetadata.VoteBoardMetadata.CandidatePaymentAddress,
+		*voterPaymentAddress,
+		voteGOVBoardMetadata.VoteBoardMetadata.BoardIndex,
+		amountOfVote,
+	)
+	instStr, err := inst.GetStringFormat()
+	if err != nil {
+		return nil, err
+	}
+	return [][]string{instStr}, nil
 }
