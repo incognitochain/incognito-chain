@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"strconv"
@@ -38,6 +39,7 @@ func buildInstructionsForBuyGOVTokensReq(
 	bestBlockHeight := beaconBestState.BestBlock.Header.Height
 	instType := ""
 	if (sellingGOVTokensParams == nil) ||
+		(!bytes.Equal(common.GOVTokenID[:], md.TokenID[:])) ||
 		(bestBlockHeight+1 < sellingGOVTokensParams.StartSellingAt) ||
 		(bestBlockHeight+1 > sellingGOVTokensParams.StartSellingAt+sellingGOVTokensParams.SellingWithin) ||
 		(accumulativeValues.govTokensSold+md.Amount > sellingGOVTokensParams.GOVTokensToSell) {

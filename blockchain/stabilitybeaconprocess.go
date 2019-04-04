@@ -25,36 +25,38 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 		}
 		return nil
 	}
-
-	Logger.log.Warn("+++++++++++++++++++Here! ", len(inst), inst[0], strconv.Itoa(component.AcceptDCBBoardIns), "\n")
 	if len(inst) < 2 {
 		return nil // Not error, just not stability instruction
 	}
-	Logger.log.Warn("+++++++++++++++++++Here! ", inst[0], "\n")
 	switch inst[0] {
 	case strconv.Itoa(metadata.LoanRequestMeta):
 		return bsb.processLoanRequestInstruction(inst)
 	case strconv.Itoa(metadata.LoanResponseMeta):
 		return bsb.processLoanResponseInstruction(inst)
 	case strconv.Itoa(component.AcceptDCBBoardIns):
-		Logger.log.Error("-----------------------------------------------Here! Update DCB Board!\n")
+		fmt.Println("[voting] - Accept DCB Board intruction", inst)
 		acceptDCBBoardIns := frombeaconins.AcceptDCBBoardIns{}
 		err := json.Unmarshal([]byte(inst[2]), &acceptDCBBoardIns)
 		if err != nil {
+			fmt.Println("[voting] - Accept DCB Board intruction ERRORRRRRRRRRRRRRRR", err)
 			return err
 		}
 		err = bsb.UpdateDCBBoard(acceptDCBBoardIns)
 		if err != nil {
+			fmt.Println("[voting] - Accept DCB Board intruction ERRORRRRRRRRRRRRRRR2", err)
 			return err
 		}
 	case strconv.Itoa(component.AcceptGOVBoardIns):
+		fmt.Println("[voting] - Accept GOV Board intruction", inst)
 		acceptGOVBoardIns := frombeaconins.AcceptGOVBoardIns{}
 		err := json.Unmarshal([]byte(inst[2]), &acceptGOVBoardIns)
 		if err != nil {
+			fmt.Println("[voting] - Accept GOV Board intruction ERRORRRRRRRRRRRRRRR", err)
 			return err
 		}
 		err = bsb.UpdateGOVBoard(acceptGOVBoardIns)
 		if err != nil {
+			fmt.Println("[voting] - Accept GOV Board intruction ERRORRRRRRRRRRRRRRR2", err)
 			return err
 		}
 	case strconv.Itoa(component.ShareRewardOldDCBBoardIns):
