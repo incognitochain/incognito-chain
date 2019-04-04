@@ -14,7 +14,7 @@ package blockchain
 // func (blockgen *BlkTmplGenerator) buildCMBRefund(
 // 	sourceTxns []*metadata.TxDesc,
 // 	shardID byte,
-// 	producerPrivateKey *privacy.SpendingKey,
+// 	producerPrivateKey *privacy.PrivateKey,
 // ) ([]*transaction.Tx, error) {
 // 	// Get old block
 // 	refunds := []*transaction.Tx{}
