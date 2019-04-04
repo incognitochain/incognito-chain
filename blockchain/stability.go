@@ -80,14 +80,15 @@ func buildStabilityActions(
 			if err != nil {
 				continue
 			}
-			fmt.Println("[voting] - instructions froms beacon block:", l[0], l[1], l[2], shardToProcess, shardID)
 			if shardToProcess == int(shardID) {
 				metaType, err := strconv.Atoi(l[0])
 				if err != nil {
 					return nil, err
 				}
 				var newIns []string
-				fmt.Println("[voting] - instructions metaType: ", metaType, component.AcceptDCBProposalIns)
+				if metaType != 37 {
+					fmt.Println("[voting] - instructions metaType: ", metaType, component.AcceptDCBProposalIns)
+				}
 				switch metaType {
 				case component.AcceptDCBProposalIns:
 					acceptProposalIns := frombeaconins.AcceptProposalIns{}
@@ -119,6 +120,7 @@ func buildStabilityActions(
 					_, _, _, txProposal, err := bc.GetTransactionByHash(&txID)
 					metaProposal := txProposal.GetMetadata().(*metadata.SubmitGOVProposalMetadata)
 					if err != nil {
+						fmt.Println("[voting] - error 1 ", err.Error())
 						return nil, err
 					}
 					newIns, err = fromshardins.NewNewGOVConstitutionIns(
@@ -127,8 +129,10 @@ func buildStabilityActions(
 						acceptProposalIns.Voters,
 					).GetStringFormat()
 					if err != nil {
+						fmt.Println("[voting] - error 2 ", err.Error())
 						return nil, err
 					}
+					fmt.Println("[voting] - new instructions AcceptProposalIns: ", newIns)
 				}
 				actions = append(actions, newIns)
 			}
@@ -151,8 +155,8 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		if len(inst) == 0 {
 			continue
 		}
-		fmt.Println("[voting] -----------------------> Instrucstion from shard to beacon ", inst)
 		if inst[0] != "37" {
+			fmt.Println("[voting] -----------------------> Instrucstion from shard to beacon ", inst)
 			fmt.Printf("[db] beaconProducer found inst: %s\n", inst[0])
 		}
 		// TODO: will improve the condition later
@@ -311,7 +315,9 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 			shardToProcess, err := strconv.Atoi(l[1])
 			if err == nil && shardToProcess == int(shardID) {
 				metaType, err := strconv.Atoi(l[0])
-				fmt.Println("[voting] - metaType: ", l)
+				if metaType != 37 {
+					fmt.Println("[voting] - metaType: ", l)
+				}
 				if err != nil {
 					return nil, err
 				}

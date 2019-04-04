@@ -136,7 +136,9 @@ func CreateShardInstructionsFromTransactionAndIns(
 	}
 
 	for _, tx := range transactions {
-		fmt.Println("[voting] - CreateShardInstructionsFromTransactionAndIns: ", tx.GetMetadataType())
+		if tx.GetMetadataType() != 38 {
+			fmt.Println("[voting] - CreateShardInstructionsFromTransactionAndIns: ", tx.GetMetadataType())
+		}
 		switch tx.GetMetadataType() {
 		case metadata.ShardStakingMeta:
 			pk := tx.GetProof().InputCoins[0].CoinDetails.PublicKey.Compress()

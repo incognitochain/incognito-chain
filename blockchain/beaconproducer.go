@@ -162,7 +162,11 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	//================End Generate Signature
 	fmt.Println("[voting] - Beaconblock[", beaconBlock.Header.Height, "] body")
 	for _, inst := range beaconBlock.Body.Instructions {
-		fmt.Println("[voting] - - - > ", inst)
+		if len(inst) != 0 {
+			if inst[0] != "37" {
+				fmt.Println("[voting] - - - > ", inst)
+			}
+		}
 	}
 	return beaconBlock, nil
 }
