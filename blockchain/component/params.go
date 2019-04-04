@@ -237,10 +237,18 @@ func (govParams *GOVParams) Hash() *common.Hash {
 	record := string(govParams.SalaryPerTx)
 	record += string(govParams.BasicSalary)
 	record += string(govParams.FeePerKbTx)
-	record += string(govParams.SellingBonds.Hash().GetBytes())
-	record += string(govParams.SellingGOVTokens.Hash().GetBytes())
-	record += string(govParams.RefundInfo.Hash().GetBytes())
-	record += string(govParams.OracleNetwork.Hash().GetBytes())
+	if govParams.SellingBonds != nil {
+		record += string(govParams.SellingBonds.Hash().GetBytes())
+	}
+	if govParams.SellingGOVTokens != nil {
+		record += string(govParams.SellingGOVTokens.Hash().GetBytes())
+	}
+	if govParams.RefundInfo != nil {
+		record += string(govParams.RefundInfo.Hash().GetBytes())
+	}
+	if govParams.OracleNetwork != nil {
+		record += string(govParams.OracleNetwork.Hash().GetBytes())
+	}
 	hash := common.HashH([]byte(record))
 	return &hash
 }
