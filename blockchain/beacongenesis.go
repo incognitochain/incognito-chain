@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -31,7 +33,7 @@ func CreateBeaconGenesisBlock(
 	inst = append(inst, shardAssingInstruction)
 
 	// init network param
-	inst = append(inst, []string{InitAction, salaryFund, strconv.Itoa(int(genesisParams.InitFundSalary))})
+	// inst = append(inst, []string{InitAction, salaryFund, strconv.Itoa(int(genesisParams.InitFundSalary))})
 	inst = append(inst, []string{SetAction, "randomnumber", strconv.Itoa(int(0))})
 
 	// init stability params
@@ -73,7 +75,37 @@ func createStabilityGenesisInsts(genesisParams GenesisParams) [][]string {
 }
 
 func createGOVGenesisInsts(genesisParams GenesisParams) [][]string {
-	return [][]string{createGOVGenesisBoardInst(), createGOVGenesisParamInst(genesisParams)}
+
+	return [][]string{
+		createGOVGenesisBoardInst(),
+		createGOVGenesisParamInst(genesisParams),
+		createGOVGenesisOracleInst(),
+		createGOVGenesisSalaryFund(genesisParams),
+	}
+}
+
+func createGOVGenesisSalaryFund(genesisParams GenesisParams) []string {
+	return []string{InitAction, salaryFund, strconv.Itoa(int(genesisParams.InitFundSalary))}
+}
+
+func createGOVGenesisOracleInst() []string {
+	initialPrices := component.Oracle{
+		DCBToken: 1000,   // $10
+		GOVToken: 2000,   // $20
+		Constant: 100,    // $1
+		ETH:      15000,  // $150
+		BTC:      400000, // $4000
+	}
+	content, err := json.Marshal(initialPrices)
+	if err != nil {
+		fmt.Println("Error to marshal oracleInitialPrices: ", err)
+		return []string{}
+	}
+	return []string{
+		InitAction,
+		oracleInitialPrices,
+		string(content),
+	}
 }
 
 func createGOVGenesisBoardInst() []string {
@@ -94,33 +126,43 @@ func createGOVGenesisBoardInst() []string {
 
 func createGOVGenesisParamInst(genesisParams GenesisParams) []string {
 	// Bond
-	sellingBonds := &component.SellingBonds{
-		BondName:       "Bond 1000 blocks",
-		BondSymbol:     "BND1000",
-		TotalIssue:     1000,
-		BondsToSell:    1000,
-		BondPrice:      100, // 1 constant
-		Maturity:       3,
-		BuyBackPrice:   120, // 1.2 constant
-		StartSellingAt: 0,
-		SellingWithin:  100000,
-	}
-	sellingGOVTokens := &component.SellingGOVTokens{
-		TotalIssue:      1000,
-		GOVTokensToSell: 1000,
-		GOVTokenPrice:   500, // 5 constant
-		StartSellingAt:  0,
-		SellingWithin:   10000,
+	// sellingBonds := &component.SellingBonds{
+	// 	BondName:       "Bond 1000 blocks",
+	// 	BondSymbol:     "BND1000",
+	// 	TotalIssue:     1000,
+	// 	BondsToSell:    1000,
+	// 	BondPrice:      100, // 1 constant
+	// 	Maturity:       3,
+	// 	BuyBackPrice:   120, // 1.2 constant
+	// 	StartSellingAt: 0,
+	// 	SellingWithin:  100000,
+	// }
+	// sellingGOVTokens := &component.SellingGOVTokens{
+	// 	TotalIssue:      1000,
+	// 	GOVTokensToSell: 1000,
+	// 	GOVTokenPrice:   500, // 5 constant
+	// 	StartSellingAt:  0,
+	// 	SellingWithin:   10000,
+	// }
+
+	oracleNetwork := &component.OracleNetwork{
+		OraclePubKeys: [][]byte{
+			[]byte{3, 36, 133, 3, 185, 44, 62, 112, 196, 239, 49, 190, 100, 172, 50, 147, 196, 154, 105, 211, 203, 57, 242, 110, 34, 126, 100, 226, 74, 148, 128, 167, 0},
+			// []byte{3, 36, 133, 3, 185, 44, 62, 112, 196, 239, 49, 190, 100, 172, 50, 147, 196, 154, 105, 211, 203, 57, 242, 110, 34, 126, 100, 226, 74, 148, 128, 167, 1},
+		},
+		UpdateFrequency:        10,
+		OracleRewardMultiplier: 1,
+		AcceptableErrorMargin:  5,
 	}
 
 	govParams := component.GOVParams{
 		SalaryPerTx:      uint64(genesisParams.SalaryPerTx),
 		BasicSalary:      uint64(genesisParams.BasicSalary),
 		FeePerKbTx:       uint64(genesisParams.FeePerTxKb),
-		SellingBonds:     sellingBonds,
-		SellingGOVTokens: sellingGOVTokens,
+		SellingBonds:     nil,
+		SellingGOVTokens: nil,
 		RefundInfo:       nil,
-		OracleNetwork:    nil,
+		OracleNetwork:    oracleNetwork,
 	}
 
 	// First proposal created by GOV, reward back to itself
