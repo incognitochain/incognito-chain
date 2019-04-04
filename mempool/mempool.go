@@ -310,6 +310,7 @@ func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
 // This function is safe for concurrent access.
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
 	if uint64(len(tp.pool)) >= tp.maxTx {
 		return nil, nil, errors.New("Pool reach max number of transaction")
 	}
@@ -317,7 +318,6 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	if err != nil {
 		Logger.log.Error(err)
 	}
-	tp.mtx.Unlock()
 
 	return hash, txDesc, err
 }
