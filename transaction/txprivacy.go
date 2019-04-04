@@ -898,13 +898,14 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 }
 
 func (tx *Tx) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
-	Logger.log.Info("Validating sanity data", tx.Metadata)
+	Logger.log.Infof("\n\n\n START Validating sanity data of metadata %+v\n\n\n", tx.Metadata)
 	if tx.Metadata != nil {
 		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, tx)
 		if err != nil || !ok || !isContinued {
 			return ok, err
 		}
 	}
+	Logger.log.Infof("\n\n\n END sanity data of metadata%+v\n\n\n")
 	return tx.validateNormalTxSanityData()
 }
 
