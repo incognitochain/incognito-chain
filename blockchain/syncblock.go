@@ -550,15 +550,15 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 		return
 	}
 
-	go func() {
-		blks := blockchain.config.BeaconPool.GetValidBlock()
-		for _, newBlk := range blks {
-			err := blockchain.InsertBeaconBlock(newBlk, false)
-			if err != nil {
-				Logger.log.Error(err)
-			}
+	// go func() {
+	blks := blockchain.config.BeaconPool.GetValidBlock()
+	for _, newBlk := range blks {
+		err := blockchain.InsertBeaconBlock(newBlk, false)
+		if err != nil {
+			Logger.log.Error(err)
 		}
-	}()
+	}
+	// }()
 
 	for shardID := range blockchain.syncStatus.Shards {
 		blks := blockchain.config.ShardPool[shardID].GetValidBlock()
