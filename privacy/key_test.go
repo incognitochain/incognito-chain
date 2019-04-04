@@ -8,13 +8,13 @@ import (
 	"testing"
 )
 
-func TestGenerateSpendingKey(t *testing.T) {
-	spendingKey := GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+func TestGeneratePrivateKey(t *testing.T) {
+	privateKey := GeneratePrivateKey(new(big.Int).SetInt64(123).Bytes())
 	expectedResult := []byte{2, 31, 181, 150, 219, 129, 230, 208, 43, 243, 210, 88, 110, 227, 152, 31, 229, 25, 242, 117, 192, 172, 156, 167, 107, 188, 242, 235, 180, 9, 125, 150}
 
-	spendingKeyArray := make([]uint8, SpendingKeySize)
-	copy(spendingKeyArray, spendingKey)
-	assert.Equal(t, expectedResult, spendingKeyArray)
+	privateKeyArray := make([]uint8, PrivateKeySize)
+	copy(privateKeyArray, privateKey)
+	assert.Equal(t, expectedResult, privateKeyArray)
 }
 
 func TestPAdd1Div4(t *testing.T) {
@@ -24,10 +24,10 @@ func TestPAdd1Div4(t *testing.T) {
 }
 
 func TestGenerateKey(t *testing.T) {
-	spendingKey := GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	privateKey := GeneratePrivateKey(new(big.Int).SetInt64(123).Bytes())
 
 	//publicKey is compressed
-	publicKey := GeneratePublicKey(spendingKey)
+	publicKey := GeneratePublicKey(privateKey)
 	publicKeyBytes := make([]byte, CompressedPointSize)
 	copy(publicKeyBytes, publicKey[:])
 
@@ -40,7 +40,7 @@ func TestGenerateKey(t *testing.T) {
 
 	assert.Equal(t, publicKeyBytes, publicKeyPoint.Compress())
 
-	receivingKey := GenerateReceivingKey(spendingKey)
+	receivingKey := GenerateReceivingKey(privateKey)
 
 	transmissionKey := GenerateTransmissionKey(receivingKey)
 	transmissionKeyBytes := make([]byte, CompressedPointSize)
@@ -53,7 +53,7 @@ func TestGenerateKey(t *testing.T) {
 	}
 	assert.Equal(t, transmissionKeyBytes, transmissionKeyPoint.Compress())
 
-	paymentAddress := GeneratePaymentAddress(spendingKey)
+	paymentAddress := GeneratePaymentAddress(privateKey)
 	paymentAddrBytes := paymentAddress.Bytes()
 
 	paymentAddress2 := new(PaymentAddress)
@@ -62,7 +62,7 @@ func TestGenerateKey(t *testing.T) {
 	assert.Equal(t, paymentAddress.Pk, paymentAddress2.Pk)
 	assert.Equal(t, paymentAddress.Tk, paymentAddress2.Tk)
 
-	sk := GenerateSpendingKey([]byte{123})
+	sk := GeneratePrivateKey([]byte{123})
 	fmt.Printf("Spending key byte : %v\n", sk)
 	skStr := base58.Base58Check.Encode(base58.Base58Check{}, sk, 0x01)
 	fmt.Printf("Spending key string after encode : %v\n", skStr)

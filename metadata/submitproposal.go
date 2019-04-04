@@ -156,6 +156,26 @@ type SubmitGOVProposalMetadata struct {
 	MetadataBase
 }
 
+func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) BuildReqActions(
+	tx Transaction,
+	bcr BlockchainRetriever,
+	shardID byte,
+) ([][]string, error) {
+	submitProposal := component.SubmitProposalData{
+		ProposalTxID:      *tx.Hash(),
+		ConstitutionIndex: submitGOVProposalMetadata.SubmitProposalInfo.ConstitutionIndex,
+		SubmitterPayment:  submitGOVProposalMetadata.SubmitProposalInfo.PaymentAddress,
+	}
+	inst := fromshardins.NewSubmitProposalIns(common.GOVBoard, submitProposal)
+
+	instStr, err := inst.GetStringFormat()
+	fmt.Println("[voting] - submitGOVProposalMetadata BuildReqActions: ", instStr)
+	if err != nil {
+		return nil, err
+	}
+	return [][]string{instStr}, nil
+}
+
 func NewSubmitGOVProposalMetadata(
 	govParams component.GOVParams,
 	executeDuration uint64,
@@ -200,10 +220,10 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateTxWithBlockC
 
 func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateSanityData(br BlockchainRetriever, tx Transaction) (bool, bool, error) {
 	if !submitGOVProposalMetadata.GOVParams.ValidateSanityData() {
-		return true, false, nil
+		return true, false, errors.New("submitGOVProposalMetadata.GOVParams")
 	}
 	if !submitGOVProposalMetadata.SubmitProposalInfo.ValidateSanityData() {
-		return true, false, nil
+		return true, false, errors.New("submitGOVProposalMetadata.SubmitProposalInfo")
 	}
 	return true, true, nil
 }

@@ -140,7 +140,7 @@ func (blockgen *BlkTmplGenerator) buildBuyBackRes(
 	instType string,
 	buyBackInfoStr string,
 	prevBuySellResMetaStr string,
-	blkProducerPrivateKey *privacy.SpendingKey,
+	blkProducerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
 	var buyBackInfo BuyBackInfo
 	err := json.Unmarshal([]byte(buyBackInfoStr), &buyBackInfo)
@@ -214,7 +214,7 @@ func (blockgen *BlkTmplGenerator) buildBuyBondsFromGOVRes(
 	instType string,
 	contentStr string,
 	sellingBondsParamsStr string,
-	blkProducerPrivateKey *privacy.SpendingKey,
+	blkProducerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
 	sellingBondsParamsBytes := []byte(sellingBondsParamsStr)
 	var sellingBondsParams component.SellingBonds

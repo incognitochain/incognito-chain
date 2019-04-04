@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/wallet"
+	"github.com/pkg/errors"
 )
 
 type BuySellRequest struct {
@@ -44,7 +44,18 @@ func NewBuySellRequest(
 }
 
 func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-	// no need to do validation here since it'll be checked on beacon chain
+	if len(bsReq.TradeID) > 0 {
+		// Validation for trading bonds
+		_, buy, _, amount, _ := bcr.GetLatestTradeActivation(bsReq.TradeID)
+		if amount < bsReq.Amount {
+			return false, errors.Errorf("trade bond requested amount too high, %d > %d\n", bsReq.Amount, amount)
+		}
+		if !buy {
+			return false, errors.New("trade is for selling bonds, not buying")
+		}
+	}
+
+	// no need to do other validations here since it'll be checked on beacon chain
 	return true, nil
 }
 

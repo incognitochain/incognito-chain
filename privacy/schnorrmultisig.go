@@ -15,7 +15,7 @@ type MultiSigScheme struct {
 
 // MultiSigKeyset contains keyset for EC Schnorr MultiSig Scheme
 type MultiSigKeyset struct {
-	priKey *SpendingKey
+	priKey *PrivateKey
 	pubKey *PublicKey
 }
 
@@ -47,7 +47,7 @@ func (multiSig *SchnMultiSig) Set(R *EllipticPoint, S *big.Int) {
 }
 
 // Set - Constructing MultiSigKeyset
-func (multiSigKeyset *MultiSigKeyset) Set(priKey *SpendingKey, pubKey *PublicKey) {
+func (multiSigKeyset *MultiSigKeyset) Set(priKey *PrivateKey, pubKey *PublicKey) {
 	multiSigKeyset.priKey = priKey
 	multiSigKeyset.pubKey = pubKey
 }
@@ -72,7 +72,7 @@ func (multiSig *SchnMultiSig) Bytes() []byte {
 
 func (multisigScheme *MultiSigScheme) Init() {
 	multisigScheme.Keyset = new(MultiSigKeyset)
-	multisigScheme.Keyset.priKey = new(SpendingKey)
+	multisigScheme.Keyset.priKey = new(PrivateKey)
 	multisigScheme.Keyset.pubKey = new(PublicKey)
 	multisigScheme.Signature = new(SchnMultiSig)
 	multisigScheme.Signature.R = new(EllipticPoint)
