@@ -19,13 +19,9 @@ const (
 )
 
 var (
-	loanIDKeyPrefix         = "loanID-"
-	loanRespKeyPrefix       = "loanResp-"
-	saleDataPrefix          = "sale-"
-	dividendPrefixDCB       = "divDCB"
-	dividendPrefixGOV       = "divGOV"
-	dividendSubmitPrefix    = "divSub"
-	dividendAggregatePrefix = "divAgg"
+	loanIDKeyPrefix   = "loanID-"
+	loanRespKeyPrefix = "loanResp-"
+	saleDataPrefix    = "sale-"
 )
 
 func getLoanRequestKeyBeacon(loanID []byte) string {
@@ -116,55 +112,4 @@ func ParseCrowdsalePaymentInstruction(data string) (*CrowdsalePaymentInstruction
 		return nil, err
 	}
 	return inst, nil
-}
-
-//// Dividend
-func getDCBDividendKeyBeacon() string {
-	return dividendPrefixDCB
-}
-
-func getGOVDividendKeyBeacon() string {
-	return dividendPrefixGOV
-}
-
-func getDividendValueBeacon(amounts []uint64) string {
-	value, _ := json.Marshal(amounts)
-	return string(value)
-}
-
-func parseDividendValueBeacon(value string) ([]uint64, error) {
-	data := []uint64{}
-	err := json.Unmarshal([]byte(value), &data)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
-func getDividendSubmitKeyBeacon(shardID byte, dividendID uint64, tokenID *common.Hash) string {
-	return strings.Join([]string{dividendSubmitPrefix, string(shardID), strconv.FormatUint(dividendID, 10), tokenID.String()}, "")
-}
-
-func getDividendSubmitValueBeacon(shardTokenAmount uint64) string {
-	return strconv.FormatUint(shardTokenAmount, 10)
-}
-
-func parseDividendSubmitValueBeacon(value string) uint64 {
-	shardTokenAmount, _ := strconv.ParseUint(value, 10, 64)
-	return shardTokenAmount
-}
-
-func getDividendAggregatedKeyBeacon(dividendID uint64, tokenID *common.Hash) string {
-	return strings.Join([]string{dividendAggregatePrefix, strconv.FormatUint(dividendID, 10), tokenID.String()}, "")
-}
-
-func getDividendAggregatedValueBeacon(totalTokenAmount, cstToPayout uint64) string {
-	return strings.Join([]string{strconv.FormatUint(totalTokenAmount, 10), strconv.FormatUint(cstToPayout, 10)}, dataSep)
-}
-
-func parseDividendAggregatedValueBeacon(value string) (uint64, uint64) {
-	splits := strings.Split(value, dataSep)
-	totalTokenAmount, _ := strconv.ParseUint(splits[0], 10, 64)
-	cstToPayout, _ := strconv.ParseUint(splits[1], 10, 64)
-	return totalTokenAmount, cstToPayout
 }

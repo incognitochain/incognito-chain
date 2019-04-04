@@ -87,8 +87,6 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 			return err
 		}
 		bsb.UpdateGOVFund(-int64(rewardGOVProposalSubmitterIns.Amount))
-	case strconv.Itoa(metadata.DividendSubmitMeta):
-		return bsb.processDividendSubmitInstruction(inst)
 
 	case strconv.Itoa(metadata.CrowdsalePaymentMeta):
 		return bsb.processCrowdsalePaymentInstruction(inst)
@@ -409,22 +407,6 @@ func (bsb *BestStateBeacon) processUpdateDCBProposalInstruction(ins frombeaconin
 		value := getSaleDataValueBeacon(&data)
 		bsb.Params[key] = value
 	}
-
-	// Store dividend payments if needed
-	if dcbParams.DividendAmount > 0 {
-		key := getDCBDividendKeyBeacon()
-		dividendAmounts := []uint64{}
-		if value, ok := bsb.Params[key]; ok {
-			var err error
-			dividendAmounts, err = parseDividendValueBeacon(value)
-			if err != nil {
-				return err
-			}
-		}
-		dividendAmounts = append(dividendAmounts, dcbParams.DividendAmount)
-		value := getDividendValueBeacon(dividendAmounts)
-		bsb.Params[key] = value
-	}
 	return nil
 }
 
@@ -441,53 +423,6 @@ func (bsb *BestStateBeacon) processUpdateGOVProposalInstruction(ins frombeaconin
 		CurrentGOVNationalWelfare: GetOracleGOVNationalWelfare(),
 		GOVParams:                 ins.GOVParams,
 	}
-	return nil
-}
-
-func (bsb *BestStateBeacon) processDividendSubmitInstruction(inst []string) error {
-	fmt.Printf("[db] beaconProcess found inst: %+v\n", inst)
-	ds, err := metadata.ParseDividendSubmitActionValue(inst[2])
-	if err != nil {
-		fmt.Printf("[db] err parse divsub: %v\n", err)
-		return err
-	}
-
-	// Save number of token for this shard
-	key := getDividendSubmitKeyBeacon(ds.ShardID, ds.DividendID, ds.TokenID)
-	value := getDividendSubmitValueBeacon(ds.TotalTokenAmount)
-	bsb.Params[key] = value
-
-	// If enough shard submitted token amounts, aggregate total and save to component to initiate dividend payments
-	totalTokenOnAllShards := uint64(0)
-	for i := byte(0); i <= byte(255); i++ {
-		key := getDividendSubmitKeyBeacon(i, ds.DividendID, ds.TokenID)
-		if value, ok := bsb.Params[key]; ok {
-			shardTokenAmount := parseDividendSubmitValueBeacon(value)
-			totalTokenOnAllShards += shardTokenAmount
-		} else {
-			fmt.Printf("[db] no divSub for: %d %d %x\n", i, ds.DividendID, ds.TokenID)
-			return nil
-		}
-	}
-	forDCB := ds.TokenID.IsEqual(&common.DCBTokenID)
-	_, cstToPayout := bsb.GetLatestDividendProposal(forDCB)
-	if forDCB && cstToPayout > bsb.StabilityInfo.BankFund {
-		cstToPayout = bsb.StabilityInfo.BankFund
-	} else if !forDCB && cstToPayout > bsb.StabilityInfo.SalaryFund {
-		cstToPayout = bsb.StabilityInfo.SalaryFund
-	}
-
-	key = getDividendAggregatedKeyBeacon(ds.DividendID, ds.TokenID)
-	value = getDividendAggregatedValueBeacon(totalTokenOnAllShards, cstToPayout)
-	bsb.Params[key] = value
-
-	// Update institution's fund
-	if forDCB {
-		bsb.StabilityInfo.BankFund -= cstToPayout
-	} else {
-		bsb.StabilityInfo.SalaryFund -= cstToPayout
-	}
-	fmt.Printf("[db] updated dividend: %d %d %d\n", totalTokenOnAllShards, cstToPayout, bsb.StabilityInfo.BankFund)
 	return nil
 }
 
