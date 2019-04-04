@@ -108,7 +108,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			for peerID, peerState := range blockchain.syncStatus.PeersState {
 				for shardID := range blockchain.syncStatus.Shards {
 					if shardState, ok := peerState.Shard[shardID]; ok {
-						if shardState.Height > GetBestStateBeacon().GetBestHeightOfShard(shardID) && shardState.Height >= GetBestStateShard(shardID).ShardHeight {
+						if shardState.Height > GetBestStateBeacon().GetBestHeightOfShard(shardID) && shardState.Height > GetBestStateShard(shardID).ShardHeight {
 							if RCS.ClosestShardsState[shardID].Height == blockchain.BestState.Shard[shardID].ShardHeight {
 								RCS.ClosestShardsState[shardID] = *shardState
 							} else {
