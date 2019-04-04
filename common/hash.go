@@ -31,6 +31,23 @@ func (hash *Hash) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// Format writes first few bytes of hash for debugging
+func (hash *Hash) Format(f fmt.State, c rune) {
+	if c == 'h' {
+		t := hash.String()
+		f.Write([]byte(t[:8]))
+	} else {
+		m := "%"
+		for i := 0; i < 128; i++ {
+			if f.Flag(i) {
+				m += string(i)
+			}
+		}
+		m += string(c)
+		fmt.Fprintf(f, m, hash[:])
+	}
+}
+
 /*
 String returns the Hash as the hexadecimal string of the byte-reversed
  hash.

@@ -127,11 +127,6 @@ type BlockchainRetriever interface {
 	GetLoanRequestMeta(loanID []byte) (*LoanRequest, error)
 	GetLoanWithdrawed(loanID []byte) (bool, error)
 
-	// For validating dividend
-	GetLatestDividendProposal(bool) (uint64, uint64)
-	GetAmountPerAccount(*common.Hash) (uint64, []privacy.PaymentAddress, []uint64, error)
-	GetDividendReceiversForID(dividendID uint64, forDCB bool) ([]privacy.PaymentAddress, []uint64, bool, error)
-
 	// For validating crowdsale
 	GetCrowdsaleData([]byte) (*component.SaleData, error)
 	CrowdsaleExisted(saleID []byte) bool
@@ -143,13 +138,8 @@ type BlockchainRetriever interface {
 	// For validating trade bonds
 	GetAllTrades() []*component.TradeBondWithGOV
 	GetTradeActivation([]byte) (*common.Hash, bool, bool, uint64, error)
+	GetLatestTradeActivation([]byte) (*common.Hash, bool, bool, uint64, error)
 
-	// For validating cmb
-	GetCMB([]byte) (privacy.PaymentAddress, []privacy.PaymentAddress, uint64, *common.Hash, uint8, uint64, error)
-	GetBlockHeightByBlockHash(*common.Hash) (uint64, byte, error)
-	GetCMBResponse([]byte) ([][]byte, error)
-	GetDepositSend([]byte) ([]byte, error)
-	GetWithdrawRequest([]byte) ([]byte, uint8, error)
 	GetConstitution(boardType common.BoardType) ConstitutionInterface
 	UpdateDCBFund(transaction Transaction)
 	GetGovernor(boardType common.BoardType) GovernorInterface
