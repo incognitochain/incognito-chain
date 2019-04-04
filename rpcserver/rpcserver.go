@@ -505,10 +505,10 @@ func (rpcServer RpcServer) writeHTTPResponseHeaders(req *http.Request, headers h
 		return err
 	}
 
-	headers.Add("Content-Type", "application/json")
+	/*headers.Add("Content-Type", "application/json")
 	headers.Add("Access-Control-Allow-Origin", "*")
 	headers.Add("Access-Control-Allow-Headers", "*")
-	headers.Add("Access-Control-Allow-Methods", "*")
+	headers.Add("Access-Control-Allow-Methods", "*")*/
 	err = headers.Write(w)
 	if err != nil {
 		return err
