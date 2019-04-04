@@ -25,9 +25,9 @@ func initTx() {
 	}
 	var initTxs []string
 	var initAmount, _ = strconv.Atoi(os.Args[1]) // amount init
-	var spendingKey = os.Args[2]                 // spending key str
+	var privateKey = os.Args[2]                 // spending key str
 	testUserkeyList := []string{
-		spendingKey,
+		privateKey,
 	}
 	for _, val := range testUserkeyList {
 

@@ -21,7 +21,7 @@ import (
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
 	libp2p "github.com/libp2p/go-libp2p-peer"
-	"github.com/patrickmn/go-cache"
+	cache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
 
@@ -121,6 +121,7 @@ type Config struct {
 
 		PushMessageGetBlockCrossShardByHash(fromShard byte, toShard byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
 		PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error
+		UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 	}
 	UserKeySet *cashec.KeySet
 }
@@ -1448,55 +1449,3 @@ func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
 	}
 	return nil
 }
-
-// func (blockchain *BlockChain) ProcessCMBTxs(block *Block) error {
-// 	for _, tx := range block.Transactions {
-// 		switch tx.GetMetadataType() {
-// 		case metadata.CMBInitRequestMeta:
-// 			{
-// 				err := blockchain.processCMBInitRequest(tx)
-// 				if err != nil {
-// 					return err
-// 				}
-// 			}
-// 		case metadata.CMBInitResponseMeta:
-// 			{
-// 				err := blockchain.processCMBInitResponse(tx)
-// 				if err != nil {
-// 					return err
-// 				}
-// 			}
-// 		case metadata.CMBInitRefundMeta:
-// 			{
-// 				err := blockchain.processCMBInitRefund(tx)
-// 				if err != nil {
-// 					return err
-// 				}
-// 			}
-// 		case metadata.CMBDepositSendMeta:
-// 			{
-// 				err := blockchain.processCMBDepositSend(tx)
-// 				if err != nil {
-// 					return err
-// 				}
-// 			}
-// 		case metadata.CMBWithdrawRequestMeta:
-// 			{
-// 				err := blockchain.processCMBWithdrawRequest(tx)
-// 				if err != nil {
-// 					return err
-// 				}
-// 			}
-// 		case metadata.CMBWithdrawResponseMeta:
-// 			{
-// 				err := blockchain.processCMBWithdrawResponse(tx)
-// 				if err != nil {
-// 					return err
-// 				}
-// 			}
-// 		}
-// 	}
-
-// 	// Penalize late response for cmb withdraw request
-// 	return blockchain.findLateWithdrawResponse(uint64(block.Header.Height))
-// }
