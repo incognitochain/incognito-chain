@@ -266,7 +266,7 @@ func buildUpdateConstitutionIns(inst string, boardType common.BoardType) ([][]st
 	return [][]string{newInst}, nil
 }
 
-func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, producerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
+func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, producerPrivateKey *privacy.PrivateKey) (metadata.Transaction, error) {
 	// Get loan request
 	withdrawMeta := tx.GetMetadata().(*metadata.LoanWithdraw)
 	meta, err := blockgen.chain.GetLoanRequestMeta(withdrawMeta.LoanID)
@@ -292,7 +292,7 @@ func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, p
 
 func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 	beaconBlocks []*BeaconBlock,
-	producerPrivateKey *privacy.SpendingKey,
+	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) ([]metadata.Transaction, error) {
 	// TODO(@0xbunyip): refund bonds in multiple blocks since many refund instructions might come at once and UTXO picking order is not perfect
@@ -434,7 +434,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 	return resTxs, nil
 }
 
-func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []metadata.Transaction, producerPrivateKey *privacy.SpendingKey) ([]metadata.Transaction, error) {
+func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []metadata.Transaction, producerPrivateKey *privacy.PrivateKey) ([]metadata.Transaction, error) {
 	respTxs := []metadata.Transaction{}
 	removeIds := []int{}
 	multisigsRegTxs := []metadata.Transaction{}
@@ -535,7 +535,7 @@ func (chain *BlockChain) AddVoteProposal(inst string) error {
 // func (blockgen *BlkTmplGenerator) buildIssuingResTxs(
 // 	chainID byte,
 // 	issuingReqTxs []metadata.Transaction,
-// 	privatekey *privacy.SpendingKey,
+// 	privatekey *privacy.PrivateKey,
 // ) ([]metadata.Transaction, error) {
 // 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 // 	oracleParams := prevBlock.Header.Oracle
@@ -599,7 +599,7 @@ func (chain *BlockChain) AddVoteProposal(inst string) error {
 // 	estimatedRefundAmt uint64,
 // 	remainingFund uint64,
 // 	db database.DatabaseInterface,
-// 	privatekey *privacy.SpendingKey,
+// 	privatekey *privacy.PrivateKey,
 // ) ([]metadata.Transaction, uint64) {
 // 	amt := uint64(0)
 // 	if estimatedRefundAmt <= remainingFund {
@@ -626,7 +626,7 @@ func (chain *BlockChain) AddVoteProposal(inst string) error {
 // func (blockgen *BlkTmplGenerator) buildRefundTxs(
 // 	chainID byte,
 // 	remainingFund uint64,
-// 	privatekey *privacy.SpendingKey,
+// 	privatekey *privacy.PrivateKey,
 // ) ([]metadata.Transaction, uint64) {
 // 	if remainingFund <= 0 {
 // 		Logger.log.Info("GOV fund is not enough for refund.")
@@ -686,7 +686,7 @@ func (chain *BlockChain) AddVoteProposal(inst string) error {
 // 	return refundTxs, totalRefundAmt
 // }
 
-// func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, producerPrivateKey *privacy.SpendingKey) (uint64, []metadata.Transaction, []metadata.Transaction) {
+// func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, producerPrivateKey *privacy.PrivateKey) (uint64, []metadata.Transaction, []metadata.Transaction) {
 // 	amount := uint64(0)
 // 	loanUnlockTxs := []metadata.Transaction{}
 // 	removableTxs := []metadata.Transaction{}
@@ -728,7 +728,7 @@ func (chain *BlockChain) AddVoteProposal(inst string) error {
 // func (blockgen *BlkTmplGenerator) buildBuyBackResponseTxs(
 // 	buyBackFromInfos []*buyBackFromInfo,
 // 	chainID byte,
-// 	privatekey *privacy.SpendingKey,
+// 	privatekey *privacy.PrivateKey,
 // ) ([]metadata.Transaction, error) {
 // 	if len(buyBackFromInfos) == 0 {
 // 		return []metadata.Transaction{}, nil
@@ -875,7 +875,7 @@ func (chain *BlockChain) AddVoteProposal(inst string) error {
 // func (blockgen *BlkTmplGenerator) buildResponseTxs(
 // 	chainID byte,
 // 	sourceTxns []*metadata.TxDesc,
-// 	privatekey *privacy.SpendingKey,
+// 	privatekey *privacy.PrivateKey,
 // 	txGroups *txGroups,
 // 	accumulativeValues *accumulativeValues,
 // 	buyBackFromInfos []*buyBackFromInfo,

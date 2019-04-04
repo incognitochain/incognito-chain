@@ -55,7 +55,7 @@ func (bc *BlockChain) calcTradeData(inst string) (*tradeData, error) {
 func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 	inst string,
 	unspentTokens map[string]([]transaction.TxTokenVout),
-	producerPrivateKey *privacy.SpendingKey,
+	producerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
 	fmt.Printf("[db] building trade act tx\n")
 	data, err := blockgen.chain.calcTradeData(inst)
@@ -90,7 +90,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuySellRequestTx(
 	tradeID []byte,
 	bondID *common.Hash,
 	amount uint64,
-	producerPrivateKey *privacy.SpendingKey,
+	producerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	keyWalletBurnAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
@@ -127,7 +127,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 	bondID *common.Hash,
 	amount uint64,
 	unspentTokens map[string]([]transaction.TxTokenVout),
-	producerPrivateKey *privacy.SpendingKey,
+	producerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
 	fmt.Printf("[db] building buyback request tx: %d\n", amount)
 	// TODO(@0xbunyip): not enough bonds to send ==> update activated status to retry later

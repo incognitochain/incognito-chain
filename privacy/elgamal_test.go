@@ -26,8 +26,8 @@ func TestElGamalEncryption(t *testing.T) {
 		fmt.Printf("Err: %v\n", err)
 	}
 
-	spendingKey := GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	receivingKey := GenerateReceivingKey(spendingKey)
+	privateKey := GeneratePrivateKey(new(big.Int).SetInt64(123).Bytes())
+	receivingKey := GenerateReceivingKey(privateKey)
 	myprivKey := new(ElGamalPrivKey)
 	myprivKey.X = new(big.Int).SetBytes(receivingKey)
 
