@@ -342,31 +342,3 @@ func (bestStateBeacon *BestStateBeacon) GetSaleData(saleID []byte) (*component.S
 	}
 	return nil, errors.Errorf("SaleID not exist: %x", saleID)
 }
-
-func (self *BestStateBeacon) GetLatestDividendProposal(forDCB bool) (id, amount uint64) {
-	key := ""
-	if forDCB {
-		key = getDCBDividendKeyBeacon()
-	} else {
-		key = getGOVDividendKeyBeacon()
-	}
-	dividendAmounts := []uint64{}
-	if value, ok := self.Params[key]; ok {
-		dividendAmounts, _ = parseDividendValueBeacon(value)
-		if len(dividendAmounts) > 0 {
-			id = uint64(len(dividendAmounts))
-			amount = dividendAmounts[len(dividendAmounts)-1]
-		}
-	}
-	return id, amount
-}
-
-func (self *BestStateBeacon) GetDividendAggregatedInfo(dividendID uint64, tokenID *common.Hash) (uint64, uint64, bool) {
-	key := getDividendAggregatedKeyBeacon(dividendID, tokenID)
-	if value, ok := self.Params[key]; ok {
-		totalTokenOnAllShards, cstToPayout := parseDividendAggregatedValueBeacon(value)
-		value = getDividendAggregatedValueBeacon(totalTokenOnAllShards, cstToPayout)
-		return totalTokenOnAllShards, cstToPayout, true
-	}
-	return 0, 0, false
-}

@@ -16,7 +16,7 @@ func buildPaymentForCoin(
 	receiverAddress privacy.PaymentAddress,
 	amount uint64,
 	saleID []byte,
-	producerPrivateKey *privacy.SpendingKey,
+	producerPrivateKey *privacy.PrivateKey,
 	db database.DatabaseInterface,
 ) (*transaction.Tx, error) {
 	// Mint and send Constant
@@ -166,7 +166,7 @@ func buildPaymentForToken(
 func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	inst string,
 	unspentTokens map[string]([]transaction.TxTokenVout),
-	producerPrivateKey *privacy.SpendingKey,
+	producerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
 	paymentInst, err := ParseCrowdsalePaymentInstruction(inst)
 	if err != nil {

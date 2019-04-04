@@ -58,9 +58,9 @@ func readTxsFromFile(filename string) {
 func initTx(amount string, privateKey string, db database.DatabaseInterface) []string {
 	var initTxs []string
 	var initAmount, _ = strconv.Atoi(amount) // amount init
-	var spendingKey = privateKey             // spending key str
+	var privateKey = privateKey             // spending key str
 	testUserkeyList := []string{
-		spendingKey,
+		privateKey,
 	}
 	for _, val := range testUserkeyList {
 

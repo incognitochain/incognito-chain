@@ -189,7 +189,6 @@ func (stateBeacon *BestStateBeacon) UpdateDCBBoard(ins frombeaconins.AcceptDCBBo
 	stateBeacon.StabilityInfo.DCBGovernor.BoardPaymentAddress = ins.BoardPaymentAddress
 	stateBeacon.StabilityInfo.DCBGovernor.StartedBlock = stateBeacon.BestBlock.Header.Height
 	stateBeacon.StabilityInfo.DCBGovernor.EndBlock = stateBeacon.StabilityInfo.DCBGovernor.StartedBlock + common.DurationOfDCBBoard
-	Logger.log.Info("New DCBGovernor.EndBlock is: ", stateBeacon.StabilityInfo.DCBGovernor.EndBlock, "\n")
 	stateBeacon.StabilityInfo.DCBGovernor.StartAmountToken = ins.StartAmountToken
 	return nil
 }
@@ -199,7 +198,6 @@ func (stateBeacon *BestStateBeacon) UpdateGOVBoard(ins frombeaconins.AcceptGOVBo
 	stateBeacon.StabilityInfo.GOVGovernor.BoardPaymentAddress = ins.BoardPaymentAddress
 	stateBeacon.StabilityInfo.GOVGovernor.StartedBlock = stateBeacon.BestBlock.Header.Height
 	stateBeacon.StabilityInfo.GOVGovernor.EndBlock = stateBeacon.StabilityInfo.GOVGovernor.StartedBlock + common.DurationOfGOVBoard
-	Logger.log.Info("New DCBGovernor.EndBlock is: ", stateBeacon.StabilityInfo.GOVGovernor.EndBlock, "\n")
 	stateBeacon.StabilityInfo.GOVGovernor.StartAmountToken = ins.StartAmountToken
 	return nil
 }
@@ -420,8 +418,20 @@ func (chain *BlockChain) neededNewGovernor(helper ConstitutionHelper) bool {
 
 func (chain *BlockChain) neededFirstNewGovernor(helper ConstitutionHelper) bool {
 	fmt.Println("[voting] - chain BeaconHeight of BestState", chain.BestState.Beacon.BeaconHeight)
+	if helper.GetBoardType() == common.DCBBoard {
+		if chain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardIndex > 1 {
+			return false
+		}
+	} else {
+		if chain.BestState.Beacon.StabilityInfo.GOVGovernor.BoardIndex > 1 {
+			return false
+		}
+	}
 	if EndOfFirstBoard == chain.BestState.Beacon.BeaconHeight {
 		fmt.Println("[voting] -  EndOfFirstBoard vs BeaconHeight", EndOfFirstBoard, chain.BestState.Beacon.BeaconHeight)
+		return true
+	}
+	if (EndOfFirstBoard < chain.BestState.Beacon.BeaconHeight) && (chain.BestState.Beacon.BeaconHeight%ExtendDurationForFirstBoard == 0) {
 		return true
 	}
 	return false
@@ -438,8 +448,7 @@ func (chain *BlockChain) neededNewConstitution(helper ConstitutionHelper) bool {
 }
 
 func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper) ([][]string, error) {
-	// panic("[voting] aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-	// 	prevBlock := blockgen.chain.BestState[shardID].BestBlock
+
 	instructions := make([]frombeaconins.InstructionFromBeacon, 0)
 	fmt.Println("[voting]-Enter generateVotingInstructionWOIns")
 	if self.neededFirstNewGovernor(helper) {
