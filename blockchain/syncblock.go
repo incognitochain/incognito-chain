@@ -83,8 +83,10 @@ func (blockchain *BlockChain) StartSyncBlk() {
 				userRole      string
 				userShardID   byte
 				userShardRole string
+				userPK        string
 			)
 			if blockchain.config.UserKeySet != nil {
+				userPK = blockchain.config.UserKeySet.GetPublicKeyB58()
 				userRole, userShardID = blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Beacon.BestBlock.Header.Round)
 				blockchain.syncShard(userShardID)
 				blockchain.stopSyncUnnecessaryShard()
@@ -267,6 +269,12 @@ func (blockchain *BlockChain) StartSyncBlk() {
 					}
 				}
 			}
+			userLayer := userRole
+			switch userRole {
+			case common.VALIDATOR_ROLE, common.PROPOSER_ROLE:
+				userLayer = common.BEACON_ROLE
+			}
+			blockchain.config.Server.UpdateConsensusState(userLayer, userPK, nil, blockchain.BestState.Beacon.BeaconCommittee, blockchain.BestState.Beacon.ShardCommittee)
 
 			blockchain.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
 			blockchain.syncStatus.Unlock()
