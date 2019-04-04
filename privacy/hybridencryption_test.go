@@ -9,10 +9,10 @@ import (
 
 func TestEncryptionBytes (t*testing.T){
 	msg := RandBytes(100)
-	spendingKey := GenerateSpendingKey([]byte{123})
-	publicKeyBytes := GeneratePublicKey(spendingKey)
+	privateKey := GeneratePrivateKey([]byte{123})
+	publicKeyBytes := GeneratePublicKey(privateKey)
 
-	privateKey := new(big.Int).SetBytes(spendingKey)
+	privateKey := new(big.Int).SetBytes(privateKey)
 	publicKey := new(EllipticPoint)
 	err := publicKey.Decompress(publicKeyBytes)
 	if err != nil{

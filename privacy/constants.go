@@ -26,7 +26,7 @@ const (
 	SigNoPrivacySize = 64
 	SigPrivacySize   = 96
 
-	SpendingKeySize = 32
+	PrivateKeySize = 32
 
 	BigIntSize    = 32 // bytes
 	Uint64Size    = 8  // bytes
