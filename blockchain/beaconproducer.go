@@ -188,11 +188,9 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
-	fmt.Printf("[db] beacon producer GetShardState %d\n", len(keys))
 	for _, value := range keys {
 		shardID := byte(value)
 		shardBlocks := allShardBlocks[shardID]
-		fmt.Printf("[db] shardID: %d\n", shardID)
 		// Only accept block in one epoch
 		totalBlock := 0
 		//UNCOMMENT FOR TESTING
@@ -219,9 +217,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 		fmt.Printf("Beacon Producer/ AFTER FILTER, ONLY GET %+v block \n", totalBlock)
 		fmt.Println("Beacon Producer/ FILTER and ONLY GET These Block from pool")
 		fmt.Println()
-		fmt.Printf("[db] beacon producer shardBlocks: %d %d\n", len(shardBlocks), totalBlock)
 		for _, shardBlock := range shardBlocks[:totalBlock+1] {
-			fmt.Printf("[db] beacon producer GetShardStateFromBlock %d\n", shardBlock.Header.Height)
 			shardState, validStaker, validSwapper, stabilityInstruction := blkTmplGenerator.chain.GetShardStateFromBlock(beaconBestState, shardBlock, accumulativeValues, shardID)
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
 			validStakers = append(validStakers, validStaker...)
@@ -456,7 +452,6 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 		}
 	}
 	// Create stability instruction
-	fmt.Printf("[db] build stability inst from S2B block %d\n", shardBlock.Header.Height)
 	stabilityInstructionsPerBlock, err := blockChain.buildStabilityInstructions(
 		shardID,
 		shardBlock.Instructions,
