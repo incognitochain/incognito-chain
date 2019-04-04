@@ -318,16 +318,17 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 			randomInstruction, rand := generateRandomInstruction(bestStateBeacon.CurrentRandomTimeStamp, &wg)
 			wg.Wait()
 			instructions = append(instructions, randomInstruction)
-			Logger.log.Critical("RandomNumber %+v", randomInstruction)
+			Logger.log.Critical("RandomNumber", randomInstruction)
 			for _, candidate := range shardCandidates {
 				shardID := calculateCandidateShardID(candidate, rand, bestStateBeacon.ActiveShards)
 				assignedCandidates[shardID] = append(assignedCandidates[shardID], candidate)
 			}
+			Logger.log.Criticalf("assignedCandidates %+v", assignedCandidates)
 			for shardId, candidates := range assignedCandidates {
 				shardAssingInstruction := []string{"assign"}
 				shardAssingInstruction = append(shardAssingInstruction, strings.Join(candidates, ","))
 				shardAssingInstruction = append(shardAssingInstruction, "shard")
-				shardAssingInstruction = append(shardAssingInstruction, strconv.Itoa(int(shardId)))
+				shardAssingInstruction = append(shardAssingInstruction, fmt.Sprintf("%v", shardId))
 				instructions = append(instructions, shardAssingInstruction)
 			}
 		}
@@ -475,7 +476,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 
 //===================================Util for Beacon=============================
 
-// ["random" "{blockheight}" "{bitcointimestamp}" "{nonce}" "{timestamp}"]
+// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
 func generateRandomInstruction(timestamp int64, wg *sync.WaitGroup) ([]string, int64) {
 	//COMMENT FOR TESTING
 	// msg := make(chan string)
@@ -484,13 +485,13 @@ func generateRandomInstruction(timestamp int64, wg *sync.WaitGroup) ([]string, i
 	// reses := strings.Split(res, (","))
 	strs := []string{}
 	//UNCOMMENT FOR TESTTING
-	reses := []string{strconv.Itoa(int(timestamp)), strconv.Itoa(int(timestamp) + 1), "1000"}
+	//@NOTICE: Hard Code for testing
+	reses := []string{"1000", strconv.Itoa(int(timestamp)), strconv.Itoa(int(timestamp) + 1)}
 	strs = append(strs, RandomAction)
 	strs = append(strs, reses...)
 	strs = append(strs, strconv.Itoa(int(timestamp)))
-	nonce, _ := strconv.Atoi(reses[2])
 	wg.Done()
-	return strs, int64(nonce)
+	return strs, int64(1000)
 }
 
 func getStakeValidatorArrayString(v []string) ([]string, []string) {
