@@ -8,9 +8,9 @@ import (
 )
 
 func TestCoin(t *testing.T){
-	spendingKey := GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	paymentAddress := GeneratePaymentAddress(spendingKey)
-	viewingKey := GenerateViewingKey(spendingKey)
+	privateKey := GeneratePrivateKey(new(big.Int).SetInt64(123).Bytes())
+	paymentAddress := GeneratePaymentAddress(privateKey)
+	viewingKey := GenerateViewingKey(privateKey)
 
 	coin := new(OutputCoin)
 	coin.CoinDetails = new(Coin)

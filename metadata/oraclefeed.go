@@ -62,8 +62,10 @@ func (of *OracleFeed) ValidateSanityData(
 	if len(of.AssetType) != common.HashSize {
 		return false, false, errors.New("Wrong oracle feed's asset type")
 	}
+	if !bytes.Equal(txr.GetSigPubKey()[:], of.FeederAddress.Pk[:]) {
+		return false, false, errors.New("FeederAddress in metadata is not matched to sender address")
+	}
 
-	// TODO: compare feederAddress to address in vins
 	return true, true, nil
 }
 

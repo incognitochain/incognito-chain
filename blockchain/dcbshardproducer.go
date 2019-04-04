@@ -51,7 +51,7 @@ func (blockchain *BlockChain) GetAmountPerAccount(tokenID *common.Hash) (uint64,
 	return totalTokenAmount, tokenHolders, amounts, nil
 }
 
-func (blockgen *BlkTmplGenerator) buildInstitutionDividendPaymentTxs(forDCB bool, producerPrivateKey *privacy.SpendingKey) ([]*transaction.Tx, error) {
+func (blockgen *BlkTmplGenerator) buildInstitutionDividendPaymentTxs(forDCB bool, producerPrivateKey *privacy.PrivateKey) ([]*transaction.Tx, error) {
 	// Get latest dividend proposal id and amount
 	id, cstToPayout := blockgen.chain.BestState.Beacon.GetLatestDividendProposal(forDCB)
 	if id == 0 || cstToPayout == 0 {
@@ -118,7 +118,7 @@ func (blockgen *BlkTmplGenerator) buildInstitutionDividendPaymentTxs(forDCB bool
 	return txs, nil
 }
 
-func (blockgen *BlkTmplGenerator) buildDividendPaymentTxs(producerPrivateKey *privacy.SpendingKey, shardID byte) ([]metadata.Transaction, error) {
+func (blockgen *BlkTmplGenerator) buildDividendPaymentTxs(producerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
 	// Build dividend payments for DCB
 	forDCB := true
 	dcbDividendPaymentTxs, err := blockgen.buildInstitutionDividendPaymentTxs(forDCB, producerPrivateKey)
@@ -177,7 +177,7 @@ func (blockgen *BlkTmplGenerator) buildInstitutionDividendSubmitInst(forDCB bool
 	return metadata.BuildDividendSubmitInst(tokenID, id, totalTokenAmount, shardID)
 }
 
-func (blockgen *BlkTmplGenerator) buildDividendSubmitInsts(producerPrivateKey *privacy.SpendingKey, shardID byte) ([][]string, error) {
+func (blockgen *BlkTmplGenerator) buildDividendSubmitInsts(producerPrivateKey *privacy.PrivateKey, shardID byte) ([][]string, error) {
 	// Dividend proposals for DCB
 	submitInsts := [][]string{}
 	forDCB := true

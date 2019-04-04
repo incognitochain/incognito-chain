@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -61,6 +62,9 @@ func (bbReq *BuyBackRequest) ValidateSanityData(
 	}
 	if txr.CalculateTxValue() < bbReq.Amount {
 		return false, false, errors.New("Burning bond amount in Vouts should be equal metadata's amount")
+	}
+	if !bytes.Equal(txr.GetSigPubKey()[:], bbReq.PaymentAddress.Pk[:]) {
+		return false, false, errors.New("PaymentAddress in metadata is not matched to sender address")
 	}
 
 	return true, true, nil
