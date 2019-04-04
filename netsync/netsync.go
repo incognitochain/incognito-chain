@@ -81,9 +81,22 @@ out:
 			{
 				go func(msgC interface{}) {
 					switch msg := msgC.(type) {
-					case *wire.MessageTx:
+					case *wire.MessageTx, *wire.MessageTxToken, *wire.MessageTxPrivacyToken:
 						{
-							netSync.HandleMessageTx(msg)
+							switch msg := msgC.(type) {
+							case *wire.MessageTx:
+								{
+									netSync.HandleMessageTx(msg)
+								}
+							case *wire.MessageTxToken:
+								{
+									netSync.HandleMessageTxToken(msg)
+								}
+							case *wire.MessageTxPrivacyToken:
+								{
+									netSync.HandleMessageTxPrivacyToken(msg)
+								}
+							}
 						}
 					case *wire.MessageBFTPropose:
 						{
@@ -181,6 +194,44 @@ func (netSync *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan 
 
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
+	Logger.log.Info("Handling new message tx")
+	hash, txDesc, err := netSync.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
+
+	if err != nil {
+		Logger.log.Error(err)
+	} else {
+		Logger.log.Infof("there is hash of transaction %s", hash.String())
+		Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
+
+		// Broadcast to network
+		err := netSync.config.Server.PushMessageToAll(msg)
+		if err != nil {
+			Logger.log.Error(err)
+		}
+	}
+}
+
+// handleTxMsg handles transaction messages from all peers.
+func (netSync *NetSync) HandleMessageTxToken(msg *wire.MessageTxToken) {
+	Logger.log.Info("Handling new message tx")
+	hash, txDesc, err := netSync.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
+
+	if err != nil {
+		Logger.log.Error(err)
+	} else {
+		Logger.log.Infof("there is hash of transaction %s", hash.String())
+		Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
+
+		// Broadcast to network
+		err := netSync.config.Server.PushMessageToAll(msg)
+		if err != nil {
+			Logger.log.Error(err)
+		}
+	}
+}
+
+// handleTxMsg handles transaction messages from all peers.
+func (netSync *NetSync) HandleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyToken) {
 	Logger.log.Info("Handling new message tx")
 	hash, txDesc, err := netSync.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
 
