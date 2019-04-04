@@ -184,7 +184,7 @@ func (rpcServer RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Connection", "close")
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Origin, Device-Type, Device-Id, Authorization, Accept-Language, *")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Origin, Device-Type, Device-Id, Authorization, Accept-Language, Access-Control-Allow-Headers, *")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, PUT, GET, OPTIONS, DELETE")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	r.Close = true
