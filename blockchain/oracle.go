@@ -229,7 +229,7 @@ func buildRewardAndRefundEvals(
 	stabilityInfo := beaconBestState.StabilityInfo
 	govParams := stabilityInfo.GOVConstitution.GOVParams
 	oracleNetwork := govParams.OracleNetwork
-	if beaconHeight == 0 || oracleNetwork == nil || uint32(beaconHeight)%oracleNetwork.UpdateFrequency != 0 {
+	if beaconHeight == 0 || oracleNetwork == nil || oracleNetwork.UpdateFrequency == 0 || uint32(beaconHeight)%oracleNetwork.UpdateFrequency != 0 {
 		return []*Evaluation{}, map[string]uint64{}, nil
 	}
 	instsByOracleType, err := groupOracleFeedTxsByOracleType(bc, beaconBestState, oracleNetwork.UpdateFrequency)
