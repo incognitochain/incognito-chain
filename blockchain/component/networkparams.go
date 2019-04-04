@@ -303,7 +303,7 @@ func (srd *SpendReserveData) Hash() *common.Hash {
 }
 
 type OracleNetwork struct {
-	OraclePubKeys          [][]byte
+	OraclePubKeys          []string // hex string encoded
 	WrongTimesAllowed      uint8
 	Quorum                 uint8
 	AcceptableErrorMargin  uint32
@@ -311,7 +311,7 @@ type OracleNetwork struct {
 	OracleRewardMultiplier uint8
 }
 
-func NewOracleNetwork(oraclePubKeys [][]byte, wrongTimesAllowed uint8, quorum uint8, acceptableErrorMargin uint32, updateFrequency uint32, oracleRewardMultiplier uint8) *OracleNetwork {
+func NewOracleNetwork(oraclePubKeys []string, wrongTimesAllowed uint8, quorum uint8, acceptableErrorMargin uint32, updateFrequency uint32, oracleRewardMultiplier uint8) *OracleNetwork {
 	return &OracleNetwork{OraclePubKeys: oraclePubKeys, WrongTimesAllowed: wrongTimesAllowed, Quorum: quorum, AcceptableErrorMargin: acceptableErrorMargin, UpdateFrequency: updateFrequency, OracleRewardMultiplier: oracleRewardMultiplier}
 }
 
@@ -322,9 +322,14 @@ func NewOracleNetworkFromJson(data interface{}) *OracleNetwork {
 	if oraclePubKeysInterface == nil {
 		panic("oraclePubKey")
 	}
-	oraclePubKeys := make([][]byte, 0)
-	for _, i := range oraclePubKeysInterface {
-		oraclePubKeys = append(oraclePubKeys, common.SliceInterfaceToSliceByte(common.InterfaceSlice(i)))
+	// oraclePubKeys := make([][]byte, 0)
+	// for _, i := range oraclePubKeysInterface {
+	// 	oraclePubKeys = append(oraclePubKeys, common.SliceInterfaceToSliceByte(common.InterfaceSlice(i)))
+	// }
+
+	oraclePubKeys := make([]string, len(oraclePubKeysInterface))
+	for idx, item := range oraclePubKeysInterface {
+		oraclePubKeys[idx] = item.(string)
 	}
 
 	oracleNetwork := NewOracleNetwork(
@@ -418,7 +423,7 @@ func (on *OracleNetwork) Hash() *common.Hash {
 	record += string(on.AcceptableErrorMargin)
 	record += string(on.UpdateFrequency)
 	for _, oraclePk := range on.OraclePubKeys {
-		record += string(oraclePk)
+		record += oraclePk
 	}
 	hash := common.HashH([]byte(record))
 	return &hash
