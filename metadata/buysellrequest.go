@@ -81,6 +81,9 @@ func (bsReq *BuySellRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tra
 	if !txr.IsCoinsBurning() {
 		return false, false, errors.New("Must send coin to burning address")
 	}
+	if !bytes.Equal(txr.GetSigPubKey()[:], bsReq.PaymentAddress.Pk[:]) {
+		return false, false, errors.New("PaymentAddress in metadata is not matched to sender address")
+	}
 
 	// For DCB trading bods with GOV
 	if len(bsReq.TradeID) > 0 {
