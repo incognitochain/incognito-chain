@@ -49,6 +49,9 @@ func (rpcServer RpcServer) handleGetBondTypes(params interface{}, closeChan <-ch
 func (rpcServer RpcServer) handleGetCurrentSellingBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	stabilityInfo := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo
 	sellingBondsParam := stabilityInfo.GOVConstitution.GOVParams.SellingBonds
+	if sellingBondsParam == nil {
+		return nil, nil
+	}
 	buyPrice := uint64(0)
 	bondID := sellingBondsParam.GetID()
 	bondPriceFromOracle := stabilityInfo.Oracle.Bonds[bondID.String()]
@@ -472,6 +475,10 @@ func (self RpcServer) handleCreateAndSendTxWithSenderAddress(params interface{},
 func (rpcServer RpcServer) handleGetCurrentSellingGOVTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	stabilityInfo := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo
 	sellingGOVTokensParam := stabilityInfo.GOVConstitution.GOVParams.SellingGOVTokens
+	if sellingGOVTokensParam == nil {
+		return nil, nil
+	}
+
 	buyPrice := uint64(0)
 	govTokenPriceFromOracle := stabilityInfo.Oracle.GOVToken
 	if govTokenPriceFromOracle == 0 {
