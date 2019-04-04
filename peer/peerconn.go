@@ -12,7 +12,7 @@ import (
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/wire"
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-peer"
 )
 
 type PeerConn struct {
@@ -346,7 +346,12 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 
 					// add 24 bytes headerBytes into messageHex
 					headerBytes := make([]byte, wire.MessageHeaderSize)
-					cmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.message))
+					cmdType, messageErr := wire.GetCmdType(reflect.TypeOf(outMsg.message))
+					if messageErr != nil {
+						Logger.log.Error("Can not get cmd type for " + outMsg.message.MessageType())
+						Logger.log.Error(messageErr)
+						continue
+					}
 					copy(headerBytes[:], []byte(cmdType))
 					copy(headerBytes[wire.MessageCmdTypeSize:], []byte{outMsg.forwardType})
 					if outMsg.forwardValue != nil {
