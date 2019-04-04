@@ -68,24 +68,15 @@ var (
 	// multisigs
 	multisigsPrefix = []byte("multisigs")
 
-	// cmb
-	cmbPrefix                = []byte("cmb-")
-	cmbResponsePrefix        = []byte("cmbres-")
-	cmbDepositSendKeyPrefix  = []byte("cmbdepositsend-")
-	cmbWithdrawRequestPrefix = []byte("cmbwithdrawreq-")
-	cmbNoticePrefix          = []byte("cmbnotice-")
-
 	// crowdsale
 	crowdsalePrefix       = []byte("crowdsale-")
 	tradeActivationPrefix = []byte("tradeAct-")
 
-	// dividend
-	dividendReceiversPrefix = []byte("divRec")
-	Unreward                = []byte("unreward")
-	Spent                   = []byte("spent")
-	Unspent                 = []byte("unspent")
-	Mintable                = []byte("mintable")
-	UnMintable              = []byte("unmintable")
+	Unreward   = []byte("unreward")
+	Spent      = []byte("spent")
+	Unspent    = []byte("unspent")
+	Mintable   = []byte("mintable")
+	UnMintable = []byte("unmintable")
 
 	// reserve
 	reserveIssuingInfoPrefix     = []byte("rsIss")
