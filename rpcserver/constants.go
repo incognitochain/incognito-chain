@@ -181,13 +181,6 @@ const (
 	CreateAndSendTxWithBuyGOVTokensRequest = "createandsendtxwithbuygovtokensrequest"
 	GetCurrentSellingGOVTokens             = "getcurrentsellinggovtokens"
 
-	// cmb
-	CreateAndSendTxWithCMBInitRequest     = "createandsendtxwithcmbinitrequest"
-	CreateAndSendTxWithCMBInitResponse    = "createandsendtxwithcmbinitresponse"
-	CreateAndSendTxWithCMBDepositContract = "createandsendtxwithcmbdepositcontract"
-	CreateAndSendTxWithCMBDepositSend     = "createandsendtxwithcmbdepositsend"
-	CreateAndSendTxWithCMBWithdrawRequest = "createandsendtxwithcmbwithdrawrequest"
-
 	// walletsta
 	GetPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
 	DefragmentAccount              = "defragmentaccount"

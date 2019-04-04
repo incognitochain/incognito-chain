@@ -14,11 +14,12 @@ const (
 	defaultCacheCleanupTime     = 60 * time.Second // in second
 
 	// Threshold ratio
-	ThresholdRatioOfDCBCrisis = 9000
-	ThresholdRatioOfGOVCrisis = 9000
-	ConstitutionPerBoard      = 10
-	EndOfFirstBoard           = 100
-	BaseSalaryBoard           = 10000
+	ThresholdRatioOfDCBCrisis   = 9000
+	ThresholdRatioOfGOVCrisis   = 9000
+	ConstitutionPerBoard        = 10
+	EndOfFirstBoard             = 100
+	ExtendDurationForFirstBoard = 50
+	BaseSalaryBoard             = 10000
 )
 
 // CONSTANT for network MAINNET
