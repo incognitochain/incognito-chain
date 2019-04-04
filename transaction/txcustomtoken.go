@@ -367,7 +367,7 @@ func (tx *TxCustomToken) GetTxActualSize() uint64 {
 }
 
 // CreateTxCustomToken ...
-func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
+func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
 	inputCoin []*privacy.InputCoin,
 	fee uint64,

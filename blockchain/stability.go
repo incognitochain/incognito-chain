@@ -79,14 +79,15 @@ func buildStabilityActions(
 			if err != nil {
 				continue
 			}
-			fmt.Println("[voting] - instructions froms beacon block:", l[0], l[1], l[2], shardToProcess, shardID)
 			if shardToProcess == int(shardID) {
 				metaType, err := strconv.Atoi(l[0])
 				if err != nil {
 					return nil, err
 				}
 				var newIns []string
-				fmt.Println("[voting] - instructions metaType: ", metaType, component.AcceptDCBProposalIns)
+				if metaType != 37 {
+					fmt.Println("[voting] - instructions metaType: ", metaType, component.AcceptDCBProposalIns)
+				}
 				switch metaType {
 				case component.AcceptDCBProposalIns:
 					acceptProposalIns := frombeaconins.AcceptProposalIns{}
@@ -118,6 +119,7 @@ func buildStabilityActions(
 					_, _, _, txProposal, err := bc.GetTransactionByHash(&txID)
 					metaProposal := txProposal.GetMetadata().(*metadata.SubmitGOVProposalMetadata)
 					if err != nil {
+						fmt.Println("[voting] - error 1 ", err.Error())
 						return nil, err
 					}
 					newIns, err = fromshardins.NewNewGOVConstitutionIns(
@@ -126,8 +128,10 @@ func buildStabilityActions(
 						acceptProposalIns.Voters,
 					).GetStringFormat()
 					if err != nil {
+						fmt.Println("[voting] - error 2 ", err.Error())
 						return nil, err
 					}
+					fmt.Println("[voting] - new instructions AcceptProposalIns: ", newIns)
 				}
 				actions = append(actions, newIns)
 			}
@@ -151,8 +155,8 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		if len(inst) == 0 {
 			continue
 		}
-		fmt.Println("[voting] -----------------------> Instrucstion from shard to beacon ", inst)
 		if inst[0] != "37" {
+			fmt.Println("[voting] -----------------------> Instrucstion from shard to beacon ", inst)
 			fmt.Printf("[db] beaconProducer found inst: %s\n", inst[0])
 		}
 		// TODO: will improve the condition later
@@ -266,7 +270,7 @@ func buildUpdateConstitutionIns(inst string, boardType common.BoardType) ([][]st
 	return [][]string{newInst}, nil
 }
 
-func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, producerPrivateKey *privacy.SpendingKey) (metadata.Transaction, error) {
+func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, producerPrivateKey *privacy.PrivateKey) (metadata.Transaction, error) {
 	// Get loan request
 	withdrawMeta := tx.GetMetadata().(*metadata.LoanWithdraw)
 	meta, err := blockgen.chain.GetLoanRequestMeta(withdrawMeta.LoanID)
@@ -292,7 +296,7 @@ func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, p
 
 func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 	beaconBlocks []*BeaconBlock,
-	producerPrivateKey *privacy.SpendingKey,
+	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) ([]metadata.Transaction, error) {
 	// TODO(@0xbunyip): refund bonds in multiple blocks since many refund instructions might come at once and UTXO picking order is not perfect
@@ -312,7 +316,9 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 			shardToProcess, err := strconv.Atoi(l[1])
 			if err == nil && shardToProcess == int(shardID) {
 				metaType, err := strconv.Atoi(l[0])
-				fmt.Println("[voting] - metaType: ", l)
+				if metaType != 37 {
+					fmt.Println("[voting] - metaType: ", l)
+				}
 				if err != nil {
 					return nil, err
 				}
@@ -432,7 +438,7 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 	return resTxs, nil
 }
 
-func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []metadata.Transaction, producerPrivateKey *privacy.SpendingKey) ([]metadata.Transaction, error) {
+func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []metadata.Transaction, producerPrivateKey *privacy.PrivateKey) ([]metadata.Transaction, error) {
 	respTxs := []metadata.Transaction{}
 	removeIds := []int{}
 	multisigsRegTxs := []metadata.Transaction{}
@@ -533,7 +539,7 @@ func (chain *BlockChain) AddVoteProposal(inst string) error {
 // func (blockgen *BlkTmplGenerator) buildIssuingResTxs(
 // 	chainID byte,
 // 	issuingReqTxs []metadata.Transaction,
-// 	privatekey *privacy.SpendingKey,
+// 	privatekey *privacy.PrivateKey,
 // ) ([]metadata.Transaction, error) {
 // 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 // 	oracleParams := prevBlock.Header.Oracle
@@ -597,7 +603,7 @@ func (chain *BlockChain) AddVoteProposal(inst string) error {
 // 	estimatedRefundAmt uint64,
 // 	remainingFund uint64,
 // 	db database.DatabaseInterface,
-// 	privatekey *privacy.SpendingKey,
+// 	privatekey *privacy.PrivateKey,
 // ) ([]metadata.Transaction, uint64) {
 // 	amt := uint64(0)
 // 	if estimatedRefundAmt <= remainingFund {
@@ -624,7 +630,7 @@ func (chain *BlockChain) AddVoteProposal(inst string) error {
 // func (blockgen *BlkTmplGenerator) buildRefundTxs(
 // 	chainID byte,
 // 	remainingFund uint64,
-// 	privatekey *privacy.SpendingKey,
+// 	privatekey *privacy.PrivateKey,
 // ) ([]metadata.Transaction, uint64) {
 // 	if remainingFund <= 0 {
 // 		Logger.log.Info("GOV fund is not enough for refund.")
@@ -684,7 +690,7 @@ func (chain *BlockChain) AddVoteProposal(inst string) error {
 // 	return refundTxs, totalRefundAmt
 // }
 
-// func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, producerPrivateKey *privacy.SpendingKey) (uint64, []metadata.Transaction, []metadata.Transaction) {
+// func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, producerPrivateKey *privacy.PrivateKey) (uint64, []metadata.Transaction, []metadata.Transaction) {
 // 	amount := uint64(0)
 // 	loanUnlockTxs := []metadata.Transaction{}
 // 	removableTxs := []metadata.Transaction{}
@@ -726,7 +732,7 @@ func (chain *BlockChain) AddVoteProposal(inst string) error {
 // func (blockgen *BlkTmplGenerator) buildBuyBackResponseTxs(
 // 	buyBackFromInfos []*buyBackFromInfo,
 // 	chainID byte,
-// 	privatekey *privacy.SpendingKey,
+// 	privatekey *privacy.PrivateKey,
 // ) ([]metadata.Transaction, error) {
 // 	if len(buyBackFromInfos) == 0 {
 // 		return []metadata.Transaction{}, nil
@@ -873,7 +879,7 @@ func (chain *BlockChain) AddVoteProposal(inst string) error {
 // func (blockgen *BlkTmplGenerator) buildResponseTxs(
 // 	chainID byte,
 // 	sourceTxns []*metadata.TxDesc,
-// 	privatekey *privacy.SpendingKey,
+// 	privatekey *privacy.PrivateKey,
 // 	txGroups *txGroups,
 // 	accumulativeValues *accumulativeValues,
 // 	buyBackFromInfos []*buyBackFromInfo,

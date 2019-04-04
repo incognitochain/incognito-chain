@@ -48,7 +48,7 @@ import (
 	Sign:
 		Sign block and update validator index, agg sig
 */
-func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddress, privateKey *privacy.SpendingKey, proposerOffset int, shardsToBeacon map[byte]uint64) (*BeaconBlock, error) {
+func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddress, privateKey *privacy.PrivateKey, proposerOffset int, shardsToBeacon map[byte]uint64) (*BeaconBlock, error) {
 	beaconBlock := &BeaconBlock{}
 	beaconBestState := BestStateBeacon{}
 	// lock blockchain
@@ -162,7 +162,11 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	//================End Generate Signature
 	fmt.Println("[voting] - Beaconblock[", beaconBlock.Header.Height, "] body")
 	for _, inst := range beaconBlock.Body.Instructions {
-		fmt.Println("[voting] - - - > ", inst)
+		if len(inst) != 0 {
+			if inst[0] != "37" {
+				fmt.Println("[voting] - - - > ", inst)
+			}
+		}
 	}
 	return beaconBlock, nil
 }
@@ -217,6 +221,9 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 		fmt.Printf("Beacon Producer/ AFTER FILTER, ONLY GET %+v block \n", totalBlock)
 		fmt.Println("Beacon Producer/ FILTER and ONLY GET These Block from pool")
 		fmt.Println()
+		if totalBlock > 49 {
+			totalBlock = 49
+		}
 		for _, shardBlock := range shardBlocks[:totalBlock+1] {
 			shardState, validStaker, validSwapper, stabilityInstruction := blkTmplGenerator.chain.GetShardStateFromBlock(beaconBestState, shardBlock, accumulativeValues, shardID)
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
@@ -477,7 +484,7 @@ func generateRandomInstruction(timestamp int64, wg *sync.WaitGroup) ([]string, i
 	// reses := strings.Split(res, (","))
 	strs := []string{}
 	//UNCOMMENT FOR TESTTING
-	reses := []string{"1000", strconv.Itoa(int(timestamp) + 1), "1000"}
+	reses := []string{strconv.Itoa(int(timestamp)), strconv.Itoa(int(timestamp) + 1), "1000"}
 	strs = append(strs, RandomAction)
 	strs = append(strs, reses...)
 	strs = append(strs, strconv.Itoa(int(timestamp)))

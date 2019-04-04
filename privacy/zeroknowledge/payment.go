@@ -13,7 +13,7 @@ import (
 
 // PaymentWitness contains all of witness for proving when spending coins
 type PaymentWitness struct {
-	spendingKey        *big.Int
+	privateKey        *big.Int
 	RandSK             *big.Int
 	inputCoins         []*privacy.InputCoin
 	outputCoins        []*privacy.OutputCoin
@@ -420,7 +420,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 // if hashPrivacy = false, witness includes spending key, input coins, output coins
 // otherwise, witness includes all attributes in PaymentWitness struct
 func (wit *PaymentWitness) Init(hasPrivacy bool,
-	spendingKey *big.Int,
+	privateKey *big.Int,
 	inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin,
 	pkLastByteSender byte,
 	commitments []*privacy.EllipticPoint, commitmentIndices []uint64, myCommitmentIndices []uint64,
@@ -432,7 +432,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 			outCoin.CoinDetails.CommitAll()
 		}
 
-		wit.spendingKey = spendingKey
+		wit.privateKey = privateKey
 		wit.inputCoins = inputCoins
 		wit.outputCoins = outputCoins
 
@@ -444,12 +444,12 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 			if wit.SNNoPrivacyWitness[i] == nil {
 				wit.SNNoPrivacyWitness[i] = new(SNNoPrivacyWitness)
 			}
-			wit.SNNoPrivacyWitness[i].Set(inputCoins[i].CoinDetails.SerialNumber, publicKey, inputCoins[i].CoinDetails.SNDerivator, wit.spendingKey)
+			wit.SNNoPrivacyWitness[i].Set(inputCoins[i].CoinDetails.SerialNumber, publicKey, inputCoins[i].CoinDetails.SNDerivator, wit.privateKey)
 		}
 		return nil
 	}
 
-	wit.spendingKey = spendingKey
+	wit.privateKey = privateKey
 	wit.inputCoins = inputCoins
 	wit.outputCoins = outputCoins
 	wit.commitmentIndexs = commitmentIndices
@@ -461,7 +461,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 	// set rand sk for Schnorr signature
 	wit.RandSK = new(big.Int).Set(randInputSK)
 
-	cmInputSK := privacy.PedCom.CommitAtIndex(wit.spendingKey, randInputSK, privacy.SK)
+	cmInputSK := privacy.PedCom.CommitAtIndex(wit.privateKey, randInputSK, privacy.SK)
 	wit.ComInputSK = new(privacy.EllipticPoint)
 	wit.ComInputSK.Set(cmInputSK.X, cmInputSK.Y)
 
@@ -553,7 +553,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 		}
 		stmt := new(SNPrivacyStatement)
 		stmt.Set(inputCoin.CoinDetails.SerialNumber, cmInputSK, wit.ComInputSND[i])
-		wit.SerialNumberWitness[i].Set(stmt, spendingKey, randInputSK, inputCoin.CoinDetails.SNDerivator, randInputSND[i])
+		wit.SerialNumberWitness[i].Set(stmt, privateKey, randInputSK, inputCoin.CoinDetails.SNDerivator, randInputSND[i])
 		// ---------------------------------------------------
 	}
 

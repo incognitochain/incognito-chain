@@ -53,7 +53,7 @@ func NewShareRewardOldBoardMetadataIns(
 }
 
 func (shareRewardOldBoardIns *ShareRewardOldBoardIns) BuildTransaction(
-	minerPrivateKey *privacy.SpendingKey,
+	minerPrivateKey *privacy.PrivateKey,
 	db database.DatabaseInterface,
 ) (metadata.Transaction, error) {
 	rewardShareOldBoardMeta := metadata.NewShareRewardOldBoardMetadata(
