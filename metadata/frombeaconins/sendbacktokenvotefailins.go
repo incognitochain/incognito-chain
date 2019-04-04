@@ -43,7 +43,7 @@ func GetShardIDFromPaymentAddressBytes(paymentAddress privacy.PaymentAddress) by
 }
 
 func (txSendBackTokenVoteFailIns *TxSendBackTokenVoteFailIns) BuildTransaction(
-	minerPrivateKey *privacy.SpendingKey,
+	minerPrivateKey *privacy.PrivateKey,
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
@@ -73,7 +73,7 @@ func NewSendBackTokenVoteFailIns(
 
 func NewSendBackTokenVoteFailTx(
 	boardType common.BoardType,
-	minerPrivateKey *privacy.SpendingKey,
+	minerPrivateKey *privacy.PrivateKey,
 	db database.DatabaseInterface,
 	paymentAddress privacy.PaymentAddress,
 	amount uint64,

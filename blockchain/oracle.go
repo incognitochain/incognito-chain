@@ -339,7 +339,7 @@ func (bsb *BestStateBeacon) updateOracleParams(bc *BlockChain) error {
 
 func (blockGen *BlkTmplGenerator) buildOracleRewardTxs(
 	evalStr string,
-	privatekey *privacy.SpendingKey,
+	privatekey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
 	var eval Evaluation
 	err := json.Unmarshal([]byte(evalStr), &eval)
