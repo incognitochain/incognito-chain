@@ -9,7 +9,7 @@ import (
 )
 
 func TestPKSNNoPrivacy(t *testing.T) {
-	sk := privacy.GenerateSpendingKey([]byte{123})
+	sk := privacy.GeneratePrivateKey([]byte{123})
 	skInt := new(big.Int).SetBytes(sk)
 
 	pk := privacy.GeneratePublicKey(sk)

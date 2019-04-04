@@ -37,7 +37,7 @@ func (txSendBackTokenToOldSupporterIns *TxSendBackTokenToOldSupporterIns) GetStr
 }
 
 func (txSendBackTokenToOldSupporterIns *TxSendBackTokenToOldSupporterIns) BuildTransaction(
-	minerPrivateKey *privacy.SpendingKey,
+	minerPrivateKey *privacy.PrivateKey,
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
@@ -67,7 +67,7 @@ func NewSendBackTokenToOldSupporterIns(
 
 func NewSendBackTokenToOldSupporterTx(
 	boardType common.BoardType,
-	minerPrivateKey *privacy.SpendingKey,
+	minerPrivateKey *privacy.PrivateKey,
 	db database.DatabaseInterface,
 	paymentAddress privacy.PaymentAddress,
 	amount uint64,
