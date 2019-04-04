@@ -71,8 +71,8 @@ func (bgtr *BuyGOVTokenRequest) ValidateSanityData(bcr BlockchainRetriever, txr 
 	if txr.CalculateTxValue() < bgtr.BuyPrice*bgtr.Amount {
 		return false, false, errors.New("Sending constant amount is not enough for buying GOV tokens.")
 	}
-	if !bytes.Equal(common.GOVTokenID[:], bgtr.TokenID[:]) {
-		return false, false, errors.New("Requested GOV tokenID has not been selling yet.")
+	if !bytes.Equal(txr.GetSigPubKey()[:], bgtr.BuyerAddress.Pk[:]) {
+		return false, false, errors.New("BuyerAddress in metadata is not matched to sender address")
 	}
 	return true, true, nil
 }
