@@ -58,7 +58,7 @@ export EXTERNAL_ADDRESS="127.0.0.1:$PORT"
 
 if [ $1 != 1 ]
 then
-    ./constant-$1 --nodemode "beacon" --listen "127.0.0.1:$PORT" --externaladdress $EXTERNAL_ADDRESS --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --spendingkey $KEY --norpc
+    ./constant-$1 --nodemode "beacon" --listen "127.0.0.1:$PORT" --externaladdress $EXTERNAL_ADDRESS --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --privatekey $KEY --norpc
 else
-    ./constant-$1 --listen "127.0.0.1:$PORT" --externaladdress $EXTERNAL_ADDRESS --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --spendingkey $KEY --rpcuser "ad" --rpcpass "123" --enablewallet --walletpassphrase "12345678"
+    ./constant-$1 --listen "127.0.0.1:$PORT" --externaladdress $EXTERNAL_ADDRESS --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --privatekey $KEY --rpcuser "ad" --rpcpass "123" --enablewallet --walletpassphrase "12345678"
 fi

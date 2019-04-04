@@ -16,7 +16,7 @@ import (
 	"github.com/constant-money/constant-chain/transaction"
 )
 
-func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte, proposerOffset int, crossShards map[byte]uint64) (*ShardBlock, error) {
+func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress, privatekey *privacy.PrivateKey, shardID byte, proposerOffset int, crossShards map[byte]uint64) (*ShardBlock, error) {
 	//============Build body=============
 	// Fetch Beacon information
 
@@ -199,7 +199,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 /*
 	Get Transaction For new Block
 */
-func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte, db database.DatabaseInterface, beaconBlocks []*BeaconBlock) ([]metadata.Transaction, error) {
+func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privacy.PaymentAddress, privatekey *privacy.PrivateKey, shardID byte, db database.DatabaseInterface, beaconBlocks []*BeaconBlock) ([]metadata.Transaction, error) {
 	txsToAdd, txToRemove, _ := blockgen.getPendingTransaction(shardID)
 	if len(txsToAdd) == 0 {
 		Logger.log.Info("Creating empty block...")
@@ -385,11 +385,11 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 		Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
 		tx := txDesc.Tx
 		tempTxDesc, err := blockgen.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
-		tempTx := tempTxDesc.Tx
 		if err != nil {
-			txToRemove = append(txToRemove, metadata.Transaction(tempTx))
+			txToRemove = append(txToRemove, tx)
 			continue
 		}
+		tempTx := tempTxDesc.Tx
 		totalFee += tx.GetTxFee()
 
 		tempSize := tempTx.GetTxActualSize()
@@ -415,7 +415,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 	4. Return total fee of tx
 */
 // get valid tx for specific shard and their fee, also return unvalid tx
-func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *privacy.SpendingKey, crossTxTokenDataMap map[byte][]CrossTxTokenData, shardID byte) ([]metadata.Transaction, []transaction.TxTokenData) {
+func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *privacy.PrivateKey, crossTxTokenDataMap map[byte][]CrossTxTokenData, shardID byte) ([]metadata.Transaction, []transaction.TxTokenData) {
 	var keys []int
 	txs := []metadata.Transaction{}
 	txTokenDataList := []transaction.TxTokenData{}
@@ -481,7 +481,7 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 // 	4. Return total fee of tx
 // */
 // // get valid tx for specific shard and their fee, also return unvalid tx
-// func (blockchain *BlockChain) createCustomTokenPrivacyTxForCrossShard(privatekey *privacy.SpendingKey, contentCrossTokenPrivacyDataMap map[byte][]ContentCrossTokenPrivacyData, shardID byte) ([]metadata.Transaction, []transaction.TxTokenData) {
+// func (blockchain *BlockChain) createCustomTokenPrivacyTxForCrossShard(privatekey *privacy.PrivateKey, contentCrossTokenPrivacyDataMap map[byte][]ContentCrossTokenPrivacyData, shardID byte) ([]metadata.Transaction, []transaction.TxTokenData) {
 // 	var keys []int
 // 	compressContentCrossTokenPrivacyData := make(map[byte][]ContentCrossTokenPrivacyData)
 // 	txs := []metadata.Transaction{}
