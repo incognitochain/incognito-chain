@@ -246,7 +246,7 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 		//}
 		//resTx.SetMetadata(meta)
 		txCustom.Type = common.TxCustomTokenType
-		fmt.Printf("[db] build issuing resp success: %s\n", txCustom.Hash().String())
+		fmt.Printf("[db] build issuing resp success: %h\n", txCustom.Hash())
 		return []metadata.Transaction{txCustom}, nil
 	}
 	return []metadata.Transaction{}, nil

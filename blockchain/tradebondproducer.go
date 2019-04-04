@@ -78,7 +78,7 @@ func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 		return nil, nil
 	}
 
-	fmt.Printf("[db] trade act tx data: %s %t %d\n", data.bondID.Short(), data.buy, data.reqAmount)
+	fmt.Printf("[db] trade act tx data: %h %t %d\n", data.bondID, data.buy, data.reqAmount)
 	txs := []metadata.Transaction{}
 	if data.buy {
 		txs, err = blockgen.buildTradeBuySellRequestTx(data.tradeID, data.bondID, data.reqAmount, producerPrivateKey)
@@ -137,7 +137,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 	unspentTokens map[string]([]transaction.TxTokenVout),
 	producerPrivateKey *privacy.SpendingKey,
 ) ([]metadata.Transaction, error) {
-	fmt.Printf("[db] building buyback request tx: %d %s\n", amount, bondID.Short())
+	fmt.Printf("[db] building buyback request tx: %d %h\n", amount, bondID)
 	// Build metadata to send to GOV
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	buyBackMeta := &metadata.BuyBackRequest{
