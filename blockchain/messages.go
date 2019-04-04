@@ -9,54 +9,54 @@ import (
 )
 
 func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]ChainState, shardToBeaconPool *map[byte][]uint64, crossShardPool *map[byte]map[byte][]uint64, peerID libp2p.ID) {
-	if beacon.Height >= blockchain.BestState.Beacon.BeaconHeight {
-		pState := &peerState{
-			Shard:  make(map[byte]*ChainState),
-			Beacon: beacon,
-			Peer:   peerID,
-		}
-		var (
-			userRole      string
-			userShardID   byte
-			userShardRole string
-		)
-		if blockchain.config.UserKeySet != nil {
-			userRole, userShardID = blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Beacon.BestBlock.Header.Round)
-		}
-		nodeMode := blockchain.config.NodeMode
-		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
-			pState.ShardToBeaconPool = shardToBeaconPool
-			for shardID := byte(0); shardID < byte(common.MAX_SHARD_NUMBER); shardID++ {
-				if shardState, ok := (*shard)[shardID]; ok {
-					if shardState.Height > GetBestStateBeacon().GetBestHeightOfShard(shardID) {
-						pState.Shard[shardID] = &shardState
-					}
-				}
-			}
-		}
-		if userRole == common.SHARD_ROLE && (nodeMode == common.NODEMODE_AUTO || nodeMode == common.NODEMODE_BEACON) {
-			userShardRole = blockchain.BestState.Shard[userShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
-			if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE {
-				if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= blockchain.BestState.Shard[userShardID].ShardHeight {
-					pState.Shard[userShardID] = &shardState
-					if pool, ok := (*crossShardPool)[userShardID]; ok {
-						pState.CrossShardPool = make(map[byte]*map[byte][]uint64)
-						pState.CrossShardPool[userShardID] = &pool
-					}
-				}
-			}
-		}
-		for shardID := range blockchain.syncStatus.Shards {
+	// if beacon.Height >= blockchain.BestState.Beacon.BeaconHeight-1 {
+	// }
+	var (
+		userRole      string
+		userShardID   byte
+		userShardRole string
+	)
+	if blockchain.config.UserKeySet != nil {
+		userRole, userShardID = blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Beacon.BestBlock.Header.Round)
+	}
+	pState := &peerState{
+		Shard:  make(map[byte]*ChainState),
+		Beacon: beacon,
+		Peer:   peerID,
+	}
+	nodeMode := blockchain.config.NodeMode
+	if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+		pState.ShardToBeaconPool = shardToBeaconPool
+		for shardID := byte(0); shardID < byte(common.MAX_SHARD_NUMBER); shardID++ {
 			if shardState, ok := (*shard)[shardID]; ok {
-				if shardState.Height > blockchain.BestState.Shard[shardID].ShardHeight {
+				if shardState.Height > GetBestStateBeacon().GetBestHeightOfShard(shardID) {
 					pState.Shard[shardID] = &shardState
 				}
 			}
 		}
-		blockchain.syncStatus.PeersStateLock.Lock()
-		blockchain.syncStatus.PeersState[pState.Peer] = pState
-		blockchain.syncStatus.PeersStateLock.Unlock()
 	}
+	if userRole == common.SHARD_ROLE && (nodeMode == common.NODEMODE_AUTO || nodeMode == common.NODEMODE_BEACON) {
+		userShardRole = blockchain.BestState.Shard[userShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
+		if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE {
+			if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= blockchain.BestState.Shard[userShardID].ShardHeight {
+				pState.Shard[userShardID] = &shardState
+				if pool, ok := (*crossShardPool)[userShardID]; ok {
+					pState.CrossShardPool = make(map[byte]*map[byte][]uint64)
+					pState.CrossShardPool[userShardID] = &pool
+				}
+			}
+		}
+	}
+	for shardID := range blockchain.syncStatus.Shards {
+		if shardState, ok := (*shard)[shardID]; ok {
+			if shardState.Height > blockchain.BestState.Shard[shardID].ShardHeight {
+				pState.Shard[shardID] = &shardState
+			}
+		}
+	}
+	blockchain.syncStatus.PeersStateLock.Lock()
+	blockchain.syncStatus.PeersState[pState.Peer] = pState
+	blockchain.syncStatus.PeersStateLock.Unlock()
 }
 
 func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
