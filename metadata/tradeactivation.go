@@ -101,7 +101,7 @@ type TradeActivationAction struct {
 }
 
 func (act *TradeActivation) BuildReqActions(txr Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	fmt.Printf("[db] trade act: build req act for tx: %s\n", txr.Hash().Short())
+	fmt.Printf("[db] trade act: build req act for tx: %h\n", txr.Hash())
 	value, err := getTradeActivationActionValue(act, txr, bcr)
 	if err != nil {
 		return nil, err
