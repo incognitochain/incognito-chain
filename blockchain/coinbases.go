@@ -2,7 +2,7 @@ package blockchain
 
 // func (blockgen *BlkTmplGenerator) buildCoinbases(
 // 	shardID byte,
-// 	privatekey *privacy.SpendingKey,
+// 	privatekey *privacy.PrivateKey,
 // 	txGroups *txGroups,
 // 	salaryTx metadata.Transaction,
 // ) ([]metadata.Transaction, error) {

@@ -8,7 +8,7 @@ import (
 )
 
 // 32-byte spending key
-type SpendingKey []byte
+type PrivateKey []byte
 
 // 33-byte public key
 type PublicKey []byte
@@ -38,27 +38,27 @@ type PaymentInfo struct {
 	Amount         uint64
 }
 
-// GenerateSpendingKey generates a random 32-byte spending key
-func GenerateSpendingKey(seed []byte) SpendingKey {
-	spendingKey := common.HashB(seed)
+// GeneratePrivateKey generates a random 32-byte spending key
+func GeneratePrivateKey(seed []byte) PrivateKey {
+	privateKey := common.HashB(seed)
 
 	temp := new(big.Int)
-	for temp.SetBytes(spendingKey).Cmp(Curve.Params().N) == 1 {
-		spendingKey = common.HashB(spendingKey)
+	for temp.SetBytes(privateKey).Cmp(Curve.Params().N) == 1 {
+		privateKey = common.HashB(privateKey)
 	}
-	return spendingKey
+	return privateKey
 }
 
 // GeneratePublicKey computes a 33-byte public-key corresponding to a spending key
-func GeneratePublicKey(spendingKey []byte) PublicKey {
+func GeneratePublicKey(privateKey []byte) PublicKey {
 	var publicKey EllipticPoint
-	publicKey.X, publicKey.Y = Curve.ScalarBaseMult(spendingKey)
+	publicKey.X, publicKey.Y = Curve.ScalarBaseMult(privateKey)
 	return publicKey.Compress()
 }
 
 // GenerateReceivingKey generates a 32-byte receiving key
-func GenerateReceivingKey(spendingKey []byte) ReceivingKey {
-	receivingKey := common.HashB(spendingKey)
+func GenerateReceivingKey(privateKey []byte) ReceivingKey {
+	receivingKey := common.HashB(privateKey)
 
 	temp := new(big.Int)
 	for temp.SetBytes(receivingKey).Cmp(Curve.Params().N) == 1 {
@@ -75,18 +75,18 @@ func GenerateTransmissionKey(receivingKey []byte) TransmissionKey {
 }
 
 // GenerateViewingKey generates a viewingKey corresponding to a spending key
-func GenerateViewingKey(spendingKey []byte) ViewingKey {
+func GenerateViewingKey(privateKey []byte) ViewingKey {
 	var viewingKey ViewingKey
-	viewingKey.Pk = GeneratePublicKey(spendingKey)
-	viewingKey.Rk = GenerateReceivingKey(spendingKey)
+	viewingKey.Pk = GeneratePublicKey(privateKey)
+	viewingKey.Rk = GenerateReceivingKey(privateKey)
 	return viewingKey
 }
 
 // GeneratePaymentAddress generates a payment address corresponding to a spending key
-func GeneratePaymentAddress(spendingKey []byte) PaymentAddress {
+func GeneratePaymentAddress(privateKey []byte) PaymentAddress {
 	var paymentAddress PaymentAddress
-	paymentAddress.Pk = GeneratePublicKey(spendingKey)
-	paymentAddress.Tk = GenerateTransmissionKey(GenerateReceivingKey(spendingKey))
+	paymentAddress.Pk = GeneratePublicKey(privateKey)
+	paymentAddress.Tk = GenerateTransmissionKey(GenerateReceivingKey(privateKey))
 	return paymentAddress
 }
 
