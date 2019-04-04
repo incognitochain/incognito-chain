@@ -14,7 +14,7 @@ package frombeaconins
 //}
 //
 //func (setEncryptionLastBlock *SetEncryptionLastBlockIns) BuildTransaction(
-//	minerPrivateKey *privacy.SpendingKey,
+//	minerPrivateKey *privacy.PrivateKey,
 //	db database.DatabaseInterface,
 //) (metadata.Transaction, error) {
 //	panic("implement me")
@@ -34,7 +34,7 @@ package frombeaconins
 //}
 //
 //func (setEncryptionFlag *SetEncryptionFlagIns) BuildTransaction(
-//	minerPrivateKey *privacy.SpendingKey,
+//	minerPrivateKey *privacy.PrivateKey,
 //	db database.DatabaseInterface,
 //) (metadata.Transaction, error) {
 //	panic("implement me")

@@ -11,7 +11,7 @@ import (
 )
 
 func TestPKSNPrivacy(t *testing.T) {
-	sk := privacy.GenerateSpendingKey([]byte{123})
+	sk := privacy.GeneratePrivateKey([]byte{123})
 	skInt := new(big.Int).SetBytes(sk)
 	SND := privacy.RandScalar()
 

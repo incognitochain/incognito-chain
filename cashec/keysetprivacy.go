@@ -18,7 +18,7 @@ import (
 // - receive coin with payment address
 // - read tx data with readonly key
 type KeySet struct {
-	PrivateKey     privacy.SpendingKey
+	PrivateKey     privacy.PrivateKey
 	PaymentAddress privacy.PaymentAddress
 	ReadonlyKey    privacy.ViewingKey
 }
@@ -27,7 +27,7 @@ type KeySet struct {
 GenerateKey - generate key set from seed byte[]
 */
 func (keysetObj *KeySet) GenerateKey(seed []byte) *KeySet {
-	keysetObj.PrivateKey = privacy.GenerateSpendingKey(seed)
+	keysetObj.PrivateKey = privacy.GeneratePrivateKey(seed)
 	keysetObj.PaymentAddress = privacy.GeneratePaymentAddress(keysetObj.PrivateKey[:])
 	keysetObj.ReadonlyKey = privacy.GenerateViewingKey(keysetObj.PrivateKey[:])
 	return keysetObj
@@ -52,7 +52,7 @@ func (keysetObj *KeySet) ImportFromPrivateKeyByte(privateKey []byte) error {
 /*
 ImportFromPrivateKeyByte - from private-key data, regenerate pub-key and readonly-key
 */
-func (keysetObj *KeySet) ImportFromPrivateKey(privateKey *privacy.SpendingKey) {
+func (keysetObj *KeySet) ImportFromPrivateKey(privateKey *privacy.PrivateKey) {
 	keysetObj.PrivateKey = *privateKey
 	keysetObj.PaymentAddress = privacy.GeneratePaymentAddress(keysetObj.PrivateKey[:])
 	keysetObj.ReadonlyKey = privacy.GenerateViewingKey(keysetObj.PrivateKey[:])

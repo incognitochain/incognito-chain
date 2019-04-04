@@ -126,7 +126,7 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 		return nil
 	}
 	beaconBlocks, err := FetchBeaconBlockFromHeight(bc.config.DataBase, previousShardBlock.Header.BeaconHeight+1, block.Header.BeaconHeight)
-	fmt.Println("[voting] - newshardtobeacon", previousShardBlock.Header.BeaconHeight, block.Header.BeaconHeight)
+	// fmt.Println("[voting] - newshardtobeacon", previousShardBlock.Header.BeaconHeight, block.Header.BeaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		fmt.Println("[voting] - error in create shard to beacon", err)
@@ -139,7 +139,11 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 		return nil
 	}
 	for _, inst := range instructions {
-		fmt.Println("[voting] - instruction to beacon: ", inst)
+		if len(inst) != 0 {
+			if inst[0] != "37" {
+				fmt.Println("[voting] - instruction to beacon: ", inst)
+			}
+		}
 	}
 	block.Instructions = append(block.Instructions, instructions...)
 	return &block

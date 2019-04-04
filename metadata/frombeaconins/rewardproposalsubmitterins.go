@@ -41,7 +41,7 @@ func (rewardProposalSubmitterIns RewardProposalSubmitterIns) GetStringFormat() (
 }
 
 func (rewardProposalSubmitterIns RewardProposalSubmitterIns) BuildTransaction(
-	minerPrivateKey *privacy.SpendingKey,
+	minerPrivateKey *privacy.PrivateKey,
 	db database.DatabaseInterface,
 	boardType common.BoardType,
 ) (metadata.Transaction, error) {
