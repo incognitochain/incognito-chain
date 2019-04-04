@@ -63,7 +63,7 @@ func buildInstForOracleFeedReq(
 	oraclePubKeys := govParams.OracleNetwork.OraclePubKeys
 	instType := "notAccepted"
 	for _, oraclePubKey := range oraclePubKeys {
-		if bytes.Equal(oraclePubKey, feederPubKey) {
+		if oraclePubKey == hex.EncodeToString(feederPubKey) {
 			instType = "accepted"
 			break
 		}
@@ -354,14 +354,14 @@ func (blockGen *BlkTmplGenerator) buildOracleRewardTxs(
 }
 
 func removeOraclePubKeys(
-	oracleRemovePubKeys [][]byte,
-	oracleBoardPubKeys [][]byte,
-) [][]byte {
-	pubKeys := [][]byte{}
+	oracleRemovePubKeys []string,
+	oracleBoardPubKeys []string,
+) []string {
+	pubKeys := []string{}
 	for _, boardPK := range oracleBoardPubKeys {
 		isRemoved := false
 		for _, removePK := range oracleRemovePubKeys {
-			if bytes.Equal(removePK, boardPK) {
+			if removePK == boardPK {
 				isRemoved = true
 				break
 			}
