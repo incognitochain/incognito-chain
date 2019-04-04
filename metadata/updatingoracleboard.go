@@ -12,14 +12,14 @@ import (
 
 type UpdatingOracleBoard struct {
 	Action        int8
-	OraclePubKeys [][]byte
+	OraclePubKeys []string          // array of hex string of pub keys
 	Signs         map[string][]byte // key: pub key string, value: signature
 	MetadataBase
 }
 
 func NewUpdatingOracleBoard(
 	action int8,
-	oraclePubKeys [][]byte,
+	oraclePubKeys []string,
 	signs map[string][]byte,
 	metaType int,
 ) *UpdatingOracleBoard {
@@ -96,7 +96,7 @@ func (uob UpdatingOracleBoard) ValidateMetadataByItself() bool {
 func (uob UpdatingOracleBoard) Hash() *common.Hash {
 	record := string(uob.Action)
 	for _, pk := range uob.OraclePubKeys {
-		record += string(pk)
+		record += pk
 	}
 	// record += string(common.ToBytes(uob.Signs))
 	record += uob.MetadataBase.Hash().String()
