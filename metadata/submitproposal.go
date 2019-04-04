@@ -220,10 +220,10 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateTxWithBlockC
 
 func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateSanityData(br BlockchainRetriever, tx Transaction) (bool, bool, error) {
 	if !submitGOVProposalMetadata.GOVParams.ValidateSanityData() {
-		return true, false, nil
+		return true, false, errors.New("submitGOVProposalMetadata.GOVParams")
 	}
 	if !submitGOVProposalMetadata.SubmitProposalInfo.ValidateSanityData() {
-		return true, false, nil
+		return true, false, errors.New("submitGOVProposalMetadata.SubmitProposalInfo")
 	}
 	return true, true, nil
 }
