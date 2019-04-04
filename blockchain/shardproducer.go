@@ -364,6 +364,10 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 	for i, txDesc := range sourceTxns {
 		Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
 		tx := txDesc.Tx
+		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		if txShardID != shardID {
+			continue
+		}
 		tempTxDesc, err := blockgen.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
 		if err != nil {
 			txToRemove = append(txToRemove, tx)
