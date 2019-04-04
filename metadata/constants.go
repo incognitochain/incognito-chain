@@ -13,21 +13,12 @@ const (
 	LoanUnlockMeta   = 5
 	LoanPaymentMeta  = 6
 
-	DividendSubmitMeta  = 7
-	DividendPaymentMeta = 8
+	// Dividend: removed 7-8
 
 	CrowdsaleRequestMeta = 10
 	CrowdsalePaymentMeta = 11
 
-	// CMB
-	CMBInitRequestMeta      = 12
-	CMBInitResponseMeta     = 13 // offchain multisig
-	CMBInitRefundMeta       = 14 // miner
-	CMBDepositContractMeta  = 15
-	CMBDepositSendMeta      = 16
-	CMBWithdrawRequestMeta  = 17
-	CMBWithdrawResponseMeta = 18 // offchain multisig
-	CMBLoanContractMeta     = 19
+	// CMB: removed 12-19
 
 	BuyFromGOVRequestMeta        = 20
 	BuyFromGOVResponseMeta       = 21

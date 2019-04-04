@@ -1220,12 +1220,11 @@ func (serverObj *Server) BoardcastNodeState() error {
 		serverObj.blockChain.BestState.Beacon.BestBlockHash,
 		serverObj.blockChain.BestState.Beacon.Hash(),
 	}
-	for shardID := 0; shardID < serverObj.blockChain.BestState.Beacon.ActiveShards; shardID++ {
-		shardIDbyte := byte(shardID)
-		msg.(*wire.MessagePeerState).Shards[shardIDbyte] = blockchain.ChainState{
-			serverObj.blockChain.BestState.Shard[shardIDbyte].ShardHeight,
-			serverObj.blockChain.BestState.Shard[shardIDbyte].BestBlockHash,
-			serverObj.blockChain.BestState.Shard[shardIDbyte].Hash(),
+	for _, shardID := range serverObj.blockChain.GetCurrentSyncShards() {
+		msg.(*wire.MessagePeerState).Shards[shardID] = blockchain.ChainState{
+			serverObj.blockChain.BestState.Shard[shardID].ShardHeight,
+			serverObj.blockChain.BestState.Shard[shardID].BestBlockHash,
+			serverObj.blockChain.BestState.Shard[shardID].Hash(),
 		}
 	}
 	msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidPendingBlockHeight()

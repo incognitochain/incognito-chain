@@ -103,7 +103,7 @@ func buildInstForShardBlockSalaryReq(
 func (blockgen *BlkTmplGenerator) buildSalaryRes(
 	instType string,
 	contentStr string,
-	blkProducerPrivateKey *privacy.SpendingKey,
+	blkProducerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
 	if instType == "fundNotEnough" {
 		return nil, nil
