@@ -52,24 +52,33 @@ func (bc *BlockChain) calcTradeData(inst string) (*tradeData, error) {
 	}, nil
 }
 
+func (bc *BlockChain) getSellBondPrice(bondID *common.Hash) uint64 {
+	buyPrice := bc.BestState.Beacon.StabilityInfo.Oracle.Bonds[bondID.String()]
+	if buyPrice == 0 {
+		buyPrice = bc.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.SellingBonds.BondPrice
+	}
+	return buyPrice
+}
+
 func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 	inst string,
 	unspentTokens map[string]([]transaction.TxTokenVout),
-	producerPrivateKey *privacy.SpendingKey,
+	producerPrivateKey *privacy.PrivateKey,
+	tradeActivated map[string]bool,
 ) ([]metadata.Transaction, error) {
-	fmt.Printf("[db] building trade act tx\n")
 	data, err := blockgen.chain.calcTradeData(inst)
 	if err != nil {
 		return nil, err
 	}
 
 	// Ignore activation request if params are unsynced
-	if data.activated || data.reqAmount > data.amount {
-		fmt.Printf("[db] skip building buy sell tx: %t %d %d\n", data.activated, data.reqAmount, data.amount)
+	activatedInBlock := tradeActivated[string(data.tradeID)]
+	if data.activated || data.reqAmount > data.amount || activatedInBlock {
+		fmt.Printf("[db] skip building buy sell tx: %t %t %d %d\n", data.activated, activatedInBlock, data.reqAmount, data.amount)
 		return nil, nil
 	}
 
-	fmt.Printf("[db] trade act tx data: %s %t %d\n", data.bondID.String(), data.buy, data.reqAmount)
+	fmt.Printf("[db] trade act tx data: %h %t %d\n", data.bondID, data.buy, data.reqAmount)
 	txs := []metadata.Transaction{}
 	if data.buy {
 		txs, err = blockgen.buildTradeBuySellRequestTx(data.tradeID, data.bondID, data.reqAmount, producerPrivateKey)
@@ -78,10 +87,10 @@ func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 	}
 
 	if err != nil {
-		fmt.Printf("[db] 3\n")
 		return nil, err
 	}
 
+	tradeActivated[string(data.tradeID)] = true
 	fmt.Printf("[db] done built trade act tx\n")
 	return txs, nil
 }
@@ -90,14 +99,11 @@ func (blockgen *BlkTmplGenerator) buildTradeBuySellRequestTx(
 	tradeID []byte,
 	bondID *common.Hash,
 	amount uint64,
-	producerPrivateKey *privacy.SpendingKey,
+	producerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	keyWalletBurnAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
-	buyPrice := blockgen.chain.BestState.Beacon.StabilityInfo.Oracle.Bonds[bondID.String()]
-	if buyPrice == 0 {
-		buyPrice = blockgen.chain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.SellingBonds.BondPrice
-	}
+	buyPrice := blockgen.chain.getSellBondPrice(bondID)
 
 	buySellMeta := &metadata.BuySellRequest{
 		PaymentAddress: keyWalletDCBAccount.KeySet.PaymentAddress,
@@ -116,7 +122,9 @@ func (blockgen *BlkTmplGenerator) buildTradeBuySellRequestTx(
 		[]metadata.Metadata{buySellMeta},
 	)
 	if err != nil {
-		return nil, err
+		fmt.Printf("[db] build buysell request err: %v\n", err)
+		// Skip building tx buyback/buysell if error (retry later)
+		return nil, nil
 	}
 	fmt.Printf("[db] built buy sell req: %d\n", cstAmount)
 	return []metadata.Transaction{txs[0]}, nil
@@ -127,10 +135,9 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 	bondID *common.Hash,
 	amount uint64,
 	unspentTokens map[string]([]transaction.TxTokenVout),
-	producerPrivateKey *privacy.SpendingKey,
+	producerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
-	fmt.Printf("[db] building buyback request tx: %d\n", amount)
-	// TODO(@0xbunyip): not enough bonds to send ==> update activated status to retry later
+	fmt.Printf("[db] building buyback request tx: %d %h\n", amount, bondID)
 	// Build metadata to send to GOV
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	buyBackMeta := &metadata.BuyBackRequest{
@@ -159,10 +166,10 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 		keyWalletBurnAccount.KeySet.PaymentAddress,
 		buyBackMeta,
 	)
-	// TODO(@0xbunyip): skip building tx buyback/buysell if error (retry later)
 	if err != nil {
 		fmt.Printf("[db] build buyback request err: %v\n", err)
-		return nil, err
+		// Skip building tx buyback/buysell if error (retry later)
+		return nil, nil
 	}
 
 	// Update list of token available for next request
