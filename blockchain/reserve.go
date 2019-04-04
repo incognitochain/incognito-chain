@@ -124,7 +124,7 @@ func buildInstructionsForContractingReq(
 func (blockgen *BlkTmplGenerator) buildContractingRes(
 	instType string,
 	contractingInfoStr string,
-	blkProducerPrivateKey *privacy.SpendingKey,
+	blkProducerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
 	var contractingInfo ContractingInfo
 	err := json.Unmarshal([]byte(contractingInfoStr), &contractingInfo)
@@ -156,7 +156,7 @@ func (blockgen *BlkTmplGenerator) buildContractingRes(
 func (blockgen *BlkTmplGenerator) buildIssuingRes(
 	instType string,
 	issuingInfoStr string,
-	blkProducerPrivateKey *privacy.SpendingKey,
+	blkProducerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) ([]metadata.Transaction, error) {
 	var issuingInfo IssuingInfo
@@ -246,7 +246,7 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 		//}
 		//resTx.SetMetadata(meta)
 		txCustom.Type = common.TxCustomTokenType
-		fmt.Printf("[db] build issuing resp success: %s\n", txCustom.Hash().String())
+		fmt.Printf("[db] build issuing resp success: %h\n", txCustom.Hash())
 		return []metadata.Transaction{txCustom}, nil
 	}
 	return []metadata.Transaction{}, nil

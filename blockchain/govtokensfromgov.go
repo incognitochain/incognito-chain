@@ -74,7 +74,7 @@ func buildInstructionsForBuyGOVTokensReq(
 func (blockgen *BlkTmplGenerator) buildBuyGOVTokensRes(
 	instType string,
 	contentStr string,
-	blkProducerPrivateKey *privacy.SpendingKey,
+	blkProducerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {

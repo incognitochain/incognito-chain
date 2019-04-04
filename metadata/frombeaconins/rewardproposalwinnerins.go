@@ -14,7 +14,7 @@ package frombeaconins
 //}
 //
 //func (rewardProposalWinnerIns RewardProposalWinnerIns) BuildTransaction(
-//	minerPrivateKey *privacy.SpendingKey,
+//	minerPrivateKey *privacy.PrivateKey,
 //	db database.DatabaseInterface,
 //) (metadata.Transaction, error) {
 //	meta := metadata.NewRewardProposalWinnerMetadata(rewardProposalWinnerIns.PaymentAddress, rewardProposalWinnerIns.Prize)
