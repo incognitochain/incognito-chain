@@ -77,7 +77,7 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 // if not want to create a privacy tx proof, set hashPrivacy = false
 // database is used like an interface which use to query info from db in building tx
 func (tx *Tx) Init(
-	senderSK *privacy.SpendingKey,
+	senderSK *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
 	inputCoins []*privacy.InputCoin,
 	fee uint64,
@@ -897,13 +897,16 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 }
 
 func (tx *Tx) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
-	Logger.log.Info("Validating sanity data", tx.Metadata)
+	Logger.log.Infof("\n\n\n START Validating sanity data of metadata %+v\n\n\n", tx.Metadata)
 	if tx.Metadata != nil {
+		Logger.log.Info("tx.Metadata.ValidateSanityData")
 		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, tx)
+		Logger.log.Info("END tx.Metadata.ValidateSanityData")
 		if err != nil || !ok || !isContinued {
 			return ok, err
 		}
 	}
+	Logger.log.Infof("\n\n\n END sanity data of metadata%+v\n\n\n")
 	return tx.validateNormalTxSanityData()
 }
 
@@ -1036,7 +1039,7 @@ func (tx *Tx) GetSenderAddress() *privacy.PaymentAddress {
 	return &withSenderAddrMeta.SenderAddress
 }
 
-func NewEmptyTx(minerPrivateKey *privacy.SpendingKey, db database.DatabaseInterface, meta metadata.Metadata) metadata.Transaction {
+func NewEmptyTx(minerPrivateKey *privacy.PrivateKey, db database.DatabaseInterface, meta metadata.Metadata) metadata.Transaction {
 	tx := Tx{}
 	keyWalletBurningAdd, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 	tx.InitTxSalary(0,
@@ -1057,7 +1060,7 @@ func NewEmptyTx(minerPrivateKey *privacy.SpendingKey, db database.DatabaseInterf
 func (tx *Tx) InitTxSalary(
 	salary uint64,
 	receiverAddr *privacy.PaymentAddress,
-	privKey *privacy.SpendingKey,
+	privKey *privacy.PrivateKey,
 	db database.DatabaseInterface,
 	metaData metadata.Metadata,
 ) error {

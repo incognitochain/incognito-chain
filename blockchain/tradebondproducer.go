@@ -63,7 +63,7 @@ func (bc *BlockChain) getSellBondPrice(bondID *common.Hash) uint64 {
 func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 	inst string,
 	unspentTokens map[string]([]transaction.TxTokenVout),
-	producerPrivateKey *privacy.SpendingKey,
+	producerPrivateKey *privacy.PrivateKey,
 	tradeActivated map[string]bool,
 ) ([]metadata.Transaction, error) {
 	data, err := blockgen.chain.calcTradeData(inst)
@@ -99,7 +99,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuySellRequestTx(
 	tradeID []byte,
 	bondID *common.Hash,
 	amount uint64,
-	producerPrivateKey *privacy.SpendingKey,
+	producerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	keyWalletBurnAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
@@ -135,7 +135,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 	bondID *common.Hash,
 	amount uint64,
 	unspentTokens map[string]([]transaction.TxTokenVout),
-	producerPrivateKey *privacy.SpendingKey,
+	producerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
 	fmt.Printf("[db] building buyback request tx: %d %h\n", amount, bondID)
 	// Build metadata to send to GOV

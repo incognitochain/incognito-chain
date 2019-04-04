@@ -98,7 +98,7 @@ func (tx *TxCustomTokenPrivacy) GetTxActualSize() uint64 {
 }
 
 // Init -  build normal tx component and privacy custom token data
-func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
+func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
 	inputCoin []*privacy.InputCoin,
 	fee uint64,

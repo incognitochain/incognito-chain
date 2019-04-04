@@ -10,7 +10,7 @@ import (
 func BuildCoinbaseTx(
 	paymentAddress *privacy.PaymentAddress,
 	amount uint64,
-	producerPrivateKey *privacy.SpendingKey,
+	producerPrivateKey *privacy.PrivateKey,
 	db database.DatabaseInterface,
 	meta metadata.Metadata,
 ) (*Tx, error) {
@@ -27,7 +27,7 @@ func BuildCoinbaseTx(
 func BuildCoinbaseTxs(
 	paymentAddresses []*privacy.PaymentAddress,
 	amounts []uint64,
-	producerPrivateKey *privacy.SpendingKey,
+	producerPrivateKey *privacy.PrivateKey,
 	db database.DatabaseInterface,
 	metaList []metadata.Metadata,
 ) ([]*Tx, error) {
