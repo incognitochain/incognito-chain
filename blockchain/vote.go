@@ -110,7 +110,8 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 	helper ConstitutionHelper,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
-	nextConstitutionIndex := self.GetConstitutionIndex(DCBConstitutionHelper{}) + 1
+	nextConstitutionIndex := helper.GetConstitutionInfo(self).ConstitutionIndex + 1
+	fmt.Println("[voting] - create accept constitution nextConstitutionIndex: ", nextConstitutionIndex)
 	resIns := make([]frombeaconins.InstructionFromBeacon, 0)
 	VoteTable, CountVote, err := self.BuildVoteTableAndPunishTransaction(helper, nextConstitutionIndex)
 	if err != nil {
@@ -127,12 +128,14 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 			bestProposal.NumberOfVote = CountVote[txId]
 		}
 	}
-	// panic("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n\n\n\n\n\n")
 	if bestProposal.NumberOfVote == 0 {
 		return resIns, nil
 	}
 	byteTemp, err0 := db.GetSubmitProposalDB(helper.GetBoardType(), helper.GetConstitutionInfo(self).ConstitutionIndex+1, bestProposal.TxId.GetBytes())
 	gg := lvdb.ViewDBByPrefix(db, lvdb.SubmitProposalPrefix)
+	for key, valuee := range gg {
+		fmt.Printf("[voting] - - - - - %+v %+v\n", key, valuee)
+	}
 	_ = gg
 	if err0 != nil {
 		return resIns, nil
@@ -140,11 +143,11 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 	submitterPaymentAddress := privacy.NewPaymentAddressFromByte(byteTemp)
 	if submitterPaymentAddress != nil {
 		rewardForProposalSubmitterIns, err := helper.NewRewardProposalSubmitterIns(self, submitterPaymentAddress)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			resIns = append(resIns, rewardForProposalSubmitterIns)
 		}
-		resIns = append(resIns, rewardForProposalSubmitterIns)
 	}
+	fmt.Println("[voting] - submitterPaymentAddress ", resIns[len(resIns)-1])
 	shardID := frombeaconins.GetShardIDFromPaymentAddressBytes(*submitterPaymentAddress)
 	acceptedProposalIns := helper.NewAcceptProposalIns(&bestProposal.TxId, VoteTable[bestProposal.TxId], shardID)
 	resIns = append(resIns, acceptedProposalIns)
@@ -168,6 +171,7 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 			}
 		}
 	}
+	fmt.Println("[voting] - - - - - - end createAcceptConstitutionAndRewardSubmitter", resIns)
 	return resIns, nil
 }
 
@@ -415,11 +419,13 @@ func ListTxToListIns(listTx []metadata.Transaction, chain *BlockChain, shardID b
 
 func (chain *BlockChain) neededNewGovernor(helper ConstitutionHelper) bool {
 	constitutionIndex := chain.GetConstitutionIndex(helper)
+	fmt.Println("[voting] - neededNewGovernor", constitutionIndex, ConstitutionPerBoard, (constitutionIndex%ConstitutionPerBoard) == 0)
 	return (constitutionIndex % ConstitutionPerBoard) == 0
 }
 
 func (chain *BlockChain) neededFirstNewGovernor(helper ConstitutionHelper) bool {
-	fmt.Println("[voting] - chain BeaconHeight of BestState", chain.BestState.Beacon.BeaconHeight)
+	fmt.Println("[voting] - chain BeaconHeight of BestState", chain.BestState.Beacon.BeaconHeight, helper.GetBoardType())
+	fmt.Println("[voting] - Current board index ", chain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardIndex, chain.BestState.Beacon.StabilityInfo.GOVGovernor.BoardIndex)
 	if helper.GetBoardType() == common.DCBBoard {
 		if chain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardIndex > 1 {
 			return false
@@ -471,37 +477,38 @@ func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper
 		if len(updateGovernorInstruction) != 0 {
 			instructions = append(instructions, updateGovernorInstruction...)
 		}
-	}
+	} else {
+		if self.neededNewConstitution(helper) {
+			//============================ VOTE PROPOSAL
+			// 	// Voting transaction
+			// 	// Check if it is the case we need to apply a new proposal
+			// 	// 1. newNW < lastNW * 0.9
+			// 	// 2. current block height == last Constitution start time + last Constitution execute duration
 
-	if self.neededNewConstitution(helper) {
-		//============================ VOTE PROPOSAL
-		// 	// Voting transaction
-		// 	// Check if it is the case we need to apply a new proposal
-		// 	// 1. newNW < lastNW * 0.9
-		// 	// 2. current block height == last Constitution start time + last Constitution execute duration
-
-		// //Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-		// // step 2 Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-		updateProposalInstruction, err := self.createAcceptConstitutionAndRewardSubmitter(helper)
-		if err != nil {
-			return nil, err
-		}
-		if len(updateProposalInstruction) != 0 {
-			fmt.Println("[voting] - updateProposalInstruction ok: ", updateProposalInstruction)
-			instructions = append(instructions, updateProposalInstruction...)
-		}
-		//============================ VOTE BOARD
-		if self.neededNewGovernor(helper) {
-			updateGovernorInstruction, err := self.CreateUpdateNewGovernorInstruction(helper)
+			// //Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+			// // step 2 Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+			updateProposalInstruction, err := self.createAcceptConstitutionAndRewardSubmitter(helper)
 			if err != nil {
+				fmt.Println("[voting] - fucking error", err)
 				return nil, err
 			}
-			if len(updateGovernorInstruction) != 0 {
-				instructions = append(instructions, updateGovernorInstruction...)
+			fmt.Println("[voting] - updateProposalInstruction : ", updateProposalInstruction)
+			if len(updateProposalInstruction) != 0 {
+				fmt.Println("[voting] - updateProposalInstruction ok: ", updateProposalInstruction)
+				instructions = append(instructions, updateProposalInstruction...)
+			}
+			//============================ VOTE BOARD
+			if self.neededNewGovernor(helper) {
+				updateGovernorInstruction, err := self.CreateUpdateNewGovernorInstruction(helper)
+				if err != nil {
+					return nil, err
+				}
+				if len(updateGovernorInstruction) != 0 {
+					instructions = append(instructions, updateGovernorInstruction...)
+				}
 			}
 		}
 	}
-
 	instructionsString := make([][]string, 0)
 	for _, instruction := range instructions {
 		newIns, err := instruction.GetStringFormat()
