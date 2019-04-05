@@ -86,6 +86,8 @@ func buildInstForShardBlockSalaryReq(
 	accumulativeValues.totalFee += shardBlockSalaryInfo.ShardBlockFee
 	if !isGOVFundEnough(beaconBestState, accumulativeValues, shardBlockSalaryInfo.ShardBlockSalary) {
 		instType = "fundNotEnough"
+	} else if shardBlockSalaryInfo.ShardBlockSalary == 0 {
+		instType = "zeroSalaryAmount"
 	} else {
 		instType = "accepted"
 		accumulativeValues.totalSalary += shardBlockSalaryInfo.ShardBlockSalary
@@ -105,7 +107,7 @@ func (blockgen *BlkTmplGenerator) buildSalaryRes(
 	contentStr string,
 	blkProducerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
-	if instType == "fundNotEnough" {
+	if instType != "accepted" {
 		return nil, nil
 	}
 	var shardBlockSalaryInfo ShardBlockSalaryInfo

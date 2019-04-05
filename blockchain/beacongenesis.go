@@ -75,7 +75,6 @@ func createStabilityGenesisInsts(genesisParams GenesisParams) [][]string {
 }
 
 func createGOVGenesisInsts(genesisParams GenesisParams) [][]string {
-
 	return [][]string{
 		createGOVGenesisBoardInst(),
 		createGOVGenesisParamInst(genesisParams),
@@ -109,11 +108,11 @@ func createGOVGenesisOracleInst() []string {
 }
 
 func createGOVGenesisBoardInst() []string {
-	govMemberAddr := privacy.PaymentAddress{
-		// Pk: []byte{3, 159, 2, 42, 22, 163, 195, 221, 129, 31, 217, 133, 149, 16, 68, 108, 42, 192, 58, 95, 39, 204, 63, 68, 203, 132, 221, 48, 181, 131, 40, 189, 0},
-		// Tk: []byte{2, 58, 116, 58, 73, 55, 129, 154, 193, 197, 40, 130, 50, 242, 99, 84, 59, 31, 107, 85, 68, 234, 250, 118, 66, 188, 15, 139, 89, 254, 12, 38, 211},
-	}
-	boardAddress := []privacy.PaymentAddress{govMemberAddr}
+	// govMemberAddr := privacy.PaymentAddress{
+	// 	Pk: []byte{3, 159, 2, 42, 22, 163, 195, 221, 129, 31, 217, 133, 149, 16, 68, 108, 42, 192, 58, 95, 39, 204, 63, 68, 203, 132, 221, 48, 181, 131, 40, 189, 0},
+	// 	Tk: []byte{2, 58, 116, 58, 73, 55, 129, 154, 193, 197, 40, 130, 50, 242, 99, 84, 59, 31, 107, 85, 68, 234, 250, 118, 66, 188, 15, 139, 89, 254, 12, 38, 211},
+	// }
+	boardAddress := []privacy.PaymentAddress{}
 	govBoardInst := &frombeaconins.AcceptGOVBoardIns{
 		BoardPaymentAddress: boardAddress,
 		StartAmountToken:    0,
@@ -180,7 +179,16 @@ func createGOVGenesisParamInst(genesisParams GenesisParams) []string {
 }
 
 func createDCBGenesisInsts() [][]string {
-	return [][]string{createDCBGenesisBoardInst(), createDCBGenesisParamsInst()}
+	boardInst := createDCBGenesisBoardInst()
+	paramInst := createDCBGenesisParamsInst()
+	insts := [][]string{}
+	if len(boardInst) > 0 {
+		insts = append(insts, boardInst)
+	}
+	if len(paramInst) > 0 {
+		insts = append(insts, paramInst)
+	}
+	return insts
 }
 
 func createDCBGenesisBoardInst() []string {
@@ -202,6 +210,8 @@ func createDCBGenesisBoardInst() []string {
 }
 
 func createDCBGenesisParamsInst() []string {
+	return nil
+
 	// Crowdsale bonds
 	bondID, _ := common.NewHashFromStr("a1bdba2624828899959bd3704df90859539623d89ba6767d0000000000000000")
 	buyBondSaleID := [32]byte{1}
@@ -248,6 +258,24 @@ func createDCBGenesisParamsInst() []string {
 		},
 	}
 
+	// Trade bonds
+	tradeBondBuyID := [32]byte{5}
+	tradeBondSellID := [32]byte{6}
+	tradeBonds := []*component.TradeBondWithGOV{
+		&component.TradeBondWithGOV{
+			TradeID: tradeBondBuyID[:],
+			BondID:  bondID,
+			Amount:  100,
+			Buy:     true,
+		},
+		&component.TradeBondWithGOV{
+			TradeID: tradeBondSellID[:],
+			BondID:  bondID,
+			Amount:  200,
+			Buy:     false,
+		},
+	}
+
 	// Dividend
 	divAmounts := []uint64{0}
 
@@ -269,6 +297,7 @@ func createDCBGenesisParamsInst() []string {
 		SpendReserveData:         spendReserveData,
 		DividendAmount:           divAmounts[0],
 		ListLoanParams:           loanParams,
+		TradeBonds:               tradeBonds,
 	}
 
 	// First proposal created by DCB, reward back to itself
