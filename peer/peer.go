@@ -16,12 +16,12 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/wire"
 	"github.com/libp2p/go-libp2p"
-	crypto "github.com/libp2p/go-libp2p-crypto"
-	host "github.com/libp2p/go-libp2p-host"
-	net "github.com/libp2p/go-libp2p-net"
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-crypto"
+	"github.com/libp2p/go-libp2p-host"
+	"github.com/libp2p/go-libp2p-net"
+	"github.com/libp2p/go-libp2p-peer"
 	ma "github.com/multiformats/go-multiaddr"
-	cache "github.com/patrickmn/go-cache"
+	"github.com/patrickmn/go-cache"
 )
 
 // ConnState represents the state of the requested connection.
@@ -107,6 +107,8 @@ type Config struct {
 */
 type MessageListeners struct {
 	OnTx               func(p *PeerConn, msg *wire.MessageTx)
+	OnTxToken          func(p *PeerConn, msg *wire.MessageTxToken)
+	OnTxPrivacyToken   func(p *PeerConn, msg *wire.MessageTxPrivacyToken)
 	OnBlockShard       func(p *PeerConn, msg *wire.MessageBlockShard)
 	OnBlockBeacon      func(p *PeerConn, msg *wire.MessageBlockBeacon)
 	OnCrossShard       func(p *PeerConn, msg *wire.MessageCrossShard)
