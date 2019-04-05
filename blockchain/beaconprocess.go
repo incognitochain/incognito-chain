@@ -119,13 +119,14 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 		}
 	}
 	// if committee of this epoch isn't store yet then store it
-	Logger.log.Infof("Store Committee in Epoch %+v \n", block.Header.Epoch)
-	res, err := blockchain.config.DataBase.HasCommitteeByEpoch(block.Header.Epoch)
-	if res == false {
-		if err := blockchain.config.DataBase.StoreCommitteeByEpoch(block.Header.Epoch, blockchain.BestState.Beacon.ShardCommittee); err != nil {
-			return err
-		}
+	// @NOTICE: Change to height
+	Logger.log.Infof("Store Committee in Height %+v \n", block.Header.Height)
+	// res, err := blockchain.config.DataBase.HasCommitteeByEpoch(block.Header.Epoch)
+	// if res == false {
+	if err := blockchain.config.DataBase.StoreCommitteeByEpoch(block.Header.Height, blockchain.BestState.Beacon.ShardCommittee); err != nil {
+		return err
 	}
+	// }
 	shardCommitteeByte, err := blockchain.config.DataBase.FetchCommitteeByEpoch(block.Header.Epoch)
 	if err != nil {
 		fmt.Println("No committee for this epoch")
@@ -343,15 +344,31 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 					validSwappers[shardID] = append(validSwappers[shardID], validSwapper[shardID]...)
 					stabilityInstructions = append(stabilityInstructions, stabilityInstruction...)
 				}
-				oracleInsts, err := blockchain.buildOracleRewardInstructions(&beaconBestState)
-				if err != nil {
-					Logger.log.Error("Build oracle reward instructions failed: ", err)
-				} else if len(oracleInsts) > 0 {
-					stabilityInstructions = append(stabilityInstructions, oracleInsts...)
-				}
 			} else {
 				return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 			}
+		}
+		votingInstructionDCB, err := blockchain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
+		if err != nil {
+			fmt.Println("[voting]-Build DCB voting instruction failed: ", err)
+		} else {
+			if len(votingInstructionDCB) != 0 {
+				stabilityInstructions = append(stabilityInstructions, votingInstructionDCB...)
+			}
+		}
+		votingInstructionGOV, err := blockchain.generateVotingInstructionWOIns(GOVConstitutionHelper{})
+		if err != nil {
+			fmt.Println("[voting]-Build GOV voting instruction failed: ", err)
+		} else {
+			if len(votingInstructionGOV) != 0 {
+				stabilityInstructions = append(stabilityInstructions, votingInstructionGOV...)
+			}
+		}
+		oracleInsts, err := blockchain.buildOracleRewardInstructions(&beaconBestState)
+		if err != nil {
+			fmt.Println("Build oracle reward instructions failed: ", err)
+		} else if len(oracleInsts) > 0 {
+			stabilityInstructions = append(stabilityInstructions, oracleInsts...)
 		}
 		tempInstruction := beaconBestState.GenerateInstruction(block, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
 		fmt.Println("BeaconProcess/tempInstruction: ", tempInstruction)
@@ -717,6 +734,10 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 		if randomFlag {
 			bestStateBeacon.IsGetRandomNumber = true
 			fmt.Println("Beacon Process/Update/RandomFlag: Shard Candidate Waiting for Current Random Number", bestStateBeacon.CandidateShardWaitingForCurrentRandom)
+			Logger.log.Critical("bestStateBeacon.ShardPendingValidator", bestStateBeacon.ShardPendingValidator)
+			Logger.log.Critical("bestStateBeacon.CandidateShardWaitingForCurrentRandom", bestStateBeacon.CandidateShardWaitingForCurrentRandom)
+			Logger.log.Critical("bestStateBeacon.CurrentRandomNumber", bestStateBeacon.CurrentRandomNumber)
+			Logger.log.Critical("bestStateBeacon.ActiveShards", bestStateBeacon.ActiveShards)
 			err := AssignValidatorShard(bestStateBeacon.ShardPendingValidator, bestStateBeacon.CandidateShardWaitingForCurrentRandom, bestStateBeacon.CurrentRandomNumber, bestStateBeacon.ActiveShards)
 			if err != nil {
 				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
@@ -824,6 +845,7 @@ func calculateCandidateShardID(candidate string, rand int64, activeShards int) (
 	// fmt.Printf("\"%d\",\n", hash[len(hash)-1])
 	// fmt.Println("Shard to be assign", hash[len(hash)-1])
 	shardID = byte(int(hash[len(hash)-1]) % activeShards)
+	Logger.log.Critical("calculateCandidateShardID/shardID", shardID)
 	return shardID
 }
 

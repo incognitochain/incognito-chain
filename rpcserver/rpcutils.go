@@ -10,6 +10,7 @@ import (
 	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/constant-money/constant-chain/wire"
+	"github.com/pkg/errors"
 )
 
 type metaConstructorType func(map[string]interface{}) (metadata.Metadata, error)
@@ -32,12 +33,39 @@ func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan
 	arrayParams := common.InterfaceSlice(params)
 	metaRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
 	meta, errCons := metaConstructorType(metaRaw)
+	keySet, errParseKey := rpcServer.GetKeySetFromPrivateKeyParams(arrayParams[0].(string))
+	if errParseKey != nil {
+		return nil, NewRPCError(ErrUnexpected, errParseKey)
+	}
+	if meta.GetType() == metadata.DCBVoteProposalMeta {
+		found := false
+		for _, address := range rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress {
+			if keySet.PaymentAddress.String() == address.String() {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, NewRPCError(ErrCreateTxData, errors.New("Vote proposal is a feature just for governors"))
+		}
+	} else {
+		if meta.GetType() == metadata.GOVVoteProposalMeta {
+			found := false
+			for _, address := range rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress {
+				if keySet.PaymentAddress.String() == address.String() {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return nil, NewRPCError(ErrCreateTxData, errors.New("Vote proposal is a feature just for governors"))
+			}
+		}
+	}
 	if errCons != nil {
 		return nil, NewRPCError(ErrUnexpected, errCons)
 	}
 	tx, err := rpcServer.buildRawTransaction(params, meta)
-	a, _ := json.Marshal(tx)
-	fmt.Println("Created raw loan tx:", string(a))
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +74,6 @@ func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan
 		// return hex for a new tx
 		return nil, NewRPCError(ErrUnexpected, errMarshal)
 	}
-	fmt.Printf("Created raw loan tx: %+v\n", tx)
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
