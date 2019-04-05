@@ -9,9 +9,6 @@ import (
 
 	"github.com/constant-money/constant-chain/common"
 
-	"github.com/constant-money/constant-chain/cashec"
-
-	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/wire"
 )
 
@@ -19,12 +16,10 @@ type BFTProtocol struct {
 	cBFTMsg   chan wire.Message
 	EngineCfg *EngineConfig
 
-	ShardToBeaconPool blockchain.ShardToBeaconPool
-	CrossShardPool    map[byte]blockchain.CrossShardPool
-	BlockGen          *blockchain.BlkTmplGenerator
-	BlockChain        *blockchain.BlockChain
-	Server            serverInterface
-	UserKeySet        *cashec.KeySet
+	// BlockGen   *blockchain.BlkTmplGenerator
+	// BlockChain *blockchain.BlockChain
+	// Server     serverInterface
+	// UserKeySet *cashec.KeySet
 
 	cQuit    chan struct{}
 	cTimeout chan struct{}
@@ -58,7 +53,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 
 	Logger.log.Info("Starting PBFT protocol for " + protocol.RoundData.Layer)
 	protocol.multiSigScheme = new(multiSigScheme)
-	protocol.multiSigScheme.Init(protocol.UserKeySet, protocol.RoundData.Committee)
+	protocol.multiSigScheme.Init(protocol.EngineCfg.UserKeySet, protocol.RoundData.Committee)
 	err := protocol.multiSigScheme.Prepare()
 	if err != nil {
 		return nil, err
@@ -108,19 +103,19 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	start := time.Now()
 	var msg wire.Message
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
-		timeSinceLastBlk := time.Since(time.Unix(protocol.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0))
+		timeSinceLastBlk := time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0))
 		if timeSinceLastBlk <= common.MinBlkInterval {
 			fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk).Seconds())
 			<-time.Tick(common.MinBlkInterval - timeSinceLastBlk)
 		}
-		newBlock, err := protocol.BlockGen.NewBlockBeacon(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
+		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockBeacon(&protocol.EngineCfg.UserKeySet.PaymentAddress, &protocol.EngineCfg.UserKeySet.PrivateKey, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
 
 		if err != nil {
 			Logger.log.Error(err)
 			protocol.closeProposeCh()
 		} else {
 			jsonBlock, _ := json.Marshal(newBlock)
-			msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.UserKeySet)
+			msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.EngineCfg.UserKeySet)
 			if err != nil {
 				Logger.log.Error(err)
 				protocol.closeProposeCh()
@@ -130,19 +125,19 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 			}
 		}
 	} else {
-		timeSinceLastBlk := time.Since(time.Unix(protocol.BlockChain.BestState.Shard[protocol.RoundData.ShardID].BestBlock.Header.Timestamp, 0))
+		timeSinceLastBlk := time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].BestBlock.Header.Timestamp, 0))
 		if timeSinceLastBlk <= common.MinBlkInterval {
 			fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk).Seconds())
 			<-time.Tick(common.MinBlkInterval - timeSinceLastBlk)
 		}
-		newBlock, err := protocol.BlockGen.NewBlockShard(&protocol.UserKeySet.PaymentAddress, &protocol.UserKeySet.PrivateKey, protocol.RoundData.ShardID, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
+		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(&protocol.EngineCfg.UserKeySet.PaymentAddress, &protocol.EngineCfg.UserKeySet.PrivateKey, protocol.RoundData.ShardID, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
 
 		if err != nil {
 			Logger.log.Error(err)
 			protocol.closeProposeCh()
 		} else {
 			jsonBlock, _ := json.Marshal(newBlock)
-			msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.UserKeySet)
+			msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.EngineCfg.UserKeySet)
 			if err != nil {
 				Logger.log.Error(err)
 				protocol.closeProposeCh()
@@ -165,9 +160,9 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 
 func (protocol *BFTProtocol) forwardMsg(msg wire.Message) {
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
-		go protocol.Server.PushMessageToBeacon(msg)
+		go protocol.EngineCfg.Server.PushMessageToBeacon(msg)
 	} else {
-		go protocol.Server.PushMessageToShard(msg, protocol.RoundData.ShardID)
+		go protocol.EngineCfg.Server.PushMessageToShard(msg, protocol.RoundData.ShardID)
 	}
 }
 
