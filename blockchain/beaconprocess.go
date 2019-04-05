@@ -119,13 +119,14 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 		}
 	}
 	// if committee of this epoch isn't store yet then store it
-	Logger.log.Infof("Store Committee in Epoch %+v \n", block.Header.Epoch)
-	res, err := blockchain.config.DataBase.HasCommitteeByEpoch(block.Header.Epoch)
-	if res == false {
-		if err := blockchain.config.DataBase.StoreCommitteeByEpoch(block.Header.Epoch, blockchain.BestState.Beacon.ShardCommittee); err != nil {
-			return err
-		}
+	// @NOTICE: Change to height
+	Logger.log.Infof("Store Committee in Height %+v \n", block.Header.Height)
+	// res, err := blockchain.config.DataBase.HasCommitteeByEpoch(block.Header.Epoch)
+	// if res == false {
+	if err := blockchain.config.DataBase.StoreCommitteeByEpoch(block.Header.Height, blockchain.BestState.Beacon.ShardCommittee); err != nil {
+		return err
 	}
+	// }
 	shardCommitteeByte, err := blockchain.config.DataBase.FetchCommitteeByEpoch(block.Header.Epoch)
 	if err != nil {
 		fmt.Println("No committee for this epoch")
@@ -717,6 +718,10 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 		if randomFlag {
 			bestStateBeacon.IsGetRandomNumber = true
 			fmt.Println("Beacon Process/Update/RandomFlag: Shard Candidate Waiting for Current Random Number", bestStateBeacon.CandidateShardWaitingForCurrentRandom)
+			Logger.log.Critical("bestStateBeacon.ShardPendingValidator", bestStateBeacon.ShardPendingValidator)
+			Logger.log.Critical("bestStateBeacon.CandidateShardWaitingForCurrentRandom", bestStateBeacon.CandidateShardWaitingForCurrentRandom)
+			Logger.log.Critical("bestStateBeacon.CurrentRandomNumber", bestStateBeacon.CurrentRandomNumber)
+			Logger.log.Critical("bestStateBeacon.ActiveShards", bestStateBeacon.ActiveShards)
 			err := AssignValidatorShard(bestStateBeacon.ShardPendingValidator, bestStateBeacon.CandidateShardWaitingForCurrentRandom, bestStateBeacon.CurrentRandomNumber, bestStateBeacon.ActiveShards)
 			if err != nil {
 				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
@@ -824,6 +829,7 @@ func calculateCandidateShardID(candidate string, rand int64, activeShards int) (
 	// fmt.Printf("\"%d\",\n", hash[len(hash)-1])
 	// fmt.Println("Shard to be assign", hash[len(hash)-1])
 	shardID = byte(int(hash[len(hash)-1]) % activeShards)
+	Logger.log.Critical("calculateCandidateShardID/shardID", shardID)
 	return shardID
 }
 
