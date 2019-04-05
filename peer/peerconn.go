@@ -12,7 +12,7 @@ import (
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/wire"
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-peer"
 )
 
 type PeerConn struct {
@@ -231,6 +231,14 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if peerConn.Config.MessageListeners.OnTx != nil {
 						peerConn.Config.MessageListeners.OnTx(peerConn, message.(*wire.MessageTx))
 					}
+				case reflect.TypeOf(&wire.MessageTxToken{}):
+					if peerConn.Config.MessageListeners.OnTxToken != nil {
+						peerConn.Config.MessageListeners.OnTxToken(peerConn, message.(*wire.MessageTxToken))
+					}
+				case reflect.TypeOf(&wire.MessageTxPrivacyToken{}):
+					if peerConn.Config.MessageListeners.OnTxPrivacyToken != nil {
+						peerConn.Config.MessageListeners.OnTxPrivacyToken(peerConn, message.(*wire.MessageTxPrivacyToken))
+					}
 				case reflect.TypeOf(&wire.MessageBlockShard{}):
 					if peerConn.Config.MessageListeners.OnBlockShard != nil {
 						peerConn.Config.MessageListeners.OnBlockShard(peerConn, message.(*wire.MessageBlockShard))
@@ -346,7 +354,12 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 
 					// add 24 bytes headerBytes into messageHex
 					headerBytes := make([]byte, wire.MessageHeaderSize)
-					cmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.message))
+					cmdType, messageErr := wire.GetCmdType(reflect.TypeOf(outMsg.message))
+					if messageErr != nil {
+						Logger.log.Error("Can not get cmd type for " + outMsg.message.MessageType())
+						Logger.log.Error(messageErr)
+						continue
+					}
 					copy(headerBytes[:], []byte(cmdType))
 					copy(headerBytes[wire.MessageCmdTypeSize:], []byte{outMsg.forwardType})
 					if outMsg.forwardValue != nil {

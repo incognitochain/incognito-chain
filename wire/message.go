@@ -8,7 +8,7 @@ import (
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/transaction"
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-peer"
 )
 
 // list message type
@@ -88,12 +88,12 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageShardToBeacon{}
 		break
 	case CmdCustomToken:
-		msg = &MessageTx{
+		msg = &MessageTxToken{
 			Transaction: &transaction.TxCustomToken{},
 		}
 		break
 	case CmdPrivacyCustomToken:
-		msg = &MessageTx{
+		msg = &MessageTxPrivacyToken{
 			Transaction: &transaction.TxCustomTokenPrivacy{},
 		}
 		break
@@ -198,8 +198,10 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdGetBlockShard, nil
 	case reflect.TypeOf(&MessageTx{}):
 		return CmdTx, nil
-		/*case reflect.TypeOf(&MessageRegistration{}):
-		  return CmdRegisteration, nil*/
+	case reflect.TypeOf(&MessageTxToken{}):
+		return CmdCustomToken, nil
+	case reflect.TypeOf(&MessageTxPrivacyToken{}):
+		return CmdPrivacyCustomToken, nil
 	case reflect.TypeOf(&MessageVersion{}):
 		return CmdVersion, nil
 	case reflect.TypeOf(&MessageVerAck{}):
