@@ -439,6 +439,10 @@ func (chain *BlockChain) neededFirstNewGovernor(helper ConstitutionHelper) bool 
 
 func (chain *BlockChain) neededNewConstitution(helper ConstitutionHelper) bool {
 	// todo: hyyyyyyyyyyyy
+	currentBoardIndex := chain.GetCurrentBoardIndex(helper)
+	if currentBoardIndex == 1 {
+		return false
+	}
 	endBlock := helper.GetConstitutionEndedBlockHeight(chain)
 	fmt.Println("[voting] - neededNewConstitution: ", endBlock, chain.BestState.Beacon.BeaconHeight)
 	if chain.BestState.Beacon.BeaconHeight >= endBlock {
