@@ -29,9 +29,16 @@ func getShardBlockFee(txs []metadata.Transaction) uint64 {
 }
 
 func getShardBlockSalary(txs []metadata.Transaction, bestStateBeacon *BestStateBeacon) uint64 {
+	txLen := uint64(0)
+	for _, tx := range txs {
+		if !tx.IsSalaryTx() {
+			txLen += 1
+		}
+	}
+
 	salaryPerTx := bestStateBeacon.StabilityInfo.GOVConstitution.GOVParams.SalaryPerTx
 	basicSalary := bestStateBeacon.StabilityInfo.GOVConstitution.GOVParams.BasicSalary
-	return uint64(len(txs))*salaryPerTx + basicSalary
+	return txLen*salaryPerTx + basicSalary
 }
 
 func hashShardBlockSalaryInfo(
