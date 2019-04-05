@@ -200,7 +200,7 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdTx, nil
 	case reflect.TypeOf(&MessageTxToken{}):
 		return CmdCustomToken, nil
-	case reflect.TypeOf(&MessageTxToken{}):
+	case reflect.TypeOf(&MessageTxPrivacyToken{}):
 		return CmdPrivacyCustomToken, nil
 	case reflect.TypeOf(&MessageVersion{}):
 		return CmdVersion, nil
