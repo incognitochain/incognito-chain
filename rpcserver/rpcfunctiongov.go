@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math/big"
 	"strconv"
 
@@ -291,8 +290,6 @@ func (rpcServer RpcServer) handleCreateRawTxWithOracleFeed(params interface{}, c
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	feederAddr := senderKey.KeySet.PaymentAddress
-	fmt.Println("hahaha: ", feederAddr.Pk)
-	fmt.Println("hahaha tk: ", feederAddr.Tk)
 
 	// Req param #4: oracle feed
 	oracleFeed := arrayParams[4].(map[string]interface{})
