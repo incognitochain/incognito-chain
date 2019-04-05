@@ -122,14 +122,14 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockC
 	raiseReserveData := submitDCBProposalMetadata.DCBParams.RaiseReserveData
 	for assetID, _ := range raiseReserveData {
 		if br.GetAssetPrice(&assetID) == 0 {
-			return false, errors.Errorf("Cannot raise reserve without oracle price for asset %x", assetID)
+			return false, errors.Errorf("Cannot raise reserve without oracle price for asset %s", assetID.String())
 		}
 	}
 
 	spendReserveData := submitDCBProposalMetadata.DCBParams.SpendReserveData
 	for assetID, _ := range spendReserveData {
 		if br.GetAssetPrice(&assetID) == 0 {
-			return false, errors.Errorf("Cannot spend reserve without oracle price for asset %x", assetID)
+			return false, errors.Errorf("Cannot spend reserve without oracle price for asset %s", assetID.String())
 		}
 	}
 	return true, nil
