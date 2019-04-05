@@ -318,26 +318,6 @@ func (blockchain *BlockChain) initBeaconState() error {
 	blockchain.BestState.Beacon.Update(initBlock, blockchain)
 	blockchain.updateStabilityLocalState(initBlock)
 
-	// Trade bonds
-	bondID, _ := common.NewHashFromStr("a1bdba2624828899959bd3704df90859539623d89ba6767d0000000000000000")
-	tradeBondBuyID := [32]byte{5}
-	tradeBondSellID := [32]byte{6}
-	tradeBonds := []*component.TradeBondWithGOV{
-		&component.TradeBondWithGOV{
-			TradeID: tradeBondBuyID[:],
-			BondID:  bondID,
-			Amount:  100,
-			Buy:     true,
-		},
-		&component.TradeBondWithGOV{
-			TradeID: tradeBondSellID[:],
-			BondID:  bondID,
-			Amount:  200,
-			Buy:     false,
-		},
-	}
-	blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.TradeBonds = tradeBonds
-
 	// Insert new block into beacon chain
 	if err := blockchain.StoreBeaconBestState(); err != nil {
 		Logger.log.Error("Error Store best state for block", blockchain.BestState.Beacon.BestBlockHash, "in beacon chain")
