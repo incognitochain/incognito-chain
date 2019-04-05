@@ -689,21 +689,21 @@ func (serverObj *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 }
 
 func (serverObj *Server) OnTxToken(peer *peer.PeerConn, msg *wire.MessageTxToken) {
-	Logger.log.Debug("Receive a new transaction START")
+	Logger.log.Debug("Receive a new transaction(normal token) START")
 	var txProcessed chan struct{}
 	serverObj.netSync.QueueTxToken(nil, msg, txProcessed)
 	//<-txProcessed
 
-	Logger.log.Debug("Receive a new transaction END")
+	Logger.log.Debug("Receive a new transaction(normal token) END")
 }
 
 func (serverObj *Server) OnTxPrivacyToken(peer *peer.PeerConn, msg *wire.MessageTxPrivacyToken) {
-	Logger.log.Debug("Receive a new transaction START")
+	Logger.log.Debug("Receive a new transaction(privacy token) START")
 	var txProcessed chan struct{}
 	serverObj.netSync.QueueTxPrivacyToken(nil, msg, txProcessed)
 	//<-txProcessed
 
-	Logger.log.Debug("Receive a new transaction END")
+	Logger.log.Debug("Receive a new transaction(privacy token) END")
 }
 
 /*
