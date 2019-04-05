@@ -480,16 +480,19 @@ func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("[voting] - updateProposalInstruction ok: ", updateProposalInstruction)
-		instructions = append(instructions, updateProposalInstruction...)
-
+		if len(updateProposalInstruction) != 0 {
+			fmt.Println("[voting] - updateProposalInstruction ok: ", updateProposalInstruction)
+			instructions = append(instructions, updateProposalInstruction...)
+		}
 		//============================ VOTE BOARD
 		if self.neededNewGovernor(helper) {
 			updateGovernorInstruction, err := self.CreateUpdateNewGovernorInstruction(helper)
 			if err != nil {
 				return nil, err
 			}
-			instructions = append(instructions, updateGovernorInstruction...)
+			if len(updateGovernorInstruction) != 0 {
+				instructions = append(instructions, updateGovernorInstruction...)
+			}
 		}
 	}
 
@@ -500,7 +503,9 @@ func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper
 			return nil, err
 		}
 		fmt.Println("[voting] - ", newIns)
-		instructionsString = append(instructionsString, newIns)
+		if len(newIns) != 0 {
+			instructionsString = append(instructionsString, newIns)
+		}
 	}
 	return instructionsString, nil
 }
