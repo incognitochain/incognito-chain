@@ -82,6 +82,9 @@ func NewSellingGOVTokens(
 }
 
 func NewSellingBondsFromJson(data interface{}) *SellingBonds {
+	if data == nil {
+		return nil
+	}
 	sellingBondsData := data.(map[string]interface{})
 	sellingBonds := NewSellingBonds(
 		sellingBondsData["BondName"].(string),
@@ -98,6 +101,9 @@ func NewSellingBondsFromJson(data interface{}) *SellingBonds {
 }
 
 func NewSellingGOVTokensFromJson(data interface{}) *SellingGOVTokens {
+	if data == nil {
+		return nil
+	}
 	sellingGOVTokensData := data.(map[string]interface{})
 	sellingGOVTokens := NewSellingGOVTokens(
 		uint64(sellingGOVTokensData["TotalIssue"].(float64)),
@@ -153,8 +159,10 @@ func NewSaleData(
 }
 
 func NewSaleDataFromJson(data interface{}) *SaleData {
+	if data == nil {
+		return nil
+	}
 	saleDataData := data.(map[string]interface{})
-
 	buyingAssetStr := saleDataData["BuyingAsset"].(string)
 	buyingAsset, errBuy := common.Hash{}.NewHashFromStr(buyingAssetStr)
 
@@ -237,6 +245,9 @@ func NewRefundInfo(
 }
 
 func NewRefundInfoFromJson(data interface{}) *RefundInfo {
+	if data == nil {
+		return nil
+	}
 	refundInfoData := data.(map[string]interface{})
 	refundInfo := NewRefundInfo(
 		uint64(refundInfoData["ThresholdToLargeTx"].(float64)),
@@ -251,6 +262,9 @@ type SaleDCBTokensByUSDData struct {
 }
 
 func NewRaiseReserveDataFromJson(data interface{}) map[common.Hash]*RaiseReserveData {
+	if data == nil {
+		return nil
+	}
 	dataMap := data.(map[string]interface{})
 	raiseReserveData := map[common.Hash]*RaiseReserveData{}
 	for key, value := range dataMap {
@@ -276,6 +290,9 @@ func (rrd *RaiseReserveData) Hash() *common.Hash {
 }
 
 func NewSpendReserveDataFromJson(data interface{}) map[common.Hash]*SpendReserveData {
+	if data == nil {
+		return nil
+	}
 	dataMap := data.(map[string]interface{})
 	spendReserveData := map[common.Hash]*SpendReserveData{}
 	for key, value := range dataMap {
@@ -303,7 +320,7 @@ func (srd *SpendReserveData) Hash() *common.Hash {
 }
 
 type OracleNetwork struct {
-	OraclePubKeys          [][]byte
+	OraclePubKeys          []string // hex string encoded
 	WrongTimesAllowed      uint8
 	Quorum                 uint8
 	AcceptableErrorMargin  uint32
@@ -311,20 +328,28 @@ type OracleNetwork struct {
 	OracleRewardMultiplier uint8
 }
 
-func NewOracleNetwork(oraclePubKeys [][]byte, wrongTimesAllowed uint8, quorum uint8, acceptableErrorMargin uint32, updateFrequency uint32, oracleRewardMultiplier uint8) *OracleNetwork {
+func NewOracleNetwork(oraclePubKeys []string, wrongTimesAllowed uint8, quorum uint8, acceptableErrorMargin uint32, updateFrequency uint32, oracleRewardMultiplier uint8) *OracleNetwork {
 	return &OracleNetwork{OraclePubKeys: oraclePubKeys, WrongTimesAllowed: wrongTimesAllowed, Quorum: quorum, AcceptableErrorMargin: acceptableErrorMargin, UpdateFrequency: updateFrequency, OracleRewardMultiplier: oracleRewardMultiplier}
 }
 
 func NewOracleNetworkFromJson(data interface{}) *OracleNetwork {
+	if data == nil {
+		return nil
+	}
 	oracleNetworkData := data.(map[string]interface{})
 
 	oraclePubKeysInterface := common.InterfaceSlice(oracleNetworkData["OraclePubKeys"])
 	if oraclePubKeysInterface == nil {
 		panic("oraclePubKey")
 	}
-	oraclePubKeys := make([][]byte, 0)
-	for _, i := range oraclePubKeysInterface {
-		oraclePubKeys = append(oraclePubKeys, common.SliceInterfaceToSliceByte(common.InterfaceSlice(i)))
+	// oraclePubKeys := make([][]byte, 0)
+	// for _, i := range oraclePubKeysInterface {
+	// 	oraclePubKeys = append(oraclePubKeys, common.SliceInterfaceToSliceByte(common.InterfaceSlice(i)))
+	// }
+
+	oraclePubKeys := make([]string, len(oraclePubKeysInterface))
+	for idx, item := range oraclePubKeysInterface {
+		oraclePubKeys[idx] = item.(string)
 	}
 
 	oracleNetwork := NewOracleNetwork(
@@ -418,7 +443,7 @@ func (on *OracleNetwork) Hash() *common.Hash {
 	record += string(on.AcceptableErrorMargin)
 	record += string(on.UpdateFrequency)
 	for _, oraclePk := range on.OraclePubKeys {
-		record += string(oraclePk)
+		record += oraclePk
 	}
 	hash := common.HashH([]byte(record))
 	return &hash

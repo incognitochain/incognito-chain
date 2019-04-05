@@ -29,8 +29,8 @@ const (
 	MainetName         = "mainnet"
 	MainnetDefaultPort = "9333"
 
-	MainNetShardCommitteeSize  = 3
-	MainNetBeaconCommitteeSize = 3
+	MainNetShardCommitteeSize  = 1
+	MainNetBeaconCommitteeSize = 1
 	MainNetActiveShards        = 2
 
 	//board and proposal parameters
@@ -64,19 +64,19 @@ const (
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 
-	TestNetShardCommitteeSize  = 3
-	TestNetBeaconCommitteeSize = 3
+	TestNetShardCommitteeSize  = 1
+	TestNetBeaconCommitteeSize = 1
 	TestNetActiveShards        = 2
 
 	//board and proposal parameters
-	TestnetSalaryPerTx                = 10
-	TestnetBasicSalary                = 10
-	TestnetInitFundSalary             = 1000000
+	TestnetSalaryPerTx                = 1
+	TestnetBasicSalary                = 0
+	TestnetInitFundSalary             = 0
 	TestnetInitDCBToken               = 10000
 	TestnetInitGovToken               = 10000
-	TestnetInitCmBToken               = 10000
-	TestnetInitBondToken              = 10000
-	TestnetFeePerTxKb                 = 1
+	TestnetInitCmBToken               = 0
+	TestnetInitBondToken              = 0
+	TestnetFeePerTxKb                 = 2
 	TestnetGenesisBlockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
 )
 

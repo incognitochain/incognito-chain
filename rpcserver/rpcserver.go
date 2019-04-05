@@ -184,8 +184,9 @@ func (rpcServer RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Connection", "close")
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Origin, Device-Type, Device-Id, Authorization, Accept-Language, Access-Control-Allow-Headers, Access-Control-Allow-Credentials, Access-Control-Allow-Origin, Access-Control-Allow-Methods, *")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, PUT, GET, OPTIONS, DELETE")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	r.Close = true
 
 	// Limit the number of connections to max allowed.
@@ -505,6 +506,10 @@ func (rpcServer RpcServer) writeHTTPResponseHeaders(req *http.Request, headers h
 		return err
 	}
 
+	/*headers.Add("Content-Type", "application/json")
+	headers.Add("Access-Control-Allow-Origin", "*")
+	headers.Add("Access-Control-Allow-Headers", "*")
+	headers.Add("Access-Control-Allow-Methods", "*")*/
 	err = headers.Write(w)
 	if err != nil {
 		return err
