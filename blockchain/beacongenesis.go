@@ -110,8 +110,8 @@ func createGOVGenesisOracleInst() []string {
 
 func createGOVGenesisBoardInst() []string {
 	govMemberAddr := privacy.PaymentAddress{
-		Pk: []byte{3, 159, 2, 42, 22, 163, 195, 221, 129, 31, 217, 133, 149, 16, 68, 108, 42, 192, 58, 95, 39, 204, 63, 68, 203, 132, 221, 48, 181, 131, 40, 189, 0},
-		Tk: []byte{2, 58, 116, 58, 73, 55, 129, 154, 193, 197, 40, 130, 50, 242, 99, 84, 59, 31, 107, 85, 68, 234, 250, 118, 66, 188, 15, 139, 89, 254, 12, 38, 211},
+		// Pk: []byte{3, 159, 2, 42, 22, 163, 195, 221, 129, 31, 217, 133, 149, 16, 68, 108, 42, 192, 58, 95, 39, 204, 63, 68, 203, 132, 221, 48, 181, 131, 40, 189, 0},
+		// Tk: []byte{2, 58, 116, 58, 73, 55, 129, 154, 193, 197, 40, 130, 50, 242, 99, 84, 59, 31, 107, 85, 68, 234, 250, 118, 66, 188, 15, 139, 89, 254, 12, 38, 211},
 	}
 	boardAddress := []privacy.PaymentAddress{govMemberAddr}
 	govBoardInst := &frombeaconins.AcceptGOVBoardIns{
@@ -146,8 +146,10 @@ func createGOVGenesisParamInst(genesisParams GenesisParams) []string {
 	oracleNetwork := &component.OracleNetwork{
 		OraclePubKeys:          []string{"039f022a16a3c3dd811fd9859510446c2ac03a5f27cc3f44cb84dd30b58328bd00"},
 		UpdateFrequency:        10,
-		OracleRewardMultiplier: 1,
-		AcceptableErrorMargin:  5,
+		Quorum:                 1,
+		OracleRewardMultiplier: 1, // 0.01C
+		AcceptableErrorMargin:  200,
+		WrongTimesAllowed:      2,
 	}
 
 	govParams := component.GOVParams{
