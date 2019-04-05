@@ -74,6 +74,10 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAdd
 	//@NOTICE: In this block, only pending validator change, shard committees will change in the next block
 	if beaconHeight%common.EPOCH == 0 {
 		if len(shardPendingValidator) > 0 {
+			Logger.log.Critical("shardPendingValidator", shardPendingValidator)
+			Logger.log.Critical("shardCommittee", shardCommittee)
+			Logger.log.Critical("blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize", blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize)
+			Logger.log.Critical("shardID", shardID)
 			swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize, shardID)
 			fmt.Println("Shard Producer: swapInstruction", swapInstruction)
 			if err != nil {
@@ -276,7 +280,7 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 				continue
 			}
 			startHeight = nextHeight
-			temp, err := blockgen.chain.config.DataBase.FetchCommitteeByEpoch(blk.Header.Epoch)
+			temp, err := blockgen.chain.config.DataBase.FetchCommitteeByEpoch(blk.Header.BeaconHeight)
 			if err != nil {
 				break
 			}

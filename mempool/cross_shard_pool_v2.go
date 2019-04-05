@@ -167,7 +167,7 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 			return nil, pool.shardID, errors.New("receive duplicate block")
 		}
 	}
-	shardCommitteeByte, err := pool.db.FetchCommitteeByEpoch(blk.Header.Epoch)
+	shardCommitteeByte, err := pool.db.FetchCommitteeByEpoch(blk.Header.BeaconHeight)
 	if err != nil {
 		return nil, pool.shardID, errors.New("No committee for this epoch")
 	}
