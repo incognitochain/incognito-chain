@@ -329,6 +329,8 @@ func (bestStateBeacon *BestStateBeacon) getAssetPrice(assetID common.Hash) uint6
 			price = oracle.ETH
 		} else if assetID.IsEqual(&common.BTCAssetID) {
 			price = oracle.BTC
+		} else if assetID.IsEqual(&common.USDAssetID) {
+			price = 1 // Oracle's price is again USD itself
 		}
 	}
 	return price
