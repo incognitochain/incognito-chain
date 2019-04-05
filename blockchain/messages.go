@@ -72,6 +72,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 				if blockchain.BestState.Shard[newBlk.Header.ShardID].ShardHeight == newBlk.Header.Height-1 {
 					err = blockchain.InsertShardBlock(newBlk, false)
 					if err != nil {
+						fmt.Println("Shard block insert pool err", err)
 						return
 					}
 				} else {

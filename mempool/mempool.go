@@ -75,7 +75,7 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.txCoinHashHPool = make(map[common.Hash][]common.Hash)
 	tp.coinHashHPool = make(map[common.Hash]bool)
 	tp.cMtx = sync.RWMutex{}
-	tp.maxTx = 1000
+	tp.maxTx = 20000
 }
 
 // ----------- transaction.MempoolRetriever's implementation -----------------
@@ -183,7 +183,6 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 
 	// get shardID of tx
 	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-
 	bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height
 	// nextBlockHeight := bestHeight + 1
 	// check version
