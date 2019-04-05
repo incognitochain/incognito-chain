@@ -339,6 +339,8 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	}
 
 	if !bytes.Equal(block.Header.TxRoot.GetBytes(), txRoot.GetBytes()) {
+		a, _ := json.Marshal(block.Body.Transactions[0])
+		fmt.Println(block.Header.TxRoot.GetBytes(), txRoot.GetBytes(), block.Body.Transactions, string(a))
 		return NewBlockChainError(HashError, errors.New("can't Verify Transaction Root"))
 	}
 	// Verify ShardTx Root
@@ -383,6 +385,8 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	}
 	isOk := VerifyHashFromStringArray(totalInstructions, block.Header.InstructionsRoot)
 	if !isOk {
+		res, _ := GenerateHashFromStringArray(totalInstructions)
+		fmt.Println("VerifyHashFromStringArray", res, block.Header.InstructionsRoot)
 		return NewBlockChainError(HashError, errors.New("Error verify action root"))
 	}
 	//Get beacon hash by height in db

@@ -835,7 +835,12 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 		comOutputValueSum = comOutputValueSum.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(fee))))
 	}
 
+	privacy.Logger.Log.Debugf("comInputValueSum: ", comInputValueSum)
+	privacy.Logger.Log.Debugf("comOutputValueSum: ", comOutputValueSum)
+
 	if !comInputValueSum.IsEqual(comOutputValueSum) {
+		privacy.Logger.Log.Debugf("comInputValueSum: ", comInputValueSum)
+		privacy.Logger.Log.Debugf("comOutputValueSum: ", comOutputValueSum)
 		privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Sum of input coins' value is not equal to sum of output coins' value")
 		return false
 	}
