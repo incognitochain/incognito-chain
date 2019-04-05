@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"strconv"
 
@@ -290,6 +291,8 @@ func (rpcServer RpcServer) handleCreateRawTxWithOracleFeed(params interface{}, c
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	feederAddr := senderKey.KeySet.PaymentAddress
+	fmt.Println("hahaha: ", feederAddr.Pk)
+	fmt.Println("hahaha tk: ", feederAddr.Tk)
 
 	// Req param #4: oracle feed
 	oracleFeed := arrayParams[4].(map[string]interface{})
@@ -354,11 +357,11 @@ func (rpcServer RpcServer) handleCreateRawTxWithUpdatingOracleBoard(params inter
 	updatingOracleBoard := arrayParams[4].(map[string]interface{})
 	action := int8(updatingOracleBoard["Action"].(float64))
 	oraclePubKeys := updatingOracleBoard["OraclePubKeys"].([]interface{})
-	assertedOraclePKs := [][]byte{}
+	assertedOraclePKs := []string{}
 	for _, pk := range oraclePubKeys {
 		hexStrPk := pk.(string)
-		pkBytes, _ := hex.DecodeString(hexStrPk)
-		assertedOraclePKs = append(assertedOraclePKs, pkBytes)
+		// pkBytes, _ := hex.DecodeString(hexStrPk)
+		assertedOraclePKs = append(assertedOraclePKs, hexStrPk)
 	}
 	signs := updatingOracleBoard["Signs"].(map[string]interface{})
 	assertedSigns := map[string][]byte{}
@@ -567,14 +570,15 @@ func (rpcServer RpcServer) handleGetCurrentOracleNetworkParams(params interface{
 		AcceptableErrorMargin:  oracleNetwork.AcceptableErrorMargin,
 		UpdateFrequency:        oracleNetwork.UpdateFrequency,
 		OracleRewardMultiplier: oracleNetwork.OracleRewardMultiplier,
+		OraclePubKeys:          oracleNetwork.OraclePubKeys,
 	}
-	if oracleNetwork != nil {
-		oraclePubKeys := oracleNetwork.OraclePubKeys
-		oracleNetworkResult.OraclePubKeys = make([]string, len(oraclePubKeys))
-		for idx, pkBytes := range oraclePubKeys {
-			oracleNetworkResult.OraclePubKeys[idx] = hex.EncodeToString(pkBytes)
-		}
-	}
+	// if oracleNetwork != nil {
+	// 	oraclePubKeys := oracleNetwork.OraclePubKeys
+	// 	oracleNetworkResult.OraclePubKeys = make([]string, len(oraclePubKeys))
+	// 	for idx, pkBytes := range oraclePubKeys {
+	// 		oracleNetworkResult.OraclePubKeys[idx] = hex.EncodeToString(pkBytes)
+	// 	}
+	// }
 	return oracleNetworkResult, nil
 }
 
@@ -587,15 +591,15 @@ func (rpcServer RpcServer) handleSignUpdatingOracleBoardContent(params interface
 	arrayParams := common.InterfaceSlice(params)
 	action := int8(arrayParams[1].(float64))        // action
 	oraclePubKeys := arrayParams[2].([]interface{}) // OraclePubKeys
-	assertedOraclePKs := [][]byte{}
+	assertedOraclePKs := []string{}
 	for _, pk := range oraclePubKeys {
 		hexStrPk := pk.(string)
-		pkBytes, _ := hex.DecodeString(hexStrPk)
-		assertedOraclePKs = append(assertedOraclePKs, pkBytes)
+		// pkBytes, _ := hex.DecodeString(hexStrPk)
+		assertedOraclePKs = append(assertedOraclePKs, hexStrPk)
 	}
 	record := string(action)
 	for _, pk := range assertedOraclePKs {
-		record += string(pk)
+		record += pk
 	}
 	record += common.HashH([]byte(strconv.Itoa(metadata.UpdatingOracleBoardMeta))).String()
 	hash := common.HashH([]byte(record))
