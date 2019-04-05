@@ -344,31 +344,31 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 					validSwappers[shardID] = append(validSwappers[shardID], validSwapper[shardID]...)
 					stabilityInstructions = append(stabilityInstructions, stabilityInstruction...)
 				}
-				votingInstructionDCB, err := blockchain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
-				if err != nil {
-					fmt.Println("[voting]-Build DCB voting instruction failed: ", err)
-				} else {
-					if len(votingInstructionDCB) != 0 {
-						stabilityInstructions = append(stabilityInstructions, votingInstructionDCB...)
-					}
-				}
-				votingInstructionGOV, err := blockchain.generateVotingInstructionWOIns(GOVConstitutionHelper{})
-				if err != nil {
-					fmt.Println("[voting]-Build GOV voting instruction failed: ", err)
-				} else {
-					if len(votingInstructionGOV) != 0 {
-						stabilityInstructions = append(stabilityInstructions, votingInstructionGOV...)
-					}
-				}
-				oracleInsts, err := blockchain.buildOracleRewardInstructions(&beaconBestState)
-				if err != nil {
-					fmt.Println("Build oracle reward instructions failed: ", err)
-				} else if len(oracleInsts) > 0 {
-					stabilityInstructions = append(stabilityInstructions, oracleInsts...)
-				}
 			} else {
 				return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 			}
+		}
+		votingInstructionDCB, err := blockchain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
+		if err != nil {
+			fmt.Println("[voting]-Build DCB voting instruction failed: ", err)
+		} else {
+			if len(votingInstructionDCB) != 0 {
+				stabilityInstructions = append(stabilityInstructions, votingInstructionDCB...)
+			}
+		}
+		votingInstructionGOV, err := blockchain.generateVotingInstructionWOIns(GOVConstitutionHelper{})
+		if err != nil {
+			fmt.Println("[voting]-Build GOV voting instruction failed: ", err)
+		} else {
+			if len(votingInstructionGOV) != 0 {
+				stabilityInstructions = append(stabilityInstructions, votingInstructionGOV...)
+			}
+		}
+		oracleInsts, err := blockchain.buildOracleRewardInstructions(&beaconBestState)
+		if err != nil {
+			fmt.Println("Build oracle reward instructions failed: ", err)
+		} else if len(oracleInsts) > 0 {
+			stabilityInstructions = append(stabilityInstructions, oracleInsts...)
 		}
 		tempInstruction := beaconBestState.GenerateInstruction(block, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
 		fmt.Println("BeaconProcess/tempInstruction: ", tempInstruction)
