@@ -192,6 +192,24 @@ func (netSync *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan 
 	netSync.cMessage <- msg
 }
 
+func (netSync *NetSync) QueueTxToken(peer *peer.Peer, msg *wire.MessageTxToken, done chan struct{}) {
+	// Don't accept more transactions if we're shutting down.
+	if atomic.LoadInt32(&netSync.shutdown) != 0 {
+		done <- struct{}{}
+		return
+	}
+	netSync.cMessage <- msg
+}
+
+func (netSync *NetSync) QueueTxPrivacyToken(peer *peer.Peer, msg *wire.MessageTxPrivacyToken, done chan struct{}) {
+	// Don't accept more transactions if we're shutting down.
+	if atomic.LoadInt32(&netSync.shutdown) != 0 {
+		done <- struct{}{}
+		return
+	}
+	netSync.cMessage <- msg
+}
+
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 	Logger.log.Info("Handling new message tx")
