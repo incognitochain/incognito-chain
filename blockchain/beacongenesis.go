@@ -75,7 +75,6 @@ func createStabilityGenesisInsts(genesisParams GenesisParams) [][]string {
 }
 
 func createGOVGenesisInsts(genesisParams GenesisParams) [][]string {
-
 	return [][]string{
 		createGOVGenesisBoardInst(),
 		createGOVGenesisParamInst(genesisParams),
@@ -183,7 +182,16 @@ func createGOVGenesisParamInst(genesisParams GenesisParams) []string {
 }
 
 func createDCBGenesisInsts() [][]string {
-	return [][]string{createDCBGenesisBoardInst(), createDCBGenesisParamsInst()}
+	boardInst := createDCBGenesisBoardInst()
+	paramInst := createDCBGenesisParamsInst()
+	insts := [][]string{}
+	if len(boardInst) > 0 {
+		insts = append(insts, boardInst)
+	}
+	if len(paramInst) > 0 {
+		insts = append(insts, paramInst)
+	}
+	return insts
 }
 
 func createDCBGenesisBoardInst() []string {
@@ -205,6 +213,8 @@ func createDCBGenesisBoardInst() []string {
 }
 
 func createDCBGenesisParamsInst() []string {
+	return nil
+
 	// Crowdsale bonds
 	bondID, _ := common.NewHashFromStr("a1bdba2624828899959bd3704df90859539623d89ba6767d0000000000000000")
 	buyBondSaleID := [32]byte{1}
@@ -250,6 +260,8 @@ func createDCBGenesisParamsInst() []string {
 			Amount:          10000000,
 		},
 	}
+
+	// Trade bonds
 
 	// Dividend
 	divAmounts := []uint64{0}
