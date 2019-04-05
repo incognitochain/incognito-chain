@@ -180,3 +180,15 @@ func Base58CheckDeserialize(data string) (*KeyWallet, error) {
 	}
 	return Deserialize(b)
 }
+
+func GetPublicKeyFromPrivateKeyStr(privateKeyStr string) ([]byte, error){
+	keyWallet, err := Base58CheckDeserialize(privateKeyStr)
+	if err != nil{
+		return []byte{}, err
+	}
+
+	keyWallet.KeySet.ImportFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
+
+	return keyWallet.KeySet.PaymentAddress.Pk, nil
+}
+
