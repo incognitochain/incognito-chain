@@ -397,7 +397,7 @@ func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
-	txMsg.(*wire.MessageTx).Transaction = &tx
+	txMsg.(*wire.MessageTxToken).Transaction = &tx
 	rpcServer.config.Server.PushMessageToAll(txMsg)
 
 	return tx.Hash(), nil
@@ -858,7 +858,7 @@ func (rpcServer RpcServer) handleSendRawPrivacyCustomTokenTransaction(params int
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
-	txMsg.(*wire.MessageTx).Transaction = &tx
+	txMsg.(*wire.MessageTxPrivacyToken).Transaction = &tx
 	rpcServer.config.Server.PushMessageToAll(txMsg)
 
 	return tx.Hash(), nil
