@@ -148,22 +148,24 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 	shardID := frombeaconins.GetShardIDFromPaymentAddressBytes(*submitterPaymentAddress)
 	acceptedProposalIns := helper.NewAcceptProposalIns(&bestProposal.TxId, VoteTable[bestProposal.TxId], shardID)
 	resIns = append(resIns, acceptedProposalIns)
-	boardType := helper.GetBoardType()
-	boardIndex := helper.GetBoard(self).GetBoardIndex()
-	totalReward := uint64(helper.GetCurrentNationalWelfare(self)) * BaseSalaryBoard
-	listVotersOfCurrentProposal, err := db.GetCurrentProposalWinningVoter(boardType, helper.GetConstitutionInfo(self).ConstitutionIndex)
-	if err == nil {
-		voterAndSupporters := make([][]privacy.PaymentAddress, len(listVotersOfCurrentProposal))
-		voterAndAmount := make([]uint64, len(listVotersOfCurrentProposal))
-		for i, voter := range listVotersOfCurrentProposal {
-			listSupporters := self.config.DataBase.GetBoardVoterList(boardType, voter, boardIndex)
-			voterAndSupporters[i] = listSupporters
-			voterAndAmount[i] = 0
-			for _, supporter := range listSupporters {
-				voterAndAmount[i] += helper.GetAmountOfVoteToBoard(self, voter, supporter, boardIndex)
+	totalReward := helper.GetBoardFund(self) / 10
+	if totalReward > 0 {
+		boardType := helper.GetBoardType()
+		boardIndex := helper.GetBoard(self).GetBoardIndex()
+		listVotersOfCurrentProposal, err := db.GetCurrentProposalWinningVoter(boardType, helper.GetConstitutionInfo(self).ConstitutionIndex)
+		if err == nil {
+			voterAndSupporters := make([][]privacy.PaymentAddress, len(listVotersOfCurrentProposal))
+			voterAndAmount := make([]uint64, len(listVotersOfCurrentProposal))
+			for i, voter := range listVotersOfCurrentProposal {
+				listSupporters := self.config.DataBase.GetBoardVoterList(boardType, voter, boardIndex)
+				voterAndSupporters[i] = listSupporters
+				voterAndAmount[i] = 0
+				for _, supporter := range listSupporters {
+					voterAndAmount[i] += helper.GetAmountOfVoteToBoard(self, voter, supporter, boardIndex)
+				}
+				shareRewardIns := self.CreateShareRewardOldBoardIns(helper, listVotersOfCurrentProposal[i], totalReward, voterAndAmount[i])
+				resIns = append(resIns, shareRewardIns...)
 			}
-			shareRewardIns := self.CreateShareRewardOldBoardIns(helper, listVotersOfCurrentProposal[i], totalReward, voterAndAmount[i])
-			resIns = append(resIns, shareRewardIns...)
 		}
 	}
 	return resIns, nil
@@ -413,7 +415,7 @@ func ListTxToListIns(listTx []metadata.Transaction, chain *BlockChain, shardID b
 
 func (chain *BlockChain) neededNewGovernor(helper ConstitutionHelper) bool {
 	constitutionIndex := chain.GetConstitutionIndex(helper)
-	return constitutionIndex == ConstitutionPerBoard
+	return (constitutionIndex % ConstitutionPerBoard) == 0
 }
 
 func (chain *BlockChain) neededFirstNewGovernor(helper ConstitutionHelper) bool {
@@ -439,6 +441,10 @@ func (chain *BlockChain) neededFirstNewGovernor(helper ConstitutionHelper) bool 
 
 func (chain *BlockChain) neededNewConstitution(helper ConstitutionHelper) bool {
 	// todo: hyyyyyyyyyyyy
+	currentBoardIndex := chain.GetCurrentBoardIndex(helper)
+	if currentBoardIndex == 1 {
+		return false
+	}
 	endBlock := helper.GetConstitutionEndedBlockHeight(chain)
 	fmt.Println("[voting] - neededNewConstitution: ", endBlock, chain.BestState.Beacon.BeaconHeight)
 	if chain.BestState.Beacon.BeaconHeight >= endBlock {
@@ -480,16 +486,19 @@ func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("[voting] - updateProposalInstruction ok: ", updateProposalInstruction)
-		instructions = append(instructions, updateProposalInstruction...)
-
+		if len(updateProposalInstruction) != 0 {
+			fmt.Println("[voting] - updateProposalInstruction ok: ", updateProposalInstruction)
+			instructions = append(instructions, updateProposalInstruction...)
+		}
 		//============================ VOTE BOARD
 		if self.neededNewGovernor(helper) {
 			updateGovernorInstruction, err := self.CreateUpdateNewGovernorInstruction(helper)
 			if err != nil {
 				return nil, err
 			}
-			instructions = append(instructions, updateGovernorInstruction...)
+			if len(updateGovernorInstruction) != 0 {
+				instructions = append(instructions, updateGovernorInstruction...)
+			}
 		}
 	}
 
@@ -500,7 +509,9 @@ func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper
 			return nil, err
 		}
 		fmt.Println("[voting] - ", newIns)
-		instructionsString = append(instructionsString, newIns)
+		if len(newIns) != 0 {
+			instructionsString = append(instructionsString, newIns)
+		}
 	}
 	return instructionsString, nil
 }
