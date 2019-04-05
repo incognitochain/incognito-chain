@@ -344,20 +344,20 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 					validSwappers[shardID] = append(validSwappers[shardID], validSwapper[shardID]...)
 					stabilityInstructions = append(stabilityInstructions, stabilityInstruction...)
 				}
-				votingInstruction, err := blockchain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
+				votingInstructionDCB, err := blockchain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
 				if err != nil {
 					fmt.Println("[voting]-Build DCB voting instruction failed: ", err)
 				} else {
-					if len(votingInstruction) != 0 {
-						stabilityInstructions = append(stabilityInstructions, votingInstruction...)
+					if len(votingInstructionDCB) != 0 {
+						stabilityInstructions = append(stabilityInstructions, votingInstructionDCB...)
 					}
 				}
-				votingInstruction, err = blockchain.generateVotingInstructionWOIns(GOVConstitutionHelper{})
+				votingInstructionGOV, err := blockchain.generateVotingInstructionWOIns(GOVConstitutionHelper{})
 				if err != nil {
 					fmt.Println("[voting]-Build GOV voting instruction failed: ", err)
 				} else {
-					if len(votingInstruction) != 0 {
-						stabilityInstructions = append(stabilityInstructions, votingInstruction...)
+					if len(votingInstructionGOV) != 0 {
+						stabilityInstructions = append(stabilityInstructions, votingInstructionGOV...)
 					}
 				}
 				oracleInsts, err := blockchain.buildOracleRewardInstructions(&beaconBestState)
