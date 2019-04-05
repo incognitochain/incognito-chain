@@ -88,12 +88,12 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageShardToBeacon{}
 		break
 	case CmdCustomToken:
-		msg = &MessageTx{
+		msg = &MessageTxToken{
 			Transaction: &transaction.TxCustomToken{},
 		}
 		break
 	case CmdPrivacyCustomToken:
-		msg = &MessageTx{
+		msg = &MessageTxPrivacyToken{
 			Transaction: &transaction.TxCustomTokenPrivacy{},
 		}
 		break
