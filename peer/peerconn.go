@@ -232,11 +232,11 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 						peerConn.Config.MessageListeners.OnTx(peerConn, message.(*wire.MessageTx))
 					}
 				case reflect.TypeOf(&wire.MessageTxToken{}):
-					if peerConn.Config.MessageListeners.OnTx != nil {
+					if peerConn.Config.MessageListeners.OnTxToken != nil {
 						peerConn.Config.MessageListeners.OnTxToken(peerConn, message.(*wire.MessageTxToken))
 					}
 				case reflect.TypeOf(&wire.MessageTxPrivacyToken{}):
-					if peerConn.Config.MessageListeners.OnTx != nil {
+					if peerConn.Config.MessageListeners.OnTxPrivacyToken != nil {
 						peerConn.Config.MessageListeners.OnTxPrivacyToken(peerConn, message.(*wire.MessageTxPrivacyToken))
 					}
 				case reflect.TypeOf(&wire.MessageBlockShard{}):
