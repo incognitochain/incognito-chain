@@ -142,7 +142,7 @@ func (bsb *BestStateBeacon) UpdateDCBFund(amount int64) {
 
 func (bsb *BestStateBeacon) UpdateGOVFund(amount int64) {
 	t := int64(bsb.StabilityInfo.SalaryFund) + amount
-	bsb.StabilityInfo.BankFund = uint64(t)
+	bsb.StabilityInfo.SalaryFund = uint64(t)
 }
 
 func (bsb *BestStateBeacon) processUpdatingOracleBoardInstruction(inst []string) error {
