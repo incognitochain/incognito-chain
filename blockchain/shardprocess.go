@@ -81,13 +81,13 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 	shardID := block.Header.ShardID
-	Logger.log.Infof("SHARD %+v | Check block existence for insert height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
+	Logger.log.Infof("SHARD %+v | Check block existence for insert height %+v at hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 	isExist, _ := blockchain.config.DataBase.HasBlock(block.Hash())
 	if isExist {
 		return nil
 		// return NewBlockChainError(DuplicateBlockErr, errors.New("This block has been stored already"))
 	}
-	Logger.log.Infof("SHARD %+v | Begin Insert new block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
+	Logger.log.Infof("SHARD %+v | Begin Insert new block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 	if !isProducer {
 		Logger.log.Infof("SHARD %+v | Verify Pre Processing  Block %+v \n", block.Header.ShardID, *block.Hash())
 		if err := blockchain.VerifyPreProcessingShardBlock(block, shardID, false); err != nil {
@@ -459,7 +459,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 							return NewBlockChainError(CrossShardBlockError, errors.New("Next Cross Shard Block "+strconv.Itoa(int(toShardCrossShardBlock.Header.Height))+"is Not Expected block Height "+strconv.Itoa(int(nextHeight))+" from shard "+strconv.Itoa(int(fromShard))))
 						}
 						startHeight = nextHeight
-						temp, err := blockchain.config.DataBase.FetchCommitteeByEpoch(toShardCrossShardBlock.Header.Epoch)
+						temp, err := blockchain.config.DataBase.FetchCommitteeByEpoch(toShardCrossShardBlock.Header.BeaconHeight)
 						if err != nil {
 							return NewBlockChainError(CrossShardBlockError, err)
 						}
