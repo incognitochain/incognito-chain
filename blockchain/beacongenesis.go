@@ -259,6 +259,22 @@ func createDCBGenesisParamsInst() []string {
 	}
 
 	// Trade bonds
+	tradeBondBuyID := [32]byte{5}
+	tradeBondSellID := [32]byte{6}
+	tradeBonds := []*component.TradeBondWithGOV{
+		&component.TradeBondWithGOV{
+			TradeID: tradeBondBuyID[:],
+			BondID:  bondID,
+			Amount:  100,
+			Buy:     true,
+		},
+		&component.TradeBondWithGOV{
+			TradeID: tradeBondSellID[:],
+			BondID:  bondID,
+			Amount:  200,
+			Buy:     false,
+		},
+	}
 
 	// Dividend
 	divAmounts := []uint64{0}
@@ -281,6 +297,7 @@ func createDCBGenesisParamsInst() []string {
 		SpendReserveData:         spendReserveData,
 		DividendAmount:           divAmounts[0],
 		ListLoanParams:           loanParams,
+		TradeBonds:               tradeBonds,
 	}
 
 	// First proposal created by DCB, reward back to itself
