@@ -29,8 +29,8 @@ const (
 	MainetName         = "mainnet"
 	MainnetDefaultPort = "9333"
 
-	MainNetShardCommitteeSize  = 1
-	MainNetBeaconCommitteeSize = 1
+	MainNetShardCommitteeSize  = 3
+	MainNetBeaconCommitteeSize = 3
 	MainNetActiveShards        = 2
 
 	//board and proposal parameters
@@ -64,8 +64,8 @@ const (
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 
-	TestNetShardCommitteeSize  = 1
-	TestNetBeaconCommitteeSize = 1
+	TestNetShardCommitteeSize  = 4
+	TestNetBeaconCommitteeSize = 4
 	TestNetActiveShards        = 2
 
 	//board and proposal parameters
@@ -99,12 +99,12 @@ var PreSelectShardNodeTestnetSerializedPubkey = []string{
 	"183GBqPhSfcEFZP7MQFTnuLVuX2PRkd5HFA3qkqkLN4STghvxpw", //shard 0
 	"15ezEJs61P8qq6F8Zrhbcd2RpuqrtDWtzPheJWiEM6ct1sWjFTi", //shard 0
 	"16VVUEPJR3uwbkgyVXcwiifsJLcqqR95onn7sZ3jzfs1QofLv11", //shard 1
-	//"183cdDa9XXppiTTxF4HBiFyRABWtB8v8EBy556WNfX2RnW87VRC", //shard 0
+	"183cdDa9XXppiTTxF4HBiFyRABWtB8v8EBy556WNfX2RnW87VRC", //shard 0
 
 	"14zf4SMg7Jfmmaq64jkjcfRBY8NB9xkg9adSBkXisoEiXUWxxs3", //shard 1
 	"16H5t5ezMF16S5j5ZEyHP3N4nBBcsppg5bRfU5Ft8N1VZYBQu38", //shard 1
 	"156qsnqcYWPUb8PLbdowV4TtUhS8kuEboABfHgVeh4MguoPwqVj", //shard 1
-	//"177cGseHedBzrvBTqP2boXBjXb84JgKJEs7fGbCmgJ47gcgNwoK", //shard 1
+	"177cGseHedBzrvBTqP2boXBjXb84JgKJEs7fGbCmgJ47gcgNwoK", //shard 1
 
 	"177wqpiaSaswghv2z2y13KR6RPwfMm6mbeTtnfMEdH2iPhmxEbv",
 	"16HxssV6VKrGs9qNnCoA1bXi5Uqjco8DyhYLLLqmhgJPAGHyk9A",
