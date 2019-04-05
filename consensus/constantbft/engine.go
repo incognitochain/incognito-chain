@@ -117,21 +117,15 @@ func (engine *Engine) Stop() error {
 }
 
 func (engine *Engine) execBeaconRole() {
-	// fmt.Printf("Node mode %+v, user role %+v, shardID %+v \n currentPBFTRound %+v, beacon height %+v, currentPBFTBlkHeight %+v, prevRoundUserLayer %+v \n ", engine.config.NodeMode, userRole, shardID, currentPBFTRound, engine.config.BlockChain.BestState.Beacon.BeaconHeight, currentPBFTBlkHeight, prevRoundUserLayer)
 	if engine.currentBFTBlkHeight <= engine.config.BlockChain.BestState.Beacon.BeaconHeight {
 		// reset round
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
 		engine.currentBFTRound = 1
 	}
 	bftProtocol := &BFTProtocol{
-		cQuit:             engine.cQuit,
-		cBFTMsg:           engine.cBFTMsg,
-		BlockGen:          engine.config.BlockGen,
-		UserKeySet:        engine.config.UserKeySet,
-		BlockChain:        engine.config.BlockChain,
-		Server:            engine.config.Server,
-		ShardToBeaconPool: engine.config.ShardToBeaconPool,
-		CrossShardPool:    engine.config.CrossShardPool,
+		cQuit:     engine.cQuit,
+		cBFTMsg:   engine.cBFTMsg,
+		EngineCfg: &engine.config,
 	}
 	bftProtocol.RoundData.ProposerOffset = (engine.currentBFTRound - 1) % len(engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
 	bftProtocol.RoundData.BestStateHash = engine.config.BlockChain.BestState.Beacon.Hash()
@@ -194,17 +188,11 @@ func (engine *Engine) execShardRole(shardID byte) {
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
 		engine.currentBFTRound = 1
 	}
-	// fmt.Printf("Node mode %+v, user role %+v, shardID %+v \n currentPBFTRound %+v, beacon height %+v, currentPBFTBlkHeight %+v, prevRoundUserLayer %+v \n ", engine.config.NodeMode, userRole, shardID, currentPBFTRound, engine.config.BlockChain.BestState.Shard[shardID].ShardCommittee, currentPBFTBlkHeight, prevRoundUserLayer)
 	engine.config.BlockChain.SyncShard(shardID)
 	bftProtocol := &BFTProtocol{
-		cQuit:             engine.cQuit,
-		cBFTMsg:           engine.cBFTMsg,
-		BlockGen:          engine.config.BlockGen,
-		UserKeySet:        engine.config.UserKeySet,
-		BlockChain:        engine.config.BlockChain,
-		Server:            engine.config.Server,
-		ShardToBeaconPool: engine.config.ShardToBeaconPool,
-		CrossShardPool:    engine.config.CrossShardPool,
+		cQuit:     engine.cQuit,
+		cBFTMsg:   engine.cBFTMsg,
+		EngineCfg: &engine.config,
 	}
 	bftProtocol.RoundData.ProposerOffset = (engine.currentBFTRound - 1) % len(engine.config.BlockChain.BestState.Shard[shardID].ShardCommittee)
 	bftProtocol.RoundData.BestStateHash = engine.config.BlockChain.BestState.Shard[shardID].Hash()
