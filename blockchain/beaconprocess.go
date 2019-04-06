@@ -171,12 +171,17 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 		return err
 	}
 	// ************ Store block at last
+	Logger.log.Infof("Store StabilityInfo %+v \n")
+	if err := blockchain.config.DataBase.StoreStabilityInfoByHeight(block.Header.Height, bestStateBeacon.StabilityInfo); err != nil {
+		return err
+	}
 	//========Store new Beaconblock and new Beacon bestState in cache
-	Logger.log.Infof("Store Beacon BestState %+v \n", *block.Hash())
+	Logger.log.Infof("Store Beacon BestState %+v \n")
 	if err := blockchain.config.DataBase.StoreBeaconBestState(blockchain.BestState.Beacon); err != nil {
 		return err
 	}
-	Logger.log.Infof("Store Beacon Block %+v \n", *block.Hash())
+
+	Logger.log.Infof("Store Beacon Block %+v \n", block.Header.Height, *block.Hash())
 	if err := blockchain.config.DataBase.StoreBeaconBlock(block); err != nil {
 		return err
 	}
