@@ -18,6 +18,7 @@ type hasher interface {
 var (
 	beaconPrefix            = []byte("bea-")
 	beaconBestBlockkey      = []byte("bea-bestBlock")
+	stabilityPrefix         = []byte("sta-")
 	committeePrefix         = []byte("com-")
 	epochPrefix             = []byte("ep-")
 	shardIDPrefix           = []byte("s")

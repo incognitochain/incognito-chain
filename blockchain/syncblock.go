@@ -110,7 +110,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			for peerID, peerState := range blockchain.syncStatus.PeersState {
 				for shardID := range blockchain.syncStatus.Shards {
 					if shardState, ok := peerState.Shard[shardID]; ok {
-						if shardState.Height > GetBestStateBeacon().GetBestHeightOfShard(shardID) && shardState.Height > GetBestStateShard(shardID).ShardHeight {
+						if shardState.Height > GetBestStateBeacon().GetBestHeightOfShard(shardID) || shardState.Height > GetBestStateShard(shardID).ShardHeight {
 							if RCS.ClosestShardsState[shardID].Height == blockchain.BestState.Shard[shardID].ShardHeight {
 								RCS.ClosestShardsState[shardID] = *shardState
 							} else {
@@ -426,10 +426,10 @@ func (blockchain *BlockChain) SyncBlkShard(shardID byte, byHash bool, getFromPoo
 		blockchain.syncStatus.CurrentlySyncShardBlkByHeight[shardID].DeleteExpired()
 		cacheItems := blockchain.syncStatus.CurrentlySyncShardBlkByHeight[shardID].Items()
 		blkBatchsNeedToGet := getBlkNeedToGetByHeight(from, to, cacheItems, peerID)
-		// fmt.Println("SyncBlkShard", from, to, blkBatchsNeedToGet)
+		fmt.Println("SyncBlkShard", from, to, blkBatchsNeedToGet)
 		if len(blkBatchsNeedToGet) > 0 {
 			for fromHeight, toHeight := range blkBatchsNeedToGet {
-				// fmt.Println("SyncBlkShard", shardID, fromHeight, toHeight, peerID)
+				fmt.Println("SyncBlkShard", shardID, fromHeight, toHeight, peerID)
 				go blockchain.config.Server.PushMessageGetBlockShardByHeight(shardID, fromHeight, toHeight, peerID)
 			}
 		}
@@ -568,6 +568,7 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 			err := blockchain.InsertShardBlock(newBlk, false)
 			if err != nil {
 				Logger.log.Error(err)
+				break
 			}
 		}
 	}
