@@ -11,7 +11,7 @@ type RewardDCBProposalSubmitterMetadata struct {
 }
 
 func (rewardDCBProposalSubmitterMetadata *RewardDCBProposalSubmitterMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
-	bcr.UpdateDCBFund(tx)
+	// bcr.UpdateDCBFund(tx)
 	return nil
 }
 
@@ -44,7 +44,7 @@ type RewardGOVProposalSubmitterMetadata struct {
 }
 
 func (rewardGOVProposalSubmitterMetadata *RewardGOVProposalSubmitterMetadata) ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error {
-	bcr.UpdateDCBFund(tx)
+	// bcr.UpdateDCBFund(tx)
 	return nil
 }
 
