@@ -3,7 +3,6 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
@@ -42,7 +41,6 @@ func getShardBlockSalary(txs []metadata.Transaction, bc *BlockChain, beaconHeigh
 		return 0, err
 	}
 	if stabilityInfo == nil {
-		fmt.Println("stabilityInfo is null")
 		return 0, nil
 	}
 	salaryPerTx := stabilityInfo.GOVConstitution.GOVParams.SalaryPerTx
