@@ -426,10 +426,10 @@ func (blockchain *BlockChain) SyncBlkShard(shardID byte, byHash bool, getFromPoo
 		blockchain.syncStatus.CurrentlySyncShardBlkByHeight[shardID].DeleteExpired()
 		cacheItems := blockchain.syncStatus.CurrentlySyncShardBlkByHeight[shardID].Items()
 		blkBatchsNeedToGet := getBlkNeedToGetByHeight(from, to, cacheItems, peerID)
-		// fmt.Println("SyncBlkShard", from, to, blkBatchsNeedToGet)
+		fmt.Println("SyncBlkShard", from, to, blkBatchsNeedToGet)
 		if len(blkBatchsNeedToGet) > 0 {
 			for fromHeight, toHeight := range blkBatchsNeedToGet {
-				// fmt.Println("SyncBlkShard", shardID, fromHeight, toHeight, peerID)
+				fmt.Println("SyncBlkShard", shardID, fromHeight, toHeight, peerID)
 				go blockchain.config.Server.PushMessageGetBlockShardByHeight(shardID, fromHeight, toHeight, peerID)
 			}
 		}
@@ -552,23 +552,24 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 		return
 	}
 
-	go func() {
-		blks := blockchain.config.BeaconPool.GetValidBlock()
-		for _, newBlk := range blks {
-			err := blockchain.InsertBeaconBlock(newBlk, false)
-			if err != nil {
-				Logger.log.Error(err)
-			}
+	blks := blockchain.config.BeaconPool.GetValidBlock()
+	for _, newBlk := range blks {
+		err := blockchain.InsertBeaconBlock(newBlk, false)
+		if err != nil {
+			Logger.log.Error(err)
 		}
-	}()
+	}
 
 	for shardID := range blockchain.syncStatus.Shards {
-		blks := blockchain.config.ShardPool[shardID].GetValidBlock()
-		for _, newBlk := range blks {
-			err := blockchain.InsertShardBlock(newBlk, false)
-			if err != nil {
-				Logger.log.Error(err)
+		go func(shardID byte) {
+			blks := blockchain.config.ShardPool[shardID].GetValidBlock()
+			for _, newBlk := range blks {
+				err := blockchain.InsertShardBlock(newBlk, false)
+				if err != nil {
+					Logger.log.Error(err)
+					break
+				}
 			}
-		}
+		}(shardID)
 	}
 }
