@@ -88,12 +88,8 @@ func buildStabilityActions(
 		return nil, err
 	}
 
-	fmt.Println("hahaha: totalFee ", totalFee)
-	fmt.Println("hahaha: totalSalary ", totalSalary)
-
 	if totalFee != 0 || totalSalary != 0 {
 		salaryUpdateActions, _ := createShardBlockSalaryUpdateAction(totalSalary, totalFee, producerAddress, shardBlockHeight)
-		fmt.Println("hahaha: salaryUpdateActions ", salaryUpdateActions)
 		actions = append(actions, salaryUpdateActions...)
 	}
 
