@@ -113,7 +113,7 @@ func GetKeyVoteBoardList(
 		voterBytes = voterPaymentAddress.Bytes()
 	}
 	key := GetKeyFromVariadic(
-		voteBoardListPrefix,
+		VoteBoardListPrefix,
 		boardType.Bytes(),
 		common.Uint32ToBytes(boardIndex),
 		candidateBytes,
@@ -123,7 +123,7 @@ func GetKeyVoteBoardList(
 }
 
 func ParseKeyVoteBoardList(key []byte) (boardType common.BoardType, boardIndex uint32, candidatePubKey []byte, voterPaymentAddress *privacy.PaymentAddress, err error) {
-	length := []int{len(voteBoardListPrefix), 1, 4, common.PaymentAddressLength, common.PaymentAddressLength}
+	length := []int{len(VoteBoardListPrefix), 1, 4, common.PaymentAddressLength, common.PaymentAddressLength}
 	elements, err := ParseKeyToSlice(key, length)
 	if err != nil {
 		return 0, 0, nil, nil, err
