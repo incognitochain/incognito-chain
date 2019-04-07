@@ -49,6 +49,9 @@ import (
 		Sign block and update validator index, agg sig
 */
 func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddress, privateKey *privacy.PrivateKey, proposerOffset int, shardsToBeacon map[byte]uint64) (*BeaconBlock, error) {
+
+	fmt.Println("hahahahah NewBlockBeacon")
+
 	beaconBlock := &BeaconBlock{}
 	beaconBestState := BestStateBeacon{}
 	// lock blockchain
