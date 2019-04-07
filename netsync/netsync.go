@@ -338,7 +338,7 @@ func (netSync *NetSync) HandleMessageBFTMsg(msg wire.Message) {
 // }
 
 func (netSync *NetSync) HandleMessagePeerState(msg *wire.MessagePeerState) {
-	Logger.log.Info("Handling new message peerstate")
+	Logger.log.Info("Handling new message peerstate", msg.SenderID)
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
 	if err != nil {
 		Logger.log.Error(err)
