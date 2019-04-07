@@ -209,13 +209,13 @@ func (stateBeacon *BestStateBeacon) UpdateGOVBoard(ins frombeaconins.AcceptGOVBo
 }
 
 //????
-func (blockchain *BlockChain) UpdateDCBFund(tx metadata.Transaction) {
-	blockchain.BestState.Beacon.StabilityInfo.BankFund -= common.RewardProposalSubmitter
-}
+// func (blockchain *BlockChain) UpdateDCBFund(tx metadata.Transaction) {
+// 	blockchain.BestState.Beacon.StabilityInfo.BankFund -= common.RewardProposalSubmitter
+// }
 
-func (blockchain *BlockChain) UpdateGOVFund(tx metadata.Transaction) {
-	blockchain.BestState.Beacon.StabilityInfo.BankFund -= common.RewardProposalSubmitter
-}
+// func (blockchain *BlockChain) UpdateGOVFund(tx metadata.Transaction) {
+// 	blockchain.BestState.Beacon.StabilityInfo.SalaryFund -= common.RewardProposalSubmitter
+// }
 
 func createSendBackTokenVoteFailIns(
 	boardType common.BoardType,
@@ -237,7 +237,8 @@ func createSendBackTokenVoteFailIns(
 
 func (self *BlockChain) createSendBackTokenAfterVoteFailIns(
 	boardType common.BoardType,
-	newDCBList []privacy.PaymentAddress,
+	newGovernorList []privacy.PaymentAddress,
+	helper ConstitutionHelper,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
 	fmt.Println("[voting]- Enter createSendBackTokenAfterVoteFailIns")
 	var propertyID common.Hash
@@ -246,13 +247,21 @@ func (self *BlockChain) createSendBackTokenAfterVoteFailIns(
 	} else {
 		propertyID = common.GOVTokenID
 	}
-	setOfNewDCB := make(map[string]bool, 0)
-	for _, i := range newDCBList {
-		setOfNewDCB[string(i.Bytes())] = true
+	setOfNewGovernor := make(map[string]bool, 0)
+	for _, i := range newGovernorList {
+		setOfNewGovernor[string(i.Bytes())] = true
 	}
-	currentBoardIndex := self.GetCurrentBoardIndex(DCBConstitutionHelper{})
-	begin := lvdb.GetKeyVoteBoardList(boardType, 0, nil, nil)
-	end := lvdb.GetKeyVoteBoardList(boardType, currentBoardIndex+1, nil, nil)
+	currentBoardIndex := self.GetCurrentBoardIndex(helper)
+	fmt.Println("[voting] - Current board index: ", currentBoardIndex)
+	// db := self.config.DataBase
+	// gg := lvdb.ViewDBByPrefix(db, lvdb.VoteBoardListPrefix)
+	// fmt.Println("[voting] - START watch db when send back token:")
+	// for key, value := range gg {
+	// 	fmt.Println("[voting] - ", key, value)
+	// }
+	// fmt.Println("[voting] - END watch db when send back token:")
+	begin := lvdb.GetKeyVoteBoardList(boardType, currentBoardIndex+1, nil, nil)
+	end := lvdb.GetKeyVoteBoardList(boardType, currentBoardIndex+2, nil, nil)
 	searchRange := util.Range{
 		Start: begin,
 		Limit: end,
@@ -262,32 +271,32 @@ func (self *BlockChain) createSendBackTokenAfterVoteFailIns(
 	listNewIns := make([]frombeaconins.InstructionFromBeacon, 0)
 	for iter.Next() {
 		key := iter.Key()
-		_, boardIndex, candidatePubKey, voterPaymentAddress, _ := lvdb.ParseKeyVoteBoardList(key)
+		_, boardIndex, candidatePayment, voterPaymentAddress, _ := lvdb.ParseKeyVoteBoardList(key)
 		value := iter.Value()
-		amountOfDCBToken := lvdb.ParseValueVoteBoardList(value)
-		_, found := setOfNewDCB[string(candidatePubKey)]
-		if boardIndex < uint32(currentBoardIndex) || !found {
+		amountOfToken := lvdb.ParseValueVoteBoardList(value)
+		_, found := setOfNewGovernor[string(candidatePayment)]
+		if (boardIndex == currentBoardIndex+1) && (!found) {
 			inst, _ := frombeaconins.NewSendBackTokenVoteFailIns(
 				*voterPaymentAddress,
-				amountOfDCBToken,
+				amountOfToken,
 				propertyID,
 			).GetStringFormat()
 			listNewIns = append(
 				listNewIns,
 				frombeaconins.NewSendBackTokenVoteFailIns(
 					*voterPaymentAddress,
-					amountOfDCBToken,
+					amountOfToken,
 					propertyID,
 				),
 			)
 			fmt.Println("[voting]-SendBackIns: ", inst)
-		}
-		err := self.config.DataBase.Delete(key)
-		if err != nil {
-			return nil, err
+			err := self.config.DataBase.Delete(key)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
-	fmt.Println("[voting]- createSendBackTokenAfterVoteFailIns ok")
+	fmt.Println("[voting]- createSendBackTokenAfterVoteFailIns ok", listNewIns)
 	return listNewIns, nil
 }
 
@@ -383,6 +392,7 @@ func (self *BlockChain) CreateUpdateNewGovernorInstruction(
 	sendBackTokenAfterVoteFailIns, err := self.createSendBackTokenAfterVoteFailIns(
 		helper.GetBoardType(),
 		newBoardPaymentAddress,
+		helper,
 	)
 	if err != nil {
 		fmt.Println("[voting]- err", err)
@@ -418,6 +428,9 @@ func ListTxToListIns(listTx []metadata.Transaction, chain *BlockChain, shardID b
 }
 
 func (chain *BlockChain) neededNewGovernor(helper ConstitutionHelper) bool {
+	if chain.GetCurrentBoardIndex(helper) == 1 {
+		return false
+	}
 	constitutionIndex := chain.GetConstitutionIndex(helper)
 	fmt.Println("[voting] - neededNewGovernor", constitutionIndex, ConstitutionPerBoard, (constitutionIndex%ConstitutionPerBoard) == 0)
 	return (constitutionIndex % ConstitutionPerBoard) == 0
@@ -447,10 +460,10 @@ func (chain *BlockChain) neededFirstNewGovernor(helper ConstitutionHelper) bool 
 
 func (chain *BlockChain) neededNewConstitution(helper ConstitutionHelper) bool {
 	// todo: hyyyyyyyyyyyy
-	// currentBoardIndex := chain.GetCurrentBoardIndex(helper)
-	// if currentBoardIndex == 1 {
-	// 	return false
-	// }
+	currentBoardIndex := chain.GetCurrentBoardIndex(helper)
+	if currentBoardIndex == 1 {
+		return false
+	}
 	endBlock := helper.GetConstitutionEndedBlockHeight(chain)
 	fmt.Println("[voting] - neededNewConstitution: ", endBlock, chain.BestState.Beacon.BeaconHeight)
 	if chain.BestState.Beacon.BeaconHeight >= endBlock {
