@@ -110,7 +110,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			for peerID, peerState := range blockchain.syncStatus.PeersState {
 				for shardID := range blockchain.syncStatus.Shards {
 					if shardState, ok := peerState.Shard[shardID]; ok {
-						if shardState.Height > GetBestStateBeacon().GetBestHeightOfShard(shardID) || shardState.Height > GetBestStateShard(shardID).ShardHeight {
+						if shardState.Height > GetBestStateBeacon().GetBestHeightOfShard(shardID) && shardState.Height > GetBestStateShard(shardID).ShardHeight {
 							if RCS.ClosestShardsState[shardID].Height == blockchain.BestState.Shard[shardID].ShardHeight {
 								RCS.ClosestShardsState[shardID] = *shardState
 							} else {
@@ -552,24 +552,24 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 		return
 	}
 
-	go func() {
-		blks := blockchain.config.BeaconPool.GetValidBlock()
-		for _, newBlk := range blks {
-			err := blockchain.InsertBeaconBlock(newBlk, false)
-			if err != nil {
-				Logger.log.Error(err)
-			}
+	blks := blockchain.config.BeaconPool.GetValidBlock()
+	for _, newBlk := range blks {
+		err := blockchain.InsertBeaconBlock(newBlk, false)
+		if err != nil {
+			Logger.log.Error(err)
 		}
-	}()
+	}
 
 	for shardID := range blockchain.syncStatus.Shards {
-		blks := blockchain.config.ShardPool[shardID].GetValidBlock()
-		for _, newBlk := range blks {
-			err := blockchain.InsertShardBlock(newBlk, false)
-			if err != nil {
-				Logger.log.Error(err)
-				break
+		go func(shardID byte) {
+			blks := blockchain.config.ShardPool[shardID].GetValidBlock()
+			for _, newBlk := range blks {
+				err := blockchain.InsertShardBlock(newBlk, false)
+				if err != nil {
+					Logger.log.Error(err)
+					break
+				}
 			}
-		}
+		}(shardID)
 	}
 }
