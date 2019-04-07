@@ -371,6 +371,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		block.Header.ProducerAddress,
 		block.Header.Height,
 		beaconBlocks,
+		block.Header.BeaconHeight,
 	)
 	if err != nil {
 		Logger.log.Error(err)
