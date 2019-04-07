@@ -70,7 +70,10 @@ type DatabaseInterface interface {
 	StoreBeaconBestState(interface{}) error
 	StoreCommitteeByHeight(uint64, interface{}) error
 	StoreCommitteeByEpoch(uint64, interface{}) error
+	StoreStabilityInfoByHeight(uint64, interface{}) error
+
 	FetchCommitteeByHeight(uint64) ([]byte, error)
+	FetchStabilityInfoByHeight(uint64) ([]byte, error)
 	FetchCommitteeByEpoch(uint64) ([]byte, error)
 	HasCommitteeByEpoch(uint64) (bool, error)
 	FetchBeaconBestState() ([]byte, error)
