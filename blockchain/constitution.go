@@ -126,7 +126,7 @@ func (helper GOVConstitutionHelper) GetBoardType() common.BoardType {
 func (helper DCBConstitutionHelper) NewRewardProposalSubmitterIns(chain *BlockChain, receiverAddress *privacy.PaymentAddress) (frombeaconins.InstructionFromBeacon, error) {
 	rewardProposalSubmitter := (chain.BestState.Beacon.StabilityInfo.BankFund / 10)
 	if rewardProposalSubmitter == 0 {
-		return nil, errors.New("Not enough BankFund")
+		return nil, errors.New("[voting] - Not enough BankFund")
 	}
 	return frombeaconins.NewRewardProposalSubmitterIns(receiverAddress, common.RewardProposalSubmitter, common.DCBBoard), nil
 }
@@ -134,7 +134,7 @@ func (helper DCBConstitutionHelper) NewRewardProposalSubmitterIns(chain *BlockCh
 func (helper GOVConstitutionHelper) NewRewardProposalSubmitterIns(chain *BlockChain, receiverAddress *privacy.PaymentAddress) (frombeaconins.InstructionFromBeacon, error) {
 	rewardProposalSubmitter := (chain.BestState.Beacon.StabilityInfo.SalaryFund / 10)
 	if rewardProposalSubmitter == 0 {
-		return nil, errors.New("Not enough SalaryFund")
+		return nil, errors.New("[voting] - Not enough SalaryFund")
 	}
 	ins := frombeaconins.NewRewardProposalSubmitterIns(receiverAddress, common.RewardProposalSubmitter, common.GOVBoard)
 	return ins, nil

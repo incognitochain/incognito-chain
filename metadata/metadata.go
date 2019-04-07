@@ -9,7 +9,7 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
 )
 
 type MetadataBase struct {
@@ -141,7 +141,7 @@ type BlockchainRetriever interface {
 	GetLatestTradeActivation([]byte) (*common.Hash, bool, bool, uint64, error)
 
 	GetConstitution(boardType common.BoardType) ConstitutionInterface
-	UpdateDCBFund(transaction Transaction)
+	// UpdateDCBFund(transaction Transaction)
 	GetGovernor(boardType common.BoardType) GovernorInterface
 }
 
