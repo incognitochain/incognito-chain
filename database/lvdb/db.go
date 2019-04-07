@@ -55,7 +55,7 @@ var (
 	//vote prefix
 	voteBoardSumPrefix           = []byte("votesumboard-")
 	voteBoardCountPrefix         = []byte("votecountboard-")
-	voteBoardListPrefix          = []byte("votelistboard-")
+	VoteBoardListPrefix          = []byte("votelistboard-")
 	threePhraseCryptoOwnerPrefix = []byte("threephrasecryptoownerprefix-")
 	VoteProposalPrefix           = []byte("voteproposalprefix-")
 	listVoterOfProposalPrefix    = []byte("listvoterofproposalprefix-")
