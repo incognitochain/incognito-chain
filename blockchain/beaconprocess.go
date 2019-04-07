@@ -74,6 +74,9 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock, isCom
 }
 
 func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee bool) error {
+
+	fmt.Println("fuck InsertBeaconBlock")
+
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 
@@ -172,6 +175,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	}
 	// ************ Store block at last
 	Logger.log.Infof("Store StabilityInfo %+v \n")
+	fmt.Println("Store StabilityInfo")
 	if err := blockchain.config.DataBase.StoreStabilityInfoByHeight(block.Header.Height, bestStateBeacon.StabilityInfo); err != nil {
 		return err
 	}

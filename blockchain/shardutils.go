@@ -125,11 +125,12 @@ func CreateShardInstructionsFromTransactionAndIns(
 	producerAddress *privacy.PaymentAddress,
 	shardBlockHeight uint64,
 	beaconBlocks []*BeaconBlock,
+	beaconHeight uint64,
 ) (instructions [][]string, err error) {
 	// Generate stake action
 	stakeShardPubKey := []string{}
 	stakeBeaconPubKey := []string{}
-	instructions, err = buildStabilityActions(transactions, bc, shardID, producerAddress, shardBlockHeight, beaconBlocks)
+	instructions, err = buildStabilityActions(transactions, bc, shardID, producerAddress, shardBlockHeight, beaconBlocks, beaconHeight)
 	if err != nil {
 		fmt.Println("[voting] - wtf err???", err)
 		return nil, err

@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
@@ -28,7 +29,7 @@ func getShardBlockFee(txs []metadata.Transaction) uint64 {
 	return totalFee
 }
 
-func getShardBlockSalary(txs []metadata.Transaction, bestStateBeacon *BestStateBeacon) uint64 {
+func getShardBlockSalary(txs []metadata.Transaction, bc *BlockChain, beaconHeight uint64) (uint64, error) {
 	txLen := uint64(0)
 	for _, tx := range txs {
 		if !tx.IsSalaryTx() {
@@ -36,9 +37,17 @@ func getShardBlockSalary(txs []metadata.Transaction, bestStateBeacon *BestStateB
 		}
 	}
 
-	salaryPerTx := bestStateBeacon.StabilityInfo.GOVConstitution.GOVParams.SalaryPerTx
-	basicSalary := bestStateBeacon.StabilityInfo.GOVConstitution.GOVParams.BasicSalary
-	return txLen*salaryPerTx + basicSalary
+	stabilityInfo, err := getStabilityInfoByHeight(bc, beaconHeight)
+	if err != nil {
+		return 0, err
+	}
+	if stabilityInfo == nil {
+		fmt.Println("stabilityInfo is null")
+		return 0, nil
+	}
+	salaryPerTx := stabilityInfo.GOVConstitution.GOVParams.SalaryPerTx
+	basicSalary := stabilityInfo.GOVConstitution.GOVParams.BasicSalary
+	return (txLen*salaryPerTx + basicSalary), nil
 }
 
 func hashShardBlockSalaryInfo(
