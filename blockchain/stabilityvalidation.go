@@ -130,6 +130,8 @@ func (bc *BlockChain) VerifyStabilityTransactionsForNewBlock(insts [][]string, b
 			err = bc.verifyShardBlockSalaryResTx(tx, insts, instUsed, block.Header.ShardID)
 
 			// TODO(@0xbunyip): CrowdsalePaymentMeta
+			// TODO(@0xbunyip): IssuingResponseMeta
+			// TODO(@0xbunyip): ContractingResponseMeta
 		}
 
 		if err != nil {
@@ -137,7 +139,9 @@ func (bc *BlockChain) VerifyStabilityTransactionsForNewBlock(insts [][]string, b
 		}
 	}
 
-	// TODO(@0xbunyip): check if unused instructions are not skipped:
-	// e.g.: TradeActivation failed either because it's activated, reqAmount too high or failed building Tx
+	// TODO(@0xbunyip): check if unused instructions weren't ignored:
+	// 1. TradeActivation failed either because it's activated, reqAmount too high or failed building Tx
+	// 2. IssuingResponse: inst type == accepted or failed building Tx
+	// 3. ContractingResponse: inst type == accepted or failed building Tx
 	return nil
 }
