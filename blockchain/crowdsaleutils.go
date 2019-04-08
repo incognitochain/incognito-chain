@@ -174,10 +174,6 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	}
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	saleID := paymentInst.SaleID
-	saleData, err := blockgen.chain.BestState.Beacon.GetSaleData(saleID)
-	if err != nil {
-		return nil, err
-	}
 	assetID := &paymentInst.AssetID
 
 	var txResponse metadata.Transaction
@@ -185,13 +181,10 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 		txResponse, err = buildPaymentForCoin(
 			paymentInst.PaymentAddress,
 			paymentInst.Amount,
-			saleData.SaleID,
+			saleID,
 			producerPrivateKey,
 			blockgen.chain.GetDatabase(),
 		)
-		if err != nil {
-			return nil, err
-		}
 	} else if common.IsBondAsset(assetID) {
 		// Get unspent token UTXO to send to user
 		if _, ok := unspentTokens[assetID.String()]; !ok {
@@ -210,9 +203,12 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 			paymentInst.Amount,
 			*assetID,
 			unspentTokens,
-			saleData.SaleID,
+			saleID,
 			mint,
 		)
+	}
+	if err != nil {
+		return nil, err
 	}
 	return []metadata.Transaction{txResponse}, err
 }
