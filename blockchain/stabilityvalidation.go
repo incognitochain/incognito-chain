@@ -128,6 +128,8 @@ func (bc *BlockChain) VerifyStabilityTransactionsForNewBlock(insts [][]string, b
 
 		case metadata.ShardBlockSalaryResponseMeta:
 			err = bc.verifyShardBlockSalaryResTx(tx, insts, instUsed, block.Header.ShardID)
+
+			// TODO(@0xbunyip): CrowdsalePaymentMeta
 		}
 
 		if err != nil {
