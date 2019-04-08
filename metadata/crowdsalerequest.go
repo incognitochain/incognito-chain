@@ -54,20 +54,20 @@ func NewCrowdsaleRequest(csReqData map[string]interface{}) (Metadata, error) {
 
 func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if sale exists and ongoing
-	saleData, err := bcr.GetCrowdsaleData(csReq.SaleID)
+	saleData, err := bcr.GetProposedCrowdsale(csReq.SaleID)
 	if err != nil {
 		return false, err
 	}
 
 	beaconHeight := bcr.GetBeaconHeight()
 	if beaconHeight >= saleData.EndBlock {
-		return false, errors.Errorf("Crowdsale ended")
+		return false, errors.Errorf("crowdsale ended")
 	}
 
 	// Check if request is still valid
 	shardHeight := bcr.GetChainHeight(shardID)
 	if csReq.ValidUntil > 0 && shardHeight >= csReq.ValidUntil {
-		return false, errors.Errorf("Crowdsale request is not valid anymore")
+		return false, errors.Errorf("crowdsale request is not valid anymore")
 	}
 
 	// Check if asset is sent to correct address
@@ -75,13 +75,13 @@ func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 		keyWalletBurnAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 		unique, pubkey, _ := txr.GetUniqueReceiver()
 		if !unique || !bytes.Equal(pubkey, keyWalletBurnAccount.KeySet.PaymentAddress.Pk[:]) {
-			return false, errors.Errorf("Crowdsale request must send CST to Burning address")
+			return false, errors.Errorf("crowdsale request must send CST to Burning address")
 		}
 	} else {
 		keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 		unique, pubkey, _ := txr.GetTokenUniqueReceiver()
 		if !unique || !bytes.Equal(pubkey, keyWalletDCBAccount.KeySet.PaymentAddress.Pk[:]) {
-			return false, errors.Errorf("Crowdsale request must send tokens to DCB address")
+			return false, errors.Errorf("crowdsale request must send tokens to DCB address")
 		}
 	}
 
@@ -97,7 +97,6 @@ func (csReq *CrowdsaleRequest) ValidateSanityData(bcr BlockchainRetriever, txr T
 
 func (csReq *CrowdsaleRequest) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
-	// TODO(@0xbunyip): accept only some pairs of assets
 	return true
 }
 
@@ -133,7 +132,7 @@ func (csReq *CrowdsaleRequest) BuildReqActions(txr Transaction, bcr BlockchainRe
 
 func getCrowdsaleRequestActionValue(csReq *CrowdsaleRequest, txr Transaction, bcr BlockchainRetriever) (string, error) {
 	// Calculate value of asset sent in request tx
-	saleData, err := bcr.GetCrowdsaleData(csReq.SaleID)
+	saleData, err := bcr.GetProposedCrowdsale(csReq.SaleID)
 	if err != nil {
 		return "", err
 	}
