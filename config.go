@@ -26,7 +26,7 @@ const (
 	defaultConfigFilename     = "config.conf"
 	defaultDataDirname        = "data"
 	defaultDatabaseDirname    = "block"
-	defaultLogLevel           = "info"
+	defaultLogLevel           = "debug"
 	defaultLogDirname         = "logs"
 	defaultLogFilename        = "log.log"
 	defaultMaxPeers           = 125

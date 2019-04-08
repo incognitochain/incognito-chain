@@ -26,7 +26,7 @@ const (
 	MinTxsInBlock      = 10                   // minium txs for block to get immediate process (meaning no wait time)
 	MinBlockWaitTime   = 2                    // second
 	MaxBlockWaitTime   = 4 - MinBlockWaitTime // second
-	MinBlkInterval     = 5 * time.Second      //second
+	MinBlkInterval     = 20 * time.Second      //second
 )
 
 // for voting parameter
