@@ -134,5 +134,8 @@ func (bc *BlockChain) VerifyStabilityTransactionsForNewBlock(insts [][]string, b
 			return err
 		}
 	}
+
+	// TODO(@0xbunyip): check if unused instructions are not skipped:
+	// e.g.: TradeActivation failed either because it's activated, reqAmount too high or failed building Tx
 	return nil
 }
