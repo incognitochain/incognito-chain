@@ -109,20 +109,18 @@ func (protocol *BFTProtocol) phaseListen() error {
 		msgReady, _ := MakeMsgBFTReady(protocol.RoundData.BestStateHash, protocol.RoundData.ProposerOffset, protocol.EngineCfg.CrossShardPool[protocol.RoundData.ShardID].GetLatestValidBlockHeight(), protocol.EngineCfg.UserKeySet)
 		protocol.EngineCfg.Server.PushMessageToShard(msgReady, protocol.RoundData.ShardID)
 	}
+
+	var timeSinceLastBlk time.Duration
+	if protocol.RoundData.Layer == common.BEACON_ROLE {
+		timeSinceLastBlk = time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0))
+	} else {
+		timeSinceLastBlk = time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].BestBlock.Header.Timestamp, 0))
+	}
+	additionalWaitTime := common.MinBlkInterval - timeSinceLastBlk
+
 	fmt.Println("BFT: Listen phase", time.Since(protocol.startTime).Seconds())
-	timeout := time.AfterFunc(ListenTimeout*time.Second, func() {
-		var timeSinceLastBlk time.Duration
-		if protocol.RoundData.Layer == common.BEACON_ROLE {
-			timeSinceLastBlk = time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0))
-		} else {
-			timeSinceLastBlk = time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].BestBlock.Header.Timestamp, 0))
-		}
 
-		if timeSinceLastBlk <= common.MinBlkInterval {
-			fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk).Seconds())
-			<-time.Tick(common.MinBlkInterval - timeSinceLastBlk)
-		}
-
+	timeout := time.AfterFunc(ListenTimeout*time.Second+additionalWaitTime, func() {
 		fmt.Println("BFT: Listen phase timeout", time.Since(protocol.startTime).Seconds())
 		protocol.closeTimeoutCh()
 	})
