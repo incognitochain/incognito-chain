@@ -147,7 +147,10 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 			resIns = append(resIns, rewardForProposalSubmitterIns)
 		}
 	}
-	fmt.Println("[voting] - submitterPaymentAddress ", resIns[len(resIns)-1])
+	if len(resIns) > 0 {
+		fmt.Println("[voting] - submitterPaymentAddress ", resIns[len(resIns)-1])
+	}
+
 	shardID := frombeaconins.GetShardIDFromPaymentAddressBytes(*submitterPaymentAddress)
 	acceptedProposalIns := helper.NewAcceptProposalIns(&bestProposal.TxId, VoteTable[bestProposal.TxId], shardID)
 	resIns = append(resIns, acceptedProposalIns)
