@@ -326,7 +326,7 @@ func (blockchain *BlockChain) stopSyncUnnecessaryShard() {
 func (blockchain *BlockChain) stopSyncShard(shardID byte) error {
 	if blockchain.config.NodeMode == common.NODEMODE_AUTO || blockchain.config.NodeMode == common.NODEMODE_SHARD {
 		userRole, userShardID := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Beacon.BestBlock.Header.Round)
-		if userRole == "shard" && shardID == userShardID {
+		if userRole == common.SHARD_ROLE && shardID == userShardID {
 			return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation can't be stopped")
 		}
 	}
