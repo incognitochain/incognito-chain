@@ -8,6 +8,7 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/pkg/errors"
+	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
@@ -329,6 +330,45 @@ func (db *db) StoreCommitteeByHeight(blkHeight uint64, v interface{}) error {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
+}
+
+func (db *db) StoreStabilityInfoByHeight(blkHeight uint64, v interface{}) error {
+	//key: bea-s-com-{height}
+	//value: all shard committee
+	key := append(beaconPrefix)
+	key = append(key, stabilityPrefix...)
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, blkHeight)
+	key = append(key, buf[:]...)
+
+	val, err := json.Marshal(v)
+	if err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+	}
+
+	if err := db.lvdb.Put(key, val, nil); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
+}
+
+func (db *db) FetchStabilityInfoByHeight(blkHeight uint64) ([]byte, error) {
+	//key: bea-s-com-{height}
+	//value: all shard committee
+	key := append(beaconPrefix)
+	key = append(key, stabilityPrefix...)
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, blkHeight)
+	key = append(key, buf[:]...)
+
+	b, err := db.lvdb.Get(key, nil)
+	if err != nil {
+		if err != lvdberr.ErrNotFound {
+			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+		return []byte{}, nil
+	}
+	return b, nil
 }
 
 func (db *db) FetchCommitteeByHeight(blkHeight uint64) ([]byte, error) {

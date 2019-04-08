@@ -371,6 +371,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		block.Header.ProducerAddress,
 		block.Header.Height,
 		beaconBlocks,
+		block.Header.BeaconHeight,
 	)
 	if err != nil {
 		Logger.log.Error(err)
@@ -386,7 +387,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	isOk := VerifyHashFromStringArray(totalInstructions, block.Header.InstructionsRoot)
 	if !isOk {
 		res, _ := GenerateHashFromStringArray(totalInstructions)
-		fmt.Println("VerifyHashFromStringArray", res, block.Header.InstructionsRoot)
+		fmt.Println("VerifyHashFromStringArray", totalInstructions, res, block.Header.InstructionsRoot)
 		return NewBlockChainError(HashError, errors.New("Error verify action root"))
 	}
 	//Get beacon hash by height in db
