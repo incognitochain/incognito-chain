@@ -12,7 +12,7 @@ import (
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/wire"
-	"github.com/libp2p/go-libp2p-peer"
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 type PeerConn struct {
@@ -147,7 +147,6 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 
 				// cache message hash
 				hashMsgRaw := common.HashH(jsonDecodeBytesRaw).String()
-				// fmt.Println("hyyyyyyyyyyy", string(jsonDecodeBytesRaw))
 				if err := peerConn.ListenerPeer.HashToPool(hashMsgRaw); err != nil {
 					Logger.log.Error(err)
 					return
@@ -160,11 +159,11 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					return
 				}
 				// disconnect when received spam message
-				//if len(jsonDecodeBytes) >= SPAM_MESSAGE_SIZE {
-				//	Logger.log.Error("InMessageHandler received spam message")
-				//	peerConn.ForceClose()
-				//	return
-				//}
+				if len(jsonDecodeBytes) >= SPAM_MESSAGE_SIZE {
+					Logger.log.Error("InMessageHandler received spam message")
+					peerConn.ForceClose()
+					return
+				}
 
 				Logger.log.Infof("In message content : %s", string(jsonDecodeBytes))
 

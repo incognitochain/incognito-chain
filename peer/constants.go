@@ -11,7 +11,7 @@ const (
 	DelimMessageByte  = '\n'
 	DelimMessageStr   = "\n"
 
-	MsgLiveTime         = 4 * time.Second  // in second
+	MsgLiveTime         = 3 * time.Second  // in second
 	MsgsCleanupInterval = MsgLiveTime * 10 //in second
 )
 

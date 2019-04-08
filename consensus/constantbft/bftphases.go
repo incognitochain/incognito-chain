@@ -111,6 +111,18 @@ func (protocol *BFTProtocol) phaseListen() error {
 	}
 	fmt.Println("BFT: Listen phase", time.Since(protocol.startTime).Seconds())
 	timeout := time.AfterFunc(ListenTimeout*time.Second, func() {
+		var timeSinceLastBlk time.Duration
+		if protocol.RoundData.Layer == common.BEACON_ROLE {
+			timeSinceLastBlk = time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0))
+		} else {
+			timeSinceLastBlk = time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].BestBlock.Header.Timestamp, 0))
+		}
+
+		if timeSinceLastBlk <= common.MinBlkInterval {
+			fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk).Seconds())
+			<-time.Tick(common.MinBlkInterval - timeSinceLastBlk)
+		}
+
 		fmt.Println("BFT: Listen phase timeout", time.Since(protocol.startTime).Seconds())
 		protocol.closeTimeoutCh()
 	})
