@@ -117,7 +117,9 @@ func (protocol *BFTProtocol) phaseListen() error {
 		timeSinceLastBlk = time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].BestBlock.Header.Timestamp, 0))
 	}
 	additionalWaitTime := common.MinBlkInterval - timeSinceLastBlk
-
+	if additionalWaitTime < 0 {
+		additionalWaitTime = 0
+	}
 	fmt.Println("BFT: Listen phase", time.Since(protocol.startTime).Seconds())
 
 	timeout := time.AfterFunc(ListenTimeout*time.Second+additionalWaitTime, func() {
