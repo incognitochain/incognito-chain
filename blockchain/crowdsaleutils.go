@@ -236,6 +236,10 @@ func generateCrowdsalePaymentInstruction(
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
 	dcbShardID := common.GetShardIDFromLastByte(dcbPk[len(dcbPk)-1])
-	paymentInst := []string{strconv.Itoa(metadata.CrowdsalePaymentMeta), strconv.Itoa(int(dcbShardID)), instStr}
+	paymentInst := []string{
+		strconv.Itoa(metadata.CrowdsalePaymentMeta),
+		strconv.Itoa(int(dcbShardID)),
+		instStr,
+	}
 	return [][]string{paymentInst}, nil
 }
