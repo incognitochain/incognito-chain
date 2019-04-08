@@ -2,8 +2,9 @@ package frombeaconins
 
 import (
 	"encoding/json"
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"strconv"
+
+	"github.com/constant-money/constant-chain/blockchain/component"
 
 	"github.com/constant-money/constant-chain/transaction"
 
@@ -60,11 +61,13 @@ func (txSendBackTokenVoteFailIns *TxSendBackTokenVoteFailIns) BuildTransaction(
 }
 
 func NewSendBackTokenVoteFailIns(
+	boardType common.BoardType,
 	paymentAddress privacy.PaymentAddress,
 	amount uint64,
 	propertyID common.Hash,
 ) *TxSendBackTokenVoteFailIns {
 	return &TxSendBackTokenVoteFailIns{
+		BoardType:      boardType,
 		PaymentAddress: paymentAddress,
 		Amount:         amount,
 		PropertyID:     propertyID,
@@ -83,13 +86,13 @@ func NewSendBackTokenVoteFailTx(
 
 	//create token params
 	customTokenParamTx := mintDCBTokenParam
+	if boardType == common.GOVBoard {
+		customTokenParamTx = mintGOVTokenParam
+	}
 	customTokenParamTx.Receiver = []transaction.TxTokenVout{{
 		Value:          amount,
 		PaymentAddress: paymentAddress,
 	}}
-	if boardType == common.GOVBoard {
-		customTokenParamTx = mintGOVTokenParam
-	}
 	customTokenParamTx.Amount = amount
 
 	//CALL DB
@@ -113,7 +116,6 @@ func NewSendBackTokenVoteFailTx(
 	if err1 != nil {
 		return nil, err1
 	}
-	txCustom.Type = common.TxCustomTokenType
 	return txCustom, nil
 }
 
