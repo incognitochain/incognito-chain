@@ -719,8 +719,6 @@ func (tx *Tx) ValidateTxWithBlockChain(
 }
 
 func (tx *Tx) validateNormalTxSanityData() (bool, error) {
-	//todo @0xthunderbird
-	return true, nil
 	txN := tx
 	//check version
 	if txN.Version > TxVersion {
@@ -729,6 +727,11 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 	// check LockTime before now
 	if int64(txN.LockTime) > time.Now().Unix() {
 		return false, errors.New("wrong tx locktime")
+	}
+
+	// check tx size
+	if tx.GetTxActualSize() > common.MaxTxSize{
+		return false, errors.New("tx size is too large")
 	}
 
 	// check sanity of Proof
@@ -841,7 +844,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 			//check ComOutputValue
 			for i := 0; i < len(txN.Proof.ComOutputValue); i++ {
 				if !txN.Proof.ComOutputValue[i].IsSafe() {
-					return false, errors.New("validate sanity ComInputValue of proof failed")
+					return false, errors.New("validate sanity ComOutputValue of proof failed")
 				}
 			}
 			if len(txN.Proof.CommitmentIndices) != len(txN.Proof.InputCoins)*privacy.CMRingSize {
