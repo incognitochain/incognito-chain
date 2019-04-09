@@ -729,6 +729,11 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 		return false, errors.New("wrong tx locktime")
 	}
 
+	// check tx size
+	if tx.GetTxActualSize() > common.MaxTxSize{
+		return false, errors.New("tx size is too large")
+	}
+
 	// check sanity of Proof
 	validateSanityOfProof, err := tx.validateSanityDataOfProof()
 	if err != nil || !validateSanityOfProof {
