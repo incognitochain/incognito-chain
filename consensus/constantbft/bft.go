@@ -16,11 +16,6 @@ type BFTProtocol struct {
 	cBFTMsg   chan wire.Message
 	EngineCfg *EngineConfig
 
-	// BlockGen   *blockchain.BlkTmplGenerator
-	// BlockChain *blockchain.BlockChain
-	// Server     serverInterface
-	// UserKeySet *cashec.KeySet
-
 	cQuit    chan struct{}
 	cTimeout chan struct{}
 
