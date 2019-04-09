@@ -117,24 +117,14 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	peerConn.SetIsConnected(true)
 	for {
 		Logger.log.Infof("PEER %s (address: %s) Reading stream", peerConn.RemotePeer.PeerID.Pretty(), peerConn.RemotePeer.RawAddress)
-		//str, errR := rw.ReadString(DelimMessageByte)
-		//if errR != nil {
-		//	peerConn.SetIsConnected(false)
-		//	Logger.log.Error("---------------------------------------------------------------------")
-		//	Logger.log.Errorf("InMessageHandler ERROR %s %s", peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
-		//	Logger.log.Error(errR)
-		//	Logger.log.Errorf("InMessageHandler QUIT %s %s", peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
-		//	Logger.log.Error("---------------------------------------------------------------------")
-		//	close(peerConn.cWrite)
-		//	return
-		//}
+
 		str, errR := peerConn.ReadString(rw, DelimMessageByte, SPAM_MESSAGE_SIZE)
 		if errR != nil {
 			peerConn.SetIsConnected(false)
 			Logger.log.Error("---------------------------------------------------------------------")
 			Logger.log.Errorf("InMessageHandler ERROR %s %s", peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
 			Logger.log.Error(errR)
-			Logger.log.Errorf("InMessageHandler QUIT %s %s", peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
+			Logger.log.Errorf("InMessageHandler QUIT")
 			Logger.log.Error("---------------------------------------------------------------------")
 			close(peerConn.cWrite)
 			return
@@ -158,12 +148,6 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					Logger.log.Error(err)
 					return
 				}
-				// disconnect when received spam message
-				if len(jsonDecodeBytes) >= SPAM_MESSAGE_SIZE {
-					Logger.log.Error("InMessageHandler received spam message")
-					peerConn.ForceClose()
-					return
-				}
 
 				Logger.log.Infof("In message content : %s", string(jsonDecodeBytes))
 
@@ -171,6 +155,22 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				messageBody := jsonDecodeBytes[:len(jsonDecodeBytes)-wire.MessageHeaderSize]
 
 				messageHeader := jsonDecodeBytes[len(jsonDecodeBytes)-wire.MessageHeaderSize:]
+
+				// get cmd type in header message
+				commandInHeader := bytes.Trim(messageHeader[:wire.MessageCmdTypeSize], "\x00")
+				commandType := string(messageHeader[:len(commandInHeader)])
+				// convert to particular message from message cmd type
+				message, err := wire.MakeEmptyMessage(string(commandType))
+				if err != nil {
+					Logger.log.Error("Can not find particular message for message cmd type")
+					Logger.log.Error(err)
+					return
+				}
+
+				if len(jsonDecodeBytes) > message.MaxPayloadLength(1) {
+					Logger.log.Error("Msg size exceed MsgType %s max size", commandType)
+					return
+				}
 				// check forward
 				if peerConn.Config.MessageListeners.GetCurrentRoleShard != nil {
 					cRole, cShard := peerConn.Config.MessageListeners.GetCurrentRoleShard()
@@ -195,17 +195,6 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 							return
 						}
 					}
-				}
-
-				// get cmd type in header message
-				commandInHeader := bytes.Trim(messageHeader[:wire.MessageCmdTypeSize], "\x00")
-				commandType := string(messageHeader[:len(commandInHeader)])
-				// convert to particular message from message cmd type
-				message, err := wire.MakeEmptyMessage(string(commandType))
-				if err != nil {
-					Logger.log.Error("Can not find particular message for message cmd type")
-					Logger.log.Error(err)
-					return
 				}
 
 				err = json.Unmarshal(messageBody, &message)
