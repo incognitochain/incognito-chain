@@ -210,7 +210,7 @@ func (protocol *BFTProtocol) phasePrepare() error {
 	var collectedRiList map[string][]byte //map of members and their Ri
 	collectedRiList = make(map[string][]byte)
 	collectedRiList[protocol.EngineCfg.UserKeySet.GetPublicKeyB58()] = protocol.multiSigScheme.personal.Ri
-preparephase:
+phase:
 	for {
 		select {
 		case <-protocol.cTimeout:
@@ -226,7 +226,7 @@ preparephase:
 			}
 
 			protocol.phase = PBFT_COMMIT
-			break preparephase
+			break phase
 		case msgPrepare := <-protocol.cBFTMsg:
 			if msgPrepare.MessageType() == wire.CmdBFTPrepare {
 				fmt.Println("BFT: Prepare msg received", time.Since(protocol.startTime).Seconds())
