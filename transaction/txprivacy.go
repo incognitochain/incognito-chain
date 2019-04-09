@@ -719,8 +719,6 @@ func (tx *Tx) ValidateTxWithBlockChain(
 }
 
 func (tx *Tx) validateNormalTxSanityData() (bool, error) {
-	//todo @0xthunderbird
-	return true, nil
 	txN := tx
 	//check version
 	if txN.Version > TxVersion {
@@ -841,7 +839,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 			//check ComOutputValue
 			for i := 0; i < len(txN.Proof.ComOutputValue); i++ {
 				if !txN.Proof.ComOutputValue[i].IsSafe() {
-					return false, errors.New("validate sanity ComInputValue of proof failed")
+					return false, errors.New("validate sanity ComOutputValue of proof failed")
 				}
 			}
 			if len(txN.Proof.CommitmentIndices) != len(txN.Proof.InputCoins)*privacy.CMRingSize {
