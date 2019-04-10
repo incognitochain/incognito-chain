@@ -176,7 +176,7 @@ func (rpcServer RpcServer) sendRawCustomTokenTxWithMetadata(params interface{}, 
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	txMsg.(*wire.MessageTx).Transaction = &tx
+	txMsg.(*wire.MessageTxToken).Transaction = &tx
 	rpcServer.config.Server.PushMessageToAll(txMsg)
 
 	result := jsonresult.CreateTransactionResult{
