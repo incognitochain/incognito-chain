@@ -260,7 +260,7 @@ func buildInstTypeAndAmountForIssuingAction(
 	stabilityInfo := beaconBestState.StabilityInfo
 	oracle := stabilityInfo.Oracle
 	if bytes.Equal(md.AssetType[:], common.ConstantID[:]) {
-		return "accepted", md.DepositedAmount / oracle.Constant
+		return "accepted", (md.DepositedAmount * 100) / oracle.Constant
 	}
 	// process for case of DCB token
 	raiseReserveData := stabilityInfo.DCBConstitution.DCBParams.RaiseReserveData
