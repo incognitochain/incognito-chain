@@ -117,6 +117,7 @@ func (engine *Engine) Stop() error {
 }
 
 func (engine *Engine) execBeaconRole() {
+	engine.config.BlockChain.BestState.Beacon.LockMu.Lock()
 	if engine.currentBFTBlkHeight <= engine.config.BlockChain.BestState.Beacon.BeaconHeight {
 		// reset round
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
@@ -158,6 +159,7 @@ func (engine *Engine) execBeaconRole() {
 		err = errors.New("Not your turn yet")
 	}
 
+	engine.config.BlockChain.BestState.Beacon.LockMu.Unlock()
 	if err == nil {
 		fmt.Println(resBlk.(*blockchain.BeaconBlock))
 		err = engine.config.BlockChain.InsertBeaconBlock(resBlk.(*blockchain.BeaconBlock), false)
@@ -183,6 +185,8 @@ func (engine *Engine) execBeaconRole() {
 }
 
 func (engine *Engine) execShardRole(shardID byte) {
+	engine.config.BlockChain.BestState.Beacon.LockMu.Lock()
+	engine.config.BlockChain.BestState.Shard[shardID].Lock.Lock()
 	if engine.currentBFTBlkHeight <= engine.config.BlockChain.BestState.Shard[shardID].ShardHeight {
 		// reset
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
@@ -227,6 +231,9 @@ func (engine *Engine) execShardRole(shardID byte) {
 	default:
 		err = errors.New("Not your turn yet")
 	}
+
+	engine.config.BlockChain.BestState.Beacon.LockMu.Unlock()
+	engine.config.BlockChain.BestState.Shard[shardID].Lock.Unlock()
 	if err == nil {
 		shardBlk := resBlk.(*blockchain.ShardBlock)
 		fmt.Println("========NEW SHARD BLOCK=======", shardBlk.Header.Height)
