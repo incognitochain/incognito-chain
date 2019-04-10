@@ -1404,6 +1404,7 @@ func (bc *BlockChain) processUpdateDCBConstitutionIns(inst []string) error {
 	if err != nil {
 		return err
 	}
+	bc.GetDatabase().AddBoardFundDB(boardType, constitution.GetConstitutionIndex(), bc.BestState.Beacon.StabilityInfo.BankFund)
 	return nil
 }
 
@@ -1427,5 +1428,6 @@ func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
 	if err != nil {
 		return err
 	}
+	bc.GetDatabase().AddBoardFundDB(boardType, constitution.GetConstitutionIndex(), bc.BestState.Beacon.StabilityInfo.SalaryFund)
 	return nil
 }
