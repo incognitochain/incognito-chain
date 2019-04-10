@@ -4,7 +4,7 @@ const (
 	ListenTimeout  = 10  //in s
 	PrepareTimeout = 4   //in s
 	CommitTimeout  = 4   //in s
-	DelayTime      = 600 // in ms
+	DelayTime      = 300 // in ms
 )
 
 const (
