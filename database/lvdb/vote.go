@@ -273,6 +273,74 @@ func (db *db) GetBoardVoterList(boardType common.BoardType, candidatePaymentAddr
 	return listVoter
 }
 
+func (db *db) AddBoardFundDB(boardType common.BoardType, constitutionIndex uint32, amountOfBoardFund uint64) error {
+	key := GetKeyBoardFund(boardType, constitutionIndex)
+	ok, err := db.HasValue(key)
+	if err != nil {
+		return err
+	}
+	if ok {
+		return errors.Errorf("Can not update board fund")
+	}
+	err = db.Put(key, common.Uint64ToBytes(amountOfBoardFund))
+	return err
+}
+
+func (db *db) AddConstantsPriceDB(constitutionIndex uint32, price uint64) error {
+	key := GetKeyConstantsPrice(constitutionIndex)
+	ok, err := db.HasValue(key)
+	if err != nil {
+		return err
+	}
+	if ok {
+		valueBytes, _ := db.Get(key)
+		value := common.BytesToUint64(valueBytes)
+		value += price
+		err = db.Put(key, common.Uint64ToBytes(value))
+		return err
+	}
+	err = db.Put(key, common.Uint64ToBytes(price))
+	return err
+}
+
+func (db *db) DeleteAnyProposalButThisDB(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte) error {
+	begin := GetKeySubmitProposal(boardType, constitutionIndex, nil)
+	end := GetKeySubmitProposal(boardType, constitutionIndex+1, nil)
+	searchRange := util.Range{
+		Start: begin,
+		Limit: end,
+	}
+	iter := db.NewIterator(&searchRange, nil)
+	for iter.Next() {
+		key := iter.Key()
+		_, _, proposalTxIDTemp, err := ParseKeySubmitProposal(key)
+		if err != nil {
+			return err
+		}
+		if !common.ByteEqual(proposalTxID, proposalTxIDTemp) {
+			err = db.Delete(key)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (db *db) GetProposalSubmitterByConstitutionIndexDB(boardType common.BoardType, constitutionIndex uint32) ([]byte, error) {
+	begin := GetKeySubmitProposal(boardType, constitutionIndex, nil)
+	end := GetKeySubmitProposal(boardType, constitutionIndex+1, nil)
+	searchRange := util.Range{
+		Start: begin,
+		Limit: end,
+	}
+	iter := db.NewIterator(&searchRange, nil)
+	for iter.Next() {
+		return iter.Value(), nil
+	}
+	return nil, errors.Errorf("Proposal submitter not found")
+}
+
 func concatListPaymentAddresses(paymentAddresses []privacy.PaymentAddress) []byte {
 	res := make([]byte, len(paymentAddresses)*common.PaymentAddressLength)
 	i := 0
