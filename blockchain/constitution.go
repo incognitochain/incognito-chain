@@ -181,6 +181,14 @@ func (helper GOVConstitutionHelper) GetBoardFund(chain *BlockChain) uint64 {
 	return chain.BestState.Beacon.StabilityInfo.SalaryFund
 }
 
+func (helper DCBConstitutionHelper) GetBoardReward(chain *BlockChain) uint64 {
+	// chain.GetDatabase()
+	return chain.BestState.Beacon.StabilityInfo.BankFund
+}
+func (helper GOVConstitutionHelper) GetBoardReward(chain *BlockChain) uint64 {
+	return chain.BestState.Beacon.StabilityInfo.SalaryFund
+}
+
 func (helper DCBConstitutionHelper) GetTokenID() *common.Hash {
 	id := common.Hash(common.DCBTokenID)
 	return &id

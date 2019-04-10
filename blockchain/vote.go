@@ -27,6 +27,7 @@ type ConstitutionHelper interface {
 	GetCurrentBoardPaymentAddress(chain *BlockChain) []privacy.PaymentAddress
 	GetBoardSumToken(chain *BlockChain) uint64
 	GetBoardFund(chain *BlockChain) uint64
+	GetBoardReward(chain *BlockChain) uint64
 	GetTokenID() *common.Hash
 	GetAmountOfVoteToBoard(chain *BlockChain, candidatePaymentAddress privacy.PaymentAddress, voterPaymentAddress privacy.PaymentAddress, boardIndex uint32) uint64
 	GetBoard(chain *BlockChain) metadata.GovernorInterface
@@ -131,22 +132,26 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 	if bestProposal.NumberOfVote == 0 {
 		return resIns, nil
 	}
-	byteTemp, err0 := db.GetSubmitProposalDB(helper.GetBoardType(), helper.GetConstitutionInfo(self).ConstitutionIndex+1, bestProposal.TxId.GetBytes())
-	gg := lvdb.ViewDBByPrefix(db, lvdb.SubmitProposalPrefix)
-	for key, valuee := range gg {
-		fmt.Printf("[voting] - - - - - %+v %+v\n", key, valuee)
+
+	err = db.DeleteAnyProposalButThisDB(helper.GetBoardType(), nextConstitutionIndex, bestProposal.TxId.GetBytes())
+	if helper.GetConstitutionInfo(self).ConstitutionIndex != 0 {
+		byteTemp, err0 := db.GetProposalSubmitterByConstitutionIndexDB(helper.GetBoardType(), helper.GetConstitutionInfo(self).ConstitutionIndex)
+		if err0 != nil {
+			return resIns, nil
+		}
+		submitterPaymentAddress := privacy.NewPaymentAddressFromByte(byteTemp)
+		if submitterPaymentAddress != nil {
+			rewardForProposalSubmitterIns, err := helper.NewRewardProposalSubmitterIns(self, submitterPaymentAddress)
+			if err == nil {
+				resIns = append(resIns, rewardForProposalSubmitterIns)
+			}
+		}
 	}
-	_ = gg
+	byteTemp, err0 := db.GetProposalSubmitterByConstitutionIndexDB(helper.GetBoardType(), helper.GetConstitutionInfo(self).ConstitutionIndex)
 	if err0 != nil {
 		return resIns, nil
 	}
 	submitterPaymentAddress := privacy.NewPaymentAddressFromByte(byteTemp)
-	if submitterPaymentAddress != nil {
-		rewardForProposalSubmitterIns, err := helper.NewRewardProposalSubmitterIns(self, submitterPaymentAddress)
-		if err == nil {
-			resIns = append(resIns, rewardForProposalSubmitterIns)
-		}
-	}
 	shardID := frombeaconins.GetShardIDFromPaymentAddressBytes(*submitterPaymentAddress)
 	acceptedProposalIns := helper.NewAcceptProposalIns(&bestProposal.TxId, VoteTable[bestProposal.TxId], shardID)
 	resIns = append(resIns, acceptedProposalIns)

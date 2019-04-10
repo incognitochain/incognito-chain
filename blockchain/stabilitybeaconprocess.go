@@ -547,5 +547,5 @@ func (bc *BlockChain) updateStabilityLocalState(block *BeaconBlock) error {
 			return err
 		}
 	}
-	return nil
+	return bc.GetDatabase().AddConstantsPriceDB(bc.BestState.Beacon.StabilityInfo.DCBConstitution.ConstitutionIndex, bc.BestState.Beacon.StabilityInfo.Oracle.Constant)
 }
