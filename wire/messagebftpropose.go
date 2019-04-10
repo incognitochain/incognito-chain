@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	MaxBFTProposePayload = 5000 // 5 Kb
+	MaxBFTProposePayload = 50000 // 50 Kb
 )
 
 type MessageBFTPropose struct {
