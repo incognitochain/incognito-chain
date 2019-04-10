@@ -18,7 +18,7 @@ type CrowdsalePayment struct {
 
 func (csRes *CrowdsalePayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if sale exists
-	saleData, err := bcr.GetCrowdsaleData(csRes.SaleID)
+	saleData, err := bcr.GetProposedCrowdsale(csRes.SaleID)
 	if err != nil {
 		return false, err
 	}

@@ -32,14 +32,13 @@ func (td *tradeData) Compare(td2 *tradeData) bool {
 func (bc *BlockChain) calcTradeData(inst string) (*tradeData, error) {
 	tradeID, reqAmount, err := metadata.ParseTradeActivationActionValue(inst)
 	if err != nil {
-		fmt.Printf("[db] err parsing ta action: %v\n", err)
-		return nil, err
+		return nil, fmt.Errorf("failed parsing ta action: %v", err)
 	}
 
+	// Okay to use unsynced BeaconBestState since we can skip activating trade if it is deleted
 	bondID, buy, activated, amount, err := bc.GetLatestTradeActivation(tradeID)
 	if err != nil {
-		fmt.Printf("[db] err getting latest trade: %v\n", err)
-		return nil, err
+		return nil, fmt.Errorf("failed getting latest trade: %v", err)
 	}
 
 	return &tradeData{
@@ -68,7 +67,8 @@ func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 ) ([]metadata.Transaction, error) {
 	data, err := blockgen.chain.calcTradeData(inst)
 	if err != nil {
-		return nil, err
+		fmt.Printf("[db] calcTradeData err: %+v\n", err)
+		return nil, nil // Skip activation
 	}
 
 	// Ignore activation request if params are unsynced

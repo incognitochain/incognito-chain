@@ -27,7 +27,7 @@ const (
 	IssuingRequestMeta           = 24
 	IssuingResponseMeta          = 25
 	ContractingRequestMeta       = 26
-	ContractingReponseMeta       = 27
+	ContractingResponseMeta      = 27
 	OracleFeedMeta               = 28
 	OracleRewardMeta             = 29
 	RefundMeta                   = 30
