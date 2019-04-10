@@ -648,6 +648,11 @@ func (tx *Tx) GetUniqueReceiver() (bool, []byte, uint64) {
 	return count == 1, pubkey, amount
 }
 
+func (tx *Tx) GetTransferData() (bool, []byte, uint64, *common.Hash) {
+	unique, pk, amount := tx.GetUniqueReceiver()
+	return unique, pk, amount, &common.ConstantID
+}
+
 func (tx *Tx) GetTokenReceivers() ([][]byte, []uint64) {
 	return nil, nil
 }
@@ -730,7 +735,7 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 	}
 
 	// check tx size
-	if tx.GetTxActualSize() > common.MaxTxSize{
+	if tx.GetTxActualSize() > common.MaxTxSize {
 		return false, errors.New("tx size is too large")
 	}
 

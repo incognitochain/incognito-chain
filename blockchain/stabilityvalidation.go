@@ -5,15 +5,13 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/pkg/errors"
 )
 
-func (bc *BlockChain) verifyBuyFromGOVRequestTx(tx metadata.Transaction, insts [][]string, instUsed []int) error {
-	fmt.Printf("[db] verifying buy from GOV Request tx\n")
+func (bc *BlockChain) verifyBuyFromGOVRequestTx(tx metadata.Transaction, insts [][]string, instUsed []int, shardID byte) error {
 	meta, ok := tx.GetMetadata().(*metadata.BuySellRequest)
 	if !ok {
 		return errors.Errorf("error parsing metadata BuySellRequest of tx %s", tx.Hash().String())
@@ -22,9 +20,10 @@ func (bc *BlockChain) verifyBuyFromGOVRequestTx(tx metadata.Transaction, insts [
 		return nil
 	}
 
+	fmt.Printf("[db] verifying buy from GOV Request tx\n")
 	for i, inst := range insts {
 		// Find corresponding instruction in block
-		if instUsed[i] > 0 || inst[0] != strconv.Itoa(metadata.TradeActivationMeta) {
+		if instUsed[i] > 0 || inst[0] != strconv.Itoa(metadata.TradeActivationMeta) || inst[1] != strconv.Itoa(int(shardID)) {
 			continue
 		}
 		td, err := bc.calcTradeData(inst[2])
@@ -58,8 +57,7 @@ func (bc *BlockChain) verifyBuyFromGOVRequestTx(tx metadata.Transaction, insts [
 	return errors.Errorf("no instruction found for BuySellRequest tx %s", tx.Hash().String())
 }
 
-func (bc *BlockChain) verifyBuyBackRequestTx(tx metadata.Transaction, insts [][]string, instUsed []int) error {
-	fmt.Printf("[db] verifying buy back GOV Request tx\n")
+func (bc *BlockChain) verifyBuyBackRequestTx(tx metadata.Transaction, insts [][]string, instUsed []int, shardID byte) error {
 	meta, ok := tx.GetMetadata().(*metadata.BuyBackRequest)
 	if !ok {
 		return errors.Errorf("error parsing metadata BuyBackRequest of tx %s", tx.Hash().String())
@@ -68,6 +66,8 @@ func (bc *BlockChain) verifyBuyBackRequestTx(tx metadata.Transaction, insts [][]
 		return nil
 	}
 
+	fmt.Printf("[db] verifying buy back GOV Request tx\n")
+
 	txToken, ok := tx.(*transaction.TxCustomToken)
 	if !ok {
 		return errors.Errorf("error parsing TxCustomToken of tx %s", tx.Hash().String())
@@ -75,7 +75,7 @@ func (bc *BlockChain) verifyBuyBackRequestTx(tx metadata.Transaction, insts [][]
 
 	for i, inst := range insts {
 		// Find corresponding instruction in block
-		if instUsed[i] > 0 || inst[0] != strconv.Itoa(metadata.TradeActivationMeta) {
+		if instUsed[i] > 0 || inst[0] != strconv.Itoa(metadata.TradeActivationMeta) || inst[1] != strconv.Itoa(int(shardID)) {
 			continue
 		}
 		td, err := bc.calcTradeData(inst[2])
@@ -125,42 +125,16 @@ func (bc *BlockChain) verifyCrowdsalePaymentTx(tx metadata.Transaction, insts []
 		if err != nil {
 			continue
 		}
-		var assetID common.Hash
-		amount := uint64(0)
-		pk := []byte{}
-		if common.IsConstantAsset(&cpi.AssetID) {
-			if _, ok := tx.(*transaction.Tx); !ok {
-				continue
-			}
-			assetID = cpi.AssetID
-			unique := false
-			unique, pk, amount = tx.GetUniqueReceiver()
-			if !unique {
-				continue
-			}
-		} else {
-			var customTx *transaction.TxCustomToken
-			ok := false
-			if customTx, ok = tx.(*transaction.TxCustomToken); !ok {
-				continue
-			}
-			unique := false
-			unique, pk, amount = tx.GetTokenUniqueReceiver()
-			assetID = customTx.TxTokenData.PropertyID
-			if !unique {
-				continue
-			}
-		}
-
+		unique, pk, amount, assetID := tx.GetTransferData()
 		txData := CrowdsalePaymentInstruction{
 			PaymentAddress: privacy.PaymentAddress{Pk: pk},
 			Amount:         amount,
-			AssetID:        assetID,
+			AssetID:        *assetID,
 			SaleID:         nil, // no need to check these last fields
 			SentAmount:     0,
 			UpdateSale:     false,
 		}
-		if !txData.Compare(cpi) {
+		if !unique || !txData.Compare(cpi) {
 			fmt.Printf("[db] data mismatched: %+v\t%+v\n", txData, cpi)
 			return errors.Errorf("invalid data for CrowdsalePayment tx: got %+v, expect %+v", txData, cpi)
 		}
@@ -173,8 +147,43 @@ func (bc *BlockChain) verifyCrowdsalePaymentTx(tx metadata.Transaction, insts []
 	return errors.Errorf("no instruction found for CrowdsalePayment tx %s", tx.Hash().String())
 }
 
+func (bc *BlockChain) verifyIssuingResponseTx(tx metadata.Transaction, insts [][]string, instUsed []int, shardID byte) error {
+	fmt.Printf("[db] verifying issuing response tx\n")
+	for i, inst := range insts {
+		// Find corresponding instruction in block
+		if instUsed[i] > 0 ||
+			inst[0] != strconv.Itoa(metadata.IssuingRequestMeta) ||
+			inst[1] != strconv.Itoa(int(shardID)) ||
+			inst[2] != "accepted" {
+			continue
+		}
+		issuingInfo, err := parseIssuingInfo(inst[3])
+		if err != nil {
+			continue
+		}
+		unique, pk, amount, assetID := tx.GetTransferData()
+		txData := &IssuingInfo{
+			ReceiverAddress: privacy.PaymentAddress{Pk: pk},
+			Amount:          amount,
+			TokenID:         *assetID,
+		}
+
+		if !unique || !txData.Compare(issuingInfo) {
+			fmt.Printf("[db] data mismatched: %+v\t%+v\n", txData, issuingInfo)
+			return errors.Errorf("invalid data for IssuingResponse tx: got %+v, expect %+v", txData, issuingInfo)
+		}
+
+		instUsed[i] += 1
+		fmt.Printf("[db] inst %d matched\n", i)
+		return nil
+	}
+
+	return errors.Errorf("no instruction found for IssuingResponse tx %s", tx.Hash().String())
+}
+
 func (bc *BlockChain) VerifyStabilityTransactionsForNewBlock(insts [][]string, block *ShardBlock) error {
 	instUsed := make([]int, len(insts)) // Count how many times an inst is used by a tx
+	shardID := block.Header.ShardID
 	for _, tx := range block.Body.Transactions {
 		if tx.GetMetadata() == nil {
 			continue
@@ -183,18 +192,20 @@ func (bc *BlockChain) VerifyStabilityTransactionsForNewBlock(insts [][]string, b
 		var err error
 		switch tx.GetMetadataType() {
 		case metadata.BuyFromGOVRequestMeta:
-			err = bc.verifyBuyFromGOVRequestTx(tx, insts, instUsed)
+			err = bc.verifyBuyFromGOVRequestTx(tx, insts, instUsed, shardID)
 
 		case metadata.BuyBackRequestMeta:
-			err = bc.verifyBuyBackRequestTx(tx, insts, instUsed)
+			err = bc.verifyBuyBackRequestTx(tx, insts, instUsed, shardID)
 
 		case metadata.ShardBlockSalaryResponseMeta:
-			err = bc.verifyShardBlockSalaryResTx(tx, insts, instUsed, block.Header.ShardID)
+			err = bc.verifyShardBlockSalaryResTx(tx, insts, instUsed, shardID)
 
 		case metadata.CrowdsalePaymentMeta:
-			err = bc.verifyCrowdsalePaymentTx(tx, insts, instUsed, block.Header.ShardID)
+			err = bc.verifyCrowdsalePaymentTx(tx, insts, instUsed, shardID)
 
-			// TODO(@0xbunyip): IssuingResponseMeta
+		case metadata.IssuingResponseMeta:
+			err = bc.verifyIssuingResponseTx(tx, insts, instUsed, shardID)
+
 			// TODO(@0xbunyip): ContractingResponseMeta
 		}
 
