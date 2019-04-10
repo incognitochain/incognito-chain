@@ -8,7 +8,7 @@ import (
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/transaction"
-	"github.com/libp2p/go-libp2p-peer"
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 // list message type
@@ -17,19 +17,17 @@ const (
 	MessageHeaderSize  = 24
 	MessageCmdTypeSize = 12
 
+	CmdGetBlockBeacon     = "getblkbeacon"
+	CmdGetBlockShard      = "getblkshard"
+	CmdGetCrossShard      = "getcrossshd"
+	CmdGetShardToBeacon   = "getshdtobcn"
 	CmdBlockShard         = "blockshard"
 	CmdBlockBeacon        = "blockbeacon"
-	CmdGetCrossShard      = "getcrossshd"
 	CmdCrossShard         = "crossshard"
-	CmdGetShardToBeacon   = "getshdtobcn"
 	CmdBlkShardToBeacon   = "blkshdtobcn"
 	CmdTx                 = "tx"
 	CmdCustomToken        = "txtoken"
 	CmdPrivacyCustomToken = "txprivacytok"
-	CmdGetBlockBeacon     = "getblkbeacon"
-	CmdGetBlockShard      = "getblkshard"
-	CmdInv                = "inv"
-	CmdGetData            = "getdata"
 	CmdVersion            = "version"
 	CmdVerack             = "verack"
 	CmdGetAddr            = "getaddr"
@@ -37,13 +35,12 @@ const (
 	CmdPing               = "ping"
 
 	// POS Cmd
-	CmdBFTPropose   = "bftpropose"
-	CmdBFTPrepare   = "bftprepare"
-	CmdBFTCommit    = "bftcommit"
-	CmdBFTReady     = "bftready"
-	CmdBFTReq       = "bftreq"
-	CmdInvalidBlock = "invalidblock"
-	CmdPeerState    = "peerstate"
+	CmdBFTPropose = "bftpropose"
+	CmdBFTPrepare = "bftprepare"
+	CmdBFTCommit  = "bftcommit"
+	CmdBFTReady   = "bftready"
+	CmdBFTReq     = "bftreq"
+	CmdPeerState  = "peerstate"
 
 	// heavy message check cmd
 	CmdMsgCheck     = "msgcheck"
@@ -222,8 +219,6 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdBFTReady, nil
 	case reflect.TypeOf(&MessageBFTReq{}):
 		return CmdBFTReq, nil
-	case reflect.TypeOf(&MessageInvalidBlock{}):
-		return CmdInvalidBlock, nil
 	case reflect.TypeOf(&MessagePeerState{}):
 		return CmdPeerState, nil
 	case reflect.TypeOf(&MessageMsgCheck{}):
