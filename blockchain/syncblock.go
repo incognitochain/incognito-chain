@@ -543,8 +543,12 @@ func (blockchain *BlockChain) SyncBlkCrossShard(getFromPool bool, byHash bool, b
 var lasttime = time.Now()
 
 func (blockchain *BlockChain) InsertBlockFromPool() {
+	fmt.Println("InsertBlockFromPool")
 	blockchain.syncStatus.Lock()
-	defer blockchain.syncStatus.Unlock()
+	defer func() {
+		blockchain.syncStatus.Unlock()
+		fmt.Println("InsertBlockFromPool unlock")
+	}()
 
 	if time.Since(lasttime) >= 30*time.Millisecond {
 		lasttime = time.Now()
@@ -553,23 +557,31 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 	}
 
 	blks := blockchain.config.BeaconPool.GetValidBlock()
+	fmt.Println("Get beacon valid blks ", blks)
 	for _, newBlk := range blks {
+		fmt.Println("Insert beacon blk", newBlk.Header.Height)
 		err := blockchain.InsertBeaconBlock(newBlk, false)
+		fmt.Println("Insert beacon blk finish", newBlk.Header.Height)
 		if err != nil {
 			Logger.log.Error(err)
 		}
 	}
 
 	for shardID := range blockchain.syncStatus.Shards {
+		fmt.Println("Get shard valid blks ", blks)
 		go func(shardID byte) {
 			blks := blockchain.config.ShardPool[shardID].GetValidBlock()
+			//fmt.Println("GetShardValidBlock", len(blks))
 			for _, newBlk := range blks {
+				//time1 := time.Now()
 				err := blockchain.InsertShardBlock(newBlk, false)
 				if err != nil {
 					Logger.log.Error(err)
 					break
 				}
+				//fmt.Println("Insert Shard blk time: ", newBlk.Header.Height, time.Since(time1).Seconds())
 			}
 		}(shardID)
+
 	}
 }
