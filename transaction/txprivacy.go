@@ -719,6 +719,8 @@ func (tx *Tx) ValidateTxWithBlockChain(
 }
 
 func (tx *Tx) validateNormalTxSanityData() (bool, error) {
+	//todo @0xkraken
+	return true, nil
 	txN := tx
 	//check version
 	if txN.Version > TxVersion {
@@ -730,7 +732,7 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 	}
 
 	// check tx size
-	if tx.GetTxActualSize() > common.MaxTxSize{
+	if tx.GetTxActualSize() > common.MaxTxSize {
 		return false, errors.New("tx size is too large")
 	}
 
