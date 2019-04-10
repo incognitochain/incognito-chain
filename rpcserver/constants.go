@@ -2,6 +2,9 @@ package rpcserver
 
 // rpc cmd method
 const (
+	StartProfiling = "startprofiling"
+	StopProfiling  = "stopprofiling"
+
 	GetNetworkInfo     = "getnetworkinfo"
 	GetConnectionCount = "getconnectioncount"
 	GetAllPeers        = "getallpeers"
