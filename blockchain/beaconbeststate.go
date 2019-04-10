@@ -2,13 +2,13 @@ package blockchain
 
 import (
 	"encoding/binary"
+	"fmt"
 	"sort"
 	"strconv"
 	"sync"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
-	"github.com/pkg/errors"
 )
 
 // BestState houses information about the current best block and other info
@@ -342,5 +342,5 @@ func (bestStateBeacon *BestStateBeacon) GetSaleData(saleID []byte) (*component.S
 	if value, ok := bestStateBeacon.Params[key]; ok {
 		return parseSaleDataValueBeacon(value)
 	}
-	return nil, errors.Errorf("SaleID not exist: %x", saleID)
+	return nil, fmt.Errorf("failed getting SaleData from BSB")
 }
