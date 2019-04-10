@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/pkg/errors"
 )
@@ -68,7 +70,7 @@ func (bc *BlockChain) verifyBuyBackRequestTx(tx metadata.Transaction, insts [][]
 
 	txToken, ok := tx.(*transaction.TxCustomToken)
 	if !ok {
-		return errors.Errorf("erroor parsing TxCustomToken of tx %s", tx.Hash().String())
+		return errors.Errorf("error parsing TxCustomToken of tx %s", tx.Hash().String())
 	}
 
 	for i, inst := range insts {
@@ -111,6 +113,66 @@ func (bc *BlockChain) verifyBuyBackRequestTx(tx metadata.Transaction, insts [][]
 
 	return errors.Errorf("no instruction found for BuyBackRequest tx %s", tx.Hash().String())
 }
+
+func (bc *BlockChain) verifyCrowdsalePaymentTx(tx metadata.Transaction, insts [][]string, instUsed []int, shardID byte) error {
+	fmt.Printf("[db] verifying crowdsale payment tx\n")
+	for i, inst := range insts {
+		// Find corresponding instruction in block
+		if instUsed[i] > 0 || inst[0] != strconv.Itoa(metadata.CrowdsalePaymentMeta) || inst[1] != strconv.Itoa(int(shardID)) {
+			continue
+		}
+		cpi, err := ParseCrowdsalePaymentInstruction(inst[2])
+		if err != nil {
+			continue
+		}
+		var assetID common.Hash
+		amount := uint64(0)
+		pk := []byte{}
+		if common.IsConstantAsset(&cpi.AssetID) {
+			if _, ok := tx.(*transaction.Tx); !ok {
+				continue
+			}
+			assetID = cpi.AssetID
+			unique := false
+			unique, pk, amount = tx.GetUniqueReceiver()
+			if !unique {
+				continue
+			}
+		} else {
+			var customTx *transaction.TxCustomToken
+			ok := false
+			if customTx, ok = tx.(*transaction.TxCustomToken); !ok {
+				continue
+			}
+			unique := false
+			unique, pk, amount = tx.GetTokenUniqueReceiver()
+			assetID = customTx.TxTokenData.PropertyID
+			if !unique {
+				continue
+			}
+		}
+
+		txData := CrowdsalePaymentInstruction{
+			PaymentAddress: privacy.PaymentAddress{Pk: pk},
+			Amount:         amount,
+			AssetID:        assetID,
+			SaleID:         nil, // no need to check these last fields
+			SentAmount:     0,
+			UpdateSale:     false,
+		}
+		if !txData.Compare(cpi) {
+			fmt.Printf("[db] data mismatched: %+v\t%+v\n", txData, cpi)
+			return errors.Errorf("invalid data for CrowdsalePayment tx: got %+v, expect %+v", txData, cpi)
+		}
+
+		instUsed[i] += 1
+		fmt.Printf("[db] inst %d matched\n", i)
+		return nil
+	}
+
+	return errors.Errorf("no instruction found for CrowdsalePayment tx %s", tx.Hash().String())
+}
+
 func (bc *BlockChain) VerifyStabilityTransactionsForNewBlock(insts [][]string, block *ShardBlock) error {
 	instUsed := make([]int, len(insts)) // Count how many times an inst is used by a tx
 	for _, tx := range block.Body.Transactions {
@@ -128,11 +190,22 @@ func (bc *BlockChain) VerifyStabilityTransactionsForNewBlock(insts [][]string, b
 
 		case metadata.ShardBlockSalaryResponseMeta:
 			err = bc.verifyShardBlockSalaryResTx(tx, insts, instUsed, block.Header.ShardID)
+
+		case metadata.CrowdsalePaymentMeta:
+			err = bc.verifyCrowdsalePaymentTx(tx, insts, instUsed, block.Header.ShardID)
+
+			// TODO(@0xbunyip): IssuingResponseMeta
+			// TODO(@0xbunyip): ContractingResponseMeta
 		}
 
 		if err != nil {
 			return err
 		}
 	}
+
+	// TODO(@0xbunyip): check if unused instructions (of the same shard) weren't ignored:
+	// 1. TradeActivation failed either because it's activated, reqAmount too high or failed building Tx
+	// 2. IssuingResponse: inst type == accepted or failed building Tx
+	// 3. ContractingResponse: inst type == accepted or failed building Tx
 	return nil
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/wallet"
-	"github.com/pkg/errors"
 )
 
 // buildPassThroughInstruction converts shard instruction to beacon instruction in order to update BeaconBestState later on in beaconprocess
@@ -38,18 +37,15 @@ func buildInstructionsForCrowdsaleRequest(
 	if saleData, ok = accumulativeValues.saleDataMap[key]; !ok {
 		if value, ok := beaconBestState.Params[key]; ok {
 			saleData, err = parseSaleDataValueBeacon(value)
+			if err != nil {
+				return nil, fmt.Errorf("fail parsing SaleData: %v", err)
+			}
 		} else {
 			// fmt.Printf("[db] saleid not exist: %x\n", saleID)
-			return nil, errors.Errorf("SaleID not exist: %x", saleID)
+			return nil, fmt.Errorf("saleID not exist: %x", saleID)
 		}
 	}
 	accumulativeValues.saleDataMap[key] = saleData
-
-	// Skip payment if either selling or buying asset is offchain (needs confirmation)
-	if common.IsOffChainAsset(&saleData.SellingAsset) || common.IsOffChainAsset(&saleData.BuyingAsset) {
-		// fmt.Println("[db] crowdsale offchain asset")
-		return nil, nil
-	}
 
 	inst, err := buildPaymentInstructionForCrowdsale(
 		priceLimit,
