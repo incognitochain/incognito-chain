@@ -28,6 +28,21 @@ type IssuingInfo struct {
 	CurrencyType    common.Hash
 }
 
+func parseIssuingInfo(issuingInfoRaw string) (*IssuingInfo, error) {
+	var issuingInfo IssuingInfo
+	err := json.Unmarshal([]byte(issuingInfoRaw), &issuingInfo)
+	if err != nil {
+		return nil, err
+	}
+	return &issuingInfo, nil
+}
+
+func (info *IssuingInfo) Compare(info2 *IssuingInfo) bool {
+	return bytes.Equal(info.ReceiverAddress.Pk, info2.ReceiverAddress.Pk) &&
+		info.Amount == info2.Amount &&
+		info.TokenID.IsEqual(&info2.TokenID)
+}
+
 type ContractingReqAction struct {
 	TxReqID common.Hash                 `json:"txReqId"`
 	Meta    metadata.ContractingRequest `json:"meta"`
