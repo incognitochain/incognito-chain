@@ -147,7 +147,6 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 			resIns = append(resIns, rewardForProposalSubmitterIns)
 		}
 	}
-	fmt.Println("[voting] - submitterPaymentAddress ", resIns[len(resIns)-1])
 	shardID := frombeaconins.GetShardIDFromPaymentAddressBytes(*submitterPaymentAddress)
 	acceptedProposalIns := helper.NewAcceptProposalIns(&bestProposal.TxId, VoteTable[bestProposal.TxId], shardID)
 	resIns = append(resIns, acceptedProposalIns)
@@ -229,6 +228,7 @@ func createSendBackTokenVoteFailIns(
 		propertyID = common.GOVTokenID
 	}
 	return frombeaconins.NewSendBackTokenVoteFailIns(
+		boardType,
 		paymentAddress,
 		amount,
 		propertyID,
@@ -276,20 +276,18 @@ func (self *BlockChain) createSendBackTokenAfterVoteFailIns(
 		amountOfToken := lvdb.ParseValueVoteBoardList(value)
 		_, found := setOfNewGovernor[string(candidatePayment)]
 		if (boardIndex == currentBoardIndex+1) && (!found) {
-			inst, _ := frombeaconins.NewSendBackTokenVoteFailIns(
+			inst := frombeaconins.NewSendBackTokenVoteFailIns(
+				boardType,
 				*voterPaymentAddress,
 				amountOfToken,
 				propertyID,
-			).GetStringFormat()
+			)
 			listNewIns = append(
 				listNewIns,
-				frombeaconins.NewSendBackTokenVoteFailIns(
-					*voterPaymentAddress,
-					amountOfToken,
-					propertyID,
-				),
+				inst,
 			)
-			fmt.Println("[voting]-SendBackIns: ", inst)
+			instString, _ := inst.GetStringFormat()
+			fmt.Println("[voting]-SendBackIns: ", instString)
 			err := self.config.DataBase.Delete(key)
 			if err != nil {
 				return nil, err
@@ -388,7 +386,6 @@ func (self *BlockChain) CreateUpdateNewGovernorInstruction(
 	if acceptBoardIns != nil {
 		instructions = append(instructions, acceptBoardIns...)
 	}
-
 	sendBackTokenAfterVoteFailIns, err := self.createSendBackTokenAfterVoteFailIns(
 		helper.GetBoardType(),
 		newBoardPaymentAddress,
@@ -480,7 +477,6 @@ func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper
 		fmt.Println("[voting]-[neededNewGovernor]-Create first instruction")
 		updateGovernorInstruction, err := self.CreateUpdateNewGovernorInstruction(helper)
 		if err != nil {
-			fmt.Println("[voting] - error", err)
 			return nil, err
 		}
 		for _, inst := range updateGovernorInstruction {
@@ -502,7 +498,6 @@ func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper
 			// // step 2 Hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 			updateProposalInstruction, err := self.createAcceptConstitutionAndRewardSubmitter(helper)
 			if err != nil {
-				fmt.Println("[voting] - fucking error", err)
 				return nil, err
 			}
 			fmt.Println("[voting] - updateProposalInstruction : ", updateProposalInstruction)
