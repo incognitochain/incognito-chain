@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"sync"
 	"time"
@@ -168,7 +169,7 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				}
 
 				if len(jsonDecodeBytes) > message.MaxPayloadLength(1) {
-					Logger.log.Error("Msg size exceed MsgType %s max size", commandType)
+					Logger.log.Error(fmt.Printf("Msg size exceed MsgType %s max size, size %v | max allow is", commandType, len(jsonDecodeBytes), message.MaxPayloadLength(1)))
 					return
 				}
 				// check forward
