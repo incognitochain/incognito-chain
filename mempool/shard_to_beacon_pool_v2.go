@@ -101,22 +101,25 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaco
 	//Check if satisfy pool capacity (for valid and invalid)
 	if len(self.pool[blkShardID]) != 0 {
 		numValidPedingBlk := int(self.latestValidHeight[blkShardID] - self.pool[blkShardID][0].Header.Height)
-		numInValidPedingBlk := len(self.pool[blkShardID]) - numValidPedingBlk
 		if numValidPedingBlk < 0 {
 			numValidPedingBlk = 0
 		}
+		numInValidPedingBlk := len(self.pool[blkShardID]) - numValidPedingBlk
 
 		if numValidPedingBlk > MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL {
+			// fmt.Println("exceed shard2beacon 1", blkShardID, numValidPedingBlk, numInValidPedingBlk, self.latestValidHeight[blkShardID], self.pool[blkShardID][0].Header.Height)
 			return 0, 0, errors.New("exceed max valid pending block")
 		}
 
 		lastBlkInPool := self.pool[blkShardID][len(self.pool[blkShardID])-1]
 		if numInValidPedingBlk > MAX_INVALID_SHARD_TO_BEACON_BLK_IN_POOL {
+			// fmt.Println("exceed shard2beacon 2", blkShardID, numValidPedingBlk, numInValidPedingBlk, self.latestValidHeight[blkShardID], self.pool[blkShardID][0].Header.Height)
 			//If invalid block is better than current invalid block
 			if lastBlkInPool.Header.Height > blkHeight {
 				//remove latest block and add better invalid to pool
 				self.pool[blkShardID] = self.pool[blkShardID][:len(self.pool[blkShardID])-1]
 			} else {
+
 				return 0, 0, errors.New("exceed invalid pending block")
 			}
 		}
@@ -206,6 +209,9 @@ func (self *ShardToBeaconPool) GetValidPendingBlock(limit map[byte]uint64) map[b
 			if blks[i].Header.Height > self.latestValidHeight[shardID] {
 				break
 			}
+			if i >= 50 {
+				break
+			}
 			if limit != nil && limit[shardID] != 0 && limit[shardID] < blks[i].Header.Height {
 				break
 			}
@@ -220,6 +226,7 @@ func (self *ShardToBeaconPool) GetValidPendingBlock(limit map[byte]uint64) map[b
 	// }
 	// fmt.Println()
 	//==============
+
 	return finalBlocks
 }
 
