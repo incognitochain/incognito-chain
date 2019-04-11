@@ -13,14 +13,14 @@ import (
 )
 
 func buildBuySellConfirmInst(inst []string, shardID byte) []string {
-	fmt.Printf("[db] build buy sell confirm inst\n")
-
 	contentBytes, _ := base64.StdEncoding.DecodeString(inst[3])
 	var buySellReqAction BuySellReqAction
 	json.Unmarshal(contentBytes, &buySellReqAction)
 	if len(buySellReqAction.Meta.TradeID) == 0 {
 		return []string{}
 	}
+
+	fmt.Printf("[db] build buy sell confirm inst\n")
 	return []string{
 		strconv.Itoa(component.ConfirmBuySellRequestMeta),
 		strconv.Itoa(int(shardID)),
@@ -31,6 +31,12 @@ func buildBuySellConfirmInst(inst []string, shardID byte) []string {
 }
 
 func buildBuyBackConfirmInst(inst []string, shardID byte) []string {
+	var buyBackInfo BuyBackInfo
+	json.Unmarshal([]byte(inst[3]), &buyBackInfo)
+	if len(buyBackInfo.TradeID) == 0 {
+		return []string{}
+	}
+
 	fmt.Printf("[db] build buy back confirm inst\n")
 	return []string{
 		strconv.Itoa(component.ConfirmBuyBackRequestMeta),
@@ -61,7 +67,10 @@ func (blockgen *BlkTmplGenerator) buildTradeBondConfirmInsts(beaconBlocks []*Bea
 					}
 
 				case strconv.Itoa(metadata.BuyBackRequestMeta):
-					insts = append(insts, buildBuyBackConfirmInst(l, shardID))
+					buyBackConfirmInst := buildBuyBackConfirmInst(l, shardID)
+					if len(buyBackConfirmInst) > 0 {
+						insts = append(insts, buyBackConfirmInst)
+					}
 				}
 			}
 		}
