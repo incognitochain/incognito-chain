@@ -20,7 +20,7 @@ type ConstitutionHelper interface {
 	NewAcceptProposalIns(txId *common.Hash, voter []privacy.PaymentAddress, shardID byte) frombeaconins.InstructionFromBeacon
 	GetBoardType() common.BoardType
 	GetConstitutionEndedBlockHeight(chain *BlockChain) uint64
-	NewRewardProposalSubmitterIns(blockgen *BlockChain, receiverAddress *privacy.PaymentAddress) (instruction frombeaconins.InstructionFromBeacon, err error)
+	NewRewardProposalSubmitterIns(blockgen *BlockChain, receiverAddress *privacy.PaymentAddress, amount uint64) (instruction frombeaconins.InstructionFromBeacon, err error)
 	GetPaymentAddressFromSubmitProposalMetadata(tx metadata.Transaction) *privacy.PaymentAddress
 	GetPaymentAddressVoter(chain *BlockChain) ([]privacy.PaymentAddress, error)
 	GetPrizeProposal() uint32
@@ -134,19 +134,6 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 	}
 
 	err = db.DeleteAnyProposalButThisDB(helper.GetBoardType(), nextConstitutionIndex, bestProposal.TxId.GetBytes())
-	if helper.GetConstitutionInfo(self).ConstitutionIndex != 0 {
-		byteTemp, err0 := db.GetProposalSubmitterByConstitutionIndexDB(helper.GetBoardType(), helper.GetConstitutionInfo(self).ConstitutionIndex)
-		if err0 != nil {
-			return resIns, nil
-		}
-		submitterPaymentAddress := privacy.NewPaymentAddressFromByte(byteTemp)
-		if submitterPaymentAddress != nil {
-			rewardForProposalSubmitterIns, err := helper.NewRewardProposalSubmitterIns(self, submitterPaymentAddress)
-			if err == nil {
-				resIns = append(resIns, rewardForProposalSubmitterIns)
-			}
-		}
-	}
 	byteTemp, err0 := db.GetProposalSubmitterByConstitutionIndexDB(helper.GetBoardType(), helper.GetConstitutionInfo(self).ConstitutionIndex)
 	if err0 != nil {
 		return resIns, nil
@@ -155,23 +142,40 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 	shardID := frombeaconins.GetShardIDFromPaymentAddressBytes(*submitterPaymentAddress)
 	acceptedProposalIns := helper.NewAcceptProposalIns(&bestProposal.TxId, VoteTable[bestProposal.TxId], shardID)
 	resIns = append(resIns, acceptedProposalIns)
-	totalReward := helper.GetBoardFund(self) / 10
+	totalReward := helper.GetBoardReward(self)
 	if totalReward > 0 {
 		boardType := helper.GetBoardType()
 		boardIndex := helper.GetBoard(self).GetBoardIndex()
 		listVotersOfCurrentProposal, err := db.GetCurrentProposalWinningVoter(boardType, helper.GetConstitutionInfo(self).ConstitutionIndex)
+		// }
 		if err == nil {
-			voterAndSupporters := make([][]privacy.PaymentAddress, len(listVotersOfCurrentProposal))
+			byteTemp, err0 := db.GetProposalSubmitterByConstitutionIndexDB(helper.GetBoardType(), helper.GetConstitutionInfo(self).ConstitutionIndex)
+			if err0 != nil {
+				return resIns, nil
+			}
+			numberOfReceiver := len(listVotersOfCurrentProposal) + 1
+			submitterRewardAmount := common.BoardRewardPercent * (totalReward / uint64(numberOfReceiver)) / 100
+			supporterRewardAmount := (totalReward / uint64(numberOfReceiver)) - submitterRewardAmount
+			submitterPaymentAddress := privacy.NewPaymentAddressFromByte(byteTemp)
+			if submitterPaymentAddress != nil {
+				rewardForProposalSubmitterIns, err1 := helper.NewRewardProposalSubmitterIns(self, submitterPaymentAddress, submitterRewardAmount)
+				if err1 == nil {
+					resIns = append(resIns, rewardForProposalSubmitterIns)
+				}
+			}
 			voterAndAmount := make([]uint64, len(listVotersOfCurrentProposal))
 			for i, voter := range listVotersOfCurrentProposal {
 				listSupporters := self.config.DataBase.GetBoardVoterList(boardType, voter, boardIndex)
-				voterAndSupporters[i] = listSupporters
 				voterAndAmount[i] = 0
 				for _, supporter := range listSupporters {
 					voterAndAmount[i] += helper.GetAmountOfVoteToBoard(self, voter, supporter, boardIndex)
 				}
-				shareRewardIns := self.CreateShareRewardOldBoardIns(helper, listVotersOfCurrentProposal[i], totalReward, voterAndAmount[i])
+				shareRewardIns := self.CreateShareRewardOldBoardIns(helper, listVotersOfCurrentProposal[i], supporterRewardAmount, voterAndAmount[i])
 				resIns = append(resIns, shareRewardIns...)
+				rewardForVoter := frombeaconins.NewRewardProposalVoterIns(&voter, submitterRewardAmount, helper.GetBoardType())
+				if rewardForVoter != nil {
+					resIns = append(resIns, rewardForVoter)
+				}
 			}
 		}
 	}
@@ -265,7 +269,7 @@ func (self *BlockChain) createSendBackTokenAfterVoteFailIns(
 	// 	fmt.Println("[voting] - ", key, value)
 	// }
 	// fmt.Println("[voting] - END watch db when send back token:")
-	begin := lvdb.GetKeyVoteBoardList(boardType, currentBoardIndex+1, nil, nil)
+	begin := lvdb.GetKeyVoteBoardList(boardType, 0, nil, nil)
 	end := lvdb.GetKeyVoteBoardList(boardType, currentBoardIndex+2, nil, nil)
 	searchRange := util.Range{
 		Start: begin,
@@ -402,8 +406,6 @@ func (self *BlockChain) CreateUpdateNewGovernorInstruction(
 	}
 	instructions = append(instructions, sendBackTokenAfterVoteFailIns...)
 	fmt.Println("[voting]-Update new governor inst ok", sendBackTokenAfterVoteFailIns)
-	// hyyyyyyyyyyyyyyyyyyyyy
-	// send back dcbtoken after board
 	return instructions, nil
 }
 

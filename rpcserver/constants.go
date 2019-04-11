@@ -187,9 +187,3 @@ const (
 
 	GetStackingAmount = "getstackingamount"
 )
-
-//Fee of specific transaction
-const (
-	FeeSubmitProposal = 100
-	FeeVote           = 100
-)
