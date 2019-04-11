@@ -12,11 +12,16 @@ import (
 	"github.com/pkg/errors"
 )
 
+type usedInstData struct {
+	tradeActivated map[string]bool
+}
+
 func (bc *BlockChain) verifyBuyFromGOVRequestTx(
 	tx metadata.Transaction,
 	insts [][]string,
 	instUsed []int,
 	shardID byte,
+	accumulatedData usedInstData,
 ) error {
 	meta, ok := tx.GetMetadata().(*metadata.BuySellRequest)
 	if !ok {
@@ -59,6 +64,7 @@ func (bc *BlockChain) verifyBuyFromGOVRequestTx(
 	}
 
 	instUsed[idx] += 1
+	accumulatedData.tradeActivated[string(meta.TradeID)] = true
 	fmt.Printf("[db] inst %d matched\n", idx)
 	return nil
 }
@@ -243,9 +249,13 @@ func (bc *BlockChain) verifyContractingResponseTx(
 	return nil
 }
 
-func (bc *BlockChain) VerifyStabilityTransactionsForNewBlock(insts [][]string, block *ShardBlock) error {
-	instUsed := make([]int, len(insts)) // Count how many times an inst is used by a tx
-	shardID := block.Header.ShardID
+func (bc *BlockChain) verifyStabilityTransactionsWithInstructions(
+	insts [][]string,
+	block *ShardBlock,
+	instUsed []int,
+	shardID byte,
+	accumulatedData usedInstData,
+) error {
 	for _, tx := range block.Body.Transactions {
 		if tx.GetMetadata() == nil {
 			continue
@@ -254,7 +264,7 @@ func (bc *BlockChain) VerifyStabilityTransactionsForNewBlock(insts [][]string, b
 		var err error
 		switch tx.GetMetadataType() {
 		case metadata.BuyFromGOVRequestMeta:
-			err = bc.verifyBuyFromGOVRequestTx(tx, insts, instUsed, shardID)
+			err = bc.verifyBuyFromGOVRequestTx(tx, insts, instUsed, shardID, accumulatedData)
 
 		case metadata.BuyBackRequestMeta:
 			err = bc.verifyBuyBackRequestTx(tx, insts, instUsed, shardID)
@@ -276,10 +286,99 @@ func (bc *BlockChain) VerifyStabilityTransactionsForNewBlock(insts [][]string, b
 			return err
 		}
 	}
-
-	// TODO(@0xbunyip): check if unused instructions (of the same shard) weren't ignored:
-	// 1. TradeActivation failed either because it's activated, reqAmount too high or failed building Tx
-	// 2. IssuingResponse: inst type == accepted or failed building Tx
-	// 3. ContractingResponse: inst type == accepted or failed building Tx
 	return nil
+}
+
+func (bc *BlockChain) verifyUnusedTradeActivationInst(inst []string, shardID byte, accumulatedData usedInstData) error {
+	// TradeActivation failed either because it's activated, reqAmount too high or failed building Tx
+	if inst[1] != strconv.Itoa(int(shardID)) {
+		return nil
+	}
+
+	data, err := bc.calcTradeData(inst[2])
+	if err != nil {
+		return nil
+	}
+
+	if data.activated || data.reqAmount > data.amount || accumulatedData.tradeActivated[string(data.tradeID)] {
+		return nil
+	}
+
+	if !data.buy {
+		// Assume not enough bond to create BuyBackRequest tx
+		return nil
+	}
+	return fmt.Errorf("invalid unused inst: %v, %d, %+v", inst, shardID, accumulatedData)
+}
+
+func (bc *BlockChain) verifyUnusedIssuingRequestInst(inst []string, shardID byte) error {
+	// IssuingRequest inst unused either because type != accepted or failed building Tx
+	if inst[1] != strconv.Itoa(int(shardID)) || inst[2] != "accepted" {
+		return nil
+	}
+
+	_, err := parseIssuingInfo(inst[3])
+	if err != nil {
+		return nil
+	}
+	return fmt.Errorf("invalid unused inst: %v, %d, %+v", inst, shardID)
+}
+
+func (bc *BlockChain) verifyUnusedContractingRequestInst(inst []string, shardID byte) error {
+	// ContractingRequest inst unused either because type != refund or failed building Tx
+	if inst[1] != strconv.Itoa(int(shardID)) || inst[2] != "refund" {
+		return nil
+	}
+
+	_, err := parseContractingInfo(inst[3])
+	if err != nil {
+		return nil
+	}
+	return fmt.Errorf("invalid unused inst: %v, %d, %+v", inst, shardID)
+}
+
+func (bc *BlockChain) verifyUnusedInstructions(
+	insts [][]string,
+	instUsed []int,
+	shardID byte,
+	accumulatedData usedInstData,
+) error {
+	for i, inst := range insts {
+		if instUsed[i] > 0 {
+			continue
+		}
+
+		var err error
+		switch inst[0] {
+		// TODO(@0xbunyip): review other insts
+		case strconv.Itoa(metadata.TradeActivationMeta):
+			err = bc.verifyUnusedTradeActivationInst(inst, shardID, accumulatedData)
+
+		case strconv.Itoa(metadata.IssuingRequestMeta):
+			err = bc.verifyUnusedIssuingRequestInst(inst, shardID)
+
+		case strconv.Itoa(metadata.ContractingRequestMeta):
+			err = bc.verifyUnusedContractingRequestInst(inst, shardID)
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (bc *BlockChain) verifyStabilityTransactionsForNewBlock(insts [][]string, block *ShardBlock) error {
+	instUsed := make([]int, len(insts)) // Count how many times an inst is used by a tx
+	accumulatedData := usedInstData{
+		tradeActivated: map[string]bool{},
+	}
+	shardID := block.Header.ShardID
+
+	err := bc.verifyStabilityTransactionsWithInstructions(insts, block, instUsed, shardID, accumulatedData)
+	if err != nil {
+		return err
+	}
+
+	return bc.verifyUnusedInstructions(insts, instUsed, shardID, accumulatedData)
 }
