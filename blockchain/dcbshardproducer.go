@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -12,6 +14,13 @@ import (
 
 func buildBuySellConfirmInst(inst []string, shardID byte) []string {
 	fmt.Printf("[db] build buy sell confirm inst\n")
+
+	contentBytes, _ := base64.StdEncoding.DecodeString(inst[3])
+	var buySellReqAction BuySellReqAction
+	json.Unmarshal(contentBytes, &buySellReqAction)
+	if len(buySellReqAction.Meta.TradeID) == 0 {
+		return []string{}
+	}
 	return []string{
 		strconv.Itoa(component.ConfirmBuySellRequestMeta),
 		strconv.Itoa(int(shardID)),
@@ -46,7 +55,10 @@ func (blockgen *BlkTmplGenerator) buildTradeBondConfirmInsts(beaconBlocks []*Bea
 				}
 				switch l[0] {
 				case strconv.Itoa(metadata.BuyFromGOVRequestMeta):
-					insts = append(insts, buildBuySellConfirmInst(l, shardID))
+					buySellConfirmInst := buildBuySellConfirmInst(l, shardID)
+					if len(buySellConfirmInst) > 0 {
+						insts = append(insts, buySellConfirmInst)
+					}
 
 				case strconv.Itoa(metadata.BuyBackRequestMeta):
 					insts = append(insts, buildBuyBackConfirmInst(l, shardID))
