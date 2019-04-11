@@ -286,6 +286,19 @@ func (db *db) AddBoardFundDB(boardType common.BoardType, constitutionIndex uint3
 	return err
 }
 
+func (db *db) GetBoardFundDB(boardType common.BoardType, constitutionIndex uint32) (uint64, error) {
+	key := GetKeyBoardFund(boardType, constitutionIndex)
+	ok, err := db.HasValue(key)
+	if err != nil {
+		return 0, err
+	}
+	if ok {
+		byteTemp, _ := db.Get(key)
+		return common.BytesToUint64(byteTemp), nil
+	}
+	return 0, errors.Errorf("Board Fund not found")
+}
+
 func (db *db) AddConstantsPriceDB(constitutionIndex uint32, price uint64) error {
 	key := GetKeyConstantsPrice(constitutionIndex)
 	ok, err := db.HasValue(key)
