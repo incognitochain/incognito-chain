@@ -117,7 +117,6 @@ func (engine *Engine) Stop() error {
 }
 
 func (engine *Engine) execBeaconRole() {
-	engine.config.BlockChain.BestState.Beacon.LockMu.Lock()
 	if engine.currentBFTBlkHeight <= engine.config.BlockChain.BestState.Beacon.BeaconHeight {
 		// reset round
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
@@ -130,6 +129,7 @@ func (engine *Engine) execBeaconRole() {
 	}
 	bftProtocol.RoundData.ProposerOffset = (engine.currentBFTRound - 1) % len(engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
 	bftProtocol.RoundData.BestStateHash = engine.config.BlockChain.BestState.Beacon.Hash()
+	engine.config.BlockChain.BestState.Beacon.LockMu.Lock()
 	bftProtocol.RoundData.Layer = common.BEACON_ROLE
 	bftProtocol.RoundData.Committee = make([]string, len(engine.config.BlockChain.BestState.Beacon.BeaconCommittee))
 	copy(bftProtocol.RoundData.Committee, engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
@@ -158,10 +158,10 @@ func (engine *Engine) execBeaconRole() {
 			engine.prevRoundUserLayer = engine.userLayer
 		}
 	default:
+		engine.config.BlockChain.BestState.Beacon.LockMu.Unlock()
 		err = errors.New("Not your turn yet")
 	}
 
-	engine.config.BlockChain.BestState.Beacon.LockMu.Unlock()
 	if err == nil {
 		fmt.Println(resBlk.(*blockchain.BeaconBlock))
 		err = engine.config.BlockChain.InsertBeaconBlock(resBlk.(*blockchain.BeaconBlock), false)
@@ -187,8 +187,6 @@ func (engine *Engine) execBeaconRole() {
 }
 
 func (engine *Engine) execShardRole(shardID byte) {
-	engine.config.BlockChain.BestState.Beacon.LockMu.Lock()
-	engine.config.BlockChain.BestState.Shard[shardID].Lock.Lock()
 	if engine.currentBFTBlkHeight <= engine.config.BlockChain.BestState.Shard[shardID].ShardHeight {
 		// reset
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
@@ -202,6 +200,8 @@ func (engine *Engine) execShardRole(shardID byte) {
 	}
 	bftProtocol.RoundData.ProposerOffset = (engine.currentBFTRound - 1) % len(engine.config.BlockChain.BestState.Shard[shardID].ShardCommittee)
 	bftProtocol.RoundData.BestStateHash = engine.config.BlockChain.BestState.Shard[shardID].Hash()
+	engine.config.BlockChain.BestState.Beacon.LockMu.Lock()
+	engine.config.BlockChain.BestState.Shard[shardID].Lock.Lock()
 	bftProtocol.RoundData.Layer = common.SHARD_ROLE
 	bftProtocol.RoundData.ShardID = shardID
 	bftProtocol.RoundData.Committee = make([]string, len(engine.config.BlockChain.BestState.Shard[shardID].ShardCommittee))
@@ -235,6 +235,8 @@ func (engine *Engine) execShardRole(shardID byte) {
 			engine.prevRoundUserLayer = engine.userLayer
 		}
 	default:
+		engine.config.BlockChain.BestState.Beacon.LockMu.Unlock()
+		engine.config.BlockChain.BestState.Shard[shardID].Lock.Unlock()
 		err = errors.New("Not your turn yet")
 	}
 	if err == nil {
