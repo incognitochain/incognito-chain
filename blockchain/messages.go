@@ -47,6 +47,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 			}
 		}
 	}
+	blockchain.syncStatus.Lock()
 	for shardID := range blockchain.syncStatus.Shards {
 		if shardState, ok := (*shard)[shardID]; ok {
 			if shardState.Height > blockchain.BestState.Shard[shardID].ShardHeight {
@@ -54,6 +55,8 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 			}
 		}
 	}
+	blockchain.syncStatus.Unlock()
+
 	blockchain.syncStatus.PeersStateLock.Lock()
 	blockchain.syncStatus.PeersState[pState.Peer] = pState
 	blockchain.syncStatus.PeersStateLock.Unlock()
