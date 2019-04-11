@@ -16,7 +16,7 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
 	"github.com/constant-money/constant-chain/wallet"
 )
 
@@ -719,8 +719,6 @@ func (tx *Tx) ValidateTxWithBlockChain(
 }
 
 func (tx *Tx) validateNormalTxSanityData() (bool, error) {
-	//todo @0xkraken
-	return true, nil
 	txN := tx
 	//check version
 	if txN.Version > TxVersion {
