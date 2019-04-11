@@ -32,16 +32,6 @@ type OneOutOfManyProof struct {
 }
 
 func (proof *OneOutOfManyProof) ValidateSanity() bool {
-	if len(proof.stmt.commitments) != privacy.CMRingSize {
-		return false
-	}
-
-	for i := 0; i < len(proof.stmt.commitments); i++ {
-		if !proof.stmt.commitments[i].IsSafe() {
-			return false
-		}
-	}
-
 	if len(proof.cl) != privacy.CMRingSizeExp || len(proof.ca) != privacy.CMRingSizeExp ||
 		len(proof.cb) != privacy.CMRingSizeExp || len(proof.cd) != privacy.CMRingSizeExp ||
 		len(proof.f) != privacy.CMRingSizeExp || len(proof.za) != privacy.CMRingSizeExp ||
