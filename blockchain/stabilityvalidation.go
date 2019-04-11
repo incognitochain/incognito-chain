@@ -27,6 +27,7 @@ func (bc *BlockChain) verifyBuyFromGOVRequestTx(
 	}
 
 	fmt.Printf("[db] verifying buy from GOV Request tx\n")
+	idx := -1
 	for i, inst := range insts {
 		if instUsed[i] > 0 || inst[0] != strconv.Itoa(metadata.TradeActivationMeta) || inst[1] != strconv.Itoa(int(shardID)) {
 			continue
@@ -35,8 +36,6 @@ func (bc *BlockChain) verifyBuyFromGOVRequestTx(
 		if err != nil || !bytes.Equal(meta.TradeID, td.tradeID) {
 			continue
 		}
-
-		fmt.Printf("[db] found inst: %s\n", inst[2])
 
 		// PaymentAddress is validated in metadata's ValidateWithBlockChain
 		txData := &tradeData{
@@ -49,17 +48,19 @@ func (bc *BlockChain) verifyBuyFromGOVRequestTx(
 		}
 
 		buyPrice := bc.getSellBondPrice(txData.bondID)
-		if !td.Compare(txData) || meta.BuyPrice != buyPrice {
-			fmt.Printf("[db] data mismatched: %+v %d\t %+v %d\n", txData, meta.BuyPrice, td, buyPrice)
-			return errors.Errorf("invalid data for trade bond BuySellRequest tx: got %+v %d, expect %+v %d", txData, meta.BuyPrice, td, buyPrice)
+		if td.Compare(txData) && meta.BuyPrice == buyPrice {
+			idx = i
+			break
 		}
-
-		instUsed[i] += 1
-		fmt.Printf("[db] inst %d matched\n", i)
-		return nil
 	}
 
-	return errors.Errorf("no instruction found for BuySellRequest tx %s", tx.Hash().String())
+	if idx == -1 {
+		return errors.Errorf("no instruction found for BuySellRequest tx %s", tx.Hash().String())
+	}
+
+	instUsed[idx] += 1
+	fmt.Printf("[db] inst %d matched\n", idx)
+	return nil
 }
 
 func (bc *BlockChain) verifyBuyBackRequestTx(
@@ -82,7 +83,9 @@ func (bc *BlockChain) verifyBuyBackRequestTx(
 	if !ok {
 		return errors.Errorf("error parsing TxCustomToken of tx %s", tx.Hash().String())
 	}
+	bondID := &txToken.TxTokenData.PropertyID
 
+	idx := -1
 	for i, inst := range insts {
 		if instUsed[i] > 0 || inst[0] != strconv.Itoa(metadata.TradeActivationMeta) || inst[1] != strconv.Itoa(int(shardID)) {
 			continue
@@ -91,8 +94,6 @@ func (bc *BlockChain) verifyBuyBackRequestTx(
 		if err != nil || !bytes.Equal(meta.TradeID, td.tradeID) {
 			continue
 		}
-
-		fmt.Printf("[db] found inst: %s\n", inst[2])
 
 		// PaymentAddress is validated in metadata's ValidateWithBlockChain
 		txData := &tradeData{
@@ -104,23 +105,19 @@ func (bc *BlockChain) verifyBuyBackRequestTx(
 			reqAmount: meta.Amount,
 		}
 
-		if !td.Compare(txData) {
-			fmt.Printf("[db] data mismatched: %+v\t%+v\n", txData, td)
-			return errors.Errorf("invalid data for trade bond BuyBackRequest tx: got %+v, expect %+v", txData, td)
+		if td.Compare(txData) && bondID.IsEqual(td.bondID) {
+			idx = i
+			break
 		}
-
-		bondID := &txToken.TxTokenData.PropertyID
-		if !bondID.IsEqual(td.bondID) {
-			fmt.Printf("[db] invalid bondID: %h %h\n", bondID, td.bondID)
-			return errors.Errorf("invalid bondID for trade bond BuyBackRequest tx: got %h, expected %h", bondID, td.bondID)
-		}
-
-		instUsed[i] += 1
-		fmt.Printf("[db] inst %d matched\n", i)
-		return nil
 	}
 
-	return errors.Errorf("no instruction found for BuyBackRequest tx %s", tx.Hash().String())
+	if idx == -1 {
+		return errors.Errorf("no instruction found for BuyBackRequest tx %s", tx.Hash().String())
+	}
+
+	instUsed[idx] += 1
+	fmt.Printf("[db] inst %d matched\n", idx)
+	return nil
 }
 
 func (bc *BlockChain) verifyCrowdsalePaymentTx(
@@ -130,6 +127,7 @@ func (bc *BlockChain) verifyCrowdsalePaymentTx(
 	shardID byte,
 ) error {
 	fmt.Printf("[db] verifying crowdsale payment tx\n")
+	idx := -1
 	for i, inst := range insts {
 		if instUsed[i] > 0 || inst[0] != strconv.Itoa(metadata.CrowdsalePaymentMeta) || inst[1] != strconv.Itoa(int(shardID)) {
 			continue
@@ -147,17 +145,19 @@ func (bc *BlockChain) verifyCrowdsalePaymentTx(
 			SentAmount:     0,
 			UpdateSale:     false,
 		}
-		if !unique || !txData.Compare(cpi) {
-			fmt.Printf("[db] data mismatched: %+v\t%+v\n", txData, cpi)
-			return errors.Errorf("invalid data for CrowdsalePayment tx: got %+v, expect %+v", txData, cpi)
+		if unique && txData.Compare(cpi) {
+			idx = i
+			break
 		}
-
-		instUsed[i] += 1
-		fmt.Printf("[db] inst %d matched\n", i)
-		return nil
 	}
 
-	return errors.Errorf("no instruction found for CrowdsalePayment tx %s", tx.Hash().String())
+	if idx == -1 {
+		return errors.Errorf("no instruction found for CrowdsalePayment tx %s", tx.Hash().String())
+	}
+
+	instUsed[idx] += 1
+	fmt.Printf("[db] inst %d matched\n", idx)
+	return nil
 }
 
 func (bc *BlockChain) verifyIssuingResponseTx(
@@ -167,6 +167,7 @@ func (bc *BlockChain) verifyIssuingResponseTx(
 	shardID byte,
 ) error {
 	fmt.Printf("[db] verifying issuing response tx\n")
+	idx := -1
 	for i, inst := range insts {
 		if instUsed[i] > 0 ||
 			inst[0] != strconv.Itoa(metadata.IssuingRequestMeta) ||
@@ -185,17 +186,20 @@ func (bc *BlockChain) verifyIssuingResponseTx(
 			TokenID:         *assetID,
 		}
 
-		if !unique || !txData.Compare(issuingInfo) {
-			fmt.Printf("[db] data mismatched: %+v\t%+v\n", txData, issuingInfo)
-			return errors.Errorf("invalid data for IssuingResponse tx: got %+v, expect %+v", txData, issuingInfo)
+		if unique && txData.Compare(issuingInfo) {
+			idx = i
+			break
 		}
 
-		instUsed[i] += 1
-		fmt.Printf("[db] inst %d matched\n", i)
-		return nil
 	}
 
-	return errors.Errorf("no instruction found for IssuingResponse tx %s", tx.Hash().String())
+	if idx == -1 {
+		return errors.Errorf("no instruction found for IssuingResponse tx %s", tx.Hash().String())
+	}
+
+	instUsed[idx] += 1
+	fmt.Printf("[db] inst %d matched\n", idx)
+	return nil
 }
 
 func (bc *BlockChain) verifyContractingResponseTx(
