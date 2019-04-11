@@ -114,7 +114,7 @@ func mainMaster(serverChan chan<- *Server) error {
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-
+	fmt.Println("NumCPU", runtime.NumCPU())
 	// Block and transaction processing can cause bursty allocations.  This
 	// limits the garbage collector from excessively overallocating during
 	// bursts.  This value was arrived at with the help of profiling live
