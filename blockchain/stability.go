@@ -372,6 +372,30 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 						return nil, err
 					}
 					resTxs = append(resTxs, tx)
+				case component.RewardDCBProposalVoterIns:
+					fmt.Println("[voting]-RewardDCBProposalVoterIns")
+					rewardProposalVoter := frombeaconins.RewardProposalVoterIns{}
+					err := json.Unmarshal([]byte(l[2]), &rewardProposalVoter)
+					if err != nil {
+						return nil, err
+					}
+					tx, err := rewardProposalVoter.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, common.DCBBoard)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, tx)
+				case component.RewardGOVProposalVoterIns:
+					fmt.Println("[voting]-RewardGOVProposalVoterIns")
+					rewardProposalVoter := frombeaconins.RewardProposalVoterIns{}
+					err := json.Unmarshal([]byte(l[2]), &rewardProposalVoter)
+					if err != nil {
+						return nil, err
+					}
+					tx, err := rewardProposalVoter.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, common.GOVBoard)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, tx)
 				case metadata.CrowdsalePaymentMeta:
 					txs, err = blockgen.buildPaymentForCrowdsale(l[2], unspentTokens, producerPrivateKey)
 
@@ -420,8 +444,8 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					fmt.Println("[voting]-SendBackTokenToOldSupporterMeta ok, tx:", tx.GetMetadata())
 					txs = append(txs, tx)
 
-				case component.ShareRewardOldDCBBoardIns, component.ShareRewardOldGOVBoardIns:
-					fmt.Println("[voting]-ShareRewardOldDCBBoardIns ok, tx:", tx.GetMetadata())
+				case component.ShareRewardOldDCBBoardSupportterIns, component.ShareRewardOldGOVBoardSupportterIns:
+					fmt.Println("[voting]-ShareRewardOldDCBBoardSupportterIns ok, tx:", tx.GetMetadata())
 					shareRewardOldBoard := frombeaconins.ShareRewardOldBoardIns{}
 					err := json.Unmarshal([]byte(l[2]), &shareRewardOldBoard)
 					if err != nil {

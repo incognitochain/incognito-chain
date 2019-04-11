@@ -5,8 +5,9 @@ import (
 )
 
 func (rpcServer *RpcServer) buildParamsSubmitDCBProposal(params interface{}) (interface{}, *RPCError) {
-	params = setBuildRawBurnTransactionParams(params, FeeSubmitProposal)
+	// params = setBuildRawBurnTransactionParams(params, FeeSubmitProposal)
 	arrayParams := common.InterfaceSlice(params)
+	arrayParams[1] = nil
 	NParams := len(arrayParams)
 
 	data := arrayParams[NParams-1].(map[string]interface{})
@@ -21,8 +22,9 @@ func (rpcServer *RpcServer) buildParamsSubmitDCBProposal(params interface{}) (in
 }
 
 func (rpcServer *RpcServer) buildParamsSubmitGOVProposal(params interface{}) (interface{}, *RPCError) {
-	params = setBuildRawBurnTransactionParams(params, FeeSubmitProposal)
+	// params = setBuildRawBurnTransactionParams(params, FeeSubmitProposal)
 	arrayParams := common.InterfaceSlice(params)
+	arrayParams[1] = nil
 	NParams := len(arrayParams)
 
 	data := arrayParams[NParams-1].(map[string]interface{})
