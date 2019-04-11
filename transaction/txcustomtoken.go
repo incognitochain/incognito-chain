@@ -649,3 +649,22 @@ func (tx *TxCustomToken) CalculateTxValue() uint64 {
 	}
 	return txValue
 }
+
+func (tx *TxCustomToken) IsCoinsBurning() bool {
+	vins := tx.TxTokenData.Vins
+	vouts := tx.TxTokenData.Vouts
+	if len(vins) == 0 || len(vouts) == 0 {
+		return false
+	}
+	senderPk := vins[0].PaymentAddress.Pk
+	keyWalletBurningAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
+	keysetBurningAccount := keyWalletBurningAccount.KeySet
+	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
+	for _, vout := range vouts {
+		outPKBytes := vout.PaymentAddress.Pk
+		if !bytes.Equal(senderPk[:], outPKBytes[:]) && !bytes.Equal(outPKBytes[:], paymentAddressBurningAccount.Pk[:]) {
+			return false
+		}
+	}
+	return true
+}
