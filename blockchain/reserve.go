@@ -28,6 +28,21 @@ type IssuingInfo struct {
 	CurrencyType    common.Hash
 }
 
+func parseIssuingInfo(issuingInfoRaw string) (*IssuingInfo, error) {
+	var issuingInfo IssuingInfo
+	err := json.Unmarshal([]byte(issuingInfoRaw), &issuingInfo)
+	if err != nil {
+		return nil, err
+	}
+	return &issuingInfo, nil
+}
+
+func (info *IssuingInfo) Compare(info2 *IssuingInfo) bool {
+	return bytes.Equal(info.ReceiverAddress.Pk, info2.ReceiverAddress.Pk) &&
+		info.Amount == info2.Amount &&
+		info.TokenID.IsEqual(&info2.TokenID)
+}
+
 type ContractingReqAction struct {
 	TxReqID common.Hash                 `json:"txReqId"`
 	Meta    metadata.ContractingRequest `json:"meta"`
@@ -39,6 +54,20 @@ type ContractingInfo struct {
 	RedeemAmount      uint64
 	RequestedTxID     common.Hash
 	CurrencyType      common.Hash
+}
+
+func parseContractingInfo(contractingInfoRaw string) (*ContractingInfo, error) {
+	var contractingInfo ContractingInfo
+	err := json.Unmarshal([]byte(contractingInfoRaw), &contractingInfo)
+	if err != nil {
+		return nil, err
+	}
+	return &contractingInfo, nil
+}
+
+func (info *ContractingInfo) Compare(info2 *ContractingInfo) bool {
+	return bytes.Equal(info.BurnerAddress.Pk, info2.BurnerAddress.Pk) &&
+		info.BurnedConstAmount == info2.BurnedConstAmount
 }
 
 func buildInstTypeAndAmountForContractingAction(
@@ -126,6 +155,7 @@ func (blockgen *BlkTmplGenerator) buildContractingRes(
 	contractingInfoStr string,
 	blkProducerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
+	fmt.Printf("[db] buildContractingRes: %s\n", contractingInfoStr)
 	var contractingInfo ContractingInfo
 	err := json.Unmarshal([]byte(contractingInfoStr), &contractingInfo)
 	if err != nil {
