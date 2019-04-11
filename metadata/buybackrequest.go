@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"reflect"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
@@ -59,6 +60,11 @@ func (bbReq *BuyBackRequest) ValidateSanityData(
 	bcr BlockchainRetriever,
 	txr Transaction,
 ) (bool, bool, error) {
+	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
+	if reflect.TypeOf(txr).String() == "*transaction.Tx" {
+		return true, true, nil
+	}
+
 	if len(bbReq.PaymentAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's payment address")
 	}
