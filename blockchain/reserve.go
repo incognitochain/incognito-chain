@@ -56,6 +56,20 @@ type ContractingInfo struct {
 	CurrencyType      common.Hash
 }
 
+func parseContractingInfo(contractingInfoRaw string) (*ContractingInfo, error) {
+	var contractingInfo ContractingInfo
+	err := json.Unmarshal([]byte(contractingInfoRaw), &contractingInfo)
+	if err != nil {
+		return nil, err
+	}
+	return &contractingInfo, nil
+}
+
+func (info *ContractingInfo) Compare(info2 *ContractingInfo) bool {
+	return bytes.Equal(info.BurnerAddress.Pk, info2.BurnerAddress.Pk) &&
+		info.BurnedConstAmount == info2.BurnedConstAmount
+}
+
 func buildInstTypeAndAmountForContractingAction(
 	beaconBestState *BestStateBeacon,
 	md *metadata.ContractingRequest,
@@ -141,6 +155,7 @@ func (blockgen *BlkTmplGenerator) buildContractingRes(
 	contractingInfoStr string,
 	blkProducerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
+	fmt.Printf("[db] buildContractingRes: %s\n", contractingInfoStr)
 	var contractingInfo ContractingInfo
 	err := json.Unmarshal([]byte(contractingInfoStr), &contractingInfo)
 	if err != nil {
