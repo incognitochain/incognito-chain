@@ -59,17 +59,6 @@ type DCBParams struct {
 	ListLoanParams           []LoanParams // component for collateralized loans of Constant
 }
 
-type RaiseReserveData struct {
-	EndBlock uint64
-	Amount   uint64 // # BANK tokens
-}
-
-type SpendReserveData struct {
-	EndBlock        uint64
-	ReserveMinPrice uint64
-	Amount          uint64 // Constant to burn
-}
-
 func NewDCBParams(
 	listSaleData []SaleData,
 	tradeBonds []*TradeBondWithGOV,
