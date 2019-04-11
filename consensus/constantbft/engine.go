@@ -142,6 +142,7 @@ func (engine *Engine) execBeaconRole() {
 	case common.PROPOSER_ROLE:
 		bftProtocol.RoundData.IsProposer = true
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
+		engine.config.BlockChain.BestState.Beacon.LockMu.Unlock()
 		resBlk, err = bftProtocol.Start()
 		if err != nil {
 			engine.currentBFTRound++
@@ -150,6 +151,7 @@ func (engine *Engine) execBeaconRole() {
 	case common.VALIDATOR_ROLE:
 		bftProtocol.RoundData.IsProposer = false
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
+		engine.config.BlockChain.BestState.Beacon.LockMu.Unlock()
 		resBlk, err = bftProtocol.Start()
 		if err != nil {
 			engine.currentBFTRound++
@@ -214,6 +216,8 @@ func (engine *Engine) execShardRole(shardID byte) {
 	case common.PROPOSER_ROLE:
 		bftProtocol.RoundData.IsProposer = true
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
+		engine.config.BlockChain.BestState.Beacon.LockMu.Unlock()
+		engine.config.BlockChain.BestState.Shard[shardID].Lock.Unlock()
 		resBlk, err = bftProtocol.Start()
 		if err != nil {
 			Logger.log.Error(err)
@@ -223,6 +227,8 @@ func (engine *Engine) execShardRole(shardID byte) {
 	case common.VALIDATOR_ROLE:
 		bftProtocol.RoundData.IsProposer = false
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
+		engine.config.BlockChain.BestState.Beacon.LockMu.Unlock()
+		engine.config.BlockChain.BestState.Shard[shardID].Lock.Unlock()
 		resBlk, err = bftProtocol.Start()
 		if err != nil {
 			engine.currentBFTRound++
@@ -231,9 +237,6 @@ func (engine *Engine) execShardRole(shardID byte) {
 	default:
 		err = errors.New("Not your turn yet")
 	}
-
-	engine.config.BlockChain.BestState.Beacon.LockMu.Unlock()
-	engine.config.BlockChain.BestState.Shard[shardID].Lock.Unlock()
 	if err == nil {
 		shardBlk := resBlk.(*blockchain.ShardBlock)
 		fmt.Println("========NEW SHARD BLOCK=======", shardBlk.Header.Height)
