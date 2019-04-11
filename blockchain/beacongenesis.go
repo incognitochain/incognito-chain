@@ -192,7 +192,6 @@ func createDCBGenesisInsts() [][]string {
 }
 
 func createDCBGenesisBoardInst() []string {
-	// TODO(@0xbunyip): set correct board address
 	boardAddress := []privacy.PaymentAddress{
 		// Payment4: 112t8rqJHgJp2TPpNpLNx34aWHB5VH5Pys3hVjjhhf9tctVeCNmX2zQLBqzHau6LpUbSV52kXtG2hRZsuYWkXWF5kw2v24RJq791fWmQxVqy
 		// privacy.PaymentAddress{
