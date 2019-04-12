@@ -128,7 +128,7 @@ type BlockchainRetriever interface {
 	GetLoanWithdrawed(loanID []byte) (bool, error)
 
 	// For validating crowdsale
-	GetCrowdsaleData([]byte) (*component.SaleData, error)
+	GetProposedCrowdsale([]byte) (*component.SaleData, error)
 	CrowdsaleExisted(saleID []byte) bool
 	GetDCBAvailableAsset(assetID *common.Hash) uint64
 
@@ -194,6 +194,7 @@ type Transaction interface {
 	// Get receivers' data for tx
 	GetReceivers() ([][]byte, []uint64)
 	GetUniqueReceiver() (bool, []byte, uint64)
+	GetTransferData() (bool, []byte, uint64, *common.Hash)
 
 	// Get receivers' data for custom token tx (nil for normal tx)
 	GetTokenReceivers() ([][]byte, []uint64)

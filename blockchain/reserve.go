@@ -28,6 +28,21 @@ type IssuingInfo struct {
 	CurrencyType    common.Hash
 }
 
+func parseIssuingInfo(issuingInfoRaw string) (*IssuingInfo, error) {
+	var issuingInfo IssuingInfo
+	err := json.Unmarshal([]byte(issuingInfoRaw), &issuingInfo)
+	if err != nil {
+		return nil, err
+	}
+	return &issuingInfo, nil
+}
+
+func (info *IssuingInfo) Compare(info2 *IssuingInfo) bool {
+	return bytes.Equal(info.ReceiverAddress.Pk, info2.ReceiverAddress.Pk) &&
+		info.Amount == info2.Amount &&
+		info.TokenID.IsEqual(&info2.TokenID)
+}
+
 type ContractingReqAction struct {
 	TxReqID common.Hash                 `json:"txReqId"`
 	Meta    metadata.ContractingRequest `json:"meta"`
@@ -39,6 +54,20 @@ type ContractingInfo struct {
 	RedeemAmount      uint64
 	RequestedTxID     common.Hash
 	CurrencyType      common.Hash
+}
+
+func parseContractingInfo(contractingInfoRaw string) (*ContractingInfo, error) {
+	var contractingInfo ContractingInfo
+	err := json.Unmarshal([]byte(contractingInfoRaw), &contractingInfo)
+	if err != nil {
+		return nil, err
+	}
+	return &contractingInfo, nil
+}
+
+func (info *ContractingInfo) Compare(info2 *ContractingInfo) bool {
+	return bytes.Equal(info.BurnerAddress.Pk, info2.BurnerAddress.Pk) &&
+		info.BurnedConstAmount == info2.BurnedConstAmount
 }
 
 func buildInstTypeAndAmountForContractingAction(
@@ -126,6 +155,7 @@ func (blockgen *BlkTmplGenerator) buildContractingRes(
 	contractingInfoStr string,
 	blkProducerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
+	fmt.Printf("[db] buildContractingRes: %s\n", contractingInfoStr)
 	var contractingInfo ContractingInfo
 	err := json.Unmarshal([]byte(contractingInfoStr), &contractingInfo)
 	if err != nil {
@@ -135,7 +165,7 @@ func (blockgen *BlkTmplGenerator) buildContractingRes(
 	if instType == "accepted" {
 		return []metadata.Transaction{}, nil
 	} else if instType == "refund" {
-		meta := metadata.NewResponseBase(txReqID, metadata.ContractingReponseMeta)
+		meta := metadata.NewResponseBase(txReqID, metadata.ContractingResponseMeta)
 		tx := new(transaction.Tx)
 		err := tx.InitTxSalary(
 			contractingInfo.BurnedConstAmount,
@@ -169,15 +199,16 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 	if instType != "accepted" {
 		return []metadata.Transaction{}, nil
 	}
-	// accepted
-	if bytes.Equal(issuingInfo.TokenID[:], common.ConstantID[:]) {
+
+	db := blockgen.chain.config.DataBase
+	if bytes.Equal(issuingInfo.TokenID[:], common.ConstantID[:]) { // accepted
 		meta := metadata.NewIssuingResponse(txReqID, metadata.IssuingResponseMeta)
 		tx := new(transaction.Tx)
 		err := tx.InitTxSalary(
 			issuingInfo.Amount,
 			&issuingInfo.ReceiverAddress,
 			blkProducerPrivateKey,
-			blockgen.chain.config.DataBase,
+			db,
 			meta,
 		)
 		if err != nil {
@@ -187,10 +218,6 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 		return []metadata.Transaction{tx}, nil
 	} else if bytes.Equal(issuingInfo.TokenID[:], common.DCBTokenID[:]) {
 		meta := metadata.NewIssuingResponse(txReqID, metadata.IssuingResponseMeta)
-		//paymentInfos := []*privacy.PaymentInfo{&privacy.PaymentInfo{
-		//	PaymentAddress: issuingInfo.ReceiverAddress,
-		//	Amount:         issuingInfo.Amount,
-		//}}
 		txCustom := &transaction.TxCustomToken{}
 		customTokenParamTx := &transaction.CustomTokenParamTx{
 			PropertyID:  common.DCBTokenID.String(),
@@ -203,19 +230,12 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 				},
 			},
 		}
-		db := blockgen.chain.config.DataBase
-		//listCustomTokens, err := frombeaconins.GetListCustomTokens(db, blockgen.chain)
-		//if err != nil {
-		//	fmt.Printf("[db] build issuing resp get list err: %v\n", err)
-		//	return nil, err
-		//}
 		err = txCustom.Init(
 			blkProducerPrivateKey,
 			[]*privacy.PaymentInfo{},
 			nil,
 			0,
 			customTokenParamTx,
-			//listCustomTokens,
 			db,
 			meta,
 			false,
@@ -225,30 +245,10 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 			fmt.Printf("[db] build issuing resp err: %v\n", err)
 			return nil, err
 		}
-		//txTokenVout := transaction.TxTokenVout{
-		//	Value:          issuingInfo.Amount,
-		//	PaymentAddress: issuingInfo.ReceiverAddress,
-		//}
-		//var propertyID [common.HashSize]byte
-		//copy(propertyID[:], issuingInfo.TokenID[:])
-		//txTokenData := transaction.TxTokenData{
-		//	Type:       transaction.CustomTokenInit,
-		//	Mintable:   true,
-		//	Amount:     issuingInfo.Amount,
-		//	PropertyID: common.Hash(propertyID),
-		//	Vins:       []transaction.TxTokenVin{},
-		//	Vouts:      []transaction.TxTokenVout{txTokenVout},
-		//}
-		//txTokenData.PropertyName = txTokenData.PropertyID.String()
-		//txTokenData.PropertySymbol = txTokenData.PropertyID.String()
-		//resTx := &transaction.TxCustomToken{
-		//	TxTokenData: txTokenData,
-		//}
-		//resTx.SetMetadata(meta)
-		txCustom.Type = common.TxCustomTokenType
 		fmt.Printf("[db] build issuing resp success: %h\n", txCustom.Hash())
 		return []metadata.Transaction{txCustom}, nil
 	}
+	// TODO(@0xbunyip): fail to issue/refund
 	return []metadata.Transaction{}, nil
 }
 
@@ -260,7 +260,7 @@ func buildInstTypeAndAmountForIssuingAction(
 	stabilityInfo := beaconBestState.StabilityInfo
 	oracle := stabilityInfo.Oracle
 	if bytes.Equal(md.AssetType[:], common.ConstantID[:]) {
-		return "accepted", md.DepositedAmount / oracle.Constant
+		return "accepted", (md.DepositedAmount * 100) / oracle.Constant
 	}
 	// process for case of DCB token
 	raiseReserveData := stabilityInfo.DCBConstitution.DCBParams.RaiseReserveData
