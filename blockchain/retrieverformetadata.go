@@ -146,17 +146,9 @@ func (blockchain *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.
 	return saleData
 }
 
-func (blockchain *BlockChain) GetCrowdsaleData(saleID []byte) (*component.SaleData, error) {
-	key := getSaleDataKeyBeacon(saleID)
-	if value, ok := blockchain.BestState.Beacon.Params[key]; ok {
-		saleData, err := parseSaleDataValueBeacon(value)
-		if err != nil {
-			return nil, err
-		}
-		return saleData, nil
-	} else {
-		return nil, errors.New("Error getting SaleData from beacon best state")
-	}
+// GetProposedCrowdsale returns SaleData from BeaconBestState; BuyingAmount and SellingAmount might be outdated, the rest is ok to use
+func (blockchain *BlockChain) GetProposedCrowdsale(saleID []byte) (*component.SaleData, error) {
+	return blockchain.BestState.Beacon.GetSaleData(saleID)
 }
 
 func (blockchain *BlockChain) GetAllCrowdsales() ([]*component.SaleData, error) {

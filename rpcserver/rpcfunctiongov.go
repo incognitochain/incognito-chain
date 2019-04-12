@@ -138,10 +138,11 @@ func (rpcServer RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{
 		uint64(voutsAmount),
 		metadata.BuyBackRequestMeta,
 	)
-	customTokenTx, err := rpcServer.buildRawCustomTokenTransaction(params, meta)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
+	customTokenTx, rpcErr := rpcServer.buildRawCustomTokenTransaction(params, meta)
+	// rpcErr := err1.(*RPCError)
+	if rpcErr != nil {
+		Logger.log.Error(rpcErr)
+		return nil, rpcErr
 	}
 
 	byteArrays, err := json.Marshal(customTokenTx)
