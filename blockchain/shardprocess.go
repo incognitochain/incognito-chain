@@ -145,9 +145,6 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 		}
 	}
 
-	//========Store new  Shard block and new shard bestState
-	blockchain.ProcessStoreShardBlock(block)
-
 	// Process stability tx
 	err = blockchain.ProcessLoanForBlock(block)
 	if err != nil {
@@ -211,6 +208,12 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 	//Remove tx out of pool
 	for _, tx := range block.Body.Transactions {
 		blockchain.config.TxPool.RemoveTx(tx)
+	}
+
+	//========Store new  Shard block and new shard bestState
+	err = blockchain.ProcessStoreShardBlock(block)
+	if err != nil {
+		return err
 	}
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 	return nil
@@ -571,8 +574,8 @@ func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *Shard
 		Swap shard committee if detect new epoch of beacon
 */
 func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBlock) error {
-	bestStateShard.lock.Lock()
-	defer bestStateShard.lock.Unlock()
+	bestStateShard.Lock.Lock()
+	defer bestStateShard.Lock.Unlock()
 
 	Logger.log.Debugf("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	var (

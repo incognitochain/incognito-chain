@@ -128,7 +128,7 @@ type BlockchainRetriever interface {
 	GetLoanWithdrawed(loanID []byte) (bool, error)
 
 	// For validating crowdsale
-	GetCrowdsaleData([]byte) (*component.SaleData, error)
+	GetProposedCrowdsale([]byte) (*component.SaleData, error)
 	CrowdsaleExisted(saleID []byte) bool
 	GetDCBAvailableAsset(assetID *common.Hash) uint64
 

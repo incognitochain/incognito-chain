@@ -138,7 +138,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	// fmt.Println("Beacon Process/Shard Committee in Epoch ", block.Header.Epoch, shardCommittee)
 	//=========Store cross shard state ==================================
 	lastCrossShardState := GetBestStateBeacon().LastCrossShardState
-	GetBestStateBeacon().lockMu.Lock()
+	GetBestStateBeacon().LockMu.Lock()
 	if block.Body.ShardState != nil {
 		for fromShard, shardBlocks := range block.Body.ShardState {
 			for _, shardBlock := range shardBlocks {
@@ -165,7 +165,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 			blockchain.config.CrossShardPool[fromShard].UpdatePool()
 		}
 	}
-	GetBestStateBeacon().lockMu.Unlock()
+	GetBestStateBeacon().LockMu.Unlock()
 	// Process instructions and store stability data
 	if err := blockchain.updateStabilityLocalState(block); err != nil {
 		return err
@@ -536,8 +536,8 @@ func (bestStateBeacon *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *B
 	Update Beststate with new Block
 */
 func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *BlockChain) error {
-	bestStateBeacon.lockMu.Lock()
-	defer bestStateBeacon.lockMu.Unlock()
+	bestStateBeacon.LockMu.Lock()
+	defer bestStateBeacon.LockMu.Unlock()
 
 	newBeaconCandidate := []string{}
 	newShardCandidate := []string{}
