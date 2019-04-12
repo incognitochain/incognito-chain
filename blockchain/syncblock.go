@@ -49,12 +49,16 @@ func (blockchain *BlockChain) StartSyncBlk() {
 	blockchain.startSyncRelayShards()
 	blockchain.syncStatus.Unlock()
 
+	broadcastTicker := time.NewTicker(defaultBroadcastStateTime)
+	insertPoolTicker := time.NewTicker(time.Millisecond * 500)
+	peersProcessTicker := time.NewTicker(defaultProcessPeerStateTime)
+
 	go func() {
 		for {
 			select {
 			case <-blockchain.cQuitSync:
 				return
-			case <-time.Tick(defaultBroadcastStateTime):
+			case <-broadcastTicker.C:
 				go blockchain.config.Server.BoardcastNodeState()
 			}
 		}
@@ -65,7 +69,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			select {
 			case <-blockchain.cQuitSync:
 				return
-			case <-time.Tick(time.Millisecond * 500):
+			case <-insertPoolTicker.C:
 				blockchain.InsertBlockFromPool()
 			}
 		}
@@ -75,7 +79,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 		select {
 		case <-blockchain.cQuitSync:
 			return
-		case <-time.Tick(defaultProcessPeerStateTime):
+		case <-peersProcessTicker.C:
 			blockchain.syncStatus.Lock()
 			blockchain.syncStatus.PeersStateLock.Lock()
 
