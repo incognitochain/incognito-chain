@@ -16,7 +16,7 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
 	"github.com/constant-money/constant-chain/wallet"
 )
 
@@ -730,9 +730,10 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 		return false, errors.New("wrong tx version")
 	}
 	// check LockTime before now
-	if int64(txN.LockTime) > time.Now().Unix() {
-		return false, errors.New("wrong tx locktime")
-	}
+	//TODO: 0xKraken uncomment dis
+	// if int64(txN.LockTime) > time.Now().Unix() {
+	// 	return false, errors.New("wrong tx locktime")
+	// }
 
 	// check tx size
 	if tx.GetTxActualSize() > common.MaxTxSize {

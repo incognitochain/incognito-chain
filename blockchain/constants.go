@@ -6,11 +6,11 @@ import "time"
 const (
 	// BlockVersion is the current latest supported block version.
 	BlockVersion                = 1
-	defaultMaxBlkReqPerPeer     = 60
-	defaultMaxBlkReqPerTime     = 600
+	defaultMaxBlkReqPerPeer     = 100
+	defaultMaxBlkReqPerTime     = 1000
 	defaultBroadcastStateTime   = 2 * time.Second  // in second
 	defaultProcessPeerStateTime = 3 * time.Second  // in second
-	defaultMaxBlockSyncTime     = 2 * time.Second  // in second
+	defaultMaxBlockSyncTime     = 1 * time.Second  // in second
 	defaultCacheCleanupTime     = 60 * time.Second // in second
 
 	// Threshold ratio
@@ -64,8 +64,8 @@ const (
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 
-	TestNetShardCommitteeSize  = 1
-	TestNetBeaconCommitteeSize = 1
+	TestNetShardCommitteeSize  = 4
+	TestNetBeaconCommitteeSize = 4
 	TestNetActiveShards        = 2
 
 	//board and proposal parameters

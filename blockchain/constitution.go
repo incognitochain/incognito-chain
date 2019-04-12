@@ -128,7 +128,7 @@ func (helper DCBConstitutionHelper) NewRewardProposalSubmitterIns(chain *BlockCh
 	if rewardProposalSubmitter == 0 {
 		return nil, errors.New("[voting] - Not enough BankFund")
 	}
-	return frombeaconins.NewRewardProposalSubmitterIns(receiverAddress, common.RewardProposalSubmitter, common.DCBBoard), nil
+	return frombeaconins.NewRewardProposalSubmitterIns(receiverAddress, rewardProposalSubmitter, common.DCBBoard), nil
 }
 
 func (helper GOVConstitutionHelper) NewRewardProposalSubmitterIns(chain *BlockChain, receiverAddress *privacy.PaymentAddress) (frombeaconins.InstructionFromBeacon, error) {
@@ -136,7 +136,7 @@ func (helper GOVConstitutionHelper) NewRewardProposalSubmitterIns(chain *BlockCh
 	if rewardProposalSubmitter == 0 {
 		return nil, errors.New("[voting] - Not enough SalaryFund")
 	}
-	ins := frombeaconins.NewRewardProposalSubmitterIns(receiverAddress, common.RewardProposalSubmitter, common.GOVBoard)
+	ins := frombeaconins.NewRewardProposalSubmitterIns(receiverAddress, rewardProposalSubmitter, common.GOVBoard)
 	return ins, nil
 }
 
