@@ -34,7 +34,8 @@ type BFTProtocol struct {
 	}
 	multiSigScheme *multiSigScheme
 
-	proposeCh chan wire.Message
+	proposeCh   chan wire.Message
+	desyncMsgCh chan wire.Message
 
 	startTime time.Time
 }
@@ -104,54 +105,59 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 		if err != nil {
 			Logger.log.Error(err)
 			protocol.closeProposeCh()
-		}
-
-		timeSinceLastBlk := time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0))
-		if timeSinceLastBlk <= common.MinBlkInterval {
-			fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk).Seconds())
-			time.Sleep(common.MinBlkInterval - timeSinceLastBlk)
-		}
-
-		err = protocol.EngineCfg.BlockGen.FinalizeBeaconBlock(newBlock, protocol.EngineCfg.UserKeySet)
-
-		if err != nil {
-			Logger.log.Error(err)
-			protocol.closeProposeCh()
 		} else {
-			jsonBlock, _ := json.Marshal(newBlock)
-			msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.EngineCfg.UserKeySet)
+			timeSinceLastBlk := time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0))
+			if timeSinceLastBlk <= common.MinBlkInterval {
+				fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk).Seconds())
+				time.Sleep(common.MinBlkInterval - timeSinceLastBlk)
+			}
+
+			err = protocol.EngineCfg.BlockGen.FinalizeBeaconBlock(newBlock, protocol.EngineCfg.UserKeySet)
+
 			if err != nil {
 				Logger.log.Error(err)
 				protocol.closeProposeCh()
 			} else {
-				protocol.pendingBlock = newBlock
-				protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
+				jsonBlock, _ := json.Marshal(newBlock)
+				msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.EngineCfg.UserKeySet)
+				if err != nil {
+					Logger.log.Error(err)
+					protocol.closeProposeCh()
+				} else {
+					protocol.pendingBlock = newBlock
+					protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
+				}
 			}
 		}
 	} else {
 
 		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(protocol.EngineCfg.UserKeySet, protocol.RoundData.ShardID, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
 
-		timeSinceLastBlk := time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].BestBlock.Header.Timestamp, 0))
-		if timeSinceLastBlk <= common.MinBlkInterval {
-			fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk).Seconds())
-			time.Sleep(common.MinBlkInterval - timeSinceLastBlk)
-		}
-
-		err = protocol.EngineCfg.BlockGen.FinalizeShardBlock(newBlock, protocol.EngineCfg.UserKeySet)
-
 		if err != nil {
 			Logger.log.Error(err)
 			protocol.closeProposeCh()
 		} else {
-			jsonBlock, _ := json.Marshal(newBlock)
-			msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.EngineCfg.UserKeySet)
+			timeSinceLastBlk := time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].BestBlock.Header.Timestamp, 0))
+			if timeSinceLastBlk <= common.MinBlkInterval {
+				fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk).Seconds())
+				time.Sleep(common.MinBlkInterval - timeSinceLastBlk)
+			}
+
+			err = protocol.EngineCfg.BlockGen.FinalizeShardBlock(newBlock, protocol.EngineCfg.UserKeySet)
+
 			if err != nil {
 				Logger.log.Error(err)
 				protocol.closeProposeCh()
 			} else {
-				protocol.pendingBlock = newBlock
-				protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
+				jsonBlock, _ := json.Marshal(newBlock)
+				msg, err = MakeMsgBFTPropose(jsonBlock, protocol.RoundData.Layer, protocol.RoundData.ShardID, protocol.EngineCfg.UserKeySet)
+				if err != nil {
+					Logger.log.Error(err)
+					protocol.closeProposeCh()
+				} else {
+					protocol.pendingBlock = newBlock
+					protocol.multiSigScheme.dataToSig = newBlock.Header.Hash()
+				}
 			}
 		}
 	}
@@ -190,4 +196,8 @@ func (protocol *BFTProtocol) closeProposeCh() {
 	default:
 		close(protocol.proposeCh)
 	}
+}
+
+func (protocol *BFTProtocol) RoundDesyncDetector() {
+
 }

@@ -6,12 +6,12 @@ import "time"
 const (
 	// BlockVersion is the current latest supported block version.
 	BlockVersion                = 1
-	defaultMaxBlkReqPerPeer     = 100
-	defaultMaxBlkReqPerTime     = 1000
-	defaultBroadcastStateTime   = 2 * time.Second  // in second
-	defaultProcessPeerStateTime = 3 * time.Second  // in second
-	defaultMaxBlockSyncTime     = 1 * time.Second  // in second
-	defaultCacheCleanupTime     = 60 * time.Second // in second
+	defaultMaxBlkReqPerPeer     = 1000
+	defaultMaxBlkReqPerTime     = 6000
+	defaultBroadcastStateTime   = 2 * time.Second         // in second
+	defaultProcessPeerStateTime = 3 * time.Second         // in second
+	defaultMaxBlockSyncTime     = 1200 * time.Millisecond // in ms
+	defaultCacheCleanupTime     = 30 * time.Second        // in second
 
 	// Threshold ratio
 	ThresholdRatioOfDCBCrisis   = 9000
