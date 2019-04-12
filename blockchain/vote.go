@@ -178,6 +178,7 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 				}
 			}
 		}
+		fmt.Println("[voting] - - - - Fund Update - ", helper.GetBoardFund(self))
 	}
 	fmt.Println("[voting] - - - - - - end createAcceptConstitutionAndRewardSubmitter", resIns)
 	return resIns, nil
@@ -335,23 +336,26 @@ func (chain *BlockChain) CreateShareRewardOldBoardIns(
 ) []frombeaconins.InstructionFromBeacon {
 	Ins := make([]frombeaconins.InstructionFromBeacon, 0)
 	boardIndex := chain.GetCurrentBoardIndex(helper)
+	fmt.Printf("[voting] ------------------- Create Share Reward Old Board Ins to %+v %+v\n", chairPaymentAddress, totalAmountCoinReward)
 	voterList := chain.config.DataBase.GetBoardVoterList(helper.GetBoardType(), chairPaymentAddress, boardIndex)
 	for _, voter := range voterList {
 		amountOfVote := helper.GetAmountOfVoteToBoard(chain, chairPaymentAddress, voter, boardIndex)
 		amountOfCoin := amountOfVote * totalAmountCoinReward / totalVoteAmount
-		Ins = append(Ins, chain.CreateSingleShareRewardOldBoardIns(
-			helper,
-			chairPaymentAddress,
-			voter,
-			amountOfCoin,
-		))
+		if amountOfCoin > 0 {
+			Ins = append(Ins, chain.CreateSingleShareRewardOldBoardIns(
+				helper,
+				chairPaymentAddress,
+				voter,
+				amountOfCoin,
+			))
+		}
 	}
 	return Ins
 }
 
-func (chain *BlockChain) GetCoinTermReward(helper ConstitutionHelper) uint64 {
-	return helper.GetBoardFund(chain) * common.PercentageBoardSalary / common.BasePercentage
-}
+// func (chain *BlockChain) GetCoinTermReward(helper ConstitutionHelper) uint64 {
+// 	return helper.GetBoardFund(chain) * common.PercentageBoardSalary / common.BasePercentage
+// }
 
 //todo @0xjackalope reward for chair
 func (self *BlockChain) CreateUpdateNewGovernorInstruction(

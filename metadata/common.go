@@ -50,6 +50,9 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case ContractingRequestMeta:
 		md = &ContractingRequest{}
 
+	case ContractingResponseMeta:
+		md = &ResponseBase{}
+
 	case OracleFeedMeta:
 		md = &OracleFeed{}
 
@@ -132,7 +135,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &RewardGOVProposalVoterMetadata{}
 
 	default:
-		fmt.Printf("[db] meta: %+v\n", meta)
+		fmt.Printf("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
 	}
 

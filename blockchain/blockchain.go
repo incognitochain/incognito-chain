@@ -21,7 +21,7 @@ import (
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
 	libp2p "github.com/libp2p/go-libp2p-peer"
-	cache "github.com/patrickmn/go-cache"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
 
@@ -663,7 +663,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		// save tx which relate to custom token
 		// Reject Double spend UTXO before enter this state
 		fmt.Printf("StoreCustomTokenPaymentAddresstHistory/CustomTokenTx: \n VIN %+v VOUT %+v \n", customTokenTx.TxTokenData.Vins, customTokenTx.TxTokenData.Vouts)
-		err = blockchain.StoreCustomTokenPaymentAddresstHistory(customTokenTx)
+		err = blockchain.StoreCustomTokenPaymentAddresstHistory(customTokenTx, block.Header.ShardID)
 		if err != nil {
 			// Skip double spend
 			return err
@@ -820,7 +820,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 // 	KeyWallet: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
 //   H: value-spent/unspent-rewarded/unreward
 */
-func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxCustomToken) error {
+func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxCustomToken, shardID byte) error {
 	Splitter := lvdb.Splitter
 	TokenPaymentAddressPrefix := lvdb.TokenPaymentAddressPrefix
 	unspent := lvdb.Unspent
@@ -861,6 +861,25 @@ func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customToken
 		}
 	}
 	for index, vout := range customTokenTx.TxTokenData.Vouts {
+		// check vout by type and receiver
+		txCustomTokenType := customTokenTx.TxTokenData.Type
+		if txCustomTokenType == transaction.CustomTokenInit || txCustomTokenType == transaction.CustomTokenTransfer {
+			// check receiver's shard and current shard ID
+			shardIDOfReceiver := common.GetShardIDFromLastByte(vout.PaymentAddress.Pk[len(vout.PaymentAddress.Pk)-1])
+			if shardIDOfReceiver != shardID {
+				continue
+			}
+		} else if txCustomTokenType == transaction.CustomTokenCrossShard {
+			shardIDOfReceiver := common.GetShardIDFromLastByte(vout.PaymentAddress.Pk[len(vout.PaymentAddress.Pk)-1])
+			if shardIDOfReceiver != shardID {
+				continue
+			}
+		} else if txCustomTokenType == transaction.CustomTokenMint {
+			shardIDOfReceiver := common.GetShardIDFromLastByte(vout.PaymentAddress.Pk[len(vout.PaymentAddress.Pk)-1])
+			if shardIDOfReceiver != shardID {
+				continue
+			}
+		}
 		paymentAddressBytes := base58.Base58Check{}.Encode(vout.PaymentAddress.Bytes(), 0x00)
 		utxoHash := []byte(customTokenTx.Hash().String())
 		voutIndex := index

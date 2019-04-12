@@ -16,7 +16,7 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
 	"github.com/constant-money/constant-chain/wallet"
 )
 
@@ -648,6 +648,11 @@ func (tx *Tx) GetUniqueReceiver() (bool, []byte, uint64) {
 	return count == 1, pubkey, amount
 }
 
+func (tx *Tx) GetTransferData() (bool, []byte, uint64, *common.Hash) {
+	unique, pk, amount := tx.GetUniqueReceiver()
+	return unique, pk, amount, &common.ConstantID
+}
+
 func (tx *Tx) GetTokenReceivers() ([][]byte, []uint64) {
 	return nil, nil
 }
@@ -719,16 +724,20 @@ func (tx *Tx) ValidateTxWithBlockChain(
 }
 
 func (tx *Tx) validateNormalTxSanityData() (bool, error) {
-	//todo @0xthunderbird
-	return true, nil
 	txN := tx
 	//check version
 	if txN.Version > TxVersion {
 		return false, errors.New("wrong tx version")
 	}
 	// check LockTime before now
-	if int64(txN.LockTime) > time.Now().Unix() {
-		return false, errors.New("wrong tx locktime")
+	//TODO: 0xKraken uncomment dis
+	// if int64(txN.LockTime) > time.Now().Unix() {
+	// 	return false, errors.New("wrong tx locktime")
+	// }
+
+	// check tx size
+	if tx.GetTxActualSize() > common.MaxTxSize {
+		return false, errors.New("tx size is too large")
 	}
 
 	// check sanity of Proof
@@ -841,7 +850,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 			//check ComOutputValue
 			for i := 0; i < len(txN.Proof.ComOutputValue); i++ {
 				if !txN.Proof.ComOutputValue[i].IsSafe() {
-					return false, errors.New("validate sanity ComInputValue of proof failed")
+					return false, errors.New("validate sanity ComOutputValue of proof failed")
 				}
 			}
 			if len(txN.Proof.CommitmentIndices) != len(txN.Proof.InputCoins)*privacy.CMRingSize {

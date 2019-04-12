@@ -201,9 +201,11 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(payToAddress *privac
 		Logger.log.Info("Creating empty block...")
 	}
 	// Remove unrelated shard tx
-	for _, tx := range txToRemove {
-		blockgen.txPool.RemoveTx(tx)
-	}
+	go func() {
+		for _, tx := range txToRemove {
+			blockgen.txPool.RemoveTx(tx)
+		}
+	}()
 
 	// Process stability tx, create response txs if needed
 	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey)
@@ -349,22 +351,12 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 */
 func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	sourceTxns := blockgen.txPool.MiningDescs()
-	// sourceTxns := []*metadata.TxDesc{}
-	//@NOTICE: COMMENT To allow produce too many empty block
-	// get tx and wait for more if not enough
-	//if len(sourceTxns) < common.MinTxsInBlock {
-	//	<-time.Tick(common.MinBlockWaitTime * time.Second)
-	//	sourceTxns = blockgen.txPool.MiningDescs()
-	//	if len(sourceTxns) == 0 {
-	//		<-time.Tick(common.MaxBlockWaitTime * time.Second)
-	//		sourceTxns = blockgen.txPool.MiningDescs()
-	//	}
-	//}
 	isEmpty := blockgen.chain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
 		panic("TempTxPool Is not Empty")
 	}
 	currentSize := uint64(0)
+	startTime := time.Now()
 	for i, txDesc := range sourceTxns {
 		Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
 		tx := txDesc.Tx
@@ -387,6 +379,10 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 		currentSize += tempSize
 		txsToAdd = append(txsToAdd, tempTx)
 		if len(txsToAdd) == common.MaxTxsInBlock {
+			break
+		}
+		elasped := time.Since(startTime)
+		if elasped >= common.MinBlkInterval/2 {
 			break
 		}
 	}
