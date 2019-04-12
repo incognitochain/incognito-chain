@@ -80,8 +80,8 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	Logger.log.Infof("Check block existence for insert process %d, with hash %+v", block.Header.Height, *block.Hash())
 	isExist, _ := blockchain.config.DataBase.HasBeaconBlock(block.Hash())
 	if isExist {
-		return nil
-		// return NewBlockChainError(DuplicateBlockErr, errors.New("This block has been stored already"))
+		//return nil
+		return NewBlockChainError(DuplicateBlockErr, errors.New("This block has been stored already"))
 	}
 	Logger.log.Infof("Begin Insert new block %d, with hash %+v \n", block.Header.Height, *block.Hash())
 	// fmt.Printf("Beacon block %+v \n", block)
@@ -138,7 +138,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	// fmt.Println("Beacon Process/Shard Committee in Epoch ", block.Header.Epoch, shardCommittee)
 	//=========Store cross shard state ==================================
 	lastCrossShardState := GetBestStateBeacon().LastCrossShardState
-	GetBestStateBeacon().lockMu.Lock()
+	GetBestStateBeacon().LockMu.Lock()
 	if block.Body.ShardState != nil {
 		for fromShard, shardBlocks := range block.Body.ShardState {
 			for _, shardBlock := range shardBlocks {
@@ -165,23 +165,23 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 			blockchain.config.CrossShardPool[fromShard].UpdatePool()
 		}
 	}
-	GetBestStateBeacon().lockMu.Unlock()
+	GetBestStateBeacon().LockMu.Unlock()
 	// Process instructions and store stability data
 	if err := blockchain.updateStabilityLocalState(block); err != nil {
 		return err
 	}
 	// ************ Store block at last
-	Logger.log.Infof("Store StabilityInfo %+v \n")
+	Logger.log.Info("Store StabilityInfo ")
 	if err := blockchain.config.DataBase.StoreStabilityInfoByHeight(block.Header.Height, bestStateBeacon.StabilityInfo); err != nil {
 		return err
 	}
 	//========Store new Beaconblock and new Beacon bestState in cache
-	Logger.log.Infof("Store Beacon BestState %+v \n")
+	Logger.log.Infof("Store Beacon BestState  ")
 	if err := blockchain.config.DataBase.StoreBeaconBestState(blockchain.BestState.Beacon); err != nil {
 		return err
 	}
 
-	Logger.log.Infof("Store Beacon Block %+v \n", block.Header.Height, *block.Hash())
+	Logger.log.Info("Store Beacon Block ", block.Header.Height, *block.Hash())
 	if err := blockchain.config.DataBase.StoreBeaconBlock(block); err != nil {
 		return err
 	}
@@ -194,10 +194,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	blockchain.config.BeaconPool.SetBeaconState(blockchain.BestState.Beacon.BeaconHeight)
 
 	//=========Remove shard to beacon block in pool
-	Logger.log.Infof("Remove block from pool block %d with hash %+v \n", *block.Hash(), block.Header.Height, blockchain.BestState.Beacon.BestShardHeight)
+	Logger.log.Info("Remove block from pool block with hash  ", *block.Hash(), block.Header.Height, blockchain.BestState.Beacon.BestShardHeight)
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
 
-	Logger.log.Infof("Finish Insert new block %d, with hash %+v", block.Header.Height, *block.Hash())
+	Logger.log.Info("Finish Insert new block , with hash", block.Header.Height, *block.Hash())
 	return nil
 }
 
@@ -536,8 +536,8 @@ func (bestStateBeacon *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *B
 	Update Beststate with new Block
 */
 func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *BlockChain) error {
-	bestStateBeacon.lockMu.Lock()
-	defer bestStateBeacon.lockMu.Unlock()
+	bestStateBeacon.LockMu.Lock()
+	defer bestStateBeacon.LockMu.Unlock()
 
 	newBeaconCandidate := []string{}
 	newShardCandidate := []string{}

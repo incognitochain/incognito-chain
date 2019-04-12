@@ -66,6 +66,7 @@ func (addrManager *AddrManager) savePeers() error {
 	for k, v := range addrManager.addrIndex {
 		ska := new(serializedKnownAddress)
 		ska.Addr = k
+		fmt.Println("PeerID", len(v.PeerID.String()))
 		ska.Src = v.PeerID.Pretty()
 		ska.PublicKey = v.PublicKey
 
@@ -147,6 +148,9 @@ func (addrManager *AddrManager) deserializePeers(filePath string) error {
 	copy(addrManager.key[:], sam.Key[:])
 
 	for _, v := range sam.Addresses {
+		if len(v.Src) > 10000 {
+			continue
+		}
 		peer := new(peer.Peer)
 		peer.PeerID = peer2.ID(v.Src)
 		peer.RawAddress = v.Addr
