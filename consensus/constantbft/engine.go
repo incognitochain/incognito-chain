@@ -10,6 +10,7 @@ import (
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/wire"
 )
 
@@ -243,7 +244,7 @@ func (engine *Engine) execShardRole(shardID byte) {
 		shardBlk := resBlk.(*blockchain.ShardBlock)
 		fmt.Println("========NEW SHARD BLOCK=======", shardBlk.Header.Height)
 		isProducer := false
-		if strings.Compare(engine.config.UserKeySet.GetPublicKeyB58(), shardBlk.Header.Producer) == 0 {
+		if strings.Compare(engine.config.UserKeySet.GetPublicKeyB58(), base58.Base58Check{}.Encode(shardBlk.Header.ProducerAddress.Pk, common.ZeroByte)) == 0 {
 			isProducer = true
 		}
 		err = engine.config.BlockChain.InsertShardBlock(shardBlk, isProducer)

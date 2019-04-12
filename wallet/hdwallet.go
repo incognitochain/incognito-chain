@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha512"
+
 	"github.com/constant-money/constant-chain/cashec"
+	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 )
 
@@ -130,7 +132,7 @@ func (key *KeyWallet) Base58CheckSerialize(keyType byte) string {
 		return ""
 	}
 
-	return base58.Base58Check{}.Encode(serializedKey, byte(0x00))
+	return base58.Base58Check{}.Encode(serializedKey, common.ZeroByte)
 }
 
 // Deserialize a byte slice into a KeySet
@@ -181,9 +183,9 @@ func Base58CheckDeserialize(data string) (*KeyWallet, error) {
 	return Deserialize(b)
 }
 
-func GetPublicKeyFromPrivateKeyStr(privateKeyStr string) ([]byte, error){
+func GetPublicKeyFromPrivateKeyStr(privateKeyStr string) ([]byte, error) {
 	keyWallet, err := Base58CheckDeserialize(privateKeyStr)
-	if err != nil{
+	if err != nil {
 		return []byte{}, err
 	}
 
@@ -191,4 +193,3 @@ func GetPublicKeyFromPrivateKeyStr(privateKeyStr string) ([]byte, error){
 
 	return keyWallet.KeySet.PaymentAddress.Pk, nil
 }
-
