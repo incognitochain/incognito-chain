@@ -2,13 +2,13 @@ package blockchain
 
 import (
 	"encoding/binary"
+	"fmt"
 	"sort"
 	"strconv"
 	"sync"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
-	"github.com/pkg/errors"
 )
 
 // BestState houses information about the current best block and other info
@@ -54,7 +54,7 @@ type BestStateBeacon struct {
 	LastCrossShardState map[byte]map[byte]uint64 `json:"LastCrossShardState"`
 
 	ShardHandle map[byte]bool `json:"ShardHandle"` // lock sync.RWMutex
-	lockMu      sync.RWMutex
+	LockMu      sync.RWMutex
 }
 
 type StabilityInfo struct {
@@ -85,8 +85,8 @@ func (self *BestStateBeacon) GetBestShardHeight() map[byte]uint64 {
 }
 
 func (self *BestStateBeacon) GetBestHeightOfShard(shardID byte) uint64 {
-	self.lockMu.RLock()
-	defer self.lockMu.RUnlock()
+	self.LockMu.RLock()
+	defer self.LockMu.RUnlock()
 	return self.BestShardHeight[shardID]
 }
 
@@ -271,8 +271,8 @@ func (bestStateBeacon *BestStateBeacon) GetBytes() []byte {
 	return res
 }
 func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
-	bestStateBeacon.lockMu.Lock()
-	defer bestStateBeacon.lockMu.Unlock()
+	bestStateBeacon.LockMu.Lock()
+	defer bestStateBeacon.LockMu.Unlock()
 	return common.HashH(bestStateBeacon.GetBytes())
 }
 
@@ -342,5 +342,5 @@ func (bestStateBeacon *BestStateBeacon) GetSaleData(saleID []byte) (*component.S
 	if value, ok := bestStateBeacon.Params[key]; ok {
 		return parseSaleDataValueBeacon(value)
 	}
-	return nil, errors.Errorf("SaleID not exist: %x", saleID)
+	return nil, fmt.Errorf("failed getting SaleData from BSB")
 }

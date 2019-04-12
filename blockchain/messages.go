@@ -9,8 +9,6 @@ import (
 )
 
 func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]ChainState, shardToBeaconPool *map[byte][]uint64, crossShardPool *map[byte]map[byte][]uint64, peerID libp2p.ID) {
-	// if beacon.Height >= blockchain.BestState.Beacon.BeaconHeight-1 {
-	// }
 	var (
 		userRole      string
 		userShardID   byte

@@ -96,40 +96,46 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockC
 
 	// TODO(@0xbunyip): validate DCBParams: LoanParams, etc
 
-	// Validate SaleData
+	// Validate Crowdsale data
 	for _, sale := range submitDCBProposalMetadata.DCBParams.ListSaleData {
 		// No crowdsale existed with the same id
 		if br.CrowdsaleExisted(sale.SaleID) {
-			return false, errors.Errorf("Crowdsale with the same ID existed")
+			return false, errors.Errorf("crowdsale with the same ID existed")
+		}
+
+		// Valid asset pair
+		if !(common.IsBondAsset(&sale.BuyingAsset) && common.IsConstantAsset(&sale.SellingAsset)) && (common.IsConstantAsset(&sale.BuyingAsset) && common.IsBondAsset(&sale.SellingAsset)) {
+			return false, errors.Errorf("crowdsale asset pair must be bond and Constant")
 		}
 
 		// EndBlock is valid
 		if sale.EndBlock <= br.GetBeaconHeight() {
-			return false, errors.Errorf("Crowdsale EndBlock must be higher than current beacon height")
+			return false, errors.Errorf("crowdsale EndBlock must be higher than current beacon height")
 		}
 
 		// Amount and DefaultPrice must be set
 		if sale.BuyingAmount*sale.DefaultBuyPrice*sale.SellingAmount*sale.DefaultSellPrice == 0 {
-			return false, errors.Errorf("Crowdsale asset amounts and prices must be set")
+			return false, errors.Errorf("crowdsale asset amounts and prices must be set")
 		}
 
 		// Check if DCB has enough SellingAsset
 		if common.IsBondAsset(&sale.SellingAsset) && br.GetDCBAvailableAsset(&sale.SellingAsset) < sale.SellingAmount {
-			return false, errors.Errorf("Crowdsale: not enough selling asset")
+			return false, errors.Errorf("crowdsale: not enough selling asset")
 		}
 	}
 
+	// Validate reserve data
 	raiseReserveData := submitDCBProposalMetadata.DCBParams.RaiseReserveData
 	for assetID, _ := range raiseReserveData {
 		if br.GetAssetPrice(&assetID) == 0 {
-			return false, errors.Errorf("Cannot raise reserve without oracle price for asset %s", assetID.String())
+			return false, errors.Errorf("cannot raise reserve without oracle price for asset %s", assetID.String())
 		}
 	}
 
 	spendReserveData := submitDCBProposalMetadata.DCBParams.SpendReserveData
 	for assetID, _ := range spendReserveData {
 		if br.GetAssetPrice(&assetID) == 0 {
-			return false, errors.Errorf("Cannot spend reserve without oracle price for asset %s", assetID.String())
+			return false, errors.Errorf("cannot spend reserve without oracle price for asset %s", assetID.String())
 		}
 	}
 	return true, nil

@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"strconv"
@@ -112,4 +113,10 @@ func ParseCrowdsalePaymentInstruction(data string) (*CrowdsalePaymentInstruction
 		return nil, err
 	}
 	return inst, nil
+}
+
+func (inst *CrowdsalePaymentInstruction) Compare(inst2 *CrowdsalePaymentInstruction) bool {
+	return bytes.Equal(inst.PaymentAddress.Pk, inst2.PaymentAddress.Pk) &&
+		inst.Amount == inst2.Amount &&
+		inst.AssetID.IsEqual(&inst2.AssetID)
 }
