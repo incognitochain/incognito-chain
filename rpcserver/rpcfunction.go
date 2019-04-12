@@ -20,6 +20,9 @@ type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, 
 
 // Commands valid for normal user
 var RpcHandler = map[string]commandHandler{
+
+	StartProfiling: RpcServer.handleStartProfiling,
+	StopProfiling:  RpcServer.handleStopProfiling,
 	// node
 	GetNetworkInfo:           RpcServer.handleGetNetWorkInfo,
 	GetConnectionCount:       RpcServer.handleGetConnectionCount,

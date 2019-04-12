@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 
 	"github.com/constant-money/constant-chain/cashec"
+	peer "github.com/libp2p/go-libp2p-peer"
 
 	"time"
 
 	"github.com/constant-money/constant-chain/common"
-	"github.com/libp2p/go-libp2p-peer"
 )
 
 const (
-	MaxGetAddressPayload = 1000 // 1 Kb
+	MaxGetAddressPayload = 100000 // 1 Kb
 )
 
 type RawPeer struct {

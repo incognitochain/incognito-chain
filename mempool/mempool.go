@@ -575,21 +575,27 @@ func (tp *TxPool) EmptyPool() bool {
 		return true
 	}
 
-	for key := range tp.pool {
-		delete(tp.pool, key)
-	}
+	// for key := range tp.pool {
+	// 	delete(tp.pool, key)
+	// }
 
-	for key := range tp.poolSerialNumbers {
-		delete(tp.poolSerialNumbers, key)
-	}
+	// for key := range tp.poolSerialNumbers {
+	// 	delete(tp.poolSerialNumbers, key)
+	// }
 
-	for key := range tp.txCoinHashHPool {
-		delete(tp.txCoinHashHPool, key)
-	}
+	// for key := range tp.txCoinHashHPool {
+	// 	delete(tp.txCoinHashHPool, key)
+	// }
 
-	for key := range tp.coinHashHPool {
-		delete(tp.coinHashHPool, key)
-	}
+	// for key := range tp.coinHashHPool {
+	// 	delete(tp.coinHashHPool, key)
+	// }
+
+	tp.pool = make(map[common.Hash]*TxDesc)
+	tp.poolSerialNumbers = make(map[common.Hash][][]byte)
+	tp.txCoinHashHPool = make(map[common.Hash][]common.Hash)
+	tp.coinHashHPool = make(map[common.Hash]bool)
+
 	tp.candidateList = []string{}
 	tp.tokenIDList = []string{}
 
