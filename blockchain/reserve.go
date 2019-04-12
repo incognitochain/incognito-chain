@@ -135,7 +135,7 @@ func (blockgen *BlkTmplGenerator) buildContractingRes(
 	if instType == "accepted" {
 		return []metadata.Transaction{}, nil
 	} else if instType == "refund" {
-		meta := metadata.NewResponseBase(txReqID, metadata.ContractingReponseMeta)
+		meta := metadata.NewResponseBase(txReqID, metadata.ContractingResponseMeta)
 		tx := new(transaction.Tx)
 		err := tx.InitTxSalary(
 			contractingInfo.BurnedConstAmount,
@@ -169,15 +169,16 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 	if instType != "accepted" {
 		return []metadata.Transaction{}, nil
 	}
-	// accepted
-	if bytes.Equal(issuingInfo.TokenID[:], common.ConstantID[:]) {
+
+	db := blockgen.chain.config.DataBase
+	if bytes.Equal(issuingInfo.TokenID[:], common.ConstantID[:]) { // accepted
 		meta := metadata.NewIssuingResponse(txReqID, metadata.IssuingResponseMeta)
 		tx := new(transaction.Tx)
 		err := tx.InitTxSalary(
 			issuingInfo.Amount,
 			&issuingInfo.ReceiverAddress,
 			blkProducerPrivateKey,
-			blockgen.chain.config.DataBase,
+			db,
 			meta,
 		)
 		if err != nil {
@@ -187,10 +188,6 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 		return []metadata.Transaction{tx}, nil
 	} else if bytes.Equal(issuingInfo.TokenID[:], common.DCBTokenID[:]) {
 		meta := metadata.NewIssuingResponse(txReqID, metadata.IssuingResponseMeta)
-		//paymentInfos := []*privacy.PaymentInfo{&privacy.PaymentInfo{
-		//	PaymentAddress: issuingInfo.ReceiverAddress,
-		//	Amount:         issuingInfo.Amount,
-		//}}
 		txCustom := &transaction.TxCustomToken{}
 		customTokenParamTx := &transaction.CustomTokenParamTx{
 			PropertyID:  common.DCBTokenID.String(),
@@ -203,19 +200,12 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 				},
 			},
 		}
-		db := blockgen.chain.config.DataBase
-		//listCustomTokens, err := frombeaconins.GetListCustomTokens(db, blockgen.chain)
-		//if err != nil {
-		//	fmt.Printf("[db] build issuing resp get list err: %v\n", err)
-		//	return nil, err
-		//}
 		err = txCustom.Init(
 			blkProducerPrivateKey,
 			[]*privacy.PaymentInfo{},
 			nil,
 			0,
 			customTokenParamTx,
-			//listCustomTokens,
 			db,
 			meta,
 			false,
@@ -225,30 +215,10 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 			fmt.Printf("[db] build issuing resp err: %v\n", err)
 			return nil, err
 		}
-		//txTokenVout := transaction.TxTokenVout{
-		//	Value:          issuingInfo.Amount,
-		//	PaymentAddress: issuingInfo.ReceiverAddress,
-		//}
-		//var propertyID [common.HashSize]byte
-		//copy(propertyID[:], issuingInfo.TokenID[:])
-		//txTokenData := transaction.TxTokenData{
-		//	Type:       transaction.CustomTokenInit,
-		//	Mintable:   true,
-		//	Amount:     issuingInfo.Amount,
-		//	PropertyID: common.Hash(propertyID),
-		//	Vins:       []transaction.TxTokenVin{},
-		//	Vouts:      []transaction.TxTokenVout{txTokenVout},
-		//}
-		//txTokenData.PropertyName = txTokenData.PropertyID.String()
-		//txTokenData.PropertySymbol = txTokenData.PropertyID.String()
-		//resTx := &transaction.TxCustomToken{
-		//	TxTokenData: txTokenData,
-		//}
-		//resTx.SetMetadata(meta)
-		txCustom.Type = common.TxCustomTokenType
 		fmt.Printf("[db] build issuing resp success: %h\n", txCustom.Hash())
 		return []metadata.Transaction{txCustom}, nil
 	}
+	// TODO(@0xbunyip): fail to issue/refund
 	return []metadata.Transaction{}, nil
 }
 

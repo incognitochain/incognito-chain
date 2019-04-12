@@ -101,7 +101,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 		timeSinceLastBlk := time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0))
 		if timeSinceLastBlk <= common.MinBlkInterval {
 			fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk).Seconds())
-			<-time.Tick(common.MinBlkInterval - timeSinceLastBlk)
+			time.Sleep(common.MinBlkInterval - timeSinceLastBlk)
 		}
 		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockBeacon(&protocol.EngineCfg.UserKeySet.PaymentAddress, &protocol.EngineCfg.UserKeySet.PrivateKey, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
 
@@ -123,7 +123,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 		timeSinceLastBlk := time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].BestBlock.Header.Timestamp, 0))
 		if timeSinceLastBlk <= common.MinBlkInterval {
 			fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk).Seconds())
-			<-time.Tick(common.MinBlkInterval - timeSinceLastBlk)
+			time.Sleep(common.MinBlkInterval - timeSinceLastBlk)
 		}
 		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(&protocol.EngineCfg.UserKeySet.PaymentAddress, &protocol.EngineCfg.UserKeySet.PrivateKey, protocol.RoundData.ShardID, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
 
