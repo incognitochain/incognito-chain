@@ -14,7 +14,7 @@ func GenerateAddress(seeds []string) ([]string, error) {
 	var pubAddresses []string
 	for _, seed := range seeds {
 		keySet := (&cashec.KeySet{}).GenerateKey([]byte(seed))
-		pubAddress := base58.Base58Check{}.Encode(keySet.PaymentAddress.Pk, byte(0x00))
+		pubAddress := base58.Base58Check{}.Encode(keySet.PaymentAddress.Pk, common.ZeroByte)
 		pubAddresses = append(pubAddresses, pubAddress)
 	}
 	return pubAddresses, nil
@@ -33,7 +33,7 @@ func GenerateAddressByShard(shardID byte) ([]string, error) {
 			paymentAddress := child.Base58CheckSerialize(wallet.PaymentAddressType)
 			if child.KeySet.PaymentAddress.Pk[32] == byte(shardID) {
 				fmt.Printf("Acc %+v : \n", i)
-				fmt.Printf("PublicKey %+v \n ", base58.Base58Check{}.Encode(child.KeySet.PaymentAddress.Pk, byte(0x00)))
+				fmt.Printf("PublicKey %+v \n ", base58.Base58Check{}.Encode(child.KeySet.PaymentAddress.Pk, common.ZeroByte))
 				fmt.Printf("PaymentAddress: %+v \n", paymentAddress)
 				fmt.Printf("PrivateKey: %+v \n ", privAddr)
 				k++
@@ -50,10 +50,10 @@ func GenerateAddressByte(seeds [][]byte) ([]string, []string, error) {
 	var privateKeys []string
 	var pubAddresses []string
 	for _, seed := range seeds {
-		privateKey := base58.Base58Check{}.Encode(seed, byte(0x00))
+		privateKey := base58.Base58Check{}.Encode(seed, common.ZeroByte)
 		privateKeys = append(privateKeys, privateKey)
 		keySet := (&cashec.KeySet{}).GenerateKey(seed)
-		pubAddress := base58.Base58Check{}.Encode(keySet.PaymentAddress.Pk, byte(0x00))
+		pubAddress := base58.Base58Check{}.Encode(keySet.PaymentAddress.Pk, common.ZeroByte)
 		pubAddresses = append(pubAddresses, pubAddress)
 	}
 	return privateKeys, pubAddresses, nil

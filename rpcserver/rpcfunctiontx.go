@@ -259,7 +259,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 				Sig:         tempTx.Sig,
 			}
 			if len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
 			}
 			metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
 			result.Metadata = string(metaData)
@@ -284,7 +284,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
 			result.CustomTokenData = string(txCustomData)
 			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
 			}
 			if tempTx.Metadata != nil {
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
@@ -309,7 +309,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 				Sig:         tempTx.Sig,
 			}
 			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), byte(0x00))
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
 			}
 			tokenData, _ := json.MarshalIndent(tempTx.TxTokenPrivacyData, "", "\t")
 			result.PrivacyCustomTokenData = string(tokenData)
@@ -705,7 +705,7 @@ func (rpcServer RpcServer) handleRandomCommitments(params interface{}, closeChan
 	result["MyCommitmentIndexs"] = myCommitmentIndexs
 	temp := []string{}
 	for _, commitment := range commitments {
-		temp = append(temp, base58.Base58Check{}.Encode(commitment, byte(0x00)))
+		temp = append(temp, base58.Base58Check{}.Encode(commitment, common.ZeroByte))
 	}
 	result["Commitments"] = temp
 

@@ -98,12 +98,21 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	start := time.Now()
 	var msg wire.Message
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
+
+		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockBeacon(&protocol.EngineCfg.UserKeySet.PaymentAddress, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
+
+		if err != nil {
+			Logger.log.Error(err)
+			protocol.closeProposeCh()
+		}
+
 		timeSinceLastBlk := time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0))
 		if timeSinceLastBlk <= common.MinBlkInterval {
 			fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk).Seconds())
 			time.Sleep(common.MinBlkInterval - timeSinceLastBlk)
 		}
-		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockBeacon(&protocol.EngineCfg.UserKeySet.PaymentAddress, &protocol.EngineCfg.UserKeySet.PrivateKey, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
+
+		err = protocol.EngineCfg.BlockGen.FinalizeBeaconBlock(newBlock, protocol.EngineCfg.UserKeySet)
 
 		if err != nil {
 			Logger.log.Error(err)
@@ -120,12 +129,16 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 			}
 		}
 	} else {
+
+		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(protocol.EngineCfg.UserKeySet, protocol.RoundData.ShardID, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
+
 		timeSinceLastBlk := time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].BestBlock.Header.Timestamp, 0))
 		if timeSinceLastBlk <= common.MinBlkInterval {
 			fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk).Seconds())
 			time.Sleep(common.MinBlkInterval - timeSinceLastBlk)
 		}
-		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(&protocol.EngineCfg.UserKeySet.PaymentAddress, &protocol.EngineCfg.UserKeySet.PrivateKey, protocol.RoundData.ShardID, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
+
+		err = protocol.EngineCfg.BlockGen.FinalizeShardBlock(newBlock, protocol.EngineCfg.UserKeySet)
 
 		if err != nil {
 			Logger.log.Error(err)
