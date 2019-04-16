@@ -92,6 +92,8 @@ type RpcServerConfig struct {
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
 	FeeEstimator map[byte]*mempool.FeeEstimator
+
+	IsMiningNode bool // flag mining node. True: mining, False: not mining
 }
 
 func (rpcServer *RpcServer) Init(config *RpcServerConfig) {

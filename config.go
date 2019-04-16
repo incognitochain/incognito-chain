@@ -39,7 +39,7 @@ const (
 	sampleConfigFilename      = "sample-config.conf"
 	defaultDisableRpcTLS      = true
 	defaultFastStartup        = true
-	defaultNodeMode           = "relay"
+	defaultNodeMode           = common.NODEMODE_RELAY
 	// For wallet
 	defaultWalletName = "wallet"
 )
@@ -105,7 +105,7 @@ type config struct {
 	// Net config
 	TestNet bool `long:"testnet" description:"Use the test network"`
 
-	PrivateKey string `long:"privatekey" description:"User spending key used for operation in consensus"`
+	PrivateKey  string `long:"privatekey" description:"User spending key used for operation in consensus"`
 	NodeMode    string `long:"nodemode" description:"Role of this node (beacon/shard/wallet/relay | default role is 'relay' (relayshards must be set to run), 'auto' mode will switch between 'beacon' and 'shard')"`
 	RelayShards string `long:"relayshards" description:"set relay shards of this node when in 'relay' mode if noderole is auto then it only sync shard data when user is a shard producer/validator"`
 	// For Wallet
@@ -284,7 +284,7 @@ func loadConfig() (*config, []string, error) {
 		TestNet:              true,
 		DiscoverPeersAddress: "127.0.0.1:9330", //"35.230.8.182:9339",
 		NodeMode:             defaultNodeMode,
-		PrivateKey:          common.EmptyString,
+		PrivateKey:           common.EmptyString,
 		FastStartup:          defaultFastStartup,
 	}
 
