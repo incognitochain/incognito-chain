@@ -93,7 +93,8 @@ type RpcServerConfig struct {
 	// the mempool before they are mined into blocks.
 	FeeEstimator map[byte]*mempool.FeeEstimator
 
-	IsMiningNode bool // flag mining node. True: mining, False: not mining
+	IsMiningNode    bool   // flag mining node. True: mining, False: not mining
+	MiningPubKeyB58 string // base58check encode of mining pubkey
 }
 
 func (rpcServer *RpcServer) Init(config *RpcServerConfig) {
