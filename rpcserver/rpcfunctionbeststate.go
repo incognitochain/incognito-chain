@@ -78,7 +78,7 @@ func (rpcServer RpcServer) handleGetCommitteeList(params interface{}, closeChan 
 
 /*
 	Tell a public key can stake or not
-	Compare this public key with database only (TODO: compare with mempool also)
+	Compare this public key with database only
 	param #1: public key
 	return #1: true (can stake), false (can't stake)
 	return #2: error
@@ -88,7 +88,9 @@ func (rpcServer RpcServer) handleCanPubkeyStake(params interface{}, closeChan <-
 	pubkey := arrayParams[0].(string)
 	temp := rpcServer.config.BlockChain.BestState.Beacon.GetValidStakers([]string{pubkey})
 	if len(temp) == 0 {
-
+		return jsonresult.StakeResult{PublicKey: pubkey, CanStake: false}, nil
+	}
+	if common.IndexOfStrInHashMap(pubkey, rpcServer.config.TxMemPool.CandidatePool) > 0 {
 		return jsonresult.StakeResult{PublicKey: pubkey, CanStake: false}, nil
 	}
 	return jsonresult.StakeResult{PublicKey: pubkey, CanStake: true}, nil

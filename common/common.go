@@ -300,11 +300,11 @@ func IndexOfStr(item string, list []string) int {
 }
 func IndexOfStrInHashMap(v string, m map[Hash]string) int {
 	for _, value := range m {
-		if strings.Compare(value,v) != 0 {
-			return 0
+		if strings.Compare(value,v) == 0 {
+			return 1
 		}
 	}
-	return 1
+	return -1
 }
 func ValidateNodeAddress(nodeAddr string) bool {
 	if len(nodeAddr) == 0 {
