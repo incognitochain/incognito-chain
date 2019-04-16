@@ -330,6 +330,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			return errors.New("RPCS: No valid listen address")
 		}
 
+		miningPubkeyB58 := ""
+		if serverObj.userKeySet != nil {
+			miningPubkeyB58 = serverObj.userKeySet.GetPublicKeyB58()
+		}
 		rpcConfig := rpcserver.RpcServerConfig{
 			Listenters:      rpcListeners,
 			RPCQuirks:       cfg.RPCQuirks,
@@ -350,7 +354,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			FeeEstimator:    serverObj.feeEstimator,
 			ProtocolVersion: serverObj.protocolVersion,
 			Database:        &serverObj.dataBase,
-			IsMiningNode:    cfg.NodeMode != common.NODEMODE_RELAY && cfg.PrivateKey != "", // a node is mining if it constains this condiction when runing
+			IsMiningNode:    cfg.NodeMode != common.NODEMODE_RELAY && miningPubkeyB58 != "", // a node is mining if it constains this condiction when runing
+			MiningPubKeyB58: miningPubkeyB58,
 		}
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
