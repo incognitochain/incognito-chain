@@ -589,7 +589,7 @@ func (tx *TxCustomToken) GetTokenReceivers() ([][]byte, []uint64) {
 }
 
 func (tx *TxCustomToken) GetTokenUniqueReceiver() (bool, []byte, uint64) {
-	sender := tx.GetSigPubKey()
+	sender := []byte{}
 	if len(tx.TxTokenData.Vins) > 0 {
 		sender = tx.TxTokenData.Vins[0].PaymentAddress.Pk
 	}
@@ -605,7 +605,11 @@ func (tx *TxCustomToken) GetTokenUniqueReceiver() (bool, []byte, uint64) {
 		}
 	}
 	return count == 1, pubkey, amount
+}
 
+func (tx *TxCustomToken) GetTransferData() (bool, []byte, uint64, *common.Hash) {
+	unique, pk, amount := tx.GetTokenUniqueReceiver()
+	return unique, pk, amount, &tx.TxTokenData.PropertyID
 }
 
 func (tx *TxCustomToken) GetMetadataFromVinsTx(bcr metadata.BlockchainRetriever) (metadata.Metadata, error) {
@@ -644,4 +648,23 @@ func (tx *TxCustomToken) CalculateTxValue() uint64 {
 		txValue += vout.Value
 	}
 	return txValue
+}
+
+func (tx *TxCustomToken) IsCoinsBurning() bool {
+	vins := tx.TxTokenData.Vins
+	vouts := tx.TxTokenData.Vouts
+	if len(vins) == 0 || len(vouts) == 0 {
+		return false
+	}
+	senderPk := vins[0].PaymentAddress.Pk
+	keyWalletBurningAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
+	keysetBurningAccount := keyWalletBurningAccount.KeySet
+	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
+	for _, vout := range vouts {
+		outPKBytes := vout.PaymentAddress.Pk
+		if !bytes.Equal(senderPk[:], outPKBytes[:]) && !bytes.Equal(outPKBytes[:], paymentAddressBurningAccount.Pk[:]) {
+			return false
+		}
+	}
+	return true
 }
