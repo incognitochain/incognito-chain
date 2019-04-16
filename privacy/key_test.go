@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/stretchr/testify/assert"
@@ -67,3 +68,10 @@ func TestGenerateKey(t *testing.T) {
 	skStr := base58.Base58Check.Encode(base58.Base58Check{}, sk, 0x01)
 	fmt.Printf("Spending key string after encode : %v\n", skStr)
 }
+
+func TestDecodePubKey(t *testing.T){
+	// shard 0
+	res, _ := hex.DecodeString("023db7a5efdc3c948d9882458e74568edf42ac0f7eaa1527beb457075d57028bfe")
+	fmt.Printf("Res: %v\n", res)
+}
+
