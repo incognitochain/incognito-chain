@@ -59,7 +59,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			case <-blockchain.cQuitSync:
 				return
 			case <-broadcastTicker.C:
-				go blockchain.config.Server.BoardcastNodeState()
+				blockchain.config.Server.BoardcastNodeState()
 			}
 		}
 	}()
@@ -321,7 +321,6 @@ func (blockchain *BlockChain) StopSyncUnnecessaryShard() {
 func (blockchain *BlockChain) stopSyncUnnecessaryShard() {
 	for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 		if err := blockchain.stopSyncShard(shardID); err != nil {
-			// fmt.Println("StopSyncUnnecessaryShard", shardID)
 			Logger.log.Error(err)
 		}
 	}
@@ -337,7 +336,6 @@ func (blockchain *BlockChain) stopSyncShard(shardID byte) error {
 	if _, ok := blockchain.syncStatus.Shards[shardID]; ok {
 		if common.IndexOfByte(shardID, blockchain.config.RelayShards) < 0 {
 			delete(blockchain.syncStatus.Shards, shardID)
-			// fmt.Println("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation stopped")
 			return nil
 		}
 		return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation can't be stopped")
@@ -358,11 +356,6 @@ func (blockchain *BlockChain) GetCurrentSyncShards() []byte {
 func (blockchain *BlockChain) StopSync() error {
 	close(blockchain.cQuitSync)
 	return nil
-}
-
-func (blockchain *BlockChain) ResetCurrentSyncRecord() {
-	blockchain.syncStatus.Lock()
-	defer blockchain.syncStatus.Unlock()
 }
 
 //SyncBlkBeacon Send a req to sync beacon block
