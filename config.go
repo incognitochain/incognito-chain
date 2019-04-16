@@ -40,6 +40,8 @@ const (
 	defaultDisableRpcTLS      = true
 	defaultFastStartup        = true
 	defaultNodeMode           = "relay"
+	defaultTxPoolTTL          = uint(86400) * 10
+	defaultTxPoolMaxTx        = uint64(20000)
 	// For wallet
 	defaultWalletName = "wallet"
 )
@@ -105,7 +107,7 @@ type config struct {
 	// Net config
 	TestNet bool `long:"testnet" description:"Use the test network"`
 
-	PrivateKey string `long:"privatekey" description:"User spending key used for operation in consensus"`
+	PrivateKey  string `long:"privatekey" description:"User spending key used for operation in consensus"`
 	NodeMode    string `long:"nodemode" description:"Role of this node (beacon/shard/wallet/relay | default role is 'relay' (relayshards must be set to run), 'auto' mode will switch between 'beacon' and 'shard')"`
 	RelayShards string `long:"relayshards" description:"set relay shards of this node when in 'relay' mode if noderole is auto then it only sync shard data when user is a shard producer/validator"`
 	// For Wallet
@@ -115,6 +117,9 @@ type config struct {
 	WalletAutoInit   bool   `long:"walletautoinit" description:"Init wallet automatically if not exist"`
 
 	FastStartup bool `long:"faststartup" description:"Load existed shard/chain dependencies instead of rebuild from block data"`
+
+	TxPoolTTL   uint   `long:"txpoolttl" description:"Set Time To Live (TTL) Value for transaction that enter pool"`
+	TxPoolMaxTx uint64 `long:"txpoolmaxtx" description:"Set Maximum number of transaction in pool"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -284,8 +289,10 @@ func loadConfig() (*config, []string, error) {
 		TestNet:              true,
 		DiscoverPeersAddress: "127.0.0.1:9330", //"35.230.8.182:9339",
 		NodeMode:             defaultNodeMode,
-		PrivateKey:          common.EmptyString,
+		PrivateKey:           common.EmptyString,
 		FastStartup:          defaultFastStartup,
+		TxPoolTTL:            defaultTxPoolTTL,
+		TxPoolMaxTx:          defaultTxPoolMaxTx,
 	}
 
 	// Service options which are only added on Windows.

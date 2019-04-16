@@ -28,6 +28,12 @@ type Config struct {
 	// FeeEstimatator provides a feeEstimator. If it is not nil, the mempool
 	// records all new transactions it observes into the feeEstimator.
 	FeeEstimator map[byte]*FeeEstimator
+
+	// Transaction life time in pool
+	TTL uint
+	
+	//Max transaction pool may have
+	MaxTx uint64
 }
 
 // TxDesc is transaction message in mempool
@@ -36,6 +42,9 @@ type TxDesc struct {
 	Desc metadata.TxDesc
 
 	StartingPriority int
+
+	//Unix Time that transaction enter mempool
+	StartTime time.Time
 }
 
 // TxPool is transaction pool
@@ -47,21 +56,22 @@ type TxPool struct {
 	config            Config
 	pool              map[common.Hash]*TxDesc
 	poolSerialNumbers map[common.Hash][][]byte
-
 	txCoinHashHPool map[common.Hash][]common.Hash
 	coinHashHPool   map[common.Hash]bool
 	cMtx            sync.RWMutex
-
 	//Candidate List in mempool
-	candidateList []string
+	candidateList map[common.Hash]string
 	candidateMtx  sync.RWMutex
 
 	//Token ID List in Mempool
-	tokenIDList []string
+	tokenIDList map[common.Hash]string
 	tokenIDMtx  sync.RWMutex
 
 	//Max transaction pool may have
 	maxTx uint64
+
+	//Time to live for all transaction
+	TTL uint
 }
 
 /*
@@ -75,9 +85,28 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.txCoinHashHPool = make(map[common.Hash][]common.Hash)
 	tp.coinHashHPool = make(map[common.Hash]bool)
 	tp.cMtx = sync.RWMutex{}
-	tp.maxTx = 20000
+	tp.maxTx = cfg.MaxTx
+	tp.TTL = cfg.TTL
 }
-
+func TxPoolMainLoop(tp *TxPool) {
+	for {
+		<-time.Tick(60*time.Second)
+		ttl := time.Duration(tp.TTL)*time.Second
+		txsToBeRemoved := []common.Hash{}
+		for _, tx := range tp.pool{
+			if time.Since(tx.StartTime) > ttl {
+				txsToBeRemoved = append(txsToBeRemoved, *tx.Desc.Tx.Hash())
+			}
+		}
+		for _,txHash := range txsToBeRemoved {
+			delete(tp.pool,txHash)
+			delete(tp.poolSerialNumbers,txHash)
+			delete(tp.txCoinHashHPool,txHash)
+			delete(tp.candidateList,txHash)
+			delete(tp.tokenIDList,txHash)
+		}
+	}
+}
 // ----------- transaction.MempoolRetriever's implementation -----------------
 func (tp *TxPool) GetSerialNumbers() map[common.Hash][][]byte {
 	return tp.poolSerialNumbers
@@ -137,14 +166,14 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
 			pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
-			tp.AddCandiateToList(pubkey)
+			tp.AddCandiateToList(*txHash, pubkey)
 		}
 	}
 	if tx.GetType() == common.TxCustomTokenType {
 		customTokenTx := tx.(*transaction.TxCustomToken)
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
 			tokenID := customTokenTx.TxTokenData.PropertyID.String()
-			tp.AddTokenIDToList(tokenID)
+			tp.AddTokenIDToList(*txHash, tokenID)
 		}
 	}
 	return txD
@@ -250,10 +279,13 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
 			tokenID := customTokenTx.TxTokenData.PropertyID.String()
 			tp.tokenIDMtx.Lock()
-			found := common.IndexOfStr(tokenID, tp.tokenIDList)
+			found := common.IndexOfStrInHashMap(tokenID, tp.tokenIDList)
 			tp.tokenIDMtx.Unlock()
 			if found > -1 {
-				return nil, nil, errors.New("Init Transaction of this Token is in pool already")
+				str := fmt.Sprintf("Init Transaction of this Token is in pool already %+v", tokenID)
+				err := MempoolTxError{}
+				err.Init(RejectDuplicateInitTokenTx, errors.New(str))
+				return nil, nil, err
 			}
 		}
 	}
@@ -269,8 +301,10 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
 			pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
-			tempPubkey := metadata.GetValidStaker(tp.candidateList, []string{pubkey})
-			if len(tempPubkey) == 0 {
+			tp.tokenIDMtx.Lock()
+			found := common.IndexOfStrInHashMap(pubkey, tp.candidateList)
+			tp.tokenIDMtx.Unlock()
+			if found > -1 {
 				str := fmt.Sprintf("This public key already stake and still in pool %+v", pubkey)
 				err := MempoolTxError{}
 				err.Init(RejectDuplicateStakeTx, errors.New(str))
@@ -495,78 +529,47 @@ func (tp *TxPool) RemoveTxCoinHashH(txHashH common.Hash) error {
 	return nil
 }
 
-func (tp *TxPool) AddCandiateToList(candidate string) {
+func (tp *TxPool) AddCandiateToList(txHash common.Hash, candidate string) {
 	tp.candidateMtx.Lock()
 	defer tp.candidateMtx.Unlock()
-	// fmt.Println("Mempool/addCanđiateToList: ", candidate)
-	tp.candidateList = append(tp.candidateList, candidate)
+	tp.candidateList[txHash] = candidate
 }
 
 func (tp *TxPool) RemoveCandidateList(candidate []string) {
 	tp.candidateMtx.Lock()
 	defer tp.candidateMtx.Unlock()
-	newList := []string{}
 	for _, value := range candidate {
-		flag := false
-		for _, currentCandidate := range tp.candidateList {
+		for txHash, currentCandidate := range tp.candidateList {
 			if strings.Compare(value, currentCandidate) == 0 {
-				flag = true
+				delete(tp.candidateList, txHash)
 				break
 			}
 		}
-		if !flag {
-			newList = append(newList, value)
-		}
 	}
-	tp.candidateList = newList
 }
-func (tp *TxPool) AddTokenIDToList(tokenID string) {
+func (tp *TxPool) AddTokenIDToList(txHash common.Hash, tokenID string) {
 	tp.tokenIDMtx.Lock()
 	defer tp.tokenIDMtx.Unlock()
-	// fmt.Println("Mempool/addCanđiateToList: ", candidate)
-	tp.tokenIDList = append(tp.tokenIDList, tokenID)
+	tp.tokenIDList[txHash] = tokenID
 }
 
 func (tp *TxPool) RemoveTokenIDList(tokenID []string) {
 	tp.tokenIDMtx.Lock()
 	defer tp.tokenIDMtx.Unlock()
-	newList := []string{}
 	for _, value := range tokenID {
-		flag := false
-		for _, currentToken := range tp.tokenIDList {
+		for txHash, currentToken := range tp.tokenIDList {
 			if strings.Compare(value, currentToken) == 0 {
-				flag = true
+				delete(tp.tokenIDList, txHash)
 				break
 			}
 		}
-		if !flag {
-			newList = append(newList, value)
-		}
 	}
-	tp.tokenIDList = newList
 }
 
-/*
-	pool              map[common.Hash]*TxDesc
-	poolSerialNumbers map[common.Hash][][]byte
-
-	txCoinHashHPool map[common.Hash][]common.Hash
-	coinHashHPool   map[common.Hash]bool
-	cMtx            sync.RWMutex
-
-	//Candidate List in mempool
-	candidateList []string
-	candidateMtx  sync.RWMutex
-
-	//Token ID List in Mempool
-	tokenIDList []string
-	tokenIDMtx  sync.RWMutex
-*/
 func (tp *TxPool) EmptyPool() bool {
 	tp.cMtx.Lock()
 	tp.candidateMtx.Lock()
 	tp.tokenIDMtx.Lock()
-
 	defer tp.cMtx.Unlock()
 	defer tp.candidateMtx.Unlock()
 	defer tp.tokenIDMtx.Unlock()
@@ -574,39 +577,15 @@ func (tp *TxPool) EmptyPool() bool {
 	if len(tp.pool) == 0 && len(tp.poolSerialNumbers) == 0 && len(tp.txCoinHashHPool) == 0 && len(tp.coinHashHPool) == 0 && len(tp.candidateList) == 0 && len(tp.tokenIDList) == 0 {
 		return true
 	}
-
-	// for key := range tp.pool {
-	// 	delete(tp.pool, key)
-	// }
-
-	// for key := range tp.poolSerialNumbers {
-	// 	delete(tp.poolSerialNumbers, key)
-	// }
-
-	// for key := range tp.txCoinHashHPool {
-	// 	delete(tp.txCoinHashHPool, key)
-	// }
-
-	// for key := range tp.coinHashHPool {
-	// 	delete(tp.coinHashHPool, key)
-	// }
-
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbers = make(map[common.Hash][][]byte)
 	tp.txCoinHashHPool = make(map[common.Hash][]common.Hash)
 	tp.coinHashHPool = make(map[common.Hash]bool)
-
-	tp.candidateList = []string{}
-	tp.tokenIDList = []string{}
-
+	tp.candidateList = make(map[common.Hash]string)
+	tp.tokenIDList = make(map[common.Hash]string)
 	if len(tp.pool) == 0 && len(tp.poolSerialNumbers) == 0 && len(tp.txCoinHashHPool) == 0 && len(tp.coinHashHPool) == 0 && len(tp.candidateList) == 0 && len(tp.tokenIDList) == 0 {
 		return true
 	}
-	fmt.Println("len(tp.pool)", len(tp.pool))
-	fmt.Println("len(tp.poolSerialNumbers)", len(tp.poolSerialNumbers))
-	fmt.Println("len(tp.txCoinHashHPool)", len(tp.txCoinHashHPool))
-	fmt.Println("len(tp.coinHashHPool)", len(tp.coinHashHPool))
-	fmt.Println("len(tp.candidateList)", len(tp.candidateList))
-	fmt.Println("len(tp.tokenIDList)", len(tp.tokenIDList))
 	return false
 }
+
