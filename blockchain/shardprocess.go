@@ -424,7 +424,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	for _, beaconBlock := range beaconBlocks {
 		instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
 	}
-	err = blockchain.VerifyStabilityTransactionsForNewBlock(instsForValidations, block)
+	err = blockchain.verifyStabilityTransactionsForNewBlock(instsForValidations, block)
 	if err != nil {
 		return NewBlockChainError(TransactionError, err)
 	}
