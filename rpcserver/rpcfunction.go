@@ -405,15 +405,30 @@ handleGetMiningInfo - RPC returns various mining-related info
 */
 func (rpcServer RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	if !rpcServer.config.IsMiningNode {
-		return nil, NewRPCError(ErrUnexpected, errors.New("Not mining"))
+		return jsonresult.GetMiningInfoResult{
+			IsCommittee: false,
+		}, nil
 	}
-	// shardID := byte(int(component.(float64)))
-	// result := jsonresult.GetMiningInfoResult{}
-	// result.Blocks = uint64(rpcServer.config.BlockChain.BestState[shardID].BestBlock.Header.Height + 1)
-	// result.PoolSize = rpcServer.config.TxMemPool.Count()
-	// result.Chain = rpcServer.config.ChainParams.Name
-	// result.CurrentBlockTx = len(rpcServer.config.BlockChain.BestState[shardID].BestBlock.Transactions)
-	return jsonresult.GetMiningInfoResult{}, nil
+	arrayParams := common.InterfaceSlice(params)
+	pubkey := arrayParams[0].(string)
+	result := jsonresult.GetMiningInfoResult{}
+	result.IsCommittee = true
+	result.PoolSize = rpcServer.config.TxMemPool.Count()
+	result.Chain = rpcServer.config.ChainParams.Name
+
+	result.BeaconHeight = rpcServer.config.BlockChain.BestState.Beacon.BeaconHeight
+
+	role, shardID := rpcServer.config.BlockChain.BestState.Beacon.GetPubkeyRole(pubkey, 0)
+	result.Role = role
+	if role == common.SHARD_ROLE {
+		result.ShardHeight = rpcServer.config.BlockChain.BestState.Shard[shardID].ShardHeight
+		result.CurrentShardBlockTx = len(rpcServer.config.BlockChain.BestState.Shard[shardID].BestBlock.Body.Transactions)
+		result.ShardID = int(shardID)
+	} else if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE || role == common.PENDING_ROLE {
+		result.ShardID = -1
+	}
+
+	return result, nil
 }
 
 /*
