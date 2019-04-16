@@ -60,11 +60,11 @@ type TxPool struct {
 	coinHashHPool   map[common.Hash]bool
 	cMtx            sync.RWMutex
 	//Candidate List in mempool
-	candidateList map[common.Hash]string
+	CandidatePool map[common.Hash]string
 	candidateMtx  sync.RWMutex
 
 	//Token ID List in Mempool
-	tokenIDList map[common.Hash]string
+	TokenIDPool map[common.Hash]string
 	tokenIDMtx  sync.RWMutex
 
 	//Max transaction pool may have
@@ -81,9 +81,10 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.config = *cfg
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbers = make(map[common.Hash][][]byte)
-
 	tp.txCoinHashHPool = make(map[common.Hash][]common.Hash)
 	tp.coinHashHPool = make(map[common.Hash]bool)
+	tp.TokenIDPool = make(map[common.Hash]string)
+	tp.CandidatePool = make(map[common.Hash]string)
 	tp.cMtx = sync.RWMutex{}
 	tp.maxTx = cfg.MaxTx
 	tp.TTL = cfg.TTL
@@ -102,8 +103,8 @@ func TxPoolMainLoop(tp *TxPool) {
 			delete(tp.pool,txHash)
 			delete(tp.poolSerialNumbers,txHash)
 			delete(tp.txCoinHashHPool,txHash)
-			delete(tp.candidateList,txHash)
-			delete(tp.tokenIDList,txHash)
+			delete(tp.CandidatePool,txHash)
+			delete(tp.TokenIDPool,txHash)
 		}
 	}
 }
@@ -279,9 +280,9 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
 			tokenID := customTokenTx.TxTokenData.PropertyID.String()
 			tp.tokenIDMtx.Lock()
-			found := common.IndexOfStrInHashMap(tokenID, tp.tokenIDList)
+			found := common.IndexOfStrInHashMap(tokenID, tp.TokenIDPool)
 			tp.tokenIDMtx.Unlock()
-			if found > -1 {
+			if found > 0 {
 				str := fmt.Sprintf("Init Transaction of this Token is in pool already %+v", tokenID)
 				err := MempoolTxError{}
 				err.Init(RejectDuplicateInitTokenTx, errors.New(str))
@@ -302,9 +303,9 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
 			pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
 			tp.tokenIDMtx.Lock()
-			found := common.IndexOfStrInHashMap(pubkey, tp.candidateList)
+			found := common.IndexOfStrInHashMap(pubkey, tp.CandidatePool)
 			tp.tokenIDMtx.Unlock()
-			if found > -1 {
+			if found > 0 {
 				str := fmt.Sprintf("This public key already stake and still in pool %+v", pubkey)
 				err := MempoolTxError{}
 				err.Init(RejectDuplicateStakeTx, errors.New(str))
@@ -532,37 +533,45 @@ func (tp *TxPool) RemoveTxCoinHashH(txHashH common.Hash) error {
 func (tp *TxPool) AddCandiateToList(txHash common.Hash, candidate string) {
 	tp.candidateMtx.Lock()
 	defer tp.candidateMtx.Unlock()
-	tp.candidateList[txHash] = candidate
+	tp.CandidatePool[txHash] = candidate
 }
 
 func (tp *TxPool) RemoveCandidateList(candidate []string) {
 	tp.candidateMtx.Lock()
 	defer tp.candidateMtx.Unlock()
+	candidateToBeRemoved := []common.Hash{}
 	for _, value := range candidate {
-		for txHash, currentCandidate := range tp.candidateList {
+		for txHash, currentCandidate := range tp.CandidatePool {
 			if strings.Compare(value, currentCandidate) == 0 {
-				delete(tp.candidateList, txHash)
+				candidateToBeRemoved = append(candidateToBeRemoved, txHash)
 				break
 			}
 		}
+	}
+	for _, txHash := range candidateToBeRemoved {
+		delete(tp.CandidatePool,txHash)
 	}
 }
 func (tp *TxPool) AddTokenIDToList(txHash common.Hash, tokenID string) {
 	tp.tokenIDMtx.Lock()
 	defer tp.tokenIDMtx.Unlock()
-	tp.tokenIDList[txHash] = tokenID
+	tp.TokenIDPool[txHash] = tokenID
 }
 
 func (tp *TxPool) RemoveTokenIDList(tokenID []string) {
 	tp.tokenIDMtx.Lock()
 	defer tp.tokenIDMtx.Unlock()
+	tokenToBeRemoved := []common.Hash{}
 	for _, value := range tokenID {
-		for txHash, currentToken := range tp.tokenIDList {
+		for txHash, currentToken := range tp.TokenIDPool {
 			if strings.Compare(value, currentToken) == 0 {
-				delete(tp.tokenIDList, txHash)
+				tokenToBeRemoved = append(tokenToBeRemoved, txHash)
 				break
 			}
 		}
+	}
+	for _, txHash := range tokenToBeRemoved {
+		delete(tp.TokenIDPool, txHash)
 	}
 }
 
@@ -574,16 +583,16 @@ func (tp *TxPool) EmptyPool() bool {
 	defer tp.candidateMtx.Unlock()
 	defer tp.tokenIDMtx.Unlock()
 
-	if len(tp.pool) == 0 && len(tp.poolSerialNumbers) == 0 && len(tp.txCoinHashHPool) == 0 && len(tp.coinHashHPool) == 0 && len(tp.candidateList) == 0 && len(tp.tokenIDList) == 0 {
+	if len(tp.pool) == 0 && len(tp.poolSerialNumbers) == 0 && len(tp.txCoinHashHPool) == 0 && len(tp.coinHashHPool) == 0 && len(tp.CandidatePool) == 0 && len(tp.TokenIDPool) == 0 {
 		return true
 	}
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbers = make(map[common.Hash][][]byte)
 	tp.txCoinHashHPool = make(map[common.Hash][]common.Hash)
 	tp.coinHashHPool = make(map[common.Hash]bool)
-	tp.candidateList = make(map[common.Hash]string)
-	tp.tokenIDList = make(map[common.Hash]string)
-	if len(tp.pool) == 0 && len(tp.poolSerialNumbers) == 0 && len(tp.txCoinHashHPool) == 0 && len(tp.coinHashHPool) == 0 && len(tp.candidateList) == 0 && len(tp.tokenIDList) == 0 {
+	tp.CandidatePool = make(map[common.Hash]string)
+	tp.TokenIDPool = make(map[common.Hash]string)
+	if len(tp.pool) == 0 && len(tp.poolSerialNumbers) == 0 && len(tp.txCoinHashHPool) == 0 && len(tp.coinHashHPool) == 0 && len(tp.CandidatePool) == 0 && len(tp.TokenIDPool) == 0 {
 		return true
 	}
 	return false
