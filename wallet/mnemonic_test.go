@@ -135,3 +135,18 @@ func TestNewSeed(t *testing.T) {
 //	//fmt.Printf("serial number str: %v\n\n", base58.Base58Check.Encode(base58.Base58Check{}, serialNumber4.Compress(), 0))
 //
 //}
+
+//func TestKeyWallet(t * testing.T){
+//
+//
+//	res, err := GetPublicKeyFromPrivateKeyStr("112t8rqJHgJp2TPpNpLNx34aWHB5VH5Pys3hVjjhhf9tctVeCNmX2zQLBqzHau6LpUbSV52kXtG2hRZsuYWkXWF5kw2v24RJq791fWmQxVqy")
+//	if err != nil{
+//		fmt.Println("Err: ", err)
+//	}
+//
+//	resEncodeHex := hex.EncodeToString(res)
+//
+//	fmt.Println("res: ", res)
+//	fmt.Println("resEncodeHex: ", resEncodeHex)
+//}
+
