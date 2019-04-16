@@ -274,6 +274,7 @@ func (db *db) GetBoardVoterList(boardType common.BoardType, candidatePaymentAddr
 }
 
 func (db *db) AddBoardFundDB(boardType common.BoardType, constitutionIndex uint32, amountOfBoardFund uint64) error {
+	fmt.Printf("[voting]-[boardfund] - %+v %+v %+v \n", boardType, constitutionIndex, amountOfBoardFund)
 	key := GetKeyBoardFund(boardType, constitutionIndex)
 	ok, err := db.HasValue(key)
 	if err != nil {
@@ -300,6 +301,7 @@ func (db *db) GetBoardFundDB(boardType common.BoardType, constitutionIndex uint3
 }
 
 func (db *db) AddConstantsPriceDB(constitutionIndex uint32, price uint64) error {
+	fmt.Printf("[voting]-[constantprice] %+v %+v\n", constitutionIndex, price)
 	key := GetKeyConstantsPrice(constitutionIndex)
 	ok, err := db.HasValue(key)
 	if err != nil {
