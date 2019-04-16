@@ -373,7 +373,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 		}
 		tempTx := tempTxDesc.Tx
 		totalFee += tx.GetTxFee()
-
+		
 		tempSize := tempTx.GetTxActualSize()
 		if currentSize+tempSize >= common.MaxBlockSize {
 			break
@@ -383,6 +383,8 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 		if len(txsToAdd) == common.MaxTxsInBlock {
 			break
 		}
+		// Time bound condition for block creation
+		//if time for getting transaction exceed half of MinBlkInterval then break
 		elasped := time.Since(startTime)
 		if elasped >= common.MinBlkInterval/2 {
 			break
