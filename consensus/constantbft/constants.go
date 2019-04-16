@@ -1,7 +1,7 @@
 package constantbft
 
 const (
-	ListenTimeout  = 10  //in s
+	ListenTimeout  = 6   //in s
 	PrepareTimeout = 4   //in s
 	CommitTimeout  = 4   //in s
 	DelayTime      = 300 // in ms

@@ -191,7 +191,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 	for _, tx := range block.Body.Transactions {
 		if tx.GetMetadata() != nil {
 			if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
-				pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), byte(0x00))
+				pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
 				candidates = append(candidates, pubkey)
 			}
 		}
@@ -297,14 +297,15 @@ DO NOT USE THIS with GENESIS BLOCK
 func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, shardID byte, isPresig bool) error {
 	//verify producer sig
 	blkHash := block.Header.Hash()
-	err := cashec.ValidateDataB58(block.Header.Producer, block.ProducerSig, blkHash.GetBytes())
+	producerPk := base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte)
+	err := cashec.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
 	if err != nil {
 		return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
 	}
 	//verify producer
 	producerPosition := (blockchain.BestState.Shard[shardID].ShardProposerIdx + block.Header.Round) % len(blockchain.BestState.Shard[shardID].ShardCommittee)
 	tempProducer := blockchain.BestState.Shard[shardID].ShardCommittee[producerPosition]
-	if strings.Compare(tempProducer, block.Header.Producer) != 0 {
+	if strings.Compare(tempProducer, producerPk) != 0 {
 		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
 	}
 	Logger.log.Debugf("SHARD %+v | Begin VerifyPreProcessingShardBlock Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
@@ -371,7 +372,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		block.Body.Transactions,
 		blockchain,
 		shardID,
-		block.Header.ProducerAddress,
+		&block.Header.ProducerAddress,
 		block.Header.Height,
 		beaconBlocks,
 		block.Header.BeaconHeight,
@@ -423,7 +424,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	for _, beaconBlock := range beaconBlocks {
 		instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
 	}
-	err = blockchain.VerifyStabilityTransactionsForNewBlock(instsForValidations, block)
+	err = blockchain.verifyStabilityTransactionsForNewBlock(instsForValidations, block)
 	if err != nil {
 		return NewBlockChainError(TransactionError, err)
 	}
@@ -612,7 +613,7 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 	if block.Header.Height == 1 {
 		bestStateShard.ShardProposerIdx = 0
 	} else {
-		bestStateShard.ShardProposerIdx = common.IndexOfStr(block.Header.Producer, bestStateShard.ShardCommittee)
+		bestStateShard.ShardProposerIdx = common.IndexOfStr(base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte), bestStateShard.ShardCommittee)
 	}
 
 	// Add pending validator

@@ -26,7 +26,7 @@ func Init() {
 	for index, blk := range blks {
 		blk.Header.Height = uint64(index)
 	}
-	latestShardState[byte(0x00)] = 1
+	latestShardState[common.ZeroByte] = 1
 }
 
 /*
@@ -49,12 +49,12 @@ func TestSetShardState(t *testing.T) {
 	Init()
 	shardToBeaconPoolTest := GetShardToBeaconPool()
 	shardToBeaconPoolTest.SetShardState(latestShardState)
-	if shardToBeaconPoolTest.latestValidHeight[byte(0x00)] != 1 {
+	if shardToBeaconPoolTest.latestValidHeight[common.ZeroByte] != 1 {
 		panic("LastestValidHeight Should Be 1")
 	}
-	latestShardState[byte(0x00)] = 5
+	latestShardState[common.ZeroByte] = 5
 	shardToBeaconPoolTest.SetShardState(latestShardState)
-	if shardToBeaconPoolTest.latestValidHeight[byte(0x00)] != 5 {
+	if shardToBeaconPoolTest.latestValidHeight[common.ZeroByte] != 5 {
 		panic("LastestValidHeight Should Be 5")
 	}
 }
@@ -64,28 +64,28 @@ func TestAddShardToBeaconBlock(t *testing.T) {
 	shardToBeaconPoolTest.SetShardState(latestShardState)
 	shardToBeaconPoolTest.AddShardToBeaconBlock(blk2)
 	shardToBeaconPoolTest.AddShardToBeaconBlock(blk3)
-	if shardToBeaconPoolTest.latestValidHeight[byte(0x00)] != 3 {
+	if shardToBeaconPoolTest.latestValidHeight[common.ZeroByte] != 3 {
 		panic("LastestValidHeight Should Be 3")
 	}
-	if len(shardToBeaconPoolTest.pool[byte(0x00)]) != 2 {
+	if len(shardToBeaconPoolTest.pool[common.ZeroByte]) != 2 {
 		panic("Pool Should Have 2 Block")
 	}
 	shardToBeaconPoolTest.AddShardToBeaconBlock(blk5)
-	if shardToBeaconPoolTest.latestValidHeight[byte(0x00)] != 3 {
+	if shardToBeaconPoolTest.latestValidHeight[common.ZeroByte] != 3 {
 		panic("LastestValidHeight Should Be 3")
 	}
-	if len(shardToBeaconPoolTest.pool[byte(0x00)]) != 3 {
+	if len(shardToBeaconPoolTest.pool[common.ZeroByte]) != 3 {
 		panic("Pool Should Have 3 Block")
 	}
 	shardToBeaconPoolTest.AddShardToBeaconBlock(blk6)
-	if shardToBeaconPoolTest.latestValidHeight[byte(0x00)] != 3 {
+	if shardToBeaconPoolTest.latestValidHeight[common.ZeroByte] != 3 {
 		panic("LastestValidHeight Should Be 3")
 	}
-	t.Log(shardToBeaconPoolTest.pool[byte(0x00)][0].Header.Height)
-	t.Log(shardToBeaconPoolTest.pool[byte(0x00)][1].Header.Height)
-	t.Log(shardToBeaconPoolTest.pool[byte(0x00)][2].Header.Height)
-	t.Log(shardToBeaconPoolTest.pool[byte(0x00)][3].Header.Height)
-	if len(shardToBeaconPoolTest.pool[byte(0x00)]) != 4 {
+	t.Log(shardToBeaconPoolTest.pool[common.ZeroByte][0].Header.Height)
+	t.Log(shardToBeaconPoolTest.pool[common.ZeroByte][1].Header.Height)
+	t.Log(shardToBeaconPoolTest.pool[common.ZeroByte][2].Header.Height)
+	t.Log(shardToBeaconPoolTest.pool[common.ZeroByte][3].Header.Height)
+	if len(shardToBeaconPoolTest.pool[common.ZeroByte]) != 4 {
 		panic("Pool Should Have 4 Block")
 	}
 	//==============Duplicate==================
