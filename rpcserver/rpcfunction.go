@@ -404,13 +404,12 @@ func (rpcServer RpcServer) handleGetGenerate(params interface{}, closeChan <-cha
 handleGetMiningInfo - RPC returns various mining-related info
 */
 func (rpcServer RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	if !rpcServer.config.IsMiningNode {
+	if !rpcServer.config.IsMiningNode || rpcServer.config.MiningPubKeyB58 == "" {
 		return jsonresult.GetMiningInfoResult{
 			IsCommittee: false,
 		}, nil
 	}
-	arrayParams := common.InterfaceSlice(params)
-	pubkey := arrayParams[0].(string)
+
 	result := jsonresult.GetMiningInfoResult{}
 	result.IsCommittee = true
 	result.PoolSize = rpcServer.config.TxMemPool.Count()
@@ -418,7 +417,7 @@ func (rpcServer RpcServer) handleGetMiningInfo(params interface{}, closeChan <-c
 
 	result.BeaconHeight = rpcServer.config.BlockChain.BestState.Beacon.BeaconHeight
 
-	role, shardID := rpcServer.config.BlockChain.BestState.Beacon.GetPubkeyRole(pubkey, 0)
+	role, shardID := rpcServer.config.BlockChain.BestState.Beacon.GetPubkeyRole(rpcServer.config.MiningPubKeyB58, 0)
 	result.Role = role
 	if role == common.SHARD_ROLE {
 		result.ShardHeight = rpcServer.config.BlockChain.BestState.Shard[shardID].ShardHeight
