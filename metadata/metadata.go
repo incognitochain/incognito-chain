@@ -194,6 +194,7 @@ type Transaction interface {
 	// Get receivers' data for tx
 	GetReceivers() ([][]byte, []uint64)
 	GetUniqueReceiver() (bool, []byte, uint64)
+	GetTransferData() (bool, []byte, uint64, *common.Hash)
 
 	// Get receivers' data for custom token tx (nil for normal tx)
 	GetTokenReceivers() ([][]byte, []uint64)
