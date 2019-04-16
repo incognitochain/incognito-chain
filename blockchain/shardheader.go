@@ -13,8 +13,7 @@ import (
 	-PendingValidator Root is root hash of pending validator in beststate
 */
 type ShardHeader struct {
-	ProducerAddress *privacy.PaymentAddress
-	Producer        string
+	ProducerAddress privacy.PaymentAddress
 	ShardID         byte
 	Version         int
 	PrevBlockHash   common.Hash
@@ -39,7 +38,6 @@ type ShardHeader struct {
 func (shardHeader *ShardHeader) String() string {
 	res := common.EmptyString
 	res += shardHeader.ProducerAddress.String()
-	res += shardHeader.Producer
 	res += string(shardHeader.ShardID)
 	res += fmt.Sprintf("%v", shardHeader.Version)
 	res += shardHeader.PrevBlockHash.String()

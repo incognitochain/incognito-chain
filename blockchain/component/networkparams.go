@@ -261,6 +261,17 @@ type SaleDCBTokensByUSDData struct {
 	EndBlock uint64
 }
 
+type RaiseReserveData struct {
+	EndBlock uint64
+	Amount   uint64 // # BANK tokens
+}
+
+type SpendReserveData struct {
+	EndBlock        uint64
+	ReserveMinPrice uint64
+	Amount          uint64 // Constant to burn
+}
+
 func NewRaiseReserveDataFromJson(data interface{}) map[common.Hash]*RaiseReserveData {
 	if data == nil {
 		return nil

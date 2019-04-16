@@ -14,7 +14,6 @@ import (
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
 )
@@ -48,7 +47,7 @@ import (
 	Sign:
 		Sign block and update validator index, agg sig
 */
-func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddress, privateKey *privacy.PrivateKey, proposerOffset int, shardsToBeacon map[byte]uint64) (*BeaconBlock, error) {
+func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privacy.PaymentAddress, proposerOffset int, shardsToBeacon map[byte]uint64) (*BeaconBlock, error) {
 	beaconBlock := &BeaconBlock{}
 	beaconBestState := BestStateBeacon{}
 	// lock blockchain
@@ -78,7 +77,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	blkTmplGenerator.chain.chainLock.Unlock()
 
 	//==========Create header
-	beaconBlock.Header.Producer = base58.Base58Check{}.Encode(payToAddress.Pk, byte(0x00))
+	beaconBlock.Header.ProducerAddress = *producerAddress
 	beaconBlock.Header.Version = VERSION
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	beaconBlock.Header.Epoch = beaconBestState.Epoch
@@ -87,7 +86,6 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	if beaconBlock.Header.Height%common.EPOCH == 1 {
 		beaconBlock.Header.Epoch++
 	}
-	beaconBlock.Header.Timestamp = time.Now().Unix()
 	beaconBlock.Header.PrevBlockHash = beaconBestState.BestBlockHash
 	tempShardState, staker, swap, stabilityInstructions := blkTmplGenerator.GetShardState(&beaconBestState, shardsToBeacon)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
@@ -148,27 +146,34 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.P
 	}
 	beaconBlock.Header.InstructionHash = tempInstructionHash
 	//===============End Create Header
-	//===============Generate Signature
-	// Signature of producer, sign on hash of header
-	blockHash := beaconBlock.Header.Hash()
-	keySet := &cashec.KeySet{}
-	keySet.ImportFromPrivateKey(privateKey)
-	producerSig, err := keySet.SignDataB58(blockHash.GetBytes())
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, err
-	}
-	beaconBlock.ProducerSig = producerSig
-	//================End Generate Signature
-	fmt.Println("[voting] - Beaconblock[", beaconBlock.Header.Height, "] body")
-	for _, inst := range beaconBlock.Body.Instructions {
-		if len(inst) != 0 {
-			if inst[0] != "37" {
-				fmt.Println("[voting] - - - > ", inst)
+
+	go func() {
+		//TODO: @someone will remove right?
+		fmt.Println("[voting] - Beaconblock[", beaconBlock.Header.Height, "] body")
+		for _, inst := range beaconBlock.Body.Instructions {
+			if len(inst) != 0 {
+				if inst[0] != "37" {
+					fmt.Println("[voting] - - - > ", inst)
+				}
 			}
 		}
-	}
+	}()
+
 	return beaconBlock, nil
+}
+
+func (blkTmplGenerator *BlkTmplGenerator) FinalizeBeaconBlock(blk *BeaconBlock, producerKeyset *cashec.KeySet) error {
+	// Signature of producer, sign on hash of header
+	blk.Header.Timestamp = time.Now().Unix()
+	blockHash := blk.Header.Hash()
+	producerSig, err := producerKeyset.SignDataB58(blockHash.GetBytes())
+	if err != nil {
+		Logger.log.Error(err)
+		return err
+	}
+	blk.ProducerSig = producerSig
+	//================End Generate Signature
+	return nil
 }
 
 // return param:
