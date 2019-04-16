@@ -42,6 +42,7 @@ type BFTProtocol struct {
 
 func (protocol *BFTProtocol) Start() (interface{}, error) {
 	protocol.proposeCh = make(chan wire.Message)
+	protocol.desyncMsgCh = make(chan wire.Message)
 	protocol.phase = PBFT_LISTEN
 	if protocol.RoundData.IsProposer {
 		protocol.phase = PBFT_PROPOSE
@@ -107,7 +108,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 			protocol.closeProposeCh()
 		} else {
 			timeSinceLastBlk := time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0))
-			if timeSinceLastBlk <= common.MinBlkInterval {
+			if timeSinceLastBlk < common.MinBlkInterval {
 				fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk).Seconds())
 				time.Sleep(common.MinBlkInterval - timeSinceLastBlk)
 			}
@@ -138,7 +139,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 			protocol.closeProposeCh()
 		} else {
 			timeSinceLastBlk := time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].BestBlock.Header.Timestamp, 0))
-			if timeSinceLastBlk <= common.MinBlkInterval {
+			if timeSinceLastBlk < common.MinBlkInterval {
 				fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk).Seconds())
 				time.Sleep(common.MinBlkInterval - timeSinceLastBlk)
 			}
