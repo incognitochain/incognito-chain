@@ -240,7 +240,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	})
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
-	go mempool.TxPoolMainLoop(serverObj.memPool)
 
 	//==============Temp mem pool only used for validation
 	serverObj.tempMemPool = &mempool.TxPool{}
@@ -517,6 +516,10 @@ func (serverObj Server) Start() {
 			go serverObj.Stop()
 			return
 		}
+	}
+
+	if serverObj.tempMemPool != nil {
+		go mempool.TxPoolMainLoop(serverObj.memPool)
 	}
 }
 
