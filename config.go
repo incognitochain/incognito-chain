@@ -26,6 +26,7 @@ const (
 	defaultConfigFilename     = "config.conf"
 	defaultDataDirname        = "data"
 	defaultDatabaseDirname    = "block"
+	defaultDatabaseMempoolDirname   = "mempool"
 	defaultLogLevel           = "info"
 	defaultLogDirname         = "logs"
 	defaultLogFilename        = "log.log"
@@ -63,9 +64,10 @@ var runServiceCommand func(string) error
 type config struct {
 	Nodename    string `short:"n" long:"name" description:"Node name"`
 	ShowVersion bool   `short:"V" long:"version" description:"Display version information and exit"`
-	ConfigFile  string `short:"C" long:"configfile" description:"Path to configuratio\n file"`
+	ConfigFile  string `short:"C" long:"configfile" description:"Path to configuration file"`
 	DataDir     string `short:"D" long:"datadir" description:"Directory to store data"`
 	DatabaseDir string `short:"d" long:"datapre" description:"Database dir"`
+	DatabaseMempoolDir string `short:"m" long:"datamempool" description:"Mempool Database Dir"`
 	LogDir      string `short:"l" long:"logdir" description:"Directory to log output."`
 	LogLevel    string `long:"loglevel" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical} -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems -- Use show to list available subsystems"`
 
@@ -120,6 +122,8 @@ type config struct {
 
 	TxPoolTTL   uint   `long:"txpoolttl" description:"Set Time To Live (TTL) Value for transaction that enter pool"`
 	TxPoolMaxTx uint64 `long:"txpoolmaxtx" description:"Set Maximum number of transaction in pool"`
+	
+	ResetMempool bool `long:"resetmempool" description:"Reset Mempool database"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -277,6 +281,7 @@ func loadConfig() (*config, []string, error) {
 		RPCMaxClients:      defaultMaxRPCClients,
 		DataDir:            defaultDataDir,
 		DatabaseDir:        defaultDatabaseDirname,
+		DatabaseMempoolDir: defaultDatabaseMempoolDirname,
 		LogDir:             defaultLogDir,
 		RPCKey:             defaultRPCKeyFile,
 		RPCCert:            defaultRPCCertFile,
