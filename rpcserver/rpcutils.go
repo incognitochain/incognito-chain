@@ -123,13 +123,12 @@ func (rpcServer RpcServer) sendRawTxWithMetadata(params interface{}, closeChan <
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	hash, txDesc, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
-	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 	// broadcast message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
@@ -162,13 +161,12 @@ func (rpcServer RpcServer) sendRawCustomTokenTxWithMetadata(params interface{}, 
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	hash, txDesc, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
-	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 	// broadcast message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
