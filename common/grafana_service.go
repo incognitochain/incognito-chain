@@ -31,6 +31,7 @@ func SendMetricDataToGrafana(id string, value float64, metric string) {
 		log.Println("Create Request failed with err: ", err)
 		return
 	}
+
 	ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
 	defer cancel()
 	req = req.WithContext(ctx)
