@@ -127,8 +127,17 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 }
 
 func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
-	//TODO: check node mode -> node mode & role before add block to pool
+	if blockchain.config.NodeMode == common.NODEMODE_BEACON || blockchain.config.NodeMode == common.NODEMODE_AUTO {
+		beaconRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+		if beaconRole != common.PROPOSER_ROLE && beaconRole != common.VALIDATOR_ROLE {
+			return
+		}
+	} else {
+		return
+	}
+
 	if blockchain.IsReady(false, 0) {
+
 		fmt.Println("Blockchain Message/OnShardToBeaconBlockReceived: Block Height", block.Header.Height)
 		blkHash := block.Header.Hash()
 		err := cashec.ValidateDataB58(base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte), block.ProducerSig, blkHash.GetBytes())
@@ -142,7 +151,6 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 			return
 		}
 
-		//TODO: what if shard to beacon from old committee
 		if err = ValidateAggSignature(block.ValidatorsIdx, blockchain.BestState.Beacon.ShardCommittee[block.Header.ShardID], block.AggregatedSig, block.R, block.Hash()); err != nil {
 			Logger.log.Error(err)
 			return
@@ -163,7 +171,16 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 }
 
 func (blockchain *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {
-	Logger.log.Criticalf("Received CrossShardBlock %+v from %+v \n", block.Header.Height, block.Header.ShardID)
+	Logger.log.Info("Received CrossShardBlock", block.Header.Height, block.Header.ShardID)
+	if blockchain.config.NodeMode == common.NODEMODE_SHARD || blockchain.config.NodeMode == common.NODEMODE_AUTO {
+		shardRole := blockchain.BestState.Shard[block.ToShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+		if shardRole != common.PROPOSER_ROLE && shardRole != common.VALIDATOR_ROLE {
+			return
+		}
+	} else {
+		return
+	}
+
 	expectedHeight, toShardID, err := blockchain.config.CrossShardPool[block.ToShardID].AddCrossShardBlock(block)
 	for fromShardID, height := range expectedHeight {
 		// fmt.Printf("Shard %+v request CrossShardBlock with Height %+v from shard %+v \n", toShardID, height, fromShardID)
