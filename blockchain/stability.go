@@ -416,7 +416,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					prevBuySellResMetaStr := l[4]
 					txs, err = blockgen.buildBuyBackRes(l[2], buyBackInfoStr, prevBuySellResMetaStr, producerPrivateKey)
 
-					// todo @0xjackalope move meta to ins?
 				case component.SendBackTokenVoteBoardFailIns:
 					fmt.Println("[voting]-SendBackTokenVoteBoardFailIns")
 					sendBackTokenVoteFail := frombeaconins.TxSendBackTokenVoteFailIns{}
