@@ -87,7 +87,11 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.maxTx = cfg.MaxTx
 	tp.TxLifeTime = cfg.TxLifeTime
 }
+
 func TxPoolMainLoop(tp *TxPool) {
+	if tp.TxLifeTime == 0 {
+		return
+	}
 	for {
 		<-time.Tick(TXPOOL_SCAN_TIME * time.Second)
 		ttl := time.Duration(tp.TxLifeTime) * time.Second
