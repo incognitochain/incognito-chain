@@ -235,9 +235,12 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		DataBase:     serverObj.dataBase,
 		ChainParams:  chainParams,
 		FeeEstimator: serverObj.feeEstimator,
+		TTL:          cfg.TxPoolTTL,
+		MaxTx:        cfg.TxPoolMaxTx,
 	})
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
+	go mempool.TxPoolMainLoop(serverObj.memPool)
 
 	//==============Temp mem pool only used for validation
 	serverObj.tempMemPool = &mempool.TxPool{}
@@ -246,6 +249,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		DataBase:     serverObj.dataBase,
 		ChainParams:  chainParams,
 		FeeEstimator: serverObj.feeEstimator,
+		MaxTx:        cfg.TxPoolMaxTx,
 	})
 	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
 	//===============
