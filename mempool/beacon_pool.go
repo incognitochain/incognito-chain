@@ -53,7 +53,7 @@ func (self *BeaconPool) GetBeaconState() uint64 {
 }
 
 func (self *BeaconPool) AddBeaconBlock(blk *blockchain.BeaconBlock) error {
-	//TODO: validate aggregated signature
+
 	self.poolMu.Lock()
 	defer self.poolMu.Unlock()
 
