@@ -220,7 +220,25 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) Hash() *common.Hash 
 	return &hash
 }
 
-func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
+func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateTxWithBlockChain(tx Transaction, br BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+	beaconHeight := br.GetBeaconHeight()
+	govParams := submitGOVProposalMetadata.GOVParams
+	sellingBonds := govParams.SellingBonds
+	if sellingBonds != nil {
+		if sellingBonds.StartSellingAt+sellingBonds.Maturity < beaconHeight {
+			return false, nil
+		}
+		if sellingBonds.StartSellingAt+sellingBonds.SellingWithin < beaconHeight {
+			return false, nil
+		}
+	}
+
+	sellingGOVTokens := govParams.SellingGOVTokens
+	if sellingGOVTokens != nil {
+		if sellingGOVTokens.StartSellingAt+sellingGOVTokens.SellingWithin < beaconHeight {
+			return false, nil
+		}
+	}
 	return true, nil
 }
 
