@@ -13,6 +13,7 @@ import (
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
 )
 
 /*
@@ -219,14 +220,15 @@ FOR CURRENT COMMITTEES ONLY
 func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock, isCommittee bool) error {
 	//verify producer sig
 	blkHash := block.Header.Hash()
-	err := cashec.ValidateDataB58(block.Header.Producer, block.ProducerSig, blkHash.GetBytes())
+	producerPk := base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte)
+	err := cashec.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
 	if err != nil {
 		return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
 	}
 	//verify producer
 	producerPosition := (blockchain.BestState.Beacon.BeaconProposerIdx + block.Header.Round) % len(blockchain.BestState.Beacon.BeaconCommittee)
 	tempProducer := blockchain.BestState.Beacon.BeaconCommittee[producerPosition]
-	if strings.Compare(tempProducer, block.Header.Producer) != 0 {
+	if strings.Compare(tempProducer, producerPk) != 0 {
 		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
 	}
 	//verify version
@@ -556,7 +558,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 	if newBlock.Header.Height == 1 {
 		bestStateBeacon.BeaconProposerIdx = 0
 	} else {
-		bestStateBeacon.BeaconProposerIdx = common.IndexOfStr(newBlock.Header.Producer, bestStateBeacon.BeaconCommittee)
+		bestStateBeacon.BeaconProposerIdx = common.IndexOfStr(base58.Base58Check{}.Encode(newBlock.Header.ProducerAddress.Pk, common.ZeroByte), bestStateBeacon.BeaconCommittee)
 	}
 
 	allShardState := newBlock.Body.ShardState
