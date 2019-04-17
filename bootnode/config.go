@@ -8,7 +8,7 @@ import (
 
 // See loadConfig for details on the configuration load process.
 type config struct {
-	RPCPort int `long:"rpcport" short:"p" description:"Max number of RPC clients for standard connections"`
+	RPCPort int `long:"rpcport" short:"p" description:"Linsten port of RPC server"`
 }
 
 // newConfigParser returns a new command line flags parser.
@@ -22,8 +22,8 @@ func loadConfig() (*config, error) {
 		RPCPort: RpcServerPort,
 	}
 
-	preCfg := cfg
-	preParser := newConfigParser(&preCfg, flags.HelpFlag)
+	//preCfg := cfg
+	preParser := newConfigParser(&cfg, flags.HelpFlag)
 	_, err := preParser.Parse()
 	if err != nil {
 		if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {
