@@ -16,4 +16,4 @@
 - Run `constant-bootnode -h` to view helping
 ### Run directly
 - Run `cd ./bootnode`
-- Or run `sh ./run.sh -p 9330`
+- Or run `sh ./run_bootnode.sh -p 9330`
