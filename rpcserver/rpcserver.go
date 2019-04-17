@@ -300,7 +300,7 @@ func (rpcServer RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	// Logger.log.Info(string(body))
-	log.Println(string(body))
+	// log.Println(string(body))
 
 	// Unfortunately, the http server doesn't provide the ability to
 	// change the read deadline for the new connection and having one breaks
