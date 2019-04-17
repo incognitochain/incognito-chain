@@ -26,6 +26,7 @@ const (
 	ErrSendTxData
 	ErrTxTypeInvalid
 	ErrRejectInvalidFee
+	ErrTxNotExistedInMemAndBLock
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -54,6 +55,7 @@ var ErrCodeMessage = map[int]struct {
 	ErrTxTypeInvalid:                 {-1014, "Invalid tx type"},
 	ErrInvalidSenderViewingKey:       {-1015, "Invalid viewing key"},
 	ErrRejectInvalidFee:              {-1016, "Reject invalid fee"},
+	ErrTxNotExistedInMemAndBLock:     {-1017, "Tx is not existed in mem and block"},
 
 	// processing -2xxx
 	ErrCreateTxData: {-2001, "Can not create tx"},
