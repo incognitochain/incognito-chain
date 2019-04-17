@@ -40,6 +40,8 @@ const (
 	defaultDisableRpcTLS      = true
 	defaultFastStartup        = true
 	defaultNodeMode           = common.NODEMODE_RELAY
+	defaultTxPoolTTL          = uint(86400) * 10 // in second
+	defaultTxPoolMaxTx        = uint64(20000)
 	// For wallet
 	defaultWalletName = "wallet"
 )
@@ -115,6 +117,9 @@ type config struct {
 	WalletAutoInit   bool   `long:"walletautoinit" description:"Init wallet automatically if not exist"`
 
 	FastStartup bool `long:"faststartup" description:"Load existed shard/chain dependencies instead of rebuild from block data"`
+
+	TxPoolTTL   uint   `long:"txpoolttl" description:"Set Time To Live (TTL) Value for transaction that enter pool"`
+	TxPoolMaxTx uint64 `long:"txpoolmaxtx" description:"Set Maximum number of transaction in pool"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -286,6 +291,8 @@ func loadConfig() (*config, []string, error) {
 		NodeMode:             defaultNodeMode,
 		PrivateKey:           common.EmptyString,
 		FastStartup:          defaultFastStartup,
+		TxPoolTTL:            defaultTxPoolTTL,
+		TxPoolMaxTx:          defaultTxPoolMaxTx,
 	}
 
 	// Service options which are only added on Windows.
