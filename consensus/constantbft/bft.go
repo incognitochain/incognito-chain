@@ -108,9 +108,9 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 			protocol.closeProposeCh()
 		} else {
 			timeSinceLastBlk := time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0))
-			if timeSinceLastBlk < common.MinBlkInterval {
-				fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk).Seconds())
-				time.Sleep(common.MinBlkInterval - timeSinceLastBlk)
+			if timeSinceLastBlk < common.MinBeaconBlkInterval {
+				fmt.Println("BFT: Wait for ", (common.MinBeaconBlkInterval - timeSinceLastBlk).Seconds())
+				time.Sleep(common.MinBeaconBlkInterval - timeSinceLastBlk)
 			}
 
 			err = protocol.EngineCfg.BlockGen.FinalizeBeaconBlock(newBlock, protocol.EngineCfg.UserKeySet)
@@ -139,9 +139,9 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 			protocol.closeProposeCh()
 		} else {
 			timeSinceLastBlk := time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].BestBlock.Header.Timestamp, 0))
-			if timeSinceLastBlk < common.MinBlkInterval {
-				fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk).Seconds())
-				time.Sleep(common.MinBlkInterval - timeSinceLastBlk)
+			if timeSinceLastBlk < common.MinShardBlkInterval {
+				fmt.Println("BFT: Wait for ", (common.MinShardBlkInterval - timeSinceLastBlk).Seconds())
+				time.Sleep(common.MinShardBlkInterval - timeSinceLastBlk)
 			}
 
 			err = protocol.EngineCfg.BlockGen.FinalizeShardBlock(newBlock, protocol.EngineCfg.UserKeySet)
