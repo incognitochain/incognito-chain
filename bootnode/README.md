@@ -9,10 +9,11 @@
 - Mac, Linux, Window OS
 - Git clone source into $GOPATH/src/github.com/constant-money/constant-chain
 - Run `go get -v`
-### Build
+### Build and RUN
 - Run `cd ./bootnode`
 - Run `sh ./build.sh`
-### Run
-- Run `cd ./bootnode`
 - Run `constant-bootnode -p 9330`
-- Or run `sh ./run.sh`
+- Run `constant-bootnode -h` to view helping
+### Run directly
+- Run `cd ./bootnode`
+- Or run `sh ./run.sh -p 9330`
