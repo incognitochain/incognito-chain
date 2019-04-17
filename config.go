@@ -40,7 +40,7 @@ const (
 	defaultDisableRpcTLS      = true
 	defaultFastStartup        = true
 	defaultNodeMode           = common.NODEMODE_RELAY
-	defaultTxPoolTTL          = uint(86400) * 10
+	defaultTxPoolTTL          = uint(86400) * 10 // in second
 	defaultTxPoolMaxTx        = uint64(20000)
 	// For wallet
 	defaultWalletName = "wallet"
