@@ -31,7 +31,7 @@ type Config struct {
 
 	// Transaction life time in pool
 	TTL uint
-	
+
 	//Max transaction pool may have
 	MaxTx uint64
 }
@@ -54,9 +54,9 @@ type TxPool struct {
 	config            Config
 	pool              map[common.Hash]*TxDesc
 	poolSerialNumbers map[common.Hash][][]byte
-	txCoinHashHPool map[common.Hash][]common.Hash
-	coinHashHPool   map[common.Hash]bool
-	cMtx            sync.RWMutex
+	txCoinHashHPool   map[common.Hash][]common.Hash
+	coinHashHPool     map[common.Hash]bool
+	cMtx              sync.RWMutex
 	//Candidate List in mempool
 	CandidatePool map[common.Hash]string
 	candidateMtx  sync.RWMutex
@@ -89,28 +89,29 @@ func (tp *TxPool) Init(cfg *Config) {
 }
 func TxPoolMainLoop(tp *TxPool) {
 	for {
-		<-time.Tick(TXPOOL_SCAN_TIME*time.Second)
-		ttl := time.Duration(tp.TTL)*time.Second
+		<-time.Tick(TXPOOL_SCAN_TIME * time.Second)
+		ttl := time.Duration(tp.TTL) * time.Second
 		txsToBeRemoved := []common.Hash{}
-		for _, tx := range tp.pool{
-			Logger.log.Criticalf("Tx Start Time %+v \n",time.Since(tx.StartTime))
+		for _, tx := range tp.pool {
+			Logger.log.Criticalf("Tx Start Time %+v \n", time.Since(tx.StartTime))
 			Logger.log.Criticalf("TTL of Pool %+v", ttl)
 			if time.Since(tx.StartTime) > ttl {
 				txsToBeRemoved = append(txsToBeRemoved, *tx.Desc.Tx.Hash())
 			}
 		}
 		Logger.log.Criticalf("Begin Remove Timeout Transaction, number of tx in pool %+v \n", len(tp.pool))
-		for _,txHash := range txsToBeRemoved {
-			Logger.log.Infof("Remove Transaction %+v after %+v \n",txHash, time.Since(tp.pool[txHash].StartTime))
-			delete(tp.pool,txHash)
-			delete(tp.poolSerialNumbers,txHash)
-			delete(tp.txCoinHashHPool,txHash)
-			delete(tp.CandidatePool,txHash)
-			delete(tp.TokenIDPool,txHash)
+		for _, txHash := range txsToBeRemoved {
+			Logger.log.Infof("Remove Transaction %+v after %+v \n", txHash, time.Since(tp.pool[txHash].StartTime))
+			delete(tp.pool, txHash)
+			delete(tp.poolSerialNumbers, txHash)
+			delete(tp.txCoinHashHPool, txHash)
+			delete(tp.CandidatePool, txHash)
+			delete(tp.TokenIDPool, txHash)
 		}
 		Logger.log.Criticalf("Finish Remove Timeout Transaction, number of tx in pool %+v \n", len(tp.pool))
 	}
 }
+
 // ----------- transaction.MempoolRetriever's implementation -----------------
 func (tp *TxPool) GetSerialNumbers() map[common.Hash][][]byte {
 	return tp.poolSerialNumbers
@@ -552,7 +553,7 @@ func (tp *TxPool) RemoveCandidateList(candidate []string) {
 		}
 	}
 	for _, txHash := range candidateToBeRemoved {
-		delete(tp.CandidatePool,txHash)
+		delete(tp.CandidatePool, txHash)
 	}
 }
 func (tp *TxPool) AddTokenIDToList(txHash common.Hash, tokenID string) {
@@ -600,4 +601,3 @@ func (tp *TxPool) EmptyPool() bool {
 	}
 	return false
 }
-

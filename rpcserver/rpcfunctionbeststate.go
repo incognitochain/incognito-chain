@@ -52,7 +52,7 @@ func (rpcServer RpcServer) handleGetCandidateList(params interface{}, closeChan 
 	CBWFNR := rpcServer.config.BlockChain.BestState.Beacon.CandidateBeaconWaitingForNextRandom
 	epoch := rpcServer.config.BlockChain.BestState.Beacon.Epoch
 	result := jsonresult.CandidateListsResult{
-		Epoch: epoch,
+		Epoch:                                  epoch,
 		CandidateShardWaitingForCurrentRandom:  CSWFCR,
 		CandidateBeaconWaitingForCurrentRandom: CBWFCR,
 		CandidateShardWaitingForNextRandom:     CSWFNR,
