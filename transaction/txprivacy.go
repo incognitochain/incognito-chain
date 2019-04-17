@@ -513,6 +513,9 @@ func (tx Tx) String() string {
 		metadata := metadataHash.String()
 		record += metadata
 	}
+
+	//TODO: To be uncomment
+	// record += string(tx.Info)
 	return record
 }
 

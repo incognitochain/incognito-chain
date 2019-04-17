@@ -235,6 +235,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		DataBase:     serverObj.dataBase,
 		ChainParams:  chainParams,
 		FeeEstimator: serverObj.feeEstimator,
+		TxLifeTime:   cfg.TxPoolTTL,
+		MaxTx:        cfg.TxPoolMaxTx,
 	})
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
@@ -246,6 +248,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		DataBase:     serverObj.dataBase,
 		ChainParams:  chainParams,
 		FeeEstimator: serverObj.feeEstimator,
+		MaxTx:        cfg.TxPoolMaxTx,
 	})
 	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
 	//===============
@@ -513,6 +516,10 @@ func (serverObj Server) Start() {
 			go serverObj.Stop()
 			return
 		}
+	}
+
+	if serverObj.tempMemPool != nil {
+		go mempool.TxPoolMainLoop(serverObj.memPool)
 	}
 }
 
