@@ -221,12 +221,16 @@ func (rpcServer RpcServer) handleGetMempoolInfo(params interface{}, closeChan <-
 
 func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blockHash *common.Hash, blockHeight uint64, index int, shardID byte) (*jsonresult.TransactionDetail, *RPCError) {
 	var result *jsonresult.TransactionDetail
+	blockHashStr := ""
+	if blockHash != nil {
+		blockHashStr = blockHash.String()
+	}
 	switch tx.GetType() {
 	case common.TxNormalType, common.TxSalaryType:
 		{
 			tempTx := tx.(*transaction.Tx)
 			result = &jsonresult.TransactionDetail{
-				BlockHash:   blockHash.String(),
+				BlockHash:   blockHashStr,
 				BlockHeight: blockHeight,
 				Index:       uint64(index),
 				ShardID:     shardID,
@@ -249,7 +253,7 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 		{
 			tempTx := tx.(*transaction.TxCustomToken)
 			result = &jsonresult.TransactionDetail{
-				BlockHash:   blockHash.String(),
+				BlockHash:   blockHashStr,
 				BlockHeight: blockHeight,
 				Index:       uint64(index),
 				ShardID:     shardID,
@@ -276,7 +280,7 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 		{
 			tempTx := tx.(*transaction.TxCustomTokenPrivacy)
 			result = &jsonresult.TransactionDetail{
-				BlockHash:   blockHash.String(),
+				BlockHash:   blockHashStr,
 				BlockHeight: blockHeight,
 				Index:       uint64(index),
 				ShardID:     shardID,
