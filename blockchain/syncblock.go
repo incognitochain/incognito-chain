@@ -50,7 +50,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 	blockchain.syncStatus.Unlock()
 
 	broadcastTicker := time.NewTicker(defaultBroadcastStateTime)
-	insertPoolTicker := time.NewTicker(time.Millisecond * 500)
+	insertPoolTicker := time.NewTicker(time.Millisecond * 100)
 	peersProcessTicker := time.NewTicker(defaultProcessPeerStateTime)
 
 	go func() {
@@ -537,11 +537,11 @@ func (blockchain *BlockChain) SyncBlkCrossShard(getFromPool bool, byHash bool, b
 var lasttime = time.Now()
 
 func (blockchain *BlockChain) InsertBlockFromPool() {
-	fmt.Println("InsertBlockFromPool")
+	// fmt.Println("InsertBlockFromPool")
 	blockchain.syncStatus.Lock()
 	defer func() {
 		blockchain.syncStatus.Unlock()
-		fmt.Println("InsertBlockFromPool unlock")
+		// fmt.Println("InsertBlockFromPool unlock")
 	}()
 
 	if time.Since(lasttime) >= 30*time.Millisecond {
@@ -553,16 +553,16 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 	blks := blockchain.config.BeaconPool.GetValidBlock()
 	fmt.Println("Get beacon valid blks ", blks)
 	for _, newBlk := range blks {
-		fmt.Println("Insert beacon blk", newBlk.Header.Height)
+		// fmt.Println("Insert beacon blk", newBlk.Header.Height)
 		err := blockchain.InsertBeaconBlock(newBlk, false)
-		fmt.Println("Insert beacon blk finish", newBlk.Header.Height)
+		// fmt.Println("Insert beacon blk finish", newBlk.Header.Height)
 		if err != nil {
 			Logger.log.Error(err)
 		}
 	}
 
 	for shardID := range blockchain.syncStatus.Shards {
-		fmt.Println("Get shard valid blks ", blks)
+		// fmt.Println("Get shard valid blks ", blks)
 		go func(shardID byte) {
 			blks := blockchain.config.ShardPool[shardID].GetValidBlock()
 			//fmt.Println("GetShardValidBlock", len(blks))
