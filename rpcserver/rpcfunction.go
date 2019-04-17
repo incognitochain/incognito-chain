@@ -43,6 +43,7 @@ var RpcHandler = map[string]commandHandler{
 	GetBeaconPoolStateV2:        RpcServer.handleGetBeaconPoolStateV2,
 	GetShardToBeaconPoolState:   RpcServer.handleGetShardToBeaconPoolState,
 	GetCrossShardPoolState:      RpcServer.handleGetCrossShardPoolState,
+	GetNextCrossShard:           RpcServer.handleGetNextCrossShard,
 	// block
 	GetBestBlock:        RpcServer.handleGetBestBlock,
 	GetBestBlockHash:    RpcServer.handleGetBestBlockHash,

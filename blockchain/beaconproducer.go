@@ -283,7 +283,6 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 	instructions = append(instructions, stabilityInstructions...)
 	//=======Swap
 	// Shard Swap: both abnormal or normal swap
-	//TODO: key value
 	var keys []int
 	for k := range swap {
 		keys = append(keys, int(k))

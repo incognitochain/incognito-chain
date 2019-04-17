@@ -112,7 +112,7 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 			Height: height,
 			Fee:    fee,
 		},
-		StartingPriority: 1, //@todo we will apply calc function for it.
+		StartingPriority: 1,
 	}
 	Logger.log.Info(tx.Hash().String())
 	tp.pool[*tx.Hash()] = txD
