@@ -1,8 +1,10 @@
 package mempool
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/constant-money/constant-chain/databasemp"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -22,6 +24,8 @@ type Config struct {
 	BlockChain *blockchain.BlockChain
 
 	DataBase database.DatabaseInterface
+	
+	DataBaseMempool databasemp.DatabaseInterface
 
 	ChainParams *blockchain.Params
 
@@ -146,7 +150,6 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 	txD := &TxDesc{
 		Desc: metadata.TxDesc{
 			Tx:     tx,
-			Added:  time.Now(),
 			Height: height,
 			Fee:    fee,
 		},
@@ -171,6 +174,9 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 	if txHash != nil {
 		tp.AddTxCoinHashH(*txHash)
 	}
+	
+	tp.AddTransactionToDatabase(txHash, *txD)
+	
 	// add candidate into candidate list ONLY with staking transaction
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
@@ -604,4 +610,16 @@ func (tp *TxPool) EmptyPool() bool {
 		return true
 	}
 	return false
+}
+
+// Ignore error if transaction is not in database
+func (tp *TxPool) AddTransactionToDatabase(txHash *common.Hash, txDesc TxDesc) {
+		value, err := json.Marshal(txDesc)
+		if err != nil {
+			return
+		}
+		err = tp.config.DataBaseMempool.AddTransaction(txHash,value)
+		if err != nil {
+			return
+		}
 }
