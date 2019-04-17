@@ -363,7 +363,6 @@ func (chain *BlockChain) CreateShareRewardOldBoardIns(
 // 	return helper.GetBoardFund(chain) * common.PercentageBoardSalary / common.BasePercentage
 // }
 
-//todo @0xjackalope reward for chair
 func (self *BlockChain) CreateUpdateNewGovernorInstruction(
 	helper ConstitutionHelper,
 ) ([]frombeaconins.InstructionFromBeacon, error) {

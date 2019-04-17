@@ -384,7 +384,6 @@ func (bsb *BestStateBeacon) processLoanResponseInstruction(inst []string) error 
 
 func (bsb *BestStateBeacon) processUpdateDCBProposalInstruction(ins frombeaconins.UpdateDCBConstitutionIns) error {
 	dcbParams := ins.DCBParams
-	//todo @0xjackalope: update new Constitution
 	oldConstitution := bsb.StabilityInfo.DCBConstitution
 	bsb.StabilityInfo.DCBConstitution = DCBConstitution{
 		ConstitutionInfo: ConstitutionInfo{
