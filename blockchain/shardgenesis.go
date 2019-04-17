@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"log"
 	"time"
 
 	"github.com/constant-money/constant-chain/wallet"
@@ -18,7 +17,7 @@ func createSpecialTokenTx(
 	amount uint64,
 	initialAddress privacy.PaymentAddress,
 ) transaction.TxCustomToken {
-	log.Printf("Init token %s: %s \n", tokenSymbol, tokenID.String())
+	//log.Printf("Init token %s: %s \n", tokenSymbol, tokenID.String())
 	paymentAddr := initialAddress
 	vout := transaction.TxTokenVout{
 		Value:          amount,
