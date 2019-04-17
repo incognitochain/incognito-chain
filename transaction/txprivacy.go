@@ -513,6 +513,7 @@ func (tx Tx) String() string {
 		metadata := metadataHash.String()
 		record += metadata
 	}
+	record += string(tx.Info)
 	return record
 }
 
