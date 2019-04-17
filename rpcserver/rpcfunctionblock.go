@@ -114,7 +114,7 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 			result.NextBlockHash = nextHashString
 			result.TxHashes = []string{}
 			result.BlockProducerSign = block.ProducerSig
-			result.BlockProducer = block.Header.Producer
+			result.BlockProducer = block.Header.ProducerAddress.String()
 			result.AggregatedSig = block.AggregatedSig
 			result.BeaconHeight = block.Header.BeaconHeight
 			result.BeaconBlockHash = block.Header.BeaconHash.String()
@@ -155,7 +155,7 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 			result.PreviousBlockHash = block.Header.PrevBlockHash.String()
 			result.NextBlockHash = nextHashString
 			result.BlockProducerSign = block.ProducerSig
-			result.BlockProducer = block.Header.Producer
+			result.BlockProducer = block.Header.ProducerAddress.String()
 			result.AggregatedSig = block.AggregatedSig
 			result.BeaconHeight = block.Header.BeaconHeight
 			result.BeaconBlockHash = block.Header.BeaconHash.String()
@@ -230,7 +230,7 @@ func (rpcServer RpcServer) handleRetrieveBeaconBlock(params interface{}, closeCh
 			Epoch:             block.Header.Epoch,
 			Version:           block.Header.Version,
 			BlockProducerSign: block.ProducerSig,
-			BlockProducer:     block.Header.Producer,
+			BlockProducer:     block.Header.ProducerAddress.String(),
 			AggregatedSig:     block.AggregatedSig,
 			R:                 block.R,
 			PreviousBlockHash: block.Header.PrevBlockHash.String(),
@@ -311,7 +311,7 @@ func (rpcServer RpcServer) handleGetBlockChainInfo(params interface{}, closeChan
 			BasicSalary:      beaconBestState.StabilityInfo.GOVConstitution.GOVParams.BasicSalary,
 			TotalTxs:         bestState.TotalTxns,
 			SalaryFund:       beaconBestState.StabilityInfo.SalaryFund,
-			BlockProducer:    bestState.BestBlock.Header.Producer,
+			BlockProducer:    bestState.BestBlock.Header.ProducerAddress.String(),
 			BlockProducerSig: bestState.BestBlock.ProducerSig,
 		}
 	}
@@ -319,7 +319,7 @@ func (rpcServer RpcServer) handleGetBlockChainInfo(params interface{}, closeChan
 	result.BestBlocks[-1] = jsonresult.GetBestBlockItem{
 		Height:           beaconBestState.BestBlock.Header.Height,
 		Hash:             beaconBestState.BestBlock.Hash().String(),
-		BlockProducer:    beaconBestState.BestBlock.Header.Producer,
+		BlockProducer:    beaconBestState.BestBlock.Header.ProducerAddress.String(),
 		BlockProducerSig: beaconBestState.BestBlock.ProducerSig,
 		SalaryFund:       beaconBestState.StabilityInfo.SalaryFund,
 		SalaryPerTx:      beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SalaryPerTx,
