@@ -41,8 +41,6 @@ type TxDesc struct {
 	// transaction details
 	Desc metadata.TxDesc
 
-	StartingPriority int
-
 	//Unix Time that transaction enter mempool
 	StartTime time.Time
 }
@@ -91,21 +89,26 @@ func (tp *TxPool) Init(cfg *Config) {
 }
 func TxPoolMainLoop(tp *TxPool) {
 	for {
-		<-time.Tick(60*time.Second)
+		<-time.Tick(TXPOOL_SCAN_TIME*time.Second)
 		ttl := time.Duration(tp.TTL)*time.Second
 		txsToBeRemoved := []common.Hash{}
 		for _, tx := range tp.pool{
+			Logger.log.Criticalf("Tx Start Time %+v \n",time.Since(tx.StartTime))
+			Logger.log.Criticalf("TTL of Pool %+v", ttl)
 			if time.Since(tx.StartTime) > ttl {
 				txsToBeRemoved = append(txsToBeRemoved, *tx.Desc.Tx.Hash())
 			}
 		}
+		Logger.log.Criticalf("Begin Remove Timeout Transaction, number of tx in pool %+v \n", len(tp.pool))
 		for _,txHash := range txsToBeRemoved {
+			Logger.log.Infof("Remove Transaction %+v after %+v \n",txHash, time.Since(tp.pool[txHash].StartTime))
 			delete(tp.pool,txHash)
 			delete(tp.poolSerialNumbers,txHash)
 			delete(tp.txCoinHashHPool,txHash)
 			delete(tp.CandidatePool,txHash)
 			delete(tp.TokenIDPool,txHash)
 		}
+		Logger.log.Criticalf("Finish Remove Timeout Transaction, number of tx in pool %+v \n", len(tp.pool))
 	}
 }
 // ----------- transaction.MempoolRetriever's implementation -----------------
@@ -142,7 +145,7 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 			Height: height,
 			Fee:    fee,
 		},
-		StartingPriority: 1, //@todo we will apply calc function for it.
+		StartTime: time.Now(),
 	}
 	Logger.log.Info(tx.Hash().String())
 	tp.pool[*tx.Hash()] = txD

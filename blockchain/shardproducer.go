@@ -67,8 +67,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	for _, assignInstruction := range assignInstructions {
 		shardPendingValidator = append(shardPendingValidator, strings.Split(assignInstruction[1], ",")...)
 	}
-	// fmt.Println("Shard Producer: shardPendingValidator", shardPendingValidator)
-	// fmt.Println("Shard Producer: shardCommitee", shardCommittee)
 	//Swap instruction
 	// Swap instruction only appear when reach the last block in an epoch
 	//@NOTICE: In this block, only pending validator change, shard committees will change in the next block
