@@ -13,6 +13,6 @@
 - Run `cd ./bootnode`
 - Run `sh ./build.sh`
 ### Run
-- Build successfully
+- Run `cd ./bootnode`
 - Run `constant-bootnode -p 9330`
 - Or run `sh ./run.sh`
