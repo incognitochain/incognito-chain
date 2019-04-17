@@ -7,7 +7,7 @@
 ### Prerequisites
 - Install Go >= 1.10
 - Mac, Linux, Window OS
-- Git clone source into $GOPATH
+- Git clone source into $GOPATH/src/github.com/constant-money/constant-chain
 - Run `go get -v`
 ### Build
 - Run `cd ./bootnode`
