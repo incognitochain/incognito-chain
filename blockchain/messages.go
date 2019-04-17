@@ -171,8 +171,9 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 }
 
 func (blockchain *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {
+	Logger.log.Info("Received CrossShardBlock", block.Header.Height, block.Header.ShardID)
 	if blockchain.config.NodeMode == common.NODEMODE_SHARD || blockchain.config.NodeMode == common.NODEMODE_AUTO {
-		shardRole := blockchain.BestState.Shard[block.Header.ShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+		shardRole := blockchain.BestState.Shard[block.ToShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
 		if shardRole != common.PROPOSER_ROLE && shardRole != common.VALIDATOR_ROLE {
 			return
 		}
@@ -180,7 +181,6 @@ func (blockchain *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {
 		return
 	}
 
-	Logger.log.Criticalf("Received CrossShardBlock %+v from %+v \n", block.Header.Height, block.Header.ShardID)
 	expectedHeight, toShardID, err := blockchain.config.CrossShardPool[block.ToShardID].AddCrossShardBlock(block)
 	for fromShardID, height := range expectedHeight {
 		// fmt.Printf("Shard %+v request CrossShardBlock with Height %+v from shard %+v \n", toShardID, height, fromShardID)
