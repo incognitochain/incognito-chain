@@ -39,7 +39,7 @@ const (
 	sampleConfigFilename      = "sample-config.conf"
 	defaultDisableRpcTLS      = true
 	defaultFastStartup        = true
-	defaultNodeMode           = "relay"
+	defaultNodeMode           = common.NODEMODE_RELAY
 	defaultTxPoolTTL          = uint(86400) * 10
 	defaultTxPoolMaxTx        = uint64(20000)
 	// For wallet

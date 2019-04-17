@@ -219,31 +219,13 @@ func (rpcServer RpcServer) handleGetMempoolInfo(params interface{}, closeChan <-
 	return result, nil
 }
 
-// Get transaction by Hash
-func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	// param #1: transaction Hash
-	if len(arrayParams) < 1 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Tx hash is empty"))
-	}
-	Logger.log.Infof("Get TransactionByHash input Param %+v", arrayParams[0].(string))
-	txHash, _ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
-	Logger.log.Infof("Get Transaction By Hash %+v", txHash)
-	shardID, blockHash, index, tx, err := rpcServer.config.BlockChain.GetTransactionByHash(txHash)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	db := *(rpcServer.config.Database)
-	blockHeight, _, err := db.GetIndexOfBlock(blockHash)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	result := jsonresult.TransactionDetail{}
+func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blockHash *common.Hash, blockHeight uint64, index int, shardID byte) (*jsonresult.TransactionDetail, *RPCError) {
+	var result *jsonresult.TransactionDetail
 	switch tx.GetType() {
 	case common.TxNormalType, common.TxSalaryType:
 		{
 			tempTx := tx.(*transaction.Tx)
-			result = jsonresult.TransactionDetail{
+			result = &jsonresult.TransactionDetail{
 				BlockHash:   blockHash.String(),
 				BlockHeight: blockHeight,
 				Index:       uint64(index),
@@ -266,7 +248,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 	case common.TxCustomTokenType:
 		{
 			tempTx := tx.(*transaction.TxCustomToken)
-			result = jsonresult.TransactionDetail{
+			result = &jsonresult.TransactionDetail{
 				BlockHash:   blockHash.String(),
 				BlockHeight: blockHeight,
 				Index:       uint64(index),
@@ -293,7 +275,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 	case common.TxCustomTokenPrivacyType:
 		{
 			tempTx := tx.(*transaction.TxCustomTokenPrivacy)
-			result = jsonresult.TransactionDetail{
+			result = &jsonresult.TransactionDetail{
 				BlockHash:   blockHash.String(),
 				BlockHeight: blockHeight,
 				Index:       uint64(index),
@@ -322,6 +304,45 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 			return nil, NewRPCError(ErrTxTypeInvalid, errors.New("Tx type is invalid"))
 		}
 	}
+	return result, nil
+}
+
+// Get transaction by Hash
+func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	// param #1: transaction Hash
+	if len(arrayParams) < 1 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Tx hash is empty"))
+	}
+	Logger.log.Infof("Get TransactionByHash input Param %+v", arrayParams[0].(string))
+	txHash, _ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
+	Logger.log.Infof("Get Transaction By Hash %+v", txHash)
+	db := *(rpcServer.config.Database)
+	shardID, blockHash, index, tx, err := rpcServer.config.BlockChain.GetTransactionByHash(txHash)
+	if err != nil {
+		// maybe tx is still in tx mempool -> check mempool
+		tx, errM := rpcServer.config.TxMemPool.GetTx(txHash)
+		if errM != nil {
+			return nil, NewRPCError(ErrTxNotExistedInMemAndBLock, errors.New("Tx is not existed in block or mempool"))
+		}
+		result, errM := rpcServer.revertTxToResponseObject(tx, nil, 0, 0, byte(0))
+		if errM != nil {
+			return nil, errM.(*RPCError)
+		}
+		result.IsInMempool = true
+		return result, nil
+	}
+
+	blockHeight, _, err := db.GetIndexOfBlock(blockHash)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	result, err := rpcServer.revertTxToResponseObject(tx, blockHash, blockHeight, index, shardID)
+	if err.(*RPCError) != nil {
+		return nil, err.(*RPCError)
+	}
+	result.IsInBlock = true
+
 	return result, nil
 }
 
