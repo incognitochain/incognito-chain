@@ -235,10 +235,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 					}
 				case common.SHARD_ROLE:
 					if (blockchain.config.NodeMode == common.NODEMODE_AUTO || blockchain.config.NodeMode == common.NODEMODE_SHARD) && (userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE) {
-						if _, ok := blockchain.syncStatus.Shards[userShardID]; !ok {
-							blockchain.syncStatus.Shards[userShardID] = struct{}{}
-						}
-						if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE && blockchain.IsReady(true, userShardID) {
+						if blockchain.IsReady(true, userShardID) {
 							for shardID, peer := range RCS.CrossShardBlks {
 								for peerID, blks := range peer {
 									blockchain.SyncBlkCrossShard(true, false, nil, blks, shardID, userShardID, peerID)
