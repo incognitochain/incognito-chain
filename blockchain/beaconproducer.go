@@ -146,19 +146,6 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	}
 	beaconBlock.Header.InstructionHash = tempInstructionHash
 	//===============End Create Header
-
-	go func() {
-		//TODO: @someone will remove right?
-		fmt.Println("[voting] - Beaconblock[", beaconBlock.Header.Height, "] body")
-		for _, inst := range beaconBlock.Body.Instructions {
-			if len(inst) != 0 {
-				if inst[0] != "37" {
-					fmt.Println("[voting] - - - > ", inst)
-				}
-			}
-		}
-	}()
-
 	return beaconBlock, nil
 }
 
