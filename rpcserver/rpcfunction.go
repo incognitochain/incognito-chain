@@ -199,19 +199,19 @@ var RpcHandler = map[string]commandHandler{
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	ListAccounts:               RpcServer.handleListAccounts,
-	GetAccount:                 RpcServer.handleGetAccount,
-	GetAddressesByAccount:      RpcServer.handleGetAddressesByAccount,
-	GetAccountAddress:          RpcServer.handleGetAccountAddress,
-	DumpPrivkey:                RpcServer.handleDumpPrivkey,
-	ImportAccount:              RpcServer.handleImportAccount,
-	RemoveAccount:              RpcServer.handleRemoveAccount,
-	ListUnspentOutputCoins:     RpcServer.handleListUnspentOutputCoins,
-	GetBalance:                 RpcServer.handleGetBalance,
-	GetBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
-	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
-	GetReceivedByAccount:       RpcServer.handleGetReceivedByAccount,
-	SetTxFee:                   RpcServer.handleSetTxFee,
+	ListAccounts:                       RpcServer.handleListAccounts,
+	GetAccount:                         RpcServer.handleGetAccount,
+	GetAddressesByAccount:              RpcServer.handleGetAddressesByAccount,
+	GetAccountAddress:                  RpcServer.handleGetAccountAddress,
+	DumpPrivkey:                        RpcServer.handleDumpPrivkey,
+	ImportAccount:                      RpcServer.handleImportAccount,
+	RemoveAccount:                      RpcServer.handleRemoveAccount,
+	ListUnspentOutputCoins:             RpcServer.handleListUnspentOutputCoins,
+	GetBalance:                         RpcServer.handleGetBalance,
+	GetBalanceByPrivatekey:             RpcServer.handleGetBalanceByPrivatekey,
+	GetBalanceByPaymentAddress:         RpcServer.handleGetBalanceByPaymentAddress,
+	GetReceivedByAccount:               RpcServer.handleGetReceivedByAccount,
+	SetTxFee:                           RpcServer.handleSetTxFee,
 	GetRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
 }
 
@@ -405,17 +405,30 @@ func (rpcServer RpcServer) handleGetGenerate(params interface{}, closeChan <-cha
 handleGetMiningInfo - RPC returns various mining-related info
 */
 func (rpcServer RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// TODO update code to new consensus
-	// if !rpcServer.config.IsGenerateNode {
-	// 	return nil, NewRPCError(ErrUnexpected, errors.New("Not mining"))
-	// }
-	// shardID := byte(int(component.(float64)))
-	// result := jsonresult.GetMiningInfoResult{}
-	// result.Blocks = uint64(rpcServer.config.BlockChain.BestState[shardID].BestBlock.Header.Height + 1)
-	// result.PoolSize = rpcServer.config.TxMemPool.Count()
-	// result.Chain = rpcServer.config.ChainParams.Name
-	// result.CurrentBlockTx = len(rpcServer.config.BlockChain.BestState[shardID].BestBlock.Transactions)
-	return jsonresult.GetMiningInfoResult{}, nil
+	if !rpcServer.config.IsMiningNode || rpcServer.config.MiningPubKeyB58 == "" {
+		return jsonresult.GetMiningInfoResult{
+			IsCommittee: false,
+		}, nil
+	}
+
+	result := jsonresult.GetMiningInfoResult{}
+	result.IsCommittee = true
+	result.PoolSize = rpcServer.config.TxMemPool.Count()
+	result.Chain = rpcServer.config.ChainParams.Name
+
+	result.BeaconHeight = rpcServer.config.BlockChain.BestState.Beacon.BeaconHeight
+
+	role, shardID := rpcServer.config.BlockChain.BestState.Beacon.GetPubkeyRole(rpcServer.config.MiningPubKeyB58, 0)
+	result.Role = role
+	if role == common.SHARD_ROLE {
+		result.ShardHeight = rpcServer.config.BlockChain.BestState.Shard[shardID].ShardHeight
+		result.CurrentShardBlockTx = len(rpcServer.config.BlockChain.BestState.Shard[shardID].BestBlock.Body.Transactions)
+		result.ShardID = int(shardID)
+	} else if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE || role == common.PENDING_ROLE {
+		result.ShardID = -1
+	}
+
+	return result, nil
 }
 
 /*

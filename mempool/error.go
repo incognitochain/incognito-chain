@@ -12,6 +12,7 @@ const (
 	RejectSansityTx
 	RejectSalaryTx
 	RejectDuplicateStakeTx
+	RejectDuplicateInitTokenTx
 	RejectVersion
 	RejectInvalidFee
 	RejectInvalidSize

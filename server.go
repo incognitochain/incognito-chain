@@ -130,7 +130,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	serverObj.userKeySet, err = cfg.GetUserKeySet()
 	if err != nil {
-		if cfg.NodeMode == "auto" || cfg.NodeMode == "beacon" || cfg.NodeMode == "shard" {
+		if cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_BEACON || cfg.NodeMode == common.NODEMODE_SHARD {
 			Logger.log.Critical(err)
 			return err
 		} else {
@@ -235,6 +235,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		DataBase:     serverObj.dataBase,
 		ChainParams:  chainParams,
 		FeeEstimator: serverObj.feeEstimator,
+		TxLifeTime:   cfg.TxPoolTTL,
+		MaxTx:        cfg.TxPoolMaxTx,
 	})
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
@@ -246,6 +248,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		DataBase:     serverObj.dataBase,
 		ChainParams:  chainParams,
 		FeeEstimator: serverObj.feeEstimator,
+		MaxTx:        cfg.TxPoolMaxTx,
 	})
 	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
 	//===============
@@ -330,6 +333,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			return errors.New("RPCS: No valid listen address")
 		}
 
+		miningPubkeyB58 := ""
+		if serverObj.userKeySet != nil {
+			miningPubkeyB58 = serverObj.userKeySet.GetPublicKeyB58()
+		}
 		rpcConfig := rpcserver.RpcServerConfig{
 			Listenters:      rpcListeners,
 			RPCQuirks:       cfg.RPCQuirks,
@@ -350,6 +357,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			FeeEstimator:    serverObj.feeEstimator,
 			ProtocolVersion: serverObj.protocolVersion,
 			Database:        &serverObj.dataBase,
+			IsMiningNode:    cfg.NodeMode != common.NODEMODE_RELAY && miningPubkeyB58 != "", // a node is mining if it constains this condiction when runing
+			MiningPubKeyB58: miningPubkeyB58,
 		}
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
@@ -500,13 +509,17 @@ func (serverObj Server) Start() {
 	}
 	go serverObj.blockChain.StartSyncBlk()
 
-	if cfg.NodeMode != "relay" {
+	if cfg.NodeMode != common.NODEMODE_RELAY {
 		err := serverObj.consensusEngine.Start()
 		if err != nil {
 			Logger.log.Error(err)
 			go serverObj.Stop()
 			return
 		}
+	}
+
+	if serverObj.tempMemPool != nil {
+		go mempool.TxPoolMainLoop(serverObj.memPool)
 	}
 }
 
@@ -1250,7 +1263,7 @@ func (serverObj *Server) BoardcastNodeState() error {
 	msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidPendingBlockHeight()
 	if serverObj.userKeySet != nil {
 		userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58(), serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
-		if (cfg.NodeMode == "auto" || cfg.NodeMode == "shard") && userRole == "shard" {
+		if (cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_SHARD) && userRole == common.NODEMODE_SHARD {
 			userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58(), serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Round)
 			if userRole == "shard-proposer" || userRole == "shard-validator" {
 				msg.(*wire.MessagePeerState).CrossShardPool[shardID] = serverObj.crossShardPool[shardID].GetValidBlockHeight()
