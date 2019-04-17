@@ -371,7 +371,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 		}
 		tempTx := tempTxDesc.Tx
 		totalFee += tx.GetTxFee()
-		
+
 		tempSize := tempTx.GetTxActualSize()
 		if currentSize+tempSize >= common.MaxBlockSize {
 			break
