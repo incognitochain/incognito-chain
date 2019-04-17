@@ -111,12 +111,14 @@ func (protocol *BFTProtocol) phaseListen() error {
 	}
 
 	var timeSinceLastBlk time.Duration
+	additionalWaitTime := timeSinceLastBlk
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
 		timeSinceLastBlk = time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0))
+		additionalWaitTime = common.MinBeaconBlkInterval - timeSinceLastBlk
 	} else {
 		timeSinceLastBlk = time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].BestBlock.Header.Timestamp, 0))
+		additionalWaitTime = common.MinShardBlkInterval - timeSinceLastBlk
 	}
-	additionalWaitTime := common.MinBlkInterval - timeSinceLastBlk
 	if additionalWaitTime < 0 {
 		additionalWaitTime = 0
 	}
