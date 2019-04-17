@@ -51,7 +51,7 @@ func (blockGen *BlkTmplGenerator) registerMultiSigsAddresses(
 }
 
 func ValidateAggSignature(validatorIdx [][]int, committees []string, aggSig string, R string, blockHash *common.Hash) error {
-	return nil //single-node
+	// return nil //single-node
 	//multi-node
 	pubKeysR := []*privacy.PublicKey{}
 	for _, index := range validatorIdx[0] {
@@ -76,7 +76,7 @@ func ValidateAggSignature(validatorIdx [][]int, committees []string, aggSig stri
 	RCombined := new(privacy.EllipticPoint)
 	RCombined.Set(big.NewInt(0), big.NewInt(0))
 	Rbytesarr, byteVersion, err := base58.Base58Check{}.Decode(R)
-	if (err != nil) || (byteVersion != byte(0x00)) {
+	if (err != nil) || (byteVersion != common.ZeroByte) {
 		return err
 	}
 	err = RCombined.Decompress(Rbytesarr)

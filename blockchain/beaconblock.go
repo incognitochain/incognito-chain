@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/privacy"
 )
 
 const (
@@ -27,9 +28,9 @@ type BeaconBody struct {
 }
 
 type BeaconHeader struct {
-	Producer string `json:"Producer"`
-	Version  int    `json:"Version"`
-	Height   uint64 `json:"Height"`
+	ProducerAddress privacy.PaymentAddress
+	Version         int    `json:"Version"`
+	Height          uint64 `json:"Height"`
 	//epoch length should be config in consensus
 	Epoch         uint64      `json:"Epoch"`
 	Round         int         `json:"Round"`
@@ -149,7 +150,7 @@ func (beaconBody *BeaconBody) Hash() common.Hash {
 
 func (beaconHeader *BeaconHeader) toString() string {
 	res := ""
-	res += beaconHeader.Producer
+	res += beaconHeader.ProducerAddress.String()
 	res += fmt.Sprintf("%v", beaconHeader.Version)
 	res += fmt.Sprintf("%v", beaconHeader.Height)
 	res += fmt.Sprintf("%v", beaconHeader.Epoch)

@@ -38,7 +38,7 @@ privacy/server/verifying\.key
 datadirs/data**
 data/**
 constant-*
-constant-*
+constant_*
 
 pkg
 src/.com

@@ -213,13 +213,12 @@ func (netSync *NetSync) QueueTxPrivacyToken(peer *peer.Peer, msg *wire.MessageTx
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 	Logger.log.Info("Handling new message tx")
-	hash, txDesc, err := netSync.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
+	hash, _, err := netSync.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
 
 	if err != nil {
 		Logger.log.Error(err)
 	} else {
 		Logger.log.Infof("there is hash of transaction %s", hash.String())
-		Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 		// Broadcast to network
 		err := netSync.config.Server.PushMessageToAll(msg)
@@ -232,14 +231,12 @@ func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) HandleMessageTxToken(msg *wire.MessageTxToken) {
 	Logger.log.Info("Handling new message tx")
-	hash, txDesc, err := netSync.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
+	hash, _, err := netSync.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
 
 	if err != nil {
 		Logger.log.Error(err)
 	} else {
 		Logger.log.Infof("there is hash of transaction %s", hash.String())
-		Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
-
 		// Broadcast to network
 		err := netSync.config.Server.PushMessageToAll(msg)
 		if err != nil {
@@ -251,13 +248,12 @@ func (netSync *NetSync) HandleMessageTxToken(msg *wire.MessageTxToken) {
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) HandleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyToken) {
 	Logger.log.Info("Handling new message tx")
-	hash, txDesc, err := netSync.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
+	hash, _, err := netSync.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
 
 	if err != nil {
 		Logger.log.Error(err)
 	} else {
 		Logger.log.Infof("there is hash of transaction %s", hash.String())
-		Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 		// Broadcast to network
 		err := netSync.config.Server.PushMessageToAll(msg)
