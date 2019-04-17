@@ -714,6 +714,7 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 		for i := 0; i < len(proof.InputCoins); i++ {
 			// Check input coins' Serial number is created from input coins' input and sender's spending key
 			if !proof.SNNoPrivacyProof[i].Verify(nil) {
+				privacy.Logger.Log.Errorf("Failed verify serial number no privacy\n")
 				return false
 			}
 
@@ -724,6 +725,7 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 			cmTmp = cmTmp.Add(cmShardIDSender)
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(proof.InputCoins[i].CoinDetails.Randomness))
 			if !cmTmp.IsEqual(proof.InputCoins[i].CoinDetails.CoinCommitment) {
+				privacy.Logger.Log.Errorf("Input coins %v commitment wrong!\n", i)
 				return false
 			}
 
@@ -736,11 +738,11 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 			cmTmp := proof.OutputCoins[i].CoinDetails.PublicKey
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(proof.OutputCoins[i].CoinDetails.Value))))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMult(proof.OutputCoins[i].CoinDetails.SNDerivator))
-			//TODO: refactor this hard code
 			shardID := common.GetShardIDFromLastByte(proof.OutputCoins[i].CoinDetails.GetPubKeyLastByte())
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(proof.OutputCoins[i].CoinDetails.Randomness))
 			if !cmTmp.IsEqual(proof.OutputCoins[i].CoinDetails.CoinCommitment) {
+				privacy.Logger.Log.Errorf("Output coins %v commitment wrong!\n", i)
 				return false
 			}
 
@@ -749,7 +751,15 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 		}
 
 		// check if sum of input values equal sum of output values
-		return sumInputValue == sumOutputValue+fee
+		if sumInputValue != sumOutputValue + fee {
+			privacy.Logger.Log.Infof("sumInputValue: %v\n", sumInputValue)
+			privacy.Logger.Log.Infof("sumOutputValue: %v\n", sumOutputValue)
+			privacy.Logger.Log.Infof("fee: %v\n", fee)
+			privacy.Logger.Log.Errorf("Sum of inputs is not equal sum of output!\n")
+			return false
+		}
+		return true
+
 	}
 
 	// if hasPrivacy == true
