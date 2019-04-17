@@ -235,7 +235,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		DataBase:     serverObj.dataBase,
 		ChainParams:  chainParams,
 		FeeEstimator: serverObj.feeEstimator,
-		TTL:          cfg.TxPoolTTL,
+		TxLifeTime:   cfg.TxPoolTTL,
 		MaxTx:        cfg.TxPoolMaxTx,
 	})
 	//add tx pool

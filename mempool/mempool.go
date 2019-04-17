@@ -30,7 +30,7 @@ type Config struct {
 	FeeEstimator map[byte]*FeeEstimator
 
 	// Transaction life time in pool
-	TTL uint
+	TxLifeTime uint
 
 	//Max transaction pool may have
 	MaxTx uint64
@@ -69,7 +69,7 @@ type TxPool struct {
 	maxTx uint64
 
 	//Time to live for all transaction
-	TTL uint
+	TxLifeTime uint
 }
 
 /*
@@ -85,12 +85,12 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.CandidatePool = make(map[common.Hash]string)
 	tp.cMtx = sync.RWMutex{}
 	tp.maxTx = cfg.MaxTx
-	tp.TTL = cfg.TTL
+	tp.TxLifeTime = cfg.TxLifeTime
 }
 func TxPoolMainLoop(tp *TxPool) {
 	for {
 		<-time.Tick(TXPOOL_SCAN_TIME * time.Second)
-		ttl := time.Duration(tp.TTL) * time.Second
+		ttl := time.Duration(tp.TxLifeTime) * time.Second
 		txsToBeRemoved := []common.Hash{}
 		for _, tx := range tp.pool {
 			Logger.log.Criticalf("Tx Start Time %+v \n", time.Since(tx.StartTime))
