@@ -151,7 +151,7 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
-	hash, txDesc, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
 		mempoolErr, ok := err.(mempool.MempoolTxError)
 		if ok {
@@ -163,7 +163,6 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 	}
 
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
-	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 	// broadcast Message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
@@ -404,13 +403,12 @@ func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
-	hash, txDesc, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
-	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 	// broadcast message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
@@ -865,13 +863,12 @@ func (rpcServer RpcServer) handleSendRawPrivacyCustomTokenTransaction(params int
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
-	hash, txDesc, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
-	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 	// broadcast message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)

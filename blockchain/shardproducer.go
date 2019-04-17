@@ -67,8 +67,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	for _, assignInstruction := range assignInstructions {
 		shardPendingValidator = append(shardPendingValidator, strings.Split(assignInstruction[1], ",")...)
 	}
-	// fmt.Println("Shard Producer: shardPendingValidator", shardPendingValidator)
-	// fmt.Println("Shard Producer: shardCommitee", shardCommittee)
 	//Swap instruction
 	// Swap instruction only appear when reach the last block in an epoch
 	//@NOTICE: In this block, only pending validator change, shard committees will change in the next block
@@ -383,6 +381,8 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 		if len(txsToAdd) == common.MaxTxsInBlock {
 			break
 		}
+		// Time bound condition for block creation
+		//if time for getting transaction exceed half of MinBlkInterval then break
 		elasped := time.Since(startTime)
 		if elasped >= common.MinBlkInterval/2 {
 			break
