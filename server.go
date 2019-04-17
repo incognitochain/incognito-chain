@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/constant-money/constant-chain/databasemp"
 	"log"
 	"net"
 	"os"
@@ -118,7 +119,7 @@ func (serverObj *Server) setupRPCListeners() ([]net.Listener, error) {
 /*
 NewServer - create server object which control all process of node
 */
-func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInterface, chainParams *blockchain.Params, protocolVer string, interrupt <-chan struct{}) error {
+func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInterface, dbmp databasemp.DatabaseInterface, chainParams *blockchain.Params, protocolVer string, interrupt <-chan struct{}) error {
 	// Init data for Server
 	serverObj.protocolVersion = protocolVer
 	serverObj.chainParams = chainParams
@@ -237,6 +238,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		FeeEstimator: serverObj.feeEstimator,
 		TxLifeTime:   cfg.TxPoolTTL,
 		MaxTx:        cfg.TxPoolMaxTx,
+		DataBaseMempool: dbmp,
 	})
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
