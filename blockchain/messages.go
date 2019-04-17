@@ -5,6 +5,7 @@ import (
 
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 
@@ -65,7 +66,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 		fmt.Printf("Shard block received from shard %+v \n", newBlk.Header.ShardID)
 		if blockchain.BestState.Shard[newBlk.Header.ShardID].ShardHeight < newBlk.Header.Height {
 			blkHash := newBlk.Header.Hash()
-			err := cashec.ValidateDataB58(newBlk.Header.Producer, newBlk.ProducerSig, blkHash.GetBytes())
+			err := cashec.ValidateDataB58(base58.Base58Check{}.Encode(newBlk.Header.ProducerAddress.Pk, common.ZeroByte), newBlk.ProducerSig, blkHash.GetBytes())
 			if err != nil {
 				Logger.log.Error(err)
 				return
@@ -94,7 +95,7 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 		fmt.Println("Beacon block received", newBlk.Header.Height, blockchain.BestState.Beacon.BeaconHeight)
 		if blockchain.BestState.Beacon.BeaconHeight < newBlk.Header.Height {
 			blkHash := newBlk.Header.Hash()
-			err := cashec.ValidateDataB58(newBlk.Header.Producer, newBlk.ProducerSig, blkHash.GetBytes())
+			err := cashec.ValidateDataB58(base58.Base58Check{}.Encode(newBlk.Header.ProducerAddress.Pk, common.ZeroByte), newBlk.ProducerSig, blkHash.GetBytes())
 			if err != nil {
 				fmt.Println("Beacon block validate err", err)
 				Logger.log.Error(err)
@@ -126,11 +127,20 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 }
 
 func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
-	//TODO: check node mode -> node mode & role before add block to pool
+	if blockchain.config.NodeMode == common.NODEMODE_BEACON || blockchain.config.NodeMode == common.NODEMODE_AUTO {
+		beaconRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+		if beaconRole != common.PROPOSER_ROLE && beaconRole != common.VALIDATOR_ROLE {
+			return
+		}
+	} else {
+		return
+	}
+
 	if blockchain.IsReady(false, 0) {
+
 		fmt.Println("Blockchain Message/OnShardToBeaconBlockReceived: Block Height", block.Header.Height)
 		blkHash := block.Header.Hash()
-		err := cashec.ValidateDataB58(block.Header.Producer, block.ProducerSig, blkHash.GetBytes())
+		err := cashec.ValidateDataB58(base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte), block.ProducerSig, blkHash.GetBytes())
 
 		if err != nil {
 			Logger.log.Debugf("Invalid Producer Signature of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
@@ -141,7 +151,6 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 			return
 		}
 
-		//TODO: what if shard to beacon from old committee
 		if err = ValidateAggSignature(block.ValidatorsIdx, blockchain.BestState.Beacon.ShardCommittee[block.Header.ShardID], block.AggregatedSig, block.R, block.Hash()); err != nil {
 			Logger.log.Error(err)
 			return
@@ -162,7 +171,16 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 }
 
 func (blockchain *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {
-	Logger.log.Criticalf("Received CrossShardBlock %+v from %+v \n", block.Header.Height, block.Header.ShardID)
+	Logger.log.Info("Received CrossShardBlock", block.Header.Height, block.Header.ShardID)
+	if blockchain.config.NodeMode == common.NODEMODE_SHARD || blockchain.config.NodeMode == common.NODEMODE_AUTO {
+		shardRole := blockchain.BestState.Shard[block.ToShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+		if shardRole != common.PROPOSER_ROLE && shardRole != common.VALIDATOR_ROLE {
+			return
+		}
+	} else {
+		return
+	}
+
 	expectedHeight, toShardID, err := blockchain.config.CrossShardPool[block.ToShardID].AddCrossShardBlock(block)
 	for fromShardID, height := range expectedHeight {
 		// fmt.Printf("Shard %+v request CrossShardBlock with Height %+v from shard %+v \n", toShardID, height, fromShardID)

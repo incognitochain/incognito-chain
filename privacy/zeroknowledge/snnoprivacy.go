@@ -245,6 +245,7 @@ func (pro *SNNoPrivacyProof) Verify(mess []byte) bool {
 	rightPoint1 = rightPoint1.Add(pro.tSeed)
 
 	if !leftPoint1.IsEqual(rightPoint1) {
+		privacy.Logger.Log.Errorf("Failed verify serial number no privacy 1")
 		return false
 	}
 
@@ -254,5 +255,10 @@ func (pro *SNNoPrivacyProof) Verify(mess []byte) bool {
 	rightPoint2 := privacy.PedCom.G[privacy.SK].ScalarMult(x)
 	rightPoint2 = rightPoint2.Add(pro.tOutput)
 
-	return leftPoint2.IsEqual(rightPoint2)
+	if !leftPoint2.IsEqual(rightPoint2){
+		privacy.Logger.Log.Errorf("Failed verify serial number no privacy 1")
+		return false
+	}
+
+	return true
 }

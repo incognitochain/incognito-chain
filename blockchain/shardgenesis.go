@@ -60,7 +60,7 @@ func CreateShardGenesisBlock(
 		BeaconHeight:    1,
 		Epoch:           1,
 		Round:           1,
-		ProducerAddress: &privacy.PaymentAddress{},
+		ProducerAddress: privacy.PaymentAddress{},
 	}
 
 	for _, tx := range icoParams.InitialConstant {

@@ -146,7 +146,6 @@ func (netSync *NetSync) GetBlkBeaconByHeightAndSend(peerID libp2p.ID, fromPool b
 		}
 		blk, err := netSync.config.BlockChain.GetBeaconBlockByHeight(blkHeight)
 		if err != nil {
-			Logger.log.Error(err)
 			continue
 		}
 		msgBeaconBlk, err := wire.MakeEmptyMessage(wire.CmdBlockBeacon)

@@ -50,7 +50,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 	blockchain.syncStatus.Unlock()
 
 	broadcastTicker := time.NewTicker(defaultBroadcastStateTime)
-	insertPoolTicker := time.NewTicker(time.Millisecond * 500)
+	insertPoolTicker := time.NewTicker(time.Millisecond * 100)
 	peersProcessTicker := time.NewTicker(defaultProcessPeerStateTime)
 
 	go func() {
@@ -59,7 +59,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			case <-blockchain.cQuitSync:
 				return
 			case <-broadcastTicker.C:
-				go blockchain.config.Server.BoardcastNodeState()
+				blockchain.config.Server.BoardcastNodeState()
 			}
 		}
 	}()
@@ -235,10 +235,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 					}
 				case common.SHARD_ROLE:
 					if (blockchain.config.NodeMode == common.NODEMODE_AUTO || blockchain.config.NodeMode == common.NODEMODE_SHARD) && (userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE) {
-						if _, ok := blockchain.syncStatus.Shards[userShardID]; !ok {
-							blockchain.syncStatus.Shards[userShardID] = struct{}{}
-						}
-						if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE && blockchain.IsReady(true, userShardID) {
+						if blockchain.IsReady(true, userShardID) {
 							for shardID, peer := range RCS.CrossShardBlks {
 								for peerID, blks := range peer {
 									blockchain.SyncBlkCrossShard(true, false, nil, blks, shardID, userShardID, peerID)
@@ -321,7 +318,6 @@ func (blockchain *BlockChain) StopSyncUnnecessaryShard() {
 func (blockchain *BlockChain) stopSyncUnnecessaryShard() {
 	for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 		if err := blockchain.stopSyncShard(shardID); err != nil {
-			// fmt.Println("StopSyncUnnecessaryShard", shardID)
 			Logger.log.Error(err)
 		}
 	}
@@ -337,7 +333,6 @@ func (blockchain *BlockChain) stopSyncShard(shardID byte) error {
 	if _, ok := blockchain.syncStatus.Shards[shardID]; ok {
 		if common.IndexOfByte(shardID, blockchain.config.RelayShards) < 0 {
 			delete(blockchain.syncStatus.Shards, shardID)
-			// fmt.Println("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation stopped")
 			return nil
 		}
 		return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation can't be stopped")
@@ -358,11 +353,6 @@ func (blockchain *BlockChain) GetCurrentSyncShards() []byte {
 func (blockchain *BlockChain) StopSync() error {
 	close(blockchain.cQuitSync)
 	return nil
-}
-
-func (blockchain *BlockChain) ResetCurrentSyncRecord() {
-	blockchain.syncStatus.Lock()
-	defer blockchain.syncStatus.Unlock()
 }
 
 //SyncBlkBeacon Send a req to sync beacon block
@@ -547,11 +537,11 @@ func (blockchain *BlockChain) SyncBlkCrossShard(getFromPool bool, byHash bool, b
 var lasttime = time.Now()
 
 func (blockchain *BlockChain) InsertBlockFromPool() {
-	fmt.Println("InsertBlockFromPool")
+	// fmt.Println("InsertBlockFromPool")
 	blockchain.syncStatus.Lock()
 	defer func() {
 		blockchain.syncStatus.Unlock()
-		fmt.Println("InsertBlockFromPool unlock")
+		// fmt.Println("InsertBlockFromPool unlock")
 	}()
 
 	if time.Since(lasttime) >= 30*time.Millisecond {
@@ -563,16 +553,16 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 	blks := blockchain.config.BeaconPool.GetValidBlock()
 	fmt.Println("Get beacon valid blks ", blks)
 	for _, newBlk := range blks {
-		fmt.Println("Insert beacon blk", newBlk.Header.Height)
+		// fmt.Println("Insert beacon blk", newBlk.Header.Height)
 		err := blockchain.InsertBeaconBlock(newBlk, false)
-		fmt.Println("Insert beacon blk finish", newBlk.Header.Height)
+		// fmt.Println("Insert beacon blk finish", newBlk.Header.Height)
 		if err != nil {
 			Logger.log.Error(err)
 		}
 	}
 
 	for shardID := range blockchain.syncStatus.Shards {
-		fmt.Println("Get shard valid blks ", blks)
+		// fmt.Println("Get shard valid blks ", blks)
 		go func(shardID byte) {
 			blks := blockchain.config.ShardPool[shardID].GetValidBlock()
 			//fmt.Println("GetShardValidBlock", len(blks))
