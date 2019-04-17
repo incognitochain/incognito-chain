@@ -68,7 +68,7 @@ func (multiSig *multiSigScheme) SignData(RiList map[string][]byte) error {
 		pubKeyTemp, byteVersion, err := base58.Base58Check{}.Decode(szPubKey)
 		listPubkeyOfSigners[counter] = new(privacy.PublicKey)
 		*listPubkeyOfSigners[counter] = pubKeyTemp
-		if (err != nil) || (byteVersion != byte(0x00)) {
+		if (err != nil) || (byteVersion != common.ZeroByte) {
 			return err
 		}
 		listROfSigners[counter] = new(privacy.EllipticPoint)
@@ -84,8 +84,8 @@ func (multiSig *multiSigScheme) SignData(RiList map[string][]byte) error {
 
 	commitSig := multiSig.cryptoScheme.Keyset.SignMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(multiSig.personal.r))
 
-	multiSig.combine.R = base58.Base58Check{}.Encode(RCombined.Compress(), byte(0x00))
-	multiSig.combine.CommitSig = base58.Base58Check{}.Encode(commitSig.Bytes(), byte(0x00))
+	multiSig.combine.R = base58.Base58Check{}.Encode(RCombined.Compress(), common.ZeroByte)
+	multiSig.combine.CommitSig = base58.Base58Check{}.Encode(commitSig.Bytes(), common.ZeroByte)
 
 	return nil
 }
@@ -94,7 +94,7 @@ func (multiSig *multiSigScheme) VerifyCommitSig(validatorPk string, commitSig st
 	RCombined := new(privacy.EllipticPoint)
 	RCombined.Set(big.NewInt(0), big.NewInt(0))
 	Rbytesarr, byteVersion, err := base58.Base58Check{}.Decode(R)
-	if (err != nil) || (byteVersion != byte(0x00)) {
+	if (err != nil) || (byteVersion != common.ZeroByte) {
 		return err
 	}
 	err = RCombined.Decompress(Rbytesarr)
@@ -104,7 +104,7 @@ func (multiSig *multiSigScheme) VerifyCommitSig(validatorPk string, commitSig st
 	listPubkeyOfSigners := GetPubKeysFromIdx(multiSig.combine.SigningCommittee, validatorsIdx)
 	validatorPubkey := new(privacy.PublicKey)
 	pubKeyTemp, byteVersion, err := base58.Base58Check{}.Decode(validatorPk)
-	if (err != nil) || (byteVersion != byte(0x00)) {
+	if (err != nil) || (byteVersion != common.ZeroByte) {
 		return err
 	}
 	*validatorPubkey = pubKeyTemp
@@ -128,7 +128,7 @@ func (multiSig *multiSigScheme) CombineSigs(R string, commitSigs map[string]bftC
 	for pubkey, valSig := range commitSigs {
 		sig := new(privacy.SchnMultiSig)
 		bytesSig, byteVersion, err := base58.Base58Check{}.Decode(valSig.Sig)
-		if (err != nil) || (byteVersion != byte(0x00)) {
+		if (err != nil) || (byteVersion != common.ZeroByte) {
 			return "", err
 		}
 		sig.SetBytes(bytesSig)
@@ -144,5 +144,5 @@ func (multiSig *multiSigScheme) CombineSigs(R string, commitSigs map[string]bftC
 	multiSig.combine.ValidatorsIdxR = make([]int, len(validatorsIdxR))
 	copy(multiSig.combine.ValidatorsIdxR, validatorsIdxR)
 	aggregatedSig := multiSig.cryptoScheme.CombineMultiSig(listSigOfSigners)
-	return base58.Base58Check{}.Encode(aggregatedSig.Bytes(), byte(0x00)), nil
+	return base58.Base58Check{}.Encode(aggregatedSig.Bytes(), common.ZeroByte), nil
 }

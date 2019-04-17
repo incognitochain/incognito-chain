@@ -10,6 +10,7 @@ import (
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/wire"
 )
 
@@ -177,9 +178,6 @@ func (engine *Engine) execBeaconRole() {
 		} else {
 			engine.config.Server.PushMessageToAll(newBeaconBlockMsg)
 		}
-		//reset round
-		// engine.prevRoundUserLayer = ""
-		// engine.currentBFTRound = 1
 	} else {
 		Logger.log.Error(err)
 	}
@@ -200,7 +198,6 @@ func (engine *Engine) execShardRole(shardID byte) {
 	}
 	bftProtocol.RoundData.ProposerOffset = (engine.currentBFTRound - 1) % len(engine.config.BlockChain.BestState.Shard[shardID].ShardCommittee)
 	bftProtocol.RoundData.BestStateHash = engine.config.BlockChain.BestState.Shard[shardID].Hash()
-	engine.config.BlockChain.BestState.Beacon.LockMu.Lock()
 	engine.config.BlockChain.BestState.Shard[shardID].Lock.Lock()
 	bftProtocol.RoundData.Layer = common.SHARD_ROLE
 	bftProtocol.RoundData.ShardID = shardID
@@ -216,7 +213,6 @@ func (engine *Engine) execShardRole(shardID byte) {
 	case common.PROPOSER_ROLE:
 		bftProtocol.RoundData.IsProposer = true
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
-		engine.config.BlockChain.BestState.Beacon.LockMu.Unlock()
 		engine.config.BlockChain.BestState.Shard[shardID].Lock.Unlock()
 		resBlk, err = bftProtocol.Start()
 		if err != nil {
@@ -227,7 +223,6 @@ func (engine *Engine) execShardRole(shardID byte) {
 	case common.VALIDATOR_ROLE:
 		bftProtocol.RoundData.IsProposer = false
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
-		engine.config.BlockChain.BestState.Beacon.LockMu.Unlock()
 		engine.config.BlockChain.BestState.Shard[shardID].Lock.Unlock()
 		resBlk, err = bftProtocol.Start()
 		if err != nil {
@@ -235,7 +230,6 @@ func (engine *Engine) execShardRole(shardID byte) {
 			engine.prevRoundUserLayer = engine.userLayer
 		}
 	default:
-		engine.config.BlockChain.BestState.Beacon.LockMu.Unlock()
 		engine.config.BlockChain.BestState.Shard[shardID].Lock.Unlock()
 		err = errors.New("Not your turn yet")
 	}
@@ -243,7 +237,7 @@ func (engine *Engine) execShardRole(shardID byte) {
 		shardBlk := resBlk.(*blockchain.ShardBlock)
 		fmt.Println("========NEW SHARD BLOCK=======", shardBlk.Header.Height)
 		isProducer := false
-		if strings.Compare(engine.config.UserKeySet.GetPublicKeyB58(), shardBlk.Header.Producer) == 0 {
+		if strings.Compare(engine.config.UserKeySet.GetPublicKeyB58(), base58.Base58Check{}.Encode(shardBlk.Header.ProducerAddress.Pk, common.ZeroByte)) == 0 {
 			isProducer = true
 		}
 		err = engine.config.BlockChain.InsertShardBlock(shardBlk, isProducer)

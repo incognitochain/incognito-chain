@@ -39,6 +39,24 @@ func (rpcServer RpcServer) handleGetCrossShardPoolState(params interface{}, clos
 	return result, nil
 }
 
+func (rpcServer RpcServer) handleGetNextCrossShard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	// get component
+	paramsArray := common.InterfaceSlice(params)
+	if len(paramsArray) < 3 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key component"))
+	}
+	fromShard := byte(paramsArray[0].(float64))
+	toShard := byte(paramsArray[1].(float64))
+	startHeight := uint64(paramsArray[2].(float64))
+
+	result := mempool.GetCrossShardPool(toShard).GetNextCrossShardHeight(fromShard, toShard, startHeight)
+	// if !ok || result == nil {
+	// 	return nil, NewRPCError(ErrUnexpected, errors.New("Best State shard given by ID not existed"))
+	// }
+	// result.BestShardBlock = nil
+	return result, nil
+}
+
 func (rpcServer RpcServer) handleGetBeaconPoolState(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// if rpcServer.config.BlockChain.BestState.Beacon == nil {
 	// 	return nil, NewRPCError(ErrUnexpected, errors.New("Best State beacon not existed"))
