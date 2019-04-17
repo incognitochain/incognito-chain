@@ -73,7 +73,7 @@ func (pool *CrossShardPool_v2) UpdatePool() (map[byte]uint64, error) {
 	return expectedHeight, err
 }
 
-func (pool *CrossShardPool_v2) getNextCrossShardHeight(fromShard, toShard byte, startHeight uint64) uint64 {
+func (pool *CrossShardPool_v2) GetNextCrossShardHeight(fromShard, toShard byte, startHeight uint64) uint64 {
 	nextHeight, err := pool.db.FetchCrossShardNextHeight(fromShard, toShard, startHeight)
 	if err != nil {
 		return 0
@@ -95,7 +95,7 @@ func (pool *CrossShardPool_v2) updatePool() (map[byte]uint64, error) {
 		for _, blk := range blks {
 			//only when beacon confirm (save next cross shard height), we make cross shard block valid
 			//if waitHeight > blockHeight, remove that block
-			waitHeight := pool.getNextCrossShardHeight(blkShardID, pool.shardID, startHeight)
+			waitHeight := pool.GetNextCrossShardHeight(blkShardID, pool.shardID, startHeight)
 			if waitHeight > blk.Header.Height {
 				removeIndex++
 				index++
