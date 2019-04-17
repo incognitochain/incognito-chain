@@ -78,18 +78,22 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 				if err := protocol.phasePropose(); err != nil {
 					return nil, err
 				}
+				go common.SendMetricDataToGrafana(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(protocol.startTime).Seconds()), "Propose")
 			case PBFT_LISTEN:
 				if err := protocol.phaseListen(); err != nil {
 					return nil, err
 				}
+				go common.SendMetricDataToGrafana(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(protocol.startTime).Seconds()), "Listen")
 			case PBFT_PREPARE:
 				if err := protocol.phasePrepare(); err != nil {
 					return nil, err
 				}
+				go common.SendMetricDataToGrafana(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(protocol.startTime).Seconds()), "Prepare")
 			case PBFT_COMMIT:
 				if err := protocol.phaseCommit(); err != nil {
 					return nil, err
 				}
+				go common.SendMetricDataToGrafana(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(protocol.startTime).Seconds()), "Commit")
 				return protocol.pendingBlock, nil
 			}
 		}
