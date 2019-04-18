@@ -19,7 +19,7 @@ import (
 func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, shardID byte, proposerOffset int, crossShards map[byte]uint64) (*ShardBlock, error) {
 	//============Build body=============
 	// Fetch Beacon information
-
+	fmt.Printf("[ndh] ========================== Creating shard block[%+v] ==============================", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
 	beaconHeight := blockgen.chain.BestState.Beacon.BeaconHeight
 	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
 	// fmt.Println("Shard Producer/NewBlockShard, Beacon Height", beaconHeight)
@@ -37,9 +37,10 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	fmt.Println("Shard Producer/NewBlockShard, Beacon Height", beaconHeight)
 	fmt.Println("Shard Producer/NewBlockShard, Beacon Hash", beaconHash)
 	fmt.Println("Shard Producer/NewBlockShard, Beacon Epoch", epoch)
+
 	//Fetch beacon block from height
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockgen.chain.config.DataBase, blockgen.chain.BestState.Shard[shardID].BeaconHeight+1, beaconHeight)
-	// fmt.Println("[voting] - newshard", blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight)
+	// fmt.Println("[ndh] - newshard", blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -125,7 +126,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	}
 	prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
 	prevBlockHash := prevBlock.Hash()
-
 	crossTransactionRoot, err := CreateMerkleCrossTransaction(block.Body.CrossTransactions)
 	if err != nil {
 		return nil, err

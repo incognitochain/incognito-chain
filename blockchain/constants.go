@@ -17,8 +17,8 @@ const (
 	ThresholdRatioOfDCBCrisis   = 9000
 	ThresholdRatioOfGOVCrisis   = 9000
 	ConstitutionPerBoard        = 10
-	EndOfFirstBoard             = 100
-	ExtendDurationForFirstBoard = 50
+	EndOfFirstBoard             = 50
+	ExtendDurationForFirstBoard = 30
 	BaseSalaryBoard             = 10000
 )
 
@@ -77,7 +77,7 @@ const (
 	TestnetInitCmBToken               = 0
 	TestnetInitBondToken              = 0
 	TestnetFeePerTxKb                 = 2
-	TestnetGenesisBlockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
+	TestnetGenesisBlockPaymentAddress = "1Uv46Pu4pqBvxCcPw7MXhHfiAD5Rmi2xgEE7XB6eQurFAt4vSYvfyGn3uMMB1xnXDq9nRTPeiAZv5gRFCBDroRNsXJF1sxPSjNQtivuHk"
 )
 
 // for beacon
@@ -136,5 +136,5 @@ const (
 // ---------------------------------------------
 
 var TestnetInitConstant = []string{
-	`{"Version":1,"Type":"s","LockTime":1553768899,"Fee":0,"Info":null,"SigPubKey":"AsKCsGYkt3JthzFysVzWHxkESGfEoSRFeWafGB+DZRQA","Sig":"MpZZJmgM61lNx3cqoC74qc/m+TCgrngctP/i+SusXNFmlgQzIE/1JoPnO9+4kbUp1jtLBWY80B629qWU/UiuHA==","Proof":"11111116WGHqpGKhPnvZ7i2w3heBopZQYdwc4cG7c4H53LZKzjBdafgMwxaXKzdaKCniFTXSdTm7rXCPeg5qqxB1hP3w2uNQRj5V6sX4F7n7SpDN6uYF18Y29NJNJxugr6R6WpYrSX9UVYbnBwEgnHPefMrzFMvTQDrqurWT2ZpVu7BDedZwkLoq61YTNeDRw2HGN2tLFyN7M2icsd7HhqWSpi","PubKeyLastByteSender":0,"Metadata":null}`,
+	`{"Version":1,"Type":"s","LockTime":1554269718,"Fee":0,"Info":null,"SigPubKey":"A58CKhajw92BH9mFlRBEbCrAOl8nzD9Ey4TdMLWDKL0A","Sig":"ZqtpQ/H30vwQSNMrNj5yU1CU4hH958AnxsXJVLaysV76IUDP3IN+FiII5nwVs8T4KRwsA60p7EMT7v1H95nN8A==","Proof":"11111116WGHqpGRpb156mNjZAF55nAeqtfP68nb2hQYXCzLzACytCMb85wsvL37QLnSmmFCf6UU4oWWQx1FtQQjmUW1ZFq6dBJt1GwQLNKGz8DqR4P2UfKN2eNXX83htr2AaLUUEQoSw1ntBaRq4ArQgkhT6oMzv5bHqRDbZdR5Z9yt4jZvHGveWdCowP5jRq1vH3j5Z92W9eguWWEhmkKe9hj","PubKeyLastByteSender":0,"Metadata":null}`,
 }

@@ -16,12 +16,14 @@ const (
 
 	RewardDCBProposalSubmitterIns
 	RewardGOVProposalSubmitterIns
-	ShareRewardOldDCBBoardIns
-	ShareRewardOldGOVBoardIns
+	ShareRewardOldDCBBoardSupportterIns
+	ShareRewardOldGOVBoardSupportterIns
 	SendBackTokenVoteBoardFailIns
 
 	ConfirmBuySellRequestMeta
 	ConfirmBuyBackRequestMeta
+	RewardDCBProposalVoterIns
+	RewardGOVProposalVoterIns
 )
 
 const (
