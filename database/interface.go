@@ -176,5 +176,8 @@ type DatabaseInterface interface {
 	GetMultiSigsRegistration([]byte) ([]byte, error)
 	GetBoardVoterList(boardType common.BoardType, chairPaymentAddress privacy.PaymentAddress, boardIndex uint32) []privacy.PaymentAddress
 
+	// bond
+	StoreSoldBondTypes(*common.Hash, []byte) error
+	GetSoldBondTypes() ([][]byte, error)
 	Close() error
 }
