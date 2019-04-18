@@ -330,7 +330,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 			return nil, NewRPCError(ErrTxNotExistedInMemAndBLock, errors.New("Tx is not existed in block or mempool"))
 		}
 		result, errM := rpcServer.revertTxToResponseObject(tx, nil, 0, 0, byte(0))
-		if errM != nil {
+		if errM.(*RPCError) != nil {
 			return nil, errM.(*RPCError)
 		}
 		result.IsInMempool = true
