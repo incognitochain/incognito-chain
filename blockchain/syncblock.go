@@ -53,6 +53,11 @@ func (blockchain *BlockChain) StartSyncBlk() {
 	insertPoolTicker := time.NewTicker(time.Millisecond * 100)
 	peersProcessTicker := time.NewTicker(defaultProcessPeerStateTime)
 
+	defer func() {
+		broadcastTicker.Stop()
+		insertPoolTicker.Stop()
+		peersProcessTicker.Stop()
+	}()
 	go func() {
 		for {
 			select {

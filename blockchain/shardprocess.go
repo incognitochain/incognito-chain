@@ -206,9 +206,11 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 	blockchain.config.TxPool.RemoveCandidateList(candidates)
 	blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
 	//Remove tx out of pool
-	for _, tx := range block.Body.Transactions {
-		blockchain.config.TxPool.RemoveTx(tx)
-	}
+	go func() {
+		for _, tx := range block.Body.Transactions {
+			blockchain.config.TxPool.RemoveTx(tx)
+		}
+	}()
 
 	//========Store new  Shard block and new shard bestState
 	err = blockchain.ProcessStoreShardBlock(block)
