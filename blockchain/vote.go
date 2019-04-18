@@ -63,7 +63,7 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 	CountVote map[common.Hash]uint32,
 	err error,
 ) {
-	fmt.Println("[voting] [--- Build vote table ---]")
+	fmt.Println("[ndh] [--- Build vote table ---]")
 	VoteTable = make(map[common.Hash][]privacy.PaymentAddress)
 	CountVote = make(map[common.Hash]uint32)
 
@@ -86,7 +86,7 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 		key := iter.Key()
 		value := iter.Value()
 		_, constitutionIndex, voterPayment, err := lvdb.ParseKeyVoteProposal(key)
-		fmt.Printf("[voting] ==> constitution Index: %+v; voterPayment: %+v; rightIndex: %+v\n", constitutionIndex, voterPayment, rightIndex)
+		fmt.Printf("[ndh] ==> constitution Index: %+v; voterPayment: %+v; rightIndex: %+v\n", constitutionIndex, voterPayment, rightIndex)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -107,7 +107,7 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 		VoteTable[*proposalTxID] = append(VoteTable[*proposalTxID], *voterPayment)
 		CountVote[*proposalTxID] += 1
 	}
-	fmt.Println("[voting] [+++ Build vote table +++]")
+	fmt.Println("[ndh] [+++ Build vote table +++]")
 	return
 }
 
@@ -116,11 +116,11 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 ) ([]frombeaconins.InstructionFromBeacon, error) {
 	currentConstitutionIndex := helper.GetConstitutionInfo(self).ConstitutionIndex
 	nextConstitutionIndex := currentConstitutionIndex + 1
-	fmt.Println("[voting] - create accept constitution nextConstitutionIndex: ", nextConstitutionIndex)
+	fmt.Println("[ndh] - create accept constitution nextConstitutionIndex: ", nextConstitutionIndex)
 	resIns := make([]frombeaconins.InstructionFromBeacon, 0)
 	VoteTable, CountVote, err := self.BuildVoteTableAndPunishTransaction(helper, nextConstitutionIndex)
 	if err != nil {
-		fmt.Printf("[voting] - error here %+v\n", err)
+		fmt.Printf("[ndh] - error here %+v\n", err)
 		return nil, err
 	}
 	bestProposal := metadata.ProposalVote{
@@ -135,7 +135,7 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 		}
 	}
 	if bestProposal.NumberOfVote == 0 {
-		fmt.Printf("[voting] - Number of vote is zero \n")
+		fmt.Printf("[ndh] - Number of vote is zero \n")
 		return resIns, nil
 	}
 
@@ -184,9 +184,9 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 				}
 			}
 		}
-		fmt.Println("[voting] - - - - Fund Update - ", helper.GetBoardFund(self))
+		fmt.Println("[ndh] - - - - Fund Update - ", helper.GetBoardFund(self))
 	}
-	fmt.Println("[voting] - - - - - - end createAcceptConstitutionAndRewardSubmitter", resIns)
+	fmt.Println("[ndh] - - - - - - end createAcceptConstitutionAndRewardSubmitter", resIns)
 	return resIns, nil
 }
 
@@ -197,7 +197,7 @@ func (self *BlockChain) createAcceptBoardIns(
 ) ([]frombeaconins.InstructionFromBeacon, error) {
 	acceptBoardIns := frombeaconins.NewAcceptBoardIns(boardType, BoardPaymentAddress, sumOfVote)
 	inst, _ := acceptBoardIns.GetStringFormat()
-	fmt.Println("[voting] -  SendBackToken to vote failed acceptBoardIns", inst)
+	fmt.Println("[ndh] -  SendBackToken to vote failed acceptBoardIns", inst)
 	if len(inst) != 0 {
 		return []frombeaconins.InstructionFromBeacon{acceptBoardIns}, nil
 	} else {
@@ -256,7 +256,7 @@ func (self *BlockChain) createSendBackTokenAfterVoteFailIns(
 	newGovernorList []privacy.PaymentAddress,
 	helper ConstitutionHelper,
 ) ([]frombeaconins.InstructionFromBeacon, error) {
-	fmt.Println("[voting]- Enter createSendBackTokenAfterVoteFailIns")
+	fmt.Println("[ndh]- Enter createSendBackTokenAfterVoteFailIns")
 	var propertyID common.Hash
 	if boardType == common.DCBBoard {
 		propertyID = common.DCBTokenID
@@ -268,14 +268,14 @@ func (self *BlockChain) createSendBackTokenAfterVoteFailIns(
 		setOfNewGovernor[string(i.Bytes())] = true
 	}
 	currentBoardIndex := self.GetCurrentBoardIndex(helper)
-	fmt.Println("[voting] - Current board index: ", currentBoardIndex)
+	fmt.Println("[ndh] - Current board index: ", currentBoardIndex)
 	// db := self.config.DataBase
 	// gg := lvdb.ViewDBByPrefix(db, lvdb.VoteBoardListPrefix)
-	// fmt.Println("[voting] - START watch db when send back token:")
+	// fmt.Println("[ndh] - START watch db when send back token:")
 	// for key, value := range gg {
-	// 	fmt.Println("[voting] - ", key, value)
+	// 	fmt.Println("[ndh] - ", key, value)
 	// }
-	// fmt.Println("[voting] - END watch db when send back token:")
+	// fmt.Println("[ndh] - END watch db when send back token:")
 	begin := lvdb.GetKeyVoteBoardList(boardType, 0, nil, nil)
 	end := lvdb.GetKeyVoteBoardList(boardType, currentBoardIndex+2, nil, nil)
 	searchRange := util.Range{
@@ -303,14 +303,14 @@ func (self *BlockChain) createSendBackTokenAfterVoteFailIns(
 				inst,
 			)
 			instString, _ := inst.GetStringFormat()
-			fmt.Println("[voting]-SendBackIns: ", instString)
+			fmt.Println("[ndh]-SendBackIns: ", instString)
 			err := self.config.DataBase.Delete(key)
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
-	fmt.Println("[voting]- createSendBackTokenAfterVoteFailIns ok", listNewIns)
+	fmt.Println("[ndh]- createSendBackTokenAfterVoteFailIns ok", listNewIns)
 	return listNewIns, nil
 }
 
@@ -342,7 +342,7 @@ func (chain *BlockChain) CreateShareRewardOldBoardIns(
 ) []frombeaconins.InstructionFromBeacon {
 	Ins := make([]frombeaconins.InstructionFromBeacon, 0)
 	boardIndex := chain.GetCurrentBoardIndex(helper)
-	fmt.Printf("[voting] ------------------- Create Share Reward Old Board Ins to %+v %+v\n", chairPaymentAddress, totalAmountCoinReward)
+	fmt.Printf("[ndh] ------------------- Create Share Reward Old Board Ins to %+v %+v\n", chairPaymentAddress, totalAmountCoinReward)
 	voterList := chain.config.DataBase.GetBoardVoterList(helper.GetBoardType(), chairPaymentAddress, boardIndex)
 	for _, voter := range voterList {
 		amountOfVote := helper.GetAmountOfVoteToBoard(chain, chairPaymentAddress, voter, boardIndex)
@@ -368,19 +368,19 @@ func (self *BlockChain) CreateUpdateNewGovernorInstruction(
 ) ([]frombeaconins.InstructionFromBeacon, error) {
 	instructions := make([]frombeaconins.InstructionFromBeacon, 0)
 	newBoardList, err := self.config.DataBase.GetTopMostVoteGovernor(helper.GetBoardType(), self.GetCurrentBoardIndex(helper)+1)
-	fmt.Println("[voting] - SendBackToken to vote failed Enter function")
+	fmt.Println("[ndh] - SendBackToken to vote failed Enter function")
 	if err != nil {
-		fmt.Println("[voting] - Error 1", err)
+		fmt.Println("[ndh] - Error 1", err)
 		if reflect.TypeOf(err).String() == "*database.DatabaseError" {
 			return nil, nil
 		}
 		return nil, err
 	}
 	if len(newBoardList) == 0 {
-		fmt.Println("[voting] - not enough candidate")
+		fmt.Println("[ndh] - not enough candidate")
 		return nil, errors.New("not enough candidate")
 	}
-	fmt.Println("[voting] -  SendBackToken to vote failed Get top most vote governor ok")
+	fmt.Println("[ndh] -  SendBackToken to vote failed Get top most vote governor ok")
 	sort.Sort(newBoardList)
 	sumOfVote := uint64(0)
 	var newBoardPaymentAddress []privacy.PaymentAddress
@@ -400,7 +400,7 @@ func (self *BlockChain) CreateUpdateNewGovernorInstruction(
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("[voting]-acceptBoardIns ok")
+	fmt.Println("[ndh]-acceptBoardIns ok")
 	if acceptBoardIns != nil {
 		instructions = append(instructions, acceptBoardIns...)
 	}
@@ -410,11 +410,11 @@ func (self *BlockChain) CreateUpdateNewGovernorInstruction(
 		helper,
 	)
 	if err != nil {
-		fmt.Println("[voting]- err", err)
+		fmt.Println("[ndh]- err", err)
 		return nil, err
 	}
 	instructions = append(instructions, sendBackTokenAfterVoteFailIns...)
-	fmt.Println("[voting]-Update new governor inst ok", sendBackTokenAfterVoteFailIns)
+	fmt.Println("[ndh]-Update new governor inst ok", sendBackTokenAfterVoteFailIns)
 	return instructions, nil
 }
 
@@ -448,13 +448,13 @@ func (chain *BlockChain) neededNewGovernor(helper ConstitutionHelper) bool {
 	if constitutionIndex == 0 {
 		return false
 	}
-	fmt.Println("[voting] - neededNewGovernor", chain.GetCurrentBoardIndex(helper), constitutionIndex, ConstitutionPerBoard, (constitutionIndex%ConstitutionPerBoard) == 0)
+	fmt.Println("[ndh] - neededNewGovernor", chain.GetCurrentBoardIndex(helper), constitutionIndex, ConstitutionPerBoard, (constitutionIndex%ConstitutionPerBoard) == 0)
 	return (constitutionIndex % ConstitutionPerBoard) == 0
 }
 
 func (chain *BlockChain) neededFirstNewGovernor(helper ConstitutionHelper) bool {
-	fmt.Println("[voting] - chain BeaconHeight of BestState", chain.BestState.Beacon.BeaconHeight, helper.GetBoardType())
-	fmt.Println("[voting] - Current board index ", chain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardIndex, chain.BestState.Beacon.StabilityInfo.GOVGovernor.BoardIndex)
+	fmt.Println("[ndh] - chain BeaconHeight of BestState", chain.BestState.Beacon.BeaconHeight, helper.GetBoardType())
+	fmt.Println("[ndh] - Current board index ", chain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardIndex, chain.BestState.Beacon.StabilityInfo.GOVGovernor.BoardIndex)
 	if helper.GetBoardType() == common.DCBBoard {
 		if chain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardIndex > 1 {
 			return false
@@ -465,7 +465,7 @@ func (chain *BlockChain) neededFirstNewGovernor(helper ConstitutionHelper) bool 
 		}
 	}
 	if EndOfFirstBoard == chain.BestState.Beacon.BeaconHeight {
-		fmt.Println("[voting] -  EndOfFirstBoard vs BeaconHeight", EndOfFirstBoard, chain.BestState.Beacon.BeaconHeight)
+		fmt.Println("[ndh] -  EndOfFirstBoard vs BeaconHeight", EndOfFirstBoard, chain.BestState.Beacon.BeaconHeight)
 		return true
 	}
 	if (EndOfFirstBoard < chain.BestState.Beacon.BeaconHeight) && ((chain.BestState.Beacon.BeaconHeight-EndOfFirstBoard)%ExtendDurationForFirstBoard == 0) {
@@ -481,7 +481,7 @@ func (chain *BlockChain) neededNewConstitution(helper ConstitutionHelper) bool {
 		return false
 	}
 	endBlock := helper.GetConstitutionEndedBlockHeight(chain)
-	fmt.Println("[voting] - neededNewConstitution: ", endBlock, chain.BestState.Beacon.BeaconHeight)
+	fmt.Println("[ndh] - neededNewConstitution: ", endBlock, chain.BestState.Beacon.BeaconHeight)
 	if chain.BestState.Beacon.BeaconHeight >= endBlock {
 		return true
 	}
@@ -491,16 +491,16 @@ func (chain *BlockChain) neededNewConstitution(helper ConstitutionHelper) bool {
 func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper) ([][]string, error) {
 
 	instructions := make([]frombeaconins.InstructionFromBeacon, 0)
-	fmt.Println("[voting]-Enter generateVotingInstructionWOIns")
+	fmt.Println("[ndh]-Enter generateVotingInstructionWOIns")
 	if self.neededFirstNewGovernor(helper) {
-		fmt.Println("[voting]-[neededNewGovernor]-Create first instruction")
+		fmt.Println("[ndh]-[neededNewGovernor]-Create first instruction")
 		updateGovernorInstruction, err := self.CreateUpdateNewGovernorInstruction(helper)
 		if err != nil {
 			return nil, err
 		}
 		for _, inst := range updateGovernorInstruction {
 			instString, _ := inst.GetStringFormat()
-			fmt.Println("[voting]-[neededNewGovernor] - Created ", instString)
+			fmt.Println("[ndh]-[neededNewGovernor] - Created ", instString)
 		}
 		if len(updateGovernorInstruction) != 0 {
 			instructions = append(instructions, updateGovernorInstruction...)
@@ -519,9 +519,9 @@ func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper
 			if err != nil {
 				return nil, err
 			}
-			fmt.Println("[voting] - updateProposalInstruction : ", updateProposalInstruction)
+			fmt.Println("[ndh] - updateProposalInstruction : ", updateProposalInstruction)
 			if len(updateProposalInstruction) != 0 {
-				fmt.Println("[voting] - updateProposalInstruction ok: ", updateProposalInstruction)
+				fmt.Println("[ndh] - updateProposalInstruction ok: ", updateProposalInstruction)
 				instructions = append(instructions, updateProposalInstruction...)
 			}
 			//============================ VOTE BOARD
@@ -542,7 +542,7 @@ func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("[voting] - ", newIns)
+		fmt.Println("[ndh] - ", newIns)
 		if len(newIns) != 0 {
 			instructionsString = append(instructionsString, newIns)
 		}

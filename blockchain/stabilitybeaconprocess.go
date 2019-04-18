@@ -34,29 +34,29 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 	case strconv.Itoa(metadata.LoanResponseMeta):
 		return bsb.processLoanResponseInstruction(inst)
 	case strconv.Itoa(component.AcceptDCBBoardIns):
-		fmt.Println("[voting] - Accept DCB Board intruction", inst)
+		fmt.Println("[ndh] - Accept DCB Board intruction", inst)
 		acceptDCBBoardIns := frombeaconins.AcceptDCBBoardIns{}
 		err := json.Unmarshal([]byte(inst[2]), &acceptDCBBoardIns)
 		if err != nil {
-			fmt.Println("[voting] - Accept DCB Board intruction ERRORRRRRRRRRRRRRRR", err)
+			fmt.Println("[ndh] - Accept DCB Board intruction ERRORRRRRRRRRRRRRRR", err)
 			return err
 		}
 		err = bsb.UpdateDCBBoard(acceptDCBBoardIns)
 		if err != nil {
-			fmt.Println("[voting] - Accept DCB Board intruction ERRORRRRRRRRRRRRRRR2", err)
+			fmt.Println("[ndh] - Accept DCB Board intruction ERRORRRRRRRRRRRRRRR2", err)
 			return err
 		}
 	case strconv.Itoa(component.AcceptGOVBoardIns):
-		fmt.Println("[voting] - Accept GOV Board intruction", inst)
+		fmt.Println("[ndh] - Accept GOV Board intruction", inst)
 		acceptGOVBoardIns := frombeaconins.AcceptGOVBoardIns{}
 		err := json.Unmarshal([]byte(inst[2]), &acceptGOVBoardIns)
 		if err != nil {
-			fmt.Println("[voting] - Accept GOV Board intruction ERRORRRRRRRRRRRRRRR", err)
+			fmt.Println("[ndh] - Accept GOV Board intruction ERRORRRRRRRRRRRRRRR", err)
 			return err
 		}
 		err = bsb.UpdateGOVBoard(acceptGOVBoardIns)
 		if err != nil {
-			fmt.Println("[voting] - Accept GOV Board intruction ERRORRRRRRRRRRRRRRR2", err)
+			fmt.Println("[ndh] - Accept GOV Board intruction ERRORRRRRRRRRRRRRRR2", err)
 			return err
 		}
 	case strconv.Itoa(component.ShareRewardOldDCBBoardSupportterIns):

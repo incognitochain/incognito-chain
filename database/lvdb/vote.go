@@ -27,7 +27,7 @@ func (db *db) AddVoteBoard(
 	amount uint64,
 ) error {
 	//add to sum amount of vote token to this candidate
-	fmt.Println("[voting] - [Add Vote Board] Enter add vote board", boardType, boardIndex)
+	fmt.Println("[ndh] - [Add Vote Board] Enter add vote board", boardType, boardIndex)
 	key := GetKeyVoteBoardSum(boardType, boardIndex, &CandidatePaymentAddress)
 
 	currentVoteInBytes, err := db.lvdb.Get(key, nil)
@@ -35,7 +35,7 @@ func (db *db) AddVoteBoard(
 		currentVoteInBytes = make([]byte, 8)
 		binary.LittleEndian.PutUint64(currentVoteInBytes, uint64(0))
 	}
-	fmt.Printf("[voting] - [Add Vote Board] %+v - %+v\n", CandidatePaymentAddress, currentVoteInBytes)
+	fmt.Printf("[ndh] - [Add Vote Board] %+v - %+v\n", CandidatePaymentAddress, currentVoteInBytes)
 	currentVote := binary.LittleEndian.Uint64(currentVoteInBytes)
 	newVote := currentVote + amount
 
@@ -43,7 +43,7 @@ func (db *db) AddVoteBoard(
 	binary.LittleEndian.PutUint64(newVoteInBytes, newVote)
 	err = db.Put(key, newVoteInBytes)
 	if err != nil {
-		fmt.Println("[voting] - [Add Vote Board] - Error1: ", err)
+		fmt.Println("[ndh] - [Add Vote Board] - Error1: ", err)
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 
@@ -60,7 +60,7 @@ func (db *db) AddVoteBoard(
 	binary.LittleEndian.PutUint32(newCountInByte, newCount)
 	err = db.Put(key, newCountInByte)
 	if err != nil {
-		fmt.Println("[voting] - [Add Vote Board] - Error2: ", err)
+		fmt.Println("[ndh] - [Add Vote Board] - Error2: ", err)
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 
@@ -75,11 +75,11 @@ func (db *db) AddVoteBoard(
 	newAmountInByte := GetValueVoteBoardList(newAmount)
 	err = db.Put(key, newAmountInByte)
 	// gg := ViewDBByPrefix(db, VoteBoardListPrefix)
-	// fmt.Println("[voting] - START watch db when add Vote:")
+	// fmt.Println("[ndh] - START watch db when add Vote:")
 	// for key, value := range gg {
-	// 	fmt.Println("[voting] - ", key, value)
+	// 	fmt.Println("[ndh] - ", key, value)
 	// }
-	// fmt.Println("[voting] - END watch db when add Vote:")
+	// fmt.Println("[ndh] - END watch db when add Vote:")
 	return err
 }
 
@@ -274,7 +274,7 @@ func (db *db) GetBoardVoterList(boardType common.BoardType, candidatePaymentAddr
 }
 
 func (db *db) AddBoardFundDB(boardType common.BoardType, constitutionIndex uint32, amountOfBoardFund uint64) error {
-	fmt.Printf("[voting]-[boardfund] - %+v %+v %+v \n", boardType, constitutionIndex, amountOfBoardFund)
+	fmt.Printf("[ndh]-[boardfund] - %+v %+v %+v \n", boardType, constitutionIndex, amountOfBoardFund)
 	key := GetKeyBoardFund(boardType, constitutionIndex)
 	ok, err := db.HasValue(key)
 	if err != nil {
@@ -301,7 +301,7 @@ func (db *db) GetBoardFundDB(boardType common.BoardType, constitutionIndex uint3
 }
 
 func (db *db) AddConstantsPriceDB(constitutionIndex uint32, price uint64) error {
-	fmt.Printf("[voting]-[constantprice] %+v %+v\n", constitutionIndex, price)
+	fmt.Printf("[ndh]-[constantprice] %+v %+v\n", constitutionIndex, price)
 	key := GetKeyConstantsPrice(constitutionIndex)
 	ok, err := db.HasValue(key)
 	if err != nil {
