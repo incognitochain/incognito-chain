@@ -34,7 +34,7 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 }
 func (sm *StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
 	SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR := bcr.GetAllCommitteeValidatorCandidate()
-	senderPubkeyString := base58.Base58Check{}.Encode(txr.GetSigPubKey(), byte(0x00))
+	senderPubkeyString := base58.Base58Check{}.Encode(txr.GetSigPubKey(), common.ZeroByte)
 	tempStaker := []string{senderPubkeyString}
 	for _, committees := range SC {
 		tempStaker = GetValidStaker(committees, tempStaker)
@@ -106,11 +106,11 @@ func (sm *StakingMetadata) CalculateSize() uint64 {
 }
 
 func GetBeaconStakeAmount() uint64 {
-	const STAKE_BEACON_AMOUNT = 2000
+	const STAKE_BEACON_AMOUNT = 20000
 	return STAKE_BEACON_AMOUNT
 }
 
 func GetShardStateAmount() uint64 {
-	const STAKE_SHARD_AMOUNT = 1000
+	const STAKE_SHARD_AMOUNT = 10000
 	return STAKE_SHARD_AMOUNT
 }

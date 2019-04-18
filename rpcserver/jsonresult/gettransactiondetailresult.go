@@ -24,4 +24,7 @@ type TransactionDetail struct {
 	Metadata               string `json:"Metadata"`
 	CustomTokenData        string `json:"CustomTokenData"`
 	PrivacyCustomTokenData string `json:"PrivacyCustomTokenData"`
+
+	IsInMempool bool `json:"IsInMempool"`
+	IsInBlock   bool `json:"IsInBlock"`
 }
