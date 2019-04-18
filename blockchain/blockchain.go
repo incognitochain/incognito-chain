@@ -1432,9 +1432,10 @@ func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
 		return err
 	}
 	boardType := common.GOVBoard
-	constitution := bc.GetConstitution(boardType)
+	constitution := bc.GetConstitution(boardType) // last constitution
 	nextConstitutionIndex := constitution.GetConstitutionIndex() + 1
-	err = bc.GetDatabase().SetNewProposalWinningVoter(
+	db := bc.GetDatabase()
+	err = db.SetNewProposalWinningVoter(
 		boardType,
 		nextConstitutionIndex,
 		updateConstitutionIns.Voters,
@@ -1442,6 +1443,21 @@ func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
 	if err != nil {
 		return err
 	}
+
+	// store unique info of bonds to db if any
+	sellingBondsParams := updateConstitutionIns.GOVParams.SellingBonds
+	if sellingBondsParams != nil {
+		bondID := sellingBondsParams.GetID()
+		sellingBondsParamsBytes, err := json.Marshal(sellingBondsParams)
+		if err != nil {
+			return err
+		}
+		err = db.StoreSoldBondTypes(bondID, sellingBondsParamsBytes)
+		if err != nil {
+			return err
+		}
+	}
+
 	err = bc.BestState.Beacon.processUpdateGOVProposalInstruction(*updateConstitutionIns)
 	if err != nil {
 		return err
