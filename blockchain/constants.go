@@ -64,14 +64,14 @@ const (
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 
-	TestNetShardCommitteeSize  = 4
-	TestNetBeaconCommitteeSize = 4
+	TestNetShardCommitteeSize  = 3
+	TestNetBeaconCommitteeSize = 3
 	TestNetActiveShards        = 2
 
 	//board and proposal parameters
 	TestnetSalaryPerTx                = 1
-	TestnetBasicSalary                = 0
-	TestnetInitFundSalary             = 0
+	TestnetBasicSalary                = 100
+	TestnetInitFundSalary             = 100000
 	TestnetInitDCBToken               = 10000
 	TestnetInitGovToken               = 10000
 	TestnetInitCmBToken               = 0

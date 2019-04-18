@@ -31,7 +31,7 @@ func (bc *BlockChain) verifyBuyFromGOVRequestTx(
 		return nil
 	}
 
-	fmt.Printf("[db] verifying buy from GOV Request tx\n")
+	fmt.Printf("[db] verifying buy from GOV Request tx: %h\n", tx.Hash())
 	idx := -1
 	for i, inst := range insts {
 		if instUsed[i] > 0 || inst[0] != strconv.Itoa(metadata.TradeActivationMeta) || inst[1] != strconv.Itoa(int(shardID)) {

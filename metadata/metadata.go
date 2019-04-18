@@ -50,11 +50,6 @@ func (mb *MetadataBase) Hash() *common.Hash {
 	return &hash
 }
 
-func (mb *MetadataBase) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
-	// TODO: 0xjackalope
-	return true
-}
-
 func (mb *MetadataBase) CheckTransactionFee(tx Transaction, minFeePerKbTx uint64) bool {
 	txFee := tx.GetTxFee()
 	fullFee := minFeePerKbTx * tx.GetTxActualSize()
@@ -154,7 +149,6 @@ type Metadata interface {
 	// isContinue, ok, err
 	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
-	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool
 	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
 	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
 	ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error
