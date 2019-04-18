@@ -13,7 +13,9 @@ type DatabaseInterface interface {
 	AddTransaction(key *common.Hash, value []byte) error
 	RemoveTransaction(key *common.Hash) error
 	GetTransaction(key *common.Hash) ([]byte, error)
+	HasTransaction(key *common.Hash) (bool, error)
 	Reset() error
+	Load() ([][]byte, error)
 	
 	Close() error
 }
