@@ -298,7 +298,14 @@ func IndexOfStr(item string, list []string) int {
 	}
 	return -1
 }
-
+func IndexOfStrInHashMap(v string, m map[Hash]string) int {
+	for _, value := range m {
+		if strings.Compare(value, v) == 0 {
+			return 1
+		}
+	}
+	return -1
+}
 func ValidateNodeAddress(nodeAddr string) bool {
 	if len(nodeAddr) == 0 {
 		return false

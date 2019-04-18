@@ -92,6 +92,9 @@ type RpcServerConfig struct {
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
 	FeeEstimator map[byte]*mempool.FeeEstimator
+
+	IsMiningNode    bool   // flag mining node. True: mining, False: not mining
+	MiningPubKeyB58 string // base58check encode of mining pubkey
 }
 
 func (rpcServer *RpcServer) Init(config *RpcServerConfig) {
@@ -297,7 +300,7 @@ func (rpcServer RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	// Logger.log.Info(string(body))
-	log.Println(string(body))
+	// log.Println(string(body))
 
 	// Unfortunately, the http server doesn't provide the ability to
 	// change the read deadline for the new connection and having one breaks
