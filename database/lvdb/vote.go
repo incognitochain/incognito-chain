@@ -250,8 +250,8 @@ func (db *db) GetCurrentProposalWinningVoter(boardType common.BoardType, constit
 	if err != nil {
 		return nil, err
 	}
-	res := decompListPaymentAddressesByte(value)
-	return res, nil
+	res, err1 := decompListPaymentAddressesByte(value)
+	return res, err1
 }
 
 func (db *db) GetBoardVoterList(boardType common.BoardType, candidatePaymentAddress privacy.PaymentAddress, boardIndex uint32) []privacy.PaymentAddress {
@@ -365,11 +365,13 @@ func concatListPaymentAddresses(paymentAddresses []privacy.PaymentAddress) []byt
 	return res
 }
 
-func decompListPaymentAddressesByte(paymentAddressesByte []byte) []privacy.PaymentAddress {
-	//todo handle error
+func decompListPaymentAddressesByte(paymentAddressesByte []byte) ([]privacy.PaymentAddress, error) {
+	if len(paymentAddressesByte)%common.PaymentAddressLength != 0 {
+		return nil, errors.New("Wrong payment address length")
+	}
 	res := make([]privacy.PaymentAddress, len(paymentAddressesByte)/common.PaymentAddressLength)
 	for i, paymentAddress := range res {
 		(&paymentAddress).SetBytes(paymentAddressesByte[i*common.PaymentAddressLength : (i+1)*common.PaymentAddressLength])
 	}
-	return res
+	return res, nil
 }
