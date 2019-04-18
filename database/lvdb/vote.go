@@ -27,7 +27,7 @@ func (db *db) AddVoteBoard(
 	amount uint64,
 ) error {
 	//add to sum amount of vote token to this candidate
-	fmt.Println("[voting] - [Add Vote Board] Enter add vote board", boardType, boardIndex)
+	fmt.Println("[ndh] - [Add Vote Board] Enter add vote board", boardType, boardIndex)
 	key := GetKeyVoteBoardSum(boardType, boardIndex, &CandidatePaymentAddress)
 
 	currentVoteInBytes, err := db.lvdb.Get(key, nil)
@@ -35,7 +35,7 @@ func (db *db) AddVoteBoard(
 		currentVoteInBytes = make([]byte, 8)
 		binary.LittleEndian.PutUint64(currentVoteInBytes, uint64(0))
 	}
-	fmt.Printf("[voting] - [Add Vote Board] %+v - %+v\n", CandidatePaymentAddress, currentVoteInBytes)
+	fmt.Printf("[ndh] - [Add Vote Board] %+v - %+v\n", CandidatePaymentAddress, currentVoteInBytes)
 	currentVote := binary.LittleEndian.Uint64(currentVoteInBytes)
 	newVote := currentVote + amount
 
@@ -43,7 +43,7 @@ func (db *db) AddVoteBoard(
 	binary.LittleEndian.PutUint64(newVoteInBytes, newVote)
 	err = db.Put(key, newVoteInBytes)
 	if err != nil {
-		fmt.Println("[voting] - [Add Vote Board] - Error1: ", err)
+		fmt.Println("[ndh] - [Add Vote Board] - Error1: ", err)
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 
@@ -60,7 +60,7 @@ func (db *db) AddVoteBoard(
 	binary.LittleEndian.PutUint32(newCountInByte, newCount)
 	err = db.Put(key, newCountInByte)
 	if err != nil {
-		fmt.Println("[voting] - [Add Vote Board] - Error2: ", err)
+		fmt.Println("[ndh] - [Add Vote Board] - Error2: ", err)
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 
@@ -75,11 +75,11 @@ func (db *db) AddVoteBoard(
 	newAmountInByte := GetValueVoteBoardList(newAmount)
 	err = db.Put(key, newAmountInByte)
 	// gg := ViewDBByPrefix(db, VoteBoardListPrefix)
-	// fmt.Println("[voting] - START watch db when add Vote:")
+	// fmt.Println("[ndh] - START watch db when add Vote:")
 	// for key, value := range gg {
-	// 	fmt.Println("[voting] - ", key, value)
+	// 	fmt.Println("[ndh] - ", key, value)
 	// }
-	// fmt.Println("[voting] - END watch db when add Vote:")
+	// fmt.Println("[ndh] - END watch db when add Vote:")
 	return err
 }
 
@@ -250,8 +250,8 @@ func (db *db) GetCurrentProposalWinningVoter(boardType common.BoardType, constit
 	if err != nil {
 		return nil, err
 	}
-	res := decompListPaymentAddressesByte(value)
-	return res, nil
+	res, err1 := decompListPaymentAddressesByte(value)
+	return res, err1
 }
 
 func (db *db) GetBoardVoterList(boardType common.BoardType, candidatePaymentAddress privacy.PaymentAddress, boardIndex uint32) []privacy.PaymentAddress {
@@ -273,6 +273,89 @@ func (db *db) GetBoardVoterList(boardType common.BoardType, candidatePaymentAddr
 	return listVoter
 }
 
+func (db *db) AddBoardFundDB(boardType common.BoardType, constitutionIndex uint32, amountOfBoardFund uint64) error {
+	fmt.Printf("[ndh]-[boardfund] - %+v %+v %+v \n", boardType, constitutionIndex, amountOfBoardFund)
+	key := GetKeyBoardFund(boardType, constitutionIndex)
+	ok, err := db.HasValue(key)
+	if err != nil {
+		return err
+	}
+	if ok {
+		return errors.Errorf("Can not update board fund")
+	}
+	err = db.Put(key, common.Uint64ToBytes(amountOfBoardFund))
+	return err
+}
+
+func (db *db) GetBoardFundDB(boardType common.BoardType, constitutionIndex uint32) (uint64, error) {
+	key := GetKeyBoardFund(boardType, constitutionIndex)
+	ok, err := db.HasValue(key)
+	if err != nil {
+		return 0, err
+	}
+	if ok {
+		byteTemp, _ := db.Get(key)
+		return common.BytesToUint64(byteTemp), nil
+	}
+	return 0, errors.Errorf("Board Fund not found")
+}
+
+func (db *db) AddConstantsPriceDB(constitutionIndex uint32, price uint64) error {
+	fmt.Printf("[ndh]-[constantprice] %+v %+v\n", constitutionIndex, price)
+	key := GetKeyConstantsPrice(constitutionIndex)
+	ok, err := db.HasValue(key)
+	if err != nil {
+		return err
+	}
+	if ok {
+		valueBytes, _ := db.Get(key)
+		value := common.BytesToUint64(valueBytes)
+		value += price
+		err = db.Put(key, common.Uint64ToBytes(value))
+		return err
+	}
+	err = db.Put(key, common.Uint64ToBytes(price))
+	return err
+}
+
+func (db *db) DeleteAnyProposalButThisDB(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte) error {
+	begin := GetKeySubmitProposal(boardType, constitutionIndex, nil)
+	end := GetKeySubmitProposal(boardType, constitutionIndex+1, nil)
+	searchRange := util.Range{
+		Start: begin,
+		Limit: end,
+	}
+	iter := db.NewIterator(&searchRange, nil)
+	for iter.Next() {
+		key := iter.Key()
+		_, _, proposalTxIDTemp, err := ParseKeySubmitProposal(key)
+		if err != nil {
+			return err
+		}
+		if !common.ByteEqual(proposalTxID, proposalTxIDTemp) {
+			err = db.Delete(key)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (db *db) GetProposalSubmitterByConstitutionIndexDB(boardType common.BoardType, constitutionIndex uint32) ([]byte, error) {
+	begin := GetKeySubmitProposal(boardType, constitutionIndex, nil)
+	end := GetKeySubmitProposal(boardType, constitutionIndex+1, nil)
+	searchRange := util.Range{
+		Start: begin,
+		Limit: end,
+	}
+	iter := db.NewIterator(&searchRange, nil)
+	for iter.Next() {
+		return iter.Value(), nil
+	}
+	return nil, errors.Errorf("Proposal submitter not found")
+}
+
 func concatListPaymentAddresses(paymentAddresses []privacy.PaymentAddress) []byte {
 	res := make([]byte, len(paymentAddresses)*common.PaymentAddressLength)
 	i := 0
@@ -282,11 +365,13 @@ func concatListPaymentAddresses(paymentAddresses []privacy.PaymentAddress) []byt
 	return res
 }
 
-func decompListPaymentAddressesByte(paymentAddressesByte []byte) []privacy.PaymentAddress {
-	//todo handle error
+func decompListPaymentAddressesByte(paymentAddressesByte []byte) ([]privacy.PaymentAddress, error) {
+	if len(paymentAddressesByte)%common.PaymentAddressLength != 0 {
+		return nil, errors.New("Wrong payment address length")
+	}
 	res := make([]privacy.PaymentAddress, len(paymentAddressesByte)/common.PaymentAddressLength)
 	for i, paymentAddress := range res {
 		(&paymentAddress).SetBytes(paymentAddressesByte[i*common.PaymentAddressLength : (i+1)*common.PaymentAddressLength])
 	}
-	return res
+	return res, nil
 }

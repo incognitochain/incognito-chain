@@ -1405,6 +1405,7 @@ func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
 
 func (bc *BlockChain) processUpdateDCBConstitutionIns(inst []string) error {
 	updateConstitutionIns, err := frombeaconins.NewUpdateDCBConstitutionInsFromStr(inst)
+	fmt.Printf("[ndh] Update DCB constitution instrucstion %+v\n", updateConstitutionIns)
 	if err != nil {
 		return err
 	}
@@ -1423,11 +1424,13 @@ func (bc *BlockChain) processUpdateDCBConstitutionIns(inst []string) error {
 	if err != nil {
 		return err
 	}
+	bc.GetDatabase().AddBoardFundDB(boardType, constitution.GetConstitutionIndex(), bc.BestState.Beacon.StabilityInfo.BankFund)
 	return nil
 }
 
 func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
 	updateConstitutionIns, err := frombeaconins.NewUpdateGOVConstitutionInsFromStr(inst)
+	fmt.Printf("[ndh] Update DCB constitution instrucstion %+v\n", updateConstitutionIns)
 	if err != nil {
 		return err
 	}
@@ -1446,5 +1449,6 @@ func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
 	if err != nil {
 		return err
 	}
+	bc.GetDatabase().AddBoardFundDB(boardType, constitution.GetConstitutionIndex(), bc.BestState.Beacon.StabilityInfo.SalaryFund)
 	return nil
 }
