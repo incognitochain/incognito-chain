@@ -132,13 +132,13 @@ func CreateShardInstructionsFromTransactionAndIns(
 	stakeBeaconPubKey := []string{}
 	instructions, err = buildStabilityActions(transactions, bc, shardID, producerAddress, shardBlockHeight, beaconBlocks, beaconHeight)
 	if err != nil {
-		fmt.Println("[voting] - wtf err???", err)
+		fmt.Println("[ndh] - wtf err???", err)
 		return nil, err
 	}
 
 	for _, tx := range transactions {
 		if tx.GetMetadataType() != 38 {
-			fmt.Println("[voting] - CreateShardInstructionsFromTransactionAndIns: ", tx.GetMetadataType())
+			fmt.Println("[ndh] - CreateShardInstructionsFromTransactionAndIns: ", tx.GetMetadataType())
 		}
 		switch tx.GetMetadataType() {
 		case metadata.ShardStakingMeta:

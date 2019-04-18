@@ -77,7 +77,7 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) BuildReqActions(
 	inst := fromshardins.NewSubmitProposalIns(common.DCBBoard, submitProposal)
 
 	instStr, err := inst.GetStringFormat()
-	fmt.Println("[voting] - submitDCBProposalMetadata BuildReqActions: ", instStr)
+	fmt.Println("[ndh] - submitDCBProposalMetadata BuildReqActions: ", instStr)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) BuildReqActions(
 	inst := fromshardins.NewSubmitProposalIns(common.GOVBoard, submitProposal)
 
 	instStr, err := inst.GetStringFormat()
-	fmt.Println("[voting] - submitGOVProposalMetadata BuildReqActions: ", instStr)
+	fmt.Println("[ndh] - submitGOVProposalMetadata BuildReqActions: ", instStr)
 	if err != nil {
 		return nil, err
 	}
