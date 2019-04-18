@@ -7,7 +7,6 @@ import (
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/metadata/frombeaconins"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/pkg/errors"
 )
 
 type ConstitutionInfo struct {
@@ -123,20 +122,20 @@ func (helper GOVConstitutionHelper) GetBoardType() common.BoardType {
 	return common.GOVBoard
 }
 
-func (helper DCBConstitutionHelper) NewRewardProposalSubmitterIns(chain *BlockChain, receiverAddress *privacy.PaymentAddress) (frombeaconins.InstructionFromBeacon, error) {
-	rewardProposalSubmitter := (chain.BestState.Beacon.StabilityInfo.BankFund / 10)
-	if rewardProposalSubmitter == 0 {
-		return nil, errors.New("[voting] - Not enough BankFund")
-	}
-	return frombeaconins.NewRewardProposalSubmitterIns(receiverAddress, rewardProposalSubmitter, common.DCBBoard), nil
+func (helper DCBConstitutionHelper) NewRewardProposalSubmitterIns(chain *BlockChain, receiverAddress *privacy.PaymentAddress, amount uint64) (frombeaconins.InstructionFromBeacon, error) {
+	// rewardProposalSubmitter := (chain.BestState.Beacon.StabilityInfo.BankFund / 10)
+	// if rewardProposalSubmitter == 0 {
+	// 	return nil, errors.New("[ndh] - Not enough BankFund")
+	// }
+	return frombeaconins.NewRewardProposalSubmitterIns(receiverAddress, amount, common.DCBBoard), nil
 }
 
-func (helper GOVConstitutionHelper) NewRewardProposalSubmitterIns(chain *BlockChain, receiverAddress *privacy.PaymentAddress) (frombeaconins.InstructionFromBeacon, error) {
-	rewardProposalSubmitter := (chain.BestState.Beacon.StabilityInfo.SalaryFund / 10)
-	if rewardProposalSubmitter == 0 {
-		return nil, errors.New("[voting] - Not enough SalaryFund")
-	}
-	ins := frombeaconins.NewRewardProposalSubmitterIns(receiverAddress, rewardProposalSubmitter, common.GOVBoard)
+func (helper GOVConstitutionHelper) NewRewardProposalSubmitterIns(chain *BlockChain, receiverAddress *privacy.PaymentAddress, amount uint64) (frombeaconins.InstructionFromBeacon, error) {
+	// rewardProposalSubmitter := (chain.BestState.Beacon.StabilityInfo.SalaryFund / 10)
+	// if rewardProposalSubmitter == 0 {
+	// 	return nil, errors.New("[ndh] - Not enough SalaryFund")
+	// }
+	ins := frombeaconins.NewRewardProposalSubmitterIns(receiverAddress, amount, common.GOVBoard)
 	return ins, nil
 }
 
@@ -179,6 +178,43 @@ func (helper DCBConstitutionHelper) GetBoardFund(chain *BlockChain) uint64 {
 }
 func (helper GOVConstitutionHelper) GetBoardFund(chain *BlockChain) uint64 {
 	return chain.BestState.Beacon.StabilityInfo.SalaryFund
+}
+
+func (helper DCBConstitutionHelper) GetBoardReward(chain *BlockChain) uint64 {
+	constitutionIndex := helper.GetConstitutionInfo(chain).ConstitutionIndex
+	total, err := chain.GetDatabase().GetBoardFundDB(common.DCBBoard, constitutionIndex)
+	if err != nil {
+		return 0
+	}
+	if constitutionIndex == 0 {
+		return total
+	}
+	preFund, err := chain.GetDatabase().GetBoardFundDB(common.DCBBoard, constitutionIndex-1)
+	if err != nil {
+		return 0
+	}
+	if total < preFund {
+		return 0
+	}
+	return common.DCBRewardPercent * (total - preFund) / 100
+}
+func (helper GOVConstitutionHelper) GetBoardReward(chain *BlockChain) uint64 {
+	constitutionIndex := helper.GetConstitutionInfo(chain).ConstitutionIndex
+	total, err := chain.GetDatabase().GetBoardFundDB(common.DCBBoard, constitutionIndex)
+	if err != nil {
+		return 0
+	}
+	if constitutionIndex == 0 {
+		return total
+	}
+	preFund, err := chain.GetDatabase().GetBoardFundDB(common.DCBBoard, constitutionIndex-1)
+	if err != nil {
+		return 0
+	}
+	if total < preFund {
+		return 0
+	}
+	return common.GOVRewardPercent * (total - preFund) / 100
 }
 
 func (helper DCBConstitutionHelper) GetTokenID() *common.Hash {

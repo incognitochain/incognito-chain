@@ -33,15 +33,16 @@ const (
 const (
 	SumOfVoteDCBToken                 = 100000000
 	SumOfVoteGOVToken                 = 100000000
-	MinimumBlockOfProposalDuration    = 50
+	MinimumBlockOfProposalDuration    = 10
 	MaximumBlockOfProposalDuration    = 200
 	MaximumProposalExplainationLength = 1000
 	DCBGovernorsLowerBound            = 3
-	DCBGovernorsUpperBound            = 6
+	DCBGovernorsUpperBound            = 4
+	DCBRewardPercent                  = 30
 	GOVGovernorsLowerBound            = 3
-	GOVGovernorsUpperBound            = 6
-	EncryptionOnePhraseDuration       = 5
-	RewardProposalSubmitter           = 500
+	GOVGovernorsUpperBound            = 4
+	GOVRewardPercent                  = 30
+	BoardRewardPercent                = 30
 	BasePercentage                    = 10000
 	PercentageBoardSalary             = 5
 )
