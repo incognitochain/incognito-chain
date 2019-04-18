@@ -603,7 +603,7 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 	//======BEGIN For testing and benchmark
 	temp := 0
 	for _, tx := range block.Body.Transactions {
-		//TODO: detect transaction that's not from user
+		//detect transaction that's not salary
 		if !tx.IsSalaryTx() {
 			temp++
 		}
