@@ -175,8 +175,13 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 		tp.AddTxCoinHashH(*txHash)
 	}
 	
-	tp.AddTransactionToDatabase(txHash, *txD)
-	
+	//TODO: Delete print statement after finish testing
+	err := tp.AddTransactionToDatabase(txHash, *txD)
+	if err != nil {
+		Logger.log.Errorf("Fail to add tx %+v to mempool database %+v \n", *txHash, err)
+	}
+	Logger.log.Criticalf("Add tx %+v to mempool database success \n", *txHash)
+	//==================================================
 	// add candidate into candidate list ONLY with staking transaction
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
@@ -613,13 +618,14 @@ func (tp *TxPool) EmptyPool() bool {
 }
 
 // Ignore error if transaction is not in database
-func (tp *TxPool) AddTransactionToDatabase(txHash *common.Hash, txDesc TxDesc) {
+func (tp *TxPool) AddTransactionToDatabase(txHash *common.Hash, txDesc TxDesc) error {
 		value, err := json.Marshal(txDesc)
 		if err != nil {
-			return
+			return err
 		}
 		err = tp.config.DataBaseMempool.AddTransaction(txHash,value)
 		if err != nil {
-			return
+			return err
 		}
+		return nil
 }
