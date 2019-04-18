@@ -126,7 +126,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuySellRequestTx(
 		// Skip building tx buyback/buysell if error (retry later)
 		return nil, nil
 	}
-	fmt.Printf("[db] built buy sell req: %d\n", cstAmount)
+	fmt.Printf("[db] built buy sell req: %d %v\n", cstAmount, keyWalletDCBAccount.KeySet.PaymentAddress)
 	return []metadata.Transaction{txs[0]}, nil
 }
 
