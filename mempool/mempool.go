@@ -92,8 +92,10 @@ func TxPoolMainLoop(tp *TxPool) {
 	if tp.TxLifeTime == 0 {
 		return
 	}
+	scanInterval := time.NewTicker(TXPOOL_SCAN_TIME * time.Second)
+	defer scanInterval.Stop()
 	for {
-		<-time.Tick(TXPOOL_SCAN_TIME * time.Second)
+		<-scanInterval.C
 		ttl := time.Duration(tp.TxLifeTime) * time.Second
 		txsToBeRemoved := []common.Hash{}
 		for _, tx := range tp.pool {
