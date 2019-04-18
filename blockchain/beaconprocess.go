@@ -357,7 +357,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		}
 		votingInstructionDCB, err := blockchain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
 		if err != nil {
-			fmt.Println("[voting]-Build DCB voting instruction failed: ", err)
+			fmt.Println("[ndh]-Build DCB voting instruction failed: ", err)
 		} else {
 			if len(votingInstructionDCB) != 0 {
 				stabilityInstructions = append(stabilityInstructions, votingInstructionDCB...)
@@ -365,7 +365,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		}
 		votingInstructionGOV, err := blockchain.generateVotingInstructionWOIns(GOVConstitutionHelper{})
 		if err != nil {
-			fmt.Println("[voting]-Build GOV voting instruction failed: ", err)
+			fmt.Println("[ndh]-Build GOV voting instruction failed: ", err)
 		} else {
 			if len(votingInstructionGOV) != 0 {
 				stabilityInstructions = append(stabilityInstructions, votingInstructionGOV...)
