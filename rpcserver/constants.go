@@ -24,6 +24,7 @@ const (
 	GetShardPoolLatestValidHeight = "getshardpoollatestvalidheight"
 	GetShardToBeaconPoolState     = "getshardtobeaconpoolstate"
 	GetCrossShardPoolState        = "getcrossshardpoolstate"
+	GetNextCrossShard             = "getnextcrossshard"
 	GetShardToBeaconPoolStateV2   = "getshardtobeaconpoolstatev2"
 	GetCrossShardPoolStateV2      = "getcrossshardpoolstatev2"
 	GetShardPoolStateV2           = "getshardpoolstatev2"
