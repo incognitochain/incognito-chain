@@ -268,7 +268,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		return nil, nil, err
 	}
 
-	// ValidateTransaction tx by it self // TODO validate performance later 0xkraken
+	// ValidateTransaction tx by it self
 	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
 	if !validated {
 		err := MempoolTxError{}
