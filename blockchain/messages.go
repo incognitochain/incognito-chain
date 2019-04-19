@@ -71,11 +71,17 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 				Logger.log.Error(err)
 				return
 			} else {
-				if blockchain.BestState.Shard[newBlk.Header.ShardID].ShardHeight == newBlk.Header.Height-1 {
-					err = blockchain.InsertShardBlock(newBlk, false)
-					if err != nil {
-						fmt.Println("Shard block insert pool err", err)
-						return
+				if blockchain.BestState.Shard[newBlk.Header.ShardID].ShardHeight == newBlk.Header.Height-1 && blockchain.config.UserKeySet != nil {
+					if !blockchain.ConsensusOngoing {
+						userRole := blockchain.BestState.Shard[newBlk.Header.ShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+						if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+							fmt.Println("Shard block insert", newBlk.Header.Height)
+							err = blockchain.InsertShardBlock(newBlk, false)
+							if err != nil {
+								Logger.log.Error(err)
+								return
+							}
+						}
 					}
 				} else {
 					err = blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
@@ -102,25 +108,25 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 				return
 			} else {
 				if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 && blockchain.config.UserKeySet != nil {
-					userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
-					fmt.Println("Beacon block user role", userRole)
-					if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
-						fmt.Println("Beacon block insert", newBlk.Header.Height)
-						err = blockchain.InsertBeaconBlock(newBlk, false)
-						if err != nil {
-							return
+					if !blockchain.ConsensusOngoing {
+						userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+						if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+							fmt.Println("Beacon block insert", newBlk.Header.Height)
+							err = blockchain.InsertBeaconBlock(newBlk, false)
+							if err != nil {
+								return
+							}
 						}
-						return
 					}
+				} else {
+					fmt.Println("Beacon block prepare add to pool", newBlk.Header.Height)
+					err := blockchain.config.BeaconPool.AddBeaconBlock(newBlk)
+					if err != nil {
+						fmt.Println("Beacon block add pool err", err)
+					}
+					fmt.Println("InsertBlockFromPool from beacon", newBlk.Header.Height)
+					blockchain.InsertBlockFromPool()
 				}
-
-				fmt.Println("Beacon block prepare add to pool", newBlk.Header.Height)
-				err := blockchain.config.BeaconPool.AddBeaconBlock(newBlk)
-				if err != nil {
-					fmt.Println("Beacon block add pool err", err)
-				}
-				fmt.Println("InsertBlockFromPool from beacon", newBlk.Header.Height)
-				blockchain.InsertBlockFromPool()
 			}
 		}
 	}
