@@ -88,8 +88,6 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 				if err != nil {
 					fmt.Println("Shard block add pool err", err)
 				}
-				fmt.Println("InsertBlockFromPool from shard")
-				go blockchain.InsertBlockFromPool()
 			}
 		}
 	}
@@ -123,8 +121,6 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 				if err != nil {
 					fmt.Println("Beacon block add pool err", err)
 				}
-				fmt.Println("InsertBlockFromPool from beacon", newBlk.Header.Height)
-				go blockchain.InsertBlockFromPool()
 			}
 		}
 	}
