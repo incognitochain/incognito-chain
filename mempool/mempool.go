@@ -195,8 +195,8 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 		if err != nil {
 			Logger.log.Error("Fail To Get Transaction from DBMP ", err)
 		} else {
-			Logger.log.Criticalf("Tx %+v from Pool Desc %+v \n", *txD.Desc.Tx.Hash(), txD)
-			Logger.log.Criticalf("Success Get Transaction %+v from DBMP %+v \n", *txDesc.Desc.Tx.Hash(), txDesc)
+			//Logger.log.Criticalf("Tx %+v from Pool Desc %+v \n", *txD.Desc.Tx.Hash(), txD)
+			//Logger.log.Criticalf("Success Get Transaction %+v from DBMP %+v \n", *txDesc.Desc.Tx.Hash(), txDesc)
 		}
 		tp.pool[*tx.Hash()] = &txDesc
 	} else {
