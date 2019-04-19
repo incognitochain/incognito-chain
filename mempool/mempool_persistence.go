@@ -93,20 +93,34 @@ func (tp *TxPool) ResetDatabaseMP() error {
 	return tp.config.DataBaseMempool.Reset()
 }
 func (tp *TxPool) LoadDatabaseMP() (int,error) {
-	allTxs, err := tp.config.DataBaseMempool.Load()
+	allTxHashes, allTxs, err := tp.config.DataBaseMempool.Load()
+	ttl := time.Duration(tp.TxLifeTime) * time.Second
 	if err != nil {
 		return 0, err
 	}
-	for _, tx := range allTxs {
+	for index, tx := range allTxs {
 		values := strings.Split(string(tx),string(lvdb.Splitter))
 		txDesc, err := UmmarshallTxDescFromDatabase(values[0], []byte(values[1]), []byte(values[2]))
 		if err != nil {
+			txHash,err := common.NewHash(allTxHashes[index][3:])
+			if err != nil {
+				continue
+			}
+			// fail to ummarshall transaction then remove
+			tp.RemoveTransactionFromDatabaseMP(txHash)
 			continue
 		}
+		//if transaction is timeout then remove
+		if time.Since(txDesc.StartTime) > ttl {
+			tp.RemoveTransactionFromDatabaseMP(txDesc.Desc.Tx.Hash())
+		}
+		//if not validated by current blockchain db then remove
 		err = tp.ValidateTransaction(txDesc.Desc.Tx)
 		if err != nil {
+			tp.RemoveTransactionFromDatabaseMP(txDesc.Desc.Tx.Hash())
 			continue
 		}
+		
 		tp.addTx(&txDesc, false)
 	}
 	return len(allTxs),nil
