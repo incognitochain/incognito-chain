@@ -59,6 +59,7 @@ type BlockChain struct {
 			Shards map[byte]bool
 		}
 	}
+	ConsensusOngoing bool
 	// knownChainState struct {
 	// 	Shards map[byte]ChainState
 	// 	Beacon ChainState
