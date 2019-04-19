@@ -1,11 +1,20 @@
 #!/usr/bin/env bash
 
 docker -v || bash -c "wget -qO- https://get.docker.com/ | sh"
+dataDir="/data"
+
+source miner.conf
 
 if [  -z "$privatekey" ]; then
     echo "Private key not set!"
-    echo "Type: export privatekey=your_private_key"
-    echo "Then run again"
+    exit
+fi
+if [  -z "$miner_port" ]; then
+    echo "port not set!"
+    exit
+fi
+if [  -z "$miner_rpc" ]; then
+    echo "rpc not set!"
     exit
 fi
 
@@ -15,4 +24,4 @@ read -p "Clear database?[y/n]"  clear
 ip=`curl http://checkip.amazonaws.com/`
 docker rm -f constant_miner
 
-docker run -e NAME=miner -p 9330:9330 -p 9334:9334 -e DISCOVERPEERSADDRESS='172.104.39.6:9330' -v /data:/data -e PRIVATEKEY="${privatekey}" -e EXTERNALADDRESS="${ip}:9330"  -e PORT=9330 -e RPC_PORT=9334 -d --name constant_miner dungvanautonomous/constant /run_constant.sh $clear
+docker run -e NAME=miner -p $miner_port:$miner_port -p $miner_rpc:$miner_rpc -e DISCOVERPEERSADDRESS='172.104.39.6:9330' -v /${dataDir}:/data -e PRIVATEKEY="${privatekey}" -e EXTERNALADDRESS="${ip}:9330"  -e PORT=$miner_port -e RPC_PORT=$miner_rpc -d --name constant_miner dungvanautonomous/constant /run_constant.sh $clear
