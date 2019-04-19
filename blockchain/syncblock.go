@@ -544,11 +544,6 @@ var lasttime = time.Now()
 
 func (blockchain *BlockChain) InsertBlockFromPool() {
 	// fmt.Println("InsertBlockFromPool")
-	blockchain.syncStatus.Lock()
-	defer func() {
-		blockchain.syncStatus.Unlock()
-		// fmt.Println("InsertBlockFromPool unlock")
-	}()
 
 	if time.Since(lasttime) >= 30*time.Millisecond {
 		lasttime = time.Now()
@@ -566,7 +561,7 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 			Logger.log.Error(err)
 		}
 	}
-
+	blockchain.syncStatus.Lock()
 	for shardID := range blockchain.syncStatus.Shards {
 		// fmt.Println("Get shard valid blks ", blks)
 
@@ -588,5 +583,7 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 		}(shardID)
 
 	}
+
+	blockchain.syncStatus.Unlock()
 	wg.Wait()
 }
