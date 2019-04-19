@@ -83,14 +83,13 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 							}
 						}
 					}
-				} else {
-					err = blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
-					if err != nil {
-						fmt.Println("Shard block add pool err", err)
-					}
-					fmt.Println("InsertBlockFromPool from shard")
-					blockchain.InsertBlockFromPool()
 				}
+				err = blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
+				if err != nil {
+					fmt.Println("Shard block add pool err", err)
+				}
+				fmt.Println("InsertBlockFromPool from shard")
+				blockchain.InsertBlockFromPool()
 			}
 		}
 	}
@@ -118,15 +117,15 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 							}
 						}
 					}
-				} else {
-					fmt.Println("Beacon block prepare add to pool", newBlk.Header.Height)
-					err := blockchain.config.BeaconPool.AddBeaconBlock(newBlk)
-					if err != nil {
-						fmt.Println("Beacon block add pool err", err)
-					}
-					fmt.Println("InsertBlockFromPool from beacon", newBlk.Header.Height)
-					blockchain.InsertBlockFromPool()
 				}
+				fmt.Println("Beacon block prepare add to pool", newBlk.Header.Height)
+				err := blockchain.config.BeaconPool.AddBeaconBlock(newBlk)
+				if err != nil {
+					fmt.Println("Beacon block add pool err", err)
+				}
+				fmt.Println("InsertBlockFromPool from beacon", newBlk.Header.Height)
+				blockchain.InsertBlockFromPool()
+
 			}
 		}
 	}
