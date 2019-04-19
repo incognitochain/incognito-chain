@@ -397,16 +397,6 @@ func (bsb *BestStateBeacon) processUpdateDCBProposalInstruction(ins frombeaconin
 		CurrentDCBNationalWelfare: GetOracleDCBNationalWelfare(),
 		DCBParams:                 dcbParams,
 	}
-
-	// Store saledata in state
-	for _, data := range dcbParams.ListSaleData {
-		key := getSaleDataKeyBeacon(data.SaleID)
-		if _, ok := bsb.Params[key]; ok {
-			continue
-		}
-		value := getSaleDataValueBeacon(&data)
-		bsb.Params[key] = value
-	}
 	return nil
 }
 
@@ -543,6 +533,21 @@ func (bc *BlockChain) updateStabilityLocalState(block *BeaconBlock) error {
 			err = bc.processUpdateGOVConstitutionIns(inst)
 		}
 
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (bc *BlockChain) storeListSaleData(dcbParams component.DCBParams) error {
+	// Store saledata in state
+	for _, data := range dcbParams.ListSaleData {
+		var saleRaw []byte
+		var err error
+		if saleRaw, err = json.Marshal(data); err == nil {
+			err = bc.config.DataBase.StoreSaleData(data.SaleID, saleRaw)
+		}
 		if err != nil {
 			return err
 		}

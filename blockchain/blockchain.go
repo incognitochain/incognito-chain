@@ -1419,6 +1419,11 @@ func (bc *BlockChain) processUpdateDCBConstitutionIns(inst []string) error {
 	if err != nil {
 		return err
 	}
+	err = bc.storeListSaleData()
+	if err != nil {
+		return err
+	}
+
 	err = bc.BestState.Beacon.processUpdateDCBProposalInstruction(*updateConstitutionIns)
 	if err != nil {
 		return err

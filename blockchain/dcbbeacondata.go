@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
@@ -72,24 +71,6 @@ func parseLoanResponseValueBeacon(data string) ([]*LoanRespData, error) {
 }
 
 //// Crowdsale bond
-func getSaleDataKeyBeacon(saleID []byte) string {
-	return saleDataPrefix + string(saleID)
-}
-
-func getSaleDataValueBeacon(data *component.SaleData) string {
-	value, _ := json.Marshal(data)
-	return string(value)
-}
-
-func parseSaleDataValueBeacon(value string) (*component.SaleData, error) {
-	data := &component.SaleData{}
-	err := json.Unmarshal([]byte(value), data)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
 type CrowdsalePaymentInstruction struct {
 	PaymentAddress privacy.PaymentAddress
 	Amount         uint64
