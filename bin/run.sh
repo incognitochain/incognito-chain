@@ -4,7 +4,7 @@ docker -v || bash -c "wget -qO- https://get.docker.com/ | sh"
 
 if [  -z "$privatekey" ]; then
     echo "Private key not set!"
-    echo "Type: privatekey=your_private_key"
+    echo "Type: export privatekey=your_private_key"
     echo "Then run again"
     exit
 fi
