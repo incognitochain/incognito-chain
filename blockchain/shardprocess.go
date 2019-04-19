@@ -78,6 +78,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 	@Notice: this block must have full information (complete block)
 */
 func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer bool) error {
+	//#slow why we need chainLock here?
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 	shardID := block.Header.ShardID
