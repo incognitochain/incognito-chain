@@ -51,7 +51,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	if interruptRequested(interrupt) {
 		return nil
 	}
-	
+
 	db, err := database.Open("leveldb", filepath.Join(cfg.DataDir, cfg.DatabaseDir))
 	// Create db and use it.
 	if err != nil {
@@ -66,7 +66,7 @@ func mainMaster(serverChan chan<- *Server) error {
 		Logger.log.Error(err)
 		panic(err)
 	}
-	
+
 	// Check wallet and start it
 	var walletObj *wallet.Wallet
 	if cfg.Wallet {

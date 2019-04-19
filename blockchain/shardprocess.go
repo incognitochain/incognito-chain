@@ -727,7 +727,6 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(txs []metadata.Trans
 			}
 			index++
 		} else {
-			//TODO: verify salary transaction
 			salaryCount++
 		}
 	}
