@@ -20,7 +20,7 @@ func (tp *TxPool) AddTransactionToDatabaseMP(txHash *common.Hash, txDesc TxDesc)
 	tx := txDesc.Desc.Tx
 	tempDesc := TempDesc{
 		StartTime: txDesc.StartTime,
-		IsPushMessage:txDesc.IsPushMessage,
+		IsPushMessage:txDesc.IsFowardMessage,
 		Height:txDesc.Desc.Height,
 		Fee:txDesc.Desc.Fee,
 		FeePerKB: txDesc.Desc.FeePerKB,
@@ -92,11 +92,12 @@ func (tp *TxPool) GetTransactionFromDatabaseMP(txHash *common.Hash) (TxDesc, err
 func (tp *TxPool) ResetDatabaseMP() error {
 	return tp.config.DataBaseMempool.Reset()
 }
-func (tp *TxPool) LoadDatabaseMP() (int,error) {
+func (tp *TxPool) LoadDatabaseMP() ([]TxDesc,error) {
+	txDescs := []TxDesc{}
 	allTxHashes, allTxs, err := tp.config.DataBaseMempool.Load()
 	ttl := time.Duration(tp.TxLifeTime) * time.Second
 	if err != nil {
-		return 0, err
+		return txDescs, err
 	}
 	for index, tx := range allTxs {
 		values := strings.Split(string(tx),string(lvdb.Splitter))
@@ -122,8 +123,9 @@ func (tp *TxPool) LoadDatabaseMP() (int,error) {
 		}
 		
 		tp.addTx(&txDesc, false)
+		txDescs = append(txDescs, txDesc)
 	}
-	return len(allTxs),nil
+	return txDescs, nil
 }
 func (tp *TxPool) RemoveTransactionFromDatabaseMP(txHash *common.Hash) (error){
 	err := tp.config.DataBaseMempool.RemoveTransaction(txHash)
@@ -167,7 +169,7 @@ func UmmarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byt
 	if err != nil {
 		return txDesc, err
 	}
-	txDesc.IsPushMessage = tempDesc.IsPushMessage
+	txDesc.IsFowardMessage = tempDesc.IsPushMessage
 	txDesc.StartTime = tempDesc.StartTime
 	txDesc.Desc.Height = tempDesc.Height
 	txDesc.Desc.Fee = tempDesc.Fee

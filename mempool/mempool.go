@@ -50,8 +50,7 @@ type TxDesc struct {
 	//Unix Time that transaction enter mempool
 	StartTime time.Time
 	
-	//TODO: add value to this field
-	IsPushMessage bool
+	IsFowardMessage bool
 }
 
 // TxPool is transaction pool
@@ -100,7 +99,7 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.TxLifeTime = cfg.TxLifeTime
 	tp.Reset = cfg.Reset
 }
-func (tp *TxPool) LoadOrResetDatabaseMP() {
+func (tp *TxPool) LoadOrResetDatabaseMP() []TxDesc {
 	if tp.Reset {
 		err := tp.ResetDatabaseMP()
 		if err != nil {
@@ -108,13 +107,15 @@ func (tp *TxPool) LoadOrResetDatabaseMP() {
 		} else {
 			Logger.log.Critical("Successfully Reset from database")
 		}
+		return []TxDesc{}
 	} else {
-		numOfTxs, err := tp.LoadDatabaseMP()
+		txDescs, err := tp.LoadDatabaseMP()
 		if err != nil {
 			Logger.log.Errorf("Fail to load mempool database, error: %+v \n", err)
 		} else {
-			Logger.log.Criticalf("Successfully load %+v from database \n", numOfTxs)
+			Logger.log.Criticalf("Successfully load %+v from database \n", len(txDescs))
 		}
+		return txDescs
 	}
 }
 func TxPoolMainLoop(tp *TxPool) {
@@ -415,7 +416,9 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 
 	return hash, txDesc, err
 }
-
+func (tp *TxPool) MarkFowardedTransaction(txHash common.Hash) {
+	tp.pool[txHash].IsFowardMessage = true
+}
 // This function is safe for concurrent access.
 func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction) (*metadata.TxDesc, error) {
 	tp.mtx.Lock()
