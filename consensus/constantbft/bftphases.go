@@ -131,13 +131,13 @@ func (protocol *BFTProtocol) phaseListen() error {
 phase:
 	for {
 		select {
-		case msgPropose := <-protocol.cBFTMsg:
-			if msgPropose.MessageType() == wire.CmdBFTPropose {
+		case msg := <-protocol.cBFTMsg:
+			if msg.MessageType() == wire.CmdBFTPropose {
 				fmt.Println("BFT: Propose block received", time.Since(protocol.startTime).Seconds())
-				protocol.forwardMsg(msgPropose)
+				protocol.forwardMsg(msg)
 				if protocol.RoundData.Layer == common.BEACON_ROLE {
 					pendingBlk := blockchain.BeaconBlock{}
-					pendingBlk.UnmarshalJSON(msgPropose.(*wire.MessageBFTPropose).Block)
+					pendingBlk.UnmarshalJSON(msg.(*wire.MessageBFTPropose).Block)
 
 					err := protocol.EngineCfg.BlockChain.VerifyPreSignBeaconBlock(&pendingBlk, true)
 					if err != nil {
@@ -148,7 +148,7 @@ phase:
 					protocol.multiSigScheme.dataToSig = pendingBlk.Header.Hash()
 				} else {
 					pendingBlk := blockchain.ShardBlock{}
-					pendingBlk.UnmarshalJSON(msgPropose.(*wire.MessageBFTPropose).Block)
+					pendingBlk.UnmarshalJSON(msg.(*wire.MessageBFTPropose).Block)
 					err := protocol.EngineCfg.BlockChain.VerifyPreSignShardBlock(&pendingBlk, protocol.RoundData.ShardID)
 					if err != nil {
 						Logger.log.Error(err)
@@ -162,26 +162,28 @@ phase:
 				timeout.Stop()
 				break phase
 			} else {
-				if msgPropose.MessageType() == wire.CmdBFTReq {
+				if msg.MessageType() == wire.CmdBFTReq {
 					go func() {
-						isMatchBeststate := msgPropose.(*wire.MessageBFTReq).BestStateHash == protocol.RoundData.BestStateHash
-						isMatchOffset := msgPropose.(*wire.MessageBFTReq).ProposerOffset == protocol.RoundData.ProposerOffset
-						isCommitee := common.IndexOfStr(msgPropose.(*wire.MessageBFTReq).Pubkey, protocol.RoundData.Committee) != -1
-						fmt.Println("BFT: val ", isMatchBeststate, isMatchOffset, isCommitee, time.Now().Unix(), protocol.RoundData.BestStateHash, msgPropose.(*wire.MessageBFTReq).BestStateHash, blockchain.GetBestStateBeacon().BeaconHeight)
+						isMatchBeststate := msg.(*wire.MessageBFTReq).BestStateHash == protocol.RoundData.BestStateHash
+						isMatchOffset := msg.(*wire.MessageBFTReq).ProposerOffset == protocol.RoundData.ProposerOffset
+						isCommitee := common.IndexOfStr(msg.(*wire.MessageBFTReq).Pubkey, protocol.RoundData.Committee) != -1
+						fmt.Println("BFT: val ", isMatchBeststate, isMatchOffset, isCommitee, time.Now().Unix(), protocol.RoundData.BestStateHash, msg.(*wire.MessageBFTReq).BestStateHash, blockchain.GetBestStateBeacon().BeaconHeight)
 						if isMatchBeststate && isMatchOffset && isCommitee {
 							if protocol.RoundData.Layer == common.BEACON_ROLE {
-								if userRole, _ := protocol.EngineCfg.BlockChain.BestState.Beacon.GetPubkeyRole(msgPropose.(*wire.MessageBFTReq).Pubkey, protocol.RoundData.ProposerOffset); userRole == common.PROPOSER_ROLE {
+								if userRole, _ := protocol.EngineCfg.BlockChain.BestState.Beacon.GetPubkeyRole(msg.(*wire.MessageBFTReq).Pubkey, protocol.RoundData.ProposerOffset); userRole == common.PROPOSER_ROLE {
 									msgReady, _ := MakeMsgBFTReady(protocol.RoundData.BestStateHash, protocol.RoundData.ProposerOffset, protocol.EngineCfg.ShardToBeaconPool.GetLatestValidPendingBlockHeight(), protocol.EngineCfg.UserKeySet)
 									protocol.EngineCfg.Server.PushMessageToBeacon(msgReady)
 								}
 							} else {
-								if userRole := protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].GetPubkeyRole(msgPropose.(*wire.MessageBFTReq).Pubkey, protocol.RoundData.ProposerOffset); userRole == common.PROPOSER_ROLE {
+								if userRole := protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].GetPubkeyRole(msg.(*wire.MessageBFTReq).Pubkey, protocol.RoundData.ProposerOffset); userRole == common.PROPOSER_ROLE {
 									msgReady, _ := MakeMsgBFTReady(protocol.RoundData.BestStateHash, protocol.RoundData.ProposerOffset, nil, protocol.EngineCfg.UserKeySet)
 									protocol.EngineCfg.Server.PushMessageToShard(msgReady, protocol.RoundData.ShardID)
 								}
 							}
 						}
 					}()
+				} else {
+					protocol.earlyMsgCh <- msg
 				}
 			}
 
@@ -215,13 +217,13 @@ func (protocol *BFTProtocol) phasePrepare() error {
 phase:
 	for {
 		select {
-		case msgPrepare := <-protocol.cBFTMsg:
-			if msgPrepare.MessageType() == wire.CmdBFTPrepare {
+		case msg := <-protocol.cBFTMsg:
+			if msg.MessageType() == wire.CmdBFTPrepare {
 				fmt.Println("BFT: Prepare msg received", time.Since(protocol.startTime).Seconds())
-				if common.IndexOfStr(msgPrepare.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0 && bytes.Compare(protocol.multiSigScheme.dataToSig[:], msgPrepare.(*wire.MessageBFTPrepare).BlkHash[:]) == 0 {
-					if _, ok := collectedRiList[msgPrepare.(*wire.MessageBFTPrepare).Pubkey]; !ok {
-						collectedRiList[msgPrepare.(*wire.MessageBFTPrepare).Pubkey] = msgPrepare.(*wire.MessageBFTPrepare).Ri
-						protocol.forwardMsg(msgPrepare)
+				if common.IndexOfStr(msg.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0 && bytes.Compare(protocol.multiSigScheme.dataToSig[:], msg.(*wire.MessageBFTPrepare).BlkHash[:]) == 0 {
+					if _, ok := collectedRiList[msg.(*wire.MessageBFTPrepare).Pubkey]; !ok {
+						collectedRiList[msg.(*wire.MessageBFTPrepare).Pubkey] = msg.(*wire.MessageBFTPrepare).Ri
+						protocol.forwardMsg(msg)
 						if len(collectedRiList) == len(protocol.RoundData.Committee) {
 							fmt.Println("BFT: Collected enough Ri", time.Since(protocol.startTime).Seconds())
 							timeout.Stop()
@@ -229,6 +231,8 @@ phase:
 						}
 					}
 				}
+			} else {
+				protocol.earlyMsgCh <- msg
 			}
 		case <-protocol.cTimeout:
 			//Use collected Ri to calc r & get ValidatorsIdx if len(Ri) > 1/2size(committee)
@@ -304,7 +308,6 @@ phase:
 						protocol.closeTimeoutCh()
 					}
 				}
-
 			}
 		case <-protocol.cTimeout:
 			//Combine collected Sigs with the same r that has the longest list must has size > 1/2size(committee)
