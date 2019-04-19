@@ -183,7 +183,6 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	txHash := tx.Hash()
 	Logger.log.Info(tx.Hash().String())
 	
-	//TODO: Delete print statement after finish testing
 	if isStore {
 		err := tp.AddTransactionToDatabaseMP(txHash, *txD)
 		if err != nil {
@@ -312,6 +311,7 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 	}
 	
 	// ValidateTransaction tx by it self // TODO validate performance later 0xkraken
+	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
 	if !validated {
 		err := MempoolTxError{}
@@ -389,7 +389,6 @@ func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
 	} else {
 		return errors.New("not exist tx in pool")
 	}
-	return nil
 }
 
 // MaybeAcceptTransaction is the main workhorse for handling insertion of new

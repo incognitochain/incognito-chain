@@ -222,7 +222,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 */
 func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	blockHash := block.Hash().String()
-	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
+	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 
 	if err := blockchain.StoreShardBlock(block); err != nil {
 		return err
