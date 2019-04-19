@@ -119,13 +119,10 @@ type SaleData struct {
 	SaleID   []byte // Unique id of the crowdsale to store in db
 	EndBlock uint64
 
-	BuyingAsset     common.Hash
-	BuyingAmount    uint64
-	DefaultBuyPrice uint64
-
-	SellingAsset     common.Hash
-	SellingAmount    uint64
-	DefaultSellPrice uint64
+	BondID *common.Hash
+	Price  uint64 // price per bond (in Constant)
+	Amount uint64 // number of bond to buy/sell
+	Buy    bool
 
 	proposalTxHash common.Hash // Temp storage; stored permanent in db, not in proposal
 }
