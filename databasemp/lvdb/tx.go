@@ -61,10 +61,15 @@ func (db *db) Reset() error {
 	return nil
 }
 
-func (db *db) Load() ([][]byte, error) {
+func (db *db) Load() ([][]byte, [][]byte, error) {
+	txHashes := [][]byte{}
 	txs := [][]byte{}
 	iter := db.lvdb.NewIterator(util.BytesPrefix(txKeyPrefix), nil)
 	for iter.Next() {
+		key := iter.Key()
+		newKey := make([]byte,len(key))
+		copy(newKey,key)
+		txHashes = append(txHashes, newKey)
 		value := iter.Value()
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -72,7 +77,7 @@ func (db *db) Load() ([][]byte, error) {
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
-		return txs, databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "iter.Error"))
+		return txHashes, txs, databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "iter.Error"))
 	}
-	return txs, nil
+	return txHashes, txs, nil
 }
