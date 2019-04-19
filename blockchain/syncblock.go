@@ -3,6 +3,7 @@ package blockchain
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/constant-money/constant-chain/common"
@@ -554,7 +555,7 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 	} else {
 		return
 	}
-
+	var wg sync.WaitGroup
 	blks := blockchain.config.BeaconPool.GetValidBlock()
 	fmt.Println("Get beacon valid blks ", blks)
 	for _, newBlk := range blks {
@@ -568,6 +569,8 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 
 	for shardID := range blockchain.syncStatus.Shards {
 		// fmt.Println("Get shard valid blks ", blks)
+
+		wg.Add(1)
 		go func(shardID byte) {
 			blks := blockchain.config.ShardPool[shardID].GetValidBlock()
 			//fmt.Println("GetShardValidBlock", len(blks))
@@ -580,7 +583,10 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 				}
 				//fmt.Println("Insert Shard blk time: ", newBlk.Header.Height, time.Since(time1).Seconds())
 			}
+
+			wg.Done()
 		}(shardID)
 
 	}
+	wg.Wait()
 }
