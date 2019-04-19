@@ -76,7 +76,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			case <-blockchain.cQuitSync:
 				return
 			case <-insertPoolTicker.C:
-				blockchain.InsertBlockFromPool()
+				go blockchain.InsertBlockFromPool()
 			}
 		}
 	}()
@@ -550,7 +550,6 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 	} else {
 		return
 	}
-	var wg sync.WaitGroup
 	blks := blockchain.config.BeaconPool.GetValidBlock()
 	fmt.Println("Get beacon valid blks ", blks)
 	for _, newBlk := range blks {
@@ -561,6 +560,7 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 			Logger.log.Error(err)
 		}
 	}
+	var wg sync.WaitGroup
 	blockchain.syncStatus.Lock()
 	for shardID := range blockchain.syncStatus.Shards {
 		// fmt.Println("Get shard valid blks ", blks)
