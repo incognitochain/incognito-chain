@@ -551,7 +551,6 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 	}
 
 	blks := blockchain.config.BeaconPool.GetValidBlock()
-	fmt.Println("Get beacon valid blks ", blks)
 	for _, newBlk := range blks {
 		// fmt.Println("Insert beacon blk", newBlk.Header.Height)
 		err := blockchain.InsertBeaconBlock(newBlk, false)
